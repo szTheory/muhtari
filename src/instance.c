@@ -1,7 +1,14 @@
-/* Instance lifetime, the info query and the size-tag helper. */
+/* Instance lifetime, the version and info queries, and the size-tag helper. */
 #include <string.h>
 
 #include "internal.h"
+#include "muhtari_version.h"
+
+/* The interface numbers this build reports. Each starts at 1, so zero means
+   absent; the behaviour revision changes when a frame, audio or state hash
+   changes for the same inputs. */
+#define MUHTARI__ABI 1u
+#define MUHTARI__BEHAVIOUR_REVISION 1u
 
 muhtari_status muhtari__check_size(const void *s, uint32_t first, uint32_t ours)
 {
@@ -28,6 +35,29 @@ static void write_out(void *out, const void *full, uint32_t ours)
     uint32_t size;
     memcpy(&size, out, sizeof size);
     memcpy(out, full, size < ours ? size : ours);
+}
+
+muhtari_status muhtari_get_versions(muhtari_versions *out)
+{
+    if (out == NULL) {
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    }
+    muhtari_status st =
+        muhtari__check_size(out, MUHTARI__VERSIONS_SIZE_FIRST, (uint32_t)sizeof *out);
+    if (st != MUHTARI_STATUS_OK) {
+        return st;
+    }
+    muhtari_versions v;
+    memset(&v, 0, sizeof v);
+    v.size = out->size;
+    v.library_major = MUHTARI_VERSION_MAJOR;
+    v.library_minor = MUHTARI_VERSION_MINOR;
+    v.library_patch = MUHTARI_VERSION_PATCH;
+    v.api = MUHTARI_API_VERSION;
+    v.abi = MUHTARI__ABI;
+    v.behaviour_revision = MUHTARI__BEHAVIOUR_REVISION;
+    write_out(out, &v, (uint32_t)sizeof v);
+    return MUHTARI_STATUS_OK;
 }
 
 muhtari_status muhtari_create(const muhtari_config *cfg, muhtari **out)

@@ -1,10 +1,17 @@
 cmake_minimum_required(VERSION 3.25)
 
+# version.txt is the single version source; release-please edits only it.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" MUHTARI_VERSION LIMIT_COUNT 1)
+if(NOT MUHTARI_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+  message(FATAL_ERROR "version.txt must hold MAJOR.MINOR.PATCH, not '${MUHTARI_VERSION}'")
+endif()
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS version.txt)
+
 # Only C is needed to build the library. A project that embeds this one with
 # add_subdirectory gets the library and the muhtari::muhtari alias; the runner,
 # the libretro core and the tests are added only when this is the top-level
 # project.
-project(muhtari LANGUAGES C)
+project(muhtari VERSION ${MUHTARI_VERSION} LANGUAGES C)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -42,6 +49,11 @@ target_compile_options(muhtari PRIVATE
   $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-fno-stack-protector -U_FORTIFY_SOURCE -ffile-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=.>
   $<$<C_COMPILER_ID:MSVC>:/GS- /Zl>)
 muhtari_warnings(muhtari)
+
+# The library version reaches the core through a private generated header;
+# the public header carries no version macros.
+configure_file(cmake/version.h.in ${PROJECT_BINARY_DIR}/generated/muhtari_version.h @ONLY)
+target_include_directories(muhtari PRIVATE ${PROJECT_BINARY_DIR}/generated)
 
 if(NOT PROJECT_IS_TOP_LEVEL)
   return()
