@@ -34,7 +34,7 @@ values in tests cite their source document.
   platform), each holding `LICENSE` and `THIRD-PARTY-NOTICES.md`; a behaviour-changing merge to `main` publishes
   them with `SHA256SUMS` and verified attestations as a GitHub release, through a release pull request the
   release App merges, with no manual step; a rehearsal run exercised every publish step before the first tag.
-  Needs the owner's release App and its secrets (GSD-HANDOFF 7).
+  Uses the release App `muhtari-release` and its secrets, set up 2026-10-15 (GSD-HANDOFF 7).
 - [ ] **FRAME-07**: The README's one-line install, run against the latest release's version-free archive, puts the
   core and its `.info` into RetroArch on an Apple Silicon Mac; a test runs that exact line against the built
   archive on macOS arm64.
@@ -156,34 +156,34 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FRAME-01 | — | Pending |
-| FRAME-02 | — | Pending |
-| FRAME-03 | — | Pending |
-| FRAME-04 | — | Pending |
-| FRAME-05 | — | Pending |
-| FRAME-06 | — | Pending |
-| FRAME-07 | — | Pending |
-| FRAME-08 | — | Pending |
-| FRAME-09 | — | Pending |
-| CPU-01 | — | Pending |
-| CPU-02 | — | Pending |
-| CPU-03 | — | Pending |
-| CPU-04 | — | Pending |
-| CPU-05 | — | Pending |
-| GAME-01 | — | Pending |
-| GAME-02 | — | Pending |
-| GAME-03 | — | Pending |
-| GAME-04 | — | Pending |
-| GAME-05 | — | Pending |
-| GAME-06 | — | Pending |
-| SND-01 | — | Pending |
-| SND-02 | — | Pending |
-| SND-03 | — | Pending |
-| SND-04 | — | Pending |
-| SND-05 | — | Pending |
+| FRAME-01 | Phase 1 | Pending |
+| FRAME-02 | Phase 1 | Pending |
+| FRAME-03 | Phase 1 | Pending |
+| FRAME-04 | Phase 1 | Pending |
+| FRAME-05 | Phase 1 | Pending |
+| FRAME-06 | Phase 1 | Pending |
+| FRAME-07 | Phase 1 | Pending |
+| FRAME-08 | Phase 1 | Pending |
+| FRAME-09 | Phase 1 | Pending |
+| CPU-01 | Phase 2 | Pending |
+| CPU-02 | Phase 2 | Pending |
+| CPU-03 | Phase 2 | Pending |
+| CPU-04 | Phase 2 | Pending |
+| CPU-05 | Phase 2 | Pending |
+| GAME-01 | Phase 3 | Pending |
+| GAME-02 | Phase 3 | Pending |
+| GAME-03 | Phase 3 | Pending |
+| GAME-04 | Phase 3 | Pending |
+| GAME-05 | Phase 3 | Pending |
+| GAME-06 | Phase 3 | Pending |
+| SND-01 | Phase 4 | Pending |
+| SND-02 | Phase 4 | Pending |
+| SND-03 | Phase 4 | Pending |
+| SND-04 | Phase 4 | Pending |
+| SND-05 | Phase 4 | Pending |
 
-**Coverage:** v1 requirements: 25 total; mapped to phases at roadmap creation.
+**Coverage:** v1 requirements: 25 total; 25 mapped to phases; 0 unmapped.
 
 ---
 *Requirements defined: 2026-10-15*
-*Last updated: 2026-10-15 after preparation review*
+*Last updated: 2026-10-15 after roadmap creation and the release App set-up*
