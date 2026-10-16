@@ -11,7 +11,10 @@ set(floor_linux_core 2.17)      # glibc, muhtari_libretro.so
 set(floor_linux_runner 2.34)    # glibc, muhtari-run: __libc_start_main@GLIBC_2.34
 set(floor_macos_x64 10.13)      # LC_VERSION_MIN_MACOSX version
 set(floor_macos_arm64 11.0)     # LC_BUILD_VERSION minos
-set(floor_windows KERNEL32.dll) # the only DLL the runner and the core import
+# The only DLL the runner and the core import, with MSVC's static runtime:
+# llvm-readobj --coff-imports lists "Name: KERNEL32.dll" alone for both, on
+# windows-x64 and windows-arm64 (CI run 38935217538).
+set(floor_windows KERNEL32.dll)
 foreach(var DIR SUFFIX WORK)
   if("${${var}}" STREQUAL "")
     message(FATAL_ERROR "floor: -D${var} is required")
@@ -101,6 +104,9 @@ elseif(os STREQUAL "windows")
     read(text llvm-readobj --coff-imports "${bin}")
     string(REGEX MATCHALL "Name: [^\n]+" dlls "${text}")
     list(TRANSFORM dlls REPLACE "^Name: " "")
+    if(NOT dlls)
+      list(APPEND bad "${bin}: no imports read")
+    endif()
     foreach(dll IN LISTS dlls)
       if(NOT dll IN_LIST floor_windows)
         list(APPEND bad "${bin}: imports ${dll}, outside the allowlist ${floor_windows}")
@@ -109,6 +115,9 @@ elseif(os STREQUAL "windows")
   endforeach()
   read(text llvm-readobj --coff-exports "${core}")
   string(REGEX MATCHALL "Name: [^\n]+" exports "${text}")
+  if(NOT exports)
+    list(APPEND bad "${core}: no exports read")
+  endif()
   within("${core}" "${exports}" "^Name: retro_" "exports")
   file(STRINGS "${WORK}/library/lib/muhtari.lib" directives
     REGEX "[-/][Dd][Ee][Ff][Aa][Uu][Ll][Tt][Ll][Ii][Bb]")

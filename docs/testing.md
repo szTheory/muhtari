@@ -147,6 +147,48 @@ cmake -DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLA
 
 Each fails unless every selected inventory test appears exactly once, ran, and did not fail, error or skip.
 
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request, on each push to `main`, by hand, and when another workflow
+calls it with an optional `ref`. Each job runs the same workflow preset you run locally, then the JUnit check above
+with its lane's inventory and labels.
+
+| Job | Runner | Runs | JUnit check |
+|---|---|---|---|
+| `changes` | `ubuntu-26.04` | `scripts/classify-changes.sh` on the pull request's paths, old and new names | none |
+| `hygiene` | `ubuntu-26.04` | preset `hygiene` | `hygiene.txt` |
+| `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
+| `asan` | `ubuntu-26.04` | preset `asan` | `ci.txt` without `abi` and `release` |
+| `nofp` ×2 | `ubuntu-26.04`, `ubuntu-26.04-arm` | preset `nofp` | `nofp.txt` |
+| `be32` | `ubuntu-26.04` | preset `be32`; uploads `hashes-be32` | `ci.txt`, label `portable` |
+| `hash-equality` | `ubuntu-26.04` | compares exactly seven `hashes.txt` files: the six `build` legs and `be32` | none |
+| `wasm32` | `ubuntu-26.04` | preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
+| `CI required` | `ubuntu-26.04` | the roll-up below | none |
+
+The hosted `be32` job takes about 25 seconds, well inside the five-minute limit for a per-pull-request lane, so
+`hash-equality` compares seven files. Windows legs load the MSVC environment with `vswhere` and `vcvarsall` for the runner's own architecture. Every
+action is pinned by full commit SHA.
+
+**The roll-up.** The ruleset requires one check, `CI required`. It always runs, and passes only when every job it
+needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which
+happens only when every changed path is under `.planning/`; `title` and `perf` may be skipped outside pull
+requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` reports only and is not among the
+jobs `CI required` needs.
+
+**Concurrency.** A new push to a pull request cancels that pull request's run in progress. Runs on `main` are never
+cancelled, and a call from another workflow does not queue behind the push run on the same commit.
+
+**Reading a failure.** Open the red job and the first red step:
+
+- A preset step fails: the CTest summary at the end of the step names each failed test, with its output above it.
+  Rerun that lane's preset locally (see "Running the Linux lanes locally").
+- An "Every test ran" step fails: a test was missing, ran twice, or failed in the JUnit file. Compare
+  `tests/inventory/<lane>.txt` with what the preset registers.
+- `hash-equality` fails: the message names the first file that differs and prints both files. The artifact name
+  names the lane.
+- `CI required` fails with every other job green: a job was skipped where the roll-up does not allow it. Its log
+  prints each job's result.
+
 ## Release archives
 
 `release.archive_contents` unpacks the three zips under `build/ci/release/extract` and requires:
