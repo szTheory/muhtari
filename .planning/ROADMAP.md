@@ -40,7 +40,23 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Merging the phase's pull request publishes a GitHub release of the 18 archives, each holding `LICENSE` and `THIRD-PARTY-NOTICES.md`, with `SHA256SUMS` and verified attestations, through a release pull request the release App merges, after a rehearsal run exercised every publish step.
   4. The README's one-line install, run against the latest release's version-free archive, puts the core and its `.info` into RetroArch on an Apple Silicon Mac, and a CI test runs that exact line against the built archive on macOS arm64.
   5. `scripts/apply-repo-settings.sh` applies the settings and the committed ruleset, pull-request titles are checked as Conventional Commits, `ctest -R policy.dependabot` and `ctest -L perf` pass, the instructions-per-frame gate compares each pull request with its merge base, and the nightly `muhtari-run --bench` records its trend data.
-**Plans**: TBD
+**Plans**: 14 plans (01–08 local; 09–14 need GitHub runs)
+
+Plans:
+- [ ] 01-01-PLAN.md — Tracer: header, core, runner hash, presets, exact inventory; the core's full 0.1.0 contract
+- [ ] 01-02-PLAN.md — Warm palette seed with notice, PNG writer, `--dump-frame`
+- [ ] 01-03-PLAN.md — Runner bench, stop, exit table, usage; `docs/runner.md`
+- [ ] 01-04-PLAN.md — libretro core, vendored header, `.info`, in-process host in both pixel formats
+- [ ] 01-05-PLAN.md — Install, embed, header C/C++, archives, README install line, embedding docs
+- [ ] 01-06-PLAN.md — ABI gates, `release.floor`, the `hygiene` lane
+- [ ] 01-07-PLAN.md — Pins and fetch script; Linux `ci`, `asan`, `nofp` in containers
+- [ ] 01-08-PLAN.md — `be32` and wasm32 lanes; four-lane local hash equality
+- [ ] 01-09-PLAN.md — `ci.yml` on six platforms behind `CI required`, via a draft probe PR
+- [ ] 01-10-PLAN.md — Hosted RetroArch job with pixel-exact compare
+- [ ] 01-11-PLAN.md — Release pipeline and the published-and-deleted rehearsal
+- [ ] 01-12-PLAN.md — Instructions-per-frame gate (report-only) and nightly bench
+- [ ] 01-13-PLAN.md — Settings `--check`, committed ruleset, Dependabot
+- [ ] 01-14-PLAN.md — Measured timeouts, owner applies settings, probe PR closed
 **UI hint**: no
 **Canonical refs:** `.planning/preparation/ENGINEERING.md`, `.planning/preparation/HOSTS-AND-INTEGRATION.md`, `.planning/preparation/ARCHITECTURE.md`, `PROVENANCE.md`
 
@@ -93,7 +109,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. A test frame in RetroArch | 0/TBD | Not started | - |
+| 1. A test frame in RetroArch | 0/14 | Not started | - |
 | 2. The CPU matches the public vectors | 0/TBD | Not started | - |
 | 3. Games play in RetroArch | 0/TBD | Not started | - |
 | 4. Sound | 0/TBD | Not started | - |
