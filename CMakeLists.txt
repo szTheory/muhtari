@@ -59,11 +59,17 @@ if(NOT PROJECT_IS_TOP_LEVEL)
   return()
 endif()
 
+# Host helpers the runner and the libretro adapter share: the palette that
+# turns native colour bytes into RGB. Outside the core and its hash.
+add_library(muhtari_host STATIC host/palette.c)
+target_include_directories(muhtari_host PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host)
+muhtari_warnings(muhtari_host)
+
 # The headless runner, built as ISO C17 with POSIX 2008 and no GNU extensions.
 add_executable(muhtari-run
   runner/main.c
   runner/sha256.c)
-target_link_libraries(muhtari-run PRIVATE muhtari::muhtari)
+target_link_libraries(muhtari-run PRIVATE muhtari::muhtari muhtari_host)
 target_compile_definitions(muhtari-run PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-run PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/runner)
