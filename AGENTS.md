@@ -56,4 +56,6 @@ Small modules, plain control flow, fixed-width integer types. Public names start
 prefixes its own names. A hardware comment says what the hardware does and cites its source (a document, or a
 `.planning/preparation` section). No planning IDs in code, test names or user docs. To decide how to do
 something, follow the ladder at ponytail.dev: remove the need, reuse what is here, use the standard library, use
-the platform, and only then write the minimum new code.
+the platform, and only then write the minimum new code. Another copy and paste beats another dependency: when
+outside code is needed, a permissive seed with its notice is preferred to a new package, so the dependency tree
+stays small and flat.

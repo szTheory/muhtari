@@ -1,8 +1,8 @@
 ---
 title: "Prompt coverage: every owner ask and where it lives"
-summary: "Maps each of the owner's 52 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
+summary: "Maps each of the owner's 53 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
 read_when: "At kickoff review and at every milestone close; also before calling an owner ask done, deferred or out of scope."
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # Prompt coverage
@@ -14,7 +14,7 @@ not committed.
 | Question | Section |
 |---|---|
 | Where does owner ask N live, and what is left to do? | 1 |
-| Which asks are only partly placed? | 1 (status Partial: 3, 8, 31, 51) |
+| Which asks are only partly placed? | 1 (status Partial: 31, 51, 52) |
 | What did the owner require, and what did preparation choose? | 2 |
 | How is this file kept true? | 3 |
 
@@ -36,7 +36,7 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 5 | A reusable core with clean video, audio and input interfaces that other frontends, Playstead included, can use | ARCHITECTURE (public C API); AGENTS 2, 4; DECISIONS (three deliverables, native MARIA pixels); HOSTS 1, 4, 7; v1.0 ph1 (test card through libretro) | Documented | Playstead pin fields v2.0; continuation protocol v3.0 (SEED-002); integration v6.0 (SEED-005) |
 | 6 | Incredibly fast | ENGINEERING 8 (Cachegrind Ir/frame gate per PR, no allocation after load); ECOSYSTEM 1.1, 4 (burst/lazy design, 1.8–4.3 M Ir/frame); MARIA 10; ARCHITECTURE | Documented | Baseline measured in v1.0; ceilings tightened at each tune-up (SEED-007) |
 | 7 | Correct, and fixing what people dislike about other 7800 emulators | ECOSYSTEM 1.2 (wiki problem games), 2 (C.01–C.27, each with a response and milestone); CONFORMANCE 3 (oracles at VBLANK), 4 (own diagnostics); MARIA 9; SYSTEM 9; v1.0 ph2–4 | Documented | Hardware-measured accuracy and an FPGA-RTL oracle v4.0 (SEED-003) |
-| 8 | Best-practice C, CMake and CI/CD; fan-out research through every stakeholder lens with an adversarial pass | ENGINEERING 2 (flags, presets, analyzers), 4 (CI); ECOSYSTEM 3 (personas); every choice names its strongest alternative and flip condition; MARIA 10 (corrections to the design spine); ECOSYSTEM 5 (strongest reason this is wrong) | Documented | GSD-HANDOFF 8 records the adversarial pass: the fact-check (58 claims re-fetched, 5 corrected), the fresh-eyes review, two roadmapper dry runs and the hygiene tests |
+| 8 | Best-practice C, CMake and CI/CD; fan-out research through every stakeholder lens with an adversarial pass | ENGINEERING 2 (flags, presets, analyzers), 4 (CI); ECOSYSTEM 3 (personas); every choice names its strongest alternative and flip condition; MARIA 10 (corrections to the design spine); ECOSYSTEM 5 (strongest reason this is wrong); GSD-HANDOFF 3 (each discuss advisor gets the owner's fan-out brief, and its recommendations are followed) | Documented | GSD-HANDOFF 8 records the adversarial pass: the fact-check (58 claims re-fetched, 5 corrected), the fresh-eyes review, two roadmapper dry runs and the hygiene tests |
 | 9 | Code that is a joy to read, educational and self-documenting; KISS/YAGNI per ponytail.dev | AGENTS Style; ENGINEERING 10 (names, sizes, comments cite sources, the ladder), 7 (YAGNI list); HOSTS 5 (YAGNI order) | Documented | Size and comment rules are enforced by review (ENGINEERING 10) |
 | 10 | Performance, compatibility and correctness baselines across all games, always ratcheting up | CONFORMANCE 5 (ledger, predicates, ratchet, local-only preset); ENGINEERING 8 (Ir/frame gate, `quality.json` contract); DECISIONS (passes only ratchet up); v1.0 ph3–4 (frame and audio hashes on six platforms) | Documented | `quality.json` is first built at v2.0's tune-up (SEED-007); the whole-library ledger is v2.0 (SEED-001) |
 | 11 | Hardware documentation with provenance, primary sources preferred, kept in `.planning` as a RAG-discoverable second brain | SYSTEM, MARIA, AUDIO, CARTRIDGES (tiered, pinned Sources tables); README (frontmatter `read_when`, Where to look); PROVENANCE 1, 6–7; ENGINEERING 11 (`docs/hardware/<chip>.md`) | Documented | Facts graduate to public `docs/hardware/` as each subsystem lands (README, "Keeping it current") |
@@ -80,9 +80,10 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 49 | Usable as a core inside other emulators and frontends | HOSTS 1 (libretro), 2 (rcheevos map), 4 (runner process contract); ARCHITECTURE; AGENTS 2, 4; ENGINEERING 11 (`docs/embedding.md`) | Documented | The browser build (SEED-008); Playstead integration v6.0 (SEED-005) |
 | 50 | Use the new OpenGSD (`gsd-core`), not the old GSD | GSD-HANDOFF 1, 2 (`@opengsd/gsd-core` 1.17.0 version check), 5, 8; LESSONS XFER-023, -024 | Documented | — |
 | 51 | Power-efficient, for battery life on handhelds | ECOSYSTEM 4 (work per frame, device budgets); FRAME-08 (instructions-per-frame ratchet), FRAME-09 (bench); ENGINEERING 8, 9 (`armhf` nightly); PROJECT constraints (efficiency); SEED-005 | Partial | Work per frame is guarded from phase 1, but energy is never measured; battery budgets on a handheld come with the ports (SEED-005) |
-| 52 | Efficient in the browser through WebAssembly; the owner ranks it very important | HOSTS 6; ARCHITECTURE (portability row); PROJECT constraints (efficiency); the pending todo for the phase 1 discussion (a wasm32 hash lane); SEED-008 | Later | Phase 1 discuss decides the wasm32 hash lane; the browser build is weighed at the v1.0 close, or sooner if the owner asks (SEED-008) |
+| 52 | Efficient in the browser through WebAssembly; the owner ranks it very important | HOSTS 6; ARCHITECTURE (portability row); PROJECT constraints (efficiency); v1.0 ph1 (a wasm32 build and hash-equality lane on every PR, decided at the phase 1 discussion); SEED-008 | Partial | The wasm32 build and its frame hash are guarded from phase 1; the browser build is weighed at the v1.0 close, or sooner if the owner asks (SEED-008) |
+| 53 | Another copy and paste beats another dependency: small, flat dependency trees, a dependency only when truly needed | AGENTS Style; PROVENANCE 4 (permissive seeds with their notices); PROJECT out of scope (no test framework dependency); ENGINEERING 7 (YAGNI list) | Documented | — |
 
-Totals: Documented 42, Partial 3, Later 5, Inapplicable 0.
+Totals: Documented 45, Partial 3, Later 5, Inapplicable 0.
 
 ## 2. Owner constraints vs agent recommendations
 

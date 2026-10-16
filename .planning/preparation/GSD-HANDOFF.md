@@ -2,7 +2,7 @@
 title: "GSD hand-off: kickoff, per-phase routine, settings and owner tasks"
 summary: "How to start and run muhtari with OpenGSD one step at a time: the kickoff text, the settings and why, the per-phase and milestone routines, the owner's tasks, and what was checked before hand-off."
 read_when: "Before the kickoff, before each GSD step, and whenever a GSD step behaves unexpectedly."
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # GSD hand-off
@@ -72,7 +72,9 @@ node ~/.claude/gsd-core/bin/gsd-tools.cjs query config-get workflow.test_command
 1. The agent branches `phase/NN-slug` off `origin/main` (AGENTS rule 9; the pre-commit hook refuses commits on
    `main` once a remote exists).
 2. `/gsd-discuss-phase N` — the owner's global GSD profile turns on advisor mode, so discuss also spawns advisor
-   researchers; expect that cost.
+   researchers; expect that cost. Each advisor gets the owner's fan-out brief: every decision point in its area
+   researched through all relevant lenses, primary sources first, with an adversarial pass, ending in one
+   coherent recommendation per point that the step then follows without asking again (owner, 2026-10-16).
 3. `/gsd-plan-phase N`
 4. `/gsd-execute-phase N` — code review, the test gate (`workflow.test_command`), the verifier and the phase
    close all run inside this step [GH.01].
