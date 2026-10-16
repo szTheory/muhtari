@@ -33,7 +33,7 @@ How code, data and hardware facts enter muhtari, which upstream files may seed i
 | 7800basic `e7c18d2ecdc6` [PV.09] | Compiler GPL-2; included and generated 6502 code CC0; output belongs to its author | As a tool only; `includes/*` CC0 except the files named in §3; `lzsa1compression.asm` BSL-1.0 (Brandwood) |
 | 7800OpenBIOS `b8bc745a8744` [PV.10] | BIOS source CC0; the KiloParsec game all rights reserved | `7800openbios.asm`, built with KiloParsec removed (§6) |
 | 7800.8bitdev.org wiki [PV.11] | None stated (no rights text, no copyright page) | Facts in our own words; a short quote with a citation; prose and tables are not copied |
-| nesturbator `3200aa868371` [PV.12] | MIT; every commit is by the owner's account or its release bot | All of it, except its third-party files (`libretro.h`, vectors and test ROMs keep their own notices) and NES facts |
+| nesturbator `9f9386c661f6` [PV.12] | MIT; every commit is by the owner's account or its release bot | All of it, except its third-party files (`libretro.h`, vectors and test ROMs keep their own notices) and NES facts |
 
 Pins: a7800 `7a2afdc1ea08` is v5.2 (`4dbf85ea90fb`, the oracle binary) plus 25 palette, display and notes commits; its `pokey.cpp` last changed 2022-06-08, before v5.2. 7800basic `e7c18d2ecdc6` is v0.41 (`03aebb85206f`) plus 7 commits.
 
@@ -48,11 +48,11 @@ A seed is the only route by which another project's expression reaches `src/`. R
 
 | Module | Seed @ pin | Licence | Must change | Attribution | Replace when | Parity corpus |
 |---|---|---|---|---|---|---|
-| SALLY CPU | nesturbator `src/cpu.c` @`3200aa868371` | MIT, same owner | NMOS decimal ADC/SBC; per-cycle NMI (penultimate cycle, branch, BRK hijack); generic bus seam; drop 2A03 paths | commit-body line (§5a) | n/a (own code) | SingleStepTests `6502/v1`, every bus cycle |
-| Bus, synth, state, runner, libretro, CI, hygiene | nesturbator @`3200aa868371` | MIT, same owner | MARIA ticks; 4/6-tick cycles; HALT on any cycle; RDY on reads only; several audio sources | commit-body line; `libretro.h` keeps its notice | n/a | its own hash pins |
+| SALLY CPU | nesturbator `src/cpu.c` @`9f9386c661f6` | MIT, same owner | NMOS decimal ADC/SBC; per-cycle NMI (penultimate cycle, branch, BRK hijack); generic bus seam; drop 2A03 paths | commit-body line (§5a) | n/a (own code) | SingleStepTests `6502/v1`, every bus cycle |
+| Bus, synth, state, runner, libretro, CI, hygiene | nesturbator @`9f9386c661f6` | MIT, same owner | MARIA ticks; 4/6-tick cycles; HALT on any cycle; RDY on reads only; several audio sources | commit-body line; `libretro.h` keeps its notice | n/a | its own hash pins |
 | POKEY (fallback only) | a7800 `src/devices/sound/pokey.cpp` @`7a2afdc1ea08` | BSD-3-Clause | used only if the own POKEY (written from the Altirra Hardware Reference Manual, A7800-AUDIO §5) slips: C17 integer port; the `double`/`exp()` output stage (L774–818) becomes integer tables; (tick, level) transitions; plus the init, two-tone and high-pass fixes MAME lacks | §5a header; notices section in all zips | v4: checked against MiSTer `rtl/Pokey/*` | POKEY unit vectors; 7800basic POKEY and RMT samples; E.X.O., A.R.T.I., Ballblazer (local) |
 | YM2151 (v4) | ymfm `src/ymfm_opm.*` @`81aec25ccbb9` | BSD-3-Clause | C++ to C17; OPM only; integer | §5a | only if size or speed demands it | ymfm itself, built as a test oracle |
-| Palettes (host helper) | a7800 `src/mame/drivers/a7800.cpp` L705–1452 | BSD-3-Clause | 6 tables (NTSC/PAL × cool 25.7°, warm 26.7°, hot 27.7°) become a C table outside the hash | §5a | an own generator, if the owner wants no notice (§7) | byte-equal RGB tables |
+| Palettes (host helper) | a7800 `src/mame/drivers/a7800.cpp` L705–1452 | BSD-3-Clause | 6 tables (NTSC/PAL × cool 25.7°, warm 26.7°, hot 27.7°) become a C table outside the hash; only the warm NTSC table is seeded so far (`host/palette.c`), and the other five arrive with the palette option | §5a | an own generator, if the owner wants no notice (§7) | byte-equal RGB tables |
 | MARIA, TIA audio, RIOT, boards, ports, HLE boot | none: own code from the Software Guide, the A78 spec, schematics and measured facts | — | — | lifting any table turns it into a seed row | — | diagnostics; hash-list ledger |
 
 Read, never copied: MAME and a7800 `maria.cpp`, `bus/a7800/*`, `a7800_ctrl/*`; MiSTer `rtl/Maria/*`, `sally.sv`, `TIA.sv`, `M6532.sv`, `cart.sv`, `souper.v`; floooh `m6502.h`; A7800Hawk. a7800's `pokey.cpp` credits "original info found in Ron Fries' Pokey emulator", yet MAME licenses it BSD-3 under three named holders. That is accepted as stated.
@@ -112,7 +112,7 @@ It keeps the project's own licence clean. It is not legal advice, and it is no d
 | PV.09 | T1 | github.com/7800-devtools/7800basic `LICENSE.txt`, `includes/*` headers, `samples/` | `e7c18d2ecdc6` | GPL-2/CC0/BSL-1.0/LGPL-2 split, unknown includes |
 | PV.10 | T1 | github.com/7800-devtools/7800OpenBIOS `README.txt`, `7800openbios.asm` L1–11, L164, L846–852 | `b8bc745a8744` | CC0, KiloParsec terms, RIOT loader |
 | PV.11 | T2 | 7800.8bitdev.org `api.php` siteinfo `rightsinfo` (empty); "7800 NTSC BIOS" rev 1259 | accessed 2026-10-15 | no wiki licence; BIOS disassembly |
-| PV.12 | T1 | github.com/szTheory/nesturbator `PROVENANCE.md`, `THIRD-PARTY-NOTICES.md`, `CMakeLists.txt` L115–138, `tests/cmake/check_archives.cmake` L400–420, git authors | `3200aa868371` | templates, archive check, same-owner seeds |
+| PV.12 | T1 | github.com/szTheory/nesturbator `PROVENANCE.md`, `THIRD-PARTY-NOTICES.md`, `CMakeLists.txt` L115–138, `tests/cmake/check_archives.cmake` L32–50, git authors | `9f9386c661f6` | templates, archive check, same-owner seeds |
 | PV.13 | T1 | nesturbator `.planning/preparation/DECISIONS.md` DEC.04, `NES-ECOSYSTEM.md` §3 | `8ae2c6e32e7f` | relicensing precedent |
 | PV.14 | T1 | GitHub API `license` of test7800 (`ce8e29a987a1`), prosystem-libretro, js7800, Stella, ProSystem1_3, Klaus2m5 tests, NES_MiSTer; a7800 v5.2 and test7800 v0.9.0 release assets | accessed 2026-10-15 | GPL status; released oracle binaries |
 | PV.15 | T4 | forums.atariage.com/topic/271920 "TIA sound abnormalities" (cited by MiSTer `top.sv`) | fetch returned 403, 2026-10-15 (unverified) | TIA mix measurements |
