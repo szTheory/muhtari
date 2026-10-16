@@ -124,11 +124,50 @@ endif()
 # Release archives, one per install component.
 include(cmake/packaging.cmake)
 
+# The hygiene lane registers only the repository checks (formatting, the
+# integer-only text scan, the analyzer, scripts/hygiene.sh) and finds its own
+# tools, so no one sets PATH: clang-format and clang-tidy 21 by their Debian
+# names, then Homebrew's keg-only llvm@21, then PATH.
+option(MUHTARI_HYGIENE "Register only the hygiene tests" OFF)
+if(MUHTARI_HYGIENE)
+  set(hint "")
+  find_program(MUHTARI_BREW brew)
+  if(MUHTARI_BREW)
+    execute_process(COMMAND ${MUHTARI_BREW} --prefix llvm@21
+      OUTPUT_VARIABLE prefix OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE rc)
+    if(rc EQUAL 0)
+      set(hint ${prefix}/bin)
+    endif()
+  endif()
+  set(get "macOS: brew install llvm@21; Ubuntu: apt install clang-format-21 clang-tidy-21")
+  find_program(MUHTARI_CLANG_FORMAT NAMES clang-format-21 clang-format HINTS ${hint})
+  find_program(MUHTARI_CLANG_TIDY NAMES clang-tidy-21 clang-tidy HINTS ${hint})
+  foreach(tool CLANG_FORMAT CLANG_TIDY)
+    if(NOT MUHTARI_${tool})
+      string(TOLOWER ${tool} name)
+      string(REPLACE "_" "-" name ${name})
+      message(FATAL_ERROR "hygiene: ${name} 21 not found (${get})")
+    endif()
+  endforeach()
+  execute_process(COMMAND ${MUHTARI_CLANG_FORMAT} --version OUTPUT_VARIABLE version)
+  if(NOT version MATCHES "version 21\\.")
+    string(REGEX MATCH "version [0-9.]+" found "${version}")
+    message(FATAL_ERROR "hygiene: ${MUHTARI_CLANG_FORMAT} is ${found}, not 21 (${get})")
+  endif()
+  find_program(MUHTARI_JQ jq REQUIRED)
+  find_program(MUHTARI_SH sh REQUIRED)
+  find_package(Git REQUIRED)
+endif()
+
 # Tests. MUHTARI_TIMEOUT_SCALE multiplies every test's timeout on slow lanes;
 # MUHTARI_INVENTORY names the tests/inventory/<name>.txt the registered tests
 # must equal.
 set(MUHTARI_TIMEOUT_SCALE 1 CACHE STRING "Multiplier for every test timeout")
-set(MUHTARI_INVENTORY ci CACHE STRING "Test inventory file under tests/inventory")
+set(inventory ci)
+if(MUHTARI_HYGIENE)
+  set(inventory hygiene)
+endif()
+set(MUHTARI_INVENTORY ${inventory} CACHE STRING "Test inventory file under tests/inventory")
 enable_testing()
 include(cmake/MuhtariTests.cmake)
 include(tests/tests.cmake)

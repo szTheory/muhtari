@@ -1,0 +1,3 @@
+# Every test the hygiene preset registers: name<TAB>labels.
+# Sorted; configure fails when this differs from what is registered.
+hygiene.tree	hygiene
