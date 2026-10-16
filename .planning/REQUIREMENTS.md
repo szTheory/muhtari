@@ -30,12 +30,12 @@ values in tests cite their source document.
 - [x] **FRAME-05**: The `asan`, `nofp` and `hygiene` presets pass: no sanitizer finding; no floating point, no
   mutable global and no undefined symbol beyond the C memory functions in the core; no personal data, no unlisted
   binary and no GPL text in the tree.
-- [ ] **FRAME-06**: Every pull request builds the 18 archives (library, runner and libretro core for each
+- [x] **FRAME-06**: Every pull request builds the 18 archives (library, runner and libretro core for each
   platform), each holding `LICENSE` and `THIRD-PARTY-NOTICES.md`; a behaviour-changing merge to `main` publishes
   them with `SHA256SUMS` and verified attestations as a GitHub release, through a release pull request the
   release App merges, with no manual step; a rehearsal run exercised every publish step before the first tag.
   Uses the release App `muhtari-release` and its secrets, set up 2026-10-15 (GSD-HANDOFF 7).
-- [ ] **FRAME-07**: The README's one-line install, run against the latest release's version-free archive, puts the
+- [x] **FRAME-07**: The README's one-line install, run against the latest release's version-free archive, puts the
   core and its `.info` into RetroArch on an Apple Silicon Mac; a test runs that exact line against the built
   archive on macOS arm64.
 - [ ] **FRAME-08**: `scripts/apply-repo-settings.sh` applies the repository settings and the committed ruleset;
@@ -169,8 +169,8 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 | FRAME-03 | Phase 1 | Complete |
 | FRAME-04 | Phase 1 | Complete |
 | FRAME-05 | Phase 1 | Complete |
-| FRAME-06 | Phase 1 | Pending |
-| FRAME-07 | Phase 1 | Pending |
+| FRAME-06 | Phase 1 | Complete |
+| FRAME-07 | Phase 1 | Complete |
 | FRAME-08 | Phase 1 | Pending |
 | FRAME-09 | Phase 1 | Pending |
 | CPU-01 | Phase 2 | Pending |
