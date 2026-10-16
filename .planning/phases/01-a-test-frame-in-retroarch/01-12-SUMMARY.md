@@ -137,8 +137,8 @@ coverage:
     requirement: FRAME-05
     verification:
       - kind: integration
-        ref: "plan 01-14 ci.yml run on the probe pull request"
-        status: unknown
+        ref: "plan 01-14 ci.yml run on the probe pull request (build linux-x64 and linux-arm64, asan, nofp on both), https://github.com/szTheory/muhtari/actions/runs/38935647258"
+        status: pass
     human_judgment: false
 
 duration: 19min

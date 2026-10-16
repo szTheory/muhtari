@@ -124,8 +124,8 @@ coverage:
     requirement: FRAME-03
     verification:
       - kind: e2e
-        ref: "plan 01-14 CI run (hash-equality, be32, wasm32 jobs)"
-        status: unknown
+        ref: "plan 01-14 CI run (hash-equality 7 identical files, be32, wasm32 cmp), https://github.com/szTheory/muhtari/actions/runs/38935647258"
+        status: pass
     human_judgment: false
 
 duration: 10min
