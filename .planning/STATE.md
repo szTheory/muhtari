@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-10-16T15:24:47.555Z"
+stopped_at: Completed 01-08-PLAN.md
+last_updated: "2026-10-16T15:31:29.973Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: 4462955c2bb546f26e99e45d06762d87467820e6
+state_head: 5455b3a0f9086ce36395073b236424ac7787fbdb
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 8 of 21
+Plan: 9 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P05 | 4 min | 2 tasks | 9 files |
 | Phase 01 P06 | 6 min | 3 tasks | 14 files |
 | Phase 01 P07 | 5 min | 3 tasks | 14 files |
+| Phase 01 P08 | 4 min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,7 @@ Recent decisions affecting current work:
 - [Phase 01]: The .info keeps is_experimental = true; info_claims exempts it by name as a label, not a capability
 - [Phase 01]: library_version comes from MUHTARI_VERSION_STRING in the private generated version header
 - [Phase 01]: libretro.vendored reads its file table from PROVENANCE.md section 8 and is registered even when the core is not built
+- [Phase 01]: Library installs to literal lib/ and include/ so muhtari.pc keeps prefix=${pcfiledir}/../..; the consumer's MSVC runtime follows the build configuration through a generator expression
 
 ### Pending Todos
 
@@ -113,6 +115,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T15:24:47.538Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-10-16T15:31:29.956Z
+Stopped at: Completed 01-08-PLAN.md
 Resume file: None

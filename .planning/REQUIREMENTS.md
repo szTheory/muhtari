@@ -17,7 +17,7 @@ values in tests cite their source document.
 - [ ] **FRAME-01**: `cmake --workflow --preset ci` (`ci-msvc` on Windows) builds the library, `muhtari-run` and the
   libretro core and runs every test on all six platforms; CI runs the same commands, and its one required check,
   `CI required`, passes.
-- [ ] **FRAME-02**: `ctest -R 'install.consumer|embed.subdirectory'` shows that a C program including only the
+- [x] **FRAME-02**: `ctest -R 'install.consumer|embed.subdirectory'` shows that a C program including only the
   public header creates an instance, runs one frame and destroys it, built against the installed package and as an
   embedded subdirectory; the header also compiles as C++.
 - [ ] **FRAME-03**: With no cartridge loaded the core outputs a built-in 320×242 test card showing all 256 MARIA
@@ -114,6 +114,7 @@ values in tests cite their source document.
 Later milestones. Each has a seed in `.planning/seeds/` that says when it comes back.
 
 ### The whole library (SEED-001)
+
 - **LIB-01**: Every board in MAME's CC0 list loads and plays, including Activision (both image layouts),
   Absolute, Fractalus, BankSet, Souper and EXRAM.
 - **LIB-02**: The XG-1 light gun, paddles, driving controller, keypad, trak-ball, mice, SNES2Atari and Mega7800
@@ -124,21 +125,25 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 - **LIB-05**: The compatibility ledger covers every entry of the CC0 list.
 
 ### States and movies (SEED-002)
+
 - **STATE-01**: Save states, rewind and run-ahead work in RetroArch under a deterministic `.info` claim.
 - **STATE-02**: `muhtari-run --record FILE` writes a movie that `--movie` replays identically on every platform.
 - **STATE-03**: The runner honours Playstead's continuation protocol (qualify, initial-run, continue).
 
 ### Measured accuracy (SEED-003)
+
 - **ACC-01**: An FPGA-RTL oracle, the nightly a7800 oracle and owner-console diagnostics confirm or refit every
   fitted timing constant.
 - **ACC-02**: The XM expansion (YM2151, RAM, POKEY) plays.
 
 ### Tools (SEED-004)
+
 - **TOOL-01**: Hooks, bounded runs, breakpoints, traces, display-list and DMA views and symbols serve homebrew
   developers, with hooks-off cost unchanged.
 - **TOOL-02**: Python bindings and a vectorised Gymnasium-style environment serve AI agents.
 
 ### Everywhere (SEED-005), the browser (SEED-008) and 2600 mode (SEED-006)
+
 - **PORT-01**: Console and handheld builds with measured frame-time and battery budgets; libretro buildbot;
   Playstead integration.
 - **WEB-01**: An efficient WebAssembly build plays in the browser with sound, with frame and audio hashes equal to
@@ -160,7 +165,7 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FRAME-01 | Phase 1 | Pending |
-| FRAME-02 | Phase 1 | Pending |
+| FRAME-02 | Phase 1 | Complete |
 | FRAME-03 | Phase 1 | Pending |
 | FRAME-04 | Phase 1 | Pending |
 | FRAME-05 | Phase 1 | Pending |
