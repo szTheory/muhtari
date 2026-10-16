@@ -1,15 +1,17 @@
 /* muhtari-run: the headless runner.
  *
  *   muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
+ *   muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...
  *
- * Runs N frames of one instance with no content; --frames is required. For
- * each --hash-frame N it prints, after frame N has run:
+ * Runs N frames of one instance with no content; --frames or --bench is
+ * required. For each --hash-frame N it prints, after frame N has run:
  *
  *   frame <N> sha256 <64 lowercase hex digits>
  *
  * The hash is SHA-256 over the 320x242 native colour bytes, row-major, top
  * row first. For each --dump-frame N:FILE it writes frame N to FILE as a
- * 320x242 RGB PNG in the warm NTSC palette.
+ * 320x242 RGB PNG in the warm NTSC palette. --bench N also times each
+ * frame and prints the report described in bench.h.
  *
  * Exit status: 0 done, 1 failure, 2 usage.
  */
@@ -17,6 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bench.h"
+#include "clock.h"
 #include "muhtari.h"
 #include "palette.h"
 #include "png.h"
@@ -44,7 +48,9 @@ static int usage(const char *why)
 {
     fprintf(stderr, "muhtari-run: %s\n", why);
     fprintf(stderr, "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...\n"
+                    "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...\n"
                     "  --frames N           run N frames (N >= 1)\n"
+                    "  --bench N            run N frames and report the time per frame\n"
                     "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
                     "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n");
     return 2;
@@ -123,6 +129,7 @@ static int dump_frame(const uint8_t *video, const char *path, uint8_t *row)
 /* The runner's options. Each list has room for one entry per argument. */
 typedef struct options {
     uint32_t frames;
+    int bench;
     uint32_t *hash_frames;
     uint32_t hash_count;
     uint32_t *dump_frames;
@@ -146,12 +153,17 @@ static int parse_options(int argc, char **argv, options *o)
         const char *arg = argv[i];
         const char *value = i + 1 < argc ? argv[i + 1] : NULL;
         uint32_t n;
-        if (strcmp(arg, "--frames") == 0 || strcmp(arg, "--hash-frame") == 0) {
+        if (strcmp(arg, "--frames") == 0 || strcmp(arg, "--bench") == 0 ||
+            strcmp(arg, "--hash-frame") == 0) {
             if (!parse_count(value, value == NULL ? 0u : strlen(value), &n)) {
                 return usage("option needs a whole number of 1 or more");
             }
-            if (strcmp(arg, "--frames") == 0) {
+            if (strcmp(arg, "--hash-frame") != 0) {
+                if (o->frames != 0u) {
+                    return usage("give --frames or --bench once");
+                }
                 o->frames = n;
+                o->bench = strcmp(arg, "--bench") == 0;
             } else {
                 o->hash_frames[o->hash_count++] = n;
             }
@@ -168,7 +180,7 @@ static int parse_options(int argc, char **argv, options *o)
         }
     }
     if (o->frames == 0u) {
-        return usage("--frames N is required");
+        return usage("--frames N or --bench N is required");
     }
     for (uint32_t k = 0; k < o->hash_count; k++) {
         if (o->hash_frames[k] > o->frames) {
@@ -200,11 +212,16 @@ static int run(const options *opt)
     uint8_t *video = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
     int16_t *audio = (int16_t *)malloc(AUDIO_CAPACITY * sizeof *audio);
     uint8_t *row = (uint8_t *)malloc(3u * WIDTH);
-    if (video == NULL || audio == NULL || row == NULL) {
+    /* One microsecond sample per frame for --bench, on the heap: 300,000
+       frames take 1.2 MB. */
+    uint32_t *samples = opt->bench ? (uint32_t *)malloc((size_t)opt->frames * sizeof *samples)
+                                   : NULL;
+    if (video == NULL || audio == NULL || row == NULL || (opt->bench && samples == NULL)) {
         fprintf(stderr, "muhtari-run: out of memory\n");
         free(video);
         free(audio);
         free(row);
+        free(samples);
         return 1;
     }
 
@@ -220,10 +237,13 @@ static int run(const options *opt)
         free(video);
         free(audio);
         free(row);
+        free(samples);
         return 1;
     }
 
     int status = 0;
+    uint32_t timed = 0;
+    uint64_t total_ns = 0;
     /* A 64-bit count, so the loop ends when --frames is 4294967295. */
     for (uint64_t n = 1; n <= opt->frames; n++) {
         uint32_t f = (uint32_t)n;
@@ -234,7 +254,13 @@ static int run(const options *opt)
         io.video_pitch = WIDTH;
         io.audio = audio;
         io.audio_capacity = AUDIO_CAPACITY;
+        uint64_t start_ns = opt->bench ? muhtari__clock_ns() : 0u;
         st = muhtari_run_frame(m, &io);
+        if (opt->bench) {
+            uint64_t ns = muhtari__clock_ns() - start_ns;
+            samples[timed++] = muhtari__bench_us(ns);
+            total_ns += ns;
+        }
         if (st != MUHTARI_STATUS_OK) {
             fprintf(stderr, "muhtari-run: muhtari_run_frame failed with status %lu\n",
                     (unsigned long)st);
@@ -256,10 +282,17 @@ static int run(const options *opt)
         }
     }
 
+    if (status == 0 && opt->bench) {
+        char report[512];
+        size_t len = muhtari__bench_format(report, sizeof report, samples, timed, total_ns);
+        fwrite(report, 1u, len, stdout);
+    }
+
     muhtari_destroy(m);
     free(video);
     free(audio);
     free(row);
+    free(samples);
     return status;
 }
 
