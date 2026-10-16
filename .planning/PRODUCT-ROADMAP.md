@@ -34,6 +34,9 @@ High Score Cartridge saves, full PAL, `.srm` saves, and a compatibility ledger o
 Opens with the milestone tune-up (SEED-007), which this time also adds the weekly triage digest, the monthly
 CI-efficiency report and the `quality.json` ratchet.
 **Trigger:** v1.0 shipped. **Why next:** cartridge coverage and saves are what players notice first.
+**Weighed at the same boundary — the browser (SEED-008):** the owner ranks an efficient WebAssembly build very
+important (2026-10-15), so the v1.0 close decides whether it comes before, with or after v2.0; a wasm32 hash lane may
+join CI in phase 1 already.
 
 ## Mid — v3.0 "States and movies" (SEED-002), v4.0 "Measured accuracy" (SEED-003)
 
@@ -49,8 +52,8 @@ expansion (YM2151), the composite artifact filter.
 
 v5.0: inspection and hook APIs, breakpoints, DMA/display-list views, traces with symbols, homebrew lint, Python
 bindings with a vectorised AI environment, Lua scripting in the runner, speedrun and TAS aids.
-v6.0: console and handheld ports, a supported big-endian tier, a Raspberry Pi budget, a WASM web demo, Playstead
-integration.
+v6.0: console and handheld ports with measured frame-time and battery budgets, a supported big-endian tier, a
+Raspberry Pi budget, Playstead integration (the browser build moved to SEED-008).
 2600 mode: the 7800's backward compatibility with Atari 2600 cartridges — owner decision 2026-10-15: after the
 7800 library is complete. **Trigger:** v2.0 closed and the owner promotes it.
 
@@ -59,3 +62,4 @@ integration.
 | Date | Change | Why |
 |---|---|---|
 | 2026-10-15 | Initial horizons set during preparation | Library share from the CC0 MAME list; sibling velocity evidence; owner decisions (2600 later, RetroArch frontend, no GUI in the core repository) |
+| 2026-10-15 | The browser build leaves v6.0 as SEED-008, weighed at the v1.0 close; a wasm32 hash lane is a phase 1 discuss question; efficiency becomes a PROJECT constraint | Owner, at the kickoff: running efficiently in the browser through WebAssembly is very important, and battery life on handhelds matters |

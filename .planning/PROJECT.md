@@ -82,6 +82,10 @@ that any host can embed.
   — the repository is public and MIT.
 - **Determinism**: integer-only core with all state in the instance — the same inputs give identical frame and
   audio hashes on every platform; every call is bounded in emulated time.
+- **Efficiency**: efficient enough for battery-powered handhelds and for the browser through WebAssembly, which the
+  owner ranks very important — work per emulated frame sets both speed and power draw, so the instructions-per-frame
+  ratchet guards it from phase 1, and nothing enters the core that a wasm32 build cannot carry (threads, files,
+  floating point, allocation after load). The browser build is SEED-008; handheld budgets are SEED-005.
 - **Legal**: no ROM, BIOS or firmware bytes beyond licence-checked fixtures; Atari names only to say what the core
   emulates.
 - **Privacy**: no personal paths, addresses or names in tracked files, commits or release artifacts.
@@ -127,4 +131,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-15 after preparation*
+*Last updated: 2026-10-15 after the kickoff (efficiency constraint)*
