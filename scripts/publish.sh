@@ -1,10 +1,10 @@
 #!/bin/sh
 # Publish steps shared by the release and its rehearsal, each safe to re-run:
 #   publish.sh prepare DIR                 exactly the 18 zips, one commit; SHA256SUMS
-#   publish.sh upload TAG RELEASE_ID DIR   upload to that release, overwriting
+#   publish.sh upload TAG RELEASE_ID DIR   upload to that release, replacing
 #   publish.sh verify TAG DIR              attestations, tampered copies, the published release
 #   publish.sh rehearsal-create TAG        a draft prerelease at EXPECTED_SHA; prints its ID
-#   publish.sh rehearsal-delete TAG        delete a rehearsal release and its tag
+#   publish.sh rehearsal-delete TAG [ID]   delete a rehearsal release and its tag
 # Fault prevented: a release with a missing, extra, unverifiable or tampered
 # asset, or with archives built from another commit. prepare reads
 # EXPECTED_SHA; the rest call gh with GH_TOKEN and GITHUB_REPOSITORY.
@@ -53,10 +53,20 @@ prepare() {
   echo "publish: 18 archives from $EXPECTED_SHA; SHA256SUMS written"
 }
 
+# By release ID, because a draft cannot be looked up by its tag; an asset
+# already there is replaced.
 upload() {
   found=$(gh api "repos/$REPO/releases/$2" --jq .tag_name)
   [ "$found" = "$1" ] || fail "release $2 is $found, not $1"
-  (cd "$3" && gh release upload "$1" $(names) SHA256SUMS --clobber --repo "$REPO")
+  old=$(gh api "repos/$REPO/releases/$2/assets?per_page=100" --jq '.[] | "\(.id) \(.name)"')
+  for n in $(names) SHA256SUMS; do
+    for id in $(printf '%s\n' "$old" | awk -v n="$n" '$2 == n { print $1 }'); do
+      gh api -X DELETE "repos/$REPO/releases/assets/$id" > /dev/null
+    done
+    gh api -X POST "https://uploads.github.com/repos/$REPO/releases/$2/assets?name=$n" \
+      -H 'Content-Type: application/octet-stream' --input "$3/$n" > /dev/null || fail "cannot upload $n"
+    echo "publish: uploaded $n"
+  done
 }
 
 verify() {
@@ -106,21 +116,29 @@ release_id() {
   gh api "repos/$REPO/releases?per_page=100" --jq ".[] | select(.tag_name == \"$1\") | .id"
 }
 
+# The ID comes from the create response: a new draft can be missing from the
+# release list for a while.
 rehearsal_create() {
   [ -n "${EXPECTED_SHA:-}" ] || fail "EXPECTED_SHA is not set"
-  if [ -z "$(release_id "$1")" ]; then
-    gh release create "$1" --repo "$REPO" --draft --prerelease --latest=false --target "$EXPECTED_SHA" \
-      --title "$1" --notes "Rehearsal; deleted at the end of this run." > /dev/null
-  fi
   id=$(release_id "$1")
+  if [ -z "$id" ]; then
+    id=$(gh api -X POST "repos/$REPO/releases" -f tag_name="$1" -f target_commitish="$EXPECTED_SHA" \
+      -f name="$1" -f body="Rehearsal; deleted at the end of this run." -F draft=true -F prerelease=true \
+      -f make_latest=false --jq .id)
+  fi
   [ -n "$id" ] || fail "no release $1 after creating it"
   echo "$id"
 }
 
+# The release goes before its tag, which an immutable release protects.
 rehearsal_delete() {
-  gh release delete "$1" --repo "$REPO" --cleanup-tag --yes > /dev/null 2>&1 || true
-  gh api -X DELETE "repos/$REPO/git/refs/tags/$1" > /dev/null 2>&1 || true
+  if [ -n "${2:-}" ]; then
+    gh api -X DELETE "repos/$REPO/releases/$2" > /dev/null 2>&1 || true
+    if gh api "repos/$REPO/releases/$2" > /dev/null 2>&1; then fail "release $2 still exists"; fi
+  fi
+  gh release delete "$1" --repo "$REPO" --yes > /dev/null 2>&1 || true
   if [ -n "$(release_id "$1")" ]; then fail "$1 still has a release"; fi
+  gh api -X DELETE "repos/$REPO/git/refs/tags/$1" > /dev/null 2>&1 || true
   if gh api "repos/$REPO/git/ref/tags/$1" > /dev/null 2>&1; then fail "tag $1 still exists"; fi
   echo "publish: $1 and its release are gone"
 }
@@ -134,6 +152,6 @@ case "$cmd $#" in
   "upload 3") upload "$1" "$2" "$3" ;;
   "verify 2") verify "$1" "$2" ;;
   "rehearsal-create 1") rehearsal_create "$1" ;;
-  "rehearsal-delete 1") rehearsal_delete "$1" ;;
-  *) fail "usage: publish.sh prepare DIR | upload TAG RELEASE_ID DIR | verify TAG DIR | rehearsal-create TAG | rehearsal-delete TAG" ;;
+  "rehearsal-delete 1" | "rehearsal-delete 2") rehearsal_delete "$1" "${2:-}" ;;
+  *) fail "usage: publish.sh prepare DIR | upload TAG RELEASE_ID DIR | verify TAG DIR | rehearsal-create TAG | rehearsal-delete TAG [RELEASE_ID]" ;;
 esac

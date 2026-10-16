@@ -52,6 +52,8 @@ jobs:
       contents: write
       id-token: write
       attestations: write
+    outputs:
+      id: ${{ steps.draft.outputs.id }}
     env:
       GH_TOKEN: ${{ github.token }}
       EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -81,8 +83,12 @@ jobs:
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-checksums: dist/SHA256SUMS
+      # By ID, as gh release edit --draft=false --prerelease --latest=false
+      # would, but without looking the draft up by its tag.
       - name: Publish as a prerelease that is never latest
-        run: gh release edit "$REHEARSAL_TAG" --draft=false --prerelease --latest=false --repo "$GITHUB_REPOSITORY"
+        env:
+          ID: ${{ steps.draft.outputs.id }}
+        run: gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$ID" -F draft=false -F prerelease=true -f make_latest=false
       - run: sh scripts/publish.sh verify "$REHEARSAL_TAG" dist
 
   # The README's install line against the published rehearsal.
@@ -115,4 +121,6 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
-      - run: sh scripts/publish.sh rehearsal-delete "$REHEARSAL_TAG"
+      - env:
+          ID: ${{ needs.rehearsal.outputs.id }}
+        run: sh scripts/publish.sh rehearsal-delete "$REHEARSAL_TAG" $ID
