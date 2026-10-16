@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-10-16T15:01:31.551Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-10-16T15:07:44.005Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: d7270a6f675e2c2f95e6efc771dbe95104fc5e05
+state_head: da55c7419e4080dba770d7389f50069a2adde2e6
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 5 of 21
+Plan: 6 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P02 | 6 min | 2 tasks | 9 files |
 | Phase 01 P03 | 3 min | 2 tasks | 6 files |
 | Phase 01 P04 | 4 min | 2 tasks | 10 files |
+| Phase 01 P05 | 4 min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work:
 - [Phase 01]: D-03 holds on the fetched a7800 warm table: $46 = 0xAF5163 (red largest), $C6 = 0x469A46 (green largest); the test card is unchanged
 - [Phase 01]: nesturbator citations in PROVENANCE and ASSET_POLICY pin published main 9f9386c661f6; PV.12 cites check_archives.cmake L32-50
 - [Phase 01]: muhtari_host is PIC with hidden visibility so the libretro module can link it
+- [Phase 01]: The PNG writer takes RGB rows; the runner converts native bytes through muhtari__palette_rgb one row at a time
+- [Phase 01]: runner.dump_png pins the card PNG at 232,645 bytes, SHA-256 1c0b16cb9c92d70869d3aee5cd581627f8902cb528e90f1f1d4252d9288ac956
 
 ### Pending Todos
 
@@ -101,6 +104,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T15:01:31.534Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-10-16T15:07:43.987Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
