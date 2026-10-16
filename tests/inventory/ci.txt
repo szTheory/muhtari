@@ -1,0 +1,4 @@
+# Every test the ci, dev and ci-msvc presets register: name<TAB>labels.
+# Sorted; configure fails when this differs from what is registered.
+core.testcard.pinned_hash	core,portable
+runner.hash	portable,runner

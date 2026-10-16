@@ -68,3 +68,12 @@ target_compile_definitions(muhtari-run PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-run PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/runner)
 muhtari_warnings(muhtari-run)
+
+# Tests. MUHTARI_TIMEOUT_SCALE multiplies every test's timeout on slow lanes;
+# MUHTARI_INVENTORY names the tests/inventory/<name>.txt the registered tests
+# must equal.
+set(MUHTARI_TIMEOUT_SCALE 1 CACHE STRING "Multiplier for every test timeout")
+set(MUHTARI_INVENTORY ci CACHE STRING "Test inventory file under tests/inventory")
+enable_testing()
+include(cmake/MuhtariTests.cmake)
+include(tests/tests.cmake)
