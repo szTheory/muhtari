@@ -27,8 +27,8 @@ kickoff resumes at roadmap creation [GH.01]. GSD's own researcher still runs bef
 ## 2. Kickoff
 
 **Before it** (about ten minutes):
-- The repository already exists locally with one commit, `docs: project preparation`, and its hooks enabled.
-  In any fresh clone, run `git config core.hooksPath .githooks` first.
+- The repository exists on GitHub (`szTheory/muhtari`) with its settings applied. In any fresh clone, run
+  `git config core.hooksPath .githooks` first.
 - `cat ~/.claude/gsd-core/VERSION` prints `1.17.0`, the version these files were checked against (section 8).
   Use **Claude Code** for v1.0. Codex has GSD 1.16.0 installed; to use Codex instead, first reinstall GSD
   1.17.0 for Codex (the GSD installer with its Codex flag) and repeat the dry run in section 8 (unverified there).
@@ -150,7 +150,7 @@ Subagent reasoning effort comes from the owner's global GSD agent install, not f
 
 | When | Task |
 |---|---|
-| End of preparation or kickoff | Say yes to creating the public repository `szTheory/muhtari`. The agent runs `gh repo create … --public --source . --push` (the pre-push hook scans the whole history first) and `scripts/apply-repo-settings.sh` |
+| Done 2026-10-15 | The public repository `szTheory/muhtari` exists and `scripts/apply-repo-settings.sh` applied its settings (`--check` reports no drift); the required-check ruleset is applied in phase 1 once CI reports |
 | Kickoff | Create a GitHub App `muhtari-release` (repository permissions: Contents, Pull requests, Issues and Workflows read/write, Metadata read; install it on this repository only), then run `gh variable set MUHTARI_APP_CLIENT_ID --body <client id>`, `gh secret set MUHTARI_APP_PRIVATE_KEY < <key file>` and, because Dependabot-triggered runs see only Dependabot secrets, `gh secret set MUHTARI_APP_PRIVATE_KEY --app dependabot < <key file>`. Agents cannot read `.env.local` or key files (GSD's secret-read guard), so these commands are yours. It is the project's only CI credential (ENGINEERING.md has the details) |
 | Kickoff | RetroArch with Metal: `brew install --cask retroarch-metal` or `RetroArch_Metal.dmg`. The `retroarch` cask is Intel-only; the App Store build cannot load outside cores |
 | Any time | Optional `.env.local` (copy `.env.example`): `MUHTARI_ROM_DIR` for the local-only library preset with your own cart dumps; `MUHTARI_BIOS_DIR` for booting through your own BIOS dump. Results stay on your machine |
