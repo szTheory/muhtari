@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-15-PLAN.md
-last_updated: "2026-10-16T17:16:11.679Z"
+stopped_at: Completed 01-16-PLAN.md
+last_updated: "2026-10-16T17:31:44.024Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: 3d085a20954aac60b7d50953ea7445ae6bf13337
+state_head: f9db90b8c859799aec79ba967ee93ed334f11e62
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 15
+  completed_plans: 16
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 16 of 21
+Plan: 17 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -73,6 +73,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P13 | 10 min | 3 tasks | 11 files |
 | Phase 01 P14 | 16 min | 2 tasks | 7 files |
 | Phase 01 P15 | 13 min | 3 tasks | 13 files |
+| Phase 01 P16 | 11 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,7 @@ Recent decisions affecting current work:
 - [Phase 01]: check-title.sh rejects a skip token in the title as well as the body, because the title becomes the squash commit's subject
 - [Phase 01]: policy.ci_required also requires every job but the report-only wasm32 in CI required's needs
 - [Phase 01]: apply-repo-settings.sh --check reads sha_pinning_required, which replaces the unbuilt hygiene.action_pins
+- [Phase 01]: Hosted RetroArch 1.22.2 starts the no-game core with -L and no content on macos-15 (run 38939482093); the retroarch job compares its screenshot with the runner's frame through sips and is in CI required
 
 ### Pending Todos
 
@@ -143,6 +145,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T17:16:11.658Z
-Stopped at: Completed 01-15-PLAN.md
+Last session: 2026-10-16T17:31:44.003Z
+Stopped at: Completed 01-16-PLAN.md
 Resume file: None

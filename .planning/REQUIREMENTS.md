@@ -23,7 +23,7 @@ values in tests cite their source document.
 - [x] **FRAME-03**: With no cartridge loaded the core outputs a built-in 320×242 test card showing all 256 MARIA
   colours; `muhtari-run --frames 1 --dump-frame 1:FILE --hash-frame 1` writes it as an image and prints its
   SHA-256, and the hash is the same on every platform.
-- [ ] **FRAME-04**: The libretro core loads in an in-process test host that calls it the way RetroArch does,
+- [x] **FRAME-04**: The libretro core loads in an in-process test host that calls it the way RetroArch does,
   reports 39375000/656711 frames per second and 320×242 with aspect ratio 960/847 (pixels 6:7), and delivers a
   frame equal to the runner's; a hosted macOS job runs RetroArch, pinned by SHA-256, unattended, and its
   screenshot equals the runner's frame.
@@ -167,7 +167,7 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 | FRAME-01 | Phase 1 | Pending |
 | FRAME-02 | Phase 1 | Complete |
 | FRAME-03 | Phase 1 | Complete |
-| FRAME-04 | Phase 1 | Pending |
+| FRAME-04 | Phase 1 | Complete |
 | FRAME-05 | Phase 1 | Complete |
 | FRAME-06 | Phase 1 | Pending |
 | FRAME-07 | Phase 1 | Pending |
