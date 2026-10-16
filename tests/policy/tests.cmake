@@ -46,3 +46,7 @@ muhtari_add_test(NAME release.single_version_source.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${policy_cmd}" -DCODE=1
     "-DREGEX=notes.md holds 1.2.3" -P ${policy_scripts}/expect_fail.cmake
   LABELS policy TIMEOUT 30)
+
+muhtari_add_test(NAME docs.budgets
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/budgets.cmake
+  LABELS policy TIMEOUT 10)
