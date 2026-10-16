@@ -35,7 +35,7 @@ find_package(Git REQUIRED)
 set(policy_repo ${CMAKE_BINARY_DIR}/policy/version_fixture)
 file(REMOVE_RECURSE ${policy_repo})
 file(WRITE ${policy_repo}/version.txt "1.2.3\n")
-file(WRITE ${policy_repo}/notes.md "Released as 1.2.3.\n")
+file(WRITE ${policy_repo}/notes.md "Released as 1.2.3 today.\n")
 execute_process(COMMAND ${GIT_EXECUTABLE} init -q WORKING_DIRECTORY ${policy_repo}
   COMMAND_ERROR_IS_FATAL ANY)
 execute_process(COMMAND ${GIT_EXECUTABLE} add version.txt notes.md
