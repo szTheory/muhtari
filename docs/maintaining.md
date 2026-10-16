@@ -29,6 +29,7 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
    - `verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the
      release's own `releases/download/<tag>/` URL matches `SHA256SUMS` and verifies as signed by `release.yml` from
      `refs/heads/main`.
+7. `install-line-latest` runs the README's install line verbatim on `macos-15` against the latest release.
 
 Only an attestation whose source ref is `refs/heads/main` is release provenance. A rehearsal signs with the same
 `release.yml`, but from `refs/pull/<number>/merge`, so a check that a download is a release must pin the ref:
@@ -37,7 +38,6 @@ Only an attestation whose source ref is `refs/heads/main` is release provenance.
 gh attestation verify muhtari-runner-linux-x64.zip --repo szTheory/muhtari \
   --signer-workflow szTheory/muhtari/.github/workflows/release.yml --source-ref refs/heads/main
 ```
-7. `install-line-latest` runs the README's install line verbatim on `macos-15` against the latest release.
 
 The release workflow never cancels a run: runs on `main` queue behind each other.
 
