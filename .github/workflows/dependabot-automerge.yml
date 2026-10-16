@@ -1,9 +1,10 @@
 # Merges Dependabot's patch and minor updates once the ruleset's required
 # check passes; majors wait for a person. Both the pull request's author and
 # the run's actor must be Dependabot: a person who pushes to a Dependabot
-# branch triggers a run that keeps Dependabot as the author. The merge uses the release App's
-# token: a merge made with GITHUB_TOKEN starts no push run on main, and the
-# workflows permission lets it change files under .github/workflows/.
+# branch triggers a run that keeps Dependabot as the author. The merge uses
+# the release App's token: a merge made with GITHUB_TOKEN starts no push run
+# on main, and the workflows permission lets it change files under
+# .github/workflows/.
 name: Dependabot auto-merge
 
 on:
