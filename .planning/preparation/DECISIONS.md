@@ -2,7 +2,7 @@
 title: "Decisions already made"
 summary: "One line per settled choice for muhtari, with its reason and the file and section that support it; open questions at the end."
 read_when: "Before reopening any choice, and whenever a phase needs to know what is settled. Reopen a decision only with new evidence, and record the change here with its date."
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # Decisions already made
@@ -81,7 +81,7 @@ evidence. IDs use a dot (`DEC.07`) so they never collide with GSD's `D-NN` phase
 | DEC.46 | Six platforms on every PR plus a 32-bit big-endian PowerPC lane under qemu (per PR if it stays ≤ 5 min, else nightly); armhf nightly; console compile lanes from v6.0 | Identical output on every platform is a product claim; Wii-class data model | ENGINEERING 9 |
 | DEC.47 | One required check `CI required`; `push` runs only on `main`; SHA-pinned actions; timeouts twice the slowest measured run with its run ID; no cache until one is measured to pay | Sibling CI evidence | ENGINEERING 4 |
 | DEC.48 | Ubuntu 26.04 runners for Linux jobs; clang-format 21 pinned | Current images; one formatter version locally and in CI | ENGINEERING 1, 2 |
-| DEC.49 | Releases: release-please `simple` with a GitHub App token, exactly 18 archives, `SHA256SUMS`, verified attestations, version-free asset names, `version.txt` the only machine-edited version, a rehearsal before the first tag | Sibling release footguns | ENGINEERING 5 |
+| DEC.49 | Releases: release-please `simple` with a GitHub App token, exactly 18 archives, `SHA256SUMS`, verified attestations, version-free asset names, `version.txt` the only machine-edited version, every publish step exercised before 0.1.0, by a published and deleted prerelease rehearsal on the pull request | Sibling release footguns. 2026-10-16: the rehearsal moved from `workflow_dispatch` to `pull_request`, because `workflow_dispatch` fires only for workflow files on the default branch and an untagged draft cannot be published or verified; green rehearsal https://github.com/szTheory/muhtari/actions/runs/38942043999 | ENGINEERING 5 |
 | DEC.50 | Repository settings as code (squash title and body from the PR), committed ruleset applied in phase 1 once CI reports | GSD's ship step pushes a CI-skip commit | ENGINEERING 6 |
 | DEC.51 | Cachegrind instructions per frame is the only per-PR speed gate (+1 %); wall-clock percentiles up to p99.999 over ≥ 300,000 frames are nightly trend data; zero allocations after load is a test | Shared runners make wall-clock tails noise | ENGINEERING 8 |
 | DEC.52 | One `quality.json` ratchet with one check, built in the v2.0 tune-up; per-metric gates (hash pins, Ir gate, ledger) work from v1.0 | Baselines only ratchet up | ENGINEERING 8; SEED-007 |

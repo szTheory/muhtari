@@ -271,7 +271,7 @@ reused.
 
 A failed rehearsal recovers with "Re-run all jobs" or a new push. If `cleanup` itself failed, delete the leftover
 by hand: `gh release delete rehearsal-<id>-<attempt> --cleanup-tag --yes`. `publish.sh` deletes only
-`rehearsal-*` tags.
+`rehearsal-*` tags. `docs/maintaining.md` describes the real release, which runs the same steps on `main`.
 
 ## Supported systems
 
