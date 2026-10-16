@@ -73,6 +73,8 @@ muhtari_warnings(muhtari_host)
 # The headless runner, built as ISO C17 with POSIX 2008 and no GNU extensions.
 add_executable(muhtari-run
   runner/main.c
+  runner/crc32.c
+  runner/png.c
   runner/sha256.c)
 target_link_libraries(muhtari-run PRIVATE muhtari::muhtari muhtari_host)
 target_compile_definitions(muhtari-run PRIVATE _POSIX_C_SOURCE=200809L)
