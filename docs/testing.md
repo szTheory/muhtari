@@ -176,6 +176,12 @@ happens only when every changed path is under `.planning/`; `title` and `perf` m
 requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` reports only and is not among the
 jobs `CI required` needs.
 
+**Tests of CI itself.** The hygiene lane checks the rules above. `policy.ci_required` reads the roll-up's `jq`
+program from `ci.yml` and runs it, with the step's own arguments, on synthetic job results; it also fails when a
+job other than `wasm32` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
+renamed, empty and planning-only path lists. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
+comment with a run ID or the word `provisional`.
+
 **The title.** The squash commit on `main` takes the pull request's title and body, and release-please reads its
 type. `title` passes a Conventional Commit title with a lower-case subject, such as `fix(runner): exit 2 on a
 missing file`. It fails a scope that starts with a digit (a plan number), a `Phase 1: Name` title, `feat`, `fix`

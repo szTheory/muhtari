@@ -94,3 +94,67 @@ muhtari_add_test(NAME policy.title
   COMMAND ${MUHTARI_SH} -c "${hygiene_titles}" sh ${CMAKE_SOURCE_DIR}/scripts/check-title.sh
     ${CMAKE_CURRENT_LIST_DIR}/fixtures/titles.txt
   LABELS hygiene policy TIMEOUT 30)
+
+# The CI required roll-up, run on synthetic needs. The self test runs it on a
+# copy of ci.yml whose program ignores heavy, which must let a skipped build
+# through and so fail the case that names it.
+set(hygiene_ci ${CMAKE_SOURCE_DIR}/.github/workflows/ci.yml)
+muhtari_add_test(NAME policy.ci_required
+  COMMAND ${CMAKE_COMMAND} -DCI_YML=${hygiene_ci} -DJQ=${MUHTARI_JQ} -DREPORT_ONLY=wasm32
+    -P ${hygiene_scripts}/ci_required.cmake
+  LABELS hygiene policy TIMEOUT 30)
+file(READ ${hygiene_ci} hygiene_yml)
+string(REPLACE "$heavy == \"false\" and " "" hygiene_yml "${hygiene_yml}")
+file(WRITE ${CMAKE_BINARY_DIR}/hygiene/ci_required_fixture/ci.yml "${hygiene_yml}")
+set(hygiene_cmd ${CMAKE_COMMAND} -DCI_YML=${CMAKE_BINARY_DIR}/hygiene/ci_required_fixture/ci.yml
+  -DJQ=${MUHTARI_JQ} -DREPORT_ONLY=wasm32 -P ${hygiene_scripts}/ci_required.cmake)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.ci_required.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=build skipped when heavy=true: want fail, got exit 0"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)
+
+# The changes job's classifier: heavy=false only for a non-empty list wholly
+# under .planning/, both names of a rename included.
+set(hygiene_classify [=[
+script=$1
+check() {
+  got=$(printf '%b' "$2" | sh "$script")
+  if [ "$got" != "heavy=$1" ]
+  then
+    echo "ci.classify: want heavy=$1, got $got for: $2"
+    exit 1
+  fi
+}
+check true '.planning/STATE.md\nsrc/core.c\n'
+check true 'src/core.c\n.planning/core.c\n'
+check true ''
+check true '\n\n'
+check true '(listing failed)\n'
+check true '.planning-notes/a.md\n'
+check true 'docs/.planning/a.md\n'
+check false '.planning/STATE.md\n.planning/phases/01/a.md\n'
+check false '.planning/STATE.md'
+echo "ci.classify: 9 lists"
+]=])
+muhtari_add_test(NAME ci.classify
+  COMMAND ${MUHTARI_SH} -c "${hygiene_classify}" sh ${CMAKE_SOURCE_DIR}/scripts/classify-changes.sh
+  LABELS hygiene TIMEOUT 30)
+
+# Every workflow timeout names a run ID or says provisional. The self test
+# scans a fixture with two good lines and two bad ones.
+muhtari_add_test(NAME hygiene.timeout_comments
+  COMMAND ${CMAKE_COMMAND} -DDIR=${CMAKE_SOURCE_DIR}/.github/workflows -P ${hygiene_scripts}/timeouts.cmake
+  LABELS hygiene TIMEOUT 30)
+set(hygiene_timeouts ${CMAKE_BINARY_DIR}/hygiene/timeouts_fixture)
+file(WRITE ${hygiene_timeouts}/sample.yml "jobs:\n  a:\n    timeout-minutes: 5  # provisional\n"
+  "  b:\n    timeout-minutes: 30\n  c:\n    timeout-minutes: 8  # 2 x 3 min, run 38935647258\n"
+  "  d:\n    timeout-minutes: 15  # a guess\n")
+set(hygiene_cmd ${CMAKE_COMMAND} -DDIR=${hygiene_timeouts} -P ${hygiene_scripts}/timeouts.cmake)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME hygiene.timeout_comments.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=sample.yml: timeout-minutes: 30.*sample.yml: timeout-minutes: 15 .*a guess.*timeout_comments: 2 lines"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene TIMEOUT 30)
