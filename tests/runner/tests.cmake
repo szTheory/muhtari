@@ -128,3 +128,9 @@ muhtari_add_test(NAME runner.bench.format COMMAND muhtari-test-runner format
   LABELS runner bench portable TIMEOUT 10)
 muhtari_add_test(NAME runner.stop COMMAND muhtari-test-runner stop
   LABELS runner portable TIMEOUT 10)
+
+# Not portable: it reads docs/runner.md from the source tree.
+muhtari_add_test(NAME runner.exit.table
+  COMMAND ${runner_check} -DDOC=${PROJECT_SOURCE_DIR}/docs/runner.md
+    -P ${PROJECT_SOURCE_DIR}/tests/cmake/exit_table.cmake
+  LABELS runner TIMEOUT 10)

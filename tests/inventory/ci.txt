@@ -19,6 +19,7 @@ runner.bench.format	bench,portable,runner
 runner.bench.percentile	bench,portable,runner
 runner.dump_png	portable,runner
 runner.exit.failure	portable,runner
+runner.exit.table	runner
 runner.hash	portable,runner
 runner.hash.repeat	portable,runner
 runner.png	portable,runner
