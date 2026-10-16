@@ -135,8 +135,8 @@ coverage:
         ref: "grep -n 'cancel-in-progress' .github/workflows/ci.yml shows ${{ github.event_name == 'pull_request' }} under group ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}"
         status: pass
       - kind: e2e
-        ref: "a release.yml call not queued behind the push run is first exercised by plan 01-17's release workflow"
-        status: unknown
+        ref: "release run https://github.com/szTheory/muhtari/actions/runs/38942043999 (plan 01-17): its nested ci / changes started 2026-10-16T17:44:52Z, the same second as changes in CI run 38942043783 on the same commit e6b87b0, and both runs succeeded"
+        status: pass
     human_judgment: false
   - id: D10
     description: "Every uses: line in ci.yml pins a 40-hex SHA with a # v comment"

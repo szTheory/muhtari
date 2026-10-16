@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-16-PLAN.md
-last_updated: "2026-10-16T17:31:44.024Z"
+stopped_at: Completed 01-17-PLAN.md
+last_updated: "2026-10-16T17:56:22.103Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: f9db90b8c859799aec79ba967ee93ed334f11e62
+state_head: 44d6670e0097d2156dde2e9e5234ab20af1917c4
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 16
+  completed_plans: 17
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 17 of 21
+Plan: 18 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -74,6 +74,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P14 | 16 min | 2 tasks | 7 files |
 | Phase 01 P15 | 13 min | 3 tasks | 13 files |
 | Phase 01 P16 | 11 min | 2 tasks | 8 files |
+| Phase 01 P17 | 20 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,8 @@ Recent decisions affecting current work:
 - [Phase 01]: policy.ci_required also requires every job but the report-only wasm32 in CI required's needs
 - [Phase 01]: apply-repo-settings.sh --check reads sha_pinning_required, which replaces the unbuilt hygiene.action_pins
 - [Phase 01]: Hosted RetroArch 1.22.2 starts the no-game core with -L and no content on macos-15 (run 38939482093); the retroarch job compares its screenshot with the runner's frame through sips and is in CI required
+- [Phase 01]: Release rehearsal is a published prerelease rehearsal-<run>-<attempt> deleted by a cleanup job; A4 held (GITHUB_TOKEN on same-repo pull_request gets contents/id-token/attestations write), so no draft-only fallback
+- [Phase 01]: publish.sh addresses draft releases by the ID from the create response; a new draft is missing from the release list at first (run 38941477560)
 
 ### Pending Todos
 
@@ -145,6 +148,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T17:31:44.003Z
-Stopped at: Completed 01-16-PLAN.md
+Last session: 2026-10-16T17:56:22.084Z
+Stopped at: Completed 01-17-PLAN.md
 Resume file: None
