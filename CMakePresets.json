@@ -83,6 +83,20 @@
         "MUHTARI_TIMEOUT_SCALE": "10",
         "MUHTARI_INVENTORY": "ci"
       }
+    },
+    {
+      "name": "wasm32",
+      "inherits": "base",
+      "$comment": "One preopen covers the source and build trees, since binaryDir is under sourceDir. MUHTARI_TIMEOUT_SCALE is provisional until measured runs fix it at phase close.",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/wasm32-wasi.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "MUHTARI_BUILD_LIBRETRO": "OFF",
+        "MUHTARI_TIMEOUT_SCALE": "5",
+        "MUHTARI_INVENTORY": "wasm32",
+        "CMAKE_CROSSCOMPILING_EMULATOR": "${sourceDir}/build/pins/wasmtime/wasmtime;run;--dir=${sourceDir}::${sourceDir}"
+      }
     }
   ],
   "buildPresets": [
@@ -92,7 +106,8 @@
     { "name": "hygiene", "configurePreset": "hygiene" },
     { "name": "asan", "configurePreset": "asan" },
     { "name": "nofp", "configurePreset": "nofp" },
-    { "name": "be32", "configurePreset": "be32" }
+    { "name": "be32", "configurePreset": "be32" },
+    { "name": "wasm32", "configurePreset": "wasm32" }
   ],
   "testPresets": [
     {
@@ -184,6 +199,16 @@
       },
       "filter": { "include": { "label": "^portable$" } },
       "execution": { "noTestsAction": "error", "jobs": "" }
+    },
+    {
+      "name": "wasm32",
+      "configurePreset": "wasm32",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "filter": { "include": { "label": "^portable$" } },
+      "execution": { "noTestsAction": "error", "jobs": "" }
     }
   ],
   "packagePresets": [
@@ -249,6 +274,14 @@
         { "type": "configure", "name": "be32" },
         { "type": "build", "name": "be32" },
         { "type": "test", "name": "be32" }
+      ]
+    },
+    {
+      "name": "wasm32",
+      "steps": [
+        { "type": "configure", "name": "wasm32" },
+        { "type": "build", "name": "wasm32" },
+        { "type": "test", "name": "wasm32" }
       ]
     }
   ]

@@ -188,6 +188,15 @@ elseif(MUHTARI_NOFP)
   set(inventory nofp)
 endif()
 set(MUHTARI_INVENTORY ${inventory} CACHE STRING "Test inventory file under tests/inventory")
+# Fault prevented: every wasm32 test failing on a missing runtime, with a
+# message that does not say where the runtime comes from.
+if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
+  list(GET CMAKE_CROSSCOMPILING_EMULATOR 0 emulator)
+  if(NOT EXISTS "${emulator}")
+    message(FATAL_ERROR "wasm32: the test runtime '${emulator}' is missing; fetch it with\n"
+      "  scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime")
+  endif()
+endif()
 enable_testing()
 include(cmake/MuhtariTests.cmake)
 include(tests/tests.cmake)
