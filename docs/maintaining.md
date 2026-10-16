@@ -148,7 +148,9 @@ delete the key file. Only the owner handles the key.
 
 `.github/dependabot.yml` updates the pinned GitHub Actions weekly; they are the project's only dependencies. Minor
 and patch updates come as one grouped pull request and each major update as its own, so a major never holds the
-group back. Their commits use the `ci` prefix, which cuts no release.
+group back. Their commits use the `ci` prefix, which cuts no release. A 7-day cooldown proposes a version only
+once it is a week old, so a compromised release pulled within days never reaches the unattended merge; security
+updates are not delayed.
 
 `.github/workflows/dependabot-automerge.yml` runs on Dependabot's pull requests only. Its `decide` step reads the
 update type: a patch or minor update turns on squash auto-merge with an App token, which merges once `CI required`
