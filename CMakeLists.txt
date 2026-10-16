@@ -85,6 +85,12 @@ set_target_properties(muhtari-run PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/runner)
 muhtari_warnings(muhtari-run)
 
+# The libretro core links muhtari_host, which exists only at top level, so an
+# add_subdirectory embedding never builds it.
+if(MUHTARI_BUILD_LIBRETRO)
+  add_subdirectory(libretro)
+endif()
+
 # Tests. MUHTARI_TIMEOUT_SCALE multiplies every test's timeout on slow lanes;
 # MUHTARI_INVENTORY names the tests/inventory/<name>.txt the registered tests
 # must equal.
