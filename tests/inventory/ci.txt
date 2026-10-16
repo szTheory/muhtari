@@ -13,6 +13,9 @@ core.testcard.boundaries	core,portable
 core.testcard.pinned_hash	core,portable
 core.testcard.static	core,portable
 host.palette	host,portable
+install.consumer	install
+install.consumer.dll_crt	install
+install.stage	install
 libretro.host.rgb565	libretro,portable
 libretro.host.xrgb8888	libretro,portable
 libretro.info_claims	libretro

@@ -59,6 +59,31 @@ if(NOT PROJECT_IS_TOP_LEVEL)
   return()
 endif()
 
+# The library component: the header, the static library, a CMake package
+# exporting muhtari::muhtari and a pkg-config file, and nothing else. Before
+# 1.0 a minor version may break the API, so the package accepts a request
+# only from the same MAJOR.MINOR. Both files locate the prefix from their own
+# directory, so an extracted archive works wherever it lands.
+include(CMakePackageConfigHelpers)
+set(MUHTARI_CMAKE_DIR lib/cmake/muhtari)
+install(TARGETS muhtari EXPORT muhtariTargets
+  ARCHIVE DESTINATION lib COMPONENT library)
+install(FILES include/muhtari.h DESTINATION include COMPONENT library)
+install(EXPORT muhtariTargets NAMESPACE muhtari::
+  DESTINATION ${MUHTARI_CMAKE_DIR} COMPONENT library)
+configure_package_config_file(cmake/muhtariConfig.cmake.in
+  ${PROJECT_BINARY_DIR}/muhtariConfig.cmake
+  INSTALL_DESTINATION ${MUHTARI_CMAKE_DIR})
+write_basic_package_version_file(${PROJECT_BINARY_DIR}/muhtariConfigVersion.cmake
+  COMPATIBILITY SameMinorVersion)
+configure_file(cmake/muhtari.pc.in ${PROJECT_BINARY_DIR}/muhtari.pc @ONLY)
+install(FILES
+    ${PROJECT_BINARY_DIR}/muhtariConfig.cmake
+    ${PROJECT_BINARY_DIR}/muhtariConfigVersion.cmake
+  DESTINATION ${MUHTARI_CMAKE_DIR} COMPONENT library)
+install(FILES ${PROJECT_BINARY_DIR}/muhtari.pc
+  DESTINATION lib/pkgconfig COMPONENT library)
+
 # Host helpers the runner and the libretro adapter share: the palette that
 # turns native colour bytes into RGB. Outside the core and its hash. PIC lets
 # it link into the libretro module; hidden visibility keeps its symbols out of
