@@ -54,7 +54,7 @@ Decisions are logged in PROJECT.md Key Decisions table; the full list with sourc
 `.planning/preparation/DECISIONS.md`.
 Recent decisions affecting current work:
 
-None yet.
+- Kickoff: CI and release refinements from the owner's lattice_stripe and exifcleaner histories are in ENGINEERING 4–7 (LESSONS XFER-026 to XFER-033) for phase 1.
 
 ### Pending Todos
 
