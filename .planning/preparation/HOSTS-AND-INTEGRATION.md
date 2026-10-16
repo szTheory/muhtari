@@ -180,7 +180,7 @@ Exits 0 pass / 77 refusal before fixture access / 1 failure after access match t
 
 **Debugger/observability** (runner-side, no GUI, v5): instruction trace with tick + beam row/column; DLL/DL dump at frame N; per-line DMA CSV/overlay PNG from the always-kept line stats (≈ a7800's `a7800dev` view [HI.18]); memory dump; symbols from dasm `-s` dump / `-l` listing (7800basic emits dasm output) and cc65 ld65 `-Ln` VICE labels or `--dbgfile` [HI.19]. Precedent: MAME has break/watch/register/exception points, `trace` with `noloop`, `gvblank` [HI.17]; A7800Hawk has memory domains, System Bus read/write callbacks, register get/set, CPU trace, no stepping [HI.12].
 
-## 6. WASM (v6; the hash lane may come earlier)
+## 6. WASM (SEED-008; the hash lane may come in phase 1)
 **Rec:** Emscripten build of the core + a ~150-line JS harness (canvas 320×242, AudioWorklet at 48 kHz, keyboard + Gamepad API); content = test card, own MIT diagnostic ROMs, OpenBIOS (CC0) for the BIOS path; plus a WASI build of `muhtari-run` under Node or wasmtime as a seventh hash-equality lane. The core already satisfies the needs: no threads (no SharedArrayBuffer → no COOP/COEP headers, any static host), no files (bytes in, caller buffers out), allocator hook, no mutable globals; check 32-bit `size_t` in state-size math. **Alt:** RetroArch's web player via `emscripten-static-cmake` (statically linked into GPL-3 RetroArch, output `${CORENAME}_libretro.{wasm,js}` [HI.09]). **Would change if:** the owner wants shaders and menus on the web.
 
 ## 7. Feature → host or core

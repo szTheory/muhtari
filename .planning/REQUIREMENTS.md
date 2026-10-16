@@ -138,8 +138,11 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
   developers, with hooks-off cost unchanged.
 - **TOOL-02**: Python bindings and a vectorised Gymnasium-style environment serve AI agents.
 
-### Everywhere (SEED-005) and 2600 mode (SEED-006)
-- **PORT-01**: Console, handheld and web builds; libretro buildbot; Playstead integration.
+### Everywhere (SEED-005), the browser (SEED-008) and 2600 mode (SEED-006)
+- **PORT-01**: Console and handheld builds with measured frame-time and battery budgets; libretro buildbot;
+  Playstead integration.
+- **WEB-01**: An efficient WebAssembly build plays in the browser with sound, with frame and audio hashes equal to
+  native.
 - **A2600-01**: Atari 2600 cartridges run in 7800 mode.
 
 ## Out of Scope

@@ -1,6 +1,6 @@
 ---
 title: "Prompt coverage: every owner ask and where it lives"
-summary: "Maps each of the owner's 50 asks (the preparation brief, all layers, plus one later message) to the file section, rule, seed or milestone that carries it, with a status and what remains."
+summary: "Maps each of the owner's 52 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
 read_when: "At kickoff review and at every milestone close; also before calling an owner ask done, deferred or out of scope."
 updated: 2026-10-15
 ---
@@ -14,7 +14,7 @@ not committed.
 | Question | Section |
 |---|---|
 | Where does owner ask N live, and what is left to do? | 1 |
-| Which asks are only partly placed? | 1 (status Partial: 3, 8, 31) |
+| Which asks are only partly placed? | 1 (status Partial: 3, 8, 31, 51) |
 | What did the owner require, and what did preparation choose? | 2 |
 | How is this file kept true? | 3 |
 
@@ -77,8 +77,10 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 46 | Compile the research into `.md` files and give a kickoff command for a fresh context | README; GSD-HANDOFF 2 (the kickoff message for a new session) | Documented | The pre-seeded `PROJECT.md`, `REQUIREMENTS.md`, `research/SUMMARY.md` and `STACK.md` (GSD-HANDOFF 1) must exist before the kickoff |
 | 47 | A lessons exchange with the sibling projects (periodic pasteable lessons) | LESSONS (protocol, template, XFER ledger); AGENTS 11; GSD-HANDOFF 4 (offered at each milestone boundary); SEED-007 | Documented | — |
 | 48 | Use subagents for context efficiency | GSD-HANDOFF 3 (discuss spawns advisor researchers), 5 (research, plan-check, verifier and code-review agents on; `model_profile: inherit`); preparation itself ran as parallel research agents | Documented | — |
-| 49 | Usable as a core inside other emulators and frontends | HOSTS 1 (libretro), 2 (rcheevos map), 4 (runner process contract); ARCHITECTURE; AGENTS 2, 4; ENGINEERING 11 (`docs/embedding.md`) | Documented | WASM build and Playstead integration v6.0 (SEED-005) |
+| 49 | Usable as a core inside other emulators and frontends | HOSTS 1 (libretro), 2 (rcheevos map), 4 (runner process contract); ARCHITECTURE; AGENTS 2, 4; ENGINEERING 11 (`docs/embedding.md`) | Documented | The browser build (SEED-008); Playstead integration v6.0 (SEED-005) |
 | 50 | Use the new OpenGSD (`gsd-core`), not the old GSD | GSD-HANDOFF 1, 2 (`@opengsd/gsd-core` 1.17.0 version check), 5, 8; LESSONS XFER-023, -024 | Documented | — |
+| 51 | Power-efficient, for battery life on handhelds | ECOSYSTEM 4 (work per frame, device budgets); FRAME-08 (instructions-per-frame ratchet), FRAME-09 (bench); ENGINEERING 8, 9 (`armhf` nightly); PROJECT constraints (efficiency); SEED-005 | Partial | Work per frame is guarded from phase 1, but energy is never measured; battery budgets on a handheld come with the ports (SEED-005) |
+| 52 | Efficient in the browser through WebAssembly; the owner ranks it very important | HOSTS 6; ARCHITECTURE (portability row); PROJECT constraints (efficiency); the pending todo for the phase 1 discussion (a wasm32 hash lane); SEED-008 | Later | Phase 1 discuss decides the wasm32 hash lane; the browser build is weighed at the v1.0 close, or sooner if the owner asks (SEED-008) |
 
 Totals: Documented 42, Partial 3, Later 5, Inapplicable 0.
 
