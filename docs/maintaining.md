@@ -26,8 +26,9 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
    - `attested`: each zip's attestation verifies from `refs/heads/main` and a copy with its last byte flipped does
      not;
    - publish the draft as the latest release;
-   - `verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from
-     `releases/latest/download/` matches `SHA256SUMS` and verifies as signed by `release.yml` from `refs/heads/main`.
+   - `verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the
+     release's own `releases/download/<tag>/` URL matches `SHA256SUMS` and verifies as signed by `release.yml` from
+     `refs/heads/main`.
 
 Only an attestation whose source ref is `refs/heads/main` is release provenance. A rehearsal signs with the same
 `release.yml`, but from `refs/pull/<number>/merge`, so a check that a download is a release must pin the ref:

@@ -111,10 +111,9 @@ verify() {
     [ "$i" -lt 6 ] || fail "$1 does not list the 18 archives and SHA256SUMS, all non-empty"
     sleep 10
   done
-  case $1 in
-    rehearsal-*) base=https://github.com/$REPO/releases/download/$1/ ;;
-    *) base=https://github.com/$REPO/releases/latest/download/ ;;
-  esac
+  # The tag's own URL, never the latest alias: a re-run for an older release
+  # must check that release. install-line-latest tests the alias.
+  base=https://github.com/$REPO/releases/download/$1/
   for n in $(names) SHA256SUMS; do
     curl -fsSL --retry 3 -o "$tmp/download/$n" "$base$n" || fail "cannot download $base$n"
   done
