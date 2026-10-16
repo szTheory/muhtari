@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-11-PLAN.md
-last_updated: "2026-10-16T16:04:25.364Z"
+stopped_at: Completed 01-12-PLAN.md
+last_updated: "2026-10-16T16:25:57.635Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: 727b5dfdbf92e87822ba9153b3a9b42f7bded8b4
+state_head: dd80f1995ae05e485c832cd2d42b18744cbc3528
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 11
+  completed_plans: 12
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 12 of 21
+Plan: 13 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -69,6 +69,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P09 | 10 min | 3 tasks | 14 files |
 | Phase 01 P10 | 6 min | 3 tasks | 11 files |
 | Phase 01 P11 | 6 min | 3 tasks | 15 files |
+| Phase 01 P12 | 19 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,10 @@ Recent decisions affecting current work:
 - [Phase 01]: tests/api/v1.c names muhtari_allocator: abi.api_version found it missing, and v1.c is not frozen until 0.1.0 is released
 - [Phase 01]: Hygiene preset sets CMAKE_OSX_SYSROOT=macosx so Homebrew clang-tidy finds the SDK headers; CMake 4 leaves the sysroot empty
 - [Phase 01]: The float scan exempts cited section numbers such as section 6.2, so hardware citations in src/ stay as written
+- [Phase 01]: abi self-test regexes allow a line break anywhere in the finding title, because CMake wraps messages at a path-dependent column
+- [Phase 01]: abi.api_v1 and abi.header.* are registered from tests/abi/tests.cmake so the nofp lane includes one file
+- [Phase 01]: The asan container lane needs libclang-rt-21-dev; local x86_64 emulated runs substitute bsdtar for GNU tar
+- [Phase 01]: MUHTARI_SHORT_RUNS cuts the 600-frame runs to 60; MUHTARI_NOFP builds the core with -mgeneral-regs-only and registers only abi tests
 
 ### Pending Todos
 
@@ -126,6 +131,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T16:04:20.776Z
-Stopped at: Completed 01-11-PLAN.md
+Last session: 2026-10-16T16:25:57.617Z
+Stopped at: Completed 01-12-PLAN.md
 Resume file: None
