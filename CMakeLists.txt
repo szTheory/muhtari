@@ -60,9 +60,14 @@ if(NOT PROJECT_IS_TOP_LEVEL)
 endif()
 
 # Host helpers the runner and the libretro adapter share: the palette that
-# turns native colour bytes into RGB. Outside the core and its hash.
+# turns native colour bytes into RGB. Outside the core and its hash. PIC lets
+# it link into the libretro module; hidden visibility keeps its symbols out of
+# that module's exports.
 add_library(muhtari_host STATIC host/palette.c)
 target_include_directories(muhtari_host PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host)
+set_target_properties(muhtari_host PROPERTIES
+  C_VISIBILITY_PRESET hidden
+  POSITION_INDEPENDENT_CODE ON)
 muhtari_warnings(muhtari_host)
 
 # The headless runner, built as ISO C17 with POSIX 2008 and no GNU extensions.
