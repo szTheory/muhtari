@@ -125,9 +125,17 @@ coverage:
   - id: D7
     description: "README and docs read well for users and embedders: the RetroArch quick start matches the real menus, and the embedding guide is accurate and complete"
     requirement: FRAME-07
-    verification: []
-    human_judgment: true
-    rationale: "Prose quality and whether the RetroArch menu steps match what a user sees are judgements no test makes; the install itself is covered by D5"
+    verification:
+      - kind: unit
+        ref: "tests/policy/tests.cmake#docs.api_names"
+        status: pass
+      - kind: e2e
+        ref: "CI job retroarch: RetroArch 1.22.2 on macos-15 starts the archive's core with no content and its screenshot equals the runner's frame (run 38971166983)"
+        status: pass
+      - kind: other
+        ref: "Agent check 2026-10-16 (01-UAT.md test 2): Main Menu, Load Core and Start Core are exact strings in the RetroArch 1.22.2 binary; the README's core name equals the .info display_name; the .info and the core declare no-game support; the flags muhtari.pc resolves to build and run tests/consumer (exit 0); the agent read README.md and docs/embedding.md against the code"
+        status: pass
+    human_judgment: false
 
 duration: 10 min
 completed: 2026-10-16

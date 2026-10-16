@@ -23,9 +23,13 @@ evidence.
 5. **Tested and documented together, within budgets.** Every behaviour change lands with a test that
    `cmake --workflow --preset ci` runs. The README stays user-facing and short; testing, CI and maintainer docs
    live in `docs/`; the public header stays terse and puts behaviour prose in `docs/`.
-6. **Verification is automation-first.** This is settled; do not re-propose it. Deterministic checks go in
-   tests; integration, end-to-end and smoke checks go in CI when they catch recurring regressions. Ask the owner
-   only for identity-bound consent or a judgement no test or artifact can establish, and say why.
+6. **Verification is automation-first; the owner verifies nothing by default.** This is settled; do not
+   re-propose it. Deterministic checks go in tests; integration, end-to-end and smoke checks go in CI when they
+   catch recurring regressions; a check with no recurring value is run once by the agent and recorded as a
+   command and an exit status. The agent makes the judgement calls itself: it reads docs against the code, views
+   images and screenshots, and runs RetroArch. What only a merge can show is confirmed at ship (rule 9), not in
+   UAT. Ask the owner only for identity-bound consent (the App key, admin settings, a merge) or a run on their
+   own hardware, and say why.
 7. **Proportional gates.** Repository-check code is CMake `-P` or POSIX sh and, from phase 3, stays under a
    tenth of `src/` lines. Every gate names the fault it prevents. At most two code-review fix rounds and one gap round per phase. Review findings about test or
    tooling code become seeds, not requirements. Re-plan a gap only with new evidence.
@@ -47,8 +51,8 @@ evidence.
 
 Every plan SUMMARY carries `requirements-completed:` and a block-style `coverage:` list. Each entry has `id`,
 `description`, `requirement`, `verification` (kind one of unit, integration, e2e, automated_ui,
-manual_procedural, other; `ref`; `status`) and `human_judgment` (false unless a person must decide). No flow
-style `{}` and no inline `#` comments in that block.
+manual_procedural, other; `ref`; `status`) and `human_judgment` (true only for what rule 6 leaves to the
+owner). No flow style `{}` and no inline `#` comments in that block.
 
 ## Style
 

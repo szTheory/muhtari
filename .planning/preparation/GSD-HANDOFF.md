@@ -80,8 +80,9 @@ node ~/.claude/gsd-core/bin/gsd-tools.cjs query config-get workflow.test_command
    close all run inside this step [GH.01].
 5. Read `.planning/phases/NN-*/NN-VERIFICATION.md`:
    - `passed` → step 6;
-   - `human_needed` → `/gsd-verify-work N`, which must first close every item that code, configuration, a
-     test, CI or hosted evidence can prove, and hand the owner only the irreducible rest;
+   - `human_needed` → `/gsd-verify-work N`, which closes every item with code, configuration, a test, CI,
+     hosted evidence or the agent's own reading, viewing and running, and hands the owner only what AGENTS rule 6
+     leaves to them;
    - `gaps_found` → one gap round (`/gsd-plan-phase N` for the gaps, then execute); a second only with new
      evidence.
 6. `/gsd-ship N` opens the pull request titled "Phase N: name". The agent retitles it as a Conventional Commit
@@ -98,8 +99,9 @@ node ~/.claude/gsd-core/bin/gsd-tools.cjs query config-get workflow.test_command
 **Verification default (settled 2026-10-15; never re-proposed):** automation first. Deterministic behaviour goes
 in local tests; integration, end-to-end, smoke and seam checks go in CI when they catch recurring regressions; a
 one-time hosted outcome is collected by a read-only evidence command. Passing results are recorded as command,
-exit status and run URL. The owner is asked only for identity-bound consent or a judgement no test or artifact
-can establish, with the reason stated.
+exit status and run URL. The owner is asked only for identity-bound consent or a run on their own hardware, with
+the reason stated. Narrowed 2026-10-16: judging docs, images and RetroArch's menus is the agent's job, and a truth
+only a merge can show is confirmed at ship (step 8), never in UAT.
 
 **Closeout policy:** a fix merged after a phase's verification makes that verification "stale". Accept an
 override closeout at milestone end when CI passes on the merged head and the milestone audit covers the phase;

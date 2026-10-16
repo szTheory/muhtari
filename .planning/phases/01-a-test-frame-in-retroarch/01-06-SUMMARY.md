@@ -150,8 +150,10 @@ coverage:
       - kind: other
         ref: "grep finds ## Test card and $rc in docs/runner.md; grep -nE for planning IDs prints nothing"
         status: pass
-    human_judgment: true
-    rationale: "Whether the test-card explanation is clear to a user is a reading judgement no test makes"
+      - kind: other
+        ref: "Agent check 2026-10-16 (01-UAT.md test 1): every position, size and colour the section states matches card.png from muhtari-run --frames 1 --dump-frame 1:card.png pixel by pixel (exit 0), and the agent read the section against the card"
+        status: pass
+    human_judgment: false
 
 duration: 6min
 completed: 2026-10-16

@@ -69,6 +69,15 @@ covered_files:
 covered_digest: "v3:sha256:9e6661e2c399abc001314065cd3197e6768a7c29002dbcbad1dbb4d6d178a0f9"
 behavior_unverified: 2
 overrides_applied: 0
+overrides:
+  - must_have: "Merging the phase's pull request publishes a GitHub release of the 18 archives, each holding LICENSE and THIRD-PARTY-NOTICES.md, with SHA256SUMS and verified attestations, through a release pull request the release App merges, after a rehearsal run exercised every publish step"
+    reason: "Only the merge can show it, so the ship step confirms it from the push Release run on main (AGENTS rules 6 and 9; GSD-HANDOFF 3, step 8), not UAT. Before the merge the rehearsal ran every publish step on a prerelease (Release run 38957354117) and the real path is wired"
+    accepted_by: "the agent, under the owner's standing instruction of 2026-10-16 (DEC.09)"
+    accepted_at: "2026-10-16T21:45:03Z"
+  - must_have: "The README's one-line install, run against the latest release's version-free archive, puts the core and its .info into RetroArch on an Apple Silicon Mac"
+    reason: "releases/latest exists only after the first release, so the ship step confirms install-line-latest from the same Release run (AGENTS rules 6 and 9), not UAT. Before the merge the same line passed against the built zip on macOS arm64 (CI step 'README install line') and against the rehearsal tag (Release run 38957354117)"
+    accepted_by: "the agent, under the owner's standing instruction of 2026-10-16 (DEC.09)"
+    accepted_at: "2026-10-16T21:45:03Z"
 behavior_unverified_items:
   - truth: "Merging the phase's pull request publishes a GitHub release of the 18 archives, each holding LICENSE and THIRD-PARTY-NOTICES.md, with SHA256SUMS and verified attestations, through a release pull request the release App merges, after a rehearsal run exercised every publish step"
     test: "After the phase PR merges, read the push Release run on main (gh run view <id> --json jobs): release-please opens the release PR with the App token and enables auto-merge; after that PR merges, release-ci, publish and install-line-latest succeed and v0.1.0 lists 19 assets (gh release view v0.1.0 --json assets)"
