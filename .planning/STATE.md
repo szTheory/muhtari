@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 Phase: 1 of 4 (A test frame in RetroArch)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-10-15 — Roadmap created
+Last activity: 2026-10-15 — Roadmap approved; release App and its secrets set up
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -62,7 +62,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- FRAME-06 (Phase 1) needs the owner's release App and its secrets before the first release can publish (GSD-HANDOFF 7).
+None yet.
 
 ## Deferred Items
 

@@ -34,7 +34,7 @@ values in tests cite their source document.
   platform), each holding `LICENSE` and `THIRD-PARTY-NOTICES.md`; a behaviour-changing merge to `main` publishes
   them with `SHA256SUMS` and verified attestations as a GitHub release, through a release pull request the
   release App merges, with no manual step; a rehearsal run exercised every publish step before the first tag.
-  Needs the owner's release App and its secrets (GSD-HANDOFF 7).
+  Uses the release App `muhtari-release` and its secrets, set up 2026-10-15 (GSD-HANDOFF 7).
 - [ ] **FRAME-07**: The README's one-line install, run against the latest release's version-free archive, puts the
   core and its `.info` into RetroArch on an Apple Silicon Mac; a test runs that exact line against the built
   archive on macOS arm64.
@@ -186,4 +186,4 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 
 ---
 *Requirements defined: 2026-10-15*
-*Last updated: 2026-10-15 after preparation review*
+*Last updated: 2026-10-15 after roadmap creation and the release App set-up*
