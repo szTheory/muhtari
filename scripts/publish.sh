@@ -2,7 +2,8 @@
 # Publish steps shared by the release and its rehearsal, each safe to re-run:
 #   publish.sh prepare DIR                 exactly the 18 zips, one commit; SHA256SUMS
 #   publish.sh upload TAG RELEASE_ID DIR   upload to that release, replacing
-#   publish.sh verify TAG DIR              attestations, tampered copies, the published release
+#   publish.sh attested DIR                attestations verify; tampered copies do not
+#   publish.sh verify TAG DIR              attested, then the published release
 #   publish.sh rehearsal-create TAG        a draft prerelease at EXPECTED_SHA; prints its ID
 #   publish.sh rehearsal-delete TAG [ID]   delete a rehearsal release and its tag
 # Fault prevented: a release with a missing, extra, unverifiable or tampered
@@ -69,22 +70,27 @@ upload() {
   done
 }
 
-verify() {
+# Run before publishing too, because a published release cannot be changed.
+attested() {
   tmp=${RUNNER_TEMP:-${TMPDIR:-/tmp}}/publish-verify
   rm -rf "$tmp"
   mkdir -p "$tmp/download"
   for n in $(names); do
-    gh attestation verify "$2/$n" --repo "$REPO" > /dev/null || fail "$n: its attestation does not verify"
-    cp "$2/$n" "$tmp/$n"
+    gh attestation verify "$1/$n" --repo "$REPO" > /dev/null || fail "$n: its attestation does not verify"
+    cp "$1/$n" "$tmp/$n"
     size=$(wc -c < "$tmp/$n")
     last=$(tail -c 1 "$tmp/$n" | od -An -tu1 | tr -d ' ')
     printf "$(printf '\\%03o' $((last ^ 255)))" | dd of="$tmp/$n" bs=1 seek=$((size - 1)) conv=notrunc 2> /dev/null
-    if cmp -s "$2/$n" "$tmp/$n"; then fail "$n: the copy was not changed"; fi
+    if cmp -s "$1/$n" "$tmp/$n"; then fail "$n: the copy was not changed"; fi
     if gh attestation verify "$tmp/$n" --repo "$REPO" > /dev/null 2>&1; then
       fail "$n: a copy with its last byte flipped verifies"
     fi
     echo "publish: $n verifies; a copy with its last byte flipped fails, as expected"
   done
+}
+
+verify() {
+  attested "$2"
   draft=$(gh release view "$1" --repo "$REPO" --json isDraft --jq .isDraft)
   [ "$draft" = false ] || fail "$1 is not published"
   gh release verify "$1" --repo "$REPO"
@@ -146,12 +152,13 @@ rehearsal_delete() {
 cmd=${1:-}
 [ $# -eq 0 ] || shift
 case $cmd in rehearsal-*) case ${1:-} in rehearsal-*) ;; *) fail "$cmd: '${1:-}' is not a rehearsal tag" ;; esac ;; esac
-case $cmd in upload | verify | rehearsal-*) REPO=${GITHUB_REPOSITORY:?publish: GITHUB_REPOSITORY is not set} ;; esac
+case $cmd in upload | attested | verify | rehearsal-*) REPO=${GITHUB_REPOSITORY:?publish: GITHUB_REPOSITORY is not set} ;; esac
 case "$cmd $#" in
   "prepare 1") prepare "$1" ;;
   "upload 3") upload "$1" "$2" "$3" ;;
+  "attested 1") attested "$1" ;;
   "verify 2") verify "$1" "$2" ;;
   "rehearsal-create 1") rehearsal_create "$1" ;;
   "rehearsal-delete 1" | "rehearsal-delete 2") rehearsal_delete "$1" "${2:-}" ;;
-  *) fail "usage: publish.sh prepare DIR | upload TAG RELEASE_ID DIR | verify TAG DIR | rehearsal-create TAG | rehearsal-delete TAG [RELEASE_ID]" ;;
+  *) fail "usage: publish.sh prepare DIR | upload TAG RELEASE_ID DIR | attested DIR | verify TAG DIR | rehearsal-create TAG | rehearsal-delete TAG [RELEASE_ID]" ;;
 esac
