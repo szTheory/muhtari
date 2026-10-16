@@ -23,6 +23,11 @@ on:
 permissions:
   contents: read
 
+# The instructions-per-frame gate reports only until it is armed; arming is
+# one ci: pull request setting this to "true" (docs/testing.md, "Performance").
+env:
+  MUHTARI_PERF_ARMED: "false"
+
 # Only a pull request's runs supersede each other, so every main commit keeps
 # a result. The workflow name is part of the group because a call from
 # release.yml sees the caller's context: its run must not queue behind the
@@ -351,6 +356,99 @@ jobs:
         if: failure()
         run: cat build/ra/retroarch.log || true
 
+  # Cachegrind instructions per frame of the test card, the pull request's
+  # merge commit against its first parent measured twice (docs/testing.md,
+  # "Performance"). Direct runs only: release.yml's nested call checks out the
+  # pull request head, whose first parent is not the merge base, and
+  # github.event_name cannot tell that call apart, so the condition reads
+  # inputs.ref. On workflow_dispatch it measures one commit three times.
+  perf:
+    needs: changes
+    if: ${{ !inputs.ref && needs.changes.outputs.heavy == 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20  # provisional
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Cachegrind
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends valgrind
+      # Both runners are installed under paths of equal length, so the path
+      # Cachegrind and the loader see costs the same instructions. NO_BASE is
+      # decided from the base tree's contents only: a base that has presets
+      # and fails to build fails this step.
+      - name: Build the runner at head and base
+        id: build
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          build() {
+            (cd "$1" && cmake --preset ci > /dev/null && cmake --build --preset ci --target muhtari-run &&
+              cmake --install build/ci --component runner --prefix "$2")
+          }
+          build . "$RUNNER_TEMP/perf/head"
+          if [ "$EVENT" = workflow_dispatch ]; then
+            echo no_base=none >> "$GITHUB_OUTPUT"
+          elif git cat-file -e 'HEAD^1:CMakePresets.json' 2> /dev/null; then
+            git worktree add --detach "$RUNNER_TEMP/base" 'HEAD^1'
+            build "$RUNNER_TEMP/base" "$RUNNER_TEMP/perf/base"
+            echo no_base=false >> "$GITHUB_OUTPUT"
+          else
+            echo "perf: base HEAD^1 has no CMakePresets.json; verdict NO_BASE"
+            echo no_base=true >> "$GITHUB_OUTPUT"
+          fi
+      - name: Instructions per frame
+        env:
+          EVENT: ${{ github.event_name }}
+          NO_BASE: ${{ steps.build.outputs.no_base }}
+        run: |
+          valgrind=$(command -v valgrind)
+          # Ir of one run of the runner under $1 for $2 frames, from the
+          # summary line of Cachegrind's output; empty output is a failure.
+          ir() {
+            rm -f "$RUNNER_TEMP/cg.out"
+            env -i "$valgrind" --tool=cachegrind --cache-sim=no --cachegrind-out-file="$RUNNER_TEMP/cg.out" \
+              "$1/bin/muhtari-run" --frames "$2" > /dev/null 2>&1 || return 1
+            local v
+            v=$(sed -n 's/^summary: *\([0-9][0-9]*\)$/\1/p' "$RUNNER_TEMP/cg.out")
+            [ -n "$v" ] || return 1
+            echo "$v"
+          }
+          # Ir/frame = (Ir at 360 frames - Ir at 60) / 300, in integers.
+          per_frame() {
+            local a b
+            a=$(ir "$1" 60) || return 1
+            b=$(ir "$1" 360) || return 1
+            echo $(( (b - a) / 300 ))
+          }
+          head=$(per_frame "$RUNNER_TEMP/perf/head")
+          if [ "$NO_BASE" = none ]; then
+            h2=$(per_frame "$RUNNER_TEMP/perf/head")
+            h3=$(per_frame "$RUNNER_TEMP/perf/head")
+            max=$head min=$head
+            for v in "$h2" "$h3"; do
+              if [ "$v" -gt "$max" ]; then max=$v; fi
+              if [ "$v" -lt "$min" ]; then min=$v; fi
+            done
+            line="perf control testcard runs=$head,$h2,$h3 spread=$((max - min))"
+            echo "$line"
+            echo "$line" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          base1= base2=
+          if [ "$NO_BASE" = false ]; then
+            base1=$(per_frame "$RUNNER_TEMP/perf/base")
+            base2=$(per_frame "$RUNNER_TEMP/perf/base")
+          fi
+          rc=0
+          cmake -DROM=testcard "-DHEAD=$head" "-DBASE1=$base1" "-DBASE2=$base2" -DALLOW=tests/perf/allow.txt \
+            "-DARMED=$MUHTARI_PERF_ARMED" "-DTODAY=$(date -u +%Y-%m-%d)" "-DNO_BASE=$NO_BASE" \
+            -P tests/cmake/perf_compare.cmake > perf.txt 2>&1 || rc=$?
+          cat perf.txt
+          grep '^perf ' perf.txt >> "$GITHUB_STEP_SUMMARY" || true
+          exit "$rc"
+
   # The one required check. GitHub reports a skipped job as success and skips
   # a job whose dependency failed, so this always runs and requires every
   # result to be success, except: a heavy job skipped when changes said
@@ -359,7 +457,7 @@ jobs:
   ci-required:
     name: CI required
     if: always()
-    needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality, retroarch]
+    needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality, retroarch, perf]
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # provisional
     steps:
