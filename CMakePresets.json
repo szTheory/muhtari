@@ -60,6 +60,17 @@
         "MUHTARI_TIMEOUT_SCALE": "3",
         "MUHTARI_INVENTORY": "ci"
       }
+    },
+    {
+      "name": "nofp",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "MUHTARI_NOFP": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -67,7 +78,8 @@
     { "name": "ci", "configurePreset": "ci" },
     { "name": "ci-msvc", "configurePreset": "ci-msvc" },
     { "name": "hygiene", "configurePreset": "hygiene" },
-    { "name": "asan", "configurePreset": "asan" }
+    { "name": "asan", "configurePreset": "asan" },
+    { "name": "nofp", "configurePreset": "nofp" }
   ],
   "testPresets": [
     {
@@ -139,6 +151,16 @@
       },
       "filter": { "exclude": { "label": "^(abi|release)$" } },
       "execution": { "noTestsAction": "error", "jobs": "" }
+    },
+    {
+      "name": "nofp",
+      "configurePreset": "nofp",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "filter": { "include": { "label": "^abi$" } },
+      "execution": { "noTestsAction": "error", "jobs": "" }
     }
   ],
   "packagePresets": [
@@ -188,6 +210,14 @@
         { "type": "configure", "name": "asan" },
         { "type": "build", "name": "asan" },
         { "type": "test", "name": "asan" }
+      ]
+    },
+    {
+      "name": "nofp",
+      "steps": [
+        { "type": "configure", "name": "nofp" },
+        { "type": "build", "name": "nofp" },
+        { "type": "test", "name": "nofp" }
       ]
     }
   ]

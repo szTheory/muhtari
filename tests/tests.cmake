@@ -1,9 +1,13 @@
 # Every subsystem's tests. Each file is include()d, never add_subdirectory()d,
 # so the top-level directory's TESTS property holds every name and the
 # inventory check in cmake/MuhtariTests.cmake sees them all. The hygiene lane
-# registers only its own tests.
+# registers only its own tests, and the nofp lane only the abi tests.
 if(MUHTARI_HYGIENE)
   include(${CMAKE_CURRENT_LIST_DIR}/hygiene/tests.cmake)
+  return()
+endif()
+if(MUHTARI_NOFP)
+  include(${CMAKE_CURRENT_LIST_DIR}/abi/tests.cmake)
   return()
 endif()
 include(${CMAKE_CURRENT_LIST_DIR}/abi/tests.cmake)

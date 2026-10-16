@@ -25,6 +25,8 @@ It needs CMake 4.3 or later, Ninja and a C and C++ compiler. The workflow runs f
 | `ci` | The workflow above. Every Linux and macOS leg of CI runs it. |
 | `ci-msvc` | The same five steps with MSVC and the static C runtime, in `build/ci-msvc`. |
 | `asan` | Debug build with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, in `build/asan`; any finding stops the test. Long runs drop from 600 frames to 60 (`MUHTARI_SHORT_RUNS`) and timeouts triple. It runs the `ci` inventory except the `abi` and `release` labels, whose checks of binary shape the instrumentation changes. |
+| `nofp` | Release build with GCC in `build/nofp`, the core compiled with `-mgeneral-regs-only`, which rejects any floating-point type; it registers and runs only the `abi` tests (`tests/inventory/nofp.txt`). |
+| `hygiene` | The repository checks: the tree scan, formatting, the integer-only text scan, the analyzer and the pins file. |
 
 `ctest --preset ci -R <regex>` reruns part of the suite after a build; `ctest --test-dir build/ci -L <label>`
 selects by label.
@@ -61,6 +63,8 @@ output matches the expected message; a crash or a missing file does not count as
 | `abi.undefined.self_test` | A library that calls `abort`. |
 | `abi.globals.self_test` | A library with a writable file-scope integer. |
 | `abi.api_version.self_test` | A copy of the header with one field no API test names. |
+| `abi.nofp_fixture` | On the `nofp` lane, a file holding one `double` division, which must fail to compile with GCC's `-mgeneral-regs-only` diagnostic. |
+| `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |
 | `release.archive_contents.self_test` | A libretro zip without `THIRD-PARTY-NOTICES.md`. |
@@ -135,7 +139,8 @@ reads what each OS loader enforces. On every system the libretro core exports on
 `pins.txt` lists every file a build or a CI job downloads, one `name version url sha256` row each.
 `scripts/fetch-pin.sh NAME DEST` downloads the row `NAME` into a temporary directory and checks its SHA-256 before
 anything else happens; only then does it unpack a `.tar.xz` or `.tar.gz` into `DEST`, top folder stripped, or
-copy any other file there. A wrong digest exits 1 with `sha256 mismatch` and leaves `DEST` untouched. `PINS=<file>`
+copy any other file there. `policy.pins` (hygiene lane) requires four fields per row, a unique name, an `https://`
+URL and a 64-digit hex digest. A wrong digest exits 1 with `sha256 mismatch` and leaves `DEST` untouched. `PINS=<file>`
 reads another pins file. A bump is one `ci:` pull request that takes the new digest from the release API.
 
 ## Running the Linux lanes locally

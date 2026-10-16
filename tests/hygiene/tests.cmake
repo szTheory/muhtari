@@ -38,3 +38,21 @@ muhtari_add_test(NAME hygiene.analyzer
 -checks='-*,clang-analyzer-*' --warnings-as-errors='*' src/*.c" sh
     ${CMAKE_SOURCE_DIR} ${MUHTARI_CLANG_TIDY} ${CMAKE_BINARY_DIR}
   LABELS hygiene TIMEOUT 120)
+
+# Every pins.txt row is well formed. The self test runs scripts/fetch-pin.sh
+# on a row whose digest is wrong for its file, which must stop before DEST
+# is touched.
+muhtari_add_test(NAME policy.pins
+  COMMAND ${CMAKE_COMMAND} -DPINS=${CMAKE_SOURCE_DIR}/pins.txt -P ${hygiene_scripts}/pins.cmake
+  LABELS hygiene policy TIMEOUT 10)
+set(hygiene_pins ${CMAKE_BINARY_DIR}/hygiene/pins_fixture)
+file(WRITE ${hygiene_pins}/payload.txt "not the pinned bytes\n")
+string(REPEAT "0" 64 hygiene_zeros)
+file(WRITE ${hygiene_pins}/pins.txt "payload 1 file://${hygiene_pins}/payload.txt ${hygiene_zeros}\n")
+set(hygiene_cmd ${CMAKE_COMMAND} -E env PINS=${hygiene_pins}/pins.txt
+  ${MUHTARI_SH} ${CMAKE_SOURCE_DIR}/scripts/fetch-pin.sh payload ${hygiene_pins}/dest)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.pins.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1 "-DREGEX=payload: sha256 mismatch"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)

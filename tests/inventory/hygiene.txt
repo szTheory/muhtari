@@ -5,3 +5,5 @@ hygiene.format	hygiene
 hygiene.no_float	hygiene
 hygiene.no_float.self_test	hygiene
 hygiene.tree	hygiene
+policy.pins	hygiene,policy
+policy.pins.self_test	hygiene,policy

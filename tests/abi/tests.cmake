@@ -62,3 +62,55 @@ muhtari_add_test(NAME abi.api_version.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${abi_cmd}" -DCODE=1
     "-DREGEX=in no tests/api/vK.c with K <= 1: untested_field" -P ${abi_scripts}/expect_fail.cmake
   LABELS abi TIMEOUT 10)
+
+# The frozen API v1 program: every function, field and constant of version 1.
+add_executable(muhtari-test-api-v1 ${CMAKE_SOURCE_DIR}/tests/api/v1.c)
+target_link_libraries(muhtari-test-api-v1 PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-api-v1 PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-api-v1)
+muhtari_add_test(NAME abi.api_v1 COMMAND muhtari-test-api-v1
+  LABELS abi portable TIMEOUT 10)
+
+# The public header compiles alone as C17 and as C++17 with warnings fatal.
+# Fault prevented: a header that only the core's own build, with its own
+# flags and language, can compile. The targets are built only by these
+# tests, which share the build tree and so take turns.
+add_library(muhtari_header_c17 OBJECT EXCLUDE_FROM_ALL
+  ${CMAKE_CURRENT_LIST_DIR}/../header/header.c)
+add_library(muhtari_header_cxx17 OBJECT EXCLUDE_FROM_ALL
+  ${CMAKE_CURRENT_LIST_DIR}/../header/header.cpp)
+set_target_properties(muhtari_header_cxx17 PROPERTIES
+  CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+muhtari_warnings(muhtari_header_c17)
+foreach(abi_target IN ITEMS muhtari_header_c17 muhtari_header_cxx17)
+  target_include_directories(${abi_target} PRIVATE ${PROJECT_SOURCE_DIR}/include)
+  target_compile_options(${abi_target} PRIVATE
+    $<$<COMPILE_LANG_AND_ID:C,GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -Werror>
+    $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -Werror>
+    $<$<COMPILE_LANG_AND_ID:C,MSVC>:/W4 /WX /TC>
+    $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4 /WX /TP>)
+endforeach()
+foreach(abi_lang IN ITEMS c17 cxx17)
+  muhtari_add_test(NAME abi.header.${abi_lang}
+    COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR}
+      --target muhtari_header_${abi_lang} --config $<CONFIG>
+    LABELS abi TIMEOUT 120)
+  set_tests_properties(abi.header.${abi_lang} PROPERTIES RESOURCE_LOCK build_tree)
+endforeach()
+
+# On the nofp lane, a fixture holding one double division must fail to build
+# under -mgeneral-regs-only with GCC's own diagnostic (AArch64 names the
+# option; x86-64 refuses the SSE register a double travels in). Fault
+# prevented: a flag that stopped rejecting floating point, so the lane passes
+# on a core that uses it. The fixture is built only inside this test.
+if(MUHTARI_NOFP)
+  set(abi_cmd ${CMAKE_C_COMPILER} -std=c17 -mgeneral-regs-only
+    -c ${CMAKE_CURRENT_LIST_DIR}/nofp_fixture.c -o ${PROJECT_BINARY_DIR}/tests/abi/nofp_fixture.o)
+  string(REPLACE ";" "$<SEMICOLON>" abi_cmd "${abi_cmd}")
+  muhtari_add_test(NAME abi.nofp_fixture
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${abi_cmd}" -DCODE=1
+      "-DREGEX=general-regs-only. is incompatible with the use of floating-point types|SSE register (return|argument) with SSE disabled"
+      -P ${abi_scripts}/expect_fail.cmake
+    LABELS abi TIMEOUT 30)
+endif()

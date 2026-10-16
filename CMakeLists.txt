@@ -159,6 +159,17 @@ if(MUHTARI_HYGIENE)
   find_package(Git REQUIRED)
 endif()
 
+# The nofp lane proves the core integer-only by machine code, not text: GCC's
+# -mgeneral-regs-only rejects any floating-point type in the core and in the
+# abi fixtures, which copy the core's options. It registers only the abi tests.
+option(MUHTARI_NOFP "Build the core with general registers only; register only the abi tests" OFF)
+if(MUHTARI_NOFP)
+  if(NOT CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    message(FATAL_ERROR "nofp: -mgeneral-regs-only needs GCC, not ${CMAKE_C_COMPILER_ID}")
+  endif()
+  target_compile_options(muhtari PRIVATE -mgeneral-regs-only)
+endif()
+
 # Tests. MUHTARI_TIMEOUT_SCALE multiplies every test's timeout on slow lanes;
 # MUHTARI_INVENTORY names the tests/inventory/<name>.txt the registered tests
 # must equal.
@@ -173,6 +184,8 @@ endif()
 set(inventory ci)
 if(MUHTARI_HYGIENE)
   set(inventory hygiene)
+elseif(MUHTARI_NOFP)
+  set(inventory nofp)
 endif()
 set(MUHTARI_INVENTORY ${inventory} CACHE STRING "Test inventory file under tests/inventory")
 enable_testing()
