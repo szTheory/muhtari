@@ -13,4 +13,7 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.host.xrgb8888
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> xrgb8888
     LABELS libretro portable TIMEOUT 30)
+  muhtari_add_test(NAME libretro.host.rgb565
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> rgb565
+    LABELS libretro portable TIMEOUT 30)
 endif()

@@ -2,10 +2,11 @@
  * frontend such as RetroArch does, then compares every frame it receives
  * with the library's own frame through the same palette.
  *
- *   muhtari-test-libretro-host <module> xrgb8888
+ *   muhtari-test-libretro-host <module> xrgb8888|rgb565
  *
- * Pixels are read as native-endian integers, so a swapped channel order or
- * byte order fails here. */
+ * Pixels are read as native-endian integers, so a swapped channel order, 555
+ * for 565, or a swapped byte order fails here. In rgb565 mode the host
+ * registers no batch audio callback, so the single-sample path runs. */
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -154,6 +155,7 @@ static void resolve_all(void)
 
 /* ---- frontend callbacks: record what the core does ---- */
 
+static int rgb565; /* the mode: 0 xrgb8888, 1 rgb565 */
 static int no_game_calls, no_game_value;
 static int pixel_format_calls;
 static enum retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
@@ -185,7 +187,7 @@ static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 /* Keeps the rows of the last frame, packed, in the module's own byte order. */
 static void RETRO_CALLCONV video(const void *data, unsigned width, unsigned height, size_t pitch)
 {
-    size_t row = (size_t)W * 4u;
+    size_t row = (size_t)W * (rgb565 ? 2u : 4u);
     unsigned y;
     video_calls++;
     video_width = width;
@@ -237,6 +239,16 @@ static int16_t RETRO_CALLCONV input(unsigned port, unsigned device, unsigned ind
     return 0;
 }
 
+/* got must equal want; prints both. */
+static void check_string(const char *what, const char *got, const char *want)
+{
+    if (got == NULL || strcmp(got, want) != 0) {
+        fprintf(stderr, "%s: got \"%s\", expected \"%s\"\n", what, got != NULL ? got : "(null)",
+                want);
+        check_failures++;
+    }
+}
+
 /* ---- the library's own frame, the expected image ---- */
 
 static void *host_alloc(void *user, size_t size)
@@ -253,14 +265,22 @@ static void host_free(void *user, void *ptr, size_t size)
 }
 
 /* Compares the captured frame with the palette of each native byte, read as
-   a native-endian uint32_t. Prints the first mismatch. */
+   a native-endian uint32_t, or uint16_t in rgb565 mode. Prints the first
+   mismatch. */
 static void compare_frame(const uint8_t *native)
 {
     uint32_t i, mismatches = 0;
     for (i = 0; i < W * H; i++) {
-        uint32_t want = muhtari__palette_rgb(native[i]);
-        uint32_t got;
-        memcpy(&got, &frame[4u * i], sizeof got);
+        uint32_t want, got;
+        if (rgb565) {
+            uint16_t px;
+            memcpy(&px, &frame[2u * i], sizeof px);
+            got = px;
+            want = muhtari__palette_rgb565(native[i]);
+        } else {
+            memcpy(&got, &frame[4u * i], sizeof got);
+            want = muhtari__palette_rgb(native[i]);
+        }
         if (got != want) {
             if (mismatches == 0) {
                 fprintf(stderr, "first mismatch at (%u,%u): got 0x%08x, expected 0x%08x\n",
@@ -287,10 +307,11 @@ int main(int argc, char **argv)
     muhtari *m = NULL;
     unsigned run;
 
-    if (argc != 3 || strcmp(argv[2], "xrgb8888") != 0) {
-        fprintf(stderr, "usage: muhtari-test-libretro-host <module> xrgb8888\n");
+    if (argc != 3 || (strcmp(argv[2], "xrgb8888") != 0 && strcmp(argv[2], "rgb565") != 0)) {
+        fprintf(stderr, "usage: muhtari-test-libretro-host <module> xrgb8888|rgb565\n");
         return 2;
     }
+    rgb565 = strcmp(argv[2], "rgb565") == 0;
     if (!module_open(argv[1])) {
         fprintf(stderr, "cannot load %s\n", argv[1]);
         return 1;
@@ -323,13 +344,13 @@ int main(int argc, char **argv)
 
     memset(&sys, 0, sizeof sys);
     p_get_system_info(&sys);
-    CHECK(sys.library_name != NULL && strcmp(sys.library_name, "muhtari") == 0);
-    CHECK(sys.library_version != NULL && strcmp(sys.library_version, version) == 0);
-    CHECK(!sys.need_fullpath);
+    check_string("library_name", sys.library_name, "muhtari");
+    check_string("library_version", sys.library_version, version);
+    CHECK_EQ_U64(sys.need_fullpath, 0);
 
     p_set_video_refresh(video);
     p_set_audio_sample(sample);
-    p_set_audio_sample_batch(batch);
+    p_set_audio_sample_batch(rgb565 ? NULL : batch);
     p_set_input_poll(on_poll);
     p_set_input_state(input);
 
@@ -337,13 +358,14 @@ int main(int argc, char **argv)
     memset(&dummy, 0, sizeof dummy);
     dummy.data = dummy_bytes;
     dummy.size = sizeof dummy_bytes;
-    CHECK(!p_load_game(&dummy));
+    CHECK_EQ_U64(p_load_game(&dummy), 0);
     CHECK_EQ_U64(pixel_format_calls, 0);
 
     /* No content: the pixel format is set before load returns (L861-865). */
-    CHECK(p_load_game(NULL));
+    CHECK_EQ_U64(p_load_game(NULL), 1);
     CHECK_EQ_U64(pixel_format_calls, 1);
-    CHECK_EQ_U64(pixel_format, RETRO_PIXEL_FORMAT_XRGB8888);
+    CHECK_EQ_U64(pixel_format,
+                 rgb565 ? RETRO_PIXEL_FORMAT_RGB565 : RETRO_PIXEL_FORMAT_XRGB8888);
 
     memset(&av, 0, sizeof av);
     p_get_system_av_info(&av);
@@ -375,12 +397,18 @@ int main(int argc, char **argv)
         CHECK_EQ_U64(video_null, 0);
         CHECK_EQ_U64(video_width, W);
         CHECK_EQ_U64(video_height, H);
-        CHECK_EQ_U64(video_pitch, W * 4u);
+        CHECK_EQ_U64(video_pitch, W * (rgb565 ? 2u : 4u));
         compare_frame(native);
-        CHECK_EQ_U64(batch_calls, 1);
-        CHECK(batch_frames == 800u || batch_frames == 801u);
-        CHECK_EQ_U64(batch_frames, io.audio_count);
-        CHECK_EQ_U64(sample_frames, 0);
+        /* 800 or 801 stereo frames, as many as the library wrote, through
+           the one path this mode allows. */
+        if (io.audio_count != 800u && io.audio_count != 801u) {
+            fprintf(stderr, "library audio_count %u, expected 800 or 801\n",
+                    (unsigned)io.audio_count);
+            check_failures++;
+        }
+        CHECK_EQ_U64(batch_calls, rgb565 ? 0u : 1u);
+        CHECK_EQ_U64(batch_frames, rgb565 ? 0u : io.audio_count);
+        CHECK_EQ_U64(sample_frames, rgb565 ? io.audio_count : 0u);
     }
     CHECK_EQ_U64(batch_nonzero, 0);
     CHECK_EQ_U64(sample_nonzero, 0);

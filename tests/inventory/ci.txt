@@ -13,6 +13,7 @@ core.testcard.boundaries	core,portable
 core.testcard.pinned_hash	core,portable
 core.testcard.static	core,portable
 host.palette	host,portable
+libretro.host.rgb565	libretro,portable
 libretro.host.xrgb8888	libretro,portable
 policy.no_skip	policy
 policy.no_skip.self_test	policy
