@@ -1,8 +1,13 @@
 # Every test the ci, dev and ci-msvc presets register: name<TAB>labels.
 # Sorted; configure fails when this differs from what is registered.
 abi.api_v1	abi,portable
+abi.globals	abi
+abi.globals.self_test	abi
 abi.header.c17	abi
 abi.header.cxx17	abi
+abi.symbols	abi
+abi.undefined	abi
+abi.undefined.self_test	abi
 core.api.size_tags	core,portable
 core.audio.silence	core,portable
 core.create.allocator	core,portable

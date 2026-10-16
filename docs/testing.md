@@ -39,7 +39,7 @@ Every leg registers the same tests; a check that only one platform can perform r
 |---|---|
 | `core` | The library's behaviour: sizes, allocation, the frame and the test card hash. |
 | `portable` | Tests that hold on every platform, including the frame and audio hashes. |
-| `abi` | The public header compiled alone as C17 and C++17, and the API test. |
+| `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
 | `runner` | `muhtari-run` options, output, exit statuses and the PNG writer. |
 | `bench` | The runner's benchmark report. |
@@ -57,12 +57,25 @@ output matches the expected message; a crash or a missing file does not count as
 
 | Self test | Fault fed to the check |
 |---|---|
+| `abi.undefined.self_test` | A library that calls `abort`. |
+| `abi.globals.self_test` | A library with a writable file-scope integer. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |
 | `release.archive_contents.self_test` | A libretro zip without `THIRD-PARTY-NOTICES.md`. |
 | `release.single_version_source.self_test` | A repository whose `notes.md` repeats its version. |
 
 `policy.no_skip` fails when any test file sets a skip return code or disables a test, naming the file and line.
+
+## The core library's symbols
+
+`tests/cmake/abi.cmake` reads the built `libmuhtari.a` with `nm -P`:
+
+- `abi.undefined`: every symbol the library needs and does not define is `memcpy`, `memmove`, `memset`, `memcmp`
+  or a compiler helper listed in the script for that system (`bzero` on macOS, the GOT symbol on x86-64 Linux,
+  libgcc's 64-bit integer routines on 32-bit PowerPC);
+- `abi.globals`: no writable data symbol, so all state lives in the instance;
+- `abi.symbols`: the exported `muhtari_` names are exactly the functions `include/muhtari.h` declares, and every
+  other exported name starts `muhtari__`.
 
 ## The JUnit check
 
