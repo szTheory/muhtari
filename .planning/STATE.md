@@ -146,6 +146,16 @@ Recent decisions affecting current work:
 - [2026-10-16] [release] Add the release firmware scan with the first ROM code — [todo file](.planning/todos/pending/2026-10-16-add-the-release-firmware-scan-with-the-first-rom-code.md)
 - [2026-10-16] [ci] Limit release rehearsals to pushes that change release inputs — [todo file](.planning/todos/pending/2026-10-16-limit-release-rehearsals-to-pushes-that-change-release-inputs.md)
 
+### Ship step (phase 01)
+
+- Next: `/gsd-execute-phase 1` finishes with phase verification; then `/gsd-ship 1`.
+- The phase pull request's squash title must be a release-cutting Conventional Commit, `feat: …` for this
+  capability (GSD-HANDOFF §3 step 6): release-please opens a release PR only for releasable types, so a `ci:` or
+  `docs:` title would publish nothing (research F-12). Chosen title, accepted by `scripts/check-title.sh` (exit 0):
+  `feat: a test frame in RetroArch from the library, runner and libretro core`
+- Probe PR #6 is closed; the branch is kept for the phase PR. The `main` ruleset requiring `CI required` is live
+  and `scripts/apply-repo-settings.sh --check` reports no drift.
+
 ### Blockers/Concerns
 
 None yet.
