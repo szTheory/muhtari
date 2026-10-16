@@ -15,4 +15,6 @@ core.testcard.static	core,portable
 host.palette	host,portable
 policy.no_skip	policy
 policy.no_skip.self_test	policy
+runner.dump_png	portable,runner
 runner.hash	portable,runner
+runner.png	portable,runner
