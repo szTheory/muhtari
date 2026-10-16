@@ -19,6 +19,10 @@ function(muhtari_libretro_module name)
 endfunction()
 
 muhtari_libretro_module(muhtari_libretro)
+# Test only, never installed or packaged: the same adapter in RGB565, so the
+# in-process host proves the 16-bit path and the single-sample audio path.
+muhtari_libretro_module(muhtari_libretro_rgb565)
+target_compile_definitions(muhtari_libretro_rgb565 PRIVATE USE_RGB565)
 
 # Core information for RetroArch's info directory, with display_version
 # taken from version.txt.
