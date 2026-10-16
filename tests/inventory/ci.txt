@@ -15,6 +15,17 @@ core.testcard.static	core,portable
 host.palette	host,portable
 policy.no_skip	policy
 policy.no_skip.self_test	policy
+runner.bench.format	bench,portable,runner
+runner.bench.percentile	bench,portable,runner
 runner.dump_png	portable,runner
+runner.exit.failure	portable,runner
 runner.hash	portable,runner
+runner.hash.repeat	portable,runner
 runner.png	portable,runner
+runner.stop	portable,runner
+runner.usage.dump_syntax	portable,runner
+runner.usage.frame_range	portable,runner
+runner.usage.no_args	portable,runner
+runner.usage.positional	portable,runner
+runner.usage.unknown	portable,runner
+runner.version	portable,runner
