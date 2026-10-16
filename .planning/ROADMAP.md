@@ -40,23 +40,30 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Merging the phase's pull request publishes a GitHub release of the 18 archives, each holding `LICENSE` and `THIRD-PARTY-NOTICES.md`, with `SHA256SUMS` and verified attestations, through a release pull request the release App merges, after a rehearsal run exercised every publish step.
   4. The README's one-line install, run against the latest release's version-free archive, puts the core and its `.info` into RetroArch on an Apple Silicon Mac, and a CI test runs that exact line against the built archive on macOS arm64.
   5. `scripts/apply-repo-settings.sh` applies the settings and the committed ruleset, pull-request titles are checked as Conventional Commits, `ctest -R policy.dependabot` and `ctest -L perf` pass, the instructions-per-frame gate compares each pull request with its merge base, and the nightly `muhtari-run --bench` records its trend data.
-**Plans**: 14 plans (01–08 local; 09–14 need GitHub runs)
+**Plans**: 21 plans (01–13 local; 14–21 need GitHub runs)
 
 Plans:
-- [ ] 01-01-PLAN.md — Tracer: header, core, runner hash, presets, exact inventory; the core's full 0.1.0 contract
-- [ ] 01-02-PLAN.md — Warm palette seed with notice, PNG writer, `--dump-frame`
-- [ ] 01-03-PLAN.md — Runner bench, stop, exit table, usage; `docs/runner.md`
-- [ ] 01-04-PLAN.md — libretro core, vendored header, `.info`, in-process host in both pixel formats
-- [ ] 01-05-PLAN.md — Install, embed, header C/C++, archives, README install line, embedding docs
-- [ ] 01-06-PLAN.md — ABI gates, `release.floor`, the `hygiene` lane
-- [ ] 01-07-PLAN.md — Pins and fetch script; Linux `ci`, `asan`, `nofp` in containers
-- [ ] 01-08-PLAN.md — `be32` and wasm32 lanes; four-lane local hash equality
-- [ ] 01-09-PLAN.md — `ci.yml` on six platforms behind `CI required`, via a draft probe PR
-- [ ] 01-10-PLAN.md — Hosted RetroArch job with pixel-exact compare
-- [ ] 01-11-PLAN.md — Release pipeline and the published-and-deleted rehearsal
-- [ ] 01-12-PLAN.md — Instructions-per-frame gate (report-only) and nightly bench
-- [ ] 01-13-PLAN.md — Settings `--check`, committed ruleset, Dependabot
-- [ ] 01-14-PLAN.md — Measured timeouts, owner applies settings, probe PR closed
+- [ ] 01-01-PLAN.md — Tracer: header, core and runner print the pinned hash; presets and the version source
+- [ ] 01-02-PLAN.md — Exact-inventory test harness; the core's full 0.1.0 contract under test
+- [ ] 01-03-PLAN.md — Negative controls, the no-skip rule and the JUnit completeness check
+- [ ] 01-04-PLAN.md — Warm palette seed with its notice and `host.palette`
+- [ ] 01-05-PLAN.md — PNG writer and `--dump-frame`, with pinned PNG bytes
+- [ ] 01-06-PLAN.md — Runner bench, stop, exit table, usage; `docs/runner.md`
+- [ ] 01-07-PLAN.md — libretro core, vendored header, `.info`, in-process host in both pixel formats
+- [ ] 01-08-PLAN.md — Install, consumer, embedded subdirectory, header as C and C++
+- [ ] 01-09-PLAN.md — Archives, the single version source at the next release version, README install line, docs
+- [ ] 01-10-PLAN.md — ABI gates, `abi.api_version`, `release.floor`
+- [ ] 01-11-PLAN.md — The `hygiene` lane with self-locating tools; the notices policy
+- [ ] 01-12-PLAN.md — Pins and fetch script; Linux `ci`, `asan`, `nofp` in containers
+- [ ] 01-13-PLAN.md — `be32` and wasm32 lanes; four-lane local hash equality
+- [ ] 01-14-PLAN.md — `ci.yml` on six platforms behind `CI required`, via a draft probe PR
+- [ ] 01-15-PLAN.md — Title check, CI policy tests, ENGINEERING amendment, wasm32 todos
+- [ ] 01-16-PLAN.md — Hosted RetroArch job with pixel-exact compare
+- [ ] 01-17-PLAN.md — Publish script and the published-and-deleted rehearsal on the pull request
+- [ ] 01-18-PLAN.md — Real release path on `main`; DEC.49 and ENGINEERING §5 records; release runbook
+- [ ] 01-19-PLAN.md — Instructions-per-frame gate (report-only) and nightly bench
+- [ ] 01-20-PLAN.md — Settings `--check`, committed ruleset, Dependabot
+- [ ] 01-21-PLAN.md — Measured timeouts, owner applies settings, probe PR closed, `feat:` ship title recorded
 **UI hint**: no
 **Canonical refs:** `.planning/preparation/ENGINEERING.md`, `.planning/preparation/HOSTS-AND-INTEGRATION.md`, `.planning/preparation/ARCHITECTURE.md`, `PROVENANCE.md`
 

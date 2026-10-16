@@ -821,10 +821,13 @@ mkdir -p ~/Library/Application\ Support/RetroArch && curl -fsSL https://github.c
 | A8 | GNU `time` is on the hosted ubuntu image | bench | `apt-get install time` (recommended anyway) |
 | A9 | Phase-3 `src/` size 5–7k lines | R-04 | budget pressure higher or lower |
 
-## Open Questions
+## Open Questions (RESOLVED)
 1. **Rehearsal form** (R-02): prerelease publish-and-delete (recommended) versus draft-only. The owner may want to record the DEC.49 wording change.
+   - **Resolution:** a `pull_request`-triggered, published prerelease `rehearsal-<run_id>` that is attested, verified and deleted, with ENGINEERING §5's draft-only rehearsal as the fallback; a docs task amends DEC.49 and ENGINEERING §5 with the evidence.
 2. **Who applies the ruleset** (R-14): the agent with the owner's `gh` auth, or the owner with one command. Both satisfy rule 6; it is identity-bound.
+   - **Resolution:** exactly one `checkpoint:human-action`: the owner runs `scripts/apply-repo-settings.sh` once, after `CI required` has reported on the draft probe PR and before `/gsd-ship`; the agent then runs the read-only `--check`, requires "no drift", and never runs `gh pr merge`.
 3. **Palette scope:** seed only the warm NTSC table now (recommended: the only one used and tested), or all six PROVENANCE §4 tables. The rest can arrive with the `muhtari_palette` option in phase 3.
+   - **Resolution:** only the warm NTSC table, from the BSD-3 a7800 file at its pin; if the classifier blocks the download, the owner runs one command.
 
 ## Environment Availability
 | Dependency | Needed by | Available here | Version | Fallback |
