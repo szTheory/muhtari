@@ -113,12 +113,16 @@ target_compile_definitions(muhtari-run PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-run PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/runner)
 muhtari_warnings(muhtari-run)
+install(TARGETS muhtari-run RUNTIME DESTINATION bin COMPONENT runner)
 
 # The libretro core links muhtari_host, which exists only at top level, so an
 # add_subdirectory embedding never builds it.
 if(MUHTARI_BUILD_LIBRETRO)
   add_subdirectory(libretro)
 endif()
+
+# Release archives, one per install component.
+include(cmake/packaging.cmake)
 
 # Tests. MUHTARI_TIMEOUT_SCALE multiplies every test's timeout on slow lanes;
 # MUHTARI_INVENTORY names the tests/inventory/<name>.txt the registered tests

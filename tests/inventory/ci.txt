@@ -26,6 +26,8 @@ libretro.info_claims.self_test	libretro
 libretro.vendored	libretro
 policy.no_skip	policy
 policy.no_skip.self_test	policy
+release.archive_contents	release
+release.archive_contents.self_test	release
 runner.bench.format	bench,portable,runner
 runner.bench.percentile	bench,portable,runner
 runner.dump_png	portable,runner
