@@ -3,7 +3,7 @@ status: complete
 phase: 01-a-test-frame-in-retroarch
 source: [01-VERIFICATION.md]
 started: 2026-10-16T20:45:00Z
-updated: 2026-10-16T21:47:05.690Z
+updated: 2026-10-16T22:04:07.094Z
 ---
 
 ## Current Test
@@ -29,13 +29,18 @@ expected: All jobs of the push Release run on main succeed; record the run URL
 result: skipped
 reason: "Deferred follow-up: not a human check. Only the merge can show it, so the ship step confirms the push Release run on main from its run URL (AGENTS rules 6 and 9); 01-VERIFICATION.md carries both truths as overrides."
 
+### 4. At ship, before the merge: the phase pull request's own Release run (rehearsal of the current publish.sh) is green
+expected: ci, rehearsal, install-line and cleanup succeed on the pull request's head commit; the rehearsal's attested and verify steps pass with --source-ref refs/pull/<N>/merge, and no rehearsal release or tag remains
+result: skipped
+reason: "Deferred follow-up: not a human check. Added from the re-verification of 2026-10-16: no Release run has exercised publish.sh since the code review fixes, and only the phase pull request can run the rehearsal, so the ship step confirms that run before the merge is enabled (AGENTS rules 6 and 9)."
+
 ## Summary
 
-total: 3
+total: 4
 passed: 2
 issues: 0
 pending: 0
-skipped: 1
+skipped: 2
 blocked: 0
 
 ## Gaps
@@ -44,4 +49,7 @@ blocked: 0
 
 - test: 3
   idea: "Confirm at ship that the push Release run on main succeeds: the release pull request auto-merged, v0.1.0 published with 19 verified assets, install-line-latest green; record the run URL"
+  deferred_at: 2026-10-16
+- test: 4
+  idea: "At ship, enable the merge only after the phase pull request's Release run is green: ci, rehearsal, install-line and cleanup on the head commit; record the run URL"
   deferred_at: 2026-10-16
