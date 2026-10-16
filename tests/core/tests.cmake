@@ -9,8 +9,21 @@ set_target_properties(muhtari-test-core PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-core)
 
-foreach(case IN ITEMS testcard.pinned_hash)
-  string(REGEX REPLACE "^[a-z]+\\." "" arg "${case}")
-  muhtari_add_test(NAME core.${case} COMMAND muhtari-test-core ${arg}
+foreach(case IN ITEMS
+    testcard.pinned_hash testcard.all_colours testcard.static testcard.boundaries
+    frame.pitch_336 frame.validate_first audio.silence api.size_tags
+    create.allocator info)
+  muhtari_add_test(NAME core.${case} COMMAND muhtari-test-core ${case}
     LABELS core portable TIMEOUT 10)
 endforeach()
+muhtari_add_test(NAME core.no_alloc_after_load COMMAND muhtari-test-core no_alloc_after_load
+  LABELS perf portable TIMEOUT 10)
+
+# The frozen API v1 program: every function, field and constant of version 1.
+add_executable(muhtari-test-api-v1 ${CMAKE_SOURCE_DIR}/tests/api/v1.c)
+target_link_libraries(muhtari-test-api-v1 PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-api-v1 PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-api-v1)
+muhtari_add_test(NAME abi.api_v1 COMMAND muhtari-test-api-v1
+  LABELS abi portable TIMEOUT 10)
