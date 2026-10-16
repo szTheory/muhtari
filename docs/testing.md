@@ -157,7 +157,7 @@ with its lane's inventory and labels.
 
 | Job | Runner | Runs | JUnit check |
 |---|---|---|---|
-| `changes` | `ubuntu-26.04` | `scripts/classify-changes.sh` on the pull request's paths, old and new names | none |
+| `changes` | `ubuntu-26.04` | `scripts/classify-changes.sh` on the pull request's paths, old and new names, and its changed-file count | none |
 | `hygiene` | `ubuntu-26.04` | preset `hygiene` | `hygiene.txt` |
 | `title` | `ubuntu-26.04` | pull requests only: `scripts/check-title.sh` on the live title and body | none |
 | `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
@@ -183,7 +183,8 @@ jobs `CI required` needs.
 **Tests of CI itself.** The hygiene lane checks the rules above. `policy.ci_required` reads the roll-up's `jq`
 program from `ci.yml` and runs it, with the step's own arguments, on synthetic job results; it also fails when a
 job other than `wasm32` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
-renamed, empty and planning-only path lists. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
+renamed, empty and planning-only path lists, and on a planning-only list from a pull request of more than 3000
+files, which the files API cuts short. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
 comment with a run ID or the word `provisional`. A measured timeout is twice the job's slowest successful run,
 rounded up to minutes, with a 5-minute floor for network-bound and roll-up jobs; its comment names that run and
 the sample count. A job with fewer than ten successful runs stays `provisional` and gives its sample count.

@@ -56,11 +56,13 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
-      # A failed listing adds a path outside .planning/, so it counts as heavy.
+      # A failed listing adds a path outside .planning/, so it counts as heavy;
+      # CHANGED catches a listing cut short at the API's 3000 files.
       - id: classify
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.pull_request.number }}
+          CHANGED: ${{ github.event.pull_request.changed_files }}
         run: |
           if [ -z "$NUMBER" ]; then
             echo heavy=true | tee -a "$GITHUB_OUTPUT"
@@ -68,7 +70,7 @@ jobs:
           fi
           { gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$NUMBER/files" \
               --jq '.[] | .filename, (.previous_filename // empty)' || echo '(listing failed)'; } |
-            sh scripts/classify-changes.sh | tee -a "$GITHUB_OUTPUT"
+            sh scripts/classify-changes.sh "$CHANGED" | tee -a "$GITHUB_OUTPUT"
 
   # The image has clang-format-21, clang-tidy-21 and jq; configure finds them.
   hygiene:

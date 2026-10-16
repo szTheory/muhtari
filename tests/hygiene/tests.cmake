@@ -137,11 +137,12 @@ muhtari_add_test(NAME policy.dependabot.self_test
   LABELS hygiene policy TIMEOUT 30)
 
 # The changes job's classifier: heavy=false only for a non-empty list wholly
-# under .planning/, both names of a rename included.
+# under .planning/, both names of a rename included, from a pull request of at
+# most 3000 files, the most the files API lists.
 set(hygiene_classify [=[
 script=$1
 check() {
-  got=$(printf '%b' "$2" | sh "$script")
+  got=$(printf '%b' "$2" | sh "$script" "${3-2}")
   if [ "$got" != "heavy=$1" ]
   then
     echo "ci.classify: want heavy=$1, got $got for: $2"
@@ -157,7 +158,11 @@ check true '.planning-notes/a.md\n'
 check true 'docs/.planning/a.md\n'
 check false '.planning/STATE.md\n.planning/phases/01/a.md\n'
 check false '.planning/STATE.md'
-echo "ci.classify: 9 lists"
+check false '.planning/STATE.md\n' 3000
+check true '.planning/STATE.md\n' 3001
+check true '.planning/STATE.md\n' ''
+check true '.planning/STATE.md\n' 'x'
+echo "ci.classify: 13 lists"
 ]=])
 muhtari_add_test(NAME ci.classify
   COMMAND ${MUHTARI_SH} -c "${hygiene_classify}" sh ${CMAKE_SOURCE_DIR}/scripts/classify-changes.sh
