@@ -29,8 +29,10 @@ foreach(mode IN ITEMS undefined globals symbols)
     LABELS abi TIMEOUT 30)
 endforeach()
 
-foreach(case IN ITEMS "undefined;libc;unexpected undefined symbol:.*abort"
-                      "globals;global;writable data symbol:.*counter")
+# CMake wraps a long message at a column that depends on the build path, so
+# the regexes allow a line break anywhere in the finding's title.
+foreach(case IN ITEMS "undefined;libc;unexpected[^:]*symbol:.*abort"
+                      "globals;global;writable[^:]*symbol:.*counter")
   list(GET case 0 mode)
   list(GET case 1 fixture)
   list(GET case 2 regex)

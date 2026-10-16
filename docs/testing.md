@@ -129,6 +129,33 @@ reads what each OS loader enforces. On every system the libretro core exports on
 | macOS | minimum OS at most 10.13 on x86_64 (`LC_VERSION_MIN_MACOSX version`) and 11.0 on arm64 (`LC_BUILD_VERSION minos`); the runner and the core link only `/usr/lib/libSystem.B.dylib` | `otool -l`, `otool -L`, `nm -gUj` |
 | Windows | `muhtari-run.exe` and `muhtari_libretro.dll` import only `KERNEL32.dll`; `muhtari.lib` carries no `/DEFAULTLIB` directive | `llvm-readobj --coff-imports`, `llvm-readobj --coff-exports` |
 
+## Pinned downloads
+
+`pins.txt` lists every file a build or a CI job downloads, one `name version url sha256` row each.
+`scripts/fetch-pin.sh NAME DEST` downloads the row `NAME` into a temporary directory and checks its SHA-256 before
+anything else happens; only then does it unpack a `.tar.xz` or `.tar.gz` into `DEST`, top folder stripped, or
+copy any other file there. A wrong digest exits 1 with `sha256 mismatch` and leaves `DEST` untouched. `PINS=<file>`
+reads another pins file. A bump is one `ci:` pull request that takes the new digest from the release API.
+
+## Running the Linux lanes locally
+
+Every Linux lane runs on a Mac or any Docker host in an `ubuntu:26.04` container. The container's apt CMake is older
+than the presets need, so the recipe fetches the pinned CMake first. An anonymous volume over `build` keeps the
+container's build apart from the host's:
+
+```sh
+docker run --rm --platform linux/arm64 -v "$PWD:/src" -v /src/build -w /src ubuntu:26.04 sh -c '
+  apt-get update -qq &&
+  apt-get install -y -qq --no-install-recommends ca-certificates curl xz-utils git ninja-build gcc g++ binutils &&
+  scripts/fetch-pin.sh cmake-linux-aarch64 /opt/cmake &&
+  PATH=/opt/cmake/bin:$PATH cmake --workflow --preset ci'
+```
+
+Replace `ci` with another workflow to run that lane. On an x86_64 host use `--platform linux/amd64` and the
+`cmake-linux-x86_64` row. Under Docker's x86_64 emulation on Apple Silicon, GNU tar cannot create nested folders
+("Function not implemented"); add `libarchive-tools` to the install list and run
+`ln -s /usr/bin/bsdtar /usr/local/bin/tar` before `fetch-pin.sh`.
+
 ## One version source
 
 `version.txt` is the only file a person or release-please edits to change the version. CMake generates the

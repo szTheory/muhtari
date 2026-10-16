@@ -1,0 +1,18 @@
+# Every pinned download, one row each: name version url sha256.
+# scripts/fetch-pin.sh NAME DEST downloads a row and verifies its SHA-256 before use.
+#
+# Bump policy: take an LTS patch release when it fixes a security advisory, and move
+# to the next LTS before this one's end of life. Each bump is one `ci:` pull request
+# whose digest comes from the release API (the asset's `digest` field). Packages
+# installed with apt stay unpinned: they are signed, and drift fails loudly as a
+# build failure or a hash change.
+
+# wasmtime 48 LTS: runs the wasm32 lane's tests.
+wasmtime-x86_64-linux 48.0.6 https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.6/wasmtime-v48.0.6-x86_64-linux.tar.xz a04bbb203271301e923ccc54ebe834145b1595af1ffb457c8e5dbf1baadd7248
+wasmtime-aarch64-linux 48.0.6 https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.6/wasmtime-v48.0.6-aarch64-linux.tar.xz 206a572cd4fab81e86bb4e808976e822603fd2aa9c67730c921710c2c6bf1c00
+wasmtime-aarch64-macos 48.0.6 https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.6/wasmtime-v48.0.6-aarch64-macos.tar.xz 0b24079ba8c8a23df9cd9a11e40f0b5edc95398a70a7cdec9286133f18701c69
+
+# Local only: CMake for running the Linux lanes in an ubuntu:26.04 container, whose
+# apt CMake is older than the presets need. CI images already carry a new enough CMake.
+cmake-linux-aarch64 4.4.3 https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-linux-aarch64.tar.gz 2efc974dbd63b4444c0e8494b92f2e80c2d7e635b4b80eac2916985ddd8f72a6
+cmake-linux-x86_64 4.4.3 https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-linux-x86_64.tar.gz d6c83076c575bc00b823522ac974bda66d0af05d6ddc30e739c12385cf32c6cc
