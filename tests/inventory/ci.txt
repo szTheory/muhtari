@@ -15,6 +15,9 @@ core.testcard.static	core,portable
 host.palette	host,portable
 libretro.host.rgb565	libretro,portable
 libretro.host.xrgb8888	libretro,portable
+libretro.info_claims	libretro
+libretro.info_claims.self_test	libretro
+libretro.vendored	libretro
 policy.no_skip	policy
 policy.no_skip.self_test	policy
 runner.bench.format	bench,portable,runner

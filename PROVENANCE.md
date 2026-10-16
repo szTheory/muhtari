@@ -89,11 +89,11 @@ Licence terms: BSD-3 clause 1 (keep the notice, conditions and disclaimer with s
 - **Test vectors.** A SingleStepTests sample is committed with its MIT notice; the full set is fetched nightly at the pin.
 
 ## 8. Vendored files
-Vendored files are never edited. A ctest checks each SHA-256, and each notice lives in `THIRD-PARTY-NOTICES.md`.
+Vendored files are never edited. The ctest `libretro.vendored` (`tests/cmake/vendored.cmake`) checks each SHA-256 in this table, and each notice lives in `THIRD-PARTY-NOTICES.md`.
 
 | File | Upstream | Commit | SHA-256 |
 |---|---|---|---|
-| none yet; first will be `libretro/libretro.h` (MIT, RetroArch team), at nesturbator's pin [PV.12] | RetroArch `libretro-common/include/libretro.h` | `69a4f0ea1e8a` (v1.22.2) | `bd3398d29c3763d18617087020ff56b5450a48a63123403a4b674f8e79947acb` |
+| `libretro/libretro.h` | RetroArch `libretro-common/include/libretro.h` (MIT, RetroArch team), copied from nesturbator's identical copy [PV.12] | `69a4f0ea1e8a` (v1.22.2) | `bd3398d29c3763d18617087020ff56b5450a48a63123403a4b674f8e79947acb` |
 
 ## 9. What this file does not do
 It keeps the project's own licence clean. It is not legal advice, and it is no defence against a rights holder's claim; the asset policy handles that side by keeping game and firmware bytes out of the repository entirely.
