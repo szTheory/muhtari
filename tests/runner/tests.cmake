@@ -1,15 +1,17 @@
 # muhtari-run tests.
 #
 # This file is also the command-line checks themselves, run as
-#   cmake -DRUN=<muhtari-run> -DCASE=<name> [-DOUT=<file>] [-DVERSION_FILE=<file>]
-#     [-DFRAMES=<long run>]
+#   cmake -DRUN=<muhtari-run> [-DEMULATOR=<list>] -DCASE=<name> [-DOUT=<file>]
+#     [-DVERSION_FILE=<file>] [-DFRAMES=<long run>]
 #     -P tests/runner/tests.cmake
+# EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
+# runs its own guest binary.
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   set(card "9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4")
 
   # Runs muhtari-run with ARGN; fails unless it exits 0 with stdout want.
   function(expect_output want)
-    execute_process(COMMAND "${RUN}" ${ARGN}
+    execute_process(COMMAND ${EMULATOR} "${RUN}" ${ARGN}
       OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE rc)
     if(NOT rc STREQUAL "0" OR NOT out STREQUAL want)
       message(FATAL_ERROR "muhtari-run ${ARGN}: expected exit 0 and output\n${want}"
@@ -20,7 +22,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   # Runs muhtari-run with ARGN through expect_fail.cmake: exit code and
   # output matching regex, or the test fails.
   function(expect_exit code regex)
-    set(CMD "${RUN}" ${ARGN})
+    set(CMD ${EMULATOR} "${RUN}" ${ARGN})
     set(CODE ${code})
     set(REGEX "${regex}")
     include(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../cmake/expect_fail.cmake)
@@ -81,7 +83,10 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   return()
 endif()
 
-set(runner_check ${CMAKE_COMMAND} -DRUN=$<TARGET_FILE:muhtari-run>)
+# Every script that starts muhtari-run gets the emulator, so an emulated lane
+# never runs a host binary or fails to start a guest one.
+string(REPLACE ";" "$<SEMICOLON>" runner_emulator "${CMAKE_CROSSCOMPILING_EMULATOR}")
+set(runner_check ${CMAKE_COMMAND} -DRUN=$<TARGET_FILE:muhtari-run> "-DEMULATOR=${runner_emulator}")
 foreach(case IN ITEMS hash hash.repeat usage.no_args usage.unknown usage.positional
     usage.frame_range usage.dump_syntax)
   muhtari_add_test(NAME runner.${case}
@@ -100,6 +105,31 @@ muhtari_add_test(NAME runner.version
   COMMAND ${runner_check} -DCASE=version -DVERSION_FILE=${PROJECT_SOURCE_DIR}/version.txt
     -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner portable TIMEOUT 10)
+
+# hashes.txt, the file CI compares across lanes.
+set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
+muhtari_add_test(NAME runner.hashes_file
+  COMMAND ${runner_check} -DMODE=write -DOUT=${PROJECT_BINARY_DIR} -P ${runner_hashes}
+  LABELS runner portable TIMEOUT 20)
+# The comparison's self tests: two files where three are required, and two
+# files one byte apart.
+set(runner_fixture ${PROJECT_BINARY_DIR}/tests/hashes)
+file(WRITE ${runner_fixture}/a.txt "frame1 00\n")
+file(WRITE ${runner_fixture}/b.txt "frame1 01\n")
+# CMake wraps long messages, so the regexes allow a break between words.
+foreach(case IN ITEMS "count;3;a;expected 3 files,[^/]*got 2" "byte;2;b;b.txt[^/]*differs")
+  list(GET case 0 name)
+  list(GET case 1 count)
+  list(GET case 2 second)
+  list(GET case 3 regex)
+  set(runner_cmd ${CMAKE_COMMAND} "-DFILES=${runner_fixture}/a.txt\\;${runner_fixture}/${second}.txt"
+    -DCOUNT=${count} -DMODE=compare -P ${runner_hashes})
+  string(REPLACE ";" "$<SEMICOLON>" runner_cmd "${runner_cmd}")
+  muhtari_add_test(NAME runner.hashes_compare.${name}.self_test
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${runner_cmd}" -DCODE=1 "-DREGEX=${regex}"
+      -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+    LABELS runner TIMEOUT 10)
+endforeach()
 
 # The PNG writer and its checksums, checked by an independent parse.
 add_executable(muhtari-test-png

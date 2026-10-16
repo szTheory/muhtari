@@ -1,9 +1,9 @@
 # The documented exit statuses, run as
-#   cmake -DRUN=<muhtari-run> -DDOC=<docs/runner.md> -P exit_table.cmake
+#   cmake -DRUN=<muhtari-run> [-DEMULATOR=<list>] -DDOC=<docs/runner.md> -P exit_table.cmake
 # Fault prevented: the exit statuses in docs/runner.md drift from the ones
 # the binary prints with --help. Every table line --help prints after
 # "exit status:" must appear as a whole line in the document.
-execute_process(COMMAND "${RUN}" --help OUTPUT_VARIABLE out RESULT_VARIABLE rc)
+execute_process(COMMAND ${EMULATOR} "${RUN}" --help OUTPUT_VARIABLE out RESULT_VARIABLE rc)
 string(FIND "${out}" "exit status:\n" at)
 if(NOT rc STREQUAL "0" OR at EQUAL -1)
   message(FATAL_ERROR "muhtari-run --help: expected exit 0 and an exit status table, got exit ${rc}\n${out}")

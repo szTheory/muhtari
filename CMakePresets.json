@@ -71,6 +71,18 @@
         "CMAKE_CXX_COMPILER": "g++",
         "MUHTARI_NOFP": "ON"
       }
+    },
+    {
+      "name": "be32",
+      "inherits": "base",
+      "$comment": "MUHTARI_TIMEOUT_SCALE is provisional until measured runs fix it at phase close.",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/ppc-linux-gnu.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "MUHTARI_TIMEOUT_SCALE": "10",
+        "MUHTARI_INVENTORY": "ci"
+      }
     }
   ],
   "buildPresets": [
@@ -79,7 +91,8 @@
     { "name": "ci-msvc", "configurePreset": "ci-msvc" },
     { "name": "hygiene", "configurePreset": "hygiene" },
     { "name": "asan", "configurePreset": "asan" },
-    { "name": "nofp", "configurePreset": "nofp" }
+    { "name": "nofp", "configurePreset": "nofp" },
+    { "name": "be32", "configurePreset": "be32" }
   ],
   "testPresets": [
     {
@@ -161,6 +174,16 @@
       },
       "filter": { "include": { "label": "^abi$" } },
       "execution": { "noTestsAction": "error", "jobs": "" }
+    },
+    {
+      "name": "be32",
+      "configurePreset": "be32",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "filter": { "include": { "label": "^portable$" } },
+      "execution": { "noTestsAction": "error", "jobs": "" }
     }
   ],
   "packagePresets": [
@@ -218,6 +241,14 @@
         { "type": "configure", "name": "nofp" },
         { "type": "build", "name": "nofp" },
         { "type": "test", "name": "nofp" }
+      ]
+    },
+    {
+      "name": "be32",
+      "steps": [
+        { "type": "configure", "name": "be32" },
+        { "type": "build", "name": "be32" },
+        { "type": "test", "name": "be32" }
       ]
     }
   ]
