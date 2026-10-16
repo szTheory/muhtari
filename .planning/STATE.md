@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-09-PLAN.md
-last_updated: "2026-10-16T15:44:17.607Z"
+stopped_at: Completed 01-10-PLAN.md
+last_updated: "2026-10-16T15:55:30.572Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: 2d3022fc4b06f1686d9d762c6d67da2e39a9585e
+state_head: 3c7391e1986f841c78d3bcf4741f6b8bf7d5c557
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 9
+  completed_plans: 10
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 10 of 21
+Plan: 11 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -67,6 +67,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P07 | 5 min | 3 tasks | 14 files |
 | Phase 01 P08 | 4 min | 2 tasks | 11 files |
 | Phase 01 P09 | 10 min | 3 tasks | 14 files |
+| Phase 01 P10 | 6 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,8 @@ Recent decisions affecting current work:
 - [Phase 01]: The dev test preset also excludes label release because the dev workflow has no package step
 - [Phase 01]: release.single_version_source scans tracked files only, outside version.txt, release-please files, CHANGELOG.md and .planning/; a version followed by a dot is outside the bounded match
 - [Phase 01]: install_line.cmake runs the README line verbatim under sh with a scratch HOME; it is a CI step on macOS arm64, not a CTest
+- [Phase 01]: abi.undefined allows bzero and __bzero on Darwin through the per-system helper table instead of building the core with -fno-builtin
+- [Phase 01]: tests/api/v1.c names muhtari_allocator: abi.api_version found it missing, and v1.c is not frozen until 0.1.0 is released
 
 ### Pending Todos
 
@@ -120,6 +123,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T15:44:17.589Z
-Stopped at: Completed 01-09-PLAN.md
+Last session: 2026-10-16T15:55:25.538Z
+Stopped at: Completed 01-10-PLAN.md
 Resume file: None
