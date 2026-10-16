@@ -50,3 +50,9 @@ muhtari_add_test(NAME release.single_version_source.self_test
 muhtari_add_test(NAME docs.budgets
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/budgets.cmake
   LABELS policy TIMEOUT 10)
+
+# Each derived file has a notice, each notice has a file, and the libretro
+# .info licence field agrees with both.
+muhtari_add_test(NAME policy.notices
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/notices.cmake
+  LABELS policy TIMEOUT 10)
