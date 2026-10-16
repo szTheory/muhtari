@@ -59,6 +59,7 @@ output matches the expected message; a crash or a missing file does not count as
 |---|---|
 | `abi.undefined.self_test` | A library that calls `abort`. |
 | `abi.globals.self_test` | A library with a writable file-scope integer. |
+| `abi.api_version.self_test` | A copy of the header with one field no API test names. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |
 | `release.archive_contents.self_test` | A libretro zip without `THIRD-PARTY-NOTICES.md`. |
@@ -76,6 +77,11 @@ output matches the expected message; a crash or a missing file does not count as
 - `abi.globals`: no writable data symbol, so all state lives in the instance;
 - `abi.symbols`: the exported `muhtari_` names are exactly the functions `include/muhtari.h` declares, and every
   other exported name starts `muhtari__`.
+
+`abi.api_version` (`tests/cmake/api_version.cmake`) keeps the header honest: `tests/api/v<N>.c` must exist for the
+header's `MUHTARI_API_VERSION` N, and every function, type, constant and struct field the header names must appear
+in some `tests/api/vK.c` with K at most N. `tests/api/v1.c` is frozen once released; a later API version adds its
+own file.
 
 ## The JUnit check
 

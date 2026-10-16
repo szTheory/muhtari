@@ -46,12 +46,15 @@ int main(void)
     CHECK(v.abi != 0u);
     CHECK(v.behaviour_revision != 0u);
 
+    muhtari_allocator allocator;
+    memset(&allocator, 0, sizeof allocator);
+    allocator.alloc = v1_alloc;
+    allocator.free = v1_free;
+    allocator.user = NULL;
     muhtari_config cfg;
     memset(&cfg, 0, sizeof cfg);
     cfg.size = (uint32_t)sizeof cfg;
-    cfg.allocator.alloc = v1_alloc;
-    cfg.allocator.free = v1_free;
-    cfg.allocator.user = NULL;
+    cfg.allocator = allocator;
     muhtari *m = NULL;
     CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
 
