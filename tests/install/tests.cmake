@@ -52,3 +52,45 @@ foreach(install_crt IN ITEMS static dll)
     FIXTURES_REQUIRED install_staged
     PASS_REGULAR_EXPRESSION "consumer: one frame, 800 samples")
 endforeach()
+
+# A C project embeds the source tree with add_subdirectory, gets only the
+# library and its alias, and runs the consumer's frame with it.
+muhtari_add_test(NAME embed.subdirectory
+  COMMAND ${CMAKE_CTEST_COMMAND} --build-and-test
+    ${CMAKE_CURRENT_LIST_DIR}/../embed ${PROJECT_BINARY_DIR}/embed
+    --build-generator ${CMAKE_GENERATOR}
+    ${install_config}
+    --build-options
+      -DMUHTARI_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+      ${install_build_options}
+    --test-command embed
+  LABELS install TIMEOUT 120)
+set_tests_properties(embed.subdirectory PROPERTIES
+  PASS_REGULAR_EXPRESSION "consumer: one frame, 800 samples")
+
+# The public header compiles alone as C17 and as C++17 with warnings fatal.
+# Fault prevented: a header that only the core's own build, with its own
+# flags and language, can compile. The targets are built only by these
+# tests, which share the build tree and so take turns.
+add_library(muhtari_header_c17 OBJECT EXCLUDE_FROM_ALL
+  ${CMAKE_CURRENT_LIST_DIR}/../header/header.c)
+add_library(muhtari_header_cxx17 OBJECT EXCLUDE_FROM_ALL
+  ${CMAKE_CURRENT_LIST_DIR}/../header/header.cpp)
+set_target_properties(muhtari_header_cxx17 PROPERTIES
+  CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+muhtari_warnings(muhtari_header_c17)
+foreach(install_target IN ITEMS muhtari_header_c17 muhtari_header_cxx17)
+  target_include_directories(${install_target} PRIVATE ${PROJECT_SOURCE_DIR}/include)
+  target_compile_options(${install_target} PRIVATE
+    $<$<COMPILE_LANG_AND_ID:C,GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -Werror>
+    $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -Werror>
+    $<$<COMPILE_LANG_AND_ID:C,MSVC>:/W4 /WX /TC>
+    $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4 /WX /TP>)
+endforeach()
+foreach(install_lang IN ITEMS c17 cxx17)
+  muhtari_add_test(NAME abi.header.${install_lang}
+    COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR}
+      --target muhtari_header_${install_lang} --config $<CONFIG>
+    LABELS abi TIMEOUT 120)
+  set_tests_properties(abi.header.${install_lang} PROPERTIES RESOURCE_LOCK build_tree)
+endforeach()

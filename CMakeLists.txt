@@ -59,6 +59,10 @@ if(NOT PROJECT_IS_TOP_LEVEL)
   return()
 endif()
 
+# C++ only compiles the public header as a C++ embedder would; an embedding
+# project never meets it.
+enable_language(CXX)
+
 # The library component: the header, the static library, a CMake package
 # exporting muhtari::muhtari and a pkg-config file, and nothing else. Before
 # 1.0 a minor version may break the API, so the package accepts a request
