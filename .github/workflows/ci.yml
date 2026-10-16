@@ -1,0 +1,128 @@
+# Continuous integration. Every job runs the same `cmake --workflow --preset`
+# command as a local build, then checks that every test it expected ran. The
+# ruleset requires one check, `CI required`. docs/testing.md describes the jobs.
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Commit to build; empty builds the caller's commit"
+        type: string
+        required: false
+        default: ""
+
+# No trigger-level path filter: a workflow skipped by paths leaves the
+# required check pending. The changes job decides what runs instead.
+
+permissions:
+  contents: read
+
+# Only a pull request's runs supersede each other, so every main commit keeps
+# a result. The workflow name is part of the group because a call from
+# release.yml sees the caller's context: its run must not queue behind the
+# push run on the same commit.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # heavy=false only for a pull request whose every changed path, old and new
+  # name, is under .planning/; then the heavy jobs are skipped.
+  changes:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5  # provisional
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      heavy: ${{ steps.classify.outputs.heavy }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || '' }}
+      # A failed listing adds a path outside .planning/, so it counts as heavy.
+      - id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -z "$NUMBER" ]; then
+            echo heavy=true | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          { gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$NUMBER/files" \
+              --jq '.[] | .filename, (.previous_filename // empty)' || echo '(listing failed)'; } |
+            sh scripts/classify-changes.sh | tee -a "$GITHUB_OUTPUT"
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true'
+    name: build (${{ matrix.os }}-${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30  # provisional
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-26.04, preset: ci, os: linux, arch: x64 }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || '' }}
+      - name: Build, test, package
+        run: cmake --workflow --preset ${{ matrix.preset }}
+      - name: Every test ran
+        run: >-
+          cmake -DJUNIT=build/${{ matrix.preset }}/junit.xml -DINVENTORY=tests/inventory/ci.txt
+          -DEXCLUDE=release -P tests/cmake/check_junit.cmake
+      - name: Every release test ran
+        run: >-
+          cmake -DJUNIT=build/${{ matrix.preset }}/junit-release.xml -DINVENTORY=tests/inventory/ci.txt
+          -DLABELS=release -P tests/cmake/check_junit.cmake
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: archives-${{ matrix.os }}-${{ matrix.arch }}
+          path: build/${{ matrix.preset }}/muhtari-*.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hashes-${{ matrix.os }}-${{ matrix.arch }}
+          path: build/${{ matrix.preset }}/hashes.txt
+          if-no-files-found: error
+
+  # The one required check. GitHub reports a skipped job as success and skips
+  # a job whose dependency failed, so this always runs and requires every
+  # result to be success, except: a heavy job skipped when changes said
+  # heavy=false; title and perf skipped outside pull requests; and perf
+  # skipped in a nested call that passes ref (release.yml's).
+  ci-required:
+    name: CI required
+    if: always()
+    needs: [changes, build]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5  # provisional
+    steps:
+      - name: Every job succeeded or was skipped as allowed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          EVENT: ${{ github.event_name }}
+          HEAVY: ${{ needs.changes.outputs.heavy }}
+          CALLED: ${{ inputs.ref && 'true' || 'false' }}
+        run: |
+          echo "$NEEDS" | jq -e --arg event "$EVENT" --arg heavy "$HEAVY" --arg called "$CALLED" 'to_entries | all(
+            .value.result == "success"
+            or (.key == "title" and .value.result == "skipped" and $event != "pull_request")
+            or (.key == "perf" and .value.result == "skipped" and ($event != "pull_request" or $called == "true"))
+            or ($heavy == "false" and .value.result == "skipped" and (.key | IN("changes", "hygiene", "title") | not)))'
