@@ -5,11 +5,11 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: verifying
-stopped_at: Phase 1 executed (21/21 plans); verification human_needed, no gaps (01-UAT.md, 3 items); code review 1 critical, 8 warnings, 6 info open
-last_updated: "2026-10-16T20:31:47.023Z"
+stopped_at: "Phase 1 code review fix round 1 of 2: CR-01 and WR-01 to WR-08 fixed (01-REVIEW-FIX.md), IN-01 to IN-06 open; verification human_needed, no gaps (01-UAT.md, 3 items)"
+last_updated: "2026-10-16T21:00:50.835Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: b14f13ba7a34e2785d5731edad41f7ebd2472f97
+state_head: fe488b62e708e60c784e812b80dac334300be9b3
 progress:
   total_phases: 4
   completed_phases: 0
@@ -174,6 +174,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T20:31:46.986Z
-Stopped at: Phase 1 executed (21/21 plans); verification human_needed, no gaps (01-UAT.md, 3 items); code review 1 critical, 8 warnings, 6 info open
-Resume file: .planning/phases/01-a-test-frame-in-retroarch/01-REVIEW.md
+Last session: 2026-10-16T21:00:50.720Z
+Stopped at: Phase 1 code review fix round 1 of 2: CR-01 and WR-01 to WR-08 fixed (01-REVIEW-FIX.md), IN-01 to IN-06 open; verification human_needed, no gaps (01-UAT.md, 3 items)
+Resume file: .planning/phases/01-a-test-frame-in-retroarch/01-UAT.md
