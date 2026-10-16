@@ -254,6 +254,24 @@ It runs the line verbatim under a scratch `HOME`, with only the download base re
 `~/Library/Application Support/RetroArch`. After publishing, the same script runs with the release URL as
 `BASE_URL`.
 
+## Release rehearsal
+
+`.github/workflows/release.yml` runs on a pull request from this repository that changes `release.yml`,
+`scripts/publish.sh`, `release-please-config.json` or `cmake/packaging.cmake`. Its tag is
+`rehearsal-<run id>-<attempt>`, new for every attempt, because a deleted immutable release's tag can never be
+reused.
+
+| Job | Runs |
+|---|---|
+| `ci` | `ci.yml` on the pull request's head commit |
+| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, `SHA256SUMS` in C-locale name order; a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; publish with `--prerelease --latest=false`; `publish.sh verify`: each zip's attestation verifies and a copy with its last byte flipped does not, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` |
+| `install-line` | the README install line on `macos-15` against the rehearsal's download URL |
+| `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete` removes the release and its tag, and fails if either remains |
+
+A failed rehearsal recovers with "Re-run all jobs" or a new push. If `cleanup` itself failed, delete the leftover
+by hand: `gh release delete rehearsal-<id>-<attempt> --cleanup-tag --yes`. `publish.sh` deletes only
+`rehearsal-*` tags.
+
 ## Supported systems
 
 The oldest systems the README lists are checked from the binaries, not run on these systems. `release.floor`

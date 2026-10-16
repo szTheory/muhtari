@@ -1,0 +1,118 @@
+# Releases. On a pull request from this repository that touches the release
+# inputs, a rehearsal runs CI on the pull request's head and then every
+# publish step against a throwaway prerelease, which it deletes with its tag.
+# docs/testing.md describes the jobs.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - scripts/publish.sh
+      - release-please-config.json
+      - cmake/packaging.cmake
+
+permissions:
+  contents: read
+
+# Release runs wait for each other and are never cancelled: by default a
+# newly queued run cancels the pending one, even without cancel-in-progress.
+concurrency:
+  group: release-${{ github.ref }}
+  queue: max
+
+# A published and deleted tag name can never be reused under immutable
+# releases, so every attempt gets its own; "Re-run all jobs" or a new push
+# recovers a failed rehearsal.
+env:
+  REHEARSAL_TAG: rehearsal-${{ github.run_id }}-${{ github.run_attempt }}
+
+jobs:
+  # CI on the commit the rehearsal publishes. GitHub refuses to start a called
+  # workflow whose jobs ask for more than this job grants, so these are the
+  # union of every permissions block in ci.yml: widen them whenever a ci.yml
+  # job asks for more.
+  ci:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ github.event.pull_request.head.sha }}
+    permissions:
+      contents: read
+      pull-requests: read
+
+  # GITHUB_TOKEN only; the App token is for pushes to main.
+  rehearsal:
+    needs: ci
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15  # provisional
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: archives-*
+          merge-multiple: true
+          path: dist
+      # The six build legs' hashes-<os>-<arch>, each with its commit.txt.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: hashes-*-*
+          path: dist/legs
+      - run: sh scripts/publish.sh prepare dist
+      - id: draft
+        run: |
+          id=$(sh scripts/publish.sh rehearsal-create "$REHEARSAL_TAG")
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+      - env:
+          ID: ${{ steps.draft.outputs.id }}
+        run: sh scripts/publish.sh upload "$REHEARSAL_TAG" "$ID" dist
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: dist/SHA256SUMS
+      - name: Publish as a prerelease that is never latest
+        run: gh release edit "$REHEARSAL_TAG" --draft=false --prerelease --latest=false --repo "$GITHUB_REPOSITORY"
+      - run: sh scripts/publish.sh verify "$REHEARSAL_TAG" dist
+
+  # The README's install line against the published rehearsal.
+  install-line:
+    needs: rehearsal
+    runs-on: macos-15
+    timeout-minutes: 10  # provisional
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: >-
+          cmake -DREADME=README.md
+          "-DBASE_URL=https://github.com/szTheory/muhtari/releases/download/$REHEARSAL_TAG/"
+          -P tests/cmake/install_line.cmake
+
+  # Last, whatever happened before: the rehearsal release and its tag go.
+  cleanup:
+    needs: [rehearsal, install-line]
+    if: always() && needs.rehearsal.result != 'skipped'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5  # provisional
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: sh scripts/publish.sh rehearsal-delete "$REHEARSAL_TAG"

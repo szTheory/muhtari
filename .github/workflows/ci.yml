@@ -150,10 +150,16 @@ jobs:
           name: archives-${{ matrix.os }}-${{ matrix.arch }}
           path: build/${{ matrix.preset }}/muhtari-*.zip
           if-no-files-found: error
+      # The commit these archives were built from; a release publishes only
+      # archives that all record its own commit.
+      - name: The commit built
+        run: git rev-parse HEAD > build/${{ matrix.preset }}/commit.txt
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hashes-${{ matrix.os }}-${{ matrix.arch }}
-          path: build/${{ matrix.preset }}/hashes.txt
+          path: |
+            build/${{ matrix.preset }}/hashes.txt
+            build/${{ matrix.preset }}/commit.txt
           if-no-files-found: error
 
   asan:
