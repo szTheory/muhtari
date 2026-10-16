@@ -2,6 +2,7 @@
  *
  *   muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
  *   muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...
+ *   muhtari-run --help | --version
  *
  * Runs N frames of one instance with no content; --frames or --bench is
  * required. For each --hash-frame N it prints, after frame N has run:
@@ -11,9 +12,11 @@
  * The hash is SHA-256 over the 320x242 native colour bytes, row-major, top
  * row first. For each --dump-frame N:FILE it writes frame N to FILE as a
  * 320x242 RGB PNG in the warm NTSC palette. --bench N also times each
- * frame and prints the report described in bench.h.
+ * frame and prints the report described in bench.h. SIGINT or SIGTERM
+ * ends the run after the frame in progress; output is flushed and the
+ * status is 0.
  *
- * Exit status: 0 done, 1 failure, 2 usage.
+ * Exit statuses are listed in exit_status.h and printed by --help.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,10 +24,12 @@
 
 #include "bench.h"
 #include "clock.h"
+#include "exit_status.h"
 #include "muhtari.h"
 #include "palette.h"
 #include "png.h"
 #include "sha256.h"
+#include "stop.h"
 
 #define WIDTH 320u
 #define HEIGHT 242u
@@ -44,16 +49,41 @@ static void run_free(void *user, void *ptr, size_t size)
     free(ptr);
 }
 
+static const char synopsis[] =
+    "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...\n"
+    "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...\n"
+    "       muhtari-run --help | --version\n"
+    "  --frames N           run N frames (N >= 1)\n"
+    "  --bench N            run N frames and report the time per frame\n"
+    "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
+    "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n"
+    "  --help               print this text and the exit statuses\n"
+    "  --version            print the version\n";
+
 static int usage(const char *why)
 {
-    fprintf(stderr, "muhtari-run: %s\n", why);
-    fprintf(stderr, "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...\n"
-                    "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...\n"
-                    "  --frames N           run N frames (N >= 1)\n"
-                    "  --bench N            run N frames and report the time per frame\n"
-                    "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
-                    "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n");
-    return 2;
+    fprintf(stderr, "muhtari-run: %s\n%s", why, synopsis);
+    return MUHTARI__EXIT_USAGE;
+}
+
+static void help(void)
+{
+    fputs(synopsis, stdout);
+    fputs("exit status:\n", stdout);
+    for (size_t i = 0; i < sizeof muhtari__exit_statuses / sizeof muhtari__exit_statuses[0]; i++) {
+        printf("  %d  %-7s  %s\n", muhtari__exit_statuses[i].code, muhtari__exit_statuses[i].name,
+               muhtari__exit_statuses[i].meaning);
+    }
+}
+
+static void version(void)
+{
+    muhtari_versions v;
+    memset(&v, 0, sizeof v);
+    v.size = (uint32_t)sizeof v;
+    (void)muhtari_get_versions(&v);
+    printf("muhtari-run %lu.%lu.%lu\n", (unsigned long)v.library_major,
+           (unsigned long)v.library_minor, (unsigned long)v.library_patch);
 }
 
 /* Parses the first len characters of text as a decimal number from 1 to
@@ -100,7 +130,7 @@ static int dump_frame(const uint8_t *video, const char *path, uint8_t *row)
     FILE *f = fopen(path, "wb");
     if (f == NULL) {
         fprintf(stderr, "muhtari-run: cannot open %s for writing\n", path);
-        return 1;
+        return MUHTARI__EXIT_FAILURE;
     }
     muhtari__png png;
     int failed = muhtari__png_begin(&png, f, WIDTH, HEIGHT) != 0;
@@ -121,9 +151,9 @@ static int dump_frame(const uint8_t *video, const char *path, uint8_t *row)
     }
     if (failed) {
         fprintf(stderr, "muhtari-run: cannot write %s\n", path);
-        return 1;
+        return MUHTARI__EXIT_FAILURE;
     }
-    return 0;
+    return MUHTARI__EXIT_DONE;
 }
 
 /* The runner's options. Each list has room for one entry per argument. */
@@ -135,10 +165,18 @@ typedef struct options {
     uint32_t *dump_frames;
     const char **dump_paths;
     uint32_t dump_count;
+    int printed; /* --help or --version ran; nothing else to do */
 } options;
 
+static int compare_u32(const void *a, const void *b)
+{
+    uint32_t x = *(const uint32_t *)a;
+    uint32_t y = *(const uint32_t *)b;
+    return (x > y) - (x < y);
+}
+
 /* Returns 0 when the options are valid, 2 after a usage message, 1 when out
-   of memory. */
+   of memory. The hash frames come back sorted with duplicates removed. */
 static int parse_options(int argc, char **argv, options *o)
 {
     o->hash_frames = (uint32_t *)malloc((size_t)argc * sizeof *o->hash_frames);
@@ -146,9 +184,19 @@ static int parse_options(int argc, char **argv, options *o)
     o->dump_paths = (const char **)malloc((size_t)argc * sizeof *o->dump_paths);
     if (o->hash_frames == NULL || o->dump_frames == NULL || o->dump_paths == NULL) {
         fprintf(stderr, "muhtari-run: out of memory\n");
-        return 1;
+        return MUHTARI__EXIT_FAILURE;
     }
-    /* Every option takes one value, so options sit at odd positions. */
+    if (argc == 2 && strcmp(argv[1], "--help") == 0) {
+        help();
+        o->printed = 1;
+        return MUHTARI__EXIT_DONE;
+    }
+    if (argc == 2 && strcmp(argv[1], "--version") == 0) {
+        version();
+        o->printed = 1;
+        return MUHTARI__EXIT_DONE;
+    }
+    /* Every other option takes one value, so options sit at odd positions. */
     for (int i = 1; i < argc; i += 2) {
         const char *arg = argv[i];
         const char *value = i + 1 < argc ? argv[i + 1] : NULL;
@@ -175,6 +223,8 @@ static int parse_options(int argc, char **argv, options *o)
             }
             o->dump_frames[o->dump_count] = n;
             o->dump_paths[o->dump_count++] = colon + 1;
+        } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0) {
+            return usage("--help and --version take no other arguments");
         } else {
             return usage(arg[0] == '-' ? "unknown option" : "unexpected argument");
         }
@@ -192,17 +242,17 @@ static int parse_options(int argc, char **argv, options *o)
             return usage("--dump-frame is beyond --frames");
         }
     }
-    return 0;
-}
-
-static int listed(const uint32_t *list, uint32_t count, uint32_t f)
-{
-    for (uint32_t k = 0; k < count; k++) {
-        if (list[k] == f) {
-            return 1;
+    if (o->hash_count > 0u) {
+        qsort(o->hash_frames, o->hash_count, sizeof o->hash_frames[0], compare_u32);
+        uint32_t kept = 1;
+        for (uint32_t k = 1; k < o->hash_count; k++) {
+            if (o->hash_frames[k] != o->hash_frames[kept - 1u]) {
+                o->hash_frames[kept++] = o->hash_frames[k];
+            }
         }
+        o->hash_count = kept;
     }
-    return 0;
+    return MUHTARI__EXIT_DONE;
 }
 
 /* Runs the frames into heap buffers (a 77,440-byte local would overflow a
@@ -222,7 +272,7 @@ static int run(const options *opt)
         free(audio);
         free(row);
         free(samples);
-        return 1;
+        return MUHTARI__EXIT_FAILURE;
     }
 
     muhtari_config cfg;
@@ -238,10 +288,11 @@ static int run(const options *opt)
         free(audio);
         free(row);
         free(samples);
-        return 1;
+        return MUHTARI__EXIT_FAILURE;
     }
 
-    int status = 0;
+    int status = MUHTARI__EXIT_DONE;
+    uint32_t next_hash = 0;
     uint32_t timed = 0;
     uint64_t total_ns = 0;
     /* A 64-bit count, so the loop ends when --frames is 4294967295. */
@@ -264,10 +315,11 @@ static int run(const options *opt)
         if (st != MUHTARI_STATUS_OK) {
             fprintf(stderr, "muhtari-run: muhtari_run_frame failed with status %lu\n",
                     (unsigned long)st);
-            status = 1;
+            status = MUHTARI__EXIT_FAILURE;
             break;
         }
-        if (listed(opt->hash_frames, opt->hash_count, f)) {
+        if (next_hash < opt->hash_count && opt->hash_frames[next_hash] == f) {
+            next_hash++;
             char hex[65];
             hash_frame(video, hex);
             printf("frame %lu sha256 %s\n", (unsigned long)f, hex);
@@ -277,12 +329,14 @@ static int run(const options *opt)
                 status = dump_frame(video, opt->dump_paths[k], row);
             }
         }
-        if (status != 0) {
+        /* A stop request ends the run only between whole frames, after the
+           frame's outputs are written. */
+        if (status != 0 || muhtari__stop_requested()) {
             break;
         }
     }
 
-    if (status == 0 && opt->bench) {
+    if (status == MUHTARI__EXIT_DONE && opt->bench) {
         char report[512];
         size_t len = muhtari__bench_format(report, sizeof report, samples, timed, total_ns);
         fwrite(report, 1u, len, stdout);
@@ -301,7 +355,8 @@ int main(int argc, char **argv)
     options opt;
     memset(&opt, 0, sizeof opt);
     int status = parse_options(argc, argv, &opt);
-    if (status == 0) {
+    if (status == MUHTARI__EXIT_DONE && !opt.printed) {
+        muhtari__stop_install();
         status = run(&opt);
     }
     free(opt.hash_frames);
@@ -309,7 +364,7 @@ int main(int argc, char **argv)
     free(opt.dump_paths);
     if (fflush(stdout) != 0) {
         fprintf(stderr, "muhtari-run: cannot write output\n");
-        return 1;
+        return MUHTARI__EXIT_FAILURE;
     }
     return status;
 }

@@ -77,7 +77,8 @@ add_executable(muhtari-run
   runner/clock.c
   runner/crc32.c
   runner/png.c
-  runner/sha256.c)
+  runner/sha256.c
+  runner/stop.c)
 target_link_libraries(muhtari-run PRIVATE muhtari::muhtari muhtari_host)
 target_compile_definitions(muhtari-run PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-run PROPERTIES
