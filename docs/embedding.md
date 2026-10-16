@@ -105,7 +105,8 @@ muhtari_destroy(m);
 
 `muhtari_get_info` reports the picture size, the frame rate, the pixel aspect ratio, the sample rate and the
 largest audio count per frame, so a host need not hard-code them. A NULL `video` or `audio` skips that output.
-`muhtari_run_frame` checks its arguments before it changes anything, and always writes `audio_count`.
+`muhtari_run_frame` checks its arguments before it changes anything. Once `m` and `io` are not NULL and the size
+tag is accepted, it writes `audio_count` on every return, zero on an error.
 
 ## Statuses
 

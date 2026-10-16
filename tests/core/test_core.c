@@ -233,9 +233,9 @@ static void test_pitch_336(void)
     muhtari_destroy(m);
 }
 
-/* Each refused call returns its status, writes audio_count and changes no
-   state: the following valid frames give the counts an untouched instance
-   gives, 800 then 801. */
+/* Each refused call returns its status and changes no state, and one refused
+   after its size tag is accepted writes audio_count as zero: the following
+   valid frames give the counts an untouched instance gives, 800 then 801. */
 static void test_validate_first(void)
 {
     muhtari *m = make();
