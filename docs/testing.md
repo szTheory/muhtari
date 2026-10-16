@@ -157,6 +157,7 @@ with its lane's inventory and labels.
 |---|---|---|---|
 | `changes` | `ubuntu-26.04` | `scripts/classify-changes.sh` on the pull request's paths, old and new names | none |
 | `hygiene` | `ubuntu-26.04` | preset `hygiene` | `hygiene.txt` |
+| `title` | `ubuntu-26.04` | pull requests only: `scripts/check-title.sh` on the live title and body | none |
 | `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
 | `asan` | `ubuntu-26.04` | preset `asan` | `ci.txt` without `abi` and `release` |
 | `nofp` ×2 | `ubuntu-26.04`, `ubuntu-26.04-arm` | preset `nofp` | `nofp.txt` |
@@ -174,6 +175,13 @@ needs succeeded, with three exceptions: the heavy jobs may be skipped when `chan
 happens only when every changed path is under `.planning/`; `title` and `perf` may be skipped outside pull
 requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` reports only and is not among the
 jobs `CI required` needs.
+
+**The title.** The squash commit on `main` takes the pull request's title and body, and release-please reads its
+type. `title` passes a Conventional Commit title with a lower-case subject, such as `fix(runner): exit 2 on a
+missing file`. It fails a scope that starts with a digit (a plan number), a `Phase 1: Name` title, `feat`, `fix`
+or `perf` scoped `ci`, `release`, `build`, `test` or `docs` (pipeline work cuts no release), and any CI skip
+token in the title or body. Editing the title reruns it. Try one locally:
+`echo | sh scripts/check-title.sh 'fix: x'`.
 
 **Concurrency.** A new push to a pull request cancels that pull request's run in progress. Runs on `main` are never
 cancelled, and a call from another workflow does not queue behind the push run on the same commit.

@@ -59,3 +59,38 @@ muhtari_add_test(NAME policy.pins.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1 "-DREGEX=payload: sha256 mismatch"
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene policy TIMEOUT 30)
+
+# Pull-request titles and bodies. Each fixture line is want|title|body, the
+# body with \n escapes; scripts/check-title.sh must give every want, and the
+# fixtures must hold both kinds, so a check that passes or fails everything
+# fails here.
+set(hygiene_titles [=[
+script=$1
+passes=0
+fails=0
+while IFS='|' read -r want title body
+do
+  if [ -z "$want" ]
+  then continue
+  fi
+  if printf '%b\n' "$body" | sh "$script" "$title" > /dev/null 2>&1
+  then got=pass
+  else got=fail
+  fi
+  if [ "$got" != "$want" ]
+  then
+    echo "policy.title: want $want, got $got: $title|$body"
+    exit 1
+  fi
+  if [ "$want" = pass ]
+  then passes=$((passes + 1))
+  else fails=$((fails + 1))
+  fi
+done < "$2"
+echo "policy.title: $passes pass and $fails fail fixtures"
+[ "$passes" -gt 0 ] && [ "$fails" -gt 0 ]
+]=])
+muhtari_add_test(NAME policy.title
+  COMMAND ${MUHTARI_SH} -c "${hygiene_titles}" sh ${CMAKE_SOURCE_DIR}/scripts/check-title.sh
+    ${CMAKE_CURRENT_LIST_DIR}/fixtures/titles.txt
+  LABELS hygiene policy TIMEOUT 30)

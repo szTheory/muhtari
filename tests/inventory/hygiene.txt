@@ -7,3 +7,4 @@ hygiene.no_float.self_test	hygiene
 hygiene.tree	hygiene
 policy.pins	hygiene,policy
 policy.pins.self_test	hygiene,policy
+policy.title	hygiene,policy

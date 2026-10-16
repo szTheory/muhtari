@@ -78,6 +78,29 @@ jobs:
       - name: Every test ran
         run: cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake
 
+  # The squash commit takes the pull request's title and body, so the check
+  # reads them live: an edit reruns it (the edited trigger) without a commit.
+  title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5  # provisional
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || '' }}
+      - name: Conventional Commit title, no skip token
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          title=$(gh pr view "$NUMBER" --repo "$GITHUB_REPOSITORY" --json title --jq .title)
+          gh pr view "$NUMBER" --repo "$GITHUB_REPOSITORY" --json body --jq .body |
+            sh scripts/check-title.sh "$title"
+
   build:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
@@ -259,7 +282,7 @@ jobs:
   ci-required:
     name: CI required
     if: always()
-    needs: [changes, hygiene, build, asan, nofp, be32, hash-equality]
+    needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality]
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # provisional
     steps:
