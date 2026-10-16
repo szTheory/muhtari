@@ -32,6 +32,7 @@ sources, and gives one recommendation per choice. Open the file a question point
 | [LESSONS.md](../LESSONS.md) | Sibling lessons imported as hypotheses with their local disposition; the export template | At phase and milestone boundaries, or when the owner asks to export lessons |
 | [PRODUCT-ROADMAP.md](../PRODUCT-ROADMAP.md) | Immediate / Near / Mid / Long horizons with evidence, triggers and a decision log | At every milestone step, or when a finding changes priorities |
 | [seeds/](../seeds/) | SEED-001–006 hold each later horizon's narrative; SEED-007 is the tune-up that opens every later milestone | When a seed's trigger fires, and at every new milestone |
+| [ATARIAGE-EXTRACTS.md](ATARIAGE-EXTRACTS.md) | Paraphrased AtariAge forum facts (tier T4, many measured on hardware) with handle, date and evidence type; harvested with a browser because scripted fetches are blocked | Before relying on an AtariAge claim cited in another file |
 
 ## Where to look
 | Question | File and section |
