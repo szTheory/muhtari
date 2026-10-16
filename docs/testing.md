@@ -164,6 +164,7 @@ with its lane's inventory and labels.
 | `be32` | `ubuntu-26.04` | preset `be32`; uploads `hashes-be32` | `ci.txt`, label `portable` |
 | `hash-equality` | `ubuntu-26.04` | compares exactly seven `hashes.txt` files: the six `build` legs and `be32` | none |
 | `wasm32` | `ubuntu-26.04` | preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
+| `retroarch` | `macos-15` | the built core in RetroArch; see "Hosted RetroArch" | none |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
 The hosted `be32` job takes about 25 seconds, well inside the five-minute limit for a per-pull-request lane, so
@@ -202,6 +203,36 @@ cancelled, and a call from another workflow does not queue behind the push run o
   names the lane.
 - `CI required` fails with every other job green: a job was skipped where the roll-up does not allow it. Its log
   prints each job's result.
+
+## Hosted RetroArch
+
+The `retroarch` job proves that a real frontend shows the frame the runner hashes. It is a CI step, not a CTest,
+so it never skips itself off macOS. On `macos-15` it:
+
+1. unzips the core and the runner from the `archives-macos-arm64` artifact of the macOS arm64 `build` leg;
+2. fetches RetroArch 1.22.2 Metal with `scripts/fetch-pin.sh retroarch-dmg` (the `RetroArch_Metal.dmg` row in
+   `pins.txt`, checked by SHA-256), copies the app out of the image and checks its bundle version;
+3. runs `tests/retroarch/run_retroarch.cmake`: RetroArch gets its own `HOME`, `CFFIXED_USER_HOME` and the
+   configuration from `tests/retroarch/test.cfg.in`, and starts with `--verbose -L <core>`, no content,
+   `--max-frames=5 --max-frames-ss`. The launch is bounded at 50 seconds; a non-zero exit or a missing
+   screenshot fails with RetroArch's log;
+4. writes the runner's frame with `muhtari-run --frames 5 --dump-frame 5:runner.png`, decodes both PNGs with
+   `sips --deleteColorManagementProperties` and `sips -s format bmp`, and builds `tests/retroarch/compare.c` and
+   `bmp.c`. The compare must print `320x242, every pixel equal`;
+5. runs a negative control: it inverts one byte of pixel (7,3) in a copy of the runner's BMP, and the compare
+   must exit 1 and name that pixel first.
+
+`video_gpu_screenshot = "false"` makes RetroArch save the core's own frame at the size the core reports, with no
+scaling or on-screen text. The card is static, so five frames only need the core loaded.
+
+**Rerunning it.** Rerun the job from the run page, or `gh run rerun <run-id> --failed`. On a Mac with a desktop
+session, the same steps run locally from the job's commands, with `-DRETROARCH` pointing at an installed
+`RetroArch.app/Contents/MacOS/RetroArch`.
+
+**If RetroArch will not start the core without content.** The job relies on RetroArch starting a core that
+reports no-game support when `-L` is given and no content. If it stops doing so, the log printed by
+`run_retroarch.cmake` shows it. Treat that as a blocker for the owner, with the log and the run URL. Every fix,
+such as letting the core accept a content file, changes a settled decision.
 
 ## Release archives
 

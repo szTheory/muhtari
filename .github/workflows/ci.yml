@@ -322,6 +322,25 @@ jobs:
           cc -std=c17 -O2 -Wall -Wextra -Werror -o compare ../../tests/retroarch/bmp.c ../../tests/retroarch/compare.c
           ./compare runner.bmp shot.bmp | tee compare.txt
           grep -q '^320x242, every pixel equal$' compare.txt
+      # Fault prevented: a compare that cannot fail. One byte of pixel (7,3)
+      # in a copy of the runner's BMP is inverted, at an offset read from
+      # the BMP header; the tool must exit 1 naming exactly that pixel.
+      - name: The compare's negative control
+        working-directory: build/frames
+        run: |
+          cp runner.bmp flipped.bmp
+          field() { od -An -t "$1" -j "$2" -N "$3" flipped.bmp | tr -d ' \n'; }
+          data=$(field u4 10 4) width=$(field u4 18 4) height=$(field d4 22 4) bpp=$(field u2 28 2)
+          x=7 y=3 row=3
+          if [ "$height" -gt 0 ]; then row=$((height - 1 - y)); fi
+          off=$((data + row * ((width * bpp + 31) / 32 * 4) + x * bpp / 8))
+          byte=$(field u1 "$off" 1)
+          printf "$(printf '\\%03o' $((byte ^ 255)))" | dd of=flipped.bmp bs=1 seek="$off" conv=notrunc 2> /dev/null
+          rc=0
+          out=$(./compare shot.bmp flipped.bmp) || rc=$?
+          echo "$out (exit $rc)"
+          if [ "$rc" -ne 1 ]; then exit 1; fi
+          case $out in "first difference at $x,$y: "*) ;; *) exit 1 ;; esac
       - name: RetroArch log
         if: failure()
         run: cat build/ra/retroarch.log || true
