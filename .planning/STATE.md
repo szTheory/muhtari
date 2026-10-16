@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-10-16T14:55:16.658Z"
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-10-16T15:01:31.551Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: 1252ba0170f21661a65d37fa8838aa3b964775cf
+state_head: d7270a6f675e2c2f95e6efc771dbe95104fc5e05
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 4 of 21
+Plan: 5 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P01 | 10 min | 2 tasks | 13 files |
 | Phase 01 P02 | 6 min | 2 tasks | 9 files |
 | Phase 01 P03 | 3 min | 2 tasks | 6 files |
+| Phase 01 P04 | 4 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Plan 01's core already met the 0.1.0 contract; 15 mutation runs stood in for a failing RED and the core was not changed
 - [Phase 01]: no_skip scans test CMake source for skip and disable properties and names file:line; check_junit treats any testcase without status run as not run
 - [Phase 01]: A command list passed through add_test to a -P script escapes its semicolons as $<SEMICOLON>
+- [Phase 01]: D-03 holds on the fetched a7800 warm table: $46 = 0xAF5163 (red largest), $C6 = 0x469A46 (green largest); the test card is unchanged
+- [Phase 01]: nesturbator citations in PROVENANCE and ASSET_POLICY pin published main 9f9386c661f6; PV.12 cites check_archives.cmake L32-50
+- [Phase 01]: muhtari_host is PIC with hidden visibility so the libretro module can link it
 
 ### Pending Todos
 
@@ -97,6 +101,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T14:55:16.643Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-10-16T15:01:31.534Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None
