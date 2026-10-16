@@ -110,7 +110,7 @@ if(MUHTARI_NOFP)
   string(REPLACE ";" "$<SEMICOLON>" abi_cmd "${abi_cmd}")
   muhtari_add_test(NAME abi.nofp_fixture
     COMMAND ${CMAKE_COMMAND} "-DCMD=${abi_cmd}" -DCODE=1
-      "-DREGEX=general-regs-only. is incompatible with the use of floating-point types|SSE register (return|argument) with SSE disabled"
+      "-DREGEX=general-regs-only[^ ]* is incompatible with the use of floating-point.types|SSE register (return|argument) with SSE disabled"
       -P ${abi_scripts}/expect_fail.cmake
     LABELS abi TIMEOUT 30)
 endif()

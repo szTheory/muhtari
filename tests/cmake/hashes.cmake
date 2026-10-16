@@ -17,7 +17,9 @@ if(MODE STREQUAL "write")
   set(frame1 ${CMAKE_MATCH_1})
   set(frame600 ${CMAKE_MATCH_2})
   file(SHA256 "${png}" png_sha256)
-  file(WRITE "${OUT}/hashes.txt" "frame1 ${frame1}\nframe600 ${frame600}\npng ${png_sha256}\n")
+  # Unix newlines on every host: file(WRITE) writes CRLF on Windows.
+  file(CONFIGURE OUTPUT "${OUT}/hashes.txt" NEWLINE_STYLE UNIX
+    CONTENT "frame1 ${frame1}\nframe600 ${frame600}\npng ${png_sha256}\n")
 elseif(MODE STREQUAL "compare")
   # Fault prevented: lanes that disagree, or a lane that stops uploading and
   # silently drops out. Passes only for exactly COUNT existing files that are

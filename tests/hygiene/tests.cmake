@@ -32,10 +32,13 @@ muhtari_add_test(NAME hygiene.no_float.self_test
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene TIMEOUT 30)
 
-# The clang static analyzer finds nothing in the core.
+# The clang static analyzer finds nothing in the core. The Annex K check is
+# off: the core may call only the C memory functions (abi.undefined), and the
+# _s variants it asks for are optional in C11 and absent from glibc.
 muhtari_add_test(NAME hygiene.analyzer
   COMMAND ${MUHTARI_SH} -c "cd \"$1\" && \"$2\" -p \"$3\" --quiet \
--checks='-*,clang-analyzer-*' --warnings-as-errors='*' src/*.c" sh
+-checks='-*,clang-analyzer-*,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling' \
+--warnings-as-errors='*' src/*.c" sh
     ${CMAKE_SOURCE_DIR} ${MUHTARI_CLANG_TIDY} ${CMAKE_BINARY_DIR}
   LABELS hygiene TIMEOUT 120)
 
