@@ -97,6 +97,12 @@
         "MUHTARI_INVENTORY": "wasm32",
         "CMAKE_CROSSCOMPILING_EMULATOR": "${sourceDir}/build/pins/wasmtime/wasmtime;run;--dir=${sourceDir}::${sourceDir}"
       }
+    },
+    {
+      "name": "bench",
+      "inherits": "base",
+      "$comment": "The nightly bench: the runner only, built with the host compiler.",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
     }
   ],
   "buildPresets": [
@@ -107,7 +113,8 @@
     { "name": "asan", "configurePreset": "asan" },
     { "name": "nofp", "configurePreset": "nofp" },
     { "name": "be32", "configurePreset": "be32" },
-    { "name": "wasm32", "configurePreset": "wasm32" }
+    { "name": "wasm32", "configurePreset": "wasm32" },
+    { "name": "bench", "configurePreset": "bench", "targets": ["muhtari-run"] }
   ],
   "testPresets": [
     {
@@ -282,6 +289,13 @@
         { "type": "configure", "name": "wasm32" },
         { "type": "build", "name": "wasm32" },
         { "type": "test", "name": "wasm32" }
+      ]
+    },
+    {
+      "name": "bench",
+      "steps": [
+        { "type": "configure", "name": "bench" },
+        { "type": "build", "name": "bench" }
       ]
     }
   ]

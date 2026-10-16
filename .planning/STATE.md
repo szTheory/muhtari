@@ -136,6 +136,7 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 - [2026-10-16] [ci] Promote the wasm32 lane into CI required — [todo file](.planning/todos/pending/2026-10-16-promote-the-wasm32-lane-into-ci-required.md)
+- [2026-10-16] [ci] Arm the instructions-per-frame gate — [todo file](.planning/todos/pending/2026-10-16-arm-the-instructions-per-frame-gate.md)
 - [2026-10-16] [release] Add the release firmware scan with the first ROM code — [todo file](.planning/todos/pending/2026-10-16-add-the-release-firmware-scan-with-the-first-rom-code.md)
 - [2026-10-16] [ci] Limit release rehearsals to pushes that change release inputs — [todo file](.planning/todos/pending/2026-10-16-limit-release-rehearsals-to-pushes-that-change-release-inputs.md)
 

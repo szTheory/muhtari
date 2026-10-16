@@ -166,6 +166,7 @@ with its lane's inventory and labels.
 | `hash-equality` | `ubuntu-26.04` | compares exactly seven `hashes.txt` files: the six `build` legs and `be32` | none |
 | `wasm32` | `ubuntu-26.04` | preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
 | `retroarch` | `macos-15` | the built core in RetroArch; see "Hosted RetroArch" | none |
+| `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame; see "Performance" | none |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
 The hosted `be32` job takes about 25 seconds, well inside the five-minute limit for a per-pull-request lane, so
@@ -204,6 +205,53 @@ cancelled, and a call from another workflow does not queue behind the push run o
   names the lane.
 - `CI required` fails with every other job green: a job was skipped where the roll-up does not allow it. Its log
   prints each job's result.
+
+## Performance
+
+**Instructions per frame.** The `perf` job in `ci.yml` counts the instructions the runner executes per frame of
+the test card under Cachegrind: Ir/frame = (Ir at 360 frames − Ir at 60) / 300, in integers, with
+`--cache-sim=no`, an empty environment and runner paths of equal length, so the count is the same on every run. It
+measures the pull request's merge commit once and its first parent (the merge base) twice, then
+`tests/cmake/perf_compare.cmake` prints one line to the log and the job summary:
+
+```
+perf testcard head=3837643 base=3837643 delta_bp=0 verdict=PASS
+```
+
+`delta_bp` is the change in basis points (hundredths of a percent). The verdicts:
+
+| Verdict | When |
+|---|---|
+| `PASS` | the head is at most 1.00 % slower than the base (exactly +1.00 % passes) |
+| `FAIL` | the head is more than 1.00 % slower, or more than the allow file permits |
+| `UNSTABLE` | the two base measurements differ, so no comparison is trusted |
+| `NO_BASE` | the merge base has no `CMakePresets.json` to build; only the head is measured |
+
+`NO_BASE` appears on direct pull request runs until the first pull request merges, because `main` held only
+planning files before then; it is decided from the base tree's contents, and a base that has presets but fails to
+build fails the job. An empty or non-numeric measurement is an input error (`perf: error ...`, exit 1), never a
+pass. `perf` runs only in direct runs of `ci.yml`: in `release.yml`'s nested call, which checks out the pull
+request head rather than the merge commit, it is skipped, and `CI required` accepts that skip only in a call that
+passes `ref`.
+
+**Arming.** Until `MUHTARI_PERF_ARMED` in `ci.yml` is `"true"` every verdict reports only and the job succeeds.
+Once armed, `FAIL`, `UNSTABLE` and `NO_BASE` fail it. It is armed by one `ci:` pull request after two dispatched
+control runs on `main` show zero spread: on `workflow_dispatch` the job measures one commit three times and prints
+`perf control testcard runs=<a>,<b>,<c> spread=<n>`.
+
+**Exceptions.** A pull request that must be slower adds a line to `tests/perf/allow.txt`:
+`<rom> <max % × 100> <expiry YYYY-MM-DD> <reason>`, for example `testcard 250 2026-12-01 the new mixer`. It
+raises that ROM's limit from the day it is checked through its expiry, at most 60 days away, and is removed after
+the pull request merges. `ctest -L perf` runs the gate's own tests on synthetic values.
+
+**Nightly bench.** `.github/workflows/nightly.yml` runs `muhtari-run --bench 300000` every night on `ubuntu-26.04`,
+`ubuntu-26.04-arm` and `macos-15`, and under wasmtime 48.0.6 on `ubuntu-26.04` (row `wasm32-wasmtime-48.0.6`).
+Each report has the runner's nine keys (`frames`, `fps_milli`, `p50_us` to `p99_999_us`, `max_us`), then
+`max_rss_kb` from `/usr/bin/time` (not for wasm32, where it would measure wasmtime) and `runner`. Find them in the
+run's job summaries and its `bench-<runner>` and `bench-wasm32` artifacts; they are trend data, never a gate and
+never committed. A failed night opens or comments on the one open issue labelled `nightly`, and a good night closes
+it; the report decides from the jobs' results. Dispatching the workflow with `force_failure` fails a run on purpose.
+A pull request that changes the bench or the workflow runs the bench jobs but writes no issue.
 
 ## Hosted RetroArch
 

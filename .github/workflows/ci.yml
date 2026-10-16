@@ -436,7 +436,7 @@ jobs:
             echo "$line" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          base1= base2=
+          base1='' base2=''
           if [ "$NO_BASE" = false ]; then
             base1=$(per_frame "$RUNNER_TEMP/perf/base")
             base2=$(per_frame "$RUNNER_TEMP/perf/base")
