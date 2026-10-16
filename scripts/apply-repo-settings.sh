@@ -51,6 +51,9 @@ if [ "$check" = 1 ]; then
   done
   have=$(gh api "repos/$repo/actions/permissions/workflow" -q .default_workflow_permissions)
   [ "$have" = read ] || { printf 'drift: default_workflow_permissions is %s, want read\n' "$have"; drift=1; }
+  # GitHub then refuses any action not pinned by full commit SHA.
+  have=$(gh api "repos/$repo/actions/permissions" -q .sha_pinning_required)
+  [ "$have" = true ] || { printf 'drift: sha_pinning_required is %s, want true\n' "$have"; drift=1; }
   [ "$drift" = 0 ] && echo "no drift on $repo"
   exit "$drift"
 fi

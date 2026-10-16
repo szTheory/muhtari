@@ -123,7 +123,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- [2026-10-16] [ci] Consider a wasm32 build and hash lane in phase 1 CI — [todo file](.planning/todos/pending/2026-10-15-consider-a-wasm32-build-and-hash-lane-in-phase-1-ci.md)
+- [2026-10-16] [ci] Promote the wasm32 lane into CI required — [todo file](.planning/todos/pending/2026-10-16-promote-the-wasm32-lane-into-ci-required.md)
 
 ### Blockers/Concerns
 
