@@ -1,0 +1,6 @@
+# CMake package for muhtari: the static library as muhtari::muhtari. Every
+# path is relative to this file, so the installed tree can move.
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/muhtariTargets.cmake")
+check_required_components(muhtari)

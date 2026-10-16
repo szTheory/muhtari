@@ -1,0 +1,9 @@
+prefix=${pcfiledir}/../..
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: muhtari
+Description: Atari 7800 emulator core
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -lmuhtari
+Cflags: -I${includedir}

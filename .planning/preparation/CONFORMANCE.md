@@ -41,7 +41,7 @@ Disposition key: **commit** (every byte explicitly permissive), **build-ci** (bu
 - **Recommendation:** SST sample = first 100 tests per opcode (25,600) in nesturbator's binary vector format (precedent ~1.68 MB) [CF.27]; full set nightly at the pin. **Strongest alternative:** every 100th test (needs the 1.08 GB download per PR). **Would change if:** nightly finds a failure the sample misses.
 
 ## 2. Experiments (all tested on 2026-10-15, macOS arm64 unless stated; each under 15 minutes)
-**(a) 7800basic reproducibility.** v0.41 ships only WebAssembly binaries run by `wasmtime` [CF.01]; asset `7800basic-0.41-wasm.tar.gz` SHA-256 `62ef0a56…a7fe7` = GitHub digest; wasmtime v49.0.1 (published 2026-09-24) pinned by digest [CF.03]. `simple` and `pokey`, built twice in each of two working directories at different path depths, and again in Linux arm64 and Linux x86-64 (emulated) containers, gave identical bytes:
+**(a) 7800basic reproducibility.** v0.41 ships only WebAssembly binaries run by `wasmtime` [CF.01]; asset `7800basic-0.41-wasm.tar.gz` SHA-256 `62ef0a56…a7fe7` = GitHub digest; the runtime is pinned to wasmtime v48.0.6 LTS by digest in `pins.txt` (phase 1 D-19: x86_64-linux `a04bbb20…7248`, aarch64-linux `206a572c…1c00`, aarch64-macos `0b24079b…1c69`) [CF.03]; the runs below used v49.0.1, so phase 3 repeats them on the pin before reusing it. `simple` and `pokey`, built twice in each of two working directories at different path depths, and again in Linux arm64 and Linux x86-64 (emulated) containers, gave identical bytes:
 
 | ROM | Bytes | SHA-256 (.a78) | SHA-256 (.bin) |
 |---|---|---|---|
@@ -177,7 +177,7 @@ The runner peeks at each VBLANK start, stops at status $00 or a frame cap (cap =
 |---|---|---|---|---|
 | CF.01 | T1 | github.com/7800-devtools/7800basic (LICENSE.txt, README.txt, samples/sizes.ref, make_test.sh, release v0.41 + asset digests) | tag v0.41 `03aebb85206f`; master `e7c18d2ecdc6` | licences, wasm, sizes |
 | CF.02 | T1 | 7800basic-0.41-wasm.tar.gz contents (includes headers, samples, Guide PDF) | SHA-256 `62ef0a56…a7fe7` | byte attribution |
-| CF.03 | T1 | github.com/bytecodealliance/wasmtime/releases/tag/v49.0.1 | v49.0.1 | runtime |
+| CF.03 | T1 | github.com/bytecodealliance/wasmtime/releases/tag/v48.0.6 (pin); v49.0.1 (experiment run) | v48.0.6 | runtime |
 | CF.04 | T1 | github.com/7800-devtools/7800OpenBIOS (README.txt, 7800openbios.asm) | `b8bc745a8744` | CC0, layout |
 | CF.05 | T1 | github.com/dasm-assembler/dasm/releases/tag/v2.20.17 | v2.20.17 | assembler |
 | CF.06 | T1 | github.com/cc65/cc65 (cfg/atari7800.cfg, doc/atari7800.sgml, libsrc/atari7800/*) | `a6530f469142` | target |

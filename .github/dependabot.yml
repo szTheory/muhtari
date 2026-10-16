@@ -1,0 +1,20 @@
+# Keeps the pinned action SHAs current. Actions are the only dependency; the
+# C code has none. Minor and patch updates come as one grouped pull request,
+# which the auto-merge workflow merges; each major update comes on its own,
+# so it never holds the group back, and waits for a person. The cooldown
+# proposes a version only once it is a week old, so a compromised release
+# that is pulled within days never reaches the unattended merge. It does not
+# delay security updates.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: ci

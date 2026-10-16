@@ -71,6 +71,6 @@ Remove it and rewrite the branch before pushing; the push hook scans every commi
 | AP.04 | T1 | github.com/7800-devtools/7800OpenBIOS `README.txt`, `7800openbios.asm` L1–11, L164 | `b8bc745a8744` | KiloParsec terms; Fuji data |
 | AP.05 | T1 | github.com/7800-devtools/7800basic `LICENSE.txt`, `includes/*`, `samples/` | `e7c18d2ecdc6` | unstated sample licences |
 | AP.06 | T2 | 7800.8bitdev.org "A78 Header Specification" (magic at offsets 1 and 100); MAME `a78_slot.cpp` L490–499 | rev 1120; `dddf4cd1faee` | A78 signature |
-| AP.07 | T1 | github.com/szTheory/nesturbator `ASSET_POLICY.md`, `tests/roms/manifest.txt`, `scripts/hygiene.sh` | `3200aa868371` | template, manifest format |
+| AP.07 | T1 | github.com/szTheory/nesturbator `ASSET_POLICY.md`, `tests/roms/manifest.txt`, `scripts/hygiene.sh` | `9f9386c661f6` | template, manifest format |
 | AP.08 | T4 | forums.atariage.com/topic/266712 "anybody dump their NTSC BIOS" (search snippet; page returned 403) | accessed 2026-10-15 (unverified) | bad dump |
 | AP.09 | T4 | web search for SHA-256 digests of these dumps (none found) | accessed 2026-10-15 | none published |

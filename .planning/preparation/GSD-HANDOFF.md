@@ -2,7 +2,7 @@
 title: "GSD hand-off: kickoff, per-phase routine, settings and owner tasks"
 summary: "How to start and run muhtari with OpenGSD one step at a time: the kickoff text, the settings and why, the per-phase and milestone routines, the owner's tasks, and what was checked before hand-off."
 read_when: "Before the kickoff, before each GSD step, and whenever a GSD step behaves unexpectedly."
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # GSD hand-off
@@ -72,14 +72,17 @@ node ~/.claude/gsd-core/bin/gsd-tools.cjs query config-get workflow.test_command
 1. The agent branches `phase/NN-slug` off `origin/main` (AGENTS rule 9; the pre-commit hook refuses commits on
    `main` once a remote exists).
 2. `/gsd-discuss-phase N` — the owner's global GSD profile turns on advisor mode, so discuss also spawns advisor
-   researchers; expect that cost.
+   researchers; expect that cost. Each advisor gets the owner's fan-out brief: every decision point in its area
+   researched through all relevant lenses, primary sources first, with an adversarial pass, ending in one
+   coherent recommendation per point that the step then follows without asking again (owner, 2026-10-16).
 3. `/gsd-plan-phase N`
 4. `/gsd-execute-phase N` — code review, the test gate (`workflow.test_command`), the verifier and the phase
    close all run inside this step [GH.01].
 5. Read `.planning/phases/NN-*/NN-VERIFICATION.md`:
    - `passed` → step 6;
-   - `human_needed` → `/gsd-verify-work N`, which must first close every item that code, configuration, a
-     test, CI or hosted evidence can prove, and hand the owner only the irreducible rest;
+   - `human_needed` → `/gsd-verify-work N`, which closes every item with code, configuration, a test, CI,
+     hosted evidence or the agent's own reading, viewing and running, and hands the owner only what AGENTS rule 6
+     leaves to them;
    - `gaps_found` → one gap round (`/gsd-plan-phase N` for the gaps, then execute); a second only with new
      evidence.
 6. `/gsd-ship N` opens the pull request titled "Phase N: name". The agent retitles it as a Conventional Commit
@@ -96,8 +99,9 @@ node ~/.claude/gsd-core/bin/gsd-tools.cjs query config-get workflow.test_command
 **Verification default (settled 2026-10-15; never re-proposed):** automation first. Deterministic behaviour goes
 in local tests; integration, end-to-end, smoke and seam checks go in CI when they catch recurring regressions; a
 one-time hosted outcome is collected by a read-only evidence command. Passing results are recorded as command,
-exit status and run URL. The owner is asked only for identity-bound consent or a judgement no test or artifact
-can establish, with the reason stated.
+exit status and run URL. The owner is asked only for identity-bound consent or a run on their own hardware, with
+the reason stated. Narrowed 2026-10-16: judging docs, images and RetroArch's menus is the agent's job, and a truth
+only a merge can show is confirmed at ship (step 8), never in UAT.
 
 **Closeout policy:** a fix merged after a phase's verification makes that verification "stale". Accept an
 override closeout at milestone end when CI passes on the merged head and the milestone audit covers the phase;

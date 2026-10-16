@@ -14,35 +14,35 @@ values in tests cite their source document.
 
 ### A test frame in RetroArch
 
-- [ ] **FRAME-01**: `cmake --workflow --preset ci` (`ci-msvc` on Windows) builds the library, `muhtari-run` and the
+- [x] **FRAME-01**: `cmake --workflow --preset ci` (`ci-msvc` on Windows) builds the library, `muhtari-run` and the
   libretro core and runs every test on all six platforms; CI runs the same commands, and its one required check,
   `CI required`, passes.
-- [ ] **FRAME-02**: `ctest -R 'install.consumer|embed.subdirectory'` shows that a C program including only the
+- [x] **FRAME-02**: `ctest -R 'install.consumer|embed.subdirectory'` shows that a C program including only the
   public header creates an instance, runs one frame and destroys it, built against the installed package and as an
   embedded subdirectory; the header also compiles as C++.
-- [ ] **FRAME-03**: With no cartridge loaded the core outputs a built-in 320×242 test card showing all 256 MARIA
+- [x] **FRAME-03**: With no cartridge loaded the core outputs a built-in 320×242 test card showing all 256 MARIA
   colours; `muhtari-run --frames 1 --dump-frame 1:FILE --hash-frame 1` writes it as an image and prints its
   SHA-256, and the hash is the same on every platform.
-- [ ] **FRAME-04**: The libretro core loads in an in-process test host that calls it the way RetroArch does,
+- [x] **FRAME-04**: The libretro core loads in an in-process test host that calls it the way RetroArch does,
   reports 39375000/656711 frames per second and 320×242 with aspect ratio 960/847 (pixels 6:7), and delivers a
   frame equal to the runner's; a hosted macOS job runs RetroArch, pinned by SHA-256, unattended, and its
   screenshot equals the runner's frame.
-- [ ] **FRAME-05**: The `asan`, `nofp` and `hygiene` presets pass: no sanitizer finding; no floating point, no
+- [x] **FRAME-05**: The `asan`, `nofp` and `hygiene` presets pass: no sanitizer finding; no floating point, no
   mutable global and no undefined symbol beyond the C memory functions in the core; no personal data, no unlisted
   binary and no GPL text in the tree.
-- [ ] **FRAME-06**: Every pull request builds the 18 archives (library, runner and libretro core for each
+- [x] **FRAME-06**: Every pull request builds the 18 archives (library, runner and libretro core for each
   platform), each holding `LICENSE` and `THIRD-PARTY-NOTICES.md`; a behaviour-changing merge to `main` publishes
   them with `SHA256SUMS` and verified attestations as a GitHub release, through a release pull request the
   release App merges, with no manual step; a rehearsal run exercised every publish step before the first tag.
   Uses the release App `muhtari-release` and its secrets, set up 2026-10-15 (GSD-HANDOFF 7).
-- [ ] **FRAME-07**: The README's one-line install, run against the latest release's version-free archive, puts the
+- [x] **FRAME-07**: The README's one-line install, run against the latest release's version-free archive, puts the
   core and its `.info` into RetroArch on an Apple Silicon Mac; a test runs that exact line against the built
   archive on macOS arm64.
-- [ ] **FRAME-08**: `scripts/apply-repo-settings.sh` applies the repository settings and the committed ruleset;
+- [x] **FRAME-08**: `scripts/apply-repo-settings.sh` applies the repository settings and the committed ruleset;
   pull-request titles are checked as Conventional Commits; `ctest -R policy.dependabot` shows the Dependabot
   auto-merge condition on synthetic events; the instructions-per-frame gate compares every pull request with its
   merge base and, once armed by two zero-spread control runs, fails one that is more than 1 % slower.
-- [ ] **FRAME-09**: `ctest -L perf` shows zero allocations after load; the nightly `muhtari-run --bench` records
+- [x] **FRAME-09**: `ctest -L perf` shows zero allocations after load; the nightly `muhtari-run --bench` records
   frames per second, p50 to p99.999 and maximum microseconds per frame over at least 300,000 frames, and maximum
   RSS, as trend data.
 
@@ -114,6 +114,7 @@ values in tests cite their source document.
 Later milestones. Each has a seed in `.planning/seeds/` that says when it comes back.
 
 ### The whole library (SEED-001)
+
 - **LIB-01**: Every board in MAME's CC0 list loads and plays, including Activision (both image layouts),
   Absolute, Fractalus, BankSet, Souper and EXRAM.
 - **LIB-02**: The XG-1 light gun, paddles, driving controller, keypad, trak-ball, mice, SNES2Atari and Mega7800
@@ -124,21 +125,25 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 - **LIB-05**: The compatibility ledger covers every entry of the CC0 list.
 
 ### States and movies (SEED-002)
+
 - **STATE-01**: Save states, rewind and run-ahead work in RetroArch under a deterministic `.info` claim.
 - **STATE-02**: `muhtari-run --record FILE` writes a movie that `--movie` replays identically on every platform.
 - **STATE-03**: The runner honours Playstead's continuation protocol (qualify, initial-run, continue).
 
 ### Measured accuracy (SEED-003)
+
 - **ACC-01**: An FPGA-RTL oracle, the nightly a7800 oracle and owner-console diagnostics confirm or refit every
   fitted timing constant.
 - **ACC-02**: The XM expansion (YM2151, RAM, POKEY) plays.
 
 ### Tools (SEED-004)
+
 - **TOOL-01**: Hooks, bounded runs, breakpoints, traces, display-list and DMA views and symbols serve homebrew
   developers, with hooks-off cost unchanged.
 - **TOOL-02**: Python bindings and a vectorised Gymnasium-style environment serve AI agents.
 
 ### Everywhere (SEED-005), the browser (SEED-008) and 2600 mode (SEED-006)
+
 - **PORT-01**: Console and handheld builds with measured frame-time and battery budgets; libretro buildbot;
   Playstead integration.
 - **WEB-01**: An efficient WebAssembly build plays in the browser with sound, with frame and audio hashes equal to
@@ -159,15 +164,15 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FRAME-01 | Phase 1 | Pending |
-| FRAME-02 | Phase 1 | Pending |
-| FRAME-03 | Phase 1 | Pending |
-| FRAME-04 | Phase 1 | Pending |
-| FRAME-05 | Phase 1 | Pending |
-| FRAME-06 | Phase 1 | Pending |
-| FRAME-07 | Phase 1 | Pending |
-| FRAME-08 | Phase 1 | Pending |
-| FRAME-09 | Phase 1 | Pending |
+| FRAME-01 | Phase 1 | Complete |
+| FRAME-02 | Phase 1 | Complete |
+| FRAME-03 | Phase 1 | Complete |
+| FRAME-04 | Phase 1 | Complete |
+| FRAME-05 | Phase 1 | Complete |
+| FRAME-06 | Phase 1 | Complete |
+| FRAME-07 | Phase 1 | Complete |
+| FRAME-08 | Phase 1 | Complete |
+| FRAME-09 | Phase 1 | Complete |
 | CPU-01 | Phase 2 | Pending |
 | CPU-02 | Phase 2 | Pending |
 | CPU-03 | Phase 2 | Pending |
