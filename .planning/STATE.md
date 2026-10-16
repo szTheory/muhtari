@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-14-PLAN.md
-last_updated: "2026-10-16T16:58:57.661Z"
+stopped_at: Completed 01-15-PLAN.md
+last_updated: "2026-10-16T17:16:11.679Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: 0a1120e1f94e59dfa0eb667a45bc7279bd7431ac
+state_head: 3d085a20954aac60b7d50953ea7445ae6bf13337
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 14
+  completed_plans: 15
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 15 of 21
+Plan: 16 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -72,6 +72,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P12 | 19 min | 3 tasks | 17 files |
 | Phase 01 P13 | 10 min | 3 tasks | 11 files |
 | Phase 01 P14 | 16 min | 2 tasks | 7 files |
+| Phase 01 P15 | 13 min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,9 @@ Recent decisions affecting current work:
 - [Phase 01]: R-10 settled on GitHub: MSVC /W4 /WX is clean, the /MT runner and DLL import only KERNEL32.dll, llvm-nm reads the COFF .lib, muhtari.lib has no /DEFAULTLIB
 - [Phase 01]: hashes.txt is written with Unix newlines; CMake file(WRITE) writes CRLF on Windows
 - [Phase 01]: hygiene.analyzer leaves out clang-tidy's Annex K buffer-handling check, which clang-tidy 21 enables against glibc
+- [Phase 01]: check-title.sh rejects a skip token in the title as well as the body, because the title becomes the squash commit's subject
+- [Phase 01]: policy.ci_required also requires every job but the report-only wasm32 in CI required's needs
+- [Phase 01]: apply-repo-settings.sh --check reads sha_pinning_required, which replaces the unbuilt hygiene.action_pins
 
 ### Pending Todos
 
@@ -139,6 +143,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T16:58:57.641Z
-Stopped at: Completed 01-14-PLAN.md
+Last session: 2026-10-16T17:16:11.658Z
+Stopped at: Completed 01-15-PLAN.md
 Resume file: None
