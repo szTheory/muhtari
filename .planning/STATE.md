@@ -5,11 +5,11 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-18-PLAN.md
-last_updated: "2026-10-16T18:28:12.090Z"
+stopped_at: Completed 01-19-PLAN.md
+last_updated: "2026-10-16T19:00:33.612Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: 09cdd8b1ea91b9a49ba400ee6cb9a339b074f5ee
+state_head: 947dc258d86c0ef4ba84c01d3034d39030b7efb7
 progress:
   total_phases: 4
   completed_phases: 0
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 19 of 21
+Plan: 20 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -76,6 +76,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P16 | 11 min | 2 tasks | 8 files |
 | Phase 01 P17 | 20 min | 2 tasks | 8 files |
 | Phase 01 P18 | 20 min | 2 tasks | 9 files |
+| Phase 01 P19 | 21 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,8 @@ Recent decisions affecting current work:
 - [Phase 01]: publish.sh addresses draft releases by the ID from the create response; a new draft is missing from the release list at first (run 38941477560)
 - [Phase 01]: Real release path: release-please with the App token, release-ci at release-please's sha, publish to the draft by ID as latest; re-run on a published release only verifies
 - [Phase 01]: publish.sh attested runs attestation and tampered-copy checks before the irreversible publish on both paths
+- [Phase 01]: The perf gate reports NO_BASE while the merge base has no CMakePresets.json and is skipped in release.yml's nested ci call (inputs.ref); measured test card Ir/frame 3837643 on ubuntu-26.04
+- [Phase 01]: Nightly bench writes max_rss_kb from /usr/bin/time (-v kB on Linux, -l bytes on macOS); the forced failure step runs after bench-wasm32's upload
 
 ### Pending Todos
 
@@ -154,6 +157,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T18:28:12.068Z
-Stopped at: Completed 01-18-PLAN.md
+Last session: 2026-10-16T19:00:33.587Z
+Stopped at: Completed 01-19-PLAN.md
 Resume file: None

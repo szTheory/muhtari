@@ -42,7 +42,7 @@ values in tests cite their source document.
   pull-request titles are checked as Conventional Commits; `ctest -R policy.dependabot` shows the Dependabot
   auto-merge condition on synthetic events; the instructions-per-frame gate compares every pull request with its
   merge base and, once armed by two zero-spread control runs, fails one that is more than 1 % slower.
-- [ ] **FRAME-09**: `ctest -L perf` shows zero allocations after load; the nightly `muhtari-run --bench` records
+- [x] **FRAME-09**: `ctest -L perf` shows zero allocations after load; the nightly `muhtari-run --bench` records
   frames per second, p50 to p99.999 and maximum microseconds per frame over at least 300,000 frames, and maximum
   RSS, as trend data.
 
@@ -172,7 +172,7 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 | FRAME-06 | Phase 1 | Complete |
 | FRAME-07 | Phase 1 | Complete |
 | FRAME-08 | Phase 1 | Pending |
-| FRAME-09 | Phase 1 | Pending |
+| FRAME-09 | Phase 1 | Complete |
 | CPU-01 | Phase 2 | Pending |
 | CPU-02 | Phase 2 | Pending |
 | CPU-03 | Phase 2 | Pending |
