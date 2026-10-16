@@ -137,8 +137,14 @@ coverage:
   - id: D8
     description: "The Linux and Windows branches of floor.cmake and abi.cmake (readelf, llvm-readobj, COFF nm output, ELF helper rows)"
     requirement: FRAME-06
-    verification: []
-    human_judgment: true
+    verification:
+      - kind: integration
+        ref: "plan 01-12: the Linux ci, asan and nofp lanes in ubuntu:26.04 containers run the abi tests and release.floor"
+        status: unknown
+      - kind: integration
+        ref: "plan 01-14: the hosted ci.yml Windows legs run the abi tests and release.floor"
+        status: unknown
+    human_judgment: false
     rationale: "No Linux or Windows toolchain on this Mac; plans 12 and 14 run these branches on their CI legs and adjust them"
 
 duration: 6min
