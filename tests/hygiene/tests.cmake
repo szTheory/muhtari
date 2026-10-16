@@ -115,6 +115,27 @@ muhtari_add_test(NAME policy.ci_required.self_test
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene policy TIMEOUT 30)
 
+# The Dependabot auto-merge decision, run on synthetic events. The self test
+# runs it on a copy of the workflow whose program merges majors, which must
+# fail the case that names them.
+set(hygiene_dependabot ${CMAKE_SOURCE_DIR}/.github/workflows/dependabot-automerge.yml)
+muhtari_add_test(NAME policy.dependabot
+  COMMAND ${CMAKE_COMMAND} -DWORKFLOW=${hygiene_dependabot} -DJQ=${MUHTARI_JQ}
+    -P ${hygiene_scripts}/dependabot.cmake
+  LABELS hygiene policy TIMEOUT 30)
+file(READ ${hygiene_dependabot} hygiene_yml)
+string(REPLACE "else \"wait\" end" "else \"merge\" end" hygiene_yml "${hygiene_yml}")
+file(WRITE ${CMAKE_BINARY_DIR}/hygiene/dependabot_fixture/dependabot-automerge.yml "${hygiene_yml}")
+set(hygiene_cmd ${CMAKE_COMMAND}
+  -DWORKFLOW=${CMAKE_BINARY_DIR}/hygiene/dependabot_fixture/dependabot-automerge.yml
+  -DJQ=${MUHTARI_JQ} -P ${hygiene_scripts}/dependabot.cmake)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.dependabot.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=semver-major: want wait, got 'merge'"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)
+
 # The changes job's classifier: heavy=false only for a non-empty list wholly
 # under .planning/, both names of a rename included.
 set(hygiene_classify [=[

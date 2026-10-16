@@ -1,0 +1,15 @@
+# Keeps the pinned action SHAs current. Actions are the only dependency; the
+# C code has none. Minor and patch updates come as one grouped pull request,
+# which the auto-merge workflow merges; each major update comes on its own,
+# so it never holds the group back, and waits for a person.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: ci
