@@ -39,9 +39,10 @@ under the source tree, so this one preopen covers both, at the same paths inside
 with `scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime`; configure stops with that command when the
 runtime is missing. WASI output files have no `.wasm` suffix.
 
-`MUHTARI_TIMEOUT_SCALE` multiplies every test timeout. The scales are 3 for `asan`, 10 for `be32` and 5 for
-`wasm32`. The `be32` and `wasm32` values are provisional until measured CI runs fix them. In an arm64 container on
-an Apple Silicon Mac, the `be32` test step took 1.1 s and the `wasm32` step 0.3 s.
+`MUHTARI_TIMEOUT_SCALE` multiplies every test timeout. The scales are 3 for `asan`, 11 for `be32` and 3 for
+`wasm32`. The emulator scales are measured: over ten hosted CI runs, the tests a lane shares with Linux x64 took
+10.7 times as long in total under `qemu-ppc` and 2.5 times as long under `wasmtime`, rounded up. In an arm64
+container on an Apple Silicon Mac, the `be32` test step took 1.1 s and the `wasm32` step 0.3 s.
 
 ### Comparing hashes across lanes
 
@@ -183,7 +184,9 @@ jobs `CI required` needs.
 program from `ci.yml` and runs it, with the step's own arguments, on synthetic job results; it also fails when a
 job other than `wasm32` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
 renamed, empty and planning-only path lists. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
-comment with a run ID or the word `provisional`.
+comment with a run ID or the word `provisional`. A measured timeout is twice the job's slowest successful run,
+rounded up to minutes, with a 5-minute floor for network-bound and roll-up jobs; its comment names that run and
+the sample count. A job with fewer than ten successful runs stays `provisional` and gives its sample count.
 
 **The title.** The squash commit on `main` takes the pull request's title and body, and release-please reads its
 type. `title` passes a Conventional Commit title with a lower-case subject, such as `fix(runner): exit 2 on a

@@ -51,7 +51,7 @@ jobs:
   rehearsal:
     needs: ci
     runs-on: ubuntu-26.04
-    timeout-minutes: 15  # provisional
+    timeout-minutes: 14  # 2 x 399 s, slowest of 11 runs, run 38951834012
     permissions:
       contents: write
       id-token: write
@@ -100,7 +100,7 @@ jobs:
   install-line:
     needs: rehearsal
     runs-on: macos-15
-    timeout-minutes: 10  # provisional
+    timeout-minutes: 5  # network-bound floor; slowest 9 s in 11 runs, run 38943087443
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -116,7 +116,7 @@ jobs:
     needs: [rehearsal, install-line]
     if: always() && needs.rehearsal.result != 'skipped'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # provisional
+    timeout-minutes: 5  # network-bound floor; slowest 17 s in 11 runs, run 38943087443
     permissions:
       contents: write
     env:
@@ -135,7 +135,7 @@ jobs:
   release-please:
     if: github.event_name == 'push'
     runs-on: ubuntu-26.04
-    timeout-minutes: 10  # provisional
+    timeout-minutes: 10  # provisional, 0 samples (runs on main only)
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -183,7 +183,7 @@ jobs:
   publish:
     needs: [release-please, release-ci]
     runs-on: ubuntu-26.04
-    timeout-minutes: 15  # provisional
+    timeout-minutes: 15  # provisional, 0 samples (runs on main only)
     permissions:
       contents: write
       id-token: write
@@ -228,7 +228,7 @@ jobs:
   install-line-latest:
     needs: [release-please, publish]
     runs-on: macos-15
-    timeout-minutes: 10  # provisional
+    timeout-minutes: 10  # provisional, 0 samples (runs on main only)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

@@ -75,25 +75,25 @@
     {
       "name": "be32",
       "inherits": "base",
-      "$comment": "MUHTARI_TIMEOUT_SCALE is provisional until measured runs fix it at phase close.",
+      "$comment": "MUHTARI_TIMEOUT_SCALE 11: on hosted CI the tests both lanes share ran 10.7 times as long under qemu-ppc as on Linux x64 (10 runs).",
       "toolchainFile": "${sourceDir}/cmake/toolchains/ppc-linux-gnu.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
-        "MUHTARI_TIMEOUT_SCALE": "10",
+        "MUHTARI_TIMEOUT_SCALE": "11",
         "MUHTARI_INVENTORY": "ci"
       }
     },
     {
       "name": "wasm32",
       "inherits": "base",
-      "$comment": "One preopen covers the source and build trees, since binaryDir is under sourceDir. MUHTARI_TIMEOUT_SCALE is provisional until measured runs fix it at phase close.",
+      "$comment": "One preopen covers the source and build trees, since binaryDir is under sourceDir. MUHTARI_TIMEOUT_SCALE 3: on hosted CI the tests both lanes share ran 2.5 times as long under wasmtime as on Linux x64 (10 runs).",
       "toolchainFile": "${sourceDir}/cmake/toolchains/wasm32-wasi.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
         "MUHTARI_BUILD_LIBRETRO": "OFF",
-        "MUHTARI_TIMEOUT_SCALE": "5",
+        "MUHTARI_TIMEOUT_SCALE": "3",
         "MUHTARI_INVENTORY": "wasm32",
         "CMAKE_CROSSCOMPILING_EMULATOR": "${sourceDir}/build/pins/wasmtime/wasmtime;run;--dir=${sourceDir}::${sourceDir}"
       }
