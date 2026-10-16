@@ -127,8 +127,10 @@ verify() {
   echo "publish: $1 published with 19 assets; every download matches SHA256SUMS and verifies"
 }
 
+# Every page, so a release past the first 100 is still found; a draft has no
+# tag to look up by.
 release_id() {
-  gh api "repos/$REPO/releases?per_page=100" --jq ".[] | select(.tag_name == \"$1\") | .id"
+  gh api --paginate "repos/$REPO/releases?per_page=100" --jq ".[] | select(.tag_name == \"$1\") | .id"
 }
 
 # The ID comes from the create response: a new draft can be missing from the
