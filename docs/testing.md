@@ -17,16 +17,57 @@ It needs CMake 4.3 or later, Ninja and a C and C++ compiler. The workflow runs f
 4. package the three release zips into `build/ci`;
 5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
-## Presets
+## Lanes
 
-| Workflow | Use |
-|---|---|
-| `dev` | Debug build in `build/dev`; configure, build and test, without packaging or the `release` tests. |
-| `ci` | The workflow above. Every Linux and macOS leg of CI runs it. |
-| `ci-msvc` | The same five steps with MSVC and the static C runtime, in `build/ci-msvc`. |
-| `asan` | Debug build with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, in `build/asan`; any finding stops the test. Long runs drop from 600 frames to 60 (`MUHTARI_SHORT_RUNS`) and timeouts triple. It runs the `ci` inventory except the `abi` and `release` labels, whose checks of binary shape the instrumentation changes. |
-| `nofp` | Release build with GCC in `build/nofp`, the core compiled with `-mgeneral-regs-only`, which rejects any floating-point type; it registers and runs only the `abi` tests (`tests/inventory/nofp.txt`). |
-| `hygiene` | The repository checks: the tree scan, formatting, the integer-only text scan, the analyzer and the pins file. |
+Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build goes to `build/<name>`.
+
+| Preset | What it proves | Inventory | Tests run |
+|---|---|---|---|
+| `dev` | A Debug build passes, for day-to-day work. No packaging. | `ci` | all but `release` |
+| `ci` | The workflow above: the build, the tests and the release zips. Every Linux and macOS leg of CI runs it. | `ci` | all but `release`, then `release` |
+| `ci-msvc` | The same five steps with MSVC and the static C runtime. | `ci` | all but `release`, then `release` |
+| `asan` | No memory or undefined-behaviour fault, using clang-21 with AddressSanitizer and UndefinedBehaviorSanitizer. Any finding stops the test. Long runs drop from 600 frames to 60 (`MUHTARI_SHORT_RUNS`). | `ci` | all but `abi` and `release`, whose binary-shape checks the instrumentation changes |
+| `nofp` | The core uses no floating point. It is built with GCC's `-mgeneral-regs-only`, which rejects any floating-point type. | `nofp` | `abi` |
+| `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer and the pins file. | `hygiene` | `hygiene` |
+| `be32` | The same hashes on a big-endian, 32-bit target with unsigned `char`. It cross-compiles for 32-bit PowerPC (`cmake/toolchains/ppc-linux-gnu.cmake`) and runs under `qemu-ppc`. | `ci` | `portable` |
+| `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
+
+On the two emulated lanes, CMake runs each test binary through `CMAKE_CROSSCOMPILING_EMULATOR`. Every script that
+starts `muhtari-run` takes the same emulator as `-DEMULATOR=`, so a test never runs a host binary in place of the
+guest one. The wasm32 emulator is `build/pins/wasmtime/wasmtime run --dir=<source>::<source>`. The build tree sits
+under the source tree, so this one preopen covers both, at the same paths inside the guest. Fetch the runtime first
+with `scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime`; configure stops with that command when the
+runtime is missing. WASI output files have no `.wasm` suffix.
+
+`MUHTARI_TIMEOUT_SCALE` multiplies every test timeout. The scales are 3 for `asan`, 10 for `be32` and 5 for
+`wasm32`. The `be32` and `wasm32` values are provisional until measured CI runs fix them. In an arm64 container on
+an Apple Silicon Mac, the `be32` test step took 1.1 s and the `wasm32` step 0.3 s.
+
+### Comparing hashes across lanes
+
+`runner.hashes_file` (`tests/cmake/hashes.cmake`, mode `write`) writes `build/<preset>/hashes.txt`. It has three
+lines: the frame 1 and frame 600 hashes and the SHA-256 of the frame 1 PNG.
+
+```text
+frame1 <hex>
+frame600 <hex>
+png <hex>
+```
+
+CI collects the file from each lane, and the `hash-equality` job compares them:
+
+```sh
+cmake "-DFILES=<file>;<file>;..." -DCOUNT=<n> -DMODE=compare -P tests/cmake/hashes.cmake
+```
+
+The comparison passes only when it gets exactly `COUNT` files, all present and byte-identical. Otherwise it names
+the first file that differs. The fixed count means a lane that stops uploading fails the job, instead of silently
+dropping out.
+
+- **Required files.** Seven: the six `build` legs and `be32`. If `be32` moves to nightly because its job takes more
+  than five minutes, the per-PR count is six and the full `be32` comparison runs nightly.
+- **wasm32.** It reports only, compared with the Linux x64 file outside the required check. Once it is promoted
+  into `hash-equality`, the count goes up by one.
 
 `ctest --preset ci -R <regex>` reruns part of the suite after a build; `ctest --test-dir build/ci -L <label>`
 selects by label.
@@ -37,6 +78,8 @@ selects by label.
 labels comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
 test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
 Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
+Three lanes register their own lists: `hygiene.txt`, `nofp.txt`, and `wasm32.txt`, which is the `ci` list
+without the `libretro` tests.
 
 | Label | Tests |
 |---|---|
@@ -63,6 +106,8 @@ output matches the expected message; a crash or a missing file does not count as
 | `abi.undefined.self_test` | A library that calls `abort`. |
 | `abi.globals.self_test` | A library with a writable file-scope integer. |
 | `abi.api_version.self_test` | A copy of the header with one field no API test names. |
+| `runner.hashes_compare.count.self_test` | Two `hashes.txt` files where three are required. |
+| `runner.hashes_compare.byte.self_test` | Two `hashes.txt` files one byte apart. |
 | `abi.nofp_fixture` | On the `nofp` lane, a file holding one `double` division, which must fail to compile with GCC's `-mgeneral-regs-only` diagnostic. |
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
@@ -157,8 +202,15 @@ docker run --rm --platform linux/arm64 -v "$PWD:/src" -v /src/build -w /src ubun
   PATH=/opt/cmake/bin:$PATH cmake --workflow --preset ci'
 ```
 
-Replace `ci` with another workflow to run that lane. The `asan` lane also needs
-`clang-21 lld-21 libclang-rt-21-dev` in the install list; the last holds the sanitizer runtimes. On an x86_64 host use `--platform linux/amd64` and the
+Replace `ci` with another workflow to run that lane. Some lanes need more packages in the install list:
+
+- `asan`: `clang-21 lld-21 libclang-rt-21-dev`. The last holds the sanitizer runtimes.
+- `be32`: `gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user`.
+- `wasm32`: `clang-21 lld-21 wasi-libc libclang-rt-21-dev-wasm32`. Also run
+  `scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime` before the workflow.
+
+To keep a lane's `hashes.txt`, mount a directory outside the repository and copy the file into it, for example
+`-v "$OUT:/out"` and then `cp build/be32/hashes.txt /out/`. On an x86_64 host use `--platform linux/amd64` and the
 `cmake-linux-x86_64` row. Under Docker's x86_64 emulation on Apple Silicon, GNU tar cannot create nested folders
 ("Function not implemented"); add `libarchive-tools` to the install list and run
 `ln -s /usr/bin/bsdtar /usr/local/bin/tar` before `fetch-pin.sh`.
