@@ -63,6 +63,7 @@ output matches the expected message; a crash or a missing file does not count as
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |
 | `release.archive_contents.self_test` | A libretro zip without `THIRD-PARTY-NOTICES.md`. |
+| `release.floor.self_test` | An impossible floor: glibc 2.0, macOS 9.0, or no allowed Windows DLL. |
 | `release.single_version_source.self_test` | A repository whose `notes.md` repeats its version. |
 
 `policy.no_skip` fails when any test file sets a skip return code or disables a test, naming the file and line.
@@ -115,6 +116,18 @@ It runs the line verbatim under a scratch `HOME`, with only the download base re
 `cores/muhtari_libretro.dylib` and `info/muhtari_libretro.info` under
 `~/Library/Application Support/RetroArch`. After publishing, the same script runs with the release URL as
 `BASE_URL`.
+
+## Supported systems
+
+The oldest systems the README lists are checked from the binaries, not run on these systems. `release.floor`
+(`tests/cmake/floor.cmake`, floors in one table at its top) unpacks the zips under `build/ci/release/floor` and
+reads what each OS loader enforces. On every system the libretro core exports only `retro_*` names.
+
+| System | Floor | Read with |
+|---|---|---|
+| Linux | `muhtari_libretro.so` needs no `GLIBC_*` above 2.17, `muhtari-run` none above 2.34; each needs only `libc.so.6` and the `ld-linux` loader; every version need is a plain `GLIBC_<n>.<n>[.<n>]`; no `__isoc23_*` reference | `readelf -dW`, `readelf -VW`, `readelf --dyn-syms -W`, `nm -D --defined-only` |
+| macOS | minimum OS at most 10.13 on x86_64 (`LC_VERSION_MIN_MACOSX version`) and 11.0 on arm64 (`LC_BUILD_VERSION minos`); the runner and the core link only `/usr/lib/libSystem.B.dylib` | `otool -l`, `otool -L`, `nm -gUj` |
+| Windows | `muhtari-run.exe` and `muhtari_libretro.dll` import only `KERNEL32.dll`; `muhtari.lib` carries no `/DEFAULTLIB` directive | `llvm-readobj --coff-imports`, `llvm-readobj --coff-exports` |
 
 ## One version source
 

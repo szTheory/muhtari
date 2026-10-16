@@ -38,3 +38,28 @@ muhtari_add_test(NAME release.archive_contents.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${release_cmd}" -DCODE=1
     "-DREGEX=lacks: THIRD-PARTY-NOTICES.md" -P ${release_scripts}/expect_fail.cmake
   LABELS release TIMEOUT 10)
+
+# The floors each binary reads as, from its own extraction of the zips. The
+# self test passes an impossible floor for this leg's system and expects it
+# named.
+set(release_floor_cmd ${CMAKE_COMMAND} -DDIR=${PROJECT_BINARY_DIR} -DSUFFIX=${release_suffix})
+muhtari_add_test(NAME release.floor
+  COMMAND ${release_floor_cmd} -DWORK=${PROJECT_BINARY_DIR}/release/floor
+    -P ${release_scripts}/floor.cmake
+  LABELS release TIMEOUT 60)
+set(release_floor 9.0)
+set(release_regex "minimum OS [0-9.]+ is above the floor 9.0")
+if(MUHTARI_OS STREQUAL "linux")
+  set(release_floor 2.0)
+  set(release_regex "GLIBC_[0-9.]+ is above the floor 2.0")
+elseif(MUHTARI_OS STREQUAL "windows")
+  set(release_floor "")
+  set(release_regex "imports KERNEL32.dll, outside the allowlist")
+endif()
+set(release_cmd ${release_floor_cmd} -DWORK=${PROJECT_BINARY_DIR}/release/floor_self_test
+  -DFLOOR_OVERRIDE=${release_floor} -P ${release_scripts}/floor.cmake)
+string(REPLACE ";" "$<SEMICOLON>" release_cmd "${release_cmd}")
+muhtari_add_test(NAME release.floor.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${release_cmd}" -DCODE=1
+    "-DREGEX=${release_regex}" -P ${release_scripts}/expect_fail.cmake
+  LABELS release TIMEOUT 60)
