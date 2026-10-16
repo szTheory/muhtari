@@ -274,6 +274,58 @@ jobs:
       - name: Same hashes as Linux x64
         run: cmp hashes-linux-x64/hashes.txt build/wasm32/hashes.txt
 
+  # A real frontend shows the same frame the runner hashes: RetroArch from
+  # the pinned DMG runs the built core with no content, and its screenshot,
+  # decoded by sips, equals the runner's frame pixel for pixel. A CI step,
+  # not a CTest, so nothing skips itself off macOS.
+  retroarch:
+    needs: [changes, build]
+    if: needs.changes.outputs.heavy == 'true'
+    runs-on: macos-15
+    timeout-minutes: 15  # provisional
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || '' }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: archives-macos-arm64
+          path: build/archives
+      - name: Core and runner from the build
+        run: |
+          unzip -q build/archives/muhtari-libretro-macos-arm64.zip -d build/libretro
+          unzip -q build/archives/muhtari-runner-macos-arm64.zip -d build/runner
+      - name: RetroArch 1.22.2 from the pinned DMG
+        run: |
+          scripts/fetch-pin.sh retroarch-dmg build/dmg
+          hdiutil attach build/dmg/RetroArch_Metal.dmg -nobrowse -readonly -mountpoint build/mount
+          ditto build/mount/RetroArch.app build/RetroArch.app
+          hdiutil detach build/mount
+          version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/RetroArch.app/Contents/Info.plist)
+          echo "RetroArch $version"
+          test "$version" = 1.22.2
+      - name: RetroArch runs the core with no content
+        run: >-
+          cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch
+          -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info
+          -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra" -DFRAMES=5
+          "-DSHOT=$PWD/build/frames/shot.png" -P tests/retroarch/run_retroarch.cmake
+      - name: The screenshot equals the runner's frame
+        working-directory: build/frames
+        run: |
+          ../runner/bin/muhtari-run --frames 5 --dump-frame 5:runner.png
+          for f in runner shot; do
+            sips --deleteColorManagementProperties "$f.png" > /dev/null
+            sips -s format bmp "$f.png" --out "$f.bmp" > /dev/null
+          done
+          cc -std=c17 -O2 -Wall -Wextra -Werror -o compare ../../tests/retroarch/bmp.c ../../tests/retroarch/compare.c
+          ./compare runner.bmp shot.bmp | tee compare.txt
+          grep -q '^320x242, every pixel equal$' compare.txt
+      - name: RetroArch log
+        if: failure()
+        run: cat build/ra/retroarch.log || true
+
   # The one required check. GitHub reports a skipped job as success and skips
   # a job whose dependency failed, so this always runs and requires every
   # result to be success, except: a heavy job skipped when changes said
@@ -282,7 +334,7 @@ jobs:
   ci-required:
     name: CI required
     if: always()
-    needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality]
+    needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality, retroarch]
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # provisional
     steps:
