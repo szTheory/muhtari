@@ -14,7 +14,7 @@ values in tests cite their source document.
 
 ### A test frame in RetroArch
 
-- [ ] **FRAME-01**: `cmake --workflow --preset ci` (`ci-msvc` on Windows) builds the library, `muhtari-run` and the
+- [x] **FRAME-01**: `cmake --workflow --preset ci` (`ci-msvc` on Windows) builds the library, `muhtari-run` and the
   libretro core and runs every test on all six platforms; CI runs the same commands, and its one required check,
   `CI required`, passes.
 - [x] **FRAME-02**: `ctest -R 'install.consumer|embed.subdirectory'` shows that a C program including only the
@@ -38,7 +38,7 @@ values in tests cite their source document.
 - [x] **FRAME-07**: The README's one-line install, run against the latest release's version-free archive, puts the
   core and its `.info` into RetroArch on an Apple Silicon Mac; a test runs that exact line against the built
   archive on macOS arm64.
-- [ ] **FRAME-08**: `scripts/apply-repo-settings.sh` applies the repository settings and the committed ruleset;
+- [x] **FRAME-08**: `scripts/apply-repo-settings.sh` applies the repository settings and the committed ruleset;
   pull-request titles are checked as Conventional Commits; `ctest -R policy.dependabot` shows the Dependabot
   auto-merge condition on synthetic events; the instructions-per-frame gate compares every pull request with its
   merge base and, once armed by two zero-spread control runs, fails one that is more than 1 % slower.
@@ -164,14 +164,14 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FRAME-01 | Phase 1 | Pending |
+| FRAME-01 | Phase 1 | Complete |
 | FRAME-02 | Phase 1 | Complete |
 | FRAME-03 | Phase 1 | Complete |
 | FRAME-04 | Phase 1 | Complete |
 | FRAME-05 | Phase 1 | Complete |
 | FRAME-06 | Phase 1 | Complete |
 | FRAME-07 | Phase 1 | Complete |
-| FRAME-08 | Phase 1 | Pending |
+| FRAME-08 | Phase 1 | Complete |
 | FRAME-09 | Phase 1 | Complete |
 | CPU-01 | Phase 2 | Pending |
 | CPU-02 | Phase 2 | Pending |

@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
-status: executing
-stopped_at: Completed 01-20-PLAN.md
-last_updated: "2026-10-16T19:31:02.724Z"
+status: verifying
+stopped_at: Completed 01-21-PLAN.md
+last_updated: "2026-10-16T20:15:35.211Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: c2d148342b45372bacb2331dbf6b2af7d7e1ab53
+state_head: 59eaf9b63ceea5a133efd41aa54f0efe2f77d818
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 20
+  completed_plans: 21
   percent: 0
 ---
 
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
 Plan: 21 of 21
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-16 — Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
@@ -78,6 +78,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P18 | 20 min | 2 tasks | 9 files |
 | Phase 01 P19 | 21 min | 3 tasks | 12 files |
 | Phase 01 P20 | 17 min | 3 tasks | 8 files |
+| Phase 01 P21 | 33 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -138,6 +139,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Nightly bench writes max_rss_kb from /usr/bin/time (-v kB on Linux, -l bytes on macOS); the forced failure step runs after bench-wasm32's upload
 - [Phase 01]: Ruleset drift compares only the fields and rule parameters the committed file sets, after dropping server-only fields
 - [Phase 01]: Dependabot auto-merge writes the App client ID into the workflow because vars may not reach Dependabot runs
+- [Phase 01]: workflow.test_gate_timeout is 3: twice the measured 1.36 s cmake --workflow --preset ci time; re-measure it when the suite grows (phase 2 adds the CPU tests)
+- [Phase 01]: Timeouts: twice the slowest of 10+ successful runs (5-minute floor for network-bound and roll-up jobs); be32 scale 11, wasm32 scale 3 from measured slowdowns
+- [Phase 01]: The phase PR's squash title is feat: a test frame in RetroArch from the library, runner and libretro core, so release-please cuts 0.1.0
 
 ### Pending Todos
 
@@ -170,6 +174,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T19:31:02.702Z
-Stopped at: Completed 01-20-PLAN.md
+Last session: 2026-10-16T20:15:35.176Z
+Stopped at: Completed 01-21-PLAN.md
 Resume file: None
