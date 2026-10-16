@@ -4,7 +4,9 @@
 #
 #   scripts/apply-repo-settings.sh [--check] [owner/repo]
 #
-# --check prints settings that differ from this file and exits 1 if any do.
+# --check only reads: it prints one drift line for every setting, label or
+# ruleset part that differs from this file and the committed ruleset, then
+# exits 1 if any did.
 # Needs: gh, authenticated with admin rights on the repository.
 #
 # Why squash title = PR title and squash body = PR body: GSD's ship step pushes
@@ -38,22 +40,68 @@ needs-info:d876e3:Waiting on the reporter
 nightly:5319e7:Rolling nightly failure report
 digest:c5def5:Weekly triage digest'
 
+# The branch ruleset (required check, squash only, no force push), applied by
+# name: an existing ruleset with the same name is replaced.
+ruleset_file=.github/rulesets/main.json
+ruleset=$(dirname "$0")/../$ruleset_file
+ruleset_name=$(jq -r .name "$ruleset")
+
 if [ "$check" = 1 ]; then
   drift=0
+  # want <setting> <have> <want>: prints one line per difference and goes on,
+  # so a single run reports all drift.
+  want() {
+    [ "$2" = "$3" ] || { printf 'drift: %s is %s, want %s\n' "$1" "$2" "$3"; drift=1; }
+  }
+  # get <path> <jq filter>: a setting as the API reports it, or "unreadable".
+  get() { gh api "repos/$repo$1" -q "$2" 2>/dev/null || echo unreadable; }
+
   current=$(gh api "repos/$repo")
-  printf '%s\n' "$MERGE_SETTINGS" | while IFS='=' read -r key want; do
-    have=$(printf '%s' "$current" | jq -r ".$key")
-    [ "$have" = "$want" ] || { printf 'drift: %s is %s, want %s\n' "$key" "$have" "$want"; exit 1; }
-  done || drift=1
+  while IFS='=' read -r key value; do
+    want "$key" "$(printf '%s' "$current" | jq -r ".$key")" "$value"
+  done <<EOF
+$MERGE_SETTINGS
+EOF
   for path in secret_scanning secret_scanning_push_protection; do
-    have=$(printf '%s' "$current" | jq -r ".security_and_analysis.$path.status")
-    [ "$have" = enabled ] || { printf 'drift: %s is %s, want enabled\n' "$path" "$have"; drift=1; }
+    want "$path" "$(printf '%s' "$current" | jq -r ".security_and_analysis.$path.status")" enabled
   done
-  have=$(gh api "repos/$repo/actions/permissions/workflow" -q .default_workflow_permissions)
-  [ "$have" = read ] || { printf 'drift: default_workflow_permissions is %s, want read\n' "$have"; drift=1; }
+  want default_workflow_permissions "$(get /actions/permissions/workflow .default_workflow_permissions)" read
+  want can_approve_pull_request_reviews "$(get /actions/permissions/workflow .can_approve_pull_request_reviews)" false
   # GitHub then refuses any action not pinned by full commit SHA.
-  have=$(gh api "repos/$repo/actions/permissions" -q .sha_pinning_required)
-  [ "$have" = true ] || { printf 'drift: sha_pinning_required is %s, want true\n' "$have"; drift=1; }
+  want sha_pinning_required "$(get /actions/permissions .sha_pinning_required)" true
+  want immutable-releases "$(get /immutable-releases .enabled)" true
+  want private-vulnerability-reporting "$(get /private-vulnerability-reporting .enabled)" true
+  want automated-security-fixes "$(get /automated-security-fixes .enabled)" true
+  # Dependabot alerts answer 204 when enabled and 404 when not.
+  if gh api "repos/$repo/vulnerability-alerts" --silent 2>/dev/null; then have=true; else have=false; fi
+  want vulnerability-alerts "$have" true
+
+  labels=$(gh label list --repo "$repo" --limit 500 --json name,color,description 2>/dev/null) || labels='[]'
+  while IFS=: read -r name colour description; do
+    have=$(printf '%s' "$labels" | jq -r --arg n "$name" '.[] | select(.name == $n) | "\(.color):\(.description)"')
+    want "label $name" "${have:-missing}" "$colour:$description"
+  done <<EOF
+$LABELS
+EOF
+
+  # The live ruleset with the file's name must match the file. Server-only
+  # fields (id, source, timestamps, links) and rule parameters the file does
+  # not set are left out; the line names the parts that differ.
+  id=$(get /rulesets ".[] | select(.name == \"$ruleset_name\") | .id")
+  case $id in
+    '' | unreadable) want "ruleset $ruleset_name" missing "$ruleset_file" ;;
+    *)
+      parts=$(gh api "repos/$repo/rulesets/$id" | jq -r --slurpfile f "$ruleset" '
+        def shape: {target, enforcement, conditions, bypass_actors, rules: (.rules | sort_by(.type))};
+        def keep($p): if $p == null then del(.parameters)
+          else .parameters = ((.parameters // {}) | with_entries(select(.key as $k | $p | has($k)))) end;
+        ($f[0] | shape) as $want
+        | (.rules |= map(. as $r | keep([$f[0].rules[] | select(.type == $r.type) | .parameters][0]))
+           | shape) as $have
+        | [$want | keys[] | select($want[.] != $have[.])] | join(",")')
+      want "ruleset $ruleset_name" "${parts:+different in }${parts:-as committed}" "as committed" ;;
+  esac
+
   [ "$drift" = 0 ] && echo "no drift on $repo"
   exit "$drift"
 fi
@@ -91,19 +139,14 @@ printf '%s\n' "$LABELS" | while IFS=: read -r name colour description; do
   gh label create "$name" --repo "$repo" --color "$colour" --description "$description" --force >/dev/null
 done
 
-# The branch ruleset (required checks, squash only, no force push) is a
-# committed file that phase 1 adds together with the CI it requires, and is
-# applied once a run has reported the required check.
-ruleset=.github/rulesets/main.json
-if [ -f "$ruleset" ]; then
-  name=$(sed -n 's/^[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$ruleset" | head -n 1)
-  id=$(gh api "repos/$repo/rulesets" -q ".[] | select(.name == \"$name\") | .id")
-  if [ -n "$id" ]; then
-    gh api -X PUT "repos/$repo/rulesets/$id" --silent --input "$ruleset"
-  else
-    gh api -X POST "repos/$repo/rulesets" --silent --input "$ruleset"
-  fi
-  echo "ruleset '$name' applied"
+# The ruleset is applied once a CI run has reported its required check;
+# before that it would block the pull request that adds CI.
+id=$(gh api "repos/$repo/rulesets" -q ".[] | select(.name == \"$ruleset_name\") | .id")
+if [ -n "$id" ]; then
+  gh api -X PUT "repos/$repo/rulesets/$id" --silent --input "$ruleset"
+else
+  gh api -X POST "repos/$repo/rulesets" --silent --input "$ruleset"
 fi
+echo "ruleset '$ruleset_name' applied"
 
 echo "repository settings applied to $repo"
