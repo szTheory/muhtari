@@ -3,26 +3,46 @@ phase: 01
 review: 01-REVIEW.md
 titles: json
 findings:
+  - id: WR-01
+    severity: warning
+    disposition: open
+    title: "The Dependabot actor gate does not stop a person's commit from merging unattended"
+  - id: WR-02
+    severity: warning
+    disposition: open
+    title: "`rehearsal_delete` still reports success when the lookup call fails"
+  - id: WR-03
+    severity: warning
+    disposition: open
+    title: "The pre-publish `attested` gate is weaker than the post-publish `verify` gate"
+  - id: WR-04
+    severity: warning
+    disposition: open
+    title: "The documented 4096-byte size-tag limit has no boundary test"
+  - id: IN-01
+    severity: info
+    disposition: open
+    title: "The size-tag cap's comment claims more than the cap does"
+  - id: IN-02
+    severity: info
+    disposition: open
+    title: "The new guide check and its self test are missing from `docs/testing.md`"
+  - id: IN-03
+    severity: info
+    disposition: open
+    title: "`api_names.cmake` relies on CMake 4's policy defaults for `IN_LIST`"
+  - id: IN-04
+    severity: info
+    disposition: open
+    title: "The `api_names` self test leaves the `_`-prefix branch untested, and header comments count as declarations"
+  - id: IN-05
+    severity: info
+    disposition: open
+    title: "One embedding-guide paragraph mixes `muhtari_get_info` and `muhtari_run_frame`"
   - id: CR-01
     severity: critical
     disposition: fixed
     title: "`--bench N` overflows the sample buffer on 32-bit targets [product]"
-  - id: WR-01
-    severity: warning
-    disposition: fixed
-    title: "The size tag has no upper bound, so a garbage tag reads out of bounds and loops up to 4 GiB [product]"
-  - id: WR-02
-    severity: warning
-    disposition: fixed
-    title: "The docs say `muhtari_run_frame` always writes `audio_count`, but it does not [product]"
-  - id: WR-03
-    severity: warning
-    disposition: fixed
-    title: "Pull-request rehearsals produce attestations the release checks cannot tell apart from release attestations [release/CI]"
-  - id: WR-04
-    severity: warning
-    disposition: fixed
-    title: "Dependabot action updates auto-merge with no cooldown into workflows that hold the App key and the attestation identity [release/CI]"
   - id: WR-05
     severity: warning
     disposition: fixed
@@ -39,54 +59,34 @@ findings:
     severity: warning
     disposition: fixed
     title: "`release_id` reads only the first 100 releases, so rehearsal cleanup can report success while a release remains [release/CI]"
-  - id: IN-01
-    severity: info
-    disposition: open
-    title: "Wrong window size in the zlib header comment [product]"
-  - id: IN-02
-    severity: info
-    disposition: open
-    title: "The bench silently reports nothing, or saturated times, when its inputs go bad [product]"
-  - id: IN-03
-    severity: info
-    disposition: open
-    title: "`argc == 0` is reported as out of memory [product]"
-  - id: IN-04
-    severity: info
-    disposition: open
-    title: "The App client ID is defined twice [release/CI]"
-  - id: IN-05
-    severity: info
-    disposition: open
-    title: "`check_junit.cmake` matches labels as an unanchored regex [test/tooling]"
   - id: IN-06
     severity: info
     disposition: open
     title: "The presets require CMake 4.3 but `CMakeLists.txt` declares 3.25 [release/CI]"
-open: 6
+open: 10
 total: 15
-recorded: 2026-10-16T21:00:03.837Z
+recorded: 2026-10-16T21:56:13.840Z
 ---
 
 # Phase 01: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | fixed | 01-REVIEW-FIX.md |
-| WR-01 | warning | fixed | 01-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 01-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 01-REVIEW-FIX.md |
-| WR-04 | warning | fixed | 01-REVIEW-FIX.md |
-| WR-05 | warning | fixed | 01-REVIEW-FIX.md |
-| WR-06 | warning | fixed | 01-REVIEW-FIX.md |
-| WR-07 | warning | fixed | 01-REVIEW-FIX.md |
-| WR-08 | warning | fixed | 01-REVIEW-FIX.md |
+| WR-01 | warning | open | - |
+| WR-02 | warning | open | - |
+| WR-03 | warning | open | - |
+| WR-04 | warning | open | - |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
 | IN-04 | info | open | - |
 | IN-05 | info | open | - |
-| IN-06 | info | open | - |
+| CR-01 | critical | fixed | 01-REVIEW-FIX.md (not in the current review) |
+| WR-05 | warning | fixed | 01-REVIEW-FIX.md (not in the current review) |
+| WR-06 | warning | fixed | 01-REVIEW-FIX.md (not in the current review) |
+| WR-07 | warning | fixed | 01-REVIEW-FIX.md (not in the current review) |
+| WR-08 | warning | fixed | 01-REVIEW-FIX.md (not in the current review) |
+| IN-06 | info | open | - (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
