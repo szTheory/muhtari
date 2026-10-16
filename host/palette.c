@@ -7,7 +7,9 @@
 
 /* The warm NTSC palette, upstream's "26.7 PHASE SHIFT - LUM3 from TREBORS PRO
    PALETTES V7" block: the 16 ntsc_hue*_warm rows in order, each 16 luma steps,
-   so the native byte $hl indexes it directly. 0x00RRGGBB. */
+   so the native byte $hl indexes it directly. 0x00RRGGBB. Kept four values per
+   line, sixteen per hue row, by hand. */
+/* clang-format off */
 static const uint32_t palette_warm_ntsc[256] = {
     /* hue 0 ($00-$0F) */
     0x000000, 0x1e1e1e, 0x333333, 0x454545,
@@ -90,6 +92,7 @@ static const uint32_t palette_warm_ntsc[256] = {
     0xb3931c, 0xc0a132, 0xcdaf44, 0xdabc55,
     0xe7c966, 0xf3d675, 0xffe384, 0xffef93,
 };
+/* clang-format on */
 
 uint32_t muhtari__palette_rgb(uint8_t index)
 {

@@ -4,11 +4,7 @@
 #ifndef MUHTARI_RUNNER_EXIT_STATUS_H
 #define MUHTARI_RUNNER_EXIT_STATUS_H
 
-enum {
-    MUHTARI__EXIT_DONE = 0,
-    MUHTARI__EXIT_FAILURE = 1,
-    MUHTARI__EXIT_USAGE = 2
-};
+enum { MUHTARI__EXIT_DONE = 0, MUHTARI__EXIT_FAILURE = 1, MUHTARI__EXIT_USAGE = 2 };
 
 typedef struct muhtari__exit_status {
     int code;
@@ -17,8 +13,10 @@ typedef struct muhtari__exit_status {
 } muhtari__exit_status;
 
 static const muhtari__exit_status muhtari__exit_statuses[] = {
-    {MUHTARI__EXIT_DONE, "done", "every frame ran, or SIGINT or SIGTERM stopped the run after a whole frame"},
-    {MUHTARI__EXIT_FAILURE, "failure", "a file could not be written, memory ran out or the core failed"},
+    {MUHTARI__EXIT_DONE, "done",
+     "every frame ran, or SIGINT or SIGTERM stopped the run after a whole frame"},
+    {MUHTARI__EXIT_FAILURE, "failure",
+     "a file could not be written, memory ran out or the core failed"},
     {MUHTARI__EXIT_USAGE, "usage", "the command line is invalid, so nothing ran"},
 };
 

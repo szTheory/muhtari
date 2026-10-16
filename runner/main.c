@@ -264,8 +264,8 @@ static int run(const options *opt)
     uint8_t *row = (uint8_t *)malloc(3u * WIDTH);
     /* One microsecond sample per frame for --bench, on the heap: 300,000
        frames take 1.2 MB. */
-    uint32_t *samples = opt->bench ? (uint32_t *)malloc((size_t)opt->frames * sizeof *samples)
-                                   : NULL;
+    uint32_t *samples =
+        opt->bench ? (uint32_t *)malloc((size_t)opt->frames * sizeof *samples) : NULL;
     if (video == NULL || audio == NULL || row == NULL || (opt->bench && samples == NULL)) {
         fprintf(stderr, "muhtari-run: out of memory\n");
         free(video);

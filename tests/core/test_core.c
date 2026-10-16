@@ -14,9 +14,9 @@
 #define HEIGHT 242u
 #define FRAME_BYTES (WIDTH * HEIGHT)
 #define AUDIO_CAP 801u
-#define WIDE 336u                 /* a pitch 16 bytes wider than a row */
-#define PAD_BYTE 0xA5u            /* fill the core must leave alone */
-#define AUDIO_SENTINEL 0x5A5A     /* sample the core must overwrite or leave alone */
+#define WIDE 336u                  /* a pitch 16 bytes wider than a row */
+#define PAD_BYTE 0xA5u             /* fill the core must leave alone */
+#define AUDIO_SENTINEL 0x5A5A      /* sample the core must overwrite or leave alone */
 #define COUNT_SENTINEL 0xDEADBEEFu /* audio_count before a call that must write it */
 
 /* SHA-256 of the NTSC test card's 77,440 native colour bytes. */
@@ -325,8 +325,7 @@ static void test_silence(void)
         }
         total += io.audio_count;
     }
-    CHECK_EQ_U64(total,
-                 (uint64_t)13125u * TICKS_PER_FRAME * SAMPLES_PER_PERIOD / TICKS_PER_PERIOD);
+    CHECK_EQ_U64(total, (uint64_t)13125u * TICKS_PER_FRAME * SAMPLES_PER_PERIOD / TICKS_PER_PERIOD);
     muhtari_destroy(m);
 }
 
@@ -348,8 +347,8 @@ static void size_cases(const char *name, uint32_t ours, int is_output,
                        muhtari_status (*call)(tagged *t, muhtari *m), muhtari *m)
 {
     static const struct {
-        int32_t delta;     /* size = ours + delta */
-        uint32_t nonzero;  /* offset past ours of a nonzero tail byte, or 0 for none */
+        int32_t delta;    /* size = ours + delta */
+        uint32_t nonzero; /* offset past ours of a nonzero tail byte, or 0 for none */
         muhtari_status want;
     } cases[] = {
         {-4, 0, MUHTARI_STATUS_ERR_STRUCT_SIZE},
@@ -444,8 +443,8 @@ static void test_size_tags(void)
     muhtari_destroy(m);
 }
 
-/* create requires both hooks, reports a failed allocation without touching
-   *out, and destroy hands free the size alloc was given. */
+/* create requires both hooks, reports a failed allocation without touching the
+   out pointer, and destroy hands free the size alloc was given. */
 static void test_allocator(void)
 {
     counts c;

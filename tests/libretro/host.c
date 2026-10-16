@@ -36,7 +36,7 @@
         double check_a_ = (double)(a);                                                             \
         double check_b_ = (double)(b);                                                             \
         if (check_a_ != check_b_) {                                                                \
-            fprintf(stderr, "%s:%d: %s == %s failed: %.17g != %.17g\n", __FILE__, __LINE__, #a,   \
+            fprintf(stderr, "%s:%d: %s == %s failed: %.17g != %.17g\n", __FILE__, __LINE__, #a,    \
                     #b, check_a_, check_b_);                                                       \
             check_failures++;                                                                      \
         }                                                                                          \
@@ -364,8 +364,7 @@ int main(int argc, char **argv)
     /* No content: the pixel format is set before load returns (L861-865). */
     CHECK_EQ_U64(p_load_game(NULL), 1);
     CHECK_EQ_U64(pixel_format_calls, 1);
-    CHECK_EQ_U64(pixel_format,
-                 rgb565 ? RETRO_PIXEL_FORMAT_RGB565 : RETRO_PIXEL_FORMAT_XRGB8888);
+    CHECK_EQ_U64(pixel_format, rgb565 ? RETRO_PIXEL_FORMAT_RGB565 : RETRO_PIXEL_FORMAT_XRGB8888);
 
     memset(&av, 0, sizeof av);
     p_get_system_av_info(&av);

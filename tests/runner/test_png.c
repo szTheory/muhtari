@@ -197,8 +197,8 @@ static void check_png(const uint8_t *d, size_t n, const uint8_t *video, uint8_t 
         bad += (uint32_t)(r[0] != 0u);
         for (uint32_t x = 0; x < WIDTH; x++) {
             uint32_t rgb = muhtari__palette_rgb(video[y * WIDTH + x]);
-            uint32_t png_rgb = ((uint32_t)r[1u + 3u * x] << 16) |
-                               ((uint32_t)r[2u + 3u * x] << 8) | r[3u + 3u * x];
+            uint32_t png_rgb =
+                ((uint32_t)r[1u + 3u * x] << 16) | ((uint32_t)r[2u + 3u * x] << 8) | r[3u + 3u * x];
             bad += (uint32_t)(png_rgb != rgb);
         }
     }
