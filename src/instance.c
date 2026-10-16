@@ -10,12 +10,16 @@
 #define MUHTARI__ABI 1u
 #define MUHTARI__BEHAVIOUR_REVISION 1u
 
+/* The largest size tag accepted, far above any struct's planned growth, so a
+   garbage tag is refused without reading past the caller's object. */
+#define MUHTARI__SIZE_TAG_MAX 4096u
+
 muhtari_status muhtari__check_size(const void *s, uint32_t first, uint32_t ours)
 {
     const uint8_t *bytes = (const uint8_t *)s;
     uint32_t size;
     memcpy(&size, s, sizeof size); /* the tag is untrusted: read it alone first */
-    if (size < first) {
+    if (size < first || size > MUHTARI__SIZE_TAG_MAX) {
         return MUHTARI_STATUS_ERR_STRUCT_SIZE;
     }
     /* A newer caller's struct is accepted only if the fields this build does

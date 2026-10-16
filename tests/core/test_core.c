@@ -393,6 +393,20 @@ static void size_cases(const char *name, uint32_t ours, int is_output,
             }
         }
     }
+    /* A garbage tag far past the buffer is refused before any byte past the
+       tag is read, and nothing is written. */
+    tagged t;
+    memset(&t, 0, sizeof t);
+    uint32_t garbage = 0xFFFFFFFFu;
+    memcpy(t.bytes, &garbage, sizeof garbage);
+    tagged before = t;
+    muhtari_status got = call(&t, m);
+    if (got != MUHTARI_STATUS_ERR_STRUCT_SIZE) {
+        fprintf(stderr, "%s size 0xFFFFFFFF: expected status %u, got %u\n", name,
+                (unsigned)MUHTARI_STATUS_ERR_STRUCT_SIZE, (unsigned)got);
+        check_failures++;
+    }
+    CHECK(memcmp(t.bytes, before.bytes, sizeof t.bytes) == 0);
 }
 
 static muhtari_status call_versions(tagged *t, muhtari *m)
