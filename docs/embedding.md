@@ -68,7 +68,7 @@ There is no init macro. The size tag lets a program built against one header run
 
 ## The allocator
 
-`muhtari_config.allocator` needs both `alloc` and `free`; either one missing returns
+`muhtari_config.allocator`, a `muhtari_allocator`, needs both `alloc` and `free`; either one missing returns
 `MUHTARI_STATUS_ERR_ARGUMENT`. There is no default. `alloc` must return memory aligned for `max_align_t`, as
 `malloc` does. A host with a C library can pass this wrapper:
 
@@ -82,7 +82,8 @@ static void host_free(void *user, void *ptr, size_t size) {
 ```
 
 `free` receives the size that was allocated, so a fixed arena or pool needs no header of its own. `user` is
-passed back unchanged. All allocation happens in `muhtari_create`; running frames allocates nothing.
+passed back unchanged. All allocation happens in `muhtari_create`, which returns `MUHTARI_STATUS_ERR_NO_MEMORY`
+when `alloc` returns NULL; running frames allocates nothing.
 
 ## A frame
 
@@ -103,10 +104,13 @@ muhtari_status st = muhtari_run_frame(m, &io);   /* io.audio_count: 800 or 801 *
 muhtari_destroy(m);
 ```
 
-`muhtari_get_info` reports the picture size, the frame rate, the pixel aspect ratio, the sample rate and the
-largest audio count per frame, so a host need not hard-code them. A NULL `video` or `audio` skips that output.
-`muhtari_run_frame` checks its arguments before it changes anything. Once `m` and `io` are not NULL and the size
-tag is accepted, it writes `audio_count` on every return, zero on an error.
+`muhtari_get_info` fills a `muhtari_info` with the picture size, the frame rate, the pixel aspect ratio, the
+sample rate and the largest audio count per frame, so a host need not hard-code them. A NULL `video` or `audio`
+skips that output. With `video` set, a `video_pitch` outside 320..65536 returns `MUHTARI_STATUS_ERR_ARGUMENT`;
+with `audio` set, an `audio_capacity` below the frame's sample count, 800 or 801, returns
+`MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL`, so size the buffer from `max_audio_samples`. `muhtari_run_frame` checks its
+arguments before it changes anything. Once `m` and `io` are not NULL and the size tag is accepted, it writes
+`audio_count` on every return, zero on an error.
 
 ## Statuses
 
@@ -118,7 +122,7 @@ instead (`st == MUHTARI_STATUS_OK`), or cast the constant: `(muhtari_status)MUHT
 ## Version numbers
 
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
-`muhtari_get_versions` reports:
+`muhtari_get_versions` fills a `muhtari_versions`:
 
 | Field | Meaning |
 |---|---|
