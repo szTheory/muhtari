@@ -4,22 +4,17 @@
 # Fault prevented: a code change skipping CI as "planning only". Prints
 # heavy=false only when there is at least one path and every path is under
 # .planning/; anything else, including empty or unreadable input, prints
-# heavy=true.
+# heavy=true. It reads all of its input, so the writer never sees a closed pipe.
 set -u
 paths=0
+heavy=false
 while IFS= read -r path || [ -n "$path" ]; do
   [ -n "$path" ] || continue
   paths=$((paths + 1))
   case "$path" in
     .planning/*) ;;
-    *)
-      echo heavy=true
-      exit 0
-      ;;
+    *) heavy=true ;;
   esac
 done
-if [ "$paths" -gt 0 ]; then
-  echo heavy=false
-else
-  echo heavy=true
-fi
+[ "$paths" -gt 0 ] || heavy=true
+echo "heavy=$heavy"
