@@ -4,12 +4,11 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 2
 current_phase_name: The CPU matches the public vectors
-status: planning
-stopped_at: "Phase 01 verified and complete (UAT closed with no owner check); next /gsd-ship 1, then plan Phase 2"
-last_updated: "2026-10-16T22:04:45.504Z"
+status: "Phase 1 shipped — PR #7"
+stopped_at: "Phase 1 shipped as PR #7; merge after its Release run is green, then /gsd-discuss-phase 2"
+last_updated: "2026-10-16T22:18:31.326Z"
 last_activity: 2026-10-16
-last_activity_desc: Phase 01 complete, transitioned to Phase 2
-state_head: e3e7634dd424e2a401a1b17c021fc53462763323
+state_head: c120a78aebbbb20fd2c5b7784924b08bedf0e9d2
 progress:
   total_phases: 4
   completed_phases: 1
@@ -25,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-16)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Ship phase 01, then Phase 2 — The CPU matches the public vectors
+**Current focus:** Phase 2 — The CPU matches the public vectors (phase 01 shipped as PR #7)
 
 ## Current Position
 
 Phase: 2 — The CPU matches the public vectors
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-16 — Phase 01 complete, transitioned to Phase 2
+Status: Phase 1 shipped — PR #7
+Last activity: 2026-10-16
 
 Progress: [███░░░░░░░] 25%
 
@@ -156,17 +155,18 @@ Recent decisions affecting current work:
 
 ### Ship step (phase 01)
 
-- Next: `/gsd-ship 1`. Verification passed on 2026-10-16 with two run confirmations for this step (01-UAT.md
-  tests 3 and 4). Before the merge: the pull request's own Release run (ci, rehearsal, install-line, cleanup) is
-  green on its head commit, because no Release run has exercised publish.sh since the review fixes and the
-  rehearsal is not a required check. After the merge: the push Release run on main is green (release pull request
-  auto-merged, v0.1.0 with 19 verified assets, install-line-latest); record both run URLs.
-- The phase pull request's squash title must be a release-cutting Conventional Commit, `feat: …` for this
-  capability (GSD-HANDOFF §3 step 6): release-please opens a release PR only for releasable types, so a `ci:` or
-  `docs:` title would publish nothing (research F-12). Chosen title, accepted by `scripts/check-title.sh` (exit 0):
-  `feat: a test frame in RetroArch from the library, runner and libretro core`
-- Probe PR #6 is closed; the branch is kept for the phase PR. The `main` ruleset requiring `CI required` is live
-  and `scripts/apply-repo-settings.sh --check` reports no drift.
+- Shipped 2026-10-16 as PR #7, titled `feat: a test frame in RetroArch from the library, runner and libretro core`
+  so release-please cuts 0.1.0 (`scripts/check-title.sh` exit 0 on the title and body). This note is the head
+  commit the pull request opened on, so CI and the Release rehearsal run once and no CI-skip commit is needed.
+- Before the merge (01-UAT.md test 4): the pull request's own Release run (ci, rehearsal, install-line, cleanup)
+  is green on its head commit, because no Release run had exercised publish.sh since the review fixes and the
+  rehearsal is not a required check. The owner then runs `gh pr merge 7 --auto --squash`; agent merges are
+  blocked.
+- After the merge (01-UAT.md test 3): the push Release run on main is green (release pull request auto-merged,
+  v0.1.0 with 19 verified assets, install-line-latest). Each run URL is posted on PR #7 once confirmed; a step
+  that finds one missing confirms it first.
+- The `main` ruleset requiring `CI required` is live and `scripts/apply-repo-settings.sh --check` reports no
+  drift.
 
 ### Blockers/Concerns
 
@@ -182,6 +182,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T22:12:00.000Z
-Stopped at: Phase 01 verified and complete (UAT closed with no owner check); next /gsd-ship 1, then plan Phase 2
+Last session: 2026-10-16T22:18:31.291Z
+Stopped at: Phase 1 shipped as PR #7; merge after its Release run is green, then /gsd-discuss-phase 2
 Resume file: None
