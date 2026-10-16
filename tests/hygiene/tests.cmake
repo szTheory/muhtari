@@ -158,3 +158,52 @@ muhtari_add_test(NAME hygiene.timeout_comments.self_test
     "-DREGEX=sample.yml: timeout-minutes: 30.*sample.yml: timeout-minutes: 15 .*a guess.*timeout_comments: 2 lines"
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene TIMEOUT 30)
+
+# The release's asset set. scripts/publish.sh prepare runs on 18 empty
+# placeholder zips and six build legs' commit.txt, and SHA256SUMS must list
+# the 18 in C-locale name order. The self test leaves one zip out, which must
+# fail naming it.
+set(hygiene_publish ${CMAKE_BINARY_DIR}/hygiene/publish_set)
+file(REMOVE_RECURSE ${hygiene_publish})
+foreach(c library runner libretro)
+  foreach(o linux macos windows)
+    foreach(a x64 arm64)
+      file(WRITE ${hygiene_publish}/full/muhtari-${c}-${o}-${a}.zip "")
+      if(NOT "${c}-${o}-${a}" STREQUAL "runner-windows-x64")
+        file(WRITE ${hygiene_publish}/short/muhtari-${c}-${o}-${a}.zip "")
+      endif()
+    endforeach()
+  endforeach()
+endforeach()
+foreach(leg RANGE 1 6)
+  file(WRITE ${hygiene_publish}/full/legs/${leg}/commit.txt "fixture\n")
+  file(WRITE ${hygiene_publish}/short/legs/${leg}/commit.txt "fixture\n")
+endforeach()
+set(hygiene_publish_check [=[
+EXPECTED_SHA=fixture sh "$1" prepare "$2" || exit 1
+names=$(awk '{ print $2 }' "$2/SHA256SUMS")
+count=$(printf '%s\n' "$names" | grep -c '^muhtari-[a-z]*-[a-z]*-[a-z0-9]*\.zip$')
+if [ "$count" -ne 18 ]
+then
+  echo "policy.publish_set: $count archives in SHA256SUMS, want 18"
+  exit 1
+fi
+if ! printf '%s\n' "$names" | LC_ALL=C sort -c -u
+then
+  echo "policy.publish_set: SHA256SUMS is not in C-locale name order"
+  exit 1
+fi
+echo "policy.publish_set: 18 archives in C-locale name order"
+]=])
+muhtari_add_test(NAME policy.publish_set
+  COMMAND ${MUHTARI_SH} -c "${hygiene_publish_check}" sh ${CMAKE_SOURCE_DIR}/scripts/publish.sh
+    ${hygiene_publish}/full
+  LABELS hygiene policy TIMEOUT 30)
+set(hygiene_cmd ${CMAKE_COMMAND} -E env EXPECTED_SHA=fixture
+  ${MUHTARI_SH} ${CMAKE_SOURCE_DIR}/scripts/publish.sh prepare ${hygiene_publish}/short)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.publish_set.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=publish: missing muhtari-runner-windows-x64.zip"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)

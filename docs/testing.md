@@ -110,6 +110,7 @@ output matches the expected message; a crash or a missing file does not count as
 | `runner.hashes_compare.byte.self_test` | Two `hashes.txt` files one byte apart. |
 | `abi.nofp_fixture` | On the `nofp` lane, a file holding one `double` division, which must fail to compile with GCC's `-mgeneral-regs-only` diagnostic. |
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
+| `policy.publish_set.self_test` | 17 of the 18 release zips; `publish.sh prepare` must exit 1 naming the missing one. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |
 | `release.archive_contents.self_test` | A libretro zip without `THIRD-PARTY-NOTICES.md`. |
@@ -264,7 +265,7 @@ reused.
 | Job | Runs |
 |---|---|
 | `ci` | `ci.yml` on the pull request's head commit |
-| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, `SHA256SUMS` in C-locale name order; a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; publish with `--prerelease --latest=false`; `publish.sh verify`: each zip's attestation verifies and a copy with its last byte flipped does not, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` |
+| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, `SHA256SUMS` in C-locale name order (`policy.publish_set` checks this on placeholders); a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; publish with `--prerelease --latest=false`; `publish.sh verify`: each zip's attestation verifies and a copy with its last byte flipped does not, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` |
 | `install-line` | the README install line on `macos-15` against the rehearsal's download URL |
 | `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete` removes the release and its tag, and fails if either remains |
 
