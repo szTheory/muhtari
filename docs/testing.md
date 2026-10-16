@@ -316,7 +316,7 @@ reused.
 | Job | Runs |
 |---|---|
 | `ci` | `ci.yml` on the pull request's head commit |
-| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, `SHA256SUMS` in C-locale name order (`policy.publish_set` checks this on placeholders); a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; `publish.sh attested`: each zip's attestation verifies and a copy with its last byte flipped does not; publish with `--prerelease --latest=false`; `publish.sh verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` |
+| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, `SHA256SUMS` in C-locale name order (`policy.publish_set` checks this on placeholders); a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; `publish.sh attested`: each zip's attestation verifies from the pull request's `refs/pull/<number>/merge` and a copy with its last byte flipped does not; publish with `--prerelease --latest=false`; `publish.sh verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` from that ref. A release tag verifies only from `refs/heads/main` (`policy.publish_ref`) |
 | `install-line` | the README install line on `macos-15` against the rehearsal's download URL |
 | `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete` removes the release and its tag, and fails if either remains |
 

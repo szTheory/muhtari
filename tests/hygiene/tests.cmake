@@ -228,3 +228,14 @@ muhtari_add_test(NAME policy.publish_set.self_test
     "-DREGEX=publish: missing muhtari-runner-windows-x64.zip"
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene policy TIMEOUT 30)
+# Fault prevented: a release verifies against a pull request's attestation.
+# verify on a release tag with a pull request's ref must refuse before any
+# network call.
+set(hygiene_cmd ${CMAKE_COMMAND} -E env GITHUB_REPOSITORY=fixture/fixture SOURCE_REF=refs/pull/1/merge
+  ${MUHTARI_SH} ${CMAKE_SOURCE_DIR}/scripts/publish.sh verify v0.1.0 ${hygiene_publish}/full)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.publish_ref
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=publish: v0.1.0 verifies only from refs/heads/main, not refs/pull/1/merge"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)

@@ -7,8 +7,10 @@
 #   publish.sh rehearsal-create TAG        a draft prerelease at EXPECTED_SHA; prints its ID
 #   publish.sh rehearsal-delete TAG [ID]   delete a rehearsal release and its tag
 # Fault prevented: a release with a missing, extra, unverifiable or tampered
-# asset, or with archives built from another commit. prepare reads
-# EXPECTED_SHA; the rest call gh with GH_TOKEN and GITHUB_REPOSITORY.
+# asset, or with archives built from another commit, or a release that
+# accepts a pull request's attestation. prepare reads EXPECTED_SHA; the rest
+# call gh with GH_TOKEN and GITHUB_REPOSITORY, and attested and verify accept
+# only attestations made on SOURCE_REF, which for a release is refs/heads/main.
 set -eu
 
 fail() {
@@ -76,7 +78,8 @@ attested() {
   rm -rf "$tmp"
   mkdir -p "$tmp/download"
   for n in $(names); do
-    gh attestation verify "$1/$n" --repo "$REPO" > /dev/null || fail "$n: its attestation does not verify"
+    gh attestation verify "$1/$n" --repo "$REPO" --source-ref "$SOURCE_REF" > /dev/null ||
+      fail "$n: its attestation does not verify from $SOURCE_REF"
     cp "$1/$n" "$tmp/$n"
     size=$(wc -c < "$tmp/$n")
     last=$(tail -c 1 "$tmp/$n" | od -An -tu1 | tr -d ' ')
@@ -89,7 +92,13 @@ attested() {
   done
 }
 
+# Only an attestation made on main is release provenance: a pull request's
+# rehearsal signs with the same workflow file, but from its own ref.
 verify() {
+  case $1 in
+    rehearsal-*) ;;
+    *) [ "$SOURCE_REF" = refs/heads/main ] || fail "$1 verifies only from refs/heads/main, not $SOURCE_REF" ;;
+  esac
   attested "$2"
   draft=$(gh release view "$1" --repo "$REPO" --json isDraft --jq .isDraft)
   [ "$draft" = false ] || fail "$1 is not published"
@@ -113,7 +122,8 @@ verify() {
   (cd "$tmp/download" && sha256 $(names)) | cmp -s - "$2/SHA256SUMS" || fail "a downloaded zip differs"
   for n in $(names); do
     gh attestation verify "$tmp/download/$n" --repo "$REPO" \
-      --signer-workflow "$REPO/.github/workflows/release.yml" > /dev/null || fail "downloaded $n does not verify"
+      --signer-workflow "$REPO/.github/workflows/release.yml" --source-ref "$SOURCE_REF" > /dev/null ||
+      fail "downloaded $n does not verify from $SOURCE_REF"
   done
   echo "publish: $1 published with 19 assets; every download matches SHA256SUMS and verifies"
 }
@@ -153,6 +163,7 @@ cmd=${1:-}
 [ $# -eq 0 ] || shift
 case $cmd in rehearsal-*) case ${1:-} in rehearsal-*) ;; *) fail "$cmd: '${1:-}' is not a rehearsal tag" ;; esac ;; esac
 case $cmd in upload | attested | verify | rehearsal-*) REPO=${GITHUB_REPOSITORY:?publish: GITHUB_REPOSITORY is not set} ;; esac
+case $cmd in attested | verify) SOURCE_REF=${SOURCE_REF:?publish: SOURCE_REF is not set} ;; esac
 case "$cmd $#" in
   "prepare 1") prepare "$1" ;;
   "upload 3") upload "$1" "$2" "$3" ;;

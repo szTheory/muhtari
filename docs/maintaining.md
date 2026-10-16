@@ -23,10 +23,19 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
 6. `publish` runs `scripts/publish.sh` on the draft, found by its release ID:
    - `prepare`: exactly the 18 zips, every build leg's recorded commit equal to the release commit, `SHA256SUMS`;
    - `upload`, then `actions/attest` over `SHA256SUMS`;
-   - `attested`: each zip's attestation verifies and a copy with its last byte flipped does not;
+   - `attested`: each zip's attestation verifies from `refs/heads/main` and a copy with its last byte flipped does
+     not;
    - publish the draft as the latest release;
    - `verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from
-     `releases/latest/download/` matches `SHA256SUMS` and verifies as signed by `release.yml`.
+     `releases/latest/download/` matches `SHA256SUMS` and verifies as signed by `release.yml` from `refs/heads/main`.
+
+Only an attestation whose source ref is `refs/heads/main` is release provenance. A rehearsal signs with the same
+`release.yml`, but from `refs/pull/<number>/merge`, so a check that a download is a release must pin the ref:
+
+```sh
+gh attestation verify muhtari-runner-linux-x64.zip --repo szTheory/muhtari \
+  --signer-workflow szTheory/muhtari/.github/workflows/release.yml --source-ref refs/heads/main
+```
 7. `install-line-latest` runs the README's install line verbatim on `macos-15` against the latest release.
 
 The release workflow never cancels a run: runs on `main` queue behind each other.
