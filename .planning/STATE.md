@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-10-PLAN.md
-last_updated: "2026-10-16T15:55:30.572Z"
+stopped_at: Completed 01-11-PLAN.md
+last_updated: "2026-10-16T16:04:25.364Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: 3c7391e1986f841c78d3bcf4741f6b8bf7d5c557
+state_head: 727b5dfdbf92e87822ba9153b3a9b42f7bded8b4
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 11 of 21
+Plan: 12 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -68,6 +68,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P08 | 4 min | 2 tasks | 11 files |
 | Phase 01 P09 | 10 min | 3 tasks | 14 files |
 | Phase 01 P10 | 6 min | 3 tasks | 11 files |
+| Phase 01 P11 | 6 min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,8 @@ Recent decisions affecting current work:
 - [Phase 01]: install_line.cmake runs the README line verbatim under sh with a scratch HOME; it is a CI step on macOS arm64, not a CTest
 - [Phase 01]: abi.undefined allows bzero and __bzero on Darwin through the per-system helper table instead of building the core with -fno-builtin
 - [Phase 01]: tests/api/v1.c names muhtari_allocator: abi.api_version found it missing, and v1.c is not frozen until 0.1.0 is released
+- [Phase 01]: Hygiene preset sets CMAKE_OSX_SYSROOT=macosx so Homebrew clang-tidy finds the SDK headers; CMake 4 leaves the sysroot empty
+- [Phase 01]: The float scan exempts cited section numbers such as section 6.2, so hardware citations in src/ stay as written
 
 ### Pending Todos
 
@@ -123,6 +126,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T15:55:25.538Z
-Stopped at: Completed 01-10-PLAN.md
+Last session: 2026-10-16T16:04:20.776Z
+Stopped at: Completed 01-11-PLAN.md
 Resume file: None
