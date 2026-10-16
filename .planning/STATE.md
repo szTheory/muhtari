@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-10-16T15:16:18.583Z"
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-10-16T15:24:47.555Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: 1ea117591c84b8cd5d2f137b903ff9a3a90bda56
+state_head: 4462955c2bb546f26e99e45d06762d87467820e6
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 7 of 21
+Plan: 8 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P04 | 4 min | 2 tasks | 10 files |
 | Phase 01 P05 | 4 min | 2 tasks | 9 files |
 | Phase 01 P06 | 6 min | 3 tasks | 14 files |
+| Phase 01 P07 | 5 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,10 @@ Recent decisions affecting current work:
 - [Phase 01]: muhtari-run --bench is an alternative to --frames (give one, once); only muhtari_run_frame is timed, and the report is nine key value lines
 - [Phase 01]: The exit table lives in runner/exit_status.h as a const struct array (0 done, 1 failure, 2 usage); runner.exit.table requires every --help table line verbatim in docs/runner.md
 - [Phase 01]: Runner command-line checks dispatch on -DCASE in tests/runner/tests.cmake; exit-status cases include tests/cmake/expect_fail.cmake from a function
+- [Phase 01]: The libretro instance is created in retro_load_game(NULL) with the adapter's own malloc wrapper; retro_init is empty and unload or deinit frees it
+- [Phase 01]: The .info keeps is_experimental = true; info_claims exempts it by name as a label, not a capability
+- [Phase 01]: library_version comes from MUHTARI_VERSION_STRING in the private generated version header
+- [Phase 01]: libretro.vendored reads its file table from PROVENANCE.md section 8 and is registered even when the core is not built
 
 ### Pending Todos
 
@@ -108,6 +113,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T15:16:18.568Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-10-16T15:24:47.538Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None
