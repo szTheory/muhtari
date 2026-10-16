@@ -1,7 +1,7 @@
 # Maintaining muhtari
 
-How a release is made, rehearsed, recovered and withdrawn, and how the pinned downloads move. Tests and CI are in
-`docs/testing.md`.
+How a release is made, rehearsed, recovered and withdrawn, how the pinned downloads move, and how the repository's
+settings, the release App and Dependabot are kept. Tests and CI are in `docs/testing.md`.
 
 ## How a release happens
 
@@ -91,3 +91,57 @@ before use. Take a long-term-support patch release when it fixes a security advi
 long-term-support line before the current one's end of life. Each bump is one `ci:` pull request whose digest comes
 from the release API (the asset's `digest` field). Packages installed with apt stay unpinned: they are signed, and
 drift fails loudly as a build failure or a hash change.
+
+## Repository settings
+
+`scripts/apply-repo-settings.sh` holds the repository's settings as code, and `.github/rulesets/main.json` holds the
+branch ruleset. The script applies, idempotently:
+
+- squash merging only, with the pull request's title and body as the commit message, auto-merge, branch deletion
+  on merge, branch updates, and no wiki or projects;
+- secret scanning with push protection, private vulnerability reporting, Dependabot alerts and security updates;
+- Actions pinned by full commit SHA, a read-only default token, and no pull request approval by Actions;
+- immutable releases;
+- the eight labels: `bug`, `compatibility`, `enhancement`, `docs`, `performance`, `needs-info`, `nightly`, `digest`;
+- the ruleset, replaced by name: no deletion or force push on the default branch, linear history, pull requests
+  with no required approval and squash merging only, and the `CI required` check from GitHub Actions, with no
+  bypass.
+
+The owner runs `scripts/apply-repo-settings.sh` with admin rights, once after creating the repository and again at
+each milestone tune-up. The ruleset blocks a pull request until a run has reported `CI required`, so it is applied
+only once CI does.
+
+`scripts/apply-repo-settings.sh --check` only reads. It compares every setting above, each label's colour and
+description, and the live ruleset with the committed file, prints one `drift:` line for each difference, and exits
+1 if there was any (`no drift on <repository>` otherwise). Run it at each tune-up and after changing anything in
+the repository's settings page. Change a setting in the script, not by hand, then apply it.
+
+## Release App and secrets
+
+The GitHub App `muhtari-release`, installed on this repository only, makes the tokens that open and merge release
+pull requests and merge Dependabot updates. A merge with an App token starts the `push` runs on `main` that a
+merge with `GITHUB_TOKEN` would not. Its repository permissions are Contents, Pull requests, Issues and Workflows
+read and write, and Metadata read; each workflow narrows its token further.
+
+CI holds one variable and one secret:
+
+- `MUHTARI_APP_CLIENT_ID`, an Actions variable. It is not secret; `dependabot-automerge.yml` also writes it in,
+  because Actions variables may not reach Dependabot-triggered runs.
+- `MUHTARI_APP_PRIVATE_KEY`, stored twice: as an Actions secret and as a Dependabot secret, because a
+  Dependabot-triggered run sees only Dependabot secrets.
+
+To rotate the key, on the App's settings page generate a new private key, then run
+`gh secret set MUHTARI_APP_PRIVATE_KEY < <key file>` and
+`gh secret set MUHTARI_APP_PRIVATE_KEY --app dependabot < <key file>`, delete the old key on the settings page, and
+delete the key file. Only the owner handles the key.
+
+## Dependabot
+
+`.github/dependabot.yml` updates the pinned GitHub Actions weekly; they are the project's only dependencies. Minor
+and patch updates come as one grouped pull request and each major update as its own, so a major never holds the
+group back. Their commits use the `ci` prefix, which cuts no release.
+
+`.github/workflows/dependabot-automerge.yml` runs on Dependabot's pull requests only. Its `decide` step reads the
+update type: a patch or minor update turns on squash auto-merge with an App token, which merges once `CI required`
+passes; a major update waits for a person to read its release notes and merge it. `policy.dependabot` runs that
+decision on synthetic events.
