@@ -5,39 +5,39 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "`--bench N` overflows the sample buffer on 32-bit targets [product]"
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The size tag has no upper bound, so a garbage tag reads out of bounds and loops up to 4 GiB [product]"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The docs say `muhtari_run_frame` always writes `audio_count`, but it does not [product]"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Pull-request rehearsals produce attestations the release checks cannot tell apart from release attestations [release/CI]"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Dependabot action updates auto-merge with no cooldown into workflows that hold the App key and the attestation identity [release/CI]"
   - id: WR-05
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The \"planning only\" classification can skip CI for a pull request with more than 3,000 files [release/CI]"
   - id: WR-06
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Dependabot auto-merge is gated on the pull request's author, not on who triggered the run [release/CI]"
   - id: WR-07
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`publish.sh verify` downloads from `releases/latest/` for real tags, so a re-run of an older release fails or checks the wrong release [release/CI]"
   - id: WR-08
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`release_id` reads only the first 100 releases, so rehearsal cleanup can report success while a release remains [release/CI]"
   - id: IN-01
     severity: info
@@ -63,24 +63,24 @@ findings:
     severity: info
     disposition: open
     title: "The presets require CMake 4.3 but `CMakeLists.txt` declares 3.25 [release/CI]"
-open: 15
+open: 6
 total: 15
-recorded: 2026-10-16T20:24:50.012Z
+recorded: 2026-10-16T21:00:03.837Z
 ---
 
 # Phase 01: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| WR-05 | warning | open | - |
-| WR-06 | warning | open | - |
-| WR-07 | warning | open | - |
-| WR-08 | warning | open | - |
+| CR-01 | critical | fixed | 01-REVIEW-FIX.md |
+| WR-01 | warning | fixed | 01-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 01-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 01-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 01-REVIEW-FIX.md |
+| WR-05 | warning | fixed | 01-REVIEW-FIX.md |
+| WR-06 | warning | fixed | 01-REVIEW-FIX.md |
+| WR-07 | warning | fixed | 01-REVIEW-FIX.md |
+| WR-08 | warning | fixed | 01-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
