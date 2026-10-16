@@ -42,11 +42,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The README's one-line install, run against the latest release's version-free archive, puts the core and its `.info` into RetroArch on an Apple Silicon Mac, and a CI test runs that exact line against the built archive on macOS arm64.
   5. `scripts/apply-repo-settings.sh` applies the settings and the committed ruleset, pull-request titles are checked as Conventional Commits, `ctest -R policy.dependabot` and `ctest -L perf` pass, the instructions-per-frame gate compares each pull request with its merge base, and the nightly `muhtari-run --bench` records its trend data.
 
-**Plans**: 21 plans (01–13 local; 14–21 need GitHub runs)
+**Plans**: 1/21 plans executed (01–13 local; 14–21 need GitHub runs)
 
 Plans:
 **Wave 1**
-- [ ] 01-01-PLAN.md — Tracer: header, core and runner print the pinned hash; presets and the version source
+- [x] 01-01-PLAN.md — Tracer: header, core and runner print the pinned hash; presets and the version source
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 01-02-PLAN.md — Exact-inventory test harness; the core's full 0.1.0 contract under test
@@ -169,7 +169,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. A test frame in RetroArch | 0/14 | Not started | - |
+| 1. A test frame in RetroArch | 1/21 | In Progress | - |
 | 2. The CPU matches the public vectors | 0/TBD | Not started | - |
 | 3. Games play in RetroArch | 0/TBD | Not started | - |
 | 4. Sound | 0/TBD | Not started | - |
