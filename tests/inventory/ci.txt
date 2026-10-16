@@ -28,6 +28,9 @@ policy.no_skip	policy
 policy.no_skip.self_test	policy
 release.archive_contents	release
 release.archive_contents.self_test	release
+release.single_version_source	policy
+release.single_version_source.next	policy
+release.single_version_source.self_test	policy
 runner.bench.format	bench,portable,runner
 runner.bench.percentile	bench,portable,runner
 runner.dump_png	portable,runner
