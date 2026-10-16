@@ -2,44 +2,44 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
-current_phase: 01
-current_phase_name: A test frame in RetroArch
-status: verifying
-stopped_at: "Phase 1 code review fix round 1 of 2: CR-01 and WR-01 to WR-08 fixed (01-REVIEW-FIX.md), IN-01 to IN-06 open; verification human_needed, no gaps (01-UAT.md, 3 items)"
-last_updated: "2026-10-16T21:00:50.835Z"
+current_phase: 2
+current_phase_name: The CPU matches the public vectors
+status: planning
+stopped_at: "Phase 01 verified and complete (UAT closed with no owner check); next /gsd-ship 1, then plan Phase 2"
+last_updated: "2026-10-16T22:04:45.504Z"
 last_activity: 2026-10-16
-last_activity_desc: Phase 01 execution started
-state_head: fe488b62e708e60c784e812b80dac334300be9b3
+last_activity_desc: Phase 01 complete, transitioned to Phase 2
+state_head: e3e7634dd424e2a401a1b17c021fc53462763323
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 21
   completed_plans: 21
-  percent: 0
+  percent: 25
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-15)
+See: .planning/PROJECT.md (updated 2026-10-16)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 01 — A test frame in RetroArch
+**Current focus:** Ship phase 01, then Phase 2 — The CPU matches the public vectors
 
 ## Current Position
 
-Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 21 of 21
-Status: Phase complete — ready for verification
-Last activity: 2026-10-16 — Phase 01 execution started
+Phase: 2 — The CPU matches the public vectors
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-16 — Phase 01 complete, transitioned to Phase 2
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
+- Total plans completed: 21
 - Average duration: -
 - Total execution time: 0.0 hours
 
@@ -47,7 +47,7 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01 | 21 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: -
@@ -142,6 +142,9 @@ Recent decisions affecting current work:
 - [Phase 01]: workflow.test_gate_timeout is 3: twice the measured 1.36 s cmake --workflow --preset ci time; re-measure it when the suite grows (phase 2 adds the CPU tests)
 - [Phase 01]: Timeouts: twice the slowest of 10+ successful runs (5-minute floor for network-bound and roll-up jobs); be32 scale 11, wasm32 scale 3 from measured slowdowns
 - [Phase 01]: The phase PR's squash title is feat: a test frame in RetroArch from the library, runner and libretro core, so release-please cuts 0.1.0
+- [Phase 01]: The owner verifies nothing by default (AGENTS rule 6, DEC.09, 2026-10-16): the UAT closed with docs.api_names, the hosted RetroArch job and the agent's one-off checks; truths only a pull request or a merge can show are confirmed at ship
+- [Phase 01]: The re-review after fix round 1 found the Dependabot actor gate and the rehearsal cleanup lookup incomplete; WR-01 to WR-03 wait for a ci: pull request after the merge, and one code-review fix round is left in this phase
+- [Phase 01]: workflow.code_review_depth_overrides is set to [] explicitly: unset, config-get returns the string "[]" and the code-review depth resolver halts
 
 ### Pending Todos
 
@@ -149,10 +152,15 @@ Recent decisions affecting current work:
 - [2026-10-16] [ci] Arm the instructions-per-frame gate — [todo file](.planning/todos/pending/2026-10-16-arm-the-instructions-per-frame-gate.md)
 - [2026-10-16] [release] Add the release firmware scan with the first ROM code — [todo file](.planning/todos/pending/2026-10-16-add-the-release-firmware-scan-with-the-first-rom-code.md)
 - [2026-10-16] [ci] Limit release rehearsals to pushes that change release inputs — [todo file](.planning/todos/pending/2026-10-16-limit-release-rehearsals-to-pushes-that-change-release-inputs.md)
+- [2026-10-16] [ci] Close the re-review's findings on the Dependabot gate and the publish checks — [todo file](.planning/todos/pending/2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md)
 
 ### Ship step (phase 01)
 
-- Next: `/gsd-execute-phase 1` finishes with phase verification; then `/gsd-ship 1`.
+- Next: `/gsd-ship 1`. Verification passed on 2026-10-16 with two run confirmations for this step (01-UAT.md
+  tests 3 and 4). Before the merge: the pull request's own Release run (ci, rehearsal, install-line, cleanup) is
+  green on its head commit, because no Release run has exercised publish.sh since the review fixes and the
+  rehearsal is not a required check. After the merge: the push Release run on main is green (release pull request
+  auto-merged, v0.1.0 with 19 verified assets, install-line-latest); record both run URLs.
 - The phase pull request's squash title must be a release-cutting Conventional Commit, `feat: …` for this
   capability (GSD-HANDOFF §3 step 6): release-please opens a release PR only for releasable types, so a `ci:` or
   `docs:` title would publish nothing (research F-12). Chosen title, accepted by `scripts/check-title.sh` (exit 0):
@@ -174,6 +182,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T21:00:50.720Z
-Stopped at: Phase 1 code review fix round 1 of 2: CR-01 and WR-01 to WR-08 fixed (01-REVIEW-FIX.md), IN-01 to IN-06 open; verification human_needed, no gaps (01-UAT.md, 3 items)
-Resume file: .planning/phases/01-a-test-frame-in-retroarch/01-UAT.md
+Last session: 2026-10-16T22:12:00.000Z
+Stopped at: Phase 01 verified and complete (UAT closed with no owner check); next /gsd-ship 1, then plan Phase 2
+Resume file: None

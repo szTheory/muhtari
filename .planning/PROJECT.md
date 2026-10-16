@@ -17,16 +17,16 @@ that any host can embed.
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ `cmake --workflow --preset ci` (`ci-msvc` on Windows) builds and tests everything on Linux, macOS and
+  Windows, x64 and arm64, and CI runs the same commands behind one required check — Phase 1
 
 ### Active
 
 - [ ] One command installs the latest release into RetroArch on an Apple Silicon Mac, and a hosted test shows
-      RetroArch displays the runner's frame.
-- [ ] `cmake --workflow --preset ci` (`ci-msvc` on Windows) builds and tests everything on Linux, macOS and
-      Windows, x64 and arm64, and CI runs the same commands behind one required check.
+      RetroArch displays the runner's frame. Phase 1 built both and the hosted test passes; the install from
+      `releases/latest` is confirmed when the first release publishes.
 - [ ] Every behaviour-changing merge to `main` publishes a release (library, runner, libretro core) with no
-      manual step.
+      manual step. Phase 1 rehearsed every publish step; the first real release confirms it.
 - [ ] The 6502C "SALLY" CPU matches the public 6502 vectors on every opcode and every bus cycle, with the 7800's
       slow cycles, HALT and RDY.
 - [ ] Linear and SuperGame cartridges render with exact MARIA DMA timing, take joystick and console-switch input,
@@ -99,17 +99,18 @@ that any host can embed.
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Time in MARIA clock ticks; the CPU drives the bus; MARIA DMA runs as one exact burst per line | Every documented edge is an integer; cheaper than per-tick stepping on low-power targets | — Pending |
-| Integer-only core, no globals, bounded run calls | Bit-identical hashes everywhere; hostile ROMs cannot hang a host | — Pending |
-| Native MARIA byte per pixel; palettes and composite filter outside the hash | Hash stability; hosts choose presentation | — Pending |
+| Integer-only core, no globals, bounded run calls | Bit-identical hashes everywhere; hostile ROMs cannot hang a host | ✓ Phase 1: tests enforce no floating point, no globals and the no-FP lanes |
+| Native MARIA byte per pixel; palettes and composite filter outside the hash | Hash stability; hosts choose presentation | ✓ Phase 1: frames are colour numbers; the runner and the libretro core apply the palette |
 | Audio hashed as a transition stream; PCM secondary | Determinism independent of the mixer and output rate | — Pending |
 | Reuse the owner's nesturbator code; MARIA, TIA, RIOT, POKEY and boards written from documentation and cross-checked | Fastest correct path; existing permissive chip models are lumped or diverge from documentation | — Pending |
 | Fast boot by default; CC0 OpenBIOS for the BIOS path in CI; no Atari bytes | Redistributable and legal | — Pending |
 | Tests on licence-checked inputs: public 6502 vectors, 7800basic samples built in CI, own diagnostic ROMs | Reproducible without a network or private ROMs | — Pending |
 | One compatibility ledger in which a pass stays a pass | A regression is a one-line diff | — Pending |
-| One entrypoint: CMake workflow presets; one required CI check | No script to keep in step with CI | — Pending |
-| release-please with a GitHub App token; version-free asset names; unsigned macOS artifacts installed by script | Automatic releases with no owner step | — Pending |
-| With no cartridge loaded the core outputs a built-in test card | A build or a release can be checked without any ROM | — Pending |
+| One entrypoint: CMake workflow presets; one required CI check | No script to keep in step with CI | ✓ Phase 1: CI runs the presets on six platforms behind `CI required` |
+| release-please with a GitHub App token; version-free asset names; unsigned macOS artifacts installed by script | Automatic releases with no owner step | — Rehearsed in phase 1; the first real release confirms it |
+| With no cartridge loaded the core outputs a built-in test card | A build or a release can be checked without any ROM | ✓ Phase 1: the card's hash is pinned and RetroArch shows it pixel for pixel |
 | Linear and SuperGame boards first, then POKEY | 187 of 204 known titles; 195 with POKEY | — Pending |
+| The owner verifies nothing by default: tests, CI and the agent close every check, post-merge truths are confirmed at ship (DEC.09, 2026-10-16) | The owner's time goes to consent, not to reading docs or watching runs | ✓ Phase 1: UAT closed with no owner check |
 
 The full list with sources is `.planning/preparation/DECISIONS.md`.
 
@@ -131,4 +132,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-15 after the kickoff (efficiency constraint)*
+*Last updated: 2026-10-16 after Phase 1*
