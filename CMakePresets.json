@@ -39,6 +39,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_OSX_SYSROOT": "macosx",
         "MUHTARI_HYGIENE": "ON"
       }
     }
