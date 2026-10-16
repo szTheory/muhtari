@@ -152,7 +152,8 @@ group back. Their commits use the `ci` prefix, which cuts no release. A 7-day co
 once it is a week old, so a compromised release pulled within days never reaches the unattended merge; security
 updates are not delayed.
 
-`.github/workflows/dependabot-automerge.yml` runs on Dependabot's pull requests only. Its `decide` step reads the
+`.github/workflows/dependabot-automerge.yml` runs on Dependabot's pull requests only, and only when Dependabot also
+triggered the run, so a person's push to a Dependabot branch never merges unattended. Its `decide` step reads the
 update type: a patch or minor update turns on squash auto-merge with an App token, which merges once `CI required`
 passes; a major update waits for a person to read its release notes and merge it. `policy.dependabot` runs that
 decision on synthetic events.

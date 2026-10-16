@@ -1,5 +1,7 @@
 # Merges Dependabot's patch and minor updates once the ruleset's required
-# check passes; majors wait for a person. The merge uses the release App's
+# check passes; majors wait for a person. Both the pull request's author and
+# the run's actor must be Dependabot: a person who pushes to a Dependabot
+# branch triggers a run that keeps Dependabot as the author. The merge uses the release App's
 # token: a merge made with GITHUB_TOKEN starts no push run on main, and the
 # workflows permission lets it change files under .github/workflows/.
 name: Dependabot auto-merge
@@ -12,7 +14,7 @@ permissions:
 
 jobs:
   dependabot-automerge:
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # provisional, 0 samples
     steps:
@@ -22,9 +24,10 @@ jobs:
       - id: decide
         env:
           LOGIN: ${{ github.event.pull_request.user.login }}
+          ACTOR: ${{ github.actor }}
           TYPE: ${{ steps.meta.outputs.update-type }}
         run: |
-          decision=$(jq -n -e -r --arg login "$LOGIN" --arg type "$TYPE" 'if $login != "dependabot[bot]" then "skip" elif $type == "version-update:semver-patch" or $type == "version-update:semver-minor" then "merge" else "wait" end')
+          decision=$(jq -n -e -r --arg login "$LOGIN" --arg actor "$ACTOR" --arg type "$TYPE" 'if $login != "dependabot[bot]" or $actor != "dependabot[bot]" then "skip" elif $type == "version-update:semver-patch" or $type == "version-update:semver-minor" then "merge" else "wait" end')
           echo "decision=$decision" >> "$GITHUB_OUTPUT"
       # The client ID is not a secret and is written here because Actions
       # variables may not reach Dependabot-triggered runs; the key is stored
