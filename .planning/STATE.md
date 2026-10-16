@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 01
 current_phase_name: A test frame in RetroArch
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-10-16T15:07:44.005Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-10-16T15:16:18.583Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 01 execution started
-state_head: da55c7419e4080dba770d7389f50069a2adde2e6
+state_head: 1ea117591c84b8cd5d2f137b903ff9a3a90bda56
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 21
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 ## Current Position
 
 Phase: 01 (A test frame in RetroArch) — EXECUTING
-Plan: 6 of 21
+Plan: 7 of 21
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 01 execution started
 
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 3 min | 2 tasks | 6 files |
 | Phase 01 P04 | 4 min | 2 tasks | 10 files |
 | Phase 01 P05 | 4 min | 2 tasks | 9 files |
+| Phase 01 P06 | 6 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase 01]: muhtari_host is PIC with hidden visibility so the libretro module can link it
 - [Phase 01]: The PNG writer takes RGB rows; the runner converts native bytes through muhtari__palette_rgb one row at a time
 - [Phase 01]: runner.dump_png pins the card PNG at 232,645 bytes, SHA-256 1c0b16cb9c92d70869d3aee5cd581627f8902cb528e90f1f1d4252d9288ac956
+- [Phase 01]: muhtari-run --bench is an alternative to --frames (give one, once); only muhtari_run_frame is timed, and the report is nine key value lines
+- [Phase 01]: The exit table lives in runner/exit_status.h as a const struct array (0 done, 1 failure, 2 usage); runner.exit.table requires every --help table line verbatim in docs/runner.md
+- [Phase 01]: Runner command-line checks dispatch on -DCASE in tests/runner/tests.cmake; exit-status cases include tests/cmake/expect_fail.cmake from a function
 
 ### Pending Todos
 
@@ -104,6 +108,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T15:07:43.987Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-10-16T15:16:18.568Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None
