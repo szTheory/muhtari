@@ -18,6 +18,18 @@ uint32_t muhtari__bench_rank(uint32_t n, uint32_t ppm)
     return (uint32_t)rank;
 }
 
+/* Where size_t has more than 32 bits, every count fits; the check would be
+   a constant comparison there, which the warnings reject. */
+size_t muhtari__bench_bytes(uint32_t n)
+{
+#if SIZE_MAX / 4u < 0xffffffffu
+    if (n > SIZE_MAX / sizeof(uint32_t)) {
+        return 0u;
+    }
+#endif
+    return (size_t)n * sizeof(uint32_t);
+}
+
 uint32_t muhtari__bench_us(uint64_t ns)
 {
     uint64_t us = ns / 1000u;

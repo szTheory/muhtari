@@ -263,9 +263,10 @@ static int run(const options *opt)
     int16_t *audio = (int16_t *)malloc(AUDIO_CAPACITY * sizeof *audio);
     uint8_t *row = (uint8_t *)malloc(3u * WIDTH);
     /* One microsecond sample per frame for --bench, on the heap: 300,000
-       frames take 1.2 MB. */
-    uint32_t *samples =
-        opt->bench ? (uint32_t *)malloc((size_t)opt->frames * sizeof *samples) : NULL;
+       frames take 1.2 MB. A count whose buffer size does not fit in size_t
+       is out of memory, not a wrapped, too-small allocation. */
+    size_t sample_bytes = opt->bench ? muhtari__bench_bytes(opt->frames) : 0u;
+    uint32_t *samples = sample_bytes != 0u ? (uint32_t *)malloc(sample_bytes) : NULL;
     if (video == NULL || audio == NULL || row == NULL || (opt->bench && samples == NULL)) {
         fprintf(stderr, "muhtari-run: out of memory\n");
         free(video);

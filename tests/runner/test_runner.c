@@ -1,5 +1,5 @@
 /* The runner's bench statistics and stop flag, one case per argv[1]:
-   percentile, format or stop. */
+   percentile, bytes, format or stop. */
 #include <signal.h>
 #include <stdint.h>
 #include <string.h>
@@ -25,6 +25,22 @@ static void percentile(void)
     CHECK_EQ_U64(muhtari__bench_rank(0xffffffffu, 999990u), 4294924346u);
     CHECK_EQ_U64(muhtari__bench_us(1999u), 1u);
     CHECK_EQ_U64(muhtari__bench_us(0xffffffffffffffffu), 0xffffffffu);
+}
+
+/* The sample buffer's size is exact, or 0 where it does not fit in size_t,
+   never a wrapped product: on 32 bits, 2^30 frames would wrap to 0 bytes. */
+static void bytes(void)
+{
+    CHECK_EQ_U64(muhtari__bench_bytes(1u), 4u);
+    CHECK_EQ_U64(muhtari__bench_bytes(300000u), 1200000u);
+    CHECK_EQ_U64(muhtari__bench_bytes(0x3fffffffu), 0xfffffffcu);
+#if SIZE_MAX > 0xffffffffu
+    CHECK_EQ_U64(muhtari__bench_bytes(0x40000000u), 0x100000000u);
+    CHECK_EQ_U64(muhtari__bench_bytes(0xffffffffu), 0x3fffffffcu);
+#else
+    CHECK_EQ_U64(muhtari__bench_bytes(0x40000000u), 0u);
+    CHECK_EQ_U64(muhtari__bench_bytes(0xffffffffu), 0u);
+#endif
 }
 
 /* The report is nine "key value" lines in a fixed order, from sorted
@@ -65,11 +81,13 @@ static void stop(void)
 int main(int argc, char **argv)
 {
     if (argc != 2) {
-        fprintf(stderr, "usage: muhtari-test-runner percentile|format|stop\n");
+        fprintf(stderr, "usage: muhtari-test-runner percentile|bytes|format|stop\n");
         return 2;
     }
     if (strcmp(argv[1], "percentile") == 0) {
         percentile();
+    } else if (strcmp(argv[1], "bytes") == 0) {
+        bytes();
     } else if (strcmp(argv[1], "format") == 0) {
         format();
     } else if (strcmp(argv[1], "stop") == 0) {

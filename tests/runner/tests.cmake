@@ -155,6 +155,10 @@ set_target_properties(muhtari-test-runner PROPERTIES
 muhtari_warnings(muhtari-test-runner)
 muhtari_add_test(NAME runner.bench.percentile COMMAND muhtari-test-runner percentile
   LABELS runner bench portable TIMEOUT 10)
+# Fault prevented: on a 32-bit size_t, a large --bench count wraps the
+# sample buffer's size, and the bench writes past a too-small allocation.
+muhtari_add_test(NAME runner.bench.bytes COMMAND muhtari-test-runner bytes
+  LABELS runner bench portable TIMEOUT 10)
 muhtari_add_test(NAME runner.bench.format COMMAND muhtari-test-runner format
   LABELS runner bench portable TIMEOUT 10)
 muhtari_add_test(NAME runner.stop COMMAND muhtari-test-runner stop

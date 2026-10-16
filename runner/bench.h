@@ -13,6 +13,10 @@
    clamped to 1..n. */
 uint32_t muhtari__bench_rank(uint32_t n, uint32_t ppm);
 
+/* The bytes of one uint32_t sample per frame for n frames, or 0 when that
+   does not fit in size_t, as for n >= 2^30 where size_t has 32 bits. */
+size_t muhtari__bench_bytes(uint32_t n);
+
 /* Microseconds from nanoseconds, truncated and saturated at UINT32_MAX. */
 uint32_t muhtari__bench_us(uint64_t ns);
 

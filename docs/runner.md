@@ -19,7 +19,7 @@ muhtari-run --help | --version
 | Option | Meaning |
 |---|---|
 | `--frames N` | Run N frames, N from 1 to 4294967295. Give `--frames` or `--bench`, once. |
-| `--bench N` | Run N frames, time each one, and print the report described under [Output](#output). |
+| `--bench N` | Run N frames, time each one, and print the report described under [Output](#output). It keeps 4 bytes per frame, so where `size_t` has 32 bits an N of 1073741824 or more exits 1 as out of memory. |
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
 | `--help` | Print the usage text and the exit statuses. It takes no other arguments. |
