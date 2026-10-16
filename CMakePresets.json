@@ -42,13 +42,32 @@
         "CMAKE_OSX_SYSROOT": "macosx",
         "MUHTARI_HYGIENE": "ON"
       }
+    },
+    {
+      "name": "asan",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "CMAKE_C_COMPILER": "clang-21",
+        "CMAKE_CXX_COMPILER": "clang++-21",
+        "CMAKE_C_FLAGS": "-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer",
+        "CMAKE_CXX_FLAGS": "-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined",
+        "CMAKE_MODULE_LINKER_FLAGS": "-fsanitize=address,undefined",
+        "MUHTARI_SHORT_RUNS": "ON",
+        "MUHTARI_TIMEOUT_SCALE": "3",
+        "MUHTARI_INVENTORY": "ci"
+      }
     }
   ],
   "buildPresets": [
     { "name": "dev", "configurePreset": "dev" },
     { "name": "ci", "configurePreset": "ci" },
     { "name": "ci-msvc", "configurePreset": "ci-msvc" },
-    { "name": "hygiene", "configurePreset": "hygiene" }
+    { "name": "hygiene", "configurePreset": "hygiene" },
+    { "name": "asan", "configurePreset": "asan" }
   ],
   "testPresets": [
     {
@@ -110,6 +129,16 @@
       },
       "filter": { "include": { "label": "^hygiene$" } },
       "execution": { "noTestsAction": "error", "jobs": "" }
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "filter": { "exclude": { "label": "^(abi|release)$" } },
+      "execution": { "noTestsAction": "error", "jobs": "" }
     }
   ],
   "packagePresets": [
@@ -151,6 +180,14 @@
         { "type": "configure", "name": "hygiene" },
         { "type": "build", "name": "hygiene" },
         { "type": "test", "name": "hygiene" }
+      ]
+    },
+    {
+      "name": "asan",
+      "steps": [
+        { "type": "configure", "name": "asan" },
+        { "type": "build", "name": "asan" },
+        { "type": "test", "name": "asan" }
       ]
     }
   ]

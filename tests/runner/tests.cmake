@@ -2,6 +2,7 @@
 #
 # This file is also the command-line checks themselves, run as
 #   cmake -DRUN=<muhtari-run> -DCASE=<name> [-DOUT=<file>] [-DVERSION_FILE=<file>]
+#     [-DFRAMES=<long run>]
 #     -P tests/runner/tests.cmake
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   set(card "9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4")
@@ -35,8 +36,8 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     # Fault prevented: repeated or unordered --hash-frame options print
     # duplicate or out-of-order lines, so a host comparing line by line
     # sees a mismatch.
-    expect_output("frame 1 sha256 ${card}\nframe 600 sha256 ${card}\n"
-      --frames 600 --hash-frame 600 --hash-frame 1 --hash-frame 1)
+    expect_output("frame 1 sha256 ${card}\nframe ${FRAMES} sha256 ${card}\n"
+      --frames ${FRAMES} --hash-frame ${FRAMES} --hash-frame 1 --hash-frame 1)
   elseif(CASE STREQUAL "dump_png")
     # Fault prevented: the PNG the runner dumps, the image compared with
     # RetroArch's screenshot, changes bytes (palette, layout or writer) while
@@ -84,7 +85,7 @@ set(runner_check ${CMAKE_COMMAND} -DRUN=$<TARGET_FILE:muhtari-run>)
 foreach(case IN ITEMS hash hash.repeat usage.no_args usage.unknown usage.positional
     usage.frame_range usage.dump_syntax)
   muhtari_add_test(NAME runner.${case}
-    COMMAND ${runner_check} -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE}
+    COMMAND ${runner_check} -DCASE=${case} -DFRAMES=${MUHTARI_LONG_RUN} -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 10)
 endforeach()
 muhtari_add_test(NAME runner.dump_png

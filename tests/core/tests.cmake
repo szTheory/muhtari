@@ -5,6 +5,7 @@ add_executable(muhtari-test-core
   ${CMAKE_SOURCE_DIR}/runner/sha256.c)
 target_include_directories(muhtari-test-core PRIVATE ${CMAKE_SOURCE_DIR}/runner)
 target_link_libraries(muhtari-test-core PRIVATE muhtari::muhtari)
+target_compile_definitions(muhtari-test-core PRIVATE LONG_RUN=${MUHTARI_LONG_RUN}u)
 set_target_properties(muhtari-test-core PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-core)

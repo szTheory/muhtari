@@ -24,6 +24,7 @@ It needs CMake 4.3 or later, Ninja and a C and C++ compiler. The workflow runs f
 | `dev` | Debug build in `build/dev`; configure, build and test, without packaging or the `release` tests. |
 | `ci` | The workflow above. Every Linux and macOS leg of CI runs it. |
 | `ci-msvc` | The same five steps with MSVC and the static C runtime, in `build/ci-msvc`. |
+| `asan` | Debug build with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, in `build/asan`; any finding stops the test. Long runs drop from 600 frames to 60 (`MUHTARI_SHORT_RUNS`) and timeouts triple. It runs the `ci` inventory except the `abi` and `release` labels, whose checks of binary shape the instrumentation changes. |
 
 `ctest --preset ci -R <regex>` reruns part of the suite after a build; `ctest --test-dir build/ci -L <label>`
 selects by label.
@@ -151,7 +152,8 @@ docker run --rm --platform linux/arm64 -v "$PWD:/src" -v /src/build -w /src ubun
   PATH=/opt/cmake/bin:$PATH cmake --workflow --preset ci'
 ```
 
-Replace `ci` with another workflow to run that lane. On an x86_64 host use `--platform linux/amd64` and the
+Replace `ci` with another workflow to run that lane. The `asan` lane also needs
+`clang-21 lld-21 libclang-rt-21-dev` in the install list; the last holds the sanitizer runtimes. On an x86_64 host use `--platform linux/amd64` and the
 `cmake-linux-x86_64` row. Under Docker's x86_64 emulation on Apple Silicon, GNU tar cannot create nested folders
 ("Function not implemented"); add `libarchive-tools` to the install list and run
 `ln -s /usr/bin/bsdtar /usr/local/bin/tar` before `fetch-pin.sh`.

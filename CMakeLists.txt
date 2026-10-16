@@ -163,6 +163,13 @@ endif()
 # MUHTARI_INVENTORY names the tests/inventory/<name>.txt the registered tests
 # must equal.
 set(MUHTARI_TIMEOUT_SCALE 1 CACHE STRING "Multiplier for every test timeout")
+# MUHTARI_SHORT_RUNS shortens the long runs from 600 frames to 60 on slow
+# lanes such as the sanitizers. Every test still runs.
+option(MUHTARI_SHORT_RUNS "Run long tests for 60 frames instead of 600" OFF)
+set(MUHTARI_LONG_RUN 600)
+if(MUHTARI_SHORT_RUNS)
+  set(MUHTARI_LONG_RUN 60)
+endif()
 set(inventory ci)
 if(MUHTARI_HYGIENE)
   set(inventory hygiene)

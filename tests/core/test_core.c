@@ -148,18 +148,19 @@ static void test_all_colours(void)
     muhtari_destroy(m);
 }
 
-/* With no content the card is static: frame 600 equals frame 1. */
+/* With no content the card is static: frame LONG_RUN (600, or 60 on short
+   runs) equals frame 1. */
 static void test_static(void)
 {
     muhtari *m = make();
     char first[65], last[65];
     run(m, video);
     hash_hex(video, FRAME_BYTES, first);
-    for (uint32_t f = 2; f <= 600u; f++) {
+    for (uint32_t f = 2; f <= LONG_RUN; f++) {
         run(m, video2);
     }
     hash_hex(video2, FRAME_BYTES, last);
-    check_str("frame 600 sha256", last, first);
+    check_str("last frame sha256", last, first);
     muhtari_destroy(m);
 }
 
@@ -519,8 +520,8 @@ static void test_info(void)
     muhtari_destroy(m);
 }
 
-/* After create the core never allocates: one alloc at create, none in 600
-   frames, one free at destroy. */
+/* After create the core never allocates: one alloc at create, none in
+   LONG_RUN frames, one free at destroy. */
 static void test_no_alloc_after_load(void)
 {
     counts c;
@@ -534,7 +535,7 @@ static void test_no_alloc_after_load(void)
     muhtari *m = NULL;
     CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(c.allocs, 1);
-    for (uint32_t f = 0; f < 600u; f++) {
+    for (uint32_t f = 0; f < LONG_RUN; f++) {
         run(m, video);
     }
     CHECK_EQ_U64(c.allocs, 1);
