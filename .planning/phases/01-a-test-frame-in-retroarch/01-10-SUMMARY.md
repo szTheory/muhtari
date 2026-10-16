@@ -139,8 +139,8 @@ coverage:
     requirement: FRAME-06
     verification:
       - kind: integration
-        ref: "plan 01-12: the Linux ci, asan and nofp lanes in ubuntu:26.04 containers run the abi tests and release.floor"
-        status: unknown
+        ref: "plan 01-12: the Linux ci, asan and nofp lanes in ubuntu:26.04 containers run the abi tests and release.floor; docker run --rm --platform linux/arm64 -v \"$PWD:/src\" -v /src/build -w /src ubuntu:26.04 sh -c '<apt install> && scripts/fetch-pin.sh cmake-linux-aarch64 /opt/cmake && PATH=/opt/cmake/bin:$PATH cmake --workflow --preset ci' exit 0 (aarch64, GCC 15.2), and the same with --platform linux/amd64 and cmake-linux-x86_64 exit 0 (x86_64 emulated); cmake --workflow --preset nofp exit 0 on both"
+        status: pass
       - kind: integration
         ref: "plan 01-14: the hosted ci.yml Windows legs run the abi tests and release.floor"
         status: unknown
