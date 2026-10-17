@@ -126,7 +126,48 @@ Plans:
   4. `muhtari-run --probe FILE` prints the A78 fields, board, region, peripherals and all four hashes, identifies a header-stripped image through the hash list, and gives a 2600 image, an unsupported board and a malformed, truncated or oversized file each a distinct status and message; the counting-allocator test and `ctest -R fuzz.regress.loader` pass on every platform and the loader fuzz target runs nightly.
   5. Merging the phase's pull request publishes a release through the Phase 1 pipeline with no manual step.
 
-**Plans**: TBD
+**Plans**: 13 plans (sequential waves; parallelization off)
+
+Plans:
+**Wave 1**
+- [ ] 02-01-PLAN.md — Tracer: CMake skeleton, seeded SALLY, N65V reader and committed sample; 256 `cpu.vectors.XX`; draft probe PR
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 02-02-PLAN.md — NMI by φ2 index, vector tooling tests and the full-set pin, Clark's decimal test, `policy.rom_hash_coverage`
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 02-03-PLAN.md — Bus and TIA: 4/6-tick cycles, open bus, INPTCTRL, HALT gate and window, WSYNC RDY, NMI latch; `ctest -L sally`
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 02-04-PLAN.md — RIOT: lazy timer, flags, PA7, ports, power-on values, RAM; `ctest -L riot`; the one-off Cachegrind check
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 02-05-PLAN.md — SHA-1 from FIPS 180-4; generated CC0 tables with `policy.cartdb_generated`
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 02-06-PLAN.md — API version 2 with `muhtari_probe`; header path, refusal classes, warnings, size tags
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 02-07-PLAN.md — Test hash list by link-time substitution; override, slices, Activision swap, 2600 prefixes
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 02-08-PLAN.md — Internal loader, counting allocator, loader fuzz target, replay and `fuzz` preset
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [ ] 02-09-PLAN.md — `muhtari-run --probe`: key-value lines, eight hashes, MD5, status text, exit 77
+
+**Wave 10** *(blocked on Wave 9 completion)*
+- [ ] 02-10-PLAN.md — 7800basic `simple` built on every leg; sample probe tests; `muhtari-run-testdb`; Windows evidence
+
+**Wave 11** *(blocked on Wave 10 completion)*
+- [ ] 02-11-PLAN.md — `vectors-full` preset and nightly job; nightly `loader-fuzz`
+
+**Wave 12** *(blocked on Wave 11 completion)*
+- [ ] 02-12-PLAN.md — Release firmware scan in `publish.sh prepare` and over tracked files
+
+**Wave 13** *(blocked on Wave 12 completion)*
+- [ ] 02-13-PLAN.md — Docs and reference fixes, measured timeouts, be32 budget, probe PR closed, ship title checked
+
 **UI hint**: no
 **Canonical refs:** `.planning/preparation/A7800-SYSTEM.md`, `.planning/preparation/A7800-CARTRIDGES-AND-PERIPHERALS.md`, `.planning/preparation/ARCHITECTURE.md`, `.planning/preparation/CONFORMANCE.md`
 
@@ -170,6 +211,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
-| 2. The CPU matches the public vectors | 0/TBD | Not started | - |
+| 2. The CPU matches the public vectors | 0/13 | Planned | - |
 | 3. Games play in RetroArch | 0/TBD | Not started | - |
 | 4. Sound | 0/TBD | Not started | - |
