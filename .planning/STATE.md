@@ -4,11 +4,11 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 2
 current_phase_name: The CPU matches the public vectors
-status: "Phase 1 shipped — PR #7"
-stopped_at: "Phase 1 shipped as PR #7; merge after its Release run is green, then /gsd-discuss-phase 2"
-last_updated: "2026-10-16T22:18:31.326Z"
+status: Phase 2 context gathered
+stopped_at: Phase 2 context gathered
+last_updated: "2026-10-17T00:00:24.570Z"
 last_activity: 2026-10-16
-state_head: c120a78aebbbb20fd2c5b7784924b08bedf0e9d2
+state_head: 57b4880f53b5d26234d0060b8902b66ac8ef4aef
 progress:
   total_phases: 4
   completed_phases: 1
@@ -24,13 +24,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-16)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 2 — The CPU matches the public vectors (phase 01 shipped as PR #7)
+**Current focus:** Phase 2 — The CPU matches the public vectors (phase 01 released as v0.1.0)
 
 ## Current Position
 
 Phase: 2 — The CPU matches the public vectors
 Plan: Not started
-Status: Phase 1 shipped — PR #7
+Status: Phase 2 context gathered
 Last activity: 2026-10-16
 
 Progress: [███░░░░░░░] 25%
@@ -158,13 +158,13 @@ Recent decisions affecting current work:
 - Shipped 2026-10-16 as PR #7, titled `feat: a test frame in RetroArch from the library, runner and libretro core`
   so release-please cuts 0.1.0 (`scripts/check-title.sh` exit 0 on the title and body). This note is the head
   commit the pull request opened on, so CI and the Release rehearsal run once and no CI-skip commit is needed.
-- Before the merge (01-UAT.md test 4): the pull request's own Release run (ci, rehearsal, install-line, cleanup)
-  is green on its head commit, because no Release run had exercised publish.sh since the review fixes and the
-  rehearsal is not a required check. The owner then runs `gh pr merge 7 --auto --squash`; agent merges are
-  blocked.
-- After the merge (01-UAT.md test 3): the push Release run on main is green (release pull request auto-merged,
-  v0.1.0 with 19 verified assets, install-line-latest). Each run URL is posted on PR #7 once confirmed; a step
-  that finds one missing confirms it first.
+- Before the merge (01-UAT.md test 4), confirmed: the pull request's own Release run 38975022865 (ci,
+  rehearsal, install-line, cleanup) was green on its head commit; evidence on PR #7, comment 6225897054. The owner
+  merged it on 2026-10-16 as f36c884.
+- After the merge (01-UAT.md test 3), confirmed 2026-10-16: release pull request #8 merged itself as 952fce9,
+  and its Release run 38983378877 published v0.1.0 as latest with 19 assets and passed install-line-latest.
+  `shasum -a 256 -c SHA256SUMS` and `gh attestation verify` (signer workflow, `refs/heads/main`) passed on all 18
+  zips; evidence on PR #7, comment 6226988821.
 - The `main` ruleset requiring `CI required` is live and `scripts/apply-repo-settings.sh --check` reports no
   drift.
 
@@ -182,6 +182,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T22:18:31.291Z
-Stopped at: Phase 1 shipped as PR #7; merge after its Release run is green, then /gsd-discuss-phase 2
-Resume file: None
+Last session: 2026-10-17T00:00:05.419Z
+Stopped at: Phase 2 context gathered
+Resume file: .planning/phases/02-the-cpu-matches-the-public-vectors/02-CONTEXT.md
