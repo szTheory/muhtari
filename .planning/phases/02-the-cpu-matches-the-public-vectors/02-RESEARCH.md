@@ -592,7 +592,7 @@ sources.
 | A7 | The seed's non-decimal opcodes pass 6502/v1 unchanged | Seeds | Found by plan 1's first `ctest -L vectors` run |
 | A8 | The 7800 BIOS/HSC/Supercharger rows in `firmware.txt` are SHA-1 only (ASSET_POLICY §4 publishes no SHA-256) | D-28 | None; the scan compares SHA-1 for firmware and SHA-256 for built samples |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **OpenBIOS digests in `tests/release/firmware.txt` (D-28).** Their digests exist only after an OpenBIOS build, which
    ASSET_POLICY §3 schedules with `boot.c` (phase 3). Downloading the 7800OpenBIOS repository would also fetch the
@@ -601,10 +601,14 @@ sources.
      the two OpenBIOS rows arrive with the phase 3 build. If the planner wants them now, the only clean route is a
      sparse checkout that excludes `kiloparsec.bl1`, with 8,192 fill bytes substituted, recorded as a command and exit
      status.
+   - Decided: the two OpenBIOS rows arrive with the phase 3 build; phase 2 ships the section 4 BIOS/HSC rows, the
+     Supercharger SHA-1 and a comment line saying so.
 2. **Nightly path filtering.** Recommendation as in the code map: one path union in `nightly.yml`. Revisit if the
    bench's PR runs become a nuisance.
+   - Decided: one path union in `nightly.yml`.
 3. **`fuzz` preset vs ad-hoc commands in the job.** Recommendation: the preset with `fuzz.txt`, matching the
    hygiene/nofp pattern.
+   - Decided: a `fuzz` preset with `fuzz.txt`.
 
 ## Risks beyond this phase
 
