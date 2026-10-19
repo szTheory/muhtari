@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Phase 2 planned (16 plans)
-last_updated: "2026-10-18T23:50:24.309Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-10-19T00:09:35.393Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: d42c31efbafb09739702000e4ec091fc44fcf5df
+state_head: 91fed85dbebff7a18b928981778f819639035f81
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 21
+  completed_plans: 22
   percent: 25
 ---
 
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 1 of 16
-Status: Executing Phase 02
+Plan: 2 of 16
+Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
 Progress: [███░░░░░░░] 25%
@@ -79,6 +79,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 01 P19 | 21 min | 3 tasks | 12 files |
 | Phase 01 P20 | 17 min | 3 tasks | 8 files |
 | Phase 01 P21 | 33 min | 3 tasks | 8 files |
+| Phase 02 P01 | 15 min | 3 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -145,6 +146,10 @@ Recent decisions affecting current work:
 - [Phase 01]: The owner verifies nothing by default (AGENTS rule 6, DEC.09, 2026-10-16): the UAT closed with docs.api_names, the hosted RetroArch job and the agent's one-off checks; truths only a pull request or a merge can show are confirmed at ship
 - [Phase 01]: The re-review after fix round 1 found the Dependabot actor gate and the rehearsal cleanup lookup incomplete; WR-01 to WR-03 wait for a ci: pull request after the merge, and one code-review fix round is left in this phase
 - [Phase 01]: workflow.code_review_depth_overrides is set to [] explicitly: unset, config-get returns the string "[]" and the code-review depth resolver halts
+- [Phase 02]: embed.subdirectory accepts muhtari_* OBJECT libraries beside muhtari and still rejects any other target an embedding adds
+- [Phase 02]: The vector harness reads .json as one full 10,000-test upstream file and any other path as the 256-chunk N65V sample; a zero-test run exits 1
+- [Phase 02]: Hosted run 39179237062: the OBJECT split links on MSVC, wasm-ld and nofp with no fallback; be32 took 43 s
+- [Phase 02]: Before decimal mode, 223 of 256 opcodes pass all upstream vectors; the 33 failures are exactly the ADC, SBC, RRA, ISC and ARR forms
 
 ### Pending Todos
 
@@ -183,6 +188,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-18T23:42:43.316Z
-Stopped at: Phase 2 planned (16 plans)
-Resume file: .planning/phases/02-the-cpu-matches-the-public-vectors/02-01-PLAN.md
+Last session: 2026-10-19T00:09:35.325Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None
