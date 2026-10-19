@@ -75,12 +75,17 @@ jobs:
   # The image has clang-format-21, clang-tidy-21 and jq; configure finds them.
   hygiene:
     runs-on: ubuntu-26.04
-    timeout-minutes: 1  # 2 x 27 s, slowest of 32 runs, run 38943539777
+    timeout-minutes: 5  # provisional: network-bound floor now the job fetches the MAME lists
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
+      # policy.cartdb_generated regenerates src/cartdb.c from these.
+      - name: Fetch the MAME software lists
+        run: |
+          scripts/fetch-pin.sh mame-a7800-xml build/pins/mame
+          scripts/fetch-pin.sh mame-a2600-xml build/pins/mame
       - run: cmake --workflow --preset hygiene
       - name: Every test ran
         run: cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake

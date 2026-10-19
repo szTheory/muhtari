@@ -15,7 +15,9 @@ muhtari_add_test(NAME hygiene.format
   LABELS hygiene TIMEOUT 60)
 
 # No floating point in the core's text. The self test scans a fixture with
-# six float lines beside two lines that only look like them.
+# seven float lines beside three lines that only look like them; the SPDX
+# pair shows a licence expression is passed over and the code after it is
+# not.
 set(hygiene_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 muhtari_add_test(NAME hygiene.no_float
   COMMAND ${CMAKE_COMMAND} "-DROOTS=${CMAKE_SOURCE_DIR}/src$<SEMICOLON>${CMAKE_SOURCE_DIR}/include"
@@ -23,12 +25,13 @@ muhtari_add_test(NAME hygiene.no_float
   LABELS hygiene TIMEOUT 30)
 set(hygiene_fixture ${CMAKE_BINARY_DIR}/hygiene/no_float_fixture)
 file(WRITE ${hygiene_fixture}/sample.c "int y = 0x1E5;\nint double_free = 2;\nx = 1.5;\n"
-  "z = 0x1p3;\nw = 1e3;\ndouble d;\n#include <math.h>\n#include <float.h>\n")
+  "z = 0x1p3;\nw = 1e3;\ndouble d;\n#include <math.h>\n#include <float.h>\n"
+  "/* SPDX-License-Identifier: MIT AND CC0-1.0 */\n/* SPDX-License-Identifier: MIT */ double e;\n")
 set(hygiene_cmd ${CMAKE_COMMAND} -DROOTS=${hygiene_fixture} -P ${hygiene_scripts}/no_float.cmake)
 string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
 muhtari_add_test(NAME hygiene.no_float.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
-    "-DREGEX=sample.c:3: x = 1.5.*sample.c:8: #include <float.h>.*no_float: 6 lines"
+    "-DREGEX=sample.c:3: x = 1.5.*sample.c:8: #include <float.h>.*sample.c:10: .*no_float: 7 lines"
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene TIMEOUT 30)
 
@@ -268,5 +271,46 @@ string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
 muhtari_add_test(NAME policy.publish_ref
   COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
     "-DREGEX=publish: fixture-release verifies only from refs/heads/main, not refs/pull/1/merge"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)
+
+# Fault prevented: a cartridge table edited by hand, or left behind by a
+# change to its generator. The generator runs over the pinned MAME lists
+# (fetched before configure, see CMakeLists.txt) into the build directory, and
+# its output must equal src/cartdb.c byte for byte. The self test compares
+# against a copy of src/cartdb.c with one byte changed, which must fail.
+set(hygiene_cartdb [=[
+"$1" "-DA7800=$3" "-DA2600=$4" "-DOUT=$5" -P "$2" || exit 1
+if ! "$1" -E compare_files "$6" "$5"
+then
+  echo "policy.cartdb_generated: src/cartdb.c differs from the generator output. Regenerate it with"
+  echo "  cmake -DA7800=$3 -DA2600=$4 -DOUT=src/cartdb.c -P tools/cartdb.cmake"
+  exit 1
+fi
+echo "policy.cartdb_generated: src/cartdb.c equals the generator output"
+]=])
+set(hygiene_cartdb_args ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}/tools/cartdb.cmake
+  ${MUHTARI_MAME_PINS}/a7800.xml ${MUHTARI_MAME_PINS}/a2600.xml)
+muhtari_add_test(NAME policy.cartdb_generated
+  COMMAND ${MUHTARI_SH} -c "${hygiene_cartdb}" sh ${hygiene_cartdb_args}
+    ${CMAKE_BINARY_DIR}/hygiene/cartdb/cartdb.c ${CMAKE_SOURCE_DIR}/src/cartdb.c
+  LABELS hygiene policy TIMEOUT 30)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/cartdb.c)
+file(READ ${CMAKE_SOURCE_DIR}/src/cartdb.c hygiene_rows)
+string(FIND "${hygiene_rows}" "{{0x" hygiene_at)
+if(hygiene_at EQUAL -1)
+  message(FATAL_ERROR "policy.cartdb_generated.self_test: no key row in src/cartdb.c")
+endif()
+string(SUBSTRING "${hygiene_rows}" 0 ${hygiene_at} hygiene_head)
+math(EXPR hygiene_at "${hygiene_at} + 4")
+string(SUBSTRING "${hygiene_rows}" ${hygiene_at} -1 hygiene_tail)
+file(WRITE ${CMAKE_BINARY_DIR}/hygiene/cartdb_fixture/cartdb.c "${hygiene_head}{{1x${hygiene_tail}")
+set(hygiene_cmd ${MUHTARI_SH} -c "${hygiene_cartdb}" sh ${hygiene_cartdb_args}
+  ${CMAKE_BINARY_DIR}/hygiene/cartdb_fixture/generated.c
+  ${CMAKE_BINARY_DIR}/hygiene/cartdb_fixture/cartdb.c)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.cartdb_generated.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=src/cartdb\\.c differs from the generator output"
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene policy TIMEOUT 30)

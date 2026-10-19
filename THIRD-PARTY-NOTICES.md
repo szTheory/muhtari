@@ -69,6 +69,25 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
+## MAME software lists
+
+- **Applies to:** `src/cartdb.c`
+- **Upstream:** https://github.com/mamedev/mame, files `hash/a7800.xml` and `hash/a2600.xml` at commit
+  `dddf4cd1faeeca6a6dac26ecbc2da2da4242b740`. Each file's own header licenses it CC0-1.0.
+- **Upstream file SHA-256:** `5343714eedd715f7f1f080f1e283d5ed56e6f6509ea3eff2f8f7c8c53ee066b9` (`a7800.xml`),
+  `efe03008c6c2a4aa197eac1242d838913b3ec4eb434d04f2b59bb769a726197c` (`a2600.xml`)
+- **Changes:** `tools/cartdb.cmake` keeps only SHA-1s and numbers: for `a7800.xml`, each chip's SHA-1
+  with its entry's board, RAM, sound, TV system and light-gun fields; for `a2600.xml`, the first 8
+  bytes of each distinct SHA-1. No name, title or ROM byte is kept.
+- **Licence:** CC0-1.0
+
+CC0 asks for nothing; these lines are a courtesy.
+
+```
+Cartridge data from MAME hash/a7800.xml (CC0-1.0), MAME software-list contributors, dddf4cd1faeeca6a6dac26ecbc2da2da4242b740
+Cartridge data from MAME hash/a2600.xml (CC0-1.0), MAME software-list contributors, dddf4cd1faeeca6a6dac26ecbc2da2da4242b740
+```
+
 ## singlesteptests
 
 - **Applies to:** `tests/vectors/6502-sample.n65v`, `tests/vectors/fixtures/a9.json`, `tests/vectors/fixtures/02.json`, `tests/vectors/fixtures/a9-bad-a.json`

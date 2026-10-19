@@ -8,6 +8,8 @@ hygiene.no_float.self_test	hygiene
 hygiene.timeout_comments	hygiene
 hygiene.timeout_comments.self_test	hygiene
 hygiene.tree	hygiene
+policy.cartdb_generated	hygiene,policy
+policy.cartdb_generated.self_test	hygiene,policy
 policy.ci_required	hygiene,policy
 policy.ci_required.self_test	hygiene,policy
 policy.dependabot	hygiene,policy

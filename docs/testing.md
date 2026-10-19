@@ -28,7 +28,7 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `ci-msvc` | The same five steps with MSVC and the static C runtime. | `ci` | all but `release`, then `release` |
 | `asan` | No memory or undefined-behaviour fault, using clang-21 with AddressSanitizer and UndefinedBehaviorSanitizer. Any finding stops the test. Long runs drop from 600 frames to 60 (`MUHTARI_SHORT_RUNS`). | `ci` | all but `abi` and `release`, whose binary-shape checks the instrumentation changes |
 | `nofp` | The core uses no floating point. It is built with GCC's `-mgeneral-regs-only`, which rejects any floating-point type. | `nofp` | `abi` |
-| `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer and the pins file. | `hygiene` | `hygiene` |
+| `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer, the pins file, and `src/cartdb.c` equal to `tools/cartdb.cmake`'s output over the two pinned MAME lists. Fetch those first with `scripts/fetch-pin.sh mame-a7800-xml build/pins/mame` and `scripts/fetch-pin.sh mame-a2600-xml build/pins/mame`; configure stops with both commands when either is missing. | `hygiene` | `hygiene` |
 | `be32` | The same hashes on a big-endian, 32-bit target with unsigned `char`. It cross-compiles for 32-bit PowerPC (`cmake/toolchains/ppc-linux-gnu.cmake`) and runs under `qemu-ppc`. | `ci` | `portable` |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
 
@@ -111,6 +111,8 @@ output matches the expected message; a crash or a missing file does not count as
 | `runner.hashes_compare.byte.self_test` | Two `hashes.txt` files one byte apart. |
 | `abi.nofp_fixture` | On the `nofp` lane, a file holding one `double` division, which must fail to compile with GCC's `-mgeneral-regs-only` diagnostic. |
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
+| `policy.cartdb_generated.self_test` | A copy of `src/cartdb.c` with one byte changed; the check must exit 1 with `src/cartdb.c differs from the generator output`. |
+| `hygiene.no_float.self_test` | Seven float lines beside three look-alikes, among them an SPDX line naming `CC0-1.0`, and an SPDX line followed by `double`. |
 | `policy.publish_set.self_test` | 17 of the 18 release zips; `publish.sh prepare` must exit 1 naming the missing one. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |

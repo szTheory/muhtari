@@ -2,8 +2,10 @@
 # folding leaves no trace of a float literal in an object file, so this text
 # scan reports every line of a .c or .h file under ROOTS that names float,
 # double, <math.h> or <float.h>, or holds a hex floating literal (0x1p3) or,
-# once hex integers and cited section numbers ("section 6.2") are removed, a
-# decimal one (1.5, 1.e3, 1e3). Comments count, so they write numbers as
+# once hex integers, cited section numbers ("section 6.2") and SPDX licence
+# expressions are removed, a decimal one (1.5, 1.e3, 1e3). An expression is
+# removed up to the first character none uses, such as the closing */, so the
+# rest of its line is still scanned. Comments count, so they write numbers as
 # integers.
 #
 #   cmake "-DROOTS=<dir>;<dir>" -P no_float.cmake
@@ -32,7 +34,9 @@ foreach(root IN LISTS ROOTS)
       math(EXPR n "${n} + 1")
       # Hex floats are matched before hex integers are removed, since the
       # removal would cut them apart.
-      string(REGEX REPLACE "0[xX][0-9a-fA-F]+|section [0-9.]*[0-9]" "" s " ${line} ")
+      string(REGEX REPLACE
+        "0[xX][0-9a-fA-F]+|section [0-9.]*[0-9]|SPDX-License-Identifier: [A-Za-z0-9 .+()-]*"
+        "" s " ${line} ")
       if(line MATCHES "0[xX][0-9a-fA-F]*\\.?[0-9a-fA-F]*[pP][+-]?[0-9]"
           OR s MATCHES "[^A-Za-z0-9_](float|double)[^A-Za-z0-9_]"
           OR s MATCHES "<math\\.h>"
