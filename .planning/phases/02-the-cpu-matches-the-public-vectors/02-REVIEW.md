@@ -1,104 +1,118 @@
 ---
 phase: 02-the-cpu-matches-the-public-vectors
-reviewed: 2026-10-19T19:30:00Z
+reviewed: 2026-10-19T00:00:00Z
 depth: standard
-files_reviewed: 13
+files_reviewed: 4
 files_reviewed_list:
-  - docs/embedding.md
   - docs/hardware/bus.md
-  - docs/hardware/sally.md
   - src/bus.c
-  - src/cpu.c
-  - src/instance.c
   - src/internal.h
   - tests/bus/test_bus.c
-  - tests/bus/tests.cmake
-  - tests/cpu/test_cpu.c
-  - tests/cpu/tests.cmake
-  - tests/inventory/ci.txt
-  - tests/inventory/wasm32.txt
 findings:
   critical: 0
-  warning: 2
-  info: 1
+  warning: 1
+  info: 2
   total: 3
 status: issues_found
 ---
 
-# Phase 2: Code Review Report
+# Phase 02: Code Review Report
 
-**Reviewed:** 2026-10-19T19:30:00Z
+**Reviewed:** 2026-10-19
 **Depth:** standard
-**Files Reviewed:** 13
+**Files Reviewed:** 4
 **Status:** issues_found
-
-## Narrative Findings (AI reviewer)
 
 ## Summary
 
-This re-review covers the fix round (commits be6d152, e0b2a25 and 5d6c2ae, diffed against 4f620d2). I read the 13 files in full where they changed, and the code they call: `events`, `hold`, `latch_nmi` and `rearm` in `src/bus.c`; `jam`, `nmi_due` and `nmi` in `src/cpu.c`; `muhtari__power_on`; and the CPU test bus in `tests/cpu/vector_bus.c`.
+This re-review covers fix round 2 (62b6bdc), which makes `muhtari__bus_request_halt` and `muhtari__bus_raise_nmi`
+return 1 when they take a request and 0 when they ignore it. The diff base is 2cca8b3. The HALT side is sound. Once
+the gate has counted two writes it never closes again, because `halt_gate_writes` only goes up, so a request that
+returns 1 always produces its window.
 
-The three fixes do what the fix report says:
-- `muhtari__bus_request_halt` now ignores a request while `halt_stage != HALT_NONE`. `events` sets `HALT_NONE` before it applies the hold, inside the same bus call, so no caller can see a window half applied.
-- `muhtari__bus_raise_nmi` now ignores an edge while `nmi_pending` is set. Every path that clears `nmi_pending` goes through `latch_nmi`, so a pending edge is either latched or dropped under MEN = 0. It never sticks.
-- The jammed guard in `muhtari__cpu_step` makes exactly one bus read per step, so ticks always advance. That keeps rule 4's bound for a jammed ROM. `muhtari__power_on` clears `jammed`, `nmi_pending` and `halt_stage`.
-- The inventories gained the three new tests in sorted order, with matching labels.
-
-I traced the two new bus tests by hand against `events`, and their expected and wrong-model values are right.
-
-There is no blocker. Two warnings remain:
-- The one-at-a-time rule trades a silent overwrite for a silent drop that no caller can detect.
-- The new JAM test cannot catch the exact regression its NMI assertion names.
-
-Under rule 7, WR-02 is about test code, so it is a seed, not a requirement.
+The NMI side over-promises. `raise_nmi` returns 1 for an edge that `latch_nmi` will later throw away without any
+signal. A scratch probe confirmed this (details under WR-05). That is the same "the caller cannot tell" gap the fix
+was meant to close, just moved one step later. The two info items are a doc sentence that names one reason for a 0
+when there are two, and test gaps around the return-1 path. Under project rule 7, the test-gap item is a seed, not a
+requirement.
 
 ## Warnings
 
-### WR-01: A HALT window or NMI edge that is ignored is dropped without a word, and the caller cannot tell
+### WR-05: `raise_nmi` returns 1 for an edge that is later dropped at latch
 
-**File:** `src/bus.c:248-258`, `src/bus.c:262-270`, `src/internal.h:281-288`
-**Issue:** Both entry points return `void`. The previous review's WR-03 objected that a second request silently replaced the first, which "silently corrupts cycle counts". The fix makes the second request silently vanish instead. The CPU still runs through a DMA window it should have lost, or misses a DLI, and nothing reports it.
+**File:** `src/bus.c:111-117`, `src/bus.c:261-273`, `src/internal.h:286-289`, `docs/hardware/bus.md:154-157`
 
-This rule constrains the caller, and the caller is MARIA, which does not exist yet. A MARIA that schedules ahead would hit it. For example, it might queue line N+1's window before the bus reaches line N's `halt_at`, or raise zone N+1's NMI before zone N's edge latches. All of its later requests would be dropped, and no test or assertion would fail. docs/hardware/bus.md says "MARIA asks for the next window after this one ends", but MARIA has no way to learn whether the bus accepted a request.
-**Fix:** Return whether the request was taken. The MARIA side and its tests can then assert that it was:
+**Issue:** `muhtari__bus_raise_nmi` returns 1 whenever MEN = 1 and no edge is pending. `latch_nmi` then drops the
+edge without any signal in two cases:
+
+1. **An earlier edge is latched but not yet taken.** `nmi_phi2 != 0` (`bus.c:114`), and the CPU clears it only when
+   it takes the NMI (`cpu.c:608`, `cpu.c:1168`).
+2. **MEN was cleared between the raise and the latch.** This can happen through an unlocked INPTCTRL write.
+
+The bus doc's own sentence on the first case ("a latched edge the CPU has not taken keeps its `nmi_phi2` against a
+later one") contradicts "returns ... 1 when it is taken" two lines later. The header says "returns 1 when it takes
+the request", which a caller will read as "this edge will be latched".
+
+**Evidence:** I built a scratch probe against `src/*.c`: power on, set INPTCTRL to `$07`, `raise_nmi(m, 6)`, four
+reads, then `raise_nmi(m, ticks + 2)` and four more reads. Its output was
+`first=1 phi2=2 second=1 phi2_after=2 pending=0`. The second edge returned 1 and was then thrown away.
+
+**Fix:** A raise cannot predict whether the CPU will take the earlier edge before the new one latches. So either
+make the drop observable, or narrow the contract so it promises only what the raise knows.
+
+The smallest correct change is to narrow the contract in the header and the doc, for example: "Returns 1 when the
+edge is queued for latching and 0 when it is ignored. A queued edge is still dropped at its latch when an earlier
+latched edge has not been taken or MEN has been cleared."
+
+If MARIA needs to know, add a counter that the tests can assert:
+
 ```c
-/* Returns 1 when the window is taken, 0 when it is ignored (gate shut, or
-   one already in flight). */
-int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick)
+static void latch_nmi(muhtari *m, uint64_t index)
 {
-    struct muhtari__bus *b = &m->bus;
-    if (b->halt_gate_writes < 2u || b->halt_stage != HALT_NONE) {
-        return 0;
+    m->bus.nmi_pending = 0u;
+    if (men(m) && m->bus.nmi_phi2 == 0u) {
+        m->bus.nmi_phi2 = index;
+    } else {
+        m->bus.nmi_dropped++; /* edge queued by raise_nmi but never latched */
     }
-    ...
-    return 1;
 }
 ```
-Do the same for `muhtari__bus_raise_nmi`. Then make `bus.halt.one_window_at_a_time` and `bus.nmi.one_edge_at_a_time` check the 0 return as well as the timing.
 
-### WR-02: `cpu.jam.step_reads_ffff` cannot catch a jammed step that polls for an NMI
-
-**File:** `tests/cpu/test_cpu.c:410`, `tests/cpu/test_cpu.c:430`
-**Issue:** The test latches an NMI with `nmi_phi2 = phi2` (11 after the JAM's eleven reads), then checks "the latched NMI, not taken". JAM stores no poll mark, and the machine was memset, so `poll_phi2` is still 0. `nmi_due` requires `nmi_phi2 <= poll_phi2`, which is 11 <= 0, so it is false.
-
-The most likely regression is a guard that reads `$FFFF` and then falls through to the usual `if (nmi_due(m)) nmi(m);`. That regression would pass this assertion. The assertion failed against the pre-fix source only because LDA #$55 ran and stored a fresh mark. It never tested the jammed path's NMI rule. This is a seed under rule 7.
-**Fix:** Make the NMI due by the CPU's own rule before the jammed steps, so that only an explicit "no NMI while jammed" passes:
-```c
-    machine.m.bus.nmi_phi2 = machine.m.bus.phi2;
-    machine.m.cpu.poll_phi2 = machine.m.bus.phi2; /* due by nmi_due's rule */
-    struct muhtari__cpu before = machine.m.cpu;
-```
+Add a `nmi.one_edge_at_a_time` sub-case that raises a second edge after the first has latched, and pin down
+whichever contract you choose.
 
 ## Info
 
-### IN-01: The JAM doc says a frame still ends, but no frame loop runs the CPU yet
+### IN-04: The HALT doc names one reason for a 0 return; the gate is the other
 
-**File:** `docs/hardware/sally.md:158-160`
-**Issue:** "so time keeps moving and a frame still ends" describes a run loop that does not exist yet: `src/frame.c` never calls `muhtari__cpu_step`. The per-step guarantee is true and tested. The frame-level claim is a promise that no test checks yet.
-**Fix:** Write "so time keeps moving" for now. When the run loop lands, add a test that a frame ends on a jammed ROM.
+**File:** `docs/hardware/bus.md:141-143`
+
+**Issue:** The doc says "The request returns 0 when it is ignored and 1 when it is taken, so MARIA can check that it
+asked after the last window ended." But a request made while the gate is shut (`halt_gate_writes < 2`, `bus.c:251`)
+also returns 0. A MARIA that reads 0 as "I asked before the last window ended" would misreport the gate-shut case,
+which happens before the BIOS's two INPTCTRL writes. The NMI paragraph does list both of its reasons ("under MEN = 0
+or behind another"), so the two paragraphs are also inconsistent.
+
+**Fix:** Name both reasons, matching the NMI paragraph: "The request returns 0 when it is ignored, with the gate
+shut or behind another window, and 1 when it is taken." Drop the "so MARIA can check..." clause, or say that MARIA
+must also know the gate state before it can read a 0 that way.
+
+### IN-05: Nothing tests that a request after a window, or an edge after a latch, returns 1 (seed, test code)
+
+**File:** `tests/bus/test_bus.c:288-296`, `tests/bus/test_bus.c:434-435`, `tests/bus/test_bus.c:496-509`
+
+**Issue:** The case comment says "Once a window ends, the next request is taken". That path is checked only through
+`halt_three_reads`, which discards the return (`test_bus.c:291`), so a return of 0 alongside a working window would
+pass. `nmi.one_edge_at_a_time` checks the 1 for a first edge and the 0 for a blocked second edge. It never checks
+that `raise_nmi` returns 1 again once `nmi_pending` clears, and that is exactly the path WR-05 shows is misleading.
+
+**Fix:** Have `halt_three_reads` return the request's result through an out-parameter, or call `expect_taken` on
+the request in `halt_one_window_at_a_time` before the timing check. Add an NMI sub-case that latches a first edge,
+then raises another and asserts both the return and the resulting `nmi_phi2`. Under project rule 7, record this as
+a seed.
 
 ---
 
-_Reviewed: 2026-10-19T19:30:00Z_
+_Reviewed: 2026-10-19_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
