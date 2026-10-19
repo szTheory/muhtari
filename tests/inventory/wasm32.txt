@@ -336,6 +336,7 @@ release.floor.self_test	release
 release.single_version_source	policy
 release.single_version_source.next	policy
 release.single_version_source.self_test	policy
+riot.timer.reads_n_minus_1	portable,riot
 runner.bench.bytes	bench,portable,runner
 runner.bench.format	bench,portable,runner
 runner.bench.percentile	bench,portable,runner

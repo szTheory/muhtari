@@ -103,6 +103,7 @@ void muhtari__power_on(muhtari *m)
     m->bus.next_deadline = UINT64_MAX; /* no event pending */
     /* Only the zero fill exists so far; every RAM_FILL value gives it. */
     memset(m->ram, 0, sizeof m->ram);
+    muhtari__riot_reset(m);
 }
 
 void muhtari_destroy(muhtari *m)

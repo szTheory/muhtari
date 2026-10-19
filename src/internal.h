@@ -67,6 +67,27 @@ struct muhtari__bus {
     uint8_t nmi_pending;
 };
 
+/* The 6532's RAM: 128 bytes (docs/hardware/riot.md, RAM). */
+#define MUHTARI__RIOT_RAM_SIZE 128u
+
+/* The RIOT's state (docs/hardware/riot.md). The timer is not counted: it is
+   the value timer_n written in the cycle whose phi2 count is timer_phi2, on
+   an interval of 1 << timer_shift cycles, and every read computes INTIM from
+   the cycles since. timer_cleared records a timer access that cleared the
+   flag after it set. pa7_flag is PA7's edge flag, pa7_positive the active
+   edge, and pa7_detect the edge detector's input as last seen. */
+struct muhtari__riot {
+    uint64_t timer_phi2;
+    uint16_t timer_n;
+    uint8_t timer_shift;
+    uint8_t timer_cleared;
+    uint8_t ora, ddra, orb, ddrb;
+    uint8_t pa7_flag;
+    uint8_t pa7_positive;
+    uint8_t pa7_detect;
+    uint8_t ram[MUHTARI__RIOT_RAM_SIZE];
+};
+
 /* INPTCTRL's bits (docs/hardware/bus.md, INPTCTRL). */
 #define MUHTARI__INPTCTRL_LOCK 0x01u
 #define MUHTARI__INPTCTRL_MEN 0x02u
@@ -102,6 +123,7 @@ struct muhtari {
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
     struct muhtari__cpu cpu;
     struct muhtari__bus bus;
+    struct muhtari__riot riot;
     struct muhtari__profile profile;
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
 };
@@ -179,6 +201,13 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v);
 uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr);
 void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick);
 
+/* The RIOT as the bus sees it (src/riot.c): A9 selects its ports and timer
+   or its RAM, and A0-A6 the register or byte (docs/hardware/riot.md).
+   reset puts it in its RES state under m->profile. */
+uint8_t muhtari__riot_read(muhtari *m, uint16_t addr);
+void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v);
+void muhtari__riot_reset(muhtari *m);
+
 /* The entry points MARIA drives (docs/hardware/bus.md, HALT and NMI).
    request_halt asks for HALT from at_tick until until_tick, and does nothing
    until the HALT gate has counted two writes. raise_nmi raises an NMI edge
@@ -189,7 +218,8 @@ void muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
 /* Runs exactly one instruction. */
 void muhtari__cpu_step(muhtari *m);
 
-/* Puts the CPU, the bus and RAM in their power-on state under m->profile. */
+/* Puts the CPU, the bus, RAM and the RIOT in their power-on state under
+   m->profile. */
 void muhtari__power_on(muhtari *m);
 
 #endif /* MUHTARI_INTERNAL_H */

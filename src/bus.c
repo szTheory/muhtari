@@ -5,8 +5,10 @@
 
 /* What answers an address (docs/hardware/bus.md, Memory map). DEV_OPEN is
    every address nothing on the board drives yet: the cartridge and BIOS
-   space with nothing loaded, the unused windows, and the RIOT until it lands.
-   DEV_TIA and DEV_RIOT, and every address while MEN = 0, take slow cycles. */
+   space with nothing loaded, and the unused windows. DEV_RIOT is the
+   RIOT's ports and timer at $0280-$02FF and its RAM at $0480-$04FF, with
+   their mirrors. DEV_TIA and DEV_RIOT, and every address while MEN = 0,
+   take slow cycles. */
 enum bus_device { DEV_OPEN, DEV_RAM, DEV_MARIA, DEV_TIA, DEV_RIOT };
 
 /* A fast cycle is 4 ticks with its data at the phi2 fall, tick 4; a slow
@@ -45,10 +47,10 @@ static enum bus_device decode(const muhtari *m, uint16_t addr)
         if (addr < 0x0200u) {
             return DEV_RAM;
         }
-        return low < 0x80u ? DEV_OPEN : DEV_RIOT;
+        return low < 0x80u ? DEV_OPEN : DEV_RIOT; /* $0280, $0380: src/riot.c */
     }
     if (addr < 0x0600u) {
-        return (addr & 0x80u) != 0u ? DEV_RIOT : DEV_OPEN;
+        return (addr & 0x80u) != 0u ? DEV_RIOT : DEV_OPEN; /* $0480, $0580: src/riot.c */
     }
     if (addr >= MUHTARI__RAM_BASE && addr < MUHTARI__RAM_BASE + MUHTARI__RAM_SIZE) {
         return DEV_RAM;
@@ -200,6 +202,8 @@ uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
         v = m->ram[ram_index(addr)];
     } else if (dev == DEV_TIA) {
         v = muhtari__tia_read(m, addr);
+    } else if (dev == DEV_RIOT) {
+        v = muhtari__riot_read(m, addr);
     }
     m->bus.open_bus = v;
     end(m, len);
@@ -231,6 +235,8 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
         muhtari__tia_write(m, addr, m->bus.ticks + data_at(len));
         inptctrl_write(m, v);
         rearm(m);
+    } else if (dev == DEV_RIOT) {
+        muhtari__riot_write(m, addr, v);
     }
     m->bus.open_bus = v;
     end(m, len);
