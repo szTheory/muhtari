@@ -42,3 +42,12 @@ target_include_directories(muhtari-test-cpu PRIVATE
 set_target_properties(muhtari-test-cpu PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-cpu)
+
+# The N65V reader on crafted buffers.
+add_executable(muhtari-test-reader
+  ${CMAKE_CURRENT_LIST_DIR}/test_reader.c
+  ${cpu_vectors_dir}/n65v.c)
+target_include_directories(muhtari-test-reader PRIVATE ${cpu_vectors_dir})
+set_target_properties(muhtari-test-reader PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-reader)

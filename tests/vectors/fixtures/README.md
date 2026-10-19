@@ -10,3 +10,5 @@ The tests in `tests/cpu/tests.cmake` run them through `muhtari-vecconv` and `muh
 | File | Taken from | What it is | What it tests |
 |------|------------|------------|---------------|
 | `a9.json` | `6502/v1/a9.json` | bytes 0 to 1,799: five whole tests (the fifth ends at byte 1,662), then the sixth cut inside its initial RAM list | the spaced upstream layout through the converter and the harness, and a prefix cut mid-test |
+| `02.json` | `6502/v1/02.json` | bytes 0 to 2,899: five whole tests (the fifth ends at byte 2,637), then the sixth cut inside its final RAM list | the compact upstream layout, and the harness's check that the JAM opcode jams |
+| `a9-bad-a.json` | `6502/v1/a9.json` | the first test (bytes 2 to 333) as a one-test array, with its final `a` changed from 204 to 205 | that the harness fails a wrong final state and names the file, the test and the field |

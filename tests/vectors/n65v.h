@@ -68,7 +68,8 @@ struct n65v_reader {
 };
 
 /* Reads buf[0..len). The file must hold exactly `chunks` chunks; chunk k has
-   opcode (first_opcode + k) mod 256 and exactly tests_per_chunk tests. */
+   opcode (first_opcode + k) mod 256 and exactly tests_per_chunk tests. A
+   chunk with no tests is an error. */
 void n65v_init(struct n65v_reader *r, const uint8_t *buf, size_t len, uint8_t first_opcode,
                uint32_t chunks, uint32_t tests_per_chunk);
 

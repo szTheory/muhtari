@@ -92,6 +92,10 @@ static int get_header(struct n65v_reader *r)
     at = r->off;
     if (!get_u16(r, "count", "", &count))
         return 0;
+    if (count == 0u) {
+        fail(r, at, "count 0");
+        return 0;
+    }
     if ((uint32_t)count != r->tests_per_chunk) {
         fail(r, at, "count %u, expected %lu", (unsigned)count, (unsigned long)r->tests_per_chunk);
         return 0;

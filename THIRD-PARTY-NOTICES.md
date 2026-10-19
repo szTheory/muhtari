@@ -71,14 +71,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 
 ## singlesteptests
 
-- **Applies to:** `tests/vectors/6502-sample.n65v`, `tests/vectors/fixtures/a9.json`
+- **Applies to:** `tests/vectors/6502-sample.n65v`, `tests/vectors/fixtures/a9.json`, `tests/vectors/fixtures/02.json`, `tests/vectors/fixtures/a9-bad-a.json`
 - **Upstream:** https://github.com/SingleStepTests/65x02, directory `6502/v1` at commit
   `2f6980a2d95757486c7bee24355c360e40e2a224`. The repository's `LICENSE` licenses it MIT.
 - **Changes:** the first 100 tests of each of the 256 files `6502/v1/00.json` to `ff.json`,
   converted to the N65V binary form (`tests/vectors/n65v.h`) and concatenated in opcode order. Test
   names are dropped; every state, RAM pair and bus cycle is kept.
-  The fixtures in `tests/vectors/fixtures` are byte prefixes of upstream files, cut where its
-  `README.md` says.
+  The fixtures in `tests/vectors/fixtures` are byte prefixes of upstream files, and one upstream
+  test with a value changed, as its `README.md` says.
 - **Licence:** MIT
 
 ```
