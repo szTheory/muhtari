@@ -29,6 +29,7 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `asan` | No memory or undefined-behaviour fault, using clang-21 with AddressSanitizer and UndefinedBehaviorSanitizer. Any finding stops the test. Long runs drop from 600 frames to 60 (`MUHTARI_SHORT_RUNS`). | `ci` | all but `abi` and `release`, whose binary-shape checks the instrumentation changes |
 | `nofp` | The core uses no floating point. It is built with GCC's `-mgeneral-regs-only`, which rejects any floating-point type. | `nofp` | `abi` |
 | `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer, the pins file, and `src/cartdb.c` equal to `tools/cartdb.cmake`'s output over the two pinned MAME lists. Fetch those first with `scripts/fetch-pin.sh mame-a7800-xml build/pins/mame` and `scripts/fetch-pin.sh mame-a2600-xml build/pins/mame`; configure stops with both commands when either is missing. | `hygiene` | `hygiene` |
+| `fuzz` | The cartridge loader keeps its invariants on any input: libFuzzer runs `tests/fuzz/loader.c` for 60 seconds with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, starting from the images `muhtari-test-images` writes. New inputs go to `build/fuzz/fuzz/corpus` and crashes to `build/fuzz/fuzz/crash`, never into the tree. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader`. | `fuzz` | `fuzz` |
 | `be32` | The same hashes on a big-endian, 32-bit target with unsigned `char`. It cross-compiles for 32-bit PowerPC (`cmake/toolchains/ppc-linux-gnu.cmake`) and runs under `qemu-ppc`. | `ci` | `portable` |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
 
@@ -79,8 +80,8 @@ selects by label.
 labels comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
 test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
 Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
-Three lanes register their own lists: `hygiene.txt`, `nofp.txt`, and `wasm32.txt`, which is the `ci` list
-without the `libretro` tests.
+Four lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, and `wasm32.txt`, which is the
+`ci` list without the `libretro` tests.
 
 | Label | Tests |
 |---|---|
@@ -88,7 +89,8 @@ without the `libretro` tests.
 | `portable` | Tests that hold on every platform, including the frame and audio hashes. |
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
-| `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits. No image bytes are tracked. |
+| `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. No image bytes are tracked. |
+| `fuzz` | The loader fuzz target's invariants replayed over its seeds and committed regressions, and on the `fuzz` lane libFuzzer itself. |
 | `runner` | `muhtari-run` options, output, exit statuses and the PNG writer. |
 | `bench` | The runner's benchmark report. |
 | `libretro` | The libretro core in an in-process host, its `.info` file and its vendored header. |

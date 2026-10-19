@@ -209,6 +209,13 @@ if(MUHTARI_NOFP AND NOT CMAKE_C_COMPILER_ID STREQUAL "GNU")
   message(FATAL_ERROR "nofp: -mgeneral-regs-only needs GCC, not ${CMAKE_C_COMPILER_ID}")
 endif()
 
+# The fuzz lane builds the libFuzzer target and registers only the fuzz
+# tests. libFuzzer ships with Clang, never GCC, MSVC or Apple's Clang.
+option(MUHTARI_FUZZ "Build the libFuzzer target; register only the fuzz tests" OFF)
+if(MUHTARI_FUZZ AND NOT CMAKE_C_COMPILER_ID STREQUAL "Clang")
+  message(FATAL_ERROR "fuzz: libFuzzer needs Clang, not ${CMAKE_C_COMPILER_ID}")
+endif()
+
 # Tests. MUHTARI_TIMEOUT_SCALE multiplies every test's timeout on slow lanes;
 # MUHTARI_INVENTORY names the tests/inventory/<name>.txt the registered tests
 # must equal.
@@ -225,6 +232,8 @@ if(MUHTARI_HYGIENE)
   set(inventory hygiene)
 elseif(MUHTARI_NOFP)
   set(inventory nofp)
+elseif(MUHTARI_FUZZ)
+  set(inventory fuzz)
 endif()
 set(MUHTARI_INVENTORY ${inventory} CACHE STRING "Test inventory file under tests/inventory")
 # Fault prevented: every wasm32 test failing on a missing runtime, with a
