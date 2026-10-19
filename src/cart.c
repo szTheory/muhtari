@@ -26,6 +26,10 @@
 #define A78_AUDIO 66u
 #define A78_IRQ 68u
 
+/* Bytes 1-9 of an A78 header. An array, not a string literal: MSVC on ARM64
+   gives a literal an external COMDAT name outside the muhtari_ namespace. */
+static const uint8_t cart_magic[9] = {'A', 'T', 'A', 'R', 'I', '7', '8', '0', '0'};
+
 /* The cart-type word's bits (docs/hardware/cartridge.md, Cart type). */
 #define CT_POKEY_4000 0x0001u
 #define CT_SUPERGAME 0x0002u
@@ -581,7 +585,7 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
     if (n == 0u) {
         return MUHTARI_STATUS_ERR_INVALID_IMAGE;
     }
-    if (n >= 10u && memcmp(img + A78_MAGIC, "ATARI7800", 9u) == 0) {
+    if (n >= 10u && memcmp(img + A78_MAGIC, cart_magic, sizeof cart_magic) == 0) {
         return cart_header(img, n, keys, key_count, entries, entry_count, out);
     }
     return cart_headerless(img, n, keys, key_count, entries, entry_count, prefix, prefix_count,
