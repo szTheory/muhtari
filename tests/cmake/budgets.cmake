@@ -1,6 +1,7 @@
 # Document size budgets, run as
 #   cmake -DROOT=<source dir> -P budgets.cmake
-# Fault prevented: the README, the public header or a page in docs/ growing
+# Fault prevented: the README, the public header or a page in docs/ or
+# docs/hardware/ growing
 # past its budget, as manuals and design prose drift into them. Fails naming
 # each file over budget with its size and limit, in bytes.
 if(NOT IS_DIRECTORY "${ROOT}")
@@ -8,7 +9,7 @@ if(NOT IS_DIRECTORY "${ROOT}")
 endif()
 
 set(checks "README.md=12288" "include/muhtari.h=24576")
-file(GLOB docs RELATIVE "${ROOT}" "${ROOT}/docs/*.md")
+file(GLOB docs RELATIVE "${ROOT}" "${ROOT}/docs/*.md" "${ROOT}/docs/hardware/*.md")
 foreach(doc IN LISTS docs)
   list(APPEND checks "${doc}=40960")
 endforeach()
