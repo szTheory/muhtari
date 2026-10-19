@@ -99,6 +99,18 @@ muhtari_add_test(NAME cpu.unstable.sally_constant
   COMMAND muhtari-test-cpu unstable.sally_constant
   LABELS vectors portable TIMEOUT 10)
 
+# Bruce Clark's decimal mode test, assembled from tests/cpu/decimal/clark.s,
+# over all 262,144 ADC and SBC cases on A, C, N, V and Z. The 65C02 build of
+# the same listing predicts other flags, so SALLY must fail it: ERROR = 1.
+# TIMEOUT 60 is provisional until measured.
+set(cpu_decimal ${CMAKE_SOURCE_DIR}/tests/cpu/decimal)
+muhtari_add_test(NAME cpu.decimal.clark
+  COMMAND muhtari-test-cpu decimal.clark ${cpu_decimal}/clark-6502.bin 0
+  LABELS vectors portable TIMEOUT 60)
+muhtari_add_test(NAME cpu.decimal.clark.self_test
+  COMMAND muhtari-test-cpu decimal.clark ${cpu_decimal}/clark-65c02.bin 1
+  LABELS vectors portable TIMEOUT 60)
+
 # The vector tooling, on byte prefixes of upstream files in
 # tests/vectors/fixtures (see the README there).
 set(cpu_fixtures ${CMAKE_SOURCE_DIR}/tests/vectors/fixtures)
