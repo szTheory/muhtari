@@ -72,6 +72,7 @@ add_library(muhtari_objs OBJECT
   src/bus.c
   src/tia.c
   src/riot.c
+  src/maria.c
   src/sha1.c
   src/cart.c)
 add_library(muhtari_cpu OBJECT src/cpu.c)

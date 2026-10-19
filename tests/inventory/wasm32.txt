@@ -346,6 +346,7 @@ host.palette	host,portable
 install.consumer	install
 install.consumer.dll_crt	install
 install.stage	install
+maria.dma_line.empty_dl	maria,portable
 perf.gate.allowed	perf
 perf.gate.identical	perf
 perf.gate.missing	perf

@@ -126,12 +126,75 @@ struct muhtari__cart {
     muhtari_cart_info info;
 };
 
+/* One line's DMA, as MARIA's burst ran it (docs/hardware/maria.md,
+   Statistics). cost is HALTRST minus T0 in ticks; bytes counts the graphics,
+   character map and character graphics bytes fetched; headers the object
+   headers read whole; objects the objects whose every fetch ran. */
+struct muhtari__line_stats {
+    uint16_t cost;
+    uint16_t bytes;
+    uint8_t headers;
+    uint8_t objects;
+    uint16_t flags; /* MUHTARI__LINE_* */
+};
+
+/* The flags of a line's statistics. */
+#define MUHTARI__LINE_LAST 0x0001u        /* the zone's last line: the next DLL entry was read */
+#define MUHTARI__LINE_ABORTED 0x0002u     /* the burst reached LRC and stopped */
+#define MUHTARI__LINE_DLI 0x0004u         /* the entry read on this line has DLI set */
+#define MUHTARI__LINE_DLI_QUEUED 0x0008u  /* the bus took the DLI's NMI edge */
+#define MUHTARI__LINE_DMA_BLOCKED 0x0010u /* the bus refused the line's HALT request */
+#define MUHTARI__LINE_DMA_OFF 0x0020u     /* CTRL had DMA off, so no burst ran */
+
+/* The sticky feature mask: a bit sets on the first line that uses the
+   feature and stays set (docs/hardware/maria.md, Statistics). */
+#define MUHTARI__FEAT_RM0 0x0001u
+#define MUHTARI__FEAT_RM2 0x0002u
+#define MUHTARI__FEAT_RM3 0x0004u
+#define MUHTARI__FEAT_WRITE_MODE 0x0008u
+#define MUHTARI__FEAT_KANGAROO 0x0010u
+#define MUHTARI__FEAT_HOLEY8 0x0020u
+#define MUHTARI__FEAT_HOLEY16 0x0040u
+#define MUHTARI__FEAT_IND1 0x0080u
+#define MUHTARI__FEAT_IND2 0x0100u
+#define MUHTARI__FEAT_DLI 0x0200u
+#define MUHTARI__FEAT_DLI_QUEUED 0x0400u
+#define MUHTARI__FEAT_DMA_BLOCKED 0x0800u
+
+/* An NTSC frame's lines (A7800-MARIA section 6). */
+#define MUHTARI__LINES_NTSC 263u
+
+/* Line RAM: 160 cells per buffer (A7800-MARIA section 3). */
+#define MUHTARI__LINE_CELLS 160u
+
+/* MARIA's state (docs/hardware/maria.md). reg holds the registers at
+   $20-$3F, indexed by address minus $20. The display-list walk: dll is the
+   next DLL entry's address, dl the zone's DL base, entry the zone's DLL byte
+   0 (DLI, H16, H8) and offset the zone's OFFSET, which counts down to 0 on
+   the zone's last line. line_ram holds two buffers of 160 cells, each cell
+   the palette in bits 4-2 and the data pair in bits 1-0; the burst fills
+   line_ram[write_buf]. write_mode is the latch only 5-byte headers load.
+   stats is each line's statistics and features the sticky feature mask. */
+struct muhtari__maria {
+    uint8_t reg[32];
+    uint16_t dll;
+    uint16_t dl;
+    uint8_t entry;
+    uint8_t offset;
+    uint8_t write_mode;
+    uint8_t write_buf;
+    uint8_t line_ram[2][MUHTARI__LINE_CELLS];
+    struct muhtari__line_stats stats[MUHTARI__LINES_NTSC];
+    uint32_t features;
+};
+
 struct muhtari {
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
     struct muhtari__cpu cpu;
     struct muhtari__bus bus;
     struct muhtari__riot riot;
+    struct muhtari__maria maria;
     struct muhtari__profile profile;
     struct muhtari__cart cart;
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
@@ -287,6 +350,19 @@ void muhtari__riot_reset(muhtari *m);
    Each returns 1 when it takes the request and 0 when it ignores it. */
 int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
 int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
+
+/* MARIA's VBE fetch (docs/hardware/maria.md, Display lists): starting at
+   tick t0 it loads the DLL pointer from DPPH and DPPL and reads zone 0's
+   entry. Returns the tick at which it ends, t0 + 7. */
+uint64_t muhtari__maria_vbe(muhtari *m, uint64_t t0);
+
+/* One line's DMA burst (docs/hardware/maria.md, DMA cost): the PLA starts
+   at tick t0, every fetch at its own tick, and a fetch at or after lrc is
+   dropped. Fills *st and stats[line] (when line is below 263), ORs the
+   feature bits and returns the HALTRST tick. lrc is at most 454 ticks after
+   t0. */
+uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t line,
+                                 struct muhtari__line_stats *st);
 
 /* Runs exactly one instruction, then the NMI entry when one is due. On a
    jammed CPU it makes one read of $FFFF instead, and changes nothing else
