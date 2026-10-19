@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-10-19T01:06:31.581Z"
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-10-19T01:27:00.465Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: de9a2cece398872cbf01fd719b3f2053f000abbb
+state_head: a734cf65b8dee38c1f269488c07b62e0c23e99d7
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 26
+  completed_plans: 27
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 6 of 16
+Plan: 7 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -84,6 +84,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P03 | 10 min | 3 tasks | 19 files |
 | Phase 02 P04 | 9 min | 2 tasks | 12 files |
 | Phase 02 P05 | 17 min | 2 tasks | 10 files |
+| Phase 02 P06 | 18 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -167,6 +168,11 @@ Recent decisions affecting current work:
 - [Phase 02]: NMI is taken when nmi_phi2 is at or before poll_phi2, which each instruction but JAM stores once, right before its final bus access; the NMI entry and JAM store none
 - [Phase 02]: The vector harness checks every opcode poll mark (4 for BRK, 1 for a three-cycle branch, N - 1 otherwise) and gives each JAM an edge and a stale mark of before + 12
 - [Phase 02]: Hosted run 39183525965: the six cpu.nmi tests and the poll-checked vectors are green on every leg; MSVC rejects (uint8_t)~CONSTANT as C4310
+- [Phase 02]: HALT_RUN_CYCLES = 2 is the one named fitted HALT constant: /HALT falls at the first cycle boundary at or after the request, c0 and c1 run, c2 is frozen for ceil((until - fall)/4) whole 4-tick cycles
+- [Phase 02]: TIA WSYNC releases RDY at the first tick after the write's data with (tick + tia_phase) mod 456 = 0; a held read runs in the first cycle starting at or after it, at its own decoded length
+- [Phase 02]: The NMI latch is a cycle's data tick (4 fast, 5 slow), a held cycle's own tick 4; held cycles carry their own phi2 index
+- [Phase 02]: abi.undefined allows __ImageBase on Windows x64: MSVC addresses cpu.c's switch jump table through it now cpu.c is in the archive
+- [Phase 02]: Hosted run 39185135366: the 16 bus cases and the archive with the CPU are green on every leg; be32 took 32 s
 
 ### Pending Todos
 
@@ -205,6 +211,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T01:06:23.186Z
-Stopped at: Completed 02-05-PLAN.md
+Last session: 2026-10-19T01:27:00.376Z
+Stopped at: Completed 02-06-PLAN.md
 Resume file: None
