@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
-status: executing
-stopped_at: Completed 02-15-PLAN.md
-last_updated: "2026-10-19T03:57:13.672Z"
+status: verifying
+stopped_at: Completed 02-16-PLAN.md
+last_updated: "2026-10-19T04:31:44.232Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: ecf4d78f023a4956e7d657b6bf27659e16be809f
+state_head: a74d3ee90922c01e3c726eb5a8fa0d4562c2efaa
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 36
+  completed_plans: 37
   percent: 25
 ---
 
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
 Plan: 16 of 16
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-18 — Phase 02 execution started
 
 Progress: [███░░░░░░░] 25%
@@ -94,6 +94,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P13 | 10 min | 3 tasks | 16 files |
 | Phase 02 P14 | 15 min | 2 tasks | 9 files |
 | Phase 02 P15 | 17 min | 2 tasks | 12 files |
+| Phase 02 P16 | 33 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -209,6 +210,11 @@ Recent decisions affecting current work:
 - [Phase 02]: Plan 14: the checkout's GIT_HTTP_LOW_SPEED_TIME is 240 s, the fetch's 60 s; GitHub sends nothing for 75 to 80 s while it packs the 6502/v1 blobs
 - [Phase 02]: Plan 14: Hosted nightly run 39195320935: all 2,560,000 vectors and the loader fuzz target are green; vectors-full 1 min 43 s (fetch 83 s), loader-fuzz 1 min 30 s
 - [Phase 02]: Plan 15: the firmware scan strips an A78 header with file(DOWNLOAD file:// RANGE_START 128), the one CMake call that copies a byte range with NULs, and makes its own temporary directory outside every zip's directory
+- [Phase 02]: Plan 16: No be32 flip: the hosted be32 job's slowest of 13 runs is 45 s (run 39198577488), so hash-equality keeps seven files
+- [Phase 02]: Plan 16: Timeouts measured from 13 ci.yml and 10 to 17 nightly.yml runs; a job that fetches or installs takes the 5-minute network-bound floor; nightly vectors-full is 8 min, the fetch TIMEOUT 220 s plus 2 x 118 s
+- [Phase 02]: Plan 16: CTest TIMEOUTs are twice the slowest time over the lane's scale; the firmware scans stay provisional with 9 samples
+- [Phase 02]: Plan 16: workflow.test_gate_timeout is 4: twice the slowest clean local gate, 1.82 s
+- [Phase 02]: Plan 16: The ship title is feat: the CPU matches the public 6502 vectors, with the 7800 bus, RIOT and cartridge probing (check-title.sh exit 0); probe PR #9 closed unmerged
 
 ### Pending Todos
 
@@ -247,6 +253,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T03:57:13.607Z
-Stopped at: Completed 02-15-PLAN.md
+Last session: 2026-10-19T04:31:44.172Z
+Stopped at: Completed 02-16-PLAN.md
 Resume file: None
