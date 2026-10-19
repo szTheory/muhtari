@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-08-PLAN.md
-last_updated: "2026-10-19T01:58:53.350Z"
+stopped_at: Completed 02-09-PLAN.md
+last_updated: "2026-10-19T02:22:50.145Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: 5f948fb1172b669c20dea62e802364696597e542
+state_head: ad87acd3fff80ef216c6d15f1b3aee697d905541
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 29
+  completed_plans: 30
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 9 of 16
+Plan: 10 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -87,6 +87,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P06 | 18 min | 3 tasks | 12 files |
 | Phase 02 P07 | 12 min | 3 tasks | 12 files |
 | Phase 02 P08 | 13 min | 2 tasks | 19 files |
+| Phase 02 P09 | 21 min | 3 tasks | 21 files |
 
 ## Accumulated Context
 
@@ -183,6 +184,11 @@ Recent decisions affecting current work:
 - [Phase 02]: src/cartdb.c's header spans lines 2-3: clang-format 21 reflows the one-line form; tables are 19,284 B of const data
 - [Phase 02]: hygiene.no_float removes an SPDX licence expression up to the first character no expression uses, so text after */ is still scanned
 - [Phase 02]: Hosted run 39187517812: cart.sha1.fips and policy.cartdb_generated are green on every leg; be32 took 48 s, the hygiene job 43 s with its fetch
+- [Phase 02]: API version 2 publishes muhtari_probe; v1.c checks its version as a floor, v2.c names every new name and value, and abi.api_v2 runs on ci, wasm32 and nofp
+- [Phase 02]: Probe geometry: linear 4-48 KiB in 4 KiB steps or 64 KiB; SuperGame 32 KiB-1 MiB in 16 KiB steps; SG9 (2^n + 1) x 16 KiB; every MAME 7800 list size fits
+- [Phase 02]: The v4 block replaces the cart type only when it validates and its board fits the body; otherwise HEADER_V4_IGNORED
+- [Phase 02]: A core string constant is a static const byte array: MSVC on ARM64 exports a literal as an external COMDAT name (run 39189208610)
+- [Phase 02]: Hosted run 39189405561: the probe and API version 2 are green on every leg; be32 took 41 s
 
 ### Pending Todos
 
@@ -221,6 +227,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T01:58:53.297Z
-Stopped at: Completed 02-08-PLAN.md
+Last session: 2026-10-19T02:22:50.095Z
+Stopped at: Completed 02-09-PLAN.md
 Resume file: None
