@@ -13,7 +13,15 @@ abi.undefined.self_test	abi
 bus.cycle.fast_4_ticks	portable,sally
 bus.cycle.men_off_all_slow	portable,sally
 bus.cycle.slow_6_ticks	portable,sally
+bus.halt.freezes_writes	portable,sally
+bus.halt.gate_counts_rmw_dummy	portable,sally
+bus.halt.gate_two_writes	portable,sally
+bus.halt.latency_two_cycles	portable,sally
+bus.halt.waits_for_slow_fall	portable,sally
 bus.inptctrl.lock	portable,riot
+bus.nmi.held_fetch_after_wsync	portable,sally
+bus.nmi.last_cycle_after_next	portable,sally
+bus.nmi.latched_in_cycle	portable,sally
 bus.open_bus.unmapped	portable,riot
 bus.open_bus.write_only	portable,riot
 bus.rdy.holds_reads_only	portable,sally

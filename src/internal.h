@@ -44,16 +44,27 @@ struct muhtari__cpu {
    bus's slow path; UINT64_MAX when none is pending. open_bus is the last
    byte on the data bus; inptctrl is INPTCTRL's four bits; halt_gate_writes
    counts unlocked writes in the TIA range, up to 2. rdy_release is the
-   tick from which a held read may run, 0 while RDY is high. */
+   tick from which a held read may run, 0 while RDY is high. A HALT request
+   waits in halt_at and halt_until until /HALT falls; halt_lost is then the
+   number of cycles the CPU loses, and halt_cycles counts the cycles run
+   since the fall, through halt_stage. nmi_at is a raised NMI edge not yet
+   latched, while nmi_pending is set. */
 struct muhtari__bus {
     uint64_t phi2;
     uint64_t nmi_phi2;
     uint64_t ticks;
     uint64_t next_deadline;
     uint64_t rdy_release;
+    uint64_t halt_at;
+    uint64_t halt_until;
+    uint64_t halt_lost;
+    uint64_t nmi_at;
     uint8_t open_bus;
     uint8_t inptctrl;
     uint8_t halt_gate_writes;
+    uint8_t halt_stage;
+    uint8_t halt_cycles;
+    uint8_t nmi_pending;
 };
 
 /* INPTCTRL's bits (docs/hardware/bus.md, INPTCTRL). */
@@ -167,6 +178,13 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v);
    the TIA at data_tick. */
 uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr);
 void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick);
+
+/* The entry points MARIA drives (docs/hardware/bus.md, HALT and NMI).
+   request_halt asks for HALT from at_tick until until_tick, and does nothing
+   until the HALT gate has counted two writes. raise_nmi raises an NMI edge
+   at at_tick, and does nothing while MEN = 0. */
+void muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
+void muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
 
 /* Runs exactly one instruction. */
 void muhtari__cpu_step(muhtari *m);

@@ -9,10 +9,13 @@ set_target_properties(muhtari-test-bus PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-bus)
 
-# Cycle length by address and MEN, and RDY from TIA WSYNC, one case per
-# argv.
+# Cycle length by address and MEN, the HALT gate and window, RDY from TIA
+# WSYNC and the NMI latch, one case per argv.
 foreach(bus_case IN ITEMS cycle.fast_4_ticks cycle.slow_6_ticks cycle.men_off_all_slow
-    rdy.holds_reads_only rdy.rmw_completes_both_writes)
+    halt.gate_two_writes halt.gate_counts_rmw_dummy halt.latency_two_cycles
+    halt.waits_for_slow_fall halt.freezes_writes rdy.holds_reads_only
+    rdy.rmw_completes_both_writes nmi.latched_in_cycle nmi.last_cycle_after_next
+    nmi.held_fetch_after_wsync)
   muhtari_add_test(NAME bus.${bus_case} COMMAND muhtari-test-bus ${bus_case}
     LABELS sally portable TIMEOUT 10)
 endforeach()

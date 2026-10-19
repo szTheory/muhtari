@@ -71,33 +71,99 @@ static int slow(const muhtari *m, enum bus_device dev)
     return dev == DEV_TIA || dev == DEV_RIOT || !men(m);
 }
 
-/* Recomputes next_deadline from the pending events. While RDY is low every
-   cycle takes the slow path, so the next read can be held. */
+/* The fitted HALT rule (docs/hardware/bus.md, HALT): /HALT falls at the
+   first cycle boundary at or after the request; SALLY runs that cycle (c0)
+   and the next (c1), then freezes the third (c2) for every whole 4-tick
+   cycle /HALT stays low, and completes it. HALT_RUN_CYCLES is the two
+   cycles of latency, fitted, not measured. */
+#define HALT_RUN_CYCLES 2u
+
+/* Where a HALT request stands. */
+enum halt_stage {
+    HALT_NONE,
+    HALT_REQUESTED, /* /HALT has not fallen yet */
+    HALT_LOW        /* /HALT has fallen; halt_cycles counts c0 and c1 */
+};
+
+/* Recomputes next_deadline from the pending events. While RDY is low or
+   /HALT is low every cycle takes the slow path. */
 static void rearm(muhtari *m)
 {
-    m->bus.next_deadline = m->bus.rdy_release != 0u ? 0u : UINT64_MAX;
+    struct muhtari__bus *b = &m->bus;
+    uint64_t d = UINT64_MAX;
+    if (b->rdy_release != 0u || b->halt_stage == HALT_LOW) {
+        d = 0u;
+    }
+    if (b->halt_stage == HALT_REQUESTED && b->halt_at < d) {
+        d = b->halt_at;
+    }
+    if (b->nmi_pending != 0u && b->nmi_at < d) {
+        d = b->nmi_at;
+    }
+    b->next_deadline = d;
+}
+
+/* Latches the pending NMI edge as phi2 cycle index, unless MEN is clear or
+   an edge the CPU has not taken is already latched (docs/hardware/bus.md,
+   NMI). */
+static void latch_nmi(muhtari *m, uint64_t index)
+{
+    m->bus.nmi_pending = 0u;
+    if (men(m) && m->bus.nmi_phi2 == 0u) {
+        m->bus.nmi_phi2 = index;
+    }
 }
 
 /* Runs n whole 4-tick phi2 cycles in which the CPU is held. Each is counted
-   in phi2, so whatever counts phi2 counts through the hold
-   (docs/hardware/bus.md, RDY). */
+   in phi2, so whatever counts phi2 counts through the hold, and a pending
+   NMI edge is latched by the held cycle whose phi2 falls at or after it
+   (docs/hardware/bus.md, RDY and NMI). */
 static void hold(muhtari *m, uint64_t n)
 {
-    m->bus.ticks += n * BUS_FAST_TICKS;
-    m->bus.phi2 += n;
+    struct muhtari__bus *b = &m->bus;
+    if (n == 0u) {
+        return;
+    }
+    if (b->nmi_pending != 0u && b->nmi_at <= b->ticks + n * BUS_FAST_TICKS) {
+        uint64_t j = b->nmi_at > b->ticks ? (b->nmi_at - b->ticks - 1u) / BUS_FAST_TICKS : 0u;
+        latch_nmi(m, b->phi2 + 1u + j);
+    }
+    b->ticks += n * BUS_FAST_TICKS;
+    b->phi2 += n;
 }
 
-/* The events at or before a cycle's data tick. RDY holds a read that starts
-   before its release until a cycle starts at or after it; writes are never
-   held (docs/hardware/bus.md, RDY). */
-static void events(muhtari *m, int is_read)
+/* Whole 4-tick cycles from tick from until tick until, rounded up. */
+static uint64_t cycles_until(uint64_t from, uint64_t until)
+{
+    return until > from ? (until - from + BUS_FAST_TICKS - 1u) / BUS_FAST_TICKS : 0u;
+}
+
+/* The events at or before a cycle's data tick, data ticks after its start:
+   the HALT window, then RDY, which holds a read that starts before its
+   release until a cycle starts at or after it and never holds a write, then
+   the NMI latch (docs/hardware/bus.md, HALT, RDY and NMI). */
+static void events(muhtari *m, int is_read, uint32_t data)
 {
     struct muhtari__bus *b = &m->bus;
-    if (is_read && b->rdy_release != 0u) {
-        if (b->ticks < b->rdy_release) {
-            hold(m, (b->rdy_release - b->ticks + BUS_FAST_TICKS - 1u) / BUS_FAST_TICKS);
+    if (b->halt_stage == HALT_REQUESTED && b->halt_at <= b->ticks) {
+        b->halt_stage = HALT_LOW;
+        b->halt_cycles = 0u;
+        b->halt_lost = cycles_until(b->ticks, b->halt_until);
+    }
+    if (b->halt_stage == HALT_LOW) {
+        if (b->halt_cycles == HALT_RUN_CYCLES) {
+            b->halt_stage = HALT_NONE;
+            hold(m, b->halt_lost);
+        } else {
+            b->halt_cycles++;
         }
+    }
+    if (is_read && b->rdy_release != 0u) {
+        hold(m, cycles_until(b->ticks, b->rdy_release));
         b->rdy_release = 0u;
+    }
+    if (b->nmi_pending != 0u && b->nmi_at <= b->ticks + data) {
+        latch_nmi(m, b->phi2 + 1u);
     }
     rearm(m);
 }
@@ -114,7 +180,7 @@ static uint32_t begin(muhtari *m, enum bus_device dev, int is_read)
 {
     uint32_t len = slow(m, dev) ? BUS_SLOW_TICKS : BUS_FAST_TICKS;
     if (m->bus.ticks + data_at(len) >= m->bus.next_deadline) {
-        events(m, is_read);
+        events(m, is_read, data_at(len));
     }
     return len;
 }
@@ -168,4 +234,26 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
     }
     m->bus.open_bus = v;
     end(m, len);
+}
+
+void muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick)
+{
+    struct muhtari__bus *b = &m->bus;
+    if (b->halt_gate_writes < 2u) {
+        return;
+    }
+    b->halt_at = at_tick;
+    b->halt_until = until_tick;
+    b->halt_stage = HALT_REQUESTED;
+    rearm(m);
+}
+
+void muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick)
+{
+    if (!men(m)) {
+        return;
+    }
+    m->bus.nmi_at = at_tick;
+    m->bus.nmi_pending = 1u;
+    rearm(m);
 }

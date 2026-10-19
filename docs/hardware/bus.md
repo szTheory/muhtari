@@ -114,3 +114,42 @@ cycle. A refit changes the behaviour revision.
 
 So `STA WSYNC` from tick 0, with `tia_phase` 0, writes at tick 13 and ends at 14. The next opcode fetch is held
 from 14 for 111 cycles, runs from 458 to 462, and `phi2` counts every held cycle.
+
+## HALT
+
+MARIA stops SALLY with HALT while it fetches a line's graphics. HALT stops read and write cycles alike: the CPU's
+phase enables go away, and φ2 keeps running (System notes, section 3).
+
+**The gate.** HALT reaches SALLY only after two writes in the TIA's range (Software Guide). The count includes every
+unlocked write cycle the TIA's chip select sees, at any mirror and with any data, and it stops at 2. A
+read-modify-write's dummy write counts too. So `INC $06` from INPTCTRL `$02` opens the gate on its own: it reads
+`$06`, since the operand left `$06` on the bus and CXBLPF drives only D7, then writes `$06` back and then writes
+`$07`. INPTCTRL ends at `$07`, and the count at 2. A write after LOCK does not count. Until the gate opens, a HALT
+request does nothing.
+
+**The window.** MARIA asks for HALT from one tick until another. /HALT falls at the first cycle boundary at or after
+the request: at once when the request lands on a boundary, or at the end of the cycle in flight. That end is up to
+3 ticks later after a fast cycle and up to 5 after a slow one. SALLY samples HALT at the start of each φ2 and stops
+only from the second sample:
+
+- c0, the cycle that starts at the fall, runs, and so does c1, the next.
+- c2 waits for m whole 4-tick cycles, where m counts the cycles from the fall to the end of the request, rounded up.
+  Then it completes. It takes 4 + 4m ticks when fast, and every frozen cycle counts in `phi2`.
+
+Release takes the same two samples, so SALLY loses exactly m cycles.
+
+The two cycles of latency are fitted, not measured. They are MiSTer's figure, chosen so that a 46-cycle loop counts
+correctly. A scope shows the bus free by the second φ2 fall, and other emulators stop the CPU at once (System notes,
+sections 2 and 3). `src/bus.c` names the constant and keeps the rule in one place. A refit changes the behaviour
+revision.
+
+## NMI
+
+On the 7800 only MARIA raises NMI, at the end of a zone's DMA, and never while MEN = 0. SALLY latches the edge at the
+end of a φ2. The bus records `nmi_phi2`, the φ2 count of the first cycle whose data tick falls at or after the edge:
+tick 4 of a fast cycle, tick 5 of a slow one. An edge raised while MEN = 0 is dropped.
+
+Held RDY and HALT cycles each carry their own φ2 count. So an edge latched during a hold names the held cycle it
+fell in, not the cycle that completes the access. After `STA WSYNC`, an edge at tick 100 falls in held cycle 25 of
+`CLC`'s opcode fetch, which completes at φ2 115. Where the CPU compares that count, and so after which instruction
+it takes the NMI, is in `docs/hardware/sally.md`, NMI.
