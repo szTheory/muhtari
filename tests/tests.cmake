@@ -12,6 +12,7 @@ if(MUHTARI_NOFP)
 endif()
 include(${CMAKE_CURRENT_LIST_DIR}/abi/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/core/tests.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cpu/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/host/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/install/tests.cmake)
 # Without the libretro core (wasm32: WASI has no dlopen) none of its tests

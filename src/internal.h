@@ -25,9 +25,42 @@
 #define MUHTARI__PITCH_MIN 320u
 #define MUHTARI__PITCH_MAX 65536u
 
+/* SALLY's registers. P is held raw, as the stack and the vectors see it.
+   jammed is set by a JAM opcode; the CPU then runs no more instructions. */
+struct muhtari__cpu {
+    uint16_t pc;
+    uint8_t a, x, y, s, p;
+    uint8_t jammed;
+};
+
+/* The bus's state. phi2 counts completed CPU cycles. nmi_phi2 is the phi2
+   count of the cycle that latched an NMI edge, 0 when none is latched. */
+struct muhtari__bus {
+    uint64_t phi2;
+    uint64_t nmi_phi2;
+};
+
+/* RAM fill patterns at power-on. */
+#define MUHTARI__RAM_FILL_ZERO 0u
+
+/* The machine profile: what differs between consoles of one model.
+   ane_lxa_constant is the value ANE and LXA OR into A (docs/hardware/sally.md,
+   Unstable opcodes); riot_orb_power_on is the RIOT's port B output register
+   at power-on; ram_fill is a MUHTARI__RAM_FILL_* pattern; tia_phase is the
+   TIA line's offset at power-on, in ticks. */
+struct muhtari__profile {
+    uint8_t ane_lxa_constant;
+    uint8_t riot_orb_power_on;
+    uint8_t ram_fill;
+    uint16_t tia_phase;
+};
+
 struct muhtari {
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
+    struct muhtari__cpu cpu;
+    struct muhtari__bus bus;
+    struct muhtari__profile profile;
 };
 
 /* The size of each struct as first released: the end of its last field. A
@@ -91,5 +124,13 @@ muhtari_status muhtari__check_size(const void *s, uint32_t first, uint32_t ours)
 
 /* The test card's native colour at (x, y) in a frame h rows tall. */
 uint8_t muhtari__testcard_pixel(uint32_t x, uint32_t y, uint32_t h);
+
+/* One CPU bus cycle: a read or a write at addr. The CPU makes every access
+   through these two; the CPU test programs define their own. */
+uint8_t muhtari__bus_read(muhtari *m, uint16_t addr);
+void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v);
+
+/* Runs exactly one instruction. */
+void muhtari__cpu_step(muhtari *m);
 
 #endif /* MUHTARI_INTERNAL_H */

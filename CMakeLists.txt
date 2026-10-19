@@ -31,29 +31,51 @@ function(muhtari_warnings target)
   endif()
 endfunction()
 
-# The core library. It links nothing beyond memcpy, memmove, memset and
-# memcmp: no stack protector or fortify helpers, no MSVC security cookie and
-# no default runtime library, and no build path recorded in the objects.
-add_library(muhtari STATIC
-  src/instance.c
-  src/frame.c
-  src/testcard.c)
-add_library(muhtari::muhtari ALIAS muhtari)
-target_include_directories(muhtari PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-set_target_properties(muhtari PROPERTIES
-  C_VISIBILITY_PRESET hidden
-  POSITION_INDEPENDENT_CODE ON)
-target_compile_options(muhtari PRIVATE
-  $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-fno-stack-protector -U_FORTIFY_SOURCE -ffile-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=.>
-  $<$<C_COMPILER_ID:MSVC>:/GS- /Zl>)
-muhtari_warnings(muhtari)
+option(MUHTARI_NOFP "Build the core with general registers only; register only the abi tests" OFF)
 
 # The library version reaches the core through a private generated header;
 # the public header carries no version macros.
 configure_file(cmake/version.h.in ${PROJECT_BINARY_DIR}/generated/muhtari_version.h @ONLY)
-target_include_directories(muhtari PRIVATE ${PROJECT_BINARY_DIR}/generated)
+
+# The options of every target that holds core code. The core links nothing
+# beyond memcpy, memmove, memset and memcmp: no stack protector or fortify
+# helpers, no MSVC security cookie and no default runtime library, and no
+# build path recorded in the objects. The nofp lane proves it integer-only by
+# machine code, not text: GCC's -mgeneral-regs-only rejects any
+# floating-point type, and the abi fixtures copy these options from muhtari.
+function(muhtari_core_options target)
+  set_target_properties(${target} PROPERTIES
+    C_VISIBILITY_PRESET hidden
+    POSITION_INDEPENDENT_CODE ON)
+  target_compile_options(${target} PRIVATE
+    $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-fno-stack-protector -U_FORTIFY_SOURCE -ffile-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=.>
+    $<$<C_COMPILER_ID:MSVC>:/GS- /Zl>)
+  if(MUHTARI_NOFP)
+    target_compile_options(${target} PRIVATE -mgeneral-regs-only)
+  endif()
+  target_include_directories(${target} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${PROJECT_BINARY_DIR}/generated)
+  muhtari_warnings(${target})
+endfunction()
+
+# The core library, built from object libraries so each object is compiled
+# once: the CPU test programs link the CPU's object with their own bus, so the
+# object under test is the object that ships. muhtari_cpu joins the archive
+# with the bus that defines its two bus functions.
+add_library(muhtari_objs OBJECT
+  src/instance.c
+  src/frame.c
+  src/testcard.c)
+add_library(muhtari_cpu OBJECT src/cpu.c)
+add_library(muhtari STATIC $<TARGET_OBJECTS:muhtari_objs>)
+add_library(muhtari::muhtari ALIAS muhtari)
+target_include_directories(muhtari PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+foreach(core_target IN ITEMS muhtari muhtari_objs muhtari_cpu)
+  muhtari_core_options(${core_target})
+endforeach()
 
 if(NOT PROJECT_IS_TOP_LEVEL)
   return()
@@ -159,15 +181,10 @@ if(MUHTARI_HYGIENE)
   find_package(Git REQUIRED)
 endif()
 
-# The nofp lane proves the core integer-only by machine code, not text: GCC's
-# -mgeneral-regs-only rejects any floating-point type in the core and in the
-# abi fixtures, which copy the core's options. It registers only the abi tests.
-option(MUHTARI_NOFP "Build the core with general registers only; register only the abi tests" OFF)
-if(MUHTARI_NOFP)
-  if(NOT CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    message(FATAL_ERROR "nofp: -mgeneral-regs-only needs GCC, not ${CMAKE_C_COMPILER_ID}")
-  endif()
-  target_compile_options(muhtari PRIVATE -mgeneral-regs-only)
+# The nofp lane builds every core object with -mgeneral-regs-only (see
+# muhtari_core_options) and registers only the abi tests.
+if(MUHTARI_NOFP AND NOT CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  message(FATAL_ERROR "nofp: -mgeneral-regs-only needs GCC, not ${CMAKE_C_COMPILER_ID}")
 endif()
 
 # Tests. MUHTARI_TIMEOUT_SCALE multiplies every test's timeout on slow lanes;
