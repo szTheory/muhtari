@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 0
+open_count: 1
 waived_count: 0
 fixed_count: 1
-total_count: 1
-last_updated: 2026-10-19T02:35:09.642Z
+total_count: 2
+last_updated: 2026-10-19T23:56:08.197Z
 ---
 
 # Broken Windows Ledger
@@ -16,6 +16,7 @@ last_updated: 2026-10-19T02:35:09.642Z
 | id | phase | kind | file | line | description | status | reason | recorded_at | resolved_at |
 |----|-------|------|------|------|-------------|--------|--------|-------------|-------------|
 | 1 | 02 | stub | src/cart.c |  | muhtari__cart_identify ignores the layouts argument: no slice hashes and no 128 KiB half-swapped hash yet; the identification plan that follows adds them | fixed |  | 2026-10-19T02:21:16.103Z | 2026-10-19T02:35:09.642Z |
+| 2 | 03 | stub | src/maria.c | 68 | MARIA's DMA fetch floats for cartridge space until the board read is routed (plan 03-02) | open |  | 2026-10-19T23:56:08.197Z |  |
 
 ````json
 [
@@ -30,6 +31,19 @@ last_updated: 2026-10-19T02:35:09.642Z
     "reason": "",
     "recorded_at": "2026-10-19T02:21:16.103Z",
     "resolved_at": "2026-10-19T02:35:09.642Z",
+    "milestone": "v1.0"
+  },
+  {
+    "id": 2,
+    "kind": "stub",
+    "phase": "03",
+    "file": "src/maria.c",
+    "line": 68,
+    "description": "MARIA's DMA fetch floats for cartridge space until the board read is routed (plan 03-02)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-19T23:56:08.197Z",
+    "resolved_at": null,
     "milestone": "v1.0"
   }
 ]
