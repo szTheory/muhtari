@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-04-PLAN.md
-last_updated: "2026-10-19T00:46:35.226Z"
+stopped_at: Completed 02-05-PLAN.md
+last_updated: "2026-10-19T01:06:31.581Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: eb826d18f8cbfb9dda82f9fadb07a73bc80c1b3e
+state_head: de9a2cece398872cbf01fd719b3f2053f000abbb
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 25
+  completed_plans: 26
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 5 of 16
+Plan: 6 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -83,6 +83,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P02 | 9 min | 3 tasks | 11 files |
 | Phase 02 P03 | 10 min | 3 tasks | 19 files |
 | Phase 02 P04 | 9 min | 2 tasks | 12 files |
+| Phase 02 P05 | 17 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,9 @@ Recent decisions affecting current work:
 - [Phase 02]: policy.rom_hash_coverage reads the working tree under ROOT and exempts only tests/roms/manifest.txt; its self test zeros the sample digest in a configure-time copy of the real manifest
 - [Phase 02]: Hosted run 39182041117: cpu.decimal.clark takes 3.78 s on be32 and under 1 s elsewhere, so TIMEOUT 60 stays until the D-31 measurement
 - [Phase 02]: 6502.org answers 404 to curl's default user agent; fetch the tutorial with a browser -A string
+- [Phase 02]: NMI is taken when nmi_phi2 is at or before poll_phi2, which each instruction but JAM stores once, right before its final bus access; the NMI entry and JAM store none
+- [Phase 02]: The vector harness checks every opcode poll mark (4 for BRK, 1 for a three-cycle branch, N - 1 otherwise) and gives each JAM an edge and a stale mark of before + 12
+- [Phase 02]: Hosted run 39183525965: the six cpu.nmi tests and the poll-checked vectors are green on every leg; MSVC rejects (uint8_t)~CONSTANT as C4310
 
 ### Pending Todos
 
@@ -201,6 +205,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T00:46:35.173Z
-Stopped at: Completed 02-04-PLAN.md
+Last session: 2026-10-19T01:06:23.186Z
+Stopped at: Completed 02-05-PLAN.md
 Resume file: None
