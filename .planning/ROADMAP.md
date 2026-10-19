@@ -126,7 +126,7 @@ Plans:
   4. `muhtari-run --probe FILE` prints the A78 fields, board, region, peripherals and all four hashes, identifies a header-stripped image through the hash list, and gives a 2600 image, an unsupported board and a malformed, truncated or oversized file each a distinct status and message; the counting-allocator test and `ctest -R fuzz.regress.loader` pass on every platform and the loader fuzz target runs nightly.
   5. Merging the phase's pull request publishes a release through the Phase 1 pipeline with no manual step.
 
-**Plans**: 7/16 plans executed (sequential waves; parallelization off)
+**Plans**: 8/16 plans executed (sequential waves; parallelization off)
 
 Plans:
 **Wave 1**
@@ -151,7 +151,7 @@ Plans:
 - [x] 02-07-PLAN.md — RIOT: lazy timer, flags, PA7, ports, power-on values, RAM; `ctest -L riot`; the one-off Cachegrind check
 
 **Wave 8** *(blocked on Wave 7 completion)*
-- [ ] 02-08-PLAN.md — SHA-1 from FIPS 180-4; generated CC0 tables with `policy.cartdb_generated`; `no_float` accepts the SPDX expression
+- [x] 02-08-PLAN.md — SHA-1 from FIPS 180-4; generated CC0 tables with `policy.cartdb_generated`; `no_float` accepts the SPDX expression
 
 **Wave 9** *(blocked on Wave 8 completion)*
 - [ ] 02-09-PLAN.md — API version 2 with `muhtari_probe`; header path, refusal classes, warnings, size tags
@@ -220,6 +220,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
-| 2. The CPU matches the public vectors | 7/16 | In Progress | - |
+| 2. The CPU matches the public vectors | 8/16 | In Progress | - |
 | 3. Games play in RetroArch | 0/TBD | Not started | - |
 | 4. Sound | 0/TBD | Not started | - |

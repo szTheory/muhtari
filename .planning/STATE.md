@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-10-19T01:42:42.843Z"
+stopped_at: Completed 02-08-PLAN.md
+last_updated: "2026-10-19T01:58:53.350Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: 0ac89619d18031456edb69658b63512ae066e355
+state_head: 5f948fb1172b669c20dea62e802364696597e542
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 28
+  completed_plans: 29
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 8 of 16
+Plan: 9 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -86,6 +86,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P05 | 17 min | 2 tasks | 10 files |
 | Phase 02 P06 | 18 min | 3 tasks | 12 files |
 | Phase 02 P07 | 12 min | 3 tasks | 12 files |
+| Phase 02 P08 | 13 min | 2 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -178,6 +179,10 @@ Recent decisions affecting current work:
 - [Phase 02]: PA7's edge detector input is the level XOR the rising-edge select, and the flag sets when it falls; marked as a model in docs/hardware/riot.md
 - [Phase 02]: Cachegrind: split archive 48.449 vs one translation unit 48.299 Ir per emulated cycle (0.31 %), under 5 %, so the core stays split
 - [Phase 02]: Hosted run 39186310654: the 16 riot-labelled tests are green on every leg; be32 took 31 s
+- [Phase 02]: The cartdb key's part is its slice position; a layout row lists slice sizes and each slice's part, so a reloaded chip appears twice
+- [Phase 02]: src/cartdb.c's header spans lines 2-3: clang-format 21 reflows the one-line form; tables are 19,284 B of const data
+- [Phase 02]: hygiene.no_float removes an SPDX licence expression up to the first character no expression uses, so text after */ is still scanned
+- [Phase 02]: Hosted run 39187517812: cart.sha1.fips and policy.cartdb_generated are green on every leg; be32 took 48 s, the hygiene job 43 s with its fetch
 
 ### Pending Todos
 
@@ -216,6 +221,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T01:42:42.792Z
-Stopped at: Completed 02-07-PLAN.md
+Last session: 2026-10-19T01:58:53.297Z
+Stopped at: Completed 02-08-PLAN.md
 Resume file: None
