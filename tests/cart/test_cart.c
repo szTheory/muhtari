@@ -1,7 +1,9 @@
-/* muhtari_probe on images built in memory (images.h), one case per argv.
-   The program links the core's objects rather than the archive. */
+/* muhtari_probe and the internal load on images built in memory (images.h),
+   one case per argv. The program links the core's objects rather than the
+   archive. */
 #include <string.h>
 
+#include "../alloc.h"
 #include "cartdb.h"
 #include "images.h"
 #include "internal.h"
@@ -673,6 +675,141 @@ static void test_headerless_ports(void)
     CHECK_EQ_U64(out.port2, MUHTARI_PORT_PROLINE);
 }
 
+/* One image of each refusal class, built into buf, and the status the class
+   gives. */
+static size_t reject_2600(void)
+{
+    return images_2600(buf, 4u * IMAGES_KIB);
+}
+
+static size_t reject_2600_listed(void)
+{
+    return images_seeded(buf, 8u * IMAGES_KIB, IMAGES_SEED_2600);
+}
+
+static size_t reject_board(void)
+{
+    size_t n = images_a78(buf, 4u, 512u * IMAGES_KIB, 0x1000u, 512u * IMAGES_KIB);
+    buf[64] = 4u; /* Souper as the version 4 mapper */
+    return n;
+}
+
+static size_t reject_size_zero(void)
+{
+    return images_a78(buf, 3u, 0u, 0u, 32u * IMAGES_KIB);
+}
+
+static size_t reject_bad_magic(void)
+{
+    images_fill(buf, 1000u, 1000u);
+    return 1000u;
+}
+
+static size_t reject_not_cart(void)
+{
+    return images_seeded(buf, 4u * IMAGES_KIB, IMAGES_SEED_NOT_CART);
+}
+
+static size_t reject_header_only(void)
+{
+    images_header(buf, 3u, "Short", 32u * IMAGES_KIB, 0u);
+    return IMAGES_HEADER;
+}
+
+static size_t reject_sg_short(void)
+{
+    return images_a78(buf, 3u, 128u * IMAGES_KIB, 0x0002u, 40u * IMAGES_KIB);
+}
+
+static size_t reject_oversized(void)
+{
+    size_t n = images_a78(buf, 3u, 1024u * IMAGES_KIB, 0x0002u, 1024u * IMAGES_KIB);
+    buf[n] = 0u;
+    return n + 1u;
+}
+
+static const struct {
+    const char *name;
+    size_t (*build)(void);
+    muhtari_status want;
+} rejects[] = {
+    {"2600", reject_2600, MUHTARI_STATUS_ERR_UNSUPPORTED_2600},
+    {"2600, listed", reject_2600_listed, MUHTARI_STATUS_ERR_UNSUPPORTED_2600},
+    {"unsupported board", reject_board, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD},
+    {"size field 0", reject_size_zero, MUHTARI_STATUS_ERR_INVALID_IMAGE},
+    {"bad magic", reject_bad_magic, MUHTARI_STATUS_ERR_INVALID_IMAGE},
+    {"not a cartridge", reject_not_cart, MUHTARI_STATUS_ERR_INVALID_IMAGE},
+    {"header only", reject_header_only, MUHTARI_STATUS_ERR_TRUNCATED_IMAGE},
+    {"SuperGame short", reject_sg_short, MUHTARI_STATUS_ERR_TRUNCATED_IMAGE},
+    {"oversized", reject_oversized, MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE},
+};
+
+static struct muhtari before;
+
+/* Loads n bytes of buf into a fresh instance, with every allocation after
+   create failing when fail is set. Checks the status, that the instance is
+   byte-identical unless the load is OK, and the allocator's counts. */
+static void expect_load(const char *what, size_t n, int fail, muhtari_status want)
+{
+    alloc_counts c;
+    muhtari_config cfg = alloc_config(&c);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL) {
+        return;
+    }
+    alloc_counts created = c;
+    if (fail) {
+        c.fail_from = c.allocs + 1u;
+    }
+    memcpy(&before, m, sizeof before);
+    muhtari_status got = muhtari__cart_load(m, buf, n);
+    if (got != want) {
+        fprintf(stderr, "%s%s: expected status %u, got %u\n", what, fail ? ", failing" : "",
+                (unsigned)want, (unsigned)got);
+        check_failures++;
+    }
+    if (want == MUHTARI_STATUS_OK) {
+        /* The positive control: one allocation of rom_size bytes. */
+        muhtari_cart_info info = expect_written(what, buf, n, MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(c.allocs, created.allocs + 1u);
+        CHECK_EQ_U64(c.alloc_size, info.rom_size);
+        CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, info.rom_size) == 0);
+    } else {
+        if (want != MUHTARI_STATUS_ERR_NO_MEMORY) {
+            CHECK_EQ_U64(c.allocs, created.allocs);
+        }
+        if (memcmp(m, &before, sizeof before) != 0) {
+            fprintf(stderr, "%s%s: the instance changed\n", what, fail ? ", failing" : "");
+            check_failures++;
+        }
+    }
+    CHECK_EQ_U64(c.frees, created.frees);
+    muhtari_destroy(m);
+    /* destroy frees the ROM, when there is one, and the instance. */
+    CHECK_EQ_U64(c.frees - created.frees, want == MUHTARI_STATUS_OK ? 2u : 1u);
+}
+
+/* A refused image allocates nothing and leaves the instance byte-identical,
+   with the status muhtari_probe gives; with an allocator that fails every
+   call the status is still the refusal's, so validation runs first. An
+   accepted linear image makes exactly one allocation, of rom_size bytes,
+   and destroy frees it. */
+static void test_no_alloc_on_reject(void)
+{
+    for (size_t i = 0; i < sizeof rejects / sizeof rejects[0]; i++) {
+        size_t n = rejects[i].build();
+        muhtari_cart_info out;
+        prefill(&out, 0u);
+        CHECK_EQ_U64(muhtari_probe(buf, n, &out), rejects[i].want);
+        expect_load(rejects[i].name, n, 0, rejects[i].want);
+        expect_load(rejects[i].name, n, 1, rejects[i].want);
+    }
+    size_t n = images_linear(buf, 3u, 16u * IMAGES_KIB);
+    expect_load("linear", n, 0, MUHTARI_STATUS_OK);
+    expect_load("linear", n, 1, MUHTARI_STATUS_ERR_NO_MEMORY);
+}
+
 static const struct {
     const char *name;
     void (*run)(void);
@@ -683,6 +820,7 @@ static const struct {
     {"identify.not_a_cartridge", test_not_a_cartridge},
     {"identify.slices", test_slices},
     {"identify.hash_override", test_hash_override},
+    {"load.no_alloc_on_reject", test_no_alloc_on_reject},
     {"probe.2600", test_2600},
     {"probe.accepted", test_accepted},
     {"probe.arguments", test_arguments},

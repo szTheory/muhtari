@@ -8,6 +8,7 @@
 
 #include "muhtari.h"
 #include "sha256.h"
+#include "../alloc.h"
 #include "../check.h"
 
 #define WIDTH 320u
@@ -44,29 +45,6 @@ static void test_free(void *user, void *ptr, size_t size)
 {
     (void)user;
     (void)size;
-    free(ptr);
-}
-
-/* A counting allocator: records every call and the sizes it sees. */
-typedef struct counts {
-    uint32_t allocs, frees;
-    size_t alloc_size, free_size;
-    int fail; /* nonzero: alloc returns NULL */
-} counts;
-
-static void *count_alloc(void *user, size_t size)
-{
-    counts *c = (counts *)user;
-    c->allocs++;
-    c->alloc_size = size;
-    return c->fail ? NULL : malloc(size);
-}
-
-static void count_free(void *user, void *ptr, size_t size)
-{
-    counts *c = (counts *)user;
-    c->frees++;
-    c->free_size = size;
     free(ptr);
 }
 
@@ -476,7 +454,7 @@ static void test_size_tags(void)
    out pointer, and destroy hands free the size alloc was given. */
 static void test_allocator(void)
 {
-    counts c;
+    alloc_counts c;
     memset(&c, 0, sizeof c);
     muhtari_config cfg;
     memset(&cfg, 0, sizeof cfg);
@@ -497,12 +475,12 @@ static void test_allocator(void)
     CHECK(m == marker);
 
     cfg.allocator.free = count_free;
-    c.fail = 1;
+    c.fail_from = 1u;
     CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_ERR_NO_MEMORY);
     CHECK_EQ_U64(c.allocs, 1);
     CHECK(m == marker);
 
-    c.fail = 0;
+    c.fail_from = 0u;
     CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
     CHECK(m != marker && m != NULL);
     muhtari_destroy(m);
@@ -552,7 +530,7 @@ static void test_info(void)
    LONG_RUN frames, one free at destroy. */
 static void test_no_alloc_after_load(void)
 {
-    counts c;
+    alloc_counts c;
     memset(&c, 0, sizeof c);
     muhtari_config cfg;
     memset(&cfg, 0, sizeof cfg);

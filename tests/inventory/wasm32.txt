@@ -37,6 +37,7 @@ cart.identify.hash_override	cart,portable
 cart.identify.headerless_ports	cart,portable
 cart.identify.not_a_cartridge	cart,portable
 cart.identify.slices	cart,portable
+cart.load.no_alloc_on_reject	cart,portable
 cart.probe.2600	cart,portable
 cart.probe.accepted	cart,portable
 cart.probe.arguments	cart,portable
