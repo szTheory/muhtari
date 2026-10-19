@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-11-PLAN.md
-last_updated: "2026-10-19T02:53:55.167Z"
+stopped_at: Completed 02-12-PLAN.md
+last_updated: "2026-10-19T03:07:30.953Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: 12a6b18dafa0fc8309e0edbca3c97b472c03b5e6
+state_head: 805a2236f416406f9f9369800c217e3fb3bc6797
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 32
+  completed_plans: 33
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 12 of 16
+Plan: 13 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -90,6 +90,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P09 | 21 min | 3 tasks | 21 files |
 | Phase 02 P10 | 11 min | 2 tasks | 11 files |
 | Phase 02 P11 | 14 min | 3 tasks | 21 files |
+| Phase 02 P12 | 9 min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -197,6 +198,8 @@ Recent decisions affecting current work:
 - [Phase 02]: The loader identifies before it allocates; struct muhtari__cart keeps the ROM pointer and the loaded muhtari_cart_info, whose rom_size is the allocation's size
 - [Phase 02]: The fuzz preset builds every object with fuzzer-no-link coverage under ASan and UBSan (632 counters); the replay takes files, so tests/fuzz/tests.cmake globs the regressions at configure time
 - [Phase 02]: Container fuzz run: 32,253 runs in 61 s, 528 exec/s, cov 173 to 245, corpus 18 to 85 units, no crash; hosted run 39191834717 green on every leg
+- [Phase 02]: Plan 12: host/status_text.c holds the English; muhtari__status_text gives "unsupported board" and the runner appends the board name
+- [Phase 02]: Plan 12: --help prints the exit code as %2d so 77 refused aligns and rows 0-2 stay byte-identical
 
 ### Pending Todos
 
@@ -235,6 +238,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T02:53:55.116Z
-Stopped at: Completed 02-11-PLAN.md
+Last session: 2026-10-19T03:07:30.901Z
+Stopped at: Completed 02-12-PLAN.md
 Resume file: None

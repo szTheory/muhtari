@@ -126,7 +126,7 @@ Plans:
   4. `muhtari-run --probe FILE` prints the A78 fields, board, region, peripherals and all four hashes, identifies a header-stripped image through the hash list, and gives a 2600 image, an unsupported board and a malformed, truncated or oversized file each a distinct status and message; the counting-allocator test and `ctest -R fuzz.regress.loader` pass on every platform and the loader fuzz target runs nightly.
   5. Merging the phase's pull request publishes a release through the Phase 1 pipeline with no manual step.
 
-**Plans**: 11/16 plans executed (sequential waves; parallelization off)
+**Plans**: 12/16 plans executed (sequential waves; parallelization off)
 
 Plans:
 **Wave 1**
@@ -163,7 +163,7 @@ Plans:
 - [x] 02-11-PLAN.md — Internal loader, counting allocator, loader fuzz target, replay and `fuzz` preset
 
 **Wave 12** *(blocked on Wave 11 completion)*
-- [ ] 02-12-PLAN.md — `muhtari-run --probe`: key-value lines, eight hashes, MD5, status text, exit 77
+- [x] 02-12-PLAN.md — `muhtari-run --probe`: key-value lines, eight hashes, MD5, status text, exit 77
 
 **Wave 13** *(blocked on Wave 12 completion)*
 - [ ] 02-13-PLAN.md — 7800basic `simple` built on every test leg; `MUHTARI_TESTS=OFF` for build-only jobs; sample probe tests; `muhtari-run-testdb`; Windows evidence
@@ -220,6 +220,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
-| 2. The CPU matches the public vectors | 11/16 | In Progress | - |
+| 2. The CPU matches the public vectors | 12/16 | In Progress | - |
 | 3. Games play in RetroArch | 0/TBD | Not started | - |
 | 4. Sound | 0/TBD | Not started | - |
