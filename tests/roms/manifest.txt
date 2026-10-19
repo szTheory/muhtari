@@ -1,0 +1,19 @@
+# Test fixtures and other binary files allowed in this repository.
+#
+# scripts/hygiene.sh rejects a ROM, BIOS or save file name, a 7800 image and
+# any file git treats as binary unless its path is the first field of a line
+# here. ASSET_POLICY.md section 2 says which files may be listed.
+#
+# One line per file, fields separated by a tab:
+#
+#   path<TAB>source<TAB>pin<TAB>licence<TAB>sha256<TAB>notice
+#
+#   path     the file's path from the repository root
+#   source   where the file comes from (a repository URL, or this-repo)
+#   pin      the upstream commit, or a release tag plus asset name
+#   licence  the licence that permits redistribution (SPDX expression)
+#   sha256   the file's SHA-256, 64 lowercase hex digits
+#   notice   the THIRD-PARTY-NOTICES.md section, or -
+#
+# Lines starting with # are comments.
+tests/vectors/6502-sample.n65v	https://github.com/SingleStepTests/65x02	2f6980a2d95757486c7bee24355c360e40e2a224	MIT	9f64df03b8e242943fb86b826e174b667e521176c3df2dbbbad45ae80eeada9d	singlesteptests

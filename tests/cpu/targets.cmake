@@ -17,3 +17,14 @@ target_include_directories(muhtari-test-vectors PRIVATE
 set_target_properties(muhtari-test-vectors PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-vectors)
+
+# The converter from upstream JSON to N65V, which builds the committed
+# sample. A test tool: never installed.
+add_executable(muhtari-vecconv
+  ${cpu_vectors_dir}/vecconv.c
+  ${cpu_vectors_dir}/n65v.c
+  ${cpu_vectors_dir}/sst_json.c)
+target_include_directories(muhtari-vecconv PRIVATE ${cpu_vectors_dir})
+set_target_properties(muhtari-vecconv PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-vecconv)

@@ -3,3 +3,4 @@
 /tests/roms/** -text
 *.a78 binary
 *.bin binary
+*.n65v binary

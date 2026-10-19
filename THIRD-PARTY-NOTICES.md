@@ -68,3 +68,37 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
+
+## singlesteptests
+
+- **Applies to:** `tests/vectors/6502-sample.n65v`
+- **Upstream:** https://github.com/SingleStepTests/65x02, directory `6502/v1` at commit
+  `2f6980a2d95757486c7bee24355c360e40e2a224`. The repository's `LICENSE` licenses it MIT.
+- **Changes:** the first 100 tests of each of the 256 files `6502/v1/00.json` to `ff.json`,
+  converted to the N65V binary form (`tests/vectors/n65v.h`) and concatenated in opcode order. Test
+  names are dropped; every state, RAM pair and bus cycle is kept.
+- **Licence:** MIT
+
+```
+MIT License
+
+Copyright (c) 2024 Thomas Harte et al
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
