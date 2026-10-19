@@ -15,8 +15,8 @@ files:
 Phase 2's first code review (02-REVIEW.md as committed in 4f620d2, 2026-10-19) left one warning and three info
 findings open after its first fix round. WR-01, IN-02 and IN-03 are about tooling, so AGENTS rule 7 makes them seeds,
 not requirements. IN-01 is an info finding outside the fix round's scope. The re-review of the fix round reused the ids
-WR-01 and IN-01 for new findings, so 02-REVIEW-DISPOSITION.md keeps only IN-02 and IN-03, 02-REVIEW-FIX.md records
-WR-01 as skipped, and this file is the record of all four.
+WR-01 and IN-01 for new findings, so 02-REVIEW-DISPOSITION.md keeps only IN-02 and IN-03, 02-REVIEW-FIX.md as
+committed in 99482b2 records WR-01 as skipped, and this file is the record of all four.
 
 - WR-01: the `paths` filter on nightly.yml's `pull_request` trigger leaves out inputs of the vectors-full and
   loader-fuzz jobs: `src/internal.h`, `src/instance.c`, `src/riot.c`, `src/cartdb.h`, `src/sha1.h`,

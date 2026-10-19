@@ -5,10 +5,10 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: planning
-stopped_at: Phase 02 re-verified after its review fixes; next /gsd-ship 2
-last_updated: "2026-10-19T19:41:18.000Z"
+stopped_at: Phase 02 fix round 2 made 02-VERIFICATION.md stale; next /gsd-execute-phase 02, then /gsd-ship 2
+last_updated: "2026-10-19T20:15:41.000Z"
 last_activity: 2026-10-19
-last_activity_desc: Phase 02 re-verified after its review fixes
+last_activity_desc: Phase 02 code-review fix round 2
 state_head: 1350b30100595c0aa264de0fad31139e9012ae84
 progress:
   total_phases: 4
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-19)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Ship phase 02 (`/gsd-ship 2`; the merge publishes 0.2.0), then Phase 3 — Games play in RetroArch
+**Current focus:** Re-verify phase 02 after fix round 2 (`/gsd-execute-phase 02`), ship it (`/gsd-ship 2`; the merge publishes 0.2.0), then Phase 3 — Games play in RetroArch
 
 ## Current Position
 
 Phase: 3 — Games play in RetroArch
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-19 — Phase 02 re-verified after its review fixes
+Last activity: 2026-10-19 — Phase 02 code-review fix round 2
 
 Progress: [█████░░░░░] 50%
 
@@ -218,6 +218,7 @@ Recent decisions affecting current work:
 - [Phase 02]: Plan 16: The ship title is feat: the CPU matches the public 6502 vectors, with the 7800 bus, RIOT and cartridge probing (check-title.sh exit 0); probe PR #9 closed unmerged
 - [Phase 02]: Review fix round 1 fixed WR-02 to WR-04. The bus takes one HALT window and one NMI edge at a time and ignores a second while one is in flight; a step on a jammed CPU reads $FFFF once, so time keeps moving. Phase 3's MARIA and run loop build on both (docs/hardware/bus.md, docs/hardware/sally.md, JAM). WR-01 and IN-01 to IN-03 wait in the 2026-10-19 todo; one code-review fix round is left in this phase
 - [Phase 02]: The re-review of fix round 1 (2cca8b3) found no blocker. Its new WR-01 (the bus entry points cannot say a request was ignored), WR-02 (a test seed) and IN-01 wait in the MARIA and run-loop todo for phase 3, so one code-review fix round is still left. The re-verification passed 5/5 with a fresh covered digest
+- [Phase 02]: Fix round 2, the last one rule 7 allows, fixed the re-review's WR-01 (62b6bdc): `muhtari__bus_request_halt` and `muhtari__bus_raise_nmi` return 1 when they take a request and 0 when they ignore it, and MARIA checks it in phase 3. WR-02 is skipped as a test seed; it and IN-01 wait in the MARIA and run-loop todo. No code-review fix round is left in this phase
 
 ### Pending Todos
 
@@ -245,6 +246,8 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- [Phase 02] Ship is blocked: fix round 2 changed covered files, so `verification.status` reads `stale`.
+  `/gsd-execute-phase 02` resumes at the phase gates and re-runs the verifier; then `/gsd-ship 2`.
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
@@ -259,6 +262,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T19:41:18.000Z
-Stopped at: Phase 02 re-verified after its review fixes; next /gsd-ship 2
+Last session: 2026-10-19T20:15:41.000Z
+Stopped at: Phase 02 fix round 2 made 02-VERIFICATION.md stale; next /gsd-execute-phase 02, then /gsd-ship 2
 Resume file: None

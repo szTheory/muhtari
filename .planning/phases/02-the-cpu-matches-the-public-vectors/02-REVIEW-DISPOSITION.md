@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: deferred
+    disposition: fixed
     title: "A HALT window or NMI edge that is ignored is dropped without a word, and the caller cannot tell"
   - id: WR-02
     severity: warning
-    disposition: deferred
+    disposition: skipped
     title: "`cpu.jam.step_reads_ffff` cannot catch a jammed step that polls for an NMI"
   - id: IN-01
     severity: info
@@ -33,18 +33,18 @@ findings:
     title: "The firmware scan cannot recognise multi-chip or half-swapped 7800 images"
 open: 0
 total: 7
-recorded: 2026-10-19T19:30:44.642Z
+recorded: 2026-10-19T20:15:17.290Z
 ---
 
 # Phase 02: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: phase 3's MARIA is the first caller |
-| WR-02 | warning | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: test code, a seed under rule 7 |
+| WR-01 | warning | fixed | 02-REVIEW-FIX.md |
+| WR-02 | warning | skipped | 02-REVIEW-FIX.md |
 | IN-01 | info | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: waits for phase 3's run loop |
-| WR-03 | warning | fixed | 02-REVIEW-FIX.md (not in the current review) |
-| WR-04 | warning | fixed | 02-REVIEW-FIX.md (not in the current review) |
+| WR-03 | warning | fixed | 02-REVIEW-FIX.md as committed in 99482b2 (not in the current review) |
+| WR-04 | warning | fixed | 02-REVIEW-FIX.md as committed in 99482b2 (not in the current review) |
 | IN-02 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md (not in the current review) |
 | IN-03 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md (not in the current review) |
 
