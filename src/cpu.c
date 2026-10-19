@@ -610,7 +610,7 @@ static void nmi(muhtari *m)
     muhtari__bus_read(m, m->cpu.pc);
     push(m, (uint8_t)(m->cpu.pc >> 8));
     push(m, (uint8_t)m->cpu.pc);
-    push(m, (uint8_t)((m->cpu.p & (uint8_t)~FLAG_B) | FLAG_U));
+    push(m, (uint8_t)((m->cpu.p & ~FLAG_B) | FLAG_U));
     set_flag(m, FLAG_I, 1);
     m->cpu.pc = read_addr(m, 0xFFFAu, 0xFFFBu);
 }
