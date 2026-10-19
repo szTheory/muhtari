@@ -5,10 +5,10 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: planning
-stopped_at: Phase 02 complete, ready to plan Phase 3
-last_updated: "2026-10-19T19:39:38.498Z"
+stopped_at: Phase 02 re-verified after its review fixes; next /gsd-ship 2
+last_updated: "2026-10-19T19:41:18.000Z"
 last_activity: 2026-10-19
-last_activity_desc: Phase 02 complete, transitioned to Phase 3
+last_activity_desc: Phase 02 re-verified after its review fixes
 state_head: 1350b30100595c0aa264de0fad31139e9012ae84
 progress:
   total_phases: 4
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-19)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 02 — The CPU matches the public vectors
+**Current focus:** Ship phase 02 (`/gsd-ship 2`; the merge publishes 0.2.0), then Phase 3 — Games play in RetroArch
 
 ## Current Position
 
 Phase: 3 — Games play in RetroArch
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-19 — Phase 02 complete, transitioned to Phase 3
+Last activity: 2026-10-19 — Phase 02 re-verified after its review fixes
 
 Progress: [█████░░░░░] 50%
 
@@ -217,6 +217,7 @@ Recent decisions affecting current work:
 - [Phase 02]: Plan 16: workflow.test_gate_timeout is 4: twice the slowest clean local gate, 1.82 s
 - [Phase 02]: Plan 16: The ship title is feat: the CPU matches the public 6502 vectors, with the 7800 bus, RIOT and cartridge probing (check-title.sh exit 0); probe PR #9 closed unmerged
 - [Phase 02]: Review fix round 1 fixed WR-02 to WR-04. The bus takes one HALT window and one NMI edge at a time and ignores a second while one is in flight; a step on a jammed CPU reads $FFFF once, so time keeps moving. Phase 3's MARIA and run loop build on both (docs/hardware/bus.md, docs/hardware/sally.md, JAM). WR-01 and IN-01 to IN-03 wait in the 2026-10-19 todo; one code-review fix round is left in this phase
+- [Phase 02]: The re-review of fix round 1 (2cca8b3) found no blocker. Its new WR-01 (the bus entry points cannot say a request was ignored), WR-02 (a test seed) and IN-01 wait in the MARIA and run-loop todo for phase 3, so one code-review fix round is still left. The re-verification passed 5/5 with a fresh covered digest
 
 ### Pending Todos
 
@@ -225,6 +226,7 @@ Recent decisions affecting current work:
 - [2026-10-16] [ci] Limit release rehearsals to pushes that change release inputs — [todo file](.planning/todos/pending/2026-10-16-limit-release-rehearsals-to-pushes-that-change-release-inputs.md)
 - [2026-10-16] [ci] Close the re-review's findings on the Dependabot gate and the publish checks — [todo file](.planning/todos/pending/2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md)
 - [2026-10-19] [ci] Close the phase 2 review seeds on the nightly filter and the ROM tables — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md)
+- [2026-10-19] [core] Close the phase 2 re-review findings when MARIA and the run loop land — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md)
 
 ### Ship step (phase 01)
 
@@ -243,9 +245,6 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-- [Phase 02] Ship is blocked: the review fix round changed 13 files that 02-VERIFICATION.md covers, so
-  `verification.status` reads `stale`. `/gsd-execute-phase 02` resumes at the phase gates: the code review gate,
-  the regression gate and the verifier. One review fix round is left.
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
@@ -260,6 +259,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T19:13:31.000Z
-Stopped at: Phase 02 complete, ready to plan Phase 3
+Last session: 2026-10-19T19:41:18.000Z
+Stopped at: Phase 02 re-verified after its review fixes; next /gsd-ship 2
 Resume file: None

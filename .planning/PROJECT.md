@@ -100,8 +100,8 @@ that any host can embed.
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Time in MARIA clock ticks; the CPU drives the bus; MARIA DMA runs as one exact burst per line | Every documented edge is an integer; cheaper than per-tick stepping on low-power targets | — Phase 2: the CPU drives the bus in MARIA ticks (4- and 6-tick cycles, HALT, RDY); the per-line DMA burst comes with MARIA in phase 3 |
-| Integer-only core, no globals, bounded run calls | Bit-identical hashes everywhere; hostile ROMs cannot hang a host | ✓ Phase 1: tests enforce no floating point, no globals and the no-FP lanes |
+| Time in MARIA clock ticks; the CPU drives the bus; MARIA DMA runs as one exact burst per line | Every documented edge is an integer; cheaper than per-tick stepping on low-power targets | — Phase 2: the CPU drives the bus in MARIA ticks (4- and 6-tick cycles, HALT, RDY), and the bus takes one HALT window and one NMI edge at a time; the per-line DMA burst comes with MARIA in phase 3 |
+| Integer-only core, no globals, bounded run calls | Bit-identical hashes everywhere; hostile ROMs cannot hang a host | ✓ Phase 1: tests enforce no floating point, no globals and the no-FP lanes; Phase 2: a step on a jammed CPU still makes one bus read, so emulated time keeps moving |
 | Native MARIA byte per pixel; palettes and composite filter outside the hash | Hash stability; hosts choose presentation | ✓ Phase 1: frames are colour numbers; the runner and the libretro core apply the palette |
 | Audio hashed as a transition stream; PCM secondary | Determinism independent of the mixer and output rate | — Pending |
 | Reuse the owner's nesturbator code; MARIA, TIA, RIOT, POKEY and boards written from documentation and cross-checked | Fastest correct path; existing permissive chip models are lumped or diverge from documentation | — Phase 2: SALLY, seeded from nesturbator 9f9386c661f6, passes all 2,560,000 public vectors; the RIOT is written from the datasheet; MARIA, TIA, POKEY and the boards follow |
