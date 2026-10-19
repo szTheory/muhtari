@@ -177,14 +177,14 @@ with its lane's inventory and labels.
 | `changes` | `ubuntu-26.04` | `scripts/classify-changes.sh` on the pull request's paths, old and new names, and its changed-file count | none |
 | `hygiene` | `ubuntu-26.04` | preset `hygiene` | `hygiene.txt` |
 | `title` | `ubuntu-26.04` | pull requests only: `scripts/check-title.sh` on the live title and body | none |
-| `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
-| `asan` | `ubuntu-26.04` | preset `asan` | `ci.txt` without `abi` and `release` |
+| `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | fetches its wasmtime and 7800basic, then preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
+| `asan` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `asan` | `ci.txt` without `abi` and `release` |
 | `nofp` ×2 | `ubuntu-26.04`, `ubuntu-26.04-arm` | preset `nofp` | `nofp.txt` |
-| `be32` | `ubuntu-26.04` | preset `be32`; uploads `hashes-be32` | `ci.txt`, label `portable` |
+| `be32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `be32`; uploads `hashes-be32` | `ci.txt`, label `portable` |
 | `hash-equality` | `ubuntu-26.04` | compares exactly seven `hashes.txt` files: the six `build` legs and `be32` | none |
-| `wasm32` | `ubuntu-26.04` | preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
+| `wasm32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
 | `retroarch` | `macos-15` | the built core in RetroArch; see "Hosted RetroArch" | none |
-| `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame; see "Performance" | none |
+| `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame of runners built with `MUHTARI_TESTS` OFF; see "Performance" | none |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
 The hosted `be32` job takes about 25 seconds, well inside the five-minute limit for a per-pull-request lane, so
@@ -359,7 +359,8 @@ reads what each OS loader enforces. On every system the libretro core exports on
 `pins.txt` lists every file a build or a CI job downloads, one `name version url sha256` row each.
 `scripts/fetch-pin.sh NAME DEST` downloads the row `NAME` into a temporary directory and checks its SHA-256 before
 anything else happens; only then does it unpack a `.tar.xz` or `.tar.gz` into `DEST`, top folder stripped, or
-copy any other file there. `policy.pins` (hygiene lane) requires four fields per row, a unique name, an `https://`
+copy any other file there. A `.zip` (the Windows wasmtime) is read with `cmake -E tar`, since Git Bash's tar cannot
+read one, and must hold exactly one top folder, which is stripped. `policy.pins` (hygiene lane) requires four fields per row, a unique name, an `https://`
 URL and a 64-digit hex digest. A wrong digest exits 1 with `sha256 mismatch` and leaves `DEST` untouched. `PINS=<file>`
 reads another pins file. A bump is one `ci:` pull request that takes the new digest from the release API.
 The `sst-6502-v1` row is not a download: it pins the SingleStepTests commit the vector sample comes from, and its

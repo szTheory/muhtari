@@ -89,8 +89,9 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends wasi-libc libclang-rt-21-dev-wasm32
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+      # MUHTARI_TESTS OFF: the runner only, so configure needs no test tool.
       - name: Build the runner
-        run: cmake --preset wasm32 && cmake --build --preset wasm32 --target muhtari-run
+        run: cmake --preset wasm32 -DMUHTARI_TESTS=OFF && cmake --build --preset wasm32 --target muhtari-run
       - name: Bench 300,000 frames
         run: |
           mkdir -p report

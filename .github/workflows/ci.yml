@@ -118,17 +118,17 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 3  # 2 x 71 s, slowest leg of 32 runs, run 38939482093
+    timeout-minutes: 3  # provisional: 2 x 71 s, slowest leg of 32 runs, run 38939482093, before the sample fetch
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { runner: ubuntu-26.04, preset: ci, os: linux, arch: x64 }
-          - { runner: ubuntu-26.04-arm, preset: ci, os: linux, arch: arm64 }
-          - { runner: macos-15, preset: ci, os: macos, arch: arm64 }
-          - { runner: macos-15-intel, preset: ci, os: macos, arch: x64 }
-          - { runner: windows-2025, preset: ci-msvc, os: windows, arch: x64 }
-          - { runner: windows-11-arm, preset: ci-msvc, os: windows, arch: arm64 }
+          - { runner: ubuntu-26.04, preset: ci, os: linux, arch: x64, wasmtime: x86_64-linux }
+          - { runner: ubuntu-26.04-arm, preset: ci, os: linux, arch: arm64, wasmtime: aarch64-linux }
+          - { runner: macos-15, preset: ci, os: macos, arch: arm64, wasmtime: aarch64-macos }
+          - { runner: macos-15-intel, preset: ci, os: macos, arch: x64, wasmtime: x86_64-macos }
+          - { runner: windows-2025, preset: ci-msvc, os: windows, arch: x64, wasmtime: x86_64-windows }
+          - { runner: windows-11-arm, preset: ci-msvc, os: windows, arch: arm64, wasmtime: aarch64-windows }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -144,6 +144,14 @@ jobs:
           $arch = if ($env:RUNNER_ARCH -eq 'ARM64') { 'arm64' } else { 'x64' }
           cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" $arch && set" |
             ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { "$($Matches[1])=$($Matches[2])" >> $env:GITHUB_ENV } }
+      # built.samples builds 7800basic's sample with these (tests/built/);
+      # configure stops when either is missing.
+      - name: Fetch wasmtime and 7800basic
+        env:
+          WASMTIME: wasmtime-${{ matrix.wasmtime }}
+        run: |
+          scripts/fetch-pin.sh "$WASMTIME" build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
       - name: Build, test, package
         run: cmake --workflow --preset ${{ matrix.preset }}
       - name: Every test ran
@@ -178,7 +186,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 2  # 2 x 55 s, slowest of 32 runs, run 38937116459
+    timeout-minutes: 3  # provisional: 2 x 55 s, slowest of 32 runs, run 38937116459, before the sample fetch
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -187,6 +195,10 @@ jobs:
       # clang-21 is on the image; its sanitizer runtimes may not be.
       - name: Sanitizer runtimes
         run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y libclang-rt-21-dev; }
+      - name: Fetch wasmtime and 7800basic
+        run: |
+          scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
       - run: cmake --workflow --preset asan
       # The abi and release checks read binary shapes the instrumentation changes.
       - name: Every test ran
@@ -219,12 +231,16 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 48 s in 32 runs, run 38945207181
+    timeout-minutes: 5  # provisional: network-bound floor; slowest 48 s in 32 runs, run 38945207181, before the sample fetch
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
+      - name: Fetch wasmtime and 7800basic
+        run: |
+          scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
       - name: Cross compiler and qemu-user
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - run: cmake --workflow --preset be32
@@ -275,6 +291,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends wasi-libc libclang-rt-21-dev-wasm32
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
       - run: cmake --workflow --preset wasm32
       - name: Every test ran
         run: >-
@@ -384,14 +401,16 @@ jobs:
       # Both runners are installed under paths of equal length, so the path
       # Cachegrind and the loader see costs the same instructions. NO_BASE is
       # decided from the base tree's contents only: a base that has presets
-      # and fails to build fails this step.
+      # and fails to build fails this step. MUHTARI_TESTS OFF builds the
+      # runner without registering the tests, so neither tree needs the
+      # sample's tools; a base from before the option ignores it.
       - name: Build the runner at head and base
         id: build
         env:
           EVENT: ${{ github.event_name }}
         run: |
           build() {
-            (cd "$1" && cmake --preset ci > /dev/null && cmake --build --preset ci --target muhtari-run &&
+            (cd "$1" && cmake --preset ci -DMUHTARI_TESTS=OFF > /dev/null && cmake --build --preset ci --target muhtari-run &&
               cmake --install build/ci --component runner --prefix "$2")
           }
           build . "$RUNNER_TEMP/perf/head"
