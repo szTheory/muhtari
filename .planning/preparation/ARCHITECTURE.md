@@ -2,7 +2,7 @@
 title: "Architecture: time model, modules, public API, I/O contracts and build order"
 summary: "The technical shape of the muhtari core: one MARIA-tick timeline advanced only by bus.c, a per-line DMA burst, lazy devices, the module and seed map, the public C API and its versions, the I/O, determinism, state, observability and boot contracts, the v1.0 build order, and how each research conflict is settled."
 read_when: "Before planning or writing core, runner or libretro code; before adding a module, API call, profile field or hash; whenever two research files disagree."
-updated: 2026-10-15
+updated: 2026-10-19
 ---
 
 # muhtari architecture
@@ -67,7 +67,7 @@ Coordinates: line n starts at t = 0 = MiSTer column 412 of raster n − 1; t cou
 ## 3. Modules
 | Module | Owns | Interface | Seed or own [ARCH.08 §4] | Lands |
 |---|---|---|---|---|
-| `cpu.c` | SALLY: registers, 256 NMOS opcodes, NMOS decimal, NMI/IRQ edge sampling (§2), JAM, ANE/LXA constant | `cpu_step()`; memory only through `bus_read`/`bus_write`, one call per cycle | nesturbator `src/cpu.c` @`3200aa868371` (MIT, same owner): add decimal and the per-cycle NMI rules, drop 2A03 paths | P2; then the A78 probe, CC0 table and loader fuzz target (moved from P3) |
+| `cpu.c` | SALLY: registers, 256 NMOS opcodes, NMOS decimal, NMI/IRQ edge sampling (§2), JAM, ANE/LXA constant | `cpu_step()`; memory only through `bus_read`/`bus_write`, one call per cycle | szTheory/nesturbator `src/cpu.c` @`9f9386c661f6` (MIT, same owner; the published main PROVENANCE §4 pins): add decimal and the per-cycle NMI rules, drop 2A03 paths | P2; then the A78 probe, CC0 table and loader fuzz target (moved from P3) |
 | `bus.c` | `ticks`, φ2 counter, decode table and mirrors [ARCH.01 §4], 4/6-tick cycles, open-bus byte, INPTCTRL latch and HALT gate, RDY sources, deadline dispatcher, `halt_window()` | `bus_read`/`bus_write(addr)`, `bus_peek(addr)` (no side effects) | nesturbator bus pattern | P2 |
 | `riot.c` | 6532 ports, DDRs, timer on φ2, flags, 128 B RAM | `riot_read`/`riot_write(addr)` at the data tick | own (datasheet; `M6532.sv` facts only) | P2 |
 | `maria.c` | registers, CTRL half-cycle latch, MSTAT (one cycle stale), DPP/DLL/DL engine, DMA burst and schedule, two line RAMs, pixel spans, DLI, line statistics | `maria_dma_burst(T0, LRC)`, `maria_render_to(tick)`, `maria_read`/`maria_write(reg, tick)` | own (Software Guide, MiSTer facts; MAME and a7800 cross-check only) | P3 |
@@ -79,7 +79,7 @@ Coordinates: line n starts at t = 0 = MiSTer column 412 of raster n − 1; t cou
 | `synth.c` | per-tick merge of level changes, mixer tables, band-limited kernel, DC blocker, output-rate fraction | `synth_level(tick, source, level)`, `synth_render(end_tick, out)` | nesturbator `src/synth.c` | P1 silence; P4 |
 | `boot.c` | HLE hand-off, BIOS identification and mapping, detection of the BIOS's 2600 path | `boot_hle()`, `boot_bios_identify(bytes)` | own: facts only, no Atari bytes [ARCH.08 §6] | P3 |
 | `state.c` | visitor and 64-byte header (§7) | `state_visit(mode)` | nesturbator `src/state.c` | v3 |
-| `instance.c`, `testcard.c`; runner, adapter, CI, hygiene | public API, config and profile, frame driver, counters, test card; §1 | `include/muhtari.h` | nesturbator @`3200aa868371` | P1 |
+| `instance.c`, `testcard.c`; runner, adapter, CI, hygiene | public API, config and profile, frame driver, counters, test card; §1 | `include/muhtari.h` | szTheory/nesturbator @`9f9386c661f6` | P1 |
 | `host/palette.c` | six V7 tables (NTSC/PAL × 25.7°/26.7°/27.7°) + MIT generator | `host/muhtari_host.h` | a7800 `src/mame/drivers/a7800.cpp` L705–1452 (BSD-3) | P1 |
 | Later | `hsc.c`, `savekey.c` (v2); `xm.c` (v2, YM v4); `ym2151.c` (v4); runner `patch.c`, movies (v3); `host/composite.c` (v4) | — | ymfm OPM (BSD-3) seeds `ym2151.c`; the rest own (lifting MiSTer's MIT composite structure would need a §4 row first) | v2–v4 |
 

@@ -24,8 +24,9 @@ scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # for example wa
 scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
 ```
 
-Configure stops with both commands when either is missing; the sample tests are never skipped. Configuring with
-`-DMUHTARI_TESTS=OFF` builds the products only and registers no test, which the perf gate and the nightly bench use.
+Configure stops with both commands when either is missing; the sample tests are never skipped.
+
+`-DMUHTARI_TESTS=OFF` builds the products and registers no test, so configure needs no sample tool. Its users: `perf` (head and base builds), the `bench` preset of nightly's `bench` job, and `bench-wasm32`.
 
 ## Lanes
 
@@ -97,6 +98,10 @@ Five lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vec
 | Label | Tests |
 |---|---|
 | `core` | The library's behaviour: sizes, allocation, the frame and the test card hash. |
+| `vectors` | SALLY against public tests. `cpu.vectors.<op>`, one per opcode, runs the committed sample, the first 100 SingleStepTests `6502/v1` tests of that opcode, and checks every bus cycle, the final registers and RAM, and the cycle where the instruction polls NMI. `cpu.decimal.clark` runs Bruce Clark's decimal-mode test to `ERROR` = 0. `cpu.unstable.sally_constant` pins the ANE and LXA constant. The rest test the vector tooling: the reader, the converter and the pin. |
+| `vectors-full` | The `vectors-full` lane: the fetch, the sample match, and `cpu.vectors-full.<op>` over all 10,000 tests of each opcode's file. |
+| `sally` | SALLY on the 7800's bus (`docs/hardware/bus.md`): 4- and 6-tick cycles, RDY holding reads only, the HALT gate and its two-cycle latency, and the NMI latch, with `cpu.nmi.*` for the instruction after which an edge is taken. |
+| `riot` | The RIOT (`docs/hardware/riot.md`): its timer, PA7 edge, ports, RAM window and power-on state, with the bus's INPTCTRL lock and open-bus reads. |
 | `portable` | Tests that hold on every platform, including the frame and audio hashes. |
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
@@ -120,6 +125,9 @@ output matches the expected message; a crash or a missing file does not count as
 | Self test | Fault fed to the check |
 |---|---|
 | `abi.undefined.self_test` | A library that calls `abort`. |
+| `cpu.vectors.self_test` | One `a9` vector whose final A is changed; the harness must exit 1 naming `a9.json[0]`. |
+| `cpu.decimal.clark.self_test` | Clark's test built for the 65C02, whose decimal flags differ; SALLY must leave `ERROR` = 1. |
+| `policy.rom_hash_coverage.self_test` | A copy of the manifest with the vector sample's SHA-256 zeroed. |
 | `abi.globals.self_test` | A library with a writable file-scope integer. |
 | `abi.api_version.self_test` | A copy of the header with one field no API test names. |
 | `runner.hashes_compare.count.self_test` | Two `hashes.txt` files where three are required. |
@@ -139,6 +147,19 @@ output matches the expected message; a crash or a missing file does not count as
 | `release.single_version_source.self_test` | A repository whose `notes.md` repeats its version. |
 
 `policy.no_skip` fails when any test file sets a skip return code or disables a test, naming the file and line.
+
+## Fixtures and the firmware scans
+
+`tests/roms/manifest.txt` lists every binary file the repository may hold: its path, source, pin, licence, SHA-256
+and notice section (ASSET_POLICY.md section 2). Today that is the vector sample, three vector fixtures and Clark's
+two test builds. `policy.rom_hash_coverage` (hygiene lane) requires each row's file to exist with that SHA-256, a row
+for every file under `tests/roms/` and in a fuzz `regress` directory, and at most 512 KiB under `tests/fuzz/`.
+
+The firmware scan (`tests/cmake/firmware_scan.cmake`) hashes files with SHA-1 and SHA-256, whole and, for an A78
+image, again without its 128-byte header. It fails on a digest in `tests/release/firmware.txt` (BIOS and HSC
+firmware), a built sample's digest in `tests/built/expected.txt`, a 7800 key in `src/cartdb.c`, or a 2600 prefix
+there. `hygiene.firmware_scan` scans every tracked file; `release.firmware_scan` scans the members of the three
+release zips; `publish.sh prepare` runs it over all 18 zips before a release.
 
 ## The core library's symbols
 
@@ -190,7 +211,7 @@ with its lane's inventory and labels.
 | `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame of runners built with `MUHTARI_TESTS` OFF; see "Performance" | none |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
-The hosted `be32` job takes about 25 seconds, well inside the five-minute limit for a per-pull-request lane, so
+The hosted `be32` job takes under a minute, well inside the five-minute limit for a per-pull-request lane, so
 `hash-equality` compares seven files. Windows legs load the MSVC environment with `vswhere` and `vcvarsall` for the runner's own architecture. Every
 action is pinned by full commit SHA.
 
@@ -275,10 +296,20 @@ Each report has the runner's nine keys (`frames`, `fps_milli`, `p50_us` to `p99_
 run's job summaries and its `bench-<runner>` and `bench-wasm32` artifacts; they are trend data, never a gate and
 never committed. A failed night opens or comments on the one open issue labelled `nightly`, and a good night closes
 it; the report decides from the jobs' results. Dispatching the workflow with `force_failure` fails a run on purpose.
-The same workflow runs the `vectors-full` lane and the `fuzz` lane (job `loader-fuzz`) on `ubuntu-26.04`, each
-followed by the JUnit check on its inventory; `loader-fuzz` uploads `build/fuzz/fuzz/crash/` when it fails. Neither
-caches its vectors or corpus. A pull request that changes the bench, the CPU, the vector tooling, the loader or the
-workflow runs every job but writes no issue.
+The same workflow runs the `vectors-full` lane (`cmake --workflow --preset vectors-full`) and the `fuzz` lane (job
+`loader-fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its
+inventory; `loader-fuzz` uploads `build/fuzz/fuzz/crash/` when it fails. Neither caches its vectors or corpus. One
+path union triggers the whole workflow on a pull request: the workflow itself, the runner's bench and clock files,
+`src/cpu.c`, `src/cart.c`, `src/cartdb.c`, `src/sha1.c`, and `tests/cpu/`, `tests/vectors/`, `tests/cart/`,
+`tests/fuzz/` and the two vector scripts. Such a pull request runs every job but writes no issue.
+
+**Bumping the vector pin.** One `ci:` pull request: set the new commit in the `sst-6502-v1` row and the sample's
+manifest row; run the `vectors-full` workflow once, whose fetch fails against the old list but leaves the new files
+in `build/vectors-full/vectors-full`; regenerate `tests/vectors/6502-v1.sha256` from them and put its SHA-256 in
+the row; rewrite the sample with
+`cmake -DWRITE=ON` on the `cpu.vectors-full.sample_match` command (`ctest --test-dir build/vectors-full -R
+sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `cpu.vectors.pin` and
+`policy.rom_hash_coverage` fail until all four agree.
 
 ## Hosted RetroArch
 

@@ -1,6 +1,6 @@
 # Asset policy
 
-Which bytes may be in this repository, its history, its CI artifacts and its release archives: game ROMs, BIOS and other firmware, saves, states, screenshots and test fixtures. Code provenance is in [PROVENANCE.md](PROVENANCE.md); this file covers data. Written on 2026-10-15, before any such file exists. `[AP.NN]` IDs resolve in §8.
+Which bytes may be in this repository, its history, its CI artifacts and its release archives: game ROMs, BIOS and other firmware, saves, states, screenshots and test fixtures. Code provenance is in [PROVENANCE.md](PROVENANCE.md); this file covers data. Written on 2026-10-15; updated 2026-10-19. `[AP.NN]` IDs resolve in §8.
 
 | Question | Section |
 |---|---|
@@ -33,7 +33,7 @@ A file whose licence is unstated or restricts redistribution is built or fetched
 
 | Fixture | Built or fetched from (pin) | Why not committed |
 |---|---|---|
-| 7800basic samples | 7800basic `e7c18d2ecdc6` + pinned dasm | sample sources, `rmtplayer.asm` and `macro.h` state no licence [AP.05] |
+| 7800basic samples | 7800basic tag v0.41 `03aebb85206f53046425c19a236f65ae80d9f498`, its release package with the bundled `dasm.wasm`, run under the pinned wasmtime | sample sources, `rmtplayer.asm` and `macro.h` state no licence [AP.05] |
 | OpenBIOS | 7800OpenBIOS `b8bc745a8744`, with `kiloparsec.bl1` replaced by 8,192 fill bytes | CC0 code, but its splash screen draws the Atari Fuji [AP.04] |
 | GPL test suites (e.g. Klaus Dormann's) | fetched at a pin; SHA-256 checked | GPL-3 |
 - **Recommendation:** build OpenBIOS in CI. **Strongest alternative:** commit the KiloParsec-free binary, which CC0 allows. **Would change if:** the dasm build is not byte-identical on all six platforms.
@@ -69,7 +69,7 @@ Remove it and rewrite the branch before pushing; the push hook scans every commi
 | AP.02 | T1 | github.com/libretro/libretro-database `dat/System.dat` L74–76 | `12c21cf79f1e` | MD5s, libretro file names |
 | AP.03 | T1 | github.com/MiSTer-devel/Atari7800_MiSTer `rtl/mem4.hex`, `rtl/ar.hex` (decoded and hashed here (tested)), `rtl/RIOT/M6532.sv` L69–80 | `0dc8ad2e3ff7` | firmware inside an MIT repo |
 | AP.04 | T1 | github.com/7800-devtools/7800OpenBIOS `README.txt`, `7800openbios.asm` L1–11, L164 | `b8bc745a8744` | KiloParsec terms; Fuji data |
-| AP.05 | T1 | github.com/7800-devtools/7800basic `LICENSE.txt`, `includes/*`, `samples/` | `e7c18d2ecdc6` | unstated sample licences |
+| AP.05 | T1 | github.com/7800-devtools/7800basic `LICENSE.txt`, `includes/*`, `samples/` | tag v0.41 `03aebb85206f` | unstated sample licences |
 | AP.06 | T2 | 7800.8bitdev.org "A78 Header Specification" (magic at offsets 1 and 100); MAME `a78_slot.cpp` L490–499 | rev 1120; `dddf4cd1faee` | A78 signature |
 | AP.07 | T1 | github.com/szTheory/nesturbator `ASSET_POLICY.md`, `tests/roms/manifest.txt`, `scripts/hygiene.sh` | `9f9386c661f6` | template, manifest format |
 | AP.08 | T4 | forums.atariage.com/topic/266712 "anybody dump their NTSC BIOS" (search snippet; page returned 403) | accessed 2026-10-15 (unverified) | bad dump |
