@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-10-19T00:09:35.393Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-10-19T00:21:48.150Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: 91fed85dbebff7a18b928981778f819639035f81
+state_head: 8d06a286e642fc06a6546fd09916338c656b30cc
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 22
+  completed_plans: 23
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 2 of 16
+Plan: 3 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -80,6 +80,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 01 P20 | 17 min | 3 tasks | 8 files |
 | Phase 01 P21 | 33 min | 3 tasks | 8 files |
 | Phase 02 P01 | 15 min | 3 tasks | 22 files |
+| Phase 02 P02 | 9 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -150,6 +151,9 @@ Recent decisions affecting current work:
 - [Phase 02]: The vector harness reads .json as one full 10,000-test upstream file and any other path as the 256-chunk N65V sample; a zero-test run exits 1
 - [Phase 02]: Hosted run 39179237062: the OBJECT split links on MSVC, wasm-ld and nofp with no fallback; be32 took 43 s
 - [Phase 02]: Before decimal mode, 223 of 256 opcodes pass all upstream vectors; the 33 failures are exactly the ADC, SBC, RRA, ISC and ARR forms
+- [Phase 02]: The default ANE and LXA constant is MUHTARI__ANE_LXA_SALLY in internal.h, so cpu.unstable.sally_constant pins the shipped default without linking muhtari
+- [Phase 02]: All 256 opcodes pass all 2,560,000 upstream 6502/v1 tests after decimal ADC/SBC/ARR; no other opcode needed a fix
+- [Phase 02]: Hosted run 39180164525: the 256 vector tests are green on every leg; be32 took 45 s, so no ci.yml timeout changed
 
 ### Pending Todos
 
@@ -188,6 +192,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T00:09:35.325Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-10-19T00:21:48.079Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

@@ -126,14 +126,14 @@ Plans:
   4. `muhtari-run --probe FILE` prints the A78 fields, board, region, peripherals and all four hashes, identifies a header-stripped image through the hash list, and gives a 2600 image, an unsupported board and a malformed, truncated or oversized file each a distinct status and message; the counting-allocator test and `ctest -R fuzz.regress.loader` pass on every platform and the loader fuzz target runs nightly.
   5. Merging the phase's pull request publishes a release through the Phase 1 pipeline with no manual step.
 
-**Plans**: 1/16 plans executed (sequential waves; parallelization off)
+**Plans**: 2/16 plans executed (sequential waves; parallelization off)
 
 Plans:
 **Wave 1**
 - [x] 02-01-PLAN.md — Tracer: CMake skeleton, seeded SALLY, readers and harness on upstream JSON; committed sample; `cpu.vectors.a9`; draft probe PR
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 02-02-PLAN.md — All 256 `cpu.vectors.XX`: decimal mode, JAM, SH* stores, the unstable constant, `sally.md`; hosted run with the 256 tests
+- [x] 02-02-PLAN.md — All 256 `cpu.vectors.XX`: decimal mode, JAM, SH* stores, the unstable constant, `sally.md`; hosted run with the 256 tests
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 02-03-PLAN.md — Vector tooling under test: JSON fixtures, reader and converter cases, the self test, the full-set per-file list and its pin
@@ -220,6 +220,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
-| 2. The CPU matches the public vectors | 1/16 | In Progress | - |
+| 2. The CPU matches the public vectors | 2/16 | In Progress | - |
 | 3. Games play in RetroArch | 0/TBD | Not started | - |
 | 4. Sound | 0/TBD | Not started | - |
