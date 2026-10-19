@@ -1016,13 +1016,18 @@ Measure after the tracer plan. Timeouts follow the "2 × slowest of N runs with 
 | A8 | The `banksets` recipe gap is a missing tool stage | Sample Inventory | 34 samples + an unsupported row |
 | A9 | Library-preset inventory derived from ledger rows | Pitfall 11 | inventory check conflicts |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Rule 7 budget.** It cannot be met as worded. Owner scoping is needed at ship (see the Gate-Code Budget section). The plans should proceed and record the numbers.
+   **RESOLVED** (orchestrator resolution 6): plan 03-19 records the tally with its command and definition, trims only where no named fault is lost, and writes the shortfall into SEED-007 as an owner scoping item for ship; it does not block the phase.
 2. **`banksets`.** Is it built, or listed 34 + 1 unsupported? Recommend 34 + an unsupported ledger row, unless a tool's usage output reveals the stage.
+   **RESOLVED** (orchestrator resolution 2): 34 samples are built and pinned; `banksets` has no build row (it fails to assemble with the recipe and its board is refused) and gets one `unsupported` ledger row in plan 03-14.
 3. **Hand-off frame convention (A3/A4).** Lock this in the tracer plan, document it in `docs/embedding.md`, then pin.
+   **RESOLVED**: plan 03-02's locked conventions fix the hand-off at line 240 t 24, frame 1 as the 8,190-tick partial frame with unscanned rows $00 and 54 audio samples; plan 03-04 documents it in `docs/embedding.md` and plan 03-05 pins after it.
 4. **BIOS mapping under MEN = 0.** With MEN = 0 (the 2600 decode), A12 = 1 is "cartridge", and the BIOS must answer there while EXT = 0, or power-on cannot read $FFFC. Recommendation: while EXT = 0, every A15 = 1 address returns the BIOS image (mirrored); with MEN = 0, A12 = 1 maps to the BIOS's top 4 KiB as the 2600 decode sees it (A7800-SYSTEM §4: "with the BIOS mapped the cart sees A12, A14 and A15 low"; MiSTer mirrors over $8000–$FFFF). Verify with OpenBIOS booting `simple`. [ASSUMED]
+   **RESOLVED** (orchestrator resolution 4): the recommendation is adopted in plan 03-13 and verified there by `bios.handoff_simple` (OpenBIOS boots `simple` with K in [300, 340]); K itself is the first opcode fetch from cartridge space after EXT goes 0 to 1 (orchestrator resolution 1, plan 03-12 corrects D-16's wording).
 5. **Cart RAM storage.** D-03 says "Only the ROM copy is allocated". Put the SuperGame 16 KiB RAM in the same allocation as the ROM (ROM ‖ RAM), so `get_memory(CART_RAM)` is a stable pointer and `core.no_alloc_after_load` holds. Alternatively use a fixed 16 KiB array in the instance; that costs every instance 16 KiB. Recommend the joint allocation.
+   **RESOLVED** (orchestrator resolution 5): the joint ROM and RAM allocation, in plan 03-08.
 
 ## Environment Availability
 
