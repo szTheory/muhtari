@@ -235,6 +235,9 @@ set(MUHTARI_LONG_RUN 600)
 if(MUHTARI_SHORT_RUNS)
   set(MUHTARI_LONG_RUN 60)
 endif()
+# The vectors-full lane registers only the full vector set's tests: a fetch
+# of the pinned 6502/v1 files and one test per opcode over each whole file.
+option(MUHTARI_VECTORS_FULL "Register only the full vector set's tests" OFF)
 set(inventory ci)
 if(MUHTARI_HYGIENE)
   set(inventory hygiene)
@@ -242,6 +245,8 @@ elseif(MUHTARI_NOFP)
   set(inventory nofp)
 elseif(MUHTARI_FUZZ)
   set(inventory fuzz)
+elseif(MUHTARI_VECTORS_FULL)
+  set(inventory vectors-full)
 endif()
 set(MUHTARI_INVENTORY ${inventory} CACHE STRING "Test inventory file under tests/inventory")
 # Fault prevented: every wasm32 test failing on a missing runtime, with a
