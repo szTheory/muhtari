@@ -32,9 +32,7 @@ muhtari_status muhtari__check_size(const void *s, uint32_t first, uint32_t ours)
     return MUHTARI_STATUS_OK;
 }
 
-/* Writes min(caller size, ours) bytes of a fully built output struct whose
-   own size field already holds the caller's value. */
-static void write_out(void *out, const void *full, uint32_t ours)
+void muhtari__write_out(void *out, const void *full, uint32_t ours)
 {
     uint32_t size;
     memcpy(&size, out, sizeof size);
@@ -60,7 +58,7 @@ muhtari_status muhtari_get_versions(muhtari_versions *out)
     v.api = MUHTARI_API_VERSION;
     v.abi = MUHTARI__ABI;
     v.behaviour_revision = MUHTARI__BEHAVIOUR_REVISION;
-    write_out(out, &v, (uint32_t)sizeof v);
+    muhtari__write_out(out, &v, (uint32_t)sizeof v);
     return MUHTARI_STATUS_OK;
 }
 
@@ -139,6 +137,6 @@ muhtari_status muhtari_get_info(const muhtari *m, muhtari_info *out)
     info.sample_rate_num = 48000u;
     info.sample_rate_den = 1u;
     info.max_audio_samples = MUHTARI__MAX_AUDIO_SAMPLES;
-    write_out(out, &info, (uint32_t)sizeof info);
+    muhtari__write_out(out, &info, (uint32_t)sizeof info);
     return MUHTARI_STATUS_OK;
 }

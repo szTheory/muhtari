@@ -72,7 +72,8 @@ add_library(muhtari_objs OBJECT
   src/bus.c
   src/tia.c
   src/riot.c
-  src/sha1.c)
+  src/sha1.c
+  src/cart.c)
 add_library(muhtari_cpu OBJECT src/cpu.c)
 add_library(muhtari_cartdb OBJECT src/cartdb.c)
 add_library(muhtari STATIC

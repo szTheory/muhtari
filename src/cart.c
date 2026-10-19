@@ -1,0 +1,446 @@
+/* Cartridge identification: the A78 header, the 7800 and 2600 tables, the
+   footer test of a headerless image and the board geometry
+   (docs/hardware/cartridge.md). Pure: nothing is allocated or kept. */
+#include <string.h>
+
+#include "cartdb.h"
+#include "internal.h"
+#include "sha1.h"
+
+#define CART_HEADER_SIZE 128u
+#define CART_KIB 1024u
+
+/* A78 header offsets (docs/hardware/cartridge.md, The A78 header). */
+#define A78_VERSION 0u
+#define A78_MAGIC 1u
+#define A78_TITLE 17u
+#define A78_ROM_SIZE 49u
+#define A78_CART_TYPE 53u
+#define A78_PORT1 55u
+#define A78_PORT2 56u
+#define A78_TV 57u
+#define A78_SAVE 58u
+#define A78_XM 63u
+#define A78_MAPPER 64u
+#define A78_MAPPER_OPTIONS 65u
+#define A78_AUDIO 66u
+#define A78_IRQ 68u
+
+/* The cart-type word's bits (docs/hardware/cartridge.md, Cart type). */
+#define CT_POKEY_4000 0x0001u
+#define CT_SUPERGAME 0x0002u
+#define CT_RAM_4000 0x0004u
+#define CT_ROM_4000 0x0008u
+#define CT_BANK6_4000 0x0010u
+#define CT_BANKED_RAM 0x0020u
+#define CT_POKEY_450 0x0040u
+#define CT_FRACTALUS 0x0080u
+#define CT_ACTIVISION 0x0100u
+#define CT_ABSOLUTE 0x0200u
+#define CT_POKEY_440 0x0400u
+#define CT_YM2151 0x0800u
+#define CT_SOUPER 0x1000u
+#define CT_BANKSET 0x2000u
+#define CT_HALT_RAM 0x4000u
+#define CT_POKEY_800 0x8000u
+
+/* What a header or a table entry says the cartridge holds. */
+struct cart_board {
+    uint32_t board, options, ram, sound;
+};
+
+static uint32_t be16(const uint8_t *p)
+{
+    return ((uint32_t)p[0] << 8) | (uint32_t)p[1];
+}
+
+static uint32_t be32(const uint8_t *p)
+{
+    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+}
+
+/* Whether a body of n bytes fits the board's geometry
+   (docs/hardware/cartridge.md, Geometry). A refused board has none here. */
+static int cart_fits(const struct cart_board *b, size_t n)
+{
+    if (b->board == MUHTARI_BOARD_LINEAR) {
+        return (n % (4u * CART_KIB) == 0u && n >= 4u * CART_KIB && n <= 48u * CART_KIB) ||
+               n == 64u * CART_KIB;
+    }
+    if (b->board == MUHTARI_BOARD_SUPERGAME) {
+        if (n % (16u * CART_KIB) != 0u || n > 1024u * CART_KIB) {
+            return 0;
+        }
+        size_t banks = n / (16u * CART_KIB);
+        if ((b->options & MUHTARI_BOARD_ROM_AT_4000) != 0u) {
+            /* 2^k banks behind one fixed bank at $4000. */
+            return banks >= 3u && ((banks - 1u) & (banks - 2u)) == 0u;
+        }
+        return banks >= 2u;
+    }
+    return 0;
+}
+
+/* The board the cart-type word describes (docs/hardware/cartridge.md,
+   Cart type). */
+static void cart_decode_v3(uint32_t t, struct cart_board *b)
+{
+    memset(b, 0, sizeof *b);
+    b->board = (t & CT_SUPERGAME) != 0u ? MUHTARI_BOARD_SUPERGAME : MUHTARI_BOARD_LINEAR;
+    if ((t & CT_POKEY_4000) != 0u) {
+        b->sound |= MUHTARI_SOUND_POKEY_4000;
+    }
+    if ((t & CT_POKEY_450) != 0u) {
+        b->sound |= MUHTARI_SOUND_POKEY_450;
+    }
+    if ((t & CT_POKEY_440) != 0u) {
+        b->sound |= MUHTARI_SOUND_POKEY_440;
+    }
+    if ((t & CT_POKEY_800) != 0u) {
+        b->sound |= MUHTARI_SOUND_POKEY_800;
+    }
+    if ((t & CT_YM2151) != 0u) {
+        b->sound |= MUHTARI_SOUND_YM2151;
+    }
+    if ((t & CT_RAM_4000) != 0u) {
+        b->ram = 16u * CART_KIB;
+    }
+    if ((t & CT_ROM_4000) != 0u) {
+        b->options |= MUHTARI_BOARD_ROM_AT_4000;
+    }
+    if ((t & CT_BANK6_4000) != 0u) {
+        b->options |= MUHTARI_BOARD_BANK6_AT_4000;
+    }
+    if ((t & CT_BANKED_RAM) != 0u) {
+        b->options |= MUHTARI_BOARD_BANKED_RAM;
+        b->ram = 32u * CART_KIB;
+    }
+    if ((t & CT_HALT_RAM) != 0u) {
+        b->options |= MUHTARI_BOARD_HALT_BANKED_RAM;
+        b->ram = 32u * CART_KIB;
+    }
+    if ((t & CT_FRACTALUS) != 0u) {
+        b->board = MUHTARI_BOARD_FRACTALUS;
+        b->ram = 2u * CART_KIB;
+    }
+    if ((t & CT_ABSOLUTE) != 0u) {
+        b->board = MUHTARI_BOARD_ABSOLUTE;
+    }
+    if ((t & CT_ACTIVISION) != 0u) {
+        b->board = MUHTARI_BOARD_ACTIVISION;
+    }
+    if ((t & CT_BANKSET) != 0u) {
+        b->board = MUHTARI_BOARD_BANKSET;
+    }
+    if ((t & CT_SOUPER) != 0u) {
+        b->board = MUHTARI_BOARD_SOUPER;
+    }
+}
+
+/* The board the v4 block at bytes 64-69 describes; 0 when the block does
+   not validate (docs/hardware/cartridge.md, The v4 block). */
+static int cart_decode_v4(const uint8_t *h, struct cart_board *b)
+{
+    static const uint32_t boards[5] = {MUHTARI_BOARD_LINEAR, MUHTARI_BOARD_SUPERGAME,
+                                       MUHTARI_BOARD_ACTIVISION, MUHTARI_BOARD_ABSOLUTE,
+                                       MUHTARI_BOARD_SOUPER};
+    /* POKEY codes 0-5 of the audio word's bits 0-2. */
+    static const uint32_t pokeys[6] = {0u,
+                                       MUHTARI_SOUND_POKEY_440,
+                                       MUHTARI_SOUND_POKEY_450,
+                                       MUHTARI_SOUND_POKEY_450 | MUHTARI_SOUND_POKEY_440,
+                                       MUHTARI_SOUND_POKEY_800,
+                                       MUHTARI_SOUND_POKEY_4000};
+    uint32_t mapper = h[A78_MAPPER];
+    uint32_t opt = h[A78_MAPPER_OPTIONS];
+    uint32_t audio = be16(h + A78_AUDIO);
+    uint32_t irq = be16(h + A78_IRQ);
+    uint32_t device;
+    if (mapper > 4u || (audio & ~0x3Fu) != 0u || (audio & 7u) > 5u || (irq & ~7u) != 0u) {
+        return 0;
+    }
+    if (mapper == 0u) {
+        if ((opt & 0x7Cu) != 0u) {
+            return 0;
+        }
+        device = opt & 3u;
+    } else if (mapper == 1u) {
+        device = opt & 7u;
+        if ((opt & 0x78u) != 0u || device > 6u) {
+            return 0;
+        }
+    } else {
+        if ((opt & 0x7Fu) != 0u) {
+            return 0;
+        }
+        device = 0u;
+    }
+    memset(b, 0, sizeof *b);
+    b->board = boards[mapper];
+    b->sound = pokeys[audio & 7u];
+    if ((audio & 0x08u) != 0u) {
+        b->sound |= MUHTARI_SOUND_YM2151;
+    }
+    if ((audio & 0x10u) != 0u) {
+        b->sound |= MUHTARI_SOUND_COVOX;
+    }
+    switch (device) {
+    case 1u: /* 16K RAM */
+        b->ram = 16u * CART_KIB;
+        break;
+    case 2u: /* 8K EXRAM/A8, read as the Fractalus mirror RAM */
+        b->board = MUHTARI_BOARD_FRACTALUS;
+        b->ram = 2u * CART_KIB;
+        break;
+    case 3u: /* 32K EXRAM/M2, read as halt-banked RAM */
+        b->options = MUHTARI_BOARD_HALT_BANKED_RAM;
+        b->ram = 32u * CART_KIB;
+        break;
+    case 4u: /* EXROM */
+        b->options = MUHTARI_BOARD_ROM_AT_4000;
+        break;
+    case 5u: /* EXFIX */
+        b->options = MUHTARI_BOARD_BANK6_AT_4000;
+        break;
+    case 6u: /* 32K EXRAM/X2 */
+        b->options = MUHTARI_BOARD_BANKED_RAM;
+        b->ram = 32u * CART_KIB;
+        break;
+    default:
+        break;
+    }
+    if ((opt & 0x80u) != 0u) {
+        b->board = MUHTARI_BOARD_BANKSET;
+    }
+    return 1;
+}
+
+/* Copies at most 32 title bytes up to the first NUL, a byte outside
+   $20-$7E as '?', then drops trailing spaces. out->title is zero. */
+static void cart_title(const uint8_t *t, muhtari_cart_info *out)
+{
+    uint32_t len = 0u;
+    for (uint32_t i = 0u; i < 32u && t[i] != 0u; i++) {
+        uint8_t c = t[i];
+        if (c < 0x20u || c > 0x7Eu) {
+            out->warnings |= MUHTARI_CART_WARN_TITLE_NONPRINTABLE;
+            c = (uint8_t)'?';
+        }
+        out->title[len++] = c;
+    }
+    while (len > 0u && out->title[len - 1u] == (uint8_t)' ') {
+        out->title[--len] = 0u;
+    }
+}
+
+static void cart_sha1(const uint8_t *p, size_t n, uint8_t digest[20])
+{
+    struct muhtari__sha1 ctx;
+    muhtari__sha1_init(&ctx);
+    muhtari__sha1_update(&ctx, p, n);
+    muhtari__sha1_final(&ctx, digest);
+}
+
+/* The single-chip 7800 entry whose key is digest, or NULL. Of two equal
+   keys the first, the lower entry, wins. */
+static const struct muhtari__cartdb_entry *
+cart_find_7800(const uint8_t digest[20], const struct muhtari__cartdb_key *keys, uint32_t key_count,
+               const struct muhtari__cartdb_entry *entries, uint32_t entry_count)
+{
+    uint32_t lo = 0u;
+    uint32_t hi = key_count;
+    while (lo < hi) {
+        uint32_t mid = lo + (hi - lo) / 2u;
+        if (memcmp(keys[mid].sha1, digest, 20u) < 0) {
+            lo = mid + 1u;
+        } else {
+            hi = mid;
+        }
+    }
+    for (; lo < key_count && memcmp(keys[lo].sha1, digest, 20u) == 0; lo++) {
+        uint32_t e = keys[lo].entry;
+        if (e < entry_count && entries[e].parts <= 1u) {
+            return &entries[e];
+        }
+    }
+    return NULL;
+}
+
+static void cart_entry_board(const struct muhtari__cartdb_entry *e, struct cart_board *b)
+{
+    b->board = e->board;
+    b->options = e->board_options;
+    b->ram = (uint32_t)e->ram_kib * CART_KIB;
+    b->sound = e->sound;
+}
+
+static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
+{
+    out->board = b->board;
+    out->board_options = b->options;
+    out->ram_size = b->ram;
+    out->sound = b->sound;
+}
+
+/* Boards a loaded cartridge cannot run yet. */
+static int cart_refused(const struct cart_board *b)
+{
+    return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME) ||
+           (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
+}
+
+static uint32_t cart_port(uint32_t code, muhtari_cart_info *out)
+{
+    if (code > MUHTARI_PORT_MEGA7800) {
+        out->warnings |= MUHTARI_CART_WARN_UNKNOWN_PORT;
+        return MUHTARI_PORT_NONE;
+    }
+    return code;
+}
+
+/* An image whose bytes 1-9 are the A78 magic. */
+static muhtari_status cart_header(const uint8_t *img, size_t n,
+                                  const struct muhtari__cartdb_key *keys, uint32_t key_count,
+                                  const struct muhtari__cartdb_entry *entries, uint32_t entry_count,
+                                  muhtari_cart_info *out)
+{
+    if (n < CART_HEADER_SIZE) {
+        return MUHTARI_STATUS_ERR_TRUNCATED_IMAGE;
+    }
+    uint32_t field = be32(img + A78_ROM_SIZE);
+    if (field == 0u) {
+        return MUHTARI_STATUS_ERR_INVALID_IMAGE;
+    }
+    size_t body = n - CART_HEADER_SIZE;
+    if (body == 0u) {
+        return MUHTARI_STATUS_ERR_TRUNCATED_IMAGE;
+    }
+    size_t mapped = field < body ? field : body;
+
+    out->kind = MUHTARI_KIND_7800;
+    out->source = MUHTARI_SOURCE_HEADER;
+    out->flags = MUHTARI_CART_HEADER;
+    out->rom_size = (uint32_t)mapped;
+    uint32_t version = img[A78_VERSION];
+    out->a78_version = version;
+    out->a78_rom_size = field;
+    out->a78_cart_type = be16(img + A78_CART_TYPE);
+    out->a78_port1 = img[A78_PORT1];
+    out->a78_port2 = img[A78_PORT2];
+    out->a78_tv = img[A78_TV];
+    out->a78_save = img[A78_SAVE];
+    out->a78_xm = img[A78_XM];
+    if (version >= 4u) {
+        out->a78_mapper = img[A78_MAPPER];
+        out->a78_mapper_options = img[A78_MAPPER_OPTIONS];
+        out->a78_audio = be16(img + A78_AUDIO);
+        out->a78_irq = be16(img + A78_IRQ);
+    }
+    if (field != body) {
+        out->warnings |= MUHTARI_CART_WARN_SIZE_FIELD_MISMATCH;
+    }
+    cart_title(img + A78_TITLE, out);
+
+    struct cart_board b;
+    struct cart_board v4;
+    cart_decode_v3(out->a78_cart_type, &b);
+    if (version >= 4u && cart_decode_v4(img, &v4)) {
+        b = v4;
+    }
+
+    if ((out->a78_save & 0x01u) != 0u) {
+        out->devices |= MUHTARI_DEVICE_HSC;
+    }
+    if ((out->a78_save & 0x02u) != 0u) {
+        out->devices |= MUHTARI_DEVICE_SAVEKEY;
+    }
+    if (out->a78_xm != 0u) {
+        out->devices |= MUHTARI_DEVICE_XM;
+    }
+    out->port1 = cart_port(out->a78_port1, out);
+    out->port2 = cart_port(out->a78_port2, out);
+    out->region = (out->a78_tv & 1u) != 0u ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
+
+    /* A table match overrides the header's board, RAM and sound, never its
+       controllers or region. */
+    uint8_t digest[20];
+    cart_sha1(img + CART_HEADER_SIZE, mapped, digest);
+    const struct muhtari__cartdb_entry *e =
+        cart_find_7800(digest, keys, key_count, entries, entry_count);
+    if (e != NULL) {
+        if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
+            return MUHTARI_STATUS_ERR_INVALID_IMAGE;
+        }
+        struct cart_board listed;
+        cart_entry_board(e, &listed);
+        if (memcmp(&listed, &b, sizeof b) != 0) {
+            out->warnings |= MUHTARI_CART_WARN_HEADER_CORRECTED;
+        }
+        b = listed;
+        out->flags |= MUHTARI_CART_HASH_MATCH;
+    }
+    cart_set_board(out, &b);
+    if (cart_refused(&b)) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+    }
+    if (!cart_fits(&b, mapped)) {
+        return field > body ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;
+    }
+    return MUHTARI_STATUS_OK;
+}
+
+muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
+                                      const struct muhtari__cartdb_key *keys, uint32_t key_count,
+                                      const struct muhtari__cartdb_entry *entries,
+                                      uint32_t entry_count,
+                                      const struct muhtari__cartdb_layout *layouts,
+                                      uint32_t layout_count, const uint8_t (*prefix)[8],
+                                      uint32_t prefix_count, muhtari_cart_info *out)
+{
+    /* The slice lookup over layouts is not implemented yet: a multi-chip
+       image is identified by its header or its footer. */
+    (void)layouts;
+    (void)layout_count;
+    (void)prefix;
+    (void)prefix_count;
+    if (out == NULL || (img == NULL && n > 0u)) {
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    }
+    if (n > MUHTARI_IMAGE_SIZE_MAX) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE;
+    }
+    memset(out, 0, sizeof *out);
+    out->size = (uint32_t)sizeof *out;
+    if (n >= 10u && memcmp(img + A78_MAGIC, "ATARI7800", 9u) == 0) {
+        return cart_header(img, n, keys, key_count, entries, entry_count, out);
+    }
+    return MUHTARI_STATUS_ERR_INVALID_IMAGE;
+}
+
+muhtari_status muhtari_probe(const void *image, size_t n, muhtari_cart_info *out)
+{
+    if (out == NULL || (image == NULL && n > 0u)) {
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    }
+    muhtari_status st =
+        muhtari__check_size(out, MUHTARI__CART_INFO_SIZE_FIRST, (uint32_t)sizeof *out);
+    if (st != MUHTARI_STATUS_OK) {
+        return st;
+    }
+    if (n > MUHTARI_IMAGE_SIZE_MAX) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE;
+    }
+    muhtari_cart_info info;
+    st = muhtari__cart_identify((const uint8_t *)image, n, muhtari__cartdb_7800_keys,
+                                muhtari__cartdb_7800_key_count, muhtari__cartdb_7800_entries,
+                                muhtari__cartdb_7800_entry_count, muhtari__cartdb_7800_layouts,
+                                muhtari__cartdb_7800_layout_count, muhtari__cartdb_2600_prefix,
+                                muhtari__cartdb_2600_prefix_count, &info);
+    /* A refusal a host can show is written; every other error writes nothing. */
+    if (st == MUHTARI_STATUS_OK || st == MUHTARI_STATUS_ERR_UNSUPPORTED_2600 ||
+        st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) {
+        info.size = out->size;
+        muhtari__write_out(out, &info, (uint32_t)sizeof info);
+    }
+    return st;
+}

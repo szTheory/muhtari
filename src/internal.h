@@ -138,6 +138,8 @@ struct muhtari {
     ((uint32_t)(offsetof(muhtari_info, max_audio_samples) + sizeof(uint32_t)))
 #define MUHTARI__FRAME_SIZE_FIRST                                                                  \
     ((uint32_t)(offsetof(muhtari_frame, audio_count) + sizeof(uint32_t)))
+#define MUHTARI__CART_INFO_SIZE_FIRST                                                              \
+    ((uint32_t)(offsetof(muhtari_cart_info, title) + sizeof(((muhtari_cart_info *)0)->title)))
 
 /* The public layouts, pinned on every target. P is the pointer size; every
    field sits where the previous one ends, except that muhtari_config's
@@ -183,9 +185,60 @@ _Static_assert(offsetof(muhtari_frame, audio_capacity) == 8 + 2 * MUHTARI__P,
 _Static_assert(offsetof(muhtari_frame, audio_count) == 12 + 2 * MUHTARI__P, "frame.audio_count");
 _Static_assert(sizeof(muhtari_frame) == 16 + 2 * MUHTARI__P, "frame size");
 
+/* muhtari_cart_info is 26 uint32_t fields and the title: 140 bytes on every
+   target. */
+_Static_assert(offsetof(muhtari_cart_info, size) == 0, "cart_info.size");
+_Static_assert(offsetof(muhtari_cart_info, kind) == 4, "cart_info.kind");
+_Static_assert(offsetof(muhtari_cart_info, source) == 8, "cart_info.source");
+_Static_assert(offsetof(muhtari_cart_info, flags) == 12, "cart_info.flags");
+_Static_assert(offsetof(muhtari_cart_info, warnings) == 16, "cart_info.warnings");
+_Static_assert(offsetof(muhtari_cart_info, rom_size) == 20, "cart_info.rom_size");
+_Static_assert(offsetof(muhtari_cart_info, board) == 24, "cart_info.board");
+_Static_assert(offsetof(muhtari_cart_info, board_options) == 28, "cart_info.board_options");
+_Static_assert(offsetof(muhtari_cart_info, ram_size) == 32, "cart_info.ram_size");
+_Static_assert(offsetof(muhtari_cart_info, sound) == 36, "cart_info.sound");
+_Static_assert(offsetof(muhtari_cart_info, devices) == 40, "cart_info.devices");
+_Static_assert(offsetof(muhtari_cart_info, port1) == 44, "cart_info.port1");
+_Static_assert(offsetof(muhtari_cart_info, port2) == 48, "cart_info.port2");
+_Static_assert(offsetof(muhtari_cart_info, region) == 52, "cart_info.region");
+_Static_assert(offsetof(muhtari_cart_info, a78_version) == 56, "cart_info.a78_version");
+_Static_assert(offsetof(muhtari_cart_info, a78_rom_size) == 60, "cart_info.a78_rom_size");
+_Static_assert(offsetof(muhtari_cart_info, a78_cart_type) == 64, "cart_info.a78_cart_type");
+_Static_assert(offsetof(muhtari_cart_info, a78_port1) == 68, "cart_info.a78_port1");
+_Static_assert(offsetof(muhtari_cart_info, a78_port2) == 72, "cart_info.a78_port2");
+_Static_assert(offsetof(muhtari_cart_info, a78_tv) == 76, "cart_info.a78_tv");
+_Static_assert(offsetof(muhtari_cart_info, a78_save) == 80, "cart_info.a78_save");
+_Static_assert(offsetof(muhtari_cart_info, a78_xm) == 84, "cart_info.a78_xm");
+_Static_assert(offsetof(muhtari_cart_info, a78_mapper) == 88, "cart_info.a78_mapper");
+_Static_assert(offsetof(muhtari_cart_info, a78_mapper_options) == 92,
+               "cart_info.a78_mapper_options");
+_Static_assert(offsetof(muhtari_cart_info, a78_audio) == 96, "cart_info.a78_audio");
+_Static_assert(offsetof(muhtari_cart_info, a78_irq) == 100, "cart_info.a78_irq");
+_Static_assert(offsetof(muhtari_cart_info, title) == 104, "cart_info.title");
+_Static_assert(sizeof(muhtari_cart_info) == 140, "cart_info size");
+
 /* Returns OK when the size tag at s is at least first and every byte past
    ours is zero; ERR_STRUCT_SIZE otherwise. */
 muhtari_status muhtari__check_size(const void *s, uint32_t first, uint32_t ours);
+
+/* Writes min(caller size, ours) bytes of a fully built output struct whose
+   own size field already holds the caller's value. */
+void muhtari__write_out(void *out, const void *full, uint32_t ours);
+
+/* Identifies the n bytes at img against the cartridge tables given, which
+   muhtari_probe passes from src/cartdb.c and tests pass from their own list
+   (docs/hardware/cartridge.md). Fills *out, size field included, and returns
+   the status muhtari_probe returns; img may be NULL only when n is 0. */
+struct muhtari__cartdb_key;
+struct muhtari__cartdb_entry;
+struct muhtari__cartdb_layout;
+muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
+                                      const struct muhtari__cartdb_key *keys, uint32_t key_count,
+                                      const struct muhtari__cartdb_entry *entries,
+                                      uint32_t entry_count,
+                                      const struct muhtari__cartdb_layout *layouts,
+                                      uint32_t layout_count, const uint8_t (*prefix)[8],
+                                      uint32_t prefix_count, muhtari_cart_info *out);
 
 /* The test card's native colour at (x, y) in a frame h rows tall. */
 uint8_t muhtari__testcard_pixel(uint32_t x, uint32_t y, uint32_t h);
