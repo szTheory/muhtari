@@ -26,4 +26,15 @@ void images_header(uint8_t *h, uint8_t version, const char *title, uint32_t rom_
    bytes with a valid footer. buf holds IMAGES_HEADER + body bytes. */
 size_t images_linear(uint8_t *buf, uint8_t version, uint32_t body);
 
+/* A headered image over a filled body: header fields as images_header, the
+   size field rom_size, body bytes after the header. */
+size_t images_a78(uint8_t *buf, uint8_t version, uint32_t rom_size, uint16_t cart_type,
+                  uint32_t body);
+
+/* A headerless image of n bytes whose footer a 7800 BIOS accepts. */
+size_t images_headerless(uint8_t *buf, uint32_t n);
+
+/* A 2600 image of n bytes: reset at $F000 and a footer the 7800 test fails. */
+size_t images_2600(uint8_t *buf, uint32_t n);
+
 #endif /* MUHTARI_TEST_IMAGES_H */

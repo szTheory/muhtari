@@ -389,6 +389,109 @@ static muhtari_status cart_header(const uint8_t *img, size_t n,
     return MUHTARI_STATUS_OK;
 }
 
+/* Whether the 8-byte SHA-1 prefix of digest is in the sorted 2600 list. */
+static int cart_find_2600(const uint8_t digest[20], const uint8_t (*prefix)[8],
+                          uint32_t prefix_count)
+{
+    uint32_t lo = 0u;
+    uint32_t hi = prefix_count;
+    while (lo < hi) {
+        uint32_t mid = lo + (hi - lo) / 2u;
+        int c = memcmp(prefix[mid], digest, 8u);
+        if (c == 0) {
+            return 1;
+        }
+        if (c < 0) {
+            lo = mid + 1u;
+        } else {
+            hi = mid;
+        }
+    }
+    return 0;
+}
+
+/* The NTSC BIOS's test of the last 8 bytes, $FFF8-$FFFF, with the region bit
+   ignored: $FFF8's high nibble is $F; $FFF9's low nibble is 3 or 7 and its
+   high nibble, the start page, is at least 4 and at or below the reset
+   vector's page; the reset vector is neither $0000 nor $FFFF
+   (A7800-CARTRIDGES-AND-PERIPHERALS section 1.5). */
+static int cart_footer(const uint8_t *f)
+{
+    uint32_t reset = (uint32_t)f[4] | ((uint32_t)f[5] << 8);
+    uint32_t start = f[1] & 0xF0u;
+    uint32_t low = f[1] & 0x0Fu;
+    return (f[0] & 0xF0u) == 0xF0u && (low == 3u || low == 7u) && start >= 0x40u &&
+           start <= (reset >> 8) && reset != 0x0000u && reset != 0xFFFFu;
+}
+
+/* The sizes of 2600 images: 2 KiB multiples up to 64 KiB, 10,495 bytes, and
+   multiples of the 8,448-byte Supercharger load. */
+static int cart_2600_size(size_t n)
+{
+    return (n % (2u * CART_KIB) == 0u && n <= 64u * CART_KIB) || n == 10495u || n % 8448u == 0u;
+}
+
+/* An image without the A78 magic: the 7800 list, the 2600 list, the footer
+   test and the 2600 sizes, in that order. n is at least 1. */
+static muhtari_status cart_headerless(const uint8_t *img, size_t n,
+                                      const struct muhtari__cartdb_key *keys, uint32_t key_count,
+                                      const struct muhtari__cartdb_entry *entries,
+                                      uint32_t entry_count, const uint8_t (*prefix)[8],
+                                      uint32_t prefix_count, muhtari_cart_info *out)
+{
+    uint8_t digest[20];
+    cart_sha1(img, n, digest);
+    out->rom_size = (uint32_t)n;
+    const struct muhtari__cartdb_entry *e =
+        cart_find_7800(digest, keys, key_count, entries, entry_count);
+    if (e != NULL) {
+        if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
+            return MUHTARI_STATUS_ERR_INVALID_IMAGE;
+        }
+        struct cart_board b;
+        cart_entry_board(e, &b);
+        cart_set_board(out, &b);
+        out->kind = MUHTARI_KIND_7800;
+        out->source = MUHTARI_SOURCE_HASH;
+        out->flags = MUHTARI_CART_HASH_MATCH;
+        out->region =
+            (e->flags & (MUHTARI__CARTDB_NTSC | MUHTARI__CARTDB_PAL)) == MUHTARI__CARTDB_PAL
+                ? MUHTARI_REGION_PAL
+                : MUHTARI_REGION_NTSC;
+        out->port1 = (e->flags & MUHTARI__CARTDB_LIGHTGUN) != 0u ? MUHTARI_PORT_LIGHTGUN
+                                                                 : MUHTARI_PORT_PROLINE;
+        out->port2 = MUHTARI_PORT_PROLINE;
+        return cart_refused(&b) ? MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD : MUHTARI_STATUS_OK;
+    }
+    if (cart_find_2600(digest, prefix, prefix_count)) {
+        out->kind = MUHTARI_KIND_2600;
+        out->source = MUHTARI_SOURCE_HASH;
+        out->flags = MUHTARI_CART_HASH_MATCH;
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_2600;
+    }
+    if (n >= 8u && cart_footer(img + n - 8u)) {
+        struct cart_board b;
+        memset(&b, 0, sizeof b);
+        b.board = n <= 48u * CART_KIB ? MUHTARI_BOARD_LINEAR : MUHTARI_BOARD_SUPERGAME;
+        if (!cart_fits(&b, n)) {
+            return MUHTARI_STATUS_ERR_INVALID_IMAGE;
+        }
+        cart_set_board(out, &b);
+        out->kind = MUHTARI_KIND_7800;
+        out->source = MUHTARI_SOURCE_FOOTER;
+        out->region = MUHTARI_REGION_NTSC;
+        out->port1 = MUHTARI_PORT_PROLINE;
+        out->port2 = MUHTARI_PORT_PROLINE;
+        return MUHTARI_STATUS_OK;
+    }
+    if (cart_2600_size(n)) {
+        out->kind = MUHTARI_KIND_2600;
+        out->source = MUHTARI_SOURCE_SIZE;
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_2600;
+    }
+    return MUHTARI_STATUS_ERR_INVALID_IMAGE;
+}
+
 muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
                                       const struct muhtari__cartdb_key *keys, uint32_t key_count,
                                       const struct muhtari__cartdb_entry *entries,
@@ -401,8 +504,6 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
        image is identified by its header or its footer. */
     (void)layouts;
     (void)layout_count;
-    (void)prefix;
-    (void)prefix_count;
     if (out == NULL || (img == NULL && n > 0u)) {
         return MUHTARI_STATUS_ERR_ARGUMENT;
     }
@@ -411,10 +512,14 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
     }
     memset(out, 0, sizeof *out);
     out->size = (uint32_t)sizeof *out;
+    if (n == 0u) {
+        return MUHTARI_STATUS_ERR_INVALID_IMAGE;
+    }
     if (n >= 10u && memcmp(img + A78_MAGIC, "ATARI7800", 9u) == 0) {
         return cart_header(img, n, keys, key_count, entries, entry_count, out);
     }
-    return MUHTARI_STATUS_ERR_INVALID_IMAGE;
+    return cart_headerless(img, n, keys, key_count, entries, entry_count, prefix, prefix_count,
+                           out);
 }
 
 muhtari_status muhtari_probe(const void *image, size_t n, muhtari_cart_info *out)

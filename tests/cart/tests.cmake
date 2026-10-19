@@ -19,11 +19,12 @@ add_executable(muhtari-test-cart
   $<TARGET_OBJECTS:muhtari_objs>
   $<TARGET_OBJECTS:muhtari_cpu>
   $<TARGET_OBJECTS:muhtari_cartdb>)
-target_include_directories(muhtari-test-cart PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(muhtari-test-cart PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 set_target_properties(muhtari-test-cart PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-cart)
-foreach(cart_case IN ITEMS probe.accepted)
+foreach(cart_case IN ITEMS probe.accepted probe.arguments probe.oversized probe.2600
+    probe.unsupported_board probe.malformed probe.truncated)
   muhtari_add_test(NAME cart.${cart_case} COMMAND muhtari-test-cart ${cart_case}
     LABELS cart portable TIMEOUT 10)
 endforeach()

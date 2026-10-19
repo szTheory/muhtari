@@ -27,7 +27,13 @@ bus.open_bus.unmapped	portable,riot
 bus.open_bus.write_only	portable,riot
 bus.rdy.holds_reads_only	portable,sally
 bus.rdy.rmw_completes_both_writes	portable,sally
+cart.probe.2600	cart,portable
 cart.probe.accepted	cart,portable
+cart.probe.arguments	cart,portable
+cart.probe.malformed	cart,portable
+cart.probe.oversized	cart,portable
+cart.probe.truncated	cart,portable
+cart.probe.unsupported_board	cart,portable
 cart.sha1.fips	cart,portable
 core.api.size_tags	core,portable
 core.audio.silence	core,portable
