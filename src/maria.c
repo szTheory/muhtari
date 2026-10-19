@@ -20,6 +20,7 @@
 #define MARIA_ABORT_TAIL_LAST 9u
 #define MARIA_LINE_TICKS 454u
 #define MARIA_DMA_REQ_T 28u
+_Static_assert(MARIA_TERMINATOR == 4u * MARIA_DL_BYTE, "a terminator is a full 4-byte read");
 
 /* The bytes of a DLL entry, and VBE's length: the PLA start and the entry's
    three bytes (A7800-MARIA section 4.2). */
@@ -27,16 +28,38 @@
 #define MARIA_VBE_LEN (MARIA_PLA_START + MARIA_DLL_ENTRY * MARIA_DL_BYTE - 1u)
 
 /* The registers MARIA's DMA reads, as indexes into reg (A7800-MARIA
-   section 2.4). */
+   section 2.4), and CTRL's DMA-side bits: character width in bit 4,
+   kangaroo mode in bit 2 and the read mode in bits 1-0 (section 3). */
 #define MARIA_DPPH 0x0Cu
 #define MARIA_DPPL 0x10u
+#define MARIA_CHARBASE 0x14u
+#define MARIA_CTRL 0x1Cu
+#define MARIA_CTRL_CW 0x10u
+#define MARIA_CTRL_KANGAROO 0x04u
+#define MARIA_CTRL_RM 0x03u
 
-/* A DLL entry's byte 0: OFFSET in bits 3-0 (A7800-MARIA section 2.1). */
-#define MARIA_ENTRY_OFFSET 0x0Fu
+/* A DLL entry's byte 0: DLI in bit 7, H16 in bit 6, H8 in bit 5 and OFFSET
+   in bits 3-0 (A7800-MARIA section 2.1). */
 #define MARIA_ENTRY_DLI 0x80u
+#define MARIA_ENTRY_H16 0x40u
+#define MARIA_ENTRY_H8 0x20u
+#define MARIA_ENTRY_OFFSET 0x0Fu
 
-/* A header is a terminator when (b1 & 0x5F) == 0 (A7800-MARIA section 2.2). */
+/* A header's second byte (A7800-MARIA section 2.2): a 4-byte header when
+   its width field is not 0; else a 5-byte header when bit 6 is set, with
+   WM in bit 7 and IND in bit 5; else the terminator, (b1 & 0x5F) == 0. */
+#define MARIA_HDR_WIDTH 0x1Fu
+#define MARIA_HDR_FIVE 0x40u
+#define MARIA_HDR_WM 0x80u
+#define MARIA_HDR_IND 0x20u
 #define MARIA_TERM_MASK 0x5Fu
+#define MARIA_WIDTH_MAX 32u
+
+/* The hole test's address bits: A15, and A12 under H16 or A11 under H8
+   (A7800-MARIA section 2.3). */
+#define MARIA_A15 0x8000u
+#define MARIA_A12 0x1000u
+#define MARIA_A11 0x0800u
 
 /* One DMA read at addr. RAM answers, $1800-$27FF and its page 0 and 1
    mirrors by the rule src/bus.c's ram_index applies. TIA, MARIA and RIOT
@@ -56,9 +79,9 @@ static uint8_t fetch(muhtari *m, uint16_t addr)
     return v;
 }
 
-/* Reads the DLL entry at dll, its bytes addressed at t, t + 2 and t + 4,
-   and makes it the zone's: byte 0 sets OFFSET, H16, H8 and DLI, bytes 1
-   and 2 the DL address, high byte first (A7800-MARIA section 2.1). */
+/* Reads the DLL entry at dll and makes it the zone's: byte 0 sets OFFSET,
+   H16, H8 and DLI, bytes 1 and 2 the DL address, high byte first
+   (A7800-MARIA section 2.1). */
 static void read_entry(muhtari *m)
 {
     struct muhtari__maria *ma = &m->maria;
@@ -79,12 +102,227 @@ uint64_t muhtari__maria_vbe(muhtari *m, uint64_t t0)
     return t0 + MARIA_VBE_LEN;
 }
 
+/* One burst in progress: t is the next fetch's address tick, and a fetch at
+   or after lrc is dropped and ends the burst (A7800-MARIA section 4.6). p
+   walks the DL; hpos is the object's next line-RAM cell. ctrl is CTRL as
+   the PLA start samples it (section 5). */
+struct walk {
+    muhtari *m;
+    struct muhtari__line_stats *st;
+    uint64_t t;
+    uint64_t lrc;
+    uint16_t p;
+    uint8_t ctrl;
+    uint8_t hpos;
+    uint8_t aborted;
+};
+
+/* Whether the fetch addressed at w->t runs: one at or after LRC is dropped
+   and the burst ends (A7800-MARIA section 4.6). */
+static int runs(struct walk *w)
+{
+    if (w->t >= w->lrc) {
+        w->aborted = 1u;
+    }
+    return !w->aborted;
+}
+
+/* The next DL byte into *v; 0 when the abort dropped it. */
+static int dl_byte(struct walk *w, uint8_t *v)
+{
+    if (!runs(w)) {
+        return 0;
+    }
+    *v = fetch(w->m, w->p);
+    w->p = (uint16_t)(w->p + 1u);
+    w->t += MARIA_DL_BYTE;
+    return 1;
+}
+
+/* Whether a graphics address falls in a hole of the zone (A7800-MARIA
+   section 2.3). */
+static int holey(uint8_t entry, uint16_t addr)
+{
+    if ((addr & MARIA_A15) == 0u) {
+        return 0;
+    }
+    return ((entry & MARIA_ENTRY_H16) != 0u && (addr & MARIA_A12) != 0u) ||
+           ((entry & MARIA_ENTRY_H8) != 0u && (addr & MARIA_A11) != 0u);
+}
+
+/* Writes one cell when its data pair is not 00 or kangaroo mode is on.
+   hpos wraps at 8 bits; cells 160-255 are scratch and keep nothing
+   (A7800-MARIA section 3). */
+static void cell(struct walk *w, uint8_t pos, uint8_t pal, uint8_t data)
+{
+    struct muhtari__maria *ma = &w->m->maria;
+    if ((data != 0u || (w->ctrl & MARIA_CTRL_KANGAROO) != 0u) && pos < MUHTARI__LINE_CELLS) {
+        ma->line_ram[ma->write_buf & 1u][pos] = (uint8_t)((pal << 2) | data);
+    }
+}
+
+/* Writes graphics byte v of palette pal at hpos (A7800-MARIA section 3).
+   Write mode 0: four cells, cell k holding P2 P1 P0 and data bits 7-2k and
+   6-2k. Write mode 1: two cells, cell 0 holding P2 D3 D2 and D7 D6, cell 1
+   P2 D1 D0 and D5 D4. */
+static void draw(struct walk *w, uint8_t pal, uint8_t v)
+{
+    if (w->m->maria.write_mode == 0u) {
+        for (uint8_t k = 0u; k < 4u; k++) {
+            cell(w, (uint8_t)(w->hpos + k), pal, (uint8_t)((v >> (6u - 2u * k)) & 3u));
+        }
+        w->hpos = (uint8_t)(w->hpos + 4u);
+    } else {
+        uint8_t p2 = (uint8_t)(pal & 4u);
+        cell(w, w->hpos, (uint8_t)(p2 | ((v >> 2) & 3u)), (uint8_t)(v >> 6));
+        cell(w, (uint8_t)(w->hpos + 1u), (uint8_t)(p2 | (v & 3u)), (uint8_t)((v >> 4) & 3u));
+        w->hpos = (uint8_t)(w->hpos + 2u);
+    }
+}
+
+/* One graphics slot of 3 ticks at addr: drawn unless the address is in a
+   hole (A7800-MARIA section 4.4). Returns 0 when the abort dropped it. */
+static int gfx(struct walk *w, uint16_t addr, int hole, uint8_t pal)
+{
+    if (!runs(w)) {
+        return 0;
+    }
+    if (!hole) {
+        draw(w, pal, fetch(w->m, addr));
+        w->st->bytes++;
+    }
+    w->t += MARIA_GFX_BYTE;
+    return 1;
+}
+
+/* A direct object: byte i at hi:lo + i plus OFFSET pages, 3 ticks each. A
+   holey byte costs its slot and ends the object (A7800-MARIA sections 2.3,
+   4.2 and 4.4). Returns 0 when the abort cut it short. */
+static int direct(struct walk *w, uint16_t base, uint32_t width, uint8_t pal)
+{
+    const struct muhtari__maria *ma = &w->m->maria;
+    for (uint32_t i = 0u; i < width; i++) {
+        uint16_t addr = (uint16_t)(base + i + ((uint32_t)ma->offset << 8));
+        int hole = holey(ma->entry, addr);
+        if (!gfx(w, addr, hole, pal)) {
+            return 0;
+        }
+        if (hole) {
+            break;
+        }
+    }
+    return 1;
+}
+
+/* An indirect object: map entry i at hi:lo + i with no OFFSET, 3 ticks,
+   then the character's 1 or 2 graphics bytes at CHARBASE:c plus OFFSET
+   pages, 3 ticks each. A character whose graphics fall in a hole costs its
+   whole slot and ends the object (A7800-MARIA sections 2.3, 4.2 and 4.4).
+   Returns 0 when the abort cut it short. */
+static int indirect(struct walk *w, uint16_t base, uint32_t width, uint8_t pal)
+{
+    const struct muhtari__maria *ma = &w->m->maria;
+    uint32_t n = (w->ctrl & MARIA_CTRL_CW) != 0u ? 2u : 1u;
+    for (uint32_t i = 0u; i < width; i++) {
+        uint16_t addr;
+        int hole;
+        if (!runs(w)) {
+            return 0;
+        }
+        addr =
+            (uint16_t)(((uint32_t)ma->reg[MARIA_CHARBASE] << 8) +
+                       (uint32_t)fetch(w->m, (uint16_t)(base + i)) + ((uint32_t)ma->offset << 8));
+        w->st->bytes++;
+        w->t += MARIA_CHARMAP;
+        hole = holey(ma->entry, addr);
+        for (uint32_t j = 0u; j < n; j++) {
+            if (!gfx(w, (uint16_t)(addr + j), hole, pal)) {
+                return 0;
+            }
+        }
+        if (hole) {
+            break;
+        }
+    }
+    return 1;
+}
+
+/* Records the features an object uses (docs/hardware/maria.md,
+   Statistics). */
+static void object_features(struct walk *w, int ind)
+{
+    struct muhtari__maria *ma = &w->m->maria;
+    static const uint32_t rm[4] = {MUHTARI__FEAT_RM0, MUHTARI__FEAT_RM0, MUHTARI__FEAT_RM2,
+                                   MUHTARI__FEAT_RM3};
+    uint32_t f = rm[w->ctrl & MARIA_CTRL_RM];
+    if ((w->ctrl & MARIA_CTRL_KANGAROO) != 0u) {
+        f |= MUHTARI__FEAT_KANGAROO;
+    }
+    if (ma->write_mode != 0u) {
+        f |= MUHTARI__FEAT_WRITE_MODE;
+    }
+    if ((ma->entry & MARIA_ENTRY_H16) != 0u) {
+        f |= MUHTARI__FEAT_HOLEY16;
+    }
+    if ((ma->entry & MARIA_ENTRY_H8) != 0u) {
+        f |= MUHTARI__FEAT_HOLEY8;
+    }
+    if (ind) {
+        f |= (w->ctrl & MARIA_CTRL_CW) != 0u ? MUHTARI__FEAT_IND2 : MUHTARI__FEAT_IND1;
+    }
+    ma->features |= f;
+}
+
+/* Walks the zone's DL from its base, header by header, until the
+   terminator or the abort (A7800-MARIA section 2.2). Returns the address
+   tick of the terminator's last byte; meaningless after an abort. */
+static uint64_t walk_dl(struct walk *w)
+{
+    struct muhtari__maria *ma = &w->m->maria;
+    for (;;) {
+        uint8_t h[5] = {0u, 0u, 0u, 0u, 0u};
+        uint8_t pw, five, ind = 0u;
+        uint16_t base;
+        int done;
+        if (!dl_byte(w, &h[0]) || !dl_byte(w, &h[1]) || !dl_byte(w, &h[2]) || !dl_byte(w, &h[3])) {
+            return 0u;
+        }
+        if ((h[1] & MARIA_TERM_MASK) == 0u) {
+            return w->t - MARIA_DL_BYTE;
+        }
+        five = (uint8_t)((h[1] & MARIA_HDR_WIDTH) == 0u);
+        if (five && !dl_byte(w, &h[4])) {
+            return 0u;
+        }
+        w->st->headers++;
+        base = (uint16_t)(((uint16_t)h[2] << 8) | h[0]);
+        if (five) {
+            ma->write_mode = (uint8_t)((h[1] & MARIA_HDR_WM) != 0u);
+            ind = (uint8_t)((h[1] & MARIA_HDR_IND) != 0u);
+            pw = h[3];
+            w->hpos = h[4];
+        } else {
+            pw = h[1];
+            w->hpos = h[3];
+        }
+        object_features(w, ind);
+        if (ind) {
+            done = indirect(w, base, MARIA_WIDTH_MAX - (pw & MARIA_HDR_WIDTH), (uint8_t)(pw >> 5));
+        } else {
+            done = direct(w, base, MARIA_WIDTH_MAX - (pw & MARIA_HDR_WIDTH), (uint8_t)(pw >> 5));
+        }
+        if (!done) {
+            return 0u;
+        }
+        w->st->objects++;
+    }
+}
+
 uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t line,
                                  struct muhtari__line_stats *st)
 {
     struct muhtari__maria *ma = &m->maria;
-    uint16_t p = ma->dl;
-    uint64_t t = t0 + MARIA_PLA_START; /* the next fetch's address tick */
+    struct walk w;
     uint64_t end;
     int last = ma->offset == 0u;
 
@@ -93,18 +331,22 @@ uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t
     st->headers = 0u;
     st->objects = 0u;
     st->flags = 0u;
-    if (lrc > t0 + MARIA_LINE_TICKS) {
-        lrc = t0 + MARIA_LINE_TICKS;
+    w.m = m;
+    w.st = st;
+    w.t = t0 + MARIA_PLA_START;
+    w.lrc = lrc < t0 + MARIA_LINE_TICKS ? lrc : t0 + MARIA_LINE_TICKS;
+    w.p = ma->dl;
+    w.ctrl = ma->reg[MARIA_CTRL];
+    w.hpos = 0u;
+    w.aborted = 0u;
+
+    end = walk_dl(&w);
+    if (w.aborted) {
+        st->flags |= MUHTARI__LINE_ABORTED;
+        end = w.lrc + (last ? MARIA_ABORT_TAIL_LAST : MARIA_ABORT_TAIL_OTHER);
+    } else {
+        end += last ? MARIA_TAIL_LAST : MARIA_TAIL_OTHER;
     }
-
-    /* The terminator: all four bytes are read (A7800-MARIA section 2.2). */
-    (void)fetch(m, p);
-    (void)fetch(m, (uint16_t)(p + 1u));
-    (void)fetch(m, (uint16_t)(p + 2u));
-    (void)fetch(m, (uint16_t)(p + 3u));
-    t += MARIA_TERMINATOR;
-    end = t - MARIA_DL_BYTE;
-
     if (last) {
         st->flags |= MUHTARI__LINE_LAST;
         read_entry(m);
@@ -112,10 +354,8 @@ uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t
             st->flags |= MUHTARI__LINE_DLI;
             ma->features |= MUHTARI__FEAT_DLI;
         }
-        end += MARIA_TAIL_LAST;
     } else {
         ma->offset--;
-        end += MARIA_TAIL_OTHER;
     }
     st->cost = (uint16_t)(end - t0);
     if (line < MUHTARI__LINES_NTSC) {
