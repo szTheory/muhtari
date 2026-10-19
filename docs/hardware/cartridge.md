@@ -112,13 +112,13 @@ spaces is common, the 7800basic tools write it, and sets nothing. Region is PAL 
 
 1. The arguments, the size tag and the size cap, before any byte is hashed.
 2. **The A78 magic.** A file that ends inside the header, or right after it, is truncated, except that a ROM size of
-   0 is invalid. The header is parsed, and the cartridge maps min(ROM size, bytes after the header). The SHA-1 of
-   those bytes is looked up in the 7800 list; a match to an entry that is not a cartridge (the HSC ROM, the XM, the
+   0 is invalid. The header is parsed, and the cartridge maps min(ROM size, bytes after the header). Those bytes
+   are looked up in the 7800 list as the Hash list section describes; a match to an entry that is not a cartridge (the HSC ROM, the XM, the
    XBoard) is invalid, and any other match replaces the board, RAM and sound and makes the source the hash, never
    the ports, nor the region unless TV bit 2 (multi-region) leaves the header naming none (see Hash list). Then a
    refused board is reported, and the geometry is checked: a body that fails it is truncated when the ROM size is
    larger than the bytes present, and invalid otherwise. A short body that fits its board loads as the bytes present.
-3. **The 7800 list**, for an image without the magic, by the SHA-1 of the whole image. The entry gives the board, RAM,
+3. **The 7800 list**, for an image without the magic, by the whole image, as for a header. The entry gives the board, RAM,
    sound and region (PAL for a PAL-only entry, else NTSC), and port 1 is a light gun for a light-gun entry, ProLine
    otherwise; port 2 is ProLine.
 4. **The 2600 list**, by the first 8 bytes of the same SHA-1: a 2600 image.
@@ -129,6 +129,40 @@ spaces is common, the 7800basic tools write it, and sets nothing. Region is PAL 
 7. Anything else is not a cartridge image.
 
 A 2600 image reports only its kind, source, size and, for a list match, the match flag.
+
+## Hash list
+
+`src/cartdb.c` holds two lists generated from MAME's CC0 software lists, which `src/cartdb.h` describes:
+
+- **The 7800 list.** One key per ROM chip, the chip's full SHA-1, sorted, pointing at an entry. An entry gives the
+  board, board options, RAM, sound, its regions and a light-gun flag. A multi-chip entry also names a layout: the
+  slice sizes of its image in address order, and which chip each slice holds (one chip may fill two slices).
+- **The 2600 list.** The first 8 bytes of the SHA-1 of every 2600 ROM, sorted. Eight bytes keep the list at 12.8 KB
+  instead of 32 KB. A false hit only refuses an image, and forging one needs a second preimage of 64 bits. The 7800
+  keys stay full width, because a match overrides the header.
+
+A body is looked up in a fixed number of SHA-1 passes, each over at most the body:
+
+1. the whole body, matched against single-chip entries;
+2. on a miss, each slice of every layout whose sizes add up to the body, matched when the slices are one entry's
+   chips in the layout's order;
+3. on a miss at exactly 128 KiB, the body again with each 16 KiB bank's 8 KiB halves swapped, fed to SHA-1 in that
+   order without a copy. Activision boards come dumped both ways (cartridge notes, section 1.4), and only an
+   Activision entry counts for this pass.
+
+The slice and swap hashes are computed at run time, not listed: SHA-1 does not compose, so a whole-image key cannot
+be derived from per-chip keys, nor a swapped key from a straight one.
+
+A match overrides the header's board, board options, RAM and sound, sets `MUHTARI_CART_HASH_MATCH`, makes the
+source `MUHTARI_SOURCE_HASH`, and sets `MUHTARI_CART_WARN_HEADER_CORRECTED` when the header said otherwise. It never
+changes the controllers. The region comes from the header, from the entry when the header sets TV bit 2
+(multi-region) and so names none, and otherwise NTSC. A headerless match takes the entry's region (PAL for a
+PAL-only entry) and puts a light gun on port 1 for a light-gun entry, ProLine elsewhere.
+
+Entries that are not cartridges stay in the list, so an image matching one is refused as invalid: the High Score
+Cartridge ROM, listed both alone and inside the XM (its one duplicate key resolves to the first entry), and any XM or
+XBoard entry. The test program links `tests/cart/test_cartdb.c` in place of the bundled lists, with keys for images
+built in memory, and `cart.identify.bundled_has_no_test_entries` fails if any of its keys appears in `src/cartdb.c`.
 
 ## The footer test
 

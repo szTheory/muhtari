@@ -48,6 +48,18 @@ static const uint8_t cart_magic[9] = {'A', 'T', 'A', 'R', 'I', '7', '8', '0', '0
 #define CT_HALT_RAM 0x4000u
 #define CT_POKEY_800 0x8000u
 
+/* The tables identification reads, passed in by the caller. */
+struct cart_tables {
+    const struct muhtari__cartdb_key *keys;
+    uint32_t key_count;
+    const struct muhtari__cartdb_entry *entries;
+    uint32_t entry_count;
+    const struct muhtari__cartdb_layout *layouts;
+    uint32_t layout_count;
+    const uint8_t (*prefix)[8];
+    uint32_t prefix_count;
+};
+
 /* What a header or a table entry says the cartridge holds. */
 struct cart_board {
     uint32_t board, options, ram, sound;
@@ -281,29 +293,119 @@ static void cart_sha1(const uint8_t *p, size_t n, uint8_t digest[20])
     muhtari__sha1_final(&ctx, digest);
 }
 
-/* The single-chip 7800 entry whose key is digest, or NULL. Of two equal
-   keys the first, the lower entry, wins. */
-static const struct muhtari__cartdb_entry *
-cart_find_7800(const uint8_t digest[20], const struct muhtari__cartdb_key *keys, uint32_t key_count,
-               const struct muhtari__cartdb_entry *entries, uint32_t entry_count)
+/* The first key equal to digest, or key_count when there is none. Equal
+   keys are sorted by entry, so the first is the lower entry. */
+static uint32_t cart_first_key(const uint8_t digest[20], const struct cart_tables *t)
 {
     uint32_t lo = 0u;
-    uint32_t hi = key_count;
+    uint32_t hi = t->key_count;
     while (lo < hi) {
         uint32_t mid = lo + (hi - lo) / 2u;
-        if (memcmp(keys[mid].sha1, digest, 20u) < 0) {
+        if (memcmp(t->keys[mid].sha1, digest, 20u) < 0) {
             lo = mid + 1u;
         } else {
             hi = mid;
         }
     }
-    for (; lo < key_count && memcmp(keys[lo].sha1, digest, 20u) == 0; lo++) {
-        uint32_t e = keys[lo].entry;
-        if (e < entry_count && entries[e].parts <= 1u) {
-            return &entries[e];
+    return lo;
+}
+
+/* The single-chip 7800 entry whose key is digest, or NULL. Of two equal
+   keys the first, the lower entry, wins. */
+static const struct muhtari__cartdb_entry *cart_find_7800(const uint8_t digest[20],
+                                                          const struct cart_tables *t)
+{
+    for (uint32_t k = cart_first_key(digest, t);
+         k < t->key_count && memcmp(t->keys[k].sha1, digest, 20u) == 0; k++) {
+        uint32_t e = t->keys[k].entry;
+        if (e < t->entry_count && t->entries[e].parts <= 1u) {
+            return &t->entries[e];
         }
     }
     return NULL;
+}
+
+/* Whether digest is keyed as part of entry e. */
+static int cart_has_part(const uint8_t digest[20], uint32_t e, uint32_t part,
+                         const struct cart_tables *t)
+{
+    for (uint32_t k = cart_first_key(digest, t);
+         k < t->key_count && memcmp(t->keys[k].sha1, digest, 20u) == 0; k++) {
+        if (t->keys[k].entry == e && t->keys[k].part == part) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* The multi-chip entry whose chips are the slices of body under layout li,
+   in order, or NULL. One SHA-1 per slice. */
+static const struct muhtari__cartdb_entry *cart_find_slices(const uint8_t *body, uint32_t li,
+                                                            const struct cart_tables *t)
+{
+    const struct muhtari__cartdb_layout *l = &t->layouts[li];
+    uint8_t digest[MUHTARI__CARTDB_SLICES_MAX][20];
+    uint32_t slices = 0u;
+    size_t at = 0u;
+    for (; slices < MUHTARI__CARTDB_SLICES_MAX && l->size[slices] != 0u; slices++) {
+        cart_sha1(body + at, l->size[slices], digest[slices]);
+        at += l->size[slices];
+    }
+    if (slices == 0u) {
+        return NULL;
+    }
+    for (uint32_t k = cart_first_key(digest[0], t);
+         k < t->key_count && memcmp(t->keys[k].sha1, digest[0], 20u) == 0; k++) {
+        uint32_t e = t->keys[k].entry;
+        if (e >= t->entry_count || t->entries[e].parts <= 1u || t->entries[e].layout != li + 1u ||
+            t->keys[k].part != l->part[0]) {
+            continue;
+        }
+        uint32_t i = 1u;
+        while (i < slices && cart_has_part(digest[i], e, l->part[i], t)) {
+            i++;
+        }
+        if (i == slices) {
+            return &t->entries[e];
+        }
+    }
+    return NULL;
+}
+
+/* The 7800 entry for n bytes at body, with digest set to their SHA-1. The
+   passes are bounded (docs/hardware/cartridge.md, Hash list): the whole
+   body; each slice of every layout whose sizes sum to n; and for a 128 KiB
+   miss, the body again with each 16 KiB bank's 8 KiB halves swapped, fed in
+   that order with no copy, which only an Activision entry may match. */
+static const struct muhtari__cartdb_entry *
+cart_lookup(const uint8_t *body, size_t n, const struct cart_tables *t, uint8_t digest[20])
+{
+    cart_sha1(body, n, digest);
+    const struct muhtari__cartdb_entry *e = cart_find_7800(digest, t);
+    for (uint32_t li = 0u; e == NULL && li < t->layout_count; li++) {
+        uint64_t sum = 0u;
+        for (uint32_t i = 0u; i < MUHTARI__CARTDB_SLICES_MAX && t->layouts[li].size[i] != 0u; i++) {
+            sum += t->layouts[li].size[i];
+        }
+        if (sum == n) {
+            e = cart_find_slices(body, li, t);
+        }
+    }
+    if (e == NULL && n == 128u * CART_KIB) {
+        struct muhtari__sha1 ctx;
+        uint8_t swapped[20];
+        muhtari__sha1_init(&ctx);
+        for (size_t bank = 0u; bank < n; bank += 16u * CART_KIB) {
+            muhtari__sha1_update(&ctx, body + bank + 8u * CART_KIB, 8u * CART_KIB);
+            muhtari__sha1_update(&ctx, body + bank, 8u * CART_KIB);
+        }
+        muhtari__sha1_final(&ctx, swapped);
+        e = cart_find_7800(swapped, t);
+        if (e != NULL && e->board != MUHTARI_BOARD_ACTIVISION) {
+            e = NULL;
+        }
+    }
+    return e;
 }
 
 static void cart_entry_board(const struct muhtari__cartdb_entry *e, struct cart_board *b)
@@ -347,9 +449,7 @@ static uint32_t cart_port(uint32_t code, muhtari_cart_info *out)
 }
 
 /* An image whose bytes 1-9 are the A78 magic. */
-static muhtari_status cart_header(const uint8_t *img, size_t n,
-                                  const struct muhtari__cartdb_key *keys, uint32_t key_count,
-                                  const struct muhtari__cartdb_entry *entries, uint32_t entry_count,
+static muhtari_status cart_header(const uint8_t *img, size_t n, const struct cart_tables *t,
                                   muhtari_cart_info *out)
 {
     if (n < CART_HEADER_SIZE) {
@@ -444,9 +544,7 @@ static muhtari_status cart_header(const uint8_t *img, size_t n,
        multi-region, which names none; then the entry's applies (cartridge
        notes, section 1.4). */
     uint8_t digest[20];
-    cart_sha1(img + CART_HEADER_SIZE, mapped, digest);
-    const struct muhtari__cartdb_entry *e =
-        cart_find_7800(digest, keys, key_count, entries, entry_count);
+    const struct muhtari__cartdb_entry *e = cart_lookup(img + CART_HEADER_SIZE, mapped, t, digest);
     if (e != NULL) {
         if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
             return MUHTARI_STATUS_ERR_INVALID_IMAGE;
@@ -517,17 +615,12 @@ static int cart_2600_size(size_t n)
 
 /* An image without the A78 magic: the 7800 list, the 2600 list, the footer
    test and the 2600 sizes, in that order. n is at least 1. */
-static muhtari_status cart_headerless(const uint8_t *img, size_t n,
-                                      const struct muhtari__cartdb_key *keys, uint32_t key_count,
-                                      const struct muhtari__cartdb_entry *entries,
-                                      uint32_t entry_count, const uint8_t (*prefix)[8],
-                                      uint32_t prefix_count, muhtari_cart_info *out)
+static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct cart_tables *t,
+                                      muhtari_cart_info *out)
 {
     uint8_t digest[20];
-    cart_sha1(img, n, digest);
     out->rom_size = (uint32_t)n;
-    const struct muhtari__cartdb_entry *e =
-        cart_find_7800(digest, keys, key_count, entries, entry_count);
+    const struct muhtari__cartdb_entry *e = cart_lookup(img, n, t, digest);
     if (e != NULL) {
         if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
             return MUHTARI_STATUS_ERR_INVALID_IMAGE;
@@ -544,7 +637,7 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n,
         out->port2 = MUHTARI_PORT_PROLINE;
         return cart_refused(&b) ? MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD : MUHTARI_STATUS_OK;
     }
-    if (cart_find_2600(digest, prefix, prefix_count)) {
+    if (cart_find_2600(digest, t->prefix, t->prefix_count)) {
         out->kind = MUHTARI_KIND_2600;
         out->source = MUHTARI_SOURCE_HASH;
         out->flags = MUHTARI_CART_HASH_MATCH;
@@ -581,10 +674,6 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
                                       uint32_t layout_count, const uint8_t (*prefix)[8],
                                       uint32_t prefix_count, muhtari_cart_info *out)
 {
-    /* The slice lookup over layouts is not implemented yet: a multi-chip
-       image is identified by its header or its footer. */
-    (void)layouts;
-    (void)layout_count;
     if (out == NULL || (img == NULL && n > 0u)) {
         return MUHTARI_STATUS_ERR_ARGUMENT;
     }
@@ -596,11 +685,12 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
     if (n == 0u) {
         return MUHTARI_STATUS_ERR_INVALID_IMAGE;
     }
+    struct cart_tables t = {keys,    key_count,    entries, entry_count,
+                            layouts, layout_count, prefix,  prefix_count};
     if (n >= 10u && memcmp(img + A78_MAGIC, cart_magic, sizeof cart_magic) == 0) {
-        return cart_header(img, n, keys, key_count, entries, entry_count, out);
+        return cart_header(img, n, &t, out);
     }
-    return cart_headerless(img, n, keys, key_count, entries, entry_count, prefix, prefix_count,
-                           out);
+    return cart_headerless(img, n, &t, out);
 }
 
 muhtari_status muhtari_probe(const void *image, size_t n, muhtari_cart_info *out)

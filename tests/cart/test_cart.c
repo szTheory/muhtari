@@ -556,10 +556,132 @@ static void test_hash_override(void)
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_LINEAR);
 }
 
+/* Multi-chip entries: each slice of a layout whose sizes sum to the body is
+   hashed, and the entry matches when its parts come in order. */
+static void test_slices(void)
+{
+    /* 16 KiB + 32 KiB chips; a 32 + 16 KiB layout with no entry comes first. */
+    uint32_t body = 48u * IMAGES_KIB;
+    size_t n = images_seeded(buf, body, IMAGES_SEED_TWO_CHIP);
+    muhtari_cart_info out = expect_written("two chips", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_LINEAR);
+    CHECK_EQ_U64(out.sound, MUHTARI_SOUND_POKEY_450);
+    CHECK_EQ_U64(out.region, MUHTARI_REGION_PAL);
+    CHECK_EQ_U64(out.rom_size, body);
+    /* The same body under a header that says no POKEY: corrected. */
+    images_header(buf, 3u, "Two chips", body, 0u);
+    images_seeded(buf + IMAGES_HEADER, body, IMAGES_SEED_TWO_CHIP);
+    out = expect_written("two chips, headered", buf, IMAGES_HEADER + body, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER | MUHTARI_CART_HASH_MATCH);
+    CHECK_EQ_U64(out.sound, MUHTARI_SOUND_POKEY_450);
+    CHECK_EQ_HEX(out.warnings, MUHTARI_CART_WARN_HEADER_CORRECTED);
+    /* One byte changed in either slice: no match, so the footer test. */
+    static const uint32_t changed[2] = {100u, 20u * IMAGES_KIB};
+    for (size_t i = 0; i < 2u; i++) {
+        n = images_seeded(buf, body, IMAGES_SEED_TWO_CHIP);
+        buf[changed[i]] ^= 1u;
+        out = expect_written("two chips, one changed", buf, n, MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(out.source, MUHTARI_SOURCE_FOOTER);
+        CHECK_EQ_U64(out.sound, 0);
+    }
+
+    /* 16 KiB + one 8 KiB chip mapped twice. */
+    n = images_mirrored(buf);
+    out = expect_written("mirrored chip", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+    /* The two copies differ: no match, so the footer's linear board. */
+    buf[16u * IMAGES_KIB] ^= 1u;
+    out = expect_written("mirrored chip, copies differ", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_FOOTER);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_LINEAR);
+}
+
+/* A 128 KiB Activision dump in the other layout matches its entry through
+   the half-swapped pass; another size gets no such pass. */
+static void test_activision_swap(void)
+{
+    uint32_t body = 128u * IMAGES_KIB;
+    size_t n = images_seeded(buf, body, IMAGES_SEED_ACTIVISION);
+    muhtari_cart_info out =
+        expect_written("listed layout", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+    images_swap_halves(buf, n);
+    out = expect_written("swapped layout", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    CHECK_EQ_U64(out.kind, MUHTARI_KIND_7800);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+    CHECK_EQ_U64(out.rom_size, body);
+    /* Under a header that says Activision, the match is still found. */
+    images_header(buf, 3u, "Activision", body, 0x0100u);
+    images_seeded(buf + IMAGES_HEADER, body, IMAGES_SEED_ACTIVISION);
+    images_swap_halves(buf + IMAGES_HEADER, body);
+    out = expect_written("swapped layout, headered", buf, IMAGES_HEADER + body,
+                         MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER | MUHTARI_CART_HASH_MATCH);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+
+    /* 64 KiB whose swapped bytes are listed: no swapped pass, so the footer. */
+    n = images_seeded(buf, 64u * IMAGES_KIB, IMAGES_SEED_SWAP_64K);
+    out = expect_written("64 KiB", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_FOOTER);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+}
+
+/* A 2600 list hit refuses an image whose footer the 7800 test passes. */
+static void test_2600_prefix(void)
+{
+    size_t n = images_seeded(buf, 8u * IMAGES_KIB, IMAGES_SEED_2600);
+    muhtari_cart_info out =
+        expect_written("2600 prefix", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_2600);
+    check_2600("2600 prefix", &out, MUHTARI_SOURCE_HASH, MUHTARI_CART_HASH_MATCH, (uint32_t)n);
+    buf[0] ^= 1u; /* no longer listed: a headerless 7800 image by its footer */
+    out = expect_written("2600 prefix, changed", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_FOOTER);
+}
+
+/* A match to an entry that is not a cartridge is invalid, out untouched. */
+static void test_not_a_cartridge(void)
+{
+    size_t n = images_seeded(buf, 4u * IMAGES_KIB, IMAGES_SEED_NOT_CART);
+    expect_untouched("not a cartridge", buf, n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    images_header(buf, 3u, "Not a cartridge", 4u * IMAGES_KIB, 0u);
+    images_seeded(buf + IMAGES_HEADER, 4u * IMAGES_KIB, IMAGES_SEED_NOT_CART);
+    expect_untouched("not a cartridge, headered", buf, IMAGES_HEADER + 4u * IMAGES_KIB,
+                     MUHTARI_STATUS_ERR_INVALID_IMAGE);
+}
+
+/* A headerless match's ports: a light gun on port 1 for a light-gun entry,
+   ProLine on both otherwise. */
+static void test_headerless_ports(void)
+{
+    size_t n = images_seeded(buf, 16u * IMAGES_KIB, IMAGES_SEED_LIGHTGUN);
+    muhtari_cart_info out = expect_written("light gun", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.port1, MUHTARI_PORT_LIGHTGUN);
+    CHECK_EQ_U64(out.port2, MUHTARI_PORT_PROLINE);
+    CHECK_EQ_U64(out.region, MUHTARI_REGION_NTSC);
+    n = images_seeded(buf, 16u * IMAGES_KIB, IMAGES_SEED_PROLINE);
+    out = expect_written("ProLine", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.port1, MUHTARI_PORT_PROLINE);
+    CHECK_EQ_U64(out.port2, MUHTARI_PORT_PROLINE);
+}
+
 static const struct {
     const char *name;
     void (*run)(void);
 } cases[] = {
+    {"identify.2600_prefix", test_2600_prefix},
+    {"identify.activision_swap", test_activision_swap},
+    {"identify.headerless_ports", test_headerless_ports},
+    {"identify.not_a_cartridge", test_not_a_cartridge},
+    {"identify.slices", test_slices},
     {"identify.hash_override", test_hash_override},
     {"probe.2600", test_2600},
     {"probe.accepted", test_accepted},

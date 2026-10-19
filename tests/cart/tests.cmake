@@ -26,7 +26,31 @@ set_target_properties(muhtari-test-cart PROPERTIES
 muhtari_warnings(muhtari-test-cart)
 foreach(cart_case IN ITEMS probe.accepted probe.arguments probe.oversized probe.2600
     probe.unsupported_board probe.malformed probe.truncated probe.warnings
-    identify.hash_override)
+    identify.hash_override identify.slices identify.activision_swap identify.2600_prefix
+    identify.not_a_cartridge identify.headerless_ports)
   muhtari_add_test(NAME cart.${cart_case} COMMAND muhtari-test-cart ${cart_case}
     LABELS cart portable TIMEOUT 10)
 endforeach()
+
+# No test-list key is in the bundled tables. The self test appends the test
+# list's first key row to a copy of src/cartdb.c and expects it named.
+set(cart_scripts ${PROJECT_SOURCE_DIR}/tests/cmake)
+set(cart_test_list ${CMAKE_CURRENT_LIST_DIR}/test_cartdb.c)
+muhtari_add_test(NAME cart.identify.bundled_has_no_test_entries
+  COMMAND ${CMAKE_COMMAND} -DTEST_LIST=${cart_test_list}
+    -DBUNDLED=${PROJECT_SOURCE_DIR}/src/cartdb.c -P ${cart_scripts}/no_test_entries.cmake
+  LABELS cart portable TIMEOUT 10)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  ${PROJECT_SOURCE_DIR}/src/cartdb.c ${cart_test_list})
+file(READ ${PROJECT_SOURCE_DIR}/src/cartdb.c cart_leak)
+file(READ ${cart_test_list} cart_test_text)
+string(REGEX MATCH "{{0x[^}]*}" cart_test_key "${cart_test_text}")
+file(WRITE ${PROJECT_BINARY_DIR}/tests/cart/cartdb_leak.c "${cart_leak}${cart_test_key},0,0},\n")
+set(cart_cmd ${CMAKE_COMMAND} -DTEST_LIST=${cart_test_list}
+  -DBUNDLED=${PROJECT_BINARY_DIR}/tests/cart/cartdb_leak.c -P ${cart_scripts}/no_test_entries.cmake)
+string(REPLACE ";" "$<SEMICOLON>" cart_cmd "${cart_cmd}")
+muhtari_add_test(NAME cart.identify.bundled_has_no_test_entries.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${cart_cmd}" -DCODE=1
+    "-DREGEX=holds the test-list key 1aa9559b74eab35d4c5443b56bc4dfd7a445ac4a"
+    -P ${cart_scripts}/expect_fail.cmake
+  LABELS cart portable TIMEOUT 10)

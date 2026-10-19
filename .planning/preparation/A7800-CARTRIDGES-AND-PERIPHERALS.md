@@ -2,7 +2,7 @@
 title: "Atari 7800 cartridges, boards, controllers, saves and hostile inputs"
 summary: "A78 header v1–v4, every board scheme with library share, pin-level controller map, HSC/SaveKey saves, commercial library, ROM-hack support and parser bounds for muhtari."
 read_when: "Before designing or changing cart.c/board_*.c, the A78/headerless probe, ports.c, saves (HSC, SaveKey, .srm), patch handling, or the loader fuzz targets."
-updated: 2026-10-15
+updated: 2026-10-19
 ---
 # Atari 7800 cartridges and peripherals (research R4)
 
@@ -75,7 +75,7 @@ The MAME softlist `hash/a7800.xml` is CC0 (204 entries, per-chip CRC32 and SHA-1
 
 One body can carry two controller setups: PROPack's Alien Brigade and Crossbow each come as a Joystick and a Lightgun header over one CRC [CART.15].
 
-**Recommendation:** at build time, generate a sorted SHA-1 table from the CC0 XML (slot, RAM, POKEY, peripheral, region), adding slice hashes and a half-swapped Activision key. At load, normalise Activision images to one layout by swapping halves when the body matches OM. A hash match overrides board, RAM and POKEY (status `HEADER_CORRECTED`), never controllers. Region comes from the header, else the hash, else NTSC. **Strongest alternative:** trust the header and use the hash only when there is no header (MiSTer, a7800). **Would change if:** the owner's dumps show softlist slot errors.
+**Recommendation:** at build time, generate a sorted per-chip SHA-1 table from the CC0 XML (slot, RAM, POKEY, peripheral, region) with each multi-chip entry's slice layout. Compute the slice hashes and the half-swapped Activision hash at run time, at most one pass per slice and one swapped pass for a 128 KiB miss: SHA-1 does not compose, so neither a whole-image key nor a swapped key can be derived from MAME's per-chip hashes at build time (tested while building the probe). At load, normalise Activision images to one layout by swapping halves when the body matches OM. A hash match overrides board, RAM and POKEY (status `HEADER_CORRECTED`), never controllers. Region comes from the header, else the hash, else NTSC. **Strongest alternative:** trust the header and use the hash only when there is no header (MiSTer, a7800). **Would change if:** the owner's dumps show softlist slot errors.
 
 ### 1.5 2600 images → `MUHTARI_STATUS_UNSUPPORTED_2600` (2600 support is planned)
 `hash/a2600.xml` is also CC0. Its 1592 entries by size: 4K 935, 8K 373, 2K 133, 16K 121, 32K 16, 12K 6, 64K 5, 10495 B 3 (tested) [CART.19]. So 8K, 16K, 32K and 64K overlap with 7800 sizes.

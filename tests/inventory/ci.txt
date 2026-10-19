@@ -27,7 +27,14 @@ bus.open_bus.unmapped	portable,riot
 bus.open_bus.write_only	portable,riot
 bus.rdy.holds_reads_only	portable,sally
 bus.rdy.rmw_completes_both_writes	portable,sally
+cart.identify.2600_prefix	cart,portable
+cart.identify.activision_swap	cart,portable
+cart.identify.bundled_has_no_test_entries	cart,portable
+cart.identify.bundled_has_no_test_entries.self_test	cart,portable
 cart.identify.hash_override	cart,portable
+cart.identify.headerless_ports	cart,portable
+cart.identify.not_a_cartridge	cart,portable
+cart.identify.slices	cart,portable
 cart.probe.2600	cart,portable
 cart.probe.accepted	cart,portable
 cart.probe.arguments	cart,portable
