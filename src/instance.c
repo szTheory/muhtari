@@ -10,8 +10,9 @@
 #define MUHTARI__ABI 1u
 #define MUHTARI__BEHAVIOUR_REVISION 1u
 
-/* The largest size tag accepted, far above any struct's planned growth, so a
-   garbage tag is refused without reading past the caller's object. */
+/* The largest size tag accepted, far above any struct's planned growth. A tag
+   promises that many readable bytes; the cap bounds how far a wrong tag can
+   make the check read, it does not make a wrong tag safe. */
 #define MUHTARI__SIZE_TAG_MAX 4096u
 
 muhtari_status muhtari__check_size(const void *s, uint32_t first, uint32_t ours)

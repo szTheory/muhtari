@@ -59,7 +59,10 @@ cfg.size = (uint32_t)sizeof cfg;
 
 There is no init macro. The size tag lets a program built against one header run with a library from another:
 
+- `size` promises that many readable bytes at the struct's address; the library may read all of them. A wrong
+  tag is undefined behaviour, so always set it from `sizeof`.
 - A size below the struct's first released size, or above 4096 bytes, returns `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
+  The cap only bounds how far a wrong tag can make the library read.
 - A smaller size from an older header is accepted. Input fields it lacks take their zero default, and an output
   struct receives only its first `size` bytes.
 - A larger size from a newer header is accepted only if every byte the library does not know is zero; otherwise
