@@ -5,19 +5,19 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: skipped
     title: "Nightly pull-request path filter misses inputs of the vectors-full and loader-fuzz jobs"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The size-tag cap does not stop reads past the caller's object, as its comment says it does"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A second HALT request or NMI edge silently replaces one still in flight"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`muhtari__cpu_step` does not enforce the jammed invariant, and a jammed CPU advances no time"
   - id: IN-01
     severity: info
@@ -31,19 +31,19 @@ findings:
     severity: info
     disposition: open
     title: "The firmware scan cannot recognise multi-chip or half-swapped 7800 images"
-open: 7
+open: 3
 total: 7
-recorded: 2026-10-19T04:42:28.681Z
+recorded: 2026-10-19T18:54:37.412Z
 ---
 
 # Phase 02: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
+| WR-01 | warning | skipped | 02-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 02-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 02-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 02-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
