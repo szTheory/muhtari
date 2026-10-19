@@ -16,3 +16,8 @@ foreach(cpu_vectors_n RANGE 255)
       ${cpu_vectors_op}
     LABELS vectors portable TIMEOUT 10)
 endforeach()
+
+# The default ANE and LXA constant gives the value real SALLYs read.
+muhtari_add_test(NAME cpu.unstable.sally_constant
+  COMMAND muhtari-test-cpu unstable.sally_constant
+  LABELS vectors portable TIMEOUT 10)

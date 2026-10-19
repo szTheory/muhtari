@@ -43,6 +43,10 @@ struct muhtari__bus {
 /* RAM fill patterns at power-on. */
 #define MUHTARI__RAM_FILL_ZERO 0u
 
+/* The ANE and LXA constant three real SALLYs show, the default profile's
+   (docs/hardware/sally.md, Unstable opcodes). */
+#define MUHTARI__ANE_LXA_SALLY 0x00u
+
 /* The machine profile: what differs between consoles of one model.
    ane_lxa_constant is the value ANE and LXA OR into A (docs/hardware/sally.md,
    Unstable opcodes); riot_orb_power_on is the RIOT's port B output register

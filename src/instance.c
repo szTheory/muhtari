@@ -87,7 +87,7 @@ muhtari_status muhtari_create(const muhtari_config *cfg, muhtari **out)
     /* The default profile: the ANE and LXA constant three real SALLYs show
        (docs/hardware/sally.md, Unstable opcodes), port B's output register at
        its reset value, zero-filled RAM, and the TIA line at its origin. */
-    m->profile.ane_lxa_constant = 0x00u;
+    m->profile.ane_lxa_constant = MUHTARI__ANE_LXA_SALLY;
     m->profile.riot_orb_power_on = 0xFFu;
     m->profile.ram_fill = MUHTARI__RAM_FILL_ZERO;
     m->profile.tia_phase = 0u;
