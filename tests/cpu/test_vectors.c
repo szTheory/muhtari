@@ -2,11 +2,14 @@
    object on the flat test bus, and compares each test's final registers,
    raw P with B, RAM and every bus cycle.
 
-     muhtari-test-vectors FILE XX
+     muhtari-test-vectors FILE XX [--first N]
 
-   FILE is either the N65V sample, whose 256 chunks are opcodes 00 to ff, or
-   one upstream XX.json file. Only opcode XX runs, but every test in the file
-   is read, so the whole file is validated. Each failing test prints one line,
+   FILE is an N65V file or one upstream XX.json file. An N65V file whose
+   first chunk is opcode 00 is the sample, 256 chunks for opcodes 00 to ff;
+   any other N65V file is one chunk. A .json file must hold all 10000 tests,
+   or with --first N its first N tests are run and what follows is not read,
+   so a byte prefix of an upstream file runs. Only opcode XX runs, but every
+   test read is validated. Each failing test prints one line,
    "6502/XX.json[i]: <first mismatch>", in file order; the first failing test
    also prints its expected and actual cycles. The last line is
    "6502/XX: F of N failed". Exit status: 0 when every test passed, 1 on a
@@ -26,7 +29,7 @@ static struct n65v_reader reader;
 
 static int usage(void)
 {
-    fprintf(stderr, "usage: muhtari-test-vectors <file.n65v|XX.json> <opcode-hex>\n");
+    fprintf(stderr, "usage: muhtari-test-vectors <file.n65v|XX.json> <opcode-hex> [--first N]\n");
     return 2;
 }
 
@@ -183,9 +186,26 @@ static int ends_with(const char *s, const char *suffix)
     return n >= k && strcmp(s + n - k, suffix) == 0;
 }
 
+/* Parses --first's N: 1 to SST_JSON_FULL_COUNT, decimal digits only.
+   Returns 0 for anything else. */
+static uint32_t parse_first(const char *s)
+{
+    uint32_t n = 0u;
+    if (*s == '\0' || strlen(s) > 5u) {
+        return 0u;
+    }
+    for (; *s != '\0'; s++) {
+        if (*s < '0' || *s > '9') {
+            return 0u;
+        }
+        n = n * 10u + (uint32_t)(*s - '0');
+    }
+    return n <= SST_JSON_FULL_COUNT ? n : 0u;
+}
+
 int main(int argc, char **argv)
 {
-    if (argc != 3) {
+    if (argc != 3 && argc != 5) {
         return usage();
     }
     int hi = n65v_hex_digit(argv[2][0]);
@@ -194,6 +214,14 @@ int main(int argc, char **argv)
         return usage();
     }
     uint8_t want = (uint8_t)(hi * 16 + lo);
+    int json = ends_with(argv[1], ".json");
+    uint32_t first = 0u;
+    if (argc == 5) {
+        first = strcmp(argv[3], "--first") == 0 ? parse_first(argv[4]) : 0u;
+        if (first == 0u || !json) {
+            return usage();
+        }
+    }
 
     size_t len = 0u;
     uint8_t *buf = n65v_read_file(argv[1], &len);
@@ -202,13 +230,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if (ends_with(argv[1], ".json")) {
+    if (json) {
         /* One upstream file becomes one chunk of opcode XX. */
         uint8_t *chunk = NULL;
         size_t chunk_len = 0u;
         uint32_t count = 0u;
         char err[160];
-        int ok = sst_json_convert(buf, len, want, 0u, &chunk, &chunk_len, &count, err, sizeof err);
+        int ok =
+            sst_json_convert(buf, len, want, first, &chunk, &chunk_len, &count, err, sizeof err);
         free(buf);
         if (!ok) {
             fprintf(stderr, "muhtari-test-vectors: %s: %s\n", argv[1], err);
@@ -218,10 +247,12 @@ int main(int argc, char **argv)
         len = chunk_len;
         n65v_init(&reader, buf, len, want, 1u, count);
     } else {
-        /* The sample: 256 chunks, opcodes 00 to ff, each with the count its
-           first header gives. The reader checks every header against it. */
+        /* Every chunk has the count the first header gives, and the reader
+           checks every header against it. A first chunk of opcode 00 starts
+           the 256-chunk sample; any other is the file's only chunk. */
+        uint8_t first_op = len >= 6u ? buf[5] : 0u;
         uint32_t per_chunk = len >= 8u ? (uint32_t)buf[6] | ((uint32_t)buf[7] << 8) : 1u;
-        n65v_init(&reader, buf, len, 0u, 256u, per_chunk);
+        n65v_init(&reader, buf, len, first_op, first_op == 0u ? 256u : 1u, per_chunk);
     }
 
     uint32_t run = 0u;

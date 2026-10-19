@@ -232,6 +232,7 @@ cpu.vectors.cc	portable,vectors
 cpu.vectors.cd	portable,vectors
 cpu.vectors.ce	portable,vectors
 cpu.vectors.cf	portable,vectors
+cpu.vectors.convert.a9	portable,vectors
 cpu.vectors.d0	portable,vectors
 cpu.vectors.d1	portable,vectors
 cpu.vectors.d2	portable,vectors
