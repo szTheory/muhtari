@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-09-PLAN.md
-last_updated: "2026-10-19T02:22:50.145Z"
+stopped_at: Completed 02-10-PLAN.md
+last_updated: "2026-10-19T02:36:12.036Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: ad87acd3fff80ef216c6d15f1b3aee697d905541
+state_head: 7b6e04cbf93e5c858d31ae65f51ee5d11117c09b
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 30
+  completed_plans: 31
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 10 of 16
+Plan: 11 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -88,6 +88,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P07 | 12 min | 3 tasks | 12 files |
 | Phase 02 P08 | 13 min | 2 tasks | 19 files |
 | Phase 02 P09 | 21 min | 3 tasks | 21 files |
+| Phase 02 P10 | 11 min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -189,6 +190,9 @@ Recent decisions affecting current work:
 - [Phase 02]: The v4 block replaces the cart type only when it validates and its board fits the body; otherwise HEADER_V4_IGNORED
 - [Phase 02]: A core string constant is a static const byte array: MSVC on ARM64 exports a literal as an external COMDAT name (run 39189208610)
 - [Phase 02]: Hosted run 39189405561: the probe and API version 2 are green on every leg; be32 took 41 s
+- [Phase 02]: A header hash match reports source hash; the entry's region applies only when TV bit 2 (multi-region) leaves the header naming none
+- [Phase 02]: The half-swapped pass runs only for a 128 KiB miss and only an Activision entry may match it
+- [Phase 02]: The leak check compares full 20-byte rows and every row's 8-byte prefix against src/cartdb.c
 
 ### Pending Todos
 
@@ -227,6 +231,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T02:22:50.095Z
-Stopped at: Completed 02-09-PLAN.md
+Last session: 2026-10-19T02:36:11.984Z
+Stopped at: Completed 02-10-PLAN.md
 Resume file: None
