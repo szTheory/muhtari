@@ -82,7 +82,7 @@ static void help(void)
     fputs(synopsis, stdout);
     fputs("exit status:\n", stdout);
     for (size_t i = 0; i < sizeof muhtari__exit_statuses / sizeof muhtari__exit_statuses[0]; i++) {
-        printf("  %d  %-7s  %s\n", muhtari__exit_statuses[i].code, muhtari__exit_statuses[i].name,
+        printf(" %2d  %-7s  %s\n", muhtari__exit_statuses[i].code, muhtari__exit_statuses[i].name,
                muhtari__exit_statuses[i].meaning);
     }
 }
@@ -313,13 +313,28 @@ static int probe(const char *path)
     memset(&info, 0, sizeof info);
     info.size = (uint32_t)sizeof info;
     muhtari_status st = muhtari_probe(image, n, &info);
-    int status = MUHTARI__EXIT_DONE;
-    if (st == MUHTARI_STATUS_OK) {
+    /* Which lines print follows what probe wrote: everything for OK and an
+       unsupported board, the four fields it fills for a 2600 image, only
+       the hashes when it wrote nothing, and nothing at all for an image
+       too large to read whole. */
+    int status = MUHTARI__EXIT_FAILURE;
+    if (st == MUHTARI_STATUS_OK || st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) {
         print_identity(&info);
+        status = st == MUHTARI_STATUS_OK ? MUHTARI__EXIT_DONE : MUHTARI__EXIT_REFUSED;
+    } else if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_2600) {
+        printf("kind %s\n", muhtari__kind_name(info.kind));
+        printf("source %s\n", muhtari__source_name(info.source));
+        printf("rom_size %lu\n", (unsigned long)info.rom_size);
+        status = MUHTARI__EXIT_REFUSED;
+    }
+    if (st != MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE) {
         print_all_hashes(image, n);
-    } else {
+    }
+    if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) {
+        fprintf(stderr, "muhtari-run: %s: %s: %s\n", path, muhtari__status_text(st),
+                muhtari__board_name(info.board));
+    } else if (st != MUHTARI_STATUS_OK) {
         fprintf(stderr, "muhtari-run: %s: %s\n", path, muhtari__status_text(st));
-        status = MUHTARI__EXIT_FAILURE;
     }
     free(image);
     return status;

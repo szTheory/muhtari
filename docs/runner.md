@@ -4,13 +4,15 @@
 device or input device, and prints hashes, writes PNG images or reports frame times. Scripts and CI use it to
 check that a build produces the expected picture.
 
-This release has no cartridge loading, so every run shows the built-in test card (see [Test card](#test-card)).
+This release runs no cartridge, so every run shows the built-in test card (see [Test card](#test-card)).
+`--probe` reads a cartridge image and reports what it is, without running it (see [Probing an image](#probing-an-image)).
 
 ## Synopsis
 
 ```text
 muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
 muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...
+muhtari-run --probe FILE
 muhtari-run --help | --version
 ```
 
@@ -22,10 +24,11 @@ muhtari-run --help | --version
 | `--bench N` | Run N frames, time each one, and print the report described under [Output](#output). It keeps 4 bytes per frame, so where `size_t` has 32 bits an N of 1073741824 or more exits 1 as out of memory. |
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
+| `--probe FILE` | Identify the cartridge image in FILE and print its fields and hashes. It takes exactly one file and no other option. |
 | `--help` | Print the usage text and the exit statuses. It takes no other arguments. |
 | `--version` | Print `muhtari-run` and the version. It takes no other arguments. |
 
-Anything else on the command line, including a file name, is a usage error.
+Anything else on the command line, including a file name anywhere but after `--probe`, is a usage error.
 
 ## Output
 
@@ -56,6 +59,42 @@ nearest-rank sample: with n frames, the p-th percentile is the frame time of ran
 every value reported is a time that was actually measured. Microseconds are truncated. With fewer than 100,000
 frames, p99.999 is the maximum.
 
+## Probing an image
+
+`muhtari-run --probe FILE` reads FILE whole, up to one byte past the size limit, and identifies it as the library's
+`muhtari_probe` does. It reads with plain sequential reads, so FILE may be a pipe such as `/dev/stdin`. Standard
+output gets one `key value` line each, where the value is everything after the first space, in this order:
+
+1. `kind source board board_options rom_size ram_size sound devices port1 port2 region`;
+2. for an image with an A78 header only, `title` and the raw header fields `a78_version a78_rom_size a78_cart_type
+   a78_port1 a78_port2 a78_tv a78_save a78_xm a78_mapper a78_mapper_options a78_audio a78_irq`;
+3. one `warning <name>` line for each warning, such as `warning size_field_mismatch`;
+4. `sha1 sha256 md5 crc32` of the file as given, then `sha1_headerless sha256_headerless md5_headerless
+   crc32_headerless`.
+
+Values are lowercase names (`kind 7800`, `board supergame`, `port1 proline`, `region ntsc`); sets of flags are
+names separated by commas, or `none` (`sound pokey_450,ym2151`); raw header fields are hexadecimal, `0x%02x`, with
+four digits for `a78_cart_type` and `a78_audio`; sizes are decimal bytes. Hashes are lowercase hexadecimal, eight
+digits for CRC-32.
+
+The headerless hashes follow the RetroAchievements rule for the 7800 (rcheevos @1433173220a7,
+`src/rhash/hash_rom.c`): when the file is longer than 128 bytes and bytes 1 to 9 are `ATARI7800`, the first 128
+bytes are left out; any other file, including one of exactly 128 bytes, is hashed whole. `md5_headerless` is the
+RetroAchievements game hash. Where the bytes the cartridge maps differ from this input, the probe also prints
+`warning size_field_mismatch`.
+
+When the image is refused, standard error gets `muhtari-run: FILE: <message>`, and fewer lines print:
+
+| Image | Message | Lines printed | Exit status |
+|---|---|---|---|
+| a 2600 cartridge | `unsupported: 2600 (planned)` | `kind source rom_size` and the hashes | 77 |
+| a 7800 board this version does not emulate | `unsupported board: <board>` | all the lines above | 77 |
+| not a cartridge image, or a header that fits no board | `not a 7800 or 2600 cartridge image` | the hashes | 1 |
+| shorter than its header says | `the image ends before the size its header gives` | the hashes | 1 |
+| more than 1,048,704 bytes | `larger than 1 MiB plus a 128-byte header` | none | 1 |
+
+A file that cannot be opened or read exits 1 with `cannot open` or `cannot read`.
+
 ## Stopping
 
 SIGINT (Ctrl+C) or SIGTERM ends the run after the frame in progress. That frame's hash and PNG are still written,
@@ -68,8 +107,9 @@ ignored when the runner started, as under `nohup`, stays ignored.
 
 ```text
   0  done     every frame ran, or SIGINT or SIGTERM stopped the run after a whole frame
-  1  failure  a file could not be written, memory ran out or the core failed
+  1  failure  a file could not be read or written, an image is malformed, truncated or too large, memory ran out or the core failed
   2  usage    the command line is invalid, so nothing ran
+ 77  refused  the image is a 2600 cartridge or uses a board this version does not emulate
 ```
 
 Errors and usage messages go to standard error; standard output holds only the results above.

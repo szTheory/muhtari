@@ -91,7 +91,7 @@ Four lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, and 
 | `host` | The palette helper shared by the runner and the core. |
 | `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. No image bytes are tracked. |
 | `fuzz` | The loader fuzz target's invariants replayed over its seeds and committed regressions, and on the `fuzz` lane libFuzzer itself. |
-| `runner` | `muhtari-run` options, output, exit statuses and the PNG writer. |
+| `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
 | `bench` | The runner's benchmark report. |
 | `libretro` | The libretro core in an in-process host, its `.info` file and its vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
