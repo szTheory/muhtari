@@ -5,10 +5,10 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: planning
-stopped_at: Phase 02 complete and verified (16/16 plans; 02-VERIFICATION.md passed); next /gsd-ship 2
-last_updated: "2026-10-19T04:49:10.774Z"
+stopped_at: Phase 02 code review fix round 1 done (WR-02 to WR-04 fixed; WR-01 and the info findings deferred to a todo); next /gsd-ship 2
+last_updated: "2026-10-19T18:56:00.000Z"
 last_activity: 2026-10-19
-last_activity_desc: Phase 02 complete, transitioned to Phase 3
+last_activity_desc: Phase 02 code review fix round 1
 state_head: 19e4c76b0e6f73ce6c8058edc40ad1aac0b0fae2
 progress:
   total_phases: 4
@@ -32,7 +32,7 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 Phase: 3 — Games play in RetroArch
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-19 — Phase 02 complete, transitioned to Phase 3
+Last activity: 2026-10-19 — Phase 02 code review fix round 1
 
 Progress: [█████░░░░░] 50%
 
@@ -216,6 +216,7 @@ Recent decisions affecting current work:
 - [Phase 02]: Plan 16: CTest TIMEOUTs are twice the slowest time over the lane's scale; the firmware scans stay provisional with 9 samples
 - [Phase 02]: Plan 16: workflow.test_gate_timeout is 4: twice the slowest clean local gate, 1.82 s
 - [Phase 02]: Plan 16: The ship title is feat: the CPU matches the public 6502 vectors, with the 7800 bus, RIOT and cartridge probing (check-title.sh exit 0); probe PR #9 closed unmerged
+- [Phase 02]: Review fix round 1 fixed WR-02 to WR-04. The bus takes one HALT window and one NMI edge at a time and ignores a second while one is in flight; a step on a jammed CPU reads $FFFF once, so time keeps moving. Phase 3's MARIA and run loop build on both (docs/hardware/bus.md, docs/hardware/sally.md, JAM). WR-01 and IN-01 to IN-03 wait in the 2026-10-19 todo; one code-review fix round is left in this phase
 
 ### Pending Todos
 
@@ -223,6 +224,7 @@ Recent decisions affecting current work:
 - [2026-10-16] [ci] Arm the instructions-per-frame gate — [todo file](.planning/todos/pending/2026-10-16-arm-the-instructions-per-frame-gate.md)
 - [2026-10-16] [ci] Limit release rehearsals to pushes that change release inputs — [todo file](.planning/todos/pending/2026-10-16-limit-release-rehearsals-to-pushes-that-change-release-inputs.md)
 - [2026-10-16] [ci] Close the re-review's findings on the Dependabot gate and the publish checks — [todo file](.planning/todos/pending/2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md)
+- [2026-10-19] [ci] Close the phase 2 review seeds on the nightly filter and the ROM tables — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md)
 
 ### Ship step (phase 01)
 
@@ -241,11 +243,6 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-- [Phase 02] 02-REVIEW.md has 4 warnings and 3 info findings, all `open` in 02-REVIEW-DISPOSITION.md. WR-03 (a
-  second HALT request or NMI edge replaces one still in flight) and WR-04 (`muhtari__cpu_step` does not enforce
-  `jammed`, so a skipped jammed CPU advances no time) bear on phase 3's MARIA and run loop; WR-02 corrects the
-  size-tag comment and `docs/embedding.md`; WR-01 and IN-03 are tooling findings and become seeds (AGENTS rule 7).
-  `/gsd-code-review 02 --fix` is the fix round (at most two per phase).
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
@@ -260,6 +257,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T05:00:00.000Z
-Stopped at: Phase 02 complete and verified (16/16 plans; 02-VERIFICATION.md passed); next /gsd-ship 2
+Last session: 2026-10-19T18:56:00.000Z
+Stopped at: Phase 02 code review fix round 1 done (WR-02 to WR-04 fixed; WR-01 and the info findings deferred to a todo); next /gsd-ship 2
 Resume file: None

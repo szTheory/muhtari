@@ -21,19 +21,19 @@ findings:
     title: "`muhtari__cpu_step` does not enforce the jammed invariant, and a jammed CPU advances no time"
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: deferred
     title: "Stale value comment on `muhtari_versions.api`"
   - id: IN-02
     severity: info
-    disposition: open
+    disposition: deferred
     title: "The cartdb generator accepts a `reload` slice whose size differs from the chip it repeats"
   - id: IN-03
     severity: info
-    disposition: open
+    disposition: deferred
     title: "The firmware scan cannot recognise multi-chip or half-swapped 7800 images"
-open: 3
+open: 0
 total: 7
-recorded: 2026-10-19T18:54:37.412Z
+recorded: 2026-10-19T18:55:07.781Z
 ---
 
 # Phase 02: Code Review Disposition
@@ -44,9 +44,9 @@ recorded: 2026-10-19T18:54:37.412Z
 | WR-02 | warning | fixed | 02-REVIEW-FIX.md |
 | WR-03 | warning | fixed | 02-REVIEW-FIX.md |
 | WR-04 | warning | fixed | 02-REVIEW-FIX.md |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
+| IN-01 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md |
+| IN-02 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md |
+| IN-03 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
