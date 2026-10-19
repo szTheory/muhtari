@@ -61,14 +61,15 @@ endfunction()
 
 # The core library, built from object libraries so each object is compiled
 # once: the CPU test programs link the CPU's object with their own bus, so the
-# object under test is the object that ships. muhtari_cpu joins the archive
-# with the bus that defines its two bus functions.
+# object under test is the object that ships. The archive holds the CPU's
+# object with src/bus.c, which defines its two bus functions.
 add_library(muhtari_objs OBJECT
   src/instance.c
   src/frame.c
-  src/testcard.c)
+  src/testcard.c
+  src/bus.c)
 add_library(muhtari_cpu OBJECT src/cpu.c)
-add_library(muhtari STATIC $<TARGET_OBJECTS:muhtari_objs>)
+add_library(muhtari STATIC $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
 add_library(muhtari::muhtari ALIAS muhtari)
 target_include_directories(muhtari PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

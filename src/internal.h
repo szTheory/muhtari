@@ -37,12 +37,33 @@ struct muhtari__cpu {
     uint8_t jammed;
 };
 
-/* The bus's state. phi2 counts completed CPU cycles. nmi_phi2 is the phi2
-   count of the cycle that latched an NMI edge, 0 when none is latched. */
+/* The bus's state (docs/hardware/bus.md). ticks counts MARIA clocks and
+   phi2 counts completed CPU cycles, held ones included. nmi_phi2 is the phi2
+   count of the cycle that latched an NMI edge, 0 when none is latched.
+   next_deadline is the earliest tick at which a pending event needs the
+   bus's slow path; UINT64_MAX when none is pending. open_bus is the last
+   byte on the data bus; inptctrl is INPTCTRL's four bits; halt_gate_writes
+   counts unlocked writes in the TIA range, up to 2. */
 struct muhtari__bus {
     uint64_t phi2;
     uint64_t nmi_phi2;
+    uint64_t ticks;
+    uint64_t next_deadline;
+    uint8_t open_bus;
+    uint8_t inptctrl;
+    uint8_t halt_gate_writes;
 };
+
+/* INPTCTRL's bits (docs/hardware/bus.md, INPTCTRL). */
+#define MUHTARI__INPTCTRL_LOCK 0x01u
+#define MUHTARI__INPTCTRL_MEN 0x02u
+#define MUHTARI__INPTCTRL_EXT 0x04u
+#define MUHTARI__INPTCTRL_TIA_EN 0x08u
+#define MUHTARI__INPTCTRL_BITS 0x0Fu
+
+/* The 4 KiB of system RAM at $1800-$27FF (docs/hardware/bus.md, Memory map). */
+#define MUHTARI__RAM_BASE 0x1800u
+#define MUHTARI__RAM_SIZE 0x1000u
 
 /* RAM fill patterns at power-on. */
 #define MUHTARI__RAM_FILL_ZERO 0u
@@ -69,6 +90,7 @@ struct muhtari {
     struct muhtari__cpu cpu;
     struct muhtari__bus bus;
     struct muhtari__profile profile;
+    uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
 };
 
 /* The size of each struct as first released: the end of its last field. A
@@ -140,5 +162,8 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v);
 
 /* Runs exactly one instruction. */
 void muhtari__cpu_step(muhtari *m);
+
+/* Puts the CPU, the bus and RAM in their power-on state under m->profile. */
+void muhtari__power_on(muhtari *m);
 
 #endif /* MUHTARI_INTERNAL_H */

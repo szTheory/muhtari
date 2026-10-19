@@ -91,8 +91,18 @@ muhtari_status muhtari_create(const muhtari_config *cfg, muhtari **out)
     m->profile.riot_orb_power_on = 0xFFu;
     m->profile.ram_fill = MUHTARI__RAM_FILL_ZERO;
     m->profile.tia_phase = 0u;
+    muhtari__power_on(m);
     *out = m;
     return MUHTARI_STATUS_OK;
+}
+
+void muhtari__power_on(muhtari *m)
+{
+    memset(&m->cpu, 0, sizeof m->cpu);
+    memset(&m->bus, 0, sizeof m->bus);
+    m->bus.next_deadline = UINT64_MAX; /* no event pending */
+    /* Only the zero fill exists so far; every RAM_FILL value gives it. */
+    memset(m->ram, 0, sizeof m->ram);
 }
 
 void muhtari_destroy(muhtari *m)
