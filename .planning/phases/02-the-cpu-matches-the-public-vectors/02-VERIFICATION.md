@@ -1,32 +1,50 @@
 ---
 phase: 02-the-cpu-matches-the-public-vectors
-verified: 2026-10-19T04:47:19Z
+verified: 2026-10-19T19:37:48Z
 status: passed
 score: 5/5 must-haves verified (criterion 5 on pre-merge evidence, confirmed at /gsd-ship after the merge)
 covered_files: [".github/workflows/ci.yml",".github/workflows/nightly.yml",".planning/phases/02-the-cpu-matches-the-public-vectors/02-01-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-01-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-02-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-02-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-03-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-03-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-04-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-04-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-05-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-05-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-06-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-06-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-07-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-07-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-08-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-08-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-09-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-09-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-10-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-10-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-11-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-11-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-12-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-12-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-13-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-13-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-14-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-14-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-15-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-15-SUMMARY.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-16-PLAN.md",".planning/phases/02-the-cpu-matches-the-public-vectors/02-16-SUMMARY.md","ASSET_POLICY.md","CMakeLists.txt","CMakePresets.json","docs/embedding.md","docs/hardware/bus.md","docs/hardware/cartridge.md","docs/hardware/riot.md","docs/hardware/sally.md","docs/maintaining.md","docs/runner.md","docs/testing.md","host/status_text.c","host/status_text.h","include/muhtari.h","libretro/muhtari_libretro.info.in","pins.txt","runner/exit_status.h","runner/main.c","runner/md5.c","runner/md5.h","scripts/fetch-pin.sh","scripts/publish.sh","src/bus.c","src/cart.c","src/cartdb.c","src/cartdb.h","src/cpu.c","src/instance.c","src/internal.h","src/riot.c","src/sha1.c","src/sha1.h","src/tia.c","tests/abi/tests.cmake","tests/alloc.h","tests/api/v1.c","tests/api/v2.c","tests/built/build.cmake","tests/built/expected.txt","tests/built/tests.cmake","tests/bus/test_bus.c","tests/bus/tests.cmake","tests/cart/images.c","tests/cart/images.h","tests/cart/test_cart.c","tests/cart/test_cartdb.c","tests/cart/test_sha1.c","tests/cart/tests.cmake","tests/cart/write_images.c","tests/cmake/abi.cmake","tests/cmake/budgets.cmake","tests/cmake/fetch_vectors.cmake","tests/cmake/firmware_scan.cmake","tests/cmake/no_float.cmake","tests/cmake/no_test_entries.cmake","tests/cmake/rom_hash_coverage.cmake","tests/cmake/vectors_pin.cmake","tests/cmake/vectors_sample_match.cmake","tests/core/test_core.c","tests/cpu/decimal/clark-6502.bin","tests/cpu/decimal/clark-65c02.bin","tests/cpu/decimal/clark.s","tests/cpu/full.cmake","tests/cpu/targets.cmake","tests/cpu/test_cpu.c","tests/cpu/test_reader.c","tests/cpu/test_vectors.c","tests/cpu/tests.cmake","tests/cpu/vector_bus.c","tests/cpu/vector_bus.h","tests/embed/CMakeLists.txt","tests/fuzz/loader.c","tests/fuzz/replay_main.h","tests/fuzz/seeds.c","tests/fuzz/seeds.h","tests/fuzz/tests.cmake","tests/header/header.c","tests/header/header.cpp","tests/hygiene/tests.cmake","tests/inventory/ci.txt","tests/inventory/fuzz.txt","tests/inventory/hygiene.txt","tests/inventory/nofp.txt","tests/inventory/vectors-full.txt","tests/inventory/wasm32.txt","tests/release/firmware.txt","tests/release/tests.cmake","tests/riot/test_riot.c","tests/riot/tests.cmake","tests/roms/manifest.txt","tests/runner/test_runner.c","tests/runner/tests.cmake","tests/tests.cmake","tests/vectors/6502-sample.n65v","tests/vectors/6502-v1.sha256","tests/vectors/fixtures/02.json","tests/vectors/fixtures/README.md","tests/vectors/fixtures/a9-bad-a.json","tests/vectors/fixtures/a9.json","tests/vectors/n65v.c","tests/vectors/n65v.h","tests/vectors/sst_json.c","tests/vectors/sst_json.h","tests/vectors/vecconv.c","tools/cartdb.cmake"]
-covered_digest: "v3:sha256:e4bb33bb53e493ef063a0992410cf7b5be5826b1c845c9c0467048ab6aaa3eff"
+covered_digest: "v3:sha256:99092bede274b6ef927dc976132fc20db30ea69dbc71760f1479c04307c7be58"
 behavior_unverified: 0
 overrides_applied: 0
+re_verification:
+  previous_status: passed
+  previous_score: 5/5
+  reason: "stale after code-review fix round 1 (be6d152, e0b2a25, 5d6c2ae) changed 13 covered files"
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 2: The CPU matches the public vectors — Verification Report
 
 **Phase goal:** The SALLY CPU matches the public 6502 vectors on every opcode and every bus cycle, the bus applies the 7800's slow cycles, HALT and RDY, RIOT and INPTCTRL behave as documented, and the runner probes and loads cartridge images safely; merging publishes the release.
-**Verified:** 2026-10-19T04:47:19Z, branch `phase/02-the-cpu-matches-the-public-vectors` at 19e4c76 (the last code commit is 3fe7728; everything after it touches only `.planning/`).
+**Verified:** 2026-10-19T19:37:48Z, branch `phase/02-the-cpu-matches-the-public-vectors` at 1350b30 (last code commit 5d6c2ae; everything after it touches only `.planning/`). The branch is 14 commits ahead of its remote; nothing from the fix round has been pushed.
 **Status:** passed
-**Re-verification:** No. This is the first verification.
+**Re-verification:** Yes. The report of 2026-10-19T04:47:19Z (passed, 5/5) went stale when code-review fix round 1 changed 13 covered files. It had no gaps, so this run re-checks all five criteria. The changed files get a full check and the rest get a regression check.
 
-## Commands run by the verifier
+## What changed since the last verification
+
+`git diff 19e4c76..HEAD -- . ':!.planning'` touches 13 files (+163/−13):
+
+- **be6d152 (WR-02):** only comments and docs. The `MUHTARI__SIZE_TAG_MAX` comment in `src/instance.c` and "Structs and sizes" in `docs/embedding.md` now say that a size tag promises that many readable bytes, and that the 4096-byte cap only limits how far a wrong tag can make the library read. No behaviour changed.
+- **e0b2a25 (WR-03):** `muhtari__bus_request_halt` now returns early unless `halt_stage == HALT_NONE`, and `muhtari__bus_raise_nmi` returns early while `nmi_pending` is set. I traced both through `src/bus.c`. `events()` moves HALT_REQUESTED to HALT_LOW and then back to HALT_NONE once the window's hold is done, so the next request is accepted. `latch_nmi()` clears `nmi_pending` on every latch, so a dropped edge can never block later edges for good. The rule is written up in docs/hardware/bus.md (HALT and NMI) and in the entry-point comment in src/internal.h, and both match the code.
+- **5d6c2ae (WR-04):** `muhtari__cpu_step` now checks `jammed` first. A step on a jammed CPU makes one `muhtari__bus_read(m, 0xFFFF)` and returns, so it takes no NMI and changes no register. docs/hardware/sally.md (JAM) and src/internal.h say the same. The vector harness still steps each case once on a cleared CPU (test_vectors.c:183), so the guard never runs on vector cases. The JAM opcodes still give their 11-read pattern, and the full-set runs below confirm it.
+
+All three new tests have real assertions, and each names the wrong model it rules out. `bus.halt.one_window_at_a_time` checks tick counts for a second request made both before and after /HALT falls, and checks that the next request after the window is taken. `bus.nmi.one_edge_at_a_time` checks that `nmi_phi2` is 2, not 4. `cpu.jam.step_reads_ffff` checks one $FFFF read per step, phi2+1, every register, the poll mark, `jammed`, and that the latched NMI is not taken. 02-REVIEW-FIX.md records each test failing against the source before the fix. I did not repeat that stash run.
+
+## Commands run by the verifier (this run)
 
 | Command | Exit | Result |
 | ------- | ---- | ------ |
-| `cmake --workflow --preset ci` | 0 | 405 of 405 tests passed, then `ci-release` 6 of 6. Labels: vectors 266, sally 19, riot 16, cart 19, built 5, fuzz 2, runner 30 |
-| `cmake --workflow --preset hygiene` | 0 | 24 of 24 passed, including policy.cartdb_generated, policy.rom_hash_coverage, hygiene.no_float and hygiene.firmware_scan, each with its self test |
-| `muhtari-test-vectors build/vectors-full/vectors-full/6502/v1/XX.json XX` (the HEAD build/ci binary) for 69 e9 61 6b 8b ab 93 02 00 7e | 0 | `0 of 10000 failed` for each opcode: ADC and SBC (decimal mode), ARR, ANE, LXA, SHA, JAM and BRK |
-| `ctest -L vectors-full -E fetch` in build/vectors-full | 0 | 257 of 257 passed |
-| `muhtari-test-images <scratch>` and then `muhtari-run --probe` on each image | see criterion 4 | |
+| `cmake --workflow --preset ci` | 0 | 408 of 408, then `ci-release` 6 of 6. Labels: vectors 266, sally 22 (was 19, plus the 3 new tests), riot 16, cart 19, built 5, fuzz 2, runner 30. 256 `cpu.vectors.XX` tests |
+| `cmake --workflow --preset hygiene` | 0 | 24 of 24 |
+| `cmake --build build/vectors-full && ctest --test-dir build/vectors-full -L vectors-full -E fetch -j8` | 0 | 257 of 257: the full SingleStepTests set at its pin, built from HEAD |
+| `build/ci/tests/muhtari-test-vectors build/vectors-full/vectors-full/6502/v1/XX.json XX` for 02 12 f2 69 e9 00 4c 6c ee 8b | 0 | `0 of 10000 failed` for each, including three JAM opcodes after the jammed-step change |
+| asan lane in `ubuntu:26.04` arm64 (docs/testing.md recipe, plus clang-21, lld-21, libclang-rt-21-dev, `cmake --workflow --preset asan`) | 0 | 397 of 397 |
+| `grep -nE "TBD\|FIXME\|XXX"` over the 13 changed files | 1 (no match) | no debt markers |
 | `scripts/check-title.sh "feat: the CPU matches the public 6502 vectors, with the 7800 bus, RIOT and cartridge probing"` | 0 | |
-| `gh run view` 39199084217 (CI), 39199084192 (Nightly), 39199084187 (Release) | success | all three on head 3fe7728 |
+| `gh run list --branch phase/02-the-cpu-matches-the-public-vectors` | 0 | the latest hosted runs are still on 3fe7728 (CI 39199084217, Nightly 39199084192, Release 39199084187, all success). Nothing has run on the fix commits yet, because they are not pushed |
 
 ## Goal Achievement
 
@@ -34,89 +52,88 @@ overrides_applied: 0
 
 | # | Truth | Status | Evidence |
 | - | ----- | ------ | -------- |
-| 1 | `ctest -L vectors` matches every opcode of the committed sample on final state and on every bus cycle, decimal mode included, on every pull request; `ctest -L vectors-full` matches the full set at its pin in the nightly run | VERIFIED | The ci and wasm32 inventories each hold the 256 tests `cpu.vectors.00` to `cpu.vectors.ff`. A local run prints `0 of 100 failed` for each. `tests/cpu/test_vectors.c` compares the registers, raw P, every RAM byte, the cycle count and each cycle's address, value and direction. It also checks `jammed` against the twelve JAM opcodes and checks the poll mark. It sets `ane_lxa_constant = 0xEE`. The sample has the manifest row with pin 2f6980a2 and matches the `sst-6502-v1` row in pins.txt. Full set: the verifier ran 10 opcodes on the HEAD binary (0 of 10000 failed each) and all 257 local vectors-full tests passed. Hosted Nightly run 39199084192 job `vectors-full`: `100% tests passed out of 258`, `check_junit: 258 tests ran once each`. nightly.yml has the cron `17 4 * * *` and the `vectors-full` job |
-| 2 | `ctest -L sally` passes: 4- and 6-tick cycles, HALT only after two INPTCTRL writes and stopping reads and writes, RDY holding only reads so a read-modify-write completes both writes, and an NMI raised in the last cycle is taken after the next instruction | VERIFIED | 19 of 19 passed, all named for the criterion: bus.cycle.{fast_4_ticks, slow_6_ticks, men_off_all_slow}, bus.halt.{gate_two_writes, gate_counts_rmw_dummy, latency_two_cycles, waits_for_slow_fall, freezes_writes}, bus.rdy.{holds_reads_only, rmw_completes_both_writes}, bus.nmi.* and cpu.nmi.*. The verifier read `rdy_rmw_completes_both_writes`: INC $02 with INPTCTRL locked must take 26 ticks (4+4+6+6+6), leave the second write's byte on the bus, and hold the next fetch. Each case also rejects the tick count the nearest wrong model would give. In `src/bus.c`, `muhtari__bus_request_halt` is ignored until `halt_gate_writes >= 2`, and RDY holds only when `is_read` |
-| 3 | `ctest -L riot` passes: the timer through HALT and WSYNC at each interval, its flag, SWCHA/SWCHB with direction registers and power-on values, RIOT RAM at $0480–$04FF, INPTCTRL locking and open-bus reads | VERIFIED | 16 of 16 passed: riot.timer.{reads_n_minus_1, flag_at_n_interval_plus_1, counts_past_underflow, read_in_setting_cycle_keeps_flag, access_clears_flag, counts_through_halt, counts_through_wsync, slow_cycle_counts_one}, riot.pa7.edge_flag, riot.swcha.ddr, riot.swchb.ddr, riot.power_on.defaults, riot.ram.window, bus.inptctrl.lock and bus.open_bus.{unmapped, write_only}. `src/riot.c` computes the timer when it is read (`riot_intim`, `riot_timer_flag`) |
-| 4 | `muhtari-run --probe FILE` prints the A78 fields, board, region, peripherals and all four hashes; identifies a header-stripped image through the hash list; gives a 2600 image, an unsupported board and a malformed, truncated or oversized file each a distinct status and message; the counting-allocator test and `ctest -R fuzz.regress.loader` pass on every platform; the loader fuzz target runs nightly | VERIFIED | The verifier's probe of `linear-v4-48k` printed kind, source, board, options, sizes, sound, devices, ports, region, title, the 13 `a78_*` fields and 8 hashes (sha1, sha256, md5 and crc32, each headered and headerless), exit 0. Refusals: `2600-4k` exit 77 with `unsupported: 2600 (planned)`. `souper-v4` exit 77 with `unsupported board: souper`. `bad-magic-1000` exit 1 with `not a 7800 or 2600 cartridge image`. `header-only` and `supergame-short` exit 1 with `the image ends before the size its header gives`. `oversized` exit 1 with `larger than 1 MiB plus a 128-byte header` and empty stdout. The core statuses differ for each class (ERR_UNSUPPORTED_2600, ERR_UNSUPPORTED_BOARD, ERR_INVALID_IMAGE, ERR_TRUNCATED_IMAGE, ERR_UNSUPPORTED_SIZE, checked in cart.probe.*). Hash list: `muhtari-run-testdb --probe` on the stripped 7800basic `simple` .bin printed `source hash`, `board linear`, `region ntsc`, sha1 1aa9559b…. The shipped runner prints `source footer` for the same file, and cart.identify.bundled_has_no_test_entries passes. `cart.load.no_alloc_on_reject` (read) checks per refusal class that the allocation count is unchanged, the instance is byte-identical and a failing allocator still gives the refusal status. It and `fuzz.regress.loader` (21 inputs) are in ci.txt and wasm32.txt, and hosted CI 39199084217 passed on all six build legs, asan, be32, nofp and wasm32. Nightly 39199084192 job `loader-fuzz` succeeded |
-| 5 | Merging the phase's pull request publishes a release through the Phase 1 pipeline with no manual step | VERIFIED (pre-merge evidence; confirmed at ship) | Only the merge can show this, so `/gsd-ship` confirms it after the merge (CLAUDE.md rule 9); it is not a gap. Evidence now: the ship title passes `scripts/check-title.sh` (exit 0). release-please-config.json has `bump-minor-pre-major: true` with version.txt at 0.1.0, so a `feat:` merge cuts 0.2.0. Release run 39199084187 on head 3fe7728 succeeded, with `rehearsal`, `install-line` and `cleanup` green (`release-please` and `publish` are skipped on pull requests, as they should be). Draft probe PR #9 is CLOSED and was not merged |
+| 1 | `ctest -L vectors` matches every opcode of the committed sample on final state and every bus cycle, decimal mode included, on every pull request; `ctest -L vectors-full` matches the full set at its pin nightly | VERIFIED | This run: all 256 `cpu.vectors.XX` pass in the ci workflow. The rebuilt vectors-full tree passes 257 of 257, and 10 opcodes give 0 of 10000 failed on the HEAD binary, including JAM 02, 12 and F2 after the WR-04 change. Since the last report, `tests/cpu/test_vectors.c`, the sample, the pin and nightly.yml are unchanged (they are not in the fix diff). The hosted nightly run 39199084192 was on 3fe7728, so it does not cover the fix commits. The local full-set run does |
+| 2 | `ctest -L sally` passes: 4- and 6-tick cycles, HALT only after two INPTCTRL writes, stopping reads and writes, RDY holding only reads with a read-modify-write's two writes completing, NMI in the last cycle taken after the next instruction | VERIFIED | 22 of 22 sally tests pass: the 19 from before plus bus.halt.one_window_at_a_time, bus.nmi.one_edge_at_a_time and cpu.jam.step_reads_ffff. The HALT gate still checks `halt_gate_writes < 2u` before anything else, and RDY still holds only on `is_read`. The new early returns only refuse a request while one is in flight, and every earlier timing case still passes. asan 397 of 397 |
+| 3 | `ctest -L riot` passes: timer through HALT and WSYNC per interval, flag, SWCHA/SWCHB with DDRs and power-on values, RIOT RAM $0480–$04FF, INPTCTRL lock, open bus | VERIFIED | 16 of 16 riot tests pass. `src/riot.c` and `tests/riot/` are not in the fix diff. The HALT change lands in `bus.c`, through which the timer-through-HALT case runs, and riot.timer.counts_through_halt still passes |
+| 4 | `muhtari-run --probe FILE` prints A78 fields, board, region, peripherals and four hashes; header-stripped identity through the hash list; distinct statuses and messages for 2600, unsupported board, malformed, truncated and oversized; counting-allocator test and `fuzz.regress.loader` pass on every platform; nightly loader fuzz | VERIFIED | `runner/`, `src/cart.c`, `src/cartdb.c`, `host/` and `tests/cart/` are not in the fix diff. runner 30 of 30, cart 19 of 19 and fuzz 2 of 2 pass in this run's ci workflow and again under asan. The fix's only change in `src/instance.c` is a comment. The direct probe observations from the last report (all fields and 8 hashes; exit 77 for `2600-4k` and `souper-v4`; exit 1 with distinct messages for `bad-magic-1000`, `header-only`, `supergame-short` and `oversized`; `source hash` from `muhtari-run-testdb`) rest on code the fix round did not touch. The be32, wasm32 and nofp lanes on the fix commits rest on the fixer's container runs (02-REVIEW-FIX.md: be32 372, wasm32 370, nofp 12, all exit 0). The hosted run on the ship pull request runs them again before the merge (see below) |
+| 5 | Merging the phase's pull request publishes a release through the Phase 1 pipeline with no manual step | VERIFIED (pre-merge evidence; confirmed at ship) | Only a merge can show this, so `/gsd-ship` confirms it after the merge (CLAUDE.md rule 9), not UAT. Evidence now: the ship title passes `scripts/check-title.sh` (exit 0). The release workflow, release-please config and `scripts/publish.sh` are not in the fix diff. The Release run 39199084187 rehearsal was green on 3fe7728 |
 
 **Score:** 5/5 truths verified, 0 present but behavior-unverified.
 
 ### Plan must-haves (02-01 to 02-16)
 
-There are about 100 plan truths. Each roadmap criterion above lists the ones the verifier checked through the named tests, all of which pass in the verifier's own ci or hygiene run. The rest rest on artifacts:
-- 02-01/02-03/02-04: cpu.vectors.{convert.*, reader, self_test, pin}, cpu.decimal.clark and its 65C02 self test, and policy.rom_hash_coverage all pass.
-- 02-08: policy.cartdb_generated byte-compares `src/cartdb.c` with the generator output (hygiene, passed), and cart.sha1.fips passes.
-- 02-09/02-10/02-11: cart.probe.*, cart.identify.* and cart.load.* (19 cart tests) pass. abi.* passes.
-- 02-12: runner.* (30) passes, including runner.md5 and runner.exit.table.
-- 02-13: built.samples rebuilds `simple` and checks both SHA-256s; its self test passes.
-- 02-14: tests/cpu/full.cmake registers the fetch, the sample match and 256 per-opcode tests on the upstream JSON. nightly.yml has the vectors-full and loader-fuzz jobs with measured timeouts.
-- 02-15: release.firmware_scan and hygiene.firmware_scan pass, each with its self test.
-- 02-16: timeouts carry run IDs, hygiene.timeout_comments passes, the probe PR is closed and the title check passes.
+These are unchanged from the last report. The fix round added behaviour (one HALT window and one NMI edge at a time, idle reads from a jammed CPU) that no plan truth contradicts. Every test named for a plan truth still passes in this run's ci and hygiene workflows.
 
 ### Required artifacts
 
 | Artifact | Status | Details |
 | -------- | ------ | ------- |
-| `src/cpu.c` (1,467 lines) | VERIFIED | Wired into `muhtari` through the `muhtari_cpu` OBJECT library and the vector harness |
-| `src/bus.c`, `src/riot.c`, `src/tia.c` | VERIFIED | Exercised by the sally and riot tests through the real bus |
-| `src/cart.c`, `src/cartdb.c`, `src/sha1.c` | VERIFIED | `muhtari_probe` and the internal loader. cartdb is generated and checked byte for byte |
-| `runner/main.c`, `runner/md5.c`, `host/status_text.c` | VERIFIED | `--probe` behaviour seen directly |
-| `tests/vectors/6502-sample.n65v` (1,677,886 bytes) | VERIFIED | Manifest row and SHA-256 checked by policy.rom_hash_coverage |
-| `tests/cpu/full.cmake`, `tests/cmake/fetch_vectors.cmake`, nightly jobs | VERIFIED | Hosted nightly green |
+| `src/cpu.c` | VERIFIED | jammed guard at the head of `muhtari__cpu_step`. The full set passes on the rebuilt binary |
+| `src/bus.c` | VERIFIED | Both early returns sit before any state changes. `rearm`, `events` and `latch_nmi` are unchanged, and the state they clear lets the next request in |
+| `src/internal.h`, `src/instance.c` | VERIFIED | Comment-only changes that match the code |
+| `docs/hardware/bus.md`, `docs/hardware/sally.md`, `docs/embedding.md` | VERIFIED | I read them against the code. JAM no longer hands idling to the run loop, which now matches `cpu.c` |
+| `tests/bus/test_bus.c`, `tests/cpu/test_cpu.c` and their tests.cmake | VERIFIED | The new cases are registered under `sally portable`, appear in the ci.txt and wasm32.txt inventories, and ran in this ci run |
+| everything else in covered_files | VERIFIED (regression) | Not in the fix diff, and the ci, hygiene, vectors-full and asan runs pass |
 
 ### Key links
 
 | From | To | Status | Details |
 | ---- | -- | ------ | ------- |
-| muhtari-test-vectors | src/cpu.c objects | WIRED | Same objects as the library. The poll mark and `jammed` are checked per test |
-| bus.c HALT gate | INPTCTRL writes | WIRED | `halt_gate_writes` is counted in `inptctrl_write` and read in `muhtari__bus_request_halt` |
-| muhtari-run --probe | muhtari_probe | WIRED | Real probe output, statuses become exit codes 0, 1 and 77 |
-| muhtari-run-testdb | tests/cart/test_cartdb.c | WIRED | Link-time substitution, `source hash` seen. The shipped runner does not contain the entry |
-| nightly.yml | vectors-full and fuzz presets | WIRED | Hosted run 39199084192 |
+| muhtari-test-vectors | src/cpu.c objects | WIRED | Rebuilt from HEAD. 257 full-set tests pass |
+| bus.c HALT gate | INPTCTRL writes and halt_stage | WIRED | `halt_gate_writes` is counted in `inptctrl_write`. `halt_stage` goes back to HALT_NONE in `events()` |
+| bus.c NMI raise | latch_nmi | WIRED | `nmi_pending` is set in `raise_nmi` and cleared on every latch, in `events()` and in `hold()` |
+| cpu_step jammed guard | bus read | WIRED | Goes through `muhtari__bus_read`, so phi2 and the bus log count it (checked by cpu.jam.step_reads_ffff) |
+| muhtari-run --probe | muhtari_probe | WIRED | Unchanged. runner.* 30 of 30 |
+| nightly.yml | vectors-full and fuzz presets | WIRED | Unchanged. The local vectors-full preset passes |
+
+### Data-flow trace
+
+Not applicable. The phase draws no UI. Probe output values come from `muhtari_probe` over the file's bytes, as traced in the last report, and that code is unchanged.
 
 ### Behavioral spot-checks
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| Full-set opcodes on the HEAD binary | `muhtari-test-vectors …/XX.json XX` ×10 | 0 of 10000 failed each | PASS |
-| Probe of a clean v4 image | `muhtari-run --probe linear-v4-48k` | all fields and 8 hashes, exit 0 | PASS |
-| Refusal classes | `muhtari-run --probe` on 7 refusal images | distinct messages, exit 77 or 1, oversized prints nothing on stdout | PASS |
-| Hash-list identity | `muhtari-run-testdb --probe simple.bas.bin` | `source hash` | PASS |
+| One HALT window at a time | `ctest` bus.halt.one_window_at_a_time (in the ci run) | Passed | PASS |
+| One NMI edge at a time | `ctest` bus.nmi.one_edge_at_a_time | Passed | PASS |
+| Jammed step reads $FFFF only | `ctest` cpu.jam.step_reads_ffff | Passed | PASS |
+| JAM and other opcodes on the full set | `muhtari-test-vectors …/XX.json XX` ×10 | 0 of 10000 failed each | PASS |
+| Memory safety of the changed paths | asan lane in container | 397 of 397 | PASS |
 
 ### Probe execution
 
-There are no `scripts/*/tests/probe-*.sh` scripts in this repository. The "probe PR" is a CI rehearsal pull request (#9, closed), and its runs appear above.
+There are no `scripts/*/tests/probe-*.sh` scripts in this repository, and the phase declares none.
 
 ### Requirements coverage
 
-| Requirement | Description | Status | Evidence |
-| ----------- | ----------- | ------ | -------- |
-| CPU-01 | Committed sample, every opcode, final state and every cycle, decimal mode, unstable constant | SATISFIED | Criterion 1, plus cpu.unstable.sally_constant |
-| CPU-02 | Full set at its pin, nightly | SATISFIED | Criterion 1: local run plus Nightly 39199084192 |
-| CPU-03 | `ctest -L sally` timing, HALT, RDY, NMI | SATISFIED | Criterion 2 |
-| CPU-04 | `ctest -L riot`, INPTCTRL, open bus | SATISFIED | Criterion 3 |
-| CPU-05 | `--probe`, hash list, refusal classes, counting allocator, fuzz replay and nightly fuzz | SATISFIED | Criterion 4 |
+| Requirement | Source plans | Description | Status | Evidence |
+| ----------- | ------------ | ----------- | ------ | -------- |
+| CPU-01 | 5 plans | Committed sample, every opcode, state and every cycle, decimal mode, unstable constant | SATISFIED | Criterion 1 |
+| CPU-02 | 4 plans | Full set at its pin, nightly | SATISFIED | Criterion 1: local 257 of 257 at HEAD |
+| CPU-03 | 3 plans | `ctest -L sally` timing, HALT, RDY, NMI | SATISFIED | Criterion 2: 22 of 22 |
+| CPU-04 | 3 plans | `ctest -L riot`, INPTCTRL, open bus | SATISFIED | Criterion 3: 16 of 16 |
+| CPU-05 | 9 plans | `--probe`, hash list, refusal classes, counting allocator, fuzz replay, nightly fuzz | SATISFIED | Criterion 4 |
 
-Every ID in the plans' `requirements:` fields is one of CPU-01 to CPU-05. REQUIREMENTS.md maps no other ID to Phase 2, so no requirement is orphaned.
+The plans' `requirements:` fields list only CPU-01 to CPU-05. REQUIREMENTS.md maps exactly those five to Phase 2 (lines 176 to 180), so no requirement is orphaned.
 
 ### Anti-patterns found
 
 | File | Line | Pattern | Severity | Impact |
 | ---- | ---- | ------- | -------- | ------ |
-| (110 phase-changed files) | - | TBD, FIXME or XXX debt markers | none found | - |
-| 02-16-SUMMARY.md | coverage entry for criterion 5 | `status: pending-ship`, outside the summary schema's pass, fail and unknown values | Info | Bookkeeping only. Set it to `pass` at ship once the 0.2.0 Release run is confirmed, or record it as `unknown` |
-| 02-REVIEW.md | WR-01 to WR-04, IN-01 to IN-03 | open code-review findings (all `open` in 02-REVIEW-DISPOSITION.md) | Warning (advisory) | Left to the separate code-review fix step. None of them fails a criterion: WR-01 limits the nightly `pull_request` path filter, while the scheduled nightly still runs every job. WR-02 concerns a caller passing a struct shorter than its size tag. WR-03 and WR-04 concern HALT and NMI requests that overlap and the run loop for a jammed CPU, which is phase 3 work |
+| 13 changed files | - | TBD, FIXME or XXX | none found | - |
+| 02-16-SUMMARY.md | coverage entry for criterion 5 | `status: pending-ship` | Info | Carried over from the last report. Set it to `pass` at ship once the release run is confirmed |
+| 02-REVIEW.md (re-review) | WR-01, WR-02, IN-01 | deferred to phase 3 in 02-REVIEW-DISPOSITION.md | Info | None fails a criterion. WR-01 (a dropped HALT or NMI request is silent) has no caller until MARIA. WR-02 is test code, a seed under rule 7. IN-01's frame loop is phase 3 work. The first-round seeds WR-01, IN-02 and IN-03 are tracked in a pending todo |
+| hosted CI | - | fix commits not yet run on hosted CI | Info | Not a gap. This run checked them locally (ci, hygiene, vectors-full, asan), and the fixer ran be32, wasm32 and nofp in containers. The ship pull request's required CI runs every lane on the head before the merge can happen. /gsd-ship confirms a CI run exists on the head commit (rule 9) |
 
 ### Human verification required
 
-None. Every check above was run by the verifier. The merge is the owner's consent action, and the release it publishes is confirmed at `/gsd-ship` (rule 9), not in UAT.
+None. I ran every check above. The merge is the owner's consent action, and the release it publishes is confirmed at `/gsd-ship` (rule 9), not in UAT.
 
 ### Gaps summary
 
-No gaps. The phase goal holds in the codebase: SALLY matches all 2,560,000 SingleStepTests 6502 vectors on state and every bus cycle, and the 7800 bus timing, HALT, RDY, NMI, RIOT and INPTCTRL behave as their tests require. The probe and loader refuse every bad class distinctly without allocating, and the nightly jobs are wired and green. Only the merge itself can show the release being published, and `/gsd-ship` confirms that after the merge.
+No gaps. The fix round's changes are small and match their docs, and each comes with a test that fails before the fix and passes after it. They cause no regression: the full SingleStepTests set still matches, the 22 sally tests, the 16 riot tests and the cart, runner and fuzz tests all pass, and asan is clean. The phase goal holds at 1350b30. What remains is ship-time confirmation: hosted CI on the pushed head and the release that the merge publishes.
 
 ---
 
-_Verified: 2026-10-19T04:47:19Z_
+_Verified: 2026-10-19T19:37:48Z_
 _Verifier: Claude (gsd-verifier)_
