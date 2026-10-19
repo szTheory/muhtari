@@ -24,7 +24,7 @@ with no manual step.
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: A test frame in RetroArch** - Library, runner and libretro core show a built-in test card; CI on every platform; the first automatic attested release installs into RetroArch with one line (completed 2026-10-16)
-- [ ] **Phase 2: The CPU matches the public vectors** - SALLY matches the public 6502 vectors on every cycle, with the 7800 bus timing, RIOT, INPTCTRL and the cartridge probe and loader
+- [x] **Phase 2: The CPU matches the public vectors** - SALLY matches the public 6502 vectors on every cycle, with the 7800 bus timing, RIOT, INPTCTRL and the cartridge probe and loader (completed 2026-10-19)
 - [ ] **Phase 3: Games play in RetroArch** - MARIA with exact DMA timing, linear and SuperGame boards, fast and OpenBIOS boot, joysticks and console switches make 7800 games playable
 - [ ] **Phase 4: Sound** - TIA and POKEY sound through an integer band-limited synthesiser, with audio hashes identical on every platform
 
@@ -126,7 +126,7 @@ Plans:
   4. `muhtari-run --probe FILE` prints the A78 fields, board, region, peripherals and all four hashes, identifies a header-stripped image through the hash list, and gives a 2600 image, an unsupported board and a malformed, truncated or oversized file each a distinct status and message; the counting-allocator test and `ctest -R fuzz.regress.loader` pass on every platform and the loader fuzz target runs nightly.
   5. Merging the phase's pull request publishes a release through the Phase 1 pipeline with no manual step.
 
-**Plans**: 16/16 plans executed (sequential waves; parallelization off)
+**Plans**: 16/16 plans complete (sequential waves; parallelization off)
 
 Plans:
 **Wave 1**
@@ -220,6 +220,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
-| 2. The CPU matches the public vectors | 16/16 | In Progress | - |
+| 2. The CPU matches the public vectors | 16/16 | Complete    | 2026-10-19 |
 | 3. Games play in RetroArch | 0/TBD | Not started | - |
 | 4. Sound | 0/TBD | Not started | - |
