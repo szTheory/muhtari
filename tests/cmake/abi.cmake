@@ -31,6 +31,10 @@ set(helpers
   # x86-64 ELF position-independent code names the linker-defined GOT symbol
   # (System V x86-64 psABI, section 3.5).
   "^Linux/(x86_64|amd64|AMD64)$:_GLOBAL_OFFSET_TABLE_"
+  # MSVC on x64 addresses a switch's jump table relative to the
+  # linker-defined image base (measured: llvm-nm on the core, MSVC /O2, run
+  # 39184977244).
+  "^Windows/(AMD64|x64|x86_64)$:__ImageBase"
   # 32-bit PowerPC has no 64-bit divide or shift instruction; GCC calls the
   # libgcc integer routines (GCC internals manual, "Integer library routines").
   "^Linux/(ppc|powerpc)$:__udivdi3 __umoddi3 __ashldi3 __lshrdi3")

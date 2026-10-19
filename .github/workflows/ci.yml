@@ -45,7 +45,7 @@ jobs:
   # name, is under .planning/; then the heavy jobs are skipped.
   changes:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 8 s in 33 runs, run 38945207181
+    timeout-minutes: 5  # network-bound floor; slowest 8 s in 13 runs, run 39195625395
     permissions:
       contents: read
       pull-requests: read
@@ -75,12 +75,17 @@ jobs:
   # The image has clang-format-21, clang-tidy-21 and jq; configure finds them.
   hygiene:
     runs-on: ubuntu-26.04
-    timeout-minutes: 1  # 2 x 27 s, slowest of 32 runs, run 38943539777
+    timeout-minutes: 5  # network-bound floor; slowest 27 s in 13 runs, run 39198577488
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
+      # policy.cartdb_generated regenerates src/cartdb.c from these.
+      - name: Fetch the MAME software lists
+        run: |
+          scripts/fetch-pin.sh mame-a7800-xml build/pins/mame
+          scripts/fetch-pin.sh mame-a2600-xml build/pins/mame
       - run: cmake --workflow --preset hygiene
       - name: Every test ran
         run: cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake
@@ -113,17 +118,17 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 3  # 2 x 71 s, slowest leg of 32 runs, run 38939482093
+    timeout-minutes: 5  # network-bound floor; slowest leg 84 s in 13 runs, run 39197902638
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { runner: ubuntu-26.04, preset: ci, os: linux, arch: x64 }
-          - { runner: ubuntu-26.04-arm, preset: ci, os: linux, arch: arm64 }
-          - { runner: macos-15, preset: ci, os: macos, arch: arm64 }
-          - { runner: macos-15-intel, preset: ci, os: macos, arch: x64 }
-          - { runner: windows-2025, preset: ci-msvc, os: windows, arch: x64 }
-          - { runner: windows-11-arm, preset: ci-msvc, os: windows, arch: arm64 }
+          - { runner: ubuntu-26.04, preset: ci, os: linux, arch: x64, wasmtime: x86_64-linux }
+          - { runner: ubuntu-26.04-arm, preset: ci, os: linux, arch: arm64, wasmtime: aarch64-linux }
+          - { runner: macos-15, preset: ci, os: macos, arch: arm64, wasmtime: aarch64-macos }
+          - { runner: macos-15-intel, preset: ci, os: macos, arch: x64, wasmtime: x86_64-macos }
+          - { runner: windows-2025, preset: ci-msvc, os: windows, arch: x64, wasmtime: x86_64-windows }
+          - { runner: windows-11-arm, preset: ci-msvc, os: windows, arch: arm64, wasmtime: aarch64-windows }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -139,6 +144,14 @@ jobs:
           $arch = if ($env:RUNNER_ARCH -eq 'ARM64') { 'arm64' } else { 'x64' }
           cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" $arch && set" |
             ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { "$($Matches[1])=$($Matches[2])" >> $env:GITHUB_ENV } }
+      # built.samples builds 7800basic's sample with these (tests/built/);
+      # configure stops when either is missing.
+      - name: Fetch wasmtime and 7800basic
+        env:
+          WASMTIME: wasmtime-${{ matrix.wasmtime }}
+        run: |
+          scripts/fetch-pin.sh "$WASMTIME" build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
       - name: Build, test, package
         run: cmake --workflow --preset ${{ matrix.preset }}
       - name: Every test ran
@@ -173,7 +186,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 2  # 2 x 55 s, slowest of 32 runs, run 38937116459
+    timeout-minutes: 5  # network-bound floor; slowest 35 s in 13 runs, run 39198234113
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -182,6 +195,10 @@ jobs:
       # clang-21 is on the image; its sanitizer runtimes may not be.
       - name: Sanitizer runtimes
         run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y libclang-rt-21-dev; }
+      - name: Fetch wasmtime and 7800basic
+        run: |
+          scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
       - run: cmake --workflow --preset asan
       # The abi and release checks read binary shapes the instrumentation changes.
       - name: Every test ran
@@ -194,7 +211,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: nofp (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 1  # 2 x 29 s, slowest leg of 32 runs, run 38945207181
+    timeout-minutes: 1  # 2 x 21 s, slowest leg of 13 runs, run 39198577488
     strategy:
       fail-fast: false
       matrix:
@@ -214,12 +231,16 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 48 s in 32 runs, run 38945207181
+    timeout-minutes: 5  # network-bound floor; slowest 45 s in 13 runs, run 39198577488
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
+      - name: Fetch wasmtime and 7800basic
+        run: |
+          scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
       - name: Cross compiler and qemu-user
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - run: cmake --workflow --preset be32
@@ -239,7 +260,7 @@ jobs:
     needs: [changes, build, be32]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # roll-up floor; slowest 9 s in 32 runs, run 38946364083
+    timeout-minutes: 5  # roll-up floor; slowest 7 s in 13 runs, run 39198407537
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -260,7 +281,7 @@ jobs:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 30 s in 32 runs, run 38938418438
+    timeout-minutes: 5  # network-bound floor; slowest 34 s in 13 runs, run 39197902638
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -270,6 +291,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends wasi-libc libclang-rt-21-dev-wasm32
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
       - run: cmake --workflow --preset wasm32
       - name: Every test ran
         run: >-
@@ -295,7 +317,7 @@ jobs:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: macos-15
-    timeout-minutes: 5  # network-bound floor; slowest 29 s in 26 runs, run 38951834012
+    timeout-minutes: 5  # network-bound floor; slowest 29 s in 13 runs, run 39198079849
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -368,7 +390,7 @@ jobs:
     needs: changes
     if: ${{ !inputs.ref && needs.changes.outputs.heavy == 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-26.04
-    timeout-minutes: 20  # provisional, 5 samples
+    timeout-minutes: 5  # network-bound floor; slowest 29 s in 13 runs, run 39198079849
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -379,14 +401,16 @@ jobs:
       # Both runners are installed under paths of equal length, so the path
       # Cachegrind and the loader see costs the same instructions. NO_BASE is
       # decided from the base tree's contents only: a base that has presets
-      # and fails to build fails this step.
+      # and fails to build fails this step. MUHTARI_TESTS OFF builds the
+      # runner without registering the tests, so neither tree needs the
+      # sample's tools; a base from before the option ignores it.
       - name: Build the runner at head and base
         id: build
         env:
           EVENT: ${{ github.event_name }}
         run: |
           build() {
-            (cd "$1" && cmake --preset ci > /dev/null && cmake --build --preset ci --target muhtari-run &&
+            (cd "$1" && cmake --preset ci -DMUHTARI_TESTS=OFF > /dev/null && cmake --build --preset ci --target muhtari-run &&
               cmake --install build/ci --component runner --prefix "$2")
           }
           build . "$RUNNER_TEMP/perf/head"
@@ -461,7 +485,7 @@ jobs:
     if: always()
     needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality, retroarch, perf]
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # roll-up floor; slowest 4 s in 33 runs, run 38953745345
+    timeout-minutes: 5  # roll-up floor; slowest 4 s in 13 runs, run 39197713488
     steps:
       - name: Every job succeeded or was skipped as allowed
         env:

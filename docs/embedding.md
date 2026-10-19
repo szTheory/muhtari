@@ -59,7 +59,10 @@ cfg.size = (uint32_t)sizeof cfg;
 
 There is no init macro. The size tag lets a program built against one header run with a library from another:
 
+- `size` promises that many readable bytes at the struct's address; the library may read all of them. A wrong
+  tag is undefined behaviour, so always set it from `sizeof`.
 - A size below the struct's first released size, or above 4096 bytes, returns `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
+  The cap only bounds how far a wrong tag can make the library read.
 - A smaller size from an older header is accepted. Input fields it lacks take their zero default, and an output
   struct receives only its first `size` bytes.
 - A larger size from a newer header is accepted only if every byte the library does not know is zero; otherwise
@@ -111,6 +114,76 @@ with `audio` set, an `audio_capacity` below the frame's sample count, 800 or 801
 `MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL`, so size the buffer from `max_audio_samples`. `muhtari_run_frame` checks its
 arguments before it changes anything. Once `m` and `io` are not NULL and the size tag is accepted, it writes
 `audio_count` on every return, zero on an error.
+
+## Probing a cartridge image
+
+`muhtari_probe(image, n, &info)` reads the `n` bytes at `image` and fills a `muhtari_cart_info` with what the
+cartridge is: an A78 file, a headerless 7800 image or a 2600 image. It is pure: it allocates nothing, keeps no
+state, and gives the same output for the same bytes, so concurrent calls on different outputs cannot interact.
+It reads at most `MUHTARI_IMAGE_SIZE_MAX` bytes (1 MiB of ROM plus a 128-byte header) and hashes them a fixed
+number of times. Running a probed image arrives in a later API version; until then `muhtari_run_frame` still
+gives the test card.
+
+```c
+muhtari_cart_info info;
+memset(&info, 0, sizeof info);
+info.size = (uint32_t)sizeof info;
+muhtari_status st = muhtari_probe(image, n, &info);
+```
+
+It checks, in this order:
+
+1. `info` is NULL, or `image` is NULL with `n` above 0: `MUHTARI_STATUS_ERR_ARGUMENT`.
+2. A bad size tag: `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
+3. `n` above `MUHTARI_IMAGE_SIZE_MAX`: `MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE`, before any byte is hashed.
+4. The image itself, as `docs/hardware/cartridge.md` describes: the A78 magic, the 7800 list, the 2600 list,
+   the footer test and the size. A NULL `image` with `n` = 0 is `MUHTARI_STATUS_ERR_INVALID_IMAGE`.
+
+| Status | Meaning | `info` |
+|---|---|---|
+| `MUHTARI_STATUS_OK` | A 7800 cartridge on a board this library runs | written |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD` | A 7800 cartridge on a board it does not run yet | written |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_2600` | A 2600 image | written: only `kind`, `source`, `rom_size` and `flags` are non-zero |
+| `MUHTARI_STATUS_ERR_INVALID_IMAGE` | Not a cartridge image, or a size no board has | untouched |
+| `MUHTARI_STATUS_ERR_TRUNCATED_IMAGE` | An A78 file that ends early | untouched |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE` | Larger than `MUHTARI_IMAGE_SIZE_MAX` | untouched |
+
+The two refusals that write `info` are the one exception to the rule that an error writes nothing: a host can
+show what it refused.
+
+| Field | Values |
+|---|---|
+| `kind` | `MUHTARI_KIND_7800`, `MUHTARI_KIND_2600` |
+| `source` | What identified it: `MUHTARI_SOURCE_HEADER`, `MUHTARI_SOURCE_HASH`, `MUHTARI_SOURCE_FOOTER`, `MUHTARI_SOURCE_SIZE` |
+| `flags` | `MUHTARI_CART_HEADER` (it has an A78 header), `MUHTARI_CART_HASH_MATCH` (a list entry matched) |
+| `warnings` | Header defects it accepted, listed below |
+| `rom_size` | Bytes the cartridge maps, header excluded |
+| `board` | `MUHTARI_BOARD_LINEAR`, `MUHTARI_BOARD_SUPERGAME`, `MUHTARI_BOARD_ACTIVISION`, `MUHTARI_BOARD_ABSOLUTE`, `MUHTARI_BOARD_FRACTALUS`, `MUHTARI_BOARD_BANKSET`, `MUHTARI_BOARD_SOUPER` |
+| `board_options` | Bits: `MUHTARI_BOARD_ROM_AT_4000`, `MUHTARI_BOARD_BANK6_AT_4000`, `MUHTARI_BOARD_BANKED_RAM`, `MUHTARI_BOARD_HALT_BANKED_RAM` |
+| `ram_size` | Cartridge RAM in bytes |
+| `sound` | Bits: `MUHTARI_SOUND_POKEY_4000`, `MUHTARI_SOUND_POKEY_450`, `MUHTARI_SOUND_POKEY_440`, `MUHTARI_SOUND_POKEY_800`, `MUHTARI_SOUND_YM2151`, `MUHTARI_SOUND_COVOX` |
+| `devices` | Bits: `MUHTARI_DEVICE_HSC`, `MUHTARI_DEVICE_SAVEKEY`, `MUHTARI_DEVICE_XM` |
+| `port1`, `port2` | `MUHTARI_PORT_NONE`, `MUHTARI_PORT_PROLINE`, `MUHTARI_PORT_LIGHTGUN`, `MUHTARI_PORT_PADDLE`, `MUHTARI_PORT_TRAKBALL`, `MUHTARI_PORT_JOYSTICK`, `MUHTARI_PORT_DRIVING`, `MUHTARI_PORT_KEYPAD`, `MUHTARI_PORT_ST_MOUSE`, `MUHTARI_PORT_AMIGA_MOUSE`, `MUHTARI_PORT_ATARIVOX`, `MUHTARI_PORT_SNES2ATARI`, `MUHTARI_PORT_MEGA7800`: the A78 codes 0 to 12 |
+| `region` | `MUHTARI_REGION_NTSC`, `MUHTARI_REGION_PAL` |
+| `a78_version`, `a78_rom_size`, `a78_cart_type`, `a78_port1`, `a78_port2`, `a78_tv`, `a78_save`, `a78_xm` | The A78 header's fields as written; zero without a header |
+| `a78_mapper`, `a78_mapper_options`, `a78_audio`, `a78_irq` | The version 4 block as written; zero below version 4 |
+| `title` | The header's title: at most 32 printable ASCII bytes, trailing spaces dropped, NUL-terminated and zero-padded |
+
+Zero means absent in every field. A board moves from `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD` to
+`MUHTARI_STATUS_OK` in the release that runs it. The warning bits:
+
+| Bit | The header |
+|---|---|
+| `MUHTARI_CART_WARN_HEADER_V4_IGNORED` | says version 4 or above, but its version 4 block is invalid or its board does not fit the ROM, so the cart type was used |
+| `MUHTARI_CART_WARN_HEADER_CORRECTED` | names a board, RAM or sound that a list entry for the same bytes corrects |
+| `MUHTARI_CART_WARN_VERSION_ABOVE_4` | gives a version above 4, read as 4 |
+| `MUHTARI_CART_WARN_SIZE_FIELD_MISMATCH` | gives a ROM size other than the bytes after it |
+| `MUHTARI_CART_WARN_TITLE_NONPRINTABLE` | has a title byte outside printable ASCII, shown as `?` |
+| `MUHTARI_CART_WARN_UNKNOWN_PORT` | names a controller code above 12, read as `MUHTARI_PORT_NONE` |
+| `MUHTARI_CART_WARN_LEGACY_SAVE_BIT` | marks the High Score Cartridge with the old bit 2 |
+| `MUHTARI_CART_WARN_XM_VALUE` | gives an XM byte other than 0 or 1 |
+| `MUHTARI_CART_WARN_RESERVED_NONZERO` | has a reserved byte or bit set |
+| `MUHTARI_CART_WARN_CART_TYPE_CONFLICT` | sets cart-type bits that cannot all hold, resolved as `docs/hardware/cartridge.md` says |
 
 ## Statuses
 

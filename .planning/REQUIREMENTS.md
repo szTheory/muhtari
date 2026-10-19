@@ -48,20 +48,20 @@ values in tests cite their source document.
 
 ### The CPU matches the public vectors
 
-- [ ] **CPU-01**: `ctest -L vectors` runs the committed sample of the SingleStepTests `6502` set (the first 100
+- [x] **CPU-01**: `ctest -L vectors` runs the committed sample of the SingleStepTests `6502` set (the first 100
   tests of every opcode, at its pinned commit) and every opcode matches on final state and on every bus cycle,
   decimal mode included, with the unstable-opcode constant set to the suite's value.
-- [ ] **CPU-02**: `ctest -L vectors-full` runs the full set, fetched at its pinned commit, with every test matching;
+- [x] **CPU-02**: `ctest -L vectors-full` runs the full set, fetched at its pinned commit, with every test matching;
   CI runs it nightly.
-- [ ] **CPU-03**: `ctest -L sally` shows that a bus cycle lasts 4 ticks, or 6 when it touches TIA or RIOT space;
+- [x] **CPU-03**: `ctest -L sally` shows that a bus cycle lasts 4 ticks, or 6 when it touches TIA or RIOT space;
   that HALT reaches the CPU only after two INPTCTRL writes and stops read and write cycles alike; that RDY holds
   only read cycles, so a read-modify-write completes both writes; and that an NMI raised in an instruction's last
   cycle is taken after the next instruction.
-- [ ] **CPU-04**: `ctest -L riot` shows the RIOT timer counting through HALT and WSYNC at each interval, its
+- [x] **CPU-04**: `ctest -L riot` shows the RIOT timer counting through HALT and WSYNC at each interval, its
   interrupt flag, SWCHA and SWCHB with their direction registers and profile power-on values, and RIOT RAM at
   $0480–$04FF; INPTCTRL locks after its lock write; reads of write-only or unmapped addresses return the open-bus
   byte.
-- [ ] **CPU-05**: `muhtari-run --probe FILE` prints the A78 v3/v4 fields, board, region, peripherals and the
+- [x] **CPU-05**: `muhtari-run --probe FILE` prints the A78 v3/v4 fields, board, region, peripherals and the
   headered and headerless SHA-1, SHA-256, MD5 and CRC-32, and identifies a header-stripped image through the hash
   list (shown with a 7800basic sample and a test list; real dumps use the bundled CC0 list); a 2600 image, an
   unsupported board, and a malformed, truncated or oversized file each get a distinct status and message; a
@@ -173,11 +173,11 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 | FRAME-07 | Phase 1 | Complete |
 | FRAME-08 | Phase 1 | Complete |
 | FRAME-09 | Phase 1 | Complete |
-| CPU-01 | Phase 2 | Pending |
-| CPU-02 | Phase 2 | Pending |
-| CPU-03 | Phase 2 | Pending |
-| CPU-04 | Phase 2 | Pending |
-| CPU-05 | Phase 2 | Pending |
+| CPU-01 | Phase 2 | Complete |
+| CPU-02 | Phase 2 | Complete |
+| CPU-03 | Phase 2 | Complete |
+| CPU-04 | Phase 2 | Complete |
+| CPU-05 | Phase 2 | Complete |
 | GAME-01 | Phase 3 | Pending |
 | GAME-02 | Phase 3 | Pending |
 | GAME-03 | Phase 3 | Pending |

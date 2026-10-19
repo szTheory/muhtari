@@ -9,7 +9,8 @@
 extern "C" {
 #endif
 
-#define MUHTARI_API_VERSION 1
+#define MUHTARI_API_VERSION 2
+#define MUHTARI_IMAGE_SIZE_MAX 1048704u /* 1 MiB of ROM plus a 128-byte header */
 
 typedef uint32_t muhtari_status;
 enum {
@@ -17,7 +18,12 @@ enum {
     MUHTARI_STATUS_ERR_ARGUMENT = 1,
     MUHTARI_STATUS_ERR_STRUCT_SIZE = 2,
     MUHTARI_STATUS_ERR_NO_MEMORY = 3,
-    MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL = 4
+    MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL = 4,
+    MUHTARI_STATUS_ERR_INVALID_IMAGE = 5,
+    MUHTARI_STATUS_ERR_TRUNCATED_IMAGE = 6,
+    MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE = 7,
+    MUHTARI_STATUS_ERR_UNSUPPORTED_2600 = 8,
+    MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD = 9
 };
 
 typedef struct muhtari muhtari;
@@ -64,6 +70,99 @@ muhtari_status muhtari_create(const muhtari_config *cfg, muhtari **out);
 void muhtari_destroy(muhtari *m); /* NULL-safe */
 muhtari_status muhtari_get_info(const muhtari *m, muhtari_info *out);
 muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io);
+
+enum { MUHTARI_KIND_7800 = 1, MUHTARI_KIND_2600 = 2 };
+enum {
+    MUHTARI_SOURCE_HEADER = 1,
+    MUHTARI_SOURCE_HASH = 2,
+    MUHTARI_SOURCE_FOOTER = 3,
+    MUHTARI_SOURCE_SIZE = 4
+};
+enum {
+    MUHTARI_BOARD_LINEAR = 1,
+    MUHTARI_BOARD_SUPERGAME = 2,
+    MUHTARI_BOARD_ACTIVISION = 3,
+    MUHTARI_BOARD_ABSOLUTE = 4,
+    MUHTARI_BOARD_FRACTALUS = 5,
+    MUHTARI_BOARD_BANKSET = 6,
+    MUHTARI_BOARD_SOUPER = 7
+};
+enum {
+    MUHTARI_BOARD_ROM_AT_4000 = 1u,
+    MUHTARI_BOARD_BANK6_AT_4000 = 2u,
+    MUHTARI_BOARD_BANKED_RAM = 4u,
+    MUHTARI_BOARD_HALT_BANKED_RAM = 8u
+};
+enum {
+    MUHTARI_SOUND_POKEY_4000 = 1u,
+    MUHTARI_SOUND_POKEY_450 = 2u,
+    MUHTARI_SOUND_POKEY_440 = 4u,
+    MUHTARI_SOUND_POKEY_800 = 8u,
+    MUHTARI_SOUND_YM2151 = 16u,
+    MUHTARI_SOUND_COVOX = 32u
+};
+enum { MUHTARI_DEVICE_HSC = 1u, MUHTARI_DEVICE_SAVEKEY = 2u, MUHTARI_DEVICE_XM = 4u };
+enum { /* the A78 byte 55/56 codes */
+       MUHTARI_PORT_NONE = 0,
+       MUHTARI_PORT_PROLINE = 1,
+       MUHTARI_PORT_LIGHTGUN = 2,
+       MUHTARI_PORT_PADDLE = 3,
+       MUHTARI_PORT_TRAKBALL = 4,
+       MUHTARI_PORT_JOYSTICK = 5,
+       MUHTARI_PORT_DRIVING = 6,
+       MUHTARI_PORT_KEYPAD = 7,
+       MUHTARI_PORT_ST_MOUSE = 8,
+       MUHTARI_PORT_AMIGA_MOUSE = 9,
+       MUHTARI_PORT_ATARIVOX = 10,
+       MUHTARI_PORT_SNES2ATARI = 11,
+       MUHTARI_PORT_MEGA7800 = 12
+};
+enum { MUHTARI_REGION_NTSC = 1, MUHTARI_REGION_PAL = 2 };
+enum { MUHTARI_CART_HEADER = 1u, MUHTARI_CART_HASH_MATCH = 2u };
+enum {
+    MUHTARI_CART_WARN_HEADER_V4_IGNORED = 1u,
+    MUHTARI_CART_WARN_HEADER_CORRECTED = 2u,
+    MUHTARI_CART_WARN_VERSION_ABOVE_4 = 4u,
+    MUHTARI_CART_WARN_SIZE_FIELD_MISMATCH = 8u,
+    MUHTARI_CART_WARN_TITLE_NONPRINTABLE = 16u,
+    MUHTARI_CART_WARN_UNKNOWN_PORT = 32u,
+    MUHTARI_CART_WARN_LEGACY_SAVE_BIT = 64u,
+    MUHTARI_CART_WARN_XM_VALUE = 128u,
+    MUHTARI_CART_WARN_RESERVED_NONZERO = 256u,
+    MUHTARI_CART_WARN_CART_TYPE_CONFLICT = 512u
+};
+
+typedef struct muhtari_cart_info {
+    uint32_t size;
+    uint32_t kind;
+    uint32_t source;
+    uint32_t flags;
+    uint32_t warnings;
+    uint32_t rom_size; /* bytes mapped, header excluded */
+    uint32_t board;
+    uint32_t board_options;
+    uint32_t ram_size;
+    uint32_t sound;
+    uint32_t devices;
+    uint32_t port1;
+    uint32_t port2;
+    uint32_t region;
+    uint32_t a78_version;
+    uint32_t a78_rom_size;
+    uint32_t a78_cart_type;
+    uint32_t a78_port1;
+    uint32_t a78_port2;
+    uint32_t a78_tv;
+    uint32_t a78_save;
+    uint32_t a78_xm;
+    uint32_t a78_mapper;
+    uint32_t a78_mapper_options;
+    uint32_t a78_audio;
+    uint32_t a78_irq;
+    uint8_t title[36]; /* printable ASCII, NUL-terminated, zero-padded */
+} muhtari_cart_info;
+
+muhtari_status muhtari_probe(const void *image, size_t n, muhtari_cart_info *out);
 
 #ifdef __cplusplus
 }

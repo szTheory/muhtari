@@ -17,6 +17,17 @@ It needs CMake 4.3 or later, Ninja and a C and C++ compiler. The workflow runs f
 4. package the three release zips into `build/ci`;
 5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
+The tests also build 7800basic's `simple` sample from pinned tools, so fetch the tools first:
+
+```sh
+scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # for example wasmtime-aarch64-macos
+scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+```
+
+Configure stops with both commands when either is missing; the sample tests are never skipped.
+
+`-DMUHTARI_TESTS=OFF` builds the products and registers no test, so configure needs no sample tool. Its users: `perf` (head and base builds), the `bench` preset of nightly's `bench` job, and `bench-wasm32`.
+
 ## Lanes
 
 Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build goes to `build/<name>`.
@@ -28,7 +39,9 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `ci-msvc` | The same five steps with MSVC and the static C runtime. | `ci` | all but `release`, then `release` |
 | `asan` | No memory or undefined-behaviour fault, using clang-21 with AddressSanitizer and UndefinedBehaviorSanitizer. Any finding stops the test. Long runs drop from 600 frames to 60 (`MUHTARI_SHORT_RUNS`). | `ci` | all but `abi` and `release`, whose binary-shape checks the instrumentation changes |
 | `nofp` | The core uses no floating point. It is built with GCC's `-mgeneral-regs-only`, which rejects any floating-point type. | `nofp` | `abi` |
-| `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer and the pins file. | `hygiene` | `hygiene` |
+| `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer, the pins file, and `src/cartdb.c` equal to `tools/cartdb.cmake`'s output over the two pinned MAME lists. Fetch those first with `scripts/fetch-pin.sh mame-a7800-xml build/pins/mame` and `scripts/fetch-pin.sh mame-a2600-xml build/pins/mame`; configure stops with both commands when either is missing. | `hygiene` | `hygiene` |
+| `fuzz` | The cartridge loader keeps its invariants on any input: libFuzzer runs `tests/fuzz/loader.c` for 60 seconds with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, starting from the images `muhtari-test-images` writes. New inputs go to `build/fuzz/fuzz/corpus` and crashes to `build/fuzz/fuzz/crash`, never into the tree. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader`. | `fuzz` | `fuzz` |
+| `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, about 1 GiB of disk and 90 s for the fetch. | `vectors-full` | `vectors-full` |
 | `be32` | The same hashes on a big-endian, 32-bit target with unsigned `char`. It cross-compiles for 32-bit PowerPC (`cmake/toolchains/ppc-linux-gnu.cmake`) and runs under `qemu-ppc`. | `ci` | `portable` |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
 
@@ -79,16 +92,23 @@ selects by label.
 labels comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
 test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
 Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
-Three lanes register their own lists: `hygiene.txt`, `nofp.txt`, and `wasm32.txt`, which is the `ci` list
-without the `libretro` tests.
+Five lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt` and `wasm32.txt`, which is the
+`ci` list without the `libretro` tests.
 
 | Label | Tests |
 |---|---|
 | `core` | The library's behaviour: sizes, allocation, the frame and the test card hash. |
+| `vectors` | SALLY against public tests. `cpu.vectors.<op>`, one per opcode, runs the committed sample, the first 100 SingleStepTests `6502/v1` tests of that opcode, and checks every bus cycle, the final registers and RAM, and the cycle where the instruction polls NMI. `cpu.decimal.clark` runs Bruce Clark's decimal-mode test to `ERROR` = 0. `cpu.unstable.sally_constant` pins the ANE and LXA constant. The rest test the vector tooling: the reader, the converter and the pin. |
+| `vectors-full` | The `vectors-full` lane: the fetch, the sample match, and `cpu.vectors-full.<op>` over all 10,000 tests of each opcode's file. |
+| `sally` | SALLY on the 7800's bus (`docs/hardware/bus.md`): 4- and 6-tick cycles, RDY holding reads only, the HALT gate and its two-cycle latency, and the NMI latch, with `cpu.nmi.*` for the instruction after which an edge is taken. |
+| `riot` | The RIOT (`docs/hardware/riot.md`): its timer, PA7 edge, ports, RAM window and power-on state, with the bus's INPTCTRL lock and open-bus reads. |
 | `portable` | Tests that hold on every platform, including the frame and audio hashes. |
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
-| `runner` | `muhtari-run` options, output, exit statuses and the PNG writer. |
+| `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. `cart.identify.test_list` finds the built 7800basic sample through the test hash list. No image bytes are tracked. |
+| `fuzz` | The loader fuzz target's invariants replayed over its seeds and committed regressions, and on the `fuzz` lane libFuzzer itself. |
+| `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
+| `built` | Samples built from pinned tools (`tests/built/`). `built.samples` builds 7800basic 0.41's `simple` sample under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/simple/`, and checks the `.a78` and `.bin` SHA-256s in `expected.txt`. `runner.probe.sample_*` then probe it: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `bench` | The runner's benchmark report. |
 | `libretro` | The libretro core in an in-process host, its `.info` file and its vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
@@ -105,20 +125,41 @@ output matches the expected message; a crash or a missing file does not count as
 | Self test | Fault fed to the check |
 |---|---|
 | `abi.undefined.self_test` | A library that calls `abort`. |
+| `cpu.vectors.self_test` | One `a9` vector whose final A is changed; the harness must exit 1 naming `a9.json[0]`. |
+| `cpu.decimal.clark.self_test` | Clark's test built for the 65C02, whose decimal flags differ; SALLY must leave `ERROR` = 1. |
+| `policy.rom_hash_coverage.self_test` | A copy of the manifest with the vector sample's SHA-256 zeroed. |
 | `abi.globals.self_test` | A library with a writable file-scope integer. |
 | `abi.api_version.self_test` | A copy of the header with one field no API test names. |
 | `runner.hashes_compare.count.self_test` | Two `hashes.txt` files where three are required. |
 | `runner.hashes_compare.byte.self_test` | Two `hashes.txt` files one byte apart. |
 | `abi.nofp_fixture` | On the `nofp` lane, a file holding one `double` division, which must fail to compile with GCC's `-mgeneral-regs-only` diagnostic. |
+| `built.samples.self_test` | An `expected.txt` whose `.a78` digest differs in one digit; the build must exit 1 with `simple: .a78 SHA-256 drift`. |
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
+| `policy.cartdb_generated.self_test` | A copy of `src/cartdb.c` with one byte changed; the check must exit 1 with `src/cartdb.c differs from the generator output`. |
+| `hygiene.firmware_scan.self_test` | The same synthetic file tracked in a fixture repository; the tracked-file scan must exit 1 with `matches synthetic (header stripped)`. |
+| `hygiene.no_float.self_test` | Seven float lines beside three look-alikes, among them an SPDX line naming `CC0-1.0`, and an SPDX line followed by `double`. |
 | `policy.publish_set.self_test` | 17 of the 18 release zips; `publish.sh prepare` must exit 1 naming the missing one. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |
 | `release.archive_contents.self_test` | A libretro zip without `THIRD-PARTY-NOTICES.md`. |
+| `release.firmware_scan.self_test` | A zip holding a synthetic 256-byte A78 file and a list naming the SHA-1 of its last 128 bytes; the scan must exit 1 with `matches synthetic (header stripped)`. |
 | `release.floor.self_test` | An impossible floor: glibc 2.0, macOS 9.0, or no allowed Windows DLL. |
 | `release.single_version_source.self_test` | A repository whose `notes.md` repeats its version. |
 
 `policy.no_skip` fails when any test file sets a skip return code or disables a test, naming the file and line.
+
+## Fixtures and the firmware scans
+
+`tests/roms/manifest.txt` lists every binary file the repository may hold: its path, source, pin, licence, SHA-256
+and notice section (ASSET_POLICY.md section 2). Today that is the vector sample, three vector fixtures and Clark's
+two test builds. `policy.rom_hash_coverage` (hygiene lane) requires each row's file to exist with that SHA-256, a row
+for every file under `tests/roms/` and in a fuzz `regress` directory, and at most 512 KiB under `tests/fuzz/`.
+
+The firmware scan (`tests/cmake/firmware_scan.cmake`) hashes files with SHA-1 and SHA-256, whole and, for an A78
+image, again without its 128-byte header. It fails on a digest in `tests/release/firmware.txt` (BIOS and HSC
+firmware), a built sample's digest in `tests/built/expected.txt`, a 7800 key in `src/cartdb.c`, or a 2600 prefix
+there. `hygiene.firmware_scan` scans every tracked file; `release.firmware_scan` scans the members of the three
+release zips; `publish.sh prepare` runs it over all 18 zips before a release.
 
 ## The core library's symbols
 
@@ -160,17 +201,17 @@ with its lane's inventory and labels.
 | `changes` | `ubuntu-26.04` | `scripts/classify-changes.sh` on the pull request's paths, old and new names, and its changed-file count | none |
 | `hygiene` | `ubuntu-26.04` | preset `hygiene` | `hygiene.txt` |
 | `title` | `ubuntu-26.04` | pull requests only: `scripts/check-title.sh` on the live title and body | none |
-| `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
-| `asan` | `ubuntu-26.04` | preset `asan` | `ci.txt` without `abi` and `release` |
+| `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | fetches its wasmtime and 7800basic, then preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
+| `asan` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `asan` | `ci.txt` without `abi` and `release` |
 | `nofp` ×2 | `ubuntu-26.04`, `ubuntu-26.04-arm` | preset `nofp` | `nofp.txt` |
-| `be32` | `ubuntu-26.04` | preset `be32`; uploads `hashes-be32` | `ci.txt`, label `portable` |
+| `be32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `be32`; uploads `hashes-be32` | `ci.txt`, label `portable` |
 | `hash-equality` | `ubuntu-26.04` | compares exactly seven `hashes.txt` files: the six `build` legs and `be32` | none |
-| `wasm32` | `ubuntu-26.04` | preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
+| `wasm32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
 | `retroarch` | `macos-15` | the built core in RetroArch; see "Hosted RetroArch" | none |
-| `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame; see "Performance" | none |
+| `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame of runners built with `MUHTARI_TESTS` OFF; see "Performance" | none |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
-The hosted `be32` job takes about 25 seconds, well inside the five-minute limit for a per-pull-request lane, so
+The hosted `be32` job takes under a minute, well inside the five-minute limit for a per-pull-request lane, so
 `hash-equality` compares seven files. Windows legs load the MSVC environment with `vswhere` and `vcvarsall` for the runner's own architecture. Every
 action is pinned by full commit SHA.
 
@@ -255,7 +296,20 @@ Each report has the runner's nine keys (`frames`, `fps_milli`, `p50_us` to `p99_
 run's job summaries and its `bench-<runner>` and `bench-wasm32` artifacts; they are trend data, never a gate and
 never committed. A failed night opens or comments on the one open issue labelled `nightly`, and a good night closes
 it; the report decides from the jobs' results. Dispatching the workflow with `force_failure` fails a run on purpose.
-A pull request that changes the bench or the workflow runs the bench jobs but writes no issue.
+The same workflow runs the `vectors-full` lane (`cmake --workflow --preset vectors-full`) and the `fuzz` lane (job
+`loader-fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its
+inventory; `loader-fuzz` uploads `build/fuzz/fuzz/crash/` when it fails. Neither caches its vectors or corpus. One
+path union triggers the whole workflow on a pull request: the workflow itself, the runner's bench and clock files,
+`src/cpu.c`, `src/cart.c`, `src/cartdb.c`, `src/sha1.c`, and `tests/cpu/`, `tests/vectors/`, `tests/cart/`,
+`tests/fuzz/` and the two vector scripts. Such a pull request runs every job but writes no issue.
+
+**Bumping the vector pin.** One `ci:` pull request: set the new commit in the `sst-6502-v1` row and the sample's
+manifest row; run the `vectors-full` workflow once, whose fetch fails against the old list but leaves the new files
+in `build/vectors-full/vectors-full`; regenerate `tests/vectors/6502-v1.sha256` from them and put its SHA-256 in
+the row; rewrite the sample with
+`cmake -DWRITE=ON` on the `cpu.vectors-full.sample_match` command (`ctest --test-dir build/vectors-full -R
+sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `cpu.vectors.pin` and
+`policy.rom_hash_coverage` fail until all four agree.
 
 ## Hosted RetroArch
 
@@ -317,7 +371,7 @@ reused.
 | Job | Runs |
 |---|---|
 | `ci` | `ci.yml` on the pull request's head commit |
-| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, `SHA256SUMS` in C-locale name order (`policy.publish_set` checks this on placeholders); a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; `publish.sh attested`: each zip's attestation verifies from the pull request's `refs/pull/<number>/merge` and a copy with its last byte flipped does not; publish with `--prerelease --latest=false`; `publish.sh verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` from that ref. A release tag verifies only from `refs/heads/main` (`policy.publish_ref`) |
+| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, no zip member that `tests/cmake/firmware_scan.cmake` finds listed (ASSET_POLICY.md section 5), `SHA256SUMS` in C-locale name order (`policy.publish_set` checks this on one-member placeholder zips); a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; `publish.sh attested`: each zip's attestation verifies from the pull request's `refs/pull/<number>/merge` and a copy with its last byte flipped does not; publish with `--prerelease --latest=false`; `publish.sh verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` from that ref. A release tag verifies only from `refs/heads/main` (`policy.publish_ref`) |
 | `install-line` | the README install line on `macos-15` against the rehearsal's download URL |
 | `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete` removes the release and its tag, and fails if either remains |
 
@@ -342,9 +396,14 @@ reads what each OS loader enforces. On every system the libretro core exports on
 `pins.txt` lists every file a build or a CI job downloads, one `name version url sha256` row each.
 `scripts/fetch-pin.sh NAME DEST` downloads the row `NAME` into a temporary directory and checks its SHA-256 before
 anything else happens; only then does it unpack a `.tar.xz` or `.tar.gz` into `DEST`, top folder stripped, or
-copy any other file there. `policy.pins` (hygiene lane) requires four fields per row, a unique name, an `https://`
+copy any other file there. A `.zip` (the Windows wasmtime) is read with `cmake -E tar`, since Git Bash's tar cannot
+read one, and must hold exactly one top folder, which is stripped. `policy.pins` (hygiene lane) requires four fields per row, a unique name, an `https://`
 URL and a 64-digit hex digest. A wrong digest exits 1 with `sha256 mismatch` and leaves `DEST` untouched. `PINS=<file>`
 reads another pins file. A bump is one `ci:` pull request that takes the new digest from the release API.
+The `sst-6502-v1` row is not a download: it pins the SingleStepTests commit the vector sample comes from, and its
+digest is that of `tests/vectors/6502-v1.sha256`, the per-file list of the full set. `cpu.vectors.pin` requires that
+list to name `6502/v1/00.json` to `ff.json` in order, its digest to match the row, and the row's commit to match the
+sample's manifest pin.
 
 ## Running the Linux lanes locally
 
@@ -364,8 +423,11 @@ Replace `ci` with another workflow to run that lane. Some lanes need more packag
 
 - `asan`: `clang-21 lld-21 libclang-rt-21-dev`. The last holds the sanitizer runtimes.
 - `be32`: `gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user`.
-- `wasm32`: `clang-21 lld-21 wasi-libc libclang-rt-21-dev-wasm32`. Also run
-  `scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime` before the workflow.
+- `wasm32`: `clang-21 lld-21 wasi-libc libclang-rt-21-dev-wasm32`.
+
+Every lane but `nofp`, `hygiene` and `fuzz` builds the sample, so also run
+`scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime` and
+`scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic` before the workflow.
 
 To keep a lane's `hashes.txt`, mount a directory outside the repository and copy the file into it, for example
 `-v "$OUT:/out"` and then `cp build/be32/hashes.txt /out/`. On an x86_64 host use `--platform linux/amd64` and the

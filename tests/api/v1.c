@@ -1,8 +1,9 @@
-/* API version 1, as released in 0.1.0. FROZEN: once released this file never
-   changes. It calls every function, assigns every field of every struct and
-   checks every constant of version 1, so a rename, a removal or a changed
-   value fails to build or fails here. Each later API version adds its own
-   file, v2.c and so on, beside this one. */
+/* API version 1, as released in 0.1.0. FROZEN: version 1's names and values
+   never change, and its version check is a floor, so a later API version
+   still passes it. It calls every function, assigns every field of every
+   struct and checks every constant of version 1, so a rename, a removal or a
+   changed value fails to build or fails here. Each later API version adds its
+   own file, v2.c and so on, beside this one. */
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,7 +25,7 @@ static void v1_free(void *user, void *ptr, size_t size)
 
 int main(void)
 {
-    CHECK_EQ_U64(MUHTARI_API_VERSION, 1);
+    CHECK(MUHTARI_API_VERSION >= 1);
     CHECK_EQ_U64(MUHTARI_STATUS_OK, 0);
     CHECK_EQ_U64(MUHTARI_STATUS_ERR_ARGUMENT, 1);
     CHECK_EQ_U64(MUHTARI_STATUS_ERR_STRUCT_SIZE, 2);
@@ -42,7 +43,7 @@ int main(void)
     v.abi = 0u;
     v.behaviour_revision = 0u;
     CHECK_EQ_U64(muhtari_get_versions(&v), MUHTARI_STATUS_OK);
-    CHECK_EQ_U64(v.api, 1);
+    CHECK(v.api >= 1);
     CHECK(v.abi != 0u);
     CHECK(v.behaviour_revision != 0u);
 

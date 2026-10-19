@@ -2,43 +2,44 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
-current_phase: 2
-current_phase_name: The CPU matches the public vectors
-status: "Phase 1 shipped — PR #7"
-stopped_at: "Phase 1 shipped as PR #7; merge after its Release run is green, then /gsd-discuss-phase 2"
-last_updated: "2026-10-16T22:18:31.326Z"
-last_activity: 2026-10-16
-state_head: c120a78aebbbb20fd2c5b7784924b08bedf0e9d2
+current_phase: 3
+current_phase_name: Games play in RetroArch
+status: "Phase 02 shipped — PR #10"
+stopped_at: Phase 02 shipped as PR #10 (auto-merge on); next /gsd-discuss-phase 3
+last_updated: "2026-10-19T20:37:55.435Z"
+last_activity: 2026-10-19
+last_activity_desc: Phase 02 shipped as PR #10
+state_head: de425c90c6354fc6291ae0de5d1e615532dcb0b8
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 21
-  completed_plans: 21
-  percent: 25
+  completed_phases: 2
+  total_plans: 37
+  completed_plans: 37
+  percent: 50
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-16)
+See: .planning/PROJECT.md (updated 2026-10-19)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 2 — The CPU matches the public vectors (phase 01 shipped as PR #7)
+**Current focus:** Ship phase 02 (`/gsd-ship 2`; the merge publishes 0.2.0), then Phase 3 — Games play in RetroArch
 
 ## Current Position
 
-Phase: 2 — The CPU matches the public vectors
+Phase: 3 — Games play in RetroArch
 Plan: Not started
-Status: Phase 1 shipped — PR #7
-Last activity: 2026-10-16
+Status: Phase 02 shipped — PR #10
+Last activity: 2026-10-19 — Phase 02 shipped as PR #10
 
-Progress: [███░░░░░░░] 25%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 37
 - Average duration: -
 - Total execution time: 0.0 hours
 
@@ -47,6 +48,7 @@ Progress: [███░░░░░░░] 25%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 21 | - | - |
+| 02 | 16 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: -
@@ -78,6 +80,22 @@ Progress: [███░░░░░░░] 25%
 | Phase 01 P19 | 21 min | 3 tasks | 12 files |
 | Phase 01 P20 | 17 min | 3 tasks | 8 files |
 | Phase 01 P21 | 33 min | 3 tasks | 8 files |
+| Phase 02 P01 | 15 min | 3 tasks | 22 files |
+| Phase 02 P02 | 9 min | 3 tasks | 11 files |
+| Phase 02 P03 | 10 min | 3 tasks | 19 files |
+| Phase 02 P04 | 9 min | 2 tasks | 12 files |
+| Phase 02 P05 | 17 min | 2 tasks | 10 files |
+| Phase 02 P06 | 18 min | 3 tasks | 12 files |
+| Phase 02 P07 | 12 min | 3 tasks | 12 files |
+| Phase 02 P08 | 13 min | 2 tasks | 19 files |
+| Phase 02 P09 | 21 min | 3 tasks | 21 files |
+| Phase 02 P10 | 11 min | 2 tasks | 11 files |
+| Phase 02 P11 | 14 min | 3 tasks | 21 files |
+| Phase 02 P12 | 9 min | 2 tasks | 14 files |
+| Phase 02 P13 | 10 min | 3 tasks | 16 files |
+| Phase 02 P14 | 15 min | 2 tasks | 9 files |
+| Phase 02 P15 | 17 min | 2 tasks | 12 files |
+| Phase 02 P16 | 33 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -144,33 +162,94 @@ Recent decisions affecting current work:
 - [Phase 01]: The owner verifies nothing by default (AGENTS rule 6, DEC.09, 2026-10-16): the UAT closed with docs.api_names, the hosted RetroArch job and the agent's one-off checks; truths only a pull request or a merge can show are confirmed at ship
 - [Phase 01]: The re-review after fix round 1 found the Dependabot actor gate and the rehearsal cleanup lookup incomplete; WR-01 to WR-03 wait for a ci: pull request after the merge, and one code-review fix round is left in this phase
 - [Phase 01]: workflow.code_review_depth_overrides is set to [] explicitly: unset, config-get returns the string "[]" and the code-review depth resolver halts
+- [Phase 02]: embed.subdirectory accepts muhtari_* OBJECT libraries beside muhtari and still rejects any other target an embedding adds
+- [Phase 02]: The vector harness reads .json as one full 10,000-test upstream file and any other path as the 256-chunk N65V sample; a zero-test run exits 1
+- [Phase 02]: Hosted run 39179237062: the OBJECT split links on MSVC, wasm-ld and nofp with no fallback; be32 took 43 s
+- [Phase 02]: Before decimal mode, 223 of 256 opcodes pass all upstream vectors; the 33 failures are exactly the ADC, SBC, RRA, ISC and ARR forms
+- [Phase 02]: The default ANE and LXA constant is MUHTARI__ANE_LXA_SALLY in internal.h, so cpu.unstable.sally_constant pins the shipped default without linking muhtari
+- [Phase 02]: All 256 opcodes pass all 2,560,000 upstream 6502/v1 tests after decimal ADC/SBC/ARR; no other opcode needed a fix
+- [Phase 02]: Hosted run 39180164525: the 256 vector tests are green on every leg; be32 took 45 s, so no ci.yml timeout changed
+- [Phase 02]: The vector harness takes --first N for a .json prefix and reads an N65V file whose first chunk is not opcode 00 as one chunk
+- [Phase 02]: The N65V reader refuses a chunk with count 0, naming the count's offset
+- [Phase 02]: Hosted run 39181184945: the seven vector tooling tests pass on every leg, wasm32 and Windows included
+- [Phase 02]: The Clark harness returns through a sentinel RTS to $FFF0 and fails on a JAM or at 150,000,000 cycles; the 6502 build leaves ERROR 0 after 53,953,831 cycles, the 65C02 build ERROR 1
+- [Phase 02]: policy.rom_hash_coverage reads the working tree under ROOT and exempts only tests/roms/manifest.txt; its self test zeros the sample digest in a configure-time copy of the real manifest
+- [Phase 02]: Hosted run 39182041117: cpu.decimal.clark takes 3.78 s on be32 and under 1 s elsewhere, so TIMEOUT 60 stays until the D-31 measurement
+- [Phase 02]: 6502.org answers 404 to curl's default user agent; fetch the tutorial with a browser -A string
+- [Phase 02]: NMI is taken when nmi_phi2 is at or before poll_phi2, which each instruction but JAM stores once, right before its final bus access; the NMI entry and JAM store none
+- [Phase 02]: The vector harness checks every opcode poll mark (4 for BRK, 1 for a three-cycle branch, N - 1 otherwise) and gives each JAM an edge and a stale mark of before + 12
+- [Phase 02]: Hosted run 39183525965: the six cpu.nmi tests and the poll-checked vectors are green on every leg; MSVC rejects (uint8_t)~CONSTANT as C4310
+- [Phase 02]: HALT_RUN_CYCLES = 2 is the one named fitted HALT constant: /HALT falls at the first cycle boundary at or after the request, c0 and c1 run, c2 is frozen for ceil((until - fall)/4) whole 4-tick cycles
+- [Phase 02]: TIA WSYNC releases RDY at the first tick after the write's data with (tick + tia_phase) mod 456 = 0; a held read runs in the first cycle starting at or after it, at its own decoded length
+- [Phase 02]: The NMI latch is a cycle's data tick (4 fast, 5 slow), a held cycle's own tick 4; held cycles carry their own phi2 index
+- [Phase 02]: abi.undefined allows __ImageBase on Windows x64: MSVC addresses cpu.c's switch jump table through it now cpu.c is in the archive
+- [Phase 02]: Hosted run 39185135366: the 16 bus cases and the archive with the CPU are green on every leg; be32 took 32 s
+- [Phase 02]: RIOT timer is computed on read from N, an interval shift and the writing cycle's phi2; power-on reads as 256 written on 1024T, so $FF at p = 1
+- [Phase 02]: PA7's edge detector input is the level XOR the rising-edge select, and the flag sets when it falls; marked as a model in docs/hardware/riot.md
+- [Phase 02]: Cachegrind: split archive 48.449 vs one translation unit 48.299 Ir per emulated cycle (0.31 %), under 5 %, so the core stays split
+- [Phase 02]: Hosted run 39186310654: the 16 riot-labelled tests are green on every leg; be32 took 31 s
+- [Phase 02]: The cartdb key's part is its slice position; a layout row lists slice sizes and each slice's part, so a reloaded chip appears twice
+- [Phase 02]: src/cartdb.c's header spans lines 2-3: clang-format 21 reflows the one-line form; tables are 19,284 B of const data
+- [Phase 02]: hygiene.no_float removes an SPDX licence expression up to the first character no expression uses, so text after */ is still scanned
+- [Phase 02]: Hosted run 39187517812: cart.sha1.fips and policy.cartdb_generated are green on every leg; be32 took 48 s, the hygiene job 43 s with its fetch
+- [Phase 02]: API version 2 publishes muhtari_probe; v1.c checks its version as a floor, v2.c names every new name and value, and abi.api_v2 runs on ci, wasm32 and nofp
+- [Phase 02]: Probe geometry: linear 4-48 KiB in 4 KiB steps or 64 KiB; SuperGame 32 KiB-1 MiB in 16 KiB steps; SG9 (2^n + 1) x 16 KiB; every MAME 7800 list size fits
+- [Phase 02]: The v4 block replaces the cart type only when it validates and its board fits the body; otherwise HEADER_V4_IGNORED
+- [Phase 02]: A core string constant is a static const byte array: MSVC on ARM64 exports a literal as an external COMDAT name (run 39189208610)
+- [Phase 02]: Hosted run 39189405561: the probe and API version 2 are green on every leg; be32 took 41 s
+- [Phase 02]: A header hash match reports source hash; the entry's region applies only when TV bit 2 (multi-region) leaves the header naming none
+- [Phase 02]: The half-swapped pass runs only for a 128 KiB miss and only an Activision entry may match it
+- [Phase 02]: The leak check compares full 20-byte rows and every row's 8-byte prefix against src/cartdb.c
+- [Phase 02]: The loader identifies before it allocates; struct muhtari__cart keeps the ROM pointer and the loaded muhtari_cart_info, whose rom_size is the allocation's size
+- [Phase 02]: The fuzz preset builds every object with fuzzer-no-link coverage under ASan and UBSan (632 counters); the replay takes files, so tests/fuzz/tests.cmake globs the regressions at configure time
+- [Phase 02]: Container fuzz run: 32,253 runs in 61 s, 528 exec/s, cov 173 to 245, corpus 18 to 85 units, no crash; hosted run 39191834717 green on every leg
+- [Phase 02]: Plan 12: host/status_text.c holds the English; muhtari__status_text gives "unsupported board" and the runner appends the board name
+- [Phase 02]: Plan 12: --help prints the exit code as %2d so 77 refused aligns and rows 0-2 stay byte-identical
+- [Phase 02]: Plan 13: Hosted run 39193868744: the 7800basic sample builds byte-identical on all six build legs, asan, be32 and wasm32, so no leg moves to its own preset; be32 took 39 s
+- [Phase 02]: Plan 13: MUHTARI_TESTS OFF registers no test; the bench preset, the perf gate and bench-wasm32 use it so their configure needs no sample tool
+- [Phase 02]: Plan 13: muhtari-run-testdb links the runner's sources and the core's objects with tests/cart/test_cartdb.c; never installed
+- [Phase 02]: Plan 14: the checkout's GIT_HTTP_LOW_SPEED_TIME is 240 s, the fetch's 60 s; GitHub sends nothing for 75 to 80 s while it packs the 6502/v1 blobs
+- [Phase 02]: Plan 14: Hosted nightly run 39195320935: all 2,560,000 vectors and the loader fuzz target are green; vectors-full 1 min 43 s (fetch 83 s), loader-fuzz 1 min 30 s
+- [Phase 02]: Plan 15: the firmware scan strips an A78 header with file(DOWNLOAD file:// RANGE_START 128), the one CMake call that copies a byte range with NULs, and makes its own temporary directory outside every zip's directory
+- [Phase 02]: Plan 16: No be32 flip: the hosted be32 job's slowest of 13 runs is 45 s (run 39198577488), so hash-equality keeps seven files
+- [Phase 02]: Plan 16: Timeouts measured from 13 ci.yml and 10 to 17 nightly.yml runs; a job that fetches or installs takes the 5-minute network-bound floor; nightly vectors-full is 8 min, the fetch TIMEOUT 220 s plus 2 x 118 s
+- [Phase 02]: Plan 16: CTest TIMEOUTs are twice the slowest time over the lane's scale; the firmware scans stay provisional with 9 samples
+- [Phase 02]: Plan 16: workflow.test_gate_timeout is 4: twice the slowest clean local gate, 1.82 s
+- [Phase 02]: Plan 16: The ship title is feat: the CPU matches the public 6502 vectors, with the 7800 bus, RIOT and cartridge probing (check-title.sh exit 0); probe PR #9 closed unmerged
+- [Phase 02]: Review fix round 1 fixed WR-02 to WR-04. The bus takes one HALT window and one NMI edge at a time and ignores a second while one is in flight; a step on a jammed CPU reads $FFFF once, so time keeps moving. Phase 3's MARIA and run loop build on both (docs/hardware/bus.md, docs/hardware/sally.md, JAM). WR-01 and IN-01 to IN-03 wait in the 2026-10-19 todo; one code-review fix round is left in this phase
+- [Phase 02]: The re-review of fix round 1 (2cca8b3) found no blocker. Its new WR-01 (the bus entry points cannot say a request was ignored), WR-02 (a test seed) and IN-01 wait in the MARIA and run-loop todo for phase 3, so one code-review fix round is still left. The re-verification passed 5/5 with a fresh covered digest
+- [Phase 02]: Fix round 2, the last one rule 7 allows, fixed the re-review's WR-01 (62b6bdc): `muhtari__bus_request_halt` and `muhtari__bus_raise_nmi` return 1 when they take a request and 0 when they ignore it, and MARIA checks it in phase 3. WR-02 is skipped as a test seed; it and IN-01 wait in the MARIA and run-loop todo. No code-review fix round is left in this phase
+- [Phase 02]: The third review (4f8de62) found no blocker. WR-05: `muhtari__bus_raise_nmi` can return 1 for an edge the latch later drops, so its 1 means "queued", not "will be taken". It, IN-04 and the IN-05 seed wait in the MARIA and run-loop todo; phase 3 settles what the 1 promises. The re-verification passed 5/5 with the same 139 covered files
 
 ### Pending Todos
 
 - [2026-10-16] [ci] Promote the wasm32 lane into CI required — [todo file](.planning/todos/pending/2026-10-16-promote-the-wasm32-lane-into-ci-required.md)
 - [2026-10-16] [ci] Arm the instructions-per-frame gate — [todo file](.planning/todos/pending/2026-10-16-arm-the-instructions-per-frame-gate.md)
-- [2026-10-16] [release] Add the release firmware scan with the first ROM code — [todo file](.planning/todos/pending/2026-10-16-add-the-release-firmware-scan-with-the-first-rom-code.md)
 - [2026-10-16] [ci] Limit release rehearsals to pushes that change release inputs — [todo file](.planning/todos/pending/2026-10-16-limit-release-rehearsals-to-pushes-that-change-release-inputs.md)
 - [2026-10-16] [ci] Close the re-review's findings on the Dependabot gate and the publish checks — [todo file](.planning/todos/pending/2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md)
+- [2026-10-19] [ci] Close the phase 2 review seeds on the nightly filter and the ROM tables — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md)
+- [2026-10-19] [core] Close the phase 2 re-review findings when MARIA and the run loop land — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md)
 
 ### Ship step (phase 01)
 
 - Shipped 2026-10-16 as PR #7, titled `feat: a test frame in RetroArch from the library, runner and libretro core`
   so release-please cuts 0.1.0 (`scripts/check-title.sh` exit 0 on the title and body). This note is the head
   commit the pull request opened on, so CI and the Release rehearsal run once and no CI-skip commit is needed.
-- Before the merge (01-UAT.md test 4): the pull request's own Release run (ci, rehearsal, install-line, cleanup)
-  is green on its head commit, because no Release run had exercised publish.sh since the review fixes and the
-  rehearsal is not a required check. The owner then runs `gh pr merge 7 --auto --squash`; agent merges are
-  blocked.
-- After the merge (01-UAT.md test 3): the push Release run on main is green (release pull request auto-merged,
-  v0.1.0 with 19 verified assets, install-line-latest). Each run URL is posted on PR #7 once confirmed; a step
-  that finds one missing confirms it first.
+- Before the merge (01-UAT.md test 4), confirmed: the pull request's own Release run 38975022865 (ci,
+  rehearsal, install-line, cleanup) was green on its head commit; evidence on PR #7, comment 6225897054. The owner
+  merged it on 2026-10-16 as f36c884.
+- After the merge (01-UAT.md test 3), confirmed 2026-10-16: release pull request #8 merged itself as 952fce9,
+  and its Release run 38983378877 published v0.1.0 as latest with 19 assets and passed install-line-latest.
+  `shasum -a 256 -c SHA256SUMS` and `gh attestation verify` (signer workflow, `refs/heads/main`) passed on all 18
+  zips; evidence on PR #7, comment 6226988821.
 - The `main` ruleset requiring `CI required` is live and `scripts/apply-repo-settings.sh --check` reports no
   drift.
 
 ### Blockers/Concerns
 
-None yet.
+- [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
+- [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
+  pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
 
 ## Deferred Items
 
@@ -182,6 +261,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-16T22:18:31.291Z
-Stopped at: Phase 1 shipped as PR #7; merge after its Release run is green, then /gsd-discuss-phase 2
+Last session: 2026-10-19T20:30:00.000Z
+Stopped at: Phase 02 re-verified after fix round 2 (passed); next /gsd-ship 2
 Resume file: None

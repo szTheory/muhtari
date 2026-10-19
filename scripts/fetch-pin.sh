@@ -6,8 +6,10 @@
 # Fault prevented: an unpinned or tampered download reaching a build. NAME is a
 # row of pins.txt ("name version url sha256"; $PINS names another file). The
 # download lands in a temporary directory; only when its SHA-256 equals the
-# row's is it unpacked into DEST (.tar.xz or .tar.gz, top directory stripped)
-# or copied there. Prints DEST. Exit status 1 on any failure, 2 on misuse.
+# row's is it unpacked into DEST (.tar.xz, .tar.gz or .zip, top directory
+# stripped) or copied there. A zip is read by CMake, because Git Bash's tar
+# cannot read one, and must hold exactly one top-level directory. Prints DEST.
+# Exit status 1 on any failure, 2 on misuse.
 set -eu
 set -f
 
@@ -47,6 +49,19 @@ fi
 mkdir -p "$dest"
 case $file in
   *.tar.xz | *.tar.gz) tar -xf "$file" -C "$dest" --strip-components=1 ;;
+  *.zip)
+    # Globbing is off, so find names the top directory. The relative path
+    # keeps an MSYS path away from a native cmake on Windows.
+    mkdir "$tmp/x"
+    (cd "$tmp/x" && ${CMAKE:-cmake} -E tar xf "../${file##*/}")
+    tops=$(find "$tmp/x" -mindepth 1 -maxdepth 1)
+    top=$(find "$tmp/x" -mindepth 1 -maxdepth 1 -type d)
+    if [ -z "$top" ] || [ "$tops" != "$top" ] || [ "$(printf '%s\n' "$top" | wc -l)" -ne 1 ]; then
+      echo "fetch-pin: $name: the zip must hold exactly one top-level directory" >&2
+      exit 1
+    fi
+    cp -R "$top/." "$dest/"
+    ;;
   *) cp "$file" "$dest/" ;;
 esac
 echo "$dest"

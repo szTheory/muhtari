@@ -2,7 +2,7 @@
 title: "Engineering: C rules, tests, CI, release, repo settings and quality loops"
 summary: "Build, test, CI, release, repository, triage, performance and documentation decisions for muhtari, with mutable facts re-verified on 2026-10-15."
 read_when: "Before creating or changing CMake files, presets, tests, workflows, repository settings, the release pipeline, quality gates or engineering docs."
-updated: 2026-10-16
+updated: 2026-10-19
 ---
 
 # Engineering: C rules, tests, CI, release, repo settings and quality loops
@@ -114,12 +114,12 @@ Warnings (GCC, Clang): `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-co
 - **Property tests. Rec** in-repo `tests/prop.h` (~60 lines): splitmix64 seeded per test; a failure prints seed, case and a one-line repro; 100 cases per PR, 10,000 nightly with a random printed seed; size-halving shrink. Properties: `run(N)` then `run(M)` equals `run(N+M)`; save → load → continue equals uninterrupted; state round trip is byte-identical; a rejected load or state leaves the instance unchanged; `probe` is pure; two instances never interact; input applies only at the next VBLANK start — **Alt** `theft` v0.4.5 (ISC, last release 2019, `fork`/`waitpid` in `src/theft_run.c`, so no MSVC legs) [ENG.15] — **Flip** hand-minimising a property failure takes > 30 min twice.
 - **Fuzz corpus. Rec** seeds generated at build time by `tests/fuzz/seeds.c`; only minimised regressions committed (manifest rows); `tests/fuzz/**` ≤ 512 KiB, checked by hygiene — **Alt** commit evolved corpora (nesturbator's `tests/fuzz` is 9.0 MB) — **Flip** nightly coverage plateaus without an evolved corpus → keep it as a nightly artifact, still uncommitted.
 
-Fuzz targets, each an `LLVMFuzzerTestOneInput` plus a standalone replay `main` registered as `fuzz.regress.<target>` on all six legs (Apple clang has no libFuzzer [ENG.17]); nightly 60 s per target, clang-21 + ASan/UBSan, `-timeout=2 -max_len=65664` (64 KiB + 128-byte header, derived); crashes uploaded and minimised into `tests/fuzz/<target>/regress/`:
+Fuzz targets, each an `LLVMFuzzerTestOneInput` plus a standalone replay `main` registered as `fuzz.regress.<target>` on all six legs (Apple clang has no libFuzzer [ENG.17]); nightly 60 s per target, clang-21 + ASan/UBSan, `-timeout=2 -max_len=1048705` (`MUHTARI_IMAGE_SIZE_MAX`, 1 MiB + the 128-byte header, plus one, so no seed stops short of SuperGame geometry or the oversize check); crashes uploaded and minimised into `tests/fuzz/<target>/regress/`:
 | Target | Entry | Arrives with |
 |---|---|---|
-| `fuzz.a78` | `muhtari_probe` + `muhtari_load` (A78 v3/v4, headerless, 2600 images) | cartridge loader |
-| `fuzz.run` | random bytes as a 48 KiB linear cart, fast boot, 2 frames: no crash, UB or timeout | cartridge loader |
-| `fuzz.movie`, `fuzz.state`, `fuzz.patch` | runner movie parser; `muhtari_load_state` after a fixed load (validate before apply); a patch parser if one is ever added | movies; save states; that feature |
+| `loader` (`tests/fuzz/loader.c`; replay `fuzz.regress.loader`) | `muhtari_probe` + the internal load (A78 v3/v4, headerless, 2600 images) | phase 2 (landed) |
+| `run` | random bytes as a 48 KiB linear cart, fast boot, 2 frames: no crash, UB or timeout | cartridge loader |
+| `movie`, `state`, `patch` | runner movie parser; `muhtari_load_state` after a fixed load (validate before apply); a patch parser if one is ever added | movies; save states; that feature |
 
 ## 4. CI design
 Workflows: `ci.yml` (required), `nightly.yml`, `release.yml`, `digest.yml` (weekly, section 7), `dependabot-automerge.yml`.

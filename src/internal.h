@@ -25,9 +25,116 @@
 #define MUHTARI__PITCH_MIN 320u
 #define MUHTARI__PITCH_MAX 65536u
 
+/* SALLY's registers. P is held raw, as the stack and the vectors see it.
+   jammed is set by a JAM opcode; the CPU then runs no more instructions,
+   and each step makes one read of $FFFF.
+   poll_phi2 is the phi2 count at which the last instruction's deciding cycle
+   completed: an NMI latched at or before it is taken after that instruction
+   (docs/hardware/sally.md, NMI). */
+struct muhtari__cpu {
+    uint64_t poll_phi2;
+    uint16_t pc;
+    uint8_t a, x, y, s, p;
+    uint8_t jammed;
+};
+
+/* The bus's state (docs/hardware/bus.md). ticks counts MARIA clocks and
+   phi2 counts completed CPU cycles, held ones included. nmi_phi2 is the phi2
+   count of the cycle that latched an NMI edge, 0 when none is latched.
+   next_deadline is the earliest tick at which a pending event needs the
+   bus's slow path; UINT64_MAX when none is pending. open_bus is the last
+   byte on the data bus; inptctrl is INPTCTRL's four bits; halt_gate_writes
+   counts unlocked writes in the TIA range, up to 2. rdy_release is the
+   tick from which a held read may run, 0 while RDY is high. A HALT request
+   waits in halt_at and halt_until until /HALT falls; halt_lost is then the
+   number of cycles the CPU loses, and halt_cycles counts the cycles run
+   since the fall, through halt_stage. nmi_at is a raised NMI edge not yet
+   latched, while nmi_pending is set. */
+struct muhtari__bus {
+    uint64_t phi2;
+    uint64_t nmi_phi2;
+    uint64_t ticks;
+    uint64_t next_deadline;
+    uint64_t rdy_release;
+    uint64_t halt_at;
+    uint64_t halt_until;
+    uint64_t halt_lost;
+    uint64_t nmi_at;
+    uint8_t open_bus;
+    uint8_t inptctrl;
+    uint8_t halt_gate_writes;
+    uint8_t halt_stage;
+    uint8_t halt_cycles;
+    uint8_t nmi_pending;
+};
+
+/* The 6532's RAM: 128 bytes (docs/hardware/riot.md, RAM). */
+#define MUHTARI__RIOT_RAM_SIZE 128u
+
+/* The RIOT's state (docs/hardware/riot.md). The timer is not counted: it is
+   the value timer_n written in the cycle whose phi2 count is timer_phi2, on
+   an interval of 1 << timer_shift cycles, and every read computes INTIM from
+   the cycles since. timer_cleared records a timer access that cleared the
+   flag after it set. pa7_flag is PA7's edge flag, pa7_positive the active
+   edge, and pa7_detect the edge detector's input as last seen. */
+struct muhtari__riot {
+    uint64_t timer_phi2;
+    uint16_t timer_n;
+    uint8_t timer_shift;
+    uint8_t timer_cleared;
+    uint8_t ora, ddra, orb, ddrb;
+    uint8_t pa7_flag;
+    uint8_t pa7_positive;
+    uint8_t pa7_detect;
+    uint8_t ram[MUHTARI__RIOT_RAM_SIZE];
+};
+
+/* INPTCTRL's bits (docs/hardware/bus.md, INPTCTRL). */
+#define MUHTARI__INPTCTRL_LOCK 0x01u
+#define MUHTARI__INPTCTRL_MEN 0x02u
+#define MUHTARI__INPTCTRL_EXT 0x04u
+#define MUHTARI__INPTCTRL_TIA_EN 0x08u
+#define MUHTARI__INPTCTRL_BITS 0x0Fu
+
+/* The 4 KiB of system RAM at $1800-$27FF (docs/hardware/bus.md, Memory map). */
+#define MUHTARI__RAM_BASE 0x1800u
+#define MUHTARI__RAM_SIZE 0x1000u
+
+/* RAM fill patterns at power-on. */
+#define MUHTARI__RAM_FILL_ZERO 0u
+
+/* The ANE and LXA constant three real SALLYs show, the default profile's
+   (docs/hardware/sally.md, Unstable opcodes). */
+#define MUHTARI__ANE_LXA_SALLY 0x00u
+
+/* The machine profile: what differs between consoles of one model.
+   ane_lxa_constant is the value ANE and LXA OR into A (docs/hardware/sally.md,
+   Unstable opcodes); riot_orb_power_on is the RIOT's port B output register
+   at power-on; ram_fill is a MUHTARI__RAM_FILL_* pattern; tia_phase is the
+   TIA line's offset at power-on, in ticks. */
+struct muhtari__profile {
+    uint8_t ane_lxa_constant;
+    uint8_t riot_orb_power_on;
+    uint8_t ram_fill;
+    uint16_t tia_phase;
+};
+
+/* The loaded cartridge: rom holds the info.rom_size bytes the board maps,
+   allocated through the instance's allocator; NULL while none is loaded. */
+struct muhtari__cart {
+    uint8_t *rom;
+    muhtari_cart_info info;
+};
+
 struct muhtari {
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
+    struct muhtari__cpu cpu;
+    struct muhtari__bus bus;
+    struct muhtari__riot riot;
+    struct muhtari__profile profile;
+    struct muhtari__cart cart;
+    uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
 };
 
 /* The size of each struct as first released: the end of its last field. A
@@ -40,6 +147,8 @@ struct muhtari {
     ((uint32_t)(offsetof(muhtari_info, max_audio_samples) + sizeof(uint32_t)))
 #define MUHTARI__FRAME_SIZE_FIRST                                                                  \
     ((uint32_t)(offsetof(muhtari_frame, audio_count) + sizeof(uint32_t)))
+#define MUHTARI__CART_INFO_SIZE_FIRST                                                              \
+    ((uint32_t)(offsetof(muhtari_cart_info, title) + sizeof(((muhtari_cart_info *)0)->title)))
 
 /* The public layouts, pinned on every target. P is the pointer size; every
    field sits where the previous one ends, except that muhtari_config's
@@ -85,11 +194,107 @@ _Static_assert(offsetof(muhtari_frame, audio_capacity) == 8 + 2 * MUHTARI__P,
 _Static_assert(offsetof(muhtari_frame, audio_count) == 12 + 2 * MUHTARI__P, "frame.audio_count");
 _Static_assert(sizeof(muhtari_frame) == 16 + 2 * MUHTARI__P, "frame size");
 
+/* muhtari_cart_info is 26 uint32_t fields and the title: 140 bytes on every
+   target. */
+_Static_assert(offsetof(muhtari_cart_info, size) == 0, "cart_info.size");
+_Static_assert(offsetof(muhtari_cart_info, kind) == 4, "cart_info.kind");
+_Static_assert(offsetof(muhtari_cart_info, source) == 8, "cart_info.source");
+_Static_assert(offsetof(muhtari_cart_info, flags) == 12, "cart_info.flags");
+_Static_assert(offsetof(muhtari_cart_info, warnings) == 16, "cart_info.warnings");
+_Static_assert(offsetof(muhtari_cart_info, rom_size) == 20, "cart_info.rom_size");
+_Static_assert(offsetof(muhtari_cart_info, board) == 24, "cart_info.board");
+_Static_assert(offsetof(muhtari_cart_info, board_options) == 28, "cart_info.board_options");
+_Static_assert(offsetof(muhtari_cart_info, ram_size) == 32, "cart_info.ram_size");
+_Static_assert(offsetof(muhtari_cart_info, sound) == 36, "cart_info.sound");
+_Static_assert(offsetof(muhtari_cart_info, devices) == 40, "cart_info.devices");
+_Static_assert(offsetof(muhtari_cart_info, port1) == 44, "cart_info.port1");
+_Static_assert(offsetof(muhtari_cart_info, port2) == 48, "cart_info.port2");
+_Static_assert(offsetof(muhtari_cart_info, region) == 52, "cart_info.region");
+_Static_assert(offsetof(muhtari_cart_info, a78_version) == 56, "cart_info.a78_version");
+_Static_assert(offsetof(muhtari_cart_info, a78_rom_size) == 60, "cart_info.a78_rom_size");
+_Static_assert(offsetof(muhtari_cart_info, a78_cart_type) == 64, "cart_info.a78_cart_type");
+_Static_assert(offsetof(muhtari_cart_info, a78_port1) == 68, "cart_info.a78_port1");
+_Static_assert(offsetof(muhtari_cart_info, a78_port2) == 72, "cart_info.a78_port2");
+_Static_assert(offsetof(muhtari_cart_info, a78_tv) == 76, "cart_info.a78_tv");
+_Static_assert(offsetof(muhtari_cart_info, a78_save) == 80, "cart_info.a78_save");
+_Static_assert(offsetof(muhtari_cart_info, a78_xm) == 84, "cart_info.a78_xm");
+_Static_assert(offsetof(muhtari_cart_info, a78_mapper) == 88, "cart_info.a78_mapper");
+_Static_assert(offsetof(muhtari_cart_info, a78_mapper_options) == 92,
+               "cart_info.a78_mapper_options");
+_Static_assert(offsetof(muhtari_cart_info, a78_audio) == 96, "cart_info.a78_audio");
+_Static_assert(offsetof(muhtari_cart_info, a78_irq) == 100, "cart_info.a78_irq");
+_Static_assert(offsetof(muhtari_cart_info, title) == 104, "cart_info.title");
+_Static_assert(sizeof(muhtari_cart_info) == 140, "cart_info size");
+
 /* Returns OK when the size tag at s is at least first and every byte past
    ours is zero; ERR_STRUCT_SIZE otherwise. */
 muhtari_status muhtari__check_size(const void *s, uint32_t first, uint32_t ours);
 
+/* Writes min(caller size, ours) bytes of a fully built output struct whose
+   own size field already holds the caller's value. */
+void muhtari__write_out(void *out, const void *full, uint32_t ours);
+
+/* Identifies the n bytes at img against the cartridge tables given, which
+   muhtari_probe passes from src/cartdb.c and tests pass from their own list
+   (docs/hardware/cartridge.md). Fills *out, size field included, and returns
+   the status muhtari_probe returns; img may be NULL only when n is 0. */
+struct muhtari__cartdb_key;
+struct muhtari__cartdb_entry;
+struct muhtari__cartdb_layout;
+muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
+                                      const struct muhtari__cartdb_key *keys, uint32_t key_count,
+                                      const struct muhtari__cartdb_entry *entries,
+                                      uint32_t entry_count,
+                                      const struct muhtari__cartdb_layout *layouts,
+                                      uint32_t layout_count, const uint8_t (*prefix)[8],
+                                      uint32_t prefix_count, muhtari_cart_info *out);
+
+/* Loads the n bytes at image into m: the status is muhtari_probe's for the
+   same bytes. Every refusal returns before anything is allocated and leaves
+   m unchanged. On OK the mapped ROM is copied into one allocation of
+   rom_size bytes, replacing any cartridge loaded before; ERR_NO_MEMORY
+   leaves m unchanged. muhtari_destroy frees it (docs/hardware/cartridge.md,
+   Loading). */
+muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n);
+
 /* The test card's native colour at (x, y) in a frame h rows tall. */
 uint8_t muhtari__testcard_pixel(uint32_t x, uint32_t y, uint32_t h);
+
+/* One CPU bus cycle: a read or a write at addr. The CPU makes every access
+   through these two; the CPU test programs define their own. */
+uint8_t muhtari__bus_read(muhtari *m, uint16_t addr);
+void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v);
+
+/* The TIA as the bus sees it (src/tia.c): the byte a read of addr returns,
+   its undriven bits from the open-bus byte, and a write whose data reaches
+   the TIA at data_tick. */
+uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr);
+void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick);
+
+/* The RIOT as the bus sees it (src/riot.c): A9 selects its ports and timer
+   or its RAM, and A0-A6 the register or byte (docs/hardware/riot.md).
+   reset puts it in its RES state under m->profile. */
+uint8_t muhtari__riot_read(muhtari *m, uint16_t addr);
+void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v);
+void muhtari__riot_reset(muhtari *m);
+
+/* The entry points MARIA drives (docs/hardware/bus.md, HALT and NMI).
+   request_halt asks for HALT from at_tick until until_tick, and does nothing
+   until the HALT gate has counted two writes. raise_nmi raises an NMI edge
+   at at_tick, and does nothing while MEN = 0. Each takes one at a time: a
+   request while a window is waiting or /HALT is low, or an edge while an
+   earlier one is not yet latched, is ignored and the one in flight stands.
+   Each returns 1 when it takes the request and 0 when it ignores it. */
+int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
+int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
+
+/* Runs exactly one instruction, then the NMI entry when one is due. On a
+   jammed CPU it makes one read of $FFFF instead, and changes nothing else
+   (docs/hardware/sally.md, JAM). */
+void muhtari__cpu_step(muhtari *m);
+
+/* Puts the CPU, the bus, RAM and the RIOT in their power-on state under
+   m->profile. */
+void muhtari__power_on(muhtari *m);
 
 #endif /* MUHTARI_INTERNAL_H */

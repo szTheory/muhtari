@@ -2,12 +2,16 @@
 # Sorted; configure fails when this differs from what is registered.
 ci.classify	hygiene
 hygiene.analyzer	hygiene
+hygiene.firmware_scan	hygiene
+hygiene.firmware_scan.self_test	hygiene
 hygiene.format	hygiene
 hygiene.no_float	hygiene
 hygiene.no_float.self_test	hygiene
 hygiene.timeout_comments	hygiene
 hygiene.timeout_comments.self_test	hygiene
 hygiene.tree	hygiene
+policy.cartdb_generated	hygiene,policy
+policy.cartdb_generated.self_test	hygiene,policy
 policy.ci_required	hygiene,policy
 policy.ci_required.self_test	hygiene,policy
 policy.dependabot	hygiene,policy
@@ -17,4 +21,6 @@ policy.pins.self_test	hygiene,policy
 policy.publish_ref	hygiene,policy
 policy.publish_set	hygiene,policy
 policy.publish_set.self_test	hygiene,policy
+policy.rom_hash_coverage	hygiene,policy
+policy.rom_hash_coverage.self_test	hygiene,policy
 policy.title	hygiene,policy

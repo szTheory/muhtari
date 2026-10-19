@@ -2,7 +2,7 @@
 title: "Atari 7800 system: clocks, line timeline, SALLY, memory map, INPTCTRL, RIOT and boot"
 summary: "Tick-level system facts with sources and disagreements: crystals and the one-MARIA-clock tick, the per-line event timeline, SALLY HALT/RDY/NMI rules, the decoded memory map with slow cycles and open bus, INPTCTRL, the 6532 RIOT, the BIOS boot paths and the HLE hand-off state."
 read_when: "Before designing or changing the time base, bus, CPU wrapper, RIOT, power-on profile, boot/HLE path or any timing that crosses chips."
-updated: 2026-10-15
+updated: 2026-10-19
 ---
 
 # Atari 7800 system timing and boot
@@ -85,108 +85,69 @@ on hardware puts MSTAT's edge or the first pixel elsewhere.
 
 ## 3. SALLY (6502C)
 
-- NMOS 6502 with decimal mode and NMOS decimal flags (`BCD_EN=1`, "NMOS 6502 / Sally decimal mode" [SYS.07]), plus
-  HALT (pin 35) from MARIA pin 40 with a 4.7 kΩ pull-up; NMI from MARIA pin 2; RDY (pin 2) = MARIA READY wire-ANDed
-  with TIA RDY [SYS.06]. ANE's magic constant reads $00 on most consoles and drifts on one NCR part (measured [SYS.24]).
-- **HALT** removes the core's phase enables, so reads and writes stop alike; address lines are released and R/W floats
-  high [SYS.06][SYS.19]. /HALT changes only in φ1, ~70 ns after φ2 falls; SALLY samples it at each φ2 start and freezes
-  from the second sample: the cycle beginning at the fall (c0) and the next (c1) run, c2 waits mid-cycle for m cycles
-  (m = whole cycles /HALT stays low); release takes the same two samples, so the CPU loses exactly m cycles and c2 then
-  completes. The two-cycle latency is fitted, not measured; a 46-cycle loop that must count 556 pins in = out
-  [SYS.06][SYS.08]. /HALT was measured low 2.25 µs = 16.1 ticks [SYS.06] = the 16 ticks lost per empty line [SYS.18].
-- **Alignment arithmetic** (derived): with g = grid position mod 4 against t, a fast cycle in flight gives a wait of
-  (g − 28) mod 4 ∈ {0, 2} or {1, 3}, alternating line by line because a line is 113.5 cycles — the Software Guide's
-  "every other scanline"; a slow cycle in flight allows up to 5 [SYS.01].
-- **C4 Slow cycles** (MiSTer's divider [SYS.10], derived): a TIA/RIOT cycle's φ2 and the next cycle's φ1 last 3 ticks
-  instead of 2 (MARIA's divider, not the TIA clock), so k slow cycles add exactly 2k ticks. Recommendation: a 6-tick
-  bus call whose data and φ2 fall come at tick 5. Strongest alternative: A7800Hawk's access at tick 4, then 2 idle
-  ticks [SYS.16]. Would change if: a RIOT-timer or MSTAT edge diagnostic separates the two.
-- **RDY** holds read cycles only; a read-modify-write straddling it completes both writes [SYS.06][SYS.07]. Sources:
-  a write to MARIA WSYNC ($24 and mirrors) drives RDY low until t 0 [SYS.10]; a write to TIA WSYNC ($02) holds until
-  TIA's own HBLANK, and TIA's 228-colour-clock line (456 ticks) slides 2 ticks per MARIA line [SYS.20][SYS.11]
-  (derived). The held cycle runs at the fast rate because its address is the next opcode's [SYS.20].
-- **C5 RDY after a write.** Recommendation: hold the first read after the write (`STA WSYNC` stalls on the next opcode
-  fetch), the documented NMOS rule. Strongest alternative: MiSTer's netlist note that the cycle right after a write
-  cannot be held either, so the stall lands one cycle later [SYS.07]. Would change if: a hardware WSYNC-then-store
-  diagnostic shows the store 4 ticks (2 pixels) earlier.
-- **HALT gate.** HALT reaches SALLY only after two writes to INPTCTRL, data ignored [SYS.01]; MiSTer counts every
-  unlocked write cycle in the TIA chip-select range, saturating at 2, so RMW dummy writes count [SYS.11].
-- **NMI** (MARIA's DLI only, off while INPTCTRL bit 1 = 0 [SYS.10]) is an edge latched at the end of every φ2, also
-  under RDY, and polled in φ2 of the last cycle (T2 for a branch): an edge present by the end of the penultimate cycle
-  is taken after this instruction, a later one after the next; a taken branch without page cross polls early; NMI
-  before T5 φ2 of BRK/IRQ takes its vector [SYS.07]. Under WSYNC the handler starts after t 0 (DLI "pushed" [SYS.20]).
-- **C6 DLI timing.** Recommendation: MiSTer's — NMI low from the second φ1 after /HALT rises, two cycles wide [SYS.08].
-  Strongest alternative: one tick after DMA shutdown [SYS.01][SYS.16]. Would change if: a diagnostic timing the
-  handler's first write against the line fits the one-tick model.
-- **IRQ:** no on-board source — the RIOT IRQ output is unconnected in MAME and MiSTer [SYS.12][SYS.11]; the cart edge
-  has IRQ (pin 31, unverified [SYS.28]), which MiSTer drives only from a cart POKEY, as an option [SYS.11].
-- **Reset:** RES only at power-on (derived); the Reset button is SWCHB bit 0, read by software [SYS.01]; NMOS RES
-  leaves D undefined, and every BIOS starts with SEI, CLD [SYS.03][SYS.04][SYS.17].
-- **Changes to the NES sibling's CPU** (nesturbator `src/cpu.c`, `e4c75a059d4d` [SYS.31]): NMOS decimal ADC/SBC (its
-  ADC ignores D); NMI from a per-cycle edge sample with the penultimate, branch and hijack rules (it takes a flag at
-  the next boundary); HALT freezes any cycle, so DMA cannot live only in the read call; 4- or 6-tick cycles by address
-  instead of 24 fixed sub-ticks; RDY with two sources; ANE/LXA constant as a profile field; drop the DMC store note.
+The facts graduated in phase 2: `docs/hardware/sally.md` (registers, cycle order, NMOS decimal, unofficial and
+unstable opcodes, JAM, NMI polling) and `docs/hardware/bus.md` (slow cycles, RDY, the HALT gate and window, the NMI
+latch). Those pages cite this section's sources [SYS.01][SYS.06][SYS.07][SYS.08][SYS.10][SYS.11][SYS.16][SYS.19]
+[SYS.20][SYS.24]. The choice lines stay here:
+
+- **HALT latency** (built as fitted): c0 and c1 run, c2 waits m whole cycles; fitted to MiSTer's 46-cycle loop that
+  must count 556, not measured [SYS.06][SYS.08]. /HALT measured low 2.25 µs = 16.1 ticks [SYS.06], the 16 ticks lost
+  per empty line [SYS.18].
+- **C4 Slow cycles** (built): a TIA/RIOT cycle is a 6-tick bus call whose data and φ2 fall come at tick 5, so k slow
+  cycles add 2k ticks [SYS.10]. Strongest alternative: A7800Hawk's access at tick 4, then 2 idle ticks [SYS.16].
+  Would change if: a RIOT-timer or MSTAT edge diagnostic separates the two.
+- **C5 RDY after a write** (built): hold the first read after the write, the documented NMOS rule. Strongest
+  alternative: MiSTer's note that the cycle right after a write cannot be held either [SYS.07]. Would change if: a
+  hardware WSYNC-then-store diagnostic shows the store 4 ticks earlier.
+- **C6 DLI timing** (arrives with MARIA): MiSTer's NMI low from the second φ1 after /HALT rises, two cycles wide
+  [SYS.08]. Strongest alternative: one tick after DMA shutdown [SYS.01][SYS.16]. Would change if: a diagnostic timing
+  the handler's first write against the line fits the one-tick model.
+- **Not yet graduated** (MARIA, the cartridge devices and boot arrive in phase 3): the alignment arithmetic, a fast
+  cycle in flight giving a HALT wait of (g − 28) mod 4 ∈ {0, 2} or {1, 3} alternating by line, up to 5 after a slow
+  one (derived [SYS.01]); MARIA WSYNC ($24) low until t 0 [SYS.10]; the cart edge's IRQ (pin 31, unverified
+  [SYS.28]), driven by MiSTer only from a cart POKEY [SYS.11]; RES only at power-on, and every BIOS starts SEI, CLD
+  [SYS.03][SYS.04][SYS.17].
+- **Changes to the NES sibling's CPU** (szTheory/nesturbator `src/cpu.c` @9f9386c661f6 [SYS.31]): NMOS decimal
+  ADC/SBC; NMI from a per-cycle edge sample with the penultimate, branch and hijack rules; HALT freezes any cycle;
+  4- or 6-tick cycles by address; RDY with two sources; the ANE/LXA constant as a named default; no DMC store note.
 
 ## 4. Memory map (INPTCTRL bit 1 = 1)
 
-| Range (mirrors) | Device | Cycle | Reads return |
-|---|---|---|---|
-| $0000–$001F ($0100, $0200, $0300) | TIA; writes also hit INPTCTRL until locked | slow | TIA drives D7 (INPT0–5, CXBLPF) or D7–D6 (other collision regs); D5–D0 float [SYS.11] |
-| $0020–$003F (same mirrors) | MARIA | fast | MSTAT ($28) drives D7 only; every other address is open bus [SYS.10]; hardware: palette reads $00 or noise [SYS.26][SYS.19] |
-| $0040–$00FF, $0140–$01FF | RAM, = $2040–$20FF and $2140–$21FF | fast | RAM [SYS.01][SYS.10] |
-| $0240–$027F, $0340–$037F | nothing on the board (Guide: "shadowed") | fast | cart or open bus [SYS.10] |
-| $0280–$02FF ($0380–$03FF) | RIOT ports and timer (A9 = 1) | slow | RIOT, 8 bits |
-| $0480–$04FF ($0580–$05FF) | RIOT RAM, 128 B (A9 = 0), "don't use" | slow | RAM [SYS.01][SYS.12] |
-| $0400–$047F, $0500–$057F, $0600–$17FF | cartridge (POKEY $0450, XM $0400–$047F, POKEY $0800, HSC $1000–$17FF) | fast | cart or open bus |
-| $1800–$27FF | RAM, two 6116; $2000–$203F and $2100–$213F reachable only here | fast | RAM |
-| $2800–$2FFF | Guide: mirror of $2000–$27FF ("BIOS conflict"); MAME: page $27 only, some revisions, unreliable; MiSTer: undecoded; A7800Hawk: reads 0 or Summer Games deadlocks | fast | C8 |
-| $3000–$FFFF | cartridge (HSC ROM, bankset at $3000); BIOS on A15 = 1 while INPTCTRL bit 2 = 0 | fast | signature $FF80–$FFF7, $FFF8 region, $FFF9 start page, vectors [SYS.01] |
+The decode with MEN = 1 and MEN = 0, the slow cycles and the open-bus byte graduated to `docs/hardware/bus.md`
+(Memory map, Slow cycles, Open bus) [SYS.01][SYS.10][SYS.11]. The choice lines and the facts that wait for MARIA and
+the cartridge stay here:
 
-- MEN = 0 (power-on, 2600 mode): the 2600 decode — A12 = 0 ∧ A7 = 0 TIA, A12 = 0 ∧ A7 = 1 RIOT, else cart; no system
-  RAM; every cycle slow [SYS.10]. While MARIA drives the bus, TIA, RIOT and MARIA are not selected [SYS.10]; hardware
-  returns "chaotic data" there [SYS.19].
-- With the BIOS mapped the cart sees A12, A14 and A15 low (OpenBIOS author's note [SYS.17]); MiSTer mirrors the
-  BIOS over $8000–$FFFF, MAME maps it at $C000–$FFFF [SYS.11][SYS.12].
-- **C7 Open bus.** Recommendation: one data-bus byte updated by every CPU write, read and DMA fetch; undriven bits read
-  it (MiSTer [SYS.11]). It explains the $00 palette read after `LDA P0C1,Y` (operand high byte $00) (derived) and
-  Choplifter's sky [SYS.02]. Strongest alternative: zeros (MAME). Would change if: never — zeros break Choplifter.
-- **C8 $2800–$2FFF.** Recommendation: undecoded (cart or open bus). Strongest alternative: read 0 (A7800Hawk). Would
-  change if: Summer Games deadlocks on open bus, or the owner's console mirrors page $27 reliably.
+- **C7 Open bus** (built): one data-bus byte updated by every CPU read and write (DMA fetches join with MARIA);
+  undriven bits read it (MiSTer [SYS.11]), which explains Choplifter's sky [SYS.02]. Strongest alternative: zeros
+  (MAME). Would change if: never — zeros break Choplifter.
+- **C8 $2800–$2FFF** (built): undecoded, so cart or open bus. Strongest alternative: read 0 (A7800Hawk). Would change
+  if: Summer Games deadlocks on open bus, or the owner's console mirrors page $27 reliably. The Guide calls it a
+  mirror of $2000–$27FF ("BIOS conflict"); MAME maps page $27 only on some revisions [SYS.12].
+- **Not yet graduated:** MSTAT ($28) drives D7 only, and hardware palette reads give $00 or noise [SYS.10][SYS.26]
+  [SYS.19]; while MARIA drives the bus, TIA, RIOT and MARIA are not selected and hardware returns "chaotic data"
+  [SYS.10][SYS.19]; the cart map's POKEY $0450, XM $0400–$047F, POKEY $0800, HSC $1000–$17FF and the bankset at $3000;
+  the BIOS signature $FF80–$FFF7, $FFF8 region and $FFF9 start page [SYS.01]; with the BIOS mapped the cart sees A12,
+  A14 and A15 low [SYS.17], and MiSTer mirrors the BIOS over $8000–$FFFF where MAME maps it at $C000–$FFFF
+  [SYS.11][SYS.12].
 
 ## 5. INPTCTRL ($01, write-only)
 
-| Bit | 1 | 0 |
-|---|---|---|
-| 0 LOCK | ignore every later write until power-off | writable |
-| 1 MEN | MARIA, system RAM, 7800 decode, NMI, fast cycles | 2600 decode, every cycle slow, no NMI |
-| 2 EXT | cartridge at $8000–$FFFF | BIOS at $8000–$FFFF |
-| 3 TIA-EN | TIA video, two-button mode off | MARIA video |
-| 4–7 | ignored ($16 acts as $06) | |
-
-- A latch on the TIA chip-select [SYS.01][SYS.11][SYS.12]: until LOCK every TIA-range write also writes INPTCTRL and
-  the reverse [SYS.20]; reads return the TIA. Power-on $00: BIOS mapped, MARIA off, unlocked, HALT gate closed
-  [SYS.12][SYS.11][SYS.16]. The BIOS leaves 7800 carts unlocked ($16) [SYS.21]; its 2600 loader ends by writing $FD to
-  a TIA register (LOCK + EXT + TIA-EN) [SYS.17]. So a 7800 game writes bits 0–2 set ($07) before its first TIA write.
+The bits, the latch on the TIA chip select and the power-on $00 graduated to `docs/hardware/bus.md`, INPTCTRL, and
+the two-write HALT gate to its HALT section [SYS.01][SYS.11][SYS.12][SYS.20]. Kept here for boot (phase 3): the BIOS
+leaves 7800 carts unlocked ($16) [SYS.21], and its 2600 loader ends by writing $FD to a TIA register (LOCK + EXT +
+TIA-EN) [SYS.17].
 
 ## 6. RIOT 6532
 
-- Select CS1 = A7, RS = A9 (1 = ports/timer, 0 = RAM), A0–A6 inside [SYS.11][SYS.30]. $280 SWCHA (reads the pins),
-  $281 CTLSWA, $282 SWCHB (output bits read back ORB), $283 CTLSWB, $284 INTIM, $285 flags (D7 timer, D6 PA7, D5–D0 = 0;
-  read clears PA7); writes $294–$297 = TIM1T/8T/64T/1024T (+$08 enables IRQ, e.g. TIM64TI $29E); writes $284–$287 =
-  PA7 edge control (A0 polarity, A1 IRQ) [SYS.01][SYS.30].
-- Timer: after writing N it reads N − 1 at once and sets the flag at φ2 number N × interval + 1, then counts every φ2
-  from $FF and keeps going past later underflows (Beef Drop [SYS.19]); a timer read or write clears the flag, except a
-  read in the cycle it sets [SYS.30][SYS.05]. Clock = φ2: it counts through HALT and WSYNC (113 counts per WSYNC line,
-  DMA on or off, measured [SYS.26]), a count lasts 6 ticks on slow cycles [SYS.27]; games write it twice [SYS.18].
-- Ports: SWCHA bits 7–4 = P0 right/left/down/up, 3–0 = P1, low = pressed; SWCHB bit 0 Reset ("Game Start"), 1 Select,
-  3 Pause, 6/7 difficulty; PB2/PB4 driven low (CTLSWB $14, SWCHB $00) enable two-button pads [SYS.01][SYS.19].
-- 7800-mode RAM is decoded and slow; it fails when DMA halts the CPU mid-access and when code runs from it [SYS.05].
-  Recommendation: plain slow RAM. Strongest alternative: corrupt a halted access. Would change if: a title needs it.
-- **C9 Power-on.** The datasheet zeroes DDRA, ORA, DDRB, ORB, disables both interrupts and selects a falling PA7 edge;
-  the timer is not reset [SYS.30]. Hardware reports instead show CTLSWB = $14 without a SWCHB write leaving PB2/PB4
-  high, ORB acting as $FF [SYS.25][SYS.19], which One on One and Worm! need [SYS.02]; MAME at the pin resets ORB to 0
-  [SYS.14]. Recommendation: DDRA = DDRB = $00, ORA = $00, ORB = $FF, timer $FF at 1024T, flags clear. Strongest
-  alternative: datasheet zeros. Would change if: the owner's console reads SWCHB = $00 after power-on with CTLSWB = $FF.
+Graduated to `docs/hardware/riot.md`: the select lines, registers, timer, flags, PA7, ports, RAM, power-on and the
+unconnected IRQ [SYS.01][SYS.05][SYS.12][SYS.19][SYS.25][SYS.26][SYS.27][SYS.30]. The choice lines:
+
+- **RIOT RAM** (built): plain slow RAM. Strongest alternative: corrupt an access DMA halts, as hardware does
+  [SYS.05]. Would change if: a title needs it.
+- **C9 Power-on** (built): DDRA = DDRB = $00, ORA = $00, ORB = $FF (a profile field), timer $FF at 1024T, flags clear,
+  from hardware reports that CTLSWB = $14 without a SWCHB write leaves PB2/PB4 high [SYS.25][SYS.19], which One on One
+  and Worm! need [SYS.02]. Strongest alternative: the datasheet's zeros [SYS.30] (MAME resets ORB to 0 [SYS.14]).
+  Would change if: the owner's console reads SWCHB = $00 after power-on with CTLSWB = $FF.
 
 ## 7. Boot
 
@@ -293,4 +254,4 @@ cites was not found. (5) OpenBIOS loader provenance (section 7).
 | SYS.28 | T4 | consolemods 7800 connector pinouts, https://consolemods.org/wiki/Atari_7800:Connector_Pinouts | search snippet only (403) | cart IRQ pin (unverified) |
 | SYS.29 | T4 | AtariAge 86087 (slow cycles, POKEY pitch) https://forums.atariage.com/topic/86087-78006502-hardware-questions/ and 293982 (FE banking, snippet) | accessed 2026-10-15 | slow on every TIA/RIOT access; Decathlon (unverified) |
 | SYS.30 | T1 | MOS 6532 datasheet, http://archive.6502.org/datasheets/mos_6532_riot.pdf | accessed 2026-10-15 | RES, timer, ports, flags |
-| SYS.31 | T3 | nesturbator `src/cpu.c`, `.planning/preparation/ARCHITECTURE.md`, github.com/szTheory/nesturbator (MIT, sibling) | `e4c75a059d4d` | seed CPU, time-model precedent |
+| SYS.31 | T3 | nesturbator `src/cpu.c`, `.planning/preparation/ARCHITECTURE.md`, github.com/szTheory/nesturbator (MIT, sibling) | `9f9386c661f6` (published main, PROVENANCE §4) | seed CPU, time-model precedent |

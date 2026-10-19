@@ -286,7 +286,9 @@ RetroArch runs.
   records frames per second and percentiles but not RSS, which would measure wasmtime. It is trend data for the
   browser priority and never a gate.
 - **D-24:** One committed pins file lists every pinned download as `name version url sha256`: wasmtime, the
-  RetroArch DMG, and later the vector archive and the 7800basic package. A POSIX sh fetch script downloads by
+  RetroArch DMG, and later the vector archive and the 7800basic package. (Updated 2026-10-19: GitHub has no
+  per-directory archive, so "the vector archive" is the `sst-6502-v1` row, which pins the SingleStepTests commit and
+  the digest of `tests/vectors/6502-v1.sha256`; phase 2 D-11.) A POSIX sh fetch script downloads by
   name and verifies the SHA-256.
   - **Bump policy.** Take an LTS patch on a security advisory, and move to the next LTS before end of life. Each
     bump is one `ci:` pull request taking the digest from the release API.

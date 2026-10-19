@@ -2,7 +2,7 @@
 title: "Conformance: test ROMs, oracles, diagnostics and the compatibility ledger"
 summary: "Which 7800 test material muhtari may use under which licence, how each reports, how oracles are compared at VBLANK, what our own diagnostics measure, and how results ratchet in CI."
 read_when: "Admitting a test ROM or fixture, writing diagnostics or the runner's result protocol, building the ledger/scoreboard, an oracle job, or a CI tier."
-updated: 2026-10-15
+updated: 2026-10-19
 ---
 
 # Conformance, oracles and the compatibility ledger
@@ -25,7 +25,7 @@ Disposition key: **commit** (every byte explicitly permissive), **build-ci** (bu
 |---|---|---|---|---|---|
 | SingleStepTests 65x02 `6502/v1` [CF.08] | MIT → commit a sample | 256 files, 1,081,886,574 B, 10,000 tests each = 2,560,000 (tested); `2f6980a2d957` | per-cycle bus + final state of all 256 NMOS opcodes incl. decimal (99 of 199 sampled `69` tests have D set (tested)); not IRQ/NMI, RDY/HALT, slow cycles | JSON compare | PR sample, nightly full |
 | Bruce Clark decimal test [CF.10] | "This code is public domain." → commit (transcribe the 6502.org listing, never Klaus's GPL copy) | ~1 KB (derived) | all ADC/SBC decimal cases incl. invalid BCD and NMOS N/V/Z | `ERROR` byte: 0 pass, 1 fail | PR |
-| Klaus Dormann functional test [CF.09] | GPL-3.0 (repo LICENSE) → fetch | `6502_functional_test.bin` 65,536 B; `7954e2dbb49c` | documented opcodes and modes; its decimal test is Bruce Clark's code plus GPL-3 additions | trap loop (PC repeats); success address from its listing (unverified) | nightly, optional |
+| Klaus Dormann functional test [CF.09] | GPL-3.0 (repo LICENSE) → dropped (2026-10-19) | — | dropped because its pass address is only in its GPL listing, which may not be opened (PROVENANCE 1), and SST's 2,560,000 vectors plus Bruce Clark's test already cover every opcode and decimal mode; revisit only if the nightly misses a defect a sequence test would catch | — | none |
 | muhtari diagnostics (section 4) | MIT → commit source and bytes | 4–32 KB each | MARIA/SALLY/RIOT timing | RAM mailbox + screen | PR |
 | 7800OpenBIOS minus KiloParsec [CF.04] | BIOS asm CC0; KiloParsec all-rights-reserved, removed; draws the Atari Fuji logo → build-ci only, never commit or package (trademark caution [CF.31]) | 16,384 B; `b8bc745a8744` | BIOS boot path, cart-type check, hand-off with no Atari code | none (cart starts) | PR |
 | 7800basic v0.41 samples [CF.01][CF.02] | compiler GPL-2 (tool only); generated asm CC0; includes mostly CC0, but `lzsa1compression.asm` is BSL-1.0 and `rmtplayer.asm`, `macro.h` state no licence [CF.31]; sample code, art and music unstated → build-ci, hashes only | 35 in `sizes.ref`, 32,896–131,200 B; tag `03aebb85206f` | boards (headers, tested): linear 32/48 K, POKEY@$450 32/48 K, SuperGame+RAM 128 K, +POKEY@$450, Banksets 64 K; controller bytes all say joystick, only `hiscoretable` sets a save device (SaveKey) | nothing → frame/audio-hash predicates | PR |
@@ -151,7 +151,7 @@ The runner peeks at each VBLANK start, stops at status $00 or a frame cap (cap =
 |---|---|---|---|
 | Per PR × 6 (ubuntu x64/arm64, macOS arm64/x64, Windows x64/arm64) | units; SST sample; Bruce Clark; diagnostics (committed bytes); OpenBIOS built from the pin, then booted; 7800basic samples built on each leg + ROM SHA-256 pins + frame/audio hashes; fuzz-corpus replay | +1–2 per leg over the build baseline (precedent: slowest leg 679 s) | sample build 12 s (tested, M-series); ~13 MB downloads; ~28,800 emulated frames at an assumed ≥ 2,000 fps ≈ 15 s (hypothesis) |
 | Per PR × 1 (Linux) | diagnostic rebuild-and-compare; ratchet; doc freshness | < 1 | — |
-| Nightly | SST full (~190 MB transfer by precedent); Klaus (fetch); a7800 differential over samples + diagnostics; fuzz 2 × 60 s; big-endian qemu; v4: Verilator | 10–25 | a7800 4.9–6.4× real time in emulation (tested); apt ~1 min (derived) |
+| Nightly | SST full (~190 MB transfer by precedent); a7800 differential over samples + diagnostics; fuzz 2 × 60 s; big-endian qemu; v4: Verilator | 10–25 | a7800 4.9–6.4× real time in emulation (tested); apt ~1 min (derived) |
 | Local | library preset; real-BIOS boots; Atari diagnostic cart; forum test ROMs; upstream MAME, BizHawk, test7800; RetroArch session; hardware sessions | owner time | — |
 
 **Measure before gating:** a new lane runs report-only (outside `CI required`) for its first 10 runs on main. It then gets a timeout of 2× its slowest of the last 40 successful runs, with the run ID in a comment (precedent [CF.27]), and joins the roll-up. A lane over budget moves down a tier rather than being trimmed blindly. Oracle agreement never gates. Built third-party ROMs are never uploaded as artifacts: anyone with read access to a public repo can download artifacts, kept 90 days by default [CF.28].
@@ -160,7 +160,7 @@ The runner peeks at each VBLANK start, stops at status $00 or a frame cap (cap =
 ## 7. Admission rules for third-party fixtures
 1. Judge the **bytes that end up in the ROM**: test or game source, runtime/kernel, compiler libraries (cc65 crt0 = zlib), fonts, graphics, music, generated bytes (headers and signatures are tool output), and BIOS-derived code. A tool's own licence (dasm GPL-2, `7800sign` LGPL-2, 7800basic compiler GPL-2) does not reach its output unless the tool copies its own runtime in.
 2. Licence evidence = LICENSE plus per-file headers **at the exact pin**. A repo-level grant does not cover files with their own © line (2e). For dasm builds, attribute bytes by listing `FILE` sections that emit bytes (2e method). Re-check at every pin bump (a sibling once cited a GPL-3 commit as zlib [CF.27]).
-3. Disposition: **commit** only if every byte source is MIT/BSD/zlib/CC0 or explicitly public domain and no third-party logo is drawn; **build-ci** for unstated or mixed licences and for trademark-bearing bytes (OpenBIOS's Fuji logo): commit hashes only, no artifacts; **fetch** for copyleft binaries (Klaus, GPL-3); **local** for Atari ROMs/BIOS, commercial dumps and anything not script-fetchable (AtariAge attachments).
+3. Disposition: **commit** only if every byte source is MIT/BSD/zlib/CC0 or explicitly public domain and no third-party logo is drawn; **build-ci** for unstated or mixed licences and for trademark-bearing bytes (OpenBIOS's Fuji logo): commit hashes only, no artifacts; **fetch** for copyleft binaries (GPL-3); **local** for Atari ROMs/BIOS, commercial dumps and anything not script-fetchable (AtariAge attachments).
 4. Firmware inside permissive repos stays out: MiSTer's `mem4.hex` (HSC ROM), `ar.hex` (Supercharger BIOS) and `M6532.sv` loader bytes are Atari's [CF.31].
 5. Manifest row, as in the sibling [CF.27]: `path<TAB>source<TAB>pin<TAB>SPDX<TAB>sha256`; SPDX `NOASSERTION` when unstated and `LicenseRef-PublicDomain` for an explicit public-domain statement. build-ci rows add a recipe line (tool + digest + command) and the expected output SHA-256.
 6. Our own ROMs: MIT source, committed bytes, own glyphs (no cc65 fonts), signed with `7800sign`, rebuilt and compared in CI.
@@ -170,7 +170,7 @@ The runner peeks at each VBLANK start, stops at status $00 or a frame cap (cap =
 - `general_tests`: does it exist publicly, under what licence, and is "test 15 = 556" from hardware or fitted? Ask the MiSTer core author (issue).
 - REUSE: is OpenBIOS's `Start2600` block clean? This matters only if a logo-free OpenBIOS variant is ever committed.
 - Owner: which flash cart(s) and console revisions are available, and is a PAL unit available?
-- Klaus success address and whether SST alone suffices (drop Klaus if the nightly never adds a finding in a milestone).
+- Settled 2026-10-19: Klaus Dormann's test is dropped, because its success address is only in its GPL listing, which may not be opened, and SST plus Bruce Clark's test cover what it would; reopen only if the nightly misses a defect at the level of instruction sequences.
 
 ## Sources
 | ID | Tier | Source (URL) | Pin or access date | Supports |

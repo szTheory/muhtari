@@ -2,7 +2,7 @@
 #
 # This file is also the command-line checks themselves, run as
 #   cmake -DRUN=<muhtari-run> [-DEMULATOR=<list>] -DCASE=<name> [-DOUT=<file>]
-#     [-DVERSION_FILE=<file>] [-DFRAMES=<long run>]
+#     [-DVERSION_FILE=<file>] [-DFRAMES=<long run>] [-DDIR=<image directory>]
 #     -P tests/runner/tests.cmake
 # EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
 # runs its own guest binary.
@@ -26,6 +26,62 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     set(CODE ${code})
     set(REGEX "${regex}")
     include(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../cmake/expect_fail.cmake)
+  endfunction()
+
+
+  # The --probe line keys, in the order the runner prints them.
+  set(identity_keys kind source board board_options rom_size ram_size sound devices
+    port1 port2 region)
+  set(header_keys title a78_version a78_rom_size a78_cart_type a78_port1 a78_port2 a78_tv
+    a78_save a78_xm a78_mapper a78_mapper_options a78_audio a78_irq)
+  set(hash_keys sha1 sha256 md5 crc32 sha1_headerless sha256_headerless md5_headerless
+    crc32_headerless)
+
+  # Runs muhtari-run --probe on DIR/name; sets out, err and rc here.
+  macro(probe name)
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --probe "${DIR}/${name}"
+      OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(out MATCHES "\r")
+      message(FATAL_ERROR "--probe ${name}: standard output holds a carriage return")
+    endif()
+  endmacro()
+
+  # Fails unless rc is code and the keys of out's lines are, in order, ARGN.
+  function(expect_keys name code)
+    string(REGEX MATCHALL "[^\n]+" lines "${out}")
+    set(keys "")
+    foreach(line IN LISTS lines)
+      string(REGEX REPLACE " .*" "" key "${line}")
+      list(APPEND keys "${key}")
+    endforeach()
+    if(NOT rc STREQUAL code OR NOT keys STREQUAL "${ARGN}")
+      message(FATAL_ERROR "--probe ${name}: expected exit ${code} and keys\n${ARGN}\n"
+        "got exit ${rc} and keys\n${keys}\noutput\n${out}${err}")
+    endif()
+  endfunction()
+
+  # Sets var to the value of key's line in out: everything after the first
+  # space.
+  function(probe_value key var)
+    string(REGEX MATCH "(^|\n)${key} ([^\n]*)" match "${out}")
+    set(${var} "${CMAKE_MATCH_2}" PARENT_SCOPE)
+  endfunction()
+
+  # Fails unless the sha1, sha256 and md5 lines with suffix equal CMake's
+  # own digests of file and the crc32 line is eight lowercase hex digits.
+  function(expect_hashes suffix file)
+    foreach(alg IN ITEMS SHA1 SHA256 MD5)
+      file(${alg} "${file}" want)
+      string(TOLOWER "${alg}${suffix}" key)
+      probe_value(${key} got)
+      if(NOT got STREQUAL want)
+        message(FATAL_ERROR "--probe: ${key} is '${got}', CMake's ${alg} of ${file} is ${want}")
+      endif()
+    endforeach()
+    probe_value(crc32${suffix} got)
+    if(NOT got MATCHES "^[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]$")
+      message(FATAL_ERROR "--probe: crc32${suffix} is '${got}', not eight lowercase hex digits")
+    endif()
   endfunction()
 
   set(usage_line "usage: muhtari-run ")
@@ -77,6 +133,136 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   elseif(CASE STREQUAL "exit.failure")
     # Fault prevented: a file the runner cannot write is reported as success.
     expect_exit(1 "cannot open" --frames 1 --dump-frame "1:${OUT}/missing/x.png")
+  elseif(CASE STREQUAL "probe.accepted")
+    # Fault prevented: --probe misnames a field, drops or reorders a line,
+    # or prints a digest of the wrong bytes, so a host or a hash database
+    # reads the wrong identity.
+    probe(linear-v3-16k)
+    expect_keys(linear-v3-16k 0 ${identity_keys} ${header_keys} ${hash_keys})
+    string(FIND "${out}" "sha1 " at)
+    string(SUBSTRING "${out}" 0 ${at} fields)
+    set(want "kind 7800\nsource header\nboard linear\nboard_options none\nrom_size 16384\n"
+      "ram_size 0\nsound none\ndevices none\nport1 proline\nport2 proline\nregion ntsc\n"
+      "title Clean Linear\na78_version 0x03\na78_rom_size 16384\na78_cart_type 0x0000\n"
+      "a78_port1 0x01\na78_port2 0x01\na78_tv 0x00\na78_save 0x00\na78_xm 0x00\n"
+      "a78_mapper 0x00\na78_mapper_options 0x00\na78_audio 0x0000\na78_irq 0x00\n")
+    string(CONCAT want ${want})
+    if(NOT fields STREQUAL want)
+      message(FATAL_ERROR "--probe linear-v3-16k: expected\n${want}got\n${fields}")
+    endif()
+    expect_hashes("" "${DIR}/linear-v3-16k")
+    expect_hashes("_headerless" "${DIR}/linear-v3-16k-body")
+  # Fault prevented for the refusal cases: a refused image exits with
+  # another class's status or message, or prints lines a host would take as
+  # the identity of an image the core refused.
+  elseif(CASE STREQUAL "probe.2600")
+    probe(2600-4k)
+    expect_keys(2600-4k 77 kind source rom_size ${hash_keys})
+    probe_value(kind kind)
+    if(NOT kind STREQUAL "2600" OR NOT err MATCHES "muhtari-run: [^\n]*/2600-4k: unsupported: 2600 \\(planned\\)\n")
+      message(FATAL_ERROR "--probe 2600-4k: kind '${kind}', standard error\n${err}")
+    endif()
+    expect_hashes("" "${DIR}/2600-4k")
+  elseif(CASE STREQUAL "probe.unsupported_board")
+    probe(souper-v4)
+    expect_keys(souper-v4 77 ${identity_keys} ${header_keys} ${hash_keys})
+    probe_value(board board)
+    if(NOT board STREQUAL "souper" OR NOT err MATCHES "/souper-v4: unsupported board: souper\n")
+      message(FATAL_ERROR "--probe souper-v4: board '${board}', standard error\n${err}")
+    endif()
+    expect_hashes("" "${DIR}/souper-v4")
+  elseif(CASE STREQUAL "probe.malformed")
+    foreach(name IN ITEMS size-zero bad-magic-1000)
+      probe(${name})
+      expect_keys(${name} 1 ${hash_keys})
+      if(NOT err MATCHES "/${name}: not a 7800 or 2600 cartridge image\n")
+        message(FATAL_ERROR "--probe ${name}: standard error\n${err}")
+      endif()
+      expect_hashes("" "${DIR}/${name}")
+    endforeach()
+  elseif(CASE STREQUAL "probe.truncated")
+    foreach(name IN ITEMS header-only supergame-short)
+      probe(${name})
+      expect_keys(${name} 1 ${hash_keys})
+      if(NOT err MATCHES "/${name}: the image ends before the size its header gives\n")
+        message(FATAL_ERROR "--probe ${name}: standard error\n${err}")
+      endif()
+    endforeach()
+  elseif(CASE STREQUAL "probe.oversized")
+    probe(oversized)
+    if(NOT rc STREQUAL "1" OR NOT out STREQUAL ""
+        OR NOT err MATCHES "/oversized: larger than 1 MiB plus a 128-byte header\n")
+      message(FATAL_ERROR "--probe oversized: expected exit 1 and no output, "
+        "got exit ${rc}, output\n${out}standard error\n${err}")
+    endif()
+  elseif(CASE STREQUAL "probe.usage")
+    # --probe is the whole command line: one file, no other option.
+    set(image "${DIR}/linear-v3-16k")
+    expect_exit(2 "--probe takes one file.*${usage_line}" --probe "${image}" --frames 1)
+    expect_exit(2 "--probe takes one file.*${usage_line}" --frames 1 --probe "${image}")
+    expect_exit(2 "--probe takes one file.*${usage_line}" --probe)
+    expect_exit(2 "--probe takes one file.*${usage_line}" --probe "${image}" "${image}")
+    expect_exit(2 "--probe takes one file.*${usage_line}" --probe --help)
+  elseif(CASE STREQUAL "probe.unreadable")
+    # Fault prevented: a missing file is reported without its name, or as
+    # an image the core refused.
+    expect_exit(1 "^muhtari-run: [^\n]*/no-such-image: cannot open\n$" --probe "${DIR}/no-such-image")
+  elseif(CASE STREQUAL "probe.headerless_rule")
+    # Fault prevented: the headerless hashes drop the header of a file that
+    # is nothing but a header, where rcheevos hashes the whole file.
+    probe(magic-only-128)
+    expect_keys(magic-only-128 1 ${hash_keys})
+    expect_hashes("" "${DIR}/magic-only-128")
+    expect_hashes("_headerless" "${DIR}/magic-only-128")
+  # Fault prevented for the sample cases: --probe passes on images the tests
+  # write but misreads a real one, a 7800basic build made by the published
+  # tools (tests/built/).
+  elseif(CASE STREQUAL "probe.sample_a78")
+    probe(simple.bas.a78)
+    expect_keys(simple.bas.a78 0 ${identity_keys} ${header_keys} ${hash_keys})
+    string(FIND "${out}" "sha1 " at)
+    string(SUBSTRING "${out}" 0 ${at} fields)
+    # The title is "My Game" padded with spaces to 32 bytes, and the magic
+    # padded likewise: neither is a warning.
+    set(want "kind 7800\nsource header\nboard linear\nboard_options none\nrom_size 32768\n"
+      "ram_size 0\nsound none\ndevices none\nport1 proline\nport2 proline\nregion ntsc\n"
+      "title My Game\na78_version 0x04\na78_rom_size 32768\na78_cart_type 0x0000\n"
+      "a78_port1 0x01\na78_port2 0x01\na78_tv 0x00\na78_save 0x00\na78_xm 0x00\n"
+      "a78_mapper 0x00\na78_mapper_options 0x00\na78_audio 0x0000\na78_irq 0x00\n")
+    string(CONCAT want ${want})
+    if(NOT fields STREQUAL want)
+      message(FATAL_ERROR "--probe simple.bas.a78: expected\n${want}got\n${fields}")
+    endif()
+    expect_hashes("" "${DIR}/simple.bas.a78")
+    # The .bin is the .a78 without its 128-byte header.
+    expect_hashes("_headerless" "${DIR}/simple.bas.bin")
+  elseif(CASE STREQUAL "probe.sample_headerless" OR CASE STREQUAL "probe.sample_hash_match")
+    # The stripped sample's last 8 bytes: $FFF8 = $FF and $FFF9 = $F7, which
+    # the footer test requires (docs/hardware/cartridge.md, "The footer
+    # test"), then the NMI vector $F000, reset $F4AD and IRQ $F05F.
+    file(READ "${DIR}/simple.bas.bin" footer OFFSET 32760 HEX)
+    if(NOT footer STREQUAL "fff700f0adf45ff0")
+      message(FATAL_ERROR "simple.bas.bin: footer ${footer}, not fff700f0adf45ff0")
+    endif()
+    probe(simple.bas.bin)
+    expect_keys(simple.bas.bin 0 ${identity_keys} ${hash_keys})
+    set(want_source footer)
+    if(CASE STREQUAL "probe.sample_hash_match")
+      # The test list's entry for this SHA-1: linear, NTSC.
+      set(want_source hash)
+    endif()
+    foreach(pair IN ITEMS "source ${want_source}" "board linear" "region ntsc"
+        "sha1 1aa9559b74eab35d4c5443b56bc4dfd7a445ac4a" "md5 948e2565fefcbb635cd8b73ea9b29941"
+        "crc32 55f0312b")
+      string(REPLACE " " ";" pair "${pair}")
+      list(GET pair 0 key)
+      list(GET pair 1 want)
+      probe_value(${key} got)
+      if(NOT got STREQUAL want)
+        message(FATAL_ERROR "--probe simple.bas.bin: ${key} is '${got}', not '${want}'\n${out}${err}")
+      endif()
+    endforeach()
+    expect_hashes("" "${DIR}/simple.bas.bin")
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
   endif()
@@ -105,6 +291,60 @@ muhtari_add_test(NAME runner.version
   COMMAND ${runner_check} -DCASE=version -DVERSION_FILE=${PROJECT_SOURCE_DIR}/version.txt
     -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner portable TIMEOUT 10)
+
+# --probe on the images muhtari-test-images writes into the build directory;
+# no image bytes are tracked.
+set(runner_probe_dir ${CMAKE_BINARY_DIR}/runner-probe)
+file(MAKE_DIRECTORY ${runner_probe_dir})
+muhtari_add_test(NAME runner.probe.images
+  COMMAND muhtari-test-images ${runner_probe_dir}
+  LABELS runner portable TIMEOUT 30)
+set_tests_properties(runner.probe.images PROPERTIES FIXTURES_SETUP probe_images)
+foreach(case IN ITEMS accepted 2600 unsupported_board malformed truncated oversized usage
+    unreadable headerless_rule)
+  muhtari_add_test(NAME runner.probe.${case}
+    COMMAND ${runner_check} -DCASE=probe.${case} -DDIR=${runner_probe_dir}
+      -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS runner portable TIMEOUT 10)
+  if(NOT case MATCHES "^(usage|unreadable)$")
+    set_tests_properties(runner.probe.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
+  endif()
+endforeach()
+
+# muhtari-run-testdb: the runner's own sources and the core's objects with
+# tests/cart/test_cartdb.c in place of src/cartdb.c (link-time
+# substitution), so --probe can show a hash match end to end while the
+# shipped runner never holds a test entry. A test program: never installed
+# or packaged.
+get_target_property(runner_sources muhtari-run SOURCES)
+add_executable(muhtari-run-testdb
+  ${runner_sources}
+  ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
+  $<TARGET_OBJECTS:muhtari_objs>
+  $<TARGET_OBJECTS:muhtari_cpu>)
+target_include_directories(muhtari-run-testdb PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(muhtari-run-testdb PRIVATE muhtari_host)
+target_compile_definitions(muhtari-run-testdb PRIVATE _POSIX_C_SOURCE=200809L)
+set_target_properties(muhtari-run-testdb PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-run-testdb)
+
+# --probe on 7800basic's simple sample, which built.samples builds into the
+# build tree (tests/built/): headered and stripped through the shipped
+# runner, which finds the stripped one by its footer, and stripped through
+# muhtari-run-testdb, which finds it in the test hash list.
+set(runner_sample_dir ${PROJECT_BINARY_DIR}/built/simple)
+foreach(case IN ITEMS sample_a78 sample_headerless sample_hash_match)
+  set(runner_program $<TARGET_FILE:muhtari-run>)
+  if(case STREQUAL "sample_hash_match")
+    set(runner_program $<TARGET_FILE:muhtari-run-testdb>)
+  endif()
+  muhtari_add_test(NAME runner.probe.${case}
+    COMMAND ${CMAKE_COMMAND} -DRUN=${runner_program} "-DEMULATOR=${runner_emulator}"
+      -DCASE=probe.${case} -DDIR=${runner_sample_dir} -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS built portable TIMEOUT 10)
+  set_tests_properties(runner.probe.${case} PROPERTIES FIXTURES_REQUIRED built_samples)
+endforeach()
 
 # hashes.txt, the file CI compares across lanes.
 set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
@@ -144,10 +384,11 @@ muhtari_add_test(NAME runner.png
   COMMAND muhtari-test-png ${PROJECT_BINARY_DIR}/tests/png_test.png
   LABELS runner portable TIMEOUT 10)
 
-# The bench statistics and the stop flag.
+# The bench statistics, the stop flag and MD5.
 add_executable(muhtari-test-runner
   ${CMAKE_CURRENT_LIST_DIR}/test_runner.c
   ${PROJECT_SOURCE_DIR}/runner/bench.c
+  ${PROJECT_SOURCE_DIR}/runner/md5.c
   ${PROJECT_SOURCE_DIR}/runner/stop.c)
 target_compile_definitions(muhtari-test-runner PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-test-runner PROPERTIES
@@ -162,6 +403,10 @@ muhtari_add_test(NAME runner.bench.bytes COMMAND muhtari-test-runner bytes
 muhtari_add_test(NAME runner.bench.format COMMAND muhtari-test-runner format
   LABELS runner bench portable TIMEOUT 10)
 muhtari_add_test(NAME runner.stop COMMAND muhtari-test-runner stop
+  LABELS runner portable TIMEOUT 10)
+# Fault prevented: a wrong MD5 constant or byte order changes the
+# RetroAchievements hash --probe prints, with nothing else to notice it.
+muhtari_add_test(NAME runner.md5 COMMAND muhtari-test-runner md5
   LABELS runner portable TIMEOUT 10)
 
 # Not portable: it reads docs/runner.md from the source tree.

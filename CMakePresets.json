@@ -73,6 +73,22 @@
       }
     },
     {
+      "name": "fuzz",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "CMAKE_C_COMPILER": "clang-21",
+        "CMAKE_CXX_COMPILER": "clang++-21",
+        "CMAKE_C_FLAGS": "-fsanitize=address,undefined,fuzzer-no-link -fno-sanitize-recover=all -fno-omit-frame-pointer",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
+        "MUHTARI_BUILD_LIBRETRO": "OFF",
+        "MUHTARI_FUZZ": "ON",
+        "MUHTARI_INVENTORY": "fuzz"
+      }
+    },
+    {
       "name": "be32",
       "inherits": "base",
       "$comment": "MUHTARI_TIMEOUT_SCALE 11: on hosted CI the tests both lanes share ran 10.7 times as long under qemu-ppc as on Linux x64 (10 runs).",
@@ -99,10 +115,19 @@
       }
     },
     {
+      "name": "vectors-full",
+      "inherits": "ci",
+      "$comment": "The nightly full vector set: the fetch of the pinned 6502/v1 files, the sample match and one test per opcode over each whole file.",
+      "cacheVariables": {
+        "MUHTARI_VECTORS_FULL": "ON",
+        "MUHTARI_INVENTORY": "vectors-full"
+      }
+    },
+    {
       "name": "bench",
       "inherits": "base",
-      "$comment": "The nightly bench: the runner only, built with the host compiler.",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "$comment": "The nightly bench: the runner only, built with the host compiler. MUHTARI_TESTS OFF registers no tests, so configure needs no test tool.",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "MUHTARI_TESTS": "OFF" }
     }
   ],
   "buildPresets": [
@@ -112,8 +137,10 @@
     { "name": "hygiene", "configurePreset": "hygiene" },
     { "name": "asan", "configurePreset": "asan" },
     { "name": "nofp", "configurePreset": "nofp" },
+    { "name": "fuzz", "configurePreset": "fuzz" },
     { "name": "be32", "configurePreset": "be32" },
     { "name": "wasm32", "configurePreset": "wasm32" },
+    { "name": "vectors-full", "configurePreset": "vectors-full" },
     { "name": "bench", "configurePreset": "bench", "targets": ["muhtari-run"] }
   ],
   "testPresets": [
@@ -198,6 +225,15 @@
       "execution": { "noTestsAction": "error", "jobs": "" }
     },
     {
+      "name": "fuzz",
+      "configurePreset": "fuzz",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "execution": { "noTestsAction": "error", "jobs": "" }
+    },
+    {
       "name": "be32",
       "configurePreset": "be32",
       "output": {
@@ -215,6 +251,16 @@
         "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
       },
       "filter": { "include": { "label": "^portable$" } },
+      "execution": { "noTestsAction": "error", "jobs": "" }
+    },
+    {
+      "name": "vectors-full",
+      "configurePreset": "vectors-full",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "filter": { "include": { "label": "^vectors-full$" } },
       "execution": { "noTestsAction": "error", "jobs": "" }
     }
   ],
@@ -276,6 +322,14 @@
       ]
     },
     {
+      "name": "fuzz",
+      "steps": [
+        { "type": "configure", "name": "fuzz" },
+        { "type": "build", "name": "fuzz" },
+        { "type": "test", "name": "fuzz" }
+      ]
+    },
+    {
       "name": "be32",
       "steps": [
         { "type": "configure", "name": "be32" },
@@ -289,6 +343,14 @@
         { "type": "configure", "name": "wasm32" },
         { "type": "build", "name": "wasm32" },
         { "type": "test", "name": "wasm32" }
+      ]
+    },
+    {
+      "name": "vectors-full",
+      "steps": [
+        { "type": "configure", "name": "vectors-full" },
+        { "type": "build", "name": "vectors-full" },
+        { "type": "test", "name": "vectors-full" }
       ]
     },
     {

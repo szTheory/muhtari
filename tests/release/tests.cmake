@@ -63,3 +63,34 @@ muhtari_add_test(NAME release.floor.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${release_cmd}" -DCODE=1
     "-DREGEX=${release_regex}" -P ${release_scripts}/expect_fail.cmake
   LABELS release TIMEOUT 60)
+
+# No member of this leg's zips is firmware, a built sample or a known ROM.
+# The self test zips a synthetic 256-byte A78 file and lists the SHA-1 of its
+# last 128 bytes, which must be found once the header is stripped.
+set(release_scan_lists -DEXPECTED=${PROJECT_SOURCE_DIR}/tests/built/expected.txt
+  -DCARTDB=${PROJECT_SOURCE_DIR}/src/cartdb.c)
+muhtari_add_test(NAME release.firmware_scan
+  COMMAND ${CMAKE_COMMAND} "-DZIPS=${PROJECT_BINARY_DIR}/muhtari-*-${release_suffix}.zip"
+    -DFIRMWARE=${PROJECT_SOURCE_DIR}/tests/release/firmware.txt ${release_scan_lists}
+    -P ${release_scripts}/firmware_scan.cmake
+  LABELS release TIMEOUT 60)  # provisional, 9 samples
+set(release_scan ${PROJECT_BINARY_DIR}/release/firmware_scan_self_test)
+file(REMOVE_RECURSE ${release_scan})
+string(REPEAT "h" 118 release_pad)
+string(REPEAT "synthetic payload, not a ROM. " 5 release_body)
+string(SUBSTRING "${release_body}" 0 128 release_body)
+file(WRITE ${release_scan}/stage/synthetic.a78 "xATARI7800${release_pad}${release_body}")
+string(SHA1 release_sha1 "${release_body}")
+file(WRITE ${release_scan}/firmware.txt "sha1 ${release_sha1} synthetic\n")
+execute_process(
+  COMMAND ${CMAKE_COMMAND} -E tar cf ${release_scan}/synthetic.zip --format=zip synthetic.a78
+  WORKING_DIRECTORY ${release_scan}/stage
+  COMMAND_ERROR_IS_FATAL ANY)
+set(release_cmd ${CMAKE_COMMAND} -DZIPS=${release_scan}/synthetic.zip ${release_scan_lists}
+  -DFIRMWARE=${release_scan}/firmware.txt -P ${release_scripts}/firmware_scan.cmake)
+string(REPLACE ";" "$<SEMICOLON>" release_cmd "${release_cmd}")
+muhtari_add_test(NAME release.firmware_scan.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${release_cmd}" -DCODE=1
+    "-DREGEX=synthetic.zip/synthetic.a78: matches synthetic \\(header stripped\\)"
+    -P ${release_scripts}/expect_fail.cmake
+  LABELS release TIMEOUT 30)  # provisional, 9 samples

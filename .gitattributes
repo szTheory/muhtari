@@ -1,5 +1,7 @@
 * text=auto eol=lf
 # Fixture bytes are hashed in tests/roms/manifest.txt; git must never rewrite them.
 /tests/roms/** -text
+/tests/vectors/fixtures/*.json -text
 *.a78 binary
 *.bin binary
+*.n65v binary

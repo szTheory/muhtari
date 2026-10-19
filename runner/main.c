@@ -2,6 +2,7 @@
  *
  *   muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
  *   muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...
+ *   muhtari-run --probe FILE
  *   muhtari-run --help | --version
  *
  * Runs N frames of one instance with no content; --frames or --bench is
@@ -16,6 +17,10 @@
  * ends the run after the frame in progress; output is flushed and the
  * status is 0.
  *
+ * --probe FILE identifies a cartridge image with muhtari_probe and prints
+ * its fields and eight hashes as "key value" lines; it runs no frames.
+ * docs/runner.md lists the lines and their formats.
+ *
  * Exit statuses are listed in exit_status.h and printed by --help.
  */
 #include <stdio.h>
@@ -24,11 +29,15 @@
 
 #include "bench.h"
 #include "clock.h"
+#include "crc32.h"
 #include "exit_status.h"
+#include "md5.h"
 #include "muhtari.h"
 #include "palette.h"
 #include "png.h"
+#include "sha1.h"
 #include "sha256.h"
+#include "status_text.h"
 #include "stop.h"
 
 #define WIDTH 320u
@@ -52,11 +61,13 @@ static void run_free(void *user, void *ptr, size_t size)
 static const char synopsis[] =
     "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...\n"
     "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...\n"
+    "       muhtari-run --probe FILE\n"
     "       muhtari-run --help | --version\n"
     "  --frames N           run N frames (N >= 1)\n"
     "  --bench N            run N frames and report the time per frame\n"
     "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
     "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n"
+    "  --probe FILE         print the cartridge image's fields and hashes\n"
     "  --help               print this text and the exit statuses\n"
     "  --version            print the version\n";
 
@@ -71,7 +82,7 @@ static void help(void)
     fputs(synopsis, stdout);
     fputs("exit status:\n", stdout);
     for (size_t i = 0; i < sizeof muhtari__exit_statuses / sizeof muhtari__exit_statuses[0]; i++) {
-        printf("  %d  %-7s  %s\n", muhtari__exit_statuses[i].code, muhtari__exit_statuses[i].name,
+        printf(" %2d  %-7s  %s\n", muhtari__exit_statuses[i].code, muhtari__exit_statuses[i].name,
                muhtari__exit_statuses[i].meaning);
     }
 }
@@ -156,6 +167,179 @@ static int dump_frame(const uint8_t *video, const char *path, uint8_t *row)
     return MUHTARI__EXIT_DONE;
 }
 
+/* Writes n bytes as 2n lowercase hex digits and a terminating NUL. */
+static void to_hex(const uint8_t *digest, size_t n, char *hex)
+{
+    static const char digits[] = "0123456789abcdef";
+    for (size_t i = 0; i < n; i++) {
+        hex[2u * i] = digits[digest[i] >> 4];
+        hex[2u * i + 1u] = digits[digest[i] & 0x0fu];
+    }
+    hex[2u * n] = '\0';
+}
+
+/* Prints the SHA-1, SHA-256, MD5 and CRC-32 of n bytes at p, each key
+   followed by suffix. */
+static void print_hashes(const char *suffix, const uint8_t *p, size_t n)
+{
+    uint8_t digest[32];
+    char hex[65];
+    struct muhtari__sha1 sha1;
+    muhtari__sha1_init(&sha1);
+    muhtari__sha1_update(&sha1, p, n);
+    muhtari__sha1_final(&sha1, digest);
+    to_hex(digest, 20u, hex);
+    printf("sha1%s %s\n", suffix, hex);
+    muhtari__sha256 sha256;
+    muhtari__sha256_init(&sha256);
+    muhtari__sha256_update(&sha256, p, n);
+    muhtari__sha256_final(&sha256, digest);
+    to_hex(digest, 32u, hex);
+    printf("sha256%s %s\n", suffix, hex);
+    muhtari__md5 md5;
+    muhtari__md5_init(&md5);
+    muhtari__md5_update(&md5, p, n);
+    muhtari__md5_final(&md5, digest);
+    to_hex(digest, 16u, hex);
+    printf("md5%s %s\n", suffix, hex);
+    printf("crc32%s %08lx\n", suffix, (unsigned long)muhtari__crc32(0u, p, n));
+}
+
+/* Prints the eight hash lines: the file as given, then headerless. The
+   headerless input follows rcheevos's 7800 rule (rcheevos @1433173220a7,
+   src/rhash/hash_rom.c): a file longer than 128 bytes whose bytes 1 to 9
+   are "ATARI7800" loses its first 128 bytes; any other file is hashed
+   whole. */
+static void print_all_hashes(const uint8_t *image, size_t n)
+{
+    size_t skip = n > 128u && memcmp(image + 1, "ATARI7800", 9u) == 0 ? 128u : 0u;
+    print_hashes("", image, n);
+    print_hashes("_headerless", image + skip, n - skip);
+}
+
+/* Prints key and the names of the bits set in bits, separated by commas, or
+   "none". */
+static void print_bits(const char *key, muhtari__bit_set set, uint32_t bits)
+{
+    printf("%s ", key);
+    if (bits == 0u) {
+        puts("none");
+        return;
+    }
+    const char *separator = "";
+    for (uint32_t bit = 0; bit < 32u; bit++) {
+        if ((bits >> bit) & 1u) {
+            printf("%s%s", separator, muhtari__bit_name(set, bit));
+            separator = ",";
+        }
+    }
+    putchar('\n');
+}
+
+/* Prints the identity lines of an image probe described, in the order
+   docs/runner.md gives: the fields, the raw A78 header fields when the image
+   has a header, then one line per warning. */
+static void print_identity(const muhtari_cart_info *c)
+{
+    printf("kind %s\n", muhtari__kind_name(c->kind));
+    printf("source %s\n", muhtari__source_name(c->source));
+    printf("board %s\n", muhtari__board_name(c->board));
+    print_bits("board_options", MUHTARI__BITS_BOARD_OPTIONS, c->board_options);
+    printf("rom_size %lu\n", (unsigned long)c->rom_size);
+    printf("ram_size %lu\n", (unsigned long)c->ram_size);
+    print_bits("sound", MUHTARI__BITS_SOUND, c->sound);
+    print_bits("devices", MUHTARI__BITS_DEVICES, c->devices);
+    printf("port1 %s\n", muhtari__port_name(c->port1));
+    printf("port2 %s\n", muhtari__port_name(c->port2));
+    printf("region %s\n", muhtari__region_name(c->region));
+    if (c->flags & MUHTARI_CART_HEADER) {
+        printf("title %s\n", (const char *)c->title);
+        printf("a78_version 0x%02lx\n", (unsigned long)c->a78_version);
+        printf("a78_rom_size %lu\n", (unsigned long)c->a78_rom_size);
+        printf("a78_cart_type 0x%04lx\n", (unsigned long)c->a78_cart_type);
+        printf("a78_port1 0x%02lx\n", (unsigned long)c->a78_port1);
+        printf("a78_port2 0x%02lx\n", (unsigned long)c->a78_port2);
+        printf("a78_tv 0x%02lx\n", (unsigned long)c->a78_tv);
+        printf("a78_save 0x%02lx\n", (unsigned long)c->a78_save);
+        printf("a78_xm 0x%02lx\n", (unsigned long)c->a78_xm);
+        printf("a78_mapper 0x%02lx\n", (unsigned long)c->a78_mapper);
+        printf("a78_mapper_options 0x%02lx\n", (unsigned long)c->a78_mapper_options);
+        printf("a78_audio 0x%04lx\n", (unsigned long)c->a78_audio);
+        printf("a78_irq 0x%02lx\n", (unsigned long)c->a78_irq);
+    }
+    for (uint32_t bit = 0; bit < 32u; bit++) {
+        if ((c->warnings >> bit) & 1u) {
+            printf("warning %s\n", muhtari__bit_name(MUHTARI__BITS_WARNINGS, bit));
+        }
+    }
+}
+
+/* Reads the file at path into one buffer of the image cap plus one byte,
+   looping on fread until it returns 0. Nothing seeks in the stream or asks
+   its position, so a pipe works and no long overflows; a longer file stops
+   one byte past the cap, which probe refuses by size. Returns the exit
+   status. */
+static int probe(const char *path)
+{
+    const size_t cap = (size_t)MUHTARI_IMAGE_SIZE_MAX + 1u;
+    uint8_t *image = (uint8_t *)malloc(cap);
+    if (image == NULL) {
+        fprintf(stderr, "muhtari-run: out of memory\n");
+        return MUHTARI__EXIT_FAILURE;
+    }
+    FILE *f = fopen(path, "rb");
+    if (f == NULL) {
+        fprintf(stderr, "muhtari-run: %s: cannot open\n", path);
+        free(image);
+        return MUHTARI__EXIT_FAILURE;
+    }
+    size_t n = 0;
+    for (;;) {
+        size_t got = fread(image + n, 1u, cap - n, f);
+        if (got == 0u) {
+            break;
+        }
+        n += got;
+    }
+    int unreadable = ferror(f) != 0;
+    (void)fclose(f);
+    if (unreadable) {
+        fprintf(stderr, "muhtari-run: %s: cannot read\n", path);
+        free(image);
+        return MUHTARI__EXIT_FAILURE;
+    }
+
+    muhtari_cart_info info;
+    memset(&info, 0, sizeof info);
+    info.size = (uint32_t)sizeof info;
+    muhtari_status st = muhtari_probe(image, n, &info);
+    /* Which lines print follows what probe wrote: everything for OK and an
+       unsupported board, the four fields it fills for a 2600 image, only
+       the hashes when it wrote nothing, and nothing at all for an image
+       too large to read whole. */
+    int status = MUHTARI__EXIT_FAILURE;
+    if (st == MUHTARI_STATUS_OK || st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) {
+        print_identity(&info);
+        status = st == MUHTARI_STATUS_OK ? MUHTARI__EXIT_DONE : MUHTARI__EXIT_REFUSED;
+    } else if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_2600) {
+        printf("kind %s\n", muhtari__kind_name(info.kind));
+        printf("source %s\n", muhtari__source_name(info.source));
+        printf("rom_size %lu\n", (unsigned long)info.rom_size);
+        status = MUHTARI__EXIT_REFUSED;
+    }
+    if (st != MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE) {
+        print_all_hashes(image, n);
+    }
+    if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) {
+        fprintf(stderr, "muhtari-run: %s: %s: %s\n", path, muhtari__status_text(st),
+                muhtari__board_name(info.board));
+    } else if (st != MUHTARI_STATUS_OK) {
+        fprintf(stderr, "muhtari-run: %s: %s\n", path, muhtari__status_text(st));
+    }
+    free(image);
+    return status;
+}
+
 /* The runner's options. Each list has room for one entry per argument. */
 typedef struct options {
     uint32_t frames;
@@ -165,7 +349,8 @@ typedef struct options {
     uint32_t *dump_frames;
     const char **dump_paths;
     uint32_t dump_count;
-    int printed; /* --help or --version ran; nothing else to do */
+    const char *probe; /* --probe FILE, the whole command line */
+    int printed;       /* --help or --version ran; nothing else to do */
 } options;
 
 static int compare_u32(const void *a, const void *b)
@@ -196,6 +381,12 @@ static int parse_options(int argc, char **argv, options *o)
         o->printed = 1;
         return MUHTARI__EXIT_DONE;
     }
+    /* --probe takes one file and is the whole command line; a second
+       option in the file's place is a usage error. */
+    if (argc == 3 && strcmp(argv[1], "--probe") == 0 && strncmp(argv[2], "--", 2u) != 0) {
+        o->probe = argv[2];
+        return MUHTARI__EXIT_DONE;
+    }
     /* Every other option takes one value, so options sit at odd positions. */
     for (int i = 1; i < argc; i += 2) {
         const char *arg = argv[i];
@@ -223,6 +414,8 @@ static int parse_options(int argc, char **argv, options *o)
             }
             o->dump_frames[o->dump_count] = n;
             o->dump_paths[o->dump_count++] = colon + 1;
+        } else if (strcmp(arg, "--probe") == 0) {
+            return usage("--probe takes one file and no other option");
         } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0) {
             return usage("--help and --version take no other arguments");
         } else {
@@ -356,7 +549,9 @@ int main(int argc, char **argv)
     options opt;
     memset(&opt, 0, sizeof opt);
     int status = parse_options(argc, argv, &opt);
-    if (status == MUHTARI__EXIT_DONE && !opt.printed) {
+    if (status == MUHTARI__EXIT_DONE && opt.probe != NULL) {
+        status = probe(opt.probe);
+    } else if (status == MUHTARI__EXIT_DONE && !opt.printed) {
         muhtari__stop_install();
         status = run(&opt);
     }

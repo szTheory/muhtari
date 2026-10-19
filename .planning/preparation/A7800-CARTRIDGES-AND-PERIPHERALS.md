@@ -2,7 +2,7 @@
 title: "Atari 7800 cartridges, boards, controllers, saves and hostile inputs"
 summary: "A78 header v1–v4, every board scheme with library share, pin-level controller map, HSC/SaveKey saves, commercial library, ROM-hack support and parser bounds for muhtari."
 read_when: "Before designing or changing cart.c/board_*.c, the A78/headerless probe, ports.c, saves (HSC, SaveKey, .srm), patch handling, or the loader fuzz targets."
-updated: 2026-10-15
+updated: 2026-10-19
 ---
 # Atari 7800 cartridges and peripherals (research R4)
 
@@ -21,71 +21,66 @@ updated: 2026-10-15
 | Which parsers handle hostile input, and what bounds do they need? | 7 |
 
 ## 1. The A78 header
-### 1.1 Fields [CART.01][CART.02] (multi-byte fields are big-endian [CART.20])
-| Off | Len | Field | Values / history |
-|---|---|---|---|
-| 0 | 1 | version | 1 (Dan Boris's A7800 emulator), 2 (+save byte), 3 (2021), 4 (Jan 2024). Treat a version above 4 as 4 and warn |
-| 1 | 16 | magic | `ATARI7800`, then 7 pad bytes (zeros in the spec, spaces in some tools [CART.39]). Compare only the 9 bytes, as MAME and rcheevos do; MiSTer checks just `ATARI` [CART.20][CART.29][CART.24] |
-| 17 | 32 | title | v3: zero-terminated, zero-padded. Older headers may be unterminated |
-| 49 | 4 | ROM size, header excluded | MAME/a7800 load min(field, file−128) [CART.20][CART.22] |
-| 53 | 2 | cart type (byte 53 = bits 15–8) | table 1.2. Bits 8–12 added in v3 (2021); bits 13–15 in Mar 2022 [CART.02] |
-| 55/56 | 1+1 | port 1 / port 2 device | 0 none, 1 ProLine, 2 light gun, 3 paddle, 4 trak-ball, 5 2600 stick, 6 driving, 7 keypad, 8 ST mouse, 9 Amiga mouse, 10 AtariVox/SaveKey, 11 SNES2Atari, 12 Mega7800. v1 had 0–2; 10–11 added in 2022, 12 in 2024 |
-| 57 | 1 | TV | b0 PAL; b1 composite artifacts wanted (v3); b2 multi-region (2024). v1/v2 used an index 0/1, which is compatible |
-| 58 | 1 | save | b0 HSC; b1 SaveKey/AtariVox. v2 values 1/2 are the same encoding. The 2019 wiki text said "b1 SaveKey, b2 HSC", so also accept 0x04 as HSC and lint it |
-| 59–62 | 4 | reserved | must be 0 in v3 |
-| 63 | 1 | slot pass-through | b0 XM. v1: "1 = expansion module required". Treat any non-zero value as XM and lint values other than 1 |
-| 64 | 1 | v4 mapper | 0 linear, 1 SuperGame, 2 Activision, 3 Absolute, 4 Souper. MiSTer also uses 5 = ACE/SN Cart, which is not in the spec [CART.24] |
-| 65 | 1 | v4 mapper options | b7 bankset. $4000 device in b0–1 (linear) or b0–2 (SG): 0 none, 1 16K RAM, 2 8K EXRAM/A8, 3 32K EXRAM/M2, 4 EXROM, 5 EXFIX, 6 32K EXRAM/X2 (SG only) |
-| 66 | 2 | v4 audio | b0–2 POKEY: 0 none, 1 @440, 2 @450, 3 @450+@440, 4 @800, 5 @4000. b3 YM2151 @460; b4 Covox @430; b5 ADPCM stream @420 (documented nowhere) |
-| 68 | 2 | v4 IRQ sources | b0 POKEY 1 (@450/@800/@4000); b1 POKEY 2 (@440); b2 YM2151 |
-| 70–99 | 30 | reserved | |
-| 100 | 28 | `ACTUAL CART DATA STARTS HERE` | nobody checks it [CART.20][CART.24] |
+The header, the probe and the hash lists graduated in phase 2 to `docs/hardware/cartridge.md`, which cites this
+section's sources [CART.01][CART.02][CART.20]. The subsections keep their numbers because that page cites them; each
+keeps its choice line and the evidence the page does not repeat.
 
-The spec gives the v4 option names no semantics. My reading (derived, unverified): A8 = bit 7 Fractalus mirror RAM (A7800DS calls Fractalus "EXRAM/A8" [CART.30]); M2 = bit 14 halt-banked RAM; X2 = bit 5 banked RAM (A7800DS has "SUPERCART_RAMX2"); EXROM = bit 3; EXFIX = bit 4.
+### 1.1 Fields [CART.01][CART.02] (multi-byte fields are big-endian [CART.20])
+The field table, version handling and the v4 block are in `docs/hardware/cartridge.md`, The A78 header and The v4
+block. Field history: v1 is Dan Boris's A7800 emulator, v2 added the save byte, v3 came in 2021, v4 in January 2024
+[CART.02]; MAME and rcheevos compare 9 magic bytes, MiSTer just `ATARI` [CART.20][CART.29][CART.24]; MiSTer also uses
+mapper 5 = ACE/SN Cart, which is not in the spec [CART.24]. The spec gives the v4 option names no semantics. Reading
+(derived, unverified): A8 = bit 7 Fractalus mirror RAM (A7800DS calls Fractalus "EXRAM/A8" [CART.30]); M2 = bit 14
+halt-banked RAM; X2 = bit 5 banked RAM (A7800DS has "SUPERCART_RAMX2"); EXROM = bit 3; EXFIX = bit 4.
 
 ### 1.2 Cart-type word (bytes 53–54) [CART.01]
-| Bit | Meaning | Bit | Meaning |
-|---|---|---|---|
-| 0 | POKEY @$4000 | 8 | Activision banking |
-| 1 | SuperGame banking | 9 | Absolute banking |
-| 2 | SG RAM @$4000 (16K) | 10 | POKEY @$440 |
-| 3 | ROM @$4000 (extra first bank: 144K "SG9") | 11 | YM2151 @$460/$461 |
-| 4 | bank 6 @$4000 | 12 | Souper |
-| 5 | banked RAM | 13 | bankset |
-| 6 | POKEY @$450 | 14 | halt-banked RAM |
-| 7 | mirror RAM @$4000 (Fractalus) | 15 | POKEY @$800 |
-
-MAME's comments swap Activision and Absolute, but its loader code follows the spec (0x100 = Activision) [CART.20].
+The bit table is in `docs/hardware/cartridge.md`, Cart type. MAME's comments swap Activision and Absolute, but its
+loader code follows the spec (0x100 = Activision) [CART.20].
 
 ### 1.3 Parsing policy and who reads what
-**Readers:** MAME upstream uses bits 0–9 only (it drops special bits above 0x300) [CART.20]. a7800 v5.2 uses bits 0–9 and 13–15 plus byte 63, and no v4 [CART.22]. MiSTer uses bits 0–15, byte 64 only for ACE, and turns on the HSC when byte 58 ≠ 0 [CART.24]. A7800DS reads v4 and falls back to v3 [CART.30]. BizHawk checks its MD5 database first, then bits 0–3 and 6 [CART.27].
+**Readers:** MAME upstream uses bits 0–9 only [CART.20]; a7800 v5.2 bits 0–9 and 13–15 plus byte 63, no v4
+[CART.22]; MiSTer bits 0–15, byte 64 only for ACE, and the HSC when byte 58 ≠ 0 [CART.24]; A7800DS reads v4 and falls
+back to v3 [CART.30]; BizHawk checks its MD5 database first [CART.27]. The conflict order built is MAME's
+`validate_header` [CART.20][CART.22], listed in `docs/hardware/cartridge.md`, Cart type.
 
-**MAME `validate_header` drops devices in this order:** POKEY@4000 (when it clashes with RAM, ROM@4000, bank 6 or banked RAM), then RAM (clashing with ROM@4000, bank 6 or banked RAM), then ROM@4000 (clashing with bank 6 or banked RAM), then bank 6 (clashing with banked RAM). Activision or Absolute clears the low byte. "$4000 bits without SG" forces SG; a7800 v5.2 deleted that rule [CART.20][CART.22].
-
-**Recommendation:** parse v3 always. When the version is ≥ 4 and the v4 block validates (mapper ≤ 4, options in range, size fits the mapper), v4's mapper, RAM, audio and IRQ fields override the v3 bits. Otherwise use v3 and set the warning bit `HEADER_V4_IGNORED`. Resolve v3 conflicts with MAME's table, with one exception: POKEY@4000 plus ROM@4000 or bankset keeps the POKEY as write-only, as in the bankset wiki and MiSTer's `pokey4k_wo` [CART.04][CART.24]. Controllers, TV, save and XM always come from bytes 55–63. **Strongest alternative:** honour v4 blindly, as the spec says [CART.01]. **Would change if:** a scan of PROPack headers finds v4 images whose v3 bits are deliberately stale.
+**Recommendation** (built): parse v3 always; a version ≥ 4 block that validates and fits the body overrides the v3
+board, RAM and sound, else `HEADER_V4_IGNORED`; POKEY@4000 beside ROM@4000 stays write-only, as in the bankset wiki
+and MiSTer's `pokey4k_wo` [CART.04][CART.24]. **Strongest alternative:** honour v4 blindly, as the spec says
+[CART.01]. **Would change if:** a scan of PROPack headers finds v4 images whose v3 bits are deliberately stale.
 
 ### 1.4 Headerless images and hash identity
-The MAME softlist `hash/a7800.xml` is CC0 (204 entries, per-chip CRC32 and SHA-1) [CART.18]. libretro's 7800 DAT (2026.10.07) lists 227 headerless `.bin` commercial entries and 110 headered `.a78` aftermarket entries, so both forms must be identified [CART.40]. Trebor's PROPack v8.17 retail lists give CRC32s of headerless bodies: 91 of 114 match a softlist CRC directly (tested) [CART.15]. The misses:
+The lists, the slice and half-swap passes and the override rules are in `docs/hardware/cartridge.md`, Hash list.
+Evidence: the CC0 `hash/a7800.xml` has 204 entries with per-chip CRC32 and SHA-1 [CART.18]; libretro's 7800 DAT
+(2026.10.07) lists 227 headerless `.bin` and 110 headered `.a78` entries, so both forms must be identified [CART.40];
+91 of 114 PROPack v8.17 CRC32s match a softlist CRC directly (tested) [CART.15]. The misses: 9 two-chip entries
+(hash each slice); 11 48K games stored on a 64K chip (Desert Falcon, Donkey Kong, DK Jr, Hat Trick, NTSC Mario Bros,
+PAL Xevious: the 48K hash needs local dumps); 3 Activision layouts (Double Dragon NTSC and PAL, Rampage), whose
+PROPack "(AM)" images swap the 8K halves of every 16K bank against MAME's "(OM)" dumps, which the header cannot tell
+apart [CART.03][CART.15][CART.20][CART.22][CART.24][CART.27]. PROPack's Alien Brigade and Crossbow each carry a
+Joystick and a Lightgun header over one CRC [CART.15].
 
-| Miss class | n | Titles | Remedy |
-|---|---|---|---|
-| 2-chip softlist entries | 9 | Crossbow ×4, NTSC Karateka, NTSC One-on-One, PAL Barnyard Blaster, PAL Choplifter, PAL Galaga | hash each slice at the `offset=` boundaries |
-| 48K game stored on a 64K chip | 11 | Desert Falcon, Donkey Kong, DK Jr (incl. the Alternate), Hat Trick, NTSC Mario Bros, PAL Xevious | MAME linear maps the top 48K. Generate the 48K hash from local dumps; it cannot be derived from MAME's |
-| Activision layout | 3 | DD NTSC AM AA265865 / OM F20773D5, DD PAL F29ABDB2 / 4D634BF5, Rampage 39A316AA / D2876EE2 | PROPack "(AM)" images swap the 8K halves of every 16K bank relative to MAME's raw-EPROM "(OM)" dumps. MAME maps OM; a7800, BizHawk and MiSTer map AM (the Stolberg convention). The header cannot tell them apart [CART.03][CART.15][CART.20][CART.22][CART.24][CART.27] |
-
-One body can carry two controller setups: PROPack's Alien Brigade and Crossbow each come as a Joystick and a Lightgun header over one CRC [CART.15].
-
-**Recommendation:** at build time, generate a sorted SHA-1 table from the CC0 XML (slot, RAM, POKEY, peripheral, region), adding slice hashes and a half-swapped Activision key. At load, normalise Activision images to one layout by swapping halves when the body matches OM. A hash match overrides board, RAM and POKEY (status `HEADER_CORRECTED`), never controllers. Region comes from the header, else the hash, else NTSC. **Strongest alternative:** trust the header and use the hash only when there is no header (MiSTer, a7800). **Would change if:** the owner's dumps show softlist slot errors.
+**Recommendation** (built): a sorted per-chip SHA-1 table generated from the CC0 XML at build time, with each
+multi-chip entry's slice layout; slice and half-swapped hashes computed at run time, since SHA-1 does not compose
+(tested while building the probe). A match overrides board, RAM and POKEY (`HEADER_CORRECTED`), never controllers;
+region from the header, else the hash, else NTSC. Normalising Activision images at load arrives with the board in
+phase 3. **Strongest alternative:** trust the header and use the hash only when there is none (MiSTer, a7800).
+**Would change if:** the owner's dumps show softlist slot errors.
 
 ### 1.5 2600 images → `MUHTARI_STATUS_UNSUPPORTED_2600` (2600 support is planned)
-`hash/a2600.xml` is also CC0. Its 1592 entries by size: 4K 935, 8K 373, 2K 133, 16K 121, 32K 16, 12K 6, 64K 5, 10495 B 3 (tested) [CART.19]. So 8K, 16K, 32K and 64K overlap with 7800 sizes.
+The probe order, the footer test and the 2600 sizes are in `docs/hardware/cartridge.md`, Probe order and The footer
+test. Evidence: `hash/a2600.xml` (CC0) has 1592 entries: 4K 935, 8K 373, 2K 133, 16K 121, 32K 16, 12K 6, 64K 5,
+10495 B 3 (tested) [CART.19], so 8K to 64K overlap 7800 sizes; the NTSC BIOS footer checks are [CART.16], and the PAL
+BIOS checks only the footer and looks for 2600-style mirrors [CART.16].
 
-The NTSC BIOS falls back to 2600 mode unless the footer passes three checks: $FFF8 has high nibble $F plus a region bit; $FFF9 has low nibble 3 or 7 and a high nibble (the start page) ≥ 4 and below the reset vector's page; the reset vector is neither $0000 nor $FFFF. The PAL BIOS checks only the footer and looks for 2600-style mirrors [CART.16].
-
-**Recommendation:** probe in this order: (1) A78 magic → 7800; (2) 7800 SHA-1 table → 7800; (3) `a2600.xml` SHA-1 → 2600; (4) footer test on the last 8 bytes (region bit ignored) passes → headerless 7800, linear if ≤ 48K, else SG; (5) size 2K/4K, or a 2600 size (2K multiples ≤ 64K, 10495, n×8448 Supercharger) with a failing footer → 2600; (6) otherwise `INVALID_IMAGE`. **Strongest alternative:** size-only rules, such as BizHawk's `len % 1024 == 128` header test [CART.27]. **Would change if:** the footer test misclassifies anything in the owner's library or the 7800basic sample builds.
+**Recommendation** (built): magic, then the 7800 list, the 2600 list, the footer test, the 2600 sizes, else
+`INVALID_IMAGE`. **Strongest alternative:** size-only rules, such as BizHawk's `len % 1024 == 128` header test
+[CART.27]. **Would change if:** the footer test misclassifies anything in the owner's library or the 7800basic sample
+builds.
 
 ### 1.6 Bad headers in the wild
-Commando without POKEY music has a bad header [CART.12]. ProSystem ignored headers and keyed games by MD5, so old dumps carry stale headers [CART.34]. The hash table covers only the CC0-listed retail set; homebrew and hacks get header lint (§6).
+Commando without POKEY music has a bad header [CART.12]. ProSystem ignored headers and keyed games by MD5, so old
+dumps carry stale headers [CART.34]. The hash table covers only the CC0-listed retail set; homebrew and hacks get
+header lint (§6).
 
 ## 2. Boards
 ### 2.1 Every scheme (n = softlist entries, of which commercial) [CART.03][CART.18]

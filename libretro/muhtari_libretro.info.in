@@ -4,7 +4,7 @@
 display_name = "Atari - 7800 (muhtari)"
 authors = "muhtari contributors"
 corename = "muhtari"
-license = "MIT, BSD-3-Clause"
+license = "MIT, BSD-3-Clause, CC0-1.0"
 permissions = ""
 display_version = "@PROJECT_VERSION@"
 manufacturer = "Atari"
