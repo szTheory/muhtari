@@ -29,6 +29,37 @@ static uint8_t fetch(muhtari *m)
     return v;
 }
 
+/* The poll mark. An NMI is taken after an instruction when its edge was
+   latched at or before the phi2 count at which the instruction's deciding
+   cycle completed; for most instructions that is cycle N - 1 of N. Every
+   instruction but JAM stores the mark once, right after that cycle's bus
+   call returns, so a held cycle up to then moves the mark and a held final
+   cycle does not. Nothing is stored per cycle (docs/hardware/sally.md,
+   NMI). */
+static void poll_mark(muhtari *m)
+{
+    m->cpu.poll_phi2 = m->bus.phi2;
+}
+
+/* The final cycle of an instruction: the poll mark, then the access. */
+static uint8_t last_fetch(muhtari *m)
+{
+    poll_mark(m);
+    return fetch(m);
+}
+
+static uint8_t last_read(muhtari *m, uint16_t addr)
+{
+    poll_mark(m);
+    return muhtari__bus_read(m, addr);
+}
+
+static void last_write(muhtari *m, uint16_t addr, uint8_t v)
+{
+    poll_mark(m);
+    muhtari__bus_write(m, addr, v);
+}
+
 /* Sets the bits in mask when cond is nonzero and clears them otherwise.
    Other bits of P stay as they are: bits 4 and 5 change only on a pull. */
 static void set_flag(muhtari *m, uint8_t mask, int cond)
@@ -132,6 +163,13 @@ static void implied(muhtari *m)
     muhtari__bus_read(m, m->cpu.pc);
 }
 
+/* implied as an instruction's final cycle. */
+static void last_implied(muhtari *m)
+{
+    poll_mark(m);
+    implied(m);
+}
+
 /* Loads and transfers: the register takes v, N and Z follow it. */
 static void assign(muhtari *m, uint8_t *reg, uint8_t v)
 {
@@ -142,14 +180,14 @@ static void assign(muhtari *m, uint8_t *reg, uint8_t v)
 /* LDA, LDX, LDY from memory. */
 static void load(muhtari *m, uint8_t *reg, uint16_t ea)
 {
-    uint8_t v = muhtari__bus_read(m, ea);
+    uint8_t v = last_read(m, ea);
     assign(m, reg, v);
 }
 
 /* Reads the operand of a read instruction at ea. */
 static uint8_t read_at(muhtari *m, uint16_t ea)
 {
-    return muhtari__bus_read(m, ea);
+    return last_read(m, ea);
 }
 
 /* The binary sum A + v + C. V is set when both inputs have the same sign and
@@ -251,21 +289,21 @@ static void bit_op(muhtari *m, uint8_t v)
 /* Register increments and decrements wrap at 8 bits. */
 static void step_reg(muhtari *m, uint8_t *reg, uint8_t delta)
 {
-    implied(m);
+    last_implied(m);
     assign(m, reg, (uint8_t)(*reg + delta));
 }
 
 /* Flag instructions: one dummy cycle, then one bit of P. */
 static void flag_op(muhtari *m, uint8_t mask, int cond)
 {
-    implied(m);
+    last_implied(m);
     set_flag(m, mask, cond);
 }
 
 /* Transfers between registers: one dummy cycle. */
 static void transfer(muhtari *m, uint8_t *dst, uint8_t v)
 {
-    implied(m);
+    last_implied(m);
     assign(m, dst, v);
 }
 
@@ -428,7 +466,7 @@ static void sbx(muhtari *m, uint8_t v)
 /* The accumulator forms of ASL, LSR, ROL and ROR: one dummy cycle. */
 static void accumulator(muhtari *m, rmw_op op)
 {
-    implied(m);
+    last_implied(m);
     m->cpu.a = op(m, m->cpu.a);
 }
 
@@ -440,7 +478,7 @@ static void rmw(muhtari *m, uint16_t ea, rmw_op op)
     uint8_t v = muhtari__bus_read(m, ea);
     muhtari__bus_write(m, ea, v);
     uint8_t r = op(m, v);
-    muhtari__bus_write(m, ea, r);
+    last_write(m, ea, r);
 }
 
 /* The stack is page 1. A push writes at 0x0100 + S and then decrements S; a
@@ -468,11 +506,16 @@ static void stack_dummy(muhtari *m)
 /* Conditional branches: the offset byte, then, when taken, a dummy read at
    PC while the low byte is added, and a second dummy read at
    (old PCH << 8) | new PCL when the target is in another page (64doc,
-   "Relative addressing"). The offset is signed. */
+   "Relative addressing"). The offset is signed.
+   The deciding cycle is cycle 1, the opcode fetch, when the branch is not
+   taken or is taken within the page, and cycle 3 when it crosses a page
+   (docs/hardware/sally.md, NMI). */
 static void branch(muhtari *m, int cond)
 {
+    uint64_t opcode_done = m->bus.phi2;
     uint8_t off = fetch(m);
     if (!cond) {
+        m->cpu.poll_phi2 = opcode_done;
         return;
     }
     implied(m);
@@ -480,7 +523,9 @@ static void branch(muhtari *m, int cond)
     uint32_t delta = (off & 0x80u) != 0u ? (uint32_t)off + 0xFF00u : (uint32_t)off;
     uint16_t target = (uint16_t)(pc + delta);
     if ((target & 0xFF00u) != (pc & 0xFF00u)) {
-        muhtari__bus_read(m, (uint16_t)((pc & 0xFF00u) | (target & 0x00FFu)));
+        last_read(m, (uint16_t)((pc & 0xFF00u) | (target & 0x00FFu)));
+    } else {
+        m->cpu.poll_phi2 = opcode_done;
     }
     m->cpu.pc = target;
 }
@@ -535,7 +580,7 @@ static void store_sh(muhtari *m, uint8_t reg, uint8_t lo, uint8_t hi, uint8_t id
     uint8_t value = (uint8_t)(reg & (uint8_t)(hi + 1u));
     uint8_t high = sum > 0xFFu ? value : hi;
     muhtari__bus_read(m, (uint16_t)(((uint32_t)hi << 8) | (sum & 0xFFu)));
-    muhtari__bus_write(m, (uint16_t)(((uint32_t)high << 8) | (sum & 0xFFu)), value);
+    last_write(m, (uint16_t)(((uint32_t)high << 8) | (sum & 0xFFu)), value);
 }
 
 /* The abs,X and abs,Y forms of store_sh: the two address bytes, then the
@@ -547,13 +592,36 @@ static void store_sh_abs(muhtari *m, uint8_t reg, uint8_t idx)
     store_sh(m, reg, lo, hi, idx);
 }
 
+/* Nonzero when an NMI edge is latched at or before the poll mark. */
+static int nmi_due(const muhtari *m)
+{
+    return m->bus.nmi_phi2 != 0u && m->bus.nmi_phi2 <= m->cpu.poll_phi2;
+}
+
+/* The NMI entry, seven cycles: two dummy reads at PC, PCH, PCL and P pushed
+   with bit 4 clear and bit 5 set, I set, then PC from 0xFFFA/0xFFFB. The edge
+   is consumed before the first cycle, and the entry stores no poll mark, so
+   the handler's first instruction always runs and an edge latched during the
+   entry waits for the next poll (docs/hardware/sally.md, NMI). */
+static void nmi(muhtari *m)
+{
+    m->bus.nmi_phi2 = 0u;
+    muhtari__bus_read(m, m->cpu.pc);
+    muhtari__bus_read(m, m->cpu.pc);
+    push(m, (uint8_t)(m->cpu.pc >> 8));
+    push(m, (uint8_t)m->cpu.pc);
+    push(m, (uint8_t)((m->cpu.p & (uint8_t)~FLAG_B) | FLAG_U));
+    set_flag(m, FLAG_I, 1);
+    m->cpu.pc = read_addr(m, 0xFFFAu, 0xFFFBu);
+}
+
 void muhtari__cpu_step(muhtari *m)
 {
     uint8_t opcode = fetch(m);
     switch (opcode) {
     /* Loads. */
     case 0xA9: /* LDA immediate */
-        assign(m, &m->cpu.a, fetch(m));
+        assign(m, &m->cpu.a, last_fetch(m));
         break;
     case 0xA5: /* LDA zp */
         load(m, &m->cpu.a, ea_zp(m));
@@ -577,7 +645,7 @@ void muhtari__cpu_step(muhtari *m)
         load(m, &m->cpu.a, ea_izy(m, 0));
         break;
     case 0xA2: /* LDX immediate */
-        assign(m, &m->cpu.x, fetch(m));
+        assign(m, &m->cpu.x, last_fetch(m));
         break;
     case 0xA6: /* LDX zp */
         load(m, &m->cpu.x, ea_zp(m));
@@ -592,7 +660,7 @@ void muhtari__cpu_step(muhtari *m)
         load(m, &m->cpu.x, ea_absi(m, m->cpu.y, 0));
         break;
     case 0xA0: /* LDY immediate */
-        assign(m, &m->cpu.y, fetch(m));
+        assign(m, &m->cpu.y, last_fetch(m));
         break;
     case 0xA4: /* LDY zp */
         load(m, &m->cpu.y, ea_zp(m));
@@ -609,43 +677,43 @@ void muhtari__cpu_step(muhtari *m)
 
     /* Stores. abs,X, abs,Y and (zp),Y always make the dummy read. */
     case 0x85: /* STA zp */
-        muhtari__bus_write(m, ea_zp(m), m->cpu.a);
+        last_write(m, ea_zp(m), m->cpu.a);
         break;
     case 0x95: /* STA zp,X */
-        muhtari__bus_write(m, ea_zpx(m), m->cpu.a);
+        last_write(m, ea_zpx(m), m->cpu.a);
         break;
     case 0x8D: /* STA abs */
-        muhtari__bus_write(m, ea_abs(m), m->cpu.a);
+        last_write(m, ea_abs(m), m->cpu.a);
         break;
     case 0x9D: /* STA abs,X */
-        muhtari__bus_write(m, ea_absi(m, m->cpu.x, 1), m->cpu.a);
+        last_write(m, ea_absi(m, m->cpu.x, 1), m->cpu.a);
         break;
     case 0x99: /* STA abs,Y */
-        muhtari__bus_write(m, ea_absi(m, m->cpu.y, 1), m->cpu.a);
+        last_write(m, ea_absi(m, m->cpu.y, 1), m->cpu.a);
         break;
     case 0x81: /* STA (zp,X) */
-        muhtari__bus_write(m, ea_izx(m), m->cpu.a);
+        last_write(m, ea_izx(m), m->cpu.a);
         break;
     case 0x91: /* STA (zp),Y */
-        muhtari__bus_write(m, ea_izy(m, 1), m->cpu.a);
+        last_write(m, ea_izy(m, 1), m->cpu.a);
         break;
     case 0x86: /* STX zp */
-        muhtari__bus_write(m, ea_zp(m), m->cpu.x);
+        last_write(m, ea_zp(m), m->cpu.x);
         break;
     case 0x96: /* STX zp,Y */
-        muhtari__bus_write(m, ea_zpy(m), m->cpu.x);
+        last_write(m, ea_zpy(m), m->cpu.x);
         break;
     case 0x8E: /* STX abs */
-        muhtari__bus_write(m, ea_abs(m), m->cpu.x);
+        last_write(m, ea_abs(m), m->cpu.x);
         break;
     case 0x84: /* STY zp */
-        muhtari__bus_write(m, ea_zp(m), m->cpu.y);
+        last_write(m, ea_zp(m), m->cpu.y);
         break;
     case 0x94: /* STY zp,X */
-        muhtari__bus_write(m, ea_zpx(m), m->cpu.y);
+        last_write(m, ea_zpx(m), m->cpu.y);
         break;
     case 0x8C: /* STY abs */
-        muhtari__bus_write(m, ea_abs(m), m->cpu.y);
+        last_write(m, ea_abs(m), m->cpu.y);
         break;
 
     /* Transfers. TXS sets no flag. */
@@ -665,13 +733,13 @@ void muhtari__cpu_step(muhtari *m)
         transfer(m, &m->cpu.x, m->cpu.s);
         break;
     case 0x9A: /* TXS */
-        implied(m);
+        last_implied(m);
         m->cpu.s = m->cpu.x;
         break;
 
     /* ORA */
     case 0x09:
-        ora(m, fetch(m));
+        ora(m, last_fetch(m));
         break;
     case 0x05:
         ora(m, read_at(m, ea_zp(m)));
@@ -697,7 +765,7 @@ void muhtari__cpu_step(muhtari *m)
 
     /* AND */
     case 0x29:
-        and_op(m, fetch(m));
+        and_op(m, last_fetch(m));
         break;
     case 0x25:
         and_op(m, read_at(m, ea_zp(m)));
@@ -723,7 +791,7 @@ void muhtari__cpu_step(muhtari *m)
 
     /* EOR */
     case 0x49:
-        eor(m, fetch(m));
+        eor(m, last_fetch(m));
         break;
     case 0x45:
         eor(m, read_at(m, ea_zp(m)));
@@ -749,7 +817,7 @@ void muhtari__cpu_step(muhtari *m)
 
     /* ADC */
     case 0x69:
-        adc(m, fetch(m));
+        adc(m, last_fetch(m));
         break;
     case 0x65:
         adc(m, read_at(m, ea_zp(m)));
@@ -775,7 +843,7 @@ void muhtari__cpu_step(muhtari *m)
 
     /* SBC */
     case 0xE9:
-        sbc(m, fetch(m));
+        sbc(m, last_fetch(m));
         break;
     case 0xE5:
         sbc(m, read_at(m, ea_zp(m)));
@@ -801,7 +869,7 @@ void muhtari__cpu_step(muhtari *m)
 
     /* CMP */
     case 0xC9:
-        cmp_reg(m, m->cpu.a, fetch(m));
+        cmp_reg(m, m->cpu.a, last_fetch(m));
         break;
     case 0xC5:
         cmp_reg(m, m->cpu.a, read_at(m, ea_zp(m)));
@@ -827,7 +895,7 @@ void muhtari__cpu_step(muhtari *m)
 
     /* CPX and CPY */
     case 0xE0:
-        cmp_reg(m, m->cpu.x, fetch(m));
+        cmp_reg(m, m->cpu.x, last_fetch(m));
         break;
     case 0xE4:
         cmp_reg(m, m->cpu.x, read_at(m, ea_zp(m)));
@@ -836,7 +904,7 @@ void muhtari__cpu_step(muhtari *m)
         cmp_reg(m, m->cpu.x, read_at(m, ea_abs(m)));
         break;
     case 0xC0:
-        cmp_reg(m, m->cpu.y, fetch(m));
+        cmp_reg(m, m->cpu.y, last_fetch(m));
         break;
     case 0xC4:
         cmp_reg(m, m->cpu.y, read_at(m, ea_zp(m)));
@@ -891,7 +959,7 @@ void muhtari__cpu_step(muhtari *m)
         break;
 
     case 0xEA: /* NOP */
-        implied(m);
+        last_implied(m);
         break;
 
     /* Shifts and rotates. Read-modify-write abs,X always makes the dummy
@@ -986,20 +1054,24 @@ void muhtari__cpu_step(muhtari *m)
     /* Stack. */
     case 0x48: /* PHA */
         implied(m);
+        poll_mark(m);
         push(m, m->cpu.a);
         break;
     case 0x08: /* PHP */
         implied(m);
+        poll_mark(m);
         push_p(m);
         break;
     case 0x68: /* PLA */
         implied(m);
         stack_dummy(m);
+        poll_mark(m);
         assign(m, &m->cpu.a, pull(m));
         break;
     case 0x28: /* PLP */
         implied(m);
         stack_dummy(m);
+        poll_mark(m);
         pull_p(m);
         break;
 
@@ -1030,14 +1102,19 @@ void muhtari__cpu_step(muhtari *m)
         break;
 
     /* Jumps. */
-    case 0x4C: /* JMP abs */
-        m->cpu.pc = ea_abs(m);
+    case 0x4C: { /* JMP abs */
+        uint8_t lo = fetch(m);
+        uint8_t hi = last_fetch(m);
+        m->cpu.pc = (uint16_t)(((uint32_t)hi << 8) | lo);
         break;
+    }
     case 0x6C: { /* JMP (ind): the pointer's high byte comes from the same
                     page, so a pointer at xxFF reads xx00 (64doc). */
         uint16_t ptr = ea_abs(m);
         uint16_t next = (uint16_t)((ptr & 0xFF00u) | ((ptr + 1u) & 0x00FFu));
-        m->cpu.pc = read_addr(m, ptr, next);
+        uint8_t lo = muhtari__bus_read(m, ptr);
+        uint8_t hi = last_read(m, next);
+        m->cpu.pc = (uint16_t)(((uint32_t)hi << 8) | lo);
         break;
     }
 
@@ -1049,7 +1126,7 @@ void muhtari__cpu_step(muhtari *m)
         uint8_t lo = pull(m);
         uint8_t hi = pull(m);
         m->cpu.pc = (uint16_t)(((uint32_t)hi << 8) | lo);
-        fetch(m);
+        last_fetch(m);
         break;
     }
 
@@ -1060,6 +1137,7 @@ void muhtari__cpu_step(muhtari *m)
         stack_dummy(m);
         pull_p(m);
         uint8_t lo = pull(m);
+        poll_mark(m);
         uint8_t hi = pull(m);
         m->cpu.pc = (uint16_t)(((uint32_t)hi << 8) | lo);
         break;
@@ -1067,15 +1145,25 @@ void muhtari__cpu_step(muhtari *m)
 
     /* BRK: the byte after the opcode is read and skipped, the return
        address and P | 0x30 are pushed, I is set and D is left alone, and PC
-       loads from 0xFFFE/0xFFFF. */
-    case 0x00:
+       loads from 0xFFFE/0xFFFF. Its deciding cycle is cycle 4, the push of
+       PCL: an NMI latched by then takes the vector at 0xFFFA instead, with B
+       still set in the pushed P, and is consumed. A later one waits for the
+       handler's first instruction (docs/hardware/sally.md, NMI). */
+    case 0x00: {
         fetch(m);
         push(m, (uint8_t)(m->cpu.pc >> 8));
         push(m, (uint8_t)m->cpu.pc);
+        poll_mark(m);
         push_p(m);
         set_flag(m, FLAG_I, 1);
-        m->cpu.pc = read_addr(m, 0xFFFEu, 0xFFFFu);
+        uint16_t vector = 0xFFFEu;
+        if (nmi_due(m)) {
+            m->bus.nmi_phi2 = 0u;
+            vector = 0xFFFAu;
+        }
+        m->cpu.pc = read_addr(m, vector, (uint16_t)(vector + 1u));
         break;
+    }
 
     /* JSR: the low address byte, a dummy stack read, the return address
        (the last operand byte) pushed high byte first, then the high address
@@ -1085,7 +1173,7 @@ void muhtari__cpu_step(muhtari *m)
         stack_dummy(m);
         push(m, (uint8_t)(m->cpu.pc >> 8));
         push(m, (uint8_t)m->cpu.pc);
-        uint8_t hi = fetch(m);
+        uint8_t hi = last_fetch(m);
         m->cpu.pc = (uint16_t)(((uint32_t)hi << 8) | lo);
         break;
     }
@@ -1100,14 +1188,14 @@ void muhtari__cpu_step(muhtari *m)
     case 0x7A:
     case 0xDA:
     case 0xFA:
-        implied(m);
+        last_implied(m);
         break;
     case 0x80:
     case 0x82:
     case 0x89:
     case 0xC2:
     case 0xE2:
-        fetch(m);
+        last_fetch(m);
         break;
     case 0x04:
     case 0x44:
@@ -1156,16 +1244,16 @@ void muhtari__cpu_step(muhtari *m)
 
     /* SAX: store A AND X; no flag changes. */
     case 0x87: /* SAX zp */
-        muhtari__bus_write(m, ea_zp(m), (uint8_t)(m->cpu.a & m->cpu.x));
+        last_write(m, ea_zp(m), (uint8_t)(m->cpu.a & m->cpu.x));
         break;
     case 0x97: /* SAX zp,Y */
-        muhtari__bus_write(m, ea_zpy(m), (uint8_t)(m->cpu.a & m->cpu.x));
+        last_write(m, ea_zpy(m), (uint8_t)(m->cpu.a & m->cpu.x));
         break;
     case 0x8F: /* SAX abs */
-        muhtari__bus_write(m, ea_abs(m), (uint8_t)(m->cpu.a & m->cpu.x));
+        last_write(m, ea_abs(m), (uint8_t)(m->cpu.a & m->cpu.x));
         break;
     case 0x83: /* SAX (zp,X) */
-        muhtari__bus_write(m, ea_izx(m), (uint8_t)(m->cpu.a & m->cpu.x));
+        last_write(m, ea_izx(m), (uint8_t)(m->cpu.a & m->cpu.x));
         break;
 
     /* Combined read-modify-writes. abs,X, abs,Y and (zp),Y always make the
@@ -1300,29 +1388,29 @@ void muhtari__cpu_step(muhtari *m)
     /* Unofficial immediate ALU operations. */
     case 0x0B: /* ANC */
     case 0x2B:
-        anc(m, fetch(m));
+        anc(m, last_fetch(m));
         break;
     case 0x4B: /* ALR: AND, then LSR of A */
-        m->cpu.a = lsr(m, (uint8_t)(m->cpu.a & fetch(m)));
+        m->cpu.a = lsr(m, (uint8_t)(m->cpu.a & last_fetch(m)));
         break;
     case 0x6B: /* ARR */
-        arr(m, fetch(m));
+        arr(m, last_fetch(m));
         break;
     case 0xCB: /* SBX */
-        sbx(m, fetch(m));
+        sbx(m, last_fetch(m));
         break;
     case 0xEB: /* SBC immediate */
-        sbc(m, fetch(m));
+        sbc(m, last_fetch(m));
         break;
 
     /* ANE and LXA OR A with a chip-dependent constant from the machine
        profile (docs/hardware/sally.md, Unstable opcodes). */
     case 0x8B: /* ANE */
         assign(m, &m->cpu.a,
-               (uint8_t)((m->cpu.a | m->profile.ane_lxa_constant) & m->cpu.x & fetch(m)));
+               (uint8_t)((m->cpu.a | m->profile.ane_lxa_constant) & m->cpu.x & last_fetch(m)));
         break;
     case 0xAB: /* LXA */
-        m->cpu.x = (uint8_t)((m->cpu.a | m->profile.ane_lxa_constant) & fetch(m));
+        m->cpu.x = (uint8_t)((m->cpu.a | m->profile.ane_lxa_constant) & last_fetch(m));
         assign(m, &m->cpu.a, m->cpu.x);
         break;
 
@@ -1368,7 +1456,12 @@ void muhtari__cpu_step(muhtari *m)
     case 0xB2:
     case 0xD2:
     case 0xF2:
+        /* A jammed CPU takes no NMI: only reset recovers it
+           (docs/hardware/sally.md, JAM). */
         jam(m);
-        break;
+        return;
+    }
+    if (nmi_due(m)) {
+        nmi(m);
     }
 }

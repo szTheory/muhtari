@@ -25,6 +25,10 @@ core.testcard.pinned_hash	core,portable
 core.testcard.static	core,portable
 cpu.decimal.clark	portable,vectors
 cpu.decimal.clark.self_test	portable,vectors
+cpu.nmi.branch_no_cross_polls_early	portable,sally
+cpu.nmi.hijacks_brk	portable,sally
+cpu.nmi.last_cycle_taken_after_next	portable,sally
+cpu.nmi.penultimate_taken_after	portable,sally
 cpu.unstable.sally_constant	portable,vectors
 cpu.vectors.00	portable,vectors
 cpu.vectors.01	portable,vectors

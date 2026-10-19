@@ -99,6 +99,15 @@ muhtari_add_test(NAME cpu.unstable.sally_constant
   COMMAND muhtari-test-cpu unstable.sally_constant
   LABELS vectors portable TIMEOUT 10)
 
+# NMI timing on the flat bus: the edge's phi2 count against each
+# instruction's deciding cycle (docs/hardware/sally.md, NMI).
+foreach(cpu_nmi_case IN ITEMS penultimate_taken_after last_cycle_taken_after_next
+    branch_no_cross_polls_early hijacks_brk)
+  muhtari_add_test(NAME cpu.nmi.${cpu_nmi_case}
+    COMMAND muhtari-test-cpu nmi.${cpu_nmi_case}
+    LABELS sally portable TIMEOUT 10)
+endforeach()
+
 # Bruce Clark's decimal mode test, assembled from tests/cpu/decimal/clark.s,
 # over all 262,144 ADC and SBC cases on A, C, N, V and Z. The 65C02 build of
 # the same listing predicts other flags, so SALLY must fail it: ERROR = 1.

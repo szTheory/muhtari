@@ -20,6 +20,10 @@ struct vector_machine {
     struct n65v_cycle log[VECTOR_LOG_CAPACITY];
     uint32_t log_count;
     uint8_t log_overflow; /* set when a cycle arrived with the log full */
+    /* A scripted NMI edge: the cycle that takes phi2 past nmi_at - 1 to or
+       beyond nmi_at latches it, as m.bus.nmi_phi2 = nmi_at, unless an edge
+       is already latched. 0 means none. */
+    uint64_t nmi_at;
 };
 
 /* Empties the cycle log and clears its overflow flag. */

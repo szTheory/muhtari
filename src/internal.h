@@ -26,8 +26,12 @@
 #define MUHTARI__PITCH_MAX 65536u
 
 /* SALLY's registers. P is held raw, as the stack and the vectors see it.
-   jammed is set by a JAM opcode; the CPU then runs no more instructions. */
+   jammed is set by a JAM opcode; the CPU then runs no more instructions.
+   poll_phi2 is the phi2 count at which the last instruction's deciding cycle
+   completed: an NMI latched at or before it is taken after that instruction
+   (docs/hardware/sally.md, NMI). */
 struct muhtari__cpu {
+    uint64_t poll_phi2;
     uint16_t pc;
     uint8_t a, x, y, s, p;
     uint8_t jammed;

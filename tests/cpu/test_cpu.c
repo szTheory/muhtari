@@ -2,6 +2,7 @@
 
      muhtari-test-cpu unstable.sally_constant
      muhtari-test-cpu decimal.clark FILE EXPECTED
+     muhtari-test-cpu nmi.<case>
 
    Each case runs a program through the CPU object and checks what it leaves.
    decimal.clark loads FILE, an assembled tests/cpu/decimal/clark.s, at $2000,
@@ -139,6 +140,197 @@ static int decimal_clark(char **args)
     return 1;
 }
 
+/* NMI timing (docs/hardware/sally.md, NMI). A program runs from its origin
+   with S = $FD while the flat bus latches an edge at the phi2 count nmi_at;
+   with no holds, cycle k of the first instruction completes at phi2 k. The
+   NMI handler and the BRK handler are NOPs. Each case checks the return
+   address the NMI pushed, and that the nearest wrong model would push a
+   different one. */
+#define NMI_HANDLER 0x0500u
+#define BRK_HANDLER 0x0600u
+#define NMI_STEP_LIMIT 8u
+
+struct nmi_result {
+    uint16_t ret; /* the return address the NMI pushed, 0 when not taken */
+    uint8_t p;    /* the P it pushed */
+};
+
+static struct nmi_result nmi_run(uint16_t origin, const uint8_t *program, size_t size,
+                                 uint64_t nmi_at)
+{
+    struct nmi_result r = {0u, 0u};
+    memset(&machine, 0, sizeof machine);
+    memcpy(&machine.ram[origin], program, size);
+    memset(&machine.ram[NMI_HANDLER], 0xEA, 16u);
+    memset(&machine.ram[BRK_HANDLER], 0xEA, 16u);
+    machine.ram[0xFFFAu] = (uint8_t)(NMI_HANDLER & 0xFFu);
+    machine.ram[0xFFFBu] = (uint8_t)(NMI_HANDLER >> 8);
+    machine.ram[0xFFFEu] = (uint8_t)(BRK_HANDLER & 0xFFu);
+    machine.ram[0xFFFFu] = (uint8_t)(BRK_HANDLER >> 8);
+    machine.m.cpu.s = 0xFDu;
+    machine.m.cpu.pc = origin;
+    machine.nmi_at = nmi_at;
+    for (uint32_t i = 0u; i < NMI_STEP_LIMIT; i++) {
+        vector_machine_reset_log(&machine);
+        muhtari__cpu_step(&machine.m);
+        if (machine.m.cpu.pc == NMI_HANDLER) {
+            uint8_t s = machine.m.cpu.s;
+            r.p = machine.ram[0x0100u | (uint8_t)(s + 1u)];
+            r.ret = (uint16_t)(machine.ram[0x0100u | (uint8_t)(s + 2u)] |
+                               ((uint32_t)machine.ram[0x0100u | (uint8_t)(s + 3u)] << 8));
+            return r;
+        }
+    }
+    return r;
+}
+
+/* Fails when got is not expected, or when the wrong model named would push
+   the same address, so that the case could not tell the two apart. */
+static int expect_return(const char *what, uint16_t got, uint16_t expected, const char *model,
+                         uint16_t wrong)
+{
+    if (expected == wrong) {
+        printf("%s: %s also gives $%04x\n", what, model, (unsigned)expected);
+        return 0;
+    }
+    if (got != expected) {
+        printf("%s: return address expected $%04x got $%04x (%s gives $%04x)\n", what,
+               (unsigned)expected, (unsigned)got, model, (unsigned)wrong);
+        return 0;
+    }
+    return 1;
+}
+
+/* LDA abs takes 4 cycles; an edge in cycle 3 is taken after it. Polling
+   only the edges latched before the instruction began would take it after
+   the NOP. */
+static int nmi_penultimate_taken_after(char **args)
+{
+    (void)args;
+    /* clang-format off */
+    static const uint8_t program[] = {
+        0xAD, 0x34, 0x12, /* $0200 LDA $1234 */
+        0xEA,             /* $0203 NOP */
+        0xEA,             /* $0204 NOP */
+    };
+    /* clang-format on */
+    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 3u);
+    return expect_return("LDA $1234, edge in cycle 3", r.ret, 0x0203u,
+                         "polling at the instruction's start", 0x0204u);
+}
+
+/* An edge in LDA abs's last cycle, cycle 4, is taken after the next
+   instruction. Polling every edge latched by the instruction's end would
+   take it after LDA. */
+static int nmi_last_cycle_taken_after_next(char **args)
+{
+    (void)args;
+    /* clang-format off */
+    static const uint8_t program[] = {
+        0xAD, 0x34, 0x12, /* $0200 LDA $1234 */
+        0xEA,             /* $0203 NOP */
+        0xEA,             /* $0204 NOP */
+    };
+    /* clang-format on */
+    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 4u);
+    return expect_return("LDA $1234, edge in cycle 4", r.ret, 0x0204u,
+                         "polling at the instruction's end", 0x0203u);
+}
+
+/* A taken branch within its page decides at cycle 1 of 3, so an edge in its
+   cycle 2 waits for the next instruction, where cycle N - 1 would take it
+   after the branch. LDA zp, also 3 cycles, takes the same edge after LDA.
+   A branch across a page decides at cycle 3 of 4. */
+static int nmi_branch_no_cross_polls_early(char **args)
+{
+    (void)args;
+    /* clang-format off */
+    static const uint8_t no_cross[] = {
+        0x90, 0x00, /* $0200 BCC $0202 (C is clear: taken, same page) */
+        0xEA,       /* $0202 NOP */
+        0xEA,       /* $0203 NOP */
+    };
+    static const uint8_t lda_zp[] = {
+        0xA5, 0x10, /* $0200 LDA $10 */
+        0xEA,       /* $0202 NOP */
+        0xEA,       /* $0203 NOP */
+    };
+    static const uint8_t cross[] = {
+        0x90, 0x01, /* $02FD BCC $0300 (taken, crosses into page 3) */
+        0xEA,       /* $02FF NOP (skipped) */
+        0xEA,       /* $0300 NOP */
+        0xEA,       /* $0301 NOP */
+    };
+    /* clang-format on */
+    static const struct {
+        const char *what;
+        uint16_t origin;
+        const uint8_t *program;
+        size_t size;
+        uint64_t nmi_at;
+        uint16_t expected;
+        const char *model;
+        uint16_t wrong;
+    } cases[] = {
+        {"BCC within the page, edge in cycle 1", 0x0200u, no_cross, sizeof no_cross, 1u, 0x0202u,
+         "polling at the instruction's start", 0x0203u},
+        {"BCC within the page, edge in cycle 2", 0x0200u, no_cross, sizeof no_cross, 2u, 0x0203u,
+         "polling at cycle N - 1", 0x0202u},
+        {"LDA $10, edge in cycle 2", 0x0200u, lda_zp, sizeof lda_zp, 2u, 0x0202u,
+         "the branch's cycle 1 rule", 0x0203u},
+        {"BCC across a page, edge in cycle 2", 0x02FDu, cross, sizeof cross, 2u, 0x0300u,
+         "the branch's cycle 1 rule", 0x0301u},
+        {"BCC across a page, edge in cycle 3", 0x02FDu, cross, sizeof cross, 3u, 0x0300u,
+         "the branch's cycle 1 rule", 0x0301u},
+        {"BCC across a page, edge in cycle 4", 0x02FDu, cross, sizeof cross, 4u, 0x0301u,
+         "polling at the instruction's end", 0x0300u},
+    };
+    int ok = 1;
+    for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {
+        struct nmi_result r =
+            nmi_run(cases[i].origin, cases[i].program, cases[i].size, cases[i].nmi_at);
+        ok &=
+            expect_return(cases[i].what, r.ret, cases[i].expected, cases[i].model, cases[i].wrong);
+    }
+    return ok;
+}
+
+/* BRK decides at cycle 4 of 7. An edge by then turns it into the NMI: B
+   stays set in the pushed P, the return address is BRK + 2 and the vector
+   is $FFFA. An edge in cycle 5 runs the BRK handler's first instruction,
+   then the NMI, which pushes P with B clear. Comparing at cycle 6 would
+   hijack that BRK too. */
+static int nmi_hijacks_brk(char **args)
+{
+    (void)args;
+    /* clang-format off */
+    static const uint8_t program[] = {
+        0x00, 0xEA, /* $0200 BRK (and its skipped byte) */
+        0xEA,       /* $0202 NOP */
+    };
+    /* clang-format on */
+    int ok = 1;
+    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 4u);
+    ok &= expect_return("BRK, edge in cycle 4", r.ret, 0x0202u, "comparing at BRK's cycle 3",
+                        0x0601u);
+    if ((r.p & 0x10u) == 0u) {
+        printf("BRK, edge in cycle 4: pushed P $%02x has B clear\n", (unsigned)r.p);
+        ok = 0;
+    }
+    if (machine.m.bus.nmi_phi2 != 0u) {
+        printf("BRK, edge in cycle 4: the edge was not consumed\n");
+        ok = 0;
+    }
+    r = nmi_run(0x0200u, program, sizeof program, 5u);
+    ok &= expect_return("BRK, edge in cycle 5", r.ret, 0x0601u, "comparing at BRK's cycle 6",
+                        0x0202u);
+    if ((r.p & 0x10u) != 0u) {
+        printf("BRK, edge in cycle 5: the NMI pushed P $%02x with B set\n", (unsigned)r.p);
+        ok = 0;
+    }
+    return ok;
+}
+
 static const struct {
     const char *name;
     int args; /* arguments after the case name */
@@ -146,6 +338,10 @@ static const struct {
 } cases[] = {
     {"unstable.sally_constant", 0, run_unstable_sally_constant},
     {"decimal.clark", 2, decimal_clark},
+    {"nmi.penultimate_taken_after", 0, nmi_penultimate_taken_after},
+    {"nmi.last_cycle_taken_after_next", 0, nmi_last_cycle_taken_after_next},
+    {"nmi.branch_no_cross_polls_early", 0, nmi_branch_no_cross_polls_early},
+    {"nmi.hijacks_brk", 0, nmi_hijacks_brk},
 };
 
 int main(int argc, char **argv)

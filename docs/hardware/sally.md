@@ -14,6 +14,10 @@ Sources:
 - **The vectors**, SingleStepTests 65x02, `6502/v1` at commit `2f6980a2d957`
   (https://github.com/SingleStepTests/65x02, MIT): 10,000 tests per opcode, each with its initial and final state
   and every bus cycle. `tests/vectors/6502-sample.n65v` holds the first 100 tests of each opcode.
+- **CPU interrupts**, the NESdev wiki (https://www.nesdev.org/wiki/CPU_interrupts, accessed 2026-10-16): when the
+  NMOS 6502 polls its interrupt lines, for ordinary instructions, branches and BRK.
+- **The 7800 system notes**, `.planning/preparation/A7800-SYSTEM.md` section 3: on the 7800, MARIA drives NMI, and
+  the edge is latched in every cycle, held ones included.
 - **The SALLY readings**, "fingerprinting 6502 processors" (https://forums.atariage.com/topic/385521, accessed
   2026-10-15): ANE and LXA run on three real 7800 consoles.
 
@@ -21,7 +25,7 @@ Sources:
 
 A, X and Y are 8-bit, and so are S, the stack pointer, and P, the status register. PC is 16-bit. The stack is page
 1: a push writes at `$0100 + S` and then decrements S, and a pull increments S and then reads. S wraps within the
-page. Reset, IRQ and NMI are outside this page; on the 7800, IRQ is not connected.
+page. Reset and IRQ are outside this page; on the 7800, IRQ is not connected. NMI has its own section below.
 
 ## Status register
 
@@ -153,4 +157,37 @@ Twelve opcodes stop the CPU: `02 12 22 32 42 52 62 72 92 B2 D2 F2`. On the vecto
 opcode at PC, the next byte at PC + 1, then `$FFFF`, `$FFFE`, `$FFFE`, and `$FFFF` six times. PC ends at PC + 1, and no
 register or flag changes. After that the CPU executes nothing until reset. `src/cpu.c` sets `jammed`, and the CPU
 is not stepped again: idling the machine is the run loop's job. The vector harness checks that `jammed` is set after
-exactly these twelve opcodes.
+exactly these twelve opcodes. A jammed CPU also takes no NMI, so only reset recovers it.
+
+## NMI
+
+On the 7800, NMI comes from MARIA. The bus latches a falling edge at the end of a cycle and records `nmi_phi2`, the
+φ2 count of the cycle it fell in. φ2 counts cycles as they complete, so the first cycle of the run is 1, and a held
+cycle counts each of its φ2 periods.
+
+The CPU does not look at the edge in every cycle. Each instruction has one deciding cycle, and the CPU takes the NMI
+after the instruction when the edge was latched by the end of that cycle. A later edge is taken after the next
+instruction. With the cycles of an instruction numbered 1 to N (CPU interrupts):
+
+| Instruction | Deciding cycle |
+|-------------|----------------|
+| Most instructions | N - 1, the penultimate cycle |
+| Branch not taken (N = 2) | 1, the opcode fetch |
+| Branch taken within the page (N = 3) | 1, the opcode fetch, so it polls one cycle early |
+| Branch taken across a page (N = 4) | 3 |
+| BRK (N = 7) | 4, the push of the return address's low byte |
+
+`src/cpu.c` stores the φ2 count once per instruction, as `poll_phi2`, right after the deciding cycle's bus access
+returns. At the end of the instruction it takes the NMI when `nmi_phi2` is not 0 and is at or below `poll_phi2`.
+
+BRK compares at its cycle 4, before it reads its vector. If the edge came by then, BRK reads the vector at `$FFFA`
+instead of `$FFFE`, and the NMI is consumed. Everything else stays as BRK does it: the return address is BRK + 2, and
+the pushed P has bit 4 set. An edge from cycle 5 on gets the BRK vector, and the NMI follows the handler's first
+instruction.
+
+The NMI entry takes 7 cycles. It makes two dummy reads at PC, pushes PCH, PCL and P with bit 4 clear and bit 5 set,
+sets I, then reads PC from `$FFFA` and `$FFFB`. The edge is consumed before the first of these cycles. The entry does
+not poll, so the handler's first instruction always runs. An edge latched during the entry is kept, and the poll at
+the end of that first instruction takes it.
+
+The twelve JAM opcodes store no poll mark and do not check for an NMI: a jammed CPU ignores it.
