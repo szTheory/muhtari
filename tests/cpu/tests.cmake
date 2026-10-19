@@ -80,8 +80,8 @@ include(${CMAKE_CURRENT_LIST_DIR}/targets.cmake)
 
 # SALLY against the committed sample of the public SingleStepTests vectors:
 # final registers, raw P, RAM and every bus cycle of each test, one test per
-# opcode from cpu.vectors.00 to cpu.vectors.ff. TIMEOUT 10 is provisional
-# until measured.
+# opcode from cpu.vectors.00 to cpu.vectors.ff. TIMEOUT 2 is twice the slowest,
+# 0.97 s on Windows arm64 in 13 runs, run 39197902638.
 foreach(cpu_vectors_n RANGE 255)
   math(EXPR cpu_vectors_hi "${cpu_vectors_n} / 16")
   math(EXPR cpu_vectors_lo "${cpu_vectors_n} % 16")
@@ -91,7 +91,7 @@ foreach(cpu_vectors_n RANGE 255)
   muhtari_add_test(NAME cpu.vectors.${cpu_vectors_op}
     COMMAND muhtari-test-vectors ${CMAKE_SOURCE_DIR}/tests/vectors/6502-sample.n65v
       ${cpu_vectors_op}
-    LABELS vectors portable TIMEOUT 10)
+    LABELS vectors portable TIMEOUT 2)
 endforeach()
 
 # The default ANE and LXA constant gives the value real SALLYs read.
@@ -113,14 +113,15 @@ endforeach()
 # Bruce Clark's decimal mode test, assembled from tests/cpu/decimal/clark.s,
 # over all 262,144 ADC and SBC cases on A, C, N, V and Z. The 65C02 build of
 # the same listing predicts other flags, so SALLY must fail it: ERROR = 1.
-# TIMEOUT 60 is provisional until measured.
+# TIMEOUT 3 is twice the slowest clark run, 1.4 s on macOS x64 in 13 runs, run
+# 39198577488 (be32's 6.2 s is under its scale of 11); the self test exits at once.
 set(cpu_decimal ${CMAKE_SOURCE_DIR}/tests/cpu/decimal)
 muhtari_add_test(NAME cpu.decimal.clark
   COMMAND muhtari-test-cpu decimal.clark ${cpu_decimal}/clark-6502.bin 0
-  LABELS vectors portable TIMEOUT 60)
+  LABELS vectors portable TIMEOUT 3)
 muhtari_add_test(NAME cpu.decimal.clark.self_test
   COMMAND muhtari-test-cpu decimal.clark ${cpu_decimal}/clark-65c02.bin 1
-  LABELS vectors portable TIMEOUT 60)
+  LABELS vectors portable TIMEOUT 1)
 
 # The vector tooling, on byte prefixes of upstream files in
 # tests/vectors/fixtures (see the README there).

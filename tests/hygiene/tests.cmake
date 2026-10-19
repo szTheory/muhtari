@@ -333,7 +333,7 @@ muhtari_add_test(NAME hygiene.firmware_scan
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
     -DFIRMWARE=${CMAKE_SOURCE_DIR}/tests/release/firmware.txt ${hygiene_scan_lists}
     -P ${hygiene_scripts}/firmware_scan.cmake
-  LABELS hygiene TIMEOUT 60)  # provisional
+  LABELS hygiene TIMEOUT 60)  # provisional, 9 samples
 set(hygiene_scan ${CMAKE_BINARY_DIR}/hygiene/firmware_scan_fixture)
 file(REMOVE_RECURSE ${hygiene_scan})
 string(REPEAT "h" 118 hygiene_pad)
@@ -353,4 +353,4 @@ muhtari_add_test(NAME hygiene.firmware_scan.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
     "-DREGEX=synthetic.a78: matches synthetic \\(header stripped\\)"
     -P ${hygiene_scripts}/expect_fail.cmake
-  LABELS hygiene TIMEOUT 30)  # provisional
+  LABELS hygiene TIMEOUT 30)  # provisional, 9 samples

@@ -73,7 +73,7 @@ muhtari_add_test(NAME release.firmware_scan
   COMMAND ${CMAKE_COMMAND} "-DZIPS=${PROJECT_BINARY_DIR}/muhtari-*-${release_suffix}.zip"
     -DFIRMWARE=${PROJECT_SOURCE_DIR}/tests/release/firmware.txt ${release_scan_lists}
     -P ${release_scripts}/firmware_scan.cmake
-  LABELS release TIMEOUT 60)  # provisional
+  LABELS release TIMEOUT 60)  # provisional, 9 samples
 set(release_scan ${PROJECT_BINARY_DIR}/release/firmware_scan_self_test)
 file(REMOVE_RECURSE ${release_scan})
 string(REPEAT "h" 118 release_pad)
@@ -93,4 +93,4 @@ muhtari_add_test(NAME release.firmware_scan.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${release_cmd}" -DCODE=1
     "-DREGEX=synthetic.zip/synthetic.a78: matches synthetic \\(header stripped\\)"
     -P ${release_scripts}/expect_fail.cmake
-  LABELS release TIMEOUT 30)  # provisional
+  LABELS release TIMEOUT 30)  # provisional, 9 samples

@@ -20,7 +20,7 @@ set(built_args -DWASMTIME=${MUHTARI_WASMTIME} -DPKG=${MUHTARI_7800BASIC} -DNAME=
 muhtari_add_test(NAME built.samples
   COMMAND ${CMAKE_COMMAND} ${built_args} -DOUT=${MUHTARI_BUILT_DIR}
     -DEXPECTED=${built_expected} -P ${CMAKE_CURRENT_LIST_DIR}/build.cmake
-  LABELS built portable TIMEOUT 60)
+  LABELS built portable TIMEOUT 5)  # 2 x 2.44 s, macOS x64, slowest of 13 runs, run 39195320937
 set_tests_properties(built.samples PROPERTIES FIXTURES_SETUP built_samples)
 
 # Negative control: one digit of the .a78 digest changed must fail by name.
@@ -34,4 +34,4 @@ string(REPLACE ";" "$<SEMICOLON>" built_cmd "${built_cmd}")
 muhtari_add_test(NAME built.samples.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${built_cmd}" -DCODE=1
     "-DREGEX=simple: .a78 SHA-256 drift" -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS built portable TIMEOUT 60)
+  LABELS built portable TIMEOUT 4)  # 2 x 1.68 s, Windows arm64, slowest of 13 runs, run 39197737154

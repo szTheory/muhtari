@@ -65,11 +65,12 @@ if(MUHTARI_FUZZ)
     LABELS fuzz TIMEOUT 30)
   set_tests_properties(fuzz.seeds PROPERTIES FIXTURES_SETUP fuzz_seeds)
   # max_len is the image cap plus one, so no seed is cut short of SuperGame
-  # geometry or the oversize check. TIMEOUT is provisional.
+  # geometry or the oversize check. TIMEOUT 123 is twice the slowest, 61.15 s
+  # in 15 runs, run 39198059321.
   muhtari_add_test(NAME fuzz.loader
     COMMAND muhtari-fuzz-loader ${fuzz_corpora}
       -max_total_time=60 -timeout=2 -max_len=1048705 -artifact_prefix=crash/
-    LABELS fuzz TIMEOUT 120)
+    LABELS fuzz TIMEOUT 123)
   set_tests_properties(fuzz.loader PROPERTIES
     FIXTURES_REQUIRED fuzz_seeds WORKING_DIRECTORY ${fuzz_work})
   # The same invariants over the seeds and the regressions, built with the

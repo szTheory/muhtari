@@ -18,26 +18,28 @@ endif()
 set(cpu_full_sha ${CMAKE_MATCH_1})
 set(cpu_full_url ${CMAKE_MATCH_2})
 
-# TIMEOUT 600 is provisional: the measured checkout took 87 s.
+# TIMEOUT 220 is twice the slowest fetch, 109.6 s in 15 runs, run 39197673159;
+# nightly.yml's vectors-full timeout adds it to twice the job's slowest run.
 muhtari_add_test(NAME cpu.vectors-full.fetch
   COMMAND ${CMAKE_COMMAND} -DDIR=${MUHTARI_VECTORS_DIR} -DSHA=${cpu_full_sha} -DURL=${cpu_full_url}
     -DLIST=${CMAKE_SOURCE_DIR}/tests/vectors/6502-v1.sha256 -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
     -DGIT=${GIT_EXECUTABLE} -P ${CMAKE_SOURCE_DIR}/tests/cmake/fetch_vectors.cmake
-  LABELS vectors-full TIMEOUT 600)
+  LABELS vectors-full TIMEOUT 220)
 set_tests_properties(cpu.vectors-full.fetch PROPERTIES FIXTURES_SETUP vectors_full)
 
 # The committed sample is the first 100 tests of each fetched file.
-# TIMEOUT 120 is provisional.
+# TIMEOUT 5 is twice the slowest, 2.2 s in 15 runs, run 39197673159.
 muhtari_add_test(NAME cpu.vectors-full.sample_match
   COMMAND ${CMAKE_COMMAND} -DVECCONV=$<TARGET_FILE:muhtari-vecconv> -DDIR=${MUHTARI_VECTORS_DIR}
     -DSAMPLE=${CMAKE_SOURCE_DIR}/tests/vectors/6502-sample.n65v
     -DWORK=${PROJECT_BINARY_DIR}/tests/sample_match
     -P ${CMAKE_SOURCE_DIR}/tests/cmake/vectors_sample_match.cmake
-  LABELS vectors-full TIMEOUT 120)
+  LABELS vectors-full TIMEOUT 5)
 set_tests_properties(cpu.vectors-full.sample_match PROPERTIES FIXTURES_REQUIRED vectors_full)
 
 # Final registers, raw P, RAM and every bus cycle of all 10,000 tests of each
-# opcode's file. TIMEOUT 60 each is provisional.
+# opcode's file. TIMEOUT 1 each: the slowest took 0.08 s in 15 runs, run
+# 39195625393.
 foreach(cpu_full_n RANGE 255)
   math(EXPR cpu_full_hi "${cpu_full_n} / 16")
   math(EXPR cpu_full_lo "${cpu_full_n} % 16")
@@ -46,6 +48,6 @@ foreach(cpu_full_n RANGE 255)
   set(cpu_full_op "${cpu_full_h}${cpu_full_l}")
   muhtari_add_test(NAME cpu.vectors-full.${cpu_full_op}
     COMMAND muhtari-test-vectors ${MUHTARI_VECTORS_DIR}/6502/v1/${cpu_full_op}.json ${cpu_full_op}
-    LABELS vectors-full TIMEOUT 60)
+    LABELS vectors-full TIMEOUT 1)
   set_tests_properties(cpu.vectors-full.${cpu_full_op} PROPERTIES FIXTURES_REQUIRED vectors_full)
 endforeach()

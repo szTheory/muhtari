@@ -45,7 +45,7 @@ jobs:
   # name, is under .planning/; then the heavy jobs are skipped.
   changes:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 8 s in 33 runs, run 38945207181
+    timeout-minutes: 5  # network-bound floor; slowest 8 s in 13 runs, run 39195625395
     permissions:
       contents: read
       pull-requests: read
@@ -75,7 +75,7 @@ jobs:
   # The image has clang-format-21, clang-tidy-21 and jq; configure finds them.
   hygiene:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # provisional: network-bound floor now the job fetches the MAME lists
+    timeout-minutes: 5  # network-bound floor; slowest 27 s in 13 runs, run 39198577488
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -118,7 +118,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 3  # provisional: 2 x 71 s, slowest leg of 32 runs, run 38939482093, before the sample fetch
+    timeout-minutes: 5  # network-bound floor; slowest leg 84 s in 13 runs, run 39197902638
     strategy:
       fail-fast: false
       matrix:
@@ -186,7 +186,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 3  # provisional: 2 x 55 s, slowest of 32 runs, run 38937116459, before the sample fetch
+    timeout-minutes: 5  # network-bound floor; slowest 35 s in 13 runs, run 39198234113
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -211,7 +211,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: nofp (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 1  # 2 x 29 s, slowest leg of 32 runs, run 38945207181
+    timeout-minutes: 1  # 2 x 21 s, slowest leg of 13 runs, run 39198577488
     strategy:
       fail-fast: false
       matrix:
@@ -231,7 +231,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # provisional: network-bound floor; slowest 48 s in 32 runs, run 38945207181, before the sample fetch
+    timeout-minutes: 5  # network-bound floor; slowest 45 s in 13 runs, run 39198577488
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -260,7 +260,7 @@ jobs:
     needs: [changes, build, be32]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # roll-up floor; slowest 9 s in 32 runs, run 38946364083
+    timeout-minutes: 5  # roll-up floor; slowest 7 s in 13 runs, run 39198407537
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -281,7 +281,7 @@ jobs:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 30 s in 32 runs, run 38938418438
+    timeout-minutes: 5  # network-bound floor; slowest 34 s in 13 runs, run 39197902638
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -317,7 +317,7 @@ jobs:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: macos-15
-    timeout-minutes: 5  # network-bound floor; slowest 29 s in 26 runs, run 38951834012
+    timeout-minutes: 5  # network-bound floor; slowest 29 s in 13 runs, run 39198079849
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -390,7 +390,7 @@ jobs:
     needs: changes
     if: ${{ !inputs.ref && needs.changes.outputs.heavy == 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-26.04
-    timeout-minutes: 20  # provisional, 5 samples
+    timeout-minutes: 5  # network-bound floor; slowest 29 s in 13 runs, run 39198079849
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -485,7 +485,7 @@ jobs:
     if: always()
     needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality, retroarch, perf]
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # roll-up floor; slowest 4 s in 33 runs, run 38953745345
+    timeout-minutes: 5  # roll-up floor; slowest 4 s in 13 runs, run 39197713488
     steps:
       - name: Every job succeeded or was skipped as allowed
         env:
