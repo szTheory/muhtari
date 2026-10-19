@@ -26,6 +26,7 @@ bus.open_bus.unmapped	portable,riot
 bus.open_bus.write_only	portable,riot
 bus.rdy.holds_reads_only	portable,sally
 bus.rdy.rmw_completes_both_writes	portable,sally
+cart.sha1.fips	cart,portable
 core.api.size_tags	core,portable
 core.audio.silence	core,portable
 core.create.allocator	core,portable
