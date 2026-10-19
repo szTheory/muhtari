@@ -5,15 +5,15 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: deferred
     title: "A HALT window or NMI edge that is ignored is dropped without a word, and the caller cannot tell"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: deferred
     title: "`cpu.jam.step_reads_ffff` cannot catch a jammed step that polls for an NMI"
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: deferred
     title: "The JAM doc says a frame still ends, but no frame loop runs the CPU yet"
   - id: WR-03
     severity: warning
@@ -31,7 +31,7 @@ findings:
     severity: info
     disposition: deferred
     title: "The firmware scan cannot recognise multi-chip or half-swapped 7800 images"
-open: 3
+open: 0
 total: 7
 recorded: 2026-10-19T19:30:44.642Z
 ---
@@ -40,9 +40,9 @@ recorded: 2026-10-19T19:30:44.642Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| IN-01 | info | open | - |
+| WR-01 | warning | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: phase 3's MARIA is the first caller |
+| WR-02 | warning | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: test code, a seed under rule 7 |
+| IN-01 | info | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: waits for phase 3's run loop |
 | WR-03 | warning | fixed | 02-REVIEW-FIX.md (not in the current review) |
 | WR-04 | warning | fixed | 02-REVIEW-FIX.md (not in the current review) |
 | IN-02 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md (not in the current review) |
