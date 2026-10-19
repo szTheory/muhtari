@@ -5,10 +5,10 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: planning
-stopped_at: Phase 02 code review fix round 1 done (WR-02 to WR-04 fixed; WR-01 and the info findings deferred to a todo); next /gsd-ship 2
-last_updated: "2026-10-19T18:56:00.000Z"
+stopped_at: Phase 02 ship blocked because the review fixes made 02-VERIFICATION.md stale; next /gsd-execute-phase 02, then /gsd-ship 2
+last_updated: "2026-10-19T19:13:31.000Z"
 last_activity: 2026-10-19
-last_activity_desc: Phase 02 code review fix round 1
+last_activity_desc: Phase 02 ship blocked on stale verification
 state_head: 19e4c76b0e6f73ce6c8058edc40ad1aac0b0fae2
 progress:
   total_phases: 4
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-19)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Ship phase 02 (`/gsd-ship 2`; the merge publishes 0.2.0), then Phase 3 — Games play in RetroArch
+**Current focus:** Re-verify phase 02 after its review fixes (`/gsd-execute-phase 02`), ship it (`/gsd-ship 2`; the merge publishes 0.2.0), then Phase 3 — Games play in RetroArch
 
 ## Current Position
 
 Phase: 3 — Games play in RetroArch
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-19 — Phase 02 code review fix round 1
+Last activity: 2026-10-19 — Phase 02 ship blocked on stale verification
 
 Progress: [█████░░░░░] 50%
 
@@ -243,6 +243,9 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- [Phase 02] Ship is blocked: the review fix round changed 13 files that 02-VERIFICATION.md covers, so
+  `verification.status` reads `stale`. `/gsd-execute-phase 02` resumes at the phase gates: the code review gate,
+  the regression gate and the verifier. One review fix round is left.
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
@@ -257,6 +260,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T18:56:00.000Z
-Stopped at: Phase 02 code review fix round 1 done (WR-02 to WR-04 fixed; WR-01 and the info findings deferred to a todo); next /gsd-ship 2
+Last session: 2026-10-19T19:13:31.000Z
+Stopped at: Phase 02 ship blocked because the review fixes made 02-VERIFICATION.md stale; next /gsd-execute-phase 02, then /gsd-ship 2
 Resume file: None
