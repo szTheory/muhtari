@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-06-PLAN.md
-last_updated: "2026-10-19T01:27:00.465Z"
+stopped_at: Completed 02-07-PLAN.md
+last_updated: "2026-10-19T01:42:42.843Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: a734cf65b8dee38c1f269488c07b62e0c23e99d7
+state_head: 0ac89619d18031456edb69658b63512ae066e355
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 27
+  completed_plans: 28
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 7 of 16
+Plan: 8 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -85,6 +85,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P04 | 9 min | 2 tasks | 12 files |
 | Phase 02 P05 | 17 min | 2 tasks | 10 files |
 | Phase 02 P06 | 18 min | 3 tasks | 12 files |
+| Phase 02 P07 | 12 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -173,6 +174,10 @@ Recent decisions affecting current work:
 - [Phase 02]: The NMI latch is a cycle's data tick (4 fast, 5 slow), a held cycle's own tick 4; held cycles carry their own phi2 index
 - [Phase 02]: abi.undefined allows __ImageBase on Windows x64: MSVC addresses cpu.c's switch jump table through it now cpu.c is in the archive
 - [Phase 02]: Hosted run 39185135366: the 16 bus cases and the archive with the CPU are green on every leg; be32 took 32 s
+- [Phase 02]: RIOT timer is computed on read from N, an interval shift and the writing cycle's phi2; power-on reads as 256 written on 1024T, so $FF at p = 1
+- [Phase 02]: PA7's edge detector input is the level XOR the rising-edge select, and the flag sets when it falls; marked as a model in docs/hardware/riot.md
+- [Phase 02]: Cachegrind: split archive 48.449 vs one translation unit 48.299 Ir per emulated cycle (0.31 %), under 5 %, so the core stays split
+- [Phase 02]: Hosted run 39186310654: the 16 riot-labelled tests are green on every leg; be32 took 31 s
 
 ### Pending Todos
 
@@ -211,6 +216,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T01:27:00.376Z
-Stopped at: Completed 02-06-PLAN.md
+Last session: 2026-10-19T01:42:42.792Z
+Stopped at: Completed 02-07-PLAN.md
 Resume file: None
