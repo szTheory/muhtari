@@ -84,7 +84,7 @@ dropping out.
   into `hash-equality`, the count goes up by one.
 
 `ctest --preset ci -R <regex>` reruns part of the suite after a build; `ctest --test-dir build/ci -L <label>`
-selects by label.
+selects by label. `docs/emulation-tests.md` says what each emulation label's tests cover.
 
 ## The inventory
 
