@@ -60,6 +60,32 @@ muhtari_add_test(NAME policy.pins.self_test
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene policy TIMEOUT 30)
 
+# Every manifest row matches its file and every fixture has a row. The self
+# test runs the check on a copy of the manifest whose sample digest is zeros,
+# which must name the sample.
+set(hygiene_manifest ${CMAKE_SOURCE_DIR}/tests/roms/manifest.txt)
+muhtari_add_test(NAME policy.rom_hash_coverage
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -DMANIFEST=${hygiene_manifest}
+    -P ${hygiene_scripts}/rom_hash_coverage.cmake
+  LABELS hygiene policy TIMEOUT 30)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${hygiene_manifest})
+file(READ ${hygiene_manifest} hygiene_rows)
+string(REGEX REPLACE "(\ntests/vectors/6502-sample\\.n65v\t[^\t\n]*\t[^\t\n]*\t[^\t\n]*\t)[0-9a-f]+"
+  "\\1${hygiene_zeros}" hygiene_bad_rows "${hygiene_rows}")
+if(hygiene_bad_rows STREQUAL hygiene_rows)
+  message(FATAL_ERROR "policy.rom_hash_coverage.self_test: no sample row in ${hygiene_manifest}")
+endif()
+set(hygiene_bad_manifest ${CMAKE_BINARY_DIR}/hygiene/rom_hash_fixture/manifest.txt)
+file(WRITE ${hygiene_bad_manifest} "${hygiene_bad_rows}")
+set(hygiene_cmd ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -DMANIFEST=${hygiene_bad_manifest}
+  -P ${hygiene_scripts}/rom_hash_coverage.cmake)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.rom_hash_coverage.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=tests/vectors/6502-sample\\.n65v: sha256 is [0-9a-f]+, the manifest says 0+"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)
+
 # Pull-request titles and bodies. Each fixture line is want|title|body, the
 # body with \n escapes; scripts/check-title.sh must give every want, and the
 # fixtures must hold both kinds, so a check that passes or fails everything
