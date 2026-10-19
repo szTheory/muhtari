@@ -1,7 +1,9 @@
-# Nightly bench: 300,000 headless frames of the test card per platform, as
-# trend data, never a gate (docs/testing.md, "Performance"). Reports go to job
-# summaries and artifacts, never to commits. A failed night opens or updates
-# the one open issue labelled nightly; a good night closes it.
+# Nightly: the bench, 300,000 headless frames of the test card per platform,
+# as trend data, never a gate (docs/testing.md, "Performance"); the full
+# SingleStepTests 6502 set at its pin (the vectors-full preset); and the
+# loader fuzz target for 60 s (the fuzz preset). Reports go to job summaries
+# and artifacts, never to commits. A failed night opens or updates the one
+# open issue labelled nightly; a good night closes it.
 name: Nightly
 
 on:
@@ -13,8 +15,9 @@ on:
         description: "Fail the run on purpose, to show the nightly issue being written"
         type: boolean
         default: false
-  # A change to the bench or this file runs the bench jobs on its pull
-  # request; the report job writes no issue for pull requests.
+  # A change to any job's inputs or this file runs every job on its pull
+  # request: one path union for the bench, the vector set and the loader. The
+  # report job writes no issue for pull requests.
   pull_request:
     paths:
       - .github/workflows/nightly.yml
@@ -22,6 +25,16 @@ on:
       - runner/bench.h
       - runner/clock.c
       - runner/clock.h
+      - src/cpu.c
+      - tests/cpu/**
+      - tests/vectors/**
+      - tests/cmake/fetch_vectors.cmake
+      - tests/cmake/vectors_sample_match.cmake
+      - src/cart.c
+      - src/cartdb.c
+      - src/sha1.c
+      - tests/cart/**
+      - tests/fuzz/**
 
 permissions:
   contents: read
@@ -109,9 +122,49 @@ jobs:
         if: inputs.force_failure
         run: exit 1
 
+  # All 2,560,000 tests of the pinned 6502/v1 set, fetched fresh each night:
+  # no cache, so a night proves the pin still resolves.
+  vectors-full:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30  # provisional, phase 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: cmake --workflow --preset vectors-full
+      - name: Every test ran
+        if: always()
+        run: >-
+          cmake -DJUNIT=build/vectors-full/junit.xml -DINVENTORY=tests/inventory/vectors-full.txt
+          -P tests/cmake/check_junit.cmake
+
+  # The loader fuzz target for 60 s under ASan and UBSan, from the generated
+  # seeds and the committed regressions. Its crashes derive only from
+  # synthetic seeds, so they are uploaded.
+  loader-fuzz:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10  # provisional, phase 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # clang-21 is on the image; its linker and sanitizer runtimes may not be.
+      - name: Clang 21, lld and the sanitizer runtimes
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang-21 lld-21 libclang-rt-21-dev
+      - run: cmake --workflow --preset fuzz
+      - name: Every test ran
+        if: always()
+        run: cmake -DJUNIT=build/fuzz/junit.xml -DINVENTORY=tests/inventory/fuzz.txt -P tests/cmake/check_junit.cmake
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: loader-fuzz-crash
+          path: build/fuzz/fuzz/crash/
+          if-no-files-found: warn
+
   # Decides from the jobs' results, never from a piped exit status.
   report:
-    needs: [bench, bench-wasm32]
+    needs: [bench, bench-wasm32, vectors-full, loader-fuzz]
     if: always() && github.event_name != 'pull_request'
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # provisional, 0 samples (skipped on pull requests)

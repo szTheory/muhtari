@@ -40,6 +40,7 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `nofp` | The core uses no floating point. It is built with GCC's `-mgeneral-regs-only`, which rejects any floating-point type. | `nofp` | `abi` |
 | `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer, the pins file, and `src/cartdb.c` equal to `tools/cartdb.cmake`'s output over the two pinned MAME lists. Fetch those first with `scripts/fetch-pin.sh mame-a7800-xml build/pins/mame` and `scripts/fetch-pin.sh mame-a2600-xml build/pins/mame`; configure stops with both commands when either is missing. | `hygiene` | `hygiene` |
 | `fuzz` | The cartridge loader keeps its invariants on any input: libFuzzer runs `tests/fuzz/loader.c` for 60 seconds with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, starting from the images `muhtari-test-images` writes. New inputs go to `build/fuzz/fuzz/corpus` and crashes to `build/fuzz/fuzz/crash`, never into the tree. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader`. | `fuzz` | `fuzz` |
+| `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, about 1 GiB of disk and 90 s for the fetch. | `vectors-full` | `vectors-full` |
 | `be32` | The same hashes on a big-endian, 32-bit target with unsigned `char`. It cross-compiles for 32-bit PowerPC (`cmake/toolchains/ppc-linux-gnu.cmake`) and runs under `qemu-ppc`. | `ci` | `portable` |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
 
@@ -90,7 +91,7 @@ selects by label.
 labels comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
 test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
 Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
-Four lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, and `wasm32.txt`, which is the
+Five lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt` and `wasm32.txt`, which is the
 `ci` list without the `libretro` tests.
 
 | Label | Tests |
@@ -272,7 +273,10 @@ Each report has the runner's nine keys (`frames`, `fps_milli`, `p50_us` to `p99_
 run's job summaries and its `bench-<runner>` and `bench-wasm32` artifacts; they are trend data, never a gate and
 never committed. A failed night opens or comments on the one open issue labelled `nightly`, and a good night closes
 it; the report decides from the jobs' results. Dispatching the workflow with `force_failure` fails a run on purpose.
-A pull request that changes the bench or the workflow runs the bench jobs but writes no issue.
+The same workflow runs the `vectors-full` lane and the `fuzz` lane (job `loader-fuzz`) on `ubuntu-26.04`, each
+followed by the JUnit check on its inventory; `loader-fuzz` uploads `build/fuzz/fuzz/crash/` when it fails. Neither
+caches its vectors or corpus. A pull request that changes the bench, the CPU, the vector tooling, the loader or the
+workflow runs every job but writes no issue.
 
 ## Hosted RetroArch
 
