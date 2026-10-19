@@ -355,6 +355,8 @@ policy.no_skip.self_test	policy
 policy.notices	policy
 release.archive_contents	release
 release.archive_contents.self_test	release
+release.firmware_scan	release
+release.firmware_scan.self_test	release
 release.floor	release
 release.floor.self_test	release
 release.single_version_source	policy

@@ -1,0 +1,13 @@
+# Firmware that must never ship in a release zip or enter the tree, by digest.
+# Read by tests/cmake/firmware_scan.cmake. One row per digest:
+#   <sha1|sha256> <lowercase hex> <name>
+# Only published digests are listed; no firmware byte was downloaded to make
+# them. Sources: ASSET_POLICY.md section 4 (MAME a7800.cpp at dddf4cd1faee) and
+# MAME hash/a2600.xml L16483 at dddf4cd1faee (the scharger entry).
+sha1 d9d134bb6b36907c615a594cc7688f7bfcef5b43 NTSC BIOS (7800.u7)
+sha1 5a140136a16d1d83e4ff32a19409ca376a8df874 PAL BIOS (c300558-001b.u7)
+sha1 14584b1eafe9721804782d4b1ac3a4a7313e455f BIOS with Asteroids (c300558-001a.u7)
+sha1 a3af676991391a6dd716c79022d4947206b78164 HSC ROM (highscre.bin)
+sha1 cd9d030a59f5bdcc88f1f80a6cc9fc2cd932f7db Supercharger BIOS (starpath supercharger.bin)
+# The two OpenBIOS rows ($FF and $00 fill) arrive with the OpenBIOS build in CI
+# (ASSET_POLICY.md section 3), which first produces those digests.
