@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-10-19T00:21:48.150Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-10-19T00:35:04.537Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: 8d06a286e642fc06a6546fd09916338c656b30cc
+state_head: a496e2ad4f309a7dad9e215a642ecdc245aeb83f
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 23
+  completed_plans: 24
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 3 of 16
+Plan: 4 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -81,6 +81,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 01 P21 | 33 min | 3 tasks | 8 files |
 | Phase 02 P01 | 15 min | 3 tasks | 22 files |
 | Phase 02 P02 | 9 min | 3 tasks | 11 files |
+| Phase 02 P03 | 10 min | 3 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -154,6 +155,9 @@ Recent decisions affecting current work:
 - [Phase 02]: The default ANE and LXA constant is MUHTARI__ANE_LXA_SALLY in internal.h, so cpu.unstable.sally_constant pins the shipped default without linking muhtari
 - [Phase 02]: All 256 opcodes pass all 2,560,000 upstream 6502/v1 tests after decimal ADC/SBC/ARR; no other opcode needed a fix
 - [Phase 02]: Hosted run 39180164525: the 256 vector tests are green on every leg; be32 took 45 s, so no ci.yml timeout changed
+- [Phase 02]: The vector harness takes --first N for a .json prefix and reads an N65V file whose first chunk is not opcode 00 as one chunk
+- [Phase 02]: The N65V reader refuses a chunk with count 0, naming the count's offset
+- [Phase 02]: Hosted run 39181184945: the seven vector tooling tests pass on every leg, wasm32 and Windows included
 
 ### Pending Todos
 
@@ -192,6 +196,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T00:21:48.079Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-10-19T00:35:04.485Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
