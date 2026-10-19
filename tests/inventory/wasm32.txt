@@ -346,7 +346,17 @@ host.palette	host,portable
 install.consumer	install
 install.consumer.dll_crt	install
 install.stage	install
+maria.dma_line.abort	maria,portable
 maria.dma_line.empty_dl	maria,portable
+maria.dma_line.feature_mask	maria,portable
+maria.dma_line.headers	maria,portable
+maria.dma_line.holes	maria,portable
+maria.dma_line.indirect	maria,portable
+maria.dma_line.last_line	maria,portable
+maria.dma_line.line_ram	maria,portable
+maria.dma_line.stats	maria,portable
+maria.dma_line.terminators	maria,portable
+maria.dma_line.widths	maria,portable
 perf.gate.allowed	perf
 perf.gate.identical	perf
 perf.gate.missing	perf
