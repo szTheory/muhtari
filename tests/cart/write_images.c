@@ -1,11 +1,14 @@
 /* muhtari-test-images DIR: writes every seed image (tests/fuzz/seeds.c) into
-   DIR, an existing directory, one file per seed under its stable name. The
+   DIR, an existing directory, one file per seed under its stable name, and
+   linear-v3-16k-body, that seed's image without its 128-byte header, whose
+   hashes the runner tests compare with --probe's headerless ones. The
    images exist only in the build directory; none is tracked. Exit 0 when
    every file is written, 1 on a write failure, 2 on usage. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "../cart/images.h"
 #include "../fuzz/seeds.h"
 
 static int write_one(const char *dir, const char *name, const uint8_t *p, size_t n)
@@ -41,13 +44,19 @@ int main(int argc, char **argv)
         return 1;
     }
     int ok = 1;
+    uint32_t written = 0;
     for (uint32_t i = 0; ok && i < seeds_count(); i++) {
         size_t n = seeds_build(i, buf);
         ok = write_one(argv[1], seeds_name(i), buf, n);
+        written++;
+        if (ok && strcmp(seeds_name(i), "linear-v3-16k") == 0) {
+            ok = write_one(argv[1], "linear-v3-16k-body", buf + IMAGES_HEADER, n - IMAGES_HEADER);
+            written++;
+        }
     }
     free(buf);
     if (ok) {
-        printf("muhtari-test-images: %u images in %s\n", (unsigned)seeds_count(), argv[1]);
+        printf("muhtari-test-images: %u images in %s\n", (unsigned)written, argv[1]);
     }
     return ok ? 0 : 1;
 }

@@ -122,25 +122,33 @@ install(FILES ${PROJECT_BINARY_DIR}/muhtari.pc
   DESTINATION lib/pkgconfig COMPONENT library)
 
 # Host helpers the runner and the libretro adapter share: the palette that
-# turns native colour bytes into RGB. Outside the core and its hash. PIC lets
-# it link into the libretro module; hidden visibility keeps its symbols out of
-# that module's exports.
-add_library(muhtari_host STATIC host/palette.c)
-target_include_directories(muhtari_host PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host)
+# turns native colour bytes into RGB, and the English text for statuses and
+# cartridge values. Outside the core, its hash and its ABI. PIC lets it link
+# into the libretro module; hidden visibility keeps its symbols out of that
+# module's exports.
+add_library(muhtari_host STATIC host/palette.c host/status_text.c)
+# status_text.h includes the public header; every program using it links the
+# library itself.
+target_include_directories(muhtari_host PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/host ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(muhtari_host PROPERTIES
   C_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON)
 muhtari_warnings(muhtari_host)
 
 # The headless runner, built as ISO C17 with POSIX 2008 and no GNU extensions.
+# It hashes images with the core's own SHA-1 through src/sha1.h, so the
+# repository holds one SHA-1.
 add_executable(muhtari-run
   runner/main.c
   runner/bench.c
   runner/clock.c
   runner/crc32.c
+  runner/md5.c
   runner/png.c
   runner/sha256.c
   runner/stop.c)
+target_include_directories(muhtari-run PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(muhtari-run PRIVATE muhtari::muhtari muhtari_host)
 target_compile_definitions(muhtari-run PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-run PROPERTIES

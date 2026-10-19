@@ -1,10 +1,11 @@
-/* The runner's bench statistics and stop flag, one case per argv[1]:
-   percentile, bytes, format or stop. */
+/* The runner's bench statistics, stop flag and MD5, one case per argv[1]:
+   percentile, bytes, format, stop or md5. */
 #include <signal.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "../../runner/bench.h"
+#include "../../runner/md5.h"
 #include "../../runner/stop.h"
 #include "../check.h"
 
@@ -78,10 +79,56 @@ static void stop(void)
     CHECK_EQ_U64(muhtari__stop_requested(), 1u);
 }
 
+/* RFC 1321 appendix A.5's test suite. Each message is hashed whole, then
+   one byte per update, which crosses every block boundary. */
+static void md5(void)
+{
+    static const char *const cases[][2] = {
+        {"", "d41d8cd98f00b204e9800998ecf8427e"},
+        {"a", "0cc175b9c0f1b6a831c399e269772661"},
+        {"abc", "900150983cd24fb0d6963f7d28e17f72"},
+        {"message digest", "f96b697d7cb7938d525a2f31aaf161d0"},
+        {"abcdefghijklmnopqrstuvwxyz", "c3fcd3d76192e4007dfb496cca67e13b"},
+        {"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+         "d174ab98d277d9f5a5611c2c9f419d9f"},
+        {"1234567890123456789012345678901234567890"
+         "1234567890123456789012345678901234567890",
+         "57edf4a22be3c955ac49da2e2107b67a"},
+    };
+    static const char digits[] = "0123456789abcdef";
+    for (size_t c = 0; c < sizeof cases / sizeof cases[0]; c++) {
+        const char *msg = cases[c][0];
+        size_t len = strlen(msg);
+        for (int bytewise = 0; bytewise < 2; bytewise++) {
+            muhtari__md5 s;
+            uint8_t digest[16];
+            char hex[33];
+            muhtari__md5_init(&s);
+            if (bytewise) {
+                for (size_t i = 0; i < len; i++) {
+                    muhtari__md5_update(&s, msg + i, 1u);
+                }
+            } else {
+                muhtari__md5_update(&s, msg, len);
+            }
+            muhtari__md5_final(&s, digest);
+            for (size_t i = 0; i < 16u; i++) {
+                hex[2u * i] = digits[digest[i] >> 4];
+                hex[2u * i + 1u] = digits[digest[i] & 0x0fu];
+            }
+            hex[32] = '\0';
+            CHECK(strcmp(hex, cases[c][1]) == 0);
+            if (strcmp(hex, cases[c][1]) != 0) {
+                fprintf(stderr, "MD5(\"%s\"): want %s, got %s\n", msg, cases[c][1], hex);
+            }
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
-        fprintf(stderr, "usage: muhtari-test-runner percentile|bytes|format|stop\n");
+        fprintf(stderr, "usage: muhtari-test-runner percentile|bytes|format|stop|md5\n");
         return 2;
     }
     if (strcmp(argv[1], "percentile") == 0) {
@@ -92,6 +139,8 @@ int main(int argc, char **argv)
         format();
     } else if (strcmp(argv[1], "stop") == 0) {
         stop();
+    } else if (strcmp(argv[1], "md5") == 0) {
+        md5();
     } else {
         fprintf(stderr, "unknown case %s\n", argv[1]);
         return 2;

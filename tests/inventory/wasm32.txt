@@ -381,7 +381,10 @@ runner.hash.repeat	portable,runner
 runner.hashes_compare.byte.self_test	runner
 runner.hashes_compare.count.self_test	runner
 runner.hashes_file	portable,runner
+runner.md5	portable,runner
 runner.png	portable,runner
+runner.probe.accepted	portable,runner
+runner.probe.images	portable,runner
 runner.stop	portable,runner
 runner.usage.dump_syntax	portable,runner
 runner.usage.frame_range	portable,runner
