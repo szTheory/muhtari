@@ -1,0 +1,5 @@
+# Samples built in CI from pinned tools (ASSET_POLICY.md section 3). Only these
+# digests are committed; the built files stay in the build tree.
+# Columns: name, tool pins, source in the package, .a78 SHA-256, .bin SHA-256,
+# frame hash, audio hash ("-" until the frame and audio are checked).
+simple  7800basic-wasm@0.41,wasmtime@48.0.6  samples/simple/simple.bas  d09da3ed27fe82e0a4dd2821ff2cb9bde26c9531c59890788acb1cfdc4004ecf  03a8b7be5d4cd122382582a4f41a94e3104c92191ecdf0a664f93e6802e46b29  -  -

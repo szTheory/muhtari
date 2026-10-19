@@ -7,10 +7,20 @@
 # installed with apt stay unpinned: they are signed, and drift fails loudly as a
 # build failure or a hash change.
 
-# wasmtime 48 LTS: runs the wasm32 lane's tests.
+# wasmtime 48 LTS: runs the wasm32 lane's tests and the 7800basic tools that build
+# the sample in tests/built/ on every build leg. The Windows assets are zips.
 wasmtime-x86_64-linux 48.0.6 https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.6/wasmtime-v48.0.6-x86_64-linux.tar.xz a04bbb203271301e923ccc54ebe834145b1595af1ffb457c8e5dbf1baadd7248
 wasmtime-aarch64-linux 48.0.6 https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.6/wasmtime-v48.0.6-aarch64-linux.tar.xz 206a572cd4fab81e86bb4e808976e822603fd2aa9c67730c921710c2c6bf1c00
 wasmtime-aarch64-macos 48.0.6 https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.6/wasmtime-v48.0.6-aarch64-macos.tar.xz 0b24079ba8c8a23df9cd9a11e40f0b5edc95398a70a7cdec9286133f18701c69
+wasmtime-x86_64-macos 48.0.6 https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.6/wasmtime-v48.0.6-x86_64-macos.tar.xz cf05506b9b118a07fc8892d2acd63d59442d9aca01ea010bb64371b3bdb91c85
+wasmtime-x86_64-windows 48.0.6 https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.6/wasmtime-v48.0.6-x86_64-windows.zip 89bec9b918a20e2b09f1059e9cf49d2c2f3e66c1d3f23aa65979e5ff582b813a
+wasmtime-aarch64-windows 48.0.6 https://github.com/bytecodealliance/wasmtime/releases/download/v48.0.6/wasmtime-v48.0.6-aarch64-windows.zip a2d54979f5819a1e620b78fa3d5e359517e2de45cbf0fc578331d995188302c4
+
+# 7800basic 0.41's WebAssembly package: the compiler, its preprocessor, dasm and the
+# post-build tools, which build 7800basic's `simple` sample in tests/built/. The
+# compiler is GPL-2 and runs only as a tool under wasmtime; no 7800basic source or
+# script is read or copied, and the built bytes stay in the build tree.
+7800basic-wasm 0.41 https://github.com/7800-devtools/7800basic/releases/download/v0.41/7800basic-0.41-wasm.tar.gz 62ef0a562541bff3f813c038a4609abc89ab125ebda3a371f57de2821e7a7fe7
 
 # Local only: CMake for running the Linux lanes in an ubuntu:26.04 container, whose
 # apt CMake is older than the presets need. CI images already carry a new enough CMake.

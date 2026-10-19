@@ -117,8 +117,8 @@
     {
       "name": "bench",
       "inherits": "base",
-      "$comment": "The nightly bench: the runner only, built with the host compiler.",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "$comment": "The nightly bench: the runner only, built with the host compiler. MUHTARI_TESTS OFF registers no tests, so configure needs no test tool.",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "MUHTARI_TESTS": "OFF" }
     }
   ],
   "buildPresets": [

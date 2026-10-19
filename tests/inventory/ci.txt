@@ -11,6 +11,8 @@ abi.header.cxx17	abi
 abi.symbols	abi
 abi.undefined	abi
 abi.undefined.self_test	abi
+built.samples	built,portable
+built.samples.self_test	built,portable
 bus.cycle.fast_4_ticks	portable,sally
 bus.cycle.men_off_all_slow	portable,sally
 bus.cycle.slow_6_ticks	portable,sally

@@ -253,6 +253,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
       "  scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime")
   endif()
 endif()
-enable_testing()
-include(cmake/MuhtariTests.cmake)
-include(tests/tests.cmake)
+# MUHTARI_TESTS OFF builds the products only and registers no test at all.
+# Fault prevented: a job that only builds the runner (the perf gate, the
+# nightly bench) failing at configure for test tools it never runs. No listed
+# test is ever skipped: a test lane that set it would have no JUnit file and
+# fail its "Every test ran" step.
+option(MUHTARI_TESTS "Register the tests; OFF builds the products only" ON)
+if(MUHTARI_TESTS)
+  enable_testing()
+  include(cmake/MuhtariTests.cmake)
+  include(tests/tests.cmake)
+endif()
