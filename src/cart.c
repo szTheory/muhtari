@@ -1,6 +1,7 @@
 /* Cartridge identification: the A78 header, the 7800 and 2600 tables, the
    footer test of a headerless image and the board geometry
-   (docs/hardware/cartridge.md). Pure: nothing is allocated or kept. */
+   (docs/hardware/cartridge.md). Identification is pure; only a load that
+   identification accepts allocates. */
 #include <string.h>
 
 #include "cartdb.h"
@@ -693,6 +694,16 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
     return cart_headerless(img, n, &t, out);
 }
 
+/* Identification against the bundled tables. */
+static muhtari_status cart_identify_bundled(const void *image, size_t n, muhtari_cart_info *out)
+{
+    return muhtari__cart_identify((const uint8_t *)image, n, muhtari__cartdb_7800_keys,
+                                  muhtari__cartdb_7800_key_count, muhtari__cartdb_7800_entries,
+                                  muhtari__cartdb_7800_entry_count, muhtari__cartdb_7800_layouts,
+                                  muhtari__cartdb_7800_layout_count, muhtari__cartdb_2600_prefix,
+                                  muhtari__cartdb_2600_prefix_count, out);
+}
+
 muhtari_status muhtari_probe(const void *image, size_t n, muhtari_cart_info *out)
 {
     if (out == NULL || (image == NULL && n > 0u)) {
@@ -707,11 +718,7 @@ muhtari_status muhtari_probe(const void *image, size_t n, muhtari_cart_info *out
         return MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE;
     }
     muhtari_cart_info info;
-    st = muhtari__cart_identify((const uint8_t *)image, n, muhtari__cartdb_7800_keys,
-                                muhtari__cartdb_7800_key_count, muhtari__cartdb_7800_entries,
-                                muhtari__cartdb_7800_entry_count, muhtari__cartdb_7800_layouts,
-                                muhtari__cartdb_7800_layout_count, muhtari__cartdb_2600_prefix,
-                                muhtari__cartdb_2600_prefix_count, &info);
+    st = cart_identify_bundled(image, n, &info);
     /* A refusal a host can show is written; every other error writes nothing. */
     if (st == MUHTARI_STATUS_OK || st == MUHTARI_STATUS_ERR_UNSUPPORTED_2600 ||
         st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) {
@@ -719,4 +726,31 @@ muhtari_status muhtari_probe(const void *image, size_t n, muhtari_cart_info *out
         muhtari__write_out(out, &info, (uint32_t)sizeof info);
     }
     return st;
+}
+
+muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n)
+{
+    if (m == NULL) {
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    }
+    /* Validation comes first, so a refused image allocates nothing. */
+    muhtari_cart_info info;
+    muhtari_status st = cart_identify_bundled(image, n, &info);
+    if (st != MUHTARI_STATUS_OK) {
+        return st;
+    }
+    muhtari_allocator a = m->allocator;
+    uint8_t *rom = (uint8_t *)a.alloc(a.user, info.rom_size);
+    if (rom == NULL) {
+        return MUHTARI_STATUS_ERR_NO_MEMORY;
+    }
+    /* The mapped bytes start after the header, when there is one. */
+    size_t at = (info.flags & MUHTARI_CART_HEADER) != 0u ? CART_HEADER_SIZE : 0u;
+    memcpy(rom, (const uint8_t *)image + at, info.rom_size);
+    if (m->cart.rom != NULL) {
+        a.free(a.user, m->cart.rom, m->cart.info.rom_size);
+    }
+    m->cart.rom = rom;
+    m->cart.info = info;
+    return MUHTARI_STATUS_OK;
 }

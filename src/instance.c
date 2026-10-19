@@ -110,6 +110,9 @@ void muhtari_destroy(muhtari *m)
         return;
     }
     muhtari_allocator a = m->allocator;
+    if (m->cart.rom != NULL) {
+        a.free(a.user, m->cart.rom, m->cart.info.rom_size);
+    }
     a.free(a.user, m, sizeof *m);
 }
 

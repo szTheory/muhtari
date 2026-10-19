@@ -118,6 +118,13 @@ struct muhtari__profile {
     uint16_t tia_phase;
 };
 
+/* The loaded cartridge: rom holds the info.rom_size bytes the board maps,
+   allocated through the instance's allocator; NULL while none is loaded. */
+struct muhtari__cart {
+    uint8_t *rom;
+    muhtari_cart_info info;
+};
+
 struct muhtari {
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
@@ -125,6 +132,7 @@ struct muhtari {
     struct muhtari__bus bus;
     struct muhtari__riot riot;
     struct muhtari__profile profile;
+    struct muhtari__cart cart;
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
 };
 
@@ -239,6 +247,14 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
                                       const struct muhtari__cartdb_layout *layouts,
                                       uint32_t layout_count, const uint8_t (*prefix)[8],
                                       uint32_t prefix_count, muhtari_cart_info *out);
+
+/* Loads the n bytes at image into m: the status is muhtari_probe's for the
+   same bytes. Every refusal returns before anything is allocated and leaves
+   m unchanged. On OK the mapped ROM is copied into one allocation of
+   rom_size bytes, replacing any cartridge loaded before; ERR_NO_MEMORY
+   leaves m unchanged. muhtari_destroy frees it (docs/hardware/cartridge.md,
+   Loading). */
+muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n);
 
 /* The test card's native colour at (x, y) in a frame h rows tall. */
 uint8_t muhtari__testcard_pixel(uint32_t x, uint32_t y, uint32_t h);

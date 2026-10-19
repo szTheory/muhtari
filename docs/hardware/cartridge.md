@@ -205,3 +205,11 @@ the header claims more bytes than the file holds, as invalid otherwise.
 `MUHTARI_STATUS_OK` means linear or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
 Activision, Absolute, Fractalus, bankset, halt-banked RAM and Souper are reported with
 `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. XM, YM2151 and Covox are reported in `devices` and `sound` and never refused.
+
+## Loading
+
+Loading is internal until a loaded cartridge runs; the tests and the loader fuzz target reach it. It identifies the
+image exactly as `muhtari_probe` does and returns the same status. A refusal returns before anything is allocated
+and leaves the instance unchanged. An accepted image's mapped bytes, `rom_size` of them from after the header when
+there is one, are copied into one allocation through the instance's allocator, which replaces any cartridge loaded
+before; `muhtari_destroy` frees it. `muhtari_run_frame` still gives the test card and silence.
