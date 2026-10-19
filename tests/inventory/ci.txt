@@ -386,8 +386,16 @@ runner.hashes_compare.count.self_test	runner
 runner.hashes_file	portable,runner
 runner.md5	portable,runner
 runner.png	portable,runner
+runner.probe.2600	portable,runner
 runner.probe.accepted	portable,runner
+runner.probe.headerless_rule	portable,runner
 runner.probe.images	portable,runner
+runner.probe.malformed	portable,runner
+runner.probe.oversized	portable,runner
+runner.probe.truncated	portable,runner
+runner.probe.unreadable	portable,runner
+runner.probe.unsupported_board	portable,runner
+runner.probe.usage	portable,runner
 runner.stop	portable,runner
 runner.usage.dump_syntax	portable,runner
 runner.usage.frame_range	portable,runner

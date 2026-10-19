@@ -152,6 +152,68 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
     expect_hashes("" "${DIR}/linear-v3-16k")
     expect_hashes("_headerless" "${DIR}/linear-v3-16k-body")
+  # Fault prevented for the refusal cases: a refused image exits with
+  # another class's status or message, or prints lines a host would take as
+  # the identity of an image the core refused.
+  elseif(CASE STREQUAL "probe.2600")
+    probe(2600-4k)
+    expect_keys(2600-4k 77 kind source rom_size ${hash_keys})
+    probe_value(kind kind)
+    if(NOT kind STREQUAL "2600" OR NOT err MATCHES "muhtari-run: [^\n]*/2600-4k: unsupported: 2600 \\(planned\\)\n")
+      message(FATAL_ERROR "--probe 2600-4k: kind '${kind}', standard error\n${err}")
+    endif()
+    expect_hashes("" "${DIR}/2600-4k")
+  elseif(CASE STREQUAL "probe.unsupported_board")
+    probe(souper-v4)
+    expect_keys(souper-v4 77 ${identity_keys} ${header_keys} ${hash_keys})
+    probe_value(board board)
+    if(NOT board STREQUAL "souper" OR NOT err MATCHES "/souper-v4: unsupported board: souper\n")
+      message(FATAL_ERROR "--probe souper-v4: board '${board}', standard error\n${err}")
+    endif()
+    expect_hashes("" "${DIR}/souper-v4")
+  elseif(CASE STREQUAL "probe.malformed")
+    foreach(name IN ITEMS size-zero bad-magic-1000)
+      probe(${name})
+      expect_keys(${name} 1 ${hash_keys})
+      if(NOT err MATCHES "/${name}: not a 7800 or 2600 cartridge image\n")
+        message(FATAL_ERROR "--probe ${name}: standard error\n${err}")
+      endif()
+      expect_hashes("" "${DIR}/${name}")
+    endforeach()
+  elseif(CASE STREQUAL "probe.truncated")
+    foreach(name IN ITEMS header-only supergame-short)
+      probe(${name})
+      expect_keys(${name} 1 ${hash_keys})
+      if(NOT err MATCHES "/${name}: the image ends before the size its header gives\n")
+        message(FATAL_ERROR "--probe ${name}: standard error\n${err}")
+      endif()
+    endforeach()
+  elseif(CASE STREQUAL "probe.oversized")
+    probe(oversized)
+    if(NOT rc STREQUAL "1" OR NOT out STREQUAL ""
+        OR NOT err MATCHES "/oversized: larger than 1 MiB plus a 128-byte header\n")
+      message(FATAL_ERROR "--probe oversized: expected exit 1 and no output, "
+        "got exit ${rc}, output\n${out}standard error\n${err}")
+    endif()
+  elseif(CASE STREQUAL "probe.usage")
+    # --probe is the whole command line: one file, no other option.
+    set(image "${DIR}/linear-v3-16k")
+    expect_exit(2 "--probe takes one file.*${usage_line}" --probe "${image}" --frames 1)
+    expect_exit(2 "--probe takes one file.*${usage_line}" --frames 1 --probe "${image}")
+    expect_exit(2 "--probe takes one file.*${usage_line}" --probe)
+    expect_exit(2 "--probe takes one file.*${usage_line}" --probe "${image}" "${image}")
+    expect_exit(2 "--probe takes one file.*${usage_line}" --probe --help)
+  elseif(CASE STREQUAL "probe.unreadable")
+    # Fault prevented: a missing file is reported without its name, or as
+    # an image the core refused.
+    expect_exit(1 "^muhtari-run: [^\n]*/no-such-image: cannot open\n$" --probe "${DIR}/no-such-image")
+  elseif(CASE STREQUAL "probe.headerless_rule")
+    # Fault prevented: the headerless hashes drop the header of a file that
+    # is nothing but a header, where rcheevos hashes the whole file.
+    probe(magic-only-128)
+    expect_keys(magic-only-128 1 ${hash_keys})
+    expect_hashes("" "${DIR}/magic-only-128")
+    expect_hashes("_headerless" "${DIR}/magic-only-128")
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
   endif()
@@ -189,12 +251,15 @@ muhtari_add_test(NAME runner.probe.images
   COMMAND muhtari-test-images ${runner_probe_dir}
   LABELS runner portable TIMEOUT 30)
 set_tests_properties(runner.probe.images PROPERTIES FIXTURES_SETUP probe_images)
-foreach(case IN ITEMS accepted)
+foreach(case IN ITEMS accepted 2600 unsupported_board malformed truncated oversized usage
+    unreadable headerless_rule)
   muhtari_add_test(NAME runner.probe.${case}
     COMMAND ${runner_check} -DCASE=probe.${case} -DDIR=${runner_probe_dir}
       -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 10)
-  set_tests_properties(runner.probe.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
+  if(NOT case MATCHES "^(usage|unreadable)$")
+    set_tests_properties(runner.probe.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
+  endif()
 endforeach()
 
 # hashes.txt, the file CI compares across lanes.
