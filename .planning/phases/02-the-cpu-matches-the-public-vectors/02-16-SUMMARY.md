@@ -114,7 +114,10 @@ coverage:
     verification:
       - kind: other
         ref: "release.yml rehearsal run 39199084187; printf '' | scripts/check-title.sh 'feat: the CPU matches the public 6502 vectors, with the 7800 bus, RIOT and cartridge probing' exit 0; bump-minor-pre-major true"
-        status: pending-ship
+        status: pass
+      - kind: other
+        ref: "PR #10 merged as ce8a617; release PR #11 checks green (CI run 39321341786); release.yml run 39321739023 success on d698364; gh release view v0.2.0 published, not draft, 19 assets"
+        status: pass
     human_judgment: false
   - id: D1
     description: "docs/testing.md, the preparation shrink and the D-30 reference fixes pass the docs gates"
