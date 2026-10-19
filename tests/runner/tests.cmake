@@ -214,6 +214,55 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     expect_keys(magic-only-128 1 ${hash_keys})
     expect_hashes("" "${DIR}/magic-only-128")
     expect_hashes("_headerless" "${DIR}/magic-only-128")
+  # Fault prevented for the sample cases: --probe passes on images the tests
+  # write but misreads a real one, a 7800basic build made by the published
+  # tools (tests/built/).
+  elseif(CASE STREQUAL "probe.sample_a78")
+    probe(simple.bas.a78)
+    expect_keys(simple.bas.a78 0 ${identity_keys} ${header_keys} ${hash_keys})
+    string(FIND "${out}" "sha1 " at)
+    string(SUBSTRING "${out}" 0 ${at} fields)
+    # The title is "My Game" padded with spaces to 32 bytes, and the magic
+    # padded likewise: neither is a warning.
+    set(want "kind 7800\nsource header\nboard linear\nboard_options none\nrom_size 32768\n"
+      "ram_size 0\nsound none\ndevices none\nport1 proline\nport2 proline\nregion ntsc\n"
+      "title My Game\na78_version 0x04\na78_rom_size 32768\na78_cart_type 0x0000\n"
+      "a78_port1 0x01\na78_port2 0x01\na78_tv 0x00\na78_save 0x00\na78_xm 0x00\n"
+      "a78_mapper 0x00\na78_mapper_options 0x00\na78_audio 0x0000\na78_irq 0x00\n")
+    string(CONCAT want ${want})
+    if(NOT fields STREQUAL want)
+      message(FATAL_ERROR "--probe simple.bas.a78: expected\n${want}got\n${fields}")
+    endif()
+    expect_hashes("" "${DIR}/simple.bas.a78")
+    # The .bin is the .a78 without its 128-byte header.
+    expect_hashes("_headerless" "${DIR}/simple.bas.bin")
+  elseif(CASE STREQUAL "probe.sample_headerless" OR CASE STREQUAL "probe.sample_hash_match")
+    # The stripped sample's last 8 bytes: $FFF8 = $FF and $FFF9 = $F7, which
+    # the footer test requires (docs/hardware/cartridge.md, "The footer
+    # test"), then the NMI vector $F000, reset $F4AD and IRQ $F05F.
+    file(READ "${DIR}/simple.bas.bin" footer OFFSET 32760 HEX)
+    if(NOT footer STREQUAL "fff700f0adf45ff0")
+      message(FATAL_ERROR "simple.bas.bin: footer ${footer}, not fff700f0adf45ff0")
+    endif()
+    probe(simple.bas.bin)
+    expect_keys(simple.bas.bin 0 ${identity_keys} ${hash_keys})
+    set(want_source footer)
+    if(CASE STREQUAL "probe.sample_hash_match")
+      # The test list's entry for this SHA-1: linear, NTSC.
+      set(want_source hash)
+    endif()
+    foreach(pair IN ITEMS "source ${want_source}" "board linear" "region ntsc"
+        "sha1 1aa9559b74eab35d4c5443b56bc4dfd7a445ac4a" "md5 948e2565fefcbb635cd8b73ea9b29941"
+        "crc32 55f0312b")
+      string(REPLACE " " ";" pair "${pair}")
+      list(GET pair 0 key)
+      list(GET pair 1 want)
+      probe_value(${key} got)
+      if(NOT got STREQUAL want)
+        message(FATAL_ERROR "--probe simple.bas.bin: ${key} is '${got}', not '${want}'\n${out}${err}")
+      endif()
+    endforeach()
+    expect_hashes("" "${DIR}/simple.bas.bin")
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
   endif()
@@ -260,6 +309,18 @@ foreach(case IN ITEMS accepted 2600 unsupported_board malformed truncated oversi
   if(NOT case MATCHES "^(usage|unreadable)$")
     set_tests_properties(runner.probe.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
   endif()
+endforeach()
+
+# --probe on 7800basic's simple sample, which built.samples builds into the
+# build tree (tests/built/): headered, stripped by its footer, and stripped
+# by the test hash list.
+set(runner_sample_dir ${PROJECT_BINARY_DIR}/built/simple)
+foreach(case IN ITEMS sample_a78 sample_headerless sample_hash_match)
+  muhtari_add_test(NAME runner.probe.${case}
+    COMMAND ${runner_check} -DCASE=probe.${case} -DDIR=${runner_sample_dir}
+      -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS built portable TIMEOUT 10)
+  set_tests_properties(runner.probe.${case} PROPERTIES FIXTURES_REQUIRED built_samples)
 endforeach()
 
 # hashes.txt, the file CI compares across lanes.

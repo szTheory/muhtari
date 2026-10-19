@@ -810,6 +810,32 @@ static void test_no_alloc_on_reject(void)
     expect_load("linear", n, 1, MUHTARI_STATUS_ERR_NO_MEMORY);
 }
 
+/* The file named after the case: the stripped 7800basic sample. */
+static const char *case_file;
+
+/* The stripped 7800basic sample, read from the build tree, resolves through
+   the test list: its SHA-1 1aa9559b74eab35d4c5443b56bc4dfd7a445ac4a is in
+   neither MAME list, so only test_cartdb.c's entry can name it. */
+static void test_test_list(void)
+{
+    FILE *f = case_file ? fopen(case_file, "rb") : NULL;
+    if (!f) {
+        fprintf(stderr, "identify.test_list: cannot open %s\n", case_file ? case_file : "(none)");
+        check_failures++;
+        return;
+    }
+    size_t n = fread(buf, 1, sizeof buf, f);
+    fclose(f);
+    CHECK_EQ_U64(n, 32u * IMAGES_KIB);
+    muhtari_cart_info out = expect_written("test list", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.kind, MUHTARI_KIND_7800);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_LINEAR);
+    CHECK_EQ_U64(out.rom_size, 32u * IMAGES_KIB);
+    CHECK_EQ_U64(out.region, MUHTARI_REGION_NTSC);
+}
+
 static const struct {
     const char *name;
     void (*run)(void);
@@ -819,6 +845,7 @@ static const struct {
     {"identify.headerless_ports", test_headerless_ports},
     {"identify.not_a_cartridge", test_not_a_cartridge},
     {"identify.slices", test_slices},
+    {"identify.test_list", test_test_list},
     {"identify.hash_override", test_hash_override},
     {"load.no_alloc_on_reject", test_no_alloc_on_reject},
     {"probe.2600", test_2600},
@@ -833,10 +860,11 @@ static const struct {
 
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
-        fprintf(stderr, "usage: muhtari-test-cart <case>\n");
+    if (argc != 2 && argc != 3) {
+        fprintf(stderr, "usage: muhtari-test-cart <case> [file]\n");
         return 2;
     }
+    case_file = argc == 3 ? argv[2] : NULL;
     for (size_t i = 0; i < sizeof cases / sizeof cases[0]; i++) {
         if (strcmp(argv[1], cases[i].name) == 0) {
             cases[i].run();

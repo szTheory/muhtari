@@ -37,6 +37,7 @@ cart.identify.hash_override	cart,portable
 cart.identify.headerless_ports	cart,portable
 cart.identify.not_a_cartridge	cart,portable
 cart.identify.slices	cart,portable
+cart.identify.test_list	cart,portable
 cart.load.no_alloc_on_reject	cart,portable
 cart.probe.2600	cart,portable
 cart.probe.accepted	cart,portable
@@ -394,6 +395,9 @@ runner.probe.headerless_rule	portable,runner
 runner.probe.images	portable,runner
 runner.probe.malformed	portable,runner
 runner.probe.oversized	portable,runner
+runner.probe.sample_a78	built,portable
+runner.probe.sample_hash_match	built,portable
+runner.probe.sample_headerless	built,portable
 runner.probe.truncated	portable,runner
 runner.probe.unreadable	portable,runner
 runner.probe.unsupported_board	portable,runner
