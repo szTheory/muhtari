@@ -5,12 +5,16 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: skipped
-    title: "Nightly pull-request path filter misses inputs of the vectors-full and loader-fuzz jobs"
+    disposition: open
+    title: "A HALT window or NMI edge that is ignored is dropped without a word, and the caller cannot tell"
   - id: WR-02
     severity: warning
-    disposition: fixed
-    title: "The size-tag cap does not stop reads past the caller's object, as its comment says it does"
+    disposition: open
+    title: "`cpu.jam.step_reads_ffff` cannot catch a jammed step that polls for an NMI"
+  - id: IN-01
+    severity: info
+    disposition: open
+    title: "The JAM doc says a frame still ends, but no frame loop runs the CPU yet"
   - id: WR-03
     severity: warning
     disposition: fixed
@@ -19,10 +23,6 @@ findings:
     severity: warning
     disposition: fixed
     title: "`muhtari__cpu_step` does not enforce the jammed invariant, and a jammed CPU advances no time"
-  - id: IN-01
-    severity: info
-    disposition: deferred
-    title: "Stale value comment on `muhtari_versions.api`"
   - id: IN-02
     severity: info
     disposition: deferred
@@ -31,22 +31,22 @@ findings:
     severity: info
     disposition: deferred
     title: "The firmware scan cannot recognise multi-chip or half-swapped 7800 images"
-open: 0
+open: 3
 total: 7
-recorded: 2026-10-19T18:55:07.781Z
+recorded: 2026-10-19T19:30:44.642Z
 ---
 
 # Phase 02: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | skipped | 02-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 02-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 02-REVIEW-FIX.md |
-| WR-04 | warning | fixed | 02-REVIEW-FIX.md |
-| IN-01 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md |
-| IN-02 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md |
-| IN-03 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md |
+| WR-01 | warning | open | - |
+| WR-02 | warning | open | - |
+| IN-01 | info | open | - |
+| WR-03 | warning | fixed | 02-REVIEW-FIX.md (not in the current review) |
+| WR-04 | warning | fixed | 02-REVIEW-FIX.md (not in the current review) |
+| IN-02 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md (not in the current review) |
+| IN-03 | info | deferred | todo 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
