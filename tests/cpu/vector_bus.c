@@ -1,5 +1,6 @@
 /* Test definitions of the CPU's two bus functions: flat RAM, a cycle log,
-   the phi2 count the core's bus keeps and a scripted NMI edge. */
+   the phi2 count the core's bus keeps, a scripted NMI edge and a scripted
+   hold. */
 #include "vector_bus.h"
 
 /* A pointer to a structure, suitably converted, points to its first member,
@@ -12,7 +13,8 @@ static struct vector_machine *machine(muhtari *m)
 static void log_cycle(struct vector_machine *vm, uint16_t addr, uint8_t value, uint8_t kind)
 {
     uint64_t before = vm->m.bus.phi2;
-    vm->m.bus.phi2 = before + 1u;
+    vm->calls++;
+    vm->m.bus.phi2 = before + 1u + (vm->calls == vm->hold_call ? vm->hold_count : 0u);
     if (vm->nmi_at != 0u && vm->m.bus.nmi_phi2 == 0u && before < vm->nmi_at &&
         vm->nmi_at <= vm->m.bus.phi2) {
         vm->m.bus.nmi_phi2 = vm->nmi_at;

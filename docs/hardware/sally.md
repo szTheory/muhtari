@@ -180,6 +180,13 @@ instruction. With the cycles of an instruction numbered 1 to N (CPU interrupts):
 `src/cpu.c` stores the φ2 count once per instruction, as `poll_phi2`, right after the deciding cycle's bus access
 returns. At the end of the instruction it takes the NMI when `nmi_phi2` is not 0 and is at or below `poll_phi2`.
 
+RDY and HALT hold cycles, and the count includes them. A hold inside the deciding cycle, or before it, moves the poll
+point later by its length. A hold after the deciding cycle does not move it. An edge latched during a hold carries the
+φ2 count of the held period it fell in. So an edge that falls while `CLC`'s opcode fetch is held is taken after `CLC`.
+Counting cycles from the instruction's start would take it one instruction late. An edge that falls while the last
+cycle of `LDA zp` is held is taken after the next instruction. Taking φ2 minus 1 at the instruction's end would take
+it after `LDA`.
+
 BRK compares at its cycle 4, before it reads its vector. If the edge came by then, BRK reads the vector at `$FFFA`
 instead of `$FFFE`, and the NMI is consumed. Everything else stays as BRK does it: the return address is BRK + 2, and
 the pushed P has bit 4 set. An edge from cycle 5 on gets the BRK vector, and the NMI follows the handler's first

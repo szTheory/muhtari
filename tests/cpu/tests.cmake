@@ -100,9 +100,11 @@ muhtari_add_test(NAME cpu.unstable.sally_constant
   LABELS vectors portable TIMEOUT 10)
 
 # NMI timing on the flat bus: the edge's phi2 count against each
-# instruction's deciding cycle (docs/hardware/sally.md, NMI).
+# instruction's deciding cycle, with and without held cycles
+# (docs/hardware/sally.md, NMI).
 foreach(cpu_nmi_case IN ITEMS penultimate_taken_after last_cycle_taken_after_next
-    branch_no_cross_polls_early hijacks_brk)
+    branch_no_cross_polls_early hijacks_brk held_deciding_cycle_taken_after
+    held_last_cycle_taken_after_next)
   muhtari_add_test(NAME cpu.nmi.${cpu_nmi_case}
     COMMAND muhtari-test-cpu nmi.${cpu_nmi_case}
     LABELS sally portable TIMEOUT 10)

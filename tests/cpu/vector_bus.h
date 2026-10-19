@@ -24,6 +24,13 @@ struct vector_machine {
        beyond nmi_at latches it, as m.bus.nmi_phi2 = nmi_at, unless an edge
        is already latched. 0 means none. */
     uint64_t nmi_at;
+    /* A scripted hold, standing in for RDY or HALT: bus call number
+       hold_call, counted from 1 since the machine was cleared, takes
+       hold_count more phi2 counts before its access completes. 0 means
+       none. calls counts the bus calls made. */
+    uint64_t hold_call;
+    uint64_t hold_count;
+    uint64_t calls;
 };
 
 /* Empties the cycle log and clears its overflow flag. */

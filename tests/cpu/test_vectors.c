@@ -11,7 +11,11 @@
    so a byte prefix of an upstream file runs. Only opcode XX runs, but every
    test read is validated. Each failing test prints one line,
    "6502/XX.json[i]: <first mismatch>", in file order; the first failing test
-   also prints its expected and actual cycles. The last line is
+   also prints its expected and actual cycles. Every test also checks the
+   CPU's NMI poll mark (docs/hardware/sally.md, NMI): after a JAM, with an
+   edge latched during its reads, that the CPU took no NMI and left the mark
+   alone; after any other opcode, that the mark is the phi2 count of the
+   deciding cycle. The last line is
    "6502/XX: F of N failed". Exit status: 0 when every test passed, 1 on a
    failed test or a bad file, 2 on a usage error. */
 #include <stdio.h>
@@ -129,6 +133,52 @@ static int is_jam(uint8_t opcode)
            opcode != 0xE2u;
 }
 
+/* Prints "6502/XX.json[i]: <field> expected K actual J" for a phi2 count
+   check, such as "6502/48.json[0]: poll expected 2 actual 3", and returns
+   0. */
+static int count_mismatch(uint8_t opcode, const char *field, uint64_t expected, uint64_t actual)
+{
+    printf("6502/%02x.json[%u]: %s expected %llu actual %llu\n", (unsigned)opcode,
+           (unsigned)test.index, field, (unsigned long long)expected, (unsigned long long)actual);
+    return 0;
+}
+
+/* The deciding cycle, counted from the opcode fetch as 1: cycle 4 for BRK,
+   cycle 1 for a taken branch that stays in its page (3 cycles), cycle N - 1
+   for any other opcode (docs/hardware/sally.md, NMI). */
+static uint32_t deciding_cycle(uint8_t opcode, uint32_t cycles)
+{
+    if (opcode == 0x00u) {
+        return 4u;
+    }
+    if ((opcode & 0x1Fu) == 0x10u && cycles == 3u) {
+        return 1u;
+    }
+    return cycles - 1u;
+}
+
+/* The NMI checks after the step that started at phi2 count before. A JAM
+   was given an edge at its third read: it must still be latched, and the
+   poll mark must be what it was before the step. */
+static int check_poll(uint8_t opcode, uint64_t before, uint64_t mark_before, uint64_t edge)
+{
+    const muhtari *m = &machine.m;
+    if (is_jam(opcode)) {
+        if (m->bus.nmi_phi2 != edge) {
+            return count_mismatch(opcode, "nmi_phi2", edge, m->bus.nmi_phi2);
+        }
+        if (m->cpu.poll_phi2 != mark_before) {
+            return count_mismatch(opcode, "poll_phi2", mark_before, m->cpu.poll_phi2);
+        }
+        return 1;
+    }
+    uint64_t expected = deciding_cycle(opcode, test.cycle_count);
+    if (m->cpu.poll_phi2 - before != expected) {
+        return count_mismatch(opcode, "poll", expected, m->cpu.poll_phi2 - before);
+    }
+    return 1;
+}
+
 /* Runs the current test; returns 1 if it matched. Every test starts from a
    cleared CPU, so a jammed CPU is never stepped. */
 static int run_test(uint8_t opcode)
@@ -150,6 +200,19 @@ static int run_test(uint8_t opcode)
         machine.ram[in->ram_addr[i]] = in->ram_value[i];
     }
     vector_machine_reset_log(&machine);
+    /* No edge is latched unless this test scripts one: a JAM gets an edge
+       at the third of its eleven reads, which a jammed CPU must not take.
+       Its stale poll mark is set past the edge and past the JAM's last
+       read, so a JAM that checked for an NMI would take it, and a mark it
+       stored would show. */
+    uint64_t before = machine.m.bus.phi2;
+    machine.m.bus.nmi_phi2 = 0u;
+    machine.nmi_at = 0u;
+    if (is_jam(opcode)) {
+        machine.nmi_at = before + 3u;
+        cpu->poll_phi2 = before + 12u;
+    }
+    uint64_t mark_before = cpu->poll_phi2;
 
     muhtari__cpu_step(&machine.m);
 
@@ -158,7 +221,10 @@ static int run_test(uint8_t opcode)
                (unsigned)test.index, is_jam(opcode), cpu->jammed != 0u);
         return 0;
     }
-    return compare(opcode);
+    int ok = compare(opcode) && check_poll(opcode, before, mark_before, machine.nmi_at);
+    machine.nmi_at = 0u;
+    machine.m.bus.nmi_phi2 = 0u;
+    return ok;
 }
 
 /* Zeroes RAM after a test, so the next test starts from zeroed RAM. After a

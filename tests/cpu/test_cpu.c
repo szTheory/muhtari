@@ -142,7 +142,9 @@ static int decimal_clark(char **args)
 
 /* NMI timing (docs/hardware/sally.md, NMI). A program runs from its origin
    with S = $FD while the flat bus latches an edge at the phi2 count nmi_at;
-   with no holds, cycle k of the first instruction completes at phi2 k. The
+   with no holds, cycle k of the first instruction completes at phi2 k. Bus
+   call hold_call, counted from 1, may be held for hold_count more phi2
+   counts, as RDY or HALT would hold it. The
    NMI handler and the BRK handler are NOPs. Each case checks the return
    address the NMI pushed, and that the nearest wrong model would push a
    different one. */
@@ -156,7 +158,7 @@ struct nmi_result {
 };
 
 static struct nmi_result nmi_run(uint16_t origin, const uint8_t *program, size_t size,
-                                 uint64_t nmi_at)
+                                 uint64_t nmi_at, uint64_t hold_call, uint64_t hold_count)
 {
     struct nmi_result r = {0u, 0u};
     memset(&machine, 0, sizeof machine);
@@ -170,6 +172,8 @@ static struct nmi_result nmi_run(uint16_t origin, const uint8_t *program, size_t
     machine.m.cpu.s = 0xFDu;
     machine.m.cpu.pc = origin;
     machine.nmi_at = nmi_at;
+    machine.hold_call = hold_call;
+    machine.hold_count = hold_count;
     for (uint32_t i = 0u; i < NMI_STEP_LIMIT; i++) {
         vector_machine_reset_log(&machine);
         muhtari__cpu_step(&machine.m);
@@ -214,7 +218,7 @@ static int nmi_penultimate_taken_after(char **args)
         0xEA,             /* $0204 NOP */
     };
     /* clang-format on */
-    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 3u);
+    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 3u, 0u, 0u);
     return expect_return("LDA $1234, edge in cycle 3", r.ret, 0x0203u,
                          "polling at the instruction's start", 0x0204u);
 }
@@ -232,7 +236,7 @@ static int nmi_last_cycle_taken_after_next(char **args)
         0xEA,             /* $0204 NOP */
     };
     /* clang-format on */
-    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 4u);
+    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 4u, 0u, 0u);
     return expect_return("LDA $1234, edge in cycle 4", r.ret, 0x0204u,
                          "polling at the instruction's end", 0x0203u);
 }
@@ -288,7 +292,7 @@ static int nmi_branch_no_cross_polls_early(char **args)
     int ok = 1;
     for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {
         struct nmi_result r =
-            nmi_run(cases[i].origin, cases[i].program, cases[i].size, cases[i].nmi_at);
+            nmi_run(cases[i].origin, cases[i].program, cases[i].size, cases[i].nmi_at, 0u, 0u);
         ok &=
             expect_return(cases[i].what, r.ret, cases[i].expected, cases[i].model, cases[i].wrong);
     }
@@ -310,7 +314,7 @@ static int nmi_hijacks_brk(char **args)
     };
     /* clang-format on */
     int ok = 1;
-    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 4u);
+    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 4u, 0u, 0u);
     ok &= expect_return("BRK, edge in cycle 4", r.ret, 0x0202u, "comparing at BRK's cycle 3",
                         0x0601u);
     if ((r.p & 0x10u) == 0u) {
@@ -321,7 +325,7 @@ static int nmi_hijacks_brk(char **args)
         printf("BRK, edge in cycle 4: the edge was not consumed\n");
         ok = 0;
     }
-    r = nmi_run(0x0200u, program, sizeof program, 5u);
+    r = nmi_run(0x0200u, program, sizeof program, 5u, 0u, 0u);
     ok &= expect_return("BRK, edge in cycle 5", r.ret, 0x0601u, "comparing at BRK's cycle 6",
                         0x0202u);
     if ((r.p & 0x10u) != 0u) {
@@ -329,6 +333,44 @@ static int nmi_hijacks_brk(char **args)
         ok = 0;
     }
     return ok;
+}
+
+/* CLC's opcode fetch is its deciding cycle. Held for 3 more phi2 counts,
+   it completes at phi2 4, so an edge at phi2 2, in the hold, is taken after
+   CLC. Counting from the instruction's start, cycle N - 1 would be phi2 1,
+   and the edge would wait for the NOP. */
+static int nmi_held_deciding_cycle_taken_after(char **args)
+{
+    (void)args;
+    /* clang-format off */
+    static const uint8_t program[] = {
+        0x18, /* $0200 CLC */
+        0xEA, /* $0201 NOP */
+        0xEA, /* $0202 NOP */
+    };
+    /* clang-format on */
+    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 2u, 1u, 3u);
+    return expect_return("CLC, opcode fetch held, edge at phi2 2", r.ret, 0x0201u,
+                         "counting from the instruction's start", 0x0202u);
+}
+
+/* LDA zp's deciding cycle is cycle 2, done at phi2 2. Its last cycle, held
+   for 3 more counts, runs to phi2 6, so an edge at phi2 4, in the hold, is
+   taken after the NOP. phi2 - 1 at LDA's end is 5, which would take it
+   after LDA. */
+static int nmi_held_last_cycle_taken_after_next(char **args)
+{
+    (void)args;
+    /* clang-format off */
+    static const uint8_t program[] = {
+        0xA5, 0x10, /* $0200 LDA $10 */
+        0xEA,       /* $0202 NOP */
+        0xEA,       /* $0203 NOP */
+    };
+    /* clang-format on */
+    struct nmi_result r = nmi_run(0x0200u, program, sizeof program, 4u, 3u, 3u);
+    return expect_return("LDA $10, last cycle held, edge at phi2 4", r.ret, 0x0203u,
+                         "phi2 - 1 at the instruction's end", 0x0202u);
 }
 
 static const struct {
@@ -342,6 +384,8 @@ static const struct {
     {"nmi.last_cycle_taken_after_next", 0, nmi_last_cycle_taken_after_next},
     {"nmi.branch_no_cross_polls_early", 0, nmi_branch_no_cross_polls_early},
     {"nmi.hijacks_brk", 0, nmi_hijacks_brk},
+    {"nmi.held_deciding_cycle_taken_after", 0, nmi_held_deciding_cycle_taken_after},
+    {"nmi.held_last_cycle_taken_after_next", 0, nmi_held_last_cycle_taken_after_next},
 };
 
 int main(int argc, char **argv)
