@@ -17,6 +17,16 @@ It needs CMake 4.3 or later, Ninja and a C and C++ compiler. The workflow runs f
 4. package the three release zips into `build/ci`;
 5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
+The tests also build 7800basic's `simple` sample from pinned tools, so fetch the tools first:
+
+```sh
+scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # for example wasmtime-aarch64-macos
+scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+```
+
+Configure stops with both commands when either is missing; the sample tests are never skipped. Configuring with
+`-DMUHTARI_TESTS=OFF` builds the products only and registers no test, which the perf gate and the nightly bench use.
+
 ## Lanes
 
 Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build goes to `build/<name>`.
@@ -89,9 +99,10 @@ Four lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, and 
 | `portable` | Tests that hold on every platform, including the frame and audio hashes. |
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
-| `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. No image bytes are tracked. |
+| `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. `cart.identify.test_list` finds the built 7800basic sample through the test hash list. No image bytes are tracked. |
 | `fuzz` | The loader fuzz target's invariants replayed over its seeds and committed regressions, and on the `fuzz` lane libFuzzer itself. |
 | `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
+| `built` | Samples built from pinned tools (`tests/built/`). `built.samples` builds 7800basic 0.41's `simple` sample under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/simple/`, and checks the `.a78` and `.bin` SHA-256s in `expected.txt`. `runner.probe.sample_*` then probe it: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `bench` | The runner's benchmark report. |
 | `libretro` | The libretro core in an in-process host, its `.info` file and its vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
@@ -113,6 +124,7 @@ output matches the expected message; a crash or a missing file does not count as
 | `runner.hashes_compare.count.self_test` | Two `hashes.txt` files where three are required. |
 | `runner.hashes_compare.byte.self_test` | Two `hashes.txt` files one byte apart. |
 | `abi.nofp_fixture` | On the `nofp` lane, a file holding one `double` division, which must fail to compile with GCC's `-mgeneral-regs-only` diagnostic. |
+| `built.samples.self_test` | An `expected.txt` whose `.a78` digest differs in one digit; the build must exit 1 with `simple: .a78 SHA-256 drift`. |
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
 | `policy.cartdb_generated.self_test` | A copy of `src/cartdb.c` with one byte changed; the check must exit 1 with `src/cartdb.c differs from the generator output`. |
 | `hygiene.no_float.self_test` | Seven float lines beside three look-alikes, among them an SPDX line naming `CC0-1.0`, and an SPDX line followed by `double`. |
@@ -373,8 +385,11 @@ Replace `ci` with another workflow to run that lane. Some lanes need more packag
 
 - `asan`: `clang-21 lld-21 libclang-rt-21-dev`. The last holds the sanitizer runtimes.
 - `be32`: `gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user`.
-- `wasm32`: `clang-21 lld-21 wasi-libc libclang-rt-21-dev-wasm32`. Also run
-  `scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime` before the workflow.
+- `wasm32`: `clang-21 lld-21 wasi-libc libclang-rt-21-dev-wasm32`.
+
+Every lane but `nofp`, `hygiene` and `fuzz` builds the sample, so also run
+`scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime` and
+`scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic` before the workflow.
 
 To keep a lane's `hashes.txt`, mount a directory outside the repository and copy the file into it, for example
 `-v "$OUT:/out"` and then `cp build/be32/hashes.txt /out/`. On an x86_64 host use `--platform linux/amd64` and the

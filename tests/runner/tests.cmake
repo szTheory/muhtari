@@ -311,14 +311,37 @@ foreach(case IN ITEMS accepted 2600 unsupported_board malformed truncated oversi
   endif()
 endforeach()
 
+# muhtari-run-testdb: the runner's own sources and the core's objects with
+# tests/cart/test_cartdb.c in place of src/cartdb.c (link-time
+# substitution), so --probe can show a hash match end to end while the
+# shipped runner never holds a test entry. A test program: never installed
+# or packaged.
+get_target_property(runner_sources muhtari-run SOURCES)
+add_executable(muhtari-run-testdb
+  ${runner_sources}
+  ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
+  $<TARGET_OBJECTS:muhtari_objs>
+  $<TARGET_OBJECTS:muhtari_cpu>)
+target_include_directories(muhtari-run-testdb PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(muhtari-run-testdb PRIVATE muhtari_host)
+target_compile_definitions(muhtari-run-testdb PRIVATE _POSIX_C_SOURCE=200809L)
+set_target_properties(muhtari-run-testdb PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-run-testdb)
+
 # --probe on 7800basic's simple sample, which built.samples builds into the
-# build tree (tests/built/): headered, stripped by its footer, and stripped
-# by the test hash list.
+# build tree (tests/built/): headered and stripped through the shipped
+# runner, which finds the stripped one by its footer, and stripped through
+# muhtari-run-testdb, which finds it in the test hash list.
 set(runner_sample_dir ${PROJECT_BINARY_DIR}/built/simple)
 foreach(case IN ITEMS sample_a78 sample_headerless sample_hash_match)
+  set(runner_program $<TARGET_FILE:muhtari-run>)
+  if(case STREQUAL "sample_hash_match")
+    set(runner_program $<TARGET_FILE:muhtari-run-testdb>)
+  endif()
   muhtari_add_test(NAME runner.probe.${case}
-    COMMAND ${runner_check} -DCASE=probe.${case} -DDIR=${runner_sample_dir}
-      -P ${CMAKE_CURRENT_LIST_FILE}
+    COMMAND ${CMAKE_COMMAND} -DRUN=${runner_program} "-DEMULATOR=${runner_emulator}"
+      -DCASE=probe.${case} -DDIR=${runner_sample_dir} -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS built portable TIMEOUT 10)
   set_tests_properties(runner.probe.${case} PROPERTIES FIXTURES_REQUIRED built_samples)
 endforeach()
