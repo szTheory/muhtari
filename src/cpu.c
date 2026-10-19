@@ -617,6 +617,13 @@ static void nmi(muhtari *m)
 
 void muhtari__cpu_step(muhtari *m)
 {
+    if (m->cpu.jammed != 0u) {
+        /* A jammed CPU keeps reading $FFFF, as the vectors' last reads do,
+           and takes no NMI: one read per step keeps time moving and changes
+           no register (docs/hardware/sally.md, JAM). */
+        muhtari__bus_read(m, 0xFFFFu);
+        return;
+    }
     uint8_t opcode = fetch(m);
     switch (opcode) {
     /* Loads. */

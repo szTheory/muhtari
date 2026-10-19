@@ -26,7 +26,8 @@
 #define MUHTARI__PITCH_MAX 65536u
 
 /* SALLY's registers. P is held raw, as the stack and the vectors see it.
-   jammed is set by a JAM opcode; the CPU then runs no more instructions.
+   jammed is set by a JAM opcode; the CPU then runs no more instructions,
+   and each step makes one read of $FFFF.
    poll_phi2 is the phi2 count at which the last instruction's deciding cycle
    completed: an NMI latched at or before it is taken after that instruction
    (docs/hardware/sally.md, NMI). */
@@ -286,7 +287,9 @@ void muhtari__riot_reset(muhtari *m);
 void muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
 void muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
 
-/* Runs exactly one instruction. */
+/* Runs exactly one instruction, then the NMI entry when one is due. On a
+   jammed CPU it makes one read of $FFFF instead, and changes nothing else
+   (docs/hardware/sally.md, JAM). */
 void muhtari__cpu_step(muhtari *m);
 
 /* Puts the CPU, the bus, RAM and the RIOT in their power-on state under

@@ -155,9 +155,10 @@ opcodes.
 
 Twelve opcodes stop the CPU: `02 12 22 32 42 52 62 72 92 B2 D2 F2`. On the vectors, each makes eleven reads: the
 opcode at PC, the next byte at PC + 1, then `$FFFF`, `$FFFE`, `$FFFE`, and `$FFFF` six times. PC ends at PC + 1, and no
-register or flag changes. After that the CPU executes nothing until reset. `src/cpu.c` sets `jammed`, and the CPU
-is not stepped again: idling the machine is the run loop's job. The vector harness checks that `jammed` is set after
-exactly these twelve opcodes. A jammed CPU also takes no NMI, so only reset recovers it.
+register or flag changes. After that the CPU executes nothing until reset. `src/cpu.c` sets `jammed`, and each later
+step of a jammed CPU makes one read of `$FFFF`, as the vectors' last reads do, and changes no register, so time keeps
+moving and a frame still ends. The vector harness checks that `jammed` is set after exactly these twelve opcodes. A
+jammed CPU also takes no NMI, so only reset recovers it.
 
 ## NMI
 

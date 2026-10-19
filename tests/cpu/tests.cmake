@@ -110,6 +110,12 @@ foreach(cpu_nmi_case IN ITEMS penultimate_taken_after last_cycle_taken_after_nex
     LABELS sally portable TIMEOUT 10)
 endforeach()
 
+# A step on a jammed CPU reads $FFFF once and changes nothing else, so time
+# keeps moving (docs/hardware/sally.md, JAM).
+muhtari_add_test(NAME cpu.jam.step_reads_ffff
+  COMMAND muhtari-test-cpu jam.step_reads_ffff
+  LABELS sally portable TIMEOUT 10)
+
 # Bruce Clark's decimal mode test, assembled from tests/cpu/decimal/clark.s,
 # over all 262,144 ADC and SBC cases on A, C, N, V and Z. The 65C02 build of
 # the same listing predicts other flags, so SALLY must fail it: ERROR = 1.

@@ -3,6 +3,7 @@
      muhtari-test-cpu unstable.sally_constant
      muhtari-test-cpu decimal.clark FILE EXPECTED
      muhtari-test-cpu nmi.<case>
+     muhtari-test-cpu jam.step_reads_ffff
 
    Each case runs a program through the CPU object and checks what it leaves.
    decimal.clark loads FILE, an assembled tests/cpu/decimal/clark.s, at $2000,
@@ -373,6 +374,63 @@ static int nmi_held_last_cycle_taken_after_next(char **args)
                          "phi2 - 1 at the instruction's end", 0x0202u);
 }
 
+/* Fails when got is not expected. */
+static int expect_value(const char *what, uint64_t got, uint64_t expected)
+{
+    if (got != expected) {
+        printf("%s: expected %llu got %llu\n", what, (unsigned long long)expected,
+               (unsigned long long)got);
+        return 0;
+    }
+    return 1;
+}
+
+/* A step on a jammed CPU makes one read, at $FFFF, and changes no register
+   (docs/hardware/sally.md, JAM). After the JAM at $0200, LDA #$55 at $0201
+   would load A and move PC if the step ran it, and the NMI latched before
+   the step would move PC to the handler if the step took it. */
+static int jam_step_reads_ffff(char **args)
+{
+    (void)args;
+    /* clang-format off */
+    static const uint8_t program[] = {
+        0x02,       /* $0200 JAM */
+        0xA9, 0x55, /* $0201 LDA #$55 */
+    };
+    /* clang-format on */
+    int ok = 1;
+    memset(&machine, 0, sizeof machine);
+    memcpy(&machine.ram[PROGRAM_ORIGIN], program, sizeof program);
+    machine.ram[0xFFFAu] = (uint8_t)(NMI_HANDLER & 0xFFu);
+    machine.ram[0xFFFBu] = (uint8_t)(NMI_HANDLER >> 8);
+    machine.m.cpu.s = 0xFDu;
+    machine.m.cpu.pc = PROGRAM_ORIGIN;
+    muhtari__cpu_step(&machine.m);
+    ok &= expect_value("jammed after JAM", machine.m.cpu.jammed, 1u);
+    machine.m.bus.nmi_phi2 = machine.m.bus.phi2;
+    struct muhtari__cpu before = machine.m.cpu;
+    uint64_t latched = machine.m.bus.nmi_phi2;
+    for (int i = 0; i < 2; i++) {
+        uint64_t phi2 = machine.m.bus.phi2;
+        vector_machine_reset_log(&machine);
+        muhtari__cpu_step(&machine.m);
+        ok &= expect_value("bus cycles in a jammed step", machine.log_count, 1u);
+        ok &= expect_value("its address", machine.log[0].addr, 0xFFFFu);
+        ok &= expect_value("its kind", machine.log[0].kind, N65V_KIND_READ);
+        ok &= expect_value("phi2 counts it", machine.m.bus.phi2, phi2 + 1u);
+    }
+    ok &= expect_value("PC", machine.m.cpu.pc, before.pc);
+    ok &= expect_value("A", machine.m.cpu.a, before.a);
+    ok &= expect_value("X", machine.m.cpu.x, before.x);
+    ok &= expect_value("Y", machine.m.cpu.y, before.y);
+    ok &= expect_value("S", machine.m.cpu.s, before.s);
+    ok &= expect_value("P", machine.m.cpu.p, before.p);
+    ok &= expect_value("the poll mark", machine.m.cpu.poll_phi2, before.poll_phi2);
+    ok &= expect_value("still jammed", machine.m.cpu.jammed, 1u);
+    ok &= expect_value("the latched NMI, not taken", machine.m.bus.nmi_phi2, latched);
+    return ok;
+}
+
 static const struct {
     const char *name;
     int args; /* arguments after the case name */
@@ -386,6 +444,7 @@ static const struct {
     {"nmi.hijacks_brk", 0, nmi_hijacks_brk},
     {"nmi.held_deciding_cycle_taken_after", 0, nmi_held_deciding_cycle_taken_after},
     {"nmi.held_last_cycle_taken_after_next", 0, nmi_held_last_cycle_taken_after_next},
+    {"jam.step_reads_ffff", 0, jam_step_reads_ffff},
 };
 
 int main(int argc, char **argv)

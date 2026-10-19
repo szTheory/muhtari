@@ -63,6 +63,7 @@ core.testcard.pinned_hash	core,portable
 core.testcard.static	core,portable
 cpu.decimal.clark	portable,vectors
 cpu.decimal.clark.self_test	portable,vectors
+cpu.jam.step_reads_ffff	portable,sally
 cpu.nmi.branch_no_cross_polls_early	portable,sally
 cpu.nmi.held_deciding_cycle_taken_after	portable,sally
 cpu.nmi.held_last_cycle_taken_after_next	portable,sally
