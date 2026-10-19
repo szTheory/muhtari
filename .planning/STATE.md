@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-12-PLAN.md
-last_updated: "2026-10-19T03:07:30.953Z"
+stopped_at: Completed 02-13-PLAN.md
+last_updated: "2026-10-19T03:19:49.790Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: 805a2236f416406f9f9369800c217e3fb3bc6797
+state_head: 71cc4d60c3106dcda6dd8e3ef6b8740182b2af0a
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 33
+  completed_plans: 34
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 13 of 16
+Plan: 14 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -91,6 +91,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P10 | 11 min | 2 tasks | 11 files |
 | Phase 02 P11 | 14 min | 3 tasks | 21 files |
 | Phase 02 P12 | 9 min | 2 tasks | 14 files |
+| Phase 02 P13 | 10 min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -200,6 +201,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Container fuzz run: 32,253 runs in 61 s, 528 exec/s, cov 173 to 245, corpus 18 to 85 units, no crash; hosted run 39191834717 green on every leg
 - [Phase 02]: Plan 12: host/status_text.c holds the English; muhtari__status_text gives "unsupported board" and the runner appends the board name
 - [Phase 02]: Plan 12: --help prints the exit code as %2d so 77 refused aligns and rows 0-2 stay byte-identical
+- [Phase 02]: Plan 13: Hosted run 39193868744: the 7800basic sample builds byte-identical on all six build legs, asan, be32 and wasm32, so no leg moves to its own preset; be32 took 39 s
+- [Phase 02]: Plan 13: MUHTARI_TESTS OFF registers no test; the bench preset, the perf gate and bench-wasm32 use it so their configure needs no sample tool
+- [Phase 02]: Plan 13: muhtari-run-testdb links the runner's sources and the core's objects with tests/cart/test_cartdb.c; never installed
 
 ### Pending Todos
 
@@ -238,6 +242,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T03:07:30.901Z
-Stopped at: Completed 02-12-PLAN.md
+Last session: 2026-10-19T03:19:49.735Z
+Stopped at: Completed 02-13-PLAN.md
 Resume file: None
