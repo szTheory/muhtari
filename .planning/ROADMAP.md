@@ -192,10 +192,10 @@ Plans:
   4. The libretro core's memory descriptors pass rcheevos' own resolver, and the hosted RetroArch job boots a diagnostic ROM with a screenshot equal to the runner's frame.
   5. `ctest -R fuzz.regress.run` and `ctest -L prop` pass on every platform with their nightly runs, the `library` preset regenerates `docs/compatibility.md` in CI, and merging the phase's pull request publishes a release with no manual step.
 
-**Plans**: 19 plans
+**Plans**: 1/19 plans executed
 
 Plans (one wave each; every plan edits the test inventory, so they run in order):
-- [ ] 03-01-PLAN.md — MARIA's DMA burst as a unit: closed-form costs, line RAM, statistics, maria.md derivations
+- [x] 03-01-PLAN.md — MARIA's DMA burst as a unit: closed-form costs, line RAM, statistics, maria.md derivations
 - [ ] 03-02-PLAN.md — Tracer: the bounded run loop, linear cart, line events, c2 burst and fast-boot hand-off
 - [ ] 03-03-PLAN.md — Span rendering and the DLI: `simple` renders, NMI contract, MARIA page
 - [ ] 03-04-PLAN.md — Public API version 3 and `muhtari-run FILE`
@@ -214,6 +214,7 @@ Plans (one wave each; every plan edits the test inventory, so they run in order)
 - [ ] 03-17-PLAN.md — Property tests, the run fuzz target, nightly jobs and path filter
 - [ ] 03-18-PLAN.md — The `library` preset and job, ratchet, generated `docs/compatibility.md`
 - [ ] 03-19-PLAN.md — Close: measured timeouts, gate-code tally, docs, probe closed, ship title
+
 **UI hint**: no
 **Canonical refs:** `.planning/preparation/A7800-MARIA.md`, `.planning/preparation/A7800-CARTRIDGES-AND-PERIPHERALS.md`, `.planning/preparation/A7800-SYSTEM.md`, `.planning/preparation/CONFORMANCE.md`, `.planning/preparation/HOSTS-AND-INTEGRATION.md`
 
@@ -242,5 +243,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
 | 2. The CPU matches the public vectors | 16/16 | Complete    | 2026-10-19 |
-| 3. Games play in RetroArch | 0/TBD | Not started | - |
+| 3. Games play in RetroArch | 1/19 | In Progress | - |
 | 4. Sound | 0/TBD | Not started | - |

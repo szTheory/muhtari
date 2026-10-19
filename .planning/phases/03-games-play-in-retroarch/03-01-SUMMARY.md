@@ -250,3 +250,7 @@ T0 = fall + 6, VBE at t 43 through `muhtari__maria_vbe`, and the cartridge route
 ---
 *Phase: 03-games-play-in-retroarch*
 *Completed: 2026-10-19*
+
+## Self-Check: PASSED
+
+All five created files exist, and the four task commits (de6e5b2, e930ab8, aaa1984, b961c5a) are ancestors of HEAD.

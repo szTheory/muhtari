@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
-status: "Phase 03 planned"
-stopped_at: Phase 3 planned (19 plans, checker passed); next /gsd-execute-phase 3
-last_updated: "2026-10-19T22:41:12.046Z"
+status: executing
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-10-19T23:57:15.932Z"
 last_activity: 2026-10-19
-last_activity_desc: Phase 03 planned in 19 plans
-state_head: ecbe7f52aa3722cd1bfce721f094621cce0993ff
+last_activity_desc: Plan 03-01 complete (MARIA DMA burst)
+state_head: 4d88a13781d32dbb7058bebe17a7554076db9a16
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 37
+  completed_plans: 38
   percent: 50
 ---
 
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-19)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 3 — Games play in RetroArch (19 plans ready; next `/gsd-execute-phase 3`)
+**Current focus:** Phase 3 — Games play in RetroArch
 
 ## Current Position
 
-Phase: 3 (Games play in RetroArch) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 03 planned, ready to execute
-Last activity: 2026-10-19 — Phase 03 planned: research, 19 plans in 19 sequential waves, plan checker passed after two revision rounds
+Phase: 3 (Games play in RetroArch) — EXECUTING
+Plan: 2 of 19
+Status: Ready to execute
+Last activity: 2026-10-19 — Plan 03-01 complete: MARIA DMA burst, 11 maria.dma_line tests, docs/hardware/maria.md
 
 Progress: [█████░░░░░] 50%
 
@@ -96,6 +96,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P14 | 15 min | 2 tasks | 9 files |
 | Phase 02 P15 | 17 min | 2 tasks | 12 files |
 | Phase 02 P16 | 33 min | 3 tasks | 17 files |
+| Phase 03 P01 | 10 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -220,6 +221,8 @@ Recent decisions affecting current work:
 - [Phase 02]: The re-review of fix round 1 (2cca8b3) found no blocker. Its new WR-01 (the bus entry points cannot say a request was ignored), WR-02 (a test seed) and IN-01 wait in the MARIA and run-loop todo for phase 3, so one code-review fix round is still left. The re-verification passed 5/5 with a fresh covered digest
 - [Phase 02]: Fix round 2, the last one rule 7 allows, fixed the re-review's WR-01 (62b6bdc): `muhtari__bus_request_halt` and `muhtari__bus_raise_nmi` return 1 when they take a request and 0 when they ignore it, and MARIA checks it in phase 3. WR-02 is skipped as a test seed; it and IN-01 wait in the MARIA and run-loop todo. No code-review fix round is left in this phase
 - [Phase 02]: The third review (4f8de62) found no blocker. WR-05: `muhtari__bus_raise_nmi` can return 1 for an edge the latch later drops, so its 1 means "queued", not "will be taken". It, IN-04 and the IN-05 seed wait in the MARIA and run-loop todo; phase 3 settles what the 1 promises. The re-verification passed 5/5 with the same 139 covered files
+- [Phase 03]: Plan 01: MARIA's holes come from the DLL entry's H16/H8 bits, not CTRL; muhtari__maria_vbe loads zone 0's entry from DPPH/DPPL for plan 03-02's t 43 event to call
+- [Phase 03]: Plan 01: muhtari__maria_dma_line fills *st and stats[line], clamps LRC to T0 + 454, and sets a feature bit only when an object uses it; docs/hardware/maria.md derives the 16/24 empty-DL ticks from T0 = /HALT fall + 6
 
 ### Pending Todos
 
@@ -261,6 +264,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T21:18:20.310Z
-Stopped at: Phase 3 planned; next /gsd-execute-phase 3
-Resume file: .planning/phases/03-games-play-in-retroarch/03-CONTEXT.md
+Last session: 2026-10-19T23:57:15.844Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None
