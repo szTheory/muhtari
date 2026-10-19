@@ -244,27 +244,30 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
 
 /* One window at a time: a request while one is waiting or /HALT is low is
    ignored, and the window in flight keeps its hold (docs/hardware/bus.md,
-   HALT). */
-void muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick)
+   HALT). Returns 1 when the window is taken, 0 when it is ignored. */
+int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick)
 {
     struct muhtari__bus *b = &m->bus;
     if (b->halt_gate_writes < 2u || b->halt_stage != HALT_NONE) {
-        return;
+        return 0;
     }
     b->halt_at = at_tick;
     b->halt_until = until_tick;
     b->halt_stage = HALT_REQUESTED;
     rearm(m);
+    return 1;
 }
 
 /* One edge at a time: an edge raised while an earlier one waits to be
-   latched is ignored (docs/hardware/bus.md, NMI). */
-void muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick)
+   latched is ignored (docs/hardware/bus.md, NMI). Returns 1 when the edge
+   is taken, 0 when it is ignored. */
+int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick)
 {
     if (!men(m) || m->bus.nmi_pending != 0u) {
-        return;
+        return 0;
     }
     m->bus.nmi_at = at_tick;
     m->bus.nmi_pending = 1u;
     rearm(m);
+    return 1;
 }

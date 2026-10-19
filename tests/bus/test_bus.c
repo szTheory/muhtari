@@ -54,6 +54,13 @@ static int expect_ticks(const char *what, uint64_t got, uint64_t expected, const
     return expect_count(what, "ticks", got, expected, model, wrong);
 }
 
+/* What request_halt or raise_nmi returned: 1 taken, 0 ignored. */
+static int expect_taken(const char *what, int got, int expected, const char *model)
+{
+    return expect_count(what, "as return", (uint64_t)got, (uint64_t)expected, model,
+                        (uint64_t)!expected);
+}
+
 /* The ticks one read and one write at addr take. */
 static int cycle_ticks(muhtari *m, uint16_t addr, uint64_t expected, const char *model,
                        uint64_t wrong)
@@ -295,6 +302,8 @@ static int halt_gate_two_writes(void)
 {
     int ok = 1;
     muhtari *m = fresh(0x02u);
+    ok &= expect_taken("a request with the gate shut", muhtari__bus_request_halt(m, 0u, 12u), 0,
+                       "an open gate");
     ok &= expect_ticks("HALT after no write", halt_three_reads(m), 12u, "an open gate", 24u);
     muhtari__bus_write(m, 0x0001u, 0x02u);
     ok &= expect_ticks("HALT after one write", halt_three_reads(m), 12u, "one write opening", 24u);
@@ -403,18 +412,22 @@ static int halt_freezes_writes(void)
 }
 
 /* One window at a time. A request made after /HALT falls, before c2's hold,
-   is ignored: c2 still freezes for the first window's 5 cycles. A request
-   made before the first window's fall is ignored too, so /HALT falls at
-   tick 8, not 4. Once a window ends, the next request is taken. */
+   is ignored and returns 0: c2 still freezes for the first window's 5
+   cycles. A request made before the first window's fall is ignored too, so
+   /HALT falls at tick 8, not 4. Once a window ends, the next request is
+   taken. */
 static int halt_one_window_at_a_time(void)
 {
     int ok = 1;
     muhtari *m = fresh(LOCKED_7800);
     m->bus.halt_gate_writes = 2u;
     (void)muhtari__bus_read(m, 0x1800u);
-    muhtari__bus_request_halt(m, 4u, 24u);
+    ok &= expect_taken("the first request", muhtari__bus_request_halt(m, 4u, 24u), 1,
+                       "every request ignored");
     ok &= expect_ticks("c0", read_ticks(m), 4u, "no latency", 24u);
-    muhtari__bus_request_halt(m, m->bus.ticks, m->bus.ticks + 40u);
+    ok &= expect_taken("a second request after the fall",
+                       muhtari__bus_request_halt(m, m->bus.ticks, m->bus.ticks + 40u), 0,
+                       "the second request replacing the first");
     ok &= expect_ticks("c1, a second request after the fall", read_ticks(m), 4u,
                        "one cycle of latency", 24u);
     ok &= expect_ticks("c2, a second request after the fall", read_ticks(m), 24u,
@@ -425,8 +438,10 @@ static int halt_one_window_at_a_time(void)
     m = fresh(LOCKED_7800);
     m->bus.halt_gate_writes = 2u;
     (void)muhtari__bus_read(m, 0x1800u);
-    muhtari__bus_request_halt(m, 8u, 28u);
-    muhtari__bus_request_halt(m, 4u, 24u);
+    ok &= expect_taken("the first request, at tick 8", muhtari__bus_request_halt(m, 8u, 28u), 1,
+                       "every request ignored");
+    ok &= expect_taken("a second request before the fall", muhtari__bus_request_halt(m, 4u, 24u), 0,
+                       "the second request replacing the first");
     ok &= expect_ticks("the cycle before the fall", read_ticks(m), 4u,
                        "freezing the cycle before the fall", 24u);
     ok &=
@@ -468,7 +483,7 @@ static int nmi_latched_in_cycle(void)
                            cases[i].model, cases[i].wrong);
     }
     muhtari *m = fresh(0x00u);
-    muhtari__bus_raise_nmi(m, 2u);
+    ok &= expect_taken("edge with MEN clear", muhtari__bus_raise_nmi(m, 2u), 0, "no MEN gate");
     (void)muhtari__bus_read(m, 0x1800u);
     ok &=
         expect_count("edge with MEN clear", "as nmi_phi2", m->bus.nmi_phi2, 0u, "no MEN gate", 1u);
@@ -476,17 +491,21 @@ static int nmi_latched_in_cycle(void)
 }
 
 /* One edge at a time: an edge at tick 14, raised while the edge at tick 6
-   is not yet latched, is ignored, so cycle 2 latches the first. */
+   is not yet latched, is ignored and returns 0, so cycle 2 latches the
+   first. */
 static int nmi_one_edge_at_a_time(void)
 {
+    int ok = 1;
     muhtari *m = fresh(LOCKED_7800);
-    muhtari__bus_raise_nmi(m, 6u);
-    muhtari__bus_raise_nmi(m, 14u);
+    ok &= expect_taken("the first edge", muhtari__bus_raise_nmi(m, 6u), 1, "every edge ignored");
+    ok &= expect_taken("a second edge before the first is latched", muhtari__bus_raise_nmi(m, 14u),
+                       0, "the second edge replacing the first");
     for (int i = 0; i < 4; i++) {
         (void)muhtari__bus_read(m, 0x1800u);
     }
-    return expect_count("a second edge before the first is latched", "as nmi_phi2", m->bus.nmi_phi2,
-                        2u, "the second edge replacing the first", 4u);
+    ok &= expect_count("a second edge before the first is latched", "as nmi_phi2", m->bus.nmi_phi2,
+                       2u, "the second edge replacing the first", 4u);
+    return ok;
 }
 
 static int expect_address(const char *what, uint16_t got, uint16_t expected, const char *model,

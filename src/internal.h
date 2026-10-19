@@ -283,9 +283,10 @@ void muhtari__riot_reset(muhtari *m);
    until the HALT gate has counted two writes. raise_nmi raises an NMI edge
    at at_tick, and does nothing while MEN = 0. Each takes one at a time: a
    request while a window is waiting or /HALT is low, or an edge while an
-   earlier one is not yet latched, is ignored and the one in flight stands. */
-void muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
-void muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
+   earlier one is not yet latched, is ignored and the one in flight stands.
+   Each returns 1 when it takes the request and 0 when it ignores it. */
+int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
+int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
 
 /* Runs exactly one instruction, then the NMI entry when one is due. On a
    jammed CPU it makes one read of $FFFF instead, and changes nothing else

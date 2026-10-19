@@ -139,7 +139,8 @@ only from the second sample:
 Release takes the same two samples, so SALLY loses exactly m cycles.
 
 One window at a time: a request made while another is waiting for /HALT to fall, or while /HALT is low, is
-ignored, and the window in flight keeps its hold. MARIA asks for the next window after this one ends.
+ignored, and the window in flight keeps its hold. The request returns 0 when it is ignored and 1 when it is taken,
+so MARIA can check that it asked after the last window ended.
 
 The two cycles of latency are fitted, not measured. They are MiSTer's figure, chosen so that a 46-cycle loop counts
 correctly. A scope shows the bus free by the second φ2 fall, and other emulators stop the CPU at once (System notes,
@@ -152,7 +153,8 @@ On the 7800 only MARIA raises NMI, at the end of a zone's DMA, and never while M
 end of a φ2. The bus records `nmi_phi2`, the φ2 count of the first cycle whose data tick falls at or after the edge:
 tick 4 of a fast cycle, tick 5 of a slow one. An edge raised while MEN = 0 is dropped. One edge at a time: an edge
 raised while an earlier one is not yet latched is ignored, just as a latched edge the CPU has not taken keeps its
-`nmi_phi2` against a later one.
+`nmi_phi2` against a later one. Raising an edge returns 0 when it is ignored, under MEN = 0 or behind another, and
+1 when it is taken.
 
 Held RDY and HALT cycles each carry their own φ2 count. So an edge latched during a hold names the held cycle it
 fell in, not the cycle that completes the access. After `STA WSYNC`, an edge at tick 100 falls in held cycle 25 of
