@@ -5,7 +5,7 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: planning
-stopped_at: Phase 02 complete, ready to plan Phase 3
+stopped_at: Phase 02 complete and verified (16/16 plans; 02-VERIFICATION.md passed); next /gsd-ship 2
 last_updated: "2026-10-19T04:49:10.774Z"
 last_activity: 2026-10-19
 last_activity_desc: Phase 02 complete, transitioned to Phase 3
@@ -22,10 +22,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-16)
+See: .planning/PROJECT.md (updated 2026-10-19)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 02 — The CPU matches the public vectors
+**Current focus:** Ship phase 02 (`/gsd-ship 2`; the merge publishes 0.2.0), then Phase 3 — Games play in RetroArch
 
 ## Current Position
 
@@ -221,7 +221,6 @@ Recent decisions affecting current work:
 
 - [2026-10-16] [ci] Promote the wasm32 lane into CI required — [todo file](.planning/todos/pending/2026-10-16-promote-the-wasm32-lane-into-ci-required.md)
 - [2026-10-16] [ci] Arm the instructions-per-frame gate — [todo file](.planning/todos/pending/2026-10-16-arm-the-instructions-per-frame-gate.md)
-- [2026-10-16] [release] Add the release firmware scan with the first ROM code — [todo file](.planning/todos/pending/2026-10-16-add-the-release-firmware-scan-with-the-first-rom-code.md)
 - [2026-10-16] [ci] Limit release rehearsals to pushes that change release inputs — [todo file](.planning/todos/pending/2026-10-16-limit-release-rehearsals-to-pushes-that-change-release-inputs.md)
 - [2026-10-16] [ci] Close the re-review's findings on the Dependabot gate and the publish checks — [todo file](.planning/todos/pending/2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md)
 
@@ -242,7 +241,14 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-None yet.
+- [Phase 02] 02-REVIEW.md has 4 warnings and 3 info findings, all `open` in 02-REVIEW-DISPOSITION.md. WR-03 (a
+  second HALT request or NMI edge replaces one still in flight) and WR-04 (`muhtari__cpu_step` does not enforce
+  `jammed`, so a skipped jammed CPU advances no time) bear on phase 3's MARIA and run loop; WR-02 corrects the
+  size-tag comment and `docs/embedding.md`; WR-01 and IN-03 are tooling findings and become seeds (AGENTS rule 7).
+  `/gsd-code-review 02 --fix` is the fix round (at most two per phase).
+- [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
+- [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
+  pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
 
 ## Deferred Items
 
@@ -254,6 +260,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T04:31:44.172Z
-Stopped at: Phase 02 complete, ready to plan Phase 3
+Last session: 2026-10-19T05:00:00.000Z
+Stopped at: Phase 02 complete and verified (16/16 plans; 02-VERIFICATION.md passed); next /gsd-ship 2
 Resume file: None
