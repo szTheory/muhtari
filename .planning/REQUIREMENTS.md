@@ -71,15 +71,15 @@ values in tests cite their source document.
 ### Games play in RetroArch
 
 - [ ] **GAME-01**: `ctest -L basic` builds the pinned 7800basic samples, checks each ROM's SHA-256, and runs each for
-  600 frames; every frame hash equals its pinned value on every platform. Together they cover linear 16–48 KB and
-  SuperGame boards (with RAM, bank 6 and 144 KB variants), every read mode, kangaroo mode, holey and indirect DMA,
-  and display-list interrupts.
+  600 frames; every frame hash equals its pinned value on every platform. Together with the project's own diagnostic
+  ROMs they cover linear 16–48 KB and SuperGame boards (with RAM, bank 6 and 144 KB variants), every read mode,
+  kangaroo mode, holey and indirect DMA, and display-list interrupts.
 - [ ] **GAME-02**: `ctest -L diag` runs the project's own diagnostic ROMs; the DMA cost per line by header and byte
   counts, the overrun abort, the DLI tick, the WSYNC release and the slow-access cost they report equal the values
   in A7800-MARIA and A7800-SYSTEM, as do the per-line DMA statistics the core keeps.
 - [ ] **GAME-03**: The default fast boot, with no BIOS, starts a cartridge in the documented hand-off state;
   `--boot bios` boots through the CC0 OpenBIOS built in CI; every sample reaches its title-screen predicate within
-  300 frames on both paths.
+  300 frames on both paths, counted from the cartridge hand-off on the BIOS path.
 - [ ] **GAME-04**: `muhtari-run --movie FILE` replays per-frame input that drives a two-button ProLine stick and a
   one-button stick on both ports, plus Pause, Select, Reset and both difficulty switches; `ctest -L input` shows
   the SWCHA, SWCHB and INPT0–5 values the game reads match A7800-CARTRIDGES-AND-PERIPHERALS, and frames with no
