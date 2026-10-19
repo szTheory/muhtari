@@ -5,15 +5,15 @@ titles: json
 findings:
   - id: WR-05
     severity: warning
-    disposition: open
+    disposition: deferred
     title: "`raise_nmi` returns 1 for an edge that is later dropped at latch"
   - id: IN-04
     severity: info
-    disposition: open
+    disposition: deferred
     title: "The HALT doc names one reason for a 0 return; the gate is the other"
   - id: IN-05
     severity: info
-    disposition: open
+    disposition: deferred
     title: "Nothing tests that a request after a window, or an edge after a latch, returns 1 (seed, test code)"
   - id: WR-01
     severity: warning
@@ -43,7 +43,7 @@ findings:
     severity: info
     disposition: deferred
     title: "The firmware scan cannot recognise multi-chip or half-swapped 7800 images"
-open: 3
+open: 0
 total: 10
 recorded: 2026-10-19T20:22:05.838Z
 ---
@@ -52,9 +52,9 @@ recorded: 2026-10-19T20:22:05.838Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-05 | warning | open | - |
-| IN-04 | info | open | - |
-| IN-05 | info | open | - |
+| WR-05 | warning | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: both fix rounds are spent; waits for phase 3's MARIA plan |
+| IN-04 | info | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: both fix rounds are spent; waits for phase 3's MARIA plan |
+| IN-05 | info | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: both fix rounds are spent; waits for phase 3's MARIA plan |
 | WR-01 | warning | fixed | 02-REVIEW-FIX.md (not in the current review) |
 | WR-02 | warning | skipped | 02-REVIEW-FIX.md (not in the current review) |
 | IN-01 | info | deferred | todo 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md: waits for phase 3's run loop (not in the current review) |
