@@ -5,7 +5,8 @@
 /* The 6532's register select: RS, wired to A9, picks the ports and the
    timer over the RAM; A2 then picks the timer over the ports, A1-A0 the
    port register or the timer's interval, and A4 a timer write over an edge
-   control write (docs/hardware/riot.md, Registers). */
+   control write (docs/hardware/riot.md, Registers). RIOT reads drive all
+   eight data bits. */
 #define RIOT_RS 0x0200u
 #define RIOT_A2 0x04u
 #define RIOT_A4 0x10u
@@ -45,6 +46,53 @@ static uint8_t riot_intim(const muhtari *m)
         return (uint8_t)(r->timer_n - 1u - ((p - 1u) >> r->timer_shift));
     }
     return (uint8_t)(0xFFu - (p - full - 1u));
+}
+
+/* The timer flag sets at p = N I + 1 and stays set until a timer access
+   after that cycle clears it (docs/hardware/riot.md, Flags). */
+static int riot_timer_flag(const muhtari *m)
+{
+    return riot_elapsed(m) > riot_full(&m->riot) && m->riot.timer_cleared == 0u;
+}
+
+/* A timer read clears the flag, except in the cycle the flag sets. */
+static uint8_t riot_timer_read(muhtari *m)
+{
+    uint8_t v = riot_intim(m);
+    if (riot_elapsed(m) > riot_full(&m->riot) + 1u) {
+        m->riot.timer_cleared = 1u;
+    }
+    return v;
+}
+
+/* TIMINT: the timer flag in D7 and PA7's in D6, with D5-D0 driven to 0.
+   Reading it clears PA7's flag only (docs/hardware/riot.md, Flags). */
+static uint8_t riot_flags_read(muhtari *m)
+{
+    uint8_t v =
+        (uint8_t)((riot_timer_flag(m) ? 0x80u : 0x00u) | (m->riot.pa7_flag != 0u ? 0x40u : 0x00u));
+    m->riot.pa7_flag = 0u;
+    return v;
+}
+
+/* PA7's level: ORA's bit on an output pin, high on an input pin. */
+static uint8_t riot_pa7_level(const struct muhtari__riot *r)
+{
+    return (uint8_t)((((r->ora & r->ddra) | (uint8_t)~r->ddra) >> 7) & 1u);
+}
+
+/* The edge detector sees PA7 through the polarity: its input is the level
+   on the falling edge and the level inverted on the rising edge, and the
+   flag sets when that input falls. So an active edge sets it whether PA7 is
+   an input or an output, and so may a polarity change (docs/hardware/riot.md,
+   PA7). */
+static void riot_pa7_update(struct muhtari__riot *r)
+{
+    uint8_t detect = (uint8_t)(riot_pa7_level(r) ^ r->pa7_positive);
+    if (r->pa7_detect != 0u && detect == 0u) {
+        r->pa7_flag = 1u;
+    }
+    r->pa7_detect = detect;
 }
 
 /* A port reads its output register on output pins and the pin on input
@@ -87,6 +135,7 @@ static void riot_io_write(muhtari *m, uint16_t addr, uint8_t v)
         r->ddrb = v;
         break;
     }
+    riot_pa7_update(r);
 }
 
 uint8_t muhtari__riot_read(muhtari *m, uint16_t addr)
@@ -98,9 +147,9 @@ uint8_t muhtari__riot_read(muhtari *m, uint16_t addr)
         return riot_io_read(m, addr);
     }
     if ((addr & 0x01u) == 0u) {
-        return riot_intim(m);
+        return riot_timer_read(m);
     }
-    return 0x00u;
+    return riot_flags_read(m);
 }
 
 void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v)
@@ -118,7 +167,13 @@ void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v)
         r->timer_n = v;
         r->timer_shift = riot_interval_shift[addr & 0x03u];
         r->timer_phi2 = riot_now(m);
+        r->timer_cleared = 0u;
+        return;
     }
+    /* An edge control write: A0 selects the rising edge; its data, and A1's
+       interrupt enable, reach nothing, as the RIOT's IRQ is unconnected. */
+    r->pa7_positive = (uint8_t)(addr & 0x01u);
+    riot_pa7_update(r);
 }
 
 /* RES zeroes the four I/O registers, though the profile may say port B's

@@ -42,8 +42,8 @@ With MEN = 1 (INPTCTRL bit 1), the 7800 decode applies:
 | `$0020-$003F` (same mirrors) | MARIA | fast | the open-bus byte, until MARIA's registers exist |
 | `$0040-$00FF`, `$0140-$01FF` | RAM, the same bytes as `$2040-$20FF` and `$2140-$21FF` | fast | RAM |
 | `$0240-$027F`, `$0340-$037F` | nothing | fast | the open-bus byte |
-| `$0280-$02FF` (`$0380`) | RIOT ports and timer | slow | the open-bus byte, until the RIOT exists |
-| `$0480-$04FF` (`$0580`) | RIOT RAM | slow | the open-bus byte, until the RIOT exists |
+| `$0280-$02FF` (`$0380`) | RIOT ports and timer | slow | the RIOT, 8 bits (`docs/hardware/riot.md`) |
+| `$0480-$04FF` (`$0580`) | RIOT RAM | slow | the RIOT's RAM |
 | `$0400-$047F`, `$0500-$057F`, `$0600-$17FF` | cartridge | fast | the open-bus byte with no cartridge |
 | `$1800-$27FF` | RAM, 4 KiB | fast | RAM |
 | `$2800-$FFFF` | cartridge, and the BIOS while EXT = 0 | fast | the open-bus byte with nothing loaded |
