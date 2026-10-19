@@ -7,13 +7,7 @@
    every address nothing on the board drives yet: the cartridge and BIOS
    space with nothing loaded, the unused windows, and the RIOT until it lands.
    DEV_TIA and DEV_RIOT, and every address while MEN = 0, take slow cycles. */
-enum bus_device {
-    DEV_OPEN,
-    DEV_RAM,
-    DEV_MARIA,
-    DEV_TIA,
-    DEV_RIOT
-};
+enum bus_device { DEV_OPEN, DEV_RAM, DEV_MARIA, DEV_TIA, DEV_RIOT };
 
 /* A fast cycle is 4 ticks with its data at the phi2 fall, tick 4; a slow
    cycle is 6 ticks with its data at tick 5 (docs/hardware/bus.md, Clocks). */
@@ -77,27 +71,52 @@ static int slow(const muhtari *m, enum bus_device dev)
     return dev == DEV_TIA || dev == DEV_RIOT || !men(m);
 }
 
-/* Recomputes next_deadline from the pending events. */
+/* Recomputes next_deadline from the pending events. While RDY is low every
+   cycle takes the slow path, so the next read can be held. */
 static void rearm(muhtari *m)
 {
-    m->bus.next_deadline = UINT64_MAX;
+    m->bus.next_deadline = m->bus.rdy_release != 0u ? 0u : UINT64_MAX;
 }
 
-/* The events at or before a cycle's data tick. */
-static void events(muhtari *m)
+/* Runs n whole 4-tick phi2 cycles in which the CPU is held. Each is counted
+   in phi2, so whatever counts phi2 counts through the hold
+   (docs/hardware/bus.md, RDY). */
+static void hold(muhtari *m, uint64_t n)
 {
+    m->bus.ticks += n * BUS_FAST_TICKS;
+    m->bus.phi2 += n;
+}
+
+/* The events at or before a cycle's data tick. RDY holds a read that starts
+   before its release until a cycle starts at or after it; writes are never
+   held (docs/hardware/bus.md, RDY). */
+static void events(muhtari *m, int is_read)
+{
+    struct muhtari__bus *b = &m->bus;
+    if (is_read && b->rdy_release != 0u) {
+        if (b->ticks < b->rdy_release) {
+            hold(m, (b->rdy_release - b->ticks + BUS_FAST_TICKS - 1u) / BUS_FAST_TICKS);
+        }
+        b->rdy_release = 0u;
+    }
     rearm(m);
+}
+
+/* The tick, counted from a cycle's start, at which its data is on the bus. */
+static uint32_t data_at(uint32_t len)
+{
+    return len == BUS_SLOW_TICKS ? BUS_SLOW_DATA : BUS_FAST_DATA;
 }
 
 /* Runs everything before a cycle's access and returns its length: one
    compare against next_deadline on the fast path. */
-static uint32_t begin(muhtari *m, enum bus_device dev)
+static uint32_t begin(muhtari *m, enum bus_device dev, int is_read)
 {
-    uint32_t data = slow(m, dev) ? BUS_SLOW_DATA : BUS_FAST_DATA;
-    if (m->bus.ticks + data >= m->bus.next_deadline) {
-        events(m);
+    uint32_t len = slow(m, dev) ? BUS_SLOW_TICKS : BUS_FAST_TICKS;
+    if (m->bus.ticks + data_at(len) >= m->bus.next_deadline) {
+        events(m, is_read);
     }
-    return slow(m, dev) ? BUS_SLOW_TICKS : BUS_FAST_TICKS;
+    return len;
 }
 
 static void end(muhtari *m, uint32_t len)
@@ -109,22 +128,43 @@ static void end(muhtari *m, uint32_t len)
 uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
 {
     enum bus_device dev = decode(m, addr);
-    uint32_t len = begin(m, dev);
+    uint32_t len = begin(m, dev, 1);
     uint8_t v = m->bus.open_bus;
     if (dev == DEV_RAM) {
         v = m->ram[ram_index(addr)];
+    } else if (dev == DEV_TIA) {
+        v = muhtari__tia_read(m, addr);
     }
     m->bus.open_bus = v;
     end(m, len);
     return v;
 }
 
+/* Until LOCK is set, every write the TIA's chip select sees also writes
+   INPTCTRL, whose bits 4-7 do not exist, and counts towards the HALT gate,
+   which opens at 2 (docs/hardware/bus.md, INPTCTRL and HALT). */
+static void inptctrl_write(muhtari *m, uint8_t v)
+{
+    struct muhtari__bus *b = &m->bus;
+    if ((b->inptctrl & MUHTARI__INPTCTRL_LOCK) != 0u) {
+        return;
+    }
+    b->inptctrl = (uint8_t)(v & MUHTARI__INPTCTRL_BITS);
+    if (b->halt_gate_writes < 2u) {
+        b->halt_gate_writes++;
+    }
+}
+
 void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
 {
     enum bus_device dev = decode(m, addr);
-    uint32_t len = begin(m, dev);
+    uint32_t len = begin(m, dev, 0);
     if (dev == DEV_RAM) {
         m->ram[ram_index(addr)] = v;
+    } else if (dev == DEV_TIA) {
+        muhtari__tia_write(m, addr, m->bus.ticks + data_at(len));
+        inptctrl_write(m, v);
+        rearm(m);
     }
     m->bus.open_bus = v;
     end(m, len);

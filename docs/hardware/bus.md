@@ -12,6 +12,8 @@ Sources:
 - **The system notes**, `.planning/preparation/A7800-SYSTEM.md` sections 1 and 3 to 5, which gather the facts below
   with their own sources: MiSTer's Atari 7800 core at `0dc8ad2e3ff7` (facts only), MAME, and measurements posted on
   AtariAge.
+- **The Stella Programmer's Guide** (1979), section 3.2: a write to WSYNC holds the CPU until the TIA's horizontal
+  blank begins.
 
 ## Clocks
 
@@ -52,3 +54,63 @@ With MEN = 0, at power-on and in 2600 mode, the 2600 decode applies: with A12 = 
 the RIOT. Everything else is the cartridge. There is no system RAM, and every cycle is slow.
 
 At power-on every RAM byte is 0. Other fill patterns are a later profile option.
+
+## Slow cycles
+
+Every cycle that selects the TIA or the RIOT is slow: `$0000-$001F`, `$0280-$02FF` and `$0480-$04FF` with their
+mirrors. While MEN = 0, every cycle is slow, wherever it points. A slow cycle's data is on the bus at tick 5, so a
+write to the TIA lands there. `$0240-$027F` and `$0340-$037F` sit in the RIOT's pages but select nothing, so they
+take 4 ticks.
+
+## Open bus
+
+The data bus keeps the last byte any cycle put on it, read or written. An address nothing drives returns that byte.
+So `LDA $0240` returns `$02`: the last byte on the bus was the operand's high byte. A model that returns zeros there
+breaks games that read an empty address, such as Choplifter's sky (System notes, section 4).
+
+The TIA drives only some bits of a read. The rest come from the open-bus byte:
+
+| Register (A3-A0) | Driven | Idle value |
+|------------------|--------|------------|
+| `$00-$05`, `$07`: collision latches | D7-D6 | 0 |
+| `$06`: CXBLPF | D7 | 0 |
+| `$08-$0B`: INPT0-INPT3, paddles | D7 | 0 |
+| `$0C-$0D`: INPT4-INPT5, buttons | D7 | 1, button up |
+| `$0E-$0F` | nothing | |
+
+The idle values hold until the inputs are wired. MARIA's addresses, `$20-$3F`, return the open-bus byte until
+MARIA's registers exist.
+
+## INPTCTRL
+
+INPTCTRL is a write-only latch on the TIA's chip select. Until it is locked, every write the TIA sees also writes
+INPTCTRL, at any TIA address or mirror (Software Guide; System notes, section 5). Its four bits:
+
+| Bit | Name | Set | Clear |
+|-----|------|-----|-------|
+| 0 | LOCK | ignore every later write until power-off | writable |
+| 1 | MEN | MARIA, system RAM, the 7800 decode, NMI, fast cycles | the 2600 decode, every cycle slow, no NMI |
+| 2 | EXT | the cartridge at `$8000-$FFFF` | the BIOS there |
+| 3 | TIA-EN | TIA video | MARIA video |
+
+Bits 4-7 are not stored, so `$16` acts as `$06`. INPTCTRL is `$00` at power-on: unlocked, MEN clear. A 7800 game
+runs with `$07` or more set.
+
+## RDY
+
+RDY stops SALLY in a read cycle. It never stops a write, so a read-modify-write that sets it completes both of its
+writes, and the hold falls on the next read. A held read repeats whole 4-tick φ2 cycles, each counted in `phi2`, until
+a cycle starts at or after the release. It then runs at its own length: 4 ticks for the next opcode's fetch from RAM.
+
+On the 7800, RDY is MARIA's WSYNC wire-ANDed with the TIA's. MARIA's arrives with MARIA. The TIA's is a write to
+`$02` or any mirror: RDY goes low and stays low until the TIA's line wraps, at its horizontal blank (Stella
+Programmer's Guide). The TIA's line is 456 ticks, 2 more than MARIA's, so the release slides 2 ticks against MARIA's
+line every line. `tia_phase` is the TIA's position in its line at tick 0, from 0 to 455. The release is the first
+tick after the write's data tick at which tick + `tia_phase` is a multiple of 456.
+
+The release tick and the rule that the held read runs in the first cycle starting at or after it are fitted, not
+measured. They follow from the sources above, and a WSYNC diagnostic on hardware would confirm or move them by one
+cycle. A refit changes the behaviour revision.
+
+So `STA WSYNC` from tick 0, with `tia_phase` 0, writes at tick 13 and ends at 14. The next opcode fetch is held
+from 14 for 111 cycles, runs from 458 to 462, and `phi2` counts every held cycle.

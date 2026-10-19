@@ -43,12 +43,14 @@ struct muhtari__cpu {
    next_deadline is the earliest tick at which a pending event needs the
    bus's slow path; UINT64_MAX when none is pending. open_bus is the last
    byte on the data bus; inptctrl is INPTCTRL's four bits; halt_gate_writes
-   counts unlocked writes in the TIA range, up to 2. */
+   counts unlocked writes in the TIA range, up to 2. rdy_release is the
+   tick from which a held read may run, 0 while RDY is high. */
 struct muhtari__bus {
     uint64_t phi2;
     uint64_t nmi_phi2;
     uint64_t ticks;
     uint64_t next_deadline;
+    uint64_t rdy_release;
     uint8_t open_bus;
     uint8_t inptctrl;
     uint8_t halt_gate_writes;
@@ -159,6 +161,12 @@ uint8_t muhtari__testcard_pixel(uint32_t x, uint32_t y, uint32_t h);
    through these two; the CPU test programs define their own. */
 uint8_t muhtari__bus_read(muhtari *m, uint16_t addr);
 void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v);
+
+/* The TIA as the bus sees it (src/tia.c): the byte a read of addr returns,
+   its undriven bits from the open-bus byte, and a write whose data reaches
+   the TIA at data_tick. */
+uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr);
+void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick);
 
 /* Runs exactly one instruction. */
 void muhtari__cpu_step(muhtari *m);

@@ -67,7 +67,8 @@ add_library(muhtari_objs OBJECT
   src/instance.c
   src/frame.c
   src/testcard.c
-  src/bus.c)
+  src/bus.c
+  src/tia.c)
 add_library(muhtari_cpu OBJECT src/cpu.c)
 add_library(muhtari STATIC $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
 add_library(muhtari::muhtari ALIAS muhtari)
