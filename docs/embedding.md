@@ -171,7 +171,7 @@ Zero means absent in every field. A board moves from `MUHTARI_STATUS_ERR_UNSUPPO
 
 | Bit | The header |
 |---|---|
-| `MUHTARI_CART_WARN_HEADER_V4_IGNORED` | says version 4, but its version 4 block is invalid, so the older fields were used |
+| `MUHTARI_CART_WARN_HEADER_V4_IGNORED` | says version 4 or above, but its version 4 block is invalid or its board does not fit the ROM, so the cart type was used |
 | `MUHTARI_CART_WARN_HEADER_CORRECTED` | names a board, RAM or sound that a list entry for the same bytes corrects |
 | `MUHTARI_CART_WARN_VERSION_ABOVE_4` | gives a version above 4, read as 4 |
 | `MUHTARI_CART_WARN_SIZE_FIELD_MISMATCH` | gives a ROM size other than the bytes after it |

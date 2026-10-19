@@ -331,14 +331,15 @@ static void test_silence(void)
 }
 
 /* A buffer for one size-tagged struct and 16 bytes past it, aligned for any
-   of them. */
+   of them. The cart info is the largest, and its +8 cases need 8 more. */
 #define TAIL 16u
 typedef union tagged {
     muhtari_config config;
     muhtari_versions versions;
     muhtari_info info;
     muhtari_frame frame;
-    uint8_t bytes[sizeof(muhtari_frame) + sizeof(muhtari_config) + TAIL];
+    muhtari_cart_info cart;
+    uint8_t bytes[sizeof(muhtari_cart_info) + TAIL + 8u];
 } tagged;
 
 /* Each size-tag case for one struct, through call(), which runs the call
@@ -425,6 +426,15 @@ static muhtari_status call_frame(tagged *t, muhtari *m)
     return muhtari_run_frame(m, &t->frame);
 }
 
+/* A clean A78 header over a 4 KiB linear body, for the probe's size tags. */
+static uint8_t probe_image[128 + 4096];
+
+static muhtari_status call_probe(tagged *t, muhtari *m)
+{
+    (void)m;
+    return muhtari_probe(probe_image, sizeof probe_image, &t->cart);
+}
+
 static muhtari_status call_config(tagged *t, muhtari *m)
 {
     (void)m;
@@ -447,6 +457,10 @@ static void test_size_tags(void)
     size_cases("versions", (uint32_t)sizeof(muhtari_versions), 1, call_versions, m);
     size_cases("info", (uint32_t)sizeof(muhtari_info), 1, call_info, m);
     size_cases("frame", (uint32_t)sizeof(muhtari_frame), 0, call_frame, m);
+    probe_image[0] = 3u;
+    memcpy(probe_image + 1, "ATARI7800", 9);
+    probe_image[51] = 0x10u; /* size field 4096 */
+    size_cases("cart_info", (uint32_t)sizeof(muhtari_cart_info), 1, call_probe, m);
 
     /* An output's own fields are written: the size stays the caller's. */
     muhtari_info info;

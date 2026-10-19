@@ -88,7 +88,7 @@ without the `libretro` tests.
 | `portable` | Tests that hold on every platform, including the frame and audio hashes. |
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
-| `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages. |
+| `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits. No image bytes are tracked. |
 | `runner` | `muhtari-run` options, output, exit statuses and the PNG writer. |
 | `bench` | The runner's benchmark report. |
 | `libretro` | The libretro core in an in-process host, its `.info` file and its vendored header. |

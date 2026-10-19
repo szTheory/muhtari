@@ -118,16 +118,16 @@ static void test_accepted(void)
         CHECK(memcmp(a.title, title, sizeof title) == 0);
     }
 
-    /* A SuperGame header with POKEY at $4000 and 16 KiB of RAM over 128 KiB. */
+    /* A SuperGame header with 16 KiB of RAM at $4000 over 128 KiB. */
     uint32_t body = 128u * IMAGES_KIB;
-    images_header(buf, 3u, "SuperGame", body, 0x0007u);
+    images_header(buf, 3u, "SuperGame", body, 0x0006u);
     images_fill(buf + IMAGES_HEADER, body, 7u);
     muhtari_cart_info sg;
     prefill(&sg, 0u);
     CHECK_EQ_U64(muhtari_probe(buf, IMAGES_HEADER + body, &sg), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(sg.board, MUHTARI_BOARD_SUPERGAME);
     CHECK_EQ_U64(sg.ram_size, 16u * IMAGES_KIB);
-    CHECK_EQ_U64(sg.sound, MUHTARI_SOUND_POKEY_4000);
+    CHECK_EQ_U64(sg.sound, 0);
     CHECK_EQ_U64(sg.rom_size, body);
     CHECK_EQ_U64(sg.warnings, 0);
 
@@ -350,6 +350,158 @@ static void test_truncated(void)
     expect_untouched("linear 48 KiB over 10 KiB", buf, n, MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
 }
 
+/* Probes the image, expecting OK and exactly the warning bits want. */
+static muhtari_cart_info expect_warnings(const char *what, size_t n, uint32_t want)
+{
+    muhtari_cart_info out = expect_written(what, buf, n, MUHTARI_STATUS_OK);
+    if (out.warnings != want) {
+        fprintf(stderr, "%s: expected warnings 0x%x, got 0x%x\n", what, (unsigned)want,
+                (unsigned)out.warnings);
+        check_failures++;
+    }
+    return out;
+}
+
+/* Each header defect the probe accepts sets its own warning bit; a clean
+   header sets none. */
+static void test_warnings(void)
+{
+    uint32_t body = 32u * IMAGES_KIB;
+    size_t n = images_linear(buf, 4u, body);
+    expect_warnings("clean header", n, 0u);
+
+    /* Magic padded with spaces, and a title padded with spaces and no NUL,
+       as the 7800basic tools write them. */
+    memset(buf + 10, ' ', 7);
+    memset(buf + 17, ' ', 32);
+    memcpy(buf + 17, "My Game", 7);
+    muhtari_cart_info out = expect_warnings("space padding", n, 0u);
+    CHECK(memcmp(out.title, "My Game\0", 8) == 0);
+    memset(buf + 17, 'A', 32);
+    out = expect_warnings("32-byte title", n, 0u);
+    CHECK_EQ_U64(out.title[31], 'A');
+    CHECK_EQ_U64(out.title[32], 0);
+
+    n = images_linear(buf, 4u, body);
+    buf[64] = 9u; /* mapper 9: the version 4 block is invalid */
+    buf[53] = 0x00u;
+    buf[54] = 0x01u; /* the cart type says POKEY at $4000 */
+    out = expect_warnings("invalid v4 block", n, MUHTARI_CART_WARN_HEADER_V4_IGNORED);
+    CHECK_EQ_U64(out.sound, MUHTARI_SOUND_POKEY_4000);
+    CHECK_EQ_U64(out.a78_mapper, 9);
+
+    /* A zero version 4 block says linear, which 128 KiB does not fit, so
+       the cart type's SuperGame is used. */
+    n = images_a78(buf, 4u, 128u * IMAGES_KIB, 0x0002u, 128u * IMAGES_KIB);
+    out = expect_warnings("v4 size misfit", n, MUHTARI_CART_WARN_HEADER_V4_IGNORED);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+
+    /* A valid version 4 block wins over the cart type. */
+    n = images_a78(buf, 4u, 128u * IMAGES_KIB, 0x0000u, 128u * IMAGES_KIB);
+    buf[64] = 1u;
+    buf[65] = 6u;    /* 32K EXRAM/X2 */
+    buf[67] = 0x1Au; /* POKEY at $0450, YM2151, Covox */
+    out = expect_warnings("v4 block", n, 0u);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+    CHECK_EQ_U64(out.board_options, MUHTARI_BOARD_BANKED_RAM);
+    CHECK_EQ_U64(out.ram_size, 32u * IMAGES_KIB);
+    CHECK_EQ_U64(out.sound, MUHTARI_SOUND_POKEY_450 | MUHTARI_SOUND_YM2151 | MUHTARI_SOUND_COVOX);
+
+    n = images_linear(buf, 5u, body);
+    out = expect_warnings("version 5", n, MUHTARI_CART_WARN_VERSION_ABOVE_4);
+    CHECK_EQ_U64(out.a78_version, 5);
+
+    /* A size field that counts the header over a valid linear body. */
+    n = images_linear(buf, 4u, body);
+    buf[51] = (uint8_t)((body + IMAGES_HEADER) >> 8);
+    buf[52] = (uint8_t)(body + IMAGES_HEADER);
+    out = expect_warnings("size field + 128", n, MUHTARI_CART_WARN_SIZE_FIELD_MISMATCH);
+    CHECK_EQ_U64(out.rom_size, body);
+    CHECK_EQ_U64(out.a78_rom_size, body + IMAGES_HEADER);
+    /* A short body that satisfies its geometry loads as the bytes present. */
+    n = images_a78(buf, 4u, 48u * IMAGES_KIB, 0u, body);
+    out = expect_warnings("short body", n, MUHTARI_CART_WARN_SIZE_FIELD_MISMATCH);
+    CHECK_EQ_U64(out.rom_size, body);
+
+    n = images_linear(buf, 4u, body);
+    buf[20] = 0x01u;
+    out = expect_warnings("control byte in title", n, MUHTARI_CART_WARN_TITLE_NONPRINTABLE);
+    CHECK_EQ_U64(out.title[3], '?');
+    buf[20] = 0x80u;
+    expect_warnings("high byte in title", n, MUHTARI_CART_WARN_TITLE_NONPRINTABLE);
+    buf[20] = 0u;
+    buf[21] = 0x01u; /* after the first NUL: not part of the title */
+    expect_warnings("byte after NUL", n, 0u);
+
+    n = images_linear(buf, 4u, body);
+    buf[56] = 13u;
+    out = expect_warnings("port code 13", n, MUHTARI_CART_WARN_UNKNOWN_PORT);
+    CHECK_EQ_U64(out.port2, MUHTARI_PORT_NONE);
+    CHECK_EQ_U64(out.a78_port2, 13);
+    CHECK_EQ_U64(out.port1, MUHTARI_PORT_PROLINE);
+
+    n = images_linear(buf, 4u, body);
+    buf[58] = 0x04u;
+    out = expect_warnings("save bit 2", n, MUHTARI_CART_WARN_LEGACY_SAVE_BIT);
+    CHECK_EQ_U64(out.devices, MUHTARI_DEVICE_HSC);
+    buf[58] = 0x03u;
+    out = expect_warnings("HSC and SaveKey", n, 0u);
+    CHECK_EQ_U64(out.devices, MUHTARI_DEVICE_HSC | MUHTARI_DEVICE_SAVEKEY);
+
+    n = images_linear(buf, 4u, body);
+    buf[63] = 2u;
+    out = expect_warnings("XM byte 2", n, MUHTARI_CART_WARN_XM_VALUE);
+    CHECK_EQ_U64(out.devices, MUHTARI_DEVICE_XM);
+    buf[63] = 1u;
+    expect_warnings("XM byte 1", n, 0u);
+
+    static const uint32_t reserved[] = {59u, 62u, 70u, 99u};
+    for (size_t i = 0; i < sizeof reserved / sizeof reserved[0]; i++) {
+        n = images_linear(buf, 4u, body);
+        buf[reserved[i]] = 1u;
+        expect_warnings("reserved byte", n, MUHTARI_CART_WARN_RESERVED_NONZERO);
+    }
+    n = images_linear(buf, 3u, body);
+    buf[64] = 1u; /* below version 4 the v4 block is reserved */
+    out = expect_warnings("v4 byte in a v3 header", n, MUHTARI_CART_WARN_RESERVED_NONZERO);
+    CHECK_EQ_U64(out.a78_mapper, 0);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_LINEAR);
+
+    /* Cart-type bits that cannot all hold, resolved in MAME's order. Over
+       144 KiB every SuperGame variant fits. */
+    n = images_a78(buf, 3u, 144u * IMAGES_KIB, 0x0002u, 144u * IMAGES_KIB);
+    buf[54] = 0x07u; /* POKEY at $4000 and RAM at $4000: the RAM stays */
+    out = expect_warnings("POKEY and RAM", n, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    CHECK_EQ_U64(out.sound, 0);
+    CHECK_EQ_U64(out.ram_size, 16u * IMAGES_KIB);
+    buf[54] = 0x13u; /* POKEY at $4000 and bank 6 at $4000 */
+    out = expect_warnings("POKEY and bank 6", n, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    CHECK_EQ_U64(out.sound, 0);
+    CHECK_EQ_U64(out.board_options, MUHTARI_BOARD_BANK6_AT_4000);
+    buf[54] = 0x0Eu; /* RAM at $4000 and ROM at $4000: the ROM stays */
+    out = expect_warnings("RAM and ROM", n, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    CHECK_EQ_U64(out.ram_size, 0);
+    CHECK_EQ_U64(out.board_options, MUHTARI_BOARD_ROM_AT_4000);
+    buf[54] = 0x3Au; /* ROM, bank 6 and banked RAM: banked RAM stays */
+    out = expect_warnings("ROM, bank 6, banked RAM", n, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    CHECK_EQ_U64(out.board_options, MUHTARI_BOARD_BANKED_RAM);
+    buf[54] = 0x0Bu; /* POKEY at $4000 and ROM at $4000 are kept together */
+    out = expect_warnings("POKEY and ROM", n, 0u);
+    CHECK_EQ_U64(out.sound, MUHTARI_SOUND_POKEY_4000);
+    CHECK_EQ_U64(out.board_options, MUHTARI_BOARD_ROM_AT_4000);
+    buf[54] = 0x08u; /* ROM at $4000 without SuperGame: SuperGame is set */
+    out = expect_warnings("ROM without SuperGame", n, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+    /* Two special boards at once, and Activision with low-byte bits. */
+    n = images_a78(buf, 3u, 128u * IMAGES_KIB, 0x0300u, 128u * IMAGES_KIB);
+    out = expect_written("Activision and Absolute", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    n = images_a78(buf, 3u, 128u * IMAGES_KIB, 0x0141u, 128u * IMAGES_KIB);
+    out = expect_written("Activision and POKEYs", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    CHECK_EQ_U64(out.sound, 0);
+}
+
 static const struct {
     const char *name;
     void (*run)(void);
@@ -361,6 +513,7 @@ static const struct {
     {"probe.oversized", test_oversized},
     {"probe.truncated", test_truncated},
     {"probe.unsupported_board", test_unsupported_board},
+    {"probe.warnings", test_warnings},
 };
 
 int main(int argc, char **argv)

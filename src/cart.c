@@ -81,7 +81,43 @@ static int cart_fits(const struct cart_board *b, size_t n)
     return 0;
 }
 
-/* The board the cart-type word describes (docs/hardware/cartridge.md,
+/* Clears the cart-type bits that cannot hold together, in MAME's order,
+   and reports whether any were (docs/hardware/cartridge.md, Cart type). */
+static uint32_t cart_resolve_v3(uint32_t t, int *conflict)
+{
+    uint32_t special = t & (CT_FRACTALUS | CT_ACTIVISION | CT_ABSOLUTE | CT_SOUPER | CT_BANKSET);
+    uint32_t at_4000 = CT_RAM_4000 | CT_BANK6_4000 | CT_BANKED_RAM;
+    *conflict = (special & (special - 1u)) != 0u;
+    if ((t & (CT_ACTIVISION | CT_ABSOLUTE)) != 0u && (t & 0x00FFu) != 0u) {
+        *conflict = 1;
+        t &= ~0x00FFu;
+    }
+    if (special == 0u && (t & CT_SUPERGAME) == 0u &&
+        (t & (CT_ROM_4000 | CT_BANK6_4000 | CT_BANKED_RAM)) != 0u) {
+        *conflict = 1;
+        t |= CT_SUPERGAME;
+    }
+    /* POKEY at $4000 stays beside ROM at $4000, write-only. */
+    if ((t & CT_POKEY_4000) != 0u && (t & at_4000) != 0u) {
+        *conflict = 1;
+        t &= ~CT_POKEY_4000;
+    }
+    if ((t & CT_RAM_4000) != 0u && (t & (CT_ROM_4000 | CT_BANK6_4000 | CT_BANKED_RAM)) != 0u) {
+        *conflict = 1;
+        t &= ~CT_RAM_4000;
+    }
+    if ((t & CT_ROM_4000) != 0u && (t & (CT_BANK6_4000 | CT_BANKED_RAM)) != 0u) {
+        *conflict = 1;
+        t &= ~CT_ROM_4000;
+    }
+    if ((t & CT_BANK6_4000) != 0u && (t & CT_BANKED_RAM) != 0u) {
+        *conflict = 1;
+        t &= ~CT_BANK6_4000;
+    }
+    return t;
+}
+
+/* The board a resolved cart-type word describes (docs/hardware/cartridge.md,
    Cart type). */
 static void cart_decode_v3(uint32_t t, struct cart_board *b)
 {
@@ -330,32 +366,62 @@ static muhtari_status cart_header(const uint8_t *img, size_t n,
     out->a78_tv = img[A78_TV];
     out->a78_save = img[A78_SAVE];
     out->a78_xm = img[A78_XM];
+    /* A version above 4 is read as 4; below 4 the v4 block is reserved. */
+    if (version > 4u) {
+        out->warnings |= MUHTARI_CART_WARN_VERSION_ABOVE_4;
+    }
     if (version >= 4u) {
         out->a78_mapper = img[A78_MAPPER];
         out->a78_mapper_options = img[A78_MAPPER_OPTIONS];
         out->a78_audio = be16(img + A78_AUDIO);
         out->a78_irq = be16(img + A78_IRQ);
     }
+    int reserved = (out->a78_tv & 0xF8u) != 0u || (out->a78_save & 0xF8u) != 0u;
+    for (uint32_t i = 59u; i < 100u; i++) {
+        if ((i <= 62u || i >= 70u || (i >= A78_MAPPER && version < 4u)) && img[i] != 0u) {
+            reserved = 1;
+        }
+    }
+    if (reserved) {
+        out->warnings |= MUHTARI_CART_WARN_RESERVED_NONZERO;
+    }
     if (field != body) {
         out->warnings |= MUHTARI_CART_WARN_SIZE_FIELD_MISMATCH;
     }
     cart_title(img + A78_TITLE, out);
 
+    /* The v4 block wins when it validates and its board fits the body;
+       otherwise the cart type applies. */
+    int conflict;
     struct cart_board b;
     struct cart_board v4;
-    cart_decode_v3(out->a78_cart_type, &b);
-    if (version >= 4u && cart_decode_v4(img, &v4)) {
-        b = v4;
+    cart_decode_v3(cart_resolve_v3(out->a78_cart_type, &conflict), &b);
+    if (conflict) {
+        out->warnings |= MUHTARI_CART_WARN_CART_TYPE_CONFLICT;
+    }
+    if (version >= 4u) {
+        if (cart_decode_v4(img, &v4) && (cart_refused(&v4) || cart_fits(&v4, mapped))) {
+            b = v4;
+        } else {
+            out->warnings |= MUHTARI_CART_WARN_HEADER_V4_IGNORED;
+        }
     }
 
-    if ((out->a78_save & 0x01u) != 0u) {
+    /* The old wiki text put the HSC in bit 2. */
+    if ((out->a78_save & 0x05u) != 0u) {
         out->devices |= MUHTARI_DEVICE_HSC;
+    }
+    if ((out->a78_save & 0x04u) != 0u) {
+        out->warnings |= MUHTARI_CART_WARN_LEGACY_SAVE_BIT;
     }
     if ((out->a78_save & 0x02u) != 0u) {
         out->devices |= MUHTARI_DEVICE_SAVEKEY;
     }
     if (out->a78_xm != 0u) {
         out->devices |= MUHTARI_DEVICE_XM;
+    }
+    if (out->a78_xm > 1u) {
+        out->warnings |= MUHTARI_CART_WARN_XM_VALUE;
     }
     out->port1 = cart_port(out->a78_port1, out);
     out->port2 = cart_port(out->a78_port2, out);

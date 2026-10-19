@@ -24,7 +24,7 @@ set_target_properties(muhtari-test-cart PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-cart)
 foreach(cart_case IN ITEMS probe.accepted probe.arguments probe.oversized probe.2600
-    probe.unsupported_board probe.malformed probe.truncated)
+    probe.unsupported_board probe.malformed probe.truncated probe.warnings)
   muhtari_add_test(NAME cart.${cart_case} COMMAND muhtari-test-cart ${cart_case}
     LABELS cart portable TIMEOUT 10)
 endforeach()
