@@ -314,6 +314,14 @@ static void cart_entry_board(const struct muhtari__cartdb_entry *e, struct cart_
     b->sound = e->sound;
 }
 
+/* The region a list entry gives: PAL for a PAL-only entry, else NTSC. */
+static uint32_t cart_entry_region(const struct muhtari__cartdb_entry *e)
+{
+    return (e->flags & (MUHTARI__CARTDB_NTSC | MUHTARI__CARTDB_PAL)) == MUHTARI__CARTDB_PAL
+               ? MUHTARI_REGION_PAL
+               : MUHTARI_REGION_NTSC;
+}
+
 static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 {
     out->board = b->board;
@@ -432,7 +440,9 @@ static muhtari_status cart_header(const uint8_t *img, size_t n,
     out->region = (out->a78_tv & 1u) != 0u ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
 
     /* A table match overrides the header's board, RAM and sound, never its
-       controllers or region. */
+       controllers. The region stays the header's unless TV bit 2 says
+       multi-region, which names none; then the entry's applies (cartridge
+       notes, section 1.4). */
     uint8_t digest[20];
     cart_sha1(img + CART_HEADER_SIZE, mapped, digest);
     const struct muhtari__cartdb_entry *e =
@@ -447,7 +457,11 @@ static muhtari_status cart_header(const uint8_t *img, size_t n,
             out->warnings |= MUHTARI_CART_WARN_HEADER_CORRECTED;
         }
         b = listed;
+        out->source = MUHTARI_SOURCE_HASH;
         out->flags |= MUHTARI_CART_HASH_MATCH;
+        if ((out->a78_tv & 0x04u) != 0u) {
+            out->region = cart_entry_region(e);
+        }
     }
     cart_set_board(out, &b);
     if (cart_refused(&b)) {
@@ -524,10 +538,7 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n,
         out->kind = MUHTARI_KIND_7800;
         out->source = MUHTARI_SOURCE_HASH;
         out->flags = MUHTARI_CART_HASH_MATCH;
-        out->region =
-            (e->flags & (MUHTARI__CARTDB_NTSC | MUHTARI__CARTDB_PAL)) == MUHTARI__CARTDB_PAL
-                ? MUHTARI_REGION_PAL
-                : MUHTARI_REGION_NTSC;
+        out->region = cart_entry_region(e);
         out->port1 = (e->flags & MUHTARI__CARTDB_LIGHTGUN) != 0u ? MUHTARI_PORT_LIGHTGUN
                                                                  : MUHTARI_PORT_PROLINE;
         out->port2 = MUHTARI_PORT_PROLINE;

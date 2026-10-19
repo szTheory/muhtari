@@ -65,6 +65,31 @@ size_t images_headerless(uint8_t *buf, uint32_t n)
     return n;
 }
 
+size_t images_seeded(uint8_t *buf, uint32_t n, uint32_t seed)
+{
+    images_fill(buf, n, seed);
+    images_footer(buf, n);
+    return n;
+}
+
+size_t images_mirrored(uint8_t *buf)
+{
+    size_t n = images_seeded(buf, 32u * IMAGES_KIB, IMAGES_SEED_MIRRORED);
+    memcpy(buf + 16u * IMAGES_KIB, buf + 24u * IMAGES_KIB, 8u * IMAGES_KIB);
+    return n;
+}
+
+void images_swap_halves(uint8_t *p, size_t n)
+{
+    for (size_t bank = 0; bank + 16u * IMAGES_KIB <= n; bank += 16u * IMAGES_KIB) {
+        for (size_t i = 0; i < 8u * IMAGES_KIB; i++) {
+            uint8_t t = p[bank + i];
+            p[bank + i] = p[bank + 8u * IMAGES_KIB + i];
+            p[bank + 8u * IMAGES_KIB + i] = t;
+        }
+    }
+}
+
 size_t images_2600(uint8_t *buf, uint32_t n)
 {
     images_fill(buf, n, n + 2u);

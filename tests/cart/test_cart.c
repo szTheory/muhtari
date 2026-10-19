@@ -502,10 +502,65 @@ static void test_warnings(void)
     CHECK_EQ_U64(out.sound, 0);
 }
 
+/* A header over the 64 KiB body the test list keys as SuperGame with 16 KiB
+   of RAM, PAL, light gun. Returns the image's size. */
+static size_t override_image(uint16_t cart_type, uint8_t tv)
+{
+    images_header(buf, 3u, "Override", 64u * IMAGES_KIB, cart_type);
+    buf[56] = MUHTARI_PORT_JOYSTICK;
+    buf[57] = tv;
+    images_seeded(buf + IMAGES_HEADER, 64u * IMAGES_KIB, IMAGES_SEED_OVERRIDE);
+    return IMAGES_HEADER + 64u * IMAGES_KIB;
+}
+
+/* A list match beats the header for the board, RAM and sound only: the
+   ports stay the header's, and so does the region unless the header names
+   none (multi-region), when the entry's applies. */
+static void test_hash_override(void)
+{
+    size_t n = override_image(0x0000u, 0u); /* the header says plain linear */
+    muhtari_cart_info out = expect_written("override", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.kind, MUHTARI_KIND_7800);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER | MUHTARI_CART_HASH_MATCH);
+    CHECK_EQ_HEX(out.warnings, MUHTARI_CART_WARN_HEADER_CORRECTED);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+    CHECK_EQ_U64(out.board_options, 0);
+    CHECK_EQ_U64(out.ram_size, 16u * IMAGES_KIB);
+    CHECK_EQ_U64(out.sound, 0);
+    CHECK_EQ_U64(out.rom_size, 64u * IMAGES_KIB);
+    CHECK_EQ_U64(out.port1, MUHTARI_PORT_PROLINE); /* the entry's light gun is not used */
+    CHECK_EQ_U64(out.port2, MUHTARI_PORT_JOYSTICK);
+    CHECK_EQ_U64(out.region, MUHTARI_REGION_NTSC); /* the header's, not the PAL entry's */
+
+    /* TV bit 2, multi-region: the header names no region, so the entry's. */
+    n = override_image(0x0000u, 0x04u);
+    out = expect_written("override, multi-region", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.region, MUHTARI_REGION_PAL);
+    CHECK_EQ_HEX(out.warnings, MUHTARI_CART_WARN_HEADER_CORRECTED);
+    CHECK_EQ_U64(out.port2, MUHTARI_PORT_JOYSTICK);
+
+    /* A header that already says SuperGame with RAM is not corrected. */
+    n = override_image(0x0006u, 0u);
+    out = expect_written("override, header agrees", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_HEX(out.warnings, 0);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+    CHECK_EQ_U64(out.ram_size, 16u * IMAGES_KIB);
+
+    /* One body byte changed: no match, so the header's linear board. */
+    n = override_image(0x0000u, 0u);
+    buf[IMAGES_HEADER + 5u] ^= 1u;
+    out = expect_written("override, no match", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HEADER);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_LINEAR);
+}
+
 static const struct {
     const char *name;
     void (*run)(void);
 } cases[] = {
+    {"identify.hash_override", test_hash_override},
     {"probe.2600", test_2600},
     {"probe.accepted", test_accepted},
     {"probe.arguments", test_arguments},

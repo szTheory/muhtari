@@ -114,7 +114,8 @@ spaces is common, the 7800basic tools write it, and sets nothing. Region is PAL 
 2. **The A78 magic.** A file that ends inside the header, or right after it, is truncated, except that a ROM size of
    0 is invalid. The header is parsed, and the cartridge maps min(ROM size, bytes after the header). The SHA-1 of
    those bytes is looked up in the 7800 list; a match to an entry that is not a cartridge (the HSC ROM, the XM, the
-   XBoard) is invalid, and any other match replaces the board, RAM and sound, never the ports or region. Then a
+   XBoard) is invalid, and any other match replaces the board, RAM and sound and makes the source the hash, never
+   the ports, nor the region unless TV bit 2 (multi-region) leaves the header naming none (see Hash list). Then a
    refused board is reported, and the geometry is checked: a body that fails it is truncated when the ROM size is
    larger than the bytes present, and invalid otherwise. A short body that fits its board loads as the bytes present.
 3. **The 7800 list**, for an image without the magic, by the SHA-1 of the whole image. The entry gives the board, RAM,
