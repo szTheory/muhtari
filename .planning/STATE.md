@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-10-19T00:35:04.537Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-10-19T00:46:35.226Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: a496e2ad4f309a7dad9e215a642ecdc245aeb83f
+state_head: eb826d18f8cbfb9dda82f9fadb07a73bc80c1b3e
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 24
+  completed_plans: 25
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 4 of 16
+Plan: 5 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -82,6 +82,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P01 | 15 min | 3 tasks | 22 files |
 | Phase 02 P02 | 9 min | 3 tasks | 11 files |
 | Phase 02 P03 | 10 min | 3 tasks | 19 files |
+| Phase 02 P04 | 9 min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -158,6 +159,10 @@ Recent decisions affecting current work:
 - [Phase 02]: The vector harness takes --first N for a .json prefix and reads an N65V file whose first chunk is not opcode 00 as one chunk
 - [Phase 02]: The N65V reader refuses a chunk with count 0, naming the count's offset
 - [Phase 02]: Hosted run 39181184945: the seven vector tooling tests pass on every leg, wasm32 and Windows included
+- [Phase 02]: The Clark harness returns through a sentinel RTS to $FFF0 and fails on a JAM or at 150,000,000 cycles; the 6502 build leaves ERROR 0 after 53,953,831 cycles, the 65C02 build ERROR 1
+- [Phase 02]: policy.rom_hash_coverage reads the working tree under ROOT and exempts only tests/roms/manifest.txt; its self test zeros the sample digest in a configure-time copy of the real manifest
+- [Phase 02]: Hosted run 39182041117: cpu.decimal.clark takes 3.78 s on be32 and under 1 s elsewhere, so TIMEOUT 60 stays until the D-31 measurement
+- [Phase 02]: 6502.org answers 404 to curl's default user agent; fetch the tutorial with a browser -A string
 
 ### Pending Todos
 
@@ -196,6 +201,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T00:35:04.485Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-10-19T00:46:35.173Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None

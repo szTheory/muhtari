@@ -126,7 +126,7 @@ Plans:
   4. `muhtari-run --probe FILE` prints the A78 fields, board, region, peripherals and all four hashes, identifies a header-stripped image through the hash list, and gives a 2600 image, an unsupported board and a malformed, truncated or oversized file each a distinct status and message; the counting-allocator test and `ctest -R fuzz.regress.loader` pass on every platform and the loader fuzz target runs nightly.
   5. Merging the phase's pull request publishes a release through the Phase 1 pipeline with no manual step.
 
-**Plans**: 3/16 plans executed (sequential waves; parallelization off)
+**Plans**: 4/16 plans executed (sequential waves; parallelization off)
 
 Plans:
 **Wave 1**
@@ -139,7 +139,7 @@ Plans:
 - [x] 02-03-PLAN.md — Vector tooling under test: JSON fixtures, reader and converter cases, the self test, the full-set per-file list and its pin
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 02-04-PLAN.md — Clark's decimal test with its 65C02 control; `policy.rom_hash_coverage`
+- [x] 02-04-PLAN.md — Clark's decimal test with its 65C02 control; `policy.rom_hash_coverage`
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 02-05-PLAN.md — NMI by φ2 index through one poll mark per instruction; `cpu.nmi.*` with holds; the poll check on every vector
@@ -220,6 +220,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
-| 2. The CPU matches the public vectors | 3/16 | In Progress | - |
+| 2. The CPU matches the public vectors | 4/16 | In Progress | - |
 | 3. Games play in RetroArch | 0/TBD | Not started | - |
 | 4. Sound | 0/TBD | Not started | - |
