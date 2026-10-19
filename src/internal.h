@@ -280,7 +280,9 @@ void muhtari__riot_reset(muhtari *m);
 /* The entry points MARIA drives (docs/hardware/bus.md, HALT and NMI).
    request_halt asks for HALT from at_tick until until_tick, and does nothing
    until the HALT gate has counted two writes. raise_nmi raises an NMI edge
-   at at_tick, and does nothing while MEN = 0. */
+   at at_tick, and does nothing while MEN = 0. Each takes one at a time: a
+   request while a window is waiting or /HALT is low, or an edge while an
+   earlier one is not yet latched, is ignored and the one in flight stands. */
 void muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
 void muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
 

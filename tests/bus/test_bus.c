@@ -402,6 +402,42 @@ static int halt_freezes_writes(void)
     return ok;
 }
 
+/* One window at a time. A request made after /HALT falls, before c2's hold,
+   is ignored: c2 still freezes for the first window's 5 cycles. A request
+   made before the first window's fall is ignored too, so /HALT falls at
+   tick 8, not 4. Once a window ends, the next request is taken. */
+static int halt_one_window_at_a_time(void)
+{
+    int ok = 1;
+    muhtari *m = fresh(LOCKED_7800);
+    m->bus.halt_gate_writes = 2u;
+    (void)muhtari__bus_read(m, 0x1800u);
+    muhtari__bus_request_halt(m, 4u, 24u);
+    ok &= expect_ticks("c0", read_ticks(m), 4u, "no latency", 24u);
+    muhtari__bus_request_halt(m, m->bus.ticks, m->bus.ticks + 40u);
+    ok &= expect_ticks("c1, a second request after the fall", read_ticks(m), 4u,
+                       "one cycle of latency", 24u);
+    ok &= expect_ticks("c2, a second request after the fall", read_ticks(m), 24u,
+                       "the second request replacing the first", 4u);
+    ok &= expect_ticks("a request after the window", halt_three_reads(m), 24u,
+                       "requests ignored after a window", 12u);
+
+    m = fresh(LOCKED_7800);
+    m->bus.halt_gate_writes = 2u;
+    (void)muhtari__bus_read(m, 0x1800u);
+    muhtari__bus_request_halt(m, 8u, 28u);
+    muhtari__bus_request_halt(m, 4u, 24u);
+    ok &= expect_ticks("the cycle before the fall", read_ticks(m), 4u,
+                       "freezing the cycle before the fall", 24u);
+    ok &=
+        expect_ticks("c0, a second request before the fall", read_ticks(m), 4u, "no latency", 24u);
+    ok &= expect_ticks("c1, a second request before the fall", read_ticks(m), 4u,
+                       "the second request replacing the first", 24u);
+    ok &= expect_ticks("c2, a second request before the fall", read_ticks(m), 24u,
+                       "the second request replacing the first", 4u);
+    return ok;
+}
+
 /* An edge raised at a tick is latched by the first cycle whose data tick
    falls at or after it, and nmi_phi2 names that cycle. With MEN clear
    nothing is latched. */
@@ -437,6 +473,20 @@ static int nmi_latched_in_cycle(void)
     ok &=
         expect_count("edge with MEN clear", "as nmi_phi2", m->bus.nmi_phi2, 0u, "no MEN gate", 1u);
     return ok;
+}
+
+/* One edge at a time: an edge at tick 14, raised while the edge at tick 6
+   is not yet latched, is ignored, so cycle 2 latches the first. */
+static int nmi_one_edge_at_a_time(void)
+{
+    muhtari *m = fresh(LOCKED_7800);
+    muhtari__bus_raise_nmi(m, 6u);
+    muhtari__bus_raise_nmi(m, 14u);
+    for (int i = 0; i < 4; i++) {
+        (void)muhtari__bus_read(m, 0x1800u);
+    }
+    return expect_count("a second edge before the first is latched", "as nmi_phi2", m->bus.nmi_phi2,
+                        2u, "the second edge replacing the first", 4u);
 }
 
 static int expect_address(const char *what, uint16_t got, uint16_t expected, const char *model,
@@ -538,9 +588,11 @@ static const struct {
     {"halt.latency_two_cycles", halt_latency_two_cycles},
     {"halt.waits_for_slow_fall", halt_waits_for_slow_fall},
     {"halt.freezes_writes", halt_freezes_writes},
+    {"halt.one_window_at_a_time", halt_one_window_at_a_time},
     {"nmi.latched_in_cycle", nmi_latched_in_cycle},
     {"nmi.last_cycle_after_next", nmi_last_cycle_after_next},
     {"nmi.held_fetch_after_wsync", nmi_held_fetch_after_wsync},
+    {"nmi.one_edge_at_a_time", nmi_one_edge_at_a_time},
 };
 
 int main(int argc, char **argv)
