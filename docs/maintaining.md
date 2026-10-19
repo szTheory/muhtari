@@ -21,7 +21,8 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
 5. `release-ci` runs the whole of CI again on the release's commit, the `sha` release-please reports, never the
    commit that started the run.
 6. `publish` runs `scripts/publish.sh` on the draft, found by its release ID:
-   - `prepare`: exactly the 18 zips, every build leg's recorded commit equal to the release commit, `SHA256SUMS`;
+   - `prepare`: exactly the 18 zips, every build leg's recorded commit equal to the release commit, no firmware or
+     known ROM in any zip (`tests/cmake/firmware_scan.cmake`), `SHA256SUMS`;
    - `upload`, then `actions/attest` over `SHA256SUMS`;
    - `attested`: each zip's attestation verifies from `refs/heads/main` and a copy with its last byte flipped does
      not;

@@ -1,14 +1,15 @@
 #!/bin/sh
 # Publish steps shared by the release and its rehearsal, each safe to re-run:
-#   publish.sh prepare DIR                 exactly the 18 zips, one commit; SHA256SUMS
+#   publish.sh prepare DIR                 exactly the 18 zips, one commit, no firmware; SHA256SUMS
 #   publish.sh upload TAG RELEASE_ID DIR   upload to that release, replacing
 #   publish.sh attested DIR                attestations verify; tampered copies do not
 #   publish.sh verify TAG DIR              attested, then the published release
 #   publish.sh rehearsal-create TAG        a draft prerelease at EXPECTED_SHA; prints its ID
 #   publish.sh rehearsal-delete TAG [ID]   delete a rehearsal release and its tag
 # Fault prevented: a release with a missing, extra, unverifiable or tampered
-# asset, or with archives built from another commit, or a release that
-# accepts a pull request's attestation. prepare reads EXPECTED_SHA; the rest
+# asset, or with archives built from another commit or carrying firmware or a
+# known ROM, or a release that accepts a pull request's attestation. prepare
+# reads EXPECTED_SHA and runs cmake (CMAKE names another); the rest
 # call gh with GH_TOKEN and GITHUB_REPOSITORY, and attested and verify accept
 # only attestations made on SOURCE_REF, which for a release is refs/heads/main.
 set -eu
@@ -52,6 +53,12 @@ prepare() {
     got=$(tr -d '\r\n' < "$f")
     [ "$got" = "$EXPECTED_SHA" ] || fail "$f records $got, not $EXPECTED_SHA"
   done
+  # No member is firmware, a built sample or a known ROM (ASSET_POLICY.md 5).
+  root=$(dirname "$0")/..
+  zips=$(names | sed "s|^|$1/|" | tr '\n' ';')
+  "${CMAKE:-cmake}" "-DZIPS=${zips%;}" -DFIRMWARE="$root/tests/release/firmware.txt" \
+    -DEXPECTED="$root/tests/built/expected.txt" -DCARTDB="$root/src/cartdb.c" \
+    -P "$root/tests/cmake/firmware_scan.cmake" || fail "the firmware scan failed"
   (cd "$1" && sha256 $(names)) > "$1/SHA256SUMS"
   echo "publish: 18 archives from $EXPECTED_SHA; SHA256SUMS written"
 }

@@ -2,6 +2,8 @@
 # Sorted; configure fails when this differs from what is registered.
 ci.classify	hygiene
 hygiene.analyzer	hygiene
+hygiene.firmware_scan	hygiene
+hygiene.firmware_scan.self_test	hygiene
 hygiene.format	hygiene
 hygiene.no_float	hygiene
 hygiene.no_float.self_test	hygiene

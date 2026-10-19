@@ -53,7 +53,7 @@ No SHA-256 is published for these dumps (search on 2026-10-15) [AP.09]. The firs
 
 ## 5. How this is checked
 - `scripts/hygiene.sh` runs at pre-commit, at pre-push over all outgoing history, and in CI. Unless the manifest lists the file, it rejects ROM, BIOS and save extensions (`.a78 .a26 .bin .rom .hsc .sav .srm .state .eeprom`, as in `.gitignore`), the A78 magic `ATARI7800` at offset 1 [AP.06], and any file containing a NUL byte. `policy.rom_hash_coverage` ties manifest rows to files.
-- `release.firmware_scan` (untested) hashes every member of every release zip and every tracked binary (SHA-1, SHA-256): whole, and again without the first 128 bytes when an A78 header is present. It fails on any §4 digest or any ROM SHA-1 in MAME's CC0 hash list. A synthetic A78 file is its negative control.
+- `tests/cmake/firmware_scan.cmake` hashes every member of every release zip and every tracked file (SHA-1, SHA-256): whole, and again without the first 128 bytes when an A78 header is present. It fails on any §4 digest or the Supercharger BIOS (`tests/release/firmware.txt`), any built-sample SHA-256 in `tests/built/expected.txt`, and any 7800 ROM SHA-1 or 2600 SHA-1 prefix from MAME's CC0 hash lists in `src/cartdb.c`. `release.firmware_scan` runs it over each build leg's zips, `hygiene.firmware_scan` over the tracked files, and `scripts/publish.sh prepare` over the 18 release zips before `SHA256SUMS`; `release.firmware_scan.self_test` and `hygiene.firmware_scan.self_test` are its negative controls, each a synthetic A78 file.
 - `local.firmware_window_scan` (local only, untested) fails if any 32-byte window of a dump in `MUHTARI_BIOS_DIR`, with at least 8 distinct byte values, appears in a built core, runner or libretro module.
 
 ## 6. Names

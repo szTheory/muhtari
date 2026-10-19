@@ -214,18 +214,26 @@ muhtari_add_test(NAME hygiene.timeout_comments.self_test
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene TIMEOUT 30)
 
-# The release's asset set. scripts/publish.sh prepare runs on 18 empty
-# placeholder zips and six build legs' commit.txt, and SHA256SUMS must list
-# the 18 in C-locale name order. The self test leaves one zip out, which must
-# fail naming it.
+# The release's asset set. scripts/publish.sh prepare runs on 18 zips that
+# each hold LICENSE, so its firmware scan has a member to read, and six build
+# legs' commit.txt; SHA256SUMS must list the 18 in C-locale name order. The
+# self test leaves one zip out, which must fail naming it.
 set(hygiene_publish ${CMAKE_BINARY_DIR}/hygiene/publish_set)
 file(REMOVE_RECURSE ${hygiene_publish})
+file(COPY ${CMAKE_SOURCE_DIR}/LICENSE DESTINATION ${hygiene_publish}/stage)
+execute_process(
+  COMMAND ${CMAKE_COMMAND} -E tar cf ${hygiene_publish}/one.zip --format=zip LICENSE
+  WORKING_DIRECTORY ${hygiene_publish}/stage
+  COMMAND_ERROR_IS_FATAL ANY)
+file(MAKE_DIRECTORY ${hygiene_publish}/full ${hygiene_publish}/short)
 foreach(c library runner libretro)
   foreach(o linux macos windows)
     foreach(a x64 arm64)
-      file(WRITE ${hygiene_publish}/full/muhtari-${c}-${o}-${a}.zip "")
+      file(COPY_FILE ${hygiene_publish}/one.zip ${hygiene_publish}/full/muhtari-${c}-${o}-${a}.zip
+        INPUT_MAY_BE_RECENT)
       if(NOT "${c}-${o}-${a}" STREQUAL "runner-windows-x64")
-        file(WRITE ${hygiene_publish}/short/muhtari-${c}-${o}-${a}.zip "")
+        file(COPY_FILE ${hygiene_publish}/one.zip
+          ${hygiene_publish}/short/muhtari-${c}-${o}-${a}.zip INPUT_MAY_BE_RECENT)
       endif()
     endforeach()
   endforeach()
@@ -251,10 +259,10 @@ fi
 echo "policy.publish_set: 18 archives in C-locale name order"
 ]=])
 muhtari_add_test(NAME policy.publish_set
-  COMMAND ${MUHTARI_SH} -c "${hygiene_publish_check}" sh ${CMAKE_SOURCE_DIR}/scripts/publish.sh
+  COMMAND ${CMAKE_COMMAND} -E env CMAKE=${CMAKE_COMMAND} ${MUHTARI_SH} -c "${hygiene_publish_check}" sh ${CMAKE_SOURCE_DIR}/scripts/publish.sh
     ${hygiene_publish}/full
   LABELS hygiene policy TIMEOUT 30)
-set(hygiene_cmd ${CMAKE_COMMAND} -E env EXPECTED_SHA=fixture
+set(hygiene_cmd ${CMAKE_COMMAND} -E env EXPECTED_SHA=fixture CMAKE=${CMAKE_COMMAND}
   ${MUHTARI_SH} ${CMAKE_SOURCE_DIR}/scripts/publish.sh prepare ${hygiene_publish}/short)
 string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
 muhtari_add_test(NAME policy.publish_set.self_test
@@ -314,3 +322,35 @@ muhtari_add_test(NAME policy.cartdb_generated.self_test
     "-DREGEX=src/cartdb\\.c differs from the generator output"
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene policy TIMEOUT 30)
+
+# No tracked file is firmware, a built sample or a known ROM. The self test
+# tracks a synthetic 256-byte A78 file in a fixture repository and lists the
+# SHA-1 of its last 128 bytes, which must be found once the header is
+# stripped.
+set(hygiene_scan_lists -DEXPECTED=${CMAKE_SOURCE_DIR}/tests/built/expected.txt
+  -DCARTDB=${CMAKE_SOURCE_DIR}/src/cartdb.c -DGIT=${GIT_EXECUTABLE} -DTRACKED=1)
+muhtari_add_test(NAME hygiene.firmware_scan
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+    -DFIRMWARE=${CMAKE_SOURCE_DIR}/tests/release/firmware.txt ${hygiene_scan_lists}
+    -P ${hygiene_scripts}/firmware_scan.cmake
+  LABELS hygiene TIMEOUT 60)  # provisional
+set(hygiene_scan ${CMAKE_BINARY_DIR}/hygiene/firmware_scan_fixture)
+file(REMOVE_RECURSE ${hygiene_scan})
+string(REPEAT "h" 118 hygiene_pad)
+string(REPEAT "synthetic payload, not a ROM. " 5 hygiene_body)
+string(SUBSTRING "${hygiene_body}" 0 128 hygiene_body)
+file(WRITE ${hygiene_scan}/tree/synthetic.a78 "xATARI7800${hygiene_pad}${hygiene_body}")
+string(SHA1 hygiene_sha1 "${hygiene_body}")
+file(WRITE ${hygiene_scan}/firmware.txt "sha1 ${hygiene_sha1} synthetic\n")
+execute_process(COMMAND ${GIT_EXECUTABLE} init -q WORKING_DIRECTORY ${hygiene_scan}/tree
+  COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND ${GIT_EXECUTABLE} add synthetic.a78 WORKING_DIRECTORY ${hygiene_scan}/tree
+  COMMAND_ERROR_IS_FATAL ANY)
+set(hygiene_cmd ${CMAKE_COMMAND} -DROOT=${hygiene_scan}/tree -DFIRMWARE=${hygiene_scan}/firmware.txt
+  ${hygiene_scan_lists} -P ${hygiene_scripts}/firmware_scan.cmake)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME hygiene.firmware_scan.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=synthetic.a78: matches synthetic \\(header stripped\\)"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene TIMEOUT 30)  # provisional

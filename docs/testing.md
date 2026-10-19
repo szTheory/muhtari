@@ -128,11 +128,13 @@ output matches the expected message; a crash or a missing file does not count as
 | `built.samples.self_test` | An `expected.txt` whose `.a78` digest differs in one digit; the build must exit 1 with `simple: .a78 SHA-256 drift`. |
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
 | `policy.cartdb_generated.self_test` | A copy of `src/cartdb.c` with one byte changed; the check must exit 1 with `src/cartdb.c differs from the generator output`. |
+| `hygiene.firmware_scan.self_test` | The same synthetic file tracked in a fixture repository; the tracked-file scan must exit 1 with `matches synthetic (header stripped)`. |
 | `hygiene.no_float.self_test` | Seven float lines beside three look-alikes, among them an SPDX line naming `CC0-1.0`, and an SPDX line followed by `double`. |
 | `policy.publish_set.self_test` | 17 of the 18 release zips; `publish.sh prepare` must exit 1 naming the missing one. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |
 | `release.archive_contents.self_test` | A libretro zip without `THIRD-PARTY-NOTICES.md`. |
+| `release.firmware_scan.self_test` | A zip holding a synthetic 256-byte A78 file and a list naming the SHA-1 of its last 128 bytes; the scan must exit 1 with `matches synthetic (header stripped)`. |
 | `release.floor.self_test` | An impossible floor: glibc 2.0, macOS 9.0, or no allowed Windows DLL. |
 | `release.single_version_source.self_test` | A repository whose `notes.md` repeats its version. |
 
@@ -338,7 +340,7 @@ reused.
 | Job | Runs |
 |---|---|
 | `ci` | `ci.yml` on the pull request's head commit |
-| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, `SHA256SUMS` in C-locale name order (`policy.publish_set` checks this on placeholders); a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; `publish.sh attested`: each zip's attestation verifies from the pull request's `refs/pull/<number>/merge` and a copy with its last byte flipped does not; publish with `--prerelease --latest=false`; `publish.sh verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` from that ref. A release tag verifies only from `refs/heads/main` (`policy.publish_ref`) |
+| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, no zip member that `tests/cmake/firmware_scan.cmake` finds listed (ASSET_POLICY.md section 5), `SHA256SUMS` in C-locale name order (`policy.publish_set` checks this on one-member placeholder zips); a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; `publish.sh attested`: each zip's attestation verifies from the pull request's `refs/pull/<number>/merge` and a copy with its last byte flipped does not; publish with `--prerelease --latest=false`; `publish.sh verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` from that ref. A release tag verifies only from `refs/heads/main` (`policy.publish_ref`) |
 | `install-line` | the README install line on `macos-15` against the rehearsal's download URL |
 | `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete` removes the release and its tag, and fails if either remains |
 
