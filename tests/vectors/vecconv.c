@@ -38,8 +38,7 @@ static int write_file(const char *path, const uint8_t *data, size_t len)
 
 /* Reads path back: its bytes must equal what was written, and the shared
    reader must accept it as one chunk of count tests of opcode. */
-static int reread(const char *path, const uint8_t *data, size_t len, uint8_t opcode,
-                  uint32_t count)
+static int reread(const char *path, const uint8_t *data, size_t len, uint8_t opcode, uint32_t count)
 {
     static struct n65v_test t;
     struct n65v_reader r;
