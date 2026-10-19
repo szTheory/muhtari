@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-10-PLAN.md
-last_updated: "2026-10-19T02:36:12.036Z"
+stopped_at: Completed 02-11-PLAN.md
+last_updated: "2026-10-19T02:53:55.167Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: 7b6e04cbf93e5c858d31ae65f51ee5d11117c09b
+state_head: 12a6b18dafa0fc8309e0edbca3c97b472c03b5e6
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 31
+  completed_plans: 32
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 11 of 16
+Plan: 12 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -89,6 +89,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P08 | 13 min | 2 tasks | 19 files |
 | Phase 02 P09 | 21 min | 3 tasks | 21 files |
 | Phase 02 P10 | 11 min | 2 tasks | 11 files |
+| Phase 02 P11 | 14 min | 3 tasks | 21 files |
 
 ## Accumulated Context
 
@@ -193,6 +194,9 @@ Recent decisions affecting current work:
 - [Phase 02]: A header hash match reports source hash; the entry's region applies only when TV bit 2 (multi-region) leaves the header naming none
 - [Phase 02]: The half-swapped pass runs only for a 128 KiB miss and only an Activision entry may match it
 - [Phase 02]: The leak check compares full 20-byte rows and every row's 8-byte prefix against src/cartdb.c
+- [Phase 02]: The loader identifies before it allocates; struct muhtari__cart keeps the ROM pointer and the loaded muhtari_cart_info, whose rom_size is the allocation's size
+- [Phase 02]: The fuzz preset builds every object with fuzzer-no-link coverage under ASan and UBSan (632 counters); the replay takes files, so tests/fuzz/tests.cmake globs the regressions at configure time
+- [Phase 02]: Container fuzz run: 32,253 runs in 61 s, 528 exec/s, cov 173 to 245, corpus 18 to 85 units, no crash; hosted run 39191834717 green on every leg
 
 ### Pending Todos
 
@@ -231,6 +235,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T02:36:11.984Z
-Stopped at: Completed 02-10-PLAN.md
+Last session: 2026-10-19T02:53:55.116Z
+Stopped at: Completed 02-11-PLAN.md
 Resume file: None
