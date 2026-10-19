@@ -119,7 +119,15 @@ static int compare(uint8_t opcode)
     return 1;
 }
 
-/* Runs the current test; returns 1 if it matched. */
+/* The twelve JAM opcodes: the only ones that leave the CPU jammed. */
+static int is_jam(uint8_t opcode)
+{
+    return (opcode & 0x0Fu) == 0x02u && opcode != 0x82u && opcode != 0xA2u && opcode != 0xC2u &&
+           opcode != 0xE2u;
+}
+
+/* Runs the current test; returns 1 if it matched. Every test starts from a
+   cleared CPU, so a jammed CPU is never stepped. */
 static int run_test(uint8_t opcode)
 {
     const struct n65v_state *in = &test.initial;
@@ -142,6 +150,11 @@ static int run_test(uint8_t opcode)
 
     muhtari__cpu_step(&machine.m);
 
+    if ((cpu->jammed != 0u) != is_jam(opcode)) {
+        printf("6502/%02x.json[%u]: jammed expected %d got %d\n", (unsigned)opcode,
+               (unsigned)test.index, is_jam(opcode), cpu->jammed != 0u);
+        return 0;
+    }
     return compare(opcode);
 }
 

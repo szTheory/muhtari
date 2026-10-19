@@ -152,11 +152,9 @@ static uint8_t read_at(muhtari *m, uint16_t ea)
     return muhtari__bus_read(m, ea);
 }
 
-/* ADC, and SBC as ADC of the operand's complement. The sum is binary; the
-   decimal-mode sum is not modelled here (docs/hardware/sally.md, Decimal
-   mode). V is set when both inputs have the same sign and the result's sign
-   differs. */
-static void adc(muhtari *m, uint8_t v)
+/* The binary sum A + v + C. V is set when both inputs have the same sign and
+   the result's sign differs. */
+static void adc_binary(muhtari *m, uint8_t v)
 {
     uint32_t a = m->cpu.a;
     uint32_t sum = a + v + (m->cpu.p & FLAG_C);
@@ -165,9 +163,59 @@ static void adc(muhtari *m, uint8_t v)
     assign(m, &m->cpu.a, (uint8_t)sum);
 }
 
+/* ADC. With D set, the NMOS chip adds digit by digit: the low digit is
+   corrected by 6 when it passes 9 and carries 0x10, and the high digits are
+   added on top. N and V come from that sum before the high digit's
+   correction, Z from the binary sum, and A and C after the high digit is
+   corrected by 0x60 when the sum reaches 0xA0. Invalid digits go through the
+   same steps (docs/hardware/sally.md, Decimal mode). */
+static void adc(muhtari *m, uint8_t v)
+{
+    if ((m->cpu.p & FLAG_D) == 0u) {
+        adc_binary(m, v);
+        return;
+    }
+    uint32_t a = m->cpu.a;
+    uint32_t c = m->cpu.p & FLAG_C;
+    uint32_t al = (a & 0x0Fu) + (v & 0x0Fu) + c;
+    if (al >= 0x0Au) {
+        al = ((al + 0x06u) & 0x0Fu) + 0x10u;
+    }
+    uint32_t s = (a & 0xF0u) + (v & 0xF0u) + al;
+    set_flag(m, FLAG_N, (s & 0x80u) != 0u);
+    set_flag(m, FLAG_V, ((~(a ^ v) & (a ^ s)) & 0x80u) != 0u);
+    set_flag(m, FLAG_Z, ((a + v + c) & 0xFFu) == 0u);
+    if (s >= 0xA0u) {
+        s += 0x60u;
+    }
+    set_flag(m, FLAG_C, s >= 0x100u);
+    m->cpu.a = (uint8_t)s;
+}
+
+/* SBC, as ADC of the operand's complement. With D set, every flag is still
+   the binary result's, and only A differs: the digits are subtracted with a
+   borrow, a low digit that goes below zero is corrected by 6 and borrows
+   0x10, and a result below zero is corrected by 0x60. Unsigned wraparound
+   stands for the negative values; bit 31 is the sign
+   (docs/hardware/sally.md, Decimal mode). */
 static void sbc(muhtari *m, uint8_t v)
 {
-    adc(m, (uint8_t)~v);
+    if ((m->cpu.p & FLAG_D) == 0u) {
+        adc_binary(m, (uint8_t)~v);
+        return;
+    }
+    uint32_t a = m->cpu.a;
+    uint32_t c = m->cpu.p & FLAG_C;
+    uint32_t al = (a & 0x0Fu) + c - (v & 0x0Fu) - 1u;
+    if ((al & 0x80000000u) != 0u) {
+        al = ((al - 0x06u) & 0x0Fu) - 0x10u;
+    }
+    uint32_t s = (a & 0xF0u) - (v & 0xF0u) + al;
+    if ((s & 0x80000000u) != 0u) {
+        s -= 0x60u;
+    }
+    adc_binary(m, (uint8_t)~v);
+    m->cpu.a = (uint8_t)s;
 }
 
 static void ora(muhtari *m, uint8_t v)
@@ -338,14 +386,35 @@ static void anc(muhtari *m, uint8_t v)
 }
 
 /* ARR: t = A AND v, then A = t rotated right through C. N and Z follow A;
-   C is bit 6 of A and V is bit 6 XOR bit 5. No other flag changes. */
+   C is bit 6 of A and V is bit 6 XOR bit 5. No other flag changes.
+   With D set, N and Z still follow the rotated value and V is bit 6 of
+   t XOR A. Then each digit of t is tested: when the low digit plus its own
+   bit 0 exceeds 5, the low digit of A gains 6; when the high digit plus its
+   own bit 0 exceeds 5, C is set and A gains 0x60; otherwise C is clear
+   (64doc; docs/hardware/sally.md, Decimal mode). */
 static void arr(muhtari *m, uint8_t v)
 {
     uint32_t t = (uint32_t)(m->cpu.a & v);
     uint8_t r = (uint8_t)((t >> 1) | ((uint32_t)(m->cpu.p & FLAG_C) << 7));
     assign(m, &m->cpu.a, r);
-    set_flag(m, FLAG_C, (r & 0x40u) != 0u);
-    set_flag(m, FLAG_V, ((((uint32_t)r >> 6) ^ ((uint32_t)r >> 5)) & 1u) != 0u);
+    if ((m->cpu.p & FLAG_D) == 0u) {
+        set_flag(m, FLAG_C, (r & 0x40u) != 0u);
+        set_flag(m, FLAG_V, ((((uint32_t)r >> 6) ^ ((uint32_t)r >> 5)) & 1u) != 0u);
+        return;
+    }
+    set_flag(m, FLAG_V, ((t ^ r) & 0x40u) != 0u);
+    uint32_t lo = t & 0x0Fu;
+    uint32_t hi = t >> 4;
+    uint32_t a = r;
+    if (lo + (lo & 1u) > 5u) {
+        a = (a & 0xF0u) | ((a + 0x06u) & 0x0Fu);
+    }
+    int carry = hi + (hi & 1u) > 5u;
+    set_flag(m, FLAG_C, carry);
+    if (carry) {
+        a += 0x60u;
+    }
+    m->cpu.a = (uint8_t)a;
 }
 
 /* SBX: X = (A AND X) - v without borrow in; C, N and Z as CMP sets them. */
