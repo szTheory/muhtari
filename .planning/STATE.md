@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 02
 current_phase_name: The CPU matches the public vectors
 status: executing
-stopped_at: Completed 02-14-PLAN.md
-last_updated: "2026-10-19T03:37:58.925Z"
+stopped_at: Completed 02-15-PLAN.md
+last_updated: "2026-10-19T03:57:13.672Z"
 last_activity: 2026-10-18
 last_activity_desc: Phase 02 execution started
-state_head: 5a2027e2cfec99eeab9c1d31cd32572ee40b3446
+state_head: ecf4d78f023a4956e7d657b6bf27659e16be809f
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 37
-  completed_plans: 35
+  completed_plans: 36
   percent: 25
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-16)
 ## Current Position
 
 Phase: 02 (The CPU matches the public vectors) — EXECUTING
-Plan: 15 of 16
+Plan: 16 of 16
 Status: Ready to execute
 Last activity: 2026-10-18 — Phase 02 execution started
 
@@ -93,6 +93,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P12 | 9 min | 2 tasks | 14 files |
 | Phase 02 P13 | 10 min | 3 tasks | 16 files |
 | Phase 02 P14 | 15 min | 2 tasks | 9 files |
+| Phase 02 P15 | 17 min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -207,6 +208,7 @@ Recent decisions affecting current work:
 - [Phase 02]: Plan 13: muhtari-run-testdb links the runner's sources and the core's objects with tests/cart/test_cartdb.c; never installed
 - [Phase 02]: Plan 14: the checkout's GIT_HTTP_LOW_SPEED_TIME is 240 s, the fetch's 60 s; GitHub sends nothing for 75 to 80 s while it packs the 6502/v1 blobs
 - [Phase 02]: Plan 14: Hosted nightly run 39195320935: all 2,560,000 vectors and the loader fuzz target are green; vectors-full 1 min 43 s (fetch 83 s), loader-fuzz 1 min 30 s
+- [Phase 02]: Plan 15: the firmware scan strips an A78 header with file(DOWNLOAD file:// RANGE_START 128), the one CMake call that copies a byte range with NULs, and makes its own temporary directory outside every zip's directory
 
 ### Pending Todos
 
@@ -245,6 +247,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T03:37:58.852Z
-Stopped at: Completed 02-14-PLAN.md
+Last session: 2026-10-19T03:57:13.607Z
+Stopped at: Completed 02-15-PLAN.md
 Resume file: None
