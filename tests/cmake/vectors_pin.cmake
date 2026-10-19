@@ -1,0 +1,77 @@
+# Vector pin consistency, run as
+#   cmake -DLIST=<6502-v1.sha256> -DPINS=<pins.txt> -DMANIFEST=<manifest.txt>
+#     -P vectors_pin.cmake
+# Fault prevented: the committed sample, the per-file list of the full set and
+# the pin drifting apart, so the nightly run verifies files from another
+# commit than the sample, or a list that no longer covers every opcode. LIST
+# must be 256 LF lines "<sha256>  6502/v1/xx.json" for xx from 00 to ff in
+# that order (path order: as whole lines they do not sort), its SHA-256 must
+# equal the sst-6502-v1 row of PINS, and that row's commit must equal the
+# manifest's pin for the sample.
+cmake_minimum_required(VERSION 3.25)
+foreach(var LIST PINS MANIFEST)
+  if("${${var}}" STREQUAL "")
+    message(FATAL_ERROR "vectors_pin: -D${var} is required")
+  endif()
+endforeach()
+
+set(errors "")
+file(READ "${LIST}" text)
+if(text MATCHES "\r")
+  string(APPEND errors "\n  ${LIST} has a carriage return")
+endif()
+if(NOT text MATCHES "\n$")
+  string(APPEND errors "\n  ${LIST} does not end with a line feed")
+endif()
+string(REGEX REPLACE "\n$" "" text "${text}")
+string(REPLACE "\n" ";" lines "${text}")
+list(LENGTH lines count)
+if(NOT count EQUAL 256)
+  string(APPEND errors "\n  ${LIST} has ${count} lines, not 256")
+endif()
+set(n 0)
+foreach(line IN LISTS lines)
+  math(EXPR hi "(${n} / 16) % 16")
+  math(EXPR lo "${n} % 16")
+  string(SUBSTRING "0123456789abcdef" ${hi} 1 h)
+  string(SUBSTRING "0123456789abcdef" ${lo} 1 l)
+  math(EXPR n "${n} + 1")
+  set(len 0)
+  if(line MATCHES "^([0-9a-f]+)  6502/v1/${h}${l}\\.json$")
+    string(LENGTH "${CMAKE_MATCH_1}" len)
+  endif()
+  if(NOT len EQUAL 64)
+    string(APPEND errors "\n  ${LIST} line ${n} is not \"<sha256>  6502/v1/${h}${l}.json\"")
+  endif()
+endforeach()
+
+file(SHA256 "${LIST}" digest)
+file(STRINGS "${PINS}" row REGEX "^sst-6502-v1 ")
+list(LENGTH row rows)
+if(NOT rows EQUAL 1)
+  string(APPEND errors "\n  ${PINS} has ${rows} sst-6502-v1 rows, not 1")
+else()
+  separate_arguments(row UNIX_COMMAND "${row}")
+  list(GET row 1 commit)
+  list(GET row -1 pinned)
+  if(NOT pinned STREQUAL digest)
+    string(APPEND errors "\n  ${LIST} has SHA-256 ${digest}, the sst-6502-v1 row pins ${pinned}")
+  endif()
+  file(STRINGS "${MANIFEST}" sample REGEX "^tests/vectors/6502-sample\\.n65v\t")
+  string(REPLACE "\t" ";" sample "${sample}")
+  list(LENGTH sample fields)
+  if(NOT fields EQUAL 6)
+    string(APPEND errors "\n  ${MANIFEST} has no row for tests/vectors/6502-sample.n65v")
+  else()
+    list(GET sample 2 sample_pin)
+    if(NOT sample_pin STREQUAL commit)
+      string(APPEND errors
+        "\n  the sst-6502-v1 row pins commit ${commit}, the sample's manifest row ${sample_pin}")
+    endif()
+  endif()
+endif()
+
+if(errors)
+  message(FATAL_ERROR "vectors_pin:${errors}")
+endif()
+message(STATUS "vectors_pin: 256 files at ${commit}, list ${digest}")

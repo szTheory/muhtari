@@ -20,3 +20,10 @@ cmake-linux-x86_64 4.4.3 https://github.com/Kitware/CMake/releases/download/v4.4
 # RetroArch 1.22.2 Metal (universal) from the libretro buildbot: the hosted
 # retroarch job runs the built core in it.
 retroarch-dmg 1.22.2 https://buildbot.libretro.com/stable/1.22.2/apple/osx/universal/RetroArch_Metal.dmg 81b79121ba26d539064ae13b4d0419a120c3d165afbe656cf5f5412b15fdb434
+
+# SingleStepTests 65x02 at the commit the committed vector sample comes from. The
+# digest is the SHA-256 of tests/vectors/6502-v1.sha256, the list of the 256
+# 6502/v1 files' own digests. scripts/fetch-pin.sh does not serve this row:
+# tests/cmake/fetch_vectors.cmake checks the commit out and verifies every file
+# against that list.
+sst-6502-v1 2f6980a2d95757486c7bee24355c360e40e2a224 https://github.com/SingleStepTests/65x02.git 22df14296ebc6a02d69648467b52ab23feb4083f97aca1174a77d2902a5bd1e1

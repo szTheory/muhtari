@@ -345,6 +345,10 @@ anything else happens; only then does it unpack a `.tar.xz` or `.tar.gz` into `D
 copy any other file there. `policy.pins` (hygiene lane) requires four fields per row, a unique name, an `https://`
 URL and a 64-digit hex digest. A wrong digest exits 1 with `sha256 mismatch` and leaves `DEST` untouched. `PINS=<file>`
 reads another pins file. A bump is one `ci:` pull request that takes the new digest from the release API.
+The `sst-6502-v1` row is not a download: it pins the SingleStepTests commit the vector sample comes from, and its
+digest is that of `tests/vectors/6502-v1.sha256`, the per-file list of the full set. `cpu.vectors.pin` requires that
+list to name `6502/v1/00.json` to `ff.json` in order, its digest to match the row, and the row's commit to match the
+sample's manifest pin.
 
 ## Running the Linux lanes locally
 

@@ -129,3 +129,11 @@ endforeach()
 # chunk or test count and every cut, naming the byte offset.
 muhtari_add_test(NAME cpu.vectors.reader COMMAND muhtari-test-reader
   LABELS vectors portable TIMEOUT 10)
+
+# The per-file list of the full set, its pins.txt row and the sample's
+# manifest pin agree.
+muhtari_add_test(NAME cpu.vectors.pin
+  COMMAND ${CMAKE_COMMAND} -DLIST=${CMAKE_SOURCE_DIR}/tests/vectors/6502-v1.sha256
+    -DPINS=${CMAKE_SOURCE_DIR}/pins.txt -DMANIFEST=${CMAKE_SOURCE_DIR}/tests/roms/manifest.txt
+    -P ${CMAKE_SOURCE_DIR}/tests/cmake/vectors_pin.cmake
+  LABELS vectors TIMEOUT 10)

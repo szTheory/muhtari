@@ -284,6 +284,7 @@ cpu.vectors.fc	portable,vectors
 cpu.vectors.fd	portable,vectors
 cpu.vectors.fe	portable,vectors
 cpu.vectors.ff	portable,vectors
+cpu.vectors.pin	vectors
 cpu.vectors.reader	portable,vectors
 cpu.vectors.self_test	portable,vectors
 docs.api_names	policy
