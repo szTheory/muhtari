@@ -770,10 +770,10 @@ static void expect_load(const char *what, size_t n, int fail, muhtari_status wan
         check_failures++;
     }
     if (want == MUHTARI_STATUS_OK) {
-        /* The positive control: one allocation of rom_size bytes. */
+        /* The positive control: one allocation of the ROM and its RAM. */
         muhtari_cart_info info = expect_written(what, buf, n, MUHTARI_STATUS_OK);
         CHECK_EQ_U64(c.allocs, created.allocs + 1u);
-        CHECK_EQ_U64(c.alloc_size, info.rom_size);
+        CHECK_EQ_U64(c.alloc_size, (uint64_t)info.rom_size + info.ram_size);
         CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, info.rom_size) == 0);
     } else {
         if (want != MUHTARI_STATUS_ERR_NO_MEMORY) {

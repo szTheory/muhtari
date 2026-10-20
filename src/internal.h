@@ -127,9 +127,16 @@ struct muhtari__profile {
 };
 
 /* The loaded cartridge: rom holds the info.rom_size bytes the board maps,
-   allocated through the instance's allocator; NULL while none is loaded. */
+   followed by its info.ram_size bytes of RAM, in one allocation through the
+   instance's allocator; rom is NULL while none is loaded, ram while the
+   board has none. bank is the SuperGame bank at $8000 and ram_bank the
+   banked-RAM half at $4000, each already reduced to a bank that exists
+   (docs/hardware/cartridge.md, Boards). */
 struct muhtari__cart {
     uint8_t *rom;
+    uint8_t *ram;
+    uint8_t bank;
+    uint8_t ram_bank;
     muhtari_cart_info info;
 };
 
@@ -408,21 +415,24 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
 /* Loads the n bytes at image into m: the status is muhtari_probe's for the
    same bytes. Every refusal returns before anything is allocated and leaves
    m unchanged. On OK the mapped ROM is copied into one allocation of
-   rom_size bytes, replacing any cartridge loaded before; ERR_NO_MEMORY
+   rom_size + ram_size bytes, the RAM after the ROM and zeroed, replacing
+   any cartridge loaded before; ERR_NO_MEMORY
    leaves m unchanged. muhtari_destroy frees it (docs/hardware/cartridge.md,
    Loading). */
 muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n);
 
 /* The second half of muhtari__cart_load: copies the ROM of image, which
-   *info identifies, into one new allocation and replaces any cartridge
-   loaded before. ERR_NO_MEMORY leaves m unchanged. */
+   *info identifies, into one new allocation with its RAM and replaces any
+   cartridge loaded before. ERR_NO_MEMORY leaves m unchanged. */
 muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info);
 
 /* The cartridge as the bus sees it, by board (docs/hardware/bus.md, Memory
    map). read returns the byte the board drives at addr, or the open-bus
    byte where it drives none; by_maria is 1 for MARIA's DMA fetches. write
    is a CPU write into cartridge space. peek reads like read with no side
-   effect, for the hand-off and the tests. */
+   effect, for the hand-off and the tests. reset puts the bank registers
+   at power-on and fills the RAM by ram_fill. */
+void muhtari__cart_reset(muhtari *m);
 uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria);
 void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v);
 uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr);

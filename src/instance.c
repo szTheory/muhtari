@@ -107,6 +107,7 @@ void muhtari__power_on(muhtari *m)
     /* Only the zero fill exists so far; every RAM_FILL value gives it. */
     memset(m->ram, 0, sizeof m->ram);
     muhtari__riot_reset(m);
+    muhtari__cart_reset(m);
 }
 
 void muhtari_destroy(muhtari *m)
@@ -116,7 +117,7 @@ void muhtari_destroy(muhtari *m)
     }
     muhtari_allocator a = m->allocator;
     if (m->cart.rom != NULL) {
-        a.free(a.user, m->cart.rom, m->cart.info.rom_size);
+        a.free(a.user, m->cart.rom, (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
     }
     a.free(a.user, m, sizeof *m);
 }
@@ -206,9 +207,9 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     if (media->bios != NULL && !bios_valid((const uint8_t *)media->bios, media->bios_size)) {
         return MUHTARI_STATUS_ERR_INVALID_BIOS;
     }
-    /* The ROM is the only allocation; the BIOS goes into the instance's
-       fixed array. The BIOS boot itself is not run yet: a loaded BIOS is
-       kept and the fast boot runs. */
+    /* The ROM and its RAM are the only allocation; the BIOS goes into the
+       instance's fixed array. The BIOS boot itself is not run yet: a loaded
+       BIOS is kept and the fast boot runs. */
     st = muhtari__cart_install(m, media->image, &info);
     if (st != MUHTARI_STATUS_OK) {
         return st;

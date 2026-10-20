@@ -24,7 +24,8 @@ endforeach()
 # Loading, input, memory spans and counters.
 foreach(case IN ITEMS
     load.keeps_previous load.empty_refused load.invalid_bios set_input.validates
-    set_input.latched_at_vblank get_memory.spans counters.frames_and_lag)
+    set_input.latched_at_vblank get_memory.spans counters.frames_and_lag
+    load.supergame_one_allocation get_memory.cart_ram)
   muhtari_add_test(NAME core.${case} COMMAND muhtari-test-core ${case}
     LABELS core portable TIMEOUT 10) # provisional, phase 3
 endforeach()

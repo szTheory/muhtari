@@ -18,6 +18,7 @@ basic.backuptest	basic,portable
 basic.banner	basic,portable
 basic.boxcollision	basic,portable
 basic.colorfade	basic,portable
+basic.doublebuffer	basic,portable
 basic.drivingcontrol	basic,portable
 basic.fontcheck	basic,portable
 basic.helloworld	basic,portable
@@ -48,6 +49,7 @@ built.backuptest	built,portable
 built.banner	built,portable
 built.boxcollision	built,portable
 built.colorfade	built,portable
+built.doublebuffer	built,portable
 built.drivingcontrol	built,portable
 built.fontcheck	built,portable
 built.helloworld	built,portable
@@ -115,11 +117,13 @@ core.counters.frames_and_lag	core,portable
 core.create.allocator	core,portable
 core.frame.pitch_336	core,portable
 core.frame.validate_first	core,portable
+core.get_memory.cart_ram	core,portable
 core.get_memory.spans	core,portable
 core.info	core,portable
 core.load.empty_refused	core,portable
 core.load.invalid_bios	core,portable
 core.load.keeps_previous	core,portable
+core.load.supergame_one_allocation	core,portable
 core.no_alloc_after_load	perf,portable
 core.set_input.latched_at_vblank	core,portable
 core.set_input.validates	core,portable

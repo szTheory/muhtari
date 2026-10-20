@@ -5,9 +5,9 @@
 # The frame chain is frames.cmake's 600-frame chain; it holds at the behaviour
 # revision below and is written only with -DWRITE=ON (docs/emulation-tests.md).
 # behaviour_revision 1
-# Every linear sample in 7800basic 0.41's samples/sizes.ref has a row. The five
-# SuperGame samples (doublebuffer, eightysix, onehundredandone,
-# rmtramcompressiondemo, rmtramdemo) get theirs with the SuperGame board.
+# Every linear sample in 7800basic 0.41's samples/sizes.ref has a row, and
+# doublebuffer, the first SuperGame one. The other four SuperGame samples
+# (eightysix, onehundredandone, rmtramcompressiondemo, rmtramdemo) follow.
 # banksets has none: it fails to assemble with this recipe, and its bankset
 # board is refused.
 adventurer  7800basic-wasm@0.41,wasmtime@48.0.6  samples/adventurer/adventurer.bas  7dd09ae006f4514b0a41f31134dcf6a908c6bd891ee59093a3211460171e855d  e6915fccdf374074708e6025aa885bfd6ba1ba26b31e9f2f0454232fe68eee71  2ee28bc4fcaf2be8d392b56785b7f1b47b029f33f8dd41459b5e3790930c433c  -
@@ -16,6 +16,7 @@ backuptest  7800basic-wasm@0.41,wasmtime@48.0.6  samples/backuptest/backuptest.b
 banner  7800basic-wasm@0.41,wasmtime@48.0.6  samples/banner/banner.bas  556ba917df400482bf96491d23f62252a2640af4d0856fe133f6daa890ac328a  17dba9493bd16ecdc163fd1ed16404668031948bfc072ebab75c3f71d338e471  8a3a45c3cbf5996c47cb03c7dfc4af951c8478f780af51425c9dc732fa3ab385  -
 boxcollision  7800basic-wasm@0.41,wasmtime@48.0.6  samples/boxcollision/boxcollision.bas  43a6e3fd06abc00d16b013963f3e348b791463cd06fe47de015e23bc6a9c2827  c11b58f1f93c51b80585335e8ef9600342025f8c763d1346e23575e08cd8c42e  569f1ff09ebd2aa4ec15b97ee1483fd85a1cee2abd5aa0598d00246658946ba9  -
 colorfade  7800basic-wasm@0.41,wasmtime@48.0.6  samples/colorfade/colorfade.bas  fc71161b13fefc9b72e7ab264554c5707e8edd3d4d20c7accdb3cd19c2e7b3ac  766c4b5dcb80e18269db9c83b787d0133759d3591d49c243419c3e116dd962ac  8a868b24329f4bd07636cf76da0669fc3ee7bc6bb0cdeeee447e7b662031c1a9  -
+doublebuffer  7800basic-wasm@0.41,wasmtime@48.0.6  samples/doublebuffer/doublebuffer.bas  7e539ce2cec96d036b065dbc4bcf5a145e5ff6c9bd5bd24d1fe43f5d4b1821ea  452bf198c3b44ebfcf4c6f8e8b357236df70cb341978094b0f39f746e8e19aff  a0759ca6ae20dd20a73346cdc8984da407cb433f81b0035b9536893c71a1ab1d  -
 drivingcontrol  7800basic-wasm@0.41,wasmtime@48.0.6  samples/drivingcontrol/drivingcontrol.bas  8e3a6110d9744b14bb69c3cb961400bac60a644bb48041e94c742c93276ab35a  e10d5331900db7ab9a3fd9331956bec8708261bcb4f0cc84d25c09a254440106  f7636dc219b4a1257012644bcaf2cd4514dde83a1fd0b6551b278e74ba5674fc  -
 fontcheck  7800basic-wasm@0.41,wasmtime@48.0.6  samples/fontcheck/fontcheck.bas  b8af60ce3b0afccfceedd5ee57a496491bb6d9181204af85689925a87a99383a  2a7ab1f2bf4069ab94baa5f8a0e937a7fc73d2ae142625a070f4ba23d3c3f103  218471a10520aa82d1ac5dec41becb7165fa25b1974f8524f0988e285e17223a  -
 helloworld  7800basic-wasm@0.41,wasmtime@48.0.6  samples/helloworld/helloworld.bas  cd80c5e7b3558c80e8cad2aeee0b15b1757034baa727c575a85ec57e5497b3f0  553bb161f4fa99adb9e524b243f8ea8d6a8a342174841f3be09b0a60013e2dae  0bcad35bf4f8a0acc41783ca4a2bbda9a947e7c67bf91a0613e349d8fb39df80  -

@@ -910,6 +910,131 @@ static void test_counters_frames_and_lag(void)
     muhtari_destroy(m);
 }
 
+/* A SuperGame image built in memory: an A78 version 3 header with the cart
+   type given over 8 banks of 16 KiB. Each bank starts with its own number;
+   the last bank, fixed at $C000, runs program at $C000. */
+#define SG_BANKS 8u
+#define SG_BODY (SG_BANKS * 16384u)
+static uint8_t sg_image[IMAGES_HEADER + SG_BODY];
+
+static void make_sg(uint16_t cart_type, const uint8_t *program, size_t n)
+{
+    images_header(sg_image, 3u, "SuperGame", SG_BODY, cart_type);
+    uint8_t *body = sg_image + IMAGES_HEADER;
+    memset(body, 0xEA, SG_BODY); /* NOP */
+    for (uint32_t b = 0; b < SG_BANKS; b++) {
+        body[b * 16384u] = (uint8_t)b;
+    }
+    memcpy(body + SG_BODY - 16384u + 1u, program, n);
+    body[SG_BODY - 4u] = 0x01u; /* reset vector $C001 */
+    body[SG_BODY - 3u] = 0xC0u;
+}
+
+/* Increments $4000 forever: the cartridge RAM's first byte. */
+static const uint8_t prog_cart_ram[] = {0xEE, 0x00, 0x40, 0x4C, 0x01, 0xC0}; /* INC $4000 */
+
+/* A SuperGame cartridge is one allocation of its ROM and RAM, freed with
+   the same size; a refused SuperGame image allocates nothing. The banks
+   follow the board: bank 0 at power-on, the value modulo the bank count,
+   the last bank at $C000, the second-to-last at $4000 without RAM; a
+   banked-RAM board takes its RAM half from D5, and a linear board with
+   RAM maps it at $4000. */
+static void test_load_supergame_one_allocation(void)
+{
+    alloc_counts c;
+    muhtari_config cfg = alloc_config(&c);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+
+    make_sg(0x4002u, prog_idle, 0u); /* SuperGame with halt-banked RAM: refused */
+    muhtari_media media = media_for(sg_image, sizeof sg_image);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    CHECK_EQ_U64(c.allocs, 1);
+    CHECK(m->cart.rom == NULL);
+
+    make_sg(0x0006u, prog_idle, 0u); /* SuperGame with 16 KiB RAM */
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(c.allocs, 2);
+    CHECK_EQ_U64(c.alloc_size, SG_BODY + 16384u);
+    CHECK(m->cart.ram == m->cart.rom + SG_BODY);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x4000u), 0x00);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x8000u), 0x00);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0xC000u), SG_BANKS - 1u);
+    muhtari__bus_write(m, 0x8000u, 3u);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x8000u), 0x03);
+    muhtari__bus_write(m, 0xBFFFu, 0xFFu); /* 255 mod 8 */
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x8000u), 0x07);
+    muhtari__bus_write(m, 0x7FFFu, 0x5Au);
+    CHECK_EQ_HEX(m->cart.ram[0x3FFF], 0x5A);
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x8000u), 0x00);
+    CHECK_EQ_HEX(m->cart.ram[0x3FFF], 0x00);
+
+    make_sg(0x0002u, prog_idle, 0u); /* plain SuperGame: no RAM */
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(c.allocs, 3);
+    CHECK_EQ_U64(c.frees, 1);
+    CHECK_EQ_U64(c.free_size, SG_BODY + 16384u);
+    CHECK_EQ_U64(c.alloc_size, SG_BODY);
+    CHECK(m->cart.ram == NULL);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x4000u), SG_BANKS - 2u);
+
+    make_sg(0x0022u, prog_idle, 0u); /* SuperGame with banked RAM */
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(c.alloc_size, SG_BODY + 32768u);
+    muhtari__bus_write(m, 0x4000u, 0x11u);
+    muhtari__bus_write(m, 0x8000u, 0x21u); /* bank 1, RAM half 1 */
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x8000u), 0x01);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x4000u), 0x00);
+    muhtari__bus_write(m, 0x4000u, 0x22u);
+    muhtari__bus_write(m, 0x8000u, 0x01u);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x4000u), 0x11);
+    CHECK_EQ_HEX(m->cart.ram[0x4000], 0x22);
+
+    /* RAM without SuperGame is a linear board: here 32 KiB, banks 6 and 7. */
+    make_sg(0x0002u, prog_idle, 0u);
+    images_header(sg_image, 3u, "Linear RAM", 32768u, 0x0004u);
+    memcpy(sg_image + IMAGES_HEADER, sg_image + IMAGES_HEADER + SG_BODY - 32768u, 32768u);
+    media = media_for(sg_image, IMAGES_HEADER + 32768u);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(c.alloc_size, 32768u + 16384u);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x8000u), SG_BANKS - 2u);
+    muhtari__bus_write(m, 0x4001u, 0x77u);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x4001u), 0x77);
+
+    uint32_t allocs = c.allocs;
+    muhtari_destroy(m);
+    CHECK_EQ_U64(c.allocs, allocs);
+    CHECK_EQ_U64(c.frees, allocs);
+    CHECK_EQ_U64(c.free_size, sizeof *m);
+}
+
+/* CART_RAM is the board's 16 KiB at $4000: a live, stable span equal to
+   what the CPU reads there. */
+static void test_get_memory_cart_ram(void)
+{
+    muhtari *m = make();
+    make_sg(0x0006u, prog_cart_ram, sizeof prog_cart_ram);
+    muhtari_media media = media_for(sg_image, sizeof sg_image);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    muhtari_span ram = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+    CHECK(ram.data != NULL);
+    CHECK_EQ_U64(ram.bytes, 16384);
+    run(m, NULL);
+    run(m, NULL);
+    muhtari_span again = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+    CHECK(again.data == ram.data);
+    CHECK(ram.data[0] != 0u);
+    CHECK_EQ_HEX(ram.data[0], muhtari__bus_peek(m, 0x4000u));
+    ram.data[0x3FFF] = 0xA5u;
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x7FFFu), 0xA5);
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    muhtari_span cycled = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+    CHECK(cycled.data == ram.data);
+    CHECK_EQ_U64(cycled.bytes, 16384);
+    muhtari_destroy(m);
+}
+
 static const struct {
     const char *name;
     void (*run)(void);
@@ -921,10 +1046,12 @@ static const struct {
     {"frame.validate_first", test_validate_first},
     {"info", test_info},
     {"counters.frames_and_lag", test_counters_frames_and_lag},
+    {"get_memory.cart_ram", test_get_memory_cart_ram},
     {"get_memory.spans", test_get_memory_spans},
     {"load.empty_refused", test_load_empty_refused},
     {"load.invalid_bios", test_load_invalid_bios},
     {"load.keeps_previous", test_load_keeps_previous},
+    {"load.supergame_one_allocation", test_load_supergame_one_allocation},
     {"no_alloc_after_load", test_no_alloc_after_load},
     {"set_input.latched_at_vblank", test_set_input_latched_at_vblank},
     {"set_input.validates", test_set_input_validates},

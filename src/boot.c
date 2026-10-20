@@ -40,8 +40,8 @@ _Static_assert(BOOT_TICK % 4u == BOOT_CPU_PHASE, "the hand-off tick sets the CPU
 
 void muhtari__boot_fast(muhtari *m)
 {
-    /* The CPU, the bus, RAM by ram_fill and the RIOT at power-on; palettes,
-       BACKGRND and CHARBASE 0. A linear cartridge has no bank to reset. */
+    /* The CPU, the bus, RAM by ram_fill, the RIOT and the cartridge's banks
+       and RAM at power-on; palettes, BACKGRND and CHARBASE 0. */
     muhtari__power_on(m);
     memset(&m->maria, 0, sizeof m->maria);
     m->bus.inptctrl = (uint8_t)(BOOT_INPTCTRL & MUHTARI__INPTCTRL_BITS);
