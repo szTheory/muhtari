@@ -11,3 +11,12 @@ muhtari_add_test(NAME audio.spectral COMMAND muhtari-test-spectral production
   LABELS audio portable TIMEOUT 120)
 muhtari_add_test(NAME audio.spectral.controls COMMAND muhtari-test-spectral controls
   LABELS audio portable TIMEOUT 120)
+
+add_executable(muhtari-test-tia ${CMAKE_CURRENT_LIST_DIR}/test_tia.c)
+target_include_directories(muhtari-test-tia PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-tia PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-tia PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-tia)
+muhtari_add_test(NAME tia.logic COMMAND muhtari-test-tia
+  LABELS tia portable TIMEOUT 10)

@@ -581,6 +581,7 @@ runner.usage.positional	portable,runner
 runner.usage.region_pal	portable,runner
 runner.usage.unknown	portable,runner
 runner.version	portable,runner
+tia.logic	portable,tia
 title.pin.self_test	portable,title
 title.simple.bios	portable,title
 title.simple.fast	portable,title
