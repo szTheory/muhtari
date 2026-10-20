@@ -2,8 +2,9 @@
  * client of muhtari.h. "Lnnn" is a line of the vendored libretro.h
  * (RetroArch v1.22.2, see PROVENANCE.md).
  *
- * This release loads no content: retro_load_game(NULL) creates the instance,
- * which shows the built-in test card, and any content is refused. */
+ * retro_load_game(NULL) creates the instance, which shows the built-in test
+ * card; content is loaded through muhtari_load and its fast boot. The
+ * adapter copies the content, and the copy lives until the game unloads. */
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -14,6 +15,7 @@
 #include "muhtari.h"
 #include "muhtari_version.h"
 #include "palette.h"
+#include "status_text.h"
 
 #define LR_WIDTH 320u
 #define LR_HEIGHT 242u
@@ -40,7 +42,10 @@ static retro_audio_sample_t audio_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
+static retro_log_printf_t log_cb;
 static muhtari *inst;
+static uint8_t *content;
+static size_t content_size;
 static uint8_t *native;
 static lr_pixel *pixels;
 static int16_t mono[LR_AUDIO_CAPACITY];
@@ -60,11 +65,14 @@ static void lr_free(void *user, void *ptr, size_t size)
     free(ptr);
 }
 
-/* Destroys the instance and its frame buffers. */
+/* Destroys the instance, the content copy and the frame buffers. */
 static void lr_release(void)
 {
     muhtari_destroy(inst);
     inst = NULL;
+    free(content);
+    content = NULL;
+    content_size = 0u;
     free(native);
     native = NULL;
     free(pixels);
@@ -120,6 +128,7 @@ void retro_deinit(void)
     audio_batch_cb = NULL;
     input_poll_cb = NULL;
     input_state_cb = NULL;
+    log_cb = NULL;
     memset(mono, 0, sizeof mono);
     memset(stereo, 0, sizeof stereo);
 }
@@ -129,8 +138,8 @@ unsigned retro_api_version(void)
     return RETRO_API_VERSION;
 }
 
-/* L7627: static strings. No content is loaded yet, so the extension list is
-   empty. */
+/* L7627: static strings. The content is passed in memory (need_fullpath
+   false), and the core keeps its own copy. */
 void retro_get_system_info(struct retro_system_info *info)
 {
     if (info == NULL) {
@@ -139,7 +148,7 @@ void retro_get_system_info(struct retro_system_info *info)
     memset(info, 0, sizeof *info);
     info->library_name = "muhtari";
     info->library_version = MUHTARI_VERSION_STRING;
-    info->valid_extensions = "";
+    info->valid_extensions = "a78|bin";
     info->need_fullpath = false;
     info->block_extract = false;
 }
@@ -175,6 +184,38 @@ void retro_reset(void)
 {
 }
 
+/* Whether RetroPad button id is held on port. */
+static bool lr_held(unsigned port, unsigned id)
+{
+    return input_state_cb != NULL && input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, id) != 0;
+}
+
+/* The 7800 buttons held on a port: the D-pad is the stick, B button 1 and
+   A button 2 (HOSTS-AND-INTEGRATION section 1, Input). */
+static uint32_t lr_buttons(unsigned port)
+{
+    uint32_t b = 0u;
+    b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_UP) ? MUHTARI_BUTTON_UP : 0u;
+    b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_DOWN) ? MUHTARI_BUTTON_DOWN : 0u;
+    b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_LEFT) ? MUHTARI_BUTTON_LEFT : 0u;
+    b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_RIGHT) ? MUHTARI_BUTTON_RIGHT : 0u;
+    b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_B) ? MUHTARI_BUTTON_1 : 0u;
+    b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_A) ? MUHTARI_BUTTON_2 : 0u;
+    return b;
+}
+
+/* Hands the RetroPads' state to the instance; the core applies it at the
+   next VBLANK start (docs/embedding.md, Input). */
+static void lr_input(void)
+{
+    muhtari_input in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.buttons[0] = lr_buttons(0u);
+    in.buttons[1] = lr_buttons(1u);
+    (void)muhtari_set_input(inst, &in);
+}
+
 /* L7694: one frame. Input is polled once (L7685), the video callback is
    called once with the converted rows, and mono samples are duplicated into
    left/right pairs. Prefer the batch callback (L7465); use the per-sample
@@ -191,6 +232,7 @@ void retro_run(void)
     if (inst == NULL) {
         return;
     }
+    lr_input();
     memset(&io, 0, sizeof io);
     io.size = (uint32_t)sizeof io;
     io.video = native;
@@ -250,20 +292,69 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
     (void)code;
 }
 
-/* L7761. A NULL game starts the test card; content is refused. XRGB8888, or
-   RGB565 in the USE_RGB565 build, is chosen here (L861); the default
-   0RGB1555 is deprecated (L5620-5647). */
+/* Writes a message to the frontend's log, when it has one (L1243). */
+#define LR_LOG(level, ...)                                                                         \
+    do {                                                                                           \
+        if (log_cb != NULL) {                                                                      \
+            log_cb(level, __VA_ARGS__);                                                            \
+        }                                                                                          \
+    } while (0)
+
+/* Loads the content copy into the instance. Logs a refusal with its status
+   text and returns false. */
+static bool lr_load_content(const struct retro_game_info *game)
+{
+    muhtari_cart_info info;
+    muhtari_media media;
+    muhtari_status st;
+
+    if (game->data == NULL || game->size == 0u || game->size > MUHTARI_IMAGE_SIZE_MAX) {
+        LR_LOG(RETRO_LOG_ERROR, "muhtari: no content bytes, or more than %u\n",
+               (unsigned)MUHTARI_IMAGE_SIZE_MAX);
+        return false;
+    }
+    memset(&info, 0, sizeof info);
+    info.size = (uint32_t)sizeof info;
+    st = muhtari_probe(game->data, game->size, &info);
+    if (st == MUHTARI_STATUS_OK) {
+        content = (uint8_t *)malloc(game->size);
+        if (content == NULL) {
+            st = MUHTARI_STATUS_ERR_NO_MEMORY;
+        }
+    }
+    if (st == MUHTARI_STATUS_OK) {
+        memcpy(content, game->data, game->size);
+        content_size = game->size;
+        memset(&media, 0, sizeof media);
+        media.size = (uint32_t)sizeof media;
+        media.image = content;
+        media.image_size = content_size;
+        st = muhtari_load(inst, &media);
+    }
+    if (st != MUHTARI_STATUS_OK) {
+        LR_LOG(RETRO_LOG_ERROR, "muhtari: content refused: %s%s%s\n", muhtari__status_text(st),
+               st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ? ": " : "",
+               st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ? muhtari__board_name(info.board) : "");
+        return false;
+    }
+    return true;
+}
+
+/* L7761. A NULL game starts the test card; content is copied and loaded.
+   XRGB8888, or RGB565 in the USE_RGB565 build, is chosen here (L861) once
+   the content is accepted; the default 0RGB1555 is deprecated
+   (L5620-5647). */
 bool retro_load_game(const struct retro_game_info *game)
 {
     enum retro_pixel_format format = LR_PIXEL_FORMAT;
+    struct retro_log_callback log;
     muhtari_config cfg;
 
-    if (game != NULL) {
+    if (env_cb == NULL) {
         return false;
     }
-    if (env_cb == NULL || !env_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &format)) {
-        return false;
-    }
+    memset(&log, 0, sizeof log);
+    log_cb = env_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log) ? log.log : NULL;
     lr_release();
     memset(&cfg, 0, sizeof cfg);
     cfg.size = (uint32_t)sizeof cfg;
@@ -273,6 +364,11 @@ bool retro_load_game(const struct retro_game_info *game)
     pixels = (lr_pixel *)malloc(LR_PIXELS * sizeof *pixels);
     if (native == NULL || pixels == NULL || muhtari_create(&cfg, &inst) != MUHTARI_STATUS_OK) {
         inst = NULL;
+        lr_release();
+        return false;
+    }
+    if ((game != NULL && !lr_load_content(game)) ||
+        !env_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &format)) {
         lr_release();
         return false;
     }
@@ -300,15 +396,29 @@ unsigned retro_get_region(void)
     return RETRO_REGION_NTSC;
 }
 
-/* L7826: no memory regions are exposed yet. */
+/* L7826: system RAM, the 4 KiB at $1800-$27FF, from the instance. */
 void *retro_get_memory_data(unsigned id)
 {
-    (void)id;
-    return NULL;
+    muhtari_span span;
+    if (inst == NULL || id != RETRO_MEMORY_SYSTEM_RAM) {
+        return NULL;
+    }
+    memset(&span, 0, sizeof span);
+    span.size = (uint32_t)sizeof span;
+    return muhtari_get_memory(inst, MUHTARI_MEMORY_SYSTEM_RAM, &span) == MUHTARI_STATUS_OK
+               ? span.data
+               : NULL;
 }
 
 size_t retro_get_memory_size(unsigned id)
 {
-    (void)id;
-    return 0u;
+    muhtari_span span;
+    if (inst == NULL || id != RETRO_MEMORY_SYSTEM_RAM) {
+        return 0u;
+    }
+    memset(&span, 0, sizeof span);
+    span.size = (uint32_t)sizeof span;
+    return muhtari_get_memory(inst, MUHTARI_MEMORY_SYSTEM_RAM, &span) == MUHTARI_STATUS_OK
+               ? span.bytes
+               : 0u;
 }

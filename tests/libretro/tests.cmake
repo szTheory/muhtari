@@ -23,6 +23,13 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.host.rgb565
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro_rgb565> rgb565
     LABELS libretro portable TIMEOUT 30)
+  # Fault prevented: a RetroPad press that never reaches the register the
+  # cartridge reads, or content the core cannot load from memory.
+  set(libretro_input_cart ${PROJECT_BINARY_DIR}/tests/input-carts/input.a78)
+  muhtari_add_test(NAME libretro.host.input
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> input ${libretro_input_cart}
+    LABELS libretro portable TIMEOUT 30)  # provisional, phase 3
+  set_tests_properties(libretro.host.input PROPERTIES FIXTURES_REQUIRED input_carts)
 
   set(libretro_inventory ${PROJECT_SOURCE_DIR}/tests/inventory/${MUHTARI_INVENTORY}.txt)
   muhtari_add_test(NAME libretro.info_claims

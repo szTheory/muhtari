@@ -466,6 +466,7 @@ input.unplugged	input,portable
 install.consumer	install
 install.consumer.dll_crt	install
 install.stage	install
+libretro.host.input	libretro,portable
 libretro.host.rgb565	libretro,portable
 libretro.host.xrgb8888	libretro,portable
 libretro.info_claims	libretro

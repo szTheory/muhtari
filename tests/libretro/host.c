@@ -1,12 +1,19 @@
 /* Loads the built libretro module at run time and calls it in the order a
- * frontend such as RetroArch does, then compares every frame it receives
- * with the library's own frame through the same palette.
+ * frontend such as RetroArch does.
  *
  *   muhtari-test-libretro-host <module> xrgb8888|rgb565
+ *   muhtari-test-libretro-host <module> <case> <file>...
  *
+ * xrgb8888 and rgb565 run the test card with no content and compare every
+ * frame received with the library's own frame through the same palette.
  * Pixels are read as native-endian integers, so a swapped channel order, 555
  * for 565, or a swapped byte order fails here. In rgb565 mode the host
- * registers no batch audio callback, so the single-sample path runs. */
+ * registers no batch audio callback, so the single-sample path runs.
+ *
+ * The other cases load content the way a frontend does and drive the
+ * RetroPad. The input cartridge (tests/input/test_input.c) stores what it
+ * reads from SWCHA, SWCHB and INPT0-INPT5 each frame in a ring in system
+ * RAM, which the host reads back through retro_get_memory_data. */
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -14,6 +21,7 @@
 #include <dlfcn.h>
 #endif
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -168,9 +176,31 @@ static int sample_nonzero;
 static int batch_calls;
 static size_t batch_frames;
 static int batch_nonzero;
+static uint32_t pad[2]; /* the RetroPad buttons held, bit n for id n */
+static char log_text[4096];
+static size_t log_used;
+
+/* Keeps every log line, and prints it. */
+static void RETRO_CALLCONV host_log(enum retro_log_level level, const char *fmt, ...)
+{
+    va_list ap;
+    int n;
+    (void)level;
+    va_start(ap, fmt);
+    n = vsnprintf(log_text + log_used, sizeof log_text - log_used, fmt, ap);
+    va_end(ap);
+    if (n > 0) {
+        fputs(log_text + log_used, stderr);
+        log_used += (size_t)n < sizeof log_text - log_used ? (size_t)n : 0u;
+    }
+}
 
 static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 {
+    if (cmd == RETRO_ENVIRONMENT_GET_LOG_INTERFACE) {
+        ((struct retro_log_callback *)data)->log = host_log;
+        return true;
+    }
     if (cmd == RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME) {
         no_game_calls++;
         no_game_value = *(const bool *)data ? 1 : 0;
@@ -232,11 +262,11 @@ static void RETRO_CALLCONV on_poll(void)
 
 static int16_t RETRO_CALLCONV input(unsigned port, unsigned device, unsigned index, unsigned id)
 {
-    (void)port;
-    (void)device;
-    (void)index;
-    (void)id;
-    return 0;
+    if (port > 1u || (device & RETRO_DEVICE_MASK) != RETRO_DEVICE_JOYPAD || index != 0u ||
+        id > 15u) {
+        return 0;
+    }
+    return (int16_t)((pad[port] >> id) & 1u);
 }
 
 /* got must equal want; prints both. */
@@ -292,7 +322,7 @@ static void compare_frame(const uint8_t *native)
     CHECK_EQ_U64(mismatches, 0);
 }
 
-int main(int argc, char **argv)
+static void card(void)
 {
     struct retro_system_info sys;
     struct retro_system_av_info av;
@@ -306,22 +336,6 @@ int main(int argc, char **argv)
     muhtari_frame io;
     muhtari *m = NULL;
     unsigned run;
-
-    if (argc != 3 || (strcmp(argv[2], "xrgb8888") != 0 && strcmp(argv[2], "rgb565") != 0)) {
-        fprintf(stderr, "usage: muhtari-test-libretro-host <module> xrgb8888|rgb565\n");
-        return 2;
-    }
-    rgb565 = strcmp(argv[2], "rgb565") == 0;
-    if (!module_open(argv[1])) {
-        fprintf(stderr, "cannot load %s\n", argv[1]);
-        return 1;
-    }
-    resolve_all();
-    CHECK_EQ_U64(missing, 0);
-    if (missing != 0) {
-        module_close();
-        CHECK_DONE();
-    }
 
     memset(&cfg, 0, sizeof cfg);
     cfg.size = (uint32_t)sizeof cfg;
@@ -354,7 +368,8 @@ int main(int argc, char **argv)
     p_set_input_poll(on_poll);
     p_set_input_state(input);
 
-    /* Content is refused; only the test card runs in this release. */
+    /* Bytes that are no cartridge image are refused, and set no pixel
+       format. */
     memset(&dummy, 0, sizeof dummy);
     dummy.data = dummy_bytes;
     dummy.size = sizeof dummy_bytes;
@@ -414,7 +429,160 @@ int main(int argc, char **argv)
 
     p_unload_game();
     p_deinit();
-    module_close();
     muhtari_destroy(m);
+}
+
+/* ---- content cases ---- */
+
+/* Where the input cartridge keeps the offset of the entry last written, as
+   an index into system RAM ($2041), and the order of an entry's bytes
+   (tests/input/test_input.c). */
+#define LAST_ENTRY 0x0841u
+enum { E_SWCHA, E_SWCHB, E_INPT0, E_INPT1, E_INPT2, E_INPT3, E_INPT4, E_INPT5 };
+
+static unsigned char *files[2];
+static size_t file_sizes[2];
+
+/* Reads path into files[slot]; 0 on failure. */
+static int read_file(const char *path, int slot)
+{
+    FILE *f = fopen(path, "rb");
+    long n;
+    if (f == NULL || fseek(f, 0, SEEK_END) != 0 || (n = ftell(f)) <= 0 ||
+        fseek(f, 0, SEEK_SET) != 0) {
+        fprintf(stderr, "cannot read %s\n", path);
+        if (f != NULL) {
+            (void)fclose(f);
+        }
+        return 0;
+    }
+    files[slot] = (unsigned char *)malloc((size_t)n);
+    file_sizes[slot] = (size_t)n;
+    if (files[slot] == NULL || fread(files[slot], 1u, (size_t)n, f) != (size_t)n) {
+        fprintf(stderr, "cannot read %s\n", path);
+        (void)fclose(f);
+        return 0;
+    }
+    (void)fclose(f);
+    return 1;
+}
+
+/* Starts the core as a frontend does and loads files[slot]. */
+static void start(int slot)
+{
+    struct retro_game_info game;
+    memset(&game, 0, sizeof game);
+    game.data = files[slot];
+    game.size = file_sizes[slot];
+    p_set_environment(env);
+    p_init();
+    p_set_video_refresh(video);
+    p_set_audio_sample(sample);
+    p_set_audio_sample_batch(batch);
+    p_set_input_poll(on_poll);
+    p_set_input_state(input);
+    CHECK_EQ_U64(p_load_game(&game), 1);
+}
+
+static void stop(void)
+{
+    p_unload_game();
+    p_deinit();
+}
+
+static void run_frames(unsigned n)
+{
+    while (n-- > 0u) {
+        p_run();
+    }
+}
+
+/* The entry the cartridge wrote last, read through the memory interface. */
+static const uint8_t *last_entry(void)
+{
+    static const uint8_t none[8] = {0};
+    const uint8_t *ram = (const uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SYSTEM_RAM), 4096u);
+    if (ram == NULL) {
+        check_failures++;
+        return none;
+    }
+    return ram + ram[LAST_ENTRY];
+}
+
+/* Port 1's and port 2's Up reach SWCHA's bit 4 and bit 0, pulled to 0
+   while held (docs/hardware/controllers.md). */
+static void case_input(void)
+{
+    start(0);
+    run_frames(3u);
+    CHECK_EQ_HEX(last_entry()[E_SWCHA], 0xFFu);
+    pad[0] = 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+    run_frames(3u);
+    CHECK_EQ_HEX(last_entry()[E_SWCHA], 0xEFu);
+    pad[0] = 0u;
+    pad[1] = 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+    run_frames(3u);
+    CHECK_EQ_HEX(last_entry()[E_SWCHA], 0xFEu);
+    pad[1] = 0u;
+    stop();
+}
+
+int main(int argc, char **argv)
+{
+    static const struct {
+        const char *name;
+        void (*run)(void);
+        int files;
+    } cases[] = {
+        {"input", case_input, 1},
+    };
+    size_t i;
+    int found = 0;
+
+    if (argc < 3) {
+        fprintf(stderr,
+                "usage: muhtari-test-libretro-host <module> xrgb8888|rgb565|<case> <file>...\n");
+        return 2;
+    }
+    if (!module_open(argv[1])) {
+        fprintf(stderr, "cannot load %s\n", argv[1]);
+        return 1;
+    }
+    resolve_all();
+    CHECK_EQ_U64(missing, 0);
+    if (missing != 0) {
+        module_close();
+        CHECK_DONE();
+    }
+    if (argc == 3 && (strcmp(argv[2], "xrgb8888") == 0 || strcmp(argv[2], "rgb565") == 0)) {
+        rgb565 = strcmp(argv[2], "rgb565") == 0;
+        card();
+        found = 1;
+    }
+    for (i = 0; !found && i < sizeof cases / sizeof cases[0]; i++) {
+        if (strcmp(argv[2], cases[i].name) == 0) {
+            int f;
+            found = 1;
+            if (argc != 3 + cases[i].files) {
+                fprintf(stderr, "%s needs %d file(s)\n", cases[i].name, cases[i].files);
+                return 2;
+            }
+            for (f = 0; f < cases[i].files; f++) {
+                if (!read_file(argv[3 + f], f)) {
+                    return 1;
+                }
+            }
+            cases[i].run();
+        }
+    }
+    if (!found) {
+        fprintf(stderr, "unknown case %s\n", argv[2]);
+        module_close();
+        return 2;
+    }
+    free(files[0]);
+    free(files[1]);
+    module_close();
     CHECK_DONE();
 }
