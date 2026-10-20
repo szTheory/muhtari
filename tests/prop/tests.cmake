@@ -22,6 +22,6 @@ muhtari_warnings(muhtari-test-prop)
 # the next VBLANK start, or a frame that depends on input set and replaced.
 foreach(prop IN ITEMS split_run peek_pure instances_isolated input_at_vblank)
   muhtari_add_test(NAME prop.${prop} COMMAND muhtari-test-prop ${prop} ${MUHTARI_BUILT_DIR}
-    LABELS portable prop TIMEOUT 60)  # provisional, phase 3
+    LABELS portable prop TIMEOUT 39)  # 2 x 19.03 s, nightly prop 190.28 s / 10, slowest of 19 runs, run 39381236115
   set_tests_properties(prop.${prop} PROPERTIES FIXTURES_REQUIRED "built_simple;built_eightysix")
 endforeach()

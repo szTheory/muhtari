@@ -18,18 +18,18 @@ muhtari_warnings(muhtari-test-input)
 foreach(input_case IN ITEMS directions proline_two_button proline_one_button joystick_fire
     ctlswb_no_swchb_write tia_en_disables_two_button switches unplugged pa7_edge
     lag_even_frames lag_dma_and_peek)
-  # provisional, phase 3
+  # 2 x 0.20 s, macOS x64, slowest of 18 runs, run 39382016958
   muhtari_add_test(NAME input.${input_case} COMMAND muhtari-test-input ${input_case}
-    LABELS input portable TIMEOUT 10)
+    LABELS input portable TIMEOUT 1)
 endforeach()
 
 # The cartridge as files, for the runner's movie tests (tests/runner): the
 # program reading every frame, and the variant reading only on even ones.
 set(input_cart_dir ${PROJECT_BINARY_DIR}/tests/input-carts)
 file(MAKE_DIRECTORY ${input_cart_dir})
-# provisional, phase 3
+# 2 x 0.14 s, Windows arm64, slowest of 17 runs, run 39368351340
 muhtari_add_test(NAME input.cart_files
   COMMAND muhtari-test-input --write-cart ${input_cart_dir}/input.a78
     --write-cart ${input_cart_dir}/input-even.a78 even
-  LABELS input portable TIMEOUT 10)
+  LABELS input portable TIMEOUT 1)
 set_tests_properties(input.cart_files PROPERTIES FIXTURES_SETUP input_carts)

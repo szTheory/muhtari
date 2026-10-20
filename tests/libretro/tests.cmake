@@ -33,7 +33,7 @@ if(TARGET muhtari_libretro)
   set(libretro_input_cart ${PROJECT_BINARY_DIR}/tests/input-carts/input.a78)
   muhtari_add_test(NAME libretro.host.input
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> input ${libretro_input_cart}
-    LABELS libretro portable TIMEOUT 30)  # provisional, phase 3
+    LABELS libretro portable TIMEOUT 1)  # 2 x 0.02 s, Windows x64, slowest of 10 runs, run 39381705491
   set_tests_properties(libretro.host.input PROPERTIES FIXTURES_REQUIRED input_carts)
   # Fault prevented: a control, device, option or Restart that behaves
   # otherwise than the RetroPad layout and options docs/libretro.md lists.
@@ -41,7 +41,7 @@ if(TARGET muhtari_libretro)
     muhtari_add_test(NAME libretro.host.${libretro_case}
       COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> ${libretro_case}
         ${libretro_input_cart}
-      LABELS libretro portable TIMEOUT 30)  # provisional, phase 3
+      LABELS libretro portable TIMEOUT 1)  # 2 x 0.10 s, macOS x64, slowest of 10 runs, run 39382016958
     set_tests_properties(libretro.host.${libretro_case} PROPERTIES FIXTURES_REQUIRED input_carts)
   endforeach()
   # Fault prevented: a BIOS file in the system directory that is ignored,
@@ -53,7 +53,7 @@ if(TARGET muhtari_libretro)
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> bios
       ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78 ${MUHTARI_BUILT_DIR}/openbios/openbios.bin
       ${libretro_system}
-    LABELS libretro portable TIMEOUT 30)  # provisional, phase 3
+    LABELS libretro portable TIMEOUT 8)  # 2 x 3.53 s, macOS x64, slowest of 10 runs, run 39382016958
   set_tests_properties(libretro.host.bios PROPERTIES
     FIXTURES_REQUIRED "built_simple;built_openbios")
   # Fault prevented: an achievement map that points rcheevos at the wrong
@@ -62,7 +62,7 @@ if(TARGET muhtari_libretro)
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> memory_map
       ${libretro_input_cart} ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
       ${PROJECT_SOURCE_DIR}/tests/diag/sg144.a78
-    LABELS libretro portable TIMEOUT 30)  # provisional, phase 3
+    LABELS libretro portable TIMEOUT 1)  # 2 x 0.08 s, Linux x64, slowest of 10 runs, run 39373524239
   set_tests_properties(libretro.host.memory_map PROPERTIES
     FIXTURES_REQUIRED "input_carts;built_doublebuffer")
 
@@ -109,7 +109,7 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.rcheevos
     COMMAND muhtari-test-rcheevos ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78
       ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
-    LABELS libretro portable TIMEOUT 30)  # provisional, phase 3
+    LABELS libretro portable TIMEOUT 1)  # 2 x 0.31 s, macOS x64, slowest of 10 runs, run 39377950148
   set_tests_properties(libretro.rcheevos PROPERTIES
     FIXTURES_REQUIRED "built_simple;built_doublebuffer")
 

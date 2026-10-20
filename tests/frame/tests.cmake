@@ -18,7 +18,7 @@ muhtari_warnings(muhtari-test-frame)
 foreach(frame_case IN ITEMS jam_ends dma_off_ends hold_split_wsync_across_dma
     halt_c1_write_visible maria_wsync_releases_at_lrc mstat_edges handoff_state
     first_frame_partial dma_blocked_flag dli_queued dli_first_zone null_video_same_state)
-  # provisional, phase 3
+  # 2 x 0.12 s, macOS x64, slowest of 31 runs, run 39375738182
   muhtari_add_test(NAME frame.${frame_case} COMMAND muhtari-test-frame ${frame_case}
-    LABELS frame portable TIMEOUT 10)
+    LABELS frame portable TIMEOUT 1)
 endforeach()

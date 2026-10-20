@@ -564,7 +564,7 @@ foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch 
   muhtari_add_test(NAME runner.movie.${case}
     COMMAND ${runner_check} -DCASE=movie.${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
       -P ${CMAKE_CURRENT_LIST_FILE}
-    LABELS runner portable TIMEOUT 10) # provisional, phase 3
+    LABELS runner portable TIMEOUT 1) # 2 x 0.45 s, Windows arm64, slowest of 17 runs, run 39373524239
   set_tests_properties(runner.movie.${case} PROPERTIES FIXTURES_REQUIRED input_carts)
 endforeach()
 
@@ -577,7 +577,7 @@ foreach(case IN ITEMS movie.boot_bios movie.bios_mismatch movie.boot_bios_no_fil
   muhtari_add_test(NAME runner.${case}
     COMMAND ${runner_check} -DCASE=${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
       -DBIOS=${runner_bios} -DROM=${runner_simple} -P ${CMAKE_CURRENT_LIST_FILE}
-    LABELS runner portable TIMEOUT 30) # provisional, phase 3
+    LABELS runner portable TIMEOUT 3) # 2 x 1.10 s, macOS x64, slowest of 13 runs, run 39382016958
   set_tests_properties(runner.${case} PROPERTIES
     FIXTURES_REQUIRED "input_carts;built_openbios;built_simple")
 endforeach()
@@ -607,7 +607,7 @@ muhtari_add_test(NAME runner.boot_to_play
     -DJUDGE=$<TARGET_FILE:muhtari-test-boot-to-play> "-DEMULATOR=${runner_emulator}"
     -DROM=${PROJECT_BINARY_DIR}/built/spacephysics/spacephysics.bas.a78 -DOUT=${runner_play_dir}
     -DF=${runner_play_f} -DH=${runner_play_h} -DL=${runner_play_l} -P ${CMAKE_CURRENT_LIST_DIR}/boot_to_play.cmake
-  LABELS runner portable TIMEOUT 60) # provisional, phase 3
+  LABELS runner portable TIMEOUT 9) # 2 x 4.21 s, macOS x64, slowest of 9 runs, run 39382016958
 set_tests_properties(runner.boot_to_play PROPERTIES
   FIXTURES_REQUIRED built_spacephysics FIXTURES_SETUP boot_to_play)
 # The negative controls judge runner.boot_to_play's recorded runs, so each
@@ -622,7 +622,7 @@ function(runner_play_control name regex)
   muhtari_add_test(NAME runner.boot_to_play.${name}
     COMMAND ${CMAKE_COMMAND} "-DCMD=${cmd}" -DCODE=1 "-DREGEX=${regex}"
       -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-    LABELS runner portable TIMEOUT 10) # provisional, phase 3
+    LABELS runner portable TIMEOUT 1) # 2 x 0.13 s, Windows arm64, slowest of 9 runs, run 39381705491
   set_tests_properties(runner.boot_to_play.${name} PROPERTIES FIXTURES_REQUIRED boot_to_play)
 endfunction()
 set(runner_play ${runner_play_dir} ${runner_play_f} ${runner_play_h})
@@ -636,7 +636,7 @@ runner_play_control(late_mutant "^mask 1:" late ${runner_play} ${runner_play_l} 
 foreach(case IN ITEMS usage.port usage.region_pal usage.boot_bios_no_file)
   muhtari_add_test(NAME runner.${case}
     COMMAND ${runner_check} -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE}
-    LABELS runner portable TIMEOUT 10) # provisional, phase 3
+    LABELS runner portable TIMEOUT 1) # 2 x 0.16 s, macOS x64, slowest of 17 runs, run 39377950148
 endforeach()
 
 # --probe on the images muhtari-test-images writes into the build directory;
@@ -653,7 +653,7 @@ foreach(case IN ITEMS hash pal_refused)
   muhtari_add_test(NAME runner.load.${case}
     COMMAND ${runner_check} -DCASE=load.${case} -DDIR=${runner_probe_dir}
       -P ${CMAKE_CURRENT_LIST_FILE}
-    LABELS runner portable TIMEOUT 10) # provisional, phase 3
+    LABELS runner portable TIMEOUT 1) # 2 x 0.35 s, macOS x64, slowest of 31 runs, run 39377950148
   set_tests_properties(runner.load.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
 endforeach()
 foreach(case IN ITEMS accepted 2600 unsupported_board malformed truncated oversized usage
@@ -777,7 +777,7 @@ muhtari_warnings(muhtari-test-movie)
 # Fault prevented: a malformed or hostile movie runs part way, or is
 # refused at the wrong place, before the whole file is checked.
 muhtari_add_test(NAME runner.movie_parse COMMAND muhtari-test-movie
-  LABELS runner portable TIMEOUT 10) # provisional, phase 3
+  LABELS runner portable TIMEOUT 3) # 2 x 1.10 s, macOS x64, slowest of 18 runs, run 39380651205
 
 # Not portable: it reads docs/runner.md from the source tree.
 muhtari_add_test(NAME runner.exit.table

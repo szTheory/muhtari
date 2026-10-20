@@ -129,12 +129,12 @@ if(MUHTARI_FUZZ)
   muhtari_add_test(NAME fuzz.run
     COMMAND muhtari-fuzz-run ${fuzz_run_corpora}
       -max_total_time=60 -timeout=2 -max_len=49152 -artifact_prefix=crash/
-    LABELS fuzz TIMEOUT 123)  # provisional, phase 3
+    LABELS fuzz TIMEOUT 123)  # 2 x 61.13 s, fuzz job, slowest of 11 runs, run 39381240735
   set_tests_properties(fuzz.run PROPERTIES
     FIXTURES_REQUIRED fuzz_run_seeds WORKING_DIRECTORY ${fuzz_run_work})
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
-    LABELS fuzz TIMEOUT 120)  # provisional, phase 3
+    LABELS fuzz TIMEOUT 1)  # 2 x 0.24 s, fuzz job, slowest of 11 runs, run 39377950042
 else()
   muhtari_add_test(NAME fuzz.regress.loader
     COMMAND muhtari-fuzz-loader-replay --seeds ${fuzz_regress}
@@ -151,7 +151,7 @@ else()
   # The run target's seeds, an empty input among them, and its regressions.
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
-    LABELS fuzz portable TIMEOUT 60)  # provisional, phase 3
+    LABELS fuzz portable TIMEOUT 1)  # 2 x 0.09 s, wasm32 0.26 s / 3, slowest of 8 runs, run 39377950148
   # Fault prevented: the run replay passing having run nothing.
   set(fuzz_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-fuzz-run-replay>)
   string(REPLACE ";" "$<SEMICOLON>" fuzz_cmd "${fuzz_cmd}")

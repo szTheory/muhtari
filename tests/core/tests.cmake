@@ -27,7 +27,7 @@ foreach(case IN ITEMS
     set_input.latched_at_vblank get_memory.spans counters.frames_and_lag
     load.supergame_one_allocation get_memory.cart_ram)
   muhtari_add_test(NAME core.${case} COMMAND muhtari-test-core ${case}
-    LABELS core portable TIMEOUT 10) # provisional, phase 3
+    LABELS core portable TIMEOUT 1) # 2 x 0.06 s, Windows arm64, slowest of 31 runs, run 39375738182
 endforeach()
 muhtari_add_test(NAME core.no_alloc_after_load COMMAND muhtari-test-core no_alloc_after_load
   LABELS perf portable TIMEOUT 10)

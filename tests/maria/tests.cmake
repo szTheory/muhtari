@@ -12,7 +12,7 @@ muhtari_warnings(muhtari-test-maria)
 # One burst per case, one case per argv.
 foreach(maria_case IN ITEMS empty_dl headers widths indirect holes terminators last_line
     abort line_ram stats feature_mask)
-  # provisional, phase 3
+  # 2 x 0.20 s, macOS x64, slowest of 31 runs, run 39351079824
   muhtari_add_test(NAME maria.dma_line.${maria_case} COMMAND muhtari-test-maria ${maria_case}
-    LABELS maria portable TIMEOUT 10)
+    LABELS maria portable TIMEOUT 1)
 endforeach()

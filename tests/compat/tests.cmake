@@ -14,10 +14,10 @@ set(compat_simple_rom ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78)
 set(compat_bios ${MUHTARI_BUILT_DIR}/openbios/openbios.bin)
 muhtari_add_test(NAME title.simple.fast
   COMMAND muhtari-test-predicate ${compat_simple_rom} ${compat_simple_title}
-  LABELS portable title TIMEOUT 60)  # provisional, phase 3
+  LABELS portable title TIMEOUT 2)  # 2 x 0.60 s, macOS x64, slowest of 12 runs, run 39375738182
 muhtari_add_test(NAME title.simple.bios
   COMMAND muhtari-test-predicate ${compat_simple_rom} ${compat_simple_title} --bios ${compat_bios}
-  LABELS portable title TIMEOUT 60)  # provisional, phase 3
+  LABELS portable title TIMEOUT 2)  # 2 x 0.60 s, macOS x64, slowest of 12 runs, run 39375738182
 set_tests_properties(title.simple.fast title.simple.bios PROPERTIES
   FIXTURES_REQUIRED "built_simple;built_openbios")
 
@@ -31,5 +31,5 @@ string(REPLACE ";" "$<SEMICOLON>" compat_cmd "${compat_cmd}")
 muhtari_add_test(NAME title.pin.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${compat_cmd}" -DCODE=1 "-DREGEX=single colour"
     -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS portable title TIMEOUT 30)  # provisional, phase 3
+  LABELS portable title TIMEOUT 1)  # 2 x 0.16 s, macOS x64, slowest of 12 runs, run 39375738182
 set_tests_properties(title.pin.self_test PROPERTIES FIXTURES_REQUIRED probe_images)

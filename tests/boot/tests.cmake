@@ -16,12 +16,12 @@ set(boot_simple ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78)
 foreach(boot_case IN ITEMS handoff_simple splash_skip rejects_cart)
   muhtari_add_test(NAME bios.${boot_case}
     COMMAND muhtari-test-boot ${boot_case} ${boot_bios} ${boot_simple}
-    LABELS bios portable TIMEOUT 30)  # provisional, phase 3
+    LABELS bios portable TIMEOUT 1)  # 2 x 0.40 s, macOS x64, slowest of 14 runs, run 39382016958
   set_tests_properties(bios.${boot_case} PROPERTIES
     FIXTURES_REQUIRED "built_openbios;built_simple")
 endforeach()
 # The window's edges, and a BIOS and cartridge built in memory.
 foreach(boot_case IN ITEMS k_window k_first_fetch)
   muhtari_add_test(NAME bios.${boot_case} COMMAND muhtari-test-boot ${boot_case}
-    LABELS bios portable TIMEOUT 10)  # provisional, phase 3
+    LABELS bios portable TIMEOUT 1)  # 2 x 0.10 s, macOS x64, slowest of 13 runs, run 39373524239
 endforeach()

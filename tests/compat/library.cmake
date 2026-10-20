@@ -101,7 +101,7 @@ foreach(line IN LISTS library_lines)
   muhtari_add_test(NAME ${name}
     COMMAND muhtari-test-predicate ${rom} ${predicate} --bios ${library_bios} --id ${id}
       --result ${library_results}/${name}.csv
-    LABELS library TIMEOUT 60)  # provisional, phase 3
+    LABELS library TIMEOUT 2)  # 2 x 0.88 s, Linux x64, library job, slowest of 7 runs, run 39379798527
   list(APPEND library_tests ${name})
 endforeach()
 set_tests_properties(${library_tests} PROPERTIES FIXTURES_REQUIRED library_rows)
@@ -110,7 +110,7 @@ list(LENGTH library_tests library_count)
 muhtari_add_test(NAME library.results
   COMMAND ${CMAKE_COMMAND} -DDIR=${library_results} -DCOUNT=${library_count}
     -DOUT=${PROJECT_BINARY_DIR}/results.csv -P ${CMAKE_CURRENT_LIST_FILE}
-  LABELS library TIMEOUT 30)  # provisional, phase 3
+  LABELS library TIMEOUT 1)  # 2 x 0.00 s, Linux x64, library job, slowest of 7 runs, run 39381705491
 set_tests_properties(library.results PROPERTIES
   FIXTURES_CLEANUP library_rows FIXTURES_SETUP library_results)
 
@@ -125,7 +125,7 @@ endif()
 muhtari_add_test(NAME library.ratchet
   COMMAND ${CMAKE_COMMAND} -DLEDGER=${compat_ledger} -DRESULTS=${PROJECT_BINARY_DIR}/results.csv
     ${library_base} -P ${library_ratchet}
-  LABELS library TIMEOUT 30)  # provisional, phase 3
+  LABELS library TIMEOUT 1)  # 2 x 0.01 s, Linux x64, library job, slowest of 7 runs, run 39382016958
 set_tests_properties(library.ratchet PROPERTIES FIXTURES_REQUIRED library_results)
 
 # Negative control: results that differ from the ledger in one status must
@@ -139,7 +139,7 @@ muhtari_add_test(NAME library.ratchet.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${library_cmd}" -DCODE=1
     "-DREGEX=${library_first} [^ ]+: ledger [a-z]+ [^,]+, results [a-z]+"
     -P ${CMAKE_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS library TIMEOUT 30)  # provisional, phase 3
+  LABELS library TIMEOUT 1)  # 2 x 0.01 s, Linux x64, library job, slowest of 7 runs, run 39381705491
 
 # The library preset regenerates the compatibility page from the ledger the
 # ratchet has just proven equal to the fresh results, and compares it with
@@ -147,5 +147,5 @@ muhtari_add_test(NAME library.ratchet.self_test
 muhtari_add_test(NAME library.compat_doc
   COMMAND ${CMAKE_COMMAND} -DLEDGER=${compat_ledger} -DOUT=${PROJECT_BINARY_DIR}/compatibility.md
     -DCHECK=${CMAKE_SOURCE_DIR}/docs/compatibility.md -P ${CMAKE_SOURCE_DIR}/tools/compat_doc.cmake
-  LABELS library TIMEOUT 30)  # provisional, phase 3
+  LABELS library TIMEOUT 1)  # 2 x 0.01 s, Linux x64, library job, slowest of 6 runs, run 39380164010
 set_tests_properties(library.compat_doc PROPERTIES DEPENDS library.ratchet)

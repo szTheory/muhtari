@@ -75,7 +75,7 @@ jobs:
   bench:
     name: bench (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 5  # network-bound floor; slowest leg 108 s in 17 runs, run 39197430512
+    timeout-minutes: 5  # network-bound floor; slowest leg 130 s in 39 runs, run 39381242952
     strategy:
       fail-fast: false
       matrix:
@@ -119,7 +119,7 @@ jobs:
   # it would measure wasmtime, not the runner.
   bench-wasm32:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # 2 x 122 s, slowest of 17 runs, run 39197611548
+    timeout-minutes: 5  # 2 x 130 s, slowest of 39 runs, run 39381242952
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -152,7 +152,7 @@ jobs:
   # no cache, so a night proves the pin still resolves.
   vectors-full:
     runs-on: ubuntu-26.04
-    timeout-minutes: 8  # fetch TIMEOUT 220 s (4 min) + 2 x 118 s, slowest of 15 runs, run 39197673159
+    timeout-minutes: 9  # fetch TIMEOUT 220 s (4 min) + 2 x 139 s, slowest of 39 runs, run 39377950042
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -169,7 +169,7 @@ jobs:
   # only from synthetic seeds, so they are uploaded.
   fuzz:
     runs-on: ubuntu-26.04
-    timeout-minutes: 8  # provisional, phase 3
+    timeout-minutes: 5  # network-bound floor; slowest 85 s in 11 runs, run 39381236115
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -193,13 +193,13 @@ jobs:
   # The four property tests at 10,000 cases each, seeded with this run's ID,
   # under the names a pull request runs at 100 from a fixed seed. A failure
   # prints the seed and case to rerun locally. MUHTARI_TIMEOUT_SCALE 10 gives
-  # each test 600 s; the slowest took 188 s at 10,000 cases, run 39377950042.
+  # each test 390 s; the slowest took 190 s at 10,000 cases, run 39381236115.
   # Report-only: it stays out of report's needs and keeps continue-on-error
   # until it has passed 10 runs on main, then gates with a timeout of twice
   # its slowest run.
   prop:
     runs-on: ubuntu-26.04
-    timeout-minutes: 20  # provisional, phase 3
+    timeout-minutes: 8  # 2 x 211 s, slowest of 11 runs, run 39381236115
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

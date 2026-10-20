@@ -47,7 +47,7 @@ foreach(built_row IN LISTS built_rows)
     set(built_timeout 5)  # 2 x 2.44 s, macOS x64, slowest of 13 runs, run 39195320937
   else()
     set(fixtures built_${name})
-    set(built_timeout 10)  # provisional, phase 3
+    set(built_timeout 16)  # 2 x 7.73 s, macOS x64, slowest of 41 runs, run 39357152918
   endif()
   muhtari_add_test(NAME built.${name}
     COMMAND ${CMAKE_COMMAND} ${built_tools} -DNAME=${name} -DOUT=${MUHTARI_BUILT_DIR}
@@ -58,7 +58,7 @@ foreach(built_row IN LISTS built_rows)
     COMMAND ${CMAKE_COMMAND} -DCHAIN=$<TARGET_FILE:muhtari-test-chain>
       "-DEMULATOR=${built_emulator}" -DROM=${MUHTARI_BUILT_DIR}/${name}/${bas}.a78
       -DNAME=${name} -DEXPECTED=${built_expected} -P ${CMAKE_CURRENT_LIST_DIR}/frames.cmake
-    LABELS basic portable TIMEOUT 30)  # provisional, phase 3
+    LABELS basic portable TIMEOUT 10)  # 2 x 4.67 s, macOS x64, slowest of 31 runs, run 39362291672
   set_tests_properties(basic.${name} PROPERTIES FIXTURES_REQUIRED built_${name})
 endforeach()
 
@@ -81,7 +81,7 @@ include([==[${CMAKE_CURRENT_LIST_DIR}/frames.cmake]==])
 muhtari_add_test(NAME basic.revision.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${CMAKE_COMMAND}$<SEMICOLON>-P$<SEMICOLON>${built_rev0_script}"
     -DCODE=1 "-DREGEX=behaviour revision" -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS basic portable TIMEOUT 30)  # provisional, phase 3
+  LABELS basic portable TIMEOUT 7)  # 2 x 3.11 s, macOS x64, slowest of 31 runs, run 39356734460
 set_tests_properties(basic.revision.self_test PROPERTIES FIXTURES_REQUIRED built_simple)
 
 # Negative control: one digit of the .a78 digest changed must fail by name.
@@ -102,7 +102,7 @@ muhtari_add_test(NAME built.samples.self_test
 muhtari_add_test(NAME built.openbios
   COMMAND ${CMAKE_COMMAND} ${built_tools} -DASM=${MUHTARI_OPENBIOS_ASM} -DFILL=FF
     -DOUT=${MUHTARI_BUILT_DIR}/openbios/openbios.bin -P ${CMAKE_CURRENT_LIST_DIR}/openbios.cmake
-  LABELS built portable TIMEOUT 60)  # provisional, phase 3
+  LABELS built portable TIMEOUT 1)  # 2 x 0.40 s, Windows arm64, slowest of 16 runs, run 39381266556
 set_tests_properties(built.openbios PROPERTIES FIXTURES_SETUP built_openbios)
 
 # Negative control: a source whose first incbin line occurs twice must fail
@@ -120,14 +120,14 @@ string(REPLACE ";" "$<SEMICOLON>" built_cmd "${built_cmd}")
 muhtari_add_test(NAME built.openbios.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${built_cmd}" -DCODE=1
     "-DREGEX=kiloparsec[.]bl1[^ ]* occurs 2 times" -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS built portable TIMEOUT 10)  # provisional, phase 3
+  LABELS built portable TIMEOUT 1)  # 2 x 0.11 s, Windows arm64, slowest of 16 runs, run 39375738182
 
 # The simple sample through the internal load and the fast-boot hand-off:
 # 120 frames, two instances in step, and frame 120 a real picture
 # (tests/frame/test_frame.c).
 muhtari_add_test(NAME frame.sample_renders
   COMMAND muhtari-test-frame sample_renders ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78
-  LABELS built portable TIMEOUT 20)  # provisional, phase 3
+  LABELS built portable TIMEOUT 2)  # 2 x 0.67 s, macOS x64, slowest of 31 runs, run 39351445117
 set_tests_properties(frame.sample_renders PROPERTIES FIXTURES_REQUIRED built_samples)
 
 # basic.coverage: the samples and our diagnostic ROMs together exercise the
@@ -149,7 +149,7 @@ list(REMOVE_DUPLICATES built_coverage_samples)
 list(TRANSFORM built_coverage_samples REPLACE "^7800basic/" "built_")
 muhtari_add_test(NAME basic.coverage
   COMMAND muhtari-test-coverage ${built_coverage} ${MUHTARI_BUILT_DIR} ${CMAKE_SOURCE_DIR}/tests/diag
-  LABELS basic portable TIMEOUT 60)  # provisional, phase 3
+  LABELS basic portable TIMEOUT 52)  # 2 x 25.77 s, macOS x64, slowest of 19 runs, run 39362291672
 set_tests_properties(basic.coverage PROPERTIES FIXTURES_REQUIRED "${built_coverage_samples}")
 
 # Negative control: coverage.txt plus a claim of kangaroo mode for simple,
@@ -172,5 +172,5 @@ muhtari_add_test(NAME basic.coverage.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${CMAKE_COMMAND}$<SEMICOLON>-P$<SEMICOLON>${built_coverage_script}"
     -DCODE=1 "-DREGEX=7800basic/simple kangaroo: [^:]*FAIL.*exited 1"
     -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS basic portable TIMEOUT 60)  # provisional, phase 3
+  LABELS basic portable TIMEOUT 52)  # 2 x 25.76 s, macOS x64, slowest of 19 runs, run 39362291672
 set_tests_properties(basic.coverage.self_test PROPERTIES FIXTURES_REQUIRED "${built_coverage_samples}")

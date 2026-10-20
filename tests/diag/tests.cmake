@@ -19,22 +19,22 @@ muhtari_warnings(muhtari-test-diag)
 
 muhtari_add_test(NAME diag.dma
   COMMAND muhtari-test-diag ${diag_dir}/dma.a78 ${diag_dir}/expected.csv ${diag_dir}/stats.csv
-  LABELS diag portable TIMEOUT 30)  # provisional, phase 3
+  LABELS diag portable TIMEOUT 1)  # 2 x 0.10 s, macOS x64, slowest of 27 runs, run 39358378619
 muhtari_add_test(NAME diag.cpu
   COMMAND muhtari-test-diag ${diag_dir}/cpu.a78 ${diag_dir}/expected.csv
-  LABELS diag portable TIMEOUT 30)  # provisional, phase 3
+  LABELS diag portable TIMEOUT 1)  # 2 x 0.05 s, Windows x64, slowest of 24 runs, run 39358378619
 muhtari_add_test(NAME diag.dli
   COMMAND muhtari-test-diag ${diag_dir}/dli.a78 ${diag_dir}/expected.csv ${diag_dir}/stats.csv
-  LABELS diag portable TIMEOUT 30)  # provisional, phase 3
+  LABELS diag portable TIMEOUT 1)  # 2 x 0.09 s, macOS x64, slowest of 23 runs, run 39362291672
 muhtari_add_test(NAME diag.modes
   COMMAND muhtari-test-diag ${diag_dir}/modes.a78 ${diag_dir}/expected.csv
-  LABELS diag portable TIMEOUT 30)  # provisional, phase 3
+  LABELS diag portable TIMEOUT 1)  # 2 x 0.04 s, Windows arm64, slowest of 19 runs, run 39382343202
 # The board ROMs: the bytes each board maps (docs/hardware/cartridge.md,
 # The board ROMs).
 foreach(diag_board IN ITEMS linear16 bank6 sg144)
   muhtari_add_test(NAME diag.${diag_board}
     COMMAND muhtari-test-diag ${diag_dir}/${diag_board}.a78 ${diag_dir}/expected.csv
-    LABELS diag portable TIMEOUT 30)  # provisional, phase 3
+    LABELS diag portable TIMEOUT 1)  # 2 x 0.03 s, Windows arm64, slowest of 21 runs, run 39382343202
 endforeach()
 
 # diag.rebuild: every tests/diag/*.s that has a .cfg, and Bruce Clark's
@@ -69,7 +69,7 @@ set(diag_rebuild_script ${diag_out}/rebuild.cmake)
 file(WRITE ${diag_rebuild_script} "${diag_tools}set(OUT [==[${diag_out}/rebuild]==])\n"
   "set(MANIFEST [==[${diag_manifest}]==])\n${diag_rebuild}")
 muhtari_add_test(NAME diag.rebuild COMMAND ${CMAKE_COMMAND} -P ${diag_rebuild_script}
-  LABELS built portable TIMEOUT 30)  # provisional, phase 3
+  LABELS built portable TIMEOUT 22)  # 2 x 10.66 s, macOS x64, slowest of 26 runs, run 39362291672
 
 # Negative control: one digit of dma.a78's digest changed in a copy of the
 # manifest must fail by name.
@@ -94,7 +94,7 @@ muhtari_add_test(NAME diag.rebuild.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${CMAKE_COMMAND}$<SEMICOLON>-P$<SEMICOLON>${diag_wrong_script}"
     -DCODE=1 "-DREGEX=tests/diag/dma\\.a78: SHA-256 drift"
     -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS built portable TIMEOUT 30)  # provisional, phase 3
+  LABELS built portable TIMEOUT 3)  # 2 x 1.09 s, Windows arm64, slowest of 26 runs, run 39363678798
 
 # Negative control: a copy of expected.csv with the first gating value
 # changed must fail on that record. The driver runs from a generated script,
@@ -116,4 +116,4 @@ muhtari_add_test(NAME diag.expected.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${CMAKE_COMMAND}$<SEMICOLON>-P$<SEMICOLON>${diag_expected_script}"
     -DCODE=1 "-DREGEX=dma null: 241 expected 242 .hw. id 1 flags 01 FAIL.*exited 1"
     -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS diag portable TIMEOUT 30)  # provisional, phase 3
+  LABELS diag portable TIMEOUT 1)  # 2 x 0.26 s, macOS x64, slowest of 26 runs, run 39354563718
