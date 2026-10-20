@@ -3,6 +3,10 @@ phase: 03
 review: 03-REVIEW.md
 titles: json
 findings:
+  - id: CR-01
+    severity: critical
+    disposition: open
+    title: "Failed frames send NULL video data to frontends that do not support duplication"
   - id: WR-01
     severity: warning
     disposition: fixed
@@ -43,25 +47,26 @@ findings:
     severity: info
     disposition: open
     title: "The fuzz run target's bound is justified empirically, not structurally"
-open: 5
-total: 10
-recorded: 2026-10-20T15:55:37.859Z
+open: 6
+total: 11
+recorded: 2026-10-20T16:20:09.851Z
 ---
 
 # Phase 03: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 03-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 03-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 03-REVIEW-FIX.md |
-| WR-04 | warning | fixed | 03-REVIEW-FIX.md |
-| WR-05 | warning | fixed | 03-REVIEW-FIX.md |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
-| IN-04 | info | open | - |
-| IN-05 | info | open | - |
+| CR-01 | critical | open | - |
+| WR-01 | warning | fixed | 03-REVIEW-FIX.md (not in the current review) |
+| WR-02 | warning | fixed | 03-REVIEW-FIX.md (not in the current review) |
+| WR-03 | warning | fixed | 03-REVIEW-FIX.md (not in the current review) |
+| WR-04 | warning | fixed | 03-REVIEW-FIX.md (not in the current review) |
+| WR-05 | warning | fixed | 03-REVIEW-FIX.md (not in the current review) |
+| IN-01 | info | open | - (not in the current review) |
+| IN-02 | info | open | - (not in the current review) |
+| IN-03 | info | open | - (not in the current review) |
+| IN-04 | info | open | - (not in the current review) |
+| IN-05 | info | open | - (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
