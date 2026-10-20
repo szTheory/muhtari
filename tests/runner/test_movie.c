@@ -61,7 +61,7 @@ static const bad bads[] = {
 static muhtari_input frames[4];
 
 /* Expects the n bytes at p refused at line:column with message in
-   "<what>, expected <what>". */
+   "<what>, expected <what>", counting frames only. */
 static void refused(const char *name, const uint8_t *p, size_t n, uint32_t line, uint32_t column,
                     const char *message)
 {
@@ -69,8 +69,7 @@ static void refused(const char *name, const uint8_t *p, size_t n, uint32_t line,
     muhtari__movie_error err;
     uint32_t count = 0u;
     memset(&err, 0, sizeof err);
-    int rc = muhtari__movie_parse(p, n, &h, frames, (uint32_t)(sizeof frames / sizeof frames[0]),
-                                  &count, &err);
+    int rc = muhtari__movie_parse(p, n, &h, NULL, 0u, &count, &err);
     char got[160];
     snprintf(got, sizeof got, "%u:%u: %s, expected %s", (unsigned)err.line, (unsigned)err.column,
              err.what != NULL ? err.what : "(none)",
