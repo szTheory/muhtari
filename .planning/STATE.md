@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
-status: Executing phase 4; wave 9 complete; wave 10 next
-stopped_at: Phase 4 wave 9 verified; mapped POKEY conformance complete; wave 10 next
-last_updated: "2026-10-20T23:27:41.773Z"
+status: Executing phase 4; wave 10 complete; wave 11 next
+stopped_at: Phase 4 wave 10 verified; timer IRQ acceptance complete; wave 11 next
+last_updated: "2026-10-20T23:45:17.399Z"
 last_activity: 2026-10-20
-last_activity_desc: Completed wave 9 with mapped POKEY CPU, PCM, DMA, overlap and validated wiring conformance
-state_head: c37a9787f4d3c776f6d119fef8bbe019e7d89e34
+last_activity_desc: Completed wave 10 with wired timer IRQ acceptance, propagation and NMOS timing coverage
+state_head: cf4527df0fd0b45efe7c2ec73aca7957152c96cb
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 73
-  completed_plans: 65
+  completed_plans: 66
   percent: 75
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 
 ## Current Position
 
-Phase: 04 (Sound) — WAVE 9 COMPLETE
-Plan: 10 of 17
-Status: Wave 9 complete; wave 10 next
-Last activity: 2026-10-20 — Mapped POKEY conformance verified; 9/17 plans complete
+Phase: 04 (Sound) — WAVE 10 COMPLETE
+Plan: 11 of 17
+Status: Wave 10 complete; wave 11 next
+Last activity: 2026-10-20 — Timer IRQ acceptance verified; 10/17 plans complete
 
 Progress: [████████░░] 75%
 
@@ -125,6 +125,7 @@ Progress: [████████░░] 75%
 | Phase 04 P07 | 10min | 3 tasks | 7 files |
 | Phase 04 P08 | 7min | 2 tasks | 12 files |
 | Phase 04 P09 | 9min | 2 tasks | 8 files |
+| Phase 04 P10 | 10min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -364,7 +365,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T23:27:41.608Z
-Stopped at: Phase 4 wave 9 verified; mapped POKEY conformance complete; wave 10 next
-Resume file: .planning/phases/04-sound/04-10-PLAN.md
-Next command: `$gsd-execute-phase 4 --wave 10`
+Last session: 2026-10-20T23:45:22.312Z
+Stopped at: Phase 4 wave 10 verified; timer IRQ acceptance complete; wave 11 next
+Resume file: .planning/phases/04-sound/04-11-PLAN.md
+Next command: `$gsd-execute-phase 4 --wave 11`
