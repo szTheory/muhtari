@@ -477,18 +477,26 @@ static int irq_timing(char **args)
                            cases[i].cycles + 7u * cases[i].taken);
         if (cases[i].taken) {
             unsigned n = cases[i].cycles;
-            static const uint16_t addresses[] = {0x201, 0x201, 0x1FD, 0x1FC, 0x1FB, 0xFFFE, 0xFFFF};
-            if (cases[i].op != 0x28u && cases[i].op != 0x40u) {
-                for (unsigned j = 0; j < 7u; j++) {
-                    ok &= expect_value("IRQ bus address", machine.log[n + j].addr, addresses[j]);
-                    ok &= expect_value("IRQ bus direction", machine.log[n + j].kind,
-                                       j >= 2u && j <= 4u ? N65V_KIND_WRITE : N65V_KIND_READ);
-                }
-                ok &= expect_value("IRQ pushed PC high", machine.ram[0x1FD], 2u);
-                ok &= expect_value("IRQ pushed PC low", machine.ram[0x1FC], 1u);
-                ok &= expect_value("IRQ B/U/D/I", machine.ram[0x1FB],
-                                   cases[i].op == 0x78u ? 0x24u : cases[i].p);
+            uint8_t stack = cases[i].op == 0x28u ? 0xFEu : cases[i].op == 0x40u ? 0u : 0xFDu;
+            uint16_t addresses[] = {0x201,
+                                    0x201,
+                                    (uint16_t)(0x100u | stack),
+                                    (uint16_t)(0x100u | (uint8_t)(stack - 1u)),
+                                    (uint16_t)(0x100u | (uint8_t)(stack - 2u)),
+                                    0xFFFE,
+                                    0xFFFF};
+            for (unsigned j = 0; j < 7u; j++) {
+                ok &= expect_value("IRQ bus address", machine.log[n + j].addr, addresses[j]);
+                ok &= expect_value("IRQ bus direction", machine.log[n + j].kind,
+                                   j >= 2u && j <= 4u ? N65V_KIND_WRITE : N65V_KIND_READ);
             }
+            ok &= expect_value("IRQ pushed PC high", machine.log[n + 2u].value, 2u);
+            ok &= expect_value("IRQ pushed PC low", machine.log[n + 3u].value, 1u);
+            uint8_t status = cases[i].op == 0x78u                           ? 0x24u
+                             : cases[i].op == 0x28u || cases[i].op == 0x40u ? cases[i].pulled
+                                                                            : cases[i].p;
+            ok &= expect_value("IRQ B/U/D/I", machine.log[n + 4u].value, status);
+
         } else if (cases[i].op == 0x58u || cases[i].op == 0x28u) {
             muhtari__cpu_step(&machine.m);
             ok &= expect_value("CLI/PLP delayed IRQ", machine.m.cpu.pc, 0x600u);
@@ -541,6 +549,31 @@ static int irq_timing(char **args)
             ok &= expect_value("late NMI return low", machine.ram[0x1F9u], 1u);
         }
     }
+    irq_setup(0x58u, 0x24u);
+    machine.ram[0x201u] = 0x78u;
+    muhtari__cpu_step(&machine.m);
+    muhtari__cpu_step(&machine.m);
+    ok &= expect_value("CLI/SEI pending IRQ", machine.m.cpu.pc, 0x600u);
+    ok &= expect_value("CLI/SEI pushed I set", machine.ram[0x1FBu], 0x24u);
+    irq_setup(0xEAu, 0x24u);
+    machine.irq_until = 2u;
+    muhtari__cpu_step(&machine.m);
+    machine.m.cpu.p = 0x20u;
+    muhtari__cpu_step(&machine.m);
+    ok &= expect_value("revoked masked IRQ leaves no event", machine.m.cpu.pc, 0x202u);
+    irq_setup(0x00u, 0x20u);
+    muhtari__cpu_step(&machine.m);
+    ok &= expect_value("BRK only one entry despite IRQ", machine.log_count, 7u);
+    ok &= expect_value("BRK keeps B set", machine.ram[0x1FBu], 0x30u);
+    ok &= expect_value("BRK return is opcode plus two", machine.ram[0x1FCu], 2u);
+    irq_setup(0x02u, 0x20u);
+    muhtari__cpu_step(&machine.m);
+    ok &= expect_value("JAM ignores IRQ", machine.m.cpu.s, 0xFDu);
+    ok &= expect_value("JAM original bus sequence", machine.log_count, 11u);
+    vector_machine_reset_log(&machine);
+    muhtari__cpu_step(&machine.m);
+    ok &= expect_value("jammed IRQ bounded read", machine.log_count, 1u);
+    ok &= expect_value("jammed IRQ PC unchanged", machine.m.cpu.pc, 0x201u);
     irq_setup(0xEAu, 0x20u);
     machine.ram[0x600u] = 0x40u; /* persistent line retriggers after RTI */
     muhtari__cpu_step(&machine.m);

@@ -45,6 +45,11 @@ static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
 {
     struct muhtari__pokey *p = &m->pokey[chip];
     p->cycle++;
+    /* Enable needs four clocks of setup, disable two (manual section 5.7).
+       IRQEN writes occur after the falling edge, so these histories hold
+       the levels at the three previous falling edges. */
+    uint8_t eligible = (uint8_t)(p->irq_enable[0] & p->irq_enable[1] & p->irq_enable[2] & 7u);
+    unsigned irq_event = 0u;
     unsigned running = (p->skctl & 3u) != 0u;
     /* Chapter5 noise generators: XNOR taps x4+x3+1, x5+x3+1,
        x9+x4+1 or x17+x12+1. History bit0 reaches channel1 first;
@@ -103,7 +108,8 @@ static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
             c->last_fire = tick;
             c->fires++;
             unsigned mask = ch == 0u ? 1u : ch == 1u ? 2u : ch == 3u ? 4u : 0u;
-            p->irqst &= (uint8_t)~(p->irqen & mask);
+            irq_event |= eligible & mask;
+            p->irqst &= (uint8_t)~(p->irqen & eligible & mask);
             if (ch >= 2u && (p->audctl & (ch == 2u ? 4u : 2u)) != 0u) {
                 p->hp_capture[ch - 2u] = p->channel[ch - 2u].output;
                 p->hp_delay[ch - 2u] = 3u;
@@ -136,6 +142,13 @@ static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
             }
         }
     }
+    /* An event already propagating survives IRQEN acknowledgment.
+       CPU synchronization counts unheld cycles in the bus, not these
+       free-running chip clocks (manual section 5.7; hardware/pokey.md). */
+    p->irq_signal = (uint8_t)(irq_event != 0u || (p->irqen & (uint8_t)~p->irqst & 7u) != 0u);
+    p->irq_enable[2] = p->irq_enable[1];
+    p->irq_enable[1] = p->irq_enable[0];
+    p->irq_enable[0] = p->irqen;
     if (p->resync[0] == p->cycle || p->resync[1] == p->cycle) {
         for (unsigned i = 0u; i < 2u; i++) {
             if (p->resync[i] == p->cycle)

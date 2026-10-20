@@ -206,3 +206,40 @@ selects the fixed $0440 slot even when it is the only declared chip. Ignored
 v4 data and v3 reserve fields cannot assert the line. `core.audio.silence`
 executes a generated timer cartridge through handler acknowledgment and
 continued public PCM, with unwired and rejected-header controls.
+
+Timers 1/2/4 use IRQST bits 0/1/2, active low; timer 3 has no IRQ. Disabled
+sources lose their events, and unsupported serial/keyboard status stays high.
+IRQST reads do not acknowledge. Clearing an IRQEN bit immediately resets
+its status; enabling it does not restore a lost event. Timer and status
+logic continues while muted, in INIT for direct-clock timers, and during
+RDY/HALT holds. Base timers remain stopped in INIT as described above.
+
+The January 2, 2026 manual section 5.7 requires four clocks of setup when
+enabling a source and two when disabling it. A fixed three-clock enable
+history at falling edges enforces these boundaries, since register writes
+follow that edge. An event with enough setup can already be propagating
+when IRQEN is cleared one clock before it; it can still reach the CPU even
+with IRQST reset. The bus publishes the delayed line, rather than deriving
+it afresh from IRQST, so acknowledgment cannot revoke a sampled CPU decision.
+
+The adopted propagation is two unheld CPU cycles from signaled status to
+the poll-visible line. The CPU then completes its final instruction cycle
+before starting entry. This chooses the manual's common three-cycle case;
+the manual reports two-cycle cases and temperature/system variation too.
+Holds advance the chip with real clock edges but freeze CPU synchronization;
+only completed unheld bus accesses shift the line pipeline. They also postpone
+the CPU poll until its bus access completes. This deterministic digital convention
+does not model analog setup/hold or machine-dependent metastability.
+No IRQ deadline scheduler is needed: the bus already delivers every actual
+half edge, including every held clock, before it publishes the line.
+
+`sally.irq` checks all timer sources, disabled peripheral bits, enable at
+T4 versus T5 for a T8 event, disable at T6/T7/T8, acknowledgment propagation,
+INIT, muted operation, held clocks and both physical wiring identities.
+`cpu.irq.timing` checks concrete stack/vector accesses, sampled-I, branch
+polls, deciding/final and held cycles, persistent RTI and NMI overlap.
+The generated cartridge cases in `core.audio.silence` cover all three
+sources on primary, lone secondary and both dual-chip identities, with
+v3/unwired/invalid-v4 controls. `audio.frames` exercises real timer IRQ
+entry after combined RDY/HALT holds across the frame deadline, preserving
+prefix/tail PCM parity and the existing 20730-tick/139-sample carry bound.

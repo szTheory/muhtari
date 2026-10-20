@@ -271,62 +271,80 @@ static void test_public_audio(void)
     /* A held final instruction plus interrupt entry crosses the horizon.
        Compare the public prefix/tail with an explicitly drained reference;
        both WSYNC-style RDY and a DMA-style HALT window run real bus cycles. */
-    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
-    CHECK_EQ_U64(muhtari_power_cycle(reference), MUHTARI_STATUS_OK);
-    uint64_t end = m->frame_deadline;
-    for (unsigned instance = 0u; instance < 2u; instance++) {
-        muhtari *held = instance == 0u ? m : reference;
-        while (held->bus.ticks < end - 40u) {
-            muhtari__cpu_step(held);
+    for (unsigned interrupt = 0u; interrupt < 2u; interrupt++) {
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_power_cycle(reference), MUHTARI_STATUS_OK);
+        uint64_t end = m->frame_deadline;
+        for (unsigned instance = 0u; instance < 2u; instance++) {
+            muhtari *held = instance == 0u ? m : reference;
+            if (interrupt != 0u) {
+                held->cart.pokey_at[0] = 0x450u;
+                held->cart.irq_mask = 1u;
+                held->synth.pokeys = 1u;
+                muhtari__pokey_write(held, 0u, 8u, 64u, held->bus.ticks);
+            }
+            while (held->bus.ticks < end - 40u) {
+                muhtari__cpu_step(held);
+            }
+            held->ram[0] = 0x6Cu; /* JMP ($1805), also the interrupt handler */
+            held->ram[1] = 0x05u;
+            held->ram[2] = 0x18u;
+            held->ram[5] = 0u;
+            held->ram[6] = 0x18u;
+            held->cpu.pc = 0x1800u;
+            held->cpu.s = 0xFFu;
+            held->cart.rom[CART_BODY - 6u] = 0x00u;
+            held->cart.rom[CART_BODY - 5u] = 0x18u;
+            muhtari__bus_write(held, 0x0002u, 0u); /* real TIA WSYNC */
+            held->bus.rdy_release = end + 400u;
+            CHECK_EQ_U64(muhtari__bus_request_halt(held, end + 28u, end + 450u), 1u);
+            if (interrupt == 0u) {
+                CHECK_EQ_U64(muhtari__bus_raise_nmi(held, end - 4u), 1u);
+            } else {
+                held->cpu.p &= (uint8_t)~4u;
+                held->cart.rom[CART_BODY - 2u] = 0u;
+                held->cart.rom[CART_BODY - 1u] = 0x18u;
+                muhtari__pokey_write(held, 0u, 14u, 1u, held->bus.ticks);
+            }
         }
-        held->ram[0] = 0x4Cu; /* JMP $1800, also the NMI handler */
-        held->ram[1] = 0x00u;
-        held->ram[2] = 0x18u;
-        held->cpu.pc = 0x1800u;
-        held->cpu.s = 0xFFu;
-        held->cart.rom[CART_BODY - 6u] = 0x00u;
-        held->cart.rom[CART_BODY - 5u] = 0x18u;
-        muhtari__bus_write(held, 0x0002u, 0u); /* real TIA WSYNC */
-        held->bus.rdy_release = end + 400u;
-        CHECK_EQ_U64(muhtari__bus_request_halt(held, end + 28u, end + 450u), 1u);
-        CHECK_EQ_U64(muhtari__bus_raise_nmi(held, end - 4u), 1u);
+        while (reference->bus.ticks < end) {
+            muhtari__cpu_step(reference);
+        }
+        muhtari__tia_catch_up(reference, reference->bus.ticks);
+        CHECK_EQ_U64(muhtari__synth_render(reference, end, expected), 54u);
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(io.audio_count, 54u);
+        CHECK(memcmp(actual, expected, 54u * sizeof actual[0]) == 0);
+        CHECK(m->bus.ticks > end);
+        CHECK(m->bus.ticks - end <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
+        CHECK_EQ_U64(m->bus.ticks, reference->bus.ticks);
+        CHECK_EQ_U64(m->bus.phi2, reference->bus.phi2);
+        CHECK_EQ_U64(m->cpu.pc, 0x1800u);
+        CHECK_EQ_U64(m->cpu.s, 0xFCu);
+        CHECK_EQ_U64(m->bus.nmi_phi2, 0u);
+        CHECK(m->synth.pcm_count > 0u || (m->synth.pending != 0u && m->synth.pending_tick >= end));
+        CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_CARRY_SAMPLES);
+        end = m->frame_deadline;
+        while (reference->bus.ticks < end) {
+            muhtari__cpu_step(reference);
+        }
+        muhtari__tia_catch_up(reference, reference->bus.ticks);
+        uint32_t count = muhtari__synth_render(reference, end, expected);
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(io.audio_count, count);
+        CHECK(memcmp(actual, expected, count * sizeof actual[0]) == 0);
     }
-    while (reference->bus.ticks < end) {
-        muhtari__cpu_step(reference);
-    }
-    muhtari__tia_catch_up(reference, reference->bus.ticks);
-    CHECK_EQ_U64(muhtari__synth_render(reference, end, expected), 54u);
-    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
-    CHECK_EQ_U64(io.audio_count, 54u);
-    CHECK(memcmp(actual, expected, 54u * sizeof actual[0]) == 0);
-    CHECK(m->bus.ticks > end);
-    CHECK(m->bus.ticks - end <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
-    CHECK_EQ_U64(m->bus.ticks, reference->bus.ticks);
-    CHECK_EQ_U64(m->bus.phi2, reference->bus.phi2);
-    CHECK_EQ_U64(m->cpu.pc, 0x1800u);
-    CHECK_EQ_U64(m->bus.nmi_phi2, 0u);
-    CHECK(m->synth.pcm_count > 0u || (m->synth.pending != 0u && m->synth.pending_tick >= end));
-    CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_CARRY_SAMPLES);
-    end = m->frame_deadline;
-    while (reference->bus.ticks < end) {
-        muhtari__cpu_step(reference);
-    }
-    muhtari__tia_catch_up(reference, reference->bus.ticks);
-    uint32_t count = muhtari__synth_render(reference, end, expected);
-    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
-    CHECK_EQ_U64(io.audio_count, count);
-    CHECK(memcmp(actual, expected, count * sizeof actual[0]) == 0);
 
     /* JAM must still clock audio and return; no instruction can hang a
        frame or consume beyond the separately derived carry bound. */
     m->cpu.jammed = 1u;
     reference->cpu.jammed = 1u;
-    end = m->frame_deadline;
+    uint64_t end = m->frame_deadline;
     while (reference->bus.ticks < end) {
         muhtari__cpu_step(reference);
     }
     muhtari__tia_catch_up(reference, reference->bus.ticks);
-    count = muhtari__synth_render(reference, end, expected);
+    uint32_t count = muhtari__synth_render(reference, end, expected);
     CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(io.audio_count, count);
     CHECK(memcmp(actual, expected, count * sizeof actual[0]) == 0);

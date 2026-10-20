@@ -875,7 +875,7 @@ static void load_program(muhtari *m, const uint8_t *program, size_t n)
    Altirra manual chapters 3.4 and 5.7; cartridge notes section 1. */
 static void test_cart_irq(void)
 {
-    static const uint8_t program[] = {
+    static const uint8_t base_program[] = {
         0x78,                      /* SEI */
         0xA9, 7,    0x85, 1,       /* lock 7800 */
         0xA9, 64,   0x8D, 0x58, 4, /* AUDCTL: fast timer1 */
@@ -886,48 +886,63 @@ static void test_cart_irq(void)
         0x58, 0xEA,                /* CLI; NOP */
         0x4C, 0x1E, 0xF0           /* JMP self */
     };
-    static const uint8_t handler[] = {
+    static const uint8_t base_handler[] = {
         0xEE, 0, 0x18,          /* INC $1800 */
         0xA9, 0, 0x8D, 0x5E, 4, /* acknowledge */
         0x40                    /* RTI */
     };
-    for (unsigned mode = 0; mode < 4u; mode++) {
-        muhtari *m = make();
-        make_cart(cart, program, sizeof program, 0u);
-        cart[0] = mode == 2u ? 3u : 4u;
-        cart[54] = 0x40u; /* legacy fallback POKEY $450 */
-        cart[67] = 2u;
-        cart[69] = mode == 1u ? 0u : 1u;
-        cart[65] = mode == 3u ? 0xFFu : 0u; /* ignored v4 */
-        memcpy(cart + IMAGES_HEADER + 0x100u, handler, sizeof handler);
-        cart[CART_SIZE - 2u] = 0u;
-        cart[CART_SIZE - 1u] = 0xF1u;
-        muhtari_media media = media_for(cart, sizeof cart);
-        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
-        m->cpu.s = 0xFDu; /* controlled stack for documentary pushes */
-        m->ram[0] = 0u;
-        /* Stop exactly after entry to inspect hardware pushes. */
-        for (unsigned step = 0; step < 200u && m->cpu.pc != 0xF100u; step++)
-            muhtari__cpu_step(m);
-        CHECK_EQ_U64(m->cpu.pc == 0xF100u, mode == 0u);
-        if (mode == 0u) {
-            CHECK_EQ_U64(m->cpu.s, 0xFAu);
-            CHECK_EQ_U64(muhtari__bus_peek(m, 0x1FDu), 0xF0u);
-            CHECK_EQ_U64(muhtari__bus_peek(m, 0x1FCu), 0x1Eu);
-            CHECK_EQ_U64(muhtari__bus_peek(m, 0x1FBu) & 0x34u, 0x20u);
-        }
-        muhtari_frame io;
-        frame_io(&io, video, WIDTH, audio, AUDIO_CAP);
-        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
-        CHECK_EQ_U64(io.audio_count, 54u);
-        CHECK_EQ_U64(muhtari__bus_peek(m, 0x1800u), mode == 0u ? 1u : 0u);
-        int nonzero = 0;
-        for (uint32_t i = 0; i < io.audio_count; i++)
-            nonzero |= audio[i] != 0;
-        CHECK(nonzero);
-        CHECK(m->bus.ticks - m->frame_start <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
-        muhtari_destroy(m);
-    }
+    for (unsigned layout = 0u; layout < 4u; layout++)
+        for (unsigned source = 0u; source < 3u; source++)
+            for (unsigned mode = 0; mode < 4u; mode++) {
+                unsigned chip = layout == 1u || layout == 3u;
+                uint8_t program[sizeof base_program], handler[sizeof base_handler];
+                memcpy(program, base_program, sizeof program);
+                memcpy(handler, base_handler, sizeof handler);
+                program[6] = 0x60u;
+                program[21] = (uint8_t)(1u << source);
+                if (chip != 0u) {
+                    static const unsigned operands[] = {8u, 13u, 18u, 23u, 26u};
+                    for (unsigned i = 0u; i < 5u; i++)
+                        program[operands[i]] -= 16u;
+                    handler[6] -= 16u;
+                }
+                muhtari *m = make();
+                make_cart(cart, program, sizeof program, 0u);
+                cart[0] = mode == 2u ? 3u : 4u;
+                cart[53] = chip != 0u ? 4u : 0u;
+                cart[54] = chip != 0u ? 0u : 0x40u; /* legacy fallback at the selected chip */
+                cart[67] = layout >= 2u ? 3u : chip != 0u ? 1u : 2u;
+                cart[69] = mode == 1u ? 0u : (uint8_t)(1u << chip);
+                cart[65] = mode == 3u ? 0xFFu : 0u; /* ignored v4 */
+                memcpy(cart + IMAGES_HEADER + 0x100u, handler, sizeof handler);
+                cart[CART_SIZE - 2u] = 0u;
+                cart[CART_SIZE - 1u] = 0xF1u;
+                muhtari_media media = media_for(cart, sizeof cart);
+                CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+                m->cpu.s = 0xFDu; /* controlled stack for documentary pushes */
+                m->ram[0] = 0u;
+                /* Stop exactly after entry to inspect hardware pushes. */
+                for (unsigned step = 0; step < 200u && m->cpu.pc != 0xF100u; step++)
+                    muhtari__cpu_step(m);
+                CHECK_EQ_U64(m->cpu.pc == 0xF100u, mode == 0u);
+                if (mode == 0u) {
+                    CHECK_EQ_U64(m->cpu.s, 0xFAu);
+                    CHECK_EQ_U64(muhtari__bus_peek(m, 0x1FDu), 0xF0u);
+                    CHECK_EQ_U64(muhtari__bus_peek(m, 0x1FCu), 0x1Eu);
+                    CHECK_EQ_U64(muhtari__bus_peek(m, 0x1FBu) & 0x34u, 0x20u);
+                }
+                muhtari_frame io;
+                frame_io(&io, video, WIDTH, audio, AUDIO_CAP);
+                CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(io.audio_count, 54u);
+                CHECK_EQ_U64(muhtari__bus_peek(m, 0x1800u), mode == 0u ? 1u : 0u);
+                int nonzero = 0;
+                for (uint32_t i = 0; i < io.audio_count; i++)
+                    nonzero |= audio[i] != 0;
+                CHECK(nonzero);
+                CHECK(m->bus.ticks - m->frame_start <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
+                muhtari_destroy(m);
+            }
 }
 
 /* A declared cartridge, executed by SALLY, must reach the public PCM.

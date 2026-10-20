@@ -29,7 +29,9 @@ static uint8_t fetch(muhtari *m)
     return v;
 }
 
-/* The poll mark. An NMI is taken after an instruction when its edge was
+/* The poll mark samples the wired IRQ level with I now, before a final
+   CLI/SEI/PLP changes it (Altirra manual section 3.4; hardware/sally.md, IRQ).
+   An NMI is taken after an instruction when its edge was
    latched at or before the phi2 count at which the instruction's deciding
    cycle completed; for most instructions that is cycle N - 1 of N. Every
    instruction but JAM stores the mark once, right after that cycle's bus
@@ -513,9 +515,8 @@ static void stack_dummy(muhtari *m)
    (docs/hardware/sally.md, NMI). */
 static void branch(muhtari *m, int cond)
 {
-    poll_mark(m);
-    uint64_t opcode_done = m->cpu.poll_phi2;
-    uint8_t opcode_irq = m->cpu.irq_sampled;
+    uint64_t opcode_done = m->bus.phi2;
+    uint8_t opcode_irq = (uint8_t)(m->bus.irq_level != 0u && (m->cpu.p & FLAG_I) == 0u);
     uint8_t off = fetch(m);
     if (!cond) {
         m->cpu.poll_phi2 = opcode_done;
@@ -603,8 +604,8 @@ static int nmi_due(const muhtari *m)
     return m->bus.nmi_phi2 != 0u && m->bus.nmi_phi2 <= m->cpu.poll_phi2;
 }
 
-/* The NMI entry, seven cycles: two dummy reads at PC, PCH, PCL and P pushed
-   with bit 4 clear and bit 5 set, I set, then PC from 0xFFFA/0xFFFB. The edge
+/* Shared IRQ/NMI entry, seven cycles: two dummy reads at PC, PCH, PCL and P pushed
+   with bit 4 clear and bit 5 set, I set, then the selected vector. An NMI edge
    is consumed before the first cycle, and the entry stores no poll mark, so
    the handler's first instruction always runs and an edge latched during the
    entry waits for the next poll (docs/hardware/sally.md, NMI). */

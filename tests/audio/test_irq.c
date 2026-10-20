@@ -120,10 +120,30 @@ static void wired_and_held(void)
             m->bus.rdy_release = 40u;
             cycles(m, 1u);
             CHECK_EQ_U64(m->bus.phi2, 11u);
+            CHECK_EQ_U64(m->bus.irq_level, 0u); /* held clocks do not synchronize CPU */
+            cycles(m, 2u);
             CHECK_EQ_U64(m->bus.irq_level, (wiring & (1u << chip)) != 0u);
             CHECK_EQ_U64(m->pokey[chip].irqst, 254u);
         }
     }
+}
+
+static void shared_line(void)
+{
+    muhtari *m = fresh(0u, 3u);
+    muhtari__pokey_write(m, 1u, 8u, 64u, 0u);
+    write_enable(m, 0u, 1u);
+    write_enable(m, 1u, 1u);
+    cycles(m, 10u);
+    CHECK_EQ_U64(m->bus.irq_level, 1u);
+    write_enable(m, 0u, 0u);
+    cycles(m, 3u);
+    CHECK_EQ_U64(m->bus.irq_level, 1u);
+    CHECK_EQ_U64(m->pokey[0].irqst, 255u);
+    CHECK_EQ_U64(m->pokey[1].irqst, 254u);
+    write_enable(m, 1u, 0u);
+    cycles(m, 3u);
+    CHECK_EQ_U64(m->bus.irq_level, 0u);
 }
 
 int main(void)
@@ -131,5 +151,6 @@ int main(void)
     timer_sources();
     enable_edges();
     wired_and_held();
+    shared_line();
     CHECK_DONE();
 }

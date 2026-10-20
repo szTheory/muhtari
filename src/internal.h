@@ -89,6 +89,7 @@ struct muhtari__pokey {
     uint16_t prescale28, prescale114;
     uint8_t audctl, skctl, irqen, irqst, initialized;
     uint8_t hp_delay[2], hp_capture[2];
+    uint8_t irq_enable[3], irq_signal; /* section 5.7 propagation, pokey.md */
     struct muhtari__pokey_channel channel[4];
 };
 void muhtari__pokey_reset(muhtari *m, unsigned chip);
@@ -165,6 +166,7 @@ struct muhtari__bus {
     uint8_t nmi_pending;
     uint8_t cycle_len;
     uint8_t sync;
+    uint8_t irq_pipe;  /* synchronization advances on unheld CPU cycles */
     uint8_t irq_level; /* effective wired cartridge level at completed cycle */
 };
 
