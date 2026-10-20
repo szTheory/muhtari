@@ -44,19 +44,30 @@ Licence status of the main T3 sources: MiSTer `rtl/TIA.sv`, `rtl/top.sv`, `rtl/c
 
 | AUDC | Output (AUDF = 0, unit = audio clock) | Period | Ones | Agreement with the Fries-derived guide [AUD.16] |
 |---|---|---|---|---|
-| 0, 11 | constant high once the register fills (from zero: 4 steps for 0, 10 for 11); AUDV writes then give 4-bit PCM | 1 | 1 | yes |
+| 0, 11 | constant high once the register fills (from zero: 4 steps for 0, 12 for 11); AUDV writes then give 4-bit PCM | 1 | 1 | yes |
 | 1 | poly4 | 15 | 8 | yes, opposite polarity |
 | 2 / 3 | poly4 gated by div 31 / by poly5 | 465 | 248 | period yes; patterns unconfirmed |
 | 4, 5 | div 2 | 2 | 1 | yes |
-| 6, 10 | div 31 (10 = complement of 6, same sound) | 31 | 13 / 18 | yes |
-| 7, 9 | poly5 (7 = complement of 9, same sound) | 31 | 15 / 16 | yes |
+| 6, 10 | div 31; state-dependent duty in 6 | 31 | 18 / 18 from zero | period yes; complement depends on state |
+| 7, 9 | poly5; state-dependent duty in 7 | 31 | 16 / 16 from zero | period yes; complement depends on state |
 | 8 | poly9 (both registers chained) | 511 | 256 | yes |
 | 12, 13 | div 6 | 6 | 3 | yes |
-| 14 | div 93: high 44, low 49 | 93 | 44 | **no**: the guide holds AUDC 6's pattern ×3 (39 ones) |
-| 15 | poly5 with div 3 | 93 | 46 | **no**: the guide holds poly5 ×3 (48 ones) |
+| 14 | div 93: high 49, low 44 from zero | 93 | 49 | **no**: state-dependent duty, not a held mode6 pattern |
+| 15 | poly5 with div 3 | 93 | 47 | **no**: state-dependent duty, not a held poly5 pattern |
+
+The adopted functional model graduates to [TIA sound](../../docs/hardware/tia.md).
+The 2026-10-20 [reconciliation](../phases/04-sound/04-03-RECONCILIATION.md)
+derives the original Atari TIA-1A revision E sheet4 equations and independently
+checks8192 mode/state transitions and every joint-state orbit. For N=P=0 it
+corrects the earlier6/7/14/15 counts to18/16/49/47 and mode11 fill to12.
+N=21/P=0 produces13/15/44/46 and fill10; this does not establish the lost
+earlier simulation's initial state. Each disputed mode has two256-start
+basins. Mode10 always has18 ones and mode9 always16; the complement claims
+are therefore conditional. Physical startup and disputed patterns remain
+confidence-qualified adopted behavior, pending later hardware evidence.
 
 Frequency = 31,399.52 / ((AUDF+1) × period) Hz, e.g. AUDC 4 / AUDF 0 = 15,699.8 Hz and AUDC 12 / AUDF 31 = 163.5 Hz. The 7800 TIA pitch equals the 2600's (both 3.58 MHz/114).
-- **AUDV and latency:** channel level = AUDV × output bit, and a write reaches the pin at once (combinational path), so stamp it at the write cycle's end tick. AUDF acts at the next phase A compare; AUDC acts at the next A (noise feedback) and B (pulse feedback), 0–232 ticks later [AUD.01].
+- **AUDV and latency:** channel level = AUDV × output bit, and a write reaches the pin at once (combinational path), stamped at the bus data tick, start+5 on a slow cycle completing at start+6. AUDF acts at the next phase A compare; AUDC acts at the next A (noise feedback and pulse gate) and B (pulse feedback), 0–232 ticks later [AUD.01]. Due phases execute before a same-tick write.
 - **Power-on:** the TIA has no reset pin, so its state is indeterminate. An all-zero state is safe: the NOR feedback escapes the all-zero lock-up (tested). Whether the BIOS leaves TIA audio state behind is unknown; Ninja Golf's title music reportedly depends on BIOS residue [AUD.33] (unverified).
 - **Two-channel mix:** AUD0 (pin 13) and AUD1 (pin 12) are tied together with a 1 kΩ pull-up R24 [AUD.13]. The summed level follows **n/(n+30)**, n = Σ active volumes (0–30). MiSTer's 31-entry table fits that law within 1.8/32,768 (derived from [AUD.02]; the measurement thread [AUD.34] is unverified), and its developers report A/B listening tests matching hardware, including this "rumble at loud volumes" [AUD.30]. Both channels at 15 are therefore only 1.5× one channel at 15.
 - **INPTCTRL:** TIA chip selects come from A7, A12 and MARIA's TIACS decode, not from the INPTCTRL latch [AUD.13]. INPTCTRL decodes the same $00–$1F range, so writes before lock reach both [AUD.31]. MAME forwards every write [AUD.08]; a7800 forwards only when `(INPTCTRL & 3) == 3` [AUD.11], which would also mute 2600 mode.
