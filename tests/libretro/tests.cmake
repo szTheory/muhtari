@@ -8,6 +8,21 @@ muhtari_add_test(NAME libretro.vendored
 
 # The rest needs the built core.
 if(TARGET muhtari_libretro)
+  # Fault prevented: unusable BIOS candidates hiding the next file, or
+  # allocation/I/O/path failures being mistaken for missing firmware.
+  add_executable(muhtari-test-libretro-bios ${CMAKE_CURRENT_LIST_DIR}/bios.c
+    ${PROJECT_SOURCE_DIR}/tests/cart/images.c ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+  target_include_directories(muhtari-test-libretro-bios PRIVATE ${PROJECT_SOURCE_DIR}/libretro
+    ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/runner ${PROJECT_BINARY_DIR}/generated)
+  target_compile_definitions(muhtari-test-libretro-bios PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+  target_link_libraries(muhtari-test-libretro-bios PRIVATE muhtari::muhtari muhtari_host)
+  set_target_properties(muhtari-test-libretro-bios PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-libretro-bios)
+  muhtari_add_test(NAME libretro.bios_failures COMMAND muhtari-test-libretro-bios
+    LABELS libretro portable TIMEOUT 10)
+
   add_executable(muhtari-test-libretro-host ${CMAKE_CURRENT_LIST_DIR}/host.c
     ${PROJECT_SOURCE_DIR}/runner/sha256.c)
   target_include_directories(muhtari-test-libretro-host PRIVATE ${PROJECT_SOURCE_DIR}/libretro

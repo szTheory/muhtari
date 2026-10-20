@@ -8,6 +8,7 @@
  * card; content is loaded through muhtari_load, by the fast boot or through
  * a BIOS file. The adapter copies the content, and the copy lives until the
  * game unloads: the ROM descriptors of the memory map point into it. */
+#include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -552,35 +553,85 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
 
 /* ---- loading ---- */
 
-/* The first BIOS file in the system directory (L850), under the names of
-   libretro's System.dat (HOSTS-AND-INTEGRATION section 1, Firmware), read
-   into a new buffer; NULL when there is none. */
-static uint8_t *lr_read_bios(size_t *size, const char **name)
+/* Try each BIOS in the system directory (L850), under the names of
+   libretro's System.dat (HOSTS-AND-INTEGRATION section 1, Firmware).
+   Unusable files allow the next candidate; allocation or content errors
+   stop the load. Only when no BIOS works do we fall back to fast boot. */
+static muhtari_status lr_load_bios(muhtari_media *media)
 {
     static const char *const names[2] = {"7800 BIOS (U).rom", "7800 BIOS (E).rom"};
     const char *dir = NULL;
     char path[4096];
     unsigned i;
-    if (!env_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, (void *)&dir) || dir == NULL) {
-        return NULL;
+    bool unusable = false;
+    if (!env_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, (void *)&dir)) {
+        dir = NULL;
     }
-    for (i = 0; i < 2u; i++) {
+    for (i = 0; dir != NULL && i < 2u; i++) {
         uint8_t *buf;
         FILE *f;
-        (void)snprintf(path, sizeof path, "%s/%s", dir, names[i]);
+        size_t size;
+        muhtari_status st;
+        int written = snprintf(path, sizeof path, "%s/%s", dir, names[i]);
+        if (written < 0 || (size_t)written >= sizeof path) {
+            LR_LOG(RETRO_LOG_WARN, "muhtari: %s: BIOS path too long\n", names[i]);
+            unusable = true;
+            continue;
+        }
         f = fopen(path, "rb");
         if (f == NULL) {
+            if (errno != ENOENT) {
+                LR_LOG(RETRO_LOG_WARN, "muhtari: %s: cannot open BIOS file\n", names[i]);
+                unusable = true;
+            }
             continue;
         }
         buf = (uint8_t *)malloc(LR_BIOS_MAX + 1u);
-        if (buf != NULL) {
-            *size = fread(buf, 1u, LR_BIOS_MAX + 1u, f);
-            *name = names[i];
+        if (buf == NULL) {
+            (void)fclose(f);
+            lr_message(muhtari__status_text(MUHTARI_STATUS_ERR_NO_MEMORY));
+            return MUHTARI_STATUS_ERR_NO_MEMORY;
         }
+        size = fread(buf, 1u, LR_BIOS_MAX + 1u, f);
+        int read_error = ferror(f);
         (void)fclose(f);
-        return buf;
+        if (read_error) {
+            LR_LOG(RETRO_LOG_WARN, "muhtari: %s: BIOS read error\n", names[i]);
+            free(buf);
+            unusable = true;
+            continue;
+        }
+        media->bios = buf;
+        media->bios_size = size;
+        st = muhtari_load(inst, media);
+        if (st == MUHTARI_STATUS_OK) {
+            muhtari__sha256 sha;
+            uint8_t digest[32];
+            char hex[65];
+            muhtari__sha256_init(&sha);
+            muhtari__sha256_update(&sha, buf, size);
+            muhtari__sha256_final(&sha, digest);
+            muhtari__sha256_hex(digest, hex);
+            LR_LOG(RETRO_LOG_INFO, "muhtari: BIOS %s, SHA-256 %s\n", names[i], hex);
+        }
+        free(buf);
+        media->bios = NULL;
+        media->bios_size = 0u;
+        if (st != MUHTARI_STATUS_ERR_INVALID_BIOS) {
+            return st;
+        }
+        LR_LOG(RETRO_LOG_WARN, "muhtari: %s: %s\n", names[i], muhtari__status_text(st));
+        unusable = true;
     }
-    return NULL;
+    if (unusable) {
+        LR_LOG(RETRO_LOG_WARN, "muhtari: no usable 7800 BIOS file; fast boot\n");
+        lr_message("No usable 7800 BIOS file: fast boot");
+    } else {
+        LR_LOG(RETRO_LOG_WARN, "muhtari: no 7800 BIOS (U).rom or 7800 BIOS (E).rom in the system "
+                               "directory; fast boot\n");
+        lr_message("No 7800 BIOS file: fast boot");
+    }
+    return muhtari_load(inst, media);
 }
 
 /* Loads the content copy into the instance, through a BIOS file when the
@@ -591,9 +642,6 @@ static bool lr_load_content(const struct retro_game_info *game)
 {
     muhtari_media media;
     muhtari_status st;
-    uint8_t *bios = NULL;
-    size_t bios_size = 0u;
-    const char *bios_name = "";
 
     if (game->data == NULL || game->size == 0u || game->size > MUHTARI_IMAGE_SIZE_MAX) {
         LR_LOG(RETRO_LOG_ERROR, "muhtari: no content bytes, or more than %u\n",
@@ -617,34 +665,10 @@ static bool lr_load_content(const struct retro_game_info *game)
         media.image = content;
         media.image_size = content_size;
         if (lr_option_is("muhtari_boot", "bios")) {
-            bios = lr_read_bios(&bios_size, &bios_name);
-            if (bios != NULL) {
-                muhtari__sha256 sha;
-                uint8_t digest[32];
-                char hex[65];
-                muhtari__sha256_init(&sha);
-                muhtari__sha256_update(&sha, bios, bios_size);
-                muhtari__sha256_final(&sha, digest);
-                muhtari__sha256_hex(digest, hex);
-                LR_LOG(RETRO_LOG_INFO, "muhtari: BIOS %s, SHA-256 %s\n", bios_name, hex);
-                media.bios = bios;
-                media.bios_size = bios_size;
-            } else {
-                LR_LOG(RETRO_LOG_WARN,
-                       "muhtari: no 7800 BIOS (U).rom or 7800 BIOS (E).rom in the system "
-                       "directory; fast boot\n");
-                lr_message("No 7800 BIOS file: fast boot");
-            }
-        }
-        st = muhtari_load(inst, &media);
-        if (st == MUHTARI_STATUS_ERR_INVALID_BIOS) {
-            LR_LOG(RETRO_LOG_WARN, "muhtari: %s: %s; fast boot\n", bios_name,
-                   muhtari__status_text(st));
-            media.bios = NULL;
-            media.bios_size = 0u;
+            st = lr_load_bios(&media);
+        } else {
             st = muhtari_load(inst, &media);
         }
-        free(bios);
     }
     if (st != MUHTARI_STATUS_OK) {
         LR_LOG(RETRO_LOG_ERROR, "muhtari: content refused: %s%s%s\n", muhtari__status_text(st),

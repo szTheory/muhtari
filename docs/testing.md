@@ -123,7 +123,7 @@ Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vect
 | `title` | The ledger's title predicates on `simple`, on the fast boot and through OpenBIOS, and the pin writer's refusal of a blank screen ([emulation tests, title](emulation-tests.md#title)). |
 | `library` | The `library` lane: each `pr` ledger row judged afresh, the ratchet and the generated page, run by CI's `library` job ([emulation tests, ledger](emulation-tests.md#ledger); [CI](#ci)). |
 | `bench` | The runner's benchmark report. |
-| `libretro` | The libretro core in an in-process host (content, controls, devices, Restart, BIOS files, options, the memory map), rcheevos' resolver over that map (`libretro.rcheevos`), its `.info` file and its vendored header. |
+| `libretro` | The libretro core in an in-process host (content, controls, devices, Restart, BIOS files, options, the memory map), BIOS file/allocation/path faults (`libretro.bios_failures`), rcheevos' resolver over that map (`libretro.rcheevos`), its `.info` file and its vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
 | `perf` | Allocation-free frames. |
 | `policy` | Rules about the repository and the tests themselves. |

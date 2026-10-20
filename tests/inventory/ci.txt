@@ -468,6 +468,7 @@ input.unplugged	input,portable
 install.consumer	install
 install.consumer.dll_crt	install
 install.stage	install
+libretro.bios_failures	libretro,portable
 libretro.host.bios	libretro,portable
 libretro.host.devices	libretro,portable
 libretro.host.input	libretro,portable

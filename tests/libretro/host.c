@@ -793,8 +793,8 @@ static void case_reset(void)
     stop();
 }
 
-/* Writes files[1] to dir/name. */
-static void put_bios(const char *dir, const char *name)
+/* Writes bytes from files[1] to dir/name. */
+static void put_bios(const char *dir, const char *name, size_t bytes)
 {
     char path[1024];
     FILE *f;
@@ -802,7 +802,7 @@ static void put_bios(const char *dir, const char *name)
     f = fopen(path, "wb");
     CHECK(f != NULL);
     if (f != NULL) {
-        CHECK_EQ_U64(fwrite(files[1], 1u, file_sizes[1], f), file_sizes[1]);
+        CHECK_EQ_U64(fwrite(files[1], 1u, bytes, f), bytes);
         CHECK_EQ_U64(fclose(f), 0);
     }
 }
@@ -886,7 +886,7 @@ static void case_bios(const char *dir)
     hash_frames(fast, BIOS_FRAMES);
     stop();
     for (n = 0; n < 2u; n++) {
-        put_bios(dir, names[n]);
+        put_bios(dir, names[n], file_sizes[1]);
         set_var("muhtari_boot", "bios");
         log_used = 0u;
         log_text[0] = '\0';
@@ -898,7 +898,23 @@ static void case_bios(const char *dir)
         CHECK(strstr(log_text, hex) != NULL);
         CHECK(bios[BIOS_FRAMES - 1u] != fast[BIOS_FRAMES - 1u]);
     }
-    put_bios(dir, names[0]);
+    /* A damaged first file must not hide the usable second file. */
+    put_bios(dir, names[0], 17u);
+    put_bios(dir, names[1], file_sizes[1]);
+    log_used = 0u;
+    log_text[0] = message[0] = '\0';
+    start(0);
+    hash_frames(fallback, BIOS_FRAMES);
+    stop();
+    CHECK(strstr(log_text, "BIOS (U).rom: not a 4 KiB or 16 KiB BIOS image") != NULL);
+    CHECK(strstr(log_text, "BIOS (E).rom, SHA-256") != NULL);
+    CHECK(strstr(log_text, "fast boot") == NULL);
+    CHECK_EQ_U64(message[0], 0u);
+    for (i = 0; i < BIOS_FRAMES; i++) {
+        CHECK_EQ_U64(fallback[i], bios[i]);
+    }
+    drop_bios(dir, names[1]);
+    put_bios(dir, names[0], file_sizes[1]);
     frame_failure();
     drop_bios(dir, names[0]);
     log_used = 0u;

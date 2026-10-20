@@ -58,11 +58,11 @@ A BIOS is optional. With Boot set to BIOS, the core looks in the frontend's syst
 - `7800 BIOS (U).rom`, the NTSC BIOS, 4,096 bytes, then
 - `7800 BIOS (E).rom`, the PAL BIOS, 16,384 bytes,
 
-and boots through the first one it finds, showing the BIOS's own start-up screen before the game. The log names
+and boots through the first usable file, showing the BIOS's own start-up screen before the game. The log names
 the file and its SHA-256, so a user can tell which image ran. Any valid 4 KiB or 16 KiB image is accepted, such
-as OpenBIOS. With neither file present the core boots fast and says so on screen and in the log; a file that is
-not a valid BIOS image is named in the log, and the core boots fast. Fast boot starts the cartridge where the
-console's BIOS hands over to it, with no firmware at all.
+as OpenBIOS. An invalid or unreadable file is named in the log and the next name is tried. With no usable file,
+the core boots fast and says so on screen and in the log. An allocation failure reports an error and refuses the
+load. Fast boot starts the cartridge where the console's BIOS hands over to it, with no firmware at all.
 
 ## Achievements
 
