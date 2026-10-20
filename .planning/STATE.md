@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
 status: executing
-stopped_at: Completed 04-03-PLAN.md; continue existing execution at 04-04
-last_updated: "2026-10-20T20:54:09.147Z"
+stopped_at: Completed 04-04-PLAN.md; continue existing execution at 04-05
+last_updated: "2026-10-20T21:03:53.619Z"
 last_activity: 2026-10-20
-last_activity_desc: Completed TIA feedback and shared epoch plan 04-03
-state_head: 38722095bb7c88cd533efded2ad2056a411e2fb9
+last_activity_desc: Completed public TIA frame audio plan 04-04
+state_head: 303b88c03e9052bc8eb53e9f2ad4d89101b854d0
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 73
-  completed_plans: 59
+  completed_plans: 60
   percent: 75
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 ## Current Position
 
 Phase: 04 (Sound) — EXECUTING
-Plan: 4 of 17
+Plan: 5 of 17
 Status: Ready to execute
-Last activity: 2026-10-20 — Completed TIA feedback and shared epoch plan 04-03
+Last activity: 2026-10-20 — Completed public TIA frame audio plan 04-04
 
 Progress: [████████░░] 75%
 
@@ -119,6 +119,7 @@ Progress: [████████░░] 75%
 | Phase 04 P01 | 11min | 2 tasks | 8 files |
 | Phase 04 P02 | 7min | 2 tasks | 6 files |
 | Phase 04 P03 | 23min | 2 tasks | 13 files |
+| Phase 04 P04 | 6min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -299,6 +300,7 @@ Recent decisions affecting current work:
 - [Phase 04]: Conservative held-access/opcode/interrupt bound is 20730 ticks, giving 139 future PCM samples separately from 801 current-frame samples.
 - [Phase 04]: Production 132-case Q23 matrix passes at fixed M=18361; worst TIA -82.64927 dBc with validated exact-frequency reference, research nearest-bin cross-check -82.10380, worst POKEY-equivalent -94.71708 dBFS; all 132 same-gain aliases rejected.
 - [Phase 04]: Retain primary-schematic TIA recurrence and zero startup: modes6/7/14/15 have18/16/49/47 ones and mode11 fill12; alternate N21/P0 attractors explain previous counts without establishing the lost probe seed.
+- [Phase 04]: Fast boot advances hidden TIA over absolute ticks, anchors the output grid and bus-owned cartridge clock origin at tick108984/phi2zero; BIOS uses the real zero-origin timeline.
 
 ### Pending Todos
 
@@ -349,6 +351,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T20:54:09.004Z
-Stopped at: Completed 04-03-PLAN.md; continue existing execution at 04-04
+Last session: 2026-10-20T21:03:53.475Z
+Stopped at: Completed 04-04-PLAN.md; continue existing execution at 04-05
 Resume file: None
