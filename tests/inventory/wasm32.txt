@@ -340,7 +340,15 @@ docs.api_names	policy
 docs.api_names.self_test	policy
 docs.budgets	policy
 embed.subdirectory	install
+frame.dma_blocked_flag	frame,portable
+frame.dma_off_ends	frame,portable
+frame.first_frame_partial	frame,portable
+frame.halt_c1_write_visible	frame,portable
+frame.handoff_state	frame,portable
+frame.hold_split_wsync_across_dma	frame,portable
 frame.jam_ends	frame,portable
+frame.maria_wsync_releases_at_lrc	frame,portable
+frame.mstat_edges	frame,portable
 fuzz.regress.loader	fuzz,portable
 fuzz.regress.loader.self_test	fuzz,portable
 host.palette	host,portable
