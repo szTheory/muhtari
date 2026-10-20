@@ -403,6 +403,7 @@ cpu.vectors.pin	vectors
 cpu.vectors.reader	portable,vectors
 cpu.vectors.self_test	portable,vectors
 diag.cpu	diag,portable
+diag.dli	diag,portable
 diag.dma	diag,portable
 diag.expected.self_test	diag,portable
 diag.rebuild	built,portable

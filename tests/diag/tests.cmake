@@ -23,6 +23,9 @@ muhtari_add_test(NAME diag.dma
 muhtari_add_test(NAME diag.cpu
   COMMAND muhtari-test-diag ${diag_dir}/cpu.a78 ${diag_dir}/expected.csv
   LABELS diag portable TIMEOUT 30)  # provisional, phase 3
+muhtari_add_test(NAME diag.dli
+  COMMAND muhtari-test-diag ${diag_dir}/dli.a78 ${diag_dir}/expected.csv ${diag_dir}/stats.csv
+  LABELS diag portable TIMEOUT 30)  # provisional, phase 3
 
 # diag.rebuild: every tests/diag/*.s that has a .cfg, and Bruce Clark's
 # decimal test as printed and as its 65C02 control, assembled by the pinned
