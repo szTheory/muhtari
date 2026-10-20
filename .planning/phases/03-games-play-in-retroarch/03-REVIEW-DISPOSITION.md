@@ -5,7 +5,7 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "Failed frames send NULL video data to frontends that do not support duplication"
   - id: WR-01
     severity: warning
@@ -47,16 +47,16 @@ findings:
     severity: info
     disposition: open
     title: "The fuzz run target's bound is justified empirically, not structurally"
-open: 6
+open: 5
 total: 11
-recorded: 2026-10-20T16:20:09.851Z
+recorded: 2026-10-20T16:50:53.949Z
 ---
 
 # Phase 03: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
+| CR-01 | critical | fixed | 03-REVIEW-FIX.md |
 | WR-01 | warning | fixed | 03-REVIEW-FIX.md (not in the current review) |
 | WR-02 | warning | fixed | 03-REVIEW-FIX.md (not in the current review) |
 | WR-03 | warning | fixed | 03-REVIEW-FIX.md (not in the current review) |
