@@ -5,3 +5,4 @@
 # request's base be anything else, or be gone, from the day it is checked
 # through its expiry, which must be at most 60 days away. It is reviewed in the
 # pull request that needs it and removed after that merges.
+7800basic-0.41/pokey title@120=8fed977457666af8e363f6bd4e5f37375e1f457d67156ef326042fc684f1ed9e 2026-11-19 Intentional behavior-revision migration: declared POKEY detection replaces open-bus title with the detected-chip title; replacement predicate passes fast boot and OpenBIOS.
