@@ -145,14 +145,16 @@ jobs:
           cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" $arch && set" |
             ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { "$($Matches[1])=$($Matches[2])" >> $env:GITHUB_ENV } }
       # built.<name> builds 7800basic's samples and OpenBIOS with these
-      # (tests/built/); configure stops when any is missing.
-      - name: Fetch wasmtime, 7800basic and OpenBIOS
+      # (tests/built/), libretro.rcheevos compiles rcheevos' resolver;
+      # configure stops when any is missing.
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
         env:
           WASMTIME: wasmtime-${{ matrix.wasmtime }}
         run: |
           scripts/fetch-pin.sh "$WASMTIME" build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Build, test, package
         run: cmake --workflow --preset ${{ matrix.preset }}
       - name: Every test ran
@@ -196,11 +198,12 @@ jobs:
       # clang-21 is on the image; its sanitizer runtimes may not be.
       - name: Sanitizer runtimes
         run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y libclang-rt-21-dev; }
-      - name: Fetch wasmtime, 7800basic and OpenBIOS
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
         run: |
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - run: cmake --workflow --preset asan
       # The abi and release checks read binary shapes the instrumentation changes.
       - name: Every test ran
@@ -239,11 +242,12 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
-      - name: Fetch wasmtime, 7800basic and OpenBIOS
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
         run: |
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Cross compiler and qemu-user
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - run: cmake --workflow --preset be32
@@ -313,10 +317,10 @@ jobs:
       - name: Same hashes as Linux x64
         run: cmp hashes-linux-x64/hashes.txt build/wasm32/hashes.txt
 
-  # A real frontend shows the same frame the runner hashes: RetroArch from
-  # the pinned DMG runs the built core with no content, and its screenshot,
-  # decoded by sips, equals the runner's frame pixel for pixel. A CI step,
-  # not a CTest, so nothing skips itself off macOS.
+  # A real frontend shows the frames the runner hashes: RetroArch from the
+  # pinned DMG runs the built core with no content and on the dma diagnostic
+  # with an empty system directory; each screenshot, decoded by sips, equals
+  # the runner's frame, whose dma hash is the ledger's. A CI step, not a CTest.
   retroarch:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
@@ -350,17 +354,27 @@ jobs:
           -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info
           -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra" -DFRAMES=5
           "-DSHOT=$PWD/build/frames/shot.png" -P tests/retroarch/run_retroarch.cmake
-      - name: The screenshot equals the runner's frame
+      - name: RetroArch runs the dma diagnostic
+        run: >-
+          cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch
+          -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info
+          -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-dma" -DFRAMES=120 -DROM=tests/diag/dma.a78
+          "-DSHOT=$PWD/build/frames/dma-shot.png" -P tests/retroarch/run_retroarch.cmake
+      - name: The screenshots equal the runner's frames
         working-directory: build/frames
         run: |
           ../runner/bin/muhtari-run --frames 5 --dump-frame 5:runner.png
-          for f in runner shot; do
+          ../runner/bin/muhtari-run --frames 120 --dump-frame 120:dma-runner.png --hash-frame 120 ../../tests/diag/dma.a78 | tee hash.txt
+          grep "^diag/dma,.*,title@120=$(cut -d' ' -f4 hash.txt)," ../../tests/compat/ledger.csv
+          for f in runner shot dma-runner dma-shot; do
             sips --deleteColorManagementProperties "$f.png" > /dev/null
             sips -s format bmp "$f.png" --out "$f.bmp" > /dev/null
           done
           cc -std=c17 -O2 -Wall -Wextra -Werror -o compare ../../tests/retroarch/bmp.c ../../tests/retroarch/compare.c
-          ./compare runner.bmp shot.bmp | tee compare.txt
-          grep -q '^320x242, every pixel equal$' compare.txt
+          for pair in runner:shot dma-runner:dma-shot; do
+            ./compare "${pair%:*}.bmp" "${pair#*:}.bmp" | tee compare.txt
+            grep -q '^320x242, every pixel equal$' compare.txt
+          done
       # Fault prevented: a compare that cannot fail. One byte of pixel (7,3)
       # in a copy of the runner's BMP is inverted, at an offset read from
       # the BMP header; the tool must exit 1 naming exactly that pixel.
@@ -382,7 +396,12 @@ jobs:
           case $out in "first difference at $x,$y: "*) ;; *) exit 1 ;; esac
       - name: RetroArch log
         if: failure()
-        run: cat build/ra/retroarch.log || true
+        run: cat build/ra/retroarch.log build/ra-dma/retroarch.log || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: retroarch-frames
+          path: build/frames/*.png
 
   # Cachegrind instructions per frame of the test card, the pull request's
   # merge commit against its first parent measured twice (docs/testing.md,

@@ -1,9 +1,10 @@
-# Runs the built libretro core in RetroArch, unattended and with no content,
-# and keeps the screenshot RetroArch takes after N frames.
+# Runs the built libretro core in RetroArch, unattended, with no content or
+# with the cartridge ROM names, and keeps the screenshot RetroArch takes
+# after N frames.
 #
 #   cmake -DRETROARCH=<RetroArch.app/Contents/MacOS/RetroArch> -DCORE=<core>
 #         -DINFO=<.info> -DTEMPLATE=<test.cfg.in> -DRA_DIR=<run directory>
-#         -DFRAMES=<N> -DSHOT=<png> -P run_retroarch.cmake
+#         -DFRAMES=<N> -DSHOT=<png> [-DROM=<cartridge>] -P run_retroarch.cmake
 #
 # Fault prevented: a core that a real frontend cannot start, or whose frame
 # there differs from the one the library produces. RetroArch gets a home,
@@ -30,6 +31,10 @@ file(REAL_PATH "${RETROARCH}" retroarch)
 get_filename_component(shot_dir "${SHOT}" DIRECTORY)
 file(MAKE_DIRECTORY "${shot_dir}")
 file(REMOVE "${SHOT}")
+set(content "")
+if(NOT "${ROM}" STREQUAL "")
+  file(REAL_PATH "${ROM}" content)
+endif()
 
 # The macOS app creates first-run directories under its home folder even
 # when every configured path is redirected, so the child gets its own home
@@ -37,7 +42,7 @@ file(REMOVE "${SHOT}")
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E env "HOME=${RA_DIR}/home" "CFFIXED_USER_HOME=${RA_DIR}/home"
     "${retroarch}" --verbose --config "${RA_DIR}/test.cfg" -L "${core}"
-    "--max-frames=${FRAMES}" --max-frames-ss "--max-frames-ss-path=${SHOT}"
+    "--max-frames=${FRAMES}" --max-frames-ss "--max-frames-ss-path=${SHOT}" ${content}
   RESULT_VARIABLE result
   OUTPUT_VARIABLE log
   ERROR_VARIABLE log

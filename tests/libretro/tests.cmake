@@ -63,6 +63,50 @@ if(TARGET muhtari_libretro)
   set_tests_properties(libretro.host.memory_map PROPERTIES
     FIXTURES_REQUIRED "input_carts;built_doublebuffer")
 
+  # rcheevos' resolver over the core's real map (rcheevos v12.1.0, MIT,
+  # fetched by pins.txt, never vendored or shipped). Its three files build
+  # with warnings off, for this target only; the two rhash functions
+  # rc_libretro.c calls are stubbed. libretro.c is compiled into the test with
+  # MUHTARI_LIBRETRO_TEST, which adds the accessor to its instance.
+  # Fault prevented: a map that RetroArch's achievements read wrongly: a
+  # pointer off by a byte, a register with memory, more than rcheevos' 32
+  # regions, or a hole that hides the RAM shadows or the fixed ROM.
+  set(libretro_rc ${PROJECT_SOURCE_DIR}/build/pins/rcheevos)
+  if(NOT EXISTS ${libretro_rc}/src/rc_libretro.c)
+    message(FATAL_ERROR "libretro: libretro.rcheevos needs rcheevos in ${libretro_rc}; fetch it with\n"
+      "  scripts/fetch-pin.sh rcheevos build/pins/rcheevos")
+  endif()
+  set(libretro_rc_stub ${PROJECT_BINARY_DIR}/tests/rc_hash_stub.c)
+  file(WRITE ${libretro_rc_stub} "#include \"rc_hash_internal.h\"\n"
+    "int rc_hash_iterator_error(const rc_hash_iterator_t* iterator, const char* message)\n"
+    "{ (void)iterator; (void)message; return 0; }\n"
+    "int rc_path_compare_extension(const char* path, const char* ext)\n"
+    "{ (void)path; (void)ext; return 0; }\n")
+  add_library(muhtari_test_rcheevos STATIC ${libretro_rc}/src/rc_libretro.c
+    ${libretro_rc}/src/rcheevos/consoleinfo.c ${libretro_rc}/src/rc_compat.c ${libretro_rc_stub})
+  target_include_directories(muhtari_test_rcheevos PRIVATE ${libretro_rc}/include
+    ${libretro_rc}/src ${libretro_rc}/src/rhash ${PROJECT_SOURCE_DIR}/libretro)
+  set_target_properties(muhtari_test_rcheevos PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
+  target_compile_options(muhtari_test_rcheevos PRIVATE $<IF:$<C_COMPILER_ID:MSVC>,/W0,-w>)
+  add_executable(muhtari-test-rcheevos ${CMAKE_CURRENT_LIST_DIR}/rcheevos.c
+    ${PROJECT_SOURCE_DIR}/libretro/libretro.c ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+  target_compile_definitions(muhtari-test-rcheevos PRIVATE MUHTARI_LIBRETRO_TEST)
+  target_include_directories(muhtari-test-rcheevos PRIVATE ${PROJECT_SOURCE_DIR}/libretro
+    ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/runner ${PROJECT_BINARY_DIR}/generated)
+  target_include_directories(muhtari-test-rcheevos SYSTEM PRIVATE ${libretro_rc}/include
+    ${libretro_rc}/src)
+  target_link_libraries(muhtari-test-rcheevos PRIVATE muhtari_test_rcheevos muhtari::muhtari
+    muhtari_host)
+  set_target_properties(muhtari-test-rcheevos PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-rcheevos)
+  muhtari_add_test(NAME libretro.rcheevos
+    COMMAND muhtari-test-rcheevos ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78
+      ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
+    LABELS libretro portable TIMEOUT 30)  # provisional, phase 3
+  set_tests_properties(libretro.rcheevos PROPERTIES
+    FIXTURES_REQUIRED "built_simple;built_doublebuffer")
+
   set(libretro_inventory ${PROJECT_SOURCE_DIR}/tests/inventory/${MUHTARI_INVENTORY}.txt)
   muhtari_add_test(NAME libretro.info_claims
     COMMAND ${CMAKE_COMMAND} -DINFO=${PROJECT_BINARY_DIR}/libretro/muhtari_libretro.info

@@ -43,6 +43,12 @@ retroarch-dmg 1.22.2 https://buildbot.libretro.com/stable/1.22.2/apple/osx/unive
 # against that list.
 sst-6502-v1 2f6980a2d95757486c7bee24355c360e40e2a224 https://github.com/SingleStepTests/65x02.git 22df14296ebc6a02d69648467b52ab23feb4083f97aca1174a77d2902a5bd1e1
 
+# rcheevos v12.1.0 (MIT), the version RetroArch 1.22.2 bundles, at the tag's
+# commit: tests/libretro/tests.cmake compiles its libretro memory resolver into the
+# libretro.rcheevos test only. Never vendored and never shipped. The release has no
+# assets, so the row is GitHub's archive of the commit.
+rcheevos 12.1.0 https://github.com/RetroAchievements/rcheevos/archive/6755915f2bdf6c11c83b3e0e68c4623a39c0dabe.tar.gz c8bb9f66239f1b6c1f66417d26b341ce284ef2475acdc4f6fce0d04ac1678c55
+
 # MAME software lists (CC0-1.0) at one commit: tools/cartdb.cmake reads them to
 # generate src/cartdb.c, and policy.cartdb_generated regenerates it from them.
 mame-a7800-xml dddf4cd1faee https://raw.githubusercontent.com/mamedev/mame/dddf4cd1faeeca6a6dac26ecbc2da2da4242b740/hash/a7800.xml 5343714eedd715f7f1f080f1e283d5ed56e6f6509ea3eff2f8f7c8c53ee066b9

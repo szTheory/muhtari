@@ -808,6 +808,17 @@ void retro_unload_game(void)
     lr_release();
 }
 
+#ifdef MUHTARI_LIBRETRO_TEST
+/* The adapter's instance, for tests/libretro/rcheevos.c, which compiles this
+   file into itself to compare the memory map with the core's own view of
+   the bus. Never in the shipped module. */
+muhtari *muhtari__libretro_instance(void);
+muhtari *muhtari__libretro_instance(void)
+{
+    return inst;
+}
+#endif
+
 /* L7812: 0 is NTSC, the only region this release runs. */
 unsigned retro_get_region(void)
 {

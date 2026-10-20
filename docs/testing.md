@@ -17,12 +17,14 @@ It needs CMake 4.3 or later, Ninja and a C and C++ compiler. The workflow runs f
 4. package the three release zips into `build/ci`;
 5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
-The tests also build 7800basic's samples and OpenBIOS from pinned tools and source, so fetch them first:
+The tests also build 7800basic's samples and OpenBIOS from pinned tools and source, and rcheevos' resolver from
+its pinned source, so fetch them first:
 
 ```sh
 scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # for example wasmtime-aarch64-macos
 scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
 scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+scripts/fetch-pin.sh rcheevos build/pins/rcheevos
 ```
 
 Configure stops with these commands when any is missing; the sample tests are never skipped.
@@ -113,7 +115,7 @@ Five lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vec
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` (`docs/emulation-tests.md`, basic). |
 | `diag` | Our own diagnostic ROMs judged through their mailbox against values derived beforehand, and the core's statistics (`docs/emulation-tests.md`, diag). `diag.rebuild` carries `built`. |
 | `bench` | The runner's benchmark report. |
-| `libretro` | The libretro core in an in-process host, its `.info` file and its vendored header. |
+| `libretro` | The libretro core in an in-process host (content, controls, devices, Restart, BIOS files, options, the memory map), rcheevos' resolver over that map (`libretro.rcheevos`), its `.info` file and its vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
 | `perf` | Allocation-free frames. |
 | `policy` | Rules about the repository and the tests themselves. |
@@ -335,6 +337,11 @@ so it never skips itself off macOS. On `macos-15` it:
 5. runs a negative control: it inverts one byte of pixel (7,3) in a copy of the runner's BMP, and the compare
    must exit 1 and name that pixel first.
 
+Steps 3 and 4 also run on the committed `tests/diag/dma.a78` for 120 frames (`-DROM=`), with an empty system
+directory so the fast boot runs without firmware, and the runner's `--hash-frame 120` must equal the `diag/dma`
+row's pin in `tests/compat/ledger.csv`, so two test cards cannot pass. The frames are kept as the
+`retroarch-frames` artifact. [docs/libretro.md](libretro.md) describes the core the job runs.
+
 `video_gpu_screenshot = "false"` makes RetroArch save the core's own frame at the size the core reports, with no
 scaling or on-screen text. The card is static, so five frames only need the core loaded.
 
@@ -344,8 +351,7 @@ session, the same steps run locally from the job's commands, with `-DRETROARCH` 
 
 **If RetroArch will not start the core without content.** The job relies on RetroArch starting a core that
 reports no-game support when `-L` is given and no content. If it stops doing so, the log printed by
-`run_retroarch.cmake` shows it. Treat that as a blocker for the owner, with the log and the run URL. Every fix,
-such as letting the core accept a content file, changes a settled decision.
+`run_retroarch.cmake` shows it. Treat that as a blocker for the owner, with the log and the run URL.
 
 ## Release archives
 
