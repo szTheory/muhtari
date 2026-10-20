@@ -756,9 +756,9 @@ muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n)
 }
 
 /* A linear board maps its ROM so that it ends at $FFFF; below the ROM's
-   start nothing drives the bus (A7800-CARTRIDGES-AND-PERIPHERALS section
-   2.1). Other boards drive nothing yet. No function-pointer table: the
-   board is a switch, so the core keeps no mutable global. */
+   start nothing drives the bus (A7800-CARTRIDGES-AND-PERIPHERALS,
+   section 2.1). Other boards drive nothing yet. No function-pointer
+   table: the board is a switch, so the core keeps no mutable global. */
 uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
 {
     switch (m->cart.info.board) {

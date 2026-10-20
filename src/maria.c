@@ -28,15 +28,19 @@ _Static_assert(MARIA_TERMINATOR == 4u * MARIA_DL_BYTE, "a terminator is a full 4
 #define MARIA_VBE_LEN (MARIA_PLA_START + MARIA_DLL_ENTRY * MARIA_DL_BYTE - 1u)
 
 /* The registers MARIA's DMA reads, as indexes into reg (A7800-MARIA
-   section 2.4), and CTRL's DMA-side bits: character width in bit 4,
-   kangaroo mode in bit 2 and the read mode in bits 1-0 (section 3). */
+   section 2.4), and CTRL's DMA-side bits: the DMA mode in bits 6-5, on only
+   at 10, character width in bit 4, kangaroo mode in bit 2 and the read mode
+   in bits 1-0 (section 3; modes 00 and 01, test modes, count as off,
+   Choice 3.B). */
 #define MARIA_DPPH 0x0Cu
 #define MARIA_DPPL 0x10u
 #define MARIA_CHARBASE 0x14u
 #define MARIA_CTRL 0x1Cu
+#define MARIA_CTRL_DM 0x60u
 #define MARIA_CTRL_CW 0x10u
 #define MARIA_CTRL_KANGAROO 0x04u
 #define MARIA_CTRL_RM 0x03u
+#define MARIA_DM_ON 0x40u
 
 /* A DLL entry's byte 0: DLI in bit 7, H16 in bit 6, H8 in bit 5 and OFFSET
    in bits 3-0 (A7800-MARIA section 2.1). */
@@ -64,8 +68,9 @@ _Static_assert(MARIA_TERMINATOR == 4u * MARIA_DL_BYTE, "a terminator is a full 4
 /* One DMA read at addr. RAM answers, $1800-$27FF and its page 0 and 1
    mirrors by the rule src/bus.c's ram_index applies. TIA, MARIA and RIOT
    selects are gated off while MARIA drives the bus, so those reads return
-   the floating byte, the previous fetch's, with no side effect; so does
-   cartridge space, which the board does not answer yet (A7800-MARIA
+   the floating byte, the previous fetch's, with no side effect. Cartridge
+   space, from $0400 up outside the RIOT's RAM and system RAM, goes to the
+   board, which answers MARIA as it answers the CPU (A7800-MARIA,
    section 4.7). Every fetch puts its byte on the bus. */
 static uint8_t fetch(muhtari *m, uint16_t addr)
 {
@@ -74,6 +79,8 @@ static uint8_t fetch(muhtari *m, uint16_t addr)
         v = m->ram[(uint16_t)(addr + 0x2000u - MUHTARI__RAM_BASE)];
     } else if (addr >= MUHTARI__RAM_BASE && addr < MUHTARI__RAM_BASE + MUHTARI__RAM_SIZE) {
         v = m->ram[(uint16_t)(addr - MUHTARI__RAM_BASE)];
+    } else if (addr >= 0x0400u && !(addr < 0x0600u && (addr & 0x80u) != 0u)) {
+        v = muhtari__cart_read(m, addr, 1);
     }
     m->bus.open_bus = v;
     return v;
@@ -196,8 +203,8 @@ static int gfx(struct walk *w, uint16_t addr, int hole, uint8_t pal)
 }
 
 /* A direct object: byte i at hi:lo + i plus OFFSET pages, 3 ticks each. A
-   holey byte costs its slot and ends the object (A7800-MARIA sections 2.3,
-   4.2 and 4.4). Returns 0 when the abort cut it short. */
+   holey byte costs its slot and ends the object (A7800-MARIA, section 2.3,
+   section 4.2 and section 4.4). Returns 0 when the abort cut it short. */
 static int direct(struct walk *w, uint16_t base, uint32_t width, uint8_t pal)
 {
     const struct muhtari__maria *ma = &w->m->maria;
@@ -217,8 +224,8 @@ static int direct(struct walk *w, uint16_t base, uint32_t width, uint8_t pal)
 /* An indirect object: map entry i at hi:lo + i with no OFFSET, 3 ticks,
    then the character's 1 or 2 graphics bytes at CHARBASE:c plus OFFSET
    pages, 3 ticks each. A character whose graphics fall in a hole costs its
-   whole slot and ends the object (A7800-MARIA sections 2.3, 4.2 and 4.4).
-   Returns 0 when the abort cut it short. */
+   whole slot and ends the object (A7800-MARIA, section 2.3, section 4.2
+   and section 4.4). Returns 0 when the abort cut it short. */
 static int indirect(struct walk *w, uint16_t base, uint32_t width, uint8_t pal)
 {
     const struct muhtari__maria *ma = &w->m->maria;
@@ -362,4 +369,168 @@ uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t
         ma->stats[line] = *st;
     }
     return end;
+}
+
+/* The registers the CPU reads and writes outside the DMA set: WSYNC, MSTAT
+   with VBLANK in bit 7, and OFFSET, whose writes are ignored (A7800-MARIA
+   section 5). */
+#define MARIA_WSYNC 0x04u
+#define MARIA_MSTAT 0x08u
+#define MARIA_OFFSET 0x18u
+#define MARIA_VBLANK 0x80u
+
+/* The fitted HALT handshake: the PLA starts 6 ticks after /HALT falls
+   (docs/hardware/maria.md, The HALT handshake). */
+#define MARIA_HALT_T0 6u
+
+/* The line events, by index, and the tick in the line of each
+   (A7800-MARIA section 4.1): t 0, LRC, swaps line RAM and is the abort
+   deadline; t 28 requests the line's DMA; t 42 moves MSTAT on lines 16 and
+   258; t 43 runs VBE on line 16. */
+enum maria_event { EV_LRC, EV_DMA, EV_MSTAT, EV_VBE, EV_COUNT };
+static const uint8_t maria_event_t[EV_COUNT] = {0u, MARIA_DMA_REQ_T, 42u, 43u};
+#define MARIA_FIRST_DMA_LINE 17u
+#define MARIA_VBE_LINE 16u
+#define MARIA_VBLANK_LINE 258u
+
+/* Whether the event happens on line (A7800-MARIA section 4.1). */
+static int event_on(uint32_t line, uint32_t ev)
+{
+    switch (ev) {
+    case EV_LRC:
+        return 1;
+    case EV_DMA:
+        return line >= MARIA_FIRST_DMA_LINE && line <= MARIA_VBLANK_LINE;
+    case EV_MSTAT:
+        return line == MARIA_VBE_LINE || line == MARIA_VBLANK_LINE;
+    default:
+        return line == MARIA_VBE_LINE;
+    }
+}
+
+/* Arms the first event after tick t of line, or else the next line's t 0.
+   Line 263 is line 0 of the next frame, whose t 0 moves the origin. */
+static void arm_after(struct muhtari__maria *ma, uint32_t line, uint32_t t)
+{
+    for (uint32_t ev = 0u; ev < EV_COUNT; ev++) {
+        if (maria_event_t[ev] > t && event_on(line, ev)) {
+            ma->event_line = (uint16_t)line;
+            ma->event_index = (uint8_t)ev;
+            return;
+        }
+    }
+    ma->event_line = (uint16_t)(line + 1u);
+    ma->event_index = EV_LRC;
+}
+
+void muhtari__maria_start(muhtari *m)
+{
+    struct muhtari__maria *ma = &m->maria;
+    uint64_t beam = m->bus.ticks - ma->origin;
+    uint32_t line = (uint32_t)(beam / MARIA_LINE_TICKS);
+    uint32_t t = (uint32_t)(beam % MARIA_LINE_TICKS);
+    int vblank = line < MARIA_VBE_LINE || line > MARIA_VBLANK_LINE ||
+                 (line == MARIA_VBE_LINE && t < maria_event_t[EV_MSTAT]) ||
+                 (line == MARIA_VBLANK_LINE && t >= maria_event_t[EV_MSTAT]);
+    ma->mstat = vblank ? MARIA_VBLANK : 0u;
+    arm_after(ma, line, t);
+}
+
+uint64_t muhtari__maria_next_event(const muhtari *m)
+{
+    const struct muhtari__maria *ma = &m->maria;
+    return ma->origin + (uint64_t)ma->event_line * MARIA_LINE_TICKS +
+           maria_event_t[ma->event_index];
+}
+
+/* The line's DMA request at t 28: with CTRL's DMA mode on, HALT from now
+   until the burst's HALTRST; a refusal means no burst this line. With DMA
+   off the line says so. Either way a line with no burst has zero cost. */
+static void request_dma(muhtari *m, uint32_t line, uint64_t tick)
+{
+    struct muhtari__maria *ma = &m->maria;
+    struct muhtari__line_stats *st = &ma->stats[line];
+    if ((ma->reg[MARIA_CTRL] & MARIA_CTRL_DM) == MARIA_DM_ON &&
+        muhtari__bus_request_halt(m, tick, MUHTARI__HALT_UNTIL_MARIA)) {
+        ma->dma_line = (uint16_t)line;
+        ma->dma_lrc = tick - MARIA_DMA_REQ_T + MARIA_LINE_TICKS;
+        return;
+    }
+    st->cost = 0u;
+    st->bytes = 0u;
+    st->headers = 0u;
+    st->objects = 0u;
+    if ((ma->reg[MARIA_CTRL] & MARIA_CTRL_DM) == MARIA_DM_ON) {
+        st->flags = MUHTARI__LINE_DMA_BLOCKED;
+        ma->features |= MUHTARI__FEAT_DMA_BLOCKED;
+    } else {
+        st->flags = MUHTARI__LINE_DMA_OFF;
+    }
+}
+
+void muhtari__maria_event(muhtari *m)
+{
+    struct muhtari__maria *ma = &m->maria;
+    uint64_t tick = muhtari__maria_next_event(m);
+    uint32_t ev = ma->event_index;
+    uint32_t line = ma->event_line;
+    if (line == MUHTARI__LINES_NTSC) {
+        ma->origin += MUHTARI__TICKS_PER_FRAME_NTSC;
+        line = 0u;
+    }
+    switch (ev) {
+    case EV_LRC:
+        ma->write_buf ^= 1u;
+        for (uint32_t c = 0u; c < MUHTARI__LINE_CELLS; c++) {
+            ma->line_ram[ma->write_buf][c] = 0u;
+        }
+        break;
+    case EV_DMA:
+        request_dma(m, line, tick);
+        break;
+    case EV_MSTAT:
+        ma->mstat = line == MARIA_VBLANK_LINE ? MARIA_VBLANK : 0u;
+        break;
+    default:
+        if ((ma->reg[MARIA_CTRL] & MARIA_CTRL_DM) == MARIA_DM_ON) {
+            (void)muhtari__maria_vbe(m, tick);
+        }
+        break;
+    }
+    arm_after(ma, line, maria_event_t[ev]);
+}
+
+uint64_t muhtari__maria_burst(muhtari *m, uint64_t fall)
+{
+    struct muhtari__line_stats st;
+    return muhtari__maria_dma_line(m, fall + MARIA_HALT_T0, m->maria.dma_lrc, m->maria.dma_line,
+                                   &st);
+}
+
+uint8_t muhtari__maria_read(const muhtari *m, uint16_t addr)
+{
+    if ((addr & 0x1Fu) == MARIA_MSTAT) {
+        return (uint8_t)((m->bus.open_bus & (uint8_t)~MARIA_VBLANK) | m->maria.mstat);
+    }
+    return m->bus.open_bus;
+}
+
+/* RDY is MARIA's WSYNC wire-ANDed with the TIA's, so the later release
+   wins (docs/hardware/bus.md, RDY). */
+void muhtari__maria_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick)
+{
+    struct muhtari__maria *ma = &m->maria;
+    uint32_t r = addr & 0x1Fu;
+    if (r == MARIA_WSYNC) {
+        uint64_t lines = (data_tick - ma->origin) / MARIA_LINE_TICKS + 1u;
+        uint64_t release = ma->origin + lines * MARIA_LINE_TICKS;
+        if (m->bus.rdy_release < release) {
+            m->bus.rdy_release = release;
+        }
+        return;
+    }
+    if (r == MARIA_MSTAT || r == MARIA_OFFSET) {
+        return;
+    }
+    ma->reg[r] = v;
 }

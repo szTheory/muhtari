@@ -34,8 +34,9 @@ uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr)
 
 /* A WSYNC write pulls RDY low until the TIA's line wraps: the first tick
    after the write's data at which tick + tia_phase is a multiple of 456
-   (docs/hardware/bus.md, RDY; the edge is fitted). The modulo is unsigned,
-   so no signed 64-bit helper is called. */
+   (docs/hardware/bus.md, RDY; the edge is fitted). RDY is wire-ANDed with
+   MARIA's WSYNC, so a later release already pending stands. The modulo is
+   unsigned, so no signed 64-bit helper is called. */
 void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick)
 {
     if ((addr & 0x3Fu) != TIA_WSYNC) {
@@ -43,5 +44,8 @@ void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick)
     }
     uint64_t next = data_tick + 1u;
     uint64_t into = (next + m->profile.tia_phase) % TIA_LINE_TICKS;
-    m->bus.rdy_release = next + (into == 0u ? 0u : TIA_LINE_TICKS - into);
+    uint64_t release = next + (into == 0u ? 0u : TIA_LINE_TICKS - into);
+    if (m->bus.rdy_release < release) {
+        m->bus.rdy_release = release;
+    }
 }

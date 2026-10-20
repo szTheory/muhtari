@@ -197,8 +197,8 @@ static uint8_t read_after(muhtari *m, uint8_t bus, uint16_t addr)
 
 /* The TIA drives D7-D6 of its collision registers and D7 of CXBLPF and
    INPT0-INPT5, with idle inputs: D7 = 0, except INPT4 and INPT5, whose
-   buttons are up. Every other bit is the open-bus byte. MARIA's addresses
-   return the open-bus byte. */
+   buttons are up. Every other bit is the open-bus byte. MARIA's MSTAT at
+   $28 drives D7 alone, VBLANK, which is set on line 0 at power-on. */
 static int open_bus_write_only(void)
 {
     muhtari *m = fresh(LOCKED_7800);

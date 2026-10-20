@@ -55,6 +55,8 @@ void muhtari__boot_fast(muhtari *m)
 
     m->maria.origin = 0u;
     m->bus.ticks = m->maria.origin + BOOT_TICK;
+    muhtari__maria_start(m);
+    m->bus.next_deadline = 0u; /* recomputed by the first cycle */
     m->cpu.pc = (uint16_t)(muhtari__cart_peek(m, 0xFFFCu) |
                            ((uint16_t)muhtari__cart_peek(m, 0xFFFDu) << 8));
     m->cpu.s = BOOT_SX;

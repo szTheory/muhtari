@@ -52,10 +52,9 @@ struct muhtari__cpu {
    byte on the data bus; inptctrl is INPTCTRL's four bits; halt_gate_writes
    counts unlocked writes in the TIA range, up to 2. rdy_release is the
    tick from which a held read may run, 0 while RDY is high. A HALT request
-   waits in halt_at and halt_until until /HALT falls; halt_lost is then the
-   number of cycles the CPU loses, and halt_cycles counts the cycles run
-   since the fall, through halt_stage. nmi_at is a raised NMI edge not yet
-   latched, while nmi_pending is set. */
+   waits in halt_at and halt_until until /HALT falls at halt_fall, and
+   halt_cycles counts the cycles run since the fall, through halt_stage.
+   nmi_at is a raised NMI edge not yet latched, while nmi_pending is set. */
 struct muhtari__bus {
     uint64_t phi2;
     uint64_t nmi_phi2;
@@ -64,7 +63,7 @@ struct muhtari__bus {
     uint64_t rdy_release;
     uint64_t halt_at;
     uint64_t halt_until;
-    uint64_t halt_lost;
+    uint64_t halt_fall;
     uint64_t nmi_at;
     uint8_t open_bus;
     uint8_t inptctrl;
@@ -180,7 +179,11 @@ struct muhtari__line_stats {
    the zone's last line. line_ram holds two buffers of 160 cells, each cell
    the palette in bits 4-2 and the data pair in bits 1-0; the burst fills
    line_ram[write_buf]. write_mode is the latch only 5-byte headers load.
-   stats is each line's statistics and features the sticky feature mask. */
+   stats is each line's statistics and features the sticky feature mask.
+   The beam is counted from origin, the tick of line 0, t 0 of the current
+   frame: the next line event is event_index of line event_line, and a
+   requested burst is for line dma_line and stops at dma_lrc. mstat is
+   MSTAT's bit 7, VBLANK. */
 struct muhtari__maria {
     uint8_t reg[32];
     uint16_t dll;
@@ -192,7 +195,12 @@ struct muhtari__maria {
     uint8_t line_ram[2][MUHTARI__LINE_CELLS];
     struct muhtari__line_stats stats[MUHTARI__LINES_NTSC];
     uint32_t features;
-    uint64_t origin; /* the tick of line 0, t 0 of the current frame */
+    uint64_t origin;
+    uint64_t dma_lrc;
+    uint16_t event_line;
+    uint16_t dma_line;
+    uint8_t event_index;
+    uint8_t mstat;
 };
 
 /* With content loaded, each muhtari_run_frame runs from frame_start to
@@ -369,12 +377,17 @@ void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v);
 void muhtari__riot_reset(muhtari *m);
 
 /* The entry points MARIA drives (docs/hardware/bus.md, HALT and NMI).
-   request_halt asks for HALT from at_tick until until_tick, and does nothing
-   until the HALT gate has counted two writes. raise_nmi raises an NMI edge
-   at at_tick, and does nothing while MEN = 0. Each takes one at a time: a
-   request while a window is waiting or /HALT is low, or an edge while an
-   earlier one is not yet latched, is ignored and the one in flight stands.
-   Each returns 1 when it takes the request and 0 when it ignores it. */
+   request_halt asks for HALT from at_tick until until_tick; with until_tick
+   MUHTARI__HALT_UNTIL_MARIA the window's end is the HALTRST tick that
+   muhtari__maria_burst returns when the window reaches c2. raise_nmi raises
+   an NMI edge at at_tick, and does nothing while MEN = 0. Each takes one at
+   a time, and the one in flight stands. Each returns 1 when it takes the
+   request and 0 when it ignores it. request_halt returns 0 for one of two
+   reasons: the gate is shut, because it has not yet counted two writes, or
+   a window is already in flight, waiting for /HALT to fall or with /HALT
+   low. MARIA reads a 0 as no burst this line and sets dma_blocked, the
+   line's MUHTARI__LINE_DMA_BLOCKED flag. */
+#define MUHTARI__HALT_UNTIL_MARIA UINT64_MAX
 int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
 int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
 
@@ -382,6 +395,27 @@ int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
    tick t0 it loads the DLL pointer from DPPH and DPPL and reads zone 0's
    entry. Returns the tick at which it ends, t0 + 7. */
 uint64_t muhtari__maria_vbe(muhtari *m, uint64_t t0);
+
+/* MARIA's registers as the CPU sees them (docs/hardware/maria.md,
+   Registers). read returns MSTAT's VBLANK bit over the open-bus byte at $28
+   and the open-bus byte elsewhere. write stores a register; a write to $24,
+   MARIA's WSYNC, whose data reaches MARIA at data_tick, holds RDY low until
+   the next line's t 0. */
+uint8_t muhtari__maria_read(const muhtari *m, uint16_t addr);
+void muhtari__maria_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick);
+
+/* MARIA's line events (docs/hardware/maria.md, Line events). start arms
+   them from the beam at the current tick and sets MSTAT to match; the
+   power-on and the hand-off call it after placing the beam. next_event is
+   the tick of the next one; event fires it and arms the one after. */
+void muhtari__maria_start(muhtari *m);
+uint64_t muhtari__maria_next_event(const muhtari *m);
+void muhtari__maria_event(muhtari *m);
+
+/* The burst the bus runs when MARIA's HALT window reaches c2: T0 is the
+   /HALT fall plus 6, and the return is HALTRST (docs/hardware/maria.md, The
+   HALT handshake). */
+uint64_t muhtari__maria_burst(muhtari *m, uint64_t fall);
 
 /* One line's DMA burst (docs/hardware/maria.md, DMA cost): the PLA starts
    at tick t0, every fetch at its own tick, and a fetch at or after lrc is
@@ -397,7 +431,7 @@ uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t
 void muhtari__cpu_step(muhtari *m);
 
 /* Puts the CPU, the bus, RAM and the RIOT in their power-on state under
-   m->profile. */
+   m->profile, and arms MARIA's line events from the beam at that tick. */
 void muhtari__power_on(muhtari *m);
 
 #endif /* MUHTARI_INTERNAL_H */

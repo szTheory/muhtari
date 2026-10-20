@@ -89,12 +89,13 @@ enum halt_stage {
     HALT_LOW        /* /HALT has fallen; halt_cycles counts c0 and c1 */
 };
 
-/* Recomputes next_deadline from the pending events. While RDY is low or
-   /HALT is low every cycle takes the slow path. */
+/* Recomputes next_deadline from the pending events: MARIA's next line
+   event, a HALT request, an NMI edge. While RDY is low or /HALT is low
+   every cycle takes the slow path. */
 static void rearm(muhtari *m)
 {
     struct muhtari__bus *b = &m->bus;
-    uint64_t d = UINT64_MAX;
+    uint64_t d = muhtari__maria_next_event(m);
     if (b->rdy_release != 0u || b->halt_stage == HALT_LOW) {
         d = 0u;
     }
@@ -118,53 +119,136 @@ static void latch_nmi(muhtari *m, uint64_t index)
     }
 }
 
-/* Runs n whole 4-tick phi2 cycles in which the CPU is held. Each is counted
-   in phi2, so whatever counts phi2 counts through the hold, and a pending
-   NMI edge is latched by the held cycle whose phi2 falls at or after it
-   (docs/hardware/bus.md, RDY and NMI). */
-static void hold(muhtari *m, uint64_t n)
-{
-    struct muhtari__bus *b = &m->bus;
-    if (n == 0u) {
-        return;
-    }
-    if (b->nmi_pending != 0u && b->nmi_at <= b->ticks + n * BUS_FAST_TICKS) {
-        uint64_t j = b->nmi_at > b->ticks ? (b->nmi_at - b->ticks - 1u) / BUS_FAST_TICKS : 0u;
-        latch_nmi(m, b->phi2 + 1u + j);
-    }
-    b->ticks += n * BUS_FAST_TICKS;
-    b->phi2 += n;
-}
-
 /* Whole 4-tick cycles from tick from until tick until, rounded up. */
 static uint64_t cycles_until(uint64_t from, uint64_t until)
 {
     return until > from ? (until - from + BUS_FAST_TICKS - 1u) / BUS_FAST_TICKS : 0u;
 }
 
-/* The events at or before a cycle's data tick, data ticks after its start:
-   the HALT window, then RDY, which holds a read that starts before its
-   release until a cycle starts at or after it and never holds a write, then
-   the NMI latch (docs/hardware/bus.md, HALT, RDY and NMI). */
-static void events(muhtari *m, int is_read, uint32_t data)
+/* Fires every MARIA line event at or before tick limit, in tick order
+   (docs/hardware/bus.md, Line events). */
+static void maria_events(muhtari *m, uint64_t limit)
+{
+    while (muhtari__maria_next_event(m) <= limit) {
+        muhtari__maria_event(m);
+    }
+}
+
+/* The HALT window at a cycle's start, held or not: /HALT falls at the first
+   boundary at or after the request; c0 and c1 run; c2 is frozen. Returns
+   the whole cycles c2 is frozen for, 0 for any other cycle. A window MARIA
+   asked for ends at the HALTRST of the burst it runs here, at c2, so a
+   write the CPU made in c1 is in memory before the first fetch
+   (docs/hardware/bus.md, HALT). */
+static uint64_t halt_cycle(muhtari *m)
 {
     struct muhtari__bus *b = &m->bus;
+    uint64_t until = b->halt_until;
     if (b->halt_stage == HALT_REQUESTED && b->halt_at <= b->ticks) {
         b->halt_stage = HALT_LOW;
         b->halt_cycles = 0u;
-        b->halt_lost = cycles_until(b->ticks, b->halt_until);
+        b->halt_fall = b->ticks;
+    }
+    if (b->halt_stage != HALT_LOW) {
+        return 0u;
+    }
+    if (b->halt_cycles < HALT_RUN_CYCLES) {
+        b->halt_cycles++;
+        return 0u;
+    }
+    b->halt_stage = HALT_NONE;
+    if (until == MUHTARI__HALT_UNTIL_MARIA) {
+        until = muhtari__maria_burst(m, b->halt_fall);
+    }
+    return cycles_until(b->halt_fall, until);
+}
+
+/* Everything at a cycle's start whose data comes data ticks later: MARIA's
+   line events up to the data tick, then the HALT window. Returns the
+   cycles a frozen c2 is held for. */
+static uint64_t cycle_start(muhtari *m, uint32_t data)
+{
+    maria_events(m, m->bus.ticks + data);
+    return halt_cycle(m);
+}
+
+/* Advances k whole 4-tick held cycles. Each is counted in phi2, so whatever
+   counts phi2 counts through the hold, and a pending NMI edge is latched by
+   the held cycle whose phi2 falls at or after it (docs/hardware/bus.md, RDY
+   and NMI). */
+static void advance(muhtari *m, uint64_t k)
+{
+    struct muhtari__bus *b = &m->bus;
+    if (b->nmi_pending != 0u && b->nmi_at <= b->ticks + k * BUS_FAST_TICKS) {
+        uint64_t j = b->nmi_at > b->ticks ? (b->nmi_at - b->ticks - 1u) / BUS_FAST_TICKS : 0u;
+        latch_nmi(m, b->phi2 + 1u + j);
+    }
+    b->ticks += k * BUS_FAST_TICKS;
+    b->phi2 += k;
+}
+
+/* The held cycles to advance before the next cycle start a pending event
+   needs: MARIA's next line event, due by a held cycle's data tick, or the
+   HALT window's next step. At least 1, at most n. */
+static uint64_t hold_step(const muhtari *m, uint64_t n)
+{
+    const struct muhtari__bus *b = &m->bus;
+    uint64_t k = n;
+    uint64_t e = muhtari__maria_next_event(m);
+    if (e > b->ticks + 2u * BUS_FAST_TICKS) {
+        uint64_t j = cycles_until(b->ticks + BUS_FAST_DATA, e);
+        k = j < k ? j : k;
+    } else {
+        k = 1u;
     }
     if (b->halt_stage == HALT_LOW) {
-        if (b->halt_cycles == HALT_RUN_CYCLES) {
-            b->halt_stage = HALT_NONE;
-            hold(m, b->halt_lost);
-        } else {
-            b->halt_cycles++;
+        k = 1u;
+    } else if (b->halt_stage == HALT_REQUESTED) {
+        uint64_t j = cycles_until(b->ticks, b->halt_at);
+        k = j != 0u && j < k ? j : k;
+    }
+    return k != 0u ? k : 1u;
+}
+
+/* Holds the CPU for n whole 4-tick cycles from the current cycle start,
+   which the caller has already run through cycle_start. The hold stops at
+   every later held cycle start where a line event or the HALT window needs
+   it, so a CPU parked in WSYNC or under HALT still sees each line's t 0,
+   t 28, t 42 and t 43, and the line's burst runs at its own time. A c2
+   frozen inside the hold extends it: the CPU runs on only when RDY and
+   HALT have both released (docs/hardware/bus.md, Line events). */
+static void hold(muhtari *m, uint64_t n)
+{
+    while (n > 0u) {
+        uint64_t k = hold_step(m, n);
+        advance(m, k);
+        n -= k;
+        if (n > 0u) {
+            uint64_t frozen = cycle_start(m, BUS_FAST_DATA);
+            n = frozen > n ? frozen : n;
         }
     }
-    if (is_read && b->rdy_release != 0u) {
-        hold(m, cycles_until(b->ticks, b->rdy_release));
-        b->rdy_release = 0u;
+}
+
+/* The events at or before a cycle's data tick, data ticks after its start:
+   MARIA's line events and the HALT window, whose c2 is frozen, then RDY,
+   which holds a read that starts before its release until a cycle starts
+   at or after it and never holds a write, then the NMI latch. After a hold
+   the access runs at a new cycle start, which gets its own pass
+   (docs/hardware/bus.md, HALT, RDY and NMI). */
+static void events(muhtari *m, int is_read, uint32_t data)
+{
+    struct muhtari__bus *b = &m->bus;
+    for (;;) {
+        uint64_t n = cycle_start(m, data);
+        if (n == 0u && is_read && b->rdy_release != 0u) {
+            n = cycles_until(b->ticks, b->rdy_release);
+            b->rdy_release = 0u;
+        }
+        if (n == 0u) {
+            break;
+        }
+        hold(m, n);
     }
     if (b->nmi_pending != 0u && b->nmi_at <= b->ticks + data) {
         latch_nmi(m, b->phi2 + 1u);
@@ -206,6 +290,8 @@ uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
         v = muhtari__tia_read(m, addr);
     } else if (dev == DEV_RIOT) {
         v = muhtari__riot_read(m, addr);
+    } else if (dev == DEV_MARIA) {
+        v = muhtari__maria_read(m, addr);
     } else if (dev == DEV_CART) {
         v = muhtari__cart_read(m, addr, 0);
     }
@@ -241,6 +327,9 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
         rearm(m);
     } else if (dev == DEV_RIOT) {
         muhtari__riot_write(m, addr, v);
+    } else if (dev == DEV_MARIA) {
+        muhtari__maria_write(m, addr, v, m->bus.ticks + data_at(len));
+        rearm(m);
     } else if (dev == DEV_CART) {
         muhtari__cart_write(m, addr, v);
     }

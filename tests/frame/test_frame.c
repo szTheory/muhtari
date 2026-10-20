@@ -191,11 +191,13 @@ static uint64_t held_read_end(uint64_t from, uint64_t release)
    crosses it, and every DMA line, 17 to 258, says DMA off. */
 static int dma_off_ends(void)
 {
+    /* clang-format off */
     static const uint8_t code[] = {
         0xA9u, CTRL_DMA_OFF, /* $4000 LDA #$7F */
         0x85u, 0x3Cu,        /* $4002 STA CTRL */
         0x4Cu, 0x04u, 0x40u, /* $4004 JMP $4004 */
     };
+    /* clang-format on */
     muhtari *m = boot(code, sizeof code);
     if (m == NULL) {
         return 0;
@@ -428,11 +430,13 @@ static int first_frame_partial(void)
    feature mask records it. */
 static int dma_blocked_flag(void)
 {
+    /* clang-format off */
     static const uint8_t code[] = {
         0xA9u, CTRL_DMA_ON,  /* $4000 LDA #$40 */
         0x85u, 0x3Cu,        /* $4002 STA CTRL */
         0x4Cu, 0x04u, 0x40u, /* $4004 JMP $4004 */
     };
+    /* clang-format on */
     muhtari *m = boot(code, sizeof code);
     uint32_t samples = 0u;
     if (m == NULL) {

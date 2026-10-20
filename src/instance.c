@@ -99,7 +99,10 @@ void muhtari__power_on(muhtari *m)
 {
     memset(&m->cpu, 0, sizeof m->cpu);
     memset(&m->bus, 0, sizeof m->bus);
-    m->bus.next_deadline = UINT64_MAX; /* no event pending */
+    /* The beam starts at line 0, t 0 of the current origin; the first cycle
+       recomputes the deadline from MARIA's next line event. */
+    muhtari__maria_start(m);
+    m->bus.next_deadline = 0u;
     /* Only the zero fill exists so far; every RAM_FILL value gives it. */
     memset(m->ram, 0, sizeof m->ram);
     muhtari__riot_reset(m);
