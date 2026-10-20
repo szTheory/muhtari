@@ -1,18 +1,6 @@
 # The compatibility ledger's title predicates (docs/emulation-tests.md,
-# title). muhtari-test-predicate evaluates one ledger predicate on a ROM, on
-# the fast boot or through a BIOS; it includes src/internal.h to read the
-# hand-off frame K, the CPU's jam flag and MARIA's line statistics.
-add_executable(muhtari-test-predicate ${CMAKE_CURRENT_LIST_DIR}/predicate.c
-  ${CMAKE_SOURCE_DIR}/runner/sha256.c)
-target_include_directories(muhtari-test-predicate PRIVATE ${CMAKE_SOURCE_DIR}/src
-  ${CMAKE_SOURCE_DIR}/runner)
-target_link_libraries(muhtari-test-predicate PRIVATE muhtari::muhtari)
-set_target_properties(muhtari-test-predicate PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
-muhtari_warnings(muhtari-test-predicate)
-
-set(compat_ledger ${CMAKE_CURRENT_LIST_DIR}/ledger.csv)
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${compat_ledger})
+# title), on the fast boot and through a BIOS.
+include(${CMAKE_CURRENT_LIST_DIR}/targets.cmake)
 
 # simple's title on both paths, its predicate read from the ledger here, so
 # a re-pinned row reaches the tests at the next configure.

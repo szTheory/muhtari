@@ -1,5 +1,6 @@
-/* muhtari-test-predicate ROM PREDICATE [--bios FILE] [--pin]: evaluates one
-   compatibility-ledger predicate on ROM (docs/emulation-tests.md, title).
+/* muhtari-test-predicate ROM PREDICATE [--bios FILE] [--pin]
+     [--id ID --result FILE]: evaluates one compatibility-ledger predicate
+   on ROM (docs/emulation-tests.md, title).
 
      title@F=H  fast boot: frame F's SHA-256 equals H. With --bios: the
                 hand-off frame K comes by frame 600, lies in [300, 340],
@@ -14,8 +15,16 @@
    "single colour" when every byte of that frame is the same, so no blank
    screen is ever pinned. Prints "pass" or "fail <reason>"; exits 0 on a
    pass, 1 on a fail, and 2 on a usage error or a file that cannot be read
-   or loaded. The program includes src/internal.h to read K and the CPU's
-   jam flag and MARIA's line statistics. */
+   or loaded.
+
+   With --result the library preset's form runs: the fast boot, then, with
+   --bios, the BIOS path too, and FILE gets the one line
+   "ID,PREDICATE,STATUS,EVIDENCE", STATUS pass only when every path passed,
+   EVIDENCE the first 16 hex digits of the fast boot's frame F for a title
+   predicate and - otherwise. FILE is removed first, so a run that stops
+   early leaves none. It exits 0 once FILE is written, pass or fail, since
+   the ratchet judges the line. The program includes src/internal.h to
+   read K and the CPU's jam flag and MARIA's line statistics. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -215,8 +224,10 @@ static int run_window(muhtari *m, uint64_t first, uint64_t last, int (*test)(muh
     return -1;
 }
 
-/* The title test's target, and the boots test's running state. */
+/* The title test's target and the last frame it hashed, and the boots
+   test's running state. */
 static const char *want;
+static char seen[65];
 static char first_hash[65];
 static int saw_dma, saw_two;
 
@@ -231,9 +242,8 @@ static int title_test(muhtari *m, int last)
 {
     (void)m;
     (void)last;
-    char hex[65];
-    frame_hash(hex);
-    return strcmp(hex, want) == 0;
+    frame_hash(seen);
+    return strcmp(seen, want) == 0;
 }
 
 static int boots_test(muhtari *m, int last)
@@ -307,9 +317,77 @@ static int evaluate(muhtari *m, const struct predicate *pr, int bios, int pin)
     return 0;
 }
 
+/* Loads rom, with bios when it is not NULL, and evaluates pr; returns
+   evaluate's status, or 2 after a message when create or load fails. */
+static int run_path(const char *name, const uint8_t *rom, size_t rom_n, const uint8_t *bios,
+                    size_t bios_n, const struct predicate *pr, int pin)
+{
+    muhtari_config cfg;
+    memset(&cfg, 0, sizeof cfg);
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = pred_alloc;
+    cfg.allocator.free = pred_free;
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = rom;
+    media.image_size = rom_n;
+    media.bios = bios;
+    media.bios_size = bios_n;
+    muhtari *m = NULL;
+    int status = 2;
+    muhtari_status st = muhtari_create(&cfg, &m);
+    if (st == MUHTARI_STATUS_OK) {
+        st = muhtari_load(m, &media);
+    }
+    if (st == MUHTARI_STATUS_OK) {
+        status = evaluate(m, pr, bios != NULL, pin);
+    } else {
+        fprintf(stderr, "muhtari-test-predicate: %s: create or load failed with status %lu\n", name,
+                (unsigned long)st);
+    }
+    muhtari_destroy(m);
+    return status;
+}
+
+/* The --result form: the fast boot, then the BIOS path when bios is not
+   NULL, and one line written to path. Returns 0 once the line is written. */
+static int run_result(const char *name, const char *text, const uint8_t *rom, size_t rom_n,
+                      const uint8_t *bios, size_t bios_n, const struct predicate *pr,
+                      const char *id, const char *path)
+{
+    seen[0] = '\0';
+    int fast = run_path(name, rom, rom_n, NULL, 0u, pr, 0);
+    char evidence[17] = "-";
+    if (pr->title && seen[0] != '\0') {
+        memcpy(evidence, seen, 16u);
+        evidence[16] = '\0';
+    }
+    int slow = bios != NULL ? run_path(name, rom, rom_n, bios, bios_n, pr, 0) : 0;
+    if (fast == 2 || slow == 2) {
+        return 2;
+    }
+    FILE *f = fopen(path, "wb");
+    if (f == NULL) {
+        fprintf(stderr, "muhtari-test-predicate: cannot write %s\n", path);
+        return 2;
+    }
+    int bad = fprintf(f, "%s,%s,%s,%s\n", id, text, fast == 0 && slow == 0 ? "pass" : "fail",
+                      evidence) < 0;
+    bad |= fclose(f) != 0;
+    if (bad) {
+        fprintf(stderr, "muhtari-test-predicate: cannot write %s\n", path);
+        (void)remove(path);
+        return 2;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     const char *bios_path = NULL;
+    const char *id = NULL;
+    const char *result = NULL;
     int pin = 0;
     int usage = argc < 3;
     for (int i = 3; i < argc && !usage; i++) {
@@ -317,16 +395,25 @@ int main(int argc, char **argv)
             pin = 1;
         } else if (strcmp(argv[i], "--bios") == 0 && i + 1 < argc) {
             bios_path = argv[++i];
+        } else if (strcmp(argv[i], "--id") == 0 && i + 1 < argc) {
+            id = argv[++i];
+        } else if (strcmp(argv[i], "--result") == 0 && i + 1 < argc) {
+            result = argv[++i];
         } else {
             usage = 1;
         }
     }
     struct predicate pr;
-    if (usage || !parse_predicate(argv[2], &pr) || (pin && (!pr.title || bios_path != NULL))) {
+    if (usage || !parse_predicate(argv[2], &pr) || (pin && (!pr.title || bios_path != NULL)) ||
+        (id == NULL) != (result == NULL) || (pin && result != NULL)) {
         fprintf(stderr, "usage: muhtari-test-predicate ROM PREDICATE [--bios FILE] [--pin]\n"
+                        "         [--id ID --result FILE]\n"
                         "  PREDICATE: title@F=H, title@F=- with --pin, or boots@F, F >= 1;\n"
-                        "  --pin takes no --bios\n");
+                        "  --pin takes no --bios and no --result\n");
         return 2;
+    }
+    if (result != NULL) {
+        (void)remove(result);
     }
     size_t rom_n = 0u;
     size_t bios_n = 0u;
@@ -336,33 +423,12 @@ int main(int argc, char **argv)
     /* Frame and audio buffers on the heap: wasm32's stack is 64 KiB. */
     video = (uint8_t *)malloc(FRAME_BYTES);
     audio = (int16_t *)malloc(AUDIO_CAPACITY * sizeof *audio);
-    muhtari *m = NULL;
     int status = 2;
     if (rom != NULL && (bios_path == NULL || bios != NULL) && video != NULL && audio != NULL) {
-        muhtari_config cfg;
-        memset(&cfg, 0, sizeof cfg);
-        cfg.size = (uint32_t)sizeof cfg;
-        cfg.allocator.alloc = pred_alloc;
-        cfg.allocator.free = pred_free;
-        muhtari_media media;
-        memset(&media, 0, sizeof media);
-        media.size = (uint32_t)sizeof media;
-        media.image = rom;
-        media.image_size = rom_n;
-        media.bios = bios;
-        media.bios_size = bios_n;
-        muhtari_status st = muhtari_create(&cfg, &m);
-        if (st == MUHTARI_STATUS_OK) {
-            st = muhtari_load(m, &media);
-        }
-        if (st == MUHTARI_STATUS_OK) {
-            status = evaluate(m, &pr, bios != NULL, pin);
-        } else {
-            fprintf(stderr, "muhtari-test-predicate: %s: create or load failed with status %lu\n",
-                    argv[1], (unsigned long)st);
-        }
+        status = result != NULL
+                     ? run_result(argv[1], argv[2], rom, rom_n, bios, bios_n, &pr, id, result)
+                     : run_path(argv[1], rom, rom_n, bios, bios_n, &pr, pin);
     }
-    muhtari_destroy(m);
     free(rom);
     free(bios);
     free(video);

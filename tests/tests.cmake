@@ -2,7 +2,8 @@
 # so the top-level directory's TESTS property holds every name and the
 # inventory check in cmake/MuhtariTests.cmake sees them all. The hygiene lane
 # registers only its own tests, the nofp lane only the abi tests, the fuzz
-# lane only the fuzz tests and the vectors-full lane only the full vector set.
+# lane only the fuzz tests, the vectors-full lane only the full vector set
+# and the library lane only the ledger's library tests.
 if(MUHTARI_HYGIENE)
   include(${CMAKE_CURRENT_LIST_DIR}/hygiene/tests.cmake)
   return()
@@ -17,6 +18,10 @@ if(MUHTARI_FUZZ)
 endif()
 if(MUHTARI_VECTORS_FULL)
   include(${CMAKE_CURRENT_LIST_DIR}/cpu/full.cmake)
+  return()
+endif()
+if(MUHTARI_LIBRARY)
+  include(${CMAKE_CURRENT_LIST_DIR}/compat/library.cmake)
   return()
 endif()
 include(${CMAKE_CURRENT_LIST_DIR}/abi/tests.cmake)

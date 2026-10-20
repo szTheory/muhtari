@@ -242,6 +242,9 @@ endif()
 # The vectors-full lane registers only the full vector set's tests: a fetch
 # of the pinned 6502/v1 files and one test per opcode over each whole file.
 option(MUHTARI_VECTORS_FULL "Register only the full vector set's tests" OFF)
+# The library lane registers only the ledger's library tests over the ROMs
+# in MUHTARI_ROM_DIR (tests/compat/library.cmake).
+option(MUHTARI_LIBRARY "Register only the library tests" OFF)
 set(inventory ci)
 if(MUHTARI_HYGIENE)
   set(inventory hygiene)
@@ -251,6 +254,8 @@ elseif(MUHTARI_FUZZ)
   set(inventory fuzz)
 elseif(MUHTARI_VECTORS_FULL)
   set(inventory vectors-full)
+elseif(MUHTARI_LIBRARY)
+  set(inventory library)
 endif()
 set(MUHTARI_INVENTORY ${inventory} CACHE STRING "Test inventory file under tests/inventory")
 # Fault prevented: every wasm32 test failing on a missing runtime, with a
