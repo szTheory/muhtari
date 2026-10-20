@@ -51,6 +51,11 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         return MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL;
     }
 
+    /* The pending input applies at a VBLANK start: the start of every
+       frame but the first after a load, which starts at the hand-off. */
+    if (!m->loaded || m->frame_deadline - m->frame_start == MUHTARI__TICKS_PER_FRAME_NTSC) {
+        muhtari__ports_latch(m);
+    }
     if (m->loaded) {
         /* MARIA writes each pixel into the caller's row as the beam plays
            it (docs/hardware/maria.md, Rendering). A full frame scans every
@@ -80,6 +85,12 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
     if (io->audio != NULL) {
         memset(io->audio, 0, (size_t)n * sizeof io->audio[0]);
     }
+    /* A lag frame is one in which the CPU read no input register. */
+    m->frames++;
+    if (m->ports.input_read == 0u) {
+        m->lag_frames++;
+    }
+    m->ports.input_read = 0u;
     m->audio_rem = rem;
     io->audio_count = n;
     return MUHTARI_STATUS_OK;

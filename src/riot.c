@@ -152,6 +152,22 @@ uint8_t muhtari__riot_read(muhtari *m, uint16_t addr)
     return riot_flags_read(m);
 }
 
+/* What riot_read returns, without clearing a flag. */
+uint8_t muhtari__riot_peek(const muhtari *m, uint16_t addr)
+{
+    if ((addr & RIOT_RS) == 0u) {
+        return m->riot.ram[addr & (MUHTARI__RIOT_RAM_SIZE - 1u)];
+    }
+    if ((addr & RIOT_A2) == 0u) {
+        return riot_io_read(m, addr);
+    }
+    if ((addr & 0x01u) == 0u) {
+        return riot_intim(m);
+    }
+    return (uint8_t)((riot_timer_flag(m) ? 0x80u : 0x00u) |
+                     (m->riot.pa7_flag != 0u ? 0x40u : 0x00u));
+}
+
 void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v)
 {
     struct muhtari__riot *r = &m->riot;

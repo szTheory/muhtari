@@ -279,11 +279,32 @@ static void end(muhtari *m, uint32_t len)
     m->bus.phi2++;
 }
 
+/* The input registers: the RIOT's SWCHA and SWCHB, its port registers 0
+   and 2 (A9 = 1, A2 = 0, A0 = 0), and the TIA's INPT0-INPT5 at $08-$0D, in
+   every mirror (docs/hardware/riot.md, Registers; docs/hardware/bus.md,
+   Open bus). */
+static int input_register(enum bus_device dev, uint16_t addr)
+{
+    if (dev == DEV_RIOT) {
+        return (addr & 0x0205u) == 0x0200u;
+    }
+    if (dev == DEV_TIA) {
+        unsigned reg = addr & 0x0Fu;
+        return reg >= 0x08u && reg <= 0x0Du;
+    }
+    return 0;
+}
+
 uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
 {
     enum bus_device dev = decode(m, addr);
     uint32_t len = begin(m, dev, 1);
     uint8_t v = m->bus.open_bus;
+    /* Only a CPU read clears the frame's lag flag: MARIA's fetches and the
+       peek below do not come through here. */
+    if (input_register(dev, addr)) {
+        m->ports.input_read = 1u;
+    }
     if (dev == DEV_RAM) {
         v = m->ram[ram_index(addr)];
     } else if (dev == DEV_TIA) {
@@ -298,6 +319,25 @@ uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
     m->bus.open_bus = v;
     end(m, len);
     return v;
+}
+
+uint8_t muhtari__bus_peek(const muhtari *m, uint16_t addr)
+{
+    enum bus_device dev = decode(m, addr);
+    switch (dev) {
+    case DEV_RAM:
+        return m->ram[ram_index(addr)];
+    case DEV_TIA:
+        return muhtari__tia_read(m, addr);
+    case DEV_RIOT:
+        return muhtari__riot_peek(m, addr);
+    case DEV_MARIA:
+        return muhtari__maria_read(m, addr);
+    case DEV_CART:
+        return muhtari__cart_peek(m, addr);
+    default:
+        return m->bus.open_bus;
+    }
 }
 
 /* Until LOCK is set, every write the TIA's chip select sees also writes

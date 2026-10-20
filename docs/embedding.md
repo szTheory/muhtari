@@ -221,6 +221,62 @@ loaded it returns `MUHTARI_STATUS_OK` and the test card goes on. There is no unl
 `muhtari_create` return to the test card. `muhtari_get_info` describes the loaded content, so read it after a
 load.
 
+## Input
+
+```c
+muhtari_input in;
+memset(&in, 0, sizeof in);
+in.size = (uint32_t)sizeof in;
+in.buttons[0] = MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1;
+in.switches = MUHTARI_SWITCH_LEFT_DIFFICULTY_A;
+muhtari_status st = muhtari_set_input(m, &in);
+```
+
+`muhtari_set_input` sets what both controller ports and the console's switches hold. Call it before each
+`muhtari_run_frame`; the input stays until the next call.
+
+- **Devices.** `device[0]` and `device[1]` are 0 for the cartridge's choice, or `MUHTARI_PORT_PROLINE`,
+  `MUHTARI_PORT_JOYSTICK` (a 2600 one-button stick) or `MUHTARI_PORT_UNPLUGGED`. The cartridge's choice comes
+  from its header: a port the header leaves empty is unplugged, and a device this version does not model, such
+  as a light gun or paddles, is wired as a ProLine. That changes, with a behaviour revision, in the release that
+  models the device. The device is part of each input, not of the load, because a frontend may choose it after
+  loading. An explicit device this version does not model returns `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE`, and
+  any other value `MUHTARI_STATUS_ERR_ARGUMENT`.
+- **Buttons and switches.** A set bit is pressed, or held. `buttons[]` takes the `MUHTARI_BUTTON_*` bits:
+  `MUHTARI_BUTTON_UP`, `MUHTARI_BUTTON_DOWN`, `MUHTARI_BUTTON_LEFT`, `MUHTARI_BUTTON_RIGHT`, `MUHTARI_BUTTON_1`
+  and `MUHTARI_BUTTON_2`. `switches` takes the `MUHTARI_SWITCH_*` bits: `MUHTARI_SWITCH_RESET`,
+  `MUHTARI_SWITCH_SELECT` and `MUHTARI_SWITCH_PAUSE` held, and the difficulty switches as positions,
+  `MUHTARI_SWITCH_LEFT_DIFFICULTY_A` and `MUHTARI_SWITCH_RIGHT_DIFFICULTY_A` set for A and clear for B. Any other
+  bit returns `MUHTARI_STATUS_ERR_ARGUMENT`. Opposing directions, such as up and down together, pass through to
+  the pins as pressed, as a worn stick can press them.
+- **Timing.** The input is latched and reaches the machine at the next VBLANK start, which is where every frame
+  but the first after a load begins, so one frame sees one input. Two calls before that apply only the second.
+  A refused call changes nothing, and the pending input is not machine state.
+
+## Memory
+
+`muhtari_get_memory(m, kind, &span)` fills a `muhtari_span` with a live pointer into the machine and its length:
+
+| `kind` | Memory | Bytes |
+|---|---|---|
+| `MUHTARI_MEMORY_SYSTEM_RAM` | System RAM, $1800-$27FF | 4,096 |
+| `MUHTARI_MEMORY_RIOT_RAM` | The RIOT's RAM, $0480-$04FF | 128 |
+| `MUHTARI_MEMORY_CART_RAM` | The cartridge's unbanked SuperGame RAM at $4000 | 16,384, or 0 |
+
+The pointer is not const: a host may write through it, for cheats or achievements. It is the one deliberate
+exception to the rule that no struct carries a pointer into the library's state, because libretro memory maps
+need live pointers. It stays valid from the load until `muhtari_destroy`, across frames and power cycles. A kind
+the loaded content does not have, such as cartridge RAM on a cartridge without any, returns
+`MUHTARI_STATUS_OK` with a NULL `data` and zero `bytes`; this version runs no board with RAM yet. Any other
+`kind` returns `MUHTARI_STATUS_ERR_ARGUMENT`.
+
+## Counters
+
+`muhtari_get_counters` fills a `muhtari_counters`. `frames` counts the frames run since the last load or power
+cycle. `lag_frames` counts those in which the CPU read none of the input registers, SWCHA, SWCHB or INPT0-5:
+frames in which the game did not look at the controls. A read by MARIA's DMA is not a CPU read, so it does not
+count. With no content loaded every frame is a lag frame.
+
 ## Statuses
 
 `muhtari_status` is a `uint32_t`; the `MUHTARI_STATUS_*` names are constants of an unnamed enum, so the type has the
@@ -235,7 +291,7 @@ Statuses are only ever added. Those after the probe's:
 | `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` | `muhtari_run_frame` | The BIOS took its 2600 path. It stays until the next load or power cycle. |
 | `MUHTARI_STATUS_ERR_INVALID_BIOS` | `muhtari_load` | The BIOS is not 4,096 or 16,384 bytes, or its reset vector points outside it. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | The content resolves to PAL. |
-| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | input | An explicit controller this version does not model. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | `muhtari_set_input` | An explicit controller this version does not model. |
 
 ## Version numbers
 

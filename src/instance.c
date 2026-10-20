@@ -163,6 +163,7 @@ static int bios_valid(const uint8_t *bios, size_t n)
 /* Puts the loaded content, or the test card, back at power-on. */
 static void power_cycle(muhtari *m)
 {
+    muhtari__ports_reset_counters(m);
     if (m->cart.rom != NULL) {
         muhtari__boot_fast(m);
     } else {
