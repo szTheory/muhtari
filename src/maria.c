@@ -616,7 +616,8 @@ uint64_t muhtari__maria_burst(muhtari *m, uint64_t fall)
 uint8_t muhtari__maria_read(const muhtari *m, uint16_t addr)
 {
     if ((addr & 0x1Fu) == MARIA_MSTAT) {
-        return (uint8_t)((m->bus.open_bus & (uint8_t)~MARIA_VBLANK) | m->maria.mstat);
+        /* (MARIA_VBLANK ^ 0xFFu): MSVC rejects a cast of ~constant as C4310. */
+        return (uint8_t)((m->bus.open_bus & (MARIA_VBLANK ^ 0xFFu)) | m->maria.mstat);
     }
     return m->bus.open_bus;
 }
