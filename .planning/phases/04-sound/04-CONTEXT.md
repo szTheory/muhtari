@@ -64,6 +64,20 @@ are adopted under that delegation, not presented as answers to an interview that
   approved seed pin `9f9386c661f6`; reconcile the audio preparation's different `34d68516a15e` reference before
   copying. Copy only needed sections and retain attribution as PROVENANCE.md requires. The sibling's spectral
   result is a hypothesis until measured through this production pipeline.
+- **2026-10-20 evidence amendment to D-08:** The literal Q15 coefficient precision is superseded by
+  signed Q23 rows for the same 16-tap/32-phase compact-support kernel, corrected interpolation and integer
+  ring architecture. The approved seed pin remains `9f9386c661f6`; attribution and the single approximately
+  20 Hz integer blocker remain required. Regenerate the 512 coefficients as int32 values (2 KiB), normalize
+  each corrected row to 8,388,608, and convert integrated Q23 to Q30 by multiplying 128. Use synthesis identity
+  `exact-q23-16x32-dc20`. This narrow change is supported by `04-RESEARCH.md`, “Feasibility resolution:
+  explicit minimal D-08 revision”: the unchanged Q15 seed failed 9 of 132 hardware-scaled cases; Q23 passed
+  all 132 and every deliberately aliased control was rejected. Worst measured equivalent-schedule results
+  were −82.10380 dBc for TIA and −94.71708 dBFS for POKEY, with bound-derived M = 18,361 and
+  L1 = 13,341,774 / 8,388,608. Coefficients were identical under Simpson 128/256 refinement. Gain is still
+  derived from hardware currents and full-path headroom, never lowered to pass a spectral test. This records
+  new evidence rather than changing the historical D-08 text above; reproduction through the production
+  tables, actual chip models, frame carry and platform lanes remains mandatory. No tap/phase/support count,
+  rate, profile, filter or dependency is added.
 - **D-09:** Keep the released public contract: 48,000/1 Hz, mono int16, exact NTSC phase ratio 88/13,125.
   No sample-rate configuration or public synthesis profile is added. At this rate one sample interval spans
   at most 150 master-tick positions; merge mixed-level changes at a tick before kernel work. Bound catch-up,

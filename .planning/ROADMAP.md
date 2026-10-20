@@ -230,7 +230,71 @@ Plans (one wave each; every plan edits the test inventory, so they run in order)
   4. A test renders reference tones through the synthesiser and shows the largest non-harmonic peak below 16 kHz under −80 dB.
   5. Merging the phase's pull request publishes a release with no manual step.
 
-**Plans**: TBD
+**Plans**: 17 plans (sequential waves; parallelization off)
+
+Plans (one wave each; every plan depends on its predecessor):
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Production Q23 reconstruction and complete mix bounds
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-02-PLAN.md — Early production spectral tracer and132-case reproduction
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-03-PLAN.md — TIA modes, shared epoch and actual-tone synthesis
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 04-04-PLAN.md — Focused TIA conformance and audible public-frame tracer
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 04-05-PLAN.md — Frame discard, error, reset and boundary conformance
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 04-06-PLAN.md — Owned POKEY tracer, resolved half edges and actual quality
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 04-07-PLAN.md — Focused POKEY conformance and complete music semantics
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 04-08-PLAN.md — Runtime mappings and atomic0450 behavior/pin migration
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 04-09-PLAN.md — Complete mapped POKEY conformance and access priorities
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 04-10-PLAN.md — Timer IRQ through documented NMOS CPU acceptance
+**Wave 11** *(blocked on Wave 10 completion)*
+
+- [ ] 04-11-PLAN.md — Focused IRQ acceptance and private raw-transition tracer
+**Wave 12** *(blocked on Wave 11 completion)*
+
+- [ ] 04-12-PLAN.md — Global raw ordering and observer/PCM invariance
+**Wave 13** *(blocked on Wave 12 completion)*
+
+- [ ] 04-13-PLAN.md — Canonical whole-run runner hashes and stop/error semantics
+**Wave 14** *(blocked on Wave 13 completion)*
+
+- [ ] 04-14-PLAN.md — Non-silent libretro parity and audible boot-to-play
+**Wave 15** *(blocked on Wave 14 completion)*
+
+- [ ] 04-15-PLAN.md — Meaningful sample pins and platform hash inputs
+**Wave 16** *(blocked on Wave 15 completion)*
+
+- [ ] 04-16-PLAN.md — Hostile legal audio bounds and exact-synthesis cost
+**Wave 17** *(blocked on Wave 16 completion)*
+
+- [ ] 04-17-PLAN.md — Platform/release-path reachability and final sound contracts
+
+**Cross-cutting constraints:**
+
+- SND-03 adjacency: an event at frame_deadline belongs to the next half-open interval, and CPU instruction/interrupt overshoot is retained without changing CPU/frame timing.
+- Effective IRQ wiring comes only from an accepted validated v4 block; a lone440 retains secondary identity and IRQ bit1.
+- All existing sound codes map at most two reused chip instances at 4000–7FFF,0450–045F,0800–0FFF and 0440–044F, including dual440+450.
+- CPU reads/writes, side-effect-free peeks and MARIA fetches obey distinct documented overlap priorities; write-only overlaps preserve ROM/RAM reads.
+- Observation preserves machine state, frame hashes, PCM and timing; NULL observation performs no serialization, hashing or observation-only event storage.
+- Observer host context survives power cycle while chip/synth/carry/fraction state resets; callbacks never reenter core.
+- SND-03 empty: known initial zero levels emit no synthetic record; unchanged levels emit no record; a silent transition stream is the SHA-256 empty input at the runner boundary.
+
 **UI hint**: no
 **Canonical refs:** `.planning/preparation/A7800-AUDIO.md`, `.planning/preparation/ARCHITECTURE.md`, `.planning/preparation/CONFORMANCE.md`
 
@@ -244,4 +308,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
 | 2. The CPU matches the public vectors | 16/16 | Complete    | 2026-10-19 |
 | 3. Games play in RetroArch | 19/19 | Complete    | 2026-10-20 |
-| 4. Sound | 0/TBD | Not started | - |
+| 4. Sound | 0/17 | Planned | - |
