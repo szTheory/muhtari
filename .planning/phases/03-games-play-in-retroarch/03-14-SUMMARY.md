@@ -201,7 +201,7 @@ None beyond the fallbacks.
 
 ## Known Stubs
 
-None. docs/emulation-tests.md says that the library job in CI evaluates every row, but that job lands in a later plan of this phase (CONTEXT D-19). Until then, the recorded command above is the full evaluation.
+None. docs/emulation-tests.md said that the library job in CI evaluates every row before that job existed; plan 03-18 added the job, so the sentence now holds.
 
 ## Threat Flags
 
