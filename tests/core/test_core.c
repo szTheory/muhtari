@@ -465,6 +465,8 @@ static void test_synth_mix(void)
     muhtari_destroy(m);
 }
 
+static void test_cart_audio(void);
+
 static void test_silence(void)
 {
     static const uint32_t first[4] = {800, 801, 800, 801};
@@ -567,6 +569,7 @@ static void test_silence(void)
     CHECK(partitioned[0] != 0);
     test_synth_bound();
     test_synth_mix();
+    test_cart_audio();
     muhtari_destroy(m);
 }
 
@@ -864,6 +867,50 @@ static void load_program(muhtari *m, const uint8_t *program, size_t n)
     make_cart(cart, program, n, 0u);
     muhtari_media media = media_for(cart, sizeof cart);
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+}
+
+/* A declared cartridge, executed by SALLY, must reach the public PCM.
+   POKEY registers/windows: cartridge notes section 2.1 and pokey.md. */
+static void test_cart_audio(void)
+{
+    static const uint16_t types[] = {0x0001u, 0x8000u, 0x0400u};
+    static const uint16_t windows[] = {0x4000u, 0x0800u, 0x0440u};
+    for (unsigned k = 0u; k < 3u; k++) {
+        uint16_t at = windows[k];
+        uint8_t program[] = {
+            0xA9, 7, 0x85, 1, /* lock 7800 */
+            0xA9, 3, 0x8D, (uint8_t)(at + 15u), (uint8_t)(at >> 8),
+            0xA9, 20, 0x8D, (uint8_t)at, (uint8_t)(at >> 8),
+            0xA9, 0xAF, 0x8D, (uint8_t)(at + 1u), (uint8_t)(at >> 8),
+            0xAD, (uint8_t)(at + 14u), (uint8_t)(at >> 8),
+            0x8D, 0, 0x18, 0x4C, 0x13, 0xF0
+        };
+        muhtari *m = make();
+        make_cart(cart, program, sizeof program, 0u);
+        cart[53] = (uint8_t)(types[k] >> 8);
+        cart[54] = (uint8_t)types[k];
+        muhtari_media media = media_for(cart, sizeof cart);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        int nonzero = 0;
+        for (unsigned f = 0u; f < 3u; f++) {
+            muhtari_frame io;
+            frame_io(&io, NULL, 0u, audio, AUDIO_CAP);
+            CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+            for (unsigned i = 0u; i < io.audio_count; i++) nonzero |= audio[i] != 0;
+        }
+        CHECK(nonzero);
+        CHECK_EQ_HEX(m->ram[0], 255u);
+        uint16_t mirror = k == 0u ? 0x7FFEu : k == 1u ? 0x0FFEu : 0x044Eu;
+        CHECK_EQ_HEX(muhtari__bus_read(m, mirror), 255u);
+        struct muhtari__pokey before[2];
+        memcpy(before, m->pokey, sizeof before);
+        (void)muhtari__bus_peek(m, (uint16_t)(at + 10u));
+        (void)muhtari__cart_read(m, (uint16_t)(at + 10u), 1);
+        CHECK(memcmp(before, m->pokey, sizeof before) == 0);
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(m->synth.pokeys, 1u);
+        muhtari_destroy(m);
+    }
 }
 
 static const uint8_t tone[] = {
