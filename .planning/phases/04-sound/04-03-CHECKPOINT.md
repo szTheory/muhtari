@@ -1,5 +1,19 @@
 # TIA feedback model discrepancy
 
+**Status: resolved, 2026-10-20.** The following original checkpoint is
+retained as history. `04-03-RECONCILIATION.md` independently derives the
+primary schematic recurrence and explains every aggregate discrepancy as
+joint-state attractors and state-dependent fill. Acceptance/preparation
+were amended in `c51da68` before production changes. Task2 GREEN is
+`3872209`: all16 zero-start vectors,64 mode/divider period/count cases,
+alternate states, wrap, A/B write timing, hidden-state and RSYNC/WSYNC
+checks pass. Actual TIA spectral sweeps pass; the source-call probe verifies
+ordering and8192 transitions. `cmake --workflow --preset ci` exits0 with590
+ordinary and6 release tests passing. No owner verification is pending.
+Full commands and physical/model limits are in `04-03-SUMMARY.md`.
+
+## Original checkpoint
+
 Task 1 has a committed, verified bus → TIA AUDC4 → production synth tracer.
 Task 2 has a committed failing test with documentary period/ones assertions.
 The full mode implementation is paused before changing production feedback

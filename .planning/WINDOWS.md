@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 1
 waived_count: 0
-fixed_count: 5
-total_count: 6
-last_updated: 2026-10-20T20:26:27.505Z
+fixed_count: 7
+total_count: 8
+last_updated: 2026-10-20T20:53:48.887Z
 ---
 
 # Broken Windows Ledger
@@ -21,6 +21,8 @@ last_updated: 2026-10-20T20:26:27.505Z
 | 4 | 03 | todo | src/maria.c |  | A DLI set on zone 0's DLL entry, which VBE reads with no HALT window, raises no NMI; its timing waits for the diagnostic ROMs (MiSTer and A7800Hawk fire it after VBE) | fixed |  | 2026-10-20T00:33:28.665Z | 2026-10-20T02:01:16.233Z |
 | 5 | 3 | stub | src/instance.c |  | muhtari_load copies a valid BIOS into the instance but still fast-boots; the BIOS boot itself is not run | fixed |  | 2026-10-20T00:49:04.503Z | 2026-10-20T03:55:25.400Z |
 | 6 | 04 | deviation | tests/audio/test_spectral.c |  | Test-only spectral plan adds verified tests against existing production behavior without a formal RED/GREEN commit pair; no missing production behavior is claimed. | open |  | 2026-10-20T20:26:27.505Z |  |
+| 7 | 04 | deviation | .planning/preparation/A7800-AUDIO.md |  | Corrected zero-start TIA duty and fill expectations after primary-source joint-state reconciliation | fixed |  | 2026-10-20T20:52:42.338Z | 2026-10-20T20:53:48.808Z |
+| 8 | 04 | deviation | tests/frame/test_frame.c |  | WSYNC fixtures apply changed power-on profile through TIA reset before checking the stored epoch | fixed |  | 2026-10-20T20:52:42.414Z | 2026-10-20T20:53:48.887Z |
 
 ````json
 [
@@ -100,6 +102,32 @@ last_updated: 2026-10-20T20:26:27.505Z
     "reason": "",
     "recorded_at": "2026-10-20T20:26:27.505Z",
     "resolved_at": null,
+    "milestone": "v1.0"
+  },
+  {
+    "id": 7,
+    "kind": "deviation",
+    "phase": "04",
+    "file": ".planning/preparation/A7800-AUDIO.md",
+    "line": null,
+    "description": "Corrected zero-start TIA duty and fill expectations after primary-source joint-state reconciliation",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-20T20:52:42.338Z",
+    "resolved_at": "2026-10-20T20:53:48.808Z",
+    "milestone": "v1.0"
+  },
+  {
+    "id": 8,
+    "kind": "deviation",
+    "phase": "04",
+    "file": "tests/frame/test_frame.c",
+    "line": null,
+    "description": "WSYNC fixtures apply changed power-on profile through TIA reset before checking the stored epoch",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-20T20:52:42.414Z",
+    "resolved_at": "2026-10-20T20:53:48.887Z",
     "milestone": "v1.0"
   }
 ]
