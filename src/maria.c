@@ -587,11 +587,30 @@ void muhtari__maria_event(muhtari *m)
     arm_after(ma, line, maria_event_t[ev]);
 }
 
+/* The DLI: a burst that read an entry with DLI set pulls NMI low from the
+   second phi1 after /HALT rises at its HALTRST (A7800-SYSTEM section 2,
+   C6, MiSTer's timing, fitted). SALLY's phi1s fall on its 4-tick grid from
+   c2, where the bus runs the burst, so the edge is the second grid tick
+   after HALTRST. MARIA raises one edge per zone and never retries, so it
+   keeps only whether the bus queued it (docs/hardware/bus.md, NMI). */
+#define MARIA_CPU_CYCLE 4u
+#define MARIA_DLI_PHI1 2u
+
 uint64_t muhtari__maria_burst(muhtari *m, uint64_t fall)
 {
+    struct muhtari__maria *ma = &m->maria;
     struct muhtari__line_stats st;
-    return muhtari__maria_dma_line(m, fall + MARIA_HALT_T0, m->maria.dma_lrc, m->maria.dma_line,
-                                   &st);
+    uint64_t c2 = m->bus.ticks;
+    uint64_t haltrst =
+        muhtari__maria_dma_line(m, fall + MARIA_HALT_T0, ma->dma_lrc, ma->dma_line, &st);
+    if ((st.flags & MUHTARI__LINE_DLI) != 0u) {
+        uint64_t phi1 = c2 + ((haltrst - c2) / MARIA_CPU_CYCLE + MARIA_DLI_PHI1) * MARIA_CPU_CYCLE;
+        if (muhtari__bus_raise_nmi(m, phi1) && ma->dma_line < MUHTARI__LINES_NTSC) {
+            ma->stats[ma->dma_line].flags |= MUHTARI__LINE_DLI_QUEUED;
+            ma->features |= MUHTARI__FEAT_DLI_QUEUED;
+        }
+    }
+    return haltrst;
 }
 
 uint8_t muhtari__maria_read(const muhtari *m, uint16_t addr)

@@ -355,7 +355,8 @@ int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick)
 
 /* One edge at a time: an edge raised while an earlier one waits to be
    latched is ignored (docs/hardware/bus.md, NMI). Returns 1 when the edge
-   is taken, 0 when it is ignored. */
+   is queued for latching, 0 when it is ignored; latch_nmi can still drop a
+   queued edge. */
 int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick)
 {
     if (!men(m) || m->bus.nmi_pending != 0u) {

@@ -387,12 +387,16 @@ void muhtari__riot_reset(muhtari *m);
    MUHTARI__HALT_UNTIL_MARIA the window's end is the HALTRST tick that
    muhtari__maria_burst returns when the window reaches c2. raise_nmi raises
    an NMI edge at at_tick, and does nothing while MEN = 0. Each takes one at
-   a time, and the one in flight stands. Each returns 1 when it takes the
-   request and 0 when it ignores it. request_halt returns 0 for one of two
-   reasons: the gate is shut, because it has not yet counted two writes, or
-   a window is already in flight, waiting for /HALT to fall or with /HALT
-   low. MARIA reads a 0 as no burst this line and sets dma_blocked, the
-   line's MUHTARI__LINE_DMA_BLOCKED flag. */
+   a time, and the one in flight stands. raise_nmi returns 1 when the edge
+   is queued for latching and 0 when it is ignored; a queued edge can still
+   be dropped by the latch, when an earlier latched edge has not been taken
+   or MEN was cleared before it latched. MARIA keeps the return as the
+   line's MUHTARI__LINE_DLI_QUEUED flag. request_halt returns 1 when it
+   takes the request and 0 when it ignores it, for one of two reasons: the
+   gate is shut, because it has not yet counted two writes, or a window is
+   already in flight, waiting for /HALT to fall or with /HALT low. MARIA
+   reads a 0 as no burst this line and sets dma_blocked, the line's
+   MUHTARI__LINE_DMA_BLOCKED flag. */
 #define MUHTARI__HALT_UNTIL_MARIA UINT64_MAX
 int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
 int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);

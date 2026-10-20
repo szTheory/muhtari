@@ -460,15 +460,22 @@ static void rom_poke(muhtari *m, uint16_t addr, uint8_t v)
    NMI on the second phi1 after /HALT rises, inside the line's hold. The
    CPU, looping on a JMP, enters the handler on line 32, and the line's
    statistics say the bus queued the edge (docs/hardware/maria.md, The
-   DLI). */
+   DLI). As a game does, the program first locks INPTCTRL and moves the
+   stack to $01FF: the hand-off's S = $16 would push the NMI's return
+   address into the TIA's range, which also writes INPTCTRL while it is
+   unlocked. */
 static int dli_queued(void)
 {
     /* clang-format off */
     static const uint8_t code[] = {
-        0xA9u, CTRL_DMA_ON,  /* $4000 LDA #$40 */
-        0x85u, 0x3Cu,        /* $4002 STA CTRL */
-        0x4Cu, 0x04u, 0x40u, /* $4004 JMP $4004 */
-        0x40u,               /* $4007 RTI, the NMI handler */
+        0xA9u, 0x07u,        /* $4000 LDA #$07 */
+        0x85u, 0x01u,        /* $4002 STA INPTCTRL */
+        0xA2u, 0xFFu,        /* $4004 LDX #$FF */
+        0x9Au,               /* $4006 TXS */
+        0xA9u, CTRL_DMA_ON,  /* $4007 LDA #$40 */
+        0x85u, 0x3Cu,        /* $4009 STA CTRL */
+        0x4Cu, 0x0Bu, 0x40u, /* $400B JMP $400B */
+        0x40u,               /* $400E RTI, the NMI handler */
     };
     /* clang-format on */
     muhtari *m = boot(code, sizeof code);
@@ -477,7 +484,7 @@ static int dli_queued(void)
     if (m == NULL) {
         return 0;
     }
-    rom_poke(m, 0xFFFAu, 0x07u);
+    rom_poke(m, 0xFFFAu, 0x0Eu);
     rom_poke(m, 0xFFFBu, 0x40u);
     for (uint16_t z = 0u; z < ZONES; z++) {
         poke(m, (uint16_t)(DLL_AT + 3u * z), z == 1u ? 0x8Fu : 0x0Fu);
@@ -487,7 +494,7 @@ static int dli_queued(void)
     CHECK_EQ_U64(frame(m, &samples), MUHTARI_STATUS_OK);
     while (m->bus.ticks < FRAME + VBLANK_START) {
         muhtari__cpu_step(m);
-        if (m->cpu.pc == 0x4007u) {
+        if (m->cpu.pc == 0x400Eu) {
             entered++;
             CHECK_EQ_U64((m->bus.ticks - m->maria.origin) / LINE, 32u);
         }
