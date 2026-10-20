@@ -30,3 +30,14 @@ cpu,tia,205,hw
 cpu,riot_ram,205,hw
 cpu,riot,205,hw
 cpu,ram,173,hw
+dli,zone1,117,rtl
+dli,zone2,117,rtl
+dli,zone0,233,rtl
+dli,parked,20,guide
+dli,wsync_1,142,hw
+dli,wsync_3,171,hw
+dli,rdy_store,135,fit
+dli,set_lines,243,rtl
+dli,clear_lines,21,rtl
+dli,set_polls,2,rtl
+dli,clear_polls,2,rtl

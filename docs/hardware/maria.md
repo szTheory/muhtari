@@ -408,10 +408,87 @@ p = 263 + H:
 | `ram` | `$1800` | RAM | fast | 75 | 338 | 173 | hw: 113 held cycles per WSYNC line, measured |
 
 The measurements are the AtariAge threads "7800 hardware facts", "7800 Software Guide updated" and "Improving the
-emulators" (CONFORMANCE.md, Sources). The difference, 32, is the measured +2 ticks per access. If every cycle of a
-slow-access instruction were slow, the run would take 64 × 24 ticks, release at t 1816, and the slow rows would read
-187 or 188 by φ. The `lda.w` form keeps `$0000` absolute, so each test is the same four cycles: three
-fast fetches from the cartridge and one data cycle.
+emulators" (`.planning/preparation/CONFORMANCE.md`, Sources). The difference, 32, is the measured +2 ticks per
+access. If every cycle of a slow-access instruction were slow, the run would take 64 × 24 ticks, release at t 1816,
+and the slow rows would read 187 or 188 by φ. The `lda.w` form keeps `$0000` absolute, so each test is the same four
+cycles: three fast fetches from the cartridge and one data cycle.
+
+### The dli ROM: DLI, WSYNC, RDY and MSTAT
+
+The `dli` diagnostic (`tests/diag/dli.s`) times the DLI's NMI, MARIA's WSYNC, a store right after a WSYNC and both
+MSTAT edges. Each test starts the timer, 255 to TIM1T, in the first instruction after a WSYNC releases, so p = 0 is
+that write and INTIM reads (255 − p) mod 256, as in the cpu ROM.
+
+**The phase rule.** After the release, cycle i starts at t φ + 4i + 2s, where s counts the slow cycles before it.
+A later line's t 0 or t 28 is d lines on, and 454 ≡ 2 (mod 4), so the first cycle start at or after it lies φ ticks
+past it when s and d have the same parity, and the cycle's index is then the same for every φ. That holds for every
+row below except `zone0`, whose event is not on a line boundary and which comes out the same anyway. A burst does not
+move the grid: its frozen cycles are 4-tick cycles, counted.
+
+**The DLI tests.** In VBLANK the ROM points DPPH and DPPL at the test's DLL and turns DMA on. It counts lines with
+WSYNC from MSTAT's set edge, so the timer starts at t 0 of line 16 (17 for `zone2`). Then `stx TIM1T` (cycles 0-3,
+the write slow), `lda $80` (4-6) and two-cycle NOPs from cycle 7, so each NOP's opcode fetch has an odd index. The
+NMI handler's first instruction is `lda INTIM`. Each zone of these DLLs is the empty DL.
+
+- `zone1`: zone 0 has OFFSET 0, so line 17 is its last line, and zone 1's entry has DLI. /HALT falls at the first
+  cycle start at or after t 28 of line 17: s = 1, d = 1, so it is cycle (482 − 2) / 4 = 120. c2 is cycle 122, the
+  second cycle of the NOP whose opcode was cycle 121, and the empty last line freezes it ceil(21 / 4) = 6 cycles,
+  to cycle 128. NMI falls on the second φ1 after HALTRST = fall + 21, at fall + 28, which the frozen cycle 126
+  latches. The NOP polled at cycle 121, before the edge, so the CPU takes the NMI after the next NOP, cycles
+  129-130. The entry is 131-137 and `lda INTIM` reads in cycle 141: p = 138, INTIM **117**.
+- `zone2`: zones 0 and 1 have OFFSET 0 and zone 2's entry has DLI, so the burst of line 18 raises it. The timer
+  starts on line 17, whose burst freezes 6 cycles of the sled: an even number, so the NOPs keep their odd opcode
+  cycles. Line 18 is d = 1 on, so everything follows as in `zone1`: **117**.
+- `zone0`, a first-zone DLI: zone 0's entry has DLI, which VBE reads at t 43 of line 16 (The DLI). VBE ends 7 ticks
+  later, at t 50, and the edge falls on the second φ1 after that. Cycle k ≥ 4 starts at t φ + 4k + 2. For φ = 0 the
+  φ1s after t 50 are cycles 13 and 14, so the edge is at cycle 14's start and cycle 13 latches it; for φ from 1 to 3
+  they are cycles 12 and 13, and cycle 12 latches it. Either way the NOP whose opcode is cycle 13 is the first to
+  poll at or after the latch, so the NMI follows it: entry 15-21, the read in cycle 25, p = 22, INTIM **233**.
+- `parked`: the `zone1` DLL, and the CPU parked in WSYNC while line 17's burst raises the DLI. After the timer
+  write come `bit $00` (a slow TIA read, cycles 4-6) and `sta WSYNC`, which releases at line 17; `sta WSYNC` again
+  there, before t 28; then a NOP. Line 17's burst runs inside the hold and its edge is latched there. The hold ends
+  at line 18's t 0: s = 2, d = 2, so the NOP's opcode fetch is cycle (908 − 4) / 4 = 226. That fetch is the NOP's
+  deciding cycle and the edge came before it, so the NMI follows the NOP: entry 228-234, the read in cycle 238,
+  p = 235, INTIM **20**.
+
+With these instructions the MiSTer edge (the second φ1 after HALTRST) and the Software Guide's (one tick after the
+shutdown) both fall inside the frozen c2 and give the same rows. An NMI at the burst's start, as MAME raises it,
+would be latched in c1 and taken after the NOP of cycle 121: `zone1` and `zone2` would read 119.
+
+**WSYNC.** With DMA off, `sta WSYNC`, `stx TIM1T`, k more `sta WSYNC` and `lda INTIM`. The last hold ends at the
+k-th line's t 0, s = 1, so for odd k the fetch after it is cycle (454k − 2) / 4 and INTIM is read three cycles later:
+
+| Test | k | Fetch | p | INTIM | Source |
+|------|---|-------|---|-------|--------|
+| `wsync_1` | 1 | 113 | 113 | 142 | hw: $8E per line, measured |
+| `wsync_3` | 3 | 340 | 340 | 171 | hw |
+
+$8E is the "Improving the emulators" thread's figure. A held read takes the release only at a cycle start, so the
+lines alternate 113 and 114 cycles, 227 per pair.
+
+**RDY after a write.** `rdy_store` runs with DMA off, zone 0 loaded at VBE with OFFSET 1 and left unwalked, as in
+the dma ROM. From line 100's t 0: `stx TIM1T`, `sta WSYNC`, then on line 101 two NOPs, `sta CTRL` with DMA on, and
+`lda INTIM`. The first NOP's opcode fetch is the read RDY holds, cycle 113 at t φ (s = 1, d = 1). The `sta CTRL`
+write is cycle 119, its data at t φ + 28, so the request at t 28 comes first and sees DMA off: no burst. `lda INTIM`
+reads in cycle 123, p = 120, INTIM **135**. If the cycle right after a write could not be held, as MiSTer's notes
+say, the first NOP's opcode would run before the hold and every later cycle 4 ticks sooner. The write would land at
+t φ + 24, before the request; the line's empty burst would freeze `lda INTIM`'s third cycle 4 cycles, and INTIM
+would read 132.
+
+**MSTAT.** DMA is off. The ROM waits for VBLANK to clear, on line 16, and then counts lines with `sta WSYNC`, `inx`,
+`bit MSTAT`. The `bit` reads at t φ + 20, before t 42, so a line sees the edges of earlier lines only:
+
+| Test | What | Value | Source |
+|------|------|-------|--------|
+| `set_lines` | lines from line 16 until the first that reads VBLANK set: line 259 | 243 | rtl: set on line 258 |
+| `clear_lines` | lines from there until the first that reads it clear: line 17 | 21 | rtl: clear on line 16 |
+| `set_polls` | from line 258's t 0, polls of `iny`, `bit MSTAT`, `bpl` until it reads set | 2 | rtl: the edge at t 42 |
+| `clear_polls` | the same from line 16's t 0 until it reads clear | 2 | rtl |
+
+For the polls, the WSYNC loop releases into `dex` and `bne` not taken, and each poll is 8 cycles: the first reads at
+t φ + 36, before t 42, and the second at t φ + 68, after it. An edge at t 0, as MAME puts it, would give 1; an edge
+past t 68 would give 3 or more. The lines are MiSTer's `video_sync.sv` (`VBLANK_START` 258), as
+`.planning/preparation/CONFORMANCE.md` cites it, and the poll counts its edge at column 0, t 42.
 
 ## Fitted values
 
@@ -421,10 +498,12 @@ named beside it is made, on muhtari's own diagnostic ROMs or a capture:
 | Value | Chosen | Would change if |
 |-------|--------|-----------------|
 | Visible rows | 242 (NTSC), 292 (PAL): rasters 16-257 and 16-307 | a line-locked capture shows a 243rd unblanked raster, or content on raster 258 |
+| MSTAT's edges | set on line 258 and clear on line 16, both at t 42 | `dli`'s `set_lines`, `clear_lines`, `set_polls` or `clear_polls` reads other than 243, 21, 2 and 2 on hardware |
 | First pixel | t 135 | a hardware capture puts the first pixel at t 133 or 134 |
 | HALT latency and handshake | two cycles after the fall, then T0 = fall + 6 | an empty-DL loop on hardware measures other than 16 and 24 ticks, or a cycle-counted loop disagrees |
-| DLI to NMI | NMI on the second φ1 after /HALT rises | the DLI diagnostic shows the NMI a cycle earlier or later against WSYNC |
+| DLI to NMI | NMI on the second φ1 after /HALT rises | `dli`'s `zone1` or `zone2` reads other than 117 on hardware, the NMI a cycle earlier or later against WSYNC |
+| First-zone DLI | NMI on the second φ1 after VBE's end, t 50 of line 16 | `dli`'s `zone0` reads other than 233 on hardware |
 | The CPU's phase at the hand-off | 0, from the hand-off at t 24 | an RTL simulation of the hand-off gives another offset |
-| RDY after a write | the NMOS rule: RDY never holds a write | the store-timing diagnostic shows a write held |
+| RDY after a write | the NMOS rule: RDY holds the first read after the write | `dli`'s `rdy_store` reads 132, the store 4 ticks earlier, on hardware |
 | Indirect hole | 6 or 9 ticks, the character's whole slot | hardware measures 3, as a7800 charges |
 | Holey DMA | draws nothing | a capture shows the first holey byte drawn |
