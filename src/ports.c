@@ -56,7 +56,7 @@ muhtari_status muhtari_set_input(muhtari *m, const muhtari_input *in)
 }
 
 /* The latest input set reaches the machine at a VBLANK start, so a whole
-   frame sees one input (DEC.25). */
+   frame sees one input (docs/embedding.md, Input). */
 void muhtari__ports_latch(muhtari *m)
 {
     struct muhtari__ports *ports = &m->ports;
