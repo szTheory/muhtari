@@ -5,11 +5,11 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
 status: executing
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-10-20T20:26:56.544Z"
+stopped_at: 04-03 Task 2 RED complete; feedback model reconciliation required
+last_updated: "2026-10-20T20:38:15.842Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 04 execution started
-state_head: 18df6791fc181dcd5e8b2819b64de84a609b9608
+state_head: 8f2cb44b7bd6abddc61216d049a558482063cda0
 progress:
   total_phases: 4
   completed_phases: 3
@@ -336,6 +336,7 @@ Recent decisions affecting current work:
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
+- Plan 04-03 Task 2: published TIA schematic-analysis equations disagree with adopted ones counts for AUDC6/7/14/15 and AUDC11 fill latency; recurrence/startup evidence must be reconciled before GREEN. See 04-03-CHECKPOINT.md.
 
 ## Deferred Items
 
@@ -347,6 +348,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T20:26:56.409Z
-Stopped at: Completed 04-02-PLAN.md
-Resume file: .planning/phases/04-sound/04-03-PLAN.md
+Last session: 2026-10-20T20:38:15.715Z
+Stopped at: 04-03 Task 2 RED complete; feedback model reconciliation required
+Resume file: .planning/phases/04-sound/04-03-CHECKPOINT.md
