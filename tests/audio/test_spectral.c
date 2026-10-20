@@ -1,4 +1,4 @@
-/* Spectral measurement contract and hardware-equivalent schedules:
+/* Spectral measurement contract, real TIA and POKEY-equivalent schedules:
    docs/hardware/audio.md and A7800-AUDIO sections 1-4, 8. Test-only math. */
 #include <math.h>
 #include <stdint.h>
@@ -142,14 +142,9 @@ static struct spectrum measure(const struct tone *t)
 
 static void source_level(muhtari *m, const struct tone *t, uint64_t tick, unsigned high)
 {
-    if (t->tia != 0u) {
-        muhtari__synth_level(m, tick, 0u, (uint16_t)(high * 15u));
-        muhtari__synth_level(m, tick, 1u, (uint16_t)(high * 15u));
-    } else {
-        for (unsigned chip = 0; chip < t->chips; chip++) {
-            for (unsigned ch = 0; ch < t->channels; ch++) {
-                muhtari__synth_level(m, tick, 2u + 4u * chip + ch, (uint16_t)(high * 206u));
-            }
+    for (unsigned chip = 0; chip < t->chips; chip++) {
+        for (unsigned ch = 0; ch < t->channels; ch++) {
+            muhtari__synth_level(m, tick, 2u + 4u * chip + ch, (uint16_t)(high * 206u));
         }
     }
 }
@@ -159,7 +154,9 @@ static uint64_t next_edge(const struct tone *t, uint64_t edge)
     if (t->tia == 0u) {
         return t->offset + edge * 4u * (t->divisor + 4u);
     }
-    uint64_t b = edge * (t->divisor + 1u);
+    /* Zero pulse state first goes high on its fourth enabled B. The
+       writes below occur after A0's comparison, enabling that first B. */
+    uint64_t b = (edge + 3u) * (t->divisor + 1u);
     return t->offset + (b / 2u) * 456u + (b % 2u == 0u ? 64u : 288u);
 }
 
@@ -184,6 +181,15 @@ static void capture(const struct tone *t, int alias)
         exit(1);
     }
     muhtari__synth_reset(m, 0u, (uint8_t)t->chips);
+    if (t->tia != 0u) {
+        m->profile.tia_phase = (uint16_t)((456u - t->offset) % 456u);
+        muhtari__tia_reset(m);
+        for (unsigned ch = 0u; ch < 2u; ch++) {
+            muhtari__tia_write(m, (uint16_t)(0x15u + ch), 4u, t->offset);
+            muhtari__tia_write(m, (uint16_t)(0x17u + ch), (uint8_t)t->divisor, t->offset);
+            muhtari__tia_write(m, (uint16_t)(0x19u + ch), 15u, t->offset);
+        }
+    }
     uint64_t edge = 0, horizon = 0;
     unsigned samples = 0, high = 0;
     int32_t amplitude = hardware_level(t);
@@ -191,10 +197,16 @@ static void capture(const struct tone *t, int alias)
     while (samples < SETTLE + N) {
         if (alias == 0) {
             uint64_t end = horizon + 13125u;
-            while (next_edge(t, edge) < end) {
-                uint64_t tick = next_edge(t, edge++);
-                high ^= 1u;
-                source_level(m, t, tick, high);
+            if (t->tia != 0u) {
+                muhtari__tia_catch_up(m, end - 1u);
+                high = m->tia.channel[0].output;
+                REQUIRE(m->tia.channel[1].output == high);
+            } else {
+                while (next_edge(t, edge) < end) {
+                    uint64_t tick = next_edge(t, edge++);
+                    high ^= 1u;
+                    source_level(m, t, tick, high);
+                }
             }
             int16_t chunk[88];
             uint32_t count = muhtari__synth_render(m, end, chunk);

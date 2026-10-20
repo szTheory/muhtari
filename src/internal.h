@@ -64,6 +64,7 @@ struct muhtari__synth {
 struct muhtari__tia_channel {
     uint8_t audc, audf, audv;
     uint8_t count, enabled, output;
+    uint8_t noise, pulse, noise_input, pulse_gate;
 };
 struct muhtari__tia {
     uint64_t next_tick, epoch_tick;
