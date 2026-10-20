@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
-status: Recovery planned; resume 04-06 Task2; production verification pending
-stopped_at: Phase 4 targeted recovery planned and checked; resume 04-06 Task2 GREEN before 04-07
-last_updated: "2026-10-20T22:04:37.258Z"
+status: Executing phase 4; wave 6 complete; wave 7 next
+stopped_at: Phase 4 wave 6 verified; actual-clock POKEY recovery complete; wave 7 next
+last_updated: "2026-10-20T22:25:59+00:00"
 last_activity: 2026-10-20
-last_activity_desc: Planned and checked 64-phase synthesis recovery; 04-06 Task2 remains unfinished
-state_head: 907db9fa657fc161a4f81e22dae739b82f39f8a3
+last_activity_desc: Completed wave 6 with final production spectra, generation and numerical proofs
+state_head: 2a2f2c60ba1ec4bda4af5337b19e8a26ad51c464
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 73
-  completed_plans: 61
+  completed_plans: 62
   percent: 75
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 
 ## Current Position
 
-Phase: 04 (Sound) — READY TO RESUME TASK2
-Plan: 6 of 17
-Status: Recovery planned; resume 04-06 Task2; production verification pending
-Last activity: 2026-10-20 — Targeted recovery research and planning complete; 17 plans retained, 5 complete
+Phase: 04 (Sound) — WAVE 6 COMPLETE
+Plan: 7 of 17
+Status: Wave 6 complete; wave 7 next
+Last activity: 2026-10-20 — Actual-clock POKEY and64-phase synthesis recovery verified; 6/17 plans complete
 
 Progress: [████████░░] 75%
 
@@ -121,6 +121,7 @@ Progress: [████████░░] 75%
 | Phase 04 P03 | 23min | 2 tasks | 13 files |
 | Phase 04 P04 | 6min | 2 tasks | 11 files |
 | Phase 04 P05 | 5min | 2 tasks | 8 files |
+| Phase 04 P06 | 5min recovery + prior9min | 2 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -342,9 +343,8 @@ Recent decisions affecting current work:
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
-- 04-06 Task2 remains unfinished: the production32-phase kernel retains six slow AUDF1 spectral failures (worst -78.28741dBFS). Fresh isolated64-phase research passes the retained and bounded mixed/HP matrices; amended04-06 requires production integration, commonM18361/final headroom-derivedM18360 acceptance and renewed proofs before expansion.
-- Execute resume override: select04-06 Task2 GREEN first even if generic inventory treats its SUMMARY file as completion. Its `status: blocked` and empty `requirements-completed` are authoritative. Preserve committed Task1 and Task2 RED, all eight retained files, and the blocked measurements; reconcile that summary only after final gates pass. Plans04-07 onward stay blocked until then.
-- Planning validation: independent checker passed with zero findings; decision coverage30/30 and post-planning requirement/decision coverage35/35. No production or hosted CI success is claimed by this planning step.
+- Wave6 recovery verified: exact-q23-16x64-dc20, final headroom-derivedM18360; full CI600 checks, hygiene24, affected25 in release/debug, generator and84mixed/HP/refined probes pass. Historical six-failure evidence stays in04-06-SUMMARY.md; WINDOWS9 is fixed.
+- Sound requirements remain globally pending maps/IRQ/observation/hash/host/workload/platform slices. Phase4 verification waits until all17 plans complete.
 
 ## Deferred Items
 
@@ -356,7 +356,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T22:05:06+00:00
-Stopped at: Phase 4 targeted recovery planned and checked; resume 04-06 Task2 GREEN before 04-07
-Resume file: .planning/phases/04-sound/04-06-PLAN.md
-Next command: `$gsd-execute-phase 4 --wave 6` — resume04-06 Task2 despite the existing blocked summary; do not skip to04-07.
+Last session: 2026-10-20T22:24:38.866Z
+Stopped at: Phase 4 wave 6 verified; actual-clock POKEY recovery complete; wave 7 next
+Resume file: .planning/phases/04-sound/04-07-PLAN.md
+Next command: `$gsd-execute-phase 4 --wave 7`

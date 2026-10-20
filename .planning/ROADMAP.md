@@ -230,7 +230,7 @@ Plans (one wave each; every plan edits the test inventory, so they run in order)
   4. A test renders reference tones through the synthesiser and shows the largest non-harmonic peak below 16 kHz under −80 dB.
   5. Merging the phase's pull request publishes a release with no manual step.
 
-**Plans**: 5/17 plans executed (sequential waves; parallelization off)
+**Plans**: 6/17 plans executed (sequential waves; parallelization off)
 
 Plans (one wave each; every plan depends on its predecessor):
 **Wave 1**
@@ -255,7 +255,7 @@ Plans (one wave each; every plan depends on its predecessor):
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 04-06-PLAN.md — Resume blocked Task2 GREEN: retained actual clocks, owned64-phase Q23 generation, common/final-gain spectra and fresh headroom proofs; keep Task1 complete and reconcile04-06-SUMMARY.md only after verification
+- [x] 04-06-PLAN.md — Resume blocked Task2 GREEN: retained actual clocks, owned64-phase Q23 generation, common/final-gain spectra and fresh headroom proofs; keep Task1 complete and reconcile04-06-SUMMARY.md only after verification
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -324,4 +324,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
 | 2. The CPU matches the public vectors | 16/16 | Complete    | 2026-10-19 |
 | 3. Games play in RetroArch | 19/19 | Complete    | 2026-10-20 |
-| 4. Sound | 5/17 | In Progress | - |
+| 4. Sound | 6/17 | In Progress | - |
