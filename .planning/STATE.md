@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-17-PLAN.md
-last_updated: "2026-10-20T06:06:45.263Z"
+stopped_at: Completed 03-18-PLAN.md
+last_updated: "2026-10-20T06:29:14.027Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-17 complete (four run-loop properties, the run fuzz target, nightly prop and fuzz jobs, full path filter)
-state_head: 85f64f863f29c195897c2faf286ce3ba522abc22
+last_activity_desc: Plan 03-18 complete (the library preset and job, the ledger ratchet, the generated docs/compatibility.md)
+state_head: 86910d44572a7fe5ff57a7b9caadeb0d64a2b6f4
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 54
+  completed_plans: 55
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 18 of 19
+Plan: 19 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-17 complete: tests/prop.h (80 lines) with prop.split_run, peek_pure, instances_isolated and input_at_vblank over a pool of 17 run seeds, a random 48 KiB cart and the simple and eightysix samples, 100 cases per pull request; tests/fuzz/run.c makes any bytes a headerless 48 KiB cart whose footer passes (run_cart.h; without it every input was refused as 2600), two instances agree over 2 frames, each within four lines of its deadline; fuzz.regress.run and its self test on every lane; nightly fuzz job runs both targets (61 s each) and a report-only prop job runs 10,000 cases per property (slowest 188 s); nightly paths list every input (WR-01 folded); green on every hosted leg (CI 39377950148, Nightly 39377950042); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-18 complete: the library preset judges the 39 pr-tier ledger rows afresh on both boot paths (muhtari-test-predicate --id --result, found by whole-file SHA-1 under MUHTARI_ROM_DIR and tests/diag; configure fails on a missing directory, BIOS or row file); tests/cmake/compat_ratchet.cmake (100 lines) holds results equal to the ledger both ways and, against MUHTARI_LEDGER_BASE, lets no pass row fall without a tests/compat/allow.txt line expiring within 60 days; tools/compat_doc.cmake (80 lines) generates docs/compatibility.md, checked by policy.compat_doc_fresh and library.compat_doc; report-only library job (34 s, 30 s); green on every hosted job (CI 39380164010); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -113,6 +113,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P15 | 29 min | 3 tasks | 14 files |
 | Phase 03 P16 | 22 min | 2 tasks | 9 files |
 | Phase 03 P17 | 20 min | 3 tasks | 16 files |
+| Phase 03 P18 | 22 min | 3 tasks | 21 files |
 
 ## Accumulated Context
 
@@ -279,6 +280,10 @@ Recent decisions affecting current work:
 - [Phase 03]: 03-17: Run fuzz cartridges pass the footer test: run_cart.h changes the last 8 bytes as little as needed, since arbitrary headerless 48 KiB images are refused as 2600 images
 - [Phase 03]: 03-17: prop.input_at_vblank reads SWCHA, SWCHB and INPT0-5 through muhtari__bus_peek; muhtari__peek returns open bus for device registers
 - [Phase 03]: 03-17: The nightly prop job builds ci with MUHTARI_TIMEOUT_SCALE=10 and runs ctest -L prop -j 4; report-only outside report's needs until 10 green runs on main
+- [Phase 03]: 03-18: library.<id> finds a row's file by whole-file SHA-1 (sha1_a78 then sha1_raw), since CMake cannot hash a byte range; a headered dump with a different header is not found
+- [Phase 03]: 03-18: library.<id> passes once its result line is written; library.ratchet judges status and evidence against the ledger
+- [Phase 03]: 03-18: the ratchet's base is MUHTARI_LEDGER_BASE read at configure; a base without a ledger protects nothing, a base not in the clone fails
+- [Phase 03]: 03-18: the library job is report-only (REPORT_ONLY wasm32,library) until 10 green runs on main
 
 ### Pending Todos
 
@@ -320,6 +325,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T06:06:45.143Z
-Stopped at: Completed 03-17-PLAN.md
+Last session: 2026-10-20T06:29:00.313Z
+Stopped at: Completed 03-18-PLAN.md
 Resume file: None

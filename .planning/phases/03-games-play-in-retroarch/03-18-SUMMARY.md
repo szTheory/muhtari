@@ -285,7 +285,7 @@ Ready for 03-19. The `library` job joins CI required after 10 green runs on main
 - FOUND: 3d3e82f, 927045b and 47da7bc are ancestors of HEAD
 - Acceptance results:
   - the `"name": "library"` grep printed lines, and `MUHTARI_ROM_DIR` appears only in the library preset's comment;
-  - 44 `library.` lines in library.txt, with one each for `library.ratchet.self_test` and `library.compat_doc`;
+  - 43 `library.` lines in library.txt, with one each for `library.ratchet.self_test` and `library.compat_doc`;
   - one `add_executable` in targets.cmake and two `targets.cmake` includes;
   - the missing-BIOS configure exited 1 and named `no-such-bios.bin`;
   - `Fault prevented` appears once in the first 12 lines;
