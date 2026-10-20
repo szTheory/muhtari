@@ -2,7 +2,7 @@
 title: "A7800 audio: TIA, board mix, cartridge POKEY, XM, synthesis"
 summary: "Clock-exact facts and decisions for 7800 sound: TIA on its own 456-tick line, the 18 kOhm / 6.8 kOhm board mix, POKEY on the stretched cartridge phase 2, the POKEY seed, XM/YM2151 via ymfm, and integer band-limited synthesis with a transition-stream hash."
 read_when: "Before designing, implementing or testing TIA audio, pokey.c, synth.c, the mixer, A78 audio/IRQ flags, XM/YM2151, audio hashes or audio ledger predicates."
-updated: 2026-10-15
+updated: 2026-10-20
 ---
 
 # A7800 audio
@@ -74,7 +74,8 @@ Frequency = 31,399.52 / ((AUDF+1) × period) Hz, e.g. AUDC 4 / AUDF 0 = 15,699.8
 **MIX.** **Recommendation:** an integer node-current mix, `sum = T[n]·wT + Σchips P[raw]·wP (+ later sources)`.
 - T (31 entries) and P (825 entries, raw = Σ weighted drops in 10 mV units) are owned tables, generated offline from the formulas above and checked in as integers.
 - wT : wP = (2.5 V/18 kΩ) : (3.80 V/6.8 kΩ), with one profile constant `cart_gain` (Q12, default 4096) for later calibration.
-- The PCM scale is chosen from the declared audio hardware so the largest possible DC sum maps to ≤ 32,767; after the DC blocker a step can swing ±max, so clipping is impossible by construction.
+- Normalize T to `2n/(n+30)` at the 2.5 V full-scale weight (equivalently retain the literal half-scale curve at 5 V). The exact current-weight ratio is 85:342, with default Q12 cartridge gain 4096.
+- **Corrected 2026-10-20:** a DC maximum and unity kernel-row sum do not bound signed-lobe transients. Production enumerates finite step-response differences over all 88 output alignments: positive/negative masses 10865191/2476583 over Q23, L1=13341774/8388608. Complete blocker and rounding allowance gives maximum mixed level 18361 and peak bound 29203.498486, below -1 dBFS. See [audio reconstruction](../../docs/hardware/audio.md) for the proof and width bounds, tested against shipped interpolation and adverse sequences.
 
 **Strongest alternative:** MiSTer-style fixed per-source scaling, halved when external audio is present (louder, rare clipping). **Would change if:** a hardware recording of equal-volume TIA and POKEY tones (Utility Cart style, §9) gives a ratio outside 1.5–2.7×; then retune `cart_gain`.
 
@@ -131,13 +132,14 @@ Both MAME and a7800 carry the a7800 4.7–4.9 fixes; MAME upstream is the supers
 | SN76489 / YM2413 carts | ACE board SN76489 at $043F [AUD.03]; an SN76489 + YM2413 PCB exists (unverified) | — | later |
 
 ## 8. Synthesis, hashes, A/V sync
-- **Sibling precedent** [AUD.23]: each change of the mixed level adds delta × a linearly interpolated kernel row to an integer ring buffer. The kernel is 16 taps × 32 phases, Kaiser β 8 over 15 samples, Q15, each row summing to exactly 32,768; a running sum gives the output. Measured: worst non-harmonic component −87 dB below 16 kHz.
-- **Retiming:** the kernel is defined in output samples, so it carries over unchanged. Phase accumulator (NTSC, 48 kHz): +88 per tick modulo 13,125; kernel row = acc·32/13,125, remainder = interpolation (acc·32 < 2^19). PAL: +4,000 modulo 591,149 (acc·32 < 2^25). One tick is 1/149.15 sample, and 32 interpolated phases resolve positions finer than a tick.
+- **Historical sibling precedent** [AUD.23]: delta × an interpolated 16-tap/32-phase compact kernel enters an integer ring. The original table was Q15 with row sum 32,768. Its reported −87 dB result is not production evidence: the inherited judge masked folded aliases.
+- **Adopted 2026-10-20:** retain that architecture but regenerate the Nyquist-sinc/Kaiser-beta8 integral over 15 samples at Q23, per [the dated D-08 evidence amendment](../phases/04-sound/04-RESEARCH.md#feasibility-resolution-explicit-minimal-d-08-revision). The 512 int32 cells occupy 2048 bytes; Simpson128/256 give identical rows, corrected sum 8388608 and shifted phase32 endpoint. Integration converts Q23→Q30 by ×128. Identity: `exact-q23-16x32-dc20`. This precision change fixes the demonstrated Q15 feasibility failure; gain is not reduced to hide a spur. Production spectral evidence is established separately.
+- **Retiming:** phase accumulator (NTSC, 48 kHz): +88 per tick modulo 13,125; kernel row = acc·32/13,125, remainder = interpolation (acc·32 < 2^19). PAL is future scope: +4,000 modulo 591,149 (acc·32 < 2^25). One tick is 1/149.15 sample, and 32 interpolated phases resolve positions finer than a tick.
 - **Rates and bound:** TIA ≤ 2 × 31,399.5 = 62,799 changes/s; POKEY ≤ 1 merged change per φ2 cycle = 1.79 M/s per chip (AUDF 0 at 1.79 MHz toggles 447,443/s per channel); YM 55,930/s. Merge all sources per tick before the kernel. Worst case is 28.6 M multiply-adds/s per POKEY (hostile ROM) against about 1 M/s for TIA only.
 - **Why band-limit:** test7800's E.X.O. title-music errors were aliasing of 1.79 MHz tones at a 31,469 Hz output rate [AUD.32]. Bentley Bear plays a 32 kHz tone (AUDF 0, AUDC $Ax) that must stay inaudible [AUD.33].
 - **A/V:** frames are 800 or 801 samples (NTSC 48 kHz, fraction 0.562 carried) and 961 or 962 (PAL). libretro reports 39,375,000/656,711 fps and 48,000 Hz, and RetroArch's dynamic rate control absorbs the 0.07 % gap to 60 Hz. Never pad samples per frame.
 
-**SYN-1.** **Recommendation:** reuse the sibling kernel with per-tick merging and a single first-order DC blocker (≈ 20 Hz, Q30 integers, coefficients checked in); drop the NES corner filters. RF/TV colouring becomes an optional host filter outside the hashes. **Strongest alternative:** model the board's 86 Hz / ≈ 220 Hz coupling high-passes. **Would change if:** the node load is measured.
+**SYN-1.** **Recommendation (updated 2026-10-20):** use regenerated Q23/16×32 coefficients with exact sum 8388608 and Q23→Q30×128, per-tick merging and one blocker `y=x-x_previous+R*y_previous`, Q30 R=1070934451 (≈20 Hz). Use hardware-derived gain and the complete transient/rounding proof above. Retain the approved sibling interpolation/ring architecture, not its historical Q15 table or NES corner filters. RF/TV colouring becomes an optional host filter outside the hashes. **Strongest alternative:** model the board's 86 Hz / ≈ 220 Hz coupling high-passes. **Would change if:** the node load is measured.
 **SYN-2.** **Recommendation:** if the hostile 4-channel 1.79 MHz ROM costs more than 10 % of frame time on the low-power bench target, add a PCM-only "box bins" profile for POKEY (exact tick integration into 1/8-sample bins, ≤ 8 kernel adds per sample). The transition hash is unchanged by it. **Strongest alternative:** a 1,024-phase table without interpolation (32 KiB) [AUD.23]. **Would change if:** the measurement shows the dense case stays within budget.
 **HASH.** **Recommendation:** the primary hash is SHA-256 over little-endian records {u64 tick, u8 source, u16 level}, one per per-channel DAC change. Sources: TIA0/1, POKEY a/b ch1–4, YM L/R, COVOX. It is independent of mixer tables and output rate and is computed only in the runner via the hook tap (zero cost when off). The PCM hash is secondary, per (rate, profile). **Strongest alternative:** PCM-only hashes (sibling). **Would change if:** hashing costs more than 2 % in the runner. **Before freezing PCM digests:** a synthetic full-scale test once hid 3.04 % clipping [AUD.24]. Run Commando, Ballblazer, E.X.O., A.R.T.I., the RMT demos and TIA-only titles; require 0 clipped samples and a peak ≤ −1 dBFS.
 
@@ -211,7 +213,7 @@ Both MAME and a7800 carry the a7800 4.7–4.9 fixes; MAME upstream is the supers
 | AUD.20 | T2 | 7800.8bitdev.org Atari 7800 Hardware Interfacing Guide | rev 1215 | Audio In, 1.19 MHz slow access |
 | AUD.21 | T3 | github.com/aaronsgiles/ymfm (BSD-3) | 81aec25ccbb9 | OPM sources, sizes, integer-only |
 | AUD.22 | T1 | github.com/7800-devtools/7800basic `samples/` | e7c18d2ecdc6 | audio samples and their settings |
-| AUD.23 | T1 | nesturbator `src/synth.c`; `.planning/preparation/NES-HARDWARE-CPU-APU.md` §5 (owner's sibling, MIT) | 34d68516a15e | kernel, interpolation, measured quality |
+| AUD.23 | T1 | nesturbator `src/synth.c`; `.planning/preparation/NES-HARDWARE-CPU-APU.md` §5 (owner's sibling, MIT) | 9f9386c661f6 | approved interpolation/ring seed; historical Q15 quality claim is not production evidence |
 | AUD.24 | T4 | gabbaboy lesson (owner's sibling): PCM digests frozen with 3.04 % clipping | accessed 2026-10-15 | clipping check |
 | AUD.25 | T4, measured | forums.atariage.com/topic/316812 (6.8 kΩ / 18 kΩ mix) | accessed 2026-10-15 | mix resistors, balance test |
 | AUD.26 | T4, measured | AtariAge topic 86087 (POKEY pitch drops with slow cycles) | accessed 2026-10-15 | φ2 stretch |

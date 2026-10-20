@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "audio_tables.h"
 
 /* The compact Nyquist-sinc/Kaiser-beta8 integrals are regenerated at Q23;
    the interpolation and impulse-ring architecture follows the MIT sibling. */
@@ -157,9 +158,22 @@ static void flush(struct muhtari__synth *s)
         return;
     }
     advance(s, s->pending_tick);
-    /* The nonlinear node-current tables replace this bootstrap scale in
-       the next implementation task. TIA alone uses the declared maximum. */
-    int32_t level = (int32_t)(s->raw[0] + s->raw[1]) * MUHTARI__SYNTH_MAX_LEVEL / 30;
+    /* Node-current weights are (25/180):(38/68) = 85:342;
+       POKEY nonlinearity applies after each chip's weighted DAC sum
+       (A7800-AUDIO section 3). The declared hardware fixes normalization. */
+    uint64_t current = (uint64_t)muhtari__tia_mix[s->raw[0] + s->raw[1]] * MUHTARI__TIA_CURRENT;
+    for (unsigned chip = 0; chip < s->pokeys; chip++) {
+        unsigned raw = 0;
+        for (unsigned ch = 0; ch < 4u; ch++) {
+            raw += s->raw[2u + 4u * chip + ch];
+        }
+        current += (uint64_t)muhtari__pokey_mix[raw] * MUHTARI__POKEY_CURRENT *
+                   MUHTARI__CART_GAIN_Q12 / 4096u;
+    }
+    uint64_t maximum = (uint64_t)MUHTARI__MIX_Q24 * MUHTARI__TIA_CURRENT +
+                       (uint64_t)s->pokeys * muhtari__pokey_mix[824] * MUHTARI__POKEY_CURRENT *
+                           MUHTARI__CART_GAIN_Q12 / 4096u;
+    int32_t level = (int32_t)((current * MUHTARI__SYNTH_MAX_LEVEL + maximum / 2u) / maximum);
     int32_t delta = level - s->mixed_level;
     if (delta != 0) {
         int32_t coefficients[16];
@@ -175,6 +189,7 @@ static void flush(struct muhtari__synth *s)
 
 void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys)
 {
+    assert(pokeys <= 2u);
     memset(&m->synth, 0, sizeof m->synth);
     m->synth.origin = origin;
     m->synth.tick = origin;
@@ -186,7 +201,9 @@ void muhtari__synth_level(muhtari *m, uint64_t tick, unsigned source, uint16_t l
 {
     struct muhtari__synth *s = &m->synth;
     assert(source < 10u);
+    assert(level <= (source < 2u ? 15u : 206u));
     assert(tick >= s->tick);
+    assert(s->pending == 0u || tick >= s->pending_tick);
     if (s->pending != 0u && tick != s->pending_tick) {
         flush(s);
     }
@@ -200,8 +217,11 @@ uint32_t muhtari__synth_render(muhtari *m, uint64_t end, int16_t *out)
 {
     struct muhtari__synth *s = &m->synth;
     assert(end >= s->horizon);
-    /* Future events are already reflected only in future ring/PCM cells. */
-    flush(s);
+    /* A pending tick at the boundary belongs to the next interval. Earlier
+       hardware catch-up may already have queued future PCM, which stays. */
+    if (s->pending != 0u && s->pending_tick < end) {
+        flush(s);
+    }
     advance(s, end);
     uint64_t a = s->horizon - s->origin;
     uint64_t b = end - s->origin;

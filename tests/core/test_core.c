@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "audio_tables.h"
 #include "muhtari.h"
 #include "sha256.h"
 #include "../alloc.h"
@@ -278,6 +279,174 @@ static void test_validate_first(void)
 
 /* Every frame writes 800 or 801 zero samples, alternating from 800, 801, and
    the total never drifts: N frames give floor(N * 119402 * 88 / 13125). */
+/* Cumulative production step response; the 88 sample alignments exhaust
+   integer tick positions since gcd(88,13125)=1. Summation by parts turns
+   arbitrary bounded levels into finite differences of these steps. */
+static int64_t synth_step(uint32_t n, uint32_t tick, const int32_t cumulative[13125][16])
+{
+    uint32_t q = tick * 88u / 13125u;
+    uint32_t phase = tick * 88u % 13125u;
+    if (n < q) {
+        return 0;
+    }
+    return n - q >= 16u ? MUHTARI__SYNTH_Q23 : cumulative[phase][n - q];
+}
+
+static void test_synth_bound(void)
+{
+    static int32_t cumulative[13125][16];
+    int64_t cmax = 0;
+    for (uint32_t phase = 0; phase < 13125u; phase++) {
+        int32_t c[16];
+        int32_t sum = 0;
+        muhtari__synth_coefficients(phase, c);
+        for (unsigned j = 0; j < 16u; j++) {
+            sum += c[j];
+            cumulative[phase][j] = sum;
+            int64_t magnitude = c[j] < 0 ? -(int64_t)c[j] : c[j];
+            cmax = magnitude > cmax ? magnitude : cmax;
+        }
+        CHECK_EQ_U64(sum, 8388608);
+    }
+    int64_t positive = 0, negative = 0;
+    muhtari *adverse = make();
+    for (uint32_t n = 100u; n < 188u; n++) {
+        int64_t p = 0, minus = 0;
+        uint32_t first_tick = (n - 17u) * 13125u / 88u;
+        uint32_t last_tick = ((n + 1u) * 13125u + 87u) / 88u - 1u;
+        for (uint32_t tick = first_tick; tick <= last_tick; tick++) {
+            int64_t w = synth_step(n, tick, cumulative) - synth_step(n, tick + 1u, cumulative);
+            if (w >= 0) {
+                p += w;
+            } else {
+                minus -= w;
+            }
+        }
+        CHECK_EQ_U64(p - minus, MUHTARI__SYNTH_Q23);
+        positive = p > positive ? p : positive;
+        negative = minus > negative ? minus : negative;
+        /* Construct each extremizing 0/M level sequence and pass it
+           through production event ordering, ring and blocker as well. */
+        for (unsigned sign = 0; sign < 2u; sign++) {
+            muhtari__synth_reset(adverse, 0u, 0u);
+            for (uint32_t tick = first_tick; tick <= last_tick; tick++) {
+                int64_t w = synth_step(n, tick, cumulative) - synth_step(n, tick + 1u, cumulative);
+                uint16_t raw = (uint16_t)((sign == 0u ? w > 0 : w < 0) ? 15u : 0u);
+                muhtari__synth_level(adverse, tick, 0u, raw);
+                muhtari__synth_level(adverse, tick, 1u, raw);
+            }
+            CHECK_EQ_U64(muhtari__synth_render(adverse, last_tick + 1u, NULL), n + 1u);
+            CHECK_EQ_U64(adverse->synth.integrator_q23,
+                         (sign == 0u ? p : -minus) * MUHTARI__SYNTH_MAX_LEVEL);
+            CHECK_EQ_U64(adverse->synth.clipped_samples, 0);
+        }
+    }
+    muhtari_destroy(adverse);
+    CHECK_EQ_U64(cmax, 7283992);
+    CHECK_EQ_U64(positive, 10865191);
+    CHECK_EQ_U64(negative, 2476583);
+    CHECK_EQ_U64(positive + negative, 13341774);
+    /* 29203.6 is below 32767*10^(-1/20). One whole PCM LSB covers both
+       the blocker feedback's <1/(1-R) Q30 units and final half-LSB. */
+    CHECK(((positive + negative) * MUHTARI__SYNTH_MAX_LEVEL + MUHTARI__SYNTH_Q23) * 5 <=
+          INT64_C(146018) * MUHTARI__SYNTH_Q23);
+    int64_t pending = INT64_C(16) * 150 * MUHTARI__SYNTH_MAX_LEVEL * cmax;
+    CHECK_EQ_U64(pending, INT64_C(320979305068800));
+    CHECK(pending < (INT64_C(1) << 49));
+    CHECK(positive * MUHTARI__SYNTH_MAX_LEVEL * 128 < (INT64_C(1) << 45));
+    CHECK((MUHTARI__SYNTH_Q30 - 1) * INT64_C(1070934451) < (INT64_C(1) << 60));
+}
+
+/* Independent test-only exponential series, avoiding a new analysis library.
+   Forty terms on [-2.451,0] make error far below one Q24 table LSB. */
+static double synth_test_exp(double x)
+{
+    double total = 1, term = 1;
+    for (unsigned k = 1; k <= 40u; k++) {
+        term *= x / k;
+        total += term;
+    }
+    return total;
+}
+
+static void test_synth_mix(void)
+{
+    CHECK_EQ_U64(sizeof muhtari__synth_kernel, 2048);
+    for (unsigned row = 0; row < 32u; row++) {
+        int32_t sum = 0;
+        for (unsigned tap = 0; tap < 16u; tap++) {
+            sum += muhtari__synth_kernel[row][tap];
+        }
+        CHECK_EQ_U64(sum, 8388608);
+    }
+    CHECK_EQ_U64(muhtari__synth_kernel[0][15], 0);
+    CHECK_EQ_U64(sizeof muhtari__tia_mix / sizeof muhtari__tia_mix[0], 31);
+    CHECK_EQ_U64(sizeof muhtari__pokey_mix / sizeof muhtari__pokey_mix[0], 825);
+    for (unsigned n = 0; n <= 30u; n++) {
+        uint32_t expected =
+            (uint32_t)(((uint64_t)2u * n * MUHTARI__MIX_Q24 + (n + 30u) / 2u) / (n + 30u));
+        CHECK_EQ_U64(muhtari__tia_mix[n], expected);
+        if (n > 0u) {
+            CHECK(muhtari__tia_mix[n] > muhtari__tia_mix[n - 1u]);
+        }
+    }
+    CHECK_EQ_U64(muhtari__tia_mix[30], MUHTARI__MIX_Q24);
+    CHECK_EQ_U64(muhtari__pokey_mix[0], 0);
+    for (unsigned n = 0; n <= 824u; n++) {
+        double x = (double)n / 824;
+        double curve =
+            2.171 * (x <= 0.14 ? x : 0.14 + (1 - synth_test_exp(-2.85 * (x - 0.14))) / 2.85);
+        uint32_t expected = (uint32_t)(curve * MUHTARI__MIX_Q24 + 0.5);
+        CHECK_EQ_U64(muhtari__pokey_mix[n], expected);
+        if (n > 0u) {
+            CHECK(muhtari__pokey_mix[n] > muhtari__pokey_mix[n - 1u]);
+        }
+    }
+    CHECK_EQ_U64(muhtari__pokey_mix[206], 8538596);
+    CHECK_EQ_U64(muhtari__pokey_mix[824], 16777645);
+    /* At the adopted node, one maximum channel is 2.1 times TIA full
+       current (unmeasured cartridge loading remains model uncertainty). */
+    uint64_t ratio = (uint64_t)muhtari__pokey_mix[206] * MUHTARI__POKEY_CURRENT * 1000u /
+                     ((uint64_t)muhtari__tia_mix[30] * MUHTARI__TIA_CURRENT);
+    CHECK(ratio >= 2047u && ratio <= 2049u);
+
+    muhtari *m = make();
+    for (uint8_t chips = 0; chips <= 2u; chips++) {
+        muhtari__synth_reset(m, 0u, chips);
+        for (unsigned source = 2u; source < 2u + 4u * chips; source++) {
+            muhtari__synth_level(m, 0u, source, 206u);
+        }
+        CHECK_EQ_U64(muhtari__synth_render(m, 1u, NULL), 0);
+        CHECK_EQ_U64(m->synth.mixed_level, chips == 0u ? 0u : chips == 1u ? 14706u : 16332u);
+        muhtari__synth_level(m, 1u, 0u, 15u);
+        muhtari__synth_level(m, 1u, 1u, 15u);
+        CHECK_EQ_U64(muhtari__synth_render(m, 2u, NULL), 0);
+        CHECK_EQ_U64(m->synth.mixed_level, MUHTARI__SYNTH_MAX_LEVEL);
+
+        /* Adverse full-range one-tick transitions, then slower ringing
+           steps, including long DC holds and the ring-wrap boundaries. */
+        for (uint32_t tick = 2u; tick < 100000u; tick++) {
+            uint32_t period = tick < 12000u ? 1u : tick < 40000u ? 149u : 4093u;
+            if (tick % period == 0u) {
+                uint16_t high = (uint16_t)((tick / period) & 1u);
+                muhtari__synth_level(m, tick, 0u, (uint16_t)(high * 15u));
+                muhtari__synth_level(m, tick, 1u, (uint16_t)(high * 15u));
+                for (unsigned source = 2u; source < 2u + 4u * chips; source++) {
+                    muhtari__synth_level(m, tick, source, (uint16_t)(high * 206u));
+                }
+            }
+            if (tick % 13125u == 0u) {
+                CHECK_EQ_U64(muhtari__synth_render(m, tick, NULL), 88u);
+            }
+        }
+        (void)muhtari__synth_render(m, 100000u, NULL);
+        CHECK_EQ_U64(m->synth.clipped_samples, 0);
+        CHECK(m->synth.pre_clip_peak > 10000u && m->synth.pre_clip_peak <= 29203u);
+        CHECK(m->synth.kernel_adds_per_sample <= 150u);
+    }
+    muhtari_destroy(m);
+}
+
 static void test_silence(void)
 {
     static const uint32_t first[4] = {800, 801, 800, 801};
@@ -346,6 +515,27 @@ static void test_silence(void)
     CHECK_EQ_U64(m->synth.integrator_q23, other->synth.integrator_q23);
     CHECK_EQ_U64(m->synth.blocker_q30, other->synth.blocker_q30);
     muhtari_destroy(other);
+    /* CPU catch-up may queue future PCM. Drain only the logical prefix;
+       discarded output must leave byte-identical future samples. */
+    other = make();
+    muhtari__synth_reset(m, 0u, 0u);
+    muhtari__synth_reset(other, 0u, 0u);
+    uint32_t future = 13125u + MUHTARI__SYNTH_OVERSHOOT_TICKS;
+    for (uint32_t tick = 0; tick <= future; tick += 17u) {
+        uint16_t raw = (uint16_t)((tick / 17u & 1u) * 15u);
+        muhtari__synth_level(m, tick, 0u, raw);
+        muhtari__synth_level(other, tick, 0u, raw);
+    }
+    CHECK_EQ_U64(muhtari__synth_render(m, 13125u, continuous), 88);
+    CHECK_EQ_U64(muhtari__synth_render(other, 13125u, NULL), 88);
+    CHECK(m->synth.carry_high_water > 0u);
+    CHECK(m->synth.carry_high_water <= MUHTARI__SYNTH_CARRY_SAMPLES);
+    uint32_t tail = muhtari__synth_render(m, future, continuous);
+    CHECK_EQ_U64(muhtari__synth_render(other, future, partitioned), tail);
+    CHECK(memcmp(continuous, partitioned, (size_t)tail * sizeof continuous[0]) == 0);
+    muhtari_destroy(other);
+    test_synth_bound();
+    test_synth_mix();
     muhtari_destroy(m);
 }
 
