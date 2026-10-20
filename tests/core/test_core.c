@@ -449,6 +449,41 @@ static void test_synth_mix(void)
 
 static void test_silence(void)
 {
+    /* A decoded bus tone reaches production PCM. B phases alternate
+       224/232 ticks; slow writes reach the DAC at +5, not +6
+       (A7800-AUDIO section 2; docs/hardware/bus.md, Clocks). */
+    muhtari *tone = make();
+    muhtari__synth_reset(tone, 0u, 0u);
+    tone->bus.inptctrl = 0x07u;
+    muhtari__bus_write(tone, 0x15u, 4u);
+    muhtari__bus_write(tone, 0x17u, 0u);
+    muhtari__bus_write(tone, 0x19u, 15u);
+    CHECK_EQ_U64(tone->synth.raw[0], 0u);
+    tone->bus.ticks = 59u;
+    muhtari__bus_write(tone, 0x19u, 15u);
+    CHECK_EQ_U64(tone->bus.ticks, 65u);
+    CHECK_EQ_U64(tone->synth.raw[0], 15u);
+    CHECK_EQ_U64(tone->synth.pending_tick, 64u);
+    tone->bus.ticks = 65u;
+    muhtari__bus_write(tone, 0x19u, 7u);
+    CHECK_EQ_U64(tone->synth.raw[0], 7u);
+    CHECK_EQ_U64(tone->synth.pending_tick, 70u);
+    CHECK_EQ_U64(tone->bus.ticks, 71u);
+    tone->bus.ticks = 283u;
+    muhtari__bus_write(tone, 0x19u, 7u);
+    CHECK_EQ_U64(tone->synth.raw[0], 0u);
+    CHECK_EQ_U64(tone->synth.pending_tick, 288u);
+    tone->bus.ticks = 515u;
+    muhtari__bus_write(tone, 0x19u, 7u);
+    CHECK_EQ_U64(tone->synth.raw[0], 7u);
+    CHECK_EQ_U64(tone->synth.pending_tick, 520u);
+    uint32_t tone_count = muhtari__synth_render(tone, 13125u, audio);
+    int audible = 0;
+    for (uint32_t i = 0u; i < tone_count; i++) {
+        audible |= audio[i] != 0;
+    }
+    CHECK(audible);
+    muhtari_destroy(tone);
     static const uint32_t first[4] = {800, 801, 800, 801};
     muhtari *m = make();
     muhtari_frame io;
