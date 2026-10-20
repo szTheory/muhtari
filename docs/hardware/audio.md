@@ -157,6 +157,16 @@ off-bin sine amplitude, aggregate physical-line leakage, an injected
 bypass at identical current-derived gain, Q30 blocker and int16 rounding.
 The deliberately aliased output must fail the same -80 dB judge.
 
+Each path evaluates exactly 132 distinct schedules: 96 TIA cases are
+AUDF 0..31 at offsets 0, 7 and 137 master ticks, with both full-volume
+channels synchronous and no declared POKEY. The other 36 use equivalent
+POKEY AUDF 0/1/3, one/two declared chips, one/four active full-volume
+channels per chip, and the same offsets. Both chips share phase in the
+two-chip stress. Coordinate-derived case identities reject missing and
+duplicate evaluations. The diagnostic also reports the conservative
+nearest-bin TIA reference used by the feasibility research, separately
+from the validated exact-frequency reference used for acceptance.
+
 These DAC-equivalent schedules exercise synthesis without claiming chip
 timing fidelity. Actual chip tests must separately establish timer, clock
 selection and polarity behavior. The adopted node-current model and its

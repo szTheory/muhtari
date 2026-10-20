@@ -19,7 +19,7 @@ struct tone {
 };
 
 struct spectrum {
-    double db, frequency, reference;
+    double db, frequency, reference, bin_db;
 };
 
 static double real_part[N], imaginary[N], window[N], window_sum;
@@ -127,8 +127,16 @@ static struct spectrum measure(const struct tone *t)
         }
     }
     double reference = fundamental(t) < 16000.0 ? fitted_amplitude(fundamental(t)) : 32767.0;
-    struct spectrum result = {20.0 * log10(peak / reference), peak_bin * RATE / N, reference};
-    REQUIRE(isfinite(result.db) && reference > 0.0);
+    double bin_reference = reference;
+    if (fundamental(t) < 16000.0) {
+        unsigned bin = (unsigned)lround(fundamental(t) * N / RATE);
+        bin_reference = 2.0 * hypot(real_part[bin], imaginary[bin]) / window_sum;
+    }
+    struct spectrum result = {20.0 * log10(peak / reference), peak_bin * RATE / N, reference,
+                              20.0 * log10(peak / bin_reference)};
+    /* An ultrasonic signal may quantize to exact silence. Its measured
+       peak is zero (-infinity dBFS), not an unevaluated case. */
+    REQUIRE(!isnan(result.db) && result.db != INFINITY && reference > 0.0);
     return result;
 }
 
@@ -253,6 +261,56 @@ static void analyzer_controls(void)
            "checked\n");
 }
 
+/* Coordinate-derived identity detects duplicate or missing schedules
+   independently of the iteration counter. */
+static unsigned case_id(const struct tone *t)
+{
+    unsigned offset = t->offset == 0u ? 0u : t->offset == 7u ? 1u : 2u;
+    REQUIRE(t->offset == 0u || t->offset == 7u || t->offset == 137u);
+    if (t->tia != 0u) {
+        REQUIRE(t->divisor < 32u && t->chips == 0u && t->channels == 0u);
+        return t->divisor * 3u + offset;
+    }
+    REQUIRE(t->divisor == 0u || t->divisor == 1u || t->divisor == 3u);
+    REQUIRE(t->chips == 1u || t->chips == 2u);
+    REQUIRE(t->channels == 1u || t->channels == 4u);
+    unsigned divisor = t->divisor == 0u ? 0u : t->divisor == 1u ? 1u : 2u;
+    return 96u + ((divisor * 2u + t->chips - 1u) * 2u + (t->channels == 1u ? 0u : 1u)) * 3u +
+           offset;
+}
+
+static void evaluate(const struct tone *t, int controls, uint8_t seen[132], unsigned *rejected,
+                     double worst[3])
+{
+    unsigned id = case_id(t);
+    REQUIRE(id < 132u);
+    if (id >= 132u) {
+        return;
+    }
+    REQUIRE(seen[id] == 0u);
+    seen[id]++;
+    capture(t, controls);
+    struct spectrum result = measure(t);
+    printf("%s AUDF%u chips%u channels%u offset%u: peak %.4f Hz reference %.5f %s %.5f dB margin "
+           "%.5f dB\n",
+           t->tia != 0u ? "TIA" : "POKEY-equivalent", t->divisor, t->chips, t->channels, t->offset,
+           result.frequency, result.reference, fundamental(t) < 16000.0 ? "dBc" : "dBFS", result.db,
+           -80.0 - result.db);
+    unsigned kind = t->tia != 0u ? 0u : 1u;
+    if (result.db > worst[kind]) {
+        worst[kind] = result.db;
+    }
+    if (t->tia != 0u && result.bin_db > worst[2]) {
+        worst[2] = result.bin_db;
+    }
+    if (controls != 0) {
+        REQUIRE(result.db >= -80.0);
+        *rejected += result.db >= -80.0;
+    } else {
+        REQUIRE(result.db < -80.0);
+    }
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2 || (strcmp(argv[1], "production") != 0 && strcmp(argv[1], "controls") != 0)) {
@@ -268,25 +326,35 @@ int main(int argc, char **argv)
     if (controls != 0) {
         analyzer_controls();
     }
-    const struct tone tones[] = {{1u, 0u, 0u, 0u, 0u}, {0u, 0u, 2u, 4u, 0u}};
+    const unsigned offsets[] = {0u, 7u, 137u};
+    const unsigned divisors[] = {0u, 1u, 3u};
+    uint8_t seen[132] = {0};
+    double worst[3] = {-1000.0, -1000.0, -1000.0};
     unsigned evaluated = 0, rejected = 0;
-    for (unsigned i = 0; i < sizeof tones / sizeof tones[0]; i++) {
-        capture(&tones[i], controls);
-        struct spectrum result = measure(&tones[i]);
-        printf("%s AUDF%u chips%u channels%u offset%u: peak %.4f Hz reference %.5f %s %.5f dB "
-               "margin %.5f dB\n",
-               tones[i].tia != 0u ? "TIA" : "POKEY-equivalent", tones[i].divisor, tones[i].chips,
-               tones[i].channels, tones[i].offset, result.frequency, result.reference,
-               fundamental(&tones[i]) < 16000.0 ? "dBc" : "dBFS", result.db, -80.0 - result.db);
-        evaluated++;
-        if (controls != 0) {
-            REQUIRE(result.db >= -80.0);
-            rejected += result.db >= -80.0;
-        } else {
-            REQUIRE(result.db < -80.0);
+    for (unsigned divisor = 0; divisor < 32u; divisor++) {
+        for (unsigned offset = 0; offset < 3u; offset++) {
+            struct tone t = {1u, divisor, 0u, 0u, offsets[offset]};
+            evaluate(&t, controls, seen, &rejected, worst);
         }
     }
-    REQUIRE(evaluated == 2u);
+    for (unsigned divisor = 0; divisor < 3u; divisor++) {
+        for (unsigned chips = 1u; chips <= 2u; chips++) {
+            for (unsigned channels = 1u; channels <= 4u; channels += 3u) {
+                for (unsigned offset = 0; offset < 3u; offset++) {
+                    struct tone t = {0u, divisors[divisor], chips, channels, offsets[offset]};
+                    evaluate(&t, controls, seen, &rejected, worst);
+                }
+            }
+        }
+    }
+    for (unsigned id = 0; id < 132u; id++) {
+        REQUIRE(seen[id] == 1u);
+        evaluated += seen[id] == 1u;
+    }
+    REQUIRE(evaluated == 132u);
+    REQUIRE(controls == 0 || rejected == 132u);
+    printf("worst TIA %.5f dBc, POKEY-equivalent %.5f dBFS\n", worst[0], worst[1]);
+    printf("research nearest-bin reference cross-check: TIA %.5f dBc\n", worst[2]);
     printf("%u evaluated, %u alias controls rejected, %d failures\n", evaluated, rejected,
            failures);
     return failures == 0 ? 0 : 1;
