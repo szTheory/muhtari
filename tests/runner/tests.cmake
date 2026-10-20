@@ -101,7 +101,16 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     set(movie "${OUT}/${name}" PARENT_SCOPE)
   endfunction()
 
-  # Runs muhtari-run with ARGN twice; fails unless both exit 0 with the same
+  # Fails unless out holds a "handoff_frame K" line with K in OpenBIOS's
+# window, 300 to 340, as tests/boot/test_boot.c requires of simple.
+function(expect_handoff out)
+  string(REGEX MATCH "(^|\n)handoff_frame ([0-9]+)\n" match "${out}")
+  if(match STREQUAL "" OR CMAKE_MATCH_2 LESS 300 OR CMAKE_MATCH_2 GREATER 340)
+    message(FATAL_ERROR "expected handoff_frame from 300 to 340, got\n${out}")
+  endif()
+endfunction()
+
+# Runs muhtari-run with ARGN twice; fails unless both exit 0 with the same
   # standard output and nothing on standard error. Sets var to the output.
   function(run_twice var)
     foreach(pass IN ITEMS 1 2)
@@ -442,10 +451,6 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       --port2 none --movie "${movie}" "${DIR}/input.a78")
     expect_output("lag_frames 1\n" --port1 proline --port2 auto --region ntsc --movie "${movie}"
       "${DIR}/input.a78")
-    string(REPEAT "0" 64 zeros)
-    write_movie(bios.txt "${prolines}boot bios\nbios-sha256 ${zeros}\n" "2:${released}")
-    expect_exit(2 "boot bios needs --boot, which this version does not have yet.*${usage_line}"
-      --movie "${movie}" "${DIR}/input.a78")
   elseif(CASE STREQUAL "movie.behaviour_warning")
     # Fault prevented: a movie recorded on another behaviour revision
     # replays without notice, or is refused although it may still match.
@@ -457,6 +462,61 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       message(FATAL_ERROR "expected exit 0, lag_frames 1 and one warning, got exit ${rc}\n"
         "${out}${err}")
     endif()
+  elseif(CASE STREQUAL "movie.boot_bios")
+    # Fault prevented: a movie recorded through the BIOS replays fast-booted,
+    # or the BIOS file's digest goes unchecked. The header's boot bios and
+    # the file's own digest boot simple through OpenBIOS with no --boot.
+    file(SHA256 "${BIOS}" digest)
+    write_movie(boot_bios.txt "${prolines}boot bios\nbios-sha256 ${digest}\n" "400:${released}")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${movie}" --bios "${BIOS}" "${ROM}"
+      OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT err STREQUAL "bios_sha256 ${digest}\n")
+      message(FATAL_ERROR "expected exit 0 and the BIOS digest, got exit ${rc}\n${out}${err}")
+    endif()
+    expect_handoff("${out}")
+  elseif(CASE STREQUAL "movie.bios_mismatch")
+    # Fault prevented: a movie recorded with another BIOS replays, or runs
+    # frames before the refusal. Both digests are named and no frame runs.
+    file(SHA256 "${BIOS}" digest)
+    string(REPEAT "0" 64 zeros)
+    write_movie(bios_other.txt "${prolines}boot bios\nbios-sha256 ${zeros}\n" "2:${released}")
+    expect_exit(1 "^bios_sha256 ${digest}\nmuhtari-run: [^\n]*bios_other.txt: bios-sha256 ${zeros} [^\n]*${digest}\n$"
+      --hash-frame 1 --movie "${movie}" --bios "${BIOS}" "${ROM}")
+  elseif(CASE STREQUAL "movie.boot_bios_no_file")
+    # Fault prevented: a movie's boot bios runs fast-booted when no BIOS is
+    # given.
+    string(REPEAT "0" 64 zeros)
+    write_movie(bios_nofile.txt "${prolines}boot bios\nbios-sha256 ${zeros}\n" "2:${released}")
+    expect_exit(2 "the movie's boot bios needs --bios FILE.*${usage_line}"
+      --movie "${movie}" "${ROM}")
+  elseif(CASE STREQUAL "movie.boot_conflict")
+    # Fault prevented: --boot silently overrides a movie's boot key, as the
+    # port and region options may not.
+    file(SHA256 "${BIOS}" digest)
+    write_movie(boot_b.txt "${prolines}boot bios\nbios-sha256 ${digest}\n" "2:${released}")
+    expect_exit(2 "--boot fast conflicts with the movie's boot bios.*${usage_line}"
+      --boot fast --movie "${movie}" --bios "${BIOS}" "${ROM}")
+    write_movie(boot_f.txt "${prolines}boot fast\n" "2:${released}")
+    expect_exit(2 "--boot bios conflicts with the movie's boot fast.*${usage_line}"
+      --boot bios --bios "${BIOS}" --movie "${movie}" "${ROM}")
+  elseif(CASE STREQUAL "bios.rejected")
+    # Fault prevented: a cartridge the BIOS sends down its 2600 path runs on
+    # or exits as a failure. The input cart's $FFF8 is 0, which OpenBIOS's
+    # region check refuses.
+    expect_exit(77 "^bios_sha256 [0-9a-f]+\nmuhtari-run: [^\n]*input.a78: the BIOS rejected the cartridge\n$"
+      --frames 60 --boot bios --bios "${BIOS}" "${DIR}/input.a78")
+  elseif(CASE STREQUAL "bios.invalid")
+    # Fault prevented: a BIOS file of the wrong size boots, or is refused
+    # without naming the file.
+    string(REPEAT "x" 1000 bytes)
+    file(WRITE "${OUT}/bios1000.bin" "${bytes}")
+    expect_exit(1 "bios1000.bin: not a 4 KiB or 16 KiB BIOS image\n$"
+      --frames 1 --boot bios --bios "${OUT}/bios1000.bin" "${DIR}/input.a78")
+  elseif(CASE STREQUAL "usage.boot_bios_no_file")
+    expect_exit(2 "--boot bios needs --bios FILE.*${usage_line}" --frames 1 --boot bios)
+    expect_exit(2 "--bios needs --boot bios.*${usage_line}" --frames 1 --bios x.bin)
+    expect_exit(2 "--boot needs fast or bios.*${usage_line}" --frames 1 --boot slow)
+    expect_output("" --frames 1 --boot fast)
   elseif(CASE STREQUAL "usage.port")
     expect_exit(2 "--port1 needs auto, proline, joystick or none.*${usage_line}"
       --frames 1 --port1 paddle)
@@ -508,8 +568,22 @@ foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch 
   set_tests_properties(runner.movie.${case} PROPERTIES FIXTURES_REQUIRED input_carts)
 endforeach()
 
-# The device and region options.
-foreach(case IN ITEMS usage.port usage.region_pal)
+# Movies and runs that boot through OpenBIOS, which built.openbios
+# assembles, with simple, which built.simple builds, or the input cart.
+set(runner_bios ${PROJECT_BINARY_DIR}/built/openbios/openbios.bin)
+set(runner_simple ${PROJECT_BINARY_DIR}/built/simple/simple.bas.a78)
+foreach(case IN ITEMS movie.boot_bios movie.bios_mismatch movie.boot_bios_no_file
+    movie.boot_conflict bios.rejected bios.invalid)
+  muhtari_add_test(NAME runner.${case}
+    COMMAND ${runner_check} -DCASE=${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
+      -DBIOS=${runner_bios} -DROM=${runner_simple} -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS runner portable TIMEOUT 30) # provisional, phase 3
+  set_tests_properties(runner.${case} PROPERTIES
+    FIXTURES_REQUIRED "input_carts;built_openbios;built_simple")
+endforeach()
+
+# The device, region and boot options.
+foreach(case IN ITEMS usage.port usage.region_pal usage.boot_bios_no_file)
   muhtari_add_test(NAME runner.${case}
     COMMAND ${runner_check} -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 10) # provisional, phase 3

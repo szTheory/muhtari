@@ -50,6 +50,10 @@ basic.spacephysics	basic,portable
 basic.trackertest	basic,portable
 basic.underthehood	basic,portable
 bios.handoff_simple	bios,portable
+bios.k_first_fetch	bios,portable
+bios.k_window	bios,portable
+bios.rejects_cart	bios,portable
+bios.splash_skip	bios,portable
 built.adventurer	built,portable
 built.atarivoxspeech	built,portable
 built.backuptest	built,portable
@@ -513,6 +517,8 @@ riot.timer.slow_cycle_counts_one	portable,riot
 runner.bench.bytes	bench,portable,runner
 runner.bench.format	bench,portable,runner
 runner.bench.percentile	bench,portable,runner
+runner.bios.invalid	portable,runner
+runner.bios.rejected	portable,runner
 runner.dump_png	portable,runner
 runner.exit.failure	portable,runner
 runner.exit.table	runner
@@ -525,6 +531,10 @@ runner.load.hash	portable,runner
 runner.load.pal_refused	portable,runner
 runner.md5	portable,runner
 runner.movie.behaviour_warning	portable,runner
+runner.movie.bios_mismatch	portable,runner
+runner.movie.boot_bios	portable,runner
+runner.movie.boot_bios_no_file	portable,runner
+runner.movie.boot_conflict	portable,runner
 runner.movie.conflict	portable,runner
 runner.movie.lag	portable,runner
 runner.movie.malformed	portable,runner
@@ -549,6 +559,7 @@ runner.probe.unreadable	portable,runner
 runner.probe.unsupported_board	portable,runner
 runner.probe.usage	portable,runner
 runner.stop	portable,runner
+runner.usage.boot_bios_no_file	portable,runner
 runner.usage.dump_syntax	portable,runner
 runner.usage.frame_range	portable,runner
 runner.usage.no_args	portable,runner
