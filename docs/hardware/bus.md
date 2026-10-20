@@ -52,10 +52,18 @@ With MEN = 1 (INPTCTRL bit 1), the 7800 decode applies:
 `$2800-$2FFF` is left undecoded, so it reads as cartridge space. The board answers every cartridge address through
 `src/cart.c`, which picks the board's mapping with one `switch`. A linear board maps its ROM so that it ends at
 `$FFFF`; below the ROM's start, and with nothing loaded, the bus floats. MARIA's DMA reads cartridge space through
-the same board read. The BIOS's mapping while EXT = 0 arrives with the BIOS.
+the same board read.
+
+While EXT = 0 and a BIOS is loaded, the BIOS ROM answers in place of the cartridge: with MEN = 1 at every A15 = 1
+address, `$8000-$FFFF`, the image mirrored there (a 16 KiB image twice, a 4 KiB one eight times, as MiSTer maps
+it), and with MEN = 0 at every A12 = 1 address, where the 2600 decode sees the image's top 4 KiB. Below `$8000` the
+cartridge still answers. The cartridge sees A12, A14 and A15 low while the BIOS is mapped (System notes, section 4;
+the OpenBIOS source's notes on INPTCTRL); the core does not pass those addresses to the board. MARIA's DMA reads the
+BIOS through the same rule, so a BIOS's own display lists and graphics work. Writes there change nothing.
 
 With MEN = 0, at power-on and in 2600 mode, the 2600 decode applies: with A12 = 0, A7 = 0 selects the TIA and A7 = 1
-the RIOT. Everything else is the cartridge. There is no system RAM, and every cycle is slow.
+the RIOT. A12 = 1 is the BIOS while EXT = 0; with EXT = 1, or with no BIOS, nothing answers there, as the core runs
+no 2600 cartridge. There is no system RAM, and every cycle is slow.
 
 At power-on every RAM byte is 0. Other fill patterns are a later profile option.
 
@@ -100,6 +108,11 @@ INPTCTRL, at any TIA address or mirror (Software Guide; System notes, section 5)
 
 Bits 4-7 are not stored, so `$16` acts as `$06`. INPTCTRL is `$00` at power-on: unlocked, MEN clear. A 7800 game
 runs with `$07` or more set.
+
+A BIOS's 2600 loader ends by writing `$FD` to a TIA register, which leaves LOCK, EXT and TIA-EN set and MEN clear
+(System notes, section 5). So a write that locks INPTCTRL with MEN = 0, under a BIOS and before the hand-off, means
+the BIOS has refused the cartridge as a 7800 one. The core sets a sticky rejection there, and `muhtari_run_frame`
+stops that frame and returns `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` (`docs/embedding.md`, Booting with a BIOS).
 
 ## RDY
 
@@ -202,6 +215,13 @@ measured row 239, column 436, which is 8,190 ticks before VBLANK start. t 24 is 
 grid has offset 0 against the beam: derived from C10, fitted, not measured. Frame 1 after a load is those 8,190
 ticks, 54 samples. MARIA writes each row as the beam plays it, and the rows of frame 1 the beam has not scanned
 since the load are written `$00` (`docs/hardware/maria.md`, The first frame after a load).
+
+With a BIOS, the machine starts from power-on instead (System notes, section 8): INPTCTRL `$00`, MARIA's registers
+0, so CTRL is `$00` and DMA is off, RAM and the RIOT at power-on, and the beam at line 0, t 0. SALLY runs RES
+(`docs/hardware/sally.md`, Reset), which reads the BIOS's reset vector through the 2600 decode. Frame 1 is the
+117,174 ticks from power-on to the first VBLANK start, 785 samples. Line 0 lies inside vertical blank, which ends
+at line 16, t 42, so frame 1 does not start at a VBLANK start; input set before it applies from power-on, as what
+is held when the power comes on.
 
 ## NMI
 

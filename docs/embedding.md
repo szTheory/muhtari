@@ -212,10 +212,10 @@ muhtari_status st = muhtari_load(m, &media);
 
 A refused load changes nothing: the previous cartridge, or the test card, keeps running as if the call had not
 been made. Once every check passes, the ROM is copied into one allocation, the only one a load makes, and
-any cartridge loaded before is freed. A BIOS is copied into a fixed 16 KiB array inside the instance. This
-version does not run the BIOS yet: with or without one, the machine starts from the fast-boot hand-off, the
-state the NTSC BIOS leaves as it jumps to the cartridge. A successful load replaces any loaded content and
-power-cycles the machine.
+any cartridge loaded before is freed. A BIOS is copied into a fixed 16 KiB array inside the instance. Without a
+BIOS the machine starts from the fast-boot hand-off, the state the NTSC BIOS leaves as it jumps to the cartridge;
+with one it boots through the BIOS, as [Booting with a BIOS](#booting-with-a-bios) describes. A successful load
+replaces any loaded content and power-cycles the machine.
 
 `muhtari_power_cycle(m)` runs the same power-on and boot again for the content already loaded; with nothing
 loaded it returns `MUHTARI_STATUS_OK` and the test card goes on. There is no unload: `muhtari_destroy` and
@@ -224,10 +224,31 @@ load.
 
 ## The first frame after load
 
-A load leaves the machine at the fast-boot hand-off, 8,190 ticks before VBLANK start, not at a frame boundary.
-The first `muhtari_run_frame` after a load or power cycle runs only those 8,190 ticks, so it returns 54 audio
-samples rather than 800 or 801. Its picture shows only the rows the beam scanned since the hand-off; every other
-row is written $00. Every later frame runs from one VBLANK start to the next, a whole frame of 119,402 ticks.
+A load without a BIOS leaves the machine at the fast-boot hand-off, 8,190 ticks before VBLANK start, not at a frame
+boundary. The first `muhtari_run_frame` after a load or power cycle runs only those 8,190 ticks, so it returns 54
+audio samples rather than 800 or 801. Its picture shows only the rows the beam scanned since the hand-off; every
+other row is written $00. Every later frame runs from one VBLANK start to the next, a whole frame of 119,402 ticks.
+
+## Booting with a BIOS
+
+With `bios` set, a load or power cycle starts the console from power-on: INPTCTRL `$00`, so the BIOS is mapped and
+the 2600 decode applies; MARIA's registers 0, so CTRL is `$00` with DMA off; RAM and the RIOT at power-on; and the
+beam at line 0, t 0. The CPU runs RES, which takes PC from the BIOS's reset vector with S = `$FD` and I set. The first
+frame runs to the first VBLANK start, 117,174 ticks and 785 samples, and the input set before it applies from
+power-on. Every later frame is whole. The BIOS then runs as on a console: it tests the machine, checks the
+cartridge, shows its splash screen and hands off.
+
+The hand-off frame is the frame, counted from 1 after the load or power cycle, of the first opcode fetch from
+cartridge space after INPTCTRL's EXT bit goes from 0 to 1. Only that first fetch counts; a game that maps the BIOS
+back in and returns does not move it. The fast boot hands off in frame 1. OpenBIOS hands `simple` off in frame 323,
+after its splash; holding Pause through its first check skips the splash.
+
+When the BIOS refuses the cartridge as a 7800 one and takes its 2600 path, it locks INPTCTRL with MEN = 0. That
+frame stops there, and it and every later `muhtari_run_frame` return `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` with
+no audio samples, until the next `muhtari_load` or `muhtari_power_cycle`. This version runs no 2600 cartridge.
+
+The core does not hash the BIOS or report its digest; a host that records which BIOS ran hashes the bytes it
+passed. The hand-off frame is not part of the public API either; the runner reports it (`docs/runner.md`).
 
 ## Input
 

@@ -25,7 +25,7 @@ Sources:
 
 A, X and Y are 8-bit, and so are S, the stack pointer, and P, the status register. PC is 16-bit. The stack is page
 1: a push writes at `$0100 + S` and then decrements S, and a pull increments S and then reads. S wraps within the
-page. Reset and IRQ are outside this page; on the 7800, IRQ is not connected. NMI has its own section below.
+page. IRQ is outside this page; on the 7800 it is not connected. Reset and NMI have their own sections below.
 
 ## Status register
 
@@ -159,6 +159,19 @@ register or flag changes. After that the CPU executes nothing until reset. `src/
 step of a jammed CPU reads `$FFFF` once and changes no register. `frame.jam_ends` shows that a cartridge jammed at its
 reset vector still ends every frame within one 4-tick step of its deadline. The vector harness checks that `jammed` is set after exactly these twelve opcodes. A
 jammed CPU also takes no NMI, so only reset recovers it.
+
+## Reset
+
+RES runs once, at power-on, when the machine boots through a BIOS; the fast boot sets the state the BIOS leaves
+instead. Like the NMI entry it takes seven cycles: two reads at PC, then the three stack cycles, which are reads, so S
+steps down by 3 with nothing written, then PC from `$FFFC` and `$FFFD`. The registers are 0 at power-on, so S ends at
+`$FD`; I is set and the other flags keep their power-on 0 (System notes, section 8). At power-on MEN = 0, so every
+one of these cycles is slow and the vector comes from the BIOS's top 4 KiB (`docs/hardware/bus.md`, Memory map). RES
+also clears a jam. Every BIOS starts with SEI and CLD, so a value other than these is overwritten (System notes,
+section 3).
+
+`src/cpu.c` marks each opcode fetch, the cycle in which SALLY raises SYNC, so the bus can see the first one from
+cartridge space after a BIOS sets EXT: that frame is the hand-off frame (`docs/embedding.md`, Booting with a BIOS).
 
 ## NMI
 

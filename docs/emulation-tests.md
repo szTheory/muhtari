@@ -152,6 +152,28 @@ with the 7800basic package's dasm, and checks the image's SHA-256,
 The image is never committed or shipped. Both fills' digests are rows of `tests/release/firmware.txt`, so
 `release.firmware_scan` rejects a release zip that holds either, and CI uploads nothing from `build/*/built`.
 
+## bios
+
+`bios.*` boots through a BIOS (`tests/boot/test_boot.c`). The cases that need OpenBIOS take the image
+`built.openbios` builds and the `simple` sample `built.simple` builds, so they run on the ci and wasm32 inventories,
+which list both fixtures. K is the hand-off frame (`docs/embedding.md`, Booting with a BIOS).
+
+- `bios.handoff_simple`: after power-on and RES, PC is the BIOS's reset vector, S is `$FD`, I is set, INPTCTRL and
+  CTRL are `$00`, and frame 1 is 117,174 ticks. OpenBIOS then hands `simple` off with K from 300 to 340; it is 323.
+  The window comes from OpenBIOS's source: its Fuji shows for 10 half-second ticks of 32 frames, 320 frames.
+- `bios.k_window`: the window's predicate passes 300 and 340 and fails 299 and 341.
+- `bios.k_first_fetch`: a 4 KiB BIOS and a cartridge built in memory hand control back and forth, each return to
+  the cartridge after EXT rises again; K stays at the first.
+- `bios.splash_skip`: Pause held on frames 1 to 3 gives K below 30. OpenBIOS first reads SWCHB in frame 3, measured
+  with the lag counter, which counts no input read before it.
+- `bios.rejects_cart`: `simple` with bit 0 of `$FFF8` cleared fails OpenBIOS's region check, so the BIOS takes its
+  2600 path; that frame and the next return `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` with no samples, a power cycle
+  rejects it again in the same frame, and a load of the unchanged image hands off in the window.
+
+The runner's side is in `tests/runner/tests.cmake`: `runner.bios.rejected` exits 77 on the input cart, whose `$FFF8`
+is 0; `runner.bios.invalid` exits 1 on a 1,000-byte BIOS; `runner.movie.boot_bios`, `bios_mismatch`,
+`boot_bios_no_file` and `boot_conflict` check a movie's `boot` and `bios-sha256` keys.
+
 
 ## diag
 

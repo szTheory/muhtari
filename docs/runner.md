@@ -5,7 +5,8 @@ device or input device, and prints hashes, writes PNG images or reports frame ti
 check that a build produces the expected picture.
 
 Given a cartridge image FILE, it loads the image and starts it from the fast-boot hand-off, the state the
-console's BIOS leaves as it jumps to the cartridge. Without one, every run shows the built-in test card (see
+console's BIOS leaves as it jumps to the cartridge, or, with `--boot bios --bios FILE`, through a BIOS image from
+power-on. Without one, every run shows the built-in test card (see
 [Test card](#test-card)). `--movie` replays recorded controller and console-switch input, one line per frame
 (see [Movies](#movies)). `--probe` reads a cartridge image and reports what it is, without running it (see
 [Probing an image](#probing-an-image)).
@@ -18,11 +19,12 @@ muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
 muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]
 muhtari-run --movie FILE [--frames N | --bench N] [--hash-frame N]...
             [--dump-frame N:FILE]... [[--rom] FILE]
+muhtari-run --frames N --boot bios --bios FILE [--hash-frame N]... [--rom] FILE
 muhtari-run --probe FILE
 muhtari-run --help | --version
 ```
 
-`--port1`, `--port2` and `--region` may be added to any run.
+`--port1`, `--port2`, `--region`, `--boot` and `--bios` may be added to any run.
 
 ## Options
 
@@ -36,6 +38,8 @@ muhtari-run --help | --version
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
 | `--port1 D`, `--port2 D` | The device on port 1 or port 2: `auto` (the cartridge's, the default), `proline`, `joystick` or `none`. With a movie, the movie's header names the devices, and a `D` other than `auto` that differs from it is a usage error. |
 | `--region R` | `auto` (the cartridge's, the default) or `ntsc`, which runs the cartridge as NTSC. `pal` is refused as a usage error until PAL is emulated. |
+| `--boot B` | `fast` (the default) starts the cartridge from the fast-boot hand-off; `bios` boots it through the BIOS given by `--bios`, from power-on. `bios` without `--bios`, or `--bios` without `bios`, is a usage error. With a movie, the movie's `boot` key decides, and a different `--boot` is a usage error. |
+| `--bios FILE` | The BIOS image `--boot bios` runs: 4,096 or 16,384 bytes whose reset vector points inside it. Its SHA-256 is printed on standard error as `bios_sha256 <hex>`. Any other file exits 1 with `muhtari-run: FILE: not a 4 KiB or 16 KiB BIOS image`. A cartridge the BIOS rejects exits 77 with `muhtari-run: FILE: the BIOS rejected the cartridge`, after the frame in which it did. |
 | `--probe FILE` | Identify the cartridge image in FILE and print its fields and hashes. It takes exactly one file and no other option. |
 | `--help` | Print the usage text and the exit statuses. It takes no other arguments. |
 | `--version` | Print `muhtari-run` and the version. It takes no other arguments. |
@@ -65,6 +69,23 @@ lag_frames 30
 
 It counts the frames in which the game read no controller or console switch (no CPU read of SWCHA, SWCHB or
 INPT0 to INPT5).
+
+With `--boot bios`, a line follows the hash lines, before `lag_frames`:
+
+```text
+handoff_frame 323
+```
+
+It is the hand-off frame: the frame of the first opcode fetch from cartridge space after the BIOS sets INPTCTRL's
+EXT bit, or `none` when no hand-off came in the frames run (`docs/embedding.md`, Booting with a BIOS). The runner
+reads it through an internal call of the core, not the public API. The public header holds only what an embedder
+needs, and the hand-off frame is a test and diagnostic observable; the runner is built in this tree against the
+static library, and already uses the core's internal SHA-1 the same way. The BIOS digest line goes to standard
+error, before any frame runs:
+
+```text
+bios_sha256 46b5bc2b716a20a1c40e2b920365c29cbab1594d01da94f4567b240181365cb2
+```
 
 `--bench N` prints nine `key value` lines after the run:
 
@@ -139,8 +160,8 @@ order and each key once. Blank lines and lines starting with `#` are allowed in 
 | `port1`, `port2` | Required: `proline`, `joystick` or `none`. |
 | `rom-sha256` | Optional: 64 hex digits, the cartridge's headerless SHA-256, as `--probe` prints in `sha256_headerless`. A different cartridge exits 1, naming both digests. |
 | `region` | Optional: `ntsc`. `pal` is refused. |
-| `boot` | Optional: `fast` or `bios`; `bios` also needs a `bios-sha256` line. This version boots `fast` only, and a movie with `boot bios` exits 2. |
-| `bios-sha256` | Optional: 64 hex digits. |
+| `boot` | Optional: `fast` or `bios`; `bios` also needs a `bios-sha256` line. `bios` boots through the BIOS given by `--bios FILE`, and exits 2 without it. |
+| `bios-sha256` | Optional: 64 hex digits, the BIOS file's SHA-256. With `boot bios`, a `--bios` file with another digest exits 1 before any frame runs, naming both digests. |
 | `behaviour` | Optional: the core behaviour revision the movie was recorded on, 1 to 999999999. A different revision prints one warning on standard error, and the replay continues. |
 
 The first line starting with `|` ends the header; every later line is a frame line. A frame line has three fields,
@@ -157,14 +178,17 @@ held, or `.` when it is not:
 The difficulty switches are positions, not presses: each line gives where both switches stand.
 
 **Timing.** Line k after the header is the input of frame k: the runner sets it before running frame k, and the
-console reads it from the start of vertical blank that opens frame k. Frame 1 opens at the fast-boot hand-off,
-not at a vertical blank, so the first frame line reaches no game; put a movie's first input on its second line.
+console reads it from the start of vertical blank that opens frame k. Under the fast boot, frame 1 opens at the
+hand-off, not at a vertical blank, so the first frame line reaches no game; put a movie's first input on its second
+line. Under `boot bios`, frame 1 opens at power-on, line 0, which lies inside vertical blank but not at its start;
+the console reads line 1 from power-on, as what is held when the power comes on, so line 1 counts. OpenBIOS first
+reads the console switches in frame 3, so Pause held on lines 1 to 3 skips its splash.
 
 **Length.** `--frames` defaults to the number of frame lines. When `--frames` runs past the last line, every
 button and console switch is released, and the difficulty switches stay where the last line put them.
 
-**Precedence.** The header wins over the command line. `--port1`, `--port2` or `--region` naming a different value
-from the header's exits 2; `auto`, or the same value, is accepted.
+**Precedence.** The header wins over the command line. `--port1`, `--port2`, `--region` or `--boot` naming a
+different value from the header's exits 2; `auto`, or the same value, is accepted.
 
 **Limits.** A movie is at most 33,554,432 bytes (32 MiB), 1,000,000 frame lines and 32 header lines, counting
 the first. A line is at most 64 bytes, except a `rom-sha256` or `bios-sha256` line, which is its key, a space and
