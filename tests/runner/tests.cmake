@@ -359,7 +359,7 @@ set_target_properties(muhtari-run-testdb PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-run-testdb)
 
-# --probe on 7800basic's simple sample, which built.samples builds into the
+# --probe on 7800basic's simple sample, which built.simple builds into the
 # build tree (tests/built/): headered and stripped through the shipped
 # runner, which finds the stripped one by its footer, and stripped through
 # muhtari-run-testdb, which finds it in the test hash list.

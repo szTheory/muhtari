@@ -144,7 +144,7 @@ jobs:
           $arch = if ($env:RUNNER_ARCH -eq 'ARM64') { 'arm64' } else { 'x64' }
           cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" $arch && set" |
             ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { "$($Matches[1])=$($Matches[2])" >> $env:GITHUB_ENV } }
-      # built.samples builds 7800basic's sample with these (tests/built/);
+      # built.<name> builds 7800basic's samples with these (tests/built/);
       # configure stops when either is missing.
       - name: Fetch wasmtime and 7800basic
         env:
