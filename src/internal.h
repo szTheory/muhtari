@@ -233,6 +233,7 @@ struct muhtari__ports {
     uint32_t pending_switches;
     uint8_t pending;
     uint8_t input_read;
+    uint64_t io_hazard; /* frames a 2600 stick's fire shorted a driven pin */
 };
 
 /* The largest BIOS image: 16 KiB at $C000-$FFFF (A7800-SYSTEM section 7). */

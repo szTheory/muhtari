@@ -444,7 +444,17 @@ frame.sample_renders	built,portable
 fuzz.regress.loader	fuzz,portable
 fuzz.regress.loader.self_test	fuzz,portable
 host.palette	host,portable
+input.ctlswb_no_swchb_write	input,portable
 input.directions	input,portable
+input.joystick_fire	input,portable
+input.lag_dma_and_peek	input,portable
+input.lag_even_frames	input,portable
+input.pa7_edge	input,portable
+input.proline_one_button	input,portable
+input.proline_two_button	input,portable
+input.switches	input,portable
+input.tia_en_disables_two_button	input,portable
+input.unplugged	input,portable
 install.consumer	install
 install.consumer.dll_crt	install
 install.stage	install

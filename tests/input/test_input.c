@@ -217,13 +217,14 @@ static uint32_t parse(const char *text)
 }
 
 /* Runs count frames from a fresh load, line k set before frame k, into
-   rows, and copies the entry the last frame read into got. */
-static void play(const settings *s, uint32_t count, uint8_t *rows, uint8_t got[ENTRY])
+   rows; copies the entry the last frame read into got and returns the
+   io_hazard count. */
+static uint64_t play(const settings *s, uint32_t count, uint8_t *rows, uint8_t got[ENTRY])
 {
     muhtari *m = boot(s);
     if (m == NULL) {
         check_failures++;
-        return;
+        return 0u;
     }
     for (uint32_t k = 0; k < count; k++) {
         CHECK_EQ_U64(muhtari_set_input(m, &frames[k]), MUHTARI_STATUS_OK);
@@ -232,48 +233,345 @@ static void play(const settings *s, uint32_t count, uint8_t *rows, uint8_t got[E
     const uint8_t *r = ram(m);
     CHECK_EQ_U64(r[FRAME_COUNT], count - 1u); /* one read each frame after the first */
     memcpy(got, r + RING + r[LAST_ENTRY], ENTRY);
+    uint64_t hazard = m->ports.io_hazard;
     muhtari_destroy(m);
+    return hazard;
 }
 
-/* A row: a movie and what the cartridge reads on its last line. */
+/* A row: the program's settings, a movie, the eight bytes the cartridge
+   reads on the movie's last line, and the io_hazard count after it. TIA
+   drives only D7 of INPT0-INPT5, so those are compared as D7 alone: H is
+   1, L is 0 (docs/hardware/bus.md, Open bus). press, when not 0, is
+   pressed on both ports on every line, for devices whose field cannot
+   spell it. */
+#define H 0x80u
+#define L 0x00u
 typedef struct row {
+    const settings *s;
     const char *movie;
-    uint8_t swcha;
+    uint8_t want[ENTRY];
+    uint32_t hazard;
+    uint32_t press;
 } row;
 
+static const uint8_t entry_mask[ENTRY] = {0xFFu, 0xFFu, H, H, H, H, H, H};
+static const char *const entry_names[ENTRY] = {"SWCHA", "SWCHB", "INPT0", "INPT1",
+                                               "INPT2", "INPT3", "INPT4", "INPT5"};
+
+/* Plays each row and checks every byte it reads and its io_hazard count. */
+static void check_rows(const char *name, const row *rows, size_t n)
+{
+    for (size_t i = 0; i < n; i++) {
+        const row *r = &rows[i];
+        uint32_t count = parse(r->movie);
+        for (uint32_t k = 0; k < count; k++) {
+            frames[k].buttons[0] |= r->press;
+            frames[k].buttons[1] |= r->press;
+        }
+        uint8_t got[ENTRY];
+        uint64_t hazard = play(r->s, count, video, got);
+        for (uint32_t b = 0; b < ENTRY; b++) {
+            if ((got[b] & entry_mask[b]) != r->want[b]) {
+                fprintf(stderr, "FAIL %s row %u: %s 0x%02X, expected 0x%02X\n", name, (unsigned)i,
+                        entry_names[b], (unsigned)(got[b] & entry_mask[b]), (unsigned)r->want[b]);
+                check_failures++;
+            }
+        }
+        if (hazard != r->hazard) {
+            fprintf(stderr, "FAIL %s row %u: io_hazard %u, expected %u\n", name, (unsigned)i,
+                    (unsigned)hazard, (unsigned)r->hazard);
+            check_failures++;
+        }
+    }
+}
+
+/* The program's settings for each mode. CTLSWB $14 with SWCHB $00 drives
+   PB2 and PB4 low, two-button mode on both ports; CTLSWB $04 on port 0
+   alone; CTLSWB $14 with no SWCHB write leaves ORB's power-on $FF on the
+   pins; INPTCTRL $0F also sets TIA-EN (section 3.1, section 3.3). */
+static const settings two_button = {0x07u, 0x14u, 0x01u, 0x00u, 0x00u};
+static const settings two_button_port0 = {0x07u, 0x04u, 0x01u, 0x00u, 0x00u};
+static const settings no_swchb_write = {0x07u, 0x14u, 0x00u, 0x00u, 0x00u};
+static const settings tia_en = {0x0Fu, 0x14u, 0x01u, 0x00u, 0x00u};
+
 #define PROLINES "muhtari-movie 1\nport1 proline\nport2 proline\n|......|......|...BB|\n"
+#define STICKS "muhtari-movie 1\nport1 joystick\nport2 joystick\n|.....|.....|...BB|\n"
+#define UNPLUGGED "muhtari-movie 1\nport1 none\nport2 none\n|||...BB|\n"
 
 /* Each direction on each port pulls its own SWCHA pin to 0, port 0's in
    bits 7-4 as right, left, down, up and port 1's in bits 3-0
-   (A7800-CARTRIDGES-AND-PERIPHERALS section 3.1). Each also changes the
-   picture of the frame that reads it. */
+   (A7800-CARTRIDGES-AND-PERIPHERALS section 3.1). With no switch held and
+   both difficulties B, SWCHB reads $3F (docs/hardware/controllers.md,
+   Switches). Each direction also changes the picture of the frame that
+   reads it. */
 static int directions(void)
 {
     static const row rows[] = {
-        {PROLINES "|U.....|......|...BB|\n", 0xEFu}, /* section 3.1: pin 1, SWCHA b4 */
-        {PROLINES "|.D....|......|...BB|\n", 0xDFu}, /* section 3.1: pin 2, SWCHA b5 */
-        {PROLINES "|..L...|......|...BB|\n", 0xBFu}, /* section 3.1: pin 3, SWCHA b6 */
-        {PROLINES "|...R..|......|...BB|\n", 0x7Fu}, /* section 3.1: pin 4, SWCHA b7 */
-        {PROLINES "|......|U.....|...BB|\n", 0xFEu}, /* section 3.1: pin 1, SWCHA b0 */
-        {PROLINES "|......|.D....|...BB|\n", 0xFDu}, /* section 3.1: pin 2, SWCHA b1 */
-        {PROLINES "|......|..L...|...BB|\n", 0xFBu}, /* section 3.1: pin 3, SWCHA b2 */
-        {PROLINES "|......|...R..|...BB|\n", 0xF7u}, /* section 3.1: pin 4, SWCHA b3 */
+        {&plain, PROLINES "|U.....|......|...BB|\n", {0xEFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
+        /* section 3.1: pin 1, SWCHA b4 */
+        {&plain, PROLINES "|.D....|......|...BB|\n", {0xDFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
+        /* section 3.1: pin 2, SWCHA b5 */
+        {&plain, PROLINES "|..L...|......|...BB|\n", {0xBFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
+        /* section 3.1: pin 3, SWCHA b6 */
+        {&plain, PROLINES "|...R..|......|...BB|\n", {0x7Fu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
+        /* section 3.1: pin 4, SWCHA b7 */
+        {&plain, PROLINES "|......|U.....|...BB|\n", {0xFEu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
+        /* section 3.1: pin 1, SWCHA b0 */
+        {&plain, PROLINES "|......|.D....|...BB|\n", {0xFDu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
+        /* section 3.1: pin 2, SWCHA b1 */
+        {&plain, PROLINES "|......|..L...|...BB|\n", {0xFBu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
+        /* section 3.1: pin 3, SWCHA b2 */
+        {&plain, PROLINES "|......|...R..|...BB|\n", {0xF7u, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
+        /* section 3.1: pin 4, SWCHA b3 */
     };
+    check_rows("directions", rows, sizeof rows / sizeof rows[0]);
     uint8_t got[ENTRY];
-    uint32_t idle = parse(PROLINES "|......|......|...BB|\n");
-    play(&plain, idle, baseline, got);
+    (void)play(&plain, parse(PROLINES "|......|......|...BB|\n"), baseline, got);
     CHECK_EQ_HEX(got[SWCHA], 0xFFu);
     for (size_t i = 0; i < sizeof rows / sizeof rows[0]; i++) {
-        uint32_t count = parse(rows[i].movie);
-        CHECK_EQ_U64(count, 2u);
-        play(&plain, count, video, got);
-        if (got[SWCHA] != rows[i].swcha) {
-            fprintf(stderr, "FAIL row %u: SWCHA 0x%02X, expected 0x%02X\n", (unsigned)i,
-                    (unsigned)got[SWCHA], (unsigned)rows[i].swcha);
-            check_failures++;
-        }
+        (void)play(&plain, parse(rows[i].movie), video, got);
         CHECK(memcmp(video, baseline, sizeof video) != 0);
     }
+    return check_failures == 0;
+}
+
+/* Two-button mode: the right button, button 1, reads 1 on INPT0 [INPT2]
+   and the left, button 2, on INPT1 [INPT3], while INPT4 [INPT5] reads 1.
+   SWCHB shows PB2 and PB4 driven 0. */
+static int proline_two_button(void)
+{
+    static const row rows[] = {
+        /* section 3.2: right button on INPT0, 1 = pressed; INPT4/5 read 1 */
+        {&two_button, PROLINES "|....1.|......|...BB|\n", {0xFFu, 0x2Bu, H, L, L, L, H, H}, 0u, 0u},
+        /* section 3.2: left button on INPT1 */
+        {&two_button, PROLINES "|.....2|......|...BB|\n", {0xFFu, 0x2Bu, L, H, L, L, H, H}, 0u, 0u},
+        /* section 3.2: port 1's right button on INPT2 */
+        {&two_button, PROLINES "|......|....1.|...BB|\n", {0xFFu, 0x2Bu, L, L, H, L, H, H}, 0u, 0u},
+        /* section 3.2: port 1's left button on INPT3 */
+        {&two_button, PROLINES "|......|.....2|...BB|\n", {0xFFu, 0x2Bu, L, L, L, H, H, H}, 0u, 0u},
+        /* section 3.2: nothing pressed */
+        {&two_button, PROLINES "|......|......|...BB|\n", {0xFFu, 0x2Bu, L, L, L, L, H, H}, 0u, 0u},
+        /* section 3.1: PB2 alone puts port 0 in two-button mode; port 1 stays
+           one-button, so its button 1 pulls INPT5 low */
+        {&two_button_port0,
+         PROLINES "|....1.|....1.|...BB|\n",
+         {0xFFu, 0x3Bu, H, L, H, L, H, L},
+         0u,
+         0u},
+    };
+    check_rows("proline_two_button", rows, sizeof rows / sizeof rows[0]);
+    return check_failures == 0;
+}
+
+/* One-button mode: either button pulls INPT4 [INPT5] to 0. INPT0-INPT3
+   follow the buttons in both modes, as section 3.2 says MAME, a7800 and
+   MiSTer have it; the console's one-button readings are unverified. */
+static int proline_one_button(void)
+{
+    static const row rows[] = {
+        /* section 3.2: either button pulls INPT4 low */
+        {&plain, PROLINES "|....1.|......|...BB|\n", {0xFFu, 0x3Fu, H, L, L, L, L, H}, 0u, 0u},
+        /* section 3.2 */
+        {&plain, PROLINES "|.....2|......|...BB|\n", {0xFFu, 0x3Fu, L, H, L, L, L, H}, 0u, 0u},
+        /* section 3.2: port 1, both buttons, pull INPT5 low */
+        {&plain, PROLINES "|......|....12|...BB|\n", {0xFFu, 0x3Fu, L, L, H, H, H, L}, 0u, 0u},
+        /* section 3.2: nothing pressed */
+        {&plain, PROLINES "|......|......|...BB|\n", {0xFFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
+    };
+    check_rows("proline_one_button", rows, sizeof rows / sizeof rows[0]);
+    return check_failures == 0;
+}
+
+/* A 2600 stick's fire pulls pin 6 low in either mode. In two-button mode
+   that shorts the driven pin, so each frame it is held adds 1 to
+   io_hazard. INPT0-INPT3 have nothing on them. */
+static int joystick_fire(void)
+{
+    static const row rows[] = {
+        /* section 3.2: fire pulls INPT4 low */
+        {&plain, STICKS "|....1|.....|...BB|\n", {0xFFu, 0x3Fu, L, L, L, L, L, H}, 0u, 0u},
+        /* section 3.2: port 1's fire on INPT5 */
+        {&plain, STICKS "|.....|....1|...BB|\n", {0xFFu, 0x3Fu, L, L, L, L, H, L}, 0u, 0u},
+        /* section 3.2 and section 3.3: INPT4 still reads 0 in two-button
+           mode, and the frame counts */
+        {&two_button, STICKS "|....1|.....|...BB|\n", {0xFFu, 0x2Bu, L, L, L, L, L, H}, 1u, 0u},
+        /* section 3.3: two frames held, two counted */
+        {&two_button,
+         STICKS "|.....|....1|...BB|\n|.....|....1|...BB|\n",
+         {0xFFu, 0x2Bu, L, L, L, L, H, L},
+         2u,
+         0u},
+        /* section 3.3: no fire, no count */
+        {&two_button, STICKS "|.....|.....|...BB|\n", {0xFFu, 0x2Bu, L, L, L, L, H, H}, 0u, 0u},
+    };
+    check_rows("joystick_fire", rows, sizeof rows / sizeof rows[0]);
+    return check_failures == 0;
+}
+
+/* CTLSWB $14 with no SWCHB write: ORB powers on $FF, so PB2 and PB4 are
+   driven high and both ports stay one-button, as One on One needs. */
+static int ctlswb_no_swchb_write(void)
+{
+    static const row rows[] = {
+        /* section 3.3: one-button, so button 1 pulls INPT4 low */
+        {&no_swchb_write,
+         PROLINES "|....1.|......|...BB|\n",
+         {0xFFu, 0x3Fu, H, L, L, L, L, H},
+         0u,
+         0u},
+        /* section 3.3: a stick's fire is no hazard in one-button mode */
+        {&no_swchb_write, STICKS "|....1|.....|...BB|\n", {0xFFu, 0x3Fu, L, L, L, L, L, H}, 0u, 0u},
+    };
+    check_rows("ctlswb_no_swchb_write", rows, sizeof rows / sizeof rows[0]);
+    return check_failures == 0;
+}
+
+/* INPTCTRL's TIA-EN set: PB2 and PB4 are driven low, yet the ports stay
+   one-button. */
+static int tia_en_disables_two_button(void)
+{
+    static const row rows[] = {
+        /* section 3.1: TIA-EN disables two-button mode */
+        {&tia_en, PROLINES "|....1.|......|...BB|\n", {0xFFu, 0x2Bu, H, L, L, L, L, H}, 0u, 0u},
+        /* section 3.1: so a stick's fire is no hazard */
+        {&tia_en, STICKS "|....1|.....|...BB|\n", {0xFFu, 0x2Bu, L, L, L, L, L, H}, 0u, 0u},
+    };
+    check_rows("tia_en_disables_two_button", rows, sizeof rows / sizeof rows[0]);
+    return check_failures == 0;
+}
+
+/* Reset, Select and Pause read 0 on SWCHB D0, D1 and D3 while held; a
+   difficulty switch at A reads 1 on D6 (left) and D7 (right); D2, D4 and
+   D5, input pins with nothing driving them, read 1
+   (docs/hardware/controllers.md, Switches; docs/hardware/riot.md, Ports). */
+static int switches(void)
+{
+    static const row rows[] = {
+        {&plain, PROLINES "|......|......|R..BB|\n", {0xFFu, 0x3Eu, L, L, L, L, H, H}, 0u, 0u},
+        {&plain, PROLINES "|......|......|.S.BB|\n", {0xFFu, 0x3Du, L, L, L, L, H, H}, 0u, 0u},
+        {&plain, PROLINES "|......|......|..PBB|\n", {0xFFu, 0x37u, L, L, L, L, H, H}, 0u, 0u},
+        {&plain, PROLINES "|......|......|...AB|\n", {0xFFu, 0x7Fu, L, L, L, L, H, H}, 0u, 0u},
+        {&plain, PROLINES "|......|......|...BA|\n", {0xFFu, 0xBFu, L, L, L, L, H, H}, 0u, 0u},
+        {&plain, PROLINES "|......|......|RSPAA|\n", {0xFFu, 0xF4u, L, L, L, L, H, H}, 0u, 0u},
+    };
+    check_rows("switches", rows, sizeof rows / sizeof rows[0]);
+    return check_failures == 0;
+}
+
+/* An unplugged port's pins read released, whatever the host presses: SWCHA
+   high, INPT0-INPT3 0 and INPT4 [INPT5] 1, in either mode. */
+static int unplugged(void)
+{
+    static const row rows[] = {
+        /* section 3.1: nothing closes a switch */
+        {&plain, UNPLUGGED "|||...BB|\n", {0xFFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0x3Fu},
+        /* section 3.1 */
+        {&two_button, UNPLUGGED "|||...BB|\n", {0xFFu, 0x2Bu, L, L, L, L, H, H}, 0u, 0x3Fu},
+    };
+    check_rows("unplugged", rows, sizeof rows / sizeof rows[0]);
+    return check_failures == 0;
+}
+
+/* SWCHA bit 7, port 0's right, is PA7. With the falling edge selected, a
+   Right press applied at VBLANK start sets PA7's flag at that tick, and its
+   release, a rising edge, does not (docs/hardware/riot.md, PA7). */
+static int pa7_edge(void)
+{
+    uint32_t count = parse(PROLINES "|...R..|......|...BB|\n");
+    CHECK_EQ_U64(count, 2u);
+    muhtari *m = boot(&plain);
+    if (m == NULL) {
+        return 0;
+    }
+    CHECK_EQ_U64(muhtari_set_input(m, &frames[0]), MUHTARI_STATUS_OK);
+    frame(m, video);
+    frame(m, video);
+    CHECK_EQ_U64(m->riot.pa7_flag, 0u);
+
+    /* What muhtari_run_frame does first at this VBLANK start. */
+    uint64_t at = m->bus.ticks;
+    CHECK_EQ_U64(muhtari_set_input(m, &frames[1]), MUHTARI_STATUS_OK);
+    muhtari__ports_latch(m);
+    CHECK_EQ_U64(m->riot.pa7_flag, 1u);
+    CHECK_EQ_U64(m->bus.ticks, at);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x0280u), 0x7Fu);
+
+    (void)muhtari__riot_read(m, 0x0285u); /* TIMINT clears the flag */
+    CHECK_EQ_U64(m->riot.pa7_flag, 0u);
+    CHECK_EQ_U64(muhtari_set_input(m, &frames[0]), MUHTARI_STATUS_OK);
+    muhtari__ports_latch(m);
+    CHECK_EQ_U64(m->riot.pa7_flag, 0u);
+    muhtari_destroy(m);
+    return check_failures == 0;
+}
+
+/* Runs n frames of the program with settings s from a fresh load; with
+   peek, peeks SWCHA and INPT4 before each. Returns the instance's
+   counters through *c. */
+static void counted(const settings *s, uint32_t n, int peek, muhtari_counters *c)
+{
+    memset(c, 0, sizeof *c);
+    c->size = (uint32_t)sizeof *c;
+    muhtari *m = boot(s);
+    if (m == NULL) {
+        check_failures++;
+        return;
+    }
+    if ((s->flags & DMA_ON) != 0u) {
+        /* 16 zones of 16 lines at DPP's hand-off value $1F84, each listing
+           one object one byte wide whose graphics are at $0280 on the
+           zone's last line: OFFSET 0 adds nothing to the high byte
+           (A7800-MARIA section 2.1). */
+        muhtari_span span;
+        memset(&span, 0, sizeof span);
+        span.size = (uint32_t)sizeof span;
+        CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_SYSTEM_RAM, &span), MUHTARI_STATUS_OK);
+        for (uint32_t z = 0; z < 16u; z++) {
+            span.data[0x784u + 3u * z] = 0x0Fu;
+            span.data[0x784u + 3u * z + 1u] = 0x22u;
+            span.data[0x784u + 3u * z + 2u] = 0x00u;
+        }
+        static const uint8_t dl[6] = {0x80u, 0x1Fu, 0x02u, 0x00u, 0x00u, 0x00u};
+        memcpy(span.data + 0xA00u, dl, sizeof dl);
+    }
+    for (uint32_t k = 0; k < n; k++) {
+        if (peek) {
+            (void)muhtari__bus_peek(m, 0x0280u);
+            (void)muhtari__bus_peek(m, 0x000Cu);
+        }
+        frame(m, video);
+    }
+    CHECK_EQ_U64(muhtari_get_counters(m, c), MUHTARI_STATUS_OK);
+    if ((s->flags & DMA_ON) != 0u) {
+        CHECK_EQ_HEX(m->maria.reg[0x1Cu], 0x40u); /* CTRL: DMA on */
+    }
+    muhtari_destroy(m);
+}
+
+/* A lag frame is one in which the CPU reads no input register. The
+   program reading on even frames only lags on the N/2 odd ones; reading
+   every frame, it lags only on the hand-off frame, which reads nothing. */
+static int lag_even_frames(void)
+{
+    static const settings even = {0x07u, 0x00u, 0x00u, 0x00u, READ_EVEN};
+    muhtari_counters c;
+    counted(&even, 60u, 0, &c);
+    CHECK_EQ_U64(c.frames, 60u);
+    CHECK_EQ_U64(c.lag_frames, 30u);
+    counted(&plain, 60u, 0, &c);
+    CHECK_EQ_U64(c.lag_frames, 1u);
+    return check_failures == 0;
+}
+
+/* MARIA's DMA fetch from $0280 and a peek of SWCHA or INPT4 are no CPU
+   reads, so a program that never reads input lags on every frame. */
+static int lag_dma_and_peek(void)
+{
+    static const settings never_dma = {0x07u, 0x00u, 0x00u, 0x00u, READ_NEVER | DMA_ON};
+    muhtari_counters c;
+    counted(&never_dma, 10u, 1, &c);
+    CHECK_EQ_U64(c.frames, 10u);
+    CHECK_EQ_U64(c.lag_frames, 10u);
     return check_failures == 0;
 }
 
@@ -284,6 +582,16 @@ int main(int argc, char **argv)
         int (*run)(void);
     } cases[] = {
         {"directions", directions},
+        {"proline_two_button", proline_two_button},
+        {"proline_one_button", proline_one_button},
+        {"joystick_fire", joystick_fire},
+        {"ctlswb_no_swchb_write", ctlswb_no_swchb_write},
+        {"tia_en_disables_two_button", tia_en_disables_two_button},
+        {"switches", switches},
+        {"unplugged", unplugged},
+        {"pa7_edge", pa7_edge},
+        {"lag_even_frames", lag_even_frames},
+        {"lag_dma_and_peek", lag_dma_and_peek},
     };
     if (argc != 2) {
         fprintf(stderr, "usage: muhtari-test-input <case>\n");

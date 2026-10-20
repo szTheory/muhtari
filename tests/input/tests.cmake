@@ -15,7 +15,9 @@ set_target_properties(muhtari-test-input PROPERTIES
 muhtari_warnings(muhtari-test-input)
 
 # One case per argv.
-foreach(input_case IN ITEMS directions)
+foreach(input_case IN ITEMS directions proline_two_button proline_one_button joystick_fire
+    ctlswb_no_swchb_write tia_en_disables_two_button switches unplugged pa7_edge
+    lag_even_frames lag_dma_and_peek)
   # provisional, phase 3
   muhtari_add_test(NAME input.${input_case} COMMAND muhtari-test-input ${input_case}
     LABELS input portable TIMEOUT 10)
