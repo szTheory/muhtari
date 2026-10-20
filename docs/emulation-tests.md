@@ -109,6 +109,7 @@ bytes run on hardware from a flash cartridge. `docs/hardware/maria.md`, Diagnost
 | `tests/diag/cpu.a78` | the 2 ticks a slow access adds, as INTIM after 64 loads ended by a WSYNC |
 | `tests/diag/dli.a78` | the DLI's NMI on zones 0, 1 and 2 and with the CPU parked in WSYNC, MARIA's WSYNC release, a store right after a WSYNC, and MSTAT's two edges by line and poll |
 | `tests/diag/linear16.a78`, `bank6.a78`, `sg144.a78` | the bytes the linear, bank-6 and 144K boards map at $4000, $8000 and $C000, before and after bank writes |
+| `tests/diag/modes.a78` | five zones in 160B, 320B, 320D, kangaroo mode and 2-byte characters on a plain SuperGame board; the byte at $4000 and the DLIs in one frame |
 
 A diagnostic that defines `diag_nmi` gets it as its NMI vector; the others return from NMI at once.
 
@@ -163,6 +164,7 @@ commit the source, and then the `.a78` with its manifest row's digest and pin se
 | `diag.cpu` | the `cpu` ROM's 4 records against `expected.csv` |
 | `diag.dli` | the `dli` ROM's 11 records against `expected.csv`, three DLI records also against `stats.csv` |
 | `diag.linear16`, `diag.bank6`, `diag.sg144` | the board ROMs' 4, 12 and 12 records against `expected.csv` |
+| `diag.modes` | the `modes` ROM's 2 records against `expected.csv` |
 | `diag.rebuild` | the committed diagnostics and Clark's two builds rebuilt from source, byte for byte |
 | `diag.rebuild.self_test` | a manifest copy with one digit of `dma.a78`'s digest changed must fail with `tests/diag/dma.a78: SHA-256 drift` |
 | `diag.expected.self_test` | an `expected.csv` copy whose `null` value is 242 must fail on that record |

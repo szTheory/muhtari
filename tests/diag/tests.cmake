@@ -26,6 +26,9 @@ muhtari_add_test(NAME diag.cpu
 muhtari_add_test(NAME diag.dli
   COMMAND muhtari-test-diag ${diag_dir}/dli.a78 ${diag_dir}/expected.csv ${diag_dir}/stats.csv
   LABELS diag portable TIMEOUT 30)  # provisional, phase 3
+muhtari_add_test(NAME diag.modes
+  COMMAND muhtari-test-diag ${diag_dir}/modes.a78 ${diag_dir}/expected.csv
+  LABELS diag portable TIMEOUT 30)  # provisional, phase 3
 # The board ROMs: the bytes each board maps (docs/hardware/cartridge.md,
 # The board ROMs).
 foreach(diag_board IN ITEMS linear16 bank6 sg144)
