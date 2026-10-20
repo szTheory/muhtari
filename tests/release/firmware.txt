@@ -9,5 +9,8 @@ sha1 5a140136a16d1d83e4ff32a19409ca376a8df874 PAL BIOS (c300558-001b.u7)
 sha1 14584b1eafe9721804782d4b1ac3a4a7313e455f BIOS with Asteroids (c300558-001a.u7)
 sha1 a3af676991391a6dd716c79022d4947206b78164 HSC ROM (highscre.bin)
 sha1 cd9d030a59f5bdcc88f1f80a6cc9fc2cd932f7db Supercharger BIOS (starpath supercharger.bin)
-# The two OpenBIOS rows ($FF and $00 fill) arrive with the OpenBIOS build in CI
-# (ASSET_POLICY.md section 3), which first produces those digests.
+# OpenBIOS as tests/built/openbios.cmake builds it from its pinned CC0 source,
+# with either fill in place of the two binaries it includes (ASSET_POLICY.md
+# section 3). The image is a test fixture only.
+sha256 46b5bc2b716a20a1c40e2b920365c29cbab1594d01da94f4567b240181365cb2 OpenBIOS (CI build, $FF fill)
+sha256 1ee4c780397c923447b245fcd75e3a276956a0fd130049d0a85041d058c3ad4f OpenBIOS (CI build, $00 fill)

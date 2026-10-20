@@ -331,7 +331,7 @@ The owner chose the recommended option for both.
     of a single colour. Fault prevented: pinning a blank screen.
   - **Fast path:** the hash at frame 120 equals H.
   - **BIOS path.**
-    - The runner reports the hand-off frame K: the first fetch from cartridge space after the BIOS locks INPTCTRL.
+    - The runner reports the hand-off frame K: the frame of the first opcode fetch from cartridge space after INPTCTRL EXT goes 0 to 1 (OpenBIOS writes $06 and never sets LOCK on its 7800 path; corrected at planning with that evidence).
     - The row passes if K is in [300, 340] and H appears within the 300 frames from K.
   - **New evidence on timing.** The OpenBIOS splash shows the Fuji for about 320 frames (`DISPLAYTIME = 10`
     half-second ticks, `FrameCounter32`). "Within 300 frames" can therefore only be met from the cartridge hand-off,

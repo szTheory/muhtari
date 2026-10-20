@@ -139,6 +139,19 @@ a fixture `basic.coverage` requires.
 `basic.coverage.self_test` appends `kangaroo 7800basic/simple` to a copy of the file. `simple` never uses kangaroo
 mode, so the run must fail on that claim.
 
+### openbios
+
+`built.openbios` builds the 7800 OpenBIOS, whose source is CC0, into `build/<preset>/built/openbios/openbios.bin`, the
+BIOS image the BIOS-path tests boot (fixture `built_openbios`). The source is the `7800openbios-asm` row of `pins.txt`.
+It includes two binaries of an in-BIOS game that is not CC0, and they are never fetched: `tests/built/openbios.cmake`
+replaces each `incbin` line with the same number of `$FF` bytes, fails unless each line occurs exactly once, assembles
+with the 7800basic package's dasm, and checks the image's SHA-256,
+`46b5bc2b716a20a1c40e2b920365c29cbab1594d01da94f4567b240181365cb2`, on every leg. `-DFILL=00` builds the `$00` variant.
+`built.openbios.self_test` doubles one `incbin` line in a copy of the source and expects the build to fail naming it.
+
+The image is never committed or shipped. Both fills' digests are rows of `tests/release/firmware.txt`, so
+`release.firmware_scan` rejects a release zip that holds either, and CI uploads nothing from `build/*/built`.
+
 
 ## diag
 
