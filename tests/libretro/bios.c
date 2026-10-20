@@ -17,7 +17,7 @@
 
 enum { ABSENT, VALID, SHORT, OVERSIZED, BAD_VECTOR, READ_ERROR, OPEN_ERROR };
 static int candidates[2];
-static max_align_t handles[2];
+static FILE *handles[2];
 static unsigned opens, closes;
 static bool fail_alloc;
 static const char *directory;
@@ -32,12 +32,12 @@ static FILE *bios_open(const char *path, const char *mode)
         errno = candidates[i] == ABSENT ? ENOENT : EACCES;
         return NULL;
     }
-    return (FILE *)&handles[i];
+    return handles[i];
 }
 
 static size_t bios_read(void *ptr, size_t size, size_t count, FILE *f)
 {
-    unsigned i = f == (FILE *)&handles[0] ? 0u : 1u;
+    unsigned i = f == handles[0] ? 0u : 1u;
     uint8_t *buf = (uint8_t *)ptr;
     CHECK_EQ_U64(size, 1u);
     CHECK(count >= 4096u);
@@ -54,7 +54,7 @@ static size_t bios_read(void *ptr, size_t size, size_t count, FILE *f)
 
 static int bios_error(FILE *f)
 {
-    unsigned i = f == (FILE *)&handles[0] ? 0u : 1u;
+    unsigned i = f == handles[0] ? 0u : 1u;
     return candidates[i] == READ_ERROR;
 }
 
@@ -139,6 +139,10 @@ int main(void)
         {VALID, VALID, true, 1u, 1u, 0u, "out of memory", "out of memory"},
     };
     struct retro_game_info game;
+    /* Borrow distinct stream pointers as tokens; the substituted operations
+       never access or close these streams. */
+    handles[0] = stdin;
+    handles[1] = stdout;
     memset(&game, 0, sizeof game);
     game.data = image;
     game.size = images_linear(image, 3u, 4096u);
