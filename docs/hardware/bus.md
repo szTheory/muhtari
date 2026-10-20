@@ -200,16 +200,20 @@ counted; CTRL `$60` (DMA off), DPP `$1F84`, palettes, BACKGRND and CHARBASE 0; t
 at `$1FF3` and OFFSET 2; RAM and the RIOT at power-on. The beam is at line 240, t 24, the first cartridge fetch's
 measured row 239, column 436, which is 8,190 ticks before VBLANK start. t 24 is a multiple of 4, so the CPU's cycle
 grid has offset 0 against the beam: derived from C10, fitted, not measured. Frame 1 after a load is those 8,190
-ticks, 54 samples. Until MARIA renders, every row of a frame with content is written `$00`.
+ticks, 54 samples. MARIA writes each row as the beam plays it, and the rows of frame 1 the beam has not scanned
+since the load are written `$00` (`docs/hardware/maria.md`, The first frame after a load).
 
 ## NMI
 
-On the 7800 only MARIA raises NMI, at the end of a zone's DMA, and never while MEN = 0. SALLY latches the edge at the
+On the 7800 only MARIA raises NMI, after the burst that reads a DLL entry with DLI set, and never while MEN = 0. SALLY latches the edge at the
 end of a φ2. The bus records `nmi_phi2`, the φ2 count of the first cycle whose data tick falls at or after the edge:
 tick 4 of a fast cycle, tick 5 of a slow one. An edge raised while MEN = 0 is dropped. One edge at a time: an edge
 raised while an earlier one is not yet latched is ignored, just as a latched edge the CPU has not taken keeps its
 `nmi_phi2` against a later one. Raising an edge returns 0 when it is ignored, under MEN = 0 or behind another, and
-1 when it is taken.
+1 when it is queued for latching. A queued edge can still be dropped by the latch, when an earlier latched edge has
+not been taken or MEN was cleared before it latched. MARIA raises one edge per DLI and never retries, so it needs
+only the 1: it keeps it as the line's `DLI_QUEUED` flag (`docs/hardware/maria.md`, The DLI). Nothing counts dropped
+edges.
 
 Held RDY and HALT cycles each carry their own φ2 count. So an edge latched during a hold names the held cycle it
 fell in, not the cycle that completes the access. After `STA WSYNC`, an edge at tick 100 falls in held cycle 25 of

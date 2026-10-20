@@ -2,11 +2,12 @@
 
 MARIA builds each scan line from display lists in memory. It stops SALLY with HALT, fetches the line's objects into
 line RAM in one burst, and plays the other line-RAM buffer out as pixels. `src/maria.c` models the registers, the
-display-list walk, the burst and line RAM, and keeps statistics for every line. The bus that grants the burst its
-time is in `docs/hardware/bus.md`.
+line events, the display-list walk, the burst, line RAM, the picture and the DLI, and keeps statistics for every
+line. The bus that grants the burst its time is in `docs/hardware/bus.md`.
 
 Every constant on this page is written down with its source before any ROM runs, and the tests in
-`tests/maria/test_maria.c` take their expected values from here, not from the emulator's output.
+`tests/maria/test_maria.c` and `tests/frame/test_frame.c` take their expected values from here, not from the
+emulator's output.
 
 Sources:
 
@@ -70,8 +71,8 @@ is made after OFFSET is added (section 2.3).
 
 **What a DMA read returns.** RAM answers: $1800-$27FF and its mirrors at $0040-$00FF and $0140-$01FF. The TIA,
 MARIA and RIOT selects are gated off while MARIA drives the bus, so their addresses return the floating byte, the
-previous fetch's, with no side effect. Cartridge space is the board's; the core does not route it to the board yet,
-so it floats too. Every fetch leaves its byte on the bus (section 4.7).
+previous fetch's, with no side effect. Cartridge space goes to the board, which answers MARIA as it answers the CPU,
+or leaves the floating byte where it drives none. Every fetch leaves its byte on the bus (section 4.7).
 
 ## DMA cost
 
@@ -164,6 +165,88 @@ a cell turns into pixels, never what the burst writes (section 3.2):
 | 320C | 1 / 11 | P2 D3 D2; D7 0 / D6 0 |
 | 320D | 0 / 10 | P2 0 0; D7 P1 / D6 P0 |
 
+## Line events and the frame
+
+MARIA's clock is the tick count, never the DMA. `origin` is the tick of line 0, t 0 of the current frame; a line is
+454 ticks and a frame 263 lines, 119,402 ticks. The origin moves on by a frame when line 263's t 0, the next
+frame's line 0, is reached. Each line has up to four events (section 4.1):
+
+| t | Lines | Event |
+|---|-------|-------|
+| 0 | every line | LRC: the previous raster's last pixel plays, line RAM swaps, the new write buffer clears, MARIA's WSYNC releases, and a burst in flight is aborted |
+| 28 | 17-258 | with CTRL's DMA mode 10, the HALT request for the line's burst; else the line is marked DMA off |
+| 42 | 16, 258 | MSTAT's VBLANK clears on line 16 and sets on line 258 |
+| 43 | 16 | with DMA on, VBE: the DLL pointer from DPPH and DPPL and zone 0's entry |
+
+The bus fires every event whose tick is at or before a cycle's data tick, before that cycle's HALT, RDY and NMI
+logic (`docs/hardware/bus.md`, Line events). The burst requested at t 28 runs when the HALT window reaches c2 (The
+HALT handshake, above).
+
+**The frame boundary.** `muhtari_run_frame` runs from one VBLANK start, line 258, t 42, to the next. By then line
+258's t 0 has played raster 257's last pixel, so a frame holds every raster from 16 to 257 whole. The run stops at
+the first instruction boundary at or after the boundary; the overshoot carries into the next frame, so frames never
+drift.
+
+## Rendering
+
+MARIA writes the native colour byte of each pixel straight into the caller's rows; the core keeps no frame buffer.
+Pixel x of raster n, x from 0 to 319, plays at t 135 + x of line n, from the buffer that line n - 1's burst filled.
+Each 160-pixel cell gives two 320-pixel pixels. Frame rows 0-241 are rasters 16-257; rasters 258-262 and 0-15 are
+blanked and written nowhere (sections 3.3 and 6).
+
+**Spans.** Pixels are played in spans with the registers as they stand, so a mid-line colour change lands on the
+pixel it should (section 10):
+
+- a write to any register but WSYNC, MSTAT and OFFSET first plays every pixel up to its data tick with the old
+  value; the pixel after shows the new one;
+- the t 0 event plays the rest of the previous raster before line RAM swaps.
+
+**A pixel's colour.** A cell holds palette P2 P1 P0 in bits 4-2 and its data pair in bits 1-0. The read mode is
+CTRL's bits 1-0 at the moment the span plays (section 3.2):
+
+| Read mode | Palette | Left pixel's colour | Right pixel's colour |
+|-----------|---------|---------------------|----------------------|
+| 0, 1 (160A, 160B) | P2 P1 P0 | the pair | the pair |
+| 2 (320B, 320D) | P2 0 0 | bit 1, then bit 3 | bit 0, then bit 2 |
+| 3 (320A, 320C) | P2 P1 P0 | bit 1, then 0 | bit 0, then 0 |
+
+Colour 00 shows BACKGRND ($20); palette p colour c is the register at $20 + 4p + c. Colour kill, CTRL bit 7, masks
+the byte with $0F. No burst runs before line 17, so rasters 16 and 17 play cleared buffers and show only BACKGRND.
+The border (CTRL bit 3) lies outside the 320 pixels and is not emitted.
+
+**No video.** With a NULL `video`, the spans write nothing but advance exactly as they would, so a frame without
+video leaves MARIA, the CPU and RAM in the same state as a frame with it.
+
+## The DLI
+
+A DLL entry with DLI set (bit 7) raises one NMI, when the burst on the previous zone's last line reads that entry.
+NMI goes low on the second φ1 after /HALT rises at the burst's HALTRST (System notes, section 2, C6: MiSTer's
+timing, fitted). SALLY's φ1s fall on its 4-tick grid from c2, where the bus runs the burst, so the edge is the
+second grid tick after HALTRST: in the hold's last cycle, or at its end when HALTRST is on the grid. Where SALLY
+latches the edge and after which instruction it takes the NMI are in `docs/hardware/bus.md` and
+`docs/hardware/sally.md`, NMI. A DLI adds no DMA ticks (section 4.5).
+
+MARIA raises the edge through `muhtari__bus_raise_nmi` and never retries. A 1 means the bus queued the edge, and
+MARIA records it as the line's `DLI_QUEUED` flag; the latch can still drop a queued edge (`docs/hardware/bus.md`,
+NMI). VBE reads zone 0's entry with no HALT window, and a DLI set on that entry raises no NMI yet: MiSTer and
+A7800Hawk fire it after VBE, and its timing waits for the diagnostic ROMs.
+
+## The first frame after a load
+
+The fast-boot hand-off puts the beam at line 240, t 24, where the NTSC BIOS leaves it (System notes, section 7,
+C10). These conventions follow from that:
+
+- **Frame 1** is the 8,190 ticks from the hand-off to VBLANK start: 54 audio samples, (8,190 x 88) / 13,125
+  rounded down. Each later frame is 119,402 ticks, and its count is (carried remainder + elapsed x 88) / 13,125,
+  800 or 801.
+- **Its rows.** Rows 0-223, rasters 16-239, have not been scanned since the load and are written `$00`. Rows
+  224-241 show what MARIA's hand-off state draws: CTRL $60 has DMA off; if the cartridge turns DMA on before line
+  258, the DL at $2200 and the DLL entries from $1FF3 lie in RAM the cartridge has not yet written, which reads
+  zero under the default fill, so the lines are empty and show BACKGRND. At the next VBE, DPP $1F84 is reloaded.
+  The picture is deterministic, and it is not the BIOS's own.
+- **The CPU's phase.** The hand-off fetch starts at t 24, a multiple of 4, so SALLY's cycle grid has offset 0
+  against the beam. The value is derived from C10 and fitted; an RTL simulation would confirm it.
+
 ## Statistics
 
 Every burst records its line in `stats`, one entry of 8 bytes for each of the 263 NTSC lines:
@@ -176,7 +259,7 @@ Every burst records its line in `stats`, one entry of 8 bytes for each of the 26
 | `objects` | objects whose every fetch ran, a holey object included |
 | `flags` | `LAST` (the zone's last line, the next entry read), `ABORTED` (the burst reached LRC), `DLI` (the entry read has DLI set), `DLI_QUEUED`, `DMA_BLOCKED` and `DMA_OFF` |
 
-`DLI_QUEUED`, `DMA_BLOCKED` and `DMA_OFF` are for the line events that run the burst: the bus took the DLI's NMI
+`DLI_QUEUED`, `DMA_BLOCKED` and `DMA_OFF` are for the line events that run the burst: the bus queued the DLI's NMI
 edge, the bus refused the line's HALT request, and CTRL had DMA off.
 
 The feature mask, `features`, is sticky: a bit sets on the first line that uses a feature and stays set. Each object
@@ -195,6 +278,7 @@ named beside it is made, on muhtari's own diagnostic ROMs or a capture:
 | First pixel | t 135 | a hardware capture puts the first pixel at t 133 or 134 |
 | HALT latency and handshake | two cycles after the fall, then T0 = fall + 6 | an empty-DL loop on hardware measures other than 16 and 24 ticks, or a cycle-counted loop disagrees |
 | DLI to NMI | NMI on the second φ1 after /HALT rises | the DLI diagnostic shows the NMI a cycle earlier or later against WSYNC |
+| The CPU's phase at the hand-off | 0, from the hand-off at t 24 | an RTL simulation of the hand-off gives another offset |
 | RDY after a write | the NMOS rule: RDY never holds a write | the store-timing diagnostic shows a write held |
 | Indirect hole | 6 or 9 ticks, the character's whole slot | hardware measures 3, as a7800 charges |
 | Holey DMA | draws nothing | a capture shows the first holey byte drawn |
