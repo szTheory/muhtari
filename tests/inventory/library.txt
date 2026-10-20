@@ -42,4 +42,5 @@ library.diag.linear16	library
 library.diag.modes	library
 library.diag.sg144	library
 library.ratchet	library
+library.ratchet.self_test	library
 library.results	library

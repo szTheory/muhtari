@@ -317,6 +317,41 @@ jobs:
       - name: Same hashes as Linux x64
         run: cmp hashes-linux-x64/hashes.txt build/wasm32/hashes.txt
 
+  # The compatibility ledger judged afresh: every pr-tier row on its built
+  # sample or diagnostic, on the fast boot and through OpenBIOS, then the
+  # ratchet against the pull request's base ledger (docs/emulation-tests.md,
+  # ledger). The full history is fetched for git show of the base. Report-only:
+  # not in CI required's needs until it has 10 green runs on main.
+  library:
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10  # provisional, phase 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || '' }}
+          fetch-depth: 0
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
+        run: |
+          scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
+      - name: Build the samples and OpenBIOS
+        run: |
+          cmake --preset ci
+          cmake --build --preset ci
+          ctest --preset ci -L '^built$'
+      - name: Judge the ledger
+        env:
+          MUHTARI_ROM_DIR: build/ci/built
+          MUHTARI_LEDGER_BASE: ${{ github.event.pull_request.base.sha }}
+        run: cmake --workflow --preset library
+      - name: Every test ran
+        run: cmake -DJUNIT=build/library/junit.xml -DINVENTORY=tests/inventory/library.txt -P tests/cmake/check_junit.cmake
+
   # A real frontend shows the frames the runner hashes: RetroArch from the
   # pinned DMG runs the built core with no content and on the dma diagnostic
   # with an empty system directory; each screenshot, decoded by sips, equals

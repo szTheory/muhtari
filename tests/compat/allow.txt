@@ -1,0 +1,7 @@
+# Dated exceptions to the compatibility ratchet (tests/cmake/compat_ratchet.cmake),
+# one line each:
+#   <id> <predicate> <expiry YYYY-MM-DD> <reason>
+# A line lets the ledger row (id, predicate) that was pass on the pull
+# request's base be anything else, or be gone, from the day it is checked
+# through its expiry, which must be at most 60 days away. It is reviewed in the
+# pull request that needs it and removed after that merges.

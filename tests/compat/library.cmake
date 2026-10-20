@@ -74,17 +74,20 @@ string(REGEX REPLACE "\n$" "" library_text "${library_text}")
 string(REPLACE "\n" ";" library_lines "${library_text}")
 list(POP_FRONT library_lines)
 set(library_tests "")
+set(library_flipped "id,predicate,status,evidence")
 foreach(line IN LISTS library_lines)
   string(REPLACE "," ";" f "${line}")
-  list(GET f 0 id)
-  list(GET f 2 raw)
-  list(GET f 4 a78)
-  list(GET f 9 predicate)
-  list(GET f 10 status)
-  list(GET f 11 tier)
+  list(GET f 0 2 4 9 10 11 13 g)
+  list(POP_FRONT g id raw a78 predicate status tier evidence)
   if(NOT tier STREQUAL "pr" OR status MATCHES "^(unsupported|skipped)$")
     continue()
   endif()
+  # The self test's results: the ledger's, the first row's status flipped.
+  if(NOT library_tests)
+    set(library_first ${id})
+    string(REGEX REPLACE "^pass$" "fail" status "${status}")
+  endif()
+  string(APPEND library_flipped "\n${id},${predicate},${status},${evidence}")
   if(DEFINED library_sha_${a78})
     set(rom ${library_sha_${a78}})
   elseif(DEFINED library_sha_${raw})
@@ -110,8 +113,30 @@ muhtari_add_test(NAME library.results
   LABELS library TIMEOUT 30)  # provisional, phase 3
 set_tests_properties(library.results PROPERTIES
   FIXTURES_CLEANUP library_rows FIXTURES_SETUP library_results)
+
+# The ratchet. MUHTARI_LEDGER_BASE, read from the environment, names the
+# commit whose ledger a passing row may not fall from: in CI, the pull
+# request's base.
+set(library_ratchet ${CMAKE_SOURCE_DIR}/tests/cmake/compat_ratchet.cmake)
+set(library_base "")
+if(NOT "$ENV{MUHTARI_LEDGER_BASE}" STREQUAL "")
+  set(library_base -DBASE=$ENV{MUHTARI_LEDGER_BASE} -DALLOW=${CMAKE_CURRENT_LIST_DIR}/allow.txt)
+endif()
 muhtari_add_test(NAME library.ratchet
   COMMAND ${CMAKE_COMMAND} -DLEDGER=${compat_ledger} -DRESULTS=${PROJECT_BINARY_DIR}/results.csv
-    -P ${CMAKE_SOURCE_DIR}/tests/cmake/compat_ratchet.cmake
+    ${library_base} -P ${library_ratchet}
   LABELS library TIMEOUT 30)  # provisional, phase 3
 set_tests_properties(library.ratchet PROPERTIES FIXTURES_REQUIRED library_results)
+
+# Negative control: results that differ from the ledger in one status must
+# fail the ratchet naming that row.
+string(REPLACE "<semicolon>" ";" library_flipped "${library_flipped}\n")
+file(WRITE ${PROJECT_BINARY_DIR}/ratchet_self_test.csv "${library_flipped}")
+set(library_cmd ${CMAKE_COMMAND} -DLEDGER=${compat_ledger}
+  -DRESULTS=${PROJECT_BINARY_DIR}/ratchet_self_test.csv -P ${library_ratchet})
+string(REPLACE ";" "$<SEMICOLON>" library_cmd "${library_cmd}")
+muhtari_add_test(NAME library.ratchet.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${library_cmd}" -DCODE=1
+    "-DREGEX=${library_first} [^ ]+: ledger [a-z]+ [^,]+, results [a-z]+"
+    -P ${CMAKE_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+  LABELS library TIMEOUT 30)  # provisional, phase 3

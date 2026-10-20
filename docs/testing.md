@@ -47,6 +47,7 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, about 1 GiB of disk and 90 s for the fetch. | `vectors-full` | `vectors-full` |
 | `be32` | The same hashes on a big-endian, 32-bit target with unsigned `char`. It cross-compiles for 32-bit PowerPC (`cmake/toolchains/ppc-linux-gnu.cmake`) and runs under `qemu-ppc`. | `ci` | `portable` |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
+| `library` | The compatibility ledger holds: each `pr` row is judged afresh on its file under `MUHTARI_ROM_DIR` or `tests/diag`, on both boot paths, and the ratchet compares (`docs/emulation-tests.md`, ledger). Run the `ci` preset's `built` tests first, then `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library`. | `library` | `library` |
 
 On the two emulated lanes, CMake runs each test binary through `CMAKE_CROSSCOMPILING_EMULATOR`. Every script that
 starts `muhtari-run` takes the same emulator as `-DEMULATOR=`, so a test never runs a host binary in place of the
@@ -95,8 +96,8 @@ selects by label. `docs/emulation-tests.md` says what each emulation label's tes
 labels comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
 test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
 Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
-Five lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt` and `wasm32.txt`, which is the
-`ci` list without the `libretro` tests.
+Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt`, `library.txt`, one
+`library.<id>` per ledger row of tier `pr`, and `wasm32.txt`, which is the `ci` list without the `libretro` tests.
 
 | Label | Tests |
 |---|---|
@@ -217,6 +218,7 @@ with its lane's inventory and labels.
 | `hash-equality` | `ubuntu-26.04` | compares exactly seven `hashes.txt` files: the six `build` legs and `be32` | none |
 | `wasm32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
 | `retroarch` | `macos-15` | the built core in RetroArch; see "Hosted RetroArch" | none |
+| `library` | `ubuntu-26.04` | full history; builds the `ci` preset's samples and OpenBIOS (`-L '^built$'`), then preset `library` over `build/ci/built` with the pull request's base for the ratchet | `library.txt` |
 | `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame of runners built with `MUHTARI_TESTS` OFF; see "Performance" | none |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
@@ -227,12 +229,12 @@ action is pinned by full commit SHA.
 **The roll-up.** The ruleset requires one check, `CI required`. It always runs, and passes only when every job it
 needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which
 happens only when every changed path is under `.planning/`; `title` and `perf` may be skipped outside pull
-requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` reports only and is not among the
-jobs `CI required` needs.
+requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` and `library` report only and are
+not among the jobs `CI required` needs; `library` joins after 10 green runs on `main`.
 
 **Tests of CI itself.** The hygiene lane checks the rules above. `policy.ci_required` reads the roll-up's `jq`
 program from `ci.yml` and runs it, with the step's own arguments, on synthetic job results; it also fails when a
-job other than `wasm32` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
+job other than `wasm32` and `library` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
 renamed, empty and planning-only path lists, and on a planning-only list from a pull request of more than 3000
 files, which the files API cuts short. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
 comment with a run ID or the word `provisional`. A measured timeout is twice the job's slowest successful run,
