@@ -447,8 +447,11 @@ static void test_synth_mix(void)
     muhtari_destroy(m);
 }
 
+static void test_public_audio(void);
+
 static void test_silence(void)
 {
+    test_public_audio();
     static const uint32_t first[4] = {800, 801, 800, 801};
     muhtari *m = make();
     muhtari_frame io;
@@ -825,6 +828,107 @@ static void load_program(muhtari *m, const uint8_t *program, size_t n)
     make_cart(cart, program, n, 0u);
     muhtari_media media = media_for(cart, sizeof cart);
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+}
+
+/* Public PCM must follow cartridge writes even when the steady loop never
+   touches the TIA again. The absolute chip epoch and output grid have
+   different fast-boot origins (docs/embedding.md, The first frame). */
+static void test_public_audio(void)
+{
+    static const uint8_t tone[] = {
+        0xA9, 0x07, 0x85, 0x01, /* lock the 7800 decode */
+        0xA9, 0x04, 0x85, 0x15, /* AUDC0 div2 */
+        0xA9, 0x05, 0x85, 0x17, /* AUDF0 */
+        0xA9, 0x0F, 0x85, 0x19, /* AUDV0 */
+        0x4C, 0x10, 0xF0        /* JMP $F010 */
+    };
+    muhtari *m = make(), *discard = make(), *reference = make();
+    load_program(m, tone, sizeof tone);
+    load_program(discard, tone, sizeof tone);
+    load_program(reference, tone, sizeof tone);
+    const uint64_t origin = 240u * 454u + 24u;
+    CHECK_EQ_U64(m->bus.ticks, origin);
+    CHECK_EQ_U64(m->bus.phi2, 0u);
+    CHECK_EQ_U64(m->synth.origin, origin);
+    /* Independently advance the hidden zero-volume startup to the handoff. */
+    muhtari *hidden = make();
+    muhtari__tia_reset(hidden);
+    muhtari__tia_catch_up(hidden, origin);
+    CHECK(memcmp(&m->tia, &hidden->tia, sizeof m->tia) == 0);
+    muhtari_destroy(hidden);
+
+    int16_t expected[AUDIO_CAP], actual[AUDIO_CAP], after_discard[AUDIO_CAP], first[54];
+    uint32_t rem = 0u;
+    for (unsigned f = 0u; f < 24u; f++) {
+        uint64_t end = m->frame_deadline;
+        uint32_t elapsed = f == 0u ? 8190u : TICKS_PER_FRAME;
+        uint32_t count = (rem + elapsed * 88u) / 13125u;
+        rem = (rem + elapsed * 88u) % 13125u;
+        while (reference->bus.ticks < end) {
+            muhtari__cpu_step(reference);
+        }
+        muhtari__tia_catch_up(reference, reference->bus.ticks);
+        CHECK_EQ_U64(muhtari__synth_render(reference, end, expected), count);
+        muhtari_frame io;
+        frame_io(&io, NULL, 0u, actual, AUDIO_CAP);
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(io.audio_count, count);
+        CHECK_EQ_U64(m->audio_rem, rem);
+        CHECK(memcmp(actual, expected, count * sizeof actual[0]) == 0);
+        int nonzero = 0;
+        for (uint32_t i = 0u; i < count; i++) {
+            nonzero |= actual[i] != 0;
+        }
+        CHECK(nonzero);
+        if (f == 0u) {
+            CHECK_EQ_U64(count, 54u);
+            memcpy(first, actual, sizeof first);
+        }
+        frame_io(&io, NULL, 0u, f % 2u == 0u ? NULL : after_discard, AUDIO_CAP);
+        CHECK_EQ_U64(muhtari_run_frame(discard, &io), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(io.audio_count, count);
+        if (f % 2u != 0u) {
+            CHECK(memcmp(actual, after_discard, count * sizeof actual[0]) == 0);
+        }
+        CHECK_EQ_U64(m->bus.ticks, reference->bus.ticks);
+        CHECK_EQ_U64(m->bus.phi2, reference->bus.phi2);
+        CHECK_EQ_U64(m->synth.phase, reference->synth.phase);
+        CHECK_EQ_U64(m->synth.blocker_q30, reference->synth.blocker_q30);
+        CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_CARRY_SAMPLES);
+    }
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    muhtari_frame io;
+    frame_io(&io, NULL, 0u, actual, AUDIO_CAP);
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(io.audio_count, 54u);
+    CHECK(memcmp(actual, first, sizeof first) == 0);
+
+    /* A tiny in-memory BIOS selects cartridge space without resetting the
+       audio clock or reconstruction at the handoff. RES is real bus time. */
+    memset(bios, 0xEA, sizeof bios);
+    static const uint8_t boot[] = {0xA9, 0x07, 0x85, 0x01};
+    memcpy(bios + 0x3000u, boot, sizeof boot);
+    make_cart(cart, tone, sizeof tone, 0u);
+    bios[sizeof bios - 4u] = 0x00u;
+    bios[sizeof bios - 3u] = 0xF0u;
+    muhtari_media media = media_for(cart, sizeof cart);
+    media.bios = bios;
+    media.bios_size = sizeof bios;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->synth.origin, 0u);
+    CHECK_EQ_U64(m->audio_rem, 0u);
+    CHECK_EQ_U64(m->bus.phi2, 7u);
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(io.audio_count, 785u);
+    CHECK_EQ_U64(m->synth.origin, 0u);
+    int nonzero = 0;
+    for (uint32_t i = 0u; i < io.audio_count; i++) {
+        nonzero |= actual[i] != 0;
+    }
+    CHECK(nonzero);
+    muhtari_destroy(reference);
+    muhtari_destroy(discard);
+    muhtari_destroy(m);
 }
 
 /* A refused load, for each reason, leaves the previous cartridge running:
