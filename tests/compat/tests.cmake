@@ -32,3 +32,16 @@ muhtari_add_test(NAME title.simple.bios
   LABELS portable title TIMEOUT 60)  # provisional, phase 3
 set_tests_properties(title.simple.fast title.simple.bios PROPERTIES
   FIXTURES_REQUIRED "built_simple;built_openbios")
+
+# Negative control for the pin writer: the linear seed cartridge, filler
+# bytes behind a valid footer, shows one colour at frame 120, so --pin must
+# refuse it rather than pin a blank screen. The image comes from
+# muhtari-test-images.
+set(compat_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-test-predicate>
+  ${CMAKE_BINARY_DIR}/runner-probe/linear-v3-16k title@120=- --pin)
+string(REPLACE ";" "$<SEMICOLON>" compat_cmd "${compat_cmd}")
+muhtari_add_test(NAME title.pin.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${compat_cmd}" -DCODE=1 "-DREGEX=single colour"
+    -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+  LABELS portable title TIMEOUT 30)  # provisional, phase 3
+set_tests_properties(title.pin.self_test PROPERTIES FIXTURES_REQUIRED probe_images)
