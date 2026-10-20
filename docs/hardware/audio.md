@@ -1,6 +1,6 @@
 # Audio reconstruction
 
-The internal synthesis identity is `exact-q23-16x32-dc20`. The output is mono
+The internal synthesis identity is `exact-q23-16x64-dc20`. The output is mono
 signed int16 at exactly 48,000/1 Hz. One master tick advances the output phase
 by 88 modulo 13,125. Events at tick t use that tick's phase before advancing
 the interval [t,t+1); equal-tick raw source changes are merged before adding
@@ -15,15 +15,35 @@ in [sound research](../../.planning/phases/04-sound/04-RESEARCH.md),
 the dated coefficient-precision amendment. No NES filters or
 NES mixer tables are retained.
 
-For phase p=0..31 and tap j=0..15, integrate
+For phase p=0..63 and tap j=0..15, integrate
 `sinc(x) I0(8 sqrt(1-(x/7.5)^2))/I0(8)` over the intersection of
-`[j-7-p/32-0.5,j-7-p/32+0.5]` and `[-7.5,7.5]`. Here sinc is
+`[j-7-p/64-0.5,j-7-p/64+0.5]` and `[-7.5,7.5]`. Here sinc is
 `sin(pi*x)/(pi*x)`, with its continuous value 1 at zero. Composite Simpson
-integration with 128 and 256 subdivisions gives identical rounded Q23 rows.
+integration with 128, 256 and 512 subdivisions gives identical rounded Q23 rows.
 Support endpoints use their actual integrand value, not an artificial zero.
-Round each cell by `floor(area*8388608+0.5)`, then correct tap 7 for p<16,
-otherwise tap 8, to sum to 8,388,608. The 512 int32 cells occupy 2,048 bytes.
-Phase 32 is phase 0 shifted one tap right; phase 0's final cell is zero.
+Round each cell by `floor(area*8388608+0.5)`, then correct tap 7 for p<32,
+otherwise tap 8, to sum to 8,388,608. The 1024 int32 cells occupy 4,096 bytes.
+Phase 64 is phase 0 shifted one tap right; phase 0's final cell is zero.
+
+Regenerate and check from the repository root:
+
+```sh
+cmake --preset ci
+cmake --build build/ci --target muhtari-audio-coefficients
+build/ci/tools/muhtari-audio-coefficients --emit 64 128
+build/ci/tools/muhtari-audio-coefficients --check
+```
+
+The explicit maintainer target uses owned C17 math and the runner's SHA256;
+ordinary CI and shipped objects consume only the fixed integer table. `--emit`
+also supports 128 phases and 256/512 subdivisions. `--check` regenerates all
+1024 selected cells at 128/256/512 subdivisions, compares production cells and
+checks phase-major/tap-major LE-int32 SHA256
+`8fdfc75effc7565eff4996b71ad966f4c0d327909ede230d052dc58bc239d66e`.
+The larger 128-phase candidate also passed the measured recovery matrix;
+64 is the smallest measured passing density. The old 32-phase table passed
+132 equivalent schedules but failed six actual wholly slow AUDF1 cases,
+worst -78.28741 dBFS. The compact support, window and nonlinear tables remain.
 
 Runtime interpolation rounds the signed difference times the phase remainder
 over 13,125 to nearest, with ties away from zero. Tap 7/8 then corrects its
@@ -75,9 +95,9 @@ clamping it. P[206]=8,538,596 and P[824]=16,777,645 in Q24.
 The current weights `(2.5/18):(3.8/6.8)` reduce exactly to 85:342.
 Cartridge gain is the fixed Q12 value 4096. For c declared POKEYs (0,1,2),
 sum the TIA table current and each chip's nonlinear current, then round
-`18361*current/(85*16777216+c*342*P[824])` to nearest. The maximum is exactly
-18,361 for each declaration, independent of which sources are active.
-POKEY-only all-channel levels are 14,706 for one declared chip and 16,332
+`18360*current/(85*16777216+c*342*P[824])` to nearest. The maximum is exactly
+18,360 for each declaration, independent of which sources are active.
+POKEY-only all-channel levels are 14,705 for one declared chip and 16,331
 for two; these are fixed hardware-derived spectral-test amplitudes. One
 maximum POKEY channel has 2.048 times the full TIA current with the adopted
 18 kOhm resistance (about 2.1 with 18.5 kOhm). The measured POKEY fit came
@@ -93,8 +113,8 @@ tap n-q, zero before support and 8,388,608 after it. Summation by parts
 expresses any reconstruction as a sum of bounded levels times
 `w(n,t)=S(n,t)-S(n,t+1)`. Only 16 samples of finite support contribute.
 For every alignment, the weight sum is exactly 8,388,608. The maximum
-positive mass is P=10,865,191 and negative magnitude N=2,476,583, so
-L1=(P+N)/8,388,608=1.590463399887085. The test also constructs both extremizing
+positive mass is P=10,865,505 and negative magnitude N=2,476,897, so
+L1=(P+N)/8,388,608=1.590538263320923. The test also constructs both extremizing
 0/M sequences at every alignment and checks these integrator values through
 the real event/ring path. This establishes ordering as well as coefficients.
 
@@ -104,20 +124,26 @@ its output is bounded by `(P+N)M/Q`. Feedback truncation contributes less
 than `1/(1-R)=382.473` Q30 units in total, less than 0.000000357 PCM units;
 final PCM rounding contributes at most 0.5. A whole PCM LSB safely covers
 both. Therefore
-`M=floor((32767*10^(-1/20)-1)*8388608/13341774)=18361` gives a conservative
-complete peak of 29,203.498486, below 29,203.619490 (-1 dBFS). Neither a
+`M=floor((32767*10^(-1/20)-1)*8388608/13342402)=18360` gives a conservative
+complete peak of 29,203.282515, below 29,203.619490 (-1 dBFS). Neither a
 unity DC row sum nor a saturation clamp is used as a clipping argument.
+
+At the common comparison level 18361, the new bound plus one LSB is
+29204.873052835464, above the one-dB limit 29203.619489828441.
+The final 18360 scale follows this bound, not spectral tuning. Both scales
+pass the retained 132 equivalent, 72 actual and 132 rejected-control cases.
+The enumerated signed masses replace the old 32-phase numerical proof.
 
 Intermediate bounds are separate from headroom:
 
 - Corrected coefficients, including every interpolated phase, have maximum
   magnitude Cmax=7,283,992. Each pending ring cell has at most 16 intervals
   of 150 deltas of magnitude M. Thus
-  `16*150*18361*7283992=320979305068800 < 2^49`. A single delta product is
+  `16*150*18360*7283992=320961823488000 < 2^49`. A single delta product is
   below 2^37, and even the temporary integrator-plus-cell sum is below 2^50.
 - The much tighter integrated Q23 magnitude is at most
-  `P*M=199495771951 < 2^38`; conversion times 128 is
-  25,535,458,809,728 < 2^45. No Q15 width estimate is reused.
+  `P*M=199490671800 < 2^38`; conversion times 128 is
+  25,534,805,990,400 < 2^45. No Q15 width estimate is reused.
 - The blocker state bound including feedback error is below 2^45 Q30
   units. Subtracting consecutive inputs and adding feedback fits below
   2^47 even before cancellation. The quotient product is below 2^45;
@@ -125,7 +151,8 @@ Intermediate bounds are separate from headroom:
   `(2^30-1)*1070934451 < 2^60`. Division truncates toward zero, including
   negative values. Final signed rounding's negation/addition stays far
   from INT64_MIN/MAX. No 128-bit integer extension is needed on MSVC/be32.
-- The maximum mixed Q24 current is below 2^34. Multiplication by 18,361
+- The phase numerator is at most 13124*64=839936 < 2^20, fitting uint32.
+- The maximum mixed Q24 current is below 2^34. Multiplication by 18,360
   and the fixed Q12 cartridge-gain intermediates fit below 2^49. Table
   indexes are bounded by the ten raw DAC channels and two fixed chips.
 
@@ -173,3 +200,24 @@ schedule; its independent vectors and confidence limits are documented in
 [TIA sound](tia.md). POKEY stimuli remain DAC-equivalent schedules until
 that chip's integration. The adopted node-current model and its unmeasured
 physical loading limits remain as described above.
+
+
+The recovery also checked 84 bounded periodic mixed-clock/high-pass cases,
+using clock words 1/2, 1/3, 3/3, 1/4, 3/4, 5/4, 7/4 (low bit first,
+1=slow), origins 1/29/661 and two chips. Squares use AUDF0/1/3;
+high-pass uses equal-period AUDF2 with the high timer initially zero,
+then 2 at the fourth fall. Actual square PCM equals independent arithmetic
+falling-cycle schedules. Physical periods use lcm(word length,2*(N+4))
+cycles for squares and lcm(word length,12) for high-pass, summed through
+the actual 4/6-tick word. The maximum square period is 224 ticks; every
+fundamental is above 16 kHz, so none receives a harmonic mask.
+Compact square and high-pass/origin representatives stay in `audio.spectral`.
+More than 1000 continuing raw changes and nonzero kernel work are required
+even when settled ultrasonic PCM quantizes to silence.
+
+One-off independent peak refinement maximizes the same windowed DFT within
+±0.6 bin around the largest unmasked FFT peak (28 ternary iterations),
+without changing capture, normalization, masks or threshold. These are
+finite-matrix checks, not a bound on every legal register stream or a claim
+of measured analog accuracy. Platform/hash and workload certification follow
+in their respective integration checks.

@@ -25,10 +25,10 @@
    lines before its six-tick bus cycle; an opcode takes at most eight
    accesses, followed by at most seven interrupt-entry accesses. */
 #define MUHTARI__SYNTH_TAPS 16u
-#define MUHTARI__SYNTH_PHASES 32u
+#define MUHTARI__SYNTH_PHASES 64u
 #define MUHTARI__SYNTH_Q23 INT64_C(8388608)
 #define MUHTARI__SYNTH_Q30 INT64_C(1073741824)
-#define MUHTARI__SYNTH_MAX_LEVEL 18361
+#define MUHTARI__SYNTH_MAX_LEVEL 18360
 #define MUHTARI__SYNTH_RDY_TICKS 456u
 #define MUHTARI__SYNTH_DMA_TICKS (2u * 454u)
 #define MUHTARI__SYNTH_HOLD_ROUND_TICKS 12u
@@ -86,6 +86,7 @@ struct muhtari__pokey {
     uint32_t poly17;
     uint16_t prescale28, prescale114;
     uint8_t audctl, skctl, irqen, irqst, initialized;
+    uint8_t hp_delay[2], hp_capture[2];
     struct muhtari__pokey_channel channel[4];
 };
 void muhtari__pokey_reset(muhtari *m, unsigned chip);
@@ -93,8 +94,9 @@ void muhtari__pokey_write(muhtari *m, unsigned chip, uint8_t reg, uint8_t v, uin
 uint8_t muhtari__pokey_read(muhtari *m, unsigned chip, uint8_t reg, uint64_t tick);
 int muhtari__pokey_irq(const muhtari *m, unsigned chip);
 void muhtari__pokey_catch_up(muhtari *m, uint64_t tick);
+void muhtari__pokey_half_edge(muhtari *m, uint64_t tick, int falling);
 
-extern const int32_t muhtari__synth_kernel[32][16];
+extern const int32_t muhtari__synth_kernel[MUHTARI__SYNTH_PHASES][16];
 void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys);
 void muhtari__synth_level(muhtari *m, uint64_t tick, unsigned source, uint16_t level);
 uint32_t muhtari__synth_render(muhtari *m, uint64_t end, int16_t *out);

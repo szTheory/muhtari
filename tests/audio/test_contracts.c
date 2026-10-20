@@ -115,7 +115,7 @@ static void test_audio_boundaries(void)
         CHECK_EQ_U64(muhtari__synth_render(a, end, whole), 800u);
         CHECK_EQ_U64(muhtari__synth_render(b, end, NULL), 800u);
         CHECK_EQ_U64(a->synth.pending, offset == 0u ? 0u : 1u);
-        CHECK_EQ_U64(a->synth.mixed_level, offset == 0u ? 12241u : 0u);
+        CHECK_EQ_U64(a->synth.mixed_level, offset == 0u ? 12240u : 0u);
         for (unsigned i = 0u; i < 800u; i++) {
             CHECK_EQ_U64(whole[i], 0u);
         }

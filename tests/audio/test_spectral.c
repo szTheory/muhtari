@@ -1,4 +1,4 @@
-/* Spectral measurement contract, real TIA and POKEY-equivalent schedules:
+/* Spectral measurement contract, real TIA/POKEY and all-DAC stress:
    docs/hardware/audio.md and A7800-AUDIO sections 1-4, 8. Test-only math. */
 #include <math.h>
 #include <stdint.h>
@@ -25,6 +25,8 @@ struct spectrum {
 static double real_part[N], imaginary[N], window[N], window_sum;
 static int16_t pcm[N];
 static int failures;
+
+static void source_level(muhtari *m, const struct tone *t, uint64_t tick, unsigned high);
 
 #define REQUIRE(condition)                                                                         \
     do {                                                                                           \
@@ -93,6 +95,114 @@ static int intended(unsigned bin, const struct tone *t)
         }
     }
     return 0;
+}
+
+/* Actual register-programmed POKEY. Only1/3 have a direct fast clock.
+   Four/eight-channel maximum stress keeps2/4 at volume-only15 and aligns
+   the two fast squares by delaying channel3's first period one lap.
+   The resulting legal signal retains the known physical fast frequency;
+   independent all-DAC stress above remains a separate stronger schedule. */
+static void capture_pokey(const struct tone *t, unsigned slow, unsigned word, unsigned length,
+                          unsigned hp)
+{
+    muhtari *m = calloc(1u, sizeof *m);
+    muhtari *reference = calloc(1u, sizeof *reference);
+    if (m == NULL || reference == NULL) {
+        exit(1);
+    }
+    muhtari__synth_reset(m, 0u, (uint8_t)t->chips);
+    muhtari__synth_reset(reference, 0u, (uint8_t)t->chips);
+    unsigned reference_high = 0u;
+    if (length == 0u) {
+        length = 1u;
+        word = slow;
+    }
+    m->bus.clock_origin_tick = t->offset;
+    m->bus.ticks = t->offset;
+    m->bus.inptctrl = 7u;
+    for (unsigned chip = 0; chip < 2u; chip++) {
+        muhtari__pokey_reset(m, chip);
+    }
+    for (unsigned chip = 0; chip < t->chips; chip++) {
+        muhtari__pokey_write(m, chip, 8u, hp != 0u ? 0x64u : 0x60u, t->offset);
+        muhtari__pokey_write(m, chip, 0u, (uint8_t)t->divisor, t->offset);
+        muhtari__pokey_write(m, chip, 1u, 0xAFu, t->offset);
+        if (t->channels == 4u) {
+            muhtari__pokey_write(m, chip, 4u, (uint8_t)(2u * t->divisor + 4u), t->offset);
+            muhtari__pokey_write(m, chip, 5u, 0xAFu, t->offset);
+            muhtari__pokey_write(m, chip, 3u, 0x1Fu, t->offset);
+            muhtari__pokey_write(m, chip, 7u, 0x1Fu, t->offset);
+        }
+        muhtari__pokey_write(m, chip, 9u, 0u, t->offset);
+    }
+    if (hp != 0u) {
+        for (unsigned chip = 0; chip < t->chips; chip++) {
+            muhtari__pokey_write(m, chip, 4u, 0u, t->offset);
+            muhtari__pokey_write(m, chip, 9u, 0u, t->offset);
+        }
+    }
+    uint64_t start = t->offset, next = start + 2u, horizon = 0u;
+    unsigned cycles = 0u, samples = 0u, falling = 0u, transitions = 0u;
+    while (samples < SETTLE + N) {
+        uint64_t end = horizon + 13125u;
+        while (next < end) {
+            unsigned before = m->synth.raw[2];
+            muhtari__pokey_half_edge(m, next, (int)falling);
+            transitions += before != m->synth.raw[2];
+            if (falling != 0u) {
+                cycles++;
+                /* Independent falling-cycle arithmetic: initial reload then
+                   N+8 first output, N+4 subsequent periods (pokey.md). */
+                if (t->channels == 1u && hp == 0u && cycles >= t->divisor + 8u &&
+                    (cycles - t->divisor - 8u) % (t->divisor + 4u) == 0u) {
+                    reference_high ^= 1u;
+                    source_level(reference, t, next, reference_high);
+                }
+                if (hp != 0u && cycles == 4u) {
+                    for (unsigned chip = 0; chip < t->chips; chip++) {
+                        muhtari__pokey_write(m, chip, 4u, 2u, next);
+                    }
+                }
+                if (cycles == 4u && t->channels == 4u) {
+                    for (unsigned chip = 0; chip < t->chips; chip++) {
+                        muhtari__pokey_write(m, chip, 4u, (uint8_t)t->divisor, next);
+                    }
+                }
+                start += ((word >> ((cycles - 1u) % length)) & 1u) != 0u ? 6u : 4u;
+                next = start + 2u;
+            } else {
+                next = start + (((word >> (cycles % length)) & 1u) != 0u ? 5u : 4u);
+            }
+            falling ^= 1u;
+        }
+        /* Do not emit the next rise speculatively across an output cut.
+           TIA is silent here; bus integration tests exercise shared ties. */
+        int16_t chunk[88];
+        REQUIRE(muhtari__synth_render(m, end, chunk) == 88u);
+        if (t->channels == 1u && hp == 0u) {
+            /* Independent documented edge arithmetic, not chip-derived
+               timestamps. A miss shared here localizes reconstruction. */
+            int16_t expected[88];
+            REQUIRE(muhtari__synth_render(reference, end, expected) == 88u);
+            REQUIRE(memcmp(chunk, expected, sizeof chunk) == 0);
+        }
+        for (unsigned i = 0; i < 88u && samples < SETTLE + N; i++, samples++) {
+            if (samples >= SETTLE) {
+                pcm[samples - SETTLE] = chunk[i];
+            }
+        }
+        horizon = end;
+    }
+    REQUIRE(m->synth.clipped_samples == 0u);
+    REQUIRE(m->synth.kernel_adds_per_sample <= 150u);
+    REQUIRE(m->pokey[0].channel[0].fires > 1000u);
+    REQUIRE(transitions > 1000u && m->synth.kernel_adds_per_sample > 0u);
+    if (t->channels == 4u) {
+        REQUIRE(m->synth.raw[2] == m->synth.raw[4]);
+        REQUIRE(m->synth.raw[3] == 206u && m->synth.raw[5] == 206u);
+    }
+    free(m);
+    free(reference);
 }
 
 /* Evaluate the window peak at the known physical frequency, not at its
@@ -169,7 +279,7 @@ static int32_t hardware_level(const struct tone *t)
                                           MUHTARI__POKEY_CURRENT;
     uint64_t maximum = (uint64_t)MUHTARI__MIX_Q24 * MUHTARI__TIA_CURRENT +
                        (uint64_t)t->chips * muhtari__pokey_mix[824] * MUHTARI__POKEY_CURRENT;
-    REQUIRE(MUHTARI__CART_GAIN_Q12 == 4096u && MUHTARI__SYNTH_MAX_LEVEL == 18361);
+    REQUIRE(MUHTARI__CART_GAIN_Q12 == 4096u && MUHTARI__SYNTH_MAX_LEVEL == 18360);
     return (int32_t)((current * MUHTARI__SYNTH_MAX_LEVEL + maximum / 2u) / maximum);
 }
 
@@ -365,6 +475,45 @@ int main(int argc, char **argv)
     }
     REQUIRE(evaluated == 132u);
     REQUIRE(controls == 0 || rejected == 132u);
+    if (controls == 0) {
+        double actual_worst = -INFINITY;
+        unsigned actual_cases = 0u;
+        for (unsigned divisor = 0; divisor < 3u; divisor++) {
+            for (unsigned chips = 1u; chips <= 2u; chips++) {
+                for (unsigned channels = 1u; channels <= 4u; channels += 3u) {
+                    for (unsigned offset = 0; offset < 3u; offset++) {
+                        for (unsigned slow = 0; slow < 2u; slow++) {
+                            struct tone t = {0u, divisors[divisor], chips, channels,
+                                             offsets[offset]};
+                            capture_pokey(&t, slow, 0u, 0u, 0u);
+                            struct spectrum result = measure(&t);
+                            REQUIRE(result.db < -80.0);
+                            if (result.db > actual_worst) {
+                                actual_worst = result.db;
+                            }
+                            printf("actual POKEY AUDF%u chips%u active%u offset%u %s: %.5f dBFS "
+                                   "spur %.5f Hz\n",
+                                   t.divisor, chips, chips * channels, t.offset,
+                                   slow != 0u ? "slow" : "fast", result.db, result.frequency);
+                            actual_cases++;
+                        }
+                    }
+                }
+            }
+        }
+        REQUIRE(actual_cases == 72u);
+        printf("actual POKEY: %u cases, worst %.5f dBFS\n", actual_cases, actual_worst);
+        /* Compact representatives from the bounded mixed-clock recovery
+           exploration. Both physical raw periods remain ultrasonic, so
+           the existing judge masks no intended lines. */
+        for (unsigned hp = 0u; hp < 2u; hp++) {
+            struct tone t = {0u, hp != 0u ? 2u : 1u, 2u, 1u, hp != 0u ? 661u : 29u};
+            capture_pokey(&t, 0u, 3u, 3u, hp);
+            struct spectrum result = measure(&t);
+            REQUIRE(result.db < -80.0);
+            printf("mixed representative HP%u: %.8f dBFS\n", hp, result.db);
+        }
+    }
     printf("worst TIA %.5f dBc, POKEY-equivalent %.5f dBFS\n", worst[0], worst[1]);
     printf("research nearest-bin reference cross-check: TIA %.5f dBc\n", worst[2]);
     printf("%u evaluated, %u alias controls rejected, %d failures\n", evaluated, rejected,

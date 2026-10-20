@@ -102,6 +102,8 @@ void muhtari__power_on(muhtari *m)
     memset(&m->bus, 0, sizeof m->bus);
     muhtari__tia_reset(m);
     muhtari__synth_reset(m, 0u, 0u);
+    muhtari__pokey_reset(m, 0u);
+    muhtari__pokey_reset(m, 1u);
     m->audio_rem = 0u;
     /* The beam starts at line 0, t 0 of the current origin; the first cycle
        recomputes the deadline from MARIA's next line event. */

@@ -185,6 +185,13 @@ static uint64_t cycle_start(muhtari *m, uint32_t data)
 static void advance(muhtari *m, uint64_t k)
 {
     struct muhtari__bus *b = &m->bus;
+    if (m->synth.pokeys != 0u) {
+        for (uint64_t cycle = 0; cycle < k; cycle++) {
+            uint64_t start = b->ticks + cycle * BUS_FAST_TICKS;
+            muhtari__pokey_half_edge(m, start + 2u, 0);
+            muhtari__pokey_half_edge(m, start + BUS_FAST_DATA, 1);
+        }
+    }
     if (b->nmi_pending != 0u && b->nmi_at <= b->ticks + k * BUS_FAST_TICKS) {
         uint64_t j = b->nmi_at > b->ticks ? (b->nmi_at - b->ticks - 1u) / BUS_FAST_TICKS : 0u;
         latch_nmi(m, b->phi2 + 1u + j);
@@ -275,6 +282,13 @@ static uint32_t begin(muhtari *m, enum bus_device dev, int is_read)
     uint32_t len = slow(m, dev) ? BUS_SLOW_TICKS : BUS_FAST_TICKS;
     if (m->bus.ticks + data_at(len) >= m->bus.next_deadline) {
         events(m, is_read, data_at(len));
+    }
+    /* The asymmetric divider has rise s+2 in both modes, fall/data s+4
+       fast or s+5 slow, completion s+4/s+6 (hardware/pokey.md). Flush
+       every actual edge before data, including held-cycle segments. */
+    if (m->synth.pokeys != 0u) {
+        muhtari__pokey_half_edge(m, m->bus.ticks + 2u, 0);
+        muhtari__pokey_half_edge(m, m->bus.ticks + data_at(len), 1);
     }
     return len;
 }

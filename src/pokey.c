@@ -41,26 +41,84 @@ void muhtari__pokey_reset(muhtari *m, unsigned chip)
 static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
 {
     struct muhtari__pokey *p = &m->pokey[chip];
-    struct muhtari__pokey_channel *c = &p->channel[0];
-    p->tick = tick;
     p->cycle++;
-    /* Fast timer reload at T+3; AUDF is sampled only at reload. The
-       resulting N+4 period includes the split-counter pipeline (manual
-       chapter 5, Reload timing). */
-    if ((p->audctl & 64u) != 0u) {
-        if (p->cycle == c->reload) {
-            if (c->starting == 0u) {
-                c->fire = p->cycle + 1u;
-            }
-            c->starting = 0u;
-            c->reload = p->cycle + c->audf + 4u;
+    unsigned base28 = 0u, base114 = 0u;
+    if ((p->skctl & 3u) != 0u) {
+        base28 = --p->prescale28 == 0u;
+        base114 = --p->prescale114 == 0u;
+        if (base28 != 0u) {
+            p->prescale28 = 28u;
         }
+        if (base114 != 0u) {
+            p->prescale114 = 114u;
+        }
+        /* XNOR 1+x12+x17, shifting toward RANDOM's right end. Hidden
+           state advances even with zero volume (manual chapter5). */
+        uint32_t feedback = (~(p->poly17 ^ (p->poly17 >> 5))) & 1u;
+        p->poly17 = (p->poly17 >> 1) | (feedback << 16);
+    }
+    for (unsigned ch = 0u; ch < 4u; ch++) {
+        struct muhtari__pokey_channel *c = &p->channel[ch];
+        unsigned direct =
+            (ch == 0u && (p->audctl & 64u) != 0u) || (ch == 2u && (p->audctl & 32u) != 0u);
+        unsigned pulse = direct != 0u ? 1u : (p->audctl & 1u) != 0u ? base114 : base28;
+        /* Process old pipeline output before a new underflow can queue
+           its successor. Equal-tick channel order is always1,2,3,4. */
         if (p->cycle == c->fire) {
-            c->output ^= 1u;
+            c->fire = UINT64_MAX;
+            if ((c->audc & 0xA0u) == 0xA0u) {
+                c->output ^= 1u;
+            }
             c->last_fire = tick;
             c->fires++;
-            p->irqst &= (uint8_t)~(p->irqen & 1u);
-            level(m, chip, 0u, tick);
+            unsigned mask = ch == 0u ? 1u : ch == 1u ? 2u : ch == 3u ? 4u : 0u;
+            p->irqst &= (uint8_t)~(p->irqen & mask);
+            if (ch >= 2u && (p->audctl & (ch == 2u ? 4u : 2u)) != 0u) {
+                p->hp_capture[ch - 2u] = p->channel[ch - 2u].output;
+                p->hp_delay[ch - 2u] = 3u;
+            }
+            level(m, chip, ch, tick);
+        }
+        /* Counter reload is three clocks after underflow. Its output
+           pipeline takes one further clock. The forced STIMER reload
+           instead initializes the counter without producing a pulse. */
+        if (p->cycle == c->reload) {
+            c->count = c->audf;
+            c->reload = UINT64_MAX;
+            c->starting = 0u;
+        } else if (c->reload == UINT64_MAX && pulse != 0u) {
+            if (c->count == 0u) {
+                c->reload = p->cycle + 3u;
+                c->fire = p->cycle + (direct != 0u ? 4u : 5u);
+            } else {
+                c->count--;
+            }
+        }
+    }
+}
+
+void muhtari__pokey_half_edge(muhtari *m, uint64_t tick, int falling)
+{
+    /* Merge the independent TIA stream before this CLK2 edge. It emits
+       only through this shared minimum tick, so no later chip can insert
+       an event behind the synthesizer's pending timestamp. */
+    muhtari__tia_catch_up(m, tick);
+    for (unsigned chip = 0; chip < 2u; chip++) {
+        if (m->pokey[chip].initialized == 0u) {
+            muhtari__pokey_reset(m, chip);
+        }
+        struct muhtari__pokey *p = &m->pokey[chip];
+        assert(tick > p->tick);
+        p->tick = tick;
+        p->half++;
+        for (unsigned ch = 0; ch < 2u; ch++) {
+            if (p->hp_delay[ch] != 0u && --p->hp_delay[ch] == 0u) {
+                p->channel[ch].hp = p->hp_capture[ch];
+                level(m, chip, ch, tick);
+            }
+        }
+        if (falling != 0) {
+            clock_cycle(m, chip, tick);
         }
     }
 }
@@ -72,13 +130,13 @@ void muhtari__pokey_catch_up(muhtari *m, uint64_t tick)
             muhtari__pokey_reset(m, chip);
         }
     }
-    while (m->pokey[0].tick + 4u <= tick) {
-        uint64_t next = m->pokey[0].tick + 4u;
-        muhtari__tia_catch_up(m, next);
-        for (unsigned chip = 0; chip < 2u; chip++) {
-            clock_cycle(m, chip, next);
-        }
+    /* An explicitly requested fast segment, used by isolated chip
+       callers. Bus accesses supply their actual asymmetric half edges. */
+    while (m->pokey[0].tick + 2u <= tick) {
+        int falling = (m->pokey[0].half & 1u) != 0u;
+        muhtari__pokey_half_edge(m, m->pokey[0].tick + 2u, falling);
     }
+    muhtari__tia_catch_up(m, tick);
 }
 void muhtari__pokey_write(muhtari *m, unsigned chip, uint8_t reg, uint8_t v, uint64_t tick)
 {
@@ -96,6 +154,13 @@ void muhtari__pokey_write(muhtari *m, unsigned chip, uint8_t reg, uint8_t v, uin
         }
     } else if (reg == 8u) {
         p->audctl = v;
+        for (unsigned ch = 0; ch < 2u; ch++) {
+            if ((v & (ch == 0u ? 4u : 2u)) == 0u) {
+                p->hp_delay[ch] = 0u;
+                p->channel[ch].hp = 1u;
+                level(m, chip, ch, tick);
+            }
+        }
     } else if (reg == 9u) {
         for (unsigned ch = 0; ch < 4u; ch++) {
             p->channel[ch].output = 1u;
@@ -108,6 +173,10 @@ void muhtari__pokey_write(muhtari *m, unsigned chip, uint8_t reg, uint8_t v, uin
         p->irqen = v;
         p->irqst |= (uint8_t)~v;
     } else if (reg == 15u) {
+        if ((v & 3u) == 0u) {
+            p->prescale28 = 19u;
+            p->prescale114 = 78u;
+        }
         p->skctl = v;
     }
 }
@@ -115,7 +184,11 @@ uint8_t muhtari__pokey_read(muhtari *m, unsigned chip, uint8_t reg, uint64_t tic
 {
     assert(chip < 2u);
     muhtari__pokey_catch_up(m, tick);
-    return (reg & 15u) == 14u ? m->pokey[chip].irqst : 255u;
+    struct muhtari__pokey *p = &m->pokey[chip];
+    if ((reg & 15u) == 14u) {
+        return p->irqst;
+    }
+    return (reg & 15u) == 10u ? (uint8_t)~(p->poly17 >> 8) : 255u;
 }
 int muhtari__pokey_irq(const muhtari *m, unsigned chip)
 {

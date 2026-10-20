@@ -280,3 +280,16 @@ if(MUHTARI_TESTS)
   include(cmake/MuhtariTests.cmake)
   include(tests/tests.cmake)
 endif()
+
+# Explicit maintainer tool: floating point and libm stay outside shipped code
+# and the ordinary CI build. See docs/hardware/audio.md for regeneration.
+add_executable(muhtari-audio-coefficients EXCLUDE_FROM_ALL
+  tools/audio_coefficients.c runner/sha256.c)
+target_include_directories(muhtari-audio-coefficients PRIVATE src runner)
+target_link_libraries(muhtari-audio-coefficients PRIVATE muhtari::muhtari)
+if(NOT MSVC)
+  target_link_libraries(muhtari-audio-coefficients PRIVATE m)
+endif()
+set_target_properties(muhtari-audio-coefficients PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tools)
+muhtari_warnings(muhtari-audio-coefficients)

@@ -63,6 +63,9 @@ void muhtari__boot_fast(muhtari *m)
     muhtari__tia_catch_up(m, m->bus.ticks);
     m->bus.clock_origin_tick = m->bus.ticks;
     m->bus.clock_origin_phi2 = m->bus.phi2;
+    for (unsigned chip = 0; chip < 2u; chip++) {
+        m->pokey[chip].tick = m->bus.clock_origin_tick;
+    }
     muhtari__synth_reset(m, m->bus.ticks, 0u);
     muhtari__maria_start(m);
     m->bus.next_deadline = 0u; /* recomputed by the first cycle */

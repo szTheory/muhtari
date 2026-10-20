@@ -74,6 +74,41 @@ static void logic_vectors(void)
     CHECK(!muhtari__pokey_irq(m, 0u));
 }
 
+static void high_pass_vectors(void)
+{
+    for (unsigned slow = 0; slow < 3u; slow++) {
+        muhtari *m = fresh();
+        /* High timer runs two cycles ahead of low, then both period6.
+           The delayed cancellation leaves a half-phase pulse each lap. */
+        muhtari__pokey_write(m, 0u, 8u, 0x64u, 0u);
+        muhtari__pokey_write(m, 0u, 0u, 2u, 0u);
+        muhtari__pokey_write(m, 0u, 4u, 0u, 0u);
+        muhtari__pokey_write(m, 0u, 1u, 0xAFu, 0u);
+        muhtari__pokey_write(m, 0u, 9u, 0u, 0u);
+        for (unsigned cycle = 0; cycle < 14u; cycle++) {
+            (void)muhtari__bus_read(m, slow != 0u ? 0x0280u : 0x1800u);
+            if (cycle == 3u) {
+                muhtari__pokey_write(m, 0u, 4u, 2u, m->pokey[0].tick);
+            }
+        }
+        uint64_t fired = slow != 0u ? 83u : 56u;
+        uint64_t start = m->bus.ticks;
+        uint64_t fall = start + (slow == 1u ? 5u : 4u);
+        uint64_t next_start = start + (slow == 1u ? 6u : 4u);
+        CHECK_EQ_U64(m->pokey[0].channel[2].last_fire, fired);
+        CHECK_EQ_U64(m->pokey[0].hp_delay[0], 3u);
+        CHECK_EQ_U64(m->synth.raw[2], 206u);
+        muhtari__pokey_half_edge(m, start + 2u, 0);
+        muhtari__pokey_half_edge(m, fall, 1);
+        CHECK_EQ_U64(m->synth.raw[2], 206u);
+        muhtari__pokey_half_edge(m, next_start + 2u, 0);
+        CHECK_EQ_U64(next_start + 2u - fired, slow == 0u ? 6u : slow == 1u ? 9u : 7u);
+        CHECK_EQ_U64(m->synth.raw[2], 0u);
+        muhtari__pokey_half_edge(m, next_start + (slow == 1u ? 5u : 4u), 1);
+        CHECK_EQ_U64(m->synth.raw[2], 206u);
+    }
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
@@ -83,6 +118,7 @@ int main(int argc, char **argv)
         clock_vectors();
     } else if (strcmp(argv[1], "logic") == 0) {
         logic_vectors();
+        high_pass_vectors();
     } else {
         return 2;
     }

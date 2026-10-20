@@ -347,16 +347,24 @@ static void test_synth_bound(void)
     }
     muhtari_destroy(adverse);
     CHECK_EQ_U64(cmax, 7283992);
-    CHECK_EQ_U64(positive, 10865191);
-    CHECK_EQ_U64(negative, 2476583);
-    CHECK_EQ_U64(positive + negative, 13341774);
+    CHECK_EQ_U64(positive, 10865505);
+    CHECK_EQ_U64(negative, 2476897);
+    CHECK_EQ_U64(positive + negative, 13342402);
     /* 29203.6 is below 32767*10^(-1/20). One whole PCM LSB covers both
        the blocker feedback's <1/(1-R) Q30 units and final half-LSB. */
     CHECK(((positive + negative) * MUHTARI__SYNTH_MAX_LEVEL + MUHTARI__SYNTH_Q23) * 5 <=
           INT64_C(146018) * MUHTARI__SYNTH_Q23);
     int64_t pending = INT64_C(16) * 150 * MUHTARI__SYNTH_MAX_LEVEL * cmax;
-    CHECK_EQ_U64(pending, INT64_C(320979305068800));
+    CHECK_EQ_U64(pending, INT64_C(320961823488000));
     CHECK(pending < (INT64_C(1) << 49));
+    CHECK(pending + positive * MUHTARI__SYNTH_MAX_LEVEL < (INT64_C(1) << 50));
+    CHECK(positive * MUHTARI__SYNTH_MAX_LEVEL < (INT64_C(1) << 38));
+    CHECK(3 * positive * MUHTARI__SYNTH_MAX_LEVEL * 128 < (INT64_C(1) << 47));
+    CHECK_EQ_U64(13124u * MUHTARI__SYNTH_PHASES, 839936u);
+    CHECK(13124u * MUHTARI__SYNTH_PHASES < (1u << 20));
+    CHECK_EQ_U64(MUHTARI__SYNTH_OVERSHOOT_TICKS, 20730u);
+    CHECK_EQ_U64(MUHTARI__SYNTH_CARRY_SAMPLES, 139u);
+    CHECK_EQ_U64(MUHTARI__SYNTH_PCM_CAPACITY, 940u);
     CHECK(positive * MUHTARI__SYNTH_MAX_LEVEL * 128 < (INT64_C(1) << 45));
     CHECK((MUHTARI__SYNTH_Q30 - 1) * INT64_C(1070934451) < (INT64_C(1) << 60));
 }
@@ -375,8 +383,14 @@ static double synth_test_exp(double x)
 
 static void test_synth_mix(void)
 {
-    CHECK_EQ_U64(sizeof muhtari__synth_kernel, 2048);
-    for (unsigned row = 0; row < 32u; row++) {
+    CHECK_EQ_U64(sizeof muhtari__synth_kernel, 4096);
+    uint64_t max_current = (uint64_t)MUHTARI__MIX_Q24 * MUHTARI__TIA_CURRENT +
+                           2u * (uint64_t)muhtari__pokey_mix[824] * MUHTARI__POKEY_CURRENT;
+    CHECK(max_current < (UINT64_C(1) << 34));
+    CHECK(max_current * MUHTARI__SYNTH_MAX_LEVEL < (UINT64_C(1) << 49));
+    CHECK(2u * (uint64_t)muhtari__pokey_mix[824] * MUHTARI__POKEY_CURRENT * MUHTARI__CART_GAIN_Q12 <
+          (UINT64_C(1) << 49));
+    for (unsigned row = 0; row < MUHTARI__SYNTH_PHASES; row++) {
         int32_t sum = 0;
         for (unsigned tap = 0; tap < 16u; tap++) {
             sum += muhtari__synth_kernel[row][tap];
@@ -421,7 +435,7 @@ static void test_synth_mix(void)
             muhtari__synth_level(m, 0u, source, 206u);
         }
         CHECK_EQ_U64(muhtari__synth_render(m, 1u, NULL), 0);
-        CHECK_EQ_U64(m->synth.mixed_level, chips == 0u ? 0u : chips == 1u ? 14706u : 16332u);
+        CHECK_EQ_U64(m->synth.mixed_level, chips == 0u ? 0u : chips == 1u ? 14705u : 16331u);
         muhtari__synth_level(m, 1u, 0u, 15u);
         muhtari__synth_level(m, 1u, 1u, 15u);
         CHECK_EQ_U64(muhtari__synth_render(m, 2u, NULL), 0);
@@ -536,7 +550,7 @@ static void test_silence(void)
     CHECK(nonzero);
     /* Half the TIA DAC sum produces 2n/(n+30)=2/3 of full current,
        rather than half the PCM level (A7800-AUDIO section 3). */
-    CHECK_EQ_U64(m->synth.mixed_level, 12241);
+    CHECK_EQ_U64(m->synth.mixed_level, 12240);
     CHECK_EQ_U64(muhtari__synth_round(-5, 2), -3);
     CHECK_EQ_U64(muhtari__synth_round(-4, 3), -1);
     CHECK_EQ_U64(muhtari__synth_round(5, 2), 3);
