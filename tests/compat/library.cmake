@@ -140,3 +140,12 @@ muhtari_add_test(NAME library.ratchet.self_test
     "-DREGEX=${library_first} [^ ]+: ledger [a-z]+ [^,]+, results [a-z]+"
     -P ${CMAKE_SOURCE_DIR}/tests/cmake/expect_fail.cmake
   LABELS library TIMEOUT 30)  # provisional, phase 3
+
+# The library preset regenerates the compatibility page from the ledger the
+# ratchet has just proven equal to the fresh results, and compares it with
+# docs/compatibility.md.
+muhtari_add_test(NAME library.compat_doc
+  COMMAND ${CMAKE_COMMAND} -DLEDGER=${compat_ledger} -DOUT=${PROJECT_BINARY_DIR}/compatibility.md
+    -DCHECK=${CMAKE_SOURCE_DIR}/docs/compatibility.md -P ${CMAKE_SOURCE_DIR}/tools/compat_doc.cmake
+  LABELS library TIMEOUT 30)  # provisional, phase 3
+set_tests_properties(library.compat_doc PROPERTIES DEPENDS library.ratchet)

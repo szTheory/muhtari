@@ -488,6 +488,8 @@ perf.gate.no_base	perf
 perf.gate.plus_1_00	perf
 perf.gate.plus_1_01	perf
 perf.gate.unstable	perf
+policy.compat_doc_fresh	policy
+policy.compat_doc_fresh.self_test	policy
 policy.no_skip	policy
 policy.no_skip.self_test	policy
 policy.notices	policy

@@ -76,3 +76,23 @@ muhtari_add_test(NAME docs.api_names.self_test
 muhtari_add_test(NAME policy.notices
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/notices.cmake
   LABELS policy TIMEOUT 10)
+
+# docs/compatibility.md equals tools/compat_doc.cmake's output over the
+# ledger. The self test checks a copy of the page whose pass count is changed
+# and expects that copy named stale.
+set(policy_compat_cmd ${CMAKE_COMMAND} -DLEDGER=${CMAKE_SOURCE_DIR}/tests/compat/ledger.csv
+  -DOUT=${CMAKE_BINARY_DIR}/policy/compatibility.md)
+set(policy_compat_tool -P ${CMAKE_SOURCE_DIR}/tools/compat_doc.cmake)
+muhtari_add_test(NAME policy.compat_doc_fresh
+  COMMAND ${policy_compat_cmd} -DCHECK=${CMAKE_SOURCE_DIR}/docs/compatibility.md ${policy_compat_tool}
+  LABELS policy TIMEOUT 10)
+file(READ ${CMAKE_SOURCE_DIR}/docs/compatibility.md policy_page)
+string(REGEX REPLACE "\n[|] pass [|] [0-9]+ [|]\n" "\n| pass | 0 |\n" policy_page "${policy_page}")
+file(WRITE ${CMAKE_BINARY_DIR}/policy/compat_doc_fixture/compatibility.md "${policy_page}")
+set(policy_cmd ${policy_compat_cmd}
+  -DCHECK=${CMAKE_BINARY_DIR}/policy/compat_doc_fixture/compatibility.md ${policy_compat_tool})
+string(REPLACE ";" "$<SEMICOLON>" policy_cmd "${policy_cmd}")
+muhtari_add_test(NAME policy.compat_doc_fresh.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${policy_cmd}" -DCODE=1
+    "-DREGEX=compat_doc_fixture/compatibility.md.+is stale" -P ${policy_scripts}/expect_fail.cmake
+  LABELS policy TIMEOUT 10)

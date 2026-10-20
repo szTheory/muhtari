@@ -198,8 +198,8 @@ at another value than the fast boot does, so their screens differ between paths 
 on both paths.
 
 `title.simple.fast` and `title.simple.bios` evaluate `simple`'s row on both paths, reading its hash from the ledger
-at configure time. Every row on both paths is evaluated by the library job in CI, and locally by the pin recipe with
-`-DBIOS`.
+at configure time. Every row of tier `pr` is evaluated on both paths by the `library` preset (ledger, below), in CI
+on every pull request, and locally by the pin recipe with `-DBIOS`.
 
 **Pinning.** `--pin` prints `title@F=<hash>` for the fast boot's frame F and fails with `single colour` when every
 byte of that frame is the same, so a blank screen is never pinned. `title.pin.self_test` runs it on the blank linear
@@ -216,6 +216,60 @@ It fills each `title@F=-` row, sets each `unknown` row's status from both paths,
 evaluated row's status disagrees. A title not yet on `main` is unreleased: when an intended core change moves it,
 reset its predicate to `title@F=-` and run the recipe in the same commit. Never type a hash by hand.
 
+
+## ledger
+
+**Columns.** `id` is the stable key: `7800basic-0.41/<sample>`, `diag/<rom>`, or a MAME short name. `title` is the
+display name. `sha1_raw` and `sha256_raw` hash the image without its A78 header, `sha1_a78` and `sha256_a78` the
+headered file (`-` without one). `board`, `region` and `peripherals` (`+`-joined, `-` for none) say what the ROM
+needs. `predicate` is how the row is judged (title, above). `evidence_commit` is the commit last evaluated and
+`evidence` the first 16 hex digits of the title hash, or `-`. `oracle` and `checked` record an outside emulator's
+agreement and its date; both are `-` for now.
+
+**Statuses.** `pass` and `fail` are the last evaluation on both paths. `unknown` has never been evaluated.
+`unsupported` needs a board or peripheral the core refuses, and names it. `skipped` is deliberately not run, with
+the reason in the predicate, and is never in a CI tier. `infrastructure_error` means the harness broke.
+
+**Tiers.** `pr` rows are judged on every pull request by the `library` preset. `nightly` rows would run nightly;
+there are none yet. `local` rows are never run in CI.
+
+**The library preset.** It reads `MUHTARI_ROM_DIR` from the environment and finds each `pr` row's file there or in
+`tests/diag` by its SHA-1: a headered file by `sha1_a78`, a headerless one by `sha1_raw`. `MUHTARI_BIOS` names the
+BIOS image, by default `build/ci/built/openbios/openbios.bin`. Configure fails when the directory, the BIOS image or
+any row's file is missing, so no row is skipped. After the `ci` preset's built tests have run:
+
+```sh
+MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
+```
+
+- `library.<id>`, the id's slashes as dots, runs `muhtari-test-predicate ROM PREDICATE --bios FILE --id ID --result
+  FILE`. It evaluates the fast boot, then the BIOS path, and writes one line `id,predicate,status,evidence`. The
+  status is `pass` only when both paths pass. It exits 0 once the line is written, because the ratchet judges it.
+- `library.results` joins the lines into `build/library/results.csv`, sorted by id, then predicate. It fails unless
+  every row wrote one.
+- `library.ratchet` (`tests/cmake/compat_ratchet.cmake`) fails when the results and the ledger's `pr` rows differ in
+  either direction, by status or evidence. A change that improves a row therefore updates the ledger in the same
+  pull request.
+- With `MUHTARI_LEDGER_BASE` set to a commit at configure time, a row (id, predicate) that was `pass` in that
+  commit's ledger must still be `pass`. A changed predicate or a removed row counts as a fall. The exception is a
+  line `<id> <predicate> <expiry YYYY-MM-DD> <reason>` in `tests/compat/allow.txt` whose expiry is between today and
+  60 days on. `unknown` to anything and `fail` to `pass` need no line. A base whose tree has no ledger protects
+  nothing. A base missing from the clone fails.
+- `library.ratchet.self_test` gives the ratchet the ledger's own results with the first row's status flipped, and
+  expects that row named.
+- `library.compat_doc` runs after the ratchet. It regenerates the page with `tools/compat_doc.cmake` and fails
+  when the page differs from `docs/compatibility.md`.
+
+**In CI.** The `library` job (`docs/testing.md`, CI) builds the samples and OpenBIOS, then runs the preset with the
+pull request's base commit. It reports only until it has 10 green runs on `main`. `policy.compat_doc_fresh` checks
+the page on every `ci` and `wasm32` lane as well. Its self test expects a copy with a changed count to be named
+stale. After a ledger change, regenerate the page:
+
+```sh
+cmake -DLEDGER=tests/compat/ledger.csv -DOUT=docs/compatibility.md -P tools/compat_doc.cmake
+```
+
+A run over your own dumps is optional and stays local; nothing waits on it.
 
 ## boot to play
 
