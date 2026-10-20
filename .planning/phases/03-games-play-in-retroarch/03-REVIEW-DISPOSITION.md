@@ -5,23 +5,23 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A headerless image matched by hash skips the board geometry check, and the banking code assumes it passed"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The public header's contract comments contradict the behaviour a host will see"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "When the libretro core fails a frame, nothing reaches the screen or the frontend's frame pacing"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The libretro BIOS lookup gives up early and misreports failures"
   - id: WR-05
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A planning ID in core source breaks the project rule"
   - id: IN-01
     severity: info
@@ -43,20 +43,20 @@ findings:
     severity: info
     disposition: open
     title: "The fuzz run target's bound is justified empirically, not structurally"
-open: 10
+open: 5
 total: 10
-recorded: 2026-10-20T07:19:12.924Z
+recorded: 2026-10-20T15:55:37.859Z
 ---
 
 # Phase 03: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| WR-05 | warning | open | - |
+| WR-01 | warning | fixed | 03-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 03-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 03-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 03-REVIEW-FIX.md |
+| WR-05 | warning | fixed | 03-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
