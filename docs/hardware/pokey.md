@@ -167,5 +167,33 @@ the current declaration. `pokey.maps` runs generated legacy and v4 images
 through SALLY and public frame PCM, checks INIT RANDOM/IRQST against $FF,
 visits every mirrored register block and tests both sides of each window.
 Its dual-chip PCM differs from either single-chip rendering under the same
-instruction schedule. These checks establish the implemented digital model,
+instruction schedule, and from muting either input with dual-chip normalization. These checks establish the implemented digital model,
 not physical cartridge loading or analog mix calibration.
+
+CPU writes select POKEY before ROM/RAM at a declared window. At $4000,
+CPU reads preserve overlapping linear ROM, EXROM, EXFIX or RAM; this makes
+the chip write-only there. Legacy RAM/bank6/banked-RAM conflicts drop the
+$4000 sound flag during header normalization; accepted v4 can explicitly
+combine those devices with POKEY. Multiple primary sound flags retain
+$0450 before $4000 before $0800, with at most one primary and one secondary.
+A hash match overrides board/RAM/sound before this runtime selection.
+
+A CPU register access takes its real bus cycle, advancing both chip clocks.
+RANDOM and IRQST reads do not acknowledge timer requests; clearing IRQEN
+acknowledges them. STIMER changes the reload/output state described above.
+Peeks and the board-read path used by MARIA fetches select board memory or
+open bus at those same addresses, without reading registers or advancing
+chip/synthesis state. A full DMA fetch still updates the bus's floating
+byte as documented in [MARIA](maria.md).
+
+Only an accepted validated v4 block supplies effective IRQ bits 0/1;
+raw IRQ fields from ignored blocks remain visible to probing but cannot
+wire a chip. Versions below4 reserve these bytes; versions above4 follow
+v4 with a warning. Bit0 names primary and bit1 names $0440 regardless of
+how many chips are declared. Bit2 belongs to another audio device and is
+excluded from the POKEY mask. `pokey.maps` covers accepted codes/masks,
+invalid mapper/options/audio/IRQ and geometry fallback, reserved legacy
+bytes, hash overrides, repeated loads and reset. It checks overlap read
+values, whole-instance purity of peeks/DMA board reads, and actual MARIA
+objects fetching floating or board bytes at mapped RANDOM addresses. CPU interrupt
+sampling and entry are a separate integration from this mapping policy.

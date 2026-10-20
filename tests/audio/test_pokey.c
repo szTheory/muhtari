@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "internal.h"
+#include "cartdb.h"
+#include "sha1.h"
 #include "../check.h"
 #include "../cart/images.h"
 
@@ -579,7 +581,7 @@ static muhtari *map_machine(void)
 static size_t map_header(uint8_t version, uint16_t type, uint8_t code, uint32_t body)
 {
     images_header(map_image, version, "Mapped sound", body, type);
-    map_image[67] = code;
+    map_image[67] = version >= 4u ? code : 0u;
     memset(map_image + IMAGES_HEADER, 0x5A, body);
     images_footer(map_image + IMAGES_HEADER, body);
     return IMAGES_HEADER + body;
@@ -668,6 +670,7 @@ static void map_windows(void)
             size_t size = map_header((uint8_t)version, types[k], codes[k], MAP_BODY);
             map_program(primary[k], k >= 3u);
             map_load(m, size);
+            CHECK_EQ_U64(m->cart.info.warnings, 0u);
             CHECK_EQ_HEX(m->cart.pokey_at[0], primary[k]);
             CHECK_EQ_HEX(m->cart.pokey_at[1], k >= 3u ? 0x0440u : 0u);
             CHECK_EQ_U64(m->synth.pokeys, k == 4u ? 2u : 1u);
@@ -744,6 +747,292 @@ static void map_mono(void)
     CHECK_EQ_U64(counts[1], counts[2]);
     CHECK(memcmp(pcm[0], pcm[2], counts[2] * sizeof(int16_t)) != 0);
     CHECK(memcmp(pcm[1], pcm[2], counts[2] * sizeof(int16_t)) != 0);
+    /* Hold the two-chip normalization constant while muting each chip.
+       Either disconnected mix input must make one comparison equal. */
+    for (unsigned k = 0u; k < 3u; k++) {
+        size_t size = map_header(4u, 0u, 3u, MAP_BODY);
+        map_program(0x0450u, 1);
+        map_load(m, size);
+        (void)map_frame(m, pcm[k]);
+        (void)map_frame(m, pcm[k]);
+        muhtari__bus_write(m, 0x0451u, k == 1u ? 0u : 0xAFu);
+        muhtari__bus_write(m, 0x0441u, k == 0u ? 0u : 0xAFu);
+        counts[k] = map_frame(m, pcm[k]);
+    }
+    CHECK_EQ_U64(counts[0], counts[2]);
+    CHECK_EQ_U64(counts[1], counts[2]);
+    CHECK(memcmp(pcm[0], pcm[2], counts[2] * sizeof(int16_t)) != 0);
+    CHECK(memcmp(pcm[1], pcm[2], counts[2] * sizeof(int16_t)) != 0);
+    muhtari_destroy(m);
+}
+
+static void map_pure_reads(muhtari *m, uint16_t addr, uint8_t value)
+{
+    static muhtari before;
+    memcpy(&before, m, sizeof before);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, addr), value);
+    CHECK(memcmp(&before, m, sizeof before) == 0);
+    /* This is the board access used by MARIA's actual DMA fetch. The
+       fetch itself additionally updates open_bus; this seam must not. */
+    CHECK_EQ_HEX(muhtari__cart_read(m, addr, 1), value);
+    CHECK(memcmp(&before, m, sizeof before) == 0);
+}
+
+/* Run the actual DMA walker as well as its board-read seam: a one-byte
+   direct object at RANDOM must use floating/board data, not the chip. */
+static void map_dma(muhtari *m, uint16_t addr, uint8_t value)
+{
+    uint8_t dl[] = {(uint8_t)addr, 31u, (uint8_t)(addr >> 8), 60u, 0u, 0u, 0u, 0u};
+    memcpy(m->ram + 0x100u, dl, sizeof dl); /* DL at $1900 */
+    m->maria.dl = 0x1900u;
+    m->maria.dll = 0x1A00u;
+    m->maria.offset = 0u;
+    m->maria.entry = 0u;
+    m->maria.write_mode = 0u;
+    m->maria.reg[0x1Cu] = 0u; /* 160A, one byte -> four two-bit cells */
+    memset(m->maria.line_ram, 0, sizeof m->maria.line_ram);
+    struct muhtari__pokey before[2];
+    static struct muhtari__synth synth;
+    memcpy(before, m->pokey, sizeof before);
+    memcpy(&synth, &m->synth, sizeof synth);
+    uint64_t ticks = m->bus.ticks;
+    uint64_t phi2 = m->bus.phi2;
+    struct muhtari__line_stats stats;
+    CHECK_EQ_U64(muhtari__maria_dma_line(m, ticks, ticks + 454u, 20u, &stats), ticks + 26u);
+    CHECK_EQ_U64(stats.bytes, 1u);
+    for (unsigned cell = 0u; cell < 4u; cell++)
+        CHECK_EQ_U64(m->maria.line_ram[m->maria.write_buf][60u + cell],
+                     (value >> (6u - 2u * cell)) & 3u);
+    CHECK(memcmp(before, m->pokey, sizeof before) == 0);
+    CHECK(memcmp(&synth, &m->synth, sizeof synth) == 0);
+    CHECK_EQ_U64(m->bus.ticks, ticks);
+    CHECK_EQ_U64(m->bus.phi2, phi2);
+}
+
+static void map_accesses(void)
+{
+    static const uint16_t types[] = {1u, 0x40u, 0x8000u, 0x400u, 0x440u};
+    static const uint16_t windows[] = {0x4000u, 0x0450u, 0x0800u, 0x0440u, 0x0450u};
+    muhtari *m = map_machine();
+    for (unsigned k = 0u; k < 5u; k++) {
+        map_load(m, map_header(3u, types[k], 0u, MAP_BODY));
+        for (unsigned n = 0u; n < (k == 4u ? 2u : 1u); n++) {
+            uint16_t at = n == 0u ? windows[k] : 0x0440u;
+            unsigned chip = at == 0x0440u ? 1u : 0u;
+            muhtari__bus_write(m, (uint16_t)(at + 15u), 0u);
+            for (unsigned delay = 0u; delay < 20u; delay++)
+                (void)muhtari__bus_read(m, 0x1800u);
+            /* Pure observation returns board/open data even at RANDOM
+               and IRQST; the CPU reads documented chip data instead. */
+            m->bus.open_bus = 0x3Cu;
+            map_pure_reads(m, (uint16_t)(at + 10u), 0x3Cu);
+            map_pure_reads(m, (uint16_t)(at + 14u), 0x3Cu);
+            map_dma(m, (uint16_t)(at + 10u), 60u);
+            uint64_t cycles = m->pokey[chip].cycle;
+            CHECK_EQ_HEX(muhtari__bus_read(m, (uint16_t)(at + 10u)), 0xFFu);
+            CHECK_EQ_U64(m->pokey[chip].cycle, cycles + 1u);
+            muhtari__bus_write(m, (uint16_t)(at + 15u), 3u);
+            muhtari__bus_write(m, (uint16_t)(at + 8u), 0x40u);
+            muhtari__bus_write(m, at, 0u);
+            muhtari__bus_write(m, (uint16_t)(at + 1u), 0xAFu);
+            muhtari__bus_write(m, (uint16_t)(at + 14u), 1u);
+            muhtari__bus_write(m, (uint16_t)(at + 9u), 0u);
+            CHECK_EQ_U64(m->pokey[chip].channel[0].output, 1u);
+            for (unsigned delay = 0u; delay < 12u; delay++)
+                (void)muhtari__bus_read(m, 0x1800u);
+            CHECK(muhtari__pokey_irq(m, chip));
+            m->bus.open_bus = 0x63u;
+            map_pure_reads(m, (uint16_t)(at + 14u), 0x63u);
+            CHECK_EQ_HEX(muhtari__bus_read(m, (uint16_t)(at + 14u)), 0xFEu);
+            CHECK(muhtari__pokey_irq(m, chip)); /* reads do not acknowledge */
+            muhtari__bus_write(m, (uint16_t)(at + 14u), 0u);
+            CHECK(!muhtari__pokey_irq(m, chip));
+            CHECK_EQ_HEX(muhtari__bus_read(m, (uint16_t)(at + 14u)), 0xFFu);
+        }
+    }
+    muhtari_destroy(m);
+}
+
+static void map_overlaps(void)
+{
+    /* Linear 48/64K, SG EXROM/EXFIX, and v4 linear/SG/banked RAM.
+       Legacy RAM conflicts deliberately normalize away POKEY elsewhere. */
+    static const struct {
+        uint8_t version, mapper, option;
+        uint16_t type;
+        uint32_t body;
+        int ram;
+    } cases[] = {{3u, 0u, 0u, 1u, 49152u, 0},   {3u, 0u, 0u, 1u, 65536u, 0},
+                 {3u, 0u, 0u, 0xBu, 49152u, 0}, {4u, 1u, 5u, 0u, 65536u, 0},
+                 {4u, 0u, 1u, 0u, MAP_BODY, 1}, {4u, 1u, 1u, 0u, 65536u, 1},
+                 {4u, 1u, 6u, 0u, 65536u, 1}};
+    muhtari *m = map_machine();
+    for (unsigned k = 0u; k < sizeof cases / sizeof cases[0]; k++) {
+        size_t size = map_header(cases[k].version, cases[k].type, 5u, cases[k].body);
+        map_image[64] = cases[k].mapper;
+        map_image[65] = cases[k].option;
+        map_load(m, size);
+        CHECK_EQ_HEX(m->cart.pokey_at[0], 0x4000u);
+        if (cases[k].ram)
+            memset(m->cart.ram, 0x63, m->cart.info.ram_size);
+        /* Distinct ROM and RAM sentinels make accidentally reading POKEY,
+           writing RAM, or selecting the wrong priority observable. */
+        uint8_t expected = cases[k].ram ? 0x63u : 0x5Au;
+        static const uint16_t blocks[] = {0x4000u, 0x5FF0u, 0x7FF0u};
+        for (unsigned b = 0u; b < 3u; b++) {
+            uint16_t at = blocks[b];
+            muhtari__bus_write(m, (uint16_t)(at + 1u), 0x1Fu);
+            CHECK_EQ_U64(m->synth.raw[2], 206u);
+            CHECK_EQ_U64(m->pokey[0].channel[0].audc, 0x1Fu);
+            CHECK_EQ_HEX(muhtari__bus_read(m, (uint16_t)(at + 1u)), expected);
+            CHECK_EQ_HEX(muhtari__bus_read(m, (uint16_t)(at + 14u)), expected);
+            map_pure_reads(m, (uint16_t)(at + 1u), expected);
+            map_pure_reads(m, (uint16_t)(at + 10u), expected);
+            map_dma(m, (uint16_t)(at + 10u), expected);
+            CHECK_EQ_U64(m->cart.bank, 0u);
+        }
+        /* Banked RAM's other half keeps the same priority. */
+        if (cases[k].option == 6u) {
+            muhtari__bus_write(m, 0x8000u, 32u);
+            CHECK_EQ_U64(m->cart.ram_bank, 1u);
+            m->cart.ram[16385u] = 0x79u;
+            muhtari__bus_write(m, 0x4001u, 0x18u);
+            CHECK_EQ_U64(m->synth.raw[2], 112u);
+            CHECK_EQ_HEX(muhtari__bus_read(m, 0x4001u), 0x79u);
+            map_pure_reads(m, 0x4001u, 0x79u);
+        }
+    }
+    muhtari_destroy(m);
+}
+
+static void map_normalization(void)
+{
+    muhtari *m = map_machine();
+    /* All primary flags resolve to one chip at450, then4000, then800;
+       the raw sound flags remain probe metadata. */
+    static const uint16_t types[] = {0x8441u, 0x8401u, 0x8400u};
+    static const uint16_t at[] = {0x0450u, 0x4000u, 0x0800u};
+    for (unsigned k = 0u; k < 3u; k++) {
+        map_load(m, map_header(3u, types[k], 0u, MAP_BODY));
+        CHECK_EQ_U64(m->synth.pokeys, 2u);
+        CHECK_EQ_HEX(m->cart.pokey_at[0], at[k]);
+        CHECK_EQ_HEX(m->cart.pokey_at[1], 0x0440u);
+        static const uint16_t candidates[] = {0x0450u, 0x4000u, 0x0800u};
+        for (unsigned j = 0u; j < 3u; j++) {
+            muhtari__bus_write(m, at[k], 37u);
+            muhtari__bus_write(m, candidates[j], 91u);
+            CHECK_EQ_U64(m->pokey[0].channel[0].audf, j == k ? 91u : 37u);
+        }
+    }
+    static const uint16_t conflicts[] = {0x0007u, 0x0013u, 0x0023u};
+    for (unsigned k = 0u; k < 3u; k++) {
+        map_load(m, map_header(3u, conflicts[k], 0u, 65536u));
+        CHECK((m->cart.info.warnings & MUHTARI_CART_WARN_CART_TYPE_CONFLICT) != 0u);
+        CHECK_EQ_U64(m->cart.info.sound, 0u);
+        CHECK_EQ_U64(m->synth.pokeys, 0u);
+        muhtari__bus_write(m, 0x4001u, 0x1Fu);
+        CHECK_EQ_U64(m->pokey[0].channel[0].audc, 0u);
+    }
+    /* Supply an owned one-entry hash table to the existing identification
+       seam, then install its result exactly as the bundled loader does. */
+    size_t size = map_header(4u, 1u, 5u, MAP_BODY);
+    map_image[69] = 2u;
+    struct muhtari__cartdb_key key;
+    memset(&key, 0, sizeof key);
+    struct muhtari__sha1 hash;
+    muhtari__sha1_init(&hash);
+    muhtari__sha1_update(&hash, map_image + IMAGES_HEADER, MAP_BODY);
+    muhtari__sha1_final(&hash, key.sha1);
+    struct muhtari__cartdb_entry entry;
+    memset(&entry, 0, sizeof entry);
+    entry.board = MUHTARI_BOARD_LINEAR;
+    entry.sound = MUHTARI_SOUND_POKEY_450 | MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_800 |
+                  MUHTARI_SOUND_POKEY_440;
+    entry.flags = MUHTARI__CARTDB_NTSC;
+    entry.parts = 1u;
+    muhtari_cart_info info;
+    CHECK_EQ_U64(
+        muhtari__cart_identify(map_image, size, &key, 1u, &entry, 1u, NULL, 0u, NULL, 0u, &info),
+        MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.source, MUHTARI_SOURCE_HASH);
+    CHECK((info.warnings & MUHTARI_CART_WARN_HEADER_CORRECTED) != 0u);
+    CHECK_EQ_U64(info.sound, entry.sound);
+    CHECK_EQ_U64(muhtari__cart_install(m, map_image, &info), MUHTARI_STATUS_OK);
+    CHECK_EQ_HEX(m->cart.pokey_at[0], 0x0450u);
+    CHECK_EQ_HEX(m->cart.pokey_at[1], 0x0440u);
+    CHECK_EQ_U64(m->synth.pokeys, 2u);
+    CHECK_EQ_U64(m->cart.irq_mask, 2u); /* only accepted header supplies it */
+    muhtari__bus_write(m, 0x0451u, 0x1Fu);
+    muhtari__bus_write(m, 0x0447u, 0x18u);
+    CHECK_EQ_U64(m->synth.raw[2], 206u);
+    CHECK_EQ_U64(m->synth.raw[9], 112u);
+    map_load(m, map_header(3u, 0u, 0u, MAP_BODY));
+    CHECK_EQ_U64(m->cart.irq_mask, 0u);
+    muhtari_destroy(m);
+}
+
+static void map_wiring(void)
+{
+    muhtari *m = map_machine();
+    /* Every accepted v4 code and mask, including the non-POKEY IRQ bit. */
+    for (unsigned code = 0u; code <= 5u; code++) {
+        for (unsigned irq = 0u; irq < 8u; irq++) {
+            size_t size = map_header(4u, 0x440u, (uint8_t)code, MAP_BODY);
+            map_image[69] = (uint8_t)irq;
+            map_load(m, size);
+            CHECK_EQ_U64(m->cart.irq_mask, irq & 3u);
+            CHECK_EQ_U64(m->cart.info.a78_irq, irq);
+            CHECK((m->cart.info.warnings & MUHTARI_CART_WARN_HEADER_V4_IGNORED) == 0u);
+            if (code == 1u) {
+                CHECK_EQ_U64(m->synth.pokeys, 1u);
+                CHECK_EQ_U64(m->synth.secondary, 1u);
+                CHECK_EQ_U64(m->cart.pokey_at[0], 0u);
+                /* All four channels retain secondary source IDs6-9. */
+                for (unsigned ch = 0u; ch < 4u; ch++) {
+                    muhtari__bus_write(m, (uint16_t)(0x0441u + 2u * ch), 0x1Fu);
+                    CHECK_EQ_U64(m->synth.raw[6u + ch], 206u);
+                    CHECK_EQ_U64(m->synth.raw[2u + ch], 0u);
+                }
+            }
+            CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(m->cart.irq_mask, irq & 3u);
+        }
+    }
+    /* Each invalid field and a geometrically invalid v4 block falls back
+       to the legacy dual declaration, never to its raw IRQ metadata. */
+    static const struct {
+        unsigned offset;
+        uint8_t value;
+    } invalid[] = {{64u, 99u}, {65u, 4u}, {67u, 6u}, {67u, 0x40u}, {69u, 8u}, {68u, 1u}, {64u, 1u}};
+    for (unsigned k = 0u; k < sizeof invalid / sizeof invalid[0]; k++) {
+        size_t size = map_header(4u, 0x440u, 1u, MAP_BODY);
+        map_image[69] = 3u;
+        map_image[invalid[k].offset] = invalid[k].value;
+        map_load(m, size);
+        CHECK((m->cart.info.warnings & MUHTARI_CART_WARN_HEADER_V4_IGNORED) != 0u);
+        CHECK_EQ_U64(m->cart.info.a78_irq, k == 4u ? 8u : k == 5u ? 259u : 3u);
+        CHECK_EQ_U64(m->cart.irq_mask, 0u);
+        CHECK_EQ_U64(m->synth.pokeys, 2u);
+        CHECK_EQ_HEX(m->cart.pokey_at[0], 0x0450u);
+        CHECK_EQ_HEX(m->cart.pokey_at[1], 0x0440u);
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(m->cart.irq_mask, 0u);
+    }
+    /* Below v4 those bytes are reserved; above4 follows validated v4. */
+    size_t size = map_header(3u, 0x400u, 1u, MAP_BODY);
+    map_image[69] = 3u;
+    map_load(m, size);
+    CHECK_EQ_U64(m->cart.irq_mask, 0u);
+    CHECK_EQ_U64(m->cart.info.a78_irq, 0u);
+    map_image[0] = 5u;
+    map_load(m, size);
+    CHECK_EQ_U64(m->cart.irq_mask, 3u);
+    CHECK((m->cart.info.warnings & MUHTARI_CART_WARN_VERSION_ABOVE_4) != 0u);
+    map_load(m, map_header(4u, 0x440u, 0u, MAP_BODY));
+    CHECK_EQ_U64(m->cart.irq_mask, 0u);
+    CHECK_EQ_U64(m->synth.pokeys, 0u);
+    for (unsigned source = 2u; source < 10u; source++)
+        CHECK_EQ_U64(m->synth.raw[source], 0u);
     muhtari_destroy(m);
 }
 
@@ -772,6 +1061,10 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[1], "maps") == 0) {
         map_windows();
         map_mono();
+        map_accesses();
+        map_overlaps();
+        map_normalization();
+        map_wiring();
     } else {
         return 2;
     }
