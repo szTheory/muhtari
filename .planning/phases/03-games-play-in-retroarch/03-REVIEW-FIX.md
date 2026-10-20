@@ -111,23 +111,20 @@ exited 2 on the test's `max_align_t` declaration. Its superseded workflow was ca
 after the portable-token correction; hosted CI was dispatched again on `70c2a05`.
 
 
-### Hosted CI status
+### Hosted CI result
 
-At 2026-10-20T16:03:14Z, `gh run view 39452704206 -R szTheory/muhtari --json status,conclusion,jobs`
-exited 0 and showed both macOS build jobs still queued without assigned runners. The run is not green.
-Linux x64/ARM64, Windows x64, ASan, big-endian, both integer-only jobs, hygiene, library and performance passed.
+`gh run rerun 39452704206 -R szTheory/muhtari --failed` exited 0 after the first attempt completed.
+The Windows ARM64 retry passed all 588 tests plus all 6 release checks on source `70c2a05`, with no
+source or timeout change. The three usage-test timeouts did not reproduce. The cartridge geometry,
+`libretro.bios_failures` and actual BIOS host regressions all passed on ARM64.
 
-The [Windows ARM64 job](https://github.com/szTheory/muhtari/actions/runs/39452704206/job/118731533625)
-compiled successfully and passed the cartridge and libretro regressions, including `libretro.bios_failures`.
-Its full test step exited 8 because `runner.usage.port`, `runner.usage.region_pal` and
-`runner.usage.boot_bios_no_file` exceeded their existing two-second timeouts after printing the expected output.
-This is a suspected runner timing issue, not yet confirmed by a successful retry. No timeout was changed.
-
-`gh run rerun 39452704206 -R szTheory/muhtari --job 118731533625` exited 1. The direct retry API also
-exited 1 with HTTP 403: the workflow containing the job is already running. When the queued macOS work
-finishes, the next agent should run `gh run rerun 39452704206 -R szTheory/muhtari --failed` and check
-its result. The local CI and hygiene results above passed on the same source tree. This hosted follow-up
-requires no owner verification and does not consume another fix round by itself.
+`gh run watch 39452704206 -R szTheory/muhtari --exit-status` exited 0:
+[hosted CI run 39452704206](https://github.com/szTheory/muhtari/actions/runs/39452704206), attempt 2, completed
+with `success`. Linux, macOS and Windows x64/ARM64 builds, ASan, big-endian, both integer-only jobs,
+hygiene, library, performance, WebAssembly, hash equality, the hosted RetroArch screenshot comparison
+and `CI required` passed. The pull-request title job was skipped because this was a manual workflow run.
+The initial retry requests were refused while the macOS builds were queued; waiting for them to finish
+allowed the retry. No hosted follow-up or owner verification remains for this fix round.
 
 No logs or firmware bytes were committed. The original review is preserved; its per-finding disposition ledger
 records the five fixes. Existing phase verification still requires re-verification of the former source-comment gap.
