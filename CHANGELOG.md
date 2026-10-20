@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/szTheory/muhtari/compare/v0.2.0...v0.3.0) (2026-10-20)
+
+
+### Features
+
+* games play in RetroArch with MARIA, cartridges, boot and input ([#13](https://github.com/szTheory/muhtari/issues/13)) ([23c6f8f](https://github.com/szTheory/muhtari/commit/23c6f8f75355a076dcb19e469de93dc1270b94df))
+
 ## [0.2.0](https://github.com/szTheory/muhtari/compare/v0.1.0...v0.2.0) (2026-10-19)
 
 
