@@ -113,7 +113,7 @@ status: complete
 
 The plan extends existing behavior rather than adding a missing runtime feature. No artificial RED implementation commit was needed for this test-only slice. Eleven compiling mutations each made the focused executable exit1 with a concrete assertion. Every mutation was restored and the original production behavior reverified before committing. Metrics count the three implementation/test/style commits, eight changed files and ceiling(realized diff characters/4); they are not harness token usage.
 
-## Verification evidence
+## Commands and results
 
 All commands ran from the repository root. No execution logs are committed.
 
