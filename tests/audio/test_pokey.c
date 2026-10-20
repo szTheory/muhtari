@@ -52,6 +52,49 @@ static void clock_vectors(void)
     CHECK_EQ_U64(m->pokey[1].cycle, 26u);
 }
 
+static void timer_vectors(void)
+{
+    /* The manual's 8-bit fast timer reloads at T+3, first IRQ/output
+       at T+N+8, then every N+4 clocks (manual figure8, pokey.md). */
+    const uint8_t divisors[] = {0u, 1u, 255u};
+    for (unsigned d = 0; d < 3u; d++) {
+        muhtari *p = fresh();
+        muhtari__synth_reset(p, 0u, 1u);
+        muhtari__pokey_reset(p, 0u);
+        muhtari__pokey_reset(p, 1u);
+        CHECK_EQ_U64(p->pokey[0].skctl, 3u);
+        muhtari__pokey_write(p, 0u, 8u, 0x40u, 0u);
+        muhtari__pokey_write(p, 0u, 0u, divisors[d], 0u);
+        muhtari__pokey_write(p, 0u, 1u, 0xAFu, 0u);
+        muhtari__pokey_write(p, 0u, 14u, 1u, 0u);
+        muhtari__pokey_write(p, 0u, 9u, 0u, 0u);
+        uint64_t first = 4u * ((uint64_t)divisors[d] + 8u);
+        muhtari__pokey_catch_up(p, first - 1u);
+        CHECK_EQ_U64(p->synth.raw[2], 0u);
+        CHECK(!muhtari__pokey_irq(p, 0u));
+        muhtari__pokey_catch_up(p, first);
+        CHECK_EQ_U64(p->synth.raw[2], 206u);
+        CHECK(muhtari__pokey_irq(p, 0u));
+        CHECK_EQ_U64(muhtari__pokey_read(p, 0u, 14u, first), 0xFEu);
+        muhtari__pokey_catch_up(p, first + 4u * (divisors[d] + 4u));
+        CHECK_EQ_U64(p->synth.raw[2], 0u);
+        muhtari__pokey_catch_up(p, 13124u);
+        int16_t pcm[88];
+        CHECK_EQ_U64(muhtari__synth_render(p, 13125u, pcm), 88u);
+        unsigned nonzero = 0u;
+        for (unsigned i = 0; i < 88u; i++) {
+            nonzero += pcm[i] != 0;
+        }
+        CHECK(nonzero != 0u);
+        CHECK_EQ_U64(p->pokey[1].cycle, p->pokey[0].cycle);
+        CHECK_EQ_U64(p->pokey[1].channel[0].audc, 0u);
+    }
+    muhtari *alternate = fresh();
+    alternate->profile.pokey_init = 1u;
+    muhtari__pokey_reset(alternate, 0u);
+    CHECK_EQ_U64(alternate->pokey[0].skctl, 0u);
+}
+
 static void logic_vectors(void)
 {
     muhtari *m = fresh();
@@ -117,6 +160,7 @@ int main(int argc, char **argv)
     if (strcmp(argv[1], "clock") == 0) {
         clock_vectors();
     } else if (strcmp(argv[1], "logic") == 0) {
+        timer_vectors();
         logic_vectors();
         high_pass_vectors();
     } else {
