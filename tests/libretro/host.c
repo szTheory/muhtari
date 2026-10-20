@@ -33,6 +33,7 @@
 #include "libretro.h"
 #include "muhtari.h"
 #include "palette.h"
+#include "sha256.h"
 
 #define W 320u
 #define H 242u
@@ -180,6 +181,41 @@ static uint32_t pad[2]; /* the RetroPad buttons held, bit n for id n */
 static char log_text[4096];
 static size_t log_used;
 
+/* What the core told the frontend through the environment. */
+static const struct retro_controller_info *controller_info;
+static int input_descriptors; /* entries before the terminator, -1 if unset */
+static const struct retro_input_descriptor *input_list;
+static const struct retro_memory_map *memory_map;
+static int achievements = -1;
+static char message[256];
+static unsigned options_version = 2u; /* what GET_CORE_OPTIONS_VERSION answers */
+static const char *option_keys[16];   /* the keys the core declared */
+static int option_set_with;           /* 2 for SET_CORE_OPTIONS_V2, 1 for v1 */
+static const char *system_dir;
+
+/* The frontend's option values, changed by the cases. */
+static struct {
+    const char *key;
+    const char *value;
+} vars[] = {
+    {"muhtari_boot", "fast"},
+    {"muhtari_palette", "ntsc"},
+    {"muhtari_left_difficulty", "B"},
+    {"muhtari_right_difficulty", "B"},
+};
+static bool vars_updated;
+
+static void set_var(const char *key, const char *value)
+{
+    size_t i;
+    for (i = 0; i < sizeof vars / sizeof vars[0]; i++) {
+        if (strcmp(vars[i].key, key) == 0) {
+            vars[i].value = value;
+        }
+    }
+    vars_updated = true;
+}
+
 /* Keeps every log line, and prints it. */
 static void RETRO_CALLCONV host_log(enum retro_log_level level, const char *fmt, ...)
 {
@@ -199,6 +235,74 @@ static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 {
     if (cmd == RETRO_ENVIRONMENT_GET_LOG_INTERFACE) {
         ((struct retro_log_callback *)data)->log = host_log;
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_SET_CONTROLLER_INFO) {
+        controller_info = (const struct retro_controller_info *)data;
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS) {
+        input_list = (const struct retro_input_descriptor *)data;
+        for (input_descriptors = 0; input_list[input_descriptors].description != NULL;) {
+            input_descriptors++;
+        }
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_SET_MEMORY_MAPS) {
+        memory_map = (const struct retro_memory_map *)data;
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS) {
+        achievements = *(const bool *)data ? 1 : 0;
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_SET_MESSAGE) {
+        snprintf(message, sizeof message, "%s", ((const struct retro_message *)data)->msg);
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY) {
+        *(const char **)data = system_dir;
+        return system_dir != NULL;
+    }
+    if (cmd == RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION) {
+        *(unsigned *)data = options_version;
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 && options_version >= 2u) {
+        const struct retro_core_option_v2_definition *d =
+            ((const struct retro_core_options_v2 *)data)->definitions;
+        int k;
+        for (k = 0; k < 15 && d[k].key != NULL; k++) {
+            option_keys[k] = d[k].key;
+        }
+        option_set_with = 2;
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_SET_CORE_OPTIONS && options_version >= 1u) {
+        const struct retro_core_option_definition *d =
+            (const struct retro_core_option_definition *)data;
+        int k;
+        for (k = 0; k < 15 && d[k].key != NULL; k++) {
+            option_keys[k] = d[k].key;
+        }
+        option_set_with = 1;
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE) {
+        struct retro_variable *v = (struct retro_variable *)data;
+        size_t i;
+        for (i = 0; i < sizeof vars / sizeof vars[0]; i++) {
+            if (strcmp(vars[i].key, v->key) == 0) {
+                v->value = vars[i].value;
+                return true;
+            }
+        }
+        v->value = NULL;
+        return false;
+    }
+    if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE) {
+        *(bool *)data = vars_updated;
+        vars_updated = false;
         return true;
     }
     if (cmd == RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME) {
@@ -510,6 +614,20 @@ static const uint8_t *last_entry(void)
     return ram + ram[LAST_ENTRY];
 }
 
+/* Holds the buttons in mask on port for three frames, then releases them for
+   three, and returns the entry the cartridge read while they were held. */
+static void press(unsigned port, uint32_t mask, uint8_t got[8])
+{
+    pad[port] = mask;
+    run_frames(3u);
+    memcpy(got, last_entry(), 8u);
+    pad[port] = 0u;
+    run_frames(3u);
+}
+
+#define BIT(id) (1u << RETRO_DEVICE_ID_JOYPAD_##id)
+#define HI 0x80u /* TIA drives D7 alone of INPT0-INPT5 */
+
 /* Port 1's and port 2's Up reach SWCHA's bit 4 and bit 0, pulled to 0
    while held (docs/hardware/controllers.md). */
 static void case_input(void)
@@ -528,6 +646,346 @@ static void case_input(void)
     stop();
 }
 
+/* ProSystem's RetroPad layout (HOSTS-AND-INTEGRATION section 1, Input) on
+   the input cartridge, which leaves both ports in one-button mode: button 1
+   reads 1 on INPT0 [INPT2] and button 2 on INPT1 [INPT3], and either pulls
+   INPT4 [INPT5] to 0 (docs/hardware/controllers.md). Select, Start and X
+   on port 1 are Select, Pause and Reset, read 0 on SWCHB D1, D3 and D0;
+   port 2's do nothing. L and R flip the left and right difficulty on each
+   press, read 1 on SWCHB D6 and D7 at A. A Joystick's B and A both fire. */
+static void case_layout(void)
+{
+    uint8_t e[8];
+    start(0);
+    run_frames(3u);
+    press(0u, BIT(B), e);
+    CHECK_EQ_HEX(e[E_INPT0] & HI, HI);
+    CHECK_EQ_HEX(e[E_INPT1] & HI, 0u);
+    CHECK_EQ_HEX(e[E_INPT4] & HI, 0u);
+    press(0u, BIT(A), e);
+    CHECK_EQ_HEX(e[E_INPT0] & HI, 0u);
+    CHECK_EQ_HEX(e[E_INPT1] & HI, HI);
+    CHECK_EQ_HEX(e[E_INPT4] & HI, 0u);
+    press(1u, BIT(B), e);
+    CHECK_EQ_HEX(e[E_INPT2] & HI, HI);
+    CHECK_EQ_HEX(e[E_INPT5] & HI, 0u);
+    press(1u, BIT(A), e);
+    CHECK_EQ_HEX(e[E_INPT3] & HI, HI);
+    CHECK_EQ_HEX(e[E_INPT5] & HI, 0u);
+    press(0u, BIT(SELECT), e);
+    CHECK_EQ_HEX(e[E_SWCHB], 0x3Du);
+    press(0u, BIT(START), e);
+    CHECK_EQ_HEX(e[E_SWCHB], 0x37u);
+    press(0u, BIT(X), e);
+    CHECK_EQ_HEX(e[E_SWCHB], 0x3Eu);
+    press(1u, BIT(SELECT) | BIT(START) | BIT(X) | BIT(L) | BIT(R), e);
+    CHECK_EQ_HEX(e[E_SWCHB], 0x3Fu);
+    /* A press edge flips the switch, and it stays there once released. */
+    message[0] = '\0';
+    press(0u, BIT(L), e);
+    CHECK_EQ_HEX(e[E_SWCHB], 0x7Fu);
+    CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x7Fu);
+    CHECK(strstr(message, "Left difficulty: A") != NULL);
+    press(0u, BIT(R), e);
+    CHECK_EQ_HEX(e[E_SWCHB], 0xFFu);
+    CHECK(strstr(message, "Right difficulty: A") != NULL);
+    press(0u, BIT(L), e);
+    CHECK_EQ_HEX(last_entry()[E_SWCHB], 0xBFu);
+    CHECK(strstr(message, "Left difficulty: B") != NULL);
+    press(0u, BIT(R), e);
+    CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x3Fu);
+    /* Joystick: no INPT0-INPT3, and A fires like B. */
+    p_set_controller_port_device(0u, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1));
+    press(0u, BIT(A), e);
+    CHECK_EQ_HEX(e[E_INPT1] & HI, 0u);
+    CHECK_EQ_HEX(e[E_INPT4] & HI, 0u);
+    press(0u, BIT(B), e);
+    CHECK_EQ_HEX(e[E_INPT0] & HI, 0u);
+    CHECK_EQ_HEX(e[E_INPT4] & HI, 0u);
+    stop();
+}
+
+/* The controller list on both ports is Auto, ProLine, Joystick and None;
+   None unplugs the port, whose pins then read released. The input
+   descriptors name the 11 inputs of port 1 and the 6 of port 2. */
+static void case_devices(void)
+{
+    static const char *const names[4] = {"Auto (cartridge header)", "ProLine", "Joystick", "None"};
+    static const unsigned ids[4] = {
+        RETRO_DEVICE_JOYPAD, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
+        RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1), RETRO_DEVICE_NONE};
+    uint8_t e[8];
+    unsigned port, t;
+    start(0);
+    CHECK(controller_info != NULL);
+    for (port = 0; controller_info != NULL && port < 2u; port++) {
+        CHECK_EQ_U64(controller_info[port].num_types, 4u);
+        for (t = 0; t < 4u && t < controller_info[port].num_types; t++) {
+            check_string("controller", controller_info[port].types[t].desc, names[t]);
+            CHECK_EQ_U64(controller_info[port].types[t].id, ids[t]);
+        }
+    }
+    if (controller_info != NULL) {
+        CHECK(controller_info[2].types == NULL && controller_info[2].num_types == 0u);
+    }
+    CHECK_EQ_U64(input_descriptors, 17);
+    for (t = 0; input_list != NULL && (int)t < input_descriptors; t++) {
+        CHECK(input_list[t].port < 2u && input_list[t].device == RETRO_DEVICE_JOYPAD);
+        CHECK(input_list[t].id <= RETRO_DEVICE_ID_JOYPAD_R);
+    }
+    run_frames(3u);
+    press(0u, BIT(UP), e);
+    CHECK_EQ_HEX(e[E_SWCHA], 0xEFu);
+    p_set_controller_port_device(0u, RETRO_DEVICE_NONE);
+    press(0u, BIT(UP) | BIT(B) | BIT(A), e);
+    CHECK_EQ_HEX(e[E_SWCHA], 0xFFu);
+    CHECK_EQ_HEX(e[E_INPT0] & HI, 0u);
+    CHECK_EQ_HEX(e[E_INPT4] & HI, HI);
+    p_set_controller_port_device(0u, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0));
+    press(0u, BIT(UP), e);
+    CHECK_EQ_HEX(e[E_SWCHA], 0xEFu);
+    stop();
+}
+
+/* FNV-1a over the last frame received. */
+static uint64_t frame_hash(void)
+{
+    uint64_t h = 14695981039346656037u;
+    size_t i;
+    for (i = 0; i < sizeof frame; i++) {
+        h = (h ^ frame[i]) * 1099511628211u;
+    }
+    return h;
+}
+
+/* Runs n frames and keeps each frame's hash. */
+static void hash_frames(uint64_t *out, unsigned n)
+{
+    unsigned i;
+    for (i = 0; i < n; i++) {
+        p_run();
+        out[i] = frame_hash();
+    }
+}
+
+/* Restart is a power cycle: after some play, a flipped difficulty and a
+   held button, retro_reset gives the frames of a fresh load. */
+static void case_reset(void)
+{
+    uint64_t fresh[8], again[8];
+    uint8_t e[8];
+    unsigned i;
+    start(0);
+    hash_frames(fresh, 8u);
+    press(0u, BIT(L), e);
+    CHECK_EQ_HEX(e[E_SWCHB], 0x7Fu);
+    run_frames(20u);
+    p_reset();
+    hash_frames(again, 8u);
+    for (i = 0; i < 8u; i++) {
+        if (fresh[i] != again[i]) {
+            fprintf(stderr, "frame %u after reset differs from a fresh load\n", i + 1u);
+            check_failures++;
+        }
+    }
+    stop();
+}
+
+/* Writes files[1] to dir/name. */
+static void put_bios(const char *dir, const char *name)
+{
+    char path[1024];
+    FILE *f;
+    snprintf(path, sizeof path, "%s/%s", dir, name);
+    f = fopen(path, "wb");
+    CHECK(f != NULL);
+    if (f != NULL) {
+        CHECK_EQ_U64(fwrite(files[1], 1u, file_sizes[1], f), file_sizes[1]);
+        CHECK_EQ_U64(fclose(f), 0);
+    }
+}
+
+static void drop_bios(const char *dir, const char *name)
+{
+    char path[1024];
+    snprintf(path, sizeof path, "%s/%s", dir, name);
+    (void)remove(path);
+}
+
+/* muhtari_boot = bios boots through a BIOS file in the system directory,
+   under either name, and logs its SHA-256; its first frames differ from
+   the fast boot's. With no file the core says so and boots fast. */
+static void case_bios(const char *dir)
+{
+    static const char *const names[2] = {"7800 BIOS (U).rom", "7800 BIOS (E).rom"};
+    uint64_t fast[4], bios[4], fallback[4];
+    uint8_t digest[32];
+    char hex[65];
+    muhtari__sha256 sha;
+    unsigned n, i;
+
+    muhtari__sha256_init(&sha);
+    muhtari__sha256_update(&sha, files[1], file_sizes[1]);
+    muhtari__sha256_final(&sha, digest);
+    muhtari__sha256_hex(digest, hex);
+    system_dir = dir;
+    drop_bios(dir, names[0]);
+    drop_bios(dir, names[1]);
+
+    start(0);
+    hash_frames(fast, 4u);
+    stop();
+    for (n = 0; n < 2u; n++) {
+        put_bios(dir, names[n]);
+        set_var("muhtari_boot", "bios");
+        log_used = 0u;
+        log_text[0] = '\0';
+        start(0);
+        hash_frames(bios, 4u);
+        stop();
+        drop_bios(dir, names[n]);
+        CHECK(strstr(log_text, names[n]) != NULL);
+        CHECK(strstr(log_text, hex) != NULL);
+        CHECK(memcmp(bios, fast, sizeof fast) != 0);
+    }
+    log_used = 0u;
+    log_text[0] = '\0';
+    start(0);
+    hash_frames(fallback, 4u);
+    stop();
+    CHECK(strstr(log_text, "fast boot") != NULL);
+    for (i = 0; i < 4u; i++) {
+        CHECK_EQ_U64(fallback[i], fast[i]);
+    }
+    set_var("muhtari_boot", "fast");
+    system_dir = NULL;
+}
+
+/* The core declares its four options through SET_CORE_OPTIONS_V2, or the
+   v1 call when the frontend has only that. The difficulty options set the
+   switches at load and at Restart; a change mid-game sets them at once. */
+static void check_keys(void)
+{
+    static const char *const keys[4] = {"muhtari_boot", "muhtari_palette",
+                                        "muhtari_left_difficulty", "muhtari_right_difficulty"};
+    unsigned k;
+    for (k = 0; k < 4u; k++) {
+        check_string("option key", option_keys[k], keys[k]);
+    }
+    CHECK(option_keys[4] == NULL);
+}
+
+static void case_options(void)
+{
+    uint8_t e[8];
+    options_version = 1u;
+    p_set_environment(env);
+    CHECK_EQ_U64(option_set_with, 1);
+    check_keys();
+    p_deinit();
+    memset(option_keys, 0, sizeof option_keys);
+    options_version = 2u;
+
+    set_var("muhtari_left_difficulty", "A");
+    set_var("muhtari_right_difficulty", "A");
+    start(0);
+    CHECK_EQ_U64(option_set_with, 2);
+    check_keys();
+    run_frames(3u);
+    CHECK_EQ_HEX(last_entry()[E_SWCHB], 0xFFu);
+    set_var("muhtari_right_difficulty", "B");
+    run_frames(3u);
+    CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x7Fu);
+    press(0u, BIT(L), e);
+    CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x3Fu);
+    p_reset();
+    run_frames(3u);
+    CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x7Fu);
+    stop();
+    set_var("muhtari_left_difficulty", "B");
+}
+
+/* One descriptor as the core must list it. */
+typedef struct want_desc {
+    uint64_t flags;
+    size_t start, len, offset;
+} want_desc;
+
+/* Checks the map against want, in order, and returns the descriptor
+   starting at start, or NULL. */
+static const struct retro_memory_descriptor *check_map(const want_desc *want, unsigned n)
+{
+    unsigned i;
+    CHECK(memory_map != NULL);
+    if (memory_map == NULL) {
+        return NULL;
+    }
+    CHECK_EQ_U64(memory_map->num_descriptors, n);
+    for (i = 0; i < n && i < memory_map->num_descriptors; i++) {
+        const struct retro_memory_descriptor *d = &memory_map->descriptors[i];
+        if (d->flags != want[i].flags || d->start != want[i].start || d->len != want[i].len ||
+            d->offset != want[i].offset || d->select != 0u || d->ptr == NULL) {
+            fprintf(stderr,
+                    "descriptor %u: flags %llx start $%04x len $%04x offset $%04x, expected "
+                    "%llx $%04x $%04x $%04x\n",
+                    i, (unsigned long long)d->flags, (unsigned)d->start, (unsigned)d->len,
+                    (unsigned)d->offset, (unsigned long long)want[i].flags, (unsigned)want[i].start,
+                    (unsigned)want[i].len, (unsigned)want[i].offset);
+            check_failures++;
+        }
+    }
+    return memory_map->descriptors;
+}
+
+/* The achievement map (HOSTS-AND-INTEGRATION section 2): page 0's and page
+   1's RAM shadows, the RIOT's RAM, system RAM at $1800 and again at $2800
+   from its second half, unbanked cartridge RAM at $4000 and the fixed ROM
+   as CONST. Registers, $3000-$3FFF and banked windows have none. */
+static void case_memory_map(void)
+{
+    static const want_desc linear[] = {
+        {0u, 0x0040u, 0x00C0u, 0x0840u}, {0u, 0x0140u, 0x00C0u, 0x0940u},
+        {0u, 0x0480u, 0x0080u, 0u},      {RETRO_MEMDESC_SYSTEM_RAM, 0x1800u, 0x1000u, 0u},
+        {0u, 0x2800u, 0x0800u, 0x0800u}, {RETRO_MEMDESC_CONST, 0x4000u, 0xC000u, 0u},
+    };
+    static const want_desc supergame_ram[] = {
+        {0u, 0x0040u, 0x00C0u, 0x0840u},
+        {0u, 0x0140u, 0x00C0u, 0x0940u},
+        {0u, 0x0480u, 0x0080u, 0u},
+        {RETRO_MEMDESC_SYSTEM_RAM, 0x1800u, 0x1000u, 0u},
+        {0u, 0x2800u, 0x0800u, 0x0800u},
+        {0u, 0x4000u, 0x4000u, 0u},
+        {RETRO_MEMDESC_CONST, 0xC000u, 0x4000u, 0u},
+    };
+    const struct retro_memory_descriptor *d;
+    void *ram;
+
+    start(0);
+    CHECK_EQ_U64(achievements, 1);
+    ram = p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+    d = check_map(linear, 6u);
+    if (d != NULL && memory_map->num_descriptors == 6u) {
+        CHECK(d[0].ptr == ram && d[1].ptr == ram && d[3].ptr == ram && d[4].ptr == ram);
+        CHECK(d[2].ptr != ram);
+        CHECK(memcmp(d[5].ptr, files[0] + 128, 0xC000u) == 0);
+    }
+    stop();
+    memory_map = NULL;
+    achievements = -1;
+
+    start(1);
+    CHECK_EQ_U64(achievements, 1);
+    ram = p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+    d = check_map(supergame_ram, 7u);
+    if (d != NULL && memory_map->num_descriptors == 7u) {
+        CHECK(d[0].ptr == ram && d[3].ptr == ram && d[4].ptr == ram);
+        CHECK(d[5].ptr != ram && d[5].ptr != NULL);
+        /* The last bank is the file's last 16 KiB. */
+        CHECK(memcmp(d[6].ptr, files[1] + file_sizes[1] - 0x4000u, 0x4000u) == 0);
+    }
+    stop();
+}
+
 int main(int argc, char **argv)
 {
     static const struct {
@@ -535,7 +993,8 @@ int main(int argc, char **argv)
         void (*run)(void);
         int files;
     } cases[] = {
-        {"input", case_input, 1},
+        {"input", case_input, 1}, {"layout", case_layout, 1},   {"devices", case_devices, 1},
+        {"reset", case_reset, 1}, {"options", case_options, 1}, {"memory_map", case_memory_map, 2},
     };
     size_t i;
     int found = 0;
@@ -559,6 +1018,14 @@ int main(int argc, char **argv)
         rgb565 = strcmp(argv[2], "rgb565") == 0;
         card();
         found = 1;
+    }
+    /* bios <cart> <bios file> <system directory> */
+    if (argc == 6 && strcmp(argv[2], "bios") == 0) {
+        found = 1;
+        if (!read_file(argv[3], 0) || !read_file(argv[4], 1)) {
+            return 1;
+        }
+        case_bios(argv[5]);
     }
     for (i = 0; !found && i < sizeof cases / sizeof cases[0]; i++) {
         if (strcmp(argv[2], cases[i].name) == 0) {
