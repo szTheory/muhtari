@@ -230,7 +230,7 @@ static void flush(struct muhtari__synth *s)
     for (unsigned chip = 0; chip < s->pokeys; chip++) {
         unsigned raw = 0;
         for (unsigned ch = 0; ch < 4u; ch++) {
-            raw += s->raw[2u + 4u * chip + ch];
+            raw += s->raw[2u + 4u * (chip + s->secondary) + ch];
         }
         current += (uint64_t)muhtari__pokey_mix[raw] * MUHTARI__POKEY_CURRENT *
                    MUHTARI__CART_GAIN_Q12 / 4096u;

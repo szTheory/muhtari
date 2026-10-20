@@ -902,6 +902,9 @@ static void test_cart_audio(void)
         CHECK_EQ_HEX(m->ram[0], 255u);
         uint16_t mirror = k == 0u ? 0x7FFEu : k == 1u ? 0x0FFEu : 0x044Eu;
         CHECK_EQ_HEX(muhtari__bus_read(m, mirror), 255u);
+        muhtari__bus_write(m, (uint16_t)(mirror - 13u), 0x1Fu);
+        CHECK_EQ_U64(m->synth.raw[k == 2u ? 6u : 2u], 206u);
+        CHECK_EQ_U64(m->synth.raw[k == 2u ? 2u : 6u], 0u);
         struct muhtari__pokey before[2];
         memcpy(before, m->pokey, sizeof before);
         (void)muhtari__bus_peek(m, (uint16_t)(at + 10u));
@@ -911,6 +914,53 @@ static void test_cart_audio(void)
         CHECK_EQ_U64(m->synth.pokeys, 1u);
         muhtari_destroy(m);
     }
+    /* Readable ROM overlaps a write-only POKEY; DMA/peek remain pure. */
+    static uint8_t overlap[IMAGES_HEADER + 49152u];
+    images_header(overlap, 3u, "Overlap", 49152u, 1u);
+    memset(overlap + IMAGES_HEADER, 0x5Au, 49152u);
+    overlap[IMAGES_HEADER + 49148u] = 0u;
+    overlap[IMAGES_HEADER + 49149u] = 0xF0u;
+    muhtari *m = make();
+    muhtari_media media = media_for(overlap, sizeof overlap);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    muhtari__bus_write(m, 0x4001u, 0x1Fu);
+    CHECK_EQ_U64(m->synth.raw[2], 206u);
+    CHECK_EQ_HEX(muhtari__bus_read(m, 0x400Eu), 0x5Au);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x400Eu), 0x5Au);
+    CHECK_EQ_HEX(muhtari__cart_read(m, 0x400Eu, 1), 0x5Au);
+    /* v4 permits explicit RAM beside POKEY: writes select the chip,
+       reads select RAM. v3's conflicting RAM/POKEY pair drops POKEY. */
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    cart[0] = 4u;
+    cart[65] = 1u;
+    cart[67] = 5u;
+    cart[69] = 3u;
+    media = media_for(cart, sizeof cart);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.irq_mask, 3u);
+    m->cart.ram[1] = 0x63u;
+    muhtari__bus_write(m, 0x4001u, 0x1Fu);
+    CHECK_EQ_U64(m->synth.raw[2], 206u);
+    CHECK_EQ_HEX(muhtari__bus_read(m, 0x4001u), 0x63u);
+    cart[64] = 99u; /* ignored v4 retains raw fields, never wiring */
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.info.a78_irq, 3u);
+    CHECK_EQ_U64(m->cart.irq_mask, 0u);
+    CHECK_EQ_U64(m->synth.pokeys, 0u);
+    cart[64] = 0u;
+    cart[65] = 0u;
+    cart[67] = 1u; /* lone440 retains secondary wiring and source */
+    cart[69] = 2u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.irq_mask, 2u);
+    CHECK_EQ_U64(m->synth.pokeys, 1u);
+    muhtari__bus_write(m, 0x0441u, 0x1Fu);
+    CHECK_EQ_U64(m->synth.raw[6], 206u);
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.irq_mask, 0u);
+    CHECK_EQ_U64(m->synth.pokeys, 0u);
+    muhtari_destroy(m);
 }
 
 static const uint8_t tone[] = {

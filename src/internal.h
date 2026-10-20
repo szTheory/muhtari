@@ -56,7 +56,7 @@ struct muhtari__synth {
     uint32_t kernel_adds, kernel_adds_per_sample, carry_high_water;
     int32_t mixed_level;
     uint16_t raw[10];
-    uint8_t head, pending, pokeys;
+    uint8_t head, pending, pokeys, secondary;
     int16_t pcm[MUHTARI__SYNTH_PCM_CAPACITY];
 };
 
@@ -229,6 +229,8 @@ struct muhtari__cart {
     uint8_t *ram;
     uint8_t bank;
     uint8_t ram_bank;
+    uint8_t irq_mask;
+    uint16_t pokey_at[2];
     muhtari_cart_info info;
 };
 
