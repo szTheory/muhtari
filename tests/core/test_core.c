@@ -877,14 +877,34 @@ static void test_cart_audio(void)
     static const uint16_t windows[] = {0x4000u, 0x0800u, 0x0440u, 0x0450u};
     for (unsigned k = 0u; k < 4u; k++) {
         uint16_t at = windows[k];
-        uint8_t program[] = {
-            0xA9, 7, 0x85, 1, /* lock 7800 */
-            0xA9, 3, 0x8D, (uint8_t)(at + 15u), (uint8_t)(at >> 8),
-            0xA9, 20, 0x8D, (uint8_t)at, (uint8_t)(at >> 8),
-            0xA9, 0xAF, 0x8D, (uint8_t)(at + 1u), (uint8_t)(at >> 8),
-            0xAD, (uint8_t)(at + 14u), (uint8_t)(at >> 8),
-            0x8D, 0, 0x18, 0x4C, 0x13, 0xF0
-        };
+        uint8_t program[] = {0xA9,
+                             7,
+                             0x85,
+                             1, /* lock 7800 */
+                             0xA9,
+                             3,
+                             0x8D,
+                             (uint8_t)(at + 15u),
+                             (uint8_t)(at >> 8),
+                             0xA9,
+                             20,
+                             0x8D,
+                             (uint8_t)at,
+                             (uint8_t)(at >> 8),
+                             0xA9,
+                             0xAF,
+                             0x8D,
+                             (uint8_t)(at + 1u),
+                             (uint8_t)(at >> 8),
+                             0xAD,
+                             (uint8_t)(at + 14u),
+                             (uint8_t)(at >> 8),
+                             0x8D,
+                             0,
+                             0x18,
+                             0x4C,
+                             0x13,
+                             0xF0};
         muhtari *m = make();
         make_cart(cart, program, sizeof program, 0u);
         cart[53] = (uint8_t)(types[k] >> 8);
@@ -896,7 +916,8 @@ static void test_cart_audio(void)
             muhtari_frame io;
             frame_io(&io, NULL, 0u, audio, AUDIO_CAP);
             CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
-            for (unsigned i = 0u; i < io.audio_count; i++) nonzero |= audio[i] != 0;
+            for (unsigned i = 0u; i < io.audio_count; i++)
+                nonzero |= audio[i] != 0;
         }
         CHECK(nonzero);
         CHECK_EQ_HEX(m->ram[0], 255u);
