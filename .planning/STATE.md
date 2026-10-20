@@ -5,11 +5,11 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: verifying
-stopped_at: Phase 3 final fix round complete; re-review pending
-last_updated: "2026-10-20T16:51:31Z"
+stopped_at: Phase 3 final re-review clean; phase re-verification pending
+last_updated: "2026-10-20T17:01:44Z"
 last_activity: 2026-10-20
-last_activity_desc: Final fix round resolves CR-01 with retained pixels; local CI and hygiene pass; re-review pending
-state_head: 24bc0816588204fb11095e312e1330add583f77e
+last_activity_desc: Final re-review clean across four files; libretro tests 18/18; phase re-verification pending
+state_head: 0ba6ccd
 progress:
   total_phases: 4
   completed_phases: 2
@@ -31,8 +31,8 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 
 Phase: 3 (Games play in RetroArch) — VERIFYING
 Plan: 19 of 19
-Status: Final fix round complete — pending re-review and phase re-verification
-Last activity: 2026-10-20 — CR-01 fixed in 24bc081: failed frames present initialized retained pixels without requiring frontend duplication. Regression reproduced the old failure (exit 8); final local CI passed 588/588 and 6/6 release checks, hygiene 24/24 (exit 0). Hosted run 39460962750 passed on that source (gh run watch exit 0): https://github.com/szTheory/muhtari/actions/runs/39460962750. Both permitted fix rounds are used. Five Info seeds remain. Existing verification stays gaps_found until phase re-verification; no new gap plan.
+Status: Final re-review clean — pending phase re-verification
+Last activity: 2026-10-20 — Final standard-depth re-review is clean across the four files changed since f65d119: no new findings, CR-01 resolved. Targeted build and 18/18 libretro tests exited 0. Hosted source run 39460962750 was confirmed successful on 24bc081: https://github.com/szTheory/muhtari/actions/runs/39460962750. Both permitted fix rounds are used; five Info seeds remain. Existing verification stays gaps_found until execute-phase re-verification; no new gap plan. Next: $gsd-execute-phase 3 (re-verification).
 
 Progress: [█████░░░░░] 50%
 
@@ -289,7 +289,7 @@ Recent decisions affecting current work:
 - [Phase 03]: Plan 19: gate code is 1,367 narrow lines against 7,415 src/ lines (18.4 %, 25.5 % without cartdb.c); perf_compare.cmake trimmed 126 to 95; the shortfall and four candidate cuts are in SEED-007 as the owner's call at /gsd-ship 3
 - [Phase 03]: Plan 19: probe PR #12 closed unmerged; ship title 'feat: games play in RetroArch with MARIA, cartridges, boot and input' passes check-title.sh (exit 0), so the merge cuts 0.3.0
 
-- [Phase 03]: Both permitted code-review fix rounds are used: WR-01 through WR-05 resolved in round 1, CR-01 in round 2. Five Info findings remain seeds. Next: $gsd-code-review 3, then phase re-verification; no new gap plan or further fix round.
+- [Phase 03]: Both permitted code-review fix rounds are used: WR-01 through WR-05 resolved in round 1, CR-01 in round 2. Five Info findings remain seeds. Final four-file re-review is clean. Next: $gsd-execute-phase 3 for phase re-verification; no new gap plan or further fix round.
 
 ### Pending Todos
 
@@ -333,6 +333,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T16:51:31Z
-Stopped at: Phase 3 final fix round complete; next command: $gsd-code-review 3
+Last session: 2026-10-20T17:01:44Z
+Stopped at: Phase 3 final re-review clean; next command: $gsd-execute-phase 3
 Resume file: None
