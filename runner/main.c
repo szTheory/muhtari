@@ -567,9 +567,17 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
         if (o->region != 0u && h->has_region && o->region != h->region) {
             return usage("--region conflicts with the movie's region");
         }
-        if (h->has_boot && h->boot == MUHTARI__MOVIE_BOOT_BIOS) {
-            return usage(
-                "the movie's boot bios needs --boot, which this version does not have yet");
+        if (h->has_boot) {
+            static const char *const boots[] = {"fast", "bios"};
+            if (o->has_boot && o->boot != h->boot) {
+                (void)snprintf(why, sizeof why, "--boot %s conflicts with the movie's boot %s",
+                               boots[o->boot], boots[h->boot]);
+                return usage(why);
+            }
+            if (h->boot == MUHTARI__MOVIE_BOOT_BIOS && o->bios == NULL) {
+                return usage("the movie's boot bios needs --bios FILE");
+            }
+            o->boot = h->boot;
         }
         if (o->frames == 0u) {
             if (movie_frames == 0u) {
@@ -693,9 +701,11 @@ static int read_movie(const char *path, replay *mv)
 }
 
 /* Reads the BIOS image at path into a new buffer and prints its SHA-256
-   to standard error as "bios_sha256 <hex>". Returns NULL after a message;
-   the caller frees the buffer. */
-static uint8_t *read_bios(const char *path, size_t *out_n)
+   to standard error as "bios_sha256 <hex>". When the movie header h names
+   a bios-sha256, the file's SHA-256 must match it. Returns NULL after a
+   message; the caller frees the buffer. */
+static uint8_t *read_bios(const char *path, const char *movie_path, const muhtari__movie_header *h,
+                          size_t *out_n)
 {
     uint8_t *bios = read_image(path, out_n);
     if (bios == NULL) {
@@ -709,6 +719,14 @@ static uint8_t *read_bios(const char *path, size_t *out_n)
     muhtari__sha256_final(&s, digest);
     to_hex(digest, 32u, hex);
     fprintf(stderr, "bios_sha256 %s\n", hex);
+    if (h != NULL && h->has_bios_sha256 && memcmp(digest, h->bios_sha256, sizeof digest) != 0) {
+        char want[65];
+        to_hex(h->bios_sha256, 32u, want);
+        fprintf(stderr, "muhtari-run: %s: bios-sha256 %s does not match %s's SHA-256 %s\n",
+                movie_path, want, path, hex);
+        free(bios);
+        return NULL;
+    }
     return bios;
 }
 
@@ -749,7 +767,7 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
     size_t bios_n = 0;
     uint8_t *bios = NULL;
     if (bios_path != NULL) {
-        bios = read_bios(bios_path, &bios_n);
+        bios = read_bios(bios_path, movie_path, h, &bios_n);
         if (bios == NULL) {
             free(image);
             return MUHTARI__EXIT_FAILURE;
@@ -878,6 +896,11 @@ static int run(const options *opt, const replay *mv)
             uint64_t ns = muhtari__clock_ns() - start_ns;
             samples[timed++] = muhtari__bench_us(ns);
             total_ns += ns;
+        }
+        if (st == MUHTARI_STATUS_ERR_BIOS_REJECTED_CART) {
+            fprintf(stderr, "muhtari-run: %s: %s\n", opt->rom, muhtari__status_text(st));
+            status = MUHTARI__EXIT_REFUSED;
+            break;
         }
         if (st != MUHTARI_STATUS_OK) {
             fprintf(stderr, "muhtari-run: muhtari_run_frame failed with status %lu\n",

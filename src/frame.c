@@ -10,10 +10,10 @@
    included, so the loop ends for any program. It stops at the first
    instruction boundary at or after the deadline; the deadlines are absolute
    ticks, so the overshoot carries into the next frame and frames never
-   drift. */
+   drift. It stops early when the BIOS rejects the cartridge. */
 static void run_to_deadline(muhtari *m)
 {
-    while (m->bus.ticks < m->frame_deadline) {
+    while (m->bus.ticks < m->frame_deadline && m->boot.rejected == 0u) {
         muhtari__cpu_step(m);
     }
 }
@@ -28,7 +28,12 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         return st;
     }
     /* From here on audio_count is written on every return; an error reports
-       zero samples and changes no state. */
+       zero samples and changes no state. A BIOS's refusal of the cartridge
+       stands until the next load or power cycle. */
+    if (m->boot.rejected != 0u) {
+        io->audio_count = 0u;
+        return MUHTARI_STATUS_ERR_BIOS_REJECTED_CART;
+    }
     if (io->video != NULL &&
         (io->video_pitch < MUHTARI__PITCH_MIN || io->video_pitch > MUHTARI__PITCH_MAX)) {
         io->audio_count = 0u;
@@ -76,6 +81,11 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         run_to_deadline(m);
         m->maria.rows = NULL;
         m->maria.pitch = 0u;
+        if (m->boot.rejected != 0u) {
+            /* The frame stops where the BIOS took its 2600 path. */
+            io->audio_count = 0u;
+            return MUHTARI_STATUS_ERR_BIOS_REJECTED_CART;
+        }
         m->frame_start = m->frame_deadline;
         m->frame_deadline += MUHTARI__TICKS_PER_FRAME_NTSC;
     } else if (io->video != NULL) {

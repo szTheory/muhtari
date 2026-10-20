@@ -191,9 +191,9 @@ ignored when the runner started, as under `nohup`, stays ignored.
 
 ```text
   0  done     every frame ran, or SIGINT or SIGTERM stopped the run after a whole frame
-  1  failure  a file could not be read or written, an image or a movie is malformed, truncated or too large, a movie names another cartridge, memory ran out or the core failed
+  1  failure  a file could not be read or written, an image or a movie is malformed, truncated or too large, a BIOS is invalid, a movie names another cartridge or BIOS, memory ran out or the core failed
   2  usage    the command line is invalid or conflicts with the movie's header, so nothing ran
- 77  refused  the image is a 2600 cartridge, or uses a board or a region this version does not emulate
+ 77  refused  the image is a 2600 cartridge, or uses a board or a region this version does not emulate, or the BIOS rejected it
 ```
 
 Errors and usage messages go to standard error; standard output holds only the results above.

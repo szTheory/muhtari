@@ -387,7 +387,11 @@ uint8_t muhtari__peek(const muhtari *m, uint16_t addr)
 
 /* Until LOCK is set, every write the TIA's chip select sees also writes
    INPTCTRL, whose bits 4-7 do not exist, and counts towards the HALT gate,
-   which opens at 2 (docs/hardware/bus.md, INPTCTRL and HALT). */
+   which opens at 2 (docs/hardware/bus.md, INPTCTRL and HALT). A BIOS that
+   locks it with MEN = 0 before the hand-off has taken its 2600 path, as
+   every BIOS's 2600 loader does with its last write, $FD
+   (A7800-SYSTEM section 5); the core runs no 2600 cartridge, so the boot
+   is rejected. */
 static void inptctrl_write(muhtari *m, uint8_t v)
 {
     struct muhtari__bus *b = &m->bus;
@@ -397,6 +401,11 @@ static void inptctrl_write(muhtari *m, uint8_t v)
     b->inptctrl = (uint8_t)(v & MUHTARI__INPTCTRL_BITS);
     if (b->halt_gate_writes < 2u) {
         b->halt_gate_writes++;
+    }
+    if ((b->inptctrl & (MUHTARI__INPTCTRL_LOCK | MUHTARI__INPTCTRL_MEN)) ==
+            MUHTARI__INPTCTRL_LOCK &&
+        m->bios_size != 0u && m->boot.handoff_frame == 0u) {
+        m->boot.rejected = 1u;
     }
 }
 
