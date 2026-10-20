@@ -778,7 +778,8 @@ void muhtari__cart_reset(muhtari *m)
     m->cart.bank = 0u;
     m->cart.ram_bank = 0u;
     uint32_t sound = m->cart.info.sound;
-    m->cart.pokey_at[0] = (sound & MUHTARI_SOUND_POKEY_4000) != 0u ? 0x4000u :
+    m->cart.pokey_at[0] = (sound & MUHTARI_SOUND_POKEY_450) != 0u ? 0x0450u :
+                         (sound & MUHTARI_SOUND_POKEY_4000) != 0u ? 0x4000u :
                          (sound & MUHTARI_SOUND_POKEY_800) != 0u ? 0x0800u : 0u;
     m->cart.pokey_at[1] = (sound & MUHTARI_SOUND_POKEY_440) != 0u ? 0x0440u : 0u;
     uint8_t count = (uint8_t)((m->cart.pokey_at[0] != 0u) + (m->cart.pokey_at[1] != 0u));
