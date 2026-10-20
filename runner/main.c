@@ -64,6 +64,8 @@ static const char synopsis[] =
     "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE\n"
     "       muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...\n"
     "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]\n"
+    "       muhtari-run --movie FILE [--frames N | --bench N] [--hash-frame N]...\n"
+    "                   [--dump-frame N:FILE]... [[--rom] FILE]\n"
     "       muhtari-run --probe FILE\n"
     "       muhtari-run --help | --version\n"
     "  --frames N           run N frames (N >= 1)\n"
@@ -71,6 +73,10 @@ static const char synopsis[] =
     "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
     "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n"
     "  [--rom] FILE         load the cartridge image FILE; without it no content runs\n"
+    "  --movie FILE         replay the muhtari-movie 1 FILE, one line per frame;\n"
+    "                       --frames defaults to its frame count\n"
+    "  --port1 D, --port2 D the device on a port: auto, proline, joystick or none\n"
+    "  --region R           the region: auto or ntsc\n"
     "  --probe FILE         print the cartridge image's fields and hashes\n"
     "  --help               print this text and the exit statuses\n"
     "  --version            print the version\n";
@@ -370,8 +376,31 @@ typedef struct options {
     const char *probe; /* --probe FILE, the whole command line */
     const char *rom;   /* [--rom] FILE, or NULL for no content */
     const char *movie; /* --movie FILE, or NULL */
+    uint32_t port[2];  /* --port1, --port2: 0 for auto, else MUHTARI_PORT_* */
+    uint32_t region;   /* --region: 0 for auto, else MUHTARI_REGION_NTSC */
     int printed;       /* --help or --version ran; nothing else to do */
 } options;
+
+/* The values --port1 and --port2 take, and the movie's port keys. */
+static const struct {
+    const char *name;
+    uint32_t device;
+} port_values[] = {
+    {"auto", 0u},
+    {"proline", MUHTARI_PORT_PROLINE},
+    {"joystick", MUHTARI_PORT_JOYSTICK},
+    {"none", MUHTARI_PORT_UNPLUGGED},
+};
+
+static const char *port_name(uint32_t device)
+{
+    for (size_t i = 0; i < sizeof port_values / sizeof port_values[0]; i++) {
+        if (port_values[i].device == device) {
+            return port_values[i].name;
+        }
+    }
+    return "?";
+}
 
 /* A movie read and checked whole: its header and one input per frame. */
 typedef struct replay {
@@ -387,8 +416,9 @@ static int compare_u32(const void *a, const void *b)
     return (x > y) - (x < y);
 }
 
-/* Returns 0 when the options are valid, 2 after a usage message, 1 when out
-   of memory. The hash frames come back sorted with duplicates removed. */
+/* Returns 0 when the options are spelled right, 2 after a usage message, 1
+   when out of memory. check_options checks them against each other once a
+   movie, if any, has been read. */
 static int parse_options(int argc, char **argv, options *o)
 {
     o->hash_frames = (uint32_t *)malloc((size_t)argc * sizeof *o->hash_frames);
@@ -463,6 +493,27 @@ static int parse_options(int argc, char **argv, options *o)
                 return usage("--movie needs one FILE");
             }
             o->movie = value;
+        } else if (strcmp(arg, "--port1") == 0 || strcmp(arg, "--port2") == 0) {
+            int p = arg[6] - '1';
+            size_t v = 0;
+            while (v < sizeof port_values / sizeof port_values[0] &&
+                   (value == NULL || strcmp(value, port_values[v].name) != 0)) {
+                v++;
+            }
+            if (v == sizeof port_values / sizeof port_values[0]) {
+                return usage(p == 0 ? "--port1 needs auto, proline, joystick or none"
+                                    : "--port2 needs auto, proline, joystick or none");
+            }
+            o->port[p] = port_values[v].device;
+        } else if (strcmp(arg, "--region") == 0) {
+            /* PAL is refused everywhere until the core emulates it. */
+            if (value != NULL && strcmp(value, "pal") == 0) {
+                return usage("--region pal is not supported: give auto or ntsc");
+            }
+            if (value == NULL || (strcmp(value, "auto") != 0 && strcmp(value, "ntsc") != 0)) {
+                return usage("--region needs auto or ntsc");
+            }
+            o->region = strcmp(value, "ntsc") == 0 ? (uint32_t)MUHTARI_REGION_NTSC : 0u;
         } else if (strcmp(arg, "--probe") == 0) {
             return usage("--probe takes one file and no other option");
         } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0) {
@@ -471,8 +522,41 @@ static int parse_options(int argc, char **argv, options *o)
             return usage("unknown option");
         }
     }
+    return MUHTARI__EXIT_DONE;
+}
+
+/* Checks the options against each other and against the movie header h,
+   if any: the header wins, so an option that names another device or
+   region is a usage error, and --frames defaults to the movie's frame
+   count. Returns 0, or 2 after a usage message. The hash frames come back
+   sorted with duplicates removed. */
+static int check_options(options *o, const muhtari__movie_header *h, uint32_t movie_frames)
+{
+    char why[128];
+    if (h != NULL) {
+        for (int p = 0; p < 2; p++) {
+            if (o->port[p] != 0u && o->port[p] != h->device[p]) {
+                (void)snprintf(why, sizeof why, "--port%d %s conflicts with the movie's port%d %s",
+                               p + 1, port_name(o->port[p]), p + 1, port_name(h->device[p]));
+                return usage(why);
+            }
+        }
+        if (o->region != 0u && h->has_region && o->region != h->region) {
+            return usage("--region conflicts with the movie's region");
+        }
+        if (h->has_boot && h->boot == MUHTARI__MOVIE_BOOT_BIOS) {
+            return usage(
+                "the movie's boot bios needs --boot, which this version does not have yet");
+        }
+        if (o->frames == 0u) {
+            if (movie_frames == 0u) {
+                return usage("the movie has no frames: give --frames N");
+            }
+            o->frames = movie_frames;
+        }
+    }
     if (o->frames == 0u) {
-        return usage("--frames N or --bench N is required");
+        return usage("--frames N, --bench N or --movie FILE is required");
     }
     for (uint32_t k = 0; k < o->hash_count; k++) {
         if (o->hash_frames[k] > o->frames) {
@@ -576,19 +660,42 @@ static int read_movie(const char *path, replay *mv)
     return MUHTARI__EXIT_DONE;
 }
 
-/* Loads the cartridge image at path into m and fast-boots it. A refusal by
-   kind, board or region exits 77, a malformed image or any other failure
-   1. Returns the exit status. */
-static int load(muhtari *m, const char *path)
+/* Loads the cartridge image at path into m and fast-boots it, in region
+   (0 for the cartridge's). When the movie header h names a rom-sha256, the
+   image's headerless SHA-256, the --probe sha256_headerless, must match
+   it. A refusal by kind, board or region exits 77, a mismatch, a malformed
+   image or any other failure 1. Returns the exit status. */
+static int load(muhtari *m, const char *path, uint32_t region, const char *movie_path,
+                const muhtari__movie_header *h)
 {
     size_t n = 0;
     uint8_t *image = read_image(path, &n);
     if (image == NULL) {
         return MUHTARI__EXIT_FAILURE;
     }
+    if (h != NULL && h->has_rom_sha256) {
+        size_t skip = n > 128u && memcmp(image + 1, "ATARI7800", 9u) == 0 ? 128u : 0u;
+        muhtari__sha256 s;
+        uint8_t digest[32];
+        muhtari__sha256_init(&s);
+        muhtari__sha256_update(&s, image + skip, n - skip);
+        muhtari__sha256_final(&s, digest);
+        if (memcmp(digest, h->rom_sha256, sizeof digest) != 0) {
+            char want[65];
+            char got[65];
+            to_hex(h->rom_sha256, 32u, want);
+            to_hex(digest, 32u, got);
+            fprintf(stderr,
+                    "muhtari-run: %s: rom-sha256 %s does not match %s's headerless SHA-256 %s\n",
+                    movie_path, want, path, got);
+            free(image);
+            return MUHTARI__EXIT_FAILURE;
+        }
+    }
     muhtari_media media;
     memset(&media, 0, sizeof media);
     media.size = (uint32_t)sizeof media;
+    media.region = region;
     media.image = image;
     media.image_size = n;
     muhtari_status st = muhtari_load(m, &media);
@@ -602,6 +709,34 @@ static int load(muhtari *m, const char *path)
         return MUHTARI__EXIT_REFUSED;
     }
     return MUHTARI__EXIT_FAILURE;
+}
+
+/* Fills *in with frame f's input and returns 1, or returns 0 when the run
+   sets no input. Movie line f is the input set before frame f; the core
+   latches it at the VBLANK start that opens the frame (docs/runner.md,
+   Movies). Past the movie's end every button is released and the last
+   line's difficulty switches are kept. Without a movie, --port1 and
+   --port2 set the devices. */
+static int frame_input(const options *opt, const replay *mv, uint32_t f, muhtari_input *in)
+{
+    if (mv != NULL && f <= mv->count) {
+        *in = mv->frames[f - 1u];
+        return 1;
+    }
+    memset(in, 0, sizeof *in);
+    in->size = (uint32_t)sizeof *in;
+    if (mv != NULL) {
+        in->device[0] = mv->header.device[0];
+        in->device[1] = mv->header.device[1];
+        if (mv->count > 0u) {
+            in->switches = mv->frames[mv->count - 1u].switches &
+                           (MUHTARI_SWITCH_LEFT_DIFFICULTY_A | MUHTARI_SWITCH_RIGHT_DIFFICULTY_A);
+        }
+        return 1;
+    }
+    in->device[0] = opt->port[0];
+    in->device[1] = opt->port[1];
+    return opt->port[0] != 0u || opt->port[1] != 0u;
 }
 
 /* Runs the frames into heap buffers (a 77,440-byte local would overflow a
@@ -641,7 +776,16 @@ static int run(const options *opt, const replay *mv)
         return MUHTARI__EXIT_FAILURE;
     }
 
-    int status = opt->rom != NULL ? load(m, opt->rom) : MUHTARI__EXIT_DONE;
+    const muhtari__movie_header *h = mv != NULL ? &mv->header : NULL;
+    uint32_t region = h != NULL && h->has_region ? h->region : opt->region;
+    int status = MUHTARI__EXIT_DONE;
+    if (opt->rom != NULL) {
+        status = load(m, opt->rom, region, opt->movie, h);
+    } else if (h != NULL && h->has_rom_sha256) {
+        fprintf(stderr, "muhtari-run: %s: rom-sha256 names a cartridge, and none was given\n",
+                opt->movie);
+        status = MUHTARI__EXIT_FAILURE;
+    }
     uint32_t next_hash = 0;
     uint32_t timed = 0;
     uint64_t total_ns = 0;
@@ -655,11 +799,8 @@ static int run(const options *opt, const replay *mv)
         io.video_pitch = WIDTH;
         io.audio = audio;
         io.audio_capacity = AUDIO_CAPACITY;
-        /* Movie line f is the input set before frame f: the core latches
-           it at the VBLANK start that opens the frame (docs/runner.md,
-           Movies). */
-        if (mv != NULL && f <= mv->count &&
-            muhtari_set_input(m, &mv->frames[f - 1u]) != MUHTARI_STATUS_OK) {
+        muhtari_input in;
+        if (frame_input(opt, mv, f, &in) && muhtari_set_input(m, &in) != MUHTARI_STATUS_OK) {
             fprintf(stderr, "muhtari-run: muhtari_set_input failed\n");
             status = MUHTARI__EXIT_FAILURE;
             break;
@@ -732,6 +873,23 @@ int main(int argc, char **argv)
         memset(&mv, 0, sizeof mv);
         if (opt.movie != NULL) {
             status = read_movie(opt.movie, &mv);
+        }
+        if (status == MUHTARI__EXIT_DONE) {
+            status = check_options(&opt, opt.movie != NULL ? &mv.header : NULL, mv.count);
+        }
+        if (status == MUHTARI__EXIT_DONE && mv.header.has_behaviour) {
+            /* A movie from another behaviour revision may still replay
+               the same; it is warned about once, not refused. */
+            muhtari_versions v;
+            memset(&v, 0, sizeof v);
+            v.size = (uint32_t)sizeof v;
+            (void)muhtari_get_versions(&v);
+            if (mv.header.behaviour != v.behaviour_revision) {
+                fprintf(stderr,
+                        "muhtari-run: %s: behaviour %lu, this core's is %lu; replaying anyway\n",
+                        opt.movie, (unsigned long)mv.header.behaviour,
+                        (unsigned long)v.behaviour_revision);
+            }
         }
         if (status == MUHTARI__EXIT_DONE) {
             muhtari__stop_install();

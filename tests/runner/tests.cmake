@@ -118,9 +118,14 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   endfunction()
 
   # Sets var to the frame 8 hash of a 12-line movie with header that holds
-  # line on lines 5 to 10, run twice on the input cart.
+  # line on lines 5 to 10, run twice on the input cart. The other lines are
+  # ARGV4 when given, else the released ProLine line.
   function(held_hash var name header line)
-    write_movie(${name} "${header}" "4:${released}" "6:${line}" "2:${released}")
+    set(rest "${released}")
+    if(ARGC GREATER 4)
+      set(rest "${ARGV4}")
+    endif()
+    write_movie(${name} "${header}" "4:${rest}" "6:${line}" "2:${rest}")
     run_twice(out --hash-frame 8 --movie "${movie}" "${DIR}/input.a78")
     string(REGEX MATCH "frame 8 sha256 [0-9a-f]+" hash "${out}")
     set(${var} "${hash}" PARENT_SCOPE)
@@ -374,9 +379,11 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     # give four pictures, none the empty movie's.
     held_hash(empty ports-empty.txt "${prolines}" "${released}")
     held_hash(p1_proline ports-1p.txt "${prolines}" "|U...1.|......|...BB|")
-    held_hash(p1_joystick ports-1j.txt "port1 joystick\nport2 proline\n" "|U...1|......|...BB|")
+    held_hash(p1_joystick ports-1j.txt "port1 joystick\nport2 proline\n" "|U...1|......|...BB|"
+      "|.....|......|...BB|")
     held_hash(p2_proline ports-2p.txt "${prolines}" "|......|U...1.|...BB|")
-    held_hash(p2_joystick ports-2j.txt "port1 proline\nport2 joystick\n" "|......|U...1|...BB|")
+    held_hash(p2_joystick ports-2j.txt "port1 proline\nport2 joystick\n" "|......|U...1|...BB|"
+      "|......|.....|...BB|")
     expect_distinct(ports "${empty}" "${p1_proline}" "${p1_joystick}" "${p2_proline}"
       "${p2_joystick}")
   elseif(CASE STREQUAL "movie.switches")
