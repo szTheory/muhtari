@@ -174,6 +174,48 @@ The runner's side is in `tests/runner/tests.cmake`: `runner.bios.rejected` exits
 is 0; `runner.bios.invalid` exits 1 on a 1,000-byte BIOS; `runner.movie.boot_bios`, `bios_mismatch`,
 `boot_bios_no_file` and `boot_conflict` check a movie's `boot` and `bios-sha256` keys.
 
+## title
+
+`tests/compat/ledger.csv` is the compatibility ledger: one header line, then one row per ROM with the columns of
+`.planning/preparation/CONFORMANCE.md` section 5, sorted by `id`, then `predicate`. No field holds a comma, quote or
+newline. The oracle columns are `-`. `muhtari-test-predicate ROM PREDICATE [--bios FILE]` (`tests/compat/predicate.c`)
+evaluates a row's predicate, prints `pass` or `fail <reason>`, and exits 0, 1, or 2 on a usage or load error. A
+frame's hash is the SHA-256 of its 320 x 242 colour bytes, as `muhtari-run --hash-frame` prints it.
+
+- `title@F=H`, on the fast boot: frame F hashes to H, the title the sample shows by then.
+- `title@F=H`, with `--bios`: the hand-off frame K comes by frame 600 and lies in [300, 340], and some frame from K
+  to K + 299 hashes to H. K is the frame of the first cartridge opcode fetch after INPTCTRL's EXT goes from 0 to 1
+  (`docs/embedding.md`, Booting with a BIOS). OpenBIOS shows its Fuji for about 320 frames, so the 300 frames count
+  from K. `bios.splash_skip` (above) shows that Pause held on frames 1-3 skips the Fuji.
+- `boots@F`, the weak predicate: in the F frames from the hand-off (frame 1 on the fast boot, K with `--bios`),
+  DMA ran, at least two distinct frames appeared and the CPU did not jam.
+
+A row whose title differs only because the BIOS left other state falls back to `boots@F;why=<reason>`, and the
+reason stays in the row. Five samples draw with `rand`, which 7800basic seeds from INTIM, and the BIOS leaves INTIM
+at another value than the fast boot does, so their screens differ between paths (`why=rng-seeded-from-intim`).
+`hiscoretable` shows one colour until frame 262, so its predicates use frame 300. `backuptest` and `languagetest` draw nothing by design and are
+`skipped`. `banksets` is `unsupported`, as the bankset board is refused. Every other row is `title@120` and passes
+on both paths.
+
+`title.simple.fast` and `title.simple.bios` evaluate `simple`'s row on both paths, reading its hash from the ledger
+at configure time. Every row on both paths is evaluated by the library job in CI, and locally by the pin recipe with
+`-DBIOS`.
+
+**Pinning.** `--pin` prints `title@F=<hash>` for the fast boot's frame F and fails with `single colour` when every
+byte of that frame is the same, so a blank screen is never pinned. `title.pin.self_test` runs it on the blank linear
+seed cartridge and expects that failure. To pin a new ROM, add its row with predicate `title@120=-` and status
+`unknown` (the `id` is `7800basic-0.41/<sample>` or `diag/<rom>`), then run
+
+```sh
+cmake -DPREDICATE=build/ci/tests/muhtari-test-predicate -DLEDGER=tests/compat/ledger.csv \
+  -DBUILT=build/ci/built -DDIAG=tests/diag -DBIOS=build/ci/built/openbios/openbios.bin \
+  -DCOMMIT=<12 hex> -DDATE=<YYYY-MM-DD> -P tests/compat/pin.cmake
+```
+
+It fills each `title@F=-` row, sets each `unknown` row's status from both paths, and fails by name when an
+evaluated row's status disagrees. A title not yet on `main` is unreleased: when an intended core change moves it,
+reset its predicate to `title@F=-` and run the recipe in the same commit. Never type a hash by hand.
+
 
 ## diag
 
