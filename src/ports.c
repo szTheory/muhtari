@@ -110,11 +110,76 @@ uint8_t muhtari__ports_swcha(const muhtari *m)
     return pins;
 }
 
+/* Two-button mode on a port: its PB2 [PB4] an output driven 0, which puts
+   +5 V on pin 6, with INPTCTRL's TIA-EN clear (A7800-CARTRIDGES-AND-
+   PERIPHERALS section 3.3, section 3.1). */
+static int ports_two_button(const muhtari *m, uint32_t port)
+{
+    uint8_t bit = port == 0u ? 0x04u : 0x10u;
+    return (m->riot.ddrb & bit) != 0u && (m->riot.orb & bit) == 0u &&
+           (m->bus.inptctrl & MUHTARI__INPTCTRL_TIA_EN) == 0u;
+}
+
+/* SWCHB's input pins: Reset, Select and Pause pull D0, D1 and D3 to 0
+   while held, and a difficulty switch at A reads 1 on D6 (left) and D7
+   (right). D2, D4 and D5 have nothing driving them and read high
+   (docs/hardware/controllers.md, Switches). */
+uint8_t muhtari__ports_swchb(const muhtari *m)
+{
+    uint32_t s = m->ports.switches;
+    uint8_t closed = (uint8_t)(((s & MUHTARI_SWITCH_RESET) != 0u ? 0x01u : 0u) |
+                               ((s & MUHTARI_SWITCH_SELECT) != 0u ? 0x02u : 0u) |
+                               ((s & MUHTARI_SWITCH_PAUSE) != 0u ? 0x08u : 0u));
+    uint8_t a = (uint8_t)(((s & MUHTARI_SWITCH_LEFT_DIFFICULTY_A) != 0u ? 0x40u : 0u) |
+                          ((s & MUHTARI_SWITCH_RIGHT_DIFFICULTY_A) != 0u ? 0x80u : 0u));
+    return (uint8_t)((0x3Fu ^ closed) | a);
+}
+
+/* The level, 0 or 1, on INPT0-INPT5's D7. INPT0 and INPT1 [INPT2, INPT3]
+   are pins 5 and 9: a ProLine's right and left buttons, 1 while pressed,
+   in either mode, as MAME, a7800 and MiSTer have it. INPT4 [INPT5] is pin
+   6: in two-button mode a ProLine leaves it at 1, and in one-button mode
+   either button pulls it to 0; a 2600 stick's fire pulls it to 0 in
+   either mode. Nothing connected reads 0 on INPT0-INPT3 and 1 on INPT4
+   and INPT5 (A7800-CARTRIDGES-AND-PERIPHERALS section 3.1, section 3.2). */
+uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n)
+{
+    uint32_t port = n < 4u ? n / 2u : n - 4u;
+    uint32_t device = muhtari__ports_device(m, port);
+    uint32_t b = m->ports.buttons[port];
+    if (n < 4u) {
+        uint32_t button = (n & 1u) == 0u ? MUHTARI_BUTTON_1 : MUHTARI_BUTTON_2;
+        return (uint8_t)(device == MUHTARI_PORT_PROLINE && (b & button) != 0u);
+    }
+    if (device == MUHTARI_PORT_PROLINE && !ports_two_button(m, port)) {
+        return (uint8_t)((b & (MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2)) == 0u);
+    }
+    if (device == MUHTARI_PORT_JOYSTICK) {
+        return (uint8_t)((b & MUHTARI_BUTTON_1) == 0u);
+    }
+    return 1u;
+}
+
+/* A frame that ends with a 2600 stick's fire held on a port in two-button
+   mode adds 1 to io_hazard: the fire shorts the pin the console drives
+   (A7800-CARTRIDGES-AND-PERIPHERALS section 3.3). */
+void muhtari__ports_count_hazard(muhtari *m)
+{
+    for (uint32_t p = 0; p < 2u; p++) {
+        if (muhtari__ports_device(m, p) == MUHTARI_PORT_JOYSTICK &&
+            (m->ports.buttons[p] & MUHTARI_BUTTON_1) != 0u && ports_two_button(m, p)) {
+            m->ports.io_hazard++;
+            return;
+        }
+    }
+}
+
 void muhtari__ports_reset_counters(muhtari *m)
 {
     m->frames = 0u;
     m->lag_frames = 0u;
     m->ports.input_read = 0u;
+    m->ports.io_hazard = 0u;
 }
 
 /* Live pointers into the instance, the one deliberate exception to the rule

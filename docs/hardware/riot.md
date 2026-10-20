@@ -81,8 +81,9 @@ measurement. A program that changes the polarity should read TIMINT before it re
 
 ## Ports
 
-Each port reads `(OR & DDR) | (pins & ~DDR)`: the output register on output pins and the pin on input pins. Nothing
-drives the pins yet, so every input pin reads high.
+Each port reads `(OR & DDR) | (pins & ~DDR)`: the output register on output pins and the pin on input pins. The
+controllers drive port A's pins and the console switches port B's, as `docs/hardware/controllers.md` describes; a pin
+with nothing driving it reads high.
 
 On the 7800 (system notes, section 6):
 

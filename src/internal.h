@@ -554,8 +554,14 @@ void muhtari__ports_latch(muhtari *m);
    device this version does not model is wired as a ProLine. */
 uint32_t muhtari__ports_device(const muhtari *m, uint32_t port);
 
-/* SWCHA's input pins as the devices drive them (src/ports.c). */
+/* The pins the devices and switches drive (src/ports.c): SWCHA's and
+   SWCHB's input pins, and INPT0-INPT5's level, 0 or 1, for n 0 to 5. */
 uint8_t muhtari__ports_swcha(const muhtari *m);
+uint8_t muhtari__ports_swchb(const muhtari *m);
+uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n);
+
+/* Counts a frame in which a 2600 stick's fire is held in two-button mode. */
+void muhtari__ports_count_hazard(muhtari *m);
 
 /* Starts the counters and the lag flag from zero, at load and power cycle. */
 void muhtari__ports_reset_counters(muhtari *m);

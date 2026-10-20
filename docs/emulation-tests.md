@@ -51,6 +51,30 @@ from the beam in `docs/hardware/bus.md` and the line events in `docs/hardware/ma
 
 `frame.sample_renders` carries the `built` label, because it needs the sample the pinned 7800basic builds.
 
+## input
+
+`input.*` checks what a game reads from the controllers and the console switches. Each case builds a 48 KiB linear
+cartridge in memory from its own 6502 code and loads it through `muhtari_load`. Every frame the program waits for
+MSTAT's VBLANK, reads SWCHA, SWCHB and INPT0-INPT5 once into a ring in RAM, and then paints each byte as its own band of
+28 lines, so the picture shows every value read. The input comes from rows written as `muhtari-movie 1` text and read by
+the runner's own `runner/movie.c`, so the path from a movie's spelling to the register is the one the runner takes.
+Every expected byte comes from `docs/hardware/controllers.md` and the cartridge notes it cites, section 3.1 to section
+3.3, in a comment beside the row.
+
+| Case | Covers |
+|------|--------|
+| `input.directions` | each direction on each port clears its own SWCHA bit and changes the frame's picture |
+| `input.proline_two_button` | buttons 1 and 2 on INPT0-INPT3 with INPT4 and INPT5 at 1; one port in each mode |
+| `input.proline_one_button` | either button pulls INPT4 or INPT5 to 0 |
+| `input.joystick_fire` | a 2600 stick's fire on INPT4 or INPT5 in both modes, and the `io_hazard` count in two-button mode |
+| `input.ctlswb_no_swchb_write` | CTLSWB $14 with no SWCHB write stays one-button, since ORB powers on $FF |
+| `input.tia_en_disables_two_button` | INPTCTRL's TIA-EN keeps both ports one-button with PB2 and PB4 driven 0 |
+| `input.switches` | Reset, Select, Pause and both difficulty switches on SWCHB |
+| `input.unplugged` | an unplugged port reads released whatever the host presses |
+| `input.pa7_edge` | a Right press on port 0 sets PA7's flag at the VBLANK start that applies it, and its release does not |
+| `input.lag_even_frames` | a program reading on even frames only gives 30 lag frames in 60 |
+| `input.lag_dma_and_peek` | DMA fetching from $0280 and a peek of SWCHA or INPT4 leave every frame a lag frame |
+
 ## basic
 
 `basic.<name>` plays one 7800basic sample for 600 frames and checks them against a pin. There is one test for each

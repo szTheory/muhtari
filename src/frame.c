@@ -91,6 +91,7 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         m->lag_frames++;
     }
     m->ports.input_read = 0u;
+    muhtari__ports_count_hazard(m);
     m->audio_rem = rem;
     io->audio_count = n;
     return MUHTARI_STATUS_OK;

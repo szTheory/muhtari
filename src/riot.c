@@ -124,7 +124,7 @@ static uint8_t riot_io_read(const muhtari *m, uint16_t addr)
     case 1u:
         return r->ddra;
     case 2u:
-        return riot_port(r->orb, r->ddrb, 0xFFu);
+        return riot_port(r->orb, r->ddrb, muhtari__ports_swchb(m));
     default:
         return r->ddrb;
     }

@@ -256,7 +256,8 @@ muhtari_status st = muhtari_set_input(m, &in);
   `MUHTARI_SWITCH_SELECT` and `MUHTARI_SWITCH_PAUSE` held, and the difficulty switches as positions,
   `MUHTARI_SWITCH_LEFT_DIFFICULTY_A` and `MUHTARI_SWITCH_RIGHT_DIFFICULTY_A` set for A and clear for B. Any other
   bit returns `MUHTARI_STATUS_ERR_ARGUMENT`. Opposing directions, such as up and down together, pass through to
-  the pins as pressed, as a worn stick can press them.
+  the pins as pressed, as a worn stick can press them. `docs/hardware/controllers.md` gives the register bit each
+  one reaches.
 - **Timing.** The input is latched and reaches the machine at the next VBLANK start, which is where every frame
   but the first after a load begins, so one frame sees one input. Two calls before that apply only the second.
   A refused call changes nothing, and the pending input is not machine state.

@@ -33,11 +33,14 @@ static muhtari machine;
 #define FLAG_PA7 0x40u
 
 /* The power-on state under the default profile, with INPTCTRL set to
-   inptctrl. */
+   inptctrl. Both difficulty switches are at A and nothing is pressed, so
+   every input pin of both ports reads high (docs/hardware/controllers.md,
+   Switches). */
 static muhtari *fresh(uint8_t inptctrl)
 {
     memset(&machine, 0, sizeof machine);
     machine.profile.riot_orb_power_on = 0xFFu;
+    machine.ports.switches = MUHTARI_SWITCH_LEFT_DIFFICULTY_A | MUHTARI_SWITCH_RIGHT_DIFFICULTY_A;
     muhtari__power_on(&machine);
     machine.bus.inptctrl = inptctrl;
     return &machine;
