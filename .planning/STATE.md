@@ -318,6 +318,8 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- [Phase 03] Hosted review-fix CI [39452704206](https://github.com/szTheory/muhtari/actions/runs/39452704206) on source `70c2a05` has both macOS jobs queued as of 2026-10-20T16:03:14Z. Windows ARM64 passed the new regressions but three existing runner usage wrappers timed out after their expected output. GitHub refuses a retry while the workflow is running; the next agent should retry failed jobs once it ends and inspect the result. Local ci (588 + 6) and hygiene (24) passed; the report records commands, statuses and URLs.
+
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.

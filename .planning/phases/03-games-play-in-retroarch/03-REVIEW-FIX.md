@@ -110,6 +110,25 @@ exited 2 on the test's `max_align_t` declaration. Its superseded workflow was ca
 `gh run cancel 39452222905 -R szTheory/muhtari` (exit 0). The final local CI and hygiene results above were rerun
 after the portable-token correction; hosted CI was dispatched again on `70c2a05`.
 
+
+### Hosted CI status
+
+At 2026-10-20T16:03:14Z, `gh run view 39452704206 -R szTheory/muhtari --json status,conclusion,jobs`
+exited 0 and showed both macOS build jobs still queued without assigned runners. The run is not green.
+Linux x64/ARM64, Windows x64, ASan, big-endian, both integer-only jobs, hygiene, library and performance passed.
+
+The [Windows ARM64 job](https://github.com/szTheory/muhtari/actions/runs/39452704206/job/118731533625)
+compiled successfully and passed the cartridge and libretro regressions, including `libretro.bios_failures`.
+Its full test step exited 8 because `runner.usage.port`, `runner.usage.region_pal` and
+`runner.usage.boot_bios_no_file` exceeded their existing two-second timeouts after printing the expected output.
+This is a suspected runner timing issue, not yet confirmed by a successful retry. No timeout was changed.
+
+`gh run rerun 39452704206 -R szTheory/muhtari --job 118731533625` exited 1. The direct retry API also
+exited 1 with HTTP 403: the workflow containing the job is already running. When the queued macOS work
+finishes, the next agent should run `gh run rerun 39452704206 -R szTheory/muhtari --failed` and check
+its result. The local CI and hygiene results above passed on the same source tree. This hosted follow-up
+requires no owner verification and does not consume another fix round by itself.
+
 No logs or firmware bytes were committed. The original review is preserved; its per-finding disposition ledger
 records the five fixes. Existing phase verification still requires re-verification of the former source-comment gap.
 Next command: `$gsd-code-review 3`.
