@@ -93,6 +93,28 @@ An intended change that moves a pin is handled in one of two ways:
 
 A drift with no intended cause is a bug to fix, never a new pin.
 
+### coverage
+
+`basic.coverage` shows that the samples and our diagnostic ROMs together exercise every board and MARIA feature the
+emulator claims to run. `tests/built/coverage.txt` has one line per feature, `feature rom...`, where a ROM is
+`7800basic/<sample>` or `diag/<name>`:
+
+| Features | Judged from |
+|----------|-------------|
+| `board-linear16`, `board-linear32`, `board-linear48`, `board-supergame`, `board-supergame-ram`, `board-bank6`, `board-sg144` | `muhtari_probe`'s board, options, ROM size and RAM size |
+| `rm0`, `rm2`, `rm3`, `write-mode`, `kangaroo`, `holey8`, `holey16`, `indirect1`, `indirect2`, `dli` | the core's sticky feature mask after 600 fast-boot frames (`docs/hardware/maria.md`, Statistics) |
+
+`muhtari-test-coverage` (`tests/built/coverage.c`) runs each named ROM once and prints one line per claim with the
+board, sizes and mask it saw. A claim fails when the ROM does not show the feature, and a feature with no ROM fails
+too. A ROM's source or name never counts.
+
+To add a claim, run `build/ci/tests/muhtari-test-coverage FILE build/ci/built tests/diag` on a scratch file that
+names the ROM under the feature, read its mask, then add the ROM to the feature's line. A sample a line names becomes
+a fixture `basic.coverage` requires.
+
+`basic.coverage.self_test` appends `kangaroo 7800basic/simple` to a copy of the file. `simple` never uses kangaroo
+mode, so the run must fail on that claim.
+
 
 ## diag
 
