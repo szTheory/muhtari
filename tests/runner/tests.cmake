@@ -84,16 +84,57 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
   endfunction()
 
-  # Writes a movie to OUT/name: the header line, the header lines given in
-  # header, then count lines of frame each. Sets movie to its path.
-  function(write_movie name header frame count)
+  # Writes a movie to OUT/name: the version line, the header lines in
+  # header, then for each N:LINE in ARGN, N copies of the frame LINE. Sets
+  # movie to its path.
+  function(write_movie name header)
     set(text "muhtari-movie 1\n${header}")
-    if(count GREATER 0)
-      string(REPEAT "${frame}\n" ${count} lines)
+    foreach(run IN LISTS ARGN)
+      string(FIND "${run}" ":" colon)
+      string(SUBSTRING "${run}" 0 ${colon} n)
+      math(EXPR colon "${colon} + 1")
+      string(SUBSTRING "${run}" ${colon} -1 line)
+      string(REPEAT "${line}\n" ${n} lines)
       string(APPEND text "${lines}")
-    endif()
+    endforeach()
     file(WRITE "${OUT}/${name}" "${text}")
     set(movie "${OUT}/${name}" PARENT_SCOPE)
+  endfunction()
+
+  # Runs muhtari-run with ARGN twice; fails unless both exit 0 with the same
+  # standard output and nothing on standard error. Sets var to the output.
+  function(run_twice var)
+    foreach(pass IN ITEMS 1 2)
+      execute_process(COMMAND ${EMULATOR} "${RUN}" ${ARGN}
+        OUTPUT_VARIABLE out${pass} ERROR_VARIABLE err RESULT_VARIABLE rc)
+      if(NOT rc STREQUAL "0" OR NOT err STREQUAL "")
+        message(FATAL_ERROR "muhtari-run ${ARGN}: exit ${rc}\n${out${pass}}${err}")
+      endif()
+    endforeach()
+    if(NOT out1 STREQUAL out2)
+      message(FATAL_ERROR "muhtari-run ${ARGN}: two runs differ\n${out1}--\n${out2}")
+    endif()
+    set(${var} "${out1}" PARENT_SCOPE)
+  endfunction()
+
+  # Sets var to the frame 8 hash of a 12-line movie with header that holds
+  # line on lines 5 to 10, run twice on the input cart.
+  function(held_hash var name header line)
+    write_movie(${name} "${header}" "4:${released}" "6:${line}" "2:${released}")
+    run_twice(out --hash-frame 8 --movie "${movie}" "${DIR}/input.a78")
+    string(REGEX MATCH "frame 8 sha256 [0-9a-f]+" hash "${out}")
+    set(${var} "${hash}" PARENT_SCOPE)
+  endfunction()
+
+  # Fails unless the values of ARGN are all different.
+  function(expect_distinct what)
+    set(seen "")
+    foreach(v IN LISTS ARGN)
+      if(v STREQUAL "" OR v IN_LIST seen)
+        message(FATAL_ERROR "${what}: expected distinct frame hashes, got\n${ARGN}")
+      endif()
+      list(APPEND seen "${v}")
+    endforeach()
   endfunction()
 
   set(usage_line "usage: muhtari-run ")
@@ -302,8 +343,122 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     # Fault prevented: the runner miscounts or drops the frames in which the
     # game read no input. The input cart's even variant reads on even
     # frames only, so 60 frames hold 30 lag frames.
-    write_movie(lag.txt "${prolines}" "${released}" 60)
+    write_movie(lag.txt "${prolines}" "60:${released}")
     expect_output("lag_frames 30\n" --frames 60 --movie "${movie}" "${DIR}/input-even.a78")
+  elseif(CASE STREQUAL "movie.replay")
+    # Fault prevented: the runner drops or shifts a movie's input, or a
+    # replay is not repeatable. The input cart paints what it read, so a
+    # frame inside the held lines differs from an empty movie's, and a frame
+    # after them, with nothing held, matches it. --frames defaults to the
+    # movie's 12 lines.
+    write_movie(empty.txt "${prolines}" "12:${released}")
+    run_twice(empty --hash-frame 8 --hash-frame 12 --movie "${movie}" "${DIR}/input.a78")
+    write_movie(up.txt "${prolines}" "4:${released}" "6:|U.....|......|...BB|" "2:${released}")
+    run_twice(up --hash-frame 8 --hash-frame 12 --movie "${movie}" "${DIR}/input.a78")
+    string(REGEX MATCHALL "frame [0-9]+ sha256 [0-9a-f]+" empty_hashes "${empty}")
+    string(REGEX MATCHALL "frame [0-9]+ sha256 [0-9a-f]+" up_hashes "${up}")
+    list(LENGTH up_hashes n)
+    if(NOT n EQUAL 2 OR NOT up MATCHES "\nlag_frames 1\n$")
+      message(FATAL_ERROR "expected two hash lines and lag_frames 1, got\n${up}")
+    endif()
+    list(GET empty_hashes 0 empty8)
+    list(GET empty_hashes 1 empty12)
+    list(GET up_hashes 0 up8)
+    list(GET up_hashes 1 up12)
+    if(up8 STREQUAL empty8 OR NOT up12 STREQUAL empty12)
+      message(FATAL_ERROR "expected frame 8 to differ and frame 12 to match\n${empty}--\n${up}")
+    endif()
+  elseif(CASE STREQUAL "movie.ports")
+    # Fault prevented: a header's device or a port's field reaches the wrong
+    # port or the wrong pins. Up and button 1 on each port with each stick
+    # give four pictures, none the empty movie's.
+    held_hash(empty ports-empty.txt "${prolines}" "${released}")
+    held_hash(p1_proline ports-1p.txt "${prolines}" "|U...1.|......|...BB|")
+    held_hash(p1_joystick ports-1j.txt "port1 joystick\nport2 proline\n" "|U...1|......|...BB|")
+    held_hash(p2_proline ports-2p.txt "${prolines}" "|......|U...1.|...BB|")
+    held_hash(p2_joystick ports-2j.txt "port1 proline\nport2 joystick\n" "|......|U...1|...BB|")
+    expect_distinct(ports "${empty}" "${p1_proline}" "${p1_joystick}" "${p2_proline}"
+      "${p2_joystick}")
+  elseif(CASE STREQUAL "movie.switches")
+    # Fault prevented: a console switch in a movie's last field never
+    # reaches SWCHB, or reaches the wrong bit.
+    held_hash(empty sw-empty.txt "${prolines}" "${released}")
+    set(hashes "${empty}")
+    foreach(field IN ITEMS R..BB .S.BB ..PBB ...AB ...BA)
+      held_hash(h sw-${field}.txt "${prolines}" "|......|......|${field}|")
+      list(APPEND hashes "${h}")
+    endforeach()
+    expect_distinct(switches ${hashes})
+  elseif(CASE STREQUAL "movie.past_end")
+    # Fault prevented: past a movie's last line the runner keeps the last
+    # buttons held, or resets the difficulty switches. Twenty frames of a
+    # 10-line movie must run as the 20-line movie that spells out a release
+    # with the difficulty kept.
+    set(held "|U.....|......|...AB|")
+    write_movie(short.txt "${prolines}" "4:${released}" "6:${held}")
+    run_twice(short --frames 20 --hash-frame 10 --hash-frame 11 --hash-frame 20 --movie "${movie}"
+      "${DIR}/input.a78")
+    write_movie(long.txt "${prolines}" "4:${released}" "6:${held}" "10:|......|......|...AB|")
+    run_twice(long --hash-frame 10 --hash-frame 11 --hash-frame 20 --movie "${movie}"
+      "${DIR}/input.a78")
+    string(REGEX MATCH "frame 10 sha256 [0-9a-f]+" f10 "${short}")
+    string(REGEX MATCH "frame 11 sha256 [0-9a-f]+" f11 "${short}")
+    string(REPLACE "frame 10" "frame 11" f10 "${f10}")
+    if(NOT short STREQUAL long OR NOT short MATCHES "frame 20 sha256" OR f10 STREQUAL f11)
+      message(FATAL_ERROR "past the end: expected the long movie's output, with frame 11 "
+        "unlike frame 10, got\n${short}--\n${long}")
+    endif()
+  elseif(CASE STREQUAL "movie.malformed")
+    # Fault prevented: a malformed movie runs, or is refused without the
+    # place of its fault.
+    write_movie(bad.txt "${prolines}" "1:|X.....|......|...BB|")
+    expect_exit(1 "^muhtari-run: [^\n]*/bad.txt:4:2: letter out of place, expected U or [.]\n$"
+      --movie "${movie}" "${DIR}/input.a78")
+  elseif(CASE STREQUAL "movie.rom_mismatch")
+    # Fault prevented: a movie recorded on another cartridge replays on this
+    # one. The digest is the headerless SHA-256 that --probe prints.
+    probe(input.a78)
+    probe_value(sha256_headerless digest)
+    string(REPEAT "0" 64 zeros)
+    write_movie(other.txt "rom-sha256 ${zeros}\n${prolines}" "1:${released}")
+    expect_exit(1 "rom-sha256 ${zeros}[^\n]* ${digest}\n$" --movie "${movie}" "${DIR}/input.a78")
+    write_movie(same.txt "rom-sha256 ${digest}\n${prolines}" "1:${released}")
+    expect_output("lag_frames 1\n" --movie "${movie}" "${DIR}/input.a78")
+  elseif(CASE STREQUAL "movie.conflict")
+    # Fault prevented: the command line silently overrides a movie's header,
+    # so a replay runs with devices other than the recording's. The header
+    # wins; an agreeing or auto option is no conflict.
+    write_movie(conflict.txt "${prolines}region ntsc\n" "2:${released}")
+    expect_exit(2 "--port1 joystick conflicts with the movie's port1 proline.*${usage_line}"
+      --port1 joystick --movie "${movie}" "${DIR}/input.a78")
+    expect_exit(2 "--port2 none conflicts with the movie's port2 proline.*${usage_line}"
+      --port2 none --movie "${movie}" "${DIR}/input.a78")
+    expect_output("lag_frames 1\n" --port1 proline --port2 auto --region ntsc --movie "${movie}"
+      "${DIR}/input.a78")
+    string(REPEAT "0" 64 zeros)
+    write_movie(bios.txt "${prolines}boot bios\nbios-sha256 ${zeros}\n" "2:${released}")
+    expect_exit(2 "boot bios needs --boot, which this version does not have yet.*${usage_line}"
+      --movie "${movie}" "${DIR}/input.a78")
+  elseif(CASE STREQUAL "movie.behaviour_warning")
+    # Fault prevented: a movie recorded on another behaviour revision
+    # replays without notice, or is refused although it may still match.
+    write_movie(rev9.txt "${prolines}behaviour 9\n" "2:${released}")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${movie}" "${DIR}/input.a78"
+      OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT out STREQUAL "lag_frames 1\n" OR NOT err MATCHES
+        "^muhtari-run: [^\n]*/rev9.txt: behaviour 9, this core's is 1; replaying anyway\n$")
+      message(FATAL_ERROR "expected exit 0, lag_frames 1 and one warning, got exit ${rc}\n"
+        "${out}${err}")
+    endif()
+  elseif(CASE STREQUAL "usage.port")
+    expect_exit(2 "--port1 needs auto, proline, joystick or none.*${usage_line}"
+      --frames 1 --port1 paddle)
+    expect_exit(2 "--port2 needs auto, proline, joystick or none.*${usage_line}" --frames 1 --port2)
+    expect_output("" --frames 1 --port1 joystick --port2 none)
+  elseif(CASE STREQUAL "usage.region_pal")
+    expect_exit(2 "--region pal is not supported: give auto or ntsc.*${usage_line}"
+      --frames 1 --region pal)
+    expect_output("" --frames 1 --region ntsc)
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
   endif()
@@ -337,12 +492,20 @@ muhtari_add_test(NAME runner.version
 # build tree (tests/input), each case writing its own movies into OUT.
 set(runner_movie_dir ${PROJECT_BINARY_DIR}/tests/runner-movies)
 file(MAKE_DIRECTORY ${runner_movie_dir})
-foreach(case IN ITEMS lag)
+foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch conflict
+    behaviour_warning)
   muhtari_add_test(NAME runner.movie.${case}
     COMMAND ${runner_check} -DCASE=movie.${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
       -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 10) # provisional, phase 3
   set_tests_properties(runner.movie.${case} PROPERTIES FIXTURES_REQUIRED input_carts)
+endforeach()
+
+# The device and region options.
+foreach(case IN ITEMS usage.port usage.region_pal)
+  muhtari_add_test(NAME runner.${case}
+    COMMAND ${runner_check} -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS runner portable TIMEOUT 10) # provisional, phase 3
 endforeach()
 
 # --probe on the images muhtari-test-images writes into the build directory;

@@ -518,7 +518,15 @@ runner.hashes_file	portable,runner
 runner.load.hash	portable,runner
 runner.load.pal_refused	portable,runner
 runner.md5	portable,runner
+runner.movie.behaviour_warning	portable,runner
+runner.movie.conflict	portable,runner
 runner.movie.lag	portable,runner
+runner.movie.malformed	portable,runner
+runner.movie.past_end	portable,runner
+runner.movie.ports	portable,runner
+runner.movie.replay	portable,runner
+runner.movie.rom_mismatch	portable,runner
+runner.movie.switches	portable,runner
 runner.movie_parse	portable,runner
 runner.png	portable,runner
 runner.probe.2600	portable,runner
@@ -538,6 +546,8 @@ runner.stop	portable,runner
 runner.usage.dump_syntax	portable,runner
 runner.usage.frame_range	portable,runner
 runner.usage.no_args	portable,runner
+runner.usage.port	portable,runner
 runner.usage.positional	portable,runner
+runner.usage.region_pal	portable,runner
 runner.usage.unknown	portable,runner
 runner.version	portable,runner
