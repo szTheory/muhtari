@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 1
+open_count: 2
 waived_count: 0
 fixed_count: 7
-total_count: 8
-last_updated: 2026-10-20T20:53:48.887Z
+total_count: 9
+last_updated: 2026-10-20T21:22:40.462Z
 ---
 
 # Broken Windows Ledger
@@ -23,6 +23,7 @@ last_updated: 2026-10-20T20:53:48.887Z
 | 6 | 04 | deviation | tests/audio/test_spectral.c |  | Test-only spectral plan adds verified tests against existing production behavior without a formal RED/GREEN commit pair; no missing production behavior is claimed. | open |  | 2026-10-20T20:26:27.505Z |  |
 | 7 | 04 | deviation | .planning/preparation/A7800-AUDIO.md |  | Corrected zero-start TIA duty and fill expectations after primary-source joint-state reconciliation | fixed |  | 2026-10-20T20:52:42.338Z | 2026-10-20T20:53:48.808Z |
 | 8 | 04 | deviation | tests/frame/test_frame.c |  | WSYNC fixtures apply changed power-on profile through TIA reset before checking the stored epoch | fixed |  | 2026-10-20T20:52:42.414Z | 2026-10-20T20:53:48.887Z |
+| 9 | 04 | unmet-truth | tests/audio/test_spectral.c | 472 | Wholly slow actual POKEY AUDF1 produces a 15136.23 Hz spur up to -78.28741 dBFS through the fixed kernel, failing the -80 dBFS spectral gate. | open |  | 2026-10-20T21:22:40.462Z |  |
 
 ````json
 [
@@ -128,6 +129,19 @@ last_updated: 2026-10-20T20:53:48.887Z
     "reason": "",
     "recorded_at": "2026-10-20T20:52:42.414Z",
     "resolved_at": "2026-10-20T20:53:48.887Z",
+    "milestone": "v1.0"
+  },
+  {
+    "id": 9,
+    "kind": "unmet-truth",
+    "phase": "04",
+    "file": "tests/audio/test_spectral.c",
+    "line": 472,
+    "description": "Wholly slow actual POKEY AUDF1 produces a 15136.23 Hz spur up to -78.28741 dBFS through the fixed kernel, failing the -80 dBFS spectral gate.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-20T21:22:40.462Z",
+    "resolved_at": null,
     "milestone": "v1.0"
   }
 ]

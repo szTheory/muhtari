@@ -5,11 +5,11 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
 status: executing
-stopped_at: Completed 04-05-PLAN.md; continue existing execution at 04-06
-last_updated: "2026-10-20T21:12:00.038Z"
+stopped_at: Blocked 04-06 Task2 on independently reproduced slow POKEY spectral failure; see04-06-SUMMARY.md
+last_updated: "2026-10-20T21:23:42.090Z"
 last_activity: 2026-10-20
 last_activity_desc: Completed frame audio contracts plan 04-05
-state_head: 8f889d217f00fcfe71c4b4aba4cbb307671558ee
+state_head: 62a3761884b88da55dc17faf85dbdc13e092c098
 progress:
   total_phases: 4
   completed_phases: 3
@@ -342,6 +342,7 @@ Recent decisions affecting current work:
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
+- 04-06 Task2 blocked: actual wholly slow AUDF1 independently reproduces a15136.23Hz spur up to-78.28741dBFS through locked16x32 Q23 kernel; fixed-80 gate fails. Preserve uncommitted Task2 work and resolve synthesis choice before expansion.
 
 ## Deferred Items
 
@@ -353,6 +354,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T21:11:59.893Z
-Stopped at: Completed 04-05-PLAN.md; continue existing execution at 04-06
-Resume file: None
+Last session: 2026-10-20T21:23:41.951Z
+Stopped at: Blocked 04-06 Task2 on independently reproduced slow POKEY spectral failure; see04-06-SUMMARY.md
+Resume file: .planning/phases/04-sound/04-06-PLAN.md

@@ -255,7 +255,7 @@ Plans (one wave each; every plan depends on its predecessor):
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 04-06-PLAN.md — Owned POKEY tracer, resolved half edges and actual quality
+- [ ] 04-06-PLAN.md — Owned POKEY tracer, resolved half edges and actual quality; Task2 blocked by independently reproduced slow AUDF1 spectral failure, see04-06-SUMMARY.md
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
