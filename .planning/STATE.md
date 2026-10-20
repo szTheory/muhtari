@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
-status: executing
-stopped_at: Completed 03-18-PLAN.md
-last_updated: "2026-10-20T06:29:14.027Z"
+status: verifying
+stopped_at: Completed 03-19-PLAN.md
+last_updated: "2026-10-20T07:07:42.259Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-18 complete (the library preset and job, the ledger ratchet, the generated docs/compatibility.md)
-state_head: 86910d44572a7fe5ff57a7b9caadeb0d64a2b6f4
+last_activity_desc: Plan 03-19 complete (measured limits, the gate-code tally, label docs, probe PR closed, ship title checked)
+state_head: f427c51d773ee9cfb2cfda034cc073fe7bb11cd2
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 55
+  completed_plans: 56
   percent: 50
 ---
 
@@ -31,8 +31,8 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
 Plan: 19 of 19
-Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-18 complete: the library preset judges the 39 pr-tier ledger rows afresh on both boot paths (muhtari-test-predicate --id --result, found by whole-file SHA-1 under MUHTARI_ROM_DIR and tests/diag; configure fails on a missing directory, BIOS or row file); tests/cmake/compat_ratchet.cmake (100 lines) holds results equal to the ledger both ways and, against MUHTARI_LEDGER_BASE, lets no pass row fall without a tests/compat/allow.txt line expiring within 60 days; tools/compat_doc.cmake (80 lines) generates docs/compatibility.md, checked by policy.compat_doc_fresh and library.compat_doc; report-only library job (34 s, 30 s); green on every hosted job (CI 39380164010); probe PR #12 still a draft
+Status: Phase complete — ready for verification
+Last activity: 2026-10-20 — Plan 03-19 complete: every TIMEOUT and timeout-minutes phase 3 added is measured from 31 ci.yml and 11 nightly runs' job logs (be32 7 min, 2 x 184 s; prop 8; vectors-full 9; library still provisional on 7 runs); gate code 1,367 narrow lines against 7,415 src/ (18.4 %), shortfall routed to the owner in SEED-007; perf_compare.cmake 126 to 95 lines; docs/testing.md links every emulation label; WR-05, IN-04 and IN-01 closed in the re-review todo; POKEY re-pin todo added; probe PR #12 closed unmerged; ship title passes check-title.sh; green on CI 39383824898 and Nightly 39383824826
 
 Progress: [█████░░░░░] 50%
 
@@ -114,6 +114,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P16 | 22 min | 2 tasks | 9 files |
 | Phase 03 P17 | 20 min | 3 tasks | 16 files |
 | Phase 03 P18 | 22 min | 3 tasks | 21 files |
+| Phase 03 P19 | 35 min | 3 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -284,6 +285,9 @@ Recent decisions affecting current work:
 - [Phase 03]: 03-18: library.<id> passes once its result line is written; library.ratchet judges status and evidence against the ledger
 - [Phase 03]: 03-18: the ratchet's base is MUHTARI_LEDGER_BASE read at configure; a base without a ledger protects nothing, a base not in the clone fails
 - [Phase 03]: 03-18: the library job is report-only (REPORT_ONLY wasm32,library) until 10 green runs on main
+- [Phase 03]: Plan 19: CTest TIMEOUTs and timeout-minutes measured from 31 ci.yml and 11 nightly fuzz/prop runs (job logs); be32 7 min (2 x 184 s, run 39377950148), prop 8, vectors-full 9; library stays provisional on 7 runs
+- [Phase 03]: Plan 19: gate code is 1,367 narrow lines against 7,415 src/ lines (18.4 %, 25.5 % without cartdb.c); perf_compare.cmake trimmed 126 to 95; the shortfall and four candidate cuts are in SEED-007 as the owner's call at /gsd-ship 3
+- [Phase 03]: Plan 19: probe PR #12 closed unmerged; ship title 'feat: games play in RetroArch with MARIA, cartridges, boot and input' passes check-title.sh (exit 0), so the merge cuts 0.3.0
 
 ### Pending Todos
 
@@ -293,6 +297,7 @@ Recent decisions affecting current work:
 - [2026-10-16] [ci] Close the re-review's findings on the Dependabot gate and the publish checks — [todo file](.planning/todos/pending/2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md)
 - [2026-10-19] [ci] Close the phase 2 review seeds on the nightly filter and the ROM tables — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md)
 - [2026-10-19] [core] Close the phase 2 re-review findings when MARIA and the run loop land — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md)
+- [2026-10-19] [core] Re-pin the POKEY samples when POKEY lands — [todo file](.planning/todos/pending/2026-10-19-re-pin-the-pokey-samples-when-pokey-lands.md)
 
 ### Ship step (phase 01)
 
@@ -325,6 +330,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T06:29:00.313Z
-Stopped at: Completed 03-18-PLAN.md
+Last session: 2026-10-20T07:07:42.137Z
+Stopped at: Completed 03-19-PLAN.md
 Resume file: None

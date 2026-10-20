@@ -70,25 +70,25 @@ values in tests cite their source document.
 
 ### Games play in RetroArch
 
-- [ ] **GAME-01**: `ctest -L basic` builds the pinned 7800basic samples, checks each ROM's SHA-256, and runs each for
+- [x] **GAME-01**: `ctest -L basic` builds the pinned 7800basic samples, checks each ROM's SHA-256, and runs each for
   600 frames; every frame hash equals its pinned value on every platform. Together with the project's own diagnostic
   ROMs they cover linear 16–48 KB and SuperGame boards (with RAM, bank 6 and 144 KB variants), every read mode,
   kangaroo mode, holey and indirect DMA, and display-list interrupts.
-- [ ] **GAME-02**: `ctest -L diag` runs the project's own diagnostic ROMs; the DMA cost per line by header and byte
+- [x] **GAME-02**: `ctest -L diag` runs the project's own diagnostic ROMs; the DMA cost per line by header and byte
   counts, the overrun abort, the DLI tick, the WSYNC release and the slow-access cost they report equal the values
   in A7800-MARIA and A7800-SYSTEM, as do the per-line DMA statistics the core keeps.
-- [ ] **GAME-03**: The default fast boot, with no BIOS, starts a cartridge in the documented hand-off state;
+- [x] **GAME-03**: The default fast boot, with no BIOS, starts a cartridge in the documented hand-off state;
   `--boot bios` boots through the CC0 OpenBIOS built in CI; every sample reaches its title-screen predicate within
   300 frames on both paths, counted from the cartridge hand-off on the BIOS path.
-- [ ] **GAME-04**: `muhtari-run --movie FILE` replays per-frame input that drives a two-button ProLine stick and a
+- [x] **GAME-04**: `muhtari-run --movie FILE` replays per-frame input that drives a two-button ProLine stick and a
   one-button stick on both ports, plus Pause, Select, Reset and both difficulty switches; `ctest -L input` shows
   the SWCHA, SWCHB and INPT0–5 values the game reads match A7800-CARTRIDGES-AND-PERIPHERALS, and frames with no
   input read are counted as lag.
-- [ ] **GAME-05**: `ctest -R runner.boot_to_play` shows one 7800basic game played from boot through the runner — a
+- [x] **GAME-05**: `ctest -R runner.boot_to_play` shows one 7800basic game played from boot through the runner — a
   control changes play and the picture moves — and fails its negative controls; the libretro core's memory
   descriptors pass rcheevos' own resolver; the hosted RetroArch job boots a diagnostic ROM with a screenshot equal
   to the runner's frame.
-- [ ] **GAME-06**: `ctest -R fuzz.regress.run` replays the random-ROM corpus without a crash, sanitizer finding or
+- [x] **GAME-06**: `ctest -R fuzz.regress.run` replays the random-ROM corpus without a crash, sanitizer finding or
   timeout on every platform, and its fuzz target runs nightly; `ctest -L prop` runs the property tests (split runs
   equal one run, peeking changes nothing, two instances never interact, input applies only at VBLANK start) with
   100 seeded cases per pull request and 10,000 nightly; the `library` preset runs in CI over the built samples and
@@ -178,12 +178,12 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 | CPU-03 | Phase 2 | Complete |
 | CPU-04 | Phase 2 | Complete |
 | CPU-05 | Phase 2 | Complete |
-| GAME-01 | Phase 3 | Pending |
-| GAME-02 | Phase 3 | Pending |
-| GAME-03 | Phase 3 | Pending |
-| GAME-04 | Phase 3 | Pending |
-| GAME-05 | Phase 3 | Pending |
-| GAME-06 | Phase 3 | Pending |
+| GAME-01 | Phase 3 | Complete |
+| GAME-02 | Phase 3 | Complete |
+| GAME-03 | Phase 3 | Complete |
+| GAME-04 | Phase 3 | Complete |
+| GAME-05 | Phase 3 | Complete |
+| GAME-06 | Phase 3 | Complete |
 | SND-01 | Phase 4 | Pending |
 | SND-02 | Phase 4 | Pending |
 | SND-03 | Phase 4 | Pending |
