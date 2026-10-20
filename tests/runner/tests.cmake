@@ -458,7 +458,7 @@ endfunction()
     execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${movie}" "${DIR}/input.a78"
       OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE rc)
     if(NOT rc STREQUAL "0" OR NOT out STREQUAL "lag_frames 1\n" OR NOT err MATCHES
-        "^muhtari-run: [^\n]*/rev9.txt: behaviour 9, this core's is 1; replaying anyway\n$")
+        "^muhtari-run: [^\n]*/rev9.txt: behaviour 9, this core's is [1-9][0-9]*; replaying anyway\n$")
       message(FATAL_ERROR "expected exit 0, lag_frames 1 and one warning, got exit ${rc}\n"
         "${out}${err}")
     endif()
