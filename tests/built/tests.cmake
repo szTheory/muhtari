@@ -122,3 +122,26 @@ muhtari_add_test(NAME basic.coverage
   COMMAND muhtari-test-coverage ${built_coverage} ${MUHTARI_BUILT_DIR} ${CMAKE_SOURCE_DIR}/tests/diag
   LABELS basic portable TIMEOUT 60)  # provisional, phase 3
 set_tests_properties(basic.coverage PROPERTIES FIXTURES_REQUIRED "${built_coverage_samples}")
+
+# Negative control: coverage.txt plus a claim of kangaroo mode for simple,
+# which never uses it, must fail on that claim. The driver runs from a
+# generated script, so the emulator list needs no second level of escaping.
+file(READ ${built_coverage} built_text)
+set(built_coverage_wrong ${PROJECT_BINARY_DIR}/tests/built/coverage_wrong.txt)
+file(WRITE ${built_coverage_wrong} "${built_text}kangaroo 7800basic/simple\n")
+set(built_coverage_script ${PROJECT_BINARY_DIR}/tests/built/coverage_self_test.cmake)
+file(GENERATE OUTPUT ${built_coverage_script} CONTENT
+"execute_process(COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} [==[$<TARGET_FILE:muhtari-test-coverage>]==]
+  [==[${built_coverage_wrong}]==] [==[${MUHTARI_BUILT_DIR}]==] [==[${CMAKE_SOURCE_DIR}/tests/diag]==]
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
+message(\"\${out}\")
+if(NOT rc STREQUAL \"0\")
+  message(FATAL_ERROR \"muhtari-test-coverage exited \${rc}\")
+endif()
+")
+muhtari_add_test(NAME basic.coverage.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${CMAKE_COMMAND}$<SEMICOLON>-P$<SEMICOLON>${built_coverage_script}"
+    -DCODE=1 "-DREGEX=7800basic/simple kangaroo: [^:]*FAIL.*exited 1"
+    -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+  LABELS basic portable TIMEOUT 60)  # provisional, phase 3
+set_tests_properties(basic.coverage.self_test PROPERTIES FIXTURES_REQUIRED "${built_coverage_samples}")

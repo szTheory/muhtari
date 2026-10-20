@@ -10,6 +10,7 @@
    frames. Each ROM is loaded and run once. Only what the probe and the core
    report counts, never a ROM's source or name.
 
+   Every feature in the table below is required: one with no claim fails.
    One line is printed per claim; exit 0 when all pass, 1 when any fails,
    and 2 on a usage error, an unreadable COVERAGE or an unknown feature. */
 #include <stdint.h>
@@ -264,8 +265,8 @@ static void observe(struct rom *r, const char *built, const char *diag)
         r->mask = m->maria.features;
         r->ok = 1;
     } else {
-        printf("%s: probe, load or frame %lu failed with status %lu\n", r->name,
-               (unsigned long)f, (unsigned long)st);
+        printf("%s: probe, load or frame %lu failed with status %lu\n", r->name, (unsigned long)f,
+               (unsigned long)st);
     }
     muhtari_destroy(m);
     free(image);
@@ -297,6 +298,16 @@ int main(int argc, char **argv)
     }
     for (uint32_t i = 0; i < nroms; i++) {
         observe(&roms[i], argv[2], argv[3]);
+    }
+    for (uint32_t k = 0; k < FEATURES; k++) {
+        uint32_t i;
+        for (i = 0; i < nclaims && (claims[i].feature != &features[k] || claims[i].nrom == 0u);
+             i++) {
+        }
+        if (i == nclaims) {
+            printf("%s: FAIL no ROM claims it\n", features[k].name);
+            failures++;
+        }
     }
     for (uint32_t i = 0; i < nclaims; i++) {
         const struct claim *c = &claims[i];
