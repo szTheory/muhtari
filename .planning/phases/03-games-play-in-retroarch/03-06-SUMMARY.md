@@ -187,7 +187,7 @@ status: complete
 | `ctest --test-dir build/ci -R '^(diag\.\|docs\.)' --output-on-failure` (Task 3, 7 tests) | 0 |
 | `scripts/hygiene.sh --tree` | 0 |
 | `PATH=<llvm 21>:$PATH cmake --workflow --preset hygiene` (24 tests) | 0 |
-| `gh run watch 39353599149`'s CI sibling, run 39353599146 on 6283d3e (tracer) | success |
+| `gh run view 39353599146` (CI on 6283d3e, the tracer push) | success |
 | `gh run watch 39354194917 --exit-status` on fd4c35e | 0 |
 
 Tracer gate (Task 1): `human_verify_mode` is end-of-phase and the verify step is automated only. The gate re-ran the verify: ci 0, `diag.dma` 0, hygiene 0. The tracer push's hosted run 39353599146 then passed on every leg before Task 2's results were committed.
