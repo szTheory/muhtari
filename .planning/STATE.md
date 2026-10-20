@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-07-PLAN.md
-last_updated: "2026-10-20T02:06:39.602Z"
+stopped_at: Completed 03-08-PLAN.md
+last_updated: "2026-10-20T02:24:27.552Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-07 complete (the cpu and dli diagnostics)
-state_head: 06368ad999396860bfb8fe40d2a18db96204db17
+last_activity_desc: Plan 03-08 complete (the SuperGame boards)
+state_head: 5656ffada2d288a29fd7de9261e4cd6f7489c89c
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 44
+  completed_plans: 45
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 8 of 19
+Plan: 9 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-07 complete: the cpu ROM's 4 slow-access records and the dli ROM's 11 DLI, WSYNC, RDY and MSTAT records equal their derived values (parked's derivation corrected to 16 after the first run showed a missed burst); a DLI on zone 0's entry now raises NMI after VBE; green on every hosted leg (run 39356734460); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-08 complete: SuperGame, with RAM, bank 6, SG9 and banked RAM in the board switch, ROM and cart RAM in one allocation; the linear16, bank6 and sg144 ROMs matched all 28 derived values on the first run; all 34 buildable samples pinned; green on every hosted leg (run 39358378619); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -103,6 +103,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P05 | 16 min | 3 tasks | 13 files |
 | Phase 03 P06 | 26 min | 3 tasks | 19 files |
 | Phase 03 P07 | 23 min | 3 tasks | 23 files |
+| Phase 03 P08 | 16 min | 3 tasks | 28 files |
 
 ## Accumulated Context
 
@@ -247,6 +248,8 @@ Recent decisions affecting current work:
 - [Phase 03]: 03-07: the cpu ROM ends each 64-load run with MARIA's WSYNC, so slow loads read 205 and RAM loads 173, for every CPU phase
 - [Phase 03]: 03-07: a DLI on zone 0's entry raises NMI on the second phi1 after VBE's end, t 50 of line 16; broken-windows item 4 fixed
 - [Phase 03]: 03-07: parked's first derivation (20) left out line 18's burst; the doc now derives 16, which the first run read
+- [Phase 03]: 03-08: SuperGame boards (RAM, bank 6, SG9, banked RAM) in one switch; ROM and cart RAM in one allocation; SG9 maps bank 1 + register at $8000, so bank 1 at power-on
+- [Phase 03]: 03-08: all 34 buildable samples pinned; the POKEY-at-$0450 samples will move with a behaviour-revision bump when sound lands
 
 ### Pending Todos
 
@@ -288,6 +291,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T02:06:39.498Z
-Stopped at: Completed 03-07-PLAN.md
+Last session: 2026-10-20T02:24:27.456Z
+Stopped at: Completed 03-08-PLAN.md
 Resume file: None
