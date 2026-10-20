@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-11-PLAN.md
-last_updated: "2026-10-20T03:23:02.860Z"
+stopped_at: Completed 03-12-PLAN.md
+last_updated: "2026-10-20T03:35:53.151Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-11 complete (the runner replays movies)
-state_head: c6a0b989772b5d4d2763b4dc4973680ed31a1722
+last_activity_desc: Plan 03-12 complete (OpenBIOS built in CI)
+state_head: b610aaea5d5ab9f192e061ddecf090d2da2d9ab7
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 48
+  completed_plans: 49
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 12 of 19
+Plan: 13 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-11 complete: muhtari-run --movie checks the whole movie before frame 1, sets line f before frame f with the header's devices and prints lag_frames N; --port1/--port2 and --region auto|ntsc with the header winning; past the end buttons release and difficulties stay; rom-sha256 and behaviour checks; eleven runner.movie.* and runner.usage.* tests on the input cart; docs/runner.md Movies; green on every hosted leg (run 39363678798); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-12 complete: pins.txt 7800openbios-asm at b8bc745a8744; tests/built/openbios.cmake fills the two incbin lines exactly once and assembles with the package's dasm; built.openbios (fixture built_openbios) gives SHA-256 46b5bc2b... and built.openbios.self_test fails a doubled incbin by name; the four sample-building ci.yml jobs fetch the pin; firmware.txt refuses both fills; docs/emulation-tests.md openbios section; D-16 K defined by INPTCTRL EXT going 0 to 1; green on every hosted leg (run 39364791699); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -107,6 +107,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P09 | 14 min | 3 tasks | 15 files |
 | Phase 03 P10 | 21 min | 3 tasks | 20 files |
 | Phase 03 P11 | 13 min | 3 tasks | 9 files |
+| Phase 03 P12 | 11 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -260,6 +261,7 @@ Recent decisions affecting current work:
 - [Phase 03]: A movie line is at most 64 bytes except a rom-sha256 or bios-sha256 line, which is its key, a space and 64 hex digits; 03-11 decides how a movie's line 1 maps to frames, since the frame after a load latches nothing
 - [Phase 03]: Movie line k is the input set before the runner's frame k, latched at the VBLANK start that opens it; under fast boot line 1 reaches no game, so a movie records what a host passes to muhtari_set_input before each frame
 - [Phase 03]: The movie header wins: a conflicting --port1, --port2 or --region exits 2, as does boot bios until 03-13; --frames defaults to the movie length; past the end buttons release and difficulties stay; --region ntsc forces NTSC, auto refuses PAL
+- [Phase 03]: OpenBIOS is a pinned CC0 source assembled by tests/built/openbios.cmake; built.openbios builds the $FF image only, and both fill digests are firmware rows
 
 ### Pending Todos
 
@@ -301,6 +303,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T03:23:02.717Z
-Stopped at: Completed 03-11-PLAN.md
+Last session: 2026-10-20T03:35:52.971Z
+Stopped at: Completed 03-12-PLAN.md
 Resume file: None
