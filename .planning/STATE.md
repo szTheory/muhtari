@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-13-PLAN.md
-last_updated: "2026-10-20T03:59:21.052Z"
+stopped_at: Completed 03-14-PLAN.md
+last_updated: "2026-10-20T04:42:29.949Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-13 complete (BIOS path in the core and runner)
-state_head: 50074390e9ad7aedaf54262dd992f82f9857e3be
+last_activity_desc: Plan 03-14 complete (title predicates and the first ledger rows)
+state_head: aa44d09d72832104fe1466533d4bf3b7fa00d2e9
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 50
+  completed_plans: 51
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 14 of 19
+Plan: 15 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-13 complete: muhtari_load with a BIOS boots from power-on (line 0, t 0, CTRL $00, frame 1 of 117,174 ticks) through RES; the BIOS maps over A15 = 1 (MEN = 1) or A12 = 1 (MEN = 0) while EXT = 0, for the CPU and MARIA; K is the first cartridge opcode fetch with EXT = 1 (OpenBIOS hands simple off in frame 323; Pause held frames 1-3 gives K = 3); a lock with MEN = 0 before the hand-off is a sticky ERR_BIOS_REJECTED_CART (runner 77); muhtari-run --boot/--bios with bios_sha256 and handoff_frame; a movie's boot and bios-sha256 keys apply; WINDOWS.md item 5 fixed; green on every hosted leg (run 39366784570); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-14 complete: tests/compat/ledger.csv has 42 rows (34 samples, banksets unsupported, 7 diagnostics) sorted by id then predicate; muhtari-test-predicate evaluates title@F=H on the fast boot and through OpenBIOS (K in [300, 340], H within 300 frames of K) and boots@F; pin.cmake fills title@F=- rows refusing a single-colour frame and with -DBIOS evaluates every row (exit 0, 39 rows pass on both paths); five rand-driven samples fall back to boots@F, backuptest and languagetest are skipped; title.simple.fast/bios and title.pin.self_test on ci and wasm32; green on every hosted leg (run 39368351340); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -109,6 +109,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P11 | 13 min | 3 tasks | 9 files |
 | Phase 03 P12 | 11 min | 2 tasks | 10 files |
 | Phase 03 P13 | 17 min | 3 tasks | 21 files |
+| Phase 03 P14 | 39 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -266,6 +267,8 @@ Recent decisions affecting current work:
 - [Phase 03]: 03-13: a BIOS boot starts at power-on (line 0, t 0, CTRL $00) and runs RES; the BIOS answers A15 = 1 (MEN = 1) or A12 = 1 (MEN = 0) while EXT = 0, for the CPU and MARIA
 - [Phase 03]: 03-13: K is recorded once at the first cartridge opcode fetch with EXT = 1 (simple: 323; Pause held frames 1-3 gives 3); the fast boot records 1; input set before a BIOS boot's frame 1 applies from power-on, so movie line 1 counts under boot bios
 - [Phase 03]: 03-13: INPTCTRL locked with MEN = 0 before the hand-off is a sticky ERR_BIOS_REJECTED_CART (runner 77); a movie's boot key wins over --boot (exit 2), and bios-sha256 is checked before frame 1 (exit 1)
+- [Phase 03]: 03-14: the ledger has 42 rows; title@F=H is the fast boot's frame F hash, and through OpenBIOS H must appear in [K, K + 300) with K in [300, 340]; pin.cmake refuses a single-colour frame
+- [Phase 03]: 03-14: five samples that draw with rand (seeded from INTIM, which the BIOS leaves differently) fall back to boots@F;why=rng-seeded-from-intim; backuptest and languagetest draw nothing by design and are skipped
 
 ### Pending Todos
 
@@ -307,6 +310,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T03:59:20.932Z
-Stopped at: Completed 03-13-PLAN.md
+Last session: 2026-10-20T04:42:29.830Z
+Stopped at: Completed 03-14-PLAN.md
 Resume file: None
