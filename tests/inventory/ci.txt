@@ -450,6 +450,8 @@ frame.null_video_same_state	frame,portable
 frame.sample_renders	built,portable
 fuzz.regress.loader	fuzz,portable
 fuzz.regress.loader.self_test	fuzz,portable
+fuzz.regress.run	fuzz,portable
+fuzz.regress.run.self_test	fuzz,portable
 host.palette	host,portable
 input.cart_files	input,portable
 input.ctlswb_no_swchb_write	input,portable
@@ -500,6 +502,9 @@ perf.gate.unstable	perf
 policy.no_skip	policy
 policy.no_skip.self_test	policy
 policy.notices	policy
+prop.input_at_vblank	portable,prop
+prop.instances_isolated	portable,prop
+prop.peek_pure	portable,prop
 prop.split_run	portable,prop
 release.archive_contents	release
 release.archive_contents.self_test	release

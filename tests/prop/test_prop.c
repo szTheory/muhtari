@@ -155,10 +155,57 @@ static void digest(const muhtari *m, int pending, uint8_t out[32])
 }
 
 /* Reports a mismatch; returns 0 so a property can return it. */
-static int differ(const char *what, uint32_t at)
+static int differ(const char *what, uint32_t frame)
 {
-    fprintf(stderr, "  %s differs at %u\n", what, (unsigned)at);
+    fprintf(stderr, "  %s differs at frame %u\n", what, (unsigned)frame);
     return 0;
+}
+
+/* Two runs are equal: every frame record, then the state digests. */
+static int same_run(const struct frame_out *one, const struct frame_out *two, uint32_t frames,
+                    const muhtari *a, const muhtari *b)
+{
+    uint8_t d1[32];
+    uint8_t d2[32];
+    for (uint32_t i = 0; i < frames; i++) {
+        if (memcmp(&one[i], &two[i], sizeof one[i]) != 0) {
+            return differ("frame", i + 1u);
+        }
+    }
+    digest(a, 1, d1);
+    digest(b, 1, d2);
+    return memcmp(d1, d2, sizeof d1) == 0 ? 1 : differ("state", frames);
+}
+
+/* Builds pool entry p and loads it into two new instances, *a and *b, whose
+   load statuses must match. */
+static int load_pair(uint32_t p, uint64_t *rng, muhtari **a, muhtari **b)
+{
+    size_t n = pool_build(p, rng);
+    *a = create();
+    *b = create();
+    return load(*a, n) == load(*b, n) ? 1 : differ("load status", 0u);
+}
+
+static int finish(muhtari *a, muhtari *b, int ok)
+{
+    muhtari_destroy(a);
+    muhtari_destroy(b);
+    return ok;
+}
+
+/* An input muhtari_set_input accepts. */
+static void random_input(uint64_t *rng, muhtari_input *in)
+{
+    static const uint32_t devices[4] = {0u, MUHTARI_PORT_PROLINE, MUHTARI_PORT_JOYSTICK,
+                                        MUHTARI_PORT_UNPLUGGED};
+    memset(in, 0, sizeof *in);
+    in->size = (uint32_t)sizeof *in;
+    for (uint32_t p = 0; p < 2u; p++) {
+        in->device[p] = devices[prop_below(rng, 4u)];
+        in->buttons[p] = prop_below(rng, 64u);
+    }
+    in->switches = prop_below(rng, 32u);
 }
 
 /* Frames 1..k, then a pause in which the host queries the instance, then
@@ -167,17 +214,13 @@ static int differ(const char *what, uint32_t at)
    machine. */
 static int split_run(uint64_t *rng, uint32_t size)
 {
-    uint32_t p = prop_below(rng, pool_count());
-    size_t n = pool_build(p, rng);
-    uint32_t frames = 1u + prop_below(rng, size);
-    uint32_t k = prop_below(rng, frames + 1u);
     struct frame_out one[PROP_SIZE_MAX];
     struct frame_out two[PROP_SIZE_MAX];
-    uint8_t d1[32];
-    uint8_t d2[32];
-    muhtari *a = create();
-    muhtari *b = create();
-    int ok = load(a, n) == load(b, n) ? 1 : differ("load status", 0u);
+    muhtari *a;
+    muhtari *b;
+    int ok = load_pair(prop_below(rng, pool_count()), rng, &a, &b);
+    uint32_t frames = 1u + prop_below(rng, size);
+    uint32_t k = prop_below(rng, frames + 1u);
     for (uint32_t i = 0; i < frames; i++) {
         run(a, WIDTH, &one[i]);
     }
@@ -201,19 +244,145 @@ static int split_run(uint64_t *rng, uint32_t size)
     for (uint32_t i = k; i < frames; i++) {
         run(b, WIDTH, &two[i]);
     }
-    for (uint32_t i = 0; ok && i < frames; i++) {
-        if (memcmp(&one[i], &two[i], sizeof one[i]) != 0) {
-            ok = differ("frame", i + 1u);
+    return finish(a, b, ok && same_run(one, two, frames, a, b));
+}
+
+/* Every address through muhtari__peek and muhtari__bus_peek, summed. */
+static uint32_t peek_all(const muhtari *m)
+{
+    uint32_t sum = 0;
+    for (uint32_t addr = 0; addr < 0x10000u; addr++) {
+        sum = sum * 31u + muhtari__peek(m, (uint16_t)addr);
+        sum = sum * 31u + muhtari__bus_peek(m, (uint16_t)addr);
+    }
+    return sum;
+}
+
+/* Peeking every address after k frames changes neither the state nor any
+   later frame, and a second pass reads the same bytes. */
+static int peek_pure(uint64_t *rng, uint32_t size)
+{
+    struct frame_out one[PROP_SIZE_MAX];
+    struct frame_out two[PROP_SIZE_MAX];
+    uint8_t before[32];
+    uint8_t after[32];
+    muhtari *a;
+    muhtari *b;
+    int ok = load_pair(prop_below(rng, pool_count()), rng, &a, &b);
+    uint32_t frames = 1u + prop_below(rng, size);
+    uint32_t k = prop_below(rng, frames + 1u);
+    for (uint32_t i = 0; i < frames; i++) {
+        run(b, WIDTH, &two[i]);
+    }
+    for (uint32_t i = 0; i < k; i++) {
+        run(a, WIDTH, &one[i]);
+    }
+    digest(a, 1, before);
+    if (peek_all(a) != peek_all(a)) {
+        ok = differ("a second peek", k);
+    }
+    digest(a, 1, after);
+    if (memcmp(before, after, sizeof before) != 0) {
+        ok = differ("state after peeking", k);
+    }
+    for (uint32_t i = k; i < frames; i++) {
+        run(a, WIDTH, &one[i]);
+    }
+    return finish(a, b, ok && same_run(one, two, frames, a, b));
+}
+
+/* Two instances on different cartridges, loaded, given input and run
+   alternately call by call, equal each run alone. */
+static int instances_isolated(uint64_t *rng, uint32_t size)
+{
+    struct frame_out out[4][PROP_SIZE_MAX];
+    muhtari_input in[2][PROP_SIZE_MAX];
+    muhtari *m[4];
+    uint32_t p = prop_below(rng, pool_count());
+    uint32_t q = (p + 1u + prop_below(rng, pool_count() - 1u)) % pool_count();
+    /* m[0] and m[1] interleave; m[2] and m[3] run alone on the same. */
+    int ok = load_pair(p, rng, &m[0], &m[2]);
+    ok = load_pair(q, rng, &m[1], &m[3]) && ok;
+    uint32_t frames = 1u + prop_below(rng, size);
+    for (uint32_t i = 0; i < frames; i++) {
+        for (uint32_t j = 0; j < 2u; j++) {
+            random_input(rng, &in[j][i]);
+            ok = muhtari_set_input(m[j], &in[j][i]) == MUHTARI_STATUS_OK && ok;
+        }
+        run(m[0], WIDTH, &out[0][i]);
+        run(m[1], WIDTH, &out[1][i]);
+    }
+    for (uint32_t j = 2u; j < 4u; j++) {
+        for (uint32_t i = 0; i < frames; i++) {
+            ok = muhtari_set_input(m[j], &in[j - 2u][i]) == MUHTARI_STATUS_OK && ok;
+            run(m[j], WIDTH, &out[j][i]);
         }
     }
-    digest(a, 1, d1);
-    digest(b, 1, d2);
-    if (ok && memcmp(d1, d2, sizeof d1) != 0) {
-        ok = differ("state after frame", frames);
+    ok = ok && same_run(out[0], out[2], frames, m[0], m[2]) &&
+         same_run(out[1], out[3], frames, m[1], m[3]);
+    return finish(m[0], m[2], finish(m[1], m[3], ok));
+}
+
+/* The input registers through muhtari__bus_peek: SWCHA ($280), SWCHB
+   ($282) and INPT0-INPT5 ($08-$0D) (docs/hardware/controllers.md). */
+static void peek_inputs(const muhtari *m, uint8_t regs[8])
+{
+    regs[0] = muhtari__bus_peek(m, 0x0280u);
+    regs[1] = muhtari__bus_peek(m, 0x0282u);
+    for (uint16_t n = 0; n < 6u; n++) {
+        regs[2u + n] = muhtari__bus_peek(m, (uint16_t)(0x08u + n));
     }
-    muhtari_destroy(a);
-    muhtari_destroy(b);
-    return ok;
+}
+
+/* Input set between frames is pending, not state: one or more
+   muhtari_set_input calls after frame k leave the digest without the
+   pending copy, and the input registers, unchanged. The next frame applies
+   the last call at its VBLANK start, and it and the frame after equal those
+   of an instance given only the last call. No call can come during a run,
+   since muhtari_run_frame returns first. k is at least 1: the first frame
+   after a fast-boot load starts at the hand-off, which latches nothing. */
+static int input_at_vblank(uint64_t *rng, uint32_t size)
+{
+    struct frame_out one[2];
+    struct frame_out two[2];
+    struct frame_out skip;
+    uint8_t d0[32];
+    uint8_t d1[32];
+    uint8_t r0[8];
+    uint8_t r1[8];
+    muhtari_input in;
+    muhtari *a;
+    muhtari *b;
+    int ok = load_pair(prop_below(rng, pool_count()), rng, &a, &b);
+    uint32_t k = 1u + prop_below(rng, size > 2u ? size - 2u : 1u);
+    uint32_t calls = 1u + prop_below(rng, 3u);
+    for (uint32_t i = 0; i < k; i++) {
+        run(a, WIDTH, &skip);
+        run(b, WIDTH, &skip);
+    }
+    digest(a, 0, d0);
+    peek_inputs(a, r0);
+    for (uint32_t c = 0; c < calls; c++) {
+        random_input(rng, &in);
+        ok = muhtari_set_input(a, &in) == MUHTARI_STATUS_OK && ok;
+    }
+    digest(a, 0, d1);
+    peek_inputs(a, r1);
+    if (memcmp(d0, d1, sizeof d0) != 0 || memcmp(r0, r1, sizeof r0) != 0) {
+        ok = differ("pending input reached the machine", k);
+    }
+    ok = muhtari_set_input(b, &in) == MUHTARI_STATUS_OK && ok;
+    run(a, WIDTH, &one[0]);
+    run(b, WIDTH, &two[0]);
+    const struct muhtari__ports *ports = &a->ports;
+    if (ports->device[0] != in.device[0] || ports->device[1] != in.device[1] ||
+        ports->buttons[0] != in.buttons[0] || ports->buttons[1] != in.buttons[1] ||
+        ports->switches != in.switches) {
+        ok = differ("applied input", k + 1u);
+    }
+    run(a, WIDTH, &one[1]);
+    run(b, WIDTH, &two[1]);
+    return finish(a, b, ok && same_run(one, two, 2u, a, b));
 }
 
 /* Reads BUILT_DIR/name/name.bas.a78 into samples[i]. */
@@ -249,6 +418,9 @@ static const struct {
     int (*fn)(uint64_t *rng, uint32_t size);
 } props[] = {
     {"split_run", split_run},
+    {"peek_pure", peek_pure},
+    {"instances_isolated", instances_isolated},
+    {"input_at_vblank", input_at_vblank},
 };
 
 int main(int argc, char **argv)

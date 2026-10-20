@@ -1,7 +1,8 @@
-/* muhtari-test-images DIR: writes every seed image (tests/fuzz/seeds.c) into
-   DIR, an existing directory, one file per seed under its stable name, and
-   linear-v3-16k-body, that seed's image without its 128-byte header, whose
-   hashes the runner tests compare with --probe's headerless ones, and
+/* muhtari-test-images DIR: writes every seed image (tests/fuzz/seeds.h, from
+   seeds.c; the fuzz preset also builds it with the run target's run_seeds.c)
+   into DIR, an existing directory, one file per seed under its stable name,
+   and linear-v3-16k-body, that seed's image without its 128-byte header,
+   whose hashes the runner tests compare with --probe's headerless ones, and
    magic-only-128, a header and nothing more, the one length at which the
    headerless hashes cover the whole file although the magic is there. The
    images exist only in the build directory; none is tracked. Exit 0 when

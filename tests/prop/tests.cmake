@@ -15,9 +15,12 @@ set_target_properties(muhtari-test-prop PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-prop)
 
-# Fault prevented, split_run: a frame whose result depends on how the host
+# Faults prevented. split_run: a frame whose result depends on how the host
 # splits its calls, queries the instance between them or sizes its buffer.
-foreach(prop IN ITEMS split_run)
+# peek_pure: a peek that changes state. instances_isolated: state shared
+# between instances. input_at_vblank: input that reaches the machine before
+# the next VBLANK start, or a frame that depends on input set and replaced.
+foreach(prop IN ITEMS split_run peek_pure instances_isolated input_at_vblank)
   muhtari_add_test(NAME prop.${prop} COMMAND muhtari-test-prop ${prop} ${MUHTARI_BUILT_DIR}
     LABELS portable prop TIMEOUT 60)  # provisional, phase 3
   set_tests_properties(prop.${prop} PROPERTIES FIXTURES_REQUIRED "built_simple;built_eightysix")
