@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-06-PLAN.md
-last_updated: "2026-10-20T01:38:23.280Z"
+stopped_at: Completed 03-07-PLAN.md
+last_updated: "2026-10-20T02:06:39.602Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-06 complete (the diagnostic pipeline and the dma ROM)
-state_head: e8aa2a0ba86afd80fafd28a4e654efa7b88a0d72
+last_activity_desc: Plan 03-07 complete (the cpu and dli diagnostics)
+state_head: 06368ad999396860bfb8fe40d2a18db96204db17
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 43
+  completed_plans: 44
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 7 of 19
+Plan: 8 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-06 complete: the dma diagnostic's 27 DMA-cost records and the core's statistics equal the values derived beforehand; diag.rebuild rebuilds dma.a78 and both Clark builds; green on every hosted leg (run 39354194917); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-07 complete: the cpu ROM's 4 slow-access records and the dli ROM's 11 DLI, WSYNC, RDY and MSTAT records equal their derived values (parked's derivation corrected to 16 after the first run showed a missed burst); a DLI on zone 0's entry now raises NMI after VBE; green on every hosted leg (run 39356734460); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -102,6 +102,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P04 | 13 min | 3 tasks | 26 files |
 | Phase 03 P05 | 16 min | 3 tasks | 13 files |
 | Phase 03 P06 | 26 min | 3 tasks | 19 files |
+| Phase 03 P07 | 23 min | 3 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -243,6 +244,9 @@ Recent decisions affecting current work:
 - [Phase 03]: Plan 06: the dma diagnostic times one burst per frame on line 100 with DMA off elsewhere after VBE; INTIM = 245 - ceil((15 + D) / 4) ordinary, 245 - ceil((21 + D) / 4) last; all 27 records and 26 statistics rows matched their prior derivations on the first run
 - [Phase 03]: Plan 06: expected.csv and stats.csv accept lo-hi ranges; the overrun rows (INTIM 137-138, cost 420-423, 13 objects) are ranges because the abort's lost cycles depend on the CPU phase at t 28; a record's id is its row's position
 - [Phase 03]: Plan 06: a diagnostic's .a78 is committed after its source, with the manifest pin set to that source commit; diag.rebuild also rebuilds both Clark builds; hosted run 39354194917 green on every leg
+- [Phase 03]: 03-07: the cpu ROM ends each 64-load run with MARIA's WSYNC, so slow loads read 205 and RAM loads 173, for every CPU phase
+- [Phase 03]: 03-07: a DLI on zone 0's entry raises NMI on the second phi1 after VBE's end, t 50 of line 16; broken-windows item 4 fixed
+- [Phase 03]: 03-07: parked's first derivation (20) left out line 18's burst; the doc now derives 16, which the first run read
 
 ### Pending Todos
 
@@ -284,6 +288,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T01:38:23.160Z
-Stopped at: Completed 03-06-PLAN.md
+Last session: 2026-10-20T02:06:39.498Z
+Stopped at: Completed 03-07-PLAN.md
 Resume file: None

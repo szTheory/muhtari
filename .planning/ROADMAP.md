@@ -192,7 +192,7 @@ Plans:
   4. The libretro core's memory descriptors pass rcheevos' own resolver, and the hosted RetroArch job boots a diagnostic ROM with a screenshot equal to the runner's frame.
   5. `ctest -R fuzz.regress.run` and `ctest -L prop` pass on every platform with their nightly runs, the `library` preset regenerates `docs/compatibility.md` in CI, and merging the phase's pull request publishes a release with no manual step.
 
-**Plans**: 6/19 plans executed
+**Plans**: 7/19 plans executed
 
 Plans (one wave each; every plan edits the test inventory, so they run in order):
 - [x] 03-01-PLAN.md — MARIA's DMA burst as a unit: closed-form costs, line RAM, statistics, maria.md derivations
@@ -201,7 +201,7 @@ Plans (one wave each; every plan edits the test inventory, so they run in order)
 - [x] 03-04-PLAN.md — Public API version 3 and `muhtari-run FILE`
 - [x] 03-05-PLAN.md — Frame-chain pins for the linear samples, revision guard, probe PR and CI cost
 - [x] 03-06-PLAN.md — Diagnostic pipeline and the `dma` ROM, rebuild-and-compare with clark.s
-- [ ] 03-07-PLAN.md — The `cpu` and `dli` diagnostics
+- [x] 03-07-PLAN.md — The `cpu` and `dli` diagnostics
 - [ ] 03-08-PLAN.md — SuperGame boards with cart RAM, board ROMs, SuperGame sample pins
 - [ ] 03-09-PLAN.md — The `modes` ROM and `basic.coverage`
 - [ ] 03-10-PLAN.md — Controllers at pin level, the movie parser, `ctest -L input`
@@ -243,5 +243,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
 | 2. The CPU matches the public vectors | 16/16 | Complete    | 2026-10-19 |
-| 3. Games play in RetroArch | 6/19 | In Progress | - |
+| 3. Games play in RetroArch | 7/19 | In Progress | - |
 | 4. Sound | 0/TBD | Not started | - |
