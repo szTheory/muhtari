@@ -1,6 +1,7 @@
 /* Controllers and console switches as a game reads them, one case per run:
 
      muhtari-test-input <case>
+     muhtari-test-input --write-cart FILE [even] [--write-cart FILE [even]]...
 
    Each case builds a 48 KiB linear cartridge in memory from the 6502 bytes
    below, so no image is tracked. Every frame the cartridge waits for MSTAT's
@@ -14,8 +15,10 @@
    game reads is the one the runner takes. Movie line k is set before frame
    k; the first frame after a load starts at the hand-off, so line 1 never
    reaches the machine and every row's input is on line 2 (docs/embedding.md,
-   Input). Exit status: 0 when the case passes, 1 when it fails, 2 on an
-   unknown case. */
+   Input). --write-cart writes the cartridge to FILE instead, the even
+   variant reading only on even frames, for the runner's movie tests. Exit
+   status: 0 when the case passes or the files are written, 1 when it fails,
+   2 on an unknown case. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -140,9 +143,8 @@ static void put(uint16_t addr, uint8_t v)
     image[IMAGES_HEADER + (addr - ROM_BASE)] = v;
 }
 
-/* An instance running the program with settings s, loaded through
-   muhtari_load and its fast boot. NULL on failure. */
-static muhtari *boot(const settings *s)
+/* Builds the cartridge running the program with settings s into image. */
+static void build(const settings *s)
 {
     memset(image, 0, sizeof image);
     images_header(image, 3u, "Input", BODY, 0u);
@@ -157,7 +159,13 @@ static muhtari *boot(const settings *s)
     put(0xFFFBu, (uint8_t)(RTI_AT >> 8));
     put(0xFFFCu, (uint8_t)(ROM_BASE & 0xFFu));
     put(0xFFFDu, (uint8_t)(ROM_BASE >> 8));
+}
 
+/* An instance running the program with settings s, loaded through
+   muhtari_load and its fast boot. NULL on failure. */
+static muhtari *boot(const settings *s)
+{
+    build(s);
     muhtari_config cfg = alloc_config(&counts);
     muhtari *m = NULL;
     if (muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK) {
@@ -575,6 +583,36 @@ static int lag_dma_and_peek(void)
     return check_failures == 0;
 }
 
+/* Writes the cartridge for each --write-cart FILE [even] in argv to FILE.
+   Returns the exit status. */
+static int write_carts(int argc, char **argv)
+{
+    static const settings even = {0x07u, 0x00u, 0x00u, 0x00u, READ_EVEN};
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--write-cart") != 0 || i + 1 >= argc) {
+            fprintf(stderr, "usage: muhtari-test-input --write-cart FILE [even]...\n");
+            return 2;
+        }
+        const char *path = argv[++i];
+        int is_even = i + 1 < argc && strcmp(argv[i + 1], "even") == 0;
+        i += is_even;
+        build(is_even ? &even : &plain);
+        FILE *f = fopen(path, "wb");
+        if (f == NULL || fwrite(image, 1u, sizeof image, f) != sizeof image) {
+            fprintf(stderr, "cannot write %s\n", path);
+            if (f != NULL) {
+                (void)fclose(f);
+            }
+            return 1;
+        }
+        if (fclose(f) != 0) {
+            fprintf(stderr, "cannot write %s\n", path);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     static const struct {
@@ -593,6 +631,9 @@ int main(int argc, char **argv)
         {"lag_even_frames", lag_even_frames},
         {"lag_dma_and_peek", lag_dma_and_peek},
     };
+    if (argc > 1 && strcmp(argv[1], "--write-cart") == 0) {
+        return write_carts(argc, argv);
+    }
     if (argc != 2) {
         fprintf(stderr, "usage: muhtari-test-input <case>\n");
         return 2;

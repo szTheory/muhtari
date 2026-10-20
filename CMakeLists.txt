@@ -148,6 +148,7 @@ add_executable(muhtari-run
   runner/clock.c
   runner/crc32.c
   runner/md5.c
+  runner/movie.c
   runner/png.c
   runner/sha256.c
   runner/stop.c)

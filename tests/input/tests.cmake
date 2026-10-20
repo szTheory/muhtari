@@ -22,3 +22,14 @@ foreach(input_case IN ITEMS directions proline_two_button proline_one_button joy
   muhtari_add_test(NAME input.${input_case} COMMAND muhtari-test-input ${input_case}
     LABELS input portable TIMEOUT 10)
 endforeach()
+
+# The cartridge as files, for the runner's movie tests (tests/runner): the
+# program reading every frame, and the variant reading only on even ones.
+set(input_cart_dir ${PROJECT_BINARY_DIR}/tests/input-carts)
+file(MAKE_DIRECTORY ${input_cart_dir})
+# provisional, phase 3
+muhtari_add_test(NAME input.cart_files
+  COMMAND muhtari-test-input --write-cart ${input_cart_dir}/input.a78
+    --write-cart ${input_cart_dir}/input-even.a78 even
+  LABELS input portable TIMEOUT 10)
+set_tests_properties(input.cart_files PROPERTIES FIXTURES_SETUP input_carts)

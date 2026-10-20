@@ -84,7 +84,21 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
   endfunction()
 
+  # Writes a movie to OUT/name: the header line, the header lines given in
+  # header, then count lines of frame each. Sets movie to its path.
+  function(write_movie name header frame count)
+    set(text "muhtari-movie 1\n${header}")
+    if(count GREATER 0)
+      string(REPEAT "${frame}\n" ${count} lines)
+      string(APPEND text "${lines}")
+    endif()
+    file(WRITE "${OUT}/${name}" "${text}")
+    set(movie "${OUT}/${name}" PARENT_SCOPE)
+  endfunction()
+
   set(usage_line "usage: muhtari-run ")
+  set(prolines "port1 proline\nport2 proline\n")
+  set(released "|......|......|...BB|")
   if(CASE STREQUAL "hash")
     # Fault prevented: the runner's printed hash, the line hosts and CI
     # compare, drifts from the pinned test card or exits non-zero, while the
@@ -284,6 +298,12 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       endif()
     endforeach()
     expect_hashes("" "${DIR}/simple.bas.bin")
+  elseif(CASE STREQUAL "movie.lag")
+    # Fault prevented: the runner miscounts or drops the frames in which the
+    # game read no input. The input cart's even variant reads on even
+    # frames only, so 60 frames hold 30 lag frames.
+    write_movie(lag.txt "${prolines}" "${released}" 60)
+    expect_output("lag_frames 30\n" --frames 60 --movie "${movie}" "${DIR}/input-even.a78")
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
   endif()
@@ -312,6 +332,18 @@ muhtari_add_test(NAME runner.version
   COMMAND ${runner_check} -DCASE=version -DVERSION_FILE=${PROJECT_SOURCE_DIR}/version.txt
     -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner portable TIMEOUT 10)
+
+# Movies replayed on the input cart that muhtari-test-input writes into the
+# build tree (tests/input), each case writing its own movies into OUT.
+set(runner_movie_dir ${PROJECT_BINARY_DIR}/tests/runner-movies)
+file(MAKE_DIRECTORY ${runner_movie_dir})
+foreach(case IN ITEMS lag)
+  muhtari_add_test(NAME runner.movie.${case}
+    COMMAND ${runner_check} -DCASE=movie.${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
+      -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS runner portable TIMEOUT 10) # provisional, phase 3
+  set_tests_properties(runner.movie.${case} PROPERTIES FIXTURES_REQUIRED input_carts)
+endforeach()
 
 # --probe on the images muhtari-test-images writes into the build directory;
 # no image bytes are tracked.

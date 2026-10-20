@@ -444,6 +444,7 @@ frame.sample_renders	built,portable
 fuzz.regress.loader	fuzz,portable
 fuzz.regress.loader.self_test	fuzz,portable
 host.palette	host,portable
+input.cart_files	input,portable
 input.ctlswb_no_swchb_write	input,portable
 input.directions	input,portable
 input.joystick_fire	input,portable
@@ -520,6 +521,7 @@ runner.hashes_file	portable,runner
 runner.load.hash	portable,runner
 runner.load.pal_refused	portable,runner
 runner.md5	portable,runner
+runner.movie.lag	portable,runner
 runner.movie_parse	portable,runner
 runner.png	portable,runner
 runner.probe.2600	portable,runner

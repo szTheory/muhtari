@@ -33,6 +33,7 @@
 #include "crc32.h"
 #include "exit_status.h"
 #include "md5.h"
+#include "movie.h"
 #include "muhtari.h"
 #include "palette.h"
 #include "png.h"
@@ -368,8 +369,16 @@ typedef struct options {
     uint32_t dump_count;
     const char *probe; /* --probe FILE, the whole command line */
     const char *rom;   /* [--rom] FILE, or NULL for no content */
+    const char *movie; /* --movie FILE, or NULL */
     int printed;       /* --help or --version ran; nothing else to do */
 } options;
+
+/* A movie read and checked whole: its header and one input per frame. */
+typedef struct replay {
+    muhtari__movie_header header;
+    muhtari_input *frames;
+    uint32_t count;
+} replay;
 
 static int compare_u32(const void *a, const void *b)
 {
@@ -449,6 +458,11 @@ static int parse_options(int argc, char **argv, options *o)
                 return usage("unexpected argument: give one FILE");
             }
             o->rom = value;
+        } else if (strcmp(arg, "--movie") == 0) {
+            if (value == NULL || strncmp(value, "--", 2u) == 0 || o->movie != NULL) {
+                return usage("--movie needs one FILE");
+            }
+            o->movie = value;
         } else if (strcmp(arg, "--probe") == 0) {
             return usage("--probe takes one file and no other option");
         } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0) {
@@ -483,6 +497,85 @@ static int parse_options(int argc, char **argv, options *o)
     return MUHTARI__EXIT_DONE;
 }
 
+/* Reads the file at path into a new buffer, at most one byte past the
+   movie limit, so the reader refuses a longer file by its size without
+   this reading it whole. Sequential reads only, as read_image. Returns
+   NULL after a message; the caller frees the buffer. */
+static uint8_t *read_movie_file(const char *path, size_t *out_n)
+{
+    const size_t cap = (size_t)MUHTARI__MOVIE_BYTES_MAX + 1u;
+    FILE *f = fopen(path, "rb");
+    if (f == NULL) {
+        fprintf(stderr, "muhtari-run: %s: cannot open\n", path);
+        return NULL;
+    }
+    size_t size = 4096u;
+    size_t n = 0;
+    uint8_t *bytes = (uint8_t *)malloc(size);
+    while (bytes != NULL) {
+        size_t got = fread(bytes + n, 1u, size - n, f);
+        n += got;
+        if (got == 0u || n == cap) {
+            break;
+        }
+        if (n == size) {
+            size_t grown = size * 2u < cap ? size * 2u : cap;
+            uint8_t *more = (uint8_t *)realloc(bytes, grown);
+            if (more == NULL) {
+                free(bytes);
+                bytes = NULL;
+                break;
+            }
+            bytes = more;
+            size = grown;
+        }
+    }
+    int unreadable = ferror(f) != 0;
+    (void)fclose(f);
+    if (bytes == NULL) {
+        fprintf(stderr, "muhtari-run: out of memory\n");
+        return NULL;
+    }
+    if (unreadable) {
+        fprintf(stderr, "muhtari-run: %s: cannot read\n", path);
+        free(bytes);
+        return NULL;
+    }
+    *out_n = n;
+    return bytes;
+}
+
+/* Reads and checks the whole movie at path before any frame runs: one
+   pass counts the frames, the second fills them. Returns the exit status;
+   a malformed movie exits 1 with its line and column. */
+static int read_movie(const char *path, replay *mv)
+{
+    size_t n = 0;
+    uint8_t *bytes = read_movie_file(path, &n);
+    if (bytes == NULL) {
+        return MUHTARI__EXIT_FAILURE;
+    }
+    muhtari__movie_error err;
+    int rc = muhtari__movie_parse(bytes, n, &mv->header, NULL, 0u, &mv->count, &err);
+    if (rc == 0) {
+        /* At most 1,000,000 frames of 24 bytes, so the size fits size_t. */
+        mv->frames = (muhtari_input *)malloc(((size_t)mv->count + 1u) * sizeof *mv->frames);
+        if (mv->frames == NULL) {
+            fprintf(stderr, "muhtari-run: out of memory\n");
+            free(bytes);
+            return MUHTARI__EXIT_FAILURE;
+        }
+        rc = muhtari__movie_parse(bytes, n, &mv->header, mv->frames, mv->count, &mv->count, &err);
+    }
+    free(bytes);
+    if (rc != 0) {
+        fprintf(stderr, "muhtari-run: %s:%lu:%lu: %s, expected %s\n", path, (unsigned long)err.line,
+                (unsigned long)err.column, err.what, err.expected);
+        return MUHTARI__EXIT_FAILURE;
+    }
+    return MUHTARI__EXIT_DONE;
+}
+
 /* Loads the cartridge image at path into m and fast-boots it. A refusal by
    kind, board or region exits 77, a malformed image or any other failure
    1. Returns the exit status. */
@@ -513,7 +606,7 @@ static int load(muhtari *m, const char *path)
 
 /* Runs the frames into heap buffers (a 77,440-byte local would overflow a
    64 KiB stack, as wasm32's is). Returns the exit status. */
-static int run(const options *opt)
+static int run(const options *opt, const replay *mv)
 {
     uint8_t *video = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
     int16_t *audio = (int16_t *)malloc(AUDIO_CAPACITY * sizeof *audio);
@@ -562,6 +655,15 @@ static int run(const options *opt)
         io.video_pitch = WIDTH;
         io.audio = audio;
         io.audio_capacity = AUDIO_CAPACITY;
+        /* Movie line f is the input set before frame f: the core latches
+           it at the VBLANK start that opens the frame (docs/runner.md,
+           Movies). */
+        if (mv != NULL && f <= mv->count &&
+            muhtari_set_input(m, &mv->frames[f - 1u]) != MUHTARI_STATUS_OK) {
+            fprintf(stderr, "muhtari-run: muhtari_set_input failed\n");
+            status = MUHTARI__EXIT_FAILURE;
+            break;
+        }
         uint64_t start_ns = opt->bench ? muhtari__clock_ns() : 0u;
         st = muhtari_run_frame(m, &io);
         if (opt->bench) {
@@ -593,6 +695,17 @@ static int run(const options *opt)
         }
     }
 
+    if (status == MUHTARI__EXIT_DONE && mv != NULL) {
+        muhtari_counters c;
+        memset(&c, 0, sizeof c);
+        c.size = (uint32_t)sizeof c;
+        if (muhtari_get_counters(m, &c) != MUHTARI_STATUS_OK) {
+            fprintf(stderr, "muhtari-run: muhtari_get_counters failed\n");
+            status = MUHTARI__EXIT_FAILURE;
+        } else {
+            printf("lag_frames %llu\n", (unsigned long long)c.lag_frames);
+        }
+    }
     if (status == MUHTARI__EXIT_DONE && opt->bench) {
         char report[512];
         size_t len = muhtari__bench_format(report, sizeof report, samples, timed, total_ns);
@@ -615,8 +728,16 @@ int main(int argc, char **argv)
     if (status == MUHTARI__EXIT_DONE && opt.probe != NULL) {
         status = probe(opt.probe);
     } else if (status == MUHTARI__EXIT_DONE && !opt.printed) {
-        muhtari__stop_install();
-        status = run(&opt);
+        replay mv;
+        memset(&mv, 0, sizeof mv);
+        if (opt.movie != NULL) {
+            status = read_movie(opt.movie, &mv);
+        }
+        if (status == MUHTARI__EXIT_DONE) {
+            muhtari__stop_install();
+            status = run(&opt, opt.movie != NULL ? &mv : NULL);
+        }
+        free(mv.frames);
     }
     free(opt.hash_frames);
     free(opt.dump_frames);
