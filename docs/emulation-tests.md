@@ -217,6 +217,55 @@ evaluated row's status disagrees. A title not yet on `main` is unreleased: when 
 reset its predicate to `title@F=-` and run the recipe in the same commit. Never type a hash by hand.
 
 
+## boot to play
+
+`runner.boot_to_play` plays one game from boot through the real runner: the 7800basic `spacephysics` sample, which
+`built.spacephysics` builds (fixture `built_spacephysics`), fast-booted. `tests/runner/boot_to_play.cmake` writes four
+movies into `build/<preset>/tests/boot-to-play/`, each releasing every control until frame F = 121, the frame after
+the sample's `title@120`, then holding one line for H = 60 frames:
+
+| Run | Held from frame F |
+|-----|-------------------|
+| `none` | nothing |
+| `input` | Up and Left on port 1 |
+| `port2` | Up and Left on port 2 |
+| `mirror` | Up and Right on port 1 |
+
+It runs `muhtari-run` on each with `--hash-frame` on every frame and `--dump-frame` at frames 120, 140, 160 and 180,
+then `muhtari-test-boot-to-play` (`tests/runner/boot_to_play.c`) judges `input` against `none`, decoding the dumps
+with the reader `runner.png` uses (`tests/runner/png_read.c`). It prints `mask <bits>: <details>`, one bit per failed
+predicate:
+
+- bit 0, (a): the first frame whose hash differs from `none`'s lies in [F, F + 1]. The game draws thrust on the frame
+  after the input whatever the start frame, so the bound is one frame, and a latch one frame late fails it.
+- bit 1, (b): pixels differ from `none`'s at frames 140, 160 and 180, and their centroid moves at least 4 px along one
+  axis from 140 to 180.
+- bit 2, (c): the picture is not frozen; the hashes change after frame 160.
+
+(b) and (c) judge a response, so a run with no frame from F on that differs from `none`'s fails (a) alone. The test
+also requires `input`'s centroid to move up and `mirror`'s to move down, which catches swapped or merged left and
+right bits.
+
+**The controls** were found by running the game, never by reading its source (`PROVENANCE.md`, section 3, lists the
+samples as unknown). With each direction and button held alone from frame 121 and frames 150 and 180 viewed: Up thrusts
+and moves the ship right from frame 122; Left and Right turn it every eighth frame, 4 to 11 frames after the press;
+button 2 fires; Down, button 1 and every input on port 2 change nothing. Up and Left together thrust while turning,
+so the ship climbs, and Up and Right is its mirror.
+
+**Negative controls.** Each judges the recorded runs through `tests/cmake/expect_fail.cmake` and must exit 1 with its
+exact output:
+
+| Test | Judged | Output |
+|------|--------|--------|
+| `runner.boot_to_play.no_input` | `none` as the input run | `mask 1` |
+| `runner.boot_to_play.port2` | `port2` | `mask 1` |
+| `runner.boot_to_play.mirrored` | `input` as its own mirror | `sign did not flip` |
+| `runner.boot_to_play.static_mutant` | `input` with its frame 120 dump recoloured and repeated at 140, 160 and 180 | `mask 2` |
+| `runner.boot_to_play.late_mutant` | `input` with its hashes from frame F moved one frame later | `mask 1` |
+
+The mutants transform recorded output and never change the emulator. This test sets input only between frames;
+when the console applies input set between frames is left to the property tests.
+
 ## diag
 
 `diag.*` runs this repository's own diagnostic ROMs, which measure the hardware the way a program on the console

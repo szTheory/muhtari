@@ -68,3 +68,6 @@ function(expect_judge want)
 endfunction()
 
 expect_judge("^mask 0:" play "${OUT}" ${F} ${H} ${L} none input)
+# Up and Left turn the ship's nose up as it thrusts; Up and Right, the
+# mirror, must turn it down.
+expect_judge("^sign flipped:" mirrored "${OUT}" ${F} ${H} none input mirror up)

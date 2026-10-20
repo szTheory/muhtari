@@ -610,6 +610,27 @@ muhtari_add_test(NAME runner.boot_to_play
   LABELS runner portable TIMEOUT 60) # provisional, phase 3
 set_tests_properties(runner.boot_to_play PROPERTIES
   FIXTURES_REQUIRED built_spacephysics FIXTURES_SETUP boot_to_play)
+# The negative controls judge runner.boot_to_play's recorded runs, so each
+# must fail with exit 1 and its exact mask or message. The two mutants
+# transform the recorded output and never change the emulator. Fault
+# prevented: a judge that passes a run with no response, the input on the
+# wrong port, a direction whose mirror moves the same way, a picture that
+# never moves, or a response one frame late.
+function(runner_play_control name regex)
+  set(cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-test-boot-to-play> ${ARGN})
+  string(REPLACE ";" "$<SEMICOLON>" cmd "${cmd}")
+  muhtari_add_test(NAME runner.boot_to_play.${name}
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${cmd}" -DCODE=1 "-DREGEX=${regex}"
+      -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+    LABELS runner portable TIMEOUT 10) # provisional, phase 3
+  set_tests_properties(runner.boot_to_play.${name} PROPERTIES FIXTURES_REQUIRED boot_to_play)
+endfunction()
+set(runner_play ${runner_play_dir} ${runner_play_f} ${runner_play_h})
+runner_play_control(no_input "^mask 1:" play ${runner_play} ${runner_play_l} none none)
+runner_play_control(port2 "^mask 1:" play ${runner_play} ${runner_play_l} none port2)
+runner_play_control(mirrored "^sign did not flip:" mirrored ${runner_play} none input input up)
+runner_play_control(static_mutant "^mask 2:" static ${runner_play} ${runner_play_l} none input)
+runner_play_control(late_mutant "^mask 1:" late ${runner_play} ${runner_play_l} none input)
 
 # The device, region and boot options.
 foreach(case IN ITEMS usage.port usage.region_pal usage.boot_bios_no_file)
