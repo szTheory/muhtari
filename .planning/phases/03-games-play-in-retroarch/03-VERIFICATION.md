@@ -1,196 +1,276 @@
 ---
 phase: 03-games-play-in-retroarch
-verified: 2026-10-20T08:05:00Z
-status: gaps_found
-score: 129/129 truths verified (5 roadmap criteria, 124 plan truths); 68/69 prohibitions held, 1 violated
-covered_files:
-  - ".github/workflows/ci.yml"
-  - ".github/workflows/nightly.yml"
-  - ".gitignore"
-  - ".planning/phases/03-games-play-in-retroarch/03-01-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-01-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-02-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-02-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-03-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-03-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-04-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-04-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-05-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-05-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-06-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-06-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-07-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-07-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-08-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-08-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-09-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-09-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-10-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-10-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-11-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-11-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-12-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-12-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-13-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-13-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-14-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-14-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-15-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-15-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-16-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-16-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-17-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-17-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-18-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-18-SUMMARY.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-19-PLAN.md"
-  - ".planning/phases/03-games-play-in-retroarch/03-19-SUMMARY.md"
-  - "CMakeLists.txt"
-  - "CMakePresets.json"
-  - "README.md"
-  - "docs/compatibility.md"
-  - "docs/embedding.md"
-  - "docs/emulation-tests.md"
-  - "docs/hardware/bus.md"
-  - "docs/hardware/cartridge.md"
-  - "docs/hardware/controllers.md"
-  - "docs/hardware/maria.md"
-  - "docs/hardware/riot.md"
-  - "docs/hardware/sally.md"
-  - "docs/libretro.md"
-  - "docs/runner.md"
-  - "docs/testing.md"
-  - "host/status_text.c"
-  - "include/muhtari.h"
-  - "libretro/CMakeLists.txt"
-  - "libretro/libretro.c"
-  - "libretro/muhtari_libretro.info.in"
-  - "pins.txt"
-  - "runner/exit_status.h"
-  - "runner/main.c"
-  - "runner/movie.c"
-  - "runner/movie.h"
-  - "src/boot.c"
-  - "src/bus.c"
-  - "src/cart.c"
-  - "src/cpu.c"
-  - "src/frame.c"
-  - "src/instance.c"
-  - "src/internal.h"
-  - "src/maria.c"
-  - "src/ports.c"
-  - "src/riot.c"
-  - "src/tia.c"
-  - "tests/abi/tests.cmake"
-  - "tests/api/v2.c"
-  - "tests/api/v3.c"
-  - "tests/boot/test_boot.c"
-  - "tests/boot/tests.cmake"
-  - "tests/built/chain.c"
-  - "tests/built/coverage.c"
-  - "tests/built/coverage.txt"
-  - "tests/built/expected.txt"
-  - "tests/built/frames.cmake"
-  - "tests/built/openbios.cmake"
-  - "tests/built/tests.cmake"
-  - "tests/bus/test_bus.c"
-  - "tests/cart/test_cart.c"
-  - "tests/cart/tests.cmake"
-  - "tests/cart/write_images.c"
-  - "tests/cmake/ci_required.cmake"
-  - "tests/cmake/compat_ratchet.cmake"
-  - "tests/cmake/firmware_scan.cmake"
-  - "tests/cmake/info_claims.cmake"
-  - "tests/cmake/perf_compare.cmake"
-  - "tests/compat/allow.txt"
-  - "tests/compat/ledger.csv"
-  - "tests/compat/library.cmake"
-  - "tests/compat/pin.cmake"
-  - "tests/compat/predicate.c"
-  - "tests/compat/targets.cmake"
-  - "tests/compat/tests.cmake"
-  - "tests/core/test_core.c"
-  - "tests/core/tests.cmake"
-  - "tests/diag/assemble.cmake"
-  - "tests/diag/bank6.a78"
-  - "tests/diag/bank6.cfg"
-  - "tests/diag/bank6.s"
-  - "tests/diag/cpu.a78"
-  - "tests/diag/cpu.cfg"
-  - "tests/diag/cpu.s"
-  - "tests/diag/dli.a78"
-  - "tests/diag/dli.cfg"
-  - "tests/diag/dli.s"
-  - "tests/diag/dma.a78"
-  - "tests/diag/dma.cfg"
-  - "tests/diag/dma.s"
-  - "tests/diag/driver.c"
-  - "tests/diag/expected.csv"
-  - "tests/diag/lib.s"
-  - "tests/diag/linear16.a78"
-  - "tests/diag/linear16.cfg"
-  - "tests/diag/linear16.s"
-  - "tests/diag/modes.a78"
-  - "tests/diag/modes.cfg"
-  - "tests/diag/modes.s"
-  - "tests/diag/sg144.a78"
-  - "tests/diag/sg144.cfg"
-  - "tests/diag/sg144.s"
-  - "tests/diag/stats.csv"
-  - "tests/diag/tests.cmake"
-  - "tests/frame/test_frame.c"
-  - "tests/frame/tests.cmake"
-  - "tests/fuzz/loader.c"
-  - "tests/fuzz/run.c"
-  - "tests/fuzz/run_cart.h"
-  - "tests/fuzz/run_seeds.c"
-  - "tests/fuzz/tests.cmake"
-  - "tests/header/header.c"
-  - "tests/header/header.cpp"
-  - "tests/hygiene/tests.cmake"
-  - "tests/input/test_input.c"
-  - "tests/input/tests.cmake"
-  - "tests/inventory/ci.txt"
-  - "tests/inventory/fuzz.txt"
-  - "tests/inventory/library.txt"
-  - "tests/inventory/nofp.txt"
-  - "tests/inventory/wasm32.txt"
-  - "tests/libretro/host.c"
-  - "tests/libretro/rcheevos.c"
-  - "tests/libretro/tests.cmake"
-  - "tests/maria/test_maria.c"
-  - "tests/maria/tests.cmake"
-  - "tests/perf/tests.cmake"
-  - "tests/policy/tests.cmake"
-  - "tests/prop.h"
-  - "tests/prop/test_prop.c"
-  - "tests/prop/tests.cmake"
-  - "tests/release/firmware.txt"
-  - "tests/retroarch/run_retroarch.cmake"
-  - "tests/riot/test_riot.c"
-  - "tests/roms/manifest.txt"
-  - "tests/runner/boot_to_play.c"
-  - "tests/runner/boot_to_play.cmake"
-  - "tests/runner/png_read.c"
-  - "tests/runner/png_read.h"
-  - "tests/runner/test_movie.c"
-  - "tests/runner/test_png.c"
-  - "tests/runner/tests.cmake"
-  - "tests/tests.cmake"
-  - "tools/compat_doc.cmake"
-covered_digest: "v3:sha256:8c5cdcaba22a87d3448806a9466ef0785dadd0c9a533c1ec088c3da955563721"
+verified: 2026-10-20T17:22:24Z
+status: passed
+score: 129/129 truths verified (5 roadmap criteria, 124 plan truths); 69/69 prohibitions held
+covered_files: [
+  ".github/workflows/ci.yml",
+  ".github/workflows/nightly.yml",
+  ".gitignore",
+  ".planning/phases/03-games-play-in-retroarch/03-01-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-01-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-02-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-02-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-03-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-03-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-04-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-04-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-05-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-05-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-06-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-06-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-07-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-07-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-08-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-08-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-09-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-09-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-10-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-10-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-11-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-11-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-12-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-12-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-13-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-13-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-14-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-14-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-15-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-15-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-16-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-16-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-17-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-17-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-18-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-18-SUMMARY.md",
+  ".planning/phases/03-games-play-in-retroarch/03-19-PLAN.md",
+  ".planning/phases/03-games-play-in-retroarch/03-19-SUMMARY.md",
+  "CMakeLists.txt",
+  "CMakePresets.json",
+  "README.md",
+  "docs/compatibility.md",
+  "docs/embedding.md",
+  "docs/emulation-tests.md",
+  "docs/hardware/bus.md",
+  "docs/hardware/cartridge.md",
+  "docs/hardware/controllers.md",
+  "docs/hardware/maria.md",
+  "docs/hardware/riot.md",
+  "docs/hardware/sally.md",
+  "docs/libretro.md",
+  "docs/runner.md",
+  "docs/testing.md",
+  "host/status_text.c",
+  "include/muhtari.h",
+  "libretro/CMakeLists.txt",
+  "libretro/libretro.c",
+  "libretro/muhtari_libretro.info.in",
+  "pins.txt",
+  "runner/exit_status.h",
+  "runner/main.c",
+  "runner/movie.c",
+  "runner/movie.h",
+  "src/boot.c",
+  "src/bus.c",
+  "src/cart.c",
+  "src/cpu.c",
+  "src/frame.c",
+  "src/instance.c",
+  "src/internal.h",
+  "src/maria.c",
+  "src/ports.c",
+  "src/riot.c",
+  "src/tia.c",
+  "tests/abi/tests.cmake",
+  "tests/api/v2.c",
+  "tests/api/v3.c",
+  "tests/boot/test_boot.c",
+  "tests/boot/tests.cmake",
+  "tests/built/chain.c",
+  "tests/built/coverage.c",
+  "tests/built/coverage.txt",
+  "tests/built/expected.txt",
+  "tests/built/frames.cmake",
+  "tests/built/openbios.cmake",
+  "tests/built/tests.cmake",
+  "tests/bus/test_bus.c",
+  "tests/cart/test_cart.c",
+  "tests/cart/tests.cmake",
+  "tests/cart/write_images.c",
+  "tests/cmake/ci_required.cmake",
+  "tests/cmake/compat_ratchet.cmake",
+  "tests/cmake/firmware_scan.cmake",
+  "tests/cmake/info_claims.cmake",
+  "tests/cmake/perf_compare.cmake",
+  "tests/compat/allow.txt",
+  "tests/compat/ledger.csv",
+  "tests/compat/library.cmake",
+  "tests/compat/pin.cmake",
+  "tests/compat/predicate.c",
+  "tests/compat/targets.cmake",
+  "tests/compat/tests.cmake",
+  "tests/core/test_core.c",
+  "tests/core/tests.cmake",
+  "tests/diag/assemble.cmake",
+  "tests/diag/bank6.a78",
+  "tests/diag/bank6.cfg",
+  "tests/diag/bank6.s",
+  "tests/diag/cpu.a78",
+  "tests/diag/cpu.cfg",
+  "tests/diag/cpu.s",
+  "tests/diag/dli.a78",
+  "tests/diag/dli.cfg",
+  "tests/diag/dli.s",
+  "tests/diag/dma.a78",
+  "tests/diag/dma.cfg",
+  "tests/diag/dma.s",
+  "tests/diag/driver.c",
+  "tests/diag/expected.csv",
+  "tests/diag/lib.s",
+  "tests/diag/linear16.a78",
+  "tests/diag/linear16.cfg",
+  "tests/diag/linear16.s",
+  "tests/diag/modes.a78",
+  "tests/diag/modes.cfg",
+  "tests/diag/modes.s",
+  "tests/diag/sg144.a78",
+  "tests/diag/sg144.cfg",
+  "tests/diag/sg144.s",
+  "tests/diag/stats.csv",
+  "tests/diag/tests.cmake",
+  "tests/frame/test_frame.c",
+  "tests/frame/tests.cmake",
+  "tests/fuzz/loader.c",
+  "tests/fuzz/run.c",
+  "tests/fuzz/run_cart.h",
+  "tests/fuzz/run_seeds.c",
+  "tests/fuzz/tests.cmake",
+  "tests/header/header.c",
+  "tests/header/header.cpp",
+  "tests/hygiene/tests.cmake",
+  "tests/input/test_input.c",
+  "tests/input/tests.cmake",
+  "tests/inventory/ci.txt",
+  "tests/inventory/fuzz.txt",
+  "tests/inventory/library.txt",
+  "tests/inventory/nofp.txt",
+  "tests/inventory/wasm32.txt",
+  "tests/libretro/bios.c",
+  "tests/libretro/host.c",
+  "tests/libretro/rcheevos.c",
+  "tests/libretro/tests.cmake",
+  "tests/maria/test_maria.c",
+  "tests/maria/tests.cmake",
+  "tests/perf/tests.cmake",
+  "tests/policy/tests.cmake",
+  "tests/prop.h",
+  "tests/prop/test_prop.c",
+  "tests/prop/tests.cmake",
+  "tests/release/firmware.txt",
+  "tests/retroarch/run_retroarch.cmake",
+  "tests/riot/test_riot.c",
+  "tests/roms/manifest.txt",
+  "tests/runner/boot_to_play.c",
+  "tests/runner/boot_to_play.cmake",
+  "tests/runner/png_read.c",
+  "tests/runner/png_read.h",
+  "tests/runner/test_movie.c",
+  "tests/runner/test_png.c",
+  "tests/runner/tests.cmake",
+  "tests/tests.cmake",
+  "tools/compat_doc.cmake"
+]
+covered_digest: "v3:sha256:b60867aad94a42fe3ec732832f7d3aa7804be2f2ac9635b0bb2e090337e4cdba"
 behavior_unverified: 0
 overrides_applied: 0
-gaps:
-  - truth: "Prohibition (plans 03-01, 03-04, 03-19 and the CLAUDE.md Style rule): MUST NOT put planning IDs in code or comments"
-    status: failed
-    reason: "src/ports.c:59 reads 'a whole frame sees one input (DEC.25).' DEC.25 is a decision number from .planning/preparation/DECISIONS.md, added in this phase by fb79feb (plan 03-04). No automated check caught it, though plan 03-01 marks this prohibition verification: automated. The phase goal is not affected; this is a one-line comment fix, already open as review finding WR-05."
-    artifacts:
-      - path: "src/ports.c"
-        issue: "Line 59 cites the planning ID DEC.25 in place of a behavioural source"
-    missing:
-      - "Replace '(DEC.25)' with the behavioural source, e.g. '(docs/embedding.md, Input)'. Fixing WR-05 in the code-review fix round closes this gap, and no new plan is needed"
+human_verification: []
+re_verification:
+  previous_status: gaps_found
+  previous_score: 129/129
+  gaps_closed:
+    - "WR-05: source comment now cites the embedding guide instead of a planning ID"
+  gaps_remaining: []
+  regressions: []
+decision_coverage:
+  honored: 27
+  total: 27
+  not_honored: []
 ---
+
+# Phase 3: Games play in RetroArch — Re-verification
+
+**Status:** passed
+
+**Score:** 129/129 truths verified; 69/69 prohibitions held; 0 behavior-unverified.
+
+**Verified:** 2026-10-20T17:22:24Z
+
+The previous verification contract is retained. Its sole gap, WR-05, is closed: `src/ports.c:59` now cites `docs/embedding.md, Input`. The implementation, regression wiring and source changes since the previous verification were inspected. Previously passed truths received regression checks; no additional audit or gap round was opened.
+
+## Current evidence
+
+[Hosted CI run 39460962750](https://github.com/szTheory/muhtari/actions/runs/39460962750) completed successfully on source `24bc0816588204fb11095e312e1330add583f77e`. The following commands ran during this re-verification unless attributed explicitly to the orchestrator.
+
+| Check | Command | Exit and result |
+|---|---|---|
+| Hosted source evidence | `gh run view 39460962750 -R szTheory/muhtari --json status,conclusion,headSha,url` | 0; completed, success, source SHA above |
+| Source identity | `git diff --exit-code 24bc081 HEAD -- . ':!.planning'` | 0; only planning documentation differs |
+| Platform and integration jobs | `gh run view 39460962750 -R szTheory/muhtari --json jobs` | 0; all six builds, ASan, be32, nofp, hygiene, library, hash-equality, RetroArch and CI required succeed; manual-run title check skipped |
+| RetroArch and ledger execution | Same job query, including step conclusions | 0; diagnostic boot, screenshot equality, comparison negative control, ledger judgement and test-completeness steps succeed |
+| Full local workflow, supplied fresh by orchestrator | `node <gsd-tools> run-with-timeout 4 -- cmake --workflow --preset ci` | 0; 588/588 tests plus 6/6 release checks; no later source edits |
+| BIOS fallback, I/O/allocation/path faults and retained pixels | `ctest --test-dir build/ci --output-on-failure -R '^libretro.bios_failures$'` | 0; 1/1 |
+| Real BIOS rejection and video pacing | `ctest --test-dir build/ci --output-on-failure -R '^libretro.host.bios$'` | 0; 3/3 including fixtures |
+| Hash-matched board geometry | `ctest --test-dir build/ci --output-on-failure -R '^cart.probe.accepted$'` | 0; 1/1 |
+| Partial-frame audio contract | `ctest --test-dir build/ci --output-on-failure -R '^frame.first_frame_partial$'` | 0; 1/1 |
+| Cartridge RAM span | `ctest --test-dir build/ci --output-on-failure -R '^core.get_memory.cart_ram$'` | 0; 1/1 |
+| Input-latch invariant | `ctest --test-dir build/ci --output-on-failure -R '^prop.input_at_vblank$'` | 0; 3/3 including fixtures |
+| DLI queue invariant | `ctest --test-dir build/ci --output-on-failure -R '^frame.dli_queued$'` | 0; 1/1 |
+| Failed-load rollback | `ctest --test-dir build/ci --output-on-failure -R '^core.load.keeps_previous$'` | 0; 1/1 |
+| Hand-off ordering | `ctest --test-dir build/ci --output-on-failure -R '^bios.k_first_fetch$'` | 0; 1/1 |
+| Artifacts and key links | `node <gsd-tools> query verify.artifacts PLAN` and `query verify.key-links PLAN`, each of all 19 plans | 52/53 literal artifact patterns; 39/39 links, all link commands exit 0. Plan 03-03 artifact query exits 1 solely for lowercase `dli_queued`; uppercase queue flags and the passing named test prove the implementation, as in the initial verification |
+| Decision coverage | `node <gsd-tools> query check.decision-coverage-verify .planning/phases/03-games-play-in-retroarch .planning/phases/03-games-play-in-retroarch/03-CONTEXT.md` | 0; 27/27 honored |
+| Diff hygiene | `git diff --check` | 0 |
+
+The earlier mistaken `^cart.accepted$` selector reported no tests; it was not accepted as evidence. The corrected `^cart.probe.accepted$` command above ran and passed the intended regression.
+
+## Fix closure
+
+| Finding | Status | Source and behavioral evidence |
+|---|---|---|
+| WR-01 | VERIFIED | `src/cart.c` applies `cart_fits` to hash-matched headerless images; `tests/cart/test_cart.c` checks both sides of geometry boundaries; `cart.probe.accepted` passes |
+| WR-02 | VERIFIED | Header comments now describe the maximum audio count and memory lifetime through the next load; `frame.first_frame_partial` and `core.get_memory.cart_ram` pass; wording agrees with frame and loader implementation |
+| WR-03 | VERIFIED | Failed runs report once, call video with retained pixels and emit no audio; real BIOS-rejection host regression passes, including Restart and absent video callback |
+| WR-04 | VERIFIED | BIOS lookup tries subsequent unusable candidates, checks path truncation/read errors, refuses allocation failure and logs the usable candidate; deterministic fault regression and real BIOS host regression pass |
+| WR-05 | VERIFIED | Comment cites the embedding guide. Source/docs/test scan has no planning-ID or unresolved debt-marker match |
+| CR-01 | VERIFIED | Converted pixels initialize to black; failures present actual retained pixels before returning. The real adapter is tested with duplication support disabled, before the first successful frame and after a nonblack frame; byte comparisons pass |
+
+## Goal, wiring and data flow
+
+All five roadmap criteria remain VERIFIED within the initial contract, including its documented title-predicate fallbacks. GAME-01 through GAME-06 remain satisfied; no requirement is orphaned. MARIA reads mapped cartridge/BIOS bytes, renders line RAM into caller rows, and the runner hashes those rows. Libretro converts the same rows and passes actual pixels to its callback. The achievement resolver consumes the adapter's real descriptors. Hosted screenshot and hash-equality steps confirm those connections behaviorally.
+
+The prior passing 124 plan truths and 68 unaffected prohibitions remain verified after regression checks; WR-05 restores the 69th prohibition. Judgment checks are performed by the agent under AGENTS rule 6, with no owner UAT. No prohibited emulator source was opened. No deferred human-check block or shell probe was declared. The phase's probe was the closed, unmerged probe pull request, as recorded below.
+
+Nightly evidence remains [run 39383824826](https://github.com/szTheory/muhtari/actions/runs/39383824826), independently reconfirmed with `gh run view 39383824826 -R szTheory/muhtari --json status,conclusion,headSha,url,jobs` (exit 0): prop and fuzz succeed on `b727c42`. This is historical nightly evidence, not a claim of a nightly run on the final fix SHA. Current source is covered by the fresh local workflow and hosted CI above.
+
+## Advisory (New Scope, Unevidenced)
+
+None. No new blocking finding or regression was identified. Five existing Info findings remain seeds in `03-REVIEW-DISPOSITION.md`. The 18.4% gate-code budget warning remains recorded in SEED-007 for ship, as the established phase contract directs.
+
+## Human Verification Required
+
+None. The merge that publishes the release is confirmed at ship under AGENTS rule 9. This report certifies pre-ship implementation and evidence; it does not claim this phase has merged or published.
+
+## Gaps Summary
+
+WR-05 is closed; no gaps remain. Both permitted review fix rounds are complete and the final review is clean. Ready for the ship step. No source, state, requirements or other phase artifact was edited; no commit was made.
+
+---
+
+## Historical initial verification — superseded verdict
+
+The following initial report is preserved for its detailed contract and evidence. Its timestamp, `gaps_found` verdict, open WR-01–WR-05 descriptions and old source/run identifiers describe the earlier checkout only. The re-verification above supersedes them.
+
+
 
 # Phase 3: Games play in RetroArch Verification Report
 
