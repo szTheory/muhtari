@@ -52,19 +52,26 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
     }
 
     if (m->loaded) {
+        /* MARIA writes each pixel into the caller's row as the beam plays
+           it (docs/hardware/maria.md, Rendering). A full frame scans every
+           row; the first frame after a load starts mid-frame, and the rows
+           the beam has not scanned since the load are written $00. */
+        if (io->video != NULL &&
+            m->frame_deadline - m->frame_start != MUHTARI__TICKS_PER_FRAME_NTSC) {
+            for (uint32_t y = 0; y < MUHTARI__HEIGHT_NTSC; y++) {
+                memset(io->video + (size_t)y * io->video_pitch, 0, MUHTARI__WIDTH);
+            }
+        }
+        m->maria.rows = io->video;
+        m->maria.pitch = io->video_pitch;
         run_to_deadline(m);
+        m->maria.rows = NULL;
+        m->maria.pitch = 0u;
         m->frame_start = m->frame_deadline;
         m->frame_deadline += MUHTARI__TICKS_PER_FRAME_NTSC;
-    }
-    if (io->video != NULL) {
+    } else if (io->video != NULL) {
         for (uint32_t y = 0; y < MUHTARI__HEIGHT_NTSC; y++) {
             uint8_t *row = io->video + (size_t)y * io->video_pitch;
-            if (m->loaded) {
-                /* MARIA renders no row yet, and every row it has not
-                   rendered is written $00. */
-                memset(row, 0, MUHTARI__WIDTH);
-                continue;
-            }
             for (uint32_t x = 0; x < MUHTARI__WIDTH; x++) {
                 row[x] = muhtari__testcard_pixel(x, y, MUHTARI__HEIGHT_NTSC);
             }

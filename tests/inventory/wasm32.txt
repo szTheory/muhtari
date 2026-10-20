@@ -349,6 +349,7 @@ frame.hold_split_wsync_across_dma	frame,portable
 frame.jam_ends	frame,portable
 frame.maria_wsync_releases_at_lrc	frame,portable
 frame.mstat_edges	frame,portable
+frame.sample_renders	built,portable
 fuzz.regress.loader	fuzz,portable
 fuzz.regress.loader.self_test	fuzz,portable
 host.palette	host,portable

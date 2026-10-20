@@ -393,6 +393,87 @@ static const uint8_t maria_event_t[EV_COUNT] = {0u, MARIA_DMA_REQ_T, 42u, 43u};
 #define MARIA_VBE_LINE 16u
 #define MARIA_VBLANK_LINE 258u
 
+/* The picture (A7800-MARIA section 3.2, section 3.3 and section 6): pixel
+   x of raster n, 0-319, plays at t 135 + x of line n from the line-RAM
+   buffer line n - 1's burst filled, two pixels per cell. Frame rows 0-241
+   are rasters 16-257. Rasters 16 and 17 show only BACKGRND, because no
+   burst runs before line 17, so their buffers stay clear. Colour kill,
+   CTRL bit 7, masks every output byte with $0F. */
+#define MARIA_FIRST_PIXEL_T 135u
+#define MARIA_PIXELS 320u
+#define MARIA_FIRST_RASTER 16u
+#define MARIA_BACKGRND 0x00u
+#define MARIA_CTRL_KILL 0x80u
+#define MARIA_KILL_MASK 0x0Fu
+
+/* The pixels of a line played by tick t of it: those at t 135 to t. */
+static uint32_t pixels_by(uint32_t t)
+{
+    if (t < MARIA_FIRST_PIXEL_T) {
+        return 0u;
+    }
+    t = t - MARIA_FIRST_PIXEL_T + 1u;
+    return t < MARIA_PIXELS ? t : MARIA_PIXELS;
+}
+
+/* The register a cell's pixel shows under read mode rm, right being the
+   cell's second 320-pixel pixel: 0, BACKGRND, for colour 00, else palette
+   p colour c at 4p + c (A7800-MARIA section 3.2). A cell holds P2 P1 P0 in
+   bits 4-2 and its pair in bits 1-0. Read modes 0 and 1: the pair, for
+   both pixels. Read mode 2 (320B, 320D): palette P2 0 0, colour bit 1 then
+   bit 3 on the left and bit 0 then bit 2 on the right. Read mode 3 (320A,
+   320C): the whole palette, colour bit 1 then 0 on the left and bit 0 then
+   0 on the right. */
+static uint32_t pixel_reg(uint8_t cell, uint32_t rm, uint32_t right)
+{
+    uint32_t pal = (uint32_t)(cell >> 2) & 7u;
+    uint32_t c = cell & 3u;
+    if (rm == 2u) {
+        pal &= 4u;
+        c = right ? ((cell & 1u) << 1) | ((cell >> 2) & 1u)
+                  : (((uint32_t)cell >> 1 & 1u) << 1) | ((cell >> 3) & 1u);
+    } else if (rm == 3u) {
+        c = (right ? (cell & 1u) : ((uint32_t)cell >> 1 & 1u)) << 1;
+    }
+    return c == 0u ? MARIA_BACKGRND : pal * 4u + c;
+}
+
+/* Plays raster line's pixels from px up to x_end into the caller's row,
+   with the registers as they stand. With no caller rows, or a raster
+   outside the frame, nothing is written, but px moves on all the same, so
+   a frame with no video leaves MARIA's state as a frame with video does. */
+static void render(muhtari *m, uint32_t line, uint32_t x_end)
+{
+    struct muhtari__maria *ma = &m->maria;
+    if (x_end <= ma->px) {
+        return;
+    }
+    if (ma->rows != NULL && line >= MARIA_FIRST_RASTER &&
+        line < MARIA_FIRST_RASTER + MUHTARI__HEIGHT_NTSC) {
+        uint8_t *row = ma->rows + (size_t)(line - MARIA_FIRST_RASTER) * ma->pitch;
+        const uint8_t *cells = ma->line_ram[(ma->write_buf ^ 1u) & 1u];
+        uint8_t ctrl = ma->reg[MARIA_CTRL];
+        uint32_t rm = ctrl & MARIA_CTRL_RM;
+        uint8_t mask = (ctrl & MARIA_CTRL_KILL) != 0u ? MARIA_KILL_MASK : 0xFFu;
+        for (uint32_t x = ma->px; x < x_end; x++) {
+            row[x] = (uint8_t)(ma->reg[pixel_reg(cells[x >> 1], rm, x & 1u)] & mask);
+        }
+    }
+    ma->px = (uint16_t)x_end;
+}
+
+/* Renders up to tick at, a register write's data tick: every pixel played
+   at or before it shows the old value, later ones the new (A7800-MARIA
+   section 5). */
+static void render_to(muhtari *m, uint64_t at)
+{
+    uint64_t beam = at - m->maria.origin;
+    uint64_t line = beam / MARIA_LINE_TICKS;
+    if (at >= m->maria.origin && line < MUHTARI__LINES_NTSC) {
+        render(m, (uint32_t)line, pixels_by((uint32_t)(beam % MARIA_LINE_TICKS)));
+    }
+}
+
 /* Whether the event happens on line (A7800-MARIA section 4.1). */
 static int event_on(uint32_t line, uint32_t ev)
 {
@@ -433,6 +514,7 @@ void muhtari__maria_start(muhtari *m)
                  (line == MARIA_VBE_LINE && t < maria_event_t[EV_MSTAT]) ||
                  (line == MARIA_VBLANK_LINE && t >= maria_event_t[EV_MSTAT]);
     ma->mstat = vblank ? MARIA_VBLANK : 0u;
+    ma->px = (uint16_t)pixels_by(t);
     arm_after(ma, line, t);
 }
 
@@ -474,6 +556,11 @@ void muhtari__maria_event(muhtari *m)
     uint64_t tick = muhtari__maria_next_event(m);
     uint32_t ev = ma->event_index;
     uint32_t line = ma->event_line;
+    if (ev == EV_LRC) {
+        /* The last pixel of the previous raster plays at this t 0. */
+        render(m, line - 1u, MARIA_PIXELS);
+        ma->px = 0u;
+    }
     if (line == MUHTARI__LINES_NTSC) {
         ma->origin += MUHTARI__TICKS_PER_FRAME_NTSC;
         line = 0u;
@@ -516,7 +603,8 @@ uint8_t muhtari__maria_read(const muhtari *m, uint16_t addr)
 }
 
 /* RDY is MARIA's WSYNC wire-ANDed with the TIA's, so the later release
-   wins (docs/hardware/bus.md, RDY). */
+   wins (docs/hardware/bus.md, RDY). Any other register write first
+   renders the span played up to its data tick (A7800-MARIA section 10). */
 void muhtari__maria_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick)
 {
     struct muhtari__maria *ma = &m->maria;
@@ -532,5 +620,6 @@ void muhtari__maria_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_ti
     if (r == MARIA_MSTAT || r == MARIA_OFFSET) {
         return;
     }
+    render_to(m, data_tick);
     ma->reg[r] = v;
 }

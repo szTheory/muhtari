@@ -35,3 +35,11 @@ muhtari_add_test(NAME built.samples.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${built_cmd}" -DCODE=1
     "-DREGEX=simple: .a78 SHA-256 drift" -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
   LABELS built portable TIMEOUT 4)  # 2 x 1.68 s, Windows arm64, slowest of 13 runs, run 39197737154
+
+# The simple sample through the internal load and the fast-boot hand-off:
+# 120 frames, two instances in step, and frame 120 a real picture
+# (tests/frame/test_frame.c).
+muhtari_add_test(NAME frame.sample_renders
+  COMMAND muhtari-test-frame sample_renders ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78
+  LABELS built portable TIMEOUT 20)  # provisional, phase 3
+set_tests_properties(frame.sample_renders PROPERTIES FIXTURES_REQUIRED built_samples)

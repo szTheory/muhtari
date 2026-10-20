@@ -1,6 +1,7 @@
 /* The run loop through the shipped archive, one case per run:
 
      muhtari-test-frame <case>
+     muhtari-test-frame sample_renders <file>
 
    Each case builds a 48 KiB linear cartridge in memory from a few bytes of
    its own 6502 code, so no image is tracked, loads it through the internal
@@ -10,12 +11,14 @@
    258, t 42. Exit status: 0 when the case passes, 1 when it fails, 2 on a
    usage error or an unknown case. */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../alloc.h"
 #include "../cart/images.h"
 #include "../check.h"
 #include "internal.h"
+#include "sha256.h"
 
 #define LINE 454u
 #define VBLANK_START (258u * LINE + 42u)
@@ -32,26 +35,16 @@ static int16_t audio[2u * MUHTARI__MAX_AUDIO_SAMPLES];
 
 /* An instance running code from $4000 after the fast-boot hand-off: the
    body is zero but for the code and the reset vector. NULL on failure. */
+static muhtari *boot_image(const uint8_t *img, size_t n);
+
 static muhtari *boot(const uint8_t *code, size_t n)
 {
-    muhtari_config cfg = alloc_config(&counts);
-    muhtari *m = NULL;
     memset(image, 0, sizeof image);
     images_header(image, 3u, "Frame", BODY, 0u);
     memcpy(image + IMAGES_HEADER, code, n);
     image[IMAGES_HEADER + 0xFFFCu - ROM_BASE] = (uint8_t)(ROM_BASE & 0xFFu);
     image[IMAGES_HEADER + 0xFFFDu - ROM_BASE] = (uint8_t)(ROM_BASE >> 8);
-    if (muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK) {
-        fprintf(stderr, "muhtari_create failed\n");
-        return NULL;
-    }
-    if (muhtari__cart_load(m, image, sizeof image) != MUHTARI_STATUS_OK) {
-        fprintf(stderr, "muhtari__cart_load failed\n");
-        muhtari_destroy(m);
-        return NULL;
-    }
-    muhtari__boot_fast(m);
-    return m;
+    return boot_image(image, sizeof image);
 }
 
 /* Runs one frame into the case's buffers; returns its status. */
@@ -455,6 +448,122 @@ static int dma_blocked_flag(void)
     return check_failures == 0;
 }
 
+/* The whole of a file, in memory the caller frees; NULL on failure. */
+static uint8_t *read_file(const char *path, size_t *n)
+{
+    FILE *f = fopen(path, "rb");
+    uint8_t *buf = NULL;
+    long size;
+    if (f == NULL) {
+        fprintf(stderr, "cannot open %s\n", path);
+        return NULL;
+    }
+    if (fseek(f, 0, SEEK_END) == 0 && (size = ftell(f)) > 0 && fseek(f, 0, SEEK_SET) == 0) {
+        buf = malloc((size_t)size);
+        if (buf != NULL && fread(buf, 1u, (size_t)size, f) != (size_t)size) {
+            free(buf);
+            buf = NULL;
+        }
+        *n = (size_t)size;
+    }
+    fclose(f);
+    if (buf == NULL) {
+        fprintf(stderr, "cannot read %s\n", path);
+    }
+    return buf;
+}
+
+/* An instance with the n bytes at img loaded and handed off; NULL on
+   failure. */
+static muhtari *boot_image(const uint8_t *img, size_t n)
+{
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    if (muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK) {
+        fprintf(stderr, "muhtari_create failed\n");
+        return NULL;
+    }
+    if (muhtari__cart_load(m, img, n) != MUHTARI_STATUS_OK) {
+        fprintf(stderr, "muhtari__cart_load failed\n");
+        muhtari_destroy(m);
+        return NULL;
+    }
+    muhtari__boot_fast(m);
+    return m;
+}
+
+/* Runs one frame of m into rows; returns its status. */
+static muhtari_status frame_into(muhtari *m, uint8_t *rows)
+{
+    muhtari_frame io;
+    memset(&io, 0, sizeof io);
+    io.size = (uint32_t)sizeof io;
+    io.video = rows;
+    io.video_pitch = MUHTARI__WIDTH;
+    io.audio = audio;
+    io.audio_capacity = (uint32_t)(sizeof audio / sizeof audio[0]);
+    return muhtari_run_frame(m, &io);
+}
+
+#define SAMPLE_FRAMES 120u
+static uint8_t video_b[MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC];
+
+/* A built cartridge through the internal load and the fast-boot hand-off:
+   two instances run 120 frames in step and give the same picture every
+   frame, and frame 120 holds at least two colours and is not the test
+   card. Prints frame 120's SHA-256. */
+static int sample_renders(const char *path)
+{
+    size_t n = 0u;
+    uint8_t *img = read_file(path, &n);
+    muhtari *a = img != NULL ? boot_image(img, n) : NULL;
+    muhtari *b = img != NULL ? boot_image(img, n) : NULL;
+    uint32_t colours[256] = {0u};
+    uint32_t distinct = 0u;
+    int card = 1;
+    if (a == NULL || b == NULL) {
+        free(img);
+        return 0;
+    }
+    for (uint32_t k = 1u; k <= SAMPLE_FRAMES; k++) {
+        CHECK_EQ_U64(frame_into(a, video), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(frame_into(b, video_b), MUHTARI_STATUS_OK);
+        if (memcmp(video, video_b, sizeof video) != 0) {
+            fprintf(stderr, "frame %u differs between two instances\n", (unsigned)k);
+            check_failures++;
+            break;
+        }
+    }
+    for (uint32_t y = 0u; y < MUHTARI__HEIGHT_NTSC; y++) {
+        for (uint32_t x = 0u; x < MUHTARI__WIDTH; x++) {
+            uint8_t v = video[y * MUHTARI__WIDTH + x];
+            distinct += colours[v]++ == 0u ? 1u : 0u;
+            card &= v == muhtari__testcard_pixel(x, y, MUHTARI__HEIGHT_NTSC);
+        }
+    }
+    if (distinct < 2u) {
+        fprintf(stderr, "frame %u: single colour $%02x\n", (unsigned)SAMPLE_FRAMES,
+                (unsigned)video[0]);
+        check_failures++;
+    }
+    if (card) {
+        fprintf(stderr, "frame %u equals the test card\n", (unsigned)SAMPLE_FRAMES);
+        check_failures++;
+    }
+    muhtari__sha256 s;
+    uint8_t digest[32];
+    char hex[65];
+    muhtari__sha256_init(&s);
+    muhtari__sha256_update(&s, video, sizeof video);
+    muhtari__sha256_final(&s, digest);
+    muhtari__sha256_hex(digest, hex);
+    printf("frame %u: %u colours, sha256 %s\n", (unsigned)SAMPLE_FRAMES, (unsigned)distinct, hex);
+    muhtari_destroy(a);
+    muhtari_destroy(b);
+    free(img);
+    return check_failures == 0;
+}
+
 static const struct {
     const char *name;
     int (*run)(void);
@@ -472,8 +581,11 @@ static const struct {
 
 int main(int argc, char **argv)
 {
+    if (argc == 3 && strcmp(argv[1], "sample_renders") == 0) {
+        return sample_renders(argv[2]) ? 0 : 1;
+    }
     if (argc != 2) {
-        fprintf(stderr, "usage: muhtari-test-frame <case>\n");
+        fprintf(stderr, "usage: muhtari-test-frame <case> | sample_renders <file>\n");
         return 2;
     }
     for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {

@@ -183,7 +183,10 @@ struct muhtari__line_stats {
    The beam is counted from origin, the tick of line 0, t 0 of the current
    frame: the next line event is event_index of line event_line, and a
    requested burst is for line dma_line and stops at dma_lrc. mstat is
-   MSTAT's bit 7, VBLANK. */
+   MSTAT's bit 7, VBLANK. rows and pitch are the caller's video rows, set by
+   muhtari_run_frame for its own duration only and NULL otherwise; px is
+   the next pixel of the current line's raster still to render
+   (docs/hardware/maria.md, Rendering). */
 struct muhtari__maria {
     uint8_t reg[32];
     uint16_t dll;
@@ -201,6 +204,9 @@ struct muhtari__maria {
     uint16_t dma_line;
     uint8_t event_index;
     uint8_t mstat;
+    uint8_t *rows;
+    uint32_t pitch;
+    uint16_t px;
 };
 
 /* With content loaded, each muhtari_run_frame runs from frame_start to
@@ -398,9 +404,10 @@ uint64_t muhtari__maria_vbe(muhtari *m, uint64_t t0);
 
 /* MARIA's registers as the CPU sees them (docs/hardware/maria.md,
    Registers). read returns MSTAT's VBLANK bit over the open-bus byte at $28
-   and the open-bus byte elsewhere. write stores a register; a write to $24,
-   MARIA's WSYNC, whose data reaches MARIA at data_tick, holds RDY low until
-   the next line's t 0. */
+   and the open-bus byte elsewhere. write, whose data reaches MARIA at
+   data_tick, first renders the pixels played up to that tick, then stores
+   the register; a write to $24, MARIA's WSYNC, holds RDY low until the next
+   line's t 0. */
 uint8_t muhtari__maria_read(const muhtari *m, uint16_t addr);
 void muhtari__maria_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick);
 
