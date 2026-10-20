@@ -25,6 +25,7 @@ if(MUHTARI_LIBRARY)
   return()
 endif()
 include(${CMAKE_CURRENT_LIST_DIR}/abi/tests.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/audio/tests.cmake)
 # The built samples, the BIOS boot, the title predicates, the diagnostics
 # and the property tests run on the two inventories that list them; all
 # need the pinned tools.

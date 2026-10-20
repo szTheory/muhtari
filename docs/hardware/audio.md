@@ -136,3 +136,28 @@ partition equality, future carry and discard equality. It checks pre-clamp
 peaks and counts, so clamping cannot turn a failed stress check into a pass.
 Actual chip schedules and spectral acceptance are additional tests added
 with the respective chip and spectral modules.
+
+## Spectral measurement
+
+`audio.spectral` captures the shipped mixer, kernel, blocker and int16 output
+after 12,000 delivered settling samples, then measures 65,536 samples at
+48 kHz. The periodic four-term Blackman-Harris window uses coefficients
+0.35875, 0.48829, 0.14128 and 0.01168. Amplitude is
+`2*abs(DFT)/sum(window)`. The search covers strictly `0 < f < 16000 Hz`.
+An audible fundamental is evaluated at its exact physical frequency for
+the dBc reference; ultrasonic-only cases use 32767 as the dBFS reference.
+Acceptance is strictly below -80 dB.
+
+Only physical in-band harmonic lines receive a five-bin leakage mask.
+Uniform square waves have only odd harmonics; TIA's uneven B spacings
+permit even lines when an odd number of B edges separates toggles.
+No ultrasonic line is folded into a mask. `audio.spectral.controls` checks
+off-bin sine amplitude, aggregate physical-line leakage, an injected
+-60 dBc spur six bins from the fundamental, and nearest-sample kernel
+bypass at identical current-derived gain, Q30 blocker and int16 rounding.
+The deliberately aliased output must fail the same -80 dB judge.
+
+These DAC-equivalent schedules exercise synthesis without claiming chip
+timing fidelity. Actual chip tests must separately establish timer, clock
+selection and polarity behavior. The adopted node-current model and its
+unmeasured physical loading limits remain as described above.
