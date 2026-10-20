@@ -94,7 +94,8 @@ static int movie_next_line(const uint8_t *b, size_t n, size_t *pos, uint32_t num
     *pos = end < n ? end + 1u : end;
     l->s = b + start;
     l->number = number;
-    uint32_t limit = movie_limit(l->s, len > UINT32_MAX ? UINT32_MAX : (uint32_t)len);
+    /* The file is at most 32 MiB, so a line's length fits 32 bits. */
+    uint32_t limit = movie_limit(l->s, (uint32_t)len);
     for (uint32_t i = 0; i < len && i < limit; i++) {
         uint8_t c = l->s[i];
         if (c == 0u) {
