@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-10-19T23:57:15.932Z"
-last_activity: 2026-10-19
-last_activity_desc: Plan 03-01 complete (MARIA DMA burst)
-state_head: 4d88a13781d32dbb7058bebe17a7554076db9a16
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-10-20T00:17:21.951Z"
+last_activity: 2026-10-20
+last_activity_desc: Plan 03-02 complete (the bounded run loop)
+state_head: 79ad13f0cf2927ac9547a4b934930f4e42d2900d
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 38
+  completed_plans: 39
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 2 of 19
+Plan: 3 of 19
 Status: Ready to execute
-Last activity: 2026-10-19 — Plan 03-01 complete: MARIA DMA burst, 11 maria.dma_line tests, docs/hardware/maria.md
+Last activity: 2026-10-20 — Plan 03-02 complete: linear cart on the bus, fast-boot hand-off, MARIA line events and the c2 burst, 9 frame tests
 
 Progress: [█████░░░░░] 50%
 
@@ -97,6 +97,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P15 | 17 min | 2 tasks | 12 files |
 | Phase 02 P16 | 33 min | 3 tasks | 17 files |
 | Phase 03 P01 | 10 min | 3 tasks | 11 files |
+| Phase 03 P02 | 13 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -223,6 +224,8 @@ Recent decisions affecting current work:
 - [Phase 02]: The third review (4f8de62) found no blocker. WR-05: `muhtari__bus_raise_nmi` can return 1 for an edge the latch later drops, so its 1 means "queued", not "will be taken". It, IN-04 and the IN-05 seed wait in the MARIA and run-loop todo; phase 3 settles what the 1 promises. The re-verification passed 5/5 with the same 139 covered files
 - [Phase 03]: Plan 01: MARIA's holes come from the DLL entry's H16/H8 bits, not CTRL; muhtari__maria_vbe loads zone 0's entry from DPPH/DPPL for plan 03-02's t 43 event to call
 - [Phase 03]: Plan 01: muhtari__maria_dma_line fills *st and stats[line], clamps LRC to T0 + 454, and sets a feature bit only when an object uses it; docs/hardware/maria.md derives the 16/24 empty-DL ticks from T0 = /HALT fall + 6
+- [Phase 03]: Plan 02: the run loop steps SALLY to absolute VBLANK-start deadlines (line 258 t 42); MARIA's line events fire from the tick count and split every hold; the burst runs at c2 with T0 = fall + 6; the origin moves at line 263's t 0
+- [Phase 03]: Plan 02: the fast-boot hand-off is line 240 t 24 (cpu_phase 0 derived); frame 1 is 8,190 ticks and 54 samples; rows of a frame with content are $00 until span rendering; a HALT window inside an RDY hold counts held cycles as c0-c2
 
 ### Pending Todos
 
@@ -264,6 +267,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T23:57:15.844Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-10-20T00:17:21.867Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
