@@ -1,15 +1,15 @@
 # Phase 04: Sound - Research
 
 **Researched:** 2026-10-20
-**Domain:** TIA/POKEY timing, fixed-point event synthesis, deterministic host audio
-**Confidence:** MEDIUM — inspected code and isolated arithmetic probes; production audio does not exist yet.
+**Domain:** targeted recovery of actual-clock POKEY synthesis
+**Confidence:** HIGH for the bounded local candidate measurements; production integration remains unverified.
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
 
-The following sections are copied verbatim from the locked context. Their provenance is the context, not independent hardware verification. [VERIFIED: .planning/phases/04-sound/04-CONTEXT.md:17-157,232-243]
+The following is copied verbatim from the current context. It records adopted constraints, including historical statements that the dated amendments supersede; those statements are not fresh certification.
 
-DATA_H7q2X9aM_START
+DATA_W6p9R3mK_START
 ## Implementation Decisions
 
 The owner requested consideration of all relevant areas, delegated fan-out research, an adversarial pass and
@@ -59,6 +59,34 @@ are adopted under that delegation, not presented as answers to an interview that
   approved seed pin `9f9386c661f6`; reconcile the audio preparation's different `34d68516a15e` reference before
   copying. Copy only needed sections and retain attribution as PROVENANCE.md requires. The sibling's spectral
   result is a hypothesis until measured through this production pipeline.
+- **2026-10-20 evidence amendment to D-08:** The literal Q15 coefficient precision is superseded by
+  signed Q23 rows for the same 16-tap/32-phase compact-support kernel, corrected interpolation and integer
+  ring architecture. The approved seed pin remains `9f9386c661f6`; attribution and the single approximately
+  20 Hz integer blocker remain required. Regenerate the 512 coefficients as int32 values (2 KiB), normalize
+  each corrected row to 8,388,608, and convert integrated Q23 to Q30 by multiplying 128. Use synthesis identity
+  `exact-q23-16x32-dc20`. This narrow change is supported by `04-RESEARCH.md`, “Feasibility resolution:
+  explicit minimal D-08 revision”: the unchanged Q15 seed failed 9 of 132 hardware-scaled cases; Q23 passed
+  all 132 and every deliberately aliased control was rejected. Worst measured equivalent-schedule results
+  were −82.10380 dBc for TIA and −94.71708 dBFS for POKEY, with bound-derived M = 18,361 and
+  L1 = 13,341,774 / 8,388,608. Coefficients were identical under Simpson 128/256 refinement. Gain is still
+  derived from hardware currents and full-path headroom, never lowered to pass a spectral test. This records
+  new evidence rather than changing the historical D-08 text above; reproduction through the production
+  tables, actual chip models, frame carry and platform lanes remains mandatory. No tap/phase/support count,
+  rate, profile, filter or dependency is added.
+- **2026-10-20 actual-chip amendment to D-08:** The six retained wholly slow AUDF1 failures in
+  `04-06-SUMMARY.md` supersede the earlier feasibility conclusion for the fixed 32-phase table. Fresh discussion
+  reproduction of `ctest --test-dir build/ci -R '^audio.spectral$' --output-on-failure --no-tests=error`
+  exits 8, with worst peak -78.28741 dBFS. Reopen phase-table resolution first. Research 64 then 128 phases,
+  keeping 16 taps, Q23, compact support, Kaiser-beta8 shape, current weights, gain, blocker and judge fixed
+  during comparison. Those tables occupy 4/8 KiB rather than 2 KiB; the 16-cell ring and coefficient applications
+  per merged event can remain unchanged. Select the smallest candidate meeting all acceptance evidence;
+  neither candidate is certified by this discussion. Historical Q23/128 success on the old 132-case matrix
+  is only a lead. The prior prohibition on changing phase count is superseded by this evidence amendment.
+  Preserve the approved seed provenance and integer event/ring architecture; introduce no dependency.
+  If both candidates fail, diagnose coefficient/interpolation rounding separately before considering longer
+  support or a different window. Wider arithmetic, support or engine changes need measured cause and an
+  explicit inventory of invalidated proofs, not an open-ended redesign. The agent may make these technical
+  choices under the owner's delegation; no additional owner approval or listening test is required.
 - **D-09:** Keep the released public contract: 48,000/1 Hz, mono int16, exact NTSC phase ratio 88/13,125.
   No sample-rate configuration or public synthesis profile is added. At this rate one sample interval spans
   at most 150 master-tick positions; merge mixed-level changes at a tick before kernel work. Bound catch-up,
@@ -143,6 +171,50 @@ are adopted under that delegation, not presented as answers to an interview that
   self-skips, and existing review-round limits. Evidence is a command, exit status and hosted run URL where
   available; no committed execution logs. Ship-time merge/release checks remain the ship step's job.
 
+### Recovery from the actual slow-clock failure
+
+- **D-25:** Preserve all eight partially implemented files identified in `04-06-SUMMARY.md`. Keep completed
+  plans 04-01 through 04-05 as history; revalidate their affected synthesis evidence rather than repeating their
+  implementation. The next planning step must explicitly amend synthesis work and resume **04-06 Task 2**.
+  Its SUMMARY has `status: blocked`; file existence and its completed date do not establish completion.
+  Plans 04-07 onward stay blocked until Task 2 is verified and its partial summary is reconciled. Do not
+  discard the six failures, revert documented bus timing, or move unmet SND-05 acceptance to a later phase.
+- **D-26:** Compare candidates at the existing M=18,361 and unchanged hardware current model/Q12 gain4096.
+  A lower output level cannot count as spectral improvement. Recompute the full signed step/blocker bound,
+  rounding allowance and intermediate widths from final coefficients over all 13,125 phases and 88 output
+  alignments. The existing bound has little slack; do not reuse its L1 or M numerically. If a new bound needs
+  a different M solely for headroom, document that derivation separately and require spectral success both
+  at the common comparison gain and final production gain. Preserve at least 1 dB headroom, zero clipping,
+  the 85:342 current ratio and physical-only masks. A clamp is not a proof.
+- **D-27:** Preserve the 132-case production matrix, all 132 aliased controls, all 72 actual-chip cases and
+  independent arithmetic-schedule PCM comparisons. Before freezing a candidate, perform bounded offline
+  exploration of legal mixed 4/6-tick clock patterns, independently selected origins and periodic high-pass
+  narrow pulses (including the existing fast/slow/mixed delay conventions). Retain compact representative
+  worst cases in the existing tests. Physical sidebands must come from the actual periodic raw schedule;
+  an average clock frequency must not exempt aliases. No exhaustive permanent configuration matrix or new
+  test framework is required. Stop expanding the search when the established requirements and these directly
+  relevant checks pass; remaining uncertainty needs new evidence, not further speculative fan-out.
+- **D-28:** Independently refine candidate worst spectral peaks at their actual frequencies before accepting
+  a near-threshold result: an FFT-bin maximum can understate a windowed sinusoid's amplitude. Keep the
+  existing capture, settling, window, full-scale definition and -80 dB threshold. This is one-off candidate
+  evidence within D-20, not a new repository tooling gate or an invented stronger threshold. Report measured
+  margin and the limits of the finite tested matrix. Ultrasonic int16 silence is valid; establish that raw
+  DAC transitions reach synthesis so disconnected output cannot masquerade as rejection. A future permanent
+  refinement of the analyzer is a tooling seed, not an additional phase requirement.
+- **D-29:** Establish reproducible owned coefficient generation using the documented formula and convergence
+  checks; do not depend on a transient scratch path. Keep it within existing generator/documentation patterns
+  and avoid a new runtime or CI package. Update the synthesis identity when coefficients change. Recheck
+  endpoint shifting, exact row sums, ring widths, work and carry bounds, adverse transitions, partition/NULL/
+  reset behavior and eventual platform PCM parity. Phase-only changes retain support; support changes must
+  revisit every hardcoded ring size/mask, latency/tail and occupancy claim. Existing performance checks apply;
+  do not add an automatic quality mode or an unmeasured fallback.
+- **D-30:** Preserve hardware event timestamps, bus/CPU semantics, raw source IDs and transition serialization,
+  API/ABI, 48 kHz cadence and logical frame boundaries. Synthesis changes may change PCM, never justify a raw
+  transition or video re-pin. Keep the already planned mapping/revision migration and host/platform work.
+  `04-RESEARCH.md` conclusions claiming no unresolved feasibility prerequisite are stale for actual slow
+  clocks; targeted research must reconcile them before planning resumes. No replacement has been measured
+  or implemented in this discussion, and no SND requirement or plan count advances.
+
 ### Agent's Discretion
 
 Internal names, module splits, bounded carry representation, exact tie-order machinery, spectral harness details,
@@ -165,402 +237,213 @@ arbitrary rates, WAV export, save states and broad diagnostics retain their exis
 - Release-rehearsal filtering, wasm32 promotion, arming the performance gate, Dependabot/publish review seeds,
   and nightly/cartdb review seeds stay in their existing separate work; keyword matches do not make them sound
   requirements. The prior phase already folded its CPU/run-loop review todo; it is not a new Phase 4 gap.
-DATA_H7q2X9aM_END
+DATA_W6p9R3mK_END
 </user_constraints>
 
 ## Summary
 
-Use owned integer chip models, the approved sibling's reconstruction structure with the evidence-backed Q23 coefficient correction below, a single integer DC blocker, and the existing public mono PCM interface. Put timing ownership in the bus and mutable storage in the instance. Deliver one thin audible TIA path first, then widen POKEY, address decoding, IRQ, synthesis tests and host coverage. No package or new public API is required. The copied context remains the decision history; the narrow D-08 revision below is explicit new evidence for planning, not a silent rewrite of that history. [VERIFIED: .planning/phases/04-sound/04-CONTEXT.md:25-157; feasibility probes in this research]
+Recommend the smallest passing phase-density candidate: **16 taps, 64 phases, Q23, unchanged compact sinc/Kaiser-beta8 support, 48 kHz, one existing blocker**, with proposed synthesis identity `exact-q23-16x64-dc20`. Fresh isolated builds link a regenerated synthesizer against the current production chip objects and exercise the existing 132 production schedules, 132 negative controls and 72 actual-chip cases. Both 64 and 128 phases pass these finite matrices after continuous-frequency peak refinement. The 64-phase candidate also passes 84 bounded mixed-clock/high-pass cases. This is candidate evidence, not certification of an edited production tree. [VERIFIED: candidate commands in Evidence; src/synth.c:1-240; tests/audio/test_spectral.c:1-508]
 
-Two findings materially affect planning. The approved synthesis pin and the audio preparation's different pin have identical synthesis and spectral-test blobs. However, the sibling spectral judge masks folded aliases, so its reported quality cannot establish this phase's acceptance. A hardware-scaled feasibility sweep refutes the unchanged Q15 seed and establishes a concrete compliant route: regenerate the same 16-tap/32-phase windowed-sinc kernel at Q23, preserving its interpolation/ring architecture. All 132 isolated test cases pass without reducing hardware-derived gain; all 132 deliberately aliased controls fail. Production verification still precedes published PCM pins. [VERIFIED: feasibility/sweep commands and results below]
+Compare at the unchanged **M=18,361** first. The independently re-enumerated signed reconstruction bound for 64 phases requires **M=18,360** for the conservative one-dB complete-path proof; this one-LSB adjustment is required by headroom, not used to obtain spectral acceptance. The candidate passes again at that final level, including negative controls and mixed-clock exploration. Keep the current weights and cartridge gain. Resume **04-06 Task 2**, preserve its eight dirty files and six failing vectors, and require final production verification before 04-07 onward. No owner action is required for these delegated technical choices. [VERIFIED: bound/candidate commands in Evidence; locked D-25–D-30 above]
 
-The existing frame loop completes an instruction beyond its logical deadline. Preserve that CPU behavior while separating current-frame PCM/raw events from future carry. Also resolve the fast-boot clock origin explicitly: its master tick jumps forward while its phi2 count stays at power-on. [VERIFIED: src/frame.c:8-18,47-56,79-90; src/boot.c:43-76; src/instance.c:99-111]
-
-**Primary recommendation:** Build the bus/chip/audio boundary and an early production quality test together; only freeze hashes after exact timing, headroom and spectral behavior pass. [VERIFIED: locked D-02,D-04,D-11,D-17,D-20,D-21]
+The previous RESEARCH statements that production audio did not exist, Q23/32 removed all feasibility prerequisites, and fast/equivalent schedules established slow-clock feasibility are superseded. The Q15 failure and Q23/32 equivalent-schedule success remain historical observations; the retained actual slow-clock failure invalidates their extrapolation. Current production still fails six slow AUDF1 cases; this session reproduced that failure. No requirement or plan completion advances. [VERIFIED: ctest command in Evidence; 04-06-SUMMARY.md:75-108; src/synth.c:1-114]
 
 ## Architectural Responsibility Map
 
-This is the recommended responsibility allocation under the locked instance/bus/host contracts. [VERIFIED: .planning/phases/04-sound/04-CONTEXT.md:25-157]
-
-| Capability | Primary Tier | Secondary Tier | Rationale |
+| Capability | Primary owner | Secondary owner | Rationale |
 |---|---|---|---|
-| Hardware clocks and register-write timestamps | Core bus | Chip models | Only the bus advances machine time and knows slow/held segments |
-| TIA horizontal epoch, channel logic, RSYNC/WSYNC | TIA model | Bus | One mutable horizontal clock owns all TIA schedules |
-| POKEY counters, polys, RANDOM and timer IRQ | POKEY model | Bus/CPU | Chip generates level and IRQ; bus provides actual clock; CPU accepts IRQ |
-| POKEY address/overlap priority and effective wiring | Cartridge | Bus | Resolve declared hardware once; CPU and MARIA accesses have different effects |
-| Nonlinear mixing, kernel, blocker and PCM carry | Audio/synth | Frame loop | Stateful reconstruction continues across caller buffer partitions |
-| Completed-run transition/PCM SHA-256 | Runner | Internal observer | Hashing and serialization stay outside core |
-| Stereo duplication and callback choice | libretro adapter | Public library | Adapter converts completed mono output only |
-| Sample fixtures and platform equality | Existing CTest/CI | Runner | Exercise shipped objects and the real output |
+| Legal raw DAC timestamps and values | Existing TIA/POKEY/bus model | Documentary vectors | Synthesis recovery must preserve hardware events |
+| Tick-phase reconstruction and gain | Integer synthesizer | Owned coefficient generator | Density changes an interpolation table, not the clocks |
+| Spectral classification and offline refinement | Existing test-only analyzer | Bounded exploratory captures | No floating code enters the shipped core |
+| Frame/carry/discard/reset contracts | Existing core/frame integration | Current contract tests | Revalidate affected output history without repeating implementation |
+| Runner, hosts and platform pins | Existing later phase slices | Existing CI | Their work stays ordered after Task 2 |
+
+These ownership assignments follow the adopted context and inspected module boundaries; they are planning recommendations, not new public interfaces. [VERIFIED: locked D-01–D-30; src/synth.c:1-240; tests/audio/test_spectral.c:1-508]
 
 <phase_requirements>
 ## Phase Requirements
 
-The descriptions below are reproduced from the requirement source, with research support added. [VERIFIED: .planning/REQUIREMENTS.md:100-110]
+The descriptions below quote the current requirements; recovery changes none of them. [VERIFIED: .planning/REQUIREMENTS.md:100-110]
 
-| ID | Description | Research Support |
+| ID | Description | Research support |
 |---|---|---|
-| SND-01 | `ctest -L tia` steps every AUDC setting through the period and bit pattern A7800-AUDIO tabulates, on the TIA's own 456-tick lattice, with TIA writes ungated by INPTCTRL. | Own TIA vectors, shared epoch, data-tick integration |
-| SND-02 | `ctest -L pokey` checks POKEY at $4000, $0450 and $0800 as the header or hash list places it: 16-bit joins, 1.79 MHz mode, two-tone with the high-pass filter, the polynomial counters, RANDOM, SKCTL initialisation, and its clock stretching on slow cycles. | Manual vectors, piecewise phi2, decode/IRQ integration; include locked @440/dual coverage |
-| SND-03 | `muhtari-run --hash-audio` prints the transition-stream and PCM hashes for the 7800basic sound and POKEY samples, identical on every platform, and no sample clips. | Canonical serialization, shared platform output, analytic headroom plus real-sample checks |
-| SND-04 | The libretro batch and single-sample paths deliver stereo-duplicated PCM equal to the runner's, and `runner.boot_to_play` also requires non-silent audio. | Extend real module host and runner judge, including muted control |
-| SND-05 | A test renders reference tones through the synthesiser and shows the largest non-harmonic peak below 16 kHz is under −80 dB. | Actual-frequency BH4-windowed production captures, dBc/dBFS distinction, alias control |
+| SND-01 | `ctest -L tia` steps every AUDC setting through the period and bit pattern A7800-AUDIO tabulates, on the TIA's own 456-tick lattice, with TIA writes ungated by INPTCTRL. | Preserve completed TIA implementation and rerun affected synthesis tests |
+| SND-02 | `ctest -L pokey` checks POKEY at $4000, $0450 and $0800 as the header or hash list places it: 16-bit joins, 1.79 MHz mode, two-tone with the high-pass filter, the polynomial counters, RANDOM, SKCTL initialisation, and its clock stretching on slow cycles. | Resume retained actual-clock work; downstream expansion/mapping remain required |
+| SND-03 | `muhtari-run --hash-audio` prints the transition-stream and PCM hashes for the 7800basic sound and POKEY samples, identical on every platform, and no sample clips. | Recomputed widths/headroom; keep later observation/platform slices |
+| SND-04 | The libretro batch and single-sample paths deliver stereo-duplicated PCM equal to the runner's, and `runner.boot_to_play` also requires non-silent audio. | Keep later host parity slices; recovery does not certify them |
+| SND-05 | A test renders reference tones through the synthesiser and shows the largest non-harmonic peak below 16 kHz is under −80 dB. | Measured passing 64-phase route, fixed judge, final production acceptance still required |
 </phase_requirements>
 
 ## Project Constraints (from AGENTS.md)
 
-All directives below are planning constraints, reproduced in condensed form from the opened project instructions. [VERIFIED: AGENTS.md:1-74]
+Apply all of these as locked constraints: permissive seeds with provenance only; never open GPL/LGPL/unlicensed emulator source; library/runner/libretro only; no device/window code; no unapproved ROM/BIOS/save bytes or personal identifiers; GitHub noreply commits and hygiene hooks; deterministic integer-only instance state and bounded calls; every behavior change gets an existing-CI test and documentation; short user README/header with behavior prose in docs; automation-first verification with owner questions only for identity-bound consent or own hardware; CMake/POSIX-sh policy gates under the code budget; no more than two review fix rounds and one evidence-backed gap round; one GSD step then stop without chaining/bypasses; branch before commits and follow ship-time PR/CI/merge/release checks; evidence is commands, exits and hosted URLs rather than committed logs; lessons remain hypotheses until reproduced; summaries need requirements-completed plus block coverage entries; small modules, fixed-width integers, prefixed names, cited hardware comments, no planning IDs in code/test/user docs, and the remove/reuse/standard-library/platform/minimum-code ladder. [VERIFIED: AGENTS.md:1-76]
 
-- Keep permissive reuse, notices and exact approved pins; never open GPL/LGPL/unlicensed emulator source.
-- Ship library, headless runner and libretro; add no device/window code.
-- Keep ROM/BIOS/save bytes out of tracked content except manifest fixtures; keep personal data out; use noreply commits and hygiene hooks.
-- Use integer-only, per-instance, deterministic, bounded execution, including hostile/JAM programs.
-- Every behavior change includes a CI-run test and matching documentation. Keep README/header terse; prose belongs in docs.
-- The agent performs judgment and verification. Ask the owner only for identity-bound consent or their hardware; no listening UAT.
-- Repository gates use CMake -P/POSIX sh and remain below one tenth of core lines. Name prevented faults. At most two review-fix rounds and one gap round; tooling findings are seeds.
-- Perform only this GSD step; never chain or enable either bypass. Work on the phase branch; PR/auto-merge/release confirmation belongs to ship.
-- Evidence is a command, exit status and hosted URL when available, never a committed execution log.
-- Lessons are hypotheses until reproduced; export only using their template when requested.
-- Plan summaries require requirements-completed and block-style coverage entries with id, description, requirement, verification kind/ref/status and human_judgment.
-- Use small modules, plain control flow, fixed-width integers, module prefixes and muhtari_ public names. Hardware comments describe behavior and cite a source. Keep planning IDs out of code, tests and user docs. Reuse existing code/standard facilities before adding dependencies.
-
-The configuration explicitly says `"nyquist_validation": false`, `"security_enforcement": false`, `"parallelization": false`, and `"agent_skills": {}`; graph status reports disabled. Therefore no separate Validation Architecture or ASVS expansion belongs in this research, and execution remains sequential. Existing behavior tests and hostile-input checks are still required by AGENTS.md. [VERIFIED: .planning/config.json:4,28,52,74,86-88; graphify status command, exit 0]
+This research owns only this document. It did not alter the eight retained partial implementation files or commit. The current partial files are quoted verbatim from the observed status: `docs/hardware/pokey.md`, `src/boot.c`, `src/bus.c`, `src/instance.c`, `src/internal.h`, `src/pokey.c`, `tests/audio/test_pokey.c`, `tests/audio/test_spectral.c`. [VERIFIED: git status --short, exit 0; opened files and 04-06-SUMMARY.md:1-43]
 
 ## Standard Stack
 
-Use the existing toolchain and packages; add no runtime or CI analysis dependency. Versions below describe observations/pins, not upgrade recommendations. [VERIFIED: locked D-01,D-08,D-20,D-24; CMakeLists.txt:40-91]
+Use the existing C17/core/CTest architecture and test-only standard math library. This environment reports CMake 4.4.3, Apple clang 21.0.0 and Python 3.14.4; Python was used only for isolated scratch experiments, not proposed as a new CI/runtime dependency. No external package installation is required, so a package-legitimacy registry audit is inapplicable. Project skill directories were absent at both inspected locations; configured researcher agent skills were empty. Graph context is disabled. Nyquist and security artifacts are explicitly disabled; do not introduce them. [VERIFIED: local version commands, agent-skills query and graphify status, exits 0; .planning/config.json:1-100]
 
-| Component | Version/pin | Purpose and disposition |
-|---|---|---|
-| Owned C core | C17 | Extend current instance/chip/bus modules; shipped archive remains integer-only |
-| CMake/CTest | local 4.4.3 | Existing build and tests; measured with cmake --version |
-| Ninja | local 1.13.2 | Existing local generator |
-| C compiler | local Apple clang 21.0.0 | Local arithmetic/spectral research probes |
-| nesturbator synthesis seed | 9f9386c661f6fb8f6063bf756655713aedadae77 | Reconstruction structure, interpolation, ring integration and useful arithmetic/test machinery; regenerate coefficient precision as explicitly resolved below |
-| wasmtime | pinned/local 48.0.6 | Existing sample tool runtime |
-| 7800basic | existing 0.41 pin | Existing built-only samples |
-| SHA-256 | existing runner implementation | Reuse streaming hashes and explicit LE serialization |
-
-Tool versions were observed through version commands; tool/sample pins are quoted as `7800basic-wasm@0.41,wasmtime@48.0.6` in the fixture source. [VERIFIED: tests/built/expected.txt:14-20; local version commands, exit 0; PROVENANCE.md:35-62]
-
-**Installation:** none for runtime. Use existing pinned-tool fetch recipes if the execution checkout lacks them; do not add Python/NumPy, FFT libraries, BLIP libraries or a sound backend. [VERIFIED: locked D-01,D-08,D-20; tests/built/tests.cmake:4-17]
-
-## Package Legitimacy Audit
-
-Not applicable: this phase installs no external package. The sibling is a source seed governed by provenance, not a registry dependency. Read its exact LICENSE and permitted file content before copying and use the required commit-body attribution. The opened MIT license and provenance approval support this route. [VERIFIED: PROVENANCE.md:35-62; git show approved-pin:LICENSE, exit 0]
+The approved MIT seed remains the architecture/provenance pin quoted in context, `9f9386c661f6`; retain its required attribution. The regenerated table is owned mathematical output, not copied emulator expression. Hardware behavior remains the adopted documentary model, with physical startup, STIMER polarity and cartridge loading confidence-qualified. [VERIFIED: PROVENANCE.md:20-75; docs/hardware/pokey.md:1-60; locked D-07–D-08]
 
 ## Architecture Patterns
 
-### System Architecture Diagram
+Keep the event/ring architecture. Current source-of-truth declarations are `MUHTARI__SYNTH_TAPS 16u`, `MUHTARI__SYNTH_PHASES 32u`, `MUHTARI__SYNTH_Q23 INT64_C(8388608)`, `MUHTARI__SYNTH_Q30 INT64_C(1073741824)`, `MUHTARI__SYNTH_MAX_LEVEL 18361`, and `extern const int32_t muhtari__synth_kernel[32][16];`. Proposed changes are the phase count, corresponding dimensions/endpoint comparison, generated rows, final bound-derived level and identity. [VERIFIED: src/internal.h:27-31,99-104; verbatim current declarations quoted here]
 
-Recommended data flow; equal-tick ordering and logical output horizons are explicit contracts. [VERIFIED: locked D-02,D-04,D-13–D-18]
+The production endpoint currently uses `row < 31u` and otherwise the zero-left/shifted-row-zero endpoint. Replace that hardcoded terminal row with the phase-count-derived comparison. Audit declaration, definition, all dimensional assertions, table-size prose, phase-endpoint tests, synthesis identity and numeric bound expectations together. Keep `impulse[16]`, the `& 15u` ring mask and 16 applications per merged event: phase-only changes do not lengthen support. [VERIFIED: src/synth.c:16-114,127-133,200-205; src/internal.h:49-60]
 
-```mermaid
-flowchart TD
-  CPU[CPU bus access] --> BUS[Resolve access and actual clock segment]
-  BUS --> TIA[TIA horizontal/audio model]
-  BUS --> CART{Mapped cartridge audio?}
-  CART -->|yes| POKEY[Up to two POKEY models]
-  CART -->|no| MEMORY[Existing ROM/RAM/open bus]
-  POKEY --> IRQ[Timer IRQ level]
-  IRQ --> POLL[Bus sampling and CPU acceptance]
-  TIA --> ORDER[Chronological raw changes]
-  POKEY --> ORDER
-  ORDER --> TAP{Observer enabled?}
-  TAP -->|yes| HORIZON[Emit completed interval; retain future events]
-  HORIZON --> SHA[Runner transition SHA-256]
-  ORDER --> MIX[Merge source changes at each tick; nonlinear mono mix]
-  MIX --> SYNTH[Q23 kernel ring; integrate; one DC blocker]
-  SYNTH --> FRAME[Drain logical frame samples; retain tail and carry]
-  FRAME --> PCM[Runner LE mono PCM SHA-256]
-  FRAME --> LR[libretro duplicate L/R and dispatch callback]
-```
+The authoritative bus convention remains fast/held rise s+2, fall/data s+4 and completion s+4; slow rise s+2, fall/data s+5 and completion s+6. High-pass captures commit at the third subsequent actual half edge, giving the tested fast/slow/mixed delays 6/9/7 ticks. Keep fast-boot tick108984/phi2zero and BIOS tickzero/phi2zero; do not synthesize skipped BIOS cycles. These are adopted compatibility conventions, not new physical measurements. [VERIFIED: docs/hardware/pokey.md:9-60; tests/audio/test_pokey.c:20-129; 04-06-SUMMARY.md:55-73]
 
-### Component Responsibilities and Exact Seams
+Primary author documentation treats table density, support length and coefficient precision as separate error controls. Increasing density is therefore an evidence-directed local intervention; that documentation does not promise that a specific phase count meets this project's threshold. [CITED: https://www.dsprelated.com/freebooks/pasp/Implementation.html, Choice of Table Size and Word Lengths; MEDIUM from classify-confidence seam]
 
-These are existing code seams, read directly this session. Proposed additions are recommendations, not claims that new files/types already exist. [VERIFIED: sources in table]
+## Candidate measurements
 
-| Existing seam | Required work |
-|---|---|
-| src/internal.h:125-130,260-279 | Add owned TIA, two fixed POKEYs, synth, carry and effective wiring. Keep observer/context outside reset machine-state storage. Existing profile literally contains `uint16_t tia_phase;`; initialize one mutable epoch from it |
-| src/tia.c:34-49 | Existing write entry is `void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick)`; pass the value internally and extend WSYNC to RSYNC/audio. Preserve no-RSYNC tests |
-| src/bus.c:16-21,273-285,412-431 | Constants are `BUS_FAST_TICKS 4u`, `BUS_FAST_DATA 4u`, `BUS_SLOW_TICKS 6u`, `BUS_SLOW_DATA 5u`. Flush old clock segment before changing it; stamp writes at data, not end |
-| src/bus.c:100-113,174-194,245-262 | Integrate next IRQ deadlines, held-cycle catch-up and poll-visible levels; bulk phi2 advancement must preserve transition timestamps |
-| src/cart.c:506-520,543-555,748-765,827-859 | Consume effective identified sound, not raw flags; distinguish CPU read, peek and MARIA fetch. Existing `muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)` ignores by_maria today |
-| src/cart.c:193-214,486-490 | v4 decoder validates irq but raw `out->a78_irq = be16(img + A78_IRQ);` survives ignored blocks. Derive/store effective wiring only from a valid accepted block; do not wire ignored raw bits |
-| src/cpu.c:32-61,595-615,1489-1491 | Extend existing poll point/entry without changing opcode bus order; NMI already consumes its edge. Add a latched IRQ decision sampled with I at poll time, not a live flag check after the instruction |
-| src/boot.c:43-100; src/instance.c:99-111,164 onward | Reset all chip/synth state, preserve host observer. Advance TIA boot epoch; handle fast-boot phi2 origin deliberately |
-| src/frame.c:21-57,79-110 | Validate first. Replace `memset(io->audio, 0, (size_t)n * sizeof io->audio[0]);` with drain/discard of actual synthesis; preserve count, NULL semantics and sticky BIOS refusal |
-| runner/main.c:864-940 | Register tap before execution; hash successful frames' actual mono counts; finalize only when whole run succeeds/stops successfully |
-| libretro/libretro.c:468-520 | Keep existing duplication and batch preference; verify real non-silent samples and first partial interval |
+The isolated build replaces only the synthesizer table/count/terminal comparison; it links the current built production library for actual chip behavior. It keeps capture length 65,536, settling 12,000, the existing periodic four-term Blackman-Harris window, 48 kHz, physical-only masks, nonlinear currents, Q12 gain4096, blocker arithmetic and signed-int16 conversion. The exploratory judge refines each largest unmasked FFT peak over ±0.6 bin using 28 ternary iterations of the continuous windowed DFT. Frequencies reported by the inherited diagnostic remain bin centers; dB results below use the refined amplitude. This is bounded one-off investigation, not a permanent analyzer gate. [VERIFIED: /tmp candidate source/run commands in Evidence; production measurement conventions in tests/audio/test_spectral.c:13-15,181-252,420-508]
 
-**Proposed module split:** keep TIA in its existing module; add one POKEY module and one small audio/synth module, with integer tables separate only when this improves readability. Add subsystem CTest includes to the existing top-level include list and core object source list. Reuse the actual shipped object in unit tests. [VERIFIED: CMakeLists.txt:62-91; tests/tests.cmake:27-57; locked agent discretion]
+| Candidate | Common M | Existing production cases | Actual cases | Negative controls | Worst TIA dBc | Worst equivalent POKEY dBFS |
+|---|---:|---:|---:|---:|---:|---:|
+| 64 phases | 18361 | 132 pass | 72 pass | 132 rejected | -89.80738 | -94.97775 |
+| 128 phases | 18361 | 132 pass | 72 pass | 132 rejected | -89.91416 | -102.05614 |
+| 64 phases final gain | 18360 | 132 pass | 72 pass | 132 rejected | -89.93812 | -94.97775 |
 
-### Timing, clock segments and bounds
+All 72 actual-chip settled int16 captures quantize to exact silence for both phase-density candidates, yielding negative infinity dBFS, not the diagnostic accumulator's initial sentinel -1000. The actual square captures retain chip-fire assertions and independent one-channel arithmetic-schedule PCM equality. The additional mixed/HP probe explicitly requires over 1,000 raw source changes and nonzero kernel applications, so disconnected output cannot masquerade as rejection. The measured TIA acceptance margin at common comparison gain is 9.80738 dB. These finite-case results establish a concrete recovery route; they do not prove every legal register stream is spectrally bounded. [VERIFIED: candidate production outputs; mixed exploration source/assertions and outputs; Evidence]
 
-- TIA events use one independent horizontal epoch. Catch up the old schedule through the write tick before applying RSYNC; schedule subsequent A/B edges from the new epoch without firing old events twice. AUDF is a comparison to the running counter, not a reload latch. AUDV can change the raw DAC immediately. The preparation records A `{0, 144}`, B `{64, 288}`, line `456`, and the AUDF20→5/count12 wrap delay `26` clocks. These are the adopted functional expectations, with physical pattern disputes still qualified. [VERIFIED: .planning/preparation/A7800-AUDIO.md:38-63; locked D-01,D-02,D-07]
-- POKEY uses phi2 and a piecewise tick mapping, including held cycles. Flush before entering and leaving a slow segment, not merely at the next mapped access. A total phi2 difference loses where the stretched segments occurred. Keep sample/tick emission streaming so the worst number of mixed-level kernel additions in one output interval is at most 150 (one merged level per master tick); two chips do not double this kernel-add bound. Chip work remains a separate bound. [VERIFIED: src/bus.c:181-194,273-285; locked D-04,D-09; derived ceil(13125/88)=150]
-- Count invisible timers/noise/RANDOM even with zero volume or volume-only mode. Base-clock prescalers may skip directly to the next due event, but fast timers and pending pipelines still execute. Use the manual's documented STIMER/reload, high-pass and two-tone vectors as separate tests, not hashes of the implementation. [VERIFIED: .planning/preparation/A7800-AUDIO.md:85-115,144-155; CITED: https://www.virtualdub.org/downloads/Altirra%20Hardware%20Reference%20Manual.pdf chapter 5]
-- Preserve half-phase high-pass events explicitly. A whole-phi2-only DAC emitter can lose the pulse. Use the explicit divider-edge convention in Resolved clock conventions below; do not silently split six ticks into equal halves from the bus-call origin. [VERIFIED: locked D-04; .planning/preparation/A7800-AUDIO.md:88; docs/hardware/bus.md:24-32]
-- Produce audio through an output horizon and retain future work. The existing constants are `MUHTARI__TICKS_PER_FRAME_NTSC 119402u`, `MUHTARI__SAMPLES_PER_PERIOD 88u`, `MUHTARI__TICKS_PER_PERIOD 13125u`, `MUHTARI__MAX_AUDIO_SAMPLES 801u`. Stream sample emission during catch-up rather than accumulating frame-sized transition arrays. A 16-slot impulse ring suffices for the seed's support; separately prove pending PCM/raw carry capacity from instruction-plus-interrupt overshoot and held-cycle bounds. No arbitrary drop or reallocating overflow path is acceptable. [VERIFIED: src/internal.h:15-21; src/frame.c:8-18; approved seed src/synth.c:2721-2771; locked D-09,D-17]
-- Do not assume instruction overshoot is merely the maximum opcode's unheld bus cycles: a WSYNC-held read and MARIA hold can cross the deadline. Derive a conservative bound from the actual hold loop and DMA release, then assert it in adversarial tests, including an interrupt entry after the instruction. The exact carry capacity is an implementation proof obligation; this research does not certify a guessed array size. [VERIFIED: src/bus.c:148-168,219-262; src/cpu.c:1489-1491; locked D-17]
+### Bounded mixed 4/6-clock and narrow-pulse exploration
 
-### IRQ acceptance without broad CPU refactoring
+Seven periodic clock words were tested, with low-order bit selecting the first cycle and 1 denoting slow: `1/2, 1/3, 3/3, 1/4, 3/4, 5/4, 7/4` (word/length). Use independently selected origins 1,29,661; two chips with one active channel each. The direct-square portion uses AUDF0/1/3, producing 63 cases. The high-pass portion uses the existing legal equal-period AUDF2 convention, with the high timer initially AUDF0 and changed to2 at the fourth fall, producing 21 cases. This yields 84 additional actual-model cases with no changed clocks or gain. Mixed square output is compared chunk-for-chunk to an independent arithmetic reference: first fire at falling-cycle N+8, subsequent fire every N+4 falling cycles. HP pulses are produced by the retained real three-half-edge pipeline. [VERIFIED: /tmp/muhtari_recovery/explore.py and generated mixed.c, commands in Evidence]
 
-Keep the current one-poll-per-instruction design and sample IRQ level plus I at that point after ensuring POKEY is caught up. This preserves CLI/SEI/PLP old-I behavior and RTI's earlier restored-I timing. NMI wins a simultaneous decision; IRQ remains level-sensitive until chip acknowledgment. Add IRQ entry bus-cycle expectations and NMI vector hijack coverage independently of opcode vectors. The Altirra manual's CPU chapter explicitly documents flag-delay and overlapping interrupt behavior. [VERIFIED: src/cpu.c:39-60,956-960,1096-1100,1160-1189; CITED: https://www.virtualdub.org/downloads/Altirra%20Hardware%20Reference%20Manual.pdf §3.4]
+The complete settled raw period follows the actual repeating clock word and timer sequence. For these deliberately short patterns, square periods span lcm(word length,2(N+4)) cycles and HP periods span lcm(word length,12) cycles. Every resulting physical fundamental exceeds16kHz (maximum square period is224 ticks); every physical harmonic therefore lies outside the judged band. No average-frequency or folded-harmonic exemption is needed. Worst common-gain case is word3/length3, AUDF1, origin29, at -90.99157514 dBFS (bin center15358.15429688Hz); refined amplitude was used. HP cases all quantize to exact settled silence despite verified continuing raw transitions. Retain compact representative worst mixed and HP vectors in current tests; do not commit this whole exploratory matrix as a new framework. [VERIFIED: enumerated period arithmetic and 84-case output in Evidence]
 
-Preserve the CPU test object's flat-bus seam: its replacement bus currently implements only `muhtari__bus_read` and `muhtari__bus_write`. Either keep poll-visible fields updated by those bus calls, or extend the test bus deliberately if a new internal bus-poll function is necessary. A chip-function call introduced directly into the CPU would otherwise break object-level tests. [VERIFIED: tests/cpu/vector_bus.c:1-46; CMakeLists.txt:62-85]
+## Full-path signed headroom and intermediate widths
 
-The manual also documents IRQEN propagation timing and warns that source disabling can trail an already-signaled IRQ. Plan explicit timer IRQST/IRQEN active-low register expectations and acknowledgment timing from the register description/figure, not only an instantaneous line boolean. Non-timer peripherals are outside this phase; document their unmapped/default read behavior rather than growing a serial/keyboard implementation. [CITED: https://www.virtualdub.org/downloads/Altirra%20Hardware%20Reference%20Manual.pdf §§5.7,14; VERIFIED: locked D-06 and phase boundary]
+Recomputed through the candidate coefficient function: all13,125 tick phases have exact sum8,388,608; all88 output alignments satisfy summation-by-parts weight sum8,388,608. For each alignment the probe constructs both extremizing bounded0/M sequences and sends them through the actual candidate event/ring path, checking integrated Q23 against the predicted value and zero clipping (176 extremizers). [VERIFIED: bound.c and bound commands in Evidence; existing analogous production test tests/core/test_core.c:285-365]
 
-## Seed Reconciliation and Headroom Proof
-
-### Approved seed, exact comparison
-
-The following read-only commands returned exit 0; no source was copied into the repository:
-
-```sh
-git -C <approved-sibling> show 9f9386c661f6:LICENSE
-git -C <approved-sibling> ls-tree 9f9386c661f6 src/synth.c tests/core/test_synth.c tests/runner/test_spectral.c
-git -C <approved-sibling> ls-tree 34d68516a15e src/synth.c tests/core/test_synth.c tests/runner/test_spectral.c
-git -C <approved-sibling> diff 9f9386c661f6 34d68516a15e -- src/synth.c tests/core/test_synth.c tests/runner/test_spectral.c
-```
-
-Both pins have identical blobs: synth `75d64d986154d72092f4020ea4fc842b7eefb573`, synth tests `b2da1f94f509744984113ce2fdc079b4a8442060`, spectral test `2108c4bd2dc27e792fd9e0ebf38f9a221817a9ce`. The diff is empty. Use the provenance-approved pin and update the stale audio-preparation citation when implementing. [VERIFIED: git ls-tree/diff commands above; PROVENANCE.md:35-62]
-
-The seed's rows are normalized to 32768, and interpolation corrects its rounded sum at tap 7/8, including the shifted phase32 endpoint. Copy this correction, not independent coefficient rounding alone. Exclude its NES mixer tables, both NES high-pass corners and NES low-pass stage. Its final PCM helper saturates; do not treat saturation as a headroom proof. [VERIFIED: approved seed src/synth.c:1-47,2660-2771]
-
-### A useful conservative bound, with a reproducible algorithm
-
-An isolated integer probe enumerated every interpolated phase and every distinct sample/master-tick alignment. It used the approved kernel's exact interpolation/correction and event-before-sample convention, not a production implementation. Command `python3 /tmp/muhtari_headroom_probe.py` returned exit 0. Results: maximum corrected coefficient magnitude 28452; effective reconstruction positive weight mass 42452/32768 and negative mass 9684/32768; maximum L1 mass 52136/32768 = 1.591064453125. These values are verified for that probe convention only. [VERIFIED: isolated arithmetic probe run 2026-10-20, exit 0]
-
-Production proof recipe:
-
-1. For an event at integer tick t, compute q=floor(88t/13125), phase=(88t mod13125), and its corrected 16 coefficients.
-2. For output sample n, form cumulative step response S(n,t) from coefficient taps 0 through n−q, clamped to 0 before support and 32768 afterward.
-3. Summation by parts gives level weights w(n,t)=S(n,t)−S(n,t+1). Enumerate the finite support and all 88 distinct output alignments in a 13125-tick period. Check sum(w)=32768 exactly.
-4. Let P=max sum of positive weights, N=max absolute sum of negative weights. For all mixed levels in [0,M], reconstruction lies in [−NM/32768, PM/32768].
-5. For blocker y=x−x_previous+R*y_previous, its positive and negative impulse-response masses are each one. Thus |y|≤(P+N)M/32768 before fixed-point rounding. Add the recurrence's rounding bound and final PCM rounding explicitly.
-
-This derivation covers arbitrary bounded mixed-level changes and signed kernel ringing. It is a recommendation derived from finite linear reconstruction, not a hardware claim. Re-run it against production ordering and coefficient arithmetic. [VERIFIED: probe algorithm and result; CITED: https://www.dsprelated.com/freebooks/filters/DC_Blocker.html for blocker equation]
-
-For the probe's masses, M≤18354 leaves at least 1dB headroom and a one-PCM-LSB rounding allowance: floor((32767·10^(−1/20)−1)/1.591064453125)=18354. A 20Hz exponential pole at 48kHz rounds to Q30 1070934451. Use checked-in integer constants generated offline and name the recurrence; the seed instead multiplies the whole difference-plus-feedback by its HP coefficient, which is a different transfer function. [VERIFIED: isolated arithmetic probe, exit 0; approved seed src/synth.c:2755-2762]
-
-Prove widths separately. At ≤150 merged changes/sample and |delta|≤M, a ring cell has at most 16 intervals of finite pending coefficient contributions. A conservative pending-sum bound uses 16·150·M·Cmax (under 2^41 at M=18354 and Cmax=28452); the effective reconstruction bound is far tighter for the integrator. Q30 guard state fits int64, but naively multiplying a Q30 state by a Q30 coefficient does not. Reuse the seed's quotient/remainder multiply to avoid the wide product. Test negative rounding and phase-boundary correction on be32/MSVC. [VERIFIED: seed src/synth.c:2667-2673; arithmetic derived from measured coefficient maximum and locked sample-work bound]
-
-Use monotone owned TIA/POKEY tables from the adopted formulas and calculate gain from the maximum declared hardware. The preparation's POKEY table uses weighted bit drops and its TIA mix is nonlinear; do not replace them with raw-volume sums. Fix the preparation's DC-only clipping argument in the implementation PR. [VERIFIED: .planning/preparation/A7800-AUDIO.md:64-78; locked D-10,D-11]
-
-Make table normalization dimensionally explicit. The literal TIA shape n/(n+30) reaches 0.5 at n=30. If the current weight represents 2.5V at full scale, normalize the table to 2n/(n+30); alternatively retain the literal shape and use its 5V supply normalization. These are equivalent expressions of the adopted curve, not alternative analog models. Do not silently multiply a half-scale table by an already full-scale weight. Generate endpoint/current-ratio tests before freezing PCM. [VERIFIED: .planning/preparation/A7800-AUDIO.md:61,72,74-76; arithmetic derivation from quoted n/(n+30)]
-
-## Spectral Method and Early Risk
-
-### What the sibling test establishes
-
-The opened sibling judge literally says `Include folded aliases of the first 512 harmonic orders.` Its tone generator rounds to a coherent FFT bin. This contradicts this phase's intended rejection of folded aliases. Reuse the minimal FFT/capture mechanics if helpful, replace its classification and tone scheduling, and make an intentionally aliased path fail. [VERIFIED: approved seed tests/runner/test_spectral.c:168-182,237-265; locked D-20]
-
-### Measurement to pin in the first synthesis plan
-
-Recommended test-only method: 12000 output samples of settling (250ms at 48kHz), then 65536 actual int16 production samples; periodic four-term minimum Blackman-Harris window, w(n)=0.35875−0.48829cos(2πn/N)+0.14128cos(4πn/N)−0.01168cos(6πn/N). Normalize peak amplitude as 2|DFT|/sum(w). Use double math only in the test executable with the platform math library, or the permitted sibling integer FFT if it meets the same negative controls. No runtime or CI analysis package is needed. These numeric harness choices are recommendations in the delegated discretion area. [VERIFIED: locked D-20; CITED: https://www.analog.com/media/en/technical-documentation/application-notes/an215.pdf]
-
-Pin the frequency search strictly to 0<f<16000Hz. For audible intended fundamentals, report 20log10(unintended_peak/fundamental_peak) in dBc; for ultrasonic-only input, report 20log10(unintended_peak/32767) in dBFS. Use a fitted sinusoid or tightly bounded window-peak interpolation to normalize an off-bin fundamental; nearest-bin amplitude alone underestimates it. Mask only the physical in-band intended lines and a justified finite leakage neighborhood (initial recommendation ±5 FFT bins), never modulo-folded harmonics. Bound aggregate leakage from multiple intended lines and test the analyzer on off-bin known sines. Noise/distortion modes require an explicit expected physical line set, not a square-wave harmonic assumption. [VERIFIED: locked D-20; CITED: https://www.dsprelated.com/freebooks/sasp/Spectrum_Analysis_Windows.html; recommendation derived from the stated measurement contract]
-
-Use actual TIA event spacing, including its uneven B phases, and POKEY timers through the production clock/mixer/kernel/blocker. Include TIA AUDC4/AUDF sweeps, POKEY fast AUDF0/1/3, useful starting phases, actual slow-clock segments, one channel and synchronous/all-channel stress. Check PCM as delivered, plus internal pre-quantized output when locating a failure. A test-only nearest-sample/zero-order-hold version of the same tones must breach the threshold; also inject a known in-band spur near the exclusion-mask edge. [VERIFIED: locked D-20; recommended adversarial extensions]
-
-### Isolated probe results — neither production pins nor certification
-
-Command `python3 /tmp/muhtari_sound_probe.py` compiled a dependency-free C probe and returned exit 0. It used the approved Q15 kernel/correction, exact 88/13125 tick phase, a double-precision 20Hz blocker, rounded int16 output, the settling/capture/window above and a 0→16000 level swing. It did not implement POKEY chip logic, actual nonlinear cartridge scaling or production frame carry. Its peak search masked only the audible TIA fundamental ±5 bins. [VERIFIED: isolated probe run 2026-10-20, exit 0]
-
-| Input schedule | Physical fundamental | Largest unintended peak below 16kHz | Result at probe scale |
-|---|---:|---:|---:|
-| TIA B spacings 224/232, div2 | 15699.7608Hz | 13123.5352Hz | −82.4215dBc |
-| POKEY equivalent AUDF0, edge every 16 ticks | 223721.5909Hz | 834.9609Hz | −74.1340dBFS |
-| POKEY equivalent AUDF1, edge every 20 ticks | 178977.2727Hz | 750Hz | −81.6910dBFS |
-| POKEY equivalent AUDF3, edge every 28 ticks | 127840.9091Hz | 477.5391Hz | −80.5271dBFS |
-
-The dBFS result changes with the final declared-hardware scale, while dBc does not. A production single POKEY channel may pass after legitimate headroom scaling; synchronous maximum channels can be louder. Do not tune the test signal amplitude to hide the problem. First measure final tables/blocker and determine whether coefficient/interpolation precision is responsible before proposing a change to a locked synthesis choice. If the unchanged seed cannot pass, record that new evidence and revise the implementation plan within this same research finding; do not mark the requirement satisfied or add speculative filters. [VERIFIED: isolated probe limitations; locked D-08,D-10–D-12,D-20]
-
-A falsification probe postponed interpolation rounding by retaining exact coefficient numerators over 13125 while leaving the Q15 kernel rows unchanged. Command `python3 /tmp/muhtari_sound_precision_probe.py` returned exit 0. AUDF0 still measured −74.5977dBFS at the same level16000; AUDF1 improved to −86.7058dBFS and AUDF3 to −82.3266dBFS. Therefore “more interpolation precision alone fixes the ultrasonic case” is not supported. These remain isolated probe results with the limitations above. [VERIFIED: isolated precision probe run 2026-10-20, exit 0]
-
-### Feasibility resolution: explicit minimal D-08 revision
-
-**Use 16 taps, 32 phases, Q23 coefficient rows and the existing interpolated event/ring structure.** Regenerate the owned coefficient table from the seed's stated Nyquist-sinc/Kaiser-beta8 integral over 15 samples; retain exact row-sum correction, phase32 shifted endpoint and the integer 20Hz blocker. This revises D-08's coefficient precision only. The approved pin still supplies the architecture and required attribution; the regenerated higher-precision table is an explicitly documented adaptation. Do not retain the plan's stale identity `exact-q15-16x32-dc20`; name the result `exact-q23-16x32-dc20`. No new profile, rate, filter, dependency or automatic quality switch is introduced. [VERIFIED: feasibility commands/results below; approved seed src/synth.c:1-47,2697-2761; locked D-08,D-09,D-12]
-
-The new evidence is sufficient to reopen the literal Q15 precision: its nine measured failures below conflict with SND-05, while changing coefficient precision alone supplies a passing route at slightly higher derived gain. This is a prescriptive research recommendation for the orchestrator to incorporate in plan04-01 and its preparation update. It is not a claim that original D-08 already authorized Q23, and the original locked context above is deliberately preserved verbatim. [VERIFIED: local feasibility/sweep experiment; SND-05 and locked D-08]
-
-**Coefficient generation:** for phase p of 32 and tap j of 16, integrate sinc(x)·I0(8sqrt(1−(x/7.5)^2))/I0(8) on the intersection of [j−7−p/32−0.5,j−7−p/32+0.5] and [−7.5,7.5]. Round each integral to signed Q23, then correct tap7 for the first half of phases or tap8 for the second half so the row sums to 8388608. Integrate only inside the compact support; treating a support endpoint as zero in a composite quadrature introduces avoidable endpoint error. In the isolated generator, Simpson128 and Simpson256 give identical Q23 rows. A regenerated Q15 table differs from the approved seed by at most two Q15 LSBs; that small generator difference did not cure its spectral failure. [VERIFIED: /tmp/muhtari_sound_feasibility.py and quadrature-refinement command, exit0]
-
-**Gain is fixed by hardware and transient safety, not spectral convenience.** Normalize the adopted TIA full current as 2.5/18 mA and one POKEY's full current as (3.8/6.8)·P(1) mA, where P is the adopted saturation curve. For a declared chip count c, divide the bound-derived maximum mixed level M across TIA and c cartridge currents. One channel at volume15 contributes P(0.25); four coherent channels contribute P(1), including nonlinearity before mixing. The two-chip stress uses both chips at the same phase. This is conservative DAC-level stress; actual chip tests must honor which channels can select the fast clock and their output polarity, rather than falsely claiming every channel independently selects that clock. [VERIFIED: .planning/preparation/A7800-AUDIO.md:71-76,85-93; manual AUDCTL register; feasibility probe]
-
-The Q23/32 production-convention reconstruction bound measured L1=13341774/8388608=1.590463399887085. The same analytic blocker/rounding rule gives **M=18361**. Maximum corrected-row coefficient magnitude is 7283992; the conservative pending product bound 16·150·18361·7283992=320979305068800 remains below 2^49. Convert integrated Q23 to Q30 by multiplying128, then use quotient/remainder multiplication for the Q30 blocker. The coefficient table becomes 512 int32 cells (2048 bytes instead of the seed's1024); the impulse ring remains16 int64 slots and per-event work remains16 taps. [VERIFIED: /tmp/muhtari_sound_feasibility.py, coefficient/width probe, exit0; arithmetic derivation]
-
-The bound-derived all-channel amplitude at two chips is **16332**, versus **16325** for the original seed at its own M=18354. Thus the passing candidate was tested slightly louder, not at a weakened amplitude. One-chip, one-channel and all-channel amplitudes were each calculated from the same current-ratio equation; no test has an independent level knob. [VERIFIED: feasibility/sweep outputs and generator]
-
-Commands `python3 /tmp/muhtari_sound_feasibility.py` and `python3 /tmp/muhtari_sound_sweep.py` both returned exit0. Each candidate's132 cases include actual TIA B-spacing equivalents with AUDF0–31; POKEY-equivalent AUDF0/1/3; one/two declared chips; one/all active channels per chip; offsets0,7,137 ticks. The pipeline uses exact integer tick phase, corrected fixed-point coefficients, **integer** Q30 blocker coefficient1070934451 and final int16 rounding. Captures use the same12000 settle/65536 capture/BH4 window and physical-only in-band harmonic masks described above. No ultrasonic harmonic is folded into an exemption. The reported TIA dBc denominator is the maximum windowed fundamental-bin amplitude, a conservative underestimate relative to a fitted off-bin amplitude. [VERIFIED: isolated C sources generated by feasibility/sweep commands]
-
-| Candidate | Derived M | Worst TIA dBc | Worst POKEY dBFS | Exact cases failing −80 | Deliberately aliased cases rejected |
+| Phases | Maximum coefficient magnitude | Positive mass P | Negative mass N | L1 numerator P+N | Derived M |
 |---|---:|---:|---:|---:|---:|
-| Approved Q15/32 seed |18354|−82.34600|−73.94392|9/132|132/132|
-| Same kernel family regenerated Q15/32 |18354|not separately swept|−73.59387 in focused test|fails|not used for recommendation|
-| **Recommended Q23/32** |**18361**|**−82.10380**|**−94.71708**|**0/132**|**132/132**|
-| Examined Q23/128 |18359|−89.47665|−102.77320|0/132|132/132|
+| 64 | 7283992 | 10865505 | 2476897 | 13342402 | 18360 |
+| 128 | 7283992 | 10865661 | 2477053 | 13342714 | 18359 |
 
-Choose Q23/32 as the minimum measured correction; increasing phase count is unnecessary for the tested acceptance and is not part of the recommendation. The narrowest measured margin is2.10dB on TIA AUDF0, so production must retain the actual-model sweep and phase-offset tests. The alias control bypasses the kernel with nearest-sample level capture while retaining the same gain/blocker/int16 output; its worst TIA result is−9.18dBc and every case is rejected. The quality judge therefore distinguishes aliased output without masking aliases or changing scale. [VERIFIED: complete sweep and aliased-control results, exit0]
+For64 phases L1=1.590538263320923. The unchanged blocker has one positive and one negative impulse mass, so its conservative peak is L1*M plus rounding allowance. Retain one full PCM LSB for feedback truncation accumulation and final rounding. Thus M=floor((32767*10^(-1/20)-1)*8388608/13342402)=18360. At M18361, this bound plus oneLSB is29204.873052835464, exceeding the one-dB limit29203.619489828441; this is why the old M cannot be retained for the headroom proof. At M18360 the bound is29203.282514572144, below that limit. The fixed85:342 current ratio and Q12 gain4096 do not change. [VERIFIED: bound arithmetic, production blocker docs/hardware/audio.md:29-37,88-136; locked D-26]
 
-**Resolution boundary:** feasibility is established for a concrete bounded integer route. Production coefficient generation, owned mixer quantization, actual chip traces, carry and platform parity are still implementation acceptance tests; isolated equivalent schedules do not certify those unimplemented components. The planner now has a passing route rather than an instruction to execute an unchanged seed known to fail. [VERIFIED: experiment scope; source inspection confirms production sound is not implemented]
+The old numeric L1, masses and maximum-level proof are invalidated. Cmax remains7,283,992 in this enumeration, but retain the width proof independently: 16*150*18360*Cmax <2^49 for a pending ring cell; temporary integrator-plus-cell <2^50; P*M <2^38; Q23-to-Q30 conversion times128 <2^45; input difference plus feedback <2^47; quotient/remainder multiplication <2^60. The maximum mixed current and gain intermediate remain below2^34 and2^49. The 64-phase phase numerator is at most13124*64=839936 (<2^20), fitting uint32. Update numerical assertions from final coefficients, not by weakening expected bounds. [VERIFIED: candidate bound output; src/synth.c:99-114,116-142,180-205; docs/hardware/audio.md:114-136; integer arithmetic derived from quoted final inputs]
+
+Support remains16 samples, at most150 merged ticks per sample and16 coefficient applications per merged event. The instruction/bus carry proof is structurally unaffected: current declarations quote `MUHTARI__SYNTH_PCM_CAPACITY (801u + MUHTARI__SYNTH_CARRY_SAMPLES)`, with the retained overshoot constants 456,2*454,12,6 and8+7 accesses giving20,730ticks and139carry samples. Revalidate ring/order/FIFO/carry/partition/NULL/reset tests after integration; no support/clock/frame amendment is justified by this evidence. [VERIFIED: src/internal.h:23-60; docs/hardware/audio.md:38-55; locked D-09,D-17,D-29]
+
+## Reproducible owned coefficient generation
+
+Do not depend on a transient scratch filename. Add a small owned maintainer generator within the existing C/test-only-math conventions, committed with its formula and deterministic output format. A standalone C17 generator using math.h and an owned I0 series needs no package or runtime dependency. It is an implementation task, not an existing repository file. Generate candidate rows independently at Simpson128,256,512; require exact equality after quantization/correction; emit the selected checked-in int32 table. Runtime and regular CI consume fixed integer data and validate invariants; no new mandatory policy gate is needed. [VERIFIED: no package installation in this probe; docs/hardware/audio.md:18-29 and existing test-only math in tests/audio/test_spectral.c:1-15; proposed implementation recommendation under D-29]
+
+Use the documented integrand:
+h(x)=sinc(x)*I0(8*sqrt(1-(x/7.5)^2))/I0(8) inside[-7.5,7.5].
+For phase p of P and tap j, integrate over intersection of[j-7-p/P-0.5,j-7-p/P+0.5] with support.
+Use true endpoint integrand values, not artificial zero. Quantize each integral by floor(area*8388608+0.5); then correct tap7 for p<P/2, otherwise tap8, so sum is8388608. Define the virtual phaseP as phase0 shifted right by one tap with left zero; row0 final cell iszero. Runtime interpolation preserves signed nearest/ties-away difference rounding and exact row correction using the existing phase threshold. [VERIFIED: docs/hardware/audio.md:18-33; src/synth.c:89-114; fresh scratch generator128/256/512 convergence]
+
+The fresh generator's rows coincide at all three subdivision counts. To compare generators independently of C whitespace, hash phase-major/tap-major signed-int32 values serialized little-endian:64-phase SHA256 `8fdfc75effc7565eff4996b71ad966f4c0d327909ede230d052dc58bc239d66e`;128-phase `998e669a3aba82ccf2494ca22600ef06751a6921482e93cbeed468318af4f514`. Table sizes are4096/8192bytes. Treat these as candidate data fingerprints; the committed generator must reproduce selected output and convergence before it replaces production rows. [VERIFIED: generation and packed coefficient hash commands, exits0]
+
+## Invalidated and retained proofs
+
+| Evidence | Disposition | Required action |
+|---|---|---|
+| Q15 seed nine equivalent-schedule failures | Historical measurement retained, not rerun | Do not restore Q15 |
+| Q23/32 original132 schedule success | Historical scope valid; fresh current run still reports those132 passing | Keep all132; do not extrapolate to actual slow clocks |
+| Fixed32 actual slow AUDF1 quality | Refuted by six retained/currently reproduced failures | Replace density under adopted amendment |
+| Existing32 coefficient masses/L1/M | Invalid for new rows | Substitute fresh exhaustive coefficient/alignment proof |
+| Existing maximum coefficient and width powers | Cmax revalidated in candidate; width claims need final source check | Recompute numeric products and assert final bounds |
+| TIA model/lattice, clocks, raw source IDs | No evidence invalidates them | Preserve behavior; run existing vectors |
+| 16tap support, ring/work and carry structure | Unchanged mathematically by density | Recheck final implementation dimensions and contract tests |
+| PCM hashes | Expected to change with synthesis | Freeze only after final production/platform verification |
+| Video/raw-transition hashes | Synthesis recovery gives no cause to change them | Investigate any drift; never blanket repin |
+| Host/platform parity | Not established by local candidate | Complete existing downstream slices |
+
+[VERIFIED: reproduced baseline and candidate commands; opened current source and 04-06-SUMMARY.md; locked D-25–D-30]
+
+## Precise planning amendments and resume boundary
+
+1. Keep completed04-01–04-05 history. Amend04-06 Task2 and its declared file scope to include the table definition/declaration/count/endpoint, owned generator, numeric headroom assertions and audio documentation. Do not reexecute Task1 or discard its retained Task2 GREEN attempt.
+2. First preserve/reproduce the committed six-failure RED evidence, then implement the selected64-phase rows and corrected endpoint dimensions. Compare at M18361 before the separately justified finalM18360. Keep132+132+72 checks and independent PCM comparisons; never replace them with synthetic-only captures.
+3. Reproduce owned coefficient convergence/fingerprint, exact row/endpoint invariants, all13125 phases/all88alignments, adverse production sequences, full signed blocker bound and intermediate widths. Update identity and hardware/preparation prose together; never inherit the32-phase numeric proof.
+4. Retain compact representatives from the bounded mixed/HP search and independently chosen origins in existing test coverage. Preserve actual half-edge schedules and document physical period/sidebands. One-off true-frequency refinement supplies candidate evidence; a permanent analyzer improvement is a tooling seed.
+5. Revalidate affected core audio, TIA, POKEY, frame/partition/NULL/reset/carry tests with the final production objects; run fullCI and existing hygiene. Measure bounded hostile workload/performance using the current conventions. No automatic quality mode or new fallback.
+6. Reconcile04-06-SUMMARY only after Task2 GREEN evidence passes. Only then unblock04-07 onward. Keep the existing expansion, maps/IRQ, transition/PCM hashing, revision/pin migration, hosts and platform evidence. Do not mark allSND requirements complete just because synthesis recovers.
+
+These are executable tasks inside the authorized phase recovery; no additional owner choice/checkpoint is needed for candidate selection or the bound-derived one-LSB scale correction. [VERIFIED: locked D-25–D-30; current 04-06-PLAN.md:1-140 and 04-06-SUMMARY.md]
 
 ## Don't Hand-Roll
 
-| Problem | Use | Avoid |
-|---|---|---|
-| SHA-256 and hash streaming | Existing runner SHA-256 | New package or hashing inside core |
-| Reconstruction machinery | Approved seed structure/interpolation/ring; explicit Q23 coefficient adaptation, retimed and measured | New resampler architecture |
-| Host audio | Existing libretro mono duplication/callback paths | Device management or recording automation |
-| Spectral transform mechanics | Minimal permitted sibling harness or small test-only adaptation | Analysis runtime/package |
-| Fixtures and platform coverage | Existing built recipes/inventories/hash comparison | New sample-fetch infrastructure or copyrighted committed bytes |
-| Hardware behavior | Owned models from documentation with vector expectations | Porting excluded emulator source or copying facts-only RTL structure |
-
-These choices follow locked scope and the opened provenance/build seams. [VERIFIED: locked D-01,D-08,D-13,D-20–D-24; PROVENANCE.md:1-62; runner/sha256.c; libretro/libretro.c:468-520]
+Use the current event/ring/blocker, nonlinear mix, plain-C tests, owned FFT, runner SHA256, fixture recipes and CI/platform lanes. Build only the missing owned coefficient-generation recipe and minimal recovery vectors. Do not introduce a resampler dependency, larger support, new filter, public profile, device code, copied excluded source, exhaustive permanent configuration matrix or policy machinery. [VERIFIED: locked context D-08–D-30; PROVENANCE.md; inspected synth/test seams]
 
 ## Common Pitfalls
 
-1. **Wrong clock or write edge.** Equally spaced TIA edges, MARIA-derived TIA phase, tick/4 POKEY and start+6 slow writes all violate the adopted timing. Detect with timestamp vectors, RSYNC then WSYNC, and slow/held POKEY traces. [VERIFIED: locked D-01–D-04; src/bus.c:16-21]
-2. **Sorting only inside each chip.** Lazy catch-up can emit a later TIA event before an earlier POKEY event. Merge chronological streams and source-order equal ticks before notifying; retain meaningful same-source order independently of mixed-level coalescing. [VERIFIED: locked D-14]
-3. **Observing future/failed frames.** CPU overshoot can leak into a current-frame transition digest; BIOS refusal can occur after execution. Stage future raw events and publish only the allowed prefix. Runner must never finalize success hashes after any execution/dump failure. [VERIFIED: src/frame.c:79-90; runner/main.c:900-925; locked D-16–D-18]
-4. **Freezing inaudible state.** Zero AUDV, init and volume-only output do not imply stopped hidden clocks. Test RANDOM and resumed audio after silence. [VERIFIED: .planning/preparation/A7800-AUDIO.md:85-92; locked D-04,D-19]
-5. **POKEY mapping corrupts ROM or MARIA.** Keep write-only overlap priority and read/peek/DMA distinctions. Test all existing map codes, mirrors, valid/invalid v4 wiring and a lone @440 with secondary identity. [VERIFIED: src/cart.c:117-121,195-214,506-520,856-859; locked D-05,D-06,D-14]
-6. **Green silence-only host tests.** Existing host PCM checks exercise silence; add a deterministic non-silent cartridge/sample and compare every sample/count, missing callbacks and reset/reload. [VERIFIED: tests/libretro/host.c:7-11; libretro/libretro.c:468-520; locked D-22]
-7. **Clipping hidden by a clamp or quality hidden by masks.** Use the complete transient bound, pre-clamp counts/peaks, aliased controls and production scaling. [VERIFIED: seed src/synth.c:2682-2694; locked D-11,D-20]
-8. **Changing the public contract accidentally.** Preserve API/ABI, partial frames, NULL output semantics, no-content silence and instance isolation; do not add public debug/profile options. [VERIFIED: locked D-09,D-13,D-17,D-18,D-23]
+- A table-only edit misses the hardcoded terminal row and declaration dimensions; audit all count-dependent sites.
+- Reusing old L1 silently invalidates one-dB headroom even though the delta is small.
+- Reducing gain before comparison can disguise poor rejection; compare at18361 and test final18360 independently.
+- An FFT-bin peak understates off-bin sinusoid amplitude; use continuous-frequency one-off refinement.
+- Average mixed-clock frequencies produce incorrect masks; derive period from the actual raw schedule.
+- Exact ultrasonic int16 silence is legitimate only with proven continuing raw events and synthesis activity.
+- Summary existence is not completion; downstream plans remain gated by actual Task2 GREEN.
+- The isolated linker override is not production CI/platform certification.
+
+[VERIFIED: observed source/probe outcomes and locked recovery constraints]
 
 ## Code Examples
 
-The following is proposed algorithmic pseudocode, not an existing internal function signature. It restates locked D-14,D-15; serialized sizes/source IDs are copied in the User Constraints section. [VERIFIED: locked D-14,D-15]
+Proposed implementation pattern, deliberately expressed without inventing an existing API:
 
 ```text
-on raw change(tick, source, level):
-    if level differs from last raw level:
-        preserve event in chronological stream
-        observer sees LE64(tick) || U8(source) || LE16(level)
-    apply all mixed source changes at tick before adding one synthesis delta
-
-after a successful logical frame:
-    for each actual mono sample:
-        runner SHA-256 consumes LE16(sample representation)
-    increment completed frame/sample counters
+generate rows at 128, 256 and 512 subdivisions
+assert corrected integer tables are identical
+emit selected fixed integer rows and matching phase-count dimension
+for each integer event phase:
+    interpolate adjacent rows, including shifted endpoint
+    correct row sum exactly
+for each output alignment:
+    compute signed step-difference weights
+    realize both extremizing level schedules through production ring
+derive final gain from signed blocker bound plus rounding allowance
+compare fixed common gain, then validate final gain
 ```
 
-For headroom verification, use the summation-by-parts algorithm above against the production coefficient function. For chip tests, assert the documented table/figure values before comparing golden digests. For host tests, compare the actual callback buffers to a parallel public-core instance, not another adapter conversion. [VERIFIED: locked D-11,D-19,D-21,D-22]
+This is a task algorithm, not a claim that a generator or new signature exists. [VERIFIED: candidate algorithms above; existing coefficient/bound mechanisms inspected]
 
-## Test and Evidence Integration
+## Evidence and limits
 
-### Requirement coverage to schedule
+Commands were run in this research session; scratch logs/results remain outside the repository and are not deliverables.
 
-These are implementation tasks in existing test infrastructure; proposed names are intentionally left to the planner. [VERIFIED: locked D-19–D-24; tests/tests.cmake:27-57; tests/core/tests.cmake:5-33]
+| Command | Exit | What it establishes |
+|---|---:|---|
+| `ctest --test-dir build/ci -R '^audio.spectral$' --output-on-failure --no-tests=error` | 8 | Current production retains exactly six actual slow AUDF1 failures, worst-78.28741dBFS |
+| `python3 /tmp/muhtari_recovery/run.py` | 0 | Generates64 then128, checks128/256/512 convergence, compiles isolated candidate objects, runs132+72 production and132controls at commonM18361 |
+| `/tmp/muhtari_recovery/64/bound` | 0 | All13125 phases/88alignments and176 candidate event/ring extremizers; fresh64 masses and M |
+| `/tmp/muhtari_recovery/128/bound` | 0 | Same enumeration for128; larger table and lower headroom scale |
+| `python3 /tmp/muhtari_recovery/explore.py` | 0 | 84mixed/HP cases at commonM18361, independent square PCM reference, continuing raw changes/kernel activity |
+| `/tmp/muhtari_recovery/64-final/spectral production` | 0 | FinalM18360 candidate132+72 cases pass |
+| `/tmp/muhtari_recovery/64-final/spectral controls` | 0 | FinalM18360 rejects all132aliased controls |
+| `/tmp/muhtari_recovery/64-final/mixed` | 0 | FinalM18360 mixed/HP checks pass |
+| `git diff --check` | 0 | Research patch whitespace |
 
-| Area | Required evidence |
-|---|---|
-| TIA | Each AUDC period/ones/startup pattern; multiple AUDF; lowering/wrap; immediate volume; independent lattice; ungated writes; RSYNC/WSYNC and ties |
-| POKEY | N+4/N+7 and base divisors; reload/STIMER/preemption; joined low/high; two-tone delay and force break; HP half phase; staggered polys; RANDOM/init; slow and held cycles; volume-only |
-| Decode/IRQ | Every mapped window/mirror; ROM overlaps; DMA/peek purity; valid effective v4 mask; lone @440 identity; IRQ mask/ack/persistence, sampled-I instructions, held polls, NMI priority/hijack |
-| Synthesis | Exact row/interpolation invariants; ring wrap; phase/cadence; bounded hostile workload; headroom/widths; actual-tone spectral and negative controls |
-| Output boundaries | Partial fast/BIOS first frame; ordinary invalid calls atomic; sticky BIOS error separately; NULL audio followed by audible output; split rendering and observer equality; power cycle |
-| Runner | Canonical LE records and PCM; no initial-zero event; no unchanged notifications; separate labels; completed counts/rate/revision/synthesis identity; successful stop and failed-run digest suppression |
-| Hosts | Batch preferred over sample callback; sample fallback; equal L/R; exact counts/core parity; partial first frame; no callbacks; reset/reload; boot-to-play non-silence and muted negative control |
-| Platforms | Sound and POKEY sample transition/PCM pins in hashes.txt on six native lanes, be32, applicable WASM; nofp/globals/allocator/fuzz/properties stay green |
-
-The existing platform writer currently writes only the test card's frame/PNG hashes. Extend it with actual non-silent fixture paths and dependencies, so CI compares sound output rather than merely running unrelated audio units. It creates `"${OUT}/hashes.txt"` via file(CONFIGURE; the CI comparator expects seven native/be32 files and WASM compares separately to Linux. [VERIFIED: tests/cmake/hashes.cmake:4-22; .github/workflows/ci.yml:264-284,287-318]
-
-Current fixture registration creates `set(MUHTARI_BUILT_DIR ${PROJECT_BINARY_DIR}/built)` and per-sample fixture names `built_${name}`. Add sound dependencies to the hash-writing test, and list portable audio tests in both applicable inventories. Dynamic-libretro cases stay out of WASI, whose test registry already excludes them. [VERIFIED: tests/built/tests.cmake:20,37-63; tests/tests.cmake:31-51]
-
-### Pin migration must remain one intentional behavior revision
-
-The current value is `MUHTARI__BEHAVIOUR_REVISION 1u`; the fixture marker is `# behaviour_revision 1`. Mapping the existing five POKEY samples changes their observed reads, so perform the revision migration in the same commit that enables @450. Preserve ABI/API. [VERIFIED: src/instance.c:8-12; tests/built/expected.txt:7-11; locked D-23]
-
-The exact affected sample names are `eightysix, pokey, rmtramcompressiondemo, rmtramdemo and rmtromdemo`; the todo requires five frame chains and four title@120 rows, while eightysix uses boots@120. The pin writer fills only a '-' column at the current revision; changing the revision resets other frame pins for their own rewrite. Compare every non-POKEY sample's old/new chain, investigate any drift, regenerate compatibility docs and record old/new values/causes in SUMMARY. Keep the todo until evidence exists. [VERIFIED: .planning/todos/pending/2026-10-19-re-pin-the-pokey-samples-when-pokey-lands.md:15-34; tests/compat/pin.cmake:54-65,99-106; docs/emulation-tests.md, Writing a pin]
-
-Do not create more repository-policy machinery just for sound. Extend current tests/inventories and use the standard workflow as the phase check; benchmark hostile audio and record its command/exit status. Hosted RetroArch stays within its current case budget; no new recording/device checks are justified. [VERIFIED: AGENTS.md:22-37; locked D-12,D-22,D-24]
-
-## State of the Art
-
-This section records local before/after contracts, not unverified industry trend claims. [VERIFIED: sources below]
-
-| Existing behavior | Phase behavior | Evidence |
-|---|---|---|
-| Zero-filled PCM | Stateful mixed band-limited PCM | src/frame.c:99-101 and locked D-08–D-11 |
-| NMI-only CPU acceptance | NMI-priority plus explicitly wired timer IRQ | src/cpu.c:595-615,1489-1491 and locked D-06 |
-| Parsed sound metadata without cartridge audio | Effective mapped POKEY reads/writes | src/cart.c:856-859 and locked D-05 |
-| Silence-only adapter parity | Non-silent sample-for-sample parity | tests/libretro/host.c:7-11 and locked D-22 |
-| Sibling coherent/folded-mask spectral judge | Actual lattice frequencies, no alias exemption | approved test_spectral.c:168-182,237-265 and locked D-20 |
-
-## Resolved Clock Conventions
-
-### Fast boot: actual phi2 origin, not a simulated BIOS
-
-Adopt the concrete convention already specified by plan04-04 Task1. Initialize all chip state once in power_on, with the adopted SKCTL03 compatibility default. Advance TIA's zero-start logic over absolute ticks0 through BOOT_TICK using its independent horizontal lattice. Fast boot has skipped CPU execution, so leave bus.phi2 at its existing0 and anchor POKEY's first clock segment at `(tick=BOOT_TICK, phi2=0)`; do not invent pre-handoff phi2 transitions or reset a previously clocked POKEY at handoff. Its first real cycle advances the chip normally. BIOS boot starts the segment at `(tick=0, phi2=0)` and follows its actual reset/BIOS bus cycles. [VERIFIED: .planning/phases/04-sound/04-04-PLAN.md, Task 1; src/boot.c:47-76,85-100; src/instance.c:99-111]
-
-This separates the absolute raw-event timestamp epoch from the existing actual-cycle count. The fast-boot output sample grid starts at its released handoff, with audio_rem0, preserving54 samples in8190 ticks; BIOS preserves785 samples in117174 ticks. Pre-handoff TIA volume is zero, so advancing its hidden logic requires no invented audible residue. The model's SKCTL compatibility default is deterministic; it is not a claim that a physical cold chip, or a real skipped BIOS, has that same phase/state. This resolves the implementation convention under D-03,D-04,D-07,D-17 without changing CPU/RIOT timing or asking the owner for a physical-power-on decision. [VERIFIED: src/boot.c:10-16,43-102; src/frame.c:42-56; adopted plan04-04 and locked D-03,D-07]
-
-### Half phases: retain the bus divider's asymmetric segment origin
-
-Use these explicit clock-edge offsets for a cycle whose existing bus-call start is s. The next phi2 rise always follows the actual prior fall, including the extra low-phase tick after a slow cycle. Existing bus counts may still be committed at call completion; the chip's edge cursor must use the data/fall timestamp separately. [VERIFIED: docs/hardware/bus.md:24-32; src/bus.c:16-21,273-285; derived consistent edge representation]
-
-| Segment | phi2 rise | phi2 fall/data | Existing call completion/next start |
-|---|---:|---:|---:|
-| Fast or repeated held cycle |s+2|s+4|s+4|
-| Slow cycle |s+2|s+5|s+6|
-
-For example, a slow call at0 has rise2/fall5; the next call starts6 and its rise is8. Thus the slow high phase is3 ticks and the following low phase is3 ticks, exactly the documented extra tick in phi2 and the next phi1. Consecutive fast edges instead have2-tick half phases. Applying `start+3/start+6` to a slow call would wrongly move its data/fall beyond the released start+5 contract. [VERIFIED: docs/hardware/bus.md:28-32,72-75; arithmetic derivation]
-
-Cross-check: after reading the exact MIT license and file headers, the approved MiSTer pin's Maria clock divider was opened as documentation/circuit evidence only. It latches the slow selection for the opposite half and chooses divider intervals2 or3 on alternating phase enables; this supports preserving both half-edge intervals, rather than treating the aggregate six-tick call as an indivisible timer step. No RTL expression or structure is to be copied into the owned model. This is T3 implementation evidence, not a new hardware measurement. [CITED: https://github.com/MiSTer-devel/Atari7800_MiSTer/blob/0dc8ad2e3ff7/rtl/Maria/maria.sv#L192-L220; VERIFIED: PROVENANCE.md:27-29; exact-pin LICENSE and file-header reads, exit0]
-
-For the adopted high-pass delay, advance its pipeline by the next three actual CLK2 half-edge boundaries from the high-channel clock event, not by multiplying a phi2 count by a guessed fixed duration. In an all-fast segment this is6 ticks; wholly slow half phases can make it9; mixed segments use the actual edge sequence. Preserve captured data and output-latch stages in the owned functional model and assert the manual's nominal half-cycle pulse vector plus a stretched-edge vector. This is the explicit compatibility convention for the manual's approximately1.5-cycle path, with D-07's physical uncertainty retained. [CITED: https://www.virtualdub.org/downloads/Altirra%20Hardware%20Reference%20Manual.pdf p107; VERIFIED: docs/hardware/bus.md:24-32; locked D-04,D-07]
-
-## Assumptions Log
-
-No unresolved design assumption remains as a planning prerequisite. The prior hypothesis that unchanged Q15 would pass was **refuted**, not renamed resolved: it fails9/132 hardware-scaled cases. Q23/32 supplies a measured feasible correction; production reproduction remains an explicit acceptance gate. The boot and half-phase conventions above are adopted compatibility rules, with their evidence and physical limits stated. [VERIFIED: feasibility sweep; current plan04-04; clock sources above]
-
-Carry-capacity arithmetic, exact production-table quantization, actual chip spectra and cross-platform equality remain implementation proof obligations. They are not unknown architectural choices and are not certified by the isolated feasibility probe. [VERIFIED: locked D-09,D-17,D-20,D-21; experiment scope]
-
-## Open Questions
-
-No blocking research question remains for this phase's adopted functional model. Physical TIA pattern disputes, STIMER polarity, cartridge loading/gain and physical startup state retain D-07's explicit confidence qualification and later hardware milestone; they do not block this concrete implementation route or create owner UAT. [VERIFIED: .planning/preparation/A7800-AUDIO.md:171-187; locked D-07]
+**Hosted run URL:** none; no hosted run was started. No new fullCI, frame-contract, platform-parity or performance certification is claimed. Scratch commands explain what was measured; the planned committed generator and existing production checks provide the durable reproduction path. No candidate is certified for release by this research. [VERIFIED: command outputs this session]
 
 ## Environment Availability
 
-The following probes were read-only; availability describes this research environment, not every CI host. [VERIFIED: local command/version probes 2026-10-20]
+CMake4.4.3, Apple clang21.0.0, Python3.14.4 and the current built production library were available. No new package or network service is required for execution. The primary DSP author page was opened via web fallback after the research seam selected an unavailable Jina provider; its digest was cached with the confidence seam's MEDIUM tier. Physical/RTL referees remain the later milestone; their absence does not block this phase's adopted documentary model or create owner UAT. [VERIFIED: probes/query/open/store commands, exits0; locked D-07]
 
-| Dependency | Available | Version / evidence | Fallback |
-|---|---|---|---|
-| CMake, C compiler, Ninja | yes | 4.4.3; Apple clang21.0.0; 1.13.2 | Existing CI toolchain |
-| Approved sibling git objects | yes | Both pins resolved; permitted files read at approved pin | Fetch only permitted pinned files after license verification |
-| wasmtime pinned runtime | yes | 48.0.6 in existing build pins | Existing fetch-pin recipe |
-| 7800basic package/OpenBIOS source | yes | Existing build-pin files observed | Existing fetch-pin recipe; build bytes remain untracked |
-| Context7/Jina/ctx7 | unavailable here | No callable matching tools/CLI found | Built-in web open/search of primary docs |
-| NumPy | unavailable | Import produced ModuleNotFoundError | No need: dependency-free C spectral probe and test harness |
-| Hardware/RTL oracle | deferred | Outside locked phase | Documentation-derived vectors and confidence-qualified claims |
+## Assumptions Log
 
-**Missing dependencies with no fallback:** none identified for planning. Physical accuracy claims remain explicitly limited; no console measurement is required here. [VERIFIED: locked D-07,D-19,D-20]
+No unverified training-knowledge assumption is promoted to a locked implementation decision. Outstanding production reproduction, generator ownership, performance and eventual platform parity are explicit executable proof obligations. Finite matrices do not certify arbitrary hostile register streams spectrally; bounded work still must hold for those streams. [VERIFIED: scope of measured experiments and locked D-09,D-12,D-21,D-29]
 
-## Sources and Confidence
+## Open Questions
 
-- **Local authoritative sources opened:** AGENTS.md; locked phase context; requirements/state/roadmap/config; preparation index, decisions, audio/system/architecture/cartridge/conformance/host/engineering references; provenance and asset policy; current core, host, runner and test/build seams cited inline. Local implementation facts are read directly, not inferred from grep alone. [VERIFIED: session file reads]
-- **Approved seed:** nesturbator approved pin's LICENSE, src/synth.c and synth/spectral tests; exact blob comparison and arithmetic probes described above. Its tests establish what they do, not physical 7800 fidelity. [VERIFIED: git show/ls-tree/diff, exit 0]
-- **Altirra Hardware Reference Manual:** [2026-01-02 edition](https://www.virtualdub.org/downloads/Altirra%20Hardware%20Reference%20Manual.pdf), CPU §3.4, POKEY ch5 and AppE. Edition matches the preparation pin. Documentation only; no Altirra source opened. [CITED: official manual URL]
-- **DSP author references:** [Windowed-sinc interpolation](https://www.dsprelated.com/freebooks/pasp/Windowed_Sinc_Interpolation.html), [DC blocker](https://www.dsprelated.com/freebooks/filters/DC_Blocker.html), [spectral windows](https://www.dsprelated.com/freebooks/sasp/Spectrum_Analysis_Windows.html). [CITED: linked author textbook pages]
-- **Primary window reference:** [Analog Devices AN215](https://www.analog.com/media/en/technical-documentation/application-notes/an215.pdf), minimum four-term Blackman-Harris window. [CITED: manufacturer application note]
-- **Failed lookup:** Visual6502 timing page returned HTTP403; no observation was inferred from that failed fetch. Altirra's CPU chapter supplied the primary flag-delay cross-check. [VERIFIED: web open result]
+No owner-blocking decision remains. The implementation must reproduce the64-phase route and proofs through final production objects; if that contradicts the isolated evidence, retain the failing case and diagnose coefficients/interpolation first. Any support/engine/arithmetic widening requires new measured cause and a new inventory of invalidated proofs under D-08. Do not create an owner approval or listening-test blocker. [VERIFIED: locked actual-chip D-08 amendment and D-25–D-30]
 
-The research-plan seam selected Jina/Context7/websearch; unavailable tools fell back to primary-document web access. The confidence seam returns MEDIUM for `--provider websearch --verified`, and the three research digests were cached with that tier. It returns LOW for unknown provider identifiers, so those identifiers were not used to inflate documentary confidence. No package registry verification is applicable. [VERIFIED: research-plan/classify-confidence/research-store commands, exit 0]
+## Sources
+
+- Local primary evidence: current context, requirements/state/roadmap/config; AGENTS; preparation index/decisions/audio and provenance; current synthesis/internal/chip/test/audio documentation; partial04-06 summary/plan. Source values are quoted beside discrete-value claims above.
+- Candidate primary measurements: regenerated coefficient convergence, isolated production-object captures, signed step enumeration/extremizers and bounded mixed/HP captures described with commands above.
+- Primary author DSP reference: [Implementation: table size and word lengths](https://www.dsprelated.com/freebooks/pasp/Implementation.html), opened2026-10-20; separates interpolation density from coefficient precision/support. Documentary confidence MEDIUM; project measurements carry the candidate conclusion.
 
 ## Metadata
 
-| Area | Confidence | Limit |
-|---|---|---|
-| Stack and code seams | HIGH for inspected local facts | No implementation or full suite run performed in research |
-| Hardware behavior | MEDIUM | Documented adopted models; physical disputes remain qualified |
-| Architecture | MEDIUM | Boot and half-phase conventions resolved; carry capacity remains an implementation proof |
-| Synthesis headroom | HIGH for isolated Q15/Q23 calculations; unproven in production | Re-run against final arithmetic/order |
-| SND-05 feasibility | HIGH for isolated equivalent schedules; production not certified | Q23/32 passes132/132 at derived hardware gain; unchanged Q15 refuted; aliased controls rejected132/132 |
-| Host/platform coverage | HIGH for existing infrastructure; proposed extensions unimplemented | Actual sound pins and callback evidence still required |
-
-**Research date:** 2026-10-20. **Validity:** through this phase unless source code, locked context or seed changes; remeasure all production quality claims before freezing pins. No implementation, fixture bytes or committed logs were added. The orchestrator owns artifact verification and commit. [VERIFIED: research task scope]
+**Standard stack:** HIGH, inspected existing C/test seams.
+**Architecture:** HIGH for current code and adopted phase scope; physical chip confidence remains qualified.
+**Candidate feasibility:** HIGH for the stated local matrices and arithmetic, not universal or final production certification.
+**Research date:**2026-10-20. **Validity:** until context, coefficient arithmetic or final production source changes; reproduce acceptance before freezing PCM pins.

@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
-status: Blocked on 04-06 Task2; context updated, targeted replanning next
-stopped_at: Phase 4 recovery context gathered; 04-06 Task2 remains blocked pending synthesis research and targeted replanning
-last_updated: "2026-10-20T21:38:53.591Z"
+status: Recovery planned; resume 04-06 Task2; production verification pending
+stopped_at: Phase 4 targeted recovery planned and checked; resume 04-06 Task2 GREEN before 04-07
+last_updated: "2026-10-20T22:04:37.258Z"
 last_activity: 2026-10-20
-last_activity_desc: Completed frame audio contracts plan 04-05
-state_head: a823c7a589870687fc660b51256f86b1ae4e9406
+last_activity_desc: Planned and checked 64-phase synthesis recovery; 04-06 Task2 remains unfinished
+state_head: 907db9fa657fc161a4f81e22dae739b82f39f8a3
 progress:
   total_phases: 4
   completed_phases: 3
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 
 ## Current Position
 
-Phase: 04 (Sound) — EXECUTING
+Phase: 04 (Sound) — READY TO RESUME TASK2
 Plan: 6 of 17
-Status: Blocked on 04-06 Task2; context updated, targeted replanning next
-Last activity: 2026-10-20 — Completed frame audio contracts plan 04-05
+Status: Recovery planned; resume 04-06 Task2; production verification pending
+Last activity: 2026-10-20 — Targeted recovery research and planning complete; 17 plans retained, 5 complete
 
 Progress: [████████░░] 75%
 
@@ -342,7 +342,9 @@ Recent decisions affecting current work:
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
-- 04-06 Task2 blocked: actual wholly slow AUDF1 independently reproduces a15136.23Hz spur up to-78.28741dBFS through locked16x32 Q23 kernel; fixed-80 gate fails. Preserve uncommitted Task2 work and resolve synthesis choice before expansion.
+- 04-06 Task2 remains unfinished: the production32-phase kernel retains six slow AUDF1 spectral failures (worst -78.28741dBFS). Fresh isolated64-phase research passes the retained and bounded mixed/HP matrices; amended04-06 requires production integration, commonM18361/final headroom-derivedM18360 acceptance and renewed proofs before expansion.
+- Execute resume override: select04-06 Task2 GREEN first even if generic inventory treats its SUMMARY file as completion. Its `status: blocked` and empty `requirements-completed` are authoritative. Preserve committed Task1 and Task2 RED, all eight retained files, and the blocked measurements; reconcile that summary only after final gates pass. Plans04-07 onward stay blocked until then.
+- Planning validation: independent checker passed with zero findings; decision coverage30/30 and post-planning requirement/decision coverage35/35. No production or hosted CI success is claimed by this planning step.
 
 ## Deferred Items
 
@@ -354,6 +356,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T21:38:53.436Z
-Stopped at: Phase 4 recovery context gathered; 04-06 Task2 remains blocked pending synthesis research and targeted replanning
-Resume file: .planning/phases/04-sound/04-CONTEXT.md
+Last session: 2026-10-20T22:05:06+00:00
+Stopped at: Phase 4 targeted recovery planned and checked; resume 04-06 Task2 GREEN before 04-07
+Resume file: .planning/phases/04-sound/04-06-PLAN.md
+Next command: `$gsd-execute-phase 4 --wave 6` — resume04-06 Task2 despite the existing blocked summary; do not skip to04-07.

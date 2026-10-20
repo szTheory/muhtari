@@ -255,7 +255,7 @@ Plans (one wave each; every plan depends on its predecessor):
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 04-06-PLAN.md — Owned POKEY tracer, resolved half edges and actual quality; Task2 blocked by independently reproduced slow AUDF1 spectral failure, see04-06-SUMMARY.md
+- [ ] 04-06-PLAN.md — Resume blocked Task2 GREEN: retained actual clocks, owned64-phase Q23 generation, common/final-gain spectra and fresh headroom proofs; keep Task1 complete and reconcile04-06-SUMMARY.md only after verification
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
