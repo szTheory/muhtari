@@ -509,6 +509,56 @@ static int dli_queued(void)
     return check_failures == 0;
 }
 
+/* Zone 0's DLL entry has DLI set, so VBE, which reads it at t 43 of line
+   16, raises NMI on the second phi1 after its end, t 50. The CPU enters the
+   handler once, on line 16, and only the sticky feature mask records it:
+   line 16 runs no burst (docs/hardware/maria.md, The DLI). */
+static int dli_first_zone(void)
+{
+    /* clang-format off */
+    static const uint8_t code[] = {
+        0xA9u, 0x07u,        /* $4000 LDA #$07 */
+        0x85u, 0x01u,        /* $4002 STA INPTCTRL */
+        0xA2u, 0xFFu,        /* $4004 LDX #$FF */
+        0x9Au,               /* $4006 TXS */
+        0xA9u, CTRL_DMA_ON,  /* $4007 LDA #$40 */
+        0x85u, 0x3Cu,        /* $4009 STA CTRL */
+        0x4Cu, 0x0Bu, 0x40u, /* $400B JMP $400B */
+        0x40u,               /* $400E RTI, the NMI handler */
+    };
+    /* clang-format on */
+    muhtari *m = boot(code, sizeof code);
+    uint32_t samples = 0u;
+    uint32_t entered = 0u;
+    if (m == NULL) {
+        return 0;
+    }
+    rom_poke(m, 0xFFFAu, 0x0Eu);
+    rom_poke(m, 0xFFFBu, 0x40u);
+    for (uint16_t z = 0u; z < ZONES; z++) {
+        poke(m, (uint16_t)(DLL_AT + 3u * z), z == 0u ? 0x8Fu : 0x0Fu);
+        poke(m, (uint16_t)(DLL_AT + 3u * z + 1u), (uint8_t)(DL_AT >> 8));
+        poke(m, (uint16_t)(DLL_AT + 3u * z + 2u), (uint8_t)(DL_AT & 0xFFu));
+    }
+    CHECK_EQ_U64(frame(m, &samples), MUHTARI_STATUS_OK);
+    CHECK((m->maria.features & MUHTARI__FEAT_DLI_QUEUED) == 0u);
+    while (m->bus.ticks < FRAME + VBLANK_START) {
+        muhtari__cpu_step(m);
+        if (m->cpu.pc == 0x400Eu) {
+            entered++;
+            CHECK_EQ_U64((m->bus.ticks - m->maria.origin) / LINE, 16u);
+        }
+    }
+    CHECK_EQ_U64(entered, 1u);
+    CHECK((m->maria.features & (MUHTARI__FEAT_DLI | MUHTARI__FEAT_DLI_QUEUED)) ==
+          (MUHTARI__FEAT_DLI | MUHTARI__FEAT_DLI_QUEUED));
+    for (uint32_t line = 17u; line <= 258u; line++) {
+        CHECK_EQ_HEX(m->maria.stats[line].flags & MUHTARI__LINE_DLI_QUEUED, 0u);
+    }
+    muhtari_destroy(m);
+    return check_failures == 0;
+}
+
 /* An instance showing a simple-shaped picture: 16 zones of 16 lines, each
    DL one 4-byte object of two graphics bytes at $5000 plus OFFSET pages,
    palette 0, at cell 10, and a loop that keeps writing P0C1, so every
@@ -714,6 +764,7 @@ static const struct {
     {"first_frame_partial", first_frame_partial},
     {"dma_blocked_flag", dma_blocked_flag},
     {"dli_queued", dli_queued},
+    {"dli_first_zone", dli_first_zone},
     {"null_video_same_state", null_video_same_state},
 };
 

@@ -54,7 +54,8 @@ struct muhtari__cpu {
    tick from which a held read may run, 0 while RDY is high. A HALT request
    waits in halt_at and halt_until until /HALT falls at halt_fall, and
    halt_cycles counts the cycles run since the fall, through halt_stage.
-   nmi_at is a raised NMI edge not yet latched, while nmi_pending is set. */
+   nmi_at is a raised NMI edge not yet latched, while nmi_pending is set.
+   cycle_len is the length in ticks of the cycle in flight, 4 or 6. */
 struct muhtari__bus {
     uint64_t phi2;
     uint64_t nmi_phi2;
@@ -71,6 +72,7 @@ struct muhtari__bus {
     uint8_t halt_stage;
     uint8_t halt_cycles;
     uint8_t nmi_pending;
+    uint8_t cycle_len;
 };
 
 /* The 6532's RAM: 128 bytes (docs/hardware/riot.md, RAM). */
@@ -469,6 +471,11 @@ void muhtari__riot_reset(muhtari *m);
 #define MUHTARI__HALT_UNTIL_MARIA UINT64_MAX
 int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
 int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
+
+/* The tick of SALLY's n-th phi1 after tick t, n >= 1: its cycle starts,
+   from the end of the cycle in flight on, every 4 ticks
+   (docs/hardware/maria.md, The DLI). */
+uint64_t muhtari__bus_phi1_after(const muhtari *m, uint64_t t, uint32_t n);
 
 /* MARIA's VBE fetch (docs/hardware/maria.md, Display lists): starting at
    tick t0 it loads the DLL pointer from DPPH and DPPL and reads zone 0's

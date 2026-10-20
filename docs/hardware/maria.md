@@ -228,8 +228,13 @@ latches the edge and after which instruction it takes the NMI are in `docs/hardw
 
 MARIA raises the edge through `muhtari__bus_raise_nmi` and never retries. A 1 means the bus queued the edge, and
 MARIA records it as the line's `DLI_QUEUED` flag; the latch can still drop a queued edge (`docs/hardware/bus.md`,
-NMI). VBE reads zone 0's entry with no HALT window, and a DLI set on that entry raises no NMI yet: MiSTer and
-A7800Hawk fire it after VBE, and its timing waits for the diagnostic ROMs.
+NMI).
+
+**A first-zone DLI.** VBE reads zone 0's entry at t 43 of line 16 with no HALT window and ends 7 ticks later, at
+t 50. A DLI set on that entry raises NMI on the second φ1 after t 50, the burst's rule with VBE's end for HALTRST.
+SALLY's φ1s are its cycle starts: the end of the cycle in flight at t 43, 4 or 6 ticks long, then every 4 ticks.
+MiSTer and A7800Hawk fire this DLI after VBE as well. Line 16 runs no burst and keeps no statistics, so the sticky
+feature mask alone records the DLI and whether the bus queued it. The `dli` ROM's `zone0` test times it.
 
 ## The first frame after a load
 

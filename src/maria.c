@@ -550,6 +550,25 @@ static void request_dma(muhtari *m, uint32_t line, uint64_t tick)
     }
 }
 
+/* A DLI on zone 0's entry, which VBE reads with no HALT window: NMI falls
+   on the second phi1 after VBE's end, as after a burst's HALTRST
+   (docs/hardware/maria.md, The DLI; MiSTer and A7800Hawk fire it after
+   VBE). Line 16 runs no burst and keeps no statistics, so only the sticky
+   feature mask records it. */
+#define MARIA_DLI_PHI1 2u
+
+static void vbe_dli(muhtari *m, uint64_t end)
+{
+    struct muhtari__maria *ma = &m->maria;
+    if ((ma->entry & MARIA_ENTRY_DLI) == 0u) {
+        return;
+    }
+    ma->features |= MUHTARI__FEAT_DLI;
+    if (muhtari__bus_raise_nmi(m, muhtari__bus_phi1_after(m, end, MARIA_DLI_PHI1))) {
+        ma->features |= MUHTARI__FEAT_DLI_QUEUED;
+    }
+}
+
 void muhtari__maria_event(muhtari *m)
 {
     struct muhtari__maria *ma = &m->maria;
@@ -580,7 +599,7 @@ void muhtari__maria_event(muhtari *m)
         break;
     default:
         if ((ma->reg[MARIA_CTRL] & MARIA_CTRL_DM) == MARIA_DM_ON) {
-            (void)muhtari__maria_vbe(m, tick);
+            vbe_dli(m, muhtari__maria_vbe(m, tick));
         }
         break;
     }
@@ -594,7 +613,6 @@ void muhtari__maria_event(muhtari *m)
    after HALTRST. MARIA raises one edge per zone and never retries, so it
    keeps only whether the bus queued it (docs/hardware/bus.md, NMI). */
 #define MARIA_CPU_CYCLE 4u
-#define MARIA_DLI_PHI1 2u
 
 uint64_t muhtari__maria_burst(muhtari *m, uint64_t fall)
 {

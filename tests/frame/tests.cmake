@@ -17,7 +17,7 @@ muhtari_warnings(muhtari-test-frame)
 # One case per argv.
 foreach(frame_case IN ITEMS jam_ends dma_off_ends hold_split_wsync_across_dma
     halt_c1_write_visible maria_wsync_releases_at_lrc mstat_edges handoff_state
-    first_frame_partial dma_blocked_flag dli_queued null_video_same_state)
+    first_frame_partial dma_blocked_flag dli_queued dli_first_zone null_video_same_state)
   # provisional, phase 3
   muhtari_add_test(NAME frame.${frame_case} COMMAND muhtari-test-frame ${frame_case}
     LABELS frame portable TIMEOUT 10)

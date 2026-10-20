@@ -411,6 +411,7 @@ docs.api_names	policy
 docs.api_names.self_test	policy
 docs.budgets	policy
 embed.subdirectory	install
+frame.dli_first_zone	frame,portable
 frame.dli_queued	frame,portable
 frame.dma_blocked_flag	frame,portable
 frame.dma_off_ends	frame,portable

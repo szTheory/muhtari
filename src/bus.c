@@ -168,6 +168,7 @@ static uint64_t halt_cycle(muhtari *m)
    cycles a frozen c2 is held for. */
 static uint64_t cycle_start(muhtari *m, uint32_t data)
 {
+    m->bus.cycle_len = (uint8_t)(data == BUS_SLOW_DATA ? BUS_SLOW_TICKS : BUS_FAST_TICKS);
     maria_events(m, m->bus.ticks + data);
     return halt_cycle(m);
 }
@@ -421,4 +422,13 @@ int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick)
     m->bus.nmi_pending = 1u;
     rearm(m);
     return 1;
+}
+
+uint64_t muhtari__bus_phi1_after(const muhtari *m, uint64_t t, uint32_t n)
+{
+    uint64_t s = m->bus.ticks + m->bus.cycle_len;
+    if (t >= s) {
+        s += ((t - s) / BUS_FAST_TICKS + 1u) * BUS_FAST_TICKS;
+    }
+    return s + (uint64_t)(n - 1u) * BUS_FAST_TICKS;
 }

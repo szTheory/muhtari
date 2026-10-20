@@ -205,9 +205,9 @@ since the load are written `$00` (`docs/hardware/maria.md`, The first frame afte
 
 ## NMI
 
-On the 7800 only MARIA raises NMI, after the burst that reads a DLL entry with DLI set, and never while MEN = 0. SALLY latches the edge at the
-end of a φ2. The bus records `nmi_phi2`, the φ2 count of the first cycle whose data tick falls at or after the edge:
-tick 4 of a fast cycle, tick 5 of a slow one. An edge raised while MEN = 0 is dropped. One edge at a time: an edge
+On the 7800 only MARIA raises NMI, after the burst or the VBE that reads a DLL entry with DLI set, and never while
+MEN = 0. SALLY latches the edge at the end of a φ2. The bus records `nmi_phi2`, the φ2 count of the first cycle
+whose data tick falls at or after the edge: tick 4 of a fast cycle, tick 5 of a slow one. An edge raised while MEN = 0 is dropped. One edge at a time: an edge
 raised while an earlier one is not yet latched is ignored, just as a latched edge the CPU has not taken keeps its
 `nmi_phi2` against a later one. Raising an edge returns 0 when it is ignored, under MEN = 0 or behind another, and
 1 when it is queued for latching. A queued edge can still be dropped by the latch, when an earlier latched edge has
