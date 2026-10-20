@@ -304,9 +304,68 @@ and HALTRST − fall = 6 + cost (The HALT handshake), where cost is T0 + 9 + D o
 
 Neither depends on φ. INTIM = 245 − h, and the core's statistics for line 100 show cost = 9 + D or 15 + D.
 
-| Test | DL | D | Line | h | INTIM | Source |
-|------|----|---|------|---|-------|--------|
+The tests, in the ROM's order. Objects are direct unless marked, their graphics at $E000 + OFFSET × 256, outside
+any hole; "4-byte" and "5-byte" name the header. Each object costs its header (8 or 10) plus 3 per direct byte,
+or 6 (1-byte) or 9 (2-byte) per indirect character. `off` writes CTRL with DMA off, so line 100 runs no burst.
+
+| Test | Zone 0's DL | D | Line | h | INTIM | Source |
+|------|-------------|---|------|---|-------|--------|
 | `null` | terminator only | 0 | ordinary | ceil(15 / 4) = 4 | 241 | hw: the 16 ticks measured for an empty DL |
+| `null_last` | terminator only | 0 | last | ceil(21 / 4) = 6 | 239 | hw: the 24 ticks measured |
+| `off` | DMA off | - | - | 0 | 245 | guide: the RIOT datasheet's timer |
+| `h4_w1x8` | eight 4-byte, width 1 | 8 × 11 = 88 | ordinary | ceil(103 / 4) = 26 | 219 | guide |
+| `h5_w1x8` | eight 5-byte, width 1 | 8 × 13 = 104 | ordinary | ceil(119 / 4) = 30 | 215 | guide |
+| `h4_w8` | one 4-byte, width 8 | 8 + 24 = 32 | ordinary | ceil(47 / 4) = 12 | 233 | guide |
+| `h5_w32` | one 5-byte, width 32 (W = 0) | 10 + 96 = 106 | ordinary | ceil(121 / 4) = 31 | 214 | guide |
+| `h5_w32_last` | one 5-byte, width 32 | 106 | last | ceil(127 / 4) = 32 | 213 | guide |
+| `dir_w8` | one 5-byte, width 8 | 10 + 24 = 34 | ordinary | ceil(49 / 4) = 13 | 232 | guide |
+| `ind1_w8` | one 5-byte indirect, 8 characters of 1 byte | 10 + 8 × 6 = 58 | ordinary | ceil(73 / 4) = 19 | 226 | guide |
+| `ind2_w8` | the same, 2-byte characters (CTRL bit 4) | 10 + 8 × 9 = 82 | ordinary | ceil(97 / 4) = 25 | 220 | guide |
+| `term_00` | b1 = $00 | 0 | ordinary | 4 | 241 | guide: the terminator rule |
+| `term_20` | b1 = $20 | 0 | ordinary | 4 | 241 | guide |
+| `term_40` | b1 = $40: a 5-byte header, width 8 | 34 | ordinary | 13 | 232 | guide |
+| `term_80` | b1 = $80 | 0 | ordinary | 4 | 241 | guide |
+| `term_a0` | b1 = $A0 | 0 | ordinary | 4 | 241 | guide |
+| `term_c0` | b1 = $C0: a 5-byte header, write mode 1, width 8 | 34 | ordinary | 13 | 232 | guide |
+| `hole8_h4` | H8; eight 4-byte, width 8, at $C800 | 8 × (8 + 3) = 88 | ordinary | 26 | 219 | hw: header + 3 |
+| `hole8_h5` | H8; eight 5-byte, width 8, at $C800 | 8 × (10 + 3) = 104 | ordinary | 30 | 215 | hw |
+| `hole16_h4` | H16; eight 4-byte, width 8, at $D000 | 88 | ordinary | 26 | 219 | hw |
+| `hole16_h5` | H16; eight 5-byte, width 8, at $D000 | 104 | ordinary | 30 | 215 | hw |
+| `hole8_ctl` | H8; eight 4-byte, width 8, at $D000 | 8 × 32 = 256 | ordinary | ceil(271 / 4) = 68 | 177 | guide |
+| `over_11` | eleven 4-byte, width 8 | 11 × 32 = 352 | ordinary | ceil(367 / 4) = 92 | 153 | guide |
+| `over_12` | twelve 4-byte, width 8 | 384 | ordinary | ceil(399 / 4) = 100 | 145 | guide |
+| `over_13` | thirteen 4-byte, width 8 | aborted | ordinary | 107 or 108 | 137-138 | rtl: the abort tail |
+| `over_14` | fourteen | aborted | ordinary | 107 or 108 | 137-138 | rtl |
+| `over_16` | sixteen | aborted | ordinary | 107 or 108 | 137-138 | rtl |
+
+**Terminators.** Byte 1 of zone 0's first header takes each value of section 2.2's list. $00, $20, $80 and $A0 end
+the list there, so the line costs what an empty DL costs. $40 and $C0 make a 5-byte header whose byte 3, $18, gives
+width 8, followed by a terminator; $C0 also loads write mode 1, which costs nothing.
+
+**Holes.** The address bits are tested after OFFSET is added, so zone 0's OFFSET of 1 puts the graphics at $C900,
+$D100 and $E100. $C900 has A15 and A11, a hole under H8; $D100 has A15 and A12, a hole under H16; $E100 has neither.
+Each object's first byte is in the hole, so it costs its header + 3 and ends. `hole8_ctl` sets H8 over the $D100
+objects, which is not a hole under H8, so they cost their full 32. H8 and H16 sit in zone 0's DLL entry, bits 5
+and 6, not in CTRL.
+
+**Overrun.** Object k of width 8 has its header bytes at T0 + 2 + 32k and its graphics bytes at T0 + 10 + 32k + 3j,
+the last at T0 + 31 + 32k. LRC is line 101's t 0. /HALT fell at t 28 + δ, δ from 0 to 3 by φ, so T0 = t 34 + δ and
+LRC = T0 + 420 − δ, between T0 + 417 and T0 + 420.
+
+- With twelve objects the terminator is read at T0 + 386 to + 392, before LRC, and HALTRST is T0 + 393.
+- With thirteen or more, object 12's last byte at T0 + 415 runs and the terminator's (or object 13's header) second
+  byte, at T0 + 420 at the earliest, does not. Thirteen objects complete and the burst aborts, so HALTRST is
+  LRC + 3, cost = 423 − δ, from 420 to 423, and h = ceil((429 − δ) / 4) is 108 for δ = 0 and 107 otherwise.
+  INTIM reads 137 or 138, and the value stops falling as objects are added.
+
+The ROM's code fixes φ, but deriving it would mean following every cycle since the hand-off, so the rows give the
+range. With the burst ending after line 101's t 0, line 101 and line 102 may run a burst too before the ROM turns
+DMA off; the INTIM read comes before either freezes the CPU, as the read is c0 or c1 of line 101's window.
+
+**The statistics.** `tests/diag/stats.csv` gives, for every test but `off`, the cost and objects that line 100's
+entry in the core's per-line statistics must show (Statistics, above): cost 9 + D on an ordinary line or 15 + D on
+a last line, and every object whose fetches all ran, holey ones included. The overrun rows give cost 420-423 and
+13 objects.
 
 The source class is the one `tests/diag/expected.csv` records: `hw` for a value that rests on a hardware
 measurement, `guide` for one that rests on the Software Guide or a datasheet, `rtl` for the PLA re-simulation and
