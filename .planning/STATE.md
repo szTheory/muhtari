@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-10-20T00:17:21.951Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-10-20T00:34:38.417Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-02 complete (the bounded run loop)
-state_head: 79ad13f0cf2927ac9547a4b934930f4e42d2900d
+last_activity_desc: Plan 03-03 complete (MARIA rendering and the DLI)
+state_head: 3d26dbb9e7f99211a2cf3548a12f70b845b26418
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 39
+  completed_plans: 40
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 3 of 19
+Plan: 4 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-02 complete: linear cart on the bus, fast-boot hand-off, MARIA line events and the c2 burst, 9 frame tests
+Last activity: 2026-10-20 — Plan 03-03 complete: span rendering into the caller's rows, simple renders through the hand-off, the DLI's NMI with DLI_QUEUED, 12 frame tests
 
 Progress: [█████░░░░░] 50%
 
@@ -98,6 +98,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P16 | 33 min | 3 tasks | 17 files |
 | Phase 03 P01 | 10 min | 3 tasks | 11 files |
 | Phase 03 P02 | 13 min | 3 tasks | 17 files |
+| Phase 03 P03 | 11 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -226,6 +227,10 @@ Recent decisions affecting current work:
 - [Phase 03]: Plan 01: muhtari__maria_dma_line fills *st and stats[line], clamps LRC to T0 + 454, and sets a feature bit only when an object uses it; docs/hardware/maria.md derives the 16/24 empty-DL ticks from T0 = /HALT fall + 6
 - [Phase 03]: Plan 02: the run loop steps SALLY to absolute VBLANK-start deadlines (line 258 t 42); MARIA's line events fire from the tick count and split every hold; the burst runs at c2 with T0 = fall + 6; the origin moves at line 263's t 0
 - [Phase 03]: Plan 02: the fast-boot hand-off is line 240 t 24 (cpu_phase 0 derived); frame 1 is 8,190 ticks and 54 samples; rows of a frame with content are $00 until span rendering; a HALT window inside an RDY hold counts held cycles as c0-c2
+- [Phase 03]: A register write's data tick is the last pixel shown with the old value; the next pixel shows the new one
+- [Phase 03]: Only the first frame after a load pre-writes $00 to every row; rendering overwrites the scanned rows, so no rows_scanned bitmap
+- [Phase 03]: The DLI's NMI is the second grid tick strictly after HALTRST on SALLY's 4-tick grid from c2
+- [Phase 03]: A DLI on zone 0's entry, read by VBE with no HALT window, raises no NMI yet; its timing waits for the diagnostic ROMs
 
 ### Pending Todos
 
@@ -267,6 +272,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T00:17:21.867Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-10-20T00:34:38.329Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None
