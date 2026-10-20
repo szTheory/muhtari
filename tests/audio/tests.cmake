@@ -20,3 +20,13 @@ set_target_properties(muhtari-test-tia PROPERTIES
 muhtari_warnings(muhtari-test-tia)
 muhtari_add_test(NAME tia.logic COMMAND muhtari-test-tia
   LABELS tia portable TIMEOUT 10)
+
+add_executable(muhtari-test-audio-contracts ${CMAKE_CURRENT_LIST_DIR}/test_contracts.c
+  ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)
+target_include_directories(muhtari-test-audio-contracts PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-audio-contracts PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-audio-contracts PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-audio-contracts)
+muhtari_add_test(NAME audio.frames COMMAND muhtari-test-audio-contracts
+  LABELS audio portable TIMEOUT 10)

@@ -12,6 +12,7 @@ abi.header.cxx17	abi
 abi.symbols	abi
 abi.undefined	abi
 abi.undefined.self_test	abi
+audio.frames	audio,portable
 audio.spectral	audio,portable
 audio.spectral.controls	audio,portable
 basic.adventurer	basic,portable
