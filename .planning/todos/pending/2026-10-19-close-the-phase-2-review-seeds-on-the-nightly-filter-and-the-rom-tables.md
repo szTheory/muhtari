@@ -38,3 +38,4 @@ Fold each item into the next pull request that touches its file, or close them t
 - make the header comment `/* 2 */`, or `/* MUHTARI_API_VERSION */` so it cannot drift;
 - record each keyed chip's size in cartdb.cmake, and `cartdb_fail` on a reload of another size;
 - give the firmware scan the slice and swap passes `cart_lookup` uses, or narrow its header to single-chip images.
+- WR-01 folded in phase 3: nightly.yml's pull_request paths list every input of its jobs.

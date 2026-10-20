@@ -264,7 +264,7 @@ exact output:
 | `runner.boot_to_play.late_mutant` | `input` with its hashes from frame F moved one frame later | `mask 1` |
 
 The mutants transform recorded output and never change the emulator. This test sets input only between frames;
-when the console applies input set between frames is left to the property tests.
+`prop.input_at_vblank` checks when the console applies it.
 
 ## diag
 
@@ -340,3 +340,60 @@ commit the source, and then the `.a78` with its manifest row's digest and pin se
 | `diag.rebuild` | the committed diagnostics and Clark's two builds rebuilt from source, byte for byte |
 | `diag.rebuild.self_test` | a manifest copy with one digit of `dma.a78`'s digest changed must fail with `tests/diag/dma.a78: SHA-256 drift` |
 | `diag.expected.self_test` | an `expected.csv` copy whose `null` value is 242 must fail on that record |
+
+## prop
+
+`prop.*` checks properties of the run loop over generated cases (`tests/prop/test_prop.c`, harness
+`tests/prop.h`). Each case fast-boots a cartridge drawn from a pool and runs at most 8 frames. The pool is the run
+fuzz target's 17 seed inputs and 48 KiB of random bytes from the case's stream, each made a cartridge as that target
+makes it (see fuzz), and the built `simple` and `eightysix` samples. Two runs are equal when every frame's status,
+audio count and picture SHA-256 match, and so does the state digest: SHA-256 over the instance with its pointers
+cleared, then the cartridge's ROM and RAM.
+
+| Test | Holds for every case |
+|------|----------------------|
+| `prop.split_run` | Frames 1 to k drawn at a wider pitch, then `muhtari_get_info`, `muhtari_get_counters` and `muhtari_get_memory`, then frames k+1 to N, equal one sequence of N frames, for k from 0 to N |
+| `prop.peek_pure` | Peeking all 65,536 addresses through `muhtari__peek` and `muhtari__bus_peek` after frame k changes neither the digest nor any later frame, and a second pass reads the same bytes |
+| `prop.instances_isolated` | Two instances on different cartridges, loaded, given random input and run alternately call by call, equal each run alone |
+| `prop.input_at_vblank` | One to three `muhtari_set_input` calls after frame k, k at least 1, change neither the digest without the pending copy nor SWCHA, SWCHB and INPT0-5 as `muhtari__bus_peek` reads them; the next frame applies the last call, and it and the frame after equal those of an instance given only that call |
+
+`prop.input_at_vblank` cannot test a call made during a frame: `muhtari_run_frame` returns before any other call
+can be made. k starts at 1 because the first frame after a fast-boot load starts at the hand-off, which latches
+nothing.
+
+**Cases.** A pull request runs 100 cases per property from a fixed seed on every lane that builds the samples. The
+nightly `prop` job runs 10,000 per property with the workflow run's ID as the seed. Both come from the test
+program's environment, `MUHTARI_PROP_CASES` and `MUHTARI_PROP_SEED` (decimal); the core reads no environment. Case
+c's stream depends only on the seed and c.
+
+**A failure** is retried with its size, the frame bound, halved until the case passes, then printed as
+
+    split_run: failed: seed 20261020 case 41 size 2
+    rerun: MUHTARI_PROP_SEED=20261020 MUHTARI_PROP_CASES=42
+
+Rerun it with those two variables set before `ctest --test-dir build/ci -R '^prop\.split_run$'
+--output-on-failure`; the smallest failing size bounds the frames to inspect.
+
+## fuzz
+
+`fuzz.regress.<target>` replays a fuzz target's invariants on every lane over its seeds and its committed
+regressions; `fuzz.regress.<target>.self_test` gives the replay no input and must fail with `no corpus inputs`. The
+`fuzz` lane runs libFuzzer itself for 60 s per target with `-timeout=2`, under clang-21 with AddressSanitizer and
+UndefinedBehaviorSanitizer (`docs/testing.md`, Lanes).
+
+| Target | Input | Invariants |
+|--------|-------|------------|
+| `loader` (`tests/fuzz/loader.c`) | any image up to the size cap, `-max_len=1048705` | two probes agree; the load returns probe's status; a refusal allocates nothing and changes nothing; destroy frees everything |
+| `run` (`tests/fuzz/run.c`) | any bytes, truncated or padded with $00 to 49,152, `-max_len=49152` | two instances, loaded and run 2 frames call by call, agree in load status and in every frame's status, audio count and picture; each frame returns at the first instruction boundary at or after its deadline and less than four lines past it |
+
+The run target loads its input as a headerless 48 KiB linear cartridge with the fast boot. `tests/fuzz/run_cart.h`
+first changes the last 8 bytes as little as needed to pass the footer test, which would otherwise refuse nearly every
+input as a 2600 image. Its seeds (`tests/fuzz/run_seeds.c`) are all $00, all $02 (JAM on every opcode), all $FF, 13
+splitmix64 images and an empty input; the loader's are the images `tests/fuzz/seeds.c` builds. An empty input becomes
+48 KiB of $00.
+
+**Adding a regression.** The nightly `fuzz` job uploads crashes as `fuzz-crash` from `build/fuzz/fuzz/crash/`
+(loader) and `build/fuzz/fuzz/run/crash/` (run). Minimise one with `muhtari-fuzz-<target> -minimize_crash=1
+-runs=10000 <file>`, commit it under `tests/fuzz/<target>/regress/` with its row in `tests/roms/manifest.txt`, and fix
+the core in the same pull request. Reconfigure to list the new file; `fuzz.regress.<target>` replays it on every
+lane from then on.

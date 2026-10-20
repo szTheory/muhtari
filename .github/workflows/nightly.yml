@@ -1,9 +1,10 @@
 # Nightly: the bench, 300,000 headless frames of the test card per platform,
 # as trend data, never a gate (docs/testing.md, "Performance"); the full
-# SingleStepTests 6502 set at its pin (the vectors-full preset); and the
-# loader fuzz target for 60 s (the fuzz preset). Reports go to job summaries
-# and artifacts, never to commits. A failed night opens or updates the one
-# open issue labelled nightly; a good night closes it.
+# SingleStepTests 6502 set at its pin (the vectors-full preset); the loader
+# and run fuzz targets for 60 s each (the fuzz preset); and the property
+# tests at 10,000 cases each (docs/emulation-tests.md, prop). Reports go to
+# job summaries and artifacts, never to commits. A failed night opens or
+# updates the one open issue labelled nightly; a good night closes it.
 name: Nightly
 
 on:
@@ -15,26 +16,51 @@ on:
         description: "Fail the run on purpose, to show the nightly issue being written"
         type: boolean
         default: false
-  # A change to any job's inputs or this file runs every job on its pull
-  # request: one path union for the bench, the vector set and the loader. The
-  # report job writes no issue for pull requests.
+  # A pull request runs every job when it changes a file whose break could
+  # show only here, not in ci.yml: this workflow, the core and runner
+  # sources, the build files and pins, and each job's own tests, scripts and
+  # inventories. A new source file also changes CMakeLists.txt, which lists
+  # it. The report job writes no issue for pull requests.
   pull_request:
     paths:
       - .github/workflows/nightly.yml
-      - runner/bench.c
-      - runner/bench.h
-      - runner/clock.c
-      - runner/clock.h
-      - src/cpu.c
-      - tests/cpu/**
-      - tests/vectors/**
-      - tests/cmake/fetch_vectors.cmake
-      - tests/cmake/vectors_sample_match.cmake
+      - CMakeLists.txt
+      - CMakePresets.json
+      - cmake/MuhtariTests.cmake
+      - include/muhtari.h
+      - pins.txt
+      - scripts/fetch-pin.sh
+      - runner/**
+      - src/boot.c
+      - src/bus.c
       - src/cart.c
       - src/cartdb.c
+      - src/cartdb.h
+      - src/cpu.c
+      - src/frame.c
+      - src/instance.c
+      - src/internal.h
+      - src/maria.c
+      - src/ports.c
+      - src/riot.c
       - src/sha1.c
+      - src/sha1.h
+      - src/testcard.c
+      - src/tia.c
+      - tools/cartdb.cmake
+      - tests/alloc.h
+      - tests/built/**
       - tests/cart/**
+      - tests/cpu/**
       - tests/fuzz/**
+      - tests/prop.h
+      - tests/prop/**
+      - tests/vectors/**
+      - tests/cmake/check_junit.cmake
+      - tests/cmake/fetch_vectors.cmake
+      - tests/cmake/vectors_sample_match.cmake
+      - tests/inventory/fuzz.txt
+      - tests/inventory/vectors-full.txt
 
 permissions:
   contents: read
@@ -138,12 +164,12 @@ jobs:
           cmake -DJUNIT=build/vectors-full/junit.xml -DINVENTORY=tests/inventory/vectors-full.txt
           -P tests/cmake/check_junit.cmake
 
-  # The loader fuzz target for 60 s under ASan and UBSan, from the generated
-  # seeds and the committed regressions. Its crashes derive only from
-  # synthetic seeds, so they are uploaded.
-  loader-fuzz:
+  # The loader and run fuzz targets for 60 s each under ASan and UBSan, from
+  # the generated seeds and the committed regressions. Their crashes derive
+  # only from synthetic seeds, so they are uploaded.
+  fuzz:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 90 s in 15 runs, run 39195320935
+    timeout-minutes: 8  # provisional, phase 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -158,13 +184,49 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
-          name: loader-fuzz-crash
-          path: build/fuzz/fuzz/crash/
+          name: fuzz-crash
+          path: |
+            build/fuzz/fuzz/crash/
+            build/fuzz/fuzz/run/crash/
           if-no-files-found: warn
+
+  # The four property tests at 10,000 cases each, seeded with this run's ID,
+  # under the names a pull request runs at 100 from a fixed seed. A failure
+  # prints the seed and case to rerun locally. MUHTARI_TIMEOUT_SCALE 10 gives
+  # each test 600 s; the slowest took 68 s at 10,000 cases on an M1.
+  # Report-only: it stays out of report's needs and keeps continue-on-error
+  # until it has passed 10 runs on main, then gates with a timeout of twice
+  # its slowest run.
+  prop:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20  # provisional, phase 3
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
+        run: |
+          scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
+      - name: Build
+        run: cmake --preset ci -DMUHTARI_TIMEOUT_SCALE=10 && cmake --build --preset ci
+      - name: 10,000 cases per property
+        env:
+          MUHTARI_PROP_CASES: 10000
+          MUHTARI_PROP_SEED: ${{ github.run_id }}
+        run: ctest --test-dir build/ci -L prop -j 4 --output-on-failure --output-junit "$PWD/build/ci/junit-prop.xml"
+      - name: Every test ran
+        if: always()
+        run: >-
+          cmake -DJUNIT=build/ci/junit-prop.xml -DINVENTORY=tests/inventory/ci.txt
+          -DLABELS=prop -P tests/cmake/check_junit.cmake
 
   # Decides from the jobs' results, never from a piped exit status.
   report:
-    needs: [bench, bench-wasm32, vectors-full, loader-fuzz]
+    needs: [bench, bench-wasm32, vectors-full, fuzz]
     if: always() && github.event_name != 'pull_request'
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # roll-up floor; slowest 6 s in 10 runs, run 39197977418 (skipped on pull requests)
