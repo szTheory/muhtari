@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
 status: executing
-stopped_at: Completed 04-04-PLAN.md; continue existing execution at 04-05
-last_updated: "2026-10-20T21:03:53.619Z"
+stopped_at: Completed 04-05-PLAN.md; continue existing execution at 04-06
+last_updated: "2026-10-20T21:12:00.038Z"
 last_activity: 2026-10-20
-last_activity_desc: Completed public TIA frame audio plan 04-04
-state_head: 303b88c03e9052bc8eb53e9f2ad4d89101b854d0
+last_activity_desc: Completed frame audio contracts plan 04-05
+state_head: 8f889d217f00fcfe71c4b4aba4cbb307671558ee
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 73
-  completed_plans: 60
+  completed_plans: 61
   percent: 75
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 ## Current Position
 
 Phase: 04 (Sound) — EXECUTING
-Plan: 5 of 17
+Plan: 6 of 17
 Status: Ready to execute
-Last activity: 2026-10-20 — Completed public TIA frame audio plan 04-04
+Last activity: 2026-10-20 — Completed frame audio contracts plan 04-05
 
 Progress: [████████░░] 75%
 
@@ -120,6 +120,7 @@ Progress: [████████░░] 75%
 | Phase 04 P02 | 7min | 2 tasks | 6 files |
 | Phase 04 P03 | 23min | 2 tasks | 13 files |
 | Phase 04 P04 | 6min | 2 tasks | 11 files |
+| Phase 04 P05 | 5min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -301,6 +302,7 @@ Recent decisions affecting current work:
 - [Phase 04]: Production 132-case Q23 matrix passes at fixed M=18361; worst TIA -82.64927 dBc with validated exact-frequency reference, research nearest-bin cross-check -82.10380, worst POKEY-equivalent -94.71708 dBFS; all 132 same-gain aliases rejected.
 - [Phase 04]: Retain primary-schematic TIA recurrence and zero startup: modes6/7/14/15 have18/16/49/47 ones and mode11 fill12; alternate N21/P0 attractors explain previous counts without establishing the lost probe seed.
 - [Phase 04]: Fast boot advances hidden TIA over absolute ticks, anchors the output grid and bus-owned cartridge clock origin at tick108984/phi2zero; BIOS uses the real zero-origin timeline.
+- [Phase 04]: Frame-audio contracts are covered by portable audio.frames; expanded discard/reset/error checks require no runtime timing or synthesis change.
 
 ### Pending Todos
 
@@ -351,6 +353,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T21:03:53.475Z
-Stopped at: Completed 04-04-PLAN.md; continue existing execution at 04-05
+Last session: 2026-10-20T21:11:59.893Z
+Stopped at: Completed 04-05-PLAN.md; continue existing execution at 04-06
 Resume file: None
