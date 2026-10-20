@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-08-PLAN.md
-last_updated: "2026-10-20T02:24:27.552Z"
+stopped_at: Completed 03-09-PLAN.md
+last_updated: "2026-10-20T02:40:58.919Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-08 complete (the SuperGame boards)
-state_head: 5656ffada2d288a29fd7de9261e4cd6f7489c89c
+last_activity_desc: Plan 03-09 complete (the modes ROM and basic.coverage)
+state_head: bc1e36df9676969229ce25034524aaf7c39449a5
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 45
+  completed_plans: 46
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 9 of 19
+Plan: 10 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-08 complete: SuperGame, with RAM, bank 6, SG9 and banked RAM in the board switch, ROM and cart RAM in one allocation; the linear16, bank6 and sg144 ROMs matched all 28 derived values on the first run; all 34 buildable samples pinned; green on every hosted leg (run 39358378619); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-09 complete: basic.coverage judges 31 claims over all 17 board and MARIA features from the probe and the sticky mask, with a negative control; the modes ROM (plain SuperGame, 160B, 320B, 320D, kangaroo, 2-byte characters) matched both derived values on the first run; green on every hosted leg (run 39359891337); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -104,6 +104,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P06 | 26 min | 3 tasks | 19 files |
 | Phase 03 P07 | 23 min | 3 tasks | 23 files |
 | Phase 03 P08 | 16 min | 3 tasks | 28 files |
+| Phase 03 P09 | 14 min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -250,6 +251,8 @@ Recent decisions affecting current work:
 - [Phase 03]: 03-07: parked's first derivation (20) left out line 18's burst; the doc now derives 16, which the first run read
 - [Phase 03]: 03-08: SuperGame boards (RAM, bank 6, SG9, banked RAM) in one switch; ROM and cart RAM in one allocation; SG9 maps bank 1 + register at $8000, so bank 1 at power-on
 - [Phase 03]: 03-08: all 34 buildable samples pinned; the POKEY-at-$0450 samples will move with a behaviour-revision bump when sound lands
+- [Phase 03]: 03-09: modes is a plain SuperGame board of 4 banks (at_4000 reads bank 2), since no other ROM was SuperGame without RAM or options; it draws 160B, 320B, 320D, kangaroo mode and 2-byte characters
+- [Phase 03]: 03-09: basic.coverage judges 31 claims over 17 required features from the probe and the sticky mask; holey bits follow the DLL's H8/H16, so samples show them too
 
 ### Pending Todos
 
@@ -291,6 +294,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T02:24:27.456Z
-Stopped at: Completed 03-08-PLAN.md
+Last session: 2026-10-20T02:40:58.824Z
+Stopped at: Completed 03-09-PLAN.md
 Resume file: None
