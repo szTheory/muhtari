@@ -320,6 +320,9 @@ static void test_silence(void)
         nonzero |= audio[i] != 0;
     }
     CHECK(nonzero);
+    /* Half the TIA DAC sum produces 2n/(n+30)=2/3 of full current,
+       rather than half the PCM level (A7800-AUDIO section 3). */
+    CHECK_EQ_U64(m->synth.mixed_level, 12241);
     CHECK_EQ_U64(muhtari__synth_round(-5, 2), -3);
     CHECK_EQ_U64(muhtari__synth_round(-4, 3), -1);
     CHECK_EQ_U64(muhtari__synth_round(5, 2), 3);
