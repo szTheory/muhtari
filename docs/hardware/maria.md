@@ -267,6 +267,51 @@ sets its read mode (RM0 for read modes 0 and 1, RM2, RM3), kangaroo mode, write 
 when indirect, 1-byte or 2-byte characters. A line that reads an entry with DLI set sets DLI. A line with no object
 sets no mode bit. The `DLI_QUEUED` and `DMA_BLOCKED` bits are set with the line flags of the same names.
 
+## Diagnostic expected values
+
+The `dma` diagnostic ROM (`tests/diag/dma.s`) measures DMA cost the way a program on the console can: as CPU
+cycles lost to HALT, read from the RIOT timer. Every value in `tests/diag/expected.csv` is derived here from the
+constants above before the ROM first runs; the emulator's output is never copied into a gating row.
+
+**The measurement.** Each test runs in one frame. In VBLANK the ROM points DPPH and DPPL at the test's DLL and turns
+DMA on, so VBE at line 16 loads zone 0's entry; when MSTAT clears it turns DMA off again, so lines 17 and on run no
+burst and zone 0 stays unwalked. It counts lines with MARIA's WSYNC to line 99, waits past that line's t 28, writes
+the test's CTRL and writes WSYNC once more. From line 100's t 0 it runs:
+
+| Code | Cycles | φ2 count p |
+|------|--------|------------|
+| `stx TIM1T` with X = 255 | 4, the write in the last | 0 |
+| `nop` three times | 6 | 1-6 |
+| `lda INTIM` | 4, the read in the last | 7-10 |
+
+So line 100 has the only burst of the frame, zone 0's first line. With zone 0's OFFSET at 1 that line is an
+ordinary line; with OFFSET 0 it is the zone's last line.
+
+**The timer.** On the 1-cycle interval INTIM reads N − p (`docs/hardware/riot.md`, Timer), and the timer counts every
+φ2, frozen cycles included. With no burst, p = 10 and INTIM reads 255 − 10 = **245**. A burst inside the window
+freezes c2 for h more cycles, so INTIM reads 245 − h.
+
+**The window holds the burst.** WSYNC releases the next read at the first 4-tick cycle start at or after t 0, so the
+`stx` opcode fetch starts at t φ, φ from 0 to 3, and its slow RIOT write ends at t φ + 18. The NOP cycles start at
+t φ + 18, + 22, + 26 and + 30; /HALT falls at the first of them at or after t 28 (p = 3 or 4), and c2 is p = 5 or 6.
+All of it lies inside the window for every φ, and nothing before the timer write is held.
+
+**The lost cycles.** The bus freezes c2 for h = ceil((HALTRST − fall) / 4) cycles (`docs/hardware/bus.md`, HALT),
+and HALTRST − fall = 6 + cost (The HALT handshake), where cost is T0 + 9 + D or T0 + 15 + D from the closed form. So
+
+- ordinary line: h = ceil((15 + D) / 4);
+- last line: h = ceil((21 + D) / 4).
+
+Neither depends on φ. INTIM = 245 − h, and the core's statistics for line 100 show cost = 9 + D or 15 + D.
+
+| Test | DL | D | Line | h | INTIM | Source |
+|------|----|---|------|---|-------|--------|
+| `null` | terminator only | 0 | ordinary | ceil(15 / 4) = 4 | 241 | hw: the 16 ticks measured for an empty DL |
+
+The source class is the one `tests/diag/expected.csv` records: `hw` for a value that rests on a hardware
+measurement, `guide` for one that rests on the Software Guide or a datasheet, `rtl` for the PLA re-simulation and
+`fit` for a fitted value.
+
 ## Fitted values
 
 These values come from the RTL model or a fit, not from a hardware measurement. Each stays until the observation
