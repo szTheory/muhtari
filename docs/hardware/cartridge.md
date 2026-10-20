@@ -213,3 +213,32 @@ image exactly as `muhtari_probe` does and returns the same status. A refusal ret
 and leaves the instance unchanged. An accepted image's mapped bytes, `rom_size` of them from after the header when
 there is one, are copied into one allocation through the instance's allocator, which replaces any cartridge loaded
 before; `muhtari_destroy` frees it. `muhtari_run_frame` still gives the test card and silence.
+
+## The board ROMs
+
+Three diagnostic ROMs, built like the others (`docs/emulation-tests.md`, diag), read the bytes each board puts at
+fixed addresses and report them through the mailbox and on the results screen. Each bank of each ROM starts with its
+own number, so a read of a window's first byte names the bank in it. Every value below follows from the board rules of
+cartridge notes, section 2.1, and is in `tests/diag/expected.csv` before the ROM first runs. The source is `guide`.
+Record n has test id n and is the n-th row for its ROM.
+
+| ROM | Mailbox id | Board | Records, in order |
+|-----|------------|-------|-------------------|
+| `tests/diag/linear16.s` | 4 | linear, 16 KiB at $C000 | 4: `c000`, `at_4000`, `at_8000`, `at_bfff` |
+| `tests/diag/bank6.s` | 5 | SuperGame, 8 banks, bank 6 at $4000 | 12: `power_on`, `at_4000`, `at_c000`, `sel_0` to `sel_7`, `sel_11` |
+| `tests/diag/sg144.s` | 6 | SuperGame 144K, 9 banks, bank 0 at $4000 | 12: `power_on`, `at_4000`, `at_c000`, `sel_0` to `sel_7`, `sel_9` |
+
+**linear16.** The 16 KiB ROM ends at $FFFF, so it starts at $C000, whose byte is $16: `c000` = 22. Nothing drives
+$4000-$BFFF. A read there returns the open-bus byte (`docs/hardware/bus.md`, Open bus), and the last byte on the bus
+before `LDA abs`'s read is the operand's high byte. So `LDA $4000` gives `at_4000` = $40 = 64, `LDA $8000` gives
+`at_8000` = $80 = 128 and `LDA $BFFF` gives `at_bfff` = $BF = 191. A ROM mirrored there would give $16 or a code
+byte instead.
+
+**bank6.** 128 KiB is 8 banks. Before any write the bank register is 0, so `LDA $8000` reads bank 0: `power_on` = 0.
+With the bank-6 option $4000 holds bank 6, `at_4000` = 6, and $C000 holds the last bank, `at_c000` = 7. Each test
+then writes v to $8000 and reads $8000, which shows bank v mod 8: `sel_0` to `sel_7` give 0 to 7, and `sel_11`,
+v = 11, gives 3.
+
+**sg144.** 144 KiB is 9 = 2^3 + 1 banks. Bank 0 is fixed at $4000, `at_4000` = 0, and bank 8 at $C000, `at_c000` =
+8. $8000 shows bank 1 + (r mod 8) for the register r. The register is 0 at power-on, so `power_on` = 1. Writing v
+gives 1 + (v mod 8): `sel_0` to `sel_7` give 1 to 8, and `sel_9` gives 2.
