@@ -438,6 +438,19 @@ muhtari_add_test(NAME runner.stop COMMAND muhtari-test-runner stop
 # RetroAchievements hash --probe prints, with nothing else to notice it.
 muhtari_add_test(NAME runner.md5 COMMAND muhtari-test-runner md5
   LABELS runner portable TIMEOUT 10)
+# The muhtari-movie 1 reader, linked alone: good movies and about thirty
+# bad ones, each refused at its exact line and column.
+add_executable(muhtari-test-movie
+  ${CMAKE_CURRENT_LIST_DIR}/test_movie.c
+  ${PROJECT_SOURCE_DIR}/runner/movie.c)
+target_link_libraries(muhtari-test-movie PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-movie PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-movie)
+# Fault prevented: a malformed or hostile movie runs part way, or is
+# refused at the wrong place, before the whole file is checked.
+muhtari_add_test(NAME runner.movie_parse COMMAND muhtari-test-movie
+  LABELS runner portable TIMEOUT 10) # provisional, phase 3
 
 # Not portable: it reads docs/runner.md from the source tree.
 muhtari_add_test(NAME runner.exit.table

@@ -510,6 +510,7 @@ runner.hashes_file	portable,runner
 runner.load.hash	portable,runner
 runner.load.pal_refused	portable,runner
 runner.md5	portable,runner
+runner.movie_parse	portable,runner
 runner.png	portable,runner
 runner.probe.2600	portable,runner
 runner.probe.accepted	portable,runner
