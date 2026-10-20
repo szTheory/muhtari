@@ -778,8 +778,8 @@ void muhtari__cart_reset(muhtari *m)
 /* The RAM byte a board drives at addr, or NULL. A board with RAM maps it
    at $4000-$7FFF; a banked-RAM board shows the 16 KiB half ram_bank there.
    The index is masked with ram_size - 1, a power of two, so no header can
-   reach outside the RAM (A7800-CARTRIDGES-AND-PERIPHERALS sections 2.1
-   and 7). */
+   reach outside the RAM (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1,
+   and section 7 for hostile input). */
 static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
 {
     if (c->ram == NULL || addr < 0x4000u || addr >= 0x8000u) {
