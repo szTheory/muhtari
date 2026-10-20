@@ -4,9 +4,9 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 4
 current_phase_name: Sound
-status: planning
-stopped_at: Phase 3 verified; next command: $gsd-ship 3
-last_updated: "2026-10-20T17:46:26.265Z"
+status: shipping
+stopped_at: Phase 3 shipping through PR 13; await CI, merge and release confirmation
+last_updated: "2026-10-20T17:51:54Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 3 complete, transitioned to Phase 4
 state_head: e3d82355198e3d9aa2d7b6c992e23cde512e7b59
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 3 verified; ship before Phase 4 — Sound
+**Current focus:** Ship Phase 3 through PR #13, then Phase 4 — Sound
 
 ## Current Position
 
 Phase: 4 — Sound
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-20 — Phase 3 re-verification passed: 129/129 truths, 69/69 prohibitions; cmake --workflow --preset ci exited 0 (588/588 plus 6/6 release). Hosted source run 39460962750 succeeded: https://github.com/szTheory/muhtari/actions/runs/39460962750. No owner UAT. Next: $gsd-ship 3; confirm release and gate-code budget disposition there.
+Status: Phase 3 shipping — PR #13
+Last activity: 2026-10-20 — Phase 3 ship: PR #13 opened with a Conventional Commit feat title; verification.status passed (exit 0). Final source CI run 39460962750 success, checked at ship; source diff since its head exits 0. CI and release confirmation follow in this ship session.
 
 Progress: [████████░░] 75%
 
@@ -317,6 +317,14 @@ Recent decisions affecting current work:
 - The `main` ruleset requiring `CI required` is live and `scripts/apply-repo-settings.sh --check` reports no
   drift.
 
+### Ship step (phase 03)
+
+- PR #13: https://github.com/szTheory/muhtari/pull/13 — `feat: games play in RetroArch with MARIA, cartridges, boot and input`.
+- The final review is clean; both fix rounds are used. The five Info findings remain seeds under the proportional-gates rule; no additional review round.
+- Rule 7's measured gate-code shortfall (18.4% against 10%) remains disclosed in the PR and SEED-007. No rule or denominator is changed by ship; retain the reduction candidates for the tune-up.
+- The ship note uses an ordinary commit so a CI run exists on the final pull-request head, as rule 9 requires. No skip token or recovery commit.
+- This session follows the phase merge, the release pull request and the automatically published 0.3.0 release. Next GSD step after shipping: `$gsd-discuss-phase 4`.
+
 ### Blockers/Concerns
 
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
@@ -333,6 +341,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T17:46:44Z
-Stopped at: Phase 3 verified; next command: $gsd-ship 3
+Last session: 2026-10-20T17:51:54Z
+Stopped at: Phase 3 shipping through PR #13; next GSD command after shipping: $gsd-discuss-phase 4
 Resume file: None
