@@ -14,6 +14,9 @@ if(TARGET muhtari_libretro)
     ${PROJECT_SOURCE_DIR}/runner)
   target_link_libraries(muhtari-test-libretro-host PRIVATE
     muhtari::muhtari muhtari_host ${CMAKE_DL_LIBS})
+  # MSVC deprecates ISO C's fopen for its _s forms.
+  target_compile_definitions(muhtari-test-libretro-host PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   set_target_properties(muhtari-test-libretro-host PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-libretro-host)
@@ -65,8 +68,9 @@ if(TARGET muhtari_libretro)
 
   # rcheevos' resolver over the core's real map (rcheevos v12.1.0, MIT,
   # fetched by pins.txt, never vendored or shipped). Its three files build
-  # with warnings off, for this target only; the two rhash functions
-  # rc_libretro.c calls are stubbed. libretro.c is compiled into the test with
+  # with warnings and sanitizers off, for this target only (rc_libretro.c
+  # adds an offset to a null region pointer, which UBSan reports); the two
+  # rhash functions rc_libretro.c calls are stubbed. libretro.c is compiled into the test with
   # MUHTARI_LIBRETRO_TEST, which adds the accessor to its instance.
   # Fault prevented: a map that RetroArch's achievements read wrongly: a
   # pointer off by a byte, a register with memory, more than rcheevos' 32
@@ -87,10 +91,12 @@ if(TARGET muhtari_libretro)
   target_include_directories(muhtari_test_rcheevos PRIVATE ${libretro_rc}/include
     ${libretro_rc}/src ${libretro_rc}/src/rhash ${PROJECT_SOURCE_DIR}/libretro)
   set_target_properties(muhtari_test_rcheevos PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
-  target_compile_options(muhtari_test_rcheevos PRIVATE $<IF:$<C_COMPILER_ID:MSVC>,/W0,-w>)
+  target_compile_options(muhtari_test_rcheevos PRIVATE $<$<C_COMPILER_ID:MSVC>:/W0>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-w -fno-sanitize=all>)
   add_executable(muhtari-test-rcheevos ${CMAKE_CURRENT_LIST_DIR}/rcheevos.c
     ${PROJECT_SOURCE_DIR}/libretro/libretro.c ${PROJECT_SOURCE_DIR}/runner/sha256.c)
-  target_compile_definitions(muhtari-test-rcheevos PRIVATE MUHTARI_LIBRETRO_TEST)
+  target_compile_definitions(muhtari-test-rcheevos PRIVATE MUHTARI_LIBRETRO_TEST
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari-test-rcheevos PRIVATE ${PROJECT_SOURCE_DIR}/libretro
     ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/runner ${PROJECT_BINARY_DIR}/generated)
   target_include_directories(muhtari-test-rcheevos SYSTEM PRIVATE ${libretro_rc}/include

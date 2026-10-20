@@ -70,6 +70,7 @@ static bool difficulty_opt[2]; /* the difficulty options when last read */
 static bool edge_held[2];      /* port 1's L and R at the last poll */
 static bool run_failed;        /* a failed frame was logged */
 static struct retro_memory_descriptor descs[LR_MAX_DESCRIPTORS];
+static struct retro_memory_map memory_map; /* outlives SET_MEMORY_MAPS */
 static unsigned desc_count;
 static uint32_t desc_next; /* the first CPU address no descriptor covers yet */
 
@@ -185,6 +186,7 @@ static void lr_release(void)
     pixels = NULL;
     memset(&cart, 0, sizeof cart);
     memset(descs, 0, sizeof descs);
+    memset(&memory_map, 0, sizeof memory_map);
     desc_count = 0u;
     desc_next = 0u;
     run_failed = false;
@@ -705,7 +707,6 @@ static uint8_t *lr_memory(uint32_t kind, size_t *bytes)
    ROM is CONST. */
 static void lr_memory_maps(void)
 {
-    struct retro_memory_map map;
     bool yes = true;
     size_t ram_bytes = 0u, riot_bytes = 0u, cart_bytes = 0u;
     uint8_t *ram = lr_memory(MUHTARI_MEMORY_SYSTEM_RAM, &ram_bytes);
@@ -746,9 +747,9 @@ static void lr_memory_maps(void)
         lr_span(0xC000u, 0x10000u, rom, (size_t)(banks - 1u) * 0x4000u, RETRO_MEMDESC_CONST);
     }
     lr_span(0x10000u, 0x10000u, NULL, 0u, 0u);
-    map.descriptors = descs;
-    map.num_descriptors = desc_count;
-    (void)env_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
+    memory_map.descriptors = descs;
+    memory_map.num_descriptors = desc_count;
+    (void)env_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &memory_map);
     (void)env_cb(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &yes);
 }
 

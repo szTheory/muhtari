@@ -880,12 +880,15 @@ static void check_keys(void)
 static void case_options(void)
 {
     uint8_t e[8];
+    size_t k;
     options_version = 1u;
     p_set_environment(env);
     CHECK_EQ_U64(option_set_with, 1);
     check_keys();
     p_deinit();
-    memset(option_keys, 0, sizeof option_keys);
+    for (k = 0; k < sizeof option_keys / sizeof option_keys[0]; k++) {
+        option_keys[k] = NULL;
+    }
     options_version = 2u;
 
     set_var("muhtari_left_difficulty", "A");
