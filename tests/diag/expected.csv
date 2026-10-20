@@ -33,7 +33,7 @@ cpu,ram,173,hw
 dli,zone1,117,rtl
 dli,zone2,117,rtl
 dli,zone0,233,rtl
-dli,parked,20,guide
+dli,parked,16,guide
 dli,wsync_1,142,hw
 dli,wsync_3,171,hw
 dli,rdy_store,135,fit

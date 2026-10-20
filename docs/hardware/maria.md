@@ -453,8 +453,11 @@ NMI handler's first instruction is `lda INTIM`. Each zone of these DLLs is the e
   write come `bit $00` (a slow TIA read, cycles 4-6) and `sta WSYNC`, which releases at line 17; `sta WSYNC` again
   there, before t 28; then a NOP. Line 17's burst runs inside the hold and its edge is latched there. The hold ends
   at line 18's t 0: s = 2, d = 2, so the NOP's opcode fetch is cycle (908 − 4) / 4 = 226. That fetch is the NOP's
-  deciding cycle and the edge came before it, so the NMI follows the NOP: entry 228-234, the read in cycle 238,
-  p = 235, INTIM **20**.
+  deciding cycle and the edge came before it, so the NMI follows the NOP: entry 228-234. DMA is still on, and line
+  18 is zone 1's first line, so its burst runs too: /HALT falls at cycle 233, at t φ + 28 of line 18, and c2 is
+  cycle 235, the handler's opcode fetch, frozen ceil(15 / 4) = 4 cycles. `lda INTIM` reads in cycle 242: p = 239,
+  INTIM **16**. The first derivation left line 18's burst out and gave 20; the first run read 16, and the burst
+  accounts for the 4 cycles.
 
 With these instructions the MiSTer edge (the second φ1 after HALTRST) and the Software Guide's (one tick after the
 shutdown) both fall inside the frozen c2 and give the same rows. An NMI at the burst's start, as MAME raises it,
