@@ -31,7 +31,8 @@ muhtari_warnings(muhtari-test-audio-contracts)
 muhtari_add_test(NAME audio.frames COMMAND muhtari-test-audio-contracts
   LABELS audio portable TIMEOUT 10)
 
-add_executable(muhtari-test-pokey ${CMAKE_CURRENT_LIST_DIR}/test_pokey.c)
+add_executable(muhtari-test-pokey ${CMAKE_CURRENT_LIST_DIR}/test_pokey.c
+  ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)
 target_include_directories(muhtari-test-pokey PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-pokey PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-pokey PROPERTIES
@@ -40,4 +41,6 @@ muhtari_warnings(muhtari-test-pokey)
 muhtari_add_test(NAME pokey.logic COMMAND muhtari-test-pokey logic
   LABELS pokey portable TIMEOUT 10)
 muhtari_add_test(NAME pokey.clock COMMAND muhtari-test-pokey clock
+  LABELS pokey portable TIMEOUT 10)
+muhtari_add_test(NAME pokey.maps COMMAND muhtari-test-pokey maps
   LABELS pokey portable TIMEOUT 10)

@@ -145,3 +145,27 @@ changing chip timestamps, current weights or masks. Its independently
 renewed headroom proof requires maximum mixed level18360; both the former
 comparison level18361 and final18360 pass. See [audio reconstruction](audio.md)
 for generation, bounds and the finite mixed-clock/high-pass evidence.
+
+## Cartridge windows
+
+The A78 declarations select the following windows (cartridge preparation
+section 2.1, sources CART.01/CART.20; see [cartridge decoding](cartridge.md)):
+
+| Legacy cart-type bit | v4 audio code | CPU window | Identity |
+|---|---|---|---|
+| 0 | 5 | $4000–$7FFF, every 16 bytes mirrored | primary |
+| 6 | 2 | $0450–$045F | primary |
+| 15 | 4 | $0800–$0FFF, every 16 bytes mirrored | primary |
+| 10 | 1 | $0440–$044F | secondary |
+| 6 and 10 | 3 | $0450–$045F and $0440–$044F | both |
+
+These are two fixed identities, with source IDs 2–5 for primary and 6–9
+for secondary. A lone $0440 chip remains secondary while the mixer counts
+one actual chip; two declared chips feed the same mono output. Loading
+another layout or power cycling clears old DAC/timer state and restores
+the current declaration. `pokey.maps` runs generated legacy and v4 images
+through SALLY and public frame PCM, checks INIT RANDOM/IRQST against $FF,
+visits every mirrored register block and tests both sides of each window.
+Its dual-chip PCM differs from either single-chip rendering under the same
+instruction schedule. These checks establish the implemented digital model,
+not physical cartridge loading or analog mix calibration.

@@ -1,7 +1,9 @@
 /* Owned chip vectors from hardware/pokey.md, through shipped objects. */
+#include <stdlib.h>
 #include <string.h>
 #include "internal.h"
 #include "../check.h"
+#include "../cart/images.h"
 
 static muhtari machine;
 
@@ -543,6 +545,208 @@ static void volume_override_vectors(void)
     CHECK_EQ_U64(m->synth.raw[2], (m->pokey[0].channel[0].output ^ 1u) * 206u);
 }
 
+/* Runtime maps: A78 codes and access priorities in hardware/cartridge.md.
+   Generate every image in memory and run actual SALLY instructions. */
+#define MAP_BODY 16384u
+#define MAP_AUDIO 801u
+static uint8_t map_image[IMAGES_HEADER + 65536u];
+
+static void *map_alloc(void *user, size_t size)
+{
+    (void)user;
+    return malloc(size);
+}
+
+static void map_free(void *user, void *ptr, size_t size)
+{
+    (void)user;
+    (void)size;
+    free(ptr);
+}
+
+static muhtari *map_machine(void)
+{
+    muhtari_config cfg;
+    memset(&cfg, 0, sizeof cfg);
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = map_alloc;
+    cfg.allocator.free = map_free;
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    return m;
+}
+
+static size_t map_header(uint8_t version, uint16_t type, uint8_t code, uint32_t body)
+{
+    images_header(map_image, version, "Mapped sound", body, type);
+    map_image[67] = code;
+    memset(map_image + IMAGES_HEADER, 0x5A, body);
+    images_footer(map_image + IMAGES_HEADER, body);
+    return IMAGES_HEADER + body;
+}
+
+static void map_load(muhtari *m, size_t size)
+{
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = map_image;
+    media.image_size = size;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    /* Fast boot leaves an unlocked handoff; ordinary cart code locks MEN. */
+    muhtari__bus_write(m, 1u, 7u);
+}
+
+static void map_store(uint8_t *program, size_t *n, uint16_t addr, uint8_t value)
+{
+    program[(*n)++] = 0xA9u; /* LDA #value; STA addr */
+    program[(*n)++] = value;
+    program[(*n)++] = 0x8Du;
+    program[(*n)++] = (uint8_t)addr;
+    program[(*n)++] = (uint8_t)(addr >> 8);
+}
+
+static void map_readback(uint8_t *program, size_t *n, uint16_t addr, uint8_t mailbox)
+{
+    program[(*n)++] = 0xADu; /* LDA addr; STA $18xx */
+    program[(*n)++] = (uint8_t)addr;
+    program[(*n)++] = (uint8_t)(addr >> 8);
+    program[(*n)++] = 0x8Du;
+    program[(*n)++] = mailbox;
+    program[(*n)++] = 0x18u;
+}
+
+static void map_program(uint16_t primary, int secondary)
+{
+    uint8_t *program = map_image + IMAGES_HEADER;
+    size_t n = 0u;
+    for (unsigned chip = 0u; chip < 2u; chip++) {
+        uint16_t at = chip == 0u ? primary : 0x0440u;
+        if ((chip == 0u && at == 0u) || (chip == 1u && !secondary))
+            continue;
+        map_store(program, &n, (uint16_t)(at + 15u), 0u); /* INIT */
+        for (unsigned delay = 0u; delay < 5u; delay++)
+            program[n++] = 0xEAu; /* ten clocks drain RANDOM to $FF */
+        map_readback(program, &n, (uint16_t)(at + 10u), (uint8_t)(2u * chip));
+        map_readback(program, &n, (uint16_t)(at + 14u), (uint8_t)(2u * chip + 1u));
+        map_store(program, &n, (uint16_t)(at + 15u), 3u);
+        map_store(program, &n, (uint16_t)(at + 8u), 0x40u);
+        map_store(program, &n, at, chip == 0u ? 200u : 137u);
+        map_store(program, &n, (uint16_t)(at + 1u), 0xAFu);
+        map_store(program, &n, (uint16_t)(at + 9u), 0u);
+    }
+    /* Linear 16K body begins at $C000. Keep the loop clear of registers. */
+    uint16_t loop = (uint16_t)(0xC000u + n);
+    program[n++] = 0x4Cu;
+    program[n++] = (uint8_t)loop;
+    program[n] = (uint8_t)(loop >> 8);
+}
+
+static uint32_t map_frame(muhtari *m, int16_t pcm[MAP_AUDIO])
+{
+    muhtari_frame frame;
+    memset(&frame, 0, sizeof frame);
+    frame.size = (uint32_t)sizeof frame;
+    frame.audio = pcm;
+    frame.audio_capacity = MAP_AUDIO;
+    CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+    unsigned nonzero = 0u;
+    for (uint32_t i = 0u; i < frame.audio_count; i++)
+        nonzero += pcm[i] != 0;
+    CHECK(nonzero != 0u);
+    return frame.audio_count;
+}
+
+static void map_windows(void)
+{
+    static const uint16_t types[] = {1u, 0x40u, 0x8000u, 0x400u, 0x440u};
+    static const uint8_t codes[] = {5u, 2u, 4u, 1u, 3u};
+    static const uint16_t primary[] = {0x4000u, 0x0450u, 0x0800u, 0u, 0x0450u};
+    muhtari *m = map_machine();
+    for (unsigned version = 3u; version <= 4u; version++) {
+        for (unsigned k = 0u; k < 5u; k++) {
+            size_t size = map_header((uint8_t)version, types[k], codes[k], MAP_BODY);
+            map_program(primary[k], k >= 3u);
+            map_load(m, size);
+            CHECK_EQ_HEX(m->cart.pokey_at[0], primary[k]);
+            CHECK_EQ_HEX(m->cart.pokey_at[1], k >= 3u ? 0x0440u : 0u);
+            CHECK_EQ_U64(m->synth.pokeys, k == 4u ? 2u : 1u);
+            CHECK_EQ_U64(m->synth.secondary, k == 3u);
+            int16_t pcm[MAP_AUDIO];
+            for (unsigned f = 0u; f < 3u; f++)
+                (void)map_frame(m, pcm);
+            for (unsigned chip = 0u; chip < 2u; chip++) {
+                uint16_t at = chip == 0u ? primary[k] : (k >= 3u ? 0x0440u : 0u);
+                if (at == 0u) {
+                    for (unsigned ch = 0u; ch < 4u; ch++)
+                        CHECK_EQ_U64(m->synth.raw[2u + chip * 4u + ch], 0u);
+                    continue;
+                }
+                CHECK_EQ_HEX(m->ram[2u * chip], 0xFFu);      /* INIT RANDOM */
+                CHECK_EQ_HEX(m->ram[2u * chip + 1u], 0xFFu); /* IRQST */
+                CHECK_EQ_U64(m->pokey[chip].channel[0].audf, chip == 0u ? 200u : 137u);
+                CHECK(m->pokey[chip].channel[0].fires != 0u);
+                muhtari__bus_write(m, (uint16_t)(at + 15u), 3u);
+                uint32_t end = at == 0x4000u ? 0x8000u : at == 0x0800u ? 0x1000u : at + 16u;
+                /* Every mirrored block, including the last, writes the same
+                   timer/DAC and reads documentary IRQST/unconnected values. */
+                for (uint32_t block = at; block < end; block += 16u) {
+                    muhtari__bus_write(m, (uint16_t)block, 37u);
+                    CHECK_EQ_U64(m->pokey[chip].channel[0].audf, 37u);
+                    muhtari__bus_write(m, (uint16_t)(block + 1u), 0x1Fu);
+                    CHECK_EQ_U64(m->synth.raw[2u + chip * 4u], 206u);
+                    CHECK_EQ_HEX(muhtari__bus_read(m, (uint16_t)(block + 14u)), 0xFFu);
+                    CHECK_EQ_HEX(muhtari__bus_read(m, (uint16_t)(block + 15u)), 0xFFu);
+                }
+                /* Addresses immediately outside must not change this chip. */
+                muhtari__bus_write(m, (uint16_t)(at - 1u), 0u);
+                muhtari__bus_write(m, (uint16_t)end, 0u);
+                CHECK_EQ_U64(m->pokey[chip].channel[0].audf, 37u);
+                CHECK_EQ_U64(m->pokey[chip].skctl, 3u);
+            }
+            CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(m->synth.pokeys, k == 4u ? 2u : 1u);
+            for (unsigned source = 2u; source < 10u; source++)
+                CHECK_EQ_U64(m->synth.raw[source], 0u);
+        }
+    }
+    size_t size = map_header(3u, 0u, 0u, MAP_BODY);
+    map_load(m, size);
+    CHECK_EQ_U64(m->synth.pokeys, 0u);
+    CHECK_EQ_U64(m->synth.secondary, 0u);
+    CHECK_EQ_U64(m->cart.pokey_at[0], 0u);
+    CHECK_EQ_U64(m->cart.pokey_at[1], 0u);
+    muhtari__bus_write(m, 0x0451u, 0x1Fu);
+    muhtari__bus_write(m, 0x0441u, 0x1Fu);
+    for (unsigned source = 2u; source < 10u; source++)
+        CHECK_EQ_U64(m->synth.raw[source], 0u);
+    muhtari_destroy(m);
+}
+
+static void map_mono(void)
+{
+    int16_t pcm[3][MAP_AUDIO];
+    uint32_t counts[3];
+    static const uint8_t codes[] = {2u, 1u, 3u};
+    muhtari *m = map_machine();
+    for (unsigned k = 0u; k < 3u; k++) {
+        size_t size = map_header(4u, 0u, codes[k], MAP_BODY);
+        /* Identical instructions/timing even for the absent chip. */
+        map_program(0x0450u, 1);
+        map_load(m, size);
+        (void)map_frame(m, pcm[k]);
+        (void)map_frame(m, pcm[k]);
+        counts[k] = map_frame(m, pcm[k]);
+        CHECK_EQ_U64(m->pokey[0].channel[0].audc, k == 1u ? 0u : 0xAFu);
+        CHECK_EQ_U64(m->pokey[1].channel[0].audc, k == 0u ? 0u : 0xAFu);
+    }
+    CHECK_EQ_U64(counts[0], counts[2]);
+    CHECK_EQ_U64(counts[1], counts[2]);
+    CHECK(memcmp(pcm[0], pcm[2], counts[2] * sizeof(int16_t)) != 0);
+    CHECK(memcmp(pcm[1], pcm[2], counts[2] * sizeof(int16_t)) != 0);
+    muhtari_destroy(m);
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
@@ -565,6 +769,9 @@ int main(int argc, char **argv)
         timer_vectors();
         logic_vectors();
         high_pass_vectors();
+    } else if (strcmp(argv[1], "maps") == 0) {
+        map_windows();
+        map_mono();
     } else {
         return 2;
     }
