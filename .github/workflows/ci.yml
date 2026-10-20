@@ -527,7 +527,7 @@ jobs:
           fi
           rc=0
           cmake -DROM=testcard "-DHEAD=$head" "-DBASE1=$base1" "-DBASE2=$base2" -DALLOW=tests/perf/allow.txt \
-            "-DARMED=$MUHTARI_PERF_ARMED" "-DTODAY=$(date -u +%Y-%m-%d)" "-DNO_BASE=$NO_BASE" \
+            "-DARMED=$MUHTARI_PERF_ARMED" "-DNO_BASE=$NO_BASE" \
             -P tests/cmake/perf_compare.cmake > perf.txt 2>&1 || rc=$?
           cat perf.txt
           grep '^perf ' perf.txt >> "$GITHUB_STEP_SUMMARY" || true

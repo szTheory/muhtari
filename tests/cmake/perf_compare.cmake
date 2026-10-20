@@ -1,6 +1,6 @@
 # Instructions-per-frame gate, run as
 #   cmake -DROM=<name> -DHEAD=<n> -DBASE1=<n> -DBASE2=<n> -DALLOW=<allow file>
-#     -DARMED=<true|false> -DTODAY=<YYYY-MM-DD> [-DNO_BASE=true] -P perf_compare.cmake
+#     -DARMED=<true|false> [-DNO_BASE=true] -P perf_compare.cmake
 # Fault prevented: a pull request making the core slower unnoticed. HEAD is
 # the Cachegrind Ir/frame of the merge commit, BASE1 and BASE2 two measurements
 # of its first parent. Prints one line,
@@ -16,33 +16,6 @@ cmake_minimum_required(VERSION 3.25)
 
 function(perf_error reason)
   message(FATAL_ERROR "perf: error ${reason}")
-endfunction()
-
-# Days since 1970-01-01 of a YYYY-MM-DD date (the civil-from-days inverse).
-function(perf_days out date)
-  if(NOT date MATCHES "^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$")
-    perf_error("date '${date}' is not YYYY-MM-DD")
-  endif()
-  set(y ${CMAKE_MATCH_1})
-  set(m ${CMAKE_MATCH_2})
-  set(d ${CMAKE_MATCH_3})
-  # A leading zero would read as octal.
-  string(REGEX REPLACE "^0" "" m "${m}")
-  string(REGEX REPLACE "^0" "" d "${d}")
-  if(m LESS 1 OR m GREATER 12 OR d LESS 1 OR d GREATER 31)
-    perf_error("date '${date}' is out of range")
-  endif()
-  if(m LESS_EQUAL 2)
-    math(EXPR y "${y} - 1")
-    math(EXPR m "${m} + 9")
-  else()
-    math(EXPR m "${m} - 3")
-  endif()
-  math(EXPR era "${y} / 400")
-  math(EXPR yoe "${y} - ${era} * 400")
-  math(EXPR doy "(153 * ${m} + 2) / 5 + ${d} - 1")
-  math(EXPR days "${era} * 146097 + ${yoe} * 365 + ${yoe} / 4 - ${yoe} / 100 + ${doy} - 719468")
-  set(${out} ${days} PARENT_SCOPE)
 endfunction()
 
 # A measurement is a decimal integer without a leading zero; 0 is no
@@ -68,11 +41,16 @@ endif()
 if(NOT EXISTS "${ALLOW}")
   perf_error("allow file '${ALLOW}' does not exist")
 endif()
-perf_days(today "${TODAY}")
 
-# Allow lines: <rom> <max % x 100> <expiry YYYY-MM-DD> <reason>. The reason is
-# never printed, so a semicolon or bracket in it is replaced before the text is
-# split into lines.
+# Allow lines: <rom> <max % x 100> <expiry YYYY-MM-DD> <reason>, each applying
+# from today (UTC, or SOURCE_DATE_EPOCH) through its expiry, at most 60 days
+# on. The reason is never printed, so a semicolon or bracket in it is replaced
+# before the text is split into lines.
+string(TIMESTAMP now "%s" UTC)
+string(TIMESTAMP today "%Y-%m-%d" UTC)
+math(EXPR later "${now} + 60 * 86400")
+set(ENV{SOURCE_DATE_EPOCH} ${later})
+string(TIMESTAMP last "%Y-%m-%d" UTC)
 set(limit 100)
 file(READ "${ALLOW}" text)
 string(REGEX REPLACE "[][;\r]" "_" text "${text}")
@@ -83,23 +61,14 @@ foreach(line IN LISTS lines)
   if(line MATCHES "^[ \t_]*$" OR line MATCHES "^#")
     continue()
   endif()
-  if(NOT line MATCHES "^([A-Za-z0-9_.-]+) (0|[1-9][0-9]*) ([0-9-]+) [^ ]")
+  if(NOT line MATCHES "^([A-Za-z0-9_.-]+) (0|[1-9][0-9]*) ([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) [^ ]")
     perf_error("malformed allow line ${n} of ${ALLOW}")
   endif()
-  set(rom ${CMAKE_MATCH_1})
-  set(cap ${CMAKE_MATCH_2})
-  perf_days(expiry "${CMAKE_MATCH_3}")
-  math(EXPR ahead "${expiry} - ${today}")
-  # Applies from today through its expiry, at most 60 days away.
-  if(rom STREQUAL ROM AND ahead GREATER_EQUAL 0 AND ahead LESS_EQUAL 60 AND cap GREATER limit)
-    set(limit ${cap})
+  if(CMAKE_MATCH_1 STREQUAL ROM AND NOT CMAKE_MATCH_3 STRLESS today
+      AND NOT CMAKE_MATCH_3 STRGREATER last AND CMAKE_MATCH_2 GREATER limit)
+    set(limit ${CMAKE_MATCH_2})
   endif()
 endforeach()
-
-set(exit_on_verdict FALSE)
-if(ARMED STREQUAL "true")
-  set(exit_on_verdict TRUE)
-endif()
 
 if(NO_BASE STREQUAL "true")
   set(verdict NO_BASE)
@@ -121,6 +90,6 @@ else()
 endif()
 
 message(NOTICE "${line}")
-if(NOT verdict STREQUAL "PASS" AND exit_on_verdict)
+if(NOT verdict STREQUAL "PASS" AND ARMED STREQUAL "true")
   message(FATAL_ERROR "perf: verdict ${verdict} with the gate armed")
 endif()
