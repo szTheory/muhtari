@@ -22,6 +22,13 @@ foreach(var WASMTIME PKG SRC OUT MANIFEST)
   endif()
 endforeach()
 
+# Paths given relative, as docs/emulation-tests.md writes them, are taken from
+# the working directory.
+foreach(var WASMTIME PKG SRC CFG OUT MANIFEST KEEP)
+  if(NOT "${${var}}" STREQUAL "")
+    get_filename_component(${var} "${${var}}" ABSOLUTE)
+  endif()
+endforeach()
 file(TO_CMAKE_PATH "${PKG}" pkg)
 get_filename_component(src_dir "${SRC}" DIRECTORY)
 get_filename_component(name "${SRC}" NAME_WE)
