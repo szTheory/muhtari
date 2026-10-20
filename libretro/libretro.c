@@ -469,7 +469,8 @@ void retro_reset(void)
    called once with the converted rows, and mono samples are duplicated into
    left/right pairs. Prefer the batch callback (L7465); use the per-sample
    callback only when no batch callback is registered (L7453). A failed frame
-   duplicates the last picture without audio; its first failure is reported. */
+   presents the last picture (black before the first frame) without audio;
+   its first failure is reported. */
 void retro_run(void)
 {
     muhtari_frame io;
@@ -497,7 +498,7 @@ void retro_run(void)
             run_failed = true;
         }
         if (video_cb != NULL) {
-            video_cb(NULL, LR_WIDTH, LR_HEIGHT, (size_t)LR_WIDTH * sizeof pixels[0]);
+            video_cb(pixels, LR_WIDTH, LR_HEIGHT, (size_t)LR_WIDTH * sizeof pixels[0]);
         }
         return;
     }
@@ -809,6 +810,7 @@ bool retro_load_game(const struct retro_game_info *game)
         lr_release();
         return false;
     }
+    memset(pixels, 0, LR_PIXELS * sizeof *pixels);
     if ((game != NULL && !lr_load_content(game)) ||
         !env_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &format)) {
         lr_release();

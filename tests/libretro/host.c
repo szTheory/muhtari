@@ -828,10 +828,12 @@ static void frame_failure(void)
             int videos = video_calls;
             int batches = batch_calls;
             int nulls = video_null;
+            uint64_t previous = frame_hash();
             p_run();
             CHECK_EQ_U64(video_calls, videos + 1);
             if (message_calls != messages) {
-                CHECK_EQ_U64(video_null, nulls + 1);
+                CHECK_EQ_U64(video_null, nulls);
+                CHECK_EQ_U64(frame_hash(), previous);
                 CHECK_EQ_U64(batch_calls, batches);
             }
         }
@@ -840,11 +842,13 @@ static void frame_failure(void)
         CHECK(strstr(message, "BIOS rejected") != NULL);
         CHECK(strstr(log_text, "frame failed:") != NULL);
         size_t logged = log_used;
+        uint64_t previous = frame_hash();
         int videos = video_calls, nulls = video_null, batches = batch_calls;
         size_t samples = sample_frames;
         run_frames(3u);
         CHECK_EQ_U64(video_calls, videos + 3);
-        CHECK_EQ_U64(video_null, nulls + 3);
+        CHECK_EQ_U64(video_null, nulls);
+        CHECK_EQ_U64(frame_hash(), previous);
         CHECK_EQ_U64(video_width, W);
         CHECK_EQ_U64(video_height, H);
         CHECK_EQ_U64(video_pitch, W * 4u);

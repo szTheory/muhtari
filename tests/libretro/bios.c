@@ -94,6 +94,10 @@ static void RETRO_CALLCONV bios_log(enum retro_log_level level, const char *fmt,
 
 static bool RETRO_CALLCONV bios_env(unsigned cmd, void *data)
 {
+    if (cmd == RETRO_ENVIRONMENT_GET_CAN_DUPE) {
+        *(bool *)data = false;
+        return true;
+    }
     if (cmd == RETRO_ENVIRONMENT_GET_LOG_INTERFACE) {
         ((struct retro_log_callback *)data)->log = bios_log;
         return true;
@@ -115,6 +119,56 @@ static bool RETRO_CALLCONV bios_env(unsigned cmd, void *data)
         return true;
     }
     return cmd == RETRO_ENVIRONMENT_SET_PIXEL_FORMAT;
+}
+
+static lr_pixel retained[LR_PIXELS];
+static unsigned videos;
+static bool capture;
+
+static void RETRO_CALLCONV failure_video(const void *data, unsigned width, unsigned height,
+                                         size_t pitch)
+{
+    videos++;
+    CHECK(data != NULL);
+    CHECK_EQ_U64(width, LR_WIDTH);
+    CHECK_EQ_U64(height, LR_HEIGHT);
+    CHECK_EQ_U64(pitch, LR_WIDTH * sizeof retained[0]);
+    if (data != NULL) {
+        if (capture) {
+            memcpy(retained, data, sizeof retained);
+        } else {
+            CHECK(memcmp(retained, data, sizeof retained) == 0);
+        }
+    }
+}
+
+/* Inject the core's persistent BIOS rejection before the first run and
+   after a rendered test card. A frontend without duping requires pixels. */
+static void failed_frames(void)
+{
+    CHECK(retro_load_game(NULL));
+    retro_set_video_refresh(failure_video);
+    memset(retained, 0, sizeof retained);
+    videos = 0u;
+    capture = false;
+    inst->boot.rejected = 1u;
+    retro_run();
+    CHECK_EQ_U64(videos, 1u);
+    inst->boot.rejected = 0u;
+    capture = true;
+    retro_run();
+    CHECK_EQ_U64(videos, 2u);
+    bool nonzero = false;
+    for (size_t i = 0; i < LR_PIXELS; i++) {
+        nonzero = nonzero || retained[i] != 0u;
+    }
+    CHECK(nonzero);
+    capture = false;
+    inst->boot.rejected = 1u;
+    retro_run();
+    retro_run();
+    CHECK_EQ_U64(videos, 4u);
+    retro_unload_game();
 }
 
 int main(void)
@@ -184,6 +238,7 @@ int main(void)
     CHECK(strstr(seen_log, "BIOS path too long") != NULL);
     CHECK(strstr(seen_message, "No usable") != NULL);
     retro_unload_game();
+    failed_frames();
     retro_deinit();
     CHECK_DONE();
 }
