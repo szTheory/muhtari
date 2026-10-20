@@ -152,6 +152,41 @@ static void high_pass_vectors(void)
     }
 }
 
+/* Manual chapter5: joined $0000 fast high channel fires at11,18,...;
+   high-pass channel2 is sampled by timer4, three half edges later. */
+static void joined_pcm_trace(void)
+{
+    muhtari *m = fresh();
+    muhtari__pokey_write(m, 0u, 8u, 0x72u, 0u);
+    muhtari__pokey_write(m, 0u, 3u, 0xAFu, 0u);
+    muhtari__pokey_write(m, 0u, 6u, 0u, 0u);
+    muhtari__pokey_write(m, 0u, 9u, 0u, 0u);
+    for (unsigned cycle = 1u; cycle <= 48u; cycle++) {
+        (void)muhtari__bus_read(m, 0x1800u);
+        if (cycle == 10u)
+            CHECK_EQ_U64(m->pokey[0].channel[1].fires, 0u);
+        if (cycle == 11u) {
+            CHECK_EQ_U64(m->pokey[0].channel[0].fires, 1u);
+            CHECK_EQ_U64(m->pokey[0].channel[1].fires, 1u);
+            CHECK_EQ_U64(m->synth.raw[3], 206u);
+        }
+        if (cycle == 18u)
+            CHECK_EQ_U64(m->pokey[0].channel[1].fires, 2u);
+        if (cycle == 24u)
+            CHECK_EQ_U64(m->pokey[0].hp_delay[1], 3u);
+    }
+    CHECK_EQ_U64(m->pokey[0].channel[1].last_fire, 184u);
+    int16_t pcm[88];
+    muhtari__pokey_catch_up(m, 13124u);
+    CHECK_EQ_U64(muhtari__synth_render(m, 13125u, pcm), 88u);
+    unsigned nonzero = 0u;
+    for (unsigned i = 0; i < 88u; i++)
+        nonzero += pcm[i] != 0;
+    CHECK(nonzero != 0u);
+    CHECK(m->synth.kernel_adds > 0u);
+    CHECK_EQ_U64(m->synth.clipped_samples, 0u);
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
@@ -160,6 +195,7 @@ int main(int argc, char **argv)
     if (strcmp(argv[1], "clock") == 0) {
         clock_vectors();
     } else if (strcmp(argv[1], "logic") == 0) {
+        joined_pcm_trace();
         timer_vectors();
         logic_vectors();
         high_pass_vectors();
