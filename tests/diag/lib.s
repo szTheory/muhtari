@@ -1,8 +1,9 @@
 ; SPDX-License-Identifier: MIT
 ; The diagnostics' common code: the 7800's registers, the result mailbox at
 ; $2200 with its CRC-16, and a results screen drawn in our own hex glyphs.
-; A diagnostic includes this file right after its ORG $C000 and ends with
-; LIB_TAIL, which places the font at $F800-$FFFF and the vectors. It defines
+; A diagnostic includes this file right after its ORG $C000 (RORG $C000 in a
+; banked ROM's last bank) and ends with LIB_TAIL, which places the font at
+; $F800-$FFFF and the vectors. It defines
 ; reset; IRQ returns at once, and so does NMI unless it defines diag_nmi.
 
 ; The registers (Software Guide; docs/hardware/maria.md, Registers;
@@ -256,7 +257,7 @@ LIB_R   SET LIB_R + 1
         IF * > FONT
         ERR
         ENDIF
-        ORG FONT
+        ds FONT-*, $FF          ; ORG's fill: a banked ROM's last bank is RORG $C000
         ds 2*256, 0
         ;     0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F    blank
         .byte $FC, $FC, $FC, $FC, $0C, $FC, $FC, $0C, $FC, $FC, $CC, $F0, $FC, $F0, $FC, $C0, $00

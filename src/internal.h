@@ -129,7 +129,7 @@ struct muhtari__profile {
 /* The loaded cartridge: rom holds the info.rom_size bytes the board maps,
    followed by its info.ram_size bytes of RAM, in one allocation through the
    instance's allocator; rom is NULL while none is loaded, ram while the
-   board has none. bank is the SuperGame bank at $8000 and ram_bank the
+   board has none. bank is the SuperGame bank register and ram_bank the
    banked-RAM half at $4000, each already reduced to a bank that exists
    (docs/hardware/cartridge.md, Boards). */
 struct muhtari__cart {

@@ -793,7 +793,7 @@ static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
 }
 
 /* The SuperGame bank at addr, $4000-$FFFF (A7800-CARTRIDGES-AND-PERIPHERALS
-   section 2.1): the last bank at $C000, the selected one at $8000, and at
+   section 2.1): the last bank at $C000, the register's at $8000, and at
    $4000 bank 6 with that option, bank 0 on the 2^n + 1 board, else the
    second-to-last. Every number is reduced modulo the bank count. */
 static uint32_t cart_sg_bank(const struct muhtari__cart *c, uint16_t addr)
@@ -803,7 +803,8 @@ static uint32_t cart_sg_bank(const struct muhtari__cart *c, uint16_t addr)
         return banks - 1u;
     }
     if (addr >= 0x8000u) {
-        return c->bank;
+        /* The 2^n + 1 board's register selects among the banks after bank 0. */
+        return (c->info.board_options & MUHTARI_BOARD_ROM_AT_4000) != 0u ? 1u + c->bank : c->bank;
     }
     if ((c->info.board_options & MUHTARI_BOARD_ROM_AT_4000) != 0u) {
         return 0u;
@@ -856,8 +857,9 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
 }
 
 /* A write to the board's RAM stores; on a SuperGame board a write to
-   $8000-$BFFF selects the bank at $8000: the value modulo the bank count,
-   or 1 + the value modulo 2^n on the 2^n + 1 board. A banked-RAM board
+   $8000-$BFFF sets the bank register: the value modulo the bank count, or
+   modulo 2^n on the 2^n + 1 board, which shows bank 1 + the register at
+   $8000. A banked-RAM board
    takes the RAM half from D5 of the same write
    (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1). ROM ignores a write. */
 void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
@@ -876,7 +878,7 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         if (addr >= 0x8000u && addr < 0xC000u) {
             uint32_t banks = c->info.rom_size / CART_BANK;
             if ((c->info.board_options & MUHTARI_BOARD_ROM_AT_4000) != 0u) {
-                c->bank = (uint8_t)(1u + v % (banks - 1u));
+                c->bank = (uint8_t)(v % (banks - 1u));
             } else {
                 c->bank = (uint8_t)(v % banks);
             }
