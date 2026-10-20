@@ -73,6 +73,27 @@ struct muhtari__tia {
     struct muhtari__tia_channel channel[2];
 };
 
+/* Owned timer/audio state; docs/hardware/pokey.md. Chip clocks count real
+   CLK2 edges independently of the bus's completed-cycle counter. */
+struct muhtari__pokey_channel {
+    uint64_t reload, fire, last_fire;
+    uint32_t fires;
+    uint16_t count;
+    uint8_t audf, audc, output, hp;
+};
+struct muhtari__pokey {
+    uint64_t cycle, tick, half;
+    uint32_t poly17;
+    uint16_t prescale28, prescale114;
+    uint8_t audctl, skctl, irqen, irqst, initialized;
+    struct muhtari__pokey_channel channel[4];
+};
+void muhtari__pokey_reset(muhtari *m, unsigned chip);
+void muhtari__pokey_write(muhtari *m, unsigned chip, uint8_t reg, uint8_t v, uint64_t tick);
+uint8_t muhtari__pokey_read(muhtari *m, unsigned chip, uint8_t reg, uint64_t tick);
+int muhtari__pokey_irq(const muhtari *m, unsigned chip);
+void muhtari__pokey_catch_up(muhtari *m, uint64_t tick);
+
 extern const int32_t muhtari__synth_kernel[32][16];
 void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys);
 void muhtari__synth_level(muhtari *m, uint64_t tick, unsigned source, uint16_t level);
@@ -190,6 +211,7 @@ struct muhtari__profile {
     uint8_t riot_orb_power_on;
     uint8_t ram_fill;
     uint16_t tia_phase;
+    uint8_t pokey_init;
 };
 
 /* The loaded cartridge: rom holds the info.rom_size bytes the board maps,
@@ -336,6 +358,7 @@ struct muhtari {
     struct muhtari__boot boot;
     struct muhtari__synth synth;
     struct muhtari__tia tia;
+    struct muhtari__pokey pokey[2];
     int16_t audio_work[MUHTARI__MAX_AUDIO_SAMPLES];
     uint64_t frames;                /* frames run since the last load or power cycle */
     uint64_t lag_frames;            /* of those, frames with no CPU read of an input */

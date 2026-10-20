@@ -453,6 +453,47 @@ static void test_synth_mix(void)
 
 static void test_silence(void)
 {
+    /* The manual's 8-bit fast timer reloads at T+3, first IRQ/output
+       at T+4, then every N+4 clocks (hardware/pokey.md). */
+    const uint8_t divisors[] = {0u, 1u, 255u};
+    for (unsigned d = 0; d < 3u; d++) {
+        muhtari *p = make();
+        muhtari__synth_reset(p, 0u, 1u);
+        muhtari__pokey_reset(p, 0u);
+        muhtari__pokey_reset(p, 1u);
+        CHECK_EQ_U64(p->pokey[0].skctl, 3u);
+        muhtari__pokey_write(p, 0u, 8u, 0x40u, 0u);
+        muhtari__pokey_write(p, 0u, 0u, divisors[d], 0u);
+        muhtari__pokey_write(p, 0u, 1u, 0xAFu, 0u);
+        muhtari__pokey_write(p, 0u, 14u, 1u, 0u);
+        muhtari__pokey_write(p, 0u, 9u, 0u, 0u);
+        uint64_t first = 4u * ((uint64_t)divisors[d] + 4u);
+        muhtari__pokey_catch_up(p, first - 1u);
+        CHECK_EQ_U64(p->synth.raw[2], 0u);
+        CHECK(!muhtari__pokey_irq(p, 0u));
+        muhtari__pokey_catch_up(p, first);
+        CHECK_EQ_U64(p->synth.raw[2], 206u);
+        CHECK(muhtari__pokey_irq(p, 0u));
+        CHECK_EQ_U64(muhtari__pokey_read(p, 0u, 14u, first), 0xFEu);
+        muhtari__pokey_catch_up(p, first + 4u * (divisors[d] + 4u));
+        CHECK_EQ_U64(p->synth.raw[2], 0u);
+        muhtari__pokey_catch_up(p, 13124u);
+        int16_t pcm[88];
+        CHECK_EQ_U64(muhtari__synth_render(p, 13125u, pcm), 88u);
+        unsigned nonzero = 0u;
+        for (unsigned i = 0; i < 88u; i++) {
+            nonzero += pcm[i] != 0;
+        }
+        CHECK(nonzero != 0u);
+        CHECK_EQ_U64(p->pokey[1].cycle, p->pokey[0].cycle);
+        CHECK_EQ_U64(p->pokey[1].channel[0].audc, 0u);
+        muhtari_destroy(p);
+    }
+    muhtari *alternate = make();
+    alternate->profile.pokey_init = 1u;
+    muhtari__pokey_reset(alternate, 0u);
+    CHECK_EQ_U64(alternate->pokey[0].skctl, 0u);
+    muhtari_destroy(alternate);
     static const uint32_t first[4] = {800, 801, 800, 801};
     muhtari *m = make();
     muhtari_frame io;

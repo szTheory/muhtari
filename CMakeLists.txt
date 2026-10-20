@@ -72,6 +72,7 @@ add_library(muhtari_objs OBJECT
   src/testcard.c
   src/bus.c
   src/tia.c
+  src/pokey.c
   src/riot.c
   src/maria.c
   src/boot.c
