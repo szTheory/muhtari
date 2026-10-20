@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
-status: Executing phase 4; wave 6 complete; wave 7 next
-stopped_at: Phase 4 wave 6 verified; actual-clock POKEY recovery complete; wave 7 next
-last_updated: "2026-10-20T22:25:59+00:00"
+status: Executing phase 4; wave 7 complete; wave 8 next
+stopped_at: Phase 4 wave 7 verified; POKEY music semantics complete; wave 8 next
+last_updated: "2026-10-20T23:03:01+00:00"
 last_activity: 2026-10-20
-last_activity_desc: Completed wave 6 with final production spectra, generation and numerical proofs
-state_head: 2a2f2c60ba1ec4bda4af5337b19e8a26ad51c464
+last_activity_desc: Completed wave 7 with joined timers, two-tone, polynomial and RANDOM/init conformance
+state_head: 7b5e7d39b1dc30035ed2317c03b558353758c9d4
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 73
-  completed_plans: 62
+  completed_plans: 63
   percent: 75
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 
 ## Current Position
 
-Phase: 04 (Sound) — WAVE 6 COMPLETE
-Plan: 7 of 17
-Status: Wave 6 complete; wave 7 next
-Last activity: 2026-10-20 — Actual-clock POKEY and64-phase synthesis recovery verified; 6/17 plans complete
+Phase: 04 (Sound) — WAVE 7 COMPLETE
+Plan: 8 of 17
+Status: Wave 7 complete; wave 8 next
+Last activity: 2026-10-20 — POKEY music semantics verified; 7/17 plans complete
 
 Progress: [████████░░] 75%
 
@@ -122,6 +122,7 @@ Progress: [████████░░] 75%
 | Phase 04 P04 | 6min | 2 tasks | 11 files |
 | Phase 04 P05 | 5min | 2 tasks | 8 files |
 | Phase 04 P06 | 5min recovery + prior9min | 2 tasks | 19 files |
+| Phase 04 P07 | 10min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -338,12 +339,15 @@ Recent decisions affecting current work:
 - The ship note uses an ordinary commit so a CI run exists on the final pull-request head, as rule 9 requires. No skip token or recovery commit.
 - This session follows the phase merge, the release pull request and the automatically published 0.3.0 release. Next GSD step after shipping: `$gsd-discuss-phase 4`.
 
+- [Phase 04]: Joined timing follows manual figure8: last AUDF write atT+9, shared latch atT+10 and output atT+11. The prose callsT+9 the reload; pokey.md preserves this documentary discrepancy. Small owned LFSRs replace proposed tables.
+
 ### Blockers/Concerns
 
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
 - Wave6 recovery verified: exact-q23-16x64-dc20, final headroom-derivedM18360; full CI600 checks, hygiene24, affected25 in release/debug, generator and84mixed/HP/refined probes pass. Historical six-failure evidence stays in04-06-SUMMARY.md; WINDOWS9 is fixed.
+- Wave7 verified: both joined pairs, STIMER/AUDF deadlines, two-tone, staggered noise, RANDOM/init and hidden-state resumption; full CI600, hygiene24 and assertion-enabled focused tests pass. Four new production spectral cases pass, worst−103.26565420dBFS.
 - Sound requirements remain globally pending maps/IRQ/observation/hash/host/workload/platform slices. Phase4 verification waits until all17 plans complete.
 
 ## Deferred Items
@@ -356,7 +360,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T22:24:38.866Z
-Stopped at: Phase 4 wave 6 verified; actual-clock POKEY recovery complete; wave 7 next
-Resume file: .planning/phases/04-sound/04-07-PLAN.md
-Next command: `$gsd-execute-phase 4 --wave 7`
+Last session: 2026-10-20T23:02:43.509Z
+Stopped at: Phase 4 wave 7 verified; POKEY music semantics complete; wave 8 next
+Resume file: .planning/phases/04-sound/04-08-PLAN.md
+Next command: `$gsd-execute-phase 4 --wave 8`
