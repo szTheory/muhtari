@@ -544,8 +544,8 @@ static void card(void)
 #define LAST_ENTRY 0x0841u
 enum { E_SWCHA, E_SWCHB, E_INPT0, E_INPT1, E_INPT2, E_INPT3, E_INPT4, E_INPT5 };
 
-static unsigned char *files[2];
-static size_t file_sizes[2];
+static unsigned char *files[3];
+static size_t file_sizes[3];
 
 /* Reads path into files[slot]; 0 on failure. */
 static int read_file(const char *path, int slot)
@@ -813,12 +813,14 @@ static void drop_bios(const char *dir, const char *name)
 }
 
 /* muhtari_boot = bios boots through a BIOS file in the system directory,
-   under either name, and logs its SHA-256; its first frames differ from
-   the fast boot's. With no file the core says so and boots fast. */
+   under either name, and logs its SHA-256: frame 120 shows the BIOS, not
+   the title the fast boot shows there. With no file the core says so and
+   gives the fast boot's frames. */
+#define BIOS_FRAMES 120u
 static void case_bios(const char *dir)
 {
     static const char *const names[2] = {"7800 BIOS (U).rom", "7800 BIOS (E).rom"};
-    uint64_t fast[4], bios[4], fallback[4];
+    static uint64_t fast[BIOS_FRAMES], bios[BIOS_FRAMES], fallback[BIOS_FRAMES];
     uint8_t digest[32];
     char hex[65];
     muhtari__sha256 sha;
@@ -833,7 +835,7 @@ static void case_bios(const char *dir)
     drop_bios(dir, names[1]);
 
     start(0);
-    hash_frames(fast, 4u);
+    hash_frames(fast, BIOS_FRAMES);
     stop();
     for (n = 0; n < 2u; n++) {
         put_bios(dir, names[n]);
@@ -841,20 +843,20 @@ static void case_bios(const char *dir)
         log_used = 0u;
         log_text[0] = '\0';
         start(0);
-        hash_frames(bios, 4u);
+        hash_frames(bios, BIOS_FRAMES);
         stop();
         drop_bios(dir, names[n]);
         CHECK(strstr(log_text, names[n]) != NULL);
         CHECK(strstr(log_text, hex) != NULL);
-        CHECK(memcmp(bios, fast, sizeof fast) != 0);
+        CHECK(bios[BIOS_FRAMES - 1u] != fast[BIOS_FRAMES - 1u]);
     }
     log_used = 0u;
     log_text[0] = '\0';
     start(0);
-    hash_frames(fallback, 4u);
+    hash_frames(fallback, BIOS_FRAMES);
     stop();
     CHECK(strstr(log_text, "fast boot") != NULL);
-    for (i = 0; i < 4u; i++) {
+    for (i = 0; i < BIOS_FRAMES; i++) {
         CHECK_EQ_U64(fallback[i], fast[i]);
     }
     set_var("muhtari_boot", "fast");
@@ -905,85 +907,134 @@ static void case_options(void)
     set_var("muhtari_left_difficulty", "B");
 }
 
-/* One descriptor as the core must list it. */
-typedef struct want_desc {
+/* Where the map must put a span of CPU addresses: no memory, system RAM
+   from byte at, the RIOT's RAM, cartridge RAM, or the content file from
+   byte at. */
+enum { NOTHING, RAM, RIOT, CART_RAM, ROM };
+typedef struct want_span {
+    uint32_t start, end;
+    int kind;
+    size_t at;
     uint64_t flags;
-    size_t start, len, offset;
-} want_desc;
+} want_span;
 
-/* Checks the map against want, in order, and returns the descriptor
-   starting at start, or NULL. */
-static const struct retro_memory_descriptor *check_map(const want_desc *want, unsigned n)
+/* The spans every cartridge shares (HOSTS-AND-INTEGRATION section 2): page
+   0's and page 1's RAM shadows at $2040 and $2140, the RIOT's RAM, system
+   RAM, and its second half again at $2800. */
+#define SHARED_SPANS                                                                               \
+    {0x0040u, 0x0100u, RAM, 0x0840u, 0u}, {0x0140u, 0x0200u, RAM, 0x0940u, 0u},                    \
+        {0x0480u, 0x0500u, RIOT, 0u, 0u}, {0x1800u, 0x2800u, RAM, 0u, RETRO_MEMDESC_SYSTEM_RAM},   \
+        {0x2800u, 0x3000u, RAM, 0x0800u, 0u}
+
+/* The byte the map gives for CPU address addr, or NULL; *flags gets its
+   descriptor's flags. Exactly one descriptor must cover each address. */
+static const uint8_t *resolve(uint32_t addr, uint64_t *flags)
 {
-    unsigned i;
-    CHECK(memory_map != NULL);
-    if (memory_map == NULL) {
-        return NULL;
-    }
-    CHECK_EQ_U64(memory_map->num_descriptors, n);
-    for (i = 0; i < n && i < memory_map->num_descriptors; i++) {
+    const struct retro_memory_descriptor *hit = NULL;
+    unsigned i, n = 0;
+    *flags = 0u;
+    for (i = 0; i < memory_map->num_descriptors; i++) {
         const struct retro_memory_descriptor *d = &memory_map->descriptors[i];
-        if (d->flags != want[i].flags || d->start != want[i].start || d->len != want[i].len ||
-            d->offset != want[i].offset || d->select != 0u || d->ptr == NULL) {
-            fprintf(stderr,
-                    "descriptor %u: flags %llx start $%04x len $%04x offset $%04x, expected "
-                    "%llx $%04x $%04x $%04x\n",
-                    i, (unsigned long long)d->flags, (unsigned)d->start, (unsigned)d->len,
-                    (unsigned)d->offset, (unsigned long long)want[i].flags, (unsigned)want[i].start,
-                    (unsigned)want[i].len, (unsigned)want[i].offset);
-            check_failures++;
+        if (addr >= d->start && addr - d->start < d->len) {
+            hit = d;
+            n++;
         }
     }
-    return memory_map->descriptors;
+    if (n != 1u) {
+        fprintf(stderr, "address $%04x is in %u descriptors\n", (unsigned)addr, n);
+        check_failures++;
+        return NULL;
+    }
+    *flags = hit->flags;
+    return hit->ptr != NULL ? (const uint8_t *)hit->ptr + hit->offset + (addr - hit->start) : NULL;
 }
 
-/* The achievement map (HOSTS-AND-INTEGRATION section 2): page 0's and page
-   1's RAM shadows, the RIOT's RAM, system RAM at $1800 and again at $2800
-   from its second half, unbanked cartridge RAM at $4000 and the fixed ROM
-   as CONST. Registers, $3000-$3FFF and banked windows have none. */
+/* Checks every descriptor's shape and every address of the CPU bus against
+   want: the right byte, no memory outside the spans, the right flags. A
+   descriptor with select 0 has a power-of-two length (libretro.h L3634),
+   here aligned to its start, and one with no memory has no flags (L3582). */
+static void check_map(const want_span *want, unsigned n, const unsigned char *file)
+{
+    const uint8_t *ram = (const uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+    const uint8_t *first[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    unsigned i, bad = 0;
+    uint32_t addr;
+    CHECK(memory_map != NULL && ram != NULL);
+    if (memory_map == NULL || ram == NULL) {
+        return;
+    }
+    for (i = 0; i < memory_map->num_descriptors; i++) {
+        const struct retro_memory_descriptor *d = &memory_map->descriptors[i];
+        CHECK(d->select == 0u && d->disconnect == 0u && d->len != 0u);
+        CHECK((d->len & (d->len - 1u)) == 0u && d->start % (d->len != 0u ? d->len : 1u) == 0u);
+        CHECK(d->ptr != NULL || d->flags == 0u);
+    }
+    for (addr = 0; addr < 0x10000u; addr++) {
+        const want_span *w = NULL;
+        const uint8_t *expect = NULL;
+        unsigned at = 0u;
+        uint64_t flags;
+        const uint8_t *got = resolve(addr, &flags);
+        int ok;
+        for (i = 0; i < n; i++) {
+            if (addr >= want[i].start && addr < want[i].end) {
+                w = &want[i];
+                at = i;
+            }
+        }
+        if (w != NULL && w->kind != RAM && first[at] == NULL && got != NULL) {
+            first[at] = got - (addr - w->start); /* the span's own base */
+        }
+        if (w == NULL) {
+            ok = got == NULL && flags == 0u;
+        } else if (w->kind == RAM) {
+            expect = ram + w->at + (addr - w->start);
+            ok = got == expect && flags == w->flags;
+        } else {
+            expect = first[at] + (addr - w->start);
+            ok = got != NULL && got == expect && flags == w->flags &&
+                 (w->kind != ROM || *got == file[w->at + (addr - w->start)]) &&
+                 (w->kind == ROM || got < ram || got >= ram + 4096);
+        }
+        if (!ok && bad++ == 0u) {
+            fprintf(stderr, "address $%04x: flags %llx, %s\n", (unsigned)addr,
+                    (unsigned long long)flags, got == NULL ? "no memory" : "wrong byte");
+        }
+    }
+    CHECK_EQ_U64(bad, 0u);
+}
+
+/* The achievement map (HOSTS-AND-INTEGRATION section 2): the shared spans,
+   unbanked cartridge RAM at $4000 and the fixed ROM as CONST. Registers,
+   $3000-$3FFF and banked windows have no memory. Linear: the input
+   cartridge's 48 KiB from $4000. SuperGame with RAM: doublebuffer's RAM at
+   $4000 and its last bank at $C000. SuperGame 2^n + 1: sg144's bank 0 at
+   $4000 and its last bank at $C000. */
 static void case_memory_map(void)
 {
-    static const want_desc linear[] = {
-        {0u, 0x0040u, 0x00C0u, 0x0840u}, {0u, 0x0140u, 0x00C0u, 0x0940u},
-        {0u, 0x0480u, 0x0080u, 0u},      {RETRO_MEMDESC_SYSTEM_RAM, 0x1800u, 0x1000u, 0u},
-        {0u, 0x2800u, 0x0800u, 0x0800u}, {RETRO_MEMDESC_CONST, 0x4000u, 0xC000u, 0u},
-    };
-    static const want_desc supergame_ram[] = {
-        {0u, 0x0040u, 0x00C0u, 0x0840u},
-        {0u, 0x0140u, 0x00C0u, 0x0940u},
-        {0u, 0x0480u, 0x0080u, 0u},
-        {RETRO_MEMDESC_SYSTEM_RAM, 0x1800u, 0x1000u, 0u},
-        {0u, 0x2800u, 0x0800u, 0x0800u},
-        {0u, 0x4000u, 0x4000u, 0u},
-        {RETRO_MEMDESC_CONST, 0xC000u, 0x4000u, 0u},
-    };
-    const struct retro_memory_descriptor *d;
-    void *ram;
-
-    start(0);
-    CHECK_EQ_U64(achievements, 1);
-    ram = p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
-    d = check_map(linear, 6u);
-    if (d != NULL && memory_map->num_descriptors == 6u) {
-        CHECK(d[0].ptr == ram && d[1].ptr == ram && d[3].ptr == ram && d[4].ptr == ram);
-        CHECK(d[2].ptr != ram);
-        CHECK(memcmp(d[5].ptr, files[0] + 128, 0xC000u) == 0);
+    static const want_span linear[] = {SHARED_SPANS,
+                                       {0x4000u, 0x10000u, ROM, 128u, RETRO_MEMDESC_CONST}};
+    want_span ram_cart[] = {SHARED_SPANS,
+                            {0x4000u, 0x8000u, CART_RAM, 0u, 0u},
+                            {0xC000u, 0x10000u, ROM, 0u, RETRO_MEMDESC_CONST}};
+    want_span bank0[] = {SHARED_SPANS,
+                         {0x4000u, 0x8000u, ROM, 128u, RETRO_MEMDESC_CONST},
+                         {0xC000u, 0x10000u, ROM, 0u, RETRO_MEMDESC_CONST}};
+    int slot;
+    ram_cart[6].at = file_sizes[1] - 0x4000u;
+    bank0[6].at = file_sizes[2] - 0x4000u;
+    for (slot = 0; slot < 3; slot++) {
+        memory_map = NULL;
+        achievements = -1;
+        start(slot);
+        CHECK_EQ_U64(achievements, 1);
+        if (slot == 0) {
+            check_map(linear, 6u, files[0]);
+        } else {
+            check_map(slot == 1 ? ram_cart : bank0, 7u, files[slot]);
+        }
+        stop();
     }
-    stop();
-    memory_map = NULL;
-    achievements = -1;
-
-    start(1);
-    CHECK_EQ_U64(achievements, 1);
-    ram = p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
-    d = check_map(supergame_ram, 7u);
-    if (d != NULL && memory_map->num_descriptors == 7u) {
-        CHECK(d[0].ptr == ram && d[3].ptr == ram && d[4].ptr == ram);
-        CHECK(d[5].ptr != ram && d[5].ptr != NULL);
-        /* The last bank is the file's last 16 KiB. */
-        CHECK(memcmp(d[6].ptr, files[1] + file_sizes[1] - 0x4000u, 0x4000u) == 0);
-    }
-    stop();
 }
 
 int main(int argc, char **argv)
@@ -994,7 +1045,7 @@ int main(int argc, char **argv)
         int files;
     } cases[] = {
         {"input", case_input, 1}, {"layout", case_layout, 1},   {"devices", case_devices, 1},
-        {"reset", case_reset, 1}, {"options", case_options, 1}, {"memory_map", case_memory_map, 2},
+        {"reset", case_reset, 1}, {"options", case_options, 1}, {"memory_map", case_memory_map, 3},
     };
     size_t i;
     int found = 0;
@@ -1050,6 +1101,7 @@ int main(int argc, char **argv)
     }
     free(files[0]);
     free(files[1]);
+    free(files[2]);
     module_close();
     CHECK_DONE();
 }

@@ -58,6 +58,7 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.host.memory_map
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> memory_map
       ${libretro_input_cart} ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
+      ${PROJECT_SOURCE_DIR}/tests/diag/sg144.a78
     LABELS libretro portable TIMEOUT 30)  # provisional, phase 3
   set_tests_properties(libretro.host.memory_map PROPERTIES
     FIXTURES_REQUIRED "input_carts;built_doublebuffer")
