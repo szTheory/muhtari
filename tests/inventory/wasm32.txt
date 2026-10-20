@@ -22,6 +22,7 @@ basic.boxcollision	basic,portable
 basic.colorfade	basic,portable
 basic.doublebuffer	basic,portable
 basic.drivingcontrol	basic,portable
+basic.eightysix	basic,portable
 basic.fontcheck	basic,portable
 basic.helloworld	basic,portable
 basic.hiscoretable	basic,portable
@@ -31,10 +32,13 @@ basic.mega7800controllers	basic,portable
 basic.mousedemo	basic,portable
 basic.multibuttoncontrollers	basic,portable
 basic.multisprite	basic,portable
+basic.onehundredandone	basic,portable
 basic.plotmapfile	basic,portable
 basic.pokey	basic,portable
 basic.ramcharmap	basic,portable
 basic.revision.self_test	basic,portable
+basic.rmtramcompressiondemo	basic,portable
+basic.rmtramdemo	basic,portable
 basic.rmtromdemo	basic,portable
 basic.rotationalcontrols	basic,portable
 basic.screensafe	basic,portable
@@ -53,6 +57,7 @@ built.boxcollision	built,portable
 built.colorfade	built,portable
 built.doublebuffer	built,portable
 built.drivingcontrol	built,portable
+built.eightysix	built,portable
 built.fontcheck	built,portable
 built.helloworld	built,portable
 built.hiscoretable	built,portable
@@ -62,9 +67,12 @@ built.mega7800controllers	built,portable
 built.mousedemo	built,portable
 built.multibuttoncontrollers	built,portable
 built.multisprite	built,portable
+built.onehundredandone	built,portable
 built.plotmapfile	built,portable
 built.pokey	built,portable
 built.ramcharmap	built,portable
+built.rmtramcompressiondemo	built,portable
+built.rmtramdemo	built,portable
 built.rmtromdemo	built,portable
 built.rotationalcontrols	built,portable
 built.samples.self_test	built,portable

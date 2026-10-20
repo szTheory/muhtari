@@ -5,9 +5,10 @@
 # The frame chain is frames.cmake's 600-frame chain; it holds at the behaviour
 # revision below and is written only with -DWRITE=ON (docs/emulation-tests.md).
 # behaviour_revision 1
-# Every linear sample in 7800basic 0.41's samples/sizes.ref has a row, and
-# doublebuffer, the first SuperGame one. The other four SuperGame samples
-# (eightysix, onehundredandone, rmtramcompressiondemo, rmtramdemo) follow.
+# Every linear and SuperGame sample in 7800basic 0.41's samples/sizes.ref has
+# a row. The samples with POKEY at $0450 (eightysix, pokey, rmtramcompressiondemo,
+# rmtramdemo, rmtromdemo) read the open-bus byte there until sound lands; their
+# pins will move then, with a behaviour-revision bump.
 # banksets has none: it fails to assemble with this recipe, and its bankset
 # board is refused.
 adventurer  7800basic-wasm@0.41,wasmtime@48.0.6  samples/adventurer/adventurer.bas  7dd09ae006f4514b0a41f31134dcf6a908c6bd891ee59093a3211460171e855d  e6915fccdf374074708e6025aa885bfd6ba1ba26b31e9f2f0454232fe68eee71  2ee28bc4fcaf2be8d392b56785b7f1b47b029f33f8dd41459b5e3790930c433c  -
@@ -18,6 +19,7 @@ boxcollision  7800basic-wasm@0.41,wasmtime@48.0.6  samples/boxcollision/boxcolli
 colorfade  7800basic-wasm@0.41,wasmtime@48.0.6  samples/colorfade/colorfade.bas  fc71161b13fefc9b72e7ab264554c5707e8edd3d4d20c7accdb3cd19c2e7b3ac  766c4b5dcb80e18269db9c83b787d0133759d3591d49c243419c3e116dd962ac  8a868b24329f4bd07636cf76da0669fc3ee7bc6bb0cdeeee447e7b662031c1a9  -
 doublebuffer  7800basic-wasm@0.41,wasmtime@48.0.6  samples/doublebuffer/doublebuffer.bas  7e539ce2cec96d036b065dbc4bcf5a145e5ff6c9bd5bd24d1fe43f5d4b1821ea  452bf198c3b44ebfcf4c6f8e8b357236df70cb341978094b0f39f746e8e19aff  a0759ca6ae20dd20a73346cdc8984da407cb433f81b0035b9536893c71a1ab1d  -
 drivingcontrol  7800basic-wasm@0.41,wasmtime@48.0.6  samples/drivingcontrol/drivingcontrol.bas  8e3a6110d9744b14bb69c3cb961400bac60a644bb48041e94c742c93276ab35a  e10d5331900db7ab9a3fd9331956bec8708261bcb4f0cc84d25c09a254440106  f7636dc219b4a1257012644bcaf2cd4514dde83a1fd0b6551b278e74ba5674fc  -
+eightysix  7800basic-wasm@0.41,wasmtime@48.0.6  samples/eightysix/eightysix.bas  0f7fa150369eedab473b02679afec9cb169b10da53253745135c9ced2d299c06  e7775921a91bf08f2f86f086fce3725c61f50f32d3eddee17baaac343e8c3e63  5f32f5067c35257da5984dc956a878f2e8a31e5a3048137f9a70d1b0d1f67299  -
 fontcheck  7800basic-wasm@0.41,wasmtime@48.0.6  samples/fontcheck/fontcheck.bas  b8af60ce3b0afccfceedd5ee57a496491bb6d9181204af85689925a87a99383a  2a7ab1f2bf4069ab94baa5f8a0e937a7fc73d2ae142625a070f4ba23d3c3f103  218471a10520aa82d1ac5dec41becb7165fa25b1974f8524f0988e285e17223a  -
 helloworld  7800basic-wasm@0.41,wasmtime@48.0.6  samples/helloworld/helloworld.bas  cd80c5e7b3558c80e8cad2aeee0b15b1757034baa727c575a85ec57e5497b3f0  553bb161f4fa99adb9e524b243f8ea8d6a8a342174841f3be09b0a60013e2dae  0bcad35bf4f8a0acc41783ca4a2bbda9a947e7c67bf91a0613e349d8fb39df80  -
 hiscoretable  7800basic-wasm@0.41,wasmtime@48.0.6  samples/hiscoretable/hiscoretable.bas  c728619d520c16bf6e352173a0ae6b56e65d9f74c74b18a8f28f71ce87b0169a  18eaa34d26f507301d8b3eefd4a392bdfd070378d83f3f07f6f91fdf0475c028  9a32df28f09a0cdc002dbb7e6c463e8b3d09edc86ad63b520c5ea5882ce0bd9e  -
@@ -27,12 +29,15 @@ mega7800controllers  7800basic-wasm@0.41,wasmtime@48.0.6  samples/mega7800contro
 mousedemo  7800basic-wasm@0.41,wasmtime@48.0.6  samples/mousedemo/mousedemo.bas  14c6a8113c9a4a6c6df810ce4c8d35e985a3470b78b61d6f6ee2cee9feb9ff70  5e3a1d9174e6b7ade35736bc825c73c60438432cbc9ab77e2a0d24303610eb5e  c819552e2cb8b98e656581b3215a724ac747db6e9a40e87552b544728c520327  -
 multibuttoncontrollers  7800basic-wasm@0.41,wasmtime@48.0.6  samples/multibuttoncontrollers/multibuttoncontrollers.bas  7e2364860a5cf98e9dc344291f47244963adea7af8767e431d5257828d7228e4  4a76e3180a846d55d1763c3cd4f2e0d6e7e40ec10df5569cd9621006b6bc5f3d  99264210d496383e4a7a9346a306e9ca248e22441e76cc0c4304a5b104b386bd  -
 multisprite  7800basic-wasm@0.41,wasmtime@48.0.6  samples/multisprite/multisprite.bas  7cde901d2c198d9b94b1f852e7947172d5fccd895418b2b04501e1cf42c07b19  374e4436e7c26d25fe442d8f0c4cbbcfda739974647125676d85f4be3f9541b2  135a33d79ddf49080b149596e2a8a08bd64ee921ae9608e86c7cd2cf0a08eca0  -
+onehundredandone  7800basic-wasm@0.41,wasmtime@48.0.6  samples/onehundredandone/onehundredandone.bas  3102e6f0f6c6f22c530a3fe0b5db70493dc185a113576423920d3a04d49f0dc4  8e97c0ab4517e7a4ca0dd08156d52c55f69ddc6bbeafda5eec09e1b4e4d371d0  df2a3ec6f43bb8133e36bd5733159a44fc87b6506edb10b19c6bc1111618f273  -
 plotmapfile  7800basic-wasm@0.41,wasmtime@48.0.6  samples/plotmapfile/plotmapfile.bas  01f067376bed15d9d73c2a6433dcbbe3dd8bb712432927f864f06f0da14702a6  2c76cdfe01b373268ff0b277f695fd796a0a593375350180259d3b3f44f60b12  62d99cde6648097f923baff4e89e96c2a52f3fea5c0a136b32b0a5dede73e430  -
 # pokey's .a78 differs from CONFORMANCE section 2(a)'s 290bbd3a..., which was
 # built with wasmtime 49; the pin is what this recipe on wasmtime 48.0.6
 # builds on every leg.
 pokey  7800basic-wasm@0.41,wasmtime@48.0.6  samples/pokey/pokey.bas  a96b1dcea2659a57d3cadee7348469a837bbe1714d8bab78af0c07653d4cdd25  de0180b203b4402d391d86672a21a48a36ecc52c5970378044279542739ab5a2  58f96bedc2097f9c81d5400d4bd91f89d53a46bb9e8820daa1644260017bb598  -
 ramcharmap  7800basic-wasm@0.41,wasmtime@48.0.6  samples/ramcharmap/ramcharmap.bas  7ab16ae69fc365870782554c2088d03fb078beb54b1c6ffb8865bd9bc3d3ede2  9d4dbb9918e7cd95afb6d0182f2bd15b44cd1429c108b876d6cdbfafc93ec7e5  55599431c2d99c16ac27ca88044e0ef1576399d41c3154e965fdf5043172a24b  -
+rmtramcompressiondemo  7800basic-wasm@0.41,wasmtime@48.0.6  samples/rmtramcompressiondemo/rmtramcompressiondemo.bas  bf6816a294e9d7070f824009f077d576293f750e4e7eff4fe59f1a99c755af79  478ccc8f2675ac61f7bcac77b923f74b3ac05c112e51ec20d7c66489064e359a  39c14b52eb6a8dc960f41a434c705b1f9695cf749b25c2a5537e024e2ef2ff90  -
+rmtramdemo  7800basic-wasm@0.41,wasmtime@48.0.6  samples/rmtramdemo/rmtramdemo.bas  fc65955dd6329f849dfd55376ae1bda426bf1ee59504f3d05e89acb67d1603c0  d862e6a2498a3da0d0731b559b058f43404757f36cd55e003ad0167f65b0d85e  01eeb2f730d30ffb163cbd087265c8c0768472891814b5cb37a97f8fc5609889  -
 rmtromdemo  7800basic-wasm@0.41,wasmtime@48.0.6  samples/rmtromdemo/rmtromdemo.bas  eccd1a409f8a9d4b2f68011ccb91bf3bac7ef75be9ee14dd6b54b26c7f564374  575732d595a9ba023006991dcc2edfbc4876be222e4ec65a114f2ea0d40e76a0  23d4ccd5ee418509eb0b290ca1c1283620faf47fdccd177d5eb64eb508c87899  -
 rotationalcontrols  7800basic-wasm@0.41,wasmtime@48.0.6  samples/rotationalcontrols/rotationalcontrols.bas  26ef6102db792e268c020b9080c3d22cf17087af9fdbf3ed9181c0c6228384dd  6ed79e0fc2822fdf1719be7e1338f4f21d8d84d1a98b7b95d68769e60cde5f45  893be07272c704a332d71a08c2d3439c9947ac979f6a382447926ac2b8f13eee  -
 screensafe  7800basic-wasm@0.41,wasmtime@48.0.6  samples/screensafe/screensafe.bas  0fcf6b197acd1e8aa3afa642d5cd013913a42e301038f842e0b1534acc55c78f  0314b8484d4db6b31f67bc5003dbc6ce47179afeb1fad18d658457e3f7128596  7cbf9f511a6c21f19ddc3053fb95451ddd3c5b464be331179fb9bb5ca9f1f700  -

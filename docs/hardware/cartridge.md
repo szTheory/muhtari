@@ -206,13 +206,45 @@ the header claims more bytes than the file holds, as invalid otherwise.
 Activision, Absolute, Fractalus, bankset, halt-banked RAM and Souper are reported with
 `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. XM, YM2151 and Covox are reported in `devices` and `sound` and never refused.
 
+The boards are one `switch` in `src/cart.c`, so the core keeps no table of function pointers. MARIA's fetches see the
+same bytes as the CPU on every board here.
+
+### Linear
+
+The ROM ends at $FFFF: a 16 KiB ROM starts at $C000, a 48 KiB one at $4000. Below its start nothing drives the bus, and
+a read returns the open-bus byte (`docs/hardware/bus.md`, Open bus). A write changes nothing. A linear header that asks
+for RAM gets it at $4000-$7FFF, in place of any ROM there (cartridge notes, section 2.1).
+
+### SuperGame
+
+The ROM is banks of 16 KiB. $C000-$FFFF holds the last bank. $8000-$BFFF holds the bank the register selects, and a
+write anywhere in $8000-$BFFF sets the register. At power-on and after a power cycle the register is 0. $4000-$7FFF
+depends on the board:
+
+| Board | $4000-$7FFF | $8000-$BFFF after writing v |
+|-------|-------------|-----------------------------|
+| SuperGame | the second-to-last bank | bank v mod banks |
+| with RAM | 16 KiB of RAM | bank v mod banks |
+| bank 6 | bank 6 mod banks | bank v mod banks |
+| SG9, 2^n + 1 banks | bank 0 | bank 1 + (v mod 2^n) |
+| banked RAM | RAM half (v >> 5) & 1 of 32 KiB | bank v mod banks |
+
+Sources: cartridge notes, section 2.1; the 144 KiB board is 9 banks and generalises to 2^n + 1. The board ROMs below
+read each layout.
+
+**Hostile input.** A bank number never indexes the ROM raw: every one is reduced modulo the bank count, so a write of
+any value selects a bank that exists. A RAM index is masked with `ram_size - 1`, a power of two, so no header can
+make a read or write leave the RAM (cartridge notes, section 7). A list entry for an 8 KiB-RAM game gives 8 KiB, which
+the mask mirrors over $4000-$7FFF.
+
 ## Loading
 
-Loading is internal until a loaded cartridge runs; the tests and the loader fuzz target reach it. It identifies the
-image exactly as `muhtari_probe` does and returns the same status. A refusal returns before anything is allocated
-and leaves the instance unchanged. An accepted image's mapped bytes, `rom_size` of them from after the header when
-there is one, are copied into one allocation through the instance's allocator, which replaces any cartridge loaded
-before; `muhtari_destroy` frees it. `muhtari_run_frame` still gives the test card and silence.
+`muhtari_load` identifies the image exactly as `muhtari_probe` does and returns the same status. A refusal returns
+before anything is allocated and leaves the instance unchanged. An accepted image's mapped bytes, `rom_size` of them
+from after the header when there is one, are copied into one allocation through the instance's allocator, which
+replaces any cartridge loaded before; `muhtari_destroy` frees it. A board with RAM gets its ROM followed by its
+cartridge RAM, `ram_size` bytes, in the same single allocation, so a load allocates once and running allocates
+nothing. The RAM starts zeroed, and a power cycle zeroes it again.
 
 ## The board ROMs
 

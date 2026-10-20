@@ -86,7 +86,7 @@ static void host_free(void *user, void *ptr, size_t size) {
 
 `free` receives the size that was allocated, so a fixed arena or pool needs no header of its own. `user` is
 passed back unchanged. `muhtari_create` allocates the instance and `muhtari_load` the copy of the cartridge's
-ROM; each returns `MUHTARI_STATUS_ERR_NO_MEMORY` when `alloc` returns NULL. Running frames allocates nothing.
+ROM together with its RAM; each returns `MUHTARI_STATUS_ERR_NO_MEMORY` when `alloc` returns NULL. Running frames allocates nothing.
 
 ## A frame
 
@@ -269,14 +269,19 @@ muhtari_status st = muhtari_set_input(m, &in);
 |---|---|---|
 | `MUHTARI_MEMORY_SYSTEM_RAM` | System RAM, $1800-$27FF | 4,096 |
 | `MUHTARI_MEMORY_RIOT_RAM` | The RIOT's RAM, $0480-$04FF | 128 |
-| `MUHTARI_MEMORY_CART_RAM` | The cartridge's unbanked SuperGame RAM at $4000 | 16,384, or 0 |
+| `MUHTARI_MEMORY_CART_RAM` | The cartridge's RAM at $4000 | `ram_size`, or 0 |
 
 The pointer is not const: a host may write through it, for cheats or achievements. It is the one deliberate
 exception to the rule that no struct carries a pointer into the library's state, because libretro memory maps
-need live pointers. It stays valid from the load until `muhtari_destroy`, across frames and power cycles. A kind
-the loaded content does not have, such as cartridge RAM on a cartridge without any, returns
-`MUHTARI_STATUS_OK` with a NULL `data` and zero `bytes`; this version runs no board with RAM yet. Any other
-`kind` returns `MUHTARI_STATUS_ERR_ARGUMENT`.
+need live pointers. It stays valid from the load until `muhtari_destroy`, across frames and power cycles, except
+the cartridge RAM's, below. A kind the loaded content does not have, such as cartridge RAM on a cartridge without
+any, returns `MUHTARI_STATUS_OK` with a NULL `data` and zero `bytes`. Any other `kind` returns
+`MUHTARI_STATUS_ERR_ARGUMENT`.
+
+`MUHTARI_MEMORY_CART_RAM` is the RAM the cartridge info's `ram_size` names: 16,384 bytes on a SuperGame board with
+RAM, 32,768 with banked RAM (both halves, in order), and the list's size for a game the hash list knows. It lives in
+the cartridge's allocation, so a new load replaces it: ask again after each load. It starts zeroed, and a power cycle
+zeroes it again.
 
 ## Counters
 
