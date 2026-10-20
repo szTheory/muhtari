@@ -519,6 +519,12 @@ void muhtari__power_on(muhtari *m);
 uint8_t muhtari__bus_peek(const muhtari *m, uint16_t addr);
 uint8_t muhtari__riot_peek(const muhtari *m, uint16_t addr);
 
+/* Memory as the CPU would read it at addr under the current decode: system
+   RAM, the RIOT's RAM and cartridge space, and the open-bus byte for every
+   other address, so no device register is read. It changes no state. For
+   the diagnostic driver, which reads the mailbox in RAM. */
+uint8_t muhtari__peek(const muhtari *m, uint16_t addr);
+
 /* Applies the pending input, if any, at a VBLANK start (src/ports.c;
    docs/embedding.md, Input). */
 void muhtari__ports_latch(muhtari *m);

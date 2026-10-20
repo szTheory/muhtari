@@ -340,6 +340,21 @@ uint8_t muhtari__bus_peek(const muhtari *m, uint16_t addr)
     }
 }
 
+uint8_t muhtari__peek(const muhtari *m, uint16_t addr)
+{
+    enum bus_device dev = decode(m, addr);
+    if (dev == DEV_RAM) {
+        return m->ram[ram_index(addr)];
+    }
+    if (dev == DEV_RIOT && (addr & 0x0200u) == 0u) {
+        return m->riot.ram[addr & (MUHTARI__RIOT_RAM_SIZE - 1u)];
+    }
+    if (dev == DEV_CART) {
+        return muhtari__cart_peek(m, addr);
+    }
+    return m->bus.open_bus;
+}
+
 /* Until LOCK is set, every write the TIA's chip select sees also writes
    INPTCTRL, whose bits 4-7 do not exist, and counts towards the HALT gate,
    which opens at 2 (docs/hardware/bus.md, INPTCTRL and HALT). */
