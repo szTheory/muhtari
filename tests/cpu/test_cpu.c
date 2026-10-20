@@ -431,6 +431,126 @@ static int jam_step_reads_ffff(char **args)
     return ok;
 }
 
+/* IRQ uses the existing flat bus seam, never a chip stub. Expected bus
+   cycles and old/restored-I rules: Altirra manual CPU section3.4. */
+static void irq_setup(uint8_t opcode, uint8_t p)
+{
+    memset(&machine, 0, sizeof machine);
+    machine.m.cpu.pc = 0x200u;
+    machine.m.cpu.s = 0xFDu;
+    machine.m.cpu.p = p;
+    machine.ram[0x200u] = opcode;
+    machine.ram[0x201u] = 0xEAu;
+    machine.ram[0x202u] = 0xEAu;
+    machine.ram[0xFFFEu] = 0u;
+    machine.ram[0xFFFFu] = 6u;
+    machine.ram[0xFFFAu] = 0u;
+    machine.ram[0xFFFBu] = 5u;
+    machine.ram[0x600u] = 0xEAu;
+    machine.irq_at = 1u;
+}
+
+static int irq_timing(char **args)
+{
+    (void)args;
+    int ok = 1;
+    static const struct {
+        uint8_t op, p, pulled;
+        uint16_t pc;
+        unsigned cycles, taken;
+    } cases[] = {{0xEA, 0x28, 0, 0x201, 2, 1},    /* NOP, retain D */
+                 {0x58, 0x24, 0, 0x201, 2, 0},    /* CLI old I */
+                 {0x78, 0x20, 0, 0x201, 2, 1},    /* SEI old I, push new I */
+                 {0x28, 0x24, 0x20, 0x201, 4, 0}, /* PLP old I */
+                 {0x28, 0x20, 0x24, 0x201, 4, 1},
+                 {0x40, 0x24, 0x20, 0x201, 6, 1}, /* RTI restored I */
+                 {0x40, 0x20, 0x24, 0x201, 6, 0}};
+    for (unsigned i = 0; i < sizeof cases / sizeof cases[0]; i++) {
+        irq_setup(cases[i].op, cases[i].p);
+        machine.ram[0x1FEu] = cases[i].pulled;
+        machine.ram[0x1FFu] = 1u;
+        machine.ram[0x100u] = 2u;
+        muhtari__cpu_step(&machine.m);
+        ok &= expect_value("IRQ instruction boundary", machine.m.cpu.pc,
+                           cases[i].taken ? 0x600u : cases[i].pc);
+        ok &= expect_value("IRQ seven entry cycles", machine.log_count,
+                           cases[i].cycles + 7u * cases[i].taken);
+        if (cases[i].taken) {
+            unsigned n = cases[i].cycles;
+            static const uint16_t addresses[] = {0x201, 0x201, 0x1FD, 0x1FC, 0x1FB, 0xFFFE, 0xFFFF};
+            if (cases[i].op != 0x28u && cases[i].op != 0x40u) {
+                for (unsigned j = 0; j < 7u; j++) {
+                    ok &= expect_value("IRQ bus address", machine.log[n + j].addr, addresses[j]);
+                    ok &= expect_value("IRQ bus direction", machine.log[n + j].kind,
+                                       j >= 2u && j <= 4u ? N65V_KIND_WRITE : N65V_KIND_READ);
+                }
+                ok &= expect_value("IRQ pushed PC high", machine.ram[0x1FD], 2u);
+                ok &= expect_value("IRQ pushed PC low", machine.ram[0x1FC], 1u);
+                ok &= expect_value("IRQ B/U/D/I", machine.ram[0x1FB],
+                                   cases[i].op == 0x78u ? 0x24u : cases[i].p);
+            }
+        } else if (cases[i].op == 0x58u || cases[i].op == 0x28u) {
+            muhtari__cpu_step(&machine.m);
+            ok &= expect_value("CLI/PLP delayed IRQ", machine.m.cpu.pc, 0x600u);
+        }
+    }
+    /* Arrival by the deciding cycle, arrival in the final cycle, and
+       revocation after sampling. Held calls move only the correct poll. */
+    static const struct {
+        uint64_t at, until, call, held;
+        unsigned taken;
+    } arrivals[] = {
+        {1, 0, 0, 0, 1}, {2, 0, 0, 0, 0}, {1, 2, 0, 0, 1}, {3, 0, 1, 4, 1}, {3, 0, 2, 4, 0}};
+    for (unsigned i = 0; i < sizeof arrivals / sizeof arrivals[0]; i++) {
+        irq_setup(0xEAu, 0x20u);
+        machine.irq_at = arrivals[i].at;
+        machine.irq_until = arrivals[i].until;
+        machine.hold_call = arrivals[i].call;
+        machine.hold_count = arrivals[i].held;
+        muhtari__cpu_step(&machine.m);
+        ok &= expect_value("IRQ deciding/held cycle", machine.m.cpu.pc,
+                           arrivals[i].taken ? 0x600u : 0x201u);
+        ok &= expect_value("IRQ held phi2", machine.m.bus.phi2,
+                           2u + arrivals[i].held + 7u * arrivals[i].taken);
+    }
+    /* Same-page branches poll at opcode; page crosses poll at cycle3. */
+    for (unsigned cross = 0; cross < 2u; cross++) {
+        irq_setup(0xD0u, 0x20u);
+        machine.ram[0x201u] = cross ? 0x7Fu : 0u;
+        if (cross) {
+            machine.m.cpu.pc = 0x2FEu;
+            machine.ram[0x2FEu] = 0xD0u;
+            machine.ram[0x2FFu] = 0xFFu;
+        }
+        machine.irq_at = 2u;
+        muhtari__cpu_step(&machine.m);
+        ok &= expect_value("IRQ branch poll", machine.m.cpu.pc, cross ? 0x600u : 0x202u);
+    }
+    /* NMI priority and IRQ hijack through entry cycle4. */
+    for (uint64_t at = 1u; at <= 9u; at++) {
+        irq_setup(0xEAu, 0x20u);
+        machine.nmi_at = at;
+        muhtari__cpu_step(&machine.m);
+        ok &= expect_value("IRQ/NMI vector window", machine.m.cpu.pc, at <= 6u ? 0x500u : 0x600u);
+        ok &= expect_value("IRQ/NMI one entry", machine.m.cpu.s, 0xFAu);
+        ok &= expect_value("IRQ/NMI B clear", machine.ram[0x1FBu], 0x20u);
+        if (at > 6u) {
+            muhtari__cpu_step(&machine.m);
+            ok &=
+                expect_value("late NMI after first handler instruction", machine.m.cpu.pc, 0x500u);
+            ok &= expect_value("late NMI return low", machine.ram[0x1F9u], 1u);
+        }
+    }
+    irq_setup(0xEAu, 0x20u);
+    machine.ram[0x600u] = 0x40u; /* persistent line retriggers after RTI */
+    muhtari__cpu_step(&machine.m);
+    vector_machine_reset_log(&machine);
+    muhtari__cpu_step(&machine.m);
+    ok &= expect_value("persistent IRQ after RTI", machine.m.cpu.pc, 0x600u);
+    ok &= expect_value("RTI plus entry", machine.log_count, 13u);
+    return ok;
+}
+
 static const struct {
     const char *name;
     int args; /* arguments after the case name */
@@ -438,6 +558,7 @@ static const struct {
 } cases[] = {
     {"unstable.sally_constant", 0, run_unstable_sally_constant},
     {"decimal.clark", 2, decimal_clark},
+    {"irq.timing", 0, irq_timing},
     {"nmi.penultimate_taken_after", 0, nmi_penultimate_taken_after},
     {"nmi.last_cycle_taken_after_next", 0, nmi_last_cycle_taken_after_next},
     {"nmi.branch_no_cross_polls_early", 0, nmi_branch_no_cross_polls_early},

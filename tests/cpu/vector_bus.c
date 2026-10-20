@@ -19,6 +19,8 @@ static void log_cycle(struct vector_machine *vm, uint16_t addr, uint8_t value, u
         vm->nmi_at <= vm->m.bus.phi2) {
         vm->m.bus.nmi_phi2 = vm->nmi_at;
     }
+    vm->m.bus.irq_level = (uint8_t)(vm->irq_at != 0u && vm->m.bus.phi2 >= vm->irq_at &&
+                                    (vm->irq_until == 0u || vm->m.bus.phi2 < vm->irq_until));
     if (vm->log_count >= VECTOR_LOG_CAPACITY) {
         vm->log_overflow = 1u;
         return;
