@@ -243,6 +243,8 @@ samples while advancing all sound state. Frame PCM is staged inside the instance
 a BIOS refusal returns zero samples and leaves the caller's audio buffer untouched. Ordinary validation errors
 execute nothing; a BIOS refusal follows partial execution and does not roll that execution back. Power cycle
 resets chip logic, synthesis, pending samples, blocker history and the fractional remainder.
+The console Reset input is a software-readable switch: holding it does not reset sound chips or
+reconstruction history. Cartridge software decides how to react to that switch.
 
 ## Booting with a BIOS
 

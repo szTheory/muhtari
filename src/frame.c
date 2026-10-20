@@ -29,8 +29,8 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         return st;
     }
     /* From here on audio_count is written on every return; an error reports
-       zero samples and changes no state. A BIOS's refusal of the cartridge
-       stands until the next load or power cycle. */
+       zero samples. Validation executes nothing; BIOS refusal can instead
+       follow partial execution and stands until load or power cycle. */
     if (m->boot.rejected != 0u) {
         io->audio_count = 0u;
         return MUHTARI_STATUS_ERR_BIOS_REJECTED_CART;

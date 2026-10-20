@@ -219,8 +219,12 @@ static void test_pitch_336(void)
 /* Each refused call returns its status and changes no state, and one refused
    after its size tag is accepted writes audio_count as zero: the following
    valid frames give the counts an untouched instance gives, 800 then 801. */
+static void test_audio_validate(void);
+static void load_audio_program(muhtari *m);
+
 static void test_validate_first(void)
 {
+    test_audio_validate();
     muhtari *m = make();
     muhtari_frame io;
     frame_io(&io, video, WIDTH, audio, AUDIO_CAP);
@@ -449,9 +453,65 @@ static void test_synth_mix(void)
 
 static void test_public_audio(void);
 
+/* Deadline ownership and the finite FIFO bound use exact tick injections,
+   including a full frame followed by the entire conservative overshoot. */
+static void test_audio_boundaries(void)
+{
+    muhtari *a = make(), *b = make();
+    int16_t whole[AUDIO_CAP], split[AUDIO_CAP];
+    for (unsigned offset = 0u; offset < 3u; offset++) {
+        const uint64_t end = TICKS_PER_FRAME;
+        const uint64_t event = end - 1u + offset;
+        muhtari__synth_reset(a, 0u, 0u);
+        muhtari__synth_reset(b, 0u, 0u);
+        muhtari__synth_level(a, event, 0u, 15u);
+        muhtari__synth_level(b, event, 0u, 15u);
+        CHECK_EQ_U64(muhtari__synth_render(a, end, whole), 800u);
+        CHECK_EQ_U64(muhtari__synth_render(b, end, NULL), 800u);
+        CHECK_EQ_U64(a->synth.pending, offset == 0u ? 0u : 1u);
+        CHECK_EQ_U64(a->synth.mixed_level, offset == 0u ? 12241u : 0u);
+        for (unsigned i = 0u; i < 800u; i++) {
+            CHECK_EQ_U64(whole[i], 0u);
+        }
+        uint32_t n = muhtari__synth_render(a, end + 13125u, whole);
+        CHECK_EQ_U64(muhtari__synth_render(b, end + 13125u, split), n);
+        CHECK_EQ_U64(n, 88u);
+        CHECK(memcmp(whole, split, n * sizeof whole[0]) == 0);
+        CHECK(a->synth.pre_clip_peak > 0u);
+        CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
+    }
+    const uint32_t future = TICKS_PER_FRAME + MUHTARI__SYNTH_OVERSHOOT_TICKS;
+    for (unsigned path = 0u; path < 2u; path++) {
+        muhtari *m = path == 0u ? a : b;
+        muhtari__synth_reset(m, 0u, 0u);
+        for (uint32_t tick = 0u; tick < future; tick += 17u) {
+            /* Before each flush, account for all samples it could append.
+               This fails as a test assertion even in NDEBUG builds. */
+            uint64_t produced = (uint64_t)tick * 88u / 13125u;
+            CHECK(produced <= MUHTARI__SYNTH_PCM_CAPACITY);
+            if (produced > MUHTARI__SYNTH_PCM_CAPACITY) {
+                break;
+            }
+            muhtari__synth_level(m, tick, 0u, (uint16_t)((tick / 17u & 1u) * 15u));
+        }
+        CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_PCM_CAPACITY);
+    }
+    CHECK_EQ_U64(muhtari__synth_render(a, TICKS_PER_FRAME, whole), 800u);
+    CHECK_EQ_U64(muhtari__synth_render(b, TICKS_PER_FRAME, NULL), 800u);
+    CHECK(a->synth.pcm_count > 0u);
+    CHECK(a->synth.pcm_count <= MUHTARI__SYNTH_CARRY_SAMPLES);
+    uint32_t n = muhtari__synth_render(a, future, whole);
+    CHECK_EQ_U64(muhtari__synth_render(b, future, split), n);
+    CHECK(memcmp(whole, split, n * sizeof whole[0]) == 0);
+    CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
+    muhtari_destroy(b);
+    muhtari_destroy(a);
+}
+
 static void test_silence(void)
 {
     test_public_audio();
+    test_audio_boundaries();
     static const uint32_t first[4] = {800, 801, 800, 801};
     muhtari *m = make();
     muhtari_frame io;
@@ -793,9 +853,17 @@ static void test_no_alloc_after_load(void)
     }
     CHECK_EQ_U64(c.allocs, 1);
     CHECK_EQ_U64(c.frees, 0);
+    load_audio_program(m);
+    CHECK_EQ_U64(c.allocs, 2);
+    for (uint32_t f = 0; f < LONG_RUN; f++) {
+        run(m, NULL);
+    }
+    CHECK(m->synth.pre_clip_peak > 0u);
+    CHECK_EQ_U64(c.allocs, 2);
+    CHECK_EQ_U64(c.frees, 0);
     muhtari_destroy(m);
-    CHECK_EQ_U64(c.allocs, 1);
-    CHECK_EQ_U64(c.frees, 1);
+    CHECK_EQ_U64(c.allocs, 2);
+    CHECK_EQ_U64(c.frees, 2);
 }
 
 /* A 4 KiB linear cartridge built in memory: an A78 version 3 header with
@@ -843,18 +911,83 @@ static void load_program(muhtari *m, const uint8_t *program, size_t n)
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
 }
 
+static const uint8_t tone[] = {
+    0xA9, 0x07, 0x85, 0x01, /* lock the 7800 decode */
+    0xA9, 0x04, 0x85, 0x15, /* AUDC0 div2 */
+    0xA9, 0x05, 0x85, 0x17, /* AUDF0 */
+    0xA9, 0x0F, 0x85, 0x19, /* AUDV0 */
+    0x4C, 0x10, 0xF0        /* JMP $F010 */
+};
+
+static void load_audio_program(muhtari *m)
+{
+    load_program(m, tone, sizeof tone);
+}
+
+/* Validate with audible chip/filter history, pending input and future carry.
+   A byte comparison includes every unobserved audio field as well. */
+static void test_audio_validate(void)
+{
+    muhtari *m = make();
+    load_audio_program(m);
+    run(m, NULL);
+    CHECK(m->synth.pre_clip_peak > 0u);
+    muhtari_input in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.switches = MUHTARI_SWITCH_RESET;
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_OK);
+    struct muhtari before = *m;
+    const uint32_t count = (m->audio_rem + TICKS_PER_FRAME * 88u) / 13125u;
+    for (unsigned bad = 0u; bad < 8u; bad++) {
+        muhtari_frame io;
+        frame_io(&io, video, WIDTH, audio, count);
+        io.audio_count = COUNT_SENTINEL;
+        memset(video, PAD_BYTE, sizeof video);
+        for (unsigned i = 0u; i <= AUDIO_CAP; i++) {
+            audio[i] = AUDIO_SENTINEL;
+        }
+        muhtari_status want = MUHTARI_STATUS_ERR_ARGUMENT;
+        if (bad == 0u) {
+            CHECK_EQ_U64(muhtari_run_frame(m, NULL), want);
+        } else {
+            if (bad == 1u) {
+                io.size = 4u;
+                want = MUHTARI_STATUS_ERR_STRUCT_SIZE;
+            } else if (bad == 2u) {
+                io.size = UINT32_MAX;
+                want = MUHTARI_STATUS_ERR_STRUCT_SIZE;
+            } else if (bad == 3u || bad == 4u) {
+                io.video_pitch = bad == 3u ? WIDTH - 1u : 65537u;
+            } else if (bad == 5u || bad == 6u) {
+                io.audio_capacity = bad == 5u ? 0u : count - 1u;
+                want = MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL;
+            }
+            CHECK_EQ_U64(muhtari_run_frame(bad == 7u ? NULL : m, &io), want);
+            CHECK_EQ_U64(io.audio_count, bad == 1u || bad == 2u || bad == 7u ? COUNT_SENTINEL : 0u);
+        }
+        CHECK(memcmp(m, &before, sizeof before) == 0);
+        for (unsigned i = 0u; i <= AUDIO_CAP; i++) {
+            CHECK_EQ_U64(audio[i], AUDIO_SENTINEL);
+        }
+        for (unsigned i = 0u; i < sizeof video; i++) {
+            CHECK_EQ_U64(video[i], PAD_BYTE);
+        }
+    }
+    muhtari_frame io;
+    frame_io(&io, NULL, 0u, audio, count);
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(io.audio_count, count);
+    CHECK_EQ_U64(audio[count], AUDIO_SENTINEL);
+    CHECK(m->bus.ticks > before.bus.ticks);
+    muhtari_destroy(m);
+}
+
 /* Public PCM must follow cartridge writes even when the steady loop never
    touches the TIA again. The absolute chip epoch and output grid have
    different fast-boot origins (docs/embedding.md, The first frame). */
 static void test_public_audio(void)
 {
-    static const uint8_t tone[] = {
-        0xA9, 0x07, 0x85, 0x01, /* lock the 7800 decode */
-        0xA9, 0x04, 0x85, 0x15, /* AUDC0 div2 */
-        0xA9, 0x05, 0x85, 0x17, /* AUDF0 */
-        0xA9, 0x0F, 0x85, 0x19, /* AUDV0 */
-        0x4C, 0x10, 0xF0        /* JMP $F010 */
-    };
     muhtari *m = make(), *discard = make(), *reference = make();
     load_program(m, tone, sizeof tone);
     load_program(discard, tone, sizeof tone);
@@ -874,7 +1007,7 @@ static void test_public_audio(void)
 
     int16_t expected[AUDIO_CAP], actual[AUDIO_CAP], after_discard[AUDIO_CAP], first[54];
     uint32_t rem = 0u;
-    for (unsigned f = 0u; f < 24u; f++) {
+    for (unsigned f = 0u; f <= 1000u; f++) {
         uint64_t end = m->frame_deadline;
         uint32_t elapsed = f == 0u ? 8190u : TICKS_PER_FRAME;
         uint32_t count = (rem + elapsed * 88u) / 13125u;
@@ -883,7 +1016,16 @@ static void test_public_audio(void)
             muhtari__cpu_step(reference);
         }
         muhtari__tia_catch_up(reference, reference->bus.ticks);
-        CHECK_EQ_U64(muhtari__synth_render(reference, end, expected), count);
+        uint32_t written = 0u;
+        const uint64_t start = reference->synth.horizon;
+        static const uint32_t cuts[] = {1u, 149u, 150u, 2387u, 8190u};
+        for (unsigned c = 0u; c < sizeof cuts / sizeof cuts[0]; c++) {
+            if (start + cuts[c] < end) {
+                written += muhtari__synth_render(reference, start + cuts[c], expected + written);
+            }
+        }
+        written += muhtari__synth_render(reference, end, expected + written);
+        CHECK_EQ_U64(written, count);
         muhtari_frame io;
         frame_io(&io, NULL, 0u, actual, AUDIO_CAP);
         CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
@@ -899,7 +1041,14 @@ static void test_public_audio(void)
             CHECK_EQ_U64(count, 54u);
             memcpy(first, actual, sizeof first);
         }
-        frame_io(&io, NULL, 0u, f % 2u == 0u ? NULL : after_discard, AUDIO_CAP);
+        if (f == 500u) {
+            muhtari_input in;
+            memset(&in, 0, sizeof in);
+            in.size = (uint32_t)sizeof in;
+            in.switches = MUHTARI_SWITCH_RESET;
+            CHECK_EQ_U64(muhtari_set_input(discard, &in), MUHTARI_STATUS_OK);
+        }
+        frame_io(&io, NULL, 0u, f % 2u == 0u ? NULL : after_discard, f % 2u == 0u ? 0u : count);
         CHECK_EQ_U64(muhtari_run_frame(discard, &io), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(io.audio_count, count);
         if (f % 2u != 0u) {
@@ -909,9 +1058,23 @@ static void test_public_audio(void)
         CHECK_EQ_U64(m->bus.phi2, reference->bus.phi2);
         CHECK_EQ_U64(m->synth.phase, reference->synth.phase);
         CHECK_EQ_U64(m->synth.blocker_q30, reference->synth.blocker_q30);
+        CHECK(memcmp(m->synth.impulse, reference->synth.impulse, sizeof m->synth.impulse) == 0);
+        CHECK_EQ_U64(m->synth.integrator_q23, reference->synth.integrator_q23);
+        CHECK(memcmp(&m->synth, &discard->synth, sizeof m->synth) == 0);
+        CHECK(memcmp(&m->tia, &discard->tia, sizeof m->tia) == 0);
+        if (f >= 500u) {
+            CHECK_EQ_U64(muhtari__bus_peek(discard, 0x0282u) & 1u, 0u);
+            CHECK_EQ_U64(muhtari__bus_peek(m, 0x0282u) & 1u, 1u);
+        }
         CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_CARRY_SAMPLES);
     }
     CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    muhtari *fresh = make();
+    load_audio_program(fresh);
+    CHECK(memcmp(&m->tia, &fresh->tia, sizeof m->tia) == 0);
+    CHECK(memcmp(&m->synth, &fresh->synth, sizeof m->synth) == 0);
+    CHECK_EQ_U64(m->audio_rem, 0u);
+    muhtari_destroy(fresh);
     muhtari_frame io;
     frame_io(&io, NULL, 0u, actual, AUDIO_CAP);
     CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
@@ -926,7 +1089,7 @@ static void test_public_audio(void)
     uint64_t end = m->frame_deadline;
     for (unsigned instance = 0u; instance < 2u; instance++) {
         muhtari *held = instance == 0u ? m : reference;
-        while (held->bus.ticks < end - 8u) {
+        while (held->bus.ticks < end - 40u) {
             muhtari__cpu_step(held);
         }
         held->ram[0] = 0x4Cu; /* JMP $1800, also the NMI handler */
@@ -936,6 +1099,7 @@ static void test_public_audio(void)
         held->cpu.s = 0xFFu;
         held->cart.rom[CART_BODY - 6u] = 0x00u;
         held->cart.rom[CART_BODY - 5u] = 0x18u;
+        muhtari__bus_write(held, 0x0002u, 0u); /* real TIA WSYNC */
         held->bus.rdy_release = end + 400u;
         CHECK_EQ_U64(muhtari__bus_request_halt(held, end + 28u, end + 450u), 1u);
         CHECK_EQ_U64(muhtari__bus_raise_nmi(held, end - 4u), 1u);
@@ -965,6 +1129,22 @@ static void test_public_audio(void)
     CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(io.audio_count, count);
     CHECK(memcmp(actual, expected, count * sizeof actual[0]) == 0);
+
+    /* JAM must still clock audio and return; no instruction can hang a
+       frame or consume beyond the separately derived carry bound. */
+    m->cpu.jammed = 1u;
+    reference->cpu.jammed = 1u;
+    end = m->frame_deadline;
+    while (reference->bus.ticks < end) {
+        muhtari__cpu_step(reference);
+    }
+    muhtari__tia_catch_up(reference, reference->bus.ticks);
+    count = muhtari__synth_render(reference, end, expected);
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(io.audio_count, count);
+    CHECK(memcmp(actual, expected, count * sizeof actual[0]) == 0);
+    CHECK_EQ_U64(m->bus.ticks, reference->bus.ticks);
+    CHECK(m->bus.ticks - end <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
 
     /* A tiny in-memory BIOS selects cartridge space without resetting the
        audio clock or reconstruction at the handoff. RES is real bus time. */
