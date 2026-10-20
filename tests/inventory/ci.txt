@@ -68,6 +68,8 @@ built.mousedemo	built,portable
 built.multibuttoncontrollers	built,portable
 built.multisprite	built,portable
 built.onehundredandone	built,portable
+built.openbios	built,portable
+built.openbios.self_test	built,portable
 built.plotmapfile	built,portable
 built.pokey	built,portable
 built.ramcharmap	built,portable

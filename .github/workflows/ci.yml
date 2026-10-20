@@ -144,14 +144,15 @@ jobs:
           $arch = if ($env:RUNNER_ARCH -eq 'ARM64') { 'arm64' } else { 'x64' }
           cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" $arch && set" |
             ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { "$($Matches[1])=$($Matches[2])" >> $env:GITHUB_ENV } }
-      # built.<name> builds 7800basic's samples with these (tests/built/);
-      # configure stops when either is missing.
-      - name: Fetch wasmtime and 7800basic
+      # built.<name> builds 7800basic's samples and OpenBIOS with these
+      # (tests/built/); configure stops when any is missing.
+      - name: Fetch wasmtime, 7800basic and OpenBIOS
         env:
           WASMTIME: wasmtime-${{ matrix.wasmtime }}
         run: |
           scripts/fetch-pin.sh "$WASMTIME" build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
       - name: Build, test, package
         run: cmake --workflow --preset ${{ matrix.preset }}
       - name: Every test ran
@@ -195,10 +196,11 @@ jobs:
       # clang-21 is on the image; its sanitizer runtimes may not be.
       - name: Sanitizer runtimes
         run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y libclang-rt-21-dev; }
-      - name: Fetch wasmtime and 7800basic
+      - name: Fetch wasmtime, 7800basic and OpenBIOS
         run: |
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
       - run: cmake --workflow --preset asan
       # The abi and release checks read binary shapes the instrumentation changes.
       - name: Every test ran
@@ -237,10 +239,11 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
-      - name: Fetch wasmtime and 7800basic
+      - name: Fetch wasmtime, 7800basic and OpenBIOS
         run: |
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
       - name: Cross compiler and qemu-user
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - run: cmake --workflow --preset be32
@@ -292,6 +295,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y --no-install-recommends wasi-libc libclang-rt-21-dev-wasm32
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
       - run: cmake --workflow --preset wasm32
       - name: Every test ran
         run: >-

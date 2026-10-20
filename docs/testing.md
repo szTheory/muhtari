@@ -17,14 +17,15 @@ It needs CMake 4.3 or later, Ninja and a C and C++ compiler. The workflow runs f
 4. package the three release zips into `build/ci`;
 5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
-The tests also build 7800basic's `simple` sample from pinned tools, so fetch the tools first:
+The tests also build 7800basic's samples and OpenBIOS from pinned tools and source, so fetch them first:
 
 ```sh
 scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # for example wasmtime-aarch64-macos
 scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
 ```
 
-Configure stops with both commands when either is missing; the sample tests are never skipped.
+Configure stops with these commands when any is missing; the sample tests are never skipped.
 
 `-DMUHTARI_TESTS=OFF` builds the products and registers no test, so configure needs no sample tool. Its users: `perf` (head and base builds), the `bench` preset of nightly's `bench` job, and `bench-wasm32`.
 
@@ -431,8 +432,9 @@ Replace `ci` with another workflow to run that lane. Some lanes need more packag
 - `wasm32`: `clang-21 lld-21 wasi-libc libclang-rt-21-dev-wasm32`.
 
 Every lane but `nofp`, `hygiene` and `fuzz` builds the sample, so also run
-`scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime` and
-`scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic` before the workflow.
+`scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime`,
+`scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic` and
+`scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios` before the workflow.
 
 To keep a lane's `hashes.txt`, mount a directory outside the repository and copy the file into it, for example
 `-v "$OUT:/out"` and then `cp build/be32/hashes.txt /out/`. On an x86_64 host use `--platform linux/amd64` and the

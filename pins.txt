@@ -22,6 +22,11 @@ wasmtime-aarch64-windows 48.0.6 https://github.com/bytecodealliance/wasmtime/rel
 # script is read or copied, and the built bytes stay in the build tree.
 7800basic-wasm 0.41 https://github.com/7800-devtools/7800basic/releases/download/v0.41/7800basic-0.41-wasm.tar.gz 62ef0a562541bff3f813c038a4609abc89ab125ebda3a371f57de2821e7a7fe7
 
+# 7800 OpenBIOS (CC0-1.0) source at one commit: tests/built/openbios.cmake assembles
+# it with the package's dasm into the BIOS image the BIOS-path tests boot. Only this
+# file is fetched; the two binaries it includes are replaced by fill, never fetched.
+7800openbios-asm b8bc745a8744 https://raw.githubusercontent.com/7800-devtools/7800OpenBIOS/b8bc745a8744ae3e0d24cc151e63f669f6a87c24/7800openbios.asm ff04da42db52480cf4cd5e11d415a6c55a54b72ab24af9b461cd4dff4e422109
+
 # Local only: CMake for running the Linux lanes in an ubuntu:26.04 container, whose
 # apt CMake is older than the presets need. CI images already carry a new enough CMake.
 cmake-linux-aarch64 4.4.3 https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-linux-aarch64.tar.gz 2efc974dbd63b4444c0e8494b92f2e80c2d7e635b4b80eac2916985ddd8f72a6

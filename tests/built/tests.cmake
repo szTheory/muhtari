@@ -6,11 +6,15 @@
 set(MUHTARI_BUILT_PINS ${CMAKE_SOURCE_DIR}/build/pins)
 find_program(MUHTARI_WASMTIME wasmtime PATHS ${MUHTARI_BUILT_PINS}/wasmtime NO_DEFAULT_PATH)
 set(MUHTARI_7800BASIC ${MUHTARI_BUILT_PINS}/7800basic)
-if(NOT MUHTARI_WASMTIME OR NOT EXISTS ${MUHTARI_7800BASIC}/7800basic.wasm)
-  message(FATAL_ERROR "built: the sample needs wasmtime in ${MUHTARI_BUILT_PINS}/wasmtime and "
-    "the 7800basic package in ${MUHTARI_7800BASIC}; fetch both with\n"
+set(MUHTARI_OPENBIOS_ASM ${MUHTARI_BUILT_PINS}/openbios/7800openbios.asm)
+if(NOT MUHTARI_WASMTIME OR NOT EXISTS ${MUHTARI_7800BASIC}/7800basic.wasm
+    OR NOT EXISTS ${MUHTARI_OPENBIOS_ASM})
+  message(FATAL_ERROR "built: the samples and OpenBIOS need wasmtime in ${MUHTARI_BUILT_PINS}/wasmtime, "
+    "the 7800basic package in ${MUHTARI_7800BASIC} and the OpenBIOS source in "
+    "${MUHTARI_BUILT_PINS}/openbios; fetch them with\n"
     "  scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime\n"
-    "  scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic")
+    "  scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic\n"
+    "  scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios")
 endif()
 
 set(MUHTARI_BUILT_DIR ${PROJECT_BINARY_DIR}/built)
@@ -92,6 +96,31 @@ muhtari_add_test(NAME built.samples.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${built_cmd}" -DCODE=1
     "-DREGEX=simple: .a78 SHA-256 drift" -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
   LABELS built portable TIMEOUT 4)  # 2 x 1.68 s, Windows arm64, slowest of 13 runs, run 39197737154
+
+# built.openbios: the CC0 OpenBIOS image from its pinned source with $FF fill
+# (openbios.cmake), the BIOS the BIOS-path tests boot. It sets up built_openbios.
+muhtari_add_test(NAME built.openbios
+  COMMAND ${CMAKE_COMMAND} ${built_tools} -DASM=${MUHTARI_OPENBIOS_ASM} -DFILL=FF
+    -DOUT=${MUHTARI_BUILT_DIR}/openbios/openbios.bin -P ${CMAKE_CURRENT_LIST_DIR}/openbios.cmake
+  LABELS built portable TIMEOUT 60)  # provisional, phase 3
+set_tests_properties(built.openbios PROPERTIES FIXTURES_SETUP built_openbios)
+
+# Negative control: a source whose first incbin line occurs twice must fail
+# naming the line, so a changed source never assembles with a binary left out
+# of the fill.
+file(READ ${MUHTARI_OPENBIOS_ASM} built_text)
+string(REPLACE "incbin \"kiloparsec.bl1\"" "incbin \"kiloparsec.bl1\"\n incbin \"kiloparsec.bl1\""
+  built_text "${built_text}")
+set(built_openbios_twice ${PROJECT_BINARY_DIR}/tests/built/openbios_twice.asm)
+file(WRITE ${built_openbios_twice} "${built_text}")
+set(built_cmd ${CMAKE_COMMAND} ${built_tools} -DASM=${built_openbios_twice} -DFILL=FF
+  -DOUT=${PROJECT_BINARY_DIR}/tests/built/openbios_twice/openbios.bin
+  -P ${CMAKE_CURRENT_LIST_DIR}/openbios.cmake)
+string(REPLACE ";" "$<SEMICOLON>" built_cmd "${built_cmd}")
+muhtari_add_test(NAME built.openbios.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${built_cmd}" -DCODE=1
+    "-DREGEX=kiloparsec[.]bl1[^ ]* occurs 2 times" -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+  LABELS built portable TIMEOUT 10)  # provisional, phase 3
 
 # The simple sample through the internal load and the fast-boot hand-off:
 # 120 frames, two instances in step, and frame 120 a real picture
