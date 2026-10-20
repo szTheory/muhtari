@@ -20,6 +20,12 @@
 #define MUHTARI__TICKS_PER_PERIOD 13125u
 #define MUHTARI__MAX_AUDIO_SAMPLES 801u
 
+/* The beam: a line is 454 ticks, and a frame's VBLANK starts at line 258,
+   t 42, the boundary between one muhtari_run_frame and the next
+   (A7800-SYSTEM section 2; docs/hardware/bus.md, The run loop). */
+#define MUHTARI__LINE_TICKS 454u
+#define MUHTARI__VBLANK_START (258u * MUHTARI__LINE_TICKS + 42u)
+
 /* The bounds of muhtari_frame.video_pitch. The cap keeps row offsets inside a
    32-bit size_t. */
 #define MUHTARI__PITCH_MIN 320u
@@ -46,10 +52,12 @@ struct muhtari__cpu {
    byte on the data bus; inptctrl is INPTCTRL's four bits; halt_gate_writes
    counts unlocked writes in the TIA range, up to 2. rdy_release is the
    tick from which a held read may run, 0 while RDY is high. A HALT request
-   waits in halt_at and halt_until until /HALT falls; halt_lost is then the
-   number of cycles the CPU loses, and halt_cycles counts the cycles run
-   since the fall, through halt_stage. nmi_at is a raised NMI edge not yet
-   latched, while nmi_pending is set. */
+   waits in halt_at and halt_until until /HALT falls at halt_fall, and
+   halt_cycles counts the cycles run since the fall, through halt_stage.
+   nmi_at is a raised NMI edge not yet latched, while nmi_pending is set.
+   cycle_len is the length in ticks of the cycle in flight, 4 or 6. sync
+   is set by the CPU for the read that fetches an opcode, SALLY's SYNC
+   cycle, and cleared by that read. */
 struct muhtari__bus {
     uint64_t phi2;
     uint64_t nmi_phi2;
@@ -58,7 +66,7 @@ struct muhtari__bus {
     uint64_t rdy_release;
     uint64_t halt_at;
     uint64_t halt_until;
-    uint64_t halt_lost;
+    uint64_t halt_fall;
     uint64_t nmi_at;
     uint8_t open_bus;
     uint8_t inptctrl;
@@ -66,6 +74,8 @@ struct muhtari__bus {
     uint8_t halt_stage;
     uint8_t halt_cycles;
     uint8_t nmi_pending;
+    uint8_t cycle_len;
+    uint8_t sync;
 };
 
 /* The 6532's RAM: 128 bytes (docs/hardware/riot.md, RAM). */
@@ -120,22 +130,154 @@ struct muhtari__profile {
 };
 
 /* The loaded cartridge: rom holds the info.rom_size bytes the board maps,
-   allocated through the instance's allocator; NULL while none is loaded. */
+   followed by its info.ram_size bytes of RAM, in one allocation through the
+   instance's allocator; rom is NULL while none is loaded, ram while the
+   board has none. bank is the SuperGame bank register and ram_bank the
+   banked-RAM half at $4000, each already reduced to a bank that exists
+   (docs/hardware/cartridge.md, Boards). */
 struct muhtari__cart {
     uint8_t *rom;
+    uint8_t *ram;
+    uint8_t bank;
+    uint8_t ram_bank;
     muhtari_cart_info info;
 };
 
+/* One line's DMA, as MARIA's burst ran it (docs/hardware/maria.md,
+   Statistics). cost is HALTRST minus T0 in ticks; bytes counts the graphics,
+   character map and character graphics bytes fetched; headers the object
+   headers read whole; objects the objects whose every fetch ran. */
+struct muhtari__line_stats {
+    uint16_t cost;
+    uint16_t bytes;
+    uint8_t headers;
+    uint8_t objects;
+    uint16_t flags; /* MUHTARI__LINE_* */
+};
+
+/* The flags of a line's statistics. */
+#define MUHTARI__LINE_LAST 0x0001u        /* the zone's last line: the next DLL entry was read */
+#define MUHTARI__LINE_ABORTED 0x0002u     /* the burst reached LRC and stopped */
+#define MUHTARI__LINE_DLI 0x0004u         /* the entry read on this line has DLI set */
+#define MUHTARI__LINE_DLI_QUEUED 0x0008u  /* the bus took the DLI's NMI edge */
+#define MUHTARI__LINE_DMA_BLOCKED 0x0010u /* the bus refused the line's HALT request */
+#define MUHTARI__LINE_DMA_OFF 0x0020u     /* CTRL had DMA off, so no burst ran */
+
+/* The sticky feature mask: a bit sets on the first line that uses the
+   feature and stays set (docs/hardware/maria.md, Statistics). */
+#define MUHTARI__FEAT_RM0 0x0001u
+#define MUHTARI__FEAT_RM2 0x0002u
+#define MUHTARI__FEAT_RM3 0x0004u
+#define MUHTARI__FEAT_WRITE_MODE 0x0008u
+#define MUHTARI__FEAT_KANGAROO 0x0010u
+#define MUHTARI__FEAT_HOLEY8 0x0020u
+#define MUHTARI__FEAT_HOLEY16 0x0040u
+#define MUHTARI__FEAT_IND1 0x0080u
+#define MUHTARI__FEAT_IND2 0x0100u
+#define MUHTARI__FEAT_DLI 0x0200u
+#define MUHTARI__FEAT_DLI_QUEUED 0x0400u
+#define MUHTARI__FEAT_DMA_BLOCKED 0x0800u
+
+/* An NTSC frame's lines (A7800-MARIA section 6). */
+#define MUHTARI__LINES_NTSC 263u
+
+/* Line RAM: 160 cells per buffer (A7800-MARIA section 3). */
+#define MUHTARI__LINE_CELLS 160u
+
+/* MARIA's state (docs/hardware/maria.md). reg holds the registers at
+   $20-$3F, indexed by address minus $20. The display-list walk: dll is the
+   next DLL entry's address, dl the zone's DL base, entry the zone's DLL byte
+   0 (DLI, H16, H8) and offset the zone's OFFSET, which counts down to 0 on
+   the zone's last line. line_ram holds two buffers of 160 cells, each cell
+   the palette in bits 4-2 and the data pair in bits 1-0; the burst fills
+   line_ram[write_buf]. write_mode is the latch only 5-byte headers load.
+   stats is each line's statistics and features the sticky feature mask.
+   The beam is counted from origin, the tick of line 0, t 0 of the current
+   frame: the next line event is event_index of line event_line, and a
+   requested burst is for line dma_line and stops at dma_lrc. mstat is
+   MSTAT's bit 7, VBLANK. rows and pitch are the caller's video rows, set by
+   muhtari_run_frame for its own duration only and NULL otherwise; px is
+   the next pixel of the current line's raster still to render
+   (docs/hardware/maria.md, Rendering). */
+struct muhtari__maria {
+    uint8_t reg[32];
+    uint16_t dll;
+    uint16_t dl;
+    uint8_t entry;
+    uint8_t offset;
+    uint8_t write_mode;
+    uint8_t write_buf;
+    uint8_t line_ram[2][MUHTARI__LINE_CELLS];
+    struct muhtari__line_stats stats[MUHTARI__LINES_NTSC];
+    uint32_t features;
+    uint64_t origin;
+    uint64_t dma_lrc;
+    uint16_t event_line;
+    uint16_t dma_line;
+    uint8_t event_index;
+    uint8_t mstat;
+    uint8_t *rows;
+    uint32_t pitch;
+    uint16_t px;
+};
+
+/* The controller ports as the host sets them (docs/embedding.md, Input).
+   device, buttons and switches are the input applied to the machine, each
+   device as the host asked, 0 for the cartridge's; the pending_ fields are
+   the last input set, waiting for the next VBLANK start, while pending is
+   set. Pending input is not machine state. input_read records a CPU read
+   of SWCHA, SWCHB or INPT0-5 in the current frame. */
+struct muhtari__ports {
+    uint32_t device[2];
+    uint32_t buttons[2];
+    uint32_t switches;
+    uint32_t pending_device[2];
+    uint32_t pending_buttons[2];
+    uint32_t pending_switches;
+    uint8_t pending;
+    uint8_t input_read;
+    uint64_t io_hazard; /* frames a 2600 stick's fire shorted a driven pin */
+};
+
+/* The largest BIOS image: 16 KiB at $C000-$FFFF (A7800-SYSTEM section 7). */
+#define MUHTARI__BIOS_SIZE_MAX 16384u
+
+/* The boot (docs/embedding.md, Booting with a BIOS). handoff_frame is the
+   frame, counted from 1 after a load or power cycle, of the first opcode
+   fetch from cartridge space after INPTCTRL's EXT went from 0 to 1, and 0
+   until it comes; the fast boot hands off in frame 1. rejected is set when
+   the BIOS takes its 2600 path, INPTCTRL locking with MEN = 0 before the
+   hand-off, and stays set until the next load or power cycle. */
+struct muhtari__boot {
+    uint64_t handoff_frame;
+    uint8_t rejected;
+};
+
+/* With content loaded, each muhtari_run_frame runs from frame_start to
+   frame_deadline, both VBLANK-start ticks except frame_start after the
+   hand-off (docs/hardware/bus.md, The run loop). bios holds the bios_size
+   bytes muhtari_load copied, 0 for fast boot. */
 struct muhtari {
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
+    uint8_t loaded;              /* content is loaded and handed off */
+    uint64_t frame_start;
+    uint64_t frame_deadline;
     struct muhtari__cpu cpu;
     struct muhtari__bus bus;
     struct muhtari__riot riot;
+    struct muhtari__maria maria;
     struct muhtari__profile profile;
     struct muhtari__cart cart;
+    struct muhtari__ports ports;
+    struct muhtari__boot boot;
+    uint64_t frames;                /* frames run since the last load or power cycle */
+    uint64_t lag_frames;            /* of those, frames with no CPU read of an input */
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
+    uint32_t bios_size;
+    uint8_t bios[16384];
 };
+_Static_assert(sizeof(((muhtari *)0)->bios) == MUHTARI__BIOS_SIZE_MAX, "bios array");
 
 /* The size of each struct as first released: the end of its last field. A
    caller's size tag below this is rejected. */
@@ -149,6 +291,11 @@ struct muhtari {
     ((uint32_t)(offsetof(muhtari_frame, audio_count) + sizeof(uint32_t)))
 #define MUHTARI__CART_INFO_SIZE_FIRST                                                              \
     ((uint32_t)(offsetof(muhtari_cart_info, title) + sizeof(((muhtari_cart_info *)0)->title)))
+#define MUHTARI__MEDIA_SIZE_FIRST ((uint32_t)(offsetof(muhtari_media, bios_size) + sizeof(size_t)))
+#define MUHTARI__INPUT_SIZE_FIRST ((uint32_t)(offsetof(muhtari_input, switches) + sizeof(uint32_t)))
+#define MUHTARI__SPAN_SIZE_FIRST ((uint32_t)(offsetof(muhtari_span, bytes) + sizeof(size_t)))
+#define MUHTARI__COUNTERS_SIZE_FIRST                                                               \
+    ((uint32_t)(offsetof(muhtari_counters, lag_frames) + sizeof(uint64_t)))
 
 /* The public layouts, pinned on every target. P is the pointer size; every
    field sits where the previous one ends, except that muhtari_config's
@@ -226,6 +373,38 @@ _Static_assert(offsetof(muhtari_cart_info, a78_irq) == 100, "cart_info.a78_irq")
 _Static_assert(offsetof(muhtari_cart_info, title) == 104, "cart_info.title");
 _Static_assert(sizeof(muhtari_cart_info) == 140, "cart_info size");
 
+/* muhtari_media: two uint32_t fields, then two pointer and size pairs; a
+   size_t is pointer sized on every target. */
+_Static_assert(sizeof(size_t) == MUHTARI__P, "size_t is pointer sized");
+_Static_assert(offsetof(muhtari_media, size) == 0, "media.size");
+_Static_assert(offsetof(muhtari_media, region) == 4, "media.region");
+_Static_assert(offsetof(muhtari_media, image) == 8, "media.image");
+_Static_assert(offsetof(muhtari_media, image_size) == 8 + MUHTARI__P, "media.image_size");
+_Static_assert(offsetof(muhtari_media, bios) == 8 + 2 * MUHTARI__P, "media.bios");
+_Static_assert(offsetof(muhtari_media, bios_size) == 8 + 3 * MUHTARI__P, "media.bios_size");
+_Static_assert(sizeof(muhtari_media) == 8 + 4 * MUHTARI__P, "media size");
+
+/* muhtari_input is six uint32_t fields: 24 bytes on every target. */
+_Static_assert(offsetof(muhtari_input, size) == 0, "input.size");
+_Static_assert(offsetof(muhtari_input, device) == 4, "input.device");
+_Static_assert(offsetof(muhtari_input, buttons) == 12, "input.buttons");
+_Static_assert(offsetof(muhtari_input, switches) == 20, "input.switches");
+_Static_assert(sizeof(muhtari_input) == 24, "input size");
+
+/* muhtari_span: the size, then a pointer and a size_t from P on, so 64-bit
+   targets carry 4 alignment bytes after the size field. */
+_Static_assert(offsetof(muhtari_span, size) == 0, "span.size");
+_Static_assert(offsetof(muhtari_span, data) == MUHTARI__P, "span.data");
+_Static_assert(offsetof(muhtari_span, bytes) == 2 * MUHTARI__P, "span.bytes");
+_Static_assert(sizeof(muhtari_span) == 3 * MUHTARI__P, "span size");
+
+/* muhtari_counters: the size, 4 alignment bytes, then two uint64_t fields,
+   which every target aligns to 8: 24 bytes. */
+_Static_assert(offsetof(muhtari_counters, size) == 0, "counters.size");
+_Static_assert(offsetof(muhtari_counters, frames) == 8, "counters.frames");
+_Static_assert(offsetof(muhtari_counters, lag_frames) == 16, "counters.lag_frames");
+_Static_assert(sizeof(muhtari_counters) == 24, "counters size");
+
 /* Returns OK when the size tag at s is at least first and every byte past
    ours is zero; ERR_STRUCT_SIZE otherwise. */
 muhtari_status muhtari__check_size(const void *s, uint32_t first, uint32_t ours);
@@ -252,10 +431,56 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
 /* Loads the n bytes at image into m: the status is muhtari_probe's for the
    same bytes. Every refusal returns before anything is allocated and leaves
    m unchanged. On OK the mapped ROM is copied into one allocation of
-   rom_size bytes, replacing any cartridge loaded before; ERR_NO_MEMORY
+   rom_size + ram_size bytes, the RAM after the ROM and zeroed, replacing
+   any cartridge loaded before; ERR_NO_MEMORY
    leaves m unchanged. muhtari_destroy frees it (docs/hardware/cartridge.md,
    Loading). */
 muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n);
+
+/* The second half of muhtari__cart_load: copies the ROM of image, which
+   *info identifies, into one new allocation with its RAM and replaces any
+   cartridge loaded before. ERR_NO_MEMORY leaves m unchanged. */
+muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info);
+
+/* The cartridge as the bus sees it, by board (docs/hardware/bus.md, Memory
+   map). read returns the byte the board drives at addr, or the open-bus
+   byte where it drives none; by_maria is 1 for MARIA's DMA fetches. write
+   is a CPU write into cartridge space. peek reads like read with no side
+   effect, for the hand-off and the tests. reset puts the bank registers
+   at power-on and fills the RAM by ram_fill. */
+void muhtari__cart_reset(muhtari *m);
+uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria);
+void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v);
+uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr);
+
+/* The fast-boot hand-off: puts the machine where the NTSC BIOS leaves it as
+   it jumps to the cartridge, with no BIOS run (A7800-SYSTEM section 7, C10;
+   docs/hardware/bus.md, The run loop). Needs a loaded cartridge. */
+void muhtari__boot_fast(muhtari *m);
+
+/* The BIOS boot: the power-on state, the beam at line 0, t 0 with MARIA's
+   CTRL $00, frame 1 running to the first VBLANK start 117,174 ticks away,
+   then RES, which takes PC from the BIOS's reset vector (A7800-SYSTEM
+   sections 7 and 8; docs/embedding.md, Booting with a BIOS). Needs a
+   loaded cartridge and BIOS. */
+void muhtari__boot_bios(muhtari *m);
+
+/* Whether the BIOS answers a read of addr: while EXT = 0, every A15 = 1
+   address with MEN = 1, and every A12 = 1 address with MEN = 0, as the
+   2600 decode sees it (docs/hardware/bus.md, Memory map). byte is the
+   BIOS byte there: the image mirrored over $8000-$FFFF with MEN = 1, its
+   top 4 KiB with MEN = 0. */
+int muhtari__boot_bios_maps(const muhtari *m, uint16_t addr);
+uint8_t muhtari__boot_bios_byte(const muhtari *m, uint16_t addr);
+
+/* The hand-off frame K, 0 until the hand-off; see struct muhtari__boot.
+   Not public: the runner reads it as a diagnostic. */
+uint64_t muhtari__boot_handoff_frame(const muhtari *m);
+
+/* SALLY's RES sequence, seven cycles: two reads at PC, three stack reads
+   that step S down by 3, then PC from $FFFC/$FFFD, with I set
+   (docs/hardware/sally.md, Reset). */
+void muhtari__cpu_reset(muhtari *m);
 
 /* The test card's native colour at (x, y) in a frame h rows tall. */
 uint8_t muhtari__testcard_pixel(uint32_t x, uint32_t y, uint32_t h);
@@ -277,16 +502,67 @@ void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick);
 uint8_t muhtari__riot_read(muhtari *m, uint16_t addr);
 void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v);
 void muhtari__riot_reset(muhtari *m);
+/* Runs PA7's edge detector after the device pins change. */
+void muhtari__riot_pins_changed(muhtari *m);
 
 /* The entry points MARIA drives (docs/hardware/bus.md, HALT and NMI).
-   request_halt asks for HALT from at_tick until until_tick, and does nothing
-   until the HALT gate has counted two writes. raise_nmi raises an NMI edge
-   at at_tick, and does nothing while MEN = 0. Each takes one at a time: a
-   request while a window is waiting or /HALT is low, or an edge while an
-   earlier one is not yet latched, is ignored and the one in flight stands.
-   Each returns 1 when it takes the request and 0 when it ignores it. */
+   request_halt asks for HALT from at_tick until until_tick; with until_tick
+   MUHTARI__HALT_UNTIL_MARIA the window's end is the HALTRST tick that
+   muhtari__maria_burst returns when the window reaches c2. raise_nmi raises
+   an NMI edge at at_tick, and does nothing while MEN = 0. Each takes one at
+   a time, and the one in flight stands. raise_nmi returns 1 when the edge
+   is queued for latching and 0 when it is ignored; a queued edge can still
+   be dropped by the latch, when an earlier latched edge has not been taken
+   or MEN was cleared before it latched. MARIA keeps the return as the
+   line's MUHTARI__LINE_DLI_QUEUED flag. request_halt returns 1 when it
+   takes the request and 0 when it ignores it, for one of two reasons: the
+   gate is shut, because it has not yet counted two writes, or a window is
+   already in flight, waiting for /HALT to fall or with /HALT low. MARIA
+   reads a 0 as no burst this line and sets dma_blocked, the line's
+   MUHTARI__LINE_DMA_BLOCKED flag. */
+#define MUHTARI__HALT_UNTIL_MARIA UINT64_MAX
 int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
 int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
+
+/* The tick of SALLY's n-th phi1 after tick t, n >= 1: its cycle starts,
+   from the end of the cycle in flight on, every 4 ticks
+   (docs/hardware/maria.md, The DLI). */
+uint64_t muhtari__bus_phi1_after(const muhtari *m, uint64_t t, uint32_t n);
+
+/* MARIA's VBE fetch (docs/hardware/maria.md, Display lists): starting at
+   tick t0 it loads the DLL pointer from DPPH and DPPL and reads zone 0's
+   entry. Returns the tick at which it ends, t0 + 7. */
+uint64_t muhtari__maria_vbe(muhtari *m, uint64_t t0);
+
+/* MARIA's registers as the CPU sees them (docs/hardware/maria.md,
+   Registers). read returns MSTAT's VBLANK bit over the open-bus byte at $28
+   and the open-bus byte elsewhere. write, whose data reaches MARIA at
+   data_tick, first renders the pixels played up to that tick, then stores
+   the register; a write to $24, MARIA's WSYNC, holds RDY low until the next
+   line's t 0. */
+uint8_t muhtari__maria_read(const muhtari *m, uint16_t addr);
+void muhtari__maria_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick);
+
+/* MARIA's line events (docs/hardware/maria.md, Line events). start arms
+   them from the beam at the current tick and sets MSTAT to match; the
+   power-on and the hand-off call it after placing the beam. next_event is
+   the tick of the next one; event fires it and arms the one after. */
+void muhtari__maria_start(muhtari *m);
+uint64_t muhtari__maria_next_event(const muhtari *m);
+void muhtari__maria_event(muhtari *m);
+
+/* The burst the bus runs when MARIA's HALT window reaches c2: T0 is the
+   /HALT fall plus 6, and the return is HALTRST (docs/hardware/maria.md, The
+   HALT handshake). */
+uint64_t muhtari__maria_burst(muhtari *m, uint64_t fall);
+
+/* One line's DMA burst (docs/hardware/maria.md, DMA cost): the PLA starts
+   at tick t0, every fetch at its own tick, and a fetch at or after lrc is
+   dropped. Fills *st and stats[line] (when line is below 263), ORs the
+   feature bits and returns the HALTRST tick. lrc is at most 454 ticks after
+   t0. */
+uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t line,
+                                 struct muhtari__line_stats *st);
 
 /* Runs exactly one instruction, then the NMI entry when one is due. On a
    jammed CPU it makes one read of $FFFF instead, and changes nothing else
@@ -294,7 +570,39 @@ int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
 void muhtari__cpu_step(muhtari *m);
 
 /* Puts the CPU, the bus, RAM and the RIOT in their power-on state under
-   m->profile. */
+   m->profile, and arms MARIA's line events from the beam at that tick. */
 void muhtari__power_on(muhtari *m);
+
+/* The byte a CPU read of addr would return, with no side effect: no timer
+   flag cleared, no cycle run, no input read recorded. For the tests. */
+uint8_t muhtari__bus_peek(const muhtari *m, uint16_t addr);
+uint8_t muhtari__riot_peek(const muhtari *m, uint16_t addr);
+
+/* Memory as the CPU would read it at addr under the current decode: system
+   RAM, the RIOT's RAM and cartridge space, and the open-bus byte for every
+   other address, so no device register is read. It changes no state. For
+   the diagnostic driver, which reads the mailbox in RAM. */
+uint8_t muhtari__peek(const muhtari *m, uint16_t addr);
+
+/* Applies the pending input, if any, at a VBLANK start (src/ports.c;
+   docs/embedding.md, Input). */
+void muhtari__ports_latch(muhtari *m);
+
+/* The device wired to port 0 or 1: MUHTARI_PORT_PROLINE, _JOYSTICK or
+   _UNPLUGGED, the host's choice or else the cartridge's, where a header
+   device this version does not model is wired as a ProLine. */
+uint32_t muhtari__ports_device(const muhtari *m, uint32_t port);
+
+/* The pins the devices and switches drive (src/ports.c): SWCHA's and
+   SWCHB's input pins, and INPT0-INPT5's level, 0 or 1, for n 0 to 5. */
+uint8_t muhtari__ports_swcha(const muhtari *m);
+uint8_t muhtari__ports_swchb(const muhtari *m);
+uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n);
+
+/* Counts a frame in which a 2600 stick's fire is held in two-button mode. */
+void muhtari__ports_count_hazard(muhtari *m);
+
+/* Starts the counters and the lag flag from zero, at load and power cycle. */
+void muhtari__ports_reset_counters(muhtari *m);
 
 #endif /* MUHTARI_INTERNAL_H */

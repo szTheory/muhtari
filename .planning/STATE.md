@@ -2,44 +2,44 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
-current_phase: 3
-current_phase_name: Games play in RetroArch
-status: "Phase 02 shipped — PR #10"
-stopped_at: Phase 02 shipped as PR #10 (auto-merge on); next /gsd-discuss-phase 3
-last_updated: "2026-10-19T20:37:55.435Z"
-last_activity: 2026-10-19
-last_activity_desc: Phase 02 shipped as PR #10
-state_head: de425c90c6354fc6291ae0de5d1e615532dcb0b8
+current_phase: 4
+current_phase_name: Sound
+status: shipping
+stopped_at: Phase 3 shipping through PR 13; await CI, merge and release confirmation
+last_updated: "2026-10-20T17:51:54Z"
+last_activity: 2026-10-20
+last_activity_desc: Phase 3 complete, transitioned to Phase 4
+state_head: e3d82355198e3d9aa2d7b6c992e23cde512e7b59
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 37
-  completed_plans: 37
-  percent: 50
+  completed_phases: 3
+  total_plans: 56
+  completed_plans: 56
+  percent: 75
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-19)
+See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Ship phase 02 (`/gsd-ship 2`; the merge publishes 0.2.0), then Phase 3 — Games play in RetroArch
+**Current focus:** Ship Phase 3 through PR #13, then Phase 4 — Sound
 
 ## Current Position
 
-Phase: 3 — Games play in RetroArch
+Phase: 4 — Sound
 Plan: Not started
-Status: Phase 02 shipped — PR #10
-Last activity: 2026-10-19 — Phase 02 shipped as PR #10
+Status: Phase 3 shipping — PR #13
+Last activity: 2026-10-20 — Phase 3 ship: PR #13 opened with a Conventional Commit feat title; verification.status passed (exit 0). Final source CI run 39460962750 success, checked at ship; source diff since its head exits 0. CI and release confirmation follow in this ship session.
 
-Progress: [█████░░░░░] 50%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 37
+- Total plans completed: 56
 - Average duration: -
 - Total execution time: 0.0 hours
 
@@ -49,6 +49,7 @@ Progress: [█████░░░░░] 50%
 |-------|-------|-------|----------|
 | 01 | 21 | - | - |
 | 02 | 16 | - | - |
+| 3 | 19 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: -
@@ -96,6 +97,25 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P14 | 15 min | 2 tasks | 9 files |
 | Phase 02 P15 | 17 min | 2 tasks | 12 files |
 | Phase 02 P16 | 33 min | 3 tasks | 17 files |
+| Phase 03 P01 | 10 min | 3 tasks | 11 files |
+| Phase 03 P02 | 13 min | 3 tasks | 17 files |
+| Phase 03 P03 | 11 min | 3 tasks | 14 files |
+| Phase 03 P04 | 13 min | 3 tasks | 26 files |
+| Phase 03 P05 | 16 min | 3 tasks | 13 files |
+| Phase 03 P06 | 26 min | 3 tasks | 19 files |
+| Phase 03 P07 | 23 min | 3 tasks | 23 files |
+| Phase 03 P08 | 16 min | 3 tasks | 28 files |
+| Phase 03 P09 | 14 min | 3 tasks | 15 files |
+| Phase 03 P10 | 21 min | 3 tasks | 20 files |
+| Phase 03 P11 | 13 min | 3 tasks | 9 files |
+| Phase 03 P12 | 11 min | 2 tasks | 10 files |
+| Phase 03 P13 | 17 min | 3 tasks | 21 files |
+| Phase 03 P14 | 39 min | 3 tasks | 8 files |
+| Phase 03 P15 | 29 min | 3 tasks | 14 files |
+| Phase 03 P16 | 22 min | 2 tasks | 9 files |
+| Phase 03 P17 | 20 min | 3 tasks | 16 files |
+| Phase 03 P18 | 22 min | 3 tasks | 21 files |
+| Phase 03 P19 | 35 min | 3 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -220,6 +240,57 @@ Recent decisions affecting current work:
 - [Phase 02]: The re-review of fix round 1 (2cca8b3) found no blocker. Its new WR-01 (the bus entry points cannot say a request was ignored), WR-02 (a test seed) and IN-01 wait in the MARIA and run-loop todo for phase 3, so one code-review fix round is still left. The re-verification passed 5/5 with a fresh covered digest
 - [Phase 02]: Fix round 2, the last one rule 7 allows, fixed the re-review's WR-01 (62b6bdc): `muhtari__bus_request_halt` and `muhtari__bus_raise_nmi` return 1 when they take a request and 0 when they ignore it, and MARIA checks it in phase 3. WR-02 is skipped as a test seed; it and IN-01 wait in the MARIA and run-loop todo. No code-review fix round is left in this phase
 - [Phase 02]: The third review (4f8de62) found no blocker. WR-05: `muhtari__bus_raise_nmi` can return 1 for an edge the latch later drops, so its 1 means "queued", not "will be taken". It, IN-04 and the IN-05 seed wait in the MARIA and run-loop todo; phase 3 settles what the 1 promises. The re-verification passed 5/5 with the same 139 covered files
+- [Phase 03]: Plan 01: MARIA's holes come from the DLL entry's H16/H8 bits, not CTRL; muhtari__maria_vbe loads zone 0's entry from DPPH/DPPL for plan 03-02's t 43 event to call
+- [Phase 03]: Plan 01: muhtari__maria_dma_line fills *st and stats[line], clamps LRC to T0 + 454, and sets a feature bit only when an object uses it; docs/hardware/maria.md derives the 16/24 empty-DL ticks from T0 = /HALT fall + 6
+- [Phase 03]: Plan 02: the run loop steps SALLY to absolute VBLANK-start deadlines (line 258 t 42); MARIA's line events fire from the tick count and split every hold; the burst runs at c2 with T0 = fall + 6; the origin moves at line 263's t 0
+- [Phase 03]: Plan 02: the fast-boot hand-off is line 240 t 24 (cpu_phase 0 derived); frame 1 is 8,190 ticks and 54 samples; rows of a frame with content are $00 until span rendering; a HALT window inside an RDY hold counts held cycles as c0-c2
+- [Phase 03]: A register write's data tick is the last pixel shown with the old value; the next pixel shows the new one
+- [Phase 03]: Only the first frame after a load pre-writes $00 to every row; rendering overwrites the scanned rows, so no rows_scanned bitmap
+- [Phase 03]: The DLI's NMI is the second grid tick strictly after HALTRST on SALLY's 4-tick grid from c2
+- [Phase 03]: A DLI on zone 0's entry, read by VBE with no HALT window, raises no NMI yet; its timing waits for the diagnostic ROMs
+- [Phase 03]: The input latch runs at the start of a frame that begins at VBLANK start; input set before the first frame after a load applies at frame 2
+- [Phase 03]: A header naming no controller leaves the port unplugged; an unmodelled header device is wired as a ProLine
+- [Phase 03]: Applied and pending input survive load and power cycle; with no content every frame is a lag frame
+- [Phase 03]: Plan 05: frames.cmake under -DWRITE=ON at a core behaviour revision above the file's rewrites the row and the revision line and resets every other row's frame pin to -; a - column fails the check
+- [Phase 03]: Plan 05: hosted run 39351079824 with all 29 linear samples: be32 101 s, asan 36 s, so basic stays per-PR on both lanes with no lane inventory; slowest build leg macos-x64 101 s; no timeout-minutes changed
+- [Phase 03]: Plan 05: probe PR #12 is open as a draft; src/maria.c's MSTAT read no longer casts ~MARIA_VBLANK (MSVC C4310 on the first phase-3 push)
+- [Phase 03]: Plan 06: the dma diagnostic times one burst per frame on line 100 with DMA off elsewhere after VBE; INTIM = 245 - ceil((15 + D) / 4) ordinary, 245 - ceil((21 + D) / 4) last; all 27 records and 26 statistics rows matched their prior derivations on the first run
+- [Phase 03]: Plan 06: expected.csv and stats.csv accept lo-hi ranges; the overrun rows (INTIM 137-138, cost 420-423, 13 objects) are ranges because the abort's lost cycles depend on the CPU phase at t 28; a record's id is its row's position
+- [Phase 03]: Plan 06: a diagnostic's .a78 is committed after its source, with the manifest pin set to that source commit; diag.rebuild also rebuilds both Clark builds; hosted run 39354194917 green on every leg
+- [Phase 03]: 03-07: the cpu ROM ends each 64-load run with MARIA's WSYNC, so slow loads read 205 and RAM loads 173, for every CPU phase
+- [Phase 03]: 03-07: a DLI on zone 0's entry raises NMI on the second phi1 after VBE's end, t 50 of line 16; broken-windows item 4 fixed
+- [Phase 03]: 03-07: parked's first derivation (20) left out line 18's burst; the doc now derives 16, which the first run read
+- [Phase 03]: 03-08: SuperGame boards (RAM, bank 6, SG9, banked RAM) in one switch; ROM and cart RAM in one allocation; SG9 maps bank 1 + register at $8000, so bank 1 at power-on
+- [Phase 03]: 03-08: all 34 buildable samples pinned; the POKEY-at-$0450 samples will move with a behaviour-revision bump when sound lands
+- [Phase 03]: 03-09: modes is a plain SuperGame board of 4 banks (at_4000 reads bank 2), since no other ROM was SuperGame without RAM or options; it draws 160B, 320B, 320D, kangaroo mode and 2-byte characters
+- [Phase 03]: 03-09: basic.coverage judges 31 claims over 17 required features from the probe and the sticky mask; holey bits follow the DLL's H8/H16, so samples show them too
+- [Phase 03]: Two-button mode follows the levels at each read: PB2 [PB4] an output driven 0 and INPTCTRL TIA-EN clear; CTLSWB $14 alone stays one-button since ORB powers on $FF
+- [Phase 03]: INPT0-INPT3 follow the ProLine's buttons in one-button mode too (MAME, a7800, MiSTer); io_hazard counts frames ending with a stick's fire held in two-button mode and is internal
+- [Phase 03]: A movie line is at most 64 bytes except a rom-sha256 or bios-sha256 line, which is its key, a space and 64 hex digits; 03-11 decides how a movie's line 1 maps to frames, since the frame after a load latches nothing
+- [Phase 03]: Movie line k is the input set before the runner's frame k, latched at the VBLANK start that opens it; under fast boot line 1 reaches no game, so a movie records what a host passes to muhtari_set_input before each frame
+- [Phase 03]: The movie header wins: a conflicting --port1, --port2 or --region exits 2, as does boot bios until 03-13; --frames defaults to the movie length; past the end buttons release and difficulties stay; --region ntsc forces NTSC, auto refuses PAL
+- [Phase 03]: OpenBIOS is a pinned CC0 source assembled by tests/built/openbios.cmake; built.openbios builds the $FF image only, and both fill digests are firmware rows
+- [Phase 03]: 03-13: a BIOS boot starts at power-on (line 0, t 0, CTRL $00) and runs RES; the BIOS answers A15 = 1 (MEN = 1) or A12 = 1 (MEN = 0) while EXT = 0, for the CPU and MARIA
+- [Phase 03]: 03-13: K is recorded once at the first cartridge opcode fetch with EXT = 1 (simple: 323; Pause held frames 1-3 gives 3); the fast boot records 1; input set before a BIOS boot's frame 1 applies from power-on, so movie line 1 counts under boot bios
+- [Phase 03]: 03-13: INPTCTRL locked with MEN = 0 before the hand-off is a sticky ERR_BIOS_REJECTED_CART (runner 77); a movie's boot key wins over --boot (exit 2), and bios-sha256 is checked before frame 1 (exit 1)
+- [Phase 03]: 03-14: the ledger has 42 rows; title@F=H is the fast boot's frame F hash, and through OpenBIOS H must appear in [K, K + 300) with K in [300, 340]; pin.cmake refuses a single-colour frame
+- [Phase 03]: 03-14: five samples that draw with rand (seeded from INTIM, which the BIOS leaves differently) fall back to boots@F;why=rng-seeded-from-intim; backuptest and languagetest draw nothing by design and are skipped
+- [Phase 03]: 03-15: libretro memory map covers the whole 64 KiB bus in aligned power-of-two descriptors with pointer-less descriptors over unmapped spans, so rcheevos reaches the page 0 shadows and the fixed ROM
+- [Phase 03]: 03-15: muhtari_boot applies at content load; Restart power-cycles the loaded media and reapplies only the difficulty options
+- [Phase 03]: 03-15: rcheevos v12.1.0 is a test-only pin built with warnings and sanitizers off, with two generated rhash stubs
+- [Phase 03]: 03-16: Boot to play holds Up+Left on port 1 from frame 121 with Up+Right as its mirror; (a) uses the measured one-frame bound inside [F, F+2] so a one-frame-late latch fails
+- [Phase 03]: 03-17: Run fuzz cartridges pass the footer test: run_cart.h changes the last 8 bytes as little as needed, since arbitrary headerless 48 KiB images are refused as 2600 images
+- [Phase 03]: 03-17: prop.input_at_vblank reads SWCHA, SWCHB and INPT0-5 through muhtari__bus_peek; muhtari__peek returns open bus for device registers
+- [Phase 03]: 03-17: The nightly prop job builds ci with MUHTARI_TIMEOUT_SCALE=10 and runs ctest -L prop -j 4; report-only outside report's needs until 10 green runs on main
+- [Phase 03]: 03-18: library.<id> finds a row's file by whole-file SHA-1 (sha1_a78 then sha1_raw), since CMake cannot hash a byte range; a headered dump with a different header is not found
+- [Phase 03]: 03-18: library.<id> passes once its result line is written; library.ratchet judges status and evidence against the ledger
+- [Phase 03]: 03-18: the ratchet's base is MUHTARI_LEDGER_BASE read at configure; a base without a ledger protects nothing, a base not in the clone fails
+- [Phase 03]: 03-18: the library job is report-only (REPORT_ONLY wasm32,library) until 10 green runs on main
+- [Phase 03]: Plan 19: CTest TIMEOUTs and timeout-minutes measured from 31 ci.yml and 11 nightly fuzz/prop runs (job logs); be32 7 min (2 x 184 s, run 39377950148), prop 8, vectors-full 9; library stays provisional on 7 runs
+- [Phase 03]: Plan 19: gate code is 1,367 narrow lines against 7,415 src/ lines (18.4 %, 25.5 % without cartdb.c); perf_compare.cmake trimmed 126 to 95; the shortfall and four candidate cuts are in SEED-007 as the owner's call at /gsd-ship 3
+- [Phase 03]: Plan 19: probe PR #12 closed unmerged; ship title 'feat: games play in RetroArch with MARIA, cartridges, boot and input' passes check-title.sh (exit 0), so the merge cuts 0.3.0
+
+- [Phase 03]: Both permitted code-review fix rounds are used: WR-01 through WR-05 resolved in round 1, CR-01 in round 2. Five Info findings remain seeds. Final four-file re-review is clean. Re-verification passed; next: $gsd-ship 3. No new gap plan or further fix round.
 
 ### Pending Todos
 
@@ -229,6 +300,7 @@ Recent decisions affecting current work:
 - [2026-10-16] [ci] Close the re-review's findings on the Dependabot gate and the publish checks — [todo file](.planning/todos/pending/2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md)
 - [2026-10-19] [ci] Close the phase 2 review seeds on the nightly filter and the ROM tables — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md)
 - [2026-10-19] [core] Close the phase 2 re-review findings when MARIA and the run loop land — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md)
+- [2026-10-19] [core] Re-pin the POKEY samples when POKEY lands — [todo file](.planning/todos/pending/2026-10-19-re-pin-the-pokey-samples-when-pokey-lands.md)
 
 ### Ship step (phase 01)
 
@@ -244,6 +316,14 @@ Recent decisions affecting current work:
   zips; evidence on PR #7, comment 6226988821.
 - The `main` ruleset requiring `CI required` is live and `scripts/apply-repo-settings.sh --check` reports no
   drift.
+
+### Ship step (phase 03)
+
+- PR #13: https://github.com/szTheory/muhtari/pull/13 — `feat: games play in RetroArch with MARIA, cartridges, boot and input`.
+- The final review is clean; both fix rounds are used. The five Info findings remain seeds under the proportional-gates rule; no additional review round.
+- Rule 7's measured gate-code shortfall (18.4% against 10%) remains disclosed in the PR and SEED-007. No rule or denominator is changed by ship; retain the reduction candidates for the tune-up.
+- The ship note uses an ordinary commit so a CI run exists on the final pull-request head, as rule 9 requires. No skip token or recovery commit.
+- This session follows the phase merge, the release pull request and the automatically published 0.3.0 release. Next GSD step after shipping: `$gsd-discuss-phase 4`.
 
 ### Blockers/Concerns
 
@@ -261,6 +341,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-19T20:30:00.000Z
-Stopped at: Phase 02 re-verified after fix round 2 (passed); next /gsd-ship 2
+Last session: 2026-10-20T17:51:54Z
+Stopped at: Phase 3 shipping through PR #13; next GSD command after shipping: $gsd-discuss-phase 4
 Resume file: None

@@ -1,0 +1,107 @@
+# Fills the ledger's unpinned title rows, and with -DBIOS evaluates every
+# row on both paths (docs/emulation-tests.md, title). A fixture recipe, run
+# by hand on the core under test:
+#   cmake -DPREDICATE=<muhtari-test-predicate> -DLEDGER=tests/compat/ledger.csv
+#     -DBUILT=build/ci/built -DDIAG=tests/diag [-DBIOS=<openbios.bin>]
+#     [-DCOMMIT=<12 hex>] [-DDATE=<YYYY-MM-DD>] -P tests/compat/pin.cmake
+# A title@F=- predicate becomes title@F=<the fast boot's frame F hash>, and
+# the driver refuses a frame of one colour, so no blank screen is pinned.
+# With BIOS, an unknown row's status becomes pass when the fast and BIOS
+# runs both pass and fail otherwise; any other evaluated row whose status
+# disagrees fails the run by name. unsupported and skipped rows are not run. Rows are
+# written sorted by id, then predicate.
+foreach(var PREDICATE LEDGER BUILT DIAG)
+  if(NOT DEFINED ${var})
+    message(FATAL_ERROR "pin: -D${var} is required")
+  endif()
+endforeach()
+
+# The ledger's fields hold no comma, quote or newline; a predicate's ";why="
+# is kept from CMake's list splitting as a placeholder.
+file(READ ${LEDGER} text)
+string(REPLACE ";" "<semicolon>" text "${text}")
+string(REGEX REPLACE "\n$" "" text "${text}")
+string(REPLACE "\n" ";" lines "${text}")
+list(POP_FRONT lines header)
+
+# Runs the driver on row's file with ARGN; sets out and rc in the caller.
+function(drive rom predicate)
+  string(REPLACE "<semicolon>" ";" predicate "${predicate}")
+  execute_process(COMMAND ${EMULATOR} ${PREDICATE} ${rom} "${predicate}" ${ARGN}
+    OUTPUT_VARIABLE o ERROR_VARIABLE o RESULT_VARIABLE r OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(out "${o}" PARENT_SCOPE)
+  set(rc "${r}" PARENT_SCOPE)
+endfunction()
+
+set(rows "")
+set(wrong "")
+foreach(line IN LISTS lines)
+  string(REPLACE "," ";" f "${line}")
+  list(LENGTH f n)
+  list(GET f 0 id)
+  if(NOT n EQUAL 16)
+    message(FATAL_ERROR "pin: ${id}: ${n} fields, not 16")
+  endif()
+  list(GET f 9 predicate)
+  list(GET f 10 status)
+  if(id MATCHES "^7800basic-0[.]41/(.+)$")
+    set(rom ${BUILT}/${CMAKE_MATCH_1}/${CMAKE_MATCH_1}.bas.a78)
+  elseif(id MATCHES "^diag/(.+)$")
+    set(rom ${DIAG}/${CMAKE_MATCH_1}.a78)
+  else()
+    message(FATAL_ERROR "pin: ${id}: no file rule for this id")
+  endif()
+  if(predicate MATCHES "^title@([0-9]+)=-$")
+    drive(${rom} "${predicate}" --pin)
+    if(NOT rc STREQUAL "0" OR NOT out MATCHES "^title@[0-9]+=([0-9a-f]+)$")
+      message(FATAL_ERROR "pin: ${id}: ${out}")
+    endif()
+    set(predicate "${out}")
+    string(SUBSTRING "${CMAKE_MATCH_1}" 0 16 evidence)
+    list(REMOVE_AT f 13)
+    list(INSERT f 13 ${evidence})
+    list(REMOVE_AT f 9)
+    list(INSERT f 9 "${predicate}")
+    message(STATUS "pin: ${id}: ${predicate}")
+  endif()
+  if(DEFINED BIOS AND NOT status MATCHES "^(unsupported|skipped)$")
+    drive(${rom} "${predicate}")
+    set(fast "${out}")
+    set(result pass)
+    if(NOT rc STREQUAL "0")
+      set(result fail)
+    endif()
+    drive(${rom} "${predicate}" --bios ${BIOS})
+    if(NOT rc STREQUAL "0")
+      set(result fail)
+    endif()
+    message(STATUS "pin: ${id}: ${result} (fast: ${fast}; bios: ${out})")
+    if(status STREQUAL "unknown")
+      list(REMOVE_AT f 10)
+      list(INSERT f 10 ${result})
+    elseif(NOT status STREQUAL result)
+      list(APPEND wrong "${id} is ${status} but evaluates ${result}")
+    endif()
+    if(DEFINED COMMIT)
+      list(REMOVE_AT f 12)
+      list(INSERT f 12 ${COMMIT})
+    endif()
+    if(DEFINED DATE)
+      list(REMOVE_AT f 15)
+      list(APPEND f ${DATE})
+    endif()
+  endif()
+  list(JOIN f "," row)
+  list(GET f 9 predicate)
+  list(APPEND rows "${id} ${predicate}\t${row}")
+endforeach()
+# A space sorts before every character of an id, so "a b" precedes "ab".
+list(SORT rows)
+list(TRANSFORM rows REPLACE "^[^\t]*\t" "")
+list(JOIN rows "\n" text)
+string(REPLACE "<semicolon>" ";" text "${header}\n${text}\n")
+file(WRITE ${LEDGER} "${text}")
+if(wrong)
+  list(JOIN wrong "\n  " wrong)
+  message(FATAL_ERROR "pin: rows whose status disagrees with the evaluation:\n  ${wrong}")
+endif()

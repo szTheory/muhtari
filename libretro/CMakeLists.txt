@@ -3,10 +3,13 @@
 # functions, which libretro.h marks with default visibility or dllexport,
 # in the export table.
 function(muhtari_libretro_module name)
-  add_library(${name} MODULE libretro.c)
+  # The runner's SHA-256 names the BIOS file a user supplied in the log.
+  add_library(${name} MODULE libretro.c ${PROJECT_SOURCE_DIR}/runner/sha256.c)
   target_include_directories(${name} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR}/generated)
+    ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR}/generated ${PROJECT_SOURCE_DIR}/runner)
   target_link_libraries(${name} PRIVATE muhtari::muhtari muhtari_host)
+  # MSVC deprecates ISO C's fopen, which reads the BIOS file, for its _s forms.
+  target_compile_definitions(${name} PRIVATE $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   # No "lib" prefix: the frontend and the release name it muhtari_libretro.
   # CMake gives a MODULE the suffix .so on macOS; RetroArch expects .dylib.
   set_target_properties(${name} PROPERTIES

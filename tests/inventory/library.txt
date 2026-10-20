@@ -1,0 +1,47 @@
+# Every test the library preset registers: name<TAB>labels. One library.<id>
+# per ledger row of tier pr that is neither unsupported nor skipped, the id's
+# slashes as dots. Sorted; configure fails when this differs from what is
+# registered.
+library.7800basic-0.41.adventurer	library
+library.7800basic-0.41.atarivoxspeech	library
+library.7800basic-0.41.banner	library
+library.7800basic-0.41.boxcollision	library
+library.7800basic-0.41.colorfade	library
+library.7800basic-0.41.doublebuffer	library
+library.7800basic-0.41.drivingcontrol	library
+library.7800basic-0.41.eightysix	library
+library.7800basic-0.41.fontcheck	library
+library.7800basic-0.41.helloworld	library
+library.7800basic-0.41.hiscoretable	library
+library.7800basic-0.41.keypadcontrol	library
+library.7800basic-0.41.mega7800controllers	library
+library.7800basic-0.41.mousedemo	library
+library.7800basic-0.41.multibuttoncontrollers	library
+library.7800basic-0.41.multisprite	library
+library.7800basic-0.41.onehundredandone	library
+library.7800basic-0.41.plotmapfile	library
+library.7800basic-0.41.pokey	library
+library.7800basic-0.41.ramcharmap	library
+library.7800basic-0.41.rmtramcompressiondemo	library
+library.7800basic-0.41.rmtramdemo	library
+library.7800basic-0.41.rmtromdemo	library
+library.7800basic-0.41.rotationalcontrols	library
+library.7800basic-0.41.screensafe	library
+library.7800basic-0.41.simple	library
+library.7800basic-0.41.smasteroids	library
+library.7800basic-0.41.snescontrollers	library
+library.7800basic-0.41.soundtest	library
+library.7800basic-0.41.spacephysics	library
+library.7800basic-0.41.trackertest	library
+library.7800basic-0.41.underthehood	library
+library.compat_doc	library
+library.diag.bank6	library
+library.diag.cpu	library
+library.diag.dli	library
+library.diag.dma	library
+library.diag.linear16	library
+library.diag.modes	library
+library.diag.sg144	library
+library.ratchet	library
+library.ratchet.self_test	library
+library.results	library

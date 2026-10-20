@@ -85,8 +85,8 @@ static void host_free(void *user, void *ptr, size_t size) {
 ```
 
 `free` receives the size that was allocated, so a fixed arena or pool needs no header of its own. `user` is
-passed back unchanged. All allocation happens in `muhtari_create`, which returns `MUHTARI_STATUS_ERR_NO_MEMORY`
-when `alloc` returns NULL; running frames allocates nothing.
+passed back unchanged. `muhtari_create` allocates the instance and `muhtari_load` the copy of the cartridge's
+ROM together with its RAM; each returns `MUHTARI_STATUS_ERR_NO_MEMORY` when `alloc` returns NULL. Running frames allocates nothing.
 
 ## A frame
 
@@ -121,8 +121,7 @@ arguments before it changes anything. Once `m` and `io` are not NULL and the siz
 cartridge is: an A78 file, a headerless 7800 image or a 2600 image. It is pure: it allocates nothing, keeps no
 state, and gives the same output for the same bytes, so concurrent calls on different outputs cannot interact.
 It reads at most `MUHTARI_IMAGE_SIZE_MAX` bytes (1 MiB of ROM plus a 128-byte header) and hashes them a fixed
-number of times. Running a probed image arrives in a later API version; until then `muhtari_run_frame` still
-gives the test card.
+number of times. `muhtari_load` runs an image (see [Loading content](#loading-content)).
 
 ```c
 muhtari_cart_info info;
@@ -169,7 +168,8 @@ show what it refused.
 | `a78_mapper`, `a78_mapper_options`, `a78_audio`, `a78_irq` | The version 4 block as written; zero below version 4 |
 | `title` | The header's title: at most 32 printable ASCII bytes, trailing spaces dropped, NUL-terminated and zero-padded |
 
-Zero means absent in every field. A board moves from `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD` to
+Zero means absent in every field. `MUHTARI_PORT_UNPLUGGED` (256) sits outside the A78 byte range: probing never
+reports it, and a host passes it for an empty controller port. A board moves from `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD` to
 `MUHTARI_STATUS_OK` in the release that runs it. The warning bits:
 
 | Bit | The header |
@@ -185,12 +185,148 @@ Zero means absent in every field. A board moves from `MUHTARI_STATUS_ERR_UNSUPPO
 | `MUHTARI_CART_WARN_RESERVED_NONZERO` | has a reserved byte or bit set |
 | `MUHTARI_CART_WARN_CART_TYPE_CONFLICT` | sets cart-type bits that cannot all hold, resolved as `docs/hardware/cartridge.md` says |
 
+## Loading content
+
+```c
+muhtari_media media;
+memset(&media, 0, sizeof media);
+media.size = (uint32_t)sizeof media;
+media.image = image;            /* the cartridge file's bytes, copied */
+media.image_size = n;
+muhtari_status st = muhtari_load(m, &media);
+```
+
+`muhtari_load` validates everything before it applies anything, in this order:
+
+1. `m` or `media` is NULL: `MUHTARI_STATUS_ERR_ARGUMENT`.
+2. A bad size tag: `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
+3. `bios` is NULL with a non-zero `bios_size`, or `region` is neither 0 nor a `MUHTARI_REGION_*` value:
+   `MUHTARI_STATUS_ERR_ARGUMENT`.
+4. The image, exactly as `muhtari_probe` judges it, with the same statuses. An empty image is
+   `MUHTARI_STATUS_ERR_INVALID_IMAGE`, and a NULL image with a size is `MUHTARI_STATUS_ERR_ARGUMENT`.
+5. The region: `region` when it is not 0, else the cartridge's, which comes from its header, then the hash list,
+   then NTSC. PAL returns `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` until PAL timing is emulated, so no pinned NTSC
+   hash can change silently when it is.
+6. The BIOS, when `bios` is not NULL: it must be 4,096 or 16,384 bytes, and its reset vector, mapped to end at
+   $FFFF, must point inside it. Otherwise `MUHTARI_STATUS_ERR_INVALID_BIOS`.
+
+A refused load changes nothing: the previous cartridge, or the test card, keeps running as if the call had not
+been made. Once every check passes, the ROM is copied into one allocation, the only one a load makes, and
+any cartridge loaded before is freed. A BIOS is copied into a fixed 16 KiB array inside the instance. Without a
+BIOS the machine starts from the fast-boot hand-off, the state the NTSC BIOS leaves as it jumps to the cartridge;
+with one it boots through the BIOS, as [Booting with a BIOS](#booting-with-a-bios) describes. A successful load
+replaces any loaded content and power-cycles the machine.
+
+`muhtari_power_cycle(m)` runs the same power-on and boot again for the content already loaded; with nothing
+loaded it returns `MUHTARI_STATUS_OK` and the test card goes on. There is no unload: `muhtari_destroy` and
+`muhtari_create` return to the test card. `muhtari_get_info` describes the loaded content, so read it after a
+load.
+
+## The first frame after load
+
+A load without a BIOS leaves the machine at the fast-boot hand-off, 8,190 ticks before VBLANK start, not at a frame
+boundary. The first `muhtari_run_frame` after a load or power cycle runs only those 8,190 ticks, so it returns 54
+audio samples rather than 800 or 801. Its picture shows only the rows the beam scanned since the hand-off; every
+other row is written $00. Every later frame runs from one VBLANK start to the next, a whole frame of 119,402 ticks.
+
+## Booting with a BIOS
+
+With `bios` set, a load or power cycle starts the console from power-on: INPTCTRL `$00`, so the BIOS is mapped and
+the 2600 decode applies; MARIA's registers 0, so CTRL is `$00` with DMA off; RAM and the RIOT at power-on; and the
+beam at line 0, t 0. The CPU runs RES, which takes PC from the BIOS's reset vector with S = `$FD` and I set. The first
+frame runs to the first VBLANK start, 117,174 ticks and 785 samples, and the input set before it applies from
+power-on. Every later frame is whole. The BIOS then runs as on a console: it tests the machine, checks the
+cartridge, shows its splash screen and hands off.
+
+The hand-off frame is the frame, counted from 1 after the load or power cycle, of the first opcode fetch from
+cartridge space after INPTCTRL's EXT bit goes from 0 to 1. Only that first fetch counts; a game that maps the BIOS
+back in and returns does not move it. The fast boot hands off in frame 1. OpenBIOS hands `simple` off in frame 323,
+after its splash; holding Pause through its first check skips the splash.
+
+When the BIOS refuses the cartridge as a 7800 one and takes its 2600 path, it locks INPTCTRL with MEN = 0. That
+frame stops there, and it and every later `muhtari_run_frame` return `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` with
+no audio samples, until the next `muhtari_load` or `muhtari_power_cycle`. This version runs no 2600 cartridge.
+
+The core does not hash the BIOS or report its digest; a host that records which BIOS ran hashes the bytes it
+passed. The hand-off frame is not part of the public API either; the runner reports it (`docs/runner.md`).
+
+## Input
+
+```c
+muhtari_input in;
+memset(&in, 0, sizeof in);
+in.size = (uint32_t)sizeof in;
+in.buttons[0] = MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1;
+in.switches = MUHTARI_SWITCH_LEFT_DIFFICULTY_A;
+muhtari_status st = muhtari_set_input(m, &in);
+```
+
+`muhtari_set_input` sets what both controller ports and the console's switches hold. Call it before each
+`muhtari_run_frame`; the input stays until the next call.
+
+- **Devices.** `device[0]` and `device[1]` are 0 for the cartridge's choice, or `MUHTARI_PORT_PROLINE`,
+  `MUHTARI_PORT_JOYSTICK` (a 2600 one-button stick) or `MUHTARI_PORT_UNPLUGGED`. The cartridge's choice comes
+  from its header: a port the header leaves empty is unplugged, and a device this version does not model, such
+  as a light gun or paddles, is wired as a ProLine. That changes, with a behaviour revision, in the release that
+  models the device. The device is part of each input, not of the load, because a frontend may choose it after
+  loading. An explicit device this version does not model returns `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE`, and
+  any other value `MUHTARI_STATUS_ERR_ARGUMENT`.
+- **Buttons and switches.** A set bit is pressed, or held. `buttons[]` takes the `MUHTARI_BUTTON_*` bits:
+  `MUHTARI_BUTTON_UP`, `MUHTARI_BUTTON_DOWN`, `MUHTARI_BUTTON_LEFT`, `MUHTARI_BUTTON_RIGHT`, `MUHTARI_BUTTON_1`
+  and `MUHTARI_BUTTON_2`. `switches` takes the `MUHTARI_SWITCH_*` bits: `MUHTARI_SWITCH_RESET`,
+  `MUHTARI_SWITCH_SELECT` and `MUHTARI_SWITCH_PAUSE` held, and the difficulty switches as positions,
+  `MUHTARI_SWITCH_LEFT_DIFFICULTY_A` and `MUHTARI_SWITCH_RIGHT_DIFFICULTY_A` set for A and clear for B. Any other
+  bit returns `MUHTARI_STATUS_ERR_ARGUMENT`. Opposing directions, such as up and down together, pass through to
+  the pins as pressed, as a worn stick can press them. `docs/hardware/controllers.md` gives the register bit each
+  one reaches.
+- **Timing.** The input is latched and reaches the machine at the next VBLANK start, which is where every frame
+  but the first after a load begins, so one frame sees one input. Two calls before that apply only the second.
+  A refused call changes nothing, and the pending input is not machine state.
+
+## Memory
+
+`muhtari_get_memory(m, kind, &span)` fills a `muhtari_span` with a live pointer into the machine and its length:
+
+| `kind` | Memory | Bytes |
+|---|---|---|
+| `MUHTARI_MEMORY_SYSTEM_RAM` | System RAM, $1800-$27FF | 4,096 |
+| `MUHTARI_MEMORY_RIOT_RAM` | The RIOT's RAM, $0480-$04FF | 128 |
+| `MUHTARI_MEMORY_CART_RAM` | The cartridge's RAM at $4000 | `ram_size`, or 0 |
+
+The pointer is not const: a host may write through it, for cheats or achievements. It is the one deliberate
+exception to the rule that no struct carries a pointer into the library's state, because libretro memory maps
+need live pointers. It stays valid from the load until `muhtari_destroy`, across frames and power cycles, except
+the cartridge RAM's, below. A kind the loaded content does not have, such as cartridge RAM on a cartridge without
+any, returns `MUHTARI_STATUS_OK` with a NULL `data` and zero `bytes`. Any other `kind` returns
+`MUHTARI_STATUS_ERR_ARGUMENT`.
+
+`MUHTARI_MEMORY_CART_RAM` is the RAM the cartridge info's `ram_size` names: 16,384 bytes on a SuperGame board with
+RAM, 32,768 with banked RAM (both halves, in order), and the list's size for a game the hash list knows. It lives in
+the cartridge's allocation, so a new load replaces it: ask again after each load. It starts zeroed, and a power cycle
+zeroes it again.
+
+## Counters
+
+`muhtari_get_counters` fills a `muhtari_counters`. `frames` counts the frames run since the last load or power
+cycle. `lag_frames` counts those in which the CPU read none of the input registers, SWCHA, SWCHB or INPT0-5:
+frames in which the game did not look at the controls. A read by MARIA's DMA is not a CPU read, so it does not
+count. With no content loaded every frame is a lag frame.
+
 ## Statuses
 
 `muhtari_status` is a `uint32_t`; the `MUHTARI_STATUS_*` names are constants of an unnamed enum, so the type has the
 same size on every target. In C++, a conditional expression that mixes the two, such as
 `ok ? st : MUHTARI_STATUS_ERR_ARGUMENT`, draws a warning under `g++ -Wextra` (an error with `-Werror`). Compare
 instead (`st == MUHTARI_STATUS_OK`), or cast the constant: `(muhtari_status)MUHTARI_STATUS_ERR_ARGUMENT`.
+
+Statuses are only ever added. Those after the probe's:
+
+| Status | Returned by | Meaning |
+|---|---|---|
+| `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` | `muhtari_run_frame` | The BIOS took its 2600 path. It stays until the next load or power cycle. |
+| `MUHTARI_STATUS_ERR_INVALID_BIOS` | `muhtari_load` | The BIOS is not 4,096 or 16,384 bytes, or its reset vector points outside it. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | The content resolves to PAL. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | `muhtari_set_input` | An explicit controller this version does not model. |
 
 ## Version numbers
 

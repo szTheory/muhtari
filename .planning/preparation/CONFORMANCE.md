@@ -48,6 +48,11 @@ Disposition key: **commit** (every byte explicitly permissive), **build-ci** (bu
 | simple | 32,896 / 32,768 | `d09da3ed27fe82e0a4dd2821ff2cb9bde26c9531c59890788acb1cfdc4004ecf` | `03a8b7be5d4cd122382582a4f41a94e3104c92191ecdf0a664f93e6802e46b29` |
 | pokey | 32,896 / 32,768 | `290bbd3ab77eb452d792d2e5d52c29b19004101611a62f9e1e5e1411c5fe8463` | `a0f10b15fdbf4e1804e5c1895d7a2b150edf169115bccd7078f64a14112d2aca` |
 
+*Note, 2026-10-20:* on the pinned wasmtime 48.0.6, the project's recipe (`tests/built/build.cmake`) builds `pokey`
+to `.a78` `a96b1dcea2659a57d3cadee7348469a837bbe1714d8bab78af0c07653d4cdd25` and `.bin`
+`de0180b203b4402d391d86672a21a48a36ecc52c5970378044279542739ab5a2`, on every leg; `tests/built/expected.txt` pins
+those. The `pokey` row above came from wasmtime 49 and is superseded. `simple` is unchanged.
+
 All 35 `sizes.ref` samples built in 12 s with sizes equal to the reference; no date strings in either ROM; the `7800sign` signature step is deterministic. Windows untested. `sizes.ref` and `make_test.sh` are in the repo, not the release package. The release tag is `03aebb85206f`; `e7c18d2ecdc6` is later master (2026-10-10).
 - **Recommendation:** every PR leg downloads the pinned wasmtime and package (~13 MB), builds the 35 samples with `sh 7800basic.sh`, and checks each ROM's SHA-256 before any emulator hash, so toolchain drift is reported as drift. **Strongest alternative:** build once on Linux and share the ROMs through the Actions cache (never artifacts, section 6). **Would change if:** a Windows leg produces different bytes, or the build takes over 60 s on a leg.
 

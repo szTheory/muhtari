@@ -51,3 +51,18 @@ calls.
   A request with the gate shut also returns 0. Name both reasons, as the NMI paragraph does.
 - IN-05 (test code, a seed): no test asserts the 1 for a request after a window ends (`halt_three_reads` discards
   it), or for an edge raised after the first latches.
+
+## Phase 3 outcome (2026-10-20)
+
+Phase 3's D-06 folded three findings in, and plan 03-19 marks them:
+
+- WR-05: closed by plan 03-03 (`f06d45f`, `78c0c4d`). `muhtari__bus_raise_nmi`'s 1 now means "queued for latching"
+  in `src/internal.h`, `src/bus.c` and docs/hardware/bus.md, and `bus.nmi.one_edge_at_a_time` pins a queued edge that
+  the latch drops under MEN = 0. No drop counter was added.
+- IN-04: closed by plan 03-02 (`d81b630`, `ef3ebbc`). docs/hardware/bus.md and the HALT comment name both reasons for
+  a 0: the gate is shut, or a window is already in flight. A 0 sets `dma_blocked`.
+- IN-01: closed by plan 03-02 (`b92ae0c`, `ef3ebbc`). `frame.jam_ends` and `frame.dma_off_ends` show that a frame ends on a
+  jammed ROM, and docs/hardware/sally.md's JAM sentence says only that.
+
+WR-02 (`cpu.jam.step_reads_ffff` leaves `poll_phi2` at 0) and IN-05 (no test asserts the 1 after a window ends) stay
+open as seeds. Both are test code, which AGENTS rule 7 routes to seeds, not requirements.

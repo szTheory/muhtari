@@ -142,7 +142,7 @@ Integer-only (`hygiene.no_float`, `nofp` preset, `abi.undefined`); no mutable gl
 |---|---|---|
 | `region` | AUTO (header, then hash, then NTSC), NTSC, PAL | [ARCH.04 §1.4] |
 | `ram_fill` | ZERO, SEEDED(u64 seed) | 4 KiB RAM + 128 B RIOT RAM, fixed integer generator [ARCH.01 §8] |
-| `cpu_phase` | 0–3: CPU-grid offset against t at MARIA enable | default = MiSTer's hand-off phase, extracted by RTL simulation in P3 [ARCH.01 §8] |
+| `cpu_phase` | 0–3: CPU-grid offset against t at MARIA enable | derived from C10 (hand-off at t 24, so 0); RTL check in v4.0 (DEC.41), 2026-10-20 [ARCH.01 §8] |
 | `tia_phase` | 0–455: TIA line counter at tick 0 | default 0; shared by TIA WSYNC and TIA audio [ARCH.03 TIA-1] |
 | `ane_lxa_constant` | $00, $EE | $EE only in the SingleStepTests lane [ARCH.07 §1] |
 | `pokey_power_on` | RUNNING (as if SKCTL = $03 at tick 0), INIT | §13 |

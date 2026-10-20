@@ -6,11 +6,12 @@
 # expect_fail.cmake, so it passes only on the exact exit status and verdict.
 # The date is fixed, so no case depends on the clock.
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
-  set(today 2026-01-02)
+  # 2026-01-02 UTC.
+  set(ENV{SOURCE_DATE_EPOCH} 1767312000)
 
   # Runs the gate with ARGN; requires exit code and output matching regex.
   function(gate code regex)
-    set(CMD ${CMAKE_COMMAND} -DROM=testcard -DTODAY=${today} ${ARGN} -P "${SCRIPT}")
+    set(CMD ${CMAKE_COMMAND} -DROM=testcard ${ARGN} -P "${SCRIPT}")
     set(CODE ${code})
     set(REGEX "${regex}")
     include(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../cmake/expect_fail.cmake)

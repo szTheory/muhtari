@@ -4,31 +4,47 @@
 device or input device, and prints hashes, writes PNG images or reports frame times. Scripts and CI use it to
 check that a build produces the expected picture.
 
-This release runs no cartridge, so every run shows the built-in test card (see [Test card](#test-card)).
-`--probe` reads a cartridge image and reports what it is, without running it (see [Probing an image](#probing-an-image)).
+Given a cartridge image FILE, it loads the image and starts it from the fast-boot hand-off, the state the
+console's BIOS leaves as it jumps to the cartridge, or, with `--boot bios --bios FILE`, through a BIOS image from
+power-on. Without one, every run shows the built-in test card (see
+[Test card](#test-card)). `--movie` replays recorded controller and console-switch input, one line per frame
+(see [Movies](#movies)). `--probe` reads a cartridge image and reports what it is, without running it (see
+[Probing an image](#probing-an-image)).
 
 ## Synopsis
 
 ```text
+muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE
 muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
-muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...
+muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]
+muhtari-run --movie FILE [--frames N | --bench N] [--hash-frame N]...
+            [--dump-frame N:FILE]... [[--rom] FILE]
+muhtari-run --frames N --boot bios --bios FILE [--hash-frame N]... [--rom] FILE
 muhtari-run --probe FILE
 muhtari-run --help | --version
 ```
+
+`--port1`, `--port2`, `--region`, `--boot` and `--bios` may be added to any run.
 
 ## Options
 
 | Option | Meaning |
 |---|---|
-| `--frames N` | Run N frames, N from 1 to 4294967295. Give `--frames` or `--bench`, once. |
+| `--frames N` | Run N frames, N from 1 to 4294967295. Give `--frames` or `--bench`, once; with `--movie`, the default is the movie's frame count. |
 | `--bench N` | Run N frames, time each one, and print the report described under [Output](#output). It keeps 4 bytes per frame, so where `size_t` has 32 bits an N of 1073741824 or more exits 1 as out of memory. |
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
+| `[--rom] FILE` | Load the cartridge image in FILE and run it. Give at most one FILE, with or without `--rom`. A refused image prints `muhtari-run: FILE: <message>` on standard error, with the messages of [Probing an image](#probing-an-image) or `unsupported region: PAL (planned)`, and runs no frame: a 2600 image, a board this version does not emulate or a PAL cartridge exits 77, and an image that is not a cartridge, is truncated or is too large exits 1. |
+| `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
+| `--port1 D`, `--port2 D` | The device on port 1 or port 2: `auto` (the cartridge's, the default), `proline`, `joystick` or `none`. With a movie, the movie's header names the devices, and a `D` other than `auto` that differs from it is a usage error. |
+| `--region R` | `auto` (the cartridge's, the default) or `ntsc`, which runs the cartridge as NTSC. `pal` is refused as a usage error until PAL is emulated. |
+| `--boot B` | `fast` (the default) starts the cartridge from the fast-boot hand-off; `bios` boots it through the BIOS given by `--bios`, from power-on. `bios` without `--bios`, or `--bios` without `bios`, is a usage error. With a movie, the movie's `boot` key decides, and a different `--boot` is a usage error. |
+| `--bios FILE` | The BIOS image `--boot bios` runs: 4,096 or 16,384 bytes whose reset vector points inside it. Its SHA-256 is printed on standard error as `bios_sha256 <hex>`. Any other file exits 1 with `muhtari-run: FILE: not a 4 KiB or 16 KiB BIOS image`. A cartridge the BIOS rejects exits 77 with `muhtari-run: FILE: the BIOS rejected the cartridge`, after the frame in which it did. |
 | `--probe FILE` | Identify the cartridge image in FILE and print its fields and hashes. It takes exactly one file and no other option. |
 | `--help` | Print the usage text and the exit statuses. It takes no other arguments. |
 | `--version` | Print `muhtari-run` and the version. It takes no other arguments. |
 
-Anything else on the command line, including a file name anywhere but after `--probe`, is a usage error.
+Anything else on the command line, including a second file name, is a usage error.
 
 ## Output
 
@@ -44,6 +60,32 @@ from the top. It is the same on every platform.
 
 `--dump-frame N:FILE` writes an unscaled 320×242 RGB PNG with 8 bits per channel, through the warm NTSC palette.
 The PNG carries no aspect-ratio metadata. The data is stored uncompressed, so each file is 232,645 bytes.
+
+With `--movie`, one more line follows the hash lines:
+
+```text
+lag_frames 30
+```
+
+It counts the frames in which the game read no controller or console switch (no CPU read of SWCHA, SWCHB or
+INPT0 to INPT5).
+
+With `--boot bios`, a line follows the hash lines, before `lag_frames`:
+
+```text
+handoff_frame 323
+```
+
+It is the hand-off frame: the frame of the first opcode fetch from cartridge space after the BIOS sets INPTCTRL's
+EXT bit, or `none` when no hand-off came in the frames run (`docs/embedding.md`, Booting with a BIOS). The runner
+reads it through an internal call of the core, not the public API. The public header holds only what an embedder
+needs, and the hand-off frame is a test and diagnostic observable; the runner is built in this tree against the
+static library, and already uses the core's internal SHA-1 the same way. The BIOS digest line goes to standard
+error, before any frame runs:
+
+```text
+bios_sha256 46b5bc2b716a20a1c40e2b920365c29cbab1594d01da94f4567b240181365cb2
+```
 
 `--bench N` prints nine `key value` lines after the run:
 
@@ -95,6 +137,72 @@ When the image is refused, standard error gets `muhtari-run: FILE: <message>`, a
 
 A file that cannot be opened or read exits 1 with `cannot open` or `cannot read`.
 
+## Movies
+
+A movie is a text file in the `muhtari-movie 1` format: a header, then one line per frame.
+
+```text
+muhtari-movie 1
+# Up held on port 1 for two frames, then Reset pressed
+port1 proline
+port2 joystick
+|......|.....|...BB|
+|U.....|.....|...BB|
+|U.....|.....|...BB|
+|......|.....|R..BB|
+```
+
+The first line is exactly `muhtari-movie 1`. Header lines follow, each a key, one space and a value, in any
+order and each key once. Blank lines and lines starting with `#` are allowed in the header only.
+
+| Key | Value |
+|---|---|
+| `port1`, `port2` | Required: `proline`, `joystick` or `none`. |
+| `rom-sha256` | Optional: 64 hex digits, the cartridge's headerless SHA-256, as `--probe` prints in `sha256_headerless`. A different cartridge exits 1, naming both digests. |
+| `region` | Optional: `ntsc`. `pal` is refused. |
+| `boot` | Optional: `fast` or `bios`; `bios` also needs a `bios-sha256` line. `bios` boots through the BIOS given by `--bios FILE`, and exits 2 without it. |
+| `bios-sha256` | Optional: 64 hex digits, the BIOS file's SHA-256. With `boot bios`, a `--bios` file with another digest exits 1 before any frame runs, naming both digests. |
+| `behaviour` | Optional: the core behaviour revision the movie was recorded on, 1 to 999999999. A different revision prints one warning on standard error, and the replay continues. |
+
+The first line starting with `|` ends the header; every later line is a frame line. A frame line has three fields,
+port 1, port 2 and the console, each closed by `|`. Each position holds its letter when the button or switch is
+held, or `.` when it is not:
+
+| Field | Positions |
+|---|---|
+| ProLine | `UDLR12`: up, down, left, right, button 1 (right), button 2 (left) |
+| Joystick | `UDLR1`: up, down, left, right, fire |
+| `none` | empty |
+| Console | `RSP`: Reset, Select and Pause, then the left and right difficulty switches as `A` or `B` |
+
+The difficulty switches are positions, not presses: each line gives where both switches stand.
+
+**Timing.** Line k after the header is the input of frame k: the runner sets it before running frame k, and the
+console reads it from the start of vertical blank that opens frame k. Under the fast boot, frame 1 opens at the
+hand-off, not at a vertical blank, so the first frame line reaches no game; put a movie's first input on its second
+line. Under `boot bios`, frame 1 opens at power-on, line 0, which lies inside vertical blank but not at its start;
+the console reads line 1 from power-on, as what is held when the power comes on, so line 1 counts. OpenBIOS first
+reads the console switches in frame 3, so Pause held on lines 1 to 3 skips its splash.
+
+**Length.** `--frames` defaults to the number of frame lines. When `--frames` runs past the last line, every
+button and console switch is released, and the difficulty switches stay where the last line put them.
+
+**Precedence.** The header wins over the command line. `--port1`, `--port2`, `--region` or `--boot` naming a
+different value from the header's exits 2; `auto`, or the same value, is accepted.
+
+**Limits.** A movie is at most 33,554,432 bytes (32 MiB), 1,000,000 frame lines and 32 header lines, counting
+the first. A line is at most 64 bytes, except a `rom-sha256` or `bios-sha256` line, which is its key, a space and
+64 hex digits. Only printable ASCII is allowed, with lines ending in LF or CR LF; a lone CR, a NUL, a byte order
+mark or a byte above `$7F` is refused. Unknown keys, repeated keys and values outside each key's set are refused
+by name.
+
+A refused movie runs no frame. It exits 1 with one line on standard error naming the first fault in the file, its
+line and its column, both counted from 1:
+
+```text
+muhtari-run: run.txt:4:2: letter out of place, expected U or .
+```
+
 ## Stopping
 
 SIGINT (Ctrl+C) or SIGTERM ends the run after the frame in progress. That frame's hash and PNG are still written,
@@ -107,9 +215,9 @@ ignored when the runner started, as under `nohup`, stays ignored.
 
 ```text
   0  done     every frame ran, or SIGINT or SIGTERM stopped the run after a whole frame
-  1  failure  a file could not be read or written, an image is malformed, truncated or too large, memory ran out or the core failed
-  2  usage    the command line is invalid, so nothing ran
- 77  refused  the image is a 2600 cartridge or uses a board this version does not emulate
+  1  failure  a file could not be read or written, an image or a movie is malformed, truncated or too large, a BIOS is invalid, a movie names another cartridge or BIOS, memory ran out or the core failed
+  2  usage    the command line is invalid or conflicts with the movie's header, so nothing ran
+ 77  refused  the image is a 2600 cartridge, or uses a board or a region this version does not emulate, or the BIOS rejected it
 ```
 
 Errors and usage messages go to standard error; standard output holds only the results above.

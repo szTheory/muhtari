@@ -29,6 +29,14 @@ const char *muhtari__status_text(muhtari_status status)
         return "unsupported: 2600 (planned)";
     case MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD:
         return "unsupported board";
+    case MUHTARI_STATUS_ERR_BIOS_REJECTED_CART:
+        return "the BIOS rejected the cartridge";
+    case MUHTARI_STATUS_ERR_INVALID_BIOS:
+        return "not a 4 KiB or 16 KiB BIOS image";
+    case MUHTARI_STATUS_ERR_UNSUPPORTED_REGION:
+        return "unsupported region: PAL (planned)";
+    case MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE:
+        return "unsupported controller";
     }
     return "unknown status";
 }

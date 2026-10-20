@@ -1,0 +1,21 @@
+# Feature to ROM claims for basic.coverage (docs/emulation-tests.md,
+# coverage): "feature rom...", where a ROM is 7800basic/<sample> or
+# diag/<name>. A claim passes only when the probe or the core's feature mask
+# shows the feature for that ROM, and every feature needs a line.
+board-linear16 diag/linear16 diag/dma
+board-linear32 7800basic/simple 7800basic/adventurer
+board-linear48 7800basic/smasteroids 7800basic/rmtromdemo
+board-supergame diag/modes
+board-supergame-ram 7800basic/doublebuffer 7800basic/onehundredandone
+board-bank6 diag/bank6
+board-sg144 diag/sg144
+rm0 7800basic/simple 7800basic/adventurer
+rm2 diag/modes
+rm3 7800basic/atarivoxspeech 7800basic/spacephysics
+write-mode 7800basic/spacephysics diag/modes
+kangaroo diag/modes
+holey8 diag/dma 7800basic/simple
+holey16 diag/dma 7800basic/adventurer
+indirect1 7800basic/atarivoxspeech diag/dma
+indirect2 7800basic/adventurer diag/modes
+dli 7800basic/simple diag/dli

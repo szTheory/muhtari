@@ -75,10 +75,24 @@ static uint8_t riot_flags_read(muhtari *m)
     return v;
 }
 
-/* PA7's level: ORA's bit on an output pin, high on an input pin. */
-static uint8_t riot_pa7_level(const struct muhtari__riot *r)
+/* A port reads its output register on output pins and the pin on input
+   pins (docs/hardware/riot.md, Ports). */
+static uint8_t riot_port(uint8_t out, uint8_t ddr, uint8_t pins)
 {
-    return (uint8_t)((((r->ora & r->ddra) | (uint8_t)~r->ddra) >> 7) & 1u);
+    return (uint8_t)((out & ddr) | (pins & (uint8_t)~ddr));
+}
+
+/* Port A as it reads, with the controllers' pins on its input pins. */
+static uint8_t riot_port_a(const muhtari *m)
+{
+    return riot_port(m->riot.ora, m->riot.ddra, muhtari__ports_swcha(m));
+}
+
+/* PA7's level: ORA's bit on an output pin, the right direction of port 0's
+   controller on an input pin. */
+static uint8_t riot_pa7_level(const muhtari *m)
+{
+    return (uint8_t)((riot_port_a(m) >> 7) & 1u);
 }
 
 /* The edge detector sees PA7 through the polarity: its input is the level
@@ -86,21 +100,19 @@ static uint8_t riot_pa7_level(const struct muhtari__riot *r)
    flag sets when that input falls. So an active edge sets it whether PA7 is
    an input or an output, and so may a polarity change (docs/hardware/riot.md,
    PA7). */
-static void riot_pa7_update(struct muhtari__riot *r)
+static void riot_pa7_update(muhtari *m)
 {
-    uint8_t detect = (uint8_t)(riot_pa7_level(r) ^ r->pa7_positive);
+    struct muhtari__riot *r = &m->riot;
+    uint8_t detect = (uint8_t)(riot_pa7_level(m) ^ r->pa7_positive);
     if (r->pa7_detect != 0u && detect == 0u) {
         r->pa7_flag = 1u;
     }
     r->pa7_detect = detect;
 }
 
-/* A port reads its output register on output pins and the pin on input
-   pins, and every input pin reads high: nothing drives them yet
-   (docs/hardware/riot.md, Ports). */
-static uint8_t riot_port(uint8_t out, uint8_t ddr)
+void muhtari__riot_pins_changed(muhtari *m)
 {
-    return (uint8_t)((out & ddr) | (uint8_t)~ddr);
+    riot_pa7_update(m);
 }
 
 static uint8_t riot_io_read(const muhtari *m, uint16_t addr)
@@ -108,11 +120,11 @@ static uint8_t riot_io_read(const muhtari *m, uint16_t addr)
     const struct muhtari__riot *r = &m->riot;
     switch (addr & 0x03u) {
     case 0u:
-        return riot_port(r->ora, r->ddra);
+        return riot_port_a(m);
     case 1u:
         return r->ddra;
     case 2u:
-        return riot_port(r->orb, r->ddrb);
+        return riot_port(r->orb, r->ddrb, muhtari__ports_swchb(m));
     default:
         return r->ddrb;
     }
@@ -135,7 +147,7 @@ static void riot_io_write(muhtari *m, uint16_t addr, uint8_t v)
         r->ddrb = v;
         break;
     }
-    riot_pa7_update(r);
+    riot_pa7_update(m);
 }
 
 uint8_t muhtari__riot_read(muhtari *m, uint16_t addr)
@@ -150,6 +162,22 @@ uint8_t muhtari__riot_read(muhtari *m, uint16_t addr)
         return riot_timer_read(m);
     }
     return riot_flags_read(m);
+}
+
+/* What riot_read returns, without clearing a flag. */
+uint8_t muhtari__riot_peek(const muhtari *m, uint16_t addr)
+{
+    if ((addr & RIOT_RS) == 0u) {
+        return m->riot.ram[addr & (MUHTARI__RIOT_RAM_SIZE - 1u)];
+    }
+    if ((addr & RIOT_A2) == 0u) {
+        return riot_io_read(m, addr);
+    }
+    if ((addr & 0x01u) == 0u) {
+        return riot_intim(m);
+    }
+    return (uint8_t)((riot_timer_flag(m) ? 0x80u : 0x00u) |
+                     (m->riot.pa7_flag != 0u ? 0x40u : 0x00u));
 }
 
 void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v)
@@ -173,7 +201,7 @@ void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v)
     /* An edge control write: A0 selects the rising edge; its data, and A1's
        interrupt enable, reach nothing, as the RIOT's IRQ is unconnected. */
     r->pa7_positive = (uint8_t)(addr & 0x01u);
-    riot_pa7_update(r);
+    riot_pa7_update(m);
 }
 
 /* RES zeroes the four I/O registers, though the profile may say port B's
@@ -197,5 +225,7 @@ void muhtari__riot_reset(muhtari *m)
     r->timer_cleared = 0u;
     r->pa7_flag = 0u;
     r->pa7_positive = 0u;
-    r->pa7_detect = 1u;
+    /* The detector starts at PA7's level, so a direction held through a
+       reset is no edge. */
+    r->pa7_detect = riot_pa7_level(m);
 }

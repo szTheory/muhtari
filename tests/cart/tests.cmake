@@ -32,7 +32,7 @@ foreach(cart_case IN ITEMS probe.accepted probe.arguments probe.oversized probe.
     LABELS cart portable TIMEOUT 10)
 endforeach()
 
-# The stripped 7800basic sample that built.samples writes resolves through
+# The stripped 7800basic sample that built.simple writes resolves through
 # the test list (tests/built/).
 muhtari_add_test(NAME cart.identify.test_list
   COMMAND muhtari-test-cart identify.test_list ${PROJECT_BINARY_DIR}/built/simple/simple.bas.bin

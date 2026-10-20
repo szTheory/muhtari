@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define MUHTARI_API_VERSION 2
+#define MUHTARI_API_VERSION 3
 #define MUHTARI_IMAGE_SIZE_MAX 1048704u /* 1 MiB of ROM plus a 128-byte header */
 
 typedef uint32_t muhtari_status;
@@ -23,7 +23,11 @@ enum {
     MUHTARI_STATUS_ERR_TRUNCATED_IMAGE = 6,
     MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE = 7,
     MUHTARI_STATUS_ERR_UNSUPPORTED_2600 = 8,
-    MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD = 9
+    MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD = 9,
+    MUHTARI_STATUS_ERR_BIOS_REJECTED_CART = 10, /* run_frame: the BIOS took its 2600 path */
+    MUHTARI_STATUS_ERR_INVALID_BIOS = 11,       /* not 4,096 or 16,384 bytes, or a bad vector */
+    MUHTARI_STATUS_ERR_UNSUPPORTED_REGION = 12, /* resolves to PAL */
+    MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE = 13  /* an explicit device this version lacks */
 };
 
 typedef struct muhtari muhtari;
@@ -42,7 +46,7 @@ typedef struct muhtari_config {
 typedef struct muhtari_versions {
     uint32_t size;
     uint32_t library_major, library_minor, library_patch;
-    uint32_t api;                /* 1 */
+    uint32_t api;                /* MUHTARI_API_VERSION */
     uint32_t abi;                /* 1 */
     uint32_t behaviour_revision; /* 1 */
 } muhtari_versions;
@@ -62,7 +66,7 @@ typedef struct muhtari_frame {
     uint8_t *video;          /* in: NULL skips video */
     int16_t *audio;          /* in: NULL skips audio */
     uint32_t audio_capacity; /* in */
-    uint32_t audio_count;    /* out: samples this frame (800 or 801) */
+    uint32_t audio_count;    /* out: samples this frame, at most max_audio_samples */
 } muhtari_frame;
 
 muhtari_status muhtari_get_versions(muhtari_versions *out);
@@ -115,7 +119,8 @@ enum { /* the A78 byte 55/56 codes */
        MUHTARI_PORT_AMIGA_MOUSE = 9,
        MUHTARI_PORT_ATARIVOX = 10,
        MUHTARI_PORT_SNES2ATARI = 11,
-       MUHTARI_PORT_MEGA7800 = 12
+       MUHTARI_PORT_MEGA7800 = 12,
+       MUHTARI_PORT_UNPLUGGED = 256 /* outside the A78 byte range */
 };
 enum { MUHTARI_REGION_NTSC = 1, MUHTARI_REGION_PAL = 2 };
 enum { MUHTARI_CART_HEADER = 1u, MUHTARI_CART_HASH_MATCH = 2u };
@@ -163,6 +168,59 @@ typedef struct muhtari_cart_info {
 } muhtari_cart_info;
 
 muhtari_status muhtari_probe(const void *image, size_t n, muhtari_cart_info *out);
+
+typedef struct muhtari_media {
+    uint32_t size;
+    uint32_t region;   /* 0: the cartridge's; MUHTARI_REGION_* */
+    const void *image; /* copied at load */
+    size_t image_size;
+    const void *bios; /* NULL: fast boot; copied at load */
+    size_t bios_size;
+} muhtari_media;
+
+muhtari_status muhtari_load(muhtari *m, const muhtari_media *media);
+muhtari_status muhtari_power_cycle(muhtari *m);
+
+enum {
+    MUHTARI_BUTTON_UP = 1u,
+    MUHTARI_BUTTON_DOWN = 2u,
+    MUHTARI_BUTTON_LEFT = 4u,
+    MUHTARI_BUTTON_RIGHT = 8u,
+    MUHTARI_BUTTON_1 = 16u,
+    MUHTARI_BUTTON_2 = 32u
+};
+enum {
+    MUHTARI_SWITCH_RESET = 1u,
+    MUHTARI_SWITCH_SELECT = 2u,
+    MUHTARI_SWITCH_PAUSE = 4u,
+    MUHTARI_SWITCH_LEFT_DIFFICULTY_A = 8u,
+    MUHTARI_SWITCH_RIGHT_DIFFICULTY_A = 16u
+};
+
+typedef struct muhtari_input {
+    uint32_t size;
+    uint32_t device[2];  /* 0: the cartridge's; MUHTARI_PORT_PROLINE, _JOYSTICK, _UNPLUGGED */
+    uint32_t buttons[2]; /* MUHTARI_BUTTON_*, pressed = 1 */
+    uint32_t switches;   /* MUHTARI_SWITCH_*: held = 1; a difficulty bit set = A */
+} muhtari_input;
+
+enum { MUHTARI_MEMORY_SYSTEM_RAM = 1, MUHTARI_MEMORY_RIOT_RAM = 2, MUHTARI_MEMORY_CART_RAM = 3 };
+
+typedef struct muhtari_span {
+    uint32_t size;
+    uint8_t *data; /* until the next load or destroy; NULL when absent */
+    size_t bytes;
+} muhtari_span;
+
+typedef struct muhtari_counters {
+    uint32_t size;
+    uint64_t frames;     /* since load or power cycle */
+    uint64_t lag_frames; /* frames with no CPU read of SWCHA, SWCHB or INPT0-5 */
+} muhtari_counters;
+
+muhtari_status muhtari_set_input(muhtari *m, const muhtari_input *in);
+muhtari_status muhtari_get_memory(muhtari *m, uint32_t kind, muhtari_span *out);
+muhtari_status muhtari_get_counters(const muhtari *m, muhtari_counters *out);
 
 #ifdef __cplusplus
 }

@@ -45,7 +45,7 @@ jobs:
   # name, is under .planning/; then the heavy jobs are skipped.
   changes:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 8 s in 13 runs, run 39195625395
+    timeout-minutes: 5  # network-bound floor; slowest 10 s in 31 runs, run 39364791699
     permissions:
       contents: read
       pull-requests: read
@@ -75,7 +75,7 @@ jobs:
   # The image has clang-format-21, clang-tidy-21 and jq; configure finds them.
   hygiene:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 27 s in 13 runs, run 39198577488
+    timeout-minutes: 5  # network-bound floor; slowest 56 s in 31 runs, run 39380164010
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -95,7 +95,7 @@ jobs:
   title:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 11 s in 29 runs, run 38955531324
+    timeout-minutes: 5  # network-bound floor; slowest 11 s in 27 runs, run 39350776083
     permissions:
       contents: read
       pull-requests: read
@@ -118,7 +118,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 5  # network-bound floor; slowest leg 84 s in 13 runs, run 39197902638
+    timeout-minutes: 5  # network-bound floor; slowest leg 131 s in 31 runs, run 39382016958
     strategy:
       fail-fast: false
       matrix:
@@ -144,14 +144,17 @@ jobs:
           $arch = if ($env:RUNNER_ARCH -eq 'ARM64') { 'arm64' } else { 'x64' }
           cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" $arch && set" |
             ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { "$($Matches[1])=$($Matches[2])" >> $env:GITHUB_ENV } }
-      # built.samples builds 7800basic's sample with these (tests/built/);
-      # configure stops when either is missing.
-      - name: Fetch wasmtime and 7800basic
+      # built.<name> builds 7800basic's samples and OpenBIOS with these
+      # (tests/built/), libretro.rcheevos compiles rcheevos' resolver;
+      # configure stops when any is missing.
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
         env:
           WASMTIME: wasmtime-${{ matrix.wasmtime }}
         run: |
           scripts/fetch-pin.sh "$WASMTIME" build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Build, test, package
         run: cmake --workflow --preset ${{ matrix.preset }}
       - name: Every test ran
@@ -186,7 +189,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 35 s in 13 runs, run 39198234113
+    timeout-minutes: 5  # network-bound floor; slowest 71 s in 31 runs, run 39368351340
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -195,10 +198,12 @@ jobs:
       # clang-21 is on the image; its sanitizer runtimes may not be.
       - name: Sanitizer runtimes
         run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y libclang-rt-21-dev; }
-      - name: Fetch wasmtime and 7800basic
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
         run: |
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - run: cmake --workflow --preset asan
       # The abi and release checks read binary shapes the instrumentation changes.
       - name: Every test ran
@@ -211,7 +216,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: nofp (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 1  # 2 x 21 s, slowest leg of 13 runs, run 39198577488
+    timeout-minutes: 1  # 2 x 22 s, slowest leg of 31 runs, run 39382016958
     strategy:
       fail-fast: false
       matrix:
@@ -231,16 +236,18 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 45 s in 13 runs, run 39198577488
+    timeout-minutes: 7  # 2 x 184 s, slowest of 31 runs, run 39377950148
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
-      - name: Fetch wasmtime and 7800basic
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
         run: |
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Cross compiler and qemu-user
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - run: cmake --workflow --preset be32
@@ -260,7 +267,7 @@ jobs:
     needs: [changes, build, be32]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # roll-up floor; slowest 7 s in 13 runs, run 39198407537
+    timeout-minutes: 5  # roll-up floor; slowest 9 s in 31 runs, run 39359891337
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -281,7 +288,7 @@ jobs:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 34 s in 13 runs, run 39197902638
+    timeout-minutes: 5  # network-bound floor; slowest 63 s in 31 runs, run 39377950148
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -292,6 +299,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y --no-install-recommends wasi-libc libclang-rt-21-dev-wasm32
           scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
       - run: cmake --workflow --preset wasm32
       - name: Every test ran
         run: >-
@@ -309,15 +317,50 @@ jobs:
       - name: Same hashes as Linux x64
         run: cmp hashes-linux-x64/hashes.txt build/wasm32/hashes.txt
 
-  # A real frontend shows the same frame the runner hashes: RetroArch from
-  # the pinned DMG runs the built core with no content, and its screenshot,
-  # decoded by sips, equals the runner's frame pixel for pixel. A CI step,
-  # not a CTest, so nothing skips itself off macOS.
+  # The compatibility ledger judged afresh: every pr-tier row on its built
+  # sample or diagnostic, on the fast boot and through OpenBIOS, then the
+  # ratchet against the pull request's base ledger (docs/emulation-tests.md,
+  # ledger). The full history is fetched for git show of the base. Report-only:
+  # not in CI required's needs until it has 10 green runs on main.
+  library:
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5  # network-bound floor; slowest 34 s in 7 runs, run 39379798527; provisional
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || '' }}
+          fetch-depth: 0
+      - name: Fetch wasmtime, 7800basic, OpenBIOS and rcheevos
+        run: |
+          scripts/fetch-pin.sh wasmtime-x86_64-linux build/pins/wasmtime
+          scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+          scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+          scripts/fetch-pin.sh rcheevos build/pins/rcheevos
+      - name: Build the samples and OpenBIOS
+        run: |
+          cmake --preset ci
+          cmake --build --preset ci
+          ctest --preset ci -L '^built$'
+      - name: Judge the ledger
+        env:
+          MUHTARI_ROM_DIR: build/ci/built
+          MUHTARI_LEDGER_BASE: ${{ github.event.pull_request.base.sha }}
+        run: cmake --workflow --preset library
+      - name: Every test ran
+        run: cmake -DJUNIT=build/library/junit.xml -DINVENTORY=tests/inventory/library.txt -P tests/cmake/check_junit.cmake
+
+  # A real frontend shows the frames the runner hashes: RetroArch from the
+  # pinned DMG runs the built core with no content and on the dma diagnostic
+  # with an empty system directory; each screenshot, decoded by sips, equals
+  # the runner's frame, whose dma hash is the ledger's. A CI step, not a CTest.
   retroarch:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: macos-15
-    timeout-minutes: 5  # network-bound floor; slowest 29 s in 13 runs, run 39198079849
+    timeout-minutes: 5  # network-bound floor; slowest 36 s in 31 runs, run 39366784570
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -346,17 +389,27 @@ jobs:
           -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info
           -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra" -DFRAMES=5
           "-DSHOT=$PWD/build/frames/shot.png" -P tests/retroarch/run_retroarch.cmake
-      - name: The screenshot equals the runner's frame
+      - name: RetroArch runs the dma diagnostic
+        run: >-
+          cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch
+          -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info
+          -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-dma" -DFRAMES=120 -DROM=tests/diag/dma.a78
+          "-DSHOT=$PWD/build/frames/dma-shot.png" -P tests/retroarch/run_retroarch.cmake
+      - name: The screenshots equal the runner's frames
         working-directory: build/frames
         run: |
           ../runner/bin/muhtari-run --frames 5 --dump-frame 5:runner.png
-          for f in runner shot; do
+          ../runner/bin/muhtari-run --frames 120 --dump-frame 120:dma-runner.png --hash-frame 120 ../../tests/diag/dma.a78 | tee hash.txt
+          grep "^diag/dma,.*,title@120=$(cut -d' ' -f4 hash.txt)," ../../tests/compat/ledger.csv
+          for f in runner shot dma-runner dma-shot; do
             sips --deleteColorManagementProperties "$f.png" > /dev/null
             sips -s format bmp "$f.png" --out "$f.bmp" > /dev/null
           done
           cc -std=c17 -O2 -Wall -Wextra -Werror -o compare ../../tests/retroarch/bmp.c ../../tests/retroarch/compare.c
-          ./compare runner.bmp shot.bmp | tee compare.txt
-          grep -q '^320x242, every pixel equal$' compare.txt
+          for pair in runner:shot dma-runner:dma-shot; do
+            ./compare "${pair%:*}.bmp" "${pair#*:}.bmp" | tee compare.txt
+            grep -q '^320x242, every pixel equal$' compare.txt
+          done
       # Fault prevented: a compare that cannot fail. One byte of pixel (7,3)
       # in a copy of the runner's BMP is inverted, at an offset read from
       # the BMP header; the tool must exit 1 naming exactly that pixel.
@@ -378,7 +431,12 @@ jobs:
           case $out in "first difference at $x,$y: "*) ;; *) exit 1 ;; esac
       - name: RetroArch log
         if: failure()
-        run: cat build/ra/retroarch.log || true
+        run: cat build/ra/retroarch.log build/ra-dma/retroarch.log || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: retroarch-frames
+          path: build/frames/*.png
 
   # Cachegrind instructions per frame of the test card, the pull request's
   # merge commit against its first parent measured twice (docs/testing.md,
@@ -390,7 +448,7 @@ jobs:
     needs: changes
     if: ${{ !inputs.ref && needs.changes.outputs.heavy == 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 29 s in 13 runs, run 39198079849
+    timeout-minutes: 5  # network-bound floor; slowest 58 s in 31 runs, run 39382016958
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -469,7 +527,7 @@ jobs:
           fi
           rc=0
           cmake -DROM=testcard "-DHEAD=$head" "-DBASE1=$base1" "-DBASE2=$base2" -DALLOW=tests/perf/allow.txt \
-            "-DARMED=$MUHTARI_PERF_ARMED" "-DTODAY=$(date -u +%Y-%m-%d)" "-DNO_BASE=$NO_BASE" \
+            "-DARMED=$MUHTARI_PERF_ARMED" "-DNO_BASE=$NO_BASE" \
             -P tests/cmake/perf_compare.cmake > perf.txt 2>&1 || rc=$?
           cat perf.txt
           grep '^perf ' perf.txt >> "$GITHUB_STEP_SUMMARY" || true
@@ -485,7 +543,7 @@ jobs:
     if: always()
     needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality, retroarch, perf]
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # roll-up floor; slowest 4 s in 13 runs, run 39197713488
+    timeout-minutes: 5  # roll-up floor; slowest 4 s in 31 runs, run 39382016958
     steps:
       - name: Every job succeeded or was skipped as allowed
         env:

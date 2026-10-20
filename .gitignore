@@ -1,6 +1,7 @@
 # Game, BIOS and save images never enter this repository. Licensed test
 # fixtures are the one exception: they live under tests/roms/ (and the assembled
-# decimal mode test under tests/cpu/decimal/), each is listed in
+# decimal mode test under tests/cpu/decimal/ and our own diagnostics under
+# tests/diag/), each is listed in
 # tests/roms/manifest.txt, and scripts/hygiene.sh rejects any image not listed.
 *.a78
 *.a26
@@ -13,6 +14,7 @@
 *.eeprom
 !/tests/roms/**
 !/tests/cpu/decimal/*.bin
+!/tests/diag/*.a78
 /roms/
 /bios/
 /private/

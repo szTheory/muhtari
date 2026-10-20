@@ -1,5 +1,5 @@
 # Roll-up check, run as
-#   cmake -DCI_YML=<ci.yml> -DJQ=<jq> [-DREPORT_ONLY=<jobs>] -P ci_required.cmake
+#   cmake -DCI_YML=<ci.yml> -DJQ=<jq> [-DREPORT_ONLY=<job,job...>] -P ci_required.cmake
 # Fault prevented: a CI required roll-up that passes a failed or wrongly
 # skipped job, or a job missing from its needs. It runs the jq program of the
 # CI required step, with the step's own arguments, on synthetic needs, and
@@ -16,6 +16,7 @@ string(FIND "${yml}" "name: CI required" job_at)
 if(at EQUAL -1 OR job_at EQUAL -1)
   message(FATAL_ERROR "ci_required: ${CI_YML} has no jobs or no CI required job")
 endif()
+string(REPLACE "," ";" REPORT_ONLY "${REPORT_ONLY}")
 string(SUBSTRING "${yml}" ${at} -1 jobs)
 string(SUBSTRING "${yml}" ${job_at} -1 job)
 if(NOT job MATCHES "needs: \\[([^]]*)\\]")

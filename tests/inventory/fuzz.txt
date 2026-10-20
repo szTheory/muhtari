@@ -2,4 +2,7 @@
 # Sorted; configure fails when this differs from what is registered.
 fuzz.loader	fuzz
 fuzz.regress.loader	fuzz
+fuzz.regress.run	fuzz
+fuzz.run	fuzz
+fuzz.run.seeds	fuzz
 fuzz.seeds	fuzz

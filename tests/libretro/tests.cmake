@@ -8,10 +8,30 @@ muhtari_add_test(NAME libretro.vendored
 
 # The rest needs the built core.
 if(TARGET muhtari_libretro)
-  add_executable(muhtari-test-libretro-host ${CMAKE_CURRENT_LIST_DIR}/host.c)
-  target_include_directories(muhtari-test-libretro-host PRIVATE ${PROJECT_SOURCE_DIR}/libretro)
+  # Fault prevented: unusable BIOS candidates hiding the next file, or
+  # allocation/I/O/path failures being mistaken for missing firmware.
+  add_executable(muhtari-test-libretro-bios ${CMAKE_CURRENT_LIST_DIR}/bios.c
+    ${PROJECT_SOURCE_DIR}/tests/cart/images.c ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+  target_include_directories(muhtari-test-libretro-bios PRIVATE ${PROJECT_SOURCE_DIR}/libretro
+    ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/runner ${PROJECT_BINARY_DIR}/generated)
+  target_compile_definitions(muhtari-test-libretro-bios PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+  target_link_libraries(muhtari-test-libretro-bios PRIVATE muhtari::muhtari muhtari_host)
+  set_target_properties(muhtari-test-libretro-bios PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-libretro-bios)
+  muhtari_add_test(NAME libretro.bios_failures COMMAND muhtari-test-libretro-bios
+    LABELS libretro portable TIMEOUT 10)
+
+  add_executable(muhtari-test-libretro-host ${CMAKE_CURRENT_LIST_DIR}/host.c
+    ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+  target_include_directories(muhtari-test-libretro-host PRIVATE ${PROJECT_SOURCE_DIR}/libretro
+    ${PROJECT_SOURCE_DIR}/runner)
   target_link_libraries(muhtari-test-libretro-host PRIVATE
     muhtari::muhtari muhtari_host ${CMAKE_DL_LIBS})
+  # MSVC deprecates ISO C's fopen for its _s forms.
+  target_compile_definitions(muhtari-test-libretro-host PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   set_target_properties(muhtari-test-libretro-host PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-libretro-host)
@@ -23,6 +43,90 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.host.rgb565
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro_rgb565> rgb565
     LABELS libretro portable TIMEOUT 30)
+  # Fault prevented: a RetroPad press that never reaches the register the
+  # cartridge reads, or content the core cannot load from memory.
+  set(libretro_input_cart ${PROJECT_BINARY_DIR}/tests/input-carts/input.a78)
+  muhtari_add_test(NAME libretro.host.input
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> input ${libretro_input_cart}
+    LABELS libretro portable TIMEOUT 1)  # 2 x 0.02 s, Windows x64, slowest of 10 runs, run 39381705491
+  set_tests_properties(libretro.host.input PROPERTIES FIXTURES_REQUIRED input_carts)
+  # Fault prevented: a control, device, option or Restart that behaves
+  # otherwise than the RetroPad layout and options docs/libretro.md lists.
+  foreach(libretro_case IN ITEMS layout devices reset options)
+    muhtari_add_test(NAME libretro.host.${libretro_case}
+      COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> ${libretro_case}
+        ${libretro_input_cart}
+      LABELS libretro portable TIMEOUT 1)  # 2 x 0.10 s, macOS x64, slowest of 10 runs, run 39382016958
+    set_tests_properties(libretro.host.${libretro_case} PROPERTIES FIXTURES_REQUIRED input_carts)
+  endforeach()
+  # Fault prevented: a BIOS file in the system directory that is ignored,
+  # unlogged, or missing without a fast-boot fallback. The case writes the
+  # file into its own directory under both names and removes it again.
+  set(libretro_system ${PROJECT_BINARY_DIR}/tests/libretro-system)
+  file(MAKE_DIRECTORY ${libretro_system})
+  muhtari_add_test(NAME libretro.host.bios
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> bios
+      ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78 ${MUHTARI_BUILT_DIR}/openbios/openbios.bin
+      ${libretro_system}
+    LABELS libretro portable TIMEOUT 8)  # 2 x 3.53 s, macOS x64, slowest of 10 runs, run 39382016958
+  set_tests_properties(libretro.host.bios PROPERTIES
+    FIXTURES_REQUIRED "built_simple;built_openbios")
+  # Fault prevented: an achievement map that points rcheevos at the wrong
+  # bytes, a register, or a banked window.
+  muhtari_add_test(NAME libretro.host.memory_map
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> memory_map
+      ${libretro_input_cart} ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
+      ${PROJECT_SOURCE_DIR}/tests/diag/sg144.a78
+    LABELS libretro portable TIMEOUT 1)  # 2 x 0.08 s, Linux x64, slowest of 10 runs, run 39373524239
+  set_tests_properties(libretro.host.memory_map PROPERTIES
+    FIXTURES_REQUIRED "input_carts;built_doublebuffer")
+
+  # rcheevos' resolver over the core's real map (rcheevos v12.1.0, MIT,
+  # fetched by pins.txt, never vendored or shipped). Its three files build
+  # with warnings and sanitizers off, for this target only (rc_libretro.c
+  # adds an offset to a null region pointer, which UBSan reports); the two
+  # rhash functions rc_libretro.c calls are stubbed. libretro.c is compiled into the test with
+  # MUHTARI_LIBRETRO_TEST, which adds the accessor to its instance.
+  # Fault prevented: a map that RetroArch's achievements read wrongly: a
+  # pointer off by a byte, a register with memory, more than rcheevos' 32
+  # regions, or a hole that hides the RAM shadows or the fixed ROM.
+  set(libretro_rc ${PROJECT_SOURCE_DIR}/build/pins/rcheevos)
+  if(NOT EXISTS ${libretro_rc}/src/rc_libretro.c)
+    message(FATAL_ERROR "libretro: libretro.rcheevos needs rcheevos in ${libretro_rc}; fetch it with\n"
+      "  scripts/fetch-pin.sh rcheevos build/pins/rcheevos")
+  endif()
+  set(libretro_rc_stub ${PROJECT_BINARY_DIR}/tests/rc_hash_stub.c)
+  file(WRITE ${libretro_rc_stub} "#include \"rc_hash_internal.h\"\n"
+    "int rc_hash_iterator_error(const rc_hash_iterator_t* iterator, const char* message)\n"
+    "{ (void)iterator; (void)message; return 0; }\n"
+    "int rc_path_compare_extension(const char* path, const char* ext)\n"
+    "{ (void)path; (void)ext; return 0; }\n")
+  add_library(muhtari_test_rcheevos STATIC ${libretro_rc}/src/rc_libretro.c
+    ${libretro_rc}/src/rcheevos/consoleinfo.c ${libretro_rc}/src/rc_compat.c ${libretro_rc_stub})
+  target_include_directories(muhtari_test_rcheevos PRIVATE ${libretro_rc}/include
+    ${libretro_rc}/src ${libretro_rc}/src/rhash ${PROJECT_SOURCE_DIR}/libretro)
+  set_target_properties(muhtari_test_rcheevos PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
+  target_compile_options(muhtari_test_rcheevos PRIVATE $<$<C_COMPILER_ID:MSVC>:/W0>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-w -fno-sanitize=all>)
+  add_executable(muhtari-test-rcheevos ${CMAKE_CURRENT_LIST_DIR}/rcheevos.c
+    ${PROJECT_SOURCE_DIR}/libretro/libretro.c ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+  target_compile_definitions(muhtari-test-rcheevos PRIVATE MUHTARI_LIBRETRO_TEST
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+  target_include_directories(muhtari-test-rcheevos PRIVATE ${PROJECT_SOURCE_DIR}/libretro
+    ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/runner ${PROJECT_BINARY_DIR}/generated)
+  target_include_directories(muhtari-test-rcheevos SYSTEM PRIVATE ${libretro_rc}/include
+    ${libretro_rc}/src)
+  target_link_libraries(muhtari-test-rcheevos PRIVATE muhtari_test_rcheevos muhtari::muhtari
+    muhtari_host)
+  set_target_properties(muhtari-test-rcheevos PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-rcheevos)
+  muhtari_add_test(NAME libretro.rcheevos
+    COMMAND muhtari-test-rcheevos ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78
+      ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
+    LABELS libretro portable TIMEOUT 1)  # 2 x 0.31 s, macOS x64, slowest of 10 runs, run 39377950148
+  set_tests_properties(libretro.rcheevos PROPERTIES
+    FIXTURES_REQUIRED "built_simple;built_doublebuffer")
 
   set(libretro_inventory ${PROJECT_SOURCE_DIR}/tests/inventory/${MUHTARI_INVENTORY}.txt)
   muhtari_add_test(NAME libretro.info_claims

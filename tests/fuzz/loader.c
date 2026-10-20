@@ -48,7 +48,7 @@ static muhtari_status load_once(const uint8_t *data, size_t size, int fail,
     if (st == MUHTARI_STATUS_OK) {
         require(!fail && want == MUHTARI_STATUS_OK);
         require(c.allocs == created.allocs + 1u && c.frees == created.frees);
-        require(c.alloc_size == probed->rom_size);
+        require(c.alloc_size == (size_t)probed->rom_size + probed->ram_size);
         require(memcmp(&m->cart.info, probed, sizeof *probed) == 0);
         size_t at = (probed->flags & MUHTARI_CART_HEADER) != 0u ? 128u : 0u;
         require(at + probed->rom_size <= size);
@@ -56,7 +56,7 @@ static muhtari_status load_once(const uint8_t *data, size_t size, int fail,
         /* A second load replaces the first: one allocation, one free. */
         require(muhtari__cart_load(m, data, size) == MUHTARI_STATUS_OK);
         require(c.allocs == created.allocs + 2u && c.frees == created.frees + 1u);
-        require(c.free_size == probed->rom_size);
+        require(c.free_size == (size_t)probed->rom_size + probed->ram_size);
     } else {
         /* A refusal makes no call at all; a failed allocation is the one
            call an accepted image makes. */

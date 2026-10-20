@@ -1,0 +1,35 @@
+# The compatibility ledger's title predicates (docs/emulation-tests.md,
+# title), on the fast boot and through a BIOS.
+include(${CMAKE_CURRENT_LIST_DIR}/targets.cmake)
+
+# simple's title on both paths, its predicate read from the ledger here, so
+# a re-pinned row reaches the tests at the next configure.
+file(STRINGS ${compat_ledger} compat_simple REGEX "^7800basic-0[.]41/simple,")
+string(REGEX MATCH ",(title@120=[0-9a-f]+)," compat_simple "${compat_simple}")
+if(NOT CMAKE_MATCH_1)
+  message(FATAL_ERROR "compat: ${compat_ledger} has no pinned title@120 row for 7800basic-0.41/simple")
+endif()
+set(compat_simple_title ${CMAKE_MATCH_1})
+set(compat_simple_rom ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78)
+set(compat_bios ${MUHTARI_BUILT_DIR}/openbios/openbios.bin)
+muhtari_add_test(NAME title.simple.fast
+  COMMAND muhtari-test-predicate ${compat_simple_rom} ${compat_simple_title}
+  LABELS portable title TIMEOUT 2)  # 2 x 0.60 s, macOS x64, slowest of 12 runs, run 39375738182
+muhtari_add_test(NAME title.simple.bios
+  COMMAND muhtari-test-predicate ${compat_simple_rom} ${compat_simple_title} --bios ${compat_bios}
+  LABELS portable title TIMEOUT 2)  # 2 x 0.60 s, macOS x64, slowest of 12 runs, run 39375738182
+set_tests_properties(title.simple.fast title.simple.bios PROPERTIES
+  FIXTURES_REQUIRED "built_simple;built_openbios")
+
+# Negative control for the pin writer: the linear seed cartridge, filler
+# bytes behind a valid footer, shows one colour at frame 120, so --pin must
+# refuse it rather than pin a blank screen. The image comes from
+# muhtari-test-images.
+set(compat_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-test-predicate>
+  ${CMAKE_BINARY_DIR}/runner-probe/linear-v3-16k title@120=- --pin)
+string(REPLACE ";" "$<SEMICOLON>" compat_cmd "${compat_cmd}")
+muhtari_add_test(NAME title.pin.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${compat_cmd}" -DCODE=1 "-DREGEX=single colour"
+    -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+  LABELS portable title TIMEOUT 1)  # 2 x 0.16 s, macOS x64, slowest of 12 runs, run 39375738182
+set_tests_properties(title.pin.self_test PROPERTIES FIXTURES_REQUIRED probe_images)

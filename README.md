@@ -47,8 +47,10 @@ frame 1 sha256 9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4
 
 ## Documentation
 
+- [docs/libretro.md](docs/libretro.md): the RetroArch core's controls, devices, options, BIOS files and achievements.
 - [docs/runner.md](docs/runner.md): `muhtari-run` options, output, exit statuses and the test card.
 - [docs/embedding.md](docs/embedding.md): using the C library from CMake or pkg-config.
+- [docs/compatibility.md](docs/compatibility.md): which games and test ROMs run, generated from the compatibility ledger.
 - [docs/testing.md](docs/testing.md): building, testing and the checks CI runs.
 
 ## Legal

@@ -636,7 +636,10 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct
         out->port1 = (e->flags & MUHTARI__CARTDB_LIGHTGUN) != 0u ? MUHTARI_PORT_LIGHTGUN
                                                                  : MUHTARI_PORT_PROLINE;
         out->port2 = MUHTARI_PORT_PROLINE;
-        return cart_refused(&b) ? MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD : MUHTARI_STATUS_OK;
+        if (cart_refused(&b)) {
+            return MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+        }
+        return cart_fits(&b, n) ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_INVALID_IMAGE;
     }
     if (cart_find_2600(digest, t->prefix, t->prefix_count)) {
         out->kind = MUHTARI_KIND_2600;
@@ -739,18 +742,153 @@ muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n)
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
+    return muhtari__cart_install(m, image, &info);
+}
+
+muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info)
+{
     muhtari_allocator a = m->allocator;
-    uint8_t *rom = (uint8_t *)a.alloc(a.user, info.rom_size);
+    /* The ROM and the board's RAM share one allocation, RAM last. */
+    uint8_t *rom = (uint8_t *)a.alloc(a.user, (size_t)info->rom_size + info->ram_size);
     if (rom == NULL) {
         return MUHTARI_STATUS_ERR_NO_MEMORY;
     }
     /* The mapped bytes start after the header, when there is one. */
-    size_t at = (info.flags & MUHTARI_CART_HEADER) != 0u ? CART_HEADER_SIZE : 0u;
-    memcpy(rom, (const uint8_t *)image + at, info.rom_size);
+    size_t at = (info->flags & MUHTARI_CART_HEADER) != 0u ? CART_HEADER_SIZE : 0u;
+    memcpy(rom, (const uint8_t *)image + at, info->rom_size);
     if (m->cart.rom != NULL) {
-        a.free(a.user, m->cart.rom, m->cart.info.rom_size);
+        a.free(a.user, m->cart.rom, (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
     }
     m->cart.rom = rom;
-    m->cart.info = info;
+    m->cart.ram = info->ram_size != 0u ? rom + info->rom_size : NULL;
+    m->cart.info = *info;
+    muhtari__cart_reset(m);
     return MUHTARI_STATUS_OK;
+}
+
+#define CART_BANK 0x4000u /* a SuperGame bank, 16 KiB */
+
+void muhtari__cart_reset(muhtari *m)
+{
+    m->cart.bank = 0u;
+    m->cart.ram_bank = 0u;
+    /* Only the zero fill exists so far; every RAM_FILL value gives it. */
+    if (m->cart.ram != NULL) {
+        memset(m->cart.ram, 0, m->cart.info.ram_size);
+    }
+}
+
+/* The RAM byte a board drives at addr, or NULL. A board with RAM maps it
+   at $4000-$7FFF; a banked-RAM board shows the 16 KiB half ram_bank there.
+   The index is masked with ram_size - 1, a power of two, so no header can
+   reach outside the RAM (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1,
+   and section 7 for hostile input). */
+static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
+{
+    if (c->ram == NULL || addr < 0x4000u || addr >= 0x8000u) {
+        return NULL;
+    }
+    uint32_t i = (uint32_t)addr - 0x4000u;
+    if ((c->info.board_options & MUHTARI_BOARD_BANKED_RAM) != 0u) {
+        i += (uint32_t)c->ram_bank * CART_BANK;
+    }
+    return &c->ram[i & (c->info.ram_size - 1u)];
+}
+
+/* The SuperGame bank at addr, $4000-$FFFF (A7800-CARTRIDGES-AND-PERIPHERALS
+   section 2.1): the last bank at $C000, the register's at $8000, and at
+   $4000 bank 6 with that option, bank 0 on the 2^n + 1 board, else the
+   second-to-last. Every number is reduced modulo the bank count. */
+static uint32_t cart_sg_bank(const struct muhtari__cart *c, uint16_t addr)
+{
+    uint32_t banks = c->info.rom_size / CART_BANK;
+    if (addr >= 0xC000u) {
+        return banks - 1u;
+    }
+    if (addr >= 0x8000u) {
+        /* The 2^n + 1 board's register selects among the banks after bank 0. */
+        return (c->info.board_options & MUHTARI_BOARD_ROM_AT_4000) != 0u ? 1u + c->bank : c->bank;
+    }
+    if ((c->info.board_options & MUHTARI_BOARD_ROM_AT_4000) != 0u) {
+        return 0u;
+    }
+    if ((c->info.board_options & MUHTARI_BOARD_BANK6_AT_4000) != 0u) {
+        return 6u % banks;
+    }
+    return banks - 2u;
+}
+
+/* A linear board maps its ROM so that it ends at $FFFF; below the ROM's
+   start nothing drives the bus. A SuperGame board maps three 16 KiB
+   windows from $4000 (A7800-CARTRIDGES-AND-PERIPHERALS, section 2.1).
+   RAM, where a board has it, answers at $4000-$7FFF instead of ROM. No
+   function-pointer table: the board is a switch, so the core keeps no
+   mutable global. */
+uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
+{
+    const struct muhtari__cart *c = &m->cart;
+    if (c->rom == NULL) {
+        return m->bus.open_bus;
+    }
+    const uint8_t *ram = cart_ram_at(c, addr);
+    if (ram != NULL) {
+        return *ram;
+    }
+    switch (c->info.board) {
+    case MUHTARI_BOARD_LINEAR: {
+        uint32_t base = 0x10000u - c->info.rom_size;
+        if (addr >= base) {
+            return c->rom[addr - base];
+        }
+        break;
+    }
+    case MUHTARI_BOARD_SUPERGAME:
+        if (addr >= 0x4000u) {
+            return c->rom[cart_sg_bank(c, addr) * CART_BANK + (addr & (CART_BANK - 1u))];
+        }
+        break;
+    default:
+        break;
+    }
+    return m->bus.open_bus;
+}
+
+uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
+{
+    (void)by_maria; /* these boards answer MARIA and the CPU alike */
+    return muhtari__cart_peek(m, addr);
+}
+
+/* A write to the board's RAM stores; on a SuperGame board a write to
+   $8000-$BFFF sets the bank register: the value modulo the bank count, or
+   modulo 2^n on the 2^n + 1 board, which shows bank 1 + the register at
+   $8000. A banked-RAM board
+   takes the RAM half from D5 of the same write
+   (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1). ROM ignores a write. */
+void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
+{
+    struct muhtari__cart *c = &m->cart;
+    if (c->rom == NULL) {
+        return;
+    }
+    uint8_t *ram = cart_ram_at(c, addr);
+    if (ram != NULL) {
+        *ram = v;
+        return;
+    }
+    switch (c->info.board) {
+    case MUHTARI_BOARD_SUPERGAME:
+        if (addr >= 0x8000u && addr < 0xC000u) {
+            uint32_t banks = c->info.rom_size / CART_BANK;
+            if ((c->info.board_options & MUHTARI_BOARD_ROM_AT_4000) != 0u) {
+                c->bank = (uint8_t)(v % (banks - 1u));
+            } else {
+                c->bank = (uint8_t)(v % banks);
+            }
+            c->ram_bank = (uint8_t)((v >> 5) & 1u);
+        }
+        break;
+    default:
+        break;
+    }
 }

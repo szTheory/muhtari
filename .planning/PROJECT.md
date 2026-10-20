@@ -29,10 +29,12 @@ that any host can embed.
 - ✓ The runner probes cartridge images and the core loads one only after validating it, with no allocation on a
   refusal and a loader fuzz target run nightly — Phase 2
 
+- ✓ Linear and SuperGame cartridges render with exact MARIA DMA timing, boot fast or through OpenBIOS,
+  take joystick and console-switch input, and play in RetroArch with cross-platform frame hashes — Phase 3
+
 ### Active
 
-- [ ] Linear and SuperGame cartridges render with exact MARIA DMA timing, take joystick and console-switch input,
-      and play with TIA and POKEY sound in RetroArch.
+- [ ] TIA and POKEY sound plays in RetroArch with the rendered cartridges.
 - [ ] Frame and audio hashes are identical on every supported platform, including a 32-bit big-endian lane.
 
 ### Out of Scope
@@ -107,7 +109,7 @@ that any host can embed.
 | Reuse the owner's nesturbator code; MARIA, TIA, RIOT, POKEY and boards written from documentation and cross-checked | Fastest correct path; existing permissive chip models are lumped or diverge from documentation | — Phase 2: SALLY, seeded from nesturbator 9f9386c661f6, passes all 2,560,000 public vectors; the RIOT is written from the datasheet; MARIA, TIA, POKEY and the boards follow |
 | Fast boot by default; CC0 OpenBIOS for the BIOS path in CI; no Atari bytes | Redistributable and legal | — Phase 2: release zips and tracked files are scanned for BIOS, HSC and known-ROM digests before publish; fast boot and OpenBIOS come with the boot path |
 | Tests on licence-checked inputs: public 6502 vectors, 7800basic samples built in CI, own diagnostic ROMs | Reproducible without a network or private ROMs | ✓ Phase 2: the SingleStepTests sample runs on every PR and the full set nightly; 7800basic's `simple` sample builds byte-identical on all nine legs |
-| One compatibility ledger in which a pass stays a pass | A regression is a one-line diff | — Pending |
+| One compatibility ledger in which a pass stays a pass | A regression is a one-line diff | ✓ Phase 3: the ledger, ratchet and generated compatibility page run in CI |
 | One entrypoint: CMake workflow presets; one required CI check | No script to keep in step with CI | ✓ Phase 1: CI runs the presets on six platforms behind `CI required` |
 | release-please with a GitHub App token; version-free asset names; unsigned macOS artifacts installed by script | Automatic releases with no owner step | ✓ v0.1.0 published by release-please with no owner step (Release run 38983378877) |
 | With no cartridge loaded the core outputs a built-in test card | A build or a release can be checked without any ROM | ✓ Phase 1: the card's hash is pinned and RetroArch shows it pixel for pixel |
@@ -136,4 +138,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-19 after Phase 2*
+*Last updated: 2026-10-20 after Phase 3 re-verification; release confirmation remains at ship*

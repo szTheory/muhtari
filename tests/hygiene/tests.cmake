@@ -129,14 +129,14 @@ muhtari_add_test(NAME policy.title
 # through and so fail the case that names it.
 set(hygiene_ci ${CMAKE_SOURCE_DIR}/.github/workflows/ci.yml)
 muhtari_add_test(NAME policy.ci_required
-  COMMAND ${CMAKE_COMMAND} -DCI_YML=${hygiene_ci} -DJQ=${MUHTARI_JQ} -DREPORT_ONLY=wasm32
+  COMMAND ${CMAKE_COMMAND} -DCI_YML=${hygiene_ci} -DJQ=${MUHTARI_JQ} -DREPORT_ONLY=wasm32,library
     -P ${hygiene_scripts}/ci_required.cmake
   LABELS hygiene policy TIMEOUT 30)
 file(READ ${hygiene_ci} hygiene_yml)
 string(REPLACE "$heavy == \"false\" and " "" hygiene_yml "${hygiene_yml}")
 file(WRITE ${CMAKE_BINARY_DIR}/hygiene/ci_required_fixture/ci.yml "${hygiene_yml}")
 set(hygiene_cmd ${CMAKE_COMMAND} -DCI_YML=${CMAKE_BINARY_DIR}/hygiene/ci_required_fixture/ci.yml
-  -DJQ=${MUHTARI_JQ} -DREPORT_ONLY=wasm32 -P ${hygiene_scripts}/ci_required.cmake)
+  -DJQ=${MUHTARI_JQ} -DREPORT_ONLY=wasm32,library -P ${hygiene_scripts}/ci_required.cmake)
 string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
 muhtari_add_test(NAME policy.ci_required.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1

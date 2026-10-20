@@ -615,6 +615,23 @@ static void nmi(muhtari *m)
     m->cpu.pc = read_addr(m, 0xFFFAu, 0xFFFBu);
 }
 
+/* RES, run once at power-on under a BIOS: like the NMI entry, but the
+   three pushes are reads, so S steps down by 3 with nothing written, from
+   the power-on 0 to $FD. I is set and PC comes from $FFFC/$FFFD
+   (docs/hardware/sally.md, Reset; A7800-SYSTEM section 8). */
+void muhtari__cpu_reset(muhtari *m)
+{
+    m->cpu.jammed = 0u;
+    muhtari__bus_read(m, m->cpu.pc);
+    muhtari__bus_read(m, m->cpu.pc);
+    for (int i = 0; i < 3; i++) {
+        stack_dummy(m);
+        m->cpu.s = (uint8_t)(m->cpu.s - 1u);
+    }
+    m->cpu.p = (uint8_t)(m->cpu.p | FLAG_I | FLAG_U);
+    m->cpu.pc = read_addr(m, 0xFFFCu, 0xFFFDu);
+}
+
 void muhtari__cpu_step(muhtari *m)
 {
     if (m->cpu.jammed != 0u) {
@@ -624,6 +641,7 @@ void muhtari__cpu_step(muhtari *m)
         muhtari__bus_read(m, 0xFFFFu);
         return;
     }
+    m->bus.sync = 1u; /* the opcode fetch: SYNC high for this read */
     uint8_t opcode = fetch(m);
     switch (opcode) {
     /* Loads. */

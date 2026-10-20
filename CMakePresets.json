@@ -124,6 +124,16 @@
       }
     },
     {
+      "name": "library",
+      "inherits": "ci",
+      "$comment": "The compatibility ledger judged afresh over the ROMs in MUHTARI_ROM_DIR, read from the environment, and tests/diag; the BIOS path uses MUHTARI_BIOS, by default the ci preset's OpenBIOS (docs/emulation-tests.md, ledger).",
+      "cacheVariables": {
+        "MUHTARI_BUILD_LIBRETRO": "OFF",
+        "MUHTARI_LIBRARY": "ON",
+        "MUHTARI_INVENTORY": "library"
+      }
+    },
+    {
       "name": "bench",
       "inherits": "base",
       "$comment": "The nightly bench: the runner only, built with the host compiler. MUHTARI_TESTS OFF registers no tests, so configure needs no test tool.",
@@ -141,6 +151,7 @@
     { "name": "be32", "configurePreset": "be32" },
     { "name": "wasm32", "configurePreset": "wasm32" },
     { "name": "vectors-full", "configurePreset": "vectors-full" },
+    { "name": "library", "configurePreset": "library", "targets": ["muhtari-test-predicate"] },
     { "name": "bench", "configurePreset": "bench", "targets": ["muhtari-run"] }
   ],
   "testPresets": [
@@ -262,6 +273,16 @@
       },
       "filter": { "include": { "label": "^vectors-full$" } },
       "execution": { "noTestsAction": "error", "jobs": "" }
+    },
+    {
+      "name": "library",
+      "configurePreset": "library",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "filter": { "include": { "label": "^library$" } },
+      "execution": { "noTestsAction": "error", "jobs": "" }
     }
   ],
   "packagePresets": [
@@ -351,6 +372,14 @@
         { "type": "configure", "name": "vectors-full" },
         { "type": "build", "name": "vectors-full" },
         { "type": "test", "name": "vectors-full" }
+      ]
+    },
+    {
+      "name": "library",
+      "steps": [
+        { "type": "configure", "name": "library" },
+        { "type": "build", "name": "library" },
+        { "type": "test", "name": "library" }
       ]
     },
     {

@@ -2,7 +2,8 @@
 # so the top-level directory's TESTS property holds every name and the
 # inventory check in cmake/MuhtariTests.cmake sees them all. The hygiene lane
 # registers only its own tests, the nofp lane only the abi tests, the fuzz
-# lane only the fuzz tests and the vectors-full lane only the full vector set.
+# lane only the fuzz tests, the vectors-full lane only the full vector set
+# and the library lane only the ledger's library tests.
 if(MUHTARI_HYGIENE)
   include(${CMAKE_CURRENT_LIST_DIR}/hygiene/tests.cmake)
   return()
@@ -19,23 +20,36 @@ if(MUHTARI_VECTORS_FULL)
   include(${CMAKE_CURRENT_LIST_DIR}/cpu/full.cmake)
   return()
 endif()
+if(MUHTARI_LIBRARY)
+  include(${CMAKE_CURRENT_LIST_DIR}/compat/library.cmake)
+  return()
+endif()
 include(${CMAKE_CURRENT_LIST_DIR}/abi/tests.cmake)
-# The built sample runs on the two inventories that list it.
+# The built samples, the BIOS boot, the title predicates, the diagnostics
+# and the property tests run on the two inventories that list them; all
+# need the pinned tools.
 if(MUHTARI_INVENTORY MATCHES "^(ci|wasm32)$")
   include(${CMAKE_CURRENT_LIST_DIR}/built/tests.cmake)
+  include(${CMAKE_CURRENT_LIST_DIR}/boot/tests.cmake)
+  include(${CMAKE_CURRENT_LIST_DIR}/compat/tests.cmake)
+  include(${CMAKE_CURRENT_LIST_DIR}/diag/tests.cmake)
+  include(${CMAKE_CURRENT_LIST_DIR}/prop/tests.cmake)
 endif()
 include(${CMAKE_CURRENT_LIST_DIR}/bus/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cart/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/core/tests.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/frame/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cpu/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/fuzz/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/host/tests.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/input/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/install/tests.cmake)
 # Without the libretro core (wasm32: WASI has no dlopen) none of its tests
 # applies.
 if(MUHTARI_BUILD_LIBRETRO)
   include(${CMAKE_CURRENT_LIST_DIR}/libretro/tests.cmake)
 endif()
+include(${CMAKE_CURRENT_LIST_DIR}/maria/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/perf/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/policy/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/release/tests.cmake)

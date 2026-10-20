@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: A test frame in RetroArch** - Library, runner and libretro core show a built-in test card; CI on every platform; the first automatic attested release installs into RetroArch with one line (completed 2026-10-16)
 - [x] **Phase 2: The CPU matches the public vectors** - SALLY matches the public 6502 vectors on every cycle, with the 7800 bus timing, RIOT, INPTCTRL and the cartridge probe and loader (completed 2026-10-19)
-- [ ] **Phase 3: Games play in RetroArch** - MARIA with exact DMA timing, linear and SuperGame boards, fast and OpenBIOS boot, joysticks and console switches make 7800 games playable
+- [x] **Phase 3: Games play in RetroArch** - MARIA with exact DMA timing, linear and SuperGame boards, fast and OpenBIOS boot, joysticks and console switches make 7800 games playable (completed 2026-10-20)
 - [ ] **Phase 4: Sound** - TIA and POKEY sound through an integer band-limited synthesiser, with audio hashes identical on every platform
 
 ## Phase Details
@@ -186,13 +186,35 @@ Plans:
 **Depends on**: Phase 2
 **Requirements**: GAME-01, GAME-02, GAME-03, GAME-04, GAME-05, GAME-06
 **Success Criteria** (what must be TRUE):
-  1. `ctest -L basic` builds the pinned 7800basic samples, checks their SHA-256 and matches every pinned frame hash over 600 frames on every platform, covering the linear and SuperGame variants, every read mode, kangaroo mode, holey and indirect DMA and display-list interrupts; `ctest -L diag` reports DMA costs, the overrun abort, the DLI tick, the WSYNC release and the slow-access cost equal to A7800-MARIA and A7800-SYSTEM.
-  2. Every sample reaches its title-screen predicate within 300 frames both by the default fast boot with no BIOS and by `--boot bios` through the CC0 OpenBIOS built in CI.
+  1. `ctest -L basic` builds the pinned 7800basic samples, checks their SHA-256 and matches every pinned frame hash over 600 frames on every platform; together with the project's diagnostic ROMs they cover the linear and SuperGame variants, every read mode, kangaroo mode, holey and indirect DMA and display-list interrupts; `ctest -L diag` reports DMA costs, the overrun abort, the DLI tick, the WSYNC release and the slow-access cost equal to A7800-MARIA and A7800-SYSTEM.
+  2. Every sample reaches its title-screen predicate within 300 frames both by the default fast boot with no BIOS and by `--boot bios` through the CC0 OpenBIOS built in CI, counted from the cartridge hand-off on the BIOS path.
   3. `muhtari-run --movie FILE` drives both stick types on both ports and every console switch, `ctest -L input` shows the values the game reads match A7800-CARTRIDGES-AND-PERIPHERALS and counts lag frames, and `ctest -R runner.boot_to_play` plays one game from boot with a control changing play and fails its negative controls.
   4. The libretro core's memory descriptors pass rcheevos' own resolver, and the hosted RetroArch job boots a diagnostic ROM with a screenshot equal to the runner's frame.
   5. `ctest -R fuzz.regress.run` and `ctest -L prop` pass on every platform with their nightly runs, the `library` preset regenerates `docs/compatibility.md` in CI, and merging the phase's pull request publishes a release with no manual step.
 
-**Plans**: TBD
+**Plans**: 19/19 plans complete
+
+Plans (one wave each; every plan edits the test inventory, so they run in order):
+- [x] 03-01-PLAN.md — MARIA's DMA burst as a unit: closed-form costs, line RAM, statistics, maria.md derivations
+- [x] 03-02-PLAN.md — Tracer: the bounded run loop, linear cart, line events, c2 burst and fast-boot hand-off
+- [x] 03-03-PLAN.md — Span rendering and the DLI: `simple` renders, NMI contract, MARIA page
+- [x] 03-04-PLAN.md — Public API version 3 and `muhtari-run FILE`
+- [x] 03-05-PLAN.md — Frame-chain pins for the linear samples, revision guard, probe PR and CI cost
+- [x] 03-06-PLAN.md — Diagnostic pipeline and the `dma` ROM, rebuild-and-compare with clark.s
+- [x] 03-07-PLAN.md — The `cpu` and `dli` diagnostics
+- [x] 03-08-PLAN.md — SuperGame boards with cart RAM, board ROMs, SuperGame sample pins
+- [x] 03-09-PLAN.md — The `modes` ROM and `basic.coverage`
+- [x] 03-10-PLAN.md — Controllers at pin level, the movie parser, `ctest -L input`
+- [x] 03-11-PLAN.md — `muhtari-run --movie`, ports and region options, lag output
+- [x] 03-12-PLAN.md — OpenBIOS built in CI from its CC0 source, firmware scan rows
+- [x] 03-13-PLAN.md — The BIOS path: power-on, hand-off frame, 2600-path refusal, `--boot`/`--bios` and the movie's boot key
+- [x] 03-14-PLAN.md — Title predicates on both paths and the ledger's rows
+- [x] 03-15-PLAN.md — libretro layout, options, BIOS, memory maps, rcheevos, RetroArch on `dma.a78`
+- [x] 03-16-PLAN.md — `runner.boot_to_play` with its negative controls
+- [x] 03-17-PLAN.md — Property tests, the run fuzz target, nightly jobs and path filter
+- [x] 03-18-PLAN.md — The `library` preset and job, ratchet, generated `docs/compatibility.md`
+- [x] 03-19-PLAN.md — Close: measured timeouts, gate-code tally, docs, probe closed, ship title
+
 **UI hint**: no
 **Canonical refs:** `.planning/preparation/A7800-MARIA.md`, `.planning/preparation/A7800-CARTRIDGES-AND-PERIPHERALS.md`, `.planning/preparation/A7800-SYSTEM.md`, `.planning/preparation/CONFORMANCE.md`, `.planning/preparation/HOSTS-AND-INTEGRATION.md`
 
@@ -221,5 +243,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
 | 2. The CPU matches the public vectors | 16/16 | Complete    | 2026-10-19 |
-| 3. Games play in RetroArch | 0/TBD | Not started | - |
+| 3. Games play in RetroArch | 19/19 | Complete    | 2026-10-20 |
 | 4. Sound | 0/TBD | Not started | - |

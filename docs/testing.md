@@ -17,14 +17,17 @@ It needs CMake 4.3 or later, Ninja and a C and C++ compiler. The workflow runs f
 4. package the three release zips into `build/ci`;
 5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
-The tests also build 7800basic's `simple` sample from pinned tools, so fetch the tools first:
+The tests also build 7800basic's samples and OpenBIOS from pinned tools and source, and rcheevos' resolver from
+its pinned source, so fetch them first:
 
 ```sh
 scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # for example wasmtime-aarch64-macos
 scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
+scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
+scripts/fetch-pin.sh rcheevos build/pins/rcheevos
 ```
 
-Configure stops with both commands when either is missing; the sample tests are never skipped.
+Configure stops with these commands when any is missing; the sample tests are never skipped.
 
 `-DMUHTARI_TESTS=OFF` builds the products and registers no test, so configure needs no sample tool. Its users: `perf` (head and base builds), the `bench` preset of nightly's `bench` job, and `bench-wasm32`.
 
@@ -40,10 +43,11 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `asan` | No memory or undefined-behaviour fault, using clang-21 with AddressSanitizer and UndefinedBehaviorSanitizer. Any finding stops the test. Long runs drop from 600 frames to 60 (`MUHTARI_SHORT_RUNS`). | `ci` | all but `abi` and `release`, whose binary-shape checks the instrumentation changes |
 | `nofp` | The core uses no floating point. It is built with GCC's `-mgeneral-regs-only`, which rejects any floating-point type. | `nofp` | `abi` |
 | `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer, the pins file, and `src/cartdb.c` equal to `tools/cartdb.cmake`'s output over the two pinned MAME lists. Fetch those first with `scripts/fetch-pin.sh mame-a7800-xml build/pins/mame` and `scripts/fetch-pin.sh mame-a2600-xml build/pins/mame`; configure stops with both commands when either is missing. | `hygiene` | `hygiene` |
-| `fuzz` | The cartridge loader keeps its invariants on any input: libFuzzer runs `tests/fuzz/loader.c` for 60 seconds with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, starting from the images `muhtari-test-images` writes. New inputs go to `build/fuzz/fuzz/corpus` and crashes to `build/fuzz/fuzz/crash`, never into the tree. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader`. | `fuzz` | `fuzz` |
+| `fuzz` | The cartridge loader and the run loop keep their invariants on any input: libFuzzer runs `tests/fuzz/loader.c` and `tests/fuzz/run.c` for 60 seconds each with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, starting from the images `muhtari-test-images` writes. New inputs go to `build/fuzz/fuzz/corpus` and `build/fuzz/fuzz/run/corpus`, crashes to the `crash` directory beside each, never into the tree. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader` and `fuzz.regress.run` (`docs/emulation-tests.md`, fuzz). | `fuzz` | `fuzz` |
 | `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, about 1 GiB of disk and 90 s for the fetch. | `vectors-full` | `vectors-full` |
 | `be32` | The same hashes on a big-endian, 32-bit target with unsigned `char`. It cross-compiles for 32-bit PowerPC (`cmake/toolchains/ppc-linux-gnu.cmake`) and runs under `qemu-ppc`. | `ci` | `portable` |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
+| `library` | The compatibility ledger holds: each `pr` row is judged afresh on its file under `MUHTARI_ROM_DIR` or `tests/diag`, on both boot paths, and the ratchet compares (label `library` below). Run the `ci` preset's `built` tests first, then `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library`. | `library` | `library` |
 
 On the two emulated lanes, CMake runs each test binary through `CMAKE_CROSSCOMPILING_EMULATOR`. Every script that
 starts `muhtari-run` takes the same emulator as `-DEMULATOR=`, so a test never runs a host binary in place of the
@@ -84,7 +88,7 @@ dropping out.
   into `hash-equality`, the count goes up by one.
 
 `ctest --preset ci -R <regex>` reruns part of the suite after a build; `ctest --test-dir build/ci -L <label>`
-selects by label.
+selects by label. `docs/emulation-tests.md` says what each emulation label's tests cover.
 
 ## The inventory
 
@@ -92,8 +96,8 @@ selects by label.
 labels comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
 test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
 Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
-Five lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt` and `wasm32.txt`, which is the
-`ci` list without the `libretro` tests.
+Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt`, `library.txt`, one
+`library.<id>` per ledger row of tier `pr`, and `wasm32.txt`, which is the `ci` list without the `libretro` tests.
 
 | Label | Tests |
 |---|---|
@@ -102,15 +106,24 @@ Five lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vec
 | `vectors-full` | The `vectors-full` lane: the fetch, the sample match, and `cpu.vectors-full.<op>` over all 10,000 tests of each opcode's file. |
 | `sally` | SALLY on the 7800's bus (`docs/hardware/bus.md`): 4- and 6-tick cycles, RDY holding reads only, the HALT gate and its two-cycle latency, and the NMI latch, with `cpu.nmi.*` for the instruction after which an edge is taken. |
 | `riot` | The RIOT (`docs/hardware/riot.md`): its timer, PA7 edge, ports, RAM window and power-on state, with the bus's INPTCTRL lock and open-bus reads. |
+| `maria` | MARIA's DMA burst with no CPU: the HALTRST tick, line RAM and statistics ([emulation tests, maria](emulation-tests.md#maria)). |
+| `frame` | Whole frames through the run loop: SALLY, the bus and MARIA together ([emulation tests, frame](emulation-tests.md#frame)). |
+| `input` | Controllers and console switches as a game reads them, driven by movie rows ([emulation tests, input](emulation-tests.md#input)). |
+| `bios` | The boot through OpenBIOS and through a BIOS built in memory ([emulation tests, bios](emulation-tests.md#bios)). |
 | `portable` | Tests that hold on every platform, including the frame and audio hashes. |
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
 | `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. `cart.identify.test_list` finds the built 7800basic sample through the test hash list. No image bytes are tracked. |
-| `fuzz` | The loader fuzz target's invariants replayed over its seeds and committed regressions, and on the `fuzz` lane libFuzzer itself. |
-| `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
-| `built` | Samples built from pinned tools (`tests/built/`). `built.samples` builds 7800basic 0.41's `simple` sample under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/simple/`, and checks the `.a78` and `.bin` SHA-256s in `expected.txt`. `runner.probe.sample_*` then probe it: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
+| `fuzz` | The loader and run fuzz targets' invariants replayed over their seeds and committed regressions, and on the `fuzz` lane libFuzzer itself (`docs/emulation-tests.md`, fuzz). |
+| `prop` | Properties of the run loop over 100 generated cases each, 10,000 in nightly's `prop` job ([emulation tests, prop](emulation-tests.md#prop); [CI](#ci)). |
+| `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, the movie reader (`runner.movie_parse`: good movies, and each bad one refused at its exact line and column), and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
+| `built` | Samples built from pinned tools (`tests/built/`). `built.<name>` builds one 7800basic 0.41 sample per row of `expected.txt` under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/<name>/`, and checks the `.a78` and `.bin` SHA-256s in that row. `runner.probe.sample_*` then probe `simple`: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
+| `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` ([emulation tests, basic](emulation-tests.md#basic)). |
+| `diag` | Our own diagnostic ROMs judged through their mailbox against values derived beforehand, and the core's statistics ([emulation tests, diag](emulation-tests.md#diag)). `diag.rebuild` carries `built`. |
+| `title` | The ledger's title predicates on `simple`, on the fast boot and through OpenBIOS, and the pin writer's refusal of a blank screen ([emulation tests, title](emulation-tests.md#title)). |
+| `library` | The `library` lane: each `pr` ledger row judged afresh, the ratchet and the generated page, run by CI's `library` job ([emulation tests, ledger](emulation-tests.md#ledger); [CI](#ci)). |
 | `bench` | The runner's benchmark report. |
-| `libretro` | The libretro core in an in-process host, its `.info` file and its vendored header. |
+| `libretro` | The libretro core in an in-process host (content, controls, devices, Restart, BIOS files, options, the memory map), BIOS file/allocation/path faults (`libretro.bios_failures`), rcheevos' resolver over that map (`libretro.rcheevos`), its `.info` file and its vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
 | `perf` | Allocation-free frames. |
 | `policy` | Rules about the repository and the tests themselves. |
@@ -134,6 +147,8 @@ output matches the expected message; a crash or a missing file does not count as
 | `runner.hashes_compare.byte.self_test` | Two `hashes.txt` files one byte apart. |
 | `abi.nofp_fixture` | On the `nofp` lane, a file holding one `double` division, which must fail to compile with GCC's `-mgeneral-regs-only` diagnostic. |
 | `built.samples.self_test` | An `expected.txt` whose `.a78` digest differs in one digit; the build must exit 1 with `simple: .a78 SHA-256 drift`. |
+| `diag.rebuild.self_test` | A manifest copy whose `dma.a78` digest differs in one digit; the rebuild must exit 1 with `tests/diag/dma.a78: SHA-256 drift`. |
+| `diag.expected.self_test` | An `expected.csv` copy with the `null` value changed; the driver must exit 1 failing that record. |
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
 | `policy.cartdb_generated.self_test` | A copy of `src/cartdb.c` with one byte changed; the check must exit 1 with `src/cartdb.c differs from the generator output`. |
 | `hygiene.firmware_scan.self_test` | The same synthetic file tracked in a fixture repository; the tracked-file scan must exit 1 with `matches synthetic (header stripped)`. |
@@ -151,9 +166,10 @@ output matches the expected message; a crash or a missing file does not count as
 ## Fixtures and the firmware scans
 
 `tests/roms/manifest.txt` lists every binary file the repository may hold: its path, source, pin, licence, SHA-256
-and notice section (ASSET_POLICY.md section 2). Today that is the vector sample, three vector fixtures and Clark's
-two test builds. `policy.rom_hash_coverage` (hygiene lane) requires each row's file to exist with that SHA-256, a row
-for every file under `tests/roms/` and in a fuzz `regress` directory, and at most 512 KiB under `tests/fuzz/`.
+and notice section (ASSET_POLICY.md section 2). Today that is the vector sample, three vector fixtures, Clark's two
+test builds and the `cpu`, `dli` and `dma` diagnostics. `policy.rom_hash_coverage` (hygiene lane) requires each
+row's file to exist with that SHA-256, a row for every file under `tests/roms/` and in a fuzz `regress` directory,
+and at most 512 KiB under `tests/fuzz/`.
 
 The firmware scan (`tests/cmake/firmware_scan.cmake`) hashes files with SHA-1 and SHA-256, whole and, for an A78
 image, again without its 128-byte header. It fails on a digest in `tests/release/firmware.txt` (BIOS and HSC
@@ -208,22 +224,23 @@ with its lane's inventory and labels.
 | `hash-equality` | `ubuntu-26.04` | compares exactly seven `hashes.txt` files: the six `build` legs and `be32` | none |
 | `wasm32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
 | `retroarch` | `macos-15` | the built core in RetroArch; see "Hosted RetroArch" | none |
+| `library` | `ubuntu-26.04` | full history; builds the `ci` preset's samples and OpenBIOS (`-L '^built$'`), then preset `library` over `build/ci/built` with the pull request's base for the ratchet | `library.txt` |
 | `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame of runners built with `MUHTARI_TESTS` OFF; see "Performance" | none |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
-The hosted `be32` job takes under a minute, well inside the five-minute limit for a per-pull-request lane, so
-`hash-equality` compares seven files. Windows legs load the MSVC environment with `vswhere` and `vcvarsall` for the runner's own architecture. Every
+The hosted `be32` job takes up to about three minutes, inside the five-minute limit for a per-pull-request lane,
+so `hash-equality` compares seven files. Windows legs load the MSVC environment with `vswhere` and `vcvarsall` for the runner's own architecture. Every
 action is pinned by full commit SHA.
 
 **The roll-up.** The ruleset requires one check, `CI required`. It always runs, and passes only when every job it
 needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which
 happens only when every changed path is under `.planning/`; `title` and `perf` may be skipped outside pull
-requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` reports only and is not among the
-jobs `CI required` needs.
+requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` and `library` report only and are
+not among the jobs `CI required` needs; `library` joins after 10 green runs on `main`.
 
 **Tests of CI itself.** The hygiene lane checks the rules above. `policy.ci_required` reads the roll-up's `jq`
 program from `ci.yml` and runs it, with the step's own arguments, on synthetic job results; it also fails when a
-job other than `wasm32` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
+job other than `wasm32` and `library` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
 renamed, empty and planning-only path lists, and on a planning-only list from a pull request of more than 3000
 files, which the files API cuts short. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
 comment with a run ID or the word `provisional`. A measured timeout is twice the job's slowest successful run,
@@ -297,11 +314,13 @@ run's job summaries and its `bench-<runner>` and `bench-wasm32` artifacts; they 
 never committed. A failed night opens or comments on the one open issue labelled `nightly`, and a good night closes
 it; the report decides from the jobs' results. Dispatching the workflow with `force_failure` fails a run on purpose.
 The same workflow runs the `vectors-full` lane (`cmake --workflow --preset vectors-full`) and the `fuzz` lane (job
-`loader-fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its
-inventory; `loader-fuzz` uploads `build/fuzz/fuzz/crash/` when it fails. Neither caches its vectors or corpus. One
-path union triggers the whole workflow on a pull request: the workflow itself, the runner's bench and clock files,
-`src/cpu.c`, `src/cart.c`, `src/cartdb.c`, `src/sha1.c`, and `tests/cpu/`, `tests/vectors/`, `tests/cart/`,
-`tests/fuzz/` and the two vector scripts. Such a pull request runs every job but writes no issue.
+`fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its inventory;
+`fuzz` uploads both targets' crash directories when it fails. Neither caches its vectors or corpus. The `prop` job
+builds the `ci` preset with `MUHTARI_TIMEOUT_SCALE=10` and runs `ctest -L prop` with `MUHTARI_PROP_CASES=10000` and
+the run's ID as `MUHTARI_PROP_SEED`; it is report-only, outside the report job's needs, until it has passed 10 runs
+on `main`. A pull request runs the whole workflow, writing no issue, when it changes a file listed in the trigger's
+`paths`: the workflow, the core and runner sources, the build files and pins, and each job's tests, scripts and
+inventories.
 
 **Bumping the vector pin.** One `ci:` pull request: set the new commit in the `sst-6502-v1` row and the sample's
 manifest row; run the `vectors-full` workflow once, whose fetch fails against the old list but leaves the new files
@@ -329,6 +348,11 @@ so it never skips itself off macOS. On `macos-15` it:
 5. runs a negative control: it inverts one byte of pixel (7,3) in a copy of the runner's BMP, and the compare
    must exit 1 and name that pixel first.
 
+Steps 3 and 4 also run on the committed `tests/diag/dma.a78` for 120 frames (`-DROM=`), with an empty system
+directory so the fast boot runs without firmware, and the runner's `--hash-frame 120` must equal the `diag/dma`
+row's pin in `tests/compat/ledger.csv`, so two test cards cannot pass. The frames are kept as the
+`retroarch-frames` artifact. [docs/libretro.md](libretro.md) describes the core the job runs.
+
 `video_gpu_screenshot = "false"` makes RetroArch save the core's own frame at the size the core reports, with no
 scaling or on-screen text. The card is static, so five frames only need the core loaded.
 
@@ -338,8 +362,7 @@ session, the same steps run locally from the job's commands, with `-DRETROARCH` 
 
 **If RetroArch will not start the core without content.** The job relies on RetroArch starting a core that
 reports no-game support when `-L` is given and no content. If it stops doing so, the log printed by
-`run_retroarch.cmake` shows it. Treat that as a blocker for the owner, with the log and the run URL. Every fix,
-such as letting the core accept a content file, changes a settled decision.
+`run_retroarch.cmake` shows it. Treat that as a blocker for the owner, with the log and the run URL.
 
 ## Release archives
 
@@ -426,8 +449,9 @@ Replace `ci` with another workflow to run that lane. Some lanes need more packag
 - `wasm32`: `clang-21 lld-21 wasi-libc libclang-rt-21-dev-wasm32`.
 
 Every lane but `nofp`, `hygiene` and `fuzz` builds the sample, so also run
-`scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime` and
-`scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic` before the workflow.
+`scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime`,
+`scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic` and
+`scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios` before the workflow.
 
 To keep a lane's `hashes.txt`, mount a directory outside the repository and copy the file into it, for example
 `-v "$OUT:/out"` and then `cp build/be32/hashes.txt /out/`. On an x86_64 host use `--platform linux/amd64` and the

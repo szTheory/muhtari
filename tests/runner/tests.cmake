@@ -84,7 +84,76 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
   endfunction()
 
+  # Writes a movie to OUT/name: the version line, the header lines in
+  # header, then for each N:LINE in ARGN, N copies of the frame LINE. Sets
+  # movie to its path.
+  function(write_movie name header)
+    set(text "muhtari-movie 1\n${header}")
+    foreach(run IN LISTS ARGN)
+      string(FIND "${run}" ":" colon)
+      string(SUBSTRING "${run}" 0 ${colon} n)
+      math(EXPR colon "${colon} + 1")
+      string(SUBSTRING "${run}" ${colon} -1 line)
+      string(REPEAT "${line}\n" ${n} lines)
+      string(APPEND text "${lines}")
+    endforeach()
+    file(WRITE "${OUT}/${name}" "${text}")
+    set(movie "${OUT}/${name}" PARENT_SCOPE)
+  endfunction()
+
+  # Fails unless out holds a "handoff_frame K" line with K in OpenBIOS's
+# window, 300 to 340, as tests/boot/test_boot.c requires of simple.
+function(expect_handoff out)
+  string(REGEX MATCH "(^|\n)handoff_frame ([0-9]+)\n" match "${out}")
+  if(match STREQUAL "" OR CMAKE_MATCH_2 LESS 300 OR CMAKE_MATCH_2 GREATER 340)
+    message(FATAL_ERROR "expected handoff_frame from 300 to 340, got\n${out}")
+  endif()
+endfunction()
+
+# Runs muhtari-run with ARGN twice; fails unless both exit 0 with the same
+  # standard output and nothing on standard error. Sets var to the output.
+  function(run_twice var)
+    foreach(pass IN ITEMS 1 2)
+      execute_process(COMMAND ${EMULATOR} "${RUN}" ${ARGN}
+        OUTPUT_VARIABLE out${pass} ERROR_VARIABLE err RESULT_VARIABLE rc)
+      if(NOT rc STREQUAL "0" OR NOT err STREQUAL "")
+        message(FATAL_ERROR "muhtari-run ${ARGN}: exit ${rc}\n${out${pass}}${err}")
+      endif()
+    endforeach()
+    if(NOT out1 STREQUAL out2)
+      message(FATAL_ERROR "muhtari-run ${ARGN}: two runs differ\n${out1}--\n${out2}")
+    endif()
+    set(${var} "${out1}" PARENT_SCOPE)
+  endfunction()
+
+  # Sets var to the frame 8 hash of a 12-line movie with header that holds
+  # line on lines 5 to 10, run twice on the input cart. The other lines are
+  # ARGV4 when given, else the released ProLine line.
+  function(held_hash var name header line)
+    set(rest "${released}")
+    if(ARGC GREATER 4)
+      set(rest "${ARGV4}")
+    endif()
+    write_movie(${name} "${header}" "4:${rest}" "6:${line}" "2:${rest}")
+    run_twice(out --hash-frame 8 --movie "${movie}" "${DIR}/input.a78")
+    string(REGEX MATCH "frame 8 sha256 [0-9a-f]+" hash "${out}")
+    set(${var} "${hash}" PARENT_SCOPE)
+  endfunction()
+
+  # Fails unless the values of ARGN are all different.
+  function(expect_distinct what)
+    set(seen "")
+    foreach(v IN LISTS ARGN)
+      if(v STREQUAL "" OR v IN_LIST seen)
+        message(FATAL_ERROR "${what}: expected distinct frame hashes, got\n${ARGN}")
+      endif()
+      list(APPEND seen "${v}")
+    endforeach()
+  endfunction()
+
   set(usage_line "usage: muhtari-run ")
+  set(prolines "port1 proline\nport2 proline\n")
+  set(released "|......|......|...BB|")
   if(CASE STREQUAL "hash")
     # Fault prevented: the runner's printed hash, the line hosts and CI
     # compare, drifts from the pinned test card or exits non-zero, while the
@@ -122,7 +191,28 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   elseif(CASE STREQUAL "usage.unknown")
     expect_exit(2 "unknown option.*${usage_line}" --nope)
   elseif(CASE STREQUAL "usage.positional")
-    expect_exit(2 "unexpected argument.*${usage_line}" card.a78)
+    # One FILE is a cartridge; a second is not.
+    expect_exit(2 "unexpected argument.*${usage_line}" --frames 1 a.a78 b.a78)
+    expect_exit(2 "unexpected argument.*${usage_line}" --frames 1 --rom a.a78 b.a78)
+    expect_exit(2 "--rom needs a FILE.*${usage_line}" --frames 1 --rom)
+  elseif(CASE STREQUAL "load.hash")
+    # Fault prevented: a cartridge given on the command line is not loaded,
+    # so the run shows the test card, or runs differently from one run to
+    # the next.
+    set(args --frames 120 --hash-frame 120 "${DIR}/linear-v3-16k")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" ${args}
+      OUTPUT_VARIABLE first ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT first MATCHES "^frame 120 sha256 [0-9a-f]+\n$"
+        OR first MATCHES "${card}")
+      message(FATAL_ERROR "muhtari-run ${args}: expected exit 0 and a frame 120 hash "
+        "other than the test card's, got exit ${rc} and output\n${first}${err}")
+    endif()
+    expect_output("${first}" ${args})
+    expect_output("${first}" --frames 120 --hash-frame 120 --rom "${DIR}/linear-v3-16k")
+  elseif(CASE STREQUAL "load.pal_refused")
+    # Fault prevented: a PAL cartridge runs on the NTSC timing, so its
+    # pinned hashes would change silently when PAL lands.
+    expect_exit(77 "linear-v3-16k-pal: unsupported region" --frames 1 "${DIR}/linear-v3-16k-pal")
   elseif(CASE STREQUAL "usage.frame_range")
     expect_exit(2 "${usage_line}" --frames 0)
     expect_exit(2 "${usage_line}" --frames 1 --hash-frame 0)
@@ -263,6 +353,179 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       endif()
     endforeach()
     expect_hashes("" "${DIR}/simple.bas.bin")
+  elseif(CASE STREQUAL "movie.lag")
+    # Fault prevented: the runner miscounts or drops the frames in which the
+    # game read no input. The input cart's even variant reads on even
+    # frames only, so 60 frames hold 30 lag frames.
+    write_movie(lag.txt "${prolines}" "60:${released}")
+    expect_output("lag_frames 30\n" --frames 60 --movie "${movie}" "${DIR}/input-even.a78")
+  elseif(CASE STREQUAL "movie.replay")
+    # Fault prevented: the runner drops or shifts a movie's input, or a
+    # replay is not repeatable. The input cart paints what it read, so a
+    # frame inside the held lines differs from an empty movie's, and a frame
+    # after them, with nothing held, matches it. --frames defaults to the
+    # movie's 12 lines.
+    write_movie(empty.txt "${prolines}" "12:${released}")
+    run_twice(empty --hash-frame 8 --hash-frame 12 --movie "${movie}" "${DIR}/input.a78")
+    write_movie(up.txt "${prolines}" "4:${released}" "6:|U.....|......|...BB|" "2:${released}")
+    run_twice(up --hash-frame 8 --hash-frame 12 --movie "${movie}" "${DIR}/input.a78")
+    string(REGEX MATCHALL "frame [0-9]+ sha256 [0-9a-f]+" empty_hashes "${empty}")
+    string(REGEX MATCHALL "frame [0-9]+ sha256 [0-9a-f]+" up_hashes "${up}")
+    list(LENGTH up_hashes n)
+    if(NOT n EQUAL 2 OR NOT up MATCHES "\nlag_frames 1\n$")
+      message(FATAL_ERROR "expected two hash lines and lag_frames 1, got\n${up}")
+    endif()
+    list(GET empty_hashes 0 empty8)
+    list(GET empty_hashes 1 empty12)
+    list(GET up_hashes 0 up8)
+    list(GET up_hashes 1 up12)
+    if(up8 STREQUAL empty8 OR NOT up12 STREQUAL empty12)
+      message(FATAL_ERROR "expected frame 8 to differ and frame 12 to match\n${empty}--\n${up}")
+    endif()
+  elseif(CASE STREQUAL "movie.ports")
+    # Fault prevented: a header's device or a port's field reaches the wrong
+    # port or the wrong pins. Up and button 1 on each port with each stick
+    # give four pictures, none the empty movie's.
+    held_hash(empty ports-empty.txt "${prolines}" "${released}")
+    held_hash(p1_proline ports-1p.txt "${prolines}" "|U...1.|......|...BB|")
+    held_hash(p1_joystick ports-1j.txt "port1 joystick\nport2 proline\n" "|U...1|......|...BB|"
+      "|.....|......|...BB|")
+    held_hash(p2_proline ports-2p.txt "${prolines}" "|......|U...1.|...BB|")
+    held_hash(p2_joystick ports-2j.txt "port1 proline\nport2 joystick\n" "|......|U...1|...BB|"
+      "|......|.....|...BB|")
+    expect_distinct(ports "${empty}" "${p1_proline}" "${p1_joystick}" "${p2_proline}"
+      "${p2_joystick}")
+  elseif(CASE STREQUAL "movie.switches")
+    # Fault prevented: a console switch in a movie's last field never
+    # reaches SWCHB, or reaches the wrong bit.
+    held_hash(empty sw-empty.txt "${prolines}" "${released}")
+    set(hashes "${empty}")
+    foreach(field IN ITEMS R..BB .S.BB ..PBB ...AB ...BA)
+      held_hash(h sw-${field}.txt "${prolines}" "|......|......|${field}|")
+      list(APPEND hashes "${h}")
+    endforeach()
+    expect_distinct(switches ${hashes})
+  elseif(CASE STREQUAL "movie.past_end")
+    # Fault prevented: past a movie's last line the runner keeps the last
+    # buttons held, or resets the difficulty switches. Twenty frames of a
+    # 10-line movie must run as the 20-line movie that spells out a release
+    # with the difficulty kept.
+    set(held "|U.....|......|...AB|")
+    write_movie(short.txt "${prolines}" "4:${released}" "6:${held}")
+    run_twice(short --frames 20 --hash-frame 10 --hash-frame 11 --hash-frame 20 --movie "${movie}"
+      "${DIR}/input.a78")
+    write_movie(long.txt "${prolines}" "4:${released}" "6:${held}" "10:|......|......|...AB|")
+    run_twice(long --hash-frame 10 --hash-frame 11 --hash-frame 20 --movie "${movie}"
+      "${DIR}/input.a78")
+    string(REGEX MATCH "frame 10 sha256 [0-9a-f]+" f10 "${short}")
+    string(REGEX MATCH "frame 11 sha256 [0-9a-f]+" f11 "${short}")
+    string(REPLACE "frame 10" "frame 11" f10 "${f10}")
+    if(NOT short STREQUAL long OR NOT short MATCHES "frame 20 sha256" OR f10 STREQUAL f11)
+      message(FATAL_ERROR "past the end: expected the long movie's output, with frame 11 "
+        "unlike frame 10, got\n${short}--\n${long}")
+    endif()
+  elseif(CASE STREQUAL "movie.malformed")
+    # Fault prevented: a malformed movie runs, or is refused without the
+    # place of its fault.
+    write_movie(bad.txt "${prolines}" "1:|X.....|......|...BB|")
+    expect_exit(1 "^muhtari-run: [^\n]*/bad.txt:4:2: letter out of place, expected U or [.]\n$"
+      --movie "${movie}" "${DIR}/input.a78")
+  elseif(CASE STREQUAL "movie.rom_mismatch")
+    # Fault prevented: a movie recorded on another cartridge replays on this
+    # one. The digest is the headerless SHA-256 that --probe prints.
+    probe(input.a78)
+    probe_value(sha256_headerless digest)
+    string(REPEAT "0" 64 zeros)
+    write_movie(other.txt "rom-sha256 ${zeros}\n${prolines}" "1:${released}")
+    expect_exit(1 "rom-sha256 ${zeros}[^\n]* ${digest}\n$" --movie "${movie}" "${DIR}/input.a78")
+    write_movie(same.txt "rom-sha256 ${digest}\n${prolines}" "1:${released}")
+    expect_output("lag_frames 1\n" --movie "${movie}" "${DIR}/input.a78")
+  elseif(CASE STREQUAL "movie.conflict")
+    # Fault prevented: the command line silently overrides a movie's header,
+    # so a replay runs with devices other than the recording's. The header
+    # wins; an agreeing or auto option is no conflict.
+    write_movie(conflict.txt "${prolines}region ntsc\n" "2:${released}")
+    expect_exit(2 "--port1 joystick conflicts with the movie's port1 proline.*${usage_line}"
+      --port1 joystick --movie "${movie}" "${DIR}/input.a78")
+    expect_exit(2 "--port2 none conflicts with the movie's port2 proline.*${usage_line}"
+      --port2 none --movie "${movie}" "${DIR}/input.a78")
+    expect_output("lag_frames 1\n" --port1 proline --port2 auto --region ntsc --movie "${movie}"
+      "${DIR}/input.a78")
+  elseif(CASE STREQUAL "movie.behaviour_warning")
+    # Fault prevented: a movie recorded on another behaviour revision
+    # replays without notice, or is refused although it may still match.
+    write_movie(rev9.txt "${prolines}behaviour 9\n" "2:${released}")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${movie}" "${DIR}/input.a78"
+      OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT out STREQUAL "lag_frames 1\n" OR NOT err MATCHES
+        "^muhtari-run: [^\n]*/rev9.txt: behaviour 9, this core's is 1; replaying anyway\n$")
+      message(FATAL_ERROR "expected exit 0, lag_frames 1 and one warning, got exit ${rc}\n"
+        "${out}${err}")
+    endif()
+  elseif(CASE STREQUAL "movie.boot_bios")
+    # Fault prevented: a movie recorded through the BIOS replays fast-booted,
+    # or the BIOS file's digest goes unchecked. The header's boot bios and
+    # the file's own digest boot simple through OpenBIOS with no --boot.
+    file(SHA256 "${BIOS}" digest)
+    write_movie(boot_bios.txt "${prolines}boot bios\nbios-sha256 ${digest}\n" "400:${released}")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${movie}" --bios "${BIOS}" "${ROM}"
+      OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT err STREQUAL "bios_sha256 ${digest}\n")
+      message(FATAL_ERROR "expected exit 0 and the BIOS digest, got exit ${rc}\n${out}${err}")
+    endif()
+    expect_handoff("${out}")
+  elseif(CASE STREQUAL "movie.bios_mismatch")
+    # Fault prevented: a movie recorded with another BIOS replays, or runs
+    # frames before the refusal. Both digests are named and no frame runs.
+    file(SHA256 "${BIOS}" digest)
+    string(REPEAT "0" 64 zeros)
+    write_movie(bios_other.txt "${prolines}boot bios\nbios-sha256 ${zeros}\n" "2:${released}")
+    expect_exit(1 "^bios_sha256 ${digest}\nmuhtari-run: [^\n]*bios_other.txt: bios-sha256 ${zeros} [^\n]*${digest}\n$"
+      --hash-frame 1 --movie "${movie}" --bios "${BIOS}" "${ROM}")
+  elseif(CASE STREQUAL "movie.boot_bios_no_file")
+    # Fault prevented: a movie's boot bios runs fast-booted when no BIOS is
+    # given.
+    string(REPEAT "0" 64 zeros)
+    write_movie(bios_nofile.txt "${prolines}boot bios\nbios-sha256 ${zeros}\n" "2:${released}")
+    expect_exit(2 "the movie's boot bios needs --bios FILE.*${usage_line}"
+      --movie "${movie}" "${ROM}")
+  elseif(CASE STREQUAL "movie.boot_conflict")
+    # Fault prevented: --boot silently overrides a movie's boot key, as the
+    # port and region options may not.
+    file(SHA256 "${BIOS}" digest)
+    write_movie(boot_b.txt "${prolines}boot bios\nbios-sha256 ${digest}\n" "2:${released}")
+    expect_exit(2 "--boot fast conflicts with the movie's boot bios.*${usage_line}"
+      --boot fast --movie "${movie}" --bios "${BIOS}" "${ROM}")
+    write_movie(boot_f.txt "${prolines}boot fast\n" "2:${released}")
+    expect_exit(2 "--boot bios conflicts with the movie's boot fast.*${usage_line}"
+      --boot bios --bios "${BIOS}" --movie "${movie}" "${ROM}")
+  elseif(CASE STREQUAL "bios.rejected")
+    # Fault prevented: a cartridge the BIOS sends down its 2600 path runs on
+    # or exits as a failure. The input cart's $FFF8 is 0, which OpenBIOS's
+    # region check refuses.
+    expect_exit(77 "^bios_sha256 [0-9a-f]+\nmuhtari-run: [^\n]*input.a78: the BIOS rejected the cartridge\n$"
+      --frames 60 --boot bios --bios "${BIOS}" "${DIR}/input.a78")
+  elseif(CASE STREQUAL "bios.invalid")
+    # Fault prevented: a BIOS file of the wrong size boots, or is refused
+    # without naming the file.
+    string(REPEAT "x" 1000 bytes)
+    file(WRITE "${OUT}/bios1000.bin" "${bytes}")
+    expect_exit(1 "bios1000.bin: not a 4 KiB or 16 KiB BIOS image\n$"
+      --frames 1 --boot bios --bios "${OUT}/bios1000.bin" "${DIR}/input.a78")
+  elseif(CASE STREQUAL "usage.boot_bios_no_file")
+    expect_exit(2 "--boot bios needs --bios FILE.*${usage_line}" --frames 1 --boot bios)
+    expect_exit(2 "--bios needs --boot bios.*${usage_line}" --frames 1 --bios x.bin)
+    expect_exit(2 "--boot needs fast or bios.*${usage_line}" --frames 1 --boot slow)
+    expect_output("" --frames 1 --boot fast)
+  elseif(CASE STREQUAL "usage.port")
+    expect_exit(2 "--port1 needs auto, proline, joystick or none.*${usage_line}"
+      --frames 1 --port1 paddle)
+    expect_exit(2 "--port2 needs auto, proline, joystick or none.*${usage_line}" --frames 1 --port2)
+    expect_output("" --frames 1 --port1 joystick --port2 none)
+  elseif(CASE STREQUAL "usage.region_pal")
+    expect_exit(2 "--region pal is not supported: give auto or ntsc.*${usage_line}"
+      --frames 1 --region pal)
+    expect_output("" --frames 1 --region ntsc)
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
   endif()
@@ -292,6 +555,90 @@ muhtari_add_test(NAME runner.version
     -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner portable TIMEOUT 10)
 
+# Movies replayed on the input cart that muhtari-test-input writes into the
+# build tree (tests/input), each case writing its own movies into OUT.
+set(runner_movie_dir ${PROJECT_BINARY_DIR}/tests/runner-movies)
+file(MAKE_DIRECTORY ${runner_movie_dir})
+foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch conflict
+    behaviour_warning)
+  muhtari_add_test(NAME runner.movie.${case}
+    COMMAND ${runner_check} -DCASE=movie.${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
+      -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS runner portable TIMEOUT 1) # 2 x 0.45 s, Windows arm64, slowest of 17 runs, run 39373524239
+  set_tests_properties(runner.movie.${case} PROPERTIES FIXTURES_REQUIRED input_carts)
+endforeach()
+
+# Movies and runs that boot through OpenBIOS, which built.openbios
+# assembles, with simple, which built.simple builds, or the input cart.
+set(runner_bios ${PROJECT_BINARY_DIR}/built/openbios/openbios.bin)
+set(runner_simple ${PROJECT_BINARY_DIR}/built/simple/simple.bas.a78)
+foreach(case IN ITEMS movie.boot_bios movie.bios_mismatch movie.boot_bios_no_file
+    movie.boot_conflict bios.rejected bios.invalid)
+  muhtari_add_test(NAME runner.${case}
+    COMMAND ${runner_check} -DCASE=${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
+      -DBIOS=${runner_bios} -DROM=${runner_simple} -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS runner portable TIMEOUT 3) # 2 x 1.10 s, macOS x64, slowest of 13 runs, run 39382016958
+  set_tests_properties(runner.${case} PROPERTIES
+    FIXTURES_REQUIRED "input_carts;built_openbios;built_simple")
+endforeach()
+
+# Boot to play: spacephysics, which built.spacephysics builds, played from
+# the fast boot through muhtari-run (boot_to_play.cmake) and judged by
+# muhtari-test-boot-to-play from the hashes and dumps it records. F is the
+# frame after the ledger's title@120, H the frames held, and L the bound on
+# the response: the game draws thrust one frame after the input, measured.
+# Fault prevented: a game that boots and shows its title but does not
+# respond to a held control, or responds late, or never moves.
+add_executable(muhtari-test-boot-to-play
+  ${CMAKE_CURRENT_LIST_DIR}/boot_to_play.c
+  ${CMAKE_CURRENT_LIST_DIR}/png_read.c)
+# MSVC deprecates ISO C's fopen for its _s forms.
+target_compile_definitions(muhtari-test-boot-to-play PRIVATE
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+set_target_properties(muhtari-test-boot-to-play PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-boot-to-play)
+set(runner_play_dir ${PROJECT_BINARY_DIR}/tests/boot-to-play)
+set(runner_play_f 121)
+set(runner_play_h 60)
+set(runner_play_l 1)
+muhtari_add_test(NAME runner.boot_to_play
+  COMMAND ${CMAKE_COMMAND} -DRUNNER=$<TARGET_FILE:muhtari-run>
+    -DJUDGE=$<TARGET_FILE:muhtari-test-boot-to-play> "-DEMULATOR=${runner_emulator}"
+    -DROM=${PROJECT_BINARY_DIR}/built/spacephysics/spacephysics.bas.a78 -DOUT=${runner_play_dir}
+    -DF=${runner_play_f} -DH=${runner_play_h} -DL=${runner_play_l} -P ${CMAKE_CURRENT_LIST_DIR}/boot_to_play.cmake
+  LABELS runner portable TIMEOUT 9) # 2 x 4.21 s, macOS x64, slowest of 9 runs, run 39382016958
+set_tests_properties(runner.boot_to_play PROPERTIES
+  FIXTURES_REQUIRED built_spacephysics FIXTURES_SETUP boot_to_play)
+# The negative controls judge runner.boot_to_play's recorded runs, so each
+# must fail with exit 1 and its exact mask or message. The two mutants
+# transform the recorded output and never change the emulator. Fault
+# prevented: a judge that passes a run with no response, the input on the
+# wrong port, a direction whose mirror moves the same way, a picture that
+# never moves, or a response one frame late.
+function(runner_play_control name regex)
+  set(cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-test-boot-to-play> ${ARGN})
+  string(REPLACE ";" "$<SEMICOLON>" cmd "${cmd}")
+  muhtari_add_test(NAME runner.boot_to_play.${name}
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${cmd}" -DCODE=1 "-DREGEX=${regex}"
+      -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+    LABELS runner portable TIMEOUT 1) # 2 x 0.13 s, Windows arm64, slowest of 9 runs, run 39381705491
+  set_tests_properties(runner.boot_to_play.${name} PROPERTIES FIXTURES_REQUIRED boot_to_play)
+endfunction()
+set(runner_play ${runner_play_dir} ${runner_play_f} ${runner_play_h})
+runner_play_control(no_input "^mask 1:" play ${runner_play} ${runner_play_l} none none)
+runner_play_control(port2 "^mask 1:" play ${runner_play} ${runner_play_l} none port2)
+runner_play_control(mirrored "^sign did not flip:" mirrored ${runner_play} none input input up)
+runner_play_control(static_mutant "^mask 2:" static ${runner_play} ${runner_play_l} none input)
+runner_play_control(late_mutant "^mask 1:" late ${runner_play} ${runner_play_l} none input)
+
+# The device, region and boot options.
+foreach(case IN ITEMS usage.port usage.region_pal usage.boot_bios_no_file)
+  muhtari_add_test(NAME runner.${case}
+    COMMAND ${runner_check} -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS runner portable TIMEOUT 1) # 2 x 0.16 s, macOS x64, slowest of 17 runs, run 39377950148
+endforeach()
+
 # --probe on the images muhtari-test-images writes into the build directory;
 # no image bytes are tracked.
 set(runner_probe_dir ${CMAKE_BINARY_DIR}/runner-probe)
@@ -300,6 +647,15 @@ muhtari_add_test(NAME runner.probe.images
   COMMAND muhtari-test-images ${runner_probe_dir}
   LABELS runner portable TIMEOUT 30)
 set_tests_properties(runner.probe.images PROPERTIES FIXTURES_SETUP probe_images)
+# A cartridge FILE loaded and run: its hash is stable, and a PAL one is
+# refused.
+foreach(case IN ITEMS hash pal_refused)
+  muhtari_add_test(NAME runner.load.${case}
+    COMMAND ${runner_check} -DCASE=load.${case} -DDIR=${runner_probe_dir}
+      -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS runner portable TIMEOUT 1) # 2 x 0.35 s, macOS x64, slowest of 31 runs, run 39377950148
+  set_tests_properties(runner.load.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
+endforeach()
 foreach(case IN ITEMS accepted 2600 unsupported_board malformed truncated oversized usage
     unreadable headerless_rule)
   muhtari_add_test(NAME runner.probe.${case}
@@ -329,7 +685,7 @@ set_target_properties(muhtari-run-testdb PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-run-testdb)
 
-# --probe on 7800basic's simple sample, which built.samples builds into the
+# --probe on 7800basic's simple sample, which built.simple builds into the
 # build tree (tests/built/): headered and stripped through the shipped
 # runner, which finds the stripped one by its footer, and stripped through
 # muhtari-run-testdb, which finds it in the test hash list.
@@ -374,6 +730,7 @@ endforeach()
 # The PNG writer and its checksums, checked by an independent parse.
 add_executable(muhtari-test-png
   ${CMAKE_CURRENT_LIST_DIR}/test_png.c
+  ${CMAKE_CURRENT_LIST_DIR}/png_read.c
   ${PROJECT_SOURCE_DIR}/runner/png.c
   ${PROJECT_SOURCE_DIR}/runner/crc32.c)
 target_link_libraries(muhtari-test-png PRIVATE muhtari::muhtari muhtari_host)
@@ -408,6 +765,19 @@ muhtari_add_test(NAME runner.stop COMMAND muhtari-test-runner stop
 # RetroAchievements hash --probe prints, with nothing else to notice it.
 muhtari_add_test(NAME runner.md5 COMMAND muhtari-test-runner md5
   LABELS runner portable TIMEOUT 10)
+# The muhtari-movie 1 reader, linked alone: good movies and about thirty
+# bad ones, each refused at its exact line and column.
+add_executable(muhtari-test-movie
+  ${CMAKE_CURRENT_LIST_DIR}/test_movie.c
+  ${PROJECT_SOURCE_DIR}/runner/movie.c)
+target_link_libraries(muhtari-test-movie PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-movie PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-movie)
+# Fault prevented: a malformed or hostile movie runs part way, or is
+# refused at the wrong place, before the whole file is checked.
+muhtari_add_test(NAME runner.movie_parse COMMAND muhtari-test-movie
+  LABELS runner portable TIMEOUT 3) # 2 x 1.10 s, macOS x64, slowest of 18 runs, run 39380651205
 
 # Not portable: it reads docs/runner.md from the source tree.
 muhtari_add_test(NAME runner.exit.table
