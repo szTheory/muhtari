@@ -22,3 +22,4 @@ tests/vectors/fixtures/02.json	https://github.com/SingleStepTests/65x02	2f6980a2
 tests/vectors/fixtures/a9-bad-a.json	https://github.com/SingleStepTests/65x02	2f6980a2d95757486c7bee24355c360e40e2a224	MIT	20b293107d78f60a8425d296171663d5784fec5f0f0787b157f4fe23f2d9aa2f	singlesteptests
 tests/cpu/decimal/clark-6502.bin	this-repo	ca244aa36b8f4e870bd3ee68935abfe474f274a7	LicenseRef-PublicDomain	1d4e8f0ee46acdf8c37b10959c390fa5a9321e183b36b308125b37488ccf083c	-
 tests/cpu/decimal/clark-65c02.bin	this-repo	ca244aa36b8f4e870bd3ee68935abfe474f274a7	LicenseRef-PublicDomain	8bc70bb49f92673fcc5189adf275c04d0dd294395c82ab83df87b0a1b0d448e1	-
+tests/diag/dma.a78	this-repo	1bc0c65d4ff99154e53b1df4d5fd1e97a1cb3eeb	MIT	250f8bf089a817d57ae506ff72adecacd399871bda7175dda999b6c7c1407e65	-

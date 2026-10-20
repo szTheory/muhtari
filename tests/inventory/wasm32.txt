@@ -402,6 +402,7 @@ cpu.vectors.ff	portable,vectors
 cpu.vectors.pin	vectors
 cpu.vectors.reader	portable,vectors
 cpu.vectors.self_test	portable,vectors
+diag.dma	diag,portable
 docs.api_names	policy
 docs.api_names.self_test	policy
 docs.budgets	policy
