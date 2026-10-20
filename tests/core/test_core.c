@@ -454,7 +454,7 @@ static void test_synth_mix(void)
 static void test_silence(void)
 {
     /* The manual's 8-bit fast timer reloads at T+3, first IRQ/output
-       at T+4, then every N+4 clocks (hardware/pokey.md). */
+       at T+N+8, then every N+4 clocks (manual figure8, pokey.md). */
     const uint8_t divisors[] = {0u, 1u, 255u};
     for (unsigned d = 0; d < 3u; d++) {
         muhtari *p = make();
@@ -467,7 +467,7 @@ static void test_silence(void)
         muhtari__pokey_write(p, 0u, 1u, 0xAFu, 0u);
         muhtari__pokey_write(p, 0u, 14u, 1u, 0u);
         muhtari__pokey_write(p, 0u, 9u, 0u, 0u);
-        uint64_t first = 4u * ((uint64_t)divisors[d] + 4u);
+        uint64_t first = 4u * ((uint64_t)divisors[d] + 8u);
         muhtari__pokey_catch_up(p, first - 1u);
         CHECK_EQ_U64(p->synth.raw[2], 0u);
         CHECK(!muhtari__pokey_irq(p, 0u));

@@ -79,7 +79,7 @@ struct muhtari__pokey_channel {
     uint64_t reload, fire, last_fire;
     uint32_t fires;
     uint16_t count;
-    uint8_t audf, audc, output, hp;
+    uint8_t audf, audc, output, hp, starting;
 };
 struct muhtari__pokey {
     uint64_t cycle, tick, half;
