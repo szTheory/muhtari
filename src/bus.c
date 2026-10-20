@@ -4,12 +4,13 @@
 #include "internal.h"
 
 /* What answers an address (docs/hardware/bus.md, Memory map). DEV_OPEN is
-   every address nothing on the board drives yet: the cartridge and BIOS
-   space with nothing loaded, and the unused windows. DEV_RIOT is the
-   RIOT's ports and timer at $0280-$02FF and its RAM at $0480-$04FF, with
-   their mirrors. DEV_TIA and DEV_RIOT, and every address while MEN = 0,
-   take slow cycles. */
-enum bus_device { DEV_OPEN, DEV_RAM, DEV_MARIA, DEV_TIA, DEV_RIOT };
+   every address nothing drives: the unused windows in pages 2 and 3, and
+   with MEN = 0 everything outside the TIA and the RIOT. DEV_CART is
+   cartridge space, which the board answers through src/cart.c, or leaves
+   to the open-bus byte. DEV_RIOT is the RIOT's ports and timer at
+   $0280-$02FF and its RAM at $0480-$04FF, with their mirrors. DEV_TIA and
+   DEV_RIOT, and every address while MEN = 0, take slow cycles. */
+enum bus_device { DEV_OPEN, DEV_RAM, DEV_MARIA, DEV_TIA, DEV_RIOT, DEV_CART };
 
 /* A fast cycle is 4 ticks with its data at the phi2 fall, tick 4; a slow
    cycle is 6 ticks with its data at tick 5 (docs/hardware/bus.md, Clocks). */
@@ -25,7 +26,8 @@ static int men(const muhtari *m)
 
 /* With MEN = 1: the TIA at $00-$1F and MARIA at $20-$3F of pages 0-3, RAM
    at $40-$FF of pages 0 and 1, the RIOT's ports at $280 and $380 and its RAM
-   at $480 and $580, and system RAM at $1800-$27FF. With MEN = 0, the 2600
+   at $480 and $580, system RAM at $1800-$27FF, and the cartridge
+   everywhere else from $0400 up. With MEN = 0, the 2600
    decode: A12 = 0 selects the TIA when A7 = 0 and the RIOT when A7 = 1, and
    there is no system RAM (docs/hardware/bus.md, Memory map). */
 static enum bus_device decode(const muhtari *m, uint16_t addr)
@@ -50,12 +52,12 @@ static enum bus_device decode(const muhtari *m, uint16_t addr)
         return low < 0x80u ? DEV_OPEN : DEV_RIOT; /* $0280, $0380: src/riot.c */
     }
     if (addr < 0x0600u) {
-        return (addr & 0x80u) != 0u ? DEV_RIOT : DEV_OPEN; /* $0480, $0580: src/riot.c */
+        return (addr & 0x80u) != 0u ? DEV_RIOT : DEV_CART; /* $0480, $0580: src/riot.c */
     }
     if (addr >= MUHTARI__RAM_BASE && addr < MUHTARI__RAM_BASE + MUHTARI__RAM_SIZE) {
         return DEV_RAM;
     }
-    return DEV_OPEN;
+    return DEV_CART;
 }
 
 /* $0040-$00FF and $0140-$01FF are the same RAM as $2040-$20FF and
@@ -204,6 +206,8 @@ uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
         v = muhtari__tia_read(m, addr);
     } else if (dev == DEV_RIOT) {
         v = muhtari__riot_read(m, addr);
+    } else if (dev == DEV_CART) {
+        v = muhtari__cart_read(m, addr, 0);
     }
     m->bus.open_bus = v;
     end(m, len);
@@ -237,6 +241,8 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
         rearm(m);
     } else if (dev == DEV_RIOT) {
         muhtari__riot_write(m, addr, v);
+    } else if (dev == DEV_CART) {
+        muhtari__cart_write(m, addr, v);
     }
     m->bus.open_bus = v;
     end(m, len);

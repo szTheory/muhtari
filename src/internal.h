@@ -20,6 +20,12 @@
 #define MUHTARI__TICKS_PER_PERIOD 13125u
 #define MUHTARI__MAX_AUDIO_SAMPLES 801u
 
+/* The beam: a line is 454 ticks, and a frame's VBLANK starts at line 258,
+   t 42, the boundary between one muhtari_run_frame and the next
+   (A7800-SYSTEM section 2; docs/hardware/bus.md, The run loop). */
+#define MUHTARI__LINE_TICKS 454u
+#define MUHTARI__VBLANK_START (258u * MUHTARI__LINE_TICKS + 42u)
+
 /* The bounds of muhtari_frame.video_pitch. The cap keeps row offsets inside a
    32-bit size_t. */
 #define MUHTARI__PITCH_MIN 320u
@@ -186,11 +192,18 @@ struct muhtari__maria {
     uint8_t line_ram[2][MUHTARI__LINE_CELLS];
     struct muhtari__line_stats stats[MUHTARI__LINES_NTSC];
     uint32_t features;
+    uint64_t origin; /* the tick of line 0, t 0 of the current frame */
 };
 
+/* With content loaded, each muhtari_run_frame runs from frame_start to
+   frame_deadline, both VBLANK-start ticks except frame_start after the
+   hand-off (docs/hardware/bus.md, The run loop). */
 struct muhtari {
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
+    uint8_t loaded;              /* content is loaded and handed off */
+    uint64_t frame_start;
+    uint64_t frame_deadline;
     struct muhtari__cpu cpu;
     struct muhtari__bus bus;
     struct muhtari__riot riot;
@@ -319,6 +332,20 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
    leaves m unchanged. muhtari_destroy frees it (docs/hardware/cartridge.md,
    Loading). */
 muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n);
+
+/* The cartridge as the bus sees it, by board (docs/hardware/bus.md, Memory
+   map). read returns the byte the board drives at addr, or the open-bus
+   byte where it drives none; by_maria is 1 for MARIA's DMA fetches. write
+   is a CPU write into cartridge space. peek reads like read with no side
+   effect, for the hand-off and the tests. */
+uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria);
+void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v);
+uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr);
+
+/* The fast-boot hand-off: puts the machine where the NTSC BIOS leaves it as
+   it jumps to the cartridge, with no BIOS run (A7800-SYSTEM section 7, C10;
+   docs/hardware/bus.md, The run loop). Needs a loaded cartridge. */
+void muhtari__boot_fast(muhtari *m);
 
 /* The test card's native colour at (x, y) in a frame h rows tall. */
 uint8_t muhtari__testcard_pixel(uint32_t x, uint32_t y, uint32_t h);

@@ -754,3 +754,38 @@ muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n)
     m->cart.info = info;
     return MUHTARI_STATUS_OK;
 }
+
+/* A linear board maps its ROM so that it ends at $FFFF; below the ROM's
+   start nothing drives the bus (A7800-CARTRIDGES-AND-PERIPHERALS section
+   2.1). Other boards drive nothing yet. No function-pointer table: the
+   board is a switch, so the core keeps no mutable global. */
+uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
+{
+    switch (m->cart.info.board) {
+    case MUHTARI_BOARD_LINEAR: {
+        uint32_t base = 0x10000u - m->cart.info.rom_size;
+        if (m->cart.rom != NULL && addr >= base) {
+            return m->cart.rom[addr - base];
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return m->bus.open_bus;
+}
+
+uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
+{
+    (void)by_maria; /* a linear board answers MARIA and the CPU alike */
+    return muhtari__cart_peek(m, addr);
+}
+
+/* A linear board has no register and no RAM, so a write changes nothing;
+   the banked boards add their cases here. */
+void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
+{
+    (void)m;
+    (void)addr;
+    (void)v;
+}

@@ -338,6 +338,7 @@ docs.api_names	policy
 docs.api_names.self_test	policy
 docs.budgets	policy
 embed.subdirectory	install
+frame.jam_ends	frame,portable
 fuzz.regress.loader	fuzz,portable
 fuzz.regress.loader.self_test	fuzz,portable
 host.palette	host,portable
