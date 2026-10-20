@@ -193,7 +193,7 @@ jobs:
   # The four property tests at 10,000 cases each, seeded with this run's ID,
   # under the names a pull request runs at 100 from a fixed seed. A failure
   # prints the seed and case to rerun locally. MUHTARI_TIMEOUT_SCALE 10 gives
-  # each test 600 s; the slowest took 68 s at 10,000 cases on an M1.
+  # each test 600 s; the slowest took 188 s at 10,000 cases, run 39377950042.
   # Report-only: it stays out of report's needs and keeps continue-on-error
   # until it has passed 10 runs on main, then gates with a timeout of twice
   # its slowest run.
