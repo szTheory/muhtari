@@ -5,11 +5,11 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: verifying
-stopped_at: Completed 03-19-PLAN.md
-last_updated: "2026-10-20T07:07:42.259Z"
+stopped_at: Phase 3 code-review fix round 1 complete; pending re-review
+last_updated: "2026-10-20T15:52:11Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-19 complete (measured limits, the gate-code tally, label docs, probe PR closed, ship title checked)
-state_head: f427c51d773ee9cfb2cfda034cc073fe7bb11cd2
+last_activity_desc: Code-review fix round 1 completed all five warnings; one fix round remains
+state_head: 70c2a05d83e271f18b46752eb70fd6d0a87005d2
 progress:
   total_phases: 4
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 
 ## Current Position
 
-Phase: 3 (Games play in RetroArch) — EXECUTING
+Phase: 3 (Games play in RetroArch) — VERIFYING
 Plan: 19 of 19
-Status: Phase complete — ready for verification
-Last activity: 2026-10-20 — Plan 03-19 complete: every TIMEOUT and timeout-minutes phase 3 added is measured from 31 ci.yml and 11 nightly runs' job logs (be32 7 min, 2 x 184 s; prop 8; vectors-full 9; library still provisional on 7 runs); gate code 1,367 narrow lines against 7,415 src/ (18.4 %), shortfall routed to the owner in SEED-007; perf_compare.cmake 126 to 95 lines; docs/testing.md links every emulation label; WR-05, IN-04 and IN-01 closed in the re-review todo; POKEY re-pin todo added; probe PR #12 closed unmerged; ship title passes check-title.sh; green on CI 39383824898 and Nightly 39383824826
+Status: Code-review fix round 1 complete — pending re-review and phase re-verification
+Last activity: 2026-10-20 — Code-review fix round 1: WR-01 through WR-05 committed with cartridge geometry, libretro failure and BIOS fallback regressions. Local ci passed 588 tests plus 6 release checks; hygiene passed 24 checks. One fix round remains. Existing verification stays gaps_found until phase re-verification; no gap re-plan is needed.
 
 Progress: [█████░░░░░] 50%
 
@@ -289,6 +289,8 @@ Recent decisions affecting current work:
 - [Phase 03]: Plan 19: gate code is 1,367 narrow lines against 7,415 src/ lines (18.4 %, 25.5 % without cartdb.c); perf_compare.cmake trimmed 126 to 95; the shortfall and four candidate cuts are in SEED-007 as the owner's call at /gsd-ship 3
 - [Phase 03]: Plan 19: probe PR #12 closed unmerged; ship title 'feat: games play in RetroArch with MARIA, cartridges, boot and input' passes check-title.sh (exit 0), so the merge cuts 0.3.0
 
+- [Phase 03]: Code-review fix round 1 resolved WR-01 through WR-05; five info findings remain outside --fix scope. One fix round remains. Next: $gsd-code-review 3, then phase re-verification for the existing WR-05 gap; no new gap plan.
+
 ### Pending Todos
 
 - [2026-10-16] [ci] Promote the wasm32 lane into CI required — [todo file](.planning/todos/pending/2026-10-16-promote-the-wasm32-lane-into-ci-required.md)
@@ -330,6 +332,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T07:07:42.137Z
-Stopped at: Completed 03-19-PLAN.md
+Last session: 2026-10-20T15:52:11Z
+Stopped at: Phase 3 code-review fix round 1 complete; next command: $gsd-code-review 3
 Resume file: None
