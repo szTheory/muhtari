@@ -155,9 +155,10 @@ output matches the expected message; a crash or a missing file does not count as
 ## Fixtures and the firmware scans
 
 `tests/roms/manifest.txt` lists every binary file the repository may hold: its path, source, pin, licence, SHA-256
-and notice section (ASSET_POLICY.md section 2). Today that is the vector sample, three vector fixtures, Clark's
-two test builds and the `dma` diagnostic. `policy.rom_hash_coverage` (hygiene lane) requires each row's file to exist with that SHA-256, a row
-for every file under `tests/roms/` and in a fuzz `regress` directory, and at most 512 KiB under `tests/fuzz/`.
+and notice section (ASSET_POLICY.md section 2). Today that is the vector sample, three vector fixtures, Clark's two
+test builds and the `cpu`, `dli` and `dma` diagnostics. `policy.rom_hash_coverage` (hygiene lane) requires each
+row's file to exist with that SHA-256, a row for every file under `tests/roms/` and in a fuzz `regress` directory,
+and at most 512 KiB under `tests/fuzz/`.
 
 The firmware scan (`tests/cmake/firmware_scan.cmake`) hashes files with SHA-1 and SHA-256, whole and, for an A78
 image, again without its 128-byte header. It fails on a digest in `tests/release/firmware.txt` (BIOS and HSC

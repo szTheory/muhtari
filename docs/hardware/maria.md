@@ -274,9 +274,26 @@ sets no mode bit. The `DLI_QUEUED` and `DMA_BLOCKED` bits are set with the line 
 
 ## Diagnostic expected values
 
-The `dma` diagnostic ROM (`tests/diag/dma.s`) measures DMA cost the way a program on the console can: as CPU
-cycles lost to HALT, read from the RIOT timer. Every value in `tests/diag/expected.csv` is derived here from the
-constants above before the ROM first runs; the emulator's output is never copied into a gating row.
+Three diagnostic ROMs measure what a program on the console can, mostly through the RIOT timer. Every value in
+`tests/diag/expected.csv` is derived here from the constants above before the ROM first runs; the emulator's output
+is never copied into a gating row, and a row changes only when its derivation here is shown wrong.
+
+| ROM | Mailbox id | Records, in order | Derived in |
+|-----|------------|-------------------|------------|
+| `tests/diag/dma.s` | 1 | 27: `null` to `over_16` | the table below |
+| `tests/diag/cpu.s` | 2 | 4: `tia`, `riot_ram`, `riot`, `ram` | The cpu ROM |
+| `tests/diag/dli.s` | 3 | 11: `zone1`, `zone2`, `zone0`, `parked`, `wsync_1`, `wsync_3`, `rdy_store`, `set_lines`, `clear_lines`, `set_polls`, `clear_polls` | The dli ROM |
+
+Record n has test id n and is the n-th row for its ROM in `expected.csv`.
+
+**Not measured here.** Five checks wait for runs on hardware. A 5-byte header with width 0 is taken as 32 bytes,
+which no source has measured. Kangaroo mode and 320B's transparent pairs show only in the picture, so frame hashes
+cover them: the samples' now, and a `modes` diagnostic's when it lands. INPTCTRL's two-write HALT gate runs before
+any cartridge code on a console, since the BIOS writes INPTCTRL first; the bus tests cover it. The RIOT's timer
+edges are covered by the RIOT tests. A raster-numbered background split, one colour change per line, would fix the
+first visible line and the first pixel on a capture.
+
+The `dma` diagnostic ROM (`tests/diag/dma.s`) measures DMA cost as CPU cycles lost to HALT.
 
 **The measurement.** Each test runs in one frame. In VBLANK the ROM points DPPH and DPPL at the test's DLL and turns
 DMA on, so VBE at line 16 loads zone 0's entry; when MSTAT clears it turns DMA off again, so lines 17 and on run no
