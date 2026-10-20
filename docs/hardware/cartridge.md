@@ -260,6 +260,9 @@ Record n has test id n and is the n-th row for its ROM.
 | `tests/diag/bank6.s` | 5 | SuperGame, 8 banks, bank 6 at $4000 | 12: `power_on`, `at_4000`, `at_c000`, `sel_0` to `sel_7`, `sel_11` |
 | `tests/diag/sg144.s` | 6 | SuperGame 144K, 9 banks, bank 0 at $4000 | 12: `power_on`, `at_4000`, `at_c000`, `sel_0` to `sel_7`, `sel_9` |
 
+The `modes` ROM is a plain SuperGame board of 4 banks; its `at_4000` reads bank 2, the second-to-last
+(`docs/hardware/maria.md`, The modes ROM).
+
 **linear16.** The 16 KiB ROM ends at $FFFF, so it starts at $C000, whose byte is $16: `c000` = 22. Nothing drives
 $4000-$BFFF. A read there returns the open-bus byte (`docs/hardware/bus.md`, Open bus), and the last byte on the bus
 before `LDA abs`'s read is the operand's high byte. So `LDA $4000` gives `at_4000` = $40 = 64, `LDA $8000` gives

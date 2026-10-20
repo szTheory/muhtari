@@ -283,12 +283,13 @@ is never copied into a gating row, and a row changes only when its derivation he
 | `tests/diag/dma.s` | 1 | 27: `null` to `over_16` | the table below |
 | `tests/diag/cpu.s` | 2 | 4: `tia`, `riot_ram`, `riot`, `ram` | The cpu ROM |
 | `tests/diag/dli.s` | 3 | 11: `zone1`, `zone2`, `zone0`, `parked`, `wsync_1`, `wsync_3`, `rdy_store`, `set_lines`, `clear_lines`, `set_polls`, `clear_polls` | The dli ROM |
+| `tests/diag/modes.s` | 7 | 2: `at_4000`, `zones` | The modes ROM |
 
 Record n has test id n and is the n-th row for its ROM in `expected.csv`.
 
 **Not measured here.** Five checks wait for runs on hardware. A 5-byte header with width 0 is taken as 32 bytes,
 which no source has measured. Kangaroo mode and 320B's transparent pairs show only in the picture, so frame hashes
-cover them: the samples' now, and a `modes` diagnostic's when it lands. INPTCTRL's two-write HALT gate runs before
+cover them: the samples' and the `modes` ROM's (The modes ROM). INPTCTRL's two-write HALT gate runs before
 any cartridge code on a console, since the BIOS writes INPTCTRL first; the bus tests cover it. The RIOT's timer
 edges are covered by the RIOT tests. A raster-numbered background split, one colour change per line, would fix the
 first visible line and the first pixel on a capture.
@@ -514,6 +515,33 @@ For the polls, the WSYNC loop releases into `dex` and `bne` not taken, and each 
 t φ + 36, before t 42, and the second at t φ + 68, after it. An edge at t 0, as MAME puts it, would give 1; an edge
 past t 68 would give 3 or more. The lines are MiSTer's `video_sync.sv` (`VBLANK_START` 258), as
 `.planning/preparation/CONFORMANCE.md` cites it, and the poll counts its edge at column 0, t 42.
+
+### The modes ROM: read modes, kangaroo mode and 2-byte characters
+
+The `modes` diagnostic (`tests/diag/modes.s`) draws what no sample does: 160B, 320B and 320D (read mode 2), kangaroo
+mode and 2-byte indirect characters. Its picture is the evidence, pinned by a frame hash; its mailbox records two
+numbers, and the core's feature mask shows each mode (Statistics, above).
+
+It is a plain SuperGame board of 4 banks, 64 KiB, each bank starting with its own number, and runs from the last bank
+at $C000. Its DLL is a 16-line empty zone, then five 16-line zones each followed by an 8-line empty zone, then seven
+16-line empty zones, past line 258. Only the five drawn zones' entries have DLI set. Each DLI's handler counts it and
+writes CTRL from a table, so a zone's bursts and rasters all run in its own mode: the edge comes on the last line of
+the empty zone before it, and the next one comes 24 lines later. In VBLANK the ROM sets CTRL back to 160A and the
+count to 0. Every object has a 5-byte header, so each sets its own write mode.
+
+| Zone | CTRL | Objects |
+|------|------|---------|
+| 1, 160B | $40: read mode 0 | two direct, write mode 1 |
+| 2, 320B | $42: read mode 2 | two direct, write mode 1 |
+| 3, 320D | $42: read mode 2 | two direct, write mode 0 |
+| 4, kangaroo | $44: kangaroo, read mode 0 | two overlapping direct, write mode 0 |
+| 5, 2-byte characters | $50: 2-byte characters, read mode 0 | one indirect, write mode 0 |
+
+- `at_4000`: a plain SuperGame board maps its second-to-last bank at $4000-$7FFF (`docs/hardware/cartridge.md`,
+  SuperGame). With 4 banks that is bank 2, so `lda $4000` reads **2**. Source: guide.
+- `zones`: the DLIs counted from MSTAT's clear edge to its set edge in one frame after DMA is turned on. Each entry
+  with DLI set raises one NMI when the previous zone's last burst reads it (The DLI), the edges are 24 lines apart,
+  and zone 0's entry has none, so the count is the number of drawn zones, **5**. Source: guide.
 
 ## Fitted values
 
