@@ -492,7 +492,9 @@ static int nmi_latched_in_cycle(void)
 
 /* One edge at a time: an edge at tick 14, raised while the edge at tick 6
    is not yet latched, is ignored and returns 0, so cycle 2 latches the
-   first. */
+   first. A 1 means the edge is queued for latching, not that it latches:
+   an edge queued at tick 6, with a second raise refused behind it, is
+   dropped by the latch when MEN is cleared before cycle 2. */
 static int nmi_one_edge_at_a_time(void)
 {
     int ok = 1;
@@ -505,6 +507,19 @@ static int nmi_one_edge_at_a_time(void)
     }
     ok &= expect_count("a second edge before the first is latched", "as nmi_phi2", m->bus.nmi_phi2,
                        2u, "the second edge replacing the first", 4u);
+
+    const char *dropped = "a queued edge dropped by the latch";
+    m = fresh(LOCKED_7800);
+    ok &= expect_taken(dropped, muhtari__bus_raise_nmi(m, 6u), 1, "refusing an edge MEN drops");
+    ok &= expect_taken(dropped, muhtari__bus_raise_nmi(m, 14u), 0,
+                       "a second edge queued behind the first");
+    m->bus.inptctrl = (uint8_t)(m->bus.inptctrl & ~MUHTARI__INPTCTRL_MEN);
+    for (int i = 0; i < 4; i++) {
+        (void)muhtari__bus_read(m, 0x1800u);
+    }
+    ok &= expect_count(dropped, "as nmi_phi2", m->bus.nmi_phi2, 0u, "latching under MEN = 0", 2u);
+    ok &= expect_count(dropped, "as nmi_pending", m->bus.nmi_pending, 0u, "keeping the edge queued",
+                       1u);
     return ok;
 }
 

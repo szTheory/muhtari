@@ -36,6 +36,7 @@ static int16_t audio[2u * MUHTARI__MAX_AUDIO_SAMPLES];
 /* An instance running code from $4000 after the fast-boot hand-off: the
    body is zero but for the code and the reset vector. NULL on failure. */
 static muhtari *boot_image(const uint8_t *img, size_t n);
+static muhtari_status frame_into(muhtari *m, uint8_t *rows);
 
 static muhtari *boot(const uint8_t *code, size_t n)
 {
@@ -448,6 +449,134 @@ static int dma_blocked_flag(void)
     return check_failures == 0;
 }
 
+/* Writes v at addr of the loaded 48 KiB ROM, which maps $4000-$FFFF. */
+static void rom_poke(muhtari *m, uint16_t addr, uint8_t v)
+{
+    m->cart.rom[addr - ROM_BASE] = v;
+}
+
+/* Zone 1's DLL entry has DLI set, so the burst on zone 0's last line,
+   line 32 (VBE on line 16, then 16 lines from 17), reads it and raises
+   NMI on the second phi1 after /HALT rises, inside the line's hold. The
+   CPU, looping on a JMP, enters the handler on line 32, and the line's
+   statistics say the bus queued the edge (docs/hardware/maria.md, The
+   DLI). */
+static int dli_queued(void)
+{
+    /* clang-format off */
+    static const uint8_t code[] = {
+        0xA9u, CTRL_DMA_ON,  /* $4000 LDA #$40 */
+        0x85u, 0x3Cu,        /* $4002 STA CTRL */
+        0x4Cu, 0x04u, 0x40u, /* $4004 JMP $4004 */
+        0x40u,               /* $4007 RTI, the NMI handler */
+    };
+    /* clang-format on */
+    muhtari *m = boot(code, sizeof code);
+    uint32_t samples = 0u;
+    uint32_t entered = 0u;
+    if (m == NULL) {
+        return 0;
+    }
+    rom_poke(m, 0xFFFAu, 0x07u);
+    rom_poke(m, 0xFFFBu, 0x40u);
+    for (uint16_t z = 0u; z < ZONES; z++) {
+        poke(m, (uint16_t)(DLL_AT + 3u * z), z == 1u ? 0x8Fu : 0x0Fu);
+        poke(m, (uint16_t)(DLL_AT + 3u * z + 1u), (uint8_t)(DL_AT >> 8));
+        poke(m, (uint16_t)(DLL_AT + 3u * z + 2u), (uint8_t)(DL_AT & 0xFFu));
+    }
+    CHECK_EQ_U64(frame(m, &samples), MUHTARI_STATUS_OK);
+    while (m->bus.ticks < FRAME + VBLANK_START) {
+        muhtari__cpu_step(m);
+        if (m->cpu.pc == 0x4007u) {
+            entered++;
+            CHECK_EQ_U64((m->bus.ticks - m->maria.origin) / LINE, 32u);
+        }
+    }
+    CHECK_EQ_U64(entered, 1u);
+    CHECK_EQ_HEX(m->maria.stats[32].flags &
+                     (MUHTARI__LINE_LAST | MUHTARI__LINE_DLI | MUHTARI__LINE_DLI_QUEUED),
+                 MUHTARI__LINE_LAST | MUHTARI__LINE_DLI | MUHTARI__LINE_DLI_QUEUED);
+    CHECK_EQ_HEX(m->maria.stats[31].flags & MUHTARI__LINE_DLI_QUEUED, 0u);
+    CHECK((m->maria.features & MUHTARI__FEAT_DLI_QUEUED) != 0u);
+    muhtari_destroy(m);
+    return check_failures == 0;
+}
+
+/* An instance showing a simple-shaped picture: 16 zones of 16 lines, each
+   DL one 4-byte object of two graphics bytes at $5000 plus OFFSET pages,
+   palette 0, at cell 10, and a loop that keeps writing P0C1, so every
+   frame renders spans between register writes. NULL on failure. */
+static muhtari *picture(void)
+{
+    /* clang-format off */
+    static const uint8_t code[] = {
+        0xA9u, 0x0Fu,        /* $4000 LDA #$0F */
+        0x85u, 0x20u,        /* $4002 STA BACKGRND */
+        0xA9u, 0x44u,        /* $4004 LDA #$44 */
+        0x85u, 0x23u,        /* $4006 STA P0C3 */
+        0xA9u, CTRL_DMA_ON,  /* $4008 LDA #$40 */
+        0x85u, 0x3Cu,        /* $400A STA CTRL */
+        0xE8u,               /* $400C INX */
+        0x86u, 0x21u,        /* $400D STX P0C1 */
+        0x4Cu, 0x0Cu, 0x40u, /* $400F JMP $400C */
+    };
+    /* clang-format on */
+    muhtari *m = boot(code, sizeof code);
+    if (m == NULL) {
+        return NULL;
+    }
+    for (uint16_t page = 0u; page < 16u; page++) {
+        rom_poke(m, (uint16_t)(0x5000u + 0x100u * page), (uint8_t)(0xC3u ^ page));
+        rom_poke(m, (uint16_t)(0x5001u + 0x100u * page), (uint8_t)(0x5Au + page));
+    }
+    for (uint16_t z = 0u; z < ZONES; z++) {
+        poke(m, (uint16_t)(DLL_AT + 3u * z), 0x0Fu);
+        poke(m, (uint16_t)(DLL_AT + 3u * z + 1u), (uint8_t)(DL_AT >> 8));
+        poke(m, (uint16_t)(DLL_AT + 3u * z + 2u), (uint8_t)(DL_AT & 0xFFu));
+    }
+    poke(m, DL_AT, 0x00u);      /* graphics address low */
+    poke(m, DL_AT + 1u, 30u);   /* palette 0, width 32 - 30 = 2 */
+    poke(m, DL_AT + 2u, 0x50u); /* graphics address high */
+    poke(m, DL_AT + 3u, 10u);   /* hpos */
+    return m;
+}
+
+/* Ten frames of the picture with video and with no video leave the same
+   line RAM, statistics, feature mask, CPU and RAM: rendering never changes
+   the machine. The frames with video hold a picture of more than one
+   colour, so the spans really ran. */
+static int null_video_same_state(void)
+{
+    muhtari *a = picture();
+    muhtari *b = picture();
+    uint32_t colours[256] = {0u};
+    uint32_t distinct = 0u;
+    if (a == NULL || b == NULL) {
+        return 0;
+    }
+    for (uint32_t k = 0u; k < 10u; k++) {
+        CHECK_EQ_U64(frame_into(a, video), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(frame_into(b, NULL), MUHTARI_STATUS_OK);
+    }
+    for (size_t i = 0u; i < sizeof video; i++) {
+        distinct += colours[video[i]]++ == 0u ? 1u : 0u;
+    }
+    CHECK(distinct >= 3u);
+    CHECK(memcmp(a->maria.line_ram, b->maria.line_ram, sizeof a->maria.line_ram) == 0);
+    CHECK(memcmp(a->maria.stats, b->maria.stats, sizeof a->maria.stats) == 0);
+    CHECK_EQ_HEX(a->maria.features, b->maria.features);
+    CHECK_EQ_U64(a->maria.write_buf, b->maria.write_buf);
+    CHECK_EQ_U64(a->maria.px, b->maria.px);
+    CHECK(memcmp(a->maria.reg, b->maria.reg, sizeof a->maria.reg) == 0);
+    CHECK(memcmp(&a->cpu, &b->cpu, sizeof a->cpu) == 0);
+    CHECK_EQ_U64(a->bus.ticks, b->bus.ticks);
+    CHECK_EQ_U64(a->bus.phi2, b->bus.phi2);
+    CHECK(memcmp(a->ram, b->ram, sizeof a->ram) == 0);
+    muhtari_destroy(a);
+    muhtari_destroy(b);
+    return check_failures == 0;
+}
+
 /* The whole of a file, in memory the caller frees; NULL on failure. */
 static uint8_t *read_file(const char *path, size_t *n)
 {
@@ -577,6 +706,8 @@ static const struct {
     {"handoff_state", handoff_state},
     {"first_frame_partial", first_frame_partial},
     {"dma_blocked_flag", dma_blocked_flag},
+    {"dli_queued", dli_queued},
+    {"null_video_same_state", null_video_same_state},
 };
 
 int main(int argc, char **argv)
