@@ -110,6 +110,7 @@ Five lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vec
 | `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
 | `built` | Samples built from pinned tools (`tests/built/`). `built.<name>` builds one 7800basic 0.41 sample per row of `expected.txt` under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/<name>/`, and checks the `.a78` and `.bin` SHA-256s in that row. `runner.probe.sample_*` then probe `simple`: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` (`docs/emulation-tests.md`, basic). |
+| `diag` | Our own diagnostic ROMs judged through their mailbox against values derived beforehand, and the core's statistics (`docs/emulation-tests.md`, diag). `diag.rebuild` carries `built`. |
 | `bench` | The runner's benchmark report. |
 | `libretro` | The libretro core in an in-process host, its `.info` file and its vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
@@ -135,6 +136,8 @@ output matches the expected message; a crash or a missing file does not count as
 | `runner.hashes_compare.byte.self_test` | Two `hashes.txt` files one byte apart. |
 | `abi.nofp_fixture` | On the `nofp` lane, a file holding one `double` division, which must fail to compile with GCC's `-mgeneral-regs-only` diagnostic. |
 | `built.samples.self_test` | An `expected.txt` whose `.a78` digest differs in one digit; the build must exit 1 with `simple: .a78 SHA-256 drift`. |
+| `diag.rebuild.self_test` | A manifest copy whose `dma.a78` digest differs in one digit; the rebuild must exit 1 with `tests/diag/dma.a78: SHA-256 drift`. |
+| `diag.expected.self_test` | An `expected.csv` copy with the `null` value changed; the driver must exit 1 failing that record. |
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
 | `policy.cartdb_generated.self_test` | A copy of `src/cartdb.c` with one byte changed; the check must exit 1 with `src/cartdb.c differs from the generator output`. |
 | `hygiene.firmware_scan.self_test` | The same synthetic file tracked in a fixture repository; the tracked-file scan must exit 1 with `matches synthetic (header stripped)`. |
@@ -152,8 +155,8 @@ output matches the expected message; a crash or a missing file does not count as
 ## Fixtures and the firmware scans
 
 `tests/roms/manifest.txt` lists every binary file the repository may hold: its path, source, pin, licence, SHA-256
-and notice section (ASSET_POLICY.md section 2). Today that is the vector sample, three vector fixtures and Clark's
-two test builds. `policy.rom_hash_coverage` (hygiene lane) requires each row's file to exist with that SHA-256, a row
+and notice section (ASSET_POLICY.md section 2). Today that is the vector sample, three vector fixtures, Clark's
+two test builds and the `dma` diagnostic. `policy.rom_hash_coverage` (hygiene lane) requires each row's file to exist with that SHA-256, a row
 for every file under `tests/roms/` and in a fuzz `regress` directory, and at most 512 KiB under `tests/fuzz/`.
 
 The firmware scan (`tests/cmake/firmware_scan.cmake`) hashes files with SHA-1 and SHA-256, whole and, for an A78

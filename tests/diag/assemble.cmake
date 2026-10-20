@@ -1,7 +1,7 @@
 # Rebuild a committed diagnostic from its source and compare its bytes, run as
 #   cmake -DWASMTIME=<wasmtime> -DPKG=<7800basic package> -DSRC=<rom>.s
 #         [-DCFG=<rom>.cfg] -DOUT=<dir> -DMANIFEST=<manifest.txt>
-#         [-DPATH=<repo path>] [-DKEEP=<dest>] -P assemble.cmake
+#         [-DPATH=<repo path>] [-DVARIANT=65c02] [-DKEEP=<dest>] -P assemble.cmake
 # Fault prevented: a source edit or a tool change leaving the committed bytes
 # stale. The committed file's SHA-256 is field 5 of its manifest row.
 #
@@ -10,7 +10,9 @@
 # 7800header.wasm -o -f <rom>.cfg, which writes <rom>.a78. Without a CFG the
 # result is dasm's plain output, <rom>.bin. Every .s beside SRC is copied in,
 # for its includes. PATH, the row to compare with, defaults to SRC's path from
-# the repository root with the result's extension. KEEP copies the result to
+# the repository root with the result's extension. VARIANT 65c02 builds
+# tests/cpu/decimal/clark.s's 65C02 control: the copy calls A65C02 and S65C02
+# for A6502 and S6502, as the file's header says. KEEP copies the result to
 # KEEP and prints its digest instead of comparing, to create or update a
 # fixture before its manifest row is written.
 cmake_minimum_required(VERSION 3.25)
@@ -38,6 +40,13 @@ file(REMOVE_RECURSE "${dir}")
 file(MAKE_DIRECTORY "${dir}")
 file(GLOB sources "${src_dir}/*.s")
 file(COPY ${sources} ${CFG} DESTINATION "${dir}")
+if(VARIANT STREQUAL "65c02")
+  file(READ "${dir}/${name}.s" text)
+  string(REGEX REPLACE "JSR ([AS])6502" "JSR \\165C02" text "${text}")
+  file(WRITE "${dir}/${name}.s" "${text}")
+elseif(NOT "${VARIANT}" STREQUAL "")
+  message(FATAL_ERROR "assemble: unknown -DVARIANT=${VARIANT}")
+endif()
 
 set(run "${WASMTIME}" run --dir=. "--dir=${pkg}::/b")
 

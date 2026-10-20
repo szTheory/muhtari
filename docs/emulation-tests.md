@@ -93,3 +93,63 @@ An intended change that moves a pin is handled in one of two ways:
 
 A drift with no intended cause is a bug to fix, never a new pin.
 
+
+## diag
+
+`diag.*` runs this repository's own diagnostic ROMs, which measure the hardware the way a program on the console
+can and report numbers, never verdicts. Each `tests/diag/<rom>.s` is MIT 6502 code with an SPDX line. It includes
+`tests/diag/lib.s` (the registers, the mailbox, its CRC and a results screen in our own hex glyphs) and is committed
+beside its `<rom>.cfg` and the signed `<rom>.a78` built from them, with a row in `tests/roms/manifest.txt`. The same
+bytes run on hardware from a flash cartridge. `dma` measures DMA cost; `docs/hardware/maria.md`, Diagnostic expected
+values, says how and derives every value it reports.
+
+**The mailbox** is RAM at $2200-$22FF:
+
+| Address | Content |
+|---------|---------|
+| $2200-$2203 | magic `M7DG` |
+| $2204 | version 1 |
+| $2205 | status: $80 running, $00 done, written last |
+| $2206, $2207 | records written; the ROM's id |
+| $2208-$2209 | CRC-16 of $2210-$22FF, low byte first: polynomial $1021, initial $FFFF, no reflection, no final XOR |
+| $2210 + 4n | record n: test id n + 1, flags (bit 0 valid), a 16-bit value, low byte first |
+
+The results screen shows one row per record, `NN VVVV` in hex, and the CRC on the last row, so a photographed screen
+can be transcribed and checked.
+
+**The driver.** `muhtari-test-diag ROM EXPECTED [STATS]` (`tests/diag/driver.c`) loads the ROM with `muhtari_load`,
+fast-boots it, and reads the mailbox at the end of each frame, the VBLANK start, through `muhtari__peek`, which
+changes no state. It stops when the magic is there and the status is $00, and fails as `hang` after 600 frames. It
+then checks the version and the CRC and judges record n against the n-th row of `tests/diag/expected.csv` for the
+ROM, which it names from the file name. A missing or extra record, a wrong id or an unset valid bit fails. It prints
+one line per record and exits 0 when all pass, 1 when one fails, and 2 on a usage or file error. No verdict lives in
+the ROM or the runner.
+
+**`expected.csv`** has the columns `rom,test,value,source`. The value is a number or an inclusive `lo-hi` range,
+where the hardware leaves a choice the ROM cannot see. The source is `hw` (a hardware measurement), `guide` (the
+Software Guide or a datasheet), `rtl` (the PLA re-simulation) or `fit` (a fitted value). A `hw` or `guide` value is
+derived in `docs/hardware/maria.md` and committed before the ROM that reports it first runs; only a `fit` value may
+be read off the emulator. `git log` shows the order.
+
+**`stats.csv`**, `rom,test,ordinary,last,objects`, records each DMA test a second time. On the frame where a record
+appears, the driver finds the first line from 17 to 258 that ran DMA and requires the core's statistics for it to
+show the row's cost for its kind, ordinary or last, and its objects; `-` means a line of that kind must not appear.
+It prints `stats agree` or `stats disagree` for each.
+
+**Rebuilding.** `diag.rebuild` (label `built`) assembles each `tests/diag/*.s` that has a `.cfg`, and Bruce Clark's
+`tests/cpu/decimal/clark.s` as printed and as its 65C02 control, with the pinned `dasm.wasm -f3`, `7800sign.wasm -w`
+and `7800header.wasm` under wasmtime (`tests/diag/assemble.cmake`), and requires each result's SHA-256 to equal its
+manifest row's. After a source edit, derive and commit any new expected value first, then write the new bytes with
+
+    cmake -DWASMTIME=build/pins/wasmtime/wasmtime -DPKG=build/pins/7800basic -DSRC=tests/diag/<rom>.s \
+          -DCFG=tests/diag/<rom>.cfg -DOUT=build/diag -DMANIFEST=tests/roms/manifest.txt \
+          -DKEEP=tests/diag/<rom>.a78 -P tests/diag/assemble.cmake
+
+commit the source, and then the `.a78` with its manifest row's digest and pin set to that commit.
+
+| Test | Covers |
+|------|--------|
+| `diag.dma` | the `dma` ROM's 27 records against `expected.csv`, each DMA record also against `stats.csv` |
+| `diag.rebuild` | the committed diagnostics and Clark's two builds rebuilt from source, byte for byte |
+| `diag.rebuild.self_test` | a manifest copy with one digit of `dma.a78`'s digest changed must fail with `tests/diag/dma.a78: SHA-256 drift` |
+| `diag.expected.self_test` | an `expected.csv` copy whose `null` value is 242 must fail on that record |
