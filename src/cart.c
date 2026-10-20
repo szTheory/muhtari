@@ -636,7 +636,10 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct
         out->port1 = (e->flags & MUHTARI__CARTDB_LIGHTGUN) != 0u ? MUHTARI_PORT_LIGHTGUN
                                                                  : MUHTARI_PORT_PROLINE;
         out->port2 = MUHTARI_PORT_PROLINE;
-        return cart_refused(&b) ? MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD : MUHTARI_STATUS_OK;
+        if (cart_refused(&b)) {
+            return MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+        }
+        return cart_fits(&b, n) ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_INVALID_IMAGE;
     }
     if (cart_find_2600(digest, t->prefix, t->prefix_count)) {
         out->kind = MUHTARI_KIND_2600;

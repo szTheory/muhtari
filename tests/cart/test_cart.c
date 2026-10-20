@@ -157,7 +157,7 @@ static void test_accepted(void)
 
     /* A headerless image matching a PAL light-gun list entry takes the
        entry's board, RAM, sound and region, and a light gun on port 1. */
-    size_t n = images_2600(buf, 16u * IMAGES_KIB);
+    size_t n = images_2600(buf, 32u * IMAGES_KIB);
     struct muhtari__cartdb_entry e;
     memset(&e, 0, sizeof e);
     e.board = MUHTARI_BOARD_SUPERGAME;
@@ -177,6 +177,32 @@ static void test_accepted(void)
     CHECK_EQ_U64(out.port1, MUHTARI_PORT_LIGHTGUN);
     CHECK_EQ_U64(out.port2, MUHTARI_PORT_PROLINE);
     CHECK_EQ_U64(out.rom_size, n);
+
+    /* A hash match supplies metadata, but cannot make invalid geometry safe.
+       Check both sides of each minimum/maximum before a mapper can run. */
+    static const struct {
+        uint32_t kib;
+        uint8_t board;
+        uint8_t options;
+        muhtari_status status;
+    } geometry[] = {
+        {4u, MUHTARI_BOARD_SUPERGAME, 0u, MUHTARI_STATUS_ERR_INVALID_IMAGE},
+        {16u, MUHTARI_BOARD_SUPERGAME, 0u, MUHTARI_STATUS_ERR_INVALID_IMAGE},
+        {32u, MUHTARI_BOARD_SUPERGAME, 0u, MUHTARI_STATUS_OK},
+        {16u, MUHTARI_BOARD_SUPERGAME, MUHTARI_BOARD_ROM_AT_4000, MUHTARI_STATUS_ERR_INVALID_IMAGE},
+        {32u, MUHTARI_BOARD_SUPERGAME, MUHTARI_BOARD_ROM_AT_4000, MUHTARI_STATUS_ERR_INVALID_IMAGE},
+        {48u, MUHTARI_BOARD_SUPERGAME, MUHTARI_BOARD_ROM_AT_4000, MUHTARI_STATUS_OK},
+        {64u, MUHTARI_BOARD_LINEAR, 0u, MUHTARI_STATUS_OK},
+        {80u, MUHTARI_BOARD_LINEAR, 0u, MUHTARI_STATUS_ERR_INVALID_IMAGE},
+    };
+    for (size_t i = 0; i < sizeof geometry / sizeof geometry[0]; i++) {
+        n = images_2600(buf, geometry[i].kib * IMAGES_KIB);
+        memset(&e, 0, sizeof e);
+        e.board = geometry[i].board;
+        e.board_options = geometry[i].options;
+        e.parts = 1u;
+        CHECK_EQ_U64(identify_listed(buf, n, buf, n, e, 0, &out), geometry[i].status);
+    }
 }
 
 /* The argument checks come first, and none of them writes out. */

@@ -120,7 +120,7 @@ spaces is common, the 7800basic tools write it, and sets nothing. Region is PAL 
    larger than the bytes present, and invalid otherwise. A short body that fits its board loads as the bytes present.
 3. **The 7800 list**, for an image without the magic, by the whole image, as for a header. The entry gives the board, RAM,
    sound and region (PAL for a PAL-only entry, else NTSC), and port 1 is a light gun for a light-gun entry, ProLine
-   otherwise; port 2 is ProLine.
+   otherwise; port 2 is ProLine. The image must fit the entry's board geometry or is invalid.
 4. **The 2600 list**, by the first 8 bytes of the same SHA-1: a 2600 image.
 5. **The footer test** below: a headerless 7800 image, linear up to 48 KiB and SuperGame above, which must fit that
    board's geometry or is invalid.
