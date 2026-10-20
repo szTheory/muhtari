@@ -161,8 +161,27 @@ static void joined_pcm_trace(void)
     muhtari__pokey_write(m, 0u, 3u, 0xAFu, 0u);
     muhtari__pokey_write(m, 0u, 6u, 0u, 0u);
     muhtari__pokey_write(m, 0u, 9u, 0u, 0u);
-    for (unsigned cycle = 1u; cycle <= 48u; cycle++) {
+    static muhtari reference;
+    memset(&reference, 0, sizeof reference);
+    muhtari__synth_reset(&reference, 0u, 2u);
+    unsigned output = 1u, latch = 1u, captured = 0u, delay = 0u;
+    for (unsigned cycle = 1u; cycle <= 3281u; cycle++) {
+        for (unsigned half = 0u; half < 2u; half++) {
+            uint64_t tick = cycle * 4u - 2u + half * 2u;
+            if (delay != 0u && --delay == 0u)
+                latch = captured;
+            if (half != 0u) {
+                if (cycle >= 11u && (cycle - 11u) % 7u == 0u)
+                    output ^= 1u;
+                if (cycle >= 24u && (cycle - 24u) % 28u == 0u) {
+                    captured = output;
+                    delay = 3u;
+                }
+            }
+            muhtari__synth_level(&reference, tick, 3u, (uint16_t)((output ^ latch) * 206u));
+        }
         (void)muhtari__bus_read(m, 0x1800u);
+        CHECK_EQ_U64(m->synth.raw[3], (output ^ latch) * 206u);
         if (cycle == 10u)
             CHECK_EQ_U64(m->pokey[0].channel[1].fires, 0u);
         if (cycle == 11u) {
@@ -175,10 +194,11 @@ static void joined_pcm_trace(void)
         if (cycle == 24u)
             CHECK_EQ_U64(m->pokey[0].hp_delay[1], 3u);
     }
-    CHECK_EQ_U64(m->pokey[0].channel[1].last_fire, 184u);
-    int16_t pcm[88];
-    muhtari__pokey_catch_up(m, 13124u);
+    CHECK_EQ_U64(m->pokey[0].channel[1].last_fire, (11u + 467u * 7u) * 4u);
+    int16_t pcm[88], expected[88];
     CHECK_EQ_U64(muhtari__synth_render(m, 13125u, pcm), 88u);
+    CHECK_EQ_U64(muhtari__synth_render(&reference, 13125u, expected), 88u);
+    CHECK(memcmp(pcm, expected, sizeof pcm) == 0);
     unsigned nonzero = 0u;
     for (unsigned i = 0; i < 88u; i++)
         nonzero += pcm[i] != 0;
@@ -290,6 +310,13 @@ static void two_tone_vectors(void)
         CHECK_EQ_U64(m->pokey[0].channel[0].last_fire, fires[i] * 4u);
         CHECK_EQ_U64(m->pokey[0].channel[0].fires, i + 1u);
     }
+    m = fresh();
+    muhtari__pokey_write(m, 0u, 8u, 64u, 0u);
+    muhtari__pokey_write(m, 0u, 15u, 139u, 0u);
+    muhtari__pokey_write(m, 0u, 9u, 0u, 0u);
+    run_to(m, 20u);
+    CHECK_EQ_U64(m->pokey[0].channel[0].fires, 4u);
+    CHECK_EQ_U64(m->pokey[0].channel[0].last_fire, 80u);
     for (unsigned force = 0u; force < 2u; force++) {
         m = fresh();
         muhtari__pokey_write(m, 0u, 8u, 64u, 0u);
@@ -301,8 +328,8 @@ static void two_tone_vectors(void)
         CHECK_EQ_U64(m->pokey[0].channel[1].last_fire, 96u);
         run_to(m, 45u);
         /* Adjacent resyncs at24/25 extend N+4 by3. Force break
-           removes timer1 resync, leaving only timer2's reload at24. */
-        CHECK_EQ_U64(m->pokey[0].channel[0].last_fire, force != 0u ? 176u : 180u);
+           removes timer1 resync; timer2 still resyncs at25. */
+        CHECK_EQ_U64(m->pokey[0].channel[0].last_fire, 180u);
     }
 }
 

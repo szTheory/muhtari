@@ -28,6 +28,8 @@ void muhtari__pokey_reset(muhtari *m, unsigned chip)
     p->irqst = 255u;
     p->tick = m->bus.clock_origin_tick;
     p->cycle = m->bus.clock_origin_phi2;
+    p->carry[0] = p->carry[1] = UINT64_MAX;
+    p->resync[0] = p->resync[1] = UINT64_MAX;
     p->prescale28 = 19u;
     p->prescale114 = 78u;
     for (unsigned ch = 0; ch < 4u; ch++) {
@@ -61,13 +63,26 @@ static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
         struct muhtari__pokey_channel *c = &p->channel[ch];
         unsigned direct =
             (ch == 0u && (p->audctl & 64u) != 0u) || (ch == 2u && (p->audctl & 32u) != 0u);
+        unsigned joined = (p->audctl & (ch < 2u ? 16u : 8u)) != 0u;
         unsigned pulse = direct != 0u ? 1u : (p->audctl & 1u) != 0u ? base114 : base28;
+        if (joined != 0u && (ch & 1u) != 0u) {
+            pulse = p->carry[ch / 2u] == p->cycle;
+            direct = (p->audctl & (ch == 1u ? 64u : 32u)) != 0u;
+            if (pulse != 0u)
+                p->carry[ch / 2u] = UINT64_MAX;
+        }
         /* Process old pipeline output before a new underflow can queue
            its successor. Equal-tick channel order is always1,2,3,4. */
         if (p->cycle == c->fire) {
             c->fire = UINT64_MAX;
             if ((c->audc & 0xA0u) == 0xA0u) {
                 c->output ^= 1u;
+            }
+            /* Serial output idles at mark. Only its two-tone timer
+               selection is modeled: timer2 unconditional, timer1 mark
+               unless force-break. Manual chapter5, two-tone resync. */
+            if ((p->skctl & 8u) != 0u && (ch == 1u || (ch == 0u && (p->skctl & 128u) == 0u))) {
+                p->resync[ch] = p->cycle + 1u;
             }
             c->last_fire = tick;
             c->fires++;
@@ -88,12 +103,38 @@ static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
             c->starting = 0u;
         } else if (c->reload == UINT64_MAX && pulse != 0u) {
             if (c->count == 0u) {
-                c->reload = p->cycle + 3u;
                 c->fire = p->cycle + (direct != 0u ? 4u : 5u);
+                if (joined != 0u && (ch & 1u) == 0u) {
+                    /* Linked low counter wraps without reloading; its
+                       carry reaches the high counter three clocks later.
+                       Manual chapter5, linked timer fire timing. */
+                    c->count = 255u;
+                    p->carry[ch / 2u] = p->cycle + 3u;
+                } else {
+                    c->reload = p->cycle + (direct != 0u ? 3u : 4u);
+                    if (joined != 0u)
+                        p->channel[ch - 1u].reload = c->reload;
+                }
             } else {
                 c->count--;
             }
         }
+    }
+    if (p->resync[0] == p->cycle || p->resync[1] == p->cycle) {
+        for (unsigned i = 0u; i < 2u; i++) {
+            if (p->resync[i] == p->cycle)
+                p->resync[i] = UINT64_MAX;
+            struct muhtari__pokey_channel *c = &p->channel[i];
+            c->count = c->audf;
+            c->reload = UINT64_MAX;
+            c->starting = 0u;
+            /* A pulse already delivered this clock survives; a later
+               pulse is preempted. Adjacent delivered pulses may leave
+               two distinct resyncs, one on each following clock. */
+            if (c->fire > p->cycle)
+                c->fire = UINT64_MAX;
+        }
+        p->carry[0] = UINT64_MAX;
     }
 }
 
@@ -162,10 +203,14 @@ void muhtari__pokey_write(muhtari *m, unsigned chip, uint8_t reg, uint8_t v, uin
             }
         }
     } else if (reg == 9u) {
+        p->carry[0] = p->carry[1] = UINT64_MAX;
         for (unsigned ch = 0; ch < 4u; ch++) {
             p->channel[ch].output = 1u;
             p->channel[ch].reload = p->cycle + 3u;
-            p->channel[ch].fire = UINT64_MAX;
+            /* Figure8: T+4 preempts IRQST atT+8, but T+5 cannot.
+               A pulse past that boundary is already in the pipeline. */
+            if (p->channel[ch].fire >= p->cycle + 4u)
+                p->channel[ch].fire = UINT64_MAX;
             p->channel[ch].starting = 1u;
             level(m, chip, ch, tick);
         }
@@ -177,6 +222,8 @@ void muhtari__pokey_write(muhtari *m, unsigned chip, uint8_t reg, uint8_t v, uin
             p->prescale28 = 19u;
             p->prescale114 = 78u;
         }
+        if ((v & 8u) == 0u)
+            p->resync[0] = p->resync[1] = UINT64_MAX;
         p->skctl = v;
     }
 }

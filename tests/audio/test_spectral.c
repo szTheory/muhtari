@@ -141,14 +141,27 @@ static void capture_pokey(const struct tone *t, unsigned slow, unsigned word, un
             muhtari__pokey_write(m, chip, 9u, 0u, t->offset);
         }
     }
+    if (hp >= 2u) {
+        for (unsigned chip = 0; chip < t->chips; chip++) {
+            muhtari__pokey_write(m, chip, 8u, hp == 2u ? 0x72u : 0x64u, t->offset);
+            muhtari__pokey_write(m, chip, 0u, 0u, t->offset);
+            muhtari__pokey_write(m, chip, 4u, 0u, t->offset);
+            muhtari__pokey_write(m, chip, 1u, hp == 2u ? 0u : 0xAFu, t->offset);
+            muhtari__pokey_write(m, chip, 3u, hp == 2u ? 0xAFu : 0u, t->offset);
+            if (hp == 3u)
+                muhtari__pokey_write(m, chip, 15u, 11u, t->offset);
+            muhtari__pokey_write(m, chip, 9u, 0u, t->offset);
+        }
+    }
+    unsigned observed = hp == 2u ? 3u : 2u;
     uint64_t start = t->offset, next = start + 2u, horizon = 0u;
     unsigned cycles = 0u, samples = 0u, falling = 0u, transitions = 0u;
     while (samples < SETTLE + N) {
         uint64_t end = horizon + 13125u;
         while (next < end) {
-            unsigned before = m->synth.raw[2];
+            unsigned before = m->synth.raw[observed];
             muhtari__pokey_half_edge(m, next, (int)falling);
-            transitions += before != m->synth.raw[2];
+            transitions += before != m->synth.raw[observed];
             if (falling != 0u) {
                 cycles++;
                 /* Independent falling-cycle arithmetic: initial reload then
@@ -158,7 +171,7 @@ static void capture_pokey(const struct tone *t, unsigned slow, unsigned word, un
                     reference_high ^= 1u;
                     source_level(reference, t, next, reference_high);
                 }
-                if (hp != 0u && cycles == 4u) {
+                if (hp == 1u && cycles == 4u) {
                     for (unsigned chip = 0; chip < t->chips; chip++) {
                         muhtari__pokey_write(m, chip, 4u, 2u, next);
                     }
@@ -512,6 +525,20 @@ int main(int argc, char **argv)
             struct spectrum result = measure(&t);
             REQUIRE(result.db < -80.0);
             printf("mixed representative HP%u: %.8f dBFS\n", hp, result.db);
+        }
+    }
+    if (controls == 0u) {
+        /* Joined $0000+HP and two-tone AUDF0+HP repeat within28
+           clocks (manual chapter5). Even wholly slow gives >=42kHz:
+           no physical line is in the judged band and none is masked. */
+        for (unsigned mode = 2u; mode <= 3u; mode++) {
+            for (unsigned slow = 0u; slow < 2u; slow++) {
+                struct tone t = {0u, 0u, 2u, 1u, 29u};
+                capture_pokey(&t, slow, 0u, 0u, mode);
+                struct spectrum result = measure(&t);
+                REQUIRE(result.db < -80.0);
+                printf("joined/two-tone HP mode%u slow%u: %.8f dBFS\n", mode, slow, result.db);
+            }
         }
     }
     printf("worst TIA %.5f dBc, POKEY-equivalent %.5f dBFS\n", worst[0], worst[1]);

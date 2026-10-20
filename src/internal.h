@@ -83,6 +83,7 @@ struct muhtari__pokey_channel {
 };
 struct muhtari__pokey {
     uint64_t cycle, tick, half;
+    uint64_t carry[2], resync[2];
     uint32_t poly17;
     uint16_t prescale28, prescale114;
     uint8_t audctl, skctl, irqen, irqst, initialized;

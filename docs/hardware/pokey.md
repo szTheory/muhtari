@@ -33,7 +33,7 @@ STIMER output polarity, cold state, analog cartridge loading and
 sub-cycle races are confidence-qualified adopted behavior, pending
 hardware evidence.
 
-## Clock integration and implemented timer subset
+## Clock integration and timers
 
 The bus supplies each actual half edge before accessing data. A fast or
 held cycle starting at s rises at s+2 and falls at s+4, completing at s+4.
@@ -47,11 +47,30 @@ Only channels1/3 select the direct machine clock. Other timers use shared
 divide28 or divide114 prescalers, whose adopted initial phases produce
 first pulses at19/78 and first zero-divisor IRQs at24/83. Base timers use
 (N+1) prescaler periods. Reload samples AUDF after the split-counter delay.
-The current implementation covers independent timers, square and
-volume-only output, timer IRQ requests and running17-bit RANDOM state.
-Joined counters, other distortion modes and the complete init/noise
-pipeline belong to the following chip expansion; CPU IRQ acceptance and
-cartridge address decoding belong to their integration slices.
+Both joined pairs are implemented. The low counter wraps every256 input
+pulses without reloading; its carry reaches the high counter three clocks
+later. High underflow reloads both, giving N+7 fast clocks or (N+1) base
+pulses for the combined16-bit N. Each high period contains AUDF_high+1
+low pulses. The high output follows the last low output by three clocks.
+CPU IRQ acceptance and cartridge address decoding have separate integration.
+
+AUDF is sampled on reload, so writes throughT+2 affect the initialT+3
+reload; the next unjoined fast reload isT+7 for AUDF0. STIMER atT+4
+preempts the pendingT+8 pulse; T+5 preserves it. The manual prose names
+T+9 for the joined second reload, while figure8 labelsT+9 as the last
+AUDF write (a deadline, not the latch). The adopted pipeline follows that
+figure: shared latch atT+10, high output atT+11, then seven clocks apart.
+This documentary discrepancy remains a hardware-measurement question.
+
+Two-tone uses an idle mark serial data bit: timer2 always resynchronizes
+both counters, timer1 does so unless force-break selects space. This
+models only the timer interaction; there is no serial peripheral. The
+extra reload follows the ordinary reload by two clocks and produces
+fast AUDF0 outputs at8,14,20. Adjacent delivered timer pulses retain
+both resyncs; same-cycle pulses coalesce. Force-break suppresses timer1's
+resync without suppressing its sound output. Resync does not fabricate
+audio pulses. A base timer's reload precedes its output by one clock,
+absorbing the extra delay before the next prescaler pulse.
 
 High-pass captures the low output when its high timer fires, then updates
 the XOR latch on the third subsequent actual half edge. All-fast delay
