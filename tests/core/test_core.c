@@ -309,6 +309,24 @@ static void test_silence(void)
         total += io.audio_count;
     }
     CHECK_EQ_U64(total, (uint64_t)13125u * TICKS_PER_FRAME * SAMPLES_PER_PERIOD / TICKS_PER_PERIOD);
+
+    /* Exercise the shipped reconstruction separately from the silent card.
+       During bootstrap the public silent path supplies the negative control. */
+#ifdef MUHTARI__SYNTH_TAPS
+    muhtari__synth_reset(m, 0u, 0u);
+    muhtari__synth_level(m, 0u, 0u, 15u);
+    uint32_t reconstructed = muhtari__synth_render(m, 13125u, audio);
+#else
+    frame_io(&io, NULL, 0u, audio, AUDIO_CAP);
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    uint32_t reconstructed = 88u;
+#endif
+    CHECK_EQ_U64(reconstructed, 88u);
+    int nonzero = 0;
+    for (uint32_t i = 0; i < reconstructed; i++) {
+        nonzero |= audio[i] != 0;
+    }
+    CHECK(nonzero);
     muhtari_destroy(m);
 }
 
