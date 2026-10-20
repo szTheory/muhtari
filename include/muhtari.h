@@ -181,6 +181,47 @@ typedef struct muhtari_media {
 muhtari_status muhtari_load(muhtari *m, const muhtari_media *media);
 muhtari_status muhtari_power_cycle(muhtari *m);
 
+enum {
+    MUHTARI_BUTTON_UP = 1u,
+    MUHTARI_BUTTON_DOWN = 2u,
+    MUHTARI_BUTTON_LEFT = 4u,
+    MUHTARI_BUTTON_RIGHT = 8u,
+    MUHTARI_BUTTON_1 = 16u,
+    MUHTARI_BUTTON_2 = 32u
+};
+enum {
+    MUHTARI_SWITCH_RESET = 1u,
+    MUHTARI_SWITCH_SELECT = 2u,
+    MUHTARI_SWITCH_PAUSE = 4u,
+    MUHTARI_SWITCH_LEFT_DIFFICULTY_A = 8u,
+    MUHTARI_SWITCH_RIGHT_DIFFICULTY_A = 16u
+};
+
+typedef struct muhtari_input {
+    uint32_t size;
+    uint32_t device[2];  /* 0: the cartridge's; MUHTARI_PORT_PROLINE, _JOYSTICK, _UNPLUGGED */
+    uint32_t buttons[2]; /* MUHTARI_BUTTON_*, pressed = 1 */
+    uint32_t switches;   /* MUHTARI_SWITCH_*: held = 1; a difficulty bit set = A */
+} muhtari_input;
+
+enum { MUHTARI_MEMORY_SYSTEM_RAM = 1, MUHTARI_MEMORY_RIOT_RAM = 2, MUHTARI_MEMORY_CART_RAM = 3 };
+
+typedef struct muhtari_span {
+    uint32_t size;
+    uint8_t *data; /* stable from load to destroy; NULL when absent */
+    size_t bytes;
+} muhtari_span;
+
+typedef struct muhtari_counters {
+    uint32_t size;
+    uint64_t frames;     /* since load or power cycle */
+    uint64_t lag_frames; /* frames with no CPU read of SWCHA, SWCHB or INPT0-5 */
+} muhtari_counters;
+
+muhtari_status muhtari_set_input(muhtari *m, const muhtari_input *in);
+muhtari_status muhtari_get_memory(muhtari *m, uint32_t kind, muhtari_span *out);
+muhtari_status muhtari_get_counters(const muhtari *m, muhtari_counters *out);
+
 #ifdef __cplusplus
 }
 #endif

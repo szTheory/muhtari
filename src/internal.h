@@ -209,6 +209,23 @@ struct muhtari__maria {
     uint16_t px;
 };
 
+/* The controller ports as the host sets them (docs/embedding.md, Input).
+   device, buttons and switches are the input applied to the machine, each
+   device as the host asked, 0 for the cartridge's; the pending_ fields are
+   the last input set, waiting for the next VBLANK start, while pending is
+   set. Pending input is not machine state. input_read records a CPU read
+   of SWCHA, SWCHB or INPT0-5 in the current frame. */
+struct muhtari__ports {
+    uint32_t device[2];
+    uint32_t buttons[2];
+    uint32_t switches;
+    uint32_t pending_device[2];
+    uint32_t pending_buttons[2];
+    uint32_t pending_switches;
+    uint8_t pending;
+    uint8_t input_read;
+};
+
 /* The largest BIOS image: 16 KiB at $C000-$FFFF (A7800-SYSTEM section 7). */
 #define MUHTARI__BIOS_SIZE_MAX 16384u
 
@@ -228,6 +245,9 @@ struct muhtari {
     struct muhtari__maria maria;
     struct muhtari__profile profile;
     struct muhtari__cart cart;
+    struct muhtari__ports ports;
+    uint64_t frames;                /* frames run since the last load or power cycle */
+    uint64_t lag_frames;            /* of those, frames with no CPU read of an input */
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
     uint32_t bios_size;
     uint8_t bios[16384];
@@ -247,6 +267,10 @@ _Static_assert(sizeof(((muhtari *)0)->bios) == MUHTARI__BIOS_SIZE_MAX, "bios arr
 #define MUHTARI__CART_INFO_SIZE_FIRST                                                              \
     ((uint32_t)(offsetof(muhtari_cart_info, title) + sizeof(((muhtari_cart_info *)0)->title)))
 #define MUHTARI__MEDIA_SIZE_FIRST ((uint32_t)(offsetof(muhtari_media, bios_size) + sizeof(size_t)))
+#define MUHTARI__INPUT_SIZE_FIRST ((uint32_t)(offsetof(muhtari_input, switches) + sizeof(uint32_t)))
+#define MUHTARI__SPAN_SIZE_FIRST ((uint32_t)(offsetof(muhtari_span, bytes) + sizeof(size_t)))
+#define MUHTARI__COUNTERS_SIZE_FIRST                                                               \
+    ((uint32_t)(offsetof(muhtari_counters, lag_frames) + sizeof(uint64_t)))
 
 /* The public layouts, pinned on every target. P is the pointer size; every
    field sits where the previous one ends, except that muhtari_config's
@@ -334,6 +358,27 @@ _Static_assert(offsetof(muhtari_media, image_size) == 8 + MUHTARI__P, "media.ima
 _Static_assert(offsetof(muhtari_media, bios) == 8 + 2 * MUHTARI__P, "media.bios");
 _Static_assert(offsetof(muhtari_media, bios_size) == 8 + 3 * MUHTARI__P, "media.bios_size");
 _Static_assert(sizeof(muhtari_media) == 8 + 4 * MUHTARI__P, "media size");
+
+/* muhtari_input is six uint32_t fields: 24 bytes on every target. */
+_Static_assert(offsetof(muhtari_input, size) == 0, "input.size");
+_Static_assert(offsetof(muhtari_input, device) == 4, "input.device");
+_Static_assert(offsetof(muhtari_input, buttons) == 12, "input.buttons");
+_Static_assert(offsetof(muhtari_input, switches) == 20, "input.switches");
+_Static_assert(sizeof(muhtari_input) == 24, "input size");
+
+/* muhtari_span: the size, then a pointer and a size_t from P on, so 64-bit
+   targets carry 4 alignment bytes after the size field. */
+_Static_assert(offsetof(muhtari_span, size) == 0, "span.size");
+_Static_assert(offsetof(muhtari_span, data) == MUHTARI__P, "span.data");
+_Static_assert(offsetof(muhtari_span, bytes) == 2 * MUHTARI__P, "span.bytes");
+_Static_assert(sizeof(muhtari_span) == 3 * MUHTARI__P, "span size");
+
+/* muhtari_counters: the size, 4 alignment bytes, then two uint64_t fields,
+   which every target aligns to 8: 24 bytes. */
+_Static_assert(offsetof(muhtari_counters, size) == 0, "counters.size");
+_Static_assert(offsetof(muhtari_counters, frames) == 8, "counters.frames");
+_Static_assert(offsetof(muhtari_counters, lag_frames) == 16, "counters.lag_frames");
+_Static_assert(sizeof(muhtari_counters) == 24, "counters size");
 
 /* Returns OK when the size tag at s is at least first and every byte past
    ours is zero; ERR_STRUCT_SIZE otherwise. */
@@ -468,5 +513,22 @@ void muhtari__cpu_step(muhtari *m);
 /* Puts the CPU, the bus, RAM and the RIOT in their power-on state under
    m->profile, and arms MARIA's line events from the beam at that tick. */
 void muhtari__power_on(muhtari *m);
+
+/* The byte a CPU read of addr would return, with no side effect: no timer
+   flag cleared, no cycle run, no input read recorded. For the tests. */
+uint8_t muhtari__bus_peek(const muhtari *m, uint16_t addr);
+uint8_t muhtari__riot_peek(const muhtari *m, uint16_t addr);
+
+/* Applies the pending input, if any, at a VBLANK start (src/ports.c;
+   docs/embedding.md, Input). */
+void muhtari__ports_latch(muhtari *m);
+
+/* The device wired to port 0 or 1: MUHTARI_PORT_PROLINE, _JOYSTICK or
+   _UNPLUGGED, the host's choice or else the cartridge's, where a header
+   device this version does not model is wired as a ProLine. */
+uint32_t muhtari__ports_device(const muhtari *m, uint32_t port);
+
+/* Starts the counters and the lag flag from zero, at load and power cycle. */
+void muhtari__ports_reset_counters(muhtari *m);
 
 #endif /* MUHTARI_INTERNAL_H */

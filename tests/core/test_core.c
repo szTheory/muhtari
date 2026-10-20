@@ -1,4 +1,6 @@
 /* The core library through its public header: muhtari-test-core <case>.
+   The input, lag and memory cases also look inside the instance through
+   src/internal.h, at what the public API does not show.
    Expected test-card values follow the card's rules as docs/ describes them,
    and the pinned hash was computed by an independent model of those rules,
    not by this code. */
@@ -6,9 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "internal.h"
 #include "muhtari.h"
 #include "sha256.h"
 #include "../alloc.h"
+#include "../cart/images.h"
 #include "../check.h"
 
 #define WIDTH 320u
@@ -551,6 +555,361 @@ static void test_no_alloc_after_load(void)
     CHECK_EQ_U64(c.frees, 1);
 }
 
+/* A 4 KiB linear cartridge built in memory: an A78 version 3 header with
+   ProLine on both ports and the TV byte tv, over a body that runs program,
+   n bytes at $F000, which the reset vector points at. */
+#define CART_BODY 4096u
+#define CART_SIZE (IMAGES_HEADER + CART_BODY)
+
+static void make_cart(uint8_t *buf, const uint8_t *program, size_t n, uint8_t tv)
+{
+    images_header(buf, 3u, "Core", CART_BODY, 0u);
+    buf[57] = tv;
+    uint8_t *body = buf + IMAGES_HEADER;
+    memset(body, 0xEA, CART_BODY); /* NOP */
+    memcpy(body, program, n);
+    body[CART_BODY - 4u] = 0x00u; /* reset vector $F000 */
+    body[CART_BODY - 3u] = 0xF0u;
+}
+
+/* The programs: each loops at $F000 forever. */
+static const uint8_t prog_idle[] = {0x4C, 0x00, 0xF0};                    /* JMP $F000 */
+static const uint8_t prog_count[] = {0xEE, 0x00, 0x18, 0x4C, 0x00, 0xF0}; /* INC $1800 */
+static const uint8_t prog_swcha[] = {0xAD, 0x80, 0x02, 0x4C, 0x00, 0xF0}; /* LDA $0280 */
+static const uint8_t prog_inpt4[] = {0xA5, 0x0C, 0x4C, 0x00, 0xF0};       /* LDA $0C */
+
+static uint8_t cart[CART_SIZE];
+static uint8_t other[CART_SIZE];
+static uint8_t bios[16384];
+
+static muhtari_media media_for(const void *image, size_t n)
+{
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = n;
+    return media;
+}
+
+/* Loads the cartridge running program into m. */
+static void load_program(muhtari *m, const uint8_t *program, size_t n)
+{
+    make_cart(cart, program, n, 0u);
+    muhtari_media media = media_for(cart, sizeof cart);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+}
+
+/* A refused load, for each reason, leaves the previous cartridge running:
+   the instance that saw the refusals gives the frames and RAM of one that
+   did not. */
+static void test_load_keeps_previous(void)
+{
+    muhtari *a = make();
+    muhtari *b = make();
+    load_program(a, prog_count, sizeof prog_count);
+    load_program(b, prog_count, sizeof prog_count);
+    run(a, video);
+    run(b, video2);
+
+    muhtari_media media = media_for(other, images_2600(other, 4096u));
+    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_2600);
+    make_cart(other, prog_idle, sizeof prog_idle, 1u);
+    media = media_for(other, sizeof other);
+    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_REGION);
+    make_cart(other, prog_idle, sizeof prog_idle, 0u);
+    media.region = MUHTARI_REGION_PAL;
+    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_REGION);
+    media.region = 0u;
+    media.bios = bios;
+    media.bios_size = 8192u;
+    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_INVALID_BIOS);
+
+    run(a, video);
+    run(b, video2);
+    char ha[65], hb[65];
+    hash_hex(video, FRAME_BYTES, ha);
+    hash_hex(video2, FRAME_BYTES, hb);
+    check_str("frame 2 after refused loads", ha, hb);
+    CHECK(memcmp(a->ram, b->ram, sizeof a->ram) == 0);
+    CHECK(a->ram[0] != 0u);
+    CHECK_EQ_U64(a->bios_size, 0);
+    muhtari_destroy(a);
+    muhtari_destroy(b);
+}
+
+/* An empty image, and a NULL one with a size, are refused before anything
+   is allocated. */
+static void test_load_empty_refused(void)
+{
+    alloc_counts c;
+    muhtari_config cfg = alloc_config(&c);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    muhtari_media media = media_for(cart, 0u);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    media = media_for(NULL, 0u);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    media = media_for(NULL, CART_SIZE);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_ARGUMENT);
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    media = media_for(cart, sizeof cart);
+    media.bios_size = 4096u; /* a size with no BIOS */
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_load(NULL, &media), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_load(m, NULL), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(c.allocs, 1);
+    CHECK(m->cart.rom == NULL);
+    muhtari_destroy(m);
+}
+
+/* A BIOS must be 4 KiB or 16 KiB with its reset vector inside it; a valid
+   one is copied into the instance and allocates nothing. */
+static void test_load_invalid_bios(void)
+{
+    alloc_counts c;
+    muhtari_config cfg = alloc_config(&c);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    muhtari_media media = media_for(cart, sizeof cart);
+    media.bios = bios;
+    memset(bios, 0xEA, sizeof bios);
+    static const size_t bad_sizes[] = {0u, 4095u, 8192u};
+    for (size_t i = 0; i < sizeof bad_sizes / sizeof bad_sizes[0]; i++) {
+        media.bios_size = bad_sizes[i];
+        bios[bad_sizes[i] > 3u ? bad_sizes[i] - 3u : 0u] = 0xF0u;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_BIOS);
+    }
+    media.bios_size = 16384u;
+    bios[16380] = 0x00u; /* reset vector $0000 */
+    bios[16381] = 0x00u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_BIOS);
+    bios[16381] = 0xBFu; /* $BF00, below $C000 */
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_BIOS);
+    CHECK_EQ_U64(c.allocs, 1);
+
+    bios[16381] = 0xC0u; /* $C000 */
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->bios_size, 16384);
+    CHECK(memcmp(m->bios, bios, sizeof bios) == 0);
+    media.bios_size = 4096u;
+    bios[4092] = 0x00u; /* $F000 */
+    bios[4093] = 0xF0u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->bios_size, 4096);
+    CHECK_EQ_U64(c.allocs, 3); /* the instance and two ROM copies */
+    muhtari_destroy(m);
+}
+
+static muhtari_input input_of(uint32_t buttons0, uint32_t switches)
+{
+    muhtari_input in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.buttons[0] = buttons0;
+    in.switches = switches;
+    return in;
+}
+
+/* Unknown bits and devices are refused and change nothing. */
+static void test_set_input_validates(void)
+{
+    muhtari *m = make();
+    load_program(m, prog_idle, sizeof prog_idle);
+    muhtari_input ok = input_of(MUHTARI_BUTTON_UP | MUHTARI_BUTTON_2, MUHTARI_SWITCH_PAUSE);
+    ok.device[1] = MUHTARI_PORT_JOYSTICK;
+    CHECK_EQ_U64(muhtari_set_input(m, &ok), MUHTARI_STATUS_OK);
+    struct muhtari__ports before = m->ports;
+
+    muhtari_input in = input_of(0x40u, 0u);
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_ERR_ARGUMENT);
+    in = input_of(0u, 0u);
+    in.buttons[1] = 0x80000000u;
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_ERR_ARGUMENT);
+    in = input_of(0u, 0x20u);
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_ERR_ARGUMENT);
+    in = input_of(0u, 0u);
+    in.device[1] = MUHTARI_PORT_PADDLE;
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+    in.device[1] = 13u; /* no device has this code */
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_ERR_ARGUMENT);
+    in.device[1] = 0u;
+    CHECK_EQ_U64(muhtari_set_input(NULL, &in), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_set_input(m, NULL), MUHTARI_STATUS_ERR_ARGUMENT);
+    in.size = 4u;
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    CHECK(memcmp(&m->ports, &before, sizeof before) == 0);
+
+    /* The devices resolve: the header's ProLine for 0, the host's choice
+       otherwise, and nothing before the input applies. */
+    CHECK_EQ_U64(muhtari__ports_device(m, 1u), MUHTARI_PORT_PROLINE);
+    run(m, NULL);
+    run(m, NULL);
+    CHECK_EQ_U64(muhtari__ports_device(m, 0u), MUHTARI_PORT_PROLINE);
+    CHECK_EQ_U64(muhtari__ports_device(m, 1u), MUHTARI_PORT_JOYSTICK);
+    in = input_of(0u, 0u);
+    in.device[0] = MUHTARI_PORT_UNPLUGGED;
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_OK);
+    run(m, NULL);
+    CHECK_EQ_U64(muhtari__ports_device(m, 0u), MUHTARI_PORT_UNPLUGGED);
+    muhtari_destroy(m);
+}
+
+/* Input set after the load, which leaves the beam mid-frame, reaches the
+   machine at the next VBLANK start, the start of frame 2; of two inputs
+   set before it, the second applies. */
+static void test_set_input_latched_at_vblank(void)
+{
+    muhtari *m = make();
+    load_program(m, prog_idle, sizeof prog_idle);
+    muhtari_input a = input_of(MUHTARI_BUTTON_LEFT, MUHTARI_SWITCH_RESET);
+    muhtari_input b = input_of(MUHTARI_BUTTON_1, MUHTARI_SWITCH_LEFT_DIFFICULTY_A);
+    CHECK_EQ_U64(muhtari_set_input(m, &a), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_set_input(m, &b), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->ports.buttons[0], 0);
+    run(m, NULL); /* frame 1: hand-off to VBLANK start */
+    CHECK_EQ_U64(m->ports.buttons[0], 0);
+    CHECK_EQ_U64(m->ports.switches, 0);
+    run(m, NULL); /* frame 2 starts at VBLANK start */
+    CHECK_EQ_U64(m->ports.buttons[0], MUHTARI_BUTTON_1);
+    CHECK_EQ_U64(m->ports.switches, MUHTARI_SWITCH_LEFT_DIFFICULTY_A);
+    CHECK_EQ_U64(m->ports.pending, 0);
+    /* From then on every frame starts at a VBLANK start. */
+    CHECK_EQ_U64(muhtari_set_input(m, &a), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->ports.buttons[0], MUHTARI_BUTTON_1);
+    run(m, NULL);
+    CHECK_EQ_U64(m->ports.buttons[0], MUHTARI_BUTTON_LEFT);
+    CHECK_EQ_U64(m->ports.switches, MUHTARI_SWITCH_RESET);
+    muhtari_destroy(m);
+}
+
+static muhtari_span span_of(muhtari *m, uint32_t kind, muhtari_status want)
+{
+    muhtari_span span;
+    memset(&span, 0, sizeof span);
+    span.size = (uint32_t)sizeof span;
+    CHECK_EQ_U64(muhtari_get_memory(m, kind, &span), want);
+    return span;
+}
+
+/* The spans are live, stable pointers into the machine's RAM. */
+static void test_get_memory_spans(void)
+{
+    muhtari *m = make();
+    muhtari_span ram = span_of(m, MUHTARI_MEMORY_SYSTEM_RAM, MUHTARI_STATUS_OK);
+    CHECK(ram.data != NULL);
+    CHECK_EQ_U64(ram.bytes, 4096);
+    load_program(m, prog_count, sizeof prog_count);
+    run(m, NULL);
+    muhtari_span again = span_of(m, MUHTARI_MEMORY_SYSTEM_RAM, MUHTARI_STATUS_OK);
+    CHECK(again.data == ram.data);
+    CHECK(ram.data[0] != 0u);
+    CHECK_EQ_HEX(ram.data[0], muhtari__bus_peek(m, 0x1800u));
+    ram.data[0x123] = 0x5Au;
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x1923u), 0x5A);
+
+    muhtari_span riot = span_of(m, MUHTARI_MEMORY_RIOT_RAM, MUHTARI_STATUS_OK);
+    CHECK(riot.data != NULL);
+    CHECK_EQ_U64(riot.bytes, 128);
+    riot.data[5] = 0xA7u;
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x0485u), 0xA7);
+
+    muhtari_span cart_ram = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+    CHECK(cart_ram.data == NULL);
+    CHECK_EQ_U64(cart_ram.bytes, 0);
+    (void)span_of(m, 0u, MUHTARI_STATUS_ERR_ARGUMENT);
+    (void)span_of(m, 4u, MUHTARI_STATUS_ERR_ARGUMENT);
+    muhtari_span span;
+    memset(&span, 0, sizeof span);
+    span.size = (uint32_t)sizeof span;
+    CHECK_EQ_U64(muhtari_get_memory(NULL, MUHTARI_MEMORY_SYSTEM_RAM, &span),
+                 MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_SYSTEM_RAM, NULL),
+                 MUHTARI_STATUS_ERR_ARGUMENT);
+    span.size = 4u;
+    CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_SYSTEM_RAM, &span),
+                 MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    CHECK(span.data == NULL);
+
+    for (uint32_t f = 0; f < 3u; f++) {
+        run(m, NULL);
+    }
+    muhtari_span later = span_of(m, MUHTARI_MEMORY_RIOT_RAM, MUHTARI_STATUS_OK);
+    CHECK(later.data == riot.data);
+    muhtari_destroy(m);
+}
+
+static muhtari_counters counters_of(const muhtari *m)
+{
+    muhtari_counters c;
+    memset(&c, 0, sizeof c);
+    c.size = (uint32_t)sizeof c;
+    CHECK_EQ_U64(muhtari_get_counters(m, &c), MUHTARI_STATUS_OK);
+    return c;
+}
+
+/* Frames count from the load or power cycle; a frame is a lag frame unless
+   the CPU read SWCHA, SWCHB or INPT0-5 in it. A peek and a MARIA fetch of
+   $0280 are not CPU reads. */
+static void test_counters_frames_and_lag(void)
+{
+    muhtari *m = make();
+    run(m, NULL);
+    muhtari_counters c = counters_of(m);
+    CHECK_EQ_U64(c.frames, 1);
+    CHECK_EQ_U64(c.lag_frames, 1);
+
+    load_program(m, prog_idle, sizeof prog_idle);
+    c = counters_of(m);
+    CHECK_EQ_U64(c.frames, 0);
+    CHECK_EQ_U64(c.lag_frames, 0);
+    for (uint32_t f = 0; f < 5u; f++) {
+        run(m, NULL);
+        (void)muhtari__bus_peek(m, 0x0280u);
+        (void)muhtari__bus_peek(m, 0x000Cu);
+    }
+    c = counters_of(m);
+    CHECK_EQ_U64(c.frames, 5);
+    CHECK_EQ_U64(c.lag_frames, 5);
+
+    /* MARIA's DMA fetches a graphics byte from $0280: a one-byte object
+       whose graphics address is page 2 plus OFFSET 0, low byte $80. */
+    static const uint8_t dl[] = {0x80u, 0x1Fu, 0x02u, 0x00u, 0u, 0u, 0u, 0u};
+    memcpy(&m->ram[0x1900u - MUHTARI__RAM_BASE], dl, sizeof dl);
+    m->maria.dl = 0x1900u;
+    m->maria.offset = 0u;
+    struct muhtari__line_stats st;
+    memset(&st, 0, sizeof st);
+    (void)muhtari__maria_dma_line(m, 1000u, 1454u, 300u, &st);
+    CHECK_EQ_U64(st.bytes, 1);
+    CHECK_EQ_U64(m->ports.input_read, 0);
+
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    c = counters_of(m);
+    CHECK_EQ_U64(c.frames, 0);
+    CHECK_EQ_U64(c.lag_frames, 0);
+
+    load_program(m, prog_swcha, sizeof prog_swcha);
+    for (uint32_t f = 0; f < 4u; f++) {
+        run(m, NULL);
+    }
+    c = counters_of(m);
+    CHECK_EQ_U64(c.frames, 4);
+    CHECK_EQ_U64(c.lag_frames, 0);
+
+    load_program(m, prog_inpt4, sizeof prog_inpt4);
+    run(m, NULL);
+    run(m, NULL);
+    c = counters_of(m);
+    CHECK_EQ_U64(c.frames, 2);
+    CHECK_EQ_U64(c.lag_frames, 0);
+
+    CHECK_EQ_U64(muhtari_get_counters(NULL, &c), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_get_counters(m, NULL), MUHTARI_STATUS_ERR_ARGUMENT);
+    muhtari_destroy(m);
+}
+
 static const struct {
     const char *name;
     void (*run)(void);
@@ -561,7 +920,14 @@ static const struct {
     {"frame.pitch_336", test_pitch_336},
     {"frame.validate_first", test_validate_first},
     {"info", test_info},
+    {"counters.frames_and_lag", test_counters_frames_and_lag},
+    {"get_memory.spans", test_get_memory_spans},
+    {"load.empty_refused", test_load_empty_refused},
+    {"load.invalid_bios", test_load_invalid_bios},
+    {"load.keeps_previous", test_load_keeps_previous},
     {"no_alloc_after_load", test_no_alloc_after_load},
+    {"set_input.latched_at_vblank", test_set_input_latched_at_vblank},
+    {"set_input.validates", test_set_input_validates},
     {"testcard.all_colours", test_all_colours},
     {"testcard.boundaries", test_boundaries},
     {"testcard.pinned_hash", test_pinned_hash},

@@ -75,7 +75,8 @@ add_library(muhtari_objs OBJECT
   src/maria.c
   src/boot.c
   src/sha1.c
-  src/cart.c)
+  src/cart.c
+  src/ports.c)
 add_library(muhtari_cpu OBJECT src/cpu.c)
 add_library(muhtari_cartdb OBJECT src/cartdb.c)
 add_library(muhtari STATIC

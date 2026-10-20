@@ -1,9 +1,13 @@
 # The core library through its public header. One executable runs each case
-# named on its command line; the runner's SHA-256 is linked as a test helper.
+# named on its command line; the runner's SHA-256 and the in-memory image
+# builders are linked as test helpers, and src/ is on the include path for
+# the cases that look inside the instance.
 add_executable(muhtari-test-core
   ${CMAKE_CURRENT_LIST_DIR}/test_core.c
+  ${CMAKE_SOURCE_DIR}/tests/cart/images.c
   ${CMAKE_SOURCE_DIR}/runner/sha256.c)
-target_include_directories(muhtari-test-core PRIVATE ${CMAKE_SOURCE_DIR}/runner)
+target_include_directories(muhtari-test-core PRIVATE ${CMAKE_SOURCE_DIR}/runner
+  ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-core PRIVATE muhtari::muhtari)
 target_compile_definitions(muhtari-test-core PRIVATE LONG_RUN=${MUHTARI_LONG_RUN}u)
 set_target_properties(muhtari-test-core PROPERTIES
@@ -16,6 +20,13 @@ foreach(case IN ITEMS
     create.allocator info)
   muhtari_add_test(NAME core.${case} COMMAND muhtari-test-core ${case}
     LABELS core portable TIMEOUT 10)
+endforeach()
+# Loading, input, memory spans and counters.
+foreach(case IN ITEMS
+    load.keeps_previous load.empty_refused load.invalid_bios set_input.validates
+    set_input.latched_at_vblank get_memory.spans counters.frames_and_lag)
+  muhtari_add_test(NAME core.${case} COMMAND muhtari-test-core ${case}
+    LABELS core portable TIMEOUT 10) # provisional, phase 3
 endforeach()
 muhtari_add_test(NAME core.no_alloc_after_load COMMAND muhtari-test-core no_alloc_after_load
   LABELS perf portable TIMEOUT 10)

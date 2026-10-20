@@ -81,6 +81,16 @@ muhtari_warnings(muhtari-test-api-v2)
 muhtari_add_test(NAME abi.api_v2 COMMAND muhtari-test-api-v2
   LABELS abi portable TIMEOUT 10)
 
+# API version 3's program: what version 3 adds, loading, input, memory and
+# counters.
+add_executable(muhtari-test-api-v3 ${CMAKE_SOURCE_DIR}/tests/api/v3.c)
+target_link_libraries(muhtari-test-api-v3 PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-api-v3 PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-api-v3)
+muhtari_add_test(NAME abi.api_v3 COMMAND muhtari-test-api-v3
+  LABELS abi portable TIMEOUT 10)
+
 # The public header compiles alone as C17 and as C++17 with warnings fatal.
 # Fault prevented: a header that only the core's own build, with its own
 # flags and language, can compile. The targets are built only by these
