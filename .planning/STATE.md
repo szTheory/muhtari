@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
-status: ready_to_execute
-stopped_at: Phase 4 planned and independently verified; ready to execute
-last_updated: "2026-10-20T19:36:43.437Z"
+status: executing
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-10-20T20:16:40.903Z"
 last_activity: 2026-10-20
-last_activity_desc: Phase 4 sound planning complete; 17 sequential plans independently verified
-state_head: ff6fb3bfd7fdd212522f1ca5d7317ce91184200b
+last_activity_desc: Phase 04 execution started
+state_head: 7dc414c0b64d4dad064b52b30ddfcd556652f05a
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 73
-  completed_plans: 56
+  completed_plans: 57
   percent: 75
 ---
 
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 4 — Sound; context gathered, planning next
+**Current focus:** Phase 04 — Sound
 
 ## Current Position
 
-Phase: 04 (Sound) — READY TO EXECUTE
-Plan: 0 of 17 executed
+Phase: 04 (Sound) — EXECUTING
+Plan: 2 of 17
 Status: Ready to execute
-Last activity: 2026-10-20 — Phase 4 research and 17 plans independently verified; all 5 requirements and 24 decisions covered. New spectral evidence supports the documented Q23 precision amendment. Next: $gsd-execute-phase 4.
+Last activity: 2026-10-20 — Phase 04 execution started
 
 Progress: [████████░░] 75%
 
@@ -116,6 +116,7 @@ Progress: [████████░░] 75%
 | Phase 03 P17 | 20 min | 3 tasks | 16 files |
 | Phase 03 P18 | 22 min | 3 tasks | 21 files |
 | Phase 03 P19 | 35 min | 3 tasks | 22 files |
+| Phase 04 P01 | 11min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -291,6 +292,9 @@ Recent decisions affecting current work:
 - [Phase 03]: Plan 19: probe PR #12 closed unmerged; ship title 'feat: games play in RetroArch with MARIA, cartridges, boot and input' passes check-title.sh (exit 0), so the merge cuts 0.3.0
 
 - [Phase 03]: Both permitted code-review fix rounds are used: WR-01 through WR-05 resolved in round 1, CR-01 in round 2. Five Info findings remain seeds. Final four-file re-review is clean. Re-verification passed; next: $gsd-ship 3. No new gap plan or further fix round.
+- [Phase 04]: Regenerated Q23 16-tap/32-phase coefficients retain exact sum 8388608, shifted endpoint and Q23-to-Q30 multiplication by 128.
+- [Phase 04]: Production headroom proof fixes M=18361 from L1=13341774/8388608 and complete blocker rounding; current weights 85:342 and default Q12 gain 4096 stay fixed.
+- [Phase 04]: Conservative held-access/opcode/interrupt bound is 20730 ticks, giving 139 future PCM samples separately from 801 current-frame samples.
 
 ### Pending Todos
 
@@ -341,6 +345,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T19:37:07+00:00
-Stopped at: Phase 4 planned and independently verified; ready to execute
-Resume file: .planning/phases/04-sound/04-01-PLAN.md
+Last session: 2026-10-20T20:16:40.757Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: .planning/phases/04-sound/04-02-PLAN.md
