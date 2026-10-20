@@ -447,8 +447,57 @@ static void test_synth_mix(void)
     muhtari_destroy(m);
 }
 
+static uint64_t tia_b_tick(unsigned n)
+{
+    return (uint64_t)(n / 2u) * 456u + ((n & 1u) == 0u ? 64u : 288u);
+}
+
+/* Documentary expectations, A7800-AUDIO section 2. Volume stays zero:
+   hidden waveform state must keep running without synthesis events. */
+static void test_tia_modes(void)
+{
+    static const unsigned periods[16] = {1u, 15u, 465u, 465u, 2u, 2u, 31u, 31u,
+                                          511u, 31u, 31u, 1u, 6u, 6u, 93u, 93u};
+    static const unsigned ones[16] = {1u, 8u, 248u, 248u, 1u, 1u, 13u, 15u,
+                                       256u, 16u, 18u, 1u, 3u, 3u, 44u, 46u};
+    static const unsigned dividers[] = {0u, 1u, 5u, 31u};
+    muhtari *m = make();
+    for (unsigned mode = 0u; mode < 16u; mode++) {
+        for (unsigned d = 0u; d < 4u; d++) {
+            muhtari__tia_reset(m);
+            muhtari__synth_reset(m, 0u, 0u);
+            m->tia.channel[0].audc = (uint8_t)mode;
+            m->tia.channel[0].audf = (uint8_t)dividers[d];
+            unsigned scale = dividers[d] + 1u;
+            unsigned warmup = 1024u * scale;
+            unsigned period = periods[mode] * scale;
+            uint8_t first[511u * 32u];
+            unsigned sum = 0u;
+            muhtari__tia_catch_up(m, tia_b_tick(warmup - 1u));
+            for (unsigned i = 0u; i < period; i++) {
+                muhtari__tia_catch_up(m, tia_b_tick(warmup + i));
+                first[i] = m->tia.channel[0].output;
+                sum += first[i];
+            }
+            CHECK_EQ_U64(sum, ones[mode] * scale);
+            for (unsigned i = 0u; i < period; i++) {
+                muhtari__tia_catch_up(m, tia_b_tick(warmup + period + i));
+                if (first[i] != m->tia.channel[0].output) {
+                    fprintf(stderr, "TIA mode %u AUDF %u period mismatch at %u\n", mode,
+                            dividers[d], i);
+                    check_failures++;
+                    break;
+                }
+            }
+            CHECK_EQ_U64(m->synth.pending, 0u);
+        }
+    }
+    muhtari_destroy(m);
+}
+
 static void test_silence(void)
 {
+    test_tia_modes();
     /* A decoded bus tone reaches production PCM. B phases alternate
        224/232 ticks; slow writes reach the DAC at +5, not +6
        (A7800-AUDIO section 2; docs/hardware/bus.md, Clocks). */
