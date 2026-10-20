@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-04-PLAN.md
-last_updated: "2026-10-20T00:50:16.301Z"
+stopped_at: Completed 03-05-PLAN.md
+last_updated: "2026-10-20T01:09:22.631Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-04 complete (public API version 3 and muhtari-run FILE)
-state_head: 6272dfbeb22d8f40982bbdb164674ebff7e4bc8f
+last_activity_desc: Plan 03-05 complete (frame pins for the 29 linear 7800basic samples)
+state_head: fdbefd58292a8de1f48feebbb65890d1528c3047
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 41
+  completed_plans: 42
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 5 of 19
+Plan: 6 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-04 complete: API version 3 (load, power cycle, input latched at VBLANK start, live memory spans, frame and lag counters), muhtari-run [--rom] FILE, abi.api_v3 and 9 new core and runner tests
+Last activity: 2026-10-20 — Plan 03-05 complete: the 600-frame SHA-256 chain with the behaviour-revision guard, built.<name> and basic.<name> for 29 linear samples, green on every hosted leg (run 39351079824); probe PR #12 open as a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -100,6 +100,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P02 | 13 min | 3 tasks | 17 files |
 | Phase 03 P03 | 11 min | 3 tasks | 14 files |
 | Phase 03 P04 | 13 min | 3 tasks | 26 files |
+| Phase 03 P05 | 16 min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -235,6 +236,9 @@ Recent decisions affecting current work:
 - [Phase 03]: The input latch runs at the start of a frame that begins at VBLANK start; input set before the first frame after a load applies at frame 2
 - [Phase 03]: A header naming no controller leaves the port unplugged; an unmodelled header device is wired as a ProLine
 - [Phase 03]: Applied and pending input survive load and power cycle; with no content every frame is a lag frame
+- [Phase 03]: Plan 05: frames.cmake under -DWRITE=ON at a core behaviour revision above the file's rewrites the row and the revision line and resets every other row's frame pin to -; a - column fails the check
+- [Phase 03]: Plan 05: hosted run 39351079824 with all 29 linear samples: be32 101 s, asan 36 s, so basic stays per-PR on both lanes with no lane inventory; slowest build leg macos-x64 101 s; no timeout-minutes changed
+- [Phase 03]: Plan 05: probe PR #12 is open as a draft; src/maria.c's MSTAT read no longer casts ~MARIA_VBLANK (MSVC C4310 on the first phase-3 push)
 
 ### Pending Todos
 
@@ -276,6 +280,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T00:50:16.215Z
-Stopped at: Completed 03-04-PLAN.md
+Last session: 2026-10-20T01:09:16.886Z
+Stopped at: Completed 03-05-PLAN.md
 Resume file: None
