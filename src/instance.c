@@ -1,4 +1,5 @@
-/* Instance lifetime, the version and info queries, and the size-tag helper. */
+/* Instance lifetime, loading and power cycling, the version and info
+   queries, and the size-tag helper. */
 #include <string.h>
 
 #include "internal.h"
@@ -145,5 +146,86 @@ muhtari_status muhtari_get_info(const muhtari *m, muhtari_info *out)
     info.sample_rate_den = 1u;
     info.max_audio_samples = MUHTARI__MAX_AUDIO_SAMPLES;
     muhtari__write_out(out, &info, (uint32_t)sizeof info);
+    return MUHTARI_STATUS_OK;
+}
+
+/* A BIOS is 4 KiB or 16 KiB mapped to end at $FFFF, and its reset vector,
+   the last bytes but two, must point inside it (A7800-SYSTEM section 7). */
+static int bios_valid(const uint8_t *bios, size_t n)
+{
+    if (n != 4096u && n != MUHTARI__BIOS_SIZE_MAX) {
+        return 0;
+    }
+    uint32_t reset = (uint32_t)bios[n - 4u] | ((uint32_t)bios[n - 3u] << 8);
+    return reset >= 0x10000u - (uint32_t)n;
+}
+
+/* Puts the loaded content, or the test card, back at power-on. */
+static void power_cycle(muhtari *m)
+{
+    if (m->cart.rom != NULL) {
+        muhtari__boot_fast(m);
+    } else {
+        muhtari__power_on(m);
+        m->audio_rem = 0u;
+    }
+}
+
+muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
+{
+    if (m == NULL || media == NULL) {
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    }
+    muhtari_status st =
+        muhtari__check_size(media, MUHTARI__MEDIA_SIZE_FIRST, (uint32_t)sizeof *media);
+    if (st != MUHTARI_STATUS_OK) {
+        return st;
+    }
+    if ((media->bios == NULL && media->bios_size != 0u) ||
+        (media->region != 0u && media->region != MUHTARI_REGION_NTSC &&
+         media->region != MUHTARI_REGION_PAL)) {
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    }
+    /* Everything is validated before anything is applied, so a refused load
+       leaves the previous content running. probe refuses a NULL image with
+       a size, and an empty one, before any allocation. */
+    muhtari_cart_info info;
+    memset(&info, 0, sizeof info);
+    info.size = (uint32_t)sizeof info;
+    st = muhtari_probe(media->image, media->image_size, &info);
+    if (st != MUHTARI_STATUS_OK) {
+        return st;
+    }
+    /* The region: the caller's, else the cartridge's, which the probe
+       resolved from the header, the hash list, then NTSC. PAL is refused. */
+    uint32_t region = media->region != 0u ? media->region : info.region;
+    if (region != MUHTARI_REGION_NTSC) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_REGION;
+    }
+    if (media->bios != NULL && !bios_valid((const uint8_t *)media->bios, media->bios_size)) {
+        return MUHTARI_STATUS_ERR_INVALID_BIOS;
+    }
+    /* The ROM is the only allocation; the BIOS goes into the instance's
+       fixed array. The BIOS boot itself is not run yet: a loaded BIOS is
+       kept and the fast boot runs. */
+    st = muhtari__cart_install(m, media->image, &info);
+    if (st != MUHTARI_STATUS_OK) {
+        return st;
+    }
+    m->bios_size = 0u;
+    if (media->bios != NULL) {
+        memcpy(m->bios, media->bios, media->bios_size);
+        m->bios_size = (uint32_t)media->bios_size;
+    }
+    power_cycle(m);
+    return MUHTARI_STATUS_OK;
+}
+
+muhtari_status muhtari_power_cycle(muhtari *m)
+{
+    if (m == NULL) {
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    }
+    power_cycle(m);
     return MUHTARI_STATUS_OK;
 }

@@ -9,7 +9,8 @@ static_assert(offsetof(muhtari_info, size) == 0, "info size first");
 static_assert(offsetof(muhtari_frame, size) == 0, "frame size first");
 static_assert(offsetof(muhtari_cart_info, size) == 0, "cart_info size first");
 static_assert(sizeof(muhtari_status) == 4, "status is 32 bits");
-static_assert(MUHTARI_API_VERSION == 2, "API version");
+static_assert(offsetof(muhtari_media, size) == 0, "media size first");
+static_assert(MUHTARI_API_VERSION == 3, "API version");
 
 // Each function keeps its declared signature, with C linkage.
 static muhtari_status (*const get_versions_fn)(muhtari_versions *) = muhtari_get_versions;
@@ -18,6 +19,8 @@ static void (*const destroy_fn)(muhtari *) = muhtari_destroy;
 static muhtari_status (*const get_info_fn)(const muhtari *, muhtari_info *) = muhtari_get_info;
 static muhtari_status (*const run_frame_fn)(muhtari *, muhtari_frame *) = muhtari_run_frame;
 static muhtari_status (*const probe_fn)(const void *, size_t, muhtari_cart_info *) = muhtari_probe;
+static muhtari_status (*const load_fn)(muhtari *, const muhtari_media *) = muhtari_load;
+static muhtari_status (*const power_cycle_fn)(muhtari *) = muhtari_power_cycle;
 
 int header_check(muhtari_status st);
 
@@ -32,6 +35,8 @@ int header_check(muhtari_status st)
     (void)get_info_fn;
     (void)run_frame_fn;
     (void)probe_fn;
+    (void)load_fn;
+    (void)power_cycle_fn;
     // A status compares against the constants without a sign or enum warning.
     return (st == MUHTARI_STATUS_OK || st == MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL ||
             st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) &&

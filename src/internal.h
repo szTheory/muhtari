@@ -209,9 +209,13 @@ struct muhtari__maria {
     uint16_t px;
 };
 
+/* The largest BIOS image: 16 KiB at $C000-$FFFF (A7800-SYSTEM section 7). */
+#define MUHTARI__BIOS_SIZE_MAX 16384u
+
 /* With content loaded, each muhtari_run_frame runs from frame_start to
    frame_deadline, both VBLANK-start ticks except frame_start after the
-   hand-off (docs/hardware/bus.md, The run loop). */
+   hand-off (docs/hardware/bus.md, The run loop). bios holds the bios_size
+   bytes muhtari_load copied, 0 for fast boot. */
 struct muhtari {
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
@@ -225,7 +229,10 @@ struct muhtari {
     struct muhtari__profile profile;
     struct muhtari__cart cart;
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
+    uint32_t bios_size;
+    uint8_t bios[16384];
 };
+_Static_assert(sizeof(((muhtari *)0)->bios) == MUHTARI__BIOS_SIZE_MAX, "bios array");
 
 /* The size of each struct as first released: the end of its last field. A
    caller's size tag below this is rejected. */
@@ -239,6 +246,7 @@ struct muhtari {
     ((uint32_t)(offsetof(muhtari_frame, audio_count) + sizeof(uint32_t)))
 #define MUHTARI__CART_INFO_SIZE_FIRST                                                              \
     ((uint32_t)(offsetof(muhtari_cart_info, title) + sizeof(((muhtari_cart_info *)0)->title)))
+#define MUHTARI__MEDIA_SIZE_FIRST ((uint32_t)(offsetof(muhtari_media, bios_size) + sizeof(size_t)))
 
 /* The public layouts, pinned on every target. P is the pointer size; every
    field sits where the previous one ends, except that muhtari_config's
@@ -316,6 +324,17 @@ _Static_assert(offsetof(muhtari_cart_info, a78_irq) == 100, "cart_info.a78_irq")
 _Static_assert(offsetof(muhtari_cart_info, title) == 104, "cart_info.title");
 _Static_assert(sizeof(muhtari_cart_info) == 140, "cart_info size");
 
+/* muhtari_media: two uint32_t fields, then two pointer and size pairs; a
+   size_t is pointer sized on every target. */
+_Static_assert(sizeof(size_t) == MUHTARI__P, "size_t is pointer sized");
+_Static_assert(offsetof(muhtari_media, size) == 0, "media.size");
+_Static_assert(offsetof(muhtari_media, region) == 4, "media.region");
+_Static_assert(offsetof(muhtari_media, image) == 8, "media.image");
+_Static_assert(offsetof(muhtari_media, image_size) == 8 + MUHTARI__P, "media.image_size");
+_Static_assert(offsetof(muhtari_media, bios) == 8 + 2 * MUHTARI__P, "media.bios");
+_Static_assert(offsetof(muhtari_media, bios_size) == 8 + 3 * MUHTARI__P, "media.bios_size");
+_Static_assert(sizeof(muhtari_media) == 8 + 4 * MUHTARI__P, "media size");
+
 /* Returns OK when the size tag at s is at least first and every byte past
    ours is zero; ERR_STRUCT_SIZE otherwise. */
 muhtari_status muhtari__check_size(const void *s, uint32_t first, uint32_t ours);
@@ -346,6 +365,11 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
    leaves m unchanged. muhtari_destroy frees it (docs/hardware/cartridge.md,
    Loading). */
 muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n);
+
+/* The second half of muhtari__cart_load: copies the ROM of image, which
+   *info identifies, into one new allocation and replaces any cartridge
+   loaded before. ERR_NO_MEMORY leaves m unchanged. */
+muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info);
 
 /* The cartridge as the bus sees it, by board (docs/hardware/bus.md, Memory
    map). read returns the byte the board drives at addr, or the open-bus

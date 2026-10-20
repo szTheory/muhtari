@@ -109,7 +109,7 @@ ignored when the runner started, as under `nohup`, stays ignored.
   0  done     every frame ran, or SIGINT or SIGTERM stopped the run after a whole frame
   1  failure  a file could not be read or written, an image is malformed, truncated or too large, memory ran out or the core failed
   2  usage    the command line is invalid, so nothing ran
- 77  refused  the image is a 2600 cartridge or uses a board this version does not emulate
+ 77  refused  the image is a 2600 cartridge, or uses a board or a region this version does not emulate
 ```
 
 Errors and usage messages go to standard error; standard output holds only the results above.

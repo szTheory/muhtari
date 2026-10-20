@@ -739,19 +739,24 @@ muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n)
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
+    return muhtari__cart_install(m, image, &info);
+}
+
+muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info)
+{
     muhtari_allocator a = m->allocator;
-    uint8_t *rom = (uint8_t *)a.alloc(a.user, info.rom_size);
+    uint8_t *rom = (uint8_t *)a.alloc(a.user, info->rom_size);
     if (rom == NULL) {
         return MUHTARI_STATUS_ERR_NO_MEMORY;
     }
     /* The mapped bytes start after the header, when there is one. */
-    size_t at = (info.flags & MUHTARI_CART_HEADER) != 0u ? CART_HEADER_SIZE : 0u;
-    memcpy(rom, (const uint8_t *)image + at, info.rom_size);
+    size_t at = (info->flags & MUHTARI_CART_HEADER) != 0u ? CART_HEADER_SIZE : 0u;
+    memcpy(rom, (const uint8_t *)image + at, info->rom_size);
     if (m->cart.rom != NULL) {
         a.free(a.user, m->cart.rom, m->cart.info.rom_size);
     }
     m->cart.rom = rom;
-    m->cart.info = info;
+    m->cart.info = *info;
     return MUHTARI_STATUS_OK;
 }
 

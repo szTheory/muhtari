@@ -85,8 +85,8 @@ static void host_free(void *user, void *ptr, size_t size) {
 ```
 
 `free` receives the size that was allocated, so a fixed arena or pool needs no header of its own. `user` is
-passed back unchanged. All allocation happens in `muhtari_create`, which returns `MUHTARI_STATUS_ERR_NO_MEMORY`
-when `alloc` returns NULL; running frames allocates nothing.
+passed back unchanged. `muhtari_create` allocates the instance and `muhtari_load` the copy of the cartridge's
+ROM; each returns `MUHTARI_STATUS_ERR_NO_MEMORY` when `alloc` returns NULL. Running frames allocates nothing.
 
 ## A frame
 
@@ -121,8 +121,7 @@ arguments before it changes anything. Once `m` and `io` are not NULL and the siz
 cartridge is: an A78 file, a headerless 7800 image or a 2600 image. It is pure: it allocates nothing, keeps no
 state, and gives the same output for the same bytes, so concurrent calls on different outputs cannot interact.
 It reads at most `MUHTARI_IMAGE_SIZE_MAX` bytes (1 MiB of ROM plus a 128-byte header) and hashes them a fixed
-number of times. Running a probed image arrives in a later API version; until then `muhtari_run_frame` still
-gives the test card.
+number of times. `muhtari_load` runs an image (see [Loading content](#loading-content)).
 
 ```c
 muhtari_cart_info info;
@@ -169,7 +168,8 @@ show what it refused.
 | `a78_mapper`, `a78_mapper_options`, `a78_audio`, `a78_irq` | The version 4 block as written; zero below version 4 |
 | `title` | The header's title: at most 32 printable ASCII bytes, trailing spaces dropped, NUL-terminated and zero-padded |
 
-Zero means absent in every field. A board moves from `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD` to
+Zero means absent in every field. `MUHTARI_PORT_UNPLUGGED` (256) sits outside the A78 byte range: probing never
+reports it, and a host passes it for an empty controller port. A board moves from `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD` to
 `MUHTARI_STATUS_OK` in the release that runs it. The warning bits:
 
 | Bit | The header |
@@ -185,12 +185,57 @@ Zero means absent in every field. A board moves from `MUHTARI_STATUS_ERR_UNSUPPO
 | `MUHTARI_CART_WARN_RESERVED_NONZERO` | has a reserved byte or bit set |
 | `MUHTARI_CART_WARN_CART_TYPE_CONFLICT` | sets cart-type bits that cannot all hold, resolved as `docs/hardware/cartridge.md` says |
 
+## Loading content
+
+```c
+muhtari_media media;
+memset(&media, 0, sizeof media);
+media.size = (uint32_t)sizeof media;
+media.image = image;            /* the cartridge file's bytes, copied */
+media.image_size = n;
+muhtari_status st = muhtari_load(m, &media);
+```
+
+`muhtari_load` validates everything before it applies anything, in this order:
+
+1. `m` or `media` is NULL, `bios` is NULL with a non-zero `bios_size`, or `region` is neither 0 nor a
+   `MUHTARI_REGION_*` value: `MUHTARI_STATUS_ERR_ARGUMENT`.
+2. A bad size tag: `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
+3. The image, exactly as `muhtari_probe` judges it, with the same statuses. An empty image is
+   `MUHTARI_STATUS_ERR_INVALID_IMAGE`, and a NULL image with a size is `MUHTARI_STATUS_ERR_ARGUMENT`.
+4. The region: `region` when it is not 0, else the cartridge's, which comes from its header, then the hash list,
+   then NTSC. PAL returns `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` until PAL timing is emulated, so no pinned NTSC
+   hash can change silently when it is.
+5. The BIOS, when `bios` is not NULL: it must be 4,096 or 16,384 bytes, and its reset vector, mapped to end at
+   $FFFF, must point inside it. Otherwise `MUHTARI_STATUS_ERR_INVALID_BIOS`.
+
+A refused load changes nothing: the previous cartridge, or the test card, keeps running as if the call had not
+been made. Only then is anything applied. The ROM is copied into one allocation, the only one a load makes, and
+any cartridge loaded before is freed. A BIOS is copied into a fixed 16 KiB array inside the instance. This
+version does not run the BIOS yet: with or without one, the machine starts from the fast-boot hand-off, the
+state the NTSC BIOS leaves as it jumps to the cartridge. A successful load replaces any loaded content and
+power-cycles the machine.
+
+`muhtari_power_cycle(m)` runs the same power-on and boot again for the content already loaded; with nothing
+loaded it returns `MUHTARI_STATUS_OK` and the test card goes on. There is no unload: `muhtari_destroy` and
+`muhtari_create` return to the test card. `muhtari_get_info` describes the loaded content, so read it after a
+load.
+
 ## Statuses
 
 `muhtari_status` is a `uint32_t`; the `MUHTARI_STATUS_*` names are constants of an unnamed enum, so the type has the
 same size on every target. In C++, a conditional expression that mixes the two, such as
 `ok ? st : MUHTARI_STATUS_ERR_ARGUMENT`, draws a warning under `g++ -Wextra` (an error with `-Werror`). Compare
 instead (`st == MUHTARI_STATUS_OK`), or cast the constant: `(muhtari_status)MUHTARI_STATUS_ERR_ARGUMENT`.
+
+Statuses are only ever added. Those after the probe's:
+
+| Status | Returned by | Meaning |
+|---|---|---|
+| `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` | `muhtari_run_frame` | The BIOS took its 2600 path. It stays until the next load or power cycle. |
+| `MUHTARI_STATUS_ERR_INVALID_BIOS` | `muhtari_load` | The BIOS is not 4,096 or 16,384 bytes, or its reset vector points outside it. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | The content resolves to PAL. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | input | An explicit controller this version does not model. |
 
 ## Version numbers
 

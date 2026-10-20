@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define MUHTARI_API_VERSION 2
+#define MUHTARI_API_VERSION 3
 #define MUHTARI_IMAGE_SIZE_MAX 1048704u /* 1 MiB of ROM plus a 128-byte header */
 
 typedef uint32_t muhtari_status;
@@ -23,7 +23,11 @@ enum {
     MUHTARI_STATUS_ERR_TRUNCATED_IMAGE = 6,
     MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE = 7,
     MUHTARI_STATUS_ERR_UNSUPPORTED_2600 = 8,
-    MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD = 9
+    MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD = 9,
+    MUHTARI_STATUS_ERR_BIOS_REJECTED_CART = 10, /* run_frame: the BIOS took its 2600 path */
+    MUHTARI_STATUS_ERR_INVALID_BIOS = 11,       /* not 4,096 or 16,384 bytes, or a bad vector */
+    MUHTARI_STATUS_ERR_UNSUPPORTED_REGION = 12, /* resolves to PAL */
+    MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE = 13  /* an explicit device this version lacks */
 };
 
 typedef struct muhtari muhtari;
@@ -42,7 +46,7 @@ typedef struct muhtari_config {
 typedef struct muhtari_versions {
     uint32_t size;
     uint32_t library_major, library_minor, library_patch;
-    uint32_t api;                /* 1 */
+    uint32_t api;                /* MUHTARI_API_VERSION */
     uint32_t abi;                /* 1 */
     uint32_t behaviour_revision; /* 1 */
 } muhtari_versions;
@@ -115,7 +119,8 @@ enum { /* the A78 byte 55/56 codes */
        MUHTARI_PORT_AMIGA_MOUSE = 9,
        MUHTARI_PORT_ATARIVOX = 10,
        MUHTARI_PORT_SNES2ATARI = 11,
-       MUHTARI_PORT_MEGA7800 = 12
+       MUHTARI_PORT_MEGA7800 = 12,
+       MUHTARI_PORT_UNPLUGGED = 256 /* outside the A78 byte range */
 };
 enum { MUHTARI_REGION_NTSC = 1, MUHTARI_REGION_PAL = 2 };
 enum { MUHTARI_CART_HEADER = 1u, MUHTARI_CART_HASH_MATCH = 2u };
@@ -163,6 +168,18 @@ typedef struct muhtari_cart_info {
 } muhtari_cart_info;
 
 muhtari_status muhtari_probe(const void *image, size_t n, muhtari_cart_info *out);
+
+typedef struct muhtari_media {
+    uint32_t size;
+    uint32_t region;   /* 0: the cartridge's; MUHTARI_REGION_* */
+    const void *image; /* copied at load */
+    size_t image_size;
+    const void *bios; /* NULL: fast boot; copied at load */
+    size_t bios_size;
+} muhtari_media;
+
+muhtari_status muhtari_load(muhtari *m, const muhtari_media *media);
+muhtari_status muhtari_power_cycle(muhtari *m);
 
 #ifdef __cplusplus
 }

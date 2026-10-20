@@ -122,7 +122,28 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   elseif(CASE STREQUAL "usage.unknown")
     expect_exit(2 "unknown option.*${usage_line}" --nope)
   elseif(CASE STREQUAL "usage.positional")
-    expect_exit(2 "unexpected argument.*${usage_line}" card.a78)
+    # One FILE is a cartridge; a second is not.
+    expect_exit(2 "unexpected argument.*${usage_line}" --frames 1 a.a78 b.a78)
+    expect_exit(2 "unexpected argument.*${usage_line}" --frames 1 --rom a.a78 b.a78)
+    expect_exit(2 "--rom needs a FILE.*${usage_line}" --frames 1 --rom)
+  elseif(CASE STREQUAL "load.hash")
+    # Fault prevented: a cartridge given on the command line is not loaded,
+    # so the run shows the test card, or runs differently from one run to
+    # the next.
+    set(args --frames 120 --hash-frame 120 "${DIR}/linear-v3-16k")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" ${args}
+      OUTPUT_VARIABLE first ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT first MATCHES "^frame 120 sha256 [0-9a-f]+\n$"
+        OR first MATCHES "${card}")
+      message(FATAL_ERROR "muhtari-run ${args}: expected exit 0 and a frame 120 hash "
+        "other than the test card's, got exit ${rc} and output\n${first}${err}")
+    endif()
+    expect_output("${first}" ${args})
+    expect_output("${first}" --frames 120 --hash-frame 120 --rom "${DIR}/linear-v3-16k")
+  elseif(CASE STREQUAL "load.pal_refused")
+    # Fault prevented: a PAL cartridge runs on the NTSC timing, so its
+    # pinned hashes would change silently when PAL lands.
+    expect_exit(77 "linear-v3-16k-pal: unsupported region" --frames 1 "${DIR}/linear-v3-16k-pal")
   elseif(CASE STREQUAL "usage.frame_range")
     expect_exit(2 "${usage_line}" --frames 0)
     expect_exit(2 "${usage_line}" --frames 1 --hash-frame 0)
@@ -300,6 +321,15 @@ muhtari_add_test(NAME runner.probe.images
   COMMAND muhtari-test-images ${runner_probe_dir}
   LABELS runner portable TIMEOUT 30)
 set_tests_properties(runner.probe.images PROPERTIES FIXTURES_SETUP probe_images)
+# A cartridge FILE loaded and run: its hash is stable, and a PAL one is
+# refused.
+foreach(case IN ITEMS hash pal_refused)
+  muhtari_add_test(NAME runner.load.${case}
+    COMMAND ${runner_check} -DCASE=load.${case} -DDIR=${runner_probe_dir}
+      -P ${CMAKE_CURRENT_LIST_FILE}
+    LABELS runner portable TIMEOUT 10) # provisional, phase 3
+  set_tests_properties(runner.load.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
+endforeach()
 foreach(case IN ITEMS accepted 2600 unsupported_board malformed truncated oversized usage
     unreadable headerless_rule)
   muhtari_add_test(NAME runner.probe.${case}

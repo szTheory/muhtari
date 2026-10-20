@@ -25,7 +25,7 @@ static const muhtari__exit_status muhtari__exit_statuses[] = {
      "memory ran out or the core failed"},
     {MUHTARI__EXIT_USAGE, "usage", "the command line is invalid, so nothing ran"},
     {MUHTARI__EXIT_REFUSED, "refused",
-     "the image is a 2600 cartridge or uses a board this version does not emulate"},
+     "the image is a 2600 cartridge, or uses a board or a region this version does not emulate"},
 };
 
 #endif /* MUHTARI_RUNNER_EXIT_STATUS_H */

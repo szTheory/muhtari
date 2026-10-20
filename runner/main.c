@@ -1,12 +1,13 @@
 /* muhtari-run: the headless runner.
  *
- *   muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
- *   muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...
+ *   muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]
+ *   muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]
  *   muhtari-run --probe FILE
  *   muhtari-run --help | --version
  *
- * Runs N frames of one instance with no content; --frames or --bench is
- * required. For each --hash-frame N it prints, after frame N has run:
+ * Runs N frames of one instance, with the cartridge FILE loaded through
+ * muhtari_load and fast-booted, or with no content when there is no FILE;
+ * --frames or --bench is required. For each --hash-frame N it prints, after frame N has run:
  *
  *   frame <N> sha256 <64 lowercase hex digits>
  *
@@ -59,14 +60,15 @@ static void run_free(void *user, void *ptr, size_t size)
 }
 
 static const char synopsis[] =
-    "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...\n"
-    "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...\n"
+    "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE\n"
+    "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE\n"
     "       muhtari-run --probe FILE\n"
     "       muhtari-run --help | --version\n"
     "  --frames N           run N frames (N >= 1)\n"
     "  --bench N            run N frames and report the time per frame\n"
     "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
     "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n"
+    "  [--rom] FILE         load the cartridge image FILE; without it no content runs\n"
     "  --probe FILE         print the cartridge image's fields and hashes\n"
     "  --help               print this text and the exit statuses\n"
     "  --version            print the version\n";
@@ -274,24 +276,25 @@ static void print_identity(const muhtari_cart_info *c)
     }
 }
 
-/* Reads the file at path into one buffer of the image cap plus one byte,
-   looping on fread until it returns 0. Nothing seeks in the stream or asks
-   its position, so a pipe works and no long overflows; a longer file stops
-   one byte past the cap, which probe refuses by size. Returns the exit
-   status. */
-static int probe(const char *path)
+/* Reads the file at path into one new buffer of the image cap plus one
+   byte, looping on fread until it returns 0. Nothing seeks in the stream or
+   asks its position, so a pipe works and no long overflows; a longer file
+   stops one byte past the cap, which the core refuses by size. Returns NULL
+   after a message when the file cannot be read; the caller frees the
+   buffer. */
+static uint8_t *read_image(const char *path, size_t *out_n)
 {
     const size_t cap = (size_t)MUHTARI_IMAGE_SIZE_MAX + 1u;
     uint8_t *image = (uint8_t *)malloc(cap);
     if (image == NULL) {
         fprintf(stderr, "muhtari-run: out of memory\n");
-        return MUHTARI__EXIT_FAILURE;
+        return NULL;
     }
     FILE *f = fopen(path, "rb");
     if (f == NULL) {
         fprintf(stderr, "muhtari-run: %s: cannot open\n", path);
         free(image);
-        return MUHTARI__EXIT_FAILURE;
+        return NULL;
     }
     size_t n = 0;
     for (;;) {
@@ -306,6 +309,19 @@ static int probe(const char *path)
     if (unreadable) {
         fprintf(stderr, "muhtari-run: %s: cannot read\n", path);
         free(image);
+        return NULL;
+    }
+    *out_n = n;
+    return image;
+}
+
+/* Identifies the image at path and prints what probe found. Returns the
+   exit status. */
+static int probe(const char *path)
+{
+    size_t n = 0;
+    uint8_t *image = read_image(path, &n);
+    if (image == NULL) {
         return MUHTARI__EXIT_FAILURE;
     }
 
@@ -350,6 +366,7 @@ typedef struct options {
     const char **dump_paths;
     uint32_t dump_count;
     const char *probe; /* --probe FILE, the whole command line */
+    const char *rom;   /* [--rom] FILE, or NULL for no content */
     int printed;       /* --help or --version ran; nothing else to do */
 } options;
 
@@ -387,10 +404,19 @@ static int parse_options(int argc, char **argv, options *o)
         o->probe = argv[2];
         return MUHTARI__EXIT_DONE;
     }
-    /* Every other option takes one value, so options sit at odd positions. */
-    for (int i = 1; i < argc; i += 2) {
+    /* Every other option takes one value; an argument that is not an
+       option is the cartridge FILE, given at most once. */
+    for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
+        if (strncmp(arg, "--", 2u) != 0) {
+            if (o->rom != NULL) {
+                return usage("unexpected argument: give one FILE");
+            }
+            o->rom = arg;
+            continue;
+        }
         const char *value = i + 1 < argc ? argv[i + 1] : NULL;
+        i++;
         uint32_t n;
         if (strcmp(arg, "--frames") == 0 || strcmp(arg, "--bench") == 0 ||
             strcmp(arg, "--hash-frame") == 0) {
@@ -414,12 +440,20 @@ static int parse_options(int argc, char **argv, options *o)
             }
             o->dump_frames[o->dump_count] = n;
             o->dump_paths[o->dump_count++] = colon + 1;
+        } else if (strcmp(arg, "--rom") == 0) {
+            if (value == NULL || strncmp(value, "--", 2u) == 0) {
+                return usage("--rom needs a FILE");
+            }
+            if (o->rom != NULL) {
+                return usage("unexpected argument: give one FILE");
+            }
+            o->rom = value;
         } else if (strcmp(arg, "--probe") == 0) {
             return usage("--probe takes one file and no other option");
         } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0) {
             return usage("--help and --version take no other arguments");
         } else {
-            return usage(arg[0] == '-' ? "unknown option" : "unexpected argument");
+            return usage("unknown option");
         }
     }
     if (o->frames == 0u) {
@@ -446,6 +480,34 @@ static int parse_options(int argc, char **argv, options *o)
         o->hash_count = kept;
     }
     return MUHTARI__EXIT_DONE;
+}
+
+/* Loads the cartridge image at path into m and fast-boots it. A refusal by
+   kind, board or region exits 77, a malformed image or any other failure
+   1. Returns the exit status. */
+static int load(muhtari *m, const char *path)
+{
+    size_t n = 0;
+    uint8_t *image = read_image(path, &n);
+    if (image == NULL) {
+        return MUHTARI__EXIT_FAILURE;
+    }
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = n;
+    muhtari_status st = muhtari_load(m, &media);
+    free(image);
+    if (st == MUHTARI_STATUS_OK) {
+        return MUHTARI__EXIT_DONE;
+    }
+    fprintf(stderr, "muhtari-run: %s: %s\n", path, muhtari__status_text(st));
+    if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_2600 || st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ||
+        st == MUHTARI_STATUS_ERR_UNSUPPORTED_REGION) {
+        return MUHTARI__EXIT_REFUSED;
+    }
+    return MUHTARI__EXIT_FAILURE;
 }
 
 /* Runs the frames into heap buffers (a 77,440-byte local would overflow a
@@ -485,12 +547,12 @@ static int run(const options *opt)
         return MUHTARI__EXIT_FAILURE;
     }
 
-    int status = MUHTARI__EXIT_DONE;
+    int status = opt->rom != NULL ? load(m, opt->rom) : MUHTARI__EXIT_DONE;
     uint32_t next_hash = 0;
     uint32_t timed = 0;
     uint64_t total_ns = 0;
     /* A 64-bit count, so the loop ends when --frames is 4294967295. */
-    for (uint64_t n = 1; n <= opt->frames; n++) {
+    for (uint64_t n = 1; status == MUHTARI__EXIT_DONE && n <= opt->frames; n++) {
         uint32_t f = (uint32_t)n;
         muhtari_frame io;
         memset(&io, 0, sizeof io);

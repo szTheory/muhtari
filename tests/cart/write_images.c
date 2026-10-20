@@ -54,6 +54,10 @@ int main(int argc, char **argv)
         if (ok && strcmp(seeds_name(i), "linear-v3-16k") == 0) {
             ok = write_one(argv[1], "linear-v3-16k-body", buf + IMAGES_HEADER, n - IMAGES_HEADER);
             written++;
+            /* The same cartridge with its header's TV byte saying PAL. */
+            buf[57] = 1u;
+            ok = ok && write_one(argv[1], "linear-v3-16k-pal", buf, n);
+            written++;
         }
     }
     if (ok) {
