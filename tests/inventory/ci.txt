@@ -527,6 +527,7 @@ runner.bench.format	bench,portable,runner
 runner.bench.percentile	bench,portable,runner
 runner.bios.invalid	portable,runner
 runner.bios.rejected	portable,runner
+runner.boot_to_play	portable,runner
 runner.dump_png	portable,runner
 runner.exit.failure	portable,runner
 runner.exit.table	runner

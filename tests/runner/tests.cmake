@@ -582,6 +582,35 @@ foreach(case IN ITEMS movie.boot_bios movie.bios_mismatch movie.boot_bios_no_fil
     FIXTURES_REQUIRED "input_carts;built_openbios;built_simple")
 endforeach()
 
+# Boot to play: spacephysics, which built.spacephysics builds, played from
+# the fast boot through muhtari-run (boot_to_play.cmake) and judged by
+# muhtari-test-boot-to-play from the hashes and dumps it records. F is the
+# frame after the ledger's title@120, H the frames held, and L the bound on
+# the response: the game draws thrust one frame after the input, measured.
+# Fault prevented: a game that boots and shows its title but does not
+# respond to a held control, or responds late, or never moves.
+add_executable(muhtari-test-boot-to-play
+  ${CMAKE_CURRENT_LIST_DIR}/boot_to_play.c
+  ${CMAKE_CURRENT_LIST_DIR}/png_read.c)
+# MSVC deprecates ISO C's fopen for its _s forms.
+target_compile_definitions(muhtari-test-boot-to-play PRIVATE
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+set_target_properties(muhtari-test-boot-to-play PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-boot-to-play)
+set(runner_play_dir ${PROJECT_BINARY_DIR}/tests/boot-to-play)
+set(runner_play_f 121)
+set(runner_play_h 60)
+set(runner_play_l 1)
+muhtari_add_test(NAME runner.boot_to_play
+  COMMAND ${CMAKE_COMMAND} -DRUNNER=$<TARGET_FILE:muhtari-run>
+    -DJUDGE=$<TARGET_FILE:muhtari-test-boot-to-play> "-DEMULATOR=${runner_emulator}"
+    -DROM=${PROJECT_BINARY_DIR}/built/spacephysics/spacephysics.bas.a78 -DOUT=${runner_play_dir}
+    -DF=${runner_play_f} -DH=${runner_play_h} -DL=${runner_play_l} -P ${CMAKE_CURRENT_LIST_DIR}/boot_to_play.cmake
+  LABELS runner portable TIMEOUT 60) # provisional, phase 3
+set_tests_properties(runner.boot_to_play PROPERTIES
+  FIXTURES_REQUIRED built_spacephysics FIXTURES_SETUP boot_to_play)
+
 # The device, region and boot options.
 foreach(case IN ITEMS usage.port usage.region_pal usage.boot_bios_no_file)
   muhtari_add_test(NAME runner.${case}
@@ -680,6 +709,7 @@ endforeach()
 # The PNG writer and its checksums, checked by an independent parse.
 add_executable(muhtari-test-png
   ${CMAKE_CURRENT_LIST_DIR}/test_png.c
+  ${CMAKE_CURRENT_LIST_DIR}/png_read.c
   ${PROJECT_SOURCE_DIR}/runner/png.c
   ${PROJECT_SOURCE_DIR}/runner/crc32.c)
 target_link_libraries(muhtari-test-png PRIVATE muhtari::muhtari muhtari_host)
