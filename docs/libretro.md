@@ -48,6 +48,9 @@ There is no region option: this release runs NTSC only.
 **Restart** power-cycles the console: memory is cleared, the cartridge starts again the way it was loaded, and the
 difficulty switches go back to their options.
 
+If a frame fails, the core reports the error on screen and in the log once, and keeps presenting the last
+picture until Restart or a new load.
+
 ## BIOS files
 
 A BIOS is optional. With Boot set to BIOS, the core looks in the frontend's system directory for

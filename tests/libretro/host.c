@@ -188,6 +188,7 @@ static const struct retro_input_descriptor *input_list;
 static const struct retro_memory_map *memory_map;
 static int achievements = -1;
 static char message[256];
+static unsigned message_calls;
 static unsigned options_version = 2u; /* what GET_CORE_OPTIONS_VERSION answers */
 static const char *option_keys[16];   /* the keys the core declared */
 static int option_set_with;           /* 2 for SET_CORE_OPTIONS_V2, 1 for v1 */
@@ -257,6 +258,7 @@ static bool RETRO_CALLCONV env(unsigned cmd, void *data)
         return true;
     }
     if (cmd == RETRO_ENVIRONMENT_SET_MESSAGE) {
+        message_calls++;
         snprintf(message, sizeof message, "%s", ((const struct retro_message *)data)->msg);
         return true;
     }
@@ -812,6 +814,52 @@ static void drop_bios(const char *dir, const char *name)
     (void)remove(path);
 }
 
+/* A BIOS-rejected cart still delivers one video callback per run, and
+   reports the failure once, including again after Restart. */
+static void frame_failure(void)
+{
+    uint8_t footer = files[0][file_sizes[0] - 8u];
+    files[0][file_sizes[0] - 8u] &= 0xFEu;
+    start(0);
+    for (unsigned restart = 0; restart < 2u; restart++) {
+        unsigned messages = message_calls;
+        unsigned run;
+        for (run = 0; run < 30u && message_calls == messages; run++) {
+            int videos = video_calls;
+            int batches = batch_calls;
+            int nulls = video_null;
+            p_run();
+            CHECK_EQ_U64(video_calls, videos + 1);
+            if (message_calls != messages) {
+                CHECK_EQ_U64(video_null, nulls + 1);
+                CHECK_EQ_U64(batch_calls, batches);
+            }
+        }
+        CHECK(run < 30u);
+        CHECK_EQ_U64(message_calls, messages + 1u);
+        CHECK(strstr(message, "BIOS rejected") != NULL);
+        CHECK(strstr(log_text, "frame failed:") != NULL);
+        size_t logged = log_used;
+        int videos = video_calls, nulls = video_null, batches = batch_calls;
+        size_t samples = sample_frames;
+        run_frames(3u);
+        CHECK_EQ_U64(video_calls, videos + 3);
+        CHECK_EQ_U64(video_null, nulls + 3);
+        CHECK_EQ_U64(video_width, W);
+        CHECK_EQ_U64(video_height, H);
+        CHECK_EQ_U64(video_pitch, W * 4u);
+        CHECK_EQ_U64(batch_calls, batches);
+        CHECK_EQ_U64(sample_frames, samples);
+        CHECK_EQ_U64(message_calls, messages + 1u);
+        CHECK_EQ_U64(log_used, logged);
+        p_reset();
+    }
+    p_set_video_refresh(NULL);
+    run_frames(30u);
+    stop();
+    files[0][file_sizes[0] - 8u] = footer;
+}
+
 /* muhtari_boot = bios boots through a BIOS file in the system directory,
    under either name, and logs its SHA-256: frame 120 shows the BIOS, not
    the title the fast boot shows there. With no file the core says so and
@@ -850,6 +898,9 @@ static void case_bios(const char *dir)
         CHECK(strstr(log_text, hex) != NULL);
         CHECK(bios[BIOS_FRAMES - 1u] != fast[BIOS_FRAMES - 1u]);
     }
+    put_bios(dir, names[0]);
+    frame_failure();
+    drop_bios(dir, names[0]);
     log_used = 0u;
     log_text[0] = '\0';
     start(0);

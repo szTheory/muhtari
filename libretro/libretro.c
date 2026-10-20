@@ -468,7 +468,7 @@ void retro_reset(void)
    called once with the converted rows, and mono samples are duplicated into
    left/right pairs. Prefer the batch callback (L7465); use the per-sample
    callback only when no batch callback is registered (L7453). A failed frame
-   sends no video or audio, and the first failure is logged. */
+   duplicates the last picture without audio; its first failure is reported. */
 void retro_run(void)
 {
     muhtari_frame io;
@@ -492,7 +492,11 @@ void retro_run(void)
     if (st != MUHTARI_STATUS_OK) {
         if (!run_failed) {
             LR_LOG(RETRO_LOG_ERROR, "muhtari: frame failed: %s\n", muhtari__status_text(st));
+            lr_message(muhtari__status_text(st));
             run_failed = true;
+        }
+        if (video_cb != NULL) {
+            video_cb(NULL, LR_WIDTH, LR_HEIGHT, (size_t)LR_WIDTH * sizeof pixels[0]);
         }
         return;
     }
