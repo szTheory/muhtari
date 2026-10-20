@@ -3,7 +3,7 @@
 ; $2200 with its CRC-16, and a results screen drawn in our own hex glyphs.
 ; A diagnostic includes this file right after its ORG $C000 and ends with
 ; LIB_TAIL, which places the font at $F800-$FFFF and the vectors. It defines
-; reset; NMI and IRQ return at once.
+; reset; IRQ returns at once, and so does NMI unless it defines diag_nmi.
 
 ; The registers (Software Guide; docs/hardware/maria.md, Registers;
 ; docs/hardware/riot.md, Registers). Pages 0 and 1 below $40 are zero page,
@@ -272,5 +272,9 @@ LIB_R   SET LIB_R + 1
         ds $FFF8-*, 0
         ; $FFF8: region and signature flags; $FFF9: the ROM starts at $C000.
         .byte $FF, $C7
+        IFCONST diag_nmi
+        .word diag_nmi, reset, lib_nmi
+        ELSE
         .word lib_nmi, reset, lib_nmi
+        ENDIF
         ENDM
