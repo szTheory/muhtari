@@ -1,6 +1,8 @@
-/* The fast-boot hand-off: the state the NTSC BIOS leaves as it jumps to a
-   cartridge, set directly with no BIOS run (A7800-SYSTEM section 7, C10;
-   docs/hardware/bus.md, The run loop). */
+/* The two boots: the fast-boot hand-off, the state the NTSC BIOS leaves
+   as it jumps to a cartridge, set directly with no BIOS run (A7800-SYSTEM
+   section 7, C10; docs/hardware/bus.md, The run loop); and the BIOS boot,
+   power-on and RES with the BIOS mapped (A7800-SYSTEM sections 7 and 8;
+   docs/embedding.md, Booting with a BIOS). */
 #include <string.h>
 
 #include "internal.h"
@@ -70,4 +72,61 @@ void muhtari__boot_fast(muhtari *m)
     m->frame_deadline = m->maria.origin + MUHTARI__VBLANK_START;
     m->audio_rem = 0u;
     m->loaded = 1u;
+    m->boot.handoff_frame = 1u;
+    m->boot.rejected = 0u;
+}
+
+void muhtari__boot_bios(muhtari *m)
+{
+    /* Power-on (A7800-SYSTEM section 8): the CPU's registers 0, INPTCTRL
+       0, so MEN = 0 and EXT = 0 and the BIOS answers the 2600 decode's
+       A12 = 1, RAM by ram_fill, the RIOT and the cartridge at power-on,
+       and MARIA with CTRL $00, DMA off. */
+    muhtari__power_on(m);
+    memset(&m->maria, 0, sizeof m->maria);
+    m->maria.origin = 0u;
+    m->bus.ticks = 0u;
+    muhtari__maria_start(m);
+    m->bus.next_deadline = 0u;
+    m->boot.handoff_frame = 0u;
+    m->boot.rejected = 0u;
+
+    /* Frame 1 runs from line 0, t 0 to the first VBLANK start, 117,174
+       ticks; RES's seven cycles are its first. */
+    m->frame_start = 0u;
+    m->frame_deadline = MUHTARI__VBLANK_START;
+    m->audio_rem = 0u;
+    m->loaded = 1u;
+    muhtari__cpu_reset(m);
+}
+_Static_assert(MUHTARI__VBLANK_START == 117174u, "frame 1 under the BIOS");
+
+/* While EXT = 0 the BIOS ROM is selected in place of the cartridge: with
+   MEN = 1 at every A15 = 1 address, the image mirrored over $8000-$FFFF
+   (MiSTer; a 16 KiB image twice, a 4 KiB one eight times), and with
+   MEN = 0 at every A12 = 1 address, where the 2600 decode sees the image's
+   top 4 KiB (A7800-SYSTEM section 4; 7800OpenBIOS's notes on INPTCTRL). */
+int muhtari__boot_bios_maps(const muhtari *m, uint16_t addr)
+{
+    uint8_t c = m->bus.inptctrl;
+    if (m->bios_size == 0u || (c & MUHTARI__INPTCTRL_EXT) != 0u) {
+        return 0;
+    }
+    if ((c & MUHTARI__INPTCTRL_MEN) != 0u) {
+        return (addr & 0x8000u) != 0u;
+    }
+    return (addr & 0x1000u) != 0u;
+}
+
+uint8_t muhtari__boot_bios_byte(const muhtari *m, uint16_t addr)
+{
+    if ((m->bus.inptctrl & MUHTARI__INPTCTRL_MEN) != 0u) {
+        return m->bios[addr & (m->bios_size - 1u)];
+    }
+    return m->bios[m->bios_size - 0x1000u + (addr & 0x0FFFu)];
+}
+
+uint64_t muhtari__boot_handoff_frame(const muhtari *m)
+{
+    return m->boot.handoff_frame;
 }

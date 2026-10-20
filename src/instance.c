@@ -165,7 +165,9 @@ static int bios_valid(const uint8_t *bios, size_t n)
 static void power_cycle(muhtari *m)
 {
     muhtari__ports_reset_counters(m);
-    if (m->cart.rom != NULL) {
+    if (m->cart.rom != NULL && m->bios_size != 0u) {
+        muhtari__boot_bios(m);
+    } else if (m->cart.rom != NULL) {
         muhtari__boot_fast(m);
     } else {
         muhtari__power_on(m);
@@ -208,8 +210,8 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
         return MUHTARI_STATUS_ERR_INVALID_BIOS;
     }
     /* The ROM and its RAM are the only allocation; the BIOS goes into the
-       instance's fixed array. The BIOS boot itself is not run yet: a loaded
-       BIOS is kept and the fast boot runs. */
+       instance's fixed array. With a BIOS the machine boots through it,
+       without one through the fast-boot hand-off. */
     st = muhtari__cart_install(m, media->image, &info);
     if (st != MUHTARI_STATUS_OK) {
         return st;

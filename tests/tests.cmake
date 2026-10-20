@@ -20,10 +20,11 @@ if(MUHTARI_VECTORS_FULL)
   return()
 endif()
 include(${CMAKE_CURRENT_LIST_DIR}/abi/tests.cmake)
-# The built samples and the diagnostics run on the two inventories that list
-# them; both need the pinned tools.
+# The built samples, the BIOS boot and the diagnostics run on the two
+# inventories that list them; all need the pinned tools.
 if(MUHTARI_INVENTORY MATCHES "^(ci|wasm32)$")
   include(${CMAKE_CURRENT_LIST_DIR}/built/tests.cmake)
+  include(${CMAKE_CURRENT_LIST_DIR}/boot/tests.cmake)
   include(${CMAKE_CURRENT_LIST_DIR}/diag/tests.cmake)
 endif()
 include(${CMAKE_CURRENT_LIST_DIR}/bus/tests.cmake)

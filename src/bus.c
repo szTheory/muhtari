@@ -9,8 +9,9 @@
    cartridge space, which the board answers through src/cart.c, or leaves
    to the open-bus byte. DEV_RIOT is the RIOT's ports and timer at
    $0280-$02FF and its RAM at $0480-$04FF, with their mirrors. DEV_TIA and
-   DEV_RIOT, and every address while MEN = 0, take slow cycles. */
-enum bus_device { DEV_OPEN, DEV_RAM, DEV_MARIA, DEV_TIA, DEV_RIOT, DEV_CART };
+   DEV_RIOT, and every address while MEN = 0, take slow cycles. DEV_BIOS
+   is the BIOS image while INPTCTRL's EXT is 0 (src/boot.c). */
+enum bus_device { DEV_OPEN, DEV_RAM, DEV_MARIA, DEV_TIA, DEV_RIOT, DEV_CART, DEV_BIOS };
 
 /* A fast cycle is 4 ticks with its data at the phi2 fall, tick 4; a slow
    cycle is 6 ticks with its data at tick 5 (docs/hardware/bus.md, Clocks). */
@@ -29,9 +30,13 @@ static int men(const muhtari *m)
    at $480 and $580, system RAM at $1800-$27FF, and the cartridge
    everywhere else from $0400 up. With MEN = 0, the 2600
    decode: A12 = 0 selects the TIA when A7 = 0 and the RIOT when A7 = 1, and
-   there is no system RAM (docs/hardware/bus.md, Memory map). */
+   there is no system RAM. A loaded BIOS answers A15 = 1 with MEN = 1, and
+   A12 = 1 with MEN = 0, while EXT = 0 (docs/hardware/bus.md, Memory map). */
 static enum bus_device decode(const muhtari *m, uint16_t addr)
 {
+    if (muhtari__boot_bios_maps(m, addr)) {
+        return DEV_BIOS;
+    }
     if (!men(m)) {
         if ((addr & 0x1000u) != 0u) {
             return DEV_OPEN;
@@ -296,11 +301,28 @@ static int input_register(enum bus_device dev, uint16_t addr)
     return 0;
 }
 
+/* The hand-off: the first opcode fetch from cartridge space once EXT is 1.
+   INPTCTRL is 0 at power-on, so EXT = 1 means it rose since; the fast boot
+   records frame 1 itself. Only the first such fetch counts, so a later
+   return to the BIOS and back to the cartridge does not move it
+   (docs/embedding.md, Booting with a BIOS). */
+static void note_handoff(muhtari *m, enum bus_device dev)
+{
+    if (dev == DEV_CART && m->boot.handoff_frame == 0u && m->boot.rejected == 0u &&
+        (m->bus.inptctrl & MUHTARI__INPTCTRL_EXT) != 0u) {
+        m->boot.handoff_frame = m->frames + 1u;
+    }
+}
+
 uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
 {
     enum bus_device dev = decode(m, addr);
     uint32_t len = begin(m, dev, 1);
     uint8_t v = m->bus.open_bus;
+    if (m->bus.sync != 0u) {
+        m->bus.sync = 0u;
+        note_handoff(m, dev);
+    }
     /* Only a CPU read clears the frame's lag flag: MARIA's fetches and the
        peek below do not come through here. */
     if (input_register(dev, addr)) {
@@ -316,6 +338,8 @@ uint8_t muhtari__bus_read(muhtari *m, uint16_t addr)
         v = muhtari__maria_read(m, addr);
     } else if (dev == DEV_CART) {
         v = muhtari__cart_read(m, addr, 0);
+    } else if (dev == DEV_BIOS) {
+        v = muhtari__boot_bios_byte(m, addr);
     }
     m->bus.open_bus = v;
     end(m, len);
@@ -336,6 +360,8 @@ uint8_t muhtari__bus_peek(const muhtari *m, uint16_t addr)
         return muhtari__maria_read(m, addr);
     case DEV_CART:
         return muhtari__cart_peek(m, addr);
+    case DEV_BIOS:
+        return muhtari__boot_bios_byte(m, addr);
     default:
         return m->bus.open_bus;
     }
@@ -352,6 +378,9 @@ uint8_t muhtari__peek(const muhtari *m, uint16_t addr)
     }
     if (dev == DEV_CART) {
         return muhtari__cart_peek(m, addr);
+    }
+    if (dev == DEV_BIOS) {
+        return muhtari__boot_bios_byte(m, addr);
     }
     return m->bus.open_bus;
 }

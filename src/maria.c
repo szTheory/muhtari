@@ -71,7 +71,8 @@ _Static_assert(MARIA_TERMINATOR == 4u * MARIA_DL_BYTE, "a terminator is a full 4
    the floating byte, the previous fetch's, with no side effect. Cartridge
    space, from $0400 up outside the RIOT's RAM and system RAM, goes to the
    board, which answers MARIA as it answers the CPU (A7800-MARIA,
-   section 4.7). Every fetch puts its byte on the bus. */
+   section 4.7), or to the BIOS where it is mapped (src/boot.c). Every
+   fetch puts its byte on the bus. */
 static uint8_t fetch(muhtari *m, uint16_t addr)
 {
     uint8_t v = m->bus.open_bus;
@@ -80,7 +81,8 @@ static uint8_t fetch(muhtari *m, uint16_t addr)
     } else if (addr >= MUHTARI__RAM_BASE && addr < MUHTARI__RAM_BASE + MUHTARI__RAM_SIZE) {
         v = m->ram[(uint16_t)(addr - MUHTARI__RAM_BASE)];
     } else if (addr >= 0x0400u && !(addr < 0x0600u && (addr & 0x80u) != 0u)) {
-        v = muhtari__cart_read(m, addr, 1);
+        v = muhtari__boot_bios_maps(m, addr) ? muhtari__boot_bios_byte(m, addr)
+                                             : muhtari__cart_read(m, addr, 1);
     }
     m->bus.open_bus = v;
     return v;

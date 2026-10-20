@@ -51,6 +51,7 @@ basic.soundtest	basic,portable
 basic.spacephysics	basic,portable
 basic.trackertest	basic,portable
 basic.underthehood	basic,portable
+bios.handoff_simple	bios,portable
 built.adventurer	built,portable
 built.atarivoxspeech	built,portable
 built.backuptest	built,portable

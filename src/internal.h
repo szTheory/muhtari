@@ -55,7 +55,9 @@ struct muhtari__cpu {
    waits in halt_at and halt_until until /HALT falls at halt_fall, and
    halt_cycles counts the cycles run since the fall, through halt_stage.
    nmi_at is a raised NMI edge not yet latched, while nmi_pending is set.
-   cycle_len is the length in ticks of the cycle in flight, 4 or 6. */
+   cycle_len is the length in ticks of the cycle in flight, 4 or 6. sync
+   is set by the CPU for the read that fetches an opcode, SALLY's SYNC
+   cycle, and cleared by that read. */
 struct muhtari__bus {
     uint64_t phi2;
     uint64_t nmi_phi2;
@@ -73,6 +75,7 @@ struct muhtari__bus {
     uint8_t halt_cycles;
     uint8_t nmi_pending;
     uint8_t cycle_len;
+    uint8_t sync;
 };
 
 /* The 6532's RAM: 128 bytes (docs/hardware/riot.md, RAM). */
@@ -239,6 +242,17 @@ struct muhtari__ports {
 /* The largest BIOS image: 16 KiB at $C000-$FFFF (A7800-SYSTEM section 7). */
 #define MUHTARI__BIOS_SIZE_MAX 16384u
 
+/* The boot (docs/embedding.md, Booting with a BIOS). handoff_frame is the
+   frame, counted from 1 after a load or power cycle, of the first opcode
+   fetch from cartridge space after INPTCTRL's EXT went from 0 to 1, and 0
+   until it comes; the fast boot hands off in frame 1. rejected is set when
+   the BIOS takes its 2600 path, INPTCTRL locking with MEN = 0 before the
+   hand-off, and stays set until the next load or power cycle. */
+struct muhtari__boot {
+    uint64_t handoff_frame;
+    uint8_t rejected;
+};
+
 /* With content loaded, each muhtari_run_frame runs from frame_start to
    frame_deadline, both VBLANK-start ticks except frame_start after the
    hand-off (docs/hardware/bus.md, The run loop). bios holds the bios_size
@@ -256,6 +270,7 @@ struct muhtari {
     struct muhtari__profile profile;
     struct muhtari__cart cart;
     struct muhtari__ports ports;
+    struct muhtari__boot boot;
     uint64_t frames;                /* frames run since the last load or power cycle */
     uint64_t lag_frames;            /* of those, frames with no CPU read of an input */
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
@@ -442,6 +457,30 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr);
    it jumps to the cartridge, with no BIOS run (A7800-SYSTEM section 7, C10;
    docs/hardware/bus.md, The run loop). Needs a loaded cartridge. */
 void muhtari__boot_fast(muhtari *m);
+
+/* The BIOS boot: the power-on state, the beam at line 0, t 0 with MARIA's
+   CTRL $00, frame 1 running to the first VBLANK start 117,174 ticks away,
+   then RES, which takes PC from the BIOS's reset vector (A7800-SYSTEM
+   sections 7 and 8; docs/embedding.md, Booting with a BIOS). Needs a
+   loaded cartridge and BIOS. */
+void muhtari__boot_bios(muhtari *m);
+
+/* Whether the BIOS answers a read of addr: while EXT = 0, every A15 = 1
+   address with MEN = 1, and every A12 = 1 address with MEN = 0, as the
+   2600 decode sees it (docs/hardware/bus.md, Memory map). byte is the
+   BIOS byte there: the image mirrored over $8000-$FFFF with MEN = 1, its
+   top 4 KiB with MEN = 0. */
+int muhtari__boot_bios_maps(const muhtari *m, uint16_t addr);
+uint8_t muhtari__boot_bios_byte(const muhtari *m, uint16_t addr);
+
+/* The hand-off frame K, 0 until the hand-off; see struct muhtari__boot.
+   Not public: the runner reads it as a diagnostic. */
+uint64_t muhtari__boot_handoff_frame(const muhtari *m);
+
+/* SALLY's RES sequence, seven cycles: two reads at PC, three stack reads
+   that step S down by 3, then PC from $FFFC/$FFFD, with I set
+   (docs/hardware/sally.md, Reset). */
+void muhtari__cpu_reset(muhtari *m);
 
 /* The test card's native colour at (x, y) in a frame h rows tall. */
 uint8_t muhtari__testcard_pixel(uint32_t x, uint32_t y, uint32_t h);

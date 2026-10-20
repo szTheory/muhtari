@@ -2,21 +2,25 @@
  *
  *   muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]
  *   muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]
+ *   muhtari-run --frames N --boot bios --bios FILE [--hash-frame N]... [--rom] FILE
  *   muhtari-run --probe FILE
  *   muhtari-run --help | --version
  *
  * Runs N frames of one instance, with the cartridge FILE loaded through
- * muhtari_load and fast-booted, or with no content when there is no FILE;
- * --frames or --bench is required. For each --hash-frame N it prints, after frame N has run:
+ * muhtari_load and fast-booted, or booted through the BIOS with --boot bios
+ * --bios FILE, or with no content when there is no FILE; --frames or
+ * --bench is required. For each --hash-frame N it prints, after frame N has run:
  *
  *   frame <N> sha256 <64 lowercase hex digits>
  *
  * The hash is SHA-256 over the 320x242 native colour bytes, row-major, top
  * row first. For each --dump-frame N:FILE it writes frame N to FILE as a
  * 320x242 RGB PNG in the warm NTSC palette. --bench N also times each
- * frame and prints the report described in bench.h. SIGINT or SIGTERM
- * ends the run after the frame in progress; output is flushed and the
- * status is 0.
+ * frame and prints the report described in bench.h. With --boot bios it
+ * prints the BIOS's SHA-256 to standard error and, after the frames,
+ * "handoff_frame K", the frame of the first cartridge opcode fetch.
+ * SIGINT or SIGTERM ends the run after the frame in progress; output is
+ * flushed and the status is 0.
  *
  * --probe FILE identifies a cartridge image with muhtari_probe and prints
  * its fields and eight hashes as "key value" lines; it runs no frames.
@@ -32,6 +36,7 @@
 #include "clock.h"
 #include "crc32.h"
 #include "exit_status.h"
+#include "internal.h"
 #include "md5.h"
 #include "movie.h"
 #include "muhtari.h"
@@ -66,6 +71,7 @@ static const char synopsis[] =
     "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]\n"
     "       muhtari-run --movie FILE [--frames N | --bench N] [--hash-frame N]...\n"
     "                   [--dump-frame N:FILE]... [[--rom] FILE]\n"
+    "       muhtari-run --frames N --boot bios --bios FILE [--hash-frame N]... [--rom] FILE\n"
     "       muhtari-run --probe FILE\n"
     "       muhtari-run --help | --version\n"
     "  --frames N           run N frames (N >= 1)\n"
@@ -77,6 +83,8 @@ static const char synopsis[] =
     "                       --frames defaults to its frame count\n"
     "  --port1 D, --port2 D the device on a port: auto, proline, joystick or none\n"
     "  --region R           the region: auto or ntsc\n"
+    "  --boot B             how the cartridge starts: fast (the default) or bios\n"
+    "  --bios FILE          the BIOS image --boot bios runs\n"
     "  --probe FILE         print the cartridge image's fields and hashes\n"
     "  --help               print this text and the exit statuses\n"
     "  --version            print the version\n";
@@ -378,6 +386,9 @@ typedef struct options {
     const char *movie; /* --movie FILE, or NULL */
     uint32_t port[2];  /* --port1, --port2: 0 for auto, else MUHTARI_PORT_* */
     uint32_t region;   /* --region: 0 for auto, else MUHTARI_REGION_NTSC */
+    int has_boot;      /* --boot given */
+    uint32_t boot;     /* --boot: MUHTARI__MOVIE_BOOT_*, then the boot that runs */
+    const char *bios;  /* --bios FILE, or NULL */
     int printed;       /* --help or --version ran; nothing else to do */
 } options;
 
@@ -514,6 +525,18 @@ static int parse_options(int argc, char **argv, options *o)
                 return usage("--region needs auto or ntsc");
             }
             o->region = strcmp(value, "ntsc") == 0 ? (uint32_t)MUHTARI_REGION_NTSC : 0u;
+        } else if (strcmp(arg, "--boot") == 0) {
+            if (value == NULL || (strcmp(value, "fast") != 0 && strcmp(value, "bios") != 0)) {
+                return usage("--boot needs fast or bios");
+            }
+            o->has_boot = 1;
+            o->boot = strcmp(value, "bios") == 0 ? (uint32_t)MUHTARI__MOVIE_BOOT_BIOS
+                                                 : (uint32_t)MUHTARI__MOVIE_BOOT_FAST;
+        } else if (strcmp(arg, "--bios") == 0) {
+            if (value == NULL || strncmp(value, "--", 2u) == 0 || o->bios != NULL) {
+                return usage("--bios needs one FILE");
+            }
+            o->bios = value;
         } else if (strcmp(arg, "--probe") == 0) {
             return usage("--probe takes one file and no other option");
         } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0) {
@@ -557,6 +580,15 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
     }
     if (o->frames == 0u) {
         return usage("--frames N, --bench N or --movie FILE is required");
+    }
+    if (o->boot == MUHTARI__MOVIE_BOOT_BIOS && o->bios == NULL) {
+        return usage("--boot bios needs --bios FILE");
+    }
+    if (o->boot != MUHTARI__MOVIE_BOOT_BIOS && o->bios != NULL) {
+        return usage("--bios needs --boot bios");
+    }
+    if (o->bios != NULL && o->rom == NULL) {
+        return usage("--boot bios needs a cartridge FILE");
     }
     for (uint32_t k = 0; k < o->hash_count; k++) {
         if (o->hash_frames[k] > o->frames) {
@@ -660,13 +692,35 @@ static int read_movie(const char *path, replay *mv)
     return MUHTARI__EXIT_DONE;
 }
 
-/* Loads the cartridge image at path into m and fast-boots it, in region
-   (0 for the cartridge's). When the movie header h names a rom-sha256, the
-   image's headerless SHA-256, the --probe sha256_headerless, must match
-   it. A refusal by kind, board or region exits 77, a mismatch, a malformed
-   image or any other failure 1. Returns the exit status. */
+/* Reads the BIOS image at path into a new buffer and prints its SHA-256
+   to standard error as "bios_sha256 <hex>". Returns NULL after a message;
+   the caller frees the buffer. */
+static uint8_t *read_bios(const char *path, size_t *out_n)
+{
+    uint8_t *bios = read_image(path, out_n);
+    if (bios == NULL) {
+        return NULL;
+    }
+    muhtari__sha256 s;
+    uint8_t digest[32];
+    char hex[65];
+    muhtari__sha256_init(&s);
+    muhtari__sha256_update(&s, bios, *out_n);
+    muhtari__sha256_final(&s, digest);
+    to_hex(digest, 32u, hex);
+    fprintf(stderr, "bios_sha256 %s\n", hex);
+    return bios;
+}
+
+/* Loads the cartridge image at path into m, in region (0 for the
+   cartridge's), fast-booted, or booted through the BIOS image at
+   bios_path when that is not NULL. When the movie header h names a
+   rom-sha256, the image's headerless SHA-256, the --probe
+   sha256_headerless, must match it. A refusal by kind, board or region
+   exits 77, a mismatch, a malformed image, an invalid BIOS or any other
+   failure 1. Returns the exit status. */
 static int load(muhtari *m, const char *path, uint32_t region, const char *movie_path,
-                const muhtari__movie_header *h)
+                const muhtari__movie_header *h, const char *bios_path)
 {
     size_t n = 0;
     uint8_t *image = read_image(path, &n);
@@ -692,18 +746,31 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
             return MUHTARI__EXIT_FAILURE;
         }
     }
+    size_t bios_n = 0;
+    uint8_t *bios = NULL;
+    if (bios_path != NULL) {
+        bios = read_bios(bios_path, &bios_n);
+        if (bios == NULL) {
+            free(image);
+            return MUHTARI__EXIT_FAILURE;
+        }
+    }
     muhtari_media media;
     memset(&media, 0, sizeof media);
     media.size = (uint32_t)sizeof media;
     media.region = region;
     media.image = image;
     media.image_size = n;
+    media.bios = bios;
+    media.bios_size = bios_n;
     muhtari_status st = muhtari_load(m, &media);
     free(image);
+    free(bios);
     if (st == MUHTARI_STATUS_OK) {
         return MUHTARI__EXIT_DONE;
     }
-    fprintf(stderr, "muhtari-run: %s: %s\n", path, muhtari__status_text(st));
+    fprintf(stderr, "muhtari-run: %s: %s\n",
+            st == MUHTARI_STATUS_ERR_INVALID_BIOS ? bios_path : path, muhtari__status_text(st));
     if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_2600 || st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ||
         st == MUHTARI_STATUS_ERR_UNSUPPORTED_REGION) {
         return MUHTARI__EXIT_REFUSED;
@@ -780,7 +847,7 @@ static int run(const options *opt, const replay *mv)
     uint32_t region = h != NULL && h->has_region ? h->region : opt->region;
     int status = MUHTARI__EXIT_DONE;
     if (opt->rom != NULL) {
-        status = load(m, opt->rom, region, opt->movie, h);
+        status = load(m, opt->rom, region, opt->movie, h, opt->bios);
     } else if (h != NULL && h->has_rom_sha256) {
         fprintf(stderr, "muhtari-run: %s: rom-sha256 names a cartridge, and none was given\n",
                 opt->movie);
@@ -836,6 +903,18 @@ static int run(const options *opt, const replay *mv)
         }
     }
 
+    /* The hand-off frame is read through an internal call, not the public
+       API: the public header carries only what an embedder needs, and K is
+       a test and diagnostic observable. The runner is built in this tree
+       against the static core, and already includes src/ for SHA-1. */
+    if (status == MUHTARI__EXIT_DONE && opt->bios != NULL) {
+        uint64_t k = muhtari__boot_handoff_frame(m);
+        if (k == 0u) {
+            puts("handoff_frame none");
+        } else {
+            printf("handoff_frame %llu\n", (unsigned long long)k);
+        }
+    }
     if (status == MUHTARI__EXIT_DONE && mv != NULL) {
         muhtari_counters c;
         memset(&c, 0, sizeof c);

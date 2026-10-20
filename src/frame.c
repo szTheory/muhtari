@@ -52,8 +52,12 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
     }
 
     /* The pending input applies at a VBLANK start: the start of every
-       frame but the first after a load, which starts at the hand-off. */
-    if (!m->loaded || m->frame_deadline - m->frame_start == MUHTARI__TICKS_PER_FRAME_NTSC) {
+       frame but the first after a load. That first frame starts at the
+       fast boot's hand-off, which latches nothing, or at the BIOS boot's
+       power-on, whose inputs are what is held as the power comes on, so
+       they apply from it (docs/runner.md, Movies). */
+    if (!m->loaded || elapsed == MUHTARI__TICKS_PER_FRAME_NTSC ||
+        elapsed == MUHTARI__VBLANK_START) {
         muhtari__ports_latch(m);
     }
     if (m->loaded) {
