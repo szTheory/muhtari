@@ -47,6 +47,49 @@ from the beam in `docs/hardware/bus.md` and the line events in `docs/hardware/ma
 | `frame.dma_blocked_flag` | a refused HALT request marks the line DMA blocked, at zero cost |
 | `frame.dli_queued` | a DLI on zone 1's entry enters the NMI handler on line 32, zone 0's last, and the line says the edge was queued |
 | `frame.null_video_same_state` | ten frames with and without video leave the same line RAM, statistics, CPU and RAM |
-| `frame.sample_renders` | 7800basic's `simple` sample, built by `built.samples`: two instances give the same 120 frames, and frame 120 holds more than one colour and is not the test card |
+| `frame.sample_renders` | 7800basic's `simple` sample, built by `built.simple`: two instances give the same 120 frames, and frame 120 holds more than one colour and is not the test card |
 
 `frame.sample_renders` carries the `built` label, because it needs the sample the pinned 7800basic builds.
+
+## basic
+
+`basic.<name>` plays one 7800basic sample for 600 frames and checks them against a pin. There is one test for each
+row of `tests/built/expected.txt`, and the sample comes from that row's `built.<name>` fixture. The ROM is loaded with
+`muhtari_load` and fast-booted, with no input. `muhtari-test-chain` (`tests/built/chain.c`) hashes every frame into
+a chain:
+
+    h_0 = 32 zero bytes
+    h_i = SHA-256(h_(i-1) || frame_i), i = 1 .. 600
+
+Here frame_i is frame i's 320 x 242 native colour bytes. Frame 1 is the partial frame after the hand-off. Because the
+chain covers frame order, two swapped frames fail as surely as one changed frame. `tests/built/frames.cmake`
+compares h_600 with the row's sixth column, `frame`.
+
+The file holds a `# behaviour_revision N` line. Each check fails unless N equals the library's behaviour revision,
+so a pin holds only at the revision it was written under. `basic.revision.self_test` gives the check a copy whose
+line says 0 and expects it to fail, naming the behaviour revision.
+
+When a check fails with `frame chain drift`, find the first frame that differs. Run
+`muhtari-run --frames 600 --hash-frame N FILE` on the old and new cores and bisect on N.
+
+### Writing a pin
+
+Pins are only ever written by the core under test, never by hand:
+
+    cmake -DCHAIN=build/ci/tests/muhtari-test-chain -DROM=build/ci/built/<name>/<name>.bas.a78 \
+          -DNAME=<name> -DEXPECTED=tests/built/expected.txt -DWRITE=ON -P tests/built/frames.cmake
+
+`-DWRITE=ON` fills a `-` column. If the column already holds a pin at the file's revision, it refuses
+(`refusing to rewrite a pin at behaviour revision N`), unless the core gives the same chain.
+
+An intended change that moves a pin is handled in one of two ways:
+
+- **Unreleased pin.** A pin is unreleased while `git show origin/main:tests/built/expected.txt` has `-` or no row in
+  its place. Reset the column to `-`, run `-DWRITE=ON`, and record the row, the cause and the old and new chains.
+  The revision does not change.
+- **Released pin.** Bump the library's behaviour revision first. `-DWRITE=ON` then sees a core revision above the
+  file's: it rewrites the row and the revision line and resets every other row's pin to `-`. Run it once more for
+  each of those rows.
+
+A drift with no intended cause is a bug to fix, never a new pin.
+
