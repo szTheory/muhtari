@@ -79,6 +79,53 @@ The equal-period high timer two cycles ahead leaves a2-tick fast or3-tick
 slow pulse. This is an adopted functional convention for the manual's
 approximately1.5-cycle path, not a measured analog timing claim.
 
+## Noise, initialization and register reads
+
+All channels share owned XNOR shift registers at the actual machine
+clock: poly4 is1+x3+x4, poly5 is1+x3+x5, and AUDCTL bit7 selects
+1+x4+x9 or1+x12+x17 for the long register. From the adopted zero
+state their short patterns are000011101100101 and
+0000011100100010101111011010011. A history pipeline delivers each
+bit to channels1,2,3,4 one cycle apart, with channel1 sampling first.
+Long noise samples bit8, the right end of the CPU-visible RANDOM byte.
+AUDC bit7 bypasses the poly5 clock mask; bit5 chooses toggle instead
+of noise sampling; bit6 chooses poly4 instead of long noise. These
+circuits continue under volume-only and volume zero.
+
+SKCTL bits0–1 both zero enter init. Prescalers reset and hold their
+19/78 startup phase. Noise registers drain toward zero rather than
+stopping instantly; poly5's audio gate is held high in init. Timer
+counters, outputs and audio registers are retained. Fast timers keep
+running, including joined ones; base-clock timers receive no pulses.
+On exit, the first base pulses are19/78 clocks later, with first
+zero-divisor IRQs at24/83. Rewriting SKCTL in running mode does not
+reset prescaler or noise phase.
+
+RANDOM returns the inverted bits15..8 of the long register. Short
+mode feeds back from bits8/13 into bit16, retaining the lower drain
+stages; long mode uses bits0/5. Each init clock shifts in zero, so
+RANDOM is$FF after nine clocks and the entire register drains within
+18. Four clocks after a fully drained short-mode exit, RANDOM is$1F.
+The unique$00 state occurs382 clocks after exit; successive114-clock
+reads return00 DF EE 16 B9. These are documentary values, not hashes.
+Changing AUDCTL mode preserves register state.
+
+IRQST is the implemented timer status read and RANDOM the noise read.
+Other register reads return$FF, an explicit disconnected-peripheral
+convention. No keyboard, paddle conversion or serial transport is
+implemented. Two chip slots and separate machines retain all counters,
+noise pipelines and DAC history independently.
+
+The portable pokey.logic/pokey.clock cases include exact timer/IRQ and
+noise values, half-edge high-pass delays, both joined pairs, two-tone
+resync collisions, all16 distortion modes, init drain and exit, silent
+state resumption and split catch-up equality. A joined+high-pass trace
+compares real-bus PCM with independently scheduled raw edges through
+the production synthesizer. The spectral gate also covers joined+HP
+and two-tone+HP at fast and wholly slow clocks; these particular signals
+have no physical lines below16kHz, so no alias is masked. This finite
+coverage is a functional model check, not a silicon measurement.
+
 ## Reconstruction recovery
 
 The production spectral test retains the independent all-DAC stress and

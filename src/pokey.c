@@ -44,6 +44,22 @@ static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
 {
     struct muhtari__pokey *p = &m->pokey[chip];
     p->cycle++;
+    unsigned running = (p->skctl & 3u) != 0u;
+    /* Chapter5 noise generators: XNOR taps x4+x3+1, x5+x3+1,
+       x9+x4+1 or x17+x12+1. History bit0 reaches channel1 first;
+       each subsequent channel receives it one clock later. RANDOM's
+       right-end bit8 is the long generator's audio sample point. */
+    unsigned bits[3] = {p->poly4 & 1u, running != 0u ? p->poly5 & 1u : 1u, (p->poly17 >> 8) & 1u};
+    for (unsigned i = 0u; i < 3u; i++)
+        p->noise[i] = (uint8_t)(((unsigned)p->noise[i] << 1) | bits[i]);
+    unsigned f4 = running != 0u ? (~((unsigned)p->poly4 ^ ((unsigned)p->poly4 >> 1))) & 1u : 0u;
+    unsigned f5 = running != 0u ? (~((unsigned)p->poly5 ^ ((unsigned)p->poly5 >> 2))) & 1u : 0u;
+    p->poly4 = (uint8_t)((p->poly4 >> 1) | (f4 << 3));
+    p->poly5 = (uint8_t)((p->poly5 >> 1) | (f5 << 4));
+    unsigned tap = (p->audctl & 128u) != 0u ? 8u : 0u;
+    uint32_t feedback =
+        running != 0u ? (~((p->poly17 >> tap) ^ (p->poly17 >> (tap + 5u)))) & 1u : 0u;
+    p->poly17 = (p->poly17 >> 1) | (feedback << 16);
     unsigned base28 = 0u, base114 = 0u;
     if ((p->skctl & 3u) != 0u) {
         base28 = --p->prescale28 == 0u;
@@ -54,10 +70,6 @@ static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
         if (base114 != 0u) {
             p->prescale114 = 114u;
         }
-        /* XNOR 1+x12+x17, shifting toward RANDOM's right end. Hidden
-           state advances even with zero volume (manual chapter5). */
-        uint32_t feedback = (~(p->poly17 ^ (p->poly17 >> 5))) & 1u;
-        p->poly17 = (p->poly17 >> 1) | (feedback << 16);
     }
     for (unsigned ch = 0u; ch < 4u; ch++) {
         struct muhtari__pokey_channel *c = &p->channel[ch];
@@ -75,8 +87,11 @@ static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
            its successor. Equal-tick channel order is always1,2,3,4. */
         if (p->cycle == c->fire) {
             c->fire = UINT64_MAX;
-            if ((c->audc & 0xA0u) == 0xA0u) {
-                c->output ^= 1u;
+            if ((c->audc & 128u) != 0u || ((p->noise[1] >> ch) & 1u) != 0u) {
+                if ((c->audc & 32u) != 0u)
+                    c->output ^= 1u;
+                else
+                    c->output = (uint8_t)((p->noise[(c->audc & 64u) != 0u ? 0u : 2u] >> ch) & 1u);
             }
             /* Serial output idles at mark. Only its two-tone timer
                selection is modeled: timer2 unconditional, timer1 mark
@@ -94,8 +109,8 @@ static void clock_cycle(muhtari *m, unsigned chip, uint64_t tick)
             }
             level(m, chip, ch, tick);
         }
-        /* Counter reload is three clocks after underflow. Its output
-           pipeline takes one further clock. The forced STIMER reload
+        /* Fast counter reload is three clocks after underflow; base
+           reload is four. Output follows one clock later. STIMER
            instead initializes the counter without producing a pulse. */
         if (p->cycle == c->reload) {
             c->count = c->audf;

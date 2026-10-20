@@ -350,6 +350,18 @@ static void polynomial_vectors(void)
             }
         }
     }
+    /* Independent recurrence from the documented long polynomial;
+       bit8 reaches the audio pipeline before the register's right end. */
+    unsigned bits[96] = {0u}, history17 = 0u;
+    for (unsigned i = 17u; i < 96u; i++)
+        bits[i] = 1u ^ bits[i - 17u] ^ bits[i - 12u];
+    m = fresh();
+    for (unsigned cycle = 1u; cycle <= 80u; cycle++) {
+        run_to(m, cycle);
+        history17 = (history17 << 1) | bits[cycle + 7u];
+        for (unsigned ch = 0u; ch < 4u; ch++)
+            CHECK_EQ_U64((m->pokey[0].noise[2] >> ch) & 1u, (history17 >> ch) & 1u);
+    }
     /* RANDOM's 9-bit reset/exit timing and 114-cycle sequence, chapter5.
        The unique00 state is382 clocks after the fully drained zero state. */
     m = fresh();
@@ -366,8 +378,10 @@ static void polynomial_vectors(void)
         CHECK_EQ_HEX(muhtari__pokey_read(m, 0u, 10u, cycle * 4u), bytes[i]);
     }
     uint64_t cycle = m->pokey[0].cycle;
+    uint32_t draining = m->pokey[0].poly17;
     muhtari__pokey_write(m, 0u, 15u, 0u, cycle * 4u);
     run_to(m, cycle + 9u);
+    CHECK_EQ_U64(m->pokey[0].poly17, draining >> 9);
     CHECK_EQ_HEX(muhtari__pokey_read(m, 0u, 10u, (cycle + 9u) * 4u), 0xFFu);
     run_to(m, cycle + 18u);
     CHECK_EQ_U64(m->pokey[0].poly17, 0u);
@@ -406,6 +420,17 @@ static void init_vectors(void)
         CHECK_EQ_U64(m->pokey[0].channel[1].last_fire, (200u + first + 5u) * 4u);
         CHECK(muhtari__pokey_irq(m, 0u));
     }
+}
+
+static void joined_init_vectors(void)
+{
+    muhtari *m = fresh();
+    muhtari__pokey_write(m, 0u, 15u, 0u, 0u);
+    muhtari__pokey_write(m, 0u, 8u, 0x58u, 0u);
+    muhtari__pokey_write(m, 0u, 9u, 0u, 0u);
+    run_to(m, 200u);
+    CHECK_EQ_U64(m->pokey[0].channel[1].fires, 28u);
+    CHECK_EQ_U64(m->pokey[0].channel[3].fires, 0u);
 }
 
 static void distortion_vectors(void)
@@ -477,6 +502,47 @@ static void silent_state_vectors(void)
     }
 }
 
+static void independence_vectors(void)
+{
+    static muhtari control;
+    muhtari *m = fresh();
+    muhtari__pokey_write(m, 1u, 8u, 0xE4u, 0u);
+    muhtari__pokey_write(m, 1u, 0u, 31u, 0u);
+    muhtari__pokey_write(m, 1u, 1u, 0x4Fu, 0u);
+    muhtari__pokey_write(m, 1u, 9u, 0u, 0u);
+    memcpy(&control, m, sizeof control);
+    muhtari__pokey_write(m, 0u, 8u, 0x72u, 0u);
+    muhtari__pokey_write(m, 0u, 15u, 139u, 0u);
+    muhtari__pokey_write(m, 0u, 9u, 0u, 0u);
+    for (unsigned cycle = 128u; cycle <= 4096u; cycle += 128u) {
+        run_to(m, cycle);
+        run_to(&control, cycle);
+        CHECK(memcmp(&m->pokey[1], &control.pokey[1], sizeof m->pokey[1]) == 0);
+        CHECK(memcmp(&m->synth.raw[6], &control.synth.raw[6], 4u * sizeof(uint16_t)) == 0);
+    }
+    CHECK(m->pokey[1].channel[0].fires != 0u);
+}
+
+static void volume_override_vectors(void)
+{
+    muhtari *m = fresh();
+    muhtari__pokey_write(m, 0u, 8u, 0x64u, 0u);
+    muhtari__pokey_write(m, 0u, 1u, 0xBFu, 0u);
+    muhtari__pokey_write(m, 0u, 9u, 0u, 0u);
+    for (unsigned cycle = 1u; cycle <= 64u; cycle++) {
+        run_to(m, cycle);
+        CHECK_EQ_U64(m->synth.raw[2], 206u);
+    }
+    /* Removing the override reveals the still-running HP/output state. */
+    muhtari__pokey_write(m, 0u, 1u, 0xAFu, 256u);
+    CHECK_EQ_U64(m->synth.raw[2],
+                 (m->pokey[0].channel[0].output ^ m->pokey[0].channel[0].hp) * 206u);
+    muhtari__pokey_write(m, 0u, 8u, 0x60u, 256u);
+    CHECK_EQ_U64(m->pokey[0].channel[0].hp, 1u);
+    CHECK_EQ_U64(m->pokey[0].hp_delay[0], 0u);
+    CHECK_EQ_U64(m->synth.raw[2], (m->pokey[0].channel[0].output ^ 1u) * 206u);
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
@@ -485,8 +551,11 @@ int main(int argc, char **argv)
     if (strcmp(argv[1], "clock") == 0) {
         clock_vectors();
     } else if (strcmp(argv[1], "logic") == 0) {
+        independence_vectors();
+        volume_override_vectors();
         polynomial_vectors();
         init_vectors();
+        joined_init_vectors();
         distortion_vectors();
         silent_state_vectors();
         joined_pcm_trace();
