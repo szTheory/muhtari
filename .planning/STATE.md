@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-10-PLAN.md
-last_updated: "2026-10-20T03:08:02.372Z"
+stopped_at: Completed 03-11-PLAN.md
+last_updated: "2026-10-20T03:23:02.860Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-10 complete (controllers at pin level and the movie reader)
-state_head: e245f70d2e4493e04a711cd3f6d9bc3ab7fa24f6
+last_activity_desc: Plan 03-11 complete (the runner replays movies)
+state_head: c6a0b989772b5d4d2763b4dc4973680ed31a1722
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 47
+  completed_plans: 48
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 11 of 19
+Plan: 12 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-10 complete: ProLine in both modes, the 2600 stick with io_hazard, the console switches and unplugged ports reach SWCHA, SWCHB and INPT0-5 from src/ports.c pins; runner/movie.c validates the whole muhtari-movie 1 file (runner.movie_parse, 33 rows plus limits); eleven input.* tests drive an in-memory cart from movie rows; green on every hosted leg (run 39362291672); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-11 complete: muhtari-run --movie checks the whole movie before frame 1, sets line f before frame f with the header's devices and prints lag_frames N; --port1/--port2 and --region auto|ntsc with the header winning; past the end buttons release and difficulties stay; rom-sha256 and behaviour checks; eleven runner.movie.* and runner.usage.* tests on the input cart; docs/runner.md Movies; green on every hosted leg (run 39363678798); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -106,6 +106,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P08 | 16 min | 3 tasks | 28 files |
 | Phase 03 P09 | 14 min | 3 tasks | 15 files |
 | Phase 03 P10 | 21 min | 3 tasks | 20 files |
+| Phase 03 P11 | 13 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -257,6 +258,8 @@ Recent decisions affecting current work:
 - [Phase 03]: Two-button mode follows the levels at each read: PB2 [PB4] an output driven 0 and INPTCTRL TIA-EN clear; CTLSWB $14 alone stays one-button since ORB powers on $FF
 - [Phase 03]: INPT0-INPT3 follow the ProLine's buttons in one-button mode too (MAME, a7800, MiSTer); io_hazard counts frames ending with a stick's fire held in two-button mode and is internal
 - [Phase 03]: A movie line is at most 64 bytes except a rom-sha256 or bios-sha256 line, which is its key, a space and 64 hex digits; 03-11 decides how a movie's line 1 maps to frames, since the frame after a load latches nothing
+- [Phase 03]: Movie line k is the input set before the runner's frame k, latched at the VBLANK start that opens it; under fast boot line 1 reaches no game, so a movie records what a host passes to muhtari_set_input before each frame
+- [Phase 03]: The movie header wins: a conflicting --port1, --port2 or --region exits 2, as does boot bios until 03-13; --frames defaults to the movie length; past the end buttons release and difficulties stay; --region ntsc forces NTSC, auto refuses PAL
 
 ### Pending Todos
 
@@ -298,6 +301,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T03:08:02.256Z
-Stopped at: Completed 03-10-PLAN.md
+Last session: 2026-10-20T03:23:02.717Z
+Stopped at: Completed 03-11-PLAN.md
 Resume file: None
