@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 04
 current_phase_name: Sound
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-10-20T20:16:40.903Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-10-20T20:26:56.544Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 04 execution started
-state_head: 7dc414c0b64d4dad064b52b30ddfcd556652f05a
+state_head: 18df6791fc181dcd5e8b2819b64de84a609b9608
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 73
-  completed_plans: 57
+  completed_plans: 58
   percent: 75
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 ## Current Position
 
 Phase: 04 (Sound) — EXECUTING
-Plan: 2 of 17
+Plan: 3 of 17
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 04 execution started
 
@@ -117,6 +117,7 @@ Progress: [████████░░] 75%
 | Phase 03 P18 | 22 min | 3 tasks | 21 files |
 | Phase 03 P19 | 35 min | 3 tasks | 22 files |
 | Phase 04 P01 | 11min | 2 tasks | 8 files |
+| Phase 04 P02 | 7min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -295,6 +296,7 @@ Recent decisions affecting current work:
 - [Phase 04]: Regenerated Q23 16-tap/32-phase coefficients retain exact sum 8388608, shifted endpoint and Q23-to-Q30 multiplication by 128.
 - [Phase 04]: Production headroom proof fixes M=18361 from L1=13341774/8388608 and complete blocker rounding; current weights 85:342 and default Q12 gain 4096 stay fixed.
 - [Phase 04]: Conservative held-access/opcode/interrupt bound is 20730 ticks, giving 139 future PCM samples separately from 801 current-frame samples.
+- [Phase 04]: Production 132-case Q23 matrix passes at fixed M=18361; worst TIA -82.64927 dBc with validated exact-frequency reference, research nearest-bin cross-check -82.10380, worst POKEY-equivalent -94.71708 dBFS; all 132 same-gain aliases rejected.
 
 ### Pending Todos
 
@@ -345,6 +347,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T20:16:40.757Z
-Stopped at: Completed 04-01-PLAN.md
-Resume file: .planning/phases/04-sound/04-02-PLAN.md
+Last session: 2026-10-20T20:26:56.409Z
+Stopped at: Completed 04-02-PLAN.md
+Resume file: .planning/phases/04-sound/04-03-PLAN.md
