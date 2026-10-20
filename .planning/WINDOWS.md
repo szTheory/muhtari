@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 0
+open_count: 1
 waived_count: 0
 fixed_count: 5
-total_count: 5
-last_updated: 2026-10-20T03:55:25.400Z
+total_count: 6
+last_updated: 2026-10-20T20:26:27.505Z
 ---
 
 # Broken Windows Ledger
@@ -20,6 +20,7 @@ last_updated: 2026-10-20T03:55:25.400Z
 | 3 | 03 | stub | src/frame.c |  | With content loaded every frame row is written $00: MARIA renders no row until span rendering lands (plan 03-03) | fixed |  | 2026-10-20T00:16:07.865Z | 2026-10-20T00:33:28.582Z |
 | 4 | 03 | todo | src/maria.c |  | A DLI set on zone 0's DLL entry, which VBE reads with no HALT window, raises no NMI; its timing waits for the diagnostic ROMs (MiSTer and A7800Hawk fire it after VBE) | fixed |  | 2026-10-20T00:33:28.665Z | 2026-10-20T02:01:16.233Z |
 | 5 | 3 | stub | src/instance.c |  | muhtari_load copies a valid BIOS into the instance but still fast-boots; the BIOS boot itself is not run | fixed |  | 2026-10-20T00:49:04.503Z | 2026-10-20T03:55:25.400Z |
+| 6 | 04 | deviation | tests/audio/test_spectral.c |  | Test-only spectral plan adds verified tests against existing production behavior without a formal RED/GREEN commit pair; no missing production behavior is claimed. | open |  | 2026-10-20T20:26:27.505Z |  |
 
 ````json
 [
@@ -86,6 +87,19 @@ last_updated: 2026-10-20T03:55:25.400Z
     "reason": "",
     "recorded_at": "2026-10-20T00:49:04.503Z",
     "resolved_at": "2026-10-20T03:55:25.400Z",
+    "milestone": "v1.0"
+  },
+  {
+    "id": 6,
+    "kind": "deviation",
+    "phase": "04",
+    "file": "tests/audio/test_spectral.c",
+    "line": null,
+    "description": "Test-only spectral plan adds verified tests against existing production behavior without a formal RED/GREEN commit pair; no missing production behavior is claimed.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-20T20:26:27.505Z",
+    "resolved_at": null,
     "milestone": "v1.0"
   }
 ]
