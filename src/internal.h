@@ -85,6 +85,7 @@ struct muhtari__pokey {
     uint64_t cycle, tick, half;
     uint64_t carry[2], resync[2];
     uint32_t poly17;
+    uint8_t poly4, poly5, noise[3];
     uint16_t prescale28, prescale114;
     uint8_t audctl, skctl, irqen, irqst, initialized;
     uint8_t hp_delay[2], hp_capture[2];
