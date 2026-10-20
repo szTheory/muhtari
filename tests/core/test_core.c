@@ -537,6 +537,19 @@ static void test_silence(void)
     CHECK_EQ_U64(muhtari__synth_render(other, future, partitioned), tail);
     CHECK(memcmp(continuous, partitioned, (size_t)tail * sizeof continuous[0]) == 0);
     muhtari_destroy(other);
+    /* A boundary event is still pending after the completed half-open
+       prefix: all 88 samples are silent, the next interval starts its step. */
+    muhtari__synth_reset(m, 0u, 0u);
+    muhtari__synth_level(m, 13125u, 0u, 15u);
+    CHECK_EQ_U64(muhtari__synth_render(m, 13125u, continuous), 88u);
+    CHECK_EQ_U64(m->synth.pending, 1u);
+    CHECK_EQ_U64(m->synth.mixed_level, 0u);
+    for (unsigned i = 0u; i < 88u; i++) {
+        CHECK_EQ_U64(continuous[i], 0u);
+    }
+    CHECK_EQ_U64(muhtari__synth_render(m, 13275u, partitioned), 1u);
+    CHECK_EQ_U64(m->synth.pending, 0u);
+    CHECK(partitioned[0] != 0);
     test_synth_bound();
     test_synth_mix();
     muhtari_destroy(m);
@@ -849,6 +862,8 @@ static void test_public_audio(void)
     const uint64_t origin = 240u * 454u + 24u;
     CHECK_EQ_U64(m->bus.ticks, origin);
     CHECK_EQ_U64(m->bus.phi2, 0u);
+    CHECK_EQ_U64(m->bus.clock_origin_tick, origin);
+    CHECK_EQ_U64(m->bus.clock_origin_phi2, 0u);
     CHECK_EQ_U64(m->synth.origin, origin);
     /* Independently advance the hidden zero-volume startup to the handoff. */
     muhtari *hidden = make();
@@ -903,6 +918,54 @@ static void test_public_audio(void)
     CHECK_EQ_U64(io.audio_count, 54u);
     CHECK(memcmp(actual, first, sizeof first) == 0);
 
+    /* A held final instruction plus interrupt entry crosses the horizon.
+       Compare the public prefix/tail with an explicitly drained reference;
+       both WSYNC-style RDY and a DMA-style HALT window run real bus cycles. */
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_power_cycle(reference), MUHTARI_STATUS_OK);
+    uint64_t end = m->frame_deadline;
+    for (unsigned instance = 0u; instance < 2u; instance++) {
+        muhtari *held = instance == 0u ? m : reference;
+        while (held->bus.ticks < end - 8u) {
+            muhtari__cpu_step(held);
+        }
+        held->ram[0] = 0x4Cu; /* JMP $1800, also the NMI handler */
+        held->ram[1] = 0x00u;
+        held->ram[2] = 0x18u;
+        held->cpu.pc = 0x1800u;
+        held->cpu.s = 0xFFu;
+        held->cart.rom[CART_BODY - 6u] = 0x00u;
+        held->cart.rom[CART_BODY - 5u] = 0x18u;
+        held->bus.rdy_release = end + 400u;
+        CHECK_EQ_U64(muhtari__bus_request_halt(held, end + 28u, end + 450u), 1u);
+        CHECK_EQ_U64(muhtari__bus_raise_nmi(held, end - 4u), 1u);
+    }
+    while (reference->bus.ticks < end) {
+        muhtari__cpu_step(reference);
+    }
+    muhtari__tia_catch_up(reference, reference->bus.ticks);
+    CHECK_EQ_U64(muhtari__synth_render(reference, end, expected), 54u);
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(io.audio_count, 54u);
+    CHECK(memcmp(actual, expected, 54u * sizeof actual[0]) == 0);
+    CHECK(m->bus.ticks > end);
+    CHECK(m->bus.ticks - end <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
+    CHECK_EQ_U64(m->bus.ticks, reference->bus.ticks);
+    CHECK_EQ_U64(m->bus.phi2, reference->bus.phi2);
+    CHECK_EQ_U64(m->cpu.pc, 0x1800u);
+    CHECK_EQ_U64(m->bus.nmi_phi2, 0u);
+    CHECK(m->synth.pcm_count > 0u || (m->synth.pending != 0u && m->synth.pending_tick >= end));
+    CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_CARRY_SAMPLES);
+    end = m->frame_deadline;
+    while (reference->bus.ticks < end) {
+        muhtari__cpu_step(reference);
+    }
+    muhtari__tia_catch_up(reference, reference->bus.ticks);
+    uint32_t count = muhtari__synth_render(reference, end, expected);
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(io.audio_count, count);
+    CHECK(memcmp(actual, expected, count * sizeof actual[0]) == 0);
+
     /* A tiny in-memory BIOS selects cartridge space without resetting the
        audio clock or reconstruction at the handoff. RES is real bus time. */
     memset(bios, 0xEA, sizeof bios);
@@ -916,6 +979,8 @@ static void test_public_audio(void)
     media.bios_size = sizeof bios;
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(m->synth.origin, 0u);
+    CHECK_EQ_U64(m->bus.clock_origin_tick, 0u);
+    CHECK_EQ_U64(m->bus.clock_origin_phi2, 0u);
     CHECK_EQ_U64(m->audio_rem, 0u);
     CHECK_EQ_U64(m->bus.phi2, 7u);
     CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
@@ -926,6 +991,28 @@ static void test_public_audio(void)
         nonzero |= actual[i] != 0;
     }
     CHECK(nonzero);
+
+    /* Audible BIOS work may precede the sticky 2600 refusal. No tentative
+       samples may overwrite the caller buffer on either refused call. */
+    static const uint8_t refusal[] = {
+        0xA9, 0x00, 0x85, 0x15,       /* AUDC0 constant, EXT remains clear */
+        0xA9, 0x0A, 0x85, 0x19,       /* audible even volume, no INPTCTRL lock */
+        0xA2, 0xFF, 0xCA, 0xD0, 0xFD, /* delay */
+        0xA9, 0xFD, 0x85, 0x01        /* lock MEN clear: refusal */
+    };
+    memcpy(bios + 0x3000u, refusal, sizeof refusal);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    for (uint32_t i = 0u; i < AUDIO_CAP; i++) {
+        actual[i] = AUDIO_SENTINEL;
+    }
+    for (unsigned call = 0u; call < 2u; call++) {
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_ERR_BIOS_REJECTED_CART);
+        CHECK_EQ_U64(io.audio_count, 0u);
+        for (uint32_t i = 0u; i < AUDIO_CAP; i++) {
+            CHECK_EQ_U64(actual[i], AUDIO_SENTINEL);
+        }
+    }
+    CHECK(m->synth.raw[0] > 0u);
     muhtari_destroy(reference);
     muhtari_destroy(discard);
     muhtari_destroy(m);

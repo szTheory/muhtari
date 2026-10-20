@@ -229,6 +229,21 @@ boundary. The first `muhtari_run_frame` after a load or power cycle runs only th
 audio samples rather than 800 or 801. Its picture shows only the rows the beam scanned since the hand-off; every
 other row is written $00. Every later frame runs from one VBLANK start to the next, a whole frame of 119,402 ticks.
 
+Loaded cartridges produce mono TIA audio through the integer reconstruction and DC blocker. The sample grid
+starts at the fast-boot hand-off with zero fractional remainder. TIA's hidden zero-start logic has already run
+on its absolute 456-tick lattice from power-on; its volume remains zero until the cartridge writes it. Actual
+CPU cycle counting starts at zero at the hand-off tick (line 240, t 24), which is also the cartridge-audio clock
+segment's tick origin. Fast boot invents no skipped CPU cycles. These deterministic startup values are
+compatibility defaults, not measured physical power-on or skipped-BIOS residue.
+
+Each frame returns only samples in its logical half-open interval. CPU instructions and interrupt entries
+still complete across the deadline; later samples and reconstruction history carry into the next frame.
+An event exactly at the deadline belongs to the next interval. A NULL audio buffer discards the same completed
+samples while advancing all sound state. Frame PCM is staged inside the instance and copied only on success;
+a BIOS refusal returns zero samples and leaves the caller's audio buffer untouched. Ordinary validation errors
+execute nothing; a BIOS refusal follows partial execution and does not roll that execution back. Power cycle
+resets chip logic, synthesis, pending samples, blocker history and the fractional remainder.
+
 ## Booting with a BIOS
 
 With `bios` set, a load or power cycle starts the console from power-on: INPTCTRL `$00`, so the BIOS is mapped and
@@ -237,6 +252,9 @@ beam at line 0, t 0. The CPU runs RES, which takes PC from the BIOS's reset vect
 frame runs to the first VBLANK start, 117,174 ticks and 785 samples, and the input set before it applies from
 power-on. Every later frame is whole. The BIOS then runs as on a console: it tests the machine, checks the
 cartridge, shows its splash screen and hands off.
+
+Under BIOS boot both the sound sample grid and the actual cartridge-audio clock segment start at tick zero,
+CPU cycle zero. The reset and BIOS cycles advance that real timeline; cartridge hand-off does not reset it.
 
 The hand-off frame is the frame, counted from 1 after the load or power cycle, of the first opcode fetch from
 cartridge space after INPTCTRL's EXT bit goes from 0 to 1. Only that first fetch counts; a game that maps the BIOS

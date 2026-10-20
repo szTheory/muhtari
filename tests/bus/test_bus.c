@@ -245,6 +245,7 @@ static int rdy_holds_reads_only(void)
        read starts at 358. */
     m = fresh(LOCKED_7800);
     m->profile.tia_phase = 100u;
+    muhtari__tia_reset(m);
     muhtari__bus_write(m, 0x0002u, 0x00u);
     (void)muhtari__bus_read(m, 0x1800u);
     ok &= expect_ticks("read after STA $02, tia_phase 100", m->bus.ticks, 362u,

@@ -119,6 +119,9 @@ struct muhtari__cpu {
    is set by the CPU for the read that fetches an opcode, SALLY's SYNC
    cycle, and cleared by that read. */
 struct muhtari__bus {
+    /* Actual clock-segment origin for cartridge audio. Fast boot skips
+       CPU execution; it does not invent phi2 cycles (embedding.md). */
+    uint64_t clock_origin_tick, clock_origin_phi2;
     uint64_t phi2;
     uint64_t nmi_phi2;
     uint64_t ticks;
@@ -333,6 +336,7 @@ struct muhtari {
     struct muhtari__boot boot;
     struct muhtari__synth synth;
     struct muhtari__tia tia;
+    int16_t audio_work[MUHTARI__MAX_AUDIO_SAMPLES];
     uint64_t frames;                /* frames run since the last load or power cycle */
     uint64_t lag_frames;            /* of those, frames with no CPU read of an input */
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
