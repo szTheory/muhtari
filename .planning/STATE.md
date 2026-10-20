@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-16-PLAN.md
-last_updated: "2026-10-20T05:40:39.597Z"
+stopped_at: Completed 03-17-PLAN.md
+last_updated: "2026-10-20T06:06:45.263Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-16 complete (boot to play on spacephysics with five negative controls)
-state_head: f906c1bfb07c437fbcd1f251195aad484d40ce9a
+last_activity_desc: Plan 03-17 complete (four run-loop properties, the run fuzz target, nightly prop and fuzz jobs, full path filter)
+state_head: 85f64f863f29c195897c2faf286ce3ba522abc22
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 53
+  completed_plans: 54
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 17 of 19
+Plan: 18 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-16 complete: runner.boot_to_play plays spacephysics from the fast boot through the real muhtari-run (four movies, a hash for every frame to 180, dumps at 120/140/160/180); Up+Left on port 1 from frame 121 changes frame 122 and moves the ship up 17 px, Up+Right its mirror down 17 px; controls found by running the game (Up thrusts at F+1, Left/Right turn on a global 8-frame cadence, button 2 fires, Down, button 1 and port 2 do nothing); (a) bound measured at F+1 inside [F, F+2] so a one-frame-late latch fails; runner.boot_to_play.{no_input,port2,static_mutant,late_mutant} fail with mask 1, 1, 2, 1 and mirrored with sign did not flip; PNG reader shared as tests/runner/png_read.c; green on every hosted leg (run 39375738182); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-17 complete: tests/prop.h (80 lines) with prop.split_run, peek_pure, instances_isolated and input_at_vblank over a pool of 17 run seeds, a random 48 KiB cart and the simple and eightysix samples, 100 cases per pull request; tests/fuzz/run.c makes any bytes a headerless 48 KiB cart whose footer passes (run_cart.h; without it every input was refused as 2600), two instances agree over 2 frames, each within four lines of its deadline; fuzz.regress.run and its self test on every lane; nightly fuzz job runs both targets (61 s each) and a report-only prop job runs 10,000 cases per property (slowest 188 s); nightly paths list every input (WR-01 folded); green on every hosted leg (CI 39377950148, Nightly 39377950042); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -112,6 +112,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P14 | 39 min | 3 tasks | 8 files |
 | Phase 03 P15 | 29 min | 3 tasks | 14 files |
 | Phase 03 P16 | 22 min | 2 tasks | 9 files |
+| Phase 03 P17 | 20 min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -275,6 +276,9 @@ Recent decisions affecting current work:
 - [Phase 03]: 03-15: muhtari_boot applies at content load; Restart power-cycles the loaded media and reapplies only the difficulty options
 - [Phase 03]: 03-15: rcheevos v12.1.0 is a test-only pin built with warnings and sanitizers off, with two generated rhash stubs
 - [Phase 03]: 03-16: Boot to play holds Up+Left on port 1 from frame 121 with Up+Right as its mirror; (a) uses the measured one-frame bound inside [F, F+2] so a one-frame-late latch fails
+- [Phase 03]: 03-17: Run fuzz cartridges pass the footer test: run_cart.h changes the last 8 bytes as little as needed, since arbitrary headerless 48 KiB images are refused as 2600 images
+- [Phase 03]: 03-17: prop.input_at_vblank reads SWCHA, SWCHB and INPT0-5 through muhtari__bus_peek; muhtari__peek returns open bus for device registers
+- [Phase 03]: 03-17: The nightly prop job builds ci with MUHTARI_TIMEOUT_SCALE=10 and runs ctest -L prop -j 4; report-only outside report's needs until 10 green runs on main
 
 ### Pending Todos
 
@@ -316,6 +320,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T05:40:39.471Z
-Stopped at: Completed 03-16-PLAN.md
+Last session: 2026-10-20T06:06:45.143Z
+Stopped at: Completed 03-17-PLAN.md
 Resume file: None
