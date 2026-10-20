@@ -66,7 +66,7 @@ typedef struct muhtari_frame {
     uint8_t *video;          /* in: NULL skips video */
     int16_t *audio;          /* in: NULL skips audio */
     uint32_t audio_capacity; /* in */
-    uint32_t audio_count;    /* out: samples this frame (800 or 801) */
+    uint32_t audio_count;    /* out: samples this frame, at most max_audio_samples */
 } muhtari_frame;
 
 muhtari_status muhtari_get_versions(muhtari_versions *out);
@@ -208,7 +208,7 @@ enum { MUHTARI_MEMORY_SYSTEM_RAM = 1, MUHTARI_MEMORY_RIOT_RAM = 2, MUHTARI_MEMOR
 
 typedef struct muhtari_span {
     uint32_t size;
-    uint8_t *data; /* stable from load to destroy; NULL when absent */
+    uint8_t *data; /* until the next load or destroy; NULL when absent */
     size_t bytes;
 } muhtari_span;
 
