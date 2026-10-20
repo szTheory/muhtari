@@ -2,7 +2,7 @@
 title: "Decisions already made"
 summary: "One line per settled choice for muhtari, with its reason and the file and section that support it; open questions at the end."
 read_when: "Before reopening any choice, and whenever a phase needs to know what is settled. Reopen a decision only with new evidence, and record the change here with its date."
-updated: 2026-10-16
+updated: 2026-10-20
 ---
 
 # Decisions already made
@@ -52,7 +52,7 @@ evidence. IDs use a dot (`DEC.07`) so they never collide with GSD's `D-NN` phase
 | DEC.25 | A frame runs from VBLANK start to VBLANK start; input is applied at VBLANK start | Lowest input latency | ARCHITECTURE |
 | DEC.26 | Public API `muhtari_*`: opaque instance, size-tagged fixed-width structs, append-only statuses, caller-owned buffers, an error changes no state, separate ABI/behaviour/state/battery versions | Sibling API conventions that held over three milestones | ARCHITECTURE |
 | DEC.27 | Video is the native MARIA byte per pixel, 320 × 242 NTSC / 292 PAL, pixel aspect 6:7 (PAL 1.0396); palettes (default warm) and the composite filter are host helpers outside the hash | Hash stability; hosts choose presentation | A7800-MARIA 6–8 |
-| DEC.28 | Audio is mono int16 at a rational rate; the primary hash covers the transition stream (tick, source, level); PCM is secondary; synthesis cost is bounded per output sample | Mixer-independent determinism; hostile high-rate POKEY | A7800-AUDIO 8 |
+| DEC.28 | Audio is mono int16 at a rational rate; the primary hash covers the transition stream (tick, source, level); PCM is secondary; synthesis cost is bounded per output sample. 2026-10-20: actual slow POKEY refutes fixed Q23/16x32 quality feasibility; narrowly reopen phase-table density (64 then 128 first), preserve gain/quality contracts and require fresh proofs before selecting coefficients | Mixer-independent determinism; hostile high-rate POKEY | A7800-AUDIO 8; phases/04-sound/04-06-SUMMARY.md; phases/04-sound/04-CONTEXT.md D-08, D-25–D-30 |
 | DEC.29 | TIA audio steps on its own 456-tick lattice; TIA writes are not gated by INPTCTRL | Schematic; correct pitch | A7800-AUDIO 2 |
 | DEC.30 | POKEY counts the bus's φ2 cycles (stretched by slow cycles, running through HALT), powers on as if SKCTL = $03, and drives IRQ only when the A78 v4 bit asks | Schematic and hardware report; MiSTer behaviour | A7800-AUDIO 4 |
 | DEC.31 | Boards dispatch through a `switch` on the board kind (or pointers kept in the instance), never a const pointer table | Under PIC such a table counts as mutable data and fails the no-globals check | ENGINEERING 2 |

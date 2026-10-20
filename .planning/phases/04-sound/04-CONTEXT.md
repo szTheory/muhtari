@@ -1,7 +1,7 @@
 # Phase 4: Sound - Context
 
 **Gathered:** 2026-10-20
-**Status:** Ready for planning
+**Status:** Ready for targeted replanning; 04-06 remains blocked
 
 <domain>
 ## Phase Boundary
@@ -78,6 +78,20 @@ are adopted under that delegation, not presented as answers to an interview that
   new evidence rather than changing the historical D-08 text above; reproduction through the production
   tables, actual chip models, frame carry and platform lanes remains mandatory. No tap/phase/support count,
   rate, profile, filter or dependency is added.
+- **2026-10-20 actual-chip amendment to D-08:** The six retained wholly slow AUDF1 failures in
+  `04-06-SUMMARY.md` supersede the earlier feasibility conclusion for the fixed 32-phase table. Fresh discussion
+  reproduction of `ctest --test-dir build/ci -R '^audio.spectral$' --output-on-failure --no-tests=error`
+  exits 8, with worst peak -78.28741 dBFS. Reopen phase-table resolution first. Research 64 then 128 phases,
+  keeping 16 taps, Q23, compact support, Kaiser-beta8 shape, current weights, gain, blocker and judge fixed
+  during comparison. Those tables occupy 4/8 KiB rather than 2 KiB; the 16-cell ring and coefficient applications
+  per merged event can remain unchanged. Select the smallest candidate meeting all acceptance evidence;
+  neither candidate is certified by this discussion. Historical Q23/128 success on the old 132-case matrix
+  is only a lead. The prior prohibition on changing phase count is superseded by this evidence amendment.
+  Preserve the approved seed provenance and integer event/ring architecture; introduce no dependency.
+  If both candidates fail, diagnose coefficient/interpolation rounding separately before considering longer
+  support or a different window. Wider arithmetic, support or engine changes need measured cause and an
+  explicit inventory of invalidated proofs, not an open-ended redesign. The agent may make these technical
+  choices under the owner's delegation; no additional owner approval or listening test is required.
 - **D-09:** Keep the released public contract: 48,000/1 Hz, mono int16, exact NTSC phase ratio 88/13,125.
   No sample-rate configuration or public synthesis profile is added. At this rate one sample interval spans
   at most 150 master-tick positions; merge mixed-level changes at a tick before kernel work. Bound catch-up,
@@ -162,6 +176,50 @@ are adopted under that delegation, not presented as answers to an interview that
   self-skips, and existing review-round limits. Evidence is a command, exit status and hosted run URL where
   available; no committed execution logs. Ship-time merge/release checks remain the ship step's job.
 
+### Recovery from the actual slow-clock failure
+
+- **D-25:** Preserve all eight partially implemented files identified in `04-06-SUMMARY.md`. Keep completed
+  plans 04-01 through 04-05 as history; revalidate their affected synthesis evidence rather than repeating their
+  implementation. The next planning step must explicitly amend synthesis work and resume **04-06 Task 2**.
+  Its SUMMARY has `status: blocked`; file existence and its completed date do not establish completion.
+  Plans 04-07 onward stay blocked until Task 2 is verified and its partial summary is reconciled. Do not
+  discard the six failures, revert documented bus timing, or move unmet SND-05 acceptance to a later phase.
+- **D-26:** Compare candidates at the existing M=18,361 and unchanged hardware current model/Q12 gain4096.
+  A lower output level cannot count as spectral improvement. Recompute the full signed step/blocker bound,
+  rounding allowance and intermediate widths from final coefficients over all 13,125 phases and 88 output
+  alignments. The existing bound has little slack; do not reuse its L1 or M numerically. If a new bound needs
+  a different M solely for headroom, document that derivation separately and require spectral success both
+  at the common comparison gain and final production gain. Preserve at least 1 dB headroom, zero clipping,
+  the 85:342 current ratio and physical-only masks. A clamp is not a proof.
+- **D-27:** Preserve the 132-case production matrix, all 132 aliased controls, all 72 actual-chip cases and
+  independent arithmetic-schedule PCM comparisons. Before freezing a candidate, perform bounded offline
+  exploration of legal mixed 4/6-tick clock patterns, independently selected origins and periodic high-pass
+  narrow pulses (including the existing fast/slow/mixed delay conventions). Retain compact representative
+  worst cases in the existing tests. Physical sidebands must come from the actual periodic raw schedule;
+  an average clock frequency must not exempt aliases. No exhaustive permanent configuration matrix or new
+  test framework is required. Stop expanding the search when the established requirements and these directly
+  relevant checks pass; remaining uncertainty needs new evidence, not further speculative fan-out.
+- **D-28:** Independently refine candidate worst spectral peaks at their actual frequencies before accepting
+  a near-threshold result: an FFT-bin maximum can understate a windowed sinusoid's amplitude. Keep the
+  existing capture, settling, window, full-scale definition and -80 dB threshold. This is one-off candidate
+  evidence within D-20, not a new repository tooling gate or an invented stronger threshold. Report measured
+  margin and the limits of the finite tested matrix. Ultrasonic int16 silence is valid; establish that raw
+  DAC transitions reach synthesis so disconnected output cannot masquerade as rejection. A future permanent
+  refinement of the analyzer is a tooling seed, not an additional phase requirement.
+- **D-29:** Establish reproducible owned coefficient generation using the documented formula and convergence
+  checks; do not depend on a transient scratch path. Keep it within existing generator/documentation patterns
+  and avoid a new runtime or CI package. Update the synthesis identity when coefficients change. Recheck
+  endpoint shifting, exact row sums, ring widths, work and carry bounds, adverse transitions, partition/NULL/
+  reset behavior and eventual platform PCM parity. Phase-only changes retain support; support changes must
+  revisit every hardcoded ring size/mask, latency/tail and occupancy claim. Existing performance checks apply;
+  do not add an automatic quality mode or an unmeasured fallback.
+- **D-30:** Preserve hardware event timestamps, bus/CPU semantics, raw source IDs and transition serialization,
+  API/ABI, 48 kHz cadence and logical frame boundaries. Synthesis changes may change PCM, never justify a raw
+  transition or video re-pin. Keep the already planned mapping/revision migration and host/platform work.
+  `04-RESEARCH.md` conclusions claiming no unresolved feasibility prerequisite are stale for actual slow
+  clocks; targeted research must reconcile them before planning resumes. No replacement has been measured
+  or implemented in this discussion, and no SND requirement or plan count advances.
+
 ### Agent's Discretion
 
 Internal names, module splits, bounded carry representation, exact tie-order machinery, spectral harness details,
@@ -182,6 +240,9 @@ Downstream agents must read the relevant sections before planning or implementat
 
 - `AGENTS.md`: licensing, scope, verification, budgets, branch and single-step rules.
 - `.planning/ROADMAP.md` Phase 4 and `.planning/REQUIREMENTS.md` SND-01–SND-05: scope and acceptance.
+- `.planning/phases/04-sound/04-06-SUMMARY.md`: partial execution, six retained failures and resume boundary.
+- `.planning/phases/04-sound/04-RESEARCH.md`: historical feasibility, generation formula and prior candidate results; actual slow-clock conclusions require reconciliation.
+- `docs/hardware/audio.md`, `src/synth.c`, `tests/audio/test_spectral.c`: shipped arithmetic/proofs and measurement conventions.
 - `.planning/PROJECT.md`: product constraints and no separate low-accuracy core.
 - `.planning/preparation/README.md` and `.planning/preparation/DECISIONS.md`: reference index and settled choices.
 - `.planning/preparation/A7800-AUDIO.md` §§1–5, 8–10 and source table: chip models, mix, synthesis and uncertainty.
@@ -206,6 +267,7 @@ External primary references consulted or identified for targeted implementation 
   chapter 5 and appendix E; documentation only, never Altirra source. Use A7800-AUDIO's pinned edition.
 - [A78 header specification](https://7800.8bitdev.org/index.php/A78_Header_Specification), maintained format
   specification; reconcile with the pinned revision before changing the parser.
+- [Filter-table implementation](https://www.dsprelated.com/freebooks/pasp/Implementation.html): primary author treatment of phase-table density, interpolation and word length.
 - [Windowed-sinc interpolation](https://www.dsprelated.com/freebooks/pasp/Windowed_Sinc_Interpolation.html),
   [DC blocker](https://www.dsprelated.com/freebooks/filters/DC_Blocker.html), and
   [spectrum-analysis windows](https://www.dsprelated.com/freebooks/sasp/spectrum_analysis_windows.html):
@@ -217,14 +279,15 @@ External primary references consulted or identified for targeted implementation 
 <code_context>
 ## Existing Code Insights
 
-- `src/tia.c`: value-less write entry point currently handles WSYNC only; extend internally for audio and RSYNC.
+- `src/tia.c`: implemented two-phase audio, all AUDC settings and shared RSYNC/WSYNC epoch; preserve its verified behavior.
 - `src/bus.c`: authoritative data ticks and phi2/held-cycle counting; POKEY catch-up and IRQ integration belong
   here, preserving existing slow/fast conventions.
 - `src/cpu.c`: NMI exists, maskable IRQ acceptance does not yet exist.
 - `src/cart.c`, `src/cartdb.c`: sound/header identification is already parsed; runtime decode must consume it.
-- `src/frame.c`: returns zero-filled PCM, carries rational remainder, permits instruction overshoot and partial
-  first frames. Replace silence without changing its validated external timing.
-- `src/internal.h`, `src/instance.c`, `src/boot.c`: instance-owned storage, power cycle and behaviour revision.
+- `src/frame.c`: supplies TIA PCM with logical horizon and retained synthesis carry; tests cover partial frames, instruction overshoot, partition/discard equality, reset and invalid-call atomicity.
+- `src/pokey.c`: committed fast timer tracer plus retained partial actual-clock implementation; Task 2 remains blocked.
+- `src/synth.c`, `src/audio_tables.h`: implemented Q23/16x32 reconstruction, exact row correction and current mixer. The phase endpoint and several dimensions are hardcoded; parameter changes need a complete audit.
+- `src/internal.h`, `src/instance.c`, `src/boot.c`: instance-owned storage, power cycle, clock-origin anchors and behaviour revision.
 - `include/muhtari.h`: released API 3 already returns fixed-rate mono PCM; no new consumer needs public options.
 - `runner/main.c`, `runner/sha256.c`: existing private inspection and streaming SHA-256 can serve audio hashes.
 - `libretro/libretro.c`: existing mono-to-stereo, batch preference and sample fallback; extend parity tests.
@@ -239,8 +302,7 @@ External primary references consulted or identified for targeted implementation 
 The owner's fan-out brief prioritises relevant stakeholder perspectives, primary evidence, adversarial checks,
 coherent defaults and smaller, flatter dependencies: another copy and paste beats another dependency. Apply it
 to 7800 audio, host embedding, portability, licensing and test validity. Unrelated UI and distributed-system
-design do not add useful decisions here. Three independent review passes converged; remaining uncertainties
-require implementation measurements, rather than additional speculative fan-out.
+design do not add useful decisions here. The original three reviews and a second three-way recovery review converged. The recovery lenses covered DSP, numerical/measurement validity, and runtime/delivery. Further speculative fan-out has diminishing value; candidate measurements are now decisive. The observed 15,136.23 Hz bin is near 13 times the slow AUDF1 fundamental minus 32 times 48 kHz (15,136.36 Hz), which motivates a phase-resolution experiment but does not prove its cause.
 </specifics>
 
 <deferred>

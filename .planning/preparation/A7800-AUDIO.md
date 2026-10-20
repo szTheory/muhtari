@@ -145,6 +145,13 @@ Both MAME and a7800 carry the a7800 4.7–4.9 fixes; MAME upstream is the supers
 ## 8. Synthesis, hashes, A/V sync
 - **Historical sibling precedent** [AUD.23]: delta × an interpolated 16-tap/32-phase compact kernel enters an integer ring. The original table was Q15 with row sum 32,768. Its reported −87 dB result is not production evidence: the inherited judge masked folded aliases.
 - **Adopted 2026-10-20:** retain that architecture but regenerate the Nyquist-sinc/Kaiser-beta8 integral over 15 samples at Q23, per [the dated D-08 evidence amendment](../phases/04-sound/04-RESEARCH.md#feasibility-resolution-explicit-minimal-d-08-revision). The 512 int32 cells occupy 2048 bytes; Simpson128/256 give identical rows, corrected sum 8388608 and shifted phase32 endpoint. Integration converts Q23→Q30 by ×128. Identity: `exact-q23-16x32-dc20`. This precision change fixes the demonstrated Q15 feasibility failure; gain is not reduced to hide a spur. Production spectral evidence is established separately.
+- **Actual-chip evidence amendment, 2026-10-20:** the current Q23/16×32 table fails six wholly slow AUDF1
+  cases, worst -78.28741 dBFS; the earlier equivalent-schedule sweep does not establish slow-clock feasibility.
+  Keep the implementation as the failing baseline, and research 64 then 128 Q23 phases before widening support.
+  No replacement is certified. Preserve gain, physical masks and the -80 dB contract; regenerate
+  coefficient-dependent bounds. See [partial execution evidence](../phases/04-sound/04-06-SUMMARY.md) and
+  [recovery decisions](../phases/04-sound/04-CONTEXT.md) D-08 and D-25–D-30. This supersedes SYN-1's fixed phase
+  count as a planning constraint, not its ring/mixer/blocker architecture.
 - **Retiming:** phase accumulator (NTSC, 48 kHz): +88 per tick modulo 13,125; kernel row = acc·32/13,125, remainder = interpolation (acc·32 < 2^19). PAL is future scope: +4,000 modulo 591,149 (acc·32 < 2^25). One tick is 1/149.15 sample, and 32 interpolated phases resolve positions finer than a tick.
 - **Rates and bound:** TIA ≤ 2 × 31,399.5 = 62,799 changes/s; POKEY ≤ 1 merged change per φ2 cycle = 1.79 M/s per chip (AUDF 0 at 1.79 MHz toggles 447,443/s per channel); YM 55,930/s. Merge all sources per tick before the kernel. Worst case is 28.6 M multiply-adds/s per POKEY (hostile ROM) against about 1 M/s for TIA only.
 - **Why band-limit:** test7800's E.X.O. title-music errors were aliasing of 1.79 MHz tones at a 31,469 Hz output rate [AUD.32]. Bentley Bear plays a 32 kHz tone (AUDF 0, AUDC $Ax) that must stay inaudible [AUD.33].
