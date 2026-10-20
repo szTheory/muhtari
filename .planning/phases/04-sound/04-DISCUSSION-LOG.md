@@ -1,0 +1,96 @@
+# Phase 4: Sound - Discussion Log
+
+> Audit trail only. Planning and execution consume `04-CONTEXT.md`.
+
+**Date:** 2026-10-20
+**Phase:** 04-sound
+**Areas discussed:** chip timing and cartridge mapping; synthesis and mix; host contracts and evidence.
+
+## Owner direction
+
+The owner invoked `$gsd-discuss-phase 4`, then requested all relevant decision points be considered through
+fan-out research, stakeholder perspectives, primary sources and an adversarial pass. The owner explicitly
+requested a coherent recommendation set and automatic following of those recommendations. Small, flat
+dependency trees and copying a suitable permissive seed were preferred to adding packages.
+
+This replaced routine area-selection and question-by-question interaction. No unanswered interview choice was
+silently defaulted. Three read-only agents investigated independent areas, then the orchestrator reconciled
+their recommendations. No further fan-out was needed once remaining questions required measurements.
+
+## Chip timing, startup and cartridge mapping
+
+| Choice | Benefit / cost | Selected |
+|--------|----------------|----------|
+| Independent TIA lattice, shared RSYNC/WSYNC epoch | Preserves hardware edge placement; mutable phase must be shared | Yes |
+| Uniform 228-tick TIA audio or MARIA-derived stepping | Simpler; contradicts settled edge model | No |
+| Bus phi2 POKEY with documented reload/init behaviour | Preserves slow-cycle pitch, hidden state and RANDOM; needs segment-aware catch-up | Yes |
+| Fixed-rate POKEY or stopping silent channels | Cheaper shortcut; loses clock stretching or observable state | No |
+| SKCTL=$03 startup, alternate init internal | Existing compatibility default; physical startup still uncertain | Yes |
+| Default silent init | Familiar to some emulators; conflicts with settled startup choice | No |
+| All existing POKEY header codes, two fixed instances | One reusable model, no speculative expansion interface | Yes |
+| Three required base windows only | Smaller initial coverage, leaves already parsed POKEY codes inconsistent | No |
+| v4-controlled timer IRQ including CPU acceptance | Fulfils settled wiring; CPU entry path is currently missing | Yes |
+| IRQ line without CPU acceptance | Superficially small; cannot deliver the promised behaviour | No |
+
+**Recommendation basis:** A7800-AUDIO, existing bus data ticks, Altirra's hardware manual and the maintained A78
+specification. TIA writes use start+5 on slow cycles, not completion at start+6. No new evidence overturns the
+settled chip models; uncertain physical startup and STIMER polarity stay documented.
+
+## Synthesis, mix and headroom
+
+| Choice | Benefit / cost | Selected |
+|--------|----------------|----------|
+| Approved sibling kernel and one DC blocker | Small permitted seed, integer runtime; quality must be retested | Yes |
+| New external resampler | Additional dependency and integration without a demonstrated need | No |
+| Short polynomial correction or simple averaging | Cheap; insufficient evidence for the required rejection | No |
+| Large phase table | Trades interpolation for memory; consider only with performance evidence | Deferred |
+| Box-bin profile | Conditional preparation fallback; adds approximation and evidence burden | Deferred |
+| Owned nonlinear mixer tables and node-current weights | Existing documented model; physical balance still unmeasured | Yes |
+| Speculative board/TV filters or new user controls | Adds assumptions and API without measurements or consumers | No |
+| Complete signed-kernel/DC-blocker peak bound | Covers ringing, rounding and intermediate overflow | Yes |
+| Maximum DC sum as clipping proof | Unity sum misses negative-lobe overshoot | No |
+
+**Recommendation basis:** approved seed and DSP derivations. The sibling spectral test's coherent frequencies do
+not prove rejection with actual 7800 lattice events. Preparation's no-clipping argument must be corrected in the
+implementation change. Keep the current fixed 48 kHz API and do not expose hypothetical rates or profiles.
+
+## Observation, hashes and host evidence
+
+| Choice | Benefit / cost | Selected |
+|--------|----------------|----------|
+| Internal transition tap consumed by existing runner | Meets real consumer with no new public lifetime contract | Yes |
+| Public observer API/general hooks | Useful later; broadens published contract unnecessarily now | No |
+| Separate canonical raw-transition and LE mono PCM digests | Distinguishes chip changes from synthesis changes | Yes |
+| Native-memory PCM/struct hashing | Simple but padding and endianness break portability | No |
+| Whole-run hash output with explicit counts | Fits existing CLI and bounded output | Yes |
+| Per-frame syntax, WAV or new expectations tooling | Extra surface outside current requirement | Deferred |
+| Half-open logical intervals with bounded carry | Handles existing CPU overshoot and partial first frames | Yes |
+| Flush everything generated by the final instruction | Leaks next-frame audio into the requested run | No |
+| NULL output still advances audio history | Later PCM equals always-rendered operation | Yes |
+| Skip synthesis when output is discarded | Changes subsequent PCM | No |
+| Production-path spectral measurement and bad control | Tests actual alias rejection; measurement reference must be explicit | Yes |
+| Reuse sibling -87 dB claim as acceptance | Different clocks and filters; no local proof | No |
+| Reuse cross-platform comparison and in-process libretro host | Recurring determinism and adapter evidence within existing budget | Yes |
+| New hosted recording/device test suite | Adds fragile machinery beyond the established e2e budget | No |
+
+**Recommendation basis:** current frame driver and callbacks. Render audible tones against their intended
+fundamental and ultrasonic-only cases against a declared full-scale reference; never exempt aliases. Preserve
+no-content silence, ordinary-call validation, power-cycle behaviour and the existing BIOS-refusal exception.
+
+## Released pins and todo disposition
+
+The existing POKEY re-pin todo is directly applicable: mapping $0450 changes reads used by five released samples.
+Adopt its same-commit behaviour revision, frame-chain/title-pin rewrite and compatibility regeneration. Require
+causal old/new evidence; unaffected samples changing are bugs to investigate. Keep the todo pending until
+execution, and leave unrelated CI and review seeds in their existing workstreams.
+
+## Agent's Discretion
+
+The owner delegated recommendations and routine technical choices. Names, module boundaries, exact bounded
+event carry, CLI labels and spectral-harness details remain research/planning choices within CONTEXT.md's
+contracts. No implementation performance, spectrum or clipping result is claimed by this discussion.
+
+## Deferred Ideas
+
+Existing later milestones retain PAL, expansion audio, physical calibration, hardware/RTL comparison, public
+hooks, arbitrary rates, WAV output and states. No additional capability was added from the generic brief.
