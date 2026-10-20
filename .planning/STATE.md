@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-14-PLAN.md
-last_updated: "2026-10-20T04:42:29.949Z"
+stopped_at: Completed 03-15-PLAN.md
+last_updated: "2026-10-20T05:16:30.119Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-14 complete (title predicates and the first ledger rows)
-state_head: aa44d09d72832104fe1466533d4bf3b7fa00d2e9
+last_activity_desc: Plan 03-15 complete (the libretro adapter, its achievement map and RetroArch on the dma diagnostic)
+state_head: c9fcdc151b6f848511d5c41ed7c11c4308c4c03a
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 51
+  completed_plans: 52
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 15 of 19
+Plan: 16 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-14 complete: tests/compat/ledger.csv has 42 rows (34 samples, banksets unsupported, 7 diagnostics) sorted by id then predicate; muhtari-test-predicate evaluates title@F=H on the fast boot and through OpenBIOS (K in [300, 340], H within 300 frames of K) and boots@F; pin.cmake fills title@F=- rows refusing a single-colour frame and with -DBIOS evaluates every row (exit 0, 39 rows pass on both paths); five rand-driven samples fall back to boots@F, backuptest and languagetest are skipped; title.simple.fast/bios and title.pin.self_test on ci and wasm32; green on every hosted leg (run 39368351340); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-15 complete: the libretro core loads content through muhtari_load with ProSystem's RetroPad layout (L/R flip the difficulty switches with an OSD message), Auto/ProLine/Joystick/None per port, Restart as a power cycle, optional 7800 BIOS (U)/(E).rom logged with SHA-256 and a fast-boot fallback, and core options v2/v1 (muhtari_boot, muhtari_palette, two difficulties); SET_MEMORY_MAPS covers the 64 KiB bus in aligned power-of-two pieces with pointer-less holes, and rcheevos v12.1.0 (test-only pin) resolves it for simple and doublebuffer (11 and 13 regions, every byte equal to the core's peek); libretro.host.{input,layout,devices,reset,bios,options,memory_map} and libretro.rcheevos on ci; the retroarch job runs tests/diag/dma.a78 (+15 lines), frame 120 pixel-equal and its hash the diag/dma pin; green on every hosted leg (run 39373524239); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -110,6 +110,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P12 | 11 min | 2 tasks | 10 files |
 | Phase 03 P13 | 17 min | 3 tasks | 21 files |
 | Phase 03 P14 | 39 min | 3 tasks | 8 files |
+| Phase 03 P15 | 29 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -269,6 +270,9 @@ Recent decisions affecting current work:
 - [Phase 03]: 03-13: INPTCTRL locked with MEN = 0 before the hand-off is a sticky ERR_BIOS_REJECTED_CART (runner 77); a movie's boot key wins over --boot (exit 2), and bios-sha256 is checked before frame 1 (exit 1)
 - [Phase 03]: 03-14: the ledger has 42 rows; title@F=H is the fast boot's frame F hash, and through OpenBIOS H must appear in [K, K + 300) with K in [300, 340]; pin.cmake refuses a single-colour frame
 - [Phase 03]: 03-14: five samples that draw with rand (seeded from INTIM, which the BIOS leaves differently) fall back to boots@F;why=rng-seeded-from-intim; backuptest and languagetest draw nothing by design and are skipped
+- [Phase 03]: 03-15: libretro memory map covers the whole 64 KiB bus in aligned power-of-two descriptors with pointer-less descriptors over unmapped spans, so rcheevos reaches the page 0 shadows and the fixed ROM
+- [Phase 03]: 03-15: muhtari_boot applies at content load; Restart power-cycles the loaded media and reapplies only the difficulty options
+- [Phase 03]: 03-15: rcheevos v12.1.0 is a test-only pin built with warnings and sanitizers off, with two generated rhash stubs
 
 ### Pending Todos
 
@@ -310,6 +314,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T04:42:29.830Z
-Stopped at: Completed 03-14-PLAN.md
+Last session: 2026-10-20T05:16:23.361Z
+Stopped at: Completed 03-15-PLAN.md
 Resume file: None
