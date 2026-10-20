@@ -462,6 +462,8 @@ void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick);
 uint8_t muhtari__riot_read(muhtari *m, uint16_t addr);
 void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v);
 void muhtari__riot_reset(muhtari *m);
+/* Runs PA7's edge detector after the device pins change. */
+void muhtari__riot_pins_changed(muhtari *m);
 
 /* The entry points MARIA drives (docs/hardware/bus.md, HALT and NMI).
    request_halt asks for HALT from at_tick until until_tick; with until_tick
@@ -550,6 +552,9 @@ void muhtari__ports_latch(muhtari *m);
    _UNPLUGGED, the host's choice or else the cartridge's, where a header
    device this version does not model is wired as a ProLine. */
 uint32_t muhtari__ports_device(const muhtari *m, uint32_t port);
+
+/* SWCHA's input pins as the devices drive them (src/ports.c). */
+uint8_t muhtari__ports_swcha(const muhtari *m);
 
 /* Starts the counters and the lag flag from zero, at load and power cycle. */
 void muhtari__ports_reset_counters(muhtari *m);

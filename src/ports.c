@@ -1,6 +1,7 @@
-/* The controller ports as the host sets them, the memory spans and the
-   frame counters (docs/embedding.md, Input, Memory and Counters). The pins
-   the devices drive are read in src/riot.c and src/tia.c. */
+/* The controller ports as the host sets them, the pins their devices drive,
+   the memory spans and the frame counters (docs/embedding.md, Input, Memory
+   and Counters; docs/hardware/controllers.md). src/riot.c and src/tia.c read
+   the pins. */
 #include <string.h>
 
 #include "internal.h"
@@ -68,6 +69,8 @@ void muhtari__ports_latch(muhtari *m)
     }
     ports->switches = ports->pending_switches;
     ports->pending = 0u;
+    /* The new pins reach PA7's edge detector at this tick. */
+    muhtari__riot_pins_changed(m);
 }
 
 /* A header naming no controller leaves the port unplugged; one naming a
@@ -84,6 +87,27 @@ uint32_t muhtari__ports_device(const muhtari *m, uint32_t port)
         return MUHTARI_PORT_UNPLUGGED;
     }
     return device == MUHTARI_PORT_JOYSTICK ? MUHTARI_PORT_JOYSTICK : MUHTARI_PORT_PROLINE;
+}
+
+/* SWCHA's input pins: port 0 in bits 7-4 as right, left, down and up, port
+   1 in bits 3-0. A pressed direction closes its switch and pulls the pin to
+   0; an unplugged port's pins read high (A7800-CARTRIDGES-AND-PERIPHERALS
+   section 3.1; docs/hardware/controllers.md, Directions). */
+uint8_t muhtari__ports_swcha(const muhtari *m)
+{
+    uint8_t pins = 0xFFu;
+    for (uint32_t p = 0; p < 2u; p++) {
+        if (muhtari__ports_device(m, p) == MUHTARI_PORT_UNPLUGGED) {
+            continue;
+        }
+        uint32_t b = m->ports.buttons[p];
+        uint8_t closed = (uint8_t)(((b & MUHTARI_BUTTON_UP) != 0u ? 0x1u : 0u) |
+                                   ((b & MUHTARI_BUTTON_DOWN) != 0u ? 0x2u : 0u) |
+                                   ((b & MUHTARI_BUTTON_LEFT) != 0u ? 0x4u : 0u) |
+                                   ((b & MUHTARI_BUTTON_RIGHT) != 0u ? 0x8u : 0u));
+        pins = (uint8_t)(pins & ~(uint32_t)(p == 0u ? closed << 4 : closed));
+    }
+    return pins;
 }
 
 void muhtari__ports_reset_counters(muhtari *m)

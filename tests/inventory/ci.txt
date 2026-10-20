@@ -444,6 +444,7 @@ frame.sample_renders	built,portable
 fuzz.regress.loader	fuzz,portable
 fuzz.regress.loader.self_test	fuzz,portable
 host.palette	host,portable
+input.directions	input,portable
 install.consumer	install
 install.consumer.dll_crt	install
 install.stage	install

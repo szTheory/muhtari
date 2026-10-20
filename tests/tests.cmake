@@ -33,6 +33,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/frame/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cpu/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/fuzz/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/host/tests.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/input/tests.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/install/tests.cmake)
 # Without the libretro core (wasm32: WASI has no dlopen) none of its tests
 # applies.
