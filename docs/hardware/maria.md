@@ -371,6 +371,48 @@ The source class is the one `tests/diag/expected.csv` records: `hw` for a value 
 measurement, `guide` for one that rests on the Software Guide or a datasheet, `rtl` for the PLA re-simulation and
 `fit` for a fitted value.
 
+### The cpu ROM: slow accesses
+
+The `cpu` diagnostic (`tests/diag/cpu.s`) times 64 × `LDA` absolute from one address, with DMA off for the whole
+run. A slow cycle takes 6 ticks instead of 4, its data cycle only, and the RIOT timer counts it once like any other
+cycle (`docs/hardware/bus.md`, Clocks; `docs/hardware/riot.md`, Timer). So INTIM alone cannot see the 2 ticks. The
+ROM ends the run with MARIA's WSYNC instead. The hold that follows lasts until the next line's t 0 and counts every
+held cycle, so the run's extra ticks come back as fewer held cycles.
+
+**The run.** `sta WSYNC` starts it. The next opcode fetch runs at t φ of the next line, φ from 0 to 3, the first
+cycle start at or after t 0 (`docs/hardware/bus.md`, RDY). From there, in ticks from t 0:
+
+| Code | Ticks | Ends at | φ2 count p |
+|------|-------|---------|------------|
+| `ldx #255` | 8 | φ + 8 | |
+| `stx TIM1T`, the write slow | 12 + 6 | φ + 26 | 0 |
+| `lda.w ADDR` × 64 | 64 × 16, or 64 × 18 when ADDR is slow | φ + 1050, or φ + 1178 | 1-256 |
+| `sta WSYNC` | 12, the write's data at the end | φ + 1062, or φ + 1190 | 257-259 |
+| held fetch | H × 4 | t 1362 + φ | 260 to 259 + H |
+| `lda INTIM`, the read slow | 12 + 6 | | 263 + H |
+
+Both data ticks lie between t 908 and t 1362, so the WSYNC releases at t 1362, the third line's t 0. The held
+fetch repeats whole 4-tick cycles until one starts at or after it: H = ceil((1362 − 1062 − φ) / 4) = 75 after fast
+reads and H = ceil((1362 − 1190 − φ) / 4) = 43 after slow ones. Neither depends on φ, as 300 and 172 are multiples
+of 4. The 128 ticks the slow reads add are 32 fewer held cycles.
+
+**The timer.** TIM1T = 255 sets the 1-cycle interval, so INTIM reads 255 − p up to p = 255. From p = 256 it reads $FF
+and counts down once per cycle, which is (255 − p) mod 256 again (`docs/hardware/riot.md`, Timer). The read is at
+p = 263 + H:
+
+| Test | Address | Device | Cycle | H | p | INTIM | Source |
+|------|---------|--------|-------|---|---|-------|--------|
+| `tia` | `$0000` | TIA | slow | 43 | 306 | 205 | hw: +2 ticks per slow access, measured |
+| `riot_ram` | `$0480` | RIOT RAM | slow | 43 | 306 | 205 | hw: RIOT RAM is slow, measured |
+| `riot` | `$0280` | RIOT ports | slow | 43 | 306 | 205 | hw |
+| `ram` | `$1800` | RAM | fast | 75 | 338 | 173 | hw: 113 held cycles per WSYNC line, measured |
+
+The measurements are the AtariAge threads "7800 hardware facts", "7800 Software Guide updated" and "Improving the
+emulators" (CONFORMANCE.md, Sources). The difference, 32, is the measured +2 ticks per access. If every cycle of a
+slow-access instruction were slow, the run would take 64 × 24 ticks, release at t 1816, and the slow rows would read
+187 or 188 by φ. The `lda.w` form keeps `$0000` absolute, so each test is the same four cycles: three
+fast fetches from the cartridge and one data cycle.
+
 ## Fitted values
 
 These values come from the RTL model or a fit, not from a hardware measurement. Each stays until the observation

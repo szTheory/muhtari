@@ -26,3 +26,7 @@ dma,over_12,145,guide
 dma,over_13,137-138,rtl
 dma,over_14,137-138,rtl
 dma,over_16,137-138,rtl
+cpu,tia,205,hw
+cpu,riot_ram,205,hw
+cpu,riot,205,hw
+cpu,ram,173,hw
