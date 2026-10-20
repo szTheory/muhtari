@@ -1,0 +1,5 @@
+# Feature to ROM claims for basic.coverage (docs/emulation-tests.md,
+# coverage): "feature rom...", where a ROM is 7800basic/<sample> or
+# diag/<name>. A claim passes only when the probe or the core's feature mask
+# shows the feature for that ROM.
+dli 7800basic/simple

@@ -100,3 +100,25 @@ muhtari_add_test(NAME frame.sample_renders
   COMMAND muhtari-test-frame sample_renders ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78
   LABELS built portable TIMEOUT 20)  # provisional, phase 3
 set_tests_properties(frame.sample_renders PROPERTIES FIXTURES_REQUIRED built_samples)
+
+# basic.coverage: the samples and our diagnostic ROMs together exercise the
+# features coverage.txt names, judged from the probe and the core's sticky
+# feature mask, never from a ROM's source (docs/emulation-tests.md, coverage).
+# muhtari-test-coverage includes src/internal.h to read that mask. Fault
+# prevented: coverage claimed that nothing exercises.
+add_executable(muhtari-test-coverage ${CMAKE_CURRENT_LIST_DIR}/coverage.c)
+target_include_directories(muhtari-test-coverage PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-coverage PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-test-coverage PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-coverage)
+set(built_coverage ${CMAKE_CURRENT_LIST_DIR}/coverage.txt)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${built_coverage})
+file(STRINGS ${built_coverage} built_coverage_rows REGEX "^[^#]")
+string(REGEX MATCHALL "7800basic/[A-Za-z0-9_]+" built_coverage_samples "${built_coverage_rows}")
+list(REMOVE_DUPLICATES built_coverage_samples)
+list(TRANSFORM built_coverage_samples REPLACE "^7800basic/" "built_")
+muhtari_add_test(NAME basic.coverage
+  COMMAND muhtari-test-coverage ${built_coverage} ${MUHTARI_BUILT_DIR} ${CMAKE_SOURCE_DIR}/tests/diag
+  LABELS basic portable TIMEOUT 60)  # provisional, phase 3
+set_tests_properties(basic.coverage PROPERTIES FIXTURES_REQUIRED "${built_coverage_samples}")

@@ -18,6 +18,7 @@ basic.backuptest	basic,portable
 basic.banner	basic,portable
 basic.boxcollision	basic,portable
 basic.colorfade	basic,portable
+basic.coverage	basic,portable
 basic.doublebuffer	basic,portable
 basic.drivingcontrol	basic,portable
 basic.eightysix	basic,portable
