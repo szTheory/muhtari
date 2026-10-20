@@ -416,7 +416,7 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
     if (dev == DEV_RAM) {
         m->ram[ram_index(addr)] = v;
     } else if (dev == DEV_TIA) {
-        muhtari__tia_write(m, addr, m->bus.ticks + data_at(len));
+        muhtari__tia_write(m, addr, v, m->bus.ticks + data_at(len));
         inptctrl_write(m, v);
         rearm(m);
     } else if (dev == DEV_RIOT) {

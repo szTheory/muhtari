@@ -60,6 +60,18 @@ struct muhtari__synth {
     int16_t pcm[MUHTARI__SYNTH_PCM_CAPACITY];
 };
 
+/* Independent TIA horizontal/audio state; docs/hardware/tia.md. */
+struct muhtari__tia_channel {
+    uint8_t audc, audf, audv;
+    uint8_t count, enabled, output;
+};
+struct muhtari__tia {
+    uint64_t next_tick, epoch_tick;
+    uint16_t epoch_phase;
+    uint8_t phase, initialized;
+    struct muhtari__tia_channel channel[2];
+};
+
 extern const int32_t muhtari__synth_kernel[32][16];
 void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys);
 void muhtari__synth_level(muhtari *m, uint64_t tick, unsigned source, uint16_t level);
@@ -319,6 +331,7 @@ struct muhtari {
     struct muhtari__ports ports;
     struct muhtari__boot boot;
     struct muhtari__synth synth;
+    struct muhtari__tia tia;
     uint64_t frames;                /* frames run since the last load or power cycle */
     uint64_t lag_frames;            /* of those, frames with no CPU read of an input */
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
@@ -542,7 +555,9 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v);
    its undriven bits from the open-bus byte, and a write whose data reaches
    the TIA at data_tick. */
 uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr);
-void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick);
+void muhtari__tia_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick);
+void muhtari__tia_reset(muhtari *m);
+void muhtari__tia_catch_up(muhtari *m, uint64_t tick);
 
 /* The RIOT as the bus sees it (src/riot.c): A9 selects its ports and timer
    or its RAM, and A0-A6 the register or byte (docs/hardware/riot.md).
