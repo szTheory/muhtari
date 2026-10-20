@@ -203,7 +203,10 @@ the header claims more bytes than the file holds, as invalid otherwise.
 ## Cartridge audio access
 
 Declared POKEY registers repeat every 16 bytes over $4000-$7FFF or $0800-$0FFF;
-$0440-$044F selects the secondary chip (cartridge notes, section 2.1).
+$0450-$045F selects the primary chip and $0440-$044F the secondary chip,
+including the dual-chip declaration (cartridge notes, section 2.1).
+If a legacy header declares multiple primary locations, $0450 takes priority,
+then $4000, then $0800; the fixed slots bound the declaration to two chips.
 CPU writes select POKEY before board RAM or ROM. CPU reads select readable
 RAM or overlapping linear ROM, EXROM or EXFIX before a write-only $4000 POKEY;
 otherwise POKEY answers. Peeks and MARIA fetches always observe board memory

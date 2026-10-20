@@ -873,9 +873,9 @@ static void load_program(muhtari *m, const uint8_t *program, size_t n)
    POKEY registers/windows: cartridge notes section 2.1 and pokey.md. */
 static void test_cart_audio(void)
 {
-    static const uint16_t types[] = {0x0001u, 0x8000u, 0x0400u};
-    static const uint16_t windows[] = {0x4000u, 0x0800u, 0x0440u};
-    for (unsigned k = 0u; k < 3u; k++) {
+    static const uint16_t types[] = {0x0001u, 0x8000u, 0x0400u, 0x0040u};
+    static const uint16_t windows[] = {0x4000u, 0x0800u, 0x0440u, 0x0450u};
+    for (unsigned k = 0u; k < 4u; k++) {
         uint16_t at = windows[k];
         uint8_t program[] = {
             0xA9, 7, 0x85, 1, /* lock 7800 */
@@ -900,7 +900,7 @@ static void test_cart_audio(void)
         }
         CHECK(nonzero);
         CHECK_EQ_HEX(m->ram[0], 255u);
-        uint16_t mirror = k == 0u ? 0x7FFEu : k == 1u ? 0x0FFEu : 0x044Eu;
+        uint16_t mirror = k == 0u ? 0x7FFEu : k == 1u ? 0x0FFEu : (uint16_t)(at + 14u);
         CHECK_EQ_HEX(muhtari__bus_read(m, mirror), 255u);
         muhtari__bus_write(m, (uint16_t)(mirror - 13u), 0x1Fu);
         CHECK_EQ_U64(m->synth.raw[k == 2u ? 6u : 2u], 206u);
@@ -956,6 +956,16 @@ static void test_cart_audio(void)
     CHECK_EQ_U64(m->synth.pokeys, 1u);
     muhtari__bus_write(m, 0x0441u, 0x1Fu);
     CHECK_EQ_U64(m->synth.raw[6], 206u);
+    cart[67] = 3u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->synth.pokeys, 2u);
+    muhtari__bus_write(m, 0x0451u, 0x1Fu);
+    muhtari__bus_write(m, 0x0443u, 0x18u);
+    CHECK_EQ_U64(m->synth.raw[2], 206u);
+    CHECK_EQ_U64(m->synth.raw[7], 112u);
+    CHECK_EQ_U64(m->synth.raw[6], 0u);
+    CHECK_EQ_HEX(muhtari__bus_read(m, 0x045Eu), 255u);
+    CHECK_EQ_HEX(muhtari__bus_read(m, 0x044Eu), 255u);
     make_cart(cart, prog_idle, sizeof prog_idle, 0u);
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(m->cart.irq_mask, 0u);
