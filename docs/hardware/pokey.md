@@ -27,7 +27,7 @@ Low-channel XOR latches at one invert channels1/2. Volume-only bypasses
 the XOR. Only actual DAC changes enter synthesis; volume bits contribute
 12,26,56,112 units, then the existing per-chip nonlinear/current mix and
 production reconstruction apply. IRQST is active low; clearing IRQEN
-bits acknowledges their requests. CPU wiring is a later integration.
+bits acknowledges their requests. Accepted v4 wiring supplies the CPU interrupt level.
 
 STIMER output polarity, cold state, analog cartridge loading and
 sub-cycle races are confidence-qualified adopted behavior, pending
@@ -52,7 +52,7 @@ pulses without reloading; its carry reaches the high counter three clocks
 later. High underflow reloads both, giving N+7 fast clocks or (N+1) base
 pulses for the combined16-bit N. Each high period contains AUDF_high+1
 low pulses. The high output follows the last low output by three clocks.
-CPU IRQ acceptance and cartridge address decoding have separate integration.
+CPU IRQ acceptance follows the sampled-I rules in [SALLY](sally.md).
 
 AUDF is sampled on reload, so writes throughT+2 affect the initialT+3
 reload; the next unjoined fast reload isT+7 for AUDF0. STIMER atT+4
@@ -196,4 +196,13 @@ invalid mapper/options/audio/IRQ and geometry fallback, reserved legacy
 bytes, hash overrides, repeated loads and reset. It checks overlap read
 values, whole-instance purity of peeks/DMA board reads, and actual MARIA
 objects fetching floating or board bytes at mapped RANDOM addresses. CPU interrupt
-sampling and entry are a separate integration from this mapping policy.
+sampling and entry follow [SALLY](sally.md).
+
+## Interrupts
+
+The bus consumes both chips' actual falling edges before publishing their
+wired OR level for the CPU poll. Bit 0 selects the primary slot; bit 1
+selects the fixed $0440 slot even when it is the only declared chip. Ignored
+v4 data and v3 reserve fields cannot assert the line. `core.audio.silence`
+executes a generated timer cartridge through handler acknowledgment and
+continued public PCM, with unwired and rejected-header controls.

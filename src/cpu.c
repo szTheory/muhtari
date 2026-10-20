@@ -39,6 +39,7 @@ static uint8_t fetch(muhtari *m)
 static void poll_mark(muhtari *m)
 {
     m->cpu.poll_phi2 = m->bus.phi2;
+    m->cpu.irq_sampled = (uint8_t)(m->bus.irq_level != 0u && (m->cpu.p & FLAG_I) == 0u);
 }
 
 /* The final cycle of an instruction: the poll mark, then the access. */
@@ -512,10 +513,13 @@ static void stack_dummy(muhtari *m)
    (docs/hardware/sally.md, NMI). */
 static void branch(muhtari *m, int cond)
 {
-    uint64_t opcode_done = m->bus.phi2;
+    poll_mark(m);
+    uint64_t opcode_done = m->cpu.poll_phi2;
+    uint8_t opcode_irq = m->cpu.irq_sampled;
     uint8_t off = fetch(m);
     if (!cond) {
         m->cpu.poll_phi2 = opcode_done;
+        m->cpu.irq_sampled = opcode_irq;
         return;
     }
     implied(m);
@@ -526,6 +530,7 @@ static void branch(muhtari *m, int cond)
         last_read(m, (uint16_t)((pc & 0xFF00u) | (target & 0x00FFu)));
     } else {
         m->cpu.poll_phi2 = opcode_done;
+        m->cpu.irq_sampled = opcode_irq;
     }
     m->cpu.pc = target;
 }
@@ -603,16 +608,24 @@ static int nmi_due(const muhtari *m)
    is consumed before the first cycle, and the entry stores no poll mark, so
    the handler's first instruction always runs and an edge latched during the
    entry waits for the next poll (docs/hardware/sally.md, NMI). */
-static void nmi(muhtari *m)
+static void interrupt_entry(muhtari *m, int is_nmi)
 {
-    m->bus.nmi_phi2 = 0u;
+    if (is_nmi)
+        m->bus.nmi_phi2 = 0u;
     muhtari__bus_read(m, m->cpu.pc);
     muhtari__bus_read(m, m->cpu.pc);
     push(m, (uint8_t)(m->cpu.pc >> 8));
     push(m, (uint8_t)m->cpu.pc);
+    /* IRQ shares BRK's vector-selection window through cycle4; a later
+       edge waits for the handler's first instruction (sally.md, IRQ). */
+    uint16_t vector = is_nmi ? 0xFFFAu : 0xFFFEu;
+    if (!is_nmi && m->bus.nmi_phi2 != 0u && m->bus.nmi_phi2 <= m->bus.phi2) {
+        vector = 0xFFFAu;
+        m->bus.nmi_phi2 = 0u;
+    }
     push(m, (uint8_t)((m->cpu.p & ~FLAG_B) | FLAG_U));
     set_flag(m, FLAG_I, 1);
-    m->cpu.pc = read_addr(m, 0xFFFAu, 0xFFFBu);
+    m->cpu.pc = read_addr(m, vector, (uint16_t)(vector + 1u));
 }
 
 /* RES, run once at power-on under a BIOS: like the NMI entry, but the
@@ -622,6 +635,7 @@ static void nmi(muhtari *m)
 void muhtari__cpu_reset(muhtari *m)
 {
     m->cpu.jammed = 0u;
+    m->cpu.irq_sampled = 0u;
     muhtari__bus_read(m, m->cpu.pc);
     muhtari__bus_read(m, m->cpu.pc);
     for (int i = 0; i < 3; i++) {
@@ -1487,6 +1501,8 @@ void muhtari__cpu_step(muhtari *m)
         return;
     }
     if (nmi_due(m)) {
-        nmi(m);
+        interrupt_entry(m, 1);
+    } else if (opcode != 0u && m->cpu.irq_sampled != 0u) {
+        interrupt_entry(m, 0);
     }
 }

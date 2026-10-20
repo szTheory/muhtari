@@ -297,6 +297,12 @@ static void end(muhtari *m, uint32_t len)
 {
     m->bus.ticks += len;
     m->bus.phi2++;
+    /* Both chips have consumed this cycle's actual falling edge before
+       the CPU can poll it (hardware/pokey.md, Interrupts). */
+    m->bus.irq_level = (uint8_t)(((m->cart.irq_mask & 1u) != 0u && m->cart.pokey_at[0] != 0u &&
+                                  muhtari__pokey_irq(m, 0u)) ||
+                                 ((m->cart.irq_mask & 2u) != 0u && m->cart.pokey_at[1] != 0u &&
+                                  muhtari__pokey_irq(m, 1u)));
 }
 
 /* The input registers: the RIOT's SWCHA and SWCHB, its port registers 0

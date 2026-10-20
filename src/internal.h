@@ -127,6 +127,7 @@ struct muhtari__cpu {
     uint16_t pc;
     uint8_t a, x, y, s, p;
     uint8_t jammed;
+    uint8_t irq_sampled; /* level and I sampled at the deciding cycle */
 };
 
 /* The bus's state (docs/hardware/bus.md). ticks counts MARIA clocks and
@@ -164,6 +165,7 @@ struct muhtari__bus {
     uint8_t nmi_pending;
     uint8_t cycle_len;
     uint8_t sync;
+    uint8_t irq_level; /* effective wired cartridge level at completed cycle */
 };
 
 /* The 6532's RAM: 128 bytes (docs/hardware/riot.md, RAM). */

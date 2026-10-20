@@ -25,7 +25,7 @@ Sources:
 
 A, X and Y are 8-bit, and so are S, the stack pointer, and P, the status register. PC is 16-bit. The stack is page
 1: a push writes at `$0100 + S` and then decrements S, and a pull increments S and then reads. S wraps within the
-page. IRQ is outside this page; on the 7800 it is not connected. Reset and NMI have their own sections below.
+page. Cartridge POKEY IRQ reaches SALLY only through accepted v4 wiring metadata. Reset, NMI and IRQ have their own sections below.
 
 ## Status register
 
@@ -212,3 +212,23 @@ not poll, so the handler's first instruction always runs. An edge latched during
 the end of that first instruction takes it.
 
 The twelve JAM opcodes store no poll mark and do not check for an NMI: a jammed CPU ignores it.
+
+## IRQ
+
+Cartridge timers drive a level, sampled with the current I flag at the same
+deciding cycle as NMI. The decision survives changes to I in the final cycle:
+CLI, SEI and PLP use old I; RTI has already restored I when it polls.
+A persistent level can retrigger after RTI until the device acknowledges it.
+NMI wins when both are eligible. A JAM ignores both.
+
+Entry takes seven cycles: two reads at the next PC, PCH/PCL/status pushes,
+then the low/high vector reads at $FFFE/$FFFF. Status has B clear and U set;
+I is then set and D retained. An NMI arriving through entry cycle 4 redirects
+the vector to $FFFA/$FFFB without changing the IRQ return address or status.
+Later edges wait for the handler's first instruction. BRK keeps its existing
+cycle-4 hijack window and B-set stack byte. The entry itself does not poll.
+
+These are the adopted functional NMOS semantics from the January 2, 2026
+[Altirra Hardware Reference Manual](https://www.virtualdub.org/downloads/Altirra%20Hardware%20Reference%20Manual.pdf),
+section 3.4, together with the existing CPU interrupt cycle references above.
+They do not claim analog setup/hold or temperature-dependent race behavior.
