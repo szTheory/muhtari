@@ -192,7 +192,7 @@ Plans:
   4. The libretro core's memory descriptors pass rcheevos' own resolver, and the hosted RetroArch job boots a diagnostic ROM with a screenshot equal to the runner's frame.
   5. `ctest -R fuzz.regress.run` and `ctest -L prop` pass on every platform with their nightly runs, the `library` preset regenerates `docs/compatibility.md` in CI, and merging the phase's pull request publishes a release with no manual step.
 
-**Plans**: 15/19 plans executed
+**Plans**: 16/19 plans executed
 
 Plans (one wave each; every plan edits the test inventory, so they run in order):
 - [x] 03-01-PLAN.md — MARIA's DMA burst as a unit: closed-form costs, line RAM, statistics, maria.md derivations
@@ -210,7 +210,7 @@ Plans (one wave each; every plan edits the test inventory, so they run in order)
 - [x] 03-13-PLAN.md — The BIOS path: power-on, hand-off frame, 2600-path refusal, `--boot`/`--bios` and the movie's boot key
 - [x] 03-14-PLAN.md — Title predicates on both paths and the ledger's rows
 - [x] 03-15-PLAN.md — libretro layout, options, BIOS, memory maps, rcheevos, RetroArch on `dma.a78`
-- [ ] 03-16-PLAN.md — `runner.boot_to_play` with its negative controls
+- [x] 03-16-PLAN.md — `runner.boot_to_play` with its negative controls
 - [ ] 03-17-PLAN.md — Property tests, the run fuzz target, nightly jobs and path filter
 - [ ] 03-18-PLAN.md — The `library` preset and job, ratchet, generated `docs/compatibility.md`
 - [ ] 03-19-PLAN.md — Close: measured timeouts, gate-code tally, docs, probe closed, ship title
@@ -243,5 +243,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
 | 2. The CPU matches the public vectors | 16/16 | Complete    | 2026-10-19 |
-| 3. Games play in RetroArch | 15/19 | In Progress | - |
+| 3. Games play in RetroArch | 16/19 | In Progress | - |
 | 4. Sound | 0/TBD | Not started | - |

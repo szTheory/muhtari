@@ -5,16 +5,16 @@ milestone_name: 7800 games play with sound in RetroArch
 current_phase: 3
 current_phase_name: Games play in RetroArch
 status: executing
-stopped_at: Completed 03-15-PLAN.md
-last_updated: "2026-10-20T05:16:30.119Z"
+stopped_at: Completed 03-16-PLAN.md
+last_updated: "2026-10-20T05:40:39.597Z"
 last_activity: 2026-10-20
-last_activity_desc: Plan 03-15 complete (the libretro adapter, its achievement map and RetroArch on the dma diagnostic)
-state_head: c9fcdc151b6f848511d5c41ed7c11c4308c4c03a
+last_activity_desc: Plan 03-16 complete (boot to play on spacephysics with five negative controls)
+state_head: f906c1bfb07c437fbcd1f251195aad484d40ce9a
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 56
-  completed_plans: 52
+  completed_plans: 53
   percent: 50
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-19)
 ## Current Position
 
 Phase: 3 (Games play in RetroArch) — EXECUTING
-Plan: 16 of 19
+Plan: 17 of 19
 Status: Ready to execute
-Last activity: 2026-10-20 — Plan 03-15 complete: the libretro core loads content through muhtari_load with ProSystem's RetroPad layout (L/R flip the difficulty switches with an OSD message), Auto/ProLine/Joystick/None per port, Restart as a power cycle, optional 7800 BIOS (U)/(E).rom logged with SHA-256 and a fast-boot fallback, and core options v2/v1 (muhtari_boot, muhtari_palette, two difficulties); SET_MEMORY_MAPS covers the 64 KiB bus in aligned power-of-two pieces with pointer-less holes, and rcheevos v12.1.0 (test-only pin) resolves it for simple and doublebuffer (11 and 13 regions, every byte equal to the core's peek); libretro.host.{input,layout,devices,reset,bios,options,memory_map} and libretro.rcheevos on ci; the retroarch job runs tests/diag/dma.a78 (+15 lines), frame 120 pixel-equal and its hash the diag/dma pin; green on every hosted leg (run 39373524239); probe PR #12 still a draft
+Last activity: 2026-10-20 — Plan 03-16 complete: runner.boot_to_play plays spacephysics from the fast boot through the real muhtari-run (four movies, a hash for every frame to 180, dumps at 120/140/160/180); Up+Left on port 1 from frame 121 changes frame 122 and moves the ship up 17 px, Up+Right its mirror down 17 px; controls found by running the game (Up thrusts at F+1, Left/Right turn on a global 8-frame cadence, button 2 fires, Down, button 1 and port 2 do nothing); (a) bound measured at F+1 inside [F, F+2] so a one-frame-late latch fails; runner.boot_to_play.{no_input,port2,static_mutant,late_mutant} fail with mask 1, 1, 2, 1 and mirrored with sign did not flip; PNG reader shared as tests/runner/png_read.c; green on every hosted leg (run 39375738182); probe PR #12 still a draft
 
 Progress: [█████░░░░░] 50%
 
@@ -111,6 +111,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03 P13 | 17 min | 3 tasks | 21 files |
 | Phase 03 P14 | 39 min | 3 tasks | 8 files |
 | Phase 03 P15 | 29 min | 3 tasks | 14 files |
+| Phase 03 P16 | 22 min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -273,6 +274,7 @@ Recent decisions affecting current work:
 - [Phase 03]: 03-15: libretro memory map covers the whole 64 KiB bus in aligned power-of-two descriptors with pointer-less descriptors over unmapped spans, so rcheevos reaches the page 0 shadows and the fixed ROM
 - [Phase 03]: 03-15: muhtari_boot applies at content load; Restart power-cycles the loaded media and reapplies only the difficulty options
 - [Phase 03]: 03-15: rcheevos v12.1.0 is a test-only pin built with warnings and sanitizers off, with two generated rhash stubs
+- [Phase 03]: 03-16: Boot to play holds Up+Left on port 1 from frame 121 with Up+Right as its mirror; (a) uses the measured one-frame bound inside [F, F+2] so a one-frame-late latch fails
 
 ### Pending Todos
 
@@ -314,6 +316,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T05:16:23.361Z
-Stopped at: Completed 03-15-PLAN.md
+Last session: 2026-10-20T05:40:39.471Z
+Stopped at: Completed 03-16-PLAN.md
 Resume file: None
