@@ -100,14 +100,15 @@ A drift with no intended cause is a bug to fix, never a new pin.
 can and report numbers, never verdicts. Each `tests/diag/<rom>.s` is MIT 6502 code with an SPDX line. It includes
 `tests/diag/lib.s` (the registers, the mailbox, its CRC and a results screen in our own hex glyphs) and is committed
 beside its `<rom>.cfg` and the signed `<rom>.a78` built from them, with a row in `tests/roms/manifest.txt`. The same
-bytes run on hardware from a flash cartridge. `docs/hardware/maria.md`, Diagnostic expected values, says how each
-ROM measures and derives every value it reports:
+bytes run on hardware from a flash cartridge. `docs/hardware/maria.md`, Diagnostic expected values, and
+`docs/hardware/cartridge.md`, The board ROMs, say how each ROM measures and derive every value it reports:
 
 | ROM | Measures |
 |-----|----------|
 | `tests/diag/dma.a78` | DMA cost by header, width, mode, terminator, hole and overrun, as INTIM after one burst |
 | `tests/diag/cpu.a78` | the 2 ticks a slow access adds, as INTIM after 64 loads ended by a WSYNC |
 | `tests/diag/dli.a78` | the DLI's NMI on zones 0, 1 and 2 and with the CPU parked in WSYNC, MARIA's WSYNC release, a store right after a WSYNC, and MSTAT's two edges by line and poll |
+| `tests/diag/linear16.a78`, `bank6.a78`, `sg144.a78` | the bytes the linear, bank-6 and 144K boards map at $4000, $8000 and $C000, before and after bank writes |
 
 A diagnostic that defines `diag_nmi` gets it as its NMI vector; the others return from NMI at once.
 
@@ -161,6 +162,7 @@ commit the source, and then the `.a78` with its manifest row's digest and pin se
 | `diag.dma` | the `dma` ROM's 27 records against `expected.csv`, each DMA record also against `stats.csv` |
 | `diag.cpu` | the `cpu` ROM's 4 records against `expected.csv` |
 | `diag.dli` | the `dli` ROM's 11 records against `expected.csv`, three DLI records also against `stats.csv` |
+| `diag.linear16`, `diag.bank6`, `diag.sg144` | the board ROMs' 4, 12 and 12 records against `expected.csv` |
 | `diag.rebuild` | the committed diagnostics and Clark's two builds rebuilt from source, byte for byte |
 | `diag.rebuild.self_test` | a manifest copy with one digit of `dma.a78`'s digest changed must fail with `tests/diag/dma.a78: SHA-256 drift` |
 | `diag.expected.self_test` | an `expected.csv` copy whose `null` value is 242 must fail on that record |

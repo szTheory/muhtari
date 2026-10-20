@@ -404,12 +404,15 @@ cpu.vectors.ff	portable,vectors
 cpu.vectors.pin	vectors
 cpu.vectors.reader	portable,vectors
 cpu.vectors.self_test	portable,vectors
+diag.bank6	diag,portable
 diag.cpu	diag,portable
 diag.dli	diag,portable
 diag.dma	diag,portable
 diag.expected.self_test	diag,portable
+diag.linear16	diag,portable
 diag.rebuild	built,portable
 diag.rebuild.self_test	built,portable
+diag.sg144	diag,portable
 docs.api_names	policy
 docs.api_names.self_test	policy
 docs.budgets	policy
