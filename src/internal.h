@@ -20,6 +20,53 @@
 #define MUHTARI__TICKS_PER_PERIOD 13125u
 #define MUHTARI__MAX_AUDIO_SAMPLES 801u
 
+/* Compact support and the instruction-boundary overshoot proof are in
+   docs/hardware/audio.md. A held access clears RDY and at most two DMA
+   lines before its six-tick bus cycle; an opcode takes at most eight
+   accesses, followed by at most seven interrupt-entry accesses. */
+#define MUHTARI__SYNTH_TAPS 16u
+#define MUHTARI__SYNTH_PHASES 32u
+#define MUHTARI__SYNTH_Q23 INT64_C(8388608)
+#define MUHTARI__SYNTH_Q30 INT64_C(1073741824)
+#define MUHTARI__SYNTH_MAX_LEVEL 18361
+#define MUHTARI__SYNTH_RDY_TICKS 456u
+#define MUHTARI__SYNTH_DMA_TICKS (2u * 454u)
+#define MUHTARI__SYNTH_HOLD_ROUND_TICKS 12u
+#define MUHTARI__SYNTH_ACCESS_TICKS 6u
+#define MUHTARI__SYNTH_OPCODE_CYCLES 8u
+#define MUHTARI__SYNTH_INTERRUPT_CYCLES 7u
+#define MUHTARI__SYNTH_OVERSHOOT_TICKS                                                             \
+    ((MUHTARI__SYNTH_RDY_TICKS + MUHTARI__SYNTH_DMA_TICKS + MUHTARI__SYNTH_HOLD_ROUND_TICKS +      \
+      MUHTARI__SYNTH_ACCESS_TICKS) *                                                               \
+     (MUHTARI__SYNTH_OPCODE_CYCLES + MUHTARI__SYNTH_INTERRUPT_CYCLES))
+#define MUHTARI__SYNTH_CARRY_SAMPLES ((MUHTARI__SYNTH_OVERSHOOT_TICKS * 88u + 13124u) / 13125u)
+#define MUHTARI__SYNTH_PCM_CAPACITY (801u + MUHTARI__SYNTH_CARRY_SAMPLES)
+
+/* All synthesis history is owned by the machine. pcm is a FIFO: at most
+   801 current-frame samples plus separately bounded instruction carry.
+   horizon is the logical half-open output end, tick the hardware catch-up
+   position; a pending mixed tick coalesces simultaneous source writes. */
+struct muhtari__synth {
+    uint64_t tick, origin, horizon;
+    uint64_t pending_tick;
+    int64_t impulse[16];
+    int64_t integrator_q23, previous_q30, blocker_q30;
+    uint64_t pre_clip_peak, clipped_samples;
+    uint32_t phase, pcm_read, pcm_count;
+    uint32_t kernel_adds, kernel_adds_per_sample, carry_high_water;
+    int32_t mixed_level;
+    uint16_t raw[10];
+    uint8_t head, pending, pokeys;
+    int16_t pcm[MUHTARI__SYNTH_PCM_CAPACITY];
+};
+
+extern const int32_t muhtari__synth_kernel[32][16];
+void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys);
+void muhtari__synth_level(muhtari *m, uint64_t tick, unsigned source, uint16_t level);
+uint32_t muhtari__synth_render(muhtari *m, uint64_t end, int16_t *out);
+void muhtari__synth_coefficients(uint32_t phase, int32_t out[16]);
+int64_t muhtari__synth_round(int64_t value, int64_t divisor);
+
 /* The beam: a line is 454 ticks, and a frame's VBLANK starts at line 258,
    t 42, the boundary between one muhtari_run_frame and the next
    (A7800-SYSTEM section 2; docs/hardware/bus.md, The run loop). */
@@ -271,6 +318,7 @@ struct muhtari {
     struct muhtari__cart cart;
     struct muhtari__ports ports;
     struct muhtari__boot boot;
+    struct muhtari__synth synth;
     uint64_t frames;                /* frames run since the last load or power cycle */
     uint64_t lag_frames;            /* of those, frames with no CPU read of an input */
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */

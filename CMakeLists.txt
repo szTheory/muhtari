@@ -68,6 +68,7 @@ endfunction()
 add_library(muhtari_objs OBJECT
   src/instance.c
   src/frame.c
+  src/synth.c
   src/testcard.c
   src/bus.c
   src/tia.c

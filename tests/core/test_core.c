@@ -310,23 +310,39 @@ static void test_silence(void)
     }
     CHECK_EQ_U64(total, (uint64_t)13125u * TICKS_PER_FRAME * SAMPLES_PER_PERIOD / TICKS_PER_PERIOD);
 
-    /* Exercise the shipped reconstruction separately from the silent card.
-       During bootstrap the public silent path supplies the negative control. */
-#ifdef MUHTARI__SYNTH_TAPS
+    /* Exercise the shipped reconstruction separately from the silent card. */
     muhtari__synth_reset(m, 0u, 0u);
     muhtari__synth_level(m, 0u, 0u, 15u);
     uint32_t reconstructed = muhtari__synth_render(m, 13125u, audio);
-#else
-    frame_io(&io, NULL, 0u, audio, AUDIO_CAP);
-    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
-    uint32_t reconstructed = 88u;
-#endif
     CHECK_EQ_U64(reconstructed, 88u);
     int nonzero = 0;
     for (uint32_t i = 0; i < reconstructed; i++) {
         nonzero |= audio[i] != 0;
     }
     CHECK(nonzero);
+    CHECK_EQ_U64(muhtari__synth_round(-5, 2), -3);
+    CHECK_EQ_U64(muhtari__synth_round(-4, 3), -1);
+    CHECK_EQ_U64(muhtari__synth_round(5, 2), 3);
+    int16_t continuous[176], partitioned[176];
+    muhtari *other = make();
+    muhtari__synth_reset(m, 0u, 0u);
+    muhtari__synth_reset(other, 0u, 0u);
+    static const uint32_t events[] = {0u, 149u, 150u, 2387u, 13124u, 13125u, 19000u};
+    uint32_t written = 0;
+    for (unsigned i = 0; i < sizeof events / sizeof events[0]; i++) {
+        uint16_t level = (uint16_t)((i & 1u) == 0u ? 15u : 0u);
+        muhtari__synth_level(m, events[i], 0u, level);
+        muhtari__synth_level(other, events[i], 0u, level);
+        written += muhtari__synth_render(other, events[i], partitioned + written);
+    }
+    CHECK_EQ_U64(muhtari__synth_render(m, 26250u, continuous), 176u);
+    written += muhtari__synth_render(other, 26250u, partitioned + written);
+    CHECK_EQ_U64(written, 176u);
+    CHECK(memcmp(continuous, partitioned, sizeof continuous) == 0);
+    CHECK(memcmp(m->synth.impulse, other->synth.impulse, sizeof m->synth.impulse) == 0);
+    CHECK_EQ_U64(m->synth.integrator_q23, other->synth.integrator_q23);
+    CHECK_EQ_U64(m->synth.blocker_q30, other->synth.blocker_q30);
+    muhtari_destroy(other);
     muhtari_destroy(m);
 }
 
