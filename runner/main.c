@@ -61,7 +61,8 @@ static void run_free(void *user, void *ptr, size_t size)
 
 static const char synopsis[] =
     "usage: muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE\n"
-    "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE\n"
+    "       muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...\n"
+    "       muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]\n"
     "       muhtari-run --probe FILE\n"
     "       muhtari-run --help | --version\n"
     "  --frames N           run N frames (N >= 1)\n"

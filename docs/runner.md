@@ -4,14 +4,17 @@
 device or input device, and prints hashes, writes PNG images or reports frame times. Scripts and CI use it to
 check that a build produces the expected picture.
 
-This release runs no cartridge, so every run shows the built-in test card (see [Test card](#test-card)).
-`--probe` reads a cartridge image and reports what it is, without running it (see [Probing an image](#probing-an-image)).
+Given a cartridge image FILE, it loads the image and starts it from the fast-boot hand-off, the state the
+console's BIOS leaves as it jumps to the cartridge. Without one, every run shows the built-in test card (see
+[Test card](#test-card)). `--probe` reads a cartridge image and reports what it is, without running it (see
+[Probing an image](#probing-an-image)).
 
 ## Synopsis
 
 ```text
+muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE
 muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
-muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]...
+muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]
 muhtari-run --probe FILE
 muhtari-run --help | --version
 ```
@@ -24,11 +27,12 @@ muhtari-run --help | --version
 | `--bench N` | Run N frames, time each one, and print the report described under [Output](#output). It keeps 4 bytes per frame, so where `size_t` has 32 bits an N of 1073741824 or more exits 1 as out of memory. |
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
+| `[--rom] FILE` | Load the cartridge image in FILE and run it. Give at most one FILE, with or without `--rom`. A refused image prints `muhtari-run: FILE: <message>` on standard error, with the messages of [Probing an image](#probing-an-image) or `unsupported region: PAL (planned)`, and runs no frame: a 2600 image, a board this version does not emulate or a PAL cartridge exits 77, and an image that is not a cartridge, is truncated or is too large exits 1. |
 | `--probe FILE` | Identify the cartridge image in FILE and print its fields and hashes. It takes exactly one file and no other option. |
 | `--help` | Print the usage text and the exit statuses. It takes no other arguments. |
 | `--version` | Print `muhtari-run` and the version. It takes no other arguments. |
 
-Anything else on the command line, including a file name anywhere but after `--probe`, is a usage error.
+Anything else on the command line, including a second file name, is a usage error.
 
 ## Output
 

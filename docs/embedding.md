@@ -198,19 +198,20 @@ muhtari_status st = muhtari_load(m, &media);
 
 `muhtari_load` validates everything before it applies anything, in this order:
 
-1. `m` or `media` is NULL, `bios` is NULL with a non-zero `bios_size`, or `region` is neither 0 nor a
-   `MUHTARI_REGION_*` value: `MUHTARI_STATUS_ERR_ARGUMENT`.
+1. `m` or `media` is NULL: `MUHTARI_STATUS_ERR_ARGUMENT`.
 2. A bad size tag: `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
-3. The image, exactly as `muhtari_probe` judges it, with the same statuses. An empty image is
+3. `bios` is NULL with a non-zero `bios_size`, or `region` is neither 0 nor a `MUHTARI_REGION_*` value:
+   `MUHTARI_STATUS_ERR_ARGUMENT`.
+4. The image, exactly as `muhtari_probe` judges it, with the same statuses. An empty image is
    `MUHTARI_STATUS_ERR_INVALID_IMAGE`, and a NULL image with a size is `MUHTARI_STATUS_ERR_ARGUMENT`.
-4. The region: `region` when it is not 0, else the cartridge's, which comes from its header, then the hash list,
+5. The region: `region` when it is not 0, else the cartridge's, which comes from its header, then the hash list,
    then NTSC. PAL returns `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` until PAL timing is emulated, so no pinned NTSC
    hash can change silently when it is.
-5. The BIOS, when `bios` is not NULL: it must be 4,096 or 16,384 bytes, and its reset vector, mapped to end at
+6. The BIOS, when `bios` is not NULL: it must be 4,096 or 16,384 bytes, and its reset vector, mapped to end at
    $FFFF, must point inside it. Otherwise `MUHTARI_STATUS_ERR_INVALID_BIOS`.
 
 A refused load changes nothing: the previous cartridge, or the test card, keeps running as if the call had not
-been made. Only then is anything applied. The ROM is copied into one allocation, the only one a load makes, and
+been made. Once every check passes, the ROM is copied into one allocation, the only one a load makes, and
 any cartridge loaded before is freed. A BIOS is copied into a fixed 16 KiB array inside the instance. This
 version does not run the BIOS yet: with or without one, the machine starts from the fast-boot hand-off, the
 state the NTSC BIOS leaves as it jumps to the cartridge. A successful load replaces any loaded content and
@@ -220,6 +221,13 @@ power-cycles the machine.
 loaded it returns `MUHTARI_STATUS_OK` and the test card goes on. There is no unload: `muhtari_destroy` and
 `muhtari_create` return to the test card. `muhtari_get_info` describes the loaded content, so read it after a
 load.
+
+## The first frame after load
+
+A load leaves the machine at the fast-boot hand-off, 8,190 ticks before VBLANK start, not at a frame boundary.
+The first `muhtari_run_frame` after a load or power cycle runs only those 8,190 ticks, so it returns 54 audio
+samples rather than 800 or 801. Its picture shows only the rows the beam scanned since the hand-off; every other
+row is written $00. Every later frame runs from one VBLANK start to the next, a whole frame of 119,402 ticks.
 
 ## Input
 
