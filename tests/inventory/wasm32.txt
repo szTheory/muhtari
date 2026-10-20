@@ -565,3 +565,5 @@ runner.usage.positional	portable,runner
 runner.usage.region_pal	portable,runner
 runner.usage.unknown	portable,runner
 runner.version	portable,runner
+title.simple.bios	portable,title
+title.simple.fast	portable,title
