@@ -85,27 +85,164 @@ measure SUBROUTINE
         sty CTRL
         rts
 
-; The tests: CTRL for line 100, then the DLL's address.
+; The tests: CTRL for line 100, then the DLL's address. The order is
+; expected.csv's.
         MAC TESTROW
-        .byte {1}, <{2}, >{2}
+        .byte {1}, <({2}), >({2})
         ENDM
 test_tab
-        TESTROW CTRL_ON, dll_null          ; null
+        TESTROW CTRL_ON, dll_null               ; null
+        TESTROW CTRL_ON, dll_null_last          ; null_last
+        TESTROW CTRL_OFF, dll_null              ; off
+        TESTROW CTRL_ON, dll_h4_w1x8            ; h4_w1x8
+        TESTROW CTRL_ON, dll_h5_w1x8            ; h5_w1x8
+        TESTROW CTRL_ON, dll_h4_w8              ; h4_w8
+        TESTROW CTRL_ON, dll_h5_w32             ; h5_w32
+        TESTROW CTRL_ON, dll_h5_w32_last        ; h5_w32_last
+        TESTROW CTRL_ON, dll_dir_w8             ; dir_w8
+        TESTROW CTRL_ON, dll_ind_w8             ; ind1_w8
+        TESTROW CTRL_ON_CW2, dll_ind_w8         ; ind2_w8
+        TESTROW CTRL_ON, dll_term_00            ; term_00
+        TESTROW CTRL_ON, dll_term_20            ; term_20
+        TESTROW CTRL_ON, dll_term_40            ; term_40
+        TESTROW CTRL_ON, dll_term_80            ; term_80
+        TESTROW CTRL_ON, dll_term_a0            ; term_a0
+        TESTROW CTRL_ON, dll_term_c0            ; term_c0
+        TESTROW CTRL_ON, dll_hole8_h4           ; hole8_h4
+        TESTROW CTRL_ON, dll_hole8_h5           ; hole8_h5
+        TESTROW CTRL_ON, dll_hole16_h4          ; hole16_h4
+        TESTROW CTRL_ON, dll_hole16_h5          ; hole16_h5
+        TESTROW CTRL_ON, dll_hole8_ctl          ; hole8_ctl
+        TESTROW CTRL_ON, dll_over_11            ; over_11
+        TESTROW CTRL_ON, dll_over_12            ; over_12
+        TESTROW CTRL_ON, dll_over_13            ; over_13
+        TESTROW CTRL_ON, dll_over_14            ; over_14
+        TESTROW CTRL_ON, dll_over_16            ; over_16
 TESTS   = (* - test_tab) / 3
 
 ; A DLL: zone 0 with entry byte 0 = {1} (DLI, H16, H8, OFFSET) and DL {2},
-; then 16-line zones of the empty DL.
+; then 16-line zones of the empty DL. OFFSET 1 makes line 100 an ordinary
+; line, OFFSET 0 the zone's last.
         MAC DLL
-        .byte {1}, >{2}, <{2}
+        .byte {1}, >({2}), <({2})
         .byte $0F, >dl_null, <dl_null
         .byte $0F, >dl_null, <dl_null
         .byte $0F, >dl_null, <dl_null
         ENDM
-dll_null
-        DLL $01, dl_null
+ORD     = $01
+LAST    = $00
+H8      = $20
+H16     = $40
+dll_null        DLL ORD, dl_null
+dll_null_last   DLL LAST, dl_null
+dll_h4_w1x8     DLL ORD, dl_h4_w1x8
+dll_h5_w1x8     DLL ORD, dl_h5_w1x8
+dll_h4_w8       DLL ORD, dl_h4_w8
+dll_h5_w32      DLL ORD, dl_h5_w32
+dll_h5_w32_last DLL LAST, dl_h5_w32
+dll_dir_w8      DLL ORD, dl_dir_w8
+dll_ind_w8      DLL ORD, dl_ind_w8
+dll_term_00     DLL ORD, dl_term_00
+dll_term_20     DLL ORD, dl_term_20
+dll_term_40     DLL ORD, dl_term_40
+dll_term_80     DLL ORD, dl_term_80
+dll_term_a0     DLL ORD, dl_term_a0
+dll_term_c0     DLL ORD, dl_term_c0
+dll_hole8_h4    DLL ORD|H8, dl_hole8_h4
+dll_hole8_h5    DLL ORD|H8, dl_hole8_h5
+dll_hole16_h4   DLL ORD|H16, dl_hole16_h4
+dll_hole16_h5   DLL ORD|H16, dl_hole16_h5
+dll_hole8_ctl   DLL ORD|H8, dl_hole16_h4
+dll_over_11     DLL ORD, dl_over + 4*(16-11)
+dll_over_12     DLL ORD, dl_over + 4*(16-12)
+dll_over_13     DLL ORD, dl_over + 4*(16-13)
+dll_over_14     DLL ORD, dl_over + 4*(16-14)
+dll_over_16     DLL ORD, dl_over
 
-; The DLs.
-dl_null
+; Headers (docs/hardware/maria.md, Display lists). H4 is a 4-byte header of
+; width {2} at {1}; H5 a 5-byte one, byte 1 {3}: $40 direct, $60 indirect.
+; Palette 0, hpos 0. TERM is a terminator, read whole.
+        MAC H4
+        .byte <({1}), 32-({2}), >({1}), 0
+        ENDM
+        MAC H5
+        .byte <({1}), {3}, >({1}), (32-({2}))&$1F, 0
+        ENDM
+        MAC TERM
         .byte $00, $00, $00, $00
+        ENDM
+GFX     = $E000                 ; no hole: A12 and A11 clear
+HOLE8   = $C800                 ; A11: a hole under H8
+HOLE16  = $D000                 ; A12: a hole under H16
+
+dl_null TERM
+dl_h4_w1x8
+        REPEAT 8
+        H4 GFX, 1
+        REPEND
+        TERM
+dl_h5_w1x8
+        REPEAT 8
+        H5 GFX, 1, $40
+        REPEND
+        TERM
+dl_h4_w8
+        H4 GFX, 8
+        TERM
+dl_h5_w32
+        H5 GFX, 32, $40
+        TERM
+dl_dir_w8
+        H5 GFX, 8, $40
+        TERM
+dl_ind_w8
+        H5 GFX, 8, $60
+        TERM
+; Byte 1 of the first header takes each value; $40 and $C0 read as a 5-byte
+; header of width 8.
+dl_term_00
+        .byte $00, $00, >GFX, $18, $00
+        TERM
+dl_term_20
+        .byte $00, $20, >GFX, $18, $00
+        TERM
+dl_term_40
+        .byte $00, $40, >GFX, $18, $00
+        TERM
+dl_term_80
+        .byte $00, $80, >GFX, $18, $00
+        TERM
+dl_term_a0
+        .byte $00, $A0, >GFX, $18, $00
+        TERM
+dl_term_c0
+        .byte $00, $C0, >GFX, $18, $00
+        TERM
+dl_hole8_h4
+        REPEAT 8
+        H4 HOLE8, 8
+        REPEND
+        TERM
+dl_hole8_h5
+        REPEAT 8
+        H5 HOLE8, 8, $40
+        REPEND
+        TERM
+dl_hole16_h4
+        REPEAT 8
+        H4 HOLE16, 8
+        REPEND
+        TERM
+dl_hole16_h5
+        REPEAT 8
+        H5 HOLE16, 8, $40
+        REPEND
+        TERM
+; Sixteen objects of width 8; over_n starts 16 - n headers in.
+dl_over
+        REPEAT 16
+        H4 GFX, 8
+        REPEND
+        TERM
 
         LIB_TAIL

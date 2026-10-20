@@ -11,8 +11,8 @@
 # result is dasm's plain output, <rom>.bin. Every .s beside SRC is copied in,
 # for its includes. PATH, the row to compare with, defaults to SRC's path from
 # the repository root with the result's extension. KEEP copies the result to
-# KEEP and prints its digest, for a new fixture's first commit; with KEEP a
-# missing row is not an error.
+# KEEP and prints its digest instead of comparing, to create or update a
+# fixture before its manifest row is written.
 cmake_minimum_required(VERSION 3.25)
 foreach(var WASMTIME PKG SRC OUT MANIFEST)
   if("${${var}}" STREQUAL "")
@@ -66,12 +66,10 @@ file(SHA256 "${dir}/${result}" got)
 if(KEEP)
   file(COPY_FILE "${dir}/${result}" "${KEEP}")
   message(STATUS "${PATH}: kept as ${KEEP}, SHA-256 ${got}")
+  return()
 endif()
 file(STRINGS "${MANIFEST}" rows REGEX "^${PATH}\t")
 list(LENGTH rows count)
-if(count EQUAL 0 AND KEEP)
-  return()
-endif()
 if(NOT count EQUAL 1)
   message(FATAL_ERROR "${PATH}: ${MANIFEST} has ${count} rows for it, not 1")
 endif()
