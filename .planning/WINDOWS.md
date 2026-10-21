@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 5
 waived_count: 0
 fixed_count: 9
-total_count: 12
-last_updated: 2026-10-21T18:33:05.691Z
+total_count: 14
+last_updated: 2026-10-21T19:22:57.900Z
 ---
 
 # Broken Windows Ledger
@@ -27,6 +27,8 @@ last_updated: 2026-10-21T18:33:05.691Z
 | 10 | 05 | deviation | .github/workflows/be-equality.yml |  | Extracted read-only reusable equality because GitHub rejects the skipped nightly issue-write reporter in a read-only call. | fixed |  | 2026-10-21T18:32:19.333Z | 2026-10-21T18:32:24.687Z |
 | 11 | 05 | unmet-truth | tests/cmake/abi.cmake |  | Full PowerPC inventory rejects __divdi3 and writable cartridge-database count symbols; same-head full inventory and equality are not verified. | open |  | 2026-10-21T18:32:19.409Z |  |
 | 12 | 05 | unrun-verify | .github/workflows/be-equality.yml |  | PowerPC archive inventory and same-head equality cannot complete while the preceding full normal ABI inventory fails. | open |  | 2026-10-21T18:33:05.691Z |  |
+| 13 | 05 | unmet-truth | .github/workflows/be-equality.yml | 66 | Complete native/PowerPC inventories pass, but hosted equality rejects relative evidence directories; absolute-path replay of the authentic pair passes. | open |  | 2026-10-21T19:22:57.834Z |  |
+| 14 | 05 | unrun-verify | .github/workflows/be-equality.yml | 38 | Temporary target diagnostic remains; its removal and complete final-head equality proof are unfinished at the mandatory recovery halt. | open |  | 2026-10-21T19:22:57.900Z |  |
 
 ````json
 [
@@ -183,6 +185,32 @@ last_updated: 2026-10-21T18:33:05.691Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-10-21T18:33:05.691Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 13,
+    "kind": "unmet-truth",
+    "phase": "05",
+    "file": ".github/workflows/be-equality.yml",
+    "line": 66,
+    "description": "Complete native/PowerPC inventories pass, but hosted equality rejects relative evidence directories; absolute-path replay of the authentic pair passes.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-21T19:22:57.834Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 14,
+    "kind": "unrun-verify",
+    "phase": "05",
+    "file": ".github/workflows/be-equality.yml",
+    "line": 38,
+    "description": "Temporary target diagnostic remains; its removal and complete final-head equality proof are unfinished at the mandatory recovery halt.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-21T19:22:57.900Z",
     "resolved_at": null,
     "milestone": "v2.0"
   }
