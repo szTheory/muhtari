@@ -1,15 +1,21 @@
-# Stack
+# Stack research — v2.0 The whole library
 
-**Project:** muhtari · **Researched:** 2026-10-15 · Details and pins: `.planning/preparation/ENGINEERING.md`.
+Researched: 2026-10-21. Scope: new capabilities only. Approved milestone scope; phase-level implementation research remains separate.
 
-| Layer | Choice | Why |
-|---|---|---|
-| Language | C17, `CMAKE_C_EXTENSIONS OFF`; public header also valid C++ | Embeds in any host, console SDK or WASM |
-| Build | CMake (≥ 3.25 for embedders; presets v11 locally and in CI), Ninja, CTest; one entrypoint `cmake --workflow --preset <lane>` | No script to keep in step with CI |
-| Runtime dependencies | None; the core links only `memcpy`/`memmove`/`memset`/`memcmp` | Portability and determinism |
-| Vendored | `libretro.h` (MIT) only | The libretro ABI |
-| Test harness | Plain CTest executables, an in-repo check header and a small seeded property harness | No framework dependency |
-| Fixture tools (pinned; the `ci` preset fetches them on any host) | 7800basic WASM package under wasmtime (samples, dasm, 7800sign), dasm for OpenBIOS, cc65 at a pinned commit, qemu-user + PowerPC GCC for the big-endian lane, Valgrind for instructions/frame | Reproducible test inputs with no committed third-party ROM bytes |
-| Formatting and analysis | clang-format 21, clang-tidy analyzer checks | One version locally and in CI |
-| CI/CD | GitHub Actions (Ubuntu 26.04, macOS 15, Windows 2025/11-arm), release-please 17.6.0 via its v5.0.0 action, a GitHub App token, artifact attestations | Automatic, verifiable releases |
-| Hosts | RetroArch (Metal build) on the owner's Mac; the runner for automation and Playstead | No GUI in this repository |
+## Recommendation
+
+Keep C17, CMake/CTest, the existing runner, libretro header and integer synthesiser. Add no runtime dependency. Boards, EEPROM and pin protocols are small own modules written from documented hardware facts; tests reuse existing diagnostic ROM construction, mailbox checks, seeded property checks and fuzz replay infrastructure.
+
+Core additions: HSC storage and mapping; a bounded 24LC256 state machine; per-device pin state; board-specific reads/writes with CPU/MARIA ownership; region parameters in the existing dispatcher. Host additions: battery-file persistence in the runner, SAVE_RAM exposure and lightgun/analog/mouse mapping in libretro. Device files and clocks remain outside the core.
+
+Pipeline tune-up uses POSIX sh, gh and existing CMake JSON parsing; no reporting service or test framework. A weekly triage digest and monthly efficiency section are already proposed in ENGINEERING sections 7/12. The quality ratchet must consume measured existing outputs and stay within the gate-code budget; do not manufacture coverage values or duplicate per-metric gates.
+
+## New source verification
+
+Microchip DS21203R documents a 32K x 8 EEPROM, a 64-byte page buffer and a maximum 5 ms write cycle. Model busy time with emulated ticks; 5 ms is a deterministic model choice based on a maximum, not a measured typical value. See https://ww1.microchip.com/downloads/en/devicedoc/21203r.pdf (sections 6–8, accessed 2026-10-21).
+
+Libretro's current input documentation distinguishes relative mouse deltas from screen-space pointer and lightgun coordinates, including off-screen lightgun input. Use the existing vendored header as the ABI and verify individual IDs against it: https://docs.libretro.com/development/input-api/ (accessed 2026-10-21).
+
+## Exclusions and confidence
+
+No new graphics/audio/device backend, browser harness, state serializer or speech synthesiser. Existing tool versions remain pinned; no dependency upgrade is required by these features. HIGH confidence in stack reuse and data boundaries; board and sensor fits need phase research.
