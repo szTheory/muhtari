@@ -352,7 +352,17 @@ struct muhtari__boot {
    frame_deadline, both VBLANK-start ticks except frame_start after the
    hand-off (docs/hardware/bus.md, The run loop). bios holds the bios_size
    bytes muhtari_load copied, 0 for fast boot. */
+typedef void (*muhtari__audio_observer)(void *user, uint64_t tick, uint8_t source, uint16_t raw);
+struct muhtari__observation;
+muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user);
+void muhtari__synth_raw(muhtari *m, uint64_t tick, unsigned source, uint8_t raw);
+void muhtari__observe_begin(muhtari *m, uint64_t end);
+void muhtari__observe_end(muhtari *m);
+
 struct muhtari {
+    muhtari__audio_observer observer;
+    void *observer_user;
+    struct muhtari__observation *observation;
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
     uint8_t loaded;              /* content is loaded and handed off */

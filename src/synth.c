@@ -306,3 +306,6 @@ uint32_t muhtari__synth_render(muhtari *m, uint64_t end, int16_t *out)
     s->horizon = end;
     return (uint32_t)count;
 }
+
+muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user)
+{ m->observer = callback; m->observer_user = user; return MUHTARI_STATUS_OK; }

@@ -404,8 +404,51 @@ static void test_public_audio(void)
     muhtari_destroy(m);
 }
 
+static unsigned observed;
+static uint64_t observed_tick;
+static void record_one(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    CHECK(user == &observed);
+    CHECK_EQ_U64(source, 0u);
+    CHECK_EQ_U64(raw, 9u);
+    observed++;
+    observed_tick = tick;
+}
+static void test_observer_one(void)
+{
+    static const uint8_t program[] = {0xA9,7,0x85,1,0xA9,9,0x85,0x19,0x02};
+    muhtari *m = make(), *off = make();
+    CHECK_EQ_U64(muhtari__synth_observe(m, record_one, &observed), 0);
+    load_program(m, program, sizeof program);
+    load_program(off, program, sizeof program);
+    /* Fast boot has already filled the constant waveform's pulse register. */
+    m->tia.channel[0].output = off->tia.channel[0].output = 1u;
+    muhtari_frame a, b;
+    int16_t pcm[801], reference[801];
+    frame_io(&a, NULL, 0u, pcm, 801u);
+    frame_io(&b, NULL, 0u, reference, 801u);
+    a.audio_capacity = 0u;
+    CHECK_EQ_U64(muhtari_run_frame(m, &a), MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL);
+    CHECK_EQ_U64(observed, 0u);
+    a.audio_capacity = 801u;
+    CHECK_EQ_U64(muhtari_run_frame(m, &a), 0);
+    CHECK_EQ_U64(muhtari_run_frame(off, &b), 0);
+    CHECK_EQ_U64(observed, 1u);
+    CHECK(observed_tick >= m->synth.origin && observed_tick < m->frame_start);
+    CHECK_EQ_U64(a.audio_count, b.audio_count);
+    CHECK(memcmp(pcm, reference, a.audio_count * sizeof pcm[0]) == 0);
+    CHECK(memcmp(&m->cpu, &off->cpu, sizeof m->cpu) == 0);
+    CHECK(memcmp(&m->synth, &off->synth, sizeof m->synth) == 0);
+    CHECK(memcmp(m->ram, off->ram, sizeof m->ram) == 0);
+    CHECK_EQ_U64(muhtari_power_cycle(m), 0);
+    CHECK(m->observer == record_one && m->observer_user == &observed);
+    muhtari_destroy(off);
+    muhtari_destroy(m);
+}
+
 int main(void)
 {
+    test_observer_one();
     test_audio_boundaries();
     test_public_audio();
     CHECK_DONE();
