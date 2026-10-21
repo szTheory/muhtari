@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: blocked
-stopped_at: Halted 05-10 after completed full producer equality failure
-last_updated: "2026-10-21T19:25:29.865Z"
+status: ready_to_execute
+stopped_at: Completed scoped equality debug and 05-10 replacement acceptance; 05-04 ready
+last_updated: "2026-10-21T20:21:00Z"
 last_activity: 2026-10-21
-last_activity_desc: Recovery ABI and inventories pass; hosted equality caller failure halts 05-10
-state_head: 80a49af9cd0e6b531c848c08bb0f985f5d40914e
+last_activity_desc: Canonical evidence paths and diagnostic-free final hosted acceptance complete; 05-04 ready
+state_head: 0901c877977e9f712a77193d4840df5ff5b5408d
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 total_phases: 7
 ---
@@ -30,14 +30,14 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — BLOCKED
-Plan: 05-10 recovery (third of nine live plans; halted)
-Status: Hosted equality caller failed; 05-04 onward remain blocked
-Last activity: 2026-10-21 — PowerPC ABI and full inventories pass; relative-path equality fails
+Phase: 05 (Pipeline tune-up) — READY TO EXECUTE
+Plan: 05-04 (next of six remaining live plans)
+Status: 05-10 recovery accepted; 05-04 is ready, later plans retain their dependencies
+Last activity: 2026-10-21 — Equality caller fixed and complete final-head hosted acceptance passed
 
-Progress: [░░░░░░░░░░] 0% — 2/9 plans complete; 0/7 phases complete.
+Progress: [░░░░░░░░░░] 0% of milestone phases — 3/9 Phase 5 plans complete; 0/7 phases complete.
 
-Implementation: 2/9 Phase 5 plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
+Implementation: 3/9 Phase 5 plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
 ## Accumulated Context
 
@@ -90,10 +90,21 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T19:25:29.849Z
-Stopped at: Halted 05-10 after completed full producer equality failure
-Resume file: .planning/phases/05-pipeline-tune-up/05-10-HALTED.md
-Next command after an explicit scoped recovery decision: `$gsd-debug "PowerPC equality caller rejects relative evidence directories"`
+Last session: 2026-10-21T20:21:00Z
+Stopped at: Completed scoped equality debug and 05-10 replacement acceptance
+Resume file: .planning/phases/05-pipeline-tune-up/05-10-SUMMARY.md
+Next command: `$gsd-execute-phase 5`
+
+Recovery evidence: implementation `0901c877977e9f712a77193d4840df5ff5b5408d`;
+[Release-called required CI and equality](https://github.com/szTheory/muhtari/actions/runs/39663281026)
+jobs 119461511750 and 119441583140 succeed. [Direct Nightly](https://github.com/szTheory/muhtari/actions/runs/39663280880)
+is completed success; its actual equality producer is merge
+`5ad2484b9d48c0ef860c4a1d9a23f18a9dd7b2a2`. Authentic artifacts pass all eight
+607/6 JUnit judges, exact membership checks and each two-file comparator, exit 0.
+Local ci, retained controls, counter, hygiene and diff checks exit 0. Current
+count13445/BE193/C14853; no budget, inventory, ABI or privilege predicate changed.
+Historical failed halts remain unchanged. No downstream plan, ship, merge or
+owner verification ran; all phase-wide requirements remain pending.
 
 Current planning contract: D-17 and D-19–20 now use an audited absolute ratchet.
 The prior 857-line prerequisite is explicitly superseded; no exact new cap or
@@ -160,12 +171,12 @@ No phase implementation or owner hardware verification ran during initialization
 |------|----------|-------|-------|
 | Phase 05 P01 | 12min | 2 tasks | 6 files |
 | Phase 05 P02 | 17min | 3 tasks | 9 files |
-| Phase 05 P10 | 20min | 0 tasks | 5 files |
+| Phase 05 P10 | 83min wall, including external queues | 2 tasks | 8 touched implementation files |
 
 ### Blockers
 
-- Historical 05-03 remains superseded and halted. The single gap recovery 05-10 restored actual PowerPC ABI and complete native/BE 607+6 inventories, but its final hosted equality command failed. 05-04 onward remain blocked; no additional gap round is authorized.
-- 05-10 halted: GNU/qemu ABI and complete 607+6 native/BE inventories pass, but both read-only hosted equality callers reject relative evidence directories. Final diagnostic cleanup and successful caller proof remain incomplete; no downstream execution or second gap round authorized.
+- No PowerPC recovery blocker remains. Historical 05-03 is superseded and halted; 05-10's original equality failure and HALTED file remain historical facts. The explicitly authorized debug continuation supplies final diagnostic-free hosted acceptance and a successful 05-10 SUMMARY.
+- 05-04 is ready. Later plans retain their unexecuted dependencies; no second gap round or downstream step ran during this debug session.
 
 ## Phase 5 gap planning verification
 

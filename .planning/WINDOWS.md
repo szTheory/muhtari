@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 5
+open_count: 1
 waived_count: 0
-fixed_count: 9
+fixed_count: 13
 total_count: 14
-last_updated: 2026-10-21T19:22:57.900Z
+last_updated: 2026-10-21T20:21:18.153Z
 ---
 
 # Broken Windows Ledger
@@ -25,10 +25,10 @@ last_updated: 2026-10-21T19:22:57.900Z
 | 8 | 04 | deviation | tests/frame/test_frame.c |  | WSYNC fixtures apply changed power-on profile through TIA reset before checking the stored epoch | fixed |  | 2026-10-20T20:52:42.414Z | 2026-10-20T20:53:48.887Z |
 | 9 | 04 | unmet-truth | tests/audio/test_spectral.c | 472 | Wholly slow actual POKEY AUDF1 produces a 15136.23 Hz spur up to -78.28741 dBFS through the fixed kernel, failing the -80 dBFS spectral gate. | fixed |  | 2026-10-20T21:22:40.462Z | 2026-10-20T22:24:38.241Z |
 | 10 | 05 | deviation | .github/workflows/be-equality.yml |  | Extracted read-only reusable equality because GitHub rejects the skipped nightly issue-write reporter in a read-only call. | fixed |  | 2026-10-21T18:32:19.333Z | 2026-10-21T18:32:24.687Z |
-| 11 | 05 | unmet-truth | tests/cmake/abi.cmake |  | Full PowerPC inventory rejects __divdi3 and writable cartridge-database count symbols; same-head full inventory and equality are not verified. | open |  | 2026-10-21T18:32:19.409Z |  |
-| 12 | 05 | unrun-verify | .github/workflows/be-equality.yml |  | PowerPC archive inventory and same-head equality cannot complete while the preceding full normal ABI inventory fails. | open |  | 2026-10-21T18:33:05.691Z |  |
-| 13 | 05 | unmet-truth | .github/workflows/be-equality.yml | 66 | Complete native/PowerPC inventories pass, but hosted equality rejects relative evidence directories; absolute-path replay of the authentic pair passes. | open |  | 2026-10-21T19:22:57.834Z |  |
-| 14 | 05 | unrun-verify | .github/workflows/be-equality.yml | 38 | Temporary target diagnostic remains; its removal and complete final-head equality proof are unfinished at the mandatory recovery halt. | open |  | 2026-10-21T19:22:57.900Z |  |
+| 11 | 05 | unmet-truth | tests/cmake/abi.cmake |  | Full PowerPC inventory rejects __divdi3 and writable cartridge-database count symbols; same-head full inventory and equality are not verified. | fixed |  | 2026-10-21T18:32:19.409Z | 2026-10-21T20:21:17.820Z |
+| 12 | 05 | unrun-verify | .github/workflows/be-equality.yml |  | PowerPC archive inventory and same-head equality cannot complete while the preceding full normal ABI inventory fails. | fixed |  | 2026-10-21T18:33:05.691Z | 2026-10-21T20:21:17.934Z |
+| 13 | 05 | unmet-truth | .github/workflows/be-equality.yml | 66 | Complete native/PowerPC inventories pass, but hosted equality rejects relative evidence directories; absolute-path replay of the authentic pair passes. | fixed |  | 2026-10-21T19:22:57.834Z | 2026-10-21T20:21:18.042Z |
+| 14 | 05 | unrun-verify | .github/workflows/be-equality.yml | 38 | Temporary target diagnostic remains; its removal and complete final-head equality proof are unfinished at the mandatory recovery halt. | fixed |  | 2026-10-21T19:22:57.900Z | 2026-10-21T20:21:18.153Z |
 
 ````json
 [
@@ -169,10 +169,10 @@ last_updated: 2026-10-21T19:22:57.900Z
     "file": "tests/cmake/abi.cmake",
     "line": null,
     "description": "Full PowerPC inventory rejects __divdi3 and writable cartridge-database count symbols; same-head full inventory and equality are not verified.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-21T18:32:19.409Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-21T20:21:17.820Z",
     "milestone": "v2.0"
   },
   {
@@ -182,10 +182,10 @@ last_updated: 2026-10-21T19:22:57.900Z
     "file": ".github/workflows/be-equality.yml",
     "line": null,
     "description": "PowerPC archive inventory and same-head equality cannot complete while the preceding full normal ABI inventory fails.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-21T18:33:05.691Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-21T20:21:17.934Z",
     "milestone": "v2.0"
   },
   {
@@ -195,10 +195,10 @@ last_updated: 2026-10-21T19:22:57.900Z
     "file": ".github/workflows/be-equality.yml",
     "line": 66,
     "description": "Complete native/PowerPC inventories pass, but hosted equality rejects relative evidence directories; absolute-path replay of the authentic pair passes.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-21T19:22:57.834Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-21T20:21:18.042Z",
     "milestone": "v2.0"
   },
   {
@@ -208,10 +208,10 @@ last_updated: 2026-10-21T19:22:57.900Z
     "file": ".github/workflows/be-equality.yml",
     "line": 38,
     "description": "Temporary target diagnostic remains; its removal and complete final-head equality proof are unfinished at the mandatory recovery halt.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-21T19:22:57.900Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-21T20:21:18.153Z",
     "milestone": "v2.0"
   }
 ]

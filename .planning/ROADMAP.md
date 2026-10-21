@@ -19,7 +19,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
-| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Blocked at 05-10 |
+| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | In progress |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Not started |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
@@ -34,11 +34,11 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 2/9 plans executed.
+**Plans:** 3/9 plans executed.
 
-05-10 restored PowerPC ABI and complete 607+6 native/BE inventories, then halted on hosted equality's relative-path caller failure.
+05-10 restored PowerPC ABI, and its authorized debug continuation fixed evidence-path handling and proved diagnostic-free native/BE 607+6 inventories, two-file equality and release-called required CI at immutable implementation 0901c877.
 05-03 is superseded for scheduling; its partial implementation and historical halt records remain.
-05-04 onward await successful final caller proof and diagnostic cleanup; no full producer success is claimed.
+05-04 is ready; later plans retain their remaining dependencies. Original failed halts remain unchanged, and phase-wide completion is not claimed.
 
 Plans:
 **Wave 1**
@@ -48,11 +48,11 @@ Plans:
 - [x] 05-02-PLAN.md — Resolve the output race and derive measured test/job bounds.
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 05-10-PLAN.md — Halted after ABI/inventory recovery; hosted equality caller and diagnostic cleanup remain incomplete.
+- [x] 05-10-PLAN.md — Recover PowerPC ABI and prove diagnostic-free full native/BE equality and release-called required CI.
 
 05-03-PLAN.md is superseded by 05-10; its implemented PR compilation and wiring are retained.
 
-**Wave 4** *(blocked on Wave 3 completion)*
+**Wave 4** *(ready)*
 - [ ] 05-04-PLAN.md — Deliver privilege-safe weekly triage and monthly hosted-efficiency reports.
 
 **Wave 5** *(blocked on Wave 4 completion)*
@@ -172,7 +172,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
-| 5. Pipeline tune-up | 2/9 | Blocked at 05-10 | — |
+| 5. Pipeline tune-up | 3/9 | In progress | — |
 | 6. Retail cartridge boards | 0/TBD | Not started | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |

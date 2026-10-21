@@ -1,7 +1,7 @@
 ---
 phase: 05-pipeline-tune-up
 plan: "10"
-status: halted
+status: complete
 subsystem: infra
 tags: [powerpc, cmake, audio, portability]
 requires:
@@ -12,11 +12,12 @@ requires:
 provides:
   - Actual PowerPC ABI recovery with unchanged output and fault controls
   - Complete native and PowerPC normal/package inventory evidence
-  - Reproduced hosted relative-path equality failure and mandatory halt
+  - Canonical evidence-path contract with retained absolute/relative controls
+  - Diagnostic-free full equality and release-called required CI at an immutable implementation SHA
 affects: [05-04, 05-05, 05-06, 05-07, 05-08, 05-09]
 tech-stack:
   added: []
-  patterns: [unsigned bounded magnitude division, target-only constant placement]
+  patterns: [unsigned bounded magnitude division, target-only constant placement, canonical evidence paths]
 key-files:
   created:
     - .planning/phases/05-pipeline-tune-up/05-10-HALTED.md
@@ -26,17 +27,21 @@ key-files:
     - cmake/toolchains/ppc-linux-gnu.cmake
     - docs/hardware/audio.md
     - .github/workflows/be-equality.yml
+    - docs/testing.md
+    - tests/cmake/lane_equality.cmake
+    - tests/policy/tests.cmake
 key-decisions:
-  - Stop on the first completed full producer equality failure as required by this recovery plan.
-  - Preserve all ABI predicates and fixed allocations; do not repair the newly isolated caller defect without a scoped recovery decision.
-duration: 20min
+  - Preserve the original mandatory halt and failed hosted evidence; complete only the explicitly authorized scoped debug continuation.
+  - Normalize evidence arguments once, retaining every identity, inventory, ABI and byte-comparison predicate.
+  - Keep separate image/caller timing cohorts, the provisional 30-minute bound and all fixed allocations.
+duration: 83min wall
 completed: 2026-10-21
 actuals:
-  tokens: 1655
-  tasks: 0
-  commits: 2
+  tokens: 2113
+  tasks: 2
+  commits: 5
 plan_head_before: a2daeb660fd7ca74912fa1a8dd7c58617b863e16
-plan_head_after: 96dc316427cbcb686b06b650d4cc16d729c419d3
+plan_head_after: 0901c877977e9f712a77193d4840df5ff5b5408d
 requirements-completed: []
 requirements-contributed: [TUNE-02, TUNE-04, TUNE-05]
 coverage:
@@ -45,7 +50,7 @@ coverage:
     requirement: TUNE-02
     verification:
       - kind: integration
-        ref: https://github.com/szTheory/muhtari/actions/runs/39659029223
+        ref: https://github.com/szTheory/muhtari/actions/runs/39663281026/job/119441583140
         status: pass
       - kind: unit
         ref: core.audio.silence rounding equivalence and production reconstruction, exit 0
@@ -56,10 +61,10 @@ coverage:
     requirement: TUNE-04
     verification:
       - kind: integration
-        ref: Both check_junit selections in Release 39659029223 and Nightly 39659029340, exit 0
+        ref: Both check_junit selections in Release 39663281026 and Nightly 39663280880, exit 0
         status: pass
       - kind: other
-        ref: Independent exact Counter comparison of downloaded release JUnit reports, exit 0
+        ref: Independent exact Counter comparison of all eight downloaded final JUnit reports, exit 0
         status: pass
     human_judgment: false
   - id: hosted-equality
@@ -67,28 +72,175 @@ coverage:
     requirement: TUNE-05
     verification:
       - kind: integration
-        ref: Release job 119426862308 and Nightly job 119426862666, comparator exit 1
-        status: fail
+        ref: Release job 119441583140 and Nightly job 119441580417, comparator exit 0
+        status: pass
     human_judgment: false
   - id: final-cleanup
     description: Diagnostic-free final implementation and matching coverage documentation are accepted
     requirement: TUNE-05
     verification:
       - kind: integration
-        ref: Not run after mandatory full-producer failure; temporary diagnostic remains
-        status: unknown
+        ref: Diagnostic-free implementation 0901c877, both full hosted producers, docs.budgets and local ci, exit 0
+        status: pass
+    human_judgment: false
+  - id: relative-path-contract
+    description: Existing valid and seven fault cases execute with absolute and relative directories
+    requirement: TUNE-02
+    verification:
+      - kind: integration
+        ref: policy.lane_equality.controls RED exit 8, GREEN exit 0, comparator-only revert/reapply RED/GREEN confirmed
+        status: pass
+    human_judgment: false
+  - id: called-native-ci
+    description: Release-called required CI and six-native-file equality complete on the implementation SHA
+    requirement: TUNE-05
+    verification:
+      - kind: integration
+        ref: https://github.com/szTheory/muhtari/actions/runs/39663281026/job/119461511750
+        status: pass
     human_judgment: false
 ---
 
-# Phase 5 Plan 10: PowerPC ABI recovery Partial Summary
+# Phase 5 Plan 10: PowerPC recovery Summary
 
-**Unsigned rounding and read-only counts restore the real PowerPC ABI; full
-inventories pass, but the hosted equality caller fails on relative paths.**
+**PowerPC ABI, complete native/BE inventories, exact equality and release-called
+required CI now pass at the immutable implementation head.**
 
-This is a halt record, not successful replacement coverage. Neither task meets
-every acceptance criterion: Task 1 still requires diagnostic cleanup and Task 2
-requires successful final callers and documentation. Progress remains 2/9;
-05-04 onward remain blocked. Historical 05-03 records are unchanged.
+The original attempt stopped on the required boundary. Its failure is preserved
+in unchanged 05-10-HALTED.md and in the historical sections below. The owner then
+authorized this narrow find-and-fix debug continuation. Both recovery tasks are
+accepted; Phase 5 progress is 3/9, with 05-04 next. No downstream plan, second gap
+round, ship, merge or owner UAT ran. Phase-wide requirements remain pending.
+
+## Scoped caller diagnosis and correction
+
+Authentic Release artifacts at `96dc316427cbcb686b06b650d4cc16d729c419d3`
+reproduce `lane_equality: members of NATIVE:` with relative directories, exit 1;
+the unchanged comparator with absolute directories exits 0. The comparator had
+computed REAL_PATH values only for duplicate detection, then passed the original
+relative values to GLOB. Reusing the existing canonical values as NATIVE and BE
+repairs member enumeration, reads and comparison together without changing any
+predicate or adding comparator lines.
+
+The existing `policy.lane_equality.controls` now runs its valid case and all seven
+named faults with absolute then relative directories. Before the fix, the eight
+absolute cases pass and the relative positive fails, CTest exit 8. After the fix,
+all sixteen pass, exit 0. Reverting only the three comparator substitutions
+restores that exact failure; reapplying restores success. Mixed absolute/relative
+artifact replay passes and mixed-spelling duplicate directories remain rejected.
+Stryker is not configured for this CMake repository; that mutation signal is
+explicitly skipped, while the comparator-only revert signal passes.
+
+Implementation commit `0901c877977e9f712a77193d4840df5ff5b5408d` also removes
+all eleven temporary ABI diagnostic lines and updates the existing portability
+paragraph. No ABI judge, allowlist, generated data, inventory, expected hash,
+permission, public API or timeout declaration changed. The retained root fix is
+within the prior BE allocation. The diagnostic-free workflow itself produced
+the successful evidence below.
+
+## Final immutable hosted acceptance
+
+| Run/job | Actual producer SHA | Accepted result |
+|---|---|---|
+| [Release equality](https://github.com/szTheory/muhtari/actions/runs/39663281026/job/119441583140) | 0901c877977e9f712a77193d4840df5ff5b5408d | Native 607+6, BE 607+6, four JUnit judges and exact two-file equality succeed. |
+| [Direct Nightly equality](https://github.com/szTheory/muhtari/actions/runs/39663280880/job/119441580417) | 5ad2484b9d48c0ef860c4a1d9a23f18a9dd7b2a2 | Native 607+6, BE 607+6, four JUnit judges and exact two-file equality succeed. |
+| [Release-called CI required](https://github.com/szTheory/muhtari/actions/runs/39663281026/job/119461511750) | 0901c877977e9f712a77193d4840df5ff5b5408d | All six native legs and six-file hash equality succeed; roll-up has HEAVY=true and CALLED=true, exit 0. |
+| [Direct CI](https://github.com/szTheory/muhtari/actions/runs/39663280906) | PR merge for head 0901c877 | Completed success; supplementary evidence rather than a substitute for called CI. |
+
+Nightly's API headSha is the PR head; its actual checkout is the separately
+identified merge SHA. Each pair's downloaded commit.txt files both match its own
+producer; identity.txt and nonempty hashes.txt match byte-for-byte. PR merge
+metadata independently identifies `5ad2484b` for this head.
+
+`gh run view RUN -R szTheory/muhtari --json status,conclusion,headSha,jobs,url`,
+`gh api --allow-escape-sequences repos/szTheory/muhtari/actions/jobs/JOB/logs`
+and `gh run download RUN -R szTheory/muhtari -n lane-equality -D build/<directory>`
+— exit 0 for both final producers. Their eight normal/release `check_junit.cmake`
+replays exit 0. An independent Python stdlib Counter/ElementTree check over the
+downloaded JUnit files exits 0: exact registered membership and no extra,
+missing, duplicate, failure, error or skipped execution. Both relative-path
+`lane_equality.cmake` replays with the exact producer SHA exit 0,
+`hashes: 2 identical files`. Artifacts and raw logs remain ignored build output.
+The same eight historical inventory judges also pass; that does not relabel
+historical failed hosted equality as success.
+
+Authentic called Linux x64, macOS x64 and arm64 logs explicitly show the
+implementation checkout and exact 607/6 JUnit results. Called CI required
+completed at 20:17:26 UTC, six-native equality at 20:16:56. macOS jobs spent a
+long external queue with no runner assigned; unchanged labels are documented
+as supported and eventually received runners. No published GitHub incident or
+precise capacity cause was established. Queue time is not test duration or a
+successful producer timing sample. No rerun or relaxed gate was used.
+
+Workflow inspection confirms rehearsal needs ci+equality, publication needs
+release-ci+release-equality, and real release callers use the release-please SHA.
+Nightly reporting needs equality; write credentials remain outside the producer.
+Production publication/default-branch truths remain ship checks. This summary
+claims the successful required jobs above, not an unobserved overall Release
+publication result. Later planning-only commits are not claimed as producer SHAs.
+
+## Final local verification and fixed bounds
+
+- `cmake --workflow --preset ci` — exit 0 after the final implementation edit;
+  both JUnit judges exit 0, 607 normal and six release executions exactly once.
+- `ctest --preset ci -R '^policy[.]lane_equality[.]controls$' --output-on-failure`
+  — exit 0; sixteen absolute/relative valid/fault cases, with recorded RED and
+  comparator-only revert/reapply evidence above.
+- `cmake -DCI_YML=.github/workflows/ci.yml -DJQ=jq -DREPORT_ONLY=wasm32,library
+  -P tests/cmake/ci_required.cmake` — exit 0, fifteen retained cases.
+- `cmake -DROOT=. -DINVENTORY=tests/policy/gate-lines.txt
+  -DOUT=build/ci/gate-count.json -P tests/cmake/gate_count.cmake` — exit 0,
+  13,445 physical lines, source denominators 8,580/6,533.
+- `scripts/hygiene.sh --tree`, `git diff --check` and `docs.budgets` — exit 0.
+  docs/testing.md is 40,949/40,960 bytes. An initial local workflow correctly
+  failed its oversized explanation; the paragraph was shortened and the fresh
+  complete workflow passed. A stale interim run was interrupted, exit 130,
+  before the final edit; it contributes no acceptance evidence.
+- `git diff --exit-code 96dc316..0901c877 -- src/synth.c tests/core/test_core.c
+  cmake/toolchains/ppc-linux-gnu.cmake tests/cmake/abi.cmake tests/abi src/cartdb.c
+  src/cartdb.h tools/cartdb.cmake tests/inventory/ci.txt quality.json` — exit 0.
+  This continuation preserves the already proved arithmetic/ABI correction.
+
+Local checks have no hosted URL; their hosted counterpart is the final producer
+and called-CI evidence above. Every behavior change is reached by existing ci
+registration; no test name or expected output was added or dropped.
+
+| Successful producer cohort | n | Image | Native normal/release seconds | BE normal/release seconds | Job maximum | Twice-max minutes |
+|---|---:|---|---|---|---:|---:|
+| Release-called | 1 provisional | ubuntu-26.04 20261018.168.1 | 52.89/0.62 | 594.96/0.18 | 689 s | 23 |
+| Direct Nightly | 1 provisional | ubuntu-26.04 20261012.163.1 | 52.41/0.41 | 642.17/0.19 | 741 s | 25 |
+
+GNU identifies 15.2.0; installed cross package is 15.2.0-16ubuntu1cross1 and
+qemu-user is 1:10.2.1+ds-1ubuntu3.2 in each completed log. CMake 4.4.4 is listed
+in each exact image's included-software manifest, fetched with `gh api`, exit 0.
+Workload is complete native+BE configure/build/607 normal/package/six release
+and unchanged equality. Formula is ceil(2 x maximum / 60) with the five-minute
+floor. The image/caller cohorts remain separate and below ten samples; retain
+the unchanged provisional 30-minute bound. Earlier failed 706/740-second jobs
+and cancelled 6m35s remain excluded. No run was manufactured for a cohort.
+
+B12885, S2, N1970 and C14853 remain fixed. Current use is count368/400,
+BE193/300, fixes1/100, digest0/650, quality0/450 and reserve0/70.
+The caller continuation adds five control lines and removes eleven temporary
+lines, net minus six; recovery ends seven lines above prior BE186. Total is
+13,445 with 1,408 headroom; broad sensitivity adds the unchanged 59-line
+RetroArch product wrapper, 13,504. Advisory full/authored source ratios are
+156.7016%/205.8013%. No ratio compliance, rebaseline, allowance transfer,
+unallocated growth or weakened control is claimed.
+
+The header's tokens field retains the prior realized-diff proxy, not a model
+usage claim: 8,452 implementation/test/doc diff characters / 4 = 2,113. Five
+commits lie between the recorded heads: three implementation/test commits and
+two historical halt/tracking commits. Wall envelope is 83 minutes from the
+prior plan head timestamp to called-CI acceptance, including external queues;
+it is not an active coding-time or latency measurement.
+
+## Historical attempt through the mandatory halt
+
+The following original attempt record describes the state at `96dc316`, before
+the explicitly authorized debug continuation. Its unresolved/current wording
+is historical and is superseded by the acceptance above. Both HALTED files and
+05-03's partial SUMMARY are unchanged. Failed runs remain failed.
 
 ## Partial commits
 
