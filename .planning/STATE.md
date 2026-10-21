@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_phase: 05
+current_phase: 5
 current_phase_name: Pipeline tune-up
-status: blocked
-stopped_at: Halted 05-03-PLAN.md at full PowerPC ABI integration; 05-04 onward blocked
-last_updated: "2026-10-21T18:31:40.472Z"
+status: ready_to_execute
+stopped_at: Gap recovery 05-10 planned and independently checked; 05-04 onward await recovery
+last_updated: "2026-10-21T18:53:43.467Z"
 last_activity: 2026-10-21
-last_activity_desc: Halted plan 05-03 on full PowerPC ABI failures; later plans blocked
-state_head: d1b443506bac6d20c3f4cc0a1d6e51d87faa7249
+last_activity_desc: Planned bounded 05-10 PowerPC recovery; all coverage gates passed
+state_head: 471e5b34c6cce3346a5ddb52977f05d17e103c4a
 progress:
   total_phases: 7
   completed_phases: 0
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — BLOCKED
-Plan: 3 of 9
-Status: Blocked at 05-03 full PowerPC ABI integration; 05-04 onward blocked
-Last activity: 2026-10-21 — Halted 05-03 on full PowerPC ABI failures; later plans blocked
+Phase: 5 (Pipeline tune-up) — READY TO EXECUTE
+Plan: 05-10 recovery (third of nine live plans; 05-03 superseded)
+Status: Ready to execute 05-10; 05-04 onward await successful recovery
+Last activity: 2026-10-21 — Planned bounded PowerPC recovery; independent checker passed
 
 Progress: [░░░░░░░░░░] 0% — 2/9 plans complete; 0/7 phases complete.
 
@@ -91,9 +91,9 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 ## Session Continuity
 
 Last session: 2026-10-21T18:31:40.455Z
-Stopped at: Halted 05-03-PLAN.md at full PowerPC ABI integration; 05-04 onward blocked
-Resume file: .planning/phases/05-pipeline-tune-up/05-03-HALTED.md
-Next command: `$gsd-plan-phase 5 --gaps`
+Stopped at: Gap recovery 05-10 planned and independently checked
+Resume file: .planning/phases/05-pipeline-tune-up/05-10-PLAN.md
+Next command: `$gsd-execute-phase 5 --gaps-only`
 
 Current planning contract: D-17 and D-19–20 now use an audited absolute ratchet.
 The prior 857-line prerequisite is explicitly superseded; no exact new cap or
@@ -163,4 +163,18 @@ No phase implementation or owner hardware verification ran during initialization
 
 ### Blockers
 
-- 05-03 halted: full PowerPC inventory rejects __divdi3 and writable cartdb count symbols; fix-attempt/D20 limit reached, 05-04 onward blocked pending replanning from evidence.
+- PowerPC ABI/equality acceptance remains unproved. Historical 05-03 is superseded for scheduling; the one new-evidence gap round is planned as 05-10. Only 05-10 is ready; 05-04 onward depend on its successful completion. No implementation or full-BE success is claimed by planning.
+
+## Phase 5 gap planning verification
+
+One recovery plan, 05-10, passed the independent plan checker with no findings.
+`check verify-command-paths 5 --raw` and `check verify-failure-directions 5 --raw`
+— exit 0, no blockers/warnings/read errors.
+`query check.decision-coverage-plan .planning/phases/05-pipeline-tune-up .planning/phases/05-pipeline-tune-up/05-CONTEXT.md`
+— exit 0, 20/20 decisions covered.
+`check gap-analysis.plan-post .planning/phases/05-pipeline-tune-up "TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05" --raw`
+— exit 0, all 25 requirements/decisions covered.
+`query phase-plan-index 5` — exit 0, only 05-10 ready; 05-04–09 remain blocked.
+The narrow gap input explicitly records that no phase verifier ran. Historical
+[hosted failure evidence](https://github.com/szTheory/muhtari/actions/runs/39652860054)
+remains diagnostic; implementation and successful complete BE evidence await execution.

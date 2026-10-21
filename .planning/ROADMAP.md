@@ -36,9 +36,9 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
 **Plans:** 2/9 plans executed.
 
-05-03 is halted on full PowerPC ABI failures; 05-04 onward remain blocked.
-See `05-03-HALTED.md` in the phase directory. Partial implementation is committed;
-no full-inventory or equality success is claimed.
+05-10 is ready to recover the PowerPC ABI failures and remaining full-inventory/equality acceptance.
+05-03 is superseded for scheduling; its partial implementation and historical halt records remain.
+05-04 onward await successful 05-10 recovery; no BE success is claimed by planning.
 
 Plans:
 **Wave 1**
@@ -48,7 +48,9 @@ Plans:
 - [x] 05-02-PLAN.md — Resolve the output race and derive measured test/job bounds.
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 05-03-PLAN.md — Require BE compilation on PRs and full same-head native/BE equality nightly and for releases.
+- [ ] 05-10-PLAN.md — Recover the PowerPC ABI boundary and prove full same-head native/BE inventory/package equality.
+
+05-03-PLAN.md is superseded by 05-10; its implemented PR compilation and wiring are retained.
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 05-04-PLAN.md — Deliver privilege-safe weekly triage and monthly hosted-efficiency reports.
