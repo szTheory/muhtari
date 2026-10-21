@@ -5,11 +5,11 @@ milestone_name: The whole library
 current_phase: 5
 current_phase_name: Pipeline tune-up
 status: Ready for planning
-stopped_at: Phase 5 refreshed research blocked after scratch feasibility experiments; no plans created
-last_updated: "2026-10-21T15:31:39Z"
+stopped_at: Phase 5 context revised after delegated budget review; ready for targeted research refresh and planning
+last_updated: "2026-10-21T16:34:45.086Z"
 last_activity: 2026-10-21
-last_activity_desc: Phase 5 research refreshed with tested replacements; D-17 feasibility unresolved
-state_head: 6dc0047
+last_activity_desc: Phase 5 budget contract revised; absolute ratchet adopted, no plans created
+state_head: 8ce7bb4ed2d0dda16d9ee37094008405f6670954
 progress:
   total_phases: 7
   completed_phases: 0
@@ -33,7 +33,7 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 Phase: 5 of 11 (Pipeline tune-up), first of seven v2.0 phases
 Plan: Not started
 Status: Ready for planning
-Last activity: 2026-10-21 — Phase 5 research refreshed with tested replacements; D-17 feasibility unresolved, no plans created
+Last activity: 2026-10-21 — Phase 5 budget contract revised; absolute ratchet adopted, no plans created
 
 Implementation: 0/7 phases; no plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
@@ -88,12 +88,17 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T15:31:39Z
-Stopped at: Phase 5 refreshed research blocked after scratch feasibility experiments; no plans created
-Resume file: .planning/phases/05-pipeline-tune-up/05-RESEARCH.md
-Next command: `$gsd-discuss-phase 5` if reopening the budget contract; otherwise supply a concrete alternative construction before another planning pass
+Last session: 2026-10-21T16:34:07.933Z
+Stopped at: Phase 5 context revised after delegated budget review; ready for targeted research refresh and planning
+Resume file: .planning/phases/05-pipeline-tune-up/05-CONTEXT.md
+Next command: `$gsd-plan-phase 5 --research`
 
-Planning blocker: refreshed research executed 250 lines of scratch shared primitives,
+Current planning contract: D-17 and D-19–20 now use an audited absolute ratchet.
+The prior 857-line prerequisite is explicitly superseded; no exact new cap or
+compliance result is claimed. Next planning refreshes only affected research,
+then schedules the bounded baseline/simplification task before additions.
+
+Prior research blocker (historical): refreshed research executed 250 lines of scratch shared primitives,
 archive and roll-up replacements, and an incomplete quality prototype. Their positive
 and fault-specific negative controls passed. The tested strategy's optimistic broad
 construction is 2,262 lines before embedded/configure/reporting enforcement, against
@@ -110,8 +115,8 @@ experiments; `wc -l /tmp/muhtari-p5-{common,archive,quality,rollup}.cmake` — e
 failure evidence and read-only lane audit are recorded in the research report,
 including [run 39617761785](https://github.com/szTheory/muhtari/actions/runs/39617761785).
 WASM has nine qualifying successful main-push runs and library five; neither is
-eligible for promotion. Await continuation choice: a concrete alternative design,
-explicit contract revision through discussion, or stop with the current contract.
+eligible for promotion at that audit. The owner subsequently delegated the policy
+revision recorded in CONTEXT.md; no lane promotion or implementation occurred.
 
 ## v1.0 closeout verification
 
@@ -139,3 +144,7 @@ criteria, 15 historical deferral rows, unchanged outgoing snapshots and seeds.
 Archive PR #18 merged as 752916f after [required PR CI](https://github.com/szTheory/muhtari/actions/runs/39614799435)
 passed; no release-please pull request was pending after the archive merge.
 No phase implementation or owner hardware verification ran during initialization.
+
+## Decisions
+
+- [Phase 5]: Replace hard gate/source ratio with audited absolute ratchet; fix scoped allocations before additions and tighten to final actual. Planning uses a bounded initial measurement task, not a full prototype. — Owner delegated adoption after refreshed failed construction and three advisory reviews; preserve safety controls and all TUNE outcomes.

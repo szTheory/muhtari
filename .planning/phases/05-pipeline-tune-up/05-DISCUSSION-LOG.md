@@ -6,6 +6,9 @@
 **Areas considered:** weekly/monthly reporting; CI reliability and cost; quality/performance/portability;
 release safety, freshness and proportionality.
 
+**Revision:** the original discussion below is preserved as history. The final section records the later
+owner-authorized budget/acceptance/planning revision; current decisions are in CONTEXT D-10, D-17, D-19–20.
+
 ## Discussion contract
 
 The owner requested all relevant angles, breadth and depth until diminishing returns, primary-source research,
@@ -151,3 +154,64 @@ choices stay with formal research/planning. Do not interpret illustrative mechan
 The two phase-2 todo files remain reviewed but not adopted wholesale; emulator/parser/test seeds need reproduction
 and a relevant future scope. New board/controller/save/PAL functionality stays in later phases. No dashboard,
 service, speculative dependency, bot state machine, extra UI or additional GSD step is introduced.
+
+## Reopened budget, acceptance and planning — 2026-10-21
+
+The owner selected **Update it** from Update/View/Skip. The agent then offered three areas: budget rule
+(retain hard 10%, bounded exception or measured replacement), Phase 5 acceptance (eliminate all overage or
+ship measured improvement), and planning prerequisite (full tested construction or allocated measured task).
+The owner requested all relevant angles, fan-out research, primary sources, an adversarial pass, coherent
+recommendations and automatic adoption: “let's do what u rec”. This replaces further interview questions;
+no individual technical option is attributed to a specific multiple-choice answer.
+
+Three read-only typed advisory roles reviewed (1) budget/metrics, (2) acceptance/planning and (3) adversarial
+safety/gaming. A targeted synthesis challenge checked allowance renewal, savings accounting, expiry and
+governance overhead. Relevant lenses were maintainers, security/legal/privacy, C architecture, QA/test validity,
+CI/SRE, delivery and release consumers. UI, graphics engines and unrelated language ecosystems add no decision
+to this infrastructure scope. No further fan-out was useful after the same policy and controls converged.
+
+| Decision | Alternatives considered | Adopted recommendation | Tradeoff and structural response |
+|---|---|---|---|
+| Budget rule | Hard 10%; finite legacy-debt exception; absolute ratchet; reporting only | Audited absolute line ratchet, ratios advisory | Needs initial inventory and explicit allocations; avoids denominator gaming and an unsupported numerical promise |
+| Scope growth | No growth ever; baseline plus automatic headroom; fixed fault-linked allowance | Exact baseline B, executed savings S, fixed scoped N including controls/glue/reserve; C = B - S + N | Required capabilities may increase total, but no extra inherited-rewrite allowance, replenishment or candidate-baseline laundering |
+| Phase acceptance | Reach 857; waive until a date; ship behavior within allocated absolute ceiling | Retained-fault measured simplification, all five TUNE outcomes, actual within C, final tightening | Old ratio becomes diagnostic rather than a hidden failed requirement or indefinitely renewed debt |
+| Planning prerequisite | Full replacement prototype; unconstrained executor exploration; allocated initial slice | Boundary/fault map and ranges in planning; first bounded task freezes B, measures S and fixes N/C before additions | Estimates are not evidence of compliance; affected expansion stops on unresolved count, control loss or overrun |
+| Temporary versus permanent growth | Repeated 60-day waivers; silently raise policy; explicit new scope | D-10 temporary exceptions for unchanged scope; prior scope adoption/allocation for permanent gate machinery | Required digest/quality code persists honestly; other quality bounds cannot be loosened through the structural allowance |
+| Governance machinery | New classifier, allowance interpreter or taxonomy; one existing metric/table | Existing quality metric plus file/block inventory and short allocation table | Review judges scope/fault equivalence; CI checks actual numeric bound/expiry, not prose |
+
+The strict-ratio option remains logically possible: the tested experiment is a failed construction, not proof
+that every implementation is impossible. Retaining it would retain an unestablished shipment condition. A
+temporary 10% exception would recreate that blocker at expiry without a measured convergence path. Reporting
+only was considered too weak against gradual machinery growth. These are project judgments; no external
+source prescribes a suitable LOC ceiling for this repository.
+
+### Adversarial findings incorporated
+
+- Partial inventory 2,764, failed incomplete candidate 2,262 and overinclusive sensitivity 8,607 cannot initialize
+  the new cap. Use an exact audited commit and counting boundary; no invented 3,000/3,500-line ceiling.
+- Count dedicated negative controls and invocation/configure/workflow enforcement wherever they live; ordinary
+  product behavior tests remain distinct. Any operational-only exclusion needs an exact documented boundary.
+- S is an executed net saving including changed control cost, not a forecast; no deletion can pay twice.
+- N covers only named required additions and a fixed stated reserve. Unused reserve retires at final tightening;
+  redistribution is visible and does not increase total. No unbounded integration exemption.
+- A temporary overrun needs a credible removal/consolidation exit and expiry checked on every run. It cannot
+  renew itself, turn into baseline or fund safety/control deletion.
+- Preserve named safety outcomes, not redundant script shapes. No compliance through line golf, relocation,
+  source padding, dependencies hiding checks or deleting unique evidence.
+- Do not replace the line-count problem with a policy framework or repeated full implementation research.
+
+### Sources and policy synchronization
+
+[Google SRE](https://sre.google/workbook/eliminating-toil/) considers automation development/maintenance cost;
+[NIST SSDF](https://doi.org/10.6028/NIST.SP.800-218) supports risk-based security requirements and reviewed
+exceptions. [GitHub's required-status documentation](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)
+explains skipped-job success semantics, reinforcing exact executed evidence. These inform tradeoffs and safety
+requirements; the absolute ratchet is our project-specific inference.
+
+The revised contract is synchronized in AGENTS rule 7, TUNE-03, Phase 5 roadmap criterion 3, ENGINEERING §11,
+DEC.10 and CONTEXT D-10/D-17/D-19–20. RESEARCH retains its experiment and copied old constraints as explicit
+history beneath a supersession banner; only affected guidance needs refresh. No implementation, new dependency,
+hosted write, CI dispatch, cap measurement, phase verification or second GSD step occurred during discussion.
+
+The next command is `$gsd-plan-phase 5 --research`: refresh the changed contract, reuse valid prior findings,
+then plan the bounded initial measurement and required improvements. No full replacement prototype is required.

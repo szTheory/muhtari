@@ -9,7 +9,7 @@ Core value: 7800 games behave as they do on the console, identically on every pl
 
 - [ ] **TUNE-01**: Maintainers receive a weekly triage digest with a monthly CI-efficiency section derived from hosted runs, without a new service dependency.
 - [ ] **TUNE-02**: CI uses measured timeout and workload bounds, resolves reproduced flakes and overlapping-output races, and records the stronger signal for any removed check.
-- [ ] **TUNE-03**: A single quality.json ratchet consumes measured existing outputs, rejects unexplained regressions, and permits explicit dated exceptions; repository-check code meets the tenth-of-src budget without hiding its count.
+- [ ] **TUNE-03**: A single quality.json ratchet consumes measured existing outputs, rejects unexplained regressions, and permits explicit dated exceptions; repository-check code meets an audited absolute line budget with scoped additions allocated before implementation, final tightening to actual size, and full counts and advisory source ratios published.
 - [ ] **TUNE-04**: Performance comparisons are armed only after the documented deterministic controls pass; the resulting state and supported/advisory portability lanes are explicit.
 - [ ] **TUNE-05**: User and maintainer docs, install instructions and repository-setting checks match the released behavior; the measured weakest quality dimension receives a shipped improvement.
 
@@ -93,3 +93,8 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | COMP-03 | Phase 11 | Pending |
 
 Coverage: 27 approved requirements; 27 mapped; 0 unmapped. Phase mapping approved on 2026-10-21. Nothing here claims implementation or verification of the new requirements.
+
+2026-10-21 policy revision: the owner delegated adoption of recommendations after refreshed Phase 5 research.
+TUNE-03 replaces the hard tenth-of-source ceiling with the absolute ratchet specified in
+`.planning/phases/05-pipeline-tune-up/05-CONTEXT.md` D-17, D-19–20. All five pipeline outcomes remain required;
+this is an explicit budget-contract change, not a claim that the old limit was met or proved impossible.

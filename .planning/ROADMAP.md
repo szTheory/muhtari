@@ -40,7 +40,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 
 1. Maintainers receive one weekly triage digest and its monthly CI-efficiency section from hosted evidence.
 2. The reproduced audio timeout and compatibility-output race are resolved under measured bounds; any removed check names its stronger replacement.
-3. One quality ratchet rejects unexplained regressions, performance arming follows the control-run result, and gate code meets the existing tenth-of-src budget.
+3. One quality ratchet rejects unexplained regressions, performance arming follows the control-run result, and gate code meets its audited absolute budget with preallocated scoped additions, final tightening and published advisory source ratios.
 4. The release docs/install path and repository-setting checks match current behavior, and the measured weakest dimension has a shipped improvement.
 
 ### Phase 6: Retail cartridge boards

@@ -2,7 +2,7 @@
 title: "Engineering: C rules, tests, CI, release, repo settings and quality loops"
 summary: "Build, test, CI, release, repository, triage, performance and documentation decisions for muhtari, with mutable facts re-verified on 2026-10-15."
 read_when: "Before creating or changing CMake files, presets, tests, workflows, repository settings, the release pipeline, quality gates or engineering docs."
-updated: 2026-10-19
+updated: 2026-10-21
 ---
 
 # Engineering: C rules, tests, CI, release, repo settings and quality loops
@@ -234,7 +234,33 @@ Branch policy: `.githooks/pre-commit` runs `hygiene.sh --staged` and refuses a c
 | Public header | terse: one line per function and field, no hardware prose; ≤ 24 KB (nesturbator's grew from 9 to 36 KB) | `docs.budgets` |
 | Evidence | command + exit status + run URL in SUMMARY and VERIFICATION files, never pasted logs | review |
 | `.planning` | ≤ 3 MB per milestone, archived at close (today: nesturbator 6.4 MB, gabbaboy 9.5 MB, glueyneo 9.7 MB) | digest reports size (soft) |
-| Gate code | policy and hygiene scripts ≤ 10 % of `src/` lines; CMake `-P` or POSIX sh only; AGENTS.md short, each rule backed by a failing check | tune-up |
+| Gate code | one audited absolute physical-line budget in `quality.json`; CMake `-P` or POSIX sh only; full/authored source ratios advisory; each gate names its fault and retains a meaningful control | quality ratchet and tune-up |
+
+**Gate-budget revision, 2026-10-21 (DEC.10):** the hard 10% ceiling is replaced, not waived until a speculative
+deadline. Count comments/blanks, check implementations, dedicated fault controls, shared helpers once,
+invocation contracts, embedded workflow/configure predicates and the counter itself. Default to whole files;
+document any exact block exclusions for purely operational/generation work. Ordinary product tests and fixture
+bytes are outside this maintenance metric; production assertions and check controls remain counted wherever
+located. Publish the file/block inventory, broad sensitivity count, total and authored-only source ratios.
+Core growth, generated data, relocated predicates or a dependency do not create extra budget.
+
+Initialize from an exact audited starting commit/count `B`. The first bounded simplification slice measures
+fault-preserving savings `S`; before affected additions, fix one scoped allowance `N`, including their controls,
+glue and a separately stated integration reserve. The phase ceiling is `C = B - S + N`. Estimates belong in
+planning, not in claims of measured savings. No allowance for inherited-code rewrites; preserve their faults
+and reduce duplicate work. Authorized additions are only those named by the accepted phase scope. Record their
+allocation and reason in a short existing planning table; do not build an allowance interpreter or policy DSL.
+Redistribution within fixed `N` is visible; unused allowance/reserve retires when the final actual count tightens
+the ceiling. Do not replenish savings or absorb an overrun into a new baseline.
+
+After initialization, unchanged-scope growth follows the normal trusted-base ratchet and dated exceptions
+(at most 60 days, credible removal/consolidation exit, expiry checked on every run). A permanent increase
+requires an explicit new scope decision and fixed allocation before implementation, with from/to, requirement,
+fault and controls visible; editing the candidate baseline alone is insufficient. This narrow structural
+budget change does not authorize loosening other quality bounds. Safety/control loss, unresolved counting or
+an unallocated overrun stops affected expansion. Planning needs a complete boundary/fault map, allocations and
+the initial measured task, not a full replacement prototype. Phase ship needs all scoped behavior plus actual
+count within the accepted ceiling; no declaration of old 10% compliance is required or permitted without evidence.
 
 - **Rec** byte budgets as CTests (README, header, docs) — **Alt** review-only limits — **Flip** a budget blocks a correct change twice (raise it with a reason in `quality.json`).
 

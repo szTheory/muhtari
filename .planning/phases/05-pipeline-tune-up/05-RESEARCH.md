@@ -2,8 +2,16 @@
 
 **Researched:** 2026-10-21
 **Domain:** CMake/CTest and GitHub Actions reliability, reporting, quality and release safety.
-**Status:** BLOCKED — the bounded replacement experiment did not establish D-17 feasibility.
+**Status:** HISTORICAL BLOCKER SUPERSEDED — targeted refresh needed under revised D-17, D-19–20.
 **Confidence:** MEDIUM for implementation mechanisms; LOW for an achievable complete allocation.
+
+**Policy revision, 2026-10-21:** the subsequent delegated discuss-phase explicitly replaced the hard 10%
+ceiling and complete-prototype planning prerequisite. Current authority is `05-CONTEXT.md` D-10, D-17,
+D-19–20, synchronized with AGENTS rule 7, TUNE-03, ENGINEERING §11 and DEC.10. Preserve this report's
+experiments, failed-construction arithmetic and limitations as historical evidence. The copied constraints,
+requirement wording and 857-line blocking conclusions below describe the prior contract; they no longer
+prohibit planning. Refresh only affected guidance toward an audited absolute ratchet, fixed scoped allocations
+and a first measured simplification task; do not repeat the same feasibility search or invent a new cap.
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)

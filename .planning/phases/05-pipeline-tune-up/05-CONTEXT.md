@@ -2,18 +2,25 @@
 
 **Gathered:** 2026-10-21
 **Status:** Ready for planning
+**Revised:** 2026-10-21 after refreshed research and delegated policy review; D-17 replaced, D-19–20 added.
 
 <domain>
 ## Phase Boundary
 
 Deliver TUNE-01–05 from `.planning/REQUIREMENTS.md`: weekly triage and monthly hosted CI-efficiency reporting,
-measured reliable CI, one quality ratchet within the existing gate-code budget, controlled performance arming,
+measured reliable CI, one quality ratchet within an audited absolute gate-code budget, controlled performance arming,
 and release/docs/settings freshness with a shipped improvement to the weakest quality dimension.
 
 This is discussion, not implementation or phase verification. The owner explicitly requested consideration of
 all relevant perspectives, primary-source research, adversarial analysis and coherent recommendations, and
 instructed the agent to follow those recommendations. Decisions below are agent-selected under that delegation;
 they are not invented answers to an interview. No additional capability or new GSD step is authorized here.
+
+In this revision the owner selected updating context, then explicitly requested all three budget/acceptance/
+planning decisions be considered through relevant role reviews, primary sources and an adversarial pass, and
+said to adopt the recommendations. That delegation authorizes the explicit replacement of the former hard
+10% contract across AGENTS, TUNE-03, the roadmap, ENGINEERING and DEC.10. It does not assert infeasibility of
+every possible 857-line implementation. No further interview answers or routine approvals are required.
 
 Carry forward three deliverables, integer bounded instance state, permissive reuse, automation-first verification,
 one required CI check, preset entrypoints, no new service, CMake `-P`/POSIX sh repository checks, review limits,
@@ -92,6 +99,10 @@ and one GSD step per session. Prefer another copy and paste over another depende
   bound too: comparing two JSON policies alone proves nothing. Missing/malformed required evidence fails; a
   named advisory/unavailable metric has no fabricated passing value. Validate boundary, missing-data, expired-
   exception and baseline-tampering cases using the existing negative-control pattern.
+  The gate-code metric has one narrow structural distinction: initialization and explicitly adopted new-scope
+  allocations follow D-19; permanent required machinery is not financed through recurring 60-day waivers.
+  Under unchanged scope, count overruns still need the exact dated temporary exception and credible exit.
+  A new scope allocation cannot loosen another metric, excuse a missing control or authorize self-rebaselining.
 - **D-11:** Start with measured inventories, public compatibility, current ABI/warning/analyzer results, archive
   sizes, current fuzz targets/regressions, gate-code count and comparable Ir output. Historical/nondeterministic
   CI-duration observations require a defined comparable sample window; do not gate on an arbitrary shared-host
@@ -140,16 +151,20 @@ and one GSD step per session. Prefer another copy and paste over another depende
   from 404 and verify signer identity before irreversible publication. Choose a narrow true docs claim where
   adding a new bot state machine would violate proportionality. Phase ship confirms release PR health and actual
   publication when applicable; pipeline-only commits use `ci:`/`test:`/`docs:` and do not invent a product release.
-- **D-17:** Meet the existing tenth-of-src gate-code budget through removal of duplicate work and shared existing
-  primitives. Do not relax the ratio, pad `src/`, compress readable code into line golf, move enforcement out of
-  the inventory, or rename it a test driver to hide it. Preserve safety-critical firmware/archive, identity,
-  privacy, deterministic-core and release checks. Count every repository-check implementation, including existing/new embedded
-  workflow logic and moved implementations, and publish the file inventory plus broad sensitivity count. Use
-  the existing full `src/*.c`/`src/*.h` denominator consistently, also showing the authored-only denominator so
-  generated cartdb data cannot conceal the proportion. This session reproduced the historical narrow baseline:
-  1,367/8,577 = 15.94%; without `src/cartdb.c`, 1,367/6,530 = 20.93%. At the unchanged full denominator the
-  maximum whole-line budget is 857; new checks must pay for themselves within it. Formal planning must establish
-  a feasible simplification path with every retained fault mapped, before execution adds more enforcement.
+- **D-17:** Replace the hard tenth-of-src ceiling with one audited absolute physical-line ratchet in
+  `quality.json`; keep 10% and full/authored source ratios diagnostic, with no deadline promising convergence.
+  Count every repository-check implementation, dedicated fault-control harness, declarative enforcement,
+  shared helper once, invocation contract and embedded workflow/configure predicate, including moved code
+  and the counter/manifest/glue itself. Include comments and blanks. Default to whole files; any exact block
+  exclusion must be purely operational/generation work with its boundary documented. Ordinary emulator product
+  tests and fixture bytes are outside this maintenance metric; embedded repository-policy assertions and
+  check controls are not. Publish the file/block inventory and broad sensitivity set. No source padding, line
+  golf, hidden driver classification, outsourcing predicates to dependencies or free allowance from core growth.
+  Preserve firmware/provenance/archive, signer/identity, privacy, bounded deterministic-core, exact executed
+  inventory/no-skip and independent release safety outcomes with meaningful fault controls. Implementations may
+  merge or be replaced by stronger evidence; preserving a fault does not require preserving its old script.
+  The historical 1,367/8,577 count was narrow; 2,764 is a partial mixed-file sensitivity set, 8,607 overinclusive,
+  and 2,262 one failed incomplete construction. None is a complete numerator, lower bound or replacement cap.
 - **D-18:** Keep work small and cohesive, prioritize the reproduced faults and simplification, and stop expanding
   analysis when another lens changes no decision or verification. Security, reliability, maintainer cost,
   embedder/player compatibility, test validity and release consumers are relevant; UI design, rendering-engine
@@ -157,12 +172,45 @@ and one GSD step per session. Prefer another copy and paste over another depende
   settled emulator choices or turn all dormant review seeds into mandatory work. Export lessons in the existing
   pasteable template only when asked; do not start an export workflow as a second GSD step.
 
+### Budget initialization, acceptance and planning readiness
+
+- **D-19:** Freeze an exact audited starting commit/count `B` in the first bounded execution slice. Measure
+  actual retained-fault net savings `S` from its readable simplification, including any changed control/glue
+  cost; do not claim forecast savings or double-spend deletions. Before affected additions, fix per-component
+  allocations totaling `N` and a phase ceiling `C = B - S + N`. A separately stated integration reserve is part
+  of fixed `N`, never extra headroom. Allow additions only for the scoped digest/reporting, quality ratchet,
+  BE relocation/comparison and reproduced safety/correctness fixes; each names its requirement/fault and
+  includes its controls, shared definitions and invocation costs. Inherited-code refactoring is not a new
+  allowance. Redistribute within the total only with the mapping visible. No new capability or allowance is
+  implied by a convenient abstraction, dependency or renamed file. Maintain one short allocation table in
+  existing planning artifacts and one numeric quality metric, not a classifier, allowance interpreter, fault
+  taxonomy engine, policy DSL or prose-validation gate. At close, actual count must fit `C`; retire unused
+  allowance/reserve and tighten to accepted actual. Subsequent permanent growth needs explicit scope adoption
+  and a fixed from/to allocation before implementation; a proposed baseline edit alone cannot grant it.
+  Temporary unchanged-scope overruns follow D-10, with expiry checked even when inherited from the base and
+  a credible named removal/consolidation exit. No automatic renewal or waiver-to-baseline conversion.
+- **D-20:** Planning may proceed with a complete counting boundary/fault-to-consumer map, component allocation
+  ranges, named integration uncertainty and the first bounded baseline/simplification task. It need not first
+  implement or prototype the complete phase. That task freezes `B`, demonstrates nonzero fault-preserving
+  savings and fixes the numeric `N`/`C` before adding the new enforcement; it does not mint an unlimited budget.
+  An unresolved boundary, lost fault/control, absent required evidence or exceeded allocation stops affected
+  expansion. Simplify within the ceiling, or use the existing one-gap/new-evidence route for a concrete scope
+  revision; do not repeat broad research or silently raise the total. Remaining independent work may proceed.
+  Phase acceptance still requires all TUNE-01–05 outcomes and their automated/agent evidence, improved inherited
+  machinery with measured retained-fault savings, and final count within the explicitly allocated absolute
+  ceiling. A higher total caused by allocated required capabilities is reported honestly. The former 10%
+  overage is a historical fact and advisory proportion, not a deferred mandatory debt or temporary waiver.
+  Refresh only research affected by this policy change, reuse measured experiments and valid implementation
+  guidance, and stop analysis when another lens changes no decision or control. No second GSD step here.
+
 ### Agent's Discretion
 
 Internal schema names, helper boundaries, batching/API page sizes, readable report formatting, per-test cost
 values and the exact simplifications are researcher/planner choices within these contracts. The numbered
 choices are coherent outcomes, not a task breakdown; formal phase research still runs. No dependency addition
 is justified merely by a convenient parser or reporting abstraction.
+The agent may set the concrete allocations from evidence and make routine implementation choices within the
+fixed scope/ceiling without another owner confirmation. It may not grant itself a larger scope or total.
 
 ### Folded Todos
 
@@ -191,6 +239,8 @@ Keep todos pending until execution supplies evidence; folding is not completion.
 - `.planning/preparation/README.md` — reference index.
 - `.planning/preparation/ENGINEERING.md` §§3–9, 11–13 — inventory, CI, release, reporting, ratchet and budgets.
 - `.planning/preparation/DECISIONS.md` DEC.07–15, DEC.43–54, DEC.56 — locked process and portability flip conditions.
+- `.planning/phases/05-pipeline-tune-up/05-RESEARCH.md` — preserve measured experiments and limitations;
+  its copied old constraints and 857-line planning prohibition are superseded by this revision, not current policy.
 - `.planning/seeds/SEED-007-milestone-tune-up.md` — recurring scope and historical gate inventory; do not rewrite
   its dormant status as part of this discussion.
 - `.planning/RETROSPECTIVE.md`, `.planning/LESSONS.md` — local evidence versus inbound hypotheses.
@@ -216,6 +266,14 @@ Keep todos pending until execution supplies evidence; folding is not completion.
   `docs/libretro.md`, `PROVENANCE.md`, `ASSET_POLICY.md` — docs freshness and what evidence may be published.
 
 ### Primary external sources checked 2026-10-21
+
+- [Google SRE, Eliminating Toil](https://sre.google/workbook/eliminating-toil/) — weigh automation's development,
+  maintenance and operational cost; it supplies no repository-specific LOC threshold. The absolute ratchet
+  and allocation procedure are project judgments, not a number prescribed by this source.
+- [NIST SSDF](https://doi.org/10.6028/NIST.SP.800-218) — risk-based security requirements and reviewed exceptions;
+  does not justify removing firmware, identity, privacy or release protections to satisfy a line metric.
+- [GitHub required-status troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)
+  — skipped jobs can report success; retain evidence that required work actually executed when simplifying.
 
 - [GitHub workflow-job REST API](https://docs.github.com/en/rest/actions/workflow-jobs) — job/step timestamps,
   statuses, logs and attempt-specific listings; establish which queue fields actually exist before deriving them.
@@ -263,6 +321,13 @@ no new framework/ecosystem dependency is warranted by this phase.
 
 <specifics>
 ## Specific Ideas and Evidence
+
+- Refreshed research measured 250 lines of scratch helpers/replacements plus an incomplete quality prototype;
+  its 2,262-line construction excludes remaining enforcement and fails the former 857 ceiling. This supports
+  reopening the delivery constraint, not claiming impossibility or choosing an invented 3,000/3,500-line cap.
+  Three read-only advisory reviews covered budget/metrics, acceptance/delivery, and an independent adversarial
+  challenge. They converge on explicit scoped growth, measured simplification, intact safety and bounded planning.
+  No exact new numerator or permanent cap has been measured during discussion; those belong to D-19's task.
 
 - Hosted baseline: `gh api repos/szTheory/muhtari/actions/runs/39614799435/jobs --paginate` — exit 0.
   [Run 39614799435](https://github.com/szTheory/muhtari/actions/runs/39614799435): BE execution 681 s, slowest
