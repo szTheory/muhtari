@@ -423,6 +423,8 @@ static void test_observer_one(void)
     CHECK_EQ_U64(muhtari__synth_observe(m, record_one, &observed), 0);
     load_program(m, program, sizeof program);
     load_program(off, program, sizeof program);
+    CHECK_EQ_U64(muhtari__synth_observe(off, record_one, &observed), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK(off->observation == NULL);
     /* Fast boot has already filled the constant waveform's pulse register. */
     m->tia.channel[0].output = off->tia.channel[0].output = 1u;
     muhtari_frame a, b;
