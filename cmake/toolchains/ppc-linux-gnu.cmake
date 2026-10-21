@@ -6,6 +6,8 @@ set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR powerpc)
 set(CMAKE_C_COMPILER powerpc-linux-gnu-gcc)
 set(CMAKE_CXX_COMPILER powerpc-linux-gnu-g++)
+# Keep const integers read-only rather than writable small data (GCC PowerPC Options).
+string(APPEND CMAKE_C_FLAGS_INIT " -mno-readonly-in-sdata")
 set(CMAKE_FIND_ROOT_PATH /usr/powerpc-linux-gnu)
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)

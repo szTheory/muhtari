@@ -513,9 +513,37 @@ static void test_silence(void)
     /* Half the TIA DAC sum produces 2n/(n+30)=2/3 of full current,
        rather than half the PCM level (A7800-AUDIO section 3). */
     CHECK_EQ_U64(m->synth.mixed_level, 12240);
-    CHECK_EQ_U64(muhtari__synth_round(-5, 2), -3);
-    CHECK_EQ_U64(muhtari__synth_round(-4, 3), -1);
-    CHECK_EQ_U64(muhtari__synth_round(5, 2), 3);
+    /* Literal magnitudes cover both signs, even ties, odd divisors and
+       interpolation/PCM bounds from docs/hardware/audio.md. */
+    static const struct {
+        int64_t value, divisor, expected;
+    } rounding[] = {
+        {0, 2, 0},
+        {0, 13125, 0},
+        {12, 4, 3},
+        {9, 4, 2},
+        {10, 4, 3},
+        {11, 4, 3},
+        {4, 3, 1},
+        {5, 3, 2},
+        {6, 3, 2},
+        {6562, 13125, 0},
+        {6563, 13125, 1},
+        {95595111007, 13125, 7283437},
+        {95595111008, 13125, 7283437},
+        {35183835217919, 1073741824, 32767},
+        {35183835217920, 1073741824, 32768},
+        {35183835217921, 1073741824, 32768},
+        {35184372088831, 1073741824, 32768},
+        {35184372088832, 1073741824, 32768},
+        {35184372088833, 1073741824, 32768},
+    };
+    for (unsigned i = 0; i < sizeof rounding / sizeof rounding[0]; i++) {
+        CHECK_EQ_U64(muhtari__synth_round(rounding[i].value, rounding[i].divisor),
+                     rounding[i].expected);
+        CHECK_EQ_U64(muhtari__synth_round(-rounding[i].value, rounding[i].divisor),
+                     -rounding[i].expected);
+    }
     int16_t continuous[176], partitioned[176];
     muhtari *other = make();
     muhtari__synth_reset(m, 0u, 0u);

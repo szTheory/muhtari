@@ -143,11 +143,14 @@ const int32_t muhtari__synth_kernel[MUHTARI__SYNTH_PHASES][16] = {
 /* Q30 exp(-2*pi*20/48000), evaluated offline. */
 #define SYNTH_POLE INT64_C(1070934451)
 
-/* C division truncates toward zero. Round signed halves away from zero;
-   no right shift of a negative value or floating operation is used. */
+/* Divide unsigned magnitude, then restore sign: nearest, ties away from
+   zero. The documented bounds keep the rounded quotient in int64_t. */
 int64_t muhtari__synth_round(int64_t value, int64_t divisor)
 {
-    return value >= 0 ? (value + divisor / 2) / divisor : -((-value + divisor / 2) / divisor);
+    uint64_t magnitude = value < 0 ? UINT64_C(0) - (uint64_t)value : (uint64_t)value;
+    uint64_t denominator = (uint64_t)divisor;
+    int64_t rounded = (int64_t)((magnitude + denominator / 2u) / denominator);
+    return value < 0 ? -rounded : rounded;
 }
 
 void muhtari__synth_coefficients(uint32_t phase, int32_t out[16])
