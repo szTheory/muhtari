@@ -99,6 +99,10 @@ muhtari_add_test(NAME policy.compat_doc_fresh.self_test
   LABELS policy TIMEOUT 10)
 
 if(MUHTARI_INVENTORY STREQUAL "ci")
+  muhtari_add_test(NAME policy.digest.controls
+    COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+      -DWORK=${CMAKE_BINARY_DIR}/policy/digest_fixture -P ${CMAKE_CURRENT_LIST_DIR}/digest.cmake
+    LABELS policy TIMEOUT 30)
   # Fault prevented: comparing empty, duplicate or unrelated lane evidence.
   file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/policy/lane_equality_controls.cmake CONTENT [=[
 string(REPEAT "a" 40 sha)

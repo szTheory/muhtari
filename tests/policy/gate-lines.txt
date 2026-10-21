@@ -33,6 +33,7 @@ release-please-config.json
 scripts/apply-repo-settings.sh
 scripts/check-title.sh
 scripts/classify-changes.sh
+scripts/digest.sh
 scripts/fetch-pin.sh
 scripts/hygiene.sh
 scripts/publish.sh
@@ -117,6 +118,7 @@ tests/maria/tests.cmake
 tests/perf/allow.txt
 tests/perf/tests.cmake
 tests/policy/gate-lines.txt
+tests/policy/digest.cmake
 tests/policy/tests.cmake
 tests/prop/tests.cmake
 tests/release/firmware.txt
