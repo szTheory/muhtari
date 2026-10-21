@@ -9,6 +9,16 @@ run() {
   printf '{"id":%s,"run_attempt":2,"path":".github/workflows/ci.yml","event":"push","head_sha":"abc","created_at":"2026-10-02T00:00:00Z","updated_at":"2026-10-02T00:02:00Z","html_url":"https://github.com/example/public/actions/runs/%s"}' "$1" "$1"
 }
 case "$*" in
+  'issue list '*)
+    if [ "${DIGEST_CASE:-}" = duplicate ]; then echo '[{"number":1},{"number":2}]'
+    elif [ -f "$DIGEST_WORK/prior.json" ]; then cat "$DIGEST_WORK/prior.json"
+    else echo '[]'; fi ;;
+  'issue create '*|'issue edit '*)
+    [ "${DIGEST_CASE:-}" != write ] || { echo 'write failed' >&2; exit 1; }
+    while [ "$#" -gt 0 ]; do
+      if [ "$1" = --body-file ]; then cp "$2" "$DIGEST_WORK/published.md"; fi
+      shift
+    done ;;
   'api repos/example/public') echo '{"private":false,"default_branch":"main","created_at":"2026-10-01T00:00:00Z"}' ;;
   *actions/runs/1/attempts/*/jobs*)
     case "$*" in *attempts/1/*) n=1; result=failure ;; *) n=2; result=success ;; esac
@@ -31,6 +41,12 @@ execute_process(COMMAND ${cmd} preview "${WORK}/report" 2026-10-01T00:00:00Z 202
   RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
 if(NOT rc STREQUAL "0")
   message(FATAL_ERROR "digest valid preview failed: ${out}")
+endif()
+set(publish "${CMAKE_COMMAND}" -E env "GITHUB_ACTIONS=true" "GITHUB_EVENT_NAME=workflow_dispatch"
+  "GITHUB_REF=refs/heads/main" "DIGEST_PUBLISH=true" ${cmd} publish "${WORK}/report")
+execute_process(COMMAND ${publish} RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
+if(NOT rc STREQUAL "0" OR NOT EXISTS "${WORK}/published.md")
+  message(FATAL_ERROR "digest assertion: trusted publisher must create a rolling issue: ${out}")
 endif()
 if(NOT EXISTS "${WORK}/report/evidence.json")
   message(FATAL_ERROR "digest assertion: successful preview must persist structured evidence")
