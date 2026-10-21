@@ -234,6 +234,10 @@ No additional implementation deviation was undertaken. The designed stop conditi
 was reached on new hosted caller evidence. The source/ABI work is retained; full
 recovery and phase-wide TUNE completion are explicitly not claimed.
 
+The required SDK state/progress commands counted the halted summary as completed
+and checked its roadmap item. Tracking was immediately corrected to 2/9, unchecked
+05-10 and blocked downstream status. The SDK implementation was not changed.
+
 ## Self-Check: PASSED (halt record)
 
 All five changed implementation paths exist; f4ce072 and 96dc316 are ancestors

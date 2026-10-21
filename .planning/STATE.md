@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_phase: 5
+current_phase: 05
 current_phase_name: Pipeline tune-up
-status: ready_to_execute
-stopped_at: Gap recovery 05-10 planned and independently checked; 05-04 onward await recovery
-last_updated: "2026-10-21T18:53:43.467Z"
+status: blocked
+stopped_at: Halted 05-10 after completed full producer equality failure
+last_updated: "2026-10-21T19:25:29.865Z"
 last_activity: 2026-10-21
-last_activity_desc: Planned bounded 05-10 PowerPC recovery; all coverage gates passed
-state_head: 471e5b34c6cce3346a5ddb52977f05d17e103c4a
+last_activity_desc: Recovery ABI and inventories pass; hosted equality caller failure halts 05-10
+state_head: 80a49af9cd0e6b531c848c08bb0f985f5d40914e
 progress:
   total_phases: 7
   completed_phases: 0
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 5 (Pipeline tune-up) — READY TO EXECUTE
-Plan: 05-10 recovery (third of nine live plans; 05-03 superseded)
-Status: Ready to execute 05-10; 05-04 onward await successful recovery
-Last activity: 2026-10-21 — Planned bounded PowerPC recovery; independent checker passed
+Phase: 05 (Pipeline tune-up) — BLOCKED
+Plan: 05-10 recovery (third of nine live plans; halted)
+Status: Hosted equality caller failed; 05-04 onward remain blocked
+Last activity: 2026-10-21 — PowerPC ABI and full inventories pass; relative-path equality fails
 
 Progress: [░░░░░░░░░░] 0% — 2/9 plans complete; 0/7 phases complete.
 
@@ -90,10 +90,10 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T18:31:40.455Z
-Stopped at: Gap recovery 05-10 planned and independently checked
-Resume file: .planning/phases/05-pipeline-tune-up/05-10-PLAN.md
-Next command: `$gsd-execute-phase 5 --gaps-only`
+Last session: 2026-10-21T19:25:29.849Z
+Stopped at: Halted 05-10 after completed full producer equality failure
+Resume file: .planning/phases/05-pipeline-tune-up/05-10-HALTED.md
+Next command after an explicit scoped recovery decision: `$gsd-debug "PowerPC equality caller rejects relative evidence directories"`
 
 Current planning contract: D-17 and D-19–20 now use an audited absolute ratchet.
 The prior 857-line prerequisite is explicitly superseded; no exact new cap or
@@ -160,10 +160,12 @@ No phase implementation or owner hardware verification ran during initialization
 |------|----------|-------|-------|
 | Phase 05 P01 | 12min | 2 tasks | 6 files |
 | Phase 05 P02 | 17min | 3 tasks | 9 files |
+| Phase 05 P10 | 20min | 0 tasks | 5 files |
 
 ### Blockers
 
-- PowerPC ABI/equality acceptance remains unproved. Historical 05-03 is superseded for scheduling; the one new-evidence gap round is planned as 05-10. Only 05-10 is ready; 05-04 onward depend on its successful completion. No implementation or full-BE success is claimed by planning.
+- Historical 05-03 remains superseded and halted. The single gap recovery 05-10 restored actual PowerPC ABI and complete native/BE 607+6 inventories, but its final hosted equality command failed. 05-04 onward remain blocked; no additional gap round is authorized.
+- 05-10 halted: GNU/qemu ABI and complete 607+6 native/BE inventories pass, but both read-only hosted equality callers reject relative evidence directories. Final diagnostic cleanup and successful caller proof remain incomplete; no downstream execution or second gap round authorized.
 
 ## Phase 5 gap planning verification
 
