@@ -5,6 +5,9 @@ file(MAKE_DIRECTORY "${WORK}/bin")
 file(WRITE "${WORK}/bin/gh" [=[#!/bin/sh
 set -eu
 printf '%s\n' "$*" >> "$DIGEST_WORK/calls"
+run() {
+  printf '{"id":%s,"run_attempt":2,"path":".github/workflows/ci.yml","event":"push","head_sha":"abc","created_at":"2026-10-02T00:00:00Z","updated_at":"2026-10-02T00:02:00Z","html_url":"https://github.com/example/public/actions/runs/%s"}' "$1" "$1"
+}
 case "$*" in
   'api repos/example/public') echo '{"private":false,"default_branch":"main","created_at":"2026-10-01T00:00:00Z"}' ;;
   *actions/runs/1/attempts/*/jobs*)
@@ -12,8 +15,9 @@ case "$*" in
     printf '{"total_count":1,"jobs":[{"id":%s,"run_id":1,"name":"native","conclusion":"%s","started_at":"2026-10-02T00:00:00Z","completed_at":"2026-10-02T00:01:00Z","html_url":"https://github.com/example/public/actions/runs/1","labels":["ubuntu"],"steps":[]}]}' "$n" "$result" ;;
   *actions/runs*)
     [ "${DIGEST_CASE:-}" != api ] || { echo 'required API failed' >&2; exit 1; }
-    count=1; [ "${DIGEST_CASE:-}" != truncated ] || count=1001
-    printf '{"total_count":%s,"workflow_runs":[{"id":1,"run_attempt":2,"path":".github/workflows/ci.yml","event":"push","head_sha":"abc","created_at":"2026-10-02T00:00:00Z","updated_at":"2026-10-02T00:02:00Z","html_url":"https://github.com/example/public/actions/runs/1"}]}' "$count" ;;
+    count=1; [ "${DIGEST_CASE:-}" != truncated ] || count=2
+    printf '{"total_count":%s,"workflow_runs":[' "$count"; run 1; printf ']}'
+    printf '{"total_count":%s,"workflow_runs":[' "$count"; run 1; printf ']}' ;;
   *issues*) echo '[{"number":7,"title":"$(touch SENTINEL) <script>bad</script>","labels":[],"created_at":"2026-10-01T00:00:00Z","updated_at":"2026-10-01T00:00:00Z","html_url":"https://github.com/example/public/issues/7"}]' ;;
   *pulls*) echo '[]' ;;
   *actions/runner-images*) echo '[]' ;;
@@ -56,4 +60,11 @@ endforeach()
 file(READ "${WORK}/calls" calls)
 if(calls MATCHES "issue (create|edit)|-X (POST|PATCH)")
   message(FATAL_ERROR "digest assertion: preview attempted write")
+endif()
+execute_process(COMMAND ${cmd} preview "${WORK}/calendar" COMMAND_ERROR_IS_FATAL ANY)
+file(READ "${WORK}/calendar/evidence.json" calendar)
+string(JSON start GET "${calendar}" start)
+string(JSON end GET "${calendar}" end)
+if(NOT start MATCHES "-01T00:00:00Z$" OR NOT end MATCHES "-01T00:00:00Z$" OR NOT start STRLESS end)
+  message(FATAL_ERROR "digest assertion: default calendar boundaries")
 endif()
