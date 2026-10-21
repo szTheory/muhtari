@@ -235,7 +235,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 24  # 2 x 691 s, n=6, run 39614595363; provisional; full audio workload
+    timeout-minutes: 5  # network floor; compile-only max 33 s, n=2, run 39651391712; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
