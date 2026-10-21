@@ -1,6 +1,7 @@
 ## Deferred Items
 
 - Tooling seed: `policy.compat_doc_fresh` and its self-test share
+  status: acknowledged
   `build/ci/policy/compatibility.md` as output. One full CI invocation reported
   a stale page while both ran concurrently; the generated and committed pages
   were identical afterward, the isolated freshness check passed, and a complete

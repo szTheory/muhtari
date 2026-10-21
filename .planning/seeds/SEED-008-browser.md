@@ -5,6 +5,10 @@ planted: 2026-10-15
 planted_during: kickoff of milestone v1.0
 trigger_when: milestone v1.0 has shipped (weigh it against v2.0 at that new-milestone step), or the owner asks for a web build sooner
 scope: medium
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
+  status: dormant
 ---
 
 # SEED-008: muhtari in the browser — an efficient WebAssembly build

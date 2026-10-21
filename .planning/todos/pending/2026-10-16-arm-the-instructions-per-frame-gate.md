@@ -7,6 +7,9 @@ files:
   - .github/workflows/ci.yml
   - .github/workflows/nightly.yml
   - docs/testing.md
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
 ---
 
 ## Problem

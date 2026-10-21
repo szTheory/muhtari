@@ -12,7 +12,7 @@ their silent test card.
 The interpolation and 16-slot int64 impulse ring follow the approved MIT
 sibling at `9f9386c661f6`, `src/synth.c`. The historical Q15 coefficients are
 replaced by regenerated Q23 coefficients under the dated precision amendment
-in [sound research](../../.planning/phases/04-sound/04-RESEARCH.md),
+in [sound research](../../.planning/milestones/v1.0-phases/04-sound/04-RESEARCH.md),
 the dated coefficient-precision amendment. No NES filters or
 NES mixer tables are retained.
 

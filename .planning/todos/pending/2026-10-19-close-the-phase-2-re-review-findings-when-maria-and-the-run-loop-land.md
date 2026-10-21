@@ -10,6 +10,9 @@ files:
   - src/internal.h
   - docs/hardware/bus.md
   - tests/bus/test_bus.c
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
 ---
 
 ## Problem

@@ -5,6 +5,10 @@ planted: 2026-10-15
 planted_during: preparation, before milestone v1.0
 trigger_when: milestone v3.0 has shipped, or a measured accuracy gap blocks a known game
 scope: large
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
+  status: dormant
 ---
 
 # SEED-003: Measured accuracy and the XM expansion (v4.0)

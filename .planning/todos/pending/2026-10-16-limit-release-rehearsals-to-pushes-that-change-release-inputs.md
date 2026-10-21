@@ -5,6 +5,9 @@ area: ci
 severity: minor
 files:
   - .github/workflows/release.yml
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
 ---
 
 ## Problem

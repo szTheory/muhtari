@@ -8,6 +8,9 @@ files:
   - tools/cartdb.cmake
   - tests/cmake/firmware_scan.cmake
   - include/muhtari.h
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
 ---
 
 ## Problem
