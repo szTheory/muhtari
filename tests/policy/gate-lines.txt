@@ -75,6 +75,7 @@ tests/cmake/no_skip.cmake
 tests/cmake/no_test_entries.cmake
 tests/cmake/notices.cmake
 tests/cmake/perf_compare.cmake
+tests/cmake/quality.cmake
 tests/cmake/pins.cmake
 tests/cmake/rom_hash_coverage.cmake
 tests/cmake/single_version.cmake
@@ -120,6 +121,7 @@ tests/perf/allow.txt
 tests/perf/tests.cmake
 tests/policy/gate-lines.txt
 tests/policy/digest.cmake
+tests/policy/quality.cmake
 tests/policy/tests.cmake
 tests/prop/tests.cmake
 tests/release/firmware.txt

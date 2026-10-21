@@ -521,6 +521,7 @@ policy.lane_equality.controls	policy
 policy.no_skip	policy
 policy.no_skip.self_test	policy
 policy.notices	policy
+policy.quality.controls	policy
 prop.input_at_vblank	portable,prop
 prop.instances_isolated	portable,prop
 prop.peek_pure	portable,prop
