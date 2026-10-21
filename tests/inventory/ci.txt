@@ -516,6 +516,7 @@ pokey.maps	pokey,portable
 policy.compat_doc_fresh	policy
 policy.compat_doc_fresh.self_test	policy
 policy.gate_count.controls	policy
+policy.lane_equality.controls	policy
 policy.no_skip	policy
 policy.no_skip.self_test	policy
 policy.notices	policy

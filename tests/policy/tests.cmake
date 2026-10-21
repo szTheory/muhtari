@@ -99,6 +99,54 @@ muhtari_add_test(NAME policy.compat_doc_fresh.self_test
   LABELS policy TIMEOUT 10)
 
 if(MUHTARI_INVENTORY STREQUAL "ci")
+  # Fault prevented: comparing empty, duplicate or unrelated lane evidence.
+  file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/policy/lane_equality_controls.cmake CONTENT [=[
+string(REPEAT "a" 40 sha)
+foreach(case valid sha config empty missing extra duplicate difference)
+  file(REMOVE_RECURSE "${WORK}")
+  foreach(lane native be)
+    file(WRITE "${WORK}/${lane}/hashes.txt" "frame1 abc\n")
+    file(WRITE "${WORK}/${lane}/commit.txt" "${sha}\n")
+    file(WRITE "${WORK}/${lane}/identity.txt" "fixtures abc\noptions Release full\n")
+  endforeach()
+  set(be "${WORK}/be")
+  if(case STREQUAL "sha")
+    file(WRITE "${be}/commit.txt" "wrong\n")
+    set(regex "lane_equality: commit")
+  elseif(case STREQUAL "config")
+    file(WRITE "${be}/identity.txt" "different\n")
+    set(regex "lane_equality: configuration")
+  elseif(case STREQUAL "empty")
+    file(WRITE "${be}/hashes.txt" "")
+    set(regex "lane_equality: empty")
+  elseif(case STREQUAL "missing")
+    file(REMOVE "${be}/commit.txt")
+    set(regex "lane_equality: members")
+  elseif(case STREQUAL "extra")
+    file(WRITE "${be}/extra.txt" "extra\n")
+    set(regex "lane_equality: members")
+  elseif(case STREQUAL "duplicate")
+    set(be "${WORK}/native")
+    set(regex "lane_equality: duplicate")
+  elseif(case STREQUAL "difference")
+    file(APPEND "${be}/hashes.txt" "changed\n")
+    set(regex "hashes: .* differs from")
+  endif()
+  set(cmd "${CMAKE_COMMAND}" -DNATIVE=${WORK}/native -DBE=${be} -DEXPECTED_SHA=${sha}
+    -P "${ROOT}/tests/cmake/lane_equality.cmake")
+  if(case STREQUAL "valid")
+    execute_process(COMMAND ${cmd} COMMAND_ERROR_IS_FATAL ANY)
+  else()
+    execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1 "-DREGEX=${regex}"
+      -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+  endif()
+endforeach()
+]=])
+  muhtari_add_test(NAME policy.lane_equality.controls
+    COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+      -DWORK=${CMAKE_BINARY_DIR}/policy/lane_equality_fixture
+      -P ${CMAKE_BINARY_DIR}/policy/lane_equality_controls.cmake
+    LABELS policy TIMEOUT 30)
   # Fault prevented: incorrect physical counts or invalid inventories accepted as evidence.
   file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/policy/gate_count_controls.cmake CONTENT [=[
 file(REMOVE_RECURSE "${WORK}")

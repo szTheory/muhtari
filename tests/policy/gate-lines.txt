@@ -66,6 +66,7 @@ tests/cmake/gate_count.cmake
 tests/cmake/hashes.cmake
 tests/cmake/info_claims.cmake
 tests/cmake/install_line.cmake
+tests/cmake/lane_equality.cmake
 tests/cmake/no_float.cmake
 tests/cmake/no_skip.cmake
 tests/cmake/no_test_entries.cmake
