@@ -1,6 +1,6 @@
 # Testing
 
-Run CI checks locally, including inventory, negative controls and release checks.
+Run CI locally, including inventory, controls and release checks.
 
 ## The entry point
 
@@ -383,7 +383,7 @@ It runs the line verbatim under a scratch `HOME`, with only the download base re
 ## Release rehearsal
 
 `.github/workflows/release.yml` runs on a pull request from this repository that changes `release.yml`,
-`scripts/publish.sh`, `release-please-config.json` or `cmake/packaging.cmake`. Its tag is
+`be-equality.yml`, `scripts/publish.sh`, `release-please-config.json` or `cmake/packaging.cmake`. Its tag is
 `rehearsal-<run id>-<attempt>`, new for every attempt, because a deleted immutable release's tag can never be
 reused.
 

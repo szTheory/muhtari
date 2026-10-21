@@ -27,7 +27,8 @@ set(install_build_options
   "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
   "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}")
 if(CMAKE_CROSSCOMPILING)
-  list(APPEND install_build_options -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE})
+  list(APPEND install_build_options -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+    -DCMAKE_STAGING_PREFIX=${PROJECT_BINARY_DIR}/stage)
 endif()
 
 foreach(install_crt IN ITEMS static dll)

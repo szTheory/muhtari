@@ -14,6 +14,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/release.yml
+      - .github/workflows/be-equality.yml
       - scripts/publish.sh
       - release-please-config.json
       - cmake/packaging.cmake

@@ -24,43 +24,18 @@ on:
   pull_request:
     paths:
       - .github/workflows/nightly.yml
+      - .github/workflows/be-equality.yml
       - CMakeLists.txt
       - CMakePresets.json
-      - cmake/MuhtariTests.cmake
-      - include/muhtari.h
+      - cmake/**
+      - include/**
       - pins.txt
       - scripts/fetch-pin.sh
       - runner/**
-      - src/boot.c
-      - src/bus.c
-      - src/cart.c
-      - src/cartdb.c
-      - src/cartdb.h
-      - src/cpu.c
-      - src/frame.c
-      - src/instance.c
-      - src/internal.h
-      - src/maria.c
-      - src/ports.c
-      - src/riot.c
-      - src/sha1.c
-      - src/sha1.h
-      - src/testcard.c
-      - src/tia.c
-      - tools/cartdb.cmake
-      - tests/alloc.h
-      - tests/built/**
-      - tests/cart/**
-      - tests/cpu/**
-      - tests/fuzz/**
-      - tests/prop.h
-      - tests/prop/**
-      - tests/vectors/**
-      - tests/cmake/check_junit.cmake
-      - tests/cmake/fetch_vectors.cmake
-      - tests/cmake/vectors_sample_match.cmake
-      - tests/inventory/fuzz.txt
-      - tests/inventory/vectors-full.txt
+      - src/**
+      - libretro/**
+      - tests/**
+      - tools/**
 
 permissions:
   contents: read
