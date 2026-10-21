@@ -45,13 +45,14 @@ muhtari_add_test(NAME pokey.clock COMMAND muhtari-test-pokey clock
 muhtari_add_test(NAME pokey.maps COMMAND muhtari-test-pokey maps
   LABELS pokey portable TIMEOUT 10)
 
-add_executable(muhtari-test-irq ${CMAKE_CURRENT_LIST_DIR}/test_irq.c)
+add_executable(muhtari-test-irq ${CMAKE_CURRENT_LIST_DIR}/test_irq.c
+  ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c)
 target_include_directories(muhtari-test-irq PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-irq PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-irq PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-irq)
 muhtari_add_test(NAME sally.irq COMMAND muhtari-test-irq
-  LABELS sally portable TIMEOUT 10)
+  LABELS sally pokey portable TIMEOUT 10)
 muhtari_add_test(NAME cpu.irq.timing COMMAND muhtari-test-cpu irq.timing
   LABELS sally portable TIMEOUT 10)
