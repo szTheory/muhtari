@@ -75,10 +75,10 @@ The comparison passes only when it gets exactly `COUNT` files, all present and b
 the first file that differs. The fixed count means a lane that stops uploading fails the job, instead of silently
 dropping out.
 
-- **Required files.** Six native files on PRs; PowerPC compilation remains required. Full nightly normal/release
-  inventories run after building/packaging. Native/BE hashes require matching immutable SHA and fixture/options
-  identity; architecture/toolchain and timeout scale intentionally differ. Releases and rehearsals call this
-  equality at their commit before publication; called runs cannot write nightly issues.
+- **Required files.** PRs compare six native files and compile PowerPC. Nightly/release calls run full native/BE
+  normal and package inventories, then require matching immutable SHA, fixtures and options for two-file hash
+  equality. Architecture/toolchain and timeout scale may differ. Absolute or working-directory-relative evidence
+  paths are canonicalized. Publication requires equality; calls stay read-only.
 - **wasm32.** It reports only, compared with the Linux x64 file outside the required check. Once it is promoted
   into `hash-equality`, the count goes up by one.
 

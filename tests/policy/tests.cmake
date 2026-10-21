@@ -102,6 +102,10 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
   # Fault prevented: comparing empty, duplicate or unrelated lane evidence.
   file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/policy/lane_equality_controls.cmake CONTENT [=[
 string(REPEAT "a" 40 sha)
+foreach(path absolute relative)
+if(path STREQUAL "relative")
+  file(RELATIVE_PATH WORK "${CMAKE_CURRENT_BINARY_DIR}" "${WORK}")
+endif()
 foreach(case valid sha config empty missing extra duplicate difference)
   file(REMOVE_RECURSE "${WORK}")
   foreach(lane native be)
@@ -140,6 +144,7 @@ foreach(case valid sha config empty missing extra duplicate difference)
     execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1 "-DREGEX=${regex}"
       -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
   endif()
+endforeach()
 endforeach()
 ]=])
   muhtari_add_test(NAME policy.lane_equality.controls

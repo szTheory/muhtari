@@ -35,17 +35,6 @@ jobs:
           scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
           scripts/fetch-pin.sh rcheevos build/pins/rcheevos
-      - name: Temporary PowerPC ABI diagnosis
-        run: |
-          cmake --workflow --preset be32-compile
-          powerpc-linux-gnu-gcc --version
-          powerpc-linux-gnu-gcc -Q --help=target | grep -E 'sdata|readonly'
-          qemu-ppc --version
-          cmake --version
-          powerpc-linux-gnu-nm -P build/be32/libmuhtari.a
-          powerpc-linux-gnu-objdump -dr build/be32/CMakeFiles/muhtari_objs.dir/src/synth.c.o
-          powerpc-linux-gnu-objdump -t -h build/be32/CMakeFiles/muhtari_cartdb.dir/src/cartdb.c.o
-          ctest --test-dir build/be32 -R '^(abi[.](undefined|globals)([.]self_test)?|core[.]audio[.]silence)$' -V --output-junit junit-abi.xml
       - name: Full native and PowerPC inventories, then identity and hash equality
         run: |
           for lane in native be; do
