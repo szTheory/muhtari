@@ -17,6 +17,7 @@ audio.observer	audio,portable
 audio.samples	audio,basic,portable
 audio.spectral	audio,portable
 audio.spectral.controls	audio,portable
+audio.stress	audio,perf,portable
 basic.adventurer	basic,portable
 basic.atarivoxspeech	basic,portable
 basic.backuptest	basic,portable

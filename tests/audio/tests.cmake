@@ -108,3 +108,13 @@ muhtari_add_test(NAME audio.samples
   LABELS audio basic portable TIMEOUT 120)
 set_tests_properties(audio.samples PROPERTIES FIXTURES_REQUIRED
   "built_soundtest;built_soundeffects;built_trackertest;built_eightysix;built_pokey;built_rmtramcompressiondemo;built_rmtramdemo;built_rmtromdemo")
+
+add_executable(muhtari-test-audio-stress ${CMAKE_CURRENT_LIST_DIR}/test_stress.c
+  ${CMAKE_CURRENT_LIST_DIR}/../cart/images.c ${CMAKE_SOURCE_DIR}/runner/clock.c)
+target_include_directories(muhtari-test-audio-stress PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-audio-stress PRIVATE muhtari::muhtari)
+target_compile_definitions(muhtari-test-audio-stress PRIVATE _POSIX_C_SOURCE=200809L)
+set_target_properties(muhtari-test-audio-stress PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-audio-stress)
+muhtari_add_test(NAME audio.stress COMMAND muhtari-test-audio-stress
+  LABELS audio perf portable TIMEOUT 30)
