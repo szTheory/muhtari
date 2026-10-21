@@ -117,3 +117,8 @@ foreach(case equal waived inherited_valid restored introduced floor floor_regres
       -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
   endif()
 endforeach()
+set(cmd "${CMAKE_COMMAND}" -DROOT=${ROOT} -DBUILD=${WORK}/absent -DOUT=${WORK}/evidence.json
+  -DSHA=${head} -DCONFIG=ci -P "${ROOT}/tests/cmake/quality_evidence.cmake")
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1
+  "-DREGEX=quality_evidence: missing junit" -P "${ROOT}/tests/cmake/expect_fail.cmake"
+  COMMAND_ERROR_IS_FATAL ANY)
