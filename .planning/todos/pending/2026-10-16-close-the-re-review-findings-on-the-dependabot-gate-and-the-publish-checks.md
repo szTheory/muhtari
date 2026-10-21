@@ -8,6 +8,9 @@ files:
   - docs/maintaining.md
   - scripts/publish.sh
   - docs/testing.md
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
 ---
 
 ## Problem

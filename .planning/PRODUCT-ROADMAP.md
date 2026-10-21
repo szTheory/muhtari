@@ -25,7 +25,7 @@ with the 7800's slow cycles, HALT and RDY; (3) games play — MARIA graphics wit
 linear and SuperGame cartridges (187 of the 204 known titles), joysticks and console switches, fast boot and an
 open-BIOS boot path, hash-pinned homebrew on six platforms; (4) sound — TIA audio and cartridge POKEY (195 of
 204), audio hashes on six platforms, one integrated play session.
-Requirements: `.planning/REQUIREMENTS.md` v1. Evidence: `.planning/research/SUMMARY.md`.
+Requirements: `.planning/milestones/v1.0-REQUIREMENTS.md` v1. Evidence: `.planning/research/SUMMARY.md`.
 
 ## Near — v2.0 "The whole library" (SEED-001)
 

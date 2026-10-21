@@ -5,6 +5,10 @@ planted: 2026-10-15
 planted_during: preparation, before milestone v1.0
 trigger_when: milestone v5.0 has shipped, or a port, the libretro buildbot or Playstead integration is wanted sooner
 scope: large
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
+  status: dormant
 ---
 
 # SEED-005: muhtari everywhere — consoles, handhelds and Playstead (v6.0)

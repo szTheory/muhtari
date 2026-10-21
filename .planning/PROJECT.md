@@ -13,34 +13,54 @@ hosts; and for the owner, who tries every release on a Mac in RetroArch with car
 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library
 that any host can embed.
 
+## Current State
+
+Planning milestone **v1.0** shipped 2026-10-21; the package release is **v0.4.0**.
+Four phases, 73 plans and 149 recorded tasks deliver games with sound in RetroArch.
+[Release publication and latest-install run](https://github.com/szTheory/muhtari/actions/runs/39533130210) completed successfully; v0.4.0 is published with 19 assets.
+The C/header tree has 38,684 tracked lines, including 8,577 in src/; the public
+API is version 3, ABI 1, behaviour revision 2. The library remains integer-only,
+instance-owned and bounded, without allocation after load.
+
+Closeout is **override_closeout**: 15 items acknowledged as deferred (six todos, eight dormant seeds and one compatibility-test output race); four stale phase verification fingerprints explicitly accepted.
+The [audit](milestones/v1.0-MILESTONE-AUDIT.md) records 25/25 scoped requirements
+and no integration gaps. Gate code remains 15.94% of src/, performance comparison
+is report-only, and WASM/library jobs remain advisory.
+
+## Next Milestone Goals
+
+Select scope with `$gsd-new-milestone`. The product roadmap and dormant seeds
+retain pipeline tune-up, remaining boards/peripherals/saves/PAL, states/movies,
+measured accuracy, tools and ports as candidates; none is activated by closeout.
+
 ## Requirements
 
 ### Validated
 
 - ✓ `cmake --workflow --preset ci` (`ci-msvc` on Windows) builds and tests everything on Linux, macOS and
-  Windows, x64 and arm64, and CI runs the same commands behind one required check — Phase 1
+  Windows, x64 and arm64, and CI runs the same commands behind one required check — v1.0, Phase 1
 - ✓ One command installs the latest release into RetroArch on an Apple Silicon Mac, and a hosted test shows
-  RetroArch displays the runner's frame — Phase 1; confirmed when v0.1.0 published (Release run 38983378877
+  RetroArch displays the runner's frame — v1.0, Phase 1; confirmed when v0.1.0 published (Release run 38983378877
   passed install-line-latest)
 - ✓ Every behaviour-changing merge to `main` publishes a release (library, runner, libretro core) with no
-  manual step — Phase 1; confirmed by v0.1.0 (release pull request #8 merged itself, Release run 38983378877)
+  manual step — v1.0, Phase 1; confirmed by v0.1.0 (release pull request #8 merged itself, Release run 38983378877)
 - ✓ The 6502C "SALLY" CPU matches the public 6502 vectors on every opcode and every bus cycle, with the 7800's
-  slow cycles, HALT and RDY — Phase 2
+  slow cycles, HALT and RDY — v1.0, Phase 2
 - ✓ The runner probes cartridge images and the core loads one only after validating it, with no allocation on a
-  refusal and a loader fuzz target run nightly — Phase 2
+  refusal and a loader fuzz target run nightly — v1.0, Phase 2
 
 - ✓ Linear and SuperGame cartridges render with exact MARIA DMA timing, boot fast or through OpenBIOS,
-  take joystick and console-switch input, and play in RetroArch with cross-platform frame hashes — Phase 3
+  take joystick and console-switch input, and play in RetroArch with cross-platform frame hashes — v1.0, Phase 3
 
 - ✓ TIA and declared cartridge POKEY deliver sound through the library, canonical runner hashes and actual
-  libretro batch/fallback paths; all eight sound samples are non-silent and clipping-free — Phase 4
+  libretro batch/fallback paths; all eight sound samples are non-silent and clipping-free — v1.0, Phase 4
 - ✓ Owned exact-q23-16x64-dc20 synthesis passes the production spectral/alias judge with renewed integer
-  headroom/width/carry proofs; hostile legal chip traffic stays bounded — Phase 4
+  headroom/width/carry proofs; hostile legal chip traffic stays bounded — v1.0, Phase 4
 
 ### Active
 
-- [ ] Confirm phase4 hosted native/be32/WASM hash equality, PR-head CI and automatic release during ship.
-  Local deterministic evidence and all comparison wiring are verified; hosted outcomes are not yet claimed.
+No active milestone requirements. All 25 v1.0 requirements have scoped evidence;
+the next milestone defines fresh requirements with `$gsd-new-milestone`.
 
 ### Out of Scope
 
@@ -93,7 +113,7 @@ that any host can embed.
   audio hashes on every platform; every call is bounded in emulated time.
 - **Efficiency**: efficient enough for battery-powered handhelds and for the browser through WebAssembly, which the
   owner ranks very important — work per emulated frame sets both speed and power draw, so the instructions-per-frame
-  ratchet guards it from phase 1, and nothing enters the core that a wasm32 build cannot carry (threads, files,
+  comparison measures it from phase 1 and remains report-only pending arming controls, and nothing enters the core that a wasm32 build cannot carry (threads, files,
   floating point, allocation after load). The browser build is SEED-008; handheld budgets are SEED-005.
 - **Legal**: no ROM, BIOS or firmware bytes beyond licence-checked fixtures; Atari names only to say what the core
   emulates.
@@ -107,16 +127,16 @@ that any host can embed.
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Time in MARIA clock ticks; the CPU drives the bus; MARIA DMA runs as one exact burst per line | Every documented edge is an integer; cheaper than per-tick stepping on low-power targets | — Phase 2: the CPU drives the bus in MARIA ticks (4- and 6-tick cycles, HALT, RDY), and the bus takes one HALT window and one NMI edge at a time and returns 1 or 0 for each request (what the NMI's 1 promises is settled with MARIA); the per-line DMA burst comes with MARIA in phase 3 |
+| Time in MARIA clock ticks; the CPU drives the bus; MARIA DMA runs as one exact burst per line | Every documented edge is an integer; cheaper than per-tick stepping on low-power targets | ✓ v1.0: 4/6-tick CPU cycles, holds and queued NMI integrate with exact MARIA bursts and diagnostic timing |
 | Integer-only core, no globals, bounded run calls | Bit-identical hashes everywhere; hostile ROMs cannot hang a host | ✓ Phase 1: tests enforce no floating point, no globals and the no-FP lanes; Phase 2: a step on a jammed CPU still makes one bus read, so emulated time keeps moving |
 | Native MARIA byte per pixel; palettes and composite filter outside the hash | Hash stability; hosts choose presentation | ✓ Phase 1: frames are colour numbers; the runner and the libretro core apply the palette |
 | Audio hashed as a transition stream; PCM secondary | Determinism independent of the mixer and output rate | ✓ Phase 4: canonical11-byte raw records and LE mono PCM have separate completed-run digests; fixed identities and half-open ownership |
-| Reuse the owner's nesturbator code; MARIA, TIA, RIOT, POKEY and boards written from documentation and cross-checked | Fastest correct path; existing permissive chip models are lumped or diverge from documentation | — Phase 2: SALLY, seeded from nesturbator 9f9386c661f6, passes all 2,560,000 public vectors; the RIOT is written from the datasheet; MARIA, TIA, POKEY and the boards follow |
-| Fast boot by default; CC0 OpenBIOS for the BIOS path in CI; no Atari bytes | Redistributable and legal | — Phase 2: release zips and tracked files are scanned for BIOS, HSC and known-ROM digests before publish; fast boot and OpenBIOS come with the boot path |
+| Reuse the owner's nesturbator code; MARIA, TIA, RIOT, POKEY and boards written from documentation and cross-checked | Fastest correct path; existing permissive chip models are lumped or diverge from documentation | ✓ v1.0: seeded SALLY passes all vectors; documented RIOT, MARIA, TIA, POKEY and linear/SuperGame implementations ship |
+| Fast boot by default; CC0 OpenBIOS for the BIOS path in CI; no Atari bytes | Redistributable and legal | ✓ v1.0: fast/OpenBIOS boot and firmware scans run in CI; release artifacts contain no BIOS |
 | Tests on licence-checked inputs: public 6502 vectors, 7800basic samples built in CI, own diagnostic ROMs | Reproducible without a network or private ROMs | ✓ Phase 2: the SingleStepTests sample runs on every PR and the full set nightly; 7800basic's `simple` sample builds byte-identical on all nine legs |
 | One compatibility ledger in which a pass stays a pass | A regression is a one-line diff | ✓ Phase 3: the ledger, ratchet and generated compatibility page run in CI |
 | One entrypoint: CMake workflow presets; one required CI check | No script to keep in step with CI | ✓ Phase 1: CI runs the presets on six platforms behind `CI required` |
-| release-please with a GitHub App token; version-free asset names; unsigned macOS artifacts installed by script | Automatic releases with no owner step | ✓ v0.1.0 published by release-please with no owner step (Release run 38983378877) |
+| release-please with a GitHub App token; version-free asset names; unsigned macOS artifacts installed by script | Automatic releases with no owner step | ✓ v1.0: package v0.4.0 published automatically and install-line-latest passed, run 39533130210 |
 | With no cartridge loaded the core outputs a built-in test card | A build or a release can be checked without any ROM | ✓ Phase 1: the card's hash is pinned and RetroArch shows it pixel for pixel |
 | Linear and SuperGame boards first, then POKEY | 187 of 204 known titles; 195 with POKEY | ✓ Phase 3 boards; Phase 4 declared primary/secondary POKEY maps, clocking and accepted-v4 timer IRQs |
 | The owner verifies nothing by default: tests, CI and the agent close every check, post-merge truths are confirmed at ship (DEC.09, 2026-10-16) | The owner's time goes to consent, not to reading docs or watching runs | ✓ Phase 1: UAT closed with no owner check |
@@ -143,4 +163,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-20 after Phase 4 execution verification; hosted/release confirmation remains at ship*
+*Last updated: 2026-10-21 after v1.0 milestone closeout*

@@ -6,6 +6,9 @@ severity: minor
 files:
   - .github/workflows/ci.yml
   - .planning/phases/01-a-test-frame-in-retroarch/01-CONTEXT.md
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
 ---
 
 ## Problem

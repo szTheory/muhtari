@@ -5,6 +5,10 @@ planted: 2026-10-15
 planted_during: preparation, before milestone v1.0
 trigger_when: milestone v2.0 (the whole 7800 library) has closed and the owner promotes 2600 mode
 scope: large
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
+  status: dormant
 ---
 
 # SEED-006: Atari 2600 cartridges in 7800 mode

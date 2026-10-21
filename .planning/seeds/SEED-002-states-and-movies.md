@@ -5,6 +5,10 @@ planted: 2026-10-15
 planted_during: preparation, before milestone v1.0
 trigger_when: milestone v2.0 has shipped, or a frontend (Playstead) needs save states or deterministic replay before then
 scope: large
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-10-21
+  status: dormant
 ---
 
 # SEED-002: Save states, rewind, run-ahead and input movies (v3.0)
