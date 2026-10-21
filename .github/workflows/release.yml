@@ -47,9 +47,18 @@ jobs:
       contents: read
       pull-requests: read
 
+  equality:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    uses: ./.github/workflows/nightly.yml
+    with:
+      ref: ${{ github.event.pull_request.head.sha }}
+      be_only: true
+    permissions:
+      contents: read
+
   # GITHUB_TOKEN only; the App token is for pushes to main.
   rehearsal:
-    needs: ci
+    needs: [ci, equality]
     runs-on: ubuntu-26.04
     timeout-minutes: 14  # provisional n=0 current sound archives; retain historical 2 x 399 s, run 38951834012
     permissions:
@@ -179,12 +188,22 @@ jobs:
       contents: read
       pull-requests: read
 
+  release-equality:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/nightly.yml
+    with:
+      ref: ${{ needs.release-please.outputs.sha }}
+      be_only: true
+    permissions:
+      contents: read
+
   # The rehearsal's steps on release-please's draft, found by its ID because
   # a draft cannot be looked up by its tag. Safe to re-run: uploads replace
   # the draft's assets, and once the release is published a re-run only
   # verifies it.
   publish:
-    needs: [release-please, release-ci]
+    needs: [release-please, release-ci, release-equality]
     runs-on: ubuntu-26.04
     timeout-minutes: 13  # 2 x 379 s, n=1, run 39533130210; provisional
     permissions:

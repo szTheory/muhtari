@@ -44,7 +44,7 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer, the pins file, and `src/cartdb.c` equal to `tools/cartdb.cmake`'s output over the two pinned MAME lists. Fetch those first with `scripts/fetch-pin.sh mame-a7800-xml build/pins/mame` and `scripts/fetch-pin.sh mame-a2600-xml build/pins/mame`; configure stops with both commands when either is missing. | `hygiene` | `hygiene` |
 | `fuzz` | The cartridge loader and the run loop keep their invariants on any input: libFuzzer runs `tests/fuzz/loader.c` and `tests/fuzz/run.c` for 60 seconds each with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, starting from the images `muhtari-test-images` writes. New inputs go to `build/fuzz/fuzz/corpus` and `build/fuzz/fuzz/run/corpus`, crashes to the `crash` directory beside each, never into the tree. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader` and `fuzz.regress.run` (`docs/emulation-tests.md`, fuzz). | `fuzz` | `fuzz` |
 | `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, about 1 GiB of disk and 90 s for the fetch. | `vectors-full` | `vectors-full` |
-| `be32` | The same hashes on a big-endian, 32-bit target with unsigned `char`. It cross-compiles for 32-bit PowerPC (`cmake/toolchains/ppc-linux-gnu.cmake`) and runs under `qemu-ppc`. | `ci` | `portable` |
+| `be32-compile` / `be32-full` | Required PR PowerPC compilation; full nightly native/BE equality under qemu-ppc. | `ci` | compile only / all normal, package, release |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
 | `library` | The compatibility ledger holds: each `pr` row is judged afresh on its file under `MUHTARI_ROM_DIR` or `tests/diag`, on both boot paths, and the ratchet compares (label `library` below). Run the `ci` preset's `built` tests first, then `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library`. | `library` | `library` |
 
@@ -63,14 +63,7 @@ builds/basic/coverage use costs 7/10/28 (control 27), basic/coverage bounds 19/5
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` (`tests/cmake/hashes.cmake`, mode `write`) writes `build/<preset>/hashes.txt`. It has three
-lines: the frame 1 and frame 600 hashes and the SHA-256 of the frame 1 PNG.
-
-```text
-frame1 <hex>
-frame600 <hex>
-png <hex>
-```
+`runner.hashes_file` writes frame/PNG and 600-frame soundtest/POKEY audio hashes to `build/<preset>/hashes.txt`.
 
 CI collects the file from each lane, and the `hash-equality` job compares them:
 
@@ -82,8 +75,10 @@ The comparison passes only when it gets exactly `COUNT` files, all present and b
 the first file that differs. The fixed count means a lane that stops uploading fails the job, instead of silently
 dropping out.
 
-- **Required files.** Seven: the six `build` legs and `be32`. If `be32` moves to nightly because its job takes more
-  than five minutes, the per-PR count is six and the full `be32` comparison runs nightly.
+- **Required files.** Six native files on PRs; PowerPC compilation remains required. Full nightly normal/release
+  inventories run after building/packaging. Native/BE hashes require matching immutable SHA and fixture/options
+  identity; architecture/toolchain and timeout scale intentionally differ. Releases and rehearsals call this
+  equality at their commit before publication; called runs cannot write nightly issues.
 - **wasm32.** It reports only, compared with the Linux x64 file outside the required check. Once it is promoted
   into `hash-equality`, the count goes up by one.
 

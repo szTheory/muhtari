@@ -8,6 +8,16 @@
 name: Nightly
 
 on:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Immutable commit for equality"
+        type: string
+        required: true
+      be_only:
+        description: "Run only full native/PowerPC equality"
+        type: boolean
+        default: true
   schedule:
     - cron: "17 4 * * *"
   workflow_dispatch:
@@ -79,6 +89,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+      - name: Immutable checkout identity
+        env:
+          EXPECTED_SHA: ${{ inputs.ref || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - name: Cross compiler and qemu-user
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - name: Fetch identical pinned fixture tools
@@ -102,7 +117,7 @@ jobs:
             git ls-tree -r HEAD -- pins.txt tests/roms tests/built tests/diag include/muhtari.h version.txt CMakePresets.json CMakeLists.txt > evidence/$lane/identity.txt
             printf '%s\n' 'Release warnings=error tests=ON libretro=ON short_runs=OFF inventory=ci normal+release' >> evidence/$lane/identity.txt
           done
-          cmake -DNATIVE=evidence/native -DBE=evidence/be -DEXPECTED_SHA=$(git rev-parse HEAD) -P tests/cmake/lane_equality.cmake
+          cmake -DNATIVE=evidence/native -DBE=evidence/be "-DEXPECTED_SHA=$(git rev-parse HEAD)" -P tests/cmake/lane_equality.cmake
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -116,6 +131,7 @@ jobs:
   # max_rss_kb from /usr/bin/time: -v on Linux reports kilobytes, -l on macOS
   # reports bytes.
   bench:
+    if: ${{ !inputs.be_only }}
     name: bench (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 5  # network floor; max 109 s, each leg n=2, run 39529469620; provisional
@@ -161,6 +177,7 @@ jobs:
   # The same bench under the pinned wasmtime, for the browser target. No RSS:
   # it would measure wasmtime, not the runner.
   bench-wasm32:
+    if: ${{ !inputs.be_only }}
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # network floor; max 116 s, n=2, run 39544379935; provisional
     steps:
@@ -194,6 +211,7 @@ jobs:
   # All 2,560,000 tests of the pinned 6502/v1 set, fetched fresh each night:
   # no cache, so a night proves the pin still resolves.
   vectors-full:
+    if: ${{ !inputs.be_only }}
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # network floor; max 100 s including fetch, n=1, run 39544379935; provisional
     steps:
@@ -211,6 +229,7 @@ jobs:
   # the generated seeds and the committed regressions. Their crashes derive
   # only from synthetic seeds, so they are uploaded.
   fuzz:
+    if: ${{ !inputs.be_only }}
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # network floor; max 76 s, n=1, run 39544379935; provisional
     steps:
@@ -241,6 +260,7 @@ jobs:
   # until it has passed 10 runs on main, then gates with a timeout of twice
   # its slowest run.
   prop:
+    if: ${{ !inputs.be_only }}
     runs-on: ubuntu-26.04
     timeout-minutes: 9  # 2 x 246 s, n=2, run 39529469620; provisional
     continue-on-error: true
@@ -270,7 +290,7 @@ jobs:
   # Decides from the jobs' results, never from a piped exit status.
   report:
     needs: [bench, bench-wasm32, vectors-full, fuzz, be-equality]
-    if: always() && github.event_name != 'pull_request'
+    if: always() && !inputs.be_only && github.event_name != 'pull_request'
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # roll-up floor; max 5 s, n=1, run 39544379935; provisional (skipped on pull requests)
     permissions:
