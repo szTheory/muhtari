@@ -5,16 +5,16 @@ milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
 status: ready_to_execute
-stopped_at: Completed scoped equality debug and 05-10 replacement acceptance; 05-04 ready
-last_updated: "2026-10-21T20:21:00Z"
+stopped_at: Completed 05-04-PLAN.md; hosted PR preview succeeds; actual default-branch publication awaits ship
+last_updated: "2026-10-21T22:22:14.509Z"
 last_activity: 2026-10-21
-last_activity_desc: Canonical evidence paths and diagnostic-free final hosted acceptance complete; 05-04 ready
-state_head: 0901c877977e9f712a77193d4840df5ff5b5408d
+last_activity_desc: Digest controls and hosted PR preview accepted; 05-05 is ready
+state_head: 9f3a3d6b9e096e5628b0e4bbe98281f86c612b2a
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 total_phases: 7
 ---
@@ -30,14 +30,14 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — READY TO EXECUTE
-Plan: 05-04 (next of six remaining live plans)
-Status: 05-10 recovery accepted; 05-04 is ready, later plans retain their dependencies
-Last activity: 2026-10-21 — Equality caller fixed and complete final-head hosted acceptance passed
+Phase: 05 (Pipeline tune-up) — IN PROGRESS
+Plan: 4 of 9
+Status: 05-04 complete; 05-05 ready; remaining plans retain dependencies
+Last activity: 2026-10-21 — Digest controls, local CI and hosted read-only preview passed
 
-Progress: [░░░░░░░░░░] 0% of milestone phases — 3/9 Phase 5 plans complete; 0/7 phases complete.
+Progress: [░░░░░░░░░░] 0% of milestone phases — 4/9 Phase 5 plans complete; 0/7 phases complete.
 
-Implementation: 3/9 Phase 5 plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
+Implementation: 4/9 Phase 5 plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
 ## Accumulated Context
 
@@ -90,10 +90,21 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T20:21:00Z
-Stopped at: Completed scoped equality debug and 05-10 replacement acceptance
-Resume file: .planning/phases/05-pipeline-tune-up/05-10-SUMMARY.md
+Last session: 2026-10-21T22:22:14.492Z
+Stopped at: Completed 05-04-PLAN.md; hosted PR preview succeeds; actual default-branch publication awaits ship
+Resume file: .planning/phases/05-pipeline-tune-up/05-04-SUMMARY.md
 Next command: `$gsd-execute-phase 5`
+
+Digest evidence: implementation `7d524edc77c977487a734243ac01364dcbd50272`;
+[hosted read-only preview](https://github.com/szTheory/muhtari/actions/runs/39685745578)
+succeeds and its publish job is skipped. `gh run view 39685745578 --json
+status,conclusion,url,jobs` and artifact download — exit 0. Final live partial
+2026-10-21 20:00–22:15 UTC contains seven runs, seven attempts, 73 jobs and
+91.5833 runner minutes. Full local CI608+6, digest controls, counter13892,
+timeout comments, hygiene and diff checks — exit 0. Digest447/650, fixed C14853;
+no reserve transferred. Actual default-branch issue publication remains a
+post-merge ship check. All phase-wide requirements and flagged assumptions stay
+pending; no downstream plan or additional GSD step ran.
 
 Recovery evidence: implementation `0901c877977e9f712a77193d4840df5ff5b5408d`;
 [Release-called required CI and equality](https://github.com/szTheory/muhtari/actions/runs/39663281026)
@@ -164,6 +175,7 @@ No phase implementation or owner hardware verification ran during initialization
 - [Phase 5]: Replace hard gate/source ratio with audited absolute ratchet; fix scoped allocations before additions and tighten to final actual. Planning uses a bounded initial measurement task, not a full prototype. — Owner delegated adoption after refreshed failed construction and three advisory reviews; preserve safety controls and all TUNE outcomes.
 - [Phase 05]: Freeze complete B=12885 at f0202e1; measured S=2; fixed N=1970 including reserve150 and C=14853 before additions. Count slice actual368/500; current count13251.
 - [Phase 05]: Keep eight audio pairs and exact inventories; isolated writer costs one line of reproduced-fix allocation, current count13252/C14853. Timeouts and scales use image-specific successful cohorts, with sub-ten samples provisional.
+- [Phase 05]: Digest447/650; all pages/attempts, public read-only previews and serialized default-branch issue publication. Missing queue/DAG/compile/CTest/image evidence stays unavailable; actual publication is a post-merge ship check.
 
 ## Performance Metrics
 
@@ -172,11 +184,12 @@ No phase implementation or owner hardware verification ran during initialization
 | Phase 05 P01 | 12min | 2 tasks | 6 files |
 | Phase 05 P02 | 17min | 3 tasks | 9 files |
 | Phase 05 P10 | 83min wall, including external queues | 2 tasks | 8 touched implementation files |
+| Phase 05 P04 | 11min | 2 tasks | 7 files |
 
 ### Blockers
 
 - No PowerPC recovery blocker remains. Historical 05-03 is superseded and halted; 05-10's original equality failure and HALTED file remain historical facts. The explicitly authorized debug continuation supplies final diagnostic-free hosted acceptance and a successful 05-10 SUMMARY.
-- 05-04 is ready. Later plans retain their unexecuted dependencies; no second gap round or downstream step ran during this debug session.
+- 05-04 is complete with hosted preview and offline publisher controls. 05-05 is ready; later plans retain dependencies. Default-branch publication is a ship check, and all phase-wide requirements remain pending.
 
 ## Phase 5 gap planning verification
 

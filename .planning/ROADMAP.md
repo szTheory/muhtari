@@ -34,11 +34,11 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 3/9 plans executed.
+**Plans:** 4/9 plans executed.
 
 05-10 restored PowerPC ABI, and its authorized debug continuation fixed evidence-path handling and proved diagnostic-free native/BE 607+6 inventories, two-file equality and release-called required CI at immutable implementation 0901c877.
 05-03 is superseded for scheduling; its partial implementation and historical halt records remain.
-05-04 is ready; later plans retain their remaining dependencies. Original failed halts remain unchanged, and phase-wide completion is not claimed.
+05-04 delivered the tested read-only digest and guarded publisher; hosted preview succeeds at 7d524ed. Actual default-branch publication is a post-merge ship check. 05-05 is ready; later plans retain dependencies. Original failed halts remain unchanged, and phase-wide completion is not claimed.
 
 Plans:
 **Wave 1**
@@ -52,10 +52,10 @@ Plans:
 
 05-03-PLAN.md is superseded by 05-10; its implemented PR compilation and wiring are retained.
 
-**Wave 4** *(ready)*
-- [ ] 05-04-PLAN.md — Deliver privilege-safe weekly triage and monthly hosted-efficiency reports.
+**Wave 4** *(complete)*
+- [x] 05-04-PLAN.md — Deliver privilege-safe weekly triage and monthly hosted-efficiency reports.
 
-**Wave 5** *(blocked on Wave 4 completion)*
+**Wave 5** *(ready)*
 - [ ] 05-05-PLAN.md — Require one quality ratchet over real observations and trusted baselines.
 
 **Wave 6** *(blocked on Wave 5 completion)*
@@ -172,7 +172,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
-| 5. Pipeline tune-up | 3/9 | In progress | — |
+| 5. Pipeline tune-up | 4/9 | In progress | — |
 | 6. Retail cartridge boards | 0/TBD | Not started | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
