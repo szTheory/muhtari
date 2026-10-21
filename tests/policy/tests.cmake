@@ -89,7 +89,8 @@ muhtari_add_test(NAME policy.compat_doc_fresh
 file(READ ${CMAKE_SOURCE_DIR}/docs/compatibility.md policy_page)
 string(REGEX REPLACE "\n[|] pass [|] [0-9]+ [|]\n" "\n| pass | 0 |\n" policy_page "${policy_page}")
 file(WRITE ${CMAKE_BINARY_DIR}/policy/compat_doc_fixture/compatibility.md "${policy_page}")
-set(policy_cmd ${policy_compat_cmd}
+set(policy_cmd ${CMAKE_COMMAND} -DLEDGER=${CMAKE_SOURCE_DIR}/tests/compat/ledger.csv
+  -DOUT=${CMAKE_BINARY_DIR}/policy/compat_doc_fixture/generated.md
   -DCHECK=${CMAKE_BINARY_DIR}/policy/compat_doc_fixture/compatibility.md ${policy_compat_tool})
 string(REPLACE ";" "$<SEMICOLON>" policy_cmd "${policy_cmd}")
 muhtari_add_test(NAME policy.compat_doc_fresh.self_test
