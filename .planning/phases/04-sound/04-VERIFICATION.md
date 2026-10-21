@@ -107,7 +107,7 @@ covered_files:
   - tests/runner/tests.cmake
   - tests/tests.cmake
   - tools/audio_coefficients.c
-covered_digest: "v3:sha256:84d9ea4c0e5d6c9d83867a9007b02eee6c9f694989b42f9f7f7b322dcc3b636c"
+covered_digest: v3:sha256:814df5593dd00b5ed75bb9f82241f9e8831727882eedf7c072d2578e13dd1fd7
 ---
 
 # Phase 04: Sound Verification Report
@@ -276,3 +276,7 @@ from regression pins. No new package, device code, job or policy gate was added.
 
 None. Only the identity-bound ship/merge consent and hosted outcomes remain;
 they are not UAT and are not a reason to run another execution wave.
+
+## Ship portability correction
+
+Hosted GCC compilation on PR15 exposed two implicit uint8_t compound-assignment conversions in the generated IRQ fixture. Explicit casts preserve identical bytes. Fresh full CI: exit0,605 ordinary plus6 archive checks. GCC15 strict compilation of tests/audio/test_irq.c: exit0. This is a compiler portability correction from hosted evidence, not an additional review or gap round.

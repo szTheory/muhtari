@@ -222,8 +222,8 @@ static void test_cart_irq(void)
                 if (chip != 0u) {
                     static const unsigned operands[] = {8u, 13u, 18u, 23u, 26u};
                     for (unsigned i = 0u; i < 5u; i++)
-                        program[operands[i]] -= 16u;
-                    handler[6] -= 16u;
+                        program[operands[i]] = (uint8_t)(program[operands[i]] - 16u);
+                    handler[6] = (uint8_t)(handler[6] - 16u);
                 }
                 muhtari *m = make();
                 images_header(cart, 3u, "IRQ", 4096u, 0u);
