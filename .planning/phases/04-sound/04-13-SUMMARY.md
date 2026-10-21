@@ -12,8 +12,15 @@ tech-stack:
   added: []
   patterns: [private-observation, portable-contracts]
 key-files:
-  created: []
-  modified: []
+  created:
+    - tests/runner/test_audio.c
+  modified:
+    - docs/runner.md
+    - runner/main.c
+    - tests/audio/test_contracts.c
+    - tests/inventory/ci.txt
+    - tests/inventory/wasm32.txt
+    - tests/runner/tests.cmake
 requirements-completed:
   - SND-03
 coverage:
@@ -35,7 +42,7 @@ coverage:
     human_judgment: false
 duration: ongoing full-phase execution
 completed: 2026-10-21
-head_after: 0c446d924c4c2d8d6518b8e0d7db881021529b71
+head_after: 3e4a0f7f095bef4260937a19049f30bc2cbfb33f
 ---
 
 # Phase 04 Plan 13: Canonical completed-run audio hashes Summary
@@ -47,7 +54,7 @@ head_after: 0c446d924c4c2d8d6518b8e0d7db881021529b71
 - Canonical separate raw and mono PCM streaming hashes with completed-run counts and deterministic signal and failure suppression.
 - Automated selections: runner.audio.contract,runner.audio.stop_failure.
 
-## Verification
+## Automated Checks
 
 - cmake --workflow --preset ci — exit 0.
 - cmake --workflow --preset hygiene — exit 0.
@@ -65,8 +72,19 @@ The functional timing model retains its documented hardware confidence limits.
 
 Reuse predecessor coverage where already shipped; add the missing contracts without duplicating implementation.
 
-## Self-Check: PASSED
+## Execution Details
 
 Verified through the shipped archive and existing CI. Continue within this invocation to the next ready wave.
 
 RED: runner.audio.contract exited8 on unknown --hash-audio. The first parity check exposed a silent fixture; soundtest requires the generic fire input on INPT1. Both ProLine buttons are now held by a deterministic60-frame movie and independently by the core reference. The test rejects the empty raw digest before comparing all seven fields. Byte-order controls use explicit >32-bit ticks and negative int16 bytes. Actual runner source and signal handler cover stops at0/1/3 completed frames, partial-frame refusal and dump errors, with no success audio labels on errors. Release CI600 checks plus6 archive tests and hygiene24 passed.
+
+## Task Commits
+
+| Commit | Change |
+| --- | --- |
+| 0c446d924c | test(04-13): require canonical runner audio hashes |
+| 3e4a0f7f09 | feat(04-13): hash completed raw transitions and mono PCM canonically |
+
+## Self-Check: PASSED
+
+Named artifacts exist, task commits are on this branch, and reported selections passed.

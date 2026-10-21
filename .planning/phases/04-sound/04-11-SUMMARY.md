@@ -13,7 +13,19 @@ tech-stack:
   patterns: [private-observation, portable-contracts]
 key-files:
   created: []
-  modified: []
+  modified:
+    - docs/hardware/audio.md
+    - src/frame.c
+    - src/instance.c
+    - src/internal.h
+    - src/pokey.c
+    - src/synth.c
+    - src/tia.c
+    - tests/audio/test_contracts.c
+    - tests/audio/test_irq.c
+    - tests/audio/tests.cmake
+    - tests/inventory/ci.txt
+    - tests/inventory/wasm32.txt
 requirements-completed:
   - SND-02
   - SND-03
@@ -48,7 +60,7 @@ head_after: 328dbaf0301fdfb3856d62583953c69e730378fb
 - Real cartridge IRQ acceptance and private raw DAC observation preserve PCM and machine state.
 - Automated selections: sally.irq,audio.frames.
 
-## Verification
+## Automated Checks
 
 - cmake --workflow --preset ci — exit 0.
 - cmake --workflow --preset hygiene — exit 0.
@@ -66,8 +78,20 @@ The functional timing model retains its documented hardware confidence limits.
 
 Reuse predecessor coverage where already shipped; add the missing contracts without duplicating implementation.
 
-## Self-Check: PASSED
+## Execution Details
 
 Verified through the shipped archive and existing CI. Continue within this invocation to the next ready wave.
 
 Observer tracer RED: build succeeded; ctest --test-dir build/ci -R ^audio.frames$ --output-on-failure --no-tests=error exited8 with missing callback assertions. GREEN passed in Release and Debug. IRQ task reused wave10 coverage and expanded the focused selection with its 48 real cartridge cases. Registration allocates bounded private storage only while enabled; frame execution allocates nothing.
+
+## Task Commits
+
+| Commit | Change |
+| --- | --- |
+| a6abe5fb32 | test(04-11): publish real cartridge IRQ conformance |
+| d6db6749e7 | test(04-11): require a raw observer callback without changing PCM |
+| 328dbaf030 | feat(04-11): observe raw DAC changes on half-open frame horizons |
+
+## Self-Check: PASSED
+
+Named artifacts exist, task commits are on this branch, and reported selections passed.

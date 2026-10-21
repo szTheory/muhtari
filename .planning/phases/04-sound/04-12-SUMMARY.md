@@ -13,7 +13,12 @@ tech-stack:
   patterns: [private-observation, portable-contracts]
 key-files:
   created: []
-  modified: []
+  modified:
+    - docs/embedding.md
+    - tests/audio/test_contracts.c
+    - tests/audio/tests.cmake
+    - tests/inventory/ci.txt
+    - tests/inventory/wasm32.txt
 requirements-completed:
   - SND-03
 coverage:
@@ -47,7 +52,7 @@ head_after: cd55cff96d5ba41f4ed71df67132f7f33e74207a
 - Stable raw ordering across lazy and continuous dual-chip advancement with half-open carry and independent canonical hash reference.
 - Automated selections: audio.observer,audio.frames.
 
-## Verification
+## Automated Checks
 
 - cmake --workflow --preset ci — exit 0.
 - cmake --workflow --preset hygiene — exit 0.
@@ -65,6 +70,16 @@ The functional timing model retains its documented hardware confidence limits.
 
 Reuse predecessor coverage where already shipped; add the missing contracts without duplicating implementation.
 
-## Self-Check: PASSED
+## Execution Details
 
 Verified through the shipped archive and existing CI. Continue within this invocation to the next ready wave.
+
+## Task Commits
+
+| Commit | Change |
+| --- | --- |
+| cd55cff96d | test(04-12): prove raw source order and independent reference hashes |
+
+## Self-Check: PASSED
+
+Named artifacts exist, task commits are on this branch, and reported selections passed.

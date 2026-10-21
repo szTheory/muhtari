@@ -12,8 +12,13 @@ tech-stack:
   added: []
   patterns: [private-observation, portable-contracts]
 key-files:
-  created: []
-  modified: []
+  created:
+    - tests/audio/test_stress.c
+  modified:
+    - docs/testing.md
+    - tests/audio/tests.cmake
+    - tests/inventory/ci.txt
+    - tests/inventory/wasm32.txt
 requirements-completed:
   - SND-02
   - SND-03
@@ -49,7 +54,7 @@ head_after: 0949c041de253cce6b3dcbb6bb436a566a2ba7d5
 - Legal dual-chip and TIA stress proves bounded allocation-free frames and measured exact-only whole-core cost.
 - Automated selections: audio.stress,fuzz.regress.run.
 
-## Verification
+## Automated Checks
 
 - cmake --workflow --preset ci — exit 0.
 - cmake --workflow --preset hygiene — exit 0.
@@ -67,7 +72,7 @@ The functional timing model retains its documented hardware confidence limits.
 
 Reuse predecessor coverage where already shipped; add the missing contracts without duplicating implementation.
 
-## Self-Check: PASSED
+## Execution Details
 
 Verified through the shipped archive and existing CI. Continue within this invocation to the next ready wave.
 
@@ -76,3 +81,13 @@ Four deterministic workloads cover direct fast channels1/3, legal base channels2
 Benchmark command: build/ci/tests/muhtari-test-audio-stress --bench 600 — exit0. Apple clang21.0.0, arm64-apple-darwin25.6.0, Release. Dual-chip exact1,221,856,000ns; TIA baseline59,274,000ns; milli ratio20613. Each completed600 frames and479591 samples; dual raw26,636,321 and baseline274,741. Exact PCM check6145531612794415913. Peak11882 versus baseline20729; no clipping. This includes whole-core/chip/interrupt and observation work; it is not a DSP-only comparison or calibrated low-power measurement. No applicable low-power trigger was established and no quality switch/fallback was added. Exact identity/current weights/gain/M remain unchanged.
 
 Full CI605 checks plus6 archive checks, hygiene24 and Debug stress/fuzz selections passed.
+
+## Task Commits
+
+| Commit | Change |
+| --- | --- |
+| 0949c041de | test(04-16): bound hostile legal audio and measure exact synthesis |
+
+## Self-Check: PASSED
+
+Named artifacts exist, task commits are on this branch, and reported selections passed.

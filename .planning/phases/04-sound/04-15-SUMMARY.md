@@ -12,8 +12,17 @@ tech-stack:
   added: []
   patterns: [private-observation, portable-contracts]
 key-files:
-  created: []
-  modified: []
+  created:
+    - tests/audio/expected.txt
+    - tests/audio/test_samples.c
+  modified:
+    - docs/emulation-tests.md
+    - tests/audio/tests.cmake
+    - tests/built/expected.txt
+    - tests/cmake/hashes.cmake
+    - tests/inventory/ci.txt
+    - tests/inventory/wasm32.txt
+    - tests/runner/tests.cmake
 requirements-completed:
   - SND-03
   - SND-05
@@ -48,7 +57,7 @@ head_after: 1ebf7b5d401f9958a23cfc4dadf337b896dc310d
 - Eight non-silent 600-frame canonical audio pins with zero clipping and observer and discard equality feed existing platform comparisons.
 - Automated selections: audio.samples,runner.hashes_file.
 
-## Verification
+## Automated Checks
 
 - cmake --workflow --preset ci — exit 0.
 - cmake --workflow --preset hygiene — exit 0.
@@ -66,7 +75,7 @@ The functional timing model retains its documented hardware confidence limits.
 
 Reuse predecessor coverage where already shipped; add the missing contracts without duplicating implementation.
 
-## Self-Check: PASSED
+## Execution Details
 
 Verified through the shipped archive and existing CI. Continue within this invocation to the next ready wave.
 
@@ -75,3 +84,13 @@ Production spectral/alias controls and TIA/POKEY/IRQ selections passed before pi
 The corpus holds both port1 ProLine buttons for60 frames then releases for540. rmtromdemo waits for release before starting music; an all-held control correctly failed non-silence. Soundeffects was absent from the old fixture table; its pinned source and generated ROM are byte-identical to soundtest, so the existing recipe and proven identical frame pin now cover both names. No old raw or video pin changed. A deliberately corrupted PCM pin returns1 through the real judge. Existing compare count/byte controls pass.
 
 Release CI604 checks plus6 archive tests, hygiene24, and assertion-enabled audio.samples with8 setup fixtures (52.72 seconds total) passed. Expanded hashes.txt preserves the three card/PNG rows and adds14 audio fields for soundtest/pokey. Native/be32/WASM hosted equality is deferred to ship; this plan proves their shared input and fixture reachability.
+
+## Task Commits
+
+| Commit | Change |
+| --- | --- |
+| 1ebf7b5d40 | test(04-15): pin non-silent sample audio and platform hash inputs |
+
+## Self-Check: PASSED
+
+Named artifacts exist, task commits are on this branch, and reported selections passed.
