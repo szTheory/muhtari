@@ -451,3 +451,12 @@ splitmix64 images and an empty input; the loader's are the images `tests/fuzz/se
 -runs=10000 <file>`, commit it under `tests/fuzz/<target>/regress/` with its row in `tests/roms/manifest.txt`, and fix
 the core in the same pull request. Reconfigure to list the new file; `fuzz.regress.<target>` replays it on every
 lane from then on.
+
+Boot-to-play also requests the runner's whole-run audio evidence. Its judge
+requires the exact completed frame/sample count, 48,000/1 rate, reported behavior
+revision and synthesis identity. The PCM digest must differ from SHA-256 over
+exactly two zero bytes per completed sample. A muted control substitutes that
+same-count zero digest while retaining valid picture/input evidence and must
+fail only the audio predicate (mask 8). Existing image, timing, wrong-port and
+mirror controls remain required. This proves non-silence and delivery, not a
+listening comparison or physical hardware calibration.

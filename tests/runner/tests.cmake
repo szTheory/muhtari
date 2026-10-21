@@ -615,7 +615,9 @@ endforeach()
 # respond to a held control, or responds late, or never moves.
 add_executable(muhtari-test-boot-to-play
   ${CMAKE_CURRENT_LIST_DIR}/boot_to_play.c
-  ${CMAKE_CURRENT_LIST_DIR}/png_read.c)
+  ${CMAKE_CURRENT_LIST_DIR}/png_read.c
+  ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+target_link_libraries(muhtari-test-boot-to-play PRIVATE muhtari::muhtari)
 # MSVC deprecates ISO C's fopen for its _s forms.
 target_compile_definitions(muhtari-test-boot-to-play PRIVATE
   $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
@@ -650,8 +652,8 @@ function(runner_play_control name regex)
   set_tests_properties(runner.boot_to_play.${name} PROPERTIES FIXTURES_REQUIRED boot_to_play)
 endfunction()
 set(runner_play ${runner_play_dir} ${runner_play_f} ${runner_play_h})
-runner_play_control(no_input "^mask 1:" play ${runner_play} ${runner_play_l} none none)
-runner_play_control(port2 "^mask 1:" play ${runner_play} ${runner_play_l} none port2)
+runner_play_control(no_input "^mask 9:" play ${runner_play} ${runner_play_l} none none)
+runner_play_control(port2 "^mask 9:" play ${runner_play} ${runner_play_l} none port2)
 runner_play_control(mirrored "^sign did not flip:" mirrored ${runner_play} none input input up)
 runner_play_control(static_mutant "^mask 2:" static ${runner_play} ${runner_play_l} none input)
 runner_play_control(late_mutant "^mask 1:" late ${runner_play} ${runner_play_l} none input)

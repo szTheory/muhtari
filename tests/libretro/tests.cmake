@@ -81,6 +81,15 @@ if(TARGET muhtari_libretro)
   set_tests_properties(libretro.host.memory_map PROPERTIES
     FIXTURES_REQUIRED "input_carts;built_doublebuffer")
 
+  muhtari_add_test(NAME libretro.host.audio
+    COMMAND ${CMAKE_COMMAND} "-DHOST=$<TARGET_FILE:muhtari-test-libretro-host>"
+      "-DMODULE=$<TARGET_FILE:muhtari_libretro>" "-DRUNNER=$<TARGET_FILE:muhtari-run>"
+      "-DROM=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
+      "-DOUT=${PROJECT_BINARY_DIR}/tests/libretro-audio" "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
+      -P ${CMAKE_CURRENT_LIST_DIR}/audio.cmake
+    LABELS audio libretro portable TIMEOUT 30)
+  set_tests_properties(libretro.host.audio PROPERTIES FIXTURES_REQUIRED built_soundtest)
+
   # rcheevos' resolver over the core's real map (rcheevos v12.1.0, MIT,
   # fetched by pins.txt, never vendored or shipped). Its three files build
   # with warnings and sanitizers off, for this target only (rc_libretro.c
