@@ -103,7 +103,7 @@ static void program(unsigned seed, int dual)
     cart[128u + 4094u] = 0;
     cart[128u + 4095u] = 0xF2;
 }
-static muhtari *make(void)
+static muhtari *make(muhtari__audio_observer callback, void *user)
 {
     muhtari_config c = {0};
     c.size = sizeof c;
@@ -111,6 +111,7 @@ static muhtari *make(void)
     c.allocator.free = release;
     muhtari *m = NULL;
     CHECK_EQ_U64(muhtari_create(&c, &m), 0);
+    CHECK_EQ_U64(muhtari__synth_observe(m, callback, user), 0);
     muhtari_media d = {0};
     d.size = sizeof d;
     d.image = cart;
@@ -142,9 +143,9 @@ static uint64_t exercise(unsigned frames, unsigned seed, int dual, int checks, u
                          uint64_t *pcm_hash)
 {
     program(seed, dual);
-    muhtari *m = make(), *off = checks ? make() : NULL, *split = checks ? make() : NULL;
     struct trace trace = {0};
-    CHECK_EQ_U64(muhtari__synth_observe(m, observe, &trace), 0);
+    muhtari *m = make(observe, &trace), *off = checks ? make(NULL, NULL) : NULL,
+            *split = checks ? make(NULL, NULL) : NULL;
     unsigned initial_allocations = allocations;
     uint64_t start = muhtari__clock_ns(), samples = 0;
     for (unsigned frame = 0; frame < frames; frame++) {

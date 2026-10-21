@@ -275,6 +275,9 @@ struct muhtari__observation {
 muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user)
 {
     if (callback != NULL && m->observation == NULL) {
+        /* Private host setup must precede load; no late allocation. */
+        if (m->loaded != 0u)
+            return MUHTARI_STATUS_ERR_ARGUMENT;
         m->observation = m->allocator.alloc(m->allocator.user, sizeof *m->observation);
         if (m->observation == NULL)
             return MUHTARI_STATUS_ERR_NO_MEMORY;

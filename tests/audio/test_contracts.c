@@ -594,17 +594,18 @@ static int reference_hashes(const char *path, const char *count, int fire)
         return 1;
     }
     muhtari *m = make();
-    muhtari_media media = media_for(image, got);
-    muhtari_status st = muhtari_load(m, &media);
-    free(image);
-    if (st != 0) {
-        muhtari_destroy(m);
-        return 1;
-    }
     muhtari__sha256 raw, pcm;
     muhtari__sha256_init(&raw);
     muhtari__sha256_init(&pcm);
     if (muhtari__synth_observe(m, reference_raw, &raw) != 0) {
+        free(image);
+        muhtari_destroy(m);
+        return 1;
+    }
+    muhtari_media media = media_for(image, got);
+    muhtari_status st = muhtari_load(m, &media);
+    free(image);
+    if (st != 0) {
         muhtari_destroy(m);
         return 1;
     }

@@ -233,8 +233,9 @@ zeros and unchanged levels produce no records. Equal ticks use ascending source
 identity, with stable order for multiple changes of one source.
 
 The callback and its host context survive load and power cycle. Register before
-execution; callbacks must never reenter the core. Registration can fail with the
-existing allocation error. A NULL callback frees the private observation storage
+the first load; callbacks must never reenter the core. Registration can fail with the
+existing allocation error. A first registration after load is rejected without
+allocation. A NULL callback frees the private observation storage
 and bypasses all observation work; synthesis still advances normally. Registration
 is private and adds nothing to the installed API or ABI.
 

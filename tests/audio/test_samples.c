@@ -8,6 +8,8 @@
 #include "../../runner/sha256.h"
 #include "../check.h"
 
+static uint8_t video[2][MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC];
+
 static void *allocate(void *u, size_t n)
 {
     (void)u;
@@ -19,7 +21,7 @@ static void release(void *u, void *p, size_t n)
     (void)n;
     free(p);
 }
-static muhtari *make(const uint8_t *rom, size_t size)
+static muhtari *make(const uint8_t *rom, size_t size, muhtari__audio_observer callback, void *user)
 {
     muhtari_config c = {0};
     c.size = sizeof c;
@@ -27,6 +29,7 @@ static muhtari *make(const uint8_t *rom, size_t size)
     c.allocator.free = release;
     muhtari *m = NULL;
     CHECK_EQ_U64(muhtari_create(&c, &m), 0);
+    CHECK_EQ_U64(muhtari__synth_observe(m, callback, user), 0);
     muhtari_media d = {0};
     d.size = sizeof d;
     d.image = rom;
@@ -98,12 +101,12 @@ int main(int argc, char **argv)
         free(rom);
         return 1;
     }
-    muhtari *m = make(rom, size), *off = make(rom, size), *discard = make(rom, size);
-    free(rom);
     struct trace t;
     memset(&t, 0, sizeof t);
     muhtari__sha256_init(&t.hash);
-    CHECK_EQ_U64(muhtari__synth_observe(m, raw, &t), 0);
+    muhtari *m = make(rom, size, raw, &t), *off = make(rom, size, NULL, NULL),
+            *discard = make(rom, size, NULL, NULL);
+    free(rom);
     muhtari__sha256 pcm;
     muhtari__sha256_init(&pcm);
     uint64_t samples = 0, nonzero = 0, peak = 0;
@@ -119,6 +122,10 @@ int main(int argc, char **argv)
             CHECK_EQ_U64(muhtari_set_input(instance, &in), 0);
             muhtari_frame io = {0};
             io.size = sizeof io;
+            if (k < 2u) {
+                io.video = video[k];
+                io.video_pitch = MUHTARI__WIDTH;
+            }
             if (k != 2u || (frame & 1u) != 0u) {
                 io.audio = audio[k];
                 io.audio_capacity = 801;
@@ -130,6 +137,7 @@ int main(int argc, char **argv)
                 CHECK_EQ_U64(io.audio_count, count);
         }
         CHECK(memcmp(audio[0], audio[1], count * sizeof(int16_t)) == 0);
+        CHECK(memcmp(video[0], video[1], sizeof video[0]) == 0);
         if ((frame & 1u) != 0u)
             CHECK(memcmp(audio[0], audio[2], count * sizeof(int16_t)) == 0);
         CHECK(memcmp(&m->synth, &off->synth, sizeof m->synth) == 0);

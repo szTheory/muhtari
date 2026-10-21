@@ -899,19 +899,19 @@ static int run(const options *opt, const replay *mv)
     const muhtari__movie_header *h = mv != NULL ? &mv->header : NULL;
     uint32_t region = h != NULL && h->has_region ? h->region : opt->region;
     int status = MUHTARI__EXIT_DONE;
-    if (opt->rom != NULL) {
-        status = load(m, opt->rom, region, opt->movie, h, opt->bios);
-    } else if (h != NULL && h->has_rom_sha256) {
-        fprintf(stderr, "muhtari-run: %s: rom-sha256 names a cartridge, and none was given\n",
-                opt->movie);
-        status = MUHTARI__EXIT_FAILURE;
-    }
     muhtari__sha256 raw_hash, pcm_hash, tentative;
     muhtari__sha256_init(&raw_hash);
     muhtari__sha256_init(&pcm_hash);
     tentative = raw_hash;
     if (status == 0 && opt->hash_audio && muhtari__synth_observe(m, audio_raw, &tentative) != 0) {
         fprintf(stderr, "muhtari-run: audio observation allocation failed\n");
+        status = MUHTARI__EXIT_FAILURE;
+    }
+    if (status == 0 && opt->rom != NULL) {
+        status = load(m, opt->rom, region, opt->movie, h, opt->bios);
+    } else if (h != NULL && h->has_rom_sha256) {
+        fprintf(stderr, "muhtari-run: %s: rom-sha256 names a cartridge, and none was given\n",
+                opt->movie);
         status = MUHTARI__EXIT_FAILURE;
     }
     uint64_t audio_frames = 0u, audio_samples = 0u;
