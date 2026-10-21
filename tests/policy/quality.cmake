@@ -1,5 +1,6 @@
 # Fault prevented: policy edits, forged baselines or old waivers bypassing actual bounds.
 cmake_minimum_required(VERSION 4.3)
+file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}")
 set(ENV{SOURCE_DATE_EPOCH} 1769904000)
 string(REPEAT "a" 40 head)
@@ -122,3 +123,13 @@ set(cmd "${CMAKE_COMMAND}" -DROOT=${ROOT} -DBUILD=${WORK}/absent -DOUT=${WORK}/e
 execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1
   "-DREGEX=quality_evidence: missing junit" -P "${ROOT}/tests/cmake/expect_fail.cmake"
   COMMAND_ERROR_IS_FATAL ANY)
+file(WRITE "${WORK}/absent/junit.xml" "<testsuite/>\n")
+execute_process(COMMAND git -C "${ROOT}" rev-parse HEAD OUTPUT_VARIABLE actual OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+set(cmd "${CMAKE_COMMAND}" -DROOT=${ROOT} -DBUILD=${WORK}/absent -DOUT=${WORK}/evidence.json
+  -DSHA=${head} -DCONFIG=ci -P "${ROOT}/tests/cmake/quality_evidence.cmake")
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1
+  "-DREGEX=quality_evidence: built SHA mismatch" -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+file(WRITE "${WORK}/absent/CMakeCache.txt" "CMAKE_HOME_DIRECTORY:INTERNAL=wrong\n")
+list(TRANSFORM cmd REPLACE "^-DSHA=.*" "-DSHA=${actual}")
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1
+  "-DREGEX=quality_evidence: build configuration mismatch" -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)

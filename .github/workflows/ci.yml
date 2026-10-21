@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 # The instructions-per-frame gate reports only until it is armed; arming is
 # one ci: pull request setting this to "true" (docs/testing.md, "Performance").
@@ -81,6 +82,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
+          fetch-depth: 0
       # policy.cartdb_generated regenerates src/cartdb.c from these.
       - name: Fetch the MAME software lists
         run: |
@@ -89,6 +91,21 @@ jobs:
       - run: cmake --workflow --preset hygiene
       - name: Every test ran
         run: cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake
+      - name: Quality observations and independent base
+        run: >-
+          cmake -DROOT=. -DBUILD=build/hygiene -DOUT=build/hygiene/quality-current.json
+          -DSHA="$(git rev-parse HEAD)" -DCONFIG=hygiene -DBUILD_BASE=ON
+          -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          -P tests/cmake/quality_evidence.cmake
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quality-hygiene
+          path: |
+            build/hygiene/quality-current.json
+            build/hygiene/quality-base.json
+            build/hygiene/quality-base-policy.json
+            build/hygiene/quality-base-sha.txt
+          if-no-files-found: error
 
   # The squash commit takes the pull request's title and body, so the check
   # reads them live: an edit reruns it (the edited trigger) without a commit.
@@ -134,6 +151,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
+          fetch-depth: 0
       # The MSVC developer environment for the runner's own architecture,
       # without a third-party action.
       - name: MSVC environment
@@ -168,6 +186,21 @@ jobs:
       - name: README install line
         if: matrix.os == 'macos' && matrix.arch == 'arm64'
         run: cmake -DREADME=README.md "-DBASE_URL=file://$PWD/build/ci/" -P tests/cmake/install_line.cmake
+      - name: Quality observations and independent base
+        run: >-
+          cmake -DROOT=. -DBUILD=build/${{ matrix.preset }} -DOUT=build/${{ matrix.preset }}/quality-current.json
+          -DSHA="$(git rev-parse HEAD)" -DCONFIG=${{ matrix.preset }} -DBUILD_BASE=ON
+          -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          -P tests/cmake/quality_evidence.cmake
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quality-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            build/${{ matrix.preset }}/quality-current.json
+            build/${{ matrix.preset }}/quality-base.json
+            build/${{ matrix.preset }}/quality-base-policy.json
+            build/${{ matrix.preset }}/quality-base-sha.txt
+          if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: archives-${{ matrix.os }}-${{ matrix.arch }}
@@ -195,6 +228,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
+          fetch-depth: 0
       # clang-21 is on the image; its sanitizer runtimes may not be.
       - name: Sanitizer runtimes
         run: dpkg -s libclang-rt-21-dev > /dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y libclang-rt-21-dev; }
@@ -210,6 +244,21 @@ jobs:
         run: >-
           cmake -DJUNIT=build/asan/junit.xml -DINVENTORY=tests/inventory/ci.txt
           "-DEXCLUDE=abi|release" -P tests/cmake/check_junit.cmake
+      - name: Quality observations and independent base
+        run: >-
+          cmake -DROOT=. -DBUILD=build/asan -DOUT=build/asan/quality-current.json
+          -DSHA="$(git rev-parse HEAD)" -DCONFIG=asan -DBUILD_BASE=ON
+          -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          -P tests/cmake/quality_evidence.cmake
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quality-asan
+          path: |
+            build/asan/quality-current.json
+            build/asan/quality-base.json
+            build/asan/quality-base-policy.json
+            build/asan/quality-base-sha.txt
+          if-no-files-found: error
 
   nofp:
     needs: changes
