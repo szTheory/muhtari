@@ -32,10 +32,8 @@ set(want_library ${notices} include/muhtari.h ${lib} lib/pkgconfig/muhtari.pc
 set(want_runner ${notices} ${exe})
 set(want_libretro ${notices} ${core} info/muhtari_libretro.info)
 
-set(expected "")
-foreach(component IN LISTS COMPONENTS)
-  list(APPEND expected "${DIR}/muhtari-${component}-${SUFFIX}.zip")
-endforeach()
+list(TRANSFORM COMPONENTS PREPEND "${DIR}/muhtari-" OUTPUT_VARIABLE expected)
+list(TRANSFORM expected APPEND "-${SUFFIX}.zip")
 file(GLOB found LIST_DIRECTORIES false "${DIR}/muhtari-*.zip")
 list(SORT expected)
 list(SORT found)
