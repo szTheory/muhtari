@@ -45,7 +45,7 @@ jobs:
   # name, is under .planning/; then the heavy jobs are skipped.
   changes:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 10 s in 31 runs, run 39364791699
+    timeout-minutes: 5  # network floor; max 7 s, n=4, run 39611531779; provisional
     permissions:
       contents: read
       pull-requests: read
@@ -75,7 +75,7 @@ jobs:
   # The image has clang-format-21, clang-tidy-21 and jq; configure finds them.
   hygiene:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 56 s in 31 runs, run 39380164010
+    timeout-minutes: 5  # network floor; max 40 s, n=4, run 39531241714; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -95,7 +95,7 @@ jobs:
   title:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 11 s in 27 runs, run 39350776083
+    timeout-minutes: 5  # network floor; max 6 s, n=3, run 39617860376; provisional
     permissions:
       contents: read
       pull-requests: read
@@ -118,7 +118,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 5  # network-bound floor; slowest leg 131 s in 31 runs, run 39382016958
+    timeout-minutes: 7  # 2 x 186 s, slowest leg macOS x64 n=9, run 39614799435; provisional
     strategy:
       fail-fast: false
       matrix:
@@ -189,7 +189,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 71 s in 31 runs, run 39368351340
+    timeout-minutes: 5  # network floor; max 131 s, n=5, run 39529469630; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -216,7 +216,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: nofp (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 1  # 2 x 22 s, slowest leg of 31 runs, run 39382016958
+    timeout-minutes: 5  # network floor; max 24/40 s, x64 n=3/arm64 n=9, runs 39617761785/39614799435; provisional
     strategy:
       fail-fast: false
       matrix:
@@ -236,7 +236,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 14  # Sound suite: 368 s in run 39529469630; 7 min exhausted in run 39530145463
+    timeout-minutes: 24  # 2 x 691 s, n=6, run 39614595363; provisional; full audio workload
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -267,7 +267,7 @@ jobs:
     needs: [changes, build, be32]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # roll-up floor; slowest 9 s in 31 runs, run 39359891337
+    timeout-minutes: 5  # roll-up floor; max 6 s, n=3, run 39614799435; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -288,7 +288,7 @@ jobs:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 63 s in 31 runs, run 39377950148
+    timeout-minutes: 5  # network floor; max 97 s, n=2, run 39614799435; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -326,7 +326,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 34 s in 7 runs, run 39379798527; provisional
+    timeout-minutes: 5  # network floor; max 31 s, n=3, run 39617761785; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -360,7 +360,7 @@ jobs:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: macos-15
-    timeout-minutes: 5  # network-bound floor; slowest 36 s in 31 runs, run 39366784570
+    timeout-minutes: 5  # network floor; max 31 s, n=9, run 39614799435; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -448,7 +448,7 @@ jobs:
     needs: changes
     if: ${{ !inputs.ref && needs.changes.outputs.heavy == 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 58 s in 31 runs, run 39382016958
+    timeout-minutes: 5  # network floor; max 47 s, n=1, run 39614799435; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -543,7 +543,7 @@ jobs:
     if: always()
     needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality, retroarch, perf]
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # roll-up floor; slowest 4 s in 31 runs, run 39382016958
+    timeout-minutes: 5  # roll-up floor; max 4 s, n=4, run 39617860376; provisional
     steps:
       - name: Every job succeeded or was skipped as allowed
         env:

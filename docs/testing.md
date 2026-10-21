@@ -1,7 +1,6 @@
 # Testing
 
-Every check that CI runs, a contributor can run with one command. This page covers that command, the presets,
-the test inventory, the negative controls and the checks on releases.
+Run CI checks locally, including inventory, negative controls and release checks.
 
 ## The entry point
 
@@ -56,12 +55,11 @@ under the source tree, so this one preopen covers both, at the same paths inside
 with `scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime`; configure stops with that command when the
 runtime is missing. WASI output files have no `.wasm` suffix.
 
-`MUHTARI_TIMEOUT_SCALE` multiplies every test timeout. The scales are 3 for `asan`, 11 for `be32` and 3 for
-`wasm32`. The emulator scales are measured: over ten hosted CI runs, the tests a lane shares with Linux x64 took
-10.7 times as long in total under `qemu-ppc` and 2.5 times as long under `wasmtime`, rounded up. In an arm64
-container on an Apple Silicon Mac, the `be32` test step took 1.1 s and the `wasm32` step 0.3 s.
-
-`audio.samples` has a provisional 240 s base timeout after two macOS Intel 120 s timeouts in run 39611531779; all eight comparisons remain required.
+`MUHTARI_TIMEOUT_SCALE`: provisional `asan`/`be32`/`wasm32` scales 2/13/2; same-run Linux x64 duration-sum
+ratios max 1.713/12.127/1.612 (n=4/4/2). ASan keeps short runs. `audio.samples`: eight 600-frame driver/runner
+pairs, eight fixtures; 250 s = twice 124.92 s (11 Intel Mac successes, run 39617761785). COST 125 starts it early;
+builds/basic/coverage use costs 7/10/28 (control 27), basic/coverage bounds 19/55 s (control 53). Movies: 3 s from
+1.05 s maximum (Windows n=7, provisional). Fixtures retain prerequisites; page writers own separate outputs.
 
 ### Comparing hashes across lanes
 
@@ -245,9 +243,10 @@ program from `ci.yml` and runs it, with the step's own arguments, on synthetic j
 job other than `wasm32` and `library` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
 renamed, empty and planning-only path lists, and on a planning-only list from a pull request of more than 3000
 files, which the files API cuts short. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
-comment with a run ID or the word `provisional`. A measured timeout is twice the job's slowest successful run,
-rounded up to minutes, with a 5-minute floor for network-bound and roll-up jobs; its comment names that run and
-the sample count. A job with fewer than ten successful runs stays `provisional` and gives its sample count.
+run/count comment. Bounds: twice the last 40 comparable successful job/runner/workload executions' maximum,
+rounded up to minutes; network/roll-up floor 5 min. n<10 is provisional. Toolchain/image/workload changes reset
+cohorts; direct/called CI stay separate. Timeouts are censored; skips and copied rerun timestamps add no samples.
+Historical bounds without current evidence say n=0. No cache is added or check removed.
 
 **The title.** The squash commit on `main` takes the pull request's title and body, and release-please reads its
 type. `title` passes a Conventional Commit title with a lower-case subject, such as `fix(runner): exit 2 on a
