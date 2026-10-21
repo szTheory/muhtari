@@ -5,10 +5,10 @@ milestone_name: The whole library
 current_phase: 5
 current_phase_name: Pipeline tune-up
 status: Ready for planning
-stopped_at: Phase 5 context gathered; ready for planning
+stopped_at: Phase 5 research blocked on D-17 gate-budget feasibility; no plans created
 last_updated: "2026-10-21T14:51:35.409Z"
 last_activity: 2026-10-21
-last_activity_desc: Phase 5 context gathered; 18 delegated decisions ready for planning
+last_activity_desc: Phase 5 research recorded; gate-budget feasibility unresolved
 state_head: 812cdbb3adeb9b95d8f7ab952b1d37f5e545c583
 progress:
   total_phases: 7
@@ -33,7 +33,7 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 Phase: 5 of 11 (Pipeline tune-up), first of seven v2.0 phases
 Plan: Not started
 Status: Ready for planning
-Last activity: 2026-10-21 — Phase 5 context gathered; 18 delegated decisions ready for planning
+Last activity: 2026-10-21 — Phase 5 research recorded; D-17 feasibility unresolved, no plans created
 
 Implementation: 0/7 phases; no plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
@@ -89,9 +89,16 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 ## Session Continuity
 
 Last session: 2026-10-21T14:51:35.396Z
-Stopped at: Phase 5 context gathered; ready for planning
-Resume file: .planning/phases/05-pipeline-tune-up/05-CONTEXT.md
-Next command: `$gsd-plan-phase 5`
+Stopped at: Phase 5 research blocked on D-17 gate-budget feasibility; no plans created
+Resume file: .planning/phases/05-pipeline-tune-up/05-RESEARCH.md
+Next command: `$gsd-plan-phase 5 --research` after new feasibility evidence or an explicit scope decision
+
+Planning blocker: the confirmed broad check inventory is 2,764 physical lines before
+embedded workflow/configure checks, against a full-source whole-line cap of 857.
+Useful consolidation candidates exist, but no defensible fault-preserving allocation
+within that cap was established. The research report records measured facts and
+unproven estimates separately. Phase 5 remains unplanned; no readiness override,
+budget relaxation, implementation or additional GSD step was performed.
 
 ## v1.0 closeout verification
 
