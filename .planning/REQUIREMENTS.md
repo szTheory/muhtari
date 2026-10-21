@@ -97,16 +97,16 @@ values in tests cite their source document.
 
 ### Sound
 
-- [ ] **SND-01**: `ctest -L tia` steps every AUDC setting through the period and bit pattern A7800-AUDIO tabulates,
+- [x] **SND-01**: `ctest -L tia` steps every AUDC setting through the period and bit pattern A7800-AUDIO tabulates,
   on the TIA's own 456-tick lattice, with TIA writes ungated by INPTCTRL.
-- [ ] **SND-02**: `ctest -L pokey` checks POKEY at $4000, $0450 and $0800 as the header or hash list places it:
+- [x] **SND-02**: `ctest -L pokey` checks POKEY at $4000, $0450 and $0800 as the header or hash list places it:
   16-bit joins, 1.79 MHz mode, two-tone with the high-pass filter, the polynomial counters, RANDOM, SKCTL
   initialisation, and its clock stretching on slow cycles.
-- [ ] **SND-03**: `muhtari-run --hash-audio` prints the transition-stream and PCM hashes for the 7800basic sound
+- [x] **SND-03**: `muhtari-run --hash-audio` prints the transition-stream and PCM hashes for the 7800basic sound
   and POKEY samples, identical on every platform, and no sample clips.
-- [ ] **SND-04**: The libretro batch and single-sample paths deliver stereo-duplicated PCM equal to the runner's,
+- [x] **SND-04**: The libretro batch and single-sample paths deliver stereo-duplicated PCM equal to the runner's,
   and `runner.boot_to_play` also requires non-silent audio.
-- [ ] **SND-05**: A test renders reference tones through the synthesiser and shows the largest non-harmonic peak
+- [x] **SND-05**: A test renders reference tones through the synthesiser and shows the largest non-harmonic peak
   below 16 kHz is under −80 dB.
 
 ## v2 Requirements
@@ -184,11 +184,11 @@ Later milestones. Each has a seed in `.planning/seeds/` that says when it comes 
 | GAME-04 | Phase 3 | Complete |
 | GAME-05 | Phase 3 | Complete |
 | GAME-06 | Phase 3 | Complete |
-| SND-01 | Phase 4 | Pending |
-| SND-02 | Phase 4 | Pending |
-| SND-03 | Phase 4 | Pending |
-| SND-04 | Phase 4 | Pending |
-| SND-05 | Phase 4 | Pending |
+| SND-01 | Phase 4 | Complete |
+| SND-02 | Phase 4 | Complete |
+| SND-03 | Phase 4 | Complete |
+| SND-04 | Phase 4 | Complete |
+| SND-05 | Phase 4 | Complete |
 
 **Coverage:** v1 requirements: 25 total; 25 mapped to phases; 0 unmapped.
 

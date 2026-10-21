@@ -80,6 +80,16 @@ Verified through the shipped archive and existing CI. Continue within this invoc
 | --- | --- |
 | cd55cff96d | test(04-12): prove raw source order and independent reference hashes |
 
+## Final lifetime reconciliation
+
+Review WR-01 is closed by11482da (RED) and8c933e1 (GREEN). First observer
+registration now precedes load; a late first registration is rejected without
+allocation. Every production/reference caller follows this order. Video bytes
+also match across observation on/off for all eight sample runs. Fresh bounded
+regression CI605+6, sanitizer593, GCC no-FP13 and hygiene24 pass after the fix;
+raw/PCM pins and synthesis identity remain unchanged. One review fix round used,
+no gap round.
+
 ## Self-Check: PASSED
 
 Named artifacts exist, task commits are on this branch, and reported selections passed.

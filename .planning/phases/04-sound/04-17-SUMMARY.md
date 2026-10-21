@@ -104,6 +104,16 @@ The document budget caught422 excess bytes in testing.md; duplicate platform pro
 
 The owned TIA model, POKEY chapter5 timer/poly/HP/IRQ model, actual slow/held clock segments, validated cartridge metadata and fixed source identities remain intact. Recovery04-06 is completed with owned64-phase generation, common/final-gain spectral and fresh headroom/width/frame proofs; isolated candidates are not accepted as production evidence. Final M18360,16 taps, exact-q23-16x64-dc20,85:342/Q12 gain4096,48kHz,API3/ABI1 and behavior revision2 are unchanged in this invocation. All30 phase decisions retain the plan17 audit's assigned tests. The three unclassified edge-classifier rows remain classifier limitations; explicit deterministic requirements are exercised by chip, frame, observer, runner, host, pin and spectral checks. No additional requirement or owner check is invented. Physical analog/startup calibration, universal spectra beyond the finite matrix and low-power target performance remain qualified, not measured claims.
 
+## Final lifetime reconciliation
+
+Review WR-01 is closed by11482da (RED) and8c933e1 (GREEN). First observer
+registration now precedes load; a late first registration is rejected without
+allocation. Every production/reference caller follows this order. Video bytes
+also match across observation on/off for all eight sample runs. Fresh bounded
+regression CI605+6, sanitizer593, GCC no-FP13 and hygiene24 pass after the fix;
+raw/PCM pins and synthesis identity remain unchanged. One review fix round used,
+no gap round.
+
 ## Self-Check: PASSED
 
 Final named checks passed; committed artifacts and required pipeline links exist.

@@ -85,6 +85,16 @@ RED: runner.audio.contract exited8 on unknown --hash-audio. The first parity che
 | 0c446d924c | test(04-13): require canonical runner audio hashes |
 | 3e4a0f7f09 | feat(04-13): hash completed raw transitions and mono PCM canonically |
 
+## Final lifetime reconciliation
+
+Review WR-01 is closed by11482da (RED) and8c933e1 (GREEN). First observer
+registration now precedes load; a late first registration is rejected without
+allocation. Every production/reference caller follows this order. Video bytes
+also match across observation on/off for all eight sample runs. Fresh bounded
+regression CI605+6, sanitizer593, GCC no-FP13 and hygiene24 pass after the fix;
+raw/PCM pins and synthesis identity remain unchanged. One review fix round used,
+no gap round.
+
 ## Self-Check: PASSED
 
 Named artifacts exist, task commits are on this branch, and reported selections passed.
