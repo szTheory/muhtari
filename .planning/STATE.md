@@ -93,7 +93,10 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 Last session: 2026-10-21T23:41:54.187Z
 Stopped at: Halted 05-05 Task2: required Windows producer evidence absent
 Resume file: .planning/phases/05-pipeline-tune-up/05-05-HALTED.md
-Next command: `$gsd-execute-phase 5`
+Next command: `$gsd-debug Windows policy.digest.controls fails in run 39694430448; unblock 05-05 Task2`
+
+Resolve the recorded Windows failure before resuming execution. The halted
+05-05 summary blocks downstream plans; repeating execute alone cannot clear it.
 
 Digest evidence: implementation `7d524edc77c977487a734243ac01364dcbd50272`;
 [hosted read-only preview](https://github.com/szTheory/muhtari/actions/runs/39685745578)

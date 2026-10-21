@@ -187,7 +187,9 @@ hosted aggregate/all-lane verification is recorded in the cross-phase defect led
 ## Next action
 
 Resolve or explicitly route the reproduced Windows tooling blocker, then resume
-Task 2 of this plan. Next GSD command is `$gsd-execute-phase 5`. No downstream plan,
+Task 2 of this plan. First route the blocker with
+`$gsd-debug Windows policy.digest.controls fails in run 39694430448; unblock 05-05 Task2`;
+after repair, resume with `$gsd-execute-phase 5`. No downstream plan,
 phase-wide requirement completion, ship, merge, settings mutation or owner UAT ran.
 
 ## Self-Check: PASSED

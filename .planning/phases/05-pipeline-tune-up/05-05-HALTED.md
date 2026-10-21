@@ -18,4 +18,6 @@ Quality actual607/allocation850; fixed N1970/C14853 unchanged.
 
 Resume Task2 after the blocker is resolved or explicitly routed. Read SUMMARY
 before resuming; retain all semantic controls and authenticate complete comparable
-current/base evidence. Next GSD command: `$gsd-execute-phase 5`.
+current/base evidence. Next GSD command:
+`$gsd-debug Windows policy.digest.controls fails in run 39694430448; unblock 05-05 Task2`.
+After the repair and required producer acceptance, resume with `$gsd-execute-phase 5`.
