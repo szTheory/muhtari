@@ -27,11 +27,21 @@ The [audit](milestones/v1.0-MILESTONE-AUDIT.md) records 25/25 scoped requirement
 and no integration gaps. Gate code remains 15.94% of src/, performance comparison
 is report-only, and WASM/library jobs remain advisory.
 
-## Next Milestone Goals
+## Current Milestone: v2.0 The whole library
 
-Select scope with `$gsd-new-milestone`. The product roadmap and dormant seeds
-retain pipeline tune-up, remaining boards/peripherals/saves/PAL, states/movies,
-measured accuracy, tools and ports as candidates; none is activated by closeout.
+**Goal:** Expand 7800 library breadth with the remaining in-scope cartridge boards, persistent saves,
+controllers and full PAL, beginning with a measured pipeline tune-up.
+
+**Target features:**
+- Activision, Absolute, Fractalus and BankSet boards; XBoard/XM RAM, POKEY and HSC support.
+- HSC and SaveKey/AtariVox EEPROM with stable battery memory, runner saves and RetroArch persistence.
+- XG-1 light gun, paddles, keypad, quadrature devices, SNES2Atari and Mega7800 at the pins.
+- PAL timing, boot, video and audio across all three deliverables.
+- Weekly triage/monthly CI-efficiency reporting, a quality ratchet and honest whole-library evidence.
+
+The owner approved the 27 requirements and seven phases (5–11) on 2026-10-21. Souper/BupChip remains
+with the later accuracy milestone; XM excludes YM2151 and AtariVox excludes speech. The browser player,
+save states and other later horizons remain deferred. Planning v2.0 does not select a package version.
 
 ## Requirements
 
@@ -59,8 +69,15 @@ measured accuracy, tools and ports as candidates; none is activated by closeout.
 
 ### Active
 
-No active milestone requirements. All 25 v1.0 requirements have scoped evidence;
-the next milestone defines fresh requirements with `$gsd-new-milestone`.
+- [ ] Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5.
+- [ ] Activision, Absolute and Fractalus cartridges — BOARD-01–03, Phase 6.
+- [ ] HSC/SaveKey battery data survives host restarts — SAVE-01–06, Phase 7.
+- [ ] Light gun and the other in-scope controllers — INPUT-01–05, Phase 8.
+- [ ] PAL timing, presentation and audio — PAL-01–03, Phase 9.
+- [ ] BankSet and XBoard/XM memory/POKEY/HSC — BOARD-04–05, Phase 10.
+- [ ] Evidence-backed library accounting — COMP-01–03, Phase 11.
+
+Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
 
 ### Out of Scope
 
@@ -73,9 +90,9 @@ the next milestone defines fresh requirements with `$gsd-new-milestone`.
 - A separate fast or low-accuracy mode — one accurate core keeps one set of bugs and one set of hashes.
 - Signed or notarised macOS artifacts — the script install path does not need them.
 - A test framework dependency — plain CTest executables with an in-repo check header cover the need.
-- Atari 2600 cartridges, the remaining boards, peripherals, saves, PAL, save states, movie recording, measured-accuracy
-  oracles, developer tools and ports — planned for later milestones; see `.planning/seeds/` and
-  `.planning/PRODUCT-ROADMAP.md`.
+- Atari 2600 cartridges, Souper/BupChip, YM2151, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech, save states,
+  movie recording, measured-accuracy oracles, the browser player, developer tools and ports — later milestones;
+  see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
 
 ## Context
 
@@ -163,4 +180,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-21 after v1.0 milestone closeout*
+*Last updated: 2026-10-21 after v2.0 milestone scope and roadmap approval*
