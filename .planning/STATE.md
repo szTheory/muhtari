@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_phase: 5
+current_phase: 05
 current_phase_name: Pipeline tune-up
 status: executing
-stopped_at: Phase 5 research and nine plans verified; ready to execute
-last_updated: "2026-10-21T17:35:10.215Z"
+stopped_at: Completed 05-01-PLAN.md; continue within the executing phase
+last_updated: "2026-10-21T17:50:57.532Z"
 last_activity: 2026-10-21
-last_activity_desc: Phase 5 research refreshed; nine plans verified, ready to execute
-state_head: c7b17edf5b8fc1bed7f8c01d5eea14e6481772c1
+last_activity_desc: Completed plan 05-01 with audited counter and allocated budget
+state_head: 16ad83924457fe4823e22329819381df74bea421
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 11
 total_phases: 7
 ---
 
@@ -26,22 +26,24 @@ total_phases: 7
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 5 — Pipeline tune-up.
+**Current focus:** Phase 05 — Pipeline tune-up
 
 ## Current Position
 
-Phase: 5 (Pipeline tune-up) — READY TO EXECUTE
-Plan: 0 of 9 plans executed
-Status: Ready to execute
-Last activity: 2026-10-21 — Phase 5 research refreshed; nine plans verified, ready to execute
+Phase: 05 (Pipeline tune-up) — EXECUTING
+Plan: 2 of 9
+Status: Executing Phase 05; plan 05-02 next
+Last activity: 2026-10-21 — Completed plan 05-01 with audited counter and allocated budget
 
-Implementation: 0/7 phases; no plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
+Progress: 11% — 1/9 plans complete; 0/7 phases complete.
+
+Implementation: 1/9 Phase 5 plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
 ## Accumulated Context
 
 Decisions and detailed execution history live in PROJECT.md,
 preparation/DECISIONS.md and milestones/v1.0-phases/. Prior requirements and the audit
-are archived under milestones/. The v2.0 scope and phases 5–11 are active; no implementation has started.
+are archived under milestones/. The v2.0 scope and phases 5–11 are active; Phase 5 execution is in progress.
 
 ### Release evidence
 
@@ -88,9 +90,9 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T17:34:35.542Z
-Stopped at: Phase 5 research and nine plans verified; ready to execute
-Resume file: .planning/phases/05-pipeline-tune-up/05-01-PLAN.md
+Last session: 2026-10-21T17:50:57.517Z
+Stopped at: Completed 05-01-PLAN.md; continue within the executing phase
+Resume file: .planning/phases/05-pipeline-tune-up/05-02-PLAN.md
 Next command: `$gsd-execute-phase 5`
 
 Current planning contract: D-17 and D-19–20 now use an audited absolute ratchet.
@@ -149,3 +151,10 @@ No phase implementation or owner hardware verification ran during initialization
 ## Decisions
 
 - [Phase 5]: Replace hard gate/source ratio with audited absolute ratchet; fix scoped allocations before additions and tighten to final actual. Planning uses a bounded initial measurement task, not a full prototype. — Owner delegated adoption after refreshed failed construction and three advisory reviews; preserve safety controls and all TUNE outcomes.
+- [Phase 05]: Freeze complete B=12885 at f0202e1; measured S=2; fixed N=1970 including reserve150 and C=14853 before additions. Count slice actual368/500; current count13251.
+
+## Performance Metrics
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 05 P01 | 12min | 2 tasks | 6 files |

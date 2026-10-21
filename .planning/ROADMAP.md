@@ -19,7 +19,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
-| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Planned |
+| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | In Progress |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Not started |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
@@ -34,11 +34,11 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 9 plans.
+**Plans:** 1/9 plans executed.
 
 Plans:
 **Wave 1**
-- [ ] 05-01-PLAN.md — Audit the complete boundary, prove retained-fault savings and fix scoped allocations.
+- [x] 05-01-PLAN.md — Audit the complete boundary, prove retained-fault savings and fix scoped allocations.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 05-02-PLAN.md — Resolve the output race and derive measured test/job bounds.
@@ -166,7 +166,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
-| 5. Pipeline tune-up | 0/TBD | Not started | — |
+| 5. Pipeline tune-up | 1/9 | In Progress | — |
 | 6. Retail cartridge boards | 0/TBD | Not started | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
