@@ -61,6 +61,8 @@ runtime is missing. WASI output files have no `.wasm` suffix.
 10.7 times as long in total under `qemu-ppc` and 2.5 times as long under `wasmtime`, rounded up. In an arm64
 container on an Apple Silicon Mac, the `be32` test step took 1.1 s and the `wasm32` step 0.3 s.
 
+`audio.samples` has a provisional 240 s base timeout after two macOS Intel 120 s timeouts in run 39611531779; all eight comparisons remain required.
+
 ### Comparing hashes across lanes
 
 `runner.hashes_file` (`tests/cmake/hashes.cmake`, mode `write`) writes `build/<preset>/hashes.txt`. It has three
