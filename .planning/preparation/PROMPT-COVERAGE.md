@@ -2,7 +2,7 @@
 title: "Prompt coverage: every owner ask and where it lives"
 summary: "Maps each of the owner's 53 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
 read_when: "At kickoff review and at every milestone close; also before calling an owner ask done, deferred or out of scope."
-updated: 2026-10-16
+updated: 2026-10-21
 ---
 
 # Prompt coverage
@@ -62,10 +62,10 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 31 | Portability to low-power devices (DS/PSP class) | ECOSYSTEM 4 (device budgets); ENGINEERING 9 (`be32` per PR; `armhf` and console compile-only lanes nightly); SEED-005 | Partial | Preparation declines DS and DSi (A7800DS serves them) and makes PSP and Old 3DS "measure, then decide"; reopens if v1.0 measures ≤ ~2 M Ir/frame (ECOSYSTEM 4). Ports v6.0 (SEED-005) |
 | 32 | A consistent frame rate, no stutter, low latency | DECISIONS (a frame runs VBLANK to VBLANK, input applied at VBLANK start; exact rational rates); ECOSYSTEM 2 (G.01, G.02, C.19); HOSTS 3 (low-latency settings); ENGINEERING 8 (deadline misses); AGENTS 4 | Documented | Run-ahead v3.0 (SEED-002) |
 | 33 | Interface design with good integration ergonomics | ARCHITECTURE (public C API); ENGINEERING 10 (`muhtari_status`; an error changes no state), 11 (terse header ≤ 24 KB, `docs/embedding.md`); HOSTS 1, 4 (exit-status table), 7 (feature → host or core) | Documented | — |
-| 34 | All regions | SYSTEM 1, 7 (NTSC and PAL clocks and BIOS paths); MARIA 6 (242 / 292 rows); DECISIONS (exact NTSC and PAL rates; region from header or the CC0 hash list) | Later | Full PAL v2.0 (SEED-001) |
+| 34 | All regions | SYSTEM 1, 7 (NTSC and PAL clocks and BIOS paths); MARIA 6 (242 / 292 rows); DECISIONS (exact NTSC and PAL rates; region from header or the CC0 hash list) | Documented | PAL-01–03, Phase 9 of approved v2.0 |
 | 35 | Display and monitor types | MARIA 6 (aspect, overscan, scaling, CRT vs LCD), 7 (palettes), 8 (composite artifacting); HOSTS 7 (palettes and filter as host helpers; CRT shaders in RetroArch); ECOSYSTEM 2 (C.11–C.13) | Documented | Composite artifact filter v4.0 (SEED-003) |
-| 36 | Maximum cartridge/mapper compatibility, ratcheted quickly | CARTRIDGES 2.1–2.3 (every board, library share, milestone); PRODUCT-ROADMAP (v1.0 ph3 187 of 204 titles, ph4 195 of 204); CONFORMANCE 5 | Documented | Every remaining board v2.0 (SEED-001) |
-| 37 | Saves | CARTRIDGES 4 (HSC, SaveKey/AtariVox, file formats); HOSTS 1 (save RAM, `.srm`), 4 (save dir, worst-case loss) | Later | HSC, SaveKey and `.srm` v2.0 (SEED-001); save states and rewind v3.0 (SEED-002) |
+| 36 | Maximum cartridge/mapper compatibility, ratcheted quickly | CARTRIDGES 2.1–2.3 (every board, library share, milestone); PRODUCT-ROADMAP (v1.0 ph3 187 of 204 titles, ph4 195 of 204); CONFORMANCE 5 | Documented | BOARD-01–05, Phases 6 and 10 of approved v2.0; Souper/BupChip and later audio expansions remain deferred |
+| 37 | Saves | CARTRIDGES 4 (HSC, SaveKey/AtariVox, file formats); HOSTS 1 (save RAM, `.srm`), 4 (save dir, worst-case loss) | Documented | SAVE-01–06, Phase 7 of approved v2.0; save states and rewind remain v3.0 (SEED-002) |
 | 38 | Friendly to ROM hackers and modified games | CARTRIDGES 1.4, 6 (hack identity, IPS/BPS, BIOS signature); ECOSYSTEM 2 (C.02: header first, no per-game hacks); DECISIONS (patching stays in the host); HOSTS 7 (RetroArch soft-patching) | Documented | `muhtari-run --patch` and homebrew lint v5.0 (SEED-004) |
 | 39 | A public GitHub repository with no PII | AGENTS 3; `scripts/hygiene.sh` and `.githooks` (every commit and push; pre-push scans the whole history); ASSET_POLICY 1, 6 | Documented | The owner consents to creating the public repository (GSD-HANDOFF 7) |
 | 40 | MIT or Apache, whichever makes sense | `LICENSE` (MIT); DECISIONS (MIT: fits every frontend's licence, same as the siblings); PROVENANCE 1, 5 | Documented | — |
@@ -79,11 +79,11 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 48 | Use subagents for context efficiency | GSD-HANDOFF 3 (discuss spawns advisor researchers), 5 (research, plan-check, verifier and code-review agents on; `model_profile: inherit`); preparation itself ran as parallel research agents | Documented | — |
 | 49 | Usable as a core inside other emulators and frontends | HOSTS 1 (libretro), 2 (rcheevos map), 4 (runner process contract); ARCHITECTURE; AGENTS 2, 4; ENGINEERING 11 (`docs/embedding.md`) | Documented | The browser build (SEED-008); Playstead integration v6.0 (SEED-005) |
 | 50 | Use the new OpenGSD (`gsd-core`), not the old GSD | GSD-HANDOFF 1, 2 (`@opengsd/gsd-core` 1.17.0 version check), 5, 8; LESSONS XFER-023, -024 | Documented | — |
-| 51 | Power-efficient, for battery life on handhelds | ECOSYSTEM 4 (work per frame, device budgets); FRAME-08 (instructions-per-frame ratchet), FRAME-09 (bench); ENGINEERING 8, 9 (`armhf` nightly); PROJECT constraints (efficiency); SEED-005 | Partial | Work per frame is guarded from phase 1, but energy is never measured; battery budgets on a handheld come with the ports (SEED-005) |
-| 52 | Efficient in the browser through WebAssembly; the owner ranks it very important | HOSTS 6; ARCHITECTURE (portability row); PROJECT constraints (efficiency); v1.0 ph1 (a wasm32 build and hash-equality lane on every PR, decided at the phase 1 discussion); SEED-008 | Partial | The wasm32 build and its frame hash are guarded from phase 1; the browser build is weighed at the v1.0 close, or sooner if the owner asks (SEED-008) |
+| 51 | Power-efficient, for battery life on handhelds | ECOSYSTEM 4 (work per frame, device budgets); FRAME-08 (instructions-per-frame ratchet), FRAME-09 (bench); ENGINEERING 8, 9 (`armhf` nightly); PROJECT constraints (efficiency); SEED-005 | Partial | Work per frame is measured, with comparisons still report-only; TUNE-04 handles arming controls in Phase 5. Energy is not measured; battery budgets on a handheld come with the ports (SEED-005) |
+| 52 | Efficient in the browser through WebAssembly; the owner ranks it very important | HOSTS 6; ARCHITECTURE (portability row); PROJECT constraints (efficiency); v1.0 ph1 (a wasm32 build and hash-equality lane on every PR, decided at the phase 1 discussion); SEED-008 | Partial | The WASM build/hash lane remains advisory. The owner considered and deferred the browser player at the v2.0 boundary on 2026-10-21 (SEED-008); TUNE-04 makes lane status explicit |
 | 53 | Another copy and paste beats another dependency: small, flat dependency trees, a dependency only when truly needed | AGENTS Style; PROVENANCE 4 (permissive seeds with their notices); PROJECT out of scope (no test framework dependency); ENGINEERING 7 (YAGNI list) | Documented | — |
 
-Totals: Documented 45, Partial 3, Later 5, Inapplicable 0.
+Totals: Documented 47, Partial 3, Later 3, Inapplicable 0.
 
 ## 2. Owner constraints vs agent recommendations
 

@@ -6,11 +6,16 @@ status: planning
 last_updated: "2026-10-21T14:29:05.791Z"
 last_activity: 2026-10-21
 progress:
-  total_phases: 0
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
   percent: 0
+current_phase: "5"
+current_phase_name: Pipeline tune-up
+total_phases: 7
+stopped_at: v2.0 roadmap approved; Phase 5 ready for discussion
+last_activity_desc: v2.0 initialized with 27 requirements and seven approved phases
 ---
 
 # Project State
@@ -20,20 +25,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Planning the next milestone.
+**Current focus:** Phase 5 — Pipeline tune-up.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-10-21 — Milestone v2.0 started
+Phase: 5 of 11 (Pipeline tune-up), first of seven v2.0 phases
+Plan: Not started
+Status: Ready for phase discussion
+Last activity: 2026-10-21 — v2.0 initialized; 27 requirements and phases 5–11 approved.
+
+Implementation: 0/7 phases; no plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
 ## Accumulated Context
 
 Decisions and detailed execution history live in PROJECT.md,
-preparation/DECISIONS.md and milestones/v1.0-phases/. Requirements and the audit
-are archived under milestones/. No next milestone scope is active.
+preparation/DECISIONS.md and milestones/v1.0-phases/. Prior requirements and the audit
+are archived under milestones/. The v2.0 scope and phases 5–11 are active; no implementation has started.
 
 ### Release evidence
 
@@ -52,7 +59,7 @@ were preserved. The audit verdict remains tech_debt; no clean verification is cl
 Gate-code proportion is 1,367/8,577 lines (15.94%, above the 10% budget).
 The performance gate is unarmed and WASM/library jobs remain advisory.
 
-## Deferred Items
+## Deferred Items — v1.0 closeout history
 
 Items acknowledged and deferred at milestone close, most recent first:
 
@@ -74,18 +81,18 @@ Items acknowledged and deferred at milestone close, most recent first:
 | todos | 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md | presence-only | 2026-10-21 | v1.0 |
 | deferred_items | 04/deferred-items.md: Tooling seed: `policy.compat_doc_fresh` and its self-test share `build/ci/policy/compatibility.md` as output. One full CI invocation reported a stale page while both ran concurrently; the generated and committed pages were identical afterward, the isolated freshness check passed, and a complete workflow retry passed all 588 regular and six archive tests. The compatibility source, ledger and tests were unchanged by this plan. Give the self-test a separate output during the later tooling tune-up; this is a test/tooling seed under AGENTS rule 7, not a sound requirement or an additional review round. | acknowledged | 2026-10-21 | v1.0 |
 
-Known verification overrides: 15 newly acknowledged, 0 carried forward from a prior close.
+At v1.0 closeout: 15 newly acknowledged, 0 carried forward from a prior close.
 Acknowledgment preserves verdicts and lapses when an artifact changes. Future
 seeds are still dormant, todos still pending; acknowledgment does not resolve them.
 
 ## Session Continuity
 
 Last session: 2026-10-21
-Stopped at: v1.0 milestone archived; no further GSD step run.
+Stopped at: v2.0 milestone initialized; no phase discussion or execution run.
 Resume file: None
-Next command: `$gsd-new-milestone`
+Next command: `$gsd-discuss-phase 5`
 
-## Closeout verification
+## v1.0 closeout verification
 
 `cmake --workflow --preset ci` — exit 0: 605 regular tests and six release/archive
 checks passed after archival. `scripts/hygiene.sh --tree` and `git diff --check` —
@@ -93,3 +100,21 @@ exit 0. Archive integrity check — exit 0: all 177 phase files retained, includ
 73 plans, 73 summaries and four unchanged verification reports; only the deferred
 item acknowledgment modifies a moved phase artifact. `query audit-open --json` —
 exit 0: zero open, 15 acknowledged. Hosted release evidence is linked above.
+
+## v2.0 initialization decisions
+
+- Owner approved whole-library scope, research first, planning version v2.0 and continuing at Phase 5.
+- Souper/BupChip remains deferred; XM covers RAM/POKEY/HSC, AtariVox covers EEPROM; no full OpenHSC.
+- All 27 requirements and the seven-phase roadmap were explicitly approved on 2026-10-21.
+- Historical v1.0 overrides remain recorded above; initialization makes no new implementation or accuracy claim.
+
+## Initialization verification
+
+`query init.new-milestone` — exit 0: v2.0 The whole library, seven phase directories.
+`cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake`, `scripts/hygiene.sh --tree` and
+`git diff --check` — exit 0. One-off structural integrity check (`python3 -`) —
+exit 0: 27 unique requirements, exact phase coverage, seven phases with 2–5
+criteria, 15 historical deferral rows, unchanged outgoing snapshots and seeds.
+Archive PR #18 merged as 752916f after [required PR CI](https://github.com/szTheory/muhtari/actions/runs/39614799435)
+passed; no release-please pull request was pending after the archive merge.
+No phase implementation or owner hardware verification ran during initialization.
