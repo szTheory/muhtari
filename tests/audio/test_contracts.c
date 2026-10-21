@@ -1,6 +1,8 @@
 /* Frame-audio contracts through the shipped archive. Cartridges and BIOS
    programs are generated in memory; timing follows docs/embedding.md. */
 #include <stdint.h>
+#include <stdio.h>
+#include "../../runner/sha256.h"
 #include <stdlib.h>
 #include <string.h>
 #include "internal.h"
@@ -446,8 +448,203 @@ static void test_observer_one(void)
     muhtari_destroy(m);
 }
 
-int main(void)
+struct event {
+    uint64_t tick;
+    uint16_t level;
+    uint8_t source;
+};
+struct events {
+    unsigned count;
+    struct event item[20000];
+};
+static struct events streams[2];
+static void collect(void *user, uint64_t tick, uint8_t source, uint16_t raw)
 {
+    struct events *e = user;
+    CHECK(e->count < 20000u);
+    if (e->count >= 20000u)
+        return;
+    e->item[e->count].tick = tick;
+    e->item[e->count].source = source;
+    e->item[e->count++].level = raw;
+}
+static void test_observer_order(void)
+{
+    muhtari *a = make(), *b = make();
+    for (unsigned lone = 0u; lone < 2u; lone++) {
+        memset(streams, 0, sizeof streams);
+        for (unsigned k = 0u; k < 2u; k++) {
+            muhtari *m = k == 0u ? a : b;
+            muhtari__synth_reset(m, 0u, lone != 0u ? 1u : 2u);
+            muhtari__tia_reset(m);
+            m->synth.secondary = (uint8_t)lone;
+            muhtari__pokey_reset(m, 0u);
+            muhtari__pokey_reset(m, 1u);
+            CHECK_EQ_U64(muhtari__synth_observe(m, collect, &streams[k]), 0);
+            muhtari__observe_begin(m, 4000u);
+            muhtari__tia_write(m, 0x19u, 15u, 0u);
+            muhtari__tia_write(m, 0x1Au, 11u, 0u);
+            for (unsigned chip = lone; chip < 2u; chip++) {
+                muhtari__pokey_write(m, chip, 8u, 0x64u, 0u);
+                for (unsigned ch = 0; ch < 4u; ch++) {
+                    muhtari__pokey_write(m, chip, (uint8_t)(2u * ch), 1u, 0u);
+                    muhtari__pokey_write(m, chip, (uint8_t)(2u * ch + 1u), 0xAFu, 0u);
+                }
+                muhtari__pokey_write(m, chip, 9u, 0u, 0u);
+            }
+            if (k == 0u)
+                muhtari__pokey_catch_up(m, 3999u);
+            else
+                for (uint64_t t = 1u; t < 4000u; t++)
+                    muhtari__pokey_catch_up(m, t);
+            muhtari__observe_end(m);
+        }
+        CHECK(streams[0].count > 100u);
+        CHECK_EQ_U64(streams[0].count, streams[1].count);
+        for (unsigned n = 0u; n < streams[0].count; n++) {
+            struct event x = streams[0].item[n], y = streams[1].item[n];
+            CHECK_EQ_U64(x.tick, y.tick);
+            CHECK_EQ_U64(x.source, y.source);
+            CHECK_EQ_U64(x.level, y.level);
+            CHECK(x.level <= 15u);
+            if (lone != 0u)
+                CHECK(x.source < 2u || x.source >= 6u);
+            if (n != 0u) {
+                struct event prev = streams[0].item[n - 1u];
+                CHECK(x.tick >= prev.tick);
+                if (x.tick == prev.tick)
+                    CHECK(x.source >= prev.source);
+            }
+        }
+    }
+    /* Deliberately non-source-ordered equal-tick submissions preserve
+       both changes on a source even when the final level returns to zero. */
+    muhtari__synth_reset(a, 0u, 0u);
+    streams[0].count = 0u;
+    muhtari__observe_begin(a, 10u);
+    muhtari__synth_raw(a, 9u, 7u, 5u);
+    muhtari__synth_raw(a, 9u, 1u, 3u);
+    muhtari__synth_raw(a, 9u, 1u, 0u);
+    muhtari__synth_raw(a, 10u, 0u, 4u);
+    muhtari__synth_raw(a, 11u, 6u, 15u);
+    muhtari__observe_end(a);
+    CHECK_EQ_U64(streams[0].count, 3u);
+    CHECK_EQ_U64(streams[0].item[0].source, 1u);
+    CHECK_EQ_U64(streams[0].item[0].level, 3u);
+    CHECK_EQ_U64(streams[0].item[1].level, 0u);
+    CHECK_EQ_U64(streams[0].item[2].source, 7u);
+    muhtari__observe_begin(a, 20u);
+    CHECK_EQ_U64(streams[0].count, 5u);
+    CHECK_EQ_U64(streams[0].item[3].tick, 10u);
+    CHECK_EQ_U64(streams[0].item[4].tick, 11u);
+    CHECK_EQ_U64(muhtari__synth_observe(a, NULL, NULL), 0);
+    CHECK(a->observation == NULL);
+    muhtari_destroy(a);
+    muhtari_destroy(b);
+}
+
+static void reference_raw(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    uint8_t bytes[11];
+    for (unsigned i = 0; i < 8u; i++)
+        bytes[i] = (uint8_t)(tick >> (8u * i));
+    bytes[8] = source;
+    bytes[9] = (uint8_t)raw;
+    bytes[10] = (uint8_t)(raw >> 8);
+    muhtari__sha256_update(user, bytes, sizeof bytes);
+}
+static void print_digest(const char *key, muhtari__sha256 *hash)
+{
+    uint8_t digest[32];
+    char hex[65];
+    muhtari__sha256_final(hash, digest);
+    muhtari__sha256_hex(digest, hex);
+    printf("%s %s\n", key, hex);
+}
+static int reference_hashes(const char *path, const char *count)
+{
+    char *end = NULL;
+    unsigned long frames = strtoul(count, &end, 10);
+    if (*count == '\0' || *end != '\0' || frames == 0u || frames > 100000u)
+        return 1;
+    FILE *f = fopen(path, "rb");
+    if (f == NULL)
+        return 1;
+    if (fseek(f, 0, SEEK_END) != 0) {
+        fclose(f);
+        return 1;
+    }
+    long length = ftell(f);
+    if (length <= 0 || length > 1048704) {
+        fclose(f);
+        return 1;
+    }
+    rewind(f);
+    uint8_t *image = malloc((size_t)length);
+    if (image == NULL) {
+        fclose(f);
+        return 1;
+    }
+    size_t got = fread(image, 1, (size_t)length, f);
+    int closed = fclose(f);
+    if (got != (size_t)length || closed != 0) {
+        free(image);
+        return 1;
+    }
+    muhtari *m = make();
+    muhtari_media media = media_for(image, got);
+    muhtari_status st = muhtari_load(m, &media);
+    free(image);
+    if (st != 0) {
+        muhtari_destroy(m);
+        return 1;
+    }
+    muhtari__sha256 raw, pcm;
+    muhtari__sha256_init(&raw);
+    muhtari__sha256_init(&pcm);
+    if (muhtari__synth_observe(m, reference_raw, &raw) != 0) {
+        muhtari_destroy(m);
+        return 1;
+    }
+    uint64_t samples = 0u;
+    for (unsigned long n = 0; n < frames; n++) {
+        int16_t audio[801];
+        muhtari_frame io;
+        frame_io(&io, NULL, 0, audio, 801);
+        if (muhtari_run_frame(m, &io) != 0) {
+            muhtari_destroy(m);
+            return 1;
+        }
+        for (uint32_t j = 0; j < io.audio_count; j++) {
+            uint16_t bits = (uint16_t)audio[j];
+            uint8_t bytes[2] = {(uint8_t)bits, (uint8_t)(bits >> 8)};
+            muhtari__sha256_update(&pcm, bytes, 2);
+        }
+        samples += io.audio_count;
+    }
+    muhtari_versions v = {0};
+    v.size = sizeof v;
+    CHECK_EQ_U64(muhtari_get_versions(&v), 0);
+    print_digest("audio_transitions_sha256", &raw);
+    print_digest("audio_pcm_sha256", &pcm);
+    printf("audio_frames %lu\naudio_samples %llu\naudio_rate 48000/1\naudio_behaviour_revision "
+           "%u\naudio_synthesis exact-q23-16x64-dc20\n",
+           frames, (unsigned long long)samples, v.behaviour_revision);
+    muhtari_destroy(m);
+    return 0;
+}
+
+int main(int argc, char **argv)
+{
+    if (argc == 4 && strcmp(argv[1], "--reference-hashes") == 0)
+        return reference_hashes(argv[2], argv[3]);
+    if (argc == 2 && strcmp(argv[1], "observer") == 0) {
+        test_observer_order();
+        test_observer_one();
+        CHECK_DONE();
+    }
+    if (argc != 1)
+        return 1;
     test_observer_one();
     test_audio_boundaries();
     test_public_audio();

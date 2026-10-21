@@ -362,3 +362,9 @@ Statuses are only ever added. Those after the probe's:
 
 `api`, `abi` and `behaviour_revision` start at 1, so zero means absent: a field that a library older than your
 header does not know stays at the zero you wrote. The library version numbers carry no such meaning.
+
+Sound output is fixed-rate 48,000/1 Hz mono signed int16. A fast-boot first
+frame returns 54 samples; full NTSC frames return 800 or 801. Use audio_count,
+not the buffer capacity. Passing NULL for audio discards samples while preserving
+synthesis history and future output. Raw-transition observation is an internal
+runner seam; the installed library exposes no observer registration facility.
