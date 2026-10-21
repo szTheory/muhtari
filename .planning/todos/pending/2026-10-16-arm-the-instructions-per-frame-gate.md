@@ -2,6 +2,7 @@
 created: 2026-10-16T19:00:00.000Z
 title: Arm the instructions-per-frame gate
 area: ci
+resolves_phase: 5
 severity: minor
 files:
   - .github/workflows/ci.yml
