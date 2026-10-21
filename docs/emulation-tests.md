@@ -460,3 +460,29 @@ same-count zero digest while retaining valid picture/input evidence and must
 fail only the audio predicate (mask 8). Existing image, timing, wrong-port and
 mirror controls remain required. This proves non-silence and delivery, not a
 listening comparison or physical hardware calibration.
+
+`audio.samples` pins eight built 7800basic sound programs in
+`tests/audio/expected.txt`: soundtest, soundeffects, trackertest, eightysix,
+pokey, rmtramcompressiondemo, rmtramdemo and rmtromdemo. Each run completes
+600 fast-boot frames with both port1 ProLine buttons held for frames1–60 and
+released for61–600. The release starts rmtromdemo's selected song; the button
+press starts soundtest's generic-fire effect. Soundeffects and soundtest have
+identical source bytes and build output in the pinned package; both names are
+checked through the existing fixture recipe.
+
+Rows record name, frame count, actual mono sample count, rate, reported behavior
+revision, synthesis identity, raw digest and PCM digest. Pins are regression
+evidence, supported by documentary chip tests and alias-sensitive spectral
+checks. The shipped archive driver compares observed, unobserved and discarded
+output, repeats the first frame after reset, requires non-silence and zero
+pre-clamp clips, and bounds delivered/pre-clamp peak to 29,204 (−1 dBFS).
+Wrong-pin controls must fail. The real runner independently reproduces every
+row through a matching movie. No ROM or audio bytes are committed.
+
+For an intentional pin update, first run the production spectral/controls,
+TIA, POKEY and IRQ checks, then run `muhtari-test-audio-samples --measure ROM
+NAME unused` from the build's tests directory. Review identity, counts, raw
+changes and clipping audits before copying the measured row. A PCM synthesis
+change alone never justifies replacing raw or video evidence. The existing
+platform hashes file also includes soundtest and pokey's seven audio fields
+under their name prefixes, preserving the card/PNG rows and Unix newlines.

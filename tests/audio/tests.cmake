@@ -1,3 +1,33 @@
+if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
+  file(STRINGS "${EXPECTED}" rows REGEX "^[^#]")
+  list(LENGTH rows count)
+  if(NOT count EQUAL 8)
+    message(FATAL_ERROR "audio sample corpus must contain eight rows")
+  endif()
+  foreach(row IN LISTS rows)
+    string(REGEX REPLACE "[ \t]+" ";" fields "${row}")
+    list(GET fields 0 name)
+    set(rom "${BUILT}/${name}/${name}.bas.a78")
+    execute_process(COMMAND ${EMULATOR} "${DRIVER}" --check "${rom}" "${name}" "${row}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE want ERROR_VARIABLE audit)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "audio sample ${name} failed: ${rc} ${want} ${audit}")
+    endif()
+    message(STATUS "${audit}")
+    string(REPEAT "|....12|......|...BB|\n" 60 input)
+    string(REPEAT "|......|......|...BB|\n" 540 released)
+    string(APPEND input "${released}")
+    file(WRITE "${CAPTURE}-${name}.movie" "muhtari-movie 1\nport1 proline\nport2 proline\n${input}")
+    execute_process(COMMAND ${EMULATOR} "${RUNNER}" --movie "${CAPTURE}-${name}.movie" --hash-audio "${rom}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE got ERROR_VARIABLE err)
+    string(REGEX REPLACE "^lag_frames [0-9]+\n" "" got "${got}")
+    if(NOT rc STREQUAL "0" OR NOT got STREQUAL want)
+      message(FATAL_ERROR "audio runner ${name} disagrees: ${rc} ${got} ${want} ${err}")
+    endif()
+  endforeach()
+  return()
+endif()
+
 add_executable(muhtari-test-spectral ${CMAKE_CURRENT_LIST_DIR}/test_spectral.c)
 target_include_directories(muhtari-test-spectral PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-spectral PRIVATE muhtari::muhtari)
@@ -60,3 +90,21 @@ muhtari_add_test(NAME cpu.irq.timing COMMAND muhtari-test-cpu irq.timing
 
 muhtari_add_test(NAME audio.observer COMMAND muhtari-test-audio-contracts observer
   LABELS audio portable TIMEOUT 10)
+
+add_executable(muhtari-test-audio-samples ${CMAKE_CURRENT_LIST_DIR}/test_samples.c
+  ${CMAKE_SOURCE_DIR}/runner/sha256.c)
+target_include_directories(muhtari-test-audio-samples PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-audio-samples PRIVATE muhtari::muhtari)
+target_compile_definitions(muhtari-test-audio-samples PRIVATE
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+set_target_properties(muhtari-test-audio-samples PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-audio-samples)
+
+muhtari_add_test(NAME audio.samples
+  COMMAND ${CMAKE_COMMAND} "-DDRIVER=$<TARGET_FILE:muhtari-test-audio-samples>"
+    "-DRUNNER=$<TARGET_FILE:muhtari-run>" "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
+    "-DEXPECTED=${CMAKE_CURRENT_LIST_DIR}/expected.txt" "-DBUILT=${PROJECT_BINARY_DIR}/built"
+    "-DCAPTURE=${PROJECT_BINARY_DIR}/tests/audio-samples" -P ${CMAKE_CURRENT_LIST_FILE}
+  LABELS audio basic portable TIMEOUT 120)
+set_tests_properties(audio.samples PROPERTIES FIXTURES_REQUIRED
+  "built_soundtest;built_soundeffects;built_trackertest;built_eightysix;built_pokey;built_rmtramcompressiondemo;built_rmtramdemo;built_rmtromdemo")

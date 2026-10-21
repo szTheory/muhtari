@@ -731,8 +731,11 @@ endforeach()
 # hashes.txt, the file CI compares across lanes.
 set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
 muhtari_add_test(NAME runner.hashes_file
-  COMMAND ${runner_check} -DMODE=write -DOUT=${PROJECT_BINARY_DIR} -P ${runner_hashes}
+  COMMAND ${runner_check} -DMODE=write -DOUT=${PROJECT_BINARY_DIR}
+    "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
+    "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${runner_hashes}
   LABELS runner portable TIMEOUT 20)
+set_tests_properties(runner.hashes_file PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 # The comparison's self tests: two files where three are required, and two
 # files one byte apart.
 set(runner_fixture ${PROJECT_BINARY_DIR}/tests/hashes)

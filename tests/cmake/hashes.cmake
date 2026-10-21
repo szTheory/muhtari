@@ -17,9 +17,34 @@ if(MODE STREQUAL "write")
   set(frame1 ${CMAKE_MATCH_1})
   set(frame600 ${CMAKE_MATCH_2})
   file(SHA256 "${png}" png_sha256)
+  set(content "frame1 ${frame1}\nframe600 ${frame600}\npng ${png_sha256}\n")
+  string(REPEAT "|....12|......|...BB|\n" 60 input)
+  string(REPEAT "|......|......|...BB|\n" 540 released)
+  file(WRITE "${OUT}/hashes-audio.movie" "muhtari-movie 1\nport1 proline\nport2 proline\n${input}${released}")
+  foreach(name soundtest pokey)
+    string(TOUPPER "${name}" key)
+    if(NOT EXISTS "${${key}}")
+      message(FATAL_ERROR "hashes: missing ${name} built audio fixture")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${OUT}/hashes-audio.movie"
+        --hash-audio "${${key}}"
+      OUTPUT_VARIABLE audio ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT audio MATCHES "audio_frames 600\n"
+        OR audio MATCHES "audio_transitions_sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+      message(FATAL_ERROR "hashes: ${name} audio failed: ${rc} ${audio} ${err}")
+    endif()
+    string(REGEX MATCHALL "audio_[^\n]+" lines "${audio}")
+    list(LENGTH lines audio_fields)
+    if(NOT audio_fields EQUAL 7)
+      message(FATAL_ERROR "hashes: ${name} expected seven audio fields")
+    endif()
+    foreach(line IN LISTS lines)
+      string(APPEND content "${name}.${line}\n")
+    endforeach()
+  endforeach()
   # Unix newlines on every host: file(WRITE) writes CRLF on Windows.
   file(CONFIGURE OUTPUT "${OUT}/hashes.txt" NEWLINE_STYLE UNIX
-    CONTENT "frame1 ${frame1}\nframe600 ${frame600}\npng ${png_sha256}\n")
+    CONTENT "${content}")
 elseif(MODE STREQUAL "compare")
   # Fault prevented: lanes that disagree, or a lane that stops uploading and
   # silently drops out. Passes only for exactly COUNT existing files that are
