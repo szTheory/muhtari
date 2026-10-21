@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/szTheory/muhtari/compare/v0.3.0...v0.4.0) (2026-10-21)
+
+
+### Features
+
+* **audio:** add deterministic TIA and POKEY sound ([#15](https://github.com/szTheory/muhtari/issues/15)) ([0e68eb5](https://github.com/szTheory/muhtari/commit/0e68eb56c8ef21cbbbfd0fa7ebdb3b6b69cea1b8))
+
 ## [0.3.0](https://github.com/szTheory/muhtari/compare/v0.2.0...v0.3.0) (2026-10-20)
 
 
