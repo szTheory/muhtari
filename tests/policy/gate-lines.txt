@@ -5,6 +5,7 @@
 .githooks/pre-push
 .github/dependabot.yml
 .github/rulesets/main.json
+.github/workflows/be-equality.yml
 .github/workflows/ci.yml
 .github/workflows/dependabot-automerge.yml
 .github/workflows/nightly.yml

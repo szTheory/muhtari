@@ -49,10 +49,9 @@ jobs:
 
   equality:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    uses: ./.github/workflows/nightly.yml
+    uses: ./.github/workflows/be-equality.yml
     with:
       ref: ${{ github.event.pull_request.head.sha }}
-      be_only: true
     permissions:
       contents: read
 
@@ -191,10 +190,9 @@ jobs:
   release-equality:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
-    uses: ./.github/workflows/nightly.yml
+    uses: ./.github/workflows/be-equality.yml
     with:
       ref: ${{ needs.release-please.outputs.sha }}
-      be_only: true
     permissions:
       contents: read
 
