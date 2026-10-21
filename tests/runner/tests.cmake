@@ -7,6 +7,24 @@
 # EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
 # runs its own guest binary.
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
+  if(CASE STREQUAL "audio")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 3 --hash-audio "${ROM}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE got ERROR_VARIABLE err)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "audio runner failed: ${rc} ${err}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${REFERENCE}" --reference-hashes "${ROM}" 3
+      RESULT_VARIABLE rc OUTPUT_VARIABLE want ERROR_VARIABLE err)
+    if(NOT rc STREQUAL "0" OR NOT got STREQUAL want)
+      message(FATAL_ERROR "audio canonical reference mismatch: ${rc}\n${got}\n${want}\n${err}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --hash-audio --hash-audio
+      RESULT_VARIABLE duplicate OUTPUT_QUIET ERROR_QUIET)
+    if(NOT duplicate STREQUAL "2")
+      message(FATAL_ERROR "duplicate audio flag accepted")
+    endif()
+    return()
+  endif()
   set(card "9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4")
 
   # Runs muhtari-run with ARGN; fails unless it exits 0 with stdout want.
@@ -784,3 +802,13 @@ muhtari_add_test(NAME runner.exit.table
   COMMAND ${runner_check} -DDOC=${PROJECT_SOURCE_DIR}/docs/runner.md
     -P ${PROJECT_SOURCE_DIR}/tests/cmake/exit_table.cmake
   LABELS runner TIMEOUT 10)
+
+# Fault prevented: hashes serialize different bytes from the public core.
+muhtari_add_test(NAME runner.audio.contract
+  COMMAND ${CMAKE_COMMAND} "-DRUN=$<TARGET_FILE:muhtari-run>"
+    "-DREFERENCE=$<TARGET_FILE:muhtari-test-audio-contracts>"
+    "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" -DCASE=audio
+    "-DROM=${PROJECT_BINARY_DIR}/roms/built/soundtest.a78"
+    -P ${CMAKE_CURRENT_LIST_FILE}
+  LABELS runner audio portable TIMEOUT 30)
+set_tests_properties(runner.audio.contract PROPERTIES FIXTURES_REQUIRED built_soundtest)

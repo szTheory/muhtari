@@ -527,6 +527,7 @@ riot.timer.flag_at_n_interval_plus_1	portable,riot
 riot.timer.read_in_setting_cycle_keeps_flag	portable,riot
 riot.timer.reads_n_minus_1	portable,riot
 riot.timer.slow_cycle_counts_one	portable,riot
+runner.audio.contract	audio,portable,runner
 runner.bench.bytes	bench,portable,runner
 runner.bench.format	bench,portable,runner
 runner.bench.percentile	bench,portable,runner
