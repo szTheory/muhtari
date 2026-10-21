@@ -148,6 +148,9 @@ delete the key file. Only the owner handles the key.
 
 ## Weekly digest
 
+`policy.digest.controls` uses CMake's native PATH modification so the same fake-API controls run on Windows
+and POSIX hosts; its semicolon-path case prevents CMake list expansion from breaking executable lookup.
+
 The Maintenance digest workflow previews one public report, with structured evidence as a downloadable artifact
 and Markdown in its job summary. Mondays at 06:00 UTC it updates the one open issue labelled `digest`. Scheduling
 is best effort; use **Run workflow** on `main` with **publish** selected to recover a missed report. Pin the issue

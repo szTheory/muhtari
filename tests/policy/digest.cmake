@@ -44,7 +44,12 @@ case "$*" in
 esac
 ]=])
 file(CHMOD "${WORK}/bin/gh" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
-set(cmd "${CMAKE_COMMAND}" -E env "PATH=${WORK}/bin:$ENV{PATH}" "DIGEST_WORK=${WORK}"
+# A literal semicolon is a legal POSIX path character and a CMake list boundary.
+if(UNIX)
+  set(ENV{PATH} "${WORK}/unused;entry:$ENV{PATH}")
+endif()
+# Native path separators also keep Windows PATH semicolons out of CMake lists.
+set(cmd "${CMAKE_COMMAND}" -E env --modify "PATH=path_list_prepend:${WORK}/bin" "DIGEST_WORK=${WORK}"
   "GITHUB_REPOSITORY=example/public" sh "${ROOT}/scripts/digest.sh")
 execute_process(COMMAND ${cmd} preview "${WORK}/report" 2026-10-01T00:00:00Z 2026-11-01T00:00:00Z
   RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
