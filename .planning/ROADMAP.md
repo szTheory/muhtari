@@ -19,7 +19,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
-| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | In Progress |
+| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Blocked at 05-03 |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Not started |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
@@ -35,6 +35,10 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
 **Plans:** 2/9 plans executed.
+
+05-03 is halted on full PowerPC ABI failures; 05-04 onward remain blocked.
+See `05-03-HALTED.md` in the phase directory. Partial implementation is committed;
+no full-inventory or equality success is claimed.
 
 Plans:
 **Wave 1**
@@ -166,7 +170,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
-| 5. Pipeline tune-up | 1/9 | In Progress | — |
+| 5. Pipeline tune-up | 2/9 | Blocked at 05-03 | — |
 | 6. Retail cartridge boards | 0/TBD | Not started | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |

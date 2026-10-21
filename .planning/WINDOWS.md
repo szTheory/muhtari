@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 1
+open_count: 3
 waived_count: 0
-fixed_count: 8
-total_count: 9
-last_updated: 2026-10-20T22:24:38.241Z
+fixed_count: 9
+total_count: 12
+last_updated: 2026-10-21T18:33:05.691Z
 ---
 
 # Broken Windows Ledger
@@ -24,6 +24,9 @@ last_updated: 2026-10-20T22:24:38.241Z
 | 7 | 04 | deviation | .planning/preparation/A7800-AUDIO.md |  | Corrected zero-start TIA duty and fill expectations after primary-source joint-state reconciliation | fixed |  | 2026-10-20T20:52:42.338Z | 2026-10-20T20:53:48.808Z |
 | 8 | 04 | deviation | tests/frame/test_frame.c |  | WSYNC fixtures apply changed power-on profile through TIA reset before checking the stored epoch | fixed |  | 2026-10-20T20:52:42.414Z | 2026-10-20T20:53:48.887Z |
 | 9 | 04 | unmet-truth | tests/audio/test_spectral.c | 472 | Wholly slow actual POKEY AUDF1 produces a 15136.23 Hz spur up to -78.28741 dBFS through the fixed kernel, failing the -80 dBFS spectral gate. | fixed |  | 2026-10-20T21:22:40.462Z | 2026-10-20T22:24:38.241Z |
+| 10 | 05 | deviation | .github/workflows/be-equality.yml |  | Extracted read-only reusable equality because GitHub rejects the skipped nightly issue-write reporter in a read-only call. | fixed |  | 2026-10-21T18:32:19.333Z | 2026-10-21T18:32:24.687Z |
+| 11 | 05 | unmet-truth | tests/cmake/abi.cmake |  | Full PowerPC inventory rejects __divdi3 and writable cartridge-database count symbols; same-head full inventory and equality are not verified. | open |  | 2026-10-21T18:32:19.409Z |  |
+| 12 | 05 | unrun-verify | .github/workflows/be-equality.yml |  | PowerPC archive inventory and same-head equality cannot complete while the preceding full normal ABI inventory fails. | open |  | 2026-10-21T18:33:05.691Z |  |
 
 ````json
 [
@@ -143,6 +146,45 @@ last_updated: 2026-10-20T22:24:38.241Z
     "recorded_at": "2026-10-20T21:22:40.462Z",
     "resolved_at": "2026-10-20T22:24:38.241Z",
     "milestone": "v1.0"
+  },
+  {
+    "id": 10,
+    "kind": "deviation",
+    "phase": "05",
+    "file": ".github/workflows/be-equality.yml",
+    "line": null,
+    "description": "Extracted read-only reusable equality because GitHub rejects the skipped nightly issue-write reporter in a read-only call.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-21T18:32:19.333Z",
+    "resolved_at": "2026-10-21T18:32:24.687Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 11,
+    "kind": "unmet-truth",
+    "phase": "05",
+    "file": "tests/cmake/abi.cmake",
+    "line": null,
+    "description": "Full PowerPC inventory rejects __divdi3 and writable cartridge-database count symbols; same-head full inventory and equality are not verified.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-21T18:32:19.409Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 12,
+    "kind": "unrun-verify",
+    "phase": "05",
+    "file": ".github/workflows/be-equality.yml",
+    "line": null,
+    "description": "PowerPC archive inventory and same-head equality cannot complete while the preceding full normal ABI inventory fails.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-21T18:33:05.691Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
   }
 ]
 ````

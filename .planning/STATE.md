@@ -4,18 +4,18 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: executing
-stopped_at: Completed 05-02-PLAN.md; continue within the executing phase
-last_updated: "2026-10-21T18:10:12.213Z"
+status: blocked
+stopped_at: Halted 05-03-PLAN.md at full PowerPC ABI integration; 05-04 onward blocked
+last_updated: "2026-10-21T18:31:40.472Z"
 last_activity: 2026-10-21
-last_activity_desc: Completed plan 05-02 with isolated writers and measured scheduling bounds
-state_head: 93af701f283291d1487860dfb014a7bb11414044
+last_activity_desc: Halted plan 05-03 on full PowerPC ABI failures; later plans blocked
+state_head: d1b443506bac6d20c3f4cc0a1d6e51d87faa7249
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
   completed_plans: 2
-  percent: 22
+  percent: 0
 total_phases: 7
 ---
 
@@ -30,12 +30,12 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — EXECUTING
+Phase: 05 (Pipeline tune-up) — BLOCKED
 Plan: 3 of 9
-Status: Executing Phase 05; plan 05-03 next
-Last activity: 2026-10-21 — Completed plan 05-02 with isolated writers and measured scheduling bounds
+Status: Blocked at 05-03 full PowerPC ABI integration; 05-04 onward blocked
+Last activity: 2026-10-21 — Halted 05-03 on full PowerPC ABI failures; later plans blocked
 
-Progress: 22% — 2/9 plans complete; 0/7 phases complete.
+Progress: [░░░░░░░░░░] 0% — 2/9 plans complete; 0/7 phases complete.
 
 Implementation: 2/9 Phase 5 plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
@@ -90,10 +90,10 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T18:10:12.194Z
-Stopped at: Completed 05-02-PLAN.md; continue within the executing phase
-Resume file: .planning/phases/05-pipeline-tune-up/05-03-PLAN.md
-Next command: `$gsd-execute-phase 5`
+Last session: 2026-10-21T18:31:40.455Z
+Stopped at: Halted 05-03-PLAN.md at full PowerPC ABI integration; 05-04 onward blocked
+Resume file: .planning/phases/05-pipeline-tune-up/05-03-HALTED.md
+Next command: `$gsd-plan-phase 5 --gaps`
 
 Current planning contract: D-17 and D-19–20 now use an audited absolute ratchet.
 The prior 857-line prerequisite is explicitly superseded; no exact new cap or
@@ -160,3 +160,7 @@ No phase implementation or owner hardware verification ran during initialization
 |------|----------|-------|-------|
 | Phase 05 P01 | 12min | 2 tasks | 6 files |
 | Phase 05 P02 | 17min | 3 tasks | 9 files |
+
+### Blockers
+
+- 05-03 halted: full PowerPC inventory rejects __divdi3 and writable cartdb count symbols; fix-attempt/D20 limit reached, 05-04 onward blocked pending replanning from evidence.
