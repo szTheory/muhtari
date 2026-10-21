@@ -110,7 +110,7 @@ muhtari_destroy(m);
 `muhtari_get_info` fills a `muhtari_info` with the picture size, the frame rate, the pixel aspect ratio, the
 sample rate and the largest audio count per frame, so a host need not hard-code them. A NULL `video` or `audio`
 skips that output. With `video` set, a `video_pitch` outside 320..65536 returns `MUHTARI_STATUS_ERR_ARGUMENT`;
-with `audio` set, an `audio_capacity` below the frame's sample count, 800 or 801, returns
+with `audio` set, an `audio_capacity` below the frame's actual sample count returns
 `MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL`, so size the buffer from `max_audio_samples`. `muhtari_run_frame` checks its
 arguments before it changes anything. Once `m` and `io` are not NULL and the size tag is accepted, it writes
 `audio_count` on every return, zero on an error.
@@ -229,7 +229,7 @@ boundary. The first `muhtari_run_frame` after a load or power cycle runs only th
 audio samples rather than 800 or 801. Its picture shows only the rows the beam scanned since the hand-off; every
 other row is written $00. Every later frame runs from one VBLANK start to the next, a whole frame of 119,402 ticks.
 
-Loaded cartridges produce mono TIA audio through the integer reconstruction and DC blocker. The sample grid
+Loaded cartridges produce mono TIA and declared cartridge POKEY audio through the integer reconstruction and DC blocker. The sample grid
 starts at the fast-boot hand-off with zero fractional remainder. TIA's hidden zero-start logic has already run
 on its absolute 456-tick lattice from power-on; its volume remains zero until the cartridge writes it. Actual
 CPU cycle counting starts at zero at the hand-off tick (line 240, t 24), which is also the cartridge-audio clock

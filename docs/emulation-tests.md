@@ -486,3 +486,7 @@ changes and clipping audits before copying the measured row. A PCM synthesis
 change alone never justifies replacing raw or video evidence. The existing
 platform hashes file also includes soundtest and pokey's seven audio fields
 under their name prefixes, preserving the card/PNG rows and Unix newlines.
+
+The six native lanes plus be32 still require exactly seven identical expanded
+hash files; WASM compares separately with Linux x64. Hosted equality and
+merge/release results are confirmed at ship, beyond local evidence.

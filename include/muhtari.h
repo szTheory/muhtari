@@ -48,7 +48,7 @@ typedef struct muhtari_versions {
     uint32_t library_major, library_minor, library_patch;
     uint32_t api;                /* MUHTARI_API_VERSION */
     uint32_t abi;                /* 1 */
-    uint32_t behaviour_revision; /* 1 */
+    uint32_t behaviour_revision; /* reported by muhtari_get_versions */
 } muhtari_versions;
 
 typedef struct muhtari_info {

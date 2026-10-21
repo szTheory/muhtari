@@ -50,7 +50,10 @@ difficulty switches go back to their options.
 
 If a frame fails, the core reports the error on screen and in the log once, and keeps presenting the last
 picture until Restart or a new load. Before the first successful frame, that picture is black. Each failed run
-sends actual pixels, including to frontends that do not support NULL-frame duplication, and sends 48 kHz audio as identical left/right copies of each mono core sample. Batch callbacks take priority; the single-sample callback is the fallback. Missing callbacks discard output while preserving future sound. Fast boot begins with 54 samples, then full NTSC frames provide 800 or 801. Restart and content reload reset synthesis history.
+sends actual pixels, including to frontends that do not support NULL-frame duplication, and sends 48 kHz audio
+as identical left/right copies of each mono core sample. Batch callbacks take priority; the single-sample
+callback is the fallback. Missing callbacks discard output while preserving future sound. Fast boot begins
+with 54 samples, then full NTSC frames provide 800 or 801. Restart and content reload reset synthesis history.
 
 ## BIOS files
 

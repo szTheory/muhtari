@@ -5,8 +5,9 @@ signed int16 at exactly 48,000/1 Hz. One master tick advances the output phase
 by 88 modulo 13,125. Events at tick t use that tick's phase before advancing
 the interval [t,t+1); equal-tick raw source changes are merged before adding
 one mixed delta. Rendering drains the logical half-open interval, and NULL
-discards samples while retaining identical history. Chip/bus integration is
-added separately; no-content public frames retain their silent test card.
+discards samples while retaining identical history. The bus merges actual TIA
+and cartridge POKEY events on this timeline; no-content public frames retain
+their silent test card.
 
 The interpolation and 16-slot int64 impulse ring follow the approved MIT
 sibling at `9f9386c661f6`, `src/synth.c`. The historical Q15 coefficients are
