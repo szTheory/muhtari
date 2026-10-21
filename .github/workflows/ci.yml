@@ -230,8 +230,7 @@ jobs:
       - name: Every test ran
         run: cmake -DJUNIT=build/nofp/junit.xml -DINVENTORY=tests/inventory/nofp.txt -P tests/cmake/check_junit.cmake
 
-  # 32-bit big-endian PowerPC under qemu-ppc: label portable, and its
-  # hashes.txt joins the comparison.
+  # Required PowerPC compilation; full execution/equality runs nightly and on releases.
   be32:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
@@ -250,21 +249,11 @@ jobs:
           scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Cross compiler and qemu-user
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
-      - run: cmake --workflow --preset be32
-      - name: Every test ran
-        run: >-
-          cmake -DJUNIT=build/be32/junit.xml -DINVENTORY=tests/inventory/ci.txt
-          -DLABELS=portable -P tests/cmake/check_junit.cmake
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: hashes-be32
-          path: build/be32/hashes.txt
-          if-no-files-found: error
+      - run: cmake --workflow --preset be32-compile
 
-  # The same inputs give the same hashes everywhere: exactly seven files, the
-  # six build legs and be32, byte-identical. wasm32 reports on its own.
+  # Exactly six native runtime files; WASM reports on its own.
   hash-equality:
-    needs: [changes, build, be32]
+    needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # roll-up floor; max 6 s, n=3, run 39614799435; provisional
@@ -281,7 +270,7 @@ jobs:
         run: |
           rm -rf hashes/hashes-wasm32
           files=$(printf '%s;' hashes/*/hashes.txt)
-          cmake "-DFILES=${files%;}" -DCOUNT=7 -DMODE=compare -P tests/cmake/hashes.cmake
+          cmake "-DFILES=${files%;}" -DCOUNT=6 -DMODE=compare -P tests/cmake/hashes.cmake
 
   # Report-only: not in CI required's needs until it has a record on main.
   wasm32:

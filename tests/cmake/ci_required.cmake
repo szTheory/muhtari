@@ -57,6 +57,9 @@ set(cases
   "perf skipped on push|push|true|false|perf=skipped|pass"
   "perf skipped in a nested call|pull_request|true|true|perf=skipped|pass"
   "perf skipped on a pull request|pull_request|true|false|perf=skipped|fail"
+  "be32 skipped when heavy=true|pull_request|true|false|be32=skipped|fail"
+  "be32 failed in a call|pull_request|true|true|be32=failure|fail"
+  "native hash comparison skipped|pull_request|true|false|hash-equality=skipped|fail"
   "asan failed|pull_request|true|false|asan=failure|fail"
   "build cancelled|push|true|false|build=cancelled|fail")
 foreach(case IN LISTS cases)

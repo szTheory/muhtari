@@ -256,6 +256,18 @@
       "execution": { "noTestsAction": "error", "jobs": "" }
     },
     {
+      "name": "be32-full",
+      "inherits": "ci",
+      "configurePreset": "be32",
+      "output": { "outputJUnitFile": "${sourceDir}/build/be32/junit.xml" }
+    },
+    {
+      "name": "be32-release",
+      "inherits": "ci-release",
+      "configurePreset": "be32",
+      "output": { "outputJUnitFile": "${sourceDir}/build/be32/junit-release.xml" }
+    },
+    {
       "name": "wasm32",
       "configurePreset": "wasm32",
       "output": {
@@ -287,6 +299,7 @@
     }
   ],
   "packagePresets": [
+    { "name": "be32", "configurePreset": "be32", "generators": ["ZIP"] },
     { "name": "ci", "configurePreset": "ci", "generators": ["ZIP"] },
     { "name": "ci-msvc", "configurePreset": "ci-msvc", "generators": ["ZIP"] }
   ],
@@ -349,6 +362,23 @@
         { "type": "configure", "name": "fuzz" },
         { "type": "build", "name": "fuzz" },
         { "type": "test", "name": "fuzz" }
+      ]
+    },
+    {
+      "name": "be32-compile",
+      "steps": [
+        { "type": "configure", "name": "be32" },
+        { "type": "build", "name": "be32" }
+      ]
+    },
+    {
+      "name": "be32-full",
+      "steps": [
+        { "type": "configure", "name": "be32" },
+        { "type": "build", "name": "be32" },
+        { "type": "test", "name": "be32-full" },
+        { "type": "package", "name": "be32" },
+        { "type": "test", "name": "be32-release" }
       ]
     },
     {
