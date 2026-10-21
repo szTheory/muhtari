@@ -4,16 +4,16 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 5
 current_phase_name: Pipeline tune-up
-status: Ready for planning
-stopped_at: Phase 5 context revised after delegated budget review; ready for targeted research refresh and planning
-last_updated: "2026-10-21T16:34:45.086Z"
+status: executing
+stopped_at: Phase 5 research and nine plans verified; ready to execute
+last_updated: "2026-10-21T17:35:10.215Z"
 last_activity: 2026-10-21
-last_activity_desc: Phase 5 budget contract revised; absolute ratchet adopted, no plans created
-state_head: 8ce7bb4ed2d0dda16d9ee37094008405f6670954
+last_activity_desc: Phase 5 research refreshed; nine plans verified, ready to execute
+state_head: c7b17edf5b8fc1bed7f8c01d5eea14e6481772c1
 progress:
   total_phases: 7
   completed_phases: 0
-  total_plans: 0
+  total_plans: 9
   completed_plans: 0
   percent: 0
 total_phases: 7
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 5 of 11 (Pipeline tune-up), first of seven v2.0 phases
-Plan: Not started
-Status: Ready for planning
-Last activity: 2026-10-21 — Phase 5 budget contract revised; absolute ratchet adopted, no plans created
+Phase: 5 (Pipeline tune-up) — READY TO EXECUTE
+Plan: 0 of 9 plans executed
+Status: Ready to execute
+Last activity: 2026-10-21 — Phase 5 research refreshed; nine plans verified, ready to execute
 
 Implementation: 0/7 phases; no plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
@@ -88,15 +88,16 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T16:34:07.933Z
-Stopped at: Phase 5 context revised after delegated budget review; ready for targeted research refresh and planning
-Resume file: .planning/phases/05-pipeline-tune-up/05-CONTEXT.md
-Next command: `$gsd-plan-phase 5 --research`
+Last session: 2026-10-21T17:34:35.542Z
+Stopped at: Phase 5 research and nine plans verified; ready to execute
+Resume file: .planning/phases/05-pipeline-tune-up/05-01-PLAN.md
+Next command: `$gsd-execute-phase 5`
 
 Current planning contract: D-17 and D-19–20 now use an audited absolute ratchet.
 The prior 857-line prerequisite is explicitly superseded; no exact new cap or
-compliance result is claimed. Next planning refreshes only affected research,
-then schedules the bounded baseline/simplification task before additions.
+compliance result is claimed. Targeted research is refreshed and nine plans
+passed independent checking with all five requirements and twenty decisions covered.
+The first execution slice freezes B, proves nonzero net S, and fixes N/C before additions.
 
 Prior research blocker (historical): refreshed research executed 250 lines of scratch shared primitives,
 archive and roll-up replacements, and an incomplete quality prototype. Their positive

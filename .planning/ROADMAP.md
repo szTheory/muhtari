@@ -19,7 +19,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
-| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Not started |
+| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Planned |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Not started |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
@@ -34,7 +34,35 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** TBD — created by plan-phase.
+**Plans:** 9 plans.
+
+Plans:
+**Wave 1**
+- [ ] 05-01-PLAN.md — Audit the complete boundary, prove retained-fault savings and fix scoped allocations.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 05-02-PLAN.md — Resolve the output race and derive measured test/job bounds.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 05-03-PLAN.md — Require BE compilation on PRs and full same-head native/BE equality nightly and for releases.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 05-04-PLAN.md — Deliver privilege-safe weekly triage and monthly hosted-efficiency reports.
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 05-05-PLAN.md — Require one quality ratchet over real observations and trusted baselines.
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 05-06-PLAN.md — Consolidate performance/compatibility policy stores while retaining semantic controls.
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 05-07-PLAN.md — Run fresh performance controls and audit conditional lane promotions.
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 05-08-PLAN.md — Correct release signer/API safety and measured rehearsal/recovery claims.
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [ ] 05-09-PLAN.md — Verify docs/install/settings and tighten final counted acceptance.
 
 **Success criteria:**
 
