@@ -2,6 +2,7 @@
 created: 2026-10-16T18:30:00.000Z
 title: Limit release rehearsals to pushes that change release inputs
 area: ci
+resolves_phase: 5
 severity: minor
 files:
   - .github/workflows/release.yml
