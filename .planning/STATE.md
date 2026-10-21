@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 4
 status: completed
-stopped_at: Phase 4 verified; ready for $gsd-ship 4
+stopped_at: Phase 4 ship — PR 15 created; hosted CI and auto-merge tracked by ship
 last_updated: "2026-10-21T01:25:40.898Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 4 complete
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 04 verified — ready to ship
+**Current focus:** Phase 04 shipping — PR #15
 
 ## Current Position
 
 Phase: 04 (Sound) — VERIFIED
 Plan: 17 of 17 complete
-Status: Ready to ship phase 4
-Last activity: 2026-10-20 — Phase 4 complete
+Status: Phase 4 shipping — PR #15
+Last activity: 2026-10-20 — Phase 4 PR #15 created; hosted checks pending
 
 Progress: [██████████] 100%
 
@@ -368,3 +368,9 @@ Last session: 2026-10-21T01:26:59.012376+00:00
 Stopped at: Phase 4 verified; ready for $gsd-ship 4
 Resume file: None
 Next command: `$gsd-ship 4`
+
+## Phase 4 Ship
+
+PR: https://github.com/szTheory/muhtari/pull/15
+
+Local ship regression: cmake --workflow --preset ci — exit 0, 605 ordinary and 6 archive checks. Phase verification query: passed. Completed inline review has no open findings; no additional review requested under automation-first rule 6. Hosted platform equality, auto-merge and release PR CI are tracked on GitHub.
