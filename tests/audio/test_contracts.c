@@ -303,7 +303,7 @@ static void test_public_audio(void)
             if (interrupt == 0u) {
                 CHECK_EQ_U64(muhtari__bus_raise_nmi(held, end - 4u), 1u);
             } else {
-                held->cpu.p &= (uint8_t)~4u;
+                held->cpu.p &= 0xFBu;
                 held->cart.rom[CART_BODY - 2u] = 0u;
                 held->cart.rom[CART_BODY - 1u] = 0x18u;
                 muhtari__pokey_write(held, 0u, 14u, 1u, held->bus.ticks);

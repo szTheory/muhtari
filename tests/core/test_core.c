@@ -286,7 +286,7 @@ static void test_validate_first(void)
 /* Cumulative production step response; the 88 sample alignments exhaust
    integer tick positions since gcd(88,13125)=1. Summation by parts turns
    arbitrary bounded levels into finite differences of these steps. */
-static int64_t synth_step(uint32_t n, uint32_t tick, const int32_t cumulative[13125][16])
+static int64_t synth_step(uint32_t n, uint32_t tick, int32_t cumulative[13125][16])
 {
     uint32_t q = tick * 88u / 13125u;
     uint32_t phase = tick * 88u % 13125u;
@@ -903,8 +903,8 @@ static void test_cart_irq(void)
                 if (chip != 0u) {
                     static const unsigned operands[] = {8u, 13u, 18u, 23u, 26u};
                     for (unsigned i = 0u; i < 5u; i++)
-                        program[operands[i]] -= 16u;
-                    handler[6] -= 16u;
+                        program[operands[i]] = (uint8_t)(program[operands[i]] - 16u);
+                    handler[6] = (uint8_t)(handler[6] - 16u);
                 }
                 muhtari *m = make();
                 make_cart(cart, program, sizeof program, 0u);

@@ -107,7 +107,7 @@ covered_files:
   - tests/runner/tests.cmake
   - tests/tests.cmake
   - tools/audio_coefficients.c
-covered_digest: v3:sha256:814df5593dd00b5ed75bb9f82241f9e8831727882eedf7c072d2578e13dd1fd7
+covered_digest: v3:sha256:7617290d3e9ff1500ed8ee899473778f53b350a2b347422e0b073fd86b68262c
 ---
 
 # Phase 04: Sound Verification Report
@@ -280,3 +280,5 @@ they are not UAT and are not a reason to run another execution wave.
 ## Ship portability correction
 
 Hosted GCC compilation on PR15 exposed two implicit uint8_t compound-assignment conversions in the generated IRQ fixture. Explicit casts preserve identical bytes. Fresh full CI: exit0,605 ordinary plus6 archive checks. GCC15 strict compilation of tests/audio/test_irq.c: exit0. This is a compiler portability correction from hosted evidence, not an additional review or gap round.
+
+Additional hosted compiler evidence found the duplicate IRQ fixture conversion, a pre-C23 nested-array qualifier conversion, and an MSVC constant-mask truncation warning in tests. The fixtures now use explicit byte conversions, a C17-compatible array parameter, and the exact0xFB status mask. Full GCC15 Release warnings-as-errors build plus core.audio.silence/sally.irq/audio.frames: exit0,3/3 checks. Fresh local CI: exit0,605 ordinary+6 archives. No production behavior or expected hash changed.
