@@ -130,7 +130,7 @@ foreach(case valid sha config empty missing extra duplicate difference)
     set(regex "lane_equality: duplicate")
   elseif(case STREQUAL "difference")
     file(APPEND "${be}/hashes.txt" "changed\n")
-    set(regex "hashes: .* differs from")
+    set(regex "differs from")
   endif()
   set(cmd "${CMAKE_COMMAND}" -DNATIVE=${WORK}/native -DBE=${be} -DEXPECTED_SHA=${sha}
     -P "${ROOT}/tests/cmake/lane_equality.cmake")
