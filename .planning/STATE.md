@@ -5,11 +5,11 @@ milestone_name: The whole library
 current_phase: 5
 current_phase_name: Pipeline tune-up
 status: Ready for planning
-stopped_at: Phase 5 research blocked on D-17 gate-budget feasibility; no plans created
-last_updated: "2026-10-21T14:51:35.409Z"
+stopped_at: Phase 5 refreshed research blocked after scratch feasibility experiments; no plans created
+last_updated: "2026-10-21T15:31:39Z"
 last_activity: 2026-10-21
-last_activity_desc: Phase 5 research recorded; gate-budget feasibility unresolved
-state_head: 812cdbb3adeb9b95d8f7ab952b1d37f5e545c583
+last_activity_desc: Phase 5 research refreshed with tested replacements; D-17 feasibility unresolved
+state_head: 6dc0047
 progress:
   total_phases: 7
   completed_phases: 0
@@ -33,7 +33,7 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 Phase: 5 of 11 (Pipeline tune-up), first of seven v2.0 phases
 Plan: Not started
 Status: Ready for planning
-Last activity: 2026-10-21 — Phase 5 research recorded; D-17 feasibility unresolved, no plans created
+Last activity: 2026-10-21 — Phase 5 research refreshed with tested replacements; D-17 feasibility unresolved, no plans created
 
 Implementation: 0/7 phases; no plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
@@ -88,17 +88,30 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T14:51:35.396Z
-Stopped at: Phase 5 research blocked on D-17 gate-budget feasibility; no plans created
+Last session: 2026-10-21T15:31:39Z
+Stopped at: Phase 5 refreshed research blocked after scratch feasibility experiments; no plans created
 Resume file: .planning/phases/05-pipeline-tune-up/05-RESEARCH.md
-Next command: `$gsd-plan-phase 5 --research` after new feasibility evidence or an explicit scope decision
+Next command: `$gsd-discuss-phase 5` if reopening the budget contract; otherwise supply a concrete alternative construction before another planning pass
 
-Planning blocker: the confirmed broad check inventory is 2,764 physical lines before
-embedded workflow/configure checks, against a full-source whole-line cap of 857.
-Useful consolidation candidates exist, but no defensible fault-preserving allocation
-within that cap was established. The research report records measured facts and
-unproven estimates separately. Phase 5 remains unplanned; no readiness override,
-budget relaxation, implementation or additional GSD step was performed.
+Planning blocker: refreshed research executed 250 lines of scratch shared primitives,
+archive and roll-up replacements, and an incomplete quality prototype. Their positive
+and fault-specific negative controls passed. The tested strategy's optimistic broad
+construction is 2,262 lines before embedded/configure/reporting enforcement, against
+the full-source whole-line cap of 857. This failed construction is not proof that all
+possible implementations are impossible. No supported complete allocation was found.
+The 2,764-line baseline and broader sensitivity remain explicit; no enforcement was
+hidden or budget relaxed. The researcher returned RESEARCH BLOCKED; no planner,
+checker, production changes, hosted writes or additional GSD step ran.
+
+`python3 /tmp/muhtari-p5-controls.py` and
+`python3 /tmp/muhtari-p5-policy-controls.py` — exit 0 on the one-off scratch
+experiments; `wc -l /tmp/muhtari-p5-{common,archive,quality,rollup}.cmake` — exit 0,
+250 lines. Scratch prototypes are not production or CI verification. Fresh hosted
+failure evidence and read-only lane audit are recorded in the research report,
+including [run 39617761785](https://github.com/szTheory/muhtari/actions/runs/39617761785).
+WASM has nine qualifying successful main-push runs and library five; neither is
+eligible for promotion. Await continuation choice: a concrete alternative design,
+explicit contract revision through discussion, or stop with the current contract.
 
 ## v1.0 closeout verification
 
