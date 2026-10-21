@@ -8,6 +8,7 @@
 .github/workflows/be-equality.yml
 .github/workflows/ci.yml
 .github/workflows/dependabot-automerge.yml
+.github/workflows/digest.yml
 .github/workflows/nightly.yml
 .github/workflows/release.yml
 .gitignore

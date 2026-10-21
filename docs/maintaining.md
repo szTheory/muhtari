@@ -146,7 +146,24 @@ To rotate the key, on the App's settings page generate a new private key, then r
 `gh secret set MUHTARI_APP_PRIVATE_KEY --app dependabot < <key file>`, delete the old key on the settings page, and
 delete the key file. Only the owner handles the key.
 
-## Dependabot
+## Weekly digest
+
+The Maintenance digest workflow previews one public report, with structured evidence as a downloadable artifact
+and Markdown in its job summary. Mondays at 06:00 UTC it updates the one open issue labelled `digest`. Scheduling
+is best effort; use **Run workflow** on `main` with **publish** selected to recover a missed report. Pin the issue
+once if useful. Read its actionable triage at later phase discussions. PR and feature-branch previews cannot
+publish, and the workflow uses no release App credentials. Publishers queue without cancellation.
+
+For local inspection, run `sh scripts/digest.sh preview build/digest`; dates default to the preceding completed
+UTC calendar month. Pass start and exclusive end timestamps to inspect another window. Manual dispatch also has
+a current-partial-month option. Collection includes all pages and attempts, including cancelled/control cost;
+rerun passes are candidates, not proven flakes. Samples identify their window and run links. Queue/dependency,
+compile share, CTest utilization and image/tool history remain explicitly unavailable without matching evidence.
+A partial update preserves the prior monthly section; a newer complete month replaces it. Failed required reads
+or issue writes fail visibly and leave the previously published success timestamp intact. Duplicate open digest
+issues require consolidation before retrying; reports never close other work or change settings.
+
+## Dependabot updates
 
 `.github/dependabot.yml` updates the pinned GitHub Actions weekly; they are the project's only dependencies. Minor
 and patch updates come as one grouped pull request and each major update as its own, so a major never holds the

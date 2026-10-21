@@ -21,7 +21,41 @@ pages() {
   rm "$2.raw"
 }
 if [ "$operation" = publish ]; then
-  fail 'publisher not implemented'
+  branch=$(jq -r .default_branch "$out/repository.json")
+  [ "${GITHUB_ACTIONS:-}" = true ] && [ "${GITHUB_REF:-}" = "refs/heads/$branch" ] || fail 'forbidden publisher ref'
+  case "${GITHUB_EVENT_NAME:-}" in
+    schedule) ;;
+    workflow_dispatch) [ "${DIGEST_PUBLISH:-false}" = true ] || fail 'forbidden publisher input' ;;
+    *) fail 'forbidden publisher event' ;;
+  esac
+  [ -s "$out/report.md" ] && [ -s "$out/evidence.json" ] || fail 'required report missing'
+  [ "$(jq -r .repo "$out/evidence.json")" = "$repo" ] || fail 'required report repository mismatch'
+  gh issue list --repo "$repo" --label digest --state open --limit 1000 --json number,body > "$out/digests.json" || fail 'required digest list failed'
+  count=$(jq 'length' "$out/digests.json")
+  [ "$count" -le 1 ] || fail 'duplicate digest issues'
+  cp "$out/monthly.md" "$out/publish-month.md"
+  if [ "$count" = 1 ]; then
+    jq -r '.[0].body' "$out/digests.json" > "$out/prior.md"
+    awk '/^<!-- digest-month:start -->$/{keep=1} keep{print} /^<!-- digest-month:end -->$/{keep=0}' "$out/prior.md" > "$out/prior-month.md"
+    if [ -s "$out/prior-month.md" ]; then
+      [ "$(grep -c '^<!-- digest-month:' "$out/prior-month.md")" = 2 ] || fail 'required previous monthly delimiters malformed'
+      # A partial month never erases the most recent complete month.
+      complete=$(jq -r --arg now "$now" '.end <= $now and (.start|endswith("-01T00:00:00Z")) and (.end|endswith("-01T00:00:00Z")) and
+        ((.end|fromdateiso8601)-(.start|fromdateiso8601) >= 2419200) and ((.end|fromdateiso8601)-(.start|fromdateiso8601) <= 2678400)' "$out/evidence.json")
+      old_end=$(sed -n 's/^Window: .* to \([^ ]*\) UTC.*/\1/p' "$out/prior-month.md")
+      new_end=$(jq -r .end "$out/evidence.json")
+      if [ "$complete" != true ] || [ "$new_end" \< "$old_end" ]; then cp "$out/prior-month.md" "$out/publish-month.md"; fi
+    fi
+  fi
+  { cat "$out/triage.md"; printf '\nLast successful report: %s\n\n' "$now"; cat "$out/publish-month.md"; } > "$out/publish.md"
+  if [ "$count" = 0 ]; then
+    gh issue create --repo "$repo" --label digest --title 'Weekly maintenance digest' --body-file "$out/publish.md" || fail 'required digest create failed'
+  else
+    number=$(jq -r '.[0].number' "$out/digests.json")
+    gh issue edit "$number" --repo "$repo" --body-file "$out/publish.md" || fail 'required digest edit failed'
+  fi
+  printf '%s\n' "$now" > "$out/last-success.txt"
+  exit 0
 fi
 if [ "$#" = 0 ] && [ "$operation" = preview ]; then
   set -- $(jq -nr --arg n "$now" '
@@ -40,7 +74,8 @@ jq -en --arg a "$start" --arg b "$end" '
 runs() (
   a=$1; b=$2; prefix=$3
   pages "repos/$repo/actions/runs?per_page=100&created=$a..$b" "$prefix.pages"
-  jq -e 'all(.[]; (.total_count|type)=="number" and (.workflow_runs|type)=="array")' "$prefix.pages" >/dev/null || fail 'required run schema'
+  jq -e 'all(.[]; (.total_count|type)=="number" and (.workflow_runs|type)=="array" and
+    all(.workflow_runs[]; (.id|type)=="number" and .run_attempt>=1 and (.updated_at|type)=="string"))' "$prefix.pages" >/dev/null || fail 'required run schema'
   total=$(jq 'map(.total_count)|max // 0' "$prefix.pages")
   if [ "$total" -ge 1000 ]; then
     split=$(jq -nr --arg a "$a" --arg b "$b" '[$a,$b]|map(fromdateiso8601)|if .[1]-.[0]<2 then empty else ((add/2)|floor|todateiso8601) end')
@@ -68,7 +103,8 @@ while read -r id attempts; do
   attempt=1
   while [ "$attempt" -le "$attempts" ]; do
     pages "repos/$repo/actions/runs/$id/attempts/$attempt/jobs?per_page=100" "$out/jobs.pages"
-    jq -e 'all(.[]; (.total_count|type)=="number" and (.jobs|type)=="array")' "$out/jobs.pages" >/dev/null || fail 'required jobs schema'
+    jq -e 'all(.[]; (.total_count|type)=="number" and (.jobs|type)=="array" and
+      all(.jobs[]; (.id|type)=="number" and (.name|type)=="string" and (.labels|type)=="array"))' "$out/jobs.pages" >/dev/null || fail 'required jobs schema'
     jq '[.[].jobs[]]|unique_by(.id)' "$out/jobs.pages" > "$out/jobs.json"
     [ "$(jq length "$out/jobs.json")" = "$(jq 'map(.total_count)|max // 0' "$out/jobs.pages")" ] || fail 'truncated job pages'
     jq --argjson attempt "$attempt" --argjson run "$id" '.[]|. + {attempt:$attempt,run_id:$run}' "$out/jobs.json" >> "$out/jobs.ndjson"
@@ -124,13 +160,13 @@ jq -r '
   def percentile($p): sort|.[((length*$p|ceil)-1)];
   . as $e | [.jobs[]|select(any(.steps[]?;.name=="Forced failure" and .conclusion=="failure"))|.run_id] as $controls |
   [.jobs[]|. as $j|($e.runs[]|select(.id==$j.run_id)) as $r|
-    . + {seconds:seconds,category:(if $r.path|endswith("/release.yml") then "release-called"
-      elif ($r.path|endswith("/ci.yml")) and (.name|test("^(changes|title|CI required)$")) then "planning/light"
+    . + {seconds:seconds,category:(if (.name|test("(^| / )(changes|title|CI required)$")) then "planning/light"
+      elif ($r.path|endswith("/release.yml")) and (.name|startswith("ci / ")) then "release-called"
       elif $r.path|endswith("/ci.yml") then "direct CI" else "other" end),control:($controls|index($j.run_id)!=null)}] as $jobs |
   [.prs[]|select(.merged_at >= $e.start and .merged_at < $e.end)]|length as $merged |
   "<!-- digest-month:start -->\n## Monthly CI efficiency\n\nWindow: \($e.start) to \($e.end) UTC (end exclusive). Generated: \($e.generated).",
   "\nRuns: \($e.runs|length); attempts with in-window jobs: \($jobs|unique_by([.run_id,.attempt])|length); jobs: \($jobs|length).",
-  "Runner minutes: \(if any($jobs[];.seconds==null and .conclusion!="skipped") then "unavailable (unfinished timestamps)" else ([$jobs[].seconds//0]|add//0)/60 end) (cancelled and intentional controls retained). Merged PRs: \($merged).",
+  "Runner minutes: \(if ($jobs|length)==0 or any($jobs[];.seconds==null and .conclusion!="skipped") then "unavailable (no completed timestamp sample)" else ([$jobs[].seconds//0]|add//0)/60 end) (cancelled and intentional controls retained). Merged PRs: \($merged).",
   "Minutes per merged PR: \(if $merged==0 or any($jobs[];.seconds==null and .conclusion!="skipped") then "unavailable" else ([$jobs[].seconds//0]|add//0)/60/$merged end).",
   "Rerun-pass candidates: \([$jobs|group_by([.run_id,.name,.labels])[]|select(.[0].control|not)|select(any(.[];.conclusion=="failure"))|select(any(.[];.conclusion=="success" and .attempt>1))]|length) (candidate only; not proven flakes).",
   "\nCategory | Jobs | Cancelled | Failures | Intentional control jobs\n--- | ---: | ---: | ---: | ---:",

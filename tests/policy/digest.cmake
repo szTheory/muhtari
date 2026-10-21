@@ -19,18 +19,27 @@ case "$*" in
       if [ "$1" = --body-file ]; then cp "$2" "$DIGEST_WORK/published.md"; fi
       shift
     done ;;
-  'api repos/example/public') echo '{"private":false,"default_branch":"main","created_at":"2026-10-01T00:00:00Z"}' ;;
+  'api repos/example/public')
+    private=false; [ "${DIGEST_CASE:-}" != private ] || private=true
+    printf '{"private":%s,"default_branch":"main","created_at":"2026-10-01T00:00:00Z"}' "$private" ;;
   *actions/runs/1/attempts/*/jobs*)
     case "$*" in *attempts/1/*) n=1; result=failure ;; *) n=2; result=success ;; esac
-    printf '{"total_count":1,"jobs":[{"id":%s,"run_id":1,"name":"native","conclusion":"%s","started_at":"2026-10-02T00:00:00Z","completed_at":"2026-10-02T00:01:00Z","html_url":"https://github.com/example/public/actions/runs/1","labels":["ubuntu"],"steps":[]}]}' "$n" "$result" ;;
+    steps='[]'
+    if [ "$n" = 1 ]; then
+      case "${DIGEST_CASE:-}" in
+        cancelled) result=cancelled ;;
+        control) steps='[{"name":"Forced failure","conclusion":"failure"}]' ;;
+      esac
+    fi
+    printf '{"total_count":1,"jobs":[{"id":%s,"run_id":1,"name":"native","conclusion":"%s","started_at":"2026-10-02T00:00:00Z","completed_at":"2026-10-02T00:01:00Z","html_url":"https://github.com/example/public/actions/runs/1","labels":["ubuntu"],"steps":%s}]}' "$n" "$result" "$steps" ;;
   *actions/runs*)
     [ "${DIGEST_CASE:-}" != api ] || { echo 'required API failed' >&2; exit 1; }
     count=1; [ "${DIGEST_CASE:-}" != truncated ] || count=2
     printf '{"total_count":%s,"workflow_runs":[' "$count"; run 1; printf ']}'
     printf '{"total_count":%s,"workflow_runs":[' "$count"; run 1; printf ']}' ;;
+  *actions/runner-images*) [ "${DIGEST_CASE:-}" != optional ] || exit 1; echo '[]' ;;
   *issues*) echo '[{"number":7,"title":"$(touch SENTINEL) <script>bad</script>","labels":[],"created_at":"2026-10-01T00:00:00Z","updated_at":"2026-10-01T00:00:00Z","html_url":"https://github.com/example/public/issues/7"}]' ;;
   *pulls*) echo '[]' ;;
-  *actions/runner-images*) echo '[]' ;;
   *) echo "unexpected API: $*" >&2; exit 1 ;;
 esac
 ]=])
@@ -41,12 +50,6 @@ execute_process(COMMAND ${cmd} preview "${WORK}/report" 2026-10-01T00:00:00Z 202
   RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
 if(NOT rc STREQUAL "0")
   message(FATAL_ERROR "digest valid preview failed: ${out}")
-endif()
-set(publish "${CMAKE_COMMAND}" -E env "GITHUB_ACTIONS=true" "GITHUB_EVENT_NAME=workflow_dispatch"
-  "GITHUB_REF=refs/heads/main" "DIGEST_PUBLISH=true" ${cmd} publish "${WORK}/report")
-execute_process(COMMAND ${publish} RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
-if(NOT rc STREQUAL "0" OR NOT EXISTS "${WORK}/published.md")
-  message(FATAL_ERROR "digest assertion: trusted publisher must create a rolling issue: ${out}")
 endif()
 if(NOT EXISTS "${WORK}/report/evidence.json")
   message(FATAL_ERROR "digest assertion: successful preview must persist structured evidence")
@@ -73,6 +76,14 @@ foreach(case api truncated)
     "-DREGEX=digest:.*(required|truncated)" -P "${ROOT}/tests/cmake/expect_fail.cmake"
     COMMAND_ERROR_IS_FATAL ANY)
 endforeach()
+foreach(case cancelled control)
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E env "DIGEST_CASE=${case}" ${cmd} preview
+    "${WORK}/${case}" 2026-10-01T00:00:00Z 2026-11-01T00:00:00Z COMMAND_ERROR_IS_FATAL ANY)
+  file(READ "${WORK}/${case}/report.md" cost)
+  if(NOT cost MATCHES "Runner minutes: 2" OR NOT cost MATCHES "Rerun-pass candidates: 0")
+    message(FATAL_ERROR "digest assertion: ${case} cost or candidacy incorrect")
+  endif()
+endforeach()
 file(READ "${WORK}/calls" calls)
 if(calls MATCHES "issue (create|edit)|-X (POST|PATCH)")
   message(FATAL_ERROR "digest assertion: preview attempted write")
@@ -83,4 +94,72 @@ string(JSON start GET "${calendar}" start)
 string(JSON end GET "${calendar}" end)
 if(NOT start MATCHES "-01T00:00:00Z$" OR NOT end MATCHES "-01T00:00:00Z$" OR NOT start STRLESS end)
   message(FATAL_ERROR "digest assertion: default calendar boundaries")
+endif()
+set(publish "${CMAKE_COMMAND}" -E env "GITHUB_ACTIONS=true" "GITHUB_EVENT_NAME=workflow_dispatch"
+  "GITHUB_REF=refs/heads/main" "DIGEST_PUBLISH=true" ${cmd} publish "${WORK}/report")
+execute_process(COMMAND ${publish} RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
+if(NOT rc STREQUAL "0" OR NOT EXISTS "${WORK}/published.md")
+  message(FATAL_ERROR "digest assertion: trusted publisher must create a rolling issue: ${out}")
+endif()
+foreach(case private duplicate write event branch input)
+  set(bad "${CMAKE_COMMAND}" -E env "DIGEST_CASE=${case}" ${publish})
+  set(regex "digest: required digest create failed")
+  if(case STREQUAL "private")
+    set(regex "digest: public repository required")
+  elseif(case STREQUAL "duplicate")
+    set(regex "digest: duplicate digest issues")
+  elseif(case STREQUAL "event" OR case STREQUAL "branch" OR case STREQUAL "input")
+    set(variable GITHUB_EVENT_NAME=pull_request)
+    if(case STREQUAL "branch")
+      set(variable GITHUB_REF=refs/heads/feature)
+    elseif(case STREQUAL "input")
+      set(variable DIGEST_PUBLISH=false)
+    endif()
+    set(bad ${publish})
+    list(INSERT bad 4 "${variable}")
+    # Insert after the corresponding trusted assignment so the denied value wins.
+    list(INSERT bad 8 "${variable}")
+    set(regex "digest: forbidden publisher")
+  endif()
+  execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${bad}" -DCODE=1 "-DREGEX=${regex}"
+    -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+endforeach()
+file(WRITE "${WORK}/old.md" "<!-- digest-month:start -->\nRetained complete month\nWindow: 2026-08-01T00:00:00Z to 2026-09-01T00:00:00Z UTC\n<!-- digest-month:end -->\n")
+execute_process(COMMAND jq -n --rawfile body "${WORK}/old.md" "[{number:7,body:$body}]"
+  OUTPUT_FILE "${WORK}/prior.json" COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND ${cmd} preview "${WORK}/report" 2026-10-01T00:00:00Z 2026-10-20T00:00:00Z COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND ${publish} COMMAND_ERROR_IS_FATAL ANY)
+file(READ "${WORK}/published.md" retained)
+if(NOT retained MATCHES "Retained complete month")
+  message(FATAL_ERROR "digest assertion: partial update erased latest month")
+endif()
+execute_process(COMMAND ${cmd} preview "${WORK}/report" 2026-09-01T00:00:00Z 2026-10-01T00:00:00Z COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND ${publish} COMMAND_ERROR_IS_FATAL ANY)
+file(READ "${WORK}/published.md" replacement)
+if(replacement MATCHES "Retained complete month" OR NOT replacement MATCHES "Window: 2026-09-01")
+  message(FATAL_ERROR "digest assertion: newer complete month did not replace retained month")
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" -E env DIGEST_CASE=optional ${cmd} preview
+  "${WORK}/optional" 2026-10-01T00:00:00Z 2026-10-20T00:00:00Z COMMAND_ERROR_IS_FATAL ANY)
+file(READ "${WORK}/optional/report.md" optional)
+if(NOT optional MATCHES "announcements: unavailable")
+  message(FATAL_ERROR "digest assertion: optional source absence hidden")
+endif()
+file(READ "${WORK}/report/last-success.txt" successful)
+set(bad "${CMAKE_COMMAND}" -E env DIGEST_CASE=write ${publish})
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${bad}" -DCODE=1 "-DREGEX=digest: required digest edit failed"
+  -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+file(READ "${WORK}/report/last-success.txt" after)
+if(NOT after STREQUAL successful)
+  message(FATAL_ERROR "digest assertion: failed write changed successful timestamp")
+endif()
+file(READ "${ROOT}/.github/workflows/digest.yml" workflow)
+foreach(contract "group: digest-publisher" "cancel-in-progress: false" "issues: read" "issues: write" "github.event.repository.default_branch" "inputs.publish")
+  string(FIND "${workflow}" "${contract}" found)
+  if(found EQUAL -1)
+    message(FATAL_ERROR "digest assertion: workflow missing privilege/serialization contract ${contract}")
+  endif()
+endforeach()
+if(workflow MATCHES "secrets[.]|create-github-app-token|pull_request_target")
+  message(FATAL_ERROR "digest assertion: preview gained App or privileged event")
 endif()
