@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: ready_to_execute
-stopped_at: Completed 05-04-PLAN.md; hosted PR preview succeeds; actual default-branch publication awaits ship
-last_updated: "2026-10-21T22:22:14.509Z"
+status: blocked
+stopped_at: "Halted 05-05 Task2: required Windows producer evidence absent"
+last_updated: "2026-10-21T23:42:17.727Z"
 last_activity: 2026-10-21
-last_activity_desc: Digest controls and hosted PR preview accepted; 05-05 is ready
-state_head: 9f3a3d6b9e096e5628b0e4bbe98281f86c612b2a
+last_activity_desc: 05-05 halted at required Windows producer evidence
+state_head: 2b3c1a68743023d1c262a85d17bb6dd922ba2deb
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 total_phases: 7
 ---
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — IN PROGRESS
-Plan: 4 of 9
-Status: 05-04 complete; 05-05 ready; remaining plans retain dependencies
-Last activity: 2026-10-21 — Digest controls, local CI and hosted read-only preview passed
+Phase: 05 (Pipeline tune-up) — EXECUTING
+Plan: 5 of 9, halted; 4 plans complete
+Status: Blocked during 05-05 Task2
+Last activity: 2026-10-21 — Typed quality judge complete; Windows evidence gate halted integration
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 4/9 Phase 5 plans complete; 0/7 phases complete.
 
@@ -90,9 +90,9 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T22:22:14.492Z
-Stopped at: Completed 05-04-PLAN.md; hosted PR preview succeeds; actual default-branch publication awaits ship
-Resume file: .planning/phases/05-pipeline-tune-up/05-04-SUMMARY.md
+Last session: 2026-10-21T23:41:54.187Z
+Stopped at: Halted 05-05 Task2: required Windows producer evidence absent
+Resume file: .planning/phases/05-pipeline-tune-up/05-05-HALTED.md
 Next command: `$gsd-execute-phase 5`
 
 Digest evidence: implementation `7d524edc77c977487a734243ac01364dcbd50272`;
@@ -176,6 +176,7 @@ No phase implementation or owner hardware verification ran during initialization
 - [Phase 05]: Freeze complete B=12885 at f0202e1; measured S=2; fixed N=1970 including reserve150 and C=14853 before additions. Count slice actual368/500; current count13251.
 - [Phase 05]: Keep eight audio pairs and exact inventories; isolated writer costs one line of reproduced-fix allocation, current count13252/C14853. Timeouts and scales use image-specific successful cohorts, with sub-ten samples provisional.
 - [Phase 05]: Digest447/650; all pages/attempts, public read-only previews and serialized default-branch issue publication. Missing queue/DAG/compile/CTest/image evidence stays unavailable; actual publication is a post-merge ship check.
+- [Phase 05]: 05-05 required integration halts at missing Windows producer evidence; count14499/C14853, quality607/850, fixed allocations count368/BE205/digest447/quality850/fixes100/reserve0. No incomplete ordinary bounds or aggregate claim.
 
 ## Performance Metrics
 
@@ -185,11 +186,13 @@ No phase implementation or owner hardware verification ran during initialization
 | Phase 05 P02 | 17min | 3 tasks | 9 files |
 | Phase 05 P10 | 83min wall, including external queues | 2 tasks | 8 touched implementation files |
 | Phase 05 P04 | 11min | 2 tasks | 7 files |
+| Phase 05 P05 | 14min halted | 1 tasks | 8 files |
 
 ### Blockers
 
 - No PowerPC recovery blocker remains. Historical 05-03 is superseded and halted; 05-10's original equality failure and HALTED file remain historical facts. The explicitly authorized debug continuation supplies final diagnostic-free hosted acceptance and a successful 05-10 SUMMARY.
-- 05-04 is complete with hosted preview and offline publisher controls. 05-05 is ready; later plans retain dependencies. Default-branch publication is a ship check, and all phase-wide requirements remain pending.
+- 05-04 has a verified hosted preview; 05-05 discovered its existing digest control fails on both Windows architectures. 05-05 Task1 is complete, Task2 partial and Task3 unstarted; required native observations and aggregate integration are blocked. Later plans retain dependencies. Default-branch publication is a ship check; all phase-wide requirements remain pending.
+- 05-05 halted during Task2: Windows digest control fails before required current/base observations; typed quality controls pass. See 05-05-SUMMARY.md and hosted run39694430448. Task3 and downstream expansion did not run.
 
 ## Phase 5 gap planning verification
 
