@@ -236,7 +236,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 7  # 2 x 184 s, slowest of 31 runs, run 39377950148
+    timeout-minutes: 14  # Sound suite: 368 s in run 39529469630; 7 min exhausted in run 39530145463
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
