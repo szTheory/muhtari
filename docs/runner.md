@@ -244,3 +244,34 @@ can display the picture wrongly. Colours below are console colour numbers.
 
 The `--dump-frame` PNG is the reference for screenshot comparisons: it is the card exactly as the core produces
 it, unscaled, through the warm NTSC palette.
+
+`--hash-audio` adds seven lines after frame hashes, BIOS/movie reports and any
+benchmark report, in this order:
+
+```
+audio_transitions_sha256 <64 lowercase hex digits>
+audio_pcm_sha256 <64 lowercase hex digits>
+audio_frames <completed frame count>
+audio_samples <actual mono sample count>
+audio_rate 48000/1
+audio_behaviour_revision <muhtari_get_versions value>
+audio_synthesis exact-q23-16x64-dc20
+```
+
+The transition SHA-256 covers 11 bytes per changed raw DAC level: little-endian
+uint64 absolute tick, uint8 source, little-endian uint16 level (0–15).
+Sources 0–1 are TIA, 2–5 primary POKEY, 6–9 secondary $440. Equal ticks use
+ascending source identity and retain same-source subevents. Initial zeros and
+unchanged levels add no records; a silent raw stream hashes empty input.
+The PCM SHA-256 separately covers two little-endian bytes per actual signed
+int16 mono sample, including silence. Neither capacity padding nor stereo
+duplication enters it. Counts cover the entire completed run, including a
+partial first frame, with half-open transition ownership at each deadline.
+
+SIGINT/SIGTERM stops between completed frames. A stop before the first frame
+reports empty streams and zero counts; `--frames 0` remains a usage error.
+Ordinary rejected frame calls execute nothing. A sticky BIOS refusal may follow
+partial execution; its tentative transition hash is discarded. Any execution,
+load or PNG dump error suppresses all seven audio success lines, including when
+earlier frames completed. The flag may accompany frames, bench or movie runs;
+duplicates and probe/help/version combinations are usage errors.

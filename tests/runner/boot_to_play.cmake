@@ -47,7 +47,7 @@ foreach(run IN LISTS runs)
     list(APPEND dump_args --dump-frame "${frame}:${OUT}/${name}-${frame}.png")
   endforeach()
   file(REMOVE "${OUT}/${name}.txt")
-  execute_process(COMMAND ${EMULATOR} "${RUNNER}" --movie "${OUT}/${name}.movie" ${hash_args}
+  execute_process(COMMAND ${EMULATOR} "${RUNNER}" --hash-audio --movie "${OUT}/${name}.movie" ${hash_args}
       ${dump_args} "${ROM}"
     OUTPUT_FILE "${OUT}/${name}.txt" ERROR_VARIABLE err RESULT_VARIABLE rc)
   if(NOT rc STREQUAL "0" OR NOT err STREQUAL "")
@@ -71,3 +71,9 @@ expect_judge("^mask 0:" play "${OUT}" ${F} ${H} ${L} none input)
 # Up and Left turn the ship's nose up as it thrusts; Up and Right, the
 # mirror, must turn it down.
 expect_judge("^sign flipped:" mirrored "${OUT}" ${F} ${H} none input mirror up)
+
+execute_process(COMMAND ${EMULATOR} "${JUDGE}" muted "${OUT}" ${F} ${H} ${L} none input
+  RESULT_VARIABLE rc OUTPUT_VARIABLE verdict ERROR_VARIABLE err)
+if(NOT rc STREQUAL "1" OR NOT verdict MATCHES "^mask 8:.*completed audio is silent")
+  message(FATAL_ERROR "muted audio control failed: ${rc} ${verdict} ${err}")
+endif()

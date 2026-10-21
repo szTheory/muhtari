@@ -9,7 +9,7 @@
    absent; the behaviour revision changes when a frame, audio or state hash
    changes for the same inputs. */
 #define MUHTARI__ABI 1u
-#define MUHTARI__BEHAVIOUR_REVISION 1u
+#define MUHTARI__BEHAVIOUR_REVISION 2u
 
 /* The largest size tag accepted, far above any struct's planned growth. A tag
    promises that many readable bytes; the cap bounds how far a wrong tag can
@@ -100,6 +100,11 @@ void muhtari__power_on(muhtari *m)
 {
     memset(&m->cpu, 0, sizeof m->cpu);
     memset(&m->bus, 0, sizeof m->bus);
+    muhtari__tia_reset(m);
+    muhtari__synth_reset(m, 0u, 0u);
+    muhtari__pokey_reset(m, 0u);
+    muhtari__pokey_reset(m, 1u);
+    m->audio_rem = 0u;
     /* The beam starts at line 0, t 0 of the current origin; the first cycle
        recomputes the deadline from MARIA's next line event. */
     muhtari__maria_start(m);
@@ -116,6 +121,7 @@ void muhtari_destroy(muhtari *m)
         return;
     }
     muhtari_allocator a = m->allocator;
+    (void)muhtari__synth_observe(m, NULL, NULL);
     if (m->cart.rom != NULL) {
         a.free(a.user, m->cart.rom, (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
     }

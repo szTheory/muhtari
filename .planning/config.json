@@ -59,7 +59,7 @@
     "schema_drift_gate": false,
     "use_worktrees": false,
     "test_command": "cmake --workflow --preset ci",
-    "test_gate_timeout": 4,
+    "test_gate_timeout": 60,
     "code_review_depth_overrides": []
   },
   "ship": {

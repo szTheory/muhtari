@@ -20,6 +20,92 @@
 #define MUHTARI__TICKS_PER_PERIOD 13125u
 #define MUHTARI__MAX_AUDIO_SAMPLES 801u
 
+/* Compact support and the instruction-boundary overshoot proof are in
+   docs/hardware/audio.md. A held access clears RDY and at most two DMA
+   lines before its six-tick bus cycle; an opcode takes at most eight
+   accesses, followed by at most seven interrupt-entry accesses. */
+#define MUHTARI__SYNTH_TAPS 16u
+#define MUHTARI__SYNTH_PHASES 64u
+#define MUHTARI__SYNTH_Q23 INT64_C(8388608)
+#define MUHTARI__SYNTH_Q30 INT64_C(1073741824)
+#define MUHTARI__SYNTH_MAX_LEVEL 18360
+#define MUHTARI__SYNTH_RDY_TICKS 456u
+#define MUHTARI__SYNTH_DMA_TICKS (2u * 454u)
+#define MUHTARI__SYNTH_HOLD_ROUND_TICKS 12u
+#define MUHTARI__SYNTH_ACCESS_TICKS 6u
+#define MUHTARI__SYNTH_OPCODE_CYCLES 8u
+#define MUHTARI__SYNTH_INTERRUPT_CYCLES 7u
+#define MUHTARI__SYNTH_OVERSHOOT_TICKS                                                             \
+    ((MUHTARI__SYNTH_RDY_TICKS + MUHTARI__SYNTH_DMA_TICKS + MUHTARI__SYNTH_HOLD_ROUND_TICKS +      \
+      MUHTARI__SYNTH_ACCESS_TICKS) *                                                               \
+     (MUHTARI__SYNTH_OPCODE_CYCLES + MUHTARI__SYNTH_INTERRUPT_CYCLES))
+#define MUHTARI__SYNTH_CARRY_SAMPLES ((MUHTARI__SYNTH_OVERSHOOT_TICKS * 88u + 13124u) / 13125u)
+#define MUHTARI__SYNTH_PCM_CAPACITY (801u + MUHTARI__SYNTH_CARRY_SAMPLES)
+
+/* All synthesis history is owned by the machine. pcm is a FIFO: at most
+   801 current-frame samples plus separately bounded instruction carry.
+   horizon is the logical half-open output end, tick the hardware catch-up
+   position; a pending mixed tick coalesces simultaneous source writes. */
+struct muhtari__synth {
+    uint64_t tick, origin, horizon;
+    uint64_t pending_tick;
+    int64_t impulse[16];
+    int64_t integrator_q23, previous_q30, blocker_q30;
+    uint64_t pre_clip_peak, clipped_samples;
+    uint32_t phase, pcm_read, pcm_count;
+    uint32_t kernel_adds, kernel_adds_per_sample, carry_high_water;
+    int32_t mixed_level;
+    uint16_t raw[10];
+    uint8_t head, pending, pokeys, secondary;
+    int16_t pcm[MUHTARI__SYNTH_PCM_CAPACITY];
+};
+
+/* Independent TIA horizontal/audio state; docs/hardware/tia.md. */
+struct muhtari__tia_channel {
+    uint8_t audc, audf, audv;
+    uint8_t count, enabled, output;
+    uint8_t noise, pulse, noise_input, pulse_gate;
+};
+struct muhtari__tia {
+    uint64_t next_tick, epoch_tick;
+    uint16_t epoch_phase;
+    uint8_t phase, initialized;
+    struct muhtari__tia_channel channel[2];
+};
+
+/* Owned timer/audio state; docs/hardware/pokey.md. Chip clocks count real
+   CLK2 edges independently of the bus's completed-cycle counter. */
+struct muhtari__pokey_channel {
+    uint64_t reload, fire, last_fire;
+    uint32_t fires;
+    uint16_t count;
+    uint8_t audf, audc, output, hp, starting;
+};
+struct muhtari__pokey {
+    uint64_t cycle, tick, half;
+    uint64_t carry[2], resync[2];
+    uint32_t poly17;
+    uint8_t poly4, poly5, noise[3];
+    uint16_t prescale28, prescale114;
+    uint8_t audctl, skctl, irqen, irqst, initialized;
+    uint8_t hp_delay[2], hp_capture[2];
+    uint8_t irq_enable[3], irq_signal; /* section 5.7 propagation, pokey.md */
+    struct muhtari__pokey_channel channel[4];
+};
+void muhtari__pokey_reset(muhtari *m, unsigned chip);
+void muhtari__pokey_write(muhtari *m, unsigned chip, uint8_t reg, uint8_t v, uint64_t tick);
+uint8_t muhtari__pokey_read(muhtari *m, unsigned chip, uint8_t reg, uint64_t tick);
+int muhtari__pokey_irq(const muhtari *m, unsigned chip);
+void muhtari__pokey_catch_up(muhtari *m, uint64_t tick);
+void muhtari__pokey_half_edge(muhtari *m, uint64_t tick, int falling);
+
+extern const int32_t muhtari__synth_kernel[MUHTARI__SYNTH_PHASES][16];
+void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys);
+void muhtari__synth_level(muhtari *m, uint64_t tick, unsigned source, uint16_t level);
+uint32_t muhtari__synth_render(muhtari *m, uint64_t end, int16_t *out);
+void muhtari__synth_coefficients(uint32_t phase, int32_t out[16]);
+int64_t muhtari__synth_round(int64_t value, int64_t divisor);
+
 /* The beam: a line is 454 ticks, and a frame's VBLANK starts at line 258,
    t 42, the boundary between one muhtari_run_frame and the next
    (A7800-SYSTEM section 2; docs/hardware/bus.md, The run loop). */
@@ -42,6 +128,7 @@ struct muhtari__cpu {
     uint16_t pc;
     uint8_t a, x, y, s, p;
     uint8_t jammed;
+    uint8_t irq_sampled; /* level and I sampled at the deciding cycle */
 };
 
 /* The bus's state (docs/hardware/bus.md). ticks counts MARIA clocks and
@@ -59,6 +146,9 @@ struct muhtari__cpu {
    is set by the CPU for the read that fetches an opcode, SALLY's SYNC
    cycle, and cleared by that read. */
 struct muhtari__bus {
+    /* Actual clock-segment origin for cartridge audio. Fast boot skips
+       CPU execution; it does not invent phi2 cycles (embedding.md). */
+    uint64_t clock_origin_tick, clock_origin_phi2;
     uint64_t phi2;
     uint64_t nmi_phi2;
     uint64_t ticks;
@@ -76,6 +166,8 @@ struct muhtari__bus {
     uint8_t nmi_pending;
     uint8_t cycle_len;
     uint8_t sync;
+    uint8_t irq_pipe;  /* synchronization advances on unheld CPU cycles */
+    uint8_t irq_level; /* effective wired cartridge level at completed cycle */
 };
 
 /* The 6532's RAM: 128 bytes (docs/hardware/riot.md, RAM). */
@@ -127,6 +219,7 @@ struct muhtari__profile {
     uint8_t riot_orb_power_on;
     uint8_t ram_fill;
     uint16_t tia_phase;
+    uint8_t pokey_init;
 };
 
 /* The loaded cartridge: rom holds the info.rom_size bytes the board maps,
@@ -140,6 +233,8 @@ struct muhtari__cart {
     uint8_t *ram;
     uint8_t bank;
     uint8_t ram_bank;
+    uint8_t irq_mask;
+    uint16_t pokey_at[2];
     muhtari_cart_info info;
 };
 
@@ -257,7 +352,17 @@ struct muhtari__boot {
    frame_deadline, both VBLANK-start ticks except frame_start after the
    hand-off (docs/hardware/bus.md, The run loop). bios holds the bios_size
    bytes muhtari_load copied, 0 for fast boot. */
+typedef void (*muhtari__audio_observer)(void *user, uint64_t tick, uint8_t source, uint16_t raw);
+struct muhtari__observation;
+muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user);
+void muhtari__synth_raw(muhtari *m, uint64_t tick, unsigned source, uint8_t raw);
+void muhtari__observe_begin(muhtari *m, uint64_t end);
+void muhtari__observe_end(muhtari *m);
+
 struct muhtari {
+    muhtari__audio_observer observer;
+    void *observer_user;
+    struct muhtari__observation *observation;
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
     uint8_t loaded;              /* content is loaded and handed off */
@@ -271,6 +376,10 @@ struct muhtari {
     struct muhtari__cart cart;
     struct muhtari__ports ports;
     struct muhtari__boot boot;
+    struct muhtari__synth synth;
+    struct muhtari__tia tia;
+    struct muhtari__pokey pokey[2];
+    int16_t audio_work[MUHTARI__MAX_AUDIO_SAMPLES];
     uint64_t frames;                /* frames run since the last load or power cycle */
     uint64_t lag_frames;            /* of those, frames with no CPU read of an input */
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
@@ -494,7 +603,9 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v);
    its undriven bits from the open-bus byte, and a write whose data reaches
    the TIA at data_tick. */
 uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr);
-void muhtari__tia_write(muhtari *m, uint16_t addr, uint64_t data_tick);
+void muhtari__tia_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick);
+void muhtari__tia_reset(muhtari *m);
+void muhtari__tia_catch_up(muhtari *m, uint64_t tick);
 
 /* The RIOT as the bus sees it (src/riot.c): A9 selects its ports and timer
    or its RAM, and A0-A6 the register or byte (docs/hardware/riot.md).

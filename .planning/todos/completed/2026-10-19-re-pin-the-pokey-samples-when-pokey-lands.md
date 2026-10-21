@@ -32,3 +32,11 @@ In the phase 4 plan that maps POKEY at $0450:
   regenerate `docs/compatibility.md` with `tools/compat_doc.cmake`;
 - record each row, the cause, and the old and new hashes in that plan's SUMMARY. A pin that moves in any sample
   without POKEY is a bug to fix, not a re-pin.
+
+## Resolution
+
+Completed in phase4 waves8/15 and verified at phase close. Accepted0450 mapping
+was enabled with behavior revision2 and measured pins. Only pokey's detection-
+dependent frame/title changed; the other33 frame chains reproduced unchanged.
+All eight sound programs now have independent non-silent raw/PCM pins and clip
+audits. Source-qualified migration evidence is in04-08/04-15-SUMMARY.md.

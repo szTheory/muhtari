@@ -478,3 +478,23 @@ To check one version by hand: `cmake -DVERSION=<x.y.z> -P tests/cmake/single_ver
 
 `docs.budgets` keeps the documents small enough to read: `README.md` at most 12 KB, `include/muhtari.h` at most
 24 KB, and each `docs/*.md` at most 40 KB. Raise a budget only with a reason in the same commit.
+
+`audio.stress` runs generated, legal dual-POKEY/TIA CPU programs with fast,
+base, joined and high-pass choices. AUDCTL permits direct clocks only on
+channels1/3; channels2/4 retain base or joined paths (hardware/pokey.md).
+Actual WSYNC, RDY/HALT carry, accepted timer IRQs and JAM remain bounded.
+The recurring check compares normal, discarded and unevenly drained output,
+requires no allocation during frames, zero clips, ≤150 merged kernel additions
+per sample and ≤139 samples after each full frame drain. A partial drain can
+retain current-frame samples too; its high-water bound is the full940-cell FIFO.
+Observation registration allocates its bounded private buffer before execution.
+
+`build/ci/tests/muhtari-test-audio-stress --bench 600` measures exact synthesis
+on600 completed legal dual-chip/TIA frames and a matched no-POKEY/TIA baseline.
+It prints target/compiler, sample/raw checks, elapsed nanoseconds and a milli
+ratio. This is whole-core workload cost, including chip/interrupt and private
+observation work. A desktop result is a proxy, not calibrated low-power
+hardware. The >10% fallback trigger applies only to an applicable measured
+low-power target. Production retains exact-q23-16x64-dc20 and never changes
+quality with workload; a future proposal must preserve raw hashes and pass the
+same independent spectral judge.

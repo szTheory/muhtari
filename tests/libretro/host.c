@@ -341,8 +341,23 @@ static void RETRO_CALLCONV video(const void *data, unsigned width, unsigned heig
     }
 }
 
+static int checking_audio;
+static int16_t expected_audio[801];
+static uint32_t expected_count, audio_position;
+static void check_audio_sample(int16_t left, int16_t right)
+{
+    if (!checking_audio)
+        return;
+    CHECK(audio_position < expected_count);
+    if (audio_position < expected_count)
+        CHECK_EQ_U64(left, expected_audio[audio_position]);
+    CHECK_EQ_U64(left, right);
+    audio_position++;
+}
+
 static void RETRO_CALLCONV sample(int16_t left, int16_t right)
 {
+    check_audio_sample(left, right);
     sample_frames++;
     if (left != 0 || right != 0) {
         sample_nonzero++;
@@ -354,6 +369,8 @@ static size_t RETRO_CALLCONV batch(const int16_t *data, size_t frames)
     size_t i;
     batch_calls++;
     batch_frames += frames;
+    for (size_t n = 0; n < frames; n++)
+        check_audio_sample(data[2u * n], data[2u * n + 1u]);
     for (i = 0; i < frames * 2u; i++) {
         if (data[i] != 0) {
             batch_nonzero++;
@@ -1111,6 +1128,74 @@ static void case_memory_map(void)
     }
 }
 
+static void case_audio(void)
+{
+    muhtari_config cfg = {0};
+    cfg.size = sizeof cfg;
+    cfg.allocator.alloc = host_alloc;
+    cfg.allocator.free = host_free;
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), 0);
+    muhtari_media media = {0};
+    media.size = sizeof media;
+    media.image = files[0];
+    media.image_size = file_sizes[0];
+    muhtari__sha256 hash;
+    muhtari__sha256_init(&hash);
+    unsigned nonzero = 0;
+    for (unsigned mode = 0; mode < 5u; mode++) {
+        start(0);
+        CHECK_EQ_U64(muhtari_load(m, &media), 0);
+        checking_audio = 1;
+        for (unsigned n = 0; n < 60u; n++) {
+            if (n == 30u) {
+                p_reset();
+                CHECK_EQ_U64(muhtari_power_cycle(m), 0);
+            }
+            muhtari_input in = {0};
+            in.size = sizeof in;
+            in.buttons[0] = MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2;
+            CHECK_EQ_U64(muhtari_set_input(m, &in), 0);
+            pad[0] =
+                (uint16_t)((1u << RETRO_DEVICE_ID_JOYPAD_B) | (1u << RETRO_DEVICE_ID_JOYPAD_A));
+            muhtari_frame io = {0};
+            io.size = sizeof io;
+            io.audio = expected_audio;
+            io.audio_capacity = 801;
+            CHECK_EQ_U64(muhtari_run_frame(m, &io), 0);
+            expected_count = io.audio_count;
+            if (n == 0u || n == 30u)
+                CHECK_EQ_U64(expected_count, 54u);
+            int none = mode == 3u || (mode == 4u && n < 10u);
+            int use_batch = !none && mode != 2u;
+            p_set_audio_sample(none || mode == 0u ? NULL : sample);
+            p_set_audio_sample_batch(use_batch ? batch : NULL);
+            audio_position = 0;
+            batch_frames = sample_frames = 0;
+            p_run();
+            CHECK_EQ_U64(audio_position, none ? 0u : expected_count);
+            CHECK_EQ_U64(batch_frames, use_batch ? expected_count : 0u);
+            CHECK_EQ_U64(sample_frames, !none && !use_batch ? expected_count : 0u);
+            if (mode == 0u && n < 30u)
+                for (uint32_t j = 0; j < expected_count; j++) {
+                    uint16_t bits = (uint16_t)expected_audio[j];
+                    uint8_t bytes[2] = {(uint8_t)bits, (uint8_t)(bits >> 8)};
+                    muhtari__sha256_update(&hash, bytes, 2);
+                    nonzero += expected_audio[j] != 0;
+                }
+        }
+        checking_audio = 0;
+        stop();
+    }
+    CHECK(nonzero > 0u);
+    uint8_t digest[32];
+    char hex[65];
+    muhtari__sha256_final(&hash, digest);
+    muhtari__sha256_hex(digest, hex);
+    printf("audio_pcm_sha256 %s\n", hex);
+    muhtari_destroy(m);
+}
+
 int main(int argc, char **argv)
 {
     static const struct {
@@ -1118,8 +1203,9 @@ int main(int argc, char **argv)
         void (*run)(void);
         int files;
     } cases[] = {
-        {"input", case_input, 1}, {"layout", case_layout, 1},   {"devices", case_devices, 1},
-        {"reset", case_reset, 1}, {"options", case_options, 1}, {"memory_map", case_memory_map, 3},
+        {"audio", case_audio, 1},           {"input", case_input, 1}, {"layout", case_layout, 1},
+        {"devices", case_devices, 1},       {"reset", case_reset, 1}, {"options", case_options, 1},
+        {"memory_map", case_memory_map, 3},
     };
     size_t i;
     int found = 0;

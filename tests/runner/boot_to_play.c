@@ -32,6 +32,8 @@
 #include <string.h>
 
 #include "png_read.h"
+#include "../../runner/sha256.h"
+#include "muhtari.h"
 
 #define HASH_LEN 64u
 #define PATH_MAX_LEN 4096u
@@ -240,9 +242,60 @@ static void make_late(char *hashes, const timing *t)
     }
 }
 
+/* Completed-run evidence is independent of image/control predicates. */
+static int audible(const char *dir, const char *name, const timing *t, int muted)
+{
+    char path[PATH_MAX_LEN];
+    if (make_path(path, dir, name, ".txt") != 0)
+        return 0;
+    FILE *f = fopen(path, "r");
+    if (f == NULL)
+        return 0;
+    char line[256], pcm[65] = "", raw[65] = "";
+    unsigned long long frames = 0, samples = 0;
+    unsigned revision = 0, rate = 0, synthesis = 0;
+    unsigned seen = 0;
+    while (fgets(line, sizeof line, f) != NULL) {
+        if (sscanf(line, "audio_pcm_sha256 %64s", pcm) == 1)
+            seen |= 1u;
+        else if (sscanf(line, "audio_transitions_sha256 %64s", raw) == 1)
+            seen |= 2u;
+        else if (sscanf(line, "audio_frames %llu", &frames) == 1)
+            seen |= 4u;
+        else if (sscanf(line, "audio_samples %llu", &samples) == 1)
+            seen |= 8u;
+        else if (sscanf(line, "audio_behaviour_revision %u", &revision) == 1)
+            seen |= 16u;
+        else if (strcmp(line, "audio_rate 48000/1\n") == 0)
+            rate = 1;
+        else if (strcmp(line, "audio_synthesis exact-q23-16x64-dc20\n") == 0)
+            synthesis = 1;
+    }
+    fclose(f);
+    muhtari_versions v = {0};
+    v.size = sizeof v;
+    (void)muhtari_get_versions(&v);
+    uint64_t expected = (UINT64_C(8190) + (uint64_t)(t->last - 1u) * 119402u) * 88u / 13125u;
+    if (seen != 31u || frames != t->last || samples != expected || samples == 0u || !rate ||
+        !synthesis || revision != v.behaviour_revision || strlen(pcm) != 64u ||
+        strspn(pcm, "0123456789abcdef") != 64u || strlen(raw) != 64u)
+        return 0;
+    muhtari__sha256 hash;
+    uint8_t zero[2] = {0, 0}, digest[32];
+    char silent[65];
+    muhtari__sha256_init(&hash);
+    for (uint64_t i = 0; i < samples; i++)
+        muhtari__sha256_update(&hash, zero, 2);
+    muhtari__sha256_final(&hash, digest);
+    muhtari__sha256_hex(digest, silent);
+    if (muted)
+        memcpy(pcm, silent, sizeof pcm);
+    return strcmp(pcm, silent) != 0;
+}
+
 /* Judges (a), (b) and (c). Returns the exit status. */
 static int judge(const timing *t, const char *base_h, const char *run_h, const uint8_t *base_png,
-                 const uint8_t *run_png)
+                 const uint8_t *run_png, int sound)
 {
     char details[512];
     size_t used = 0;
@@ -302,7 +355,11 @@ static int judge(const timing *t, const char *base_h, const char *run_h, const u
                                      (unsigned)dump_frame(t, 2));
         }
     }
-    (void)used;
+    if (!sound) {
+        mask |= 8u;
+        snprintf(details + used, sizeof details - used,
+                 " (d) completed audio is silent or invalid;");
+    }
     printf("mask %u:%s\n", (unsigned)mask, details);
     return mask == 0u ? 0 : 1;
 }
@@ -350,8 +407,8 @@ int main(int argc, char **argv)
     }
     const char *mode = argv[1];
     int mirrored = strcmp(mode, "mirrored") == 0;
-    int play =
-        strcmp(mode, "play") == 0 || strcmp(mode, "static") == 0 || strcmp(mode, "late") == 0;
+    int play = strcmp(mode, "play") == 0 || strcmp(mode, "muted") == 0 ||
+               strcmp(mode, "static") == 0 || strcmp(mode, "late") == 0;
     timing t;
     if ((!mirrored && !play) || argc != (mirrored ? 9 : 8) || parse_u32(argv[3], &t.f) != 0 ||
         parse_u32(argv[4], &t.h) != 0 || t.f < 2u || t.h < 3u || t.f + t.h - 1u > FRAMES_MAX) {
@@ -392,7 +449,8 @@ int main(int argc, char **argv)
             } else if (strcmp(mode, "late") == 0) {
                 make_late(run_h, &t);
             }
-            status = judge(&t, base_h, run_h, base_png, run_png);
+            status = judge(&t, base_h, run_h, base_png, run_png,
+                           audible(dir, run, &t, strcmp(mode, "muted") == 0));
         }
     }
     free(base_h);

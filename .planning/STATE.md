@@ -3,19 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
 current_phase: 4
-current_phase_name: Sound
-status: shipping
-stopped_at: Phase 3 shipping through PR 13; await CI, merge and release confirmation
-last_updated: "2026-10-20T17:51:54Z"
+status: completed
+stopped_at: Phase 4 ship — PR 15 created; hosted CI and auto-merge tracked by ship
+last_updated: "2026-10-21T01:25:40.898Z"
 last_activity: 2026-10-20
-last_activity_desc: Phase 3 complete, transitioned to Phase 4
-state_head: e3d82355198e3d9aa2d7b6c992e23cde512e7b59
+last_activity_desc: Phase 4 complete
+state_head: f28920de84e090e94a74ad4a34d747fee22638b8
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 56
-  completed_plans: 56
-  percent: 75
+  completed_phases: 4
+  total_plans: 73
+  completed_plans: 73
+  percent: 100
 ---
 
 # Project State
@@ -25,21 +24,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Ship Phase 3 through PR #13, then Phase 4 — Sound
+**Current focus:** Phase 04 shipping — PR #15
 
 ## Current Position
 
-Phase: 4 — Sound
-Plan: Not started
-Status: Phase 3 shipping — PR #13
-Last activity: 2026-10-20 — Phase 3 ship: PR #13 opened with a Conventional Commit feat title; verification.status passed (exit 0). Final source CI run 39460962750 success, checked at ship; source diff since its head exits 0. CI and release confirmation follow in this ship session.
+Phase: 04 (Sound) — VERIFIED
+Plan: 17 of 17 complete
+Status: Phase 4 shipping — PR #15
+Last activity: 2026-10-20 — Phase 4 PR #15 created; hosted checks pending
 
-Progress: [████████░░] 75%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 56
+- Total plans completed: 73
 - Average duration: -
 - Total execution time: 0.0 hours
 
@@ -50,6 +49,7 @@ Progress: [████████░░] 75%
 | 01 | 21 | - | - |
 | 02 | 16 | - | - |
 | 3 | 19 | - | - |
+| 4 | 17 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: -
@@ -116,6 +116,16 @@ Progress: [████████░░] 75%
 | Phase 03 P17 | 20 min | 3 tasks | 16 files |
 | Phase 03 P18 | 22 min | 3 tasks | 21 files |
 | Phase 03 P19 | 35 min | 3 tasks | 22 files |
+| Phase 04 P01 | 11min | 2 tasks | 8 files |
+| Phase 04 P02 | 7min | 2 tasks | 6 files |
+| Phase 04 P03 | 23min | 2 tasks | 13 files |
+| Phase 04 P04 | 6min | 2 tasks | 11 files |
+| Phase 04 P05 | 5min | 2 tasks | 8 files |
+| Phase 04 P06 | 5min recovery + prior9min | 2 tasks | 19 files |
+| Phase 04 P07 | 10min | 3 tasks | 7 files |
+| Phase 04 P08 | 7min | 2 tasks | 12 files |
+| Phase 04 P09 | 9min | 2 tasks | 8 files |
+| Phase 04 P10 | 10min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -291,6 +301,13 @@ Recent decisions affecting current work:
 - [Phase 03]: Plan 19: probe PR #12 closed unmerged; ship title 'feat: games play in RetroArch with MARIA, cartridges, boot and input' passes check-title.sh (exit 0), so the merge cuts 0.3.0
 
 - [Phase 03]: Both permitted code-review fix rounds are used: WR-01 through WR-05 resolved in round 1, CR-01 in round 2. Five Info findings remain seeds. Final four-file re-review is clean. Re-verification passed; next: $gsd-ship 3. No new gap plan or further fix round.
+- [Phase 04]: Regenerated Q23 16-tap/32-phase coefficients retain exact sum 8388608, shifted endpoint and Q23-to-Q30 multiplication by 128.
+- [Phase 04]: Production headroom proof fixes M=18361 from L1=13341774/8388608 and complete blocker rounding; current weights 85:342 and default Q12 gain 4096 stay fixed.
+- [Phase 04]: Conservative held-access/opcode/interrupt bound is 20730 ticks, giving 139 future PCM samples separately from 801 current-frame samples.
+- [Phase 04]: Production 132-case Q23 matrix passes at fixed M=18361; worst TIA -82.64927 dBc with validated exact-frequency reference, research nearest-bin cross-check -82.10380, worst POKEY-equivalent -94.71708 dBFS; all 132 same-gain aliases rejected.
+- [Phase 04]: Retain primary-schematic TIA recurrence and zero startup: modes6/7/14/15 have18/16/49/47 ones and mode11 fill12; alternate N21/P0 attractors explain previous counts without establishing the lost probe seed.
+- [Phase 04]: Fast boot advances hidden TIA over absolute ticks, anchors the output grid and bus-owned cartridge clock origin at tick108984/phi2zero; BIOS uses the real zero-origin timeline.
+- [Phase 04]: Frame-audio contracts are covered by portable audio.frames; expanded discard/reset/error checks require no runtime timing or synthesis change.
 
 ### Pending Todos
 
@@ -300,7 +317,6 @@ Recent decisions affecting current work:
 - [2026-10-16] [ci] Close the re-review's findings on the Dependabot gate and the publish checks — [todo file](.planning/todos/pending/2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md)
 - [2026-10-19] [ci] Close the phase 2 review seeds on the nightly filter and the ROM tables — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md)
 - [2026-10-19] [core] Close the phase 2 re-review findings when MARIA and the run loop land — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md)
-- [2026-10-19] [core] Re-pin the POKEY samples when POKEY lands — [todo file](.planning/todos/pending/2026-10-19-re-pin-the-pokey-samples-when-pokey-lands.md)
 
 ### Ship step (phase 01)
 
@@ -325,11 +341,18 @@ Recent decisions affecting current work:
 - The ship note uses an ordinary commit so a CI run exists on the final pull-request head, as rule 9 requires. No skip token or recovery commit.
 - This session follows the phase merge, the release pull request and the automatically published 0.3.0 release. Next GSD step after shipping: `$gsd-discuss-phase 4`.
 
+- [Phase 04]: Joined timing follows manual figure8: last AUDF write atT+9, shared latch atT+10 and output atT+11. The prose callsT+9 the reload; pokey.md preserves this documentary discrepancy. Small owned LFSRs replace proposed tables.
+
 ### Blockers/Concerns
 
 - [Phase 02] The four firmware-scan test TIMEOUTs stay provisional on 9 hosted samples; re-measure once 10 exist.
 - [Phase 02] 02-16-SUMMARY.md criterion 5 coverage reads `status: pending-ship`, outside the schema's
   pass/fail/unknown; set it to `pass` at ship once the 0.2.0 Release run is confirmed.
+- Wave6 recovery verified: exact-q23-16x64-dc20, final headroom-derivedM18360; full CI600 checks, hygiene24, affected25 in release/debug, generator and84mixed/HP/refined probes pass. Historical six-failure evidence stays in04-06-SUMMARY.md; WINDOWS9 is fixed.
+- Wave7 verified: both joined pairs, STIMER/AUDF deadlines, two-tone, staggered noise, RANDOM/init and hidden-state resumption; full CI600, hygiene24 and assertion-enabled focused tests pass. Four new production spectral cases pass, worst−103.26565420dBFS.
+- Wave8 verified: cartridge POKEY mirrors, overlap priorities, fixed secondary identity and accepted-v4 wiring; revision2 enabled atomically with measured pins. Only pokey video/title changes; other33 chains reproduced unchanged. Full CI600, basic71, title6, library43 and hygiene pass. Remove the narrow retired-title exception after merge (expiry2026-11-19).
+- Wave9 verified: pokey.maps covers all legacy/v4 windows, every mirror, real CPU/PCM and MARIA fetches, ROM/RAM priority, hash normalization and validated IRQ metadata; 11 mutations rejected. Full CI601, hygiene24 and focused Release/Debug3 pass. Prior wave formatting repaired without token changes.
+- Phase4 verification passed:17/17 plans, SND-01 through SND-05 implemented. Final CI605+6, sanitizer593, GCC no-FP13, MARIA11 and hygiene24 pass. Review WR-01 is resolved in round1; no gap round used. Hosted native/be32/WASM equality, PR-head CI and merge/release outcomes remain ship checks.
 
 ## Deferred Items
 
@@ -341,6 +364,13 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T17:51:54Z
-Stopped at: Phase 3 shipping through PR #13; next GSD command after shipping: $gsd-discuss-phase 4
+Last session: 2026-10-21T01:26:59.012376+00:00
+Stopped at: Phase 4 verified; ready for $gsd-ship 4
 Resume file: None
+Next command: `$gsd-ship 4`
+
+## Phase 4 Ship
+
+PR: https://github.com/szTheory/muhtari/pull/15
+
+Local ship regression: cmake --workflow --preset ci — exit 0, 605 ordinary and 6 archive checks. Phase verification query: passed. Completed inline review has no open findings; no additional review requested under automation-first rule 6. Hosted platform equality, auto-merge and release PR CI are tracked on GitHub.

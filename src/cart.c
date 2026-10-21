@@ -762,6 +762,12 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
     m->cart.rom = rom;
     m->cart.ram = info->ram_size != 0u ? rom + info->rom_size : NULL;
     m->cart.info = *info;
+    /* Only an accepted v4 block supplies wiring; raw probe fields survive
+       an ignored block (cartridge.md, The v4 block). */
+    m->cart.irq_mask =
+        info->a78_version >= 4u && (info->warnings & MUHTARI_CART_WARN_HEADER_V4_IGNORED) == 0u
+            ? (uint8_t)(info->a78_irq & 3u)
+            : 0u;
     muhtari__cart_reset(m);
     return MUHTARI_STATUS_OK;
 }
@@ -772,6 +778,17 @@ void muhtari__cart_reset(muhtari *m)
 {
     m->cart.bank = 0u;
     m->cart.ram_bank = 0u;
+    uint32_t sound = m->cart.info.sound;
+    m->cart.pokey_at[0] = (sound & MUHTARI_SOUND_POKEY_450) != 0u    ? 0x0450u
+                          : (sound & MUHTARI_SOUND_POKEY_4000) != 0u ? 0x4000u
+                          : (sound & MUHTARI_SOUND_POKEY_800) != 0u  ? 0x0800u
+                                                                     : 0u;
+    m->cart.pokey_at[1] = (sound & MUHTARI_SOUND_POKEY_440) != 0u ? 0x0440u : 0u;
+    uint8_t count = (uint8_t)((m->cart.pokey_at[0] != 0u) + (m->cart.pokey_at[1] != 0u));
+    muhtari__synth_reset(m, m->bus.clock_origin_tick, count);
+    m->synth.secondary = (uint8_t)(count == 1u && m->cart.pokey_at[1] != 0u);
+    muhtari__pokey_reset(m, 0u);
+    muhtari__pokey_reset(m, 1u);
     /* Only the zero fill exists so far; every RAM_FILL value gives it. */
     if (m->cart.ram != NULL) {
         memset(m->cart.ram, 0, m->cart.info.ram_size);
@@ -855,7 +872,27 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
 
 uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
 {
-    (void)by_maria; /* these boards answer MARIA and the CPU alike */
+    /* DMA and observation see board memory, never register side effects. */
+    if (!by_maria) {
+        for (unsigned chip = 0; chip < 2u; chip++) {
+            uint16_t at = m->cart.pokey_at[chip];
+            uint16_t size = at == 0x4000u ? 0x4000u : at == 0x0800u ? 0x0800u : 16u;
+            if (at != 0u && addr >= at && (uint32_t)addr < (uint32_t)at + size) {
+                /* Overlapping ROM/RAM remains readable; POKEY is write-only
+                   there (cartridge notes section 2.1). */
+                int overlap = at == 0x4000u &&
+                              (m->cart.ram != NULL ||
+                               (m->cart.info.board_options &
+                                (MUHTARI_BOARD_ROM_AT_4000 | MUHTARI_BOARD_BANK6_AT_4000)) != 0u ||
+                               (m->cart.info.board == MUHTARI_BOARD_LINEAR &&
+                                m->cart.info.rom_size > 32768u));
+                if (!overlap) {
+                    return muhtari__pokey_read(m, chip, (uint8_t)(addr & 15u),
+                                               m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u));
+                }
+            }
+        }
+    }
     return muhtari__cart_peek(m, addr);
 }
 
@@ -870,6 +907,15 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
     struct muhtari__cart *c = &m->cart;
     if (c->rom == NULL) {
         return;
+    }
+    for (unsigned chip = 0; chip < 2u; chip++) {
+        uint16_t at = c->pokey_at[chip];
+        uint16_t size = at == 0x4000u ? 0x4000u : at == 0x0800u ? 0x0800u : 16u;
+        if (at != 0u && addr >= at && (uint32_t)addr < (uint32_t)at + size) {
+            muhtari__pokey_write(m, chip, (uint8_t)(addr & 15u), v,
+                                 m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u));
+            return;
+        }
     }
     uint8_t *ram = cart_ram_at(c, addr);
     if (ram != NULL) {

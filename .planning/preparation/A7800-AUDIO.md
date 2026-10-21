@@ -2,7 +2,7 @@
 title: "A7800 audio: TIA, board mix, cartridge POKEY, XM, synthesis"
 summary: "Clock-exact facts and decisions for 7800 sound: TIA on its own 456-tick line, the 18 kOhm / 6.8 kOhm board mix, POKEY on the stretched cartridge phase 2, the POKEY seed, XM/YM2151 via ymfm, and integer band-limited synthesis with a transition-stream hash."
 read_when: "Before designing, implementing or testing TIA audio, pokey.c, synth.c, the mixer, A78 audio/IRQ flags, XM/YM2151, audio hashes or audio ledger predicates."
-updated: 2026-10-15
+updated: 2026-10-20
 ---
 
 # A7800 audio
@@ -40,23 +40,34 @@ Licence status of the main T3 sources: MiSTer `rtl/TIA.sv`, `rtl/top.sv`, `rtl/c
 ## 2. TIA audio
 **Clock.** The TIA runs from its own oscillator and its own 6-bit LFSR horizontal counter, not MARIA's line; hardware shows TIA-WSYNC bars drifting against MARIA lines because the TIA line is longer [AUD.31]. Counter decodes: SHS 4, RHS 8, RCB 12, RHB 16, LRHB 18, CNT 36, END 56 (tested: LFSR stepped here). Audio phase A fires at counts 0 and 18 (SHB, LRHB), phase B at 8 and 36 (RHS, CNT); the output can change only at B, so B events sit at line ticks 64 and 288: spacing alternates **224 / 232 ticks**, mean 228 [AUD.01] (tested). MAME clocks an evenly spaced 228-tick sample (right rate) [AUD.08]; A7800Hawk clocks at counts 113 and 340 of the 454-tick MARIA line = 227 ticks = 31,537.85 Hz, **+7.6 cents sharp** [AUD.12]. An RSYNC ($03) write restarts the counter and shifts the audio phase [AUD.01].
 
-**Channel logic** (facts; simulated here from [AUD.01], tested, and cross-checked against [AUD.16]): a 5-bit up-counter is compared with AUDF at phase A; on a match it restarts at 0 and the shift registers step at the next B, so the period is (AUDF+1) audio clocks. There is no reload latch: lowering AUDF below the running count lets the counter run past 31 and wrap. A switch 20→5 at count 12 gave the next step 26 clocks later; the worst case is 32 clocks ≈ 1.02 ms. A 4-bit and a 5-bit shift register with AUDC-selected feedback form poly4, poly5, poly9 and the dividers.
+**Channel logic** (owned derivation from the Atari TIA-1A revision E sheet4 and its documentary analysis, linked in [tia.md](../../docs/hardware/tia.md); periods cross-checked against [AUD.16]): a 5-bit up-counter is compared with AUDF at phase A; on a match it restarts at 0 and the shift registers step at the next B, so the period is (AUDF+1) audio clocks. There is no reload latch: lowering AUDF below the running count lets the counter run past 31 and wrap. A switch 20→5 at count 12 gave the next step 26 clocks later; the worst case is 32 clocks ≈ 1.02 ms. A 4-bit and a 5-bit shift register with AUDC-selected feedback form poly4, poly5, poly9 and the dividers.
 
 | AUDC | Output (AUDF = 0, unit = audio clock) | Period | Ones | Agreement with the Fries-derived guide [AUD.16] |
 |---|---|---|---|---|
-| 0, 11 | constant high once the register fills (from zero: 4 steps for 0, 10 for 11); AUDV writes then give 4-bit PCM | 1 | 1 | yes |
+| 0, 11 | constant high once the register fills (from zero: 4 steps for 0, 12 for 11); AUDV writes then give 4-bit PCM | 1 | 1 | yes |
 | 1 | poly4 | 15 | 8 | yes, opposite polarity |
 | 2 / 3 | poly4 gated by div 31 / by poly5 | 465 | 248 | period yes; patterns unconfirmed |
 | 4, 5 | div 2 | 2 | 1 | yes |
-| 6, 10 | div 31 (10 = complement of 6, same sound) | 31 | 13 / 18 | yes |
-| 7, 9 | poly5 (7 = complement of 9, same sound) | 31 | 15 / 16 | yes |
+| 6, 10 | div 31; state-dependent duty in 6 | 31 | 18 / 18 from zero | period yes; complement depends on state |
+| 7, 9 | poly5; state-dependent duty in 7 | 31 | 16 / 16 from zero | period yes; complement depends on state |
 | 8 | poly9 (both registers chained) | 511 | 256 | yes |
 | 12, 13 | div 6 | 6 | 3 | yes |
-| 14 | div 93: high 44, low 49 | 93 | 44 | **no**: the guide holds AUDC 6's pattern ×3 (39 ones) |
-| 15 | poly5 with div 3 | 93 | 46 | **no**: the guide holds poly5 ×3 (48 ones) |
+| 14 | div 93: high 49, low 44 from zero | 93 | 49 | **no**: state-dependent duty, not a held mode6 pattern |
+| 15 | poly5 with div 3 | 93 | 47 | **no**: state-dependent duty, not a held poly5 pattern |
+
+The adopted functional model graduates to [TIA sound](../../docs/hardware/tia.md).
+The 2026-10-20 [reconciliation](../phases/04-sound/04-03-RECONCILIATION.md)
+derives the original Atari TIA-1A revision E sheet4 equations and independently
+checks8192 mode/state transitions and every joint-state orbit. For N=P=0 it
+corrects the earlier6/7/14/15 counts to18/16/49/47 and mode11 fill to12.
+N=21/P=0 produces13/15/44/46 and fill10; this does not establish the lost
+earlier simulation's initial state. Each disputed mode has two256-start
+basins. Mode10 always has18 ones and mode9 always16; the complement claims
+are therefore conditional. Physical startup and disputed patterns remain
+confidence-qualified adopted behavior, pending later hardware evidence.
 
 Frequency = 31,399.52 / ((AUDF+1) × period) Hz, e.g. AUDC 4 / AUDF 0 = 15,699.8 Hz and AUDC 12 / AUDF 31 = 163.5 Hz. The 7800 TIA pitch equals the 2600's (both 3.58 MHz/114).
-- **AUDV and latency:** channel level = AUDV × output bit, and a write reaches the pin at once (combinational path), so stamp it at the write cycle's end tick. AUDF acts at the next phase A compare; AUDC acts at the next A (noise feedback) and B (pulse feedback), 0–232 ticks later [AUD.01].
+- **AUDV and latency:** channel level = AUDV × output bit, and a write reaches the pin at once (combinational path), stamped at the bus data tick, start+5 on a slow cycle completing at start+6. AUDF acts at the next phase A compare; AUDC acts at the next A (noise feedback and pulse gate) and B (pulse feedback), 0–232 ticks later [AUD.01]. Due phases execute before a same-tick write.
 - **Power-on:** the TIA has no reset pin, so its state is indeterminate. An all-zero state is safe: the NOR feedback escapes the all-zero lock-up (tested). Whether the BIOS leaves TIA audio state behind is unknown; Ninja Golf's title music reportedly depends on BIOS residue [AUD.33] (unverified).
 - **Two-channel mix:** AUD0 (pin 13) and AUD1 (pin 12) are tied together with a 1 kΩ pull-up R24 [AUD.13]. The summed level follows **n/(n+30)**, n = Σ active volumes (0–30). MiSTer's 31-entry table fits that law within 1.8/32,768 (derived from [AUD.02]; the measurement thread [AUD.34] is unverified), and its developers report A/B listening tests matching hardware, including this "rumble at loud volumes" [AUD.30]. Both channels at 15 are therefore only 1.5× one channel at 15.
 - **INPTCTRL:** TIA chip selects come from A7, A12 and MARIA's TIACS decode, not from the INPTCTRL latch [AUD.13]. INPTCTRL decodes the same $00–$1F range, so writes before lock reach both [AUD.31]. MAME forwards every write [AUD.08]; a7800 forwards only when `(INPTCTRL & 3) == 3` [AUD.11], which would also mute 2600 mode.
@@ -74,7 +85,8 @@ Frequency = 31,399.52 / ((AUDF+1) × period) Hz, e.g. AUDC 4 / AUDF 0 = 15,699.8
 **MIX.** **Recommendation:** an integer node-current mix, `sum = T[n]·wT + Σchips P[raw]·wP (+ later sources)`.
 - T (31 entries) and P (825 entries, raw = Σ weighted drops in 10 mV units) are owned tables, generated offline from the formulas above and checked in as integers.
 - wT : wP = (2.5 V/18 kΩ) : (3.80 V/6.8 kΩ), with one profile constant `cart_gain` (Q12, default 4096) for later calibration.
-- The PCM scale is chosen from the declared audio hardware so the largest possible DC sum maps to ≤ 32,767; after the DC blocker a step can swing ±max, so clipping is impossible by construction.
+- Normalize T to `2n/(n+30)` at the 2.5 V full-scale weight (equivalently retain the literal half-scale curve at 5 V). The exact current-weight ratio is 85:342, with default Q12 cartridge gain 4096.
+- **Corrected 2026-10-20:** a DC maximum and unity kernel-row sum do not bound signed-lobe transients. Production enumerates finite step-response differences over all 88 output alignments: positive/negative masses 10865505/2476897 over Q23, L1=13342402/8388608. Complete blocker and rounding allowance gives maximum mixed level 18360 and peak bound 29203.282515, below -1 dBFS. See [audio reconstruction](../../docs/hardware/audio.md) for the proof and width bounds, tested against shipped interpolation and adverse sequences.
 
 **Strongest alternative:** MiSTer-style fixed per-source scaling, halved when external audio is present (louder, rare clipping). **Would change if:** a hardware recording of equal-volume TIA and POKEY tones (Utility Cart style, §9) gives a ratio outside 1.5–2.7×; then retune `cart_gain`.
 
@@ -83,12 +95,7 @@ Frequency = 31,399.52 / ((AUDF+1) × period) Hz, e.g. AUDC 4 / AUDF 0 = 15,699.8
 |---|---|
 | Windows | **$4000–$7FFF**: 16 registers mirrored; A78 bit 0; Ballblazer, Commando (SuperGame), Beef Drop POKEY edition, Froggie [AUD.09][AUD.10]. **$0450–$045F**: bit 6; Bentley Bear, RMT demos (E.X.O. and A.R.T.I. likely, address unverified). **$0440–$044F**: bit 10, second chip; MiSTer plays $440 left / $450 right; Dragonfly mixes both onto EAUD; HOKEY answers at both [AUD.03][AUD.29]. **$0800–$0FFF**: bit 15; PETSCII Robots, Drone Patrol [AUD.28]. XM: $0450 behind XCTRL ($0470) bit 4. v4 audio code (bits 0–2): 0 none, 1 @440, 2 @450, 3 @450+@440, 4 @800, 5 @4000 [AUD.14]. MiSTer makes the $4000 window write-only when it overlaps RAM or a bankset [AUD.03]. |
 | Clock | POKEY φ2 = cartridge pin 32 CLK2 = Sally's φ2 output [AUD.13], so a TIA/RIOT access stretches it to 6 ticks. Hardware: song pitch drops while code polls inputs [AUD.26]. φ2 keeps running through MARIA HALT: RIOT on the same clock counts 113 per line with DMA on or off [AUD.27]. Cycles per frame = 29,850.5 − S/2 for S slow cycles (derived). A 6-cycle zero-page `LDA INPT4 / BPL` loop runs POKEY at 24/26 = **−139 cents**; 300 slow cycles per frame give −8.7 cents. MAME and a7800 use a fixed 1.79 MHz, A7800Hawk ticks every 4 ticks [AUD.08][AUD.12], and MiSTer uses the CPU phase enables [AUD.03]. |
-| Timers | 1.79 MHz: N+4 cycles; joined pair (AUDCTL bit 4: 1+2, bit 3: 3+4) at 1.79 MHz: N+7; base clocks: (N+1)×28 or ×114. A joined low timer fires AUDF_high+1 times per high period. AUDF takes effect at the next reload; STIMER reloads everything without pulses or IRQs, with the first reload 3 cycles after the write [AUD.06]. |
-| Two-tone (SKCTL bit 3) | Timer 2 always resyncs (resets timers 1 and 2); timer 1 resyncs only for a 1 bit; force break (SKCTL bit 7) selects the 0-bit tone. Resync lands 2 cycles after the reload, so a 1.79 MHz timer 1 driving it runs N+6 (fires at 8, 14, 20). A one-cycle-apart pair resyncs twice (+3) [AUD.06][AUD.04]. E.X.O. sets force break [AUD.32]. MAME 4.9 resets with no delay [AUD.07]. |
-| High-pass | ch1 by ch3, ch2 by ch4 (AUDCTL bits 2/1; pairs differ from the joins). A flip-flop samples the low channel at the high channel's clock and XORs it before the volume-only override. The ≈1.5-cycle path delay leaves half-cycle pulses, so cancellation is never complete. When disabled the flip-flop is held at 1, which inverts ch1/2 [AUD.06]. MiSTer reproduces the half phase; MAME samples in the same step [AUD.04][AUD.07]. |
-| Polys | XNOR LFSRs at 1.79 MHz shared by all channels: poly4 1+x³+x⁴ (000011101100101), poly5 1+x³+x⁵ (0000011100100010101111011010011), 9-bit 1+x⁴+x⁹, 17-bit 1+x¹²+x¹⁷ (AUDCTL bit 7 selects 9). Bits reach ch1–ch4 one cycle apart. AUDC bit 4 = volume only, bit 5 = square, bit 6 = poly4 vs 9/17, bit 7 = 0 lets poly5 mask clocks [AUD.06]. Neither MAME nor MiSTer staggers the channels [AUD.07][AUD.04]. |
-| RANDOM ($xA) | Inverted register bits 15..8, shifting 1 bit per cycle. Reads $FF from 9 cycles after init is entered. In 9-bit mode, `STA SKCTL` (leaving init) then `LDA RANDOM` gives $1F [AUD.06]. MAME's sequence passes Tempest's protection check [AUD.07][AUD.32]. A broken RNG makes Ballblazer lose a music voice [AUD.15]. |
-| Init (SKCTL bits 0–1 = 0) | Freezes the 15/64 kHz prescalers, polys, serial and keyboard. Timer counters, outputs, AUDx and AUDCTL are **not** reset, so 1.79 MHz channels keep sounding [AUD.06][AUD.04]; MAME/a7800 stop every channel [AUD.07]. On exit the first 64 kHz tick comes 19 cycles later and the first 15 kHz tick 78 cycles later (IRQ at 24 / 83) [AUD.06]. |
+| Functional timers/noise (implemented) | [Cartridge POKEY sound](../../docs/hardware/pokey.md) owns the adopted joined/reload/STIMER/two-tone/high-pass model, polynomial taps/stagger, RANDOM/init sequences and their portable tests, from [AUD.06]. It records the joined T+9 prose versus figure8 deadline discrepancy and confidence limits. |
 | Power-on | There is no reset pin and the state is indeterminate [AUD.06]. a7800 v5.2 and MAME start in init (silent until SKCTL is written) [AUD.28][AUD.07]. MiSTer (2026) leaves init because Cybernoid II, Beef Drop and the Galaxian demos never write SKCTL yet play on hardware [AUD.04]. Donkey Kong XM writes SKCTL = 0 and still sounds [AUD.33]. |
 | IRQ | Timers 1, 2 and 4 have IRQs; timer 3 has none [AUD.04]. /IRQ is cartridge pin 31 [AUD.13]. A78 v4 interrupt bits: 0 = POKEY 1, 1 = POKEY 2 (@440), 2 = YM2151 [AUD.14]. No title is known to use POKEY IRQs (unverified). |
 | YM/other titles | 1942 and Pac-Man Collection 40th need the XM YM2151 [AUD.28]; Donkey Kong PK (@$450) [AUD.33]. |
@@ -111,7 +118,7 @@ Frequency = 31,399.52 / ((AUDF+1) × period) Hz, e.g. AUDC 4 / AUDF 0 = 15,699.8
 | Execution model | per cycle, 512 KiB poly17 table, float paths | none | per-cycle RTL (Verilator-able) |
 
 Both MAME and a7800 carry the a7800 4.7–4.9 fixes; MAME upstream is the superset [AUD.07][AUD.11].
-**SEED-v1.** **Recommendation:** an own integer C POKEY written from the Altirra manual. Catch-up steps per φ2 cycle, with an idle fast path to the next prescaler tick; poly4/5/9 are tiny tables and poly17 is a 16 KiB bit table. MAME v4.9 is read-only cross-checking for RANDOM and joins; any lifted line carries the full BSD-3 notice and attribution. **Strongest alternative:** port MAME v4.9 to integer C (the design spine's plan, but upstream rather than a7800), then fix the four deviations above. **Would change if:** by mid-P4 the own model still fails the §9 timer and RANDOM vectors.
+**SEED-v1 (implemented).** Owned integer C POKEY derives from the manual only; no emulator source was used. Small per-chip shift registers and four-stage history replace the earlier proposed tables, with no dependency or new provenance notice. The adopted behavior and documentary discrepancies live in [pokey.md](../../docs/hardware/pokey.md). **Strongest alternative:** port MAME v4.9 to integer C (the design spine's plan, but upstream rather than a7800), then fix the four deviations above. **Would change if:** by mid-P4 the own model still fails the §9 timer and RANDOM vectors.
 **SEED-v4.** **Recommendation:** run Verilated MiSTer `rtl/Pokey` (self-contained module, MIT) nightly on register-write traces recorded from E.X.O., A.R.T.I., Ballblazer and the RMT demos, comparing per-channel DAC edges cycle-for-cycle and allowing only documented deviations; add owner-console recordings. **Strongest alternative:** a7800 v5.2 black-box audio captures (no cycle timing). **Would change if:** Verilator harness effort exceeds 2 days.
 
 ## 6. XM expansion and YM2151 (v4.0)
@@ -131,13 +138,15 @@ Both MAME and a7800 carry the a7800 4.7–4.9 fixes; MAME upstream is the supers
 | SN76489 / YM2413 carts | ACE board SN76489 at $043F [AUD.03]; an SN76489 + YM2413 PCB exists (unverified) | — | later |
 
 ## 8. Synthesis, hashes, A/V sync
-- **Sibling precedent** [AUD.23]: each change of the mixed level adds delta × a linearly interpolated kernel row to an integer ring buffer. The kernel is 16 taps × 32 phases, Kaiser β 8 over 15 samples, Q15, each row summing to exactly 32,768; a running sum gives the output. Measured: worst non-harmonic component −87 dB below 16 kHz.
-- **Retiming:** the kernel is defined in output samples, so it carries over unchanged. Phase accumulator (NTSC, 48 kHz): +88 per tick modulo 13,125; kernel row = acc·32/13,125, remainder = interpolation (acc·32 < 2^19). PAL: +4,000 modulo 591,149 (acc·32 < 2^25). One tick is 1/149.15 sample, and 32 interpolated phases resolve positions finer than a tick.
+- **Historical sibling precedent** [AUD.23]: delta × an interpolated 16-tap/32-phase compact kernel enters an integer ring. The original table was Q15 with row sum 32,768. Its reported −87 dB result is not production evidence: the inherited judge masked folded aliases.
+- **Production recovery, 2026-10-20:** retain the compact Nyquist-sinc/Kaiser-beta8 support and integer ring, now with 16 taps/64 phases at Q23. The owned `muhtari-audio-coefficients` maintainer target reproduces 1024 cells (4096 bytes), Simpson128/256/512 equality, exact sum8388608 and shifted phase64 endpoint. Integration converts Q23→Q30 by ×128; identity `exact-q23-16x64-dc20`. Formula, commands, fingerprint and fresh signed masses/width proof live in [audio reconstruction](../../docs/hardware/audio.md).
+- **Historical precision evidence:** Q23/32 resolved the Q15 equivalent-schedule failures but then failed six actual wholly slow AUDF1 cases, worst−78.28741dBFS. The64 and128 research candidates both pass; production64 is the smallest measured passing density. Recovery preserves all132 equivalent/132negative/72actual cases and bounded84mixed/HP cases with independent square PCM and peak refinement. CommonM18361 and final headroom-derivedM18360 both pass;85:342 weights and Q12gain4096 are unchanged. This certifies only the finite local matrix; later expansion/host/platform slices remain required.
+- **Retiming:** phase accumulator (NTSC, 48 kHz): +88 per tick modulo 13,125; kernel row = acc·64/13,125, remainder = interpolation (acc·64 < 2^20). PAL is future scope: +4,000 modulo 591,149 (acc·64 < 2^26). One tick is 1/149.15 sample, and 64 interpolated phases resolve positions finer than a tick.
 - **Rates and bound:** TIA ≤ 2 × 31,399.5 = 62,799 changes/s; POKEY ≤ 1 merged change per φ2 cycle = 1.79 M/s per chip (AUDF 0 at 1.79 MHz toggles 447,443/s per channel); YM 55,930/s. Merge all sources per tick before the kernel. Worst case is 28.6 M multiply-adds/s per POKEY (hostile ROM) against about 1 M/s for TIA only.
 - **Why band-limit:** test7800's E.X.O. title-music errors were aliasing of 1.79 MHz tones at a 31,469 Hz output rate [AUD.32]. Bentley Bear plays a 32 kHz tone (AUDF 0, AUDC $Ax) that must stay inaudible [AUD.33].
 - **A/V:** frames are 800 or 801 samples (NTSC 48 kHz, fraction 0.562 carried) and 961 or 962 (PAL). libretro reports 39,375,000/656,711 fps and 48,000 Hz, and RetroArch's dynamic rate control absorbs the 0.07 % gap to 60 Hz. Never pad samples per frame.
 
-**SYN-1.** **Recommendation:** reuse the sibling kernel with per-tick merging and a single first-order DC blocker (≈ 20 Hz, Q30 integers, coefficients checked in); drop the NES corner filters. RF/TV colouring becomes an optional host filter outside the hashes. **Strongest alternative:** model the board's 86 Hz / ≈ 220 Hz coupling high-passes. **Would change if:** the node load is measured.
+**SYN-1.** **Recommendation (updated 2026-10-20):** use regenerated Q23/16×64 coefficients with exact sum 8388608 and Q23→Q30×128, per-tick merging and one blocker `y=x-x_previous+R*y_previous`, Q30 R=1070934451 (≈20 Hz). Use hardware-derived gain and the complete transient/rounding proof above. Retain the approved sibling interpolation/ring architecture, not its historical Q15 table or NES corner filters. RF/TV colouring becomes an optional host filter outside the hashes. **Strongest alternative:** model the board's 86 Hz / ≈ 220 Hz coupling high-passes. **Would change if:** the node load is measured.
 **SYN-2.** **Recommendation:** if the hostile 4-channel 1.79 MHz ROM costs more than 10 % of frame time on the low-power bench target, add a PCM-only "box bins" profile for POKEY (exact tick integration into 1/8-sample bins, ≤ 8 kernel adds per sample). The transition hash is unchanged by it. **Strongest alternative:** a 1,024-phase table without interpolation (32 KiB) [AUD.23]. **Would change if:** the measurement shows the dense case stays within budget.
 **HASH.** **Recommendation:** the primary hash is SHA-256 over little-endian records {u64 tick, u8 source, u16 level}, one per per-channel DAC change. Sources: TIA0/1, POKEY a/b ch1–4, YM L/R, COVOX. It is independent of mixer tables and output rate and is computed only in the runner via the hook tap (zero cost when off). The PCM hash is secondary, per (rate, profile). **Strongest alternative:** PCM-only hashes (sibling). **Would change if:** hashing costs more than 2 % in the runner. **Before freezing PCM digests:** a synthetic full-scale test once hid 3.04 % clipping [AUD.24]. Run Commando, Ballblazer, E.X.O., A.R.T.I., the RMT demos and TIA-only titles; require 0 clipped samples and a peak ≤ −1 dBFS.
 
@@ -211,7 +220,7 @@ Both MAME and a7800 carry the a7800 4.7–4.9 fixes; MAME upstream is the supers
 | AUD.20 | T2 | 7800.8bitdev.org Atari 7800 Hardware Interfacing Guide | rev 1215 | Audio In, 1.19 MHz slow access |
 | AUD.21 | T3 | github.com/aaronsgiles/ymfm (BSD-3) | 81aec25ccbb9 | OPM sources, sizes, integer-only |
 | AUD.22 | T1 | github.com/7800-devtools/7800basic `samples/` | e7c18d2ecdc6 | audio samples and their settings |
-| AUD.23 | T1 | nesturbator `src/synth.c`; `.planning/preparation/NES-HARDWARE-CPU-APU.md` §5 (owner's sibling, MIT) | 34d68516a15e | kernel, interpolation, measured quality |
+| AUD.23 | T1 | nesturbator `src/synth.c`; `.planning/preparation/NES-HARDWARE-CPU-APU.md` §5 (owner's sibling, MIT) | 9f9386c661f6 | approved interpolation/ring seed; historical Q15 quality claim is not production evidence |
 | AUD.24 | T4 | gabbaboy lesson (owner's sibling): PCM digests frozen with 3.04 % clipping | accessed 2026-10-15 | clipping check |
 | AUD.25 | T4, measured | forums.atariage.com/topic/316812 (6.8 kΩ / 18 kΩ mix) | accessed 2026-10-15 | mix resistors, balance test |
 | AUD.26 | T4, measured | AtariAge topic 86087 (POKEY pitch drops with slow cycles) | accessed 2026-10-15 | φ2 stretch |

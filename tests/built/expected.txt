@@ -4,11 +4,11 @@
 # frame chain, audio hash ("-" until the frame and audio are checked).
 # The frame chain is frames.cmake's 600-frame chain; it holds at the behaviour
 # revision below and is written only with -DWRITE=ON (docs/emulation-tests.md).
-# behaviour_revision 1
+# behaviour_revision 2
 # Every linear and SuperGame sample in 7800basic 0.41's samples/sizes.ref has
-# a row. The samples with POKEY at $0450 (eightysix, pokey, rmtramcompressiondemo,
-# rmtramdemo, rmtromdemo) read the open-bus byte there until sound lands; their
-# pins will move then, with a behaviour-revision bump.
+# a row. POKEY declarations at $0450 are active. Only pokey's detection-dependent
+# video chain changed when register reads replaced open bus; fixed-address
+# samples reproduced unchanged. Pins refer to the reported behaviour revision.
 # banksets has none: it fails to assemble with this recipe, and its bankset
 # board is refused.
 adventurer  7800basic-wasm@0.41,wasmtime@48.0.6  samples/adventurer/adventurer.bas  7dd09ae006f4514b0a41f31134dcf6a908c6bd891ee59093a3211460171e855d  e6915fccdf374074708e6025aa885bfd6ba1ba26b31e9f2f0454232fe68eee71  2ee28bc4fcaf2be8d392b56785b7f1b47b029f33f8dd41459b5e3790930c433c  -
@@ -34,7 +34,7 @@ plotmapfile  7800basic-wasm@0.41,wasmtime@48.0.6  samples/plotmapfile/plotmapfil
 # pokey's .a78 differs from CONFORMANCE section 2(a)'s 290bbd3a..., which was
 # built with wasmtime 49; the pin is what this recipe on wasmtime 48.0.6
 # builds on every leg.
-pokey  7800basic-wasm@0.41,wasmtime@48.0.6  samples/pokey/pokey.bas  a96b1dcea2659a57d3cadee7348469a837bbe1714d8bab78af0c07653d4cdd25  de0180b203b4402d391d86672a21a48a36ecc52c5970378044279542739ab5a2  58f96bedc2097f9c81d5400d4bd91f89d53a46bb9e8820daa1644260017bb598  -
+pokey  7800basic-wasm@0.41,wasmtime@48.0.6  samples/pokey/pokey.bas  a96b1dcea2659a57d3cadee7348469a837bbe1714d8bab78af0c07653d4cdd25  de0180b203b4402d391d86672a21a48a36ecc52c5970378044279542739ab5a2  89a47db32322d6c497f5b8d77721aa743fc87ea40485f53fff5f22c628ce079b  -
 ramcharmap  7800basic-wasm@0.41,wasmtime@48.0.6  samples/ramcharmap/ramcharmap.bas  7ab16ae69fc365870782554c2088d03fb078beb54b1c6ffb8865bd9bc3d3ede2  9d4dbb9918e7cd95afb6d0182f2bd15b44cd1429c108b876d6cdbfafc93ec7e5  55599431c2d99c16ac27ca88044e0ef1576399d41c3154e965fdf5043172a24b  -
 rmtramcompressiondemo  7800basic-wasm@0.41,wasmtime@48.0.6  samples/rmtramcompressiondemo/rmtramcompressiondemo.bas  bf6816a294e9d7070f824009f077d576293f750e4e7eff4fe59f1a99c755af79  478ccc8f2675ac61f7bcac77b923f74b3ac05c112e51ec20d7c66489064e359a  39c14b52eb6a8dc960f41a434c705b1f9695cf749b25c2a5537e024e2ef2ff90  -
 rmtramdemo  7800basic-wasm@0.41,wasmtime@48.0.6  samples/rmtramdemo/rmtramdemo.bas  fc65955dd6329f849dfd55376ae1bda426bf1ee59504f3d05e89acb67d1603c0  d862e6a2498a3da0d0731b559b058f43404757f36cd55e003ad0167f65b0d85e  01eeb2f730d30ffb163cbd087265c8c0768472891814b5cb37a97f8fc5609889  -
@@ -44,6 +44,7 @@ screensafe  7800basic-wasm@0.41,wasmtime@48.0.6  samples/screensafe/screensafe.b
 simple  7800basic-wasm@0.41,wasmtime@48.0.6  samples/simple/simple.bas  d09da3ed27fe82e0a4dd2821ff2cb9bde26c9531c59890788acb1cfdc4004ecf  03a8b7be5d4cd122382582a4f41a94e3104c92191ecdf0a664f93e6802e46b29  d35eaf8110c0ffd3748193225d62ec782dd91b6c0c2b28a23340906ace6ef40b  -
 smasteroids  7800basic-wasm@0.41,wasmtime@48.0.6  samples/smasteroids/smasteroids.bas  6a75c14fd8e759b64f1faf6c0449d15a6ac3e816aa53cb505fc81e24704d8aa0  ea064a0e2f00b0b2a0e45402277a2b8e812d413a19fa906d88b1af490536b717  10ebb86fe85bbb33c4d4f247613d7cd765b1e998c14b3ee9be4ce1990f24113e  -
 snescontrollers  7800basic-wasm@0.41,wasmtime@48.0.6  samples/snescontrollers/snescontrollers.bas  897babfe63cbbc13a5121d4ae2d6d3140ad6fdfb8ea581c2391ad5d45ab3d46d  3321c7447471ea24871e88d5d876ea639d2eba8ff179dfebcf6ab80daa1d45da  d9985f1c67c4723d84110353567814c3d4eec6127b109a64dfabd1e10d56b946  -
+soundeffects  7800basic-wasm@0.41,wasmtime@48.0.6  samples/soundeffects/soundeffects.bas  06588f0777035b9ea9dc67146b3bd0721218b6ee8b270201682216c8d31a44d3  9a882db967ebd12fb48f4faed1f07e18bd34aeb5489bdde641b038b8d39a5902  39abd4bc3f97c6085b3ca5c78722ffadcc04950bc4ff6b2cfc6f23457664146c  -
 soundtest  7800basic-wasm@0.41,wasmtime@48.0.6  samples/soundtest/soundtest.bas  06588f0777035b9ea9dc67146b3bd0721218b6ee8b270201682216c8d31a44d3  9a882db967ebd12fb48f4faed1f07e18bd34aeb5489bdde641b038b8d39a5902  39abd4bc3f97c6085b3ca5c78722ffadcc04950bc4ff6b2cfc6f23457664146c  -
 spacephysics  7800basic-wasm@0.41,wasmtime@48.0.6  samples/spacephysics/spacephysics.bas  eaea2c6a5bac8c56662f99d9693545f59429f300b2585f7b1c40ec0ea357cc4a  aee8f40a24b4a41473041ca65f112f29564648e1d47614559e4c434d43577c47  0159c82d0d288b67d23024ac833d28d68f225a3ecce1fe77a0b8d5b46b58219a  -
 trackertest  7800basic-wasm@0.41,wasmtime@48.0.6  samples/trackertest/trackertest.bas  407f3a50b19d7badf2d0831b1c201b09dac06485e7e38cb8a0c4344ef0f4c6cc  feb6de8b9b902fed27974e24455259ce09022da969edc4f3372d4ee2ac93ab0c  cebf3541b8647978fa7945512fca2968f18f060983ee38e5688f873e36178c3e  -

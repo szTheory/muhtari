@@ -185,6 +185,13 @@ static uint64_t cycle_start(muhtari *m, uint32_t data)
 static void advance(muhtari *m, uint64_t k)
 {
     struct muhtari__bus *b = &m->bus;
+    if (m->synth.pokeys != 0u) {
+        for (uint64_t cycle = 0; cycle < k; cycle++) {
+            uint64_t start = b->ticks + cycle * BUS_FAST_TICKS;
+            muhtari__pokey_half_edge(m, start + 2u, 0);
+            muhtari__pokey_half_edge(m, start + BUS_FAST_DATA, 1);
+        }
+    }
     if (b->nmi_pending != 0u && b->nmi_at <= b->ticks + k * BUS_FAST_TICKS) {
         uint64_t j = b->nmi_at > b->ticks ? (b->nmi_at - b->ticks - 1u) / BUS_FAST_TICKS : 0u;
         latch_nmi(m, b->phi2 + 1u + j);
@@ -276,6 +283,13 @@ static uint32_t begin(muhtari *m, enum bus_device dev, int is_read)
     if (m->bus.ticks + data_at(len) >= m->bus.next_deadline) {
         events(m, is_read, data_at(len));
     }
+    /* The asymmetric divider has rise s+2 in both modes, fall/data s+4
+       fast or s+5 slow, completion s+4/s+6 (hardware/pokey.md). Flush
+       every actual edge before data, including held-cycle segments. */
+    if (m->synth.pokeys != 0u) {
+        muhtari__pokey_half_edge(m, m->bus.ticks + 2u, 0);
+        muhtari__pokey_half_edge(m, m->bus.ticks + data_at(len), 1);
+    }
     return len;
 }
 
@@ -283,6 +297,17 @@ static void end(muhtari *m, uint32_t len)
 {
     m->bus.ticks += len;
     m->bus.phi2++;
+    /* Both chips have consumed this cycle's actual falling edge before
+       the CPU can poll it (hardware/pokey.md, Interrupts). */
+    unsigned requested = (unsigned)(((m->cart.irq_mask & 1u) != 0u && m->cart.pokey_at[0] != 0u &&
+                                     m->pokey[0].irq_signal != 0u) ||
+                                    ((m->cart.irq_mask & 2u) != 0u && m->cart.pokey_at[1] != 0u &&
+                                     m->pokey[1].irq_signal != 0u));
+    /* The manual's common three-unhalted-cycle status-to-entry delay:
+       two synchronization cycles, then the CPU's final instruction cycle.
+       Held batches advance the source above, but never this CPU pipeline. */
+    m->bus.irq_pipe = (uint8_t)((((unsigned)m->bus.irq_pipe << 1) | requested) & 7u);
+    m->bus.irq_level = (uint8_t)((m->bus.irq_pipe & 4u) != 0u);
 }
 
 /* The input registers: the RIOT's SWCHA and SWCHB, its port registers 0
@@ -416,7 +441,7 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
     if (dev == DEV_RAM) {
         m->ram[ram_index(addr)] = v;
     } else if (dev == DEV_TIA) {
-        muhtari__tia_write(m, addr, m->bus.ticks + data_at(len));
+        muhtari__tia_write(m, addr, v, m->bus.ticks + data_at(len));
         inptctrl_write(m, v);
         rearm(m);
     } else if (dev == DEV_RIOT) {

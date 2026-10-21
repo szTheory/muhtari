@@ -200,6 +200,24 @@ refuses a working game. SuperGame banks are 16 KiB, and the SG9 rule generalises
 as MAME and MiSTer do (cartridge notes, sections 2.1 and 7). A size outside the table is refused: as truncated when
 the header claims more bytes than the file holds, as invalid otherwise.
 
+## Cartridge audio access
+
+Declared POKEY registers repeat every 16 bytes over $4000-$7FFF or $0800-$0FFF;
+$0450-$045F selects the primary chip and $0440-$044F the secondary chip,
+including the dual-chip declaration (cartridge notes, section 2.1).
+If a legacy header declares multiple primary locations, $0450 takes priority,
+then $4000, then $0800; the fixed slots bound the declaration to two chips.
+CPU writes select POKEY before board RAM or ROM. CPU reads select readable
+RAM or overlapping linear ROM, EXROM or EXFIX before a write-only $4000 POKEY;
+otherwise POKEY answers. Peeks and MARIA fetches always observe board memory
+or open bus, without clocking or reading POKEY registers.
+
+The two fixed chip slots retain primary source IDs 2-5 and secondary IDs 6-9.
+A lone $0440 chip uses secondary IDs and IRQ bit 1 while the mixer normalizes
+for one actual chip. Only an accepted, validated v4 block supplies effective
+IRQ bits 0-1; ignored blocks keep their raw probe fields but supply no wiring.
+Reload and power cycle restore declared chip count and the boot clock origin.
+
 ## Boards
 
 `MUHTARI_STATUS_OK` means linear or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.

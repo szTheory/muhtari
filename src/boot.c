@@ -57,6 +57,13 @@ void muhtari__boot_fast(muhtari *m)
 
     m->maria.origin = 0u;
     m->bus.ticks = m->maria.origin + BOOT_TICK;
+    /* TIA ran silently on its absolute lattice while fast boot skipped
+       the CPU. Actual cartridge phi2 instead begins here at cycle zero;
+       the released output grid begins here too (embedding.md). */
+    muhtari__tia_catch_up(m, m->bus.ticks);
+    m->bus.clock_origin_tick = m->bus.ticks;
+    m->bus.clock_origin_phi2 = m->bus.phi2;
+    muhtari__cart_reset(m);
     muhtari__maria_start(m);
     m->bus.next_deadline = 0u; /* recomputed by the first cycle */
     m->cpu.pc = (uint16_t)(muhtari__cart_peek(m, 0xFFFCu) |

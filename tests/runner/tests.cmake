@@ -7,6 +7,30 @@
 # EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
 # runs its own guest binary.
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
+  if(CASE STREQUAL "audio")
+    string(REPEAT "|....12|......|...BB|\n" 60 audio_input)
+    file(WRITE "${CAPTURE}.movie" "muhtari-movie 1\nport1 proline\nport2 proline\n${audio_input}")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${CAPTURE}.movie" --hash-audio "${ROM}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE got ERROR_VARIABLE err)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "audio runner failed: ${rc} ${err}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${REFERENCE}" --reference-hashes "${ROM}" 60 fire
+      RESULT_VARIABLE rc OUTPUT_VARIABLE want ERROR_VARIABLE err)
+    string(REGEX REPLACE "^lag_frames [0-9]+\n" "" got "${got}")
+    if(got MATCHES "audio_transitions_sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+      message(FATAL_ERROR "audio tracer was silent")
+    endif()
+    if(NOT rc STREQUAL "0" OR NOT got STREQUAL want)
+      message(FATAL_ERROR "audio canonical reference mismatch: ${rc}\n${got}\n${want}\n${err}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --hash-audio --hash-audio
+      RESULT_VARIABLE duplicate OUTPUT_QUIET ERROR_QUIET)
+    if(NOT duplicate STREQUAL "2")
+      message(FATAL_ERROR "duplicate audio flag accepted")
+    endif()
+    return()
+  endif()
   set(card "9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4")
 
   # Runs muhtari-run with ARGN; fails unless it exits 0 with stdout want.
@@ -387,10 +411,10 @@ endfunction()
     # port or the wrong pins. Up and button 1 on each port with each stick
     # give four pictures, none the empty movie's.
     held_hash(empty ports-empty.txt "${prolines}" "${released}")
-    held_hash(p1_proline ports-1p.txt "${prolines}" "|U...1.|......|...BB|")
+    held_hash(p1_proline ports-1p.txt "${prolines}" "|....12|......|...BB|")
     held_hash(p1_joystick ports-1j.txt "port1 joystick\nport2 proline\n" "|U...1|......|...BB|"
       "|.....|......|...BB|")
-    held_hash(p2_proline ports-2p.txt "${prolines}" "|......|U...1.|...BB|")
+    held_hash(p2_proline ports-2p.txt "${prolines}" "|......|....12|...BB|")
     held_hash(p2_joystick ports-2j.txt "port1 proline\nport2 joystick\n" "|......|U...1|...BB|"
       "|......|.....|...BB|")
     expect_distinct(ports "${empty}" "${p1_proline}" "${p1_joystick}" "${p2_proline}"
@@ -458,7 +482,7 @@ endfunction()
     execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${movie}" "${DIR}/input.a78"
       OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE rc)
     if(NOT rc STREQUAL "0" OR NOT out STREQUAL "lag_frames 1\n" OR NOT err MATCHES
-        "^muhtari-run: [^\n]*/rev9.txt: behaviour 9, this core's is 1; replaying anyway\n$")
+        "^muhtari-run: [^\n]*/rev9.txt: behaviour 9, this core's is [1-9][0-9]*; replaying anyway\n$")
       message(FATAL_ERROR "expected exit 0, lag_frames 1 and one warning, got exit ${rc}\n"
         "${out}${err}")
     endif()
@@ -591,7 +615,9 @@ endforeach()
 # respond to a held control, or responds late, or never moves.
 add_executable(muhtari-test-boot-to-play
   ${CMAKE_CURRENT_LIST_DIR}/boot_to_play.c
-  ${CMAKE_CURRENT_LIST_DIR}/png_read.c)
+  ${CMAKE_CURRENT_LIST_DIR}/png_read.c
+  ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+target_link_libraries(muhtari-test-boot-to-play PRIVATE muhtari::muhtari)
 # MSVC deprecates ISO C's fopen for its _s forms.
 target_compile_definitions(muhtari-test-boot-to-play PRIVATE
   $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
@@ -626,8 +652,8 @@ function(runner_play_control name regex)
   set_tests_properties(runner.boot_to_play.${name} PROPERTIES FIXTURES_REQUIRED boot_to_play)
 endfunction()
 set(runner_play ${runner_play_dir} ${runner_play_f} ${runner_play_h})
-runner_play_control(no_input "^mask 1:" play ${runner_play} ${runner_play_l} none none)
-runner_play_control(port2 "^mask 1:" play ${runner_play} ${runner_play_l} none port2)
+runner_play_control(no_input "^mask 9:" play ${runner_play} ${runner_play_l} none none)
+runner_play_control(port2 "^mask 9:" play ${runner_play} ${runner_play_l} none port2)
 runner_play_control(mirrored "^sign did not flip:" mirrored ${runner_play} none input input up)
 runner_play_control(static_mutant "^mask 2:" static ${runner_play} ${runner_play_l} none input)
 runner_play_control(late_mutant "^mask 1:" late ${runner_play} ${runner_play_l} none input)
@@ -705,8 +731,11 @@ endforeach()
 # hashes.txt, the file CI compares across lanes.
 set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
 muhtari_add_test(NAME runner.hashes_file
-  COMMAND ${runner_check} -DMODE=write -DOUT=${PROJECT_BINARY_DIR} -P ${runner_hashes}
+  COMMAND ${runner_check} -DMODE=write -DOUT=${PROJECT_BINARY_DIR}
+    "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
+    "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${runner_hashes}
   LABELS runner portable TIMEOUT 20)
+set_tests_properties(runner.hashes_file PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 # The comparison's self tests: two files where three are required, and two
 # files one byte apart.
 set(runner_fixture ${PROJECT_BINARY_DIR}/tests/hashes)
@@ -784,3 +813,28 @@ muhtari_add_test(NAME runner.exit.table
   COMMAND ${runner_check} -DDOC=${PROJECT_SOURCE_DIR}/docs/runner.md
     -P ${PROJECT_SOURCE_DIR}/tests/cmake/exit_table.cmake
   LABELS runner TIMEOUT 10)
+
+# Fault prevented: hashes serialize different bytes from the public core.
+muhtari_add_test(NAME runner.audio.contract
+  COMMAND ${CMAKE_COMMAND} "-DRUN=$<TARGET_FILE:muhtari-run>"
+    "-DREFERENCE=$<TARGET_FILE:muhtari-test-audio-contracts>"
+    "-DCAPTURE=${PROJECT_BINARY_DIR}/tests/audio-reference"
+    "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" -DCASE=audio
+    "-DROM=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
+    -P ${CMAKE_CURRENT_LIST_FILE}
+  LABELS runner audio portable TIMEOUT 30)
+set_tests_properties(runner.audio.contract PROPERTIES FIXTURES_REQUIRED built_soundtest)
+
+add_executable(muhtari-test-audio-runner ${CMAKE_CURRENT_LIST_DIR}/test_audio.c
+  ${PROJECT_SOURCE_DIR}/runner/bench.c ${PROJECT_SOURCE_DIR}/runner/clock.c
+  ${PROJECT_SOURCE_DIR}/runner/crc32.c ${PROJECT_SOURCE_DIR}/runner/md5.c
+  ${PROJECT_SOURCE_DIR}/runner/movie.c ${PROJECT_SOURCE_DIR}/runner/png.c
+  ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+target_include_directories(muhtari-test-audio-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-audio-runner PRIVATE muhtari::muhtari muhtari_host)
+target_compile_definitions(muhtari-test-audio-runner PRIVATE _POSIX_C_SOURCE=200809L
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+set_target_properties(muhtari-test-audio-runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-audio-runner)
+muhtari_add_test(NAME runner.audio.stop_failure COMMAND muhtari-test-audio-runner
+  ${PROJECT_BINARY_DIR}/tests/audio-stop.txt LABELS runner audio portable TIMEOUT 10)

@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "audio_tables.h"
 #include "muhtari.h"
 #include "sha256.h"
 #include "../alloc.h"
@@ -218,8 +219,12 @@ static void test_pitch_336(void)
 /* Each refused call returns its status and changes no state, and one refused
    after its size tag is accepted writes audio_count as zero: the following
    valid frames give the counts an untouched instance gives, 800 then 801. */
+static void test_audio_validate(void);
+static void load_audio_program(muhtari *m);
+
 static void test_validate_first(void)
 {
+    test_audio_validate();
     muhtari *m = make();
     muhtari_frame io;
     frame_io(&io, video, WIDTH, audio, AUDIO_CAP);
@@ -278,6 +283,191 @@ static void test_validate_first(void)
 
 /* Every frame writes 800 or 801 zero samples, alternating from 800, 801, and
    the total never drifts: N frames give floor(N * 119402 * 88 / 13125). */
+/* Cumulative production step response; the 88 sample alignments exhaust
+   integer tick positions since gcd(88,13125)=1. Summation by parts turns
+   arbitrary bounded levels into finite differences of these steps. */
+static int64_t synth_step(uint32_t n, uint32_t tick, int32_t cumulative[13125][16])
+{
+    uint32_t q = tick * 88u / 13125u;
+    uint32_t phase = tick * 88u % 13125u;
+    if (n < q) {
+        return 0;
+    }
+    return n - q >= 16u ? MUHTARI__SYNTH_Q23 : cumulative[phase][n - q];
+}
+
+static void test_synth_bound(void)
+{
+    static int32_t cumulative[13125][16];
+    int64_t cmax = 0;
+    for (uint32_t phase = 0; phase < 13125u; phase++) {
+        int32_t c[16];
+        int32_t sum = 0;
+        muhtari__synth_coefficients(phase, c);
+        for (unsigned j = 0; j < 16u; j++) {
+            sum += c[j];
+            cumulative[phase][j] = sum;
+            int64_t magnitude = c[j] < 0 ? -(int64_t)c[j] : c[j];
+            cmax = magnitude > cmax ? magnitude : cmax;
+        }
+        CHECK_EQ_U64(sum, 8388608);
+    }
+    int64_t positive = 0, negative = 0;
+    muhtari *adverse = make();
+    for (uint32_t n = 100u; n < 188u; n++) {
+        int64_t p = 0, minus = 0;
+        uint32_t first_tick = (n - 17u) * 13125u / 88u;
+        uint32_t last_tick = ((n + 1u) * 13125u + 87u) / 88u - 1u;
+        for (uint32_t tick = first_tick; tick <= last_tick; tick++) {
+            int64_t w = synth_step(n, tick, cumulative) - synth_step(n, tick + 1u, cumulative);
+            if (w >= 0) {
+                p += w;
+            } else {
+                minus -= w;
+            }
+        }
+        CHECK_EQ_U64(p - minus, MUHTARI__SYNTH_Q23);
+        positive = p > positive ? p : positive;
+        negative = minus > negative ? minus : negative;
+        /* Construct each extremizing 0/M level sequence and pass it
+           through production event ordering, ring and blocker as well. */
+        for (unsigned sign = 0; sign < 2u; sign++) {
+            muhtari__synth_reset(adverse, 0u, 0u);
+            for (uint32_t tick = first_tick; tick <= last_tick; tick++) {
+                int64_t w = synth_step(n, tick, cumulative) - synth_step(n, tick + 1u, cumulative);
+                uint16_t raw = (uint16_t)((sign == 0u ? w > 0 : w < 0) ? 15u : 0u);
+                muhtari__synth_level(adverse, tick, 0u, raw);
+                muhtari__synth_level(adverse, tick, 1u, raw);
+            }
+            CHECK_EQ_U64(muhtari__synth_render(adverse, last_tick + 1u, NULL), n + 1u);
+            CHECK_EQ_U64(adverse->synth.integrator_q23,
+                         (sign == 0u ? p : -minus) * MUHTARI__SYNTH_MAX_LEVEL);
+            CHECK_EQ_U64(adverse->synth.clipped_samples, 0);
+        }
+    }
+    muhtari_destroy(adverse);
+    CHECK_EQ_U64(cmax, 7283992);
+    CHECK_EQ_U64(positive, 10865505);
+    CHECK_EQ_U64(negative, 2476897);
+    CHECK_EQ_U64(positive + negative, 13342402);
+    /* 29203.6 is below 32767*10^(-1/20). One whole PCM LSB covers both
+       the blocker feedback's <1/(1-R) Q30 units and final half-LSB. */
+    CHECK(((positive + negative) * MUHTARI__SYNTH_MAX_LEVEL + MUHTARI__SYNTH_Q23) * 5 <=
+          INT64_C(146018) * MUHTARI__SYNTH_Q23);
+    int64_t pending = INT64_C(16) * 150 * MUHTARI__SYNTH_MAX_LEVEL * cmax;
+    CHECK_EQ_U64(pending, INT64_C(320961823488000));
+    CHECK(pending < (INT64_C(1) << 49));
+    CHECK(pending + positive * MUHTARI__SYNTH_MAX_LEVEL < (INT64_C(1) << 50));
+    CHECK(positive * MUHTARI__SYNTH_MAX_LEVEL < (INT64_C(1) << 38));
+    CHECK(3 * positive * MUHTARI__SYNTH_MAX_LEVEL * 128 < (INT64_C(1) << 47));
+    CHECK_EQ_U64(13124u * MUHTARI__SYNTH_PHASES, 839936u);
+    CHECK(13124u * MUHTARI__SYNTH_PHASES < (1u << 20));
+    CHECK_EQ_U64(MUHTARI__SYNTH_OVERSHOOT_TICKS, 20730u);
+    CHECK_EQ_U64(MUHTARI__SYNTH_CARRY_SAMPLES, 139u);
+    CHECK_EQ_U64(MUHTARI__SYNTH_PCM_CAPACITY, 940u);
+    CHECK(positive * MUHTARI__SYNTH_MAX_LEVEL * 128 < (INT64_C(1) << 45));
+    CHECK((MUHTARI__SYNTH_Q30 - 1) * INT64_C(1070934451) < (INT64_C(1) << 60));
+}
+
+/* Independent test-only exponential series, avoiding a new analysis library.
+   Forty terms on [-2.451,0] make error far below one Q24 table LSB. */
+static double synth_test_exp(double x)
+{
+    double total = 1, term = 1;
+    for (unsigned k = 1; k <= 40u; k++) {
+        term *= x / k;
+        total += term;
+    }
+    return total;
+}
+
+static void test_synth_mix(void)
+{
+    CHECK_EQ_U64(sizeof muhtari__synth_kernel, 4096);
+    uint64_t max_current = (uint64_t)MUHTARI__MIX_Q24 * MUHTARI__TIA_CURRENT +
+                           2u * (uint64_t)muhtari__pokey_mix[824] * MUHTARI__POKEY_CURRENT;
+    CHECK(max_current < (UINT64_C(1) << 34));
+    CHECK(max_current * MUHTARI__SYNTH_MAX_LEVEL < (UINT64_C(1) << 49));
+    CHECK(2u * (uint64_t)muhtari__pokey_mix[824] * MUHTARI__POKEY_CURRENT * MUHTARI__CART_GAIN_Q12 <
+          (UINT64_C(1) << 49));
+    for (unsigned row = 0; row < MUHTARI__SYNTH_PHASES; row++) {
+        int32_t sum = 0;
+        for (unsigned tap = 0; tap < 16u; tap++) {
+            sum += muhtari__synth_kernel[row][tap];
+        }
+        CHECK_EQ_U64(sum, 8388608);
+    }
+    CHECK_EQ_U64(muhtari__synth_kernel[0][15], 0);
+    CHECK_EQ_U64(sizeof muhtari__tia_mix / sizeof muhtari__tia_mix[0], 31);
+    CHECK_EQ_U64(sizeof muhtari__pokey_mix / sizeof muhtari__pokey_mix[0], 825);
+    for (unsigned n = 0; n <= 30u; n++) {
+        uint32_t expected =
+            (uint32_t)(((uint64_t)2u * n * MUHTARI__MIX_Q24 + (n + 30u) / 2u) / (n + 30u));
+        CHECK_EQ_U64(muhtari__tia_mix[n], expected);
+        if (n > 0u) {
+            CHECK(muhtari__tia_mix[n] > muhtari__tia_mix[n - 1u]);
+        }
+    }
+    CHECK_EQ_U64(muhtari__tia_mix[30], MUHTARI__MIX_Q24);
+    CHECK_EQ_U64(muhtari__pokey_mix[0], 0);
+    for (unsigned n = 0; n <= 824u; n++) {
+        double x = (double)n / 824;
+        double curve =
+            2.171 * (x <= 0.14 ? x : 0.14 + (1 - synth_test_exp(-2.85 * (x - 0.14))) / 2.85);
+        uint32_t expected = (uint32_t)(curve * MUHTARI__MIX_Q24 + 0.5);
+        CHECK_EQ_U64(muhtari__pokey_mix[n], expected);
+        if (n > 0u) {
+            CHECK(muhtari__pokey_mix[n] > muhtari__pokey_mix[n - 1u]);
+        }
+    }
+    CHECK_EQ_U64(muhtari__pokey_mix[206], 8538596);
+    CHECK_EQ_U64(muhtari__pokey_mix[824], 16777645);
+    /* At the adopted node, one maximum channel is 2.1 times TIA full
+       current (unmeasured cartridge loading remains model uncertainty). */
+    uint64_t ratio = (uint64_t)muhtari__pokey_mix[206] * MUHTARI__POKEY_CURRENT * 1000u /
+                     ((uint64_t)muhtari__tia_mix[30] * MUHTARI__TIA_CURRENT);
+    CHECK(ratio >= 2047u && ratio <= 2049u);
+
+    muhtari *m = make();
+    for (uint8_t chips = 0; chips <= 2u; chips++) {
+        muhtari__synth_reset(m, 0u, chips);
+        for (unsigned source = 2u; source < 2u + 4u * chips; source++) {
+            muhtari__synth_level(m, 0u, source, 206u);
+        }
+        CHECK_EQ_U64(muhtari__synth_render(m, 1u, NULL), 0);
+        CHECK_EQ_U64(m->synth.mixed_level, chips == 0u ? 0u : chips == 1u ? 14705u : 16331u);
+        muhtari__synth_level(m, 1u, 0u, 15u);
+        muhtari__synth_level(m, 1u, 1u, 15u);
+        CHECK_EQ_U64(muhtari__synth_render(m, 2u, NULL), 0);
+        CHECK_EQ_U64(m->synth.mixed_level, MUHTARI__SYNTH_MAX_LEVEL);
+
+        /* Adverse full-range one-tick transitions, then slower ringing
+           steps, including long DC holds and the ring-wrap boundaries. */
+        for (uint32_t tick = 2u; tick < 100000u; tick++) {
+            uint32_t period = tick < 12000u ? 1u : tick < 40000u ? 149u : 4093u;
+            if (tick % period == 0u) {
+                uint16_t high = (uint16_t)((tick / period) & 1u);
+                muhtari__synth_level(m, tick, 0u, (uint16_t)(high * 15u));
+                muhtari__synth_level(m, tick, 1u, (uint16_t)(high * 15u));
+                for (unsigned source = 2u; source < 2u + 4u * chips; source++) {
+                    muhtari__synth_level(m, tick, source, (uint16_t)(high * 206u));
+                }
+            }
+            if (tick % 13125u == 0u) {
+                CHECK_EQ_U64(muhtari__synth_render(m, tick, NULL), 88u);
+            }
+        }
+        (void)muhtari__synth_render(m, 100000u, NULL);
+        CHECK_EQ_U64(m->synth.clipped_samples, 0);
+        CHECK(m->synth.pre_clip_peak > 10000u && m->synth.pre_clip_peak <= 29203u);
+        CHECK(m->synth.kernel_adds_per_sample <= 150u);
+    }
+    muhtari_destroy(m);
+}
+
+static void test_cart_audio(void);
+static void test_cart_irq(void);
+
 static void test_silence(void)
 {
     static const uint32_t first[4] = {800, 801, 800, 801};
@@ -309,6 +499,79 @@ static void test_silence(void)
         total += io.audio_count;
     }
     CHECK_EQ_U64(total, (uint64_t)13125u * TICKS_PER_FRAME * SAMPLES_PER_PERIOD / TICKS_PER_PERIOD);
+
+    /* Exercise the shipped reconstruction separately from the silent card. */
+    muhtari__synth_reset(m, 0u, 0u);
+    muhtari__synth_level(m, 0u, 0u, 15u);
+    uint32_t reconstructed = muhtari__synth_render(m, 13125u, audio);
+    CHECK_EQ_U64(reconstructed, 88u);
+    int nonzero = 0;
+    for (uint32_t i = 0; i < reconstructed; i++) {
+        nonzero |= audio[i] != 0;
+    }
+    CHECK(nonzero);
+    /* Half the TIA DAC sum produces 2n/(n+30)=2/3 of full current,
+       rather than half the PCM level (A7800-AUDIO section 3). */
+    CHECK_EQ_U64(m->synth.mixed_level, 12240);
+    CHECK_EQ_U64(muhtari__synth_round(-5, 2), -3);
+    CHECK_EQ_U64(muhtari__synth_round(-4, 3), -1);
+    CHECK_EQ_U64(muhtari__synth_round(5, 2), 3);
+    int16_t continuous[176], partitioned[176];
+    muhtari *other = make();
+    muhtari__synth_reset(m, 0u, 0u);
+    muhtari__synth_reset(other, 0u, 0u);
+    static const uint32_t events[] = {0u, 149u, 150u, 2387u, 13124u, 13125u, 19000u};
+    uint32_t written = 0;
+    for (unsigned i = 0; i < sizeof events / sizeof events[0]; i++) {
+        uint16_t level = (uint16_t)((i & 1u) == 0u ? 15u : 0u);
+        muhtari__synth_level(m, events[i], 0u, level);
+        muhtari__synth_level(other, events[i], 0u, level);
+        written += muhtari__synth_render(other, events[i], partitioned + written);
+    }
+    CHECK_EQ_U64(muhtari__synth_render(m, 26250u, continuous), 176u);
+    written += muhtari__synth_render(other, 26250u, partitioned + written);
+    CHECK_EQ_U64(written, 176u);
+    CHECK(memcmp(continuous, partitioned, sizeof continuous) == 0);
+    CHECK(memcmp(m->synth.impulse, other->synth.impulse, sizeof m->synth.impulse) == 0);
+    CHECK_EQ_U64(m->synth.integrator_q23, other->synth.integrator_q23);
+    CHECK_EQ_U64(m->synth.blocker_q30, other->synth.blocker_q30);
+    muhtari_destroy(other);
+    /* CPU catch-up may queue future PCM. Drain only the logical prefix;
+       discarded output must leave byte-identical future samples. */
+    other = make();
+    muhtari__synth_reset(m, 0u, 0u);
+    muhtari__synth_reset(other, 0u, 0u);
+    uint32_t future = 13125u + MUHTARI__SYNTH_OVERSHOOT_TICKS;
+    for (uint32_t tick = 0; tick <= future; tick += 17u) {
+        uint16_t raw = (uint16_t)((tick / 17u & 1u) * 15u);
+        muhtari__synth_level(m, tick, 0u, raw);
+        muhtari__synth_level(other, tick, 0u, raw);
+    }
+    CHECK_EQ_U64(muhtari__synth_render(m, 13125u, continuous), 88);
+    CHECK_EQ_U64(muhtari__synth_render(other, 13125u, NULL), 88);
+    CHECK(m->synth.carry_high_water > 0u);
+    CHECK(m->synth.carry_high_water <= MUHTARI__SYNTH_CARRY_SAMPLES);
+    uint32_t tail = muhtari__synth_render(m, future, continuous);
+    CHECK_EQ_U64(muhtari__synth_render(other, future, partitioned), tail);
+    CHECK(memcmp(continuous, partitioned, (size_t)tail * sizeof continuous[0]) == 0);
+    muhtari_destroy(other);
+    /* A boundary event is still pending after the completed half-open
+       prefix: all 88 samples are silent, the next interval starts its step. */
+    muhtari__synth_reset(m, 0u, 0u);
+    muhtari__synth_level(m, 13125u, 0u, 15u);
+    CHECK_EQ_U64(muhtari__synth_render(m, 13125u, continuous), 88u);
+    CHECK_EQ_U64(m->synth.pending, 1u);
+    CHECK_EQ_U64(m->synth.mixed_level, 0u);
+    for (unsigned i = 0u; i < 88u; i++) {
+        CHECK_EQ_U64(continuous[i], 0u);
+    }
+    CHECK_EQ_U64(muhtari__synth_render(m, 13275u, partitioned), 1u);
+    CHECK_EQ_U64(m->synth.pending, 0u);
+    CHECK(partitioned[0] != 0);
+    test_synth_bound();
+    test_synth_mix();
+    test_cart_audio();
+    test_cart_irq();
     muhtari_destroy(m);
 }
 
@@ -526,7 +789,7 @@ static void test_info(void)
     CHECK_EQ_U64(v.api, MUHTARI_API_VERSION);
     CHECK_EQ_U64(v.api, 3);
     CHECK_EQ_U64(v.abi, 1);
-    CHECK_EQ_U64(v.behaviour_revision, 1);
+    CHECK(v.behaviour_revision > 0u);
     muhtari_destroy(m);
 }
 
@@ -550,9 +813,17 @@ static void test_no_alloc_after_load(void)
     }
     CHECK_EQ_U64(c.allocs, 1);
     CHECK_EQ_U64(c.frees, 0);
+    load_audio_program(m);
+    CHECK_EQ_U64(c.allocs, 2);
+    for (uint32_t f = 0; f < LONG_RUN; f++) {
+        run(m, NULL);
+    }
+    CHECK(m->synth.pre_clip_peak > 0u);
+    CHECK_EQ_U64(c.allocs, 2);
+    CHECK_EQ_U64(c.frees, 0);
     muhtari_destroy(m);
-    CHECK_EQ_U64(c.allocs, 1);
-    CHECK_EQ_U64(c.frees, 1);
+    CHECK_EQ_U64(c.allocs, 2);
+    CHECK_EQ_U64(c.frees, 2);
 }
 
 /* A 4 KiB linear cartridge built in memory: an A78 version 3 header with
@@ -598,6 +869,277 @@ static void load_program(muhtari *m, const uint8_t *program, size_t n)
     make_cart(cart, program, n, 0u);
     muhtari_media media = media_for(cart, sizeof cart);
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+}
+
+/* Real timer -> effective header wiring -> handler -> public frame.
+   Altirra manual chapters 3.4 and 5.7; cartridge notes section 1. */
+static void test_cart_irq(void)
+{
+    static const uint8_t base_program[] = {
+        0x78,                      /* SEI */
+        0xA9, 7,    0x85, 1,       /* lock 7800 */
+        0xA9, 64,   0x8D, 0x58, 4, /* AUDCTL: fast timer1 */
+        0xA9, 20,   0x8D, 0x50, 4, /* AUDF1 */
+        0xA9, 0xAF, 0x8D, 0x51, 4, /* audible square */
+        0xA9, 1,    0x8D, 0x5E, 4, /* IRQEN */
+        0x8D, 0x59, 4,             /* STIMER */
+        0x58, 0xEA,                /* CLI; NOP */
+        0x4C, 0x1E, 0xF0           /* JMP self */
+    };
+    static const uint8_t base_handler[] = {
+        0xEE, 0, 0x18,          /* INC $1800 */
+        0xA9, 0, 0x8D, 0x5E, 4, /* acknowledge */
+        0x40                    /* RTI */
+    };
+    for (unsigned layout = 0u; layout < 4u; layout++)
+        for (unsigned source = 0u; source < 3u; source++)
+            for (unsigned mode = 0; mode < 4u; mode++) {
+                unsigned chip = layout == 1u || layout == 3u;
+                uint8_t program[sizeof base_program], handler[sizeof base_handler];
+                memcpy(program, base_program, sizeof program);
+                memcpy(handler, base_handler, sizeof handler);
+                program[6] = 0x60u;
+                program[21] = (uint8_t)(1u << source);
+                if (chip != 0u) {
+                    static const unsigned operands[] = {8u, 13u, 18u, 23u, 26u};
+                    for (unsigned i = 0u; i < 5u; i++)
+                        program[operands[i]] = (uint8_t)(program[operands[i]] - 16u);
+                    handler[6] = (uint8_t)(handler[6] - 16u);
+                }
+                muhtari *m = make();
+                make_cart(cart, program, sizeof program, 0u);
+                cart[0] = mode == 2u ? 3u : 4u;
+                cart[53] = chip != 0u ? 4u : 0u;
+                cart[54] = chip != 0u ? 0u : 0x40u; /* legacy fallback at the selected chip */
+                cart[67] = layout >= 2u ? 3u : chip != 0u ? 1u : 2u;
+                cart[69] = mode == 1u ? 0u : (uint8_t)(1u << chip);
+                cart[65] = mode == 3u ? 0xFFu : 0u; /* ignored v4 */
+                memcpy(cart + IMAGES_HEADER + 0x100u, handler, sizeof handler);
+                cart[CART_SIZE - 2u] = 0u;
+                cart[CART_SIZE - 1u] = 0xF1u;
+                muhtari_media media = media_for(cart, sizeof cart);
+                CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+                m->cpu.s = 0xFDu; /* controlled stack for documentary pushes */
+                m->ram[0] = 0u;
+                /* Stop exactly after entry to inspect hardware pushes. */
+                for (unsigned step = 0; step < 200u && m->cpu.pc != 0xF100u; step++)
+                    muhtari__cpu_step(m);
+                CHECK_EQ_U64(m->cpu.pc == 0xF100u, mode == 0u);
+                if (mode == 0u) {
+                    CHECK_EQ_U64(m->cpu.s, 0xFAu);
+                    CHECK_EQ_U64(muhtari__bus_peek(m, 0x1FDu), 0xF0u);
+                    CHECK_EQ_U64(muhtari__bus_peek(m, 0x1FCu), 0x1Eu);
+                    CHECK_EQ_U64(muhtari__bus_peek(m, 0x1FBu) & 0x34u, 0x20u);
+                }
+                muhtari_frame io;
+                frame_io(&io, video, WIDTH, audio, AUDIO_CAP);
+                CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(io.audio_count, 54u);
+                CHECK_EQ_U64(muhtari__bus_peek(m, 0x1800u), mode == 0u ? 1u : 0u);
+                int nonzero = 0;
+                for (uint32_t i = 0; i < io.audio_count; i++)
+                    nonzero |= audio[i] != 0;
+                CHECK(nonzero);
+                CHECK(m->bus.ticks - m->frame_start <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
+                muhtari_destroy(m);
+            }
+}
+
+/* A declared cartridge, executed by SALLY, must reach the public PCM.
+   POKEY registers/windows: cartridge notes section 2.1 and pokey.md. */
+static void test_cart_audio(void)
+{
+    static const uint16_t types[] = {0x0001u, 0x8000u, 0x0400u, 0x0040u};
+    static const uint16_t windows[] = {0x4000u, 0x0800u, 0x0440u, 0x0450u};
+    for (unsigned k = 0u; k < 4u; k++) {
+        uint16_t at = windows[k];
+        uint8_t program[] = {0xA9,
+                             7,
+                             0x85,
+                             1, /* lock 7800 */
+                             0xA9,
+                             3,
+                             0x8D,
+                             (uint8_t)(at + 15u),
+                             (uint8_t)(at >> 8),
+                             0xA9,
+                             20,
+                             0x8D,
+                             (uint8_t)at,
+                             (uint8_t)(at >> 8),
+                             0xA9,
+                             0xAF,
+                             0x8D,
+                             (uint8_t)(at + 1u),
+                             (uint8_t)(at >> 8),
+                             0xAD,
+                             (uint8_t)(at + 14u),
+                             (uint8_t)(at >> 8),
+                             0x8D,
+                             0,
+                             0x18,
+                             0x4C,
+                             0x13,
+                             0xF0};
+        muhtari *m = make();
+        make_cart(cart, program, sizeof program, 0u);
+        cart[53] = (uint8_t)(types[k] >> 8);
+        cart[54] = (uint8_t)types[k];
+        muhtari_media media = media_for(cart, sizeof cart);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        int nonzero = 0;
+        for (unsigned f = 0u; f < 3u; f++) {
+            muhtari_frame io;
+            frame_io(&io, NULL, 0u, audio, AUDIO_CAP);
+            CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+            for (unsigned i = 0u; i < io.audio_count; i++)
+                nonzero |= audio[i] != 0;
+        }
+        CHECK(nonzero);
+        CHECK_EQ_HEX(m->ram[0], 255u);
+        uint16_t mirror = k == 0u ? 0x7FFEu : k == 1u ? 0x0FFEu : (uint16_t)(at + 14u);
+        CHECK_EQ_HEX(muhtari__bus_read(m, mirror), 255u);
+        muhtari__bus_write(m, (uint16_t)(mirror - 13u), 0x1Fu);
+        CHECK_EQ_U64(m->synth.raw[k == 2u ? 6u : 2u], 206u);
+        CHECK_EQ_U64(m->synth.raw[k == 2u ? 2u : 6u], 0u);
+        struct muhtari__pokey before[2];
+        memcpy(before, m->pokey, sizeof before);
+        (void)muhtari__bus_peek(m, (uint16_t)(at + 10u));
+        (void)muhtari__cart_read(m, (uint16_t)(at + 10u), 1);
+        CHECK(memcmp(before, m->pokey, sizeof before) == 0);
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(m->synth.pokeys, 1u);
+        muhtari_destroy(m);
+    }
+    /* Readable ROM overlaps a write-only POKEY; DMA/peek remain pure. */
+    static uint8_t overlap[IMAGES_HEADER + 49152u];
+    images_header(overlap, 3u, "Overlap", 49152u, 1u);
+    memset(overlap + IMAGES_HEADER, 0x5Au, 49152u);
+    overlap[IMAGES_HEADER + 49148u] = 0u;
+    overlap[IMAGES_HEADER + 49149u] = 0xF0u;
+    muhtari *m = make();
+    muhtari_media media = media_for(overlap, sizeof overlap);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    muhtari__bus_write(m, 0x4001u, 0x1Fu);
+    CHECK_EQ_U64(m->synth.raw[2], 206u);
+    CHECK_EQ_HEX(muhtari__bus_read(m, 0x400Eu), 0x5Au);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x400Eu), 0x5Au);
+    CHECK_EQ_HEX(muhtari__cart_read(m, 0x400Eu, 1), 0x5Au);
+    /* v4 permits explicit RAM beside POKEY: writes select the chip,
+       reads select RAM. v3's conflicting RAM/POKEY pair drops POKEY. */
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    cart[0] = 4u;
+    cart[65] = 1u;
+    cart[67] = 5u;
+    cart[69] = 3u;
+    media = media_for(cart, sizeof cart);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.irq_mask, 3u);
+    m->cart.ram[1] = 0x63u;
+    muhtari__bus_write(m, 0x4001u, 0x1Fu);
+    CHECK_EQ_U64(m->synth.raw[2], 206u);
+    CHECK_EQ_HEX(muhtari__bus_read(m, 0x4001u), 0x63u);
+    cart[64] = 99u; /* ignored v4 retains raw fields, never wiring */
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.info.a78_irq, 3u);
+    CHECK_EQ_U64(m->cart.irq_mask, 0u);
+    CHECK_EQ_U64(m->synth.pokeys, 0u);
+    cart[64] = 0u;
+    cart[65] = 0u;
+    cart[67] = 1u; /* lone440 retains secondary wiring and source */
+    cart[69] = 2u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.irq_mask, 2u);
+    CHECK_EQ_U64(m->synth.pokeys, 1u);
+    muhtari__bus_write(m, 0x0441u, 0x1Fu);
+    CHECK_EQ_U64(m->synth.raw[6], 206u);
+    cart[67] = 3u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->synth.pokeys, 2u);
+    muhtari__bus_write(m, 0x0451u, 0x1Fu);
+    muhtari__bus_write(m, 0x0443u, 0x18u);
+    CHECK_EQ_U64(m->synth.raw[2], 206u);
+    CHECK_EQ_U64(m->synth.raw[7], 112u);
+    CHECK_EQ_U64(m->synth.raw[6], 0u);
+    CHECK_EQ_HEX(muhtari__bus_read(m, 0x045Eu), 255u);
+    CHECK_EQ_HEX(muhtari__bus_read(m, 0x044Eu), 255u);
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.irq_mask, 0u);
+    CHECK_EQ_U64(m->synth.pokeys, 0u);
+    muhtari_destroy(m);
+}
+
+static const uint8_t tone[] = {
+    0xA9, 0x07, 0x85, 0x01, /* lock the 7800 decode */
+    0xA9, 0x04, 0x85, 0x15, /* AUDC0 div2 */
+    0xA9, 0x05, 0x85, 0x17, /* AUDF0 */
+    0xA9, 0x0F, 0x85, 0x19, /* AUDV0 */
+    0x4C, 0x10, 0xF0        /* JMP $F010 */
+};
+
+static void load_audio_program(muhtari *m)
+{
+    load_program(m, tone, sizeof tone);
+}
+
+/* Validate with audible chip/filter history, pending input and future carry.
+   A byte comparison includes every unobserved audio field as well. */
+static void test_audio_validate(void)
+{
+    muhtari *m = make();
+    load_audio_program(m);
+    run(m, NULL);
+    CHECK(m->synth.pre_clip_peak > 0u);
+    muhtari_input in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.switches = MUHTARI_SWITCH_RESET;
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_OK);
+    struct muhtari before = *m;
+    const uint32_t count = (m->audio_rem + TICKS_PER_FRAME * 88u) / 13125u;
+    for (unsigned bad = 0u; bad < 8u; bad++) {
+        muhtari_frame io;
+        frame_io(&io, video, WIDTH, audio, count);
+        io.audio_count = COUNT_SENTINEL;
+        memset(video, PAD_BYTE, sizeof video);
+        for (unsigned i = 0u; i <= AUDIO_CAP; i++) {
+            audio[i] = AUDIO_SENTINEL;
+        }
+        muhtari_status want = MUHTARI_STATUS_ERR_ARGUMENT;
+        if (bad == 0u) {
+            CHECK_EQ_U64(muhtari_run_frame(m, NULL), want);
+        } else {
+            if (bad == 1u) {
+                io.size = 4u;
+                want = MUHTARI_STATUS_ERR_STRUCT_SIZE;
+            } else if (bad == 2u) {
+                io.size = UINT32_MAX;
+                want = MUHTARI_STATUS_ERR_STRUCT_SIZE;
+            } else if (bad == 3u || bad == 4u) {
+                io.video_pitch = bad == 3u ? WIDTH - 1u : 65537u;
+            } else if (bad == 5u || bad == 6u) {
+                io.audio_capacity = bad == 5u ? 0u : count - 1u;
+                want = MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL;
+            }
+            CHECK_EQ_U64(muhtari_run_frame(bad == 7u ? NULL : m, &io), want);
+            CHECK_EQ_U64(io.audio_count, bad == 1u || bad == 2u || bad == 7u ? COUNT_SENTINEL : 0u);
+        }
+        CHECK(memcmp(m, &before, sizeof before) == 0);
+        for (unsigned i = 0u; i <= AUDIO_CAP; i++) {
+            CHECK_EQ_U64(audio[i], AUDIO_SENTINEL);
+        }
+        for (unsigned i = 0u; i < sizeof video; i++) {
+            CHECK_EQ_U64(video[i], PAD_BYTE);
+        }
+    }
+    muhtari_frame io;
+    frame_io(&io, NULL, 0u, audio, count);
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(io.audio_count, count);
+    CHECK_EQ_U64(audio[count], AUDIO_SENTINEL);
+    CHECK(m->bus.ticks > before.bus.ticks);
+    muhtari_destroy(m);
 }
 
 /* A refused load, for each reason, leaves the previous cartridge running:

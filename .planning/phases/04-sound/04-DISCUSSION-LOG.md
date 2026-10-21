@@ -1,0 +1,178 @@
+# Phase 4: Sound - Discussion Log
+
+> Audit trail only. Planning and execution consume `04-CONTEXT.md`.
+
+**Date:** 2026-10-20
+**Phase:** 04-sound
+**Areas discussed:** chip timing and cartridge mapping; synthesis and mix; host contracts and evidence.
+
+## Owner direction
+
+The owner invoked `$gsd-discuss-phase 4`, then requested all relevant decision points be considered through
+fan-out research, stakeholder perspectives, primary sources and an adversarial pass. The owner explicitly
+requested a coherent recommendation set and automatic following of those recommendations. Small, flat
+dependency trees and copying a suitable permissive seed were preferred to adding packages.
+
+This replaced routine area-selection and question-by-question interaction. No unanswered interview choice was
+silently defaulted. Three read-only agents investigated independent areas, then the orchestrator reconciled
+their recommendations. No further fan-out was needed once remaining questions required measurements.
+
+## Chip timing, startup and cartridge mapping
+
+| Choice | Benefit / cost | Selected |
+|--------|----------------|----------|
+| Independent TIA lattice, shared RSYNC/WSYNC epoch | Preserves hardware edge placement; mutable phase must be shared | Yes |
+| Uniform 228-tick TIA audio or MARIA-derived stepping | Simpler; contradicts settled edge model | No |
+| Bus phi2 POKEY with documented reload/init behaviour | Preserves slow-cycle pitch, hidden state and RANDOM; needs segment-aware catch-up | Yes |
+| Fixed-rate POKEY or stopping silent channels | Cheaper shortcut; loses clock stretching or observable state | No |
+| SKCTL=$03 startup, alternate init internal | Existing compatibility default; physical startup still uncertain | Yes |
+| Default silent init | Familiar to some emulators; conflicts with settled startup choice | No |
+| All existing POKEY header codes, two fixed instances | One reusable model, no speculative expansion interface | Yes |
+| Three required base windows only | Smaller initial coverage, leaves already parsed POKEY codes inconsistent | No |
+| v4-controlled timer IRQ including CPU acceptance | Fulfils settled wiring; CPU entry path is currently missing | Yes |
+| IRQ line without CPU acceptance | Superficially small; cannot deliver the promised behaviour | No |
+
+**Recommendation basis:** A7800-AUDIO, existing bus data ticks, Altirra's hardware manual and the maintained A78
+specification. TIA writes use start+5 on slow cycles, not completion at start+6. No new evidence overturns the
+settled chip models; uncertain physical startup and STIMER polarity stay documented.
+
+## Synthesis, mix and headroom
+
+| Choice | Benefit / cost | Selected |
+|--------|----------------|----------|
+| Approved sibling kernel and one DC blocker | Small permitted seed, integer runtime; quality must be retested | Yes |
+| New external resampler | Additional dependency and integration without a demonstrated need | No |
+| Short polynomial correction or simple averaging | Cheap; insufficient evidence for the required rejection | No |
+| Large phase table | Trades interpolation for memory; consider only with performance evidence | Deferred |
+| Box-bin profile | Conditional preparation fallback; adds approximation and evidence burden | Deferred |
+| Owned nonlinear mixer tables and node-current weights | Existing documented model; physical balance still unmeasured | Yes |
+| Speculative board/TV filters or new user controls | Adds assumptions and API without measurements or consumers | No |
+| Complete signed-kernel/DC-blocker peak bound | Covers ringing, rounding and intermediate overflow | Yes |
+| Maximum DC sum as clipping proof | Unity sum misses negative-lobe overshoot | No |
+
+**Recommendation basis:** approved seed and DSP derivations. The sibling spectral test's coherent frequencies do
+not prove rejection with actual 7800 lattice events. Preparation's no-clipping argument must be corrected in the
+implementation change. Keep the current fixed 48 kHz API and do not expose hypothetical rates or profiles.
+
+## Observation, hashes and host evidence
+
+| Choice | Benefit / cost | Selected |
+|--------|----------------|----------|
+| Internal transition tap consumed by existing runner | Meets real consumer with no new public lifetime contract | Yes |
+| Public observer API/general hooks | Useful later; broadens published contract unnecessarily now | No |
+| Separate canonical raw-transition and LE mono PCM digests | Distinguishes chip changes from synthesis changes | Yes |
+| Native-memory PCM/struct hashing | Simple but padding and endianness break portability | No |
+| Whole-run hash output with explicit counts | Fits existing CLI and bounded output | Yes |
+| Per-frame syntax, WAV or new expectations tooling | Extra surface outside current requirement | Deferred |
+| Half-open logical intervals with bounded carry | Handles existing CPU overshoot and partial first frames | Yes |
+| Flush everything generated by the final instruction | Leaks next-frame audio into the requested run | No |
+| NULL output still advances audio history | Later PCM equals always-rendered operation | Yes |
+| Skip synthesis when output is discarded | Changes subsequent PCM | No |
+| Production-path spectral measurement and bad control | Tests actual alias rejection; measurement reference must be explicit | Yes |
+| Reuse sibling -87 dB claim as acceptance | Different clocks and filters; no local proof | No |
+| Reuse cross-platform comparison and in-process libretro host | Recurring determinism and adapter evidence within existing budget | Yes |
+| New hosted recording/device test suite | Adds fragile machinery beyond the established e2e budget | No |
+
+**Recommendation basis:** current frame driver and callbacks. Render audible tones against their intended
+fundamental and ultrasonic-only cases against a declared full-scale reference; never exempt aliases. Preserve
+no-content silence, ordinary-call validation, power-cycle behaviour and the existing BIOS-refusal exception.
+
+## Released pins and todo disposition
+
+The existing POKEY re-pin todo is directly applicable: mapping $0450 changes reads used by five released samples.
+Adopt its same-commit behaviour revision, frame-chain/title-pin rewrite and compatibility regeneration. Require
+causal old/new evidence; unaffected samples changing are bugs to investigate. Keep the todo pending until
+execution, and leave unrelated CI and review seeds in their existing workstreams.
+
+## Agent's Discretion
+
+The owner delegated recommendations and routine technical choices. Names, module boundaries, exact bounded
+event carry, CLI labels and spectral-harness details remain research/planning choices within CONTEXT.md's
+contracts. No implementation performance, spectrum or clipping result is claimed by this discussion.
+
+## Deferred Ideas
+
+Existing later milestones retain PAL, expansion audio, physical calibration, hardware/RTL comparison, public
+hooks, arbitrary rates, WAV output and states. No additional capability was added from the generic brief.
+
+
+## Recovery discussion after actual slow-clock failure (2026-10-20)
+
+The owner invoked discuss again after 04-06 stopped, renewing the instruction to consider all relevant areas,
+fan out research, challenge the results and automatically follow coherent recommendations. Updating the existing
+context and preparing targeted replanning were the purpose of this invocation. No question was presented as
+answered by the owner: the decisions below were adopted by the agent under that delegation. This is one
+GSD discussion step; no implementation or planning command followed.
+
+Three independent advisory reviews covered DSP reconstruction; numerical/measurement validity; and
+architecture, runtime bounds and partial-plan recovery. Cross-checks addressed gain gaming, quantized silence,
+window amplitude bias, stale proof constants and misleading SUMMARY completion discovery. Further fan-out
+would repeat hypotheses whose value now depends on candidate measurements.
+
+### Reconstruction change
+
+| Option | Benefit / cost | Disposition |
+|--------|----------------|-------------|
+| 16 taps/Q23 with 64 then 128 linear phases | Targets interpolation with 4/8 KiB tables; retains ring/tail and 16 coefficient applications per event; new bounds required | Selected research order; candidate unmeasured |
+| Higher Q precision or revised interpolation at 32 phases | Separates rounding error; arithmetic/width changes; cannot assume removal of phase images | Diagnostic fallback if phase candidates fail |
+| Longer support or changed window | Can improve rejection; changes response, event cost, ring/tail and carry proofs | Only with measured residual cause |
+| Multistage/polyphase replacement or minimum-phase BLEP | Viable architectures; much wider state, arithmetic and response changes | No demonstrated need; defer |
+| Lower gain or wider masks | Can produce a superficial pass without improving reconstruction | Rejected |
+
+The slow AUDF1 fundamental is 119318.1818 Hz. Its thirteenth harmonic minus 32 times 48 kHz is
+15136.3636 Hz, near the observed 15136.23047 Hz FFT bin. This motivates the phase-density experiment;
+coefficient rounding, support truncation and row correction remain alternative causes. Historical Q23/128
+results cover only the earlier 132-case matrix. No denser candidate passed the new cases in this session.
+
+### Acceptance evidence
+
+| Option | Benefit / cost | Disposition |
+|--------|----------------|-------------|
+| Existing 132 production cases, 132 controls, 72 actual-chip cases plus bounded held-out clock/HP exploration | Preserves regression evidence and reduces case-specific tuning; keep compact worst examples in existing tests | Selected |
+| Known six failures alone | Cheap screening; can overfit and miss mixed-clock/narrow-pulse defects | Screening only |
+| Permanent exhaustive configuration matrix | High CI/tooling cost; still not universal proof | Rejected without recurring evidence |
+| Exact-frequency refinement of worst candidate peaks | Checks FFT-bin amplitude understatement; one-off evidence without a new framework | Selected |
+| Require nonzero PCM for ultrasonic inputs | Confuses successful suppression and int16 rounding with disconnected output | Rejected; verify raw transitions reach synthesis instead |
+
+Keep capture/settling/window/reference definitions and -80 dB unchanged. Compare spectra at current M=18361
+before any separately justified headroom scaling. Refresh all phase/alignment, signed response, blocker,
+rounding, intermediate-width and clipping proofs. An eventual final gain change must be justified by the bound
+and cannot supply the spectral improvement. Document finite coverage and measured margin, not universal rejection.
+The advisor's derived BH4 half-bin amplitude loss is approximately 0.826 dB; the current failing vector remains
+a failure after refinement. A permanent analyzer refinement is a tooling seed, not an added phase gate.
+
+### Recovery boundary
+
+| Option | Benefit / cost | Disposition |
+|--------|----------------|-------------|
+| Preserve eight dirty files; amend affected synthesis evidence; explicitly resume 04-06 Task2 | Keeps verified timing and failing vectors; requires reconciliation of blocked metadata | Selected |
+| Revert partial work or skip 04-06 because a SUMMARY exists | Loses evidence or falsely advances the phase | Rejected |
+| Move reconstruction acceptance to a later phase | Leaves the current sound requirement unmet | Rejected |
+| Replan the entire completed phase | Reopens unrelated decisions and repeats completed work | Rejected; only expand replan if support/architecture changes demand it |
+
+Raw transitions, video, public API/ABI, clocks, frame horizons and device boundaries stay fixed. Only synthesis
+identity and affected PCM evidence change with coefficients. Existing no-allocation, no-float, portability and
+performance checks apply; no new dependency, quality mode or verification framework is selected.
+
+### Sources and evidence
+
+Primary author references consulted for these recommendations:
+
+- [Filter-table implementation](https://www.dsprelated.com/freebooks/pasp/Implementation.html): table density,
+  interpolation, word length and implementation cost are separate design controls.
+- [Windowed-sinc interpolation](https://www.dsprelated.com/freebooks/pasp/Windowed_Sinc_Interpolation.html):
+  the existing reconstruction family remains a viable architecture, not proof of this candidate.
+- [Kaiser window](https://www.dsprelated.com/freebooks/sasp/Kaiser_Window.html): window/support tradeoffs.
+- [Harris, spectrum analysis windows](https://www.cs.cmu.edu/afs/cs/user/bhiksha/WWW/courses/dsp/spring2013/WWW/schedule/readings/windows_comparison2_harris.pdf): amplitude/window bias.
+
+Fresh local reproduction: `ctest --test-dir build/ci -R '^audio.spectral$' --output-on-failure --no-tests=error`
+exited **8**, retaining six failures and worst -78.28741 dBFS. No hosted run was started; there is no run URL
+for this local check. This evidence establishes the blocker, not a completed implementation.
+
+### Agent discretion and deferred work
+
+The owner delegated the technical decision. The planner/researcher selects the measured candidate within the
+bounded order and preserves the retained working tree. Wider changes require explicit evidence and updated
+proof scope, not another routine owner approval. Existing PAL, physical calibration, hardware referees,
+public hooks and other expansion work remain deferred. No new todo is folded; the already selected POKEY
+re-pin todo and previously deferred unrelated seeds retain their disposition.

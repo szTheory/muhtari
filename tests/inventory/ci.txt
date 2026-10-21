@@ -12,6 +12,12 @@ abi.header.cxx17	abi
 abi.symbols	abi
 abi.undefined	abi
 abi.undefined.self_test	abi
+audio.frames	audio,portable
+audio.observer	audio,portable
+audio.samples	audio,basic,portable
+audio.spectral	audio,portable
+audio.spectral.controls	audio,portable
+audio.stress	audio,perf,portable
 basic.adventurer	basic,portable
 basic.atarivoxspeech	basic,portable
 basic.backuptest	basic,portable
@@ -45,6 +51,7 @@ basic.screensafe	basic,portable
 basic.simple	basic,portable
 basic.smasteroids	basic,portable
 basic.snescontrollers	basic,portable
+basic.soundeffects	basic,portable
 basic.soundtest	basic,portable
 basic.spacephysics	basic,portable
 basic.trackertest	basic,portable
@@ -87,6 +94,7 @@ built.screensafe	built,portable
 built.simple	built,portable
 built.smasteroids	built,portable
 built.snescontrollers	built,portable
+built.soundeffects	built,portable
 built.soundtest	built,portable
 built.spacephysics	built,portable
 built.trackertest	built,portable
@@ -150,6 +158,7 @@ core.testcard.pinned_hash	core,portable
 core.testcard.static	core,portable
 cpu.decimal.clark	portable,vectors
 cpu.decimal.clark.self_test	portable,vectors
+cpu.irq.timing	portable,sally
 cpu.jam.step_reads_ffff	portable,sally
 cpu.nmi.branch_no_cross_polls_early	portable,sally
 cpu.nmi.held_deciding_cycle_taken_after	portable,sally
@@ -469,6 +478,7 @@ install.consumer	install
 install.consumer.dll_crt	install
 install.stage	install
 libretro.bios_failures	libretro,portable
+libretro.host.audio	audio,libretro,portable
 libretro.host.bios	libretro,portable
 libretro.host.devices	libretro,portable
 libretro.host.input	libretro,portable
@@ -500,6 +510,9 @@ perf.gate.no_base	perf
 perf.gate.plus_1_00	perf
 perf.gate.plus_1_01	perf
 perf.gate.unstable	perf
+pokey.clock	pokey,portable
+pokey.logic	pokey,portable
+pokey.maps	pokey,portable
 policy.compat_doc_fresh	policy
 policy.compat_doc_fresh.self_test	policy
 policy.no_skip	policy
@@ -531,6 +544,8 @@ riot.timer.flag_at_n_interval_plus_1	portable,riot
 riot.timer.read_in_setting_cycle_keeps_flag	portable,riot
 riot.timer.reads_n_minus_1	portable,riot
 riot.timer.slow_cycle_counts_one	portable,riot
+runner.audio.contract	audio,portable,runner
+runner.audio.stop_failure	audio,portable,runner
 runner.bench.bytes	bench,portable,runner
 runner.bench.format	bench,portable,runner
 runner.bench.percentile	bench,portable,runner
@@ -591,6 +606,8 @@ runner.usage.positional	portable,runner
 runner.usage.region_pal	portable,runner
 runner.usage.unknown	portable,runner
 runner.version	portable,runner
+sally.irq	pokey,portable,sally
+tia.logic	portable,tia
 title.pin.self_test	portable,title
 title.simple.bios	portable,title
 title.simple.fast	portable,title

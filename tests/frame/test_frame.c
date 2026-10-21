@@ -234,6 +234,8 @@ static int hold_split_wsync_across_dma(void)
         CHECK(m->bus.ticks < line_start + 20u);
         memset(&m->maria.stats[lines[i]], 0, sizeof m->maria.stats[0]);
         m->profile.tia_phase = tia_phase_for(release);
+        /* Apply the test's power-on profile to the stored TIA epoch. */
+        muhtari__tia_reset(m);
         muhtari__bus_write(m, WSYNC_TIA, 0x00u);
         (void)muhtari__bus_read(m, ZERO_BYTE);
         CHECK(m->bus.ticks >= release + 4u);
@@ -315,6 +317,7 @@ static int maria_wsync_releases_at_lrc(void)
     uint64_t tia_release = FRAME2 + 103u * LINE + 100u;
     seek(m, FRAME2 + 102u * LINE + 400u);
     m->profile.tia_phase = tia_phase_for(tia_release);
+    muhtari__tia_reset(m);
     muhtari__bus_write(m, WSYNC_TIA, 0x00u);
     muhtari__bus_write(m, WSYNC_MARIA, 0x00u);
     from = m->bus.ticks;

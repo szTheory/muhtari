@@ -1,6 +1,7 @@
 /* muhtari_run_frame: every check first, then the frame. With no content
    loaded the frame is the test card and silence; with content, the CPU runs
    from one VBLANK start to the next (docs/hardware/bus.md, The run loop). */
+#include <assert.h>
 #include <string.h>
 
 #include "internal.h"
@@ -28,8 +29,8 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         return st;
     }
     /* From here on audio_count is written on every return; an error reports
-       zero samples and changes no state. A BIOS's refusal of the cartridge
-       stands until the next load or power cycle. */
+       zero samples. Validation executes nothing; BIOS refusal can instead
+       follow partial execution and stands until load or power cycle. */
     if (m->boot.rejected != 0u) {
         io->audio_count = 0u;
         return MUHTARI_STATUS_ERR_BIOS_REJECTED_CART;
@@ -66,6 +67,10 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         muhtari__ports_latch(m);
     }
     if (m->loaded) {
+        /* This logical horizon is fixed before execution. The CPU still
+           completes its instruction and possible interrupt entry; their
+           later audio stays in the bounded synthesis FIFO (audio.md). */
+        const uint64_t audio_end = m->frame_deadline;
         /* MARIA writes each pixel into the caller's row as the beam plays
            it (docs/hardware/maria.md, Rendering). A full frame scans every
            row; the first frame after a load starts mid-frame, and the rows
@@ -78,14 +83,21 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         }
         m->maria.rows = io->video;
         m->maria.pitch = io->video_pitch;
+        muhtari__observe_begin(m, audio_end);
         run_to_deadline(m);
         m->maria.rows = NULL;
         m->maria.pitch = 0u;
+        muhtari__observe_end(m);
         if (m->boot.rejected != 0u) {
             /* The frame stops where the BIOS took its 2600 path. */
             io->audio_count = 0u;
             return MUHTARI_STATUS_ERR_BIOS_REJECTED_CART;
         }
+        muhtari__tia_catch_up(m, m->bus.ticks);
+        muhtari__observe_end(m);
+        uint32_t rendered = muhtari__synth_render(m, audio_end, m->audio_work);
+        assert(rendered == n);
+        (void)rendered;
         m->frame_start = m->frame_deadline;
         m->frame_deadline += MUHTARI__TICKS_PER_FRAME_NTSC;
     } else if (io->video != NULL) {
@@ -97,7 +109,11 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         }
     }
     if (io->audio != NULL) {
-        memset(io->audio, 0, (size_t)n * sizeof io->audio[0]);
+        if (m->loaded) {
+            memcpy(io->audio, m->audio_work, (size_t)n * sizeof io->audio[0]);
+        } else {
+            memset(io->audio, 0, (size_t)n * sizeof io->audio[0]);
+        }
     }
     /* A lag frame is one in which the CPU read no input register. */
     m->frames++;
