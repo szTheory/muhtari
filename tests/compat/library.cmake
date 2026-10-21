@@ -98,10 +98,16 @@ foreach(line IN LISTS library_lines)
   endif()
   string(REPLACE "/" "." name "library.${id}")
   string(REPLACE "<semicolon>" "$<SEMICOLON>" predicate "${predicate}")
+  set(library_timeout 2)
+  if(id STREQUAL "7800basic-0.41/eightysix")
+    # Sound synthesis: 1.23 s in run 39529469630; the 2 s budget was
+    # exhausted twice on the release head in run 39530145463.
+    set(library_timeout 4)
+  endif()
   muhtari_add_test(NAME ${name}
     COMMAND muhtari-test-predicate ${rom} ${predicate} --bios ${library_bios} --id ${id}
       --result ${library_results}/${name}.csv
-    LABELS library TIMEOUT 2)  # 2 x 0.88 s, Linux x64, library job, slowest of 7 runs, run 39379798527
+    LABELS library TIMEOUT ${library_timeout})  # Other titles: 2 x 0.88 s, run 39379798527
   list(APPEND library_tests ${name})
 endforeach()
 set_tests_properties(${library_tests} PROPERTIES FIXTURES_REQUIRED library_rows)
