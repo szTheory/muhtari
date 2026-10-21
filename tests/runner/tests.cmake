@@ -8,13 +8,19 @@
 # runs its own guest binary.
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   if(CASE STREQUAL "audio")
-    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 3 --hash-audio "${ROM}"
+    string(REPEAT "|....12|......|...BB|\n" 60 audio_input)
+    file(WRITE "${CAPTURE}.movie" "muhtari-movie 1\nport1 proline\nport2 proline\n${audio_input}")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${CAPTURE}.movie" --hash-audio "${ROM}"
       RESULT_VARIABLE rc OUTPUT_VARIABLE got ERROR_VARIABLE err)
     if(NOT rc STREQUAL "0")
       message(FATAL_ERROR "audio runner failed: ${rc} ${err}")
     endif()
-    execute_process(COMMAND ${EMULATOR} "${REFERENCE}" --reference-hashes "${ROM}" 3
+    execute_process(COMMAND ${EMULATOR} "${REFERENCE}" --reference-hashes "${ROM}" 60 fire
       RESULT_VARIABLE rc OUTPUT_VARIABLE want ERROR_VARIABLE err)
+    string(REGEX REPLACE "^lag_frames [0-9]+\n" "" got "${got}")
+    if(got MATCHES "audio_transitions_sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+      message(FATAL_ERROR "audio tracer was silent")
+    endif()
     if(NOT rc STREQUAL "0" OR NOT got STREQUAL want)
       message(FATAL_ERROR "audio canonical reference mismatch: ${rc}\n${got}\n${want}\n${err}")
     endif()
@@ -405,10 +411,10 @@ endfunction()
     # port or the wrong pins. Up and button 1 on each port with each stick
     # give four pictures, none the empty movie's.
     held_hash(empty ports-empty.txt "${prolines}" "${released}")
-    held_hash(p1_proline ports-1p.txt "${prolines}" "|U...1.|......|...BB|")
+    held_hash(p1_proline ports-1p.txt "${prolines}" "|....12|......|...BB|")
     held_hash(p1_joystick ports-1j.txt "port1 joystick\nport2 proline\n" "|U...1|......|...BB|"
       "|.....|......|...BB|")
-    held_hash(p2_proline ports-2p.txt "${prolines}" "|......|U...1.|...BB|")
+    held_hash(p2_proline ports-2p.txt "${prolines}" "|......|....12|...BB|")
     held_hash(p2_joystick ports-2j.txt "port1 proline\nport2 joystick\n" "|......|U...1|...BB|"
       "|......|.....|...BB|")
     expect_distinct(ports "${empty}" "${p1_proline}" "${p1_joystick}" "${p2_proline}"
@@ -807,8 +813,23 @@ muhtari_add_test(NAME runner.exit.table
 muhtari_add_test(NAME runner.audio.contract
   COMMAND ${CMAKE_COMMAND} "-DRUN=$<TARGET_FILE:muhtari-run>"
     "-DREFERENCE=$<TARGET_FILE:muhtari-test-audio-contracts>"
+    "-DCAPTURE=${PROJECT_BINARY_DIR}/tests/audio-reference"
     "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" -DCASE=audio
-    "-DROM=${PROJECT_BINARY_DIR}/roms/built/soundtest.a78"
+    "-DROM=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
     -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner audio portable TIMEOUT 30)
 set_tests_properties(runner.audio.contract PROPERTIES FIXTURES_REQUIRED built_soundtest)
+
+add_executable(muhtari-test-audio-runner ${CMAKE_CURRENT_LIST_DIR}/test_audio.c
+  ${PROJECT_SOURCE_DIR}/runner/bench.c ${PROJECT_SOURCE_DIR}/runner/clock.c
+  ${PROJECT_SOURCE_DIR}/runner/crc32.c ${PROJECT_SOURCE_DIR}/runner/md5.c
+  ${PROJECT_SOURCE_DIR}/runner/movie.c ${PROJECT_SOURCE_DIR}/runner/png.c
+  ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+target_include_directories(muhtari-test-audio-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-audio-runner PRIVATE muhtari::muhtari muhtari_host)
+target_compile_definitions(muhtari-test-audio-runner PRIVATE _POSIX_C_SOURCE=200809L
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+set_target_properties(muhtari-test-audio-runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-audio-runner)
+muhtari_add_test(NAME runner.audio.stop_failure COMMAND muhtari-test-audio-runner
+  ${PROJECT_BINARY_DIR}/tests/audio-stop.txt LABELS runner audio portable TIMEOUT 10)

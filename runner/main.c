@@ -76,6 +76,7 @@ static const char synopsis[] =
     "       muhtari-run --help | --version\n"
     "  --frames N           run N frames (N >= 1)\n"
     "  --bench N            run N frames and report the time per frame\n"
+    "  --hash-audio         print whole-run raw transition and mono PCM SHA-256 hashes\n"
     "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
     "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n"
     "  [--rom] FILE         load the cartridge image FILE; without it no content runs\n"
@@ -376,6 +377,7 @@ static int probe(const char *path)
 typedef struct options {
     uint32_t frames;
     int bench;
+    int hash_audio;
     uint32_t *hash_frames;
     uint32_t hash_count;
     uint32_t *dump_frames;
@@ -483,6 +485,11 @@ static int parse_options(int argc, char **argv, options *o)
             } else {
                 o->hash_frames[o->hash_count++] = n;
             }
+        } else if (strcmp(arg, "--hash-audio") == 0) {
+            if (o->hash_audio)
+                return usage("duplicate --hash-audio");
+            o->hash_audio = 1;
+            i--;
         } else if (strcmp(arg, "--dump-frame") == 0) {
             const char *colon = value == NULL ? NULL : strchr(value, ':');
             if (colon == NULL || colon[1] == '\0' ||
@@ -824,6 +831,34 @@ static int frame_input(const options *opt, const replay *mv, uint32_t f, muhtari
     return opt->port[0] != 0u || opt->port[1] != 0u;
 }
 
+/* Canonical audio evidence: explicit little-endian fields, no host structs. */
+static void audio_raw(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    uint8_t bytes[11];
+    for (unsigned i = 0u; i < 8u; i++)
+        bytes[i] = (uint8_t)(tick >> (i * 8u));
+    bytes[8] = source;
+    bytes[9] = (uint8_t)raw;
+    bytes[10] = (uint8_t)(raw >> 8);
+    muhtari__sha256_update(user, bytes, sizeof bytes);
+}
+static void audio_pcm(muhtari__sha256 *hash, const int16_t *samples, uint32_t count)
+{
+    for (uint32_t i = 0u; i < count; i++) {
+        uint16_t bits = (uint16_t)samples[i];
+        uint8_t bytes[2] = {(uint8_t)bits, (uint8_t)(bits >> 8)};
+        muhtari__sha256_update(hash, bytes, sizeof bytes);
+    }
+}
+static void audio_digest(const char *key, muhtari__sha256 *hash)
+{
+    uint8_t bytes[32];
+    char hex[65];
+    muhtari__sha256_final(hash, bytes);
+    muhtari__sha256_hex(bytes, hex);
+    printf("%s %s\n", key, hex);
+}
+
 /* Runs the frames into heap buffers (a 77,440-byte local would overflow a
    64 KiB stack, as wasm32's is). Returns the exit status. */
 static int run(const options *opt, const replay *mv)
@@ -871,11 +906,21 @@ static int run(const options *opt, const replay *mv)
                 opt->movie);
         status = MUHTARI__EXIT_FAILURE;
     }
+    muhtari__sha256 raw_hash, pcm_hash, tentative;
+    muhtari__sha256_init(&raw_hash);
+    muhtari__sha256_init(&pcm_hash);
+    tentative = raw_hash;
+    if (status == 0 && opt->hash_audio && muhtari__synth_observe(m, audio_raw, &tentative) != 0) {
+        fprintf(stderr, "muhtari-run: audio observation allocation failed\n");
+        status = MUHTARI__EXIT_FAILURE;
+    }
+    uint64_t audio_frames = 0u, audio_samples = 0u;
     uint32_t next_hash = 0;
     uint32_t timed = 0;
     uint64_t total_ns = 0;
     /* A 64-bit count, so the loop ends when --frames is 4294967295. */
-    for (uint64_t n = 1; status == MUHTARI__EXIT_DONE && n <= opt->frames; n++) {
+    for (uint64_t n = 1;
+         status == MUHTARI__EXIT_DONE && n <= opt->frames && !muhtari__stop_requested(); n++) {
         uint32_t f = (uint32_t)n;
         muhtari_frame io;
         memset(&io, 0, sizeof io);
@@ -891,6 +936,7 @@ static int run(const options *opt, const replay *mv)
             break;
         }
         uint64_t start_ns = opt->bench ? muhtari__clock_ns() : 0u;
+        tentative = raw_hash;
         st = muhtari_run_frame(m, &io);
         if (opt->bench) {
             uint64_t ns = muhtari__clock_ns() - start_ns;
@@ -907,6 +953,12 @@ static int run(const options *opt, const replay *mv)
                     (unsigned long)st);
             status = MUHTARI__EXIT_FAILURE;
             break;
+        }
+        if (opt->hash_audio) {
+            raw_hash = tentative;
+            audio_pcm(&pcm_hash, audio, io.audio_count);
+            audio_frames++;
+            audio_samples += io.audio_count;
         }
         if (next_hash < opt->hash_count && opt->hash_frames[next_hash] == f) {
             next_hash++;
@@ -955,6 +1007,17 @@ static int run(const options *opt, const replay *mv)
         fwrite(report, 1u, len, stdout);
     }
 
+    if (status == 0 && opt->hash_audio) {
+        muhtari_versions v = {0};
+        v.size = sizeof v;
+        (void)muhtari_get_versions(&v);
+        audio_digest("audio_transitions_sha256", &raw_hash);
+        audio_digest("audio_pcm_sha256", &pcm_hash);
+        printf("audio_frames %llu\naudio_samples %llu\naudio_rate "
+               "48000/1\naudio_behaviour_revision %u\naudio_synthesis exact-q23-16x64-dc20\n",
+               (unsigned long long)audio_frames, (unsigned long long)audio_samples,
+               v.behaviour_revision);
+    }
     muhtari_destroy(m);
     free(video);
     free(audio);

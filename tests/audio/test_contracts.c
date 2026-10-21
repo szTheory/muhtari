@@ -561,7 +561,7 @@ static void print_digest(const char *key, muhtari__sha256 *hash)
     muhtari__sha256_hex(digest, hex);
     printf("%s %s\n", key, hex);
 }
-static int reference_hashes(const char *path, const char *count)
+static int reference_hashes(const char *path, const char *count, int fire)
 {
     char *end = NULL;
     unsigned long frames = strtoul(count, &end, 10);
@@ -608,6 +608,11 @@ static int reference_hashes(const char *path, const char *count)
     }
     uint64_t samples = 0u;
     for (unsigned long n = 0; n < frames; n++) {
+        muhtari_input input = {0};
+        input.size = sizeof input;
+        if (fire)
+            input.buttons[0] = MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2;
+        CHECK_EQ_U64(muhtari_set_input(m, &input), 0);
         int16_t audio[801];
         muhtari_frame io;
         frame_io(&io, NULL, 0, audio, 801);
@@ -636,8 +641,8 @@ static int reference_hashes(const char *path, const char *count)
 
 int main(int argc, char **argv)
 {
-    if (argc == 4 && strcmp(argv[1], "--reference-hashes") == 0)
-        return reference_hashes(argv[2], argv[3]);
+    if ((argc == 4 || argc == 5) && strcmp(argv[1], "--reference-hashes") == 0)
+        return reference_hashes(argv[2], argv[3], argc == 5);
     if (argc == 2 && strcmp(argv[1], "observer") == 0) {
         test_observer_order();
         test_observer_one();
