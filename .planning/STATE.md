@@ -5,17 +5,17 @@ milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
 status: executing
-stopped_at: Completed 05-01-PLAN.md; continue within the executing phase
-last_updated: "2026-10-21T17:50:57.532Z"
+stopped_at: Completed 05-02-PLAN.md; continue within the executing phase
+last_updated: "2026-10-21T18:10:12.213Z"
 last_activity: 2026-10-21
-last_activity_desc: Completed plan 05-01 with audited counter and allocated budget
-state_head: 16ad83924457fe4823e22329819381df74bea421
+last_activity_desc: Completed plan 05-02 with isolated writers and measured scheduling bounds
+state_head: 93af701f283291d1487860dfb014a7bb11414044
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 1
-  percent: 11
+  completed_plans: 2
+  percent: 22
 total_phases: 7
 ---
 
@@ -31,13 +31,13 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 ## Current Position
 
 Phase: 05 (Pipeline tune-up) — EXECUTING
-Plan: 2 of 9
-Status: Executing Phase 05; plan 05-02 next
-Last activity: 2026-10-21 — Completed plan 05-01 with audited counter and allocated budget
+Plan: 3 of 9
+Status: Executing Phase 05; plan 05-03 next
+Last activity: 2026-10-21 — Completed plan 05-02 with isolated writers and measured scheduling bounds
 
-Progress: 11% — 1/9 plans complete; 0/7 phases complete.
+Progress: 22% — 2/9 plans complete; 0/7 phases complete.
 
-Implementation: 1/9 Phase 5 plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
+Implementation: 2/9 Phase 5 plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
 
 ## Accumulated Context
 
@@ -90,9 +90,9 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T17:50:57.517Z
-Stopped at: Completed 05-01-PLAN.md; continue within the executing phase
-Resume file: .planning/phases/05-pipeline-tune-up/05-02-PLAN.md
+Last session: 2026-10-21T18:10:12.194Z
+Stopped at: Completed 05-02-PLAN.md; continue within the executing phase
+Resume file: .planning/phases/05-pipeline-tune-up/05-03-PLAN.md
 Next command: `$gsd-execute-phase 5`
 
 Current planning contract: D-17 and D-19–20 now use an audited absolute ratchet.
@@ -152,9 +152,11 @@ No phase implementation or owner hardware verification ran during initialization
 
 - [Phase 5]: Replace hard gate/source ratio with audited absolute ratchet; fix scoped allocations before additions and tighten to final actual. Planning uses a bounded initial measurement task, not a full prototype. — Owner delegated adoption after refreshed failed construction and three advisory reviews; preserve safety controls and all TUNE outcomes.
 - [Phase 05]: Freeze complete B=12885 at f0202e1; measured S=2; fixed N=1970 including reserve150 and C=14853 before additions. Count slice actual368/500; current count13251.
+- [Phase 05]: Keep eight audio pairs and exact inventories; isolated writer costs one line of reproduced-fix allocation, current count13252/C14853. Timeouts and scales use image-specific successful cohorts, with sub-ten samples provisional.
 
 ## Performance Metrics
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 05 P01 | 12min | 2 tasks | 6 files |
+| Phase 05 P02 | 17min | 3 tasks | 9 files |

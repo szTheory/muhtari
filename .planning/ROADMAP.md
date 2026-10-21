@@ -34,14 +34,14 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 1/9 plans executed.
+**Plans:** 2/9 plans executed.
 
 Plans:
 **Wave 1**
 - [x] 05-01-PLAN.md — Audit the complete boundary, prove retained-fault savings and fix scoped allocations.
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 05-02-PLAN.md — Resolve the output race and derive measured test/job bounds.
+- [x] 05-02-PLAN.md — Resolve the output race and derive measured test/job bounds.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 05-03-PLAN.md — Require BE compilation on PRs and full same-head native/BE equality nightly and for releases.
