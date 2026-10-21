@@ -2,20 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: 7800 games play with sound in RetroArch
-current_phase: 04
-current_phase_name: Sound
-status: Executing phase 4; wave 10 complete; wave 11 next
-stopped_at: Phase 4 wave 10 verified; timer IRQ acceptance complete; wave 11 next
-last_updated: "2026-10-21T01:06:22.890Z"
+current_phase: 4
+status: completed
+stopped_at: Phase 4 verified; ready for $gsd-ship 4
+last_updated: "2026-10-21T01:25:40.898Z"
 last_activity: 2026-10-20
-last_activity_desc: Completed wave 10 with wired timer IRQ acceptance, propagation and NMOS timing coverage
-state_head: 0949c041de253cce6b3dcbb6bb436a566a2ba7d5
+last_activity_desc: Phase 4 complete
+state_head: f28920de84e090e94a74ad4a34d747fee22638b8
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 73
-  completed_plans: 72
-  percent: 75
+  completed_plans: 73
+  percent: 100
 ---
 
 # Project State
@@ -25,21 +24,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 04 — Sound
+**Current focus:** Phase 04 verified — ready to ship
 
 ## Current Position
 
-Phase: 04 (Sound) — WAVE 10 COMPLETE
-Plan: 17 of 17
-Status: Wave 10 complete; wave 11 next
-Last activity: 2026-10-20 — Timer IRQ acceptance verified; 10/17 plans complete
+Phase: 04 (Sound) — VERIFIED
+Plan: 17 of 17 complete
+Status: Ready to ship phase 4
+Last activity: 2026-10-20 — Phase 4 complete
 
-Progress: [████████░░] 75%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 56
+- Total plans completed: 73
 - Average duration: -
 - Total execution time: 0.0 hours
 
@@ -50,6 +49,7 @@ Progress: [████████░░] 75%
 | 01 | 21 | - | - |
 | 02 | 16 | - | - |
 | 3 | 19 | - | - |
+| 4 | 17 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: -
@@ -317,7 +317,6 @@ Recent decisions affecting current work:
 - [2026-10-16] [ci] Close the re-review's findings on the Dependabot gate and the publish checks — [todo file](.planning/todos/pending/2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md)
 - [2026-10-19] [ci] Close the phase 2 review seeds on the nightly filter and the ROM tables — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md)
 - [2026-10-19] [core] Close the phase 2 re-review findings when MARIA and the run loop land — [todo file](.planning/todos/pending/2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md)
-- [2026-10-19] [core] Re-pin the POKEY samples when POKEY lands — [todo file](.planning/todos/pending/2026-10-19-re-pin-the-pokey-samples-when-pokey-lands.md)
 
 ### Ship step (phase 01)
 
@@ -353,7 +352,7 @@ Recent decisions affecting current work:
 - Wave7 verified: both joined pairs, STIMER/AUDF deadlines, two-tone, staggered noise, RANDOM/init and hidden-state resumption; full CI600, hygiene24 and assertion-enabled focused tests pass. Four new production spectral cases pass, worst−103.26565420dBFS.
 - Wave8 verified: cartridge POKEY mirrors, overlap priorities, fixed secondary identity and accepted-v4 wiring; revision2 enabled atomically with measured pins. Only pokey video/title changes; other33 chains reproduced unchanged. Full CI600, basic71, title6, library43 and hygiene pass. Remove the narrow retired-title exception after merge (expiry2026-11-19).
 - Wave9 verified: pokey.maps covers all legacy/v4 windows, every mirror, real CPU/PCM and MARIA fetches, ROM/RAM priority, hash normalization and validated IRQ metadata; 11 mutations rejected. Full CI601, hygiene24 and focused Release/Debug3 pass. Prior wave formatting repaired without token changes.
-- Sound requirements remain globally pending IRQ/observation/hash/host/workload/platform slices. Phase4 verification waits until all17 plans complete.
+- Phase4 verification passed:17/17 plans, SND-01 through SND-05 implemented. Final CI605+6, sanitizer593, GCC no-FP13, MARIA11 and hygiene24 pass. Review WR-01 is resolved in round1; no gap round used. Hosted native/be32/WASM equality, PR-head CI and merge/release outcomes remain ship checks.
 
 ## Deferred Items
 
@@ -365,7 +364,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-20T23:45:22.312Z
-Stopped at: Phase 4 wave 10 verified; timer IRQ acceptance complete; wave 11 next
-Resume file: .planning/phases/04-sound/04-11-PLAN.md
-Next command: `$gsd-execute-phase 4 --wave 11`
+Last session: 2026-10-21T01:26:59.012376+00:00
+Stopped at: Phase 4 verified; ready for $gsd-ship 4
+Resume file: None
+Next command: `$gsd-ship 4`

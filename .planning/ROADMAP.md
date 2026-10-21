@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: A test frame in RetroArch** - Library, runner and libretro core show a built-in test card; CI on every platform; the first automatic attested release installs into RetroArch with one line (completed 2026-10-16)
 - [x] **Phase 2: The CPU matches the public vectors** - SALLY matches the public 6502 vectors on every cycle, with the 7800 bus timing, RIOT, INPTCTRL and the cartridge probe and loader (completed 2026-10-19)
 - [x] **Phase 3: Games play in RetroArch** - MARIA with exact DMA timing, linear and SuperGame boards, fast and OpenBIOS boot, joysticks and console switches make 7800 games playable (completed 2026-10-20)
-- [ ] **Phase 4: Sound** - TIA and POKEY sound through an integer band-limited synthesiser, with audio hashes identical on every platform
+- [x] **Phase 4: Sound** - TIA and POKEY sound through an integer band-limited synthesiser, with audio hashes identical on every platform (completed 2026-10-20)
 
 ## Phase Details
 
@@ -230,7 +230,7 @@ Plans (one wave each; every plan edits the test inventory, so they run in order)
   4. A test renders reference tones through the synthesiser and shows the largest non-harmonic peak below 16 kHz under −80 dB.
   5. Merging the phase's pull request publishes a release with no manual step.
 
-**Plans**: 17/17 plans executed (sequential waves; parallelization off)
+**Plans**: 17/17 plans complete (sequential waves; parallelization off)
 
 Plans (one wave each; every plan depends on its predecessor):
 **Wave 1**
@@ -324,4 +324,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. A test frame in RetroArch | 21/21 | Complete    | 2026-10-16 |
 | 2. The CPU matches the public vectors | 16/16 | Complete    | 2026-10-19 |
 | 3. Games play in RetroArch | 19/19 | Complete    | 2026-10-20 |
-| 4. Sound | 17/17 | In Progress | - |
+| 4. Sound | 17/17 | Complete    | 2026-10-20 |

@@ -120,7 +120,7 @@ The atomic GREEN commit changes four files. `docs/compatibility.md` was regenera
 
 ## TDD evidence
 
-- Task 1: `cmake --build build/ci --target muhtari-test-core` exited 0. The selected `core.audio.silence` CTest run exited 8 with planned assertions: silent PCM, open-bus values 40/08/04 instead of FF, and declared chip count 0 instead of 1. Its complete CTest JUnit report passed `node .../gsd-tools.cjs check tdd-red-evidence build/ci/cart-audio-red.json --raw`, exit 0, `RED_EVIDENCE_OK`. Semantic assessment: the target executed and failed on absent mapping behavior, with no setup or compilation failure.
+- Task 1: cmake --build build/ci --target muhtari-test-core exited 0. The selected `core.audio.silence` CTest run exited 8 with planned assertions: silent PCM, open-bus values 40/08/04 instead of FF, and declared chip count 0 instead of 1. Its complete CTest JUnit report passed `node .../gsd-tools.cjs check tdd-red-evidence build/ci/cart-audio-red.json --raw`, exit 0, `RED_EVIDENCE_OK`. Semantic assessment: the target executed and failed on absent mapping behavior, with no setup or compilation failure.
 - Task 2: the same target's JUnit run exited 8 on silent 450 PCM, missing primary DAC, open-bus read and dual count 1 instead of 2. `check tdd-red-evidence build/ci/cart-450-red.json --raw` exited 0 with `RED_EVIDENCE_OK`. Other mapped paths remained green. Semantic assessment: the target exercised the planned standalone and dual declarations and failed on their absent decode.
 - Both GREEN implementations passed `core.audio.silence`; the first tracer passed the full CI workflow and the focused cartridge selection before 450 expansion. No refactor commit was needed. RED reports remain ignored build artifacts, never committed logs. `workflow.tdd_mode` was false; task-level TDD still followed both RED/GREEN sequences.
 
@@ -128,7 +128,7 @@ The atomic GREEN commit changes four files. `docs/compatibility.md` was regenera
 
 Every one of the 34 rows ran the established writer after the revision bump:
 
-`cmake -DCHAIN=build/ci/tests/muhtari-test-chain -DROM=build/ci/built/<name>/<name>.bas.a78 -DNAME=<name> -DEXPECTED=tests/built/expected.txt -DWRITE=ON -P tests/built/frames.cmake`
+cmake -DCHAIN=build/ci/tests/muhtari-test-chain -DROM=build/ci/built/<name>/<name>.bas.a78 -DNAME=<name> -DEXPECTED=tests/built/expected.txt -DWRITE=ON -P tests/built/frames.cmake
 
 All invocations exited 0. The first writer reset other rows as designed; every row was then filled by its own real 600-frame run. Old values were saved in ignored build scratch before migration. No unresolved frame pin remains.
 
@@ -193,18 +193,18 @@ All evidence is local to this step; no hosted CI run exists because this wave ne
 
 | Command | Exit | Evidence |
 |---|---|---|
-| `cmake --workflow --preset ci` after Task 1 | 0 | 594/594 ordinary checks and 6/6 release checks |
+| cmake --workflow --preset ci after Task 1 | 0 | 594/594 ordinary checks and 6/6 release checks |
 | `ctest --test-dir build/ci -R '^core.audio.silence$|^cart\.' --output-on-failure --no-tests=error` | 0 | 21/21 including fixture; tracer verified before expansion |
 | `ctest --test-dir build/ci -L '^built$' --output-on-failure --no-tests=error` | 0 | 43/43 including dependencies; all sample fixtures built |
 | `frames.cmake -DWRITE=ON` once per row, expanded command above | 0 | 34/34 writers; only pokey changed, all 33 others equal |
-| `cmake -DPREDICATE=build/ci/tests/muhtari-test-predicate -DLEDGER=tests/compat/ledger.csv -DBUILT=build/ci/built -DDIAG=tests/diag -DBIOS=build/ci/built/openbios/openbios.bin -P tests/compat/pin.cmake` | 0 | Four remeasured title pins and every eligible row passing both boot paths |
-| `cmake --workflow --preset ci` after Task 2 | 0 | 594/594 ordinary checks and 6/6 release checks |
+| cmake -DPREDICATE=build/ci/tests/muhtari-test-predicate -DLEDGER=tests/compat/ledger.csv -DBUILT=build/ci/built -DDIAG=tests/diag -DBIOS=build/ci/built/openbios/openbios.bin -P tests/compat/pin.cmake | 0 | Four remeasured title pins and every eligible row passing both boot paths |
+| cmake --workflow --preset ci after Task 2 | 0 | 594/594 ordinary checks and 6/6 release checks |
 | `ctest --test-dir build/ci -L '^basic$' --output-on-failure --no-tests=error` | 0 | 71/71 including 34 fixture builds, all frame chains and revision guard |
 | `ctest --test-dir build/ci -L '^title$' --output-on-failure --no-tests=error` | 0 | 6/6 including dependencies and unpinnable-blank negative control |
 | `MUHTARI_ROM_DIR=build/ci/built MUHTARI_LEDGER_BASE=origin/main cmake --workflow --preset library` | 0 | 43/43 including base-aware ratchet, both-path predicates and regenerated compatibility page |
 | `ctest --test-dir build/ci -R '^core.audio.silence$|^core.info$' --output-on-failure --no-tests=error` | 0 | 2/2 on final migration objects |
-| `cmake -DLEDGER=tests/compat/ledger.csv -DOUT=docs/compatibility.md -P tools/compat_doc.cmake` | 0 | Regenerated page is byte-identical |
-| `cmake -DLEDGER=tests/compat/ledger.csv -DOUT=build/ci/cart-compatibility.md -DCHECK=docs/compatibility.md -P tools/compat_doc.cmake` | 0 | Final byte comparison |
+| cmake -DLEDGER=tests/compat/ledger.csv -DOUT=docs/compatibility.md -P tools/compat_doc.cmake | 0 | Regenerated page is byte-identical |
+| cmake -DLEDGER=tests/compat/ledger.csv -DOUT=build/ci/cart-compatibility.md -DCHECK=docs/compatibility.md -P tools/compat_doc.cmake | 0 | Final byte comparison |
 | `scripts/hygiene.sh --tree` | 0 | Tree privacy/fixture hygiene |
 | `git diff --check` | 0 | No whitespace errors |
 
@@ -212,7 +212,7 @@ An ignored, one-off host probe linked the shipped static library and ran each sa
 
 ## Deviations from Plan
 
-1. **Measured pin prediction correction.** The plan expected five changed frame chains and four changed titles. Actual measurement changes only pokey. All five images probe as declared 450; four explicitly say `set pokeysupport $450`, while pokey says `set pokeysupport on`. The pinned package's `includes/pokeysound.asm` fixed-address path initializes directly and bypasses auto-detection. Their video therefore stays unchanged while audio becomes active. The unchanged values above are deliberate evidence, not omitted migration. No non-POKEY chain drift occurred.
+1. **Measured pin prediction correction.** The plan expected five changed frame chains and four changed titles. Actual measurement changes only pokey. All five images probe as declared 450; four explicitly say `set pokeysupport $450`, while pokey says `set pokeysupport on`. The pinned package's includes/pokeysound.asm fixed-address path initializes directly and bypasses auto-detection. Their video therefore stays unchanged while audio becomes active. The unchanged values above are deliberate evidence, not omitted migration. No non-POKEY chain drift occurred.
 2. **Rule 2 — missing supporting state initialization.** The fast-boot path reset synthesis to zero chips after cartridge reset, and fixed secondary source IDs require the mixer to sum the secondary slot with one actual chip. Supporting edits to `src/boot.c`, `src/pokey.c` and `src/synth.c` were required for the planned tracer; 0d1a4b4 includes them and their tests. The source timeline and synthesis coefficients are unchanged.
 3. **Rules 1/3 — stale revision assertions.** `core.info` assumed behavior1, and the movie-warning test's regex assumed the core reports 1. Removed those stale assumptions in test-only commits d89eeab and 05647d0. The first post-migration full workflow exposed the movie regex mismatch; the final full workflow passes. No unrelated tooling cleanup was added.
 4. **Rule 2 — existing base-aware ratchet contract.** All fresh rows passed, but the first base-aware library run exited 8 because the old passing title predicate was retired. The existing documented mechanism requires a narrow dated allow line. Commit 3f65618 names exactly that old predicate, its cause and expiry 2026-11-19; the replacement still passes on both boot paths. Remove the exception after merge under the existing allow-file policy. No ratchet code or new policy machinery changed.

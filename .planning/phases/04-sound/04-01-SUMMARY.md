@@ -115,11 +115,11 @@ The tracer's full automated command was rerun successfully before expansion.
 
 | Command | Exit | Result |
 |---|---:|---|
-| `python3 /tmp/muhtari-generate-q23.py` | 0 | Simpson128=Simpson256, 512 Q23 coefficients, corrected row sum and Cmax reproduced |
-| `python3 /tmp/muhtari-generate-mix.py` | 0 | Owned tables and one/two-chip amplitudes generated from documented formulas |
-| `cmake --workflow --preset ci` | 0 | Final run: all 588 regular tests and all six archive tests passed |
+| python3 /tmp/muhtari-generate-q23.py | 0 | Simpson128=Simpson256, 512 Q23 coefficients, corrected row sum and Cmax reproduced |
+| python3 /tmp/muhtari-generate-mix.py | 0 | Owned tables and one/two-chip amplitudes generated from documented formulas |
+| cmake --workflow --preset ci | 0 | Final run: all 588 regular tests and all six archive tests passed |
 | `ctest --test-dir build/ci -R '^core.audio.silence$' --output-on-failure --no-tests=error` | 0 | Production path, proofs, adversarial sequences, carry, discard and silence passed |
-| `cmake --workflow --preset hygiene` | 0 | All 24 hygiene/policy checks, including format, analyzer and integer-only scan, passed |
+| cmake --workflow --preset hygiene | 0 | All 24 hygiene/policy checks, including format, analyzer and integer-only scan, passed |
 | `scripts/hygiene.sh --tree` | 0 | Clean-tree policy passed; also passed as hygiene.tree in the final hygiene workflow |
 | `git diff --check` | 0 | No whitespace errors |
 

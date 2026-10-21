@@ -112,14 +112,14 @@ Both paths settle for 12,000 delivered samples and capture 65,536 actual int16 s
 
 | Command | Exit | Result |
 |---|---|---|
-| `cmake --workflow --preset ci` | 0 | Tracer and final matrix runs passed all 590 ordinary tests plus 6 release tests |
+| cmake --workflow --preset ci | 0 | Tracer and final matrix runs passed all 590 ordinary tests plus 6 release tests |
 | `ctest --test-dir build/ci -R '^audio.spectral' --output-on-failure --no-tests=error` | 0 | Both spectral tests pass, including 132/132 alias rejection |
 | `ctest --test-dir build/ci -R '^(audio.spectral\|core.audio.silence)' --output-on-failure --no-tests=error` | 0 | Three tests pass, including full-path headroom and width assertions |
 | `build/ci/tests/muhtari-test-spectral production` | 0 | 132 evaluated, 0 failures; research comparison reproduced |
 | `build/ci/tests/muhtari-test-spectral controls` | 0 | 132 alias controls rejected, 0 failures; analyzer controls pass |
-| `python3 /tmp/muhtari-generate-q23.py` | 0 | Simpson128=Simpson256, 512 coefficients, row sum 8388608, Cmax 7283992 |
+| python3 /tmp/muhtari-generate-q23.py | 0 | Simpson128=Simpson256, 512 coefficients, row sum 8388608, Cmax 7283992 |
 | `scripts/hygiene.sh --tree` | 0 | Repository hygiene passes |
-| `clang-format --dry-run --Werror tests/audio/test_spectral.c` | 0 | LLVM 21 formatting passes |
+| clang-format --dry-run --Werror tests/audio/test_spectral.c | 0 | LLVM 21 formatting passes |
 | `git diff --check` | 0 | No whitespace errors |
 
 Hosted run URL: unavailable for these local commits; hosted platform validation remains a later phase obligation. No execution log is committed.
