@@ -252,9 +252,115 @@ static void flush(struct muhtari__synth *s)
     s->pending = 0u;
 }
 
+/* At most ten source changes per master tick, including both half-edge
+   subevents and a CPU write. Only instruction overshoot is retained;
+   docs/hardware/audio.md derives the shared tick bound. */
+#define OBS_CARRY (10u * (MUHTARI__SYNTH_OVERSHOOT_TICKS + 1u))
+#define OBS_PENDING 32u
+struct raw_record {
+    uint8_t source, level;
+};
+struct carry_record {
+    uint16_t offset;
+    uint8_t source, level;
+};
+struct muhtari__observation {
+    uint64_t end, tick, base;
+    uint32_t count, carried;
+    uint8_t raw[10];
+    struct raw_record pending[OBS_PENDING];
+    struct carry_record carry[OBS_CARRY];
+};
+
+muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user)
+{
+    if (callback != NULL && m->observation == NULL) {
+        m->observation = m->allocator.alloc(m->allocator.user, sizeof *m->observation);
+        if (m->observation == NULL)
+            return MUHTARI_STATUS_ERR_NO_MEMORY;
+        memset(m->observation, 0, sizeof *m->observation);
+        m->observation->end = UINT64_MAX;
+    }
+    if (callback == NULL && m->observation != NULL) {
+        m->allocator.free(m->allocator.user, m->observation, sizeof *m->observation);
+        m->observation = NULL;
+    }
+    m->observer = callback;
+    m->observer_user = user;
+    return MUHTARI_STATUS_OK;
+}
+
+static void observe_flush(muhtari *m)
+{
+    struct muhtari__observation *o = m->observation;
+    /* Stable source order preserves multiple subevents on one source. */
+    for (unsigned source = 0; source < 10u; source++) {
+        for (uint32_t i = 0; i < o->count; i++) {
+            struct raw_record r = o->pending[i];
+            if (r.source != source)
+                continue;
+            if (o->tick < o->end) {
+                m->observer(m->observer_user, o->tick, r.source, r.level);
+            } else {
+                assert(o->carried < OBS_CARRY);
+                assert(o->tick - o->end <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
+                o->base = o->end;
+                struct carry_record *c = &o->carry[o->carried++];
+                c->offset = (uint16_t)(o->tick - o->end);
+                c->source = r.source;
+                c->level = r.level;
+            }
+        }
+    }
+    o->count = 0u;
+}
+
+void muhtari__synth_raw(muhtari *m, uint64_t tick, unsigned source, uint8_t raw)
+{
+    if (m->observer == NULL)
+        return;
+    struct muhtari__observation *o = m->observation;
+    assert(source < 10u && raw <= 15u);
+    if (o->raw[source] == raw)
+        return;
+    if (o->count != 0u && o->tick != tick) {
+        assert(tick > o->tick);
+        observe_flush(m);
+    }
+    assert(o->count < OBS_PENDING);
+    o->tick = tick;
+    o->raw[source] = raw;
+    o->pending[o->count].source = (uint8_t)source;
+    o->pending[o->count++].level = raw;
+}
+
+void muhtari__observe_begin(muhtari *m, uint64_t end)
+{
+    if (m->observer == NULL)
+        return;
+    struct muhtari__observation *o = m->observation;
+    o->end = end;
+    for (uint32_t i = 0; i < o->carried; i++) {
+        struct carry_record c = o->carry[i];
+        assert(o->base + c.offset < end);
+        m->observer(m->observer_user, o->base + c.offset, c.source, c.level);
+    }
+    o->carried = 0u;
+}
+
+void muhtari__observe_end(muhtari *m)
+{
+    if (m->observer != NULL)
+        observe_flush(m);
+}
+
 void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys)
 {
     assert(pokeys <= 2u);
+    if (m->observation != NULL) {
+        memset(m->observation, 0, sizeof *m->observation);
+        m->observation->end = UINT64_MAX;
+    }
     memset(&m->synth, 0, sizeof m->synth);
     m->synth.origin = origin;
     m->synth.tick = origin;
@@ -306,6 +412,3 @@ uint32_t muhtari__synth_render(muhtari *m, uint64_t end, int16_t *out)
     s->horizon = end;
     return (uint32_t)count;
 }
-
-muhtari_status muhtari__synth_observe(muhtari *m, muhtari__audio_observer callback, void *user)
-{ m->observer = callback; m->observer_user = user; return MUHTARI_STATUS_OK; }

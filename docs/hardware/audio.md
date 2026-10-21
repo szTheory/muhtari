@@ -221,3 +221,26 @@ without changing capture, normalization, masks or threshold. These are
 finite-matrix checks, not a bound on every legal register stream or a claim
 of measured analog accuracy. Platform/hash and workload certification follow
 in their respective integration checks.
+
+## Private raw observation
+
+The runner's private observer receives absolute master ticks, source identity and
+four-bit gated DAC codes. Sources 0–1 are TIA; 2–5 are the primary POKEY;
+6–9 are the secondary at $440, including when it is the only POKEY. Mixer
+weights and POKEY bit-current conversion do not enter this stream. Known initial
+zeros and unchanged levels produce no records. Equal ticks use ascending source
+identity, with stable order for multiple changes of one source.
+
+The callback and its host context survive load and power cycle. Register before
+execution; callbacks must never reenter the core. Registration can fail with the
+existing allocation error. A NULL callback frees the private observation storage
+and bypasses all observation work; synthesis still advances normally. Registration
+is private and adds nothing to the installed API or ABI.
+
+Frames own half-open intervals: events at the deadline or beyond are retained for
+the following frame. Only instruction overshoot is buffered, never a whole frame.
+The conservative 20,730-tick bound permits ten raw changes per tick (eight chip
+channels, TIA and CPU-write margin); offsets fit uint16. A separate 32-record
+same-tick stage orders half-edge subevents and writes before delivery. These are
+functional bounds, not a claim about analog propagation. A BIOS-refused frame
+may already have invoked callbacks: its host must discard tentative evidence.

@@ -15,6 +15,8 @@ static void level(muhtari *m, unsigned chip, unsigned ch, uint64_t tick)
     unsigned source = 2u + chip * 4u + ch;
     if (((m->synth.pokeys == 2u) || (m->synth.pokeys == 1u && chip == m->synth.secondary)) &&
         m->synth.raw[source] != value) {
+        muhtari__synth_raw(m, tick, source,
+                           (uint8_t)(((c->audc & 16u) != 0u || bit != 0u) ? volume : 0u));
         muhtari__synth_level(m, tick, source, value);
     }
 }

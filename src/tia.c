@@ -50,6 +50,7 @@ static void tia_level(muhtari *m, unsigned ch, uint64_t tick)
 {
     const struct muhtari__tia_channel *c = &m->tia.channel[ch];
     uint16_t level = c->output != 0u ? c->audv : 0u;
+    muhtari__synth_raw(m, tick, ch, (uint8_t)level);
     if (level != m->synth.raw[ch]) {
         muhtari__synth_level(m, tick, ch, level);
     }

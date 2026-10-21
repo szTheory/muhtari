@@ -416,7 +416,7 @@ static void record_one(void *user, uint64_t tick, uint8_t source, uint16_t raw)
 }
 static void test_observer_one(void)
 {
-    static const uint8_t program[] = {0xA9,7,0x85,1,0xA9,9,0x85,0x19,0x02};
+    static const uint8_t program[] = {0xA9, 7, 0x85, 1, 0xA9, 9, 0x85, 0x19, 0x02};
     muhtari *m = make(), *off = make();
     CHECK_EQ_U64(muhtari__synth_observe(m, record_one, &observed), 0);
     load_program(m, program, sizeof program);

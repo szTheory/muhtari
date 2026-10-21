@@ -83,15 +83,18 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         }
         m->maria.rows = io->video;
         m->maria.pitch = io->video_pitch;
+        muhtari__observe_begin(m, audio_end);
         run_to_deadline(m);
         m->maria.rows = NULL;
         m->maria.pitch = 0u;
+        muhtari__observe_end(m);
         if (m->boot.rejected != 0u) {
             /* The frame stops where the BIOS took its 2600 path. */
             io->audio_count = 0u;
             return MUHTARI_STATUS_ERR_BIOS_REJECTED_CART;
         }
         muhtari__tia_catch_up(m, m->bus.ticks);
+        muhtari__observe_end(m);
         uint32_t rendered = muhtari__synth_render(m, audio_end, m->audio_work);
         assert(rendered == n);
         (void)rendered;

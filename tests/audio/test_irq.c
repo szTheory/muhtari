@@ -11,12 +11,44 @@ static uint8_t cart[CART_SIZE], video[320u * 242u];
 static int16_t audio[801];
 #define WIDTH 320u
 #define AUDIO_CAP 801u
-static void *alloc(void *u, size_t n) { (void)u; return malloc(n); }
-static void release(void *u, void *p, size_t n) { (void)u; (void)n; free(p); }
-static muhtari *make(void) { muhtari_config c = {0}; c.size = sizeof c; c.allocator.alloc = alloc; c.allocator.free = release; muhtari *m = NULL; CHECK_EQ_U64(muhtari_create(&c, &m), 0); return m; }
-static muhtari_media media_for(const void *p, size_t n) { muhtari_media d = {0}; d.size = sizeof d; d.image = p; d.image_size = n; return d; }
-static void frame_io(muhtari_frame *f, uint8_t *v, uint32_t pitch, int16_t *a, uint32_t cap) { memset(f, 0, sizeof *f); f->size = sizeof *f; f->video = v; f->video_pitch = pitch; f->audio = a; f->audio_capacity = cap; }
-
+static void *alloc(void *u, size_t n)
+{
+    (void)u;
+    return malloc(n);
+}
+static void release(void *u, void *p, size_t n)
+{
+    (void)u;
+    (void)n;
+    free(p);
+}
+static muhtari *make(void)
+{
+    muhtari_config c = {0};
+    c.size = sizeof c;
+    c.allocator.alloc = alloc;
+    c.allocator.free = release;
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&c, &m), 0);
+    return m;
+}
+static muhtari_media media_for(const void *p, size_t n)
+{
+    muhtari_media d = {0};
+    d.size = sizeof d;
+    d.image = p;
+    d.image_size = n;
+    return d;
+}
+static void frame_io(muhtari_frame *f, uint8_t *v, uint32_t pitch, int16_t *a, uint32_t cap)
+{
+    memset(f, 0, sizeof *f);
+    f->size = sizeof *f;
+    f->video = v;
+    f->video_pitch = pitch;
+    f->audio = a;
+    f->audio_capacity = cap;
+}
 
 static muhtari machine;
 
@@ -197,7 +229,8 @@ static void test_cart_irq(void)
                 images_header(cart, 3u, "IRQ", 4096u, 0u);
                 memset(cart + IMAGES_HEADER, 0xEA, 4096u);
                 memcpy(cart + IMAGES_HEADER, program, sizeof program);
-                cart[CART_SIZE - 4u] = 0; cart[CART_SIZE - 3u] = 0xF0;
+                cart[CART_SIZE - 4u] = 0;
+                cart[CART_SIZE - 3u] = 0xF0;
                 cart[0] = mode == 2u ? 3u : 4u;
                 cart[53] = chip != 0u ? 4u : 0u;
                 cart[54] = chip != 0u ? 0u : 0x40u; /* legacy fallback at the selected chip */

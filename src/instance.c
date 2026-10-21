@@ -121,6 +121,7 @@ void muhtari_destroy(muhtari *m)
         return;
     }
     muhtari_allocator a = m->allocator;
+    (void)muhtari__synth_observe(m, NULL, NULL);
     if (m->cart.rom != NULL) {
         a.free(a.user, m->cart.rom, (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
     }
