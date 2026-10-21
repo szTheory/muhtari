@@ -588,7 +588,7 @@ foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch 
   muhtari_add_test(NAME runner.movie.${case}
     COMMAND ${runner_check} -DCASE=movie.${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
       -P ${CMAKE_CURRENT_LIST_FILE}
-    LABELS runner portable TIMEOUT 1) # 2 x 0.45 s, Windows arm64, slowest of 17 runs, run 39373524239
+    LABELS runner portable TIMEOUT 3) # Family: 2 x 1.05 s, Windows x64, 7 runs; provisional, run 39617761785
   set_tests_properties(runner.movie.${case} PROPERTIES FIXTURES_REQUIRED input_carts)
 endforeach()
 

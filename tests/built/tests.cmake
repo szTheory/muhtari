@@ -52,13 +52,13 @@ foreach(built_row IN LISTS built_rows)
   muhtari_add_test(NAME built.${name}
     COMMAND ${CMAKE_COMMAND} ${built_tools} -DNAME=${name} -DOUT=${MUHTARI_BUILT_DIR}
       -DEXPECTED=${built_expected} -P ${CMAKE_CURRENT_LIST_DIR}/build.cmake
-    LABELS built portable TIMEOUT ${built_timeout})
+    LABELS built portable TIMEOUT ${built_timeout} COST 7)
   set_tests_properties(built.${name} PROPERTIES FIXTURES_SETUP "${fixtures}")
   muhtari_add_test(NAME basic.${name}
     COMMAND ${CMAKE_COMMAND} -DCHAIN=$<TARGET_FILE:muhtari-test-chain>
       "-DEMULATOR=${built_emulator}" -DROM=${MUHTARI_BUILT_DIR}/${name}/${bas}.a78
       -DNAME=${name} -DEXPECTED=${built_expected} -P ${CMAKE_CURRENT_LIST_DIR}/frames.cmake
-    LABELS basic portable TIMEOUT 10)  # 2 x 4.67 s, macOS x64, slowest of 31 runs, run 39362291672
+    LABELS basic portable TIMEOUT 19 COST 10)  # 2 x 9.35 s, macOS x64, 12 successes, run 39614799435
   set_tests_properties(basic.${name} PROPERTIES FIXTURES_REQUIRED built_${name})
 endforeach()
 
@@ -149,7 +149,7 @@ list(REMOVE_DUPLICATES built_coverage_samples)
 list(TRANSFORM built_coverage_samples REPLACE "^7800basic/" "built_")
 muhtari_add_test(NAME basic.coverage
   COMMAND muhtari-test-coverage ${built_coverage} ${MUHTARI_BUILT_DIR} ${CMAKE_SOURCE_DIR}/tests/diag
-  LABELS basic portable TIMEOUT 52)  # 2 x 25.77 s, macOS x64, slowest of 19 runs, run 39362291672
+  LABELS basic portable TIMEOUT 55 COST 28)  # 2 x 27.10 s, macOS x64, 13 successes, run 39614799435
 set_tests_properties(basic.coverage PROPERTIES FIXTURES_REQUIRED "${built_coverage_samples}")
 
 # Negative control: coverage.txt plus a claim of kangaroo mode for simple,
@@ -172,5 +172,5 @@ muhtari_add_test(NAME basic.coverage.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${CMAKE_COMMAND}$<SEMICOLON>-P$<SEMICOLON>${built_coverage_script}"
     -DCODE=1 "-DREGEX=7800basic/simple kangaroo: [^:]*FAIL.*exited 1"
     -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS basic portable TIMEOUT 52)  # 2 x 25.76 s, macOS x64, slowest of 19 runs, run 39362291672
+  LABELS basic portable TIMEOUT 53 COST 27)  # 2 x 26.15 s, macOS x64, 13 successes, run 39614799435
 set_tests_properties(basic.coverage.self_test PROPERTIES FIXTURES_REQUIRED "${built_coverage_samples}")
