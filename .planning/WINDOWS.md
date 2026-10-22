@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 11
+open_count: 14
 waived_count: 0
 fixed_count: 14
-total_count: 25
-last_updated: 2026-10-22T20:05:28.037Z
+total_count: 28
+last_updated: 2026-10-22T21:17:56.089Z
 ---
 
 # Broken Windows Ledger
@@ -40,6 +40,9 @@ last_updated: 2026-10-22T20:05:28.037Z
 | 23 | 05 | unrun-verify | .github/workflows/ci.yml |  | Advisory release-called WASM run39832530253 attempt2/job120020998725 loses a pinned-tool fetch with curl35 before tests; its inventory and rehearsal/install/cleanup skip. Required called CI and quality plus authentic8 join pass; direct WASM passes. Overall Release remains failure; this is a tooling seed, not required recovery evidence. | open |  | 2026-10-22T18:53:28.751Z |  |
 | 24 | 05 | unmet-truth | tests/policy/publish.cmake | 50 | Release signer RED reaches synthetic PATCH; Task1 is halted at14906 lines/fixes96 against strict14841/fixes30 before production repair. | open |  | 2026-10-22T20:05:27.962Z |  |
 | 25 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-08-PLAN.md |  | Release-safety GREEN/full CI/hosted rehearsal, complete lookup-error controls and dependent Tasks2-3 remain unrun after the Task1 fixed-allocation stop. | open |  | 2026-10-22T20:05:28.037Z |  |
+| 26 | 05 | deviation | scripts/publish.sh |  | 05-14 Task2 construction halts at15152 physical lines: safety312/fixes342 exceed300/330 by12 and strict15141 by11; Task1 accepted, Task2 draft uncommitted,05-09 blocked. | open |  | 2026-10-22T21:17:55.944Z |  |
+| 27 | 05 | unmet-truth | scripts/publish.sh | 162 | 05-14 draft api_response loses the empty204 header/body boundary through command substitution; the first successful cleanup queue control exits1 with invalid HTTP response. No Task2 GREEN or current release acceptance. | open |  | 2026-10-22T21:17:56.017Z |  |
+| 28 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-14-PLAN.md |  | 05-14 Task2 full matrix/provisioning and Task3 full local ci/library/inventories, current direct/called authentic9/8 joins, patched-gh rehearsal/install/confirmed cleanup and measured conservative cost remain unrun after the fixed-allocation stop. | open |  | 2026-10-22T21:17:56.089Z |  |
 
 ````json
 [
@@ -365,6 +368,45 @@ last_updated: 2026-10-22T20:05:28.037Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-10-22T20:05:28.037Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 26,
+    "kind": "deviation",
+    "phase": "05",
+    "file": "scripts/publish.sh",
+    "line": null,
+    "description": "05-14 Task2 construction halts at15152 physical lines: safety312/fixes342 exceed300/330 by12 and strict15141 by11; Task1 accepted, Task2 draft uncommitted,05-09 blocked.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T21:17:55.944Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 27,
+    "kind": "unmet-truth",
+    "phase": "05",
+    "file": "scripts/publish.sh",
+    "line": 162,
+    "description": "05-14 draft api_response loses the empty204 header/body boundary through command substitution; the first successful cleanup queue control exits1 with invalid HTTP response. No Task2 GREEN or current release acceptance.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T21:17:56.017Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 28,
+    "kind": "unrun-verify",
+    "phase": "05",
+    "file": ".planning/phases/05-pipeline-tune-up/05-14-PLAN.md",
+    "line": null,
+    "description": "05-14 Task2 full matrix/provisioning and Task3 full local ci/library/inventories, current direct/called authentic9/8 joins, patched-gh rehearsal/install/confirmed cleanup and measured conservative cost remain unrun after the fixed-allocation stop.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T21:17:56.089Z",
     "resolved_at": null,
     "milestone": "v2.0"
   }
