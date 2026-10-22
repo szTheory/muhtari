@@ -43,13 +43,24 @@ case "$*" in
   *) echo "unexpected API: $*" >&2; exit 1 ;;
 esac
 ]=])
-file(CHMOD "${WORK}/bin/gh" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+# Native jq.exe uses CRLF unless binary output is requested; preserve its exit code.
+find_program(DIGEST_JQ jq REQUIRED)
+file(WRITE "${WORK}/bin/jq" [=[#!/bin/sh
+set -eu
+for arg in "$@"; do
+  case "$arg" in -b|--binary) exec "$DIGEST_JQ" "$@" ;; esac
+done
+"$DIGEST_JQ" "$@" > "$DIGEST_WORK/jq-output" || exit "$?"
+awk '{ printf "%s\r\n", $0 }' "$DIGEST_WORK/jq-output"
+]=])
+file(CHMOD "${WORK}/bin/gh" "${WORK}/bin/jq" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 # A literal semicolon is a legal POSIX path character and a CMake list boundary.
 if(UNIX)
   set(ENV{PATH} "${WORK}/unused;entry:$ENV{PATH}")
 endif()
 # Native path separators also keep Windows PATH semicolons out of CMake lists.
-set(cmd "${CMAKE_COMMAND}" -E env --modify "PATH=path_list_prepend:${WORK}/bin" "DIGEST_WORK=${WORK}"
+set(cmd "${CMAKE_COMMAND}" -E env --modify "PATH=path_list_prepend:${WORK}/bin"
+  "DIGEST_WORK=${WORK}" "DIGEST_JQ=${DIGEST_JQ}"
   "GITHUB_REPOSITORY=example/public" sh "${ROOT}/scripts/digest.sh")
 execute_process(COMMAND ${cmd} preview "${WORK}/report" 2026-10-01T00:00:00Z 2026-11-01T00:00:00Z
   RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
@@ -59,9 +70,10 @@ endif()
 if(NOT EXISTS "${WORK}/report/evidence.json")
   message(FATAL_ERROR "digest assertion: successful preview must persist structured evidence")
 endif()
-execute_process(COMMAND ${cmd} preview relative-output 2026-10-01T00:00:00Z 2026-11-01T00:00:00Z
+execute_process(COMMAND "${CMAKE_COMMAND}" -E env "CDPATH=${WORK}" ${cmd} preview -relative-output
+  2026-10-01T00:00:00Z 2026-11-01T00:00:00Z
   WORKING_DIRECTORY "${WORK}" COMMAND_ERROR_IS_FATAL ANY)
-if(NOT EXISTS "${WORK}/relative-output/evidence.json")
+if(NOT EXISTS "${WORK}/-relative-output/evidence.json")
   message(FATAL_ERROR "digest assertion: relative output must resolve from the caller directory")
 endif()
 file(READ "${WORK}/report/evidence.json" evidence)

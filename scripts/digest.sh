@@ -4,13 +4,17 @@
 set -eu
 export TZ=UTC
 fail() { echo "digest: $*" >&2; exit 1; }
+# Native jq.exe otherwise adds CR to shell scalar/TSV records (jq manual, --binary).
+jq() {
+  command jq -b "$@"
+}
 [ "$#" -ge 2 ] || fail 'usage: collect OUT START END | preview OUT [START END] | publish OUT'
 operation=$1; out=$2; shift 2
 case "$operation" in collect|preview|publish) ;; *) fail 'unknown operation' ;; esac
 repo=${GITHUB_REPOSITORY:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}
 printf '%s\n' "$repo" | LC_ALL=C grep -Eq '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' || fail 'invalid repository'
-mkdir -p "$out"
-out=$(cd "$out" && pwd)
+mkdir -p -- "$out"
+out=$(CDPATH= cd -- "$out" && pwd)
 gh api "repos/$repo" > "$out/repository.json" || fail 'required repository API failed'
 jq -e '.private == false and (.default_branch | type == "string")' "$out/repository.json" >/dev/null || fail 'public repository required'
 now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
