@@ -176,9 +176,9 @@ jobs:
   # under the names a pull request runs at 100 from a fixed seed. A failure
   # prints the seed and case to rerun locally. MUHTARI_TIMEOUT_SCALE 10 gives
   # each test 390 s; the slowest took 190 s at 10,000 cases, run 39381236115.
-  # Report-only: it stays out of report's needs and keeps continue-on-error
-  # until it has passed 10 runs on main, then gates with a timeout of twice
-  # its slowest run.
+  # Report-only: 2/10 distinct successful main executions as of 2026-10-22.
+  # It stays out of report's needs and keeps continue-on-error until ten,
+  # then gates with a timeout of twice its slowest run.
   prop:
     runs-on: ubuntu-26.04
     timeout-minutes: 9  # 2 x 246 s, n=2, run 39529469620; provisional

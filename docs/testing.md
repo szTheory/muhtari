@@ -230,8 +230,8 @@ Actions are pinned by full commit SHA.
 **The roll-up.** The ruleset requires one check, `CI required`. It always runs, and passes only when every job it
 needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which
 happens only when every changed path is under `.planning/`; `title` and `perf` may be skipped outside pull
-requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` and `library` report only and are
-not among the jobs `CI required` needs; `library` joins after 10 green runs on `main`.
+requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32`/`library` stay advisory: 9/5 distinct
+successful main executions as of 2026-10-22; ten are required. Skips, PR/branch controls and duplicate reruns do not count.
 
 **Tests of CI itself.** The hygiene lane checks the rules above. `policy.ci_required` reads the roll-up's `jq`
 program from `ci.yml` and runs it, with the step's own arguments, on synthetic job results; it also fails when a
@@ -312,8 +312,8 @@ The same workflow runs the `vectors-full` lane (`cmake --workflow --preset vecto
 `fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its inventory;
 `fuzz` uploads both targets' crash directories when it fails. Neither caches its vectors or corpus. The `prop` job
 builds the `ci` preset with `MUHTARI_TIMEOUT_SCALE=10` and runs `ctest -L prop` with `MUHTARI_PROP_CASES=10000` and
-the run's ID as `MUHTARI_PROP_SEED`; it is report-only, outside the report job's needs, until it has passed 10 runs
-on `main`. A pull request runs the whole workflow, writing no issue, when it changes a file listed in the trigger's
+the run's ID as `MUHTARI_PROP_SEED`; it stays advisory outside `report.needs`: 2/10 successful main runs as of
+2026-10-22. A pull request runs the whole workflow, writing no issue, when it changes a file listed in the trigger's
 `paths`: the workflow, the core and runner sources, the build files and pins, and each job's tests, scripts and
 inventories.
 

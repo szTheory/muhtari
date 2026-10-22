@@ -321,7 +321,7 @@ jobs:
           files=$(printf '%s;' hashes/*/hashes.txt)
           cmake "-DFILES=${files%;}" -DCOUNT=6 -DMODE=compare -P tests/cmake/hashes.cmake
 
-  # Report-only: not in CI required's needs until it has a record on main.
+  # Report-only: 9/10 distinct successful main executions as of 2026-10-22.
   wasm32:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'
@@ -359,7 +359,7 @@ jobs:
   # sample or diagnostic, on the fast boot and through OpenBIOS, then the
   # ratchet against the pull request's base ledger (docs/emulation-tests.md,
   # ledger). The full history is fetched for git show of the base. Report-only:
-  # not in CI required's needs until it has 10 green runs on main.
+  # 5/10 distinct successful main executions as of 2026-10-22; ten required.
   library:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
