@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 7
+open_count: 9
 waived_count: 0
 fixed_count: 14
-total_count: 21
-last_updated: 2026-10-22T17:00:29.145Z
+total_count: 23
+last_updated: 2026-10-22T18:53:28.751Z
 ---
 
 # Broken Windows Ledger
@@ -36,6 +36,8 @@ last_updated: 2026-10-22T17:00:29.145Z
 | 19 | 05 | unrun-verify | .github/workflows/ci.yml |  | Replacement05-11 Task2/3 full ci/library, direct perf/library/quality, release-called CI and authentic artifact acceptance are unrun after Task1 allocation failure; no current run URL exists. | open |  | 2026-10-22T15:41:21.957Z |  |
 | 20 | 05 | deviation | tests/cmake/quality.cmake |  | 05-12 Task1 halted at total14842/quality921, one above strict14841/quality920; unchanged other components and no GREEN. | open |  | 2026-10-22T17:00:29.052Z |  |
 | 21 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-12-PLAN.md |  | 05-12 Task2/3 full ci, generated-corpus library, POKEY audit and current direct/called hosted acceptance unrun after Task1 fit halt. | open |  | 2026-10-22T17:00:29.145Z |  |
+| 22 | 05 | lint-warning | .github/workflows/be-equality.yml | 63 | 05-13 broad diff check exits2 on inherited blank EOF lines in be-equality.yml:63, gate-lines.txt:148 and historical05-01-SUMMARY.md:421; recovery diff check exits0 and historical/scope constraints leave the broad check unresolved. | open |  | 2026-10-22T18:49:34.389Z |  |
+| 23 | 05 | unrun-verify | .github/workflows/ci.yml |  | Advisory release-called WASM run39832530253 attempt2/job120020998725 loses a pinned-tool fetch with curl35 before tests; its inventory and rehearsal/install/cleanup skip. Required called CI and quality plus authentic8 join pass; direct WASM passes. Overall Release remains failure; this is a tooling seed, not required recovery evidence. | open |  | 2026-10-22T18:53:28.751Z |  |
 
 ````json
 [
@@ -309,6 +311,32 @@ last_updated: 2026-10-22T17:00:29.145Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-10-22T17:00:29.145Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 22,
+    "kind": "lint-warning",
+    "phase": "05",
+    "file": ".github/workflows/be-equality.yml",
+    "line": 63,
+    "description": "05-13 broad diff check exits2 on inherited blank EOF lines in be-equality.yml:63, gate-lines.txt:148 and historical05-01-SUMMARY.md:421; recovery diff check exits0 and historical/scope constraints leave the broad check unresolved.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T18:49:34.389Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 23,
+    "kind": "unrun-verify",
+    "phase": "05",
+    "file": ".github/workflows/ci.yml",
+    "line": null,
+    "description": "Advisory release-called WASM run39832530253 attempt2/job120020998725 loses a pinned-tool fetch with curl35 before tests; its inventory and rehearsal/install/cleanup skip. Required called CI and quality plus authentic8 join pass; direct WASM passes. Overall Release remains failure; this is a tooling seed, not required recovery evidence.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T18:53:28.751Z",
     "resolved_at": null,
     "milestone": "v2.0"
   }
