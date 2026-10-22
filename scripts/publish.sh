@@ -147,18 +147,52 @@ verify() {
 # Every page, so a release past the first 100 is still found; a draft has no
 # tag to look up by.
 release_id() {
-  gh api --paginate "repos/$REPO/releases?per_page=100" --jq ".[] | select(.tag_name == \"$1\") | .id"
+  pages=$(gh api --paginate --slurp "repos/$REPO/releases?per_page=100") || fail "release listing failed"
+  printf '%s\n' "$pages" | jq -er --arg tag "$1" '
+    if type == "array" and length > 0 and all(.[]; type == "array" and all(.[];
+      type == "object" and (.tag_name|type) == "string" and (.id|type) == "number" and .id > 0 and .id == (.id|floor)))
+    then [ .[][] | select(.tag_name == $tag) | .id ] |
+      if length == 0 then "" elif length == 1 then .[0] else error("duplicate release") end
+    else error("invalid pages") end
+  ' || fail "invalid release listing"
+}
+
+# Only actual response headers establish status; stderr remains visible.
+api_response() {
+  api_rc=0
+  response=$(
+    gh api --include -X "$@" && rc=0 || rc=$?
+    printf '.'
+    exit "$rc"
+  ) || api_rc=$?
+  response=${response%.}
+  parsed=$(printf '%s' "$response" | tr -d '\r' | awk '
+    NR == 1 { if ($0 !~ /^HTTP\/[0-9]+(\.[0-9]+)? [1-5][0-9][0-9] [^\r]*$/) exit 1; code=$2; next }
+    !body && $0 == "" { print code; body=1; next }
+    !body && $0 !~ /^[A-Za-z0-9-]+:/ { exit 1 }
+    body { print }
+    END { if (!body) exit 1 }
+  ') || fail "invalid HTTP response"
+  http_status=$(printf '%s\n' "$parsed" | sed -n '1p')
+  body=$(printf '%s\n' "$parsed" | sed '1d')
+  case "$api_rc:$http_status" in
+    0:2?? | 0:3?? | [1-9]*:4?? | [1-9]*:5??) ;;
+    *) fail "HTTP command/status disagreement: $api_rc/$http_status" ;;
+  esac
 }
 
 # The ID comes from the create response: a new draft can be missing from the
 # release list for a while.
 rehearsal_create() {
   [ -n "${EXPECTED_SHA:-}" ] || fail "EXPECTED_SHA is not set"
-  id=$(release_id "$1")
+  id=$(release_id "$1") || fail "release lookup failed"
   if [ -z "$id" ]; then
-    id=$(gh api -X POST "repos/$REPO/releases" -f tag_name="$1" -f target_commitish="$EXPECTED_SHA" \
+    api_response POST "repos/$REPO/releases" -f tag_name="$1" -f target_commitish="$EXPECTED_SHA" \
       -f name="$1" -f body="Rehearsal; deleted at the end of this run." -F draft=true -F prerelease=true \
-      -f make_latest=false --jq .id)
+      -f make_latest=false
+    [ "$http_status" = 201 ] || fail "create status $http_status"
+    id=$(printf '%s\n' "$body" | jq -er --arg tag "$1" 'select(type == "object" and .tag_name == $tag and
+      .draft == true and .prerelease == true and (.id|type) == "number" and .id > 0 and .id == (.id|floor)) | .id') || fail "invalid create response"
   fi
   [ -n "$id" ] || fail "no release $1 after creating it"
   echo "$id"
@@ -166,14 +200,40 @@ rehearsal_create() {
 
 # The release goes before its tag, which an immutable release protects.
 rehearsal_delete() {
-  if [ -n "${2:-}" ]; then
-    gh api -X DELETE "repos/$REPO/releases/$2" > /dev/null 2>&1 || true
-    if gh api "repos/$REPO/releases/$2" > /dev/null 2>&1; then fail "release $2 still exists"; fi
+  listed=$(release_id "$1") || fail "release lookup failed"
+  id=${2:-$listed}
+  if [ -n "$id" ]; then
+    case $id in 0* | *[!0-9]*) fail "invalid release ID" ;; esac
+    [ -z "$listed" ] || [ "$listed" = "$id" ] || fail "release identity conflict"
+    api_response GET "repos/$REPO/releases/$id"
+    if [ "$http_status" = 200 ]; then
+      printf '%s\n' "$body" | jq -e --arg tag "$1" --argjson id "$id" '.id == $id and .tag_name == $tag' > /dev/null || fail "release identity mismatch"
+      api_response DELETE "repos/$REPO/releases/$id"
+      case $http_status in 204 | 404) ;; *) fail "DELETE status $http_status" ;; esac
+    elif [ "$http_status" != 404 ]; then fail "release GET status $http_status"
+    elif [ -n "$listed" ]; then fail "listed release absent"
+    fi
+    api_response GET "repos/$REPO/releases/$id"
+    [ "$http_status" = 404 ] || fail "release still exists or GET failed: $http_status"
   fi
-  gh release delete "$1" --repo "$REPO" --yes > /dev/null 2>&1 || true
-  if [ -n "$(release_id "$1")" ]; then fail "$1 still has a release"; fi
-  gh api -X DELETE "repos/$REPO/git/refs/tags/$1" > /dev/null 2>&1 || true
-  if gh api "repos/$REPO/git/ref/tags/$1" > /dev/null 2>&1; then fail "tag $1 still exists"; fi
+  listed=$(release_id "$1") || fail "release lookup failed"
+  [ -z "$listed" ] || fail "release still listed"
+  api_response GET "repos/$REPO/git/ref/tags/$1"
+  if [ "$http_status" = 200 ]; then
+    printf '%s\n' "$body" | jq -e --arg ref "refs/tags/$1" '.ref == $ref' > /dev/null || fail "tag identity mismatch"
+    api_response DELETE "repos/$REPO/git/refs/tags/$1"
+    [ "$http_status" = 204 ] || fail "DELETE status $http_status"
+    api_response GET "repos/$REPO/git/ref/tags/$1"
+  fi
+  [ "$http_status" = 404 ] || fail "tag still exists or GET failed: $http_status"
+  listed=$(release_id "$1") || fail "release lookup failed"
+  [ -z "$listed" ] || fail "release still listed"
+  if [ -n "$id" ]; then
+    api_response GET "repos/$REPO/releases/$id"
+    [ "$http_status" = 404 ] || fail "release still exists or GET failed: $http_status"
+  fi
+  api_response GET "repos/$REPO/git/ref/tags/$1"
+  [ "$http_status" = 404 ] || fail "tag still exists or GET failed: $http_status"
   echo "publish: $1 and its release are gone"
 }
 

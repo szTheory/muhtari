@@ -171,7 +171,7 @@ foreach(row IN LISTS rows)
   execute_process(COMMAND ${cmd} EXPECTED_SHA=fixture-sha sh "${ROOT}/scripts/publish.sh" "rehearsal-${operation}" rehearsal-fixture
     RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
   file(READ "${WORK}/calls" calls)
-  if(NOT rc STREQUAL expected_rc OR (expected_rc STREQUAL "1" AND NOT out MATCHES diagnostic) OR (NOT forbidden STREQUAL "" AND calls MATCHES forbidden))
+  if(NOT rc STREQUAL expected_rc OR (expected_rc STREQUAL "1" AND NOT out MATCHES "${diagnostic}") OR (NOT forbidden STREQUAL "" AND calls MATCHES "${forbidden}"))
     message(FATAL_ERROR "publish lifecycle assertion ${row}: exit ${rc}: ${out}: ${calls}")
   endif()
 endforeach()
