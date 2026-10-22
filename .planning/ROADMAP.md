@@ -59,7 +59,7 @@ Plans:
 - [x] 05-05-PLAN.md — Require one quality ratchet over real observations and trusted baselines.
 
 **Wave 6** *(halted at measured allocation gate;0/3 tasks complete)*
-- [x] 05-06-PLAN.md — Consolidate performance/compatibility policy stores while retaining semantic controls.
+- [ ] 05-06-PLAN.md — Halted at allocation gate; consolidate performance/compatibility policy stores while retaining semantic controls.
 
 **Wave 7** *(blocked on Wave 6 completion)*
 - [ ] 05-07-PLAN.md — Run fresh performance controls and audit conditional lane promotions.
