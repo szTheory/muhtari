@@ -5,16 +5,16 @@ milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
 status: executing
-stopped_at: Completed 05-07-PLAN.md; test-card armed; advisory lanes retained; extra final CI queued
-last_updated: "2026-10-22T19:44:38.529Z"
+stopped_at: Halted 05-08 Task1 at release-safety allocation gate; RED e0c18a0, summary bf99ca3; 0/3 tasks
+last_updated: "2026-10-22T20:07:56.851Z"
 last_activity: 2026-10-22
-last_activity_desc: Plan 05-07 accepted; test-card gate armed; advisory lanes retained
-state_head: 047e8655f3254845eb55da3c9fa004b9a0f994d1
+last_activity_desc: Phase 05 execution started
+state_head: bf99ca3209229d291869736c2c13453104c1e95c
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 total_phases: 7
 ---
@@ -30,17 +30,30 @@ from a small MIT-licensed C library hosts can embed.
 ## Current Position
 
 Phase: 05 (Pipeline tune-up) — EXECUTING
-Plan: 7 of 9 complete
-Status: Ready to execute 05-08; 05-09 pending
-Last activity: 2026-10-22 — Plan05-07 accepted; test-card gate armed; advisory lanes retained
+Plan: 8 of 9
+Status: Halted at Plan05-08 Task1 fixed-allocation gate
+Last activity: 2026-10-22 — Phase 05 execution started
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 7/9 Phase5 plans complete; 0/7 phases complete.
 Implementation: 05-01,05-02,05-10,05-04,05-05,05-13,05-07 complete. Halted05-06/05-11/05-12 stay0/3 histories, superseded only for scheduling.
-Two remaining plans run in waves8–9:05-08 ->05-09. Both remain unstarted; this executor completed only05-07.
+Two remaining plans are05-08 ->05-09. Plan05-08 is halted0/3 after its first RED control;05-09 remains unstarted and blocked.
 05-13 implements only D-24–26's finite numeric-read movement, proves retained compatibility/POKEY and current required callers, and measures14840/quality919. No new scope or allocation was needed.
 REDdf6b095/94d5c49 and all historical SUMMARY/HANDOFF/VERIFICATION files remain unchanged. Test-card arming passed actual readiness controls; no promotion, ship or merge ran.
 
 ## Current acceptance
+
+05-08 is halted0/3 after RED e0c18a0; its durable partial summary is bf99ca3.
+The new real-script signer control passes correct-signer and tamper baselines, then
+reproduces wrong-signer exit0 and synthetic publication PATCH. Named CTest exits8;
+unchanged current JUnit passes RED_EVIDENCE_OK exit0 and semantic inspection.
+The fully counted fixture60/registration4/ci inventory1/gate manifest1 adds66:
+total14906, fixes96/30, strict14841 exceeded65 and C14853 exceeded53.
+Quality919/count368/BE193/digest447/reserve0 remain unchanged; BE12 is not reserve.
+No production publisher or workflow change, GREEN, completed task, new allocation,
+rebaseline, control removal, automatic gap round, rehearsal reuse or docs acceptance exists.
+WINDOWS24/25 preserve the open signer/allocation fault and unrun remaining checks.
+Active completion remains7/9; Tasks2-3 and05-09 are blocked. All shared requirements,
+historical halts, seven assumptions and descriptorless prohibitions remain pending.
 
 05-07 is accepted2/2 at task commits2a68b3b/7ed793e; canonical summary047e865.
 Two fresh same625db7a controls each measure3837262/3837262/3837262, spread0:
@@ -178,6 +191,7 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 | Phase 05 P12 | approx5min halted | 0 tasks | 4 files |
 | Phase 05 P13 | 24min plus closeout | 3 tasks | 5 files |
 | Phase 05 P07 | 38min plus closeout | 2 tasks | 4 files |
+| Phase 05 P08 | 8min halted | 0 tasks | 4 files |
 
 ## Blockers and seeds
 
@@ -188,6 +202,9 @@ WINDOWS18/19/20/21 preserve prior history;22/23 record inherited whitespace/advi
 The descriptorless TUNE-03 boundary prohibition remains flagged/unverified;
 phase-wide requirements, final allocation retirement and acceptance are unfinished.
 Default-branch digest publication and merge-dependent truths remain ship checks.
+05-08 now halts at its separate safety allocation: the first signer-control addition
+alone yields14906/fixes96 against strict14841/fixes30. No required implementation
+or complete lookup control has been funded or accepted. See05-08-SUMMARY.md.
 Tooling seeds stay in the phase deferred-items ledger and do not create requirements.
 Historical05-03 halt and05-10 original failures remain historical facts.
 
@@ -219,16 +236,17 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T19:44:38.509Z
-Stopped at: Completed 05-07-PLAN.md; test-card armed; advisory lanes retained; extra final CI queued
-Resume file: None
-Next command: $gsd-execute-phase 5
-Stop after this execute step. Plan05-07 is accepted;05-08 is next and remains unstarted;05-09 is pending.
+Last session: 2026-10-22T20:07:56.737Z
+Stopped at: Halted 05-08 Task1 at release-safety allocation gate; RED e0c18a0, summary bf99ca3; 0/3 tasks
+Resume file: .planning/phases/05-pipeline-tune-up/05-08-SUMMARY.md
+Next command: $gsd-discuss-phase 5
+Stop after this execute step. Plan05-08 is halted0/3 with RED only;05-09 remains blocked. An explicit scope/construction decision is needed before another execution.
 No new allocation or automatic gap round is authorized. Future scopes retain their own predicates.
 No new allocation, gap round, promotion, ship or merge was performed. Only the measured test-card gate was armed.
 
 ### Blockers
 
 - Historical05-06/05-11/05-12 remain halted0/3 with RED/draft histories preserved. Their old tasks cannot resume;05-13 replaces their scheduling under D-24–26.
-- Phase5 acceptance remains incomplete at7/9:05-08 release safety and05-09 final tightening/docs/settings remain unstarted. WASM/library/prop stay advisory at9/5/2; shared requirements remain pending.
+- Phase5 acceptance remains incomplete at7/9:05-08 release safety is halted0/3 at its fixed-allocation gate;05-09 final tightening/docs/settings remains unstarted and blocked. WASM/library/prop stay advisory at9/5/2; shared requirements remain pending.
 - Inherited broad whitespace and advisory called-WASM fetch failures remain tooling seeds; no release rehearsal or overall Release success is claimed. Seven assumptions and the physical-boundary prohibition remain unresolved.
+- 05-08 Task1 halted after RED e0c18a0: first release-signer control adds66, total14906/fixes96 exceeds strict14841/fixes30 and C14853; no GREEN, no new scope or allocation, Tasks2-3/05-09 blocked.
