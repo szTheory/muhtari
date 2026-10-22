@@ -89,10 +89,15 @@ jobs:
         with:
           pattern: hashes-*-*
           path: dist/legs
+      - name: Use verified GitHub CLI
+        run: |
+          sh scripts/fetch-pin.sh gh-linux-x86_64 "$RUNNER_TEMP/gh"
+          echo "$RUNNER_TEMP/gh/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/gh/bin/gh" --version
       - run: sh scripts/publish.sh prepare dist
       - id: draft
         run: |
-          id=$(sh scripts/publish.sh rehearsal-create "$REHEARSAL_TAG")
+          id=$(sh scripts/publish.sh rehearsal-create "$REHEARSAL_TAG") || exit 1
           echo "id=$id" >> "$GITHUB_OUTPUT"
       - env:
           ID: ${{ steps.draft.outputs.id }}
@@ -231,9 +236,17 @@ jobs:
         with:
           pattern: hashes-*-*
           path: dist/legs
+      - name: Use verified GitHub CLI
+        run: |
+          sh scripts/fetch-pin.sh gh-linux-x86_64 "$RUNNER_TEMP/gh"
+          echo "$RUNNER_TEMP/gh/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/gh/bin/gh" --version
       - run: sh scripts/publish.sh prepare dist
       - id: state
-        run: echo "draft=$(gh api "repos/$GITHUB_REPOSITORY/releases/$ID" --jq .draft)" | tee -a "$GITHUB_OUTPUT"
+        run: |
+          draft=$(gh api "repos/$GITHUB_REPOSITORY/releases/$ID" --jq .draft) || exit 1
+          case $draft in true | false) ;; *) echo "invalid release draft state" >&2; exit 1 ;; esac
+          echo "draft=$draft" >> "$GITHUB_OUTPUT"
       - if: steps.state.outputs.draft == 'true'
         run: sh scripts/publish.sh upload "$TAG" "$ID" dist
       - if: steps.state.outputs.draft == 'true'
