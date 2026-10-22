@@ -1,3 +1,487 @@
+# Phase 5: Pipeline tune-up — Release-safety Research Refresh
+
+**Updated:** 2026-10-22. **Domain:** existing POSIX publisher, GitHub CLI verification and release cleanup. **Confidence:** MEDIUM for external interfaces; HIGH for opened local definitions; LOW for unmeasured construction fit.
+
+<user_constraints>
+## User Constraints (from CONTEXT.md)
+
+The affected current decisions, discretion and deferred ideas are copied verbatim below. D-27–31 govern this release-safety continuation; unchanged phase decisions still apply. Earlier D-24–26-only research is preserved after this refresh as dated history, including its accepted construction and earlier fixed-budget restrictions. Those restrictions are superseded only for D-30's explicit release-safety addition. [VERIFIED: .planning/phases/05-pipeline-tune-up/05-CONTEXT.md:288-374; quoted below]
+
+<!-- DATA_233b53cb_START -->
+### Release-safety construction after the measured 05-08 halt
+
+These current decisions supersede the old unchanged-allocation restriction only for the named release-safety
+addition below. D-09/D-10/D-21–26's semantic contracts, prior acceptance and halted histories remain intact.
+
+- **D-27:** Adopt a bounded continuation of the existing publisher and synthetic transport fixture for
+  TUNE-05/D-16: enforce signer workflow and source ref before publication; distinguish release/tag absence
+  from API/transport/schema failure; confirm cleanup; exercise those boundaries through the real script.
+  The existing control is RED, not accepted behavior. Preserve 05-08 at 0/3 and RED `e0c18a0`; the next planner
+  selects a continuation/replacement representation and refreshes dependencies without rewriting that history.
+  Accepted 05-13 and 05-07 remain prerequisites. No implementation runs in discussion.
+- **D-28:** Official GitHub CLI advisories are new evidence: signer-workflow prefix matching and case-insensitive
+  source-ref matching affect gh through 2.101.0 and are patched in 2.102.0. Local `gh --version` is 2.101.0;
+  hosted versions are unmeasured. Require a supported patched gh, at least 2.102.0, in every publisher attestation
+  verification context, with an explicit fail-closed version check and meaningful boundary/malformed controls.
+  Reuse the platform CLI; any needed installation must follow existing package or verified pinned-download
+  practice, with all enforcement/glue charged below. Before PATCH require repository, full signer path
+  `$REPO/.github/workflows/release.yml` and intended source ref. Preserve independent archive-commit, exact
+  asset, firmware, hash and tamper checks. Do not add `--source-digest "$EXPECTED_SHA"` automatically:
+  a delayed release can legitimately have a workflow-trigger commit different from the archived release commit.
+  The synthetic transport proves argument placement and short-circuiting, not upstream certificate semantics;
+  current hosted rehearsal must exercise the actual patched verifier.
+- **D-29:** Use the existing gh transport and one small explicit HTTP-status helper, not a new dependency,
+  authentication state machine or generic API framework. Capture command success and structured HTTP status,
+  rather than matching an error message or assuming `set -e` propagates through every conditional/substitution.
+  Retain complete paginated release lookup for drafts; validate successful listing shape and zero-or-one
+  matching positive numeric ID before create/delete. A failed listing, including listing 404, is failure.
+  A successful complete authenticated listing supplies repository-access evidence; resource-specific 404 can
+  then establish the relevant object's absence, without claiming that 404 independently proves authorization.
+  Reject 401/403/429/5xx, transport failure, malformed status/body/ID and surviving objects. Do not swallow a
+  failed DELETE and infer success from a failed GET. Explicit already-absent responses may be idempotent;
+  confirmation must still use the relevant resource and successful complete lookup. Retain draft IDs and
+  release-before-tag deletion. Controls must cover successful/empty/paginated/malformed/failed lookup,
+  create/delete failure, already absent/surviving objects, and no publication or creation after its prerequisite
+  fails, plus correct signer/ref, wrong signer/ref and tamper. Use shared table-driven cases in the existing
+  harness; no upstream cryptographic test suite is adopted.
+- **D-30:** Explicitly adopt a fixed **300-line release-safety addition** before further implementation.
+  It funds the newly dedicated real-publisher adversarial controls, complete fail-visible lookup/cleanup
+  repair and newly evidenced patched-verifier enforcement, including their invocation/glue. It does not fund
+  an inherited-code rewrite, rehearsal reuse, unrelated review seeds or another capability. Keep frozen
+  B12,885/S2; increase fixes30 to330 and N1,970 to2,270. The phase ceiling becomes C15,153 and the strict
+  pre-closeout total becomes15,141; count368/BE205/digest447/quality920/reserve0 otherwise stay unchanged.
+  BE12 is not reserve; quality's one unused line is not credited as safety funding. The 27-line reserve below
+  belongs inside the release-safety300, not the old global reserve or additional allowance.
+
+  | Release-safety increment, net physical growth | Fixed allocation | Evidence or construction |
+  |---|---:|---|
+  | Retained first control and registration | 66 | Measured: fixture60, dispatcher4, inventory1, manifest1 |
+  | Signer restriction and patched-CLI enforcement | 22 | Estimated production delta in existing publisher/workflow |
+  | HTTP/list/create/delete failure and absence handling | 55 | Estimated production delta; one small helper |
+  | Remaining complete control matrix | 115 | Estimated fixture expansion, including version boundary/malformed cases |
+  | Additional registration/inventory/invocation predicates | 15 | Estimated counted glue; shared work counted once |
+  | Release-safety integration reserve | 27 | Explicit uncertainty inside this300 only |
+  | Total | 300 | Hard ceiling, not a spending target or measured fit |
+
+  Only66 is measured; the remaining234 is a bounded construction constraint, not a proof that implementation
+  will fit. A more conservative384 estimate was considered; no concrete additional required fault established
+  its necessity, so the tighter300 is selected without claiming384 wasteful or300 proven feasible. Internal
+  redistribution must be visible within300; no other component finances it. The old RED overrun remains a
+  historical unaccepted overrun. In later execution update `quality.json` and its provenance to this explicit
+  reviewed structural allocation before affected GREEN additions, using existing authenticated adoption rules;
+  no temporary waiver, candidate self-authorization or weakening of another metric is allowed. Count the
+  complete resulting inventory, including comments/blanks, controls and embedded glue. Unresolved counting,
+  lost controls, a measured component/strict-total miss or missing required evidence stops expansion; no
+  automatic renewal, extra gap round, generalized savings hunt or compressed statements. At closeout retire
+  unused allowance/reserve and tighten to accepted actual, under the existing final-tightening contract.
+- **D-31:** Retain conservative rehearsals and measure their cost; implement no reuse or new selection state
+  machine in this repair. Current `release.yml` has five trigger paths, including `be-equality.yml`; these are
+  selectors, not proof of complete archive-input identity. Correct current docs claiming four paths and narrow
+  replay/cleanup/Dependabot claims to actual behavior. A bot's initial eligibility decision does not promise
+  revocation after every later human push. Acceptance after the last production/control edit needs selected
+  fault-specific controls, full local `cmake --workflow --preset ci`, exact inventories, component/total/doc
+  budgets, current required direct and release-called callers with authentic artifact identity, and actual
+  patched-gh rehearsal publication/install/cleanup evidence. Prior greens and a synthetic transport cannot
+  substitute for changed-path acceptance. Keep 05-09 blocked until accepted release safety; it then performs
+  final tightening and actual docs/install/settings checks. No requirement, assumption, portability promotion,
+  ship, merge or default-branch digest publication is completed by this discussion. The seven flagged
+  assumptions and descriptorless-boundary prohibition remain pending; post-merge truths belong to ship.
+<!-- DATA_233b53cb_END -->
+
+<!-- DATA_5d0f27aa_START -->
+### Agent's Discretion
+
+Internal schema names, helper boundaries, batching/API page sizes, readable report formatting, per-test cost
+values and the exact simplifications are researcher/planner choices within these contracts. The numbered
+choices are coherent outcomes, not a task breakdown; formal phase research still runs. No dependency addition
+is justified merely by a convenient parser or reporting abstraction.
+The agent may set the concrete allocations from evidence and make routine implementation choices within the
+fixed scope/ceiling without another owner confirmation. It may not grant itself a larger scope or total.
+<!-- DATA_5d0f27aa_END -->
+
+<!-- DATA_13b5b6ee_START -->
+## Deferred Ideas
+
+The forged-SHA fixture uses an equal-valued observation, so its existing claim of proving a smaller lane hidden
+by extrema is overstated. Record this as a tooling seed under rule7, not a new acceptance requirement or an
+excuse to remove its exact identity rejection. No broader test-harness redesign is adopted here.
+
+Performance/compatibility domain-policy centralization, shared immutable grant/renewal handling and retirement
+of the two legacy exception stores are explicitly deferred by D-21. No deadline, extra allocation or automatic
+future execution is attached. The narrower Phase 5 requirement records the surviving exception limitations.
+
+
+New emulator capabilities remain in phases 6–11 or later milestones. External dashboards, caches without a measured
+payoff, broad new analysis services, extra RetroArch cases and new public APIs are not part of this tune-up.
+Do not reopen the owner's one-step or automation-first rules.
+
+### Reviewed Todos (not folded)
+
+- `.planning/todos/pending/2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md`:
+  its behavior/docs findings already have phase 3 dispositions; remaining test seeds are not pipeline requirements.
+- `.planning/todos/pending/2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md`:
+  nightly input coverage must be assessed where this phase changes workflows, but cartdb reload/swap/parser and
+  old header-comment findings are not automatically adopted. Reproduce current relevance first; keep dormant
+  tooling seeds instead of expanding phase scope by keyword match.
+<!-- DATA_13b5b6ee_END -->
+</user_constraints>
+
+## Summary
+
+Plan one finite continuation/replacement of the halted release-safety work using the existing publisher and its synthetic transport fixture. Accepted reconciliation and arming remain prerequisites. Preserve the historical values “status: halted”, “tasks_completed: 0” and “plan_head_after: e0c18a07bf2dac0b068442c988e804ea5499c86e”; the recorded outcome is “0/3 tasks complete”, with no GREEN. Current active acceptance is “7/9” in STATE. This refresh does not accept changed release paths or reopen review/gap limits. [VERIFIED: .planning/phases/05-pipeline-tune-up/05-08-SUMMARY.md:1-17,75-89; .planning/STATE.md:37-56; quoted values here]
+
+Two independent faults need separate proof: the real prepublication command omits the signer workflow, and gh through 2.101.0 also implements signer/ref comparisons incorrectly. The first is reproduced locally in the retained RED; the second is affirmatively documented by both official advisories and the patched release. Require the patched runtime and repository/full-workflow/ref constraints before publication; preserve archive identity and tamper checks independently. [VERIFIED: scripts/publish.sh:82-99,129-132; exact commands quoted under Code Examples] [CITED: https://github.com/cli/cli/security/advisories/GHSA-wjmr-j3rp-mh2g] [CITED: https://github.com/cli/cli/security/advisories/GHSA-4mq3-hpgx-9cx8]
+
+**Primary recommendation:** extend the current script with a strict version guard, one single-response HTTP helper, validated complete release lookup and explicit create/delete confirmations; extend the existing table-driven fixture, retain conservative rehearsals and stop on any allocation/control/evidence miss. The exact fixed allocation is already adopted, so routine planning needs no further owner confirmation. [VERIFIED: current D-27–31 and Agent's Discretion quoted above]
+
+## Architectural Responsibility Map
+
+This map is the proposed allocation of the current adopted responsibilities, not a new service design. [VERIFIED: current D-27–31 quoted above]
+
+| Capability | Primary tier | Secondary tier | Rationale |
+|---|---|---|---|
+| Archive/commit/firmware/hash validation | Existing publisher | Existing CMake judges | Preserve existing independent prepublication evidence. |
+| CLI floor and signer/ref enforcement | Existing publisher | Release workflow provisions CLI | Every attestation entrypoint checks the runtime; workflow supplies a patched executable. |
+| Listing/status/schema/create/delete semantics | Existing publisher | GitHub REST API | One transport helper and one complete-list lookup own the finite failure decisions. |
+| Publication/install/cleanup ordering | Release workflow | Publisher | Existing dependency order makes successful verification a prerequisite to PATCH. |
+| Adversarial transport controls | Existing CMake fixture | Actual publisher process | Test arguments, exits and side effects through the real script. |
+| Physical allocation and trusted adoption | Existing quality policy/join | Existing inventory and controls | Keep one counted boundary and authenticated base contract. |
+
+## Project Constraints (from AGENTS.md)
+
+The actionable directives below remain mandatory; they are extracted from the opened project instructions, not additional acceptance scope. [VERIFIED: AGENTS.md:1-69]
+
+- Reuse permissive code with required provenance; do not open or retain GPL/LGPL/unlicensed emulator source. Reference emulators run only as released binaries.
+- Preserve the library, headless runner and libretro deliverables; add no window/audio-device/input-device code.
+- Keep ROM/BIOS/save bytes out except admitted fixtures; keep personal identity and paths out; preserve noreply commits, hooks and hygiene checks.
+- Keep integer-only, deterministic, bounded, instance-owned core behavior.
+- Land behavior tests in the existing CI workflow and docs together; keep README/public header terse and detail in docs.
+- Automate deterministic and recurring checks; the agent performs one-off judgment and records command/exit. Owner intervention is only identity-bound consent or own-hardware work; post-merge truths remain ship checks.
+- Repository checks stay CMake script/POSIX shell. Count implementation, controls, glue, comments and blanks; explicit scoped allocation precedes permanent growth. No hidden counts, compression, weakened controls or automatic rebaseline.
+- Preserve two review fix rounds and one gap round; tooling findings remain seeds, and another gap requires new evidence.
+- One GSD step per session; forbidden chained/automatic commands and hygiene bypasses stay forbidden. Do not start implementation, ship, merge or another workflow step in this research.
+- Preserve branch/PR policy and the eventual shell auto-merge/head-CI/release-PR checks; no branch change, commit or hosted write is part of this subtask.
+- Evidence is command, exit status and actual run URL, never a committed log. Export lessons only when asked, using the existing template.
+- Preserve required SUMMARY requirement/coverage fields, block-style entries and owner-only human judgment. Keep small plain modules, fixed-width types, module/public prefixes, sourced hardware comments, no planning IDs in code/test names/user docs, and the existing dependency ladder.
+
+<phase_requirements>
+## Phase Requirements
+
+Descriptions are copied verbatim from the opened requirements; the other phase outcomes retain accepted work and their separate pending phase acceptance. [VERIFIED: .planning/REQUIREMENTS.md:12-16; quoted below]
+
+| ID | Description | Research support |
+|---|---|---|
+| TUNE-03 | One aggregate quality.json ratchet consumes measured existing outputs, rejects unexplained regressions and permits explicit dated exceptions for its metrics; performance and compatibility retain their independent semantic guards and existing domain exception stores. Repository-check code meets an audited absolute line budget with scoped additions allocated before implementation, final tightening to actual size, and full counts and advisory source ratios published. | Complete safety delta, trusted structural adoption and strict/component counting. |
+| TUNE-05 | User and maintainer docs, install instructions and repository-setting checks match the released behavior; the measured weakest quality dimension receives a shipped improvement. | Patched signer/ref verification, honest lookup/cleanup/replay promises, actual rehearsal/install acceptance. |
+</phase_requirements>
+
+## Standard Stack
+
+Use only existing platform tools and infrastructure. This refresh proposes no library or package-manager dependency; upgrading the existing CLI is funded by D-28/D-30. Version probes in this research exited 0 for gh, jq, CMake and CTest. [VERIFIED: D-28/D-30 quoted above; research environment commands recorded below]
+
+| Tool | Observed / required version | Purpose |
+|---|---|---|
+| gh | Local 2.101.0; require supported patched version >=2.102.0 | Existing API and attestation transport. Local attestation verifier is vulnerable. |
+| jq | Local jq-1.7.1-apple | Existing typed JSON/page/ID validation; compare version numbers numerically. |
+| CMake / CTest | Local 4.4.3 / 4.4.3 | Existing generated transport fixture, registration, inventory and budget checks. |
+| POSIX sh | Existing script language | Explicit command-status checks; no new runtime. |
+
+Official evidence: signer-prefix advisory declares affected “>= v2.51.0, <= v2.101.0”; source-ref advisory declares “>= v2.68.0, <= v2.101.0”; both declare patched “v2.102.0”. The official release was published 2026-09-30T02:40:02Z. This is a verified minimum, not a claim that this is today's newest release or that a hosted runner already has it. [CITED: https://github.com/cli/cli/security/advisories/GHSA-wjmr-j3rp-mh2g] [CITED: https://github.com/cli/cli/security/advisories/GHSA-4mq3-hpgx-9cx8] [CITED: https://github.com/cli/cli/releases/tag/v2.102.0]
+
+### Patched runtime provisioning
+
+Use the existing verified pinned-download path in both Ubuntu publisher jobs rather than assuming the runner image was upgraded. The existing downloader reads “name version url sha256”, checks the digest before extraction, and strips the tar's top directory. Its exact enforcement is retained; any pin row, workflow steps, PATH wiring and controls count inside D-30. The relevant existing values are “pins.txt”, “scripts/fetch-pin.sh” and “scripts/publish.sh”, already whole-file inventory entries. [VERIFIED: scripts/fetch-pin.sh:6-11,22-45,49-51; tests/policy/gate-lines.txt:31,38,40; quoted values here]
+
+A concrete official artifact was resolved read-only, without downloading or executing it:
+- Name: “gh_2.102.0_linux_amd64.tar.gz”.
+- URL: https://github.com/cli/cli/releases/download/v2.102.0/gh_2.102.0_linux_amd64.tar.gz
+- API digest: “sha256:bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386”.
+
+The release API supplied those three values with exit 0. Revalidate that official digest during execution, add one ordinary pin row, reuse the existing fetcher, expose the extracted CLI bin for both publisher jobs, and run the script's version guard before any attestation command. No new downloader, dependency resolver or silent installation is needed. [CITED: https://api.github.com/repos/cli/cli/releases/tags/v2.102.0] [VERIFIED: existing fetcher and D-28/D-30 quoted above]
+
+### Package Legitimacy Audit
+
+No npm/PyPI/crates package is installed by this continuation; registry package-name checks are not applicable. This is an upgrade of an already-required platform CLI via its official release asset and existing SHA-256 gate. No package name is inferred from search results. [VERIFIED: D-04/D-28 and script/fetcher contracts above]
+
+## Architecture Patterns
+
+### System Architecture Diagram
+
+The following proposed flow makes the adopted finite failure decisions explicit. [VERIFIED: D-27–31 quoted above]
+
+```mermaid
+flowchart TD
+  A[Release or same-repository PR] --> B[Existing CI and archive preparation]
+  B --> C[Patched CLI runtime guard]
+  C --> D[Repository + full signer workflow + intended source ref]
+  D --> E{Every asset verifies and tamper control rejects?}
+  E -->|No| F[Fail before publication PATCH]
+  E -->|Yes| G[Publish and verify release downloads]
+  G --> H[README install line]
+  G --> I[Always cleanup]
+  H --> I
+  I --> J[Complete authenticated release lookup]
+  J --> K[Release ID deletion and exact absence confirmation]
+  K --> L[Exact tag deletion and absence confirmation]
+  L --> M{Fresh complete lookup and exact resources absent?}
+  M -->|Yes| N[Cleanup success]
+  M -->|No or API/schema failure| O[Cleanup failure]
+```
+
+### Component responsibilities and finite edits
+
+Reuse the current file boundaries. Existing source-of-truth definitions are “attested()”, “verify()”, “release_id()”, “rehearsal_create()” and “rehearsal_delete()”. The retained fixture creates “${WORK}/bin/gh” and “${WORK}/dist” with CMake's file operations, and registers “policy.publish.controls”; keep that one real-script fixture. [VERIFIED: scripts/publish.sh:83-168; tests/policy/publish.cmake:3-5,23-29; tests/policy/tests.cmake:101-105; quoted names/created paths here]
+
+1. **Budget adoption before further GREEN:** update only the explicit safety allocation/provenance and its existing caller constant, then verify against the actual trusted base. Current policy literally has “ceiling”: 14853 and provenance “f0202e1f02ee24c2b7d2bc19bbe140f11f3c1fef; B=12885; S=2; N=1970”; the join literally passes “-DINITIAL_GATE_CEILING=14853”. Adopt D-30's quoted new ceiling and N. The judge's structural branch applies only to an absent base metric: “if(key STREQUAL \"gate_lines\" AND DEFINED INITIAL_GATE_CEILING AND bound EQUAL INITIAL_GATE_CEILING)”. An existing-base loosening still fails “quality: unexplained loosening ${key}” without the ordinary authorization. Do not turn the new allocation into a temporary reason or weaken other metrics. If the actual trusted base already contains the bound and the existing adoption route does not authorize this structural allocation, stop and surface that concrete integration gap; candidate policy cannot authorize itself. [VERIFIED: quality.json:3-10; tests/cmake/quality_join.cmake:78-81; tests/cmake/quality.cmake:168-205; exact values/branches quoted here; D-30 above]
+2. **Runtime guard in the common attestation path:** parse a complete recognized stable gh version into numeric major/minor/patch values; compare tuples, not strings. Reject missing/malformed/unknown output, unsuccessful version queries, prerelease syntax not explicitly supported, and versions below the floor before invoking attestation or PATCH. Place the guard at the shared verification entry so both direct and downloaded verification inherit it. Keep the pinned CLI provision in both workflow contexts; a provisioning failure must stop subsequent use. [VERIFIED: D-28 quoted above; construction recommendation within granted discretion]
+3. **Signer and ref before PATCH:** use repository, the full workflow path and intended source ref together for genuine-asset verification in both local/prepublication and downloaded paths. Preserve the changed-copy rejection. Do not equate the archived release commit with the attestation workflow-trigger commit; no automatic source-digest addition. [VERIFIED: D-28 and current commands quoted under Code Examples]
+4. **One explicit single-response helper:** call gh API with included response headers, capture command exit separately, extract the numeric status from the actual HTTP status line, and separate the body at the header/body blank line (including CRLF). Reject missing/malformed status and contradictory command/status success. Preserve stderr diagnostics. Return/carry status and body to the finite callers; do not build a response framework. A body string claiming 404 is not HTTP status evidence. [CITED: https://cli.github.com/manual/gh_api] [CITED: https://raw.githubusercontent.com/cli/cli/v2.102.0/pkg/cmd/api/api.go] [VERIFIED: D-29 quoted above]
+5. **Complete release lookup:** explicitly check success of the paginated/slurped gh command before JSON processing; do not mix included HTTP headers into paginated JSON. Validate a nonempty outer page array, every page as an array and every item as an object with string tag_name and positive integer numeric id. Then select exact tag equality via jq's argument binding and require zero or one match. Reject duplicate matching entries even if their IDs repeat. Emit an empty result only for valid zero matches; all other failures exit visibly. Check the function's result explicitly at every command-substitution/conditional call site; set -e alone is insufficient as the failure contract. [CITED: https://cli.github.com/manual/gh_api] [VERIFIED: D-29 quoted above; finite validation design within granted discretion]
+6. **Create:** require complete successful lookup before any POST. Reuse an existing valid ID without creating; for zero matches accept only successful creation and a correctly typed positive numeric ID, retaining it directly rather than depending on immediate list visibility. Validate the response object's tag and expected draft/prerelease state before using its ID. A failed lookup/POST, malformed response or invalid ID prevents further create/upload/publication. Preserve the existing release-target commit and never-latest settings. [VERIFIED: scripts/publish.sh:143-154; exact current assignments quoted under Code Examples; D-29 above]
+7. **Delete release before tag:** begin from successful complete lookup, retain any known create-response ID and validate supplied IDs before endpoint interpolation. If a known ID exists, its exact GET must identify the intended tag; a different tag/ID disagreement fails before DELETE. Delete that ID, require successful deletion (or documented explicit already-absent response), then require exact-ID GET absence and a new successful complete listing with no matching release. Missing-ID cleanup uses the validated list result. Never convert a failed DELETE followed by a failed GET into success. [VERIFIED: D-29 quoted above; finite design recommendation]
+8. **Delete and confirm the exact tag:** only after release absence, GET the exact tag resource. For present correctly identified tag, require successful DELETE and then exact GET 404; for an already-absent exact GET, skip DELETE. Treat validation/conflict/authorization/rate/server/transport errors as failure rather than guessing that a tag is gone. End with successful complete release lookup and exact absence evidence before printing success. No unbounded retry or cleanup state machine is added. [CITED: https://docs.github.com/en/rest/git/refs] [VERIFIED: D-29 quoted above]
+
+### HTTP and absence decision table
+
+This table prescribes caller behavior under D-29; it is not a claim that those branches are already implemented or exercised. GitHub documents release deletion 204/404, exact ref lookup 200/404/409 and ref deletion 204/409/422. In particular, do not treat ref DELETE 422 as an absence certificate. [CITED: https://docs.github.com/en/rest/releases/releases#delete-a-release] [CITED: https://docs.github.com/en/rest/git/refs]
+
+| Operation | Accept | Fail closed |
+|---|---|---|
+| Complete release list | Command success; valid complete page/item shape; zero or one exact-tag positive numeric ID | Any failed page, including listing 404; malformed JSON/page/item/ID; duplicate match |
+| Single resource GET | Successful expected object and validated identity; or explicit resource 404 after successful complete lookup | Non-404 error, transport failure, malformed status/body, wrong identity, or unexpected success code |
+| Create | Success/201; valid expected response and positive integer numeric ID | Any command/HTTP/schema/ID error; no subsequent operation after failed prerequisite |
+| Release DELETE | Success/204; explicit 404 may be idempotent only with exact GET and successful fresh list confirmation | Other error or surviving exact ID/tag listing |
+| Tag DELETE | Success/204 followed by exact GET 404 | Every other result; already-absent GET skips deletion rather than interpreting DELETE 422 |
+| Final cleanup | Fresh complete list has no exact matching release; exact known ID and exact tag are absent | Missing confirmation, API failure, resource survives, or contradictory evidence |
+
+A complete authenticated listing supplies repository-access evidence; it does not independently prove write permission or visibility of every draft. GitHub documents that drafts require push access and that improper authentication can be hidden by 404. Keep the existing workflow contents-write token and retained-ID checks; do not advertise a new authorization proof. No generic authentication state machine is adopted. [CITED: https://docs.github.com/en/rest/releases/releases#list-releases] [CITED: https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api]
+
+## Complete Control Matrix
+
+Use shared case data and assertions in the existing generated transport. For each negative, require the intended exit/diagnostic and inspect the recorded calls for the forbidden downstream operation. Unexpected transport calls must fail the fixture. The old fixture literally records “api -X PATCH” after “correct”, “tampered” and “wrong-signer” scenarios; preserve that publication boundary and its cause checks. Added rows below are required design coverage, not currently passing tests. [VERIFIED: tests/policy/publish.cmake:7-20,31-58; quoted existing values here; D-28/D-29/D-31 above]
+
+| Boundary | Cases to supply | Required observation |
+|---|---|---|
+| Correct signer/ref | Correct repository, full workflow and intended ref; valid unmodified assets | Genuine verification succeeds and reaches exactly the intended synthetic publication. |
+| Wrong signer | Different workflow; expected-path prefix with extra suffix | Full signer argument is passed and verifier failure prevents PATCH. Synthetic semantics are modelled, not upstream crypto proof. |
+| Wrong source ref | Different ref; case-only ref difference | Exact intended source-ref argument is passed; rejected verification prevents PATCH. |
+| Tampered asset | Existing changed-copy transport acceptance; unchanged-copy baseline | Existing tamper diagnostic and no PATCH; genuine success does not mask changed-byte acceptance. |
+| CLI floor | Stable 2.101.0, 2.102.0, later patch/minor, later major | Below floor fails before any attestation/PATCH; supported boundary and newer stable tuples proceed. |
+| CLI parsing | Failed query, empty output, malformed numeric fields, missing field, nonversion text, unsupported prerelease | Specific version failure before attestation/PATCH; no lexical or partial parse acceptance. |
+| Version entrypoints | Direct attested and verify paths; both genuine and downloaded verification loops | Every attestation-verification context is guarded; provisioning failures cannot fall back to old PATH CLI. |
+| Empty listing | Valid single empty page | Create once with validated returned ID; cleanup can confirm already-absent state. |
+| Existing release | One exact tag on first page; draft ID retained from create | No duplicate create; correct ID used through upload/cleanup. |
+| Pagination | Match only on later page; multiple valid empty pages; later page fails | Later match found; complete valid zero works; partial data never becomes absence/create. |
+| Listing transport/status | Transport failure; 401, 403, 404, 429, 500/503 | Visible failure; no POST/DELETE/PATCH justified by failed list. Parameterize codes, not duplicate scenarios. |
+| Listing schema | Empty stdout, invalid JSON, object instead of outer pages, nonarray page, nonobject item, missing/wrong tag type | Visible schema failure with no mutation. |
+| ID validation | Missing/null/string/zero/negative/fractional ID, duplicate matching entries | No interpolation of invalid IDs and no create/delete/PATCH after invalid evidence. |
+| HTTP parsing | Missing status, malformed status, CRLF boundary, success-status/nonzero-exit contradiction, JSON body containing fake status | Only actual well-formed HTTP status is used; all contradictions/errors fail. |
+| Create result | Correct 201 and ID; command/status error; malformed JSON/body/state/tag/ID | Successful returned ID retained; failure has no upload/publication or success result. |
+| Known ID | Correct tag; wrong-tag response; conflicting listed ID; malformed supplied ID | Delete only the intended positive ID; disagreement fails before deletion. |
+| Release deletion | Successful 204; documented already-absent 404; DELETE 403/429/5xx/transport failure | Only accepted deletion/absence path advances; other failures stay failures even if a later probe could fail too. |
+| Release confirmation | Exact GET still 200; exact GET 404 but listing survives; exact GET error; refreshed list error | Surviving object or any failed confirmation rejects cleanup. |
+| Tag already absent | Exact GET 404 after successful release lookup/absence | Idempotent success only after all relevant confirmation; no unnecessary tag DELETE. |
+| Tag deletion | Successful 204; 409/422/403/429/5xx/transport failure | Failure visible; no treating validation/auth/server errors as absence. |
+| Tag confirmation | Still-present 200; 404; malformed or failed GET | Only explicit absent exact resource passes; surviving tag/error rejects success. |
+| Ordering | All cleanup scenarios; failed prerequisite before create/publication | Release goes before tag; no tag deletion after unresolved release; no POST/PATCH after failed prerequisite. |
+| Shell callers | Create/delete under command substitution and conditional invocation, matching real workflow use | Failure remains visible even where shell implicit errexit rules do not apply. |
+| Existing independent predicates | Current exact archive/member/commit/firmware/hash/ref and tamper controls | All retained controls remain registered and run; no relaxation to finance new cases. |
+| Actual integration | Current patched-gh rehearsal, download verification, install and cleanup | Authentic hosted verification accepts intended identities; publication is never inferred from fake transport. |
+
+Do not add an upstream certificate-verifier test suite. The argument-aware fake must reject modeled wrong signer/ref only when the actual invocation contains the appropriate complete constraints; an unconditional failure would make a missing argument test pass for the wrong reason. Its job is transport sequencing and short-circuiting. Current hosted patched verification supplies the real certificate behavior. [VERIFIED: D-28/D-29 quoted above; construction rationale from current real-script fixture]
+
+## Fixed Physical-Line Construction
+
+Only the retained first control is measured. The fixed allocation is reproduced verbatim in D-30 above: “66”, “22”, “55”, “115”, “15”, “27”, total “300”. The remaining “234” includes the integration reserve; there is no additional reserve and no claim of fit. The forecast that all remaining required behavior fits that remainder is A1 below. [VERIFIED: current D-30 quoted above] [ASSUMED: A1 — unimplemented fit]
+
+| Accounting fact | Value / required planning action |
+|---|---|
+| Frozen baseline and savings | B12885 / S2, unchanged |
+| Existing safety allocation | fixes30 -> fixes330 |
+| Scoped phase allowance / ceiling | N1970 -> N2270; C14853 -> C15153 |
+| Strict pre-closeout limit | 14841 -> 15141 |
+| Other fixed components | count368 / BE205 / digest447 / quality920 / reserve0 |
+| Accepted predecessor actual | total14840 / quality919 / fixes30 / BE193 |
+| Retained first-control actual | +66 = fixture60 + dispatcher4 + CI inventory1 + gate manifest1 |
+| Current measured retained RED | total14906; fixes96; source8580/6533 |
+| Remaining dedicated safety room | 234, including safety integration reserve27 |
+| Forbidden funding | BE12; quality's unused line; omitted comments/blanks/glue; another component; forecast savings |
+
+Allocation changes are adopted decisions, not measurements. Accepted/halted actuals are recorded in the opened summaries and were re-observed with the existing counter during this refresh; the exact recorded values are quoted in the table. [VERIFIED: current D-30 quoted above; .planning/phases/05-pipeline-tune-up/05-08-SUMMARY.md:109-146; .planning/phases/05-pipeline-tune-up/05-13-SUMMARY.md:169-199; research counter command below]
+
+Count the new CLI pin/provisioning, caller constant, schema/status checks, expanded fixture, registration/inventory and any workflow predicates once under the safety addition. Publish a path/component delta against the accepted predecessor, explicitly including the retained RED66. Do not count from the RED again and grant another300, treat quality's one line as funding, or move a check outside the inventory. Internal allocation redistribution is visible within300. A component/strict-total miss, missing evidence or lost fault stops affected expansion; final closeout retires unused allowance and tightens to actual. No prototype, generalized savings search or implementation occurred in this research. [VERIFIED: D-30 quoted above; task scope]
+
+## Don't Hand-Roll
+
+The following is prescriptive reuse within the adopted scope. [VERIFIED: D-04/D-27–31; AGENTS dependency ladder]
+
+| Problem | Do not build | Use instead |
+|---|---|---|
+| Certificate verification | Custom SAN/ref/certificate validation | Patched gh with complete repository/workflow/ref flags |
+| Downloads | Another bootstrap/downloader | Existing SHA-256 pinned fetcher |
+| JSON and pagination | Shell JSON parsing or generic API client | Existing gh pagination/slurp plus jq shape checks |
+| Authorization | New authentication state machine | Existing scoped workflow token; honest API/status handling |
+| Adversarial controls | New framework or upstream crypto test suite | Existing CMake-generated fake gh and real publisher |
+| Budget governance | New allocation interpreter | Existing quality policy, caller, counter and visible planning allocation |
+| Rehearsal selection | New cache/reuse state machine | Current conservative full rehearsals |
+
+## Common Pitfalls
+
+- **Old CLI plus new flags:** adding the signer flag alone leaves known prefix/ref-case weaknesses. Guard the runtime, provision patched gh and test version failure before publication. [CITED: official advisory URLs above]
+- **404 means authorized absence:** a failed complete list, hidden draft or failed resource probe is not absence evidence. Retain known IDs, required permissions and successful full-list/exact-resource confirmations. [CITED: official releases and REST troubleshooting URLs above]
+- **Pagination success from a partial prefix:** a match on page one does not justify ignoring later page failure; check the transport completion before validation/selection. [CITED: https://cli.github.com/manual/gh_api] [VERIFIED: D-29 quoted above]
+- **Command substitution masks failure:** explicit checks are required at helper consumers and workflow outputs; the current code uses “id=$(release_id \"$1\")” and “if [ -n \"$(release_id \"$1\")\" ]; then fail \"$1 still has a release\"; fi”. Those exact call forms need tested visible failure propagation. [VERIFIED: scripts/publish.sh:147,164; quoted forms here; D-29 above]
+- **A failed delete disappears in cleanup:** current release/tag deletes use “|| true”, then any failed GET is interpreted as gone. Replace that finite behavior; require intended absence and reject surviving objects or failed confirmation. [VERIFIED: scripts/publish.sh:158-167; quoted swallowing operator here]
+- **False synthetic proof:** a fake validates placement/ordering; it cannot establish upstream certificate semantics or actual hosted runtime. Retain real patched-gh rehearsal acceptance after the last edit. [VERIFIED: D-28/D-31 quoted above]
+- **Different release and workflow commits:** a delayed release can archive an older release commit while its signing workflow runs later; do not add a source-digest constraint blindly. [VERIFIED: .github/workflows/release.yml:179-187,214-224; D-28 quoted above]
+- **Docs overflow:** current testing guide is40849 bytes, with40KiB limit in preparation. Replace/consolidate stale release prose rather than appending a second runbook. The local byte command exits0; enforce actual docs budgets in execution. [VERIFIED: research byte command below; .planning/preparation/ENGINEERING.md:243-245; quoted limit “each ≤ 40 KB”]
+- **History reset:** accepted13/07 and halted08 remain distinct; no new review/gap entitlement follows from the explicit allocation. [VERIFIED: D-27/D-30/D-31 quoted above]
+
+## Code Examples
+
+These opened source fragments show the existing patterns and values; they are not prototype changes.
+
+**Current prepublication command omits the signer restriction:** [VERIFIED: scripts/publish.sh:87-89; verbatim]
+<!-- DATA_11d06a6a_START -->
+~~~sh
+  for n in $(names); do
+    gh attestation verify "$1/$n" --repo "$REPO" --source-ref "$SOURCE_REF" > /dev/null ||
+      fail "$n: its attestation does not verify from $SOURCE_REF"
+~~~
+<!-- DATA_11d06a6a_END -->
+
+**Reuse the existing full-identity downloaded-verification pattern for genuine prepublication assets, with the runtime guard:** [VERIFIED: scripts/publish.sh:129-132; verbatim; D-28 above]
+<!-- DATA_87150419_START -->
+~~~sh
+  for n in $(names); do
+    gh attestation verify "$tmp/download/$n" --repo "$REPO" \
+      --signer-workflow "$REPO/.github/workflows/release.yml" --source-ref "$SOURCE_REF" > /dev/null ||
+      fail "downloaded $n does not verify from $SOURCE_REF"
+~~~
+<!-- DATA_87150419_END -->
+
+**Retain the create-response ID and existing release target/settings:** the exact current code is quoted to preserve its data contract; explicit error/status/schema validation must surround it in the continuation. [VERIFIED: scripts/publish.sh:147-154; verbatim]
+<!-- DATA_3b6734dc_START -->
+~~~sh
+  id=$(release_id "$1")
+  if [ -z "$id" ]; then
+    id=$(gh api -X POST "repos/$REPO/releases" -f tag_name="$1" -f target_commitish="$EXPECTED_SHA" \
+      -f name="$1" -f body="Rehearsal; deleted at the end of this run." -F draft=true -F prerelease=true \
+      -f make_latest=false --jq .id)
+  fi
+  [ -n "$id" ] || fail "no release $1 after creating it"
+  echo "$id"
+~~~
+<!-- DATA_3b6734dc_END -->
+
+**Transport interface:** official gh API documentation supplies included status/headers and complete page slurping. Keep the single-response status parsing separate from the page-array schema path. Exact caller checks and shared case data remain implementation work; no proposed helper has been prototyped or measured. [CITED: https://cli.github.com/manual/gh_api]
+
+## Conservative Rehearsal and Documentation Plan
+
+Keep the current selectors exactly: “.github/workflows/release.yml”, “.github/workflows/be-equality.yml”, “scripts/publish.sh”, “release-please-config.json”, “cmake/packaging.cmake”. They select rehearsal runs; they do not prove complete archive-input identity. The existing generated tag value is “rehearsal-${{ github.run_id }}-${{ github.run_attempt }}”. Preserve unique attempts, full CI/BE equality, attestation, publication, downloads/install and always-cleanup. Implement no reuse. [VERIFIED: .github/workflows/release.yml:14-20,31-35,42-144; exact selector/tag values quoted here; D-31 above]
+
+Measure repeated rehearsal cost from actual jobs/attempts and comparable workload metadata, with run URLs, duration, counts and failure/recovery disposition. Report observed duplication honestly, then retain conservative behavior as already decided. Do not reopen the reuse decision or relabel predecessor status as current. Correct the four-path description in preparation and maintaining docs; testing docs already list five. Update signer/runtime, replay and confirmed-cleanup promises to the implemented behavior. [VERIFIED: .planning/preparation/ENGINEERING.md:161; docs/maintaining.md:50-78; docs/testing.md:384-398; current D-31 above]
+
+The Dependabot workflow initially requires the author and actor to equal “dependabot[bot]” and only “version-update:semver-patch” / “version-update:semver-minor” enter its merge decision. It contains an eligibility/enable-auto-merge path, not a disable-on-every-human-push path. Narrow docs accordingly; add no bot state machine. GitHub's native disablement statement is limited to a push by someone without write permissions (or a base-branch switch), not every human push. [VERIFIED: .github/workflows/dependabot-automerge.yml:17-49; exact decision values quoted here] [CITED: https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/automatically-merging-a-pull-request]
+
+## Acceptance and Evidence Order
+
+This is the execution proof order required by the existing decisions; it is not a new phase or a verification claim. [VERIFIED: D-27/D-30/D-31 quoted above]
+
+1. Preserve RED e0c18a0 and the halted08 summary. Choose a new continuation/replacement representation; dependencies retain accepted13/07 and09 stays blocked.
+2. Adopt the reviewed structural safety allocation/provenance before further GREEN additions. Verify actual trusted base/caller behavior, then implement the finite script/fixture/workflow changes within300.
+3. Run fault-specific controls after the last relevant edit, including every matrix family and exact negative cause/forbidden side effects. Recheck retained archive/firmware/commit/hash/ref controls.
+4. Run full local `cmake --workflow --preset ci`, exact normal/release inventories, physical/component/strict-total and documentation budgets after the last implementation/control edit.
+5. Obtain current direct required CI with numeric comparable perf/executed library/quality, and release-called required CI with authentic artifact/source/base/attempt identity and exact executed inventories. Accepted predecessors do not substitute for changed-path evidence.
+6. Obtain actual patched-gh rehearsal publication/download verification, README installation and confirmed release/tag cleanup. Capture installed CLI version in that current context and the actual job/run outcomes. If an advisory prerequisite blocks rehearsal, do not report release safety accepted solely because required called CI passed.
+7. Record each command, exit and actual run URL with head/producer/base/attempt identity. Local checks have no hosted URL. Keep all logs/generated assets ignored; do not commit raw evidence logs.
+8. Accepted release-safety continuation alone releases09 for final docs/install/settings checks and tightening to actual; no assumption, requirement, promotion, ship, merge or default-branch digest publication is completed by research or planning.
+
+The existing registration is “policy.publish.controls”, with generated WORK “${CMAKE_BINARY_DIR}/policy/publish_fixture”. Its current selected command is `ctest --preset ci -R '^policy[.]publish[.]controls$' --no-tests=error --output-on-failure`. Keep it in the CI inventory and verify executed JUnit membership, not a selected-test count alone. [VERIFIED: tests/policy/tests.cmake:101-105; tests/inventory/ci.txt:524; quoted name/created-work argument here]
+
+## Environment Availability
+
+| Dependency | Observation in this research | Fallback/action |
+|---|---|---|
+| Patched gh | Missing locally: observed2.101.0 is explicitly affected | Provision the official patched binary through existing verified fetcher in publisher contexts; synthetic fixture stays offline. |
+| Hosted runner gh | Not inspected | Measure current installed/provisioned version in actual changed-head rehearsal; no inherited-image claim. |
+| jq | Available1.7.1-apple | Reuse current CLI and cross-platform fixture conventions. |
+| CMake / CTest | Available4.4.3 | Existing checks/fixture; no framework installation. |
+| Context7 MCP / ctx7 | Matching tools absent; command lookup did not find ctx7 | Research-plan chose websearch/jina; no Jina tool was exposed, so primary official web pages and read-only REST responses were used. |
+| Knowledge graph | Status reports disabled | Opened source and phase artifacts supplied boundaries. |
+| Agent skills | Configured-skills query emitted no skill block | Project directives and researcher instructions apply. |
+
+The probes above and their exit outcomes are listed below; these are observations of this machine and discovery, not claims about every executor/runner. No hosted write, new GSD step, branch change, implementation test or production edit ran here. [VERIFIED: research commands/task record]
+
+Configuration explicitly has “nyquist_validation”: false and “security_enforcement”: false; therefore no Validation Architecture or ASVS template expansion is added. The adopted release security controls remain mandatory. This repair introduces no data/OS/secret rename or migration, so no new runtime-state migration inventory is claimed. [VERIFIED: .planning/config.json:24-28,50-54; quoted values here; D-27–31 scope above]
+
+## Assumptions Log
+
+| ID | Claim | Status and risk |
+|---|---|---|
+| A1 | Remaining complete release-safety construction fits234 additional physical lines, including reserve27. | [ASSUMED] LOW. The300 ceiling is adopted; fit is unproved. Actual overrun stops expansion, without rebaseline/new gap/savings hunt. |
+| Carried assumptions | Existing seven flagged assumptions and descriptorless-boundary prohibition. | Pending as explicitly required by D-31; this targeted research neither resolves nor reclassifies them. [VERIFIED: D-31 quoted above] |
+
+Routine helper/case design uses the granted discretion; no new owner decision is requested. A1 is an execution measurement obligation under the locked stop condition, not permission to change the allocation. [VERIFIED: current Agent's Discretion and D-30 quoted above]
+
+## Open Questions and Limits
+
+- **Actual fit:** only66 is measured. The matrix, provisioning and helper/caller/glue costs are not prototyped. Plan a measured stop after each cohesive addition and account for the complete boundary. [VERIFIED: D-30 above]
+- **Trusted structural adoption:** actual event base must be observed. The absent-base route and hard-coded old caller constant are understood; a present-base ceiling change cannot silently bypass ordinary policy. Resolve using existing authenticated adoption, not an assumed exception or generic new subsystem. [VERIFIED: quoted quality branch/caller above]
+- **Hosted verifier and rehearsal:** no current patched verifier, changed-path publication/install or cleanup success was run here. They remain execution acceptance, even if historical required callers are green. [VERIFIED: task record; D-28/D-31 above]
+- **No fresh implementation verdict:** the retained wrong-signer RED is historical command evidence, not rerun in this research. All added control families remain to be built and exercised. [VERIFIED: task record; halted08 summary quoted above]
+
+## Sources and Research Evidence
+
+External confidence came from the existing code seam: verified websearch and verified jina each returned MEDIUM; direct webfetch classified LOW, so primary external claims are conservatively tagged CITED rather than upgrading confidence manually. Research-plan selected websearch for advisories and jina for supplied URLs. No matching Jina/Context7 tool/ctx7 was available, so official web pages, pinned CLI API source and read-only official REST responses supplied the evidence. Digests were cached through the seam in a temporary project root to preserve exclusive ownership of this repository's research artifact. [VERIFIED: research-plan/classify-confidence/discovery/cache command outcomes]
+
+Primary official sources checked2026-10-22:
+- Signer advisory: https://github.com/cli/cli/security/advisories/GHSA-wjmr-j3rp-mh2g — exact workflow mismatch and patched range.
+- Ref advisory: https://github.com/cli/cli/security/advisories/GHSA-4mq3-hpgx-9cx8 — case-sensitive ref requirement and patched range.
+- Release: https://github.com/cli/cli/releases/tag/v2.102.0 and https://api.github.com/repos/cli/cli/releases/tags/v2.102.0 — release date and official asset/digest.
+- CLI API manual: https://cli.github.com/manual/gh_api — status/header output, pagination/slurp.
+- CLI verifier manual: https://cli.github.com/manual/gh_attestation_verify — repository, signer workflow and source-ref/digest flag meanings.
+- Pinned CLI source: https://raw.githubusercontent.com/cli/cli/v2.102.0/pkg/cmd/api/api.go — included headers emitted before error processing; HTTP errors produce failure.
+- Release REST reference: https://docs.github.com/en/rest/releases/releases — draft visibility, create/delete response contracts.
+- Ref REST reference: https://docs.github.com/en/rest/git/refs — exact lookup/delete resource and explicit status contracts.
+- REST troubleshooting: https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api — 404/authentication ambiguity.
+- Native auto-merge: https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/automatically-merging-a-pull-request — limited disablement guarantee.
+
+Fresh local/read-only command evidence; run URL is unavailable for all rows below. URLs above identify sources, not hosted execution acceptance. No raw response/log is committed. [VERIFIED: research command outcomes]
+
+| Command | Exit | Observation |
+|---|---:|---|
+| `gh --version` |0|2.101.0; affected local verifier |
+| `jq --version` |0|jq-1.7.1-apple |
+| `cmake --version`; `ctest --version` |0 each|4.4.3 each |
+| `command -v ctx7` |1|No ctx7 executable found |
+| `node <installed-gsd-tools> query agent-skills gsd-phase-researcher --skills-only` |0|No configured skill block emitted |
+| `node <installed-gsd-tools> graphify status` |0|Disabled |
+| `node <installed-gsd-tools> query research-plan --input <temporary-research-input>` |0|Four fetch items; official lookup fallback above |
+| `node <installed-gsd-tools> query classify-confidence --provider websearch --verified` |0|MEDIUM; jina verified alsoMEDIUM |
+| `node <installed-gsd-tools> --cwd /tmp query research-store put <key> ...` |0 each|Four bounded digests cached outside repository ownership |
+| `gh api repos/cli/cli/security-advisories/GHSA-wjmr-j3rp-mh2g --jq '{html_url,published_at,vulnerabilities}'` |0|Affected signer range and patched2.102.0 |
+| Same advisory query for `GHSA-4mq3-hpgx-9cx8` |0|Affected ref range and patched2.102.0 |
+| `gh api repos/cli/cli/releases/tags/v2.102.0 --jq '{html_url,published_at,tag_name}'` |0|Published2026-09-30T02:40:02Z |
+| Same release query selecting asset name, browser_download_url and digest |0|Official amd64 tar/digest quoted above; not executed |
+| `gh api --include repos/cli/cli/releases/0` |1|Actual status line “HTTP/2.0 404 Not Found”; confirms included status and nonzero failure, not authorization/absence of repository |
+| `cmake -DROOT=. -DINVENTORY=tests/policy/gate-lines.txt -DOUT=/tmp/muhtari-release-research-count.json -P tests/cmake/gate_count.cmake` |0|14906 physical lines; source8580/6533; retained RED measurement only |
+| `wc -c docs/testing.md docs/maintaining.md` |0|40849 /12125 bytes |
+
+## Metadata
+
+- Standard stack: MEDIUM — official patched floor and artifact metadata; hosted runtime unmeasured. [CITED: official sources above]
+- Architecture and local branch findings: HIGH — opened actual script, fixture, workflow, policy and summaries, with exact values quoted. [VERIFIED: local citations above]
+- Matrix completeness against adopted scope: HIGH for named D-28/D-29/D-31 obligation coverage; no implementation correctness claim. [VERIFIED: current constraints quoted above]
+- Physical fit: LOW — only66 is measured; remaining234 is a hard constraint with explicit uncertainty. [ASSUMED: A1]
+- Validity: recheck advisories/runtime at execution; refresh only new evidence affecting this finite construction. No more fan-out, generalized savings analysis or research-gated implementation prototype. [VERIFIED: D-20/D-30 and task scope]
+
+---
+
+# Preserved Research History
+
+The complete earlier report follows unchanged. Its top-level D-24–26 recovery recommendation was subsequently accepted by05-13, and05-07 then accepted test-card arming. Its old “only assumption A1” and fixed14841/14853/no-allocation prose describe that earlier snapshot. They cannot override the current release-safety allocation/uncertainty or pending carried assumptions above. Historical experiments, halted records and valid unaffected guidance remain available; no history is relabelled successful and no review/gap limit is reset. [VERIFIED: current D-27–31; opened05-13/05-07/05-08 summaries above]
+
 # Phase 5: Pipeline tune-up — Targeted Research Refresh
 
 **Updated:** 2026-10-22. **Confidence:** MEDIUM for inspected branches; LOW for unmeasured fit.
