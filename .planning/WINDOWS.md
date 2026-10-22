@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 9
+open_count: 11
 waived_count: 0
 fixed_count: 14
-total_count: 23
-last_updated: 2026-10-22T18:53:28.751Z
+total_count: 25
+last_updated: 2026-10-22T20:05:28.037Z
 ---
 
 # Broken Windows Ledger
@@ -38,6 +38,8 @@ last_updated: 2026-10-22T18:53:28.751Z
 | 21 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-12-PLAN.md |  | 05-12 Task2/3 full ci, generated-corpus library, POKEY audit and current direct/called hosted acceptance unrun after Task1 fit halt. | open |  | 2026-10-22T17:00:29.145Z |  |
 | 22 | 05 | lint-warning | .github/workflows/be-equality.yml | 63 | 05-13 broad diff check exits2 on inherited blank EOF lines in be-equality.yml:63, gate-lines.txt:148 and historical05-01-SUMMARY.md:421; recovery diff check exits0 and historical/scope constraints leave the broad check unresolved. | open |  | 2026-10-22T18:49:34.389Z |  |
 | 23 | 05 | unrun-verify | .github/workflows/ci.yml |  | Advisory release-called WASM run39832530253 attempt2/job120020998725 loses a pinned-tool fetch with curl35 before tests; its inventory and rehearsal/install/cleanup skip. Required called CI and quality plus authentic8 join pass; direct WASM passes. Overall Release remains failure; this is a tooling seed, not required recovery evidence. | open |  | 2026-10-22T18:53:28.751Z |  |
+| 24 | 05 | unmet-truth | tests/policy/publish.cmake | 50 | Release signer RED reaches synthetic PATCH; Task1 is halted at14906 lines/fixes96 against strict14841/fixes30 before production repair. | open |  | 2026-10-22T20:05:27.962Z |  |
+| 25 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-08-PLAN.md |  | Release-safety GREEN/full CI/hosted rehearsal, complete lookup-error controls and dependent Tasks2-3 remain unrun after the Task1 fixed-allocation stop. | open |  | 2026-10-22T20:05:28.037Z |  |
 
 ````json
 [
@@ -337,6 +339,32 @@ last_updated: 2026-10-22T18:53:28.751Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-10-22T18:53:28.751Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 24,
+    "kind": "unmet-truth",
+    "phase": "05",
+    "file": "tests/policy/publish.cmake",
+    "line": 50,
+    "description": "Release signer RED reaches synthetic PATCH; Task1 is halted at14906 lines/fixes96 against strict14841/fixes30 before production repair.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T20:05:27.962Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 25,
+    "kind": "unrun-verify",
+    "phase": "05",
+    "file": ".planning/phases/05-pipeline-tune-up/05-08-PLAN.md",
+    "line": null,
+    "description": "Release-safety GREEN/full CI/hosted rehearsal, complete lookup-error controls and dependent Tasks2-3 remain unrun after the Task1 fixed-allocation stop.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T20:05:28.037Z",
     "resolved_at": null,
     "milestone": "v2.0"
   }
