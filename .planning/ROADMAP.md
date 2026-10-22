@@ -34,7 +34,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 5/9 active plans complete; retained-store reconciliation05-12 and05-07/08/09 remain. Halted05-06/05-11 are superseded for scheduling, not completed.
+**Plans:** 5/9 active plans complete; bounded recovery05-13 and05-07/08/09 remain. Halted05-06/05-11/05-12 are superseded for scheduling, not completed.
 
 05-10 restored PowerPC ABI, and its authorized debug continuation fixed evidence-path handling and proved diagnostic-free native/BE 607+6 inventories, two-file equality and release-called required CI at immutable implementation 0901c877.
 05-03 is superseded for scheduling; its partial implementation and historical halt records remain.
@@ -58,22 +58,22 @@ Plans:
 **Wave 5** *(complete)*
 - [x] 05-05-PLAN.md — Require one quality ratchet over real observations and trusted baselines.
 
-**Wave 6** *(halted during Task1;0/3 tasks complete)*
-- [ ] 05-12-PLAN.md — Selectively reconcile six drafts into retained perf/compatibility stores, prove strict fit and current local/direct/called acceptance.
+**Wave 6** *(planned; no recovery acceptance yet)*
+- [ ] 05-13-PLAN.md — Apply the single D-24–26 consumer-owned numeric-read construction, retain compatibility/POKEY audit work and prove strict fit/current local/direct/called acceptance.
 
-05-12 restored the ALLOW contract and selected8/8 controls pass, but the final physical count14842/quality921 misses strict14841/quality920 by1. RED94d5c49 is committed; no GREEN or current full local/hosted acceptance exists. Task2/3 and07/08/09 remain blocked. Other components are unchanged; C14853 still has11 lines, and BE12 is not reserve. No additional allocation, control removal, savings hunt or automatic gap round is authorized. See05-12-SUMMARY.md; the following05-06/05-11 measurements remain history.
+05-13 replaces05-12 for scheduling only. Halted05-12 restored ALLOW and selected8/8 controls pass, but its14842/quality921 misses strict14841/quality920 by1. Preserve RED94d5c49, three drafts and0/3 history; no GREEN or current full local/hosted acceptance exists. D-24–26 authorize only moving typed numeric extraction from shared authentication/status to the two measured consumers. Remove3/add2 is an unmeasured forecast; compatibility/control/caller cost remains unproved. Other components remain count368/BE193/digest447/fixes30/reserve0; BE12 is not reserve. A semantic failure, measured miss or additional required counted cost stops affected expansion. No allocation, waiver, broader savings hunt, fallback construction, gap round or review-limit reset is authorized.
 
-05-06 and05-11 are superseded for scheduling by05-12. The latest halted draft measures14879/quality958:9 lines recovered from14888,38 above strict14841/quality920 and26 above C14853. The scope decision is resolved by CONTEXT D-09/D-10/D-21–23: domain-policy centralization/store retirement is deferred; ordinary aggregate guarantees and legacy semantic guards remain. A waived merged compatibility regression can become the next base's nonpass state; no immutable domain grants, anti-renewal, automatic restoration or unified policy is claimed.
+05-06/05-11/05-12 remain halted histories, now superseded transitively for scheduling by05-13. The earlier05-11 draft measured14879/quality958:9 lines recovered from14888,38 above strict14841/quality920 and26 above C14853. CONTEXT D-09/D-10/D-21–26 retains ordinary aggregate guarantees and legacy semantic guards while deferring domain centralization/store retirement. A waived merged compatibility regression can become the next base's nonpass state; no immutable domain grants, anti-renewal, automatic restoration or unified policy is claimed.
 
-Reconciliation must preserve the six drafts selectively and the committed RED/halt lineage, all seven original perf faults, unconditional bidirectional fresh ledger/results equality, aggregate controls and useful original-item authentication. Spent POKEY removal needs accepted-base/replacement evidence, not date alone. Quality920 and total14841 with unchanged other components remain mandatory alongside fixed B12885/S2/N1970/C14853; BE12 is not reserve. No new allocation, waiver, generalized savings hunt or automatic gap round is authorized. Full local ci/generated-corpus library and current direct numeric perf/library/quality plus release-called required CI/authentic joins must accept05-12 before later waves run. Earlier greens and eight selected cases are insufficient.
+Recovery must preserve current drafts selectively and committed RED/halt lineage, all seven perf cases plus four added assertions, exact forged-SHA rejection, unconditional bidirectional fresh ledger/results equality and aggregate controls. Authenticate original items before reduction; unavailable paths continue/reject before consumer numeric use. Spent POKEY removal needs accepted-base/replacement evidence, not date alone. Quality920,total14841 and unchanged other components remain mandatory alongside B12885/S2/N1970/C14853. After the last implementation edit, full local ci/generated-corpus library against verified origin/main and current direct numeric perf/executed library/quality plus release-called required CI, authentic exact9/8 joins and executed inventories must accept05-13 before later waves run. Earlier greens and selected8/8 are insufficient. D-12/D-13 arming/promotion, release and final tightening retain separate predicates.
 
-**Wave 7** *(blocked on accepted05-12)*
+**Wave 7** *(blocked on accepted05-13)*
 - [ ] 05-07-PLAN.md — Run unchanged D-12 fresh performance controls and D-13 conditional lane-promotion audit through retained authorities.
 
-**Wave 8** *(blocked on accepted05-12/05-07)*
+**Wave 8** *(blocked on accepted05-13/05-07)*
 - [ ] 05-08-PLAN.md — Correct release signer/API safety and measured rehearsal/recovery claims.
 
-**Wave 9** *(blocked on accepted05-12/05-07/05-08)*
+**Wave 9** *(blocked on accepted05-13/05-07/05-08)*
 - [ ] 05-09-PLAN.md — Verify docs/install/settings and tighten final counted acceptance.
 
 **Success criteria:**
@@ -178,7 +178,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
-| 5. Pipeline tune-up | 5/9 | Blocked on05-12 strict fit halt | — |
+| 5. Pipeline tune-up | 5/9 | Ready05-13; later waves blocked on acceptance | — |
 | 6. Retail cartridge boards | 0/TBD | Not started | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |

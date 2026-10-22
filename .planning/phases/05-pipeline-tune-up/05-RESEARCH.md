@@ -1,3 +1,190 @@
+# Phase 5: Pipeline tune-up — Targeted Research Refresh
+
+**Updated:** 2026-10-22. **Confidence:** MEDIUM for inspected branches; LOW for unmeasured fit.
+
+<user_constraints>
+## User Constraints — Current D-24–26
+
+The following current decisions are copied verbatim; they supersede conflicting older guidance preserved below. Full current CONTEXT.md remains authoritative. [VERIFIED: .planning/phases/05-pipeline-tune-up/05-CONTEXT.md:244-283; quoted below]
+
+<!-- DATA_60326604_START -->
+- **D-24:** The measured 05-12 result is new evidence for targeted replanning, not permission to resume its
+  failed task or reset review/gap limits. Its complete count is 14,842, quality921: one above the unchanged
+  strict 14,841/quality920 contract. Adopt exactly one identified construction for the next plan: keep the
+  shared original-observation authentication and status reader, but make the two measured-value consumers
+  own their typed numeric reads. Remove the helper's three-line conditional numeric-extraction block; read
+  the number once in the join's measured branch before extrema, and once in the aggregate after its
+  unavailable/required-status handling before bounds/reporting. Inspection forecasts three lines removed and
+  two added, a net one-line saving. This narrows helper responsibility without statement compression, deleted
+  comments or removed controls. It is not measured savings or accepted fit. Planning must name this finite
+  construction and its proof obligations; no calendar refactor, generalized savings search or fallback cleanup
+  is authorized. Restoring accepted inline authentication alone would lose five lines of net sharing savings
+  and leave the six-line perf-control addition unfunded; it is not an independently fitting fallback.
+- **D-25:** Authentication must still validate each original item's identity before a reduction can discard it.
+  Preserve exact artifact membership, trusted base SHA/policy, comparable environments, SHA/source/units/
+  producer/configuration/direction checks and worst-value reduction. The aggregate retains structural base
+  initialization and advisory-unavailable continues, then rejects every other non-measured status before
+  its typed numeric read. The join reads a number only inside its measured branch; its permitted unavailable
+  base gate_lines path never uses a stale value. Malformed measured numbers still fail before extrema or
+  bounds. Retain the exact forged-SHA diagnostic and all ordinary policy controls, all seven perf cases and
+  the added wrong-ROM, malformed-allowance, zero-HEAD and negative-BASE2 assertions. The accepted join already
+  authenticates original items; sharing adds no new security guarantee under its trusted source contract.
+  Preserve useful sharing for its measured construction cost, without claiming stronger evidence than exists.
+- **D-26:** Keep B12,885/S2/N1,970/C14,853, quality920 and strict14,841 with unchanged other components. BE12
+  remains unavailable as reserve; no permanent/temporary allocation, waiver or scope increase is adopted.
+  This discussion explicitly adopts only the named construction under the owner's recommendation delegation.
+  Preserve 05-06/05-11/05-12 as halted histories and retain all three current drafts selectively. The planner
+  must choose a continuation/replacement representation that preserves those facts and refreshes active
+  dependencies; discussion does not mark a plan complete or rewrite historical summaries. A semantic failure,
+  measured fit miss or additional required compatibility/caller/control cost stops affected expansion; do not
+  credit forecasts, silently absorb growth or launch another automatic gap round. Task2/3 costs remain unproved.
+  Acceptance after the last implementation edit still requires full local ci and generated-corpus library
+  against a verified base, physical/component and documentation budgets, current direct numeric perf/executed
+  library/quality, release-called required CI, exact authenticated nine/eight-artifact joins and executed
+  inventories. Record command, exit and actual run URL with producer/base SHA and attempt identities. Eight
+  selected cases and predecessor greens remain insufficient. Only accepted reconciliation releases 05-07/08/09;
+  arming, promotion, release and final tightening retain their separate existing predicates. Stop further
+  advisory fan-out now: security, test validity, architecture, delivery and cost reviews change no other decision.
+<!-- DATA_60326604_END -->
+</user_constraints>
+
+## Current Summary and Primary Recommendation
+
+Add one bounded recovery plan for the adopted consumer-owned numeric reads. Preserve completed work and halted05-06/05-11/05-12 histories, and refresh active dependencies. Keep all three dirty implementation drafts selectively; this research changes only this report. Do not resume the failed task, reset review/gap limits, centralize domains or launch another savings search. [VERIFIED: task authorization; D-24–26 quoted above]
+
+The current recorded halt is total14842/quality921, one above strict14841/quality920. B12885/S2/N1970/C14853 remain fixed; other actual components remain count368/BE193/digest447/fixes30/reserve0. BE12 is not reserve. Earlier14888/quality967 and14879/quality958 are historical construction counts. The accepted reference remains14841/quality920. [VERIFIED: .planning/STATE.md:45-89; .planning/phases/05-pipeline-tune-up/05-12-SUMMARY.md:111-147; quoted values here and above]
+
+Deleting three lines and adding two forecasts net−1 and14841/quality920 only if every other counted line stays unchanged. This is not measured savings or acceptance; remaining required compatibility/control/caller costs are unproved. [ASSUMED] The construction and stop condition are locked. [VERIFIED: D-24–26 quoted above]
+
+## Current Architectural Responsibility and Exact Read Placement
+
+| Responsibility | Owner | Proof obligation |
+|---|---|---|
+| Original-item authentication/status | Existing shared reader | Retain original SHA/source/units/producer/configuration/direction checks before reduction. Sharing adds no security guarantee over accepted original-item validation. [VERIFIED: D-25 quoted above] |
+| Measured numeric reads | Join measured branch; aggregate after status handling | Existing typed getter must reject malformed measured values before extrema/bounds/reporting. [VERIFIED: D-24–25 quoted above] |
+| Membership/base/environment/extrema | Existing join | Preserve exact artifacts, trusted policy/base, comparable environments and worst-value reduction. [VERIFIED: D-25–26 quoted above] |
+| Bounds and domain policy | Ordinary aggregate plus independent perf/compatibility judges/stores | No domain migration or new lifecycle framework. [VERIFIED: D-21–23 in current CONTEXT.md:207-242; current adopted scope] |
+
+The helper API is macro(quality_observation json sha fields expected_source). Keep its authentication and status read; remove only its conditional numeric extraction. The existing getter checks JSON TYPE before GET, rejects empty strings/nonnegative-integer violations, and sets its result in caller scope. Keep it unchanged. [VERIFIED: tests/cmake/quality.cmake:4-15,99-119; exact block/API quoted below]
+
+<!-- DATA_e8a35515_START -->
+~~~cmake
+# Validate the original observation before callers reduce or judge its value.
+macro(quality_observation json sha fields expected_source)
+  quality_get(observation "${json}" OBJECT metrics "${key}")
+  quality_get(built "${observation}" STRING sha)
+  quality_get(source "${observation}" STRING source)
+  if(NOT built STREQUAL "${sha}" OR NOT source MATCHES "^https://github[.]com/[^/]+/[^/]+/actions/runs/[0-9]+$" OR
+      (NOT "${expected_source}" STREQUAL "" AND NOT source STREQUAL "${expected_source}"))
+    message(FATAL_ERROR "quality: commit or source mismatch ${key}; sha=${built}, expected=${sha}")
+  endif()
+  foreach(field ${fields})
+    quality_get(a "${metric}" STRING "${field}")
+    quality_get(b "${observation}" STRING "${field}")
+    if(NOT a STREQUAL b)
+      message(FATAL_ERROR "quality: observation identity ${key}.${field}")
+    endif()
+  endforeach()
+  quality_get(status "${observation}" STRING status)
+  if(status STREQUAL "measured")
+    quality_get(value "${observation}" NUMBER value)
+  endif()
+endmacro()
+~~~
+<!-- DATA_e8a35515_END -->
+
+
+Add that same numeric-read line immediately inside the join's measured branch, before reading/comparing an old reduced value. The permitted unavailable base gate_lines branch copies the observation without numeric use. Do not place extraction above the status decision or synthesize a fallback number. [VERIFIED: tests/cmake/quality_join.cmake:55-70; exact branch quoted below]
+
+<!-- DATA_e7b8799c_START -->
+~~~cmake
+    foreach(side current base)
+      set(expected_sha "${EXPECTED_SHA}")
+      if(side STREQUAL "base")
+        set(expected_sha "${BASE_SHA}")
+      endif()
+      quality_observation("${${side}}" "${expected_sha}" "units;producer;configuration;direction" "${SOURCE}")
+      if(status STREQUAL "measured")
+        string(JSON old ERROR_VARIABLE missing GET "${joined_${side}}" metrics "${key}" value)
+        # Preserve the worst actual value; the existing judge owns all threshold decisions.
+        if(NOT missing AND ((direction STREQUAL "ceiling" AND value LESS old) OR (direction STREQUAL "floor" AND value GREATER old)))
+          continue()
+        endif()
+      elseif(NOT side STREQUAL "base" OR NOT key STREQUAL "gate_lines" OR NOT status STREQUAL "unavailable")
+        message(FATAL_ERROR "quality_join: required evidence ${lane}.${key}")
+      endif()
+      string(JSON joined_${side} SET "${joined_${side}}" metrics "${key}" "${observation}")
+~~~
+<!-- DATA_e7b8799c_END -->
+
+
+In the aggregate, retain structural initialization and advisory-unavailable continues, then reject every other non-measured status. Add the same typed numeric read immediately after those branches, before bounds/reporting. Neither unavailable path may consume a stale prior value. [VERIFIED: tests/cmake/quality.cmake:214-236; exact branches quoted below]
+
+<!-- DATA_f252d2e1_START -->
+~~~cmake
+  foreach(input OBSERVATIONS BASELINE)
+    set(sha "${EXPECTED_SHA}")
+    if(input STREQUAL "BASELINE")
+      set(sha "${BASE_SHA}")
+    endif()
+    quality_observation("${${input}}" "${sha}" "units;producer;configuration" "")
+    if(input STREQUAL "BASELINE" AND absent AND key STREQUAL "gate_lines" AND
+        DEFINED INITIAL_GATE_CEILING AND bound EQUAL INITIAL_GATE_CEILING AND status STREQUAL "unavailable")
+      message(STATUS "quality: gate_lines structural initialization ${bound}; pre-policy base")
+      continue()
+    endif()
+    if(status STREQUAL "unavailable" AND availability STREQUAL "advisory")
+      quality_get(gap "${observation}" STRING reason)
+      message(STATUS "quality: ${key} unavailable (${gap})")
+      continue()
+    elseif(NOT status STREQUAL "measured")
+      message(FATAL_ERROR "quality: required evidence ${key}")
+    endif()
+    if(input STREQUAL "OBSERVATIONS" AND ((direction STREQUAL "ceiling" AND value GREATER bound) OR
+        (direction STREQUAL "floor" AND value LESS bound)))
+      message(FATAL_ERROR "quality: measured regression ${key}: ${value}, ${direction} ${bound}")
+    endif()
+    message(STATUS "quality: ${key} ${input} ${value} ${units}; ${direction} ${bound}; ${availability}; ${source}; reason=${new_${key}}")
+~~~
+<!-- DATA_f252d2e1_END -->
+
+
+Installed official CMake help confirms macro caller-scope expansion and JSON TYPE versus converted GET semantics. No newer feature/dependency is required. [CITED: cmake --help-command macro and cmake --help-command string, exit0; https://cmake.org/cmake/help/v4.3/command/macro.html; https://cmake.org/cmake/help/v4.3/command/string.html]
+
+## Current Finite Construction and Acceptance Obligations
+
+1. Remove only the three-line helper conditional and add the two consumer reads. Preserve the exact forged-SHA control draft, authentication, all comments/controls, ordinary policy logic and meaningful branch ordering. No calendar refactor, inline-authentication fallback or fallback cleanup. [VERIFIED: D-24–25 quoted above]
+2. Preserve all ordinary aggregate introduction/base/from/to/grant/calendar/expiry/renewal/conversion/actual-value controls. Preserve the exact observed/expected forged-SHA diagnostic and whitespace tolerance. The existing equal-valued fixture does not prove a smaller lane hidden by extrema; leave that claim as the explicitly deferred tooling seed. [VERIFIED: tests/policy/quality.cmake:6-13,154-180; current CONTEXT.md:492-495]
+3. Preserve exactly “allowed identical missing no_base plus_1_00 plus_1_01 unstable” and the four added wrong-ROM, malformed-allowance, zero-HEAD and negative-BASE2 assertions. Keep exact+1.00/+1.01 arithmetic/verdicts, unstable/missing/nonpositive/NO_BASE, current/expired matching allowance and armed/report-only semantics. [VERIFIED: tests/perf/tests.cmake:20-55,68-73; tests/cmake/perf_compare.cmake:21-95; quoted registered values here]
+4. Measure full physical and component deltas after controls/glue/callers. Require quality920 and strict14841 with unchanged other components, as well as C14853. A successful counter exit measures size; it does not accept fit. Semantic failure, measured miss or additional required cost stops affected expansion. No forecast credit, BE transfer, waiver, allocation increase or automatic gap round. [VERIFIED: D-26 quoted above]
+5. Carry forward historical05-12 Tasks2–3 without claiming them completed: retained compatibility equality/lifecycle controls, POKEY accepted-base/replacement audit, truthful authority docs and actual local/direct/called acceptance. Their full cost remains unproved. [VERIFIED: .planning/phases/05-pipeline-tune-up/05-12-PLAN.md:134-182; 05-12-SUMMARY.md:163-186]
+
+Compatibility retains unconditional fresh key/status/evidence equality in both directions before its trusted-base pass/legacy-allowance check. A waived merged regression can become the next base's nonpass state; no immutable domain grants, anti-renewal, automatic restoration or unified central policy. A valid allowance never excuses fresh mismatch. Preserve library's fresh results, verified BASE/ALLOW wiring and flipped-row self-test; change judge/caller only for a reproduced retained-contract violation. [VERIFIED: tests/cmake/compat_ratchet.cmake:30-94; tests/compat/library.cmake:123-148; D-23 in current CONTEXT.md:230-242]
+
+The spent POKEY row remains; audit accepted reference/current verified base and actual generated-corpus replacement pass evidence before removal. Expiry date alone proves no retirement; never renew it. Current row is “7800basic-0.41/pokey title@120=8fed977457666af8e363f6bd4e5f37375e1f457d67156ef326042fc684f1ed9e 2026-11-19”; current replacement is “title@120=dcef4b423da52d04a824def3dfa1f0167c5b9e5bdfbf5af55906d21b46464244”, status “pass”, evidence “dcef4b423da52d04”. Presence of those strings is not completed replacement proof. [VERIFIED: tests/compat/allow.txt:8; tests/compat/ledger.csv:23; D-23/D-26]
+
+Production perf already supplies retained ALLOW with ROM/HEAD/BASE1/BASE2/ARMED/NO_BASE; keep numeric first-parent measurements, equal paths, stripped environment,60/360 subtraction, tools and duplicate base. Hosted library retains event-selected base and actual inventory check. Release-called CI checks out PR head, while direct perf measures the merge's first parent; preserve distinct producer/head/merge/base/source/attempt identities. [VERIFIED: .github/workflows/ci.yml:385-391,480-579,603-618; .github/workflows/release.yml:38-50; caller contracts read this session]
+
+The join's lane list is exactly “asan hygiene linux-arm64 linux-x64 macos-arm64 macos-x64 windows-arm64 windows-x64”; it conditionally adds “quality-perf”, with4 files per ordinary lane. Preserve exact current/base SHA, source, policy and comparable environment before reduction. Current direct acceptance requires9 authentic artifacts/numeric comparable perf; release-called requires8/perf intentionally absent. Use actual verified run/attempt identities and separate fresh ignored artifact directories. [VERIFIED: tests/cmake/quality_join.cmake:8-41,55-101; D-26 quoted above; quoted membership values here]
+
+After the final implementation edit require full local ci/generated-corpus library against verified available base, physical/component/doc budgets, current direct numeric perf/executed library/quality, release-called required CI, authentic joins and corresponding exact executed inventories. Record command, exit and actual URL with producer/base/attempt identities. Historical8/8 selected cases and predecessor greens cannot accept changed callers. Only accepted recovery releases05-07/08/09; arming/promotion/release/final tightening retain separate predicates. No owner UAT or current hosted URL is claimed. [VERIFIED: D-26 quoted above]
+
+## Current Research Method, Environment and Assumptions
+
+Existing tools were probed here: CMake/CTest4.4.3, Ninja1.13.2, gh2.101.0 (2026-09-15), jq-1.7.1-apple; version commands exited0. No package/install is proposed. Research-plan selected Context7; matching MCP/ctx7 was unavailable in discovery, so installed official help supplied macro/JSON semantics. Agent-skills returned no configured skills; graph status reported disabled. Configuration explicitly contains “nyquist_validation”: false and “security_enforcement”: false, so their template sections stay omitted while all adopted safety controls remain. [VERIFIED: current discovery/version/seam/help commands; .planning/config.json:24-54; exact false values quoted here]
+
+Runtime state: hosted runs/artifacts remain stored evidence, live settings/permissions remain external configuration, library corpus/base environment wiring remains, and generated JUnit/count/quality outputs need fresh execution after edits. No product-data, OS-registration or secret migration belongs to the named source edit; unrelated OS/runtime systems were not inspected. [VERIFIED: task scope and D-24–26 quoted above]
+
+Only assumption A1 is the static net−1 fit forecast. [ASSUMED] Branch/API placement is inspected; actual fit, focused malformed/unavailable behavior, remaining required cost and current full local/hosted acceptance remain unproved execution obligations. No assumption grants scope, budget or acceptance. [VERIFIED: D-24–26 quoted above]
+
+**Ready for targeted planning:** one bounded recovery plan. No implementation tests, construction, commits or acceptance runs were performed by this researcher. Earlier research below is preserved history; its old copied decisions/initialization/range/migration guidance cannot override current D-21–26 or fixed budgets. [VERIFIED: task record and current context]
+
+---
+
+# Historical Research Preserved Below
+
+The following report is the earlier research record. Its counts, source observations, feasibility experiments, tool/lane history and future-tense instructions describe that earlier pass. Reuse useful unaffected evidence; current decisions and bounded guidance above govern planning. In particular, B/S/N/C are now frozen, domain-policy migration is deferred, and no first-allocation task or generalized savings search is authorized. [VERIFIED: current CONTEXT.md D-21–26 quoted/referenced above]
+
 
 
 > Scope revision 2026-10-22: CONTEXT D-09/D-10/D-21–23 and revised TUNE-03 defer central performance/compatibility
