@@ -1,238 +1,284 @@
 ---
 phase: 05-pipeline-tune-up
 plan: "05"
-status: blocked
-resume-from-task: 2
+status: complete
 subsystem: infra
-tags: [cmake, quality, trusted-baselines]
+tags: [cmake, quality, trusted-baselines, ci]
 requires:
   - phase: 05-01
     provides: Audited physical inventory and fixed ceiling
   - phase: 05-04
-    provides: Reporting implementation and current allocation
+    provides: Reporting implementation and scoped allocation
 provides:
-  - Typed policy and measured-value judge with deterministic fault controls
-  - Partial hosted current and independent-base observation producers
-affects: [05-05, 05-06, 05-07, 05-08, 05-09]
+  - Typed policy and actual-value ratchet with bounded reasons and independent introductions
+  - Attributable native, hygiene, ASan and advisory test-card Ir observations
+  - Required exact-artifact aggregate in direct and release-called CI
+affects: [05-06, 05-07, 05-08, 05-09]
 tech-stack:
   added: []
-  patterns: [typed CMake JSON, unchanged event-base builds, separate observation artifacts]
+  patterns: [typed CMake JSON, unchanged event-base builds, authenticated artifact extrema]
 key-files:
   created:
     - tests/cmake/quality.cmake
     - tests/cmake/quality_evidence.cmake
+    - tests/cmake/quality_join.cmake
     - tests/policy/quality.cmake
+    - docs/quality.md
   modified:
+    - quality.json
     - .github/workflows/ci.yml
+    - .github/workflows/release.yml
+    - tests/cmake/ci_required.cmake
+    - tests/hygiene/tests.cmake
     - tests/policy/tests.cmake
     - tests/inventory/ci.txt
     - tests/policy/gate-lines.txt
+    - docs/testing.md
 key-decisions:
-  - Stop required integration when Windows producer evidence is absent; retain existing controls and do not seed incomplete bounds.
-  - Redistribute only within fixed N1970 to count368, BE205, digest447, quality850, reproduced fixes100 and reserve0; C14853 is unchanged.
-requirements-completed: []
-requirements-contributed: [TUNE-03, TUNE-04]
+  - Transfer only unused fixes70 to quality before Task3 additions; count368, BE205, digest447, quality920, fixes30 and reserve0 retain N1970 and C14853.
+  - Seed ordinary bounds from authenticated independent base observations; tighten archive bytes to the observed comparable-base minimum399937.
+  - Keep unavailable dimensions explicit and library, WASM, property and unarmed test-card Ir advisory.
+requirements-completed: [TUNE-03, TUNE-04]
 coverage:
   - id: typed-quality-judge
-    description: Actual floor and ceiling checks, trusted policy identities, independent introductions and bounded inherited reasons
+    description: Actual bounds, trusted policy identities, independent introductions and bounded inherited reasons fail closed
     requirement: TUNE-03
     verification:
       - kind: unit
-        ref: policy.quality.controls; full cmake --workflow --preset ci, exit 0
+        ref: cmake --workflow --preset ci; exit 0; policy.quality.controls within 609 regular and six archive tests
         status: pass
     human_judgment: false
-  - id: partial-independent-producers
-    description: Linux native and hygiene artifacts identify current and independently built trusted-base observations
+  - id: independent-producers
+    description: Complete current and unchanged event-base observations carry matching configuration and fixture identities
     requirement: TUNE-03
     verification:
       - kind: integration
-        ref: https://github.com/szTheory/muhtari/actions/runs/39694430448
+        ref: https://github.com/szTheory/muhtari/actions/runs/39706507168
         status: pass
       - kind: other
-        ref: gh run download 39694430448 -n quality-linux-x64 and -n quality-hygiene; exit 0
+        ref: gh run download 39706507168 and 39706506980 with quality-*; authenticated artifact joins; exit 0
         status: pass
     human_judgment: false
-  - id: all-lane-required-integration
-    description: Historical Windows halt before the repair; complete bounds and aggregate integration remain unfinished
+  - id: required-aggregate
+    description: Exact artifact membership and measured bounds are required by direct and release-called CI roll-ups
     requirement: TUNE-03
     verification:
-      - kind: integration
-        ref: https://github.com/szTheory/muhtari/actions/runs/39694430448/job/119548291959
-        status: fail
-      - kind: integration
-        ref: https://github.com/szTheory/muhtari/actions/runs/39694430448/job/119548291973
-        status: fail
-    human_judgment: false
-  - id: windows-producer-unblock
-    description: Both Windows native workflows and unchanged trusted-base builds complete after the scoped debug repair
-    requirement: TUNE-03
-    verification:
-      - kind: integration
-        ref: https://github.com/szTheory/muhtari/actions/runs/39699892851/job/119566353447
+      - kind: unit
+        ref: ci_required.cmake; 18 cases; exit 0
         status: pass
       - kind: integration
-        ref: https://github.com/szTheory/muhtari/actions/runs/39699892851/job/119566353467
+        ref: https://github.com/szTheory/muhtari/actions/runs/39706507168/job/119589728007
+        status: pass
+      - kind: integration
+        ref: https://github.com/szTheory/muhtari/actions/runs/39706506980/job/119592656905
+        status: pass
+      - kind: integration
+        ref: https://github.com/szTheory/muhtari/actions/runs/39706506980/job/119592816991
+        status: pass
+    human_judgment: false
+  - id: honest-reporting
+    description: Reports show actual units, effective bounds and reasons; called perf and unqualified dimensions remain explicit gaps or advisory
+    requirement: TUNE-04
+    verification:
+      - kind: unit
+        ref: policy.quality.controls validates positive unit reporting and fault-specific omissions, identities and regressions; exit 0
+        status: pass
+      - kind: integration
+        ref: Final direct and called quality job reports and authenticated advisory Ir artifact; exit 0
         status: pass
     human_judgment: false
 actuals:
-  tokens: 8077
-  tasks: 1
-  commits: 5
+  tokens: 21213
+  tasks: 3
+  commits: 20
 plan_head_before: 3c68002e0f85d063ec62e71408f5fa48966b8c0c
-plan_head_after: cf755c968b8a9e7f8c982be62fe3fcd67037a0ed
-duration: 14min
-completed: 2026-10-21
+plan_head_after: 51a3f9592bbb69355896ada41901a5818bfa1c9b
+duration: 45min continuation
+completed: 2026-10-22
 ---
 
 # Phase 5 Plan 5: Trusted quality ratchet Summary
 
-**The Windows digest blocker is repaired and automated native/current-base evidence
-passes. Task 2 remains incomplete and is ready to resume; Task 3 is unstarted.**
+**One required quality job applies typed bounds to real, independently based observations and rejects incomplete direct or release-called evidence.**
 
-Only Task 1 is complete. Task 2 has a tested adapter and partial independent hosted
-observations; its complete baseline and bound-seeding gate is unmet. Task 3 did not
-start. The blocked status preserves this partial record as incomplete in the scheduler.
-No metric was invented,
-no missing native leg was made advisory, and no existing control was removed.
+All three tasks are complete. Task1 and the accepted Windows digest repair were preserved.
+This continuation finished Task2 and Task3. Shared phase-wide requirements remain pending:
+the sibling-plan readiness check returns no ready IDs for TUNE-03/TUNE-04.
 
-## Tasks and commits
+## Performance and commits
 
-| Task | Status | Commits |
-|---|---|---|
-| 1: Typed policy and actual measurements | Complete | RED edd49c2; GREEN 3a02e6c |
-| 2: Real producers and independent base | Partial, resume here | RED 8ac740f; adapter e6d725f; initialization controls cf755c9 |
-| 3: Required aggregate | Not started | None |
+The measured continuation runs from the first recorded clock at 2026-10-22T01:08:48Z
+to closeout after 01:53 UTC, approximately45 minutes. The earlier14-minute partial halt
+and separately accepted Windows debug are historical work, not a new completed task.
 
-Both RED runs executed `policy.quality.controls` and failed its intended assertion,
-CTest exit 8. The first observed an accepted value11 against ceiling10; the second
-observed success with missing JUnit input. `check tdd-red-evidence` returned
-`RED_EVIDENCE_OK`, exit 0, for both ignored build records. Semantic inspection found
-executed assertions rather than syntax, fixture or discovery errors. GREEN replaced
-both temporary command interfaces; no placeholder interface remains.
+| Task | Task commits |
+|---|---|
+| 1: Typed judge and fault controls | RED edd49c2; GREEN 3a02e6c |
+| 2: Real producers and independent base | RED 8ac740f; adapter e6d725f; initialization cf755c9; adoption79e9e8c; strict archive adoption51a3f95 |
+| 3: Required aggregate and release wiring | ed31959; actual-unit/reason reporting d2426a2 |
 
-The judge checks numeric types, actual floor/ceiling equality and regression,
-metric removal, identity/availability changes, independent new-metric observations,
-commit/configuration mismatches, valid and inherited reasons, calendar dates,
-grant-to-expiry lifetime, future grants, renewal and waiver-to-baseline conversion.
-The structural gate initialization requires the caller's reviewed exact ceiling;
-it cannot initialize another metric or reset an existing gate metric. Root
-`quality.json` retains its original gate_lines policy during this halt.
+The ledger measures20 commits from its persisted before head to51a3f95. This includes
+the nine task commits above, historical handoff/docs commits and accepted Windows debug
+commits. It is not a narrated count of just this continuation. Actual tokens are
+ceil(84852 realized task-diff characters /4), on the estimate's scale, not harness tokens.
+Fourteen implementation/documentation files changed; allocation and execution metadata
+are recorded separately.
 
-## Original halt evidence
+## Behavior and trusted inputs
 
-`cmake --workflow --preset ci` — exit 0, **609 regular and six release/archive tests**.
-`cmake -DROOT=. -DBUILD=build/ci -DOUT=build/ci/quality.json -DSHA="$(git rev-parse HEAD)"
--DCONFIG=ci -P tests/cmake/quality_evidence.cmake` — exit 0. The adapter reuses
-`check_junit.cmake`, requires completed ABI/fuzz/title/archive judges and fatal-warning
-configuration, reads actual archive bytes, and invokes the physical counter. These
-are local observations, with source `local`, not falsely attributed hosted evidence.
+The judge checks floor/ceiling equality and actual regression, typed numeric values,
+metric removal, producer/configuration/unit/availability changes, independent introductions
+and exact reasons. Reasons have valid UTC calendar dates, nonfuture grants, at most60 days,
+nonexpired inherited expiry and exact key/from/to. Renewal and waiver-to-baseline conversion
+reject. Temporary gate growth requires a credible exit. Only the already reviewed exact
+structural ceiling can initialize missing pre-policy gate evidence; it cannot reset an
+existing gate metric or initialize an ordinary metric.
 
-`gh run view 39694430448 --json status,conclusion,jobs` and job-log API reads — exit 0.
-At inspection the run still had other jobs executing, but both Windows native jobs
-had completed with failure. Each `Build, test, package` step runs
-`cmake --workflow --preset ci-msvc`, exit **8**. The failed test is the pre-existing
-`policy.digest.controls`, at `tests/policy/digest.cmake:52`: `digest valid preview
-failed: no such file or directory`. The new quality controls pass on both Windows
-architectures. Their subsequent observation and independent-base steps do not run.
-The digest file is unchanged by this plan; its tooling failure is recorded as a
-seed, outside this executor's implementation scope. It is not weakened or converted
-into a new product requirement.
+Native, hygiene and ASan adapters reuse the completed JUnit inventory judge and actual
+ABI, fatal-warning, analyzer, sanitizer, fuzz/title and archive outputs. Zero findings
+require their real successful judges. Three validated archives supply actual byte totals.
+Per-lane compiler/system and fixture fingerprints bind current/base pairs. Event metadata
+selects the unchanged base; its Git commit and policy presence are checked independently.
+Candidate measurements cannot become their own introduction baseline.
 
-The same run successfully completed Linux x64/arm64 native producer jobs and hygiene.
-`gh run download 39694430448 -n quality-linux-x64 -D build/quality-hosted/quality-linux-x64`
-and the corresponding hygiene download — exit 0. The agent read their current/base
-JSON and source/configuration identities. Trusted event base is
-`65b360d1afd37b7dad9f94dcff497c85df84fd1d`; hosted candidate is
-`e6d725faef06b8753945795244ccf78eb1cb2f20`. Linux base reports 605 regular tests,
-12 ABI tests, four fuzz tests, three title tests, zero ABI/warning findings and
-261853 archive bytes; hygiene base reports24 tests and zero analyzer findings.
-Compiler/system and fixture fingerprints agree within each current/base pair.
-These partial measurements are not the six-platform policy baseline.
+The aggregate requires exactly six native artifacts plus hygiene and ASan, with exactly
+the four specified producer files per lane. It verifies event-base SHA/policy, current
+SHA, source run, types, identities and pair environments before keeping the worst value
+per bound. One existing typed judge owns threshold/reason decisions. A complete direct PR
+also requires its actual advisory Ir artifact. Release-called and push CI explicitly report
+unexecuted comparable Ir. The required roll-up checks exact dependency membership, including
+quality failures, omissions and wrongly skipped called quality. Planning-only exceptions
+and the existing title/perf exceptions remain tested. Both release callers grant the
+necessary read-only actions permission union.
 
-The adapter derives the baseline SHA from event metadata, verifies the Git commit,
-builds that unchanged tree with the same preset and adapter on the same runner,
-and keeps base outputs separate. Pre-policy absence is verified with `git ls-tree`;
-an empty policy is not a candidate-controlled override. Artifact uploads name
-exactly current/base JSON, trusted policy and base SHA, excluding the base worktree.
+## Independent baseline and archive calibration
 
-Release startup failure in this run is also expected unfinished integration:
-Task 2 added CI actions:read, while the explicitly planned release permission-union
-update belongs to Task 3 and has not run. No release-called success is claimed.
+Initial complete evidence is run39699892851, implementation1abc98a and actual merge
+011fb5b9d0286a311508d0097fd122663b2d6748, trusted base
+65b360d1afd37b7dad9f94dcff497c85df84fd1d. API artifact identities, SHA/source metadata,
+identical base policies and all eight environment pairs authenticate; download and checks
+exit0. The independent base measures native605, ABI12, fuzz4, title3, hygiene24,
+ASan593 and zero observed findings. These establish the ordinary count/finding bounds.
 
-## Windows repair and continuation
+The first archive ceiling399952 came from that independently rebuilt base. Superseded
+called run39705309624/job119585345059 correctly rejected it against a fresh unchanged
+base399937, while its candidate was399361. Comparable MSVC19.51.36260.0 WindowsAMD64
+and fixture fingerprints match. Other fresh independent bases399949/399953 demonstrate
+slight compressed-byte variation. The bound was tightened to the actual minimum399937,
+without adding slack, changing baseline identities or excusing a candidate regression.
+Final direct/called archive peaks399362/399365 are below it; their independent base peaks
+399948/399952 remain above it. Raw observations are retained without normalization.
 
-Debug acceptance: [CI 39699892851](https://github.com/szTheory/muhtari/actions/runs/39699892851)
-is completed success at implementation `1abc98a`, actual merge producer
-`011fb5b9d0286a311508d0097fd122663b2d6748`, trusted base
-`65b360d1afd37b7dad9f94dcff497c85df84fd1d`. Windows jobs 119566353447/119566353467
-each pass current609+6 and unchanged base605+6. `gh run download 39699892851
--p 'quality-*'`, job-log API reads and current/base metadata checks — exit0.
-Both artifact pairs have matching tool/fixture fingerprints and exact SHA/source identities;
-unavailable metrics retain reasons without numeric values.
+The archive bound covers the largest three-archive total across native platforms, rather
+than a separate growth percentage per platform. Existing archive-member, firmware and
+release predicates remain required. The base predates the audited gate inventory; only
+gate lines use the narrow fixed structural initialization.
 
-The retained control took 27.58s on x64 and 103.28s on arm64, passing the stricter193s
-limit. Final calibration `4af6e9b` changes only timeout/provenance to207s, from
-ceil(2 x103.28), and passes full local609+6 plus focused controls. Arm64 images
-20261013.183.4 (103.28s, run39699892851) and 20261018.189.1 (96.22s, run39699026057)
-remain separate provisional n=1 cohorts. No latest-calibration hosted completion is claimed.
+## Final acceptance evidence
 
-Task1 is preserved. Resume Task2 from its existing adapter, authenticate complete lane
-evidence and finish typed policy adoption/bound seeding before Task3. Root `quality.json`
-still has the pre-adoption gate record; direct new-judge replay rejects its missing
-availability field, so no aggregate acceptance is claimed. The prior silent base DLL-CRT
-failure and certificate-revocation fetch failure are retained as transient observations,
-not purported source fixes. See `.continue-here.md` and the resolved debug session.
+Implementation is51a3f9592bbb69355896ada41901a5818bfa1c9b on the existing phase branch.
 
-## Budget and checks
+- cmake --workflow --preset ci — exit0,609 regular tests and six release/archive tests.
+- cmake --workflow --preset hygiene — exit0,24 tests; the final shell/tree scan also exits0.
+- cmake -DCI_YML=.github/workflows/ci.yml -DJQ=jq -DREPORT_ONLY=wasm32,library -P tests/cmake/ci_required.cmake — exit0,18 cases. Configure-time omission mutations for BE and quality also reject.
+- cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake — exit0,19 files within unchanged budgets.
+- Counter,30 workflow timeout comments, focused actionlint and git diff --check — exit0.
+- gh run view 39706507168 — exit0, completed success; direct quality119589728007 and CI required119589874959 pass. [Direct CI](https://github.com/szTheory/muhtari/actions/runs/39706507168).
+- gh run view 39706506980 and attempt/job API reads — exit0; called quality119592656905, CI required119592816991 and Windows arm64 retry119591355796 pass on the same implementation. [Release-called CI](https://github.com/szTheory/muhtari/actions/runs/39706506980). Its broader rehearsal is separate from this plan's required-CI acceptance.
+- gh run download 39706507168 -p 'quality-*' -D build/quality-tight-final-direct and gh run download 39706506980 -p 'quality-*' -D build/quality-tight-final-called plus artifact metadata API reads — exit0. All nine direct/eight called artifacts authenticate. Direct producer SHA is merge0b7197e1576563394c3dabddc6a21a0675b85007; called producer SHA is the implementation SHA; both trusted bases are65b360d.
+- quality_join.cmake on the authentic called set with expected implementation/base/source and PERF_REQUIRED=OFF — exit0, explicitly unavailable comparable perf.
+- python3 build/quality-fault-replay.py build/quality-tight-final-direct 0b7197e1576563394c3dabddc6a21a0675b85007 https://github.com/szTheory/muhtari/actions/runs/39706507168 — driver exit0. The intact authentic set returns0; deleting the Windows arm64 artifact returns1 with exact-set rejection; changing a real warning observation to1 returns1 with measured-regression rejection.
 
-Original halt count was14499; repaired count is **14528/C14853**, source8580/6533,
-both ratios advisory. The29-line Windows repair uses reproduced fixes30/100 including
-the earlier one-line freshness fix; digest base scope447 is unchanged.
-Quality uses **607/850** incremental whole-file lines, including controls, policy
-registration, declarations and all workflow glue. Allocation is count368/BE205/
-digest447/quality850/fixes100/reserve0, totalN1970. The visible transfer before
-affected additions is count32 + digest203 + reserve70 + BE95 into quality400.
-BE actual193 fits205; digest447 and count368 retire unused allocations. No source
-padding, line golf, exclusion, new dependency, cap increase or lost control funds it.
+Direct test-card Ir is3837262 and both independently measured base repeats are3837262,
+with compiler/Valgrind identity, equal-path/warm-up configuration and source metadata.
+It remains advisory and unarmed. Local checks have no hosted URL; the two linked runs
+provide final hosted equivalents. Build logs/evidence files stay ignored and uncommitted.
 
-Counter, `ci_required.cmake` (15 existing cases), timeout comments (29 jobs),
-`scripts/hygiene.sh --tree` and `git diff --check` — exit 0. These roll-up cases
-verify the unchanged roll-up, not the absent aggregate. `actionlint -shellcheck=''
--ignore 'label "ubuntu-26.04.*" is unknown' .github/workflows/ci.yml` — exit 0.
-Full actionlint additionally reports inherited shellcheck SC2017/SC2059 in the
-unchanged RetroArch pixel-control script; those are recorded as tooling seeds.
-No source rule or recurring control was relaxed. Evidence/logs stay uncommitted.
+The original Task1/Task2 RED records remain preserved: both named target assertions executed
+and failed intentionally, CTest exit8; the SDK classifier returned RED_EVIDENCE_OK,
+exit0. They were assertion failures, not discovery, syntax or fixture failures. Pipeline
+test/ci commit types retain the repository's no-product-release policy.
 
-## Deviations and unfinished work
+## Historical failures and retained gaps
 
-The required-evidence gate stopped original expansion; Windows current/base evidence
-is now restored. Independent bound selection remains unfinished. Additional metric bounds, comparable
-Ir artifact adaptation, aggregate artifact joins, aggregate omission/failure controls,
-release permission unions and documentation are unfinished. Existing library/WASM/
-property jobs remain advisory. Coverage, open crashes, backlog, historical duration
-and comparable Ir observations are explicit gaps, not numeric successes. The
-TUNE-03 boundary prohibition remains flagged and unresolved.
+Original run39694430448 stopped at the pre-existing Windows digest preview failure.
+Accepted repair run39699892851 restored Windows current609+6/base605+6 with unchanged
+trusted-base sources. The final207s timeout calibration and its103.28s/96.22s arm64
+observations remain preserved; this continuation did not reroute or weaken that control.
 
-No implementation placeholder, skipped test or product stub remains. Planned but
-unimplemented integration prevents this plan from being marked complete. The unrun
-hosted aggregate/all-lane verification is recorded in the cross-phase defect ledger.
+Final called run39706506980 attempt1 hit unchanged built.openbios at1.24s against1s,
+causing12 fixture-dependent tests not to run and native exit8. The missing artifact
+correctly failed the aggregate. After independent equality completed successfully,
+gh run rerun 39706506980 --failed — exit0 — retried the same commit. Attempt2 Windows
+current609+6/base605+6 and the dependent quality/roll-up pass. No timeout or source repair
+is claimed; the timing observation remains a tooling seed.
+
+Coverage, open crashes, backlog and comparable historical duration remain explicit gaps.
+Library, WASM and property observations remain advisory; no lane promotion is implied.
+Public compatibility means the executed public title predicates, not whole-library coverage.
+The descriptorless TUNE-03 boundary prohibition remains flagged/unverified for later
+phase acceptance. Shared TUNE-03/TUNE-04 remain pending outside this completed plan.
+
+No goal-blocking stub, intentionally skipped test or unrun plan verification remains.
+WINDOWS entry15 is fixed by final hosted acceptance. Existing unrelated open defects and
+tooling seeds are preserved, including the relative direct-budget invocation, older
+actionlint queue syntax and inherited shellcheck diagnostics. No dependency was installed
+to silence them.
+
+## Allocation and measured count
+
+Before Task3 additions the unused fixes70 transferred to quality850 ->920, leaving
+fixes30. This was written into the existing initialization/allocation authority first.
+Count368/BE205/digest447, reserve0, totalN1970 and C14853 did not change.
+
+| Component | Allocation | Actual incremental lines |
+|---|---:|---:|
+| Count/inventory |368|368|
+| BE relocation/equality |205|193|
+| Digest |447|447|
+| Quality, all controls/declarations/workflow glue |920|920|
+| Reproduced fixes |30|30|
+| Reserve |0|0|
+| Total |1970|1958|
+
+B12885 - S2 + actual1958 =14841 physical lines, within C14853. All new join code,
+controls, policy fields and embedded glue are counted as whole files. Full/authored
+source counts8580/6533 and ratios172.97%/227.17% are advisory. There is no source padding,
+line-budget exclusion, cap increase, new allowance or weakened safety control. Remaining
+BE12 is still its scoped allocation, not replenished reserve; final phase retirement and
+tightening belong to the later acceptance plan.
+
+## Deviations from Plan
+
+- [Rule2 - Missing critical integration] The narrow quality_join.cmake file supplies
+  exact artifact membership/provenance and extrema reduction, counted from creation.
+  It reuses quality_get and the existing judge instead of introducing a policy framework.
+- [Rule3 - Documentation budget] The testing page exceeded40KB after the additions.
+  Quality prose moved to docs/quality.md and the testing CI table/link was condensed.
+  The unchanged absolute-root CI budget check passes; no budget increased.
+- [Rule1 - Reporting bug] The judge displayed configuration in place of units.
+  A typed units read and positive report assertion fix that; active reason JSON is visible.
+- [Rule1 - Initialization evidence] Actual independent archive variation required a
+  tighter supported ceiling, not a baseline exception.51a3f95 applies399937.
+
+Authentication gates: none. No owner verification, downstream plan, new GSD step,
+settings mutation, ship or merge ran.
 
 ## Threat Flags
 
 | Flag | File | Description |
 |---|---|---|
-| threat_flag: trusted-base-filesystem | tests/cmake/quality_evidence.cmake | Reads event-selected Git trees and builds them in an isolated base directory; verifies SHA, source-root, compiler and fixture identity before comparison. |
+| threat_flag: trusted-base-filesystem | tests/cmake/quality_evidence.cmake | Reads and builds an event-selected verified Git base in a separate directory. |
+| threat_flag: artifact-join | tests/cmake/quality_join.cmake | Consumes exact same-run producer paths and validates SHA/source/configuration/environment before numeric reduction. |
 
 ## Next action
 
-Resume Task2 with `$gsd-execute-phase 5`, reading `.continue-here.md` first.
-Do not repeat completed Task1 or mark this partial plan complete. No downstream plan,
-phase-wide requirement completion, ship, merge, settings mutation or owner UAT ran.
+Continue the next unfinished plan in a fresh session with $gsd-execute-phase 5.
+This execution stops after its summary and sequential state/roadmap updates.
 
 ## Self-Check: PASSED
 
-All three created implementation/control files exist. All five task commits are
-ancestors of HEAD, and `check evaluation-scope --plan 05-05 --commits-only --raw`
-resolves those five commits, exit 0. The persisted ledger measures5 commits from
-the recorded before/after heads. There are no tracked deletions. This check confirms
-the preserved partial work and halt evidence; it does not certify unfinished tasks.
+All five created implementation/documentation files exist. All nine task commits
+are ancestors of HEAD; the evaluation-scope resolver finds the preserved plan
+history. The on-disk ledger measures20 commits between the recorded heads.
+Coverage classification and diff checks pass. No tracked file was deleted.

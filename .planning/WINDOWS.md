@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 2
+open_count: 1
 waived_count: 0
-fixed_count: 13
+fixed_count: 14
 total_count: 15
-last_updated: 2026-10-21T23:40:11.664Z
+last_updated: 2026-10-22T01:53:34.511Z
 ---
 
 # Broken Windows Ledger
@@ -29,7 +29,7 @@ last_updated: 2026-10-21T23:40:11.664Z
 | 12 | 05 | unrun-verify | .github/workflows/be-equality.yml |  | PowerPC archive inventory and same-head equality cannot complete while the preceding full normal ABI inventory fails. | fixed |  | 2026-10-21T18:33:05.691Z | 2026-10-21T20:21:17.934Z |
 | 13 | 05 | unmet-truth | .github/workflows/be-equality.yml | 66 | Complete native/PowerPC inventories pass, but hosted equality rejects relative evidence directories; absolute-path replay of the authentic pair passes. | fixed |  | 2026-10-21T19:22:57.834Z | 2026-10-21T20:21:18.042Z |
 | 14 | 05 | unrun-verify | .github/workflows/be-equality.yml | 38 | Temporary target diagnostic remains; its removal and complete final-head equality proof are unfinished at the mandatory recovery halt. | fixed |  | 2026-10-21T19:22:57.900Z | 2026-10-21T20:21:18.153Z |
-| 15 | 05 | unrun-verify | .github/workflows/ci.yml |  | Required typed bound adoption and hosted aggregate remain unfinished; Windows current/base producers are restored in run39699892851. | open | Task2 partial; Task3 unstarted. | 2026-10-21T23:40:11.664Z |  |
+| 15 | 05 | unrun-verify | .github/workflows/ci.yml |  | Required typed bound adoption and hosted aggregate remain unfinished; Windows current/base producers are restored in run39699892851. | fixed | Task2 partial; Task3 unstarted. | 2026-10-21T23:40:11.664Z | 2026-10-22T01:53:34.511Z |
 
 ````json
 [
@@ -222,10 +222,10 @@ last_updated: 2026-10-21T23:40:11.664Z
     "file": ".github/workflows/ci.yml",
     "line": null,
     "description": "Required typed bound adoption and hosted aggregate remain unfinished; Windows current/base producers are restored in run39699892851.",
-    "status": "open",
+    "status": "fixed",
     "reason": "Task2 partial; Task3 unstarted.",
     "recorded_at": "2026-10-21T23:40:11.664Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-22T01:53:34.511Z",
     "milestone": "v2.0"
   }
 ]
