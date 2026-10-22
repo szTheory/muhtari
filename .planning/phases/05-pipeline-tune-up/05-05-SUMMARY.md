@@ -282,3 +282,5 @@ All five created implementation/documentation files exist. All nine task commits
 are ancestors of HEAD; the evaluation-scope resolver finds the preserved plan
 history. The on-disk ledger measures20 commits between the recorded heads.
 Coverage classification and diff checks pass. No tracked file was deleted.
+The fresh classifier reports four auto-covered deliverables and zero errors;
+file existence and ancestry checks pass before any state advancement.
