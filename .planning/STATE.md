@@ -4,12 +4,12 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: Ready to execute05-14;05-09 blocked on accepted continuation;05-08 preserved halted0/3
-stopped_at: Phase05 targeted planning passed;05-14 continues release safety under D-27–31, then05-09; next execute-phase5, no implementation in planning
-last_updated: "2026-10-22T20:54:15.674Z"
+status: halted
+stopped_at: 05-14 halted1/3 at15152/safety312; Task1 accepted, Task2 draft retained,05-09 blocked
+last_updated: "2026-10-22T21:20:11.282Z"
 last_activity: 2026-10-22
-last_activity_desc: Phase05 targeted planning complete; independent checker and36-item coverage passed
-state_head: eccece2668fcbee3494240b01eacaa106451c6cc
+last_activity_desc: 05-14 halted1/3 at fixed-allocation gate
+state_head: c9b7f37e4b5a592a9ced5d40c0f3d281eabd3577
 progress:
   total_phases: 7
   completed_phases: 0
@@ -29,30 +29,41 @@ from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — READY TO EXECUTE
-Plan: 05-14 next;7 of9 active plans accepted
-Status: Ready to execute05-14;05-09 blocked on accepted continuation;05-08 preserved halted0/3
-Last activity: 2026-10-22 — Targeted research/planning and independent verification complete
+Phase: 05 (Pipeline tune-up) — HALTED
+Plan: 8 of 9 —05-14 partial1/3
+Status: Task2 fixed-allocation gate;05-09 blocked
+Last activity: 2026-10-22 —05-14 Task1 accepted, Task2 construction halted
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 7/9 Phase5 plans complete; 0/7 phases complete.
 Implementation: 05-01,05-02,05-10,05-04,05-05,05-13,05-07 complete. Halted05-06/05-11/05-12/05-08 stay0/3 histories, superseded only for scheduling.
-Two remaining plans are05-14 ->05-09. Only05-14 is ready;05-09 waits for actual accepted continuation, not SUMMARY existence.
+Two remaining plans are05-14 ->05-09.05-14 is halted1/3;05-09 waits for actual accepted continuation, not SUMMARY existence.
 05-13 implements only D-24–26's finite numeric-read movement, proves retained compatibility/POKEY and current required callers, and measures14840/quality919. No new scope or allocation was needed.
 REDdf6b095/94d5c49 and all historical SUMMARY/HANDOFF/VERIFICATION files remain unchanged. Test-card arming passed actual readiness controls; no promotion, ship or merge ran.
 
 ## Current acceptance
 
-Targeted planning under D-27–31 is complete. Refreshed research, independent checker,
-plan structures, scheduler and all5 requirements/31 decisions pass, exit0.
-05-14 has3 sequential tasks in wave8;05-09 remains wave9. Its eleven possible
-paths are disclosed in batches of at most5 directly touched files per task.
-The adopted safety300 includes measured66 and unproved234, including reserve27.
-Before GREEN,05-14 must prove authenticated structural adoption of fixes330,
-N2270/C15153/strict15141 with other allocations unchanged; quality.json is still
-unchanged. BE12 and quality's unused1 provide no safety funding. Complete measured
-fit and fresh local/direct/called/actual patched-gh rehearsal/install/cleanup
-remain execution obligations. No implementation, requirement completion or new
-gap/review round occurred; all seven assumptions/prohibitions remain unresolved.
+05-14 is halted1/3; its committed partial SUMMARY is c9b7f37. Task1 RED99ceff0
+and GREENbae83c1 prove actual-base15153/N2270 adoption and guarded synthetic
+publication at14965/safety125/fixes155. Actual PR20/main/base65b360d and tree0f712e7
+agree; quality.json is genuinely absent there. Existing real9-artifact predecessor
+join proves structural adoption only, not changed-path acceptance. Tracer controls
+pass twice; present-base unexplained-loosening rejection remains unchanged.
+
+Task2 REDec95123 reproduces cleanup exit0/deletion after503 failures. Its uncommitted
+publisher draft adds55 net lines; the complete147-entry audit against7ed793e is15152,
+safety312/fixes342. Strict15141 misses11 and safety300/fixes330 miss12; C15153
+passes with1, but BE12/quality1 provide no safety funding. Count368/BE193/digest447/
+quality919/reserve0 remain unchanged. The selected final controls exit8: quality
+passes, publisher's positive empty204 cleanup fails because command substitution
+loses the header/body boundary. No Task2 GREEN, control compression, new allocation,
+waiver, extra gap round or further construction follows the fit stop.
+
+Provisioning/workflow changes and Task3 docs/full local/current direct/called
+authentic9/8 joins/actual patched-gh rehearsal/install/confirmed cleanup/cost remain
+unrun. WINDOWS26/27/28 record the stop,204 defect and unrun checks. Seven assumptions,
+prohibitions and all shared requirements remain pending;05-09 stays blocked.
+The SDK state serializer counted the new halted SUMMARY as an eighth complete plan;
+the accepted count is reconciled to7/9. Filename existence grants no acceptance.
 
 ### Preserved05-08 halt
 
@@ -190,6 +201,7 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 - [Phase 05]: Inherited broad diff check exit2 is a scope warning under AGENTS6/7; own diff0. Release39832530253 overall failure is advisory WASM fetchcurl35; required calledCI+quality and authentic8 join pass. No release/rehearsal or promotion acceptance is claimed.
 - [Phase 05]: 05-07 accepted2/2: arm only testcard after fresh3837262 triples, authenticated numeric PR base and observed nightly issue close; retain WASM9/library5/prop2 advisory. Active7/9; shared requirements and05-08/09 pending; halted06/11/12 remain0/3 histories.
 - [Phase 05]: D-27–31 adopt bounded release-safety continuation and fixed increment300: fixes30→330,N1970→2270,C14853→15153,strict14841→15141; known66 included, estimated207 plus reserve27. Other components fixed;BE12 unavailable. Current discussion supersedes earlier no-new-allocation prose only for this scope; quality.json remains unchanged until planned execution. — Owner delegated adoption; measured signer RED plus official gh2.102.0 advisory floor require complete controls/lookup/cleanup funding before GREEN. No measured fit, task completion, waiver or new gap round.
+- [Phase 05]: 05-14 accepts Task1 only at14965/safety125 after actual-base15153 adoption; Task2 stops at15152/safety312/fixes342, strict15141 miss11 and safety300 miss12. REDec95123 and uncommitted publisher draft remain; no current release acceptance,05-09 blocked.
 
 ## Performance Metrics
 
@@ -207,6 +219,7 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 | Phase 05 P13 | 24min plus closeout | 3 tasks | 5 files |
 | Phase 05 P07 | 38min plus closeout | 2 tasks | 4 files |
 | Phase 05 P08 | 8min halted | 0 tasks | 4 files |
+| Phase 05 P14 | 12min halted | 1 tasks | 5 files |
 
 ## Blockers and seeds
 
@@ -220,7 +233,8 @@ Default-branch digest publication and merge-dependent truths remain ship checks.
 05-08's historical separate safety halt remains: the first signer-control addition
 alone yields14906/fixes96 against strict14841/fixes30. No required implementation
 or complete lookup control was accepted. D-30 now funds only05-14's bounded continuation;
-its remaining fit and all changed-path acceptance are unproved. See05-08-SUMMARY.md.
+Task1 adoption is now accepted but Task2 misses the fixed allocation. All changed-path
+release acceptance remains unproved. See05-08-SUMMARY.md and05-14-SUMMARY.md.
 Tooling seeds stay in the phase deferred-items ledger and do not create requirements.
 Historical05-03 halt and05-10 original failures remain historical facts.
 
@@ -252,17 +266,19 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T20:54:15.674Z
-Stopped at: Phase05 targeted planning passed;05-14 ready,05-09 blocked on accepted continuation
-Resume file: .planning/phases/05-pipeline-tune-up/05-14-PLAN.md
-Next command: $gsd-execute-phase 5
-Stop after this planning step. D-27–31's explicit allocation is planned, not implemented
-or measured fit. No additional allocation, automatic gap round, promotion, ship or merge
-ran. The existing measured test-card gate remains armed; other lane statuses are unchanged.
+Last session: 2026-10-22T21:20:11.265Z
+Stopped at: 05-14 halted1/3 at15152/safety312; Task1 accepted, Task2 draft retained,05-09 blocked
+Resume file: .planning/phases/05-pipeline-tune-up/05-14-SUMMARY.md
+Next command: $gsd-discuss-phase 5
+Stop after this execution step. D-30's exact allocation is adopted, but the complete
+construction misses safety300/strict15141 before provisioning and integration.
+No automatic gap round, promotion, ship or merge ran. The measured test-card gate
+remains armed; other lane statuses are unchanged. Preserve the uncommitted publisher draft.
 
 ### Blockers
 
 - Historical05-06/05-11/05-12 remain halted0/3 with RED/draft histories preserved. Their old tasks cannot resume;05-13 replaces their scheduling under D-24–26.
-- Phase5 acceptance remains incomplete at7/9:05-14 release safety is ready/unstarted;05-09 final tightening/docs/settings remains unstarted and blocked on accepted14. WASM/library/prop stay advisory at9/5/2; shared requirements remain pending.
+- Phase5 acceptance remains incomplete at7/9:05-14 release safety is halted1/3;05-09 final tightening/docs/settings remains unstarted and blocked on accepted14. WASM/library/prop stay advisory at9/5/2; shared requirements remain pending.
 - Inherited broad whitespace and advisory called-WASM fetch failures remain tooling seeds; no release rehearsal or overall Release success is claimed. Seven assumptions and the physical-boundary prohibition remain unresolved.
 - Historical05-08 Task1 halted after RED e0c18a0: first control adds66,total14906/fixes96 exceeded then-current strict14841/fixes30/C14853; no GREEN.05-14 schedules the explicit D-30 increment without rewriting that history; no remaining construction fit or current hosted acceptance is claimed.
+- 05-14 halted1/3: full current count15152, safety312/fixes342 exceed300/330 by12 and strict15141 by11. The draft empty204 parser control fails; provisioning/full local/current direct-called/rehearsal/install/cleanup acceptance unrun.05-09 remains blocked.

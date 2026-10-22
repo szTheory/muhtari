@@ -31,6 +31,12 @@ accept halted 05-06/05-11 or release downstream execution. Investigate the gener
 this tooling finding adds no phase requirement, check, dependency or allocation. No direct STATE/ROADMAP edit
 was used to override registered handler behavior.
 
+Reproduced during05-14 closeout: state.record-session re-derived8 completed plans from
+the new explicitly halted1/3 SUMMARY. Actual accepted completion remains7/9. Current
+STATE frontmatter/body and ROADMAP are reconciled to actual acceptance; no task/plan
+completion or requirement mutation follows summary existence. The generic serializer
+remains a tooling seed, not a new phase requirement or funded repair.
+
 ## Recovery execution evidence — 2026-10-22
 
 - Inherited whitespace seed: `git diff --check origin/main...HEAD` exits2 for new blank lines at EOF in `.github/workflows/be-equality.yml:63`, `tests/policy/gate-lines.txt:148` and historical `05-01-SUMMARY.md:421`. All three predate this recovery; its own diff check exits0. Preserve historical summaries and the fixed implementation scope; no whitespace repair or acceptance pass is inferred.
