@@ -79,13 +79,23 @@ upload() {
   done
 }
 
+require_gh() {
+  version=$(gh --version) || fail "supported stable gh >=2.102.0 required"
+  printf '%s\n' "$version" | sed -n '1p' | jq -eRs '
+    capture("^gh version (?<major>[0-9]+)\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+) \\([0-9]{4}-[0-9]{2}-[0-9]{2}\\)\\n$") |
+    [.major,.minor,.patch] | map(tonumber) | . >= [2,102,0]
+  ' > /dev/null 2>&1 || fail "supported stable gh >=2.102.0 required"
+}
+
 # Run before publishing too, because a published release cannot be changed.
 attested() {
+  require_gh
   tmp=${RUNNER_TEMP:-${TMPDIR:-/tmp}}/publish-verify
   rm -rf "$tmp"
   mkdir -p "$tmp/download"
   for n in $(names); do
-    gh attestation verify "$1/$n" --repo "$REPO" --source-ref "$SOURCE_REF" > /dev/null ||
+    gh attestation verify "$1/$n" --repo "$REPO" \
+      --signer-workflow "$REPO/.github/workflows/release.yml" --source-ref "$SOURCE_REF" > /dev/null ||
       fail "$n: its attestation does not verify from $SOURCE_REF"
     cp "$1/$n" "$tmp/$n"
     size=$(wc -c < "$tmp/$n")
