@@ -58,7 +58,7 @@
       "availability": "required"
     },
     "archive_bytes": {
-      "ceiling": 399952,
+      "ceiling": 399937,
       "units": "bytes",
       "direction": "ceiling",
       "producer": "tests/cmake/quality_evidence.cmake",

@@ -15,6 +15,10 @@ it does not measure each platform's percentage growth. The initial base has no
 audited gate inventory, so only gate lines use the reviewed fixed structural ceiling.
 This cannot reset an existing bound or initialize another metric from its own
 candidate measurements. Ordinary bounds ratchet against the trusted base policy.
+Compressed archive bytes vary slightly when rebuilding unchanged inputs. Initial
+adoption uses the minimum actual independent-base peak observed in the comparable
+cohort; it grants no extra bytes for that variation. This remains a strict ceiling
+on actual output, alongside the independent archive contents and firmware judges.
 An exact reason names the metric, old/new bound, rationale, grant and expiry dates;
 its lifetime is at most 60 days. Inherited expiry and renewal are checked every run.
 Temporary gate growth additionally names a credible removal/consolidation exit.
