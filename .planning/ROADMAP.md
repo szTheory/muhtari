@@ -34,7 +34,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 9 active plans;7/9 complete.05-14 is halted1/3 at the fixed-allocation gate;05-09 final audit/tightening remains blocked. Halted05-08 stays0/3 at RED e0c18a0 and is superseded for scheduling only. Accepted05-13/05-07 and halted05-06/05-11/05-12 histories remain unchanged.
+**Plans:** 9 active outcome slots;7/9 accepted.05-15 continues only unfinished release safety under D-32–34;05-09 final audit/tightening depends on actual accepted15 and stops if15 halts.05-14 remains halted1/3 with accepted Task1;05-08 stays halted0/3 at REDe0c18a0. Accepted05-13/05-07 and all historical halts remain unchanged. Runtime discovery retains ten canonical plans including summarized/halted14; it skips14 rather than treating its summary as acceptance.
 
 05-10 restored PowerPC ABI, and its authorized debug continuation fixed evidence-path handling and proved diagnostic-free native/BE 607+6 inventories, two-file equality and release-called required CI at immutable implementation 0901c877.
 05-03 is superseded for scheduling; its partial implementation and historical halt records remain.
@@ -72,14 +72,16 @@ Recovery preserves all seven perf cases/four added assertions, exact forged-SHA 
 
 05-07 accepted2/2 at2a68b3b/7ed793e. The test-card gate is armed after two fresh same625db7a controls with identical3837262 triples, numeric currentPR39836667094 with duplicate3837262 base, and actual forcedNightly39836662246/normal39837920876 issue21 update/close. Actual distinct successful main histories are WASM9/library5/prop2, so all remain advisory; six native hash files, PowerPC roles and exact inventories remain. Final local ci609+6/hygiene24 and14840/quality919 pass within unchanged allocations. [Extra final-head CI39839399512](https://github.com/szTheory/muhtari/actions/runs/39839399512) proves actualARMED=true perfPASS and successful quality9 join; its attempt2 RetroArch runner/required roll-up remains pending, so no overall green is claimed. The Windows trusted-base consumer failure and successful unchanged-head rerun are preserved. Final-head PRNightly39839399510 succeeds; Release39839399527 remains queued, without Release/rehearsal acceptance. No phase08/09 work, promotion, new allocation, ship or merge occurred. Shared requirements, assumptions and descriptorless prohibitions remain pending/flagged; historical records stay unchanged.
 
-**Wave 8** *(05-14 halted1/3; accepted05-13/05-07 retained)*
-- [ ] 05-14-PLAN.md — Continue the existing publisher with patched-gh signer/ref enforcement, fail-visible release lifecycle, complete real-script controls and actual rehearsal/install/cleanup acceptance within D-30's300-line increment.
+**Wave 8** *(05-15 unstarted continuation;05-14 halted1/3 preserved)*
+- [ ] 05-15-PLAN.md — Authenticate D-32's384-line safety allocation, repair empty204 responses, finish existing lifecycle/caller/download controls and verified patched-gh provisioning, then obtain actual post-edit local/hosted/rehearsal/install/confirmed-cleanup acceptance.
 
 05-08 RED e0c18a0 reproduces wrong-signer acceptance through the real publisher and a synthetic PATCH after correct-signer/tamper baselines pass. Its first fully counted control adds66 lines, yielding14906/fixes96 against the then-current strict14841/fixes30/C14853; its halt and0/3 partial summary bf99ca3 remain history.05-14 supersedes only scheduling. D-27–31 explicitly adopt the bounded continuation and safety increment before GREEN: B12885/S2 stay fixed, fixes30→330,N1970→2270,C14853→15153,strict14841→15141; count368/BE205/digest447/quality920/reserve0 stay unchanged. The300 includes measured66 and unproved remaining234 including27 reserve; quality1/BE12 grant no funding. Existing trusted-base adoption must prove the actual base/caller route or halt; candidate policy alone is insufficient. No production repair, new acceptance, extra gap/review round or requirement completion occurs in planning. Current local/direct/called authentic9/8 and actual patched-gh rehearsal publication/install/confirmed cleanup after the final edit remain mandatory. Conservative five-selector rehearsal remains; no reuse machine is planned.
 
 05-14 execution accepts Task1 only: RED99ceff0/GREENbae83c1 prove actual absent-policy base65b360d adoption of15153/N2270 and guarded synthetic publication at14965/safety125. Task2 REDec95123 reproduces false cleanup success after503 failures; its retained uncommitted repair yields15152/safety312/fixes342, exceeding strict15141 by11 and safety300/fixes330 by12. Other components remain count368/BE193/digest447/quality919/reserve0; C15153 passing with1 is insufficient. Final selected controls exit8 on the draft's positive empty204 cleanup baseline; quality passes. No provisioning, complete lifecycle GREEN, current local/direct/called/real rehearsal/install/cleanup acceptance or Task3 docs/cost is claimed. Partial SUMMARYc9b7f37 and WINDOWS26–28 preserve the exact stop. No further savings hunt, scope increase, waiver or extra gap round ran;05-09 stays blocked.
 
-**Wave 9** *(blocked on actual accepted05-14; unstarted)*
+05-15 replaces only the unaccepted safety scheduling slot, not05-14's historical outcome. Keep14 PLAN/SUMMARY and accepted Task1/RED lineage unchanged. The executor sees14 has_summary:true/halted:true and skips it;15 depends on accepted04/13/07 without a14 edge, and09 replaces14 with15. The supersedes label alone is not runtime exclusion. D-32 adopts safety300→384/fixes330→414,N2270→2354,C15153→15237,strict15141→15225 with B12885/S2 and count368/BE205/digest447/quality920/global reserve0 fixed. Measured312 plus estimated repair6/controls28/provision26/reserve12 is a bounded construction, not fit proof; quality1/BE12 supply no funding. Authenticated actual-base adoption precedes affected GREEN. Complete controls, fresh local ci/library/inventories/components/docs, current direct9/called8 joins and actual patched-gh publication/download/install/confirmed cleanup remain required. Any miss halts; no savings hunt, waiver, automatic rebaseline, scope growth or extra review/gap round is authorized.09 retires unused allocation only after accepted15. Planning completes no requirement, assumption, promotion, ship or merge.
+
+**Wave 9** *(blocked on actual accepted05-15; unstarted)*
 - [ ] 05-09-PLAN.md — Verify docs/install/settings and tighten final counted acceptance.
 
 **Success criteria:**
@@ -184,7 +186,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
-| 5. Pipeline tune-up | 7/9 | Plan05-14 halted1/3;05-09 blocked on accepted continuation;05-08 preserved halted | — |
+| 5. Pipeline tune-up | 7/9 active slots | Plan05-15 unstarted;05-09 blocked on actual accepted15;05-14 halted1/3 retained | — |
 | 6. Retail cartridge boards | 0/TBD | Not started | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |

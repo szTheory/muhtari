@@ -4,11 +4,11 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: halted
-stopped_at: Phase5 context revised D-32–34; owner adopted safety384;05-14 halted1/3,05-09 blocked; next $gsd-plan-phase 5
-last_updated: "2026-10-22T21:57:22.837Z"
+status: executing
+stopped_at: Phase5 targeted planning complete;05-15 ready,05-09 blocked on accepted15;historical14 halted1/3;accepted7/9 unchanged;next $gsd-execute-phase 5
+last_updated: "2026-10-22T22:15:06.292Z"
 last_activity: 2026-10-22
-state_head: 393c71770b28439a3a6cee5f60391f8e16419c9a
+state_head: 0caa6855917a78c8dbc5677a4ac4aaf54456690a
 progress:
   total_phases: 7
   completed_phases: 0
@@ -16,7 +16,7 @@ progress:
   completed_plans: 7
   percent: 0
 total_phases: 7
-last_activity_desc: 05-14 halted1/3 at fixed-allocation gate
+last_activity_desc: Targeted05-15/09 planning verified;accepted7/9 unchanged
 ---
 
 # Project State
@@ -29,13 +29,13 @@ from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — HALTED
-Plan: 8 of 9 —05-14 partial1/3
-Status: Task2 fixed-allocation gate;05-09 blocked
-Last activity: 2026-10-22 —05-14 Task1 accepted, Task2 construction halted
+Phase: 05 (Pipeline tune-up) — READY TO EXECUTE
+Plan: 8 of 9 active slots —05-15 ready;05-09 awaits accepted15;historical14 halted1/3
+Status: Ready to execute
+Last activity: 2026-10-22 —targeted15/09 planning verified;implementation acceptance unchanged7/9
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 7/9 Phase5 plans complete; 0/7 phases complete.
-Implementation: 05-01,05-02,05-10,05-04,05-05,05-13,05-07 complete. Halted05-06/05-11/05-12/05-08 stay0/3 histories, superseded only for scheduling.
+Implementation: 05-01,05-02,05-10,05-04,05-05,05-13,05-07 accepted. Current remaining schedule05-15 ->05-09;05-14 remains halted1/3 history. The following pre-replan position and acceptance paragraphs describe the historical halt, superseded for scheduling by the latest decision and session handoff.
 Two remaining plans are05-14 ->05-09.05-14 is halted1/3;05-09 waits for actual accepted continuation, not SUMMARY existence.
 05-13 implements only D-24–26's finite numeric-read movement, proves retained compatibility/POKEY and current required callers, and measures14840/quality919. No new scope or allocation was needed.
 REDdf6b095/94d5c49 and all historical SUMMARY/HANDOFF/VERIFICATION files remain unchanged. Test-card arming passed actual readiness controls; no promotion, ship or merge ran.
@@ -203,6 +203,7 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 - [Phase 05]: D-27–31 adopt bounded release-safety continuation and fixed increment300: fixes30→330,N1970→2270,C14853→15153,strict14841→15141; known66 included, estimated207 plus reserve27. Other components fixed;BE12 unavailable. Current discussion supersedes earlier no-new-allocation prose only for this scope; quality.json remains unchanged until planned execution. — Owner delegated adoption; measured signer RED plus official gh2.102.0 advisory floor require complete controls/lookup/cleanup funding before GREEN. No measured fit, task completion, waiver or new gap round.
 - [Phase 05]: 05-14 accepts Task1 only at14965/safety125 after actual-base15153 adoption; Task2 stops at15152/safety312/fixes342, strict15141 miss11 and safety300 miss12. REDec95123 and uncommitted publisher draft remain; no current release acceptance,05-09 blocked.
 - [Phase 05]: D-32–34: owner adopts release-safety300→384 only; fixes330→414,N2270→2354,C15153→15237,strict15141→15225. Other allocations fixed; quality.json unchanged until authenticated execution adoption. Targeted replan next;05-14 remains halted1/3,05-09 blocked,accepted7/9. — Measured current15152/safety312 construction already exceeds300 before remaining controls/provisioning; empty204 positive cleanup control fails. Full fit and acceptance remain unproved. Preserve draft, accepted Task1, RED lineage and halt histories; no automatic future growth or additional gap round.
+- [Phase 05]: D-32–34 targeted planning passed independent checker:05-15 replaces only unfinished14 scheduling in wave8;05-09 wave9 depends on actual accepted15. Safety384/fixes414/N2354/C15237/strict15225 fixed; authenticated adoption and complete controls/current acceptance required. Accepted7/9 unchanged;14 remains halted1/3, original draft/policy/history preserved. — Structure/path/failure-direction checks exit0;5 requirements and34 decisions covered;checker0 blockers/0 warnings. Runtime retains10 canonical files including summarized halted14, but9 active outcome slots;only15 ready. No implementation, budget-fit or requirement acceptance is claimed.
 
 ## Performance Metrics
 
@@ -267,10 +268,10 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T21:57:22.708Z
-Stopped at: Phase5 context revised D-32–34; owner adopted safety384;05-14 halted1/3,05-09 blocked; next $gsd-plan-phase 5
-Resume file: .planning/phases/05-pipeline-tune-up/05-CONTEXT.md
-Next command: $gsd-plan-phase 5
+Last session: 2026-10-22T22:14:42.665Z
+Stopped at: Phase5 targeted planning complete;05-15 ready,05-09 blocked on accepted15;historical14 halted1/3;accepted7/9 unchanged;next $gsd-execute-phase 5
+Resume file: .planning/phases/05-pipeline-tune-up/05-15-PLAN.md
+Next command: $gsd-execute-phase 5
 Stop after this execution step. D-30's exact allocation is adopted, but the complete
 construction misses safety300/strict15141 before provisioning and integration.
 No automatic gap round, promotion, ship or merge ran. The measured test-card gate
