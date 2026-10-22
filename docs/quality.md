@@ -1,6 +1,6 @@
 # Quality evidence
 
-The root `quality.json` stores integer floors, ceilings and bounded dated reasons.
+The root `quality.json` owns ordinary integer floors, ceilings and bounded dated reasons.
 Native, hygiene and ASan observations come from completed, inventory-checked JUnit;
 archive sizes come from the three validated zip files. Native counts cover ABI,
 fuzz replay and public compatibility title predicates, including their controls.
@@ -39,5 +39,14 @@ names the test-card workload and retains the existing semantic comparator; its
 threshold remains report-only pending the [arming controls](testing.md#performance).
 An absent or unstable base is unavailable, not a passing comparable measurement.
 Hash equality, public compatibility, ABI, sanitizers, performance and archive
-semantics retain their independent consumers. The aggregate owns policy thresholds
+semantics retain their independent consumers. The aggregate owns ordinary thresholds
 and reasons, without replacing those domain judges or promoting advisory lanes.
+
+Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
+ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and
+checks a reviewed expiry within 60 days. Compatibility always requires fresh results
+to equal evaluated ledger rows by identity, status and evidence in both directions,
+even with an allowance. A live matching allowance can waive loss of a trusted-base
+pass. Once merged, that nonpass can become the next base without the original pass
+obligation. These legacy stores provide no immutable grants, renewal prevention or
+automatic restoration. Their policy remains separate from ordinary aggregate reasons.
