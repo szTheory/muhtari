@@ -4,12 +4,12 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: Ready to execute
-stopped_at: Phase 5 remaining plans reconciled and independently checked; execute 05-12 next
-last_updated: "2026-10-22T16:46:12.309Z"
+status: halted
+stopped_at: 05-12 Task1 hard fit halt;0/3 complete;summary committed
+last_updated: "2026-10-22T17:02:09.938Z"
 last_activity: 2026-10-22
-last_activity_desc: Planned retained-store reconciliation and refreshed downstream dependencies; no implementation acceptance
-state_head: c0f05c12eea4612bb6727c2c14cd8588787d34b5
+last_activity_desc: 05-12 Task1 halted at strict fit gate
+state_head: 3e7ad585396cc406e75085a7b46dd21fed056d6b
 progress:
   total_phases: 7
   completed_phases: 0
@@ -29,18 +29,29 @@ from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — READY TO EXECUTE
+Phase: 05 (Pipeline tune-up) — HALTED AT 05-12 FIT GATE
 Plan: 5 of 9
-Status: Ready to execute
-Last activity: 2026-10-22 — Remaining planning passed independent review and all five requirements/23 decisions have coverage.
+Status: 05-12 halted0/3; downstream scheduling blocked
+Last activity: 2026-10-22 — Task1 selected controls pass; strict fit misses1
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 5/9 Phase5 plans complete; 0/7 phases complete.
 Implementation: 05-01,05-02,05-10,05-04,05-05 complete. Halted05-06/05-11 are superseded for scheduling by05-12, not completed.
 Four remaining plans run in waves6–9:05-12 ->05-07 ->05-08 ->05-09.
-05-12 selectively reconciles the six uncommitted drafts; its current full local/direct/called acceptance must succeed before05-07/08/09.
-This session changed planning only. No implementation, arming, promotion, push or hosted acceptance ran.
+05-12 halted during selective reconciliation; its current full local/direct/called acceptance must succeed before05-07/08/09.
+This execution committed RED94d5c49 and halt summary3e7ad58. No arming, promotion, push or hosted acceptance ran.
 
 ## Current acceptance
+
+Plan05-12 has0/3 tasks complete. The final retained-store draft measures14842/quality921,
+one above strict14841/quality920, while satisfying C14853 with11 lines remaining.
+All seven perf cases plus policy.quality.controls pass8/8, exit0. The production ALLOW
+invocation returns delta_bp=100 verdict=PASS, exit0. The explicit jq fit gate exits1/false.
+Other components stay count368/BE193/digest447/fixes30/reserve0; BE12 is not reserve.
+Only RED94d5c49 is a task commit; no GREEN exists. The three shared-reader/join/control
+files remain uncommitted. quality.json and perf comparator equal accepted5535b57.
+Task2/3 compatibility lifecycle/POKEY audit, full ci/library and current direct/called
+acceptance are unrun; no current run URL exists. WINDOWS20/21 track this halt.
+Read phases/05-pipeline-tune-up/05-12-SUMMARY.md. Historical records below stay historical.
 
 Plan05-06 has0/3 tasks complete. RED df6b095 is committed; the four-file implementation
 draft is uncommitted. Prior execution recorded seven perf cases and existing quality.controls passing, exit0.
@@ -89,6 +100,7 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 - [Phase 05]: Defer domain policy centralization; retain legacy stores and explicit lifecycle limits under unchanged quality920/strict14841/C14853. CONTEXT D-21–23 supersedes migration acceptance;05-12 now plans selective reconciliation and current caller acceptance. — Two named construction halts remain history; no new allocation or gap round.
 - [Phase 05]: Active completion remains5/9; generated progress.completed_plans6 counts historical/superseded work and is not new acceptance. Planning passed independent review; execute05-12 next. — Planning completes no implementation task; six drafts remain unchanged.
 - [Phase 05]: Accept the05-12 scope advisory as a tooling seed:11 possible paths are disclosed across three sequential tasks of at most five paths each, with conditional caller repair and bounded context. Do not split acceptance or hide scope to satisfy the warning threshold.
+- [Phase 05]: 05-12 stopped at Task1 fit gate: total14842/quality921 miss strict14841/quality920 by1 despite eight selected controls and production ALLOW passing; no GREEN, allocation change or additional gap round.
 
 ## Performance Metrics
 
@@ -102,12 +114,13 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 | Phase05 P05 continuation |67min through closeout checks|3 total complete|14|
 | Phase 05 P06 | 5min halted | 0 tasks | 4 files |
 | Phase 05 P11 | approx9min halted | 0 tasks | 6 files |
+| Phase 05 P12 | approx5min halted | 0 tasks | 4 files |
 
 ## Blockers and seeds
 
 Plan05-06 and replacement05-11 remain halted histories at their allocation gates.
-Their latest retained draft exceeds quality920/strict14841 by38. Revised05-12 is ready to execute under D-21–23;05-07/08/09 remain blocked on its acceptance.
-WINDOWS18/19 preserve the new deficit and unrun full/local/hosted acceptance.
+Their historical retained draft exceeded quality920/strict14841 by38. Revised05-12 now halts at a measured1-line miss;05-07/08/09 remain blocked on its acceptance.
+WINDOWS18/19 preserve prior history;20/21 record the new deficit and unrun acceptance.
 The descriptorless TUNE-03 boundary prohibition remains flagged/unverified;
 phase-wide requirements, final allocation retirement and acceptance are unfinished.
 Default-branch digest publication and merge-dependent truths remain ship checks.
@@ -142,14 +155,16 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T16:46:12.309Z
-Stopped at: Phase 5 remaining plans reconciled and independently checked; no execution
-Resume file: .planning/phases/05-pipeline-tune-up/05-12-PLAN.md
-Next command: $gsd-execute-phase 5
-Stop after this planning step. The next execution starts05-12 and must satisfy its strict fit and current caller acceptance before later waves.
-No new allocation, gap round, arming, promotion, ship or merge was authorized by planning.
+Last session: 2026-10-22T17:02:09.918Z
+Stopped at: 05-12 Task1 hard fit halt;0/3 complete;summary committed
+Resume file: .planning/phases/05-pipeline-tune-up/05-12-SUMMARY.md
+Next command: $gsd-discuss-phase 5
+Stop after this execution step. Address the concrete hard-gate miss before another execution;
+discussion grants no new allocation or automatic gap round. Current caller acceptance still blocks later waves.
+No new allocation, gap round, arming, promotion, ship or merge was authorized or performed.
 
 ### Blockers
 
-- Historical05-06/05-11 remain halted, with committed RED and six uncommitted drafts. Their old migration plans cannot resume;05-12 replaces their scheduling under the retained-store decision.
-- Current implementation acceptance remains absent:latest draft14879/quality958 exceeds strict14841/quality920 by38 and C14853 by26. Only successful05-12 fit and full current local/direct/called evidence releases05-07/08/09; planning itself supplies none of that acceptance.
+- Historical05-06/05-11 remain halted with their RED/draft histories preserved. Their old migration plans cannot resume;05-12 replaces their scheduling under the retained-store decision.
+- Current implementation acceptance remains absent:05-12 draft14842/quality921 exceeds strict14841/quality920 by1. Only successful05-12 fit and full current local/direct/called evidence releases05-07/08/09.
+- 05-12 halted0/3 at Task1 fit: total14842/quality921 exceed strict14841/quality920 by1. Task2/3 full local/library/POKEY and current direct/called acceptance remain unrun;05-07/08/09 stay blocked.

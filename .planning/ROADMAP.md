@@ -58,8 +58,10 @@ Plans:
 **Wave 5** *(complete)*
 - [x] 05-05-PLAN.md — Require one quality ratchet over real observations and trusted baselines.
 
-**Wave 6** *(planned; no new implementation acceptance)*
+**Wave 6** *(halted during Task1;0/3 tasks complete)*
 - [ ] 05-12-PLAN.md — Selectively reconcile six drafts into retained perf/compatibility stores, prove strict fit and current local/direct/called acceptance.
+
+05-12 restored the ALLOW contract and selected8/8 controls pass, but the final physical count14842/quality921 misses strict14841/quality920 by1. RED94d5c49 is committed; no GREEN or current full local/hosted acceptance exists. Task2/3 and07/08/09 remain blocked. Other components are unchanged; C14853 still has11 lines, and BE12 is not reserve. No additional allocation, control removal, savings hunt or automatic gap round is authorized. See05-12-SUMMARY.md; the following05-06/05-11 measurements remain history.
 
 05-06 and05-11 are superseded for scheduling by05-12. The latest halted draft measures14879/quality958:9 lines recovered from14888,38 above strict14841/quality920 and26 above C14853. The scope decision is resolved by CONTEXT D-09/D-10/D-21–23: domain-policy centralization/store retirement is deferred; ordinary aggregate guarantees and legacy semantic guards remain. A waived merged compatibility regression can become the next base's nonpass state; no immutable domain grants, anti-renewal, automatic restoration or unified policy is claimed.
 
@@ -176,7 +178,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
-| 5. Pipeline tune-up | 5/9 | Blocked on05-11 allocation halt | — |
+| 5. Pipeline tune-up | 5/9 | Blocked on05-12 strict fit halt | — |
 | 6. Retail cartridge boards | 0/TBD | Not started | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
