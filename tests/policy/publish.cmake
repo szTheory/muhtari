@@ -31,8 +31,12 @@ case "$*" in
   'release view '*)
     case "$*" in *'--json isDraft'*) echo false ;; *) (cd "$PUBLISH_WORK/dist" && printf '%s\n' *) ;; esac ;;
   'release verify '*) ;;
+  'api repos/example/public/releases/7 --jq .draft')
+    [ "$PUBLISH_DRAFT" != failed ] || exit 1
+    printf '%s\n' "$PUBLISH_DRAFT" ;;
   'api -X PATCH '*) ;;
   'api '*)
+    [ "${PUBLISH_DRAFT:-}" != failed ] || exit 1
     i=$(cat "$PUBLISH_WORK/position")
     i=$((i + 1))
     echo "$i" > "$PUBLISH_WORK/position"
@@ -291,6 +295,35 @@ endforeach()
 
 # Both Ubuntu attestation jobs must consume the verified pin before using PATH.
 file(READ "${ROOT}/.github/workflows/release.yml" workflow)
+# Run actual workflow output blocks; failed lookups must emit no success output.
+foreach(output draft state)
+  string(REGEX MATCH "- id: ${output}\n        run: ([^\n]*\n)(          [^\n]*\n)*" block "${workflow}")
+  string(REGEX REPLACE "^.*run: " "" block "${block}")
+  string(REGEX REPLACE "^[|]\n" "" block "${block}")
+  string(REPLACE "\n          " "\n" block "\n${block}")
+  if(block STREQUAL "\n")
+    message(FATAL_ERROR "publish caller assertion: missing ${output} output block")
+  endif()
+  foreach(value true false failed null)
+    if(output STREQUAL "draft" AND value STREQUAL "null")
+      continue()
+    endif()
+    file(WRITE "${WORK}/position" "0")
+    file(WRITE "${WORK}/output" "")
+    execute_process(COMMAND ${cmd} "PUBLISH_DRAFT=${value}" GITHUB_OUTPUT=${WORK}/output
+      REHEARSAL_TAG=rehearsal-fixture ID=7 EXPECTED_SHA=fixture-sha
+      sh -e -c "${block}" WORKING_DIRECTORY "${ROOT}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
+    file(READ "${WORK}/output" emitted)
+    if(value MATCHES "^(failed|null)$")
+      if(rc STREQUAL "0" OR NOT emitted STREQUAL "")
+        message(FATAL_ERROR "publish caller assertion: ${output}/${value} hid failure or emitted success: ${rc}: ${emitted}")
+      endif()
+    elseif(NOT rc STREQUAL "0" OR (output STREQUAL "state" AND NOT emitted STREQUAL "draft=${value}\n") OR
+      (output STREQUAL "draft" AND NOT emitted STREQUAL "id=7\n"))
+      message(FATAL_ERROR "publish caller assertion: ${output}/${value} did not emit its validated output: ${rc}: ${emitted}: ${out}")
+    endif()
+  endforeach()
+endforeach()
 foreach(job rehearsal publish)
   string(REGEX MATCH "\n  ${job}:\n((    [^\n]*\n|\n)*)" job_block "${workflow}")
   if(NOT job_block MATCHES "sh scripts/fetch-pin.sh gh-linux-x86_64 [^\n]+\n +echo [^\n]+/bin[^\n]+GITHUB_PATH[^\n]*\n +[^\n]+/bin/gh[^\n]+--version")
