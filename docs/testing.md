@@ -472,6 +472,26 @@ To check one version by hand: `cmake -DVERSION=<x.y.z> -P tests/cmake/single_ver
 
 ## Budgets
 
+The root `quality.json` stores integer floors, ceilings and bounded dated reasons.
+Native, hygiene and ASan observations come from completed, inventory-checked JUnit;
+archive sizes come from the three validated zip files. Native counts cover ABI,
+fuzz replay and public compatibility title predicates, including their controls.
+Zero findings require the actual ABI, fatal-warning, analyzer or sanitizer judge.
+Each observation identifies its built SHA, configuration, producer and source run.
+
+Initial ordinary bounds use an independently built, unchanged event-base tree on
+the same runner with matching compiler and fixture fingerprints. Native bounds
+apply to every native leg; the archive ceiling covers the largest three-archive
+total across the six native legs. It is a package-size bound, not a per-platform
+size-regression percentage. The initial base has no audited gate inventory, so
+only gate lines use the reviewed fixed structural ceiling; this cannot reset an
+existing bound or initialize another metric from its own candidate measurements.
+
+Coverage, open crashes, backlog and comparable historical duration remain explicit
+gaps. Library, WASM and property observations remain advisory. Cachegrind evidence
+names the test-card workload and retains the existing semantic comparator; its
+threshold remains report-only pending its separately documented arming controls.
+
 `docs.budgets` keeps the documents small enough to read: `README.md` at most 12 KB, `include/muhtari.h` at most
 24 KB, and each `docs/*.md` at most 40 KB. Raise a budget only with a reason in the same commit.
 
