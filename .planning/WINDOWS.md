@@ -29,7 +29,7 @@ last_updated: 2026-10-21T23:40:11.664Z
 | 12 | 05 | unrun-verify | .github/workflows/be-equality.yml |  | PowerPC archive inventory and same-head equality cannot complete while the preceding full normal ABI inventory fails. | fixed |  | 2026-10-21T18:33:05.691Z | 2026-10-21T20:21:17.934Z |
 | 13 | 05 | unmet-truth | .github/workflows/be-equality.yml | 66 | Complete native/PowerPC inventories pass, but hosted equality rejects relative evidence directories; absolute-path replay of the authentic pair passes. | fixed |  | 2026-10-21T19:22:57.834Z | 2026-10-21T20:21:18.042Z |
 | 14 | 05 | unrun-verify | .github/workflows/be-equality.yml | 38 | Temporary target diagnostic remains; its removal and complete final-head equality proof are unfinished at the mandatory recovery halt. | fixed |  | 2026-10-21T19:22:57.900Z | 2026-10-21T20:21:18.153Z |
-| 15 | 05 | unrun-verify | .github/workflows/ci.yml |  | Required hosted quality aggregate and all-lane baselines remain unverified: pre-existing Windows digest control fails before quality observations. | open |  | 2026-10-21T23:40:11.664Z |  |
+| 15 | 05 | unrun-verify | .github/workflows/ci.yml |  | Required typed bound adoption and hosted aggregate remain unfinished; Windows current/base producers are restored in run39699892851. | open | Task2 partial; Task3 unstarted. | 2026-10-21T23:40:11.664Z |  |
 
 ````json
 [
@@ -221,9 +221,9 @@ last_updated: 2026-10-21T23:40:11.664Z
     "phase": "05",
     "file": ".github/workflows/ci.yml",
     "line": null,
-    "description": "Required hosted quality aggregate and all-lane baselines remain unverified: pre-existing Windows digest control fails before quality observations.",
+    "description": "Required typed bound adoption and hosted aggregate remain unfinished; Windows current/base producers are restored in run39699892851.",
     "status": "open",
-    "reason": "",
+    "reason": "Task2 partial; Task3 unstarted.",
     "recorded_at": "2026-10-21T23:40:11.664Z",
     "resolved_at": null,
     "milestone": "v2.0"

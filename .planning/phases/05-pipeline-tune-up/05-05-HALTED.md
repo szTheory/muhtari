@@ -1,5 +1,11 @@
 # Plan 05-05 halted at required producer evidence
 
+Historical halt below is preserved. The Windows repair is accepted by completed
+[CI39699892851](https://github.com/szTheory/muhtari/actions/runs/39699892851): both
+native architectures pass current609+6 and unchanged base605+6. Task2 is still partial,
+Task3 unstarted. SUMMARY now uses status blocked so execution can resume Task2;
+read `.continue-here.md`, then run `$gsd-execute-phase 5`. This debug step ran no plan.
+
 Task1 complete; Task2 partial; Task3 not started. Production/control commits:
 edd49c2, 3a02e6c, 8ac740f, e6d725f, cf755c9. The SUMMARY has status halted.
 

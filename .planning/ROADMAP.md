@@ -34,11 +34,11 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 4/9 plans executed; 05-05 halted after one of three tasks.
+**Plans:** 4/9 plans executed; 05-05 remains partial after one of three tasks.
 
 05-10 restored PowerPC ABI, and its authorized debug continuation fixed evidence-path handling and proved diagnostic-free native/BE 607+6 inventories, two-file equality and release-called required CI at immutable implementation 0901c877.
 05-03 is superseded for scheduling; its partial implementation and historical halt records remain.
-05-04 delivered the tested read-only digest and guarded publisher; hosted preview succeeds at 7d524ed. Actual default-branch publication is a post-merge ship check. 05-05 completed its typed judge but halted in Task2: both Windows native workflows fail the existing digest control before required observation/base artifacts run (hosted run39694430448). No additional bound or aggregate is claimed. Later plans remain blocked; the halted summary is not a completed plan.
+05-04 delivered the tested read-only digest and guarded publisher; actual default-branch publication remains a ship check. The Windows debug repair now has complete current/base native acceptance in run39699892851. 05-05 Task1 remains complete, Task2 partial and ready to resume, Task3 unstarted. Its blocked SUMMARY remains incomplete; no additional bound or aggregate is claimed and later plans retain their dependencies.
 
 Plans:
 **Wave 1**
@@ -55,7 +55,7 @@ Plans:
 **Wave 4** *(complete)*
 - [x] 05-04-PLAN.md — Deliver privilege-safe weekly triage and monthly hosted-efficiency reports.
 
-**Wave 5** *(halted at required Windows producer evidence)*
+**Wave 5** *(resume incomplete Task2 after accepted Windows repair)*
 - [ ] 05-05-PLAN.md — Require one quality ratchet over real observations and trusted baselines.
 
 **Wave 6** *(blocked on Wave 5 completion)*

@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: blocked
-stopped_at: "Halted 05-05 Task2: required Windows producer evidence absent"
-last_updated: "2026-10-21T23:42:17.727Z"
-last_activity: 2026-10-21
-last_activity_desc: 05-05 halted at required Windows producer evidence
-state_head: 2b3c1a68743023d1c262a85d17bb6dd922ba2deb
+status: in_progress
+stopped_at: "Windows debug accepted; resume incomplete 05-05 Task2"
+last_updated: "2026-10-22T00:37:31Z"
+last_activity: 2026-10-22
+last_activity_desc: Windows digest repair accepted; 05-05 Task2 remains incomplete
+state_head: 4af6e9b5396d16438d293ac0c1e04ae6f6bd4ea1
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 5
+  completed_plans: 4
   percent: 0
 total_phases: 7
 ---
@@ -31,9 +31,9 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 ## Current Position
 
 Phase: 05 (Pipeline tune-up) — EXECUTING
-Plan: 5 of 9, halted; 4 plans complete
-Status: Blocked during 05-05 Task2
-Last activity: 2026-10-21 — Typed quality judge complete; Windows evidence gate halted integration
+Plan: 5 of 9, partial; 4 plans complete
+Status: Ready to resume incomplete 05-05 Task2
+Last activity: 2026-10-22 — Windows digest debug accepted with native/current-base evidence
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 4/9 Phase 5 plans complete; 0/7 phases complete.
 
@@ -90,13 +90,19 @@ seeds are still dormant, todos still pending; acknowledgment does not resolve th
 
 ## Session Continuity
 
-Last session: 2026-10-21T23:41:54.187Z
-Stopped at: Halted 05-05 Task2: required Windows producer evidence absent
-Resume file: .planning/phases/05-pipeline-tune-up/05-05-HALTED.md
-Next command: `$gsd-debug Windows policy.digest.controls fails in run 39694430448; unblock 05-05 Task2`
+Last session: 2026-10-22T00:37:31Z
+Stopped at: Windows debug accepted; resume incomplete 05-05 Task2
+Resume file: .planning/phases/05-pipeline-tune-up/.continue-here.md
+Next command: `$gsd-execute-phase 5`
 
-Resolve the recorded Windows failure before resuming execution. The halted
-05-05 summary blocks downstream plans; repeating execute alone cannot clear it.
+Accepted debug evidence: [CI39699892851](https://github.com/szTheory/muhtari/actions/runs/39699892851)
+is completed success at tested1abc98a, merge011fb5b, unchanged base65b360d.
+Both Windows current609+6/base605+6 artifacts authenticate, exit0. Final207s
+calibration4af6e9b changes timeout/provenance only; local full609+6 and focused
+controls/hygiene/count/timeout29/diff exit0. Count14528/C14853, fixes30/100.
+No latest-calibration hosted success is claimed. Task2 remains partial and Task3
+unstarted; SUMMARY status blocked exposes this incomplete plan for continuation.
+No metric bound, aggregate or phase requirement completion was added.
 
 Digest evidence: implementation `7d524edc77c977487a734243ac01364dcbd50272`;
 [hosted read-only preview](https://github.com/szTheory/muhtari/actions/runs/39685745578)
@@ -194,8 +200,7 @@ No phase implementation or owner hardware verification ran during initialization
 ### Blockers
 
 - No PowerPC recovery blocker remains. Historical 05-03 is superseded and halted; 05-10's original equality failure and HALTED file remain historical facts. The explicitly authorized debug continuation supplies final diagnostic-free hosted acceptance and a successful 05-10 SUMMARY.
-- 05-04 has a verified hosted preview; 05-05 discovered its existing digest control fails on both Windows architectures. 05-05 Task1 is complete, Task2 partial and Task3 unstarted; required native observations and aggregate integration are blocked. Later plans retain dependencies. Default-branch publication is a ship check; all phase-wide requirements remain pending.
-- 05-05 halted during Task2: Windows digest control fails before required current/base observations; typed quality controls pass. See 05-05-SUMMARY.md and hosted run39694430448. Task3 and downstream expansion did not run.
+- Windows digest repair is accepted with complete current/base native evidence in run39699892851. 05-05 Task1 is complete, Task2 partial and Task3 unstarted; typed root-policy adoption, independent bounds and aggregate integration remain unfinished. Later plans retain dependencies. Default-branch publication remains a ship check; all phase-wide requirements remain pending.
 
 ## Phase 5 gap planning verification
 

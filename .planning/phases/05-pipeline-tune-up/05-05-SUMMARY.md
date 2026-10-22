@@ -1,7 +1,8 @@
 ---
 phase: 05-pipeline-tune-up
 plan: "05"
-status: halted
+status: blocked
+resume-from-task: 2
 subsystem: infra
 tags: [cmake, quality, trusted-baselines]
 requires:
@@ -52,7 +53,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: all-lane-required-integration
-    description: Windows evidence, complete independently seeded bounds and aggregate integration remain blocked
+    description: Historical Windows halt before the repair; complete bounds and aggregate integration remain unfinished
     requirement: TUNE-03
     verification:
       - kind: integration
@@ -61,6 +62,17 @@ coverage:
       - kind: integration
         ref: https://github.com/szTheory/muhtari/actions/runs/39694430448/job/119548291973
         status: fail
+    human_judgment: false
+  - id: windows-producer-unblock
+    description: Both Windows native workflows and unchanged trusted-base builds complete after the scoped debug repair
+    requirement: TUNE-03
+    verification:
+      - kind: integration
+        ref: https://github.com/szTheory/muhtari/actions/runs/39699892851/job/119566353447
+        status: pass
+      - kind: integration
+        ref: https://github.com/szTheory/muhtari/actions/runs/39699892851/job/119566353467
+        status: pass
     human_judgment: false
 actuals:
   tokens: 8077
@@ -74,12 +86,13 @@ completed: 2026-10-21
 
 # Phase 5 Plan 5: Trusted quality ratchet Summary
 
-**The typed quality judge passes its controls, but required Windows producer evidence
-is missing because the existing digest control fails before observations run.**
+**The Windows digest blocker is repaired and automated native/current-base evidence
+passes. Task 2 remains incomplete and is ready to resume; Task 3 is unstarted.**
 
 Only Task 1 is complete. Task 2 has a tested adapter and partial independent hosted
 observations; its complete baseline and bound-seeding gate is unmet. Task 3 did not
-start. This is a durable halt, not plan or phase acceptance. No metric was invented,
+start. The blocked status preserves this partial record as incomplete in the scheduler.
+No metric was invented,
 no missing native leg was made advisory, and no existing control was removed.
 
 ## Tasks and commits
@@ -87,7 +100,7 @@ no missing native leg was made advisory, and no existing control was removed.
 | Task | Status | Commits |
 |---|---|---|
 | 1: Typed policy and actual measurements | Complete | RED edd49c2; GREEN 3a02e6c |
-| 2: Real producers and independent base | Partial, blocked | RED 8ac740f; adapter e6d725f; initialization controls cf755c9 |
+| 2: Real producers and independent base | Partial, resume here | RED 8ac740f; adapter e6d725f; initialization controls cf755c9 |
 | 3: Required aggregate | Not started | None |
 
 Both RED runs executed `policy.quality.controls` and failed its intended assertion,
@@ -105,7 +118,7 @@ The structural gate initialization requires the caller's reviewed exact ceiling;
 it cannot initialize another metric or reset an existing gate metric. Root
 `quality.json` retains its original gate_lines policy during this halt.
 
-## Evidence and blocker
+## Original halt evidence
 
 `cmake --workflow --preset ci` — exit 0, **609 regular and six release/archive tests**.
 `cmake -DROOT=. -DBUILD=build/ci -DOUT=build/ci/quality.json -DSHA="$(git rev-parse HEAD)"
@@ -146,9 +159,35 @@ Release startup failure in this run is also expected unfinished integration:
 Task 2 added CI actions:read, while the explicitly planned release permission-union
 update belongs to Task 3 and has not run. No release-called success is claimed.
 
+## Windows repair and continuation
+
+Debug acceptance: [CI 39699892851](https://github.com/szTheory/muhtari/actions/runs/39699892851)
+is completed success at implementation `1abc98a`, actual merge producer
+`011fb5b9d0286a311508d0097fd122663b2d6748`, trusted base
+`65b360d1afd37b7dad9f94dcff497c85df84fd1d`. Windows jobs 119566353447/119566353467
+each pass current609+6 and unchanged base605+6. `gh run download 39699892851
+-p 'quality-*'`, job-log API reads and current/base metadata checks — exit0.
+Both artifact pairs have matching tool/fixture fingerprints and exact SHA/source identities;
+unavailable metrics retain reasons without numeric values.
+
+The retained control took 27.58s on x64 and 103.28s on arm64, passing the stricter193s
+limit. Final calibration `4af6e9b` changes only timeout/provenance to207s, from
+ceil(2 x103.28), and passes full local609+6 plus focused controls. Arm64 images
+20261013.183.4 (103.28s, run39699892851) and 20261018.189.1 (96.22s, run39699026057)
+remain separate provisional n=1 cohorts. No latest-calibration hosted completion is claimed.
+
+Task1 is preserved. Resume Task2 from its existing adapter, authenticate complete lane
+evidence and finish typed policy adoption/bound seeding before Task3. Root `quality.json`
+still has the pre-adoption gate record; direct new-judge replay rejects its missing
+availability field, so no aggregate acceptance is claimed. The prior silent base DLL-CRT
+failure and certificate-revocation fetch failure are retained as transient observations,
+not purported source fixes. See `.continue-here.md` and the resolved debug session.
+
 ## Budget and checks
 
-Final physical count **14499/C14853**, source8580/6533, both ratios advisory.
+Original halt count was14499; repaired count is **14528/C14853**, source8580/6533,
+both ratios advisory. The29-line Windows repair uses reproduced fixes30/100 including
+the earlier one-line freshness fix; digest base scope447 is unchanged.
 Quality uses **607/850** incremental whole-file lines, including controls, policy
 registration, declarations and all workflow glue. Allocation is count368/BE205/
 digest447/quality850/fixes100/reserve0, totalN1970. The visible transfer before
@@ -166,8 +205,8 @@ No source rule or recurring control was relaxed. Evidence/logs stay uncommitted.
 
 ## Deviations and unfinished work
 
-The required-evidence gate stopped expansion. Missing Windows current/base evidence
-prevents independent all-lane seed selection. Additional metric bounds, comparable
+The required-evidence gate stopped original expansion; Windows current/base evidence
+is now restored. Independent bound selection remains unfinished. Additional metric bounds, comparable
 Ir artifact adaptation, aggregate artifact joins, aggregate omission/failure controls,
 release permission unions and documentation are unfinished. Existing library/WASM/
 property jobs remain advisory. Coverage, open crashes, backlog, historical duration
@@ -186,10 +225,8 @@ hosted aggregate/all-lane verification is recorded in the cross-phase defect led
 
 ## Next action
 
-Resolve or explicitly route the reproduced Windows tooling blocker, then resume
-Task 2 of this plan. First route the blocker with
-`$gsd-debug Windows policy.digest.controls fails in run 39694430448; unblock 05-05 Task2`;
-after repair, resume with `$gsd-execute-phase 5`. No downstream plan,
+Resume Task2 with `$gsd-execute-phase 5`, reading `.continue-here.md` first.
+Do not repeat completed Task1 or mark this partial plan complete. No downstream plan,
 phase-wide requirement completion, ship, merge, settings mutation or owner UAT ran.
 
 ## Self-Check: PASSED
