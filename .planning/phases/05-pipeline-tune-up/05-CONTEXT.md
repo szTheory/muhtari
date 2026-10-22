@@ -1,8 +1,8 @@
 # Phase 5: Pipeline tune-up - Context
 
 **Gathered:** 2026-10-21
-**Status:** Ready for planning
-**Revised:** 2026-10-21 after refreshed research and delegated policy review; D-17 replaced, D-19–20 added.
+**Status:** Scope revised; remaining plans require reconciliation before execution
+**Revised:** 2026-10-22 after the measured 05-11 allocation halt; D-09/D-10 narrowed and D-21–23 added. Earlier budget decisions remain in force.
 
 <domain>
 ## Phase Boundary
@@ -86,13 +86,15 @@ and one GSD step per session. Prefer another copy and paste over another depende
 
 ### One quality ratchet and honest portability
 
-- **D-09:** One committed root `quality.json` owns quality bounds and exceptions, and one aggregate `quality`
-  check consumes existing outputs under `CI required`. Use CMake `string(JSON)`, not a new language or platform.
-  Reuse existing semantic validators for hashes, compatibility, ABI, sanitizers and performance; do not rebuild
-  their judges inside a framework. Consolidate duplicate threshold/exception stores when migrating a metric,
-  retaining original semantic evidence and controls. Report units, direction, producer, fixture/configuration,
-  commit and availability for each metric. Baseline only what was actually measured.
-- **D-10:** Compare policy changes with the trusted PR base: floors cannot fall, ceilings cannot rise, metrics
+- **D-09:** One committed root `quality.json` owns the aggregate's ordinary bounds and dated reasons, and one
+  required `quality` check consumes authenticated existing outputs under `CI required`. Use CMake `string(JSON)`.
+  Retain independent semantic judges. For this phase, defer centralization of the performance and compatibility
+  domain policies: `tests/perf/allow.txt` and `tests/compat/allow.txt` remain their respective authorities, with
+  the existing comparator/ledger contracts. Do not add duplicate central domain thresholds or reasons. This
+  explicitly replaces the earlier requirement to retire both stores; it narrows scope rather than claiming
+  an equivalent central exception lifecycle. All remaining measured aggregate metrics and mandatory evidence
+  remain required. See D-21–23 for the exact limitation and reconciliation acceptance.
+- **D-10:** For aggregate metrics, compare policy changes with the trusted PR base: floors cannot fall, ceilings cannot rise, metrics
   cannot disappear, and new thresholds cannot legitimize the same PR's regression silently. A loosening needs
   the corresponding key/from/to, reason, date and bounded expiry (at most 60 days), visible in review and reports;
   expired or unrelated reasons do not authorize it. Tightening is free. A measured value must satisfy the effective
@@ -203,6 +205,43 @@ and one GSD step per session. Prefer another copy and paste over another depende
   Refresh only research affected by this policy change, reuse measured experiments and valid implementation
   guidance, and stop analysis when another lens changes no decision or control. No second GSD step here.
 
+### Scope resolution after the measured construction halt
+
+- **D-21:** Stop the domain-policy migration for this phase and retain the accepted ordinary aggregate ratchet
+  plus the existing performance and compatibility judges. The fresh complete count is 14,879; quality use is
+  958 against 920, with 38 still needed for the strict 14,841 total and 26 above C14,853. The named shared-reader
+  construction saved nine lines, not the required 47. This is evidence against that construction, not proof that
+  no smaller implementation exists. Another generalized savings hunt or automatic gap round is not authorized.
+  Increasing quality by 38 would fund only unfinished Task 1, not the unmeasured compatibility/caller work.
+  B12,885/S2/N1,970/C14,853 and count368/BE205/digest447/quality920/fixes30/reserve0 remain unchanged;
+  the unused BE12 is not reserve. No new permanent or temporary allocation, deadline waiver or dependency is
+  adopted. A future centralization proposal needs concrete new evidence and its own explicitly adopted scope.
+- **D-22:** Preserve the six draft files and committed RED `df6b095` as historical work. During a later planned
+  execution, reconcile them selectively into a coherent retained-store implementation; do not blanket restore,
+  reset or stash the workspace. The current draft is mixed: perf reads central domains while its production
+  caller still supplies ALLOW; compatibility remains on its legacy store. It is not accepted. Retain useful
+  original-item authentication and exact forged-SHA controls only where they fit and remain relevant. Reconcile
+  central-only fixture assertions with the explicitly deferred capability, while preserving all seven perf cases'
+  original arithmetic/verdict/input/exception faults and the ordinary aggregate controls. Preserve historical
+  RED/halt records rather than falsely declaring that centralization passed. No implementation runs in discussion.
+- **D-23:** Acceptance must identify one active authority per bound. The ordinary aggregate retains its exact
+  trusted-base, from/to, grant/expiry, renewal and actual-value controls. Legacy domain exceptions retain their
+  existing reviewed expiry/identity behavior, not those stronger central guarantees: in particular, a waived
+  compatibility regression that merges can become the next base's nonpass state; the legacy store does not
+  retain the original pass obligation indefinitely. Do not advertise immutable domain grants, anti-renewal,
+  automatic restoration or a unified central policy. Preserve exact current ledger/results equality by key,
+  status and evidence in both directions, passing-base retention outside an authorized legacy exception, exact
+  +1.00%/+1.01% verdicts, unstable/missing/nonpositive/NO_BASE handling and armed/report-only semantics.
+  An exception never excuses fresh result mismatch or forged original observations. Audit the spent POKEY
+  migration against the accepted base and replacement evidence before removal; do not renew it or claim its
+  permanent retirement from the date alone. Final reconciliation must fit quality920 and total14,841 with
+  unchanged other components, as well as C14,853; full local CI/generated-corpus library and current direct
+  numeric perf/library/quality plus release-called CI and authentic artifact joins remain required. Prior green
+  runs and the eight selected passing cases cannot accept changed callers. Plans 05-07/08/09 remain blocked
+  until revised dependencies and reconciliation acceptance are planned and subsequently satisfied. Preserve
+  05-06/05-11 as halted histories; do not mark either complete. TUNE-03/TUNE-04 remain pending. TUNE-04/D-12
+  readiness and lane-promotion predicates are unchanged; no arming, promotion, ship or merge occurs here.
+
 ### Agent's Discretion
 
 Internal schema names, helper boundaries, batching/API page sizes, readable report formatting, per-test cost
@@ -235,7 +274,7 @@ Keep todos pending until execution supplies evidence; folding is not completion.
 
 - `AGENTS.md` — especially rules 6–10, dependency ladder and summary evidence contract.
 - `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, `.planning/STATE.md` — active scope,
-  TUNE-01–05, phase goal and historical exceptions; no phase implementation completed yet.
+  TUNE-01–05, phase goal, accepted predecessor work and historical exceptions; phase acceptance remains pending.
 - `.planning/preparation/README.md` — reference index.
 - `.planning/preparation/ENGINEERING.md` §§3–9, 11–13 — inventory, CI, release, reporting, ratchet and budgets.
 - `.planning/preparation/DECISIONS.md` DEC.07–15, DEC.43–54, DEC.56 — locked process and portability flip conditions.
@@ -247,6 +286,20 @@ Keep todos pending until execution supplies evidence; folding is not completion.
 - `.planning/milestones/v1.0-phases/04-sound/deferred-items.md` — reproduced compatibility-output race.
 - `.planning/milestones/v1.0-MILESTONE-AUDIT.md` — inherited evidence gaps; do not erase accepted history.
 - The four full todo paths in Folded Todos above, and the two paths in Reviewed Todos below.
+
+### Current halt and scope reconciliation
+
+- `.planning/phases/05-pipeline-tune-up/05-11-HANDOFF.md` and
+  `.planning/phases/05-pipeline-tune-up/05-11-SUMMARY.md` — latest failed construction, six retained drafts,
+  unchanged allocations and unrun acceptance; historical records, not an active permission to retry.
+- `.planning/phases/05-pipeline-tune-up/05-06-HANDOFF.md` and
+  `.planning/phases/05-pipeline-tune-up/05-06-SUMMARY.md` — retained RED lineage and first migration halt.
+- `.planning/phases/05-pipeline-tune-up/05-05-SUMMARY.md` — accepted aggregate reference and prior hosted
+  evidence, not acceptance of the dirty migration.
+- `.planning/phases/05-pipeline-tune-up/05-07-PLAN.md`,
+  `.planning/phases/05-pipeline-tune-up/05-08-PLAN.md` and
+  `.planning/phases/05-pipeline-tune-up/05-09-PLAN.md` — existing plans requiring dependency/acceptance refresh.
+- `docs/quality.md` — current ownership prose must be reconciled with actual retained-store execution.
 
 ### Existing producers and integration contracts
 
@@ -287,6 +340,13 @@ Keep todos pending until execution supplies evidence; folding is not completion.
   [CTest COST](https://cmake.org/cmake/help/latest/prop_test/COST.html) — targeted mutual exclusion and expensive-
   first scheduling; prefer independent output ownership when possible. Recheck against the project's CMake version.
 
+### Primary sources rechecked 2026-10-22
+
+- [Google SRE, Eliminating Toil](https://sre.google/workbook/eliminating-toil/) — evaluate maintenance and
+  development cost; no prescribed LOC allowance. Deferral is a project judgment, not a source mandate.
+- [GitHub secure use reference](https://docs.github.com/en/actions/reference/security/secure-use) — retain
+  least privileges and safe handling of untrusted workflow data; policy deferral grants no extra permissions.
+
 No external emulator source was opened. Existing preparation already records sibling release/CI precedents;
 no new framework/ecosystem dependency is warranted by this phase.
 </canonical_refs>
@@ -322,6 +382,21 @@ no new framework/ecosystem dependency is warranted by this phase.
 <specifics>
 ## Specific Ideas and Evidence
 
+**Current scope decision, 2026-10-22:** the owner requested all relevant role perspectives, adversarial review,
+primary sources where useful, and automatic adoption of coherent recommendations. Three read-only advisory
+reviews covered scope/architecture, security/test validity and construction/CI economics. Two recommended
+explicit deferral under the fixed allocation; the security review preferred complete centralization only if
+its entire remaining cost received a fixed explicit budget revision. No such measured complete cost exists.
+The synthesis adopts deferral, retains the security limitations explicitly and stops further fan-out because
+no remaining lens changes the bounded choices. This is not an invented interview answer.
+
+`cmake -DROOT=. -DINVENTORY=tests/policy/gate-lines.txt -DOUT=build/plan-evidence/discussion-count.json -P tests/cmake/gate_count.cmake`
+returned exit 0 and observed 14,879 physical lines, source 8,580/6,533. Counter success is not budget acceptance.
+`gh issue list --label digest --state open --json number,title,body,url --limit 2` returned exit 0 and an empty
+list; no default-branch digest publication is inferred. No current hosted run was created; run URL unavailable
+for this discussion's local measurement. Earlier measurements below remain dated historical evidence.
+
+
 - Refreshed research measured 250 lines of scratch helpers/replacements plus an incomplete quality prototype;
   its 2,262-line construction excludes remaining enforcement and fails the former 857 ceiling. This supports
   reopening the delivery constraint, not claiming impossibility or choosing an invented 3,000/3,500-line cap.
@@ -350,6 +425,11 @@ identity checks; QA retains fault-specific controls; release consumers receive t
 
 <deferred>
 ## Deferred Ideas
+
+Performance/compatibility domain-policy centralization, shared immutable grant/renewal handling and retirement
+of the two legacy exception stores are explicitly deferred by D-21. No deadline, extra allocation or automatic
+future execution is attached. The narrower Phase 5 requirement records the surviving exception limitations.
+
 
 New emulator capabilities remain in phases 6–11 or later milestones. External dashboards, caches without a measured
 payoff, broad new analysis services, extra RetroArch cases and new public APIs are not part of this tune-up.

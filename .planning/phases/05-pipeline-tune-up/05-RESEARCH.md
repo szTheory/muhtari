@@ -1,3 +1,9 @@
+
+
+> Scope revision 2026-10-22: CONTEXT D-09/D-10/D-21–23 and revised TUNE-03 defer central performance/compatibility
+> policy migration and legacy-store retirement. Copied constraints and migration guidance below preserve the
+> earlier research history; they do not authorize another construction/gap round. Reuse unaffected measurements.
+> Remaining plans require narrow reconciliation before execution; no budget increase is adopted.
 # Phase 5: Pipeline tune-up — Research
 
 **Researched:** 2026-10-21

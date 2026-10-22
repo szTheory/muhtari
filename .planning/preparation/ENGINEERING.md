@@ -2,7 +2,7 @@
 title: "Engineering: C rules, tests, CI, release, repo settings and quality loops"
 summary: "Build, test, CI, release, repository, triage, performance and documentation decisions for muhtari, with mutable facts re-verified on 2026-10-15."
 read_when: "Before creating or changing CMake files, presets, tests, workflows, repository settings, the release pipeline, quality gates or engineering docs."
-updated: 2026-10-21
+updated: 2026-10-22
 ---
 
 # Engineering: C rules, tests, CI, release, repo settings and quality loops
@@ -199,6 +199,17 @@ Branch policy: `.githooks/pre-commit` runs `hygiene.sh --staged` and refuses a c
 - **Rec** Ir/frame is the only per-PR speed gate; wall-clock tails are nightly trend data — **Alt** a wall-clock PR gate — **Flip** a dedicated quiet benchmark host appears (then a p50/p99 trend gate there, still never p99.999). Why never on shared runners: a zero-miss 95 % bound at p = 10⁻⁵ needs n ≥ ln 0.05 / ln(1 − 10⁻⁵) = 299,572 independent frames, 83.3 min of NTSC play (derived; glueyneo's calculation [ENG.20]); frames are correlated; shared VMs add steal time and clock changes, so tails measure the host. Ir is deterministic: precedent from the NES sibling, 23.3–24.7 M Ir/frame at +0.00 % head against base (job 115428512765) [ENG.18].
 
 **Ratchet contract:** one committed `quality.json` holding floors (`tests.<preset>`, `compat.public`, `fuzz.targets`, `coverage.functions_pct`), ceilings (`warnings`, `analyzer_findings`, `fuzz.open_crashes`, `ir_per_frame.<rom>`, `size.<zip>`, `ci.critical_path_s`) and `reasons[]` (`key`, `from`, `to`, `why`, `date`). One CI check, job `quality` (needs build, perf and hash artifacts), runs `cmake -P tests/cmake/quality.cmake` with CMake's `string(JSON)`, no Python: a floor may not fall and a ceiling may not rise unless the same PR loosens the bound and adds a `reasons[]` entry (diffed against the merge base); tightening is free and is done at each tune-up. Sanitizer and fuzz status enter as `asan`/`fuzz.regress` results; `compat.local` (owner dumps) is recorded with its commit by the `library` preset and checked at the tune-up, not in CI.
+
+**Phase 5 scope revision, 2026-10-22:** the aggregate's ordinary bounds/reasons stay in `quality.json`.
+Performance and compatibility retain their existing independent semantic judges and respective
+`tests/perf/allow.txt` / `tests/compat/allow.txt` authorities; their centralization is deferred. Do not duplicate
+those domain bounds/reasons in a second active store or describe legacy rolling expiry as immutable central
+grant/from/to/renewal enforcement. A waived compatibility regression can become the next base's nonpass state;
+this limitation is accepted explicitly, not repaired by the aggregate. Current ledger/results equality remains
+unconditional. This narrows the unified-store part of the ratchet contract above; aggregate trusted-base
+controls, performance arming, full counting and fixed allocations are unchanged. Reconcile mixed draft callers
+and verify current execution before acceptance. Phase 5 CONTEXT D-21–23 is authoritative for this revision.
+
 - **Rec** one file, one check — **Alt** per-metric scoreboards (nesturbator's CONFORMANCE scoreboard, perf allow file, timeout comments) — **Flip** one metric's updates dominate PR churn (then give it its own file under the same check).
 
 ## 9. Portability lanes

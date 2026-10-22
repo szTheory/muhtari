@@ -215,3 +215,61 @@ hosted write, CI dispatch, cap measurement, phase verification or second GSD ste
 
 The next command is `$gsd-plan-phase 5 --research`: refresh the changed contract, reuse valid prior findings,
 then plan the bounded initial measurement and required improvements. No full replacement prototype is required.
+
+
+## Measured migration halt: delegated scope resolution — 2026-10-22
+
+The owner invoked discussion again, then requested all relevant perspectives, primary sources where useful,
+adversarial review and automatic adoption of a coherent recommendation. This explicitly selected all three
+remaining areas and delegated the choices below; no multiple-choice interview response is invented. Earlier
+D-01–20 remain unless explicitly narrowed by current CONTEXT D-09/D-10/D-21–23.
+
+Three read-only advisory reviews covered scope/architecture/maintainer cost, security/test validity, and
+construction/CI economics. The security recommendation initially favored preserving full centralization if a
+fixed budget for the complete remaining migration could be adopted; it also identified the incomplete mixed
+caller cutover and legacy exception-lifecycle limitation. The other two reviews recommended explicit deferral
+under the fixed allocation. The synthesis adopts deferral because the complete cost is unmeasured and the
+38-line deficit only prices unfinished Task 1. No arbitrary cap or automatic extra gap round is adopted.
+
+| Area | Alternatives considered | Adopted recommendation | Tradeoff and control |
+|---|---|---|---|
+| Domain ownership | Retain separate stores; complete central migration; leave partially migrated code | Explicitly defer domain centralization and retain one authority per semantic bound | Narrows D-09/TUNE-03; no claim of unified central reasons or complete migration |
+| Allocation | Keep fixed allocation; add 38; estimate larger complete migration; seek more generalized savings | Preserve quality920 and the complete fixed allocation; stop new migration attempts | 38 funds only the current deficit, not completion; no proof of impossibility, forecast savings or BE12 transfer |
+| Exception lifecycle | Central immutable grants/from/to/renewal; existing reviewed domain expiry | Aggregate keeps central protections; domains retain explicitly limited legacy semantics | A waived compatibility loss can become the next base's nonpass state; no automatic restoration or anti-renewal claim |
+| Draft reconciliation | Blanket restore; commit mixed draft; selective planned reconciliation | Preserve six draft files and RED history; plan a coherent retained-store implementation | Retire only central-capability-specific assertions under explicit deferral; retain original domain and aggregate faults |
+| Acceptance and scheduling | Reuse prior green runs; release downstream immediately; require current evidence | Remain blocked pending revised plans and later current acceptance | Full local CI/library, current direct perf/library/quality, called CI and authentic joins; no historical GREEN substitution |
+
+**Concrete evidence:** latest named construction recovered nine of 47 required lines. Fresh counter invocation
+`cmake -DROOT=. -DINVENTORY=tests/policy/gate-lines.txt -DOUT=build/plan-evidence/discussion-count.json -P tests/cmake/gate_count.cmake`
+returned exit 0 and 14,879 physical lines, source 8,580/6,533. It is an observation, not passing budget evidence:
+quality958 exceeds920 by38; total exceeds14,841 by38 and C14,853 by26. No implementation tests or hosted
+acceptance were rerun in this discussion. Historical eight-case success remains in 05-11-SUMMARY only.
+`gh issue list --label digest --state open --json number,title,body,url --limit 2` returned exit 0 with no issue.
+No current run URL exists for this local measurement; prior run URLs remain predecessor evidence only.
+
+**Adversarial findings retained:** the dirty perf comparator reads central domains, while production still
+passes ALLOW without trusted BASE_POLICY; compatibility still reads its own store. Passing selected tests
+cannot accept this partial cutover. An exception never excuses current ledger/results mismatch. Authenticate
+every original observation before extrema, including a smaller forged lane. Keep exact +1.00%/+1.01% arithmetic,
+duplicate-base/input/NO_BASE and report-only/armed semantics, all relevant ordinary controls, and actual counts.
+Do not conflate a reviewed legacy expiry with immutable central grant or restoration guarantees. The spent
+POKEY migration needs accepted-base/replacement evidence before removal, not renewal or expiry-date guessing.
+
+**Primary sources rechecked:** [Google SRE](https://sre.google/workbook/eliminating-toil/) supports evaluating
+automation cost, not a repository-specific LOC allowance. [GitHub secure use](https://docs.github.com/en/actions/reference/security/secure-use)
+supports minimum permissions and safe untrusted-data handling; deferral grants no new privileges. The scoped
+choice is project judgment. No outside emulator source, dependency, service or product capability was added.
+
+**Policy synchronization:** revised TUNE-03, CONTEXT D-09/D-10/D-21–23, ENGINEERING §8 and DEC.52 explicitly
+state retained domain stores. A research supersession notice prevents copied old constraints from overriding
+the new context. Existing roadmap/plan histories remain untouched: the next planning step must refresh their
+active dependencies and acceptance, including 05-07's central-POLICY assumption and 05-09's store-retirement
+requirement. 05-06/05-11 are not completed by this decision; no extra gap round is automatically authorized.
+
+**Discretion and deferral:** central domain migration can be revisited only with concrete new evidence and
+explicitly adopted scope. Reconciliation mechanics belong to the next plan, with no new allocation, broad
+savings hunt, blanket restoration or routine owner confirmation. TUNE-03/TUNE-04 and final phase acceptance
+remain pending. No execution, push, dispatch, arming, promotion, publication, ship, merge or second GSD step ran.
+
+Next command: `$gsd-plan-phase 5`. Reuse unaffected research and revise only the changed scope/dependencies;
+do not launch another migration recovery by default.
