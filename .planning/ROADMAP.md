@@ -34,11 +34,11 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 5/9 active plans complete; replacement05-11 halted during Task1 at its fixed allocation gate.
+**Plans:** 5/9 active plans complete; retained-store reconciliation05-12 and05-07/08/09 remain. Halted05-06/05-11 are superseded for scheduling, not completed.
 
 05-10 restored PowerPC ABI, and its authorized debug continuation fixed evidence-path handling and proved diagnostic-free native/BE 607+6 inventories, two-file equality and release-called required CI at immutable implementation 0901c877.
 05-03 is superseded for scheduling; its partial implementation and historical halt records remain.
-05-04 delivered the tested read-only digest and guarded publisher; actual default-branch publication remains a ship check. The accepted Windows repair is preserved. 05-05 completed typed policy adoption, independent measured bounds and the required exact-artifact aggregate at implementation51a3f95. Direct CI39706507168 and release-called CI39706506980 completed successfully; the latter passed on a same-head retry after an unchanged OpenBIOS timeout. Shared requirements remain pending. Plan05-06 has a committed RED control and an uncommitted passing perf draft measuring14888/C14853 and quality967/allocation920. No increase is authorized; bounded new-evidence recovery is required before05-07. See05-06-SUMMARY.md and05-06-HANDOFF.md.
+05-04 delivered the tested read-only digest and guarded publisher; actual default-branch publication remains a ship check. The accepted Windows repair is preserved. 05-05 completed typed ordinary-policy adoption, independent measured bounds and the required exact-artifact aggregate at implementation51a3f95. Direct CI39706507168 and release-called CI39706506980 completed successfully; the latter passed on a same-head retry after an unchanged OpenBIOS timeout. These prior greens do not accept the mixed draft or changed callers. Shared requirements remain pending. Plans05-06/05-11 halted with0/3 tasks each; their RED/draft/count and unrun-acceptance histories remain in their original SUMMARY/HANDOFF files.
 
 Plans:
 **Wave 1**
@@ -58,31 +58,27 @@ Plans:
 **Wave 5** *(complete)*
 - [x] 05-05-PLAN.md — Require one quality ratchet over real observations and trusted baselines.
 
-**Wave 6** *(halted; concrete scope decision required)*
-- [ ] 05-11-PLAN.md — Recover the allocation through shared validation, then finish the central policy migration and current acceptance.
+**Wave 6** *(planned; no new implementation acceptance)*
+- [ ] 05-12-PLAN.md — Selectively reconcile six drafts into retained perf/compatibility stores, prove strict fit and current local/direct/called acceptance.
 
-05-06-PLAN.md is superseded by 05-11 for scheduling; its zero completed tasks, committed RED and uncommitted draft remain historical facts. The recovery keeps quality920/C14853 fixed and must prove actual fit before expansion. See05-06-RECOVERY-GAPS.md; forecast savings are not credited.
+05-06 and05-11 are superseded for scheduling by05-12. The latest halted draft measures14879/quality958:9 lines recovered from14888,38 above strict14841/quality920 and26 above C14853. The scope decision is resolved by CONTEXT D-09/D-10/D-21–23: domain-policy centralization/store retirement is deferred; ordinary aggregate guarantees and legacy semantic guards remain. A waived merged compatibility regression can become the next base's nonpass state; no immutable domain grants, anti-renewal, automatic restoration or unified policy is claimed.
 
-Replacement05-11 attempted the named shared readers and retained the eight selected controls,
-exit0. Its draft measures14879/quality958:9 lines recovered from14888,38 still needed for
-strict14841/quality920 and26 above C14853. No task GREEN, compatibility expansion,
-production cutover or local/full/hosted acceptance exists. See05-11-SUMMARY.md and
-05-11-HANDOFF.md. Later waves remain blocked; another gap round is not automatically authorized.
+Reconciliation must preserve the six drafts selectively and the committed RED/halt lineage, all seven original perf faults, unconditional bidirectional fresh ledger/results equality, aggregate controls and useful original-item authentication. Spent POKEY removal needs accepted-base/replacement evidence, not date alone. Quality920 and total14841 with unchanged other components remain mandatory alongside fixed B12885/S2/N1970/C14853; BE12 is not reserve. No new allocation, waiver, generalized savings hunt or automatic gap round is authorized. Full local ci/generated-corpus library and current direct numeric perf/library/quality plus release-called required CI/authentic joins must accept05-12 before later waves run. Earlier greens and eight selected cases are insufficient.
 
-**Wave 7** *(blocked on Wave 6 completion)*
-- [ ] 05-07-PLAN.md — Run fresh performance controls and audit conditional lane promotions.
+**Wave 7** *(blocked on accepted05-12)*
+- [ ] 05-07-PLAN.md — Run unchanged D-12 fresh performance controls and D-13 conditional lane-promotion audit through retained authorities.
 
-**Wave 8** *(blocked on Wave 7 completion)*
+**Wave 8** *(blocked on accepted05-12/05-07)*
 - [ ] 05-08-PLAN.md — Correct release signer/API safety and measured rehearsal/recovery claims.
 
-**Wave 9** *(blocked on Wave 8 completion)*
+**Wave 9** *(blocked on accepted05-12/05-07/05-08)*
 - [ ] 05-09-PLAN.md — Verify docs/install/settings and tighten final counted acceptance.
 
 **Success criteria:**
 
 1. Maintainers receive one weekly triage digest and its monthly CI-efficiency section from hosted evidence.
 2. The reproduced audio timeout and compatibility-output race are resolved under measured bounds; any removed check names its stronger replacement.
-3. One quality ratchet rejects unexplained regressions, performance arming follows the control-run result, and gate code meets its audited absolute budget with preallocated scoped additions, final tightening and published advisory source ratios.
+3. One ordinary aggregate quality ratchet rejects unexplained regressions; retained performance/compatibility stores and semantic guards have explicit legacy lifecycle limits. Performance arming follows unchanged controls, and gate code meets audited fixed allocations with final tightening and published advisory source ratios.
 4. The release docs/install path and repository-setting checks match current behavior, and the measured weakest dimension has a shipped improvement.
 
 ### Phase 6: Retail cartridge boards
