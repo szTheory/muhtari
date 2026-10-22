@@ -1,8 +1,8 @@
 # Phase 5: Pipeline tune-up - Context
 
 **Gathered:** 2026-10-21
-**Status:** Scope revised; remaining plans require reconciliation before execution
-**Revised:** 2026-10-22 after the measured 05-11 allocation halt; D-09/D-10 narrowed and D-21–23 added. Earlier budget decisions remain in force.
+**Status:** Ready for targeted replanning; execution remains halted
+**Revised:** 2026-10-22 after the measured 05-12 one-line fit halt; D-24–26 adopt one named simplification for planning. D-09/D-10/D-21–23 and fixed allocations remain in force.
 
 <domain>
 ## Phase Boundary
@@ -242,6 +242,46 @@ and one GSD step per session. Prefer another copy and paste over another depende
   05-06/05-11 as halted histories; do not mark either complete. TUNE-03/TUNE-04 remain pending. TUNE-04/D-12
   readiness and lane-promotion predicates are unchanged; no arming, promotion, ship or merge occurs here.
 
+### Bounded resolution after the one-line reconciliation halt
+
+- **D-24:** The measured 05-12 result is new evidence for targeted replanning, not permission to resume its
+  failed task or reset review/gap limits. Its complete count is 14,842, quality921: one above the unchanged
+  strict 14,841/quality920 contract. Adopt exactly one identified construction for the next plan: keep the
+  shared original-observation authentication and status reader, but make the two measured-value consumers
+  own their typed numeric reads. Remove the helper's three-line conditional numeric-extraction block; read
+  the number once in the join's measured branch before extrema, and once in the aggregate after its
+  unavailable/required-status handling before bounds/reporting. Inspection forecasts three lines removed and
+  two added, a net one-line saving. This narrows helper responsibility without statement compression, deleted
+  comments or removed controls. It is not measured savings or accepted fit. Planning must name this finite
+  construction and its proof obligations; no calendar refactor, generalized savings search or fallback cleanup
+  is authorized. Restoring accepted inline authentication alone would lose five lines of net sharing savings
+  and leave the six-line perf-control addition unfunded; it is not an independently fitting fallback.
+- **D-25:** Authentication must still validate each original item's identity before a reduction can discard it.
+  Preserve exact artifact membership, trusted base SHA/policy, comparable environments, SHA/source/units/
+  producer/configuration/direction checks and worst-value reduction. The aggregate retains structural base
+  initialization and advisory-unavailable continues, then rejects every other non-measured status before
+  its typed numeric read. The join reads a number only inside its measured branch; its permitted unavailable
+  base gate_lines path never uses a stale value. Malformed measured numbers still fail before extrema or
+  bounds. Retain the exact forged-SHA diagnostic and all ordinary policy controls, all seven perf cases and
+  the added wrong-ROM, malformed-allowance, zero-HEAD and negative-BASE2 assertions. The accepted join already
+  authenticates original items; sharing adds no new security guarantee under its trusted source contract.
+  Preserve useful sharing for its measured construction cost, without claiming stronger evidence than exists.
+- **D-26:** Keep B12,885/S2/N1,970/C14,853, quality920 and strict14,841 with unchanged other components. BE12
+  remains unavailable as reserve; no permanent/temporary allocation, waiver or scope increase is adopted.
+  This discussion explicitly adopts only the named construction under the owner's recommendation delegation.
+  Preserve 05-06/05-11/05-12 as halted histories and retain all three current drafts selectively. The planner
+  must choose a continuation/replacement representation that preserves those facts and refreshes active
+  dependencies; discussion does not mark a plan complete or rewrite historical summaries. A semantic failure,
+  measured fit miss or additional required compatibility/caller/control cost stops affected expansion; do not
+  credit forecasts, silently absorb growth or launch another automatic gap round. Task2/3 costs remain unproved.
+  Acceptance after the last implementation edit still requires full local ci and generated-corpus library
+  against a verified base, physical/component and documentation budgets, current direct numeric perf/executed
+  library/quality, release-called required CI, exact authenticated nine/eight-artifact joins and executed
+  inventories. Record command, exit and actual run URL with producer/base SHA and attempt identities. Eight
+  selected cases and predecessor greens remain insufficient. Only accepted reconciliation releases 05-07/08/09;
+  arming, promotion, release and final tightening retain their separate existing predicates. Stop further
+  advisory fan-out now: security, test validity, architecture, delivery and cost reviews change no other decision.
+
 ### Agent's Discretion
 
 Internal schema names, helper boundaries, batching/API page sizes, readable report formatting, per-test cost
@@ -289,6 +329,9 @@ Keep todos pending until execution supplies evidence; folding is not completion.
 
 ### Current halt and scope reconciliation
 
+- `.planning/phases/05-pipeline-tune-up/05-12-PLAN.md` and
+  `.planning/phases/05-pipeline-tune-up/05-12-SUMMARY.md` — latest hard fit halt, exact per-path/component
+  counts, retained RED and three drafts; preserve as historical evidence when replanning D-24–26.
 - `.planning/phases/05-pipeline-tune-up/05-11-HANDOFF.md` and
   `.planning/phases/05-pipeline-tune-up/05-11-SUMMARY.md` — latest failed construction, six retained drafts,
   unchanged allocations and unrun acceptance; historical records, not an active permission to retry.
@@ -342,6 +385,9 @@ Keep todos pending until execution supplies evidence; folding is not completion.
 
 ### Primary sources rechecked 2026-10-22
 
+- [CMake 4.3 macro documentation](https://cmake.org/cmake/help/v4.3/command/macro.html) — macros expand in
+  the caller's scope; consumer-owned numeric reads make value ownership explicit. The one-line construction
+  and budget are local engineering judgments, not requirements prescribed by CMake.
 - [Google SRE, Eliminating Toil](https://sre.google/workbook/eliminating-toil/) — evaluate maintenance and
   development cost; no prescribed LOC allowance. Deferral is a project judgment, not a source mandate.
 - [GitHub secure use reference](https://docs.github.com/en/actions/reference/security/secure-use) — retain
@@ -381,6 +427,25 @@ no new framework/ecosystem dependency is warranted by this phase.
 
 <specifics>
 ## Specific Ideas and Evidence
+
+**Current bounded decision after 05-12, 2026-10-22:** the owner again requested all relevant role perspectives,
+primary sources, adversarial analysis and automatic adoption of coherent recommendations. Three read-only
+advisory reviews covered construction/maintainability, security/test validity and delivery/governance. All
+converged on D-24's consumer-owned numeric reads. Security inspected both unavailable branches and confirmed
+the proposed read locations preserve rejection before numeric use. The static net-minus-one forecast has not
+been implemented or tested. Returning to accepted authentication alone forecasts14,847/quality926; raising
+the cap funds no newly adopted capability and would not price remaining acceptance work. No allocation change
+is adopted. A broader calendar simplification was considered and excluded as unnecessary scope.
+
+Fresh local observation:
+`cmake -DROOT=. -DINVENTORY=tests/policy/gate-lines.txt -DOUT=build/plan-evidence/discussion-count.json -P tests/cmake/gate_count.cmake`
+returned exit0:14,842 physical lines, source8,580/6,533, at feee6a98 with the three drafts. This is a successful
+measurement of a failing fit, not acceptance. `gh issue list --label digest --state open --json number,title,body,url --limit 2`
+returned exit0 and no open digest. No implementation tests, hosted dispatch or acceptance ran in discussion;
+run URL is unavailable. Existing 05-12 selected-test results remain historical. The earlier observations below
+remain dated history, not the current count. Current source/ownership documentation is read against code;
+official CMake macro semantics and Google SRE automation-cost guidance support the reasoning without setting
+a repository-specific numeric limit.
 
 **Current scope decision, 2026-10-22:** the owner requested all relevant role perspectives, adversarial review,
 primary sources where useful, and automatic adoption of coherent recommendations. Three read-only advisory
@@ -425,6 +490,10 @@ identity checks; QA retains fault-specific controls; release consumers receive t
 
 <deferred>
 ## Deferred Ideas
+
+The forged-SHA fixture uses an equal-valued observation, so its existing claim of proving a smaller lane hidden
+by extrema is overstated. Record this as a tooling seed under rule7, not a new acceptance requirement or an
+excuse to remove its exact identity rejection. No broader test-harness redesign is adopted here.
 
 Performance/compatibility domain-policy centralization, shared immutable grant/renewal handling and retirement
 of the two legacy exception stores are explicitly deferred by D-21. No deadline, extra allocation or automatic

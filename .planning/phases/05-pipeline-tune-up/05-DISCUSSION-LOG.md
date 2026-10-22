@@ -273,3 +273,59 @@ remain pending. No execution, push, dispatch, arming, promotion, publication, sh
 
 Next command: `$gsd-plan-phase 5`. Reuse unaffected research and revise only the changed scope/dependencies;
 do not launch another migration recovery by default.
+
+## One-line reconciliation halt: bounded resolution — 2026-10-22
+
+The owner invoked discussion after05-12 halted and again delegated all relevant role reviews, primary-source
+research, adversarial consideration and automatic adoption of coherent recommendations. This authorizes updating
+context and selecting all three remaining areas. It does not invent interview answers, enable a chain flag or
+start planning/execution. Existing plans require a later targeted replan. Current decisions are D-24–26.
+
+Three read-only advisors covered architecture/construction, security/test validity, and delivery/governance.
+Their common recommendation is one named separation of responsibilities, with unchanged scope and allocations.
+
+| Area | Options considered | Adopted recommendation | Tradeoff and stopping condition |
+|---|---|---|---|
+| Measured fit | Consumer-owned numeric reads; restore accepted inline authentication; redistribute allocation; revise scope/cap | Plan only consumer-owned numeric reads | Remove3 helper lines, add1 per measured consumer: forecast minus1, not measured credit. No spare line or acceptance is inferred |
+| Authentication | Shared auth/status helper; accepted duplicate authentication; broader helper redesign | Keep sharing; separate numeric consumption | Original identities precede reduction; typed values precede comparisons. CMake caller-scope coupling remains explicit |
+| Controls | Retain all original and added faults; remove assertions to fit; compress formatting | Preserve controls, comments and readable flow | Keep seven perf cases, four added input/allowance assertions, ordinary controls and exact SHA diagnostic |
+| Allocation | Keep strict14841/quality920; treat BE12 as reserve; increase by1; temporary waiver | No allocation change | BE12 is not reserve. A convenient refactor is not new required scope; one-line growth would not price remaining work |
+| Delivery | Named finite attempt; generalized savings search; accept selected tests/prior greens; pause | Targeted replanning from new measured evidence, then current full acceptance | No gap-budget reset; a semantic/fit failure or additional required cost stops expansion. Preserve all halt histories |
+
+**Role synthesis:** maintainers get a helper with a narrower responsibility; QA retains fault-specific assertions
+and missing/malformed evidence rejection; security retains authentication before reduction; release/DevOps retain
+current direct/called producer and base identity; owner delivery avoids an unbounded recovery loop. Players and
+embedders retain the existing deterministic evidence. Unrelated UI, graphics and language ecosystems change no
+decision here. A calendar cleanup was considered but excluded; additional fan-out has diminishing value.
+
+**Adversarial pass:** removing conditional extraction must not leave stale macro outputs in use. In the aggregate,
+structural initialization/advisory unavailable paths continue, every other non-measured status fails, then the
+number is read before bounds/reporting. In the join the read belongs inside measured, before extrema; the allowed
+unavailable base gate_lines branch never uses it. No assertion, typed check, identity field or unknown-status
+rejection is traded away. The accepted join already authenticates every original item: the helper is sharing,
+not a new trust guarantee. Returning to accepted authentication alone loses5 saved lines while retaining6 new
+perf-control lines, forecasting14847/quality926. It is not an independently fitting fallback.
+
+**Seed, not requirement:** the current forged-SHA fixture leaves its observation equal to the others; it proves
+identity rejection but not a below-extremum masking case despite that claim. Keep the exact rejection and record
+the test-harness gap as a tooling seed. Do not spend another review/gap round or expand acceptance because of it.
+
+**Evidence:**
+`cmake -DROOT=. -DINVENTORY=tests/policy/gate-lines.txt -DOUT=build/plan-evidence/discussion-count.json -P tests/cmake/gate_count.cmake`
+returned exit0:14842 physical lines, source8580/6533. Counter success is not fit acceptance; quality921 and
+strict14841 remain exceeded by1. The count is current at feee6a98 with three retained drafts, not an immutable
+accepted implementation. `gh issue list --label digest --state open --json number,title,body,url --limit 2`
+returned exit0 and no issue. No implementation tests or hosted acceptance ran; no current run URL exists.
+
+[CMake 4.3 macro semantics](https://cmake.org/cmake/help/v4.3/command/macro.html) explain caller-scope expansion
+and support explicit value ownership. [Google SRE toil guidance](https://sre.google/workbook/eliminating-toil/)
+supports weighing development and maintenance costs. [GitHub secure use](https://docs.github.com/en/actions/reference/security/secure-use)
+supports existing minimum privileges and untrusted-input precautions. None prescribes this line budget or
+claims a local static forecast has passed. No outside emulator source or new dependency was opened/added.
+
+The next plan must preserve05-06/05-11/05-12 as halted evidence and retain the three drafts selectively. Only
+current strict fit and complete local/direct/called acceptance after the final edit release07/08/09. Task2/3
+costs remain unproved; no forecast savings, unused allowance or historical green finances them. TUNE-03/TUNE-04
+remain pending. Discussion changes no implementation, quality.json, allocation, plan or phase completion.
+
+Next command: `$gsd-plan-phase 5`. Reuse unaffected research; target D-24–26 and dependencies. Stop here.
