@@ -285,17 +285,16 @@ perf testcard head=3837643 base=3837643 delta_bp=0 verdict=PASS
 | `UNSTABLE` | the two base measurements differ, so no comparison is trusted |
 | `NO_BASE` | the merge base has no `CMakePresets.json` to build; only the head is measured |
 
-`NO_BASE` appears on direct pull request runs until the first pull request merges, because `main` held only
-planning files before then; it is decided from the base tree's contents, and a base that has presets but fails to
-build fails the job. An empty or non-numeric measurement is an input error (`perf: error ...`, exit 1), never a
-pass. `perf` runs only in direct runs of `ci.yml`: in `release.yml`'s nested call, which checks out the pull
-request head rather than the merge commit, it is skipped, and `CI required` accepts that skip only in a call that
-passes `ref`.
+`NO_BASE` depends on the base tree's contents; a base with presets that fails to build fails the job.
+Empty, non-numeric and nonpositive measurements fail even unarmed. Release-called CI skips `perf` because it
+checks out the PR head; `CI required` accepts that skip only when the call passes `ref`.
 
-**Arming.** Until `MUHTARI_PERF_ARMED` in `ci.yml` is `"true"` every verdict reports only and the job succeeds.
-Once armed, `FAIL`, `UNSTABLE` and `NO_BASE` fail it. It is armed by one `ci:` pull request after two dispatched
-control runs on `main` show zero spread: on `workflow_dispatch` the job measures one commit three times and prints
-`perf control testcard runs=<a>,<b>,<c> spread=<n>`.
+**Arming.** `MUHTARI_PERF_ARMED` is `"true"` after the 2026-10-22 controls and nightly issue recovery.
+Arming requires two fresh dispatches of one immutable commit, each with three identical positive measurements,
+a current numeric PR comparison with identical duplicate base measurements, and observed nightly failure/issue
+recovery. Dispatches print `perf control testcard runs=<a>,<b>,<c> spread=<n>`. Once armed, `FAIL`, `UNSTABLE`
+and `NO_BASE` fail the job. Coverage is test-card-only; DMA/TIA/POKEY lack their own fresh Ir controls and charged
+integration fit. Native timings alone do not qualify them; no gameplay performance claim follows.
 
 **Exceptions.** A pull request that must be slower adds a line to `tests/perf/allow.txt`:
 `<rom> <max % × 100> <expiry YYYY-MM-DD> <reason>`, for example `testcard 250 2026-12-01 the new mixer`. It

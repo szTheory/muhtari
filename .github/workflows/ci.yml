@@ -27,7 +27,7 @@ permissions:
 # The instructions-per-frame gate reports only until it is armed; arming is
 # one ci: pull request setting this to "true" (docs/testing.md, "Performance").
 env:
-  MUHTARI_PERF_ARMED: "false"
+  MUHTARI_PERF_ARMED: "true"
 
 # Only a pull request's runs supersede each other, so every main commit keeps
 # a result. The workflow name is part of the group because a call from
