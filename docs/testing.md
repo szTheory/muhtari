@@ -357,7 +357,8 @@ session, the same steps run locally from the job's commands, with `-DRETROARCH` 
 
 **If RetroArch will not start the core without content.** The job relies on RetroArch starting a core that
 reports no-game support when `-L` is given and no content. If it stops doing so, the log printed by
-`run_retroarch.cmake` shows it. Treat that as a blocker for the owner, with the log and the run URL.
+`run_retroarch.cmake` shows it. The agent diagnoses it and records the command, exit status
+and run URL; owner action is needed only for a check on the owner's own hardware.
 
 ## Release archives
 
@@ -389,13 +390,18 @@ reused.
 | Job | Runs |
 |---|---|
 | `ci` | `ci.yml` on the pull request's head commit |
-| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, no zip member that `tests/cmake/firmware_scan.cmake` finds listed (ASSET_POLICY.md section 5), `SHA256SUMS` in C-locale name order (`policy.publish_set` checks this on one-member placeholder zips); a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; `publish.sh attested`: each zip's attestation verifies from the pull request's `refs/pull/<number>/merge` and a copy with its last byte flipped does not; publish with `--prerelease --latest=false`; `publish.sh verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` from that ref. A release tag verifies only from `refs/heads/main` (`policy.publish_ref`) |
+| `equality` | full native/PowerPC normal and package inventories plus authenticated same-commit hash equality |
+| `rehearsal` | prepare exactly18 archives from the head commit with no firmware; upload and attest; verify with digest-pinned gh>=2.102.0 and full repository/signer/ref constraints, including changed-byte rejection; publish a non-latest prerelease; verify19 assets, downloaded hashes and attestations. Rehearsals use the PR merge ref; real releases require main. See [maintaining](maintaining.md#the-rehearsal) for the command sequence. |
 | `install-line` | the README install line on `macos-15` against the rehearsal's download URL |
-| `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete` removes the release and its tag, and fails if either remains |
+| `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete TAG ID` confirms release absence before tag deletion, then exact-ID/tag and complete-list absence; API errors fail |
 
-A failed rehearsal recovers with "Re-run all jobs" or a new push. If `cleanup` itself failed, delete the leftover
-by hand: `gh release delete rehearsal-<id>-<attempt> --cleanup-tag --yes`. `publish.sh` deletes only
+Recover a failed rehearsal with "Re-run all jobs" or a new push. For failed cleanup, use
+the retained draft ID and [guarded cleanup](maintaining.md#re-running-a-failed-release). `publish.sh` deletes only
 `rehearsal-*` tags. `docs/maintaining.md` describes the real release, which runs the same steps on `main`.
+
+`policy.publish.controls` tests real-script lifecycle and identity checks, including
+actual workflow output blocks. Hosted rehearsal supplies cryptographic, publication
+and install evidence; fake transport supplies argument and short-circuit controls.
 
 ## Supported systems
 
