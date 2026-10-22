@@ -149,7 +149,18 @@ if(BUILD_BASE)
   execute_process(COMMAND git -C "${ROOT}" worktree add --detach "${tree}" "${base}" COMMAND_ERROR_IS_FATAL ANY)
   file(COPY "${ROOT}/build/pins" DESTINATION "${tree}/build")
   execute_process(COMMAND "${CMAKE_COMMAND}" --workflow --preset "${CONFIG}"
-    WORKING_DIRECTORY "${tree}" COMMAND_ERROR_IS_FATAL ANY)
+    WORKING_DIRECTORY "${tree}" RESULT_VARIABLE base_rc)
+  if(NOT base_rc STREQUAL "0")
+    if(WIN32)
+      # Temporary bounded diagnosis; a failed trusted workflow remains fatal.
+      set(consumer "${tree}/build/${CONFIG}/consumer_dll_crt/consumer.exe")
+      execute_process(COMMAND "${consumer}" WORKING_DIRECTORY "${tree}"
+        RESULT_VARIABLE consumer_rc OUTPUT_VARIABLE consumer_out ERROR_VARIABLE consumer_err TIMEOUT 15)
+      message(STATUS "trusted-base consumer exit=${consumer_rc}; stdout=${consumer_out}; stderr=${consumer_err}")
+      execute_process(COMMAND dumpbin /dependents "${consumer}" TIMEOUT 15)
+    endif()
+    message(FATAL_ERROR "quality_evidence: trusted base workflow failed: ${base_rc}")
+  endif()
   execute_process(COMMAND "${CMAKE_COMMAND}" -DROOT=${tree} -DBUILD=${tree}/build/${CONFIG}
     -DOUT=${BUILD}/quality-base.json -DSHA=${base} -DCONFIG=${CONFIG} -DSOURCE=${SOURCE}
     -P "${CMAKE_CURRENT_LIST_FILE}" COMMAND_ERROR_IS_FATAL ANY)

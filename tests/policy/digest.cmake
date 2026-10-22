@@ -45,7 +45,9 @@ esac
 ]=])
 # Native jq.exe uses CRLF unless binary output is requested; preserve its exit code.
 find_program(DIGEST_JQ jq REQUIRED)
-file(WRITE "${WORK}/bin/jq" [=[#!/bin/sh
+file(CHMOD "${WORK}/bin/gh" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+if(UNIX)
+  file(WRITE "${WORK}/bin/jq" [=[#!/bin/sh
 set -eu
 for arg in "$@"; do
   case "$arg" in -b|--binary) exec "$DIGEST_JQ" "$@" ;; esac
@@ -53,9 +55,8 @@ done
 "$DIGEST_JQ" "$@" > "$DIGEST_WORK/jq-output" || exit "$?"
 awk '{ printf "%s\r\n", $0 }' "$DIGEST_WORK/jq-output"
 ]=])
-file(CHMOD "${WORK}/bin/gh" "${WORK}/bin/jq" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+  file(CHMOD "${WORK}/bin/jq" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 # A literal semicolon is a legal POSIX path character and a CMake list boundary.
-if(UNIX)
   set(ENV{PATH} "${WORK}/unused;entry:$ENV{PATH}")
 endif()
 # Native path separators also keep Windows PATH semicolons out of CMake lists.
