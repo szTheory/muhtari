@@ -11,13 +11,13 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
 
   # Runs the gate with ARGN; requires exit code and output matching regex.
   function(gate code regex)
-    set(CMD ${CMAKE_COMMAND} -DROM=testcard -DALLOW=${DIR}/empty.txt ${ARGN} -P "${SCRIPT}")
+    set(CMD ${CMAKE_COMMAND} -DROM=testcard ${ARGN} -P "${SCRIPT}")
     set(CODE ${code})
     set(REGEX "${regex}")
     include(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../cmake/expect_fail.cmake)
   endfunction()
 
-  set(empty -DPOLICY=${DIR}/empty.json -DBASE_POLICY=${DIR}/empty.json)
+  set(empty -DALLOW=${DIR}/empty.txt)
   set(base -DBASE1=1000000 -DBASE2=1000000)
   if(CASE STREQUAL "identical")
     # Fault prevented: an unchanged core reported slower.
@@ -35,13 +35,12 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     gate(1 "base=1000000 delta_bp=0 verdict=UNSTABLE"
       -DHEAD=1000000 -DBASE1=1000000 -DBASE2=1000001 ${empty} -DARMED=true)
   elseif(CASE STREQUAL "allowed")
-    # Fault prevented: central reasons ignored, inherited forever or applied to another bound.
-    gate(0 "delta_bp=200 verdict=PASS" -DHEAD=1020000 ${base} ${empty} -DPOLICY=${DIR}/current.json -DARMED=true)
-    foreach(case expired lifetime unrelated)
-      gate(1 "quality: .*reason" -DHEAD=1020000 ${base} ${empty} -DPOLICY=${DIR}/${case}.json -DARMED=true)
-    endforeach()
-    gate(1 "quality: .*reason" -DHEAD=1020000 ${base} ${empty}
-      -DBASE_POLICY=${DIR}/expired.json -DARMED=false)
+    # Fault prevented: an allow line ignored while current, honoured after
+    # expiry, or applied to another ROM; malformed allowances fail closed.
+    gate(0 "delta_bp=200 verdict=PASS" -DHEAD=1020000 ${base} -DALLOW=${DIR}/current.txt -DARMED=true)
+    gate(1 "delta_bp=200 verdict=FAIL" -DHEAD=1020000 ${base} -DALLOW=${DIR}/expired.txt -DARMED=true)
+    gate(1 "delta_bp=200 verdict=FAIL" -DHEAD=1020000 ${base} -DALLOW=${DIR}/other.txt -DARMED=true)
+    gate(1 "perf: error malformed allow line 1" -DHEAD=1000000 ${base} -DALLOW=${DIR}/malformed.txt -DARMED=false)
   elseif(CASE STREQUAL "no_base")
     # Fault prevented: a missing base tree passing an armed gate, failing a
     # gate that only reports, or hiding a missing head measurement.
@@ -52,6 +51,8 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
   elseif(CASE STREQUAL "missing")
     # Fault prevented: an empty base measurement read as a pass.
     gate(1 "perf: error BASE1" -DHEAD=1000000 -DBASE1= -DBASE2=1000000 ${empty} -DARMED=false)
+    gate(1 "perf: error HEAD '0' is not a measurement" -DHEAD=0 ${base} ${empty} -DARMED=false)
+    gate(1 "perf: error BASE2 '-1' is not a measurement" -DHEAD=1000000 -DBASE1=1000000 -DBASE2=-1 ${empty} -DARMED=false)
   else()
     message(FATAL_ERROR "perf tests: unknown CASE '${CASE}'")
   endif()
@@ -60,22 +61,10 @@ endif()
 
 set(perf_dir ${CMAKE_BINARY_DIR}/perf)
 file(WRITE ${perf_dir}/empty.txt "# no exceptions\n")
-set(policy [=[{"domains":{"metrics":{"ir_per_frame.testcard":{"ceiling":100,"direction":"ceiling"}}}}]=])
-file(WRITE ${perf_dir}/empty.json "${policy}")
-string(JSON policy SET "${policy}" domains metrics ir_per_frame.testcard ceiling 300)
-set(reason [=[{"key":"ir_per_frame.testcard","from":100,"to":300,"date":"2026-01-01","expires":"2026-02-01","why":"reviewed slowdown"}]=])
-foreach(case current expired lifetime unrelated)
-  set(r "${reason}")
-  if(case STREQUAL "expired")
-    string(JSON r SET "${r}" expires "\"2026-01-01\"")
-  elseif(case STREQUAL "lifetime")
-    string(JSON r SET "${r}" expires "\"2026-04-01\"")
-  elseif(case STREQUAL "unrelated")
-    string(JSON r SET "${r}" to 301)
-  endif()
-  string(JSON p SET "${policy}" domains reasons "[${r}]")
-  file(WRITE ${perf_dir}/${case}.json "${p}")
-endforeach()
+file(WRITE ${perf_dir}/current.txt "testcard 300 2026-02-01 a reviewed slowdown\n")
+file(WRITE ${perf_dir}/expired.txt "testcard 300 2026-01-01 a reviewed slowdown\n")
+file(WRITE ${perf_dir}/other.txt "other 300 2026-02-01 a reviewed slowdown\n")
+file(WRITE ${perf_dir}/malformed.txt "testcard invalid\n")
 foreach(case allowed identical missing no_base plus_1_00 plus_1_01 unstable)
   muhtari_add_test(NAME perf.gate.${case}
     COMMAND ${CMAKE_COMMAND} -DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/../cmake/perf_compare.cmake
