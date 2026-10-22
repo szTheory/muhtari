@@ -102,7 +102,8 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
   muhtari_add_test(NAME policy.publish.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
       -DWORK=${CMAKE_BINARY_DIR}/policy/publish_fixture -P ${CMAKE_CURRENT_LIST_DIR}/publish.cmake
-    LABELS policy TIMEOUT 30)
+    # Provisional n=0 expanded transport; 30s censored on Windows/Intel Mac, runs39874135765/39874135839.
+    LABELS policy TIMEOUT 250)
   muhtari_add_test(NAME policy.quality.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
       -DWORK=${CMAKE_BINARY_DIR}/policy/quality_fixture -P ${CMAKE_CURRENT_LIST_DIR}/quality.cmake

@@ -28,7 +28,7 @@ set from its own run. Every lane must supply current/base observations, the even
 SHA and unchanged base policy. Missing lanes, wrong identities or mismatched
 compiler/fixture environments fail. Each individual observation is checked before
 reducing to the worst measured value per bound and calling the existing typed judge.
-Direct PR runs additionally require the actual advisory test-card Ir artifact.
+Direct PR runs additionally require the actual test-card Ir artifact.
 Pushes and release-called CI report intentionally unexecuted Ir as unavailable.
 Planning-only CI skips quality alongside the other heavy work; `CI required` checks
 its exact dependency membership and rejects failed, omitted or wrongly skipped quality.
@@ -36,7 +36,8 @@ its exact dependency membership and rejects failed, omitted or wrongly skipped q
 Coverage, open crashes, backlog and comparable historical duration remain explicit
 gaps. Library, WASM and property observations remain advisory. Cachegrind evidence
 names the test-card workload and retains the existing semantic comparator; its
-threshold remains report-only pending the [arming controls](testing.md#performance).
+test-card threshold is armed after the [arming controls](testing.md#performance);
+the broader workload remains limited to that fixture.
 An absent or unstable base is unavailable, not a passing comparable measurement.
 Hash equality, public compatibility, ABI, sanitizers, performance and archive
 semantics retain their independent consumers. The aggregate owns ordinary thresholds
