@@ -13,16 +13,24 @@ case "$*" in
     exit 0 ;;
   'attestation verify '*)
     case "$3" in
-      "$PUBLISH_WORK"/dist/*) ;;
+      "$PUBLISH_WORK"/dist/* | "$PUBLISH_WORK"/temp/publish-verify/download/*) ;;
       *) [ "$PUBLISH_CASE" = tampered ] ;;
     esac
-    case "$PUBLISH_CASE" in wrong-signer | prefix-signer)
+    identity=$PUBLISH_CASE
+    case "$identity:$3" in
+      download-*:"$PUBLISH_WORK"/temp/publish-verify/download/*) identity=${identity#download-} ;;
+      download-*:*) identity=correct ;;
+    esac
+    case "$identity" in wrong-signer | prefix-signer)
       case " $* " in
         *" --signer-workflow example/public/.github/workflows/release.yml "*) exit 1 ;;
       esac
       ;; wrong-ref | case-ref)
       case " $* " in *" --source-ref refs/heads/main "*) exit 1 ;; esac ;;
     esac ;;
+  'release view '*)
+    case "$*" in *'--json isDraft'*) echo false ;; *) (cd "$PUBLISH_WORK/dist" && printf '%s\n' *) ;; esac ;;
+  'release verify '*) ;;
   'api -X PATCH '*) ;;
   'api '*)
     i=$(cat "$PUBLISH_WORK/position")
@@ -36,6 +44,12 @@ case "$*" in
 esac
 ]=])
 file(CHMOD "${WORK}/bin/gh" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+file(WRITE "${WORK}/bin/curl" [=[#!/bin/sh
+set -eu
+[ "$1 $2 $3 $4" = "-fsSL --retry 3 -o" ] || exit 1
+cp "$PUBLISH_WORK/dist/${6##*/}" "$5"
+]=])
+file(CHMOD "${WORK}/bin/curl" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 foreach(component library runner libretro)
   foreach(os linux macos windows)
     foreach(arch x64 arm64)
@@ -43,6 +57,10 @@ foreach(component library runner libretro)
     endforeach()
   endforeach()
 endforeach()
+
+file(GLOB assets RELATIVE "${WORK}/dist" "${WORK}/dist/*.zip")
+execute_process(COMMAND "${CMAKE_COMMAND}" -E sha256sum ${assets}
+  WORKING_DIRECTORY "${WORK}/dist" OUTPUT_FILE "${WORK}/dist/SHA256SUMS" COMMAND_ERROR_IS_FATAL ANY)
 
 # Shared response queue exercises production command substitutions and conditional callers.
 set(cmd "${CMAKE_COMMAND}" -E env --modify "PATH=path_list_prepend:${WORK}/bin"
@@ -73,12 +91,14 @@ set(body_release "{\"id\":7,\"tag_name\":\"rehearsal-fixture\"}")
 set(body_create "{\"id\":7,\"tag_name\":\"rehearsal-fixture\",\"draft\":true,\"prerelease\":true}")
 set(body_tag "{\"ref\":\"refs/tags/rehearsal-fixture\"}")
 set(create_sequence "list_empty;create")
+set(absent_sequence "list_empty;list_empty;tag_absent;list_empty;tag_absent")
+set(absent_known_sequence "list_empty;release_absent;release_absent;list_empty;tag_absent;list_empty;release_absent;tag_absent")
 set(delete_sequence "list_present;release;delete_release;release_absent;list_empty;tag;delete_tag;tag_absent;list_empty;release_absent;tag_absent")
 set(rows "create|0||0||" "delete|0||0||" "delete|3|crlf|0||" "delete|7|crlf|0||"
   "delete|3|missing-separator|1|invalid HTTP response|git/ref" "delete|3|bad-header|1|invalid HTTP response|git/ref"
   "delete|3|contradiction|1|HTTP command/status disagreement|git/ref" "create|1|later|0||POST" "create|1|present|0||POST")
 foreach(code 401 403 404 429 500 503 transport)
-  list(APPEND rows "create|1|fail-${code}|1|release listing failed|POST|DELETE" "delete|1|fail-${code}|1|release listing failed|DELETE")
+  list(APPEND rows "create|1|fail-${code}|1|release listing failed|POST" "delete|1|fail-${code}|1|release listing failed|DELETE")
 endforeach()
 foreach(body "" "not JSON" "{}" "[]" "[{}]" "[[null]]" "[[{}]]" "[[{\"id\":7,\"tag_name\":null}]]")
   list(APPEND rows "create|1|json-${body}|1|invalid release listing|POST")
@@ -95,18 +115,50 @@ list(APPEND rows "create|1|json-[[{\"id\":7,\"tag_name\":\"rehearsal-fixture\"},
   "create|2|json-{\"id\":7,\"tag_name\":\"rehearsal-fixture\",\"draft\":false,\"prerelease\":true}|1|invalid create response|PATCH"
   "delete|2|json-{\"id\":7,\"tag_name\":\"other\"}|1|release identity|DELETE" "delete|2|http-404|1|listed release absent|DELETE"
   "delete|4|http-200|1|release still exists|git/ref" "delete|5|present|1|release still listed|git/ref"
-  "delete|5|fail-503|1|release listing failed|git/ref" "delete|6|json-{}|1|tag identity|DELETE.*git/refs"
+  "delete|5|fail-503|1|release listing failed|git/ref" "delete|6|bad-status|1|invalid HTTP response|DELETE.*git/refs"
+  "delete|7|false-status|1|invalid HTTP response|PATCH" "delete|8|missing-separator|1|invalid HTTP response|PATCH" "delete|6|json-{}|1|tag identity|DELETE.*git/refs"
   "delete|8|http-200|1|tag still exists|PATCH" "delete|9|present|1|release still listed|PATCH"
   "delete|10|http-200|1|release still exists|PATCH" "delete|11|http-200|1|tag still exists|PATCH")
-foreach(code 403 429 500 503 transport)
-  foreach(index 2 3 4 6 7 8)
-    list(APPEND rows "delete|${index}|http-${code}|1|publish:|PATCH")
+list(APPEND rows "absent|0||0||" "absent_known|0||0|||7" "delete|0||0|||7"
+  "delete|1|empty|0|||7" "delete|0||1|release identity conflict|DELETE|8" "delete|3|http-404|0||"
+  "create|1|json-[[],[]]|0||" "create|2|json-not JSON|1|invalid create response|PATCH"
+  "create|2|json-{\"id\":7,\"tag_name\":\"rehearsal-fixture\",\"draft\":true,\"prerelease\":false}|1|invalid create response|PATCH")
+foreach(id null "\"7\"" 0 -1 1.5)
+  list(APPEND rows "delete|0||1|invalid release ID|DELETE|${id}")
+endforeach()
+foreach(code 401 403 429 500 503 transport)
+  foreach(index 2 3 4 6 7 8 9 10 11)
+    set(cause_2 "release GET status")
+    set(cause_3 "DELETE status")
+    set(cause_4 "release still exists")
+    set(cause_6 "tag still exists")
+    set(cause_7 "DELETE status")
+    set(cause_8 "tag still exists")
+    set(cause_9 "release listing failed")
+    set(cause_10 "release still exists")
+    set(cause_11 "tag still exists")
+    set(cause "${cause_${index}}")
+    if(code STREQUAL "transport" AND NOT index EQUAL 9)
+      set(cause "invalid HTTP response")
+    endif()
+    set(forbidden "PATCH")
+    if(index LESS 6)
+      set(forbidden "git/ref")
+    endif()
+    list(APPEND rows "delete|${index}|http-${code}|1|${cause}|${forbidden}")
   endforeach()
-  list(APPEND rows "create|2|http-${code}|1|publish:|PATCH")
+  set(cause "create status")
+  if(code STREQUAL "transport")
+    set(cause "invalid HTTP response")
+  endif()
+  list(APPEND rows "create|2|http-${code}|1|${cause}|PATCH")
 endforeach()
 foreach(code 409 422)
   list(APPEND rows "delete|7|http-${code}|1|DELETE status ${code}|PATCH")
 endforeach()
+set(lifecycle [=[
+if id=$(sh "$1/scripts/publish.sh" "$2" rehearsal-fixture ${3:+"$3"}); then printf '%s\n' "$id"; else exit 1; fi
+]=])
 foreach(row IN LISTS rows)
   string(REPLACE "|" ";" fields "${row}")
   list(GET fields 0 operation)
@@ -115,6 +167,9 @@ foreach(row IN LISTS rows)
   list(GET fields 3 expected_rc)
   list(GET fields 4 diagnostic)
   list(GET fields 5 forbidden)
+  list(APPEND fields "")
+  list(GET fields 6 supplied)
+  string(REGEX REPLACE "^absent.*" "delete" entry "${operation}")
   set(i 0)
   foreach(step IN LISTS ${operation}_sequence)
     math(EXPR i "${i}+1")
@@ -168,7 +223,7 @@ foreach(row IN LISTS rows)
   endforeach()
   file(WRITE "${WORK}/position" "0")
   file(WRITE "${WORK}/calls" "")
-  execute_process(COMMAND ${cmd} EXPECTED_SHA=fixture-sha sh "${ROOT}/scripts/publish.sh" "rehearsal-${operation}" rehearsal-fixture
+  execute_process(COMMAND ${cmd} EXPECTED_SHA=fixture-sha sh -c "${lifecycle}" sh "${ROOT}" "rehearsal-${entry}" "${supplied}"
     RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
   file(READ "${WORK}/calls" calls)
   if(NOT rc STREQUAL expected_rc OR (expected_rc STREQUAL "1" AND NOT out MATCHES "${diagnostic}") OR (NOT forbidden STREQUAL "" AND calls MATCHES "${forbidden}"))
@@ -182,7 +237,8 @@ if [ "$PUBLISH_ENTRY" = verify ]; then set -- verify rehearsal-fixture; else set
 sh "$script" "$@" "$PUBLISH_WORK/dist" &&
 gh api -X PATCH repos/example/public/releases/7 -F draft=false
 ]=])
-foreach(case correct tampered old wrong-signer prefix-signer wrong-ref case-ref failed empty partial nonnumeric unknown prerelease patch minor major)
+foreach(case correct tampered old wrong-signer prefix-signer wrong-ref case-ref failed empty partial nonnumeric unknown prerelease patch minor major
+  download-wrong-signer download-prefix-signer download-wrong-ref download-case-ref)
   set(version "gh version 2.102.0 (2026-09-30)")
   set(regex "attestation does not verify")
   if(case STREQUAL "old")
@@ -207,8 +263,11 @@ foreach(case correct tampered old wrong-signer prefix-signer wrong-ref case-ref 
     set(regex "copy with its last byte flipped verifies")
   endif()
   foreach(entry attested verify)
-    if(entry STREQUAL "verify" AND NOT regex MATCHES "supported stable")
+    if(case MATCHES "^download-" AND entry STREQUAL "attested")
       continue()
+    endif()
+    if(case MATCHES "^download-")
+      set(regex "downloaded .* does not verify")
     endif()
   file(WRITE "${WORK}/calls" "")
   execute_process(COMMAND ${cmd} "PUBLISH_CASE=${case}" "PUBLISH_VERSION=${version}" "PUBLISH_ENTRY=${entry}" sh -c "${publish}" sh "${ROOT}"
@@ -228,4 +287,13 @@ foreach(case correct tampered old wrong-signer prefix-signer wrong-ref case-ref 
   endif()
   message(STATUS "publish: ${case} control passed")
   endforeach()
+endforeach()
+
+# Both Ubuntu attestation jobs must consume the verified pin before using PATH.
+file(READ "${ROOT}/.github/workflows/release.yml" workflow)
+foreach(job rehearsal publish)
+  string(REGEX MATCH "\n  ${job}:\n((    [^\n]*\n|\n)*)" job_block "${workflow}")
+  if(NOT job_block MATCHES "sh scripts/fetch-pin.sh gh-linux-x86_64 [^\n]+\n +echo [^\n]+/bin[^\n]+GITHUB_PATH[^\n]*\n +[^\n]+/bin/gh[^\n]+--version")
+    message(FATAL_ERROR "publish provisioning assertion: ${job} must fetch and consume the verified CLI before attestation")
+  endif()
 endforeach()
