@@ -90,10 +90,10 @@ coverage:
 actuals:
   tokens: 21213
   tasks: 3
-  commits: 20
+  commits: 22
 plan_head_before: 3c68002e0f85d063ec62e71408f5fa48966b8c0c
-plan_head_after: 51a3f9592bbb69355896ada41901a5818bfa1c9b
-duration: 45min continuation
+plan_head_after: 370dd5eefb3b305a9d3328d2dca1f96a3c60e324
+duration: 67min continuation
 completed: 2026-10-22
 ---
 
@@ -108,7 +108,7 @@ the sibling-plan readiness check returns no ready IDs for TUNE-03/TUNE-04.
 ## Performance and commits
 
 The measured continuation runs from the first recorded clock at 2026-10-22T01:08:48Z
-to closeout after 01:53 UTC, approximately45 minutes. The earlier14-minute partial halt
+through final closeout checks at 2026-10-22T02:16:15Z, approximately67 minutes. The earlier14-minute partial halt
 and separately accepted Windows debug are historical work, not a new completed task.
 
 | Task | Task commits |
@@ -117,9 +117,9 @@ and separately accepted Windows debug are historical work, not a new completed t
 | 2: Real producers and independent base | RED 8ac740f; adapter e6d725f; initialization cf755c9; adoption79e9e8c; strict archive adoption51a3f95 |
 | 3: Required aggregate and release wiring | ed31959; actual-unit/reason reporting d2426a2 |
 
-The ledger measures20 commits from its persisted before head to51a3f95. This includes
+The ledger measures22 commits from its persisted before head to370dd5e. This includes
 the nine task commits above, historical handoff/docs commits and accepted Windows debug
-commits. It is not a narrated count of just this continuation. Actual tokens are
+commits and the initial summary/self-check commits. It is not a narrated count of just this continuation. Actual tokens are
 ceil(84852 realized task-diff characters /4), on the estimate's scale, not harness tokens.
 Fourteen implementation/documentation files changed; allocation and execution metadata
 are recorded separately.
@@ -184,7 +184,7 @@ Implementation is51a3f9592bbb69355896ada41901a5818bfa1c9b on the existing phase 
 - cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake — exit0,19 files within unchanged budgets.
 - Counter,30 workflow timeout comments, focused actionlint and git diff --check — exit0.
 - gh run view 39706507168 — exit0, completed success; direct quality119589728007 and CI required119589874959 pass. [Direct CI](https://github.com/szTheory/muhtari/actions/runs/39706507168).
-- gh run view 39706506980 and attempt/job API reads — exit0; called quality119592656905, CI required119592816991 and Windows arm64 retry119591355796 pass on the same implementation. [Release-called CI](https://github.com/szTheory/muhtari/actions/runs/39706506980). Its broader rehearsal is separate from this plan's required-CI acceptance.
+- gh run view 39706506980 and attempt/job API reads — exit0; called quality119592656905, CI required119592816991 and Windows arm64 retry119591355796 pass on the same implementation. [Release-called CI](https://github.com/szTheory/muhtari/actions/runs/39706506980). The full Release run also completed successfully.
 - gh run download 39706507168 -p 'quality-*' -D build/quality-tight-final-direct and gh run download 39706506980 -p 'quality-*' -D build/quality-tight-final-called plus artifact metadata API reads — exit0. All nine direct/eight called artifacts authenticate. Direct producer SHA is merge0b7197e1576563394c3dabddc6a21a0675b85007; called producer SHA is the implementation SHA; both trusted bases are65b360d.
 - quality_join.cmake on the authentic called set with expected implementation/base/source and PERF_REQUIRED=OFF — exit0, explicitly unavailable comparable perf.
 - python3 build/quality-fault-replay.py build/quality-tight-final-direct 0b7197e1576563394c3dabddc6a21a0675b85007 https://github.com/szTheory/muhtari/actions/runs/39706507168 — driver exit0. The intact authentic set returns0; deleting the Windows arm64 artifact returns1 with exact-set rejection; changing a real warning observation to1 returns1 with measured-regression rejection.
@@ -280,7 +280,7 @@ This execution stops after its summary and sequential state/roadmap updates.
 
 All five created implementation/documentation files exist. All nine task commits
 are ancestors of HEAD; the evaluation-scope resolver finds the preserved plan
-history. The on-disk ledger measures20 commits between the recorded heads.
+history. The on-disk ledger measures22 commits between the recorded heads.
 Coverage classification and diff checks pass. No tracked file was deleted.
 The fresh classifier reports four auto-covered deliverables and zero errors;
 file existence and ancestry checks pass before any state advancement.

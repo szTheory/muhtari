@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: in_progress
-stopped_at: "Windows debug accepted; resume incomplete 05-05 Task2"
-last_updated: "2026-10-22T00:37:31Z"
+status: executing
+stopped_at: Completed 05-05-PLAN.md
+last_updated: "2026-10-22T02:15:14.648Z"
 last_activity: 2026-10-22
-last_activity_desc: Windows digest repair accepted; 05-05 Task2 remains incomplete
-state_head: 4af6e9b5396d16438d293ac0c1e04ae6f6bd4ea1
+last_activity_desc: Phase 05 execution started
+state_head: 370dd5eefb3b305a9d3328d2dca1f96a3c60e324
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 total_phases: 7
 ---
@@ -23,195 +23,114 @@ total_phases: 7
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-21)
-
-**Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 05 — Pipeline tune-up
+See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
+Core value: 7800 games behave as on the console, identically across platforms,
+from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
 Phase: 05 (Pipeline tune-up) — EXECUTING
-Plan: 5 of 9, partial; 4 plans complete
-Status: Ready to resume incomplete 05-05 Task2
-Last activity: 2026-10-22 — Windows digest debug accepted with native/current-base evidence
+Plan: 6 of 9
+Status: Ready to execute
+Last activity: 2026-10-22 — Completed 05-05 trusted quality ratchet
 
-Progress: [░░░░░░░░░░] 0% of milestone phases — 4/9 Phase 5 plans complete; 0/7 phases complete.
+Progress: [░░░░░░░░░░] 0% of milestone phases — 5/9 Phase5 plans complete; 0/7 phases complete.
+Implementation: 05-01,05-02,05-10,05-04,05-05 complete. Next ready plan:05-06.
+No downstream plan or additional GSD step ran in this session.
 
-Implementation: 4/9 Phase 5 plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
+## Current acceptance
 
-## Accumulated Context
+Implementation51a3f9592bbb69355896ada41901a5818bfa1c9b:
+[Direct CI39706507168](https://github.com/szTheory/muhtari/actions/runs/39706507168)
+and [Release39706506980](https://github.com/szTheory/muhtari/actions/runs/39706506980)
+both completed successfully. Direct actual producer is merge0b7197e1; called producer
+is the implementation SHA; unchanged trusted base is65b360d1. Artifact downloads,
+source/SHA/configuration/environment checks and positive joins exit0.
 
-Decisions and detailed execution history live in PROJECT.md,
-preparation/DECISIONS.md and milestones/v1.0-phases/. Prior requirements and the audit
-are archived under milestones/. The v2.0 scope and phases 5–11 are active; Phase 5 execution is in progress.
+Local full CI609+6, hygiene24,18 roll-up cases, absolute-root document budgets19,
+counter14841, timeout comments30, focused actionlint, shell hygiene and diff checks exit0.
+Authentic final direct artifact replay returns0; missing-lane and measured-warning
+faults return1 for their intended predicates. Four coverage entries auto-cover;
+file existence, commit ancestry and summary checks pass.
 
-### Release evidence
+Called attempt1 hit unchanged built.openbios1.24s/1s and correctly failed incomplete
+evidence. Same-head attempt2 Windows arm64 current609+6/base605+6, quality and
+CI required pass. This is a retained tooling seed, not a source or timeout repair.
+The accepted Windows digest debug remains preserved; it was not reopened.
 
-Phase 4 PR #15 merged; CI budget fix #17 merged; release PR #16 merged as 40ce425.
-[Release publication and latest-install run](https://github.com/szTheory/muhtari/actions/runs/39533130210) completed successfully; v0.4.0 is published with 19 assets.
-`gh run view 39533130210 -R szTheory/muhtari --json status,conclusion,url` — exit 0,
-completed success. `gh release view v0.4.0 -R szTheory/muhtari --json isDraft,publishedAt,url`
-— exit 0, published and not a draft. Ship-time native/be32/WASM equality, publication
-and latest-install checks have completed; they no longer await owner verification.
-
-### Known verification overrides
-
-Phases 1, 2, 3 and 4 have stale canonical fingerprints from later covered-file
-changes. The owner explicitly accepted all four at closeout. Reports and digests
-were preserved. The audit verdict remains tech_debt; no clean verification is claimed.
-Gate-code proportion is 1,367/8,577 lines (15.94%, above the 10% budget).
-The performance gate is unarmed and WASM/library jobs remain advisory.
-
-## Deferred Items — v1.0 closeout history
-
-Items acknowledged and deferred at milestone close, most recent first:
-
-| Category | Item | Status | Deferred At | Milestone |
-|----------|------|--------|-------------|-----------|
-| seeds | SEED-001 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-002 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-003 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-004 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-005 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-006 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-007 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-008 | dormant | 2026-10-21 | v1.0 |
-| todos | 2026-10-16-arm-the-instructions-per-frame-gate.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-16-limit-release-rehearsals-to-pushes-that-change-release-inputs.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-16-promote-the-wasm32-lane-into-ci-required.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md | presence-only | 2026-10-21 | v1.0 |
-| deferred_items | 04/deferred-items.md: Tooling seed: `policy.compat_doc_fresh` and its self-test share `build/ci/policy/compatibility.md` as output. One full CI invocation reported a stale page while both ran concurrently; the generated and committed pages were identical afterward, the isolated freshness check passed, and a complete workflow retry passed all 588 regular and six archive tests. The compatibility source, ledger and tests were unchanged by this plan. Give the self-test a separate output during the later tooling tune-up; this is a test/tooling seed under AGENTS rule 7, not a sound requirement or an additional review round. | acknowledged | 2026-10-21 | v1.0 |
-
-At v1.0 closeout: 15 newly acknowledged, 0 carried forward from a prior close.
-Acknowledgment preserves verdicts and lapses when an artifact changes. Future
-seeds are still dormant, todos still pending; acknowledgment does not resolve them.
-
-## Session Continuity
-
-Last session: 2026-10-22T00:37:31Z
-Stopped at: Windows debug accepted; resume incomplete 05-05 Task2
-Resume file: .planning/phases/05-pipeline-tune-up/.continue-here.md
-Next command: `$gsd-execute-phase 5`
-
-Accepted debug evidence: [CI39699892851](https://github.com/szTheory/muhtari/actions/runs/39699892851)
-is completed success at tested1abc98a, merge011fb5b, unchanged base65b360d.
-Both Windows current609+6/base605+6 artifacts authenticate, exit0. Final207s
-calibration4af6e9b changes timeout/provenance only; local full609+6 and focused
-controls/hygiene/count/timeout29/diff exit0. Count14528/C14853, fixes30/100.
-No latest-calibration hosted success is claimed. Task2 remains partial and Task3
-unstarted; SUMMARY status blocked exposes this incomplete plan for continuation.
-No metric bound, aggregate or phase requirement completion was added.
-
-Digest evidence: implementation `7d524edc77c977487a734243ac01364dcbd50272`;
-[hosted read-only preview](https://github.com/szTheory/muhtari/actions/runs/39685745578)
-succeeds and its publish job is skipped. `gh run view 39685745578 --json
-status,conclusion,url,jobs` and artifact download — exit 0. Final live partial
-2026-10-21 20:00–22:15 UTC contains seven runs, seven attempts, 73 jobs and
-91.5833 runner minutes. Full local CI608+6, digest controls, counter13892,
-timeout comments, hygiene and diff checks — exit 0. Digest447/650, fixed C14853;
-no reserve transferred. Actual default-branch issue publication remains a
-post-merge ship check. All phase-wide requirements and flagged assumptions stay
-pending; no downstream plan or additional GSD step ran.
-
-Recovery evidence: implementation `0901c877977e9f712a77193d4840df5ff5b5408d`;
-[Release-called required CI and equality](https://github.com/szTheory/muhtari/actions/runs/39663281026)
-jobs 119461511750 and 119441583140 succeed. [Direct Nightly](https://github.com/szTheory/muhtari/actions/runs/39663280880)
-is completed success; its actual equality producer is merge
-`5ad2484b9d48c0ef860c4a1d9a23f18a9dd7b2a2`. Authentic artifacts pass all eight
-607/6 JUnit judges, exact membership checks and each two-file comparator, exit 0.
-Local ci, retained controls, counter, hygiene and diff checks exit 0. Current
-count13445/BE193/C14853; no budget, inventory, ABI or privilege predicate changed.
-Historical failed halts remain unchanged. No downstream plan, ship, merge or
-owner verification ran; all phase-wide requirements remain pending.
-
-Current planning contract: D-17 and D-19–20 now use an audited absolute ratchet.
-The prior 857-line prerequisite is explicitly superseded; no exact new cap or
-compliance result is claimed. Targeted research is refreshed and nine plans
-passed independent checking with all five requirements and twenty decisions covered.
-The first execution slice freezes B, proves nonzero net S, and fixes N/C before additions.
-
-Prior research blocker (historical): refreshed research executed 250 lines of scratch shared primitives,
-archive and roll-up replacements, and an incomplete quality prototype. Their positive
-and fault-specific negative controls passed. The tested strategy's optimistic broad
-construction is 2,262 lines before embedded/configure/reporting enforcement, against
-the full-source whole-line cap of 857. This failed construction is not proof that all
-possible implementations are impossible. No supported complete allocation was found.
-The 2,764-line baseline and broader sensitivity remain explicit; no enforcement was
-hidden or budget relaxed. The researcher returned RESEARCH BLOCKED; no planner,
-checker, production changes, hosted writes or additional GSD step ran.
-
-`python3 /tmp/muhtari-p5-controls.py` and
-`python3 /tmp/muhtari-p5-policy-controls.py` — exit 0 on the one-off scratch
-experiments; `wc -l /tmp/muhtari-p5-{common,archive,quality,rollup}.cmake` — exit 0,
-250 lines. Scratch prototypes are not production or CI verification. Fresh hosted
-failure evidence and read-only lane audit are recorded in the research report,
-including [run 39617761785](https://github.com/szTheory/muhtari/actions/runs/39617761785).
-WASM has nine qualifying successful main-push runs and library five; neither is
-eligible for promotion at that audit. The owner subsequently delegated the policy
-revision recorded in CONTEXT.md; no lane promotion or implementation occurred.
-
-## v1.0 closeout verification
-
-`cmake --workflow --preset ci` — exit 0: 605 regular tests and six release/archive
-checks passed after archival. `scripts/hygiene.sh --tree` and `git diff --check` —
-exit 0. Archive integrity check — exit 0: all 177 phase files retained, including
-73 plans, 73 summaries and four unchanged verification reports; only the deferred
-item acknowledgment modifies a moved phase artifact. `query audit-open --json` —
-exit 0: zero open, 15 acknowledged. Hosted release evidence is linked above.
-
-## v2.0 initialization decisions
-
-- Owner approved whole-library scope, research first, planning version v2.0 and continuing at Phase 5.
-- Souper/BupChip remains deferred; XM covers RAM/POKEY/HSC, AtariVox covers EEPROM; no full OpenHSC.
-- All 27 requirements and the seven-phase roadmap were explicitly approved on 2026-10-21.
-- Historical v1.0 overrides remain recorded above; initialization makes no new implementation or accuracy claim.
-
-## Initialization verification
-
-`query init.new-milestone` — exit 0: v2.0 The whole library, seven phase directories.
-`cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake`, `scripts/hygiene.sh --tree` and
-`git diff --check` — exit 0. One-off structural integrity check (`python3 -`) —
-exit 0: 27 unique requirements, exact phase coverage, seven phases with 2–5
-criteria, 15 historical deferral rows, unchanged outgoing snapshots and seeds.
-Archive PR #18 merged as 752916f after [required PR CI](https://github.com/szTheory/muhtari/actions/runs/39614799435)
-passed; no release-please pull request was pending after the archive merge.
-No phase implementation or owner hardware verification ran during initialization.
+All details, exact commands, identities, failures and task commits:
+phases/05-pipeline-tune-up/05-05-SUMMARY.md. WINDOW entry15 is fixed.
+Shared TUNE-03/TUNE-04 stay pending until their sibling plans finish.
 
 ## Decisions
 
-- [Phase 5]: Replace hard gate/source ratio with audited absolute ratchet; fix scoped allocations before additions and tighten to final actual. Planning uses a bounded initial measurement task, not a full prototype. — Owner delegated adoption after refreshed failed construction and three advisory reviews; preserve safety controls and all TUNE outcomes.
-- [Phase 05]: Freeze complete B=12885 at f0202e1; measured S=2; fixed N=1970 including reserve150 and C=14853 before additions. Count slice actual368/500; current count13251.
-- [Phase 05]: Keep eight audio pairs and exact inventories; isolated writer costs one line of reproduced-fix allocation, current count13252/C14853. Timeouts and scales use image-specific successful cohorts, with sub-ten samples provisional.
-- [Phase 05]: Digest447/650; all pages/attempts, public read-only previews and serialized default-branch issue publication. Missing queue/DAG/compile/CTest/image evidence stays unavailable; actual publication is a post-merge ship check.
-- [Phase 05]: 05-05 required integration halts at missing Windows producer evidence; count14499/C14853, quality607/850, fixed allocations count368/BE205/digest447/quality850/fixes100/reserve0. No incomplete ordinary bounds or aggregate claim.
+- Absolute audited ratchet replaces the former hard source ratio; ratios remain advisory.
+- Frozen B12885 at f0202e1, retained-fault savings S2, fixed N1970 and C14853.
+- Before Task3 additions, unused fixes70 moved to quality850 ->920. Final allocations:
+  count368/BE205/digest447/quality920/fixes30/reserve0; no total or scope increase.
+- Actual incremental scope1958 gives14841 total; quality920/920, fixes30/30,
+  count368/368, digest447/447 and BE193/205. Remaining BE12 is not new reserve.
+- Ordinary bounds use authenticated independent measurements. Compressed base archive
+  variation caused strict tightening399952 ->399937, the observed comparable-base minimum.
+- Exact artifact membership and identity precede extrema reduction; one typed judge
+  owns actual bounds/reasons. Release permission unions add only actions:read.
+- Unavailable coverage/open-crash/backlog/duration dimensions remain gaps.
+  Library/WASM/property and unarmed test-card Ir remain advisory; no promotion.
+- Preserve eight audio pairs, exact inventories and fixture prerequisites.
+  Image-specific timing cohorts below ten samples stay provisional.
+- Digest447 retains all pages/attempts, safe read-only previews and serialized
+  default-branch issue publication. Actual issue publication is still a ship check.
 
 ## Performance Metrics
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
-| Phase 05 P01 | 12min | 2 tasks | 6 files |
-| Phase 05 P02 | 17min | 3 tasks | 9 files |
-| Phase 05 P10 | 83min wall, including external queues | 2 tasks | 8 touched implementation files |
-| Phase 05 P04 | 11min | 2 tasks | 7 files |
-| Phase 05 P05 | 14min halted | 1 tasks | 8 files |
+| Phase05 P01 |12min|2|6|
+| Phase05 P02 |17min|3|9|
+| Phase05 P10 |83min wall including queues|2|8|
+| Phase05 P04 |11min|2|7|
+| Phase05 P05 prior halt |14min|1 partial|8|
+| Phase05 P05 continuation |67min through closeout checks|3 total complete|14|
 
-### Blockers
+## Blockers and seeds
 
-- No PowerPC recovery blocker remains. Historical 05-03 is superseded and halted; 05-10's original equality failure and HALTED file remain historical facts. The explicitly authorized debug continuation supplies final diagnostic-free hosted acceptance and a successful 05-10 SUMMARY.
-- Windows digest repair is accepted with complete current/base native evidence in run39699892851. 05-05 Task1 is complete, Task2 partial and Task3 unstarted; typed root-policy adoption, independent bounds and aggregate integration remain unfinished. Later plans retain dependencies. Default-branch publication remains a ship check; all phase-wide requirements remain pending.
+No current execution blocker remains for05-05. Only05-06 is next ready.
+The descriptorless TUNE-03 boundary prohibition remains flagged/unverified;
+phase-wide requirements, final allocation retirement and acceptance are unfinished.
+Default-branch digest publication and merge-dependent truths remain ship checks.
+Tooling seeds stay in the phase deferred-items ledger and do not create requirements.
+Historical05-03 halt and05-10 original failures remain historical facts.
 
-## Phase 5 gap planning verification
+## Preserved earlier evidence
 
-One recovery plan, 05-10, passed the independent plan checker with no findings.
-`check verify-command-paths 5 --raw` and `check verify-failure-directions 5 --raw`
-— exit 0, no blockers/warnings/read errors.
-`query check.decision-coverage-plan .planning/phases/05-pipeline-tune-up .planning/phases/05-pipeline-tune-up/05-CONTEXT.md`
-— exit 0, 20/20 decisions covered.
-`check gap-analysis.plan-post .planning/phases/05-pipeline-tune-up "TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05" --raw`
-— exit 0, all 25 requirements/decisions covered.
-`query phase-plan-index 5` — exit 0, only 05-10 ready; 05-04–09 remain blocked.
-The narrow gap input explicitly records that no phase verifier ran. Historical
-[hosted failure evidence](https://github.com/szTheory/muhtari/actions/runs/39652860054)
-remains diagnostic; implementation and successful complete BE evidence await execution.
+- Accepted Windows digest repair: CI39699892851 at tested1abc98a/merge011fb5b,
+  base65b360d, Windows current609+6/base605+6. Final207s calibration4af6e9b
+  preserves complete controls; observed arm64 cohorts103.28s/96.22s stay separate.
+- PowerPC recovery: implementation0901c877; release-called39663281026 and
+  direct Nightly39663280880 accepted full inventories and native/BE equality.
+- Digest implementation7d524edc; read-only preview39685745578 succeeds with
+  publish skipped. The live partial window retained seven runs/attempts,
+  73 jobs and91.5833 runner minutes; unavailable dimensions were not invented.
+- Full preparation/research history and exact failures remain in PROJECT.md,
+  phase CONTEXT/RESEARCH/SUMMARY files, resolved debug sessions and Git history.
+  The old857-line prerequisite is superseded; failed historical prototypes
+  are not new measurements or current prerequisites.
+
+## Milestone history
+
+v1.0 planning shipped2026-10-21; packagev0.4.0 has19 published assets.
+Publication/latest-install run39533130210 succeeded. Phases1–4 retain the
+owner-accepted stale fingerprints and preserved audit reports; the audit is
+tech_debt, with15 acknowledged historical deferrals. Their facts and seeds
+remain in milestones/v1.0-MILESTONE-AUDIT.md, v1.0-phases and PROJECT.md.
+v2.0 is The whole library:27 approved requirements, seven phases5–11.
+Initialization PR18 merged752916f after CI39614799435. No new milestone or
+hardware verification ran here; Souper/BupChip and other settled exclusions stand.
+
+## Session Continuity
+
+Last session: 2026-10-22T02:16:15Z
+Stopped at: Completed 05-05-PLAN.md
+Resume file: None
+Next command: $gsd-execute-phase 5
+Stop after this execution step; the next session begins05-06.
