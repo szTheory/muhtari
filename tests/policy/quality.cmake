@@ -129,8 +129,8 @@ foreach(case gate_initial gate_wrong gate_existing equal waived inherited_valid 
   endif()
   if(case MATCHES "^(gate_initial|equal|waived|inherited_valid|restored|introduced|floor)$")
     execute_process(COMMAND ${cmd} RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
-    if(NOT rc STREQUAL "0")
-      message(FATAL_ERROR "quality assertion: bound equality expected success, got ${rc}: ${out}")
+    if(NOT rc STREQUAL "0" OR NOT out MATCHES "10 findings")
+      message(FATAL_ERROR "quality assertion: valid measurement report expected, got ${rc}: ${out}")
     endif()
   else()
     execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1 "-DREGEX=${regex}"
