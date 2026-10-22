@@ -4,12 +4,12 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: executing
-stopped_at: Halted 05-08 Task1 at release-safety allocation gate; RED e0c18a0, summary bf99ca3; 0/3 tasks
-last_updated: "2026-10-22T20:07:56.851Z"
+status: Ready for targeted replanning under D-27–31;05-08 remains halted0/3,05-09 blocked
+stopped_at: Phase05 context updated after05-08 halt; D-27–31 allocate complete safety continuation300 and require patched gh>=2.102.0; next plan-phase5, no execution
+last_updated: "2026-10-22T20:29:52.326Z"
 last_activity: 2026-10-22
 last_activity_desc: Phase 05 execution started
-state_head: bf99ca3209229d291869736c2c13453104c1e95c
+state_head: 7d62c6e97d84853b32b364558abf2152a82426ee
 progress:
   total_phases: 7
   completed_phases: 0
@@ -31,7 +31,7 @@ from a small MIT-licensed C library hosts can embed.
 
 Phase: 05 (Pipeline tune-up) — EXECUTING
 Plan: 8 of 9
-Status: Halted at Plan05-08 Task1 fixed-allocation gate
+Status: Ready for targeted replanning under D-27–31;05-08 remains halted0/3,05-09 blocked
 Last activity: 2026-10-22 — Phase 05 execution started
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 7/9 Phase5 plans complete; 0/7 phases complete.
@@ -175,6 +175,7 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 - [Phase 05]: 05-13 accepted all3 tasks at14840/quality919 with current local609+6/library43 and authentic direct9/called8 evidence; active completion6/9, halted06/11/12 stay0/3. Shared TUNE-03/TUNE-04 remain pending.
 - [Phase 05]: Inherited broad diff check exit2 is a scope warning under AGENTS6/7; own diff0. Release39832530253 overall failure is advisory WASM fetchcurl35; required calledCI+quality and authentic8 join pass. No release/rehearsal or promotion acceptance is claimed.
 - [Phase 05]: 05-07 accepted2/2: arm only testcard after fresh3837262 triples, authenticated numeric PR base and observed nightly issue close; retain WASM9/library5/prop2 advisory. Active7/9; shared requirements and05-08/09 pending; halted06/11/12 remain0/3 histories.
+- [Phase 05]: D-27–31 adopt bounded release-safety continuation and fixed increment300: fixes30→330,N1970→2270,C14853→15153,strict14841→15141; known66 included, estimated207 plus reserve27. Other components fixed;BE12 unavailable. Current discussion supersedes earlier no-new-allocation prose only for this scope; quality.json remains unchanged until planned execution. — Owner delegated adoption; measured signer RED plus official gh2.102.0 advisory floor require complete controls/lookup/cleanup funding before GREEN. No measured fit, task completion, waiver or new gap round.
 
 ## Performance Metrics
 
@@ -236,10 +237,10 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T20:07:56.737Z
-Stopped at: Halted 05-08 Task1 at release-safety allocation gate; RED e0c18a0, summary bf99ca3; 0/3 tasks
-Resume file: .planning/phases/05-pipeline-tune-up/05-08-SUMMARY.md
-Next command: $gsd-discuss-phase 5
+Last session: 2026-10-22T20:29:52.122Z
+Stopped at: Phase05 context updated after05-08 halt; D-27–31 allocate complete safety continuation300 and require patched gh>=2.102.0; next plan-phase5, no execution
+Resume file: .planning/phases/05-pipeline-tune-up/05-CONTEXT.md
+Next command: $gsd-plan-phase 5
 Stop after this execute step. Plan05-08 is halted0/3 with RED only;05-09 remains blocked. An explicit scope/construction decision is needed before another execution.
 No new allocation or automatic gap round is authorized. Future scopes retain their own predicates.
 No new allocation, gap round, promotion, ship or merge was performed. Only the measured test-card gate was armed.
