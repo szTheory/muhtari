@@ -29,6 +29,11 @@ from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
+Owner approved D-35 single closeout2026-10-22: resume15 Task2 under safety512,
+fixes542/N2482/C15365/strict15353; stage09 final edits before shared acceptance.
+Earlier halt descriptions below are historical. No acceptance changes yet;7/9.
+
+
 Phase: 05 (Pipeline tune-up) — HALTED AT FIXED ALLOCATION
 Plan: 8 of 9 active slots —05-15 halted1/3;05-09 blocked
 Status: Task1 accepted; Task2 allocation stop
@@ -41,6 +46,8 @@ Two remaining plans are05-14 ->05-09.05-14 is halted1/3;05-09 waits for actual a
 REDdf6b095/94d5c49 and all historical SUMMARY/HANDOFF/VERIFICATION files remain unchanged. Test-card arming passed actual readiness controls; no promotion, ship or merge ran.
 
 ## Current acceptance
+
+D-35 resumption is active;15 is incomplete, not halted. Task1 remains accepted.
 
 05-15 is halted1/3; accepted Task1 GREEN444b657 proves actual-base15237/N2354
 adoption and real LF/CRLF empty204 cleanup at15163/safety323. Task1 RED457a095
@@ -299,7 +306,7 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 Last session: 2026-10-22T22:47:35Z
 Stopped at: Phase5 execute halted:05-15 Task1 accepted,Task2 stops at15231/safety391 versus384;05-09 blocked;accepted7/9;next $gsd-discuss-phase 5
 Resume file: .planning/phases/05-pipeline-tune-up/05-15-SUMMARY.md
-Next command: $gsd-discuss-phase 5
+Next command: continue approved05-15 Task2 and05-09 closeout
 Stop after this execution step. D-32's384 allocation is authenticated, but the
 complete current construction misses safety384/strict15225 before provisioning.
 No automatic gap round, promotion, ship or merge ran. Current HEAD intentionally

@@ -1,8 +1,8 @@
 ---
 phase: 05-pipeline-tune-up
 plan: "15"
-status: halted
-halted: true
+status: blocked
+halted: false
 tasks_completed: 1
 subsystem: infra
 tags: [release, cleanup, attestations, allocation-stop]
@@ -97,6 +97,14 @@ plan_head_after: e2e6cbd
 duration: approximately20min through construction halt
 completed: 2026-10-22
 ---
+
+## Approved resumption2026-10-22
+
+This current execution record is incomplete and resumable from Task2 under owner-approved
+D-35. Task1 is accepted; no new task or requirement is complete. The original immutable
+halt is available at ca64a29; the following body records that historical stop until
+final closeout. New scope limits are512 safety/542 fixes/N2482/C15365/strict15353.
+Prepare final09 edits before shared acceptance; preserve all actual evidence requirements.
 
 # Phase 5 Plan 15: Empty204 repair and provisioning allocation halt Summary
 

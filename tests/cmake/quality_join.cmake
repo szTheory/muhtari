@@ -77,7 +77,7 @@ foreach(side current base)
 endforeach()
 execute_process(COMMAND "${CMAKE_COMMAND}" -DPOLICY=${POLICY} -DBASE_POLICY=${BASE_POLICY}
   -DOBSERVATIONS=${OUT}/current.json -DBASELINE=${OUT}/base.json -DEXPECTED_SHA=${EXPECTED_SHA}
-  -DBASE_SHA=${BASE_SHA} -DINITIAL_GATE_CEILING=15237 -P "${CMAKE_CURRENT_LIST_DIR}/quality.cmake"
+  -DBASE_SHA=${BASE_SHA} -DINITIAL_GATE_CEILING=15365 -P "${CMAKE_CURRENT_LIST_DIR}/quality.cmake"
   COMMAND_ERROR_IS_FATAL ANY)
 if(PERF_REQUIRED)
   file(READ "${DIRECTORY}/quality-perf/quality-perf.json" perf)

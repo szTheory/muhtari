@@ -419,6 +419,25 @@ addition below. D-09/D-10/D-21–26's semantic contracts, prior acceptance and h
   accepted completion remains 7/9; 05-14 remains halted 1/3 and 05-09 blocked until accepted continuation.
   No shared requirement, flagged assumption, portability promotion, ship or merge is completed here.
 
+### Approved single closeout after the repeated allocation loop
+
+- **D-35 (owner approved 2026-10-22):** Freeze the remaining scope at05-15/05-09.
+  Adopt safety384→512, fixes414→542, N2354→2482, C15237→15365 and strict15225→15353;
+  B12885/S2 and all other components stay fixed. This explicitly supersedes D-32's
+  amounts for this closeout only. Current measured safety391 leaves121 for unfinished
+  production, associated controls and integration; this is no claim of measured fit.
+  Authenticate adoption before affected GREEN; count all controls/glue and tighten to
+  accepted actual at closeout. No automatic future increase or hidden savings.
+  Resume05-15 at Task2 with Task1/RED lineage preserved; preserve its old halt in Git
+  at ca64a29, updating only the latest execution record. Do not create plan16 or another
+  discuss/plan cycle. Preserve14 and earlier histories. Prepare09's independent final
+  docs/policy edits after15 functional repair and before final acceptance, then collect
+  current local/direct/called/rehearsal evidence on the completed code/policy/docs head.
+  Accept15 then09 only when their obligations pass. No new subsystem, promotion, test
+  wishlist or reset of review/gap limits; tooling findings remain seeds. If the complete
+  scope still misses, present the concrete tradeoff rather than another replacement
+  plan. Finish verification/state reconciliation and stop before ship or merge.
+
 ### Agent's Discretion
 
 Internal schema names, helper boundaries, batching/API page sizes, readable report formatting, per-test cost
