@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 1
+open_count: 3
 waived_count: 0
 fixed_count: 14
-total_count: 15
-last_updated: 2026-10-22T01:53:34.511Z
+total_count: 17
+last_updated: 2026-10-22T02:33:42.157Z
 ---
 
 # Broken Windows Ledger
@@ -30,6 +30,8 @@ last_updated: 2026-10-22T01:53:34.511Z
 | 13 | 05 | unmet-truth | .github/workflows/be-equality.yml | 66 | Complete native/PowerPC inventories pass, but hosted equality rejects relative evidence directories; absolute-path replay of the authentic pair passes. | fixed |  | 2026-10-21T19:22:57.834Z | 2026-10-21T20:21:18.042Z |
 | 14 | 05 | unrun-verify | .github/workflows/be-equality.yml | 38 | Temporary target diagnostic remains; its removal and complete final-head equality proof are unfinished at the mandatory recovery halt. | fixed |  | 2026-10-21T19:22:57.900Z | 2026-10-21T20:21:18.153Z |
 | 15 | 05 | unrun-verify | .github/workflows/ci.yml |  | Required typed bound adoption and hosted aggregate remain unfinished; Windows current/base producers are restored in run39699892851. | fixed | Task2 partial; Task3 unstarted. | 2026-10-21T23:40:11.664Z | 2026-10-22T01:53:34.511Z |
+| 16 | 05 | unrun-verify | .github/workflows/ci.yml |  | Performance/compatibility store cutover, full ci/library workflows and hosted caller acceptance remain unverified after the measured allocation halt. | open |  | 2026-10-22T02:33:42.066Z |  |
+| 17 | 05 | deviation | tests/cmake/quality.cmake |  | Central policy migration draft measures14888 against fixed C14853 and quality967 against allocation920; only RED is committed and cutover is halted. | open |  | 2026-10-22T02:33:42.157Z |  |
 
 ````json
 [
@@ -226,6 +228,32 @@ last_updated: 2026-10-22T01:53:34.511Z
     "reason": "Task2 partial; Task3 unstarted.",
     "recorded_at": "2026-10-21T23:40:11.664Z",
     "resolved_at": "2026-10-22T01:53:34.511Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 16,
+    "kind": "unrun-verify",
+    "phase": "05",
+    "file": ".github/workflows/ci.yml",
+    "line": null,
+    "description": "Performance/compatibility store cutover, full ci/library workflows and hosted caller acceptance remain unverified after the measured allocation halt.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T02:33:42.066Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 17,
+    "kind": "deviation",
+    "phase": "05",
+    "file": "tests/cmake/quality.cmake",
+    "line": null,
+    "description": "Central policy migration draft measures14888 against fixed C14853 and quality967 against allocation920; only RED is committed and cutover is halted.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T02:33:42.157Z",
+    "resolved_at": null,
     "milestone": "v2.0"
   }
 ]
