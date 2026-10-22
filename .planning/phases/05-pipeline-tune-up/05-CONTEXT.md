@@ -2,7 +2,7 @@
 
 **Gathered:** 2026-10-21
 **Status:** Ready for targeted replanning; execution remains halted
-**Revised:** 2026-10-22 after the measured 05-12 one-line fit halt; D-24–26 adopt one named simplification for planning. D-09/D-10/D-21–23 and fixed allocations remain in force.
+**Revised:** 2026-10-22 after the measured 05-08 release-safety halt. D-27–31 govern the remaining release work and explicitly allocate its complete construction before implementation. Earlier halt records remain historical.
 
 <domain>
 ## Phase Boundary
@@ -14,13 +14,16 @@ and release/docs/settings freshness with a shipped improvement to the weakest qu
 This is discussion, not implementation or phase verification. The owner explicitly requested consideration of
 all relevant perspectives, primary-source research, adversarial analysis and coherent recommendations, and
 instructed the agent to follow those recommendations. Decisions below are agent-selected under that delegation;
-they are not invented answers to an interview. No additional capability or new GSD step is authorized here.
+they are not invented answers to an interview. No additional emulator capability or new GSD step is authorized here.
 
-In this revision the owner selected updating context, then explicitly requested all three budget/acceptance/
+In the earlier budget revision the owner selected updating context, then explicitly requested all three budget/acceptance/
 planning decisions be considered through relevant role reviews, primary sources and an adversarial pass, and
 said to adopt the recommendations. That delegation authorizes the explicit replacement of the former hard
 10% contract across AGENTS, TUNE-03, the roadmap, ENGINEERING and DEC.10. It does not assert infeasibility of
-every possible 857-line implementation. No further interview answers or routine approvals are required.
+every possible 857-line implementation. In this revision the owner again requested all relevant areas,
+parallel research, an adversarial pass and automatic adoption. That delegation authorizes updating existing
+context and adopting D-27–31's narrow release-safety construction/allocation. Targeted planning is the next
+session; no further routine approval or invented interview answers are required.
 
 Carry forward three deliverables, integer bounded instance state, permissive reuse, automation-first verification,
 one required CI check, preset entrypoints, no new service, CMake `-P`/POSIX sh repository checks, review limits,
@@ -139,7 +142,7 @@ and one GSD step per session. Prefer another copy and paste over another depende
 - **D-15:** Measure repeated release rehearsals before changing their selection. Prefer automatic input-based
   selection over an owner-maintained label if duplication is material. Reuse only a successful rehearsal whose
   complete effective inputs remain equivalent: release/publish logic, called CI/build/package code, tools/pins,
-  version inputs and all source affecting archives. A push without a change to one of four trigger paths is NOT
+  version inputs and all source affecting archives. A push without a change to one of the trigger paths is NOT
   by itself safe to skip: the current archive content may have changed. Initial runs, unknown diffs, force-pushes,
   missing evidence and changed inputs run a full rehearsal. If demonstrating safe reuse costs more machinery
   than it saves, retain the current conservative rehearsal and record the measured decision. A retained reuse
@@ -282,6 +285,85 @@ and one GSD step per session. Prefer another copy and paste over another depende
   arming, promotion, release and final tightening retain their separate existing predicates. Stop further
   advisory fan-out now: security, test validity, architecture, delivery and cost reviews change no other decision.
 
+### Release-safety construction after the measured 05-08 halt
+
+These current decisions supersede the old unchanged-allocation restriction only for the named release-safety
+addition below. D-09/D-10/D-21–26's semantic contracts, prior acceptance and halted histories remain intact.
+
+- **D-27:** Adopt a bounded continuation of the existing publisher and synthetic transport fixture for
+  TUNE-05/D-16: enforce signer workflow and source ref before publication; distinguish release/tag absence
+  from API/transport/schema failure; confirm cleanup; exercise those boundaries through the real script.
+  The existing control is RED, not accepted behavior. Preserve 05-08 at 0/3 and RED `e0c18a0`; the next planner
+  selects a continuation/replacement representation and refreshes dependencies without rewriting that history.
+  Accepted 05-13 and 05-07 remain prerequisites. No implementation runs in discussion.
+- **D-28:** Official GitHub CLI advisories are new evidence: signer-workflow prefix matching and case-insensitive
+  source-ref matching affect gh through 2.101.0 and are patched in 2.102.0. Local `gh --version` is 2.101.0;
+  hosted versions are unmeasured. Require a supported patched gh, at least 2.102.0, in every publisher attestation
+  verification context, with an explicit fail-closed version check and meaningful boundary/malformed controls.
+  Reuse the platform CLI; any needed installation must follow existing package or verified pinned-download
+  practice, with all enforcement/glue charged below. Before PATCH require repository, full signer path
+  `$REPO/.github/workflows/release.yml` and intended source ref. Preserve independent archive-commit, exact
+  asset, firmware, hash and tamper checks. Do not add `--source-digest "$EXPECTED_SHA"` automatically:
+  a delayed release can legitimately have a workflow-trigger commit different from the archived release commit.
+  The synthetic transport proves argument placement and short-circuiting, not upstream certificate semantics;
+  current hosted rehearsal must exercise the actual patched verifier.
+- **D-29:** Use the existing gh transport and one small explicit HTTP-status helper, not a new dependency,
+  authentication state machine or generic API framework. Capture command success and structured HTTP status,
+  rather than matching an error message or assuming `set -e` propagates through every conditional/substitution.
+  Retain complete paginated release lookup for drafts; validate successful listing shape and zero-or-one
+  matching positive numeric ID before create/delete. A failed listing, including listing 404, is failure.
+  A successful complete authenticated listing supplies repository-access evidence; resource-specific 404 can
+  then establish the relevant object's absence, without claiming that 404 independently proves authorization.
+  Reject 401/403/429/5xx, transport failure, malformed status/body/ID and surviving objects. Do not swallow a
+  failed DELETE and infer success from a failed GET. Explicit already-absent responses may be idempotent;
+  confirmation must still use the relevant resource and successful complete lookup. Retain draft IDs and
+  release-before-tag deletion. Controls must cover successful/empty/paginated/malformed/failed lookup,
+  create/delete failure, already absent/surviving objects, and no publication or creation after its prerequisite
+  fails, plus correct signer/ref, wrong signer/ref and tamper. Use shared table-driven cases in the existing
+  harness; no upstream cryptographic test suite is adopted.
+- **D-30:** Explicitly adopt a fixed **300-line release-safety addition** before further implementation.
+  It funds the newly dedicated real-publisher adversarial controls, complete fail-visible lookup/cleanup
+  repair and newly evidenced patched-verifier enforcement, including their invocation/glue. It does not fund
+  an inherited-code rewrite, rehearsal reuse, unrelated review seeds or another capability. Keep frozen
+  B12,885/S2; increase fixes30 to330 and N1,970 to2,270. The phase ceiling becomes C15,153 and the strict
+  pre-closeout total becomes15,141; count368/BE205/digest447/quality920/reserve0 otherwise stay unchanged.
+  BE12 is not reserve; quality's one unused line is not credited as safety funding. The 27-line reserve below
+  belongs inside the release-safety300, not the old global reserve or additional allowance.
+
+  | Release-safety increment, net physical growth | Fixed allocation | Evidence or construction |
+  |---|---:|---|
+  | Retained first control and registration | 66 | Measured: fixture60, dispatcher4, inventory1, manifest1 |
+  | Signer restriction and patched-CLI enforcement | 22 | Estimated production delta in existing publisher/workflow |
+  | HTTP/list/create/delete failure and absence handling | 55 | Estimated production delta; one small helper |
+  | Remaining complete control matrix | 115 | Estimated fixture expansion, including version boundary/malformed cases |
+  | Additional registration/inventory/invocation predicates | 15 | Estimated counted glue; shared work counted once |
+  | Release-safety integration reserve | 27 | Explicit uncertainty inside this300 only |
+  | Total | 300 | Hard ceiling, not a spending target or measured fit |
+
+  Only66 is measured; the remaining234 is a bounded construction constraint, not a proof that implementation
+  will fit. A more conservative384 estimate was considered; no concrete additional required fault established
+  its necessity, so the tighter300 is selected without claiming384 wasteful or300 proven feasible. Internal
+  redistribution must be visible within300; no other component finances it. The old RED overrun remains a
+  historical unaccepted overrun. In later execution update `quality.json` and its provenance to this explicit
+  reviewed structural allocation before affected GREEN additions, using existing authenticated adoption rules;
+  no temporary waiver, candidate self-authorization or weakening of another metric is allowed. Count the
+  complete resulting inventory, including comments/blanks, controls and embedded glue. Unresolved counting,
+  lost controls, a measured component/strict-total miss or missing required evidence stops expansion; no
+  automatic renewal, extra gap round, generalized savings hunt or compressed statements. At closeout retire
+  unused allowance/reserve and tighten to accepted actual, under the existing final-tightening contract.
+- **D-31:** Retain conservative rehearsals and measure their cost; implement no reuse or new selection state
+  machine in this repair. Current `release.yml` has five trigger paths, including `be-equality.yml`; these are
+  selectors, not proof of complete archive-input identity. Correct current docs claiming four paths and narrow
+  replay/cleanup/Dependabot claims to actual behavior. A bot's initial eligibility decision does not promise
+  revocation after every later human push. Acceptance after the last production/control edit needs selected
+  fault-specific controls, full local `cmake --workflow --preset ci`, exact inventories, component/total/doc
+  budgets, current required direct and release-called callers with authentic artifact identity, and actual
+  patched-gh rehearsal publication/install/cleanup evidence. Prior greens and a synthetic transport cannot
+  substitute for changed-path acceptance. Keep 05-09 blocked until accepted release safety; it then performs
+  final tightening and actual docs/install/settings checks. No requirement, assumption, portability promotion,
+  ship, merge or default-branch digest publication is completed by this discussion. The seven flagged
+  assumptions and descriptorless-boundary prohibition remain pending; post-merge truths belong to ship.
+
 ### Agent's Discretion
 
 Internal schema names, helper boundaries, batching/API page sizes, readable report formatting, per-test cost
@@ -329,8 +411,16 @@ Keep todos pending until execution supplies evidence; folding is not completion.
 
 ### Current halt and scope reconciliation
 
+- `.planning/phases/05-pipeline-tune-up/05-08-SUMMARY.md` and
+  `.planning/phases/05-pipeline-tune-up/05-08-PLAN.md` — current release-signer RED and measured allocation halt;
+  D-27–31 supersede the unchanged-allocation restriction for a bounded next plan, not the historical outcome.
+- `.planning/phases/05-pipeline-tune-up/05-13-SUMMARY.md` and
+  `.planning/phases/05-pipeline-tune-up/05-07-SUMMARY.md` — accepted reconciliation/arming prerequisites;
+  active accepted completion is7/9; no prior hosted evidence accepts changed publisher paths.
+- `tests/policy/publish.cmake`, `tests/policy/gate-lines.txt`, `quality.json`,
+  `.planning/WINDOWS.md` — existing real-script fixture, complete boundary, ordinary policy and unresolved facts.
 - `.planning/phases/05-pipeline-tune-up/05-12-PLAN.md` and
-  `.planning/phases/05-pipeline-tune-up/05-12-SUMMARY.md` — latest hard fit halt, exact per-path/component
+  `.planning/phases/05-pipeline-tune-up/05-12-SUMMARY.md` — historical reconciliation fit halt, exact per-path/component
   counts, retained RED and three drafts; preserve as historical evidence when replanning D-24–26.
 - `.planning/phases/05-pipeline-tune-up/05-11-HANDOFF.md` and
   `.planning/phases/05-pipeline-tune-up/05-11-SUMMARY.md` — latest failed construction, six retained drafts,
@@ -395,6 +485,22 @@ Keep todos pending until execution supplies evidence; folding is not completion.
 
 No external emulator source was opened. Existing preparation already records sibling release/CI precedents;
 no new framework/ecosystem dependency is warranted by this phase.
+
+### Release-safety primary sources checked 2026-10-22
+
+- [GitHub CLI signer-workflow advisory](https://github.com/cli/cli/security/advisories/GHSA-wjmr-j3rp-mh2g)
+  and [source-ref advisory](https://github.com/cli/cli/security/advisories/GHSA-4mq3-hpgx-9cx8) — affected
+  ranges and patched2.102.0; verified independently through official REST advisory responses and web search.
+- [GitHub CLI2.102.0 release](https://github.com/cli/cli/releases/tag/v2.102.0) — published2026-09-30;
+  tool-floor evidence, not a claim about installed hosted runners.
+- [gh api manual](https://cli.github.com/manual/gh_api) — status/header capture, pagination and slurping;
+  installed `gh api --help` was also inspected. Local help describes the interface, not correctness of its
+  vulnerable attestation implementation.
+- [GitHub REST troubleshooting](https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api)
+  —404 can hide insufficient authentication; report access errors honestly.
+- [GitHub automatic merging](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/automatically-merging-a-pull-request)
+  —automatic disablement after a push by someone without write permission does not promise revocation after
+  every human push.
 </canonical_refs>
 
 <code_context>
@@ -413,7 +519,9 @@ no new framework/ecosystem dependency is warranted by this phase.
 
 - Required roll-up explicitly enumerates allowed skips; changing a job's role requires its synthetic controls too.
 - Artifacts and JUnit prove exact execution. One source of truth must consume these, not counts copied by hand.
-- Test card perf is report-only; WASM/library are outside `CI required`; nightly property testing is advisory.
+- Accepted05-07 armed test-card-only perf; WASM/library and nightly property testing remain advisory.
+- `scripts/publish.sh` owns release preparation/attestation/lookup/cleanup; its current `attested` path lacks
+  the signer restriction already present in downloaded verification. Reuse its generated transport fixture.
 - `.planning/**`-only commits skip heavy CI through classification, while hygiene/title/roll-up still report.
 
 ### Integration Points
@@ -428,7 +536,29 @@ no new framework/ecosystem dependency is warranted by this phase.
 <specifics>
 ## Specific Ideas and Evidence
 
-**Current bounded decision after 05-12, 2026-10-22:** the owner again requested all relevant role perspectives,
+**Current release-safety decision after05-08, 2026-10-22:** three parallel read-only advisory reviews considered
+security/test validity, proportional allocation and release delivery. Further exchanges challenged allocation
+completeness and404/authentication claims; they added no new capability. The security review accepted300 as a
+construction constraint; the budget review preferred a more conservative384 estimate. The orchestrator selected
+300 with its explicit27 reserve and complete obligations, rather than presenting the estimates as measured fit
+or claiming unanimity. Another fan-out changes no decision; stop research here. Rendering/UI rewrites,
+distributed services and unrelated ecosystems have no relevant phase requirement.
+
+Fresh observations in this discussion:
+
+- `cmake -DROOT=. -DINVENTORY=tests/policy/gate-lines.txt -DOUT=build/plan-evidence/discussion-release-count.json -P tests/cmake/gate_count.cmake`
+  —exit0,14906 physical lines; source8580/6533. This measures the retained RED, not accepted fit or completed repair.
+- `gh --version` —exit0,2.101.0. `gh api repos/cli/cli/security-advisories/GHSA-wjmr-j3rp-mh2g --jq '{html_url,published_at,vulnerabilities}'`
+  and the corresponding `GHSA-4mq3-hpgx-9cx8` query —exit0 each, patched2.102.0. The release-tag API query
+  —exit0,2.102.0 published2026-09-30. Official web search independently corroborates both advisories.
+- `gh issue list --repo szTheory/muhtari --label digest --state open --json number,title,body,url --limit 2`
+  —exit0,empty list. Default-branch publication remains a ship check.
+
+Run URL: unavailable for these local/read-only observations. No hosted workflow was dispatched, no publisher
+repair or new test was implemented, and no hosted runner's gh version or current rehearsal success is claimed.
+Historical green URLs below and in accepted summaries remain dated predecessor evidence.
+
+**Historical bounded decision after 05-12, 2026-10-22:** the owner again requested all relevant role perspectives,
 primary sources, adversarial analysis and automatic adoption of coherent recommendations. Three read-only
 advisory reviews covered construction/maintainability, security/test validity and delivery/governance. All
 converged on D-24's consumer-owned numeric reads. Security inspected both unavailable branches and confirmed

@@ -6,8 +6,8 @@
 **Areas considered:** weekly/monthly reporting; CI reliability and cost; quality/performance/portability;
 release safety, freshness and proportionality.
 
-**Revision:** the original discussion below is preserved as history. The final section records the later
-owner-authorized budget/acceptance/planning revision; current decisions are in CONTEXT D-10, D-17, D-19–20.
+**Revision:** earlier discussions below remain history. The final section records the2026-10-22 release-safety
+decision after05-08; current remaining-work decisions are in CONTEXT D-27–31.
 
 ## Discussion contract
 
@@ -329,3 +329,55 @@ costs remain unproved; no forecast savings, unused allowance or historical green
 remain pending. Discussion changes no implementation, quality.json, allocation, plan or phase completion.
 
 Next command: `$gsd-plan-phase 5`. Reuse unaffected research; target D-24–26 and dependencies. Stop here.
+
+## Release-safety revision after05-08 —2026-10-22
+
+**User direction:** discuss/consider all relevant points through parallel role reviews, primary sources and
+an adversarial pass, synthesize coherent recommendations and follow them. Prefer small flat dependencies.
+This is an explicit delegation to update context and adopt recommendations; no interview question was asked,
+no absent response was treated as consent, and no technical selection is attributed to a fabricated answer.
+
+Three read-only advisors covered publication security/test validity, allocation/proportionality and release
+delivery. Follow-up exchanges tested counting completeness, HTTP404/authentication and actual verifier
+semantics. No advisor edited files, implemented a repair or dispatched a hosted workflow.
+
+| Decision | Alternatives considered | Selected recommendation and tradeoff |
+|---|---|---|
+| Publisher construction | Existing gh plus one explicit status helper; curl/jq transport rewrite | Retain gh, successful validated paginated listing, relevant HTTP statuses and confirmed cleanup; avoid duplicate authentication/pagination machinery |
+| Attestation | Add signer flag only; patched verifier plus signer/ref constraints; source-digest pin | Require patched gh>=2.102.0 plus full signer/ref constraints; preserve archive identity separately because delayed-release trigger/archive SHAs can differ |
+| Budget response | Add66 only; let planning choose; fixed300; conservative384 | Adopt fixed300 including measured66, complete estimated production/controls/glue and27 reserve; implementation fit remains unproved |
+| Rehearsals | Conservative current selection; new complete-input reuse machinery | Retain conservative selection and measure cost; five trigger paths do not establish complete archive identity |
+| Acceptance | Synthetic transport/prior greens; current full affected-path evidence | Require exact local controls/inventories and current direct/called/rehearsal/install/cleanup evidence using actual patched gh |
+
+The known66 alone would only fund RED, leaving the repair unfunded. The security advisor's estimated complete
+construction was193–273 net lines including66. The budget advisor preferred384 for more conservative control
+headroom; no measured construction or specific additional fault established that300 cannot fit. The
+orchestrator chooses300 as a binding construction constraint, not a predicted actual or an assertion of
+unanimous sizing. All required control categories remain mandatory. No new authentication state machine,
+upstream crypto reproduction, dependency or generic API framework is adopted.
+
+The fixed incremental table is retained66 + signer/CLI22 + HTTP/lookup/cleanup55 + remaining controls115 +
+invocation/inventory15 + integration27 =300. Except66, these are estimates. fixes30→330; N1970→2270;
+C14853→15153; strict14841→15141. B12885/S2, quality920, count368/BE205/digest447 and old reserve0 stay fixed.
+BE12 is not reserve. Count everything, expose internal redistribution, stop on measured miss/control loss,
+retire unused allowance and tighten to accepted actual. No forecast savings, waiver or automatic rebaseline.
+
+New primary evidence justifies the verifier floor: official advisories
+[signer-workflow prefix matching](https://github.com/cli/cli/security/advisories/GHSA-wjmr-j3rp-mh2g) and
+[source-ref case matching](https://github.com/cli/cli/security/advisories/GHSA-4mq3-hpgx-9cx8) identify patched
+2.102.0. Local gh is2.101.0; hosted versions are unmeasured. The synthetic transport can prove flags and the
+no-PATCH boundary, not actual certificate-verification semantics. The REST API can hide authorization failures
+behind404; require successful complete access evidence, not just any failed GET. The current publisher and
+release workflow remain unchanged in this discussion.
+
+Fresh count14906 and the empty digest query each exit0; official advisory/release REST queries and gh version
+checks exit0. Canonical context records the exact commands and source links. These are local/read-only
+observations; run URL unavailable. No repair, GREEN, full CI acceptance or current rehearsal is claimed.
+
+Preserve05-08 at0/3 and REDe0c18a0. Accepted05-13/05-07 remain accepted;05-09 remains blocked on release-safety
+acceptance. Historical halts, seven assumptions, descriptorless boundary, shared pending requirements and
+ship-only/default-branch truths remain. Planning chooses the continuation representation; discussion does not
+edit plans, requirements, ordinary quality policy, production code, settings or historical summaries.
+
+Next command: `$gsd-plan-phase 5`. Reuse unaffected research; target D-27–31 and remaining dependencies.
+No auto/chain flags, second GSD step, ship or merge ran. Further fan-out changes no selected decision.
