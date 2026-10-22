@@ -380,4 +380,3 @@ Shared requirements and phase acceptance remain open. The exact next command is
 All claimed files exist; both task commits are ancestors of HEAD. Current-plan and
 working-tree diff checks pass. The extra whole-CI pending status is explicitly
 excluded from any overall-success claim.
-
