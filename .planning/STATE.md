@@ -5,11 +5,10 @@ milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
 status: halted
-stopped_at: 05-14 halted1/3 at15152/safety312; Task1 accepted, Task2 draft retained,05-09 blocked
-last_updated: "2026-10-22T21:20:11.282Z"
+stopped_at: Phase5 context revised D-32–34; owner adopted safety384;05-14 halted1/3,05-09 blocked; next $gsd-plan-phase 5
+last_updated: "2026-10-22T21:57:22.837Z"
 last_activity: 2026-10-22
-last_activity_desc: 05-14 halted1/3 at fixed-allocation gate
-state_head: c9b7f37e4b5a592a9ced5d40c0f3d281eabd3577
+state_head: 393c71770b28439a3a6cee5f60391f8e16419c9a
 progress:
   total_phases: 7
   completed_phases: 0
@@ -17,6 +16,7 @@ progress:
   completed_plans: 7
   percent: 0
 total_phases: 7
+last_activity_desc: 05-14 halted1/3 at fixed-allocation gate
 ---
 
 # Project State
@@ -202,6 +202,7 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 - [Phase 05]: 05-07 accepted2/2: arm only testcard after fresh3837262 triples, authenticated numeric PR base and observed nightly issue close; retain WASM9/library5/prop2 advisory. Active7/9; shared requirements and05-08/09 pending; halted06/11/12 remain0/3 histories.
 - [Phase 05]: D-27–31 adopt bounded release-safety continuation and fixed increment300: fixes30→330,N1970→2270,C14853→15153,strict14841→15141; known66 included, estimated207 plus reserve27. Other components fixed;BE12 unavailable. Current discussion supersedes earlier no-new-allocation prose only for this scope; quality.json remains unchanged until planned execution. — Owner delegated adoption; measured signer RED plus official gh2.102.0 advisory floor require complete controls/lookup/cleanup funding before GREEN. No measured fit, task completion, waiver or new gap round.
 - [Phase 05]: 05-14 accepts Task1 only at14965/safety125 after actual-base15153 adoption; Task2 stops at15152/safety312/fixes342, strict15141 miss11 and safety300 miss12. REDec95123 and uncommitted publisher draft remain; no current release acceptance,05-09 blocked.
+- [Phase 05]: D-32–34: owner adopts release-safety300→384 only; fixes330→414,N2270→2354,C15153→15237,strict15141→15225. Other allocations fixed; quality.json unchanged until authenticated execution adoption. Targeted replan next;05-14 remains halted1/3,05-09 blocked,accepted7/9. — Measured current15152/safety312 construction already exceeds300 before remaining controls/provisioning; empty204 positive cleanup control fails. Full fit and acceptance remain unproved. Preserve draft, accepted Task1, RED lineage and halt histories; no automatic future growth or additional gap round.
 
 ## Performance Metrics
 
@@ -266,10 +267,10 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T21:20:11.265Z
-Stopped at: 05-14 halted1/3 at15152/safety312; Task1 accepted, Task2 draft retained,05-09 blocked
-Resume file: .planning/phases/05-pipeline-tune-up/05-14-SUMMARY.md
-Next command: $gsd-discuss-phase 5
+Last session: 2026-10-22T21:57:22.708Z
+Stopped at: Phase5 context revised D-32–34; owner adopted safety384;05-14 halted1/3,05-09 blocked; next $gsd-plan-phase 5
+Resume file: .planning/phases/05-pipeline-tune-up/05-CONTEXT.md
+Next command: $gsd-plan-phase 5
 Stop after this execution step. D-30's exact allocation is adopted, but the complete
 construction misses safety300/strict15141 before provisioning and integration.
 No automatic gap round, promotion, ship or merge ran. The measured test-card gate
