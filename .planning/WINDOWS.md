@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 14
+open_count: 16
 waived_count: 0
-fixed_count: 14
-total_count: 28
-last_updated: 2026-10-22T21:17:56.089Z
+fixed_count: 15
+total_count: 31
+last_updated: 2026-10-22T22:46:49.319Z
 ---
 
 # Broken Windows Ledger
@@ -41,8 +41,11 @@ last_updated: 2026-10-22T21:17:56.089Z
 | 24 | 05 | unmet-truth | tests/policy/publish.cmake | 50 | Release signer RED reaches synthetic PATCH; Task1 is halted at14906 lines/fixes96 against strict14841/fixes30 before production repair. | open |  | 2026-10-22T20:05:27.962Z |  |
 | 25 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-08-PLAN.md |  | Release-safety GREEN/full CI/hosted rehearsal, complete lookup-error controls and dependent Tasks2-3 remain unrun after the Task1 fixed-allocation stop. | open |  | 2026-10-22T20:05:28.037Z |  |
 | 26 | 05 | deviation | scripts/publish.sh |  | 05-14 Task2 construction halts at15152 physical lines: safety312/fixes342 exceed300/330 by12 and strict15141 by11; Task1 accepted, Task2 draft uncommitted,05-09 blocked. | open |  | 2026-10-22T21:17:55.944Z |  |
-| 27 | 05 | unmet-truth | scripts/publish.sh | 162 | 05-14 draft api_response loses the empty204 header/body boundary through command substitution; the first successful cleanup queue control exits1 with invalid HTTP response. No Task2 GREEN or current release acceptance. | open |  | 2026-10-22T21:17:56.017Z |  |
+| 27 | 05 | unmet-truth | scripts/publish.sh | 162 | 05-14 draft api_response loses the empty204 header/body boundary through command substitution; the first successful cleanup queue control exits1 with invalid HTTP response. No Task2 GREEN or current release acceptance. | fixed |  | 2026-10-22T21:17:56.017Z | 2026-10-22T22:46:49.319Z |
 | 28 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-14-PLAN.md |  | 05-14 Task2 full matrix/provisioning and Task3 full local ci/library/inventories, current direct/called authentic9/8 joins, patched-gh rehearsal/install/confirmed cleanup and measured conservative cost remain unrun after the fixed-allocation stop. | open |  | 2026-10-22T21:17:56.089Z |  |
+| 29 | 05 | deviation | tests/policy/publish.cmake |  | 05-15 Task2 halts at15231: safety391/fixes421 exceed384/414 by7 and strict15225 by6 before provisioning. Task1 accepted at15163;05-09 remains blocked; no further construction or GREEN. | open |  | 2026-10-22T22:46:49.123Z |  |
+| 30 | 05 | unmet-truth | .github/workflows/release.yml |  | 05-15 real-script controls reach and reproduce missing verified patched CLI provisioning; CTest8 and RED_EVIDENCE_OK0. Pin/workflow/output repair and remaining complete-matrix audit are unimplemented at the allocation stop. | open |  | 2026-10-22T22:46:49.189Z |  |
+| 31 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-15-PLAN.md |  | 05-15 Task3 full local ci/library/inventories, current direct/called authentic9/8 joins, actual patched-gh rehearsal/publication/download/install/confirmed cleanup and cost/docs remain unrun after the designed Task2 halt. Accepted7/9 unchanged. | open |  | 2026-10-22T22:46:49.254Z |  |
 
 ````json
 [
@@ -391,10 +394,10 @@ last_updated: 2026-10-22T21:17:56.089Z
     "file": "scripts/publish.sh",
     "line": 162,
     "description": "05-14 draft api_response loses the empty204 header/body boundary through command substitution; the first successful cleanup queue control exits1 with invalid HTTP response. No Task2 GREEN or current release acceptance.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-22T21:17:56.017Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-22T22:46:49.319Z",
     "milestone": "v2.0"
   },
   {
@@ -407,6 +410,45 @@ last_updated: 2026-10-22T21:17:56.089Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-10-22T21:17:56.089Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 29,
+    "kind": "deviation",
+    "phase": "05",
+    "file": "tests/policy/publish.cmake",
+    "line": null,
+    "description": "05-15 Task2 halts at15231: safety391/fixes421 exceed384/414 by7 and strict15225 by6 before provisioning. Task1 accepted at15163;05-09 remains blocked; no further construction or GREEN.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T22:46:49.123Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 30,
+    "kind": "unmet-truth",
+    "phase": "05",
+    "file": ".github/workflows/release.yml",
+    "line": null,
+    "description": "05-15 real-script controls reach and reproduce missing verified patched CLI provisioning; CTest8 and RED_EVIDENCE_OK0. Pin/workflow/output repair and remaining complete-matrix audit are unimplemented at the allocation stop.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T22:46:49.189Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 31,
+    "kind": "unrun-verify",
+    "phase": "05",
+    "file": ".planning/phases/05-pipeline-tune-up/05-15-PLAN.md",
+    "line": null,
+    "description": "05-15 Task3 full local ci/library/inventories, current direct/called authentic9/8 joins, actual patched-gh rehearsal/publication/download/install/confirmed cleanup and cost/docs remain unrun after the designed Task2 halt. Accepted7/9 unchanged.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T22:46:49.254Z",
     "resolved_at": null,
     "milestone": "v2.0"
   }
