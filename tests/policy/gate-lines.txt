@@ -123,6 +123,7 @@ tests/perf/allow.txt
 tests/perf/tests.cmake
 tests/policy/gate-lines.txt
 tests/policy/digest.cmake
+tests/policy/publish.cmake
 tests/policy/quality.cmake
 tests/policy/tests.cmake
 tests/prop/tests.cmake
