@@ -5,16 +5,16 @@ milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
 status: executing
-stopped_at: Completed 05-13-PLAN.md; required recovery accepted with explicit tooling warnings
-last_updated: "2026-10-22T18:56:04.807Z"
+stopped_at: Completed 05-07-PLAN.md; test-card armed; advisory lanes retained; extra final CI queued
+last_updated: "2026-10-22T19:44:38.529Z"
 last_activity: 2026-10-22
-last_activity_desc: Recovery05-13 accepted; active6/9, next05-07 unstarted
-state_head: b8a6968efa1948774784a388d435805762ae48f1
+last_activity_desc: Plan 05-07 accepted; test-card gate armed; advisory lanes retained
+state_head: 047e8655f3254845eb55da3c9fa004b9a0f994d1
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 total_phases: 7
 ---
@@ -30,17 +30,50 @@ from a small MIT-licensed C library hosts can embed.
 ## Current Position
 
 Phase: 05 (Pipeline tune-up) — EXECUTING
-Plan: 6 of 9
-Status: Ready to execute
-Last activity: 2026-10-22 — Recovery05-13 accepted with explicit tooling warnings
+Plan: 7 of 9 complete
+Status: Ready to execute 05-08; 05-09 pending
+Last activity: 2026-10-22 — Plan05-07 accepted; test-card gate armed; advisory lanes retained
 
-Progress: [░░░░░░░░░░] 0% of milestone phases — 6/9 Phase5 plans complete; 0/7 phases complete.
-Implementation: 05-01,05-02,05-10,05-04,05-05,05-13 complete. Halted05-06/05-11/05-12 stay0/3 histories, superseded only for scheduling.
-Three remaining plans run in waves7–9:05-07 ->05-08 ->05-09. None ran in this executor.
+Progress: [░░░░░░░░░░] 0% of milestone phases — 7/9 Phase5 plans complete; 0/7 phases complete.
+Implementation: 05-01,05-02,05-10,05-04,05-05,05-13,05-07 complete. Halted05-06/05-11/05-12 stay0/3 histories, superseded only for scheduling.
+Two remaining plans run in waves8–9:05-08 ->05-09. Both remain unstarted; this executor completed only05-07.
 05-13 implements only D-24–26's finite numeric-read movement, proves retained compatibility/POKEY and current required callers, and measures14840/quality919. No new scope or allocation was needed.
-REDdf6b095/94d5c49 and all historical SUMMARY/HANDOFF/VERIFICATION files remain unchanged. No arming, promotion, ship or merge ran.
+REDdf6b095/94d5c49 and all historical SUMMARY/HANDOFF/VERIFICATION files remain unchanged. Test-card arming passed actual readiness controls; no promotion, ship or merge ran.
 
 ## Current acceptance
+
+05-07 is accepted2/2 at task commits2a68b3b/7ed793e; canonical summary047e865.
+Two fresh same625db7a controls each measure3837262/3837262/3837262, spread0:
+[CI39836658273](https://github.com/szTheory/muhtari/actions/runs/39836658273) and
+[CI39836675687](https://github.com/szTheory/muhtari/actions/runs/39836675687), both completed success.
+[Current numeric PR39836667094](https://github.com/szTheory/muhtari/actions/runs/39836667094)
+attempt2 succeeds with head/base/repeat3837262, producer122a83b and authenticated base65b360d.
+GCC15.2.0/Valgrind3.26.0, equal paths/env -i and60/360 subtraction remain.
+[Forced Nightly39836662246](https://github.com/szTheory/muhtari/actions/runs/39836662246)
+fails its designated step after artifact upload and updates issue21;
+[normal39837920876](https://github.com/szTheory/muhtari/actions/runs/39837920876)
+passes all9 jobs and closes that issue. Accidental cancelled duplicate39836680032
+and its actual509 execution seconds are retained; intended failure/recovery cost1290/1332 seconds.
+The test-card-only gate is now armed. Existing DMA/TIA/POKEY native60/360 attempts pass,
+but no own Ir controls or charged integration fit is proved, so no workload was added.
+Actual main-lane audit is WASM9/library5/prop2 distinct successes; all remain advisory.
+Six native required hashes, PowerPC roles, inventories and report-only contracts remain.
+Final post-edit local ci609+6, hygiene24, exact inventories and docs budgets pass, exit0.
+All146 counted entries fit14840/quality919 with unchanged components, strict14841 and C14853.
+No global shared requirement is marked complete; TUNE-02/TUNE-04 remain pending.
+
+Extra final-head [CI39839399512](https://github.com/szTheory/muhtari/actions/runs/39839399512)
+attempt2 has actual ARMED=true perfPASS at3837262/base/repeat3837262 and successful quality9 join;
+RetroArch120041448613 remains queued and the final required roll-up is not yet present.
+No overall CI green is claimed. Windows attempt1 passes current609+6 but unchanged-base605
+install.consumer emits no output; one unchanged-head rerun passes current609+6/base605+6.
+The existing consumer seed records both; no source fix or bound change is claimed.
+Automatic final-head PRNightly39839399510 succeeds; Release39839399527 is queued.
+No final Release/rehearsal or05-08 acceptance is claimed; active runs were not cancelled.
+Broad branch diff remains2 for the same inherited EOF blanks; plan/tree checks pass0.
+All seven assumptions and descriptorless prohibitions remain flagged/unverified.
+
+### Preserved05-13 acceptance
 
 05-13 is accepted3/3 at implementation31c52d9 (Task1 refactor8fd04db; canonical summaryb8a6968).
 Full final local ci609+6 and generated-corpus library43 against verified origin/main65b360d,
@@ -128,6 +161,7 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 - [Phase 05]: D-24–26 bounded recovery05-13 replaces05-12 for scheduling only; move typed numeric reads to measured consumers while retaining original-item authentication/status and controls. Semantic failure, measured miss or additional required counted compatibility/caller/control cost stops expansion. Fixed allocations and halted histories remain unchanged.
 - [Phase 05]: 05-13 accepted all3 tasks at14840/quality919 with current local609+6/library43 and authentic direct9/called8 evidence; active completion6/9, halted06/11/12 stay0/3. Shared TUNE-03/TUNE-04 remain pending.
 - [Phase 05]: Inherited broad diff check exit2 is a scope warning under AGENTS6/7; own diff0. Release39832530253 overall failure is advisory WASM fetchcurl35; required calledCI+quality and authentic8 join pass. No release/rehearsal or promotion acceptance is claimed.
+- [Phase 05]: 05-07 accepted2/2: arm only testcard after fresh3837262 triples, authenticated numeric PR base and observed nightly issue close; retain WASM9/library5/prop2 advisory. Active7/9; shared requirements and05-08/09 pending; halted06/11/12 remain0/3 histories.
 
 ## Performance Metrics
 
@@ -143,6 +177,7 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 | Phase 05 P11 | approx9min halted | 0 tasks | 6 files |
 | Phase 05 P12 | approx5min halted | 0 tasks | 4 files |
 | Phase 05 P13 | 24min plus closeout | 3 tasks | 5 files |
+| Phase 05 P07 | 38min plus closeout | 2 tasks | 4 files |
 
 ## Blockers and seeds
 
@@ -184,16 +219,16 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T18:56:04.790Z
-Stopped at: Completed 05-13-PLAN.md; required recovery accepted with explicit tooling warnings
+Last session: 2026-10-22T19:44:38.509Z
+Stopped at: Completed 05-07-PLAN.md; test-card armed; advisory lanes retained; extra final CI queued
 Resume file: None
 Next command: $gsd-execute-phase 5
-Stop after this execute step. Recovery05-13 is accepted;05-07 is next and remains unstarted.
+Stop after this execute step. Plan05-07 is accepted;05-08 is next and remains unstarted;05-09 is pending.
 No new allocation or automatic gap round is authorized. Future scopes retain their own predicates.
-No new allocation, gap round, arming, promotion, ship or merge was authorized or performed.
+No new allocation, gap round, promotion, ship or merge was performed. Only the measured test-card gate was armed.
 
 ### Blockers
 
 - Historical05-06/05-11/05-12 remain halted0/3 with RED/draft histories preserved. Their old tasks cannot resume;05-13 replaces their scheduling under D-24–26.
-- Phase5 acceptance remains incomplete at6/9:05-07 arming/promotion,05-08 release safety and05-09 final tightening/docs/settings remain unstarted.
+- Phase5 acceptance remains incomplete at7/9:05-08 release safety and05-09 final tightening/docs/settings remain unstarted. WASM/library/prop stay advisory at9/5/2; shared requirements remain pending.
 - Inherited broad whitespace and advisory called-WASM fetch failures remain tooling seeds; no release rehearsal or overall Release success is claimed. Seven assumptions and the physical-boundary prohibition remain unresolved.
