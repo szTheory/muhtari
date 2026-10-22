@@ -103,10 +103,12 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
       -DWORK=${CMAKE_BINARY_DIR}/policy/quality_fixture -P ${CMAKE_CURRENT_LIST_DIR}/quality.cmake
     LABELS policy TIMEOUT 30)
+  # Provisional n=1: Windows arm64 image 20261018.189.1, run 39699026057.
+  # Complete control max 96.22 s; ceil(2 x 96.22)=193 s, with all semantic cases retained.
   muhtari_add_test(NAME policy.digest.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
       -DWORK=${CMAKE_BINARY_DIR}/policy/digest_fixture -P ${CMAKE_CURRENT_LIST_DIR}/digest.cmake
-    LABELS policy TIMEOUT 300) # temporary native timing measurement; tighten after completed arm64 sample
+    LABELS policy TIMEOUT 193)
   # Fault prevented: comparing empty, duplicate or unrelated lane evidence.
   file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/policy/lane_equality_controls.cmake CONTENT [=[
 string(REPEAT "a" 40 sha)
