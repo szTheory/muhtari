@@ -77,6 +77,7 @@ tests/cmake/notices.cmake
 tests/cmake/perf_compare.cmake
 tests/cmake/quality.cmake
 tests/cmake/quality_evidence.cmake
+tests/cmake/quality_join.cmake
 tests/cmake/pins.cmake
 tests/cmake/rom_hash_coverage.cmake
 tests/cmake/single_version.cmake

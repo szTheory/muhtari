@@ -215,17 +215,17 @@ with its lane's inventory and labels.
 | `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | fetches its wasmtime and 7800basic, then preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
 | `asan` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `asan` | `ci.txt` without `abi` and `release` |
 | `nofp` ×2 | `ubuntu-26.04`, `ubuntu-26.04-arm` | preset `nofp` | `nofp.txt` |
-| `be32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `be32`; uploads `hashes-be32` | `ci.txt`, label `portable` |
-| `hash-equality` | `ubuntu-26.04` | compares exactly seven `hashes.txt` files: the six `build` legs and `be32` | none |
+| `be32` | `ubuntu-26.04` | preset `be32-compile`; full execution/equality runs nightly and on releases | none |
+| `hash-equality` | `ubuntu-26.04` | compares the six native `hashes.txt` files | none |
 | `wasm32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
 | `retroarch` | `macos-15` | the built core in RetroArch; see "Hosted RetroArch" | none |
 | `library` | `ubuntu-26.04` | full history; builds the `ci` preset's samples and OpenBIOS (`-L '^built$'`), then preset `library` over `build/ci/built` with the pull request's base for the ratchet | `library.txt` |
 | `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame of runners built with `MUHTARI_TESTS` OFF; see "Performance" | none |
+| `quality` | `ubuntu-26.04` | [trusted bounds and exact producer evidence](quality.md) | validated by producers |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
-The hosted `be32` job takes up to about three minutes, inside the five-minute limit for a per-pull-request lane,
-so `hash-equality` compares seven files. Windows legs load the MSVC environment with `vswhere` and `vcvarsall` for the runner's own architecture. Every
-action is pinned by full commit SHA.
+Windows legs load the native MSVC environment with `vswhere` and `vcvarsall`.
+Actions are pinned by full commit SHA.
 
 **The roll-up.** The ruleset requires one check, `CI required`. It always runs, and passes only when every job it
 needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which
@@ -471,26 +471,6 @@ names carry no version.
 To check one version by hand: `cmake -DVERSION=<x.y.z> -P tests/cmake/single_version.cmake`.
 
 ## Budgets
-
-The root `quality.json` stores integer floors, ceilings and bounded dated reasons.
-Native, hygiene and ASan observations come from completed, inventory-checked JUnit;
-archive sizes come from the three validated zip files. Native counts cover ABI,
-fuzz replay and public compatibility title predicates, including their controls.
-Zero findings require the actual ABI, fatal-warning, analyzer or sanitizer judge.
-Each observation identifies its built SHA, configuration, producer and source run.
-
-Initial ordinary bounds use an independently built, unchanged event-base tree on
-the same runner with matching compiler and fixture fingerprints. Native bounds
-apply to every native leg; the archive ceiling covers the largest three-archive
-total across the six native legs. It is a package-size bound, not a per-platform
-size-regression percentage. The initial base has no audited gate inventory, so
-only gate lines use the reviewed fixed structural ceiling; this cannot reset an
-existing bound or initialize another metric from its own candidate measurements.
-
-Coverage, open crashes, backlog and comparable historical duration remain explicit
-gaps. Library, WASM and property observations remain advisory. Cachegrind evidence
-names the test-card workload and retains the existing semantic comparator; its
-threshold remains report-only pending its separately documented arming controls.
 
 `docs.budgets` keeps the documents small enough to read: `README.md` at most 12 KB, `include/muhtari.h` at most
 24 KB, and each `docs/*.md` at most 40 KB. Raise a budget only with a reason in the same commit.

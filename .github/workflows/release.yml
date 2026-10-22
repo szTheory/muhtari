@@ -47,6 +47,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
 
   equality:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
@@ -187,6 +188,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
 
   release-equality:
     needs: release-please

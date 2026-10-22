@@ -144,15 +144,17 @@ muhtari_add_test(NAME policy.ci_required.self_test
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene policy TIMEOUT 30)
 
-# A missing PowerPC compile dependency must fail the actual roll-up audit.
-file(READ ${hygiene_ci} hygiene_yml)
-string(REPLACE ", be32," "," hygiene_yml "${hygiene_yml}")
-file(WRITE ${CMAKE_BINARY_DIR}/hygiene/ci_required_omission/ci.yml "${hygiene_yml}")
-set(hygiene_cmd ${CMAKE_COMMAND} -DCI_YML=${CMAKE_BINARY_DIR}/hygiene/ci_required_omission/ci.yml
-  -DJQ=${MUHTARI_JQ} -DREPORT_ONLY=wasm32,library -P ${hygiene_scripts}/ci_required.cmake)
-execute_process(COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
-  "-DREGEX=job be32 is not in CI required" -P ${hygiene_scripts}/expect_fail.cmake
-  COMMAND_ERROR_IS_FATAL ANY)
+# Missing compilation or quality dependencies must fail the actual roll-up audit.
+foreach(omitted be32 quality)
+  file(READ ${hygiene_ci} hygiene_yml)
+  string(REGEX REPLACE ", ${omitted}([] ,])" "\\1" hygiene_yml "${hygiene_yml}")
+  file(WRITE ${CMAKE_BINARY_DIR}/hygiene/ci_required_omission/${omitted}.yml "${hygiene_yml}")
+  set(hygiene_cmd ${CMAKE_COMMAND} -DCI_YML=${CMAKE_BINARY_DIR}/hygiene/ci_required_omission/${omitted}.yml
+    -DJQ=${MUHTARI_JQ} -DREPORT_ONLY=wasm32,library -P ${hygiene_scripts}/ci_required.cmake)
+  execute_process(COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=job ${omitted} is not in CI required" -P ${hygiene_scripts}/expect_fail.cmake
+    COMMAND_ERROR_IS_FATAL ANY)
+endforeach()
 
 # The Dependabot auto-merge decision, run on synthetic events. The self test
 # runs it on a copy of the workflow whose program merges majors, which must

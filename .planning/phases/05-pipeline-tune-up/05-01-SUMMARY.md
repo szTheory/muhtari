@@ -328,6 +328,14 @@ Count/inventory's 500 lines reserve approximately 150 for the hand-maintained li
 170 for counter/report validation, 150 for fixture controls, and 30 for declaration/glue.
 Any visible within-N redistribution must identify the receiving fault/path and unchanged
 total; C cannot rise. At phase acceptance retire unused reserve and tighten to actual.
+
+Current fixed redistribution, before the remaining quality integration: count368,
+BE205, digest447, quality920, reproduced fixes30, reserve0; N1970/C14853 unchanged.
+The prior quality850/fixes100 mapping transfers only unused fixes70 to exact
+artifact joins, omission/tampering controls and release permission/roll-up glue.
+Task2 quality actual711 leaves139 under850, below the remaining readable
+integration need. Reproduced fixes actual30 is retained in full. No control,
+counting boundary, scope, numeric metric or ordinary baseline is relaxed.
 Cross-platform archive/floor/firmware semantics, trusted-base/new-metric availability,
 inherited expiry, exact full-BE package inventory, release-call identities and all attempts
 remain named integration obligations, not claims resolved by this first slice.
