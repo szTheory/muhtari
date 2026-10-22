@@ -4,12 +4,12 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: ready
-stopped_at: Gap planning complete; replacement05-11 ready, retained draft unaccepted
-last_updated: "2026-10-22T03:16:17.432Z"
+status: blocked
+stopped_at: Replacement05-11 halted at Task1 allocation gate;14879/quality958, deficit38
+last_updated: "2026-10-22T15:41:22.376Z"
 last_activity: 2026-10-22
-last_activity_desc: Plan05-11 allocation recovery planned and independently verified
-state_head: 7f239653cffe8f834ecb5e1cda898cbef38d99cc
+last_activity_desc: Replacement05-11 halted; shared-reader construction misses38 lines
+state_head: 91c31654a5c655b3f1dd0aa99f53bcbfc8c1e462
 progress:
   total_phases: 7
   completed_phases: 0
@@ -29,14 +29,15 @@ from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — READY TO EXECUTE
-Plan: 05-11, replacement wave6; five of nine active plans complete
-Status: Ready to execute the bounded allocation recovery
-Last activity: 2026-10-22 — Plan05-11 passed independent plan verification
+Phase: 05 (Pipeline tune-up) — BLOCKED
+Plan: 5 of 9
+Status: Replacement05-11 halted at its explicit Task1 allocation gate
+Last activity: 2026-10-22 — Shared-reader construction measured14879; quality958 exceeds920
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 5/9 Phase5 plans complete; 0/7 phases complete.
 Implementation: 05-01,05-02,05-10,05-04,05-05 complete. Halted05-06 is superseded for scheduling by05-11;05-07/08/09 depend on successful05-11 acceptance.
-Only gap planning ran in this session; no implementation or downstream execution ran.
+Replacement05-11 attempted Task1 only;0/3 tasks complete. Its six-file draft remains uncommitted.
+No compatibility expansion, production cutover, push or hosted acceptance ran.
 
 ## Current acceptance
 
@@ -48,11 +49,13 @@ Full ci/library and hosted caller acceptance are unrun; no current run URL exist
 Both old allow stores/callers remain. WINDOWS16/17 track the halt and unrun acceptance.
 Read phases/05-pipeline-tune-up/05-06-SUMMARY.md and05-06-HANDOFF.md for exact evidence.
 
-Replacement05-11 has three sequential tasks in wave6 and depends on accepted05-05.
-Its concrete pair/observation validation consolidation is a construction hypothesis,
-not achieved savings. Task1 and each expansion must prove total<=14841 and quality<=920
-with non-quality components unchanged. Planning passed schema/structure checks and
-independent plan verification; decision coverage is20/20. No execution acceptance is inferred.
+Replacement05-11 is halted during Task1. Shared typed bound and observation readers
+preserve all seven perf cases plus policy.quality.controls, freshly passing exit0.
+The complete physical count is14879:9 below retained14888,38 above strict14841,
+and26 above C14853. Quality958 exceeds allocation920 by38; other components are unchanged.
+The construction has no GREEN commit and releases no downstream scheduling.
+No forecast fixture/store retirement, BE12 transfer or additional gap round is authorized.
+Read05-11-SUMMARY.md and05-11-HANDOFF.md for exact commands, deltas and scope alternatives.
 The new05-06-RECOVERY-GAPS.md is scoped planner input with verifier_ran:false;
 the historical05-VERIFICATION.md and accepted05-10 recovery remain unchanged.
 
@@ -94,11 +97,13 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 | Phase05 P05 prior halt |14min|1 partial|8|
 | Phase05 P05 continuation |67min through closeout checks|3 total complete|14|
 | Phase 05 P06 | 5min halted | 0 tasks | 4 files |
+| Phase 05 P11 | approx9min halted | 0 tasks | 6 files |
 
 ## Blockers and seeds
 
-Plan05-06 is halted at its explicit allocation gate. Replacement05-11 is ready;
-its measured gates must fit quality920/C14853 before05-07 can proceed.
+Plan05-06 and replacement05-11 are halted at their explicit allocation gates.
+Replacement05-11 still needs38 lines to fit quality920;05-07/08/09 remain blocked.
+WINDOWS18/19 preserve the new deficit and unrun full/local/hosted acceptance.
 The descriptorless TUNE-03 boundary prohibition remains flagged/unverified;
 phase-wide requirements, final allocation retirement and acceptance are unfinished.
 Default-branch digest publication and merge-dependent truths remain ship checks.
@@ -133,12 +138,14 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T03:16:17.432Z
-Stopped at: Gap planning complete; replacement05-11 independently verified, implementation unaccepted
-Resume file: .planning/phases/05-pipeline-tune-up/05-11-PLAN.md
-Next command: $gsd-execute-phase 5 --gaps-only
-Stop after this planning step; execute the replacement in a fresh session.
+Last session: 2026-10-22T15:41:22.217Z
+Stopped at: Replacement05-11 halted at Task1 allocation gate;14879/quality958, deficit38
+Resume file: .planning/phases/05-pipeline-tune-up/05-11-HANDOFF.md
+Next command: $gsd-discuss-phase 5
+Stop after this execution step. The next session must resolve the concrete bounded scope;
+this halt does not authorize another gap round, a larger allocation or downstream work.
 
 ### Blockers
 
 - The retained05-06 draft still exceeds its allocation:14888/C14853 and quality967/920. Only RED is committed. Replacement05-11 may proceed through measured gates;05-07/08/09 remain blocked until it is accepted. Fixed cap/allocations unchanged.
+- Replacement05-11 failed its explicit Task1 fit gate:14879 exceeds strict14841 by38 and C14853 by26; quality958 exceeds920 by38. No Task1 GREEN or Task2/3 acceptance;05-07/08/09 remain blocked. No new allocation or gap round is authorized.

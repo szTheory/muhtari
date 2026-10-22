@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 5
 waived_count: 0
 fixed_count: 14
-total_count: 17
-last_updated: 2026-10-22T02:33:42.157Z
+total_count: 19
+last_updated: 2026-10-22T15:41:21.957Z
 ---
 
 # Broken Windows Ledger
@@ -32,6 +32,8 @@ last_updated: 2026-10-22T02:33:42.157Z
 | 15 | 05 | unrun-verify | .github/workflows/ci.yml |  | Required typed bound adoption and hosted aggregate remain unfinished; Windows current/base producers are restored in run39699892851. | fixed | Task2 partial; Task3 unstarted. | 2026-10-21T23:40:11.664Z | 2026-10-22T01:53:34.511Z |
 | 16 | 05 | unrun-verify | .github/workflows/ci.yml |  | Performance/compatibility store cutover, full ci/library workflows and hosted caller acceptance remain unverified after the measured allocation halt. | open |  | 2026-10-22T02:33:42.066Z |  |
 | 17 | 05 | deviation | tests/cmake/quality.cmake |  | Central policy migration draft measures14888 against fixed C14853 and quality967 against allocation920; only RED is committed and cutover is halted. | open |  | 2026-10-22T02:33:42.157Z |  |
+| 18 | 05 | deviation | tests/cmake/quality.cmake |  | Replacement05-11 named reader consolidation observes14879 and quality958; strict gate14841/quality920 misses38 lines, so Task1 and downstream cutover remain halted with no GREEN commit. | open |  | 2026-10-22T15:41:21.851Z |  |
+| 19 | 05 | unrun-verify | .github/workflows/ci.yml |  | Replacement05-11 Task2/3 full ci/library, direct perf/library/quality, release-called CI and authentic artifact acceptance are unrun after Task1 allocation failure; no current run URL exists. | open |  | 2026-10-22T15:41:21.957Z |  |
 
 ````json
 [
@@ -253,6 +255,32 @@ last_updated: 2026-10-22T02:33:42.157Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-10-22T02:33:42.157Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 18,
+    "kind": "deviation",
+    "phase": "05",
+    "file": "tests/cmake/quality.cmake",
+    "line": null,
+    "description": "Replacement05-11 named reader consolidation observes14879 and quality958; strict gate14841/quality920 misses38 lines, so Task1 and downstream cutover remain halted with no GREEN commit.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T15:41:21.851Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 19,
+    "kind": "unrun-verify",
+    "phase": "05",
+    "file": ".github/workflows/ci.yml",
+    "line": null,
+    "description": "Replacement05-11 Task2/3 full ci/library, direct perf/library/quality, release-called CI and authentic artifact acceptance are unrun after Task1 allocation failure; no current run URL exists.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T15:41:21.957Z",
     "resolved_at": null,
     "milestone": "v2.0"
   }
