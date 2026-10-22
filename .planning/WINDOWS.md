@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 5
+open_count: 7
 waived_count: 0
 fixed_count: 14
-total_count: 19
-last_updated: 2026-10-22T15:41:21.957Z
+total_count: 21
+last_updated: 2026-10-22T17:00:29.145Z
 ---
 
 # Broken Windows Ledger
@@ -34,6 +34,8 @@ last_updated: 2026-10-22T15:41:21.957Z
 | 17 | 05 | deviation | tests/cmake/quality.cmake |  | Central policy migration draft measures14888 against fixed C14853 and quality967 against allocation920; only RED is committed and cutover is halted. | open |  | 2026-10-22T02:33:42.157Z |  |
 | 18 | 05 | deviation | tests/cmake/quality.cmake |  | Replacement05-11 named reader consolidation observes14879 and quality958; strict gate14841/quality920 misses38 lines, so Task1 and downstream cutover remain halted with no GREEN commit. | open |  | 2026-10-22T15:41:21.851Z |  |
 | 19 | 05 | unrun-verify | .github/workflows/ci.yml |  | Replacement05-11 Task2/3 full ci/library, direct perf/library/quality, release-called CI and authentic artifact acceptance are unrun after Task1 allocation failure; no current run URL exists. | open |  | 2026-10-22T15:41:21.957Z |  |
+| 20 | 05 | deviation | tests/cmake/quality.cmake |  | 05-12 Task1 halted at total14842/quality921, one above strict14841/quality920; unchanged other components and no GREEN. | open |  | 2026-10-22T17:00:29.052Z |  |
+| 21 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-12-PLAN.md |  | 05-12 Task2/3 full ci, generated-corpus library, POKEY audit and current direct/called hosted acceptance unrun after Task1 fit halt. | open |  | 2026-10-22T17:00:29.145Z |  |
 
 ````json
 [
@@ -281,6 +283,32 @@ last_updated: 2026-10-22T15:41:21.957Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-10-22T15:41:21.957Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 20,
+    "kind": "deviation",
+    "phase": "05",
+    "file": "tests/cmake/quality.cmake",
+    "line": null,
+    "description": "05-12 Task1 halted at total14842/quality921, one above strict14841/quality920; unchanged other components and no GREEN.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T17:00:29.052Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 21,
+    "kind": "unrun-verify",
+    "phase": "05",
+    "file": ".planning/phases/05-pipeline-tune-up/05-12-PLAN.md",
+    "line": null,
+    "description": "05-12 Task2/3 full ci, generated-corpus library, POKEY audit and current direct/called hosted acceptance unrun after Task1 fit halt.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-22T17:00:29.145Z",
     "resolved_at": null,
     "milestone": "v2.0"
   }
