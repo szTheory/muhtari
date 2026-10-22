@@ -2,7 +2,9 @@
 
 **Gathered:** 2026-10-21
 **Status:** Ready for targeted replanning; execution remains halted
-**Revised:** 2026-10-22 after the measured 05-08 release-safety halt. D-27–31 govern the remaining release work and explicitly allocate its complete construction before implementation. Earlier halt records remain historical.
+**Revised:** 2026-10-22 after the measured 05-14 lifecycle halt. D-32–34 govern the targeted continuation;
+D-32 replaces D-30's 300-line allocation with the owner-approved 384-line allocation. D-27–29 and D-31's
+safety and acceptance obligations remain. Earlier allocations and halt records remain historical.
 
 <domain>
 ## Phase Boundary
@@ -28,6 +30,12 @@ session; no further routine approval or invented interview answers are required.
 Carry forward three deliverables, integer bounded instance state, permissive reuse, automation-first verification,
 one required CI check, preset entrypoints, no new service, CMake `-P`/POSIX sh repository checks, review limits,
 and one GSD step per session. Prefer another copy and paste over another dependency; use existing platform tools.
+
+The latest discussion reviewed existing context rather than restarting the phase. The owner explicitly adopted
+the recommendation to increase only the release-safety allocation from 300 to 384 after the measured 05-14
+halt. This funds the existing finite safety repair and its remaining controls/provisioning; it grants no new
+emulator capability, generalized rewrite or automatic future increase. Targeted replanning is next; execution
+remains halted and the retained publisher draft is unaccepted.
 </domain>
 
 <decisions>
@@ -364,6 +372,53 @@ addition below. D-09/D-10/D-21–26's semantic contracts, prior acceptance and h
   ship, merge or default-branch digest publication is completed by this discussion. The seven flagged
   assumptions and descriptorless-boundary prohibition remain pending; post-merge truths belong to ship.
 
+### Release-safety continuation after the measured 05-14 halt
+
+- **D-32:** Adopt the owner's explicit **300 → 384-line release-safety allocation**, an 84-line increase for
+  TUNE-05/D-16's existing fail-visible cleanup, complete adversarial controls and patched-verifier provisioning.
+  New evidence is the complete 05-14 construction at 15,152 total / 312 safety / 342 fixes before provisioning
+  and remaining integration, plus the reproduced empty-204 response failure. The former 300 estimate is not
+  a measured feasible construction. This revision supersedes D-30's amounts and allocation table only; it
+  does not rewrite the prior overrun as accepted work or permit a candidate policy to authorize itself.
+  Freeze B12,885/S2; fixes330 → 414, N2,270 → 2,354, C15,153 → 15,237, strict15,141 → 15,225.
+  Count368/BE205/digest447/quality920/global reserve0 stay fixed. BE12 and quality1 are not safety funding.
+
+  | Release-safety construction, net physical growth from accepted 7ed793e | Fixed allocation | Basis |
+  |---|---:|---|
+  | Retained complete 05-14 construction, including original RED66 and adoption controls | 312 | Measured full 147-entry audit; includes the unaccepted draft |
+  | Empty-204 response repair | 6 | Estimated readable repair; preserve header/body and status checks |
+  | Remaining lifecycle, known-ID, caller and downloaded-verification controls | 28 | Estimated completion of existing D-29/05-14 matrix; no fault family dropped |
+  | Verified patched-CLI provisioning and its pin/invocation enforcement | 26 | Estimated complete cost in existing pin/fetch/workflow paths |
+  | Release-safety integration reserve | 12 | Fixed uncertainty inside 384, not additional headroom |
+  | Total | 384 | Hard scoped ceiling, not measured final fit |
+
+  The 84 increase covers the current 12-line component overrun plus 72 for remaining work and reserve.
+  Internal redistribution must be visible within 384. Only the retained 312 is measured; no estimate proves
+  the repair, complete control matrix, provisioning or final acceptance fits. Count all physical lines,
+  comments/blanks, controls and glue; preserve complete counting and meaningful fault controls. No line golf,
+  control deletion, unrelated savings hunt, dependency, waiver, automatic renewal or new gap round is funded.
+  Future execution must authenticate this explicit structural adoption before affected GREEN additions;
+  quality.json remains at its prior 15,153/N2,270 policy in this discussion. At closeout retire unused
+  allowance/reserve and tighten to accepted actual. Any measured miss, lost control or missing required
+  evidence stops affected expansion under the unchanged rules; another increase requires a new explicit decision.
+- **D-33:** Replan only the unfinished 05-14 release-safety continuation and its 05-09 dependency using
+  05-14-SUMMARY.md and the retained draft. Preserve Task1's accepted runtime/signer/adoption slice, original
+  RED lineage, Task2's unaccepted construction and all historical SUMMARY/HANDOFF/VERIFICATION outcomes.
+  The current positive cleanup control fails because command substitution strips trailing newlines from an
+  empty HTTP 204 response before parsing. Repair that boundary without weakening command/status agreement,
+  typed lookup, complete pagination, release-before-tag cleanup or prerequisite short-circuiting. Finish
+  the existing matrix and verified CLI provisioning within D-32, using the existing publisher, generated
+  transport fixture and pin/fetch paths. Reuse unaffected research and accepted predecessors. Do not execute
+  the halted plan unchanged or treat the missing 12 lines as the entire remaining cost. Planning may select
+  a continuation/replacement representation; it must preserve the old halt and refresh scheduling honestly.
+- **D-34:** Keep D-31's full acceptance contract. The local count and selected controls below establish the
+  discussion's starting state only; a successful count is not a passing fit and synthetic tests are not actual
+  attestation/release evidence. After final implementation require complete controls, local ci/library and
+  exact inventories, component/total/doc budgets, fresh direct/release-called authentic artifact joins and
+  actual patched-gh rehearsal publication/install/confirmed cleanup. Keep conservative rehearsals. Active
+  accepted completion remains 7/9; 05-14 remains halted 1/3 and 05-09 blocked until accepted continuation.
+  No shared requirement, flagged assumption, portability promotion, ship or merge is completed here.
+
 ### Agent's Discretion
 
 Internal schema names, helper boundaries, batching/API page sizes, readable report formatting, per-test cost
@@ -411,8 +466,15 @@ Keep todos pending until execution supplies evidence; folding is not completion.
 
 ### Current halt and scope reconciliation
 
+- `.planning/phases/05-pipeline-tune-up/05-14-SUMMARY.md` — authoritative current halt: accepted Task1,
+  15,152 total / 312 safety audit, failing empty-204 positive control, retained publisher draft and unrun acceptance.
+- `.planning/phases/05-pipeline-tune-up/05-14-PLAN.md` — existing complete control/provisioning/acceptance
+  obligations; its 300-line allocation is superseded by D-32 and requires targeted replanning before execution.
+- `scripts/publish.sh`, `tests/policy/publish.cmake`, `scripts/fetch-pin.sh`, `pins.txt`,
+  `.github/workflows/release.yml`, `tests/cmake/quality_join.cmake` — finite repair, real-script controls,
+  existing provisioning paths and authenticated policy adoption; include their complete counted costs.
 - `.planning/phases/05-pipeline-tune-up/05-08-SUMMARY.md` and
-  `.planning/phases/05-pipeline-tune-up/05-08-PLAN.md` — current release-signer RED and measured allocation halt;
+  `.planning/phases/05-pipeline-tune-up/05-08-PLAN.md` — historical release-signer RED and measured allocation halt;
   D-27–31 supersede the unchanged-allocation restriction for a bounded next plan, not the historical outcome.
 - `.planning/phases/05-pipeline-tune-up/05-13-SUMMARY.md` and
   `.planning/phases/05-pipeline-tune-up/05-07-SUMMARY.md` — accepted reconciliation/arming prerequisites;
@@ -520,8 +582,12 @@ no new framework/ecosystem dependency is warranted by this phase.
 - Required roll-up explicitly enumerates allowed skips; changing a job's role requires its synthetic controls too.
 - Artifacts and JUnit prove exact execution. One source of truth must consume these, not counts copied by hand.
 - Accepted05-07 armed test-card-only perf; WASM/library and nightly property testing remain advisory.
-- `scripts/publish.sh` owns release preparation/attestation/lookup/cleanup; its current `attested` path lacks
-  the signer restriction already present in downloaded verification. Reuse its generated transport fixture.
+- `scripts/publish.sh` owns release preparation/attestation/lookup/cleanup. Accepted 05-14 Task1 supplies
+  the patched-runtime guard and full signer/ref restrictions; the retained lifecycle draft still fails empty
+  HTTP 204 cleanup. Reuse `tests/policy/publish.cmake`'s generated transport/response queue; completing its
+  positive baseline is prerequisite to claiming execution of later matrix rows.
+- `scripts/fetch-pin.sh`, `pins.txt` and the existing rehearsal/publish jobs supply provisioning integration;
+  no new download framework or release-selection service is needed.
 - `.planning/**`-only commits skip heavy CI through classification, while hygiene/title/roll-up still report.
 
 ### Integration Points
@@ -536,7 +602,24 @@ no new framework/ecosystem dependency is warranted by this phase.
 <specifics>
 ## Specific Ideas and Evidence
 
-**Current release-safety decision after05-08, 2026-10-22:** three parallel read-only advisory reviews considered
+**Current release-safety decision after 05-14, 2026-10-22:** the owner requested the recommendation and then
+explicitly approved the proposed 300 → 384 allocation with "folllow ur recs". D-32–34 capture this finite
+revision. No new advisory fan-out, external research, implementation or hosted workflow was needed. The
+new evidence is the measured incomplete construction and existing failing control, not a general impossibility
+claim. All six todo matches retain their prior folded/deferred dispositions; this update adopts no new seed.
+
+Discussion observations (local; no hosted run URL):
+
+- `cmake -DROOT=. -DINVENTORY=tests/policy/gate-lines.txt -DOUT=/tmp/muhtari-discuss5-count.json -P tests/cmake/gate_count.cmake`
+  — exit 0, 15,152 physical lines; source 8,580/6,533. Confirms the current construction, not accepted fit.
+- `ctest --preset ci -R '^policy[.](publish|quality)[.]controls$' --no-tests=error --output-on-failure`
+  — exit 8; quality passes, publisher fails `delete|0||0||` with `publish: invalid HTTP response` after DELETE.
+  No complete passing matrix, production repair or changed-path acceptance is claimed.
+
+Preserve the uncommitted publisher draft and ordinary policy. Next command: `$gsd-plan-phase 5` for targeted
+replanning under D-32–34. This discussion grants no second GSD step or immediate implementation.
+
+**Historical release-safety decision after05-08, 2026-10-22:** three parallel read-only advisory reviews considered
 security/test validity, proportional allocation and release delivery. Further exchanges challenged allocation
 completeness and404/authentication claims; they added no new capability. The security review accepted300 as a
 construction constraint; the budget review preferred a more conservative384 estimate. The orchestrator selected
@@ -577,7 +660,7 @@ remain dated history, not the current count. Current source/ownership documentat
 official CMake macro semantics and Google SRE automation-cost guidance support the reasoning without setting
 a repository-specific numeric limit.
 
-**Current scope decision, 2026-10-22:** the owner requested all relevant role perspectives, adversarial review,
+**Historical scope decision, 2026-10-22:** the owner requested all relevant role perspectives, adversarial review,
 primary sources where useful, and automatic adoption of coherent recommendations. Three read-only advisory
 reviews covered scope/architecture, security/test validity and construction/CI economics. Two recommended
 explicit deferral under the fixed allocation; the security review preferred complete centralization only if

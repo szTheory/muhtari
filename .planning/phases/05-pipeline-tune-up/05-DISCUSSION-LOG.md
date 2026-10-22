@@ -6,8 +6,8 @@
 **Areas considered:** weekly/monthly reporting; CI reliability and cost; quality/performance/portability;
 release safety, freshness and proportionality.
 
-**Revision:** earlier discussions below remain history. The final section records the2026-10-22 release-safety
-decision after05-08; current remaining-work decisions are in CONTEXT D-27–31.
+**Revision:** earlier discussions below remain history. The final section records the 2026-10-22 measured
+05-14 halt and explicitly approved 384-line release-safety allocation; current decisions are CONTEXT D-32–34.
 
 ## Discussion contract
 
@@ -381,3 +381,57 @@ edit plans, requirements, ordinary quality policy, production code, settings or 
 
 Next command: `$gsd-plan-phase 5`. Reuse unaffected research; target D-27–31 and remaining dependencies.
 No auto/chain flags, second GSD step, ship or merge ran. Further fan-out changes no selected decision.
+
+## Release-safety allocation after measured 05-14 halt — 2026-10-22
+
+The invocation found existing context, nine active plans and historical verification. The agent presented
+Update it / View it / Skip. The owner replied "what do u rec? do that". The agent recommended reviewing
+existing context first and inspected the current state, latest partial summary, publisher/control draft and
+existing allocation. This was a targeted review, not a request to repeat settled phase decisions.
+
+| Choice presented | Description | Selected |
+|---|---|---|
+| Adopt release-safety 300 → 384 | Fixed increase of 84 for cleanup repair, remaining controls and patched-CLI provisioning; other allocations unchanged; fit still requires verification | Yes |
+
+**User's choice:** "folllow ur recs", after the exact 300 → 384 recommendation and approval question.
+No absent answer or earlier general delegation was treated as approval of an unspecified increase.
+The agent explained that the existing context forbids self-granting a larger scope or total. No additional
+routine confirmation is needed for D-32–34's adopted revision. The prior 300 ceiling, its measured miss and
+all halted outcomes remain historical; the increase is not retroactive implementation acceptance.
+
+**New evidence:** 05-14-SUMMARY.md audits all 147 entries against accepted 7ed793e: total15,152,
+safety312/fixes342. The complete existing draft is 12 over safety300/fixes330 and 11 over strict15,141,
+before remaining controls/provisioning/integration. A fresh counter invocation confirms15,152, exit0.
+Selected controls return exit8: quality passes, publisher's positive delete baseline fails on empty204.
+This is a named incomplete construction and concrete parser defect, not proof no 300-line design exists.
+Another 12 alone would leave the remaining required work unfunded.
+
+**Allocation adopted:** measured retained312 + estimated empty204 repair6 + remaining controls28 +
+verified CLI provisioning26 + integration reserve12 =384. The latter72 is an estimated construction
+constraint, not measured completion. Internal redistribution stays visible within384. Other components
+are fixed; BE12/quality1 are not safety funding. fixes330→414; N2270→2354; C15153→15237;
+strict15141→15225, with frozen B12885/S2. No allowance interpreter, dependency, waiver, generic rewrite,
+line golf, control removal, automatic gap round or future budget increase is authorized. Retire unused
+allowance and tighten to accepted actual at closeout. Later execution authenticates structural adoption
+before affected GREEN; this discussion leaves quality.json unchanged.
+
+**Agent's discretion:** choose readable implementation details and visibly redistribute the fixed384
+while retaining every existing safety/control/acceptance obligation. Reuse existing publisher, generated
+transport/response queue, pins and fetch path. The planner selects how to represent the targeted continuation
+and refreshes05-09's dependency without rewriting accepted Task1 or historical halt records. No new agents
+or external research were used; the existing measured stop supplies the needed evidence.
+
+**Deferred ideas:** none added. The six matched todos retain the existing folded/deferred dispositions.
+Accepted completion remains7/9;05-14 stays halted1/3 and05-09 blocked until actual accepted continuation.
+No pending requirement, flagged assumption, lane promotion or ship-only truth is declared complete.
+
+**Commands and exits:**
+
+- `cmake -DROOT=. -DINVENTORY=tests/policy/gate-lines.txt -DOUT=/tmp/muhtari-discuss5-count.json -P tests/cmake/gate_count.cmake`
+  — exit0,15,152 physical lines; source8,580/6,533.
+- `ctest --preset ci -R '^policy[.](publish|quality)[.]controls$' --no-tests=error --output-on-failure`
+  — exit8, quality passes; publish fails `delete|0||0||` with `publish: invalid HTTP response`.
+
+Run URL unavailable: local checks only; no hosted dispatch or changed-path acceptance is claimed.
+No production change or repair was made here; the existing uncommitted publisher draft is preserved.
+Next command: `$gsd-plan-phase 5`, targeted to D-32–34 and remaining dependencies. Stop after discussion.
