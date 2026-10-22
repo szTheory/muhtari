@@ -4,12 +4,12 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: executing
-stopped_at: Completed 05-05-PLAN.md
-last_updated: "2026-10-22T02:15:14.648Z"
+status: blocked
+stopped_at: Halted05-06 Task1 at measured allocation gate; RED committed, draft uncommitted
+last_updated: "2026-10-22T02:36:10.029Z"
 last_activity: 2026-10-22
-last_activity_desc: Phase 05 execution started
-state_head: 370dd5eefb3b305a9d3328d2dca1f96a3c60e324
+last_activity_desc: Plan05-06 halted at measured allocation gate
+state_head: b0fc4d8166d43e7185ae7ca232d5a51f510e1291
 progress:
   total_phases: 7
   completed_phases: 0
@@ -29,38 +29,32 @@ from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — EXECUTING
-Plan: 6 of 9
-Status: Ready to execute
-Last activity: 2026-10-22 — Completed 05-05 trusted quality ratchet
+Phase: 05 (Pipeline tune-up) — BLOCKED
+Plan: 6 of 9, halted during Task1; five plans complete
+Status: Measured allocation halt; recovery plan required
+Last activity: 2026-10-22 — Plan05-06 RED committed; draft over allocation
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 5/9 Phase5 plans complete; 0/7 phases complete.
-Implementation: 05-01,05-02,05-10,05-04,05-05 complete. Next ready plan:05-06.
+Implementation: 05-01,05-02,05-10,05-04,05-05 complete. Plan05-06 halted;05-07 blocked.
 No downstream plan or additional GSD step ran in this session.
 
 ## Current acceptance
 
-Implementation51a3f9592bbb69355896ada41901a5818bfa1c9b:
+Plan05-06 has0/3 tasks complete. RED df6b095 is committed; the four-file implementation
+draft is uncommitted. Seven perf cases and existing quality.controls pass, exit0.
+Draft counter14888 exceeds C14853 by35; quality967 exceeds allocation920 by47.
+No larger allocation, BE12 transfer, control/comment removal or cap change is authorized.
+Full ci/library and hosted caller acceptance are unrun; no current run URL exists.
+Both old allow stores/callers remain. WINDOWS16/17 track the halt and unrun acceptance.
+Read phases/05-pipeline-tune-up/05-06-SUMMARY.md and05-06-HANDOFF.md for exact evidence.
+
+Prior accepted05-05 implementation51a3f95 remains unchanged remotely:
 [Direct CI39706507168](https://github.com/szTheory/muhtari/actions/runs/39706507168)
 and [Release39706506980](https://github.com/szTheory/muhtari/actions/runs/39706506980)
-both completed successfully. Direct actual producer is merge0b7197e1; called producer
-is the implementation SHA; unchanged trusted base is65b360d1. Artifact downloads,
-source/SHA/configuration/environment checks and positive joins exit0.
-
-Local full CI609+6, hygiene24,18 roll-up cases, absolute-root document budgets19,
-counter14841, timeout comments30, focused actionlint, shell hygiene and diff checks exit0.
-Authentic final direct artifact replay returns0; missing-lane and measured-warning
-faults return1 for their intended predicates. Four coverage entries auto-cover;
-file existence, commit ancestry and summary checks pass.
-
-Called attempt1 hit unchanged built.openbios1.24s/1s and correctly failed incomplete
-evidence. Same-head attempt2 Windows arm64 current609+6/base605+6, quality and
-CI required pass. This is a retained tooling seed, not a source or timeout repair.
-The accepted Windows digest debug remains preserved; it was not reopened.
-
-All details, exact commands, identities, failures and task commits:
-phases/05-pipeline-tune-up/05-05-SUMMARY.md. WINDOW entry15 is fixed.
-Shared TUNE-03/TUNE-04 stay pending until their sibling plans finish.
+pass, with local609+6 and accepted counter14841. Called attempt2 preserved unchanged
+Windows current609+6/base605+6 after an OpenBIOS timeout. These are prior evidence,
+not acceptance of the new draft. Details remain in05-05-SUMMARY.md; WINDOW15 is fixed.
+Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 
 ## Decisions
 
@@ -91,10 +85,12 @@ Shared TUNE-03/TUNE-04 stay pending until their sibling plans finish.
 | Phase05 P04 |11min|2|7|
 | Phase05 P05 prior halt |14min|1 partial|8|
 | Phase05 P05 continuation |67min through closeout checks|3 total complete|14|
+| Phase 05 P06 | 5min halted | 0 tasks | 4 files |
 
 ## Blockers and seeds
 
-No current execution blocker remains for05-05. Only05-06 is next ready.
+Plan05-06 is halted at its explicit allocation gate. Bounded new-evidence recovery
+must fit quality920/C14853 or explicitly revise migration scope before05-07.
 The descriptorless TUNE-03 boundary prohibition remains flagged/unverified;
 phase-wide requirements, final allocation retirement and acceptance are unfinished.
 Default-branch digest publication and merge-dependent truths remain ship checks.
@@ -129,8 +125,12 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T02:16:15Z
-Stopped at: Completed 05-05-PLAN.md
-Resume file: None
-Next command: $gsd-execute-phase 5
-Stop after this execution step; the next session begins05-06.
+Last session: 2026-10-22T02:36:10.003Z
+Stopped at: Halted05-06 Task1 at measured allocation gate; RED committed, draft uncommitted
+Resume file: .planning/phases/05-pipeline-tune-up/05-06-HANDOFF.md
+Next command: $gsd-plan-phase 5 --gaps
+Stop after this execution step; recovery needs a bounded scope decision before05-06 resumes.
+
+### Blockers
+
+- Plan05-06 halted during Task1: draft14888 exceeds C14853 and quality967 exceeds allocation920; only RED is committed. Fixed cap/allocations unchanged; bounded new-evidence recovery required before05-07.

@@ -34,11 +34,11 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 5/9 plans executed; 05-05 is complete and 05-06 is ready.
+**Plans:** 5/9 plans complete; 05-06 halted during Task1 at its measured allocation gate.
 
 05-10 restored PowerPC ABI, and its authorized debug continuation fixed evidence-path handling and proved diagnostic-free native/BE 607+6 inventories, two-file equality and release-called required CI at immutable implementation 0901c877.
 05-03 is superseded for scheduling; its partial implementation and historical halt records remain.
-05-04 delivered the tested read-only digest and guarded publisher; actual default-branch publication remains a ship check. The accepted Windows repair is preserved. 05-05 completed typed policy adoption, independent measured bounds and the required exact-artifact aggregate at implementation51a3f95. Direct CI39706507168 and release-called CI39706506980 completed successfully; the latter passed on a same-head retry after an unchanged OpenBIOS timeout. Shared requirements remain pending, and 05-06 is the next ready plan.
+05-04 delivered the tested read-only digest and guarded publisher; actual default-branch publication remains a ship check. The accepted Windows repair is preserved. 05-05 completed typed policy adoption, independent measured bounds and the required exact-artifact aggregate at implementation51a3f95. Direct CI39706507168 and release-called CI39706506980 completed successfully; the latter passed on a same-head retry after an unchanged OpenBIOS timeout. Shared requirements remain pending. Plan05-06 has a committed RED control and an uncommitted passing perf draft measuring14888/C14853 and quality967/allocation920. No increase is authorized; bounded new-evidence recovery is required before05-07. See05-06-SUMMARY.md and05-06-HANDOFF.md.
 
 Plans:
 **Wave 1**
@@ -58,8 +58,8 @@ Plans:
 **Wave 5** *(complete)*
 - [x] 05-05-PLAN.md — Require one quality ratchet over real observations and trusted baselines.
 
-**Wave 6** *(ready)*
-- [ ] 05-06-PLAN.md — Consolidate performance/compatibility policy stores while retaining semantic controls.
+**Wave 6** *(halted at measured allocation gate;0/3 tasks complete)*
+- [x] 05-06-PLAN.md — Consolidate performance/compatibility policy stores while retaining semantic controls.
 
 **Wave 7** *(blocked on Wave 6 completion)*
 - [ ] 05-07-PLAN.md — Run fresh performance controls and audit conditional lane promotions.
@@ -172,7 +172,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
-| 5. Pipeline tune-up | 4/9 | In Progress | — |
+| 5. Pipeline tune-up | 5/9 | Blocked on05-06 allocation recovery | — |
 | 6. Retail cartridge boards | 0/TBD | Not started | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
