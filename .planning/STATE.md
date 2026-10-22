@@ -4,12 +4,12 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: blocked
-stopped_at: Halted05-06 Task1 at measured allocation gate; RED committed, draft uncommitted
-last_updated: "2026-10-22T02:36:10.029Z"
+status: ready
+stopped_at: Gap planning complete; replacement05-11 ready, retained draft unaccepted
+last_updated: "2026-10-22T03:16:17.432Z"
 last_activity: 2026-10-22
-last_activity_desc: Plan05-06 halted at measured allocation gate
-state_head: b0fc4d8166d43e7185ae7ca232d5a51f510e1291
+last_activity_desc: Plan05-11 allocation recovery planned and independently verified
+state_head: 7f239653cffe8f834ecb5e1cda898cbef38d99cc
 progress:
   total_phases: 7
   completed_phases: 0
@@ -29,24 +29,32 @@ from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — BLOCKED
-Plan: 6 of 9, halted during Task1; five plans complete
-Status: Measured allocation halt; recovery plan required
-Last activity: 2026-10-22 — Plan05-06 RED committed; draft over allocation
+Phase: 05 (Pipeline tune-up) — READY TO EXECUTE
+Plan: 05-11, replacement wave6; five of nine active plans complete
+Status: Ready to execute the bounded allocation recovery
+Last activity: 2026-10-22 — Plan05-11 passed independent plan verification
 
 Progress: [░░░░░░░░░░] 0% of milestone phases — 5/9 Phase5 plans complete; 0/7 phases complete.
-Implementation: 05-01,05-02,05-10,05-04,05-05 complete. Plan05-06 halted;05-07 blocked.
-No downstream plan or additional GSD step ran in this session.
+Implementation: 05-01,05-02,05-10,05-04,05-05 complete. Halted05-06 is superseded for scheduling by05-11;05-07/08/09 depend on successful05-11 acceptance.
+Only gap planning ran in this session; no implementation or downstream execution ran.
 
 ## Current acceptance
 
 Plan05-06 has0/3 tasks complete. RED df6b095 is committed; the four-file implementation
-draft is uncommitted. Seven perf cases and existing quality.controls pass, exit0.
+draft is uncommitted. Prior execution recorded seven perf cases and existing quality.controls passing, exit0.
 Draft counter14888 exceeds C14853 by35; quality967 exceeds allocation920 by47.
 No larger allocation, BE12 transfer, control/comment removal or cap change is authorized.
 Full ci/library and hosted caller acceptance are unrun; no current run URL exists.
 Both old allow stores/callers remain. WINDOWS16/17 track the halt and unrun acceptance.
 Read phases/05-pipeline-tune-up/05-06-SUMMARY.md and05-06-HANDOFF.md for exact evidence.
+
+Replacement05-11 has three sequential tasks in wave6 and depends on accepted05-05.
+Its concrete pair/observation validation consolidation is a construction hypothesis,
+not achieved savings. Task1 and each expansion must prove total<=14841 and quality<=920
+with non-quality components unchanged. Planning passed schema/structure checks and
+independent plan verification; decision coverage is20/20. No execution acceptance is inferred.
+The new05-06-RECOVERY-GAPS.md is scoped planner input with verifier_ran:false;
+the historical05-VERIFICATION.md and accepted05-10 recovery remain unchanged.
 
 Prior accepted05-05 implementation51a3f95 remains unchanged remotely:
 [Direct CI39706507168](https://github.com/szTheory/muhtari/actions/runs/39706507168)
@@ -89,8 +97,8 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 
 ## Blockers and seeds
 
-Plan05-06 is halted at its explicit allocation gate. Bounded new-evidence recovery
-must fit quality920/C14853 or explicitly revise migration scope before05-07.
+Plan05-06 is halted at its explicit allocation gate. Replacement05-11 is ready;
+its measured gates must fit quality920/C14853 before05-07 can proceed.
 The descriptorless TUNE-03 boundary prohibition remains flagged/unverified;
 phase-wide requirements, final allocation retirement and acceptance are unfinished.
 Default-branch digest publication and merge-dependent truths remain ship checks.
@@ -125,12 +133,12 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T02:36:10.003Z
-Stopped at: Halted05-06 Task1 at measured allocation gate; RED committed, draft uncommitted
-Resume file: .planning/phases/05-pipeline-tune-up/05-06-HANDOFF.md
-Next command: $gsd-plan-phase 5 --gaps
-Stop after this execution step; recovery needs a bounded scope decision before05-06 resumes.
+Last session: 2026-10-22T03:16:17.432Z
+Stopped at: Gap planning complete; replacement05-11 independently verified, implementation unaccepted
+Resume file: .planning/phases/05-pipeline-tune-up/05-11-PLAN.md
+Next command: $gsd-execute-phase 5 --gaps-only
+Stop after this planning step; execute the replacement in a fresh session.
 
 ### Blockers
 
-- Plan05-06 halted during Task1: draft14888 exceeds C14853 and quality967 exceeds allocation920; only RED is committed. Fixed cap/allocations unchanged; bounded new-evidence recovery required before05-07.
+- The retained05-06 draft still exceeds its allocation:14888/C14853 and quality967/920. Only RED is committed. Replacement05-11 may proceed through measured gates;05-07/08/09 remain blocked until it is accepted. Fixed cap/allocations unchanged.

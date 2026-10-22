@@ -34,7 +34,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** 5/9 plans complete; 05-06 halted during Task1 at its measured allocation gate.
+**Plans:** 5/9 active plans complete; replacement 05-11 is ready after gap planning and independent plan verification.
 
 05-10 restored PowerPC ABI, and its authorized debug continuation fixed evidence-path handling and proved diagnostic-free native/BE 607+6 inventories, two-file equality and release-called required CI at immutable implementation 0901c877.
 05-03 is superseded for scheduling; its partial implementation and historical halt records remain.
@@ -58,8 +58,10 @@ Plans:
 **Wave 5** *(complete)*
 - [x] 05-05-PLAN.md — Require one quality ratchet over real observations and trusted baselines.
 
-**Wave 6** *(halted at measured allocation gate;0/3 tasks complete)*
-- [ ] 05-06-PLAN.md — Halted at allocation gate; consolidate performance/compatibility policy stores while retaining semantic controls.
+**Wave 6** *(ready; measured fit required before expansion)*
+- [ ] 05-11-PLAN.md — Recover the allocation through shared validation, then finish the central policy migration and current acceptance.
+
+05-06-PLAN.md is superseded by 05-11 for scheduling; its zero completed tasks, committed RED and uncommitted draft remain historical facts. The recovery keeps quality920/C14853 fixed and must prove actual fit before expansion. See05-06-RECOVERY-GAPS.md; forecast savings are not credited.
 
 **Wave 7** *(blocked on Wave 6 completion)*
 - [ ] 05-07-PLAN.md — Run fresh performance controls and audit conditional lane promotions.
