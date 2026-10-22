@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 05
 current_phase_name: Pipeline tune-up
-status: ready
-stopped_at: Phase 05 bounded recovery05-13 planned and checked; implementation acceptance remains absent
-last_updated: "2026-10-22T17:46:20.742Z"
+status: executing
+stopped_at: Completed 05-13-PLAN.md; required recovery accepted with explicit tooling warnings
+last_updated: "2026-10-22T18:56:04.807Z"
 last_activity: 2026-10-22
-last_activity_desc: Bounded recovery05-13 planned;26 decisions and5 requirements covered
-state_head: 413af396be49fd7ce0910bbadcd64b8a86b3e881
+last_activity_desc: Recovery05-13 accepted; active6/9, next05-07 unstarted
+state_head: b8a6968efa1948774784a388d435805762ae48f1
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 total_phases: 7
 ---
@@ -29,30 +29,52 @@ from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
-Phase: 05 (Pipeline tune-up) — READY TO EXECUTE
-Plan: 5 of 9
-Status: Ready to execute05-13; downstream scheduling blocked until accepted recovery
-Last activity: 2026-10-22 — Targeted planning passed independent check and31-item coverage
+Phase: 05 (Pipeline tune-up) — EXECUTING
+Plan: 6 of 9
+Status: Ready to execute
+Last activity: 2026-10-22 — Recovery05-13 accepted with explicit tooling warnings
 
-Progress: [░░░░░░░░░░] 0% of milestone phases — 5/9 Phase5 plans complete; 0/7 phases complete.
-Implementation: 05-01,05-02,05-10,05-04,05-05 complete. Halted05-06/05-11/05-12 are superseded for scheduling by05-13, not completed.
-Four remaining plans run in waves6–9:05-13 ->05-07 ->05-08 ->05-09.
-05-13 adopts only D-24–26's consumer-owned numeric reads and carries forward unfinished compatibility/POKEY and full local/direct/called acceptance. Forecast net-minus-one is unmeasured; no implementation task or requirement completed in planning.
-Prior execution committed RED94d5c49 and halt summary3e7ad58. This planning step changed no implementation draft and ran no arming, promotion, push or hosted acceptance.
+Progress: [░░░░░░░░░░] 0% of milestone phases — 6/9 Phase5 plans complete; 0/7 phases complete.
+Implementation: 05-01,05-02,05-10,05-04,05-05,05-13 complete. Halted05-06/05-11/05-12 stay0/3 histories, superseded only for scheduling.
+Three remaining plans run in waves7–9:05-07 ->05-08 ->05-09. None ran in this executor.
+05-13 implements only D-24–26's finite numeric-read movement, proves retained compatibility/POKEY and current required callers, and measures14840/quality919. No new scope or allocation was needed.
+REDdf6b095/94d5c49 and all historical SUMMARY/HANDOFF/VERIFICATION files remain unchanged. No arming, promotion, ship or merge ran.
 
 ## Current acceptance
 
-05-13 is planned, not executed. Independent plan review returned zero findings; command-path/failure-direction probes, decision coverage26/26 and post-planning coverage31/31 exited0. Only05-13 is ready in the dependency index. These are planning checks; no new implementation acceptance or hosted run URL exists.
+05-13 is accepted3/3 at implementation31c52d9 (Task1 refactor8fd04db; canonical summaryb8a6968).
+Full final local ci609+6 and generated-corpus library43 against verified origin/main65b360d,
+exact executed inventories, selected8/8, malformed/unavailable and legacy lifecycle probes,
+production ALLOW and doc budgets pass, exit0. All146 counted paths were compared to5535b57:
+14840/quality919; count368/BE193/digest447/fixes30/reserve0 unchanged. BE12 is not reserve.
+Only the proven spent POKEY row was removed after actual fast/OpenBIOS replacement passes.
+
+[Direct CI39832530167](https://github.com/szTheory/muhtari/actions/runs/39832530167) attempt2
+is completed success; producer mergeb0a80659, head31c52d9, base65b360d, actual numeric
+testcard Ir3837262/base3837262/repeat3837262, executed library/inventories and authentic9 join pass.
+[Release39832530253](https://github.com/szTheory/muhtari/actions/runs/39832530253) attempt2
+is overall FAILURE from advisory WASM curl35 fetch before tests. Required called quality120020998852
+and CI required120021278635 succeed; head producer31c52d9/base65b360d and authentic8 join pass.
+WASM inventory and rehearsal/install/cleanup skipped; no overall Release green is claimed.
+Initial direct CPU/trusted-base sample timeouts and called ASan cancellation are retained;
+one unchanged-head failed-job rerun each recovered required evidence without changing bounds.
+Direct quality API job status lags despite all completed-success steps and terminal-success run.
+Broad branch diff check remains2 for three inherited EOF blanks; current-plan/working-tree
+checks pass0. Under AGENTS6/7 this is a scope warning, not an owner/new-gap gate. WINDOWS22/23
+and deferred-items preserve whitespace and advisory-fetch seeds. TUNE-03/TUNE-04 remain pending.
+All seven supplied assumptions and the descriptorless physical-boundary prohibition remain unresolved.
+
+### Historical recovery halts
 
 Plan05-12 has0/3 tasks complete. The final retained-store draft measures14842/quality921,
 one above strict14841/quality920, while satisfying C14853 with11 lines remaining.
 All seven perf cases plus policy.quality.controls pass8/8, exit0. The production ALLOW
 invocation returns delta_bp=100 verdict=PASS, exit0. The explicit jq fit gate exits1/false.
 Other components stay count368/BE193/digest447/fixes30/reserve0; BE12 is not reserve.
-Only RED94d5c49 is a task commit; no GREEN exists. The three shared-reader/join/control
-files remain uncommitted. quality.json and perf comparator equal accepted5535b57.
-Task2/3 compatibility lifecycle/POKEY audit, full ci/library and current direct/called
-acceptance are unrun; no current run URL exists. WINDOWS20/21 track this halt.
+At that halt only RED94d5c49 was a task commit; no GREEN existed and three reader/control
+files remained uncommitted. quality.json and perf comparator equalled accepted5535b57.
+Task2/3 compatibility/POKEY, full local and current hosted acceptance were unrun then.
+WINDOWS20/21 preserve that halt; accepted05-13 supplies new evidence without rewriting it.
 Read phases/05-pipeline-tune-up/05-12-SUMMARY.md. Historical records below stay historical.
 
 Plan05-06 has0/3 tasks complete. RED df6b095 is committed; the four-file implementation
@@ -104,6 +126,8 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 - [Phase 05]: Accept the05-12 scope advisory as a tooling seed:11 possible paths are disclosed across three sequential tasks of at most five paths each, with conditional caller repair and bounded context. Do not split acceptance or hide scope to satisfy the warning threshold.
 - [Phase 05]: 05-12 stopped at Task1 fit gate: total14842/quality921 miss strict14841/quality920 by1 despite eight selected controls and production ALLOW passing; no GREEN, allocation change or additional gap round.
 - [Phase 05]: D-24–26 bounded recovery05-13 replaces05-12 for scheduling only; move typed numeric reads to measured consumers while retaining original-item authentication/status and controls. Semantic failure, measured miss or additional required counted compatibility/caller/control cost stops expansion. Fixed allocations and halted histories remain unchanged.
+- [Phase 05]: 05-13 accepted all3 tasks at14840/quality919 with current local609+6/library43 and authentic direct9/called8 evidence; active completion6/9, halted06/11/12 stay0/3. Shared TUNE-03/TUNE-04 remain pending.
+- [Phase 05]: Inherited broad diff check exit2 is a scope warning under AGENTS6/7; own diff0. Release39832530253 overall failure is advisory WASM fetchcurl35; required calledCI+quality and authentic8 join pass. No release/rehearsal or promotion acceptance is claimed.
 
 ## Performance Metrics
 
@@ -118,12 +142,14 @@ Shared TUNE-03/TUNE-04 remain pending; no requirement was marked complete.
 | Phase 05 P06 | 5min halted | 0 tasks | 4 files |
 | Phase 05 P11 | approx9min halted | 0 tasks | 6 files |
 | Phase 05 P12 | approx5min halted | 0 tasks | 4 files |
+| Phase 05 P13 | 24min plus closeout | 3 tasks | 5 files |
 
 ## Blockers and seeds
 
 Plan05-06 and replacement05-11 remain halted histories at their allocation gates.
-Their historical retained draft exceeded quality920/strict14841 by38. Halted05-12 misses by1; planned05-13 is the sole bounded recovery. Plans05-07/08/09 remain blocked on accepted05-13.
-WINDOWS18/19 preserve prior history;20/21 record the new deficit and unrun acceptance.
+Their retained draft exceeded quality920/strict14841 by38; halted05-12 missed by1.
+Accepted05-13 fits14840/quality919 with current required evidence and releases05-07's dependency.
+WINDOWS18/19/20/21 preserve prior history;22/23 record inherited whitespace/advisory-fetch seeds.
 The descriptorless TUNE-03 boundary prohibition remains flagged/unverified;
 phase-wide requirements, final allocation retirement and acceptance are unfinished.
 Default-branch digest publication and merge-dependent truths remain ship checks.
@@ -158,16 +184,16 @@ hardware verification ran here; Souper/BupChip and other settled exclusions stan
 
 ## Session Continuity
 
-Last session: 2026-10-22T17:46:49.329Z
-Stopped at: Phase 05 bounded recovery05-13 planned and independently checked
-Resume file: .planning/phases/05-pipeline-tune-up/05-13-PLAN.md
+Last session: 2026-10-22T18:56:04.790Z
+Stopped at: Completed 05-13-PLAN.md; required recovery accepted with explicit tooling warnings
+Resume file: None
 Next command: $gsd-execute-phase 5
-Stop after this planning step. Execute only the named recovery within fixed limits;
-planning grants no new allocation or automatic gap round. Current caller acceptance still blocks later waves.
+Stop after this execute step. Recovery05-13 is accepted;05-07 is next and remains unstarted.
+No new allocation or automatic gap round is authorized. Future scopes retain their own predicates.
 No new allocation, gap round, arming, promotion, ship or merge was authorized or performed.
 
 ### Blockers
 
 - Historical05-06/05-11/05-12 remain halted0/3 with RED/draft histories preserved. Their old tasks cannot resume;05-13 replaces their scheduling under D-24–26.
-- Current implementation acceptance remains absent: unchanged05-12 draft14842/quality921 exceeds strict14841/quality920 by1. Only successful05-13 fit and full current local/direct/called evidence releases05-07/08/09.
-- Compatibility/POKEY and current caller acceptance remain unrun; additional required counted cost stops affected expansion. No forecast saving, BE12 transfer or automatic gap round can fund it.
+- Phase5 acceptance remains incomplete at6/9:05-07 arming/promotion,05-08 release safety and05-09 final tightening/docs/settings remain unstarted.
+- Inherited broad whitespace and advisory called-WASM fetch failures remain tooling seeds; no release rehearsal or overall Release success is claimed. Seven assumptions and the physical-boundary prohibition remain unresolved.
