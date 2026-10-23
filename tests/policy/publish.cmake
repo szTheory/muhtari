@@ -64,7 +64,9 @@ endforeach()
 
 file(GLOB assets RELATIVE "${WORK}/dist" "${WORK}/dist/*.zip")
 execute_process(COMMAND "${CMAKE_COMMAND}" -E sha256sum ${assets}
-  WORKING_DIRECTORY "${WORK}/dist" OUTPUT_FILE "${WORK}/dist/SHA256SUMS" COMMAND_ERROR_IS_FATAL ANY)
+  WORKING_DIRECTORY "${WORK}/dist" OUTPUT_VARIABLE sums COMMAND_ERROR_IS_FATAL ANY)
+string(REPLACE "\r\n" "\n" sums "${sums}")
+file(WRITE "${WORK}/dist/SHA256SUMS" "${sums}")
 
 # Shared response queue exercises production command substitutions and conditional callers.
 set(cmd "${CMAKE_COMMAND}" -E env --modify "PATH=path_list_prepend:${WORK}/bin"

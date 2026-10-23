@@ -135,7 +135,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 7  # 2 x 186 s, slowest leg macOS x64 n=9, run 39614799435; provisional
+    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 30 || 7 }}  # provisional expanded Windows controls; run 39874751162; other max291s
     strategy:
       fail-fast: false
       matrix:

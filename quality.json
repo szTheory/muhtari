@@ -1,13 +1,13 @@
 {
   "metrics": {
     "gate_lines": {
-      "ceiling": 15281,
+      "ceiling": 15287,
       "units": "physical lines including comments and blanks",
       "direction": "ceiling",
       "producer": "tests/cmake/gate_count.cmake",
       "configuration": "tests/policy/gate-lines.txt",
       "availability": "required",
-      "provenance": "f0202e1f02ee24c2b7d2bc19bbe140f11f3c1fef; B=12885; S=2; N=2398"
+      "provenance": "f0202e1f02ee24c2b7d2bc19bbe140f11f3c1fef; B=12885; S=2; N=2404"
     },
     "tests.native": {
       "floor": 605,
