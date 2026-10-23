@@ -3,9 +3,9 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 status: blocked
-stopped_at: "Phase 06 bounded redesign complete; awaiting explicit N654/C15941 allocation decision"
-last_updated: "2026-10-23T17:23:18Z"
-state_head: a56dcebda2455c1fb4d0df6611b036f7e53f50e2
+stopped_at: "Owner reopened LOC policy; fan-out research recommends scoped retirement; implementation pending"
+last_updated: "2026-10-23T17:58:32Z"
+state_head: ce306c00839921222851fc820b22de031178a2ab
 progress:
   total_phases: 7
   completed_phases: 1
@@ -16,7 +16,7 @@ last_activity: 2026-10-23
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-last_activity_desc: One bounded redesign measured15941; independently checked proposal awaits allocation decision; execution blocked
+last_activity_desc: Architecture, CI and security research plus adversarial synthesis complete; replacement policy proposed, no implementation
 ---
 
 # Project State
@@ -24,7 +24,7 @@ last_activity_desc: One bounded redesign measured15941; independently checked pr
 ## Project Reference
 
 See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
-preparation/DECISIONS.md. Current focus: decide the measured Phase 6 allocation proposal; Phase 5 is shipped.
+preparation/DECISIONS.md. Current focus: the researched proportional-gate replacement and its bounded migration; Phase 5 is shipped.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
 
@@ -37,7 +37,12 @@ was installed; Phase 6 is0/9 complete and02-09 are blocked by halted01.
 One authorized bounded redesign now measures15941 (net654), still462 above the
 authorized15479. Its independently checked proposal is in06-REDESIGN.md; no
 further design attempt, scope change, ready-plan rewrite or execution is scheduled
-before an explicit allocation decision. The historical halt remains intact.
+before a policy decision. The historical halt remains intact. The owner then
+explicitly reopened the LOC metric itself. Three research passes and one
+adversarial synthesis recommend retiring the hard line ratchet and its exclusive
+machinery in favor of concrete contract checks and bounded architecture review.
+See research/proportional-gates/RECOMMENDATION.md. This is a proposed replacement,
+not N654 approval, installed policy, requirement completion or resumed execution.
 PR #20 squash-merged at 6d57d69 on 2026-10-23T02:32:12Z. Phase 5 is shipped.
 Do not return to discussion, create plan16, reset review/gap allowances or resume
 historical halted plans. Current implementation 098bb5e has actual direct/called
@@ -92,15 +97,18 @@ No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T17:23:18Z
-**Stopped at:** One bounded redesign complete; awaiting explicit scoped allocation decision
-**Resume file:** .planning/phases/06-retail-cartridge-boards/06-REDESIGN.md
+**Last session:** 2026-10-23T17:58:32Z
+**Stopped at:** Policy re-evaluation research complete; scoped migration recommendation prepared
+**Resume file:** .planning/research/proportional-gates/RECOMMENDATION.md
 
-Next action: owner decision on exact scoped N192→654/C15479→15941, under rule7
-and D-17. No retry or optimization loop is scheduled. If approved, the exact next
-command is `$gsd-plan-phase 6` to record the accepted decision and prepare a
-successor admission plan preserving historical01; do not automatically execute.
-If declined, keep the halt. No requirement completion or review/gap reset occurred.
+The owner asked for a replacement after questioning the arbitrary line metric.
+Do not repeat the N654 approval prompt or run another fit construction by default.
+Recommendation: retire LOC accounting in one tested policy migration, preserve
+unrelated judges and the historical halt, then reconcile Phase6 successor plans.
+If planning that migration, the exact command is `$gsd-plan-phase 6`, carrying the
+new research and explicit policy scope; do not automatically execute or silently
+treat research as adoption. Active rules/quality.json remain unchanged. No other
+GSD step, requirement completion or review/gap reset ran in this research pass.
 Run URLs: N/A-local. WINDOWS32/33 retain failed fit and unrun dependent verification.
 
 ### Prior Phase 5 Ship Evidence
@@ -142,6 +150,7 @@ is normalized to nine active slots, leaving 14 halted and unaccepted.
 
 - [Phase 06]: Preserve192 and halt on measured15952; keep candidate code disposable. Active progress is9/18 across phases5/6. The SDK counted historical/halting summaries as completion; state/roadmap are normalized to accepted plans only.
 - [Phase 06]: One bounded redesign measured15941/net654. Recommend scoped N654/C15941; this is a proposal awaiting explicit approval, with archive399937 unchanged. No additional redesign or execution loop is authorized.
+- [Policy research]: Owner reopened the LOC metric; current recommendation is its retirement, superseding the N654 approval recommendation if adopted. Three focused research passes and one adversarial review complete; implementation and active-policy reconciliation remain pending.
 
 ### Blockers
 
