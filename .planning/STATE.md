@@ -6,11 +6,11 @@ current_phase: "07"
 current_phase_name: Battery saves across hosts
 current_plan: Not started
 status: ready_to_plan
-stopped_at: Phase 6 verified complete; next separate command is gsd-ship 6
-last_updated: "2026-10-23T22:56:28Z"
-state_head: 65ae7c0aa8db2caf3ed13242e1da44a5638e46c3
+stopped_at: Phase 6 shipped in PR 24; next separate command is gsd-discuss-phase 7
+last_updated: "2026-10-23T23:07:47Z"
+state_head: 58369164abd5f4a8472f84041b4e36a8c672d6db
 last_activity: 2026-10-23
-last_activity_desc: Phase 6 passed 33/33; BOARD-01–03 complete; ship remains separate
+last_activity_desc: Phase 6 shipped in PR 24; BOARD-01–03 complete; Phase 7 remains unstarted
 total_phases: 7
 progress:
   total_phases: 7
@@ -27,7 +27,7 @@ progress:
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: ship verified Phase 6. Phase 7 has not started.
+Current focus: Phase 6 ships through PR #24. Phase 7 has not started.
 
 ## Current Position
 
@@ -36,8 +36,9 @@ are complete. Phase 5 and6 are2/7 milestone phases,18/18 currently planned activ
 slots; later phases remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
-Next command: `$gsd-ship 6`.
-Draft PR24 remains unmerged: https://github.com/szTheory/muhtari/pull/24 .
+Next command: `$gsd-discuss-phase 7`.
+Phase 6 shipping PR: https://github.com/szTheory/muhtari/pull/24 .
+The ship step confirms the exact-head CI, squash merge and release-PR checks before reporting its outcome.
 No next GSD step was invoked.
 
 ## Phase 6 Acceptance
@@ -82,8 +83,8 @@ Review/gap allowances were not reset; no blocking review finding exists.
 ## Prior Acceptance and Seeds
 
 Phase 5 shipped in PR20 at6d57d69; its20/20 verification and lifecycle evidence
-remain in its artifacts. Latest published package remainsv0.4.0; Phase 6 shipping
-and post-merge release checks are the next separate step.
+remain in its artifacts. The package before this ship step is v0.4.0. Phase 6 shipping and post-merge
+release checks belong to this step; release-please owns the next package version.
 WR-01/COST-01, SEED-009 and v1.0 audit deferrals retain their scope.
 Raw monthly cost totals remain untrusted; no global hosted-cost reduction is claimed.
 
@@ -94,8 +95,8 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-Last session:2026-10-23. Stopped after Phase 6 execution and verification.
-Resume file:None. Next separate command:`$gsd-ship 6`.
+Last session:2026-10-23. Phase 6 shipping recorded in PR #24.
+Resume file:None. Next separate command:`$gsd-discuss-phase 7`.
 
 ### Quick Tasks Completed
 
