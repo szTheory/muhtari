@@ -1,0 +1,90 @@
+name: Maintenance digest
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  pull_request:
+    paths: [.github/workflows/digest.yml, scripts/digest.sh, tests/policy/digest.cmake]
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "Optional UTC window start, with end"
+        type: string
+      end:
+        description: "Optional UTC window end, exclusive"
+        type: string
+      partial_month:
+        description: "Report the current partial UTC month"
+        type: boolean
+        default: false
+      publish:
+        description: "Publish the rolling issue (default branch only)"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30 # provisional; complete all-page/attempt collection, no successful cohort yet
+    permissions:
+      contents: read
+      actions: read
+      issues: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read-only report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+          PARTIAL: ${{ inputs.partial_month }}
+        run: |
+          if [ "$PARTIAL" = true ]; then
+            START=$(date -u +%Y-%m-01T00:00:00Z)
+            END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          fi
+          if [ -n "$START$END" ]; then
+            sh scripts/digest.sh preview build/digest "$START" "$END"
+          else
+            sh scripts/digest.sh preview build/digest
+          fi
+          cat build/digest/report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maintenance-digest
+          path: |
+            build/digest/report.md
+            build/digest/evidence.json
+          if-no-files-found: error
+  publish:
+    needs: preview
+    if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish))
+    concurrency:
+      group: digest-publisher
+      cancel-in-progress: false
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5 # provisional; serialized issue write, network floor
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: maintenance-digest
+          path: build/digest
+      - name: Rebuild report sections and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DIGEST_PUBLISH: ${{ inputs.publish }}
+        run: |
+          awk '/^<!-- digest-month:start -->$/{exit} {print}' build/digest/report.md > build/digest/triage.md
+          awk '/^<!-- digest-month:start -->$/{keep=1} keep{print}' build/digest/report.md > build/digest/monthly.md
+          sh scripts/digest.sh publish build/digest

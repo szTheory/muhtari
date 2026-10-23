@@ -47,8 +47,9 @@ The larger 128-phase candidate also passed the measured recovery matrix;
 worst -78.28741 dBFS. The compact support, window and nonlinear tables remain.
 
 Runtime interpolation rounds the signed difference times the phase remainder
-over 13,125 to nearest, with ties away from zero. Tap 7/8 then corrects its
-row to exactly 8,388,608. No division or signed right shift is implicit.
+over 13,125 to nearest, with ties away from zero. Unsigned magnitude plus
+half the positive divisor is divided before restoring the sign; bounded
+quotients fit int64. Tap 7/8 corrects the row to exactly 8,388,608.
 The ring integrates Q23 impulses. Multiplication by 128 converts the integrated
 value to Q30. The single DC blocker is
 `y=x-x_previous+R*y_previous`, with Q30 pole 1,070,934,451, generated from
@@ -150,8 +151,9 @@ Intermediate bounds are separate from headroom:
   2^47 even before cancellation. The quotient product is below 2^45;
   the signed remainder product is less than
   `(2^30-1)*1070934451 < 2^60`. Division truncates toward zero, including
-  negative values. Final signed rounding's negation/addition stays far
-  from INT64_MIN/MAX. No 128-bit integer extension is needed on MSVC/be32.
+  negative values. Final rounding forms magnitude by unsigned subtraction;
+  its addition and signed quotient conversion fit the bounds above.
+  No signed negative shift or 128-bit extension is needed on MSVC/be32.
 - The phase numerator is at most 13124*64=839936 < 2^20, fitting uint32.
 - The maximum mixed Q24 current is below 2^34. Multiplication by 18,360
   and the fixed Q12 cartridge-gain intermediates fit below 2^49. Table

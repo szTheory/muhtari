@@ -487,6 +487,8 @@ change alone never justifies replacing raw or video evidence. The existing
 platform hashes file also includes soundtest and pokey's seven audio fields
 under their name prefixes, preserving the card/PNG rows and Unix newlines.
 
-The six native lanes plus be32 still require exactly seven identical expanded
-hash files; WASM compares separately with Linux x64. Hosted equality and
-merge/release results are confirmed at ship, beyond local evidence.
+Pull requests require exactly six identical expanded native hash files and compile PowerPC.
+Nightly and release workflows additionally execute the full native/PowerPC inventories
+and compare a same-commit pair. WASM compares separately with Linux x64 and remains
+advisory. Hosted equality is checked in those workflows; merge-dependent results are
+confirmed at ship.

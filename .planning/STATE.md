@@ -2,119 +2,91 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: planning
-last_updated: "2026-10-21T14:29:05.791Z"
-last_activity: 2026-10-21
+status: shipping
+last_updated: "2026-10-23T02:03:17+00:00"
+state_head: 82513206384d80e7aaa8bf8be492cb7929fb96fc
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
-current_phase: "5"
-current_phase_name: Pipeline tune-up
+  completed_phases: 1
+  total_plans: 9
+  completed_plans: 9
+  percent: 14
+last_activity: 2026-10-22
 total_phases: 7
-stopped_at: v2.0 roadmap approved; Phase 5 ready for discussion
-last_activity_desc: v2.0 initialized with 27 requirements and seven approved phases
+current_phase: 06
+current_phase_name: Retail cartridge boards
+stopped_at: Phase 5 ship in progress; PR 20 awaits final-head CI and squash merge
+last_activity_desc: Phase 5 PR 20 prepared for final-head CI and squash merge
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-21)
-
-**Core value:** 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
-**Current focus:** Phase 5 — Pipeline tune-up.
+See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
+preparation/DECISIONS.md. Current focus: ship Phase 5; Phase 6 remains unstarted.
+Core value: 7800 games behave as on the console, identically across platforms,
+from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
-Phase: 5 of 11 (Pipeline tune-up), first of seven v2.0 phases
-Plan: Not started
-Status: Ready for phase discussion
-Last activity: 2026-10-21 — v2.0 initialized; 27 requirements and phases 5–11 approved.
+Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
+and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 is not started.
+PR #20 ships Phase 5; final-head CI and merge-only observations are tracked by the ship step.
+Do not return to discussion, create plan16, reset review/gap allowances or resume
+historical halted plans. Current implementation 098bb5e has actual direct/called
+and genuine publish/download/install/confirmed-cleanup acceptance. Completion
+records caee608/8251320 change planning metadata only.
 
-Implementation: 0/7 phases; no plans executed in v2.0. Prior implementation totals belong to the archived v1.0 milestone.
+## Current Acceptance
 
-## Accumulated Context
+Direct CI 39879193530 attempt1 and Release 39879193669 attempt2 succeed. Authentic
+9/8 joins, six native hashes, full same-head native/BE610+6, library43 and actual
+gh2.102.0 lifecycle pass. Retained ID421353911 and tagrehearsal-39879193669-2 have
+fresh complete-list/exact-ID/tag404 confirmation. The immutable-base failure and
+unchanged-head recovery remain recorded. Final actual 15287 includes safety447/
+fixes477; N2404, B12885/S2, C15287. Approved maximum 15365/N2482 retires 78 lines.
+Matched local 610-test scheduling improves wall 18.24%; global hosted cost reduction
+is not claimed. Raw monthly cost totals are untrusted under deferred COST-01;
+one-off closeout accounting excludes copied retry and skipped/negative intervals.
+See 15/09 summaries for commands, exits, immutable artifact identities and run URLs.
 
-Decisions and detailed execution history live in PROJECT.md,
-preparation/DECISIONS.md and milestones/v1.0-phases/. Prior requirements and the audit
-are archived under milestones/. The v2.0 scope and phases 5–11 are active; no implementation has started.
+## Decisions and History
 
-### Release evidence
+Canonical decisions are in 05-CONTEXT.md D-01–35 and preparation/DECISIONS.md.
+Accepted05-13 supplies the finite ordinary quality aggregate; performance and
+compatibility retain legacy domain stores and their documented lifecycle limits.
+WASM/library/property remain advisory; no promotion is earned by PR/retry samples.
+The three TUNE-02 edge rows have explicit criteria; four unclassified probe rows
+and descriptorless prohibitions retain their disclosed metadata status.
 
-Phase 4 PR #15 merged; CI budget fix #17 merged; release PR #16 merged as 40ce425.
-[Release publication and latest-install run](https://github.com/szTheory/muhtari/actions/runs/39533130210) completed successfully; v0.4.0 is published with 19 assets.
-`gh run view 39533130210 -R szTheory/muhtari --json status,conclusion,url` — exit 0,
-completed success. `gh release view v0.4.0 -R szTheory/muhtari --json isDraft,publishedAt,url`
-— exit 0, published and not a draft. Ship-time native/be32/WASM equality, publication
-and latest-install checks have completed; they no longer await owner verification.
+Historical06/11/12/08 and14 halts, REDs and partial tasks remain in their original
+PLAN/SUMMARY/HANDOFF artifacts and Git. Original15 halt is ca64a29; current 15 is
+accepted under D-35. Prior state detail is retained in Git at 0b4ecd1. Those old
+halt instructions are historical, not the next action. v1.0 audit deferrals and
+stale fingerprints remain in milestones/v1.0-MILESTONE-AUDIT.md; v0.4.0 is the
+published package. v2.0 has 27 requirements across phases 5–11.
 
-### Known verification overrides
+## Blockers and Seeds
 
-Phases 1, 2, 3 and 4 have stale canonical fingerprints from later covered-file
-changes. The owner explicitly accepted all four at closeout. Reports and digests
-were preserved. The audit verdict remains tech_debt; no clean verification is claimed.
-Gate-code proportion is 1,367/8,577 lines (15.94%, above the 10% budget).
-The performance gate is unarmed and WASM/library jobs remain advisory.
-
-## Deferred Items — v1.0 closeout history
-
-Items acknowledged and deferred at milestone close, most recent first:
-
-| Category | Item | Status | Deferred At | Milestone |
-|----------|------|--------|-------------|-----------|
-| seeds | SEED-001 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-002 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-003 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-004 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-005 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-006 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-007 | dormant | 2026-10-21 | v1.0 |
-| seeds | SEED-008 | dormant | 2026-10-21 | v1.0 |
-| todos | 2026-10-16-arm-the-instructions-per-frame-gate.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-16-close-the-re-review-findings-on-the-dependabot-gate-and-the-publish-checks.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-16-limit-release-rehearsals-to-pushes-that-change-release-inputs.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-16-promote-the-wasm32-lane-into-ci-required.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-19-close-the-phase-2-re-review-findings-when-maria-and-the-run-loop-land.md | presence-only | 2026-10-21 | v1.0 |
-| todos | 2026-10-19-close-the-phase-2-review-seeds-on-the-nightly-filter-and-the-rom-tables.md | presence-only | 2026-10-21 | v1.0 |
-| deferred_items | 04/deferred-items.md: Tooling seed: `policy.compat_doc_fresh` and its self-test share `build/ci/policy/compatibility.md` as output. One full CI invocation reported a stale page while both ran concurrently; the generated and committed pages were identical afterward, the isolated freshness check passed, and a complete workflow retry passed all 588 regular and six archive tests. The compatibility source, ledger and tests were unchanged by this plan. Give the self-test a separate output during the later tooling tune-up; this is a test/tooling seed under AGENTS rule 7, not a sound requirement or an additional review round. | acknowledged | 2026-10-21 | v1.0 |
-
-At v1.0 closeout: 15 newly acknowledged, 0 carried forward from a prior close.
-Acknowledgment preserves verdicts and lapses when an artifact changes. Future
-seeds are still dormant, todos still pending; acknowledgment does not resolve them.
+No execution blocker remains. Merge-only publication checks belong to ship.
+Standard code review has no blocking finding; WR-01 and COST-01 are deferred tooling seeds in 05-REVIEW-DISPOSITION.md, under AGENTS rule 7.
+Existing seeds remain in the phase deferred-items ledger and milestone audit.
+No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-Last session: 2026-10-21
-Stopped at: v2.0 milestone initialized; no phase discussion or execution run.
-Resume file: None
-Next command: `$gsd-discuss-phase 5`
+Phase 5 ship step: https://github.com/szTheory/muhtari/pull/20. This note is pushed
+before the final-head CI run; do not infer merge from the note alone. The ship
+agent confirms CI, squash merge, release PR health and digest publication through
+GitHub. No review/gap reset or further Phase 5 plan is authorized. Stop after ship.
+Next command after successful shipping: `$gsd-discuss-phase 6`. Resume file: None.
+Final completion/ship commits change planning metadata only; source acceptance
+at 098bb5e is retained alongside the final-head hosted runs.
 
-## v1.0 closeout verification
-
-`cmake --workflow --preset ci` — exit 0: 605 regular tests and six release/archive
-checks passed after archival. `scripts/hygiene.sh --tree` and `git diff --check` —
-exit 0. Archive integrity check — exit 0: all 177 phase files retained, including
-73 plans, 73 summaries and four unchanged verification reports; only the deferred
-item acknowledgment modifies a moved phase artifact. `query audit-open --json` —
-exit 0: zero open, 15 acknowledged. Hosted release evidence is linked above.
-
-## v2.0 initialization decisions
-
-- Owner approved whole-library scope, research first, planning version v2.0 and continuing at Phase 5.
-- Souper/BupChip remains deferred; XM covers RAM/POKEY/HSC, AtariVox covers EEPROM; no full OpenHSC.
-- All 27 requirements and the seven-phase roadmap were explicitly approved on 2026-10-21.
-- Historical v1.0 overrides remain recorded above; initialization makes no new implementation or accuracy claim.
-
-## Initialization verification
-
-`query init.new-milestone` — exit 0: v2.0 The whole library, seven phase directories.
-`cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake`, `scripts/hygiene.sh --tree` and
-`git diff --check` — exit 0. One-off structural integrity check (`python3 -`) —
-exit 0: 27 unique requirements, exact phase coverage, seven phases with 2–5
-criteria, 15 historical deferral rows, unchanged outgoing snapshots and seeds.
-Archive PR #18 merged as 752916f after [required PR CI](https://github.com/szTheory/muhtari/actions/runs/39614799435)
-passed; no release-please pull request was pending after the archive merge.
-No phase implementation or owner hardware verification ran during initialization.
+Completion scanning emitted four reference warnings: generated build-relative paths
+and command strings in 02/08/09/15 summaries were treated as missing source files.
+They are not new verification gaps; fresh final verification independently covers
+the required behaviors and current evidence. Historical temporary paths stay historical.
+The scanner also counted historical summaries (15/10); accepted progress
+is normalized to nine active slots, leaving 14 halted and unaccepted.

@@ -44,8 +44,8 @@ foreach(name IN LISTS names)
 endforeach()
 
 # name|event|heavy|called|job=result,...|want. Unlisted jobs succeeded.
-set(all changes hygiene title build asan nofp be32 hash-equality retroarch perf)
-set(light build=skipped,asan=skipped,nofp=skipped,be32=skipped,hash-equality=skipped,retroarch=skipped,perf=skipped)
+set(all changes hygiene title build asan nofp be32 hash-equality retroarch perf quality)
+set(light build=skipped,asan=skipped,nofp=skipped,be32=skipped,hash-equality=skipped,retroarch=skipped,perf=skipped,quality=skipped)
 set(cases
   "all succeeded|pull_request|true|false||pass"
   "light pull request|pull_request|false|false|${light}|pass"
@@ -57,7 +57,13 @@ set(cases
   "perf skipped on push|push|true|false|perf=skipped|pass"
   "perf skipped in a nested call|pull_request|true|true|perf=skipped|pass"
   "perf skipped on a pull request|pull_request|true|false|perf=skipped|fail"
+  "be32 skipped when heavy=true|pull_request|true|false|be32=skipped|fail"
+  "be32 failed in a call|pull_request|true|true|be32=failure|fail"
+  "native hash comparison skipped|pull_request|true|false|hash-equality=skipped|fail"
   "asan failed|pull_request|true|false|asan=failure|fail"
+  "quality failed|pull_request|true|false|quality=failure|fail"
+  "quality skipped in a call|pull_request|true|true|quality=skipped,perf=skipped|fail"
+  "quality omitted|pull_request|true|false|quality=omitted|fail"
   "build cancelled|push|true|false|build=cancelled|fail")
 foreach(case IN LISTS cases)
   string(REPLACE "|" ";" f "${case}")
@@ -72,6 +78,9 @@ foreach(case IN LISTS cases)
     set(result success)
     if(",${results}," MATCHES ",${j}=([a-z]+),")
       set(result ${CMAKE_MATCH_1})
+    endif()
+    if(result STREQUAL "omitted")
+      continue()
     endif()
     string(APPEND json ",\"${j}\":{\"result\":\"${result}\"}")
   endforeach()

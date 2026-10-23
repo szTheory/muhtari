@@ -14,6 +14,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/release.yml
+      - .github/workflows/be-equality.yml
       - scripts/publish.sh
       - release-please-config.json
       - cmake/packaging.cmake
@@ -46,12 +47,21 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
+
+  equality:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    uses: ./.github/workflows/be-equality.yml
+    with:
+      ref: ${{ github.event.pull_request.head.sha }}
+    permissions:
+      contents: read
 
   # GITHUB_TOKEN only; the App token is for pushes to main.
   rehearsal:
-    needs: ci
+    needs: [ci, equality]
     runs-on: ubuntu-26.04
-    timeout-minutes: 14  # 2 x 399 s, slowest of 11 runs, run 38951834012
+    timeout-minutes: 14  # provisional n=0 current sound archives; retain historical 2 x 399 s, run 38951834012
     permissions:
       contents: write
       id-token: write
@@ -79,10 +89,15 @@ jobs:
         with:
           pattern: hashes-*-*
           path: dist/legs
+      - name: Use verified GitHub CLI
+        run: |
+          sh scripts/fetch-pin.sh gh-linux-x86_64 "$RUNNER_TEMP/gh"
+          echo "$RUNNER_TEMP/gh/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/gh/bin/gh" --version
       - run: sh scripts/publish.sh prepare dist
       - id: draft
         run: |
-          id=$(sh scripts/publish.sh rehearsal-create "$REHEARSAL_TAG")
+          id=$(sh scripts/publish.sh rehearsal-create "$REHEARSAL_TAG") || exit 1
           echo "id=$id" >> "$GITHUB_OUTPUT"
       - env:
           ID: ${{ steps.draft.outputs.id }}
@@ -103,7 +118,7 @@ jobs:
   install-line:
     needs: rehearsal
     runs-on: macos-15
-    timeout-minutes: 5  # network-bound floor; slowest 9 s in 11 runs, run 38943087443
+    timeout-minutes: 5  # network floor; provisional n=0 current rehearsal; historical max 9 s, run 38943087443
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -119,7 +134,7 @@ jobs:
     needs: [rehearsal, install-line]
     if: always() && needs.rehearsal.result != 'skipped'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network-bound floor; slowest 17 s in 11 runs, run 38943087443
+    timeout-minutes: 5  # network floor; provisional n=0 current rehearsal; historical max 17 s, run 38943087443
     permissions:
       contents: write
     env:
@@ -138,7 +153,7 @@ jobs:
   release-please:
     if: github.event_name == 'push'
     runs-on: ubuntu-26.04
-    timeout-minutes: 10  # provisional, 0 samples (runs on main only)
+    timeout-minutes: 5  # network floor; max 23 s, n=3, run 39530116768; provisional
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -178,15 +193,25 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
+
+  release-equality:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/be-equality.yml
+    with:
+      ref: ${{ needs.release-please.outputs.sha }}
+    permissions:
+      contents: read
 
   # The rehearsal's steps on release-please's draft, found by its ID because
   # a draft cannot be looked up by its tag. Safe to re-run: uploads replace
   # the draft's assets, and once the release is published a re-run only
   # verifies it.
   publish:
-    needs: [release-please, release-ci]
+    needs: [release-please, release-ci, release-equality]
     runs-on: ubuntu-26.04
-    timeout-minutes: 15  # provisional, 0 samples (runs on main only)
+    timeout-minutes: 13  # 2 x 379 s, n=1, run 39533130210; provisional
     permissions:
       contents: write
       id-token: write
@@ -211,9 +236,17 @@ jobs:
         with:
           pattern: hashes-*-*
           path: dist/legs
+      - name: Use verified GitHub CLI
+        run: |
+          sh scripts/fetch-pin.sh gh-linux-x86_64 "$RUNNER_TEMP/gh"
+          echo "$RUNNER_TEMP/gh/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/gh/bin/gh" --version
       - run: sh scripts/publish.sh prepare dist
       - id: state
-        run: echo "draft=$(gh api "repos/$GITHUB_REPOSITORY/releases/$ID" --jq .draft)" | tee -a "$GITHUB_OUTPUT"
+        run: |
+          draft=$(gh api "repos/$GITHUB_REPOSITORY/releases/$ID" --jq .draft) || exit 1
+          case $draft in true | false) ;; *) echo "invalid release draft state" >&2; exit 1 ;; esac
+          echo "draft=$draft" >> "$GITHUB_OUTPUT"
       - if: steps.state.outputs.draft == 'true'
         run: sh scripts/publish.sh upload "$TAG" "$ID" dist
       - if: steps.state.outputs.draft == 'true'
@@ -232,7 +265,7 @@ jobs:
   install-line-latest:
     needs: [release-please, publish]
     runs-on: macos-15
-    timeout-minutes: 10  # provisional, 0 samples (runs on main only)
+    timeout-minutes: 5  # network floor; max 7 s, n=1, run 39533130210; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

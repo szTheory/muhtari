@@ -26,6 +26,10 @@ set(install_build_options
   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
   "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
   "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}")
+if(CMAKE_CROSSCOMPILING)
+  list(APPEND install_build_options -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+    -DCMAKE_STAGING_PREFIX=${PROJECT_BINARY_DIR}/stage)
+endif()
 
 foreach(install_crt IN ITEMS static dll)
   if(install_crt STREQUAL "static")
@@ -46,7 +50,7 @@ foreach(install_crt IN ITEMS static dll)
         -DCMAKE_PREFIX_PATH=${PROJECT_BINARY_DIR}/stage
         -DCMAKE_MSVC_RUNTIME_LIBRARY=${install_runtime}
         ${install_build_options}
-      --test-command consumer
+      --test-command ${CMAKE_CROSSCOMPILING_EMULATOR} consumer
     LABELS install TIMEOUT 120)
   set_tests_properties(${install_name} PROPERTIES
     FIXTURES_REQUIRED install_staged
@@ -63,7 +67,7 @@ muhtari_add_test(NAME embed.subdirectory
     --build-options
       -DMUHTARI_SOURCE_DIR=${PROJECT_SOURCE_DIR}
       ${install_build_options}
-    --test-command embed
+    --test-command ${CMAKE_CROSSCOMPILING_EMULATOR} embed
   LABELS install TIMEOUT 120)
 set_tests_properties(embed.subdirectory PROPERTIES
   PASS_REGULAR_EXPRESSION "consumer: one frame, 800 samples")

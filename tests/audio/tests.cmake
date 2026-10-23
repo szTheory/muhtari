@@ -105,10 +105,9 @@ muhtari_add_test(NAME audio.samples
     "-DRUNNER=$<TARGET_FILE:muhtari-run>" "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
     "-DEXPECTED=${CMAKE_CURRENT_LIST_DIR}/expected.txt" "-DBUILT=${PROJECT_BINARY_DIR}/built"
     "-DCAPTURE=${PROJECT_BINARY_DIR}/tests/audio-samples" -P ${CMAKE_CURRENT_LIST_FILE}
-  # Eight 600-frame cases run through both the driver and runner. The
-  # macOS Intel leg exhausted 120 s twice in run 39611531779; keep a
-  # provisional 240 s bound until the tune-up remeasures hosted variance.
-  LABELS audio basic portable TIMEOUT 240)
+  # Eight 600-frame driver/runner pairs: 2 x 124.92 s, macOS Intel,
+  # 11 successes on image 20260824.0482.1, run 39617761785. Cost starts early.
+  LABELS audio basic portable TIMEOUT 250 COST 125)
 set_tests_properties(audio.samples PROPERTIES FIXTURES_REQUIRED
   "built_soundtest;built_soundeffects;built_trackertest;built_eightysix;built_pokey;built_rmtramcompressiondemo;built_rmtramdemo;built_rmtromdemo")
 

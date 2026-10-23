@@ -3,6 +3,7 @@ created: 2026-10-16T18:30:00.000Z
 title: Limit release rehearsals to pushes that change release inputs
 area: ci
 resolves_phase: 5
+closed: 2026-10-22
 severity: minor
 files:
   - .github/workflows/release.yml
@@ -24,3 +25,7 @@ Revisit if the runner time or the release notifications become a nuisance. Optio
 
 - compare the push's own `before..after` paths in a first job and skip the rehearsal when no release input changed;
 - run the rehearsal only on a pull request with a label.
+
+## Phase 5 resolution
+
+Closed by explicit scope decision D-31, reaffirmed D-35: conservative rehearsals remain; no reuse or new selection state is implemented. Current genuine lifecycle passed and repeated construction cost is recorded in15/09 summaries. Narrower per-push selection remains a future optimization seed, not an unfinished Phase 5 requirement. This closure does not claim fewer rehearsals.

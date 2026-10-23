@@ -24,8 +24,18 @@ instance-owned and bounded, without allocation after load.
 
 Closeout is **override_closeout**: 15 items acknowledged as deferred (six todos, eight dormant seeds and one compatibility-test output race); four stale phase verification fingerprints explicitly accepted.
 The [audit](milestones/v1.0-MILESTONE-AUDIT.md) records 25/25 scoped requirements
-and no integration gaps. Gate code remains 15.94% of src/, performance comparison
-is report-only, and WASM/library jobs remain advisory.
+and no integration gaps. At that historical closeout, gate code was 15.94% of src/ and performance comparison
+was report-only. Those values are superseded by Phase 5 below; the old audit stays historical.
+
+Phase 5 is now implemented and verified on its branch: 20/20 substantive truths and
+nine active outcomes accepted. Direct CI 39879193530 and Release 39879193669 pass,
+including genuine publish/download/install/confirmed cleanup. Final gate code is
+15,287 lines across 147 whole files; unused 78-line allowance retires. The controlled
+test-card performance comparison is armed; WASM/library/property remain advisory.
+Matched local scheduling improves wall time 18.24%; no global hosted-cost reduction
+is claimed. WR-01 and COST-01 remain deferred tooling seeds; raw monthly numeric
+cost totals are untrusted. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md).
+Shipping/merge is the next separate step; the published package remains v0.4.0.
 
 ## Current Milestone: v2.0 The whole library
 
@@ -67,9 +77,10 @@ save states and other later horizons remain deferred. Planning v2.0 does not sel
 - ✓ Owned exact-q23-16x64-dc20 synthesis passes the production spectral/alias judge with renewed integer
   headroom/width/carry proofs; hostile legal chip traffic stays bounded — v1.0, Phase 4
 
+- ✓ Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5 verified on branch; ship next.
+
 ### Active
 
-- [ ] Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5.
 - [ ] Activision, Absolute and Fractalus cartridges — BOARD-01–03, Phase 6.
 - [ ] HSC/SaveKey battery data survives host restarts — SAVE-01–06, Phase 7.
 - [ ] Light gun and the other in-scope controllers — INPUT-01–05, Phase 8.
@@ -130,7 +141,7 @@ Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
   audio hashes on every platform; every call is bounded in emulated time.
 - **Efficiency**: efficient enough for battery-powered handhelds and for the browser through WebAssembly, which the
   owner ranks very important — work per emulated frame sets both speed and power draw, so the instructions-per-frame
-  comparison measures it from phase 1 and remains report-only pending arming controls, and nothing enters the core that a wasm32 build cannot carry (threads, files,
+  comparison measures it from phase 1 and is armed after the Phase 5 controls, and nothing enters the core that a wasm32 build cannot carry (threads, files,
   floating point, allocation after load). The browser build is SEED-008; handheld budgets are SEED-005.
 - **Legal**: no ROM, BIOS or firmware bytes beyond licence-checked fixtures; Atari names only to say what the core
   emulates.
@@ -144,6 +155,9 @@ Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Freeze Phase 5 at existing 15/09; tighten scoped additions to actual size (D-35) | Stop repeated budget/replanning cycles while preserving every required check | ✓ Nine active outcomes accepted; actual 15287, 78 retired; no plan16 or allowance reset |
+| Keep conservative release rehearsals and advisory portability lanes (D-31) | Reuse needs independently proven input identity; lane promotion needs qualifying main history | ✓ Genuine current rehearsal accepted; no reuse state or unearned promotion |
+| Tooling review findings remain seeds (AGENTS rule 7) | Bound phase closure without hiding known limitations | ✓ WR-01/COST-01 deferred explicitly; no trusted raw monthly cost claim |
 | Time in MARIA clock ticks; the CPU drives the bus; MARIA DMA runs as one exact burst per line | Every documented edge is an integer; cheaper than per-tick stepping on low-power targets | ✓ v1.0: 4/6-tick CPU cycles, holds and queued NMI integrate with exact MARIA bursts and diagnostic timing |
 | Integer-only core, no globals, bounded run calls | Bit-identical hashes everywhere; hostile ROMs cannot hang a host | ✓ Phase 1: tests enforce no floating point, no globals and the no-FP lanes; Phase 2: a step on a jammed CPU still makes one bus read, so emulated time keeps moving |
 | Native MARIA byte per pixel; palettes and composite filter outside the hash | Hash stability; hosts choose presentation | ✓ Phase 1: frames are colour numbers; the runner and the libretro core apply the palette |
@@ -180,4 +194,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-21 after v2.0 milestone scope and roadmap approval*
+*Last updated: 2026-10-22 after Phase 5 execution and final verification; ship next*

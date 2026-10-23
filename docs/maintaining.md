@@ -32,6 +32,12 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
      `refs/heads/main`.
 7. `install-line-latest` runs the README's install line verbatim on `macos-15` against the latest release.
 
+Both Ubuntu publisher jobs fetch the SHA-256-verified GitHub CLI pin before use. Every
+attestation entrypoint rejects an unsupported or malformed version; stable gh 2.102.0
+or later is required. Genuine and downloaded assets require the full repository/signer
+workflow path and intended source ref before publication. Archive commit identity remains
+a separate check: a later workflow trigger can publish an earlier release commit.
+
 Only an attestation whose source ref is `refs/heads/main` is release provenance. A rehearsal signs with the same
 `release.yml`, but from `refs/pull/<number>/merge`, so a check that a download is a release must pin the ref:
 
@@ -47,19 +53,19 @@ cut it.
 
 ## The rehearsal
 
-A pull request from this repository that changes `release.yml`, `scripts/publish.sh`,
-`release-please-config.json` or `cmake/packaging.cmake` runs the same publish steps before it can merge. The
+A pull request from this repository that changes `release.yml`, `be-equality.yml`,
+`scripts/publish.sh`, `release-please-config.json` or `cmake/packaging.cmake` runs the same publish steps before it can merge. The
 rehearsal runs CI on the pull request's head, then publishes a prerelease named `rehearsal-<run id>-<attempt>` that
-is never marked latest, verifies it and runs the install line against it, and a `cleanup` job deletes the release
-and its tag whatever failed before it. Only the trigger, the token and the `latest` alias differ from a real
+is never marked latest, verifies it and runs the install line against it, and an always-running `cleanup` job retains the draft ID, confirms release absence
+before deleting its tag, and confirms both resources are absent. Failed reads or
+deletions fail cleanup; they never count as proof of absence. Only the trigger, the token and the `latest` alias differ from a real
 release. `docs/testing.md` lists the rehearsal's jobs.
 
 A pull request rehearses rather than a manual run because GitHub starts `workflow_dispatch` only for workflow files
 on the default branch, and a draft without a tag cannot be published or verified.
 
-**Fallback.** If a pull request's `GITHUB_TOKEN` ever loses `contents`, `id-token` or `attestations` write, the
-rehearsal shrinks to a draft: prepare, upload, attest and the attestation checks, then delete. Publishing and the
-download checks are then first exercised by the real release.
+There is no automatic draft-only fallback. Missing token permissions block the
+rehearsal and leave publication/download acceptance unproved.
 
 Every pushed commit on such a pull request rehearses again, and each rehearsal creates and deletes one public
 prerelease.
@@ -72,10 +78,19 @@ prerelease.
   request already tagged and skips `publish`.
 - **A failed rehearsal:** choose "Re-run all jobs", which takes a fresh `rehearsal-<run id>-<attempt>` tag, or push
   a new commit. A published tag that was deleted can never be reused under immutable releases. If `cleanup` itself
-  failed, delete the leftover by hand: `gh release delete rehearsal-<run id>-<attempt> --cleanup-tag --yes`.
+  failed, inspect its retained draft ID and rerun the guarded cleanup:
+  `GITHUB_REPOSITORY=szTheory/muhtari sh scripts/publish.sh rehearsal-delete rehearsal-<run id>-<attempt> <release-id>`.
 
-After any rehearsal, `gh release list` must show no `rehearsal-*` release and
-`git ls-remote --tags origin 'rehearsal-*'` must print nothing.
+Cleanup requires a successful complete paginated release listing and fresh exact-ID
+and exact-tag absence responses. Valid empty pages differ from missing, malformed or
+failed evidence. A tag-only lookup cannot discover every draft. The five rehearsal
+selectors are conservative triggers, not proof that every archive input is unchanged.
+
+Rehearsals retain called CI, full native/PowerPC equality, publication, install and
+cleanup. The monthly maintenance digest includes failed, retried and cancelled job
+time. Compare execution cost separately from queue/dependency latency, and keep
+runner-image, verifier-version and workload cohorts separate; small cohorts remain
+provisional. No rehearsal-reuse mechanism is enabled.
 
 ## Closing a phase
 
@@ -146,7 +161,29 @@ To rotate the key, on the App's settings page generate a new private key, then r
 `gh secret set MUHTARI_APP_PRIVATE_KEY --app dependabot < <key file>`, delete the old key on the settings page, and
 delete the key file. Only the owner handles the key.
 
-## Dependabot
+## Weekly digest
+
+`policy.digest.controls` uses CMake's native PATH modification so the same fake-API controls run on Windows
+and POSIX hosts; its semicolon-path case prevents CMake list expansion from breaking executable lookup.
+Output directories resolve through the shell so relative and Windows drive-rooted paths share one contract.
+The controls also exercise native jq CRLF output; binary mode keeps its shell scalars and TSV records intact.
+
+The Maintenance digest workflow previews one public report, with structured evidence as a downloadable artifact
+and Markdown in its job summary. Mondays at 06:00 UTC it updates the one open issue labelled `digest`. Scheduling
+is best effort; use **Run workflow** on `main` with **publish** selected to recover a missed report. Pin the issue
+once if useful. Read its actionable triage at later phase discussions. PR and feature-branch previews cannot
+publish, and the workflow uses no release App credentials. Publishers queue without cancellation.
+
+For local inspection, run `sh scripts/digest.sh preview build/digest`; dates default to the preceding completed
+UTC calendar month. Pass start and exclusive end timestamps to inspect another window. Manual dispatch also has
+a current-partial-month option. Collection includes all pages and attempts, including cancelled/control cost;
+rerun passes are candidates, not proven flakes. Samples identify their window and run links. Queue/dependency,
+compile share, CTest utilization and image/tool history remain explicitly unavailable without matching evidence.
+A partial update preserves the prior monthly section; a newer complete month replaces it. Failed required reads
+or issue writes fail visibly and leave the previously published success timestamp intact. Duplicate open digest
+issues require consolidation before retrying; reports never close other work or change settings.
+
+## Dependabot updates
 
 `.github/dependabot.yml` updates the pinned GitHub Actions weekly; they are the project's only dependencies. Minor
 and patch updates come as one grouped pull request and each major update as its own, so a major never holds the
@@ -155,7 +192,7 @@ once it is a week old, so a compromised release pulled within days never reaches
 updates are not delayed.
 
 `.github/workflows/dependabot-automerge.yml` runs on Dependabot's pull requests only, and only when Dependabot also
-triggered the run, so a person's push to a Dependabot branch never merges unattended. Its `decide` step reads the
-update type: a patch or minor update turns on squash auto-merge with an App token, which merges once `CI required`
+triggered the run. That initial eligibility check arms auto-merge; it does not revoke
+auto-merge after every later human push. Its `decide` step reads the update type: a patch or minor update turns on squash auto-merge with an App token, which merges once `CI required`
 passes; a major update waits for a person to read its release notes and merge it. `policy.dependabot` runs that
 decision on synthetic events.

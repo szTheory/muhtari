@@ -1,0 +1,101 @@
+{
+  "metrics": {
+    "gate_lines": {
+      "ceiling": 15287,
+      "units": "physical lines including comments and blanks",
+      "direction": "ceiling",
+      "producer": "tests/cmake/gate_count.cmake",
+      "configuration": "tests/policy/gate-lines.txt",
+      "availability": "required",
+      "provenance": "f0202e1f02ee24c2b7d2bc19bbe140f11f3c1fef; B=12885; S=2; N=2404"
+    },
+    "tests.native": {
+      "floor": 605,
+      "units": "count",
+      "direction": "floor",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "native",
+      "availability": "required"
+    },
+    "abi_tests": {
+      "floor": 12,
+      "units": "count",
+      "direction": "floor",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "native",
+      "availability": "required"
+    },
+    "fuzz_tests": {
+      "floor": 4,
+      "units": "count",
+      "direction": "floor",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "native",
+      "availability": "required"
+    },
+    "title_tests": {
+      "floor": 3,
+      "units": "count",
+      "direction": "floor",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "native",
+      "availability": "required"
+    },
+    "abi_findings": {
+      "ceiling": 0,
+      "units": "findings",
+      "direction": "ceiling",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "native",
+      "availability": "required"
+    },
+    "warnings": {
+      "ceiling": 0,
+      "units": "findings",
+      "direction": "ceiling",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "native",
+      "availability": "required"
+    },
+    "archive_bytes": {
+      "ceiling": 399937,
+      "units": "bytes",
+      "direction": "ceiling",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "native",
+      "availability": "required"
+    },
+    "tests.hygiene": {
+      "floor": 24,
+      "units": "count",
+      "direction": "floor",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "hygiene",
+      "availability": "required"
+    },
+    "analyzer_findings": {
+      "ceiling": 0,
+      "units": "findings",
+      "direction": "ceiling",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "hygiene",
+      "availability": "required"
+    },
+    "tests.asan": {
+      "floor": 593,
+      "units": "count",
+      "direction": "floor",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "asan",
+      "availability": "required"
+    },
+    "sanitizer_findings": {
+      "ceiling": 0,
+      "units": "findings",
+      "direction": "ceiling",
+      "producer": "tests/cmake/quality_evidence.cmake",
+      "configuration": "asan",
+      "availability": "required"
+    }
+  }
+}

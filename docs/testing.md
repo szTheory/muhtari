@@ -1,7 +1,6 @@
 # Testing
 
-Every check that CI runs, a contributor can run with one command. This page covers that command, the presets,
-the test inventory, the negative controls and the checks on releases.
+Run CI locally, including inventory, controls and release checks.
 
 ## The entry point
 
@@ -45,7 +44,7 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer, the pins file, and `src/cartdb.c` equal to `tools/cartdb.cmake`'s output over the two pinned MAME lists. Fetch those first with `scripts/fetch-pin.sh mame-a7800-xml build/pins/mame` and `scripts/fetch-pin.sh mame-a2600-xml build/pins/mame`; configure stops with both commands when either is missing. | `hygiene` | `hygiene` |
 | `fuzz` | The cartridge loader and the run loop keep their invariants on any input: libFuzzer runs `tests/fuzz/loader.c` and `tests/fuzz/run.c` for 60 seconds each with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, starting from the images `muhtari-test-images` writes. New inputs go to `build/fuzz/fuzz/corpus` and `build/fuzz/fuzz/run/corpus`, crashes to the `crash` directory beside each, never into the tree. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader` and `fuzz.regress.run` (`docs/emulation-tests.md`, fuzz). | `fuzz` | `fuzz` |
 | `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, about 1 GiB of disk and 90 s for the fetch. | `vectors-full` | `vectors-full` |
-| `be32` | The same hashes on a big-endian, 32-bit target with unsigned `char`. It cross-compiles for 32-bit PowerPC (`cmake/toolchains/ppc-linux-gnu.cmake`) and runs under `qemu-ppc`. | `ci` | `portable` |
+| `be32-compile` / `be32-full` | Required PR PowerPC compilation; full nightly native/BE equality under qemu-ppc. | `ci` | compile only / all normal, package, release |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
 | `library` | The compatibility ledger holds: each `pr` row is judged afresh on its file under `MUHTARI_ROM_DIR` or `tests/diag`, on both boot paths, and the ratchet compares (label `library` below). Run the `ci` preset's `built` tests first, then `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library`. | `library` | `library` |
 
@@ -56,23 +55,16 @@ under the source tree, so this one preopen covers both, at the same paths inside
 with `scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime`; configure stops with that command when the
 runtime is missing. WASI output files have no `.wasm` suffix.
 
-`MUHTARI_TIMEOUT_SCALE` multiplies every test timeout. The scales are 3 for `asan`, 11 for `be32` and 3 for
-`wasm32`. The emulator scales are measured: over ten hosted CI runs, the tests a lane shares with Linux x64 took
-10.7 times as long in total under `qemu-ppc` and 2.5 times as long under `wasmtime`, rounded up. In an arm64
-container on an Apple Silicon Mac, the `be32` test step took 1.1 s and the `wasm32` step 0.3 s.
-
-`audio.samples` has a provisional 240 s base timeout after two macOS Intel 120 s timeouts in run 39611531779; all eight comparisons remain required.
+`MUHTARI_TIMEOUT_SCALE`: provisional `asan`/`be32`/`wasm32` scales 2/13/2; same-run Linux x64 duration-sum
+ratios max 1.713/12.127/1.612 (n=4/4/2). ASan keeps short runs. `audio.samples`: eight 600-frame driver/runner
+pairs, eight fixtures; 250 s = twice 124.92 s (11 Intel Mac successes, run 39617761785). COST 125 starts it early;
+builds/basic/coverage use costs 7/10/28 (control 27), basic/coverage bounds 19/55 s (control 53). Movies: 3 s from
+1.05 s maximum (Windows n=7, provisional). Fixtures retain prerequisites; page writers own separate outputs.
+Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` (`tests/cmake/hashes.cmake`, mode `write`) writes `build/<preset>/hashes.txt`. It has three
-lines: the frame 1 and frame 600 hashes and the SHA-256 of the frame 1 PNG.
-
-```text
-frame1 <hex>
-frame600 <hex>
-png <hex>
-```
+`runner.hashes_file` writes frame/PNG and 600-frame soundtest/POKEY audio hashes to `build/<preset>/hashes.txt`.
 
 CI collects the file from each lane, and the `hash-equality` job compares them:
 
@@ -84,8 +76,10 @@ The comparison passes only when it gets exactly `COUNT` files, all present and b
 the first file that differs. The fixed count means a lane that stops uploading fails the job, instead of silently
 dropping out.
 
-- **Required files.** Seven: the six `build` legs and `be32`. If `be32` moves to nightly because its job takes more
-  than five minutes, the per-PR count is six and the full `be32` comparison runs nightly.
+- **Required files.** PRs compare six native files and compile PowerPC. Nightly/release calls run full native/BE
+  normal and package inventories, then require matching immutable SHA, fixtures and options for two-file hash
+  equality. Architecture/toolchain and timeout scale may differ. Absolute or working-directory-relative evidence
+  paths are canonicalized. Publication requires equality; calls stay read-only.
 - **wasm32.** It reports only, compared with the Linux x64 file outside the required check. Once it is promoted
   into `hash-equality`, the count goes up by one.
 
@@ -222,32 +216,33 @@ with its lane's inventory and labels.
 | `build` ×6 | `ubuntu-26.04`, `ubuntu-26.04-arm`, `macos-15`, `macos-15-intel`, `windows-2025`, `windows-11-arm` | fetches its wasmtime and 7800basic, then preset `ci` (`ci-msvc` on Windows); uploads `archives-<os>-<arch>` and `hashes-<os>-<arch>`; `macos-15` also runs the README install line on its zips | `ci.txt` without `release`, then `release` |
 | `asan` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `asan` | `ci.txt` without `abi` and `release` |
 | `nofp` ×2 | `ubuntu-26.04`, `ubuntu-26.04-arm` | preset `nofp` | `nofp.txt` |
-| `be32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `be32`; uploads `hashes-be32` | `ci.txt`, label `portable` |
-| `hash-equality` | `ubuntu-26.04` | compares exactly seven `hashes.txt` files: the six `build` legs and `be32` | none |
+| `be32` | `ubuntu-26.04` | preset `be32-compile`; full execution/equality runs nightly and on releases | none |
+| `hash-equality` | `ubuntu-26.04` | compares the six native `hashes.txt` files | none |
 | `wasm32` | `ubuntu-26.04` | fetches wasmtime and 7800basic, then preset `wasm32`; compares its `hashes.txt` with Linux x64 | `wasm32.txt`, label `portable` |
 | `retroarch` | `macos-15` | the built core in RetroArch; see "Hosted RetroArch" | none |
 | `library` | `ubuntu-26.04` | full history; builds the `ci` preset's samples and OpenBIOS (`-L '^built$'`), then preset `library` over `build/ci/built` with the pull request's base for the ratchet | `library.txt` |
 | `perf` | `ubuntu-26.04` | pull requests and dispatches only: Cachegrind instructions per frame of runners built with `MUHTARI_TESTS` OFF; see "Performance" | none |
+| `quality` | `ubuntu-26.04` | [trusted bounds and exact producer evidence](quality.md) | validated by producers |
 | `CI required` | `ubuntu-26.04` | the roll-up below | none |
 
-The hosted `be32` job takes up to about three minutes, inside the five-minute limit for a per-pull-request lane,
-so `hash-equality` compares seven files. Windows legs load the MSVC environment with `vswhere` and `vcvarsall` for the runner's own architecture. Every
-action is pinned by full commit SHA.
+Windows legs load the native MSVC environment with `vswhere` and `vcvarsall`.
+Actions are pinned by full commit SHA.
 
 **The roll-up.** The ruleset requires one check, `CI required`. It always runs, and passes only when every job it
 needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which
 happens only when every changed path is under `.planning/`; `title` and `perf` may be skipped outside pull
-requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` and `library` report only and are
-not among the jobs `CI required` needs; `library` joins after 10 green runs on `main`.
+requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32`/`library` stay advisory: 9/5 distinct
+successful main executions as of 2026-10-22; ten are required. Skips, PR/branch controls and duplicate reruns do not count.
 
 **Tests of CI itself.** The hygiene lane checks the rules above. `policy.ci_required` reads the roll-up's `jq`
 program from `ci.yml` and runs it, with the step's own arguments, on synthetic job results; it also fails when a
 job other than `wasm32` and `library` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
 renamed, empty and planning-only path lists, and on a planning-only list from a pull request of more than 3000
 files, which the files API cuts short. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
-comment with a run ID or the word `provisional`. A measured timeout is twice the job's slowest successful run,
-rounded up to minutes, with a 5-minute floor for network-bound and roll-up jobs; its comment names that run and
-the sample count. A job with fewer than ten successful runs stays `provisional` and gives its sample count.
+run/count comment. Bounds: twice the last 40 comparable successful job/runner/workload executions' maximum,
+rounded up to minutes; network/roll-up floor 5 min. n<10 is provisional. Toolchain/image/workload changes reset
+cohorts; direct/called CI stay separate. Timeouts are censored; skips and copied rerun timestamps add no samples.
+Historical bounds without current evidence say n=0. No cache is added or check removed.
 
 **The title.** The squash commit on `main` takes the pull request's title and body, and release-please reads its
 type. `title` passes a Conventional Commit title with a lower-case subject, such as `fix(runner): exit 2 on a
@@ -291,17 +286,16 @@ perf testcard head=3837643 base=3837643 delta_bp=0 verdict=PASS
 | `UNSTABLE` | the two base measurements differ, so no comparison is trusted |
 | `NO_BASE` | the merge base has no `CMakePresets.json` to build; only the head is measured |
 
-`NO_BASE` appears on direct pull request runs until the first pull request merges, because `main` held only
-planning files before then; it is decided from the base tree's contents, and a base that has presets but fails to
-build fails the job. An empty or non-numeric measurement is an input error (`perf: error ...`, exit 1), never a
-pass. `perf` runs only in direct runs of `ci.yml`: in `release.yml`'s nested call, which checks out the pull
-request head rather than the merge commit, it is skipped, and `CI required` accepts that skip only in a call that
-passes `ref`.
+`NO_BASE` depends on the base tree's contents; a base with presets that fails to build fails the job.
+Empty, non-numeric and nonpositive measurements fail even unarmed. Release-called CI skips `perf` because it
+checks out the PR head; `CI required` accepts that skip only when the call passes `ref`.
 
-**Arming.** Until `MUHTARI_PERF_ARMED` in `ci.yml` is `"true"` every verdict reports only and the job succeeds.
-Once armed, `FAIL`, `UNSTABLE` and `NO_BASE` fail it. It is armed by one `ci:` pull request after two dispatched
-control runs on `main` show zero spread: on `workflow_dispatch` the job measures one commit three times and prints
-`perf control testcard runs=<a>,<b>,<c> spread=<n>`.
+**Arming.** `MUHTARI_PERF_ARMED` is `"true"` after the 2026-10-22 controls and nightly issue recovery.
+Arming requires two fresh dispatches of one immutable commit, each with three identical positive measurements,
+a current numeric PR comparison with identical duplicate base measurements, and observed nightly failure/issue
+recovery. Dispatches print `perf control testcard runs=<a>,<b>,<c> spread=<n>`. Once armed, `FAIL`, `UNSTABLE`
+and `NO_BASE` fail the job. Coverage is test-card-only; DMA/TIA/POKEY lack their own fresh Ir controls and charged
+integration fit. Native timings alone do not qualify them; no gameplay performance claim follows.
 
 **Exceptions.** A pull request that must be slower adds a line to `tests/perf/allow.txt`:
 `<rom> <max % × 100> <expiry YYYY-MM-DD> <reason>`, for example `testcard 250 2026-12-01 the new mixer`. It
@@ -319,8 +313,8 @@ The same workflow runs the `vectors-full` lane (`cmake --workflow --preset vecto
 `fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its inventory;
 `fuzz` uploads both targets' crash directories when it fails. Neither caches its vectors or corpus. The `prop` job
 builds the `ci` preset with `MUHTARI_TIMEOUT_SCALE=10` and runs `ctest -L prop` with `MUHTARI_PROP_CASES=10000` and
-the run's ID as `MUHTARI_PROP_SEED`; it is report-only, outside the report job's needs, until it has passed 10 runs
-on `main`. A pull request runs the whole workflow, writing no issue, when it changes a file listed in the trigger's
+the run's ID as `MUHTARI_PROP_SEED`; it stays advisory outside `report.needs`: 2/10 successful main runs as of
+2026-10-22. A pull request runs the whole workflow, writing no issue, when it changes a file listed in the trigger's
 `paths`: the workflow, the core and runner sources, the build files and pins, and each job's tests, scripts and
 inventories.
 
@@ -364,7 +358,8 @@ session, the same steps run locally from the job's commands, with `-DRETROARCH` 
 
 **If RetroArch will not start the core without content.** The job relies on RetroArch starting a core that
 reports no-game support when `-L` is given and no content. If it stops doing so, the log printed by
-`run_retroarch.cmake` shows it. Treat that as a blocker for the owner, with the log and the run URL.
+`run_retroarch.cmake` shows it. The agent diagnoses it and records the command, exit status
+and run URL; owner action is needed only for a check on the owner's own hardware.
 
 ## Release archives
 
@@ -389,20 +384,25 @@ It runs the line verbatim under a scratch `HOME`, with only the download base re
 ## Release rehearsal
 
 `.github/workflows/release.yml` runs on a pull request from this repository that changes `release.yml`,
-`scripts/publish.sh`, `release-please-config.json` or `cmake/packaging.cmake`. Its tag is
+`be-equality.yml`, `scripts/publish.sh`, `release-please-config.json` or `cmake/packaging.cmake`. Its tag is
 `rehearsal-<run id>-<attempt>`, new for every attempt, because a deleted immutable release's tag can never be
 reused.
 
 | Job | Runs |
 |---|---|
 | `ci` | `ci.yml` on the pull request's head commit |
-| `rehearsal` | `scripts/publish.sh prepare`: exactly the 18 zips, each build leg's `commit.txt` equal to the head commit, no zip member that `tests/cmake/firmware_scan.cmake` finds listed (ASSET_POLICY.md section 5), `SHA256SUMS` in C-locale name order (`policy.publish_set` checks this on one-member placeholder zips); a draft prerelease at that commit; upload; `actions/attest` over `SHA256SUMS`; `publish.sh attested`: each zip's attestation verifies from the pull request's `refs/pull/<number>/merge` and a copy with its last byte flipped does not; publish with `--prerelease --latest=false`; `publish.sh verify`: `attested` again, `gh release verify`, 19 non-empty assets, and every zip downloaded from the release URL matches `SHA256SUMS` and verifies as signed by `release.yml` from that ref. A release tag verifies only from `refs/heads/main` (`policy.publish_ref`) |
+| `equality` | full native/PowerPC normal and package inventories plus authenticated same-commit hash equality |
+| `rehearsal` | prepare exactly18 archives from the head commit with no firmware; upload and attest; verify with digest-pinned gh>=2.102.0 and full repository/signer/ref constraints, including changed-byte rejection; publish a non-latest prerelease; verify19 assets, downloaded hashes and attestations. Rehearsals use the PR merge ref; real releases require main. See [maintaining](maintaining.md#the-rehearsal) for the command sequence. |
 | `install-line` | the README install line on `macos-15` against the rehearsal's download URL |
-| `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete` removes the release and its tag, and fails if either remains |
+| `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete TAG ID` confirms release absence before tag deletion, then exact-ID/tag and complete-list absence; API errors fail |
 
-A failed rehearsal recovers with "Re-run all jobs" or a new push. If `cleanup` itself failed, delete the leftover
-by hand: `gh release delete rehearsal-<id>-<attempt> --cleanup-tag --yes`. `publish.sh` deletes only
+Recover a failed rehearsal with "Re-run all jobs" or a new push. For failed cleanup, use
+the retained draft ID and [guarded cleanup](maintaining.md#re-running-a-failed-release). `publish.sh` deletes only
 `rehearsal-*` tags. `docs/maintaining.md` describes the real release, which runs the same steps on `main`.
+
+`policy.publish.controls` tests real-script lifecycle and identity checks, including
+actual workflow output blocks. Hosted rehearsal supplies cryptographic, publication
+and install evidence; fake transport supplies argument and short-circuit controls.
 
 ## Supported systems
 

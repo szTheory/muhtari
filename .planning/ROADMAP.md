@@ -19,7 +19,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
-| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Not started |
+| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Not started |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
@@ -34,14 +34,32 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Plans:** TBD — created by plan-phase.
+**Status:** Complete — nine active slots accepted, goal verification 20/20; ship next.
+
+Plans:
+- [x] 05-01-PLAN.md — Audit the boundary, retain savings and allocate additions.
+- [x] 05-02-PLAN.md — Isolate freshness writers and measure scheduling/bounds.
+- [x] 05-10-PLAN.md — Retain full native/PowerPC equality outside ordinary PR execution.
+- [x] 05-04-PLAN.md — Hosted triage/monthly digest and guarded publication.
+- [x] 05-05-PLAN.md — Typed ordinary quality policy and independent measured observations.
+- [x] 05-13-PLAN.md — Finite aggregate recovery with retained legacy domain guards.
+- [x] 05-07-PLAN.md — Arm controlled performance comparison; audit advisory lanes.
+- [x] 05-15-PLAN.md — Complete release lifecycle/provisioning and actual hosted acceptance.
+- [x] 05-09-PLAN.md — Final docs/install/settings, tightened actual and outcome evidence.
+
+D-35 resumes15 and stages09 final edits before shared acceptance under the approved
+15365 maximum; current actual 15287 retires 78 lines. Current direct/called/rehearsal
+acceptance succeeds; final phase-goal verification passes 20/20. No new discussion, plan16 or review/gap reset is authorized.
+Historical03/06/11/12/08/14 halts and their original evidence remain in their own
+artifacts; they do not schedule another execution. Runtime canonical counts may
+include halted 14; only the nine active slots above count as accepted outcomes.
 
 **Success criteria:**
 
-1. Maintainers receive one weekly triage digest and its monthly CI-efficiency section from hosted evidence.
-2. The reproduced audio timeout and compatibility-output race are resolved under measured bounds; any removed check names its stronger replacement.
-3. One quality ratchet rejects unexplained regressions, performance arming follows the control-run result, and gate code meets the existing tenth-of-src budget.
-4. The release docs/install path and repository-setting checks match current behavior, and the measured weakest dimension has a shipped improvement.
+1. Weekly triage and monthly CI-efficiency evidence from hosted runs.
+2. Measured timeout/workload bounds and repaired audio/freshness reliability, with retained signals.
+3. An ordinary aggregate quality ratchet, explicit legacy domain limits, controlled performance arming and audited final line budget.
+4. Accurate docs/install/settings and evidenced improvement in the weakest dimension.
 
 ### Phase 6: Retail cartridge boards
 
@@ -138,7 +156,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
-| 5. Pipeline tune-up | 0/TBD | Not started | — |
+| 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 0/TBD | Not started | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
@@ -147,4 +165,4 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Approved: 2026-10-21; milestone initialization only. Next: `$gsd-discuss-phase 5`.*
+*Updated: 2026-10-22; Phase 5 execution and verification complete. Next: `$gsd-ship 5`; stop before ship/merge.*

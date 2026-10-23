@@ -46,6 +46,7 @@
     {
       "name": "asan",
       "inherits": "base",
+      "$comment": "Provisional scale 2: max common-test duration-sum ratio 1.713 over four same-run/image pairs, Clang 21.1.8 ASan/UBSan with short runs vs Linux x64 Release, run 39617761785.",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
@@ -57,7 +58,7 @@
         "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined",
         "CMAKE_MODULE_LINKER_FLAGS": "-fsanitize=address,undefined",
         "MUHTARI_SHORT_RUNS": "ON",
-        "MUHTARI_TIMEOUT_SCALE": "3",
+        "MUHTARI_TIMEOUT_SCALE": "2",
         "MUHTARI_INVENTORY": "ci"
       }
     },
@@ -91,25 +92,25 @@
     {
       "name": "be32",
       "inherits": "base",
-      "$comment": "MUHTARI_TIMEOUT_SCALE 11: on hosted CI the tests both lanes share ran 10.7 times as long under qemu-ppc as on Linux x64 (10 runs).",
+      "$comment": "Provisional scale 13: max common-test duration-sum ratio 12.127 over four same-run/image pairs, GNU 15.2/qemu-ppc vs Linux x64, run 39614799435.",
       "toolchainFile": "${sourceDir}/cmake/toolchains/ppc-linux-gnu.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
-        "MUHTARI_TIMEOUT_SCALE": "11",
+        "MUHTARI_TIMEOUT_SCALE": "13",
         "MUHTARI_INVENTORY": "ci"
       }
     },
     {
       "name": "wasm32",
       "inherits": "base",
-      "$comment": "One preopen covers the source and build trees, since binaryDir is under sourceDir. MUHTARI_TIMEOUT_SCALE 3: on hosted CI the tests both lanes share ran 2.5 times as long under wasmtime as on Linux x64 (10 runs).",
+      "$comment": "One source/build preopen. Provisional scale 2: max common-test duration-sum ratio 1.612 over two same-run/image pairs, Clang 21.1.8/wasmtime vs Linux x64, run 39533130210.",
       "toolchainFile": "${sourceDir}/cmake/toolchains/wasm32-wasi.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
         "MUHTARI_BUILD_LIBRETRO": "OFF",
-        "MUHTARI_TIMEOUT_SCALE": "3",
+        "MUHTARI_TIMEOUT_SCALE": "2",
         "MUHTARI_INVENTORY": "wasm32",
         "CMAKE_CROSSCOMPILING_EMULATOR": "${sourceDir}/build/pins/wasmtime/wasmtime;run;--dir=${sourceDir}::${sourceDir}"
       }
@@ -255,6 +256,18 @@
       "execution": { "noTestsAction": "error", "jobs": "" }
     },
     {
+      "name": "be32-full",
+      "inherits": "ci",
+      "configurePreset": "be32",
+      "output": { "outputJUnitFile": "${sourceDir}/build/be32/junit.xml" }
+    },
+    {
+      "name": "be32-release",
+      "inherits": "ci-release",
+      "configurePreset": "be32",
+      "output": { "outputJUnitFile": "${sourceDir}/build/be32/junit-release.xml" }
+    },
+    {
       "name": "wasm32",
       "configurePreset": "wasm32",
       "output": {
@@ -286,6 +299,7 @@
     }
   ],
   "packagePresets": [
+    { "name": "be32", "configurePreset": "be32", "generators": ["ZIP"] },
     { "name": "ci", "configurePreset": "ci", "generators": ["ZIP"] },
     { "name": "ci-msvc", "configurePreset": "ci-msvc", "generators": ["ZIP"] }
   ],
@@ -348,6 +362,23 @@
         { "type": "configure", "name": "fuzz" },
         { "type": "build", "name": "fuzz" },
         { "type": "test", "name": "fuzz" }
+      ]
+    },
+    {
+      "name": "be32-compile",
+      "steps": [
+        { "type": "configure", "name": "be32" },
+        { "type": "build", "name": "be32" }
+      ]
+    },
+    {
+      "name": "be32-full",
+      "steps": [
+        { "type": "configure", "name": "be32" },
+        { "type": "build", "name": "be32" },
+        { "type": "test", "name": "be32-full" },
+        { "type": "package", "name": "be32" },
+        { "type": "test", "name": "be32-release" }
       ]
     },
     {

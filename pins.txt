@@ -53,3 +53,6 @@ rcheevos 12.1.0 https://github.com/RetroAchievements/rcheevos/archive/6755915f2b
 # generate src/cartdb.c, and policy.cartdb_generated regenerates it from them.
 mame-a7800-xml dddf4cd1faee https://raw.githubusercontent.com/mamedev/mame/dddf4cd1faeeca6a6dac26ecbc2da2da4242b740/hash/a7800.xml 5343714eedd715f7f1f080f1e283d5ed56e6f6509ea3eff2f8f7c8c53ee066b9
 mame-a2600-xml dddf4cd1faee https://raw.githubusercontent.com/mamedev/mame/dddf4cd1faeeca6a6dac26ecbc2da2da4242b740/hash/a2600.xml efe03008c6c2a4aa197eac1242d838913b3ec4eb434d04f2b59bb769a726197c
+
+# Publisher attestation verification; patched signer-workflow and source-ref matching.
+gh-linux-x86_64 2.102.0 https://github.com/cli/cli/releases/download/v2.102.0/gh_2.102.0_linux_amd64.tar.gz bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386

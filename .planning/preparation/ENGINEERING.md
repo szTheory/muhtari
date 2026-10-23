@@ -2,7 +2,7 @@
 title: "Engineering: C rules, tests, CI, release, repo settings and quality loops"
 summary: "Build, test, CI, release, repository, triage, performance and documentation decisions for muhtari, with mutable facts re-verified on 2026-10-15."
 read_when: "Before creating or changing CMake files, presets, tests, workflows, repository settings, the release pipeline, quality gates or engineering docs."
-updated: 2026-10-19
+updated: 2026-10-22
 ---
 
 # Engineering: C rules, tests, CI, release, repo settings and quality loops
@@ -153,12 +153,13 @@ Manifest `{".": "0.0.0"}` and `version.txt` `0.0.0` until the first release, whi
 1. A squash merge to `main` runs `release.yml`: it mints an App token (`client-id: ${{ vars.MUHTARI_APP_CLIENT_ID }}`, `private-key: ${{ secrets.MUHTARI_APP_PRIVATE_KEY }}`, `permission-contents`, `-pull-requests`, `-issues: write`), runs release-please and enables `gh pr merge --auto --squash` on the release PR.
 2. The App-made release PR runs CI without approval; GitHub merges it as the App when `CI required` passes, and that push starts `release.yml` again (nesturbator run 38432194730).
 3. On `release_created`, `uses: ./.github/workflows/ci.yml` runs CI with release-please's `sha` output as its checkout ref, never `github.sha`: when the merge's own run is dropped or fails early, a later push's run creates the release while its `github.sha` is newer (lattice_stripe; exifcleaner-node `a88f57b73636` [ENG.25][ENG.26]); `publish` needs it and fails unless every archive records the tag's commit.
-4. `publish`: exactly 18 zips `muhtari-{library,runner,libretro}-{linux,macos,windows}-{x64,arm64}.zip` → `SHA256SUMS` → `actions/attest` with `subject-checksums` → upload to the draft → `gh attestation verify` each zip → a copy with its last byte flipped must fail → publish → `gh release verify vX` → re-read until 19 non-empty assets [ENG.17] → download each zip as a user would from `releases/latest/download/`, check it against `SHA256SUMS` and run `gh attestation verify --signer-workflow <repo>/.github/workflows/release.yml` (lattice_stripe `260edf43189e`, exifcleaner-node `a44704fd528d` [ENG.25][ENG.26]).
+4. `publish`: exactly 18 zips `muhtari-{library,runner,libretro}-{linux,macos,windows}-{x64,arm64}.zip` → `SHA256SUMS` → `actions/attest` with `subject-checksums` → upload to the draft → `gh attestation verify` each zip → a copy with its last byte flipped must fail → publish → `gh release verify vX` → re-read until 19 non-empty assets [ENG.17] → download each zip from its exact `releases/download/<tag>/` URL, check it against `SHA256SUMS` and run `gh attestation verify --signer-workflow <repo>/.github/workflows/release.yml` (lattice_stripe `260edf43189e`, exifcleaner-node `a44704fd528d` [ENG.25][ENG.26]).
 - **Re-runs:** `publish` is safe to re-run: uploads overwrite the draft's assets, the draft is found by release ID because `GET releases/tags/{tag}` omits drafts, and a version already published with 19 verified assets exits 0. Recovery is "Re-run failed jobs": a full re-run sees the PR already `autorelease: tagged` and skips `publish` (lattice_stripe `e7d6c0464437`; exifcleaner-electron `78b895773742`, `0266e1c7c4d0` [ENG.25][ENG.26]).
 - **Pre-1.0 policy:** `feat` → minor, breaking → minor, `fix`/`perf` → patch; `docs chore ci test build refactor style` cut no release (write `ci:`, not `fix(ci):`); 1.0.0 only through a `Release-As: 1.0.0` final line in the PR body.
 - **Version source. Rec** release-please edits only `version.txt`, the manifest and `CHANGELOG.md`; CMake `configure_file` generates the private version header, `muhtari_libretro.info` (`display_version`) and the runner's `--version`; no `extra-files`; `release.single_version_source` fails when the current version string appears in any other tracked file; asset names carry no version, so README links `releases/latest/download/<name>.zip` — **Alt** nesturbator's `extra-files` markers (aligned `x-release-please` comments broke `hygiene.format` when 9 became 10 and blocked releases for three days [ENG.17]) — **Flip** a consumer needs the version in the file name (then add a versioned copy, never a second edited string).
 - **Archives:** `LICENSE` and `THIRD-PARTY-NOTICES.md` in every zip (BSD-3 notices must travel with binaries); no top-level folder; the libretro zip holds `cores/` and `info/`; `release.archive_contents` checks names, members and build paths on every leg.
-- **Rehearsal** of every publish step before the first real tag, on each same-repository pull request that changes `release.yml`, `scripts/publish.sh`, `release-please-config.json` or `cmake/packaging.cmake`: CI on the head commit, then `publish.sh` against a published prerelease `rehearsal-<run_id>-<run_attempt>` with `make_latest=false` (prepare, upload by release ID, attest, tampered-copy check, publish, `gh release verify`, download and verify, the README install line), and a `cleanup` job that deletes the release and its tag whatever failed. `workflow_dispatch` fires only for workflow files on the default branch, and an untagged draft cannot be published or verified, so neither can rehearse before the first merge. Fallback, if `GITHUB_TOKEN` on `pull_request` ever loses `contents`, `id-token` or `attestations: write`: the draft-only form (prepare, upload, attest, attestation checks, delete). Green run https://github.com/szTheory/muhtari/actions/runs/38942043999 (gabbaboy merged 18 release-fix PRs, #10–#29, in about two hours on its first tag, with a 1,101-line `release.yml` [ENG.19]).
+- **Rehearsal** of every publish step before the first real tag, on each same-repository pull request that changes `release.yml`, `be-equality.yml`, `scripts/publish.sh`, `release-please-config.json` or `cmake/packaging.cmake`: CI on the head commit, then `publish.sh` against a published prerelease `rehearsal-<run_id>-<run_attempt>` with `make_latest=false` (prepare, upload by release ID, attest, tampered-copy check, publish, `gh release verify`, download and verify, the README install line), and a `cleanup` job that deletes the release and its tag whatever failed. `workflow_dispatch` fires only for workflow files on the default branch, and an untagged draft cannot be published or verified, so neither can rehearse before the first merge. Permission failure blocks rehearsal; no automatic draft-only fallback exists. Green run https://github.com/szTheory/muhtari/actions/runs/38942043999 (gabbaboy merged 18 release-fix PRs, #10–#29, in about two hours on its first tag, with a 1,101-line `release.yml` [ENG.19]).
+- **Verifier and cleanup (2026-10-22):** both Ubuntu attestation jobs fetch the digest-verified gh pin; supported stable >=2.102.0 is checked at every entrypoint. Genuine/downloaded checks constrain full repository/workflow/ref, independently of archive commit. Draft/state outputs require successful typed lookup; cleanup retains the exact positive draft ID, confirms release absence before tag deletion, and requires fresh complete-list/exact-ID/tag absence. API/schema/transport failures fail visibly. Five conservative selectors remain; no reuse or later-human-push Dependabot revocation machine is claimed.
 - **Phase close:** no open `autorelease: pending` PR; `releases/latest` is the expected version with 19 assets (nesturbator's release PR #35 stayed red across a milestone).
 - **Withdrawal** (`docs/maintaining.md`): `gh release edit vGOOD --latest`; edit the bad notes to "Withdrawn: reason; use vX"; fix forward with a `fix:` PR; delete only content that must not be distributed (its tag name is then gone for good).
 - **Bot credential. Rec** GitHub App token, minted only on `push` to `main` and in the Dependabot job — **Alt** a fine-grained PAT (lattice_stripe) — **Flip** the owner declines to create an App.
@@ -199,6 +200,17 @@ Branch policy: `.githooks/pre-commit` runs `hygiene.sh --staged` and refuses a c
 - **Rec** Ir/frame is the only per-PR speed gate; wall-clock tails are nightly trend data — **Alt** a wall-clock PR gate — **Flip** a dedicated quiet benchmark host appears (then a p50/p99 trend gate there, still never p99.999). Why never on shared runners: a zero-miss 95 % bound at p = 10⁻⁵ needs n ≥ ln 0.05 / ln(1 − 10⁻⁵) = 299,572 independent frames, 83.3 min of NTSC play (derived; glueyneo's calculation [ENG.20]); frames are correlated; shared VMs add steal time and clock changes, so tails measure the host. Ir is deterministic: precedent from the NES sibling, 23.3–24.7 M Ir/frame at +0.00 % head against base (job 115428512765) [ENG.18].
 
 **Ratchet contract:** one committed `quality.json` holding floors (`tests.<preset>`, `compat.public`, `fuzz.targets`, `coverage.functions_pct`), ceilings (`warnings`, `analyzer_findings`, `fuzz.open_crashes`, `ir_per_frame.<rom>`, `size.<zip>`, `ci.critical_path_s`) and `reasons[]` (`key`, `from`, `to`, `why`, `date`). One CI check, job `quality` (needs build, perf and hash artifacts), runs `cmake -P tests/cmake/quality.cmake` with CMake's `string(JSON)`, no Python: a floor may not fall and a ceiling may not rise unless the same PR loosens the bound and adds a `reasons[]` entry (diffed against the merge base); tightening is free and is done at each tune-up. Sanitizer and fuzz status enter as `asan`/`fuzz.regress` results; `compat.local` (owner dumps) is recorded with its commit by the `library` preset and checked at the tune-up, not in CI.
+
+**Phase 5 scope revision, 2026-10-22:** the aggregate's ordinary bounds/reasons stay in `quality.json`.
+Performance and compatibility retain their existing independent semantic judges and respective
+`tests/perf/allow.txt` / `tests/compat/allow.txt` authorities; their centralization is deferred. Do not duplicate
+those domain bounds/reasons in a second active store or describe legacy rolling expiry as immutable central
+grant/from/to/renewal enforcement. A waived compatibility regression can become the next base's nonpass state;
+this limitation is accepted explicitly, not repaired by the aggregate. Current ledger/results equality remains
+unconditional. This narrows the unified-store part of the ratchet contract above; aggregate trusted-base
+controls, performance arming, full counting and fixed allocations are unchanged. Reconcile mixed draft callers
+and verify current execution before acceptance. Phase 5 CONTEXT D-21–23 is authoritative for this revision.
+
 - **Rec** one file, one check — **Alt** per-metric scoreboards (nesturbator's CONFORMANCE scoreboard, perf allow file, timeout comments) — **Flip** one metric's updates dominate PR churn (then give it its own file under the same check).
 
 ## 9. Portability lanes
@@ -234,7 +246,33 @@ Branch policy: `.githooks/pre-commit` runs `hygiene.sh --staged` and refuses a c
 | Public header | terse: one line per function and field, no hardware prose; ≤ 24 KB (nesturbator's grew from 9 to 36 KB) | `docs.budgets` |
 | Evidence | command + exit status + run URL in SUMMARY and VERIFICATION files, never pasted logs | review |
 | `.planning` | ≤ 3 MB per milestone, archived at close (today: nesturbator 6.4 MB, gabbaboy 9.5 MB, glueyneo 9.7 MB) | digest reports size (soft) |
-| Gate code | policy and hygiene scripts ≤ 10 % of `src/` lines; CMake `-P` or POSIX sh only; AGENTS.md short, each rule backed by a failing check | tune-up |
+| Gate code | one audited absolute physical-line budget in `quality.json`; CMake `-P` or POSIX sh only; full/authored source ratios advisory; each gate names its fault and retains a meaningful control | quality ratchet and tune-up |
+
+**Gate-budget revision, 2026-10-21 (DEC.10):** the hard 10% ceiling is replaced, not waived until a speculative
+deadline. Count comments/blanks, check implementations, dedicated fault controls, shared helpers once,
+invocation contracts, embedded workflow/configure predicates and the counter itself. Default to whole files;
+document any exact block exclusions for purely operational/generation work. Ordinary product tests and fixture
+bytes are outside this maintenance metric; production assertions and check controls remain counted wherever
+located. Publish the file/block inventory, broad sensitivity count, total and authored-only source ratios.
+Core growth, generated data, relocated predicates or a dependency do not create extra budget.
+
+Initialize from an exact audited starting commit/count `B`. The first bounded simplification slice measures
+fault-preserving savings `S`; before affected additions, fix one scoped allowance `N`, including their controls,
+glue and a separately stated integration reserve. The phase ceiling is `C = B - S + N`. Estimates belong in
+planning, not in claims of measured savings. No allowance for inherited-code rewrites; preserve their faults
+and reduce duplicate work. Authorized additions are only those named by the accepted phase scope. Record their
+allocation and reason in a short existing planning table; do not build an allowance interpreter or policy DSL.
+Redistribution within fixed `N` is visible; unused allowance/reserve retires when the final actual count tightens
+the ceiling. Do not replenish savings or absorb an overrun into a new baseline.
+
+After initialization, unchanged-scope growth follows the normal trusted-base ratchet and dated exceptions
+(at most 60 days, credible removal/consolidation exit, expiry checked on every run). A permanent increase
+requires an explicit new scope decision and fixed allocation before implementation, with from/to, requirement,
+fault and controls visible; editing the candidate baseline alone is insufficient. This narrow structural
+budget change does not authorize loosening other quality bounds. Safety/control loss, unresolved counting or
+an unallocated overrun stops affected expansion. Planning needs a complete boundary/fault map, allocations and
+the initial measured task, not a full replacement prototype. Phase ship needs all scoped behavior plus actual
+count within the accepted ceiling; no declaration of old 10% compliance is required or permitted without evidence.
 
 - **Rec** byte budgets as CTests (README, header, docs) — **Alt** review-only limits — **Flip** a budget blocks a correct change twice (raise it with a reason in `quality.json`).
 

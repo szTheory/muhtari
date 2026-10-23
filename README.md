@@ -2,8 +2,9 @@
 
 An Atari 7800 ProSystem emulator core in C: a small library, a headless runner and a libretro core for RetroArch.
 
-**Status: early.** The first release shows a built-in test card in RetroArch; it does not load games yet. Later
-releases add the CPU, the graphics chip, sound and cartridges, and each one is published automatically.
+**Status: early.** The core includes the CPU, graphics and TIA/POKEY sound. Cartridge-board and peripheral
+coverage remains limited; see the [compatibility ledger](docs/compatibility.md) for tested content. Releases are
+published automatically.
 
 ## Install in RetroArch (macOS, Apple Silicon)
 
