@@ -1,5 +1,13 @@
 # Fault prevented: policy edits, forged baselines or old waivers bypassing actual bounds.
 cmake_minimum_required(VERSION 4.3)
+# Reuse the exact negative-control runner without another CMake process.
+# Function scope keeps each command, result and merged output independent.
+function(quality_expect_failure regex)
+  set(CMD "${ARGN}")
+  set(CODE 1)
+  set(REGEX "${regex}")
+  include("${ROOT}/tests/cmake/expect_fail.cmake")
+endfunction()
 file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}")
 set(ENV{SOURCE_DATE_EPOCH} 1769904000)
@@ -78,9 +86,7 @@ hashes_board(activision rows)
   if(case STREQUAL "valid")
     execute_process(COMMAND ${hash_command} COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
   else()
-    execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${hash_command}" -DCODE=1
-      "-DREGEX=hashes:" -P "${ROOT}/tests/cmake/expect_fail.cmake"
-      COMMAND_ERROR_IS_FATAL ANY)
+    quality_expect_failure("hashes:" ${hash_command})
   endif()
 endforeach()
 string(REPEAT "a" 40 head)
@@ -220,8 +226,7 @@ foreach(case retirement gate_initial gate_existing equal waived inherited_valid 
       message(FATAL_ERROR "quality assertion: valid measurement report expected, got ${rc}: ${out}")
     endif()
   else()
-    execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1 "-DREGEX=${regex}"
-      -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+    quality_expect_failure("${regex}" ${cmd})
   endif()
 endforeach()
 
@@ -369,8 +374,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     list(INSERT produce 10 -DSAMPLE_TRUSTED=${repo}/tests/built/expected.txt -Dsamples=${digest})
   endif()
   if(NOT case MATCHES "^(unchanged|additions|push|dispatch|later_base|compiler|platform|samples|sample_revision)$")
-    execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${produce}" -DCODE=1 "-DREGEX=${regex}"
-      -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+    quality_expect_failure("${regex}" ${produce})
     continue()
   endif()
   # Only the preceding owned base worktree needs retiring before recursion;
@@ -413,9 +417,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     set(single "${produce}")
     list(REMOVE_ITEM single -DBUILD_BASE=ON)
     if(case STREQUAL "samples")
-      execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${single}" -DCODE=1
-        "-DREGEX=quality: invalid sample revision transition" -P "${ROOT}/tests/cmake/expect_fail.cmake"
-        COMMAND_ERROR_IS_FATAL ANY)
+      quality_expect_failure("quality: invalid sample revision transition" ${single})
       continue()
     endif()
     execute_process(COMMAND ${single} COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
@@ -435,8 +437,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     -DEXPECTED_SHA=${producer_head} -DBASE_SHA=${event_base} -DSOURCE=${run}
     -P "${ROOT}/tests/cmake/quality_join.cmake")
   if(case MATCHES "^(compiler|platform|samples)$")
-    execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${consume}" -DCODE=1
-      "-DREGEX=quality_join: incomparable environment" -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+    quality_expect_failure("quality_join: incomparable environment" ${consume})
   else()
     execute_process(COMMAND ${consume} COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
     file(READ "${WORK}/producer-joined/current.json" joined)
@@ -448,17 +449,13 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
 endforeach()
 set(cmd "${CMAKE_COMMAND}" -DROOT=${ROOT} -DBUILD=${WORK}/absent -DOUT=${WORK}/evidence.json
   -DSHA=${head} -DCONFIG=ci -P "${ROOT}/tests/cmake/quality_evidence.cmake")
-execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1
-  "-DREGEX=quality_evidence: missing junit" -P "${ROOT}/tests/cmake/expect_fail.cmake"
-  COMMAND_ERROR_IS_FATAL ANY)
+quality_expect_failure("quality_evidence: missing junit" ${cmd})
 file(WRITE "${WORK}/absent/junit.xml" "<testsuite/>\n")
 execute_process(COMMAND git -C "${ROOT}" rev-parse HEAD OUTPUT_VARIABLE actual OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
-execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1
-  "-DREGEX=quality_evidence: built SHA mismatch" -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+quality_expect_failure("quality_evidence: built SHA mismatch" ${cmd})
 file(WRITE "${WORK}/absent/CMakeCache.txt" "CMAKE_HOME_DIRECTORY:INTERNAL=wrong\n")
 list(TRANSFORM cmd REPLACE "^-DSHA=.*" "-DSHA=${actual}")
-execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1
-  "-DREGEX=quality_evidence: build configuration mismatch" -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+quality_expect_failure("quality_evidence: build configuration mismatch" ${cmd})
 
 # A smaller lane must not hide a missing/forged observation behind another lane's maximum.
 string(REPLACE fixture native p "${policy}")
@@ -554,7 +551,6 @@ foreach(case equal retirement omission extra forged missing unavailable string s
       message(FATAL_ERROR "quality assertion: worst lane expected10, got ${value}")
     endif()
   else()
-    execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1 "-DREGEX=${regex}"
-      -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
+    quality_expect_failure("${regex}" ${cmd})
   endif()
 endforeach()
