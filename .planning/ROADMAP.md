@@ -66,7 +66,43 @@ include halted 14; only the nine active slots above count as accepted outcomes.
 **Goal:** Run Activision, Absolute and Fractalus cartridges with correct banking and physical RAM behavior.
 **Depends on:** Phase 5
 **Requirements:** BOARD-01, BOARD-02, BOARD-03
-**Plans:** TBD — created by plan-phase.
+**Plans:** 9 plans in 9 sequential waves.
+
+Plans:
+**Wave 1**
+- [ ] 06-01-PLAN.md — Prove complete counted admission/comparability fit and document its unchanged bounds.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 06-02-PLAN.md — Run the Absolute tracer through all three deliverables with behavior docs and package measurement.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 06-03-PLAN.md — Publish the additive API, linked smoke coverage, exact inventories and embedding contract together.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 06-04-PLAN.md — Normalize identified Activision layouts and prove map/probe identity with matching behavior docs.
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 06-05-PLAN.md — Implement physical Fractalus aliases and independent retail-map/lifecycle vectors.
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 06-06-PLAN.md — Admit and execute three owned numeric board diagnostics.
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 06-07-PLAN.md — Verify truthful loaded achievement maps and identified-layout host equivalence.
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 06-08-PLAN.md — Prove bounded hostile/fuzz, transactional, allocation and instance-isolation behavior.
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [ ] 06-09-PLAN.md — Accept portability, final actual count and unchanged six-native package bounds.
+
+**Cross-cutting constraints:**
+- D-18: each slice measures exactly three component ZIPs against unchanged archive_bytes=399937; six native lanes remain the final authority.
+
+Each wave depends on the previous plan. Complete measured integration/control/comparability fit within
+192 net counted lines is a prerequisite in06-01. The independent archive ceiling remains399937 bytes
+per native lane's three-component sum; all6 existing native lanes must fit before final acceptance.
+Shared core, manifest and inventory ownership requires sequential execution.
 
 **Success criteria:**
 

@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: shipped
-stopped_at: "Phase 6 context gathered; next: $gsd-plan-phase 6"
-last_updated: "2026-10-23T15:02:57.707Z"
-state_head: b48a09ba25942eaa4c11e58b13b33c9bb464cd30
+status: ready_to_execute
+stopped_at: "Phase 6 planned and checked; next: $gsd-execute-phase 6"
+last_updated: "2026-10-23T16:19:11.100Z"
+state_head: c9b4658fb2dc781ea5a4993c1f37cc6d3461f666
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 10
+  total_plans: 19
   completed_plans: 10
   percent: 14
-last_activity: 2026-10-22
+last_activity: 2026-10-23
 total_phases: 7
-current_phase: 06
 current_phase_name: Retail cartridge boards
-last_activity_desc: Phase 5 merged; required CI and default-branch digest delivery confirmed
+current_phase: 06
+last_activity_desc: Phase 6 research and nine sequential plans complete; independent plan check passed
 ---
 
 # Project State
@@ -24,21 +24,22 @@ last_activity_desc: Phase 5 merged; required CI and default-branch digest delive
 ## Project Reference
 
 See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
-preparation/DECISIONS.md. Current focus: discuss Phase 6; Phase 5 is shipped.
+preparation/DECISIONS.md. Current focus: execute Phase 6; Phase 5 is shipped.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
 Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
-and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 is not started.
+and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 planning is complete;
+implementation is pending across nine sequential plans, with independent plan verification passed.
 PR #20 squash-merged at 6d57d69 on 2026-10-23T02:32:12Z. Phase 5 is shipped.
 Do not return to discussion, create plan16, reset review/gap allowances or resume
 historical halted plans. Current implementation 098bb5e has actual direct/called
 and genuine publish/download/install/confirmed-cleanup acceptance. Completion
 records caee608/8251320 change planning metadata only.
 
-## Current Acceptance
+## Prior Phase Acceptance
 
 Direct CI 39879193530 attempt1 and Release 39879193669 attempt2 succeed. Authentic
 9/8 joins, six native hashes, full same-head native/BE610+6, library43 and actual
@@ -69,16 +70,31 @@ published package. v2.0 has 27 requirements across phases 5–11.
 
 ## Blockers and Seeds
 
-No execution blocker remains. Ship observations are recorded below.
+Phase 6 execution begins with a measured prerequisite: prove the complete counted
+admission/comparability construction fits B15287 + N192, at most15479. Full fit is
+unproved; stop dependent expansion on an overrun. The unchanged archive_bytes399937
+ceiling must pass each slice locally and all six existing native lanes at acceptance.
+No extra byte allocation, owner UAT or policy self-rebaseline is authorized.
+Phase 6 plan verification and coverage pass: BOARD-01–03 and D-01–18 (21/21 items).
+Research is c9b4658; no board implementation or requirement completion is claimed.
+Phase 5 ship observations are retained below.
 Standard code review has no blocking finding; WR-01 and COST-01 are deferred tooling seeds in 05-REVIEW-DISPOSITION.md, under AGENTS rule 7.
 Existing seeds remain in the phase deferred-items ledger and milestone audit.
 No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T15:01:58.854Z
-**Stopped at:** Phase 6 context gathered; next: $gsd-plan-phase 6
-**Resume file:** .planning/phases/06-retail-cartridge-boards/06-CONTEXT.md
+**Last session:** 2026-10-23T16:19:11.100Z
+**Stopped at:** Phase 6 planned and checked; next: $gsd-execute-phase 6
+**Resume file:** .planning/phases/06-retail-cartridge-boards/06-01-PLAN.md
+
+Planning checks exited0: `check.decision-coverage-plan`18/18,
+`check gap-analysis.plan-post`21/21, both verification-command probes27 commands,
+and nine frontmatter/structure validations. Independent recheck: VERIFICATION PASSED.
+Run URL: N/A for local planning checks. Complete fit and six-native byte acceptance
+remain execution prerequisites. Stop after this planning step.
+
+### Prior Phase 5 Ship Evidence
 
 Phase 5 ship finished: https://github.com/szTheory/muhtari/pull/20 merged head
 51c0639 as 6d57d69. Final-head CI39887498127 attempt3 succeeds; attempts1/2
@@ -103,8 +119,8 @@ verification, README install and cleanup all pass. Complete authenticated releas
 listing plus exact ID/tag HTTP404 checks exit0; latest remainsv0.4.0.
 https://github.com/szTheory/muhtari/actions/runs/39887498056
 
-No further Phase 5 plan, execution, review or ship command is next. Stop after
-this ship step. Next command: `$gsd-discuss-phase 6`. Resume file: None.
+The Phase 5 ship handoff pointed to discussion; that discussion and Phase 6 planning
+are now complete. No further Phase 5 workflow is scheduled.
 
 Completion scanning emitted four reference warnings: generated build-relative paths
 and command strings in 02/08/09/15 summaries were treated as missing source files.
@@ -115,4 +131,4 @@ is normalized to nine active slots, leaving 14 halted and unaccepted.
 
 ## Decisions
 
-- [Phase 06]: Context ready for planning. Accepted Phase 5 plans remain 9/9; automatic progress totals include a historical plan. — Phase 6 discussion completed without implementation; 06-CONTEXT.md records delegated decisions and planning prerequisites.
+- [Phase 06]: Nine plans are ready to execute after research and independent checking. Accepted Phase 5 plans remain 9/9; automatic progress totals include a historical plan. All 18 context decisions are covered; measured fit prerequisites remain explicit.
