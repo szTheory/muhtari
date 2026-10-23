@@ -44,3 +44,12 @@ remains a tooling seed, not a new phase requirement or funded repair.
 
 - Hosted timeout seed: current direct run39832530167 attempt1/macOS x64 job120012226551 times out `cpu.decimal.clark` at3.17s (CTest exit8). Current release-called run39832530253 attempt1/Windows arm64 job120012202401 times out unchanged trusted-base605 `built.samples.self_test` at4.03s (CTest8; quality producer1), and called ASan job120012202359 cancels at its five-minute bound during independent-base evidence. Both quality jobs reject missing artifact sets with exit1. One failed-job rerun per workflow preserves these attempts without timeout or implementation edits; a subsequent pass is only a flake candidate.
   status: open
+
+- Tooling seed WR-01: a delayed release checkout can equal the triggering push's before SHA, so the existing producer/join correctly refuse an independent base. Preserve that rejection; a future scoped change should authenticate the selected release parent in both paths. See05-REVIEW.md and05-REVIEW-DISPOSITION.md; no current PR/rehearsal requirement or new gap round.
+  status: open, deferred under AGENTS7
+
+- Tooling observation: direct CI39875580833/job120160294530 times out two library cases at2.00s and correctly rejects the incomplete37/39 result set. Current direct/called39876385414/39876385482 execute all43 library checks successfully with unchanged library inputs; the intervening checksum-fixture/job-bound edits are not claimed as a library source repair.
+  status: open seed, no demonstrated source cause
+
+- Tooling seed COST-01, reproduced in the final evidence audit: GitHub retry job120180716506 copies the name/start/end of original120172221128 although its created_at is later than the original completion. The actual digest monthly filter counts both209s intervals as418s; skipped retry placeholders can also have negative intervals. Reproduction: python3 build/plan-evidence/release-continuation/prove-copied-cost.py, exit0, using real API records from https://github.com/szTheory/muhtari/actions/runs/39879193669. The450-run preview remains source-linked raw evidence, but its4124.1333 runner-minute total is untrusted and is not used as accepted cost evidence. This closeout uses a one-off audit excluding confirmed copied timestamps and skipped/negative placeholders. A future scoped reporter/control repair must preserve genuine failed/cancelled executions. No new phase requirement or fix round is added under AGENTS7 and D-35.
+  status: open, deferred under AGENTS7
