@@ -264,6 +264,26 @@ Code commit `334abf0` addresses the measured macOS x64 timeout in [CI40026612824
 
 WINDOWS46 records the local setup fix as fixed. The measured improvement is local; current-head hosted timing and authenticated aggregate acceptance still require the parent's normal retry. WINDOWS42, Task3, the hosted-retirement todo and all BOARD requirements remain pending. No review/gap allowance was reset, and the parent's uncommitted review report was preserved.
 
+## Hosted Failure Repair: Quality Fault Runner Startup
+
+Code commit `12281af` addresses the further measured Windows ARM timeout in [called CI40029174245, job120672888533](https://github.com/szTheory/muhtari/actions/runs/40029174245/job/120672888533). The parent-supplied log reports `policy.quality.controls` exceeding its unchanged30-second limit at30.01 seconds. This failed run is fault evidence, not acceptance.
+
+**[Rule 1 - Test performance]** Each expected failure previously started a wrapper CMake process before executing the real command. A small scoped function now includes the existing, unchanged `expect_fail.cmake`. The same runner executes the real command directly, merges stdout/stderr, requires exactly exit1 and checks the same regex. Its argument validation and failure messages are retained. Function scope isolates commands and results. Every case list, real producer recursion, raw-policy/sample/fixture control and required join assertion remains; the registration and30-second limit are unchanged. This reuses the existing mechanism rather than adding a framework or accepting arbitrary failures.
+
+| Command | Exit | Result | Run URL |
+|---|---:|---|---|
+| `/usr/bin/time -p ctest --preset ci -R '^policy[.]quality[.]controls$' --output-junit quality-inline-before.xml --no-tests=error --output-on-failure` before this change | 0 | Test3.92s, CTest3.93s, wall3.95s, user1.92s, sys1.61s | N/A-local |
+| Same command after this change, with `--output-junit quality-inline-after.xml` | 0 | Test3.67s, CTest3.68s, wall3.68s, user1.78s, sys1.54s; matched wall reduction about7% | N/A-local |
+| `cmake -P build/ci/quality-inline-check/exact_failure.cmake` | 0 | Actual helper extracted from current source accepts exact exit1 and matching message | N/A-local |
+| `cmake -P build/ci/quality-inline-check/wrong_exit.cmake` and `cmake -P build/ci/quality-inline-check/wrong_regex.cmake` | 1 each, expected | Same extracted helper rejects exit0 despite matching output, and exit1 with a wrong message; outer one-off Python assertions exit0 | N/A-local |
+| `cmake --workflow --preset ci` | 0 | 612 ordinary and six release checks; quality controls5.25s during the full concurrent suite | N/A-local |
+| `cmake --workflow --preset hygiene` | 0 | 24/24 including existing analyzer, formatting and no-float controls | N/A-local |
+| All three `check_junit.cmake` inventory commands above | 0 each | Exactly612 ordinary, six release and24 hygiene tests ran once each | N/A-local |
+| Exactly-three ZIP expansion and `wc -c` sum above | 0 | Library68,589 + libretro68,051 + runner77,259 =213,899 <=399,937 | N/A-local |
+| Case-list comparison against pre-fix HEAD; `git diff --check` | 0 each | All case lists byte-identical; no whitespace errors | N/A-local |
+
+These workflows included the parent's pending archive compression level9 and top-level MSVC Release size-optimization settings; this executor did not stage or alter those files or the review report. The measured packages are local macOS arm64 artifacts and do not establish Windows fit. WINDOWS49 records the local control startup fix as fixed; current-head hosted Windows timing/package fit, authenticated quality and remaining portability acceptance remain pending with the parent. Task3 and all BOARD requirements remain pending; no review/gap allowance or resource ceiling changed.
+
 ## Hosted Failure Repair: Pinned Tool Compilation Cost
 
 Code commit `782531b` addresses concrete tool-startup cost after [CI40026612824, Windows x64 job120664334130](https://github.com/szTheory/muhtari/actions/runs/40026612824/job/120664334130) reported `built.samples.self_test` timing out at4.06 seconds against4, and `diag.rebuild` at22.02 against22 after only four fixtures. Read-only `rg -n 'built.samples.self_test|diag.rebuild|Timeout|timeout' /tmp/muhtari-p6-retry-win.log` exited0 and confirmed those fault observations. The run is failure evidence; this local reduction does not establish a successful Windows retry.

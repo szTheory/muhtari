@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 19
 waived_count: 0
-fixed_count: 29
-total_count: 48
-last_updated: 2026-10-23T21:46:03.381Z
+fixed_count: 30
+total_count: 49
+last_updated: 2026-10-23T22:06:39.908Z
 ---
 
 # Broken Windows Ledger
@@ -63,6 +63,7 @@ last_updated: 2026-10-23T21:46:03.381Z
 | 46 | 06 | deviation | tests/policy/quality.cmake |  | Hosted CI40026612824 and called40026612929 macos-x64 policy.quality.controls exceeded unchanged30-second timeout. Reused invariant current mock outputs and retired only owned base worktrees before actual recursion; all case lists and producer/join assertions retained. Matched local wall6.64s to4.19s; full612+6, hygiene24, exact inventories and three ZIPs214132<=399937 exit0, N/A-local. Fix334abf0; hosted timing rerun remains pending. | fixed |  | 2026-10-23T21:35:00.501Z | 2026-10-23T21:35:16.931Z |
 | 47 | 06 | deviation | tests/diag/assemble.cmake |  | CI40026612824 Windows x64 built.samples.self_test timed out4.06/4s and diag.rebuild22.02/22s. Fix782531b uses only pinned Wasmtime compiled-module cache under build tree, all fresh stages/digest faults and timeouts retained. Actual cold assembler21.7ms to warm7.8-8.2ms with identical bytes; whole local batch timing overlaps baseline. Full612+6 and hygiene24, exact inventories and ZIP214132<=399937 exit0/N/A-local; Windows fit remains hosted pending. Fault URL https://github.com/szTheory/muhtari/actions/runs/40026612824/job/120664334130 | fixed |  | 2026-10-23T21:43:21.512Z | 2026-10-23T21:43:51.509Z |
 | 48 | 06 | deviation | tests/libretro/tests.cmake |  | Hosted Windows mailbox failures resolved by explicit Unix report files; PowerPC AM/OM command reached unscaled90-second timeout. Applied existing MUHTARI_TIMEOUT_SCALE to its subprocess, native90 unchanged. Fresh full local CI612+6, hygiene24 and3ZIP214132 exit0. Hosted retries pending. Evidence runs40026612824/40026612938, fixes c63697b and following timeout-scale commit. | open |  | 2026-10-23T21:46:03.381Z |  |
+| 49 | 06 | deviation | tests/policy/quality.cmake |  | Called CI40029174245 Windows ARM job120672888533 quality controls timed out30.01s. Fix12281af includes unchanged expect_fail.cmake in a scoped helper, preserving exact exit1 and merged-output regex checks, all cases and real recursive producers/joins. Matched local wall3.95s to3.68s; wrong-exit/wrong-regex rejected; full612+6, hygiene24, exact inventories and three ZIPs213899<=399937 exit0 with parent package knobs, N/A-local. Hosted timing/Windows fit remain pending. | fixed |  | 2026-10-23T22:06:22.624Z | 2026-10-23T22:06:39.908Z |
 
 ````json
 [
@@ -688,6 +689,19 @@ last_updated: 2026-10-23T21:46:03.381Z
     "reason": "",
     "recorded_at": "2026-10-23T21:46:03.381Z",
     "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 49,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/policy/quality.cmake",
+    "line": null,
+    "description": "Called CI40029174245 Windows ARM job120672888533 quality controls timed out30.01s. Fix12281af includes unchanged expect_fail.cmake in a scoped helper, preserving exact exit1 and merged-output regex checks, all cases and real recursive producers/joins. Matched local wall3.95s to3.68s; wrong-exit/wrong-regex rejected; full612+6, hygiene24, exact inventories and three ZIPs213899<=399937 exit0 with parent package knobs, N/A-local. Hosted timing/Windows fit remain pending.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T22:06:22.624Z",
+    "resolved_at": "2026-10-23T22:06:39.908Z",
     "milestone": "v2.0"
   }
 ]
