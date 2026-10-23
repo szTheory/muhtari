@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 8
+current_plan: 9
 status: ready_to_execute
-stopped_at: Completed 06-07-PLAN.md; next incomplete plan 06-08
-last_updated: "2026-10-23T20:27:47.342Z"
-state_head: f4a2a01758b2e64b0257d8ea7bd690a257756bc2
+stopped_at: Completed 06-08-PLAN.md; next incomplete plan 06-09
+last_updated: "2026-10-23T20:40:34.486Z"
+state_head: d090f1718ddae9a393815619b9802efd1e8a5bf4
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 18
-  completed_plans: 16
+  completed_plans: 17
   percent: 14
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-last_activity_desc: Plans06-10/02/03/04/05/06/07 complete locally; next06-08; hosted and remaining board acceptance pending
+last_activity_desc: Plans06-10/02/03/04/05/06/07/08 complete locally; next06-09; hosted and remaining board acceptance pending
 ---
 
 # Project State
@@ -30,9 +30,9 @@ Core value: 7800 games behave as on the console, identically across platforms, f
 
 ## Current Position
 
-Current Plan: 8
+Current Plan: 9
 Total Plans in Phase: 9
-Progress: [█░░░░░░░░░] 14% (1/7 phases; 16/18 currently planned active plans; later phases unplanned)
+Progress: [█░░░░░░░░░] 14% (1/7 phases; 17/18 currently planned active plans; later phases unplanned)
 
 Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
 and nine active plans 01,02,10,04,05,13,07,15,09 accepted. The owner adopted the
@@ -43,7 +43,7 @@ inventories609/597/6, retirement controls and hygiene pass. The hard LOC metric,
 counter, inventory and allocation/adoption machinery are removed; no replacement
 score or framework was introduced. Archive399937 and unrelated guards persist.
 
-Phase 6 is7/9 complete across active02–10. Plan10 committed701d6b4/94fcb90
+Phase 6 is8/9 complete across active02–10. Plan10 committed701d6b4/94fcb90
 and SUMMARY081412f: authenticated additive fixture relation, actual producer/join
 controls and documentation. Full local CI609+6, exact inventories and hygiene
 exit0; packages212216 <=399937. Plan02 committed27627f1/f0e1659: real Absolute
@@ -68,7 +68,11 @@ and SUMMARYf4a2a01: mandatory all-byte retail maps (13/11/21 resolver regions),
 identified headered/headerless AM/OM mapped/mailbox/video/raw/PCM equality through
 library, actual runner and loaded testdb module with original raw identities.
 Full local CI612+6, exact inventories, hygiene and three ZIPs214131 <=399937 pass.
-Next is08→09;
+Plan08 committed6128b32/d090f17: explicit31-loader/28-execution seed corpora,
+all3 boards in each100-case property, deep failed-load/resumed CPU/video/PCM,
+allocation freedom and interleaved isolation. Full local CI612+6, exact inventories,
+hygiene and three ZIPs214131 <=399937 pass; execution cap131200 and both fuzz
+durations60sec persist. Next is09;
 six-native fit remains unproved until09. BOARD-01 edge/prohibition metadata stays unresolved.
 Historical01 is superseded without changing its failed SUMMARY; its665-line construction and the654-line
 proposal remain history, not grants or new execution prerequisites. No BOARD
@@ -126,13 +130,13 @@ No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T20:27:47.295Z
-**Stopped at:** Completed 06-07-PLAN.md; next incomplete plan 06-08
-**Resume file:** .planning/phases/06-retail-cartridge-boards/06-08-PLAN.md
+**Last session:** 2026-10-23T20:40:34.428Z
+**Stopped at:** Completed 06-08-PLAN.md; next incomplete plan 06-09
+**Resume file:** .planning/phases/06-retail-cartridge-boards/06-09-PLAN.md
 
-Next command: `$gsd-execute-phase 6`, continuing at product plan08 after completed10/02/03/04/05/06/07.
-This executor stops at07; the parent owns remaining phase dispatch and gates.
-No requirement completion or review/gap reset occurred. Plan07 SUMMARY records
+Next command: `$gsd-execute-phase 6`, continuing at product plan09 after completed10/02/03/04/05/06/07/08.
+This executor stops at08; the parent owns remaining phase dispatch and gates.
+No requirement completion or review/gap reset occurred. Plan08 SUMMARY records
 commands/exits and N/A-local URLs; future board/hosted acceptance remains agent-owned.
 
 ### Prior Phase 5 Ship Evidence
@@ -160,10 +164,11 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 
 - Plan06-06 keeps uncertain edge/profile observations explicit; its72 numeric records and9 fixture host observations establish selected semantics, not retail playability. No BOARD requirement is complete.
 - [Phase 06]: Plan07 retains every intended retail host byte below32 regions (Activision13, Absolute11, Fractalus21); identified AM/OM pairs agree through all three hosts, full612+6 and local214131-byte packages pass; broader hostile/hosted acceptance remains08/09.
+- [Phase 06]: Plan08 explicitly selects retail boards in bounded replay and all100-case properties; deep failed-load/resumed CPU/video/PCM, allocation/isolation and local612+6 pass; execution131200 and both60sec fuzz durations persist, ZIP total214131 passes399937. Hosted acceptance remains09.
 
 ### Blockers
 
-- No active planning blocker. Plans06-10/02/03/04/05/06/07 are complete and06-08 is next; later plans await predecessors. Hosted retirement and future board acceptance remain pending, not LOC allocation stops.
+- No active planning blocker. Plans06-10/02/03/04/05/06/07/08 are complete and06-09 is next. Hosted retirement and final board acceptance remain pending, not LOC allocation stops.
 
 ### Quick Tasks Completed
 
@@ -183,3 +188,4 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 | Phase 06 P05 | 6min | 2 tasks | 8 files |
 | Phase 06 P06 | 6min | 3 tasks | 11 files |
 | Phase 06 P07 | 10min | 2 tasks | 5 files |
+| Phase 06 P08 | 9min | 2 tasks | 8 files |
