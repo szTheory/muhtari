@@ -1,6 +1,6 @@
 # Requirements: muhtari v2.0 — The whole library
 
-Defined and approved: 2026-10-21. Milestone v2.0; Phase 5 verified complete, shipping next; phases 6–11 not started.
+Defined and approved: 2026-10-21. Milestone v2.0; Phase 5 verified complete and shipped in PR #20; phases 6–11 not started.
 Core value: 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
 
 ## Milestone requirements
@@ -93,7 +93,7 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | COMP-03 | Phase 11 | Pending |
 
 Coverage: 27 approved requirements; 27 mapped; 0 unmapped. Phase mapping approved on 2026-10-21. Five TUNE requirements are implemented and verified in Phase 5; 22 requirements remain pending.
-Branch acceptance is not a claim of merged publication. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md) for commands, exit statuses
+Phase 5 merged at 6d57d69; ci-only work cuts no package release. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md) for commands, exit statuses
 and run URLs. WR-01 and COST-01 remain deferred tooling seeds under AGENTS rule 7; raw monthly
 cost totals are untrusted, and no global hosted-cost reduction is claimed.
 
