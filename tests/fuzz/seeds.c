@@ -1,6 +1,8 @@
 /* The loader's seed inputs (seeds.h), each built by images.c. The names are
    stable: they become file names in the build directory. */
 #include "seeds.h"
+#include <stdlib.h>
+#include <string.h>
 
 #include "../cart/images.h"
 
@@ -62,6 +64,31 @@ static size_t souper(uint8_t *b)
 static size_t activision(uint8_t *b)
 {
     return images_a78(b, 3u, 128u * KIB, 0x0100u, 128u * KIB);
+}
+
+#define RETAIL_SEED(name, type, bytes) \
+    static size_t name(uint8_t *b) { return images_a78(b, 3u, bytes, type, bytes); }
+RETAIL_SEED(absolute, 0x0200u, 65536u)
+RETAIL_SEED(fractalus, 0x0080u, 32768u)
+RETAIL_SEED(activision_short, 0x0100u, 131071u)
+RETAIL_SEED(activision_long, 0x0100u, 131073u)
+RETAIL_SEED(absolute_short, 0x0200u, 65535u)
+RETAIL_SEED(absolute_long, 0x0200u, 65537u)
+RETAIL_SEED(fractalus_short, 0x0080u, 32767u)
+RETAIL_SEED(fractalus_long, 0x0080u, 32769u)
+#undef RETAIL_SEED
+
+static size_t sg_a8(uint8_t *b)
+{
+    size_t n = images_a78(b, 4u, 32768u, 0x0080u, 32768u);
+    b[64] = 1u; b[65] = 2u;
+    return n;
+}
+static size_t bankset_a8(uint8_t *b)
+{
+    size_t n = sg_a8(b);
+    b[65] = 0x82u;
+    return n;
 }
 
 static size_t size_zero(uint8_t *b)
@@ -140,6 +167,16 @@ static const struct {
     {"2600-8k", a2600_8k},
     {"souper-v4", souper},
     {"activision", activision},
+    {"absolute", absolute},
+    {"fractalus", fractalus},
+    {"activision-short", activision_short},
+    {"activision-long", activision_long},
+    {"absolute-short", absolute_short},
+    {"absolute-long", absolute_long},
+    {"fractalus-short", fractalus_short},
+    {"fractalus-long", fractalus_long},
+    {"sg-a8", sg_a8},
+    {"bankset-a8", bankset_a8},
     {"size-zero", size_zero},
     {"bad-magic-1000", bad_magic},
     {"header-only", header_only},
@@ -164,5 +201,22 @@ const char *seeds_name(uint32_t i)
 
 size_t seeds_build(uint32_t i, uint8_t *buf)
 {
-    return seeds[i].build(buf);
+    size_t n = seeds[i].build(buf);
+    uint32_t board = strcmp(seeds[i].name, "activision") == 0 ? MUHTARI_BOARD_ACTIVISION :
+                     strcmp(seeds[i].name, "absolute") == 0 ? MUHTARI_BOARD_ABSOLUTE :
+                     strcmp(seeds[i].name, "fractalus") == 0 ? MUHTARI_BOARD_FRACTALUS : 0u;
+    if (board != 0u) {
+        muhtari_cart_info info = {0};
+        info.size = (uint32_t)sizeof info;
+        if (muhtari_probe(buf, n, &info) != MUHTARI_STATUS_OK || info.board != board) abort();
+    }
+#ifdef MUHTARI_FUZZ_REPLAY
+    if (strcmp(seeds[i].name, "activision-swapped") == 0) {
+        muhtari_cart_info info = {0};
+        info.size = (uint32_t)sizeof info;
+        if (muhtari_probe(buf, n, &info) != MUHTARI_STATUS_OK ||
+            (info.flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) == 0u) abort();
+    }
+#endif
+    return n;
 }

@@ -21,10 +21,11 @@ muhtari_warnings(muhtari-test-images)
 add_executable(muhtari-fuzz-loader-replay
   ${fuzz_dir}/loader.c
   ${fuzz_dir}/seeds.c
-  ${CMAKE_SOURCE_DIR}/tests/cart/images.c)
+  ${CMAKE_SOURCE_DIR}/tests/cart/images.c
+  ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c
+  $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
 target_compile_definitions(muhtari-fuzz-loader-replay PRIVATE MUHTARI_FUZZ_REPLAY)
-target_include_directories(muhtari-fuzz-loader-replay PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(muhtari-fuzz-loader-replay PRIVATE muhtari::muhtari)
+target_include_directories(muhtari-fuzz-loader-replay PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include)
 set_target_properties(muhtari-fuzz-loader-replay PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-fuzz-loader-replay)
@@ -58,9 +59,10 @@ if(MUHTARI_FUZZ)
   # The libFuzzer binary keeps libFuzzer's main. The fuzz preset builds every
   # object with ASan, UBSan and coverage instrumentation, so the core's own
   # branches guide the fuzzer.
-  add_executable(muhtari-fuzz-loader ${fuzz_dir}/loader.c)
-  target_include_directories(muhtari-fuzz-loader PRIVATE ${CMAKE_SOURCE_DIR}/src)
-  target_link_libraries(muhtari-fuzz-loader PRIVATE muhtari::muhtari)
+  add_executable(muhtari-fuzz-loader ${fuzz_dir}/loader.c
+    ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c
+    $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
+  target_include_directories(muhtari-fuzz-loader PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include)
   target_compile_options(muhtari-fuzz-loader PRIVATE -fsanitize=fuzzer)
   target_link_options(muhtari-fuzz-loader PRIVATE -fsanitize=fuzzer)
   set_target_properties(muhtari-fuzz-loader PROPERTIES
