@@ -117,16 +117,74 @@ static int unmapped(uint32_t addr)
            (addr >= 0x0500u && addr < 0x1800u) || (addr >= 0x3000u && addr < 0x4000u);
 }
 
+/* The deliberately visible cartridge ranges, independently of descriptors.
+   Switched windows and the higher Fractalus mirrors must remain holes. */
+static int cart_visible(const muhtari *m, uint32_t addr)
+{
+    const muhtari_cart_info *c = &m->cart.info;
+    if (c->board == MUHTARI_BOARD_ACTIVISION) {
+        return addr < 0xA000u || addr >= 0xE000u;
+    }
+    if (c->board == MUHTARI_BOARD_ABSOLUTE) {
+        return addr >= 0x8000u;
+    }
+    if (c->board == MUHTARI_BOARD_FRACTALUS) {
+        return addr < 0x5000u || addr >= 0x8000u;
+    }
+    if (addr < 0x8000u && c->ram_size != 0u) {
+        return (c->board_options & MUHTARI_BOARD_BANKED_RAM) == 0u && addr - 0x4000u < c->ram_size;
+    }
+    if (c->board == MUHTARI_BOARD_SUPERGAME) {
+        return addr < 0x8000u || addr >= 0xC000u;
+    }
+    return addr >= 0x10000u - c->rom_size;
+}
+
+static uint32_t check_regions(muhtari *m, const struct retro_memory_map *map, int report)
+{
+    rc_libretro_memory_regions_t regions;
+    memset(&regions, 0, sizeof regions);
+    if (rc_libretro_memory_init(&regions, map, no_memory, RC_CONSOLE_ATARI_7800) == 0 ||
+        regions.count >= RC_LIBRETRO_MAX_MEMORY_REGIONS || regions.total_size != 65536u) {
+        return 65536u;
+    }
+    muhtari_span ram = {0};
+    ram.size = (uint32_t)sizeof ram;
+    if (muhtari_get_memory(m, MUHTARI_MEMORY_SYSTEM_RAM, &ram) != MUHTARI_STATUS_OK) {
+        return 65536u;
+    }
+    uint32_t mapped = 0u, wrong = 0u;
+    for (uint32_t addr = 0u; addr < 0x10000u; addr++) {
+        const uint8_t *p = rc_libretro_memory_find(&regions, addr);
+        int ok;
+        if (addr >= 0x2800u && addr < 0x3000u) {
+            ok = p == ram.data + (addr - 0x2000u);
+        } else if (unmapped(addr) || (addr >= 0x4000u && !cart_visible(m, addr))) {
+            ok = p == NULL;
+        } else {
+            ok = p != NULL && *p == muhtari__peek(m, (uint16_t)addr);
+        }
+        mapped += p != NULL ? 1u : 0u;
+        if (!ok && wrong++ == 0u && report) {
+            fprintf(stderr, "$%04x resolves to %s\n", (unsigned)addr,
+                    p == NULL ? "no memory" : "a byte outside the intended bus view");
+        }
+    }
+    if (report) {
+        printf("%u regions, %u mapped bytes, %u wrong\n", (unsigned)regions.count, (unsigned)mapped,
+               (unsigned)wrong);
+    }
+    return wrong;
+}
+
 /* Loads path, resolves the map with rcheevos for console 51 and checks it. */
 static void check_cart(const char *path)
 {
     struct retro_game_info game;
-    rc_libretro_memory_regions_t regions;
     muhtari_span ram;
     muhtari *m;
     size_t size = 0u;
     unsigned char *bytes = read_file(path, &size);
-    uint32_t addr, mapped = 0u, wrong = 0u;
     int i;
 
     if (bytes == NULL) {
@@ -162,40 +220,33 @@ static void check_cart(const char *path)
     ram.size = (uint32_t)sizeof ram;
     CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_SYSTEM_RAM, &ram), MUHTARI_STATUS_OK);
 
-    memset(&regions, 0, sizeof regions);
-    CHECK(rc_libretro_memory_init(&regions, seen_map, no_memory, RC_CONSOLE_ATARI_7800) != 0);
-    /* Past 32 regions rcheevos drops the rest without a failure. */
-    CHECK(regions.count < 32u);
-    CHECK_EQ_U64(regions.total_size, 65536u);
-
-    for (addr = 0; addr < 0x10000u; addr++) {
-        const uint8_t *p = rc_libretro_memory_find(&regions, addr);
-        int ok;
-        if (addr >= 0x2800u && addr < 0x3000u) {
-            /* rcheevos' table repeats RAM's second half here, while the
-               core's bus leaves $2800 undecoded (docs/libretro.md). */
-            ok = p == ram.data + (addr - 0x2000u);
-        } else if (unmapped(addr)) {
-            ok = p == NULL;
-        } else {
-            ok = p == NULL || *p == muhtari__peek(m, (uint16_t)addr);
-        }
-        mapped += p != NULL ? 1u : 0u;
-        if (!ok && wrong++ == 0u) {
-            fprintf(stderr, "%s: $%04x resolves to %s\n", path, (unsigned)addr,
-                    p == NULL ? "no memory" : "a byte the bus does not read there");
-        }
+    printf("%s: ", path);
+    CHECK_EQ_U64(check_regions(m, seen_map, 1), 0u);
+    if (m->cart.info.board == MUHTARI_BOARD_FRACTALUS) {
+        muhtari_span physical = {0};
+        physical.size = (uint32_t)sizeof physical;
+        CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_CART_RAM, &physical), MUHTARI_STATUS_OK);
+        CHECK(physical.data != NULL);
+        CHECK_EQ_U64(physical.bytes, 2048u);
+        CHECK_EQ_U64(retro_get_memory_size(RETRO_MEMORY_SAVE_RAM), 0u);
+        CHECK_EQ_U64(m->cart.info.ram_size, 2048u);
     }
-    CHECK_EQ_U64(wrong, 0u);
-    /* The shadows, system RAM and the fixed ROM are reached. */
-    CHECK(rc_libretro_memory_find(&regions, 0x0040u) == ram.data + 0x0840u);
-    CHECK(rc_libretro_memory_find(&regions, 0x01FFu) == ram.data + 0x09FFu);
-    CHECK(rc_libretro_memory_find(&regions, 0x0480u) != NULL);
-    CHECK(rc_libretro_memory_find(&regions, 0x1800u) == ram.data);
-    CHECK(rc_libretro_memory_find(&regions, 0xC000u) != NULL);
-    CHECK(rc_libretro_memory_find(&regions, 0xFFFFu) != NULL);
-    printf("%s: %u regions, %u of 65536 addresses with memory\n", path, (unsigned)regions.count,
-           (unsigned)mapped);
+    /* Representative fault: dropping intended fixed ROM must fail even
+       though the resolver accepts its pointer-less descriptor. */
+    CHECK(seen_map->num_descriptors <= 64u);
+    if (seen_map->num_descriptors <= 64u) {
+        struct retro_memory_descriptor descriptors[64];
+        memcpy(descriptors, seen_map->descriptors,
+               seen_map->num_descriptors * sizeof descriptors[0]);
+        struct retro_memory_map bad = {descriptors, seen_map->num_descriptors};
+        for (unsigned d = 0u; d < bad.num_descriptors; d++) {
+            if (descriptors[d].ptr != NULL && descriptors[d].start >= 0x8000u) {
+                descriptors[d].ptr = NULL;
+                break;
+            }
+        }
+        CHECK(check_regions(m, &bad, 0) != 0u);
+    }
 
     retro_unload_game();
     retro_deinit();

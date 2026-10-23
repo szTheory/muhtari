@@ -133,6 +133,9 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.rcheevos
     COMMAND muhtari-test-rcheevos ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78
       ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
+      ${PROJECT_SOURCE_DIR}/tests/diag/activision.a78
+      ${PROJECT_SOURCE_DIR}/tests/diag/absolute.a78
+      ${PROJECT_SOURCE_DIR}/tests/diag/fractalus.a78
     LABELS libretro portable TIMEOUT 1)  # 2 x 0.31 s, macOS x64, slowest of 10 runs, run 39377950148
   set_tests_properties(libretro.rcheevos PROPERTIES
     FIXTURES_REQUIRED "built_simple;built_doublebuffer")

@@ -751,7 +751,15 @@ static void lr_memory_maps(void)
     lr_span(0x0480u, 0x0500u, riot, 0u, 0u);
     lr_span(0x1800u, 0x2800u, ram, 0u, RETRO_MEMDESC_SYSTEM_RAM);
     lr_span(0x2800u, 0x3000u, ram, 0x0800u, 0u);
-    if (cart_ram != NULL && (cart.board_options & MUHTARI_BOARD_BANKED_RAM) == 0u) {
+    if (cart.board == MUHTARI_BOARD_FRACTALUS && cart_ram != NULL) {
+        /* Sixteen 256-byte aliases expose the eight physical pages twice.
+           Higher bus mirrors remain descriptor holes to fit the pinned
+           resolver (cartridge preparation 2.1; docs/libretro.md). */
+        for (uint32_t page = 0u; page < 16u; page++) {
+            uint32_t start = 0x4000u + page * 0x100u;
+            lr_span(start, start + 0x100u, cart_ram, (size_t)(page / 2u) * 0x100u, 0u);
+        }
+    } else if (cart_ram != NULL && (cart.board_options & MUHTARI_BOARD_BANKED_RAM) == 0u) {
         lr_span(0x4000u, 0x4000u + (uint32_t)(cart_bytes < 0x4000u ? cart_bytes : 0x4000u),
                 cart_ram, 0u, 0u);
     }
@@ -759,6 +767,18 @@ static void lr_memory_maps(void)
         uint32_t base = 0x10000u - cart.rom_size;
         uint32_t from = base > rom_from ? base : rom_from;
         lr_span(from, 0x10000u, rom, from - base, RETRO_MEMDESC_CONST);
+    } else if (cart.board == MUHTARI_BOARD_ACTIVISION) {
+        static const uint32_t windows[4] = {0x4000u, 0x6000u, 0x8000u, 0xE000u};
+        static const uint32_t offsets[4] = {0x18000u, 0x1A000u, 0x1C000u, 0x1E000u};
+        /* Descriptors retain original host content, so translate each OM
+           half back to the identified input order (cartridge notes 1.4). */
+        uint32_t half = (cart.flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) != 0u ? 0x2000u : 0u;
+        for (uint32_t window = 0u; window < 4u; window++) {
+            lr_span(windows[window], windows[window] + 0x2000u, rom, offsets[window] ^ half,
+                    RETRO_MEMDESC_CONST);
+        }
+    } else if (cart.board == MUHTARI_BOARD_FRACTALUS) {
+        lr_span(0x8000u, 0x10000u, rom, 0u, RETRO_MEMDESC_CONST);
     } else if (cart.board == MUHTARI_BOARD_ABSOLUTE) {
         /* Original-content offsets equal CPU addresses in the fixed upper
            32 KiB (docs/hardware/cartridge.md, Absolute). */
