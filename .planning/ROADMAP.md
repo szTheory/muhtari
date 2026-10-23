@@ -67,12 +67,12 @@ include halted 14; only the nine active slots above count as accepted outcomes.
 **Depends on:** Phase 5
 **Requirements:** BOARD-01, BOARD-02, BOARD-03
 **Plans:** 8/9 active plans complete in9 sequential waves; active02–10, historical01 superseded.
-**Status:** Plans06-10/02/03/04/05/06/07/08 are complete; next06-09.
+**Status:** Plans06-10/02/03/04/05/06/07/08 are complete;06-09 local work verified, Task3 hosted acceptance pending.
 Three owned diagnostic identities produce9 complete numeric host observations plus persistent smoke; linked API1–4 smoke clients,
 identified Activision AM/OM map/CPU equivalence and original probe identities,
 physical Fractalus alias/lifecycle vectors, mandatory all-byte loaded maps and identified AM/OM host equivalence,
 full local CI612+6, exact inventories, hygiene and local three-ZIP214131 <=399937
-pass; six-native fit remains pending09.
+pass;06-09 appends30 validated equality rows after17 unchanged old rows and corrects fixture source pins. Its SUMMARY remains pending; six-native fit and authenticated hosted acceptance are unproved.
 The accepted contract-based policy and ordinary guards persist. No BOARD requirement is complete.
 **History:** Original01 halt and the665/654-line constructions remain preserved;
 the N654 allocation question is superseded, not approved. Hosted migration and
@@ -214,4 +214,4 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-23;06-10/02/03/04/05/06/07/08 are locally verified, including owned diagnostics, loaded host equivalence and hostile retail lifecycle properties. Next: `$gsd-execute-phase 6`, continuing at06-09. Historical evidence remains intact; six-native and hosted acceptance remain pending.*
+*Updated: 2026-10-23;8/9 active plans complete.06-09 local equality/claims/provenance work is verified, but its pending SUMMARY is not phase completion. Next: `$gsd-execute-phase 6`, continuing06-09 Task3 current-head hosted acceptance. Historical evidence remains intact.*

@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: 9
-status: ready_to_execute
-stopped_at: Completed 06-08-PLAN.md; next incomplete plan 06-09
-last_updated: "2026-10-23T20:40:34.486Z"
-state_head: d090f1718ddae9a393815619b9802efd1e8a5bf4
+status: awaiting_hosted_evidence
+stopped_at: 06-09 Tasks1-2 and Task3 local preparation verified; parent hosted acceptance pending
+last_updated: "2026-10-23T20:54:25.017Z"
+state_head: 78496597f077b6cabea1629d8eb2abfb5cf46ee3
 progress:
   total_phases: 7
   completed_phases: 1
@@ -17,7 +17,7 @@ last_activity: 2026-10-23
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-last_activity_desc: Plans06-10/02/03/04/05/06/07/08 complete locally; next06-09; hosted and remaining board acceptance pending
+last_activity_desc: Plan06-09 local work verified at78bb2f6; Task3 current-head hosted acceptance pending;8/9 complete and no BOARD requirement complete
 ---
 
 # Project State
@@ -73,6 +73,12 @@ all3 boards in each100-case property, deep failed-load/resumed CPU/video/PCM,
 allocation freedom and interleaved isolation. Full local CI612+6, exact inventories,
 hygiene and three ZIPs214131 <=399937 pass; execution cap131200 and both fuzz
 durations60sec persist. Next is09;
+Plan09 local commits8fd944b/b27162d/78bb2f6 add30 validated board equality rows
+after17 unchanged old rows, report fault controls, honest docs and exact fixture
+source pins. Full local CI612+6, exact inventories, hygiene and three ZIPs214131
+<=399937 pass. Its committed SUMMARY is status pending, not a completed plan.
+Tasks1–2 and Task3 local preparation are done; parent-owned hosted acceptance
+is unrun. Do not count the pending SUMMARY toward phase or requirement completion.
 six-native fit remains unproved until09. BOARD-01 edge/prohibition metadata stays unresolved.
 Historical01 is superseded without changing its failed SUMMARY; its665-line construction and the654-line
 proposal remain history, not grants or new execution prerequisites. No BOARD
@@ -130,14 +136,14 @@ No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T20:40:34.428Z
-**Stopped at:** Completed 06-08-PLAN.md; next incomplete plan 06-09
+**Last session:** 2026-10-23T20:54:24.962Z
+**Stopped at:** 06-09 Tasks1-2 and Task3 local preparation verified; parent hosted acceptance pending
 **Resume file:** .planning/phases/06-retail-cartridge-boards/06-09-PLAN.md
 
-Next command: `$gsd-execute-phase 6`, continuing at product plan09 after completed10/02/03/04/05/06/07/08.
-This executor stops at08; the parent owns remaining phase dispatch and gates.
-No requirement completion or review/gap reset occurred. Plan08 SUMMARY records
-commands/exits and N/A-local URLs; future board/hosted acceptance remains agent-owned.
+Next command: `$gsd-execute-phase 6`, continuing plan09 Task3 hosted acceptance.
+The current parent execution owns normal remote acceptance and phase gates.
+No requirement completion or review/gap reset occurred. Plan09 SUMMARY records
+commands/exits and N/A-local URLs plus the precise missing hosted evidence.
 
 ### Prior Phase 5 Ship Evidence
 
@@ -168,7 +174,7 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 
 ### Blockers
 
-- No active planning blocker. Plans06-10/02/03/04/05/06/07/08 are complete and06-09 is next. Hosted retirement and final board acceptance remain pending, not LOC allocation stops.
+- Plans06-10/02/03/04/05/06/07/08 remain8/9 complete. Plan09 local work is verified, but Task3 awaits actual current-head six-native archives, authenticated quality/current-base join, and existing hosted portability/frontend results. WINDOWS42 and hosted-retirement todo remain pending; no LOC allocation stop exists.
 
 ### Quick Tasks Completed
 
