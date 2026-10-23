@@ -20,7 +20,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
-| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Ready at fixture comparability |
+| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | In progress; next06-02 |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
@@ -66,22 +66,22 @@ include halted 14; only the nine active slots above count as accepted outcomes.
 **Goal:** Run Activision, Absolute and Fractalus cartridges with correct banking and physical RAM behavior.
 **Depends on:** Phase 5
 **Requirements:** BOARD-01, BOARD-02, BOARD-03
-**Plans:** 0/9 active plans complete in9 sequential waves; active02–10, historical01 superseded.
-**Status:** Ready at06-10 fixture comparability; only10 dispatches first. The owner
-adopted contract-based gates; quick261023-jkd removed LOC machinery with local
-CI609+6 and preserved ordinary guards. No BOARD requirement is complete.
+**Plans:** 1/9 active plans complete in9 sequential waves; active02–10, historical01 superseded.
+**Status:** Plan06-10 fixture comparability is complete; next06-02. Actual producer/join
+controls, full local CI609+6, exact inventories, hygiene and local ZIP212216 <=399937 pass.
+The accepted contract-based policy and ordinary guards persist. No BOARD requirement is complete.
 **History:** Original01 halt and the665/654-line constructions remain preserved;
 the N654 allocation question is superseded, not approved. Hosted migration and
 future board acceptance remain explicit pending evidence in the quick summary/todo.
 
 Plans:
 **Wave 1**
-- [ ] 06-10-PLAN.md — Prove authenticated additive fixture comparability through the actual producer and unchanged join.
+- [x] 06-10-PLAN.md — Prove authenticated additive fixture comparability through the actual producer and unchanged join.
 
 Historical06-01-PLAN.md is superseded;06-01-SUMMARY.md remains the original failed
 construction record. It is not an active dependency or a completed BOARD outcome.
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Wave 2** *(ready after completed Wave 1)*
 - [ ] 06-02-PLAN.md — Run the Absolute tracer through all three deliverables with behavior docs and package measurement.
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -103,13 +103,13 @@ construction record. It is not an active dependency or a completed BOARD outcome
 - [ ] 06-08-PLAN.md — Prove bounded hostile/fuzz, transactional, allocation and instance-isolation behavior.
 
 **Wave 9** *(blocked on Wave 8 completion)*
-- [ ] 06-09-PLAN.md — Accept portability, final actual count and unchanged six-native package bounds.
+- [ ] 06-09-PLAN.md — Accept board portability, behavior evidence and unchanged six-native package bounds.
 
 **Cross-cutting constraints:**
 - D-18: each slice measures exactly three component ZIPs against unchanged archive_bytes=399937; six native lanes remain the final authority.
 
-Each wave depends on the previous plan. Complete measured integration/control/comparability fit within
-192 net counted lines is a prerequisite in06-01. The independent archive ceiling remains399937 bytes
+Each wave depends on the previous plan. Plan06-10 has proven the narrow authenticated fixture relation;
+current ENGINEERING §11 governs architecture review, with no maintenance-line allocation. The independent archive ceiling remains399937 bytes
 per native lane's three-component sum; all6 existing native lanes must fit before final acceptance.
 Shared core, manifest and inventory ownership requires sequential execution.
 
@@ -202,7 +202,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
-| 6. Retail cartridge boards | 0/9 | Ready at06-10 | — |
+| 6. Retail cartridge boards | 1/9 | In Progress; next06-02 | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
@@ -210,4 +210,4 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-23; accepted policy migration is locally verified. Next: `$gsd-execute-phase 6`, starting at06-10. Historical evidence remains intact; no budget-fit retry is required.*
+*Updated: 2026-10-23;06-10 comparability is locally verified. Next: `$gsd-execute-phase 6`, continuing at06-02. Historical evidence remains intact; no budget-fit retry is required.*
