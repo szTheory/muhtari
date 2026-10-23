@@ -2,18 +2,12 @@
 schema_version: 1
 open_count: 17
 waived_count: 0
-fixed_count: 16
-total_count: 33
-last_updated: 2026-10-23T18:32:31.759Z
+fixed_count: 18
+total_count: 35
+last_updated: 2026-10-23T19:41:21.821Z
 ---
 
 # Broken Windows Ledger
-
-2026-10-23 disposition:32 is resolved by the owner's adopted LOC retirement and
-quick261023-jkd's tested migration, not by a successful historical fit.33 remains
-open for future board/six-native acceptance; the quick migration's full local
-CI609+6 is complete. Hosted retirement is captured in the pending CI todo. Original
-descriptions below remain historical evidence; no BOARD completion is implied.
 
 > Cross-phase defect register. With `workflow.windows_enforce` enabled, `/gsd-ship` blocks while `open_count > 0`.
 > Waive with `gsd-tools windows waive <id> "<reason>"` (reason required).
@@ -54,6 +48,8 @@ descriptions below remain historical evidence; no BOARD completion is implied.
 | 31 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-15-PLAN.md |  | 05-15 Task3 full local ci/library/inventories, current direct/called authentic9/8 joins, actual patched-gh rehearsal/publication/download/install/confirmed cleanup and cost/docs remain unrun after the designed Task2 halt. Accepted7/9 unchanged. | open |  | 2026-10-22T22:46:49.254Z |  |
 | 32 | 06 | unmet-truth | .planning/phases/06-retail-cartridge-boards/06-01-PLAN.md |  | Complete disposable counted construction15952 exceeds fixed15479 by473; plan01 halted and02-09 blocked; no installed policy or board changes. | fixed |  | 2026-10-23T16:58:10.879Z | 2026-10-23T18:32:31.759Z |
 | 33 | 06 | unrun-verify | .planning/phases/06-retail-cartridge-boards/06-01-PLAN.md |  | Task2 full CI and future six-native board/archive acceptance not run because Task1 complete counted fit failed; no completed requirement claimed. | open |  | 2026-10-23T16:58:10.951Z |  |
+| 34 | 06 | deviation | tests/cart/test_cart.c |  | Updated the existing Absolute probe case from refusal to acceptance when the board became executable; resolved in27627f1. | fixed |  | 2026-10-23T19:41:17.397Z | 2026-10-23T19:41:21.710Z |
+| 35 | 06 | deviation | tests/built/expected.txt |  | Advanced built/audio expectation revision metadata to3 without changing pinned hashes; resolved inf0e1659. | fixed |  | 2026-10-23T19:41:17.464Z | 2026-10-23T19:41:21.821Z |
 
 ````json
 [
@@ -484,6 +480,32 @@ descriptions below remain historical evidence; no BOARD completion is implied.
     "reason": "",
     "recorded_at": "2026-10-23T16:58:10.951Z",
     "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 34,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/cart/test_cart.c",
+    "line": null,
+    "description": "Updated the existing Absolute probe case from refusal to acceptance when the board became executable; resolved in27627f1.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T19:41:17.397Z",
+    "resolved_at": "2026-10-23T19:41:21.710Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 35,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/built/expected.txt",
+    "line": null,
+    "description": "Advanced built/audio expectation revision metadata to3 without changing pinned hashes; resolved inf0e1659.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T19:41:17.464Z",
+    "resolved_at": "2026-10-23T19:41:21.821Z",
     "milestone": "v2.0"
   }
 ]
