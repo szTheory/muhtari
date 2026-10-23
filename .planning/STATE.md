@@ -2,10 +2,10 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: blocked
-stopped_at: "Owner reopened LOC policy; fan-out research recommends scoped retirement; implementation pending"
-last_updated: "2026-10-23T17:58:32Z"
-state_head: ce306c00839921222851fc820b22de031178a2ab
+status: ready_to_execute
+stopped_at: "Quick policy migration complete locally; Phase 6 ready at06-10; next: $gsd-execute-phase 6"
+last_updated: "2026-10-23T18:34:14.906Z"
+state_head: 2ab7e0d6388eb2a6ef74a6cf978c9698008c936e
 progress:
   total_phases: 7
   completed_phases: 1
@@ -16,7 +16,7 @@ last_activity: 2026-10-23
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-last_activity_desc: Architecture, CI and security research plus adversarial synthesis complete; replacement policy proposed, no implementation
+last_activity_desc: Accepted LOC retirement implemented and locally verified; only06-10 ready; hosted acceptance and tune-up follow-ups captured
 ---
 
 # Project State
@@ -24,25 +24,27 @@ last_activity_desc: Architecture, CI and security research plus adversarial synt
 ## Project Reference
 
 See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
-preparation/DECISIONS.md. Current focus: the researched proportional-gate replacement and its bounded migration; Phase 5 is shipped.
+preparation/DECISIONS.md. Current focus: execute Phase 6 beginning with06-10 fixture comparability; Phase 5 is shipped.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
 Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
-and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 plan01 is halted:
-disposable counted construction15952 exceeds15479 by473. No task or board change
-was installed; Phase 6 is0/9 complete and02-09 are blocked by halted01.
-One authorized bounded redesign now measures15941 (net654), still462 above the
-authorized15479. Its independently checked proposal is in06-REDESIGN.md; no
-further design attempt, scope change, ready-plan rewrite or execution is scheduled
-before a policy decision. The historical halt remains intact. The owner then
-explicitly reopened the LOC metric itself. Three research passes and one
-adversarial synthesis recommend retiring the hard line ratchet and its exclusive
-machinery in favor of concrete contract checks and bounded architecture review.
-See research/proportional-gates/RECOMMENDATION.md. This is a proposed replacement,
-not N654 approval, installed policy, requirement completion or resumed execution.
+and nine active plans 01,02,10,04,05,13,07,15,09 accepted. The owner adopted the
+contract-based replacement after the measured Phase 6 budget halt. Quick task
+261023-jkd implemented policy, producer/join/judge retirement and active planning
+reconciliation in commits fbfd1e5, cc4137e and2ab7e0d. Full local CI609+6, exact
+inventories609/597/6, retirement controls and hygiene pass. The hard LOC metric,
+counter, inventory and allocation/adoption machinery are removed; no replacement
+score or framework was introduced. Archive399937 and unrelated guards persist.
+
+Phase 6 is0/9 complete across active02–10. Only06-10 is ready;02 depends on10,
+then the original02→03→04→05→06→07→08→09 chain applies. Historical01 is superseded
+without changing its failed SUMMARY; its665-line construction and the654-line
+proposal remain history, not grants or new execution prerequisites. No BOARD
+requirement or fixture helper is complete. Authentic hosted migration acceptance
+is pending and captured in a todo; it does not recreate a local budget blocker.
 PR #20 squash-merged at 6d57d69 on 2026-10-23T02:32:12Z. Phase 5 is shipped.
 Do not return to discussion, create plan16, reset review/gap allowances or resume
 historical halted plans. Current implementation 098bb5e has actual direct/called
@@ -80,36 +82,33 @@ published package. v2.0 has 27 requirements across phases 5–11.
 
 ## Blockers and Seeds
 
-Phase 6 complete counted wiring fails its fixed fit: B15287/S0/N192/C15479;
-candidate15952, net665, excess473. Native configuration and original/added policy
-controls exit0 with controlled observations; these prove no board semantics.
-Installed actual remains15287. Fresh local3-ZIP sum212216 passes399937; future
-six-native board fit remains unproved. No extra allocation or owner UAT is authorized.
-See06-01-SUMMARY.md for commands/exits, buckets, local evidence and the designed stop.
-The single redesign retains all86 historical control cases and adds7; configure,
-focused policy controls, preservation audit and counter exit0; authorized-fit
-assertion exits1. Proposed N654/C15941 is unapproved; B15287/S0 and archive399937
-stay fixed. Independent review passed proposal adequacy only. Board behavior,
-full CI and future six-native package acceptance remain unproved.
+There is no active LOC allocation stop. WINDOWS32 is resolved by adopted and tested
+policy retirement, not a claim that the old construction fit. WINDOWS33 retains
+unrun future board/hosted acceptance; the quick migration's609+6 local checks are
+complete. Local archive212216 passes399937; future six-native board fit is unproved.
+
+SEED-009-proportional-maintenance-review carries resource-bound rationale, other
+structural quotas, test-floor overlap, schema-hardening and dependency/review
+maintenance triggers within the existing milestone tune-up. These are not Phase6
+requirements. The pending hosted-retirement todo requires the next heavy CI to
+record exact head/base evidence before Phase6 ship. The agent owns both follow-ups;
+no owner UAT, new service, quota or metric system is requested.
 Standard code review has no blocking finding; WR-01 and COST-01 are deferred tooling seeds in 05-REVIEW-DISPOSITION.md, under AGENTS rule 7.
 Existing seeds remain in the phase deferred-items ledger and milestone audit.
 No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T17:58:32Z
-**Stopped at:** Policy re-evaluation research complete; scoped migration recommendation prepared
-**Resume file:** .planning/research/proportional-gates/RECOMMENDATION.md
+**Last session:** 2026-10-23T18:32:56Z
+**Stopped at:** Quick261023-jkd complete locally; active Phase6 plans reconciled and ready
+**Resume file:** .planning/phases/06-retail-cartridge-boards/06-10-PLAN.md
 
-The owner asked for a replacement after questioning the arbitrary line metric.
-Do not repeat the N654 approval prompt or run another fit construction by default.
-Recommendation: retire LOC accounting in one tested policy migration, preserve
-unrelated judges and the historical halt, then reconcile Phase6 successor plans.
-If planning that migration, the exact command is `$gsd-plan-phase 6`, carrying the
-new research and explicit policy scope; do not automatically execute or silently
-treat research as adoption. Active rules/quality.json remain unchanged. No other
-GSD step, requirement completion or review/gap reset ran in this research pass.
-Run URLs: N/A-local. WINDOWS32/33 retain failed fit and unrun dependent verification.
+Next command: `$gsd-execute-phase 6`, beginning with the actual fixture-comparability
+plan10, then product plans02–09. No new discussion, LOC-fit prototype, budget
+approval or general replanning is needed. Keep the historical halt and accepted
+hardware decisions. This session ran one quick migration, not phase execution.
+No requirement completion or review/gap reset occurred. The quick summary records
+commands/exits and local N/A URLs, with hosted coverage explicitly unknown.
 
 ### Prior Phase 5 Ship Evidence
 
@@ -148,13 +147,19 @@ is normalized to nine active slots, leaving 14 halted and unaccepted.
 
 ## Decisions
 
-- [Phase 06]: Preserve192 and halt on measured15952; keep candidate code disposable. Active progress is9/18 across phases5/6. The SDK counted historical/halting summaries as completion; state/roadmap are normalized to accepted plans only.
-- [Phase 06]: One bounded redesign measured15941/net654. Recommend scoped N654/C15941; this is a proposal awaiting explicit approval, with archive399937 unchanged. No additional redesign or execution loop is authorized.
-- [Policy research]: Owner reopened the LOC metric; current recommendation is its retirement, superseding the N654 approval recommendation if adopted. Three focused research passes and one adversarial review complete; implementation and active-policy reconciliation remain pending.
+- [Historical Phase06]: The665-line halt and654-line proposal remain preserved; neither was a successful fit or approved increase. Active progress remains9/18 across phases5/6, excluding historical summaries and quick tasks.
+- [Accepted policy]: Owner adopted LOC retirement; quick261023-jkd installed bounded contract/architecture review under DEC.10. Only the literal retired base metric may disappear; ordinary typed/evidence/identity/reason guards persist.
+- [Follow-up]: SEED-009 triggers at the existing tune-up or concrete maintenance failure; hosted acceptance has its own pending todo before Phase6 ship. Neither creates a new product requirement or recurring measurement service.
 
 ### Blockers
 
-- Phase 06 plan01 remains halted; installed actual15287 unchanged and02-09 blocked. The bounded redesign proposal measures15941, exceeding authorized15479 by462. Await explicit allocation decision; no extra allocation is authorized.
+- No active planning blocker. Only06-10 is ready; remaining plans await ordinary predecessors. Hosted retirement and future board acceptance remain honest pending work, not LOC allocation stops.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 261023-jkd | Retire maintenance line budgets; adopt contract review; ready Phase 6 comparability | 2026-10-23 | 2ab7e0d | [261023-jkd-retire-gate-line-budgets-adopt-contract-](./quick/261023-jkd-retire-gate-line-budgets-adopt-contract-/) |
 
 ## Performance Metrics
 

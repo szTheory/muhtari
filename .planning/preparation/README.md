@@ -2,7 +2,7 @@
 title: "Preparation index"
 summary: "Which preparation file answers which question, and the conventions every file in this directory shares."
 read_when: "First, before opening any other file in this directory; again when adding, renaming or retiring one."
-updated: 2026-10-15
+updated: 2026-10-23
 ---
 
 # Preparation index
@@ -31,7 +31,7 @@ sources, and gives one recommendation per choice. Open the file a question point
 | [ASSET_POLICY.md](../../ASSET_POLICY.md) | Which bytes may be committed, built in CI or kept local; firmware digests; how it is checked | Before adding a ROM, BIOS, save, state, screenshot or fixture |
 | [LESSONS.md](../LESSONS.md) | Sibling lessons imported as hypotheses with their local disposition; the export template | At phase and milestone boundaries, or when the owner asks to export lessons |
 | [PRODUCT-ROADMAP.md](../PRODUCT-ROADMAP.md) | Immediate / Near / Mid / Long horizons with evidence, triggers and a decision log | At every milestone step, or when a finding changes priorities |
-| [seeds/](../seeds/) | SEED-001–006 and SEED-008 (the browser) hold the later horizons' narratives; SEED-007 is the tune-up that opens every later milestone | When a seed's trigger fires, and at every new milestone |
+| [seeds/](../seeds/) | SEED-001–006 and SEED-008 (the browser) hold later horizons; SEED-007 is the milestone tune-up; SEED-009 carries proportional maintenance review within that tune-up | When a seed's trigger fires, and at every new milestone |
 | [ATARIAGE-EXTRACTS.md](ATARIAGE-EXTRACTS.md) | Paraphrased AtariAge forum facts (tier T4, many measured on hardware) with handle, date and evidence type; harvested with a browser because scripted fetches are blocked | Before relying on an AtariAge claim cited in another file |
 
 ## Where to look
