@@ -371,8 +371,11 @@ static void rom_name(const char *path, char *out)
    owned diagnostic identities, independent of the cartridge implementation. */
 static uint32_t retail_id(const char *rom)
 {
-    return strcmp(rom, "smoke") == 0 ? 9u : strcmp(rom, "activision") == 0 ? 10u :
-           strcmp(rom, "absolute") == 0 ? 11u : strcmp(rom, "fractalus") == 0 ? 12u : 0u;
+    return strcmp(rom, "smoke") == 0        ? 9u
+           : strcmp(rom, "activision") == 0 ? 10u
+           : strcmp(rom, "absolute") == 0   ? 11u
+           : strcmp(rom, "fractalus") == 0  ? 12u
+                                            : 0u;
 }
 
 static uint16_t retail_crc(const uint8_t mb[256])
@@ -390,9 +393,8 @@ static uint16_t retail_crc(const uint8_t mb[256])
 static int retail_judge(const uint8_t mb[256], const char *rom)
 {
     uint32_t count = strcmp(rom, "smoke") == 0 ? 1u : nrows;
-    if (retail_id(rom) == 0u || count == 0u || count > 27u ||
-        memcmp(mb, "M7DG", 4u) != 0 || mb[4] != 1u || mb[5] != 0u ||
-        mb[6] != count || mb[7] != retail_id(rom) ||
+    if (retail_id(rom) == 0u || count == 0u || count > 27u || memcmp(mb, "M7DG", 4u) != 0 ||
+        mb[4] != 1u || mb[5] != 0u || mb[6] != count || mb[7] != retail_id(rom) ||
         ((uint32_t)mb[8] | ((uint32_t)mb[9] << 8)) != retail_crc(mb)) {
         fprintf(stderr, "%s: invalid mailbox header/count/CRC\n", rom);
         return 1;
@@ -426,8 +428,8 @@ static int retail_mailbox(const char *path, const char *rom, const char *expecte
         return 1;
     }
     size_t n = fread(line, 1u, sizeof line, f);
-    int failed = ferror(f) || n != 524u || memcmp(line, "diagnostic ", 11u) != 0 ||
-                 line[523] != '\n';
+    int failed =
+        ferror(f) || n != 524u || memcmp(line, "diagnostic ", 11u) != 0 || line[523] != '\n';
     fclose(f);
     if (failed) {
         return 1;
@@ -460,10 +462,12 @@ static int retail_library(const uint8_t *image, size_t n, const char *rom)
     media.image = image;
     media.image_size = n;
     info.size = (uint32_t)sizeof info;
-    uint32_t board = strcmp(rom, "activision") == 0 ? MUHTARI_BOARD_ACTIVISION :
-                     strcmp(rom, "fractalus") == 0 ? MUHTARI_BOARD_FRACTALUS : MUHTARI_BOARD_ABSOLUTE;
+    uint32_t board = strcmp(rom, "activision") == 0  ? MUHTARI_BOARD_ACTIVISION
+                     : strcmp(rom, "fractalus") == 0 ? MUHTARI_BOARD_FRACTALUS
+                                                     : MUHTARI_BOARD_ABSOLUTE;
     if (muhtari_probe(image, n, &info) != MUHTARI_STATUS_OK || info.board != board ||
-        muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK || muhtari_load(m, &media) != MUHTARI_STATUS_OK) {
+        muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK ||
+        muhtari_load(m, &media) != MUHTARI_STATUS_OK) {
         muhtari_destroy(m);
         return 1;
     }
@@ -560,8 +564,8 @@ static int retail_transaction(uint8_t *image)
         image[64] = 3u;
         image[67] = 5u;
         failed |= muhtari_load(m, &media) != MUHTARI_STATUS_OK;
-        failed |= muhtari__cart_read(m, 0x4000u, 0) != 90u ||
-                  muhtari__cart_read(m, 0x4000u, 1) != 90u;
+        failed |=
+            muhtari__cart_read(m, 0x4000u, 0) != 90u || muhtari__cart_read(m, 0x4000u, 1) != 90u;
         muhtari__cart_write(m, 0x4000u, 0xFFu);
         failed |= muhtari__cart_peek(m, 0x4000u) != 90u || m->cart.bank != 0u;
         image[0] = 3u;
@@ -592,12 +596,10 @@ static int retail_smoke(const char *path)
     uint8_t *body = image + 128u;
     body[0] = 90u;
     body[0x4000] = 165u;
-    static const uint8_t code[] = {
-        0x78, 0xD8, 0xA9, 0x07, 0x85, 0x01, 0xA9, 0x60, 0x85, 0x3C,
-        0xA2, 0x00, 0xBD, 0x00, 0xC1, 0x9D, 0x00, 0x22, 0xE8, 0xD0, 0xF7,
-        0xAD, 0x00, 0x40, 0x8D, 0x12, 0x22, 0xA9, 0x00, 0x8D, 0x05, 0x22,
-        0x4C, 0x20, 0xC0
-    };
+    static const uint8_t code[] = {0x78, 0xD8, 0xA9, 0x07, 0x85, 0x01, 0xA9, 0x60, 0x85,
+                                   0x3C, 0xA2, 0x00, 0xBD, 0x00, 0xC1, 0x9D, 0x00, 0x22,
+                                   0xE8, 0xD0, 0xF7, 0xAD, 0x00, 0x40, 0x8D, 0x12, 0x22,
+                                   0xA9, 0x00, 0x8D, 0x05, 0x22, 0x4C, 0x20, 0xC0};
     memcpy(body + 0xC000u, code, sizeof code);
     uint8_t *mb = body + 0xC100u;
     memcpy(mb, "M7DG", 4u);
@@ -657,17 +659,25 @@ static bool RETRO_CALLCONV retail_env(unsigned cmd, void *data)
 }
 static void RETRO_CALLCONV retail_video(const void *data, unsigned w, unsigned h, size_t pitch)
 {
-    (void)data; (void)w; (void)h; (void)pitch;
+    (void)data;
+    (void)w;
+    (void)h;
+    (void)pitch;
 }
 static size_t RETRO_CALLCONV retail_audio(const int16_t *data, size_t frames)
 {
     (void)data;
     return frames;
 }
-static void RETRO_CALLCONV retail_poll(void) {}
+static void RETRO_CALLCONV retail_poll(void)
+{
+}
 static int16_t RETRO_CALLCONV retail_input(unsigned p, unsigned d, unsigned i, unsigned id)
 {
-    (void)p; (void)d; (void)i; (void)id;
+    (void)p;
+    (void)d;
+    (void)i;
+    (void)id;
     return 0;
 }
 
@@ -727,23 +737,29 @@ static int retail_libretro(const char *module_path, const char *path, const char
         free(image);
         return 1;
     }
-#define DIAG_LOAD(name, result, args) \
-    result (RETRO_CALLCONV *name) args; \
-    { DIAG_SYMBOL(name); \
-      if (symbol == NULL) { DIAG_CLOSE(); free(image); return 1; } \
-      memcpy(&name, &symbol, sizeof name); }
-    DIAG_LOAD(set_environment, void, (retro_environment_t));
-    DIAG_LOAD(set_video_refresh, void, (retro_video_refresh_t));
-    DIAG_LOAD(set_audio_sample_batch, void, (retro_audio_sample_batch_t));
-    DIAG_LOAD(set_input_poll, void, (retro_input_poll_t));
-    DIAG_LOAD(set_input_state, void, (retro_input_state_t));
-    DIAG_LOAD(init, void, (void));
-    DIAG_LOAD(deinit, void, (void));
-    DIAG_LOAD(load_game, bool, (const struct retro_game_info *));
-    DIAG_LOAD(unload_game, void, (void));
-    DIAG_LOAD(run, void, (void));
-    DIAG_LOAD(get_memory_data, void *, (unsigned));
-    DIAG_LOAD(get_memory_size, size_t, (unsigned));
+#define DIAG_LOAD(name, symbol_name, result, args)                                                 \
+    result(RETRO_CALLCONV *name) args;                                                             \
+    {                                                                                              \
+        DIAG_SYMBOL(symbol_name);                                                                  \
+        if (symbol == NULL) {                                                                      \
+            DIAG_CLOSE();                                                                          \
+            free(image);                                                                           \
+            return 1;                                                                              \
+        }                                                                                          \
+        memcpy(&name, &symbol, sizeof name);                                                       \
+    }
+    DIAG_LOAD(set_environment, set_environment, void, (retro_environment_t));
+    DIAG_LOAD(set_video_refresh, set_video_refresh, void, (retro_video_refresh_t));
+    DIAG_LOAD(set_audio_sample_batch, set_audio_sample_batch, void, (retro_audio_sample_batch_t));
+    DIAG_LOAD(set_input_poll, set_input_poll, void, (retro_input_poll_t));
+    DIAG_LOAD(set_input_state, set_input_state, void, (retro_input_state_t));
+    DIAG_LOAD(init, init, void, (void));
+    DIAG_LOAD(deinit, deinit, void, (void));
+    DIAG_LOAD(load_game, load_game, bool, (const struct retro_game_info *));
+    DIAG_LOAD(unload_game, unload_game, void, (void));
+    DIAG_LOAD(module_run, run, void, (void));
+    DIAG_LOAD(get_memory_data, get_memory_data, void *, (unsigned));
+    DIAG_LOAD(get_memory_size, get_memory_size, size_t, (unsigned));
 #undef DIAG_LOAD
     set_environment(retail_env);
     set_video_refresh(retail_video);
@@ -757,7 +773,7 @@ static int retail_libretro(const char *module_path, const char *path, const char
     int failed = 1;
     if (loaded) {
         for (uint32_t frame = 0; frame < FRAME_CAP; frame++) {
-            run();
+            module_run();
             const uint8_t *ram = (const uint8_t *)get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
             if (ram != NULL && get_memory_size(RETRO_MEMORY_SYSTEM_RAM) >= 0xB00u &&
                 memcmp(ram + 0xA00u, "M7DG", 4u) == 0 && ram[0xA05] == 0u) {

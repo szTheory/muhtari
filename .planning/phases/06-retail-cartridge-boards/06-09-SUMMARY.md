@@ -186,3 +186,21 @@ WINDOWS42 records this unrun acceptance; WINDOWS33 retains the earlier pending h
 ## Self-Check: LOCAL PASSED; HOSTED PENDING
 
 All task/preparation files exist and the three local commits are ancestors of HEAD. Final local full CI, release checks, exact inventories, actual three-ZIP sum, source provenance, trusted manifest relation and hygiene pass. The parent must obtain current-head hosted evidence, resume Task 3, then finalize this SUMMARY and phase gates. Pending status must remain visible until then.
+
+## Hosted correction round: compiler and hygiene
+
+At parent PR24 head `85e12ca9013638c7aafbe96d55636fc74d32781a`, the first actual hosted acceptance exposed two source-integration faults. Read-only `rg -n 'error: declaration|The following tests FAILED|no_float:' /tmp/muhtari-p6-hygiene.log /tmp/muhtari-p6-linux.log /tmp/muhtari-p6-prop.log` exited0 and extracted failed GNU compilation and hygiene from the parent-supplied hosted logs; the affected Nightly property compile likewise failed in run40023530478. Sources: [CI40023530702](https://github.com/szTheory/muhtari/actions/runs/40023530702), [Nightly40023530478](https://github.com/szTheory/muhtari/actions/runs/40023530478). These failed runs are evidence of the fault, not acceptance.
+
+- The dynamic diagnostic entry pointer named `run` shadowed the existing static diagnostic function under GNU `-Werror=shadow`. The loader macro now separates its local pointer name `module_run` from the unchanged actual symbol `retro_run`; the Win32 and POSIX loading paths retain the same symbol and behavior.
+- The unchanged floating-point text guard rejected plural decimal section citations in three core comments. Those comments now cite the preparation's named sections, retaining source attribution. Clang-format21 corrected the affected C/H files, including the host warning-name table; every value, expectation, selector and resource bound is retained. The guard and formatter configuration were not changed.
+
+| Final-tree verification command | Exit | Evidence / run URL |
+|---|---:|---|
+| `cmake --workflow --preset hygiene` | 0 | Actual clang-format21, clang-tidy analyzer, no-float pass/fault controls and all other hygiene checks:24/24; N/A-local |
+| `cmake --workflow --preset ci` | 0 | 612 non-release plus six release tests, actual module/numeric paths and three fresh packages; N/A-local |
+| `cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake` | 0 | Exactly24 hygiene executions; N/A-local |
+| Both ordinary/release `check_junit.cmake` commands above | 0 each | Exactly612 and6 executions; N/A-local |
+| Exactly-three ZIP expansion and `wc -c` sum above | 0 | Library68,754 + libretro68,092 + runner77,286 =214,132 <=399,937; N/A-local |
+| `git diff --check` | 0 | No whitespace errors; N/A-local |
+
+The first local hygiene correction run passed23/24 and identified the additional host-table formatting issue; the final complete24/24 rerun includes that correction. A full CI run after the final formatting change passed. `gcc --version` returns Apple Clang21 here, and no versioned GNU compiler was found in PATH/Homebrew; no local GNU proof is claimed. Parent owns push/retry and actual current-head GNU, native/BE, release and authenticated quality acceptance. WINDOWS43/44 record the corrected source faults as fixed; WINDOWS42 and the pending hosted acceptance above remain open. This correction does not complete Task3, a BOARD requirement or the phase, and does not start another GSD step.

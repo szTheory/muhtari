@@ -66,8 +66,11 @@ static size_t activision(uint8_t *b)
     return images_a78(b, 3u, 128u * KIB, 0x0100u, 128u * KIB);
 }
 
-#define RETAIL_SEED(name, type, bytes) \
-    static size_t name(uint8_t *b) { return images_a78(b, 3u, bytes, type, bytes); }
+#define RETAIL_SEED(name, type, bytes)                                                             \
+    static size_t name(uint8_t *b)                                                                 \
+    {                                                                                              \
+        return images_a78(b, 3u, bytes, type, bytes);                                              \
+    }
 RETAIL_SEED(absolute, 0x0200u, 65536u)
 RETAIL_SEED(fractalus, 0x0080u, 32768u)
 RETAIL_SEED(activision_short, 0x0100u, 131071u)
@@ -81,7 +84,8 @@ RETAIL_SEED(fractalus_long, 0x0080u, 32769u)
 static size_t sg_a8(uint8_t *b)
 {
     size_t n = images_a78(b, 4u, 32768u, 0x0080u, 32768u);
-    b[64] = 1u; b[65] = 2u;
+    b[64] = 1u;
+    b[65] = 2u;
     return n;
 }
 static size_t bankset_a8(uint8_t *b)
@@ -202,27 +206,32 @@ const char *seeds_name(uint32_t i)
 size_t seeds_build(uint32_t i, uint8_t *buf)
 {
     size_t n = seeds[i].build(buf);
-    uint32_t board = strcmp(seeds[i].name, "activision") == 0 ? MUHTARI_BOARD_ACTIVISION :
-                     strcmp(seeds[i].name, "absolute") == 0 ? MUHTARI_BOARD_ABSOLUTE :
-                     strcmp(seeds[i].name, "fractalus") == 0 ? MUHTARI_BOARD_FRACTALUS : 0u;
+    uint32_t board = strcmp(seeds[i].name, "activision") == 0  ? MUHTARI_BOARD_ACTIVISION
+                     : strcmp(seeds[i].name, "absolute") == 0  ? MUHTARI_BOARD_ABSOLUTE
+                     : strcmp(seeds[i].name, "fractalus") == 0 ? MUHTARI_BOARD_FRACTALUS
+                                                               : 0u;
     if (board != 0u) {
         muhtari_cart_info info = {0};
         info.size = (uint32_t)sizeof info;
-        if (muhtari_probe(buf, n, &info) != MUHTARI_STATUS_OK || info.board != board) abort();
+        if (muhtari_probe(buf, n, &info) != MUHTARI_STATUS_OK || info.board != board)
+            abort();
     }
     if ((strstr(seeds[i].name, "-short") != NULL || strstr(seeds[i].name, "-long") != NULL) &&
         (strncmp(seeds[i].name, "activision-", 11u) == 0 ||
-         strncmp(seeds[i].name, "absolute-", 9u) == 0 || strncmp(seeds[i].name, "fractalus-", 10u) == 0)) {
+         strncmp(seeds[i].name, "absolute-", 9u) == 0 ||
+         strncmp(seeds[i].name, "fractalus-", 10u) == 0)) {
         muhtari_cart_info info = {0};
         info.size = (uint32_t)sizeof info;
-        if (muhtari_probe(buf, n, &info) != MUHTARI_STATUS_ERR_INVALID_IMAGE) abort();
+        if (muhtari_probe(buf, n, &info) != MUHTARI_STATUS_ERR_INVALID_IMAGE)
+            abort();
     }
 #ifdef MUHTARI_FUZZ_REPLAY
     if (strcmp(seeds[i].name, "activision-swapped") == 0) {
         muhtari_cart_info info = {0};
         info.size = (uint32_t)sizeof info;
         if (muhtari_probe(buf, n, &info) != MUHTARI_STATUS_OK ||
-            (info.flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) == 0u) abort();
+            (info.flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) == 0u)
+            abort();
     }
 #endif
     return n;

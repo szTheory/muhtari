@@ -44,15 +44,16 @@ static void check_installed(const uint8_t *data, size_t size, const muhtari *m)
     if ((info->flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) != 0u) {
         require(info->board == MUHTARI_BOARD_ACTIVISION && info->rom_size == 131072u);
         for (uint32_t bank = 0u; bank < 8u; bank++) {
-            require(memcmp(m->cart.rom + bank * 16384u,
-                           data + at + bank * 16384u + 8192u, 8192u) == 0);
-            require(memcmp(m->cart.rom + bank * 16384u + 8192u,
-                           data + at + bank * 16384u, 8192u) == 0);
+            require(memcmp(m->cart.rom + bank * 16384u, data + at + bank * 16384u + 8192u, 8192u) ==
+                    0);
+            require(memcmp(m->cart.rom + bank * 16384u + 8192u, data + at + bank * 16384u, 8192u) ==
+                    0);
         }
     } else {
         require(memcmp(m->cart.rom, data + at, info->rom_size) == 0);
     }
-    for (uint32_t i = 0u; i < info->ram_size; i++) require(m->cart.ram[i] == 0u);
+    for (uint32_t i = 0u; i < info->ram_size; i++)
+        require(m->cart.ram[i] == 0u);
 }
 
 static void warmed_failure(const uint8_t *data, size_t size, muhtari_status want, uint32_t board)
@@ -71,12 +72,16 @@ static void warmed_failure(const uint8_t *data, size_t size, muhtari_status want
         require(muhtari_create(&cfg, &m[i]) == MUHTARI_STATUS_OK);
         muhtari_media media = {0};
         media.size = (uint32_t)sizeof media;
-        media.image = cart; media.image_size = built.bytes;
+        media.image = cart;
+        media.image_size = built.bytes;
         require(muhtari_load(m[i], &media) == MUHTARI_STATUS_OK);
-        if (board == MUHTARI_BOARD_ACTIVISION) muhtari__cart_write(m[i], 0xFF85u, 0u);
-        if (board == MUHTARI_BOARD_ABSOLUTE) muhtari__cart_write(m[i], 0x8000u, 2u);
+        if (board == MUHTARI_BOARD_ACTIVISION)
+            muhtari__cart_write(m[i], 0xFF85u, 0u);
+        if (board == MUHTARI_BOARD_ABSOLUTE)
+            muhtari__cart_write(m[i], 0x8000u, 2u);
         if (board == MUHTARI_BOARD_FRACTALUS) {
-            for (uint32_t p = 0u; p < 2048u; p++) m[i]->cart.ram[p] = (uint8_t)(p * 29u + 7u);
+            for (uint32_t p = 0u; p < 2048u; p++)
+                m[i]->cart.ram[p] = (uint8_t)(p * 29u + 7u);
         }
         muhtari_frame io = {0};
         io.size = (uint32_t)sizeof io;
@@ -106,13 +111,15 @@ static void warmed_failure(const uint8_t *data, size_t size, muhtari_status want
             io.size = (uint32_t)sizeof io;
             io.video = video + i * MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC;
             io.video_pitch = MUHTARI__WIDTH;
-            io.audio = audio[i]; io.audio_capacity = MUHTARI__MAX_AUDIO_SAMPLES;
+            io.audio = audio[i];
+            io.audio_capacity = MUHTARI__MAX_AUDIO_SAMPLES;
             require(muhtari_run_frame(m[i], &io) == MUHTARI_STATUS_OK);
             samples[i] = io.audio_count;
         }
         require(samples[0] == samples[1]);
         require(memcmp(audio[0], audio[1], samples[0] * sizeof audio[0][0]) == 0);
-        for (uint32_t i = 0u; i < samples[0]; i++) nonzero += audio[0][i] != 0;
+        for (uint32_t i = 0u; i < samples[0]; i++)
+            nonzero += audio[0][i] != 0;
         require(memcmp(video, video + MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC,
                        MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC) == 0);
         require(memcmp(m[0]->ram, m[1]->ram, sizeof m[0]->ram) == 0);
@@ -122,8 +129,11 @@ static void warmed_failure(const uint8_t *data, size_t size, muhtari_status want
     require(nonzero != 0u);
     require(counts[0].allocs == allocations + (want == MUHTARI_STATUS_OK ? 1u : 0u));
     require(counts[1].allocs == 2u);
-    muhtari_destroy(m[0]); muhtari_destroy(m[1]);
-    free(cart); free(video); free(deep);
+    muhtari_destroy(m[0]);
+    muhtari_destroy(m[1]);
+    free(cart);
+    free(video);
+    free(deep);
 }
 
 /* Loads data into a fresh instance; fail makes every allocation after

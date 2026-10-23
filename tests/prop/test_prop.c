@@ -205,20 +205,26 @@ static int load_pair(uint32_t p, uint64_t *rng, muhtari **a, muhtari **b)
     *a = create();
     *b = create();
     muhtari_status first = load(*a, n), second = load(*b, n);
-    if (first != MUHTARI_STATUS_OK || first != second) return differ("load status", 0u);
+    if (first != MUHTARI_STATUS_OK || first != second)
+        return differ("load status", 0u);
     uint32_t board = (*a)->cart.info.board;
     if (p < seeds_count()) {
         uint32_t expected = run_cart_board(raw, seeds_build(p, raw));
-        if (board != expected || (*b)->cart.info.board != expected) return differ("selected board", 0u);
+        if (board != expected || (*b)->cart.info.board != expected)
+            return differ("selected board", 0u);
     }
     if (board == MUHTARI_BOARD_ACTIVISION || board == MUHTARI_BOARD_ABSOLUTE ||
         board == MUHTARI_BOARD_FRACTALUS) {
-        retail_seen |= board == MUHTARI_BOARD_ACTIVISION ? 1u : board == MUHTARI_BOARD_ABSOLUTE ? 2u : 4u;
+        retail_seen |= board == MUHTARI_BOARD_ACTIVISION ? 1u
+                       : board == MUHTARI_BOARD_ABSOLUTE ? 2u
+                                                         : 4u;
         uint32_t bank = 1u + prop_below(rng, board == MUHTARI_BOARD_ACTIVISION ? 7u : 1u);
         for (uint32_t i = 0u; i < 2u; i++) {
             muhtari *m = i == 0u ? *a : *b;
-            if (board == MUHTARI_BOARD_ACTIVISION) muhtari__cart_write(m, (uint16_t)(0xFF80u + bank), 0u);
-            if (board == MUHTARI_BOARD_ABSOLUTE) muhtari__cart_write(m, 0x8000u, 2u);
+            if (board == MUHTARI_BOARD_ACTIVISION)
+                muhtari__cart_write(m, (uint16_t)(0xFF80u + bank), 0u);
+            if (board == MUHTARI_BOARD_ABSOLUTE)
+                muhtari__cart_write(m, 0x8000u, 2u);
             if (board == MUHTARI_BOARD_FRACTALUS) {
                 for (uint32_t byte = 0u; byte < 2048u; byte++) {
                     m->cart.ram[byte] = (uint8_t)(byte * 31u + 17u);
@@ -239,11 +245,14 @@ static int load_pair(uint32_t p, uint64_t *rng, muhtari **a, muhtari **b)
         struct run_cart_info bad = run_cart_control(raw, board);
         muhtari_media media = {0};
         media.size = (uint32_t)sizeof media;
-        media.image = raw; media.image_size = bad.bytes - 1u;
+        media.image = raw;
+        media.image_size = bad.bytes - 1u;
         if (muhtari_load(*a, &media) != MUHTARI_STATUS_ERR_TRUNCATED_IMAGE ||
-            allocation_calls != allocations) return differ("geometry refusal", 0u);
+            allocation_calls != allocations)
+            return differ("geometry refusal", 0u);
         digest(*a, 1, after);
-        if (memcmp(before, after, sizeof before) != 0) return differ("deep refused state", 0u);
+        if (memcmp(before, after, sizeof before) != 0)
+            return differ("deep refused state", 0u);
         fail_allocation = 1u;
         muhtari_status failed = load(*a, n);
         fail_allocation = 0u;
@@ -251,7 +260,8 @@ static int load_pair(uint32_t p, uint64_t *rng, muhtari **a, muhtari **b)
             return differ("allocation failure", 0u);
         }
         digest(*a, 1, after);
-        if (memcmp(before, after, sizeof before) != 0) return differ("deep allocation-failure state", 0u);
+        if (memcmp(before, after, sizeof before) != 0)
+            return differ("deep allocation-failure state", 0u);
     }
     return 1;
 }
@@ -510,13 +520,19 @@ int main(int argc, char **argv)
     }
     for (size_t i = 0; i < sizeof props / sizeof props[0]; i++) {
         if (strcmp(argv[1], props[i].name) == 0) {
-            for (uint32_t b = 0u; b < 3u; b++) retail_pool[b] = UINT32_MAX;
+            for (uint32_t b = 0u; b < 3u; b++)
+                retail_pool[b] = UINT32_MAX;
             for (uint32_t p = 0u; p < seeds_count(); p++) {
-                if (strcmp(seeds_name(p), "activision") == 0) retail_pool[0] = p;
-                if (strcmp(seeds_name(p), "absolute") == 0) retail_pool[1] = p;
-                if (strcmp(seeds_name(p), "fractalus") == 0) retail_pool[2] = p;
+                if (strcmp(seeds_name(p), "activision") == 0)
+                    retail_pool[0] = p;
+                if (strcmp(seeds_name(p), "absolute") == 0)
+                    retail_pool[1] = p;
+                if (strcmp(seeds_name(p), "fractalus") == 0)
+                    retail_pool[2] = p;
             }
-            for (uint32_t b = 0u; b < 3u; b++) if (retail_pool[b] == UINT32_MAX) return 1;
+            for (uint32_t b = 0u; b < 3u; b++)
+                if (retail_pool[b] == UINT32_MAX)
+                    return 1;
             int result = prop_run(props[i].name, props[i].fn);
             if (retail_seen != 7u) {
                 fprintf(stderr, "property omitted a retail board: mask %u\n", retail_seen);

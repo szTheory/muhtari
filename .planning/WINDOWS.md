@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 18
 waived_count: 0
-fixed_count: 24
-total_count: 42
-last_updated: 2026-10-23T20:53:43.049Z
+fixed_count: 26
+total_count: 44
+last_updated: 2026-10-23T21:05:03.270Z
 ---
 
 # Broken Windows Ledger
@@ -57,6 +57,8 @@ last_updated: 2026-10-23T20:53:43.049Z
 | 40 | 06 | deviation | tests/libretro/rcheevos.c |  | Raw observer requires setup before load; test-only module seam now registers it before content load, preserving no allocation during execution, focused6 and full612+6 pass. | fixed |  | 2026-10-23T20:25:58.510Z | 2026-10-23T20:26:13.527Z |
 | 41 | 06 | deviation | tests/roms/manifest.txt |  | Corrected three new diagnostic pins from predecessor commits to exact source/config/fixture commits; bytes and SHA256 unchanged, actual trusted manifest comparability passes; resolved in78bb2f6. | fixed |  | 2026-10-23T20:51:43.439Z | 2026-10-23T20:53:43.049Z |
 | 42 | 06 | unrun-verify | .planning/phases/06-retail-cartridge-boards/06-09-PLAN.md |  | Final local612+6 and214131-byte acceptance is complete; current-head six-native archives/authenticated quality join, full native/BE, applicable WASM, sanitizer/fuzz/property and existing RetroArch hosted evidence is pending with parent execution orchestrator. | open |  | 2026-10-23T20:51:43.503Z |  |
+| 43 | 06 | deviation | tests/diag/driver.c |  | Hosted CI40023530702 and Nightly40023530478 GNU shadow failure: loaded run pointer shadowed the static diagnostic run. Renamed local pointer module_run while retaining symbol retro_run; full local cmake --workflow --preset ci exit0 (612+6), URL N/A-local; GNU retry remains in hosted acceptance. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702 | fixed |  | 2026-10-23T21:04:43.262Z | 2026-10-23T21:05:03.204Z |
+| 44 | 06 | deviation | src/cart.c |  | Hosted CI40023530702 hygiene rejected decimal citations and unformatted affected C/H. Named source sections and clang-format21 correct the source without weakening guards; cmake --workflow --preset hygiene exit0 (24/24 including analyzer/no_float), exact inventories and three ZIPs214132<=399937 exit0, URL N/A-local. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702 | fixed |  | 2026-10-23T21:04:43.348Z | 2026-10-23T21:05:03.270Z |
 
 ````json
 [
@@ -604,6 +606,32 @@ last_updated: 2026-10-23T20:53:43.049Z
     "reason": "",
     "recorded_at": "2026-10-23T20:51:43.503Z",
     "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 43,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/diag/driver.c",
+    "line": null,
+    "description": "Hosted CI40023530702 and Nightly40023530478 GNU shadow failure: loaded run pointer shadowed the static diagnostic run. Renamed local pointer module_run while retaining symbol retro_run; full local cmake --workflow --preset ci exit0 (612+6), URL N/A-local; GNU retry remains in hosted acceptance. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T21:04:43.262Z",
+    "resolved_at": "2026-10-23T21:05:03.204Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 44,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "src/cart.c",
+    "line": null,
+    "description": "Hosted CI40023530702 hygiene rejected decimal citations and unformatted affected C/H. Named source sections and clang-format21 correct the source without weakening guards; cmake --workflow --preset hygiene exit0 (24/24 including analyzer/no_float), exact inventories and three ZIPs214132<=399937 exit0, URL N/A-local. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T21:04:43.348Z",
+    "resolved_at": "2026-10-23T21:05:03.270Z",
     "milestone": "v2.0"
   }
 ]

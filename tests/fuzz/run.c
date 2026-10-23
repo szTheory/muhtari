@@ -49,14 +49,16 @@ static void run_traffic(muhtari *m)
 {
     static const uint16_t neighbors[] = {0x7FFFu, 0x8001u, 0xFF7Fu, 0xFF90u};
     for (uint32_t value = 0u; value < 256u; value++) {
-        uint16_t at = m->cart.info.board == MUHTARI_BOARD_ACTIVISION ?
-                          (uint16_t)(0xFF80u + value % 16u) : 0x8000u;
+        uint16_t at = m->cart.info.board == MUHTARI_BOARD_ACTIVISION
+                          ? (uint16_t)(0xFF80u + value % 16u)
+                          : 0x8000u;
         muhtari__cart_write(m, at, (uint8_t)value);
         uint8_t bank = m->cart.bank;
         for (size_t i = 0u; i < sizeof neighbors / sizeof neighbors[0]; i++) {
             muhtari__cart_write(m, neighbors[i], (uint8_t)value);
             if (m->cart.info.board == MUHTARI_BOARD_ABSOLUTE ||
-                m->cart.info.board == MUHTARI_BOARD_ACTIVISION) require(m->cart.bank == bank);
+                m->cart.info.board == MUHTARI_BOARD_ACTIVISION)
+                require(m->cart.bank == bank);
         }
         if (m->cart.info.board == MUHTARI_BOARD_FRACTALUS) {
             for (uint32_t page = 0u; page < 64u; page++) {
@@ -99,7 +101,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     struct run_cart_info built = run_cart(data, size, cart);
     muhtari_cart_info info = {0};
     info.size = (uint32_t)sizeof info;
-    require(built.bytes <= RUN_CART_BYTES && muhtari_probe(cart, built.bytes, &info) == MUHTARI_STATUS_OK);
+    require(built.bytes <= RUN_CART_BYTES &&
+            muhtari_probe(cart, built.bytes, &info) == MUHTARI_STATUS_OK);
     require(info.board == built.board);
 
     muhtari_media media;

@@ -945,11 +945,10 @@ static void test_retail_boards(void)
     }
     /* Real CPU: write $4107, read its $7007 alias, then distinguish block
        one via $4207/$6307. Records are $5A, $A6, $5A, derived before run. */
-    static const uint8_t program[] = {
-        0xA9, 0x5A, 0x8D, 0x07, 0x41, 0xAD, 0x07, 0x70, 0x8D, 0x00, 0x22,
-        0xA9, 0xA6, 0x8D, 0x07, 0x42, 0xAD, 0x07, 0x63, 0x8D, 0x01, 0x22,
-        0xAD, 0x07, 0x40, 0x8D, 0x02, 0x22, 0x4C, 0x1C, 0xC0
-    };
+    static const uint8_t program[] = {0xA9, 0x5A, 0x8D, 0x07, 0x41, 0xAD, 0x07, 0x70,
+                                      0x8D, 0x00, 0x22, 0xA9, 0xA6, 0x8D, 0x07, 0x42,
+                                      0xAD, 0x07, 0x63, 0x8D, 0x01, 0x22, 0xAD, 0x07,
+                                      0x40, 0x8D, 0x02, 0x22, 0x4C, 0x1C, 0xC0};
     size_t n = images_a78(buf, 3u, 32768u, 0x0080u, 32768u);
     memcpy(buf + IMAGES_HEADER + 0x4000u, program, sizeof program);
     images_footer(buf + IMAGES_HEADER, 32768u);
@@ -980,8 +979,9 @@ static void test_retail_boards(void)
         memset(aliases, 0, sizeof aliases);
         for (uint32_t block = 0u; block < 8u; block++) {
             for (uint32_t byte = 0u; byte < 256u; byte++) {
-                uint8_t v = (uint8_t)(pattern == 0u ? byte : pattern == 1u ? block + 0x80u :
-                                                                          byte * 17u + block * 31u);
+                uint8_t v = (uint8_t)(pattern == 0u   ? byte
+                                      : pattern == 1u ? block + 0x80u
+                                                      : byte * 17u + block * 31u);
                 expected[block * 256u + byte] = v;
                 muhtari__bus_write(m, (uint16_t)(pages[block] + byte), v);
             }
@@ -991,7 +991,8 @@ static void test_retail_boards(void)
             for (uint32_t adjacent = 0u; adjacent < 2u; adjacent++) {
                 for (uint32_t block = 0u; block < 8u; block++) {
                     for (uint32_t byte = 0u; byte < 256u; byte++) {
-                        uint16_t addr = (uint16_t)(pages[block] + mirror * 4096u + adjacent * 256u + byte);
+                        uint16_t addr =
+                            (uint16_t)(pages[block] + mirror * 4096u + adjacent * 256u + byte);
                         uint32_t physical = block * 256u + byte;
                         retail_views(m, addr, expected[physical]);
                         aliases[physical]++;
@@ -1008,8 +1009,10 @@ static void test_retail_boards(void)
             for (uint32_t adjacent = 0u; adjacent < 2u; adjacent++) {
                 for (uint32_t block = 0u; block < 8u; block++) {
                     for (uint32_t byte = 0u; byte < 256u; byte++) {
-                        uint16_t addr = (uint16_t)(pages[block] + mirror * 4096u + adjacent * 256u + byte);
-                        uint8_t value = (uint8_t)(byte + block * 29u + mirror * 7u + adjacent * 17u + pattern);
+                        uint16_t addr =
+                            (uint16_t)(pages[block] + mirror * 4096u + adjacent * 256u + byte);
+                        uint8_t value =
+                            (uint8_t)(byte + block * 29u + mirror * 7u + adjacent * 17u + pattern);
                         expected[block * 256u + byte] = value;
                         muhtari__bus_write(m, addr, value);
                         retail_views(m, addr, value);
@@ -1036,8 +1039,11 @@ static void test_retail_boards(void)
                 buf[64] = (uint8_t)mapper;
                 buf[65] = (uint8_t)(2u + bankset * 128u);
                 muhtari_cart_info info = expect_written("A8 declaration", buf, n,
-                    mapper == 0u && bankset == 0u ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-                CHECK_EQ_U64(info.board, bankset != 0u ? MUHTARI_BOARD_BANKSET : MUHTARI_BOARD_FRACTALUS);
+                                                        mapper == 0u && bankset == 0u
+                                                            ? MUHTARI_STATUS_OK
+                                                            : MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+                CHECK_EQ_U64(info.board,
+                             bankset != 0u ? MUHTARI_BOARD_BANKSET : MUHTARI_BOARD_FRACTALUS);
                 CHECK_EQ_U64(info.ram_size, 2048u);
                 CHECK_EQ_U64(info.warnings, 0u);
             }
@@ -1055,7 +1061,8 @@ static void test_retail_boards(void)
     struct muhtari__cartdb_entry entry = {0};
     entry.board = MUHTARI_BOARD_FRACTALUS;
     entry.ram_kib = 2u;
-    CHECK_EQ_U64(identify_listed(buf, n, buf + IMAGES_HEADER, 32768u, entry, 0, &info), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(identify_listed(buf, n, buf + IMAGES_HEADER, 32768u, entry, 0, &info),
+                 MUHTARI_STATUS_OK);
     CHECK_EQ_U64(info.source, MUHTARI_SOURCE_HASH);
     static const uint32_t wrong[] = {16384u, 32767u, 32769u, 65536u};
     for (size_t i = 0u; i < sizeof wrong / sizeof wrong[0]; i++) {

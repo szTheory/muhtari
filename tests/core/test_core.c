@@ -1514,11 +1514,9 @@ static void retail_lifecycle(void)
         uint16_t type, selector;
         uint32_t bytes, board;
         uint8_t data, selected;
-    } boards[] = {
-        {0x0100u, 0xFF85u, 131072u, MUHTARI_BOARD_ACTIVISION, 0u, 5u},
-        {0x0200u, 0x8000u, 65536u, MUHTARI_BOARD_ABSOLUTE, 2u, 1u},
-        {0x0080u, 0x4007u, 32768u, MUHTARI_BOARD_FRACTALUS, 0xA5u, 0u}
-    };
+    } boards[] = {{0x0100u, 0xFF85u, 131072u, MUHTARI_BOARD_ACTIVISION, 0u, 5u},
+                  {0x0200u, 0x8000u, 65536u, MUHTARI_BOARD_ABSOLUTE, 2u, 1u},
+                  {0x0080u, 0x4007u, 32768u, MUHTARI_BOARD_FRACTALUS, 0xA5u, 0u}};
     alloc_counts counts, peer_counts;
     muhtari_config cfg = alloc_config(&counts), peer_cfg = alloc_config(&peer_counts);
     muhtari *m = NULL, *peer = NULL;

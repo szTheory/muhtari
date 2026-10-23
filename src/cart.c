@@ -11,7 +11,7 @@
 #define CART_HEADER_SIZE 128u
 #define CART_KIB 1024u
 /* Activision OM banks and compatibility hotspot range (cartridge preparation
-   sections 1.4 and 2.1; docs/hardware/cartridge.md, Activision). */
+   sections Headerless images and Every scheme; docs/hardware/cartridge.md, Activision). */
 #define CART_ACT_BANK 0x4000u
 #define CART_ACT_HALF 0x2000u
 #define CART_ACT_SELECT_FIRST 0xFF80u
@@ -464,8 +464,8 @@ static int cart_refused(const struct cart_board *b)
 {
     return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME &&
             b->board != MUHTARI_BOARD_ABSOLUTE && b->board != MUHTARI_BOARD_ACTIVISION &&
-            b->board != MUHTARI_BOARD_FRACTALUS) || b->unsupported != 0u ||
-           (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
+            b->board != MUHTARI_BOARD_FRACTALUS) ||
+           b->unsupported != 0u || (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
 }
 
 static uint32_t cart_port(uint32_t code, muhtari_cart_info *out)
@@ -910,7 +910,7 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
         }
         break;
     case MUHTARI_BOARD_ACTIVISION: {
-        /* OM half order (cartridge preparation sections 1.4 and 2.1).
+        /* OM half order (cartridge preparation, Headerless images and Every scheme).
            The switched A000/C000 halves are reversed within their bank. */
         static const uint32_t fixed[6] = {0x18000u, 0x1A000u, 0x1C000u, 0u, 0u, 0x1E000u};
         if (addr >= 0x4000u) {
@@ -1008,7 +1008,7 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
     switch (c->info.board) {
     case MUHTARI_BOARD_ACTIVISION:
         /* FF88-FF8F aliasing and bank-zero startup are selected compatibility
-           profile policies, not new measurements (cartridge notes 2.1). */
+           profile policies, not new measurements (cartridge notes, Every scheme). */
         if (addr >= CART_ACT_SELECT_FIRST && addr <= CART_ACT_SELECT_LAST) {
             c->bank = (uint8_t)(addr & 7u);
         }
