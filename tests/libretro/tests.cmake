@@ -3,7 +3,7 @@
 if(LIBRETRO_RETAIL_RUN)
   function(retail_command)
     execute_process(COMMAND ${EMULATOR} ${ARGV} RESULT_VARIABLE rc
-      OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 90)
+      OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT ${HOST_TIMEOUT})
     if(NOT rc STREQUAL "0")
       message(FATAL_ERROR "retail host command ${ARGV}: ${rc}\n${out}\n${err}")
     endif()
@@ -228,6 +228,7 @@ if(TARGET muhtari_libretro)
   set_target_properties(muhtari-test-diag-testdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-diag-testdb)
   set(libretro_retail ${PROJECT_BINARY_DIR}/tests/libretro-retail.cmake)
+  math(EXPR libretro_host_timeout "90 * ${MUHTARI_TIMEOUT_SCALE}")
   file(GENERATE OUTPUT ${libretro_retail} CONTENT
 "set(LIBRETRO_RETAIL_RUN TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
@@ -238,6 +239,7 @@ set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag-testdb>]==])
 set(RUNNER [==[$<TARGET_FILE:muhtari-run-testdb>]==])
 set(EXPECTED [==[${PROJECT_SOURCE_DIR}/tests/diag/expected.csv]==])
 set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+set(HOST_TIMEOUT ${libretro_host_timeout})
 set(CARTS [==[${MUHTARI_BUILT_DIR}/simple/simple.bas.a78]==]
   [==[${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78]==]
   [==[${PROJECT_SOURCE_DIR}/tests/diag/activision.a78]==]

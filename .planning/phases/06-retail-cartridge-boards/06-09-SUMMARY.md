@@ -294,3 +294,11 @@ The startup measurements used a read-only Python timing harness around the actua
 | `git diff --check` | 0 | No whitespace errors | N/A-local |
 
 WINDOWS47 records the locally implemented startup reduction as fixed. Actual current-head Windows timeouts and the broader authenticated hosted acceptance remain pending under WINDOWS42/Task3; the parent owns push and retry. The pre-existing dirty review report was preserved. No BOARD requirement or phase completion, new owner UAT, remote dispatch or GSD step is claimed.
+
+## Hosted newline and emulation corrections
+
+Run40026612824 exposed Windows mailbox files written with native CRLF by CMake. Commit c63697b explicitly writes the three temporary report files with Unix newlines; the strict byte parser remains unchanged. Run40026612938 exposed the AM/OM subprocess reaching its bare90-second limit on PowerPC. Its command now inherits the existing MUHTARI_TIMEOUT_SCALE, with native90 and registered outer120 unchanged. No frame count, comparison or native timeout is relaxed. WINDOWS48 tracks hosted confirmation.
+
+Fresh commands after these corrections: `cmake --workflow --preset ci`, exit0,612 ordinary plus6 release; `cmake --workflow --preset hygiene`, exit0,24; exactly-three ZIP inspection, exit0,68754+68092+77286=214132<=399937. URLs N/A-local. Focused resolver and report/hash/control tests passed3/3 and8/8, exit0. Hosted URLs: https://github.com/szTheory/muhtari/actions/runs/40026612824 and https://github.com/szTheory/muhtari/actions/runs/40026612938.
+
+The initial Nightly40023530478 fuzz failure was a harness construction error, reproduced by an accidental A78 prefix in a ten-byte linear-builder input. Commit abde451 disarms that prefix only for linear output and adds generated seed29. Fuzz and property replay checks10/10 pass locally; actual60-second fuzz and10000-case properties pass in Nightly40026612938, exit0. Local time-based LLVM sanitizer startup remained unavailable (timeouts, then interrupted), so it supplies no passing fuzz evidence. MSVC signed-status comparison was corrected in f3cf0fd. No core behavior or hostile-input bound was weakened.

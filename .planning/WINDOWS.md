@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 18
+open_count: 19
 waived_count: 0
 fixed_count: 29
-total_count: 47
-last_updated: 2026-10-23T21:43:51.509Z
+total_count: 48
+last_updated: 2026-10-23T21:46:03.381Z
 ---
 
 # Broken Windows Ledger
@@ -62,6 +62,7 @@ last_updated: 2026-10-23T21:43:51.509Z
 | 45 | 06 | deviation | tests/cmake/quality_evidence.cmake |  | Hosted quality rejected unchanged built sample rows because only the unique behavior annotation advanced2 to3. Narrow independently authenticated sample relation now retains raw event-base digest; full612+6, hygiene24, actual617dfa7 base610+6 recursion and exact environment/raw policy checks pass locally; resolved in7f90077, hosted rerun remains pending. | fixed |  | 2026-10-23T21:23:39.466Z | 2026-10-23T21:24:06.808Z |
 | 46 | 06 | deviation | tests/policy/quality.cmake |  | Hosted CI40026612824 and called40026612929 macos-x64 policy.quality.controls exceeded unchanged30-second timeout. Reused invariant current mock outputs and retired only owned base worktrees before actual recursion; all case lists and producer/join assertions retained. Matched local wall6.64s to4.19s; full612+6, hygiene24, exact inventories and three ZIPs214132<=399937 exit0, N/A-local. Fix334abf0; hosted timing rerun remains pending. | fixed |  | 2026-10-23T21:35:00.501Z | 2026-10-23T21:35:16.931Z |
 | 47 | 06 | deviation | tests/diag/assemble.cmake |  | CI40026612824 Windows x64 built.samples.self_test timed out4.06/4s and diag.rebuild22.02/22s. Fix782531b uses only pinned Wasmtime compiled-module cache under build tree, all fresh stages/digest faults and timeouts retained. Actual cold assembler21.7ms to warm7.8-8.2ms with identical bytes; whole local batch timing overlaps baseline. Full612+6 and hygiene24, exact inventories and ZIP214132<=399937 exit0/N/A-local; Windows fit remains hosted pending. Fault URL https://github.com/szTheory/muhtari/actions/runs/40026612824/job/120664334130 | fixed |  | 2026-10-23T21:43:21.512Z | 2026-10-23T21:43:51.509Z |
+| 48 | 06 | deviation | tests/libretro/tests.cmake |  | Hosted Windows mailbox failures resolved by explicit Unix report files; PowerPC AM/OM command reached unscaled90-second timeout. Applied existing MUHTARI_TIMEOUT_SCALE to its subprocess, native90 unchanged. Fresh full local CI612+6, hygiene24 and3ZIP214132 exit0. Hosted retries pending. Evidence runs40026612824/40026612938, fixes c63697b and following timeout-scale commit. | open |  | 2026-10-23T21:46:03.381Z |  |
 
 ````json
 [
@@ -674,6 +675,19 @@ last_updated: 2026-10-23T21:43:51.509Z
     "reason": "",
     "recorded_at": "2026-10-23T21:43:21.512Z",
     "resolved_at": "2026-10-23T21:43:51.509Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 48,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/libretro/tests.cmake",
+    "line": null,
+    "description": "Hosted Windows mailbox failures resolved by explicit Unix report files; PowerPC AM/OM command reached unscaled90-second timeout. Applied existing MUHTARI_TIMEOUT_SCALE to its subprocess, native90 unchanged. Fresh full local CI612+6, hygiene24 and3ZIP214132 exit0. Hosted retries pending. Evidence runs40026612824/40026612938, fixes c63697b and following timeout-scale commit.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-23T21:46:03.381Z",
+    "resolved_at": null,
     "milestone": "v2.0"
   }
 ]
