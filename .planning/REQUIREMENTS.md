@@ -1,17 +1,17 @@
 # Requirements: muhtari v2.0 — The whole library
 
-Defined and approved: 2026-10-21. Milestone v2.0; implementation not started.
+Defined and approved: 2026-10-21. Milestone v2.0; Phase 5 verified complete, shipping next; phases 6–11 not started.
 Core value: 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
 
 ## Milestone requirements
 
 ### Pipeline tune-up
 
-- [ ] **TUNE-01**: Maintainers receive a weekly triage digest with a monthly CI-efficiency section derived from hosted runs, without a new service dependency.
-- [ ] **TUNE-02**: CI uses measured timeout and workload bounds, resolves reproduced flakes and overlapping-output races, and records the stronger signal for any removed check.
-- [ ] **TUNE-03**: One aggregate quality.json ratchet consumes measured existing outputs, rejects unexplained regressions and permits explicit dated exceptions for its metrics; performance and compatibility retain their independent semantic guards and existing domain exception stores. Repository-check code meets an audited absolute line budget with scoped additions allocated before implementation, final tightening to actual size, and full counts and advisory source ratios published.
-- [ ] **TUNE-04**: Performance comparisons are armed only after the documented deterministic controls pass; the resulting state and supported/advisory portability lanes are explicit.
-- [ ] **TUNE-05**: User and maintainer docs, install instructions and repository-setting checks match the released behavior; the measured weakest quality dimension receives a shipped improvement.
+- [x] **TUNE-01**: Maintainers receive a weekly triage digest with a monthly CI-efficiency section derived from hosted runs, without a new service dependency.
+- [x] **TUNE-02**: CI uses measured timeout and workload bounds, resolves reproduced flakes and overlapping-output races, and records the stronger signal for any removed check.
+- [x] **TUNE-03**: One aggregate quality.json ratchet consumes measured existing outputs, rejects unexplained regressions and permits explicit dated exceptions for its metrics; performance and compatibility retain their independent semantic guards and existing domain exception stores. Repository-check code meets an audited absolute line budget with scoped additions allocated before implementation, final tightening to actual size, and full counts and advisory source ratios published.
+- [x] **TUNE-04**: Performance comparisons are armed only after the documented deterministic controls pass; the resulting state and supported/advisory portability lanes are explicit.
+- [x] **TUNE-05**: User and maintainer docs, install instructions and repository-setting checks match the released behavior; the measured weakest quality dimension receives a shipped improvement.
 
 ### Cartridge boards and expansion memory
 
@@ -64,11 +64,11 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 
 | Requirement | Phase | Status |
 |---|---|---|
-| TUNE-01 | Phase 5 | Pending |
-| TUNE-02 | Phase 5 | Pending |
-| TUNE-03 | Phase 5 | Pending |
-| TUNE-04 | Phase 5 | Pending |
-| TUNE-05 | Phase 5 | Pending |
+| TUNE-01 | Phase 5 | Complete |
+| TUNE-02 | Phase 5 | Complete |
+| TUNE-03 | Phase 5 | Complete |
+| TUNE-04 | Phase 5 | Complete |
+| TUNE-05 | Phase 5 | Complete |
 | BOARD-01 | Phase 6 | Pending |
 | BOARD-02 | Phase 6 | Pending |
 | BOARD-03 | Phase 6 | Pending |
@@ -92,7 +92,10 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | COMP-02 | Phase 11 | Pending |
 | COMP-03 | Phase 11 | Pending |
 
-Coverage: 27 approved requirements; 27 mapped; 0 unmapped. Phase mapping approved on 2026-10-21. Nothing here claims implementation or verification of the new requirements.
+Coverage: 27 approved requirements; 27 mapped; 0 unmapped. Phase mapping approved on 2026-10-21. Five TUNE requirements are implemented and verified in Phase 5; 22 requirements remain pending.
+Branch acceptance is not a claim of merged publication. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md) for commands, exit statuses
+and run URLs. WR-01 and COST-01 remain deferred tooling seeds under AGENTS rule 7; raw monthly
+cost totals are untrusted, and no global hosted-cost reduction is claimed.
 
 2026-10-21 policy revision: the owner delegated adoption of recommendations after refreshed Phase 5 research.
 TUNE-03 replaces the hard tenth-of-source ceiling with the absolute ratchet specified in
@@ -104,4 +107,4 @@ TUNE-03 explicitly defers performance/compatibility domain-policy centralization
 legacy stores. It does not promise the central aggregate's immutable grant/from/to/renewal protections for
 those legacy domains; a waived compatibility loss can become the next base's nonpass state. Existing semantic
 faults remain guarded; TUNE-04 readiness, aggregate controls, fixed allocations and final acceptance remain
-required. See Phase 5 CONTEXT D-21–23. No requirement is marked complete by this discussion.
+required. See Phase 5 CONTEXT D-21–23. This historical scope discussion alone marked no requirement complete; final Phase 5 verification now accepts TUNE-01–05.

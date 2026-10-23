@@ -3,6 +3,7 @@ created: 2026-10-16T19:00:00.000Z
 title: Arm the instructions-per-frame gate
 area: ci
 resolves_phase: 5
+closed: 2026-10-22
 severity: minor
 files:
   - .github/workflows/ci.yml
@@ -34,3 +35,7 @@ After the phase pull request merges:
 4. Dispatch `nightly.yml` once with `force_failure=true` (`gh workflow run nightly.yml --ref main -f
    force_failure=true`) and confirm one open issue labelled `nightly` names the run; then dispatch it once
    normally and confirm that issue closes.
+
+## Phase 5 resolution
+
+Resolved in Phase 5 plan07: two fresh zero-spread triples, a numeric PR base and actual nightly failure/recovery precede arming. Current controlled test-card comparison is ARMED/PASS. Final verification confirms these commands and run URLs; no gameplay performance claim is added.
