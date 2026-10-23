@@ -186,13 +186,13 @@ reports it, and a host passes it for an empty controller port. A board moves fro
 | `MUHTARI_CART_WARN_CART_TYPE_CONFLICT` | sets cart-type bits that cannot all hold, resolved as `docs/hardware/cartridge.md` says |
 | `MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED` | an unmatched image explicitly declares Activision, so its layout is assumed to be OM order |
 
-API 4 reserves the Activision orientation and assumed-layout bits without changing
+API 4 adds the Activision orientation and assumed-layout bits without changing
 the 140-byte `muhtari_cart_info`. `activision_half_swapped` is a descriptive probe
 flag: only a hash match authorizes interpreting the supplied image as half-swapped
 AM order. `activision_layout_assumed` is a warning for an unknown image that
 explicitly declares Activision; it records an OM assumption, not detected layout.
-These are the runner's lowercase names for the two bits. The Activision loader
-will use these contracts when its board support is enabled.
+These are the runner's lowercase names for the two bits. The loader normalizes
+only an authorized hash match into its private OM copy; it never modifies caller bytes.
 
 The supplied full-image and headerless hashes keep their existing meanings,
 including trailer handling. Normalizing a private loaded copy does not replace
@@ -202,6 +202,15 @@ the API or runner, and an unknown headerless image's size alone does not identif
 an Activision board.
 
 ## Loading content
+
+The executable retail geometries are exactly 128 KiB for Activision, 64 KiB for
+Absolute, and 32 KiB ROM plus 2 KiB physical volatile RAM for Fractalus. Linear/A8
+with 32 KiB ROM denotes Fractalus; SuperGame/A8 and BankSet/A8 remain unsupported.
+Validation precedes allocation. A refused load or allocation failure preserves the
+previous cartridge, its deep ROM/RAM state and subsequent execution. The same
+instance-owned maps serve CPU reads, peeks and MARIA; no frame or power cycle allocates.
+See [cartridge behavior](hardware/cartridge.md) for exact selector rules, aliases,
+selected uncertain edge policies and the separate limits of host memory descriptors.
 
 ```c
 muhtari_media media;

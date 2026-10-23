@@ -8,16 +8,15 @@ Run CI locally, including inventory, controls and release checks.
 cmake --workflow --preset ci
 ```
 
-It needs CMake 4.3 or later, Ninja and a C and C++ compiler. The workflow runs five steps:
+Needs CMake 4.3+, Ninja and C/C++ compilers. The five steps:
 
-1. configure into `build/ci` (Release, warnings as errors, macOS deployment target 10.13);
+1. configure `build/ci` (Release, warnings fatal, macOS deployment target 10.13);
 2. build;
 3. test every test except those labelled `release`, writing `build/ci/junit.xml`;
 4. package the three release zips into `build/ci`;
 5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
-The tests also build 7800basic's samples and OpenBIOS from pinned tools and source, and rcheevos' resolver from
-its pinned source, so fetch them first:
+Tests build 7800basic samples, OpenBIOS and rcheevos' resolver from pins. Fetch them first:
 
 ```sh
 scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # for example wasmtime-aarch64-macos
@@ -26,9 +25,12 @@ scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
 scripts/fetch-pin.sh rcheevos build/pins/rcheevos
 ```
 
-Configure stops with these commands when any is missing; the sample tests are never skipped.
+Missing pins stop configure; sample tests are never skipped.
 
-`-DMUHTARI_TESTS=OFF` builds the products and registers no test, so configure needs no sample tool. Its users: `perf` (head and base builds), the `bench` preset of nightly's `bench` job, and `bench-wasm32`.
+Owned board diagnostics add [numeric and portability checks](emulation-tests.md#diag).
+[Package acceptance](quality.md) still requires all six native lanes.
+
+`-DMUHTARI_TESTS=OFF` builds products without tests or sample tools. Used by `perf` (head/base), nightly's `bench` and `bench-wasm32`.
 
 ## Lanes
 
