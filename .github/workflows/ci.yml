@@ -300,7 +300,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user
       - run: cmake --workflow --preset be32-compile
 
-  # Exactly six native runtime files; WASM reports on its own.
+  # Exactly six native runtime files, including all three numeric board
+  # diagnostics from runner.hashes_file; WASM reports on its own.
   hash-equality:
     needs: [changes, build]
     if: needs.changes.outputs.heavy == 'true'

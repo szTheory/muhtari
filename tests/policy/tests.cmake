@@ -110,6 +110,8 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
     LABELS policy TIMEOUT ${publish_timeout} COST 725)
   muhtari_add_test(NAME policy.quality.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+      -DRUN=$<TARGET_FILE:muhtari-run> -DDRIVER=$<TARGET_FILE:muhtari-test-diag>
+      "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
       -DWORK=${CMAKE_BINARY_DIR}/policy/quality_fixture -P ${CMAKE_CURRENT_LIST_DIR}/quality.cmake
     LABELS policy TIMEOUT 30)
   # Provisional n=1 per arm64 image: 20261013.183.4/20261018.189.1, runs 39699892851/39699026057.

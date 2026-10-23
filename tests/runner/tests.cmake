@@ -838,6 +838,7 @@ endforeach()
 set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
 muhtari_add_test(NAME runner.hashes_file
   COMMAND ${runner_check} -DMODE=write -DOUT=${PROJECT_BINARY_DIR}
+    -DDRIVER=$<TARGET_FILE:muhtari-test-diag> -DDIAG=${PROJECT_SOURCE_DIR}/tests/diag
     "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
     "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${runner_hashes}
   LABELS runner portable TIMEOUT 20)
