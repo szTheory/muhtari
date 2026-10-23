@@ -2,7 +2,8 @@
    images of all $00, all $02 (JAM on every opcode), all $FF and 13 filled
    from splitmix64, then one empty input, which the target pads to 48 KiB of
    $00. Eleven additional inputs explicitly select retail boards, malformed
-   geometries and unsupported A8 combinations. The property tests draw
+   geometries and unsupported A8 combinations; one more retains an accidental
+   header prefix as a linear-builder regression. The property tests draw
    their cartridges from the same images. */
 #include "seeds.h"
 
@@ -12,7 +13,7 @@
 #include "run_cart.h"
 
 #define RUN_SEED_BYTES 49152u
-#define RUN_SEEDS 28u
+#define RUN_SEEDS 29u
 
 static const char *const names[RUN_SEEDS] = {"zero-48k",
                                              "jam-48k",
@@ -41,7 +42,8 @@ static const char *const names[RUN_SEEDS] = {"zero-48k",
                                              "fractalus-short",
                                              "fractalus-long",
                                              "sg-a8",
-                                             "bankset-a8"};
+                                             "bankset-a8",
+                                             "magic-linear"};
 
 uint32_t seeds_count(void)
 {
@@ -62,6 +64,13 @@ size_t seeds_build(uint32_t i, uint8_t *buf)
     }
     if (i == 16u) {
         return 0u;
+    }
+    if (i == 28u) {
+        /* Minimized hosted fuzz input: an accidental A78 prefix in bytes
+           intended for the headerless linear builder. No ROM fixture. */
+        buf[0] = 0u;
+        memcpy(buf + 1u, "ATARI7800", 9u);
+        return 10u;
     }
     if (i >= 17u) {
         static const uint32_t boards[] = {MUHTARI_BOARD_ACTIVISION, MUHTARI_BOARD_ABSOLUTE,

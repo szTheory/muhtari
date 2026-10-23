@@ -415,7 +415,7 @@ commit the source, and then the `.a78` with its manifest row's digest and pin se
 
 `prop.*` checks properties of the run loop over generated cases (`tests/prop/test_prop.c`, harness
 `tests/prop.h`). Each case fast-boots a cartridge drawn from a pool and runs at most 8 frames. The pool is the run
-fuzz target's 28 seed inputs and 48 KiB of random bytes from the case's stream, each made a cartridge as that target
+fuzz target's 29 seed inputs and 48 KiB of random bytes from the case's stream, each made a cartridge as that target
 makes it (see fuzz), and the built `simple` and `eightysix` samples. Two runs are equal when every frame's status,
 audio count and picture SHA-256 match, and so does the state digest: SHA-256 over the instance with its pointers
 cleared, then the cartridge's ROM and RAM.
@@ -464,11 +464,13 @@ UndefinedBehaviorSanitizer (`docs/testing.md`, Lanes).
 | `run` (`tests/fuzz/run.c`) | explicit retail A78 inputs select supported fixed-geometry builders; other bytes retain the 49,152-byte linear interpretation; `-max_len=131200` | two instances, loaded and run 2 frames call by call, agree in board, load status, frame status, audio count, PCM and picture; each frame returns at the first instruction boundary at or after its deadline and less than four lines past it |
 
 The run target retains its original headerless 48 KiB linear construction for ordinary
-bytes: `tests/fuzz/run_cart.h` adjusts only the final footer bytes needed for acceptance.
+bytes: `tests/fuzz/run_cart.h` adjusts the final footer bytes needed for acceptance
+and clears accidental A78 magic so a linear payload remains headerless.
 Explicit Activision, Absolute and Fractalus A78 declarations instead select their
 supported exact geometry and fixed-window reset vectors. Storage is bounded at 131200
 bytes. The original all-$00, JAM, all-$FF, thirteen splitmix64 and empty seeds persist;
-eleven explicit retail/malformed/A8 inputs extend execution to 28 seeds. The loader
+Eleven explicit retail/malformed/A8 inputs and one accidental-header regression
+extend execution to 29 seeds. The loader
 has 31 seeds, including isolated identified AM/OM inputs, unsupported combinations
 and geometry boundaries. Normalization checks derive the expected private bytes
 independently and preserve the supplied buffer and raw identity. Refusals compare

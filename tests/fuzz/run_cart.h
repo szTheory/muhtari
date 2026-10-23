@@ -71,6 +71,10 @@ static inline struct run_cart_info run_cart_build(const uint8_t *data, size_t si
     if (n != 0u)
         memcpy(cart, data, n);
     memset(cart + n, 0, RUN_LINEAR_BYTES - n);
+    /* These are CPU bytes, not an A78 header. A fuzzed magic prefix must
+       not make probe reinterpret the linear payload as loader metadata. */
+    if (memcmp(cart + 1u, "ATARI7800", 9u) == 0)
+        cart[1] = 0u;
     uint8_t *f = cart + RUN_LINEAR_BYTES - 8u;
     f[0] = (uint8_t)(f[0] | 0xF0u);
     uint32_t start = (uint32_t)(f[1] >> 4);
