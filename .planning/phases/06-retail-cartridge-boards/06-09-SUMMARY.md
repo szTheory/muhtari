@@ -263,3 +263,34 @@ Code commit `334abf0` addresses the measured macOS x64 timeout in [CI40026612824
 | Case-list comparison against pre-fix HEAD; `git diff --check` | 0 each | All foreach case lists byte-identical; no whitespace errors | N/A-local |
 
 WINDOWS46 records the local setup fix as fixed. The measured improvement is local; current-head hosted timing and authenticated aggregate acceptance still require the parent's normal retry. WINDOWS42, Task3, the hosted-retirement todo and all BOARD requirements remain pending. No review/gap allowance was reset, and the parent's uncommitted review report was preserved.
+
+## Hosted Failure Repair: Pinned Tool Compilation Cost
+
+Code commit `782531b` addresses concrete tool-startup cost after [CI40026612824, Windows x64 job120664334130](https://github.com/szTheory/muhtari/actions/runs/40026612824/job/120664334130) reported `built.samples.self_test` timing out at4.06 seconds against4, and `diag.rebuild` at22.02 against22 after only four fixtures. Read-only `rg -n 'built.samples.self_test|diag.rebuild|Timeout|timeout' /tmp/muhtari-p6-retry-win.log` exited0 and confirmed those fault observations. The run is failure evidence; this local reduction does not establish a successful Windows retry.
+
+**[Rule 1 - Test performance]** Both existing recipes continue running every source/preprocess/compile/assemble/sign/header stage in fresh output directories. They now use the pinned Wasmtime48 compiled-module cache explicitly at `build/pins/wasmtime-cache`, shared across the sample and diagnostic processes. The tool's content/configuration keys manage compiled code; no fixture output, fetched suite or source result is cached, and no home/global cache is selected. A plain enable flag would use the default cache location, so each recipe supplies the small explicit [Wasmtime cache configuration](https://docs.wasmtime.dev/cli-cache.html). Per-output/name configurations sit outside fresh fixture directories and `file(CONFIGURE)` retains identical files without rewriting them; parallel fixture names do not share a configuration pathname. No framework, dependency, CI lane, timeout, tool pin, manifest row, numeric expectation or package bound changes.
+
+| Observation, local macOS arm64 | Result |
+|---|---|
+| Existing focused three-test batch before the change, two runs | Wall2.230s and2.107s; exact rebuild and both digest controls passed |
+| First explicit-cache focused batch | Wall2.08s; all three tests passed |
+| Warm focused batch, three runs | Wall2.051s,2.089s,2.142s; all three passed; no whole-batch improvement is established beyond overlapping local variation |
+| Actual `dasm.wasm activision.s -f3 -ocache-probe.bin`, newly empty explicit cache |21.7ms, exit0 |
+| Same tool/arguments/source with warm cache |8.2ms,8.2ms,7.8ms, exit0 each; about62% lower than the measured cold call |
+| Explicit caching disabled, five actual assembler runs | Median17.0ms versus warm-cache median7.8ms in the matched five-run comparison |
+| Cold and warm raw assembly SHA-256 | All equal `42adcdd36f2defefb59a4b7bf4aead5ab9a3e3b97d896542436d0aca0c3086a4` |
+| Configuration timestamps across three repeated parallel batches | Unchanged for sample and Activision configs; pass |
+
+The startup measurements used a read-only Python timing harness around the actual pinned `wasmtime run -C cache=y -C cache-config=<explicit build config> --dir=. --dir=<package>::/b <package>/dasm.wasm activision.s -f3 -ocache-probe.bin` command in the existing disposable Activision rebuild directory. The cold case created an empty cache directory under the ignored build tree; each child and the measurement harness exited0. The disabled comparison used `-C cache=n`; source, tool and assembly output remained the same. These local tool-step timings do not predict Windows process/filesystem costs or prove that either hosted timeout now fits.
+
+| Final verification command | Exit | Result | Run URL |
+|---|---:|---|---|
+| `ctest --preset ci -R '^(built[.]samples[.]self_test\|diag[.]rebuild\|diag[.]rebuild[.]self_test)$' --no-tests=error --output-on-failure`, cold and repeated warm executions | 0 each | Exact diagnostic byte rebuild plus unchanged sample-digest and manifest-drift controls execute concurrently | N/A-local |
+| Disposable changed-source probe through actual `tests/diag/assemble.cmake` with the warm compiled-module cache | Child1, harness0 | Replacing the owned diagnostic's first `$A000` read with `$C000` produces the exact expected `tests/diag/activision.a78: SHA-256 drift`; cached compiled code cannot hide changed source output | N/A-local |
+| `cmake --workflow --preset ci` | 0 | 612 ordinary plus six release checks and three fresh packages | N/A-local |
+| `cmake --workflow --preset hygiene` | 0 |24/24, including formatting, analyzer, no-float and fixture coverage | N/A-local |
+| All three `check_junit.cmake` inventory commands above | 0 each | Exactly612 ordinary, six release and24 hygiene executions | N/A-local |
+| Exactly-three ZIP expansion and `wc -c` sum above | 0 | Library68,754 + libretro68,092 + runner77,286 =214,132 <=399,937 | N/A-local |
+| `git diff --check` | 0 | No whitespace errors | N/A-local |
+
+WINDOWS47 records the locally implemented startup reduction as fixed. Actual current-head Windows timeouts and the broader authenticated hosted acceptance remain pending under WINDOWS42/Task3; the parent owns push and retry. The pre-existing dirty review report was preserved. No BOARD requirement or phase completion, new owner UAT, remote dispatch or GSD step is claimed.
