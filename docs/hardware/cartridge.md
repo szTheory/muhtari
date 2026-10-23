@@ -104,6 +104,7 @@ A defect the probe accepts sets a bit in `warnings`:
 | `XM_VALUE` | the XM byte is neither 0 nor 1; it still asks for the XM |
 | `RESERVED_NONZERO` | a reserved byte or bit is set |
 | `CART_TYPE_CONFLICT` | cart-type bits conflict, resolved as above |
+| `ACTIVISION_LAYOUT_ASSUMED` | explicitly declared Activision content has no hash match; OM layout is assumed |
 
 The title keeps at most 32 bytes, drops trailing spaces and is NUL-terminated in the 36-byte field. Magic padded with
 spaces is common, the 7800basic tools write it, and sets nothing. Region is PAL when TV bit 0 is set, NTSC otherwise.
@@ -184,6 +185,7 @@ The body sizes each board this library runs accepts:
 | SuperGame | a multiple of 16 KiB from 32 KiB (2 banks) to 1 MiB |
 | SuperGame with ROM at $4000 (SG9) | (2^n + 1) x 16 KiB up to 1 MiB: 48, 80, 144, 272 or 528 KiB |
 | Absolute | exactly 64 KiB, no board options or cartridge RAM |
+| Activision | exactly 128 KiB, no board options or cartridge RAM |
 
 The evidence is MAME's 7800 list, which gives these ROM sizes per slot:
 
@@ -221,8 +223,8 @@ Reload and power cycle restore declared chip count and the boot clock origin.
 
 ## Boards
 
-`MUHTARI_STATUS_OK` means linear, Absolute or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
-Activision, Fractalus, bankset, halt-banked RAM and Souper are reported with
+`MUHTARI_STATUS_OK` means linear, Absolute, Activision or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
+Fractalus, bankset, halt-banked RAM and Souper are reported with
 `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. XM, YM2151 and Covox are reported in `devices` and `sound` and never refused.
 
 The boards are one `switch` in `src/cart.c`, so the core keeps no table of function pointers. MARIA's fetches see the
@@ -256,6 +258,46 @@ any value selects a bank that exists. A RAM index is masked with `ram_size - 1`,
 make a read or write leave the RAM (cartridge notes, section 7). A list entry for an 8 KiB-RAM game gives 8 KiB, which
 the mask mirrors over $4000-$7FFF.
 
+### Activision
+
+Activision accepts exactly 131,072 ROM bytes. The installed representation is
+OM, matching the bundled software list. Each 8 KiB CPU window uses this image
+offset, plus the address within that window:
+
+| CPU window | OM image offset |
+|---|---|
+| $4000-$5FFF | $18000 |
+| $6000-$7FFF | $1A000 |
+| $8000-$9FFF | $1C000 |
+| $A000-$BFFF | bank × $4000 + $2000 |
+| $C000-$DFFF | bank × $4000 |
+| $E000-$FFFF | $1E000 |
+
+CPU writes at $FF80-$FF8F select address bits A2-A0; data is ignored. Reads,
+MARIA fetches and peeks never select a bank. Other writes leave the latch
+alone. The switched $A000/$C000 halves are reversed within each OM bank.
+Declared audio keeps its established write priority; overlapping ROM at
+$4000 remains readable while the POKEY there is write-only.
+
+The [bankswitching guide, revision 391](https://7800.8bitdev.org/index.php?title=ATARI_7800_BANKSWITCHING_GUIDE&oldid=391)
+and cartridge preparation sections 1.4 and 2.1 supply the map and layout evidence.
+$FF88-$FF8F decoding and bank-zero startup on load/power cycle are selected
+compatibility/profile policies, not new cartridge measurements.
+
+Only an Activision hash match in the half-swapped lookup pass authorizes
+swapping each 16 KiB bank's 8 KiB halves while copying the new private ROM.
+The supplied bytes remain unchanged, including when reloaded. A direct or
+slice match needs no conversion. The descriptive
+`MUHTARI_CART_ACTIVISION_HALF_SWAPPED` flag records identified input orientation
+for headered and headerless content. Probe and host hashes retain their raw
+supplied-image meanings; they never hash the normalized private copy.
+
+An unknown image explicitly declaring Activision uses assumed OM and reports
+`MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED`. An unknown headerless image
+retains the ordinary footer/size fallback; 128 KiB alone never identifies this
+board. Modified AM dumps without an authorized match must be converted
+externally. Neither a filename nor trial execution detects orientation.
+
 ### Absolute
 
 An Absolute cartridge has exactly 65,536 ROM bytes. The CPU window $4000-$7FFF
@@ -274,7 +316,7 @@ Bank-zero startup on load and power cycle is the deterministic profile. These
 policies are not new cartridge measurements. Console RESET input remains a
 switch read by software; it does not power-cycle the board.
 
-Behaviour revision 3 makes this board executable; the public API remains 3 and
+Behaviour revision 3 makes this board executable; the public API is 4 and
 ABI remains 1, with no public structure layout changes. The disposable Absolute
 tracer copies a version-1 numeric mailbox from fixed ROM and replaces its
 record with a real $4000 read: the independently selected bank-zero tag $5A

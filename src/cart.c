@@ -10,6 +10,12 @@
 
 #define CART_HEADER_SIZE 128u
 #define CART_KIB 1024u
+/* Activision OM banks and compatibility hotspot range (cartridge preparation
+   sections 1.4 and 2.1; docs/hardware/cartridge.md, Activision). */
+#define CART_ACT_BANK 0x4000u
+#define CART_ACT_HALF 0x2000u
+#define CART_ACT_SELECT_FIRST 0xFF80u
+#define CART_ACT_SELECT_LAST 0xFF8Fu
 
 /* A78 header offsets (docs/hardware/cartridge.md, The A78 header). */
 #define A78_VERSION 0u
@@ -82,6 +88,9 @@ static int cart_fits(const struct cart_board *b, size_t n)
 {
     if (b->board == MUHTARI_BOARD_ABSOLUTE) {
         return n == 64u * CART_KIB && b->options == 0u && b->ram == 0u;
+    }
+    if (b->board == MUHTARI_BOARD_ACTIVISION) {
+        return n == 128u * CART_KIB && b->options == 0u && b->ram == 0u;
     }
     if (b->board == MUHTARI_BOARD_LINEAR) {
         return (n % (4u * CART_KIB) == 0u && n >= 4u * CART_KIB && n <= 48u * CART_KIB) ||
@@ -381,9 +390,11 @@ static const struct muhtari__cartdb_entry *cart_find_slices(const uint8_t *body,
    body; each slice of every layout whose sizes sum to n; and for a 128 KiB
    miss, the body again with each 16 KiB bank's 8 KiB halves swapped, fed in
    that order with no copy, which only an Activision entry may match. */
-static const struct muhtari__cartdb_entry *
-cart_lookup(const uint8_t *body, size_t n, const struct cart_tables *t, uint8_t digest[20])
+static const struct muhtari__cartdb_entry *cart_lookup(const uint8_t *body, size_t n,
+                                                       const struct cart_tables *t,
+                                                       uint8_t digest[20], uint32_t *orientation)
 {
+    *orientation = 0u;
     cart_sha1(body, n, digest);
     const struct muhtari__cartdb_entry *e = cart_find_7800(digest, t);
     for (uint32_t li = 0u; e == NULL && li < t->layout_count; li++) {
@@ -407,6 +418,9 @@ cart_lookup(const uint8_t *body, size_t n, const struct cart_tables *t, uint8_t 
         e = cart_find_7800(swapped, t);
         if (e != NULL && e->board != MUHTARI_BOARD_ACTIVISION) {
             e = NULL;
+        }
+        if (e != NULL) {
+            *orientation = MUHTARI_CART_ACTIVISION_HALF_SWAPPED;
         }
     }
     return e;
@@ -440,7 +454,7 @@ static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 static int cart_refused(const struct cart_board *b)
 {
     return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME &&
-            b->board != MUHTARI_BOARD_ABSOLUTE) ||
+            b->board != MUHTARI_BOARD_ABSOLUTE && b->board != MUHTARI_BOARD_ACTIVISION) ||
            (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
 }
 
@@ -549,7 +563,9 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
        multi-region, which names none; then the entry's applies (cartridge
        notes, section 1.4). */
     uint8_t digest[20];
-    const struct muhtari__cartdb_entry *e = cart_lookup(img + CART_HEADER_SIZE, mapped, t, digest);
+    uint32_t orientation;
+    const struct muhtari__cartdb_entry *e =
+        cart_lookup(img + CART_HEADER_SIZE, mapped, t, digest, &orientation);
     if (e != NULL) {
         if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
             return MUHTARI_STATUS_ERR_INVALID_IMAGE;
@@ -561,10 +577,13 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
         }
         b = listed;
         out->source = MUHTARI_SOURCE_HASH;
-        out->flags |= MUHTARI_CART_HASH_MATCH;
+        out->flags |= MUHTARI_CART_HASH_MATCH | orientation;
         if ((out->a78_tv & 0x04u) != 0u) {
             out->region = cart_entry_region(e);
         }
+    }
+    if (e == NULL && b.board == MUHTARI_BOARD_ACTIVISION) {
+        out->warnings |= MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED;
     }
     cart_set_board(out, &b);
     if (cart_refused(&b)) {
@@ -625,7 +644,8 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct
 {
     uint8_t digest[20];
     out->rom_size = (uint32_t)n;
-    const struct muhtari__cartdb_entry *e = cart_lookup(img, n, t, digest);
+    uint32_t orientation;
+    const struct muhtari__cartdb_entry *e = cart_lookup(img, n, t, digest, &orientation);
     if (e != NULL) {
         if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
             return MUHTARI_STATUS_ERR_INVALID_IMAGE;
@@ -635,7 +655,7 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct
         cart_set_board(out, &b);
         out->kind = MUHTARI_KIND_7800;
         out->source = MUHTARI_SOURCE_HASH;
-        out->flags = MUHTARI_CART_HASH_MATCH;
+        out->flags = MUHTARI_CART_HASH_MATCH | orientation;
         out->region = cart_entry_region(e);
         out->port1 = (e->flags & MUHTARI__CARTDB_LIGHTGUN) != 0u ? MUHTARI_PORT_LIGHTGUN
                                                                  : MUHTARI_PORT_PROLINE;
@@ -760,6 +780,18 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
     /* The mapped bytes start after the header, when there is one. */
     size_t at = (info->flags & MUHTARI_CART_HEADER) != 0u ? CART_HEADER_SIZE : 0u;
     memcpy(rom, (const uint8_t *)image + at, info->rom_size);
+    /* Only a matched Activision swap pass authorizes conversion of this new
+       private copy. Raw caller/host identity remains unchanged (section 1.4). */
+    if ((info->flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) != 0u &&
+        info->board == MUHTARI_BOARD_ACTIVISION && info->rom_size == 128u * CART_KIB) {
+        for (uint32_t bank = 0u; bank < info->rom_size; bank += CART_ACT_BANK) {
+            for (uint32_t i = 0u; i < CART_ACT_HALF; i++) {
+                uint8_t byte = rom[bank + i];
+                rom[bank + i] = rom[bank + CART_ACT_HALF + i];
+                rom[bank + CART_ACT_HALF + i] = byte;
+            }
+        }
+    }
     if (m->cart.rom != NULL) {
         a.free(a.user, m->cart.rom, (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
     }
@@ -856,6 +888,20 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
         return *ram;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_ACTIVISION: {
+        /* OM half order (cartridge preparation sections 1.4 and 2.1).
+           The switched A000/C000 halves are reversed within their bank. */
+        static const uint32_t fixed[6] = {0x18000u, 0x1A000u, 0x1C000u, 0u, 0u, 0x1E000u};
+        if (addr >= 0x4000u) {
+            uint32_t window = ((uint32_t)addr - 0x4000u) / CART_ACT_HALF;
+            uint32_t offset = fixed[window];
+            if (window == 3u || window == 4u) {
+                offset = (uint32_t)c->bank * CART_ACT_BANK + (window == 3u ? CART_ACT_HALF : 0u);
+            }
+            return c->rom[offset + (addr & (CART_ACT_HALF - 1u))];
+        }
+        break;
+    }
     case MUHTARI_BOARD_ABSOLUTE:
         /* Fixed upper 32 KiB; the low window selects either 16 KiB bank
            (cartridge preparation section 2.1, Absolute). */
@@ -899,6 +945,7 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
                                (m->cart.info.board_options &
                                 (MUHTARI_BOARD_ROM_AT_4000 | MUHTARI_BOARD_BANK6_AT_4000)) != 0u ||
                                m->cart.info.board == MUHTARI_BOARD_ABSOLUTE ||
+                               m->cart.info.board == MUHTARI_BOARD_ACTIVISION ||
                                (m->cart.info.board == MUHTARI_BOARD_LINEAR &&
                                 m->cart.info.rom_size > 32768u));
                 if (!overlap) {
@@ -938,6 +985,13 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         return;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_ACTIVISION:
+        /* FF88-FF8F aliasing and bank-zero startup are selected compatibility
+           profile policies, not new measurements (cartridge notes 2.1). */
+        if (addr >= CART_ACT_SELECT_FIRST && addr <= CART_ACT_SELECT_LAST) {
+            c->bank = (uint8_t)(addr & 7u);
+        }
+        break;
     case MUHTARI_BOARD_ABSOLUTE:
         /* Compatibility policy: only $8000, D0 before D1, else retain
            (cartridge preparation section 2.1, Absolute). */

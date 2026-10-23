@@ -90,6 +90,25 @@ void images_swap_halves(uint8_t *p, size_t n)
     }
 }
 
+size_t images_activision(uint8_t *buf)
+{
+    static const uint8_t program[] = {
+        0xADu, 0x00u, 0xA0u, 0x8Du, 0x00u, 0x22u, /* LDA $A000; STA $2200 */
+        0xA9u, 0x00u, 0x8Du, 0x8Du, 0xFFu,        /* data ignored; select five */
+        0xADu, 0x00u, 0xC0u, 0x8Du, 0x01u, 0x22u, /* LDA $C000; STA $2201 */
+        0x4Cu, 0x11u, 0xE1u                       /* JMP $E111 */
+    };
+    for (uint32_t half = 0u; half < 16u; half++) {
+        memset(buf + half * 8192u, (int)(0x30u + half), 8192u);
+    }
+    memcpy(buf + 0x1E100u, program, sizeof program);
+    buf[0x1FFF8u] = 0xFFu;
+    buf[0x1FFF9u] = 0xE7u;
+    buf[0x1FFFCu] = 0x00u;
+    buf[0x1FFFDu] = 0xE1u;
+    return 128u * IMAGES_KIB;
+}
+
 size_t images_2600(uint8_t *buf, uint32_t n)
 {
     images_fill(buf, n, n + 2u);

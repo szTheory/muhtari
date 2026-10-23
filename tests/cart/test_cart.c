@@ -306,7 +306,6 @@ static void test_unsupported_board(void)
         uint32_t board;
         uint32_t options;
     } boards[] = {
-        {"Activision", 0x0100u, 128u * IMAGES_KIB, MUHTARI_BOARD_ACTIVISION, 0u},
         {"Fractalus", 0x0080u, 32u * IMAGES_KIB, MUHTARI_BOARD_FRACTALUS, 0u},
         {"bankset", 0x2002u, 64u * IMAGES_KIB, MUHTARI_BOARD_BANKSET, 0u},
         {"halt-banked RAM", 0x4002u, 128u * IMAGES_KIB, MUHTARI_BOARD_SUPERGAME,
@@ -332,12 +331,12 @@ static void test_unsupported_board(void)
     n = images_headerless(buf, 32u * IMAGES_KIB);
     struct muhtari__cartdb_entry act;
     memset(&act, 0, sizeof act);
-    act.board = MUHTARI_BOARD_ACTIVISION;
+    act.board = MUHTARI_BOARD_FRACTALUS;
     act.flags = MUHTARI__CARTDB_NTSC;
     act.parts = 1u;
     CHECK_EQ_U64(identify_listed(buf, n, buf, n, act, 0, &out),
                  MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_FRACTALUS);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
 }
 
@@ -527,11 +526,13 @@ static void test_warnings(void)
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
     /* Two special boards at once, and Activision with low-byte bits. */
     n = images_a78(buf, 3u, 128u * IMAGES_KIB, 0x0300u, 128u * IMAGES_KIB);
-    out = expect_written("Activision and Absolute", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    out = expect_written("Activision and Absolute", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT |
+                                   MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED);
     n = images_a78(buf, 3u, 128u * IMAGES_KIB, 0x0141u, 128u * IMAGES_KIB);
-    out = expect_written("Activision and POKEYs", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    out = expect_written("Activision and POKEYs", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT |
+                                   MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED);
     CHECK_EQ_U64(out.sound, 0);
 }
 
@@ -633,30 +634,48 @@ static void test_slices(void)
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_LINEAR);
 }
 
-/* A 128 KiB Activision dump in the other layout matches its entry through
-   the half-swapped pass; another size gets no such pass. */
+/* Independent OM half tags at both ends of each CPU window. Observations
+   through CPU, DMA and peek must not change the latch. */
+static void activision_windows(muhtari *m, uint32_t bank)
+{
+    const uint32_t halves[6] = {12u, 13u, 14u, bank * 2u + 1u, bank * 2u, 15u};
+    for (uint32_t window = 0u; window < 6u; window++) {
+        for (uint32_t edge = 0u; edge < 2u; edge++) {
+            uint16_t addr = (uint16_t)(0x4000u + window * 8192u + edge * 8191u);
+            uint8_t want = (uint8_t)(0x30u + halves[window]);
+            CHECK_EQ_U64(muhtari__cart_read(m, addr, 0), want);
+            CHECK_EQ_U64(muhtari__cart_read(m, addr, 1), want);
+            CHECK_EQ_U64(muhtari__cart_peek(m, addr), want);
+            CHECK_EQ_U64(m->cart.bank, bank);
+        }
+    }
+}
+
+/* A 128 KiB Activision dump is normalized only through its identified
+   half-swapped pass. The known program and independently tagged halves
+   exercise every bank, both selector halves, raw-copy and failure contracts. */
 static void test_activision_swap(void)
 {
     uint32_t body = 128u * IMAGES_KIB;
     size_t n = images_seeded(buf, body, IMAGES_SEED_ACTIVISION);
-    muhtari_cart_info out =
-        expect_written("listed layout", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    muhtari_cart_info out = expect_written("listed layout", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH);
     images_swap_halves(buf, n);
-    out = expect_written("swapped layout", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    out = expect_written("swapped layout", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.kind, MUHTARI_KIND_7800);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
-    CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH | MUHTARI_CART_ACTIVISION_HALF_SWAPPED);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
     CHECK_EQ_U64(out.rom_size, body);
     /* Under a header that says Activision, the match is still found. */
     images_header(buf, 3u, "Activision", body, 0x0100u);
     images_seeded(buf + IMAGES_HEADER, body, IMAGES_SEED_ACTIVISION);
     images_swap_halves(buf + IMAGES_HEADER, body);
-    out = expect_written("swapped layout, headered", buf, IMAGES_HEADER + body,
-                         MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER | MUHTARI_CART_HASH_MATCH);
+    out = expect_written("swapped layout, headered", buf, IMAGES_HEADER + body, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER | MUHTARI_CART_HASH_MATCH |
+                                MUHTARI_CART_ACTIVISION_HALF_SWAPPED);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
 
     /* 64 KiB whose swapped bytes are listed: no swapped pass, so the footer. */
@@ -664,6 +683,152 @@ static void test_activision_swap(void)
     out = expect_written("64 KiB", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_FOOTER);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+
+    static uint8_t canonical[131072];
+    static uint8_t original[131072 + IMAGES_HEADER];
+    static muhtari saved;
+    CHECK_EQ_U64(images_activision(canonical), body);
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL) {
+        return;
+    }
+    for (uint32_t header = 0u; header < 2u; header++) {
+        for (uint32_t swapped = 0u; swapped < 2u; swapped++) {
+            size_t at = header != 0u ? IMAGES_HEADER : 0u;
+            if (header != 0u) {
+                /* Misleading v4 metadata must lose to a hash match; raw
+                   controls/region fields still survive the override. */
+                images_header(buf, 4u, "Activision tags", body, 0u);
+                buf[55] = 5u;
+            }
+            memcpy(buf + at, canonical, body);
+            if (swapped != 0u) {
+                images_swap_halves(buf + at, body);
+            }
+            n = at + body;
+            memcpy(original, buf, n);
+            out = expect_written("tagged Activision", buf, n, MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(sizeof out, 140u);
+            CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+            CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+            CHECK_EQ_U64(out.flags,
+                         MUHTARI_CART_HASH_MATCH | (header != 0u ? MUHTARI_CART_HEADER : 0u) |
+                             (swapped != 0u ? MUHTARI_CART_ACTIVISION_HALF_SWAPPED : 0u));
+            CHECK_EQ_U64(out.warnings, header != 0u ? MUHTARI_CART_WARN_HEADER_CORRECTED |
+                                                          MUHTARI_CART_WARN_HEADER_V4_IGNORED
+                                                    : 0u);
+            CHECK_EQ_U64(out.port1, header != 0u ? MUHTARI_PORT_JOYSTICK : MUHTARI_PORT_PROLINE);
+            muhtari_media media = {0};
+            media.size = (uint32_t)sizeof media;
+            media.image = buf;
+            media.image_size = n;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            CHECK(memcmp(m->cart.rom, canonical, body) == 0);
+            CHECK(memcmp(buf, original, n) == 0);
+            CHECK_EQ_U64(m->cart.bank, 0u);
+            activision_windows(m, 0u);
+            muhtari_frame frame = {0};
+            frame.size = (uint32_t)sizeof frame;
+            uint32_t allocations = counts.allocs;
+            CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(m->ram[0xA00u], 0x31u);
+            CHECK_EQ_U64(m->ram[0xA01u], 0x3Au);
+            CHECK_EQ_U64(m->cart.bank, 5u);
+            /* Every data byte at every selector: address alone selects. */
+            for (uint32_t selector = 0u; selector < 16u; selector++) {
+                for (uint32_t data = 0u; data < 256u; data++) {
+                    muhtari__cart_write(m, (uint16_t)(0xFF80u + selector), (uint8_t)data);
+                    CHECK_EQ_U64(m->cart.bank, selector % 8u);
+                }
+                activision_windows(m, selector % 8u);
+            }
+            const uint16_t passive[] = {0xFF7Fu, 0xFF80u, 0xFF87u, 0xFF88u, 0xFF8Fu, 0xFF90u};
+            for (size_t i = 0u; i < sizeof passive / sizeof passive[0]; i++) {
+                (void)muhtari__cart_read(m, passive[i], 0);
+                (void)muhtari__cart_read(m, passive[i], 1);
+                (void)muhtari__cart_peek(m, passive[i]);
+                CHECK_EQ_U64(m->cart.bank, 7u);
+            }
+            const uint16_t ignored[] = {0x3FFFu, 0x4000u, 0xA000u, 0xC000u,
+                                        0xE000u, 0xFF7Fu, 0xFF90u, 0xFFFFu};
+            for (size_t i = 0u; i < sizeof ignored / sizeof ignored[0]; i++) {
+                muhtari__cart_write(m, ignored[i], 0u);
+                CHECK_EQ_U64(m->cart.bank, 7u);
+            }
+            CHECK(memcmp(m->cart.rom, canonical, body) == 0);
+            CHECK(memcmp(buf, original, n) == 0);
+            CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(m->cart.bank, 0u);
+            CHECK_EQ_U64(counts.allocs, allocations);
+            /* Allocation refusal leaves live latch, RAM, and ROM intact. */
+            muhtari__cart_write(m, 0xFF8Bu, 0u);
+            memcpy(&saved, m, sizeof saved);
+            counts.fail_from = counts.allocs + 1u;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_NO_MEMORY);
+            CHECK(memcmp(m, &saved, sizeof saved) == 0);
+            CHECK(memcmp(m->cart.rom, canonical, body) == 0);
+            counts.fail_from = 0u;
+            /* Reload uses supplied bytes again: never normalize twice. */
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            CHECK(memcmp(m->cart.rom, canonical, body) == 0);
+        }
+    }
+    /* Unknown declared content is assumed OM; unknown headerless content
+       stays on its pre-existing footer fallback instead of size inference. */
+    n = images_a78(buf, 3u, body, 0x0100u, body);
+    out = expect_written("unknown declared", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER);
+    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, body) == 0);
+    n = images_headerless(buf, body);
+    out = expect_written("unknown headerless", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+    CHECK_EQ_U64(out.flags, 0u);
+    /* Exact geometry, including truncation status, precedes allocation. */
+    static const uint32_t bad[] = {32768u, 65536u, 131071u, 131073u, 262144u};
+    for (size_t i = 0u; i < sizeof bad / sizeof bad[0]; i++) {
+        n = images_a78(buf, 3u, bad[i], 0x0100u, bad[i]);
+        memcpy(&saved, m, sizeof saved);
+        uint32_t allocations = counts.allocs;
+        CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+        CHECK(memcmp(m, &saved, sizeof saved) == 0);
+        CHECK_EQ_U64(counts.allocs, allocations);
+    }
+    n = images_a78(buf, 3u, body, 0x0100u, 65536u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    /* Valid v4 overrides v3. All declared POKEY windows preserve DMA/peek
+       memory, and overlapping $4000 ROM remains CPU-readable. */
+    static const uint16_t pokey_at[] = {0u, 0x0440u, 0x0450u, 0x0450u, 0x0800u, 0x4000u};
+    for (uint32_t audio = 0u; audio < 6u; audio++) {
+        images_header(buf, 4u, "Assumed OM", body, 0x0200u);
+        buf[64] = 2u;
+        buf[67] = (uint8_t)audio;
+        memcpy(buf + IMAGES_HEADER, canonical, body);
+        buf[IMAGES_HEADER + 1u] ^= 1u; /* cannot identify through the test list */
+        n = body + IMAGES_HEADER;
+        out = expect_written("v4 Activision", buf, n, MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+        CHECK_EQ_U64(out.a78_cart_type, 0x0200u);
+        CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED);
+        CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+        activision_windows(m, 0u);
+        if (audio != 0u) {
+            uint16_t addr = (uint16_t)(pokey_at[audio] + 1u);
+            uint8_t byte = muhtari__cart_peek(m, addr);
+            muhtari__cart_write(m, addr, 0xAFu);
+            CHECK_EQ_U64(m->pokey[audio == 1u ? 1u : 0u].channel[0].audc, 0xAFu);
+            CHECK_EQ_U64(muhtari__cart_read(m, addr, 1), byte);
+            CHECK_EQ_U64(muhtari__cart_peek(m, addr), byte);
+            if (audio == 5u) {
+                CHECK_EQ_U64(muhtari__cart_read(m, addr, 0), 0x3Cu);
+            }
+        }
+    }
+    muhtari_destroy(m);
 }
 
 /* A 2600 list hit refuses an image whose footer the 7800 test passes. */

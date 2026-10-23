@@ -287,6 +287,9 @@ static void print_identity(const muhtari_cart_info *c)
         printf("a78_audio 0x%04lx\n", (unsigned long)c->a78_audio);
         printf("a78_irq 0x%02lx\n", (unsigned long)c->a78_irq);
     }
+    if ((c->flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) != 0u) {
+        printf("flag %s\n", muhtari__bit_name(MUHTARI__BITS_FLAGS, 2u));
+    }
     for (uint32_t bit = 0; bit < 32u; bit++) {
         if ((c->warnings >> bit) & 1u) {
             printf("warning %s\n", muhtari__bit_name(MUHTARI__BITS_WARNINGS, bit));
