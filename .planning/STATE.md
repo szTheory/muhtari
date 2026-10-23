@@ -3,9 +3,9 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 status: blocked
-stopped_at: "Phase 06 plan01 designed fit stop; next: $gsd-plan-phase 6"
-last_updated: "2026-10-23T16:58:10.596Z"
-state_head: fd918c3ea527fbd35dddbe6c7ccdf6a874d47fdd
+stopped_at: "Phase 06 bounded redesign complete; awaiting explicit N654/C15941 allocation decision"
+last_updated: "2026-10-23T17:23:18Z"
+state_head: a56dcebda2455c1fb4d0df6611b036f7e53f50e2
 progress:
   total_phases: 7
   completed_phases: 1
@@ -16,7 +16,7 @@ last_activity: 2026-10-23
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-last_activity_desc: Phase 6 plan01 halted at measured fit gate; 0/9 complete and02-09 blocked
+last_activity_desc: One bounded redesign measured15941; independently checked proposal awaits allocation decision; execution blocked
 ---
 
 # Project State
@@ -24,7 +24,7 @@ last_activity_desc: Phase 6 plan01 halted at measured fit gate; 0/9 complete and
 ## Project Reference
 
 See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
-preparation/DECISIONS.md. Current focus: replan failed Phase 6 fit; Phase 5 is shipped.
+preparation/DECISIONS.md. Current focus: decide the measured Phase 6 allocation proposal; Phase 5 is shipped.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
 
@@ -34,6 +34,10 @@ Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requiremen
 and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 plan01 is halted:
 disposable counted construction15952 exceeds15479 by473. No task or board change
 was installed; Phase 6 is0/9 complete and02-09 are blocked by halted01.
+One authorized bounded redesign now measures15941 (net654), still462 above the
+authorized15479. Its independently checked proposal is in06-REDESIGN.md; no
+further design attempt, scope change, ready-plan rewrite or execution is scheduled
+before an explicit allocation decision. The historical halt remains intact.
 PR #20 squash-merged at 6d57d69 on 2026-10-23T02:32:12Z. Phase 5 is shipped.
 Do not return to discussion, create plan16, reset review/gap allowances or resume
 historical halted plans. Current implementation 098bb5e has actual direct/called
@@ -77,19 +81,26 @@ controls exit0 with controlled observations; these prove no board semantics.
 Installed actual remains15287. Fresh local3-ZIP sum212216 passes399937; future
 six-native board fit remains unproved. No extra allocation or owner UAT is authorized.
 See06-01-SUMMARY.md for commands/exits, buckets, local evidence and the designed stop.
+The single redesign retains all86 historical control cases and adds7; configure,
+focused policy controls, preservation audit and counter exit0; authorized-fit
+assertion exits1. Proposed N654/C15941 is unapproved; B15287/S0 and archive399937
+stay fixed. Independent review passed proposal adequacy only. Board behavior,
+full CI and future six-native package acceptance remain unproved.
 Standard code review has no blocking finding; WR-01 and COST-01 are deferred tooling seeds in 05-REVIEW-DISPOSITION.md, under AGENTS rule 7.
 Existing seeds remain in the phase deferred-items ledger and milestone audit.
 No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T16:58:10.466Z
-**Stopped at:** Phase 06 plan01 designed fit stop; next: $gsd-plan-phase 6
-**Resume file:** .planning/phases/06-retail-cartridge-boards/06-01-SUMMARY.md
+**Last session:** 2026-10-23T17:23:18Z
+**Stopped at:** One bounded redesign complete; awaiting explicit scoped allocation decision
+**Resume file:** .planning/phases/06-retail-cartridge-boards/06-REDESIGN.md
 
-Next: `$gsd-plan-phase 6` using the measured overrun as new evidence, within192
-unless a separate explicit scope decision authorizes otherwise. No dependent
-execution, requirement completion, review/gap reset or second GSD step occurred.
+Next action: owner decision on exact scoped N192→654/C15479→15941, under rule7
+and D-17. No retry or optimization loop is scheduled. If approved, the exact next
+command is `$gsd-plan-phase 6` to record the accepted decision and prepare a
+successor admission plan preserving historical01; do not automatically execute.
+If declined, keep the halt. No requirement completion or review/gap reset occurred.
 Run URLs: N/A-local. WINDOWS32/33 retain failed fit and unrun dependent verification.
 
 ### Prior Phase 5 Ship Evidence
@@ -130,10 +141,11 @@ is normalized to nine active slots, leaving 14 halted and unaccepted.
 ## Decisions
 
 - [Phase 06]: Preserve192 and halt on measured15952; keep candidate code disposable. Active progress is9/18 across phases5/6. The SDK counted historical/halting summaries as completion; state/roadmap are normalized to accepted plans only.
+- [Phase 06]: One bounded redesign measured15941/net654. Recommend scoped N654/C15941; this is a proposal awaiting explicit approval, with archive399937 unchanged. No additional redesign or execution loop is authorized.
 
 ### Blockers
 
-- Phase 06 plan01 halted: complete disposable counted wiring measures15952, exceeding fixed15479 by473; installed actual15287 unchanged; plans02-09 blocked. Replan within192 using new measured evidence; no extra allocation authorized.
+- Phase 06 plan01 remains halted; installed actual15287 unchanged and02-09 blocked. The bounded redesign proposal measures15941, exceeding authorized15479 by462. Await explicit allocation decision; no extra allocation is authorized.
 
 ## Performance Metrics
 

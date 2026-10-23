@@ -68,6 +68,9 @@ include halted 14; only the nine active slots above count as accepted outcomes.
 **Requirements:** BOARD-01, BOARD-02, BOARD-03
 **Plans:** 0/9 plans complete in 9 sequential waves;01 halted before expansion.
 **Status:** Disposable construction15952 exceeds15479 by473;02–09 are blocked.
+**Bounded redesign:** One independently checked candidate measures15941/net654.
+See06-REDESIGN.md for the unapproved N654/C15941 proposal. Await the explicit
+allocation decision; no retry/optimization loop or execution is scheduled.
 
 Plans:
 **Wave 1**
@@ -202,4 +205,4 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-23; Phase 6 plan01 reached its designed fit stop. Next: `$gsd-plan-phase 6`; no dependent expansion is authorized.*
+*Updated: 2026-10-23; one bounded Phase 6 redesign is complete. Await allocation decision on N654/C15941; only if approved, next: `$gsd-plan-phase 6`. No dependent expansion is authorized.*
