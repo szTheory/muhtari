@@ -88,8 +88,9 @@ size_t seeds_build(uint32_t i, uint8_t *buf)
             buf[n - 1u] = 0u;
             probed.size = (uint32_t)sizeof probed;
             muhtari_status status = muhtari_probe(buf, n, &probed);
-            if (n > RUN_CART_BYTES || status != (i == 21u ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE
-                                                          : MUHTARI_STATUS_ERR_INVALID_IMAGE))
+            muhtari_status expected =
+                i == 21u ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;
+            if (n > RUN_CART_BYTES || status != expected)
                 abort();
             return n;
         }
