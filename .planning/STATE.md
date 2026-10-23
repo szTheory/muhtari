@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 2
+current_plan: 4
 status: ready_to_execute
-stopped_at: Completed 06-02-PLAN.md; next incomplete plan 06-03
-last_updated: "2026-10-23T19:40:41.233Z"
-state_head: f0e1659f1fd460444d82619f9deac6e93d514a9c
+stopped_at: Completed 06-03-PLAN.md; next incomplete plan 06-04
+last_updated: "2026-10-23T19:47:01.285Z"
+state_head: 176e60ece0610ba8a866f16e82bf9aa1df4c0496
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 18
-  completed_plans: 11
+  completed_plans: 12
   percent: 14
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-last_activity_desc: Plans06-10 and06-02 complete locally; next06-03; hosted and remaining board acceptance pending
+last_activity_desc: Plans06-10/02/03 complete locally; next06-04; hosted and remaining board acceptance pending
 ---
 
 # Project State
@@ -30,9 +30,9 @@ Core value: 7800 games behave as on the console, identically across platforms, f
 
 ## Current Position
 
-Current Plan: 2
+Current Plan: 4
 Total Plans in Phase: 9
-Progress: [█░░░░░░░░░] 14% (1/7 phases; 11/18 currently planned active plans; later phases unplanned)
+Progress: [█░░░░░░░░░] 14% (1/7 phases; 12/18 currently planned active plans; later phases unplanned)
 
 Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
 and nine active plans 01,02,10,04,05,13,07,15,09 accepted. The owner adopted the
@@ -43,14 +43,18 @@ inventories609/597/6, retirement controls and hygiene pass. The hard LOC metric,
 counter, inventory and allocation/adoption machinery are removed; no replacement
 score or framework was introduced. Archive399937 and unrelated guards persist.
 
-Phase 6 is2/9 complete across active02–10. Plan10 committed701d6b4/94fcb90
+Phase 6 is3/9 complete across active02–10. Plan10 committed701d6b4/94fcb90
 and SUMMARY081412f: authenticated additive fixture relation, actual producer/join
 controls and documentation. Full local CI609+6, exact inventories and hygiene
 exit0; packages212216 <=399937. Plan02 committed27627f1/f0e1659: real Absolute
 CPU mailbox value90 through library, actual runner and actual module, exact
 geometry/transaction/report controls, behavior3/ABI1 and fixed-ROM descriptors.
 Full local CI610+6, exact inventories, hygiene and all three ZIPs212982 <=399937
-pass. Next is03→04→05→06→07→08→09; six-native fit remains unproved until09.
+pass. Plan03 committed234f243/0e42dff and SUMMARY176e60e: append-only API4,
+ABI1/cart-info140, linked older/current smoke clients, tested host bit names and
+transparent orientation/assumption docs. Full local CI611+6, exact inventories,
+hygiene and three ZIPs213074 <=399937 pass. Next is04→05→06→07→08→09;
+six-native fit remains unproved until09. BOARD-01 edge/prohibition metadata stays unresolved.
 Historical01 is superseded without changing its failed SUMMARY; its665-line construction and the654-line
 proposal remain history, not grants or new execution prerequisites. No BOARD
 requirement is complete; the fixture helper is complete. Authentic hosted migration acceptance
@@ -93,7 +97,7 @@ published package. v2.0 has 27 requirements across phases 5–11.
 There is no active LOC allocation stop. WINDOWS32 is resolved by adopted and tested
 policy retirement, not a claim that the old construction fit. WINDOWS33 retains
 unrun future board/hosted acceptance; the quick migration's609+6 local checks are
-complete. Current local archive212982 passes399937; future six-native board fit is unproved.
+complete. Current local archive213074 passes399937; future six-native board fit is unproved.
 
 SEED-009-proportional-maintenance-review carries resource-bound rationale, other
 structural quotas, test-floor overlap, schema-hardening and dependency/review
@@ -107,13 +111,13 @@ No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T19:40:41.184Z
-**Stopped at:** Completed 06-02-PLAN.md; next incomplete plan 06-03
-**Resume file:** .planning/phases/06-retail-cartridge-boards/06-03-PLAN.md
+**Last session:** 2026-10-23T19:47:01.242Z
+**Stopped at:** Completed 06-03-PLAN.md; next incomplete plan 06-04
+**Resume file:** .planning/phases/06-retail-cartridge-boards/06-04-PLAN.md
 
-Next command: `$gsd-execute-phase 6`, continuing at product plan03 after completed10/02.
-This executor stops at02; the parent owns remaining phase dispatch and gates.
-No requirement completion or review/gap reset occurred. Plan02 SUMMARY records
+Next command: `$gsd-execute-phase 6`, continuing at product plan04 after completed10/02/03.
+This executor stops at03; the parent owns remaining phase dispatch and gates.
+No requirement completion or review/gap reset occurred. Plan03 SUMMARY records
 commands/exits and N/A-local URLs; future board/hosted acceptance remains agent-owned.
 
 ### Prior Phase 5 Ship Evidence
@@ -135,10 +139,11 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 - [Follow-up]: SEED-009 triggers at the existing tune-up or concrete maintenance failure; hosted acceptance has its own pending todo before Phase6 ship. Neither creates a new product requirement or recurring measurement service.
 - [Phase 06]: Plan 10 proves the named additive fixture relation through independent event-base producer recursion and unchanged exact join; no BOARD requirement is complete.
 - [Phase 06]: Plan 02 proves Absolute bank-zero numeric mailbox through library, actual runner and module; local three-ZIP sum 212982 passes399937, six-native fit remains pending09.
+- [Phase 06]: Plan03 publishes API4 constants and tested host bit names while preserving ABI1/raw identity; local611+6 and213074-byte packages pass. Loader/map/probe behavior remains04 and BOARD-01 stays pending.
 
 ### Blockers
 
-- No active planning blocker. Plans06-10/02 are complete and06-03 is next; later plans await predecessors. Hosted retirement and future board acceptance remain pending, not LOC allocation stops.
+- No active planning blocker. Plans06-10/02/03 are complete and06-04 is next; later plans await predecessors. Hosted retirement and future board acceptance remain pending, not LOC allocation stops.
 
 ### Quick Tasks Completed
 
@@ -153,3 +158,4 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 | Phase 06 P01 | 16min halted | 0 tasks | 0 files |
 | Phase 06 P10 | 7min | 2 tasks | 4 files |
 | Phase 06 P02 | 7min | 2 tasks | 13 files |
+| Phase 06 P03 | 4min | 2 tasks | 12 files |
