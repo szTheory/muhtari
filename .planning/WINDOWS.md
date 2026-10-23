@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 17
 waived_count: 0
-fixed_count: 18
-total_count: 35
-last_updated: 2026-10-23T19:41:21.821Z
+fixed_count: 19
+total_count: 36
+last_updated: 2026-10-23T19:46:54.036Z
 ---
 
 # Broken Windows Ledger
@@ -50,6 +50,7 @@ last_updated: 2026-10-23T19:41:21.821Z
 | 33 | 06 | unrun-verify | .planning/phases/06-retail-cartridge-boards/06-01-PLAN.md |  | Task2 full CI and future six-native board/archive acceptance not run because Task1 complete counted fit failed; no completed requirement claimed. | open |  | 2026-10-23T16:58:10.951Z |  |
 | 34 | 06 | deviation | tests/cart/test_cart.c |  | Updated the existing Absolute probe case from refusal to acceptance when the board became executable; resolved in27627f1. | fixed |  | 2026-10-23T19:41:17.397Z | 2026-10-23T19:41:21.710Z |
 | 35 | 06 | deviation | tests/built/expected.txt |  | Advanced built/audio expectation revision metadata to3 without changing pinned hashes; resolved inf0e1659. | fixed |  | 2026-10-23T19:41:17.464Z | 2026-10-23T19:41:21.821Z |
+| 36 | 06 | deviation | tests/header/header.c |  | API4 required updating C17 and C++17 header-only current-version assertions from3 to4; resolved in0e42dff. | fixed |  | 2026-10-23T19:45:55.060Z | 2026-10-23T19:46:54.036Z |
 
 ````json
 [
@@ -506,6 +507,19 @@ last_updated: 2026-10-23T19:41:21.821Z
     "reason": "",
     "recorded_at": "2026-10-23T19:41:17.464Z",
     "resolved_at": "2026-10-23T19:41:21.821Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 36,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/header/header.c",
+    "line": null,
+    "description": "API4 required updating C17 and C++17 header-only current-version assertions from3 to4; resolved in0e42dff.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T19:45:55.060Z",
+    "resolved_at": "2026-10-23T19:46:54.036Z",
     "milestone": "v2.0"
   }
 ]
