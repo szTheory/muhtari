@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 17
 waived_count: 0
-fixed_count: 20
-total_count: 37
-last_updated: 2026-10-23T19:56:15.118Z
+fixed_count: 21
+total_count: 38
+last_updated: 2026-10-23T20:05:34.293Z
 ---
 
 # Broken Windows Ledger
@@ -52,6 +52,7 @@ last_updated: 2026-10-23T19:56:15.118Z
 | 35 | 06 | deviation | tests/built/expected.txt |  | Advanced built/audio expectation revision metadata to3 without changing pinned hashes; resolved inf0e1659. | fixed |  | 2026-10-23T19:41:17.464Z | 2026-10-23T19:41:21.821Z |
 | 36 | 06 | deviation | tests/header/header.c |  | API4 required updating C17 and C++17 header-only current-version assertions from3 to4; resolved in0e42dff. | fixed |  | 2026-10-23T19:45:55.060Z | 2026-10-23T19:46:54.036Z |
 | 37 | 06 | deviation | tests/cart/test_cart.c |  | Activision warning vectors still expected unsupported after mapper acceptance; updated accepted status and assumed-layout warning, focused10 and full611+6 pass. | fixed |  | 2026-10-23T19:55:35.527Z | 2026-10-23T19:56:15.118Z |
+| 38 | 06 | deviation | tests/cart/test_cart.c |  | Replaced stale Fractalus refusal expectations with executable coverage and a retained BankSet hash-refusal control; resolved in1d51980. | fixed |  | 2026-10-23T20:05:34.173Z | 2026-10-23T20:05:34.293Z |
 
 ````json
 [
@@ -534,6 +535,19 @@ last_updated: 2026-10-23T19:56:15.118Z
     "reason": "",
     "recorded_at": "2026-10-23T19:55:35.527Z",
     "resolved_at": "2026-10-23T19:56:15.118Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 38,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/cart/test_cart.c",
+    "line": null,
+    "description": "Replaced stale Fractalus refusal expectations with executable coverage and a retained BankSet hash-refusal control; resolved in1d51980.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:05:34.173Z",
+    "resolved_at": "2026-10-23T20:05:34.293Z",
     "milestone": "v2.0"
   }
 ]

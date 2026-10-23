@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 5
+current_plan: 6
 status: ready_to_execute
-stopped_at: Completed 06-04-PLAN.md; next incomplete plan 06-05
-last_updated: "2026-10-23T19:57:35.297Z"
-state_head: fe6425a851e93296c104a976aa57cf936948ae6c
+stopped_at: Completed 06-05-PLAN.md; next incomplete plan 06-06
+last_updated: "2026-10-23T20:07:14.328Z"
+state_head: 2c0518f686062efffffb4d66dcf44e86ca5ba4a9
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 18
-  completed_plans: 13
+  completed_plans: 14
   percent: 14
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-last_activity_desc: Plans06-10/02/03/04 complete locally; next06-05; hosted and remaining board acceptance pending
+last_activity_desc: Plans06-10/02/03/04/05 complete locally; next06-06; hosted and remaining board acceptance pending
 ---
 
 # Project State
@@ -30,9 +30,9 @@ Core value: 7800 games behave as on the console, identically across platforms, f
 
 ## Current Position
 
-Current Plan: 5
+Current Plan: 6
 Total Plans in Phase: 9
-Progress: [█░░░░░░░░░] 14% (1/7 phases; 13/18 currently planned active plans; later phases unplanned)
+Progress: [█░░░░░░░░░] 14% (1/7 phases; 14/18 currently planned active plans; later phases unplanned)
 
 Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
 and nine active plans 01,02,10,04,05,13,07,15,09 accepted. The owner adopted the
@@ -43,7 +43,7 @@ inventories609/597/6, retirement controls and hygiene pass. The hard LOC metric,
 counter, inventory and allocation/adoption machinery are removed; no replacement
 score or framework was introduced. Archive399937 and unrelated guards persist.
 
-Phase 6 is4/9 complete across active02–10. Plan10 committed701d6b4/94fcb90
+Phase 6 is5/9 complete across active02–10. Plan10 committed701d6b4/94fcb90
 and SUMMARY081412f: authenticated additive fixture relation, actual producer/join
 controls and documentation. Full local CI609+6, exact inventories and hygiene
 exit0; packages212216 <=399937. Plan02 committed27627f1/f0e1659: real Absolute
@@ -57,7 +57,10 @@ hygiene and three ZIPs213074 <=399937 pass. Plan04 committed2a588bb/5459c41
 and SUMMARYfe6425a: identified-only private Activision normalization, six OM
 windows, independent CPU values49/58, original probe identities and fault controls.
 Full local CI611+6, exact inventories, hygiene and three ZIPs213443 <=399937
-pass. Next is05→06→07→08→09;
+pass. Plan05 committed1d51980/2c0518f: physical2KiB Fractalus aliases, exact A8
+scope/refusals, independent retail vectors and three-board volatile lifecycle.
+Full local CI612+6, exact inventories, hygiene and three ZIPs213795 <=399937 pass.
+Next is06→07→08→09;
 six-native fit remains unproved until09. BOARD-01 edge/prohibition metadata stays unresolved.
 Historical01 is superseded without changing its failed SUMMARY; its665-line construction and the654-line
 proposal remain history, not grants or new execution prerequisites. No BOARD
@@ -101,7 +104,7 @@ published package. v2.0 has 27 requirements across phases 5–11.
 There is no active LOC allocation stop. WINDOWS32 is resolved by adopted and tested
 policy retirement, not a claim that the old construction fit. WINDOWS33 retains
 unrun future board/hosted acceptance; the quick migration's609+6 local checks are
-complete. Current local archive213443 passes399937; future six-native board fit is unproved.
+complete. Current local archive213795 passes399937; future six-native board fit is unproved.
 
 SEED-009-proportional-maintenance-review carries resource-bound rationale, other
 structural quotas, test-floor overlap, schema-hardening and dependency/review
@@ -115,13 +118,13 @@ No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T19:57:35.253Z
-**Stopped at:** Completed 06-04-PLAN.md; next incomplete plan 06-05
-**Resume file:** .planning/phases/06-retail-cartridge-boards/06-05-PLAN.md
+**Last session:** 2026-10-23T20:07:14.285Z
+**Stopped at:** Completed 06-05-PLAN.md; next incomplete plan 06-06
+**Resume file:** .planning/phases/06-retail-cartridge-boards/06-06-PLAN.md
 
-Next command: `$gsd-execute-phase 6`, continuing at product plan05 after completed10/02/03/04.
-This executor stops at04; the parent owns remaining phase dispatch and gates.
-No requirement completion or review/gap reset occurred. Plan04 SUMMARY records
+Next command: `$gsd-execute-phase 6`, continuing at product plan06 after completed10/02/03/04/05.
+This executor stops at05; the parent owns remaining phase dispatch and gates.
+No requirement completion or review/gap reset occurred. Plan05 SUMMARY records
 commands/exits and N/A-local URLs; future board/hosted acceptance remains agent-owned.
 
 ### Prior Phase 5 Ship Evidence
@@ -145,10 +148,11 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 - [Phase 06]: Plan 02 proves Absolute bank-zero numeric mailbox through library, actual runner and module; local three-ZIP sum 212982 passes399937, six-native fit remains pending09.
 - [Phase 06]: Plan03 publishes API4 constants and tested host bit names while preserving ABI1/raw identity; local611+6 and213074-byte packages pass. Loader/map/probe behavior remains04 and BOARD-01 stays pending.
 - [Phase 06]: Plan04 proves identified-only private Activision normalization, six-window OM mapping and original probe identities; full611+6 and213443-byte local packages pass, broader BOARD/hosted acceptance pending.
+- [Phase 06]: Plan05 proves physical2048-byte Fractalus aliases, private unsupported A8 combinations and three-board volatile/no-allocation lifecycle; full612+6 and local213795-byte ZIP total pass, BOARD/hosted acceptance remains pending.
 
 ### Blockers
 
-- No active planning blocker. Plans06-10/02/03/04 are complete and06-05 is next; later plans await predecessors. Hosted retirement and future board acceptance remain pending, not LOC allocation stops.
+- No active planning blocker. Plans06-10/02/03/04/05 are complete and06-06 is next; later plans await predecessors. Hosted retirement and future board acceptance remain pending, not LOC allocation stops.
 
 ### Quick Tasks Completed
 
@@ -165,3 +169,4 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 | Phase 06 P02 | 7min | 2 tasks | 13 files |
 | Phase 06 P03 | 4min | 2 tasks | 12 files |
 | Phase 06 P04 | 9min | 2 tasks | 10 files |
+| Phase 06 P05 | 6min | 2 tasks | 8 files |

@@ -20,7 +20,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
-| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | In progress; next06-05 |
+| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | In progress; next06-06 |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
@@ -66,11 +66,12 @@ include halted 14; only the nine active slots above count as accepted outcomes.
 **Goal:** Run Activision, Absolute and Fractalus cartridges with correct banking and physical RAM behavior.
 **Depends on:** Phase 5
 **Requirements:** BOARD-01, BOARD-02, BOARD-03
-**Plans:** 4/9 active plans complete in9 sequential waves; active02–10, historical01 superseded.
-**Status:** Plans06-10 fixture comparability,06-02 Absolute tracer,06-03 API4 and06-04 Activision are complete;
-next06-05. Three numeric Absolute host observations, linked API1–4 smoke clients,
+**Plans:** 5/9 active plans complete in9 sequential waves; active02–10, historical01 superseded.
+**Status:** Plans06-10 fixture comparability,06-02 Absolute tracer,06-03 API4,06-04 Activision and06-05 physical Fractalus are complete;
+next06-06. Three numeric Absolute host observations, linked API1–4 smoke clients,
 identified Activision AM/OM map/CPU equivalence and original probe identities,
-full local CI611+6, exact inventories, hygiene and local three-ZIP213443 <=399937
+physical Fractalus alias/lifecycle vectors, full local CI612+6, exact inventories,
+hygiene and local three-ZIP213795 <=399937
 pass; six-native fit remains pending09.
 The accepted contract-based policy and ordinary guards persist. No BOARD requirement is complete.
 **History:** Original01 halt and the665/654-line constructions remain preserved;
@@ -94,9 +95,9 @@ construction record. It is not an active dependency or a completed BOARD outcome
 - [x] 06-04-PLAN.md — Normalize identified Activision layouts and prove map/probe identity with matching behavior docs.
 
 **Wave 5** *(ready after completed Wave 4)*
-- [ ] 06-05-PLAN.md — Implement physical Fractalus aliases and independent retail-map/lifecycle vectors.
+- [x] 06-05-PLAN.md — Implement physical Fractalus aliases and independent retail-map/lifecycle vectors.
 
-**Wave 6** *(blocked on Wave 5 completion)*
+**Wave 6** *(ready after completed Wave 5)*
 - [ ] 06-06-PLAN.md — Admit and execute three owned numeric board diagnostics.
 
 **Wave 7** *(blocked on Wave 6 completion)*
@@ -205,7 +206,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
-| 6. Retail cartridge boards | 4/9 | In Progress; next06-05 | — |
+| 6. Retail cartridge boards | 5/9 | In Progress; next06-06 | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
@@ -213,4 +214,4 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-23;06-10 comparability,06-02 Absolute tracer,06-03 API4 and06-04 Activision are locally verified. Next: `$gsd-execute-phase 6`, continuing at06-05. Historical evidence remains intact; six-native package acceptance remains pending.*
+*Updated: 2026-10-23;06-10 comparability,06-02 Absolute tracer,06-03 API4,06-04 Activision and06-05 physical Fractalus are locally verified. Next: `$gsd-execute-phase 6`, continuing at06-06. Historical evidence remains intact; six-native package acceptance remains pending.*
