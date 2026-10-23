@@ -60,6 +60,7 @@ ratios max 1.713/12.127/1.612 (n=4/4/2). ASan keeps short runs. `audio.samples`:
 pairs, eight fixtures; 250 s = twice 124.92 s (11 Intel Mac successes, run 39617761785). COST 125 starts it early;
 builds/basic/coverage use costs 7/10/28 (control 27), basic/coverage bounds 19/55 s (control 53). Movies: 3 s from
 1.05 s maximum (Windows n=7, provisional). Fixtures retain prerequisites; page writers own separate outputs.
+Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 

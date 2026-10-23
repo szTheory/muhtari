@@ -101,13 +101,13 @@ muhtari_add_test(NAME policy.compat_doc_fresh.self_test
 if(MUHTARI_INVENTORY STREQUAL "ci")
   set(publish_timeout 130)
   if(WIN32)
-    set(publish_timeout 1200)
+    set(publish_timeout 1450)
   endif()
   muhtari_add_test(NAME policy.publish.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
       -DWORK=${CMAKE_BINARY_DIR}/policy/publish_fixture -P ${CMAKE_CURRENT_LIST_DIR}/publish.cmake
-    # Provisional expanded transport; Mac max63.21s, Windows censored250s, run39874751162.
-    LABELS policy TIMEOUT ${publish_timeout})
+    # Provisional max724.35s Windows/63.21s other, runs39876385414/39874751162.
+    LABELS policy TIMEOUT ${publish_timeout} COST 725)
   muhtari_add_test(NAME policy.quality.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
       -DWORK=${CMAKE_BINARY_DIR}/policy/quality_fixture -P ${CMAKE_CURRENT_LIST_DIR}/quality.cmake

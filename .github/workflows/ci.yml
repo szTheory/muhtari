@@ -135,7 +135,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 30 || 10 }}  # provisional Windows controls; other 2 x 286s, run 39874751162
+    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 34 || 10 }}  # provisional 2 x Windows1013s/other286s, runs39876385414/39874751162
     strategy:
       fail-fast: false
       matrix:
