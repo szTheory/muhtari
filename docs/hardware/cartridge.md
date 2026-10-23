@@ -211,7 +211,7 @@ including the dual-chip declaration (cartridge notes, section 2.1).
 If a legacy header declares multiple primary locations, $0450 takes priority,
 then $4000, then $0800; the fixed slots bound the declaration to two chips.
 CPU writes select POKEY before board RAM or ROM. CPU reads select readable
-RAM or overlapping linear ROM, EXROM or EXFIX before a write-only $4000 POKEY;
+RAM or overlapping linear, Absolute or Activision ROM, EXROM or EXFIX before a write-only $4000 POKEY;
 otherwise POKEY answers. Peeks and MARIA fetches always observe board memory
 or open bus, without clocking or reading POKEY registers.
 

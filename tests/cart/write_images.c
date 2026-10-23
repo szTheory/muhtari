@@ -52,6 +52,11 @@ int main(int argc, char **argv)
         size_t n = seeds_build(i, buf);
         ok = write_one(argv[1], seeds_name(i), buf, n);
         written++;
+        if (ok && strcmp(seeds_name(i), "activision") == 0) {
+            ok = write_one(argv[1], "activision-unknown-body", buf + IMAGES_HEADER,
+                           n - IMAGES_HEADER);
+            written++;
+        }
         if (ok && strcmp(seeds_name(i), "linear-v3-16k") == 0) {
             ok = write_one(argv[1], "linear-v3-16k-body", buf + IMAGES_HEADER, n - IMAGES_HEADER);
             written++;
@@ -65,6 +70,28 @@ int main(int argc, char **argv)
         images_header(buf, 3u, "Magic only", 16u * IMAGES_KIB, 0u);
         ok = write_one(argv[1], "magic-only-128", buf, IMAGES_HEADER);
         written++;
+    }
+    for (uint32_t swapped = 0u; ok && swapped < 2u; swapped++) {
+        images_header(buf, 4u, "Activision tags", 131072u, 0x0200u);
+        buf[55] = 5u;
+        (void)images_activision(buf + IMAGES_HEADER);
+        if (swapped != 0u) {
+            images_swap_halves(buf + IMAGES_HEADER, 131072u);
+        }
+        ok = write_one(argv[1], swapped != 0u ? "activision-am" : "activision-om",
+                       buf + IMAGES_HEADER, 131072u);
+        ok = ok && write_one(argv[1], swapped != 0u ? "activision-am-a78" : "activision-om-a78",
+                             buf, IMAGES_HEADER + 131072u);
+        written += 2u;
+        if (swapped != 0u) {
+            buf[IMAGES_HEADER + 131072u] = 0xAAu;
+            buf[IMAGES_HEADER + 131073u] = 0x55u;
+            buf[IMAGES_HEADER + 131074u] = 0x01u;
+            ok = ok && write_one(argv[1], "activision-am-trailer", buf + IMAGES_HEADER, 131075u);
+            ok =
+                ok && write_one(argv[1], "activision-am-trailer-a78", buf, IMAGES_HEADER + 131075u);
+            written += 2u;
+        }
     }
     free(buf);
     if (ok) {
