@@ -5,6 +5,15 @@
 **Confidence:** MEDIUM
 
 <user_constraints>
+## Current disposition — 2026-10-23
+
+The owner accepted [the proportional-gates recommendation](../../research/proportional-gates/RECOMMENDATION.md)
+and authorized its quick migration. ENGINEERING §11 is the current contract/review policy. Current D-16/D-17
+replace all line-allocation/admission/fit prerequisites; N654 is superseded, not approved. Historical examples,
+scratch measurements and the halted01 record below do not instruct execution. Plan10 now owns the legitimate
+unimplemented fixture-comparability repair;02–09 retain all substantive board, diagnostic, resolver, hostile-state
+and package/portability acceptance. None is complete.
+
 ## User Constraints (from CONTEXT.md)
 
 The following locked decisions and discretion are copied verbatim from the phase context. [VERIFIED: .planning/phases/06-retail-cartridge-boards/06-CONTEXT.md:23-199]
@@ -117,9 +126,24 @@ The following locked decisions and discretion are copied verbatim from the phase
   playability or PAL completion. Keep untested retail ledger rows honest. Publish behavior prose in hardware,
   embedding/runner/libretro/testing docs as appropriate, with a short user-facing README and terse public header.
 
-### Fixed tooling scope and planning prerequisites
+### Current review and comparability prerequisites
 
-- **D-16:** Adopt a fixed maximum **192 net counted lines** solely for BOARD-01–03 integration and its controls.
+- **D-16 (accepted 2026-10-23):** The owner accepted the proportional-gates recommendation and authorized its
+  bounded migration. ENGINEERING §11 now governs architecture review and concrete check contracts; maintenance
+  LOC ceilings, line allocations, inventories, grant admission and complete disposable fit proofs are retired.
+  No replacement score or numerical maintenance quota applies. The N654/C15941 redesign proposal is superseded,
+  not approved. Preserve the historical measurements and halted01 evidence; they establish no board completion.
+- **D-17 (accepted 2026-10-23):** Preserve authenticated ordinary quality observations, raw trusted-base policy,
+  SHA/source/configuration identity, comparable compiler/platform and built samples, reasons and measured guards.
+  Before new board fixture admission, implement and test only the narrow trusted-manifest comparability relation
+  in06-10; current/base join equality stays intact. Every trusted old row stays byte-identical, only unique added
+  rows for the three named owned board fixtures are allowed, and later bases protect those rows as old rows.
+  Normal legal fixture admission/rebuild remains authoritative. No allocation prototype or line-fit proof is
+  a prerequisite; a concrete contract failure still stops affected work under AGENTS rule7.
+
+### Historical allocation decisions — superseded 2026-10-23
+
+- **Historical D-16:** Adopt a fixed maximum **192 net counted lines** solely for BOARD-01–03 integration and its controls.
   Measured starting count **B = 15,287** at `617dfa762ddb649839b925be5aa582180066fa78`; assumed savings **S = 0**;
   fixed allowance **N = 192**; maximum **C = 15,479**. This is an allocation estimate, not demonstrated fit.
 
@@ -135,12 +159,14 @@ The following locked decisions and discretion are copied verbatim from the phase
   ENGINEERING §11. Product C tests and owned assembly follow its existing classification; relocation does not
   create savings. Redistribution is visible within N, unused allowance retires and final actual tightens C.
   No new lane, generic framework, allowance language or automatic rebaseline is authorized.
-- **D-17:** Planning must establish a narrow, trusted-base admission path for this explicit new scope inside
+- **Historical D-17:** Planning must establish a narrow, trusted-base admission path for this explicit new scope inside
   D-16. The current quality judge demonstrates initial adoption and dated exceptions, not a permanent increase
   against an existing ceiling; `INITIAL_GATE_CEILING` is not a blanket escape. Preserve rejection of unrelated
   policy loosening, expiry/missing evidence controls and measured-value checks. Do not finance permanent growth
   through renewing temporary exceptions. If the fixed construction cannot fit, record the concrete failing
   construction and stop affected expansion; another allocation requires new evidence and an explicit decision.
+### Current independent package prerequisite
+
 - **D-18:** The independent `archive_bytes` ceiling is 399,937 and has no headroom established for new code.
   Research/planning must identify a bounded package-size measurement and a lawful acceptance path before
   implementation depends on raising it. D-16 authorizes no byte increase, no candidate self-rebaseline and no
@@ -151,7 +177,7 @@ The following locked decisions and discretion are copied verbatim from the phase
 ### Agent's Discretion
 
 Internal helper names and file splits, additive flag/warning names, independent diagnostic patterns and IDs,
-and plan ordering are delegated within these contracts. Research should resolve factual and budget-admission
+and plan ordering are delegated within these contracts. Research should resolve factual, fixture-comparability and package
 prerequisites before writing executable tasks; it must not treat an estimate as a successful experiment.
 
 ### Deferred Ideas (OUT OF SCOPE)
@@ -174,9 +200,9 @@ consumer beyond this phase. Saves, PAL and expansion boards retain their roadmap
 
 Use the existing cartridge switch, pure identification stage and one private ROM-plus-RAM allocation. The lookup already computes Activision half-swap hashes but discards which pass matched; retain that result in the existing flags, normalize only the accepted private copy, and translate host descriptors back to the supplied orientation. The loader currently refuses all three boards. The physical Fractalus index needs compressed address bits rather than the current generic power-of-two mask. [VERIFIED: src/cart.c:376-409,436-440,748-812]
 
-The preferred Fractalus host representation is feasible: a scratch executable using the existing descriptor builder and pinned resolver mapped sixteen adjacent-page aliases and fixed ROM with **36 descriptors, 21 resolver regions, 65,536 total bytes and zero mismatches**. The fixed gate admission has a concrete small construction and adversarial scratch evidence; full integration and its permanent controls have not been measured within the allowance. Fresh local packages fit the unchanged byte ceiling, but six-lane fit is unproved. A newly discovered prerequisite is exact fixture-manifest hashing in aggregate environment identity: adding owned fixture rows otherwise makes current/base evidence incomparable. [VERIFIED: local probes documented under Evidence; libretro/libretro.c:687-715; tests/cmake/quality_evidence.cmake:25-27,153-159; tests/cmake/quality_join.cmake:36-41]
+The preferred Fractalus host representation is feasible: a scratch executable using the existing descriptor builder and pinned resolver mapped sixteen adjacent-page aliases and fixed ROM with **36 descriptors, 21 resolver regions, 65,536 total bytes and zero mismatches**. The historical fixed-admission scratch evidence is superseded by current D-16/D-17 and creates no fit prerequisite. Fresh local packages fit the unchanged byte ceiling, but six-lane fit is unproved. A newly discovered prerequisite is exact fixture-manifest hashing in aggregate environment identity: adding owned fixture rows otherwise makes current/base evidence incomparable. [VERIFIED: local probes documented under Evidence; libretro/libretro.c:687-715; tests/cmake/quality_evidence.cmake:25-27,153-159; tests/cmake/quality_join.cmake:36-41]
 
-**Primary recommendation:** Make the first plan establish measured admission, additive-fixture comparability and unchanged-cap package acceptance before depending on counted expansion; then implement identification/maps, independent semantic tests and owned diagnostics, host integration, and final portability/compatibility acceptance. This is a planning order, not a claim that implementation fits.
+**Current recommendation:** Make10 establish producer-integrated additive-fixture comparability and unchanged local package acceptance before02; then implement identification/maps, independent semantic tests and owned diagnostics, host integration, and final portability/compatibility acceptance. This is a planning order, not a claim of implemented comparability or future package fit.
 
 ## Architectural Responsibility Map
 
@@ -191,7 +217,7 @@ The preferred Fractalus host representation is feasible: a scratch executable us
 
 ## Project Constraints (from AGENTS.md)
 
-All directives below are binding; they are a condensed planning checklist, not an allocation change. [VERIFIED: AGENTS.md:1-83]
+Current directives below follow the accepted policy; historical allocation excerpts are labeled separately. [VERIFIED: AGENTS.md:1-83]
 
 - Read preparation references and settled decisions before subsystem design; reopen choices only with new evidence.
 - Accept permissive material only with required notices. Never open GPL/LGPL/unlicensed emulator source or keep copies; oracle emulators run as released binaries.
@@ -200,9 +226,9 @@ All directives below are binding; they are a condensed planning checklist, not a
 - Integer-only, instance-owned, deterministic and bounded core; no allocation after load. Hostile or jammed ROMs cannot hold a call indefinitely.
 - Every behavior change receives CI-run tests and documentation together. README/header stay short; maintainer and hardware behavior belongs in docs.
 - Verification is automation-first. Agent judges documents/images/RetroArch. Only identity-bound consent or an owner-hardware run reaches the owner.
-- All repository-check implementations, comments/blanks, controls, inventories and embedded glue count. Gate code uses CMake script or POSIX sh. No line golf, hidden counts, weakened controls, new baseline funding or speculative savings.
-- Fixed scope allocations precede permanent growth; temporary exceptions expire within 60 days and need a credible exit. Name the fault each gate prevents.
-- At most two code-review fix rounds and one gap round. Tooling/test review findings become seeds; re-plan a gap only with new evidence.
+- Repository checks use CMake script or POSIX sh and reuse existing mechanisms; materially changed checks name their fault and demonstrate pass/fault behavior. Apply ENGINEERING §11 architecture review; no LOC or surrogate score authorizes work.
+- Preserve independent resource bounds, dated ordinary reasons and required fault detection.
+- At most two code-review fix rounds and one gap round. Optional tooling/test improvements become seeds; actual required-contract violations remain blocking wherever they live. Re-plan a gap only with new evidence.
 - Exactly one GSD step per session, then stop and report the next exact command. Do not invoke the forbidden chained/autonomous/profile commands or hygiene bypasses.
 - Remain on the existing phase branch; never commit on main with a remote. Ship uses a Conventional Commit PR title, shell auto-squash merge, head CI confirmation and green release PR confirmation.
 - Evidence consists of command, exit and run URL; never commit logs. Lessons remain hypotheses until reproduced; export only when requested.
@@ -313,11 +339,19 @@ The shipped runner presently has **no numeric mailbox report path**: its options
 
 Use the real installed-style runner for ordinary OM/Absolute/Fractalus diagnostics. For synthetic identified AM/OM pairs use the existing test-only runner substitution `muhtari-run-testdb`, which reuses runner sources with test tables; give in-process libretro the corresponding test-table linkage. Do not add diagnostic hashes to production tables. Compare records and frame/audio behavior while separately asserting distinct raw hashes and unchanged caller buffers. [VERIFIED: tests/runner/tests.cmake:696-712; tests/cart/test_cartdb.c:26-38; .planning/phases/06-retail-cartridge-boards/06-CONTEXT.md:125-131]
 
-## Fixed Gate Admission and Planning Prerequisites
+## Current evidence prerequisites and historical allocation research
 
-### Trusted-base boundary and narrow construction
+Current instructions: preserve raw trusted policy, ordinary typed observations and source/SHA/environment
+binding. Plan10 supplies the narrow trusted-manifest relation; the existing join still compares complete
+environment identities. ENGINEERING §11 replaces line admission and construction-fit proof.
 
-Current policy says `"ceiling": 15287` for gate lines and `"ceiling": 399937` for archive bytes. The judge's `INITIAL_GATE_CEILING` branch is reached only when a metric is absent from base policy. Existing `gate_existing` deliberately expects `quality: unexplained loosening`; passing a new initial ceiling is not a permanent-allocation mechanism. [VERIFIED: quality.json:3-10,60-66; tests/cmake/quality.cmake:168-205; tests/policy/quality.cmake:19-30,124-130]
+### Historical trusted-base admission construction — superseded 2026-10-23
+
+Everything through the next subsection is the original pre-retirement proposal and scratch evidence.
+Its imperatives, source line numbers, counts and allocation examples describe that historical experiment;
+none is a current prerequisite or an approved N654 grant.
+
+At the historical research commit, policy said `"ceiling": 15287` for gate lines and `"ceiling": 399937` for archive bytes. The judge's `INITIAL_GATE_CEILING` branch is reached only when a metric is absent from base policy. Existing `gate_existing` deliberately expects `quality: unexplained loosening`; passing a new initial ceiling is not a permanent-allocation mechanism. [VERIFIED: quality.json:3-10,60-66; tests/cmake/quality.cmake:168-205; tests/policy/quality.cmake:19-30,124-130]
 
 Keep base policy extracted from event-derived Git history and retain exact lane membership, SHA/source/producer/configuration/units, worst-value reduction, evidence availability, immutable exception lifetime and measured-bound checks. The CI caller obtains base from `.pull_request.base.sha // .before // empty`; candidate policy is a separate input. [VERIFIED: .github/workflows/ci.yml:603-618; tests/cmake/quality_join.cmake:8-20,26-80; tests/cmake/quality.cmake:57-115,137-205,211-233]
 
@@ -341,7 +375,7 @@ These are task/stop conditions derived from D-16–17 and ENGINEERING, not reque
 
 The evidence producer executes `file(SHA256 "${ROOT}/tests/roms/manifest.txt" fixture)` and places that digest in `environment`; it rebuilds base, then demands exact equality. The join repeats exact environment equality. Therefore adding D-13's mandatory manifest rows will fail the current aggregate even if compiler, old fixtures and code behavior remain correct. [VERIFIED: tests/cmake/quality_evidence.cmake:25-27,148-159; tests/cmake/quality_join.cmake:36-41]
 
-Before such additions, make comparability explicitly allow only the named new owned fixture rows while checking every old trusted-base manifest row is unchanged and all candidate rows are admitted/rebuilt. Keep pinned toolchain/sample identity checks. A candidate-provided shared digest or deleting fixture identity is not an acceptable repair. Prefer one bounded base-manifest subset comparison in the existing producer, with negative controls for changed/deleted old rows, changed toolchain/samples and an unrelated added fixture. The exact implementation and counted fit are unresolved; price them visibly within D-16's existing allocation/reserve. If they cannot fit, stop the affected expansion and report the measurement. [VERIFIED: tests/cmake/quality_evidence.cmake:25-27,153-159; tests/cmake/rom_hash_coverage.cmake:18-44; .planning/phases/06-retail-cartridge-boards/06-CONTEXT.md:143-171]
+Before such additions, make comparability explicitly allow only the named new owned fixture rows while checking every old trusted-base manifest row is unchanged and all candidate rows are admitted/rebuilt. Keep pinned toolchain/sample identity checks. A candidate-provided shared digest or deleting fixture identity is not an acceptable repair. Prefer one bounded base-manifest subset comparison in the existing producer, with negative controls for changed/deleted old rows, changed toolchain/samples and an unrelated added fixture. The implementation remains unproved and belongs to10, with current D-16/D-17 review and pass/fault evidence. No counted fit or allocation reserve applies. [VERIFIED: tests/cmake/quality_evidence.cmake:25-27,153-159; tests/cmake/rom_hash_coverage.cmake:18-44; .planning/phases/06-retail-cartridge-boards/06-CONTEXT.md:143-171]
 
 ### Independent unchanged package ceiling
 
@@ -374,7 +408,7 @@ The commands use existing preset/package outputs; the shell sum reproduces the p
 | New diagnostic assembler/signature/header tool | Existing pinned binary pipeline | Existing stages and byte-freshness controls already execute. [VERIFIED: tests/diag/assemble.cmake:58-95] |
 | Custom achievement resolver or larger region cap | Existing pinned rcheevos resolver | Preferred truthful map measured below cap; no dependency growth needed. [VERIFIED: local map probe; build/pins/rcheevos/src/rc_libretro.h:39-45] |
 | Serialization API for transactional tests | Existing test-only state digest pattern plus deep buffers/control execution | Digest clears pointers and includes ROM/RAM. [VERIFIED: tests/prop/test_prop.c:132-154] |
-| Allocation DSL or broad new policy store | One literal gate-only admission in current judge | Fixed scoped grant, existing trusted-base/evidence checks and D-17. [VERIFIED: tests/cmake/quality.cmake:168-233; context D-17; local admission probe] |
+| New policy DSL or review scorecard | Current contract checks and ENGINEERING §11 review | Accepted D-16/D-17; retain ordinary trusted-base/evidence safeguards without maintenance admission. |
 
 ## Common Pitfalls
 
@@ -396,7 +430,7 @@ Plan bounded board-selecting builders and a deterministic matrix, then extend th
 
 ### Gate and evidence errors
 
-The nine-line admission proof does not grant tooling headroom beyond the fixed total; manifest comparability, runner-report invocation controls, inventories and their negative controls all count. A passing macOS archive sum does not show the cross-platform maximum fits. Register new hashes through the existing native/PowerPC/WASM artifact paths without changing required/advisory status, and retain old compatibility predicates and pins. [VERIFIED: context D-15–18; tests/cmake/hashes.cmake:4-47; .github/workflows/ci.yml:304-356]
+The historical nine-line admission proof is superseded; manifest comparability, runner-report invocation controls and exact inventories remain real correctness obligations. A passing macOS archive sum does not show the cross-platform maximum fits. Register new hashes through the existing native/PowerPC/WASM artifact paths without changing required/advisory status, and retain old compatibility predicates and pins. [VERIFIED: context D-15–18; tests/cmake/hashes.cmake:4-47; .github/workflows/ci.yml:304-356]
 
 ## Code Examples
 
@@ -411,7 +445,9 @@ uint32_t physical = ((addr & 0x0E00) >> 1) | (addr & 0x00FF);
 
 For tests, construct eight physical 256-byte blocks, and explicitly enumerate each block's adjacent CPU page pair and four high-window mirrors. Compare every offset from those vectors; do not call the production index or merely duplicate the same bit expression in expected-value code. Preserve the context's independent-pattern requirement. [VERIFIED: context D-06/D-12]
 
-### Fixed admission comparison skeleton
+### Historical fixed admission comparison skeleton — superseded 2026-10-23
+
+This retained scratch example is not current implementation guidance.
 
 Proposed algorithm, expressed without new policy API names:
 
@@ -427,7 +463,7 @@ If and only if:
 Continue original observation identity/status/value checks for every metric.
 ```
 
-The numbers are verbatim D-16 values copied in User Constraints, and the existing metric key is `"gate_lines"`. This is the scratch-tested narrow construction, not a generic candidate scope interpreter. [VERIFIED: quality.json:3-10; context D-16; local admission probe]
+The numbers are verbatim historical D-16 values copied in User Constraints, and the retired metric key is `"gate_lines"`. This is the scratch-tested narrow construction, not a generic candidate scope interpreter. [VERIFIED: quality.json:3-10; context D-16; local admission probe]
 
 ## State of the Art
 
@@ -436,7 +472,7 @@ The numbers are verbatim D-16 values copied in User Constraints, and the existin
 | Probe identifies unsupported retail boards | Exact board/combination geometry, then supported load | `cart_refused` currently permits only linear/SuperGame. [VERIFIED: src/cart.c:436-440] |
 | Half-swapped lookup discards orientation | Identified-only copy normalization and descriptive flag | [VERIFIED: src/cart.c:376-409; context D-01–03] |
 | RAM descriptor uses contiguous physical span | Truthful Fractalus aliases with deliberate higher holes | [VERIFIED: libretro/libretro.c:754-756; local map probe; context D-11] |
-| Permanent existing-ceiling increase needs dated reason | Narrow preapproved literal gate grant, ordinary checks retained | [VERIFIED: tests/cmake/quality.cmake:189-205; local admission probe; context D-17] |
+| Historical maintenance-line increase needed admission | Metric and exclusive admission retired; ordinary resource guards retained | Current D-16/D-17 and ENGINEERING §11; historical scratch example above. |
 | Any fixture-manifest addition changes environment | Narrow additive-owned-fixture comparability, old rows/toolchain protected | [VERIFIED: tests/cmake/quality_evidence.cmake:25-27,153-159] |
 
 This is a project transition table, not an ecosystem deprecation claim.
@@ -445,15 +481,15 @@ This is a project transition table, not an ecosystem deprecation claim.
 
 | # | Claim | Section | Risk if wrong / handling |
 |---|---|---|---|
-| A1 | [ASSUMED] Complete admission controls, fixture comparability and all required counted integration can fit within the fixed 192-line allocation. | Fixed Gate Admission | Not proved. First measured task must prove it or stop affected expansion; do not lock this as successful fit. |
+| A1 | [SUPERSEDED 2026-10-23] Historical complete counted-fit assumption. | Historical allocation | Historical01 failed its constructed fit; accepted policy retirement removes this prerequisite without turning it into success.10 independently proves fixture comparability. |
 | A2 | [ASSUMED] Complete board/runner changes can fit archive_bytes 399937 across all six native lanes. | Package ceiling | Local baseline fit is insufficient. Package early, measure every existing native leg; reduce within scope or halt. |
 
-These are explicitly unproved feasibility assumptions, not permission to raise limits. Neither needs a speculative owner acceptance: replace it with measured implementation evidence or report the failure under D-16–18. Hardware edges already selected in D-08 remain labeled compatibility/profile policies, not new assumptions to reopen.
+A1 is historical/superseded; A2 remains unproved, not permission to raise a limit. Obtain actual package evidence or report the concrete failure under D-18; no speculative owner acceptance is needed. Hardware edges already selected in D-08 remain labeled compatibility/profile policies, not new assumptions to reopen.
 
 ## Open Questions
 
-1. **Full counted construction:** nine admission lines are measured; permanent controls/glue, additive-manifest handling and total phase registrations remain to be measured. Resolve in the first bounded task; no reserve replenishment.
-2. **Runner numeric observation:** an explicit diagnostic report path is required for real-runner mailbox checks. Choose the smallest bounded surface during planning and include its invocation controls in the existing allocation. Do not assert current hash-only output checks records.
+1. **Fixture comparability:** implement10's real producer→join relation and controls before02. Historical line-grant/fit construction is superseded and requires no further prototype.
+2. **Runner numeric observation:** an explicit diagnostic report path is required for real-runner mailbox checks. Choose the smallest bounded surface during planning and exercise invocation faults through existing controls. Do not assert current hash-only output checks records.
 3. **Cross-platform package fit:** local current baseline fits, future native maxima are unknown. Preserve the ceiling and fail measured overages; no unrequested byte grant.
 4. **v4 SuperGame/A8 semantics:** no phase evidence establishes this hardware combination; leave it explicitly unsupported. Linear/A8 Fractalus is the narrow accepted case. No new owner-console run blocks the selected profile.
 
@@ -478,7 +514,7 @@ No missing dependency currently blocks local research. Full cross-platform packa
 
 Validation Architecture and Security Domain template sections are omitted because configuration explicitly states `"nyquist_validation": false` and `"security_enforcement": false`. Bounds, state transactionality, immutable inputs and hostile cartridge tests remain mandatory phase behavior. This is an emulator/load boundary, with no new authentication/session/web tier. [VERIFIED: .planning/config.json:28,52,61; context D-09,D-14]
 
-Commands below were run during research. Local commands have no hosted run URL; N/A is intentional. No committed logs or product changes were produced.
+Historical commands below were run during the pre-retirement research; deleted-counter invocations are evidence only. Local commands have no hosted run URL; N/A is intentional. No committed logs or product changes were produced.
 
 | Command / probe | Exit | Result | Run URL |
 |---|---:|---|---|
@@ -491,7 +527,7 @@ Commands below were run during research. Local commands have no hosted run URL; 
 | `cc -std=c17 -I. -Iinclude -Ihost -Irunner -Ilibretro -Ibuild/ci/generated -Ibuild/pins/rcheevos/include -Ibuild/pins/rcheevos/src /tmp/muhtari-phase06-map-probe.c runner/sha256.c build/ci/libmuhtari.a build/ci/libmuhtari_host.a build/ci/libmuhtari_test_rcheevos.a -o /tmp/muhtari-phase06-map-probe`, then `/tmp/muhtari-phase06-map-probe` | 0 / 0 | 36 descriptors, 21 regions, 65,536 bytes; all intended RAM/ROM and higher holes checked, zero mismatches | N/A — local |
 | `python3 /tmp/muhtari-phase06-admission-probe.py` | 0 | 15 scratch cases matched expected exits; admission adds 9 physical lines; no production integration claim | N/A — local |
 
-Scratch files are disposable research probes, not proposed Python repository checks. Permanent controls must use the existing CMake/POSIX mechanisms and be fully counted.
+Scratch files are disposable research probes, not proposed Python repository checks. Current controls use the existing CMake/POSIX mechanisms; the historical counting policy is retired.
 
 ## Sources
 
@@ -517,10 +553,10 @@ The research-plan seam selected jina for specific-URL fetches; no jina tool was 
 **Confidence breakdown:**
 - Stack/environment: MEDIUM overall; current local tools/pins and successful existing commands are directly verified.
 - Board architecture: MEDIUM; current source and locked maps are grounded, uncertain hardware edges remain explicitly qualified.
-- Admission: MEDIUM for the nine-line scratch construction; full counted-control/comparability fit remains unproved.
+- Historical admission: MEDIUM for its scratch construction; superseded by policy retirement. Current fixture comparability remains unimplemented.
 - Package fit: MEDIUM for current local baseline; no claim about unbuilt future native maxima.
 - Pitfalls: MEDIUM; raw-copy fuzz, pointer-only rejection snapshots, optional descriptor holes and exact-manifest environment coupling are present code observations.
 
 **Research date:** 2026-10-23
 **Refresh trigger:** any changed phase decision, gate policy, pinned resolver or loader/host seam.
-**Planning disposition:** Ready for a bounded prerequisite-first plan. Do not make later execution depend on unmeasured tooling fit or an unauthorized archive-byte increase.
+**Planning disposition:** Ready for a bounded prerequisite-first plan. Execute10's concrete comparability prerequisite before02; no line-fit proof applies and no archive-byte increase is authorized.

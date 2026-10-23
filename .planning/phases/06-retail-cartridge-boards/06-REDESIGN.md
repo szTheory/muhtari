@@ -16,6 +16,16 @@ The historical construction and halted `06-01-SUMMARY.md` remain intact. Plans
 01–09 remain blocked; no BOARD requirement is complete. Review/gap allowances
 are unchanged. Approval of investigation did not authorize spending654.
 
+## Historical disposition — 2026-10-23
+
+The owner accepted retirement of the maintenance-line policy and its exclusive machinery in
+[the proportional-gates recommendation](../../research/proportional-gates/RECOMMENDATION.md).
+This supersedes the allocation question below; N654/C15941 was not approved. The remaining proposal,
+counts, commands and original decision-required status are historical evidence, not current instructions.
+The halted01 SUMMARY remains unchanged. Active plans02–10 remain incomplete; only10 is ready for the
+unimplemented fixture-comparability prerequisite. Board semantics and future six-native package acceptance
+remain unproved, with archive_bytes399937 and all substantive contracts unchanged.
+
 ## Choices and selected construction
 
 | Choice | Assessment |

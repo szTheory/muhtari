@@ -1,7 +1,7 @@
 # Phase 6: Retail cartridge boards - Context
 
 **Gathered:** 2026-10-23
-**Status:** Ready for planning
+**Status:** Reconciled 2026-10-23; comparability prerequisite06-10 ready, board plans incomplete
 
 <domain>
 ## Phase Boundary
@@ -129,9 +129,24 @@ milestones. Recognizing a PAL image is separate from executing it; retain the cu
   playability or PAL completion. Keep untested retail ledger rows honest. Publish behavior prose in hardware,
   embedding/runner/libretro/testing docs as appropriate, with a short user-facing README and terse public header.
 
-### Fixed tooling scope and planning prerequisites
+### Current review and comparability prerequisites
 
-- **D-16:** Adopt a fixed maximum **192 net counted lines** solely for BOARD-01–03 integration and its controls.
+- **D-16 (accepted 2026-10-23):** The owner accepted the proportional-gates recommendation and authorized its
+  bounded migration. ENGINEERING §11 now governs architecture review and concrete check contracts; maintenance
+  LOC ceilings, line allocations, inventories, grant admission and complete disposable fit proofs are retired.
+  No replacement score or numerical maintenance quota applies. The N654/C15941 redesign proposal is superseded,
+  not approved. Preserve the historical measurements and halted01 evidence; they establish no board completion.
+- **D-17 (accepted 2026-10-23):** Preserve authenticated ordinary quality observations, raw trusted-base policy,
+  SHA/source/configuration identity, comparable compiler/platform and built samples, reasons and measured guards.
+  Before new board fixture admission, implement and test only the narrow trusted-manifest comparability relation
+  in06-10; current/base join equality stays intact. Every trusted old row stays byte-identical, only unique added
+  rows for the three named owned board fixtures are allowed, and later bases protect those rows as old rows.
+  Normal legal fixture admission/rebuild remains authoritative. No allocation prototype or line-fit proof is
+  a prerequisite; a concrete contract failure still stops affected work under AGENTS rule7.
+
+### Historical allocation decisions — superseded 2026-10-23
+
+- **Historical D-16:** Adopt a fixed maximum **192 net counted lines** solely for BOARD-01–03 integration and its controls.
   Measured starting count **B = 15,287** at `617dfa762ddb649839b925be5aa582180066fa78`; assumed savings **S = 0**;
   fixed allowance **N = 192**; maximum **C = 15,479**. This is an allocation estimate, not demonstrated fit.
 
@@ -147,12 +162,14 @@ milestones. Recognizing a PAL image is separate from executing it; retain the cu
   ENGINEERING §11. Product C tests and owned assembly follow its existing classification; relocation does not
   create savings. Redistribution is visible within N, unused allowance retires and final actual tightens C.
   No new lane, generic framework, allowance language or automatic rebaseline is authorized.
-- **D-17:** Planning must establish a narrow, trusted-base admission path for this explicit new scope inside
+- **Historical D-17:** Planning must establish a narrow, trusted-base admission path for this explicit new scope inside
   D-16. The current quality judge demonstrates initial adoption and dated exceptions, not a permanent increase
   against an existing ceiling; `INITIAL_GATE_CEILING` is not a blanket escape. Preserve rejection of unrelated
   policy loosening, expiry/missing evidence controls and measured-value checks. Do not finance permanent growth
   through renewing temporary exceptions. If the fixed construction cannot fit, record the concrete failing
   construction and stop affected expansion; another allocation requires new evidence and an explicit decision.
+### Current independent package prerequisite
+
 - **D-18:** The independent `archive_bytes` ceiling is 399,937 and has no headroom established for new code.
   Research/planning must identify a bounded package-size measurement and a lawful acceptance path before
   implementation depends on raising it. D-16 authorizes no byte increase, no candidate self-rebaseline and no
@@ -163,7 +180,7 @@ milestones. Recognizing a PAL image is separate from executing it; retain the cu
 ### Agent's Discretion
 
 Internal helper names and file splits, additive flag/warning names, independent diagnostic patterns and IDs,
-and plan ordering are delegated within these contracts. Research should resolve factual and budget-admission
+and plan ordering are delegated within these contracts. Research should resolve factual, fixture-comparability and package
 prerequisites before writing executable tasks; it must not treat an estimate as a successful experiment.
 </decisions>
 
@@ -173,7 +190,7 @@ prerequisites before writing executable tasks; it must not treat an estimate as 
 Downstream agents must read relevant sections before planning or implementing.
 
 ### Scope and settled contracts
-- `AGENTS.md` — licensing, test/documentation, boundedness, budgets, one-step and branch rules.
+- `AGENTS.md` — licensing, test/documentation, boundedness, review, one-step and branch rules.
 - `.planning/ROADMAP.md` — Phase 6 goal and all four success criteria.
 - `.planning/REQUIREMENTS.md` — BOARD-01–03 and later-phase boundaries.
 - `.planning/PROJECT.md` — deliverables, dependency preference and deterministic core.
@@ -182,11 +199,11 @@ Downstream agents must read relevant sections before planning or implementing.
 - `.planning/preparation/A7800-CARTRIDGES-AND-PERIPHERALS.md` §§1–2,7 — layout, header policy, board maps and bounds.
 - `.planning/preparation/ARCHITECTURE.md` §§3–6 — instance ownership, loader and public contracts.
 - `.planning/preparation/CONFORMANCE.md` §§4–7 — diagnostic mailbox, legal fixtures, ledger and lane rules.
-- `.planning/preparation/ENGINEERING.md` §§3,8,11 — checks, performance and complete line counting.
+- `.planning/preparation/ENGINEERING.md` §§3,8,11 — checks, performance and current architecture review.
 - `.planning/preparation/HOSTS-AND-INTEGRATION.md` §§1–4 — maps, achievement and runner contracts.
 - `PROVENANCE.md` and `ASSET_POLICY.md` — per-file licensing and fixture admission.
 - `.planning/phases/05-pipeline-tune-up/05-CONTEXT.md` D-09–13,D-19,D-35 and
-  `.planning/phases/05-pipeline-tune-up/05-VERIFICATION.md` — current budget/lanes, historical versus accepted scope.
+  `.planning/phases/05-pipeline-tune-up/05-VERIFICATION.md` — current lanes and historical accepted scope; current review policy is ENGINEERING §11.
 - `.planning/milestones/v1.0-phases/03-games-play-in-retroarch/03-CONTEXT.md` D-23–27 and
   `.planning/milestones/v1.0-phases/04-sound/04-CONTEXT.md` D-05,D-21–24 — current host/diagnostic/audio invariants.
 - `docs/hardware/cartridge.md`, `docs/hardware/bus.md`, `docs/embedding.md`, `docs/runner.md`,
@@ -201,9 +218,9 @@ Downstream agents must read relevant sections before planning or implementing.
 - `tests/fuzz/loader.c`, `tests/fuzz/run_cart.h`, `tests/fuzz/seeds.c`, `tests/prop/test_prop.c`,
   `tests/core/test_core.c`, `tests/alloc.h` — safety/lifecycle coverage to extend.
 - `tests/libretro/host.c`, `tests/libretro/rcheevos.c`, `tests/runner/test_runner.c`, `tests/compat/ledger.csv`.
-- `quality.json`, `tests/policy/gate-lines.txt`, `tests/cmake/gate_count.cmake`, `tests/cmake/quality.cmake`,
+- `quality.json`, `tests/cmake/quality.cmake`,
   `tests/cmake/quality_join.cmake`, `tests/policy/quality.cmake`, `.github/workflows/ci.yml`,
-  `.github/workflows/nightly.yml`, `pins.txt` — actual admission, counts and pinned tooling.
+  `.github/workflows/nightly.yml`, `pins.txt` — authenticated observations and pinned tooling.
 
 ### External evidence, rechecked 2026-10-23
 - [Bankswitching guide, revision 391](https://7800.8bitdev.org/index.php?title=ATARI_7800_BANKSWITCHING_GUIDE&oldid=391)
@@ -239,7 +256,7 @@ Downstream agents must read relevant sections before planning or implementing.
 - libretro currently derives ROM descriptors from original content and maps unbanked RAM contiguously; both
   assumptions require board-aware treatment here.
 - Loader fuzz assumes raw-copy equality; run-fuzz, isolation and no-allocation cases do not currently cover these boards.
-- Existing counted registration and inventory files require D-16 even without another CI lane.
+- Existing registrations and exact inventories must retain required execution under the current D-16 review contract.
 </code_context>
 
 <specifics>
