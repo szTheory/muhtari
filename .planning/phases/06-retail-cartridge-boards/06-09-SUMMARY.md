@@ -245,3 +245,21 @@ At parent PR24 head `85e12ca9013638c7aafbe96d55636fc74d32781a`, the first actual
 | `git diff --check` | 0 | No whitespace errors; N/A-local |
 
 The first local hygiene correction run passed23/24 and identified the additional host-table formatting issue; the final complete24/24 rerun includes that correction. A full CI run after the final formatting change passed. `gcc --version` returns Apple Clang21 here, and no versioned GNU compiler was found in PATH/Homebrew; no local GNU proof is claimed. Parent owns push/retry and actual current-head GNU, native/BE, release and authenticated quality acceptance. WINDOWS43/44 record the corrected source faults as fixed; WINDOWS42 and the pending hosted acceptance above remain open. This correction does not complete Task3, a BOARD requirement or the phase, and does not start another GSD step.
+
+## Hosted Failure Repair: Quality Control Setup Cost
+
+Code commit `334abf0` addresses the measured macOS x64 timeout in [CI40026612824, job120664334192](https://github.com/szTheory/muhtari/actions/runs/40026612824/job/120664334192) and [called CI40026612929, job120664334359](https://github.com/szTheory/muhtari/actions/runs/40026612929/job/120664334359). The parent-supplied log shows `policy.quality.controls` exceeding its 30-second limit at 30.16 seconds after completing the older controls, fixture cases and sample/compiler cases; the other 611 ordinary tests passed. Those failed runs are fault evidence, not hosted acceptance.
+
+**[Rule 1 - Test performance]** The existing producer loop repeatedly removed and configured the entire current mock build even for inputs rejected before recursion. It now builds invariant current outputs once and removes only its owned base-worktree directory before each actual recursive producer. Compiler/platform mutations are restored after their evidence is captured. Every case list is byte-identical; every valid producer still performs the independent base build and its required unchanged join. All source/fixture comparability, sample relation, raw-policy retirement, typed evidence and reason controls remain. The registration and 30-second timeout are unchanged; no assertion, lane, framework or resource limit was removed or raised.
+
+| Command | Exit | Result | Run URL |
+|---|---:|---|---|
+| `/usr/bin/time -p ctest --preset ci -R '^policy[.]quality[.]controls$' --output-junit quality-controls-before.xml --no-tests=error --output-on-failure` before this change | 0 | Test6.62s, CTest6.63s, wall6.64s, user2.84s, sys3.02s | N/A-local |
+| Same command after this change, with `--output-junit quality-controls-after.xml` | 0 | Test4.17s, CTest4.18s, wall4.19s, user2.00s, sys1.79s; matched wall reduction about37% | N/A-local |
+| `cmake --workflow --preset ci` on the finished test code | 0 | 612 ordinary and six release checks; quality controls also pass during the concurrent full suite | N/A-local |
+| `cmake --workflow --preset hygiene` | 0 | 24/24, including no-float pass/fault, analyzer, formatting and fixture coverage | N/A-local |
+| All three `check_junit.cmake` inventory commands above | 0 each | Exactly612 ordinary, six release and24 hygiene tests ran once each | N/A-local |
+| Exactly-three ZIP expansion and `wc -c` sum above | 0 | Library68,754 + libretro68,092 + runner77,286 =214,132 <=399,937 | N/A-local |
+| Case-list comparison against pre-fix HEAD; `git diff --check` | 0 each | All foreach case lists byte-identical; no whitespace errors | N/A-local |
+
+WINDOWS46 records the local setup fix as fixed. The measured improvement is local; current-head hosted timing and authenticated aggregate acceptance still require the parent's normal retry. WINDOWS42, Task3, the hosted-retirement todo and all BOARD requirements remain pending. No review/gap allowance was reset, and the parent's uncommitted review report was preserved.
