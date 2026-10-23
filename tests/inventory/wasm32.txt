@@ -138,6 +138,7 @@ cart.probe.oversized	cart,portable
 cart.probe.truncated	cart,portable
 cart.probe.unsupported_board	cart,portable
 cart.probe.warnings	cart,portable
+cart.retail.boards	cart,portable
 cart.sha1.fips	cart,portable
 core.api.size_tags	core,portable
 core.audio.silence	core,portable

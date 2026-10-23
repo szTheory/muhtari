@@ -341,6 +341,22 @@ RAM, 32,768 with banked RAM (both halves, in order), and the list's size for a g
 the cartridge's allocation, so a new load replaces it: ask again after each load. It starts zeroed, and a power cycle
 zeroes it again.
 
+Fractalus exposes exactly 2,048 physical bytes in `MUHTARI_MEMORY_CART_RAM`,
+in physical order. The CPU's $4000-$7FFF aliases cover those bytes as described
+in [the cartridge map](hardware/cartridge.md#fractalus); the A8 header name does
+not imply an 8 KiB span. This is volatile RAM, with no battery/save span or
+save-device declaration. Its bus aliases do not promise complete achievement
+visibility through host descriptors.
+
+Loading a cartridge or calling `muhtari_power_cycle` restores bank zero on
+Absolute and Activision and zeroes all Fractalus RAM. A power cycle preserves
+the existing span pointer; loading replaces the allocation, so query the span
+again. Repeated bus traffic, frames and power cycles allocate nothing after
+load. `MUHTARI_SWITCH_RESET` is a console input the game reads and leaves
+cartridge state intact unless the game's own code changes it. The libretro
+adapter's `retro_reset` calls `muhtari_power_cycle`, so a frontend Restart
+restores that deterministic profile.
+
 ## Counters
 
 `muhtari_get_counters` fills a `muhtari_counters`. `frames` counts the frames run since the last load or power
