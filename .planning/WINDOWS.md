@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 17
 waived_count: 0
-fixed_count: 21
-total_count: 38
-last_updated: 2026-10-23T20:05:34.293Z
+fixed_count: 23
+total_count: 40
+last_updated: 2026-10-23T20:26:13.527Z
 ---
 
 # Broken Windows Ledger
@@ -53,6 +53,8 @@ last_updated: 2026-10-23T20:05:34.293Z
 | 36 | 06 | deviation | tests/header/header.c |  | API4 required updating C17 and C++17 header-only current-version assertions from3 to4; resolved in0e42dff. | fixed |  | 2026-10-23T19:45:55.060Z | 2026-10-23T19:46:54.036Z |
 | 37 | 06 | deviation | tests/cart/test_cart.c |  | Activision warning vectors still expected unsupported after mapper acceptance; updated accepted status and assumed-layout warning, focused10 and full611+6 pass. | fixed |  | 2026-10-23T19:55:35.527Z | 2026-10-23T19:56:15.118Z |
 | 38 | 06 | deviation | tests/cart/test_cart.c |  | Replaced stale Fractalus refusal expectations with executable coverage and a retained BankSet hash-refusal control; resolved in1d51980. | fixed |  | 2026-10-23T20:05:34.173Z | 2026-10-23T20:05:34.293Z |
+| 39 | 06 | deviation | tests/libretro/rcheevos.c |  | Retail resolver assertion initially treated volatile Fractalus RAM as battery-save memory; corrected to physical CART_RAM2048 and save0 before Task1 commit, focused6 pass. | fixed |  | 2026-10-23T20:25:58.408Z | 2026-10-23T20:26:13.457Z |
+| 40 | 06 | deviation | tests/libretro/rcheevos.c |  | Raw observer requires setup before load; test-only module seam now registers it before content load, preserving no allocation during execution, focused6 and full612+6 pass. | fixed |  | 2026-10-23T20:25:58.510Z | 2026-10-23T20:26:13.527Z |
 
 ````json
 [
@@ -548,6 +550,32 @@ last_updated: 2026-10-23T20:05:34.293Z
     "reason": "",
     "recorded_at": "2026-10-23T20:05:34.173Z",
     "resolved_at": "2026-10-23T20:05:34.293Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 39,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/libretro/rcheevos.c",
+    "line": null,
+    "description": "Retail resolver assertion initially treated volatile Fractalus RAM as battery-save memory; corrected to physical CART_RAM2048 and save0 before Task1 commit, focused6 pass.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:25:58.408Z",
+    "resolved_at": "2026-10-23T20:26:13.457Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 40,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/libretro/rcheevos.c",
+    "line": null,
+    "description": "Raw observer requires setup before load; test-only module seam now registers it before content load, preserving no allocation during execution, focused6 and full612+6 pass.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:25:58.510Z",
+    "resolved_at": "2026-10-23T20:26:13.527Z",
     "milestone": "v2.0"
   }
 ]
