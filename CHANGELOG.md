@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/szTheory/muhtari/compare/v0.4.0...v0.5.0) (2026-10-23)
+
+
+### Features
+
+* execute retail cartridge boards across all core hosts ([#24](https://github.com/szTheory/muhtari/issues/24)) ([bd5ffd7](https://github.com/szTheory/muhtari/commit/bd5ffd7680f9d513da0141f999b4ab5b6fe2f877))
+
 ## [0.4.0](https://github.com/szTheory/muhtari/compare/v0.3.0...v0.4.0) (2026-10-21)
 
 
