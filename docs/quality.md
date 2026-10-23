@@ -8,7 +8,7 @@ Zero findings require the actual ABI, fatal-warning, analyzer or sanitizer judge
 Each observation identifies its built SHA, configuration, producer and source run.
 
 Initial ordinary bounds use an independently built, unchanged event-base tree on
-the same runner with matching compiler and fixture fingerprints. Native bounds
+the same runner with matching compiler and fixture comparison identities. Native bounds
 apply to every native leg; the archive ceiling covers the largest three-archive
 total across the six native legs. This bounds package size across the platform set;
 it does not measure each platform's percentage growth. The ceiling remains 399937
@@ -20,6 +20,33 @@ cohort; it grants no extra bytes for that variation. This remains a strict ceili
 on actual output, alongside the independent archive contents and firmware judges.
 An exact reason names the metric, old/new bound, rationale, grant and expiry dates;
 its lifetime is at most 60 days. Inherited expiry and renewal are checked every run.
+
+Fixture comparison permits a narrow additive relation: only unique new rows for
+`tests/diag/activision.a78`, `tests/diag/absolute.a78` and
+`tests/diag/fractalus.a78` may be added. Each has exactly six tab-separated fields:
+the named path, `this-repo`, a nonempty pin without whitespace, `MIT`, a 64-digit
+lowercase SHA-256 and `-`. All old rows and other manifest text remain byte-identical
+and in order. Changed, deleted or duplicate old paths, duplicate additions,
+unrelated paths, malformed fields and added comments fail. A later base containing
+any named board row protects it as an old row; that row cannot be edited or repeated.
+
+The producer obtains trusted manifest bytes directly from the independently resolved
+event-base Git commit, alongside the original base-policy and SHA authority. PRs use
+the event's base SHA, pushes use `before`, and dispatches use the event head's first
+parent. After proving the relation, both current and rebuilt-base observations use
+the original trusted manifest's SHA-256 as their shared comparison identity. The
+recursive invocation uses the current evidence script and independently reads that
+same event and Git object. There is no candidate-provided shared digest or ignored
+identity field. Local observation production without an event retains the raw
+manifest digest and provides no independent-base acceptance.
+
+Compiler identity/version, platform/architecture and the complete built-sample
+expectation digest remain unchanged components of the environment. The producer
+and join still require exact complete environment equality; every individual lane
+must validate before reduction. This comparison identity does not admit fixture
+bytes, validate licensing, prove a diagnostic's behavior or replace raw content
+hashes. Manifest admission, exact fixture digests, independent rebuilds and hash
+coverage retain their separate authority.
 
 The maintenance-line metric and its exclusive counter, inventory and adoption
 handling are retired. The trusted-base key-retention check permits only the literal
