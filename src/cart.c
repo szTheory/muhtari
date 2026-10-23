@@ -80,6 +80,9 @@ static uint32_t be32(const uint8_t *p)
    (docs/hardware/cartridge.md, Geometry). A refused board has none here. */
 static int cart_fits(const struct cart_board *b, size_t n)
 {
+    if (b->board == MUHTARI_BOARD_ABSOLUTE) {
+        return n == 64u * CART_KIB && b->options == 0u && b->ram == 0u;
+    }
     if (b->board == MUHTARI_BOARD_LINEAR) {
         return (n % (4u * CART_KIB) == 0u && n >= 4u * CART_KIB && n <= 48u * CART_KIB) ||
                n == 64u * CART_KIB;
@@ -436,7 +439,8 @@ static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 /* Boards a loaded cartridge cannot run yet. */
 static int cart_refused(const struct cart_board *b)
 {
-    return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME) ||
+    return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME &&
+            b->board != MUHTARI_BOARD_ABSOLUTE) ||
            (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
 }
 
@@ -852,6 +856,16 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
         return *ram;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_ABSOLUTE:
+        /* Fixed upper 32 KiB; the low window selects either 16 KiB bank
+           (cartridge preparation section 2.1, Absolute). */
+        if (addr >= 0x8000u) {
+            return c->rom[addr];
+        }
+        if (addr >= 0x4000u) {
+            return c->rom[(uint32_t)c->bank * CART_BANK + (addr & (CART_BANK - 1u))];
+        }
+        break;
     case MUHTARI_BOARD_LINEAR: {
         uint32_t base = 0x10000u - c->info.rom_size;
         if (addr >= base) {
@@ -884,6 +898,7 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
                               (m->cart.ram != NULL ||
                                (m->cart.info.board_options &
                                 (MUHTARI_BOARD_ROM_AT_4000 | MUHTARI_BOARD_BANK6_AT_4000)) != 0u ||
+                               m->cart.info.board == MUHTARI_BOARD_ABSOLUTE ||
                                (m->cart.info.board == MUHTARI_BOARD_LINEAR &&
                                 m->cart.info.rom_size > 32768u));
                 if (!overlap) {
@@ -923,6 +938,17 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         return;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_ABSOLUTE:
+        /* Compatibility policy: only $8000, D0 before D1, else retain
+           (cartridge preparation section 2.1, Absolute). */
+        if (addr == 0x8000u) {
+            if ((v & 1u) != 0u) {
+                c->bank = 0u;
+            } else if ((v & 2u) != 0u) {
+                c->bank = 1u;
+            }
+        }
+        break;
     case MUHTARI_BOARD_SUPERGAME:
         if (addr >= 0x8000u && addr < 0xC000u) {
             uint32_t banks = c->info.rom_size / CART_BANK;

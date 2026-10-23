@@ -1,3 +1,82 @@
+# The generated retail batch reuses this file as a CMake script. Faults:
+# absent/corrupt runner reports, incomplete mailbox protocols, and a missing
+# admitted fixture must never produce a passing three-deliverable observation.
+if(DIAG_RETAIL_RUN)
+  function(diag_exec)
+    execute_process(COMMAND ${EMULATOR} "${DRIVER}" ${ARGV}
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 30)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "diag retail ${ARGV}: ${rc}\n${out}\n${err}")
+    endif()
+    message("${out}")
+  endfunction()
+  function(diag_observe path name smoke)
+    if(smoke)
+      diag_exec(--smoke "${path}")
+    else()
+      diag_exec("${path}" "${EXPECTED}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUNNER}" --probe "${path}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE probe TIMEOUT 10)
+    if(name STREQUAL "smoke")
+      set(board absolute)
+    else()
+      set(board "${name}")
+    endif()
+    if(NOT rc STREQUAL "0" OR NOT probe MATCHES "\nboard ${board}\n")
+      message(FATAL_ERROR "diag retail wrong board: ${rc} ${probe}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUNNER}" --frames 600 --diagnostic "${path}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE report ERROR_VARIABLE err TIMEOUT 30)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "diag retail runner: ${rc} ${err}")
+    endif()
+    file(WRITE "${OUT}/report.txt" "${report}")
+    diag_exec(--mailbox "${OUT}/report.txt" "${name}" "${EXPECTED}")
+    diag_exec(--libretro "${MODULE}" "${path}" "${EXPECTED}")
+    message("${name}: library, runner and libretro numeric observations passed")
+  endfunction()
+  file(MAKE_DIRECTORY "${OUT}")
+  diag_observe("${OUT}/smoke.a78" smoke TRUE)
+  file(READ "${OUT}/report.txt" good_report)
+  foreach(bad IN ITEMS "" "${good_report}extra" "diagnostic xyz\n")
+    file(WRITE "${OUT}/bad-report.txt" "${bad}")
+    execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/bad-report.txt" smoke
+      "${EXPECTED}" RESULT_VARIABLE rc TIMEOUT 10)
+    if(NOT rc STREQUAL "1")
+      message(FATAL_ERROR "diag retail accepted malformed/absent report: ${rc}")
+    endif()
+  endforeach()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/absent-report" smoke
+    "${EXPECTED}" RESULT_VARIABLE rc TIMEOUT 10)
+  if(NOT rc STREQUAL "1")
+    message(FATAL_ERROR "diag retail accepted missing report")
+  endif()
+  foreach(args IN ITEMS "--diagnostic" "--frames;1;--diagnostic"
+      "--bench;1;--diagnostic;${OUT}/smoke.a78"
+      "--frames;1;--diagnostic;--diagnostic;${OUT}/smoke.a78")
+    execute_process(COMMAND ${EMULATOR} "${RUNNER}" ${args}
+      RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET TIMEOUT 10)
+    if(NOT rc STREQUAL "2")
+      message(FATAL_ERROR "diag retail usage fault ${args}: ${rc}")
+    endif()
+  endforeach()
+  file(STRINGS "${MANIFEST}" admitted REGEX "^tests/diag/(activision|absolute|fractalus)[.]a78\t")
+  foreach(row IN LISTS admitted)
+    string(REPLACE "\t" ";" fields "${row}")
+    list(GET fields 0 relative)
+    list(GET fields 1 source)
+    list(GET fields 3 license)
+    if(NOT source STREQUAL "this-repo" OR NOT license STREQUAL "MIT" OR
+        NOT EXISTS "${ROOT}/${relative}")
+      message(FATAL_ERROR "diag retail missing or unowned admitted fixture: ${relative}")
+    endif()
+    get_filename_component(name "${relative}" NAME_WE)
+    diag_observe("${ROOT}/${relative}" "${name}" FALSE)
+  endforeach()
+  return()
+endif()
+
 # Our own diagnostic ROMs (docs/emulation-tests.md, diag). Each tests/diag/*.s
 # is MIT code of this repository, assembled into the committed .a78 beside it
 # by assemble.cmake. muhtari-test-diag runs one and judges its mailbox against
@@ -13,6 +92,27 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${diag_dir}/expec
 add_executable(muhtari-test-diag ${diag_dir}/driver.c)
 target_include_directories(muhtari-test-diag PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-diag PRIVATE muhtari::muhtari)
+if(TARGET muhtari_libretro)
+  target_include_directories(muhtari-test-diag PRIVATE ${PROJECT_SOURCE_DIR}/libretro)
+  target_compile_definitions(muhtari-test-diag PRIVATE DIAG_LIBRETRO
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+  target_link_libraries(muhtari-test-diag PRIVATE ${CMAKE_DL_LIBS})
+  set(diag_retail ${PROJECT_BINARY_DIR}/tests/diag/retail.cmake)
+  file(GENERATE OUTPUT ${diag_retail} CONTENT
+"set(DIAG_RETAIL_RUN TRUE)
+set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/retail]==])
+set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
+set(RUNNER [==[$<TARGET_FILE:muhtari-run>]==])
+set(MODULE [==[$<TARGET_FILE:muhtari_libretro>]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+set(EXPECTED [==[${diag_dir}/expected.csv]==])
+set(MANIFEST [==[${PROJECT_SOURCE_DIR}/tests/roms/manifest.txt]==])
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+  muhtari_add_test(NAME diag.retail COMMAND ${CMAKE_COMMAND} -P ${diag_retail}
+    LABELS diag portable TIMEOUT 120)
+endif()
 set_target_properties(muhtari-test-diag PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-diag)

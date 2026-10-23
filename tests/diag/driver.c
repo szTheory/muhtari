@@ -25,6 +25,15 @@
 #include <string.h>
 
 #include "internal.h"
+#ifdef DIAG_LIBRETRO
+#include "libretro.h"
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
+#endif
 
 #define FRAME_CAP 600u
 #define ROWS_MAX 64u
@@ -56,11 +65,14 @@ struct row {
 
 static struct row rows[ROWS_MAX];
 static uint32_t nrows;
+static int alloc_fail;
+static uint32_t alloc_calls;
 
 static void *diag_alloc(void *user, size_t size)
 {
     (void)user;
-    return malloc(size);
+    alloc_calls++;
+    return alloc_fail ? NULL : malloc(size);
 }
 
 static void diag_free(void *user, void *ptr, size_t size)
@@ -355,9 +367,384 @@ static void rom_name(const char *path, char *out)
     out[len] = '\0';
 }
 
+/* Retail observations use only the fixed mailbox, on every host. IDs are
+   owned diagnostic identities, independent of the cartridge implementation. */
+static uint32_t retail_id(const char *rom)
+{
+    return strcmp(rom, "smoke") == 0 ? 9u : strcmp(rom, "activision") == 0 ? 10u :
+           strcmp(rom, "absolute") == 0 ? 11u : strcmp(rom, "fractalus") == 0 ? 12u : 0u;
+}
+
+static uint16_t retail_crc(const uint8_t mb[256])
+{
+    uint32_t crc = 0xFFFFu;
+    for (uint32_t i = 16u; i < 256u; i++) {
+        crc ^= (uint32_t)mb[i] << 8;
+        for (unsigned b = 0; b < 8u; b++) {
+            crc = ((crc << 1) ^ ((crc & 0x8000u) != 0u ? 0x1021u : 0u)) & 0xFFFFu;
+        }
+    }
+    return (uint16_t)crc;
+}
+
+static int retail_judge(const uint8_t mb[256], const char *rom)
+{
+    uint32_t count = strcmp(rom, "smoke") == 0 ? 1u : nrows;
+    if (retail_id(rom) == 0u || count == 0u || count > 27u ||
+        memcmp(mb, "M7DG", 4u) != 0 || mb[4] != 1u || mb[5] != 0u ||
+        mb[6] != count || mb[7] != retail_id(rom) ||
+        ((uint32_t)mb[8] | ((uint32_t)mb[9] << 8)) != retail_crc(mb)) {
+        fprintf(stderr, "%s: invalid mailbox header/count/CRC\n", rom);
+        return 1;
+    }
+    for (uint32_t i = 0; i < count; i++) {
+        const uint8_t *r = mb + 16u + 4u * i;
+        uint32_t value = (uint32_t)r[2] | ((uint32_t)r[3] << 8);
+        int valid = strcmp(rom, "smoke") == 0 ? value == 90u : in_range(&rows[i].value, value);
+        if (r[0] != i + 1u || r[1] != 1u || !valid) {
+            fprintf(stderr, "%s: invalid record %u value %u\n", rom, i + 1u, value);
+            return 1;
+        }
+        printf("%s record %u value %u PASS\n", rom, i + 1u, value);
+    }
+    return 0;
+}
+
+static int retail_expected(const char *path, const char *rom)
+{
+    nrows = 0u;
+    return strcmp(rom, "smoke") == 0 ? 0 : read_expected(path, rom);
+}
+
+static int retail_mailbox(const char *path, const char *rom, const char *expected)
+{
+    /* Exactly one bounded lowercase report, with no trailing output. */
+    char line[525];
+    uint8_t mb[256];
+    FILE *f = fopen(path, "rb");
+    if (f == NULL) {
+        return 1;
+    }
+    size_t n = fread(line, 1u, sizeof line, f);
+    int failed = ferror(f) || n != 524u || memcmp(line, "diagnostic ", 11u) != 0 ||
+                 line[523] != '\n';
+    fclose(f);
+    if (failed) {
+        return 1;
+    }
+    for (uint32_t i = 0; i < 512u; i++) {
+        unsigned char c = (unsigned char)line[11u + i];
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) {
+            return 1;
+        }
+        uint8_t v = (uint8_t)(c <= '9' ? c - '0' : c - 'a' + 10);
+        if ((i & 1u) == 0u) {
+            mb[i / 2u] = (uint8_t)(v << 4);
+        } else {
+            mb[i / 2u] |= v;
+        }
+    }
+    return retail_expected(expected, rom) != 0 || retail_judge(mb, rom) != 0;
+}
+
+static int retail_library(const uint8_t *image, size_t n, const char *rom)
+{
+    muhtari_config cfg = {0};
+    muhtari_media media = {0};
+    muhtari_cart_info info = {0};
+    muhtari *m = NULL;
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = diag_alloc;
+    cfg.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = n;
+    info.size = (uint32_t)sizeof info;
+    uint32_t board = strcmp(rom, "activision") == 0 ? MUHTARI_BOARD_ACTIVISION :
+                     strcmp(rom, "fractalus") == 0 ? MUHTARI_BOARD_FRACTALUS : MUHTARI_BOARD_ABSOLUTE;
+    if (muhtari_probe(image, n, &info) != MUHTARI_STATUS_OK || info.board != board ||
+        muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK || muhtari_load(m, &media) != MUHTARI_STATUS_OK) {
+        muhtari_destroy(m);
+        return 1;
+    }
+    int failed = run(m, 0) < 0;
+    uint8_t mb[256];
+    for (uint32_t i = 0; i < 256u; i++) {
+        mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
+    }
+    failed |= retail_judge(mb, rom);
+    muhtari_destroy(m);
+    return failed;
+}
+
+/* The tracer also protects the existing load transaction. Refusals cannot
+   allocate or change any live state, ROM bytes or subsequent execution. */
+static int retail_transaction(uint8_t *image)
+{
+    muhtari_config cfg = {0};
+    muhtari_media media = {0};
+    muhtari *m = NULL, *control = NULL;
+    muhtari *before = (muhtari *)malloc(sizeof *before);
+    uint8_t *rom_before = (uint8_t *)malloc(65536u);
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = diag_alloc;
+    cfg.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = 65664u;
+    int failed = before == NULL || rom_before == NULL ||
+                 muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK ||
+                 muhtari_create(&cfg, &control) != MUHTARI_STATUS_OK ||
+                 muhtari_load(m, &media) != MUHTARI_STATUS_OK ||
+                 muhtari_load(control, &media) != MUHTARI_STATUS_OK;
+    if (!failed) {
+        /* Independent expected latch, all data values and selector neighbors. */
+        uint8_t bank = 0u;
+        static const uint16_t addresses[] = {0x7FFFu, 0x8000u, 0x8001u, 0xFFFFu};
+        for (uint32_t v = 0; v < 256u; v++) {
+            for (size_t a = 0; a < sizeof addresses / sizeof addresses[0]; a++) {
+                muhtari__cart_write(m, addresses[a], (uint8_t)v);
+                if (addresses[a] == 0x8000u) {
+                    bank = (v & 1u) != 0u ? 0u : (v & 2u) != 0u ? 1u : bank;
+                }
+                uint8_t tag = bank == 0u ? 90u : 165u;
+                failed |= muhtari__cart_peek(m, 0x4000u) != tag ||
+                          muhtari__cart_read(m, 0x4000u, 0) != tag ||
+                          muhtari__cart_read(m, 0x4000u, 1) != tag ||
+                          muhtari__cart_peek(m, 0xC000u) != 0x78u;
+            }
+        }
+        muhtari__cart_write(m, 0x8000u, 2u);
+        muhtari__cart_write(control, 0x8000u, 2u);
+        memcpy(before, m, sizeof *m);
+        memcpy(rom_before, m->cart.rom, 65536u);
+        uint32_t calls = alloc_calls;
+        media.image_size--;
+        failed |= muhtari_load(m, &media) != MUHTARI_STATUS_ERR_TRUNCATED_IMAGE;
+        failed |= alloc_calls != calls || memcmp(m, before, sizeof *m) != 0 ||
+                  memcmp(m->cart.rom, rom_before, 65536u) != 0;
+        image[50] = 0u;
+        image[51] = 0xC0u;
+        media.image_size = 65664u;
+        failed |= muhtari_load(m, &media) != MUHTARI_STATUS_ERR_INVALID_IMAGE;
+        failed |= alloc_calls != calls || memcmp(m, before, sizeof *m) != 0 ||
+                  memcmp(m->cart.rom, rom_before, 65536u) != 0;
+        image[50] = 1u;
+        image[51] = 0u;
+        alloc_fail = 1;
+        failed |= muhtari_load(m, &media) != MUHTARI_STATUS_ERR_NO_MEMORY;
+        alloc_fail = 0;
+        failed |= alloc_calls != calls + 1u || memcmp(m, before, sizeof *m) != 0 ||
+                  memcmp(m->cart.rom, rom_before, 65536u) != 0;
+        muhtari_frame io = {0}, other = {0};
+        io.size = (uint32_t)sizeof io;
+        other.size = (uint32_t)sizeof other;
+        failed |= muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK ||
+                  muhtari_run_frame(control, &other) != MUHTARI_STATUS_OK;
+        for (uint32_t a = 0x1800u; a < 0x2800u; a++) {
+            failed |= muhtari__peek(m, (uint16_t)a) != muhtari__peek(control, (uint16_t)a);
+        }
+        failed |= memcmp(&m->cpu, &control->cpu, sizeof m->cpu) != 0;
+        failed |= muhtari_power_cycle(m) != MUHTARI_STATUS_OK || m->cart.bank != 0u;
+        muhtari__cart_write(m, 0x8000u, 2u);
+        failed |= muhtari_load(m, &media) != MUHTARI_STATUS_OK || m->cart.bank != 0u;
+        /* v4 permits a write-only POKEY over the low ROM window. CPU,
+           MARIA and peek still read ROM; audio takes writes first. */
+        image[0] = 4u;
+        image[64] = 3u;
+        image[67] = 5u;
+        failed |= muhtari_load(m, &media) != MUHTARI_STATUS_OK;
+        failed |= muhtari__cart_read(m, 0x4000u, 0) != 90u ||
+                  muhtari__cart_read(m, 0x4000u, 1) != 90u;
+        muhtari__cart_write(m, 0x4000u, 0xFFu);
+        failed |= muhtari__cart_peek(m, 0x4000u) != 90u || m->cart.bank != 0u;
+        image[0] = 3u;
+        image[64] = 0u;
+        image[67] = 0u;
+    }
+    muhtari_destroy(m);
+    muhtari_destroy(control);
+    free(before);
+    free(rom_before);
+    return failed;
+}
+
+/* An owned disposable program: copy a complete mailbox from fixed $C100,
+   replace the record with a real bank-zero read, then publish status last.
+   The expected tag and CRC are derived from the mailbox protocol, never
+   from the production mapper. No ROM bytes enter the tracked workspace. */
+static int retail_smoke(const char *path)
+{
+    uint8_t *image = (uint8_t *)calloc(65664u, 1u);
+    if (image == NULL) {
+        return 1;
+    }
+    image[0] = 3u;
+    memcpy(image + 1u, "ATARI7800", 9u);
+    image[50] = 1u;
+    image[53] = 2u;
+    uint8_t *body = image + 128u;
+    body[0] = 90u;
+    body[0x4000] = 165u;
+    static const uint8_t code[] = {
+        0x78, 0xD8, 0xA9, 0x07, 0x85, 0x01, 0xA9, 0x60, 0x85, 0x3C,
+        0xA2, 0x00, 0xBD, 0x00, 0xC1, 0x9D, 0x00, 0x22, 0xE8, 0xD0, 0xF7,
+        0xAD, 0x00, 0x40, 0x8D, 0x12, 0x22, 0xA9, 0x00, 0x8D, 0x05, 0x22,
+        0x4C, 0x20, 0xC0
+    };
+    memcpy(body + 0xC000u, code, sizeof code);
+    uint8_t *mb = body + 0xC100u;
+    memcpy(mb, "M7DG", 4u);
+    mb[4] = 1u;
+    mb[5] = 0x80u;
+    mb[6] = 1u;
+    mb[7] = 9u;
+    mb[16] = 1u;
+    mb[17] = 1u;
+    mb[18] = 90u;
+    uint16_t crc = retail_crc(mb);
+    mb[8] = (uint8_t)crc;
+    mb[9] = (uint8_t)(crc >> 8);
+    body[0xFFF8] = 0xFFu;
+    body[0xFFF9] = 0xC7u;
+    body[0xFFFD] = 0xC0u;
+    FILE *f = fopen(path, "wb");
+    int failed = f == NULL;
+    if (f != NULL) {
+        failed = fwrite(image, 1u, 65664u, f) != 65664u;
+        failed |= fclose(f) != 0;
+    }
+    if (!failed) {
+        failed = retail_library(image, 65664u, "smoke");
+        failed |= retail_transaction(image);
+    }
+    /* Exercise protocol faults even when the record CRC is internally valid. */
+    mb[5] = 0u;
+    static const uint8_t corrupt_at[] = {0u, 4u, 5u, 6u, 7u, 8u, 16u, 17u, 18u};
+    for (size_t i = 0; i < sizeof corrupt_at; i++) {
+        uint8_t bad[256];
+        memcpy(bad, mb, sizeof bad);
+        bad[corrupt_at[i]] ^= 1u;
+        if (corrupt_at[i] >= 16u) {
+            crc = retail_crc(bad);
+            bad[8] = (uint8_t)crc;
+            bad[9] = (uint8_t)(crc >> 8);
+        }
+        failed |= retail_judge(bad, "smoke") == 0;
+    }
+    mb[5] = 0x80u;
+    free(image);
+    return failed;
+}
+
+#ifdef DIAG_LIBRETRO
+static bool RETRO_CALLCONV retail_env(unsigned cmd, void *data)
+{
+    return cmd == RETRO_ENVIRONMENT_SET_PIXEL_FORMAT || cmd == RETRO_ENVIRONMENT_SET_MEMORY_MAPS ||
+           cmd == RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS ||
+           (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE && (*(bool *)data = false, true));
+}
+static void RETRO_CALLCONV retail_video(const void *data, unsigned w, unsigned h, size_t pitch)
+{
+    (void)data; (void)w; (void)h; (void)pitch;
+}
+static size_t RETRO_CALLCONV retail_audio(const int16_t *data, size_t frames)
+{
+    (void)data;
+    return frames;
+}
+static void RETRO_CALLCONV retail_poll(void) {}
+static int16_t RETRO_CALLCONV retail_input(unsigned p, unsigned d, unsigned i, unsigned id)
+{
+    (void)p; (void)d; (void)i; (void)id;
+    return 0;
+}
+
+static int retail_libretro(const char *module_path, const char *path, const char *expected)
+{
+    char rom[FIELD_MAX];
+    size_t n = 0;
+    rom_name(path, rom);
+    uint8_t *image = read_file(path, &n);
+    if (image == NULL || retail_expected(expected, rom) != 0) {
+        free(image);
+        return 1;
+    }
+#ifdef _WIN32
+    HMODULE module = LoadLibraryA(module_path);
+#define DIAG_SYMBOL(name) FARPROC symbol = GetProcAddress(module, "retro_" #name)
+#define DIAG_CLOSE() FreeLibrary(module)
+#else
+    void *module = dlopen(module_path, RTLD_NOW);
+#define DIAG_SYMBOL(name) void *symbol = dlsym(module, "retro_" #name)
+#define DIAG_CLOSE() ((void)dlclose(module))
+#endif
+    if (module == NULL) {
+        free(image);
+        return 1;
+    }
+#define DIAG_LOAD(name, result, args) \
+    result (RETRO_CALLCONV *name) args; \
+    { DIAG_SYMBOL(name); \
+      if (symbol == NULL) { DIAG_CLOSE(); free(image); return 1; } \
+      memcpy(&name, &symbol, sizeof name); }
+    DIAG_LOAD(set_environment, void, (retro_environment_t));
+    DIAG_LOAD(set_video_refresh, void, (retro_video_refresh_t));
+    DIAG_LOAD(set_audio_sample_batch, void, (retro_audio_sample_batch_t));
+    DIAG_LOAD(set_input_poll, void, (retro_input_poll_t));
+    DIAG_LOAD(set_input_state, void, (retro_input_state_t));
+    DIAG_LOAD(init, void, (void));
+    DIAG_LOAD(deinit, void, (void));
+    DIAG_LOAD(load_game, bool, (const struct retro_game_info *));
+    DIAG_LOAD(unload_game, void, (void));
+    DIAG_LOAD(run, void, (void));
+    DIAG_LOAD(get_memory_data, void *, (unsigned));
+    DIAG_LOAD(get_memory_size, size_t, (unsigned));
+#undef DIAG_LOAD
+    set_environment(retail_env);
+    set_video_refresh(retail_video);
+    set_audio_sample_batch(retail_audio);
+    set_input_poll(retail_poll);
+    set_input_state(retail_input);
+    init();
+    struct retro_game_info game = {path, image, n, NULL};
+    int loaded = load_game(&game);
+    int failed = 1;
+    if (loaded) {
+        for (uint32_t frame = 0; frame < FRAME_CAP; frame++) {
+            run();
+            const uint8_t *ram = (const uint8_t *)get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+            if (ram != NULL && get_memory_size(RETRO_MEMORY_SYSTEM_RAM) >= 0xB00u &&
+                memcmp(ram + 0xA00u, "M7DG", 4u) == 0 && ram[0xA05] == 0u) {
+                failed = retail_judge(ram + 0xA00u, rom);
+                break;
+            }
+        }
+        unload_game();
+    }
+    deinit();
+    DIAG_CLOSE();
+#undef DIAG_SYMBOL
+#undef DIAG_CLOSE
+    free(image);
+    return failed;
+}
+#endif
+
 int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
+    if (argc == 3 && strcmp(argv[1], "--smoke") == 0) {
+        return retail_smoke(argv[2]);
+    }
+    if (argc == 5 && strcmp(argv[1], "--mailbox") == 0) {
+        return retail_mailbox(argv[2], argv[3], argv[4]);
+    }
+#ifdef DIAG_LIBRETRO
+    if (argc == 5 && strcmp(argv[1], "--libretro") == 0) {
+        return retail_libretro(argv[2], argv[3], argv[4]);
+    }
+#endif
     if (argc != 3 && argc != 4) {
         fprintf(stderr, "usage: muhtari-test-diag ROM EXPECTED [STATS]\n");
         return 2;
@@ -374,6 +761,11 @@ int main(int argc, char **argv)
     uint8_t *image = read_file(argv[1], &n);
     if (image == NULL) {
         return 2;
+    }
+    if (retail_id(rom) != 0u) {
+        int failed = retail_library(image, n, rom);
+        free(image);
+        return failed;
     }
     muhtari_config cfg;
     memset(&cfg, 0, sizeof cfg);

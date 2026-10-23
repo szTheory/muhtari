@@ -133,6 +133,12 @@ static void test_accepted(void)
     CHECK_EQ_U64(sg.rom_size, body);
     CHECK_EQ_U64(sg.warnings, 0);
 
+    /* Absolute is executable with exactly 64 KiB and no cartridge RAM. */
+    size_t absolute_n = images_a78(buf, 3u, 64u * IMAGES_KIB, 0x0200u, 64u * IMAGES_KIB);
+    muhtari_cart_info absolute = expect_written("Absolute", buf, absolute_n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(absolute.board, MUHTARI_BOARD_ABSOLUTE);
+    CHECK_EQ_U64(absolute.ram_size, 0u);
+
     /* Headerless images by their footer: linear up to 48 KiB, else SuperGame. */
     static const struct {
         uint32_t n;
@@ -301,7 +307,6 @@ static void test_unsupported_board(void)
         uint32_t options;
     } boards[] = {
         {"Activision", 0x0100u, 128u * IMAGES_KIB, MUHTARI_BOARD_ACTIVISION, 0u},
-        {"Absolute", 0x0200u, 64u * IMAGES_KIB, MUHTARI_BOARD_ABSOLUTE, 0u},
         {"Fractalus", 0x0080u, 32u * IMAGES_KIB, MUHTARI_BOARD_FRACTALUS, 0u},
         {"bankset", 0x2002u, 64u * IMAGES_KIB, MUHTARI_BOARD_BANKSET, 0u},
         {"halt-banked RAM", 0x4002u, 128u * IMAGES_KIB, MUHTARI_BOARD_SUPERGAME,
