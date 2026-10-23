@@ -18,8 +18,8 @@ that any host can embed.
 Planning milestone **v1.0** shipped 2026-10-21; the package release is **v0.4.0**.
 Four phases, 73 plans and 149 recorded tasks deliver games with sound in RetroArch.
 [Release publication and latest-install run](https://github.com/szTheory/muhtari/actions/runs/39533130210) completed successfully; v0.4.0 is published with 19 assets.
-The C/header tree has 38,684 tracked lines, including 8,577 in src/; the public
-API is version 3, ABI 1, behaviour revision 2. The library remains integer-only,
+At that release, the C/header tree had 38,684 tracked lines, including 8,577 in src/;
+its public API was version 3, ABI 1, behaviour revision 2. The library remains integer-only,
 instance-owned and bounded, without allocation after load.
 
 Closeout is **override_closeout**: 15 items acknowledged as deferred (six todos, eight dormant seeds and one compatibility-test output race); four stale phase verification fingerprints explicitly accepted.
@@ -29,13 +29,21 @@ was report-only. Those values are superseded by Phase 5 below; the old audit sta
 
 Phase 5 is implemented, verified and merged in PR #20: 20/20 substantive truths and
 nine active outcomes accepted. Direct CI 39879193530 and Release 39879193669 pass,
-including genuine publish/download/install/confirmed cleanup. Final gate code is
-15,287 lines across 147 whole files; unused 78-line allowance retires. The controlled
+including genuine publish/download/install/confirmed cleanup. Its historical gate audit
+recorded15,287 lines across147 files and retired an unused78-line allowance. The accepted
+2026-10-23 policy subsequently retired maintenance-line admission and its exclusive machinery;
+these historical quantities are not current limits. The controlled
 test-card performance comparison is armed; WASM/library/property remain advisory.
 Matched local scheduling improves wall time 18.24%; no global hosted-cost reduction
 is claimed. WR-01 and COST-01 remain deferred tooling seeds; raw monthly numeric
 cost totals are untrusted. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md).
-Phase 5 shipped at 6d57d69; discuss Phase 6 next. This ci-only merge cuts no release; the published package remains v0.4.0.
+Phase 5 shipped at6d57d69. Phase 6 is verified complete: Activision, Absolute and
+Fractalus execute through all three deliverables, with identified-layout equivalence,
+physical RAM aliases, bounded hostile-input evidence and honest host maps. The working
+branch is API4/ABI1/behavior3. Verification passes33/33; all six native archive sums fit
+the unchanged399937-byte limit (worst375270). Direct CI40031550434, Nightly40031550533
+and Release40031550534 attempt2 pass, including confirmed rehearsal cleanup.
+Phase 6 is not merged or released; `$gsd-ship 6` is next. Published latest remainsv0.4.0.
 
 ## Current Milestone: v2.0 The whole library
 
@@ -78,10 +86,10 @@ save states and other later horizons remain deferred. Planning v2.0 does not sel
   headroom/width/carry proofs; hostile legal chip traffic stays bounded — v1.0, Phase 4
 
 - ✓ Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5 verified and shipped in PR #20.
+- ✓ Activision, Absolute and Fractalus banking, physical RAM and three-host behavior — BOARD-01–03, Phase 6 verified; shipping pending.
 
 ### Active
 
-- [ ] Activision, Absolute and Fractalus cartridges — BOARD-01–03, Phase 6.
 - [ ] HSC/SaveKey battery data survives host restarts — SAVE-01–06, Phase 7.
 - [ ] Light gun and the other in-scope controllers — INPUT-01–05, Phase 8.
 - [ ] PAL timing, presentation and audio — PAL-01–03, Phase 9.
@@ -194,4 +202,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-22 after Phase 5 shipping; discuss Phase 6 next*
+*Last updated: 2026-10-23 after Phase 6 execution and verification; ship Phase 6 next*

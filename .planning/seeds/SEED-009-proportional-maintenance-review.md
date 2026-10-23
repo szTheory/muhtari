@@ -46,3 +46,13 @@ or a reason no change is warranted. No new LOC allocation, complexity score,
 dashboard, policy registry, automatic quota or owner UAT is part of this seed.
 It does not block Phase 6. Retain existing review/gap limits and preserve real
 correctness, security, provenance and evidence failures as blockers.
+
+## Observed completion-scanner friction
+
+On2026-10-23, `gsd-tools query phase.complete 6` exited0 after independent33/33
+verification but counted the superseded01 summary as10/9 and interpreted command
+strings in seven summaries as missing file paths. The agent reconciled active
+counts to9/9 and18/18 planned slots; the103-file verification fingerprint still
+passes. The actual files and commands were verified. Consider a bounded scanner
+fix at this seed's existing trigger; do not rewrite valid evidence or introduce
+a product gate to silence these warnings.

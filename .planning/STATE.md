@@ -2,213 +2,103 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 9
-status: ready_for_verification
-stopped_at: Completed06-09; active9/9 and18/18 planned slots; awaiting parent phase verification and separate outer workflow follow-ups
-last_updated: "2026-10-23T22:39:48.275Z"
-state_head: 25919fe822cd6cc23a6984c13ac826796e7d9cfe
+current_phase: "07"
+current_phase_name: Battery saves across hosts
+current_plan: Not started
+status: ready_to_plan
+stopped_at: Phase 6 verified complete; next separate command is gsd-ship 6
+last_updated: "2026-10-23T22:56:28Z"
+state_head: 65ae7c0aa8db2caf3ed13242e1da44a5638e46c3
+last_activity: 2026-10-23
+last_activity_desc: Phase 6 passed 33/33; BOARD-01–03 complete; ship remains separate
+total_phases: 7
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 18
   completed_plans: 18
-  percent: 14
-last_activity: 2026-10-23
-total_phases: 7
-current_phase: 06
-current_phase_name: Retail cartridge boards
-last_activity_desc: Plan06-09 accepted source25919fe and actualbase617dfa7; active9/9 and18/18 planned slots complete; BOARD-01–03 complete; parent phase verification pending
+  percent: 29
 ---
 
 # Project State
 
 ## Project Reference
 
-See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
-preparation/DECISIONS.md. Current focus: Phase 6 goal verification after all9 active plans; Phase 5 is shipped.
-Core value: 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
+See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
+Core value: 7800 games behave as on the console, identically across platforms,
+from a small MIT-licensed C library hosts can embed.
+Current focus: ship verified Phase 6. Phase 7 has not started.
 
 ## Current Position
 
-Current Plan: 9
-Total Plans in Phase: 9
-Progress: [█░░░░░░░░░] 14% (1/7 phases; 18/18 currently planned active plans; later phases unplanned; Phase6 verification pending)
+Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
+are complete. Phase 5 and6 are2/7 milestone phases,18/18 currently planned active
+slots; later phases remain unplanned. Historical halted plans remain excluded
+with their original records preserved.
 
-Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
-and nine active plans 01,02,10,04,05,13,07,15,09 accepted. The owner adopted the
-contract-based replacement after the measured Phase 6 budget halt. Quick task
-261023-jkd implemented policy, producer/join/judge retirement and active planning
-reconciliation in commits fbfd1e5, cc4137e and2ab7e0d. Full local CI609+6, exact
-inventories609/597/6, retirement controls and hygiene pass. The hard LOC metric,
-counter, inventory and allocation/adoption machinery are removed; no replacement
-score or framework was introduced. Archive399937 and unrelated guards persist.
+Next command: `$gsd-ship 6`.
+Draft PR24 remains unmerged: https://github.com/szTheory/muhtari/pull/24 .
+No next GSD step was invoked.
 
-Phase 6 has9/9 active plans complete across02–10; parent goal verification is pending. Plan10 committed701d6b4/94fcb90
-and SUMMARY081412f: authenticated additive fixture relation, actual producer/join
-controls and documentation. Full local CI609+6, exact inventories and hygiene
-exit0; packages212216 <=399937. Plan02 committed27627f1/f0e1659: real Absolute
-CPU mailbox value90 through library, actual runner and actual module, exact
-geometry/transaction/report controls, behavior3/ABI1 and fixed-ROM descriptors.
-Full local CI610+6, exact inventories, hygiene and all three ZIPs212982 <=399937
-pass. Plan03 committed234f243/0e42dff and SUMMARY176e60e: append-only API4,
-ABI1/cart-info140, linked older/current smoke clients, tested host bit names and
-transparent orientation/assumption docs. Full local CI611+6, exact inventories,
-hygiene and three ZIPs213074 <=399937 pass. Plan04 committed2a588bb/5459c41
-and SUMMARYfe6425a: identified-only private Activision normalization, six OM
-windows, independent CPU values49/58, original probe identities and fault controls.
-Full local CI611+6, exact inventories, hygiene and three ZIPs213443 <=399937
-pass. Plan05 committed1d51980/2c0518f: physical2KiB Fractalus aliases, exact A8
-scope/refusals, independent retail vectors and three-board volatile lifecycle.
-Full local CI612+6, exact inventories, hygiene and three ZIPs213795 <=399937 pass.
-Plan06 committedfc1b35a/7875422/bc16579 and SUMMARY9edcc58: three owned
-reproducible diagnostics with72 independent numeric records and9 complete fixture
-host observations plus persistent smoke. Full local CI612+6, exact inventories,
-hygiene and three ZIPs213796 <=399937 pass. Plan07 committedb60f03c/b564204
-and SUMMARYf4a2a01: mandatory all-byte retail maps (13/11/21 resolver regions),
-identified headered/headerless AM/OM mapped/mailbox/video/raw/PCM equality through
-library, actual runner and loaded testdb module with original raw identities.
-Full local CI612+6, exact inventories, hygiene and three ZIPs214131 <=399937 pass.
-Plan08 committed6128b32/d090f17: explicit31-loader/28-execution seed corpora,
-all3 boards in each100-case property, deep failed-load/resumed CPU/video/PCM,
-allocation freedom and interleaved isolation. Full local CI612+6, exact inventories,
-hygiene and three ZIPs214131 <=399937 pass; execution cap131200 and both fuzz
-durations60sec persist.
-Plan09 local commits8fd944b/b27162d/78bb2f6 add30 validated board equality rows
-after17 unchanged old rows, report fault controls, honest docs and exact fixture
-source pins. Full local CI612+6, exact inventories, hygiene and three ZIPs214131
-<=399937 pass. Hosted integration corrections through25919fe now have actual
-six-native source/base acceptance in calledCI40031550534: six exact three-ZIP sums,
-worst375263/base399371 <=399937, eight authenticated producer environments and
-raw original base617dfa7 policy. Nightly40031550533 succeeds with full native/
-PowerPC612+6 and47 identical rows,60-second fuzz,10000-case properties and vectors.
-Existing ARM/WASM/RetroArch and required calledCI jobs succeed. Task3 and
-BOARD-01–03 are complete; the plan SUMMARY is complete. Phase6 itself awaits
-the parent's goal-verification gate. Edge/prohibition metadata stays disclosed
-unclassified/unresolved/verification-null; no owner judgment is fabricated.
-Historical01 is superseded without changing its failed SUMMARY; its665-line construction and the654-line
-proposal remain history, not grants or new execution prerequisites. Authentic
-legacy-base retirement is demonstrated by the called aggregate. The retirement
-todo retains the separately applicable direct-PR performance/aggregate dimension;
-direct CI40031550434 and outer Release equality/rehearsal remain pending at this
-snapshot and are not claimed green. No local budget blocker is recreated.
-Do not return to discussion, create plan16, reset review/gap allowances or resume
-historical halted plans. Phase5 implementation098bb5e has actual direct/called
-and publish/download/install/confirmed-cleanup acceptance; its completion metadata iscaee608/8251320.
+## Phase 6 Acceptance
 
-## Prior Phase Acceptance
+Source25919fe and identical-tree PR merge2fe713c were accepted against actual
+base617dfa7. API4/ABI1/behavior3; all three owned diagnostics and nine fixture
+host observations; identified AM/OM identity/equivalence; mandatory resolver
+maps13/11/21; physical2048-byte Fractalus RAM; bounded hostile/lifecycle checks.
 
-Direct CI 39879193530 attempt1 and Release 39879193669 attempt2 succeed. Authentic
-9/8 joins, six native hashes, full same-head native/BE610+6, library43 and actual
-gh2.102.0 lifecycle pass. Retained ID421353911 and tagrehearsal-39879193669-2 have
-fresh complete-list/exact-ID/tag404 confirmation. The immutable-base failure and
-unchanged-head recovery remain recorded. Final actual 15287 includes safety447/
-fixes477; N2404, B12885/S2, C15287. Approved maximum 15365/N2482 retires 78 lines.
-Matched local 610-test scheduling improves wall 18.24%; global hosted cost reduction
-is not claimed. Raw monthly cost totals are untrusted under deferred COST-01;
-one-off closeout accounting excludes copied retry and skipped/negative intervals.
-See 15/09 summaries for commands, exits, immutable artifact identities and run URLs.
+Local CI612+6 and hygiene24 pass. Full native/PowerPC inventories are612+6 each,
+with47 identical equality rows. Hosted fuzz,10000-case properties, full vectors,
+WASM and actual RetroArch pass at unchanged required/advisory status.
+Worst three-component ZIP375270 <=399937; independent base399385 also fits.
+Measured402586-byte failure remains in plan09 history; ZIP9 and MSVC Release
+size preference resolve it without a byte grant. Test-card3837262 Ir/frame equals
+both independent base repeats.
 
-## Decisions and History
+`gh run view <id> --json status,conclusion,jobs` exits0/success for:
 
-Canonical decisions are in 05-CONTEXT.md D-01–35 and preparation/DECISIONS.md.
-Accepted05-13 supplies the finite ordinary quality aggregate; performance and
-compatibility retain legacy domain stores and their documented lifecycle limits.
-WASM/library/property remain advisory; no promotion is earned by PR/retry samples.
-The three TUNE-02 edge rows have explicit criteria; four unclassified probe rows
-and descriptorless prohibitions retain their disclosed metadata status.
+- CI40031550434: https://github.com/szTheory/muhtari/actions/runs/40031550434
+- Nightly40031550533: https://github.com/szTheory/muhtari/actions/runs/40031550533
+- Release40031550534 attempt2: https://github.com/szTheory/muhtari/actions/runs/40031550534
 
-Historical06/11/12/08 and14 halts, REDs and partial tasks remain in their original
-PLAN/SUMMARY/HANDOFF artifacts and Git. Original15 halt is ca64a29; current 15 is
-accepted under D-35. Prior state detail is retained in Git at 0b4ecd1. Those old
-halt instructions are historical, not the next action. v1.0 audit deferrals and
-stale fingerprints remain in milestones/v1.0-MILESTONE-AUDIT.md; v0.4.0 is the
-published package. v2.0 has 27 requirements across phases 5–11.
+Both authenticated quality joins pass with raw legacy policy preserved.
+The hosted-retirement todo is completed. Temporary release422369508 and
+tagrehearsal-40031550534-2 have exact-ID/tag/ref404 and complete-list absence.
+See06-09-SUMMARY.md and06-VERIFICATION.md for commands, exits and run URLs.
 
-## Blockers and Seeds
+## Decisions and Limits
 
-There is no active LOC allocation stop. WINDOWS32 is resolved by adopted and tested
-policy retirement, not a claim that the old construction fit. WINDOWS33 retains
-the original superseded01 halt record; it is not an active plan prerequisite.
-WINDOWS42/48/50 are fixed by actual calledCI40031550534 and Nightly40031550533.
-All six native three-ZIP sums fit; the largest is375263 <=399937.
+Core state remains deterministic, bounded and instance-owned. Fractalus RAM is
+volatile; higher achievement-map mirrors remain documented holes. Diagnostics
+do not establish untested retail playability, PAL completion or new hardware
+measurements. Three descriptorless flags remain unresolved metadata with separate
+agent intent review. No owner UAT or hardware request remains.
 
-SEED-009-proportional-maintenance-review carries resource-bound rationale, other
-structural quotas, test-floor overlap, schema-hardening and dependency/review
-maintenance triggers within the existing milestone tune-up. These are not Phase6
-requirements. The pending hosted-retirement todo now has exact head/base and
-legacy-policy evidence; applicable direct-PR performance/aggregate acceptance
-still needs its actual result before ship. The agent owns these follow-ups;
-no owner UAT, new service, quota or metric system is requested.
-Standard code review has no blocking finding; WR-01 and COST-01 are deferred tooling seeds in 05-REVIEW-DISPOSITION.md, under AGENTS rule 7.
-Existing seeds remain in the phase deferred-items ledger and milestone audit.
-No new requirement, service, owner UAT or hardware request is added.
+Maintenance-line admission remains retired; no replacement score or allocation
+is introduced. Archive399937, old predicates/pins and ordinary guards persist.
+Historical06-01 and its665/654-line constructions remain failed history, not grants.
+Review/gap allowances were not reset; no blocking review finding exists.
+
+## Prior Acceptance and Seeds
+
+Phase 5 shipped in PR20 at6d57d69; its20/20 verification and lifecycle evidence
+remain in its artifacts. Latest published package remainsv0.4.0; Phase 6 shipping
+and post-merge release checks are the next separate step.
+WR-01/COST-01, SEED-009 and v1.0 audit deferrals retain their scope.
+Raw monthly cost totals remain untrusted; no global hosted-cost reduction is claimed.
+
+The completion helper counted historical06-01 as10/9 and interpreted command
+strings as missing paths. Active counts are reconciled above; scanner caveats
+do not override the independent103-file fingerprint and33/33 verification.
+No required acceptance is missing.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T22:39:48.221Z
-**Stopped at:** Completed06-09; active9/9 and18/18 planned slots; awaiting parent phase verification and separate outer workflow follow-ups
-**Resume file:** None
-
-Next action: the current parent `$gsd-execute-phase 6` completes goal verification
-and follows the separate outstanding direct/outer workflow results. All plan work
-and BOARD requirements are complete; phase completion is not claimed yet.
-Expected next separate command after the parent's acceptance gate: `$gsd-ship`.
-No new GSD step or review/gap reset occurred. Plan09 SUMMARY records exact commands,
-exits and hosted URLs, including the distinction between named passing acceptance
-and still-pending outer workflows.
-
-### Prior Phase 5 Ship Evidence
-
-PR20 merged51c0639 as6d57d69; published package remainsv0.4.0. Prior command
-`gh run view <id> --json conclusion` exited0/success for CI39887498127 attempt3,
-post-merge release39890107224, digest39890187048 and rehearsal39887498056:
-https://github.com/szTheory/muhtari/actions/runs/39887498127
-https://github.com/szTheory/muhtari/actions/runs/39890107224
-https://github.com/szTheory/muhtari/actions/runs/39890187048
-https://github.com/szTheory/muhtari/actions/runs/39887498056
-Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
-15/09 summaries. Active counts exclude historical halted/superseded summaries.
-
-## Decisions
-
-Earlier plan decisions below retain their then-pending scope; final Plan09
-acceptance closes their semantic/package/portability prerequisites.
-
-- [Historical Phase06]: The665-line halt and654-line proposal remain preserved; neither was a successful fit or approved increase. Active progress is10/18 across phases5/6, excluding historical summaries and quick tasks.
-- [Accepted policy]: Owner adopted LOC retirement; quick261023-jkd installed bounded contract/architecture review under DEC.10. Only the literal retired base metric may disappear; ordinary typed/evidence/identity/reason guards persist.
-- [Follow-up]: SEED-009 triggers at the existing tune-up or concrete maintenance failure; hosted acceptance has its own pending todo before Phase6 ship. Neither creates a new product requirement or recurring measurement service.
-- [Phase 06]: Plan 10 proves the named additive fixture relation through independent event-base producer recursion and unchanged exact join; no BOARD requirement is complete.
-- [Phase 06]: Plan 02 proves Absolute bank-zero numeric mailbox through library, actual runner and module; local three-ZIP sum 212982 passes399937, six-native fit remains pending09.
-- [Phase 06]: Plan03 publishes API4 constants and tested host bit names while preserving ABI1/raw identity; local611+6 and213074-byte packages pass. Loader/map/probe behavior remains04 and BOARD-01 stays pending.
-- [Phase 06]: Plan04 proves identified-only private Activision normalization, six-window OM mapping and original probe identities; full611+6 and213443-byte local packages pass, broader BOARD/hosted acceptance pending.
-- [Phase 06]: Plan05 proves physical2048-byte Fractalus aliases, private unsupported A8 combinations and three-board volatile/no-allocation lifecycle; full612+6 and local213795-byte ZIP total pass, BOARD/hosted acceptance remains pending.
-
-- Plan06-06 keeps uncertain edge/profile observations explicit; its72 numeric records and9 fixture host observations establish selected semantics, not retail playability. No BOARD requirement is complete.
-- [Phase 06]: Plan07 retains every intended retail host byte below32 regions (Activision13, Absolute11, Fractalus21); identified AM/OM pairs agree through all three hosts, full612+6 and local214131-byte packages pass; broader hostile/hosted acceptance remains08/09.
-- [Phase 06]: Plan08 explicitly selects retail boards in bounded replay and all100-case properties; deep failed-load/resumed CPU/video/PCM, allocation/isolation and local612+6 pass; execution131200 and both60sec fuzz durations persist, ZIP total214131 passes399937. Hosted acceptance remains09.
-- [Phase 06]: Plan09 accepts source25919fe six-native three-ZIP sums (worst375263<=399937), actual base617dfa7 and unchanged authenticated join, plus full native/PowerPC equality612+6 and47 rows, fuzz/property/WASM/RetroArch. BOARD-01–03 complete; phase verification and direct/outer workflow follow-ups remain with parent.
-
-### Blockers
-
-- Active plans06-02–10 are9/9 complete (18/18 planned slots across phases5/6). Parent phase verification remains; direct CI40031550434 and outer Release equality/rehearsal plus the direct-PR retirement-todo dimension remain separately pending. No missing Task3 prerequisite or LOC allocation stop exists.
+Last session:2026-10-23. Stopped after Phase 6 execution and verification.
+Resume file:None. Next separate command:`$gsd-ship 6`.
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 261023-jkd | Retire maintenance line budgets; adopt contract review; ready Phase 6 comparability | 2026-10-23 | 2ab7e0d | [261023-jkd-retire-gate-line-budgets-adopt-contract-](./quick/261023-jkd-retire-gate-line-budgets-adopt-contract-/) |
-
-## Performance Metrics
-
-| Plan | Duration | Tasks | Files |
-|------|----------|-------|-------|
-| Phase 06 P01 | 16min halted | 0 tasks | 0 files |
-| Phase 06 P10 | 7min | 2 tasks | 4 files |
-| Phase 06 P02 | 7min | 2 tasks | 13 files |
-| Phase 06 P03 | 4min | 2 tasks | 12 files |
-| Phase 06 P04 | 9min | 2 tasks | 10 files |
-| Phase 06 P05 | 6min | 2 tasks | 8 files |
-| Phase 06 P06 | 6min | 3 tasks | 11 files |
-| Phase 06 P07 | 10min | 2 tasks | 5 files |
-| Phase 06 P08 | 9min | 2 tasks | 8 files |
-| Phase 06 P09 | 113min including hosted waits | 3 tasks | 34 files |
+| Task | Description | Commit |
+|---|---|---|
+| 261023-jkd | Retire maintenance line budgets and adopt contract review | 2ab7e0d |

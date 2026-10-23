@@ -20,7 +20,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
-| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | All plans complete; awaiting phase verification |
+| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipping pending |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
@@ -67,20 +67,23 @@ include halted 14; only the nine active slots above count as accepted outcomes.
 **Depends on:** Phase 5
 **Requirements:** BOARD-01, BOARD-02, BOARD-03
 **Plans:** 9/9 active plans complete in9 sequential waves; active02–10, historical01 superseded.
-**Status:** All active plans complete; parent goal verification remains pending. BOARD-01–03 complete.
+**Status:** Complete; independent goal verification passed33/33. BOARD-01–03 complete; shipping remains separate.
 Three owned diagnostic identities produce9 complete numeric host observations plus persistent smoke; linked API1–4 smoke clients,
 identified Activision AM/OM map/CPU equivalence and original probe identities,
 physical Fractalus alias/lifecycle vectors, mandatory all-byte loaded maps and identified AM/OM host equivalence,
-full local CI612+6, exact inventories, hygiene and local three-ZIP214131 <=399937
+full local CI612+6, exact inventories, hygiene and local three-ZIP213899 <=399937
 pass;06-09 appends30 validated equality rows after17 unchanged old rows and corrects fixture source pins.
 At source25919fe/base617dfa7, calledCI40031550534 passes all six native three-ZIP sums
 (worst375263 <=399937), authenticated quality and existing frontend/portability jobs.
 Nightly40031550533 passes full native/PowerPC612+6,47-row equality, fuzz/property and vectors.
 The accepted contract-based policy, old predicates/pins and ordinary guards persist.
-Direct CI and outer Release equality/rehearsal remain pending separately; no overall green claim is made for them.
+Direct CI40031550434 passes its authenticated aggregate (worst375270 <=399937),
+required performance and frontend jobs. Release40031550534 attempt2 passes full
+equality, publication/install and confirmed cleanup. All final runs are successful.
 **History:** Original01 halt and the665/654-line constructions remain preserved;
 the N654 allocation question is superseded, not approved. Actual legacy-base
-retirement is demonstrated; the todo retains the applicable direct-PR performance/aggregate follow-up before ship.
+retirement is demonstrated, including actual direct-PR performance/aggregate acceptance;
+the hosted-retirement todo is completed.
 
 Plans:
 **Wave 1**
@@ -210,7 +213,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
-| 6. Retail cartridge boards | 9/9 | Awaiting phase verification | — |
+| 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
@@ -218,4 +221,4 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-23;9/9 Phase6 active plans and18/18 currently planned slots complete. BOARD-01–03 have semantic/three-host/hostile/hosted portability and authenticated package acceptance. The current execution's parent owns goal verification; phase completion is not claimed here. Expected next separate command after that gate: `$gsd-ship`. Historical evidence and pending direct/outer workflow follow-ups remain explicit.*
+*Updated: 2026-10-23; Phase6 verified33/33 with9/9 active plans and18/18 currently planned slots complete. BOARD-01–03 have semantic/three-host/hostile/hosted portability and authenticated package acceptance. Historical failed evidence remains preserved. Next separate command: `$gsd-ship 6`.*
