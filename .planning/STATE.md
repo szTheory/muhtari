@@ -2,8 +2,8 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: ready_to_ship
-last_updated: "2026-10-23T01:55:17+00:00"
+status: shipping
+last_updated: "2026-10-23T02:03:17+00:00"
 state_head: 82513206384d80e7aaa8bf8be492cb7929fb96fc
 progress:
   total_phases: 7
@@ -15,8 +15,8 @@ last_activity: 2026-10-22
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-stopped_at: Phase 5 verified complete; ship Phase 5 before starting Phase 6
-last_activity_desc: Phase 5 verified 20/20; nine active plans accepted; ship next
+stopped_at: Phase 5 ship in progress; PR 20 awaits final-head CI and squash merge
+last_activity_desc: Phase 5 PR 20 prepared for final-head CI and squash merge
 ---
 
 # Project State
@@ -32,7 +32,7 @@ from a small MIT-licensed C library hosts can embed.
 
 Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
 and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 is not started.
-Ship Phase 5 before beginning Phase 6; this execute step stops here.
+PR #20 ships Phase 5; final-head CI and merge-only observations are tracked by the ship step.
 Do not return to discussion, create plan16, reset review/gap allowances or resume
 historical halted plans. Current implementation 098bb5e has actual direct/called
 and genuine publish/download/install/confirmed-cleanup acceptance. Completion
@@ -76,9 +76,13 @@ No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-Phase 5 execute step finished; stop before ship/merge or another GSD step.
-Next command: `$gsd-ship 5`. Resume file: None. Final completion commits contain
-planning metadata only; hosted source acceptance is for 098bb5e.
+Phase 5 ship step: https://github.com/szTheory/muhtari/pull/20. This note is pushed
+before the final-head CI run; do not infer merge from the note alone. The ship
+agent confirms CI, squash merge, release PR health and digest publication through
+GitHub. No review/gap reset or further Phase 5 plan is authorized. Stop after ship.
+Next command after successful shipping: `$gsd-discuss-phase 6`. Resume file: None.
+Final completion/ship commits change planning metadata only; source acceptance
+at 098bb5e is retained alongside the final-head hosted runs.
 
 Completion scanning emitted four reference warnings: generated build-relative paths
 and command strings in 02/08/09/15 summaries were treated as missing source files.
