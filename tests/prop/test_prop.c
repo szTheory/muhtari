@@ -1,6 +1,6 @@
 /* muhtari-test-prop NAME BUILT_DIR: runs one property (tests/prop.h) over
    its cases. Each case draws its cartridge from a pool: the run fuzz
-   target's seed images (tests/fuzz/run_seeds.c) and 48 KiB of random bytes
+   target's explicit linear/retail seed images and 48 KiB of random bytes
    from the case's stream, each made a cartridge as that target makes it
    (tests/fuzz/run_cart.h), and the built simple and eightysix samples under
    BUILT_DIR. Every load is a fast boot, and a case runs at most 8 frames.
@@ -30,6 +30,7 @@ struct frame_out {
     muhtari_status status;
     uint32_t audio_count;
     uint8_t picture[32];
+    uint8_t pcm[32];
 };
 
 static uint8_t *samples[SAMPLES];
@@ -39,11 +40,14 @@ static uint8_t *raw;
 static uint8_t video[WIDE * HEIGHT];
 static int16_t audio[MUHTARI__MAX_AUDIO_SAMPLES];
 static struct muhtari scratch;
+static uint32_t allocation_calls, fail_allocation, case_index, retail_seen;
+static uint32_t retail_pool[3];
 
 static void *prop_alloc(void *user, size_t size)
 {
     (void)user;
-    return malloc(size);
+    allocation_calls++;
+    return fail_allocation != 0u ? NULL : malloc(size);
 }
 
 static void prop_free(void *user, void *ptr, size_t size)
@@ -78,18 +82,16 @@ static uint32_t pool_count(void)
 static size_t pool_build(uint32_t p, uint64_t *rng)
 {
     if (p < seeds_count()) {
-        run_cart(raw, seeds_build(p, raw), image);
-        return RUN_CART_BYTES;
+        return run_cart(raw, seeds_build(p, raw), image).bytes;
     }
     if (p == seeds_count()) {
-        for (uint32_t at = 0; at < RUN_CART_BYTES; at += 8u) {
+        for (uint32_t at = 0; at < RUN_LINEAR_BYTES; at += 8u) {
             uint64_t v = prop_next(rng);
             for (uint32_t b = 0; b < 8u; b++) {
                 raw[at + b] = (uint8_t)(v >> (8u * b));
             }
         }
-        run_cart(raw, RUN_CART_BYTES, image);
-        return RUN_CART_BYTES;
+        return run_cart(raw, RUN_LINEAR_BYTES, image).bytes;
     }
     uint32_t s = p - seeds_count() - 1u;
     memcpy(image, samples[s], sample_sizes[s]);
@@ -119,7 +121,12 @@ static void run(muhtari *m, uint32_t pitch, struct frame_out *out)
     io.audio = audio;
     io.audio_capacity = MUHTARI__MAX_AUDIO_SAMPLES;
     memset(out, 0, sizeof *out);
+    uint32_t allocations = allocation_calls;
     out->status = muhtari_run_frame(m, &io);
+    if (allocation_calls != allocations) {
+        fputs("property frame allocated after load\n", stderr);
+        exit(1);
+    }
     out->audio_count = io.audio_count;
     muhtari__sha256 s;
     muhtari__sha256_init(&s);
@@ -127,6 +134,12 @@ static void run(muhtari *m, uint32_t pitch, struct frame_out *out)
         muhtari__sha256_update(&s, video + (size_t)y * pitch, WIDTH);
     }
     muhtari__sha256_final(&s, out->picture);
+    muhtari__sha256_init(&s);
+    for (uint32_t i = 0u; i < io.audio_count; i++) {
+        uint8_t bytes[2] = {(uint8_t)audio[i], (uint8_t)((uint16_t)audio[i] >> 8)};
+        muhtari__sha256_update(&s, bytes, sizeof bytes);
+    }
+    muhtari__sha256_final(&s, out->pcm);
 }
 
 /* The state digest. Without pending, the input waiting for the next VBLANK
@@ -179,12 +192,68 @@ static int same_run(const struct frame_out *one, const struct frame_out *two, ui
 
 /* Builds pool entry p and loads it into two new instances, *a and *b, whose
    load statuses must match. */
+static uint32_t select_pool(uint64_t *rng, uint32_t size)
+{
+    /* Shrinking replays the same case and RNG stream at a smaller size. */
+    uint32_t index = size == PROP_SIZE_MAX ? case_index++ : case_index - 1u;
+    return index < 3u ? retail_pool[index] : prop_below(rng, pool_count());
+}
+
 static int load_pair(uint32_t p, uint64_t *rng, muhtari **a, muhtari **b)
 {
     size_t n = pool_build(p, rng);
     *a = create();
     *b = create();
-    return load(*a, n) == load(*b, n) ? 1 : differ("load status", 0u);
+    muhtari_status first = load(*a, n), second = load(*b, n);
+    if (first != MUHTARI_STATUS_OK || first != second) return differ("load status", 0u);
+    uint32_t board = (*a)->cart.info.board;
+    if (p < seeds_count()) {
+        uint32_t expected = run_cart_board(raw, seeds_build(p, raw));
+        if (board != expected || (*b)->cart.info.board != expected) return differ("selected board", 0u);
+    }
+    if (board == MUHTARI_BOARD_ACTIVISION || board == MUHTARI_BOARD_ABSOLUTE ||
+        board == MUHTARI_BOARD_FRACTALUS) {
+        retail_seen |= board == MUHTARI_BOARD_ACTIVISION ? 1u : board == MUHTARI_BOARD_ABSOLUTE ? 2u : 4u;
+        uint32_t bank = 1u + prop_below(rng, board == MUHTARI_BOARD_ACTIVISION ? 7u : 1u);
+        for (uint32_t i = 0u; i < 2u; i++) {
+            muhtari *m = i == 0u ? *a : *b;
+            if (board == MUHTARI_BOARD_ACTIVISION) muhtari__cart_write(m, (uint16_t)(0xFF80u + bank), 0u);
+            if (board == MUHTARI_BOARD_ABSOLUTE) muhtari__cart_write(m, 0x8000u, 2u);
+            if (board == MUHTARI_BOARD_FRACTALUS) {
+                for (uint32_t byte = 0u; byte < 2048u; byte++) {
+                    m->cart.ram[byte] = (uint8_t)(byte * 31u + 17u);
+                }
+            }
+        }
+        /* A real frame establishes chip/CPU history before the failed load;
+           later property comparisons prove resumed frame and audio equality. */
+        struct frame_out warm[2];
+        uint32_t allocations = allocation_calls;
+        run(*a, WIDTH, &warm[0]);
+        run(*b, WIDTH, &warm[1]);
+        if (memcmp(&warm[0], &warm[1], sizeof warm[0]) != 0 || allocation_calls != allocations) {
+            return differ("warm execution/allocation", 0u);
+        }
+        uint8_t before[32], after[32];
+        digest(*a, 1, before);
+        struct run_cart_info bad = run_cart_control(raw, board);
+        muhtari_media media = {0};
+        media.size = (uint32_t)sizeof media;
+        media.image = raw; media.image_size = bad.bytes - 1u;
+        if (muhtari_load(*a, &media) != MUHTARI_STATUS_ERR_TRUNCATED_IMAGE ||
+            allocation_calls != allocations) return differ("geometry refusal", 0u);
+        digest(*a, 1, after);
+        if (memcmp(before, after, sizeof before) != 0) return differ("deep refused state", 0u);
+        fail_allocation = 1u;
+        muhtari_status failed = load(*a, n);
+        fail_allocation = 0u;
+        if (failed != MUHTARI_STATUS_ERR_NO_MEMORY || allocation_calls != allocations + 1u) {
+            return differ("allocation failure", 0u);
+        }
+        digest(*a, 1, after);
+        if (memcmp(before, after, sizeof before) != 0) return differ("deep allocation-failure state", 0u);
+    }
+    return 1;
 }
 
 static int finish(muhtari *a, muhtari *b, int ok)
@@ -218,7 +287,8 @@ static int split_run(uint64_t *rng, uint32_t size)
     struct frame_out two[PROP_SIZE_MAX];
     muhtari *a;
     muhtari *b;
-    int ok = load_pair(prop_below(rng, pool_count()), rng, &a, &b);
+    int ok = load_pair(select_pool(rng, size), rng, &a, &b);
+    size = size > 1u ? size - 1u : 1u;
     uint32_t frames = 1u + prop_below(rng, size);
     uint32_t k = prop_below(rng, frames + 1u);
     for (uint32_t i = 0; i < frames; i++) {
@@ -268,7 +338,8 @@ static int peek_pure(uint64_t *rng, uint32_t size)
     uint8_t after[32];
     muhtari *a;
     muhtari *b;
-    int ok = load_pair(prop_below(rng, pool_count()), rng, &a, &b);
+    int ok = load_pair(select_pool(rng, size), rng, &a, &b);
+    size = size > 1u ? size - 1u : 1u;
     uint32_t frames = 1u + prop_below(rng, size);
     uint32_t k = prop_below(rng, frames + 1u);
     for (uint32_t i = 0; i < frames; i++) {
@@ -298,11 +369,12 @@ static int instances_isolated(uint64_t *rng, uint32_t size)
     struct frame_out out[4][PROP_SIZE_MAX];
     muhtari_input in[2][PROP_SIZE_MAX];
     muhtari *m[4];
-    uint32_t p = prop_below(rng, pool_count());
+    uint32_t p = select_pool(rng, size);
     uint32_t q = (p + 1u + prop_below(rng, pool_count() - 1u)) % pool_count();
     /* m[0] and m[1] interleave; m[2] and m[3] run alone on the same. */
     int ok = load_pair(p, rng, &m[0], &m[2]);
     ok = load_pair(q, rng, &m[1], &m[3]) && ok;
+    size = size > 1u ? size - 1u : 1u;
     uint32_t frames = 1u + prop_below(rng, size);
     for (uint32_t i = 0; i < frames; i++) {
         for (uint32_t j = 0; j < 2u; j++) {
@@ -353,7 +425,8 @@ static int input_at_vblank(uint64_t *rng, uint32_t size)
     muhtari_input in;
     muhtari *a;
     muhtari *b;
-    int ok = load_pair(prop_below(rng, pool_count()), rng, &a, &b);
+    int ok = load_pair(select_pool(rng, size), rng, &a, &b);
+    size = size > 1u ? size - 1u : 1u;
     uint32_t k = 1u + prop_below(rng, size > 2u ? size - 2u : 1u);
     uint32_t calls = 1u + prop_below(rng, 3u);
     for (uint32_t i = 0; i < k; i++) {
@@ -437,7 +510,20 @@ int main(int argc, char **argv)
     }
     for (size_t i = 0; i < sizeof props / sizeof props[0]; i++) {
         if (strcmp(argv[1], props[i].name) == 0) {
-            return prop_run(props[i].name, props[i].fn);
+            for (uint32_t b = 0u; b < 3u; b++) retail_pool[b] = UINT32_MAX;
+            for (uint32_t p = 0u; p < seeds_count(); p++) {
+                if (strcmp(seeds_name(p), "activision") == 0) retail_pool[0] = p;
+                if (strcmp(seeds_name(p), "absolute") == 0) retail_pool[1] = p;
+                if (strcmp(seeds_name(p), "fractalus") == 0) retail_pool[2] = p;
+            }
+            for (uint32_t b = 0u; b < 3u; b++) if (retail_pool[b] == UINT32_MAX) return 1;
+            int result = prop_run(props[i].name, props[i].fn);
+            if (retail_seen != 7u) {
+                fprintf(stderr, "property omitted a retail board: mask %u\n", retail_seen);
+                return 1;
+            }
+            printf("retail board coverage: Activision, Absolute, Fractalus\n");
+            return result;
         }
     }
     fprintf(stderr, "muhtari-test-prop: unknown property %s\n", argv[1]);

@@ -130,7 +130,7 @@ if(MUHTARI_FUZZ)
   set_tests_properties(fuzz.run.seeds PROPERTIES FIXTURES_SETUP fuzz_run_seeds)
   muhtari_add_test(NAME fuzz.run
     COMMAND muhtari-fuzz-run ${fuzz_run_corpora}
-      -max_total_time=60 -timeout=2 -max_len=49152 -artifact_prefix=crash/
+      -max_total_time=60 -timeout=2 -max_len=131200 -artifact_prefix=crash/
     LABELS fuzz TIMEOUT 123)  # 2 x 61.13 s, fuzz job, slowest of 11 runs, run 39381240735
   set_tests_properties(fuzz.run PROPERTIES
     FIXTURES_REQUIRED fuzz_run_seeds WORKING_DIRECTORY ${fuzz_run_work})

@@ -1601,6 +1601,8 @@ static void retail_lifecycle(void)
             CHECK_EQ_U64(counts.allocs, allocations);
             CHECK_EQ_U64(counts.frees, frees);
             CHECK_EQ_U64(peer_counts.allocs, peer_allocations);
+            CHECK_EQ_U64(peer_counts.frees, b == 0u ? 0u : (uint32_t)b);
+            CHECK_EQ_U64(m->cart.info.ram_size, ram_bytes);
         }
         muhtari__bus_write(m, boards[b].selector, boards[b].data);
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);

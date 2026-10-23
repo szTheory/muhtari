@@ -210,6 +210,13 @@ size_t seeds_build(uint32_t i, uint8_t *buf)
         info.size = (uint32_t)sizeof info;
         if (muhtari_probe(buf, n, &info) != MUHTARI_STATUS_OK || info.board != board) abort();
     }
+    if ((strstr(seeds[i].name, "-short") != NULL || strstr(seeds[i].name, "-long") != NULL) &&
+        (strncmp(seeds[i].name, "activision-", 11u) == 0 ||
+         strncmp(seeds[i].name, "absolute-", 9u) == 0 || strncmp(seeds[i].name, "fractalus-", 10u) == 0)) {
+        muhtari_cart_info info = {0};
+        info.size = (uint32_t)sizeof info;
+        if (muhtari_probe(buf, n, &info) != MUHTARI_STATUS_ERR_INVALID_IMAGE) abort();
+    }
 #ifdef MUHTARI_FUZZ_REPLAY
     if (strcmp(seeds[i].name, "activision-swapped") == 0) {
         muhtari_cart_info info = {0};
