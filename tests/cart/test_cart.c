@@ -306,7 +306,6 @@ static void test_unsupported_board(void)
         uint32_t board;
         uint32_t options;
     } boards[] = {
-        {"Fractalus", 0x0080u, 32u * IMAGES_KIB, MUHTARI_BOARD_FRACTALUS, 0u},
         {"bankset", 0x2002u, 64u * IMAGES_KIB, MUHTARI_BOARD_BANKSET, 0u},
         {"halt-banked RAM", 0x4002u, 128u * IMAGES_KIB, MUHTARI_BOARD_SUPERGAME,
          MUHTARI_BOARD_HALT_BANKED_RAM},
@@ -331,12 +330,12 @@ static void test_unsupported_board(void)
     n = images_headerless(buf, 32u * IMAGES_KIB);
     struct muhtari__cartdb_entry act;
     memset(&act, 0, sizeof act);
-    act.board = MUHTARI_BOARD_FRACTALUS;
+    act.board = MUHTARI_BOARD_BANKSET;
     act.flags = MUHTARI__CARTDB_NTSC;
     act.parts = 1u;
     CHECK_EQ_U64(identify_listed(buf, n, buf, n, act, 0, &out),
                  MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.board, MUHTARI_BOARD_FRACTALUS);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_BANKSET);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
 }
 
@@ -924,6 +923,194 @@ static size_t reject_oversized(void)
     return n + 1u;
 }
 
+/* The three readers use the same physical memory; reads cannot select banks. */
+static void retail_views(muhtari *m, uint16_t addr, uint8_t value)
+{
+    uint8_t bank = m->cart.bank;
+    CHECK_EQ_U64(muhtari__cart_read(m, addr, 0), value);
+    CHECK_EQ_U64(muhtari__cart_read(m, addr, 1), value);
+    CHECK_EQ_U64(muhtari__cart_peek(m, addr), value);
+    CHECK_EQ_U64(muhtari__bus_peek(m, addr), value);
+    CHECK_EQ_U64(m->cart.bank, bank);
+}
+
+static void test_retail_boards(void)
+{
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL) {
+        return;
+    }
+    /* Real CPU: write $4107, read its $7007 alias, then distinguish block
+       one via $4207/$6307. Records are $5A, $A6, $5A, derived before run. */
+    static const uint8_t program[] = {
+        0xA9, 0x5A, 0x8D, 0x07, 0x41, 0xAD, 0x07, 0x70, 0x8D, 0x00, 0x22,
+        0xA9, 0xA6, 0x8D, 0x07, 0x42, 0xAD, 0x07, 0x63, 0x8D, 0x01, 0x22,
+        0xAD, 0x07, 0x40, 0x8D, 0x02, 0x22, 0x4C, 0x1C, 0xC0
+    };
+    size_t n = images_a78(buf, 3u, 32768u, 0x0080u, 32768u);
+    memcpy(buf + IMAGES_HEADER + 0x4000u, program, sizeof program);
+    images_footer(buf + IMAGES_HEADER, 32768u);
+    buf[IMAGES_HEADER + 32765u] = 0xC0u;
+    muhtari_media media = {0};
+    media.size = (uint32_t)sizeof media;
+    media.image = buf;
+    media.image_size = n;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.info.board, MUHTARI_BOARD_FRACTALUS);
+    CHECK_EQ_U64(counts.alloc_size, 32768u + 2048u);
+    CHECK(m->cart.ram == m->cart.rom + 32768u);
+    muhtari_frame frame = {0};
+    frame.size = (uint32_t)sizeof frame;
+    CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->ram[0xA00u], 0x5Au);
+    CHECK_EQ_U64(m->ram[0xA01u], 0xA6u);
+    CHECK_EQ_U64(m->ram[0xA02u], 0x5Au);
+
+    /* Independent page pairs: eight physical 256-byte blocks, each seen
+       through the adjacent page and four high mirrors. No production bit
+       compression expression computes any expected index. */
+    static const uint16_t pages[8] = {0x4000u, 0x4200u, 0x4400u, 0x4600u,
+                                      0x4800u, 0x4A00u, 0x4C00u, 0x4E00u};
+    uint8_t expected[2048];
+    uint8_t aliases[2048];
+    for (uint32_t pattern = 0u; pattern < 3u; pattern++) {
+        memset(aliases, 0, sizeof aliases);
+        for (uint32_t block = 0u; block < 8u; block++) {
+            for (uint32_t byte = 0u; byte < 256u; byte++) {
+                uint8_t v = (uint8_t)(pattern == 0u ? byte : pattern == 1u ? block + 0x80u :
+                                                                          byte * 17u + block * 31u);
+                expected[block * 256u + byte] = v;
+                muhtari__bus_write(m, (uint16_t)(pages[block] + byte), v);
+            }
+        }
+        CHECK(memcmp(m->cart.ram, expected, sizeof expected) == 0);
+        for (uint32_t mirror = 0u; mirror < 4u; mirror++) {
+            for (uint32_t adjacent = 0u; adjacent < 2u; adjacent++) {
+                for (uint32_t block = 0u; block < 8u; block++) {
+                    for (uint32_t byte = 0u; byte < 256u; byte++) {
+                        uint16_t addr = (uint16_t)(pages[block] + mirror * 4096u + adjacent * 256u + byte);
+                        uint32_t physical = block * 256u + byte;
+                        retail_views(m, addr, expected[physical]);
+                        aliases[physical]++;
+                    }
+                }
+            }
+        }
+        for (uint32_t i = 0u; i < 2048u; i++) {
+            CHECK_EQ_U64(aliases[i], 8u);
+        }
+        /* Write every alias as well, with a deep physical-memory comparison
+           after each page. This detects writes hitting a second location. */
+        for (uint32_t mirror = 0u; mirror < 4u; mirror++) {
+            for (uint32_t adjacent = 0u; adjacent < 2u; adjacent++) {
+                for (uint32_t block = 0u; block < 8u; block++) {
+                    for (uint32_t byte = 0u; byte < 256u; byte++) {
+                        uint16_t addr = (uint16_t)(pages[block] + mirror * 4096u + adjacent * 256u + byte);
+                        uint8_t value = (uint8_t)(byte + block * 29u + mirror * 7u + adjacent * 17u + pattern);
+                        expected[block * 256u + byte] = value;
+                        muhtari__bus_write(m, addr, value);
+                        retail_views(m, addr, value);
+                    }
+                    CHECK(memcmp(m->cart.ram, expected, sizeof expected) == 0);
+                }
+            }
+        }
+    }
+    /* Fixed ROM endpoints and writes outside the RAM cannot change ROM. */
+    for (uint32_t addr = 0x8000u; addr < 0x10000u; addr++) {
+        retail_views(m, (uint16_t)addr, buf[IMAGES_HEADER + addr - 0x8000u]);
+        muhtari__cart_write(m, (uint16_t)addr, 0u);
+    }
+    CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, 32768u) == 0);
+
+    /* Metadata: valid unsupported v4 combinations never fall back to v3,
+       even when v3 names a supported board. Malformed reserved bits do. */
+    static const uint16_t legacy[] = {0u, 0x0080u, 0x0002u};
+    for (size_t i = 0u; i < sizeof legacy / sizeof legacy[0]; i++) {
+        for (uint32_t mapper = 0u; mapper < 2u; mapper++) {
+            for (uint32_t bankset = 0u; bankset < 2u; bankset++) {
+                images_header(buf, 4u, "A8 wiring", 32768u, legacy[i]);
+                buf[64] = (uint8_t)mapper;
+                buf[65] = (uint8_t)(2u + bankset * 128u);
+                muhtari_cart_info info = expect_written("A8 declaration", buf, n,
+                    mapper == 0u && bankset == 0u ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+                CHECK_EQ_U64(info.board, bankset != 0u ? MUHTARI_BOARD_BANKSET : MUHTARI_BOARD_FRACTALUS);
+                CHECK_EQ_U64(info.ram_size, 2048u);
+                CHECK_EQ_U64(info.warnings, 0u);
+            }
+        }
+    }
+    images_header(buf, 4u, "Invalid v4", 32768u, 0x0080u);
+    buf[64] = 1u;
+    buf[65] = 0x0Au;
+    muhtari_cart_info info = expect_written("reserved A8", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.board, MUHTARI_BOARD_FRACTALUS);
+    CHECK_EQ_U64(info.warnings, MUHTARI_CART_WARN_HEADER_V4_IGNORED);
+    /* Independent hash metadata still overrides a syntactically valid
+       unsupported A8 combination; no production synthetic key is installed. */
+    buf[65] = 2u;
+    struct muhtari__cartdb_entry entry = {0};
+    entry.board = MUHTARI_BOARD_FRACTALUS;
+    entry.ram_kib = 2u;
+    CHECK_EQ_U64(identify_listed(buf, n, buf + IMAGES_HEADER, 32768u, entry, 0, &info), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.source, MUHTARI_SOURCE_HASH);
+    static const uint32_t wrong[] = {16384u, 32767u, 32769u, 65536u};
+    for (size_t i = 0u; i < sizeof wrong / sizeof wrong[0]; i++) {
+        n = images_a78(buf, 3u, wrong[i], 0x0080u, wrong[i]);
+        expect_untouched("Fractalus geometry", buf, n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    }
+    n = images_a78(buf, 3u, 32768u, 0x0080u, 16384u);
+    expect_untouched("Fractalus truncated", buf, n, MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    /* POKEY writes win over physical RAM, but all memory readers see RAM. */
+    n = images_a78(buf, 4u, 32768u, 0u, 32768u);
+    buf[65] = 2u;
+    buf[67] = 5u;
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    m->cart.ram[1] = 0x79u;
+    muhtari__cart_write(m, 0x4001u, 0xAFu);
+    CHECK_EQ_U64(m->pokey[0].channel[0].audc, 0xAFu);
+    retail_views(m, 0x4001u, 0x79u);
+
+    /* Absolute's unusual data precedence is a selected compatibility policy
+       (cartridge.md, Absolute). Expected low-bit transitions are tabulated. */
+    n = images_a78(buf, 3u, 65536u, 0x0200u, 65536u);
+    memset(buf + IMAGES_HEADER, 0x51, 16384u);
+    memset(buf + IMAGES_HEADER + 16384u, 0xA2, 16384u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    static const uint8_t transition[2][4] = {{0u, 0u, 1u, 0u}, {1u, 0u, 1u, 0u}};
+    static const uint16_t neighbors[] = {0x7FFFu, 0x8001u, 0xBFFFu, 0xFFFFu};
+    for (uint32_t start = 0u; start < 2u; start++) {
+        for (uint32_t value = 0u; value < 256u; value++) {
+            muhtari__cart_write(m, 0x8000u, start == 0u ? 1u : 2u);
+            for (size_t i = 0u; i < sizeof neighbors / sizeof neighbors[0]; i++) {
+                muhtari__cart_write(m, neighbors[i], (uint8_t)value);
+                CHECK_EQ_U64(m->cart.bank, start);
+            }
+            muhtari__cart_write(m, 0x8000u, (uint8_t)value);
+            uint8_t selected = transition[start][value % 4u];
+            CHECK_EQ_U64(m->cart.bank, selected);
+            retail_views(m, 0x4000u, selected == 0u ? 0x51u : 0xA2u);
+            retail_views(m, 0x7FFFu, selected == 0u ? 0x51u : 0xA2u);
+            retail_views(m, 0x8000u, buf[IMAGES_HEADER + 0x8000u]);
+            retail_views(m, 0xFFFFu, buf[IMAGES_HEADER + 0xFFFFu]);
+        }
+    }
+    CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, 65536u) == 0);
+    /* Reuse the established independent six-window Activision vectors. */
+    images_header(buf, 3u, "OM tags", 131072u, 0x0100u);
+    CHECK_EQ_U64(images_activision(buf + IMAGES_HEADER), 131072u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, IMAGES_HEADER + 131072u), MUHTARI_STATUS_OK);
+    for (uint32_t bank = 0u; bank < 8u; bank++) {
+        muhtari__cart_write(m, (uint16_t)(0xFF80u + bank), 0u);
+        activision_windows(m, bank);
+    }
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+}
+
 static const struct {
     const char *name;
     size_t (*build)(void);
@@ -1036,6 +1223,7 @@ static const struct {
     const char *name;
     void (*run)(void);
 } cases[] = {
+    {"retail.boards", test_retail_boards},
     {"identify.2600_prefix", test_2600_prefix},
     {"identify.activision_swap", test_activision_swap},
     {"identify.headerless_ports", test_headerless_ports},

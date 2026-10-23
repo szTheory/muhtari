@@ -70,6 +70,7 @@ struct cart_tables {
 /* What a header or a table entry says the cartridge holds. */
 struct cart_board {
     uint32_t board, options, ram, sound;
+    uint32_t unsupported;
 };
 
 static uint32_t be16(const uint8_t *p)
@@ -86,6 +87,9 @@ static uint32_t be32(const uint8_t *p)
    (docs/hardware/cartridge.md, Geometry). A refused board has none here. */
 static int cart_fits(const struct cart_board *b, size_t n)
 {
+    if (b->board == MUHTARI_BOARD_FRACTALUS) {
+        return n == 32u * CART_KIB && b->ram == 2u * CART_KIB && b->options == 0u;
+    }
     if (b->board == MUHTARI_BOARD_ABSOLUTE) {
         return n == 64u * CART_KIB && b->options == 0u && b->ram == 0u;
     }
@@ -256,6 +260,10 @@ static int cart_decode_v4(const uint8_t *h, struct cart_board *b)
     case 2u: /* 8K EXRAM/A8, read as the Fractalus mirror RAM */
         b->board = MUHTARI_BOARD_FRACTALUS;
         b->ram = 2u * CART_KIB;
+        /* Only Linear/A8 identifies this board. Valid SuperGame/A8 has
+           undocumented wiring; refuse it without v3 fallback (cartridge.md,
+           The v4 block). Hash metadata can still override this decision. */
+        b->unsupported = mapper != 0u;
         break;
     case 3u: /* 32K EXRAM/M2, read as halt-banked RAM */
         b->options = MUHTARI_BOARD_HALT_BANKED_RAM;
@@ -428,6 +436,7 @@ static const struct muhtari__cartdb_entry *cart_lookup(const uint8_t *body, size
 
 static void cart_entry_board(const struct muhtari__cartdb_entry *e, struct cart_board *b)
 {
+    b->unsupported = 0u;
     b->board = e->board;
     b->options = e->board_options;
     b->ram = (uint32_t)e->ram_kib * CART_KIB;
@@ -454,7 +463,8 @@ static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 static int cart_refused(const struct cart_board *b)
 {
     return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME &&
-            b->board != MUHTARI_BOARD_ABSOLUTE && b->board != MUHTARI_BOARD_ACTIVISION) ||
+            b->board != MUHTARI_BOARD_ABSOLUTE && b->board != MUHTARI_BOARD_ACTIVISION &&
+            b->board != MUHTARI_BOARD_FRACTALUS) || b->unsupported != 0u ||
            (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
 }
 
@@ -833,8 +843,9 @@ void muhtari__cart_reset(muhtari *m)
 
 /* The RAM byte a board drives at addr, or NULL. A board with RAM maps it
    at $4000-$7FFF; a banked-RAM board shows the 16 KiB half ram_bank there.
-   The index is masked with ram_size - 1, a power of two, so no header can
-   reach outside the RAM (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1,
+   Fractalus compresses the disconnected address bits; other boards mask
+   with ram_size - 1, a power of two, so no header can reach outside RAM
+   (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1,
    and section 7 for hostile input). */
 static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
 {
@@ -842,6 +853,11 @@ static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
         return NULL;
     }
     uint32_t i = (uint32_t)addr - 0x4000u;
+    if (c->info.board == MUHTARI_BOARD_FRACTALUS) {
+        /* Physical 2 KiB: A8 and upper mirror bits are disconnected;
+           A9-A11 compress into RAM A8-A10 (cartridge.md, Fractalus). */
+        return &c->ram[((addr & 0x0E00u) >> 1) | (addr & 0x00FFu)];
+    }
     if ((c->info.board_options & MUHTARI_BOARD_BANKED_RAM) != 0u) {
         i += (uint32_t)c->ram_bank * CART_BANK;
     }
@@ -888,6 +904,11 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
         return *ram;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_FRACTALUS:
+        if (addr >= 0x8000u) {
+            return c->rom[addr - 0x8000u];
+        }
+        break;
     case MUHTARI_BOARD_ACTIVISION: {
         /* OM half order (cartridge preparation sections 1.4 and 2.1).
            The switched A000/C000 halves are reversed within their bank. */

@@ -82,9 +82,12 @@ other option bit clear:
 | 5 | | EXFIX | bank 6 at $4000 |
 | 6 | | 32K EXRAM/X2 | banked RAM |
 
-The specification names these options without saying what they do; the readings of A8, M2 and X2 are the cartridge
-notes' (section 1.1) and are unverified. Both A8 and M2 name boards this library refuses, so a wrong reading can only
-refuse an image. The audio POKEY codes are 1 at $0440, 2 at $0450, 3 at both, 4 at $0800 and 5 at $4000. The other
+The specification names these options without specifying their wiring. Linear/A8 with 32 KiB ROM is accepted
+as the physical 2 KiB Fractalus board described below; the name “8K EXRAM/A8” does not establish 8 KiB SRAM.
+Valid SuperGame/A8 and BankSet/A8 remain unsupported, even when the v3 header names a supported board;
+they do not fall back to v3. Malformed reserved v4 bits retain the ignored-block warning and v3 fallback.
+A hash match retains its existing override precedence. M2 remains unsupported; X2 uses the cartridge notes'
+banked-RAM interpretation (section 1.1). The audio POKEY codes are 1 at $0440, 2 at $0450, 3 at both, 4 at $0800 and 5 at $4000. The other
 mappers take no device. Otherwise the cart type applies and `MUHTARI_CART_WARN_HEADER_V4_IGNORED` is set. Ports, TV,
 save and XM always come from bytes 55-63.
 
@@ -185,6 +188,7 @@ The body sizes each board this library runs accepts:
 | SuperGame | a multiple of 16 KiB from 32 KiB (2 banks) to 1 MiB |
 | SuperGame with ROM at $4000 (SG9) | (2^n + 1) x 16 KiB up to 1 MiB: 48, 80, 144, 272 or 528 KiB |
 | Absolute | exactly 64 KiB, no board options or cartridge RAM |
+| Fractalus | exactly 32 KiB ROM and 2 KiB physical RAM, no board options |
 | Activision | exactly 128 KiB, no board options or cartridge RAM |
 
 The evidence is MAME's 7800 list, which gives these ROM sizes per slot:
@@ -223,8 +227,8 @@ Reload and power cycle restore declared chip count and the boot clock origin.
 
 ## Boards
 
-`MUHTARI_STATUS_OK` means linear, Absolute, Activision or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
-Fractalus, bankset, halt-banked RAM and Souper are reported with
+`MUHTARI_STATUS_OK` means linear, Absolute, Activision, Fractalus or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
+Bankset, halt-banked RAM and Souper are reported with
 `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. XM, YM2151 and Covox are reported in `devices` and `sound` and never refused.
 
 The boards are one `switch` in `src/cart.c`, so the core keeps no table of function pointers. MARIA's fetches see the
@@ -322,6 +326,34 @@ tracer copies a version-1 numeric mailbox from fixed ROM and replaces its
 record with a real $4000 read: the independently selected bank-zero tag $5A
 must report value 90. The library, runner and actual libretro module validate
 the same mailbox, with no inference from frame hashes.
+
+### Fractalus
+
+The board maps exactly 32 KiB ROM at $8000-$FFFF and exactly 2,048 physical
+RAM bytes across $4000-$7FFF. Adjacent 256-byte pages alias: $4000/$4100
+hold physical block zero, $4200/$4300 block one, through $4E00/$4F00 block
+seven. Those page pairs repeat at $5000, $6000 and $7000. Each physical byte
+has eight CPU aliases. A8 and the upper mirror bits are disconnected; the
+physical index is `((address & $0E00) >> 1) | (address & $00FF)`, rather than
+masking the uncompressed CPU offset with 2047. CPU, MARIA and peek agree.
+Writes use the same physical index, with declared audio writes taking priority.
+
+The [bankswitching guide, revision 391](https://7800.8bitdev.org/index.php?title=ATARI_7800_BANKSWITCHING_GUIDE&oldid=391)
+describes the 2 KiB and adjacent-page aliases. Mirrors above $4FFF follow the
+implementation evidence collected in the cartridge preparation, section 2.1,
+as a selected compatibility policy. Zero-filled volatile RAM at load and power
+cycle is the deterministic profile, not a new hardware measurement. The A8
+metadata label supplies no evidence for physical 8 KiB SRAM or a switched
+SuperGame/A8 board. Core bus aliases do not imply complete achievement visibility;
+host descriptors have their own documented limits.
+
+Independent page-pair tests cover all 16,384 addresses and all 2,048 physical
+locations with multiple patterns. An owned disposable CPU program writes $5A
+through $4107 and reads it through $7007, writes $A6 through $4207 and reads it
+through $6307, then reads $4007 to require the original $5A. Its three numeric
+observations are therefore 90, 166 and 90, derived from the page pairs before
+execution. These checks establish memory semantics, without claiming retail
+playability or cartridge measurements.
 
 ## Loading
 
