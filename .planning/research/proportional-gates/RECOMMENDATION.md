@@ -1,7 +1,7 @@
 ---
 title: "Replace maintenance line budgets with contract checks and architecture review"
 date: 2026-10-23
-status: recommendation
+status: accepted
 scope: Repository-check policy and its Phase 6 migration
 ---
 
@@ -14,11 +14,11 @@ Use executable checks for concrete requirements, and a short evidence-based
 architecture review for the changed design. Reuse the existing review and PR
 explanation; add no policy registry or approval service.
 
-The owner explicitly reopened this policy after the Phase 6 halt. This document
-is the researched replacement proposal, not an installed rule change. It does
-not approve N654/C15941 or complete any board requirement. The active line gate
-remains in place until a tested migration removes it. Historical records remain
-historical.
+Accepted 2026-10-23: the owner authorized this recommendation and its bounded
+migration in quick task261023-jkd. ENGINEERING §11 is the authoritative current
+review contract, with AGENTS rule7 pointing to it. The migration retires the
+line gate; it does not approve N654/C15941 or complete any board requirement.
+Historical measurements and acceptance remain historical.
 
 ## Why change the policy
 
@@ -142,10 +142,11 @@ NIST SSDF recommends evaluating and maintaining reused software, including its
 provenance and vulnerabilities; it does not establish that copied code is always
 safer than packages. [SSDF PW.4](https://csrc.nist.gov/pubs/sp/800/218/final).
 
-## Proposed replacement for AGENTS rule 7
+## Adopted rule and authoritative location
 
-This is a draft for the implementation change; it does not silently supersede
-the active rule:
+The accepted review contract lives once in [ENGINEERING §11](../../preparation/ENGINEERING.md#11-docs-standards).
+AGENTS rule7 is its concise operational pointer. The following is the historical
+proposal reviewed during research, retained to explain the adoption:
 
 > **Proportional gates.** Repository checks use CMake `-P` or POSIX sh and reuse
 > existing mechanisms. A new or materially changed check names its concrete fault
@@ -207,8 +208,9 @@ than adopting an additional ecosystem by convenience.
    full boards or six-native acceptance from this research or from migration CI.
 
 The detailed path map and boundary reproductions are in
-[CI and migration research](ci-and-migration.md). The migration is deliberately
-not performed in this research pass. It is not a requirement to implement a
+[CI and migration research](ci-and-migration.md). The original research pass did
+not perform the migration; the accepted quick task now implements and verifies
+it. It is not a requirement to implement a
 dashboard, centralize all existing domain policy, or redesign the whole pipeline.
 
 ## Evidence and follow-up
@@ -224,8 +226,9 @@ repository observations, fetched primary evidence and recommendations:
 One independent adversarial review of this synthesis found no material issue.
 It checked the current judge, producer, historical redesign and all three
 research documents for lost safeguards, surrogate quotas, subjective review
-loops and overclaimed acceptance. This verifies the proposal's coherence, not
-the unimplemented retirement bridge or future board behavior.
+loops and overclaimed acceptance. This verified the proposal's coherence;
+executable retirement evidence belongs to the quick-task summary, and future
+board behavior remains unproved.
 
 Revisit the review method when a concrete accepted change causes an attributable
 maintenance or safety failure that it missed. Investigate that boundary using

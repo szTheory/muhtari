@@ -11,9 +11,8 @@ Initial ordinary bounds use an independently built, unchanged event-base tree on
 the same runner with matching compiler and fixture fingerprints. Native bounds
 apply to every native leg; the archive ceiling covers the largest three-archive
 total across the six native legs. This bounds package size across the platform set;
-it does not measure each platform's percentage growth. The initial base has no
-audited gate inventory, so only gate lines use the reviewed fixed structural ceiling.
-This cannot reset an existing bound or initialize another metric from its own
+it does not measure each platform's percentage growth. The ceiling remains 399937
+bytes; native test floors remain 605 and 593. Adoption cannot reset an existing bound or initialize another metric from its own
 candidate measurements. Ordinary bounds ratchet against the trusted base policy.
 Compressed archive bytes vary slightly when rebuilding unchanged inputs. Initial
 adoption uses the minimum actual independent-base peak observed in the comparable
@@ -21,7 +20,16 @@ cohort; it grants no extra bytes for that variation. This remains a strict ceili
 on actual output, alongside the independent archive contents and firmware judges.
 An exact reason names the metric, old/new bound, rationale, grant and expiry dates;
 its lifetime is at most 60 days. Inherited expiry and renewal are checked every run.
-Temporary gate growth additionally names a credible removal/consolidation exit.
+
+The maintenance-line metric and its exclusive counter, inventory and adoption
+handling are retired. The trusted-base key-retention check permits only the literal
+legacy `gate_lines` key to be absent from candidate policy. Raw base-policy bytes
+remain unchanged and independently authenticated; every other base key must remain.
+A newly introduced metric still needs ordinary independently measured baseline
+evidence. This transition adds no generic ignored-key list or closed metric registry;
+the current judge does not reject every additional observation key or complete
+unknown metric. For changed check architecture and new resource bounds, follow
+ENGINEERING §11 in the preparation index.
 
 The required `quality` job downloads the exact six native, hygiene and ASan artifact
 set from its own run. Every lane must supply current/base observations, the event-base

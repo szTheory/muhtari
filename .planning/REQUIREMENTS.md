@@ -9,7 +9,7 @@ Core value: 7800 games behave as they do on the console, identically on every pl
 
 - [x] **TUNE-01**: Maintainers receive a weekly triage digest with a monthly CI-efficiency section derived from hosted runs, without a new service dependency.
 - [x] **TUNE-02**: CI uses measured timeout and workload bounds, resolves reproduced flakes and overlapping-output races, and records the stronger signal for any removed check.
-- [x] **TUNE-03**: One aggregate quality.json ratchet consumes measured existing outputs, rejects unexplained regressions and permits explicit dated exceptions for its metrics; performance and compatibility retain their independent semantic guards and existing domain exception stores. Repository-check code meets an audited absolute line budget with scoped additions allocated before implementation, final tightening to actual size, and full counts and advisory source ratios published.
+- [x] **TUNE-03**: One aggregate quality.json ratchet consumes measured existing outputs, rejects unexplained regressions and permits explicit dated exceptions for its metrics; performance and compatibility retain their independent semantic guards and existing domain exception stores. Repository checks preserve concrete contracts and use the bounded architecture review in ENGINEERING §11; maintenance-line allocations and their exclusive accounting machinery are retired by the accepted 2026-10-23 policy revision.
 - [x] **TUNE-04**: Performance comparisons are armed only after the documented deterministic controls pass; the resulting state and supported/advisory portability lanes are explicit.
 - [x] **TUNE-05**: User and maintainer docs, install instructions and repository-setting checks match the released behavior; the measured weakest quality dimension receives a shipped improvement.
 
@@ -97,14 +97,22 @@ Phase 5 merged at 6d57d69; ci-only work cuts no package release. See [Phase 5 ve
 and run URLs. WR-01 and COST-01 remain deferred tooling seeds under AGENTS rule 7; raw monthly
 cost totals are untrusted, and no global hosted-cost reduction is claimed.
 
-2026-10-21 policy revision: the owner delegated adoption of recommendations after refreshed Phase 5 research.
+Historical 2026-10-21 policy revision: the owner delegated adoption of recommendations after refreshed Phase 5 research.
 TUNE-03 replaces the hard tenth-of-source ceiling with the absolute ratchet specified in
 `.planning/phases/05-pipeline-tune-up/05-CONTEXT.md` D-17, D-19–20. All five pipeline outcomes remain required;
 this is an explicit budget-contract change, not a claim that the old limit was met or proved impossible.
 
-2026-10-22 scope revision: after two measured migration halts, the owner delegated recommendation adoption.
+Historical 2026-10-22 scope revision: after two measured migration halts, the owner delegated recommendation adoption.
 TUNE-03 explicitly defers performance/compatibility domain-policy centralization and retirement of their two
 legacy stores. It does not promise the central aggregate's immutable grant/from/to/renewal protections for
 those legacy domains; a waived compatibility loss can become the next base's nonpass state. Existing semantic
 faults remain guarded; TUNE-04 readiness, aggregate controls, fixed allocations and final acceptance remain
 required. See Phase 5 CONTEXT D-21–23. This historical scope discussion alone marked no requirement complete; final Phase 5 verification now accepts TUNE-01–05.
+
+2026-10-23 accepted policy revision: the owner accepted the [proportional-gates recommendation](research/proportional-gates/RECOMMENDATION.md)
+and authorized its bounded migration. ENGINEERING §11 replaces maintenance LOC ceilings, allocation/admission,
+counting and final tightening with concrete contract checks and bounded architecture review. This supersedes
+the historical fixed-allocation obligation above and Phase 6's N654 proposal; it does not approve that grant.
+Phase 5's accepted completion and its original evidence remain historical facts. Ordinary aggregate bounds,
+dated exceptions and independent performance/compatibility authorities remain binding; no BOARD requirement
+is completed by this revision.
