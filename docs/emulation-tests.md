@@ -391,7 +391,14 @@ It prints `stats agree` or `stats disagree` for each.
 **Rebuilding.** `diag.rebuild` (label `built`) assembles each `tests/diag/*.s` that has a `.cfg`, and Bruce Clark's
 `tests/cpu/decimal/clark.s` as printed and as its 65C02 control, with the pinned `dasm.wasm -f3`, `7800sign.wasm -w`
 and `7800header.wasm` under wasmtime (`tests/diag/assemble.cmake`), and requires each result's SHA-256 to equal its
-manifest row's. After a source edit, derive and commit any new expected value first, then write the new bytes with
+manifest row's.
+
+Sample and diagnostic recipes share Wasmtime's compiled-module cache at
+`build/pins/wasmtime-cache`, with per-output/name configuration outside each
+fresh fixture directory. All source, assemble, sign and header stages still run;
+only pinned tool compilation is reused. No home cache or fixture bytes are cached.
+
+After a source edit, derive and commit any new expected value first, then write the new bytes with
 
     cmake -DWASMTIME=build/pins/wasmtime/wasmtime -DPKG=build/pins/7800basic -DSRC=tests/diag/<rom>.s \
           -DCFG=tests/diag/<rom>.cfg -DOUT=build/diag -DMANIFEST=tests/roms/manifest.txt \
