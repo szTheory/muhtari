@@ -135,7 +135,7 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 30 || 7 }}  # provisional expanded Windows controls; run 39874751162; other max291s
+    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 30 || 10 }}  # provisional Windows controls; other 2 x 286s, run 39874751162
     strategy:
       fail-fast: false
       matrix:
@@ -222,7 +222,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network floor; max 131 s, n=5, run 39529469630; provisional
+    timeout-minutes: 10  # provisional independent current/base work completed at 298s, cancelled at300s, run 39875580833
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -284,7 +284,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network floor; compile-only max 33 s, n=2, run 39651391712; provisional
+    timeout-minutes: 15  # provisional slow archive fetch censored at300s, run 39875580833; compile-only max33s
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

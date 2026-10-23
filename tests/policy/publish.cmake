@@ -63,10 +63,10 @@ foreach(component library runner libretro)
 endforeach()
 
 file(GLOB assets RELATIVE "${WORK}/dist" "${WORK}/dist/*.zip")
-execute_process(COMMAND "${CMAKE_COMMAND}" -E sha256sum ${assets}
-  WORKING_DIRECTORY "${WORK}/dist" OUTPUT_VARIABLE sums COMMAND_ERROR_IS_FATAL ANY)
-string(REPLACE "\r\n" "\n" sums "${sums}")
-file(WRITE "${WORK}/dist/SHA256SUMS" "${sums}")
+execute_process(COMMAND sh -c [=[
+if command -v sha256sum > /dev/null 2>&1; then sha256sum -- "$@"; else shasum -a 256 -- "$@"; fi
+]=] sh ${assets}
+  WORKING_DIRECTORY "${WORK}/dist" OUTPUT_FILE "${WORK}/dist/SHA256SUMS" COMMAND_ERROR_IS_FATAL ANY)
 
 # Shared response queue exercises production command substitutions and conditional callers.
 set(cmd "${CMAKE_COMMAND}" -E env --modify "PATH=path_list_prepend:${WORK}/bin"
