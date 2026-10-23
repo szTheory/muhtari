@@ -51,7 +51,7 @@ function(hashes_board name result)
   endforeach()
   file(MAKE_DIRECTORY "${OUT}")
   set(report "${OUT}/hashes-${name}-mailbox.txt")
-  file(WRITE "${report}" "${line}\n")
+  file(CONFIGURE OUTPUT "${report}" CONTENT "${line}\n" @ONLY NEWLINE_STYLE UNIX)
   execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${report}" "${name}"
       "${DIAG}/expected.csv"
     RESULT_VARIABLE rc OUTPUT_VARIABLE verdict ERROR_VARIABLE err TIMEOUT 30)
