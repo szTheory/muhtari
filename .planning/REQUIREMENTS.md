@@ -1,6 +1,6 @@
 # Requirements: muhtari v2.0 — The whole library
 
-Defined and approved: 2026-10-21. Milestone v2.0; Phase 5 verified complete and shipped in PR #20; phases 6–11 not started.
+Defined and approved: 2026-10-21. Milestone v2.0; Phase 5 shipped in PR #20. BOARD-01–03 implementation acceptance is recorded in Phase 6 summaries; phases 7–11 are not started.
 Core value: 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
 
 ## Milestone requirements
