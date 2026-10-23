@@ -82,6 +82,17 @@ coverage:
         ref: "Pending parent execution orchestrator: current-head CI and existing Nightly/full native-PowerPC callers; no run URL yet"
         status: unknown
     human_judgment: false
+  - id: authenticated-sample-annotation-comparison
+    description: Unique exact behavior-annotation migration preserves every other sample-file byte and the independently read raw event-base identity
+    requirement: BOARD-01
+    verification:
+      - kind: integration
+        ref: "policy.quality.controls real producer/unchanged join cases; full local CI 612+6 and hygiene24; exit 0 each; URL N/A-local"
+        status: pass
+      - kind: integration
+        ref: "Current-script BUILD_BASE=ON against actual617dfa762ddb649839b925be5aa582180066fa78; base610+6, equal environments and raw legacy policy; exit 0; SOURCE=local, URL N/A-local"
+        status: pass
+    human_judgment: false
 actuals:
   tokens: 9483
   tasks: 2
@@ -186,6 +197,36 @@ WINDOWS42 records this unrun acceptance; WINDOWS33 retains the earlier pending h
 ## Self-Check: LOCAL PASSED; HOSTED PENDING
 
 All task/preparation files exist and the three local commits are ancestors of HEAD. Final local full CI, release checks, exact inventories, actual three-ZIP sum, source provenance, trusted manifest relation and hygiene pass. The parent must obtain current-head hosted evidence, resume Task 3, then finalize this SUMMARY and phase gates. Pending status must remain visible until then.
+
+## Hosted Failure Repair: Authenticated Sample Annotation Comparison
+
+Fix commit `7f90077300fbef07586fef524d2b165cdb3e03e3` addresses the current/base environment mismatch reproduced in the hosted macOS/ASan producer logs. The actual legacy event base is `617dfa762ddb649839b925be5aa582180066fa78`. Its built-sample expectation file differs from the candidate only at the required `# behaviour_revision 2` to `# behaviour_revision 3` annotation; every row, tool/source pin, frame/audio hash, comment and trailing byte otherwise matches. Raw digest equality made this authorized annotation change incomparable even after fixture-manifest comparability succeeded.
+
+The current evidence script now independently obtains the original event-base `tests/built/expected.txt` using `git show` in both current and recursive base invocations. The existing quality module owns one narrow helper: unchanged files retain raw equality; a difference must be exactly the unique complete revision-two to revision-three annotation line, with every other byte equal. The resulting environment identity is always the raw trusted file's SHA-256. Caller-provided sample paths/digests cannot replace it. No sample bytes, ordinary bound, base-policy bytes, compiler/platform identity, manifest rule or join equality changed. This is an existing evidence-contract repair, not a general ignored-comment mechanism or baseline reset.
+
+The existing `policy.quality.controls` producer/unchanged-join suite now exercises revision-only acceptance, migrated-base equality, reverse/invalid revisions, missing/duplicate annotations, changed rows/pins/trailer and forged candidate trust arguments. The older raw-sample mutation case now fails at the producer boundary before joining, while compiler/platform mismatches still reach and fail the unchanged join. Fixture-admission, legacy-key retirement, typed evidence and dated-reason controls remain active. All cases execute through the current producer and the existing join without new registration or tooling.
+
+| Command | Exit | Result | Run URL |
+|---|---:|---|---|
+| `ctest --preset ci -R '^policy[.]quality[.]controls$' --output-junit quality-sample-controls.xml --no-tests=error --output-on-failure` | 0 | Extended producer/join controls pass | N/A-local |
+| `cmake --workflow --preset ci` | 0 | 612 ordinary and six release checks; exact native inventories pass | N/A-local |
+| `cmake --workflow --preset hygiene` | 0 | 24/24 including format, analyzer, no-float and fixture coverage; exact hygiene inventory passes | N/A-local |
+| Three-component ZIP expansion and `wc -c` sum using the command above | 0 | 68,753 + 68,092 + 77,286 = 214,131 <=399,937 | N/A-local |
+| Actual-base producer invocation below | 0 | Independent real legacy-base build 610+6; current/base environment equality established | N/A-local |
+| Read-only JSON/Git assertions on actual producer outputs | 0 | Current/base native tests 612/610; archive bytes214131/212228; original base policy and SHA exact, legacy key retained | N/A-local |
+| Clean exact-base worktree check followed by `git worktree remove build/ci/quality-base` | 0 | Disposable test worktree removed; no other worktree touched | N/A-local |
+
+```sh
+GITHUB_EVENT_PATH="$PWD/build/ci/sample-event.json" \
+GITHUB_EVENT_NAME=pull_request GITHUB_SHA="$(git rev-parse HEAD)" \
+cmake -DROOT=. -DBUILD=build/ci -DOUT=build/ci/quality-current-local.json \
+  -DSHA="$(git rev-parse HEAD)" -DCONFIG=ci -DSOURCE=local -DBUILD_BASE=ON \
+  -P tests/cmake/quality_evidence.cmake
+```
+
+The local event file contains only `pull_request.base.sha` set to the exact legacy SHA above. Its identity comes from that actual Git commit, not a synthetic migration file or candidate-derived digest. Current and recursive base environments both end with the independently authenticated raw sample digest `13934a6aa791c06d4e50c165bed766b0facc8d32eff4e3d595b3a880dc57e2f2`; the original trusted manifest digest remains `65d286f79039791d34061710af2d40f254e23de1836aa2dbe93b3bdf96296b7d`. Compiler/platform identity remains `AppleClang-21.0.0.21000101-Darwin-arm64`. The raw base-policy file is byte-identical to `git show` of the legacy commit and retains its `gate_lines` key.
+
+This reproduction uses `SOURCE=local` and does not claim GitHub event authentication, six-platform fit or a successful hosted aggregate. The parent must rerun existing hosted acceptance at the fix head; Task 3, WINDOWS42, the hosted-retirement todo and all BOARD requirements remain pending. The initial `actuals` interval above describes initial local preparation; final plan actuals must be refreshed when Task 3 closes. No review/gap allowance was reset.
 
 ## Hosted correction round: compiler and hygiene
 
