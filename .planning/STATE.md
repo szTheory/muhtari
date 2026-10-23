@@ -2,9 +2,9 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: shipping
-last_updated: "2026-10-23T02:03:17+00:00"
-state_head: 82513206384d80e7aaa8bf8be492cb7929fb96fc
+status: shipped
+last_updated: "2026-10-23T02:38:19+00:00"
+state_head: 6d57d69bacf8fc4154803d46aa609efdda0d8346
 progress:
   total_phases: 7
   completed_phases: 1
@@ -15,8 +15,8 @@ last_activity: 2026-10-22
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-stopped_at: Phase 5 ship in progress; PR 20 awaits final-head CI and squash merge
-last_activity_desc: Phase 5 PR 20 prepared for final-head CI and squash merge
+stopped_at: Phase 5 shipped in PR 20; Phase 6 discussion is next
+last_activity_desc: Phase 5 merged; required CI and default-branch digest delivery confirmed
 ---
 
 # Project State
@@ -24,7 +24,7 @@ last_activity_desc: Phase 5 PR 20 prepared for final-head CI and squash merge
 ## Project Reference
 
 See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
-preparation/DECISIONS.md. Current focus: ship Phase 5; Phase 6 remains unstarted.
+preparation/DECISIONS.md. Current focus: discuss Phase 6; Phase 5 is shipped.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
 
@@ -32,7 +32,7 @@ from a small MIT-licensed C library hosts can embed.
 
 Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
 and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 is not started.
-PR #20 ships Phase 5; final-head CI and merge-only observations are tracked by the ship step.
+PR #20 squash-merged at 6d57d69 on 2026-10-23T02:32:12Z. Phase 5 is shipped.
 Do not return to discussion, create plan16, reset review/gap allowances or resume
 historical halted plans. Current implementation 098bb5e has actual direct/called
 and genuine publish/download/install/confirmed-cleanup acceptance. Completion
@@ -69,20 +69,38 @@ published package. v2.0 has 27 requirements across phases 5–11.
 
 ## Blockers and Seeds
 
-No execution blocker remains. Merge-only publication checks belong to ship.
+No execution blocker remains. Ship observations are recorded below.
 Standard code review has no blocking finding; WR-01 and COST-01 are deferred tooling seeds in 05-REVIEW-DISPOSITION.md, under AGENTS rule 7.
 Existing seeds remain in the phase deferred-items ledger and milestone audit.
 No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-Phase 5 ship step: https://github.com/szTheory/muhtari/pull/20. This note is pushed
-before the final-head CI run; do not infer merge from the note alone. The ship
-agent confirms CI, squash merge, release PR health and digest publication through
-GitHub. No review/gap reset or further Phase 5 plan is authorized. Stop after ship.
-Next command after successful shipping: `$gsd-discuss-phase 6`. Resume file: None.
-Final completion/ship commits change planning metadata only; source acceptance
-at 098bb5e is retained alongside the final-head hosted runs.
+Phase 5 ship finished: https://github.com/szTheory/muhtari/pull/20 merged head
+51c0639 as 6d57d69. Final-head CI39887498127 attempt3 succeeds; attempts1/2
+remain cancelled by slow Ubuntu Valgrind downloads before measurement. The final
+actual download recovered to74.4MB/s and armed head/base3837262/PASS; no source,
+timeout, budget, review or gap reset was used to obtain recovery.
+
+`gh run view 39887498127 --json conclusion` exits0/success:
+https://github.com/szTheory/muhtari/actions/runs/39887498127
+`gh run view 39890107224 --json conclusion` exits0/success: post-merge
+release-please creates no release for ci-only work; latest remainsv0.4.0.
+https://github.com/szTheory/muhtari/actions/runs/39890107224
+Existing releasePR16 has green CI required; no new releasePR is open.
+`gh run view 39890187048 --json conclusion` exits0/success; exact issue22 GET
+confirms the first default-branch digest and successful-report timestamp.
+https://github.com/szTheory/muhtari/actions/runs/39890187048
+https://github.com/szTheory/muhtari/issues/22
+
+`gh run view 39887498056 --json conclusion` exits0/success: final-head full
+native/PowerPC equality, immutable never-latest rehearsal421392396, downloaded
+verification, README install and cleanup all pass. Complete authenticated release
+listing plus exact ID/tag HTTP404 checks exit0; latest remainsv0.4.0.
+https://github.com/szTheory/muhtari/actions/runs/39887498056
+
+No further Phase 5 plan, execution, review or ship command is next. Stop after
+this ship step. Next command: `$gsd-discuss-phase 6`. Resume file: None.
 
 Completion scanning emitted four reference warnings: generated build-relative paths
 and command strings in 02/08/09/15 summaries were treated as missing source files.

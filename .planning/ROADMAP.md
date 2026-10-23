@@ -34,7 +34,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 **Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
 **Depends on:** v1.0 closeout
 **Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Status:** Complete — nine active slots accepted, goal verification 20/20; ship next.
+**Status:** Complete — nine active slots accepted, goal verification 20/20; shipped in PR #20.
 
 Plans:
 - [x] 05-01-PLAN.md — Audit the boundary, retain savings and allocate additions.
@@ -165,4 +165,4 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-22; Phase 5 execution and verification complete. Next: `$gsd-ship 5`; stop before ship/merge.*
+*Updated: 2026-10-22; Phase 5 shipped in PR #20. Next: `$gsd-discuss-phase 6`; stop after ship.*

@@ -27,7 +27,7 @@ The [audit](milestones/v1.0-MILESTONE-AUDIT.md) records 25/25 scoped requirement
 and no integration gaps. At that historical closeout, gate code was 15.94% of src/ and performance comparison
 was report-only. Those values are superseded by Phase 5 below; the old audit stays historical.
 
-Phase 5 is now implemented and verified on its branch: 20/20 substantive truths and
+Phase 5 is implemented, verified and merged in PR #20: 20/20 substantive truths and
 nine active outcomes accepted. Direct CI 39879193530 and Release 39879193669 pass,
 including genuine publish/download/install/confirmed cleanup. Final gate code is
 15,287 lines across 147 whole files; unused 78-line allowance retires. The controlled
@@ -35,7 +35,7 @@ test-card performance comparison is armed; WASM/library/property remain advisory
 Matched local scheduling improves wall time 18.24%; no global hosted-cost reduction
 is claimed. WR-01 and COST-01 remain deferred tooling seeds; raw monthly numeric
 cost totals are untrusted. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md).
-Shipping/merge is the next separate step; the published package remains v0.4.0.
+Phase 5 shipped at 6d57d69; discuss Phase 6 next. This ci-only merge cuts no release; the published package remains v0.4.0.
 
 ## Current Milestone: v2.0 The whole library
 
@@ -77,7 +77,7 @@ save states and other later horizons remain deferred. Planning v2.0 does not sel
 - ✓ Owned exact-q23-16x64-dc20 synthesis passes the production spectral/alias judge with renewed integer
   headroom/width/carry proofs; hostile legal chip traffic stays bounded — v1.0, Phase 4
 
-- ✓ Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5 verified on branch; ship next.
+- ✓ Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5 verified and shipped in PR #20.
 
 ### Active
 
@@ -194,4 +194,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-22 after Phase 5 execution and final verification; ship next*
+*Last updated: 2026-10-22 after Phase 5 shipping; discuss Phase 6 next*
