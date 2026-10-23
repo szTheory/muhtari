@@ -40,10 +40,22 @@ same event and Git object. There is no candidate-provided shared digest or ignor
 identity field. Local observation production without an event retains the raw
 manifest digest and provides no independent-base acceptance.
 
-Compiler identity/version, platform/architecture and the complete built-sample
-expectation digest remain unchanged components of the environment. The producer
-and join still require exact complete environment equality; every individual lane
-must validate before reduction. This comparison identity does not admit fixture
+Compiler identity/version and platform/architecture remain unchanged components
+of the environment. Built-sample expectations normally require raw byte equality.
+The sole annotation transition permits exactly one complete
+`# behaviour_revision 2` line to become `# behaviour_revision 3`, with its newline
+and every other byte unchanged. Missing or duplicate annotations, another revision,
+changed rows, tool/source pins, hashes, comments or trailing bytes fail. An unchanged
+file retains ordinary raw equality; no general comment-stripping rule applies.
+
+Both current and recursive base production independently obtain the complete
+original `tests/built/expected.txt` with `git show` from the same authenticated
+event-base SHA. After proving raw equality or that exact annotation transition,
+both use the raw trusted file's SHA-256 in the environment. No caller-supplied path
+or digest can replace it; sample pins and contents are not rewritten. Production
+without an event keeps the current raw sample digest and establishes no independent
+base acceptance. The join still requires exact complete environment equality;
+every individual lane must validate before reduction. This comparison identity does not admit fixture
 bytes, validate licensing, prove a diagnostic's behavior or replace raw content
 hashes. Manifest admission, exact fixture digests, independent rebuilds and hash
 coverage retain their separate authority.
