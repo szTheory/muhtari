@@ -78,6 +78,22 @@ Hash equality, public compatibility, ABI, sanitizers, performance and archive
 semantics retain their independent consumers. The aggregate owns ordinary thresholds
 and reasons, without replacing those domain judges or promoting advisory lanes.
 
+The existing frame/audio artifact also carries the owned Activision, Absolute and
+Fractalus diagnostics. Each must identify its board, complete the fixed numeric
+mailbox and supply both requested frame hashes plus every raw-audio/PCM field.
+The driver validates the mailbox identity, record count, CRC and expected values
+before those rows enter equality. These diagnostics are silent; an empty raw
+transition stream is expected, while PCM bytes and sample counts still agree.
+The older test-card, soundtest and POKEY rows retain their byte meanings. The
+performance workload remains the test card. Diagnostic success does not establish
+untested retail gameplay, PAL execution or new physical hardware measurements.
+
+A local package pass establishes only that lane's three-ZIP total. Acceptance
+still requires all six actual native totals, release-content checks and the
+authenticated worst-lane reduction at or below 399937, with exact event-base and
+head identities. Metric retirement is accepted only through the existing hosted
+observations and surviving guards; controlled local fixtures do not replace them.
+
 Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
 ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and
 checks a reviewed expiry within 60 days. Compatibility always requires fresh results

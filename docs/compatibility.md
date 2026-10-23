@@ -3,6 +3,14 @@
 Generated from `tests/compat/ledger.csv` by `tools/compat_doc.cmake`; do not edit it by hand.
 `docs/emulation-tests.md`, ledger, says what each column and status means and how a row is judged.
 
+NTSC board support includes linear, SuperGame, Activision, Absolute and Fractalus.
+Owned board diagnostics verify selected banking and physical RAM semantics; they do not promote an
+untested retail title to a passing gameplay result. PAL execution remains unsupported.
+[Cartridge behavior](hardware/cartridge.md) describes identified-only Activision AM normalization,
+original image identity, physical 2 KiB Fractalus RAM and selected compatibility/profile policies.
+[Host memory maps](libretro.md#achievements) expose fixed ROM and only the documented RAM aliases;
+banked windows and Fractalus mirrors above $4FFF remain descriptor holes.
+
 The ledger has 42 rows. 8 are judged by the weak predicate `boots@F` (the game booted, drew and
 kept running), not by a pinned title screen.
 

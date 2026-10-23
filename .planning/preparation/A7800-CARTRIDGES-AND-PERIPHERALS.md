@@ -62,8 +62,10 @@ Joystick and a Lightgun header over one CRC [CART.15].
 **Recommendation** (built): a sorted per-chip SHA-1 table generated from the CC0 XML at build time, with each
 multi-chip entry's slice layout; slice and half-swapped hashes computed at run time, since SHA-1 does not compose
 (tested while building the probe). A match overrides board, RAM and POKEY (`HEADER_CORRECTED`), never controllers;
-region from the header, else the hash, else NTSC. Normalising Activision images at load arrives with the board in
-phase 3. **Strongest alternative:** trust the header and use the hash only when there is none (MiSTer, a7800).
+region from the header, else the hash, else NTSC. Activision loading now normalizes only an identified
+half-swapped match into a private OM copy, retaining raw caller/runner identity. Unknown explicit Activision
+assumes OM with a warning; unmatched modified AM needs external conversion. The implemented contract and
+source confidence are in `docs/hardware/cartridge.md`, Activision. **Strongest alternative:** trust the header and use the hash only when there is none (MiSTer, a7800).
 **Would change if:** the owner's dumps show softlist slot errors.
 
 ### 1.5 2600 images → `MUHTARI_STATUS_UNSUPPORTED_2600` (2600 support is planned)
@@ -118,7 +120,7 @@ Linear + SG covers 187/204 (91.7%); adding POKEY gives 195/204. For commercial t
 The softlist has no bankset, Souper, XM-required, YM2151, @800 or @440 titles. These schemes are homebrew-heavy: PETSCII Robots is the first bankset game, and Rikki & Vikki is Souper [CART.04][CART.39].
 
 ### 2.3 Milestone placement
-**Recommendation:** **v1** = linear; the SG family (SG, SG+RAM, SG9/EXROM, bank 6, banked RAM, up to 1 MB); POKEY @4000/@450/@440/@800 (phase 4); ProLine and 2600 sticks. **v2** = Activision (with AM/OM normalisation), Absolute, Fractalus, bankset (needs the exact /HALT phase), HSC, SaveKey, light gun, paddles, keypad, driving, trak-ball, mice, SNES2Atari, Mega7800, XBoard/XM (POKEY + RAM + HSC). **v4** = YM2151, Souper/BupChip, Covox/ADPCM, ACE. Boards are ops tables read through `read(addr, tick, by_maria)`; the `by_maria` flag serves bankset, Souper and XM, which a7800 passes through a global `m_dmaactive` [CART.22]. **Strongest alternative:** move Activision/Absolute into v1 (5 commercial entries, about 60 lines). **Would change if:** phase 3 has slack, or the owner's must-play list includes Double Dragon, Rampage or F-18.
+**Recommendation:** **v1** = linear; the SG family (SG, SG+RAM, SG9/EXROM, bank 6, banked RAM, up to 1 MB); POKEY @4000/@450/@440/@800 (phase 4); ProLine and 2600 sticks. **v2** = Activision (with AM/OM normalisation), Absolute, Fractalus, bankset (needs the exact /HALT phase), HSC, SaveKey, light gun, paddles, keypad, driving, trak-ball, mice, SNES2Atari, Mega7800, XBoard/XM (POKEY + RAM + HSC). **v4** = YM2151, Souper/BupChip, Covox/ADPCM, ACE. The implemented boards retain one switch and an instance-owned latch, shared by CPU reads, peeks and MARIA. The earlier ops-table suggestion is superseded by that implementation; future bankset/Souper/XM accesses must retain their caller identity without a global DMA flag [CART.22; `docs/hardware/cartridge.md`]. **Strongest alternative:** move Activision/Absolute into v1 (5 commercial entries, about 60 lines). **Would change if:** phase 3 has slack, or the owner's must-play list includes Double Dragon, Rampage or F-18.
 
 ### 2.4 Flash-cart behaviour that homebrew relies on
 **Concerto:** ≤512K. Concerto+ adds 256K, 256K + 16K RAM and 272K images with HOKEY@450; HOKEY lacks pots, keyboard and serial. The CEM module adds HSC emulation and a warm-reboot button [CART.13]. **DragonFly:** YM2151 + Covox; mixes two POKEYs onto the one cart audio line [CART.17][CART.34]. **7800GD:** bankset, dual POKEY, YM2151, Covox, BupChip; reportedly maps empty bank 62 as RAM on 1 MB SG+RAM images (T4 snippet, unverified) [CART.35]. **2600+ cart reader:** does not wire /HALT, so it cannot dump bankset carts [CART.34].
@@ -235,7 +237,7 @@ Fuzz targets: `muhtari_probe`, board construction with random bus traffic, the f
 | Parser | Size / count bounds | Offsets and invariants |
 |---|---|---|
 | A78 header | file ≥ 128 B; image ≤ 1 MiB + 128 (Souper with music, 1 MB demos), else `UNSUPPORTED_SIZE` | 9-byte magic; version ≤ 4 or warn; title ≤ 32 B, stop at NUL, map non-printables; length field: reject 0, use min(field, file−128); controller codes ≤ 12, else unknown → ProLine; v4 mapper ≤ 4 (5 = ACE later); options ≤ 3 (linear) / ≤ 6 (SG) |
-| Board geometry | linear ≤ 48K (a bankset half may be 52K); SG a multiple of 16K, ≥ 2 banks, SG9 = 2ⁿ+1; Activision 128K; Absolute 64K; Fractalus 32K; Souper ROM ≤ 512K; bankset an even split into 32/48/52/128/256/512K halves | bank = value mod banks, never a raw index; RAM index & (size−1). MAME's mram indexes a 2K softlist buffer with `offset & 0xfeff`, up to $3EFF: out of bounds (derived) [CART.20] |
+| Board geometry | linear ≤ 48K (a bankset half may be 52K); SG a multiple of 16K, ≥ 2 banks, SG9 = 2ⁿ+1; Activision 128K; Absolute 64K; Fractalus 32K; Souper ROM ≤ 512K; bankset an even split into 32/48/52/128/256/512K halves | SG bank = value mod banks, never a raw index; ordinary power-of-two RAM uses index & (size−1). Fractalus instead compresses disconnected address bits: `((addr & 0x0E00) >> 1) \| (addr & 0x00FF)`, yielding exactly 2 KiB and eight aliases per byte over $4000–$7FFF. MAME's mram indexes a 2K softlist buffer with `offset & 0xfeff`, up to $3EFF: out of bounds (derived) [CART.20]. Implemented/refused geometries and selected edge policies: `docs/hardware/cartridge.md`. |
 | Headerless / hash | ≥ 8 B for the footer test | slice hashes only when the size equals the sum of the chips; the hash table is built from CC0 XML and validated at build time |
 | BIOS | exactly 4096 (NTSC) or 16384 (PAL, and the Asteroids prototype) | known hash → info; unknown → allowed with a warning; the reset vector must point inside the BIOS [CART.21] |
 | HSC ROM | exactly 4096 | signature at +$900 and +$904 (warn if absent) |
