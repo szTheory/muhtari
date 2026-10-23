@@ -272,6 +272,10 @@ execute_process(COMMAND git -C "${repo}" rev-parse HEAD OUTPUT_VARIABLE later_ba
 execute_process(COMMAND git -C "${repo}" -c user.name=Fixture -c user.email=fixture@users.noreply.github.com commit --allow-empty -qm current COMMAND_ERROR_IS_FATAL ANY)
 execute_process(COMMAND git -C "${repo}" rev-parse HEAD OUTPUT_VARIABLE producer_head OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
 set(run "https://github.com/example/public/actions/runs/1")
+# Current mock workflow outputs are invariant across these input cases. Build
+# them once; real independent-base production still runs for every valid case.
+file(MAKE_DIRECTORY "${repo}/build/pins")
+execute_process(COMMAND "${CMAKE_COMMAND}" --workflow --preset ci WORKING_DIRECTORY "${repo}" COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
 foreach(case unchanged additions push dispatch later_base changed changed_later deleted duplicate_old duplicate_new duplicate_later unrelated malformed source pin license digest comment forged compiler platform samples sample_revision sample_reverse sample_revision4 sample_missing sample_duplicate sample_row sample_pin sample_trailer sample_forged)
   set(candidate "${trusted}${additions}")
   set(candidate_samples "${sample_base}")
@@ -354,10 +358,6 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     set(candidate_samples "${sample_head}")
   endif()
   file(WRITE "${repo}/tests/built/expected.txt" "${candidate_samples}")
-  file(REMOVE_RECURSE "${repo}/build/ci")
-  execute_process(COMMAND git -C "${repo}" worktree prune COMMAND_ERROR_IS_FATAL ANY)
-  file(MAKE_DIRECTORY "${repo}/build/pins")
-  execute_process(COMMAND "${CMAKE_COMMAND}" --workflow --preset ci WORKING_DIRECTORY "${repo}" COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
   set(produce "${CMAKE_COMMAND}" -E env GITHUB_EVENT_PATH=${WORK}/event.json GITHUB_EVENT_NAME=${event_name} GITHUB_SHA=${producer_head}
     "${CMAKE_COMMAND}" -DROOT=${repo} -DBUILD=${repo}/build/ci -DOUT=${WORK}/produced.json
     -DSHA=${producer_head} -DCONFIG=ci -DSOURCE=${run} -DBUILD_BASE=ON
@@ -372,6 +372,12 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${produce}" -DCODE=1 "-DREGEX=${regex}"
       -P "${ROOT}/tests/cmake/expect_fail.cmake" COMMAND_ERROR_IS_FATAL ANY)
     continue()
+  endif()
+  # Only the preceding owned base worktree needs retiring before recursion;
+  # fail-fast input controls require neither pruning nor reconfiguration.
+  if(EXISTS "${repo}/build/ci/quality-base")
+    file(REMOVE_RECURSE "${repo}/build/ci/quality-base")
+    execute_process(COMMAND git -C "${repo}" worktree prune COMMAND_ERROR_IS_FATAL ANY)
   endif()
   execute_process(COMMAND ${produce} COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
   file(READ "${WORK}/produced.json" produced)
@@ -397,6 +403,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
       if(case STREQUAL "platform")
         set(changed_file "${repo}/build/ci/CMakeFiles/${CMAKE_VERSION}/CMakeSystem.cmake")
       endif()
+      file(READ "${changed_file}" original_configuration)
       if(case STREQUAL "compiler")
         file(APPEND "${changed_file}" "set(CMAKE_C_COMPILER_VERSION 2)\n")
       else()
@@ -413,6 +420,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     endif()
     execute_process(COMMAND ${single} COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
     file(READ "${WORK}/produced.json" produced)
+    file(WRITE "${changed_file}" "${original_configuration}")
     file(WRITE "${repo}/tests/built/expected.txt" "${candidate_samples}")
   endif()
   set(join "${WORK}/producer-join")
