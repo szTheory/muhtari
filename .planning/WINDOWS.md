@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 20
+open_count: 17
 waived_count: 0
-fixed_count: 30
+fixed_count: 33
 total_count: 50
-last_updated: 2026-10-23T22:07:27.402Z
+last_updated: 2026-10-23T22:39:47.537Z
 ---
 
 # Broken Windows Ledger
@@ -56,15 +56,15 @@ last_updated: 2026-10-23T22:07:27.402Z
 | 39 | 06 | deviation | tests/libretro/rcheevos.c |  | Retail resolver assertion initially treated volatile Fractalus RAM as battery-save memory; corrected to physical CART_RAM2048 and save0 before Task1 commit, focused6 pass. | fixed |  | 2026-10-23T20:25:58.408Z | 2026-10-23T20:26:13.457Z |
 | 40 | 06 | deviation | tests/libretro/rcheevos.c |  | Raw observer requires setup before load; test-only module seam now registers it before content load, preserving no allocation during execution, focused6 and full612+6 pass. | fixed |  | 2026-10-23T20:25:58.510Z | 2026-10-23T20:26:13.527Z |
 | 41 | 06 | deviation | tests/roms/manifest.txt |  | Corrected three new diagnostic pins from predecessor commits to exact source/config/fixture commits; bytes and SHA256 unchanged, actual trusted manifest comparability passes; resolved in78bb2f6. | fixed |  | 2026-10-23T20:51:43.439Z | 2026-10-23T20:53:43.049Z |
-| 42 | 06 | unrun-verify | .planning/phases/06-retail-cartridge-boards/06-09-PLAN.md |  | Final local612+6 and214131-byte acceptance is complete; current-head six-native archives/authenticated quality join, full native/BE, applicable WASM, sanitizer/fuzz/property and existing RetroArch hosted evidence is pending with parent execution orchestrator. | open |  | 2026-10-23T20:51:43.503Z |  |
+| 42 | 06 | unrun-verify | .planning/phases/06-retail-cartridge-boards/06-09-PLAN.md |  | Final local612+6 and214131-byte acceptance is complete; current-head six-native archives/authenticated quality join, full native/BE, applicable WASM, sanitizer/fuzz/property and existing RetroArch hosted evidence is pending with parent execution orchestrator. | fixed |  | 2026-10-23T20:51:43.503Z | 2026-10-23T22:39:47.394Z |
 | 43 | 06 | deviation | tests/diag/driver.c |  | Hosted CI40023530702 and Nightly40023530478 GNU shadow failure: loaded run pointer shadowed the static diagnostic run. Renamed local pointer module_run while retaining symbol retro_run; full local cmake --workflow --preset ci exit0 (612+6), URL N/A-local; GNU retry remains in hosted acceptance. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702 | fixed |  | 2026-10-23T21:04:43.262Z | 2026-10-23T21:05:03.204Z |
 | 44 | 06 | deviation | src/cart.c |  | Hosted CI40023530702 hygiene rejected decimal citations and unformatted affected C/H. Named source sections and clang-format21 correct the source without weakening guards; cmake --workflow --preset hygiene exit0 (24/24 including analyzer/no_float), exact inventories and three ZIPs214132<=399937 exit0, URL N/A-local. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702 | fixed |  | 2026-10-23T21:04:43.348Z | 2026-10-23T21:05:03.270Z |
 | 45 | 06 | deviation | tests/cmake/quality_evidence.cmake |  | Hosted quality rejected unchanged built sample rows because only the unique behavior annotation advanced2 to3. Narrow independently authenticated sample relation now retains raw event-base digest; full612+6, hygiene24, actual617dfa7 base610+6 recursion and exact environment/raw policy checks pass locally; resolved in7f90077, hosted rerun remains pending. | fixed |  | 2026-10-23T21:23:39.466Z | 2026-10-23T21:24:06.808Z |
 | 46 | 06 | deviation | tests/policy/quality.cmake |  | Hosted CI40026612824 and called40026612929 macos-x64 policy.quality.controls exceeded unchanged30-second timeout. Reused invariant current mock outputs and retired only owned base worktrees before actual recursion; all case lists and producer/join assertions retained. Matched local wall6.64s to4.19s; full612+6, hygiene24, exact inventories and three ZIPs214132<=399937 exit0, N/A-local. Fix334abf0; hosted timing rerun remains pending. | fixed |  | 2026-10-23T21:35:00.501Z | 2026-10-23T21:35:16.931Z |
 | 47 | 06 | deviation | tests/diag/assemble.cmake |  | CI40026612824 Windows x64 built.samples.self_test timed out4.06/4s and diag.rebuild22.02/22s. Fix782531b uses only pinned Wasmtime compiled-module cache under build tree, all fresh stages/digest faults and timeouts retained. Actual cold assembler21.7ms to warm7.8-8.2ms with identical bytes; whole local batch timing overlaps baseline. Full612+6 and hygiene24, exact inventories and ZIP214132<=399937 exit0/N/A-local; Windows fit remains hosted pending. Fault URL https://github.com/szTheory/muhtari/actions/runs/40026612824/job/120664334130 | fixed |  | 2026-10-23T21:43:21.512Z | 2026-10-23T21:43:51.509Z |
-| 48 | 06 | deviation | tests/libretro/tests.cmake |  | Hosted Windows mailbox failures resolved by explicit Unix report files; PowerPC AM/OM command reached unscaled90-second timeout. Applied existing MUHTARI_TIMEOUT_SCALE to its subprocess, native90 unchanged. Fresh full local CI612+6, hygiene24 and3ZIP214132 exit0. Hosted retries pending. Evidence runs40026612824/40026612938, fixes c63697b and following timeout-scale commit. | open |  | 2026-10-23T21:46:03.381Z |  |
+| 48 | 06 | deviation | tests/libretro/tests.cmake |  | Hosted Windows mailbox failures resolved by explicit Unix report files; PowerPC AM/OM command reached unscaled90-second timeout. Applied existing MUHTARI_TIMEOUT_SCALE to its subprocess, native90 unchanged. Fresh full local CI612+6, hygiene24 and3ZIP214132 exit0. Hosted retries pending. Evidence runs40026612824/40026612938, fixes c63697b and following timeout-scale commit. | fixed |  | 2026-10-23T21:46:03.381Z | 2026-10-23T22:39:47.467Z |
 | 49 | 06 | deviation | tests/policy/quality.cmake |  | Called CI40029174245 Windows ARM job120672888533 quality controls timed out30.01s. Fix12281af includes unchanged expect_fail.cmake in a scoped helper, preserving exact exit1 and merged-output regex checks, all cases and real recursive producers/joins. Matched local wall3.95s to3.68s; wrong-exit/wrong-regex rejected; full612+6, hygiene24, exact inventories and three ZIPs213899<=399937 exit0 with parent package knobs, N/A-local. Hosted timing/Windows fit remain pending. | fixed |  | 2026-10-23T22:06:22.624Z | 2026-10-23T22:06:39.908Z |
-| 50 | 06 | deviation | cmake/packaging.cmake |  | Actual Windowsx64 archives402586 exceed399937 in calledCI40029174245. Candidate compressionlevel9 plus top-level ReleaseMSVC size preference preserves contents/runtime/ABI; local213899 passes but hostedWindows and six-lane fit pending. No byte grant or self-baseline. | open |  | 2026-10-23T22:07:27.402Z |  |
+| 50 | 06 | deviation | cmake/packaging.cmake |  | Actual Windowsx64 archives402586 exceed399937 in calledCI40029174245. Candidate compressionlevel9 plus top-level ReleaseMSVC size preference preserves contents/runtime/ABI; local213899 passes but hostedWindows and six-lane fit pending. No byte grant or self-baseline. | fixed |  | 2026-10-23T22:07:27.402Z | 2026-10-23T22:39:47.537Z |
 
 ````json
 [
@@ -608,10 +608,10 @@ last_updated: 2026-10-23T22:07:27.402Z
     "file": ".planning/phases/06-retail-cartridge-boards/06-09-PLAN.md",
     "line": null,
     "description": "Final local612+6 and214131-byte acceptance is complete; current-head six-native archives/authenticated quality join, full native/BE, applicable WASM, sanitizer/fuzz/property and existing RetroArch hosted evidence is pending with parent execution orchestrator.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-23T20:51:43.503Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-23T22:39:47.394Z",
     "milestone": "v2.0"
   },
   {
@@ -686,10 +686,10 @@ last_updated: 2026-10-23T22:07:27.402Z
     "file": "tests/libretro/tests.cmake",
     "line": null,
     "description": "Hosted Windows mailbox failures resolved by explicit Unix report files; PowerPC AM/OM command reached unscaled90-second timeout. Applied existing MUHTARI_TIMEOUT_SCALE to its subprocess, native90 unchanged. Fresh full local CI612+6, hygiene24 and3ZIP214132 exit0. Hosted retries pending. Evidence runs40026612824/40026612938, fixes c63697b and following timeout-scale commit.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-23T21:46:03.381Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-23T22:39:47.467Z",
     "milestone": "v2.0"
   },
   {
@@ -712,10 +712,10 @@ last_updated: 2026-10-23T22:07:27.402Z
     "file": "cmake/packaging.cmake",
     "line": null,
     "description": "Actual Windowsx64 archives402586 exceed399937 in calledCI40029174245. Candidate compressionlevel9 plus top-level ReleaseMSVC size preference preserves contents/runtime/ABI; local213899 passes but hostedWindows and six-lane fit pending. No byte grant or self-baseline.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-23T22:07:27.402Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-23T22:39:47.537Z",
     "milestone": "v2.0"
   }
 ]

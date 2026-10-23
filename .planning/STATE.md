@@ -3,21 +3,21 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: 9
-status: awaiting_hosted_evidence
-stopped_at: 06-09 Tasks1-2 and Task3 local preparation verified; parent hosted acceptance pending
-last_updated: "2026-10-23T20:54:25.017Z"
-state_head: 78496597f077b6cabea1629d8eb2abfb5cf46ee3
+status: ready_for_verification
+stopped_at: Completed06-09; active9/9 and18/18 planned slots; awaiting parent phase verification and separate outer workflow follow-ups
+last_updated: "2026-10-23T22:39:48.275Z"
+state_head: 25919fe822cd6cc23a6984c13ac826796e7d9cfe
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 18
-  completed_plans: 17
+  completed_plans: 18
   percent: 14
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 06
 current_phase_name: Retail cartridge boards
-last_activity_desc: Plan06-09 local work verified at78bb2f6; Task3 current-head hosted acceptance pending;8/9 complete and no BOARD requirement complete
+last_activity_desc: Plan06-09 accepted source25919fe and actualbase617dfa7; active9/9 and18/18 planned slots complete; BOARD-01–03 complete; parent phase verification pending
 ---
 
 # Project State
@@ -25,14 +25,14 @@ last_activity_desc: Plan06-09 local work verified at78bb2f6; Task3 current-head 
 ## Project Reference
 
 See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
-preparation/DECISIONS.md. Current focus: Phase 6 board execution after completed06-10 comparability; Phase 5 is shipped.
+preparation/DECISIONS.md. Current focus: Phase 6 goal verification after all9 active plans; Phase 5 is shipped.
 Core value: 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
 Current Plan: 9
 Total Plans in Phase: 9
-Progress: [█░░░░░░░░░] 14% (1/7 phases; 17/18 currently planned active plans; later phases unplanned)
+Progress: [█░░░░░░░░░] 14% (1/7 phases; 18/18 currently planned active plans; later phases unplanned; Phase6 verification pending)
 
 Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
 and nine active plans 01,02,10,04,05,13,07,15,09 accepted. The owner adopted the
@@ -43,7 +43,7 @@ inventories609/597/6, retirement controls and hygiene pass. The hard LOC metric,
 counter, inventory and allocation/adoption machinery are removed; no replacement
 score or framework was introduced. Archive399937 and unrelated guards persist.
 
-Phase 6 is8/9 complete across active02–10. Plan10 committed701d6b4/94fcb90
+Phase 6 has9/9 active plans complete across02–10; parent goal verification is pending. Plan10 committed701d6b4/94fcb90
 and SUMMARY081412f: authenticated additive fixture relation, actual producer/join
 controls and documentation. Full local CI609+6, exact inventories and hygiene
 exit0; packages212216 <=399937. Plan02 committed27627f1/f0e1659: real Absolute
@@ -72,18 +72,25 @@ Plan08 committed6128b32/d090f17: explicit31-loader/28-execution seed corpora,
 all3 boards in each100-case property, deep failed-load/resumed CPU/video/PCM,
 allocation freedom and interleaved isolation. Full local CI612+6, exact inventories,
 hygiene and three ZIPs214131 <=399937 pass; execution cap131200 and both fuzz
-durations60sec persist. Next is09;
+durations60sec persist.
 Plan09 local commits8fd944b/b27162d/78bb2f6 add30 validated board equality rows
 after17 unchanged old rows, report fault controls, honest docs and exact fixture
 source pins. Full local CI612+6, exact inventories, hygiene and three ZIPs214131
-<=399937 pass. Its committed SUMMARY is status pending, not a completed plan.
-Tasks1–2 and Task3 local preparation are done; parent-owned hosted acceptance
-is unrun. Do not count the pending SUMMARY toward phase or requirement completion.
-six-native fit remains unproved until09. BOARD-01 edge/prohibition metadata stays unresolved.
+<=399937 pass. Hosted integration corrections through25919fe now have actual
+six-native source/base acceptance in calledCI40031550534: six exact three-ZIP sums,
+worst375263/base399371 <=399937, eight authenticated producer environments and
+raw original base617dfa7 policy. Nightly40031550533 succeeds with full native/
+PowerPC612+6 and47 identical rows,60-second fuzz,10000-case properties and vectors.
+Existing ARM/WASM/RetroArch and required calledCI jobs succeed. Task3 and
+BOARD-01–03 are complete; the plan SUMMARY is complete. Phase6 itself awaits
+the parent's goal-verification gate. Edge/prohibition metadata stays disclosed
+unclassified/unresolved/verification-null; no owner judgment is fabricated.
 Historical01 is superseded without changing its failed SUMMARY; its665-line construction and the654-line
-proposal remain history, not grants or new execution prerequisites. No BOARD
-requirement is complete; the fixture helper is complete. Authentic hosted migration acceptance
-is pending and captured in a todo; it does not recreate a local budget blocker.
+proposal remain history, not grants or new execution prerequisites. Authentic
+legacy-base retirement is demonstrated by the called aggregate. The retirement
+todo retains the separately applicable direct-PR performance/aggregate dimension;
+direct CI40031550434 and outer Release equality/rehearsal remain pending at this
+snapshot and are not claimed green. No local budget blocker is recreated.
 Do not return to discussion, create plan16, reset review/gap allowances or resume
 historical halted plans. Phase5 implementation098bb5e has actual direct/called
 and publish/download/install/confirmed-cleanup acceptance; its completion metadata iscaee608/8251320.
@@ -121,14 +128,16 @@ published package. v2.0 has 27 requirements across phases 5–11.
 
 There is no active LOC allocation stop. WINDOWS32 is resolved by adopted and tested
 policy retirement, not a claim that the old construction fit. WINDOWS33 retains
-unrun future board/hosted acceptance; the quick migration's609+6 local checks are
-complete. Current local archive214131 passes399937; future six-native board fit is unproved.
+the original superseded01 halt record; it is not an active plan prerequisite.
+WINDOWS42/48/50 are fixed by actual calledCI40031550534 and Nightly40031550533.
+All six native three-ZIP sums fit; the largest is375263 <=399937.
 
 SEED-009-proportional-maintenance-review carries resource-bound rationale, other
 structural quotas, test-floor overlap, schema-hardening and dependency/review
 maintenance triggers within the existing milestone tune-up. These are not Phase6
-requirements. The pending hosted-retirement todo requires the next heavy CI to
-record exact head/base evidence before Phase6 ship. The agent owns both follow-ups;
+requirements. The pending hosted-retirement todo now has exact head/base and
+legacy-policy evidence; applicable direct-PR performance/aggregate acceptance
+still needs its actual result before ship. The agent owns these follow-ups;
 no owner UAT, new service, quota or metric system is requested.
 Standard code review has no blocking finding; WR-01 and COST-01 are deferred tooling seeds in 05-REVIEW-DISPOSITION.md, under AGENTS rule 7.
 Existing seeds remain in the phase deferred-items ledger and milestone audit.
@@ -136,14 +145,17 @@ No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T20:54:24.962Z
-**Stopped at:** 06-09 Tasks1-2 and Task3 local preparation verified; parent hosted acceptance pending
-**Resume file:** .planning/phases/06-retail-cartridge-boards/06-09-PLAN.md
+**Last session:** 2026-10-23T22:39:48.221Z
+**Stopped at:** Completed06-09; active9/9 and18/18 planned slots; awaiting parent phase verification and separate outer workflow follow-ups
+**Resume file:** None
 
-Next command: `$gsd-execute-phase 6`, continuing plan09 Task3 hosted acceptance.
-The current parent execution owns normal remote acceptance and phase gates.
-No requirement completion or review/gap reset occurred. Plan09 SUMMARY records
-commands/exits and N/A-local URLs plus the precise missing hosted evidence.
+Next action: the current parent `$gsd-execute-phase 6` completes goal verification
+and follows the separate outstanding direct/outer workflow results. All plan work
+and BOARD requirements are complete; phase completion is not claimed yet.
+Expected next separate command after the parent's acceptance gate: `$gsd-ship`.
+No new GSD step or review/gap reset occurred. Plan09 SUMMARY records exact commands,
+exits and hosted URLs, including the distinction between named passing acceptance
+and still-pending outer workflows.
 
 ### Prior Phase 5 Ship Evidence
 
@@ -159,6 +171,9 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 
 ## Decisions
 
+Earlier plan decisions below retain their then-pending scope; final Plan09
+acceptance closes their semantic/package/portability prerequisites.
+
 - [Historical Phase06]: The665-line halt and654-line proposal remain preserved; neither was a successful fit or approved increase. Active progress is10/18 across phases5/6, excluding historical summaries and quick tasks.
 - [Accepted policy]: Owner adopted LOC retirement; quick261023-jkd installed bounded contract/architecture review under DEC.10. Only the literal retired base metric may disappear; ordinary typed/evidence/identity/reason guards persist.
 - [Follow-up]: SEED-009 triggers at the existing tune-up or concrete maintenance failure; hosted acceptance has its own pending todo before Phase6 ship. Neither creates a new product requirement or recurring measurement service.
@@ -171,10 +186,11 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 - Plan06-06 keeps uncertain edge/profile observations explicit; its72 numeric records and9 fixture host observations establish selected semantics, not retail playability. No BOARD requirement is complete.
 - [Phase 06]: Plan07 retains every intended retail host byte below32 regions (Activision13, Absolute11, Fractalus21); identified AM/OM pairs agree through all three hosts, full612+6 and local214131-byte packages pass; broader hostile/hosted acceptance remains08/09.
 - [Phase 06]: Plan08 explicitly selects retail boards in bounded replay and all100-case properties; deep failed-load/resumed CPU/video/PCM, allocation/isolation and local612+6 pass; execution131200 and both60sec fuzz durations persist, ZIP total214131 passes399937. Hosted acceptance remains09.
+- [Phase 06]: Plan09 accepts source25919fe six-native three-ZIP sums (worst375263<=399937), actual base617dfa7 and unchanged authenticated join, plus full native/PowerPC equality612+6 and47 rows, fuzz/property/WASM/RetroArch. BOARD-01–03 complete; phase verification and direct/outer workflow follow-ups remain with parent.
 
 ### Blockers
 
-- Plans06-10/02/03/04/05/06/07/08 remain8/9 complete. Plan09 local work is verified, but Task3 awaits actual current-head six-native archives, authenticated quality/current-base join, and existing hosted portability/frontend results. WINDOWS42 and hosted-retirement todo remain pending; no LOC allocation stop exists.
+- Active plans06-02–10 are9/9 complete (18/18 planned slots across phases5/6). Parent phase verification remains; direct CI40031550434 and outer Release equality/rehearsal plus the direct-PR retirement-todo dimension remain separately pending. No missing Task3 prerequisite or LOC allocation stop exists.
 
 ### Quick Tasks Completed
 
@@ -195,3 +211,4 @@ Full prior ship evidence and reference-scanner caveats remain in Git and Phase5
 | Phase 06 P06 | 6min | 3 tasks | 11 files |
 | Phase 06 P07 | 10min | 2 tasks | 5 files |
 | Phase 06 P08 | 9min | 2 tasks | 8 files |
+| Phase 06 P09 | 113min including hosted waits | 3 tasks | 34 files |

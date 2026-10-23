@@ -15,9 +15,9 @@ Core value: 7800 games behave as they do on the console, identically on every pl
 
 ### Cartridge boards and expansion memory
 
-- [ ] **BOARD-01**: Activision cartridges run with correct banking and equivalent mapped behavior for the two identified dump layouts, while raw image identity remains inspectable.
-- [ ] **BOARD-02**: Absolute cartridges run with documented fixed/switched windows and power-on banks.
-- [ ] **BOARD-03**: Fractalus cartridges run with the documented mirrored physical RAM and bounded alias accesses.
+- [x] **BOARD-01**: Activision cartridges run with correct banking and equivalent mapped behavior for the two identified dump layouts, while raw image identity remains inspectable.
+- [x] **BOARD-02**: Absolute cartridges run with documented fixed/switched windows and power-on banks.
+- [x] **BOARD-03**: Fractalus cartridges run with the documented mirrored physical RAM and bounded alias accesses.
 - [ ] **BOARD-04**: BankSet cartridges select the documented CPU/MARIA ROM and RAM views at both HALT transitions, with supported image geometries validated before load changes state.
 - [ ] **BOARD-05**: XBoard and the XM RAM/POKEY/HSC subset run with documented control registers and CPU/MARIA banking; unsupported sound expansions remain explicit.
 
@@ -69,9 +69,9 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | TUNE-03 | Phase 5 | Complete |
 | TUNE-04 | Phase 5 | Complete |
 | TUNE-05 | Phase 5 | Complete |
-| BOARD-01 | Phase 6 | Pending |
-| BOARD-02 | Phase 6 | Pending |
-| BOARD-03 | Phase 6 | Pending |
+| BOARD-01 | Phase 6 | Complete |
+| BOARD-02 | Phase 6 | Complete |
+| BOARD-03 | Phase 6 | Complete |
 | SAVE-01 | Phase 7 | Pending |
 | SAVE-02 | Phase 7 | Pending |
 | SAVE-03 | Phase 7 | Pending |
@@ -92,7 +92,7 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | COMP-02 | Phase 11 | Pending |
 | COMP-03 | Phase 11 | Pending |
 
-Coverage: 27 approved requirements; 27 mapped; 0 unmapped. Phase mapping approved on 2026-10-21. Five TUNE requirements are implemented and verified in Phase 5; 22 requirements remain pending.
+Coverage: 27 approved requirements; 27 mapped; 0 unmapped. Phase mapping approved on 2026-10-21. Five TUNE requirements are implemented and verified in Phase 5; BOARD-01–03 have complete semantic/three-host/hostile/portability and authenticated six-native package evidence in Phase6 plan09. Eight requirements are complete; 19 remain pending. Phase6 goal verification remains with the parent execution orchestrator.
 Phase 5 merged at 6d57d69; ci-only work cuts no package release. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md) for commands, exit statuses
 and run URLs. WR-01 and COST-01 remain deferred tooling seeds under AGENTS rule 7; raw monthly
 cost totals are untrusted, and no global hosted-cost reduction is claimed.
