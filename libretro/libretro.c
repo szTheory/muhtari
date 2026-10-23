@@ -759,6 +759,10 @@ static void lr_memory_maps(void)
         uint32_t base = 0x10000u - cart.rom_size;
         uint32_t from = base > rom_from ? base : rom_from;
         lr_span(from, 0x10000u, rom, from - base, RETRO_MEMDESC_CONST);
+    } else if (cart.board == MUHTARI_BOARD_ABSOLUTE) {
+        /* Original-content offsets equal CPU addresses in the fixed upper
+           32 KiB (docs/hardware/cartridge.md, Absolute). */
+        lr_span(0x8000u, 0x10000u, rom, 0x8000u, RETRO_MEMDESC_CONST);
     } else if (cart.board == MUHTARI_BOARD_SUPERGAME) {
         /* The fixed windows of A7800-CARTRIDGES-AND-PERIPHERALS section 2.1:
            the last bank at $C000, and at $4000 bank 0 on the 2^n + 1 board,

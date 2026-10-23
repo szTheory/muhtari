@@ -481,6 +481,12 @@ static int retail_library(const uint8_t *image, size_t n, const char *rom)
    allocate or change any live state, ROM bytes or subsequent execution. */
 static int retail_transaction(uint8_t *image)
 {
+    muhtari_versions versions = {0};
+    versions.size = (uint32_t)sizeof versions;
+    if (muhtari_get_versions(&versions) != MUHTARI_STATUS_OK || versions.abi != 1u ||
+        versions.behaviour_revision != 3u) {
+        return 1;
+    }
     muhtari_config cfg = {0};
     muhtari_media media = {0};
     muhtari *m = NULL, *control = NULL;
@@ -638,8 +644,13 @@ static int retail_smoke(const char *path)
 }
 
 #ifdef DIAG_LIBRETRO
+static const struct retro_memory_map *retail_map;
 static bool RETRO_CALLCONV retail_env(unsigned cmd, void *data)
 {
+    if (cmd == RETRO_ENVIRONMENT_SET_MEMORY_MAPS) {
+        retail_map = (const struct retro_memory_map *)data;
+        return true;
+    }
     return cmd == RETRO_ENVIRONMENT_SET_PIXEL_FORMAT || cmd == RETRO_ENVIRONMENT_SET_MEMORY_MAPS ||
            cmd == RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS ||
            (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE && (*(bool *)data = false, true));
@@ -657,6 +668,39 @@ static void RETRO_CALLCONV retail_poll(void) {}
 static int16_t RETRO_CALLCONV retail_input(unsigned p, unsigned d, unsigned i, unsigned id)
 {
     (void)p; (void)d; (void)i; (void)id;
+    return 0;
+}
+
+static int retail_absolute_map(const uint8_t *image, size_t n)
+{
+    if (retail_map == NULL || retail_map->num_descriptors > 64u || n != 65664u) {
+        return 1;
+    }
+    for (uint32_t address = 0x4000u; address < 0x10000u; address++) {
+        unsigned hits = 0u;
+        for (unsigned i = 0; i < retail_map->num_descriptors; i++) {
+            const struct retro_memory_descriptor *d = &retail_map->descriptors[i];
+            if (address < d->start || address - d->start >= d->len) {
+                continue;
+            }
+            hits++;
+            if (d->select != 0u || d->disconnect != 0u) {
+                return 1;
+            }
+            if (address < 0x8000u) {
+                if (d->ptr != NULL || d->flags != 0u) {
+                    return 1;
+                }
+            } else if (d->ptr == NULL || d->flags != RETRO_MEMDESC_CONST ||
+                       ((const uint8_t *)d->ptr)[d->offset + address - d->start] !=
+                           image[128u + address]) {
+                return 1;
+            }
+        }
+        if (hits != 1u) {
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -707,6 +751,7 @@ static int retail_libretro(const char *module_path, const char *path, const char
     set_input_poll(retail_poll);
     set_input_state(retail_input);
     init();
+    retail_map = NULL;
     struct retro_game_info game = {path, image, n, NULL};
     int loaded = load_game(&game);
     int failed = 1;
@@ -717,6 +762,9 @@ static int retail_libretro(const char *module_path, const char *path, const char
             if (ram != NULL && get_memory_size(RETRO_MEMORY_SYSTEM_RAM) >= 0xB00u &&
                 memcmp(ram + 0xA00u, "M7DG", 4u) == 0 && ram[0xA05] == 0u) {
                 failed = retail_judge(ram + 0xA00u, rom);
+                if (strcmp(rom, "smoke") == 0 || strcmp(rom, "absolute") == 0) {
+                    failed |= retail_absolute_map(image, n);
+                }
                 break;
             }
         }

@@ -81,7 +81,7 @@ Atari 7800 console (number 51) addresses memory, and tells the frontend that it 
 | $1800-$27FF | system RAM, 4 KiB, flagged as system RAM |
 | $2800-$2FFF | system RAM's second half, $2000-$27FF, again |
 | $4000-$7FFF | cartridge RAM, when the board has unbanked RAM |
-| ROM | the fixed ROM, read-only: a linear cartridge's whole ROM; a SuperGame cartridge's last bank at $C000 and, without RAM, its fixed bank at $4000 |
+| ROM | the fixed ROM, read-only: a linear cartridge's whole ROM; a SuperGame cartridge's last bank at $C000 and, without RAM, its fixed bank at $4000; Absolute's upper 32 KiB at $8000-$FFFF |
 
 Everything else has no memory behind it: the TIA, MARIA and RIOT registers, $3000-$3FFF, banked windows and the
 rest of the address space. The map lists those spans too, as descriptors without a pointer, because rcheevos stops
@@ -96,3 +96,7 @@ leaves the range to the cartridge. The map follows rcheevos, so those achievemen
 external devices, not RAM, so a byte read there would be invented. It stays without memory.
 
 Banked RAM and banked ROM windows are left out because a descriptor cannot say which bank is showing.
+Absolute descriptors point into original content at the same-numbered ROM
+offsets $8000-$FFFF; its switched $4000-$7FFF window stays unmapped. Restart
+restores bank zero, the same deterministic profile as a fresh load. Absolute
+execution ships at behaviour revision 3 with ABI 1 and unchanged public layouts.

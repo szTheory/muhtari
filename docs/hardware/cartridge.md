@@ -183,6 +183,7 @@ The body sizes each board this library runs accepts:
 | Linear | a multiple of 4 KiB from 4 KiB to 48 KiB, or exactly 64 KiB, of which the top 48 KiB is mapped |
 | SuperGame | a multiple of 16 KiB from 32 KiB (2 banks) to 1 MiB |
 | SuperGame with ROM at $4000 (SG9) | (2^n + 1) x 16 KiB up to 1 MiB: 48, 80, 144, 272 or 528 KiB |
+| Absolute | exactly 64 KiB, no board options or cartridge RAM |
 
 The evidence is MAME's 7800 list, which gives these ROM sizes per slot:
 
@@ -220,8 +221,8 @@ Reload and power cycle restore declared chip count and the boot clock origin.
 
 ## Boards
 
-`MUHTARI_STATUS_OK` means linear or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
-Activision, Absolute, Fractalus, bankset, halt-banked RAM and Souper are reported with
+`MUHTARI_STATUS_OK` means linear, Absolute or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
+Activision, Fractalus, bankset, halt-banked RAM and Souper are reported with
 `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. XM, YM2151 and Covox are reported in `devices` and `sound` and never refused.
 
 The boards are one `switch` in `src/cart.c`, so the core keeps no table of function pointers. MARIA's fetches see the
@@ -254,6 +255,31 @@ read each layout.
 any value selects a bank that exists. A RAM index is masked with `ram_size - 1`, a power of two, so no header can
 make a read or write leave the RAM (cartridge notes, section 7). A list entry for an 8 KiB-RAM game gives 8 KiB, which
 the mask mirrors over $4000-$7FFF.
+
+### Absolute
+
+An Absolute cartridge has exactly 65,536 ROM bytes. The CPU window $4000-$7FFF
+holds image offsets $0000-$3FFF (bank zero) or $4000-$7FFF (bank one).
+$8000-$FFFF always holds the same-numbered image offsets, the fixed upper
+32 KiB. CPU reads, MARIA fetches and peeks agree and never select a bank.
+Only a CPU write at $8000 selects: D0 chooses zero; otherwise D1 chooses one;
+otherwise the previous bank remains. Values 0/1/2/3 therefore mean retain/zero/one/zero,
+and higher data bits are ignored. Audio decoding still takes writes first.
+
+The [bankswitching guide, revision 391](https://7800.8bitdev.org/index.php?title=ATARI_7800_BANKSWITCHING_GUIDE&oldid=391)
+establishes the windows and leaves unusual write values uncertain. The exact
+$8000 decoder and D0 precedence follow the implementation evidence collected
+in the cartridge preparation, section 2.1, as selected compatibility policies.
+Bank-zero startup on load and power cycle is the deterministic profile. These
+policies are not new cartridge measurements. Console RESET input remains a
+switch read by software; it does not power-cycle the board.
+
+Behaviour revision 3 makes this board executable; the public API remains 3 and
+ABI remains 1, with no public structure layout changes. The disposable Absolute
+tracer copies a version-1 numeric mailbox from fixed ROM and replaces its
+record with a real $4000 read: the independently selected bank-zero tag $5A
+must report value 90. The library, runner and actual libretro module validate
+the same mailbox, with no inference from frame hashes.
 
 ## Loading
 

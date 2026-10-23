@@ -33,6 +33,7 @@ muhtari-run --help | --version
 | `--frames N` | Run N frames, N from 1 to 4294967295. Give `--frames` or `--bench`, once; with `--movie`, the default is the movie's frame count. |
 | `--bench N` | Run N frames, time each one, and print the report described under [Output](#output). It keeps 4 bytes per frame, so where `size_t` has 32 bits an N of 1073741824 or more exits 1 as out of memory. |
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
+| `--diagnostic` | After the run, report the fixed diagnostic mailbox. Requires content and explicit `--frames N` with the ordinary frame bounds; no `--bench` or implicit movie frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
 | `[--rom] FILE` | Load the cartridge image in FILE and run it. Give at most one FILE, with or without `--rom`. A refused image prints `muhtari-run: FILE: <message>` on standard error, with the messages of [Probing an image](#probing-an-image) or `unsupported region: PAL (planned)`, and runs no frame: a 2600 image, a board this version does not emulate or a PAL cartridge exits 77, and an image that is not a cartridge, is truncated or is too large exits 1. |
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
@@ -47,6 +48,14 @@ muhtari-run --help | --version
 Anything else on the command line, including a second file name, is a usage error.
 
 ## Output
+
+`--diagnostic` prints exactly `diagnostic `, 512 lowercase hexadecimal digits,
+then a newline. The digits encode the 256 bytes at CPU $2200-$22FF in address
+order, read through system RAM at offset $A00 after the requested run. It runs
+no extra frames and accepts no address selector. Tests own the mailbox protocol,
+CRC and numeric verdict; the runner only reports observed bytes. Invalid usage
+exits 2; a report read or output failure exits 1. Other requested output keeps
+its usual format.
 
 `--hash-frame N` prints one line per requested frame, in ascending frame order, once per frame even when the same
 frame is requested twice:
