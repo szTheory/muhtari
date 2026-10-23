@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: ready_to_execute
-stopped_at: "Phase 6 planned and checked; next: $gsd-execute-phase 6"
-last_updated: "2026-10-23T16:19:11.100Z"
-state_head: c9b4658fb2dc781ea5a4993c1f37cc6d3461f666
+status: blocked
+stopped_at: "Phase 06 plan01 designed fit stop; next: $gsd-plan-phase 6"
+last_updated: "2026-10-23T16:58:10.596Z"
+state_head: fd918c3ea527fbd35dddbe6c7ccdf6a874d47fdd
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 19
-  completed_plans: 10
+  total_plans: 18
+  completed_plans: 9
   percent: 14
 last_activity: 2026-10-23
 total_phases: 7
-current_phase_name: Retail cartridge boards
 current_phase: 06
-last_activity_desc: Phase 6 research and nine sequential plans complete; independent plan check passed
+current_phase_name: Retail cartridge boards
+last_activity_desc: Phase 6 plan01 halted at measured fit gate; 0/9 complete and02-09 blocked
 ---
 
 # Project State
@@ -24,15 +24,16 @@ last_activity_desc: Phase 6 research and nine sequential plans complete; indepen
 ## Project Reference
 
 See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
-preparation/DECISIONS.md. Current focus: execute Phase 6; Phase 5 is shipped.
+preparation/DECISIONS.md. Current focus: replan failed Phase 6 fit; Phase 5 is shipped.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
 
 ## Current Position
 
 Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
-and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 planning is complete;
-implementation is pending across nine sequential plans, with independent plan verification passed.
+and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 plan01 is halted:
+disposable counted construction15952 exceeds15479 by473. No task or board change
+was installed; Phase 6 is0/9 complete and02-09 are blocked by halted01.
 PR #20 squash-merged at 6d57d69 on 2026-10-23T02:32:12Z. Phase 5 is shipped.
 Do not return to discussion, create plan16, reset review/gap allowances or resume
 historical halted plans. Current implementation 098bb5e has actual direct/called
@@ -70,29 +71,26 @@ published package. v2.0 has 27 requirements across phases 5–11.
 
 ## Blockers and Seeds
 
-Phase 6 execution begins with a measured prerequisite: prove the complete counted
-admission/comparability construction fits B15287 + N192, at most15479. Full fit is
-unproved; stop dependent expansion on an overrun. The unchanged archive_bytes399937
-ceiling must pass each slice locally and all six existing native lanes at acceptance.
-No extra byte allocation, owner UAT or policy self-rebaseline is authorized.
-Phase 6 plan verification and coverage pass: BOARD-01–03 and D-01–18 (21/21 items).
-Research is c9b4658; no board implementation or requirement completion is claimed.
-Phase 5 ship observations are retained below.
+Phase 6 complete counted wiring fails its fixed fit: B15287/S0/N192/C15479;
+candidate15952, net665, excess473. Native configuration and original/added policy
+controls exit0 with controlled observations; these prove no board semantics.
+Installed actual remains15287. Fresh local3-ZIP sum212216 passes399937; future
+six-native board fit remains unproved. No extra allocation or owner UAT is authorized.
+See06-01-SUMMARY.md for commands/exits, buckets, local evidence and the designed stop.
 Standard code review has no blocking finding; WR-01 and COST-01 are deferred tooling seeds in 05-REVIEW-DISPOSITION.md, under AGENTS rule 7.
 Existing seeds remain in the phase deferred-items ledger and milestone audit.
 No new requirement, service, owner UAT or hardware request is added.
 
 ## Session Continuity
 
-**Last session:** 2026-10-23T16:19:11.100Z
-**Stopped at:** Phase 6 planned and checked; next: $gsd-execute-phase 6
-**Resume file:** .planning/phases/06-retail-cartridge-boards/06-01-PLAN.md
+**Last session:** 2026-10-23T16:58:10.466Z
+**Stopped at:** Phase 06 plan01 designed fit stop; next: $gsd-plan-phase 6
+**Resume file:** .planning/phases/06-retail-cartridge-boards/06-01-SUMMARY.md
 
-Planning checks exited0: `check.decision-coverage-plan`18/18,
-`check gap-analysis.plan-post`21/21, both verification-command probes27 commands,
-and nine frontmatter/structure validations. Independent recheck: VERIFICATION PASSED.
-Run URL: N/A for local planning checks. Complete fit and six-native byte acceptance
-remain execution prerequisites. Stop after this planning step.
+Next: `$gsd-plan-phase 6` using the measured overrun as new evidence, within192
+unless a separate explicit scope decision authorizes otherwise. No dependent
+execution, requirement completion, review/gap reset or second GSD step occurred.
+Run URLs: N/A-local. WINDOWS32/33 retain failed fit and unrun dependent verification.
 
 ### Prior Phase 5 Ship Evidence
 
@@ -131,4 +129,14 @@ is normalized to nine active slots, leaving 14 halted and unaccepted.
 
 ## Decisions
 
-- [Phase 06]: Nine plans are ready to execute after research and independent checking. Accepted Phase 5 plans remain 9/9; automatic progress totals include a historical plan. All 18 context decisions are covered; measured fit prerequisites remain explicit.
+- [Phase 06]: Preserve192 and halt on measured15952; keep candidate code disposable. Active progress is9/18 across phases5/6. The SDK counted historical/halting summaries as completion; state/roadmap are normalized to accepted plans only.
+
+### Blockers
+
+- Phase 06 plan01 halted: complete disposable counted wiring measures15952, exceeding fixed15479 by473; installed actual15287 unchanged; plans02-09 blocked. Replan within192 using new measured evidence; no extra allocation authorized.
+
+## Performance Metrics
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 06 P01 | 16min halted | 0 tasks | 0 files |

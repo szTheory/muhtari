@@ -20,7 +20,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
-| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Not started |
+| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Halted at fit prerequisite |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
@@ -66,11 +66,12 @@ include halted 14; only the nine active slots above count as accepted outcomes.
 **Goal:** Run Activision, Absolute and Fractalus cartridges with correct banking and physical RAM behavior.
 **Depends on:** Phase 5
 **Requirements:** BOARD-01, BOARD-02, BOARD-03
-**Plans:** 9 plans in 9 sequential waves.
+**Plans:** 0/9 plans complete in 9 sequential waves;01 halted before expansion.
+**Status:** Disposable construction15952 exceeds15479 by473;02–09 are blocked.
 
 Plans:
 **Wave 1**
-- [ ] 06-01-PLAN.md — Prove complete counted admission/comparability fit and document its unchanged bounds.
+- [ ] 06-01-PLAN.md — Halted: complete counted construction15952 exceeds15479 by473; installed actual15287 unchanged.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 06-02-PLAN.md — Run the Absolute tracer through all three deliverables with behavior docs and package measurement.
@@ -193,7 +194,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
-| 6. Retail cartridge boards | 0/TBD | Not started | — |
+| 6. Retail cartridge boards | 0/9 | Halted at measured fit | — |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
@@ -201,4 +202,4 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-22; Phase 5 shipped in PR #20. Next: `$gsd-discuss-phase 6`; stop after ship.*
+*Updated: 2026-10-23; Phase 6 plan01 reached its designed fit stop. Next: `$gsd-plan-phase 6`; no dependent expansion is authorized.*

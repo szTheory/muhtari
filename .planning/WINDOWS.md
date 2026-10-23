@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 16
+open_count: 18
 waived_count: 0
 fixed_count: 15
-total_count: 31
-last_updated: 2026-10-22T22:46:49.319Z
+total_count: 33
+last_updated: 2026-10-23T16:58:10.951Z
 ---
 
 # Broken Windows Ledger
@@ -46,6 +46,8 @@ last_updated: 2026-10-22T22:46:49.319Z
 | 29 | 05 | deviation | tests/policy/publish.cmake |  | 05-15 Task2 halts at15231: safety391/fixes421 exceed384/414 by7 and strict15225 by6 before provisioning. Task1 accepted at15163;05-09 remains blocked; no further construction or GREEN. | open |  | 2026-10-22T22:46:49.123Z |  |
 | 30 | 05 | unmet-truth | .github/workflows/release.yml |  | 05-15 real-script controls reach and reproduce missing verified patched CLI provisioning; CTest8 and RED_EVIDENCE_OK0. Pin/workflow/output repair and remaining complete-matrix audit are unimplemented at the allocation stop. | open |  | 2026-10-22T22:46:49.189Z |  |
 | 31 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-15-PLAN.md |  | 05-15 Task3 full local ci/library/inventories, current direct/called authentic9/8 joins, actual patched-gh rehearsal/publication/download/install/confirmed cleanup and cost/docs remain unrun after the designed Task2 halt. Accepted7/9 unchanged. | open |  | 2026-10-22T22:46:49.254Z |  |
+| 32 | 06 | unmet-truth | .planning/phases/06-retail-cartridge-boards/06-01-PLAN.md |  | Complete disposable counted construction15952 exceeds fixed15479 by473; plan01 halted and02-09 blocked; no installed policy or board changes. | open |  | 2026-10-23T16:58:10.879Z |  |
+| 33 | 06 | unrun-verify | .planning/phases/06-retail-cartridge-boards/06-01-PLAN.md |  | Task2 full CI and future six-native board/archive acceptance not run because Task1 complete counted fit failed; no completed requirement claimed. | open |  | 2026-10-23T16:58:10.951Z |  |
 
 ````json
 [
@@ -449,6 +451,32 @@ last_updated: 2026-10-22T22:46:49.319Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-10-22T22:46:49.254Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 32,
+    "kind": "unmet-truth",
+    "phase": "06",
+    "file": ".planning/phases/06-retail-cartridge-boards/06-01-PLAN.md",
+    "line": null,
+    "description": "Complete disposable counted construction15952 exceeds fixed15479 by473; plan01 halted and02-09 blocked; no installed policy or board changes.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-23T16:58:10.879Z",
+    "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 33,
+    "kind": "unrun-verify",
+    "phase": "06",
+    "file": ".planning/phases/06-retail-cartridge-boards/06-01-PLAN.md",
+    "line": null,
+    "description": "Task2 full CI and future six-native board/archive acceptance not run because Task1 complete counted fit failed; no completed requirement claimed.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-23T16:58:10.951Z",
     "resolved_at": null,
     "milestone": "v2.0"
   }
