@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 17
+open_count: 18
 waived_count: 0
-fixed_count: 23
-total_count: 40
-last_updated: 2026-10-23T20:26:13.527Z
+fixed_count: 24
+total_count: 42
+last_updated: 2026-10-23T20:53:43.049Z
 ---
 
 # Broken Windows Ledger
@@ -55,6 +55,8 @@ last_updated: 2026-10-23T20:26:13.527Z
 | 38 | 06 | deviation | tests/cart/test_cart.c |  | Replaced stale Fractalus refusal expectations with executable coverage and a retained BankSet hash-refusal control; resolved in1d51980. | fixed |  | 2026-10-23T20:05:34.173Z | 2026-10-23T20:05:34.293Z |
 | 39 | 06 | deviation | tests/libretro/rcheevos.c |  | Retail resolver assertion initially treated volatile Fractalus RAM as battery-save memory; corrected to physical CART_RAM2048 and save0 before Task1 commit, focused6 pass. | fixed |  | 2026-10-23T20:25:58.408Z | 2026-10-23T20:26:13.457Z |
 | 40 | 06 | deviation | tests/libretro/rcheevos.c |  | Raw observer requires setup before load; test-only module seam now registers it before content load, preserving no allocation during execution, focused6 and full612+6 pass. | fixed |  | 2026-10-23T20:25:58.510Z | 2026-10-23T20:26:13.527Z |
+| 41 | 06 | deviation | tests/roms/manifest.txt |  | Corrected three new diagnostic pins from predecessor commits to exact source/config/fixture commits; bytes and SHA256 unchanged, actual trusted manifest comparability passes; resolved in78bb2f6. | fixed |  | 2026-10-23T20:51:43.439Z | 2026-10-23T20:53:43.049Z |
+| 42 | 06 | unrun-verify | .planning/phases/06-retail-cartridge-boards/06-09-PLAN.md |  | Final local612+6 and214131-byte acceptance is complete; current-head six-native archives/authenticated quality join, full native/BE, applicable WASM, sanitizer/fuzz/property and existing RetroArch hosted evidence is pending with parent execution orchestrator. | open |  | 2026-10-23T20:51:43.503Z |  |
 
 ````json
 [
@@ -576,6 +578,32 @@ last_updated: 2026-10-23T20:26:13.527Z
     "reason": "",
     "recorded_at": "2026-10-23T20:25:58.510Z",
     "resolved_at": "2026-10-23T20:26:13.527Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 41,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/roms/manifest.txt",
+    "line": null,
+    "description": "Corrected three new diagnostic pins from predecessor commits to exact source/config/fixture commits; bytes and SHA256 unchanged, actual trusted manifest comparability passes; resolved in78bb2f6.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:51:43.439Z",
+    "resolved_at": "2026-10-23T20:53:43.049Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 42,
+    "kind": "unrun-verify",
+    "phase": "06",
+    "file": ".planning/phases/06-retail-cartridge-boards/06-09-PLAN.md",
+    "line": null,
+    "description": "Final local612+6 and214131-byte acceptance is complete; current-head six-native archives/authenticated quality join, full native/BE, applicable WASM, sanitizer/fuzz/property and existing RetroArch hosted evidence is pending with parent execution orchestrator.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:51:43.503Z",
+    "resolved_at": null,
     "milestone": "v2.0"
   }
 ]
