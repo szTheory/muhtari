@@ -10,6 +10,12 @@
 
 #define CART_HEADER_SIZE 128u
 #define CART_KIB 1024u
+/* Activision OM banks and compatibility hotspot range (cartridge preparation
+   sections Headerless images and Every scheme; docs/hardware/cartridge.md, Activision). */
+#define CART_ACT_BANK 0x4000u
+#define CART_ACT_HALF 0x2000u
+#define CART_ACT_SELECT_FIRST 0xFF80u
+#define CART_ACT_SELECT_LAST 0xFF8Fu
 
 /* A78 header offsets (docs/hardware/cartridge.md, The A78 header). */
 #define A78_VERSION 0u
@@ -64,6 +70,7 @@ struct cart_tables {
 /* What a header or a table entry says the cartridge holds. */
 struct cart_board {
     uint32_t board, options, ram, sound;
+    uint32_t unsupported;
 };
 
 static uint32_t be16(const uint8_t *p)
@@ -80,6 +87,15 @@ static uint32_t be32(const uint8_t *p)
    (docs/hardware/cartridge.md, Geometry). A refused board has none here. */
 static int cart_fits(const struct cart_board *b, size_t n)
 {
+    if (b->board == MUHTARI_BOARD_FRACTALUS) {
+        return n == 32u * CART_KIB && b->ram == 2u * CART_KIB && b->options == 0u;
+    }
+    if (b->board == MUHTARI_BOARD_ABSOLUTE) {
+        return n == 64u * CART_KIB && b->options == 0u && b->ram == 0u;
+    }
+    if (b->board == MUHTARI_BOARD_ACTIVISION) {
+        return n == 128u * CART_KIB && b->options == 0u && b->ram == 0u;
+    }
     if (b->board == MUHTARI_BOARD_LINEAR) {
         return (n % (4u * CART_KIB) == 0u && n >= 4u * CART_KIB && n <= 48u * CART_KIB) ||
                n == 64u * CART_KIB;
@@ -244,6 +260,10 @@ static int cart_decode_v4(const uint8_t *h, struct cart_board *b)
     case 2u: /* 8K EXRAM/A8, read as the Fractalus mirror RAM */
         b->board = MUHTARI_BOARD_FRACTALUS;
         b->ram = 2u * CART_KIB;
+        /* Only Linear/A8 identifies this board. Valid SuperGame/A8 has
+           undocumented wiring; refuse it without v3 fallback (cartridge.md,
+           The v4 block). Hash metadata can still override this decision. */
+        b->unsupported = mapper != 0u;
         break;
     case 3u: /* 32K EXRAM/M2, read as halt-banked RAM */
         b->options = MUHTARI_BOARD_HALT_BANKED_RAM;
@@ -378,9 +398,11 @@ static const struct muhtari__cartdb_entry *cart_find_slices(const uint8_t *body,
    body; each slice of every layout whose sizes sum to n; and for a 128 KiB
    miss, the body again with each 16 KiB bank's 8 KiB halves swapped, fed in
    that order with no copy, which only an Activision entry may match. */
-static const struct muhtari__cartdb_entry *
-cart_lookup(const uint8_t *body, size_t n, const struct cart_tables *t, uint8_t digest[20])
+static const struct muhtari__cartdb_entry *cart_lookup(const uint8_t *body, size_t n,
+                                                       const struct cart_tables *t,
+                                                       uint8_t digest[20], uint32_t *orientation)
 {
+    *orientation = 0u;
     cart_sha1(body, n, digest);
     const struct muhtari__cartdb_entry *e = cart_find_7800(digest, t);
     for (uint32_t li = 0u; e == NULL && li < t->layout_count; li++) {
@@ -405,12 +427,16 @@ cart_lookup(const uint8_t *body, size_t n, const struct cart_tables *t, uint8_t 
         if (e != NULL && e->board != MUHTARI_BOARD_ACTIVISION) {
             e = NULL;
         }
+        if (e != NULL) {
+            *orientation = MUHTARI_CART_ACTIVISION_HALF_SWAPPED;
+        }
     }
     return e;
 }
 
 static void cart_entry_board(const struct muhtari__cartdb_entry *e, struct cart_board *b)
 {
+    b->unsupported = 0u;
     b->board = e->board;
     b->options = e->board_options;
     b->ram = (uint32_t)e->ram_kib * CART_KIB;
@@ -436,8 +462,10 @@ static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 /* Boards a loaded cartridge cannot run yet. */
 static int cart_refused(const struct cart_board *b)
 {
-    return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME) ||
-           (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
+    return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME &&
+            b->board != MUHTARI_BOARD_ABSOLUTE && b->board != MUHTARI_BOARD_ACTIVISION &&
+            b->board != MUHTARI_BOARD_FRACTALUS) ||
+           b->unsupported != 0u || (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
 }
 
 static uint32_t cart_port(uint32_t code, muhtari_cart_info *out)
@@ -545,7 +573,9 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
        multi-region, which names none; then the entry's applies (cartridge
        notes, section 1.4). */
     uint8_t digest[20];
-    const struct muhtari__cartdb_entry *e = cart_lookup(img + CART_HEADER_SIZE, mapped, t, digest);
+    uint32_t orientation;
+    const struct muhtari__cartdb_entry *e =
+        cart_lookup(img + CART_HEADER_SIZE, mapped, t, digest, &orientation);
     if (e != NULL) {
         if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
             return MUHTARI_STATUS_ERR_INVALID_IMAGE;
@@ -557,10 +587,13 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
         }
         b = listed;
         out->source = MUHTARI_SOURCE_HASH;
-        out->flags |= MUHTARI_CART_HASH_MATCH;
+        out->flags |= MUHTARI_CART_HASH_MATCH | orientation;
         if ((out->a78_tv & 0x04u) != 0u) {
             out->region = cart_entry_region(e);
         }
+    }
+    if (e == NULL && b.board == MUHTARI_BOARD_ACTIVISION) {
+        out->warnings |= MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED;
     }
     cart_set_board(out, &b);
     if (cart_refused(&b)) {
@@ -621,7 +654,8 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct
 {
     uint8_t digest[20];
     out->rom_size = (uint32_t)n;
-    const struct muhtari__cartdb_entry *e = cart_lookup(img, n, t, digest);
+    uint32_t orientation;
+    const struct muhtari__cartdb_entry *e = cart_lookup(img, n, t, digest, &orientation);
     if (e != NULL) {
         if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
             return MUHTARI_STATUS_ERR_INVALID_IMAGE;
@@ -631,7 +665,7 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct
         cart_set_board(out, &b);
         out->kind = MUHTARI_KIND_7800;
         out->source = MUHTARI_SOURCE_HASH;
-        out->flags = MUHTARI_CART_HASH_MATCH;
+        out->flags = MUHTARI_CART_HASH_MATCH | orientation;
         out->region = cart_entry_region(e);
         out->port1 = (e->flags & MUHTARI__CARTDB_LIGHTGUN) != 0u ? MUHTARI_PORT_LIGHTGUN
                                                                  : MUHTARI_PORT_PROLINE;
@@ -756,6 +790,18 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
     /* The mapped bytes start after the header, when there is one. */
     size_t at = (info->flags & MUHTARI_CART_HEADER) != 0u ? CART_HEADER_SIZE : 0u;
     memcpy(rom, (const uint8_t *)image + at, info->rom_size);
+    /* Only a matched Activision swap pass authorizes conversion of this new
+       private copy. Raw caller/host identity remains unchanged (section 1.4). */
+    if ((info->flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) != 0u &&
+        info->board == MUHTARI_BOARD_ACTIVISION && info->rom_size == 128u * CART_KIB) {
+        for (uint32_t bank = 0u; bank < info->rom_size; bank += CART_ACT_BANK) {
+            for (uint32_t i = 0u; i < CART_ACT_HALF; i++) {
+                uint8_t byte = rom[bank + i];
+                rom[bank + i] = rom[bank + CART_ACT_HALF + i];
+                rom[bank + CART_ACT_HALF + i] = byte;
+            }
+        }
+    }
     if (m->cart.rom != NULL) {
         a.free(a.user, m->cart.rom, (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
     }
@@ -797,8 +843,9 @@ void muhtari__cart_reset(muhtari *m)
 
 /* The RAM byte a board drives at addr, or NULL. A board with RAM maps it
    at $4000-$7FFF; a banked-RAM board shows the 16 KiB half ram_bank there.
-   The index is masked with ram_size - 1, a power of two, so no header can
-   reach outside the RAM (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1,
+   Fractalus compresses the disconnected address bits; other boards mask
+   with ram_size - 1, a power of two, so no header can reach outside RAM
+   (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1,
    and section 7 for hostile input). */
 static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
 {
@@ -806,6 +853,11 @@ static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
         return NULL;
     }
     uint32_t i = (uint32_t)addr - 0x4000u;
+    if (c->info.board == MUHTARI_BOARD_FRACTALUS) {
+        /* Physical 2 KiB: A8 and upper mirror bits are disconnected;
+           A9-A11 compress into RAM A8-A10 (cartridge.md, Fractalus). */
+        return &c->ram[((addr & 0x0E00u) >> 1) | (addr & 0x00FFu)];
+    }
     if ((c->info.board_options & MUHTARI_BOARD_BANKED_RAM) != 0u) {
         i += (uint32_t)c->ram_bank * CART_BANK;
     }
@@ -852,6 +904,35 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
         return *ram;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_FRACTALUS:
+        if (addr >= 0x8000u) {
+            return c->rom[addr - 0x8000u];
+        }
+        break;
+    case MUHTARI_BOARD_ACTIVISION: {
+        /* OM half order (cartridge preparation, Headerless images and Every scheme).
+           The switched A000/C000 halves are reversed within their bank. */
+        static const uint32_t fixed[6] = {0x18000u, 0x1A000u, 0x1C000u, 0u, 0u, 0x1E000u};
+        if (addr >= 0x4000u) {
+            uint32_t window = ((uint32_t)addr - 0x4000u) / CART_ACT_HALF;
+            uint32_t offset = fixed[window];
+            if (window == 3u || window == 4u) {
+                offset = (uint32_t)c->bank * CART_ACT_BANK + (window == 3u ? CART_ACT_HALF : 0u);
+            }
+            return c->rom[offset + (addr & (CART_ACT_HALF - 1u))];
+        }
+        break;
+    }
+    case MUHTARI_BOARD_ABSOLUTE:
+        /* Fixed upper 32 KiB; the low window selects either 16 KiB bank
+           (cartridge preparation section 2.1, Absolute). */
+        if (addr >= 0x8000u) {
+            return c->rom[addr];
+        }
+        if (addr >= 0x4000u) {
+            return c->rom[(uint32_t)c->bank * CART_BANK + (addr & (CART_BANK - 1u))];
+        }
+        break;
     case MUHTARI_BOARD_LINEAR: {
         uint32_t base = 0x10000u - c->info.rom_size;
         if (addr >= base) {
@@ -884,6 +965,8 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
                               (m->cart.ram != NULL ||
                                (m->cart.info.board_options &
                                 (MUHTARI_BOARD_ROM_AT_4000 | MUHTARI_BOARD_BANK6_AT_4000)) != 0u ||
+                               m->cart.info.board == MUHTARI_BOARD_ABSOLUTE ||
+                               m->cart.info.board == MUHTARI_BOARD_ACTIVISION ||
                                (m->cart.info.board == MUHTARI_BOARD_LINEAR &&
                                 m->cart.info.rom_size > 32768u));
                 if (!overlap) {
@@ -923,6 +1006,24 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         return;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_ACTIVISION:
+        /* FF88-FF8F aliasing and bank-zero startup are selected compatibility
+           profile policies, not new measurements (cartridge notes, Every scheme). */
+        if (addr >= CART_ACT_SELECT_FIRST && addr <= CART_ACT_SELECT_LAST) {
+            c->bank = (uint8_t)(addr & 7u);
+        }
+        break;
+    case MUHTARI_BOARD_ABSOLUTE:
+        /* Compatibility policy: only $8000, D0 before D1, else retain
+           (cartridge preparation section 2.1, Absolute). */
+        if (addr == 0x8000u) {
+            if ((v & 1u) != 0u) {
+                c->bank = 0u;
+            } else if ((v & 2u) != 0u) {
+                c->bank = 1u;
+            }
+        }
+        break;
     case MUHTARI_BOARD_SUPERGAME:
         if (addr >= 0x8000u && addr < 0xC000u) {
             uint32_t banks = c->info.rom_size / CART_BANK;

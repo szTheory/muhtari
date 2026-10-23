@@ -13,7 +13,7 @@ static_assert(offsetof(muhtari_media, size) == 0, "media size first");
 static_assert(offsetof(muhtari_input, size) == 0, "input size first");
 static_assert(offsetof(muhtari_span, size) == 0, "span size first");
 static_assert(offsetof(muhtari_counters, size) == 0, "counters size first");
-static_assert(MUHTARI_API_VERSION == 3, "API version");
+static_assert(MUHTARI_API_VERSION == 4, "API version");
 
 // Each function keeps its declared signature, with C linkage.
 static muhtari_status (*const get_versions_fn)(muhtari_versions *) = muhtari_get_versions;

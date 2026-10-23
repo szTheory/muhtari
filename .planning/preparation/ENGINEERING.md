@@ -2,7 +2,7 @@
 title: "Engineering: C rules, tests, CI, release, repo settings and quality loops"
 summary: "Build, test, CI, release, repository, triage, performance and documentation decisions for muhtari, with mutable facts re-verified on 2026-10-15."
 read_when: "Before creating or changing CMake files, presets, tests, workflows, repository settings, the release pipeline, quality gates or engineering docs."
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 # Engineering: C rules, tests, CI, release, repo settings and quality loops
@@ -208,7 +208,8 @@ those domain bounds/reasons in a second active store or describe legacy rolling 
 grant/from/to/renewal enforcement. A waived compatibility regression can become the next base's nonpass state;
 this limitation is accepted explicitly, not repaired by the aggregate. Current ledger/results equality remains
 unconditional. This narrows the unified-store part of the ratchet contract above; aggregate trusted-base
-controls, performance arming, full counting and fixed allocations are unchanged. Reconcile mixed draft callers
+controls and performance arming were unchanged by that revision; its counting/allocation policy is superseded
+by the 2026-10-23 revision in §11. Reconcile mixed draft callers
 and verify current execution before acceptance. Phase 5 CONTEXT D-21–23 is authoritative for this revision.
 
 - **Rec** one file, one check — **Alt** per-metric scoreboards (nesturbator's CONFORMANCE scoreboard, perf allow file, timeout comments) — **Flip** one metric's updates dominate PR churn (then give it its own file under the same check).
@@ -246,33 +247,40 @@ and verify current execution before acceptance. Phase 5 CONTEXT D-21–23 is aut
 | Public header | terse: one line per function and field, no hardware prose; ≤ 24 KB (nesturbator's grew from 9 to 36 KB) | `docs.budgets` |
 | Evidence | command + exit status + run URL in SUMMARY and VERIFICATION files, never pasted logs | review |
 | `.planning` | ≤ 3 MB per milestone, archived at close (today: nesturbator 6.4 MB, gabbaboy 9.5 MB, glueyneo 9.7 MB) | digest reports size (soft) |
-| Gate code | one audited absolute physical-line budget in `quality.json`; CMake `-P` or POSIX sh only; full/authored source ratios advisory; each gate names its fault and retains a meaningful control | quality ratchet and tune-up |
+| Repository checks | CMake `-P` or POSIX sh; concrete contracts and proportionate architecture review below | existing tests, review and tune-up |
 
-**Gate-budget revision, 2026-10-21 (DEC.10):** the hard 10% ceiling is replaced, not waived until a speculative
-deadline. Count comments/blanks, check implementations, dedicated fault controls, shared helpers once,
-invocation contracts, embedded workflow/configure predicates and the counter itself. Default to whole files;
-document any exact block exclusions for purely operational/generation work. Ordinary product tests and fixture
-bytes are outside this maintenance metric; production assertions and check controls remain counted wherever
-located. Publish the file/block inventory, broad sensitivity count, total and authored-only source ratios.
-Core growth, generated data, relocated predicates or a dependency do not create extra budget.
+**Accepted policy revision, 2026-10-23 (DEC.10):** retire the maintenance-line ceiling, advance allocations,
+count inventory, ratios and exclusive admission machinery. The 2026-10-21 absolute-budget decision and Phase 5
+acceptance remain historical; [accepted research](../research/proportional-gates/RECOMMENDATION.md) records
+the evidence and tradeoffs. No complexity score, file quota or replacement maintenance threshold takes its place.
 
-Initialize from an exact audited starting commit/count `B`. The first bounded simplification slice measures
-fault-preserving savings `S`; before affected additions, fix one scoped allowance `N`, including their controls,
-glue and a separately stated integration reserve. The phase ceiling is `C = B - S + N`. Estimates belong in
-planning, not in claims of measured savings. No allowance for inherited-code rewrites; preserve their faults
-and reduce duplicate work. Authorized additions are only those named by the accepted phase scope. Record their
-allocation and reason in a short existing planning table; do not build an allowance interpreter or policy DSL.
-Redistribution within fixed `N` is visible; unused allowance/reserve retires when the final actual count tightens
-the ceiling. Do not replenish savings or absorb an overrun into a new baseline.
+Review the changed boundary for ownership and encapsulation, change locality, coupling and interface burden,
+state/control flow, test independence, understandability, dependencies and recurring build/operational cost.
+Prefer the current owner and existing mechanisms; a helper should clarify a present responsibility or shared
+changing invariant. Short stable duplication can be clearer than generalized modes or forwarding layers.
+Use ordinary review/PR rationale, with no scored form, new registry or mandatory review document.
 
-After initialization, unchanged-scope growth follows the normal trusted-base ratchet and dated exceptions
-(at most 60 days, credible removal/consolidation exit, expiry checked on every run). A permanent increase
-requires an explicit new scope decision and fixed allocation before implementation, with from/to, requirement,
-fault and controls visible; editing the candidate baseline alone is insufficient. This narrow structural
-budget change does not authorize loosening other quality bounds. Safety/control loss, unresolved counting or
-an unallocated overrun stops affected expansion. Planning needs a complete boundary/fault map, allocations and
-the initial measured task, not a full replacement prototype. Phase ship needs all scoped behavior plus actual
-count within the accepted ceiling; no declaration of old 10% compliance is required or permitted without evidence.
+A substantive finding names affected code, a current contract or demonstrated present change burden, the
+failure/maintenance mechanism, and the property a proportionate fix must restore. Preferences, hypothetical
+extensibility and numerical thresholds alone do not block. Preventive reasoning can identify a current defect;
+an escaped bug is not required. A known material defect stops the affected work on that specific issue without
+restarting a general audit. Keep AGENTS rule 7's finite review/gap limits and seed optional improvements.
+
+Each new or materially changed check names its concrete fault, the existing mechanism it extends or why none
+suffices, and exercises representative pass/fault behavior through the relevant consumer. Consolidation keeps
+required behavior and fault detection. Controls concentrate on meaningful failure boundaries, including judges,
+parsers and artifact identity; ordinary helpers do not each need a separate tests-of-tests framework. Retain
+independent product, safety, provenance, evidence and release contracts. New resource bounds need a stated
+product/platform/reliability/operating-cost objective and comparable measurements; existing unrelated bounds
+and exception authorities remain binding until separately changed.
+
+Follow the dependency ladder in AGENTS. Prefer a narrow permissive seed when its surface is understandable,
+updates are manageable and local ownership is credible; a package can be cheaper and safer for substantial
+present correctness/security work. Compare runtime, build and transitive scope, execution privileges, authentic
+exact pin, file-level licensing/notices, relevant vulnerabilities and who tracks/applies updates. Copied code
+still needs updates; fewer dependencies is not a safety proof. Record the choice in existing change rationale
+or notices, without a new scoring system. [PROVENANCE.md](../../PROVENANCE.md) remains authoritative for seed
+restrictions, derived-code treatment, notices and unchanged vendor hashes; this policy selects no new package.
 
 - **Rec** byte budgets as CTests (README, header, docs) — **Alt** review-only limits — **Flip** a budget blocks a correct change twice (raise it with a reason in `quality.json`).
 

@@ -15,6 +15,7 @@ defaults:
 jobs:
   # Full normal and archive inventories from one checkout. Architecture/compiler,
   # emulator and timeout scale intentionally differ; semantic options do not.
+  # runner.hashes_file supplies the same numeric board/frame/audio rows on both.
   equality:
     runs-on: ubuntu-26.04
     timeout-minutes: 30  # provisional full inventory; portable max 691 s, run 39614595363

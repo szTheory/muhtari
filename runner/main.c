@@ -77,6 +77,7 @@ static const char synopsis[] =
     "  --frames N           run N frames (N >= 1)\n"
     "  --bench N            run N frames and report the time per frame\n"
     "  --hash-audio         print whole-run raw transition and mono PCM SHA-256 hashes\n"
+    "  --diagnostic         report the fixed 256-byte diagnostic mailbox after --frames\n"
     "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
     "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n"
     "  [--rom] FILE         load the cartridge image FILE; without it no content runs\n"
@@ -286,6 +287,9 @@ static void print_identity(const muhtari_cart_info *c)
         printf("a78_audio 0x%04lx\n", (unsigned long)c->a78_audio);
         printf("a78_irq 0x%02lx\n", (unsigned long)c->a78_irq);
     }
+    if ((c->flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) != 0u) {
+        printf("flag %s\n", muhtari__bit_name(MUHTARI__BITS_FLAGS, 2u));
+    }
     for (uint32_t bit = 0; bit < 32u; bit++) {
         if ((c->warnings >> bit) & 1u) {
             printf("warning %s\n", muhtari__bit_name(MUHTARI__BITS_WARNINGS, bit));
@@ -378,6 +382,7 @@ typedef struct options {
     uint32_t frames;
     int bench;
     int hash_audio;
+    int diagnostic;
     uint32_t *hash_frames;
     uint32_t hash_count;
     uint32_t *dump_frames;
@@ -485,6 +490,12 @@ static int parse_options(int argc, char **argv, options *o)
             } else {
                 o->hash_frames[o->hash_count++] = n;
             }
+        } else if (strcmp(arg, "--diagnostic") == 0) {
+            if (o->diagnostic) {
+                return usage("duplicate --diagnostic");
+            }
+            o->diagnostic = 1;
+            i--;
         } else if (strcmp(arg, "--hash-audio") == 0) {
             if (o->hash_audio)
                 return usage("duplicate --hash-audio");
@@ -563,6 +574,9 @@ static int parse_options(int argc, char **argv, options *o)
 static int check_options(options *o, const muhtari__movie_header *h, uint32_t movie_frames)
 {
     char why[128];
+    if (o->diagnostic && (o->rom == NULL || o->frames == 0u || o->bench)) {
+        return usage("--diagnostic needs content and explicit --frames N");
+    }
     if (h != NULL) {
         for (int p = 0; p < 2; p++) {
             if (o->port[p] != 0u && o->port[p] != h->device[p]) {
@@ -1017,6 +1031,21 @@ static int run(const options *opt, const replay *mv)
                "48000/1\naudio_behaviour_revision %u\naudio_synthesis exact-q23-16x64-dc20\n",
                (unsigned long long)audio_frames, (unsigned long long)audio_samples,
                v.behaviour_revision);
+    }
+    if (status == MUHTARI__EXIT_DONE && opt->diagnostic) {
+        muhtari_span span = {0};
+        char hex[513];
+        span.size = (uint32_t)sizeof span;
+        if (muhtari_get_memory(m, MUHTARI_MEMORY_SYSTEM_RAM, &span) != MUHTARI_STATUS_OK ||
+            span.data == NULL || span.bytes < 0xB00u) {
+            fprintf(stderr, "muhtari-run: cannot read diagnostic mailbox\n");
+            status = MUHTARI__EXIT_FAILURE;
+        } else {
+            to_hex((const uint8_t *)span.data + 0xA00u, 256u, hex);
+            if (printf("diagnostic %s\n", hex) < 0) {
+                status = MUHTARI__EXIT_FAILURE;
+            }
+        }
     }
     muhtari_destroy(m);
     free(video);

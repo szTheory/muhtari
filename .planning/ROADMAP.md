@@ -20,7 +20,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
-| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Not started |
+| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipping pending |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
@@ -66,7 +66,63 @@ include halted 14; only the nine active slots above count as accepted outcomes.
 **Goal:** Run Activision, Absolute and Fractalus cartridges with correct banking and physical RAM behavior.
 **Depends on:** Phase 5
 **Requirements:** BOARD-01, BOARD-02, BOARD-03
-**Plans:** TBD — created by plan-phase.
+**Plans:** 9/9 active plans complete in9 sequential waves; active02–10, historical01 superseded.
+**Status:** Complete; independent goal verification passed33/33. BOARD-01–03 complete; shipping remains separate.
+Three owned diagnostic identities produce9 complete numeric host observations plus persistent smoke; linked API1–4 smoke clients,
+identified Activision AM/OM map/CPU equivalence and original probe identities,
+physical Fractalus alias/lifecycle vectors, mandatory all-byte loaded maps and identified AM/OM host equivalence,
+full local CI612+6, exact inventories, hygiene and local three-ZIP213899 <=399937
+pass;06-09 appends30 validated equality rows after17 unchanged old rows and corrects fixture source pins.
+At source25919fe/base617dfa7, calledCI40031550534 passes all six native three-ZIP sums
+(worst375263 <=399937), authenticated quality and existing frontend/portability jobs.
+Nightly40031550533 passes full native/PowerPC612+6,47-row equality, fuzz/property and vectors.
+The accepted contract-based policy, old predicates/pins and ordinary guards persist.
+Direct CI40031550434 passes its authenticated aggregate (worst375270 <=399937),
+required performance and frontend jobs. Release40031550534 attempt2 passes full
+equality, publication/install and confirmed cleanup. All final runs are successful.
+**History:** Original01 halt and the665/654-line constructions remain preserved;
+the N654 allocation question is superseded, not approved. Actual legacy-base
+retirement is demonstrated, including actual direct-PR performance/aggregate acceptance;
+the hosted-retirement todo is completed.
+
+Plans:
+**Wave 1**
+- [x] 06-10-PLAN.md — Prove authenticated additive fixture comparability through the actual producer and unchanged join.
+
+Historical06-01-PLAN.md is superseded;06-01-SUMMARY.md remains the original failed
+construction record. It is not an active dependency or a completed BOARD outcome.
+
+**Wave 2** *(ready after completed Wave 1)*
+- [x] 06-02-PLAN.md — Run the Absolute tracer through all three deliverables with behavior docs and package measurement.
+
+**Wave 3** *(ready after completed Wave 2)*
+- [x] 06-03-PLAN.md — Publish the additive API, linked smoke coverage, exact inventories and embedding contract together.
+
+**Wave 4** *(ready after completed Wave 3)*
+- [x] 06-04-PLAN.md — Normalize identified Activision layouts and prove map/probe identity with matching behavior docs.
+
+**Wave 5** *(ready after completed Wave 4)*
+- [x] 06-05-PLAN.md — Implement physical Fractalus aliases and independent retail-map/lifecycle vectors.
+
+**Wave 6** *(ready after completed Wave 5)*
+- [x] 06-06-PLAN.md — Admit and execute three owned numeric board diagnostics.
+
+**Wave 7** *(ready after completed Wave 6)*
+- [x] 06-07-PLAN.md — Verify truthful loaded achievement maps and identified-layout host equivalence.
+
+**Wave 8** *(ready after completed Wave 7)*
+- [x] 06-08-PLAN.md — Prove bounded hostile/fuzz, transactional, allocation and instance-isolation behavior.
+
+**Wave 9** *(ready after completed Wave 8)*
+- [x] 06-09-PLAN.md — Accept board portability, behavior evidence and unchanged six-native package bounds.
+
+**Cross-cutting constraints:**
+- D-18: each slice measures exactly three component ZIPs against unchanged archive_bytes=399937; six native lanes remain the final authority.
+
+Each wave depends on the previous plan. Plan06-10 has proven the narrow authenticated fixture relation;
+current ENGINEERING §11 governs architecture review, with no maintenance-line allocation. The independent archive ceiling remains399937 bytes
+per native lane's three-component sum; all6 existing native lanes must fit before final acceptance.
+Shared core, manifest and inventory ownership requires sequential execution.
 
 **Success criteria:**
 
@@ -157,7 +213,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | Phase | Plans complete | Status | Completed |
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
-| 6. Retail cartridge boards | 0/TBD | Not started | — |
+| 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 0/TBD | Not started | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
@@ -165,4 +221,4 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-22; Phase 5 shipped in PR #20. Next: `$gsd-discuss-phase 6`; stop after ship.*
+*Updated: 2026-10-23; Phase6 verified33/33 with9/9 active plans and18/18 currently planned slots complete. BOARD-01–03 have semantic/three-host/hostile/hosted portability and authenticated package acceptance. Historical failed evidence remains preserved. Next separate command: `$gsd-ship 6`.*

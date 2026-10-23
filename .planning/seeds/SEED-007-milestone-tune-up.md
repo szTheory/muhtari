@@ -31,7 +31,8 @@ owner's recurring CI-efficiency audit and "weakest quality dimension" review hap
   decided by measurement; lowest-value tests removed only when a stronger test covers them.
 - Weakest dimension: score performance, CI/CD, ease of use, architecture, docs/README and upgrade path 1–5 with
   links; the lowest one gets this phase's main change.
-- Ratchet: `quality.json` ceilings tightened to measured values; floors raised.
+- Ratchet: review surviving `quality.json` bounds against their stated objective and comparable evidence;
+  preserve required fault detection. Maintenance LOC counting and allocations are retired by DEC.10.
 - Freshness: docs whose code changed, size budgets, the README install line, `scripts/apply-repo-settings.sh
   --check`, Dependabot majors, runner-image changes, pins of fetched suites.
 - Direction: refresh `.planning/PRODUCT-ROADMAP.md` and `.planning/preparation/PROMPT-COVERAGE.md`; export lessons.
@@ -48,7 +49,12 @@ owner's recurring CI-efficiency audit and "weakest quality dimension" review hap
 The seeds are this project's rolling roadmap: the current milestone is `.planning/ROADMAP.md`; direction beyond it
 is `.planning/PRODUCT-ROADMAP.md`; SEED-001 to SEED-006 hold each horizon's narrative.
 
-## Gate-code budget after phase 3 (2026-10-20)
+## Gate-code budget after phase 3 (2026-10-20, historical)
+
+The owner adopted contract-based gates and bounded architecture review on2026-10-23.
+The text/counts below preserve the earlier observation, not a current obligation.
+[SEED-009](SEED-009-proportional-maintenance-review.md) carries the focused future
+maintenance review within this existing tune-up; it adds no phase or metric system.
 
 AGENTS rule 7: repository-check code stays under a tenth of `src/` lines from phase 3. Phase 3 does not meet it,
 and the gap is an owner scoping item for `/gsd-ship 3`. It does not block the phase.

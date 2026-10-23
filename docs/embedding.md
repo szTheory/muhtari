@@ -154,7 +154,7 @@ show what it refused.
 |---|---|
 | `kind` | `MUHTARI_KIND_7800`, `MUHTARI_KIND_2600` |
 | `source` | What identified it: `MUHTARI_SOURCE_HEADER`, `MUHTARI_SOURCE_HASH`, `MUHTARI_SOURCE_FOOTER`, `MUHTARI_SOURCE_SIZE` |
-| `flags` | `MUHTARI_CART_HEADER` (it has an A78 header), `MUHTARI_CART_HASH_MATCH` (a list entry matched) |
+| `flags` | `MUHTARI_CART_HEADER` (it has an A78 header), `MUHTARI_CART_HASH_MATCH` (a list entry matched), `MUHTARI_CART_ACTIVISION_HALF_SWAPPED` (the identified Activision input has swapped halves) |
 | `warnings` | Header defects it accepted, listed below |
 | `rom_size` | Bytes the cartridge maps, header excluded |
 | `board` | `MUHTARI_BOARD_LINEAR`, `MUHTARI_BOARD_SUPERGAME`, `MUHTARI_BOARD_ACTIVISION`, `MUHTARI_BOARD_ABSOLUTE`, `MUHTARI_BOARD_FRACTALUS`, `MUHTARI_BOARD_BANKSET`, `MUHTARI_BOARD_SOUPER` |
@@ -172,7 +172,7 @@ Zero means absent in every field. `MUHTARI_PORT_UNPLUGGED` (256) sits outside th
 reports it, and a host passes it for an empty controller port. A board moves from `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD` to
 `MUHTARI_STATUS_OK` in the release that runs it. The warning bits:
 
-| Bit | The header |
+| Bit | Meaning |
 |---|---|
 | `MUHTARI_CART_WARN_HEADER_V4_IGNORED` | says version 4 or above, but its version 4 block is invalid or its board does not fit the ROM, so the cart type was used |
 | `MUHTARI_CART_WARN_HEADER_CORRECTED` | names a board, RAM or sound that a list entry for the same bytes corrects |
@@ -184,8 +184,33 @@ reports it, and a host passes it for an empty controller port. A board moves fro
 | `MUHTARI_CART_WARN_XM_VALUE` | gives an XM byte other than 0 or 1 |
 | `MUHTARI_CART_WARN_RESERVED_NONZERO` | has a reserved byte or bit set |
 | `MUHTARI_CART_WARN_CART_TYPE_CONFLICT` | sets cart-type bits that cannot all hold, resolved as `docs/hardware/cartridge.md` says |
+| `MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED` | an unmatched image explicitly declares Activision, so its layout is assumed to be OM order |
+
+API 4 adds the Activision orientation and assumed-layout bits without changing
+the 140-byte `muhtari_cart_info`. `activision_half_swapped` is a descriptive probe
+flag: only a hash match authorizes interpreting the supplied image as half-swapped
+AM order. `activision_layout_assumed` is a warning for an unknown image that
+explicitly declares Activision; it records an OM assumption, not detected layout.
+These are the runner's lowercase names for the two bits. The loader normalizes
+only an authorized hash match into its private OM copy; it never modifies caller bytes.
+
+The supplied full-image and headerless hashes keep their existing meanings,
+including trailer handling. Normalizing a private loaded copy does not replace
+supplied-image, movie or RetroAchievements identity. An unmatched modified AM
+image must be converted externally to OM order. There is no layout override in
+the API or runner, and an unknown headerless image's size alone does not identify
+an Activision board.
 
 ## Loading content
+
+The executable retail geometries are exactly 128 KiB for Activision, 64 KiB for
+Absolute, and 32 KiB ROM plus 2 KiB physical volatile RAM for Fractalus. Linear/A8
+with 32 KiB ROM denotes Fractalus; SuperGame/A8 and BankSet/A8 remain unsupported.
+Validation precedes allocation. A refused load or allocation failure preserves the
+previous cartridge, its deep ROM/RAM state and subsequent execution. The same
+instance-owned maps serve CPU reads, peeks and MARIA; no frame or power cycle allocates.
+See [cartridge behavior](hardware/cartridge.md) for exact selector rules, aliases,
+selected uncertain edge policies and the separate limits of host memory descriptors.
 
 ```c
 muhtari_media media;
@@ -325,6 +350,22 @@ RAM, 32,768 with banked RAM (both halves, in order), and the list's size for a g
 the cartridge's allocation, so a new load replaces it: ask again after each load. It starts zeroed, and a power cycle
 zeroes it again.
 
+Fractalus exposes exactly 2,048 physical bytes in `MUHTARI_MEMORY_CART_RAM`,
+in physical order. The CPU's $4000-$7FFF aliases cover those bytes as described
+in [the cartridge map](hardware/cartridge.md#fractalus); the A8 header name does
+not imply an 8 KiB span. This is volatile RAM, with no battery/save span or
+save-device declaration. Its bus aliases do not promise complete achievement
+visibility through host descriptors.
+
+Loading a cartridge or calling `muhtari_power_cycle` restores bank zero on
+Absolute and Activision and zeroes all Fractalus RAM. A power cycle preserves
+the existing span pointer; loading replaces the allocation, so query the span
+again. Repeated bus traffic, frames and power cycles allocate nothing after
+load. `MUHTARI_SWITCH_RESET` is a console input the game reads and leaves
+cartridge state intact unless the game's own code changes it. The libretro
+adapter's `retro_reset` calls `muhtari_power_cycle`, so a frontend Restart
+restores that deterministic profile.
+
 ## Counters
 
 `muhtari_get_counters` fills a `muhtari_counters`. `frames` counts the frames run since the last load or power
@@ -352,6 +393,10 @@ Statuses are only ever added. Those after the probe's:
 
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
 `muhtari_get_versions` fills a `muhtari_versions`:
+
+The current interface is API 4, ABI 1, behaviour revision 3. API 4 adds the
+Activision orientation and assumed-layout constants; all public structures,
+signatures and previous constant values retain their layouts and meanings.
 
 | Field | Meaning |
 |---|---|

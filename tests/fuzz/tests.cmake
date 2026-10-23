@@ -21,10 +21,11 @@ muhtari_warnings(muhtari-test-images)
 add_executable(muhtari-fuzz-loader-replay
   ${fuzz_dir}/loader.c
   ${fuzz_dir}/seeds.c
-  ${CMAKE_SOURCE_DIR}/tests/cart/images.c)
+  ${CMAKE_SOURCE_DIR}/tests/cart/images.c
+  ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c
+  $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
 target_compile_definitions(muhtari-fuzz-loader-replay PRIVATE MUHTARI_FUZZ_REPLAY)
-target_include_directories(muhtari-fuzz-loader-replay PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(muhtari-fuzz-loader-replay PRIVATE muhtari::muhtari)
+target_include_directories(muhtari-fuzz-loader-replay PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include)
 set_target_properties(muhtari-fuzz-loader-replay PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-fuzz-loader-replay)
@@ -58,9 +59,10 @@ if(MUHTARI_FUZZ)
   # The libFuzzer binary keeps libFuzzer's main. The fuzz preset builds every
   # object with ASan, UBSan and coverage instrumentation, so the core's own
   # branches guide the fuzzer.
-  add_executable(muhtari-fuzz-loader ${fuzz_dir}/loader.c)
-  target_include_directories(muhtari-fuzz-loader PRIVATE ${CMAKE_SOURCE_DIR}/src)
-  target_link_libraries(muhtari-fuzz-loader PRIVATE muhtari::muhtari)
+  add_executable(muhtari-fuzz-loader ${fuzz_dir}/loader.c
+    ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c
+    $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
+  target_include_directories(muhtari-fuzz-loader PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include)
   target_compile_options(muhtari-fuzz-loader PRIVATE -fsanitize=fuzzer)
   target_link_options(muhtari-fuzz-loader PRIVATE -fsanitize=fuzzer)
   set_target_properties(muhtari-fuzz-loader PROPERTIES
@@ -128,7 +130,7 @@ if(MUHTARI_FUZZ)
   set_tests_properties(fuzz.run.seeds PROPERTIES FIXTURES_SETUP fuzz_run_seeds)
   muhtari_add_test(NAME fuzz.run
     COMMAND muhtari-fuzz-run ${fuzz_run_corpora}
-      -max_total_time=60 -timeout=2 -max_len=49152 -artifact_prefix=crash/
+      -max_total_time=60 -timeout=2 -max_len=131200 -artifact_prefix=crash/
     LABELS fuzz TIMEOUT 123)  # 2 x 61.13 s, fuzz job, slowest of 11 runs, run 39381240735
   set_tests_properties(fuzz.run PROPERTIES
     FIXTURES_REQUIRED fuzz_run_seeds WORKING_DIRECTORY ${fuzz_run_work})

@@ -95,11 +95,14 @@ const char *muhtari__bit_name(muhtari__bit_set set, uint32_t bit)
         "pokey_4000", "pokey_450", "pokey_440", "pokey_800", "ym2151", "covox",
     };
     static const char *const devices[] = {"hsc", "savekey", "xm"};
-    static const char *const flags[] = {"header", "hash_match"};
+    static const char *const flags[] = {"header", "hash_match", "activision_half_swapped"};
     static const char *const warnings[] = {
-        "header_v4_ignored",  "header_corrected",   "version_above_4", "size_field_mismatch",
-        "title_nonprintable", "unknown_port",       "legacy_save_bit", "xm_value",
-        "reserved_nonzero",   "cart_type_conflict",
+        "header_v4_ignored",         "header_corrected",
+        "version_above_4",           "size_field_mismatch",
+        "title_nonprintable",        "unknown_port",
+        "legacy_save_bit",           "xm_value",
+        "reserved_nonzero",          "cart_type_conflict",
+        "activision_layout_assumed",
     };
     switch (set) {
     case MUHTARI__BITS_BOARD_OPTIONS:

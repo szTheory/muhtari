@@ -133,6 +133,12 @@ static void test_accepted(void)
     CHECK_EQ_U64(sg.rom_size, body);
     CHECK_EQ_U64(sg.warnings, 0);
 
+    /* Absolute is executable with exactly 64 KiB and no cartridge RAM. */
+    size_t absolute_n = images_a78(buf, 3u, 64u * IMAGES_KIB, 0x0200u, 64u * IMAGES_KIB);
+    muhtari_cart_info absolute = expect_written("Absolute", buf, absolute_n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(absolute.board, MUHTARI_BOARD_ABSOLUTE);
+    CHECK_EQ_U64(absolute.ram_size, 0u);
+
     /* Headerless images by their footer: linear up to 48 KiB, else SuperGame. */
     static const struct {
         uint32_t n;
@@ -300,9 +306,6 @@ static void test_unsupported_board(void)
         uint32_t board;
         uint32_t options;
     } boards[] = {
-        {"Activision", 0x0100u, 128u * IMAGES_KIB, MUHTARI_BOARD_ACTIVISION, 0u},
-        {"Absolute", 0x0200u, 64u * IMAGES_KIB, MUHTARI_BOARD_ABSOLUTE, 0u},
-        {"Fractalus", 0x0080u, 32u * IMAGES_KIB, MUHTARI_BOARD_FRACTALUS, 0u},
         {"bankset", 0x2002u, 64u * IMAGES_KIB, MUHTARI_BOARD_BANKSET, 0u},
         {"halt-banked RAM", 0x4002u, 128u * IMAGES_KIB, MUHTARI_BOARD_SUPERGAME,
          MUHTARI_BOARD_HALT_BANKED_RAM},
@@ -327,12 +330,12 @@ static void test_unsupported_board(void)
     n = images_headerless(buf, 32u * IMAGES_KIB);
     struct muhtari__cartdb_entry act;
     memset(&act, 0, sizeof act);
-    act.board = MUHTARI_BOARD_ACTIVISION;
+    act.board = MUHTARI_BOARD_BANKSET;
     act.flags = MUHTARI__CARTDB_NTSC;
     act.parts = 1u;
     CHECK_EQ_U64(identify_listed(buf, n, buf, n, act, 0, &out),
                  MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_BANKSET);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
 }
 
@@ -522,11 +525,13 @@ static void test_warnings(void)
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
     /* Two special boards at once, and Activision with low-byte bits. */
     n = images_a78(buf, 3u, 128u * IMAGES_KIB, 0x0300u, 128u * IMAGES_KIB);
-    out = expect_written("Activision and Absolute", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    out = expect_written("Activision and Absolute", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT |
+                                   MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED);
     n = images_a78(buf, 3u, 128u * IMAGES_KIB, 0x0141u, 128u * IMAGES_KIB);
-    out = expect_written("Activision and POKEYs", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT);
+    out = expect_written("Activision and POKEYs", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_CART_TYPE_CONFLICT |
+                                   MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED);
     CHECK_EQ_U64(out.sound, 0);
 }
 
@@ -628,30 +633,48 @@ static void test_slices(void)
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_LINEAR);
 }
 
-/* A 128 KiB Activision dump in the other layout matches its entry through
-   the half-swapped pass; another size gets no such pass. */
+/* Independent OM half tags at both ends of each CPU window. Observations
+   through CPU, DMA and peek must not change the latch. */
+static void activision_windows(muhtari *m, uint32_t bank)
+{
+    const uint32_t halves[6] = {12u, 13u, 14u, bank * 2u + 1u, bank * 2u, 15u};
+    for (uint32_t window = 0u; window < 6u; window++) {
+        for (uint32_t edge = 0u; edge < 2u; edge++) {
+            uint16_t addr = (uint16_t)(0x4000u + window * 8192u + edge * 8191u);
+            uint8_t want = (uint8_t)(0x30u + halves[window]);
+            CHECK_EQ_U64(muhtari__cart_read(m, addr, 0), want);
+            CHECK_EQ_U64(muhtari__cart_read(m, addr, 1), want);
+            CHECK_EQ_U64(muhtari__cart_peek(m, addr), want);
+            CHECK_EQ_U64(m->cart.bank, bank);
+        }
+    }
+}
+
+/* A 128 KiB Activision dump is normalized only through its identified
+   half-swapped pass. The known program and independently tagged halves
+   exercise every bank, both selector halves, raw-copy and failure contracts. */
 static void test_activision_swap(void)
 {
     uint32_t body = 128u * IMAGES_KIB;
     size_t n = images_seeded(buf, body, IMAGES_SEED_ACTIVISION);
-    muhtari_cart_info out =
-        expect_written("listed layout", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    muhtari_cart_info out = expect_written("listed layout", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH);
     images_swap_halves(buf, n);
-    out = expect_written("swapped layout", buf, n, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    out = expect_written("swapped layout", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.kind, MUHTARI_KIND_7800);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
-    CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH | MUHTARI_CART_ACTIVISION_HALF_SWAPPED);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
     CHECK_EQ_U64(out.rom_size, body);
     /* Under a header that says Activision, the match is still found. */
     images_header(buf, 3u, "Activision", body, 0x0100u);
     images_seeded(buf + IMAGES_HEADER, body, IMAGES_SEED_ACTIVISION);
     images_swap_halves(buf + IMAGES_HEADER, body);
-    out = expect_written("swapped layout, headered", buf, IMAGES_HEADER + body,
-                         MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER | MUHTARI_CART_HASH_MATCH);
+    out = expect_written("swapped layout, headered", buf, IMAGES_HEADER + body, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER | MUHTARI_CART_HASH_MATCH |
+                                MUHTARI_CART_ACTIVISION_HALF_SWAPPED);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
 
     /* 64 KiB whose swapped bytes are listed: no swapped pass, so the footer. */
@@ -659,6 +682,152 @@ static void test_activision_swap(void)
     out = expect_written("64 KiB", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_FOOTER);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+
+    static uint8_t canonical[131072];
+    static uint8_t original[131072 + IMAGES_HEADER];
+    static muhtari saved;
+    CHECK_EQ_U64(images_activision(canonical), body);
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL) {
+        return;
+    }
+    for (uint32_t header = 0u; header < 2u; header++) {
+        for (uint32_t swapped = 0u; swapped < 2u; swapped++) {
+            size_t at = header != 0u ? IMAGES_HEADER : 0u;
+            if (header != 0u) {
+                /* Misleading v4 metadata must lose to a hash match; raw
+                   controls/region fields still survive the override. */
+                images_header(buf, 4u, "Activision tags", body, 0u);
+                buf[55] = 5u;
+            }
+            memcpy(buf + at, canonical, body);
+            if (swapped != 0u) {
+                images_swap_halves(buf + at, body);
+            }
+            n = at + body;
+            memcpy(original, buf, n);
+            out = expect_written("tagged Activision", buf, n, MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(sizeof out, 140u);
+            CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
+            CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+            CHECK_EQ_U64(out.flags,
+                         MUHTARI_CART_HASH_MATCH | (header != 0u ? MUHTARI_CART_HEADER : 0u) |
+                             (swapped != 0u ? MUHTARI_CART_ACTIVISION_HALF_SWAPPED : 0u));
+            CHECK_EQ_U64(out.warnings, header != 0u ? MUHTARI_CART_WARN_HEADER_CORRECTED |
+                                                          MUHTARI_CART_WARN_HEADER_V4_IGNORED
+                                                    : 0u);
+            CHECK_EQ_U64(out.port1, header != 0u ? MUHTARI_PORT_JOYSTICK : MUHTARI_PORT_PROLINE);
+            muhtari_media media = {0};
+            media.size = (uint32_t)sizeof media;
+            media.image = buf;
+            media.image_size = n;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            CHECK(memcmp(m->cart.rom, canonical, body) == 0);
+            CHECK(memcmp(buf, original, n) == 0);
+            CHECK_EQ_U64(m->cart.bank, 0u);
+            activision_windows(m, 0u);
+            muhtari_frame frame = {0};
+            frame.size = (uint32_t)sizeof frame;
+            uint32_t allocations = counts.allocs;
+            CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(m->ram[0xA00u], 0x31u);
+            CHECK_EQ_U64(m->ram[0xA01u], 0x3Au);
+            CHECK_EQ_U64(m->cart.bank, 5u);
+            /* Every data byte at every selector: address alone selects. */
+            for (uint32_t selector = 0u; selector < 16u; selector++) {
+                for (uint32_t data = 0u; data < 256u; data++) {
+                    muhtari__cart_write(m, (uint16_t)(0xFF80u + selector), (uint8_t)data);
+                    CHECK_EQ_U64(m->cart.bank, selector % 8u);
+                }
+                activision_windows(m, selector % 8u);
+            }
+            const uint16_t passive[] = {0xFF7Fu, 0xFF80u, 0xFF87u, 0xFF88u, 0xFF8Fu, 0xFF90u};
+            for (size_t i = 0u; i < sizeof passive / sizeof passive[0]; i++) {
+                (void)muhtari__cart_read(m, passive[i], 0);
+                (void)muhtari__cart_read(m, passive[i], 1);
+                (void)muhtari__cart_peek(m, passive[i]);
+                CHECK_EQ_U64(m->cart.bank, 7u);
+            }
+            const uint16_t ignored[] = {0x3FFFu, 0x4000u, 0xA000u, 0xC000u,
+                                        0xE000u, 0xFF7Fu, 0xFF90u, 0xFFFFu};
+            for (size_t i = 0u; i < sizeof ignored / sizeof ignored[0]; i++) {
+                muhtari__cart_write(m, ignored[i], 0u);
+                CHECK_EQ_U64(m->cart.bank, 7u);
+            }
+            CHECK(memcmp(m->cart.rom, canonical, body) == 0);
+            CHECK(memcmp(buf, original, n) == 0);
+            CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(m->cart.bank, 0u);
+            CHECK_EQ_U64(counts.allocs, allocations);
+            /* Allocation refusal leaves live latch, RAM, and ROM intact. */
+            muhtari__cart_write(m, 0xFF8Bu, 0u);
+            memcpy(&saved, m, sizeof saved);
+            counts.fail_from = counts.allocs + 1u;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_NO_MEMORY);
+            CHECK(memcmp(m, &saved, sizeof saved) == 0);
+            CHECK(memcmp(m->cart.rom, canonical, body) == 0);
+            counts.fail_from = 0u;
+            /* Reload uses supplied bytes again: never normalize twice. */
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            CHECK(memcmp(m->cart.rom, canonical, body) == 0);
+        }
+    }
+    /* Unknown declared content is assumed OM; unknown headerless content
+       stays on its pre-existing footer fallback instead of size inference. */
+    n = images_a78(buf, 3u, body, 0x0100u, body);
+    out = expect_written("unknown declared", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER);
+    CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, body) == 0);
+    n = images_headerless(buf, body);
+    out = expect_written("unknown headerless", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+    CHECK_EQ_U64(out.flags, 0u);
+    /* Exact geometry, including truncation status, precedes allocation. */
+    static const uint32_t bad[] = {32768u, 65536u, 131071u, 131073u, 262144u};
+    for (size_t i = 0u; i < sizeof bad / sizeof bad[0]; i++) {
+        n = images_a78(buf, 3u, bad[i], 0x0100u, bad[i]);
+        memcpy(&saved, m, sizeof saved);
+        uint32_t allocations = counts.allocs;
+        CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+        CHECK(memcmp(m, &saved, sizeof saved) == 0);
+        CHECK_EQ_U64(counts.allocs, allocations);
+    }
+    n = images_a78(buf, 3u, body, 0x0100u, 65536u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    /* Valid v4 overrides v3. All declared POKEY windows preserve DMA/peek
+       memory, and overlapping $4000 ROM remains CPU-readable. */
+    static const uint16_t pokey_at[] = {0u, 0x0440u, 0x0450u, 0x0450u, 0x0800u, 0x4000u};
+    for (uint32_t audio = 0u; audio < 6u; audio++) {
+        images_header(buf, 4u, "Assumed OM", body, 0x0200u);
+        buf[64] = 2u;
+        buf[67] = (uint8_t)audio;
+        memcpy(buf + IMAGES_HEADER, canonical, body);
+        buf[IMAGES_HEADER + 1u] ^= 1u; /* cannot identify through the test list */
+        n = body + IMAGES_HEADER;
+        out = expect_written("v4 Activision", buf, n, MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
+        CHECK_EQ_U64(out.a78_cart_type, 0x0200u);
+        CHECK_EQ_U64(out.warnings, MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED);
+        CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+        activision_windows(m, 0u);
+        if (audio != 0u) {
+            uint16_t addr = (uint16_t)(pokey_at[audio] + 1u);
+            uint8_t byte = muhtari__cart_peek(m, addr);
+            muhtari__cart_write(m, addr, 0xAFu);
+            CHECK_EQ_U64(m->pokey[audio == 1u ? 1u : 0u].channel[0].audc, 0xAFu);
+            CHECK_EQ_U64(muhtari__cart_read(m, addr, 1), byte);
+            CHECK_EQ_U64(muhtari__cart_peek(m, addr), byte);
+            if (audio == 5u) {
+                CHECK_EQ_U64(muhtari__cart_read(m, addr, 0), 0x3Cu);
+            }
+        }
+    }
+    muhtari_destroy(m);
 }
 
 /* A 2600 list hit refuses an image whose footer the 7800 test passes. */
@@ -752,6 +921,201 @@ static size_t reject_oversized(void)
     size_t n = images_a78(buf, 3u, 1024u * IMAGES_KIB, 0x0002u, 1024u * IMAGES_KIB);
     buf[n] = 0u;
     return n + 1u;
+}
+
+/* The three readers use the same physical memory; reads cannot select banks. */
+static void retail_views(muhtari *m, uint16_t addr, uint8_t value)
+{
+    uint8_t bank = m->cart.bank;
+    CHECK_EQ_U64(muhtari__cart_read(m, addr, 0), value);
+    CHECK_EQ_U64(muhtari__cart_read(m, addr, 1), value);
+    CHECK_EQ_U64(muhtari__cart_peek(m, addr), value);
+    CHECK_EQ_U64(muhtari__bus_peek(m, addr), value);
+    CHECK_EQ_U64(m->cart.bank, bank);
+}
+
+static void test_retail_boards(void)
+{
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL) {
+        return;
+    }
+    /* Real CPU: write $4107, read its $7007 alias, then distinguish block
+       one via $4207/$6307. Records are $5A, $A6, $5A, derived before run. */
+    static const uint8_t program[] = {0xA9, 0x5A, 0x8D, 0x07, 0x41, 0xAD, 0x07, 0x70,
+                                      0x8D, 0x00, 0x22, 0xA9, 0xA6, 0x8D, 0x07, 0x42,
+                                      0xAD, 0x07, 0x63, 0x8D, 0x01, 0x22, 0xAD, 0x07,
+                                      0x40, 0x8D, 0x02, 0x22, 0x4C, 0x1C, 0xC0};
+    size_t n = images_a78(buf, 3u, 32768u, 0x0080u, 32768u);
+    memcpy(buf + IMAGES_HEADER + 0x4000u, program, sizeof program);
+    images_footer(buf + IMAGES_HEADER, 32768u);
+    buf[IMAGES_HEADER + 32765u] = 0xC0u;
+    muhtari_media media = {0};
+    media.size = (uint32_t)sizeof media;
+    media.image = buf;
+    media.image_size = n;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.info.board, MUHTARI_BOARD_FRACTALUS);
+    CHECK_EQ_U64(counts.alloc_size, 32768u + 2048u);
+    CHECK(m->cart.ram == m->cart.rom + 32768u);
+    muhtari_frame frame = {0};
+    frame.size = (uint32_t)sizeof frame;
+    CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->ram[0xA00u], 0x5Au);
+    CHECK_EQ_U64(m->ram[0xA01u], 0xA6u);
+    CHECK_EQ_U64(m->ram[0xA02u], 0x5Au);
+
+    /* Independent page pairs: eight physical 256-byte blocks, each seen
+       through the adjacent page and four high mirrors. No production bit
+       compression expression computes any expected index. */
+    static const uint16_t pages[8] = {0x4000u, 0x4200u, 0x4400u, 0x4600u,
+                                      0x4800u, 0x4A00u, 0x4C00u, 0x4E00u};
+    uint8_t expected[2048];
+    uint8_t aliases[2048];
+    for (uint32_t pattern = 0u; pattern < 3u; pattern++) {
+        memset(aliases, 0, sizeof aliases);
+        for (uint32_t block = 0u; block < 8u; block++) {
+            for (uint32_t byte = 0u; byte < 256u; byte++) {
+                uint8_t v = (uint8_t)(pattern == 0u   ? byte
+                                      : pattern == 1u ? block + 0x80u
+                                                      : byte * 17u + block * 31u);
+                expected[block * 256u + byte] = v;
+                muhtari__bus_write(m, (uint16_t)(pages[block] + byte), v);
+            }
+        }
+        CHECK(memcmp(m->cart.ram, expected, sizeof expected) == 0);
+        for (uint32_t mirror = 0u; mirror < 4u; mirror++) {
+            for (uint32_t adjacent = 0u; adjacent < 2u; adjacent++) {
+                for (uint32_t block = 0u; block < 8u; block++) {
+                    for (uint32_t byte = 0u; byte < 256u; byte++) {
+                        uint16_t addr =
+                            (uint16_t)(pages[block] + mirror * 4096u + adjacent * 256u + byte);
+                        uint32_t physical = block * 256u + byte;
+                        retail_views(m, addr, expected[physical]);
+                        aliases[physical]++;
+                    }
+                }
+            }
+        }
+        for (uint32_t i = 0u; i < 2048u; i++) {
+            CHECK_EQ_U64(aliases[i], 8u);
+        }
+        /* Write every alias as well, with a deep physical-memory comparison
+           after each page. This detects writes hitting a second location. */
+        for (uint32_t mirror = 0u; mirror < 4u; mirror++) {
+            for (uint32_t adjacent = 0u; adjacent < 2u; adjacent++) {
+                for (uint32_t block = 0u; block < 8u; block++) {
+                    for (uint32_t byte = 0u; byte < 256u; byte++) {
+                        uint16_t addr =
+                            (uint16_t)(pages[block] + mirror * 4096u + adjacent * 256u + byte);
+                        uint8_t value =
+                            (uint8_t)(byte + block * 29u + mirror * 7u + adjacent * 17u + pattern);
+                        expected[block * 256u + byte] = value;
+                        muhtari__bus_write(m, addr, value);
+                        retail_views(m, addr, value);
+                    }
+                    CHECK(memcmp(m->cart.ram, expected, sizeof expected) == 0);
+                }
+            }
+        }
+    }
+    /* Fixed ROM endpoints and writes outside the RAM cannot change ROM. */
+    for (uint32_t addr = 0x8000u; addr < 0x10000u; addr++) {
+        retail_views(m, (uint16_t)addr, buf[IMAGES_HEADER + addr - 0x8000u]);
+        muhtari__cart_write(m, (uint16_t)addr, 0u);
+    }
+    CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, 32768u) == 0);
+
+    /* Metadata: valid unsupported v4 combinations never fall back to v3,
+       even when v3 names a supported board. Malformed reserved bits do. */
+    static const uint16_t legacy[] = {0u, 0x0080u, 0x0002u};
+    for (size_t i = 0u; i < sizeof legacy / sizeof legacy[0]; i++) {
+        for (uint32_t mapper = 0u; mapper < 2u; mapper++) {
+            for (uint32_t bankset = 0u; bankset < 2u; bankset++) {
+                images_header(buf, 4u, "A8 wiring", 32768u, legacy[i]);
+                buf[64] = (uint8_t)mapper;
+                buf[65] = (uint8_t)(2u + bankset * 128u);
+                muhtari_cart_info info = expect_written("A8 declaration", buf, n,
+                                                        mapper == 0u && bankset == 0u
+                                                            ? MUHTARI_STATUS_OK
+                                                            : MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+                CHECK_EQ_U64(info.board,
+                             bankset != 0u ? MUHTARI_BOARD_BANKSET : MUHTARI_BOARD_FRACTALUS);
+                CHECK_EQ_U64(info.ram_size, 2048u);
+                CHECK_EQ_U64(info.warnings, 0u);
+            }
+        }
+    }
+    images_header(buf, 4u, "Invalid v4", 32768u, 0x0080u);
+    buf[64] = 1u;
+    buf[65] = 0x0Au;
+    muhtari_cart_info info = expect_written("reserved A8", buf, n, MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.board, MUHTARI_BOARD_FRACTALUS);
+    CHECK_EQ_U64(info.warnings, MUHTARI_CART_WARN_HEADER_V4_IGNORED);
+    /* Independent hash metadata still overrides a syntactically valid
+       unsupported A8 combination; no production synthetic key is installed. */
+    buf[65] = 2u;
+    struct muhtari__cartdb_entry entry = {0};
+    entry.board = MUHTARI_BOARD_FRACTALUS;
+    entry.ram_kib = 2u;
+    CHECK_EQ_U64(identify_listed(buf, n, buf + IMAGES_HEADER, 32768u, entry, 0, &info),
+                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.source, MUHTARI_SOURCE_HASH);
+    static const uint32_t wrong[] = {16384u, 32767u, 32769u, 65536u};
+    for (size_t i = 0u; i < sizeof wrong / sizeof wrong[0]; i++) {
+        n = images_a78(buf, 3u, wrong[i], 0x0080u, wrong[i]);
+        expect_untouched("Fractalus geometry", buf, n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    }
+    n = images_a78(buf, 3u, 32768u, 0x0080u, 16384u);
+    expect_untouched("Fractalus truncated", buf, n, MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    /* POKEY writes win over physical RAM, but all memory readers see RAM. */
+    n = images_a78(buf, 4u, 32768u, 0u, 32768u);
+    buf[65] = 2u;
+    buf[67] = 5u;
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    m->cart.ram[1] = 0x79u;
+    muhtari__cart_write(m, 0x4001u, 0xAFu);
+    CHECK_EQ_U64(m->pokey[0].channel[0].audc, 0xAFu);
+    retail_views(m, 0x4001u, 0x79u);
+
+    /* Absolute's unusual data precedence is a selected compatibility policy
+       (cartridge.md, Absolute). Expected low-bit transitions are tabulated. */
+    n = images_a78(buf, 3u, 65536u, 0x0200u, 65536u);
+    memset(buf + IMAGES_HEADER, 0x51, 16384u);
+    memset(buf + IMAGES_HEADER + 16384u, 0xA2, 16384u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    static const uint8_t transition[2][4] = {{0u, 0u, 1u, 0u}, {1u, 0u, 1u, 0u}};
+    static const uint16_t neighbors[] = {0x7FFFu, 0x8001u, 0xBFFFu, 0xFFFFu};
+    for (uint32_t start = 0u; start < 2u; start++) {
+        for (uint32_t value = 0u; value < 256u; value++) {
+            muhtari__cart_write(m, 0x8000u, start == 0u ? 1u : 2u);
+            for (size_t i = 0u; i < sizeof neighbors / sizeof neighbors[0]; i++) {
+                muhtari__cart_write(m, neighbors[i], (uint8_t)value);
+                CHECK_EQ_U64(m->cart.bank, start);
+            }
+            muhtari__cart_write(m, 0x8000u, (uint8_t)value);
+            uint8_t selected = transition[start][value % 4u];
+            CHECK_EQ_U64(m->cart.bank, selected);
+            retail_views(m, 0x4000u, selected == 0u ? 0x51u : 0xA2u);
+            retail_views(m, 0x7FFFu, selected == 0u ? 0x51u : 0xA2u);
+            retail_views(m, 0x8000u, buf[IMAGES_HEADER + 0x8000u]);
+            retail_views(m, 0xFFFFu, buf[IMAGES_HEADER + 0xFFFFu]);
+        }
+    }
+    CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, 65536u) == 0);
+    /* Reuse the established independent six-window Activision vectors. */
+    images_header(buf, 3u, "OM tags", 131072u, 0x0100u);
+    CHECK_EQ_U64(images_activision(buf + IMAGES_HEADER), 131072u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, IMAGES_HEADER + 131072u), MUHTARI_STATUS_OK);
+    for (uint32_t bank = 0u; bank < 8u; bank++) {
+        muhtari__cart_write(m, (uint16_t)(0xFF80u + bank), 0u);
+        activision_windows(m, bank);
+    }
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
 }
 
 static const struct {
@@ -866,6 +1230,7 @@ static const struct {
     const char *name;
     void (*run)(void);
 } cases[] = {
+    {"retail.boards", test_retail_boards},
     {"identify.2600_prefix", test_2600_prefix},
     {"identify.activision_swap", test_activision_swap},
     {"identify.headerless_ports", test_headerless_ports},

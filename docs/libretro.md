@@ -80,8 +80,8 @@ Atari 7800 console (number 51) addresses memory, and tells the frontend that it 
 | $0480-$04FF | the RIOT's 128 bytes of RAM |
 | $1800-$27FF | system RAM, 4 KiB, flagged as system RAM |
 | $2800-$2FFF | system RAM's second half, $2000-$27FF, again |
-| $4000-$7FFF | cartridge RAM, when the board has unbanked RAM |
-| ROM | the fixed ROM, read-only: a linear cartridge's whole ROM; a SuperGame cartridge's last bank at $C000 and, without RAM, its fixed bank at $4000 |
+| $4000-$7FFF | cartridge RAM, when the board has unbanked RAM, except Fractalus as below |
+| ROM | the fixed ROM, read-only: linear ROM; SuperGame's last bank at $C000 and, without RAM, its fixed bank at $4000; Absolute and Fractalus at $8000-$FFFF; Activision's four fixed windows below |
 
 Everything else has no memory behind it: the TIA, MARIA and RIOT registers, $3000-$3FFF, banked windows and the
 rest of the address space. The map lists those spans too, as descriptors without a pointer, because rcheevos stops
@@ -96,3 +96,34 @@ leaves the range to the cartridge. The map follows rcheevos, so those achievemen
 external devices, not RAM, so a byte read there would be invented. It stays without memory.
 
 Banked RAM and banked ROM windows are left out because a descriptor cannot say which bank is showing.
+Absolute descriptors point into original content at the same-numbered ROM
+offsets $8000-$FFFF; its switched $4000-$7FFF window stays unmapped. Restart
+restores bank zero, the same deterministic profile as a fresh load. Absolute
+execution ships at behaviour revision 3 with ABI 1 and unchanged public layouts.
+
+Activision exposes four fixed 8 KiB windows at $4000, $6000, $8000 and $E000.
+Their OM source offsets are $18000, $1A000, $1C000 and $1E000. Descriptors
+point into original host content, so identified AM input translates each
+offset with XOR $2000 before the optional 128-byte header is added. This
+preserves both the CPU-visible byte and original supplied-image identity.
+The switched $A000-$DFFF range stays unmapped.
+
+Fractalus exposes fixed ROM at $8000-$FFFF and sixteen 256-byte RAM aliases
+at $4000-$4FFF. Adjacent page pairs point to one physical 256-byte page;
+the library's physical cartridge-RAM span remains exactly 2,048 bytes. It is
+volatile RAM, so libretro's battery-save span remains absent. Its bus also
+mirrors that RAM at $5000-$7FFF, but those higher mirrors are deliberately
+descriptor holes. These ranges provide partial achievement visibility,
+not a complete bus view. The pinned resolver is tested against every intended
+byte and every hole, below its unchanged 32-region cap.
+
+Automated acceptance retains 13 resolver regions for Activision, 11 for
+Absolute and 21 for Fractalus, including explicit holes. The owned Activision
+diagnostic is also checked in identified AM and OM order, with and without
+a header. Over 600 frames the library, actual runner and loaded test module
+retain equal numeric mailbox records, mapped bytes, frame output and raw/PCM
+audio for each layout; supplied buffers and their distinct raw identities
+remain unchanged. The diagnostic is silent, so its raw transition stream is
+empty while PCM sample count and bytes are still compared. These checks
+establish selected board semantics and partial descriptor visibility, not
+retail playability or complete achievement support.

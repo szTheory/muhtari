@@ -1,5 +1,75 @@
 # The libretro core: its vendored header, its .info claims, and the core
 # called in-process as a frontend calls it.
+if(LIBRETRO_RETAIL_RUN)
+  function(retail_command)
+    execute_process(COMMAND ${EMULATOR} ${ARGV} RESULT_VARIABLE rc
+      OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT ${HOST_TIMEOUT})
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "retail host command ${ARGV}: ${rc}\n${out}\n${err}")
+    endif()
+    message("${out}")
+  endfunction()
+  file(MAKE_DIRECTORY "${OUT}")
+  retail_command("${RESOLVER}" ${CARTS})
+  retail_command("${RESOLVER}" --pair "${ROOT}/tests/diag/activision.a78" "${MODULE}" "${OUT}")
+  foreach(extension IN ITEMS a78 bin)
+    foreach(layout IN ITEMS om am)
+      set(image "${OUT}/activision.${layout}.${extension}")
+      # Numeric expectations remain owned by the existing diagnostic harness.
+      retail_command("${DRIVER}" "${image}" "${EXPECTED}")
+      retail_command("${DRIVER}" --libretro "${MODULE}" "${image}" "${EXPECTED}")
+      execute_process(COMMAND ${EMULATOR} "${RUNNER}" --probe "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE probe ERROR_VARIABLE err TIMEOUT 10)
+      if(NOT rc STREQUAL "0" OR NOT probe MATCHES "\nsource hash\nboard activision\n" OR
+          (layout STREQUAL "am" AND NOT probe MATCHES "\nflag activision_half_swapped\n") OR
+          (layout STREQUAL "om" AND probe MATCHES "activision_half_swapped"))
+        message(FATAL_ERROR "identified Activision input misreported: ${rc}\n${probe}${err}")
+      endif()
+      foreach(suffix IN ITEMS "" "_headerless")
+        if(suffix STREQUAL "" OR extension STREQUAL "bin")
+          set(hashed "${image}")
+        else()
+          set(hashed "${OUT}/activision.${layout}.bin")
+        endif()
+        foreach(alg IN ITEMS SHA1 SHA256 MD5)
+          file(${alg} "${hashed}" digest)
+          string(TOLOWER "${alg}${suffix}" key)
+          if(NOT probe MATCHES "(^|\n)${key} ${digest}\n")
+            message(FATAL_ERROR "raw ${key} identity changed for ${image}")
+          endif()
+        endforeach()
+      endforeach()
+      execute_process(COMMAND ${EMULATOR} "${RUNNER}" --frames 600 --hash-frame 600
+        --hash-audio --diagnostic "${image}" RESULT_VARIABLE rc
+        OUTPUT_VARIABLE run ERROR_VARIABLE err TIMEOUT 90)
+      string(REGEX MATCH "diagnostic [0-9a-f]+\n" report "${run}")
+      if(NOT rc STREQUAL "0" OR NOT run MATCHES "^frame 600 sha256 [0-9a-f]+\n" OR
+          NOT run MATCHES "\naudio_transitions_sha256 [0-9a-f]+\n" OR
+          NOT run MATCHES "\naudio_pcm_sha256 [0-9a-f]+\n" OR report STREQUAL "")
+        message(FATAL_ERROR "missing frame/raw/PCM/mailbox observation: ${rc}\n${run}${err}")
+      endif()
+      if(NOT DEFINED reference)
+        set(reference "${run}")
+      elseif(NOT run STREQUAL reference)
+        message(FATAL_ERROR "AM/OM runner mailbox/frame/raw/PCM observations differ")
+      endif()
+      file(CONFIGURE OUTPUT "${OUT}/report.txt" CONTENT "${report}" @ONLY NEWLINE_STYLE UNIX)
+      retail_command("${DRIVER}" --mailbox "${OUT}/report.txt" activision "${EXPECTED}")
+    endforeach()
+  endforeach()
+  # The same real numeric parser must reject a report shortened by one byte.
+  string(LENGTH "${report}" length)
+  math(EXPR short_length "${length} - 1")
+  string(SUBSTRING "${report}" 0 ${short_length} short)
+  file(WRITE "${OUT}/truncated-report.txt" "${short}")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/truncated-report.txt"
+    activision "${EXPECTED}" RESULT_VARIABLE rc TIMEOUT 10)
+  if(NOT rc STREQUAL "1")
+    message(FATAL_ERROR "truncated identified Activision report was accepted: ${rc}")
+  endif()
+  message("Identified AM/OM: library, actual runner and loaded testdb module agree; raw identities remain distinct")
+  return()
+endif()
 set(libretro_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
 muhtari_add_test(NAME libretro.vendored
@@ -118,22 +188,67 @@ if(TARGET muhtari_libretro)
   target_compile_options(muhtari_test_rcheevos PRIVATE $<$<C_COMPILER_ID:MSVC>:/W0>
     $<$<NOT:$<C_COMPILER_ID:MSVC>>:-w -fno-sanitize=all>)
   add_executable(muhtari-test-rcheevos ${CMAKE_CURRENT_LIST_DIR}/rcheevos.c
-    ${PROJECT_SOURCE_DIR}/libretro/libretro.c ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+    ${PROJECT_SOURCE_DIR}/libretro/libretro.c ${PROJECT_SOURCE_DIR}/runner/sha256.c
+    ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
+    $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
   target_compile_definitions(muhtari-test-rcheevos PRIVATE MUHTARI_LIBRETRO_TEST
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari-test-rcheevos PRIVATE ${PROJECT_SOURCE_DIR}/libretro
     ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/runner ${PROJECT_BINARY_DIR}/generated)
   target_include_directories(muhtari-test-rcheevos SYSTEM PRIVATE ${libretro_rc}/include
     ${libretro_rc}/src)
-  target_link_libraries(muhtari-test-rcheevos PRIVATE muhtari_test_rcheevos muhtari::muhtari
-    muhtari_host)
+  target_link_libraries(muhtari-test-rcheevos PRIVATE muhtari_test_rcheevos muhtari_host ${CMAKE_DL_LIBS})
   set_target_properties(muhtari-test-rcheevos PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-rcheevos)
-  muhtari_add_test(NAME libretro.rcheevos
-    COMMAND muhtari-test-rcheevos ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78
-      ${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78
-    LABELS libretro portable TIMEOUT 1)  # 2 x 0.31 s, macOS x64, slowest of 10 runs, run 39377950148
+  # Isolated synthetic tables never enter an installed module or package.
+  add_library(muhtari_libretro_testdb MODULE ${PROJECT_SOURCE_DIR}/libretro/libretro.c
+    ${PROJECT_SOURCE_DIR}/runner/sha256.c ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
+    $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
+  target_compile_definitions(muhtari_libretro_testdb PRIVATE MUHTARI_LIBRETRO_TEST
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+  target_include_directories(muhtari_libretro_testdb PRIVATE ${PROJECT_SOURCE_DIR}/libretro
+    ${PROJECT_SOURCE_DIR}/runner ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/generated)
+  target_link_libraries(muhtari_libretro_testdb PRIVATE muhtari_host)
+  set_target_properties(muhtari_libretro_testdb PROPERTIES PREFIX "" C_VISIBILITY_PRESET hidden
+    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  if(APPLE)
+    set_target_properties(muhtari_libretro_testdb PROPERTIES SUFFIX ".dylib")
+  endif()
+  muhtari_warnings(muhtari_libretro_testdb)
+  add_executable(muhtari-test-diag-testdb ${PROJECT_SOURCE_DIR}/tests/diag/driver.c
+    ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
+    $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
+  target_compile_definitions(muhtari-test-diag-testdb PRIVATE DIAG_LIBRETRO
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+  target_include_directories(muhtari-test-diag-testdb PRIVATE ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/libretro ${PROJECT_SOURCE_DIR}/src)
+  target_link_libraries(muhtari-test-diag-testdb PRIVATE ${CMAKE_DL_LIBS})
+  set_target_properties(muhtari-test-diag-testdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-diag-testdb)
+  set(libretro_retail ${PROJECT_BINARY_DIR}/tests/libretro-retail.cmake)
+  math(EXPR libretro_host_timeout "90 * ${MUHTARI_TIMEOUT_SCALE}")
+  file(GENERATE OUTPUT ${libretro_retail} CONTENT
+"set(LIBRETRO_RETAIL_RUN TRUE)
+set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/libretro-retail]==])
+set(RESOLVER [==[$<TARGET_FILE:muhtari-test-rcheevos>]==])
+set(MODULE [==[$<TARGET_FILE:muhtari_libretro_testdb>]==])
+set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag-testdb>]==])
+set(RUNNER [==[$<TARGET_FILE:muhtari-run-testdb>]==])
+set(EXPECTED [==[${PROJECT_SOURCE_DIR}/tests/diag/expected.csv]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+set(HOST_TIMEOUT ${libretro_host_timeout})
+set(CARTS [==[${MUHTARI_BUILT_DIR}/simple/simple.bas.a78]==]
+  [==[${MUHTARI_BUILT_DIR}/doublebuffer/doublebuffer.bas.a78]==]
+  [==[${PROJECT_SOURCE_DIR}/tests/diag/activision.a78]==]
+  [==[${PROJECT_SOURCE_DIR}/tests/diag/absolute.a78]==]
+  [==[${PROJECT_SOURCE_DIR}/tests/diag/fractalus.a78]==])
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+  muhtari_add_test(NAME libretro.rcheevos COMMAND ${CMAKE_COMMAND} -P ${libretro_retail}
+    LABELS libretro portable TIMEOUT 120) # bounded 600-frame comparisons, as diag.retail
   set_tests_properties(libretro.rcheevos PROPERTIES
     FIXTURES_REQUIRED "built_simple;built_doublebuffer")
 

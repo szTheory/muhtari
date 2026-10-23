@@ -2,109 +2,104 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: shipped
-last_updated: "2026-10-23T02:38:19+00:00"
-state_head: 6d57d69bacf8fc4154803d46aa609efdda0d8346
+current_phase: "07"
+current_phase_name: Battery saves across hosts
+current_plan: Not started
+status: ready_to_plan
+stopped_at: Phase 6 shipped in PR 24; next separate command is gsd-discuss-phase 7
+last_updated: "2026-10-23T23:07:47Z"
+state_head: 58369164abd5f4a8472f84041b4e36a8c672d6db
+last_activity: 2026-10-23
+last_activity_desc: Phase 6 shipped in PR 24; BOARD-01–03 complete; Phase 7 remains unstarted
+total_phases: 7
 progress:
   total_phases: 7
-  completed_phases: 1
-  total_plans: 9
-  completed_plans: 9
-  percent: 14
-last_activity: 2026-10-22
-total_phases: 7
-current_phase: 06
-current_phase_name: Retail cartridge boards
-stopped_at: Phase 5 shipped in PR 20; Phase 6 discussion is next
-last_activity_desc: Phase 5 merged; required CI and default-branch digest delivery confirmed
+  completed_phases: 2
+  total_plans: 18
+  completed_plans: 18
+  percent: 29
 ---
 
 # Project State
 
 ## Project Reference
 
-See PROJECT.md (updated 2026-10-22), REQUIREMENTS.md, ROADMAP.md and
-preparation/DECISIONS.md. Current focus: discuss Phase 6; Phase 5 is shipped.
+See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
+Current focus: Phase 6 ships through PR #24. Phase 7 has not started.
 
 ## Current Position
 
-Phase 5 is verified complete: 20/20 substantive truths, all five TUNE requirements
-and nine active plans 01,02,10,04,05,13,07,15,09 accepted. Phase 6 is not started.
-PR #20 squash-merged at 6d57d69 on 2026-10-23T02:32:12Z. Phase 5 is shipped.
-Do not return to discussion, create plan16, reset review/gap allowances or resume
-historical halted plans. Current implementation 098bb5e has actual direct/called
-and genuine publish/download/install/confirmed-cleanup acceptance. Completion
-records caee608/8251320 change planning metadata only.
+Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
+are complete. Phase 5 and6 are2/7 milestone phases,18/18 currently planned active
+slots; later phases remain unplanned. Historical halted plans remain excluded
+with their original records preserved.
 
-## Current Acceptance
+Next command: `$gsd-discuss-phase 7`.
+Phase 6 shipping PR: https://github.com/szTheory/muhtari/pull/24 .
+The ship step confirms the exact-head CI, squash merge and release-PR checks before reporting its outcome.
+No next GSD step was invoked.
 
-Direct CI 39879193530 attempt1 and Release 39879193669 attempt2 succeed. Authentic
-9/8 joins, six native hashes, full same-head native/BE610+6, library43 and actual
-gh2.102.0 lifecycle pass. Retained ID421353911 and tagrehearsal-39879193669-2 have
-fresh complete-list/exact-ID/tag404 confirmation. The immutable-base failure and
-unchanged-head recovery remain recorded. Final actual 15287 includes safety447/
-fixes477; N2404, B12885/S2, C15287. Approved maximum 15365/N2482 retires 78 lines.
-Matched local 610-test scheduling improves wall 18.24%; global hosted cost reduction
-is not claimed. Raw monthly cost totals are untrusted under deferred COST-01;
-one-off closeout accounting excludes copied retry and skipped/negative intervals.
-See 15/09 summaries for commands, exits, immutable artifact identities and run URLs.
+## Phase 6 Acceptance
 
-## Decisions and History
+Source25919fe and identical-tree PR merge2fe713c were accepted against actual
+base617dfa7. API4/ABI1/behavior3; all three owned diagnostics and nine fixture
+host observations; identified AM/OM identity/equivalence; mandatory resolver
+maps13/11/21; physical2048-byte Fractalus RAM; bounded hostile/lifecycle checks.
 
-Canonical decisions are in 05-CONTEXT.md D-01–35 and preparation/DECISIONS.md.
-Accepted05-13 supplies the finite ordinary quality aggregate; performance and
-compatibility retain legacy domain stores and their documented lifecycle limits.
-WASM/library/property remain advisory; no promotion is earned by PR/retry samples.
-The three TUNE-02 edge rows have explicit criteria; four unclassified probe rows
-and descriptorless prohibitions retain their disclosed metadata status.
+Local CI612+6 and hygiene24 pass. Full native/PowerPC inventories are612+6 each,
+with47 identical equality rows. Hosted fuzz,10000-case properties, full vectors,
+WASM and actual RetroArch pass at unchanged required/advisory status.
+Worst three-component ZIP375270 <=399937; independent base399385 also fits.
+Measured402586-byte failure remains in plan09 history; ZIP9 and MSVC Release
+size preference resolve it without a byte grant. Test-card3837262 Ir/frame equals
+both independent base repeats.
 
-Historical06/11/12/08 and14 halts, REDs and partial tasks remain in their original
-PLAN/SUMMARY/HANDOFF artifacts and Git. Original15 halt is ca64a29; current 15 is
-accepted under D-35. Prior state detail is retained in Git at 0b4ecd1. Those old
-halt instructions are historical, not the next action. v1.0 audit deferrals and
-stale fingerprints remain in milestones/v1.0-MILESTONE-AUDIT.md; v0.4.0 is the
-published package. v2.0 has 27 requirements across phases 5–11.
+`gh run view <id> --json status,conclusion,jobs` exits0/success for:
 
-## Blockers and Seeds
+- CI40031550434: https://github.com/szTheory/muhtari/actions/runs/40031550434
+- Nightly40031550533: https://github.com/szTheory/muhtari/actions/runs/40031550533
+- Release40031550534 attempt2: https://github.com/szTheory/muhtari/actions/runs/40031550534
 
-No execution blocker remains. Ship observations are recorded below.
-Standard code review has no blocking finding; WR-01 and COST-01 are deferred tooling seeds in 05-REVIEW-DISPOSITION.md, under AGENTS rule 7.
-Existing seeds remain in the phase deferred-items ledger and milestone audit.
-No new requirement, service, owner UAT or hardware request is added.
+Both authenticated quality joins pass with raw legacy policy preserved.
+The hosted-retirement todo is completed. Temporary release422369508 and
+tagrehearsal-40031550534-2 have exact-ID/tag/ref404 and complete-list absence.
+See06-09-SUMMARY.md and06-VERIFICATION.md for commands, exits and run URLs.
+
+## Decisions and Limits
+
+Core state remains deterministic, bounded and instance-owned. Fractalus RAM is
+volatile; higher achievement-map mirrors remain documented holes. Diagnostics
+do not establish untested retail playability, PAL completion or new hardware
+measurements. Three descriptorless flags remain unresolved metadata with separate
+agent intent review. No owner UAT or hardware request remains.
+
+Maintenance-line admission remains retired; no replacement score or allocation
+is introduced. Archive399937, old predicates/pins and ordinary guards persist.
+Historical06-01 and its665/654-line constructions remain failed history, not grants.
+Review/gap allowances were not reset; no blocking review finding exists.
+
+## Prior Acceptance and Seeds
+
+Phase 5 shipped in PR20 at6d57d69; its20/20 verification and lifecycle evidence
+remain in its artifacts. The package before this ship step is v0.4.0. Phase 6 shipping and post-merge
+release checks belong to this step; release-please owns the next package version.
+WR-01/COST-01, SEED-009 and v1.0 audit deferrals retain their scope.
+Raw monthly cost totals remain untrusted; no global hosted-cost reduction is claimed.
+
+The completion helper counted historical06-01 as10/9 and interpreted command
+strings as missing paths. Active counts are reconciled above; scanner caveats
+do not override the independent103-file fingerprint and33/33 verification.
+No required acceptance is missing.
 
 ## Session Continuity
 
-Phase 5 ship finished: https://github.com/szTheory/muhtari/pull/20 merged head
-51c0639 as 6d57d69. Final-head CI39887498127 attempt3 succeeds; attempts1/2
-remain cancelled by slow Ubuntu Valgrind downloads before measurement. The final
-actual download recovered to74.4MB/s and armed head/base3837262/PASS; no source,
-timeout, budget, review or gap reset was used to obtain recovery.
+Last session:2026-10-23. Phase 6 shipping recorded in PR #24.
+Resume file:None. Next separate command:`$gsd-discuss-phase 7`.
 
-`gh run view 39887498127 --json conclusion` exits0/success:
-https://github.com/szTheory/muhtari/actions/runs/39887498127
-`gh run view 39890107224 --json conclusion` exits0/success: post-merge
-release-please creates no release for ci-only work; latest remainsv0.4.0.
-https://github.com/szTheory/muhtari/actions/runs/39890107224
-Existing releasePR16 has green CI required; no new releasePR is open.
-`gh run view 39890187048 --json conclusion` exits0/success; exact issue22 GET
-confirms the first default-branch digest and successful-report timestamp.
-https://github.com/szTheory/muhtari/actions/runs/39890187048
-https://github.com/szTheory/muhtari/issues/22
+### Quick Tasks Completed
 
-`gh run view 39887498056 --json conclusion` exits0/success: final-head full
-native/PowerPC equality, immutable never-latest rehearsal421392396, downloaded
-verification, README install and cleanup all pass. Complete authenticated release
-listing plus exact ID/tag HTTP404 checks exit0; latest remainsv0.4.0.
-https://github.com/szTheory/muhtari/actions/runs/39887498056
-
-No further Phase 5 plan, execution, review or ship command is next. Stop after
-this ship step. Next command: `$gsd-discuss-phase 6`. Resume file: None.
-
-Completion scanning emitted four reference warnings: generated build-relative paths
-and command strings in 02/08/09/15 summaries were treated as missing source files.
-They are not new verification gaps; fresh final verification independently covers
-the required behaviors and current evidence. Historical temporary paths stay historical.
-The scanner also counted historical summaries (15/10); accepted progress
-is normalized to nine active slots, leaving 14 halted and unaccepted.
+| Task | Description | Commit |
+|---|---|---|
+| 261023-jkd | Retire maintenance line budgets and adopt contract review | 2ab7e0d |

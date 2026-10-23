@@ -5,6 +5,8 @@ An Atari 7800 ProSystem emulator core in C: a small library, a headless runner a
 **Status: early.** The core includes the CPU, graphics and TIA/POKEY sound. Cartridge-board and peripheral
 coverage remains limited; see the [compatibility ledger](docs/compatibility.md) for tested content. Releases are
 published automatically.
+NTSC board execution includes linear, SuperGame, Activision, Absolute and Fractalus cartridges.
+Board diagnostics establish memory behavior; the ledger records tested gameplay separately. PAL execution remains unsupported.
 
 ## Install in RetroArch (macOS, Apple Silicon)
 

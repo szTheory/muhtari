@@ -31,6 +31,12 @@ function(muhtari_warnings target)
   endif()
 endfunction()
 
+# Favor compact Release code on MSVC within the component archive ceiling.
+# Embedders retain their own build policy; the same objects still reach tests.
+if(PROJECT_IS_TOP_LEVEL AND MSVC)
+  add_compile_options("$<$<CONFIG:Release>:/Os>")
+endif()
+
 option(MUHTARI_NOFP "Build the core with general registers only; register only the abi tests" OFF)
 
 # The library version reaches the core through a private generated header;

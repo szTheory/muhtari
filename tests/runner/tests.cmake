@@ -108,6 +108,41 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
   endfunction()
 
+  # Fault prevented: an Activision probe hides original identity or confuses
+  # detected input orientation with an assumed OM declaration. Kept inside
+  # the existing real testdb probe case, including representative mutations.
+  function(activision_probe_valid observed image body source orientation assumed result)
+    set(valid TRUE)
+    foreach(line IN ITEMS "kind 7800" "source ${source}" "board activision"
+        "rom_size 131072" "ram_size 0")
+      if(NOT observed MATCHES "(^|\n)${line}\n")
+        set(valid FALSE)
+      endif()
+    endforeach()
+    foreach(pair IN ITEMS "flag activision_half_swapped;${orientation}"
+        "warning activision_layout_assumed;${assumed}")
+      list(GET pair 0 line)
+      list(GET pair 1 required)
+      if(observed MATCHES "(^|\n)${line}\n")
+        if(NOT required)
+          set(valid FALSE)
+        endif()
+      elseif(required)
+        set(valid FALSE)
+      endif()
+    endforeach()
+    foreach(alg IN ITEMS SHA1 SHA256 MD5)
+      string(TOLOWER "${alg}" key)
+      file(${alg} "${image}" full_digest)
+      file(${alg} "${body}" body_digest)
+      if(NOT observed MATCHES "(^|\n)${key} ${full_digest}\n" OR
+          NOT observed MATCHES "(^|\n)${key}_headerless ${body_digest}\n")
+        set(valid FALSE)
+      endif()
+    endforeach()
+    set(${result} "${valid}" PARENT_SCOPE)
+  endfunction()
+
   # Writes a movie to OUT/name: the version line, the header lines in
   # header, then for each N:LINE in ARGN, N copies of the frame LINE. Sets
   # movie to its path.
@@ -377,6 +412,73 @@ endfunction()
       endif()
     endforeach()
     expect_hashes("" "${DIR}/simple.bas.bin")
+    if(CASE STREQUAL "probe.sample_hash_match")
+      set(DIR "${PROBE_DIR}")
+      foreach(layout IN ITEMS om am)
+        foreach(header IN ITEMS "" "-a78")
+          set(name "activision-${layout}${header}")
+          set(orientation FALSE)
+          if(layout STREQUAL "am")
+            set(orientation TRUE)
+          endif()
+          probe(${name})
+          activision_probe_valid("${out}" "${DIR}/${name}" "${DIR}/activision-${layout}"
+            hash ${orientation} FALSE valid)
+          if(NOT rc STREQUAL "0" OR NOT err STREQUAL "" OR NOT valid)
+            message(FATAL_ERROR "Activision raw orientation/identity mismatch: ${name}\n${out}${err}")
+          endif()
+          if(NOT header STREQUAL "")
+            foreach(line IN ITEMS "a78_version 0x04" "a78_cart_type 0x0200"
+                "a78_mapper 0x00" "a78_port1 0x05" "port1 joystick")
+              if(NOT out MATCHES "(^|\n)${line}\n")
+                message(FATAL_ERROR "Activision raw header metadata lost: ${line}\n${out}")
+              endif()
+            endforeach()
+          endif()
+        endforeach()
+      endforeach()
+      # Hashes of original AM/OM bodies must remain distinct.
+      file(SHA256 "${DIR}/activision-am" am_digest)
+      file(SHA256 "${DIR}/activision-om" om_digest)
+      if(am_digest STREQUAL om_digest)
+        message(FATAL_ERROR "AM and OM raw identities collapsed")
+      endif()
+      probe(activision-am-trailer-a78)
+      activision_probe_valid("${out}" "${DIR}/activision-am-trailer-a78"
+        "${DIR}/activision-am-trailer" hash TRUE FALSE valid)
+      if(NOT rc STREQUAL "0" OR NOT valid OR
+          NOT out MATCHES "\nwarning size_field_mismatch\n")
+        message(FATAL_ERROR "Activision trailer identity or mapped-size mismatch\n${out}${err}")
+      endif()
+      set(pass "${out}")
+      foreach(fault IN ITEMS board orientation hash)
+        set(mutant "${pass}")
+        if(fault STREQUAL "board")
+          string(REPLACE "board activision\n" "board supergame\n" mutant "${mutant}")
+        elseif(fault STREQUAL "orientation")
+          string(REPLACE "flag activision_half_swapped\n" "" mutant "${mutant}")
+        else()
+          string(REGEX REPLACE "\nsha256_headerless [^\n]*\n" "\n" mutant "${mutant}")
+        endif()
+        activision_probe_valid("${mutant}" "${DIR}/activision-am-trailer-a78"
+          "${DIR}/activision-am-trailer" hash TRUE FALSE valid)
+        if(valid)
+          message(FATAL_ERROR "Activision ${fault} probe fault was accepted")
+        endif()
+      endforeach()
+      probe(activision)
+      activision_probe_valid("${out}" "${DIR}/activision" "${DIR}/activision-unknown-body"
+        header FALSE TRUE valid)
+      if(NOT rc STREQUAL "0" OR NOT valid)
+        message(FATAL_ERROR "Activision assumed layout was misreported\n${out}${err}")
+      endif()
+      string(REPLACE "warning activision_layout_assumed\n" "" mutant "${out}")
+      activision_probe_valid("${mutant}" "${DIR}/activision" "${DIR}/activision-unknown-body"
+        header FALSE TRUE valid)
+      if(valid)
+        message(FATAL_ERROR "Activision missing assumption warning was accepted")
+      endif()
+    endif()
   elseif(CASE STREQUAL "movie.lag")
     # Fault prevented: the runner miscounts or drops the frames in which the
     # game read no input. The input cart's even variant reads on even
@@ -723,15 +825,20 @@ foreach(case IN ITEMS sample_a78 sample_headerless sample_hash_match)
   endif()
   muhtari_add_test(NAME runner.probe.${case}
     COMMAND ${CMAKE_COMMAND} -DRUN=${runner_program} "-DEMULATOR=${runner_emulator}"
-      -DCASE=probe.${case} -DDIR=${runner_sample_dir} -P ${CMAKE_CURRENT_LIST_FILE}
+      -DCASE=probe.${case} -DDIR=${runner_sample_dir} -DPROBE_DIR=${runner_probe_dir}
+      -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS built portable TIMEOUT 10)
   set_tests_properties(runner.probe.${case} PROPERTIES FIXTURES_REQUIRED built_samples)
+  if(case STREQUAL "sample_hash_match")
+    set_tests_properties(runner.probe.${case} PROPERTIES FIXTURES_REQUIRED "built_samples;probe_images")
+  endif()
 endforeach()
 
 # hashes.txt, the file CI compares across lanes.
 set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
 muhtari_add_test(NAME runner.hashes_file
   COMMAND ${runner_check} -DMODE=write -DOUT=${PROJECT_BINARY_DIR}
+    -DDRIVER=$<TARGET_FILE:muhtari-test-diag> -DDIAG=${PROJECT_SOURCE_DIR}/tests/diag
     "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
     "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${runner_hashes}
   LABELS runner portable TIMEOUT 20)

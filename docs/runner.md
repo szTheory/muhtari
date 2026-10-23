@@ -33,6 +33,7 @@ muhtari-run --help | --version
 | `--frames N` | Run N frames, N from 1 to 4294967295. Give `--frames` or `--bench`, once; with `--movie`, the default is the movie's frame count. |
 | `--bench N` | Run N frames, time each one, and print the report described under [Output](#output). It keeps 4 bytes per frame, so where `size_t` has 32 bits an N of 1073741824 or more exits 1 as out of memory. |
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
+| `--diagnostic` | After the run, report the fixed diagnostic mailbox. Requires content and explicit `--frames N` with the ordinary frame bounds; no `--bench` or implicit movie frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
 | `[--rom] FILE` | Load the cartridge image in FILE and run it. Give at most one FILE, with or without `--rom`. A refused image prints `muhtari-run: FILE: <message>` on standard error, with the messages of [Probing an image](#probing-an-image) or `unsupported region: PAL (planned)`, and runs no frame: a 2600 image, a board this version does not emulate or a PAL cartridge exits 77, and an image that is not a cartridge, is truncated or is too large exits 1. |
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
@@ -47,6 +48,14 @@ muhtari-run --help | --version
 Anything else on the command line, including a second file name, is a usage error.
 
 ## Output
+
+`--diagnostic` prints exactly `diagnostic `, 512 lowercase hexadecimal digits,
+then a newline. The digits encode the 256 bytes at CPU $2200-$22FF in address
+order, read through system RAM at offset $A00 after the requested run. It runs
+no extra frames and accepts no address selector. Tests own the mailbox protocol,
+CRC and numeric verdict; the runner only reports observed bytes. Invalid usage
+exits 2; a report read or output failure exits 1. Other requested output keeps
+its usual format.
 
 `--hash-frame N` prints one line per requested frame, in ascending frame order, once per frame even when the same
 frame is requested twice:
@@ -110,7 +119,9 @@ output gets one `key value` line each, where the value is everything after the f
 1. `kind source board board_options rom_size ram_size sound devices port1 port2 region`;
 2. for an image with an A78 header only, `title` and the raw header fields `a78_version a78_rom_size a78_cart_type
    a78_port1 a78_port2 a78_tv a78_save a78_xm a78_mapper a78_mapper_options a78_audio a78_irq`;
-3. one `warning <name>` line for each warning, such as `warning size_field_mismatch`;
+3. `flag activision_half_swapped` only for an identified Activision image in the
+   half-swapped input orientation, then one `warning <name>` line for each warning,
+   such as `warning size_field_mismatch`;
 4. `sha1 sha256 md5 crc32` of the file as given, then `sha1_headerless sha256_headerless md5_headerless
    crc32_headerless`.
 
@@ -124,6 +135,18 @@ The headerless hashes follow the RetroAchievements rule for the 7800 (rcheevos @
 bytes are left out; any other file, including one of exactly 128 bytes, is hashed whole. `md5_headerless` is the
 RetroAchievements game hash. Where the bytes the cartridge maps differ from this input, the probe also prints
 `warning size_field_mismatch`.
+
+Activision runs from a private OM copy. Only a hash-authorized half-swap match
+sets `flag activision_half_swapped` and converts the copy; the hashes above
+always cover the original supplied bytes. Original AM and OM dumps therefore
+retain different identities. A header's size field limits mapped bytes while
+the raw headerless hashes still include trailing bytes after that mapped body.
+An unknown explicit Activision declaration reports
+`warning activision_layout_assumed`: OM is assumed, not detected. Modified AM
+images without a match need external conversion. Unknown headerless content
+retains the ordinary probe fallback; size and filename do not identify its layout.
+See [the cartridge map](hardware/cartridge.md#activision) for the selected
+banking and startup policies. API 4, ABI 1 and behaviour revision 3 apply.
 
 When the image is refused, standard error gets `muhtari-run: FILE: <message>`, and fewer lines print:
 

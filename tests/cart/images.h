@@ -63,4 +63,8 @@ size_t images_mirrored(uint8_t *buf);
    one Activision dump layout into the other (cartridge notes, section 1.4). */
 void images_swap_halves(uint8_t *p, size_t n);
 
+/* OM half tags $30-$3F and a fixed-ROM program reporting bank-zero $A000
+   and bank-five $C000 at CPU $2200/$2201. Returns 128 KiB. */
+size_t images_activision(uint8_t *buf);
+
 #endif /* MUHTARI_TEST_IMAGES_H */

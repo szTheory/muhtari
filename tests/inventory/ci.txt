@@ -3,6 +3,7 @@
 abi.api_v1	abi,portable
 abi.api_v2	abi,portable
 abi.api_v3	abi,portable
+abi.api_v4	abi,portable
 abi.api_version	abi
 abi.api_version.self_test	abi
 abi.globals	abi
@@ -135,6 +136,7 @@ cart.probe.oversized	cart,portable
 cart.probe.truncated	cart,portable
 cart.probe.unsupported_board	cart,portable
 cart.probe.warnings	cart,portable
+cart.retail.boards	cart,portable
 cart.sha1.fips	cart,portable
 core.api.size_tags	core,portable
 core.audio.silence	core,portable
@@ -439,6 +441,7 @@ diag.linear16	diag,portable
 diag.modes	diag,portable
 diag.rebuild	built,portable
 diag.rebuild.self_test	built,portable
+diag.retail	diag,portable
 diag.sg144	diag,portable
 docs.api_names	policy
 docs.api_names.self_test	policy
@@ -516,7 +519,6 @@ pokey.maps	pokey,portable
 policy.compat_doc_fresh	policy
 policy.compat_doc_fresh.self_test	policy
 policy.digest.controls	policy
-policy.gate_count.controls	policy
 policy.lane_equality.controls	policy
 policy.no_skip	policy
 policy.no_skip.self_test	policy

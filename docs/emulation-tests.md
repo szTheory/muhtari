@@ -336,6 +336,21 @@ bytes run on hardware from a flash cartridge. `docs/hardware/maria.md`, Diagnost
 | `tests/diag/dli.a78` | the DLI's NMI on zones 0, 1 and 2 and with the CPU parked in WSYNC, MARIA's WSYNC release, a store right after a WSYNC, and MSTAT's two edges by line and poll |
 | `tests/diag/linear16.a78`, `bank6.a78`, `sg144.a78` | the bytes the linear, bank-6 and 144K boards map at $4000, $8000 and $C000, before and after bank writes |
 | `tests/diag/modes.a78` | five zones in 160B, 320B, 320D, kangaroo mode and 2-byte characters on a plain SuperGame board; the byte at $4000 and the DLIs in one frame |
+| `tests/diag/activision.a78` | 27 records, mailbox ID 10: both tagged 8 KiB halves for all eight banks, four fixed windows, endpoints and hotspot neighbors; all executing code is fixed at $E000-$FFFF |
+| `tests/diag/absolute.a78` | 21 records, mailbox ID 11: bank-zero startup, D0/D1 selection and precedence, retain/high-bit policies, fixed ROM and nonselector writes |
+| `tests/diag/fractalus.a78` | 24 records, mailbox ID 12: initial zero RAM, adjacent-page aliases, upper mirrors, distinct physical locations, multiple patterns and fixed ROM |
+
+The three retail-board diagnostics use protocol version 1 and at most 27 records.
+Their numeric expectations precede first execution and follow the documented map
+and independently chosen fixture tags. Uncertain decoder edges, upper mirrors and
+startup state are selected compatibility/profile policies, not new cartridge
+measurements. Success proves these semantics rather than retail gameplay or PAL.
+`diag.retail` validates all three through the library, actual runner with
+`--frames 600 --diagnostic`, and the actual loaded libretro module. It also always
+runs the disposable Absolute tracer, so empty fixture admission cannot pass vacuously.
+The test owns numeric verdicts: magic, version, status, ROM identity, record count,
+CRC, record IDs, flags and values must all match. The runner only reports the fixed
+256 bytes at $2200-$22FF after its explicitly bounded normal run.
 
 A diagnostic that defines `diag_nmi` gets it as its NMI vector; the others return from NMI at once.
 
@@ -376,7 +391,14 @@ It prints `stats agree` or `stats disagree` for each.
 **Rebuilding.** `diag.rebuild` (label `built`) assembles each `tests/diag/*.s` that has a `.cfg`, and Bruce Clark's
 `tests/cpu/decimal/clark.s` as printed and as its 65C02 control, with the pinned `dasm.wasm -f3`, `7800sign.wasm -w`
 and `7800header.wasm` under wasmtime (`tests/diag/assemble.cmake`), and requires each result's SHA-256 to equal its
-manifest row's. After a source edit, derive and commit any new expected value first, then write the new bytes with
+manifest row's.
+
+Sample and diagnostic recipes share Wasmtime's compiled-module cache at
+`build/pins/wasmtime-cache`, with per-output/name configuration outside each
+fresh fixture directory. All source, assemble, sign and header stages still run;
+only pinned tool compilation is reused. No home cache or fixture bytes are cached.
+
+After a source edit, derive and commit any new expected value first, then write the new bytes with
 
     cmake -DWASMTIME=build/pins/wasmtime/wasmtime -DPKG=build/pins/7800basic -DSRC=tests/diag/<rom>.s \
           -DCFG=tests/diag/<rom>.cfg -DOUT=build/diag -DMANIFEST=tests/roms/manifest.txt \
@@ -391,6 +413,7 @@ commit the source, and then the `.a78` with its manifest row's digest and pin se
 | `diag.dli` | the `dli` ROM's 11 records against `expected.csv`, three DLI records also against `stats.csv` |
 | `diag.linear16`, `diag.bank6`, `diag.sg144` | the board ROMs' 4, 12 and 12 records against `expected.csv` |
 | `diag.modes` | the `modes` ROM's 2 records against `expected.csv` |
+| `diag.retail` | all three owned retail-board diagnostics through three actual deliverables, plus the persistent tracer and report/protocol fault controls |
 | `diag.rebuild` | the committed diagnostics and Clark's two builds rebuilt from source, byte for byte |
 | `diag.rebuild.self_test` | a manifest copy with one digit of `dma.a78`'s digest changed must fail with `tests/diag/dma.a78: SHA-256 drift` |
 | `diag.expected.self_test` | an `expected.csv` copy whose `null` value is 242 must fail on that record |
@@ -399,10 +422,17 @@ commit the source, and then the `.a78` with its manifest row's digest and pin se
 
 `prop.*` checks properties of the run loop over generated cases (`tests/prop/test_prop.c`, harness
 `tests/prop.h`). Each case fast-boots a cartridge drawn from a pool and runs at most 8 frames. The pool is the run
-fuzz target's 17 seed inputs and 48 KiB of random bytes from the case's stream, each made a cartridge as that target
+fuzz target's 29 seed inputs and 48 KiB of random bytes from the case's stream, each made a cartridge as that target
 makes it (see fuzz), and the built `simple` and `eightysix` samples. Two runs are equal when every frame's status,
 audio count and picture SHA-256 match, and so does the state digest: SHA-256 over the instance with its pointers
 cleared, then the cartridge's ROM and RAM.
+
+Each property explicitly selects Activision, Absolute and Fractalus in its first
+three cases; later cases draw from the existing pool. Switched banks and written
+physical RAM enter the comparisons. PCM joins video, status and pointer-cleared
+deep state, including resumed execution after refused loads and allocation failure.
+Interleaved instances must match controls run independently. The fixed 100-case
+PR and 10,000-case advisory nightly budgets and shrinking behavior remain unchanged.
 
 | Test | Holds for every case |
 |------|----------------------|
@@ -438,13 +468,21 @@ UndefinedBehaviorSanitizer (`docs/testing.md`, Lanes).
 | Target | Input | Invariants |
 |--------|-------|------------|
 | `loader` (`tests/fuzz/loader.c`) | any image up to the size cap, `-max_len=1048705` | two probes agree; the load returns probe's status; a refusal allocates nothing and changes nothing; destroy frees everything |
-| `run` (`tests/fuzz/run.c`) | any bytes, truncated or padded with $00 to 49,152, `-max_len=49152` | two instances, loaded and run 2 frames call by call, agree in load status and in every frame's status, audio count and picture; each frame returns at the first instruction boundary at or after its deadline and less than four lines past it |
+| `run` (`tests/fuzz/run.c`) | explicit retail A78 inputs select supported fixed-geometry builders; other bytes retain the 49,152-byte linear interpretation; `-max_len=131200` | two instances, loaded and run 2 frames call by call, agree in board, load status, frame status, audio count, PCM and picture; each frame returns at the first instruction boundary at or after its deadline and less than four lines past it |
 
-The run target loads its input as a headerless 48 KiB linear cartridge with the fast boot. `tests/fuzz/run_cart.h`
-first changes the last 8 bytes as little as needed to pass the footer test, which would otherwise refuse nearly every
-input as a 2600 image. Its seeds (`tests/fuzz/run_seeds.c`) are all $00, all $02 (JAM on every opcode), all $FF, 13
-splitmix64 images and an empty input; the loader's are the images `tests/fuzz/seeds.c` builds. An empty input becomes
-48 KiB of $00.
+The run target retains its original headerless 48 KiB linear construction for ordinary
+bytes: `tests/fuzz/run_cart.h` adjusts the final footer bytes needed for acceptance
+and clears accidental A78 magic so a linear payload remains headerless.
+Explicit Activision, Absolute and Fractalus A78 declarations instead select their
+supported exact geometry and fixed-window reset vectors. Storage is bounded at 131200
+bytes. The original all-$00, JAM, all-$FF, thirteen splitmix64 and empty seeds persist;
+Eleven explicit retail/malformed/A8 inputs and one accidental-header regression
+extend execution to 29 seeds. The loader
+has 31 seeds, including isolated identified AM/OM inputs, unsupported combinations
+and geometry boundaries. Normalization checks derive the expected private bytes
+independently and preserve the supplied buffer and raw identity. Refusals compare
+deep live ROM/RAM and resumed audible changing controls. Both fuzz durations remain
+60 seconds; no input-byte or frame cap is raised beyond the declared execution bound.
 
 **Adding a regression.** The nightly `fuzz` job uploads crashes as `fuzz-crash` from `build/fuzz/fuzz/crash/`
 (loader) and `build/fuzz/fuzz/run/crash/` (run). Minimise one with `muhtari-fuzz-<target> -minimize_crash=1
@@ -486,6 +524,15 @@ changes and clipping audits before copying the measured row. A PCM synthesis
 change alone never justifies replacing raw or video evidence. The existing
 platform hashes file also includes soundtest and pokey's seven audio fields
 under their name prefixes, preserving the card/PNG rows and Unix newlines.
+
+It also appends ten rows each under `activision.`, `absolute.` and `fractalus.`:
+frame 1, frame 600, all seven audio fields and a fixed numeric mailbox report.
+The actual runner must identify the expected board and the diagnostic driver must
+accept the complete mailbox before a row is written. These owned diagnostics are
+silent, so the empty raw-transition digest is expected; PCM bytes and counts still
+participate. Existing command-boundary controls reject absent fixtures, wrong board
+or ROM identity, missing/extra reports and each omitted frame/audio field. All 17
+older test-card/PNG and soundtest/POKEY rows keep their byte meanings.
 
 Pull requests require exactly six identical expanded native hash files and compile PowerPC.
 Nightly and release workflows additionally execute the full native/PowerPC inventories

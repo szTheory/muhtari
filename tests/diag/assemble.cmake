@@ -55,7 +55,15 @@ elseif(NOT "${VARIANT}" STREQUAL "")
   message(FATAL_ERROR "assemble: unknown -DVARIANT=${VARIANT}")
 endif()
 
-set(run "${WASMTIME}" run --dir=. "--dir=${pkg}::/b")
+# Share only compiled pinned modules with the sample recipe. Sources, signing
+# and headers still execute from scratch; each output/name owns its config.
+get_filename_component(cache "${pkg}/../wasmtime-cache" ABSOLUTE)
+file(TO_CMAKE_PATH "${cache}" cache)
+string(REPLACE "\"" "\\\"" cache_toml "${cache}")
+file(MAKE_DIRECTORY "${cache}")
+set(cache_config "${OUT}/.wasmtime-${name}.toml")
+file(CONFIGURE OUTPUT "${cache_config}" CONTENT "[cache]\ndirectory = \"${cache_toml}\"\n" @ONLY)
+set(run "${WASMTIME}" run -C cache=y "-Ccache-config=${cache_config}" --dir=. "--dir=${pkg}::/b")
 
 # stage(<name> COMMAND ...): fails naming the stage and its status.
 function(stage stage_name)

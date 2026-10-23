@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 16
 waived_count: 0
-fixed_count: 15
-total_count: 31
-last_updated: 2026-10-22T22:46:49.319Z
+fixed_count: 34
+total_count: 50
+last_updated: 2026-10-23T22:45:08.436Z
 ---
 
 # Broken Windows Ledger
@@ -46,6 +46,25 @@ last_updated: 2026-10-22T22:46:49.319Z
 | 29 | 05 | deviation | tests/policy/publish.cmake |  | 05-15 Task2 halts at15231: safety391/fixes421 exceed384/414 by7 and strict15225 by6 before provisioning. Task1 accepted at15163;05-09 remains blocked; no further construction or GREEN. | open |  | 2026-10-22T22:46:49.123Z |  |
 | 30 | 05 | unmet-truth | .github/workflows/release.yml |  | 05-15 real-script controls reach and reproduce missing verified patched CLI provisioning; CTest8 and RED_EVIDENCE_OK0. Pin/workflow/output repair and remaining complete-matrix audit are unimplemented at the allocation stop. | open |  | 2026-10-22T22:46:49.189Z |  |
 | 31 | 05 | unrun-verify | .planning/phases/05-pipeline-tune-up/05-15-PLAN.md |  | 05-15 Task3 full local ci/library/inventories, current direct/called authentic9/8 joins, actual patched-gh rehearsal/publication/download/install/confirmed cleanup and cost/docs remain unrun after the designed Task2 halt. Accepted7/9 unchanged. | open |  | 2026-10-22T22:46:49.254Z |  |
+| 32 | 06 | unmet-truth | .planning/phases/06-retail-cartridge-boards/06-01-PLAN.md |  | Complete disposable counted construction15952 exceeds fixed15479 by473; plan01 halted and02-09 blocked; no installed policy or board changes. | fixed |  | 2026-10-23T16:58:10.879Z | 2026-10-23T18:32:31.759Z |
+| 33 | 06 | unrun-verify | .planning/phases/06-retail-cartridge-boards/06-01-PLAN.md |  | Task2 full CI and future six-native board/archive acceptance not run because Task1 complete counted fit failed; no completed requirement claimed. | fixed |  | 2026-10-23T16:58:10.951Z | 2026-10-23T22:45:08.436Z |
+| 34 | 06 | deviation | tests/cart/test_cart.c |  | Updated the existing Absolute probe case from refusal to acceptance when the board became executable; resolved in27627f1. | fixed |  | 2026-10-23T19:41:17.397Z | 2026-10-23T19:41:21.710Z |
+| 35 | 06 | deviation | tests/built/expected.txt |  | Advanced built/audio expectation revision metadata to3 without changing pinned hashes; resolved inf0e1659. | fixed |  | 2026-10-23T19:41:17.464Z | 2026-10-23T19:41:21.821Z |
+| 36 | 06 | deviation | tests/header/header.c |  | API4 required updating C17 and C++17 header-only current-version assertions from3 to4; resolved in0e42dff. | fixed |  | 2026-10-23T19:45:55.060Z | 2026-10-23T19:46:54.036Z |
+| 37 | 06 | deviation | tests/cart/test_cart.c |  | Activision warning vectors still expected unsupported after mapper acceptance; updated accepted status and assumed-layout warning, focused10 and full611+6 pass. | fixed |  | 2026-10-23T19:55:35.527Z | 2026-10-23T19:56:15.118Z |
+| 38 | 06 | deviation | tests/cart/test_cart.c |  | Replaced stale Fractalus refusal expectations with executable coverage and a retained BankSet hash-refusal control; resolved in1d51980. | fixed |  | 2026-10-23T20:05:34.173Z | 2026-10-23T20:05:34.293Z |
+| 39 | 06 | deviation | tests/libretro/rcheevos.c |  | Retail resolver assertion initially treated volatile Fractalus RAM as battery-save memory; corrected to physical CART_RAM2048 and save0 before Task1 commit, focused6 pass. | fixed |  | 2026-10-23T20:25:58.408Z | 2026-10-23T20:26:13.457Z |
+| 40 | 06 | deviation | tests/libretro/rcheevos.c |  | Raw observer requires setup before load; test-only module seam now registers it before content load, preserving no allocation during execution, focused6 and full612+6 pass. | fixed |  | 2026-10-23T20:25:58.510Z | 2026-10-23T20:26:13.527Z |
+| 41 | 06 | deviation | tests/roms/manifest.txt |  | Corrected three new diagnostic pins from predecessor commits to exact source/config/fixture commits; bytes and SHA256 unchanged, actual trusted manifest comparability passes; resolved in78bb2f6. | fixed |  | 2026-10-23T20:51:43.439Z | 2026-10-23T20:53:43.049Z |
+| 42 | 06 | unrun-verify | .planning/phases/06-retail-cartridge-boards/06-09-PLAN.md |  | Final local612+6 and214131-byte acceptance is complete; current-head six-native archives/authenticated quality join, full native/BE, applicable WASM, sanitizer/fuzz/property and existing RetroArch hosted evidence is pending with parent execution orchestrator. | fixed |  | 2026-10-23T20:51:43.503Z | 2026-10-23T22:39:47.394Z |
+| 43 | 06 | deviation | tests/diag/driver.c |  | Hosted CI40023530702 and Nightly40023530478 GNU shadow failure: loaded run pointer shadowed the static diagnostic run. Renamed local pointer module_run while retaining symbol retro_run; full local cmake --workflow --preset ci exit0 (612+6), URL N/A-local; GNU retry remains in hosted acceptance. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702 | fixed |  | 2026-10-23T21:04:43.262Z | 2026-10-23T21:05:03.204Z |
+| 44 | 06 | deviation | src/cart.c |  | Hosted CI40023530702 hygiene rejected decimal citations and unformatted affected C/H. Named source sections and clang-format21 correct the source without weakening guards; cmake --workflow --preset hygiene exit0 (24/24 including analyzer/no_float), exact inventories and three ZIPs214132<=399937 exit0, URL N/A-local. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702 | fixed |  | 2026-10-23T21:04:43.348Z | 2026-10-23T21:05:03.270Z |
+| 45 | 06 | deviation | tests/cmake/quality_evidence.cmake |  | Hosted quality rejected unchanged built sample rows because only the unique behavior annotation advanced2 to3. Narrow independently authenticated sample relation now retains raw event-base digest; full612+6, hygiene24, actual617dfa7 base610+6 recursion and exact environment/raw policy checks pass locally; resolved in7f90077, hosted rerun remains pending. | fixed |  | 2026-10-23T21:23:39.466Z | 2026-10-23T21:24:06.808Z |
+| 46 | 06 | deviation | tests/policy/quality.cmake |  | Hosted CI40026612824 and called40026612929 macos-x64 policy.quality.controls exceeded unchanged30-second timeout. Reused invariant current mock outputs and retired only owned base worktrees before actual recursion; all case lists and producer/join assertions retained. Matched local wall6.64s to4.19s; full612+6, hygiene24, exact inventories and three ZIPs214132<=399937 exit0, N/A-local. Fix334abf0; hosted timing rerun remains pending. | fixed |  | 2026-10-23T21:35:00.501Z | 2026-10-23T21:35:16.931Z |
+| 47 | 06 | deviation | tests/diag/assemble.cmake |  | CI40026612824 Windows x64 built.samples.self_test timed out4.06/4s and diag.rebuild22.02/22s. Fix782531b uses only pinned Wasmtime compiled-module cache under build tree, all fresh stages/digest faults and timeouts retained. Actual cold assembler21.7ms to warm7.8-8.2ms with identical bytes; whole local batch timing overlaps baseline. Full612+6 and hygiene24, exact inventories and ZIP214132<=399937 exit0/N/A-local; Windows fit remains hosted pending. Fault URL https://github.com/szTheory/muhtari/actions/runs/40026612824/job/120664334130 | fixed |  | 2026-10-23T21:43:21.512Z | 2026-10-23T21:43:51.509Z |
+| 48 | 06 | deviation | tests/libretro/tests.cmake |  | Hosted Windows mailbox failures resolved by explicit Unix report files; PowerPC AM/OM command reached unscaled90-second timeout. Applied existing MUHTARI_TIMEOUT_SCALE to its subprocess, native90 unchanged. Fresh full local CI612+6, hygiene24 and3ZIP214132 exit0. Hosted retries pending. Evidence runs40026612824/40026612938, fixes c63697b and following timeout-scale commit. | fixed |  | 2026-10-23T21:46:03.381Z | 2026-10-23T22:39:47.467Z |
+| 49 | 06 | deviation | tests/policy/quality.cmake |  | Called CI40029174245 Windows ARM job120672888533 quality controls timed out30.01s. Fix12281af includes unchanged expect_fail.cmake in a scoped helper, preserving exact exit1 and merged-output regex checks, all cases and real recursive producers/joins. Matched local wall3.95s to3.68s; wrong-exit/wrong-regex rejected; full612+6, hygiene24, exact inventories and three ZIPs213899<=399937 exit0 with parent package knobs, N/A-local. Hosted timing/Windows fit remain pending. | fixed |  | 2026-10-23T22:06:22.624Z | 2026-10-23T22:06:39.908Z |
+| 50 | 06 | deviation | cmake/packaging.cmake |  | Actual Windowsx64 archives402586 exceed399937 in calledCI40029174245. Candidate compressionlevel9 plus top-level ReleaseMSVC size preference preserves contents/runtime/ABI; local213899 passes but hostedWindows and six-lane fit pending. No byte grant or self-baseline. | fixed |  | 2026-10-23T22:07:27.402Z | 2026-10-23T22:39:47.537Z |
 
 ````json
 [
@@ -450,6 +469,253 @@ last_updated: 2026-10-22T22:46:49.319Z
     "reason": "",
     "recorded_at": "2026-10-22T22:46:49.254Z",
     "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 32,
+    "kind": "unmet-truth",
+    "phase": "06",
+    "file": ".planning/phases/06-retail-cartridge-boards/06-01-PLAN.md",
+    "line": null,
+    "description": "Complete disposable counted construction15952 exceeds fixed15479 by473; plan01 halted and02-09 blocked; no installed policy or board changes.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T16:58:10.879Z",
+    "resolved_at": "2026-10-23T18:32:31.759Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 33,
+    "kind": "unrun-verify",
+    "phase": "06",
+    "file": ".planning/phases/06-retail-cartridge-boards/06-01-PLAN.md",
+    "line": null,
+    "description": "Task2 full CI and future six-native board/archive acceptance not run because Task1 complete counted fit failed; no completed requirement claimed.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T16:58:10.951Z",
+    "resolved_at": "2026-10-23T22:45:08.436Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 34,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/cart/test_cart.c",
+    "line": null,
+    "description": "Updated the existing Absolute probe case from refusal to acceptance when the board became executable; resolved in27627f1.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T19:41:17.397Z",
+    "resolved_at": "2026-10-23T19:41:21.710Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 35,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/built/expected.txt",
+    "line": null,
+    "description": "Advanced built/audio expectation revision metadata to3 without changing pinned hashes; resolved inf0e1659.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T19:41:17.464Z",
+    "resolved_at": "2026-10-23T19:41:21.821Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 36,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/header/header.c",
+    "line": null,
+    "description": "API4 required updating C17 and C++17 header-only current-version assertions from3 to4; resolved in0e42dff.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T19:45:55.060Z",
+    "resolved_at": "2026-10-23T19:46:54.036Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 37,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/cart/test_cart.c",
+    "line": null,
+    "description": "Activision warning vectors still expected unsupported after mapper acceptance; updated accepted status and assumed-layout warning, focused10 and full611+6 pass.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T19:55:35.527Z",
+    "resolved_at": "2026-10-23T19:56:15.118Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 38,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/cart/test_cart.c",
+    "line": null,
+    "description": "Replaced stale Fractalus refusal expectations with executable coverage and a retained BankSet hash-refusal control; resolved in1d51980.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:05:34.173Z",
+    "resolved_at": "2026-10-23T20:05:34.293Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 39,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/libretro/rcheevos.c",
+    "line": null,
+    "description": "Retail resolver assertion initially treated volatile Fractalus RAM as battery-save memory; corrected to physical CART_RAM2048 and save0 before Task1 commit, focused6 pass.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:25:58.408Z",
+    "resolved_at": "2026-10-23T20:26:13.457Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 40,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/libretro/rcheevos.c",
+    "line": null,
+    "description": "Raw observer requires setup before load; test-only module seam now registers it before content load, preserving no allocation during execution, focused6 and full612+6 pass.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:25:58.510Z",
+    "resolved_at": "2026-10-23T20:26:13.527Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 41,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/roms/manifest.txt",
+    "line": null,
+    "description": "Corrected three new diagnostic pins from predecessor commits to exact source/config/fixture commits; bytes and SHA256 unchanged, actual trusted manifest comparability passes; resolved in78bb2f6.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:51:43.439Z",
+    "resolved_at": "2026-10-23T20:53:43.049Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 42,
+    "kind": "unrun-verify",
+    "phase": "06",
+    "file": ".planning/phases/06-retail-cartridge-boards/06-09-PLAN.md",
+    "line": null,
+    "description": "Final local612+6 and214131-byte acceptance is complete; current-head six-native archives/authenticated quality join, full native/BE, applicable WASM, sanitizer/fuzz/property and existing RetroArch hosted evidence is pending with parent execution orchestrator.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T20:51:43.503Z",
+    "resolved_at": "2026-10-23T22:39:47.394Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 43,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/diag/driver.c",
+    "line": null,
+    "description": "Hosted CI40023530702 and Nightly40023530478 GNU shadow failure: loaded run pointer shadowed the static diagnostic run. Renamed local pointer module_run while retaining symbol retro_run; full local cmake --workflow --preset ci exit0 (612+6), URL N/A-local; GNU retry remains in hosted acceptance. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T21:04:43.262Z",
+    "resolved_at": "2026-10-23T21:05:03.204Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 44,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "src/cart.c",
+    "line": null,
+    "description": "Hosted CI40023530702 hygiene rejected decimal citations and unformatted affected C/H. Named source sections and clang-format21 correct the source without weakening guards; cmake --workflow --preset hygiene exit0 (24/24 including analyzer/no_float), exact inventories and three ZIPs214132<=399937 exit0, URL N/A-local. Failure URL https://github.com/szTheory/muhtari/actions/runs/40023530702",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T21:04:43.348Z",
+    "resolved_at": "2026-10-23T21:05:03.270Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 45,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/cmake/quality_evidence.cmake",
+    "line": null,
+    "description": "Hosted quality rejected unchanged built sample rows because only the unique behavior annotation advanced2 to3. Narrow independently authenticated sample relation now retains raw event-base digest; full612+6, hygiene24, actual617dfa7 base610+6 recursion and exact environment/raw policy checks pass locally; resolved in7f90077, hosted rerun remains pending.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T21:23:39.466Z",
+    "resolved_at": "2026-10-23T21:24:06.808Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 46,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/policy/quality.cmake",
+    "line": null,
+    "description": "Hosted CI40026612824 and called40026612929 macos-x64 policy.quality.controls exceeded unchanged30-second timeout. Reused invariant current mock outputs and retired only owned base worktrees before actual recursion; all case lists and producer/join assertions retained. Matched local wall6.64s to4.19s; full612+6, hygiene24, exact inventories and three ZIPs214132<=399937 exit0, N/A-local. Fix334abf0; hosted timing rerun remains pending.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T21:35:00.501Z",
+    "resolved_at": "2026-10-23T21:35:16.931Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 47,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/diag/assemble.cmake",
+    "line": null,
+    "description": "CI40026612824 Windows x64 built.samples.self_test timed out4.06/4s and diag.rebuild22.02/22s. Fix782531b uses only pinned Wasmtime compiled-module cache under build tree, all fresh stages/digest faults and timeouts retained. Actual cold assembler21.7ms to warm7.8-8.2ms with identical bytes; whole local batch timing overlaps baseline. Full612+6 and hygiene24, exact inventories and ZIP214132<=399937 exit0/N/A-local; Windows fit remains hosted pending. Fault URL https://github.com/szTheory/muhtari/actions/runs/40026612824/job/120664334130",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T21:43:21.512Z",
+    "resolved_at": "2026-10-23T21:43:51.509Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 48,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/libretro/tests.cmake",
+    "line": null,
+    "description": "Hosted Windows mailbox failures resolved by explicit Unix report files; PowerPC AM/OM command reached unscaled90-second timeout. Applied existing MUHTARI_TIMEOUT_SCALE to its subprocess, native90 unchanged. Fresh full local CI612+6, hygiene24 and3ZIP214132 exit0. Hosted retries pending. Evidence runs40026612824/40026612938, fixes c63697b and following timeout-scale commit.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T21:46:03.381Z",
+    "resolved_at": "2026-10-23T22:39:47.467Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 49,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "tests/policy/quality.cmake",
+    "line": null,
+    "description": "Called CI40029174245 Windows ARM job120672888533 quality controls timed out30.01s. Fix12281af includes unchanged expect_fail.cmake in a scoped helper, preserving exact exit1 and merged-output regex checks, all cases and real recursive producers/joins. Matched local wall3.95s to3.68s; wrong-exit/wrong-regex rejected; full612+6, hygiene24, exact inventories and three ZIPs213899<=399937 exit0 with parent package knobs, N/A-local. Hosted timing/Windows fit remain pending.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T22:06:22.624Z",
+    "resolved_at": "2026-10-23T22:06:39.908Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 50,
+    "kind": "deviation",
+    "phase": "06",
+    "file": "cmake/packaging.cmake",
+    "line": null,
+    "description": "Actual Windowsx64 archives402586 exceed399937 in calledCI40029174245. Candidate compressionlevel9 plus top-level ReleaseMSVC size preference preserves contents/runtime/ABI; local213899 passes but hostedWindows and six-lane fit pending. No byte grant or self-baseline.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-23T22:07:27.402Z",
+    "resolved_at": "2026-10-23T22:39:47.537Z",
     "milestone": "v2.0"
   }
 ]

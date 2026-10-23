@@ -815,7 +815,7 @@ static void test_info(void)
     CHECK_EQ_U64(muhtari_get_versions(NULL), MUHTARI_STATUS_ERR_ARGUMENT);
     CHECK_EQ_U64(muhtari_get_versions(&v), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(v.api, MUHTARI_API_VERSION);
-    CHECK_EQ_U64(v.api, 3);
+    CHECK_EQ_U64(v.api, 4);
     CHECK_EQ_U64(v.abi, 1);
     CHECK(v.behaviour_revision > 0u);
     muhtari_destroy(m);
@@ -823,6 +823,8 @@ static void test_info(void)
 
 /* After create the core never allocates: one alloc at create, none in
    LONG_RUN frames, one free at destroy. */
+static void retail_lifecycle(void);
+
 static void test_no_alloc_after_load(void)
 {
     alloc_counts c;
@@ -852,6 +854,7 @@ static void test_no_alloc_after_load(void)
     muhtari_destroy(m);
     CHECK_EQ_U64(c.allocs, 2);
     CHECK_EQ_U64(c.frees, 2);
+    retail_lifecycle();
 }
 
 /* A 4 KiB linear cartridge built in memory: an A78 version 3 header with
@@ -1503,6 +1506,118 @@ static void make_sg(uint16_t cart_type, const uint8_t *program, size_t n)
 /* Increments $4000 forever: the cartridge RAM's first byte. */
 static const uint8_t prog_cart_ram[] = {0xEE, 0x00, 0x40, 0x4C, 0x01, 0xC0}; /* INC $4000 */
 
+/* All three retail boards own volatile state. An idle fixed-ROM CPU
+   program makes console RESET observable independently of ROM behavior. */
+static void retail_lifecycle(void)
+{
+    static const struct {
+        uint16_t type, selector;
+        uint32_t bytes, board;
+        uint8_t data, selected;
+    } boards[] = {{0x0100u, 0xFF85u, 131072u, MUHTARI_BOARD_ACTIVISION, 0u, 5u},
+                  {0x0200u, 0x8000u, 65536u, MUHTARI_BOARD_ABSOLUTE, 2u, 1u},
+                  {0x0080u, 0x4007u, 32768u, MUHTARI_BOARD_FRACTALUS, 0xA5u, 0u}};
+    alloc_counts counts, peer_counts;
+    muhtari_config cfg = alloc_config(&counts), peer_cfg = alloc_config(&peer_counts);
+    muhtari *m = NULL, *peer = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_create(&peer_cfg, &peer), MUHTARI_STATUS_OK);
+    if (m == NULL || peer == NULL) {
+        muhtari_destroy(m);
+        muhtari_destroy(peer);
+        return;
+    }
+    for (size_t b = 0u; b < sizeof boards / sizeof boards[0]; b++) {
+        uint32_t bytes = boards[b].bytes;
+        images_a78(sg_image, 3u, bytes, boards[b].type, bytes);
+        uint8_t *body = sg_image + IMAGES_HEADER;
+        static const uint8_t idle[] = {0x4C, 0x00, 0xE0};
+        memcpy(body + bytes - 8192u, idle, sizeof idle);
+        images_footer(body, bytes);
+        body[bytes - 4u] = 0u;
+        body[bytes - 3u] = 0xE0u;
+        muhtari_media media = media_for(sg_image, IMAGES_HEADER + bytes);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(m->cart.info.board, boards[b].board);
+        CHECK_EQ_U64(m->cart.bank, 0u);
+        uint32_t ram_bytes = b == 2u ? 2048u : 0u;
+        CHECK_EQ_U64(counts.alloc_size, bytes + ram_bytes);
+        muhtari_span ram = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(ram.bytes, ram_bytes);
+        CHECK((ram.data != NULL) == (ram_bytes != 0u));
+        if (ram.data != NULL) {
+            CHECK(ram.data == m->cart.rom + bytes);
+            for (uint32_t i = 0u; i < ram_bytes; i++) {
+                CHECK_EQ_U64(ram.data[i], 0u);
+            }
+        }
+        /* No battery memory kind exists in this API; Fractalus has no
+           save-device declaration and only the volatile cart-RAM span. */
+        CHECK_EQ_U64(m->cart.info.devices, 0u);
+        (void)span_of(m, 4u, MUHTARI_STATUS_ERR_ARGUMENT);
+        uint32_t allocations = counts.allocs, frees = counts.frees;
+        uint32_t peer_allocations = peer_counts.allocs;
+        for (uint32_t cycle = 0u; cycle < 3u; cycle++) {
+            muhtari__bus_write(m, boards[b].selector, boards[b].data);
+            CHECK_EQ_U64(m->cart.bank, boards[b].selected);
+            for (uint32_t i = 0u; i < 512u; i++) {
+                if (ram.data != NULL) {
+                    /* Exercise distant aliases without any new allocation. */
+                    muhtari__bus_write(m, (uint16_t)(0x7000u + i), (uint8_t)(i + cycle));
+                } else {
+                    (void)muhtari__bus_read(m, (uint16_t)(0x4000u + i));
+                }
+            }
+            if (ram.data != NULL) {
+                ram.data[2047] = 0xA5u;
+            }
+            CHECK_EQ_U64(peer->cart.bank, 0u);
+            muhtari_span peer_ram = span_of(peer, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+            for (uint32_t i = 0u; i < peer_ram.bytes; i++) {
+                CHECK_EQ_U64(peer_ram.data[i], 0u);
+            }
+            muhtari_input in = input_of(0u, MUHTARI_SWITCH_RESET);
+            CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_OK);
+            run(m, NULL); /* fast-boot hand-off to the first VBLANK */
+            run(m, NULL); /* queued RESET is now latched */
+            run(peer, NULL);
+            CHECK_EQ_U64(m->ports.switches, MUHTARI_SWITCH_RESET);
+            CHECK_EQ_U64(muhtari__bus_read(m, 0x0282u) & 1u, 0u);
+            CHECK_EQ_U64(m->cart.bank, boards[b].selected);
+            if (ram.data != NULL) {
+                CHECK_EQ_U64(ram.data[2047], 0xA5u);
+            }
+            CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(m->cart.bank, 0u);
+            muhtari_span after = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+            CHECK(after.data == ram.data);
+            CHECK_EQ_U64(after.bytes, ram.bytes);
+            for (uint32_t i = 0u; i < after.bytes; i++) {
+                CHECK_EQ_U64(after.data[i], 0u);
+            }
+            CHECK_EQ_U64(counts.allocs, allocations);
+            CHECK_EQ_U64(counts.frees, frees);
+            CHECK_EQ_U64(peer_counts.allocs, peer_allocations);
+            CHECK_EQ_U64(peer_counts.frees, b == 0u ? 0u : (uint32_t)b);
+            CHECK_EQ_U64(m->cart.info.ram_size, ram_bytes);
+        }
+        muhtari__bus_write(m, boards[b].selector, boards[b].data);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(counts.allocs, allocations + 1u);
+        CHECK_EQ_U64(counts.frees, frees + 1u);
+        CHECK_EQ_U64(m->cart.bank, 0u);
+        ram = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+        for (uint32_t i = 0u; i < ram.bytes; i++) {
+            CHECK_EQ_U64(ram.data[i], 0u);
+        }
+    }
+    muhtari_destroy(m);
+    muhtari_destroy(peer);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+    CHECK_EQ_U64(peer_counts.allocs, peer_counts.frees);
+}
+
 /* A SuperGame cartridge is one allocation of its ROM and RAM, freed with
    the same size; a refused SuperGame image allocates nothing. The banks
    follow the board: bank 0 at power-on, the value modulo the bank count,
@@ -1577,6 +1692,7 @@ static void test_load_supergame_one_allocation(void)
     CHECK_EQ_U64(c.allocs, allocs);
     CHECK_EQ_U64(c.frees, allocs);
     CHECK_EQ_U64(c.free_size, sizeof *m);
+    retail_lifecycle();
 }
 
 /* CART_RAM is the board's 16 KiB at $4000: a live, stable span equal to

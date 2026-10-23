@@ -30,13 +30,12 @@ evidence.
    images and screenshots, and runs RetroArch. What only a merge can show is confirmed at ship (rule 9), not in
    UAT. Ask the owner only for identity-bound consent (the App key, admin settings, a merge) or a run on their
    own hardware, and say why.
-7. **Proportional gates.** Repository-check code is CMake `-P` or POSIX sh, with one measured absolute line
-   budget in `quality.json`; source ratios are advisory. Count implementations, controls and embedded glue.
-   Tighten savings; permanent growth needs an explicit scoped allocation before implementation, not automatic
-   rebaselining. Temporary overruns need dated exceptions of at most 60 days and a credible exit. No hidden
-   counts, line golf or weakened safety controls; ENGINEERING §11 defines initialization and counting.
-   Every gate names the fault it prevents. At most two code-review fix rounds and one gap round per phase. Review findings about test or
-   tooling code become seeds, not requirements. Re-plan a gap only with new evidence.
+7. **Proportional gates.** Repository checks use CMake `-P` or POSIX sh and reuse existing mechanisms.
+   A new or materially changed check names its concrete fault and exercises representative pass/fault behavior;
+   consolidation preserves required behavior and fault detection. For architecture review and new resource
+   bounds, follow `.planning/preparation/ENGINEERING.md` §11. At most two code-review fix rounds and one gap
+   round per phase. Optional test/tooling improvements become seeds; violations of an existing required
+   contract remain blocking wherever they live. Re-plan a gap only with new evidence.
 8. **One GSD step per session, then stop.** Report what finished and the exact next command. Never run
    `/gsd-next`, `/gsd-autonomous`, `/gsd-manager`, `/gsd-progress --next` or `--do`, any GSD command whose
    arguments contain `--auto` or `--chain`, or `/gsd-profile-user`, and never set the hygiene bypasses `MUHTARI_ALLOW_CHAIN` or

@@ -1,6 +1,6 @@
 # Requirements: muhtari v2.0 — The whole library
 
-Defined and approved: 2026-10-21. Milestone v2.0; Phase 5 verified complete and shipped in PR #20; phases 6–11 not started.
+Defined and approved: 2026-10-21. Milestone v2.0; Phase 5 shipped in PR #20. BOARD-01–03 implementation acceptance is recorded in Phase 6 summaries; phases 7–11 are not started.
 Core value: 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
 
 ## Milestone requirements
@@ -9,15 +9,15 @@ Core value: 7800 games behave as they do on the console, identically on every pl
 
 - [x] **TUNE-01**: Maintainers receive a weekly triage digest with a monthly CI-efficiency section derived from hosted runs, without a new service dependency.
 - [x] **TUNE-02**: CI uses measured timeout and workload bounds, resolves reproduced flakes and overlapping-output races, and records the stronger signal for any removed check.
-- [x] **TUNE-03**: One aggregate quality.json ratchet consumes measured existing outputs, rejects unexplained regressions and permits explicit dated exceptions for its metrics; performance and compatibility retain their independent semantic guards and existing domain exception stores. Repository-check code meets an audited absolute line budget with scoped additions allocated before implementation, final tightening to actual size, and full counts and advisory source ratios published.
+- [x] **TUNE-03**: One aggregate quality.json ratchet consumes measured existing outputs, rejects unexplained regressions and permits explicit dated exceptions for its metrics; performance and compatibility retain their independent semantic guards and existing domain exception stores. Repository checks preserve concrete contracts and use the bounded architecture review in ENGINEERING §11; maintenance-line allocations and their exclusive accounting machinery are retired by the accepted 2026-10-23 policy revision.
 - [x] **TUNE-04**: Performance comparisons are armed only after the documented deterministic controls pass; the resulting state and supported/advisory portability lanes are explicit.
 - [x] **TUNE-05**: User and maintainer docs, install instructions and repository-setting checks match the released behavior; the measured weakest quality dimension receives a shipped improvement.
 
 ### Cartridge boards and expansion memory
 
-- [ ] **BOARD-01**: Activision cartridges run with correct banking and equivalent mapped behavior for the two identified dump layouts, while raw image identity remains inspectable.
-- [ ] **BOARD-02**: Absolute cartridges run with documented fixed/switched windows and power-on banks.
-- [ ] **BOARD-03**: Fractalus cartridges run with the documented mirrored physical RAM and bounded alias accesses.
+- [x] **BOARD-01**: Activision cartridges run with correct banking and equivalent mapped behavior for the two identified dump layouts, while raw image identity remains inspectable.
+- [x] **BOARD-02**: Absolute cartridges run with documented fixed/switched windows and power-on banks.
+- [x] **BOARD-03**: Fractalus cartridges run with the documented mirrored physical RAM and bounded alias accesses.
 - [ ] **BOARD-04**: BankSet cartridges select the documented CPU/MARIA ROM and RAM views at both HALT transitions, with supported image geometries validated before load changes state.
 - [ ] **BOARD-05**: XBoard and the XM RAM/POKEY/HSC subset run with documented control registers and CPU/MARIA banking; unsupported sound expansions remain explicit.
 
@@ -69,9 +69,9 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | TUNE-03 | Phase 5 | Complete |
 | TUNE-04 | Phase 5 | Complete |
 | TUNE-05 | Phase 5 | Complete |
-| BOARD-01 | Phase 6 | Pending |
-| BOARD-02 | Phase 6 | Pending |
-| BOARD-03 | Phase 6 | Pending |
+| BOARD-01 | Phase 6 | Complete |
+| BOARD-02 | Phase 6 | Complete |
+| BOARD-03 | Phase 6 | Complete |
 | SAVE-01 | Phase 7 | Pending |
 | SAVE-02 | Phase 7 | Pending |
 | SAVE-03 | Phase 7 | Pending |
@@ -92,19 +92,27 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | COMP-02 | Phase 11 | Pending |
 | COMP-03 | Phase 11 | Pending |
 
-Coverage: 27 approved requirements; 27 mapped; 0 unmapped. Phase mapping approved on 2026-10-21. Five TUNE requirements are implemented and verified in Phase 5; 22 requirements remain pending.
+Coverage: 27 approved requirements; 27 mapped; 0 unmapped. Phase mapping approved on 2026-10-21. Five TUNE requirements are implemented and verified in Phase 5; BOARD-01–03 have complete semantic/three-host/hostile/portability and authenticated six-native package evidence in Phase6 plan09. Eight requirements are complete; 19 remain pending. Phase6 goal verification remains with the parent execution orchestrator.
 Phase 5 merged at 6d57d69; ci-only work cuts no package release. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md) for commands, exit statuses
 and run URLs. WR-01 and COST-01 remain deferred tooling seeds under AGENTS rule 7; raw monthly
 cost totals are untrusted, and no global hosted-cost reduction is claimed.
 
-2026-10-21 policy revision: the owner delegated adoption of recommendations after refreshed Phase 5 research.
+Historical 2026-10-21 policy revision: the owner delegated adoption of recommendations after refreshed Phase 5 research.
 TUNE-03 replaces the hard tenth-of-source ceiling with the absolute ratchet specified in
 `.planning/phases/05-pipeline-tune-up/05-CONTEXT.md` D-17, D-19–20. All five pipeline outcomes remain required;
 this is an explicit budget-contract change, not a claim that the old limit was met or proved impossible.
 
-2026-10-22 scope revision: after two measured migration halts, the owner delegated recommendation adoption.
+Historical 2026-10-22 scope revision: after two measured migration halts, the owner delegated recommendation adoption.
 TUNE-03 explicitly defers performance/compatibility domain-policy centralization and retirement of their two
 legacy stores. It does not promise the central aggregate's immutable grant/from/to/renewal protections for
 those legacy domains; a waived compatibility loss can become the next base's nonpass state. Existing semantic
 faults remain guarded; TUNE-04 readiness, aggregate controls, fixed allocations and final acceptance remain
 required. See Phase 5 CONTEXT D-21–23. This historical scope discussion alone marked no requirement complete; final Phase 5 verification now accepts TUNE-01–05.
+
+2026-10-23 accepted policy revision: the owner accepted the [proportional-gates recommendation](research/proportional-gates/RECOMMENDATION.md)
+and authorized its bounded migration. ENGINEERING §11 replaces maintenance LOC ceilings, allocation/admission,
+counting and final tightening with concrete contract checks and bounded architecture review. This supersedes
+the historical fixed-allocation obligation above and Phase 6's N654 proposal; it does not approve that grant.
+Phase 5's accepted completion and its original evidence remain historical facts. Ordinary aggregate bounds,
+dated exceptions and independent performance/compatibility authorities remain binding; no BOARD requirement
+is completed by this revision.

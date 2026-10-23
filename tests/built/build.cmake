@@ -37,7 +37,17 @@ file(MAKE_DIRECTORY "${dir}")
 file(GLOB inputs "${source_dir}/*")
 file(COPY ${inputs} DESTINATION "${dir}")
 
-set(run "${WASMTIME}" run --dir=. "--dir=${pkg}::/b")
+# Reuse compiled pinned modules across sample/diagnostic processes, not their
+# outputs: every stage still runs in its fresh directory and checks its bytes.
+# Each recipe/name has its own config, so parallel fixtures never rewrite one.
+get_filename_component(cache "${pkg}/../wasmtime-cache" ABSOLUTE)
+file(TO_CMAKE_PATH "${cache}" cache)
+string(REPLACE "\"" "\\\"" cache_toml "${cache}")
+file(MAKE_DIRECTORY "${cache}")
+set(cache_config "${OUT}/.wasmtime-${NAME}.toml")
+file(CONFIGURE OUTPUT "${cache_config}" CONTENT "[cache]\ndirectory = \"${cache_toml}\"\n" @ONLY)
+get_filename_component(cache_config "${cache_config}" ABSOLUTE)
+set(run "${WASMTIME}" run -C cache=y "-Ccache-config=${cache_config}" --dir=. "--dir=${pkg}::/b")
 
 # stage(<name> [INPUT_FILE f] [OUTPUT_FILE f] COMMAND ... [COMMAND ...])
 # One execute_process; a pipe is several COMMANDs. Fails naming the stage and

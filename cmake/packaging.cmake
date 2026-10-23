@@ -45,6 +45,7 @@ foreach(packaging_component IN ITEMS library runner libretro)
 endforeach()
 
 set(CPACK_GENERATOR ZIP)
+set(CPACK_ARCHIVE_COMPRESSION_LEVEL 9)
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
 set(CPACK_COMPONENTS_ALL library runner libretro)
