@@ -116,3 +116,14 @@ mirrors that RAM at $5000-$7FFF, but those higher mirrors are deliberately
 descriptor holes. These ranges provide partial achievement visibility,
 not a complete bus view. The pinned resolver is tested against every intended
 byte and every hole, below its unchanged 32-region cap.
+
+Automated acceptance retains 13 resolver regions for Activision, 11 for
+Absolute and 21 for Fractalus, including explicit holes. The owned Activision
+diagnostic is also checked in identified AM and OM order, with and without
+a header. Over 600 frames the library, actual runner and loaded test module
+retain equal numeric mailbox records, mapped bytes, frame output and raw/PCM
+audio for each layout; supplied buffers and their distinct raw identities
+remain unchanged. The diagnostic is silent, so its raw transition stream is
+empty while PCM sample count and bytes are still compared. These checks
+establish selected board semantics and partial descriptor visibility, not
+retail playability or complete achievement support.

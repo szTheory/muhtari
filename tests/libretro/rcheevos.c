@@ -15,16 +15,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 
 #include "../check.h"
 #include "internal.h"
 #include "libretro.h"
 #include "rc_consoles.h"
 #include "rc_libretro.h"
+#include "sha256.h"
 
 muhtari *muhtari__libretro_instance(void);
 
 static const struct retro_memory_map *seen_map;
+static muhtari__sha256 observed_video, observed_pcm, observed_raw;
+static uint64_t observed_samples, observed_events;
+static uint32_t observed_frames;
+static int capture;
+
+static void raw_audio(void *user, uint64_t tick, uint8_t source, uint16_t value)
+{
+    (void)user;
+    uint8_t bytes[11];
+    for (unsigned i = 0u; i < 8u; i++) {
+        bytes[i] = (uint8_t)(tick >> (8u * i));
+    }
+    bytes[8] = source;
+    bytes[9] = (uint8_t)value;
+    bytes[10] = (uint8_t)(value >> 8);
+    muhtari__sha256_update(&observed_raw, bytes, sizeof bytes);
+    observed_events++;
+}
+
+static void pcm_audio(int16_t sample)
+{
+    uint16_t bits = (uint16_t)sample;
+    uint8_t bytes[2] = {(uint8_t)bits, (uint8_t)(bits >> 8)};
+    muhtari__sha256_update(&observed_pcm, bytes, sizeof bytes);
+    observed_samples++;
+}
 
 static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 {
@@ -38,15 +71,25 @@ static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 
 static void RETRO_CALLCONV video(const void *data, unsigned w, unsigned h, size_t pitch)
 {
-    (void)data;
-    (void)w;
-    (void)h;
-    (void)pitch;
+    if (capture) {
+        CHECK(data != NULL && w == 320u && h == 242u && pitch >= w * 4u);
+        if (data != NULL && pitch >= w * 4u) {
+            for (unsigned y = 0u; y < h; y++) {
+                muhtari__sha256_update(&observed_video, (const uint8_t *)data + y * pitch, w * 4u);
+            }
+        }
+        observed_frames++;
+    }
 }
 
 static size_t RETRO_CALLCONV audio(const int16_t *data, size_t frames)
 {
-    (void)data;
+    if (capture) {
+        for (size_t i = 0u; i < frames; i++) {
+            CHECK_EQ_U64(data[2u * i], data[2u * i + 1u]);
+            pcm_audio(data[2u * i]);
+        }
+    }
     return frames;
 }
 
@@ -253,9 +296,318 @@ static void check_cart(const char *path)
     free(bytes);
 }
 
+struct observation {
+    uint8_t video[32], pcm[32], raw[32], mapped[32], mailbox[256];
+    uint64_t samples, events;
+    uint32_t frames;
+};
+
+static void begin_capture(void)
+{
+    muhtari__sha256_init(&observed_video);
+    muhtari__sha256_init(&observed_pcm);
+    muhtari__sha256_init(&observed_raw);
+    observed_samples = observed_events = 0u;
+    observed_frames = 0u;
+    capture = 1;
+}
+
+static void finish_capture(muhtari *m, struct observation *out)
+{
+    capture = 0;
+    muhtari__sha256_final(&observed_video, out->video);
+    muhtari__sha256_final(&observed_pcm, out->pcm);
+    muhtari__sha256_final(&observed_raw, out->raw);
+    muhtari__sha256 mapped;
+    muhtari__sha256_init(&mapped);
+    for (uint32_t addr = 0x4000u; addr < 0x10000u; addr++) {
+        uint8_t byte = muhtari__cart_peek(m, (uint16_t)addr);
+        muhtari__sha256_update(&mapped, &byte, 1u);
+    }
+    muhtari__sha256_final(&mapped, out->mapped);
+    memcpy(out->mailbox, m->ram + 0xA00u, sizeof out->mailbox);
+    out->samples = observed_samples;
+    out->events = observed_events;
+    out->frames = observed_frames;
+    CHECK_EQ_U64(out->frames, 600u);
+    CHECK(out->samples > 0u);
+    CHECK(memcmp(out->mailbox, "M7DG", 4u) == 0 && out->mailbox[5] == 0u &&
+          out->mailbox[6] == 27u && out->mailbox[7] == 10u);
+}
+
+static void hash_bytes(const void *bytes, size_t n, uint8_t digest[32])
+{
+    muhtari__sha256 hash;
+    muhtari__sha256_init(&hash);
+    muhtari__sha256_update(&hash, bytes, n);
+    muhtari__sha256_final(&hash, digest);
+}
+
+static void *library_alloc(void *user, size_t n)
+{
+    (void)user;
+    return malloc(n);
+}
+
+static void library_free(void *user, void *ptr, size_t n)
+{
+    (void)user;
+    (void)n;
+    free(ptr);
+}
+
+static void library_observe(const uint8_t *bytes, size_t n, struct observation *out)
+{
+    muhtari_config cfg = {0};
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = library_alloc;
+    cfg.allocator.free = library_free;
+    muhtari_media media = {0};
+    media.size = (uint32_t)sizeof media;
+    media.image = bytes;
+    media.image_size = n;
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL) {
+        return;
+    }
+    begin_capture();
+    CHECK_EQ_U64(muhtari__synth_observe(m, raw_audio, &observed_raw), MUHTARI_STATUS_OK);
+    if (muhtari_load(m, &media) != MUHTARI_STATUS_OK) {
+        CHECK(0);
+        muhtari_destroy(m);
+        return;
+    }
+    uint8_t pixels[320u * 242u];
+    int16_t samples[801];
+    muhtari_frame io = {0};
+    io.size = (uint32_t)sizeof io;
+    io.video = pixels;
+    io.video_pitch = 320u;
+    io.audio = samples;
+    io.audio_capacity = 801u;
+    for (uint32_t f = 0u; f < 600u; f++) {
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        muhtari__sha256_update(&observed_video, pixels, sizeof pixels);
+        for (uint32_t sample = 0u; sample < io.audio_count; sample++) {
+            pcm_audio(samples[sample]);
+        }
+        observed_frames++;
+    }
+    finish_capture(m, out);
+    muhtari_destroy(m);
+}
+
+/* Actual testdb module, loaded with the same platform primitives as host.c.
+   The accessor and raw observer exist only in this test build. */
+static void module_observe(const char *path, const uint8_t *bytes, size_t n,
+                           struct observation *out)
+{
+#ifdef _WIN32
+    HMODULE module = LoadLibraryA(path);
+#define MODULE_SYMBOL(name) FARPROC symbol = GetProcAddress(module, name)
+#define MODULE_CLOSE() FreeLibrary(module)
+#else
+    void *module = dlopen(path, RTLD_NOW);
+#define MODULE_SYMBOL(name) void *symbol = dlsym(module, name)
+#define MODULE_CLOSE() ((void)dlclose(module))
+#endif
+    CHECK(module != NULL);
+    if (module == NULL) {
+        return;
+    }
+#define MODULE_LOAD(name, result, args)                                                            \
+    result(RETRO_CALLCONV *name) args;                                                             \
+    {                                                                                              \
+        MODULE_SYMBOL("retro_" #name);                                                             \
+        if (symbol == NULL) {                                                                      \
+            CHECK(0);                                                                              \
+            MODULE_CLOSE();                                                                        \
+            return;                                                                                \
+        }                                                                                          \
+        memcpy(&name, &symbol, sizeof name);                                                       \
+    }
+    MODULE_LOAD(set_environment, void, (retro_environment_t));
+    MODULE_LOAD(set_video_refresh, void, (retro_video_refresh_t));
+    MODULE_LOAD(set_audio_sample_batch, void, (retro_audio_sample_batch_t));
+    MODULE_LOAD(set_input_poll, void, (retro_input_poll_t));
+    MODULE_LOAD(set_input_state, void, (retro_input_state_t));
+    MODULE_LOAD(init, void, (void));
+    MODULE_LOAD(deinit, void, (void));
+    MODULE_LOAD(load_game, bool, (const struct retro_game_info *));
+    MODULE_LOAD(unload_game, void, (void));
+    MODULE_LOAD(run, void, (void));
+#undef MODULE_LOAD
+    muhtari *(*instance)(void);
+    {
+        MODULE_SYMBOL("muhtari__libretro_instance");
+        CHECK(symbol != NULL);
+        if (symbol == NULL) {
+            MODULE_CLOSE();
+            return;
+        }
+        memcpy(&instance, &symbol, sizeof instance);
+    }
+    void (*observe)(muhtari__audio_observer, void *);
+    {
+        MODULE_SYMBOL("muhtari__libretro_observe");
+        CHECK(symbol != NULL);
+        if (symbol == NULL) {
+            MODULE_CLOSE();
+            return;
+        }
+        memcpy(&observe, &symbol, sizeof observe);
+    }
+    set_environment(env);
+    set_video_refresh(video);
+    set_audio_sample_batch(audio);
+    set_input_poll(poll_input);
+    set_input_state(input);
+    init();
+    begin_capture();
+    observe(raw_audio, &observed_raw);
+    struct retro_game_info game = {NULL, bytes, n, NULL};
+    int loaded = load_game(&game);
+    CHECK(loaded);
+    muhtari *m = loaded ? instance() : NULL;
+    CHECK(m != NULL && seen_map != NULL);
+    if (m != NULL && seen_map != NULL) {
+        CHECK_EQ_U64(m->cart.info.source, MUHTARI_SOURCE_HASH);
+        CHECK_EQ_U64(m->cart.info.board, MUHTARI_BOARD_ACTIVISION);
+        CHECK_EQ_U64(check_regions(m, seen_map, 0), 0u);
+        /* A normalized OM offset into retained AM input is a concrete
+           pointer error; the exact all-byte resolver check must reject it. */
+        if ((m->cart.info.flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) != 0u &&
+            seen_map->num_descriptors <= 64u) {
+            struct retro_memory_descriptor descriptors[64];
+            memcpy(descriptors, seen_map->descriptors,
+                   seen_map->num_descriptors * sizeof descriptors[0]);
+            struct retro_memory_map bad = {descriptors, seen_map->num_descriptors};
+            for (unsigned d = 0u; d < bad.num_descriptors; d++) {
+                if (descriptors[d].ptr != NULL && descriptors[d].start == 0x4000u) {
+                    descriptors[d].offset ^= 0x2000u;
+                    break;
+                }
+            }
+            CHECK(check_regions(m, &bad, 0) != 0u);
+        }
+        for (uint32_t f = 0u; f < 600u; f++) {
+            run();
+        }
+        finish_capture(m, out);
+        CHECK_EQ_U64(check_regions(m, seen_map, 0), 0u);
+    }
+    if (loaded) {
+        unload_game();
+    }
+    deinit();
+    MODULE_CLOSE();
+#undef MODULE_CLOSE
+#undef MODULE_SYMBOL
+}
+
+static void compare_observations(const struct observation *a, const struct observation *b,
+                                 int same_video)
+{
+    CHECK(memcmp(a->pcm, b->pcm, sizeof a->pcm) == 0);
+    CHECK(memcmp(a->raw, b->raw, sizeof a->raw) == 0);
+    CHECK(memcmp(a->mapped, b->mapped, sizeof a->mapped) == 0);
+    CHECK(memcmp(a->mailbox, b->mailbox, sizeof a->mailbox) == 0);
+    CHECK_EQ_U64(a->samples, b->samples);
+    CHECK_EQ_U64(a->events, b->events);
+    CHECK_EQ_U64(a->frames, b->frames);
+    if (same_video) {
+        CHECK(memcmp(a->video, b->video, sizeof a->video) == 0);
+    }
+}
+
+static void write_pair_file(const char *dir, const char *name, const uint8_t *bytes, size_t n)
+{
+    char path[4096];
+    int length = snprintf(path, sizeof path, "%s/%s", dir, name);
+    CHECK(length > 0 && (size_t)length < sizeof path);
+    if (length <= 0 || (size_t)length >= sizeof path) {
+        return;
+    }
+    FILE *f = fopen(path, "wb");
+    CHECK(f != NULL);
+    if (f != NULL) {
+        CHECK_EQ_U64(fwrite(bytes, 1u, n, f), n);
+        CHECK_EQ_U64(fclose(f), 0);
+    }
+}
+
+static void check_pair(const char *path, const char *module, const char *dir)
+{
+    size_t n = 0u;
+    uint8_t *om = read_file(path, &n);
+    CHECK(om != NULL && n == 131200u);
+    if (om == NULL || n != 131200u) {
+        free(om);
+        return;
+    }
+    uint8_t *am = (uint8_t *)malloc(n);
+    CHECK(am != NULL);
+    if (am == NULL) {
+        free(om);
+        return;
+    }
+    memcpy(am, om, n);
+    /* Independent input construction, not the production normalizer. */
+    for (uint32_t bank = 0u; bank < 8u; bank++) {
+        memcpy(am + 128u + bank * 16384u, om + 128u + bank * 16384u + 8192u, 8192u);
+        memcpy(am + 128u + bank * 16384u + 8192u, om + 128u + bank * 16384u, 8192u);
+    }
+    struct observation library_om = {0}, module_om = {0};
+    for (unsigned header = 0u; header < 2u; header++) {
+        size_t skip = header != 0u ? 0u : 128u;
+        uint8_t raw_om[32], raw_am[32], after[32];
+        hash_bytes(om + skip, n - skip, raw_om);
+        hash_bytes(am + skip, n - skip, raw_am);
+        CHECK(memcmp(raw_om, raw_am, sizeof raw_om) != 0);
+        write_pair_file(dir, header != 0u ? "activision.om.a78" : "activision.om.bin", om + skip,
+                        n - skip);
+        write_pair_file(dir, header != 0u ? "activision.am.a78" : "activision.am.bin", am + skip,
+                        n - skip);
+        for (unsigned swapped = 0u; swapped < 2u; swapped++) {
+            const uint8_t *bytes = swapped != 0u ? am + skip : om + skip;
+            muhtari_cart_info info = {0};
+            info.size = (uint32_t)sizeof info;
+            CHECK_EQ_U64(muhtari_probe(bytes, n - skip, &info), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(info.source, MUHTARI_SOURCE_HASH);
+            CHECK_EQ_U64(info.flags,
+                         MUHTARI_CART_HASH_MATCH | (header != 0u ? MUHTARI_CART_HEADER : 0u) |
+                             (swapped != 0u ? MUHTARI_CART_ACTIVISION_HALF_SWAPPED : 0u));
+            struct observation library = {0}, loaded = {0};
+            library_observe(bytes, n - skip, &library);
+            module_observe(module, bytes, n - skip, &loaded);
+            compare_observations(&library, &loaded, 0);
+            if (header == 0u && swapped == 0u) {
+                library_om = library;
+                module_om = loaded;
+            } else {
+                compare_observations(&library_om, &library, 1);
+                compare_observations(&module_om, &loaded, 1);
+            }
+            hash_bytes(bytes, n - skip, after);
+            CHECK(memcmp(after, swapped != 0u ? raw_am : raw_om, sizeof after) == 0);
+            printf("Activision %s %s: 600 frames, %llu PCM samples, %llu raw events; equal "
+                   "mapped/mailbox/video/audio, unchanged input\n",
+                   header != 0u ? "headered" : "headerless", swapped != 0u ? "AM" : "OM",
+                   (unsigned long long)loaded.samples, (unsigned long long)loaded.events);
+        }
+    }
+    free(am);
+    free(om);
+}
+
 int main(int argc, char **argv)
 {
     int i;
+    if (argc == 5 && strcmp(argv[1], "--pair") == 0) {
+        check_pair(argv[2], argv[3], argv[4]);
+        CHECK_DONE();
+    }
     if (argc < 2) {
         fprintf(stderr, "usage: muhtari-test-rcheevos <cartridge>...\n");
         return 2;

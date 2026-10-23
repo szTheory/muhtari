@@ -22,6 +22,17 @@
 #include "palette.h"
 #include "sha256.h"
 #include "status_text.h"
+#ifdef MUHTARI_LIBRETRO_TEST
+#include "internal.h"
+static muhtari__audio_observer lr_test_observer;
+static void *lr_test_observer_user;
+RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void *user);
+RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void *user)
+{
+    lr_test_observer = callback;
+    lr_test_observer_user = user;
+}
+#endif
 
 #define LR_WIDTH 320u
 #define LR_HEIGHT 242u
@@ -835,6 +846,16 @@ bool retro_load_game(const struct retro_game_info *game)
         return false;
     }
     memset(pixels, 0, LR_PIXELS * sizeof *pixels);
+#ifdef MUHTARI_LIBRETRO_TEST
+    /* Test-only raw observation follows the existing setup-before-load
+       contract, so no observer allocation occurs during emulation. */
+    if (lr_test_observer != NULL &&
+        muhtari__synth_observe(inst, lr_test_observer, lr_test_observer_user) !=
+            MUHTARI_STATUS_OK) {
+        lr_release();
+        return false;
+    }
+#endif
     if ((game != NULL && !lr_load_content(game)) ||
         !env_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &format)) {
         lr_release();
@@ -867,8 +888,8 @@ void retro_unload_game(void)
 /* The adapter's instance, for tests/libretro/rcheevos.c, which compiles this
    file into itself to compare the memory map with the core's own view of
    the bus. Never in the shipped module. */
-muhtari *muhtari__libretro_instance(void);
-muhtari *muhtari__libretro_instance(void)
+RETRO_API muhtari *muhtari__libretro_instance(void);
+RETRO_API muhtari *muhtari__libretro_instance(void)
 {
     return inst;
 }
