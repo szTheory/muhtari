@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "muhtari.h"
+#include "status_text.h"
 #include "../check.h"
 
 int main(void)
@@ -18,5 +19,13 @@ int main(void)
     CHECK_EQ_U64(muhtari_get_versions(&versions), MUHTARI_STATUS_OK);
     CHECK(versions.api >= 4);
     CHECK_EQ_U64(versions.abi, 1);
+
+    CHECK(strcmp(muhtari__bit_name(MUHTARI__BITS_FLAGS, 0), "header") == 0);
+    CHECK(strcmp(muhtari__bit_name(MUHTARI__BITS_FLAGS, 1), "hash_match") == 0);
+    CHECK(strcmp(muhtari__bit_name(MUHTARI__BITS_FLAGS, 2), "activision_half_swapped") == 0);
+    CHECK(strcmp(muhtari__bit_name(MUHTARI__BITS_FLAGS, 3), "unknown") == 0);
+    CHECK(strcmp(muhtari__bit_name(MUHTARI__BITS_WARNINGS, 9), "cart_type_conflict") == 0);
+    CHECK(strcmp(muhtari__bit_name(MUHTARI__BITS_WARNINGS, 10), "activision_layout_assumed") == 0);
+    CHECK(strcmp(muhtari__bit_name(MUHTARI__BITS_WARNINGS, 11), "unknown") == 0);
     CHECK_DONE();
 }
