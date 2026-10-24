@@ -1,31 +1,80 @@
 ---
 phase: 07-battery-saves
-fixed_at: 2026-10-24T13:59:00Z
+fixed_at: 2026-10-24T14:09:41Z
 review_path: .planning/phases/07-battery-saves/07-REVIEW.md
-iteration: 1
-findings_in_scope: 2
-fixed: 2
+iteration: 2
+findings_in_scope: 1
+fixed: 1
 skipped: 0
 status: all_fixed
 fixed_ids:
-  - CR-01
-  - CR-02
-head: bd7e686d07fca10578be1e5258e3fde32f6a5815
+  - CR-03
+head: 90b9b7a5f1f17f49f2133af17bb9e1e408fa21f1
 ---
 
 # Phase 7: Code Review Fix Report
 
-**Fixed at:** 2026-10-24T13:59:00Z
+**Fixed at:** 2026-10-24T14:09:41Z
 **Source review:** .planning/phases/07-battery-saves/07-REVIEW.md
-**Iteration:** 1 of at most 2 code-review fix rounds
+**Iteration:** 2 of at most 2 code-review fix rounds
 
 **Summary:**
 
-- Findings in scope: 2
-- Fixed: 2
+- Findings in scope: 1
+- Fixed: 1
 - Skipped: 0
 
 ## Fixed Issues
+
+### CR-03: Resolving Auto to unsupported header codes rejects the whole frontend input update
+
+**Files modified:** `libretro/libretro.c`, `tests/libretro/host.c`, `docs/libretro.md`
+**Commit:** 90b9b7a
+**Status:** fixed: requires human verification
+**Applied fix:** The adapter's effective-device owner now normalizes Auto exactly as `muhtari__ports_device` does. Recognized but unimplemented header controllers use ProLine; Joystick remains Joystick; a loaded cartridge's None remains unplugged. The loader maps unknown header codes to None, so those remain unplugged too. Auto without cartridge content retains ProLine. Installed EEPROM identity and accepted explicit ordinary-device requests still take precedence. The same normalized device continues to drive input and button mapping. No core/API refusal was relaxed and no unsupported controller was enabled.
+
+The existing loaded-module `devices` test covers every ordinary recognized header code plus unknown bytes 13 and 255 on either port. Each header is exercised with frontend Auto, explicit None, explicit ProLine and an unknown frontend callback ID (which follows Auto). Both pads hold Up+A and port 1 holds Select throughout. The cartridge's SWCHA, SWCHB, INPT4/INPT5 fire and INPT1/INPT3 button-2 samples establish both ports' behavior and the console switch independently; the actual adapter log must contain no input-refusal message. These 112 request combinations use the existing input fixture and registration. Prior round-1 late SaveKey/AtariVox callback/option, held-A, span-content and reload-warning regressions remain intact and pass.
+
+The generic logic-change status is the fixer's required review flag. The semantic assertions are automated; the orchestrator's re-review owns its resolution, without owner UAT. This is the final allowed review-fix round; no gap round or additional GSD step was used.
+
+## Round 2 Verification
+
+All checks below ran in the **main checkout**, honoring `workflow.use_worktrees=false`, after the final source change. The checked source was committed unchanged as `90b9b7a5f1f17f49f2133af17bb9e1e408fa21f1`. Modified code and test sections were reread, compiled with repository warnings, and formatted with clang-format 21. Run URL for every command below: **N/A-local**.
+
+Pre-fix regression command, exit **8**: the input fixture passes, while the actual module repeatedly refuses input and the new direction, switch, fire and button-mapping assertions fail for unsupported automatic headers.
+
+```sh
+cmake --build --preset ci --target muhtari-test-libretro-host && caffeinate -i ctest --preset ci -R '^libretro[.]host[.]devices$' --no-tests=error --output-on-failure
+```
+
+Post-fix targeted command, exit **0**: ten tests including the input fixture pass; the previous round's stop, native closed-pipe, late-storage and span regressions remain passing.
+
+```sh
+cmake --build --preset ci --target muhtari_libretro muhtari-test-libretro-host && caffeinate -i ctest --preset ci -R '^(runner[.]stop|runner[.]save[.]controls|libretro[.]host[.](layout|devices|input|battery|battery_order|xrgb8888|rgb565))$' --no-tests=error --output-on-failure
+```
+
+| Command | Exit | Evidence |
+|---|---:|---|
+| `caffeinate -i cmake --workflow --preset ci` | 0 | All 641 normal tests, rebuilt adapter variants, three-component packaging and all 6 release checks pass. |
+| `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 0 | Exactly 641 normal names run once each, without failure/error/skip. |
+| `cmake -DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release -P tests/cmake/check_junit.cmake` | 0 | Exactly 6 release names run once each. |
+| `caffeinate -i cmake --workflow --preset hygiene` | 0 | All 24 checks, including tree, formatting and analyzer, pass. |
+| `cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake` | 0 | Exactly 24 hygiene names run once each. |
+| `scripts/hygiene.sh --tree` | 0 | Complete tracked tree, including the updated fix report, passes. |
+| `scripts/hygiene.sh --history efad4e0..HEAD` | 0 | The atomic fix commit passes history hygiene and uses the GitHub noreply identity. |
+| `git diff --check` | 0 | No whitespace errors. |
+
+Additional exact local measurement command, exit **0**, run URL N/A-local:
+
+```sh
+python3 -c 'from pathlib import Path; p=Path("build/ci"); z=sorted(p.glob("muhtari-*-macos-arm64.zip")); assert len(z)==3; total=sum(f.stat().st_size for f in z); assert total<=399937; h=(p/"hashes.txt").read_text().splitlines(); assert len(h)==69; print("three archives:",total,"bytes <= 399937; hashes:",len(h),"rows")'
+```
+
+The local three-component sum is **228,514 bytes**, below the unchanged 399,937 bound; evidence retains **69 rows**. No inventory, timeout, floor, pin, quota, required/advisory status or comparison authority changed. No hosted matrix was run by this fixer. The parent owns re-review and final-source hosted acceptance; earlier hosted runs do not cover this source. No generated media/logs or phase-complete tracking are included. Only this report remains uncommitted for the parent.
+
+## Round 1 Fixed Issues (Preserved)
+
+Round 1 fixed two findings with zero skipped. Its original commits and evidence below are historical and remain unchanged; they do not establish round-2 acceptance. The re-review at `974347b` explicitly resolved CR-01 and CR-02, including the prior generic logic-review flag, and introduced CR-03 as its only blocker.
 
 ### CR-01: Broken stdout pipe terminates the runner before its required final save
 
@@ -47,7 +96,7 @@ The existing loaded-module layout test holds A throughout late SaveKey and Atari
 
 The status above is the fixer's required logic-change review flag, not an owner UAT request. Automated semantic regressions pass; the orchestrator owns the phase re-review and final acceptance.
 
-## Verification
+## Round 1 Verification (Preserved)
 
 All checks ran in the **main checkout** on the existing phase branch, honoring `workflow.use_worktrees=false`. The final verified source changes were committed unchanged as `bd7e686d07fca10578be1e5258e3fde32f6a5815`. Modified sections were reread after each fix and compiled with the repository's warning settings. No full suite ran between findings; full CI ran after the final source change. Run URL for every local command below: **N/A-local**.
 
