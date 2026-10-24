@@ -31,10 +31,12 @@ function(muhtari_warnings target)
   endif()
 endfunction()
 
-# Favor compact Release code on MSVC within the component archive ceiling.
-# Embedders retain their own build policy; the same objects still reach tests.
+# Use MSVC's minimum-size Release option set within the archive ceiling.
+# Replace the default rather than append a conflicting /O1 after /O2.
+# Embedders retain their own policy; the same objects still reach tests.
 if(PROJECT_IS_TOP_LEVEL AND MSVC)
-  add_compile_options("$<$<CONFIG:Release>:/Os>")
+  string(REGEX REPLACE "(^| )/O2( |$)" "\\1/O1\\2"
+    CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 endif()
 
 option(MUHTARI_NOFP "Build the core with general registers only; register only the abi tests" OFF)
