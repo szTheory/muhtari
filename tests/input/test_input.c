@@ -483,6 +483,136 @@ static int unplugged(void)
 /* SWCHA bit 7, port 0's right, is PA7. With the falling edge selected, a
    Right press applied at VBLANK start sets PA7's flag at that tick, and its
    release, a rising edge, does not (docs/hardware/riot.md, PA7). */
+/* A waveform executes real LDA/STA instructions in system RAM. The RIOT
+   access therefore uses the slow bus cycle's data tick, including DDR
+   release edges (docs/hardware/controllers.md, Serial EEPROM). */
+static void serial_write(muhtari *m, uint16_t reg, uint8_t value)
+{
+    const uint8_t code[] = {0xA9u, value, 0x8Du, (uint8_t)reg, (uint8_t)(reg >> 8)};
+    memcpy(m->ram, code, sizeof code);
+    m->cpu.pc = 0x1800u;
+    muhtari__cpu_step(m);
+    muhtari__cpu_step(m);
+}
+
+static uint8_t serial_read(muhtari *m)
+{
+    const uint8_t code[] = {0xADu, 0x80u, 0x02u};
+    memcpy(m->ram, code, sizeof code);
+    m->cpu.pc = 0x1800u;
+    muhtari__cpu_step(m);
+    return m->cpu.a;
+}
+
+static void serial_pins(muhtari *m, unsigned port, unsigned scl, unsigned sda)
+{
+    unsigned shift = port == 1u ? 4u : 0u;
+    uint8_t low = (uint8_t)(((scl == 0u ? 8u : 0u) | (sda == 0u ? 4u : 0u)) << shift);
+    serial_write(m, 0x0281u, low);
+}
+
+static void serial_start(muhtari *m, unsigned p)
+{
+    serial_pins(m, p, 0u, 1u);
+    serial_pins(m, p, 1u, 1u);
+    serial_pins(m, p, 1u, 0u);
+    serial_pins(m, p, 0u, 0u);
+}
+
+static void serial_stop(muhtari *m, unsigned p)
+{
+    serial_pins(m, p, 0u, 0u);
+    serial_pins(m, p, 1u, 0u);
+    serial_pins(m, p, 1u, 1u);
+}
+
+static unsigned serial_send(muhtari *m, unsigned p, uint8_t byte)
+{
+    unsigned shift = p == 1u ? 4u : 0u;
+    for (unsigned i = 0u; i < 8u; i++) {
+        unsigned bit = (unsigned)(byte >> (7u - i)) & 1u;
+        serial_pins(m, p, 0u, bit);
+        serial_pins(m, p, 1u, bit);
+        serial_pins(m, p, 0u, bit);
+    }
+    serial_pins(m, p, 0u, 1u);
+    serial_pins(m, p, 1u, 1u);
+    unsigned ack = ((unsigned)serial_read(m) >> (shift + 2u)) & 1u;
+    serial_pins(m, p, 0u, 1u);
+    return ack;
+}
+
+static uint8_t serial_receive(muhtari *m, unsigned p, unsigned nak)
+{
+    uint8_t value = 0u;
+    unsigned shift = p == 1u ? 4u : 0u;
+    for (unsigned i = 0u; i < 8u; i++) {
+        serial_pins(m, p, 0u, 1u);
+        serial_pins(m, p, 1u, 1u);
+        value = (uint8_t)(((unsigned)value << 1) |
+                         (((unsigned)serial_read(m) >> (shift + 2u)) & 1u));
+        serial_pins(m, p, 0u, 1u);
+    }
+    serial_pins(m, p, 0u, nak);
+    serial_pins(m, p, 1u, nak);
+    serial_pins(m, p, 0u, nak);
+    serial_pins(m, p, 0u, 1u);
+    return value;
+}
+
+static muhtari *serial_boot(unsigned p, uint32_t device)
+{
+    muhtari *m = boot(&plain);
+    if (m == NULL) {
+        return NULL;
+    }
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = sizeof image;
+    media.port[p - 1u] = device;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    serial_write(m, 0x0280u, 0u);
+    return m;
+}
+
+static int savekey_protocol(void)
+{
+    for (unsigned p = 1u; p <= 2u; p++) {
+        for (unsigned kind = 0u; kind < 2u; kind++) {
+            muhtari *m = serial_boot(p, kind == 0u ? MUHTARI_PORT_SAVEKEY : MUHTARI_PORT_ATARIVOX);
+            CHECK(m != NULL);
+            if (m == NULL) {
+                continue;
+            }
+            serial_start(m, p);
+            CHECK_EQ_U64(serial_send(m, p, 0xA0u), 0u);
+            CHECK_EQ_U64(serial_send(m, p, 0x12u), 0u);
+            CHECK_EQ_U64(serial_send(m, p, 0x34u), 0u);
+            CHECK_EQ_U64(serial_send(m, p, 0x5Au), 0u);
+            serial_stop(m, p);
+            CHECK_EQ_HEX(m->battery.data[0x1234u], 0xFFu);
+            uint64_t until = m->bus.ticks + 35796u;
+            while (m->bus.ticks < until) {
+                (void)muhtari__bus_read(m, 0x1800u);
+            }
+            serial_start(m, p);
+            CHECK_EQ_U64(serial_send(m, p, 0xA0u), 0u);
+            CHECK_EQ_U64(serial_send(m, p, 0x12u), 0u);
+            CHECK_EQ_U64(serial_send(m, p, 0x34u), 0u);
+            serial_start(m, p);
+            CHECK_EQ_U64(serial_send(m, p, 0xA1u), 0u);
+            CHECK_EQ_HEX(serial_receive(m, p, 1u), 0x5Au);
+            serial_stop(m, p);
+            CHECK_EQ_HEX(m->battery.data[0x1234u], 0x5Au);
+            CHECK_EQ_U64(m->battery.generation, 1u);
+            muhtari_destroy(m);
+        }
+    }
+    return check_failures == 0;
+}
+
 static int pa7_edge(void)
 {
     uint32_t count = parse(PROLINES "|...R..|......|...BB|\n");
@@ -510,6 +640,7 @@ static int pa7_edge(void)
     muhtari__ports_latch(m);
     CHECK_EQ_U64(m->riot.pa7_flag, 0u);
     muhtari_destroy(m);
+    (void)savekey_protocol();
     return check_failures == 0;
 }
 
