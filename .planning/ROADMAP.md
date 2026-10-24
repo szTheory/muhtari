@@ -136,8 +136,8 @@ Shared core, manifest and inventory ownership requires sequential execution.
 **Goal:** Keep HSC and SaveKey progress across process and frontend restarts without putting file I/O in the core.
 **Depends on:** Phase 6
 **Requirements:** SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06
-**Plans:** 7/9 plans executed in 9 sequential waves (parallelization disabled).
-**Status:** Execution active; evidence, hardware, robustness and runner saves/controls locally verified; three plans remain.
+**Plans:** 8/9 plans executed in 9 sequential waves (parallelization disabled).
+**Status:** Execution active; eight plans complete including actual independent fresh-process RetroArch proof. Final archive and portability acceptance remain07-09; no whole SAVE requirement is complete.
 
 Plans:
 **Wave 1**
@@ -162,7 +162,7 @@ Plans:
 - [x] 07-07-PLAN.md — Publish load-time SAVE_RAM, optional HSC firmware and exact achievement maps.
 
 **Wave 8** *(blocked on Wave 7 completion)*
-- [ ] 07-08-PLAN.md — Admit one owned combined diagnostic and wire the two-case hosted persistence oracle.
+- [x] 07-08-PLAN.md — Admit one owned combined diagnostic and wire the two-case hosted persistence oracle.
 
 **Wave 9** *(blocked on Wave 8 completion)*
 - [ ] 07-09-PLAN.md — Complete equality/inventories, enable proved claims and accept final native/hosted bounds.
