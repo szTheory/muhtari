@@ -180,7 +180,7 @@ Plans:
 **Goal:** Let software use light guns, analog and matrix controllers, quadrature devices and modern controller adapters.
 **Depends on:** Phase 7
 **Requirements:** INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05
-**Plans:** 4/14 plans executed in 14 sequential waves (parallelization disabled).
+**Plans:** 4/14 plans complete in 14 sequential waves (parallelization disabled). Plan08-05 halted with tasks1–2 complete; its required package gate failed.
 
 Plans:
 **Wave 1**
@@ -195,8 +195,8 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 - [x] 08-04-PLAN.md — Deliver compact typed runner replay.
 
-**Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 08-05-PLAN.md — Gate controller expansion on real host equality and packages.
+**Wave 5** *(halted at the package gate)*
+- [ ] 08-05-PLAN.md — Driving host evidence passes; exact Windows candidate401690/base401726 exceed399937. Retained narrow repair saves570 bytes but leaves1753/1789 unfunded; all following waves remain blocked.
 
 **Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 08-06-PLAN.md — Correct TIA input memory and emit historical gun light.
@@ -294,10 +294,10 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
-| 8. Controllers at the pins | 4/14 | In Progress | — |
+| 8. Controllers at the pins | 4/14 | Blocked at 08-05 package gate | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-24; Phase7 is verified complete (35/35), with SAVE-01–06 and D-01–18 covered. Phases5–7 have27 completed active slots; historical halted06-01 remains excluded. Next separate command: `$gsd-ship 7`. No later phase was started.*
+*Updated: 2026-10-24; Phases5–7 remain complete. Phase8 has4/14 accepted plans;08-05 is a durable designed stop at the exact-source archive bound, with08-06–08-14 blocked. All INPUT requirements remain pending. Next separate command: `$gsd-plan-phase 8` using the measured resource evidence; no gap or other GSD step was run here.*

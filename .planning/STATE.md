@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: 5
-status: executing
-stopped_at: Completed 08-04-PLAN.md
-last_updated: "2026-10-24T20:36:56.351Z"
+status: blocked
+stopped_at: Halted 08-05-PLAN.md at Task3 exact-source package gate; tasks1–2 complete
+last_updated: "2026-10-24T21:38:40.445Z"
 last_activity: 2026-10-24
-last_activity_desc: Completed 08-04 immutable typed replay and bounded runner effects; full local CI passes 645+6
-state_head: fe2a9bd58668da31642f5a64ed1ddd16a278195c
+last_activity_desc: Halted 08-05 at exact-source package gate; driving hosts pass, Windows ZIPs401690/401726 exceed399937
+state_head: f7e369902f4b054d3fcd8a59c397ef881492a170
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 32
+  completed_plans: 33
   percent: 43
 total_phases: 7
 current_phase: 08
@@ -30,7 +30,10 @@ from a small MIT-licensed C library hosts can embed.
 Current focus: Phase 8 execution; 08-01 proves the controller evidence prerequisite,
 08-02 publishes API6, 08-03 proves timed driving with an admitted owned numeric executable,
 and 08-04 delivers immutable typed movie2 replay with real runner effects and measured bounds.
-The remaining 10 sequential plans own host acceptance/input, other device models and final acceptance.
+08-05 tasks1–2 now prove real libretro driving and independent three-deliverable numeric/native/audio
+evidence. Its package gate failed: Windows x64 candidate401690/base401726 exceed399937 by1753/1789 bytes.
+The verified570-byte Windows normalization improvement is retained. No further optimization or device
+expansion proceeded;08-06–08-14 are durably blocked by the halted08-05 summary.
 All five INPUT requirements remain incomplete. Phase 7 details
 below are historical acceptance/shipping records.
 
@@ -42,13 +45,23 @@ Progress: [████░░░░░░] 43%
 
 Phase 7 is complete: nine plans, SAVE-01–06 and35/35 verified must-haves.
 Phase 5–7 are3/7 milestone phases with31/41 currently planned active slots complete.
-Phase 8 has4/14 plans complete; Phases 9–11 remain unplanned. Runtime totals32/42 include the historical halted06-01
-SUMMARY; it remains excluded from accepted active outcomes and is not a budget grant.
+Phase 8 has4/14 plans complete; current05 is halted with2/3 tasks complete. Phases9–11 remain unplanned.
+Runtime summarized totals33/42 include historical halted06-01 and current halted08-05; those summaries
+do not establish accepted completion. Accepted active progress remains31/41 and3/7 phases (43%).
 
-Status: Ready to execute
-Last activity: 2026-10-24 — Completed 08-04 immutable typed replay and bounded runner effects; full local CI passes645+6
-Next command: $gsd-execute-phase 8
+Status: Blocked at 08-05 package gate; do not execute08-06–08-14
+Last activity: 2026-10-24 — Real driving hosts pass; required exact-source package gate fails after narrow repair
+Next command: $gsd-plan-phase 8
 Branch: `phase/08-controllers-at-the-pins`. No Phase 8 pull request yet; Phase 7 merged in PR #28.
+
+Final measured source f7e369902f4b054d3fcd8a59c397ef881492a170, independently rebuilt event parent
+ce5397e5b52c2cfdc36058c55a6e012346c75a8f. CI40132929297 is completed/failure solely on the required
+archive ceiling: https://github.com/szTheory/muhtari/actions/runs/40132929297.
+All six native current/base646+6, hygiene24+24, ASan, both GCC nofp lanes, BE32 compilation,
+native hash equality and WASM585 (including real controller library/runner batch) pass.
+The unchanged actual eight-lane quality_join replay exits1 on401690>399937 after full identity validation.
+Full source/base/component attribution and failed attempts are in08-05-SUMMARY.md; defect register entry51
+records the unmet bound. No requirement was completed and no code-review fix or gap round was consumed.
 
 Planning checks: `check.decision-coverage-plan` exits0 with20/20 covered;
 `check gap-analysis.plan-post` exits0 with25/25 source items covered. All38 automated
@@ -124,8 +137,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 08-04-PLAN.md
-Last session: 2026-10-24T20:36:56.245Z
+**Stopped at:** Halted 08-05-PLAN.md at Task3 exact-source package gate; tasks1–2 complete
+Last session: 2026-10-24T21:38:40.322Z
 Resume file: None
 
 ### Quick Tasks Completed
@@ -142,6 +155,7 @@ Resume file: None
 | Phase 08 P02 | 7min | 3 tasks | 16 files |
 | Phase 08 P03 | 10min | 2 tasks | 12 files |
 | Phase 08 P04 | 14min | 2 tasks | 10 files |
+| Phase 08 P05 | 58min | 2 tasks | 16 files |
 
 ## Decisions
 
@@ -154,3 +168,8 @@ Resume file: None
 - [Phase 08]: Exercise actual admitted controller rows through independent new-row and later-base producer controls.
 - [Phase 08]: Preserve movie1 parsing, allocation and legacy submission independently from immutable typed movie2 replay.
 - [Phase 08]: Typed syntax acceptance remains separate from physical-device capability refusal until each controller slice lands.
+- [Phase 08]: Retain verified compact scalar normalization, but preserve399937 and halt controller expansion on actual Windows401690/401726 evidence.
+
+### Blockers
+
+- 08-05 Task3 failed: exact-source Windows x64 candidate401690/base401726 exceed399937 by1753/1789 bytes;08-06–08-14 blocked. Next separate command: $gsd-plan-phase 8.

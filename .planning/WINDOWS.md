@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 16
+open_count: 17
 waived_count: 0
 fixed_count: 34
-total_count: 50
-last_updated: 2026-10-23T22:45:08.436Z
+total_count: 51
+last_updated: 2026-10-24T21:38:39.360Z
 ---
 
 # Broken Windows Ledger
@@ -65,6 +65,7 @@ last_updated: 2026-10-23T22:45:08.436Z
 | 48 | 06 | deviation | tests/libretro/tests.cmake |  | Hosted Windows mailbox failures resolved by explicit Unix report files; PowerPC AM/OM command reached unscaled90-second timeout. Applied existing MUHTARI_TIMEOUT_SCALE to its subprocess, native90 unchanged. Fresh full local CI612+6, hygiene24 and3ZIP214132 exit0. Hosted retries pending. Evidence runs40026612824/40026612938, fixes c63697b and following timeout-scale commit. | fixed |  | 2026-10-23T21:46:03.381Z | 2026-10-23T22:39:47.467Z |
 | 49 | 06 | deviation | tests/policy/quality.cmake |  | Called CI40029174245 Windows ARM job120672888533 quality controls timed out30.01s. Fix12281af includes unchanged expect_fail.cmake in a scoped helper, preserving exact exit1 and merged-output regex checks, all cases and real recursive producers/joins. Matched local wall3.95s to3.68s; wrong-exit/wrong-regex rejected; full612+6, hygiene24, exact inventories and three ZIPs213899<=399937 exit0 with parent package knobs, N/A-local. Hosted timing/Windows fit remain pending. | fixed |  | 2026-10-23T22:06:22.624Z | 2026-10-23T22:06:39.908Z |
 | 50 | 06 | deviation | cmake/packaging.cmake |  | Actual Windowsx64 archives402586 exceed399937 in calledCI40029174245. Candidate compressionlevel9 plus top-level ReleaseMSVC size preference preserves contents/runtime/ABI; local213899 passes but hostedWindows and six-lane fit pending. No byte grant or self-baseline. | fixed |  | 2026-10-23T22:07:27.402Z | 2026-10-23T22:39:47.537Z |
+| 51 | 08 | unmet-truth | quality.json |  | Exact-source Windows x64 candidate/base ZIP sums401690/401726 exceed399937 by1753/1789 bytes after verified narrow repair; controller expansion halted. | open |  | 2026-10-24T21:38:39.360Z |  |
 
 ````json
 [
@@ -716,6 +717,19 @@ last_updated: 2026-10-23T22:45:08.436Z
     "reason": "",
     "recorded_at": "2026-10-23T22:07:27.402Z",
     "resolved_at": "2026-10-23T22:39:47.537Z",
+    "milestone": "v2.0"
+  },
+  {
+    "id": 51,
+    "kind": "unmet-truth",
+    "phase": "08",
+    "file": "quality.json",
+    "line": null,
+    "description": "Exact-source Windows x64 candidate/base ZIP sums401690/401726 exceed399937 by1753/1789 bytes after verified narrow repair; controller expansion halted.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-24T21:38:39.360Z",
+    "resolved_at": null,
     "milestone": "v2.0"
   }
 ]
