@@ -340,6 +340,26 @@ static void nonregular(const char *dir)
 }
 #endif
 
+static void save_options(const char *dir)
+{
+    char rom[1024];
+    snprintf(rom, sizeof rom, "%s/option.a78", dir);
+    cartridge(rom, 0u, 0);
+    char *args[] = {"muhtari-run", "--frames", "1", "--port1", "savekey", rom};
+    uint8_t *blank = malloc(32768);
+    CHECK(blank != NULL);
+    if (blank == NULL)
+        return;
+    memset(blank, 0xFF, 32768);
+    expected_import = blank;
+    expected_bytes = 32768;
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(6, args), 0);
+    CHECK_EQ_U64(frames_run, 1);
+    expected_import = NULL;
+    free(blank);
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 3)
@@ -350,6 +370,8 @@ int main(int argc, char **argv)
         imports(argv[1]);
     else if (strcmp(argv[2], "faults") == 0)
         faults(argv[1]);
+    else if (strcmp(argv[2], "options") == 0)
+        save_options(argv[1]);
 #ifndef __wasi__
     else if (strcmp(argv[2], "nonregular") == 0)
         nonregular(argv[1]);
