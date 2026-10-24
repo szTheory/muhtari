@@ -1,3 +1,15 @@
+# Concrete fault: agreeing hosts masking wrong driving pin values or omitted native/audio evidence.
+if(DIAG_CONTROLLERS_RUN)
+  file(MAKE_DIRECTORY "${OUT}")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --controller-case driving both
+    "${ROOT}/tests/diag/controller-motion.a78" "${EXPECTED}" "${OUT}" ${MODULE}
+    RESULT_VARIABLE rc OUTPUT_VARIABLE report ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "controller numeric/equality: ${rc}\n${report}${err}")
+  endif()
+  return()
+endif()
+
 # Detailed cross-host battery observations reuse the numeric/media owner.
 # Fault prevented: agreeing hosts hiding unchanged single-media bytes or a bad mailbox.
 if(DIAG_BATTERY_RUN)
@@ -181,7 +193,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${diag_dir}/expec
 # muhtari-test-diag: links muhtari and includes src/internal.h, to read the
 # mailbox through muhtari__peek and the core's per-line statistics, which
 # stats.csv gives for each DMA test, so each cost is recorded twice.
-add_executable(muhtari-test-diag ${diag_dir}/driver.c)
+add_executable(muhtari-test-diag ${diag_dir}/driver.c ${PROJECT_SOURCE_DIR}/runner/sha256.c)
 target_include_directories(muhtari-test-diag PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-diag PRIVATE muhtari::muhtari muhtari_host)
 add_executable(muhtari-test-retroarch-compare ${PROJECT_SOURCE_DIR}/tests/retroarch/compare.c
@@ -230,6 +242,25 @@ endif()
 set_target_properties(muhtari-test-diag PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-diag)
+
+set(diag_controllers ${PROJECT_BINARY_DIR}/tests/diag/controllers.cmake)
+set(diag_controller_module "")
+if(TARGET muhtari_libretro)
+  set(diag_controller_module "$<TARGET_FILE:muhtari_libretro_testdb>")
+endif()
+file(GENERATE OUTPUT ${diag_controllers} CONTENT
+"set(DIAG_CONTROLLERS_RUN TRUE)
+set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/controllers]==])
+set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
+set(RUNNER [==[$<TARGET_FILE:muhtari-run>]==])
+set(MODULE [==[${diag_controller_module}]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+set(EXPECTED [==[${diag_dir}/expected.csv]==])
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+muhtari_add_test(NAME diag.controllers COMMAND ${CMAKE_COMMAND} -P ${diag_controllers}
+  LABELS diag portable TIMEOUT 30)
 
 muhtari_add_test(NAME diag.dma
   COMMAND muhtari-test-diag ${diag_dir}/dma.a78 ${diag_dir}/expected.csv ${diag_dir}/stats.csv

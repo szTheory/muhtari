@@ -26,6 +26,7 @@
 
 #include "internal.h"
 #include "palette.h"
+#include "../../runner/sha256.h"
 #ifdef DIAG_LIBRETRO
 #include "libretro.h"
 #ifdef _WIN32
@@ -512,6 +513,7 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "absolute") == 0   ? 11u
            : strcmp(rom, "fractalus") == 0  ? 12u
            : strcmp(rom, "battery") == 0    ? 13u
+           : strcmp(rom, "motion0") == 0    ? 14u
                                             : 0u;
 }
 
@@ -584,6 +586,135 @@ static int retail_mailbox(const char *path, const char *rom, const char *expecte
         }
     }
     return retail_expected(expected, rom) != 0 || retail_judge(mb, rom) != 0;
+}
+
+/* Fixed stimulus, derived before execution in controllers.md, Motion diagnostic.
+   The two connectors move in opposite directions and fire on different frames. */
+#define CONTROLLER_FRAMES 12u
+#define CONTROLLER_PIXELS (320u * 242u)
+static uint8_t *controller_pixels;
+static int16_t controller_pcm[CONTROLLER_FRAMES][801];
+static uint32_t controller_counts[CONTROLLER_FRAMES];
+static muhtari__sha256 controller_raw;
+
+static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
+{
+    memset(in, 0, sizeof *in);
+    in->size = (uint32_t)sizeof *in;
+    in->port[0].device = in->port[1].device = MUHTARI_PORT_DRIVING;
+    (void)frame;
+}
+
+static void controller_raw_sample(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    uint8_t bytes[11];
+    for (unsigned i = 0u; i < 8u; i++)
+        bytes[i] = (uint8_t)(tick >> (8u * i));
+    bytes[8] = source;
+    bytes[9] = (uint8_t)raw;
+    bytes[10] = (uint8_t)(raw >> 8);
+    muhtari__sha256_update(user, bytes, sizeof bytes);
+}
+
+static void controller_digest(FILE *f, const char *key, muhtari__sha256 *hash)
+{
+    uint8_t bytes[32];
+    char hex[65];
+    muhtari__sha256_final(hash, bytes);
+    muhtari__sha256_hex(bytes, hex);
+    fprintf(f, "%s %s\n", key, hex);
+}
+
+static int controller_library(const char *path, const char *expected, const char *out)
+{
+    size_t n = 0u;
+    uint8_t *image = read_file(path, &n);
+    muhtari_config cfg = {0};
+    muhtari_media media = {0};
+    muhtari *m = NULL;
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = diag_alloc;
+    cfg.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = n;
+    media.port[0] = media.port[1] = MUHTARI_PORT_DRIVING;
+    muhtari__sha256_init(&controller_raw);
+    int failed = image == NULL || retail_expected(expected, "motion0") != 0 ||
+        muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK ||
+        muhtari__synth_observe(m, controller_raw_sample, &controller_raw) != MUHTARI_STATUS_OK ||
+        muhtari_load(m, &media) != MUHTARI_STATUS_OK;
+    for (unsigned f = 0u; f < CONTROLLER_FRAMES && !failed; f++) {
+        muhtari_input_ex in;
+        controller_stimulus(f + 1u, &in);
+        muhtari_frame io = {0};
+        io.size = (uint32_t)sizeof io;
+        io.video = controller_pixels + f * CONTROLLER_PIXELS;
+        io.video_pitch = 320u;
+        io.audio = controller_pcm[f];
+        io.audio_capacity = 801u;
+        failed = muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK ||
+                 muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        controller_counts[f] = io.audio_count;
+    }
+    uint8_t mb[256];
+    if (!failed) {
+        for (unsigned i = 0u; i < 256u; i++)
+            mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
+        failed = retail_judge(mb, "motion0");
+    }
+    /* Numeric judgment precedes all equality evidence. */
+    if (!failed) {
+        char name[4096];
+        snprintf(name, sizeof name, "%s/reference.txt", out);
+        FILE *f = fopen(name, "wb");
+        if (f == NULL)
+            failed = 1;
+        else {
+            muhtari__sha256 pcm, raw = controller_raw;
+            muhtari__sha256_init(&pcm);
+            uint32_t samples = 0u;
+            for (unsigned i = 0u; i < CONTROLLER_FRAMES; i++) {
+                char key[64];
+                muhtari__sha256 video_hash;
+                muhtari__sha256_init(&video_hash);
+                muhtari__sha256_update(&video_hash, controller_pixels + i * CONTROLLER_PIXELS,
+                                      CONTROLLER_PIXELS);
+                snprintf(key, sizeof key, "frame %u sha256", i + 1u);
+                controller_digest(f, key, &video_hash);
+                samples += controller_counts[i];
+                for (unsigned j = 0u; j < controller_counts[i]; j++) {
+                    uint16_t v = (uint16_t)controller_pcm[i][j];
+                    uint8_t bytes[2] = {(uint8_t)v, (uint8_t)(v >> 8)};
+                    muhtari__sha256_update(&pcm, bytes, sizeof bytes);
+                }
+            }
+            controller_digest(f, "audio_transitions_sha256", &raw);
+            controller_digest(f, "audio_pcm_sha256", &pcm);
+            fprintf(f, "audio_frames %u\naudio_samples %u\n", CONTROLLER_FRAMES, samples);
+            failed |= ferror(f) != 0;
+            failed |= fclose(f) != 0;
+        }
+        snprintf(name, sizeof name, "%s/input.txt", out);
+        f = fopen(name, "wb");
+        if (f == NULL)
+            failed = 1;
+        else {
+            fputs("muhtari-movie 2\nport1 driving\nport2 driving\n", f);
+            for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
+                muhtari_input_ex in;
+                controller_stimulus(i, &in);
+                fprintf(f, "|driving:%d,0,%u|driving:%d,0,%u|...BB|\n",
+                        in.port[0].dx, in.port[0].buttons != 0u ? 1u : 0u,
+                        in.port[1].dx, in.port[1].buttons != 0u ? 1u : 0u);
+            }
+            failed |= ferror(f) != 0;
+            failed |= fclose(f) != 0;
+        }
+    }
+    muhtari_destroy(m);
+    free(image);
+    return failed;
 }
 
 static int retail_library(const uint8_t *image, size_t n, const char *rom)
@@ -966,6 +1097,15 @@ static int retail_libretro(const char *module_path, const char *path, const char
 int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
+    if ((argc == 7 || argc == 8) && strcmp(argv[1], "--controller-case") == 0 &&
+        strcmp(argv[2], "driving") == 0 && strcmp(argv[3], "both") == 0) {
+        controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
+        if (controller_pixels == NULL)
+            return 1;
+        int failed = controller_library(argv[4], argv[5], argv[6]);
+        free(controller_pixels);
+        return failed;
+    }
     if (argc == 3 && strcmp(argv[1], "--battery-firmware") == 0) {
         uint8_t firmware[4096];
         memset(firmware, 255, sizeof firmware);
