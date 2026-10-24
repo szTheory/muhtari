@@ -193,5 +193,4 @@ Resume file: .planning/phases/07-battery-saves/07-09-SUMMARY.md
 | Phase 07 P06 | 10min | 3 tasks | 12 files |
 | Phase 07 P07 | 47min | 3 tasks | 8 files |
 | Phase 07 P08 | 304min | 3 tasks | 23 files |
-| Phase 07 P09 | 197min | 3 tasks | 16 files |
 | Phase 07 P09 | 328min | 3 tasks | 28 files |
