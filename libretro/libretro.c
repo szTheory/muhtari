@@ -485,7 +485,8 @@ static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
 {
     if (battery.eeprom_port == p + 1u)
         return battery.eeprom_device;
-    return lr_serial(request->port[p]) ? loaded_port[p] : request->port[p];
+    uint32_t d = lr_serial(request->port[p]) ? loaded_port[p] : request->port[p];
+    return d != 0u ? d : p == 0u ? cart.port1 : cart.port2;
 }
 
 static void lr_check_battery_request(const muhtari_media *request)
@@ -530,15 +531,10 @@ static bool lr_held(unsigned port, unsigned id)
 /* The 7800 buttons held on a port: the D-pad is the stick, B button 1 and
    A button 2. A 2600 joystick has one button, so there A fires too
    (HOSTS-AND-INTEGRATION section 1, Input). */
-static uint32_t lr_buttons(unsigned port)
+static uint32_t lr_buttons(unsigned port, uint32_t d)
 {
-    uint32_t d = lr_port_device(port);
-    bool joystick;
+    bool joystick = d == MUHTARI_PORT_JOYSTICK;
     uint32_t b = 0u;
-    if (d == 0u) {
-        d = port == 0u ? cart.port1 : cart.port2;
-    }
-    joystick = d == MUHTARI_PORT_JOYSTICK;
     b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_UP) ? MUHTARI_BUTTON_UP : 0u;
     b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_DOWN) ? MUHTARI_BUTTON_DOWN : 0u;
     b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_LEFT) ? MUHTARI_BUTTON_LEFT : 0u;
@@ -585,10 +581,10 @@ static void lr_input(void)
         lr_check_battery_request(&request);
     memset(&in, 0, sizeof in);
     in.size = (uint32_t)sizeof in;
-    in.device[0] = lr_active_port(0u, &request);
-    in.device[1] = lr_active_port(1u, &request);
-    in.buttons[0] = lr_buttons(0u);
-    in.buttons[1] = lr_buttons(1u);
+    for (unsigned p = 0u; p < 2u; p++) {
+        in.device[p] = lr_active_port(p, &request);
+        in.buttons[p] = lr_buttons(p, in.device[p]);
+    }
     in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_SELECT) ? MUHTARI_SWITCH_SELECT : 0u;
     in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_START) ? MUHTARI_SWITCH_PAUSE : 0u;
     in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_X) ? MUHTARI_SWITCH_RESET : 0u;

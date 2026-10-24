@@ -723,6 +723,55 @@ static void case_layout(void)
     CHECK_EQ_HEX(e[E_INPT0] & HI, 0u);
     CHECK_EQ_HEX(e[E_INPT4] & HI, 0u);
     stop();
+
+    /* Refused storage requests must retain the loaded joystick's A mapping,
+       including options combined with an Auto callback on ProLine metadata. */
+    for (unsigned hsc = 0u; hsc < 2u; hsc++) {
+        for (unsigned port = 0u; port < 2u; port++) {
+            const char *key = port == 0u ? "muhtari_battery_port1" : "muhtari_battery_port2";
+            unsigned fire = port == 0u ? E_INPT4 : E_INPT5;
+            unsigned joystick = RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1);
+            set_var("muhtari_hsc", hsc ? "on" : "off");
+            p_set_controller_port_device(port, joystick);
+            start(0);
+            void *save = p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+            size_t bytes = hsc ? 2048u : 0u;
+            CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), bytes);
+            CHECK((save == NULL) == (bytes == 0u));
+            pad[port] = BIT(A);
+            run_frames(3u);
+            CHECK_EQ_HEX(last_entry()[fire] & HI, 0u);
+            for (unsigned option = 0u; option < 2u; option++) {
+                for (unsigned serial = 0u; serial < 2u; serial++) {
+                    p_set_controller_port_device(port, joystick);
+                    set_var(key, "auto");
+                    run_frames(3u);
+                    CHECK_EQ_HEX(last_entry()[fire] & HI, 0u);
+                    unsigned before = message_calls;
+                    p_set_controller_port_device(
+                        port, option ? RETRO_DEVICE_JOYPAD
+                                     : RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, serial + 2u));
+                    if (option)
+                        set_var(key, serial ? "atarivox" : "savekey");
+                    run_frames(3u);
+                    CHECK_EQ_HEX(last_entry()[fire] & HI, 0u);
+                    CHECK_EQ_U64(message_calls, before + 1u);
+                    CHECK(strstr(message, "reload") != NULL);
+                    run_frames(3u);
+                    CHECK_EQ_HEX(last_entry()[fire] & HI, 0u);
+                    CHECK_EQ_U64(message_calls, before + 1u);
+                    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == save);
+                    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), bytes);
+                    for (size_t i = 0u; i < bytes; i++)
+                        CHECK_EQ_U64(((uint8_t *)save)[i], 0xFFu);
+                }
+            }
+            pad[port] = 0u;
+            stop();
+            set_var(key, "auto");
+        }
+    }
+    set_var("muhtari_hsc", "auto");
 }
 
 /* The controller list on both ports is Auto, ProLine, Joystick and None;

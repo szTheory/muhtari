@@ -54,7 +54,8 @@ cartridge metadata. A SaveKey hint without a location selects port 2. Battery No
 storage on its port while retaining an ordinary controller selection; an automatic or save-controller
 selection becomes ProLine. At most one EEPROM may attach, on either port; dual requests refuse load.
 No controller callback before load is required. A later request that changes storage reports that content
-must be reloaded and keeps the installed attachment. Auto and the installed save identity remain valid;
+must be reloaded and keeps the installed attachment and its button mapping. Auto and the installed save
+identity remain valid;
 ordinary non-save controller changes still work. A repeated unchanged request produces no repeated warning.
 
 `RETRO_MEMORY_SAVE_RAM` is the final core-owned raw span immediately after successful content load:
