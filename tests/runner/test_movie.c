@@ -273,6 +273,147 @@ static void limits(void)
     free(huge);
 }
 
+/* Every typed payload decodes complete state, independently of whether
+   this core revision implements the corresponding physical device. */
+static void typed(void)
+{
+    static const struct {
+        const char *device, *payload;
+        uint32_t id;
+    } good_rows[] = {
+        {"proline", "UDLR12", MUHTARI_PORT_PROLINE},
+        {"joystick", "UDLR1", MUHTARI_PORT_JOYSTICK},
+        {"none", "", MUHTARI_PORT_UNPLUGGED},
+        {"savekey", "", MUHTARI_PORT_SAVEKEY},
+        {"atarivox", "", MUHTARI_PORT_ATARIVOX},
+        {"lightgun", "319,241,3", MUHTARI_PORT_LIGHTGUN},
+        {"paddle", "65535,123,3", MUHTARI_PORT_PADDLE},
+        {"driving", "-2147483648,0,1", MUHTARI_PORT_DRIVING},
+        {"trakball", "2147483647,-2147483648,1", MUHTARI_PORT_TRAKBALL},
+        {"st-mouse", "-2147483648,2147483647,3", MUHTARI_PORT_ST_MOUSE},
+        {"amiga-mouse", "-2147483648,-2147483648,3", MUHTARI_PORT_AMIGA_MOUSE},
+        {"keypad", "4095", MUHTARI_PORT_KEYPAD},
+        {"snes2atari", "4095", MUHTARI_PORT_SNES2ATARI},
+        {"mega7800", "4095", MUHTARI_PORT_MEGA7800},
+    };
+    char text[512];
+    muhtari__movie_header h;
+    muhtari__movie_error err;
+    muhtari__movie_cursor cursor;
+    muhtari_input_ex in;
+    uint32_t count;
+    for (size_t i = 0u; i < sizeof good_rows / sizeof good_rows[0]; i++) {
+        const char *d = good_rows[i].device;
+        snprintf(text, sizeof text, "muhtari-movie 2\r\nport1 %s\r\nport2 %s\r\n|%s:%s|%s:%s|RSPAA|\r\n",
+                 d, d, d, good_rows[i].payload, d, good_rows[i].payload);
+        CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h,
+                                               &count, &cursor, &err), 0);
+        CHECK_EQ_U64(count, 1u);
+        CHECK_EQ_U64(h.version, 2u);
+        CHECK_EQ_U64(cursor.frame, 0u);
+        CHECK_EQ_U64(muhtari__movie_next_ex((const uint8_t *)text, strlen(text), &h,
+                                           &cursor, &in, &err), 1);
+        CHECK_EQ_U64(cursor.frame, 1u);
+        CHECK_EQ_U64(in.size, sizeof in);
+        CHECK_EQ_U64(in.port[0].device, good_rows[i].id);
+        CHECK(memcmp(&in.port[0], &in.port[1], sizeof in.port[0]) == 0);
+        CHECK_EQ_U64(in.switches, 31u);
+        switch (in.port[0].device) {
+        case MUHTARI_PORT_LIGHTGUN:
+            CHECK_EQ_U64(in.port[0].gun_x, 319u);
+            CHECK_EQ_U64(in.port[0].gun_y, 241u);
+            CHECK_EQ_U64(in.port[0].flags, MUHTARI_INPUT_GUN_OFFSCREEN);
+            CHECK_EQ_U64(in.port[0].buttons, MUHTARI_BUTTON_1);
+            break;
+        case MUHTARI_PORT_PADDLE:
+            CHECK_EQ_U64(in.port[0].paddle[0], 65535u);
+            CHECK_EQ_U64(in.port[0].paddle[1], 123u);
+            CHECK_EQ_U64(in.port[0].buttons, MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2);
+            break;
+        case MUHTARI_PORT_DRIVING:
+            CHECK(in.port[0].dx == INT32_MIN);
+            CHECK_EQ_U64(in.port[0].dy, 0u);
+            CHECK_EQ_U64(in.port[0].buttons, MUHTARI_BUTTON_1);
+            break;
+        case MUHTARI_PORT_TRAKBALL:
+            CHECK(in.port[0].dx == INT32_MAX && in.port[0].dy == INT32_MIN);
+            break;
+        case MUHTARI_PORT_ST_MOUSE:
+            CHECK(in.port[0].dx == INT32_MIN && in.port[0].dy == INT32_MAX);
+            CHECK_EQ_U64(in.port[0].buttons, MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2);
+            break;
+        case MUHTARI_PORT_AMIGA_MOUSE:
+            CHECK(in.port[0].dx == INT32_MIN && in.port[0].dy == INT32_MIN);
+            CHECK_EQ_U64(in.port[0].buttons, MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2);
+            /* 37 + 37 + four delimiters + five switches = 83. */
+            CHECK_EQ_U64(strlen(strchr(text, '|')) - 2u, 83u);
+            break;
+        case MUHTARI_PORT_KEYPAD:
+            CHECK_EQ_U64(in.port[0].keypad, 4095u);
+            break;
+        case MUHTARI_PORT_SNES2ATARI:
+        case MUHTARI_PORT_MEGA7800:
+            CHECK_EQ_U64(in.port[0].buttons, 4095u);
+            break;
+        default:
+            break;
+        }
+        muhtari_input_ex last = in;
+        CHECK_EQ_U64(muhtari__movie_next_ex((const uint8_t *)text, strlen(text), &h,
+                                           &cursor, &in, &err), 0);
+        CHECK_EQ_U64(in.switches, 24u);
+        for (unsigned p = 0u; p < 2u; p++) {
+            CHECK_EQ_U64(in.port[p].buttons | in.port[p].keypad, 0u);
+            CHECK(in.port[p].dx == 0 && in.port[p].dy == 0);
+            CHECK_EQ_U64(in.port[p].paddle[0], last.port[p].paddle[0]);
+            CHECK_EQ_U64(in.port[p].paddle[1], last.port[p].paddle[1]);
+            CHECK_EQ_U64(in.port[p].gun_x, last.port[p].gun_x);
+            CHECK_EQ_U64(in.port[p].gun_y, last.port[p].gun_y);
+            CHECK_EQ_U64(in.port[p].flags, last.port[p].flags);
+        }
+    }
+    static const struct { const char *d, *v; uint32_t col; } faults[] = {
+        {"driving", "+1,0,0", 10}, {"driving", "01,0,0", 11},
+        {"driving", "-0,0,0", 10}, {"driving", " 1,0,0", 10},
+        {"driving", "1 ,0,0", 11}, {"driving", "2147483648,0,0", 19},
+        {"driving", "-2147483649,0,0", 20}, {"driving", "0,1,0", 12},
+        {"driving", "0,-0,0", 12}, {"driving", "0,0,2", 14},
+        {"driving", "0,0", 13}, {"driving", "0,0,0,0", 15},
+        {"driving", ",0,0", 10}, {"driving", "0,,0", 12},
+        {"lightgun", "320,0,2", 13}, {"lightgun", "0,242,2", 15},
+        {"lightgun", "0,0,4", 15}, {"paddle", "65536,0,0", 13},
+        {"paddle", "0,0,4", 13}, {"keypad", "4096", 12},
+        {"snes2atari", "4096", 16}, {"mega7800", "-1", 11},
+        {"none", "0", 7}, {"proline", "D.....", 10},
+        {"trakball", "0,0,2", 15}, {"amiga-mouse", "0,0,4", 18},
+    };
+    for (size_t i = 0u; i < sizeof faults / sizeof faults[0]; i++) {
+        snprintf(text, sizeof text, "muhtari-movie 2\nport1 %s\nport2 none\n|%s:%s|none:|...BB|\n",
+                 faults[i].d, faults[i].d, faults[i].v);
+        CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h,
+                                               &count, &cursor, &err), -1);
+        if (err.line != 4u || err.column != faults[i].col) {
+            fprintf(stderr, "%s:%s refused %u:%u expected 4:%u\n", faults[i].d, faults[i].v,
+                    (unsigned)err.line, (unsigned)err.column, (unsigned)faults[i].col);
+            check_failures++;
+        }
+    }
+    snprintf(text, sizeof text, "muhtari-movie 2\nport1 amiga-mouse\nport2 amiga-mouse\n"
+             "|amiga-mouse:-2147483648,-2147483648,3|amiga-mouse:-2147483648,-2147483648,3|RSPAA|x\n");
+    CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h,
+                                           &count, &cursor, &err), -1);
+    CHECK_EQ_U64(err.line, 4u);
+    CHECK_EQ_U64(err.column, 84u);
+    CHECK(strcmp(err.what, "line over 83 bytes") == 0);
+    static const char empty[] = "muhtari-movie 2\nport1 lightgun\nport2 paddle\n";
+    CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)empty, strlen(empty), &h,
+                                           &count, &cursor, &err), 0);
+    CHECK_EQ_U64(count, 0u);
+    CHECK_EQ_U64(muhtari__movie_next_ex((const uint8_t *)empty, strlen(empty), &h,
+                                       &cursor, &in, &err), 0);
+    CHECK_EQ_U64(in.port[0].flags, MUHTARI_INPUT_GUN_OFFSCREEN);
+}
+
 int main(void)
 {
     for (size_t i = 0; i < sizeof bads / sizeof bads[0]; i++) {
@@ -284,5 +425,6 @@ int main(void)
     }
     good();
     limits();
+    typed();
     CHECK_DONE();
 }

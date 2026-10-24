@@ -590,6 +590,21 @@ endfunction()
     if(NOT typed_rc STREQUAL "0" OR NOT typed MATCHES "frame 4 sha256 [0-9a-f]+\nlag_frames 1\n$")
       message(FATAL_ERROR "typed replay expected exit 0 and frame evidence: ${typed_rc}\n${typed}${typed_err}")
     endif()
+    file(WRITE "${OUT}/driving.txt" "muhtari-movie 2\nport1 driving\nport2 driving\n|driving:0,0,0|driving:0,0,0|...BB|\n|driving:0,0,0|driving:0,0,0|...BB|\n|driving:4,0,1|driving:-4,0,0|...BB|\n|driving:-1,0,0|driving:1,0,1|...BB|\n|driving:0,0,0|driving:0,0,1|...BB|\n|driving:0,0,0|driving:0,0,0|...BB|\n")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${OUT}/driving.txt"
+      --frames 12 --diagnostic "${CMAKE_CURRENT_LIST_DIR}/../diag/controller-motion.a78"
+      RESULT_VARIABLE drive_rc OUTPUT_VARIABLE drive ERROR_VARIABLE drive_err)
+    string(REGEX MATCH "diagnostic ([0-9a-f]+)\n" found "${drive}")
+    set(mailbox "${CMAKE_MATCH_1}")
+    # Connector tuples independently derived in docs/hardware/controllers.md.
+    set(records "010100000201ff0003018000040180000501ff000601de000701cc000801ed000901ff000a0100000b0180000c01ff000d01ed000e0180000f0100001001ed00110100001201ed0013018000")
+    if(NOT drive_rc STREQUAL "0" OR NOT mailbox MATCHES "^4d3744470100130e")
+      message(FATAL_ERROR "driving replay mailbox absent: ${drive_rc} ${drive}${drive_err}")
+    endif()
+    string(SUBSTRING "${mailbox}" 32 152 observed_records)
+    if(NOT observed_records STREQUAL records)
+      message(FATAL_ERROR "driving replay pin records differ: ${observed_records}")
+    endif()
     # Fault prevented: the runner drops or shifts a movie's input, or a
     # replay is not repeatable. The input cart paints what it read, so a
     # frame inside the held lines differs from an empty movie's, and a frame
@@ -749,7 +764,7 @@ endfunction()
     expect_output("" --frames 1 --boot fast)
   elseif(CASE STREQUAL "usage.port")
     expect_exit(2 "--port1 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}"
-      --frames 1 --port1 paddle)
+      --frames 1 --port1 mouse)
     expect_exit(2 "--port2 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}" --frames 1 --port2)
     expect_output("" --frames 1 --port1 joystick --port2 none)
   elseif(CASE STREQUAL "usage.region_pal")

@@ -91,9 +91,11 @@ static const char synopsis[] =
     "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
     "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n"
     "  [--rom] FILE         load the cartridge image FILE; without it no content runs\n"
-    "  --movie FILE         replay the muhtari-movie 1 FILE, one line per frame;\n"
+    "  --movie FILE         replay a muhtari-movie 1 or 2 FILE, one line per frame;\n"
     "                       --frames defaults to its frame count\n"
-    "  --port1 D, --port2 D auto, proline, joystick, none, savekey or atarivox\n"
+    "  --port1 D, --port2 D auto, proline, joystick, none, savekey, atarivox,\n"
+    "                      lightgun, paddle, trakball, driving, keypad, st-mouse,\n"
+    "                      amiga-mouse, snes2atari or mega7800\n"
     "  --region R           the region: auto or ntsc\n"
     "  --boot B             how the cartridge starts: fast (the default) or bios\n"
     "  --bios FILE          the BIOS image --boot bios runs\n"
@@ -429,6 +431,15 @@ static const struct {
     {"none", MUHTARI_PORT_UNPLUGGED},
     {"savekey", MUHTARI_PORT_SAVEKEY},
     {"atarivox", MUHTARI_PORT_ATARIVOX},
+    {"lightgun", MUHTARI_PORT_LIGHTGUN},
+    {"paddle", MUHTARI_PORT_PADDLE},
+    {"trakball", MUHTARI_PORT_TRAKBALL},
+    {"driving", MUHTARI_PORT_DRIVING},
+    {"keypad", MUHTARI_PORT_KEYPAD},
+    {"st-mouse", MUHTARI_PORT_ST_MOUSE},
+    {"amiga-mouse", MUHTARI_PORT_AMIGA_MOUSE},
+    {"snes2atari", MUHTARI_PORT_SNES2ATARI},
+    {"mega7800", MUHTARI_PORT_MEGA7800},
 };
 
 static const char *port_name(uint32_t device)
@@ -446,6 +457,9 @@ typedef struct replay {
     muhtari__movie_header header;
     muhtari_input *frames;
     uint32_t count;
+    uint8_t *bytes;
+    size_t bytes_count;
+    muhtari__movie_cursor cursor;
 } replay;
 
 static int compare_u32(const void *a, const void *b)
@@ -751,6 +765,20 @@ static int read_movie(const char *path, replay *mv)
         return MUHTARI__EXIT_FAILURE;
     }
     muhtari__movie_error err;
+    static const char v2[] = "muhtari-movie 2";
+    size_t first = sizeof v2 - 1u;
+    if (n >= first && memcmp(bytes, v2, first) == 0 &&
+        (n == first || bytes[first] == '\n' || bytes[first] == '\r')) {
+        if (muhtari__movie_validate_ex(bytes, n, &mv->header, &mv->count, &mv->cursor, &err) == 0) {
+            mv->bytes = bytes;
+            mv->bytes_count = n;
+            return MUHTARI__EXIT_DONE;
+        }
+        fprintf(stderr, "muhtari-run: %s:%lu:%lu: %s, expected %s\n", path,
+                (unsigned long)err.line, (unsigned long)err.column, err.what, err.expected);
+        free(bytes);
+        return MUHTARI__EXIT_FAILURE;
+    }
     int rc = muhtari__movie_parse(bytes, n, &mv->header, NULL, 0u, &mv->count, &err);
     if (rc == 0) {
         /* At most 1,000,000 frames of 24 bytes, so the size fits size_t. */
@@ -1198,7 +1226,7 @@ static void audio_digest(const char *key, muhtari__sha256 *hash)
 
 /* Runs the frames into heap buffers (a 77,440-byte local would overflow a
    64 KiB stack, as wasm32's is). Returns the exit status. */
-static int run(const options *opt, const replay *mv)
+static int run(const options *opt, replay *mv)
 {
     uint8_t *video = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
     int16_t *audio = (int16_t *)malloc(AUDIO_CAPACITY * sizeof *audio);
@@ -1270,9 +1298,31 @@ static int run(const options *opt, const replay *mv)
         io.video_pitch = WIDTH;
         io.audio = audio;
         io.audio_capacity = AUDIO_CAPACITY;
-        muhtari_input in;
-        if (frame_input(opt, mv, f, &in) && muhtari_set_input(m, &in) != MUHTARI_STATUS_OK) {
-            fprintf(stderr, "muhtari-run: muhtari_set_input failed\n");
+        if (mv != NULL && mv->header.version == 1u) {
+            muhtari_input in;
+            (void)frame_input(opt, mv, f, &in);
+            st = muhtari_set_input(m, &in);
+        } else {
+            muhtari_input_ex in = {0};
+            in.size = (uint32_t)sizeof in;
+            if (mv != NULL) {
+                muhtari__movie_error err;
+                if (muhtari__movie_next_ex(mv->bytes, mv->bytes_count, &mv->header,
+                                           &mv->cursor, &in, &err) < 0) {
+                    fprintf(stderr, "muhtari-run: validated movie decode failed\n");
+                    status = MUHTARI__EXIT_FAILURE;
+                    break;
+                }
+            } else {
+                in.port[0].device = opt->port[0];
+                in.port[1].device = opt->port[1];
+            }
+            st = muhtari_set_input_ex(m, &in);
+        }
+        if (st != MUHTARI_STATUS_OK) {
+            fprintf(stderr, mv != NULL && mv->header.version == 1u ?
+                    "muhtari-run: muhtari_set_input failed\n" :
+                    "muhtari-run: muhtari_set_input_ex failed\n");
             status = MUHTARI__EXIT_FAILURE;
             break;
         }
@@ -1429,6 +1479,7 @@ int main(int argc, char **argv)
             status = run(&opt, opt.movie != NULL ? &mv : NULL);
         }
         free(mv.frames);
+        free(mv.bytes);
     }
     free(opt.hash_frames);
     free(opt.dump_frames);
