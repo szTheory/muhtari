@@ -422,10 +422,12 @@ Within each port the scalar offsets are:
 | 28, 32 | `gun_x`, `gun_y` | Native image coordinates, zero-based |
 | 36 | `flags` | `MUHTARI_INPUT_GUN_OFFSCREEN` separates off-screen aim from trigger |
 
-Only ProLine, joystick, unplugged and the already attached EEPROM are currently
+ProLine, joystick, driving, unplugged and the already attached EEPROM are currently
 implemented. Other known devices return `ERR_UNSUPPORTED_DEVICE`, including Auto
 resolving to one; unknown IDs return `ERR_ARGUMENT`. Digital devices require all
-axes, keys, aim and flags zero; unplugged/EEPROM require zero buttons too. New
+axes, keys, aim and flags zero; unplugged/EEPROM require zero buttons too. Driving
+accepts only button 1 and `dx`: positive is clockwise, one unit per pin transition,
+with the bounded cadence described in [Controllers](hardware/controllers.md#driving). New
 adapter bits 6..11 are reserved for their named device: SNES Y/X/L/R/Select/Start
 and Mega C/X/Y/Z/Mode/Start, with primary buttons B/A:
 

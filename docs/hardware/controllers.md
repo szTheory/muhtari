@@ -16,7 +16,7 @@ Sources:
 
 ## Devices
 
-Each port carries a ProLine, a 2600 joystick, a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
+Each port carries a ProLine, a 2600 joystick, a driving controller, a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
 cartridge's A78 header does. A header that names no controller leaves the port unplugged. A header device that is not
 modelled yet, such as a light gun or paddles, is wired as a ProLine.
 
@@ -86,6 +86,7 @@ notes, section 3.1 and section 3.2). Button 1 is the ProLine's right button, but
 | ProLine, two-button mode | 1 while button 1 is pressed | 1 while button 2 is pressed | 1 |
 | ProLine, one-button mode | 1 while button 1 is pressed | 1 while button 2 is pressed | 0 while either is pressed |
 | 2600 joystick | 0 | 0 | 0 while fire is pressed |
+| Driving | 0 | 0 | 0 while fire is pressed |
 | Unplugged | 0 | 0 | 1 |
 
 INPT0-INPT3 follow the ProLine's buttons in one-button mode too, as MAME, a7800 and MiSTer have them. The console's own
@@ -124,8 +125,38 @@ the read in the CPU's read path. MARIA's DMA fetches never pass through that pat
 with no side effect, and neither does an internal peek. So a display list that points at $0280 still leaves the frame
 a lag frame. `muhtari_get_counters` returns the count.
 
+## Driving
+
+The extended setter and explicit load choice accept `MUHTARI_PORT_DRIVING` on either port. Only `dx` and button 1
+apply; `dy` and other payload fields must be zero. Positive X means clockwise; one native host unit means one
+connector transition, not a host pixel, revolution or complete quadrature cycle. The legacy setter retains its
+released unsupported-device refusal and legacy header fallback.
+
+Connector pins (1,2) start at (1,1), and clockwise walks (1,1) → (1,0) → (0,0) → (0,1) → (1,1).
+Counterclockwise walks backward. This follows the driving switch table and connector routing in the original
+Atari VCS domestic field service manual, printed pages 7-4–7-9. Pins 3 and 4 stay high; button 1 grounds pin 6.
+Thus the SWCHA nibble sequence is F,D,C,E,F for positive X and F,E,C,D,F for negative X.
+
+The deterministic compatibility policy uses 454 master ticks per transition (one native line), with at most 255
+unspent transitions per axis. These are operating-cost choices, not measured wheel calibration. A fresh maximum
+drains in 115770 ticks, within one full NTSC frame; an axis produces at most 263 transitions per full frame.
+State is fixed-size in the instance. Each signed input is clamped to [-255,255] before addition, then the summed
+residual is independently clamped; excess is discarded immediately. INT32_MIN never needs negation. Pending
+submissions replace each other; VBLANK transfers the latest delta once. No submission does not repeat it.
+
+An idle axis starts at latch+454. An in-flight deadline survives addition, cancellation and reversal; a zero
+residual at that deadline makes no edge. Phase persists while idle and across same-device submissions. Device
+change and power cycle restore phase F and cancel residual work. Actual CPU reads and peeks only observe pins;
+the bus delivers each due transition chronologically before the access tick, through JAM, HALT/RDY and instruction
+overshoot. Only actual CPU input-register reads count as input polling.
+
+Independent numeric timing expectations: latch at tick 100 with left dx=2 and right dx=-1 gives edges at 554
+(SWCHA DE), then 1008 (CE), then idle CE. At 553 SWCHA is FF. A cartridge `LDA $0280` has three 4-tick fetches
+and its slow data tick at start+17, completing at start+18; `LDA $000D` has the same timing and reads right fire
+in D7. With right fire held that bit is zero. From phase D, one reverse edge restores F; from C it restores D.
+
 ## Not modelled
 
 - The TIA's VBLANK D6 latch of INPT4 and INPT5, and its D7 dump of INPT0-INPT3, which paddles need.
-- The light gun, paddles, trak-ball, driving controller, keypad, mice, AtariVox speech, SNES2Atari and Mega7800
+- The light gun, paddles, trak-ball, keypad, mice, AtariVox speech, SNES2Atari and Mega7800
   (cartridge notes, section 3.2).

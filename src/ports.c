@@ -10,6 +10,65 @@
 #define PORTS_BUTTONS 0x3Fu  /* MUHTARI_BUTTON_UP .. MUHTARI_BUTTON_2 */
 #define PORTS_SWITCHES 0x1Fu /* MUHTARI_SWITCH_RESET .. _RIGHT_DIFFICULTY_A */
 
+/* Compatibility policy, not measured wheel calibration; controllers.md,
+   Driving gives the one-line cadence and discarded excess rationale. */
+#define PORTS_MOTION_CADENCE_TICKS 454u
+#define PORTS_MOTION_RESIDUAL_MAX 255
+
+void muhtari__ports_reset(muhtari *m)
+{
+    memset(m->ports.motion, 0, sizeof m->ports.motion);
+    m->ports.motion_tick = 0u;
+}
+
+uint64_t muhtari__ports_next_event(const muhtari *m)
+{
+    return m->ports.motion_tick != 0u ? m->ports.motion_tick : UINT64_MAX;
+}
+
+static void ports_motion_rearm(muhtari *m)
+{
+    uint64_t next = UINT64_MAX;
+    for (unsigned p = 0u; p < 2u; p++) {
+        uint64_t at = m->ports.motion[p].next_tick;
+        if (at != 0u && at < next) {
+            next = at;
+        }
+    }
+    m->ports.motion_tick = next != UINT64_MAX ? next : 0u;
+}
+
+void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
+{
+    uint64_t next = muhtari__ports_next_event(m);
+    while (next <= tick && next != UINT64_MAX) {
+        for (unsigned p = 0u; p < 2u; p++) {
+            struct muhtari__motion *axis = &m->ports.motion[p];
+            if (axis->next_tick == next) {
+                if (axis->residual != 0) {
+                    int32_t step = axis->residual > 0 ? 1 : -1;
+                    axis->phase = (uint8_t)(((int32_t)axis->phase + step + 4) & 3);
+                    axis->residual -= step;
+                }
+                axis->next_tick = axis->residual != 0 ? next + PORTS_MOTION_CADENCE_TICKS : 0u;
+            }
+        }
+        /* Deliver every intermediate resolved level, even when an entire
+           cycle returns to its starting tuple (controllers.md, Driving). */
+        muhtari__riot_pins_changed(m);
+        ports_motion_rearm(m);
+        next = muhtari__ports_next_event(m);
+    }
+}
+
+static int32_t ports_motion_clamp(int32_t delta)
+{
+    if (delta > PORTS_MOTION_RESIDUAL_MAX) {
+        return PORTS_MOTION_RESIDUAL_MAX;
+    }
+    return delta < -PORTS_MOTION_RESIDUAL_MAX ? -PORTS_MOTION_RESIDUAL_MAX : delta;
+}
+
 enum {
     SAVEKEY_IDLE,
     SAVEKEY_CONTROL,
@@ -223,8 +282,8 @@ static muhtari_status ports_check_device(uint32_t device)
 muhtari_status muhtari__ports_check_device_ex(uint32_t device)
 {
     if (device == 0u || device == MUHTARI_PORT_PROLINE || device == MUHTARI_PORT_JOYSTICK ||
-        device == MUHTARI_PORT_UNPLUGGED || device == MUHTARI_PORT_SAVEKEY ||
-        device == MUHTARI_PORT_ATARIVOX) {
+        device == MUHTARI_PORT_DRIVING || device == MUHTARI_PORT_UNPLUGGED ||
+        device == MUHTARI_PORT_SAVEKEY || device == MUHTARI_PORT_ATARIVOX) {
         return MUHTARI_STATUS_OK;
     }
     return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
@@ -310,11 +369,10 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
         if (st != MUHTARI_STATUS_OK) {
             return st;
         }
-        /* Only implemented digital devices reach here. Their axes, keys,
-           aim and flags are inapplicable, including an off-screen flag. */
-        if ((port->buttons & ~PORTS_BUTTONS) != 0u || port->paddle[0] != 0u ||
-            port->paddle[1] != 0u || port->keypad != 0u || port->dx != 0 || port->dy != 0 ||
-            port->gun_x != 0u || port->gun_y != 0u || port->flags != 0u ||
+        uint32_t buttons = port->device == MUHTARI_PORT_DRIVING ? MUHTARI_BUTTON_1 : PORTS_BUTTONS;
+        if ((port->buttons & ~buttons) != 0u || port->paddle[0] != 0u || port->paddle[1] != 0u ||
+            port->keypad != 0u || (port->device != MUHTARI_PORT_DRIVING && port->dx != 0) ||
+            port->dy != 0 || port->gun_x != 0u || port->gun_y != 0u || port->flags != 0u ||
             ((port->device == MUHTARI_PORT_UNPLUGGED || port->device == MUHTARI_PORT_SAVEKEY ||
               port->device == MUHTARI_PORT_ATARIVOX) &&
              port->buttons != 0u)) {
@@ -376,13 +434,27 @@ void muhtari__ports_latch(muhtari *m)
     if (ports->pending == 0u) {
         return;
     }
+    muhtari__ports_catch_up(m, m->bus.ticks);
     for (uint32_t p = 0; p < 2u; p++) {
+        uint32_t previous = muhtari__ports_device(m, p);
         if (ports->input_mode != 0u) {
             ports->device[p] = ports->pending_ex.port[p].device;
             ports->buttons[p] = ports->pending_ex.port[p].buttons;
         } else {
             ports->device[p] = ports->pending_device[p];
             ports->buttons[p] = ports->pending_buttons[p];
+        }
+        struct muhtari__motion *axis = &ports->motion[p];
+        uint32_t device = muhtari__ports_device(m, p);
+        if (previous != device) {
+            memset(axis, 0, sizeof *axis);
+        }
+        if (ports->input_mode != 0u && device == MUHTARI_PORT_DRIVING) {
+            int32_t delta = ports_motion_clamp(ports->pending_ex.port[p].dx);
+            axis->residual = ports_motion_clamp(axis->residual + delta);
+            if (axis->next_tick == 0u && axis->residual != 0) {
+                axis->next_tick = m->bus.ticks + PORTS_MOTION_CADENCE_TICKS;
+            }
         }
     }
     if (ports->input_mode != 0u) {
@@ -398,8 +470,10 @@ void muhtari__ports_latch(muhtari *m)
         ports->switches = ports->pending_switches;
     }
     ports->pending = 0u;
+    ports_motion_rearm(m);
     /* The new pins reach PA7's edge detector at this tick. */
     muhtari__riot_pins_changed(m);
+    muhtari__bus_rearm(m);
 }
 
 /* A header naming no controller leaves the port unplugged; one naming a
@@ -435,6 +509,14 @@ uint8_t muhtari__ports_swcha(const muhtari *m)
             continue;
         }
         uint32_t b = m->ports.buttons[p];
+        if (device == MUHTARI_PORT_DRIVING) {
+            /* Connector (1,2): 11,10,00,01. Pin 1 is the low
+               SWCHA bit in its nibble (controllers.md, Driving). */
+            static const uint8_t closed[4] = {0u, 2u, 3u, 1u};
+            uint8_t low = closed[m->ports.motion[p].phase];
+            pins = (uint8_t)(pins & (uint8_t)~(p == 0u ? low << 4 : low));
+            continue;
+        }
         uint8_t closed = (uint8_t)(((b & MUHTARI_BUTTON_UP) != 0u ? 0x1u : 0u) |
                                    ((b & MUHTARI_BUTTON_DOWN) != 0u ? 0x2u : 0u) |
                                    ((b & MUHTARI_BUTTON_LEFT) != 0u ? 0x4u : 0u) |
@@ -488,7 +570,7 @@ uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n)
     if (device == MUHTARI_PORT_PROLINE && !ports_two_button(m, port)) {
         return (uint8_t)((b & (MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2)) == 0u);
     }
-    if (device == MUHTARI_PORT_JOYSTICK) {
+    if (device == MUHTARI_PORT_JOYSTICK || device == MUHTARI_PORT_DRIVING) {
         return (uint8_t)((b & MUHTARI_BUTTON_1) == 0u);
     }
     return 1u;
@@ -510,6 +592,7 @@ void muhtari__ports_count_hazard(muhtari *m)
 
 void muhtari__ports_reset_counters(muhtari *m)
 {
+    muhtari__ports_reset(m);
     m->frames = 0u;
     m->lag_frames = 0u;
     m->ports.input_read = 0u;

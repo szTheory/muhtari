@@ -1017,7 +1017,58 @@ static void driving_timing(void)
     CHECK_EQ_HEX(muhtari__bus_peek(m, 0x0280u), 0xFEu);
     CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
     CHECK_EQ_HEX(muhtari__bus_peek(m, 0x0280u), 0xFFu);
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = sizeof image;
+    media.port[0] = MUHTARI_PORT_DRIVING;
+    media.port[1] = MUHTARI_PORT_DRIVING;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.port[0].dx = 1;
+    in.port[1].dx = 1;
+    in.port[0].buttons = MUHTARI_BUTTON_1;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    muhtari_input_ex bad = in;
+    bad.port[1].dy = 1;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &bad), MUHTARI_STATUS_ERR_ARGUMENT);
+    bad = in;
+    bad.port[1].buttons = MUHTARI_BUTTON_2;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &bad), MUHTARI_STATUS_ERR_ARGUMENT);
+    frame(m, NULL);
+    frame(m, NULL);
+    const uint8_t *r = ram(m);
+    CHECK_EQ_HEX(r[RING + r[LAST_ENTRY] + SWCHA], 0xDDu);
+    CHECK_EQ_HEX(r[RING + r[LAST_ENTRY] + INPT4] & 0x80u, 0u);
+    frame(m, NULL);
+    r = ram(m);
+    CHECK_EQ_HEX(r[RING + r[LAST_ENTRY] + SWCHA], 0xDDu);
     muhtari_destroy(m);
+    /* Independent fresh executions hit each exact edge's data tick. */
+    for (unsigned edge = 1u; edge <= 4u; edge++) {
+        m = boot(&plain);
+        CHECK(m != NULL);
+        if (m == NULL) {
+            continue;
+        }
+        m->bus.ticks = 100u;
+        memset(&in, 0, sizeof in);
+        in.size = (uint32_t)sizeof in;
+        in.port[0].device = MUHTARI_PORT_DRIVING;
+        in.port[0].dx = 4;
+        CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+        muhtari__ports_latch(m);
+        static const uint8_t expected[] = {0xDFu, 0xCFu, 0xEFu, 0xFFu};
+        CHECK_EQ_HEX(motion_read(m, 0x0280u, 100u + edge * 454u), expected[edge - 1u]);
+        struct muhtari__ports before = m->ports;
+        for (unsigned i = 0u; i < 20u; i++) {
+            (void)muhtari__bus_peek(m, 0x0280u);
+        }
+        CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
+        muhtari_destroy(m);
+    }
 }
 
 static int pa7_edge(void)

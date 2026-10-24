@@ -322,7 +322,15 @@ struct muhtari__maria {
    the last input set, waiting for the next VBLANK start, while pending is
    set. Pending input is not machine state. input_read records a CPU read
    of SWCHA, SWCHB or INPT0-5 in the current frame. */
+struct muhtari__motion {
+    uint64_t next_tick;
+    int32_t residual;
+    uint8_t phase;
+};
+
 struct muhtari__ports {
+    struct muhtari__motion motion[2];
+    uint64_t motion_tick; /* zero when no controller deadline is armed */
     uint32_t device[2];
     uint32_t buttons[2];
     uint32_t switches;
@@ -745,6 +753,10 @@ uint8_t muhtari__peek(const muhtari *m, uint16_t addr);
 /* Applies the pending input, if any, at a VBLANK start (src/ports.c;
    docs/embedding.md, Input). */
 void muhtari__ports_latch(muhtari *m);
+void muhtari__ports_reset(muhtari *m);
+uint64_t muhtari__ports_next_event(const muhtari *m);
+void muhtari__ports_catch_up(muhtari *m, uint64_t tick);
+void muhtari__bus_rearm(muhtari *m);
 muhtari_status muhtari__ports_check_device_ex(uint32_t device);
 
 /* The device wired to port 0 or 1: MUHTARI_PORT_PROLINE, _JOYSTICK or
