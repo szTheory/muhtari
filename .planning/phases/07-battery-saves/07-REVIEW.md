@@ -1,6 +1,6 @@
 ---
 phase: 07-battery-saves
-reviewed: 2026-10-24T13:52:00Z
+reviewed: 2026-10-24T14:03:00Z
 depth: standard
 files_reviewed: 78
 files_reviewed_list:
@@ -83,80 +83,91 @@ files_reviewed_list:
   - tests/runner/test_save.c
   - tests/runner/tests.cmake
 findings:
-  critical: 2
+  critical: 1
   warning: 0
   info: 0
-  total: 2
+  total: 1
 status: issues_found
 ---
 
 # Phase 7: Code Review Report
 
-**Reviewed:** 2026-10-24T13:52:00Z
+**Reviewed:** 2026-10-24T14:03:00Z
 **Depth:** standard
 **Files Reviewed:** 78
 **Status:** issues_found
 
 ## Summary
 
-Two reproduced correctness defects remain: a native broken output pipe bypasses the runner's final save, and a refused late frontend storage request changes ordinary joystick button translation.
+Re-review after fix round 1: both original reproductions are corrected. One new blocking regression remains in the frontend fix: automatic unsupported header controllers now cause every input update to be refused.
 
-Scope is the explicit file array supplied by the phase evaluation resolver, relative to `d35d33aae73968c96e7d1922120145eaf814ac4e`. The resolver reports `degraded`, source `phase-range`, reason `no-task-commit-rows`; it reports no missing, outside-union or unreachable entries. The binary contents of `tests/diag/battery.a78` were excluded; its owned assembly/configuration, manifest, numeric expectations and consumers were reviewed. Production source matches `fae8e8fb5010b38965f00c090de6bd564a01500a`; the source-diff check against that commit returned no paths.
+The original 78-file text scope is preserved above, relative to `d35d33aae73968c96e7d1922120145eaf814ac4e`. Resolver status remains `degraded`, source `phase-range`, reason `no-task-commit-rows`, with no missing/outside-union/unreachable entries. Binary fixture contents were excluded; owned source, configuration, provenance and consumers remain in scope. This pass examined commits `f8cc10f194285ddb9d46873519a0544503e81266` and `bd7e686d07fca10578be1e5258e3fde32f6a5815`, their changed tests/docs, and affected signal/input call chains. Unaffected source was not redundantly re-reviewed. The source-diff check against `bd7e686` returned no paths.
 
-Review covered core load/storage ownership and ABI compatibility, bus/pin timing, EEPROM protocol/reset/generation, runner import/replacement/control/error paths, frontend publication and memory descriptors, diagnostic independence, scoped fixture/sample comparability, inventories and changed CI wiring. No source files were edited, no commits made, and no excluded upstream source opened.
+No source edits or commits were made by this reviewer. One of at most two phase review-fix rounds has been used. The original findings are preserved in Git at `6ac3648` and summarized below.
 
 ## Narrative Findings (AI reviewer)
 
-### CR-01: Broken stdout pipe terminates the runner before its required final save
+### CR-03: Resolving Auto to unsupported header codes rejects the whole frontend input update
 
 **Classification:** BLOCKER
-**File:** `runner/main.c:1384-1387`; `runner/stop.c:63-70`
-**Issue:** The runner flushes stdout before calling its final `save_flush`, but native POSIX setup leaves SIGPIPE at its default terminating disposition. A consumer that closes the output pipe causes the write or `fflush(stdout)` to terminate the process instead of returning an error. Valid completed frames and dirty battery bytes therefore never reach the final save. This violates the existing D-14/public runner contract that an unrelated output error after valid frames still flushes battery state before destruction. It also occurs during earlier buffered output when enough hash lines are emitted; merely moving this one `fflush` does not address that case. The mocked stdout failure in `tests/runner/test_save.c` returns EOF and cannot reproduce the native signal.
+**File:** `libretro/libretro.c:488-489`; related `libretro/libretro.c:584-596`, `src/ports.c:209-217,239-242,280-296`
+**Issue:** The CR-02 fix changes `lr_active_port` from returning the automatic selector (0) to returning raw `cart.port1/port2`. Supported ROMs may declare light gun, paddles, driving controllers and other devices whose existing automatic behavior is a ProLine fallback; `docs/embedding.md:390-393` and `docs/hardware/controllers.md:19-21` promise that behavior. The core intentionally rejects those codes when passed as an explicit `muhtari_input.device`. As a result, the new adapter calls `muhtari_set_input` with e.g. LIGHTGUN (2), receives ERR_UNSUPPORTED_DEVICE every frame, and discards both ports' buttons and every console switch, even when only the other port is declared unsupported. The game loads and runs but ordinary inputs, Select/Reset/Pause and difficulty changes stop reaching it. This is a regression introduced by `bd7e686`, independent of future controller implementation.
 
-**Evidence:** Run the following from the repository root. The Python command exits 0; its control runner exits 0 and creates a 34,816-byte save, while the closed-pipe runner exits -13 (SIGPIPE) and creates no save. Run URL: N/A-local.
+**Evidence:** A temporary harness reused `tests/libretro/host.c` and its existing input cartridge/actual built module. For each port, it changed that cartridge's header controller byte (55 or 56) to MUHTARI_PORT_LIGHTGUN, kept frontend Auto, loaded through `retro_load_game`, held port 1 UP plus SELECT, and ran three frames. Compilation and execution exited 0; both cases repeatedly logged input refusal and produced SWCHA FF / SWCHB 3F, instead of the required EF / 3D. Run URL: N/A-local.
 
-```python
-import pathlib, subprocess, tempfile
-with tempfile.TemporaryDirectory() as directory:
-    args = ["build/ci/runner/muhtari-run", "--frames", "120",
-            "--hash-frame", "120", "--save-dir", directory,
-            "--save-interval", "4294967295", "tests/diag/battery.a78"]
-    result = subprocess.run(args, stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL)
-    save = pathlib.Path(directory, "battery.sav")
-    assert result.returncode == 0 and save.stat().st_size == 34816
-    save.unlink()
-    child = subprocess.Popen(args, stdout=subprocess.PIPE,
-                             stderr=subprocess.DEVNULL)
-    child.stdout.close()
-    assert child.wait(timeout=10) == -13 and not save.exists()
+Reproduction source, supplied to `cc -x c - -std=c17 -O2 -I. -Iinclude -Ihost -Ilibretro -Irunner -x none tests/cart/images.c runner/sha256.c build/ci/libmuhtari.a build/ci/libmuhtari_host.a -o /tmp/muhtari-rereview-auto`, then execute `/tmp/muhtari-rereview-auto`:
+
+```c
+#define main original_host_main
+#include "tests/libretro/host.c"
+#undef main
+int main(void)
+{
+    if (!module_open("build/ci/libretro/muhtari_libretro.dylib"))
+        return 2;
+    resolve_all();
+    if (!read_file("build/ci/tests/input-carts/input.a78", 0))
+        return 2;
+    for (unsigned p = 0; p < 2; p++) {
+        files[0][55 + p] = MUHTARI_PORT_LIGHTGUN;
+        start(0);
+        pad[0] = BIT(UP) | BIT(SELECT);
+        run_frames(3);
+        const uint8_t *r = last_entry();
+        printf("port %u: SWCHA=%02x SWCHB=%02x; expected ef/3d\n",
+               p + 1, r[E_SWCHA], r[E_SWCHB]);
+        stop();
+        files[0][55 + p] = MUHTARI_PORT_PROLINE;
+    }
+    module_close();
+    return 0;
+}
 ```
 
-**Fix:** Ignore SIGPIPE in native POSIX runner initialization so broken writes return EPIPE through the existing output-error path, which must still call the dirty save path and return exit 1. Keep this host policy outside the core. Add a native child-process regression with an actually closed output pipe, asserting exit 1 and the complete expected final battery bytes; cover both end-of-run flush and output during a run.
+**Fix:** Preserve the core's existing automatic-selector semantics while translating buttons from the retained effective request, or normalize automatic metadata through the same supported-device/unplugged/ProLine-fallback rules before passing an explicit device. Do not pass unimplemented header codes as explicit requests or relax the public API's explicit-device refusal. Extend the actual loaded-module regression to automatic unsupported headers on either port, requiring working button and console-switch input, no per-frame input refusal, and retained held-A behavior for deferred storage changes.
 
-### CR-02: A refused late save-device request drops joystick A-button fire
+## Original findings resolved by round 1
 
-**Classification:** BLOCKER
-**File:** `libretro/libretro.c:533-548`; related `libretro/libretro.c:484-488,588-591`
-**Issue:** `lr_active_port` refuses a late SaveKey/AtariVox attachment by retaining `loaded_port[p]`, but `lr_buttons` independently translates RetroPad buttons from the raw `lr_port_device(p)` request. Load an ordinary joystick on a cartridge whose automatic controller is ProLine, hold RetroPad A, then request SaveKey on that port after load. The installed device remains `MUHTARI_PORT_JOYSTICK`, while A changes from `MUHTARI_BUTTON_1` to `MUHTARI_BUTTON_2`. The joystick reads only BUTTON_1, so its fire becomes released even though the requested storage change was refused pending reload. The same problem occurs through a late battery core option. It contradicts preserved ordinary joystick semantics and the frontend's promise to keep the installed attachment until reload.
+- **CR-01 — formerly BLOCKER; resolved.** Commit `f8cc10f` ignores native POSIX SIGPIPE in runner initialization. Broken writes now reach the existing error path, and `save_flush` still runs before valid state destruction. This does not add signal/I/O state to the core or change Windows/WASI behavior. The actual child-process regression covers default and inherited-ignored SIGPIPE, final buffered flush and a buffer filled during execution; it requires ordinary exit 1 and checks every one of 34,816 saved bytes. Stop/save signals retain their inherited-ignore handling; additional SIGINT/SIGTERM controls exercise it. No remaining defect was found in this fix.
+- **CR-02 — formerly BLOCKER; original reproduction resolved.** Commit `bd7e686` passes the same resolved port to device selection and button translation. The loaded-module held-A regression exercises late SaveKey/AtariVox callbacks and options on either port, absent and HSC storage, reload warnings, unchanged span and intact contents. Those assertions pass. The separate Auto fallback regression caused by its metadata resolution is CR-03 above. The fixer's “requires human verification” marker is satisfied by this agent's semantic review and automated evidence; it creates no owner UAT.
 
-**Evidence:** A temporary C probe included the current real adapter and linked the built core/host archives. With `loaded_port[0] = MUHTARI_PORT_JOYSTICK`, `cart.port1 = MUHTARI_PORT_PROLINE`, and an input callback holding only RetroPad A, changing `device[0]` from `LR_JOYSTICK` to `LR_SAVEKEY` changed the result from active device 5 / buttons 16 to active device 5 / buttons 32. Compilation and execution both exited 0. Run URL: N/A-local. The mismatch follows directly from the two cited production paths; `src/ports.c`'s joystick INPT handling tests BUTTON_1 only.
+## Re-review verification
 
-**Fix:** Resolve each port's effective device once in `lr_input` and use that same effective device for both `in.device[p]` and button translation, resolving automatic metadata consistently. Add a loaded-module regression that loads a joystick, holds A, requests late SaveKey/AtariVox through controller callbacks and core options, and verifies continued joystick fire plus the reload warning and unchanged save span.
+Executed in this re-review, exit 0, run URL N/A-local:
+
+```sh
+ctest --preset ci -R '^(runner[.]stop|runner[.]save[.]controls|libretro[.]host[.](layout|devices|input|battery|battery_order))$' --no-tests=error --output-on-failure
+```
+
+All eight selected tests, including the input fixture, pass. They confirm the original failure repairs and retained tested signal/storage/input behavior; they do not cover automatic unsupported-header fallback. The additional actual-module probe above demonstrates that missing case. The source-diff check against tested source `bd7e686d07fca10578be1e5258e3fde32f6a5815` returned no paths.
+
+The committed `07-REVIEW-FIX.md` records full local 641+6 CI, exact inventories, hygiene 24 and its commands/exit statuses. Those full suites were not redundantly rerun here. Earlier hosted [CI 40095781311](https://github.com/szTheory/muhtari/actions/runs/40095781311) and [Nightly 40095782965](https://github.com/szTheory/muhtari/actions/runs/40095782965) cover pre-fix source, not the current fix commits. No unsupported hosted-success claim is made.
 
 ## Intent and ownership review
 
-The ten flagged assumption rows and descriptor-less prohibitions were assessed against actual implementation and public claims, without fabricating owner UAT or changing their serialized lifecycle status.
-
-- SAVE-01/02/03: the instance owns the only persistent span and fixed serial page state; firmware remains outside saves. Public docs qualify the signature-only stub, selected 5 ms compatibility interval, EEPROM-only AtariVox and unavailable speech/OpenHSC routines. Firmware validation and old-layout clients were checked against their actual consumers.
-- SAVE-04 idempotency/concurrency: staged import arms persistence only on success; clean generations avoid rewriting; naming and one-writer limitations are explicit.
-- SAVE-05 concurrency: exclusive temporaries, bounded collisions, pre-replacement failure checks and consume-before-I/O requests preserve their stated boundaries. CR-01 identifies a missing native output-failure boundary.
-- SAVE-06 boundary/precision/idempotency/concurrency: load-time publication, exact layout lengths, memory-map aliases, isolated launch directories and independent complete-media/counter-pixel consumers were examined. CR-02 identifies a frontend input inconsistency when a storage change is deferred. The two hosted logical cases remain DMA equivalence and battery roundtrip.
-
-Final acceptance runs supplied by the orchestrator are [CI 40095781311](https://github.com/szTheory/muhtari/actions/runs/40095781311) and [Nightly 40095782965](https://github.com/szTheory/muhtari/actions/runs/40095782965). Their prior success does not exercise or negate these two reproduced defects. The targeted probes above are additional local review evidence; this review does not claim to have rerun the full platform matrix.
+The original ten flagged assumption rows and descriptor-less prohibitions retain their prior evidence-based intent review; no serialized lifecycle status was invented or changed. The instance remains the owner of the raw span and fixed serial page state; hosts own files. Firmware stays outside saves, stub/model/speech limitations remain explicit, and the two hosted cases remain DMA equivalence and battery roundtrip. CR-01's output-failure boundary is repaired. CR-03 violates the already required ordinary-input fallback contract and blocks acceptance wherever introduced; it does not require a controller redesign, expanded scope, new bounds, or owner verification.
 
 ---
 
 _Reviewer: gsd-code-reviewer_
 _Depth: standard_
-
