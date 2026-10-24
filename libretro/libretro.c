@@ -787,6 +787,7 @@ static muhtari_status lr_load_hsc(muhtari_media *media, uint8_t **owned)
 #else
     struct stat info;
 #if defined(__GLIBC__) && (defined(__x86_64__) || defined(__aarch64__)) && !defined(stat)
+    /* Native firmware tests cover the x86-64 (1) and AArch64 (0) layouts. */
 #ifdef __x86_64__
     int found = __xstat(1, path, &info);
 #else
