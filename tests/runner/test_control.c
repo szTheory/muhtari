@@ -62,7 +62,7 @@ static BOOL WINAPI own_console(DWORD event)
 }
 #endif
 
-static void exercise(const char *runner, const char *dir, unsigned case_number)
+static void exercise(int command_count, char **command_args, char *dir, unsigned case_number)
 {
     char rom[1024], save[1024], ready[1024], dump[1100], log[1024];
     (void)snprintf(rom, sizeof rom, "%s/control.a78", dir);
@@ -88,6 +88,7 @@ static void exercise(const char *runner, const char *dir, unsigned case_number)
     write_file(save, bytes, sizeof bytes);
     (void)remove(ready);
 #ifdef _WIN32
+    (void)command_count;
     SECURITY_ATTRIBUTES security = {(DWORD)sizeof security, NULL, TRUE};
     HANDLE output = CreateFileA(log, GENERIC_WRITE, FILE_SHARE_READ, &security, CREATE_ALWAYS,
                                 FILE_ATTRIBUTE_NORMAL, NULL);
@@ -104,7 +105,7 @@ static void exercise(const char *runner, const char *dir, unsigned case_number)
     (void)snprintf(command, sizeof command,
                    "\"%s\" --frames 4294967295 --save-dir \"%s\" --save-interval 4294967295 "
                    "--dump-frame \"%s\" \"%s\"",
-                   runner, dir, dump, rom);
+                   command_args[0], dir, dump, rom);
     /* Same private console, no new group: CTRL_C cannot target a nonzero group. */
     BOOL launched =
         CreateProcessA(NULL, command, NULL, NULL, TRUE, 0, NULL, NULL, &startup, &child);
@@ -122,8 +123,21 @@ static void exercise(const char *runner, const char *dir, unsigned case_number)
         if (fd < 0 || dup2(fd, STDOUT_FILENO) < 0 || dup2(fd, STDERR_FILENO) < 0)
             _exit(126);
         (void)close(fd);
-        execl(runner, runner, "--frames", "4294967295", "--save-dir", dir, "--save-interval",
-              "4294967295", "--dump-frame", dump, rom, (char *)NULL);
+        char *args[32];
+        int n = 0;
+        for (int i = 0; i < command_count; i++)
+            args[n++] = command_args[i];
+        args[n++] = "--frames";
+        args[n++] = "4294967295";
+        args[n++] = "--save-dir";
+        args[n++] = dir;
+        args[n++] = "--save-interval";
+        args[n++] = "4294967295";
+        args[n++] = "--dump-frame";
+        args[n++] = dump;
+        args[n++] = rom;
+        args[n] = NULL;
+        execvp(args[0], args);
         _exit(127);
     }
 #endif
@@ -187,7 +201,7 @@ static void exercise(const char *runner, const char *dir, unsigned case_number)
 
 int main(int argc, char **argv)
 {
-    if (argc != 3)
+    if (argc < 3 || argc > 18)
         return 2;
 #ifdef _WIN32
     /* Own the console so broadcast C/BREAK cannot touch the CI runner or shell. */
@@ -196,8 +210,8 @@ int main(int argc, char **argv)
     CHECK(SetConsoleCtrlHandler(NULL, FALSE));
     CHECK(SetConsoleCtrlHandler(own_console, TRUE));
 #endif
-    exercise(argv[1], argv[2], 0);
-    exercise(argv[1], argv[2], 1);
+    exercise(argc - 2, argv + 2, argv[1], 0);
+    exercise(argc - 2, argv + 2, argv[1], 1);
 #ifdef _WIN32
     (void)FreeConsole();
 #endif
