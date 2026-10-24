@@ -23,7 +23,9 @@ its lifetime is at most 60 days. Inherited expiry and renewal are checked every 
 
 Fixture comparison permits a narrow additive relation: only unique new rows for
 `tests/diag/activision.a78`, `tests/diag/absolute.a78`,
-`tests/diag/fractalus.a78` and `tests/diag/battery.a78` may be added.
+`tests/diag/fractalus.a78`, `tests/diag/battery.a78`,
+`tests/diag/controller-light.a78`, `tests/diag/controller-analog.a78` and
+`tests/diag/controller-motion.a78` may be added.
 Each has exactly six tab-separated fields:
 the named path, `this-repo`, a nonempty pin without whitespace, `MIT`, a 64-digit
 lowercase SHA-256 and `-`. All old rows and other manifest text remain byte-identical
@@ -61,8 +63,8 @@ every individual lane must validate before reduction. This comparison identity d
 bytes, validate licensing, prove a diagnostic's behavior or replace raw content
 hashes. Manifest admission, exact fixture digests, independent rebuilds and hash
 coverage retain their separate authority.
-The battery name is comparison permission only: admitting its actual bytes and
-proving battery behavior remain separate requirements. Supporting the annotation
+The battery and controller names are comparison permission only: admitting their
+actual bytes and proving device behavior remain separate requirements. Supporting the annotation
 transition changes neither the live core revision nor its diagnostic report judge;
 both must advance together when the implementation lands. Existing frame/audio
 digests and source/tool pins remain protected.
