@@ -1176,8 +1176,21 @@ static void test_audio_validate(void)
 /* A refused load, for each reason, leaves the previous cartridge running:
    the instance that saw the refusals gives the frames and RAM of one that
    did not. */
+static void hsc_tracer(void)
+{
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    cart[58] = 1u;
+    muhtari *m = make();
+    muhtari_media media = media_for(cart, sizeof cart);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x3900u), 0xC6u);
+    CHECK_EQ_HEX(muhtari__bus_read(m, 0x3904u), 0xFEu);
+    muhtari_destroy(m);
+}
+
 static void test_load_keeps_previous(void)
 {
+    hsc_tracer();
     muhtari *a = make();
     muhtari *b = make();
     load_program(a, prog_count, sizeof prog_count);
