@@ -25,7 +25,7 @@ The console's Reset is the switch a game reads; RetroArch's own Restart is a pow
 
 ## Devices
 
-Each port offers six devices in Quick Menu → Controls:
+Each port offers seven devices in Quick Menu → Controls:
 
 | Device | What the game sees |
 |---|---|
@@ -35,6 +35,20 @@ Each port offers six devices in Quick Menu → Controls:
 | None | nothing plugged in |
 | SaveKey | one 32 KiB serial EEPROM |
 | AtariVox EEPROM | the same EEPROM interface; speech is unavailable |
+| Driving | relative MOUSE X moves the wheel; MOUSE LEFT fires; Y is ignored |
+
+Driving uses `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)` for selection and base
+`RETRO_DEVICE_MOUSE` IDs for polling, once after each frame's input poll. The frontend
+must bind that abstraction; an absolute steering wheel is not mapped automatically.
+Auto selects driving when the header names it. Unknown callback identities log a warning
+and unplug ordinary input. Input descriptors refresh on load and device selection.
+
+Console controls come from the lowest numbered ordinary ProLine/joystick port, retaining
+port 1's preference when both are ordinary. Otherwise the active driving port supplies
+MIDDLE for Pause, BUTTON_4 for Select and RIGHT for Reset; LEFT remains fire. With neither
+port active, supplemental port 1 RetroPad L2/R2/L3 provide Pause/Select/Reset. Driving and
+supplemental controls use the difficulty options. A new ordinary console provider starts
+its L/R edge history at the currently held levels, so selection creates no synthetic toggle.
 
 ## Options
 

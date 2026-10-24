@@ -75,6 +75,7 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #define LR_PROLINE RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)
 #define LR_SAVEKEY RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2)
 #define LR_ATARIVOX RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3)
+#define LR_DRIVING RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)
 
 #ifdef USE_RGB565
 typedef uint16_t lr_pixel;
@@ -107,6 +108,11 @@ static unsigned device[2] = {RETRO_DEVICE_JOYPAD, RETRO_DEVICE_JOYPAD};
 static bool difficulty_a[2];   /* the left and right switches, true at A */
 static bool difficulty_opt[2]; /* the difficulty options when last read */
 static bool edge_held[2];      /* port 1's L and R at the last poll */
+static unsigned console_port;
+static uint32_t console_device;
+static unsigned console_ids[3];
+static bool console_changed;
+static void lr_refresh_inputs(void);
 static bool run_failed;        /* a failed frame was logged */
 static struct retro_memory_descriptor descs[LR_MAX_DESCRIPTORS];
 static struct retro_memory_map memory_map; /* outlives SET_MEMORY_MAPS */
@@ -135,16 +141,17 @@ static const struct retro_controller_description pad_types[] = {
     {"None", RETRO_DEVICE_NONE},
     {"SaveKey", LR_SAVEKEY},
     {"AtariVox EEPROM", LR_ATARIVOX},
+    {"Driving", LR_DRIVING},
 };
 static struct retro_controller_info ports[] = {
-    {pad_types, 6u},
-    {pad_types, 6u},
+    {pad_types, 7u},
+    {pad_types, 7u},
     {NULL, 0u},
 };
 
 /* SET_INPUT_DESCRIPTORS (L882): ProSystem's layout (HOSTS-AND-INTEGRATION
    section 1, Input). */
-static struct retro_input_descriptor inputs[] = {
+static const struct retro_input_descriptor pad_inputs[] = {
     {0u, RETRO_DEVICE_JOYPAD, 0u, RETRO_DEVICE_ID_JOYPAD_UP, "Up"},
     {0u, RETRO_DEVICE_JOYPAD, 0u, RETRO_DEVICE_ID_JOYPAD_DOWN, "Down"},
     {0u, RETRO_DEVICE_JOYPAD, 0u, RETRO_DEVICE_ID_JOYPAD_LEFT, "Left"},
@@ -164,6 +171,7 @@ static struct retro_input_descriptor inputs[] = {
     {1u, RETRO_DEVICE_JOYPAD, 0u, RETRO_DEVICE_ID_JOYPAD_A, "Button 2"},
     {0u, 0u, 0u, 0u, NULL},
 };
+static struct retro_input_descriptor inputs[23];
 
 /* The options (SET_CORE_OPTIONS_V2, L2339). No region option: PAL is
    refused in this release. */
@@ -383,6 +391,9 @@ void retro_deinit(void)
     memset(difficulty_a, 0, sizeof difficulty_a);
     memset(difficulty_opt, 0, sizeof difficulty_opt);
     memset(edge_held, 0, sizeof edge_held);
+    console_port = 0u;
+    console_device = 0u;
+    console_changed = false;
     memset(options_v1, 0, sizeof options_v1);
 }
 
@@ -426,11 +437,18 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
     info->timing.sample_rate = 48000.0;
 }
 
-/* L7673: one of pad_types; any other id means Auto. */
+/* L7673: unknown identities safely unplug ordinary input. */
 void retro_set_controller_port_device(unsigned port, unsigned id)
 {
     if (port < 2u) {
-        device[port] = id;
+        bool known = false;
+        for (unsigned i = 0u; i < sizeof pad_types / sizeof pad_types[0]; i++)
+            known |= pad_types[i].id == id;
+        if (!known)
+            LR_LOG(RETRO_LOG_WARN, "muhtari: unknown controller %u; selecting None\n", id);
+        device[port] = known ? id : RETRO_DEVICE_NONE;
+        if (inst != NULL)
+            lr_refresh_inputs();
     }
 }
 
@@ -449,6 +467,8 @@ static uint32_t lr_port_device(unsigned port)
         return MUHTARI_PORT_SAVEKEY;
     case LR_ATARIVOX:
         return MUHTARI_PORT_ATARIVOX;
+    case LR_DRIVING:
+        return MUHTARI_PORT_DRIVING;
     default:
         return 0u;
     }
@@ -493,7 +513,74 @@ static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
     d = p == 0u ? cart.port1 : cart.port2;
     if (d == MUHTARI_PORT_NONE && content != NULL)
         return MUHTARI_PORT_UNPLUGGED;
-    return d == MUHTARI_PORT_JOYSTICK ? MUHTARI_PORT_JOYSTICK : MUHTARI_PORT_PROLINE;
+    return d == MUHTARI_PORT_JOYSTICK || d == MUHTARI_PORT_DRIVING ? d : MUHTARI_PORT_PROLINE;
+}
+
+static bool lr_ordinary(uint32_t d)
+{
+    return d == MUHTARI_PORT_PROLINE || d == MUHTARI_PORT_JOYSTICK;
+}
+
+/* Descriptor storage outlives the environment callback. IDs are the base
+   abstractions actually polled (libretro.h, input descriptor contract). */
+static void lr_refresh_inputs(void)
+{
+    muhtari_media request = {0};
+    uint32_t active[2];
+    unsigned provider = 0u, n = 0u;
+    lr_battery_request(&request);
+    for (unsigned p = 0u; p < 2u; p++)
+        active[p] = lr_active_port(p, &request);
+    if (!lr_ordinary(active[0])) {
+        if (lr_ordinary(active[1]))
+            provider = 1u;
+        else if (active[0] != MUHTARI_PORT_DRIVING && active[1] == MUHTARI_PORT_DRIVING)
+            provider = 1u;
+    }
+    uint32_t kind = lr_ordinary(active[provider]) || active[provider] == MUHTARI_PORT_DRIVING
+                        ? active[provider] : MUHTARI_PORT_UNPLUGGED;
+    if (console_port != provider || console_device != kind)
+        console_changed = true;
+    console_port = provider;
+    console_device = kind;
+    bool driving = kind == MUHTARI_PORT_DRIVING;
+    console_ids[0] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_START
+                     : driving ? RETRO_DEVICE_ID_MOUSE_MIDDLE : RETRO_DEVICE_ID_JOYPAD_L2;
+    console_ids[1] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_SELECT
+                     : driving ? RETRO_DEVICE_ID_MOUSE_BUTTON_4 : RETRO_DEVICE_ID_JOYPAD_R2;
+    console_ids[2] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_X
+                     : driving ? RETRO_DEVICE_ID_MOUSE_RIGHT : RETRO_DEVICE_ID_JOYPAD_L3;
+    for (unsigned p = 0u; p < 2u; p++) {
+        if (lr_ordinary(active[p])) {
+            for (unsigned i = 0u; i < 6u; i++) {
+                inputs[n] = pad_inputs[i];
+                inputs[n++].port = p;
+            }
+        } else if (active[p] == MUHTARI_PORT_DRIVING) {
+            inputs[n++] = (struct retro_input_descriptor){p, RETRO_DEVICE_MOUSE, 0u,
+                RETRO_DEVICE_ID_MOUSE_X, "Driving motion"};
+            inputs[n++] = (struct retro_input_descriptor){p, RETRO_DEVICE_MOUSE, 0u,
+                RETRO_DEVICE_ID_MOUSE_LEFT, "Fire"};
+        }
+    }
+    if (lr_ordinary(kind)) {
+        for (unsigned i = 6u; i < 11u; i++) {
+            inputs[n] = pad_inputs[i];
+            inputs[n++].port = provider;
+        }
+    } else {
+        inputs[n++] = (struct retro_input_descriptor){provider,
+            driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u,
+            console_ids[0], "Pause"};
+        inputs[n++] = (struct retro_input_descriptor){provider,
+            driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u,
+            console_ids[1], "Select"};
+        inputs[n++] = (struct retro_input_descriptor){provider,
+            driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u,
+            console_ids[2], "Reset"};
+    }
+    memset(&inputs[n], 0, sizeof inputs[n]);
+    (void)env_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, inputs);
 }
 
 static void lr_check_battery_request(const muhtari_media *request)
@@ -562,8 +649,8 @@ static void lr_difficulty_edges(void)
                                            {"Right difficulty: B", "Right difficulty: A"}};
     unsigned i;
     for (i = 0; i < 2u; i++) {
-        bool held = lr_held(0u, ids[i]);
-        if (held && !edge_held[i]) {
+        bool held = lr_held(console_port, ids[i]);
+        if (held && !edge_held[i] && !console_changed) {
             difficulty_a[i] = !difficulty_a[i];
             lr_message(text[i][difficulty_a[i] ? 1 : 0]);
         }
@@ -576,28 +663,42 @@ static void lr_difficulty_edges(void)
    port 1 are the console's Select, Pause and Reset. */
 static void lr_input(void)
 {
-    muhtari_input in;
+    muhtari_input_ex in;
     muhtari_media request = {0};
     bool updated = false;
     if (env_cb != NULL && env_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
         lr_read_difficulty(false);
+        lr_refresh_inputs();
     }
-    lr_difficulty_edges();
+    if (lr_ordinary(console_device))
+        lr_difficulty_edges();
+    console_changed = false;
     lr_battery_request(&request);
     if (content != NULL)
         lr_check_battery_request(&request);
     memset(&in, 0, sizeof in);
     in.size = (uint32_t)sizeof in;
     for (unsigned p = 0u; p < 2u; p++) {
-        in.device[p] = lr_active_port(p, &request);
-        in.buttons[p] = lr_buttons(p, in.device[p]);
+        in.port[p].device = lr_active_port(p, &request);
+        if (lr_ordinary(in.port[p].device))
+            in.port[p].buttons = lr_buttons(p, in.port[p].device);
+        else if (in.port[p].device == MUHTARI_PORT_DRIVING && input_state_cb != NULL) {
+            in.port[p].dx = input_state_cb(p, RETRO_DEVICE_MOUSE, 0u, RETRO_DEVICE_ID_MOUSE_X);
+            in.port[p].buttons = input_state_cb(p, RETRO_DEVICE_MOUSE, 0u,
+                RETRO_DEVICE_ID_MOUSE_LEFT) != 0 ? MUHTARI_BUTTON_1 : 0u;
+        }
     }
-    in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_SELECT) ? MUHTARI_SWITCH_SELECT : 0u;
-    in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_START) ? MUHTARI_SWITCH_PAUSE : 0u;
-    in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_X) ? MUHTARI_SWITCH_RESET : 0u;
+    static const uint32_t switches[3] = {MUHTARI_SWITCH_PAUSE, MUHTARI_SWITCH_SELECT,
+                                        MUHTARI_SWITCH_RESET};
+    for (unsigned i = 0u; i < 3u; i++) {
+        if (input_state_cb != NULL && input_state_cb(console_port,
+                console_device == MUHTARI_PORT_DRIVING ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD,
+                0u, console_ids[i]) != 0)
+            in.switches |= switches[i];
+    }
     in.switches |= difficulty_a[0] ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u;
     in.switches |= difficulty_a[1] ? MUHTARI_SWITCH_RIGHT_DIFFICULTY_A : 0u;
-    if (muhtari_set_input(inst, &in) != MUHTARI_STATUS_OK) {
+    if (muhtari_set_input_ex(inst, &in) != MUHTARI_STATUS_OK) {
         LR_LOG(RETRO_LOG_ERROR, "muhtari: input request refused\n");
     }
 }
@@ -1116,7 +1217,18 @@ bool retro_load_game(const struct retro_game_info *game)
         lr_release();
         return false;
     }
-    (void)env_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, inputs);
+    lr_refresh_inputs();
+    muhtari_input_ex initial = {0};
+    muhtari_media request = {0};
+    initial.size = (uint32_t)sizeof initial;
+    lr_battery_request(&request);
+    for (unsigned p = 0u; p < 2u; p++)
+        initial.port[p].device = lr_active_port(p, &request);
+    if (muhtari_set_input_ex(inst, &initial) != MUHTARI_STATUS_OK) {
+        lr_release();
+        return false;
+    }
+    console_changed = false;
     lr_read_difficulty(true);
     if (content != NULL) {
         lr_memory_maps();

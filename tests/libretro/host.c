@@ -719,6 +719,25 @@ static void case_input(void)
         stop();
         pad[other] = 0u;
         memset(mouse, 0, sizeof mouse);
+        /* Driving remains live beside either installed EEPROM placement;
+           later identity changes retain the already published save span. */
+        p_set_controller_port_device(port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0));
+        p_set_controller_port_device(other, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2));
+        start(0);
+        void *save = p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+        CHECK(save != NULL);
+        CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 32768u);
+        mouse[port][RETRO_DEVICE_ID_MOUSE_LEFT] = 1;
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[port == 0u ? E_INPT4 : E_INPT5] & HI, 0u);
+        p_set_controller_port_device(other, UINT32_MAX);
+        run_frames(3u);
+        CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == save);
+        CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 32768u);
+        CHECK(strstr(log_text, "unknown controller") != NULL);
+        CHECK(strstr(message, "reload") != NULL);
+        stop();
+        memset(mouse, 0, sizeof mouse);
     }
 }
 
