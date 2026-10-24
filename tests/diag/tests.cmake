@@ -186,6 +186,8 @@ target_include_directories(muhtari-test-diag PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-diag PRIVATE muhtari::muhtari muhtari_host)
 add_executable(muhtari-test-retroarch-compare ${PROJECT_SOURCE_DIR}/tests/retroarch/compare.c
   ${PROJECT_SOURCE_DIR}/tests/retroarch/bmp.c)
+target_compile_definitions(muhtari-test-retroarch-compare PRIVATE
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 set_target_properties(muhtari-test-retroarch-compare PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-retroarch-compare)
