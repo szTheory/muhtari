@@ -302,6 +302,27 @@ compare for inequality, never ordering or elapsed writes. Power cycle retains by
 generation. Successful load starts FF-filled storage with generation zero; refused load
 preserves bytes, pointers, topology, generation and subsequent execution. Hosts own files.
 
+EEPROM page data becomes persistent only after completed programming in emulated time.
+Buffered or aborted serial traffic is outside the save span, and same-value programming
+is busy without changing the token. Reset settles work already due, discards future
+programming and retains committed data. Neither a getter nor a host flush advances time
+to finish a write; see [serial EEPROM](hardware/controllers.md#serial-eeprom).
+
+Per-frame input may select automatic or the already attached save device. Adding,
+removing or moving an EEPROM requires another successful load; a refused input leaves
+the pending joystick state unchanged. Use these load-time choices before importing:
+
+| Choice | Result |
+|---|---|
+| Explicit save device on one port | That port owns the EEPROM |
+| Automatic port with a save-device declaration | The declared port owns it |
+| Save hint without a location | Port 2 owns it |
+| Explicit non-save device on the hinted port | The hint is suppressed |
+| Two save devices after applying overrides | Load fails transactionally |
+
+Every layout uses the same instance-owned array; no second save copy is synchronized
+by a query. Frames, serial traffic, reset and observers allocate no memory after load.
+
 ## The first frame after load
 
 A load without a BIOS leaves the machine at the fast-boot hand-off, 8,190 ticks before VBLANK start, not at a frame

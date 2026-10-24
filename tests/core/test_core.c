@@ -824,6 +824,7 @@ static void test_info(void)
 /* After create the core never allocates: one alloc at create, none in
    LONG_RUN frames, one free at destroy. */
 static void retail_lifecycle(void);
+static void battery_allocation_lifecycle(void);
 
 static void test_no_alloc_after_load(void)
 {
@@ -855,6 +856,7 @@ static void test_no_alloc_after_load(void)
     CHECK_EQ_U64(c.allocs, 2);
     CHECK_EQ_U64(c.frees, 2);
     retail_lifecycle();
+    battery_allocation_lifecycle();
 }
 
 /* A 4 KiB linear cartridge built in memory: an A78 version 3 header with
@@ -1701,6 +1703,52 @@ static void test_battery_reset(void)
     CHECK_EQ_U64(battery_of(m).generation, 0u);
     CHECK_EQ_U64(m->savekey.pending, 0u);
     muhtari_destroy(m);
+}
+
+static void battery_allocation_lifecycle(void)
+{
+    static uint8_t firmware[4096];
+    memset(firmware, 0xFF, sizeof firmware);
+    firmware[0x900] = 0xC6u;
+    firmware[0x904] = 0xFEu;
+    for (unsigned layout = 0u; layout < 4u; layout++) {
+        alloc_counts counts;
+        muhtari_config cfg = alloc_config(&counts);
+        muhtari *m = NULL;
+        CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+        make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+        muhtari_media media = media_for(cart, sizeof cart);
+        media.hsc_mode = (layout & 1u) != 0u ? MUHTARI_HSC_ON : MUHTARI_HSC_OFF;
+        if ((layout & 2u) != 0u)
+            media.port[layout == 2u ? 0u : 1u] = MUHTARI_PORT_SAVEKEY;
+        if ((layout & 1u) != 0u) {
+            media.hsc_rom = firmware;
+            media.hsc_rom_size = sizeof firmware;
+        }
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        muhtari_battery_info before = battery_of(m);
+        uint32_t calls = counts.allocs;
+        for (unsigned frame = 0u; frame < 3u; frame++) {
+            run(m, NULL);
+            CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+            CHECK(battery_of(m).data == before.data);
+        }
+        CHECK_EQ_U64(counts.allocs, calls);
+        /* Allocation fails only after firmware validation/staging, before the
+           loaded cartridge or published span can be replaced. */
+        counts.fail_from = calls + 1u;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_NO_MEMORY);
+        CHECK_EQ_U64(counts.allocs, calls + 1u);
+        CHECK(battery_of(m).data == before.data);
+        CHECK_EQ_U64(battery_of(m).bytes, before.bytes);
+        CHECK_EQ_U64(battery_of(m).generation, before.generation);
+        counts.fail_from = 0u;
+        calls = counts.allocs;
+        run(m, NULL);
+        CHECK_EQ_U64(counts.allocs, calls);
+        muhtari_destroy(m);
+        CHECK_EQ_U64(counts.frees, calls - 1u);
+    }
 }
 
 static void test_hsc_sizes(void)

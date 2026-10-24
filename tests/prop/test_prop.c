@@ -468,6 +468,265 @@ static int input_at_vblank(uint64_t *rng, uint32_t size)
     return finish(a, b, ok && same_run(one, two, 2u, a, b));
 }
 
+/* These properties use an owned idle cartridge. The six combinations cover
+   absent, HSC, EEPROM on either port, and both combined placements. */
+static uint8_t battery_expected[34816];
+static uint8_t battery_firmware[4096];
+
+static muhtari_battery_info battery_info(const muhtari *m)
+{
+    muhtari_battery_info b = {0};
+    b.size = (uint32_t)sizeof b;
+    if (muhtari_get_battery(m, &b) != MUHTARI_STATUS_OK) {
+        fputs("battery property query failed\n", stderr);
+        exit(1);
+    }
+    return b;
+}
+
+static void battery_media(muhtari_media *media, unsigned layout, uint64_t *rng)
+{
+    memset(image, 0, 128u + 4096u);
+    image[0] = 3u;
+    memcpy(image + 1u, "ATARI7800", 9u);
+    image[51] = 0x10u;
+    image[55] = image[56] = MUHTARI_PORT_PROLINE;
+    image[128] = 0x4Cu; /* JMP $F000 */
+    image[130] = 0xF0u;
+    image[128u + 4092u] = 0u;
+    image[128u + 4093u] = 0xF0u;
+    memset(media, 0, sizeof *media);
+    media->size = (uint32_t)sizeof *media;
+    media->image = image;
+    media->image_size = 128u + 4096u;
+    unsigned hsc = layout == 1u || layout >= 4u;
+    unsigned port = layout >= 2u ? 1u + (layout & 1u) : 0u;
+    media->hsc_mode = hsc != 0u ? MUHTARI_HSC_ON : MUHTARI_HSC_OFF;
+    if (port != 0u) {
+        if (prop_below(rng, 2u) != 0u) {
+            image[54u + port] = MUHTARI_PORT_ATARIVOX;
+        } else {
+            media->port[port - 1u] = MUHTARI_PORT_SAVEKEY;
+        }
+    }
+    /* A non-save override suppresses a declared save device before load. */
+    if (layout < 2u) {
+        image[58] = 2u;
+        media->port[1] = MUHTARI_PORT_UNPLUGGED;
+    }
+    if (hsc != 0u && prop_below(rng, 2u) != 0u) {
+        memset(battery_firmware, 0xFF, sizeof battery_firmware);
+        battery_firmware[0x900] = 0xC6u;
+        battery_firmware[0x904] = 0xFEu;
+        media->hsc_rom = battery_firmware;
+        media->hsc_rom_size = sizeof battery_firmware;
+    }
+}
+
+/* Actual bus cycles carry every pin transition; getters never make edges.
+   Open-drain wiring and page semantics: docs/hardware/controllers.md. */
+static void battery_pins(muhtari *m, unsigned scl, unsigned sda)
+{
+    unsigned shift = m->battery.eeprom_port == 1u ? 4u : 0u;
+    muhtari__bus_write(m, 0x0281u,
+                       (uint8_t)(((scl == 0u ? 8u : 0u) | (sda == 0u ? 4u : 0u)) << shift));
+}
+
+static void battery_start(muhtari *m)
+{
+    battery_pins(m, 0u, 1u);
+    battery_pins(m, 1u, 1u);
+    battery_pins(m, 1u, 0u);
+    battery_pins(m, 0u, 0u);
+}
+
+static void battery_send(muhtari *m, uint8_t value)
+{
+    for (unsigned bit = 0u; bit < 8u; bit++) {
+        unsigned high = ((unsigned)value >> (7u - bit)) & 1u;
+        battery_pins(m, 0u, high);
+        battery_pins(m, 1u, high);
+        battery_pins(m, 0u, high);
+    }
+    battery_pins(m, 0u, 1u);
+    battery_pins(m, 1u, 1u);
+    battery_pins(m, 0u, 1u);
+}
+
+static void battery_stop(muhtari *m)
+{
+    battery_pins(m, 0u, 0u);
+    battery_pins(m, 1u, 0u);
+    battery_pins(m, 1u, 1u);
+}
+
+static int battery_pair(uint64_t *rng, uint32_t size, muhtari **a, muhtari **b,
+                        muhtari_media *media)
+{
+    uint32_t index = size == PROP_SIZE_MAX ? case_index++ : case_index - 1u;
+    unsigned layout = index % 6u;
+    battery_media(media, layout, rng);
+    *a = create();
+    *b = create();
+    if (muhtari_load(*a, media) != MUHTARI_STATUS_OK ||
+        muhtari_load(*b, media) != MUHTARI_STATUS_OK)
+        return differ("battery load", 0u);
+    muhtari_battery_info first = battery_info(*a), second = battery_info(*b);
+    size_t bytes = (layout == 1u || layout >= 4u ? 2048u : 0u) + (layout >= 2u ? 32768u : 0u);
+    if (first.bytes != bytes || second.bytes != bytes || first.layout_version != 1u ||
+        second.layout_version != 1u || first.generation != 0u || second.generation != 0u ||
+        (bytes == 0u ? first.data != NULL || second.data != NULL : first.data == second.data))
+        return differ("battery layout", 0u);
+    for (size_t at = 0u; at < bytes; at++) {
+        battery_expected[at] = (uint8_t)(at * 17u + prop_below(rng, 256u));
+        first.data[at] = second.data[at] = battery_expected[at];
+    }
+    return battery_info(*a).generation == 0u && battery_info(*b).generation == 0u;
+}
+
+static int battery_lifecycle(uint64_t *rng, uint32_t size)
+{
+    muhtari *a, *b;
+    muhtari_media media;
+    int ok = battery_pair(rng, size, &a, &b, &media);
+    muhtari_battery_info original = battery_info(a);
+    uint64_t expected_generation = UINT64_MAX;
+    a->battery.generation = b->battery.generation = expected_generation;
+    if (original.hsc_attached != 0u) {
+        size_t at = prop_below(rng, 2048u);
+        uint8_t value = (uint8_t)(battery_expected[at] ^ 0x80u);
+        muhtari__bus_write(a, (uint16_t)(0x1000u + at), value);
+        muhtari__bus_write(b, (uint16_t)(0x1000u + at), value);
+        muhtari__bus_write(a, (uint16_t)(0x1000u + at), value);
+        muhtari__bus_write(b, (uint16_t)(0x1000u + at), value);
+        battery_expected[at] = value;
+        expected_generation++;
+    }
+    if (original.eeprom_port != 0u) {
+        uint16_t address = (uint16_t)prop_below(rng, 32768u);
+        size_t offset = original.hsc_attached != 0u ? 2048u : 0u;
+        unsigned count = 1u + prop_below(rng, 8u * size);
+        unsigned abort_write = prop_below(rng, 3u) == 0u;
+        uint8_t values[64];
+        for (unsigned i = 0u; i < count; i++)
+            values[i] = (uint8_t)prop_below(rng, 256u);
+        for (unsigned peer = 0u; peer < 2u; peer++) {
+            muhtari *m = peer == 0u ? a : b;
+            muhtari__bus_write(m, 0x0280u, 0u);
+            battery_start(m);
+            battery_send(m, 0xA0u);
+            battery_send(m, (uint8_t)(address >> 8));
+            battery_send(m, (uint8_t)address);
+            for (unsigned i = 0u; i < count; i++)
+                battery_send(m, values[i]);
+            if (abort_write != 0u)
+                battery_start(m);
+            battery_stop(m);
+        }
+        if (memcmp(a->battery.data, battery_expected, original.bytes) != 0)
+            ok = differ("pending page became persistent", 0u);
+        if (abort_write == 0u) {
+            int changed = 0;
+            for (unsigned i = 0u; i < count; i++) {
+                size_t at = offset + (address & 0x7FC0u) + ((address + i) & 63u);
+                changed |= battery_expected[at] != values[i];
+                battery_expected[at] = values[i];
+            }
+            expected_generation += changed != 0 ? 1u : 0u;
+        }
+    }
+    struct frame_out first[2], second[2];
+    for (unsigned frame = 0u; frame < 2u; frame++) {
+        run(a, WIDTH, &first[frame]);
+        run(b, WIDTH, &second[frame]);
+    }
+    ok = same_run(first, second, 2u, a, b) && ok;
+    muhtari_battery_info after = battery_info(a);
+    if (after.data != original.data || after.bytes != original.bytes ||
+        after.generation != expected_generation ||
+        memcmp(a->battery.data, battery_expected, original.bytes) != 0)
+        ok = differ("committed battery", 2u);
+    /* Every refusal is transactional, including staging explicit firmware. */
+    uint8_t before[32], refused[32];
+    digest(a, 1, before);
+    muhtari_media bad = media;
+    bad.image_size = 127u;
+    uint32_t calls = allocation_calls;
+    if (muhtari_load(a, &bad) != MUHTARI_STATUS_ERR_TRUNCATED_IMAGE || allocation_calls != calls)
+        ok = differ("malformed battery refusal", 2u);
+    bad = media;
+    bad.port[0] = bad.port[1] = MUHTARI_PORT_SAVEKEY;
+    if (muhtari_load(a, &bad) != MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE || allocation_calls != calls)
+        ok = differ("dual EEPROM refusal", 2u);
+    fail_allocation = 1u;
+    muhtari_status failed = muhtari_load(a, &media);
+    fail_allocation = 0u;
+    if (failed != MUHTARI_STATUS_ERR_NO_MEMORY || allocation_calls != calls + 1u)
+        ok = differ("battery allocation refusal", 2u);
+    digest(a, 1, refused);
+    if (memcmp(before, refused, sizeof before) != 0 || battery_info(a).data != original.data)
+        ok = differ("battery refusal state", 2u);
+    run(a, WIDTH, first);
+    run(b, WIDTH, second);
+    ok = same_run(first, second, 1u, a, b) && ok;
+    calls = allocation_calls;
+    if (muhtari_power_cycle(a) != MUHTARI_STATUS_OK ||
+        muhtari_power_cycle(b) != MUHTARI_STATUS_OK || allocation_calls != calls ||
+        battery_info(a).generation != expected_generation ||
+        battery_info(a).data != original.data ||
+        memcmp(a->battery.data, battery_expected, original.bytes) != 0)
+        ok = differ("battery reset retention", 3u);
+    run(a, WIDTH, first);
+    run(b, WIDTH, second);
+    ok = same_run(first, second, 1u, a, b) && ok;
+    if (muhtari_load(a, &media) != MUHTARI_STATUS_OK || battery_info(a).generation != 0u)
+        ok = differ("battery reload", 0u);
+    for (size_t at = 0u; at < original.bytes; at++) {
+        if (a->battery.data[at] != 0xFFu) {
+            ok = differ("battery reload baseline", 0u);
+            break;
+        }
+    }
+    if (memcmp(b->battery.data, battery_expected, original.bytes) != 0)
+        ok = differ("battery instance isolation", 0u);
+    return finish(a, b, ok);
+}
+
+static int battery_observers(uint64_t *rng, uint32_t size)
+{
+    muhtari *a, *b;
+    muhtari_media media;
+    int ok = battery_pair(rng, size, &a, &b, &media);
+    if (a->battery.eeprom_port != 0u) {
+        for (unsigned peer = 0u; peer < 2u; peer++) {
+            muhtari *m = peer == 0u ? a : b;
+            muhtari__bus_write(m, 0x0280u, 0u);
+            battery_start(m);
+            battery_send(m, 0xA0u);
+            /* Leave an incomplete address in flight during observation. */
+            battery_send(m, 0x7Fu);
+        }
+    }
+    uint8_t before[32], after[32];
+    digest(a, 1, before);
+    uint32_t calls = allocation_calls;
+    for (unsigned n = 0u; n < size; n++) {
+        muhtari_battery_info info = battery_info(a);
+        muhtari_const_span rom = {0};
+        rom.size = (uint32_t)sizeof rom;
+        if (muhtari_get_hsc_rom(a, &rom) != MUHTARI_STATUS_OK || info.generation != 0u)
+            ok = differ("battery observer status", 0u);
+        (void)peek_all(a);
+    }
+    digest(a, 1, after);
+    if (memcmp(before, after, sizeof before) != 0 || allocation_calls != calls)
+        ok = differ("battery observer changed state or allocated", 0u);
+    struct frame_out first, second;
+    run(a, WIDTH, &first);
+    run(b, WIDTH, &second);
+    return finish(a, b, same_run(&first, &second, 1u, a, b) && ok);
+}
+
 /* Reads BUILT_DIR/name/name.bas.a78 into samples[i]. */
 static int read_sample(const char *dir, const char *name, uint32_t i)
 {
@@ -504,6 +763,8 @@ static const struct {
     {"peek_pure", peek_pure},
     {"instances_isolated", instances_isolated},
     {"input_at_vblank", input_at_vblank},
+    {"battery_lifecycle", battery_lifecycle},
+    {"battery_observers", battery_observers},
 };
 
 int main(int argc, char **argv)
@@ -534,6 +795,9 @@ int main(int argc, char **argv)
                 if (retail_pool[b] == UINT32_MAX)
                     return 1;
             int result = prop_run(props[i].name, props[i].fn);
+            if (strncmp(props[i].name, "battery_", 8u) == 0) {
+                return result;
+            }
             if (retail_seen != 7u) {
                 fprintf(stderr, "property omitted a retail board: mask %u\n", retail_seen);
                 return 1;

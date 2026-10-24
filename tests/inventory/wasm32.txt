@@ -521,6 +521,8 @@ policy.compat_doc_fresh.self_test	policy
 policy.no_skip	policy
 policy.no_skip.self_test	policy
 policy.notices	policy
+prop.battery_lifecycle	portable,prop
+prop.battery_observers	portable,prop
 prop.input_at_vblank	portable,prop
 prop.instances_isolated	portable,prop
 prop.peek_pure	portable,prop
