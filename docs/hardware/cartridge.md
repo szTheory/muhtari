@@ -355,6 +355,36 @@ observations are therefore 90, 166 and 90, derived from the page pairs before
 execution. These checks establish memory semantics, without claiming retail
 playability or cartridge measurements.
 
+## HSC
+
+The High Score Cartridge pass-through provides 2,048 SRAM bytes at $1000-$17FF
+and 4,096 ROM bytes at $3000-$3FFF, without reset vectors. Detection reads
+$C6 at $3900 and $FE at $3904 (cartridge preparation §4.1, CART.06).
+CPU reads/stores, MARIA fetches and side-effect-free peeks use the same installed
+arrays after the bus applies MEN/BIOS selection. Existing audio decode still
+takes CPU reads and writes first. No HSC means these windows retain their
+existing board/open-bus owners; disabled MEN never creates an HSC alias.
+
+New HSC SRAM is FF-filled, without formatting. A changed CPU store increments
+the instance's uint64 battery equality token; same-value stores, reads and peeks
+do not. Power cycle preserves SRAM and the token. Successful replacement load
+starts a new FF baseline; rejection leaves installed storage and execution intact.
+
+Optional user firmware is copied only at exactly 4,096 bytes. SHA-1
+`a3af676991391a6dd716c79022d4947206b78164` identifies the canonical image
+(cartridge preparation CART.06/CART.18/CART.40). Unknown supplied firmware is
+accepted with a warning; missing detection bytes warn independently. It has
+no BIOS vector validation. No Atari firmware is distributed.
+
+Without firmware, the installed ROM is FF except the two C6/FE signatures.
+This limited stub supports compatible direct-SRAM software. It supplies none
+of the seven firmware entry routines, screens, formatting or full OpenHSC
+semantics. Calling its vector area executes ordinary FF-filled memory; there
+are no firmware traps or simulated success returns. Supplied ROM and this
+stub are visible through the same read-only query and hardware windows.
+See [embedding](../embedding.md#battery-storage-and-hsc-firmware) for ownership,
+load-time controls, stable raw layout and clean host import.
+
 ## Loading
 
 `muhtari_load` identifies the image exactly as `muhtari_probe` does and returns the same status. A refusal returns

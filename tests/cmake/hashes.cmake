@@ -27,7 +27,7 @@ function(hashes_board name result)
   set(patterns "^frame 1 sha256 ([0-9a-f]+)$" "^frame 600 sha256 ([0-9a-f]+)$"
     "^audio_transitions_sha256 ([0-9a-f]+)$" "^audio_pcm_sha256 ([0-9a-f]+)$"
     "^audio_frames 600$" "^audio_samples [1-9][0-9]*$" "^audio_rate 48000/1$"
-    "^audio_behaviour_revision 3$" "^audio_synthesis exact-q23-16x64-dc20$"
+    "^audio_behaviour_revision 4$" "^audio_synthesis exact-q23-16x64-dc20$"
     "^diagnostic ([0-9a-f]+)$")
   set(content "")
   foreach(i RANGE 0 9)

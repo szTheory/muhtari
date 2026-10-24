@@ -183,10 +183,10 @@ typedef struct muhtari_media {
     size_t image_size;
     const void *bios; /* NULL: fast boot; copied at load */
     size_t bios_size;
-    uint32_t hsc_mode; /* MUHTARI_HSC_* */
+    uint32_t hsc_mode; /* 0 automatic, 1 on, 2 off */
     const void *hsc_rom; /* NULL: signature-only stub; copied at load */
     size_t hsc_rom_size;
-    uint32_t port[2]; /* 0: automatic; explicit MUHTARI_PORT_* override */
+    uint32_t port[2]; /* 0 automatic; explicit device override */
 } muhtari_media;
 
 enum { MUHTARI_HSC_AUTO = 0, MUHTARI_HSC_ON = 1, MUHTARI_HSC_OFF = 2 };

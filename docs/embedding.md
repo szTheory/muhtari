@@ -234,6 +234,9 @@ muhtari_status st = muhtari_load(m, &media);
    hash can change silently when it is.
 6. The BIOS, when `bios` is not NULL: it must be 4,096 or 16,384 bytes, and its reset vector, mapped to end at
    $FFFF, must point inside it. Otherwise `MUHTARI_STATUS_ERR_INVALID_BIOS`.
+7. HSC firmware and storage placement, described below. Invalid HSC media returns
+   `MUHTARI_STATUS_ERR_INVALID_HSC`; two EEPROM attachments return
+   `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE`. No rejected candidate replaces live storage.
 
 A refused load changes nothing: the previous cartridge, or the test card, keeps running as if the call had not
 been made. Once every check passes, the ROM is copied into one allocation, the only one a load makes, and
@@ -246,6 +249,58 @@ replaces any loaded content and power-cycles the machine.
 loaded it returns `MUHTARI_STATUS_OK` and the test card goes on. There is no unload: `muhtari_destroy` and
 `muhtari_create` return to the test card. `muhtari_get_info` describes the loaded content, so read it after a
 load.
+
+## Battery storage and HSC firmware
+
+API 5 appends `hsc_mode`, `hsc_rom`, `hsc_rom_size` and `port[2]` to `muhtari_media`.
+Old media objects keep their original minimum size; missing or incomplete appended fields
+take their zero defaults. `MUHTARI_HSC_AUTO` uses resolved cartridge metadata;
+`MUHTARI_HSC_ON` forces attachment and `MUHTARI_HSC_OFF` disables it. A supplied ROM
+implies attachment and conflicts with OFF. Both pointer/length directions must agree,
+and firmware is exactly 4,096 bytes. HSC firmware has no BIOS reset-vector requirement.
+
+The load copies firmware before replacing installed state, including caller buffers that
+alias installed ROM. `muhtari_get_battery` reports its SHA-1 in `hsc_sha1` and flags:
+`MUHTARI_HSC_FIRMWARE_KNOWN` identifies the canonical image; an explicit unknown image
+is accepted with `MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN`. Missing C6/FE signature bytes at
+offsets $900/$904 independently set `MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE`.
+Without a supplied image, `MUHTARI_HSC_FIRMWARE_STUB` describes an FF-filled ROM with
+only those two signature bytes. This stub implements no firmware routines, formatting,
+screens or full OpenHSC compatibility. It supports software that accesses SRAM directly.
+See [HSC hardware](hardware/cartridge.md#hsc).
+
+`port[0]` and `port[1]` are load-time device overrides: zero is automatic;
+`MUHTARI_PORT_UNPLUGGED` explicitly suppresses a device. An explicit override wins over
+the cartridge's controller declaration. `MUHTARI_PORT_SAVEKEY` or `MUHTARI_PORT_ATARIVOX`
+reserves one EEPROM on that physical port. Otherwise a SaveKey metadata hint defaults
+to port 2, unless an explicit non-save selection suppresses it. Dual EEPROM attachment
+is refused, while HSC and one EEPROM may coexist. Placement is fixed at load; serial
+protocol behavior is specified separately in the controller hardware documentation.
+
+Zero and size-tag a `muhtari_battery_info` and call `muhtari_get_battery(m, &battery)`.
+Layout version 1 is exactly these raw bytes, with no header or host-endian fields:
+
+| Attachment | `bytes` | Order |
+|---|---:|---|
+| Absent | 0 | `data` is NULL |
+| HSC | 2,048 | SRAM |
+| EEPROM | 32,768 | EEPROM |
+| Both | 34,816 | HSC SRAM followed by EEPROM |
+
+The pointer, length, layout and placement remain stable through frames and power cycles,
+until the next successful load or destroy. Firmware is outside the save span.
+`muhtari_get_hsc_rom` fills a size-tagged `muhtari_const_span` with the installed read-only
+ROM/stub, or NULL/0 when HSC is absent. Both queries are bounded observers: they allocate
+nothing, scan no battery bytes and advance no emulated time.
+
+After a successful load, restore host save bytes through `data` before the first frame.
+Boot setup executes no cartridge instructions before this import window. Imported bytes
+are the clean baseline; arbitrary host mutation after this window is outside the contract.
+`generation` changes only when emulated committed bytes change: reads and same-value HSC
+stores leave it unchanged. It is a uint64 equality token with defined unsigned wrap;
+compare for inequality, never ordering or elapsed writes. Power cycle retains bytes and
+generation. Successful load starts FF-filled storage with generation zero; refused load
+preserves bytes, pointers, topology, generation and subsequent execution. Hosts own files.
 
 ## The first frame after load
 
@@ -388,15 +443,18 @@ Statuses are only ever added. Those after the probe's:
 | `MUHTARI_STATUS_ERR_INVALID_BIOS` | `muhtari_load` | The BIOS is not 4,096 or 16,384 bytes, or its reset vector points outside it. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | The content resolves to PAL. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | `muhtari_set_input` | An explicit controller this version does not model. |
+| `MUHTARI_STATUS_ERR_INVALID_HSC` | `muhtari_load` | Invalid firmware size/pointer pair, HSC mode, or supplied firmware conflicting with OFF. |
 
 ## Version numbers
 
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
 `muhtari_get_versions` fills a `muhtari_versions`:
 
-The current interface is API 4, ABI 1, behaviour revision 3. API 4 adds the
-Activision orientation and assumed-layout constants; all public structures,
-signatures and previous constant values retain their layouts and meanings.
+The current interface is API 5, ABI 1, behaviour revision 4. API 5 appends the
+load-time battery controls and adds battery/installed-ROM queries. The original
+media prefix, all prior size minima, signatures and constant values remain compatible.
+Revision 4 makes declared HSC storage executable; existing sample frame/audio digests
+are unchanged. API 4's Activision orientation constants remain available.
 
 | Field | Meaning |
 |---|---|

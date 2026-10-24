@@ -387,6 +387,7 @@ struct muhtari {
     struct muhtari__profile profile;
     struct muhtari__cart cart;
     struct muhtari__battery battery;
+    uint8_t hsc_load_rom[4096]; /* unpublished load staging; never a hardware/save view */
     struct muhtari__ports ports;
     struct muhtari__boot boot;
     struct muhtari__synth synth;

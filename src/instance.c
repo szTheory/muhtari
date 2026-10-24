@@ -212,13 +212,19 @@ static int battery_serial(uint32_t device)
 
 /* Resolve the whole storage topology before installation, including serial
    placement. Its pin protocol is owned by the controller ports. */
-static muhtari_status battery_prepare(struct muhtari__battery *b, const muhtari_media *media,
-                                      const muhtari_cart_info *info)
+struct battery_candidate {
+    size_t bytes;
+    uint32_t hsc_attached, eeprom_port, eeprom_device, firmware_flags;
+    uint8_t hsc_sha1[20];
+};
+
+static muhtari_status battery_prepare(struct battery_candidate *b, uint8_t rom[4096],
+                                      const muhtari_media *media, const muhtari_cart_info *info)
 {
     if (media->hsc_mode > MUHTARI_HSC_OFF ||
         ((media->hsc_rom == NULL) != (media->hsc_rom_size == 0u)) ||
         (media->hsc_rom != NULL &&
-         (media->hsc_rom_size != sizeof b->rom || media->hsc_mode == MUHTARI_HSC_OFF))) {
+         (media->hsc_rom_size != 4096u || media->hsc_mode == MUHTARI_HSC_OFF))) {
         return MUHTARI_STATUS_ERR_INVALID_HSC;
     }
     memset(b, 0, sizeof *b);
@@ -251,28 +257,29 @@ static muhtari_status battery_prepare(struct muhtari__battery *b, const muhtari_
     }
     b->bytes = (b->hsc_attached != 0u ? 2048u : 0u) +
                (b->eeprom_port != 0u ? 32768u : 0u);
-    memset(b->data, 0xFF, sizeof b->data);
     if (b->hsc_attached != 0u) {
         if (media->hsc_rom == NULL) {
             /* Signature-only compatibility stub: no firmware routines
                (cartridge preparation section 4.1). */
-            memset(b->rom, 0xFF, sizeof b->rom);
-            b->rom[0x900] = 0xC6u;
-            b->rom[0x904] = 0xFEu;
+            memset(rom, 0xFF, 4096u);
+            rom[0x900] = 0xC6u;
+            rom[0x904] = 0xFEu;
             b->firmware_flags = MUHTARI_HSC_FIRMWARE_STUB;
         } else {
+            /* Canonical identity: cartridge preparation CART.06/18/40;
+               unknown explicit firmware is accepted with a warning. */
             static const uint8_t known[20] = {
                 0xa3, 0xaf, 0x67, 0x69, 0x91, 0x39, 0x1a, 0x6d, 0xd7, 0x16,
                 0xc7, 0x90, 0x22, 0xd4, 0x94, 0x72, 0x06, 0xb7, 0x81, 0x64
             };
-            memcpy(b->rom, media->hsc_rom, sizeof b->rom);
+            memmove(rom, media->hsc_rom, 4096u);
             struct muhtari__sha1 hash;
             muhtari__sha1_init(&hash);
-            muhtari__sha1_update(&hash, b->rom, sizeof b->rom);
+            muhtari__sha1_update(&hash, rom, 4096u);
             muhtari__sha1_final(&hash, b->hsc_sha1);
             b->firmware_flags = memcmp(b->hsc_sha1, known, sizeof known) == 0
                 ? MUHTARI_HSC_FIRMWARE_KNOWN : MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN;
-            if (b->rom[0x900] != 0xC6u || b->rom[0x904] != 0xFEu) {
+            if (rom[0x900] != 0xC6u || rom[0x904] != 0xFEu) {
                 b->firmware_flags |= MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE;
             }
         }
@@ -317,8 +324,10 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     if (media->bios != NULL && !bios_valid((const uint8_t *)media->bios, media->bios_size)) {
         return MUHTARI_STATUS_ERR_INVALID_BIOS;
     }
-    struct muhtari__battery battery;
-    st = battery_prepare(&battery, media, &info);
+    /* Unpublished fixed staging avoids large stack frames/compiler stack
+       probe dependencies, and preserves aliased firmware until installation. */
+    struct battery_candidate battery;
+    st = battery_prepare(&battery, m->hsc_load_rom, media, &info);
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
@@ -329,7 +338,17 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
-    m->battery = battery;
+    memset(&m->battery, 0, sizeof m->battery);
+    memset(m->battery.data, 0xFF, sizeof m->battery.data);
+    m->battery.bytes = battery.bytes;
+    m->battery.hsc_attached = battery.hsc_attached;
+    m->battery.eeprom_port = battery.eeprom_port;
+    m->battery.eeprom_device = battery.eeprom_device;
+    m->battery.firmware_flags = battery.firmware_flags;
+    memcpy(m->battery.hsc_sha1, battery.hsc_sha1, sizeof battery.hsc_sha1);
+    if (battery.hsc_attached != 0u) {
+        memcpy(m->battery.rom, m->hsc_load_rom, sizeof m->battery.rom);
+    }
     for (unsigned p = 0; p < 2u; p++) {
         m->ports.device[p] = media->port[p];
         m->ports.pending_device[p] = media->port[p];

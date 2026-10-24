@@ -2,7 +2,7 @@
 title: "Architecture: time model, modules, public API, I/O contracts and build order"
 summary: "The technical shape of the muhtari core: one MARIA-tick timeline advanced only by bus.c, a per-line DMA burst, lazy devices, the module and seed map, the public C API and its versions, the I/O, determinism, state, observability and boot contracts, the v1.0 build order, and how each research conflict is settled."
 read_when: "Before planning or writing core, runner or libretro code; before adding a module, API call, profile field or hash; whenever two research files disagree."
-updated: 2026-10-20
+updated: 2026-10-24
 ---
 
 # muhtari architecture
@@ -95,8 +95,9 @@ muhtari_status muhtari_power_cycle(muhtari *m);                      /* battery 
 muhtari_status muhtari_set_input(muhtari *m, const muhtari_input *in); /* latched; takes effect at the next VBLANK start */
 muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io);     /* VBLANK start → VBLANK start; NULL buffers skip that output */
 muhtari_status muhtari_get_info(const muhtari *m, muhtari_info *out); /* 320 × height, fps and rate as num/den, PAR, region */
-muhtari_status muhtari_get_memory(const muhtari *m, uint32_t kind, muhtari_span *out); /* SYSTEM_RAM, RIOT_RAM, CART_RAM, BATTERY */
-uint64_t       muhtari_save_generation(const muhtari *m);            /* changes whenever a battery byte changes */
+muhtari_status muhtari_get_memory(muhtari *m, uint32_t kind, muhtari_span *out); /* SYSTEM_RAM, RIOT_RAM, CART_RAM */
+muhtari_status muhtari_get_battery(const muhtari *m, muhtari_battery_info *out); /* raw span, layout, committed-change token */
+muhtari_status muhtari_get_hsc_rom(const muhtari *m, muhtari_const_span *out); /* installed read-only ROM/stub */
 size_t         muhtari_state_size(const muhtari *m);                 /* constant from load to unload */
 muhtari_status muhtari_save_state(const muhtari *m, void *buf, size_t n);
 muhtari_status muhtari_load_state(muhtari *m, const void *buf, size_t n); /* validated in full before anything is applied */
@@ -152,7 +153,8 @@ Integer-only (`hygiene.no_float`, `nofp` preset, `abi.undefined`); no mutable gl
 |---|---|
 | A78 or headerless image | file ≥ 128 B (header) or ≥ 8 B (footer test); image ≤ 1 MiB + 128 else `UNSUPPORTED_SIZE`; 9-byte magic; size = min(field, file − 128), 0 rejected; out-of-range codes → defaults + lint |
 | Board geometry | bank = value mod banks, never a raw index; RAM index & (size − 1); image size checked against the mapper at load |
-| BIOS, HSC ROM | exactly 4,096 or 16,384 B; the reset vector must point inside the BIOS |
+| BIOS | exactly 4,096 or 16,384 B; its reset vector must point inside the BIOS |
+| HSC ROM | exactly 4,096 B; canonical SHA-1 identifies, unknown supplied images warn and are accepted; missing C6/FE signature bytes warn independently; no reset-vector validation; see docs/embedding.md |
 | Battery bytes | HSC 2,048 B, SaveKey 32,768 B; shorter → pad $FF, longer → reject; contents never parsed |
 | State | exact size; magic, CRC-32, versions and every field bound checked before any byte is applied; ticks ≤ 2^62 |
 | Movie, IPS/BPS | runner only (`patch.c`), every offset bounded by the image cap |
@@ -161,7 +163,7 @@ Integer-only (`hygiene.no_float`, `nofp` preset, `abi.undefined`); no mutable gl
 ## 7. State and saves
 - **Visitor.** One function per struct, run as SIZE, WRITE (save) and VALIDATE then APPLY (load) — the sibling's four-pass visitor — plus RECORD, which tests use to emit every field's bounds for an automatic out-of-range rejection sweep; byte-wise LE; `_Static_assert(sizeof …)` tripwires; VALIDATE walks everything, so APPLY cannot fail [ARCH.10].
 - **Header**, 64 B: PNG-style 8-byte magic, format version, header size, total size, behaviour revision, board, region, ROM CRC-32, state CRC-32, frame number, ticks, reserved zeros [ARCH.10]. The size is constant from load to unload (libretro serialize) and XM's 128 KB RAM dominates it from v2 [ARCH.05 §1]. The body holds every chip, the profile, the counters, lazy-device catch-up ticks, both line RAMs, the open-bus byte, the HALT-gate count. Not saved: the host's pending input (set before every frame), hooks, buffers.
-- **Battery.** `get_memory(BATTERY)` is one span fixed from load to unload, writable by the host after load and before the first frame; `save_generation` changes whenever a battery byte changes, and the host flushes then; the core does no file I/O [ARCH.05 §1].
+- **Battery (implemented API 5).** `muhtari_get_battery` returns one raw span, layout 1, attachment/firmware metadata and a uint64 equality token. Pointer/length/placement stay fixed until successful load or destroy; power cycle retains bytes/token. Host restore after load and before the first frame is clean; later direct host mutation is outside contract. Only committed emulated changed bytes increment generation, with unsigned wrap; queries do not scan or advance time. Installed HSC ROM/stub is a separate const view, never save bytes. See [embedding](../../docs/embedding.md#battery-storage-and-hsc-firmware) and [HSC hardware](../../docs/hardware/cartridge.md#hsc). The core does no file I/O [ARCH.05 §1].
 - **`.srm` (v2):** raw HSC SRAM 2,048 B, SaveKey 32,768 B (erased $FF), or HSC ‖ SaveKey = 34,816 B; battery layout 1; the runner's `.sav` holds the same bytes [ARCH.04 §4.3].
 
 ## 8. Observability
