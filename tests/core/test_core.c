@@ -1818,8 +1818,103 @@ static void test_hsc_sizes(void)
     muhtari_destroy(m);
 }
 
+static void extended_lifecycle(void)
+{
+    muhtari *m = make();
+    /* Read SWCHA as the first instruction, before any VBLANK wait. */
+    static const uint8_t read_pins[] = {0xADu, 0x80u, 0x02u, 0x8Du, 0x00u, 0x18u,
+                                       0x4Cu, 0x06u, 0xF0u};
+    make_cart(cart, read_pins, sizeof read_pins, 0u);
+    muhtari_media media = media_for(cart, sizeof cart);
+    media.port[0] = MUHTARI_PORT_JOYSTICK;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari__ports_device(m, 0u), MUHTARI_PORT_JOYSTICK);
+    muhtari_input_ex in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.port[0].buttons = MUHTARI_BUTTON_UP;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    run(m, NULL);
+    CHECK_EQ_HEX(m->ram[0], 0xEFu);
+    CHECK_EQ_U64(muhtari__ports_device(m, 0u), MUHTARI_PORT_JOYSTICK);
+    in.port[0].device = MUHTARI_PORT_PROLINE;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    run(m, NULL);
+    CHECK_EQ_U64(muhtari__ports_device(m, 0u), MUHTARI_PORT_PROLINE);
+    in.port[0].device = 0u;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    run(m, NULL);
+    CHECK_EQ_U64(muhtari__ports_device(m, 0u), MUHTARI_PORT_JOYSTICK);
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari__ports_device(m, 0u), MUHTARI_PORT_JOYSTICK);
+    run(m, NULL);
+    CHECK_EQ_HEX(m->ram[0], 0xFFu);
+    /* The legacy first short frame and Auto still ignore the load choice. */
+    muhtari_input old;
+    memset(&old, 0, sizeof old);
+    old.size = (uint32_t)sizeof old;
+    old.buttons[0] = MUHTARI_BUTTON_UP;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_set_input(m, &old), MUHTARI_STATUS_OK);
+    run(m, NULL);
+    CHECK_EQ_HEX(m->ram[0], 0xFFu);
+    run(m, NULL);
+    CHECK_EQ_U64(muhtari__ports_device(m, 0u), MUHTARI_PORT_PROLINE);
+    /* Both EEPROM identities and placements survive ordinary replacement,
+       and every add/remove/move/replace refusal preserves the whole span. */
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned kind = 0u; kind < 2u; kind++) {
+            uint32_t serial = kind == 0u ? MUHTARI_PORT_SAVEKEY : MUHTARI_PORT_ATARIVOX;
+            media.port[p] = serial;
+            media.port[1u - p] = MUHTARI_PORT_JOYSTICK;
+            media.hsc_mode = MUHTARI_HSC_ON;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            muhtari_battery_info b = battery_of(m);
+            memset(b.data, 0x69, b.bytes);
+            memset(&in, 0, sizeof in);
+            in.size = (uint32_t)sizeof in;
+            in.port[1u - p].device = MUHTARI_PORT_PROLINE;
+            in.port[1u - p].buttons = MUHTARI_BUTTON_LEFT;
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            run(m, NULL);
+            CHECK_EQ_U64(muhtari__ports_device(m, 1u - p), MUHTARI_PORT_PROLINE);
+            for (unsigned fault = 0u; fault < 5u; fault++) {
+                muhtari_input_ex bad = in;
+                if (fault == 0u) bad.port[1u - p].device = serial;
+                if (fault == 1u) bad.port[p].device = MUHTARI_PORT_UNPLUGGED;
+                if (fault == 2u) bad.port[p].device = MUHTARI_PORT_PROLINE;
+                if (fault == 3u) bad.port[p].device = kind == 0u ? MUHTARI_PORT_ATARIVOX
+                                                                              : MUHTARI_PORT_SAVEKEY;
+                if (fault == 4u) {
+                    bad.port[p].device = MUHTARI_PORT_UNPLUGGED;
+                    bad.port[1u - p].device = serial;
+                }
+                struct muhtari__ports before = m->ports;
+                uint64_t tick = m->bus.ticks;
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &bad),
+                             MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+                CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
+                CHECK_EQ_U64(m->bus.ticks, tick);
+            }
+            CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(m->ports.buttons[1u - p], 0u);
+            CHECK_EQ_U64(muhtari__ports_device(m, 1u - p), MUHTARI_PORT_JOYSTICK);
+            muhtari_battery_info after = battery_of(m);
+            CHECK(after.data == b.data);
+            CHECK_EQ_U64(after.bytes, b.bytes);
+            CHECK_EQ_U64(after.layout_version, b.layout_version);
+            CHECK_EQ_U64(after.generation, b.generation);
+            CHECK_EQ_U64(after.eeprom_port, p + 1u);
+            CHECK_EQ_U64(after.eeprom_device, serial);
+            for (size_t at = 0u; at < b.bytes; at++) CHECK_EQ_HEX(b.data[at], 0x69u);
+        }
+    }
+    muhtari_destroy(m);
+}
+
 static void test_load_keeps_previous(void)
 {
+    extended_lifecycle();
     hsc_tracer();
     muhtari *a = make();
     muhtari *b = make();
