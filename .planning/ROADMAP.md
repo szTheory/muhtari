@@ -21,7 +21,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipping pending |
-| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Not started |
+| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Planned; ready to execute |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
 | 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Not started |
@@ -136,7 +136,36 @@ Shared core, manifest and inventory ownership requires sequential execution.
 **Goal:** Keep HSC and SaveKey progress across process and frontend restarts without putting file I/O in the core.
 **Depends on:** Phase 6
 **Requirements:** SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06
-**Plans:** TBD — created by plan-phase.
+**Plans:** 9 plans in 9 sequential waves (parallelization disabled).
+**Status:** Planned and independently checked; implementation not started.
+
+Plans:
+**Wave 1**
+- [ ] 07-01-PLAN.md — Prove scoped fixture admission and the narrow behavior-metadata transition.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 07-02-PLAN.md — Execute the HSC embedder tracer, preserve frozen clients and measure real packages early.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 07-03-PLAN.md — Implement timed pin-level EEPROM, frozen attachment and completion/reset edges.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 07-04-PLAN.md — Prove battery lifecycle, isolation, no-allocation and bounded I2C properties/fuzz replay.
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 07-05-PLAN.md — Deliver opt-in runner import, firmware provisioning and safe raw-save replacement.
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 07-06-PLAN.md — Complete cadence, native controls, coalescing and actual-consumer failure proofs.
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 07-07-PLAN.md — Publish load-time SAVE_RAM, optional HSC firmware and exact achievement maps.
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 07-08-PLAN.md — Admit one owned combined diagnostic and wire the two-case hosted persistence oracle.
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [ ] 07-09-PLAN.md — Complete equality/inventories, enable proved claims and accept final native/hosted bounds.
 
 **Success criteria:**
 
@@ -214,11 +243,11 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
-| 7. Battery saves across hosts | 0/TBD | Not started | — |
+| 7. Battery saves across hosts | 0/9 | Planned | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-23; Phase6 verified33/33 with9/9 active plans and18/18 currently planned slots complete. BOARD-01–03 have semantic/three-host/hostile/hosted portability and authenticated package acceptance. Historical failed evidence remains preserved. Next separate command: `$gsd-ship 6`.*
+*Updated: 2026-10-23; Phase7 research and nine sequential plans are checked, with SAVE-01–06 and D-01–18 covered. Phase5–6 retain18 completed active slots of27 now planned; no save requirement is complete. Historical failed evidence remains preserved. Next separate command: `$gsd-execute-phase 7`.*

@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: ready_to_plan
-stopped_at: Phase 7 context gathered; next separate command is gsd-plan-phase 7
-last_updated: "2026-10-24T00:26:48.310Z"
-state_head: 881df9f877e282cbb8e2b6c1b35cbc26ea08f29b
+status: ready_to_execute
+stopped_at: Phase 7 planned and checked; next separate command is gsd-execute-phase 7
+last_updated: "2026-10-24T01:57:55.286Z"
+state_head: 94aa197066ba517e7bf911150b6a2d57695164b7
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 19
+  total_plans: 28
   completed_plans: 19
   percent: 29
 last_activity: 2026-10-23
 total_phases: 7
-current_phase: 07
 current_phase_name: Battery saves across hosts
+current_phase: 07
 current_plan: Not started
-last_activity_desc: Phase 7 context captured with 18 delegated decisions; next step is gsd-plan-phase 7
+last_activity_desc: Phase 7 research and nine sequential plans checked; all six requirements and 18 decisions covered
 ---
 
 # Project State
@@ -27,19 +27,36 @@ last_activity_desc: Phase 7 context captured with 18 delegated decisions; next s
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 7 context captured; research and planning are next. Implementation has not started.
+Current focus: Phase 7 is ready to execute nine sequential plans. Research and plan checking are complete; implementation has not started.
 
 ## Current Position
 
 Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
-are complete. Phase 5 and6 are2/7 milestone phases,18/18 currently planned active
-slots; later phases remain unplanned. Historical halted plans remain excluded
+are complete. Phase 5 and6 are2/7 milestone phases,18/27 currently planned active
+slots; Phase 7 adds nine unexecuted plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
-Next command: `$gsd-plan-phase 7`.
+Next command: `$gsd-execute-phase 7`.
 Phase 6 shipping PR: https://github.com/szTheory/muhtari/pull/24 .
 The ship step confirms the exact-head CI, squash merge and release-PR checks before reporting its outcome.
 No next GSD step was invoked.
+
+## Phase 7 Planning
+
+Research and nine plans in nine dependent waves cover SAVE-01–06 and D-01–18.
+The independent plan checker passed after one focused revision; no findings remain.
+The decision gate passed18/18 and post-planning coverage passed24/24.
+Verification command probes report25 stated failure directions, no errors; their
+path parser does not interpret CMake/CTest commands. Structure and hygiene checks
+pass. No hosted run was started for this planning step and no save requirement is
+completed. Archive feasibility, actual fixture admission, native Windows controls
+and fresh-process RetroArch persistence remain mandatory execution evidence.
+
+Planning evidence (all exit0; run URL not applicable for local artifact checks):
+
+- `node ~/.codex/gsd-core/bin/gsd-tools.cjs query check.decision-coverage-plan .planning/phases/07-battery-saves .planning/phases/07-battery-saves/07-CONTEXT.md` — 18/18.
+- `node ~/.codex/gsd-core/bin/gsd-tools.cjs check gap-analysis-plan-post .planning/phases/07-battery-saves 'SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06' --raw` — 24/24.
+- `git diff --check` and `scripts/hygiene.sh --tree` — no findings.
 
 ## Phase 6 Acceptance
 
@@ -95,10 +112,10 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-**Stopped at:** Phase 7 context gathered; next separate command is gsd-plan-phase 7
+**Stopped at:** Phase 7 planned and checked; next separate command is gsd-execute-phase 7
 
 Last session: 2026-10-24T00:26:26.671Z
-Resume file: .planning/phases/07-battery-saves/07-CONTEXT.md
+Resume file: .planning/phases/07-battery-saves/07-01-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -108,4 +125,4 @@ Resume file: .planning/phases/07-battery-saves/07-CONTEXT.md
 
 ## Decisions
 
-- [Phase 07]: Discussion continuity refresh reports 19/19 disk plans because it includes superseded 06-01; accepted active completion remains 18/18 across phases 5 and 6. Phase 7 has context only, no plans or completed save requirements.
+- [Phase 07]: The runtime counts 28 plans and 19 summaries including superseded 06-01; accepted active completion is 18/27 across phases 5–7. Phase 7 has nine checked plans and no completed save requirements. Percent reports two completed phases of seven.
