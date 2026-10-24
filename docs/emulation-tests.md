@@ -80,7 +80,10 @@ Every expected byte comes from `docs/hardware/controllers.md` and the cartridge 
 `basic.<name>` plays one 7800basic sample for 600 frames and checks them against a pin. There is one test for each
 row of `tests/built/expected.txt`, and the sample comes from that row's `built.<name>` fixture. The ROM is loaded with
 `muhtari_load` and fast-booted, with no input. `muhtari-test-chain` (`tests/built/chain.c`) hashes every frame into
-a chain:
+a chain. These historical pins use explicitly unplugged ports, retaining the original no-EEPROM topology when
+metadata now automatically attaches serial storage. Enabled devices and default metadata attachment execute through
+the real RIOT path in `input.savekey.protocol` and `input.savekey.pins`; the ROM bytes and existing frame pins stay
+unchanged:
 
     h_0 = 32 zero bytes
     h_i = SHA-256(h_(i-1) || frame_i), i = 1 .. 600

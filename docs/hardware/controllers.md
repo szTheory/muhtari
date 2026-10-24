@@ -16,9 +16,50 @@ Sources:
 
 ## Devices
 
-Each port carries a ProLine, a 2600 joystick, or nothing. The host names the device per port; when it names none, the
+Each port carries a ProLine, a 2600 joystick, a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
 cartridge's A78 header does. A header that names no controller leaves the port unplugged. A header device that is not
 modelled yet, such as a light gun or paddles, is wired as a ProLine.
+
+The EEPROM attaches at successful load, on either port, with at most one device. Explicit load overrides win over
+header declarations; a save hint defaults to port 2 unless an explicit non-save choice suppresses it. Its identity,
+port and battery offset remain fixed until reload. Per-frame auto or the attached identity is accepted; adding,
+removing, moving or changing that identity is refused before any pending joystick input changes. Other joystick
+input retains its VBLANK latch semantics. See `docs/embedding.md`, Battery storage and HSC firmware.
+
+## Serial EEPROM
+
+SaveKey and AtariVox share a 32 KiB 24LC256 model. AtariVox speech is unavailable. Port 2 uses SWCHA bit 2 for SDA
+and bit 3 for SCL; port 1 uses bits 6 and 7. Pins not driven by the host are pulled high. Software can drive an
+output through ORA or release a zero output by changing DDRA; both reach `src/ports.c` at the RIOT access's actual
+data tick, tick 5 of its 6-tick cycle. The device only pulls SDA low. SWCHA includes that low during turnaround,
+even when the host drives its output high. Unused directions and buttons on an EEPROM port are inactive.
+
+Protocol facts come from [Microchip DS20001203Y](https://ww1.microchip.com/downloads/aemDocuments/documents/MPD/ProductDocuments/DataSheets/24AA256-24LC256-24FC256-256K-I2C-Serial-EEPROM-DS20001203.pdf),
+sections 4–8: START/STOP use SDA transitions while SCL is high, incoming bits use rising SCL, and ACK/data is stable
+for the next high period. The wired control bytes are A0 for write and A1 for read. Two address bytes select a
+15-bit address; A15 is ignored. Random reads set that address before repeated START; current reads use the retained
+pointer. Sequential reads wrap at 32768 bytes and end on the master's NAK. Page data wraps within 64 bytes.
+
+The implementation keeps host drive separate from device SDA. Only host changes that alter SDA while SCL remains
+high can start or stop a packet; device ACK/data edges cannot create host events. CPU reads and peeks only observe
+pins. An unsupported control byte is NAKed and clocks are ignored until START or STOP. START restarts an incomplete
+packet, discarding un-stopped page data but retaining the current address. Address-only or incomplete traffic
+without complete data bytes does not program. STOP schedules the completed data bytes of at most one page;
+over-page traffic overwrites page-buffer positions, without growing state.
+
+Microchip specifies a maximum 5 ms page write and no ACK during programming. muhtari selects that maximum as a
+fixed deterministic compatibility model: `MUHTARI__SAVEKEY_BUSY_TICKS = 35796`, the upward-rounded
+`315000000 / 8800` half-crystal ticks. This is a selected NTSC interval, not a hardware timing measurement. Pending
+bytes are invisible in battery memory until the deadline. Completion increments generation once only if a byte
+changes; a same-value write is still busy and stays clean. Host import is clean and never starts programming.
+
+Programming catches up at actual pin-access ticks and after frame execution, including instruction overshoot,
+JAM, DMA/stalls and partial execution ending in BIOS refusal. A rejected frame that executes nothing changes no
+device state. Power cycle settles work due at or before the current tick before resetting the clock epoch, then
+discards the protocol, page buffer and future programming. Thus a reset one tick before completion discards it;
+reset at or after completion retains its bytes and change token. Queries, host persistence and destruction never
+advance time to finish programming. The persistent array belongs to the existing instance battery span; the port
+owner adds only one fixed page and finite protocol state, with no allocation after load.
 
 ## Directions
 
@@ -86,5 +127,5 @@ a lag frame. `muhtari_get_counters` returns the count.
 ## Not modelled
 
 - The TIA's VBLANK D6 latch of INPT4 and INPT5, and its D7 dump of INPT0-INPT3, which paddles need.
-- Every device but the ProLine and the 2600 joystick: the light gun, paddles, the trak-ball, the driving controller,
-  the keypad, the mice, the SaveKey and AtariVox, SNES2Atari and the Mega7800 (cartridge notes, section 3.2).
+- The light gun, paddles, trak-ball, driving controller, keypad, mice, AtariVox speech, SNES2Atari and Mega7800
+  (cartridge notes, section 3.2).

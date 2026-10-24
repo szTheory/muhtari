@@ -581,8 +581,20 @@ static muhtari *serial_boot(unsigned p, uint32_t device)
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = sizeof image;
-    media.port[p - 1u] = device;
+    uint8_t old_port = image[55];
+    uint8_t old_hint = image[58];
+    if (device != 0u) {
+        media.port[p - 1u] = device;
+    } else if (p == 1u) {
+        image[55] = MUHTARI_PORT_ATARIVOX;
+    } else {
+        image[58] = 2u; /* metadata defaults the EEPROM to port 2 */
+    }
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    image[55] = old_port;
+    image[58] = old_hint;
+    CHECK_EQ_U64(m->battery.eeprom_port, p);
+    CHECK_EQ_U64(muhtari__ports_device(m, p - 1u), m->battery.eeprom_device);
     serial_write(m, 0x0280u, 0u);
     return m;
 }
@@ -606,8 +618,10 @@ static void serial_wait(muhtari *m)
 static int savekey_protocol(void)
 {
     for (unsigned p = 1u; p <= 2u; p++) {
-        for (unsigned kind = 0u; kind < 2u; kind++) {
-            muhtari *m = serial_boot(p, kind == 0u ? MUHTARI_PORT_SAVEKEY : MUHTARI_PORT_ATARIVOX);
+        for (unsigned kind = 0u; kind < 3u; kind++) {
+            muhtari *m = serial_boot(p, kind == 0u   ? MUHTARI_PORT_SAVEKEY
+                                        : kind == 1u ? MUHTARI_PORT_ATARIVOX
+                                                     : 0u);
             CHECK(m != NULL);
             if (m == NULL) {
                 continue;

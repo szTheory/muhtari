@@ -3,7 +3,11 @@
    SHA-256 chain of the frames,
      h_0 = 32 zero bytes, h_i = SHA256(h_{i-1} || frame_i),
    where frame_i is the 320 x 242 native colour bytes of frame i. The chain
-   binds frame order, so two swapped frames change it; muhtari-run
+   binds frame order, so two swapped frames change it. These historical
+   pins describe the no-EEPROM topology: explicit unplugged port choices
+   suppress newly implemented metadata save hints. Automatic attachment
+   and enabled EEPROM execution are checked by the serial device tests.
+   muhtari-run
    --hash-frame finds the first frame that differs. Exits 0, 1 when the file
    cannot be read, loaded or run, and 2 on a usage error. */
 #include <stdint.h>
@@ -132,6 +136,8 @@ int main(int argc, char **argv)
         media.size = (uint32_t)sizeof media;
         media.image = image;
         media.image_size = n;
+        media.port[0] = MUHTARI_PORT_UNPLUGGED;
+        media.port[1] = MUHTARI_PORT_UNPLUGGED;
         muhtari_status st = muhtari_create(&cfg, &m);
         if (st == MUHTARI_STATUS_OK) {
             st = muhtari_load(m, &media);

@@ -4,8 +4,17 @@
 #include "muhtari.h"
 #include "../check.h"
 
-static void *api_alloc(void *user, size_t n) { (void)user; return malloc(n); }
-static void api_free(void *user, void *p, size_t n) { (void)user; (void)n; free(p); }
+static void *api_alloc(void *user, size_t n)
+{
+    (void)user;
+    return malloc(n);
+}
+static void api_free(void *user, void *p, size_t n)
+{
+    (void)user;
+    (void)n;
+    free(p);
+}
 
 int main(void)
 {

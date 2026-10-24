@@ -28,7 +28,7 @@ enum {
     MUHTARI_STATUS_ERR_INVALID_BIOS = 11,       /* not 4,096 or 16,384 bytes, or a bad vector */
     MUHTARI_STATUS_ERR_UNSUPPORTED_REGION = 12, /* resolves to PAL */
     MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE = 13, /* an explicit device this version lacks */
-    MUHTARI_STATUS_ERR_INVALID_HSC = 14        /* invalid optional HSC media */
+    MUHTARI_STATUS_ERR_INVALID_HSC = 14         /* invalid optional HSC media */
 };
 
 typedef struct muhtari muhtari;
@@ -183,7 +183,7 @@ typedef struct muhtari_media {
     size_t image_size;
     const void *bios; /* NULL: fast boot; copied at load */
     size_t bios_size;
-    uint32_t hsc_mode; /* 0 automatic, 1 on, 2 off */
+    uint32_t hsc_mode;   /* 0 automatic, 1 on, 2 off */
     const void *hsc_rom; /* NULL: signature-only stub; copied at load */
     size_t hsc_rom_size;
     uint32_t port[2]; /* 0 automatic; explicit device override */

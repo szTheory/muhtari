@@ -41,8 +41,17 @@ muhtari_status muhtari_load(muhtari *, const muhtari_media *);
 muhtari_status muhtari_run_frame(muhtari *, muhtari_frame *);
 muhtari_status muhtari_get_versions(muhtari_versions *);
 
-static void *old_alloc(void *user, size_t n) { (void)user; return malloc(n); }
-static void old_free(void *user, void *p, size_t n) { (void)user; (void)n; free(p); }
+static void *old_alloc(void *user, size_t n)
+{
+    (void)user;
+    return malloc(n);
+}
+static void old_free(void *user, void *p, size_t n)
+{
+    (void)user;
+    (void)n;
+    free(p);
+}
 
 int main(void)
 {
@@ -61,12 +70,18 @@ int main(void)
     image[55] = 1u;
     image[56] = 1u;
     memset(image + 128, 0xEA, 4096);
-    image[128] = 0x4Cu; image[129] = 0u; image[130] = 0xF0u;
-    image[128 + 4092] = 0u; image[128 + 4093] = 0xF0u;
+    image[128] = 0x4Cu;
+    image[129] = 0u;
+    image[130] = 0xF0u;
+    image[128 + 4092] = 0u;
+    image[128 + 4093] = 0xF0u;
     uint32_t sizes[] = {(uint32_t)sizeof(muhtari_media),
-        (uint32_t)(offsetof(muhtari_media, bios_size) + sizeof(size_t))};
+                        (uint32_t)(offsetof(muhtari_media, bios_size) + sizeof(size_t))};
     for (unsigned i = 0; i < 2u; i++) {
-        struct { muhtari_media media; uint8_t canary[32]; } old;
+        struct {
+            muhtari_media media;
+            uint8_t canary[32];
+        } old;
         memset(&old, 0, sizeof old);
         memset(old.canary, 0xA5, sizeof old.canary);
         old.media.size = sizes[i];

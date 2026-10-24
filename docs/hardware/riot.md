@@ -85,6 +85,12 @@ Each port reads `(OR & DDR) | (pins & ~DDR)`: the output register on output pins
 controllers drive port A's pins and the console switches port B's, as `docs/hardware/controllers.md` describes; a pin
 with nothing driving it reads high.
 
+On an attached serial EEPROM port, the device's SDA pull-low also reaches the output readback during turnaround.
+ORA and DDRA writes notify the existing port device owner at the access's data tick, start + 5 of the slow 6-tick
+cycle, after the output/direction register changes. ORB/DDRB do not clock it. Reading or peeking a register never
+creates a pin edge; PA7 still sees its resolved pin level. The separate host drive and device ACK/data behavior are
+specified in `docs/hardware/controllers.md`, Serial EEPROM.
+
 On the 7800 (system notes, section 6):
 
 - SWCHA bits 7-4 are the left joystick's right, left, down and up, and bits 3-0 are the right joystick's. Low means

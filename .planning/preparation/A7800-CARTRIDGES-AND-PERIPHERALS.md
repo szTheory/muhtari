@@ -192,7 +192,12 @@ formatting or full OpenHSC. A future clean-room OpenHSC remains later scope; the
 wiki disassembly and copyrighted hex ROM remain excluded.
 
 ### 4.2 SaveKey / AtariVox (24LC256, 32 KB) [CART.10][CART.28]
-**Wiring:** SDA = SWCHA b2 (port 2 pin 3), SCL = b3 (pin 4); 7800basic also has a port-1 variant. Software drives SDA open-drain by toggling the DDR with the output bit at 0. **Protocol:** START, then $A0 (write) or $A1 (read), then a 2-byte address, high byte first. Writes are buffered until STOP and wrap inside a 64-byte page. Reads are sequential, and a write with no data sets the address. Each byte is ACKed; the last read byte gets a NAK. **Datasheet (unverified [CART.38]):** 5 ms write cycle with NAK while busy; A15 is don't-care; erased bytes read $FF.
+Implemented wiring, ORA/DDRA data-tick observation, ACK/read turnaround, page/read wrap,
+bounded packet recovery and completion/reset semantics have graduated into
+[controller hardware](../../docs/hardware/controllers.md#serial-eeprom). The manufacturer
+protocol facts are verified against DS20001203Y sections 4–8 [CART.38]; its 5 ms maximum
+is implemented as a selected fixed 35796-tick NTSC compatibility interval, not a hardware
+measurement. One EEPROM is frozen on either port at load; AtariVox speech is not implemented.
 
 **Layout:** page 0 holds `ATARIVOX` plus a TV byte. AtariAge allocates $0000–$3FFF; $4000–$7FFF is the file area, and 7800basic keeps its tables at $6000+ in 32-byte records. **Licence:** MiSTer's `EEPROM_24LC256.sv` is GPL-3 (from NES_MiSTer) and is excluded [CART.40].
 
@@ -293,7 +298,7 @@ Fuzz targets: `muhtari_probe`, board construction with random bus traffic, the f
 | CART.35 | T4 | forums.atariage.com/topic/160424 (search snippet only) | accessed 2026-10-15 | v4 option draft, 7800GD |
 | CART.36 | T2 | Stella man page (hexmos mirror) | accessed 2026-10-15 | SaveKey file names |
 | CART.37 | T1 | github.com/7800-devtools/a78_asm_header README (repo has no licence) | abc32926402e | tooling, licence status |
-| CART.38 | T1 | Microchip 24LC256 datasheet (DS20001203) | not fetched (403) | tWC, wrap (unverified) |
+| CART.38 | T1 | Microchip [24LC256 datasheet](https://ww1.microchip.com/downloads/aemDocuments/documents/MPD/ProductDocuments/DataSheets/24AA256-24LC256-24FC256-256K-I2C-Serial-EEPROM-DS20001203.pdf) | DS20001203Y, 1998–2022, fetched 2026-10-24 | sections 4–8 protocol, 5 ms maximum, page/read wrap |
 | CART.39 | T2 | …/Converting_Rikki_&_Vikki_(Steam)_to_an_A78 | accessed 2026-10-15 | Souper music image |
 | CART.40 | T1/T2 | coordinator's provenance audit: MiSTer per-file licence history (lightgun.sv, mouse_st.sv and detect2600.sv unknown; EEPROM_24LC256.sv GPL-3; mem4.hex = HSC ROM); HSC hashes; libretro 7800 DAT | audit 2026-10-15; DAT 2026.10.07 | licence limits, DAT counts |
 | CART.41 | T4 | mametesters.org/view.php?id=6060 (trebor relaying RevEng, 2015-11-04; fixed in 0.168) | accessed 2026-10-15 | RIOT port B outputs high at power-on; One On One reads INPT4 |
