@@ -582,6 +582,14 @@ endfunction()
     write_movie(lag.txt "${prolines}" "60:${released}")
     expect_output("lag_frames 30\n" --frames 60 --movie "${movie}" "${DIR}/input-even.a78")
   elseif(CASE STREQUAL "movie.replay")
+    # The additive grammar must traverse the real runner, not just parse.
+    file(WRITE "${OUT}/typed.txt" "muhtari-movie 2\nport1 proline\nport2 proline\n|proline:U.....|proline:......|...AB|\n|proline:......|proline:......|...AB|\n")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${OUT}/typed.txt"
+      --frames 4 --hash-frame 4 "${DIR}/input.a78"
+      RESULT_VARIABLE typed_rc OUTPUT_VARIABLE typed ERROR_VARIABLE typed_err)
+    if(NOT typed_rc STREQUAL "0" OR NOT typed MATCHES "frame 4 sha256 [0-9a-f]+\nlag_frames 1\n$")
+      message(FATAL_ERROR "typed replay expected exit 0 and frame evidence: ${typed_rc}\n${typed}${typed_err}")
+    endif()
     # Fault prevented: the runner drops or shifts a movie's input, or a
     # replay is not repeatable. The input cart paints what it read, so a
     # frame inside the held lines differs from an empty movie's, and a frame
