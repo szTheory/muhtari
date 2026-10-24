@@ -479,8 +479,8 @@ static void faults(const char *dir)
     output_fault = 0;
     bytes[0]++;
     exact_file(save, bytes, sizeof bytes);
-    CHECK_EQ_U64(remove(save), 0);
     /* Every collision belongs to someone else and must survive exhaustion. */
+    write_bytes(save, bytes, sizeof bytes);
     char temporary[1100];
     for (unsigned i = 0; i < 32; i++) {
         snprintf(temporary, sizeof temporary, "%s.tmp.%lu.%u", save, pid, i);
@@ -488,6 +488,8 @@ static void faults(const char *dir)
     }
     CHECK_EQ_U64(consume(dir, rom), 1);
     CHECK_EQ_U64(temp_opens, 0);
+    CHECK_EQ_U64(create_calls, 32);
+    exact_file(save, bytes, sizeof bytes);
     for (unsigned i = 0; i < 32; i++) {
         snprintf(temporary, sizeof temporary, "%s.tmp.%lu.%u", save, pid, i);
         exact_file(temporary, bytes, 3);
