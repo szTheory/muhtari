@@ -815,7 +815,7 @@ static void test_info(void)
     CHECK_EQ_U64(muhtari_get_versions(NULL), MUHTARI_STATUS_ERR_ARGUMENT);
     CHECK_EQ_U64(muhtari_get_versions(&v), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(v.api, MUHTARI_API_VERSION);
-    CHECK_EQ_U64(v.api, 4);
+    CHECK_EQ_U64(v.api, 5);
     CHECK_EQ_U64(v.abi, 1);
     CHECK(v.behaviour_revision > 0u);
     muhtari_destroy(m);
@@ -1178,13 +1178,57 @@ static void test_audio_validate(void)
    did not. */
 static void hsc_tracer(void)
 {
-    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    static const uint8_t program[] = {
+        0xAD, 0x01, 0x10,       /* LDA $1001: restored byte */
+        0x8D, 0x02, 0x10,       /* STA $1002: changed store */
+        0x8D, 0x02, 0x10,       /* STA $1002: same-value store */
+        0xAD, 0x02, 0x10,       /* LDA $1002 */
+        0x8D, 0x00, 0x18,       /* STA $1800 */
+        0x4C, 0x0F, 0xF0        /* JMP $F00F */
+    };
+    make_cart(cart, program, sizeof program, 0u);
     cart[58] = 1u;
     muhtari *m = make();
     muhtari_media media = media_for(cart, sizeof cart);
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cpu.pc, 0xF000u);
+    CHECK_EQ_U64(m->frames, 0u);
+    CHECK_EQ_U64(m->bus.phi2, 0u);
+    muhtari_battery_info battery;
+    memset(&battery, 0, sizeof battery);
+    battery.size = (uint32_t)sizeof battery;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery), MUHTARI_STATUS_OK);
+    CHECK(battery.data != NULL);
+    CHECK_EQ_U64(battery.bytes, 2048u);
+    CHECK_EQ_U64(battery.generation, 0u);
+    if (battery.data == NULL) {
+        muhtari_destroy(m);
+        return;
+    }
+    for (size_t i = 0; i < battery.bytes; i++) {
+        CHECK_EQ_HEX(battery.data[i], 0xFFu);
+    }
+    battery.data[1] = 0x5Au;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(battery.generation, 0u);
     CHECK_EQ_HEX(muhtari__bus_peek(m, 0x3900u), 0xC6u);
     CHECK_EQ_HEX(muhtari__bus_read(m, 0x3904u), 0xFEu);
+    run(m, NULL);
+    CHECK_EQ_HEX(m->ram[0], 0x5Au);
+    CHECK_EQ_HEX(battery.data[2], 0x5Au);
+    uint8_t *pointer = battery.data;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery), MUHTARI_STATUS_OK);
+    CHECK(battery.data == pointer);
+    CHECK_EQ_U64(battery.generation, 1u);
+    uint64_t ticks = m->bus.ticks;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->bus.ticks, ticks);
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery), MUHTARI_STATUS_OK);
+    CHECK(battery.data == pointer);
+    CHECK_EQ_U64(battery.generation, 1u);
+    CHECK_EQ_HEX(battery.data[1], 0x5Au);
+    CHECK_EQ_HEX(battery.data[2], 0x5Au);
     muhtari_destroy(m);
 }
 

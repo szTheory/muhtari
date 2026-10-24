@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define MUHTARI_API_VERSION 4
+#define MUHTARI_API_VERSION 5
 #define MUHTARI_IMAGE_SIZE_MAX 1048704u /* 1 MiB of ROM plus a 128-byte header */
 
 typedef uint32_t muhtari_status;
@@ -27,7 +27,8 @@ enum {
     MUHTARI_STATUS_ERR_BIOS_REJECTED_CART = 10, /* run_frame: the BIOS took its 2600 path */
     MUHTARI_STATUS_ERR_INVALID_BIOS = 11,       /* not 4,096 or 16,384 bytes, or a bad vector */
     MUHTARI_STATUS_ERR_UNSUPPORTED_REGION = 12, /* resolves to PAL */
-    MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE = 13  /* an explicit device this version lacks */
+    MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE = 13, /* an explicit device this version lacks */
+    MUHTARI_STATUS_ERR_INVALID_HSC = 14        /* invalid optional HSC media */
 };
 
 typedef struct muhtari muhtari;
@@ -120,7 +121,8 @@ enum { /* the A78 byte 55/56 codes */
        MUHTARI_PORT_ATARIVOX = 10,
        MUHTARI_PORT_SNES2ATARI = 11,
        MUHTARI_PORT_MEGA7800 = 12,
-       MUHTARI_PORT_UNPLUGGED = 256 /* outside the A78 byte range */
+       MUHTARI_PORT_UNPLUGGED = 256, /* outside the A78 byte range */
+       MUHTARI_PORT_SAVEKEY = 257
 };
 enum { MUHTARI_REGION_NTSC = 1, MUHTARI_REGION_PAL = 2 };
 enum {
@@ -181,7 +183,41 @@ typedef struct muhtari_media {
     size_t image_size;
     const void *bios; /* NULL: fast boot; copied at load */
     size_t bios_size;
+    uint32_t hsc_mode; /* MUHTARI_HSC_* */
+    const void *hsc_rom; /* NULL: signature-only stub; copied at load */
+    size_t hsc_rom_size;
+    uint32_t port[2]; /* 0: automatic; explicit MUHTARI_PORT_* override */
 } muhtari_media;
+
+enum { MUHTARI_HSC_AUTO = 0, MUHTARI_HSC_ON = 1, MUHTARI_HSC_OFF = 2 };
+enum {
+    MUHTARI_HSC_FIRMWARE_STUB = 1u,
+    MUHTARI_HSC_FIRMWARE_KNOWN = 2u,
+    MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN = 4u,
+    MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE = 8u
+};
+
+typedef struct muhtari_battery_info {
+    uint32_t size;
+    uint8_t *data;
+    size_t bytes;
+    uint32_t layout_version;
+    uint64_t generation;
+    uint32_t hsc_attached;
+    uint32_t eeprom_port; /* 0 absent; 1 or 2 */
+    uint32_t eeprom_device;
+    uint32_t firmware_flags;
+    uint8_t hsc_sha1[20];
+} muhtari_battery_info;
+
+typedef struct muhtari_const_span {
+    uint32_t size;
+    const uint8_t *data;
+    size_t bytes;
+} muhtari_const_span;
+
+muhtari_status muhtari_get_battery(const muhtari *m, muhtari_battery_info *out);
+muhtari_status muhtari_get_hsc_rom(const muhtari *m, muhtari_const_span *out);
 
 muhtari_status muhtari_load(muhtari *m, const muhtari_media *media);
 muhtari_status muhtari_power_cycle(muhtari *m);
