@@ -1,3 +1,15 @@
+# Report the actual embedding child's status even when CTest's build-and-test
+# wrapper omits its exit diagnostic. The existing success regex still applies.
+if(DEFINED EMBED_PROGRAM)
+  execute_process(COMMAND ${EMULATOR} "${EMBED_PROGRAM}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  message("embed consumer exit ${rc}; output follows:\n${out}${err}")
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "embed consumer exited ${rc}")
+  endif()
+  return()
+endif()
+
 # The library as an outside project consumes it.
 #
 # Fault prevented: an install tree, package file or header that only works
@@ -59,6 +71,10 @@ endforeach()
 
 # A C project embeds the source tree with add_subdirectory, gets only the
 # library and its alias, and runs the consumer's frame with it.
+set(install_embed_program ${PROJECT_BINARY_DIR}/embed/embed${CMAKE_EXECUTABLE_SUFFIX})
+if(install_multi_config)
+  set(install_embed_program ${PROJECT_BINARY_DIR}/embed/$<CONFIG>/embed${CMAKE_EXECUTABLE_SUFFIX})
+endif()
 muhtari_add_test(NAME embed.subdirectory
   COMMAND ${CMAKE_CTEST_COMMAND} --build-and-test
     ${CMAKE_CURRENT_LIST_DIR}/../embed ${PROJECT_BINARY_DIR}/embed
@@ -67,7 +83,9 @@ muhtari_add_test(NAME embed.subdirectory
     --build-options
       -DMUHTARI_SOURCE_DIR=${PROJECT_SOURCE_DIR}
       ${install_build_options}
-    --test-command ${CMAKE_CROSSCOMPILING_EMULATOR} embed
+    --test-command ${CMAKE_COMMAND}
+      "-DEMBED_PROGRAM=${install_embed_program}"
+      "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS install TIMEOUT 120)
 set_tests_properties(embed.subdirectory PROPERTIES
   PASS_REGULAR_EXPRESSION "consumer: one frame, 800 samples")
