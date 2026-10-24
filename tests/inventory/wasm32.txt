@@ -485,6 +485,10 @@ input.lag_even_frames	input,portable
 input.pa7_edge	input,portable
 input.proline_one_button	input,portable
 input.proline_two_button	input,portable
+input.savekey.pins	input,portable
+input.savekey.protocol	input,portable
+input.savekey.recovery	input,portable
+input.savekey.wrap	input,portable
 input.switches	input,portable
 input.tia_en_disables_two_button	input,portable
 input.unplugged	input,portable

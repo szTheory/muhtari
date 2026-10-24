@@ -22,6 +22,10 @@ foreach(input_case IN ITEMS directions proline_two_button proline_one_button joy
   muhtari_add_test(NAME input.${input_case} COMMAND muhtari-test-input ${input_case}
     LABELS input portable TIMEOUT 1)
 endforeach()
+foreach(input_case IN ITEMS pins protocol wrap recovery)
+  muhtari_add_test(NAME input.savekey.${input_case}
+    COMMAND muhtari-test-input savekey.${input_case} LABELS input portable TIMEOUT 10)
+endforeach()
 
 # The cartridge as files, for the runner's movie tests (tests/runner): the
 # program reading every frame, and the variant reading only on even ones.

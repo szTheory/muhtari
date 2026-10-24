@@ -99,6 +99,7 @@ muhtari_status muhtari_create(const muhtari_config *cfg, muhtari **out)
 
 void muhtari__power_on(muhtari *m)
 {
+    muhtari__savekey_reset(m);
     memset(&m->cpu, 0, sizeof m->cpu);
     memset(&m->bus, 0, sizeof m->bus);
     muhtari__tia_reset(m);
@@ -171,6 +172,9 @@ static int bios_valid(const uint8_t *bios, size_t n)
 /* Puts the loaded content, or the test card, back at power-on. */
 static void power_cycle(muhtari *m)
 {
+    /* Settle only already-due programming before boot changes the tick
+       epoch. Power-on discards all unfinished protocol (controllers.md). */
+    muhtari__savekey_catch_up(m, m->bus.ticks);
     muhtari__ports_reset_counters(m);
     if (m->cart.rom != NULL && m->bios_size != 0u) {
         muhtari__boot_bios(m);
@@ -188,11 +192,11 @@ static void media_copy(muhtari_media *dst, const muhtari_media *src)
 {
     memset(dst, 0, sizeof *dst);
     memcpy(dst, src, MUHTARI__MEDIA_SIZE_FIRST);
-#define MEDIA_FIELD(field) \
-    do { \
-        if (src->size >= offsetof(muhtari_media, field) + sizeof dst->field) { \
-            memcpy(&dst->field, &src->field, sizeof dst->field); \
-        } \
+#define MEDIA_FIELD(field)                                                                         \
+    do {                                                                                           \
+        if (src->size >= offsetof(muhtari_media, field) + sizeof dst->field) {                     \
+            memcpy(&dst->field, &src->field, sizeof dst->field);                                   \
+        }                                                                                          \
     } while (0)
     MEDIA_FIELD(hsc_mode);
     MEDIA_FIELD(hsc_rom);
@@ -228,16 +232,15 @@ static muhtari_status battery_prepare(struct battery_candidate *b, uint8_t rom[4
         return MUHTARI_STATUS_ERR_INVALID_HSC;
     }
     memset(b, 0, sizeof *b);
-    b->hsc_attached = (uint32_t)(media->hsc_mode == MUHTARI_HSC_ON ||
-        media->hsc_rom != NULL || (media->hsc_mode == MUHTARI_HSC_AUTO &&
+    b->hsc_attached = (uint32_t)(media->hsc_mode == MUHTARI_HSC_ON || media->hsc_rom != NULL ||
+                                 (media->hsc_mode == MUHTARI_HSC_AUTO &&
                                   (info->devices & MUHTARI_DEVICE_HSC) != 0u));
     for (unsigned p = 0; p < 2u; p++) {
         uint32_t device = media->port[p];
-        if (device != 0u && device != MUHTARI_PORT_PROLINE &&
-            device != MUHTARI_PORT_JOYSTICK && device != MUHTARI_PORT_UNPLUGGED &&
-            !battery_serial(device)) {
+        if (device != 0u && device != MUHTARI_PORT_PROLINE && device != MUHTARI_PORT_JOYSTICK &&
+            device != MUHTARI_PORT_UNPLUGGED && !battery_serial(device)) {
             return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
-                                                  : MUHTARI_STATUS_ERR_ARGUMENT;
+                                                   : MUHTARI_STATUS_ERR_ARGUMENT;
         }
         if (device == 0u) {
             device = p == 0u ? info->port1 : info->port2;
@@ -255,8 +258,7 @@ static muhtari_status battery_prepare(struct battery_candidate *b, uint8_t rom[4
         b->eeprom_port = 2u;
         b->eeprom_device = MUHTARI_PORT_SAVEKEY;
     }
-    b->bytes = (b->hsc_attached != 0u ? 2048u : 0u) +
-               (b->eeprom_port != 0u ? 32768u : 0u);
+    b->bytes = (b->hsc_attached != 0u ? 2048u : 0u) + (b->eeprom_port != 0u ? 32768u : 0u);
     if (b->hsc_attached != 0u) {
         if (media->hsc_rom == NULL) {
             /* Signature-only compatibility stub: no firmware routines
@@ -268,17 +270,17 @@ static muhtari_status battery_prepare(struct battery_candidate *b, uint8_t rom[4
         } else {
             /* Canonical identity: cartridge preparation CART.06/18/40;
                unknown explicit firmware is accepted with a warning. */
-            static const uint8_t known[20] = {
-                0xa3, 0xaf, 0x67, 0x69, 0x91, 0x39, 0x1a, 0x6d, 0xd7, 0x16,
-                0xc7, 0x90, 0x22, 0xd4, 0x94, 0x72, 0x06, 0xb7, 0x81, 0x64
-            };
+            static const uint8_t known[20] = {0xa3, 0xaf, 0x67, 0x69, 0x91, 0x39, 0x1a,
+                                              0x6d, 0xd7, 0x16, 0xc7, 0x90, 0x22, 0xd4,
+                                              0x94, 0x72, 0x06, 0xb7, 0x81, 0x64};
             memmove(rom, media->hsc_rom, 4096u);
             struct muhtari__sha1 hash;
             muhtari__sha1_init(&hash);
             muhtari__sha1_update(&hash, rom, 4096u);
             muhtari__sha1_final(&hash, b->hsc_sha1);
             b->firmware_flags = memcmp(b->hsc_sha1, known, sizeof known) == 0
-                ? MUHTARI_HSC_FIRMWARE_KNOWN : MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN;
+                                    ? MUHTARI_HSC_FIRMWARE_KNOWN
+                                    : MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN;
             if (rom[0x900] != 0xC6u || rom[0x904] != 0xFEu) {
                 b->firmware_flags |= MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE;
             }
@@ -344,6 +346,7 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     m->battery.hsc_attached = battery.hsc_attached;
     m->battery.eeprom_port = battery.eeprom_port;
     m->battery.eeprom_device = battery.eeprom_device;
+    muhtari__savekey_reset(m); /* a successful load starts a fresh baseline */
     m->battery.firmware_flags = battery.firmware_flags;
     memcpy(m->battery.hsc_sha1, battery.hsc_sha1, sizeof battery.hsc_sha1);
     if (battery.hsc_attached != 0u) {
@@ -376,8 +379,8 @@ muhtari_status muhtari_get_battery(const muhtari *m, muhtari_battery_info *out)
     if (m == NULL || out == NULL) {
         return MUHTARI_STATUS_ERR_ARGUMENT;
     }
-    muhtari_status st = muhtari__check_size(out, MUHTARI__BATTERY_SIZE_FIRST,
-                                           (uint32_t)sizeof *out);
+    muhtari_status st =
+        muhtari__check_size(out, MUHTARI__BATTERY_SIZE_FIRST, (uint32_t)sizeof *out);
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
@@ -404,8 +407,8 @@ muhtari_status muhtari_get_hsc_rom(const muhtari *m, muhtari_const_span *out)
     if (m == NULL || out == NULL) {
         return MUHTARI_STATUS_ERR_ARGUMENT;
     }
-    muhtari_status st = muhtari__check_size(out, MUHTARI__CONST_SPAN_SIZE_FIRST,
-                                           (uint32_t)sizeof *out);
+    muhtari_status st =
+        muhtari__check_size(out, MUHTARI__CONST_SPAN_SIZE_FIRST, (uint32_t)sizeof *out);
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }

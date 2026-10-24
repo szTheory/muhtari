@@ -802,10 +802,6 @@ static int pa7_edge(void)
     muhtari__ports_latch(m);
     CHECK_EQ_U64(m->riot.pa7_flag, 0u);
     muhtari_destroy(m);
-    (void)savekey_protocol();
-    (void)savekey_pins();
-    (void)savekey_wrap();
-    (void)savekey_recovery();
     return check_failures == 0;
 }
 
@@ -924,6 +920,10 @@ int main(int argc, char **argv)
         {"switches", switches},
         {"unplugged", unplugged},
         {"pa7_edge", pa7_edge},
+        {"savekey.pins", savekey_pins},
+        {"savekey.protocol", savekey_protocol},
+        {"savekey.wrap", savekey_wrap},
+        {"savekey.recovery", savekey_recovery},
         {"lag_even_frames", lag_even_frames},
         {"lag_dma_and_peek", lag_dma_and_peek},
     };
