@@ -124,6 +124,8 @@ expansion limited to explicitly inline helpers;
 embedded builds keep the consumer's options. The same objects run the full tests
 and enter all three component archives. A compiler setting alone proves no byte
 bound: acceptance measures the actual archives on each native target.
+The Windows HSC loader probes disk-file type through Kernel32 and closes the
+probe before reading firmware; it does not request unused CRT time metadata.
 
 Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
 ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and
