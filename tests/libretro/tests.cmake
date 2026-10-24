@@ -111,6 +111,9 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.host.battery
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> battery
     LABELS libretro portable TIMEOUT 5)
+  muhtari_add_test(NAME libretro.host.battery_order
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> battery_order
+    LABELS libretro portable TIMEOUT 5)
   # Fault prevented: the core RetroArch loads shows a frame, timing or
   # geometry other than the library's, or needs content to start.
   muhtari_add_test(NAME libretro.host.xrgb8888

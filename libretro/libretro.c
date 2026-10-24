@@ -48,6 +48,8 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #define LR_MAX_DESCRIPTORS 64u
 #define LR_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
 #define LR_PROLINE RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)
+#define LR_SAVEKEY RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2)
+#define LR_ATARIVOX RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3)
 
 #ifdef USE_RGB565
 typedef uint16_t lr_pixel;
@@ -85,6 +87,9 @@ static struct retro_memory_descriptor descs[LR_MAX_DESCRIPTORS];
 static struct retro_memory_map memory_map; /* outlives SET_MEMORY_MAPS */
 static unsigned desc_count;
 static uint32_t desc_next; /* the first CPU address no descriptor covers yet */
+static muhtari_battery_info battery;
+static uint32_t loaded_port[2], last_request[3];
+static bool request_seen;
 
 /* Writes a message to the frontend's log, when it has one (L1243). */
 #define LR_LOG(level, ...)                                                                         \
@@ -103,10 +108,12 @@ static const struct retro_controller_description pad_types[] = {
     {"ProLine", LR_PROLINE},
     {"Joystick", LR_JOYSTICK},
     {"None", RETRO_DEVICE_NONE},
+    {"SaveKey", LR_SAVEKEY},
+    {"AtariVox EEPROM", LR_ATARIVOX},
 };
 static struct retro_controller_info ports[] = {
-    {pad_types, 4u},
-    {pad_types, 4u},
+    {pad_types, 6u},
+    {pad_types, 6u},
     {NULL, 0u},
 };
 
@@ -161,6 +168,29 @@ static struct retro_core_option_v2_definition options_v2[] = {
              "R flips it.",
      .values = {{"B", "B"}, {"A", "A"}, {NULL, NULL}},
      .default_value = "B"},
+    {.key = "muhtari_hsc",
+     .desc = "High Score Cartridge",
+     .info = "Storage attachment; changes require content reload.",
+     .values = {{"auto", "Auto"}, {"on", "On"}, {"off", "Off"}, {NULL, NULL}},
+     .default_value = "auto"},
+    {.key = "muhtari_battery_port1",
+     .desc = "Port 1 battery device",
+     .info = "Overrides controller selection at content load; changes require reload.",
+     .values = {{"auto", "Auto"},
+                {"none", "None"},
+                {"savekey", "SaveKey"},
+                {"atarivox", "AtariVox EEPROM"},
+                {NULL, NULL}},
+     .default_value = "auto"},
+    {.key = "muhtari_battery_port2",
+     .desc = "Port 2 battery device",
+     .info = "Overrides controller selection at content load; changes require reload.",
+     .values = {{"auto", "Auto"},
+                {"none", "None"},
+                {"savekey", "SaveKey"},
+                {"atarivox", "AtariVox EEPROM"},
+                {NULL, NULL}},
+     .default_value = "auto"},
     {.key = NULL},
 };
 static struct retro_core_options_v2 options = {option_categories, options_v2};
@@ -202,6 +232,10 @@ static void lr_release(void)
     desc_count = 0u;
     desc_next = 0u;
     run_failed = false;
+    memset(&battery, 0, sizeof battery);
+    memset(loaded_port, 0, sizeof loaded_port);
+    memset(last_request, 0, sizeof last_request);
+    request_seen = false;
 }
 
 /* Declares the options: v2 when the frontend has it (L1848), else v1. */
@@ -386,8 +420,79 @@ static uint32_t lr_port_device(unsigned port)
         return MUHTARI_PORT_JOYSTICK;
     case RETRO_DEVICE_NONE:
         return MUHTARI_PORT_UNPLUGGED;
+    case LR_SAVEKEY:
+        return MUHTARI_PORT_SAVEKEY;
+    case LR_ATARIVOX:
+        return MUHTARI_PORT_ATARIVOX;
     default:
         return 0u;
+    }
+}
+
+static bool lr_serial(uint32_t d)
+{
+    return d == MUHTARI_PORT_SAVEKEY || d == MUHTARI_PORT_ATARIVOX;
+}
+
+/* Load options take precedence over controller requests, then cartridge metadata
+   (docs/libretro.md). An explicit none keeps an ordinary non-save controller. */
+static void lr_battery_request(muhtari_media *media)
+{
+    static const char *const keys[2] = {"muhtari_battery_port1", "muhtari_battery_port2"};
+    media->hsc_mode = lr_option_is("muhtari_hsc", "on")    ? MUHTARI_HSC_ON
+                      : lr_option_is("muhtari_hsc", "off") ? MUHTARI_HSC_OFF
+                                                           : MUHTARI_HSC_AUTO;
+    for (unsigned p = 0u; p < 2u; p++) {
+        uint32_t d = lr_port_device(p);
+        if (lr_option_is(keys[p], "savekey"))
+            d = MUHTARI_PORT_SAVEKEY;
+        else if (lr_option_is(keys[p], "atarivox"))
+            d = MUHTARI_PORT_ATARIVOX;
+        else if (lr_option_is(keys[p], "none")) {
+            if (d == 0u || lr_serial(d))
+                d = MUHTARI_PORT_PROLINE;
+        }
+        media->port[p] = d;
+    }
+}
+
+static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
+{
+    if (battery.eeprom_port == p + 1u)
+        return battery.eeprom_device;
+    return lr_serial(request->port[p]) ? loaded_port[p] : request->port[p];
+}
+
+static void lr_check_battery_request(const muhtari_media *request)
+{
+    uint32_t key[3] = {request->hsc_mode, request->port[0], request->port[1]};
+    if (request_seen && memcmp(key, last_request, sizeof key) == 0)
+        return;
+    memcpy(last_request, key, sizeof key);
+    request_seen = true;
+    bool hsc = request->hsc_mode == MUHTARI_HSC_ON ||
+               (request->hsc_mode == MUHTARI_HSC_AUTO && (cart.devices & MUHTARI_DEVICE_HSC) != 0u);
+    unsigned count = 0u, port = 0u;
+    uint32_t serial = 0u;
+    for (unsigned p = 0u; p < 2u; p++) {
+        uint32_t d = request->port[p] != 0u ? request->port[p] : p == 0u ? cart.port1 : cart.port2;
+        if (request->port[p] == 0u && battery.eeprom_port == p + 1u)
+            d = battery.eeprom_device;
+        if (lr_serial(d)) {
+            count++;
+            port = p + 1u;
+            serial = d;
+        }
+    }
+    if (count == 0u && (cart.devices & MUHTARI_DEVICE_SAVEKEY) != 0u && request->port[1] == 0u) {
+        count = 1u;
+        port = 2u;
+        serial = MUHTARI_PORT_SAVEKEY;
+    }
+    if (hsc != (battery.hsc_attached != 0u) || count > 1u || port != battery.eeprom_port ||
+        serial != battery.eeprom_device) {
+        LR_LOG(RETRO_LOG_WARN, "muhtari: battery device change requires content reload\n");
+        lr_message("Battery device change requires content reload");
     }
 }
 
@@ -444,15 +549,19 @@ static void lr_difficulty_edges(void)
 static void lr_input(void)
 {
     muhtari_input in;
+    muhtari_media request = {0};
     bool updated = false;
     if (env_cb != NULL && env_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
         lr_read_difficulty(false);
     }
     lr_difficulty_edges();
+    lr_battery_request(&request);
+    if (content != NULL)
+        lr_check_battery_request(&request);
     memset(&in, 0, sizeof in);
     in.size = (uint32_t)sizeof in;
-    in.device[0] = lr_port_device(0u);
-    in.device[1] = lr_port_device(1u);
+    in.device[0] = lr_active_port(0u, &request);
+    in.device[1] = lr_active_port(1u, &request);
     in.buttons[0] = lr_buttons(0u);
     in.buttons[1] = lr_buttons(1u);
     in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_SELECT) ? MUHTARI_SWITCH_SELECT : 0u;
@@ -460,7 +569,9 @@ static void lr_input(void)
     in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_X) ? MUHTARI_SWITCH_RESET : 0u;
     in.switches |= difficulty_a[0] ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u;
     in.switches |= difficulty_a[1] ? MUHTARI_SWITCH_RIGHT_DIFFICULTY_A : 0u;
-    (void)muhtari_set_input(inst, &in);
+    if (muhtari_set_input(inst, &in) != MUHTARI_STATUS_OK) {
+        LR_LOG(RETRO_LOG_ERROR, "muhtari: input request refused\n");
+    }
 }
 
 /* Restart is a power cycle (HOSTS-AND-INTEGRATION section 1): the console's
@@ -676,6 +787,9 @@ static bool lr_load_content(const struct retro_game_info *game)
         media.size = (uint32_t)sizeof media;
         media.image = content;
         media.image_size = content_size;
+        lr_battery_request(&media);
+        loaded_port[0] = media.port[0];
+        loaded_port[1] = media.port[1];
         if (lr_option_is("muhtari_boot", "bios")) {
             st = lr_load_bios(&media);
         } else {
@@ -688,6 +802,9 @@ static bool lr_load_content(const struct retro_game_info *game)
                st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ? muhtari__board_name(cart.board) : "");
         return false;
     }
+    battery.size = (uint32_t)sizeof battery;
+    (void)muhtari_get_battery(inst, &battery);
+    lr_check_battery_request(&media);
     return true;
 }
 
@@ -905,6 +1022,8 @@ unsigned retro_get_region(void)
 void *retro_get_memory_data(unsigned id)
 {
     size_t bytes = 0u;
+    if (inst != NULL && id == RETRO_MEMORY_SAVE_RAM)
+        return battery.data;
     if (inst == NULL || id != RETRO_MEMORY_SYSTEM_RAM) {
         return NULL;
     }
@@ -914,6 +1033,8 @@ void *retro_get_memory_data(unsigned id)
 size_t retro_get_memory_size(unsigned id)
 {
     size_t bytes = 0u;
+    if (inst != NULL && id == RETRO_MEMORY_SAVE_RAM)
+        return battery.bytes;
     if (inst == NULL || id != RETRO_MEMORY_SYSTEM_RAM) {
         return 0u;
     }

@@ -499,6 +499,7 @@ install.stage	install
 libretro.bios_failures	libretro,portable
 libretro.host.audio	audio,libretro,portable
 libretro.host.battery	libretro,portable
+libretro.host.battery_order	libretro,portable
 libretro.host.bios	libretro,portable
 libretro.host.devices	libretro,portable
 libretro.host.input	libretro,portable

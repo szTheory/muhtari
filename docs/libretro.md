@@ -25,7 +25,7 @@ The console's Reset is the switch a game reads; RetroArch's own Restart is a pow
 
 ## Devices
 
-Each port offers four devices in Quick Menu → Controls:
+Each port offers six devices in Quick Menu → Controls:
 
 | Device | What the game sees |
 |---|---|
@@ -33,6 +33,8 @@ Each port offers four devices in Quick Menu → Controls:
 | ProLine | the two-button 7800 controller |
 | Joystick | a one-button 2600 joystick; A fires too |
 | None | nothing plugged in |
+| SaveKey | one 32 KiB serial EEPROM |
+| AtariVox EEPROM | the same EEPROM interface; speech is unavailable |
 
 ## Options
 
@@ -42,8 +44,25 @@ Each port offers four devices in Quick Menu → Controls:
 | Palette (`muhtari_palette`) | NTSC (warm) | always |
 | Left difficulty (`muhtari_left_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
 | Right difficulty (`muhtari_right_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
+| High Score Cartridge (`muhtari_hsc`) | Auto (default), On, Off | at content load |
+| Port 1/2 battery device (`muhtari_battery_port1`, `muhtari_battery_port2`) | Auto (default), None, SaveKey, AtariVox | at content load |
 
 There is no region option: this release runs NTSC only.
+
+Battery options override controller requests supplied before load; Auto follows those requests, then
+cartridge metadata. A SaveKey hint without a location selects port 2. Battery None suppresses automatic
+storage on its port while retaining an ordinary controller selection; an automatic or save-controller
+selection becomes ProLine. At most one EEPROM may attach, on either port; dual requests refuse load.
+No controller callback before load is required. A later request that changes storage reports that content
+must be reloaded and keeps the installed attachment. Auto and the installed save identity remain valid;
+ordinary non-save controller changes still work. A repeated unchanged request produces no repeated warning.
+
+`RETRO_MEMORY_SAVE_RAM` is the final core-owned raw span immediately after successful content load:
+2,048 HSC bytes, 32,768 EEPROM bytes, or HSC followed by EEPROM (34,816 bytes). Absent storage and
+unloaded/no-content sessions return NULL/0. The frontend restores bytes before the first frame and owns
+all `.srm` file I/O; the adapter has no save-file operations or mirror buffer. Pointer and length remain
+stable until unload or reload. Restart retains committed battery bytes; it discards incomplete EEPROM
+programming without advancing emulated time. Save states remain unavailable.
 
 **Restart** power-cycles the console: memory is cleared, the cartridge starts again the way it was loaded, and the
 difficulty switches go back to their options.

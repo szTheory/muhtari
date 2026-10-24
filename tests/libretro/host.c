@@ -730,17 +730,21 @@ static void case_layout(void)
    descriptors name the 11 inputs of port 1 and the 6 of port 2. */
 static void case_devices(void)
 {
-    static const char *const names[4] = {"Auto (cartridge header)", "ProLine", "Joystick", "None"};
-    static const unsigned ids[4] = {
-        RETRO_DEVICE_JOYPAD, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
-        RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1), RETRO_DEVICE_NONE};
+    static const char *const names[6] = {
+        "Auto (cartridge header)", "ProLine", "Joystick", "None", "SaveKey", "AtariVox EEPROM"};
+    static const unsigned ids[6] = {RETRO_DEVICE_JOYPAD,
+                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
+                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1),
+                                    RETRO_DEVICE_NONE,
+                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2),
+                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3)};
     uint8_t e[8];
     unsigned port, t;
     start(0);
     CHECK(controller_info != NULL);
     for (port = 0; controller_info != NULL && port < 2u; port++) {
-        CHECK_EQ_U64(controller_info[port].num_types, 4u);
-        for (t = 0; t < 4u && t < controller_info[port].num_types; t++) {
+        CHECK_EQ_U64(controller_info[port].num_types, 6u);
+        for (t = 0; t < 6u && t < controller_info[port].num_types; t++) {
             check_string("controller", controller_info[port].types[t].desc, names[t]);
             CHECK_EQ_U64(controller_info[port].types[t].id, ids[t]);
         }
@@ -957,13 +961,18 @@ static void case_bios(const char *dir)
    switches at load and at Restart; a change mid-game sets them at once. */
 static void check_keys(void)
 {
-    static const char *const keys[4] = {"muhtari_boot", "muhtari_palette",
-                                        "muhtari_left_difficulty", "muhtari_right_difficulty"};
+    static const char *const keys[7] = {"muhtari_boot",
+                                        "muhtari_palette",
+                                        "muhtari_left_difficulty",
+                                        "muhtari_right_difficulty",
+                                        "muhtari_hsc",
+                                        "muhtari_battery_port1",
+                                        "muhtari_battery_port2"};
     unsigned k;
-    for (k = 0; k < 4u; k++) {
+    for (k = 0; k < 7u; k++) {
         check_string("option key", option_keys[k], keys[k]);
     }
-    CHECK(option_keys[4] == NULL);
+    CHECK(option_keys[7] == NULL);
 }
 
 static void case_options(void)
@@ -1130,6 +1139,70 @@ static void case_memory_map(void)
 }
 
 /* Restore through the module's public memory interface before any run. */
+static void battery_pin(uint8_t *code, size_t *n, unsigned port, bool scl, bool sda)
+{
+    uint8_t shift = port == 0u ? 4u : 0u;
+    code[(*n)++] = 0xA9u;
+    code[(*n)++] = (uint8_t)(((scl ? 8u : 0u) | (sda ? 4u : 0u)) << shift);
+    code[(*n)++] = 0x8Du;
+    code[(*n)++] = 0x80u;
+    code[(*n)++] = 0x02u;
+}
+
+static void battery_send(uint8_t *code, size_t *n, unsigned port, uint8_t value)
+{
+    for (unsigned bit = 0u; bit < 8u; bit++) {
+        bool high = (value & (0x80u >> bit)) != 0u;
+        battery_pin(code, n, port, false, high);
+        battery_pin(code, n, port, true, high);
+        battery_pin(code, n, port, false, high);
+    }
+    battery_pin(code, n, port, false, true);
+    battery_pin(code, n, port, true, true);
+    battery_pin(code, n, port, false, true);
+}
+
+/* Owned CPU program performs a random EEPROM read and stores all eight
+   sampled SDA bits separately, so the host's expectation is independent. */
+static void battery_read_program(uint8_t *code, unsigned port)
+{
+    size_t n = 0u;
+    uint8_t mask = port == 0u ? 0xC0u : 0x0Cu;
+    code[n++] = 0xA9u;
+    code[n++] = mask;
+    code[n++] = 0x8Du;
+    code[n++] = 0x81u;
+    code[n++] = 0x02u;
+    battery_pin(code, &n, port, true, true);
+    battery_pin(code, &n, port, true, false);
+    battery_pin(code, &n, port, false, false);
+    battery_send(code, &n, port, 0xA0u);
+    battery_send(code, &n, port, 0u);
+    battery_send(code, &n, port, 0u);
+    battery_pin(code, &n, port, true, true);
+    battery_pin(code, &n, port, true, false);
+    battery_pin(code, &n, port, false, false);
+    battery_send(code, &n, port, 0xA1u);
+    for (unsigned bit = 0u; bit < 8u; bit++) {
+        battery_pin(code, &n, port, true, true);
+        code[n++] = 0xADu;
+        code[n++] = 0x80u;
+        code[n++] = 0x02u;
+        code[n++] = 0x29u;
+        code[n++] = (uint8_t)(port == 0u ? 0x40u : 0x04u);
+        code[n++] = 0x8Du;
+        code[n++] = (uint8_t)bit;
+        code[n++] = 0x18u;
+        battery_pin(code, &n, port, false, true);
+    }
+    battery_pin(code, &n, port, true, true);
+    battery_pin(code, &n, port, false, false);
+    battery_pin(code, &n, port, true, false);
+    battery_pin(code, &n, port, true, true);
+    code[n++] = 0x02u;
+    CHECK(n < 4090u);
+}
+
 static void case_battery(void)
 {
     static uint8_t image[128u + 4096u];
@@ -1161,6 +1234,104 @@ static void case_battery(void)
     CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
     stop();
     set_var("muhtari_hsc", "auto");
+}
+
+/* Late storage changes cannot replace or reinterpret the published span. */
+static void case_battery_order(void)
+{
+    static uint8_t image[128u + 4096u];
+    struct retro_game_info game = {0};
+    game.data = image;
+    game.size = images_linear(image, 3u, 4096u);
+    image[128u] = 0x02u;
+    for (unsigned hsc = 0u; hsc < 2u; hsc++) {
+        for (unsigned serial = 0u; serial < 3u; serial++) {
+            for (unsigned port = 0u; port < 2u; port++) {
+                set_var("muhtari_hsc", hsc ? "on" : "off");
+                set_var("muhtari_battery_port1", "auto");
+                set_var("muhtari_battery_port2", "auto");
+                p_set_environment(env);
+                p_init();
+                if (serial != 0u)
+                    p_set_controller_port_device(
+                        port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, serial + 1u));
+                if (serial != 0u)
+                    battery_read_program(image + 128u, port);
+                else
+                    image[128u] = 0x02u;
+                CHECK(p_load_game(&game));
+                size_t bytes = (hsc ? 2048u : 0u) + (serial ? 32768u : 0u);
+                uint8_t *save = (uint8_t *)p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+                CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), bytes);
+                CHECK((save == NULL) == (bytes == 0u));
+                if (save != NULL)
+                    for (size_t i = 0u; i < bytes; i++)
+                        save[i] = (uint8_t)(i * 11u + 3u);
+                if (serial != 0u) {
+                    size_t offset = hsc ? 2048u : 0u;
+                    save[offset] = 0xA6u;
+                    p_run();
+                    const uint8_t *ram =
+                        (const uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+                    for (unsigned bit = 0u; bit < 8u; bit++)
+                        CHECK_EQ_U64(ram[bit], (0xA6u & (0x80u >> bit)) != 0u
+                                                   ? (port == 0u ? 0x40u : 0x04u)
+                                                   : 0u);
+                    save[offset] = (uint8_t)(offset * 11u + 3u);
+                }
+                unsigned before = message_calls;
+                if (serial != 0u) {
+                    p_set_controller_port_device(port, RETRO_DEVICE_JOYPAD);
+                    p_run();
+                    CHECK_EQ_U64(message_calls, before);
+                }
+                p_set_controller_port_device(
+                    port,
+                    serial ? RETRO_DEVICE_NONE : RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2));
+                p_run();
+                CHECK_EQ_U64(message_calls, before + 1u);
+                CHECK(strstr(message, "reload") != NULL);
+                p_run();
+                CHECK_EQ_U64(message_calls, before + 1u);
+                set_var("muhtari_hsc", hsc ? "off" : "on");
+                p_run();
+                CHECK_EQ_U64(message_calls, before + 2u);
+                p_reset();
+                CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == save);
+                CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), bytes);
+                if (save != NULL)
+                    for (size_t i = 0u; i < bytes; i++)
+                        CHECK_EQ_U64(save[i], (uint8_t)(i * 11u + 3u));
+                stop();
+                CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 0u);
+            }
+        }
+    }
+    image[58] = 3u;
+    image[128u] = 0x02u;
+    set_var("muhtari_hsc", "auto");
+    for (unsigned suppress = 0u; suppress < 2u; suppress++) {
+        p_set_environment(env);
+        set_var("muhtari_battery_port2", suppress ? "none" : "auto");
+        CHECK(p_load_game(&game));
+        CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), suppress ? 2048u : 34816u);
+        stop();
+    }
+    /* Explicit option wins over a contradictory pre-load controller setter. */
+    p_set_environment(env);
+    p_set_controller_port_device(0u, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3));
+    set_var("muhtari_battery_port1", "savekey");
+    CHECK(p_load_game(&game));
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 34816u);
+    stop();
+    p_set_environment(env);
+    set_var("muhtari_battery_port2", "atarivox");
+    CHECK(!p_load_game(&game));
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+    stop();
+    set_var("muhtari_hsc", "auto");
+    set_var("muhtari_battery_port1", "auto");
+    set_var("muhtari_battery_port2", "auto");
 }
 
 static void case_audio(void)
@@ -1238,10 +1409,15 @@ int main(int argc, char **argv)
         void (*run)(void);
         int files;
     } cases[] = {
-        {"audio", case_audio, 1},           {"input", case_input, 1},
-        {"layout", case_layout, 1},         {"devices", case_devices, 1},
-        {"reset", case_reset, 1},           {"options", case_options, 1},
-        {"memory_map", case_memory_map, 3}, {"battery", case_battery, 0},
+        {"audio", case_audio, 1},
+        {"input", case_input, 1},
+        {"layout", case_layout, 1},
+        {"devices", case_devices, 1},
+        {"reset", case_reset, 1},
+        {"options", case_options, 1},
+        {"memory_map", case_memory_map, 3},
+        {"battery", case_battery, 0},
+        {"battery_order", case_battery_order, 0},
     };
     size_t i;
     int found = 0;
