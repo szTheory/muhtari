@@ -306,6 +306,75 @@ static const settings tia_en = {0x0Fu, 0x14u, 0x01u, 0x00u, 0x00u};
 #define STICKS "muhtari-movie 1\nport1 joystick\nport2 joystick\n|.....|.....|...BB|\n"
 #define UNPLUGGED "muhtari-movie 1\nport1 none\nport2 none\n|||...BB|\n"
 
+/* Execute the additive boundary through the same CPU pin-reading program.
+   Rejections on either port must retain the complete accepted packet. */
+static void extended_digital(void)
+{
+    muhtari *m = boot(&plain);
+    CHECK(m != NULL);
+    if (m == NULL) {
+        return;
+    }
+    frame(m, NULL);
+    muhtari_input_ex in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.port[0].device = MUHTARI_PORT_PROLINE;
+    in.port[0].buttons = MUHTARI_BUTTON_LEFT | MUHTARI_BUTTON_1;
+    in.port[1].device = MUHTARI_PORT_JOYSTICK;
+    in.port[1].buttons = MUHTARI_BUTTON_DOWN | MUHTARI_BUTTON_1;
+    in.switches = MUHTARI_SWITCH_PAUSE;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    for (unsigned fault = 0u; fault < 11u; fault++) {
+        muhtari_input_ex bad = in;
+        bad.port[0].buttons = MUHTARI_BUTTON_UP;
+        switch (fault) {
+        case 0: bad.port[1].device = 999u; break;
+        case 1: bad.port[1].device = MUHTARI_PORT_PADDLE; break;
+        case 2: bad.port[1].buttons = MUHTARI_SNES_BUTTON_Y; break;
+        case 3: bad.port[1].paddle[0] = 65536u; break;
+        case 4: bad.port[1].paddle[1] = 1u; break;
+        case 5: bad.port[1].keypad = 0x1000u; break;
+        case 6: bad.port[1].dx = INT32_MIN; break;
+        case 7: bad.port[1].dy = INT32_MAX; break;
+        case 8: bad.port[1].gun_x = 320u; break;
+        case 9: bad.port[1].flags = 2u; break;
+        default: bad.switches = 32u; break;
+        }
+        CHECK_EQ_U64(muhtari_set_input_ex(m, &bad),
+                     fault == 1u ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
+                                 : MUHTARI_STATUS_ERR_ARGUMENT);
+    }
+    frame(m, video);
+    const uint8_t *r = ram(m);
+    const uint8_t *got = r + RING + r[LAST_ENTRY];
+    CHECK_EQ_HEX(got[SWCHA], 0xBDu);
+    CHECK_EQ_HEX(got[SWCHB], 0x37u);
+    CHECK_EQ_HEX(got[INPT0] & H, H);
+    CHECK_EQ_HEX(got[INPT4] & H, L);
+    CHECK_EQ_HEX(got[INPT5] & H, L);
+    frame(m, NULL); /* held controls survive with no submission */
+    r = ram(m);
+    CHECK_EQ_HEX(r[RING + r[LAST_ENTRY] + SWCHA], 0xBDu);
+    muhtari_input legacy;
+    memset(&legacy, 0, sizeof legacy);
+    legacy.size = (uint32_t)sizeof legacy;
+    legacy.device[0] = MUHTARI_PORT_PADDLE;
+    CHECK_EQ_U64(sizeof legacy, 24u);
+    CHECK_EQ_U64(muhtari_set_input(m, &legacy), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+    in.port[0].buttons = MUHTARI_BUTTON_RIGHT;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    in.port[0].device = MUHTARI_PORT_UNPLUGGED;
+    in.port[1].device = MUHTARI_PORT_UNPLUGGED;
+    in.port[0].buttons = 0u;
+    in.port[1].buttons = 0u;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    frame(m, NULL);
+    r = ram(m);
+    CHECK_EQ_HEX(r[RING + r[LAST_ENTRY] + SWCHA], 0xFFu);
+    muhtari_destroy(m);
+}
+
 /* Each direction on each port pulls its own SWCHA pin to 0, port 0's in
    bits 7-4 as right, left, down, up and port 1's in bits 3-0
    (A7800-CARTRIDGES-AND-PERIPHERALS section 3.1). With no switch held and
@@ -314,6 +383,7 @@ static const settings tia_en = {0x0Fu, 0x14u, 0x01u, 0x00u, 0x00u};
    reads it. */
 static int directions(void)
 {
+    extended_digital();
     static const row rows[] = {
         {&plain, PROLINES "|U.....|......|...BB|\n", {0xEFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
         /* section 3.1: pin 1, SWCHA b4 */

@@ -219,6 +219,13 @@ static muhtari_status ports_check_device(uint32_t device)
     return MUHTARI_STATUS_ERR_ARGUMENT;
 }
 
+muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
+{
+    (void)m;
+    (void)in;
+    return MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+}
+
 muhtari_status muhtari_set_input(muhtari *m, const muhtari_input *in)
 {
     if (m == NULL || in == NULL) {
