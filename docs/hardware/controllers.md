@@ -155,6 +155,32 @@ Independent numeric timing expectations: latch at tick 100 with left dx=2 and ri
 and its slow data tick at start+17, completing at start+18; `LDA $000D` has the same timing and reads right fire
 in D7. With right fire held that bit is zero. From phase D, one reverse edge restores F; from C it restores D.
 
+## Motion diagnostic
+
+The owned `controller-motion` executable uses mailbox version 1, ROM identity 14 and explicit scenario `motion0`
+(driving on both ports). Each scenario is a fresh load with fixed device overrides. Reset/Select/Pause encode the
+scenario index with weights 1/2/4 (active-low SWCHB bits 0/1/3), held through frame 2 and released from frame 3.
+After reset the ROM waits through visible time to the first full-frame VBLANK start before decoding the selector.
+The first record is that decoded index. Scenario 0 is currently the only implemented family member.
+
+The stimulus schedule, declared independently of observations, is: frames 1–2 neutral; frame 3 left dx=+4 and
+fire, right dx=-4 without fire; frame 4 left dx=-1 without fire, right dx=+1 and fire; frame 5 has no submission;
+frame 6 submits zero deltas and released fire. Devices remain driving throughout. Frame numbers include the short
+first frame after fast boot. A following host integration slice supplies this schedule through all three hosts.
+
+At each sampling boundary VBLANK starts at line 258 tick 42. `STA WSYNC` parks the next opcode until line 259 tick 0,
+412 master ticks later. The following `LDA $0280` has its data at opcode-start+17: three fast 4-tick fetches then
+the slow cycle's fifth tick. Whole-cycle RDY release rounds opcode-start up by 0..3 ticks, so this read occurs at
+VBLANK+429..432, strictly before the first edge at +454. Storing the byte in RAM (16 ticks) and another zero-page
+`STA WSYNC` (14 ticks) stay inside the line. Repeating gives reads at +883..886, +1337..1340, +1791..1794 and
++2245..2248. They fall after exactly 1,2,3,4 edges. The ROM records the actual sampled bytes after capturing them.
+
+Independent expected records, in order, are: scenario 0; idle FF; idle fire 80/80; frame-3 samples FF, DE, CC, ED, FF;
+frame-3 fire 00/80; frame-4 pre-edge FF and post-edge ED; frame-4 fire 80/00; frame-5 held ED and right fire 00;
+frame-6 neutral ED and right fire 80. Fire records mask D7 so open-bus low bits cannot hide or create a press.
+These 19 values follow the connector tuples and the selected cadence above, not a frame hash. The `motion0` rows
+in `tests/diag/expected.csv` label fitted timing policy separately from wiring facts; count and CRC cover all records.
+
 ## Not modelled
 
 - The TIA's VBLANK D6 latch of INPT4 and INPT5, and its D7 dump of INPT0-INPT3, which paddles need.
