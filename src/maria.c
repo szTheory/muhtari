@@ -450,15 +450,33 @@ static void render(muhtari *m, uint32_t line, uint32_t x_end)
     if (x_end <= ma->px) {
         return;
     }
-    if (ma->rows != NULL && line >= MARIA_FIRST_RASTER &&
-        line < MARIA_FIRST_RASTER + MUHTARI__HEIGHT_NTSC) {
-        uint8_t *row = ma->rows + (size_t)(line - MARIA_FIRST_RASTER) * ma->pitch;
+    if (line >= MARIA_FIRST_RASTER && line < MARIA_FIRST_RASTER + MUHTARI__HEIGHT_NTSC) {
+        uint8_t *row = ma->rows != NULL
+                           ? ma->rows + (size_t)(line - MARIA_FIRST_RASTER) * ma->pitch
+                           : NULL;
         const uint8_t *cells = ma->line_ram[(ma->write_buf ^ 1u) & 1u];
         uint8_t ctrl = ma->reg[MARIA_CTRL];
         uint32_t rm = ctrl & MARIA_CTRL_RM;
         uint8_t mask = (ctrl & MARIA_CTRL_KILL) != 0u ? MARIA_KILL_MASK : 0xFFu;
-        for (uint32_t x = ma->px; x < x_end; x++) {
-            row[x] = (uint8_t)(ma->reg[pixel_reg(cells[x >> 1], rm, x & 1u)] & mask);
+        if (row != NULL) {
+            for (uint32_t x = ma->px; x < x_end; x++) {
+                row[x] = (uint8_t)(ma->reg[pixel_reg(cells[x >> 1], rm, x & 1u)] & mask);
+            }
+        }
+        /* Only the two scheduled native samples need computation without
+           caller rows. Preserve the emission raster at x319, before LRC
+           swaps buffers (controllers.md, XG-1). */
+        for (unsigned p = 0u; p < 2u; p++) {
+            const struct muhtari__light *light = &m->ports.light[p];
+            uint32_t x = light->sample_x;
+            if (light->sample_tick != 0u && light->sample_raster == line &&
+                x >= ma->px && x < x_end) {
+                uint8_t color = row != NULL ? row[x]
+                    : (uint8_t)(ma->reg[pixel_reg(cells[x >> 1], rm, x & 1u)] & mask);
+                muhtari__ports_light_sample(m, line, x,
+                    ma->origin + (uint64_t)line * MARIA_LINE_TICKS + MARIA_FIRST_PIXEL_T + x,
+                    color, 1);
+            }
         }
     }
     ma->px = (uint16_t)x_end;
@@ -474,6 +492,11 @@ static void render_to(muhtari *m, uint64_t at)
     if (at >= m->maria.origin && line < MUHTARI__LINES_NTSC) {
         render(m, (uint32_t)line, pixels_by((uint32_t)(beam % MARIA_LINE_TICKS)));
     }
+}
+
+void muhtari__maria_flush(muhtari *m, uint64_t tick)
+{
+    render_to(m, tick);
 }
 
 /* Whether the event happens on line (A7800-MARIA section 4.1). */

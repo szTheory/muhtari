@@ -558,6 +558,15 @@ static muhtari *light_boot(unsigned port, uint8_t color, int rows, uint64_t *sam
     if (m == NULL) {
         return NULL;
     }
+    if (port == 1u) {
+        muhtari_media media;
+        memset(&media, 0, sizeof media);
+        media.size = (uint32_t)sizeof media;
+        media.image = image;
+        media.image_size = sizeof image;
+        media.port[port] = MUHTARI_PORT_LIGHTGUN;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    }
     (void)input_access(m, 0x0001u, 1, 0x07u);
     (void)input_access(m, 0x0020u, 1, color);
     muhtari_input_ex in;
@@ -565,7 +574,7 @@ static muhtari *light_boot(unsigned port, uint8_t color, int rows, uint64_t *sam
     in.size = (uint32_t)sizeof in;
     in.port[0].device = MUHTARI_PORT_UNPLUGGED;
     in.port[1].device = MUHTARI_PORT_UNPLUGGED;
-    in.port[port].device = MUHTARI_PORT_LIGHTGUN;
+    in.port[port].device = port == 1u ? 0u : MUHTARI_PORT_LIGHTGUN;
     in.port[port].gun_x = 100u;
     in.port[port].gun_y = 20u;
     in.port[port].buttons = port == 0u ? MUHTARI_BUTTON_1 : 0u;
@@ -587,10 +596,11 @@ static muhtari *light_boot(unsigned port, uint8_t color, int rows, uint64_t *sam
 static uint8_t light_access_at(muhtari *m, uint16_t addr, uint64_t tick,
                                int write, uint8_t value)
 {
-    CHECK(tick >= m->bus.ticks + 17u);
-    m->bus.ticks = tick - 17u;
+    uint32_t data = addr == 0x0020u ? 16u : 17u;
+    CHECK(tick >= m->bus.ticks + data);
+    m->bus.ticks = tick - data;
     uint8_t result = input_access(m, addr, write, value);
-    CHECK_EQ_U64(m->bus.ticks, tick + 1u);
+    CHECK_EQ_U64(m->bus.ticks, tick + (data == 17u ? 1u : 0u));
     return result;
 }
 
@@ -599,6 +609,36 @@ static int lightgun(void)
     static const uint8_t colors[] = {0xA7u, 0xA8u, 0x08u};
     static const unsigned offsets[] = {63u, 64u, 93u, 94u};
     for (unsigned port = 0u; port < 2u; port++) {
+        for (unsigned mode = 0u; mode < 5u; mode++) {
+            uint64_t sample;
+            muhtari *m = light_boot(port, 0x08u, 0, &sample);
+            if (m == NULL) {
+                continue;
+            }
+            if (mode < 3u) {
+                (void)light_access_at(m, 0x0020u, sample + 1u, 1, 0u);
+                muhtari_input_ex in = m->ports.applied_ex;
+                in.port[port].flags = MUHTARI_INPUT_GUN_OFFSCREEN;
+                if (mode == 1u) {
+                    memset(&in.port[port], 0, sizeof in.port[port]);
+                    in.port[port].device = MUHTARI_PORT_UNPLUGGED;
+                }
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                muhtari__ports_latch(m);
+                if (mode == 2u) {
+                    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+                }
+                CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port), sample + 64u,
+                                            0, 0u), mode == 0u ? 0u : 0x80u);
+            } else {
+                (void)input_access(m, 0x0001u, 1, mode == 3u ? 0u : 0x40u);
+                /* A due low precedes a simultaneous enable/disable write. */
+                (void)light_access_at(m, 0x0001u, sample + 64u, 1, mode == 3u ? 0x40u : 0u);
+                CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port), sample + 110u,
+                                            0, 0u), mode == 3u ? 0u : 0x80u);
+            }
+            muhtari_destroy(m);
+        }
         for (unsigned rows = 0u; rows < 2u; rows++) {
             for (unsigned color = 0u; color < sizeof colors; color++) {
                 for (unsigned edge = 0u; edge < 4u; edge++) {
@@ -642,6 +682,17 @@ static int lightgun(void)
             CHECK_EQ_HEX(input_access(m, (uint16_t)(0x000Cu + port), 0, 0u), 0u);
             (void)input_access(m, 0x0001u, 1, 0u);
             CHECK_EQ_HEX(input_access(m, (uint16_t)(0x000Cu + port), 0, 0u), 0x80u);
+            muhtari_destroy(m);
+        }
+        m = light_boot(port, 0x08u, 0, &sample);
+        if (m != NULL) {
+            (void)input_access(m, 0x0001u, 1, 0x40u);
+            m->bus.ticks = sample - 20u;
+            CHECK_EQ_U64(muhtari__bus_request_halt(m, m->bus.ticks, sample + 120u), 1u);
+            for (unsigned i = 0u; i < 3u; i++) {
+                (void)muhtari__bus_read(m, ROM_BASE);
+            }
+            CHECK_EQ_HEX(muhtari__bus_peek(m, (uint16_t)(0x000Cu + port)) & 0x80u, 0u);
             muhtari_destroy(m);
         }
     }

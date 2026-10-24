@@ -329,9 +329,16 @@ struct muhtari__motion {
     uint8_t phase;
 };
 
+struct muhtari__light {
+    uint64_t sample_tick, response_tick, response_until, low_until;
+    uint16_t sample_raster, sample_x;
+    uint8_t delay, width, lines, threshold, low;
+};
+
 struct muhtari__ports {
     struct muhtari__motion motion[2];
-    uint64_t motion_tick; /* zero when no controller deadline is armed */
+    struct muhtari__light light[2];
+    uint64_t next_tick; /* zero when no controller deadline is armed */
     uint32_t device[2];
     uint32_t buttons[2];
     uint32_t switches;
@@ -718,6 +725,7 @@ void muhtari__maria_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_ti
 void muhtari__maria_start(muhtari *m);
 uint64_t muhtari__maria_next_event(const muhtari *m);
 void muhtari__maria_event(muhtari *m);
+void muhtari__maria_flush(muhtari *m, uint64_t tick);
 
 /* The burst the bus runs when MARIA's HALT window reaches c2: T0 is the
    /HALT fall plus 6, and the return is HALTRST (docs/hardware/maria.md, The
@@ -758,6 +766,8 @@ void muhtari__ports_latch(muhtari *m);
 void muhtari__ports_reset(muhtari *m);
 uint64_t muhtari__ports_next_event(const muhtari *m);
 void muhtari__ports_catch_up(muhtari *m, uint64_t tick);
+void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x,
+                                  uint64_t tick, uint8_t color, int visible);
 void muhtari__bus_rearm(muhtari *m);
 muhtari_status muhtari__ports_check_device_ex(uint32_t device);
 

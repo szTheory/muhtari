@@ -318,7 +318,7 @@ static void end(muhtari *m, uint32_t len)
     m->bus.phi2++;
     /* A slow cycle finishes one tick after data. Motion due there must
        complete even if execution stops at this instruction boundary. */
-    if (m->ports.motion_tick != 0u && m->ports.motion_tick <= m->bus.ticks) {
+    if (m->ports.next_tick != 0u && m->ports.next_tick <= m->bus.ticks) {
         timed_events(m, m->bus.ticks);
         muhtari__bus_rearm(m);
     }

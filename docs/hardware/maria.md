@@ -19,6 +19,12 @@ Sources:
 
 ## Registers
 
+The XG-1 sensor samples the selected native color at emission, before host
+conversion. The renderer carries the original raster and absolute pixel
+tick, including x319 at the next line origin. Without caller rows it
+computes only the scheduled sensor pixels; a missing output buffer cannot
+change electrical input. See [controller timing](controllers.md#xg-1).
+
 MARIA answers $20-$3F of pages 0-3. `reg` holds the registers, indexed by address minus $20 (MARIA notes,
 section 2.4):
 

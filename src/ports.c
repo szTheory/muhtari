@@ -18,15 +18,16 @@
 void muhtari__ports_reset(muhtari *m)
 {
     memset(m->ports.motion, 0, sizeof m->ports.motion);
-    m->ports.motion_tick = 0u;
+    memset(m->ports.light, 0, sizeof m->ports.light);
+    m->ports.next_tick = 0u;
 }
 
 uint64_t muhtari__ports_next_event(const muhtari *m)
 {
-    return m->ports.motion_tick != 0u ? m->ports.motion_tick : UINT64_MAX;
+    return m->ports.next_tick != 0u ? m->ports.next_tick : UINT64_MAX;
 }
 
-static void ports_motion_rearm(muhtari *m)
+static void ports_rearm(muhtari *m)
 {
     uint64_t next = UINT64_MAX;
     for (unsigned p = 0u; p < 2u; p++) {
@@ -34,8 +35,82 @@ static void ports_motion_rearm(muhtari *m)
         if (at != 0u && at < next) {
             next = at;
         }
+        const struct muhtari__light *light = &m->ports.light[p];
+        const uint64_t deadlines[] = {light->sample_tick, light->response_tick, light->low_until};
+        for (unsigned i = 0u; i < 3u; i++) {
+            if (deadlines[i] != 0u && deadlines[i] < next) {
+                next = deadlines[i];
+            }
+        }
     }
-    m->ports.motion_tick = next != UINT64_MAX ? next : 0u;
+    m->ports.next_tick = next != UINT64_MAX ? next : 0u;
+}
+
+/* One relevant emitted pixel per eligible raster. The centered aperture
+   clips to native rows; all optical constants are fits (controllers.md). */
+static void ports_light_rearm(muhtari *m, unsigned p, uint64_t after)
+{
+    struct muhtari__light *light = &m->ports.light[p];
+    const muhtari_port_input *in = &m->ports.applied_ex.port[p];
+    light->sample_tick = 0u;
+    if (muhtari__ports_device(m, p) != MUHTARI_PORT_LIGHTGUN ||
+        (in->flags & MUHTARI_INPUT_GUN_OFFSCREEN) != 0u || light->lines == 0u) {
+        return;
+    }
+    uint32_t half = light->lines / 2u;
+    uint32_t first = 16u + (in->gun_y > half ? in->gun_y - half : 0u);
+    uint32_t last = 16u + in->gun_y + half;
+    if (last >= 16u + MUHTARI__HEIGHT_NTSC) {
+        last = 15u + MUHTARI__HEIGHT_NTSC;
+    }
+    uint64_t origin = m->maria.origin;
+    uint64_t row = after >= origin ? (after - origin) / 454u : 0u;
+    if (row < first) {
+        row = first;
+    }
+    uint64_t at = origin + row * 454u + 135u + in->gun_x;
+    if (at <= after) {
+        row++;
+        at += 454u;
+    }
+    if (row > last) {
+        origin += MUHTARI__TICKS_PER_FRAME_NTSC;
+        row = first;
+        at = origin + row * 454u + 135u + in->gun_x;
+    }
+    light->sample_raster = (uint16_t)row;
+    light->sample_x = (uint16_t)in->gun_x;
+    light->sample_tick = at;
+}
+
+/* Historical native brightness, before host conversion. One pending
+   delayed response and one active interval suffice: D<one raster and
+   VBLANK aim updates cannot create a second disjoint pending response. */
+void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x,
+                                  uint64_t tick, uint8_t color, int visible)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        struct muhtari__light *light = &m->ports.light[p];
+        if (light->sample_tick != tick || light->sample_raster != raster || light->sample_x != x ||
+            !visible || (color & 15u) < light->threshold) {
+            continue;
+        }
+        uint64_t start = tick + light->delay;
+        uint64_t end = start + light->width;
+        if (light->low != 0u && start <= light->low_until) {
+            if (end > light->low_until) {
+                light->low_until = end;
+            }
+        } else {
+            if (light->response_tick == 0u || start < light->response_tick) {
+                light->response_tick = start;
+            }
+            if (end > light->response_until) {
+                light->response_until = end;
+            }
+        }
+    }
+    ports_rearm(m);
 }
 
 void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
@@ -43,6 +118,23 @@ void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
     uint64_t next = muhtari__ports_next_event(m);
     while (next <= tick && next != UINT64_MAX) {
         for (unsigned p = 0u; p < 2u; p++) {
+            struct muhtari__light *light = &m->ports.light[p];
+            if (light->sample_tick == next) {
+                muhtari__maria_flush(m, next);
+                ports_light_rearm(m, p, next);
+            }
+            if (light->response_tick == next) {
+                light->low = 1u;
+                if (light->response_until > light->low_until) {
+                    light->low_until = light->response_until;
+                }
+                light->response_tick = 0u;
+                light->response_until = 0u;
+            }
+            if (light->low_until == next) {
+                light->low = 0u;
+                light->low_until = 0u;
+            }
             struct muhtari__motion *axis = &m->ports.motion[p];
             if (axis->next_tick == next) {
                 if (axis->residual != 0) {
@@ -57,7 +149,7 @@ void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
            cycle returns to its starting tuple (controllers.md, Driving). */
         muhtari__riot_pins_changed(m);
         muhtari__tia_pins_changed(m);
-        ports_motion_rearm(m);
+        ports_rearm(m);
         next = muhtari__ports_next_event(m);
     }
 }
@@ -283,7 +375,8 @@ static muhtari_status ports_check_device(uint32_t device)
 muhtari_status muhtari__ports_check_device_ex(uint32_t device)
 {
     if (device == 0u || device == MUHTARI_PORT_PROLINE || device == MUHTARI_PORT_JOYSTICK ||
-        device == MUHTARI_PORT_DRIVING || device == MUHTARI_PORT_UNPLUGGED ||
+        device == MUHTARI_PORT_DRIVING || device == MUHTARI_PORT_LIGHTGUN ||
+        device == MUHTARI_PORT_UNPLUGGED ||
         device == MUHTARI_PORT_SAVEKEY || device == MUHTARI_PORT_ATARIVOX) {
         return MUHTARI_STATUS_OK;
     }
@@ -352,10 +445,19 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
         if (st != MUHTARI_STATUS_OK) {
             return st;
         }
-        uint32_t buttons = port->device == MUHTARI_PORT_DRIVING ? MUHTARI_BUTTON_1 : PORTS_BUTTONS;
+        int gun = port->device == MUHTARI_PORT_LIGHTGUN;
+        if (gun && in->size < offsetof(muhtari_input_ex, port) +
+                                  p * sizeof(muhtari_port_input) + sizeof(muhtari_port_input)) {
+            port->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
+        }
+        uint32_t buttons = port->device == MUHTARI_PORT_DRIVING || gun ? MUHTARI_BUTTON_1
+                                                                      : PORTS_BUTTONS;
         if ((port->buttons & ~buttons) != 0u || port->paddle[0] != 0u || port->paddle[1] != 0u ||
             port->keypad != 0u || (port->device != MUHTARI_PORT_DRIVING && port->dx != 0) ||
-            port->dy != 0 || port->gun_x != 0u || port->gun_y != 0u || port->flags != 0u ||
+            port->dy != 0 ||
+            (gun ? (port->gun_x >= MUHTARI__WIDTH || port->gun_y >= MUHTARI__HEIGHT_NTSC ||
+                    (port->flags & ~(uint32_t)MUHTARI_INPUT_GUN_OFFSCREEN) != 0u)
+                 : (port->gun_x != 0u || port->gun_y != 0u || port->flags != 0u)) ||
             ((port->device == MUHTARI_PORT_UNPLUGGED || port->device == MUHTARI_PORT_SAVEKEY ||
               port->device == MUHTARI_PORT_ATARIVOX) &&
              port->buttons != 0u)) {
@@ -431,6 +533,13 @@ void muhtari__ports_latch(muhtari *m)
         uint32_t device = muhtari__ports_device(m, p);
         if (previous != device) {
             memset(axis, 0, sizeof *axis);
+            memset(&ports->light[p], 0, sizeof ports->light[p]);
+        }
+        if (device == MUHTARI_PORT_LIGHTGUN && ports->light[p].delay == 0u) {
+            ports->light[p].delay = 64u;
+            ports->light[p].width = 30u;
+            ports->light[p].lines = 9u;
+            ports->light[p].threshold = 8u;
         }
         if (ports->input_mode != 0u && device == MUHTARI_PORT_DRIVING) {
             int32_t delta = ports_motion_clamp(ports->pending_ex.port[p].dx);
@@ -453,7 +562,10 @@ void muhtari__ports_latch(muhtari *m)
         ports->switches = ports->pending_switches;
     }
     ports->pending = 0u;
-    ports_motion_rearm(m);
+    for (unsigned p = 0u; p < 2u; p++) {
+        ports_light_rearm(m, p, m->bus.ticks);
+    }
+    ports_rearm(m);
     /* The new pins reach PA7's edge detector at this tick. */
     muhtari__riot_pins_changed(m);
     muhtari__tia_pins_changed(m);
@@ -493,6 +605,12 @@ uint8_t muhtari__ports_swcha(const muhtari *m)
             continue;
         }
         uint32_t b = m->ports.buttons[p];
+        if (device == MUHTARI_PORT_LIGHTGUN) {
+            if ((b & MUHTARI_BUTTON_1) == 0u) {
+                pins &= (uint8_t)~(p == 0u ? 0x10u : 0x01u);
+            }
+            continue;
+        }
         if (device == MUHTARI_PORT_DRIVING) {
             /* Connector (1,2): 11,10,00,01. Pin 1 is the low
                SWCHA bit in its nibble (controllers.md, Driving). */
@@ -556,6 +674,9 @@ uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n)
     }
     if (device == MUHTARI_PORT_JOYSTICK || device == MUHTARI_PORT_DRIVING) {
         return (uint8_t)((b & MUHTARI_BUTTON_1) == 0u);
+    }
+    if (device == MUHTARI_PORT_LIGHTGUN) {
+        return (uint8_t)(m->ports.light[port].low == 0u);
     }
     return 1u;
 }
