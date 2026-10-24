@@ -144,6 +144,9 @@ cart.retail.boards	cart,portable
 cart.sha1.fips	cart,portable
 core.api.size_tags	core,portable
 core.audio.silence	core,portable
+core.battery.deadline	core,portable
+core.battery.no_poll	core,portable
+core.battery.reset	core,portable
 core.counters.frames_and_lag	core,portable
 core.create.allocator	core,portable
 core.frame.pitch_336	core,portable
