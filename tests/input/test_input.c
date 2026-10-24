@@ -504,11 +504,21 @@ static uint8_t serial_read(muhtari *m)
     return m->cpu.a;
 }
 
+static unsigned serial_drive_ora;
+static uint64_t serial_pin_tick;
+
 static void serial_pins(muhtari *m, unsigned port, unsigned scl, unsigned sda)
 {
     unsigned shift = port == 1u ? 4u : 0u;
     uint8_t low = (uint8_t)(((scl == 0u ? 8u : 0u) | (sda == 0u ? 4u : 0u)) << shift);
-    serial_write(m, 0x0281u, low);
+    if (serial_drive_ora != 0u) {
+        serial_write(m, 0x0280u, (uint8_t)((12u << shift) & (unsigned)~low));
+        serial_pin_tick = m->bus.ticks - 1u;
+        serial_write(m, 0x0281u, (uint8_t)(12u << shift));
+    } else {
+        serial_write(m, 0x0281u, low);
+        serial_pin_tick = m->bus.ticks - 1u;
+    }
 }
 
 static void serial_start(muhtari *m, unsigned p)
@@ -549,8 +559,8 @@ static uint8_t serial_receive(muhtari *m, unsigned p, unsigned nak)
     for (unsigned i = 0u; i < 8u; i++) {
         serial_pins(m, p, 0u, 1u);
         serial_pins(m, p, 1u, 1u);
-        value = (uint8_t)(((unsigned)value << 1) |
-                         (((unsigned)serial_read(m) >> (shift + 2u)) & 1u));
+        value =
+            (uint8_t)(((unsigned)value << 1) | (((unsigned)serial_read(m) >> (shift + 2u)) & 1u));
         serial_pins(m, p, 0u, 1u);
     }
     serial_pins(m, p, 0u, nak);
@@ -577,6 +587,22 @@ static muhtari *serial_boot(unsigned p, uint32_t device)
     return m;
 }
 
+static void serial_address(muhtari *m, unsigned p, uint16_t address)
+{
+    serial_start(m, p);
+    CHECK_EQ_U64(serial_send(m, p, 0xA0u), 0u);
+    CHECK_EQ_U64(serial_send(m, p, (uint8_t)(address >> 8)), 0u);
+    CHECK_EQ_U64(serial_send(m, p, (uint8_t)address), 0u);
+}
+
+static void serial_wait(muhtari *m)
+{
+    uint64_t until = m->bus.ticks + 35796u;
+    while (m->bus.ticks < until) {
+        (void)muhtari__bus_read(m, 0x1800u);
+    }
+}
+
 static int savekey_protocol(void)
 {
     for (unsigned p = 1u; p <= 2u; p++) {
@@ -592,11 +618,12 @@ static int savekey_protocol(void)
             CHECK_EQ_U64(serial_send(m, p, 0x34u), 0u);
             CHECK_EQ_U64(serial_send(m, p, 0x5Au), 0u);
             serial_stop(m, p);
+            CHECK_EQ_U64(m->savekey.busy_until, serial_pin_tick + MUHTARI__SAVEKEY_BUSY_TICKS);
             CHECK_EQ_HEX(m->battery.data[0x1234u], 0xFFu);
-            uint64_t until = m->bus.ticks + 35796u;
-            while (m->bus.ticks < until) {
-                (void)muhtari__bus_read(m, 0x1800u);
-            }
+            serial_start(m, p);
+            CHECK_EQ_U64(serial_send(m, p, 0xA0u), 1u);
+            serial_stop(m, p);
+            serial_wait(m);
             serial_start(m, p);
             CHECK_EQ_U64(serial_send(m, p, 0xA0u), 0u);
             CHECK_EQ_U64(serial_send(m, p, 0x12u), 0u);
@@ -610,6 +637,141 @@ static int savekey_protocol(void)
             muhtari_destroy(m);
         }
     }
+    return check_failures == 0;
+}
+
+static int savekey_pins(void)
+{
+    serial_drive_ora = 1u;
+    (void)savekey_protocol();
+    serial_drive_ora = 0u;
+    for (unsigned p = 1u; p <= 2u; p++) {
+        muhtari *m = serial_boot(p, MUHTARI_PORT_SAVEKEY);
+        if (m == NULL) {
+            CHECK(m != NULL);
+            continue;
+        }
+        unsigned shift = p == 1u ? 4u : 0u;
+        serial_start(m, p);
+        /* A control's eighth falling edge drives ACK, which remains low
+           when the host explicitly drives high during turnaround. */
+        for (unsigned i = 0u; i < 8u; i++) {
+            unsigned bit = (0xA0u >> (7u - i)) & 1u;
+            serial_pins(m, p, 0u, bit);
+            serial_pins(m, p, 1u, bit);
+            serial_pins(m, p, 0u, bit);
+        }
+        serial_pins(m, p, 0u, 1u);
+        serial_write(m, 0x0280u, (uint8_t)(4u << shift));
+        serial_write(m, 0x0281u, (uint8_t)(12u << shift));
+        CHECK_EQ_U64(((unsigned)serial_read(m) >> (shift + 2u)) & 1u, 0u);
+        struct muhtari__savekey before = m->savekey;
+        uint64_t generation = m->battery.generation;
+        for (unsigned i = 0u; i < 8u; i++) {
+            (void)serial_read(m);
+            (void)muhtari__bus_peek(m, 0x0280u);
+        }
+        CHECK(memcmp(&before, &m->savekey, sizeof before) == 0);
+        CHECK_EQ_U64(m->battery.generation, generation);
+        serial_write(m, 0x0280u, 0u);
+        serial_pins(m, p, 1u, 1u);
+        CHECK_EQ_U64(((unsigned)serial_read(m) >> (shift + 2u)) & 1u, 0u);
+        serial_pins(m, p, 0u, 1u);
+        CHECK_EQ_U64(serial_send(m, p, 0x00u), 0u);
+        CHECK_EQ_U64(serial_send(m, p, 0x00u), 0u);
+        serial_stop(m, p);
+        muhtari_destroy(m);
+    }
+    return check_failures == 0;
+}
+
+static int savekey_wrap(void)
+{
+    for (unsigned p = 1u; p <= 2u; p++) {
+        muhtari *m = serial_boot(p, MUHTARI_PORT_SAVEKEY);
+        if (m == NULL) {
+            CHECK(m != NULL);
+            continue;
+        }
+        m->battery.data[0] = 0x96u;    /* clean host restore, before execution */
+        serial_address(m, p, 0xFFFEu); /* ignored A15 */
+        for (unsigned i = 0u; i < 130u; i++) {
+            CHECK_EQ_U64(serial_send(m, p, (uint8_t)(0x30u + i)), 0u);
+        }
+        serial_stop(m, p);
+        serial_wait(m);
+        serial_address(m, p, 0xFFFFu);
+        serial_start(m, p);
+        CHECK_EQ_U64(serial_send(m, p, 0xA1u), 0u);
+        CHECK_EQ_HEX(serial_receive(m, p, 0u), (uint8_t)(0x30u + 129u));
+        CHECK_EQ_HEX(serial_receive(m, p, 1u), 0x96u);
+        serial_stop(m, p);
+        for (unsigned i = 0u; i < 32768u; i++) {
+            uint8_t expected = 0xFFu;
+            if (i == 0u) {
+                expected = 0x96u;
+            } else if (i >= 0x7FC0u) {
+                unsigned first = (i - 0x7FC0u + 2u) & 63u;
+                unsigned last = first + ((129u - first) / 64u) * 64u;
+                expected = (uint8_t)(0x30u + last);
+            }
+            CHECK_EQ_HEX(m->battery.data[i], expected);
+        }
+        CHECK_EQ_U64(m->battery.generation, 1u);
+        /* A current read continues after the previous master NAK. */
+        serial_start(m, p);
+        CHECK_EQ_U64(serial_send(m, p, 0xA1u), 0u);
+        CHECK_EQ_HEX(serial_receive(m, p, 1u), 0xFFu);
+        serial_stop(m, p);
+        muhtari_destroy(m);
+    }
+    return check_failures == 0;
+}
+
+static int savekey_recovery(void)
+{
+    muhtari *m = serial_boot(2u, MUHTARI_PORT_ATARIVOX);
+    if (m == NULL) {
+        CHECK(m != NULL);
+        return 0;
+    }
+    serial_start(m, 2u);
+    CHECK_EQ_U64(serial_send(m, 2u, 0xA2u), 1u);
+    CHECK_EQ_U64(serial_send(m, 2u, 0u), 1u);
+    serial_stop(m, 2u);
+    for (unsigned incomplete = 0u; incomplete < 8u; incomplete++) {
+        serial_start(m, 2u);
+        for (unsigned bit = 0u; bit < incomplete; bit++) {
+            serial_pins(m, 2u, 0u, 0u);
+            serial_pins(m, 2u, 1u, 0u);
+            serial_pins(m, 2u, 0u, 0u);
+        }
+        serial_stop(m, 2u);
+    }
+    serial_start(m, 2u);
+    CHECK_EQ_U64(serial_send(m, 2u, 0xA0u), 0u);
+    CHECK_EQ_U64(serial_send(m, 2u, 0x20u), 0u);
+    serial_stop(m, 2u); /* incomplete address */
+    serial_address(m, 2u, 0x1234u);
+    serial_stop(m, 2u); /* address-only STOP does not program */
+    serial_start(m, 2u);
+    CHECK_EQ_U64(serial_send(m, 2u, 0xA1u), 0u);
+    CHECK_EQ_HEX(serial_receive(m, 2u, 1u), 0xFFu);
+    CHECK_EQ_U64(serial_send(m, 2u, 0u), 1u); /* final master NAK releases */
+    serial_stop(m, 2u);
+    serial_address(m, 2u, 0x0001u);
+    CHECK_EQ_U64(serial_send(m, 2u, 0x11u), 0u);
+    serial_start(m, 2u); /* recovery aborts un-stopped buffered data */
+    CHECK_EQ_U64(serial_send(m, 2u, 0xA1u), 0u);
+    CHECK_EQ_HEX(serial_receive(m, 2u, 1u), 0xFFu);
+    serial_stop(m, 2u);
+    serial_wait(m);
+    serial_start(m, 2u);
+    CHECK_EQ_U64(serial_send(m, 2u, 0xA0u), 0u);
+    CHECK_EQ_U64(m->battery.generation, 0u);
+    CHECK_EQ_HEX(m->battery.data[1], 0xFFu);
+    serial_stop(m, 2u);
+    muhtari_destroy(m);
     return check_failures == 0;
 }
 
@@ -641,6 +803,9 @@ static int pa7_edge(void)
     CHECK_EQ_U64(m->riot.pa7_flag, 0u);
     muhtari_destroy(m);
     (void)savekey_protocol();
+    (void)savekey_pins();
+    (void)savekey_wrap();
+    (void)savekey_recovery();
     return check_failures == 0;
 }
 
