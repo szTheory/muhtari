@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/szTheory/muhtari/compare/v0.5.0...v0.6.0) (2026-10-24)
+
+
+### Features
+
+* persist HSC and EEPROM saves across hosts ([#28](https://github.com/szTheory/muhtari/issues/28)) ([f5e6706](https://github.com/szTheory/muhtari/commit/f5e670683215c63581697e3c544956cf0d32ce75))
+
 ## [0.5.0](https://github.com/szTheory/muhtari/compare/v0.4.0...v0.5.0) (2026-10-23)
 
 
