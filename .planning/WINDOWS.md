@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 17
 waived_count: 0
-fixed_count: 34
-total_count: 51
-last_updated: 2026-10-24T21:38:39.360Z
+fixed_count: 35
+total_count: 52
+last_updated: 2026-10-24T22:19:18.466Z
 ---
 
 # Broken Windows Ledger
@@ -66,6 +66,7 @@ last_updated: 2026-10-24T21:38:39.360Z
 | 49 | 06 | deviation | tests/policy/quality.cmake |  | Called CI40029174245 Windows ARM job120672888533 quality controls timed out30.01s. Fix12281af includes unchanged expect_fail.cmake in a scoped helper, preserving exact exit1 and merged-output regex checks, all cases and real recursive producers/joins. Matched local wall3.95s to3.68s; wrong-exit/wrong-regex rejected; full612+6, hygiene24, exact inventories and three ZIPs213899<=399937 exit0 with parent package knobs, N/A-local. Hosted timing/Windows fit remain pending. | fixed |  | 2026-10-23T22:06:22.624Z | 2026-10-23T22:06:39.908Z |
 | 50 | 06 | deviation | cmake/packaging.cmake |  | Actual Windowsx64 archives402586 exceed399937 in calledCI40029174245. Candidate compressionlevel9 plus top-level ReleaseMSVC size preference preserves contents/runtime/ABI; local213899 passes but hostedWindows and six-lane fit pending. No byte grant or self-baseline. | fixed |  | 2026-10-23T22:07:27.402Z | 2026-10-23T22:39:47.537Z |
 | 51 | 08 | unmet-truth | quality.json |  | Exact-source Windows x64 candidate/base ZIP sums401690/401726 exceed399937 by1753/1789 bytes after verified narrow repair; controller expansion halted. | open |  | 2026-10-24T21:38:39.360Z |  |
+| 52 | 08 | unmet-truth | .github/workflows/ci.yml | 429 | RetroArch standalone diagnostic compile in CI40132929297 omits runner/sha256.c after driver digest dependency; corrected compile passes locally, hosted acceptance pending. | fixed |  | 2026-10-24T21:45:14.275Z | 2026-10-24T22:19:18.466Z |
 
 ````json
 [
@@ -730,6 +731,19 @@ last_updated: 2026-10-24T21:38:39.360Z
     "reason": "",
     "recorded_at": "2026-10-24T21:38:39.360Z",
     "resolved_at": null,
+    "milestone": "v2.0"
+  },
+  {
+    "id": 52,
+    "kind": "unmet-truth",
+    "phase": "08",
+    "file": ".github/workflows/ci.yml",
+    "line": 429,
+    "description": "RetroArch standalone diagnostic compile in CI40132929297 omits runner/sha256.c after driver digest dependency; corrected compile passes locally, hosted acceptance pending.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-24T21:45:14.275Z",
+    "resolved_at": "2026-10-24T22:19:18.466Z",
     "milestone": "v2.0"
   }
 ]

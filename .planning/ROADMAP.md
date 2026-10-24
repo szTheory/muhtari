@@ -196,7 +196,7 @@ Plans:
 - [x] 08-04-PLAN.md — Deliver compact typed runner replay.
 
 **Wave 5** *(halted at the package gate)*
-- [ ] 08-05-PLAN.md — Driving host evidence passes; exact Windows candidate401690/base401726 exceed399937. Retained narrow repair saves570 bytes but leaves1753/1789 unfunded; all following waves remain blocked.
+- [ ] 08-05-PLAN.md — Driving and corrected actual RetroArch evidence pass; latest exact Windows candidate401687/base401724 exceed399937. Retained narrow repair saves570 bytes but leaves1750/1787 unfunded; all following waves remain blocked.
 
 **Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 08-06-PLAN.md — Correct TIA input memory and emit historical gun light.

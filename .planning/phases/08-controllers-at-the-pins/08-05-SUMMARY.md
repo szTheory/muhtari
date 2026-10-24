@@ -23,6 +23,7 @@ key-files:
   created:
     - .planning/phases/08-controllers-at-the-pins/08-05-SUMMARY.md
   modified:
+    - .github/workflows/ci.yml
     - libretro/libretro.c
     - tests/libretro/host.c
     - tests/libretro/tests.cmake
@@ -83,16 +84,24 @@ coverage:
     requirement: INPUT-04
     verification:
       - kind: integration
-        ref: Unchanged tests/cmake/quality_join.cmake over all eight actual lane artifacts; exit 1, archive_bytes 401690 exceeds 399937; https://github.com/szTheory/muhtari/actions/runs/40132929297
+        ref: Unchanged tests/cmake/quality_join.cmake over all eight actual corrected-source lane artifacts; exit 1, archive_bytes 401687 exceeds 399937; https://github.com/szTheory/muhtari/actions/runs/40135571745
         status: fail
     human_judgment: false
+  - id: retained-frontend-judge
+    description: The existing standalone numeric and pixel judges link the owned digest helper before actual RetroArch execution.
+    requirement: INPUT-01
+    verification:
+      - kind: automated_ui
+        ref: Corrected source9a64bbc in CI40135571745 attempt2, job121003161256; exact standalone compile, DMA pixel equality, two fresh battery complete-byte/pixel judges and negative controls pass
+        status: pass
+    human_judgment: false
 actuals:
-  tokens: 19137
+  tokens: 19325
   tasks: 2
-  commits: 9
+  commits: 11
 plan_head_before: 0d2f8b877e6ba68cc4ccb803a6d4ed9cece13c36
-plan_head_after: f7e369902f4b054d3fcd8a59c397ef881492a170
-duration: 58min
+plan_head_after: 9a64bbc7aba72bf7ae98e2a3e796907a6eb04cb9
+duration: 101min
 started: 2026-10-24T20:39:15Z
 completed: 2026-10-24
 ---
@@ -138,7 +147,7 @@ Frame 5 omits library submission while runner/module retain fire with zero new
 motion. Native inventory includes all three hosts; WASM executes its actual
 library/runner subset and reports module unavailability without counting it.
 
-## Authoritative package failure
+## Initial complete package cohort
 
 Final source: f7e369902f4b054d3fcd8a59c397ef881492a170.
 Genuine event-base parent: ce5397e5b52c2cfdc36058c55a6e012346c75a8f.
@@ -146,6 +155,13 @@ Completed failed run: https://github.com/szTheory/muhtari/actions/runs/401329292
 All six native current/base builds pass 646 ordinary and 6 release tests.
 The required quality job and an independent local replay of the unchanged join
 both fail specifically on archive_bytes, after authenticating all eight real lanes.
+Parent audit additionally found a required RetroArch job link failure in that run:
+its standalone diagnostic build omitted the newly required owned SHA helper.
+The earlier claim that quality was the sole required failure was incorrect.
+The one-line workflow correction in9a64bbc links runner/sha256.c and passes the exact
+standalone compile and DMA/battery judges locally. Fresh hosted frontend acceptance
+is recorded separately below. The package observations in this initial cohort
+remain specific to f7e3699/ce5397e.
 
 | Lane | Library ZIP | Runner ZIP | Libretro ZIP | Candidate sum | Genuine base sum |
 |---|---:|---:|---:|---:|---:|
@@ -212,6 +228,8 @@ optimization or contract changes belong to the next evidence-backed planning ste
 | 3 attribution | ec98fa6 | Concrete shipped-byte attribution boundary |
 | 3 repair | ce5397e | Bounded compact complete-field normalization |
 | 3 evidence | f7e3699 | Preserve acceptance gates for size repair |
+| Halt metadata | 986e4dd | Initial durable package halt, later audited and corrected |
+| 2 corrective integration | 9a64bbc | Link owned SHA helper in the actual standalone frontend judge |
 
 Task 1 RED: the built input fixture passes, then libretro.host.input fails because
 MOUSE X/LEFT query counts are0, driving pins remain neutral, and descriptors remain
@@ -222,9 +240,10 @@ pass semantic inspection. Build/setup failures were corrected before collecting
 either accepted RED. GREEN implements the declared behavior; no separate refactor
 commit was needed. Raw RED evidence remains in ignored build output, not git logs.
 
-The persisted plan ledger measures9 source/task commits from the recorded base to
-f7e3699. Actual tokens are ceil(76546 realized diff characters/4)=19137, excluding
-this halt/state metadata. These values are not harness-token measurements.
+The persisted plan ledger measures11 commits from the recorded base to9a64bbc,
+including the initial halt metadata commit. Actual tokens are
+ceil(77299 realized source/test/workflow/doc diff characters/4)=19325, excluding
+planning/halt/state metadata. These values are not harness-token measurements.
 
 ## Command evidence
 
@@ -243,7 +262,7 @@ Commands use repository-relative paths. Local checks have run URL N/A-local.
 - A direct predicate reading the actual current/base JSON and quality.json ceiling exits1: values401690/401726, excess1753/1789.
 - Hosted WASM workflow/check_junit — exit0,585 tests exactly once; diag.controllers passes0.22s. Native hash-equality and WASM/Linux hash comparison pass. Hosted nofp jobs on both GCC architectures pass; BE32 compilation passes. These results are from CI40132929297 above.
 - Dispatch perf control — exit0, three same-head test-card observations3838334/3838334/3838334 Ir/frame, spread0. Dispatch uses NO_BASE=none; it is repeatability evidence, not phase-versus-origin performance acceptance. The armed+1% PR comparator remains unchanged and advisory/required roles are preserved.
-- check evaluation-scope --plan 08-05 --commits-only --raw — exit0, all nine task commits resolve. Added-line stub/skip scan finds none; all16 modified source/test/doc/inventory files exist.
+- check evaluation-scope --plan 08-05 --commits-only --raw — initial exit0 with nine task commits; final corrective-scope check is recorded below. Added-line stub/skip scan finds none.
 
 ## Deviations and failed attempts
 
@@ -262,6 +281,89 @@ Commands use repository-relative paths. Local checks have run URL N/A-local.
    scalar normalizer in src/ports.c, authorized within the package repair. Prefix,
    alignment, signed extrema, transactional and restricted-link tests remain intact;
    all final native, hygiene, ASan and nofp checks pass. No general refactor followed.
+5. [Rule 1 - Required integration] Parent audit found that the standalone RetroArch
+   numeric judge still compiled driver.c without runner/sha256.c after the driver
+   gained digest references. This manual compile was the only such use outside
+   CMake targets. Added the existing owned source to the existing command; no lane,
+   native/hash/pixel/battery check or predicate was removed. The former exact
+   command reproduces exit1 with four missing SHA symbols; the corrected command
+   exits0 and the actual DMA numeric/statistics and battery full-byte judges pass.
+   Full local646+6 CI and hygiene24 pass. Fresh hosted acceptance passes in
+   https://github.com/szTheory/muhtari/actions/runs/40135571745 at source
+   9a64bbc7aba72bf7ae98e2a3e796907a6eb04cb9 with genuine event parent
+   986e4ddfb73c5edcb02c3ce98cfa959afbce7260. Earlier f7e3699 package measurements
+   are not a new-source package pass. Defect register52 tracks this correction.
+
+## Corrected frontend and exhaustive final audit
+
+Corrected source:9a64bbc7aba72bf7ae98e2a3e796907a6eb04cb9.
+Its genuine event parent:986e4ddfb73c5edcb02c3ce98cfa959afbce7260.
+Run:https://github.com/szTheory/muhtari/actions/runs/40135571745, attempt2,
+completed/failure. The actual RetroArch job121003161256 is completed/success at
+that exact source. Every required outcome was inspected, including RetroArch
+and the dependent CI required aggregate; no failure is inferred away from a
+successful metric or native test subset.
+
+The original standalone command, without runner/sha256.c, exits1 locally with
+the same four undefined digest functions as the actual failed f7e3699 job.
+The corrected command is:
+
+```sh
+cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Ihost \
+  tests/diag/driver.c host/palette.c runner/sha256.c \
+  build/library/lib/libmuhtari.a -o build/frames/diag
+```
+
+It exits0 against the actual packaged library. The compiled program judges
+dma.a78 with expected.csv/stats.csv and battery.a78 with expected.csv, both exit0.
+The actual hosted command also exits0. RetroArch's DMA screenshot equals every
+pixel of the retained runner frame. Both fresh frontend battery launches judge
+all34816 bytes independently at counts1 then2, with each screenshot320x242/every
+pixel equal. Comparison negative controls and firmware/save guards pass. No new
+case, lane, weakened check or dependency was introduced. The existing actual CI
+consumer catches this link dependency regression.
+
+The corrected run's initial macOS x64 attempt timed out only in the unchanged
+policy.quality.controls test at30.14s;645/646 passed. It prevented dependent
+frontend execution and left the initial quality artifact set incomplete. GitHub
+refused an early retry because that workflow was still running (HTTP403, not an
+authentication or approval rejection). After the run completed, the targeted
+same-source job retry re-requested the existing downstream jobs. macOS x64
+current/base checks and actual RetroArch then passed. The failed attempt remains
+recorded and is not counted as a successful timing sample. No timer was changed.
+
+Latest attempt2 exhaustive outcomes:
+
+- Six native current/base lanes, hygiene, ASan, both nofp lanes, BE32 compilation,
+  native hash equality, WASM, library, dispatch perf control and RetroArch succeed.
+- title is intentionally skipped for dispatch.
+- quality fails on actual archive_bytes401687>399937.
+- CI required fails because that required quality gate failed.
+
+The new source has its own actual Windows package observations; none are
+inherited from f7e3699. Exactly three candidate ZIPs are library90300,
+runner169903 and libretro141484 bytes: **401687 total**, excess**1750**.
+Its genuine parent totals**401724**, excess**1787**. Compiler/platform, raw
+manifest/sample identities and raw parent-policy checks match the preceding
+documented environment; all eight new lane artifacts were individually
+authenticated with full9a64bbc/986e4dd source/base SHAs and the new run URL.
+The unchanged full join is replayed with DIRECTORY=build/controller-retroarch-repair/quality-inputs,
+OUT=build/controller-retroarch-repair/join, the actual parent policy there,
+EXPECTED_SHA=9a64bbc7aba72bf7ae98e2a3e796907a6eb04cb9,
+BASE_SHA=986e4ddfb73c5edcb02c3ce98cfa959afbce7260, PERF_REQUIRED=OFF and that
+run's SOURCE URL: exit1 specifically on401687>399937, matching the hosted job.
+The required resource defect51 remains open; frontend defect52 is marked fixed
+only after inspecting this actual hosted compile/pixel/save acceptance.
+
+Evidence commands: XDG_CACHE_HOME=/tmp/muhtari-gh-cache gh run view 40135571745
+--json status,conclusion,attempt,headSha,jobs; gh api of job121003161256 and its
+logs; downloads of all eight quality artifacts plus the three actual Windows
+ZIPs; Python exact-identity/component audit — exit0. The original bad compile
+exits1, the corrected compile and numeric judges exit0, the unchanged join exits1.
+All hosted evidence in this section uses the corrected run URL above. Logs remain
+ignored build output. The installed github-workflows skill was read; its
+ci_monitor.cjs helper was absent from both the repository and skill directories,
+so the authorized existing gh CLI was used without installing a substitute.
 
 Failed/superseded hosted evidence is explicitly excluded from acceptance:
 
@@ -273,8 +375,9 @@ Failed/superseded hosted evidence is explicitly excluded from acceptance:
   corrected Windows current/base646+6 pass, but actual sums402260/402301 exceed
   the ceiling. macOS x64 has existing publish/quality control timeouts. Superseded
   run cancelled after conclusive size evidence; no predicate/timeout was relaxed.
-- Final CI40132929297 executes the same controls successfully on all six native
-  current/base lanes; only the actual archive bound fails. No failed attempt is
+- CI40132929297 executes the same controls successfully on all six native
+  current/base lanes; both quality/archive and RetroArch/standalone-link fail.
+  The dependent CI required aggregate also fails. No failed attempt is
   counted as a passing timing or package sample.
 
 Local WASM and nofp configuration probes exit1 because this host lacks the Linux
@@ -297,15 +400,15 @@ Accepted phase progress remains4/14. GSD's durable status:halted marker must ide
 mechanical summarized-plan count includes halted records; that does not make05
 accepted or advance the current plan. All INPUT requirements remain pending.
 
-Next separate command: `$gsd-plan-phase 8`, using the exact residual1753/1789-byte
+Next separate command: `$gsd-plan-phase 8`, using the latest exact residual1750/1787-byte
 resource evidence to revise the halted package gate. Preserve tested behavior,
 fixture identities, three deliverables and the existing ceiling. No --gaps route
 is claimed without a VERIFICATION/UAT gap report, and no other GSD step is run here.
 
 ## Self-Check: PASSED
 
-All16 changed source/test/doc/inventory files and this summary exist. All9 recorded
-task commits are ancestors of HEAD. The persisted ledger base/count/head agree
+All17 changed source/test/workflow/doc/inventory files and this summary exist. All11
+recorded plan commits are ancestors of HEAD. The persisted ledger base/count/head agree
 with the measured actuals. query phase-plan-index 08 and query init.execute-phase 08
 both exit0: 08-05 is halted, all9 dependent plans08-06–08-14 carry blocked_by08-05,
 and runnable_plans is empty. This validates the durable stop; it does not claim
