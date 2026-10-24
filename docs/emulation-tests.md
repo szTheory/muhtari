@@ -537,6 +537,14 @@ participate. Existing command-boundary controls reject absent fixtures, wrong bo
 or ROM identity, missing/extra reports and each omitted frame/audio field. All 17
 older test-card/PNG and soundtest/POKEY rows keep their byte meanings.
 
+`battery.first.` and `battery.second.` append eleven rows each: frame 1/120, the seven audio fields,
+mailbox and complete raw-save SHA-256. Two fresh runner processes share only their private save directory.
+The numeric driver first requires independent HSC and EEPROM counts 1/1 then 2/2; its media judge checks
+all 34,816 bytes, including every untouched FF byte. Only then may either process contribute hashes.
+The 47 retained observations keep their order and values; five behavior annotation rows advance from
+3 to 4 under the version policy. The complete ordered schema rejects missing or duplicate old or new rows,
+even when every lane repeats the same fault. Existing byte-difference and identity controls remain active.
+
 Pull requests require exactly six identical expanded native hash files and compile PowerPC.
 Nightly and release workflows additionally execute the full native/PowerPC inventories
 and compare a same-commit pair. WASM compares separately with Linux x64 and remains

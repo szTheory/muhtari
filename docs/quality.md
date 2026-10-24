@@ -107,6 +107,13 @@ The older test-card, soundtest and POKEY rows retain their byte meanings. The
 performance workload remains the test card. Diagnostic success does not establish
 untested retail gameplay, PAL execution or new physical hardware measurements.
 
+Battery equality appends first/second frame, raw-audio, PCM, mailbox and save observations after the
+numeric and all-byte media judges accept two fresh runner executions. The complete ordered 69-row
+schema includes every retained observation and refuses matching omissions or duplicates. The five
+retained behavior metadata rows advance from 3 to 4; all retained digest and numeric values remain
+unchanged. Optional HSC firmware and battery-save claims have loaded-module tests plus the separate
+two-launch RetroArch byte and pixel proof; neither implies save states, speech or firmware routines.
+
 A local package pass establishes only that lane's three-ZIP total. Acceptance
 still requires all six actual native totals, release-content checks and the
 authenticated worst-lane reduction at or below 399937, with exact event-base and

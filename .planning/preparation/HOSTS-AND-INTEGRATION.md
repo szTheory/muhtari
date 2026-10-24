@@ -45,7 +45,7 @@ Markers: (tested) run here on 2026-10-15, (derived), (untested), (unverified). "
 
 Port devices are `SET_CONTROLLER_INFO` (35) subclasses, not options: ProLine (default), 1-button joystick (= "two-button mode" off), light gun, paddles, none. **Rec:** these five. **Alt:** ProSystem's set (colour depth, audio filter, dual stick; no emulation options) [HI.06]. **Would change if:** rcheevos reviewers reject `region`; else add `{"muhtari_region","pal"}` to rcheevos' disallowed list as for bsnes/fceumm/mesen/snes9x [HI.04].
 
-**Firmware** (from `GET_SYSTEM_DIRECTORY` 9): `firmware0 = "7800 BIOS (U).rom"` (4,096 B, md5 0763f1ffb006ddbe32e52d497ee848ae), `firmware1 = "7800 BIOS (E).rom"` (16,384 B, md5 397bb566584be7b9764e7a68974c4263), both `opt = "true"`; names/md5 from libretro `System.dat`; ProSystem's `.info` lists only (U) [HI.02][HI.03]. **Rec:** accept any 4 KB / 16 KB image (OpenBIOS CC0 exercises the same path in CI), log its SHA-256 and whether it matches. **Alt:** refuse other md5s. **Would change if:** a game depends on a BIOS revision. Optional `highscre.bin` is implemented with a signature-only fallback; see docs/libretro.md. Its .info declaration remains pending hosted save acceptance.
+**Firmware** (from `GET_SYSTEM_DIRECTORY` 9): `firmware0 = "7800 BIOS (U).rom"` (4,096 B, md5 0763f1ffb006ddbe32e52d497ee848ae), `firmware1 = "7800 BIOS (E).rom"` (16,384 B, md5 397bb566584be7b9764e7a68974c4263), both `opt = "true"`; names/md5 from libretro `System.dat`; ProSystem's `.info` lists only (U) [HI.02][HI.03]. **Rec:** accept any 4 KB / 16 KB image (OpenBIOS CC0 exercises the same path in CI), log its SHA-256 and whether it matches. **Alt:** refuse other md5s. **Would change if:** a game depends on a BIOS revision. Optional `highscre.bin` is implemented with a signature-only fallback; see docs/libretro.md. Its optional .info declaration is backed by loaded-module and actual hosted save acceptance.
 
 **Input** (`SET_INPUT_DESCRIPTORS` 11) — RetroPad layout = ProSystem's [HI.06]:
 
@@ -62,8 +62,9 @@ Port devices are `SET_CONTROLLER_INFO` (35) subclasses, not options: ProLine (de
 **Saves and HSC (implemented):** [docs/libretro.md](../../docs/libretro.md) owns load-time option/controller/metadata
 precedence, exact immediately published SAVE_RAM, reload-only changes, optional copied `highscre.bin` and
 truthful HSC SRAM/ROM descriptors. The frontend owns per-game raw `.srm` I/O; the adapter owns no save files.
-Detailed loaded-module and pinned-resolver tests cover this path. Actual fresh-process RetroArch proof and
-`.info` save/optional-HSC promotion remain later acceptance; no save states or speech are claimed.
+Detailed loaded-module and pinned-resolver tests cover this path. The two-launch hosted RetroArch proof
+checks independent counters, complete media and pixels; `.info` declares saves and optional HSC firmware.
+No save states or speech are claimed.
 
 **Serialize.** Size constant between load and unload (L7699), 0 without content; no `SET_SERIALIZATION_QUIRKS` (44); byte-wise little-endian; savestate context ignored although `ROLLBACK_NETPLAY` (L5707) asks for big-endian. Run-ahead (same or second instance) and rewind need only speed + determinism; netplay compares content, core version and states [HI.22] → byte-identical states on six platforms + BE qemu. XM's 128 KB RAM dominates size (derived). **Rec:** LE always. **Alt:** BE in context 3. **Would change if:** a frontend really exchanges context-3 states across machines.
 
@@ -214,7 +215,7 @@ Exits 0 pass / 77 refusal before fixture access / 1 failure after access match t
 2. Do 7800 RA sets read registers, $3000–$3FFF or banked RAM? One scan of all set definitions with the owner's RA web API key.
 3. RetroArch DMG on SIGTERM: does it flush `.srm`, and with what status (Playstead's play route)?
 4. Which driver does the Metal build pick by default on Apple Silicon, and does Metal honour the swapchain setting?
-5. HSC: HLE or firmware file (decides `firmware2`)? 242 vs 243 rows (A7800-SYSTEM)?
+5. 242 vs 243 rows (A7800-SYSTEM)?
 6. Playstead: zip/CLI install support and two-artifact pins (RetroArch + core).
 
 ## Sources

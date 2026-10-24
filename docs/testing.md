@@ -67,6 +67,11 @@ Publisher controls start early (COST 725).
 ### Comparing hashes across lanes
 
 `runner.hashes_file` writes frame/PNG and 600-frame soundtest/POKEY audio hashes to `build/<preset>/hashes.txt`.
+The retained 47 rows are followed by 22 rows for two fresh battery runs: frame 1/120, seven audio fields,
+the numeric mailbox and the complete save SHA-256 for each. Both HSC and EEPROM counters and all 34,816
+bytes must independently satisfy the diagnostic driver before those rows enter equality. The comparison
+requires the complete ordered 69-row schema, so matching omissions or duplicates fail too. Report controls
+reject missing fields, duplicates, wrong behavior revisions and invalid mailboxes through the same consumer.
 
 CI collects the file from each lane, and the `hash-equality` job compares them:
 

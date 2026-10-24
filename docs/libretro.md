@@ -95,9 +95,10 @@ signatures are accepted with distinct visible warnings. No BIOS reset-vector rul
 No firmware is bundled. The stub exposes C6/FE signatures at $3900/$3904 and FF elsewhere; it contains no
 routines, formatting or high-score screens and does not provide full OpenHSC functionality.
 
-Detailed loaded-module persistence and firmware tests run locally. Actual fresh-process RetroArch save
-acceptance remains separate; the package's `libretro_saves` and optional HSC `.info` claims remain pending
-that hosted proof. Save states and AtariVox speech are unavailable.
+Loaded-module tests cover persistence and firmware failures. A separate automated RetroArch roundtrip
+starts two fresh frontend processes, checks independently drawn HSC and EEPROM counters from 1 to 2,
+and compares every saved byte with independent expectations and fresh runner processes. The package
+declares battery saves and optional HSC firmware. Save states and AtariVox speech are unavailable.
 
 ## Achievements
 
@@ -133,7 +134,7 @@ Banked RAM and banked ROM windows are left out because a descriptor cannot say w
 Absolute descriptors point into original content at the same-numbered ROM
 offsets $8000-$FFFF; its switched $4000-$7FFF window stays unmapped. Restart
 restores bank zero, the same deterministic profile as a fresh load. Absolute
-execution ships at behaviour revision 3 with ABI 1 and unchanged public layouts.
+execution was introduced at behaviour revision 3 with ABI 1 and unchanged public layouts.
 
 Activision exposes four fixed 8 KiB windows at $4000, $6000, $8000 and $E000.
 Their OM source offsets are $18000, $1A000, $1C000 and $1E000. Descriptors
