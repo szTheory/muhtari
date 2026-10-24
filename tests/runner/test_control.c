@@ -248,7 +248,9 @@ static void broken_pipe(int command_count, char **command_args, char *dir, char 
     int status = 0;
     pid_t result = 0;
     unsigned polls = 0u;
-    while (polls++ < 500u && (result = waitpid(child, &status, WNOHANG)) == 0)
+    /* Match the existing slow-lane CTest scale for this frame-heavy child. */
+    while (polls++ < 500u * MUHTARI_TIMEOUT_SCALE &&
+           (result = waitpid(child, &status, WNOHANG)) == 0)
         pause_poll();
     CHECK(result == child);
     if (result == 0) {

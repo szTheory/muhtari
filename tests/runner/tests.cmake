@@ -1066,6 +1066,7 @@ endforeach()
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI")
   add_executable(muhtari-test-control ${CMAKE_CURRENT_LIST_DIR}/test_control.c)
   target_compile_definitions(muhtari-test-control PRIVATE _POSIX_C_SOURCE=200809L
+    MUHTARI_TIMEOUT_SCALE=${MUHTARI_TIMEOUT_SCALE}
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   set_target_properties(muhtari-test-control PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-control)
