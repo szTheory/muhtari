@@ -462,8 +462,98 @@ static int directions(void)
 /* Two-button mode: the right button, button 1, reads 1 on INPT0 [INPT2]
    and the left, button 2, on INPT1 [INPT3], while INPT4 [INPT5] reads 1.
    SWCHB shows PB2 and PB4 driven 0. */
+/* Execute cartridge instructions so every check observes the real bus
+   data tick, decode and open-bus behavior (tia.md, Input ports). */
+static uint8_t input_access(muhtari *m, uint16_t addr, int write, uint8_t value)
+{
+    m->cart.rom[0] = write ? 0x8Du : 0xADu;
+    m->cart.rom[1] = (uint8_t)addr;
+    m->cart.rom[2] = (uint8_t)(addr >> 8);
+    m->cpu.pc = ROM_BASE;
+    m->cpu.a = value;
+    muhtari__cpu_step(m);
+    return m->cpu.a;
+}
+
+static void input_buttons(muhtari *m, uint32_t left, uint32_t right)
+{
+    muhtari_input in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.device[0] = MUHTARI_PORT_PROLINE;
+    in.device[1] = MUHTARI_PORT_PROLINE;
+    in.buttons[0] = left;
+    in.buttons[1] = right;
+    CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_OK);
+    muhtari__ports_latch(m);
+}
+
+static void input_latches(void)
+{
+    muhtari *m = boot(&plain);
+    CHECK(m != NULL);
+    if (m == NULL) {
+        return;
+    }
+    (void)input_access(m, 0x0001u, 1, 0x07u); /* lock 7800 decode first */
+    input_buttons(m, MUHTARI_BUTTON_1, 0u);
+    (void)input_access(m, 0x0001u, 1, 0u); /* 0->0: live */
+    CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0u);
+    (void)input_access(m, 0x0001u, 1, 0x40u); /* enable already-low */
+    input_buttons(m, 0u, 0u); /* release without any INPT read */
+    CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0u);
+    (void)input_access(m, 0x0001u, 1, 0x40u); /* 1->1 retains */
+    CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0u);
+    CHECK_EQ_HEX(input_access(m, 0x000Du, 0, 0u), 0x80u);
+    input_buttons(m, 0u, MUHTARI_BUTTON_2); /* independent unpolled low */
+    input_buttons(m, 0u, 0u);
+    CHECK_EQ_HEX(input_access(m, 0x000Du, 0, 0u), 0u);
+    (void)input_access(m, 0x0001u, 1, 0u); /* 1->0 clears and bypasses */
+    CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0x80u);
+    CHECK_EQ_HEX(input_access(m, 0x000Du, 0, 0u), 0x80u);
+    (void)input_access(m, 0x0001u, 1, 0x40u);
+    input_buttons(m, MUHTARI_BUTTON_1, 0u);
+    (void)input_access(m, 0x0001u, 1, 0u); /* low at disable stays live */
+    CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0u);
+    input_buttons(m, 0u, 0u);
+    CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0x80u);
+    muhtari_destroy(m);
+}
+
+static void input_dump(void)
+{
+    muhtari *m = boot(&plain);
+    CHECK(m != NULL);
+    if (m == NULL) {
+        return;
+    }
+    (void)input_access(m, 0x0001u, 1, 0x07u);
+    input_buttons(m, MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2,
+                  MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2);
+    (void)input_access(m, 0x0282u, 1, 0u);
+    (void)input_access(m, 0x0283u, 1, 0x14u); /* two-button high trigger */
+    static const uint8_t dump[] = {0u, 0x80u, 0x80u, 0u};
+    for (unsigned i = 0u; i < sizeof dump; i++) {
+        (void)input_access(m, 0x0001u, 1, dump[i]);
+        for (uint16_t reg = 8u; reg < 12u; reg++) {
+            /* Operand high byte supplies all seven undriven bits. */
+            CHECK_EQ_HEX(input_access(m, (uint16_t)(0x0300u | reg), 0, 0u),
+                         dump[i] != 0u ? 3u : 0x83u);
+        }
+        CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0x80u);
+        CHECK_EQ_HEX(input_access(m, 0x000Du, 0, 0u), 0x80u);
+    }
+    (void)input_access(m, 0x0001u, 1, 0x40u);
+    (void)input_access(m, 0x0283u, 1, 0u); /* PB change makes a real low */
+    (void)input_access(m, 0x0283u, 1, 0x14u);
+    CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0u);
+    CHECK_EQ_HEX(input_access(m, 0x000Du, 0, 0u), 0u);
+    muhtari_destroy(m);
+}
+
 static int proline_two_button(void)
 {
+    input_dump();
     static const row rows[] = {
         /* section 3.2: right button on INPT0, 1 = pressed; INPT4/5 read 1 */
         {&two_button, PROLINES "|....1.|......|...BB|\n", {0xFFu, 0x2Bu, H, L, L, L, H, H}, 0u, 0u},
@@ -492,6 +582,7 @@ static int proline_two_button(void)
    MiSTer have it; the console's one-button readings are unverified. */
 static int proline_one_button(void)
 {
+    input_latches();
     static const row rows[] = {
         /* section 3.2: either button pulls INPT4 low */
         {&plain, PROLINES "|....1.|......|...BB|\n", {0xFFu, 0x3Fu, H, L, L, L, L, H}, 0u, 0u},
