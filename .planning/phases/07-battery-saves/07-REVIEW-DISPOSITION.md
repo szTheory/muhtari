@@ -3,25 +3,30 @@ phase: 07
 review: 07-REVIEW.md
 titles: json
 findings:
-  - id: CR-01
+  - id: CR-03
     severity: critical
     disposition: open
+    title: "Resolving Auto to unsupported header codes rejects the whole frontend input update"
+  - id: CR-01
+    severity: critical
+    disposition: fixed
     title: "Broken stdout pipe terminates the runner before its required final save"
   - id: CR-02
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "A refused late save-device request drops joystick A-button fire"
-open: 2
-total: 2
-recorded: 2026-10-24T13:52:49.363Z
+open: 1
+total: 3
+recorded: 2026-10-24T14:05:06.692Z
 ---
 
 # Phase 07: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
-| CR-02 | critical | open | - |
+| CR-03 | critical | open | - |
+| CR-01 | critical | fixed | 07-REVIEW-FIX.md (not in the current review) |
+| CR-02 | critical | fixed | 07-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
