@@ -20,7 +20,7 @@
  * prints the BIOS's SHA-256 to standard error and, after the frames,
  * "handoff_frame K", the frame of the first cartridge opcode fetch.
  * SIGINT or SIGTERM ends the run after the frame in progress; output is
- * flushed and the status is 0.
+ * flushed. Required save failure returns 1; earlier output failure keeps its status.
  *
  * --probe FILE identifies a cartridge image with muhtari_probe and prints
  * its fields and eight hashes as "key value" lines; it runs no frames.

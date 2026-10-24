@@ -85,6 +85,12 @@ static void stop(void)
     CHECK(on_console(CTRL_C_EVENT));
 #else
 #ifdef SIGUSR1
+    CHECK(signal(SIGUSR1, SIG_IGN) != SIG_ERR);
+    muhtari__stop_install();
+    CHECK_EQ_U64(raise(SIGUSR1), 0u);
+    CHECK_EQ_U64(muhtari__flush_requested(), 0u);
+    CHECK(signal(SIGUSR1, SIG_DFL) != SIG_ERR);
+    muhtari__stop_install();
     CHECK_EQ_U64(raise(SIGUSR1), 0u);
     CHECK_EQ_U64(raise(SIGUSR1), 0u);
     CHECK_EQ_U64(muhtari__flush_requested(), 1u);

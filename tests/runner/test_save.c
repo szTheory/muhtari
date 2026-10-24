@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <sys/stat.h>
 #ifdef _WIN32
@@ -20,6 +21,9 @@ enum {
     IO_OK,
     IMPORT_READ,
     IMPORT_CLOSE,
+    SAVE_CREATE,
+    SAVE_FDOPEN,
+    SAVE_PARTIAL,
     SAVE_WRITE,
     SAVE_FLUSH,
     SAVE_SYNC,
@@ -29,11 +33,20 @@ enum {
 static int io_fault;
 static int output_fault;
 static unsigned frames_run, temp_opens, replacements;
+static unsigned create_calls;
 static unsigned change_at, request_at, stop_at, request_during_write;
 static int change_every;
 static unsigned replaced_at[128];
 static void request_flush(void);
 static void request_stop(void);
+#ifdef _WIN32
+static DWORD WINAPI concurrent_flush(LPVOID unused)
+{
+    (void)unused;
+    request_flush();
+    return 0;
+}
+#endif
 static int reject_frame;
 static FILE *import_stream, *save_stream;
 static const uint8_t *expected_import;
@@ -66,6 +79,8 @@ static FILE *test_fopen(const char *path, const char *mode)
 }
 static FILE *test_fdopen(int fd, const char *mode)
 {
+    if (strcmp(mode, "rb") != 0 && io_fault == SAVE_FDOPEN)
+        return NULL;
 #ifdef _WIN32
     FILE *f = _fdopen(fd, mode);
 #else
@@ -91,9 +106,45 @@ static size_t test_write(const void *p, size_t n, size_t count, FILE *f)
 {
     if (f == save_stream && request_during_write) {
         request_during_write = 0;
+#ifdef _WIN32
+        HANDLE thread = CreateThread(NULL, 0, concurrent_flush, NULL, 0, NULL);
+        CHECK(thread != NULL);
+        if (thread != NULL) {
+            CHECK_EQ_U64(WaitForSingleObject(thread, 1000), WAIT_OBJECT_0);
+            CloseHandle(thread);
+        }
+#else
         request_flush();
+#endif
     }
+    if (f == save_stream && io_fault == SAVE_PARTIAL)
+        return fwrite(p, n, count - 1u, f);
     return f == save_stream && io_fault == SAVE_WRITE ? 0u : fwrite(p, n, count, f);
+}
+static int test_open(const char *path, int flags, ...)
+{
+    int mode = 0;
+#ifdef _WIN32
+    int creating = flags & _O_CREAT;
+#else
+    int creating = flags & O_CREAT;
+#endif
+    if (creating) {
+        create_calls++;
+        if (io_fault == SAVE_CREATE) {
+            errno = EACCES;
+            return -1;
+        }
+        va_list args;
+        va_start(args, flags);
+        mode = va_arg(args, int);
+        va_end(args);
+    }
+#ifdef _WIN32
+    return _open(path, flags, mode);
+#else
+    return open(path, flags, (mode_t)mode);
+#endif
 }
 static int test_flush(FILE *f)
 {
@@ -173,6 +224,8 @@ int runner_entry(int argc, char **argv);
 #define main runner_entry
 #define fprintf test_print
 #define fopen test_fopen
+#define open test_open
+#define _open test_open
 #define fdopen test_fdopen
 #define _fdopen test_fdopen
 #define fread test_read
@@ -199,6 +252,8 @@ int runner_entry(int argc, char **argv);
 #undef _fdopen
 #undef fdopen
 #undef fopen
+#undef open
+#undef _open
 #undef main
 #undef fprintf
 #include "../../runner/stop.c"
@@ -275,6 +330,7 @@ static int consume(const char *dir, const char *rom)
     snprintf(image, sizeof image, "%s", rom);
     char *args[] = {"muhtari-run", "--frames", "1", "--save-dir", directory, image};
     frames_run = temp_opens = replacements = 0;
+    create_calls = 0;
     import_stream = save_stream = NULL;
     stop_flag = 0;
     flush_flag = 0;
@@ -368,21 +424,36 @@ static void imports(const char *dir)
 
 static void faults(const char *dir)
 {
-    char rom[1024], save[1024];
+    char rom[1024], save[1024], foreign[1100], own[1100];
     snprintf(rom, sizeof rom, "%s/fault.a78", dir);
     snprintf(save, sizeof save, "%s/fault.sav", dir);
     cartridge(rom, 1u, 1);
     uint8_t bytes[2048];
     memset(bytes, 0x31, sizeof bytes);
+#ifdef _WIN32
+    unsigned long pid = (unsigned long)GetCurrentProcessId();
+#else
+    unsigned long pid = (unsigned long)getpid();
+#endif
+    snprintf(foreign, sizeof foreign, "%s.tmp.%lu.31", save, pid);
+    snprintf(own, sizeof own, "%s.tmp.%lu.0", save, pid);
+    write_bytes(foreign, bytes, 3);
     for (int fault = IMPORT_READ; fault <= SAVE_REPLACE; fault++) {
         write_bytes(save, bytes, sizeof bytes);
         io_fault = fault;
         CHECK_EQ_U64(consume(dir, rom), 1);
         CHECK_EQ_U64(frames_run, fault <= IMPORT_CLOSE ? 0 : 1);
-        CHECK_EQ_U64(temp_opens, fault <= IMPORT_CLOSE ? 0 : 1);
+        CHECK_EQ_U64(temp_opens, fault <= SAVE_FDOPEN ? 0 : 1);
+        CHECK_EQ_U64(create_calls, fault <= IMPORT_CLOSE ? 0 : 1);
         io_fault = IO_OK;
         exact_file(save, bytes, sizeof bytes);
+        exact_file(foreign, bytes, 3);
+        FILE *leftover = fopen(own, "rb");
+        CHECK(leftover == NULL);
+        if (leftover != NULL)
+            fclose(leftover);
     }
+    CHECK_EQ_U64(remove(foreign), 0);
     CHECK_EQ_U64(consume("missing-save-directory", rom), 1);
     CHECK_EQ_U64(frames_run, 0);
     write_bytes(save, bytes, sizeof bytes);
@@ -411,11 +482,6 @@ static void faults(const char *dir)
     CHECK_EQ_U64(remove(save), 0);
     /* Every collision belongs to someone else and must survive exhaustion. */
     char temporary[1100];
-#ifdef _WIN32
-    unsigned long pid = (unsigned long)GetCurrentProcessId();
-#else
-    unsigned long pid = (unsigned long)getpid();
-#endif
     for (unsigned i = 0; i < 32; i++) {
         snprintf(temporary, sizeof temporary, "%s.tmp.%lu.%u", save, pid, i);
         write_bytes(temporary, bytes, 3);
@@ -427,6 +493,28 @@ static void faults(const char *dir)
         exact_file(temporary, bytes, 3);
         CHECK_EQ_U64(remove(temporary), 0);
     }
+    /* An early cadence failure stops once and cleanup does not retry it. */
+    write_bytes(save, bytes, sizeof bytes);
+    char *early[] = {"muhtari-run", "--frames",        "9", "--save-dir",
+                     directory,     "--save-interval", "1", rom};
+    io_fault = SAVE_WRITE;
+    frames_run = replacements = temp_opens = create_calls = 0;
+    CHECK_EQ_U64(runner_entry(8, early), 1);
+    CHECK_EQ_U64(frames_run, 1);
+    CHECK_EQ_U64(temp_opens, 1);
+    CHECK_EQ_U64(create_calls, 1);
+    CHECK_EQ_U64(replacements, 0);
+    io_fault = IO_OK;
+    exact_file(save, bytes, sizeof bytes);
+    /* Replacement commits; a later stdout failure retains the new bytes. */
+    frames_run = replacements = 0;
+    output_fault = 1;
+    CHECK_EQ_U64(runner_entry(8, early), 1);
+    output_fault = 0;
+    CHECK_EQ_U64(frames_run, 9);
+    CHECK_EQ_U64(replacements, 1);
+    bytes[0]++;
+    exact_file(save, bytes, sizeof bytes);
 }
 
 #ifndef __wasi__

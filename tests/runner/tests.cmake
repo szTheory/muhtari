@@ -984,6 +984,15 @@ foreach(case IN ITEMS import faults options cadence)
     ${PROJECT_BINARY_DIR}/tests/save-${case} ${case} LABELS runner portable TIMEOUT 10)
 endforeach()
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI")
+  add_executable(muhtari-test-control ${CMAKE_CURRENT_LIST_DIR}/test_control.c)
+  target_compile_definitions(muhtari-test-control PRIVATE _POSIX_C_SOURCE=200809L
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+  set_target_properties(muhtari-test-control PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-control)
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-controls)
+  # Fault prevented: an in-process callback passes while actual OS delivery cannot save/stop.
+  muhtari_add_test(NAME runner.save.controls COMMAND muhtari-test-control
+    $<TARGET_FILE:muhtari-run> ${PROJECT_BINARY_DIR}/tests/save-controls LABELS runner TIMEOUT 30)
   file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-nonregular)
   muhtari_add_test(NAME runner.save.nonregular COMMAND muhtari-test-save-runner
     ${PROJECT_BINARY_DIR}/tests/save-nonregular nonregular LABELS runner TIMEOUT 10)
