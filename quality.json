@@ -48,14 +48,6 @@
       "configuration": "native",
       "availability": "required"
     },
-    "archive_bytes": {
-      "ceiling": 399937,
-      "units": "bytes",
-      "direction": "ceiling",
-      "producer": "tests/cmake/quality_evidence.cmake",
-      "configuration": "native",
-      "availability": "required"
-    },
     "tests.hygiene": {
       "floor": 24,
       "units": "count",

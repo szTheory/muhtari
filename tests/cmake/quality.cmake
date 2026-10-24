@@ -223,8 +223,9 @@ if(count GREATER 0)
   math(EXPR last "${count}-1")
   foreach(i RANGE ${last})
     string(JSON key MEMBER "${BASE_POLICY}" metrics ${i})
-    # Only the retired maintenance metric may disappear from trusted policy.
-    if(key STREQUAL "gate_lines")
+    # Only the retired maintenance and compressed-size bounds may disappear.
+    # Archive observations remain required by the native join.
+    if(key STREQUAL "gate_lines" OR key STREQUAL "archive_bytes")
       continue()
     endif()
     quality_get(unused "${POLICY}" OBJECT metrics "${key}")

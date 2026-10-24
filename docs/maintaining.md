@@ -161,6 +161,22 @@ To rotate the key, on the App's settings page generate a new private key, then r
 `gh secret set MUHTARI_APP_PRIVATE_KEY --app dependabot < <key file>`, delete the old key on the settings page, and
 delete the key file. Only the owner handles the key.
 
+## Inspecting a CI run
+
+Save the complete response before inspecting a run; a failed transport must stop the command:
+
+```sh
+gh run view RUN_ID --json attempt,status,conclusion,headSha,url,jobs > build/ci-run.json &&
+cmake -DINPUT=build/ci-run.json -DEXPECTED_SHA=FULL_COMMIT_SHA -P tools/check_ci_run.cmake
+```
+
+The audit records the attempt and requires that exact source and a completed run with one successful `CI required` job. It prints every
+failed, skipped or unfinished job before deciding, so one known failure cannot hide another. The existing
+aggregate owns required versus advisory status: failed library/WASM reports remain visible without becoming
+required gates. A passing audit establishes the required verdict, not that every report-only job passed. Inspect
+every listed failure and its job log before claiming which checks failed. Keep prior attempts as failed evidence;
+retry only a classified transient failure at the same source, using the existing targeted job rerun.
+
 ## Weekly digest
 
 `policy.digest.controls` uses CMake's native PATH modification so the same fake-API controls run on Windows

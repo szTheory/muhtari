@@ -5,6 +5,15 @@
 **Confidence:** MEDIUM overall; current-code contracts HIGH; hardware calibration remains unmeasured.
 
 <user_constraints>
+**Policy supersession, 2026-10-24:** DEC.61 and the revised CONTEXT D-20 retire
+only the historical compressed archive cutoff after a separate owner-authorized
+purpose review. All 399937 ceilings, fit/stop recommendations and historical policy
+snapshots below describe the earlier rule; they do not govern current execution.
+Required authenticated actual native current/base three-ZIP measurements, joined
+JSON peaks, package integrity and every other existing contract remain. See
+../../research/workflow-recovery/RECOMMENDATION.md. Hardware/API/model conclusions
+are unchanged. This supersession does not claim the former cutoff passed.
+
 ## User Constraints (from CONTEXT.md)
 
 The following blocks reproduce the locked decisions, discretion and deferred scope verbatim. Their authority is the phase discussion, not an assertion that future implementation or measurements have passed. [VERIFIED: .planning/phases/08-controllers-at-the-pins/08-CONTEXT.md:33-246,383-399]

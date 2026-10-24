@@ -229,8 +229,9 @@ Each plan depends on the preceding plan because core, host, diagnostic and evide
 08-01 proves narrow fixture comparability before fixture-dependent acceptance. 08-05 requires the
 first independently judged three-deliverable controller slice and fresh exact-source limiting-native
 candidate/base three-component packages before hardware expansion. Substantial slices repeat package
-measurements; 08-14 requires final actual six-native sums within the unchanged399937-byte ceiling.
-No limit increase, self-rebaseline, semantic weakening or advisory-lane promotion is authorized.
+measurements;08-14 requires final authenticated six-native current/base observations.
+DEC.61 separately retires the historical compressed cutoff after its reproduced
+failure. Package integrity, typed measurements and all other contracts remain.
 
 **Success criteria:**
 

@@ -56,3 +56,18 @@ counts to9/9 and18/18 planned slots; the103-file verification fingerprint still
 passes. The actual files and commands were verified. Consider a bounded scanner
 fix at this seed's existing trigger; do not rewrite valid evidence or introduce
 a product gate to silence these warnings.
+
+
+## Scoped recovery follow-up, 2026-10-24
+
+The separate [workflow recovery review](../research/workflow-recovery/RECOMMENDATION.md)
+disposes only the archive-cutoff question above through DEC.61. It preserves required
+authenticated observations and independent package/security/performance contracts.
+It does not dispose editorial limits, hosted-test limits or test-count policy.
+
+Measured CI cost warrants one later profiling slice: in run40135571745 Windowsarm64
+publication controls took756.47/744.81s across current/base; controller diagnostics
+took0.28/0.27s. Before changing the DAG or matrix, identify redundant process work
+and meaningful fault equivalence classes in the existing publication controls.
+Preserve Windows shell coverage and every required failure boundary. This optional
+cost improvement is not a condition for controller development.

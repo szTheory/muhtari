@@ -1,6 +1,11 @@
 # Repository policy tests: rules about the tests themselves.
 set(policy_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
+muhtari_add_test(NAME policy.ci_run.controls
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+    -DWORK=${CMAKE_BINARY_DIR}/policy/ci_run_fixture -P ${CMAKE_CURRENT_LIST_DIR}/ci_run.cmake
+  LABELS policy TIMEOUT 10)
+
 muhtari_add_test(NAME policy.no_skip
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/no_skip.cmake
   LABELS policy TIMEOUT 10)
@@ -109,7 +114,11 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
     # Provisional max724.35s Windows/63.21s other, runs39876385414/39874751162.
     LABELS policy TIMEOUT ${publish_timeout} COST 725)
   set(quality_timeout 30)
-  if(WIN32)
+  if(APPLE)
+    # Provisional ceil(2 x 22.79s), complete current/base controls in
+    # CI40135571745 attempt2/job121002299364; all semantic cases remain.
+    set(quality_timeout 46)
+  elseif(WIN32)
     # Ceil(2 x 40.12s), maximum successful current/base Windows control in
     # run40080473918; retain all producer/join cases and numeric predicates.
     set(quality_timeout 81)

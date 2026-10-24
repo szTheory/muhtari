@@ -7,17 +7,21 @@ fuzz replay and public compatibility title predicates, including their controls.
 Zero findings require the actual ABI, fatal-warning, analyzer or sanitizer judge.
 Each observation identifies its built SHA, configuration, producer and source run.
 
-Initial ordinary bounds use an independently built, unchanged event-base tree on
-the same runner with matching compiler and fixture comparison identities. Native bounds
-apply to every native leg; the archive ceiling covers the largest three-archive
-total across the six native legs. This bounds package size across the platform set;
-it does not measure each platform's percentage growth. The ceiling remains 399937
-bytes; native test floors remain 605 and 593. Adoption cannot reset an existing bound or initialize another metric from its own
-candidate measurements. Ordinary bounds ratchet against the trusted base policy.
-Compressed archive bytes vary slightly when rebuilding unchanged inputs. Initial
-adoption uses the minimum actual independent-base peak observed in the comparable
-cohort; it grants no extra bytes for that variation. This remains a strict ceiling
-on actual output, alongside the independent archive contents and firmware judges.
+Initial ordinary bounds use an independently built event-base tree on the same
+runner with matching compiler and fixture comparison identities. Native floors
+apply to every native leg. Ordinary bounds ratchet against the trusted base policy;
+adoption cannot initialize a bound from its own candidate measurements.
+
+Archive bytes are required observations, without a numeric acceptance cutoff.
+The historical compressed minimum did not establish a present platform capacity.
+The separate 2026-10-24 purpose review retired that cutoff rather than choosing
+another arbitrary number. Every native current/base measurement remains typed,
+measured and bound to its source SHA, run, compiler, configuration and fixture
+identities. The join reports each lane and retains authenticated peaks in both
+machine-readable outputs. Exactly three component ZIPs, expected members,
+notices, prohibited-asset rules and release integrity remain required.
+A future resource limit needs a named consumer objective and comparable evidence.
+
 An exact reason names the metric, old/new bound, rationale, grant and expiry dates;
 its lifetime is at most 60 days. Inherited expiry and renewal are checked every run.
 
@@ -121,32 +125,31 @@ retained behavior metadata rows advance from 3 to 4; all retained digest and num
 unchanged. Optional HSC firmware and battery-save claims have loaded-module tests plus the separate
 two-launch RetroArch byte and pixel proof; neither implies save states, speech or firmware routines.
 
-A local package pass establishes only that lane's three-ZIP total. Acceptance
-still requires all six actual native totals, release-content checks and the
-authenticated worst-lane reduction at or below 399937, with exact event-base and
-head identities. Metric retirement is accepted only through the existing hosted
-observations and surviving guards; controlled local fixtures do not replace them.
+A local package check establishes only that lane's artifacts. Acceptance requires
+all six native current/base observations, release-content checks and the authenticated
+join with exact event-base and head identities. The only retired metric keys that
+may disappear from trusted bound policy are the former maintenance-line and archive
+cutoffs; unrelated deletion or loosening still fails.
+
 Top-level MSVC Release builds use `/O1 /Ob1`: minimum-size optimization with
-expansion limited to explicitly inline helpers;
-embedded builds keep the consumer's options. The same objects run the full tests
-and enter all three component archives. A compiler setting alone proves no byte
-bound: acceptance measures the actual archives on each native target.
+expansion limited to explicitly inline helpers. Embedded builds keep the consumer's
+options. The same objects run the tests and enter the three component archives.
+
 The Windows HSC loader probes disk-file type through Kernel32 and closes the
 probe before reading firmware; it does not request unused CRT time metadata.
 
-Controller expansion requires an early fresh Windows x64 observation, the historically
-limiting native lane, as well as the ordinary final six-lane checks. Record each actual
-library, runner and libretro ZIP size and their sum for the exact candidate and independently
-built event base. Match full source/base SHAs, compiler/platform environment, runner image,
-raw manifest/sample identities and run URL; inspect producer JSON and consume it with the
-unchanged authenticated join. A dispatch or an older passing total supplies no acceptance.
-The actual three-ZIP ceiling remains 399937 bytes. If either comparable side exceeds it,
-attribute the component increase and stop further device expansion until a contract-preserving
-change fits; the observation grants neither a larger quota nor a new baseline.
-Attribute each ZIP's compressed payload, public headers/notices and container overhead
-separately when investigating growth; unchanged test-only code contributes no shipped payload.
-Size repairs retain the exported API, fixture corpus and native/performance checks.
-Local savings still require a fresh comparable Windows observation before expansion.
+Controller acceptance keeps early attributed package measurements and final
+six-native checks. Record library, runner and libretro ZIP sizes and sums for the
+exact candidate and independently built base. Match full SHAs, compiler/platform,
+runner image, raw manifest/sample identities and run URL; inspect producer JSON
+and consume it through the authenticated join. A dispatch alone is not acceptance.
+Investigate unexpected growth against the changed payload and consumer need;
+a historical compressed minimum alone is not a capacity requirement.
+Attribute compressed code, headers/notices and container overhead when useful.
+Size optimizations retain the API, fixture corpus and native/performance checks.
+Intermediate device slices record local full-workflow package measurements; final
+phase acceptance owns the full exact-source native matrix. Run an earlier hosted
+probe when a concrete platform/integration uncertainty warrants it.
 
 Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
 ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and

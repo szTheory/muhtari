@@ -224,16 +224,19 @@ this discussion; planning is a separate command.
   controls and normal provenance admission. Existing admission covers board/save
   fixtures, not arbitrary controller additions. Before relying on fixture-dependent
   acceptance, prove this narrow prerequisite through the real consumer.
-- **D-20:** The independent archive ceiling remains 399,937 bytes for the sum of the
-  three component ZIPs in each of six native lanes. Phase 7's historical worst
-  393,952 leaves only 5,985 bytes; that is a risk indicator, not demonstrated Phase 8
-  fit. Research/planning must put attributable comparable package measurements early
-  and final six-native acceptance last. No ceiling increase, automatic rebaseline,
-  policy self-authorization, weakened semantic guard or advisory-lane promotion is
-  granted. Optimize/reuse under the current contracts; a reproduced ceiling failure
-  stops affected expansion for a specific evidence-backed resolution. Preserve the
-  armed test-card performance gate and avoid inferring whole-controller performance
-  from that workload alone.
+- **D-20 (superseded separately on 2026-10-24; DEC.61):** Require attributable
+  current/base three-component ZIP measurements on comparable native lanes and
+  final six-native acceptance. Retire only the historical 399,937-byte cutoff;
+  it was exceeded, not passed. The owner requested and authorized the separate
+  evidence-backed purpose review in workflow-recovery/RECOMMENDATION.md.
+  Preserve required typed, authenticated archive observations, joined JSON peaks,
+  exact three-ZIP content/notices/asset checks, and all runtime/ABI/provenance/test
+  and lane-authority contracts. No replacement quota or advisory promotion.
+  Preserve the armed test-card +1% performance gate; dispatch repeatability proves
+  only repeatability, and controller operating cost remains separately measured.
+  Intermediate slices keep local full-ci/package evidence; final08-14 owns the
+  complete exact-source hosted matrix. Earlier hosted probes need a concrete
+  platform/integration question, not merely another archive-size report.
 
 ### Agent's Discretion
 

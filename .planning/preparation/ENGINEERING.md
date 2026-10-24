@@ -2,7 +2,7 @@
 title: "Engineering: C rules, tests, CI, release, repo settings and quality loops"
 summary: "Build, test, CI, release, repository, triage, performance and documentation decisions for muhtari, with mutable facts re-verified on 2026-10-15."
 read_when: "Before creating or changing CMake files, presets, tests, workflows, repository settings, the release pipeline, quality gates or engineering docs."
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 
 # Engineering: C rules, tests, CI, release, repo settings and quality loops
@@ -273,6 +273,14 @@ parsers and artifact identity; ordinary helpers do not each need a separate test
 independent product, safety, provenance, evidence and release contracts. New resource bounds need a stated
 product/platform/reliability/operating-cost objective and comparable measurements; existing unrelated bounds
 and exception authorities remain binding until separately changed.
+
+**Accepted separate archive review, 2026-10-24 (DEC.61):** retire the historical
+compressed-size cutoff, with no replacement quota. Actual current/base three-ZIP
+measurements remain required and authenticated in the existing producer/join;
+package members, notices, prohibited assets and release integrity remain blocking.
+This changes no runtime bound or performance/ABI/test/provenance contract.
+The [recovery decision](../research/workflow-recovery/RECOMMENDATION.md) records
+the reproduced gate/workflow failures, alternatives and preserved controls.
 
 Follow the dependency ladder in AGENTS. Prefer a narrow permissive seed when its surface is understandable,
 updates are manageable and local ownership is credible; a package can be cheaper and safer for substantial

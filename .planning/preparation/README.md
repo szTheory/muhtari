@@ -2,7 +2,7 @@
 title: "Preparation index"
 summary: "Which preparation file answers which question, and the conventions every file in this directory shares."
 read_when: "First, before opening any other file in this directory; again when adding, renaming or retiring one."
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 
 # Preparation index
@@ -58,6 +58,7 @@ sources, and gives one recommendation per choice. Open the file a question point
 | What are the runner's options, exit statuses and Playstead mapping; in what order does scripting arrive? | HOSTS-AND-INTEGRATION 4, 5 |
 | May this code or table be reused; how do I test with my own dumps? | PROVENANCE 1–5; ASSET_POLICY 4 |
 | What is already decided, and how is GSD started and run each phase? | DECISIONS; GSD-HANDOFF 2, 3 |
+| Repeated workflow retries, proxy budgets, metadata repair or specialist fan-out? | GSD-HANDOFF 3.1; [recovery decision](../research/workflow-recovery/RECOMMENDATION.md) and [prompt](../research/workflow-recovery/prompt.txt) |
 | Does every owner ask have a home? | PROMPT-COVERAGE 1 |
 
 ## Conventions
