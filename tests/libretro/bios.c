@@ -9,22 +9,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "../check.h"
 #include "../cart/images.h"
 #include "internal.h"
 #include "libretro.h"
 
-enum { ABSENT, VALID, SHORT, OVERSIZED, BAD_VECTOR, READ_ERROR, OPEN_ERROR };
+enum {
+    ABSENT,
+    VALID,
+    SHORT,
+    OVERSIZED,
+    BAD_VECTOR,
+    READ_ERROR,
+    OPEN_ERROR,
+    NONREGULAR,
+    CLOSE_ERROR
+};
 static int candidates[2];
 static FILE *handles[2];
 static unsigned opens, closes;
 static bool fail_alloc;
+static int hsc_case = -1;
 static const char *directory;
 static char seen_log[4096], seen_message[256];
 
 static FILE *bios_open(const char *path, const char *mode)
 {
+    if (strstr(path, "highscre.bin") != NULL) {
+        opens++;
+        if (hsc_case == OPEN_ERROR) {
+            errno = EACCES;
+            return NULL;
+        }
+        return stderr;
+    }
     unsigned i = strstr(path, "(U)") != NULL ? 0u : 1u;
     (void)mode;
     opens++;
@@ -37,6 +57,10 @@ static FILE *bios_open(const char *path, const char *mode)
 
 static size_t bios_read(void *ptr, size_t size, size_t count, FILE *f)
 {
+    if (f == stderr) {
+        memset(ptr, 0x19, count);
+        return hsc_case == SHORT ? 4095u : hsc_case == OVERSIZED ? count : 4096u;
+    }
     unsigned i = f == handles[0] ? 0u : 1u;
     uint8_t *buf = (uint8_t *)ptr;
     CHECK_EQ_U64(size, 1u);
@@ -54,20 +78,41 @@ static size_t bios_read(void *ptr, size_t size, size_t count, FILE *f)
 
 static int bios_error(FILE *f)
 {
+    if (f == stderr)
+        return hsc_case == READ_ERROR;
     unsigned i = f == handles[0] ? 0u : 1u;
     return candidates[i] == READ_ERROR;
 }
 
 static int bios_close(FILE *f)
 {
-    (void)f;
     closes++;
-    return 0;
+    return f == stderr && hsc_case == CLOSE_ERROR ? EOF : 0;
 }
 
 static void *bios_alloc(size_t size)
 {
-    return fail_alloc && size == 16385u ? NULL : malloc(size);
+    return fail_alloc && size == (hsc_case >= 0 ? 4097u : 16385u) ? NULL : malloc(size);
+}
+
+#ifdef _WIN32
+static int bios_stat(const char *path, struct _stat64 *info)
+#else
+static int bios_stat(const char *path, struct stat *info)
+#endif
+{
+    (void)path;
+    if (hsc_case == ABSENT) {
+        errno = ENOENT;
+        return -1;
+    }
+    memset(info, 0, sizeof *info);
+#ifdef _WIN32
+    info->st_mode = hsc_case == NONREGULAR ? _S_IFDIR : _S_IFREG;
+#else
+    info->st_mode = hsc_case == NONREGULAR ? S_IFDIR : S_IFREG;
+#endif
+    return 0;
 }
 
 #define fopen bios_open
@@ -75,12 +120,22 @@ static void *bios_alloc(size_t size)
 #define ferror bios_error
 #define fclose bios_close
 #define malloc bios_alloc
+#ifdef _WIN32
+#define _stat64(path, info) bios_stat(path, info)
+#else
+#define stat(path, info) bios_stat(path, info)
+#endif
 #include "../../libretro/libretro.c"
 #undef fopen
 #undef fread
 #undef ferror
 #undef fclose
 #undef malloc
+#ifdef _WIN32
+#undef _stat64
+#else
+#undef stat
+#endif
 
 static void RETRO_CALLCONV bios_log(enum retro_log_level level, const char *fmt, ...)
 {
@@ -110,6 +165,10 @@ static bool RETRO_CALLCONV bios_env(unsigned cmd, void *data)
         struct retro_variable *v = (struct retro_variable *)data;
         if (strcmp(v->key, "muhtari_boot") == 0) {
             v->value = "bios";
+            return true;
+        }
+        if (hsc_case >= 0 && strcmp(v->key, "muhtari_hsc") == 0) {
+            v->value = "on";
             return true;
         }
     }
@@ -239,6 +298,40 @@ int main(void)
     CHECK(strstr(seen_message, "No usable") != NULL);
     retro_unload_game();
     failed_frames();
+    /* Present bad HSC firmware never becomes the missing-file fallback. */
+    directory = "system";
+    for (unsigned test = ABSENT; test <= CLOSE_ERROR; test++) {
+        if (test == BAD_VECTOR)
+            continue;
+        hsc_case = (int)test;
+        candidates[0] = SHORT;
+        candidates[1] = VALID;
+        fail_alloc = false;
+        seen_log[0] = seen_message[0] = '\0';
+        bool accepted = test == ABSENT || test == VALID;
+        CHECK_EQ_U64(retro_load_game(&game), accepted);
+        if (accepted) {
+            muhtari_const_span rom = {0};
+            rom.size = (uint32_t)sizeof rom;
+            CHECK_EQ_U64(muhtari_get_hsc_rom(inst, &rom), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(rom.bytes, 4096u);
+            CHECK_EQ_U64(rom.data[123], test == VALID ? 0x19u : 0xFFu);
+            CHECK(strstr(seen_log, test == VALID ? "unknown identity" : "signature-only") != NULL);
+            CHECK_EQ_U64(inst->bios_size, 4096u);
+        } else {
+            CHECK(inst == NULL);
+            CHECK(strstr(seen_log, "signature-only") == NULL);
+        }
+        retro_unload_game();
+    }
+    hsc_case = VALID;
+    fail_alloc = true;
+    CHECK(!retro_load_game(&game));
+    CHECK(inst == NULL);
+    fail_alloc = false;
+    directory = long_dir;
+    CHECK(!retro_load_game(&game));
+    CHECK(inst == NULL);
     retro_deinit();
     CHECK_DONE();
 }

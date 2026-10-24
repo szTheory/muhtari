@@ -36,6 +36,8 @@ static muhtari__sha256 observed_video, observed_pcm, observed_raw;
 static uint64_t observed_samples, observed_events;
 static uint32_t observed_frames;
 static int capture;
+static bool hsc_enabled;
+static const char *hsc_directory;
 
 static void raw_audio(void *user, uint64_t tick, uint8_t source, uint16_t value)
 {
@@ -61,6 +63,20 @@ static void pcm_audio(int16_t sample)
 
 static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 {
+    if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE && hsc_enabled) {
+        struct retro_variable *v = (struct retro_variable *)data;
+        if (strcmp(v->key, "muhtari_hsc") == 0)
+            v->value = "on";
+        else if (strcmp(v->key, "muhtari_battery_port2") == 0)
+            v->value = "savekey";
+        else
+            return false;
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY && hsc_enabled) {
+        *(const char **)data = hsc_directory;
+        return hsc_directory != NULL;
+    }
     if (cmd == RETRO_ENVIRONMENT_SET_MEMORY_MAPS) {
         seen_map = (const struct retro_memory_map *)data;
         return true;
@@ -197,10 +213,20 @@ static uint32_t check_regions(muhtari *m, const struct retro_memory_map *map, in
         return 65536u;
     }
     uint32_t mapped = 0u, wrong = 0u;
+    muhtari_battery_info battery = {0};
+    muhtari_const_span rom = {0};
+    battery.size = (uint32_t)sizeof battery;
+    rom.size = (uint32_t)sizeof rom;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_get_hsc_rom(m, &rom), MUHTARI_STATUS_OK);
     for (uint32_t addr = 0u; addr < 0x10000u; addr++) {
         const uint8_t *p = rc_libretro_memory_find(&regions, addr);
         int ok;
-        if (addr >= 0x2800u && addr < 0x3000u) {
+        if (battery.hsc_attached != 0u && addr >= 0x1000u && addr < 0x1800u) {
+            ok = p == battery.data + (addr - 0x1000u);
+        } else if (rom.data != NULL && addr >= 0x3000u && addr < 0x4000u) {
+            ok = p == rom.data + (addr - 0x3000u) && *p == muhtari__peek(m, (uint16_t)addr);
+        } else if (addr >= 0x2800u && addr < 0x3000u) {
             ok = p == ram.data + (addr - 0x2000u);
         } else if (unmapped(addr) || (addr >= 0x4000u && !cart_visible(m, addr))) {
             ok = p == NULL;
@@ -293,6 +319,59 @@ static void check_cart(const char *path)
 
     retro_unload_game();
     retro_deinit();
+    /* Repeat every retained board with both media and each installed ROM form.
+       The source file is deleted before resolver reads to prove core ownership. */
+    if (hsc_directory != NULL) {
+        char firmware_path[4096];
+        CHECK(snprintf(firmware_path, sizeof firmware_path, "%s/highscre.bin", hsc_directory) > 0);
+        for (unsigned supplied = 0u; supplied < 2u; supplied++) {
+            if (supplied != 0u) {
+                FILE *f = fopen(firmware_path, "wb");
+                CHECK(f != NULL);
+                if (f != NULL) {
+                    for (unsigned n = 0u; n < 4096u; n++)
+                        CHECK(fputc((int)((n * 13u + (n >> 8)) & 255u), f) != EOF);
+                    CHECK_EQ_U64(fclose(f), 0u);
+                }
+            }
+            hsc_enabled = true;
+            retro_set_environment(env);
+            CHECK(retro_load_game(&game));
+            m = muhtari__libretro_instance();
+            CHECK(m != NULL);
+            if (m == NULL)
+                break;
+            if (supplied != 0u)
+                CHECK_EQ_U64(remove(firmware_path), 0u);
+            muhtari_battery_info b = {0};
+            muhtari_const_span hsc = {0};
+            b.size = (uint32_t)sizeof b;
+            hsc.size = (uint32_t)sizeof hsc;
+            CHECK_EQ_U64(muhtari_get_battery(m, &b), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(muhtari_get_hsc_rom(m, &hsc), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(b.bytes, 34816u);
+            CHECK(retro_get_memory_data(RETRO_MEMORY_SAVE_RAM) == b.data);
+            CHECK_EQ_U64(retro_get_memory_size(RETRO_MEMORY_SAVE_RAM), b.bytes);
+            for (size_t n = 0u; n < b.bytes; n++)
+                b.data[n] = (uint8_t)(n * 7u + (n >> 8));
+            for (size_t n = 0u; n < hsc.bytes; n++)
+                CHECK_EQ_U64(hsc.data[n], supplied      ? (uint8_t)(n * 13u + (n >> 8))
+                                          : n == 0x900u ? 0xC6u
+                                          : n == 0x904u ? 0xFEu
+                                                        : 0xFFu);
+            CHECK_EQ_U64(check_regions(m, seen_map, 1), 0u);
+            for (unsigned d = 0u; d < seen_map->num_descriptors; d++) {
+                const struct retro_memory_descriptor *desc = &seen_map->descriptors[d];
+                if (desc->start == 0x1000u)
+                    CHECK(desc->ptr == b.data && desc->flags == 0u);
+                if (desc->start == 0x3000u)
+                    CHECK(desc->ptr == hsc.data && desc->flags == RETRO_MEMDESC_CONST);
+            }
+            retro_unload_game();
+            retro_deinit();
+        }
+        hsc_enabled = false;
+    }
     free(bytes);
 }
 
@@ -603,7 +682,7 @@ static void check_pair(const char *path, const char *module, const char *dir)
 
 int main(int argc, char **argv)
 {
-    int i;
+    int i = 1;
     if (argc == 5 && strcmp(argv[1], "--pair") == 0) {
         check_pair(argv[2], argv[3], argv[4]);
         CHECK_DONE();
@@ -612,7 +691,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "usage: muhtari-test-rcheevos <cartridge>...\n");
         return 2;
     }
-    for (i = 1; i < argc; i++) {
+    if (argc > 3 && strcmp(argv[1], "--hsc-dir") == 0) {
+        hsc_directory = argv[2];
+        i = 3;
+    }
+    for (; i < argc; i++) {
         check_cart(argv[i]);
     }
     CHECK_DONE();

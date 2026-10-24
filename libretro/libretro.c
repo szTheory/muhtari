@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "libretro.h"
 #include "muhtari.h"
@@ -757,6 +758,59 @@ static muhtari_status lr_load_bios(muhtari_media *media)
     return muhtari_load(inst, media);
 }
 
+/* Optional HSC firmware has one name and exact size. A present bad file
+   refuses loading; only absence selects the signature stub (docs/libretro.md). */
+static muhtari_status lr_load_hsc(muhtari_media *media, uint8_t **owned)
+{
+    const char *dir = NULL;
+    char path[4096];
+    FILE *f;
+    *owned = NULL;
+    bool attached =
+        media->hsc_mode == MUHTARI_HSC_ON ||
+        (media->hsc_mode == MUHTARI_HSC_AUTO && (cart.devices & MUHTARI_DEVICE_HSC) != 0u);
+    if (!attached || !env_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, (void *)&dir) || dir == NULL)
+        return MUHTARI_STATUS_OK;
+    int n = snprintf(path, sizeof path, "%s/highscre.bin", dir);
+    if (n < 0 || (size_t)n >= sizeof path)
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+#ifdef _WIN32
+    struct _stat64 info;
+    int found = _stat64(path, &info);
+#else
+    struct stat info;
+    int found = stat(path, &info);
+#endif
+    if (found != 0)
+        return errno == ENOENT ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_INVALID_HSC;
+#ifdef _WIN32
+    if ((info.st_mode & _S_IFMT) != _S_IFREG)
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+#else
+    if (!S_ISREG(info.st_mode))
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+#endif
+    f = fopen(path, "rb");
+    if (f == NULL)
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+    uint8_t *buf = (uint8_t *)malloc(4097u);
+    if (buf == NULL) {
+        (void)fclose(f);
+        return MUHTARI_STATUS_ERR_NO_MEMORY;
+    }
+    size_t bytes = fread(buf, 1u, 4097u, f);
+    int failed = ferror(f);
+    int closed = fclose(f);
+    if (bytes != 4096u || failed || closed != 0) {
+        free(buf);
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+    }
+    media->hsc_rom = buf;
+    media->hsc_rom_size = bytes;
+    *owned = buf;
+    return MUHTARI_STATUS_OK;
+}
+
 /* Loads the content copy into the instance, through a BIOS file when the
    boot option asks for one and there is one. Logs the BIOS file and its
    SHA-256, or the fast-boot fallback, or a refusal with its status text,
@@ -765,6 +819,7 @@ static bool lr_load_content(const struct retro_game_info *game)
 {
     muhtari_media media;
     muhtari_status st;
+    uint8_t *hsc = NULL;
 
     if (game->data == NULL || game->size == 0u || game->size > MUHTARI_IMAGE_SIZE_MAX) {
         LR_LOG(RETRO_LOG_ERROR, "muhtari: no content bytes, or more than %u\n",
@@ -790,11 +845,13 @@ static bool lr_load_content(const struct retro_game_info *game)
         lr_battery_request(&media);
         loaded_port[0] = media.port[0];
         loaded_port[1] = media.port[1];
-        if (lr_option_is("muhtari_boot", "bios")) {
+        st = lr_load_hsc(&media, &hsc);
+        if (st == MUHTARI_STATUS_OK && lr_option_is("muhtari_boot", "bios")) {
             st = lr_load_bios(&media);
-        } else {
+        } else if (st == MUHTARI_STATUS_OK) {
             st = muhtari_load(inst, &media);
         }
+        free(hsc);
     }
     if (st != MUHTARI_STATUS_OK) {
         LR_LOG(RETRO_LOG_ERROR, "muhtari: content refused: %s%s%s\n", muhtari__status_text(st),
@@ -804,6 +861,30 @@ static bool lr_load_content(const struct retro_game_info *game)
     }
     battery.size = (uint32_t)sizeof battery;
     (void)muhtari_get_battery(inst, &battery);
+    if ((battery.firmware_flags & MUHTARI_HSC_FIRMWARE_STUB) != 0u) {
+        LR_LOG(RETRO_LOG_WARN,
+               "muhtari: highscre.bin absent; signature-only HSC stub, no firmware routines\n");
+        lr_message("HSC signature-only stub: no firmware routines");
+    } else if (battery.hsc_attached != 0u) {
+        char hex[41];
+        static const char digits[] = "0123456789abcdef";
+        for (unsigned i = 0u; i < 20u; i++) {
+            hex[i * 2u] = digits[battery.hsc_sha1[i] >> 4];
+            hex[i * 2u + 1u] = digits[battery.hsc_sha1[i] & 15u];
+        }
+        hex[40] = '\0';
+        LR_LOG(RETRO_LOG_INFO, "muhtari: highscre.bin SHA-1 %s\n", hex);
+        if ((battery.firmware_flags &
+             (MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN | MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE)) != 0u) {
+            LR_LOG(RETRO_LOG_WARN, "muhtari: HSC firmware unknown identity%s\n",
+                   (battery.firmware_flags & MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE) != 0u
+                       ? "; missing signatures"
+                       : "");
+            lr_message((battery.firmware_flags & MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE) != 0u
+                           ? "HSC firmware unknown identity; missing signatures"
+                           : "HSC firmware unknown identity");
+        }
+    }
     lr_check_battery_request(&media);
     return true;
 }
@@ -871,14 +952,21 @@ static void lr_memory_maps(void)
     uint8_t *cart_ram = lr_memory(MUHTARI_MEMORY_CART_RAM, &cart_bytes);
     uint8_t *rom = content + ((cart.flags & MUHTARI_CART_HEADER) != 0u ? 128u : 0u);
     uint32_t rom_from = cart_ram != NULL ? 0x8000u : 0x4000u;
+    muhtari_const_span hsc_rom = {0};
+    hsc_rom.size = (uint32_t)sizeof hsc_rom;
+    (void)muhtari_get_hsc_rom(inst, &hsc_rom);
 
     desc_count = 0u;
     desc_next = 0u;
     lr_span(0x0040u, 0x0100u, ram, 0x0840u, 0u);
     lr_span(0x0140u, 0x0200u, ram, 0x0940u, 0u);
     lr_span(0x0480u, 0x0500u, riot, 0u, 0u);
+    if (battery.hsc_attached != 0u)
+        lr_span(0x1000u, 0x1800u, battery.data, 0u, 0u);
     lr_span(0x1800u, 0x2800u, ram, 0u, RETRO_MEMDESC_SYSTEM_RAM);
     lr_span(0x2800u, 0x3000u, ram, 0x0800u, 0u);
+    if (hsc_rom.data != NULL)
+        lr_span(0x3000u, 0x4000u, (uint8_t *)(uintptr_t)hsc_rom.data, 0u, RETRO_MEMDESC_CONST);
     if (cart.board == MUHTARI_BOARD_FRACTALUS && cart_ram != NULL) {
         /* Sixteen 256-byte aliases expose the eight physical pages twice.
            Higher bus mirrors remain descriptor holes to fit the pinned

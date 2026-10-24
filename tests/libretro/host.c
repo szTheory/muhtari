@@ -1348,8 +1348,60 @@ static void case_hsc_firmware(const char *dir)
     CHECK(p_load_game(&game));
     CHECK_EQ_U64(message_calls, before + 1u);
     CHECK(strstr(message, "stub") != NULL);
+    uint64_t flags;
+    uint8_t *save = (uint8_t *)p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+    for (uint32_t i = 0u; i < 2048u; i++) {
+        CHECK(resolve(0x1000u + i, &flags) == save + i);
+        CHECK_EQ_U64(flags, 0u);
+    }
+    for (uint32_t i = 0u; i < 4096u; i++) {
+        const uint8_t *rom = resolve(0x3000u + i, &flags);
+        CHECK(rom != NULL);
+        if (rom != NULL)
+            CHECK_EQ_U64(*rom, i == 0x900u ? 0xC6u : i == 0x904u ? 0xFEu : 0xFFu);
+        CHECK_EQ_U64(flags, RETRO_MEMDESC_CONST);
+    }
     stop();
+    char path[4096];
+    CHECK(snprintf(path, sizeof path, "%s/highscre.bin", dir) > 0);
+    static uint8_t firmware[4097];
+    for (size_t i = 0u; i < sizeof firmware; i++)
+        firmware[i] = (uint8_t)(i * 19u + (i >> 8));
+    for (unsigned test = 0u; test < 5u; test++) {
+        size_t bytes = test == 0u ? 4095u : test == 1u ? 4097u : 4096u;
+        firmware[0x900u] = test == 2u ? 0xC6u : 0x17u;
+        firmware[0x904u] = test == 2u ? 0xFEu : 0x39u;
+        FILE *f = fopen(path, "wb");
+        CHECK(f != NULL);
+        if (f == NULL)
+            break;
+        CHECK_EQ_U64(fwrite(firmware, 1u, bytes, f), bytes);
+        CHECK_EQ_U64(fclose(f), 0u);
+        p_set_environment(env);
+        set_var("muhtari_boot", test == 4u ? "bios" : "fast");
+        before = message_calls;
+        CHECK_EQ_U64(p_load_game(&game), test >= 2u);
+        CHECK_EQ_U64(remove(path), 0u);
+        if (test >= 2u) {
+            CHECK(message_calls > before);
+            CHECK(strstr(message, "unknown identity") != NULL);
+            CHECK((strstr(message, "missing signatures") != NULL) == (test != 2u));
+            for (uint32_t i = 0u; i < 4096u; i++) {
+                const uint8_t *rom = resolve(0x3000u + i, &flags);
+                CHECK(rom != NULL);
+                if (rom != NULL)
+                    CHECK_EQ_U64(*rom, firmware[i]);
+                CHECK_EQ_U64(flags, RETRO_MEMDESC_CONST);
+            }
+            p_reset();
+            CHECK_EQ_U64(*resolve(0x3000u, &flags), firmware[0]);
+        } else {
+            CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+        }
+        stop();
+    }
     system_dir = NULL;
+    set_var("muhtari_boot", "fast");
     set_var("muhtari_hsc", "auto");
 }
 
