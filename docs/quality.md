@@ -134,6 +134,16 @@ bound: acceptance measures the actual archives on each native target.
 The Windows HSC loader probes disk-file type through Kernel32 and closes the
 probe before reading firmware; it does not request unused CRT time metadata.
 
+Controller expansion requires an early fresh Windows x64 observation, the historically
+limiting native lane, as well as the ordinary final six-lane checks. Record each actual
+library, runner and libretro ZIP size and their sum for the exact candidate and independently
+built event base. Match full source/base SHAs, compiler/platform environment, runner image,
+raw manifest/sample identities and run URL; inspect producer JSON and consume it with the
+unchanged authenticated join. A dispatch or an older passing total supplies no acceptance.
+The actual three-ZIP ceiling remains 399937 bytes. If either comparable side exceeds it,
+attribute the component increase and stop further device expansion until a contract-preserving
+change fits; the observation grants neither a larger quota nor a new baseline.
+
 Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
 ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and
 checks a reviewed expiry within 60 days. Compatibility always requires fresh results
