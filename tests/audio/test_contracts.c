@@ -162,6 +162,15 @@ static void test_audio_boundaries(void)
 static void test_public_audio(void)
 {
     muhtari *m = make(), *discard = make(), *reference = make(), *muted = make();
+    muhtari *before = malloc(sizeof *before);
+    CHECK(before != NULL);
+    if (before == NULL) {
+        muhtari_destroy(muted);
+        muhtari_destroy(reference);
+        muhtari_destroy(discard);
+        muhtari_destroy(m);
+        return;
+    }
     load_program(m, tone, sizeof tone);
     load_program(discard, tone, sizeof tone);
     load_program(reference, tone, sizeof tone);
@@ -203,15 +212,15 @@ static void test_public_audio(void)
         written += muhtari__synth_render(reference, end, expected + written);
         CHECK_EQ_U64(written, count);
         muhtari_frame io;
-        struct muhtari before = *m;
+        memcpy(before, m, sizeof *before);
         frame_io(&io, NULL, 0u, actual, count - 1u);
         CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL);
         CHECK_EQ_U64(io.audio_count, 0u);
-        CHECK(memcmp(m, &before, sizeof before) == 0);
+        CHECK(memcmp(m, before, sizeof *before) == 0);
         if (f % 37u == 0u) {
             frame_io(&io, NULL, 0u, NULL, 0u);
             CHECK_EQ_U64(muhtari_run_frame(muted, &io), MUHTARI_STATUS_OK);
-            CHECK(memcmp(m, &before, sizeof before) == 0);
+            CHECK(memcmp(m, before, sizeof *before) == 0);
             CHECK_EQ_U64(muted->synth.pre_clip_peak, 0u);
         }
         frame_io(&io, NULL, 0u, actual, count);
@@ -400,6 +409,7 @@ static void test_public_audio(void)
         }
     }
     CHECK(m->synth.raw[0] > 0u);
+    free(before);
     muhtari_destroy(muted);
     muhtari_destroy(reference);
     muhtari_destroy(discard);

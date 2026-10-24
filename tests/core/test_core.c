@@ -1129,7 +1129,13 @@ static void test_audio_validate(void)
     in.size = (uint32_t)sizeof in;
     in.switches = MUHTARI_SWITCH_RESET;
     CHECK_EQ_U64(muhtari_set_input(m, &in), MUHTARI_STATUS_OK);
-    struct muhtari before = *m;
+    muhtari *before = malloc(sizeof *before);
+    CHECK(before != NULL);
+    if (before == NULL) {
+        muhtari_destroy(m);
+        return;
+    }
+    memcpy(before, m, sizeof *before);
     const uint32_t count = (m->audio_rem + TICKS_PER_FRAME * 88u) / 13125u;
     for (unsigned bad = 0u; bad < 8u; bad++) {
         muhtari_frame io;
@@ -1158,7 +1164,7 @@ static void test_audio_validate(void)
             CHECK_EQ_U64(muhtari_run_frame(bad == 7u ? NULL : m, &io), want);
             CHECK_EQ_U64(io.audio_count, bad == 1u || bad == 2u || bad == 7u ? COUNT_SENTINEL : 0u);
         }
-        CHECK(memcmp(m, &before, sizeof before) == 0);
+        CHECK(memcmp(m, before, sizeof *before) == 0);
         for (unsigned i = 0u; i <= AUDIO_CAP; i++) {
             CHECK_EQ_U64(audio[i], AUDIO_SENTINEL);
         }
@@ -1171,7 +1177,8 @@ static void test_audio_validate(void)
     CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(io.audio_count, count);
     CHECK_EQ_U64(audio[count], AUDIO_SENTINEL);
-    CHECK(m->bus.ticks > before.bus.ticks);
+    CHECK(m->bus.ticks > before->bus.ticks);
+    free(before);
     muhtari_destroy(m);
 }
 

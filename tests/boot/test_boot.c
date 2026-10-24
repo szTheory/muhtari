@@ -287,13 +287,20 @@ static int rejects_cart(void)
     io.audio = audio;
     io.audio_capacity = (uint32_t)(sizeof audio / sizeof audio[0]);
     io.audio_count = 99u;
-    struct muhtari refused = *m;
+    muhtari *refused = malloc(sizeof *refused);
+    CHECK(refused != NULL);
+    if (refused == NULL) {
+        muhtari_destroy(m);
+        return 0;
+    }
+    memcpy(refused, m, sizeof *refused);
     for (size_t i = 0u; i < sizeof audio / sizeof audio[0]; i++) {
         audio[i] = 0x5A5A;
     }
     CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_ERR_BIOS_REJECTED_CART);
     CHECK_EQ_U64(io.audio_count, 0u);
-    CHECK(memcmp(m, &refused, sizeof refused) == 0);
+    CHECK(memcmp(m, refused, sizeof *refused) == 0);
+    free(refused);
     for (size_t i = 0u; i < sizeof audio / sizeof audio[0]; i++) {
         CHECK_EQ_U64(audio[i], 0x5A5A);
     }
