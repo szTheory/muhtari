@@ -151,6 +151,8 @@ The first full Task 1 workflow exposed the stale paddle refusal control and pass
 
 An extra `cmake --preset wasm32` probe exits 1 because this host lacks `clang-21`; no WASM build/test pass is claimed. Both inventory entries are updated, and real cross-host/WASM acceptance remains with the later acceptance plans. All automated verification commands required by this plan ran successfully. No package installation, review-fix round, gap round or owner verification was needed.
 
+The optional `query verify-summary` scanner reports a backticked CTest command as a missing durable file and a failed self-check. This repeats the prior plan's command-string scanner limitation: the actual ten changed paths and three source ancestors were checked successfully, evaluation scope resolves them, and the explicit Self-Check section below passes. No implementation or refusal predicate was altered to silence that scanner warning.
+
 ## Known Stubs
 
 None. Future physical-device refusals are intentional phase sequencing, not claimed device implementations.
