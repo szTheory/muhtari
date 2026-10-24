@@ -3,21 +3,21 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 status: ready_to_plan
-stopped_at: Phase 7 shipped in PR 28; squash auto-merge and release PR checks pending
-last_updated: "2026-10-24T15:56:23.485Z"
-state_head: 36a9b7f14153b65fa86dfb44b593f1ebe8e7c2a6
+stopped_at: Phase 8 context gathered; ready for gsd-plan-phase 8
+last_updated: "2026-10-24T17:32:55.829Z"
+last_activity: 2026-10-24
+last_activity_desc: Phase 8 context gathered; no implementation started
+state_head: d0ed1ff2797b3cb91a762d543625d9c66c80e0a3
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 28
   completed_plans: 28
   percent: 43
-last_activity: 2026-10-24
 total_phases: 7
 current_phase: 08
 current_phase_name: Controllers at the pins
 current_plan: Not started
-last_activity_desc: Phase 7 shipped in PR 28 with 35/35 verified must-haves and all six SAVE requirements
 ---
 
 # Project State
@@ -27,7 +27,7 @@ last_activity_desc: Phase 7 shipped in PR 28 with 35/35 verified must-haves and 
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: finish Phase 7 shipping checks for PR #28, then discuss Phase 8 in a separate session.
+Current focus: Phase 8 discussion complete; 20 decisions captured in phases/08-controllers-at-the-pins/08-CONTEXT.md. Research and planning are the next separate step. Phase 7 details below are historical acceptance/shipping records.
 The helper's next-phase pointer is parked at Phase 8; no Phase 8 work was started.
 
 ## Current Position
@@ -37,10 +37,10 @@ Phase 5–7 are3/7 milestone phases with27/27 currently planned active slots com
 Phases 8–11 remain unplanned. Runtime totals28/28 include the historical halted06-01
 SUMMARY; it remains excluded from accepted active outcomes and is not a budget grant.
 
-Status: Phase 7 shipped - PR #28.
-Last Activity: 2026-10-24.
-Next command after shipping checks: `$gsd-discuss-phase 8`.
-Branch: `phase/07-battery-saves`. PR: https://github.com/szTheory/muhtari/pull/28
+Status: ready_to_plan
+Last Activity: 2026-10-24 — Phase 8 context gathered; no implementation started
+Next command after shipping checks: $gsd-plan-phase 8
+Branch: `phase/08-controllers-at-the-pins`. No Phase 8 pull request yet; Phase 7 merged in PR #28.
 Squash auto-merge and final head CI are checked by this ship session; the release
 pull request is checked after merge. No Phase 8 work was started.
 Phase 6 package v0.5.0 remains the last published version at PR creation.
@@ -111,9 +111,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 7 shipped in PR #28; squash auto-merge and release PR checks pending
-Last session: 2026-10-24T15:56:23.485Z
-Resume file: None
+**Stopped at:** Phase 8 context gathered; ready for gsd-plan-phase 8
+Last session: 2026-10-24T17:32:37.620Z
+Resume file: .planning/phases/08-controllers-at-the-pins/08-CONTEXT.md
 
 ### Quick Tasks Completed
 
