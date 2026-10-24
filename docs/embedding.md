@@ -404,6 +404,42 @@ muhtari_status st = muhtari_set_input(m, &in);
   but the first after a load begins, so one frame sees one input. Two calls before that apply only the second.
   A refused call changes nothing, and the pending input is not machine state.
 
+### Extended packets
+
+`muhtari_set_input_ex(m, &in)` accepts a separate `muhtari_input_ex`; the legacy
+24-byte `muhtari_input`, masks and unsupported-device refusals are unchanged.
+The extended packet is 88 bytes: `size` at byte 0, two 40-byte
+`muhtari_port_input` blocks at byte 4, and console `switches` at byte 84.
+Within each port the scalar offsets are:
+
+| Offset | Field | Units / meaning |
+|---|---|---|
+| 0 | `device` | Explicit device, or zero for Auto |
+| 4 | `buttons` | Existing direction and primary button bits |
+| 8, 12 | `paddle[0]`, `paddle[1]` | 0..65535, increasing resistance, independent of polling |
+| 16 | `keypad` | Low 12 bits, row-major keys |
+| 20, 24 | `dx`, `dy` | Signed 32-bit relative steps; +X right, +Y down |
+| 28, 32 | `gun_x`, `gun_y` | Native image coordinates, zero-based |
+| 36 | `flags` | `MUHTARI_INPUT_GUN_OFFSCREEN` separates off-screen aim from trigger |
+
+Only ProLine, joystick, unplugged and the already attached EEPROM are currently
+implemented. Other known devices return `ERR_UNSUPPORTED_DEVICE`, including Auto
+resolving to one; unknown IDs return `ERR_ARGUMENT`. Digital devices require all
+axes, keys, aim and flags zero; unplugged/EEPROM require zero buttons too. New
+adapter bits 6..11 are reserved for their named device: SNES Y/X/L/R/Select/Start
+and Mega C/X/Y/Z/Mode/Start, with primary buttons B/A. They never broaden the
+legacy mask. Gun trigger uses primary button 1; paddles use primary buttons 1/2.
+
+Known prefixes may end at any complete 4-byte scalar boundary, from size 4
+through 88. Missing fields are neutral zero; a missing complete gun aim pair
+means off-screen when that model is supported. Complete zero aim means (0,0).
+Larger packets may be at most 4096 bytes and must have zero unknown tail bytes.
+Both ports, all applicable ranges, masks and fields are validated before any
+pending state changes. Unknown or nonzero inapplicable fields refuse the entire
+packet. The latest accepted packet replaces the one pending packet at VBLANK;
+held state persists without resubmission. Relative contribution transfers once
+at the latch, so frames without a submission never replay a delta.
+
 ## Memory
 
 `muhtari_get_memory(m, kind, &span)` fills a `muhtari_span` with a live pointer into the machine and its length:

@@ -219,11 +219,88 @@ static muhtari_status ports_check_device(uint32_t device)
     return MUHTARI_STATUS_ERR_ARGUMENT;
 }
 
+/* New models opt in here without changing the released legacy validator. */
+muhtari_status muhtari__ports_check_device_ex(uint32_t device)
+{
+    if (device == 0u || device == MUHTARI_PORT_PROLINE || device == MUHTARI_PORT_JOYSTICK ||
+        device == MUHTARI_PORT_UNPLUGGED || device == MUHTARI_PORT_SAVEKEY ||
+        device == MUHTARI_PORT_ATARIVOX) {
+        return MUHTARI_STATUS_OK;
+    }
+    return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
+                                          : MUHTARI_STATUS_ERR_ARGUMENT;
+}
+
+static uint32_t ports_resolve_ex(const muhtari *m, unsigned p, uint32_t device)
+{
+    if (device == 0u) {
+        device = m->ports.load_device[p];
+    }
+    if (device == 0u) {
+        device = p == 0u ? m->cart.info.port1 : m->cart.info.port2;
+        if (device == MUHTARI_PORT_NONE) {
+            device = m->cart.rom != NULL ? MUHTARI_PORT_UNPLUGGED : MUHTARI_PORT_PROLINE;
+        }
+    }
+    /* The attachment is immutable even when a save hint, rather than the
+       descriptive port code, selected it (embedding.md, Battery). */
+    if (m->battery.eeprom_port == p + 1u) {
+        return m->battery.eeprom_device;
+    }
+    return device;
+}
+
 muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
 {
-    (void)m;
-    (void)in;
-    return MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+    if (m == NULL || in == NULL) {
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    }
+    muhtari_status st = muhtari__check_size(in, 4u, (uint32_t)sizeof *in);
+    if (st != MUHTARI_STATUS_OK) {
+        return st;
+    }
+    if (in->size < sizeof *in && in->size % 4u != 0u) {
+        return MUHTARI_STATUS_ERR_STRUCT_SIZE;
+    }
+    muhtari_input_ex normalized;
+    memset(&normalized, 0, sizeof normalized);
+    memcpy(&normalized, in, in->size < sizeof *in ? in->size : sizeof *in);
+    normalized.size = (uint32_t)sizeof normalized;
+    if ((normalized.switches & ~PORTS_SWITCHES) != 0u) {
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        muhtari_port_input *port = &normalized.port[p];
+        uint32_t requested = port->device;
+        if ((m->battery.eeprom_port == p + 1u && requested != 0u &&
+             requested != m->battery.eeprom_device) ||
+            (m->battery.eeprom_port != p + 1u &&
+             (requested == MUHTARI_PORT_SAVEKEY || requested == MUHTARI_PORT_ATARIVOX))) {
+            return MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+        }
+        st = muhtari__ports_check_device_ex(requested);
+        if (st != MUHTARI_STATUS_OK) {
+            return st;
+        }
+        port->device = ports_resolve_ex(m, p, requested);
+        st = muhtari__ports_check_device_ex(port->device);
+        if (st != MUHTARI_STATUS_OK) {
+            return st;
+        }
+        /* Only implemented digital devices reach here. Their axes, keys,
+           aim and flags are inapplicable, including an off-screen flag. */
+        if ((port->buttons & ~PORTS_BUTTONS) != 0u || port->paddle[0] != 0u ||
+            port->paddle[1] != 0u || port->keypad != 0u || port->dx != 0 || port->dy != 0 ||
+            port->gun_x != 0u || port->gun_y != 0u || port->flags != 0u ||
+            ((port->device == MUHTARI_PORT_UNPLUGGED || port->device == MUHTARI_PORT_SAVEKEY ||
+              port->device == MUHTARI_PORT_ATARIVOX) && port->buttons != 0u)) {
+            return MUHTARI_STATUS_ERR_ARGUMENT;
+        }
+    }
+    m->ports.pending_ex = normalized;
+    m->ports.input_mode = 1u;
+    m->ports.pending = 1u;
+    return MUHTARI_STATUS_OK;
 }
 
 muhtari_status muhtari_set_input(muhtari *m, const muhtari_input *in)
@@ -262,6 +339,7 @@ muhtari_status muhtari_set_input(muhtari *m, const muhtari_input *in)
         ports->pending_buttons[p] = in->buttons[p];
     }
     ports->pending_switches = in->switches;
+    ports->input_mode = 0u;
     ports->pending = 1u;
     return MUHTARI_STATUS_OK;
 }
@@ -275,10 +353,24 @@ void muhtari__ports_latch(muhtari *m)
         return;
     }
     for (uint32_t p = 0; p < 2u; p++) {
-        ports->device[p] = ports->pending_device[p];
-        ports->buttons[p] = ports->pending_buttons[p];
+        if (ports->input_mode != 0u) {
+            ports->device[p] = ports->pending_ex.port[p].device;
+            ports->buttons[p] = ports->pending_ex.port[p].buttons;
+        } else {
+            ports->device[p] = ports->pending_device[p];
+            ports->buttons[p] = ports->pending_buttons[p];
+        }
     }
-    ports->switches = ports->pending_switches;
+    if (ports->input_mode != 0u) {
+        ports->applied_ex = ports->pending_ex;
+        ports->switches = ports->pending_ex.switches;
+        for (unsigned p = 0u; p < 2u; p++) {
+            ports->pending_ex.port[p].dx = 0;
+            ports->pending_ex.port[p].dy = 0;
+        }
+    } else {
+        ports->switches = ports->pending_switches;
+    }
     ports->pending = 0u;
     /* The new pins reach PA7's edge detector at this tick. */
     muhtari__riot_pins_changed(m);

@@ -372,6 +372,31 @@ static void extended_digital(void)
     frame(m, NULL);
     r = ram(m);
     CHECK_EQ_HEX(r[RING + r[LAST_ENTRY] + SWCHA], 0xFFu);
+    /* Every complete scalar prefix is neutral; fractional known fields
+       refuse. A larger zero tail uses the existing size-tag policy. */
+    uint32_t packet[1024];
+    memset(packet, 0, sizeof packet);
+    for (uint32_t size = 4u; size <= sizeof in; size++) {
+        packet[0] = size;
+        CHECK_EQ_U64(muhtari_set_input_ex(m, (const muhtari_input_ex *)packet),
+                     size % 4u == 0u ? MUHTARI_STATUS_OK
+                                      : MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    }
+    packet[0] = 4096u;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, (const muhtari_input_ex *)packet), MUHTARI_STATUS_OK);
+    struct muhtari__ports before = m->ports;
+    packet[1023] = 1u;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, (const muhtari_input_ex *)packet),
+                 MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    packet[0] = 4097u;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, (const muhtari_input_ex *)packet),
+                 MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    packet[0] = 0u;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, (const muhtari_input_ex *)packet),
+                 MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    CHECK_EQ_U64(muhtari_set_input_ex(NULL, &in), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_set_input_ex(m, NULL), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
     muhtari_destroy(m);
 }
 

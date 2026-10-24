@@ -329,6 +329,11 @@ struct muhtari__ports {
     uint32_t pending_device[2];
     uint32_t pending_buttons[2];
     uint32_t pending_switches;
+    uint32_t load_device[2];
+    muhtari_input_ex pending_ex;
+    muhtari_input_ex applied_ex;
+    uint8_t input_mode; /* 0 legacy, 1 extended pending */
+    uint8_t initialized; /* an extended packet has activated initial pins */
     uint8_t pending;
     uint8_t input_read;
     uint64_t io_hazard; /* frames a 2600 stick's fire shorted a driven pin */
@@ -533,6 +538,10 @@ _Static_assert(offsetof(muhtari_input, device) == 4, "input.device");
 _Static_assert(offsetof(muhtari_input, buttons) == 12, "input.buttons");
 _Static_assert(offsetof(muhtari_input, switches) == 20, "input.switches");
 _Static_assert(sizeof(muhtari_input) == 24, "input size");
+_Static_assert(sizeof(muhtari_port_input) == 40, "port input size");
+_Static_assert(offsetof(muhtari_input_ex, port) == 4, "extended input ports");
+_Static_assert(offsetof(muhtari_input_ex, switches) == 84, "extended input switches");
+_Static_assert(sizeof(muhtari_input_ex) == 88, "extended input size");
 
 /* muhtari_span: the size, then a pointer and a size_t from P on, so 64-bit
    targets carry 4 alignment bytes after the size field. */
@@ -735,6 +744,7 @@ uint8_t muhtari__peek(const muhtari *m, uint16_t addr);
 /* Applies the pending input, if any, at a VBLANK start (src/ports.c;
    docs/embedding.md, Input). */
 void muhtari__ports_latch(muhtari *m);
+muhtari_status muhtari__ports_check_device_ex(uint32_t device);
 
 /* The device wired to port 0 or 1: MUHTARI_PORT_PROLINE, _JOYSTICK or
    _UNPLUGGED, the host's choice or else the cartridge's, where a header
