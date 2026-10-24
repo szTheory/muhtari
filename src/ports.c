@@ -228,7 +228,7 @@ muhtari_status muhtari__ports_check_device_ex(uint32_t device)
         return MUHTARI_STATUS_OK;
     }
     return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
-                                          : MUHTARI_STATUS_ERR_ARGUMENT;
+                                           : MUHTARI_STATUS_ERR_ARGUMENT;
 }
 
 static uint32_t ports_resolve_ex(const muhtari *m, unsigned p, uint32_t device)
@@ -255,7 +255,7 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
     if (m == NULL || in == NULL) {
         return MUHTARI_STATUS_ERR_ARGUMENT;
     }
-    muhtari_status st = muhtari__check_size(in, 4u, (uint32_t)sizeof *in);
+    muhtari_status st = muhtari__check_size(in, MUHTARI__INPUT_EX_SIZE_FIRST, (uint32_t)sizeof *in);
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
@@ -293,7 +293,8 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
             port->paddle[1] != 0u || port->keypad != 0u || port->dx != 0 || port->dy != 0 ||
             port->gun_x != 0u || port->gun_y != 0u || port->flags != 0u ||
             ((port->device == MUHTARI_PORT_UNPLUGGED || port->device == MUHTARI_PORT_SAVEKEY ||
-              port->device == MUHTARI_PORT_ATARIVOX) && port->buttons != 0u)) {
+              port->device == MUHTARI_PORT_ATARIVOX) &&
+             port->buttons != 0u)) {
             return MUHTARI_STATUS_ERR_ARGUMENT;
         }
     }
@@ -362,6 +363,7 @@ void muhtari__ports_latch(muhtari *m)
         }
     }
     if (ports->input_mode != 0u) {
+        ports->initialized = 1u;
         ports->applied_ex = ports->pending_ex;
         ports->switches = ports->pending_ex.switches;
         for (unsigned p = 0u; p < 2u; p++) {
@@ -369,6 +371,7 @@ void muhtari__ports_latch(muhtari *m)
             ports->pending_ex.port[p].dy = 0;
         }
     } else {
+        memset(&ports->applied_ex, 0, sizeof ports->applied_ex);
         ports->switches = ports->pending_switches;
     }
     ports->pending = 0u;

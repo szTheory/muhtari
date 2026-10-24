@@ -840,6 +840,10 @@ static void test_no_alloc_after_load(void)
     CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(c.allocs, 1);
     for (uint32_t f = 0; f < LONG_RUN; f++) {
+        muhtari_input_ex in;
+        memset(&in, 0, sizeof in);
+        in.size = (uint32_t)sizeof in;
+        CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
         run(m, video);
     }
     CHECK_EQ_U64(c.allocs, 1);
@@ -1822,8 +1826,8 @@ static void extended_lifecycle(void)
 {
     muhtari *m = make();
     /* Read SWCHA as the first instruction, before any VBLANK wait. */
-    static const uint8_t read_pins[] = {0xADu, 0x80u, 0x02u, 0x8Du, 0x00u, 0x18u,
-                                       0x4Cu, 0x06u, 0xF0u};
+    static const uint8_t read_pins[] = {0xADu, 0x80u, 0x02u, 0x8Du, 0x00u,
+                                        0x18u, 0x4Cu, 0x06u, 0xF0u};
     make_cart(cart, read_pins, sizeof read_pins, 0u);
     muhtari_media media = media_for(cart, sizeof cart);
     media.port[0] = MUHTARI_PORT_JOYSTICK;
@@ -1880,19 +1884,21 @@ static void extended_lifecycle(void)
             CHECK_EQ_U64(muhtari__ports_device(m, 1u - p), MUHTARI_PORT_PROLINE);
             for (unsigned fault = 0u; fault < 5u; fault++) {
                 muhtari_input_ex bad = in;
-                if (fault == 0u) bad.port[1u - p].device = serial;
-                if (fault == 1u) bad.port[p].device = MUHTARI_PORT_UNPLUGGED;
-                if (fault == 2u) bad.port[p].device = MUHTARI_PORT_PROLINE;
-                if (fault == 3u) bad.port[p].device = kind == 0u ? MUHTARI_PORT_ATARIVOX
-                                                                              : MUHTARI_PORT_SAVEKEY;
+                if (fault == 0u)
+                    bad.port[1u - p].device = serial;
+                if (fault == 1u)
+                    bad.port[p].device = MUHTARI_PORT_UNPLUGGED;
+                if (fault == 2u)
+                    bad.port[p].device = MUHTARI_PORT_PROLINE;
+                if (fault == 3u)
+                    bad.port[p].device = kind == 0u ? MUHTARI_PORT_ATARIVOX : MUHTARI_PORT_SAVEKEY;
                 if (fault == 4u) {
                     bad.port[p].device = MUHTARI_PORT_UNPLUGGED;
                     bad.port[1u - p].device = serial;
                 }
                 struct muhtari__ports before = m->ports;
                 uint64_t tick = m->bus.ticks;
-                CHECK_EQ_U64(muhtari_set_input_ex(m, &bad),
-                             MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &bad), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
                 CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
                 CHECK_EQ_U64(m->bus.ticks, tick);
             }
@@ -1906,7 +1912,8 @@ static void extended_lifecycle(void)
             CHECK_EQ_U64(after.generation, b.generation);
             CHECK_EQ_U64(after.eeprom_port, p + 1u);
             CHECK_EQ_U64(after.eeprom_device, serial);
-            for (size_t at = 0u; at < b.bytes; at++) CHECK_EQ_HEX(b.data[at], 0x69u);
+            for (size_t at = 0u; at < b.bytes; at++)
+                CHECK_EQ_HEX(b.data[at], 0x69u);
         }
     }
     muhtari_destroy(m);

@@ -329,21 +329,43 @@ static void extended_digital(void)
         muhtari_input_ex bad = in;
         bad.port[0].buttons = MUHTARI_BUTTON_UP;
         switch (fault) {
-        case 0: bad.port[1].device = 999u; break;
-        case 1: bad.port[1].device = MUHTARI_PORT_PADDLE; break;
-        case 2: bad.port[1].buttons = MUHTARI_SNES_BUTTON_Y; break;
-        case 3: bad.port[1].paddle[0] = 65536u; break;
-        case 4: bad.port[1].paddle[1] = 1u; break;
-        case 5: bad.port[1].keypad = 0x1000u; break;
-        case 6: bad.port[1].dx = INT32_MIN; break;
-        case 7: bad.port[1].dy = INT32_MAX; break;
-        case 8: bad.port[1].gun_x = 320u; break;
-        case 9: bad.port[1].flags = 2u; break;
-        default: bad.switches = 32u; break;
+        case 0:
+            bad.port[1].device = 999u;
+            break;
+        case 1:
+            bad.port[1].device = MUHTARI_PORT_PADDLE;
+            break;
+        case 2:
+            bad.port[1].buttons = MUHTARI_SNES_BUTTON_Y;
+            break;
+        case 3:
+            bad.port[1].paddle[0] = 65536u;
+            break;
+        case 4:
+            bad.port[1].paddle[1] = 1u;
+            break;
+        case 5:
+            bad.port[1].keypad = 0x1000u;
+            break;
+        case 6:
+            bad.port[1].dx = INT32_MIN;
+            break;
+        case 7:
+            bad.port[1].dy = INT32_MAX;
+            break;
+        case 8:
+            bad.port[1].gun_x = 320u;
+            break;
+        case 9:
+            bad.port[1].flags = 2u;
+            break;
+        default:
+            bad.switches = 32u;
+            break;
         }
-        CHECK_EQ_U64(muhtari_set_input_ex(m, &bad),
-                     fault == 1u ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
-                                 : MUHTARI_STATUS_ERR_ARGUMENT);
+        CHECK_EQ_U64(muhtari_set_input_ex(m, &bad), fault == 1u
+                                                        ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
+                                                        : MUHTARI_STATUS_ERR_ARGUMENT);
     }
     frame(m, video);
     const uint8_t *r = ram(m);
@@ -379,8 +401,7 @@ static void extended_digital(void)
     for (uint32_t size = 4u; size <= sizeof in; size++) {
         packet[0] = size;
         CHECK_EQ_U64(muhtari_set_input_ex(m, (const muhtari_input_ex *)packet),
-                     size % 4u == 0u ? MUHTARI_STATUS_OK
-                                      : MUHTARI_STATUS_ERR_STRUCT_SIZE);
+                     size % 4u == 0u ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_STRUCT_SIZE);
     }
     packet[0] = 4096u;
     CHECK_EQ_U64(muhtari_set_input_ex(m, (const muhtari_input_ex *)packet), MUHTARI_STATUS_OK);

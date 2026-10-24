@@ -440,6 +440,24 @@ packet. The latest accepted packet replaces the one pending packet at VBLANK;
 held state persists without resubmission. Relative contribution transfers once
 at the latch, so frames without a submission never replay a delta.
 
+Extended Auto resolves the successful load's explicit port override, then the
+descriptive header. A per-packet explicit choice wins over both; later Auto
+restores the remembered load choice. Descriptive cartridge metadata is unchanged.
+Explicit load choices start neutral immediately. Submit an initial extended
+packet, even with no held controls: it applies before the first opcode of fast
+boot's short first frame. Subsequent changes apply at VBLANK. The legacy setter
+retains its initial short-frame timing and automatic ProLine fallback.
+
+Ordinary device replacement clears only that port's applied controls; repeated
+same-device packets preserve device protocol state. EEPROM identity, placement,
+span, layout and bytes remain frozen until successful reload. Power cycle settles
+already-due EEPROM programming, discards unfinished protocol and pending input,
+clears volatile controls and restores the remembered load choices neutrally.
+Successful reload starts a fresh battery baseline and neutral controls; rejected
+loads and input leave execution and published storage intact. Console Reset is
+only a held switch. Calls on one instance are single-threaded; independent
+instances share no state. There is no shared-instance parallel-call guarantee.
+
 ## Memory
 
 `muhtari_get_memory(m, kind, &span)` fills a `muhtari_span` with a live pointer into the machine and its length:

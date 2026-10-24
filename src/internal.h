@@ -332,7 +332,7 @@ struct muhtari__ports {
     uint32_t load_device[2];
     muhtari_input_ex pending_ex;
     muhtari_input_ex applied_ex;
-    uint8_t input_mode; /* 0 legacy, 1 extended pending */
+    uint8_t input_mode;  /* 0 legacy, 1 extended pending */
     uint8_t initialized; /* an extended packet has activated initial pins */
     uint8_t pending;
     uint8_t input_read;
@@ -437,6 +437,7 @@ _Static_assert(sizeof(((muhtari *)0)->bios) == MUHTARI__BIOS_SIZE_MAX, "bios arr
 #define MUHTARI__CONST_SPAN_SIZE_FIRST                                                             \
     ((uint32_t)(offsetof(muhtari_const_span, bytes) + sizeof(size_t)))
 #define MUHTARI__INPUT_SIZE_FIRST ((uint32_t)(offsetof(muhtari_input, switches) + sizeof(uint32_t)))
+#define MUHTARI__INPUT_EX_SIZE_FIRST 4u
 #define MUHTARI__SPAN_SIZE_FIRST ((uint32_t)(offsetof(muhtari_span, bytes) + sizeof(size_t)))
 #define MUHTARI__COUNTERS_SIZE_FIRST                                                               \
     ((uint32_t)(offsetof(muhtari_counters, lag_frames) + sizeof(uint64_t)))
