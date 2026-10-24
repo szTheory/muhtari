@@ -47,7 +47,8 @@ Compiler identity/version and platform/architecture remain unchanged components
 of the environment. Built-sample expectations normally require raw byte equality.
 The only annotation transitions permit exactly one complete
 `# behaviour_revision 2` line to become `# behaviour_revision 3`, or exactly one
-revision 3 line to become revision 4, with its newline and every other byte unchanged.
+revision 3 line to become revision 4, or revision 4 to become revision 5,
+with its newline and every other byte unchanged.
 Missing or duplicate annotations, reverse or skipped transitions, another revision,
 changed rows, tool/source pins, hashes, comments or trailing bytes fail. An unchanged
 file retains ordinary raw equality; no general comment-stripping rule applies.
@@ -68,6 +69,10 @@ actual bytes and proving device behavior remain separate requirements. Supportin
 transition changes neither the live core revision nor its diagnostic report judge;
 both must advance together when the implementation lands. Existing frame/audio
 digests and source/tool pins remain protected.
+The 4-to-5 permission prepares the shared TIA VBLANK D6 low-latch and D7 pot-dump
+correction described by the [Atari input-port specification](https://www.blarworld.net/stella/8.%20Input%20ports.html).
+It authorizes only that annotation comparison; hardware behavior, affected numeric
+expectations and the production revision must land with their own tested change.
 
 The maintenance-line metric and its exclusive counter, inventory and adoption
 handling are retired. The trusted-base key-retention check permits only the literal

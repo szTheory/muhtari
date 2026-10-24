@@ -157,7 +157,7 @@ function(quality_fixture_identity out candidate trusted)
 endfunction()
 
 # Fault prevented: sample edits hiding behind a behavior-annotation migration.
-# Only unique exact 2-to-3 or 3-to-4 revision lines may differ; all
+# Only unique exact 2-to-3, 3-to-4 or 4-to-5 revision lines may differ; all
 # remaining bytes stay equal and identity always comes from the raw base file.
 function(quality_sample_identity out candidate trusted)
   foreach(input candidate trusted)
@@ -170,13 +170,14 @@ function(quality_sample_identity out candidate trusted)
       if(NOT count EQUAL 1)
         message(FATAL_ERROR "quality: sample annotation must be unique")
       endif()
-      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([234])\n")
+      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([2345])\n")
         message(FATAL_ERROR "quality: invalid sample revision transition")
       endif()
       set(${input}_revision "${CMAKE_MATCH_2}")
     endforeach()
     if(NOT (trusted_revision EQUAL 2 AND candidate_revision EQUAL 3) AND
-        NOT (trusted_revision EQUAL 3 AND candidate_revision EQUAL 4))
+        NOT (trusted_revision EQUAL 3 AND candidate_revision EQUAL 4) AND
+        NOT (trusted_revision EQUAL 4 AND candidate_revision EQUAL 5))
       message(FATAL_ERROR "quality: invalid sample revision transition")
     endif()
     string(REGEX REPLACE "(^|\n)# behaviour_revision ${candidate_revision}\n" "\\1# behaviour_revision ${trusted_revision}\n"
