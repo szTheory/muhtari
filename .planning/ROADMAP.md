@@ -21,7 +21,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipping pending |
-| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Planned; ready to execute |
+| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | In progress; 3/9 plans executed |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
 | 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Not started |
@@ -136,7 +136,7 @@ Shared core, manifest and inventory ownership requires sequential execution.
 **Goal:** Keep HSC and SaveKey progress across process and frontend restarts without putting file I/O in the core.
 **Depends on:** Phase 6
 **Requirements:** SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06
-**Plans:** 2/9 plans executed in 9 sequential waves (parallelization disabled).
+**Plans:** 3/9 plans executed in 9 sequential waves (parallelization disabled).
 **Status:** Execution active; evidence prerequisite and HSC embedder path verified, seven plans remain.
 
 Plans:
@@ -147,7 +147,7 @@ Plans:
 - [x] 07-02-PLAN.md — Execute the HSC embedder tracer, preserve frozen clients and measure real packages early.
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 07-03-PLAN.md — Implement timed pin-level EEPROM, frozen attachment and completion/reset edges.
+- [x] 07-03-PLAN.md — Implement timed pin-level EEPROM, frozen attachment and completion/reset edges.
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 07-04-PLAN.md — Prove battery lifecycle, isolation, no-allocation and bounded I2C properties/fuzz replay.
@@ -243,7 +243,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
-| 7. Battery saves across hosts | 0/9 | In Progress | — |
+| 7. Battery saves across hosts | 3/9 | In Progress | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |

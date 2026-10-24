@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: Completed 07-02 HSC embedder path; phase execution remains active
-last_updated: "2026-10-24T02:41:42.889Z"
-state_head: e54852f591a3a4faf9a98a0ee551a015810e5245
+stopped_at: Completed 07-03 serial EEPROM; phase execution remains active
+last_updated: "2026-10-24T03:00:23.137Z"
+state_head: 1f6ca3c3d16937403c8b92693d395b5fd1fa0edf
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 21
+  completed_plans: 22
   percent: 29
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 07
 current_phase_name: Battery saves across hosts
-last_activity_desc: Phase 7 evidence and HSC embedder path verified; seven plans remain
+last_activity_desc: Phase 7 evidence HSC and serial EEPROM verified; six plans remain
 ---
 
 # Project State
@@ -27,17 +27,17 @@ last_activity_desc: Phase 7 evidence and HSC embedder path verified; seven plans
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 7 execution is active. Plans 07-01/02 prove evidence controls
-and the HSC embedder path; serial hardware and host acceptance remain in plans 03–09.
+Current focus: Phase 7 execution is active. Plans 07-01–03 prove evidence controls,
+HSC and serial EEPROM hardware; robustness and host acceptance remain in plans 04–09.
 
 ## Current Position
 
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 9
 
 Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
 are complete. Phase 5 and6 are2/7 milestone phases,18/27 currently planned active
-slots; Phase 7 has two completed plans and seven pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
+slots; Phase 7 has three completed plans and six pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
 Next command: `$gsd-execute-phase 7`.
@@ -56,6 +56,12 @@ for commands, exits and local evidence identity. Ten assumption flags remain unr
 
 Plan07-02: API5/ABI1/behavior4, HSC/firmware/battery, frozen API4 client; CI619+6, ZIP218325 <=399937.
 Old digests retained; commands/exits N/A-local in07-02-SUMMARY.md. Serial/host/whole SAVE acceptance pending.
+
+Plan07-03: actual ORA/DDRA serial EEPROM on either port; exact due/reset and no-poll
+semantics. CI626+6, exact inventories626/6, hygiene24 and ZIP223038 <=399937 pass.
+Old no-EEPROM frame pins retained with explicit topology; default metadata executes
+separate real-pin tests. Commands/exits N/A-local in07-03-SUMMARY.md; no review/gap
+round consumed. Robustness and host acceptance remain pending; SAVE IDs stay open.
 
 Research and nine plans in nine dependent waves cover SAVE-01–06 and D-01–18.
 The independent plan checker passed after one focused revision; no findings remain.
@@ -126,10 +132,10 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-**Stopped at:** Completed 07-02 HSC embedder path; phase execution remains active
+**Stopped at:** Completed 07-03 serial EEPROM; phase execution remains active
 
-Last session: 2026-10-24T02:41:24.088Z
-Resume file: .planning/phases/07-battery-saves/07-03-PLAN.md
+Last session: 2026-10-24T03:00:23.053Z
+Resume file: .planning/phases/07-battery-saves/07-04-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -141,10 +147,13 @@ Resume file: .planning/phases/07-battery-saves/07-03-PLAN.md
 
 - [Phase 07]: The runtime counts 28 plans and 19 summaries including superseded 06-01; accepted active completion is 18/27 across phases 5–7. Phase 7 has nine checked plans and no completed save requirements. Percent reports two completed phases of seven.
 - [Phase 07]: HSC load stages firmware in a fixed unpublished instance buffer to avoid compiler stack helpers while keeping the one raw battery span authoritative.
+- [Phase 07]: Historical frame chains explicitly select no EEPROM; default metadata attachment is separately executed through real RIOT waveform tests, preserving every old digest.
 
 ## Performance Metrics
+
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 07 P01 | 6 min | 2 tasks | 3 files |
 | Phase 07 P01 | 3 min | 2 tasks | 3 files |
 | Phase 07 P02 | 11 min | 3 tasks | 22 files |
+| Phase 07 P03 | 15 min | 3 tasks | 22 files |
