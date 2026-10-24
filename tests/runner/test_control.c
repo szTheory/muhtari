@@ -199,9 +199,82 @@ static void exercise(int command_count, char **command_args, char *dir, unsigned
     (void)remove(ready);
 }
 
+#ifndef _WIN32
+/* A real EPIPE, both at the final flush and when hash output fills stdio's
+   buffer during execution. The diagnostic changes both media exactly once. */
+static void broken_pipe(int command_count, char **command_args, char *dir, char *rom,
+                        int during_run, int inherited_ignore)
+{
+    char save[1024], numbers[256][12];
+    (void)snprintf(save, sizeof save, "%s/battery.sav", dir);
+    (void)remove(save);
+    int output[2];
+    int piped = pipe(output);
+    CHECK_EQ_U64(piped, 0);
+    if (piped != 0)
+        return;
+    (void)close(output[0]);
+    pid_t child = fork();
+    CHECK(child >= 0);
+    if (child == 0) {
+        if (dup2(output[1], STDOUT_FILENO) < 0 ||
+            signal(SIGPIPE, inherited_ignore ? SIG_IGN : SIG_DFL) == SIG_ERR)
+            _exit(126);
+        (void)close(output[1]);
+        char *args[550];
+        int n = 0;
+        for (int i = 0; i < command_count; i++)
+            args[n++] = command_args[i];
+        args[n++] = "--frames";
+        args[n++] = during_run ? "375" : "120";
+        args[n++] = "--save-dir";
+        args[n++] = dir;
+        args[n++] = "--save-interval";
+        args[n++] = "4294967295";
+        unsigned hashes = during_run ? 256u : 1u;
+        for (unsigned i = 0u; i < hashes; i++) {
+            (void)snprintf(numbers[i], sizeof numbers[i], "%u", 120u + i);
+            args[n++] = "--hash-frame";
+            args[n++] = numbers[i];
+        }
+        args[n++] = rom;
+        args[n] = NULL;
+        execvp(args[0], args);
+        _exit(127);
+    }
+    (void)close(output[1]);
+    if (child < 0)
+        return;
+    int status = 0;
+    pid_t result = 0;
+    unsigned polls = 0u;
+    while (polls++ < 500u && (result = waitpid(child, &status, WNOHANG)) == 0)
+        pause_poll();
+    CHECK(result == child);
+    if (result == 0) {
+        (void)kill(child, SIGKILL);
+        (void)waitpid(child, &status, 0);
+    }
+    CHECK(WIFEXITED(status));
+    if (WIFEXITED(status))
+        CHECK_EQ_U64(WEXITSTATUS(status), 1);
+    uint8_t bytes[34817] = {0};
+    FILE *f = fopen(save, "rb");
+    CHECK(f != NULL);
+    if (f != NULL) {
+        CHECK_EQ_U64(fread(bytes, 1u, sizeof bytes, f), 34816u);
+        CHECK_EQ_U64(fclose(f), 0);
+        for (size_t i = 0u; i < 34816u; i++) {
+            uint8_t want = i == 256u || i == 26624u ? 1u : i == 257u || i == 26625u ? 0u : 255u;
+            CHECK_EQ_U64(bytes[i], want);
+        }
+    }
+}
+#endif
+
 int main(int argc, char **argv)
 {
-    if (argc < 3 || argc > 18)
+    if (argc < 4 || argc > 19)
         return 2;
 #ifdef _WIN32
     /* Own the console so broadcast C/BREAK cannot touch the CI runner or shell. */
@@ -210,8 +283,13 @@ int main(int argc, char **argv)
     CHECK(SetConsoleCtrlHandler(NULL, FALSE));
     CHECK(SetConsoleCtrlHandler(own_console, TRUE));
 #endif
-    exercise(argc - 2, argv + 2, argv[1], 0);
-    exercise(argc - 2, argv + 2, argv[1], 1);
+    exercise(argc - 3, argv + 3, argv[1], 0);
+    exercise(argc - 3, argv + 3, argv[1], 1);
+#ifndef _WIN32
+    for (int during_run = 0; during_run < 2; during_run++)
+        for (int ignored = 0; ignored < 2; ignored++)
+            broken_pipe(argc - 3, argv + 3, argv[1], argv[2], during_run, ignored);
+#endif
 #ifdef _WIN32
     (void)FreeConsole();
 #endif

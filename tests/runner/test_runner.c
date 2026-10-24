@@ -74,6 +74,16 @@ static void format(void)
 static void stop(void)
 {
     CHECK_EQ_U64(muhtari__stop_requested(), 0u);
+#if !defined(_WIN32) && !defined(__wasi__)
+    CHECK(signal(SIGINT, SIG_IGN) != SIG_ERR);
+    CHECK(signal(SIGTERM, SIG_IGN) != SIG_ERR);
+    muhtari__stop_install();
+    CHECK_EQ_U64(raise(SIGINT), 0u);
+    CHECK_EQ_U64(raise(SIGTERM), 0u);
+    CHECK_EQ_U64(muhtari__stop_requested(), 0u);
+    CHECK(signal(SIGINT, SIG_DFL) != SIG_ERR);
+    CHECK(signal(SIGTERM, SIG_DFL) != SIG_ERR);
+#endif
     muhtari__stop_install();
     CHECK_EQ_U64(muhtari__stop_requested(), 0u);
 #ifdef _WIN32

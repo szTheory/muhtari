@@ -281,8 +281,9 @@ muhtari-run: run.txt:4:2: letter out of place, expected U or .
 On POSIX, SIGINT (Ctrl+C) or SIGTERM ends the run after the frame in progress. On Windows, console Ctrl+C
 requests the same orderly stop. That frame's hash and PNG are still written, `--bench` reports the frames
 that ran, output is flushed and dirty battery bytes are saved before destruction. Exit 0 requires all required
-flushing to succeed; an earlier nonzero error keeps its status. POSIX signals inherited as ignored, as under
-`nohup`, remain ignored; Windows preserves its inherited Ctrl+C ignore attribute. Ctrl+Break saves without
+flushing to succeed; an earlier nonzero error keeps its status. A broken POSIX output pipe returns exit 1
+after saving dirty bytes. Stop/save signals inherited as ignored, as under `nohup`, remain ignored;
+Windows preserves its inherited Ctrl+C ignore attribute. Ctrl+Break saves without
 stopping. Forced process or console termination has no final-flush guarantee.
 
 ## Exit status

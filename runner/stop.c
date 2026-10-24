@@ -62,6 +62,13 @@ static void catch_signal(int sig)
 }
 void muhtari__stop_install(void)
 {
+#if defined(SIGPIPE) && !defined(__wasi__)
+    /* Broken output must return EPIPE so the frame loop can save before exit. */
+    struct sigaction action = {0};
+    action.sa_handler = SIG_IGN;
+    (void)sigemptyset(&action.sa_mask);
+    (void)sigaction(SIGPIPE, &action, NULL);
+#endif
     catch_signal(SIGINT);
     catch_signal(SIGTERM);
 #ifdef SIGUSR1

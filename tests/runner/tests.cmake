@@ -1072,7 +1072,8 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI")
   file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-controls)
   # Fault prevented: an in-process callback passes while actual OS delivery cannot save/stop.
   muhtari_add_test(NAME runner.save.controls COMMAND muhtari-test-control
-    ${PROJECT_BINARY_DIR}/tests/save-controls ${CMAKE_CROSSCOMPILING_EMULATOR}
+    ${PROJECT_BINARY_DIR}/tests/save-controls ${PROJECT_SOURCE_DIR}/tests/diag/battery.a78
+    ${CMAKE_CROSSCOMPILING_EMULATOR}
     $<TARGET_FILE:muhtari-run> LABELS runner TIMEOUT 30)
   file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-nonregular)
   muhtari_add_test(NAME runner.save.nonregular COMMAND muhtari-test-save-runner
