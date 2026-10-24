@@ -145,6 +145,8 @@ attribute the component increase and stop further device expansion until a contr
 change fits; the observation grants neither a larger quota nor a new baseline.
 Attribute each ZIP's compressed payload, public headers/notices and container overhead
 separately when investigating growth; unchanged test-only code contributes no shipped payload.
+Size repairs retain the exported API, fixture corpus and native/performance checks.
+Local savings still require a fresh comparable Windows observation before expansion.
 
 Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
 ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and
