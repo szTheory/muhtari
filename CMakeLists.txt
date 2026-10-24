@@ -37,6 +37,11 @@ endfunction()
 if(PROJECT_IS_TOP_LEVEL AND MSVC)
   string(REGEX REPLACE "(^| )/O2( |$)" "\\1/O1\\2"
     CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+  # Keep explicit inline helpers eligible without duplicating every static
+  # helper at its callers. All tests use the same shipped core objects.
+  string(REGEX REPLACE "(^| )/Ob[0-3]( |$)" "\\1\\2"
+    CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+  string(APPEND CMAKE_C_FLAGS_RELEASE " /Ob1")
 endif()
 
 option(MUHTARI_NOFP "Build the core with general registers only; register only the abi tests" OFF)
