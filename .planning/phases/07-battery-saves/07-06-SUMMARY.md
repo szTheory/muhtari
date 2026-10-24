@@ -40,11 +40,11 @@ requirements-completed: []
 requirements-contributed: [SAVE-05]
 coverage:
   - id: bounded-dirty-cadence
-    description: Positive bounded cadence default60 clean requests stop and requests during writes use the actual runner transaction
+    description: Positive bounded cadence default 60 clean requests stop and requests during writes use the actual runner transaction
     requirement: SAVE-05
     verification:
       - kind: integration
-        ref: "runner.save.cadence; F1 default60 UINT32_MAX invalid values change-after-boundary clean coalescing during-write and stop cases; exit 0; URL N/A-local"
+        ref: "runner.save.cadence; F1 default 60 UINT32_MAX invalid values change-after-boundary clean coalescing during-write and stop cases; exit 0; URL N/A-local"
         status: pass
     human_judgment: false
   - id: actual-consumer-faults
@@ -60,7 +60,7 @@ coverage:
     requirement: SAVE-05
     verification:
       - kind: e2e
-        ref: "runner.save.controls on macOS arm64; native fork exec kill bounded waits and all2048 bytes; exit 0; URL N/A-local"
+        ref: "runner.save.controls on macOS arm64; native fork exec kill bounded waits and all 2048 bytes; exit 0; URL N/A-local"
         status: pass
       - kind: integration
         ref: "runner.stop and runner.audio.stop_failure retain repeated persistent handlers inherited-ignore and frame-boundary behavior; exit 0; URL N/A-local"
@@ -71,7 +71,7 @@ coverage:
     requirement: SAVE-05
     verification:
       - kind: integration
-        ref: "Windows-specific runner.stop runner.save.cadence runner.save.controls and runner.audio.stop_failure paths implemented; actual Windows x64 and arm64 execution remains assigned to07-09"
+        ref: "Windows-specific runner.stop runner.save.cadence runner.save.controls and runner.audio.stop_failure paths implemented; actual Windows x64 and arm64 execution remains assigned to 07-09"
         status: unknown
     human_judgment: false
   - id: local-acceptance-and-docs
@@ -79,10 +79,10 @@ coverage:
     requirement: SAVE-05
     verification:
       - kind: other
-        ref: "Agent read docs against actual control transaction and tests plus ENGINEERING section11 ownership review; no universal durability or multiple-writer claim"
+        ref: "Agent read docs against actual control transaction and tests plus ENGINEERING section 11 ownership review; no universal durability or multiple-writer claim"
         status: pass
       - kind: integration
-        ref: "cmake --workflow --preset ci; 637 plus6 tests and exact inventories; hygiene24; three ZIPs226048 <=399937; exits0; URL N/A-local"
+        ref: "cmake --workflow --preset ci; 637 plus 6 tests and exact inventories; hygiene 24; three ZIPs 226048 <=399937; exits0; URL N/A-local"
         status: pass
     human_judgment: false
 actuals:
@@ -102,10 +102,10 @@ completed: 2026-10-24
 
 ## Accomplishments
 
-- Added positive uint32 `--save-interval F`, requiring `--save-dir`, default60. Only successfully completed frames advance cadence. Dirty progress waits at most F subsequent completed frames; clean cadence/request/finalization never rewrites.
+- Added positive uint32 `--save-interval F`, requiring `--save-dir`, default 60. Only successfully completed frames advance cadence. Dirty progress waits at most F subsequent completed frames; clean cadence/request/finalization never rewrites.
 - POSIX persistent `sigaction` handlers preserve inherited ignored USR1/INT/TERM. USR1 read-clear blocks that signal, consumes before I/O and restores the prior mask. Windows BREAK and C callbacks perform only synchronized Interlocked flag stores; flush exchange consumes, stop remains sticky. Existing audio and stop tests use the native callback test seam on Windows and POSIX signals otherwise.
-- Actual-main tests cover repeated/coalesced requests, request during write with a second dirty frame and a third-frame final flush, stop plus flush, F1/default60/UINT32_MAX, invalid input and changes after a cadence boundary. Windows during-write injection runs its callback on a separate native thread. Real OS delivery is a distinct child test, using ordinary frame-one PNG readiness and bounded cleanup.
-- Native macOS child tests send repeated USR1, verify all2048 saved bytes while the runner is alive, then stop with INT. A separate child stops with TERM and verifies final bytes and exit0. Windows test code owns a private console, generates actual BREAK/C broadcasts only there, and checks the same complete media and exit. Configured emulator prefixes propagate to child execution for the existing full PowerPC lane.
+- Actual-main tests cover repeated/coalesced requests, request during write with a second dirty frame and a third-frame final flush, stop plus flush, F1/default 60/UINT32_MAX, invalid input and changes after a cadence boundary. Windows during-write injection runs its callback on a separate native thread. Real OS delivery is a distinct child test, using ordinary frame-one PNG readiness and bounded cleanup.
+- Native macOS child tests send repeated USR1, verify all 2048 saved bytes while the runner is alive, then stop with INT. A separate child stops with TERM and verifies final bytes and exit 0. Windows test code owns a private console, generates actual BREAK/C broadcasts only there, and checks the same complete media and exit. Configured emulator prefixes propagate to child execution for the existing full PowerPC lane.
 - Extended the actual consumer seam for create, fdopen and partial-write failure in addition to write/flush/sync/close/replace faults. Complete prior bytes and a recognizable foreign temporary survive; owned temporaries disappear. An early cadence error stops after one frame and never cleanup-retries. A later stdout failure after successful replacement retains the new bytes and failure exit, matching the replacement commit point.
 
 ## Task Commits
@@ -114,7 +114,7 @@ completed: 2026-10-24
 2. Task2 `4d7557e` — actual OS child controls and expanded transaction failures. `a707137` corrects the child emulator prefix needed by the full BE inventory.
 3. Task3 `c5b7a83` — public cadence/control/durability semantics and graduated preparation pointer.
 
-The ledger measures five task commits from the recorded base through the final task head. Actual tokens are the realized diff's40,368 characters divided by4; summary and tracking are excluded.
+The ledger measures five task commits from the recorded base through the final task head. Actual tokens are the realized diff's 40,368 characters divided by 4; summary and tracking are excluded.
 
 ## Commands, exits and run URLs
 
@@ -122,21 +122,21 @@ All current execution evidence is local; run URL N/A-local. No committed log or 
 
 | Command | Exit | Result |
 |---|---:|---|
-| `cmake --preset ci && cmake --build --preset ci && ctest --preset ci -R '^runner[.]save[.]cadence$' --no-tests=error --output-on-failure --output-junit save-cadence-red.xml` | 8 expected | Target actually executed and asserted supported interval returns0; absent option returned usage2 |
+| `cmake --preset ci && cmake --build --preset ci && ctest --preset ci -R '^runner[.]save[.]cadence$' --no-tests=error --output-on-failure --output-junit save-cadence-red.xml` | 8 expected | Target actually executed and asserted supported interval returns 0; absent option returned usage 2 |
 | `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" check tdd-red-evidence build/ci/save-cadence-red.json --raw` | 0 | RED_EVIDENCE_OK; unchanged JUnit and semantic assessment in ignored build output |
-| `cmake --preset ci && cmake --build --preset ci && ctest --preset ci -R '^runner[.](save[.]\u007cstop$\u007caudio[.]stop_failure$)' --no-tests=error --output-on-failure` | 0 | Final9/9 focused tests |
-| `ctest --preset ci -R '^runner[.]save[.]' --no-tests=error --output-on-failure` | 0 | Final7/7 save checks, including actual native child controls |
+| `cmake --preset ci && cmake --build --preset ci && ctest --preset ci -R '^runner[.](save[.]\|stop$\|audio[.]stop_failure$)' --no-tests=error --output-on-failure` | 0 | Final 9/9 focused tests |
+| `ctest --preset ci -R '^runner[.]save[.]' --no-tests=error --output-on-failure` | 0 | Final 7/7 save checks, including actual native child controls |
 | `build/ci/tests/muhtari-test-control build/ci/tests/save-controls /usr/bin/env build/ci/runner/muhtari-run` | 0 | Real child controls also pass through a separate executable prefix |
-| `cmake --workflow --preset ci` | 0 | Final637/637 non-release plus6/6 release; all five steps |
-| `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 0 | Exactly637 registrations ran once |
-| `cmake -DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release -P tests/cmake/check_junit.cmake` | 0 | Exactly6 release registrations ran once |
-| `cmake --workflow --preset hygiene` | 0 | Final24/24 including formatting, analyzer, tree and no-float |
+| `cmake --workflow --preset ci` | 0 | Final 637/637 non-release plus 6/6 release; all five steps |
+| `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 0 | Exactly 637 registrations ran once |
+| `cmake -DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release -P tests/cmake/check_junit.cmake` | 0 | Exactly 6 release registrations ran once |
+| `cmake --workflow --preset hygiene` | 0 | Final 24/24 including formatting, analyzer, tree and no-float |
 | `git diff --check` | 0 | No whitespace errors |
-| `python3 -c 'from pathlib import Path; p=list(Path("build/ci").glob("muhtari-*-macos-arm64.zip")); print(len(p),sum(x.stat().st_size for x in p))'` | 0 | Exactly3 archives,226048 bytes <=399937 |
+| `python3 -c 'from pathlib import Path; p=list(Path("build/ci").glob("muhtari-*-macos-arm64.zip")); print(len(p),sum(x.stat().st_size for x in p))'` | 0 | Exactly 3 archives, 226048 bytes <=399937 |
 
 ## TDD Gate Compliance
 
-Task1's actual CTest JUnit failure was machine-classified and inspected before GREEN: the intended option was rejected by the real main, with no build/setup/discovery error. RED then GREEN commits are reachable. Task2 is test-only expansion over the implemented consumer/platform paths: it passed against the current product, so no artificial production defect or fake RED was introduced. Global TDD enforcement is false; no implementation gate was bypassed. Native Windows execution is explicitly pending07-09, not a local passing result.
+Task1's actual CTest JUnit failure was machine-classified and inspected before GREEN: the intended option was rejected by the real main, with no build/setup/discovery error. RED then GREEN commits are reachable. Task2 is test-only expansion over the implemented consumer/platform paths: it passed against the current product, so no artificial production defect or fake RED was introduced. Global TDD enforcement is false; no implementation gate was bypassed. Native Windows execution is explicitly pending 07-09, not a local passing result.
 
 ## Deviations from Plan
 
@@ -152,4 +152,4 @@ The descriptor-less transparency prohibition remains flagged-unverified for phas
 
 ## Self-Check: PASSED
 
-Created native control source exists; all five task commits are ancestors of HEAD. Final focused checks, full CI, exact inventories and hygiene pass. No unexpected deletion, known stub, skipped local plan test, generated untracked file or unplanned threat surface remains. Windows and BE evidence remains explicitly assigned to the later final acceptance plan. Next incomplete plan07-07 owns libretro provisioning and publication.
+Created native control source exists; all five task commits are ancestors of HEAD. Final focused checks, full CI, exact inventories and hygiene pass. No unexpected deletion, known stub, skipped local plan test, generated untracked file or unplanned threat surface remains. Windows and BE evidence remains explicitly assigned to the later final acceptance plan. Next incomplete plan 07-07 owns libretro provisioning and publication.

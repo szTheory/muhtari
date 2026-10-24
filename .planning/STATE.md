@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 6
+current_plan: 7
 status: executing
-stopped_at: Completed 07-05 runner saves; phase execution remains active
-last_updated: "2026-10-24T03:26:50.441Z"
-state_head: d3130adb71742a4ba69e0beac8920542a6c24f7b
+stopped_at: Completed 07-06 runner cadence and controls; phase execution remains active
+last_updated: "2026-10-24T03:39:12.874Z"
+state_head: 1afdccb7417919db481f1cac7acd70b825dcaf24
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 24
+  completed_plans: 25
   percent: 29
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 07
 current_phase_name: Battery saves across hosts
-last_activity_desc: Phase 7 runner import and normal save verified; four plans remain
+last_activity_desc: Phase 7 runner cadence and POSIX controls verified; three plans remain
 ---
 
 # Project State
@@ -27,17 +27,17 @@ last_activity_desc: Phase 7 runner import and normal save verified; four plans r
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 7 execution is active. Plans 07-01–05 prove evidence controls,
-HSC/EEPROM hardware, robustness and runner raw saves; controls/host acceptance remain06–09.
+Current focus: Phase 7 execution is active. Plans 07-01–06 prove evidence controls,
+HSC/EEPROM hardware, robustness and runner saves/controls locally; host acceptance remains 07–09.
 
 ## Current Position
 
-Current Plan: 6
+Current Plan: 7
 Total Plans in Phase: 9
 
 Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
 are complete. Phase 5 and6 are2/7 milestone phases,18/27 currently planned active
-slots; Phase 7 has five completed plans and four pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
+slots; Phase 7 has six completed plans and three pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
 Next command: `$gsd-execute-phase 7`.
@@ -45,10 +45,10 @@ No next GSD step was invoked.
 
 ## Phase 7 Execution
 
-Five plans are committed; full local CI635+6, exact inventories635/6 and hygiene24 pass.
-Actual macOS arm64 ZIP sum225543 <=399937. No whole SAVE requirement is complete,
+Six plans are committed; full local CI 637+6, exact inventories 637/6 and hygiene 24 pass.
+Actual macOS arm64 ZIP sum 226048 <=399937. No whole SAVE requirement is complete,
 no fixture is admitted, and no review-fix or gap round is consumed. Ten assumption
-flags remain unresolved. Commands, exit statuses and N/A-local URLs live in07-01–05-SUMMARY.md.
+flags remain unresolved. Commands, exit statuses and N/A-local URLs live in 07-01–06-SUMMARY.md.
 
 07-01 preserves actual producer/join authority with only named fixture and exact3-to-4
 annotation relations.07-02 adds API5/ABI1/behavior4, HSC/firmware and a frozen API4 client.
@@ -59,7 +59,9 @@ Local UBSan/libFuzzer3236 runs/61s passes; ASan spins before main in runtime sta
 07-05 implements opt-in exact raw import, final dirty replacement, CLI/movie provisioning,
 copied firmware and actual-main/fresh-process byte and failure tests. No clean rewrite.
 
-07-06 owns cadence, native requests and expanded failure controls.07-07 owns libretro;
+07-06 adds bounded cadence, synchronized requests, real POSIX child controls and expanded
+failure/commit-point tests. Native Windows tests are implemented but runtime proof remains 07-09.
+07-07 owns libretro;
 07-08 owns fixture admission/real fresh-process RetroArch;07-09 owns final native/BE,
 Windows, WASM, normal ASan/nofp,10000-case, hosted and six-native archive acceptance.
 
@@ -121,10 +123,10 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-**Stopped at:** Completed 07-05 runner saves; phase execution remains active
+**Stopped at:** Completed 07-06 runner cadence and controls; phase execution remains active
 
-Last session: 2026-10-24T03:26:50.357Z
-Resume file: .planning/phases/07-battery-saves/07-06-PLAN.md
+Last session: 2026-10-24T03:39:12.788Z
+Resume file: .planning/phases/07-battery-saves/07-07-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -147,3 +149,4 @@ Resume file: .planning/phases/07-battery-saves/07-06-PLAN.md
 | Phase 07 P03 | 15 min | 3 tasks | 22 files |
 | Phase 07 P04 | 11min | 2 tasks | 9 files |
 | Phase 07 P05 | 11min | 3 tasks | 12 files |
+| Phase 07 P06 | 10min | 3 tasks | 12 files |
