@@ -25,7 +25,7 @@
 enum {
     ABSENT,
     VALID,
-    SHORT,
+    TRUNCATED,
     OVERSIZED,
     BAD_VECTOR,
     READ_ERROR,
@@ -74,7 +74,7 @@ static size_t bios_read(void *ptr, size_t size, size_t count, FILE *f)
 {
     if (f == stderr) {
         memset(ptr, 0x19, count);
-        return hsc_case == SHORT ? 4095u : hsc_case == OVERSIZED ? count : 4096u;
+        return hsc_case == TRUNCATED ? 4095u : hsc_case == OVERSIZED ? count : 4096u;
     }
     unsigned i = f == handles[0] ? 0u : 1u;
     uint8_t *buf = (uint8_t *)ptr;
@@ -88,7 +88,7 @@ static size_t bios_read(void *ptr, size_t size, size_t count, FILE *f)
     if (candidates[i] != BAD_VECTOR) {
         buf[4093] = 0xF0u; /* reset at $F000, inside this synthetic BIOS */
     }
-    return candidates[i] == SHORT ? 17u : 4096u;
+    return candidates[i] == TRUNCATED ? 17u : 4096u;
 }
 
 static int bios_error(FILE *f)
@@ -293,12 +293,12 @@ int main(void)
         const char *log, *message;
     } cases[] = {
         {VALID, VALID, false, 1u, 1u, 4096u, "BIOS (U).rom, SHA-256", ""},
-        {SHORT, VALID, false, 2u, 2u, 4096u, "BIOS (E).rom, SHA-256", ""},
+        {TRUNCATED, VALID, false, 2u, 2u, 4096u, "BIOS (E).rom, SHA-256", ""},
         {OVERSIZED, VALID, false, 2u, 2u, 4096u, "BIOS (E).rom, SHA-256", ""},
         {BAD_VECTOR, VALID, false, 2u, 2u, 4096u, "BIOS (E).rom, SHA-256", ""},
         {READ_ERROR, VALID, false, 2u, 2u, 4096u, "BIOS read error", ""},
         {OPEN_ERROR, VALID, false, 2u, 1u, 4096u, "cannot open BIOS file", ""},
-        {SHORT, BAD_VECTOR, false, 2u, 2u, 0u, "no usable", "No usable"},
+        {TRUNCATED, BAD_VECTOR, false, 2u, 2u, 0u, "no usable", "No usable"},
         {READ_ERROR, ABSENT, false, 2u, 1u, 0u, "BIOS read error", "No usable"},
         {ABSENT, ABSENT, false, 2u, 0u, 0u, "no 7800 BIOS", "No 7800 BIOS"},
         {VALID, VALID, true, 1u, 1u, 0u, "out of memory", "out of memory"},
@@ -356,7 +356,7 @@ int main(void)
         if (test == BAD_VECTOR)
             continue;
         hsc_case = (int)test;
-        candidates[0] = SHORT;
+        candidates[0] = TRUNCATED;
         candidates[1] = VALID;
         fail_alloc = false;
         seen_log[0] = seen_message[0] = '\0';
