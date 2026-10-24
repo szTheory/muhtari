@@ -3,7 +3,7 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 status: ready_to_plan
-stopped_at: Phase 7 verified complete; next separate command is gsd-ship 7
+stopped_at: Phase 7 shipped in PR 28; squash auto-merge and release PR checks pending
 last_updated: "2026-10-24T15:56:23.485Z"
 state_head: 36a9b7f14153b65fa86dfb44b593f1ebe8e7c2a6
 progress:
@@ -17,7 +17,7 @@ total_phases: 7
 current_phase: 08
 current_phase_name: Controllers at the pins
 current_plan: Not started
-last_activity_desc: Phase 7 passed 35/35 must-haves and all six SAVE requirements; shipping is next
+last_activity_desc: Phase 7 shipped in PR 28 with 35/35 verified must-haves and all six SAVE requirements
 ---
 
 # Project State
@@ -27,7 +27,7 @@ last_activity_desc: Phase 7 passed 35/35 must-haves and all six SAVE requirement
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: ship the verified Phase 7 branch with `$gsd-ship 7` in a separate session.
+Current focus: finish Phase 7 shipping checks for PR #28, then discuss Phase 8 in a separate session.
 The helper's next-phase pointer is parked at Phase 8; no Phase 8 work was started.
 
 ## Current Position
@@ -37,9 +37,18 @@ Phase 5–7 are3/7 milestone phases with27/27 currently planned active slots com
 Phases 8–11 remain unplanned. Runtime totals28/28 include the historical halted06-01
 SUMMARY; it remains excluded from accepted active outcomes and is not a budget grant.
 
-Next command: `$gsd-ship 7`.
-Branch: `phase/07-battery-saves`. No next GSD step, PR or merge was invoked here.
-Phase 6 merged in PR24 and package v0.5.0 is published; Phase 7 shipping is pending.
+Status: Phase 7 shipped - PR #28.
+Last Activity: 2026-10-24.
+Next command after shipping checks: `$gsd-discuss-phase 8`.
+Branch: `phase/07-battery-saves`. PR: https://github.com/szTheory/muhtari/pull/28
+Squash auto-merge and final head CI are checked by this ship session; the release
+pull request is checked after merge. No Phase 8 work was started.
+Phase 6 package v0.5.0 remains the last published version at PR creation.
+
+Fresh ship checks: `cmake --workflow --preset ci` exits 0 (641+6 tests),
+`git diff --check` exits 0, and `verification.status` exits 0 with `passed`.
+The existing CI/nightly run URLs below were rechecked as completed/success.
+The ship-note commit deliberately retains CI triggering so the final PR head has a run.
 
 ## Phase 7 Acceptance
 
@@ -102,7 +111,7 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 7 verified complete; next separate command is gsd-ship 7
+**Stopped at:** Phase 7 shipped in PR #28; squash auto-merge and release PR checks pending
 Last session: 2026-10-24T15:56:23.485Z
 Resume file: None
 
