@@ -16,15 +16,53 @@ Sources:
 
 ## Devices
 
-Each port carries a ProLine, a 2600 joystick, a driving controller, a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
+Each port carries a ProLine, a 2600 joystick, a driving controller, an XG-1,
+a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
 cartridge's A78 header does. A header that names no controller leaves the port unplugged. A header device that is not
-modelled yet, such as a light gun or paddles, is wired as a ProLine.
+modelled yet, such as paddles, is wired as a ProLine. The legacy setter retains
+its ProLine fallback and explicit XG-1 refusal; extended input and load overrides
+can select the gun on either port.
 
 The EEPROM attaches at successful load, on either port, with at most one device. Explicit load overrides win over
 header declarations; a save hint defaults to port 2 unless an explicit non-save choice suppresses it. Its identity,
 port and battery offset remain fixed until reload. Per-frame auto or the attached identity is accepted; adding,
 removing, moving or changing that identity is refused before any pending joystick input changes. Other joystick
 input retains its VBLANK latch semantics. See `docs/embedding.md`, Battery storage and HSC firmware.
+
+## XG-1
+
+The [ANTIC XG-1 hardware article](https://www.atarimagazines.com/v7n8/xg1light.php)
+describes pin1 low at rest and high with the trigger pulled. SWCHA bit4 on
+port1, bit0 on port2 therefore has this reversed switch polarity. Pin6 is
+the separate active-low optical sensor, observed on INPT4/5. Light can
+qualify without a trigger pull. Software selects one-button mode; the
+existing PB2/PB4 and INPTCTRL electrical predicate remains unchanged.
+
+The selected optical compatibility model is unmeasured: delay D=64 master
+ticks, width W=30 ticks, aperture L=9 native rows and native luma threshold
+T=8. For aim (x,y), sample exactly x once per row y-4..y+4, clipped to native
+rows0..241, never wrapped. Qualify only actual visible MARIA emissions whose
+native color low nibble is at least8. Hue, host palettes, scaling, filters
+and caller video buffers cannot change this test. With DMA disabled,
+visible BACKGRND still qualifies. Off-screen aim and nonvisible rasters
+produce no samples. TIA video blanking bits do not blank MARIA.
+
+A qualified historical sample at tick s schedules a sensor low on
+[s+64,s+94): high at+63, low through+93, high at+94. The sample carries its
+original raster, x and absolute tick; x319 emits at its raster's tick454,
+before the next line's buffer swap. Later palette/aim changes, darkness
+or blanking cannot erase a scheduled pulse. Touching/overlapping responses
+merge without truncating active light. One sample per raster and delay
+shorter than the line permit one pending response and one active interval,
+with fixed state and no pixel queue. Replacement, successful reload and
+power cycle clear light. Repeated same-device packets preserve history.
+
+Extended packets use native coordinates, primary button1 for the trigger
+and an explicit off-screen flag; omitted aim tails default off-screen.
+No public calibration API or title-specific correction is provided.
+These parameters derive from the [controller preparation, section3.4](../../.planning/preparation/A7800-CARTRIDGES-AND-PERIPHERALS.md),
+with brightness and aperture policy made explicit here; they establish
+deterministic diagnostic behavior, not hardware-calibrated retail accuracy.
 
 ## Serial EEPROM
 

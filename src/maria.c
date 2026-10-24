@@ -451,9 +451,8 @@ static void render(muhtari *m, uint32_t line, uint32_t x_end)
         return;
     }
     if (line >= MARIA_FIRST_RASTER && line < MARIA_FIRST_RASTER + MUHTARI__HEIGHT_NTSC) {
-        uint8_t *row = ma->rows != NULL
-                           ? ma->rows + (size_t)(line - MARIA_FIRST_RASTER) * ma->pitch
-                           : NULL;
+        uint8_t *row =
+            ma->rows != NULL ? ma->rows + (size_t)(line - MARIA_FIRST_RASTER) * ma->pitch : NULL;
         const uint8_t *cells = ma->line_ram[(ma->write_buf ^ 1u) & 1u];
         uint8_t ctrl = ma->reg[MARIA_CTRL];
         uint32_t rm = ctrl & MARIA_CTRL_RM;
@@ -469,13 +468,15 @@ static void render(muhtari *m, uint32_t line, uint32_t x_end)
         for (unsigned p = 0u; p < 2u; p++) {
             const struct muhtari__light *light = &m->ports.light[p];
             uint32_t x = light->sample_x;
-            if (light->sample_tick != 0u && light->sample_raster == line &&
-                x >= ma->px && x < x_end) {
-                uint8_t color = row != NULL ? row[x]
-                    : (uint8_t)(ma->reg[pixel_reg(cells[x >> 1], rm, x & 1u)] & mask);
+            if (light->sample_tick != 0u && light->sample_raster == line && x >= ma->px &&
+                x < x_end) {
+                uint8_t color =
+                    row != NULL ? row[x]
+                                : (uint8_t)(ma->reg[pixel_reg(cells[x >> 1], rm, x & 1u)] & mask);
                 muhtari__ports_light_sample(m, line, x,
-                    ma->origin + (uint64_t)line * MARIA_LINE_TICKS + MARIA_FIRST_PIXEL_T + x,
-                    color, 1);
+                                            ma->origin + (uint64_t)line * MARIA_LINE_TICKS +
+                                                MARIA_FIRST_PIXEL_T + x,
+                                            color, 1);
             }
         }
     }

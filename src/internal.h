@@ -766,8 +766,8 @@ void muhtari__ports_latch(muhtari *m);
 void muhtari__ports_reset(muhtari *m);
 uint64_t muhtari__ports_next_event(const muhtari *m);
 void muhtari__ports_catch_up(muhtari *m, uint64_t tick);
-void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x,
-                                  uint64_t tick, uint8_t color, int visible);
+void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x, uint64_t tick,
+                                 uint8_t color, int visible);
 void muhtari__bus_rearm(muhtari *m);
 muhtari_status muhtari__ports_check_device_ex(uint32_t device);
 

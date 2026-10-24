@@ -15,7 +15,7 @@ function(hashes_diagnostic name prefix frames battery_count observed result)
   set(patterns "^frame 1 sha256 ([0-9a-f]+)$" "^frame ${frames} sha256 ([0-9a-f]+)$"
     "^audio_transitions_sha256 ([0-9a-f]+)$" "^audio_pcm_sha256 ([0-9a-f]+)$"
     "^audio_frames ${frames}$" "^audio_samples [1-9][0-9]*$" "^audio_rate 48000/1$"
-    "^audio_behaviour_revision 4$" "^audio_synthesis exact-q23-16x64-dc20$"
+    "^audio_behaviour_revision 5$" "^audio_synthesis exact-q23-16x64-dc20$"
     "^diagnostic ([0-9a-f]+)$")
   set(content "")
   foreach(i RANGE 0 9)

@@ -807,7 +807,7 @@ static int retail_transaction(uint8_t *image)
     muhtari_versions versions = {0};
     versions.size = (uint32_t)sizeof versions;
     if (muhtari_get_versions(&versions) != MUHTARI_STATUS_OK || versions.abi != 1u ||
-        versions.behaviour_revision != 4u) {
+        versions.behaviour_revision != 5u) {
         return 1;
     }
     muhtari_config cfg = {0};

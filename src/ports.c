@@ -86,8 +86,8 @@ static void ports_light_rearm(muhtari *m, unsigned p, uint64_t after)
 /* Historical native brightness, before host conversion. One pending
    delayed response and one active interval suffice: D<one raster and
    VBLANK aim updates cannot create a second disjoint pending response. */
-void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x,
-                                  uint64_t tick, uint8_t color, int visible)
+void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x, uint64_t tick,
+                                 uint8_t color, int visible)
 {
     for (unsigned p = 0u; p < 2u; p++) {
         struct muhtari__light *light = &m->ports.light[p];
@@ -376,8 +376,8 @@ muhtari_status muhtari__ports_check_device_ex(uint32_t device)
 {
     if (device == 0u || device == MUHTARI_PORT_PROLINE || device == MUHTARI_PORT_JOYSTICK ||
         device == MUHTARI_PORT_DRIVING || device == MUHTARI_PORT_LIGHTGUN ||
-        device == MUHTARI_PORT_UNPLUGGED ||
-        device == MUHTARI_PORT_SAVEKEY || device == MUHTARI_PORT_ATARIVOX) {
+        device == MUHTARI_PORT_UNPLUGGED || device == MUHTARI_PORT_SAVEKEY ||
+        device == MUHTARI_PORT_ATARIVOX) {
         return MUHTARI_STATUS_OK;
     }
     return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
@@ -446,12 +446,12 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
             return st;
         }
         int gun = port->device == MUHTARI_PORT_LIGHTGUN;
-        if (gun && in->size < offsetof(muhtari_input_ex, port) +
-                                  p * sizeof(muhtari_port_input) + sizeof(muhtari_port_input)) {
+        if (gun && in->size < offsetof(muhtari_input_ex, port) + p * sizeof(muhtari_port_input) +
+                                  sizeof(muhtari_port_input)) {
             port->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
         }
-        uint32_t buttons = port->device == MUHTARI_PORT_DRIVING || gun ? MUHTARI_BUTTON_1
-                                                                      : PORTS_BUTTONS;
+        uint32_t buttons =
+            port->device == MUHTARI_PORT_DRIVING || gun ? MUHTARI_BUTTON_1 : PORTS_BUTTONS;
         if ((port->buttons & ~buttons) != 0u || port->paddle[0] != 0u || port->paddle[1] != 0u ||
             port->keypad != 0u || (port->device != MUHTARI_PORT_DRIVING && port->dx != 0) ||
             port->dy != 0 ||

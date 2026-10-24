@@ -500,7 +500,7 @@ static void input_latches(void)
     (void)input_access(m, 0x0001u, 1, 0u); /* 0->0: live */
     CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0u);
     (void)input_access(m, 0x0001u, 1, 0x40u); /* enable already-low */
-    input_buttons(m, 0u, 0u); /* release without any INPT read */
+    input_buttons(m, 0u, 0u);                 /* release without any INPT read */
     CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0u);
     (void)input_access(m, 0x0001u, 1, 0x40u); /* 1->1 retains */
     CHECK_EQ_HEX(input_access(m, 0x000Cu, 0, 0u), 0u);
@@ -528,8 +528,7 @@ static void input_dump(void)
         return;
     }
     (void)input_access(m, 0x0001u, 1, 0x07u);
-    input_buttons(m, MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2,
-                  MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2);
+    input_buttons(m, MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2, MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2);
     (void)input_access(m, 0x0282u, 1, 0u);
     (void)input_access(m, 0x0283u, 1, 0x14u); /* two-button high trigger */
     static const uint8_t dump[] = {0u, 0x80u, 0x80u, 0u};
@@ -593,8 +592,7 @@ static muhtari *light_boot(unsigned port, uint8_t color, int rows, uint64_t *sam
     return m;
 }
 
-static uint8_t light_access_at(muhtari *m, uint16_t addr, uint64_t tick,
-                               int write, uint8_t value)
+static uint8_t light_access_at(muhtari *m, uint16_t addr, uint64_t tick, int write, uint8_t value)
 {
     uint32_t data = addr == 0x0020u ? 16u : 17u;
     CHECK(tick >= m->bus.ticks + data);
@@ -628,14 +626,14 @@ static int lightgun(void)
                 if (mode == 2u) {
                     CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
                 }
-                CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port), sample + 64u,
-                                            0, 0u), mode == 0u ? 0u : 0x80u);
+                CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port), sample + 64u, 0, 0u),
+                             mode == 0u ? 0u : 0x80u);
             } else {
                 (void)input_access(m, 0x0001u, 1, mode == 3u ? 0u : 0x40u);
                 /* A due low precedes a simultaneous enable/disable write. */
                 (void)light_access_at(m, 0x0001u, sample + 64u, 1, mode == 3u ? 0x40u : 0u);
-                CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port), sample + 110u,
-                                            0, 0u), mode == 3u ? 0u : 0x80u);
+                CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port), sample + 110u, 0, 0u),
+                             mode == 3u ? 0u : 0x80u);
             }
             muhtari_destroy(m);
         }
@@ -654,7 +652,8 @@ static int lightgun(void)
                     (void)light_access_at(m, 0x0020u, sample + 1u, 1, 0u);
                     uint8_t expected = color != 0u && edge != 0u && edge != 3u ? 0u : 0x80u;
                     CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port),
-                                                sample + offsets[edge], 0, 0u), expected);
+                                                 sample + offsets[edge], 0, 0u),
+                                 expected);
                     if (rows != 0u) {
                         CHECK_EQ_HEX(video[16u * MUHTARI__WIDTH + 100u], colors[color]);
                     }

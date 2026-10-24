@@ -71,7 +71,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       elseif(fault STREQUAL "duplicate")
         string(APPEND bad "${report}")
       elseif(fault STREQUAL "revision")
-        string(REPLACE "audio_behaviour_revision 4" "audio_behaviour_revision 3" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 5" "audio_behaviour_revision 4" bad "${bad}")
       elseif(fault STREQUAL "mailbox")
         string(REPLACE "diagnostic 4d374447" "diagnostic 00000000" bad "${bad}")
       endif()
@@ -614,7 +614,7 @@ endfunction()
     # A nonexistent ROM is not opened before the last row is validated.
     expect_exit(1 "movie.txt:5:14: decimal out of range" --movie "${v2}"
       "${v2_dir}/missing.a78")
-    foreach(pair IN ITEMS "driving;0,0,0" "proline;......" "joystick;....."
+    foreach(pair IN ITEMS "driving;0,0,0" "lightgun;319,241,3" "proline;......" "joystick;....."
         "none;" "savekey;" "atarivox;")
       list(GET pair 0 device)
       list(GET pair 1 payload)
@@ -623,7 +623,7 @@ endfunction()
     endforeach()
     # Pure validation supports all declared syntax; physical support remains
     # gated by the core, rather than silently falling back to a joystick.
-    foreach(pair IN ITEMS "lightgun;319,241,3" "paddle;65535,65535,3"
+    foreach(pair IN ITEMS "paddle;65535,65535,3"
         "trakball;-2147483648,2147483647,1" "st-mouse;2147483647,-2147483648,3"
         "amiga-mouse;-2147483648,-2147483648,3" "keypad;4095"
         "snes2atari;4095" "mega7800;4095")
