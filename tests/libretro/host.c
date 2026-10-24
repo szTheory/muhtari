@@ -179,6 +179,8 @@ static int batch_calls;
 static size_t batch_frames;
 static int batch_nonzero;
 static uint32_t pad[2]; /* the RetroPad buttons held, bit n for id n */
+static int16_t mouse[2][11];
+static unsigned mouse_queries[2][11], poll_calls;
 static char log_text[4096];
 static size_t log_used;
 
@@ -382,10 +384,15 @@ static size_t RETRO_CALLCONV batch(const int16_t *data, size_t frames)
 
 static void RETRO_CALLCONV on_poll(void)
 {
+    poll_calls++;
 }
 
 static int16_t RETRO_CALLCONV input(unsigned port, unsigned device, unsigned index, unsigned id)
 {
+    if (port < 2u && device == RETRO_DEVICE_MOUSE && index == 0u && id < 11u) {
+        mouse_queries[port][id]++;
+        return mouse[port][id];
+    }
     if (port > 1u || (device & RETRO_DEVICE_MASK) != RETRO_DEVICE_JOYPAD || index != 0u ||
         id > 15u) {
         return 0;
@@ -664,6 +671,55 @@ static void case_input(void)
     CHECK_EQ_HEX(last_entry()[E_SWCHA], 0xFEu);
     pad[1] = 0u;
     stop();
+    for (unsigned port = 0u; port < 2u; port++) {
+        unsigned other = 1u - port;
+        p_set_controller_port_device(port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0));
+        p_set_controller_port_device(other, RETRO_DEVICE_NONE);
+        start(0);
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHA], 0xFFu);
+        memset(mouse_queries, 0, sizeof mouse_queries);
+        unsigned polls = poll_calls;
+        mouse[port][RETRO_DEVICE_ID_MOUSE_X] = 1;
+        mouse[port][RETRO_DEVICE_ID_MOUSE_Y] = 123;
+        mouse[port][RETRO_DEVICE_ID_MOUSE_LEFT] = 1;
+        p_run();
+        CHECK_EQ_U64(poll_calls, polls + 1u);
+        CHECK_EQ_U64(mouse_queries[port][RETRO_DEVICE_ID_MOUSE_X], 1u);
+        CHECK_EQ_U64(mouse_queries[port][RETRO_DEVICE_ID_MOUSE_LEFT], 1u);
+        CHECK_EQ_U64(mouse_queries[port][RETRO_DEVICE_ID_MOUSE_Y], 0u);
+        mouse[port][RETRO_DEVICE_ID_MOUSE_X] = 0;
+        run_frames(3u);
+        CHECK(last_entry()[E_SWCHA] != 0xFFu);
+        CHECK_EQ_HEX(last_entry()[port == 0u ? E_INPT4 : E_INPT5] & HI, 0u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x3Fu);
+        mouse[port][RETRO_DEVICE_ID_MOUSE_MIDDLE] = 1;
+        mouse[port][RETRO_DEVICE_ID_MOUSE_BUTTON_4] = 1;
+        mouse[port][RETRO_DEVICE_ID_MOUSE_RIGHT] = 1;
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x34u);
+        unsigned found = 0u;
+        for (int i = 0; i < input_descriptors; i++) {
+            CHECK(input_list[i].port == port);
+            CHECK_EQ_U64(input_list[i].device, RETRO_DEVICE_MOUSE);
+            CHECK_EQ_U64(input_list[i].index, 0u);
+            found++;
+        }
+        CHECK_EQ_U64(found, 5u);
+        /* Changing provider to a pad with L already held creates no edge. */
+        pad[other] = BIT(L);
+        p_set_controller_port_device(other, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0));
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x3Fu);
+        pad[other] = 0u;
+        run_frames(3u);
+        pad[other] = BIT(L) | BIT(SELECT);
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x7Du);
+        stop();
+        pad[other] = 0u;
+        memset(mouse, 0, sizeof mouse);
+    }
 }
 
 /* ProSystem's RetroPad layout (HOSTS-AND-INTEGRATION section 1, Input) on
@@ -779,21 +835,22 @@ static void case_layout(void)
    descriptors name the 11 inputs of port 1 and the 6 of port 2. */
 static void case_devices(void)
 {
-    static const char *const names[6] = {
-        "Auto (cartridge header)", "ProLine", "Joystick", "None", "SaveKey", "AtariVox EEPROM"};
-    static const unsigned ids[6] = {RETRO_DEVICE_JOYPAD,
+    static const char *const names[7] = {
+        "Auto (cartridge header)", "ProLine", "Joystick", "None", "SaveKey", "AtariVox EEPROM", "Driving"};
+    static const unsigned ids[7] = {RETRO_DEVICE_JOYPAD,
                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1),
                                     RETRO_DEVICE_NONE,
                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2),
-                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3)};
+                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3),
+                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)};
     uint8_t e[8];
     unsigned port, t;
     start(0);
     CHECK(controller_info != NULL);
     for (port = 0; controller_info != NULL && port < 2u; port++) {
-        CHECK_EQ_U64(controller_info[port].num_types, 6u);
-        for (t = 0; t < 6u && t < controller_info[port].num_types; t++) {
+        CHECK_EQ_U64(controller_info[port].num_types, 7u);
+        for (t = 0; t < 7u && t < controller_info[port].num_types; t++) {
             check_string("controller", controller_info[port].types[t].desc, names[t]);
             CHECK_EQ_U64(controller_info[port].types[t].id, ids[t]);
         }
@@ -850,14 +907,15 @@ static void case_devices(void)
             for (unsigned s = 0u; s < sizeof selections / sizeof selections[0]; s++) {
                 p_set_controller_port_device(port, selections[s]);
                 run_frames(3u);
-                bool unplugged = s == 1u || (s != 2u && (headers[h] == MUHTARI_PORT_NONE ||
+                bool unplugged = s == 1u || s == 3u || (s != 2u && (headers[h] == MUHTARI_PORT_NONE ||
                                                          headers[h] > MUHTARI_PORT_MEGA7800));
                 bool joystick = s != 1u && s != 2u && headers[h] == MUHTARI_PORT_JOYSTICK;
                 const uint8_t *entry = last_entry();
-                CHECK_EQ_HEX(entry[E_SWCHA], unplugged ? (port == 0u ? 0xFEu : 0xEFu) : 0xEEu);
-                CHECK_EQ_HEX(entry[E_SWCHB], 0x3Du);
+                bool driving = s == 0u && headers[h] == MUHTARI_PORT_DRIVING;
+                CHECK_EQ_HEX(entry[E_SWCHA], unplugged || driving ? (port == 0u ? 0xFEu : 0xEFu) : 0xEEu);
+                CHECK_EQ_HEX(entry[E_SWCHB], port == 0u && (unplugged || driving) ? 0x3Fu : 0x3Du);
                 for (unsigned p = 0u; p < 2u; p++) {
-                    bool empty = p == port && unplugged;
+                    bool empty = p == port && (unplugged || driving);
                     bool stick = p == port && joystick;
                     CHECK_EQ_HEX(entry[p == 0u ? E_INPT4 : E_INPT5] & HI, empty ? HI : 0u);
                     CHECK_EQ_HEX(entry[p == 0u ? E_INPT1 : E_INPT3] & HI, empty || stick ? 0u : HI);
