@@ -42,6 +42,7 @@ muhtari-run --help | --version
 | `--boot B` | `fast` (the default) starts the cartridge from the fast-boot hand-off; `bios` boots it through the BIOS given by `--bios`, from power-on. `bios` without `--bios`, or `--bios` without `bios`, is a usage error. With a movie, the movie's `boot` key decides, and a different `--boot` is a usage error. |
 | `--bios FILE` | The BIOS image `--boot bios` runs: 4,096 or 16,384 bytes whose reset vector points inside it. Its SHA-256 is printed on standard error as `bios_sha256 <hex>`. Any other file exits 1 with `muhtari-run: FILE: not a 4 KiB or 16 KiB BIOS image`. A cartridge the BIOS rejects exits 77 with `muhtari-run: FILE: the BIOS rejected the cartridge`, after the frame in which it did. |
 | `--save-dir DIR` | Opt into per-game raw battery files in an existing accessible directory. Requires a cartridge, even when it has no battery. See [Battery files](#battery-files). |
+| `--save-interval F` | Persist dirty battery bytes every F completed frames, from 1 to 4294967295; default 60. Requires `--save-dir`. |
 | `--hsc auto\|on\|off` | Resolve HSC from cartridge metadata (default), force it on, or suppress it. Requires a cartridge. |
 | `--hsc-rom FILE` | Supply an exact 4,096-byte HSC firmware file, copied at load. Invalid size, unreadable file or an explicit `--hsc off` conflict exits 1 before import or execution. |
 | `--probe FILE` | Identify the cartridge image in FILE and print its fields and hashes. It takes exactly one file and no other option. |
@@ -70,7 +71,8 @@ their prefix and pad the rest with FF; exact files copy verbatim. An oversized f
 non-regular-file, open, read and close errors exit 1 before any frame. Rejected imports never arm persistence.
 The import is clean: missing files stay absent and existing files stay unchanged until emulated bytes change.
 
-On normal exit, dirty committed bytes are written to an exclusively created sibling temporary, then checked
+At each save cadence, on a save request and on normal or orderly stop exit, dirty committed bytes are written
+to an exclusively created sibling temporary, then checked
 for complete write, stdio flush, file sync and close. POSIX `rename`, or Windows `MoveFileEx` with replacement
 and write-through and no copy fallback, replaces the destination. That replacement is the commit point.
 Tests exercise previous-file preservation on every pre-replacement failure and ownership of temporary files.
@@ -80,7 +82,14 @@ old bytes after successful replacement followed by a later error. No directory s
 A save failure prints an error and exits 1 without a cleanup retry. Final flushing precedes destruction of
 valid state, including after an unrelated PNG or output error following valid frames; the original failure
 exit is preserved. Failed load, failed import and BIOS rejection suppress saving. Flushing never advances
-emulated time to finish a pending EEPROM write. Periodic and on-demand flushing are not implemented yet.
+emulated time to finish a pending EEPROM write. The persisted generation is updated only after replacement.
+
+The default cadence is 60 completed frames; `--save-interval F` changes it to a positive frame count. A change
+waits at most F subsequently completed frames. Refused or failed frames do not advance the cadence. Clean
+cadences, requests and exits do not create or rewrite a file. On POSIX, SIGUSR1 requests a save; on Windows,
+console Ctrl+Break requests one. Requests coalesce and are consumed before file I/O, so a request received
+during a save remains pending for the next completed frame. Handlers only record requests; all core access
+and file I/O happen in the frame loop. Forced termination has no final-flush guarantee. No IPC endpoint is added.
 
 Without supplied HSC firmware, the runner warns that the signature-only stub supplies no firmware routines.
 This permits direct SRAM callers and does not implement HSC formatting, screens, routines or full OpenHSC.
@@ -269,9 +278,12 @@ muhtari-run: run.txt:4:2: letter out of place, expected U or .
 
 ## Stopping
 
-SIGINT (Ctrl+C) or SIGTERM ends the run after the frame in progress. That frame's hash and PNG are still written,
-`--bench` reports the frames that ran, output is flushed and the exit status is 0. A signal that was already
-ignored when the runner started, as under `nohup`, stays ignored.
+On POSIX, SIGINT (Ctrl+C) or SIGTERM ends the run after the frame in progress. On Windows, console Ctrl+C
+requests the same orderly stop. That frame's hash and PNG are still written, `--bench` reports the frames
+that ran, output is flushed and dirty battery bytes are saved before destruction. Exit 0 requires all required
+flushing to succeed; an earlier nonzero error keeps its status. POSIX signals inherited as ignored, as under
+`nohup`, remain ignored; Windows preserves its inherited Ctrl+C ignore attribute. Ctrl+Break saves without
+stopping. Forced process or console termination has no final-flush guarantee.
 
 ## Exit status
 
@@ -333,7 +345,7 @@ int16 mono sample, including silence. Neither capacity padding nor stereo
 duplication enters it. Counts cover the entire completed run, including a
 partial first frame, with half-open transition ownership at each deadline.
 
-SIGINT/SIGTERM stops between completed frames. A stop before the first frame
+An orderly platform stop ends between completed frames. A stop before the first frame
 reports empty streams and zero counts; `--frames 0` remains a usage error.
 Ordinary rejected frame calls execute nothing. A sticky BIOS refusal may follow
 partial execution; its tentative transition hash is discarded. Any execution,

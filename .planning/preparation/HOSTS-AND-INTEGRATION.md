@@ -120,9 +120,10 @@ Mirrors share one `ptr` with different `offset` ("overlapping descriptors … sa
 ## 4. Runner `muhtari-run` and Playstead
 
 Implemented runner saves, HSC firmware selection, load-time save-device declarations, raw layout/import
-rules and normal-exit replacement have graduated to `docs/runner.md`, Battery files. The runner owns all
-file I/O; the core owns only the stable raw span and generation. Cadence/on-demand controls remain pending
-the following implementation slice; the horizon tables below are recommendations, not live capability claims.
+rules, dirty cadence, on-demand controls and orderly-exit replacement have graduated to `docs/runner.md`,
+Battery files and Stopping. The runner owns all file I/O; the core owns only the stable raw span and generation.
+POSIX actual-child signal evidence is local; native Windows callback/console event acceptance is recorded
+with the final native runs. The horizon tables below remain recommendations, not additional capability claims.
 
 Exit statuses: one X-macro table, printed by `--help`, README equality test [HI.22]: **0** done (also SIGTERM/SIGINT: finish frame, flush, exit) · **1** failure (I/O, corrupt or hostile image, failure after fixture access) · **2** usage · **3** hash mismatch (`--expect`) · **4** `.sav` size mismatch · **5** state rejected · **77** capability refusal (2600 image, unsupported board/device, BIOS required but absent). 3 and 77 become live (reserved in nesturbator).
 
