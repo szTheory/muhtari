@@ -136,7 +136,7 @@ Shared core, manifest and inventory ownership requires sequential execution.
 **Goal:** Keep HSC and SaveKey progress across process and frontend restarts without putting file I/O in the core.
 **Depends on:** Phase 6
 **Requirements:** SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06
-**Plans:** 6/9 plans executed in 9 sequential waves (parallelization disabled).
+**Plans:** 7/9 plans executed in 9 sequential waves (parallelization disabled).
 **Status:** Execution active; evidence, hardware, robustness and runner saves/controls locally verified; three plans remain.
 
 Plans:
@@ -159,7 +159,7 @@ Plans:
 - [x] 07-06-PLAN.md — Complete cadence, native controls, coalescing and actual-consumer failure proofs.
 
 **Wave 7** *(blocked on Wave 6 completion)*
-- [ ] 07-07-PLAN.md — Publish load-time SAVE_RAM, optional HSC firmware and exact achievement maps.
+- [x] 07-07-PLAN.md — Publish load-time SAVE_RAM, optional HSC firmware and exact achievement maps.
 
 **Wave 8** *(blocked on Wave 7 completion)*
 - [ ] 07-08-PLAN.md — Admit one owned combined diagnostic and wire the two-case hosted persistence oracle.

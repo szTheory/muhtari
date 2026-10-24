@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 7
+current_plan: 8
 status: executing
-stopped_at: Completed 07-06 runner cadence and controls; phase execution remains active
-last_updated: "2026-10-24T03:39:12.874Z"
-state_head: 528006ce793ccbbb4119b49b1d1d06d7b60311b9
+stopped_at: Completed 07-07 libretro battery support; phase execution remains active
+last_updated: "2026-10-24T04:29:54.209Z"
+state_head: 1b4ae59098e7c42430e77926e75b56dfdf95ddd8
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 25
+  completed_plans: 26
   percent: 29
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 07
 current_phase_name: Battery saves across hosts
-last_activity_desc: Phase 7 runner cadence and POSIX controls verified; three plans remain
+last_activity_desc: Phase 7 loaded libretro battery path verified; two plans remain
 ---
 
 # Project State
@@ -27,17 +27,18 @@ last_activity_desc: Phase 7 runner cadence and POSIX controls verified; three pl
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 7 execution is active. Plans 07-01–06 prove evidence controls,
-HSC/EEPROM hardware, robustness and runner saves/controls locally; host acceptance remains 07–09.
+Current focus: Phase 7 execution is active. Plans 07-01–07 prove evidence controls,
+HSC/EEPROM hardware, robustness, runner saves/controls and loaded libretro behavior locally;
+fixture and hosted/final portability acceptance remain 08–09.
 
 ## Current Position
 
-Current Plan: 7
+Current Plan: 8
 Total Plans in Phase: 9
 
 Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
 are complete. Phase 5 and6 are2/7 milestone phases,18/27 currently planned active
-slots; Phase 7 has six completed plans and three pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
+slots; Phase 7 has seven completed plans and two pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
 Next command: `$gsd-execute-phase 7`.
@@ -45,10 +46,10 @@ No next GSD step was invoked.
 
 ## Phase 7 Execution
 
-Six plans are committed; full local CI 637+6, exact inventories 637/6 and hygiene 24 pass.
-Actual macOS arm64 ZIP sum 226048 <=399937. No whole SAVE requirement is complete,
+Seven plans are committed; full local CI 640+6, exact inventories 640/6 and tree hygiene pass.
+Actual macOS arm64 ZIP sum 228469 <=399937. No whole SAVE requirement is complete,
 no fixture is admitted, and no review-fix or gap round is consumed. Ten assumption
-flags remain unresolved. Commands, exit statuses and N/A-local URLs live in 07-01–06-SUMMARY.md.
+flags remain unresolved. Commands, exit statuses and N/A-local URLs live in 07-01–07-SUMMARY.md.
 
 07-01 preserves actual producer/join authority with only named fixture and exact3-to-4
 annotation relations.07-02 adds API5/ABI1/behavior4, HSC/firmware and a frozen API4 client.
@@ -61,7 +62,9 @@ copied firmware and actual-main/fresh-process byte and failure tests. No clean r
 
 07-06 adds bounded cadence, synchronized requests, real POSIX child controls and expanded
 failure/commit-point tests. Native Windows tests are implemented but runtime proof remains 07-09.
-07-07 owns libretro;
+07-07 publishes final core-owned SAVE_RAM before execution, freezes late storage requests,
+copies optional HSC firmware and proves actual HSC descriptors through the pinned resolver.
+The .info save/optional-HSC claims remain pending actual hosted acceptance.
 07-08 owns fixture admission/real fresh-process RetroArch;07-09 owns final native/BE,
 Windows, WASM, normal ASan/nofp,10000-case, hosted and six-native archive acceptance.
 
@@ -123,10 +126,10 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-**Stopped at:** Completed 07-06 runner cadence and controls; phase execution remains active
+**Stopped at:** Completed 07-07 libretro battery support; phase execution remains active
 
-Last session: 2026-10-24T03:39:12.788Z
-Resume file: .planning/phases/07-battery-saves/07-07-PLAN.md
+Last session: 2026-10-24T04:29:54.119Z
+Resume file: .planning/phases/07-battery-saves/07-08-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -150,3 +153,4 @@ Resume file: .planning/phases/07-battery-saves/07-07-PLAN.md
 | Phase 07 P04 | 11min | 2 tasks | 9 files |
 | Phase 07 P05 | 11min | 3 tasks | 12 files |
 | Phase 07 P06 | 10min | 3 tasks | 12 files |
+| Phase 07 P07 | 47min | 3 tasks | 8 files |
