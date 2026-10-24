@@ -93,7 +93,7 @@ static const char synopsis[] =
     "  [--rom] FILE         load the cartridge image FILE; without it no content runs\n"
     "  --movie FILE         replay the muhtari-movie 1 FILE, one line per frame;\n"
     "                       --frames defaults to its frame count\n"
-    "  --port1 D, --port2 D the device on a port: auto, proline, joystick or none\n"
+    "  --port1 D, --port2 D auto, proline, joystick, none, savekey or atarivox\n"
     "  --region R           the region: auto or ntsc\n"
     "  --boot B             how the cartridge starts: fast (the default) or bios\n"
     "  --bios FILE          the BIOS image --boot bios runs\n"
@@ -425,6 +425,8 @@ static const struct {
     {"proline", MUHTARI_PORT_PROLINE},
     {"joystick", MUHTARI_PORT_JOYSTICK},
     {"none", MUHTARI_PORT_UNPLUGGED},
+    {"savekey", MUHTARI_PORT_SAVEKEY},
+    {"atarivox", MUHTARI_PORT_ATARIVOX},
 };
 
 static const char *port_name(uint32_t device)
@@ -547,8 +549,9 @@ static int parse_options(int argc, char **argv, options *o)
                 v++;
             }
             if (v == sizeof port_values / sizeof port_values[0]) {
-                return usage(p == 0 ? "--port1 needs auto, proline, joystick or none"
-                                    : "--port2 needs auto, proline, joystick or none");
+                return usage(
+                    p == 0 ? "--port1 needs auto, proline, joystick, none, savekey or atarivox"
+                           : "--port2 needs auto, proline, joystick, none, savekey or atarivox");
             }
             o->port[p] = port_values[v].device;
         } else if (strcmp(arg, "--region") == 0) {
@@ -803,10 +806,10 @@ static int save_directory(const char *path)
 {
 #ifdef _WIN32
     struct _stat64 st;
-    return _stat64(path, &st) == 0 && (st.st_mode & _S_IFMT) == _S_IFDIR;
+    return _stat64(path, &st) == 0 && (st.st_mode & _S_IFMT) == _S_IFDIR && _access(path, 6) == 0;
 #else
     struct stat st;
-    return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+    return stat(path, &st) == 0 && S_ISDIR(st.st_mode) && access(path, R_OK | W_OK | X_OK) == 0;
 #endif
 }
 
@@ -1051,10 +1054,59 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
     media.bios = bios;
     media.bios_size = bios_n;
     media.hsc_mode = opt->hsc_mode;
+    media.port[0] = h != NULL ? h->device[0] : opt->port[0];
+    media.port[1] = h != NULL ? h->device[1] : opt->port[1];
+    uint8_t *firmware = NULL;
+    if (opt->hsc_rom != NULL) {
+        firmware = (uint8_t *)malloc(4097u);
+        FILE *f = save_read_open(opt->hsc_rom);
+        int bad = firmware == NULL || f == NULL;
+        size_t used = 0u;
+        if (f != NULL) {
+            while (firmware != NULL && used < 4097u) {
+                size_t got = fread(firmware + used, 1u, 4097u - used, f);
+                used += got;
+                if (got == 0u)
+                    break;
+            }
+            if (ferror(f) != 0 || used != 4096u)
+                bad = 1;
+            if (fclose(f) != 0)
+                bad = 1;
+        }
+        if (bad) {
+            fprintf(stderr, "muhtari-run: %s: HSC firmware must be a readable 4096-byte file\n",
+                    opt->hsc_rom);
+            free(firmware);
+            free(image);
+            free(bios);
+            return MUHTARI__EXIT_FAILURE;
+        }
+        media.hsc_rom = firmware;
+        media.hsc_rom_size = used;
+    }
     muhtari_status st = muhtari_load(m, &media);
     free(image);
     free(bios);
+    free(firmware);
     if (st == MUHTARI_STATUS_OK) {
+        muhtari_battery_info b = {0};
+        b.size = (uint32_t)sizeof b;
+        if (muhtari_get_battery(m, &b) != MUHTARI_STATUS_OK)
+            return MUHTARI__EXIT_FAILURE;
+        if (b.hsc_attached) {
+            if (b.firmware_flags & MUHTARI_HSC_FIRMWARE_STUB) {
+                fprintf(stderr, "muhtari-run: HSC signature-only stub; no firmware routines\n");
+            } else {
+                char hex[41];
+                to_hex(b.hsc_sha1, 20u, hex);
+                fprintf(stderr, "hsc_sha1 %s\n", hex);
+                if (b.firmware_flags & MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN)
+                    fprintf(stderr, "muhtari-run: unknown HSC firmware identity\n");
+                if (b.firmware_flags & MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE)
+                    fprintf(stderr, "muhtari-run: HSC firmware lacks C6/FE signatures\n");
+            }
+        }
         return MUHTARI__EXIT_DONE;
     }
     fprintf(stderr, "muhtari-run: %s: %s\n",

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <io.h>
@@ -30,6 +31,24 @@ static int reject_frame;
 static FILE *import_stream, *save_stream;
 static const uint8_t *expected_import;
 static size_t expected_bytes;
+static const uint8_t *expected_firmware;
+static unsigned notice_stub, notice_unknown, notice_signature, notice_sha1;
+static int test_print(FILE *f, const char *format, ...)
+{
+    if (strstr(format, "signature-only stub") != NULL)
+        notice_stub++;
+    if (strstr(format, "unknown HSC firmware") != NULL)
+        notice_unknown++;
+    if (strstr(format, "lacks C6/FE") != NULL)
+        notice_signature++;
+    if (strstr(format, "hsc_sha1") != NULL)
+        notice_sha1++;
+    va_list args;
+    va_start(args, format);
+    int rc = vfprintf(f, format, args);
+    va_end(args);
+    return rc;
+}
 
 static FILE *test_fopen(const char *path, const char *mode)
 {
@@ -105,12 +124,20 @@ static BOOL test_move(LPCSTR from, LPCSTR to, DWORD flags)
 #endif
 static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
 {
+    if (expected_firmware != NULL && frames_run == 0u) {
+        muhtari_const_span span = {0};
+        span.size = (uint32_t)sizeof span;
+        CHECK_EQ_U64(muhtari_get_hsc_rom(m, &span), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(span.bytes, 4096);
+        CHECK(memcmp(span.data, expected_firmware, 4096) == 0);
+    }
     if (expected_import != NULL && frames_run == 0u) {
         muhtari_battery_info b = {0};
         b.size = (uint32_t)sizeof b;
         CHECK_EQ_U64(muhtari_get_battery(m, &b), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(b.bytes, expected_bytes);
-        CHECK(memcmp(b.data, expected_import, expected_bytes) == 0);
+        if (expected_bytes != 0u)
+            CHECK(memcmp(b.data, expected_import, expected_bytes) == 0);
         CHECK_EQ_U64(b.generation, 0);
     }
     frames_run++;
@@ -119,6 +146,7 @@ static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
 }
 int runner_entry(int argc, char **argv);
 #define main runner_entry
+#define fprintf test_print
 #define fopen test_fopen
 #define fdopen test_fdopen
 #define _fdopen test_fdopen
@@ -147,6 +175,7 @@ int runner_entry(int argc, char **argv);
 #undef fdopen
 #undef fopen
 #undef main
+#undef fprintf
 #include "../../runner/stop.c"
 
 static void write_bytes(const char *path, const void *p, size_t n)
@@ -269,6 +298,25 @@ static void imports(const char *dir)
             fclose(f);
     }
     expected_import = NULL;
+    cartridge(rom, 0u, 0);
+    write_bytes(save, bytes, 70000);
+    CHECK_EQ_U64(consume(dir, rom), 0);
+    CHECK_EQ_U64(temp_opens, 0);
+    exact_file(save, bytes, 70000);
+    CHECK_EQ_U64(remove(save), 0);
+    const char *names[] = {"many.parts.a78", ".hidden", "noextension"};
+    const char *saves[] = {"many.parts.sav", ".hidden.sav", "noextension.sav"};
+    for (unsigned i = 0; i < 3; i++) {
+        snprintf(rom, sizeof rom, "%s/%s", dir, names[i]);
+        snprintf(save, sizeof save, "%s/%s", dir, saves[i]);
+        cartridge(rom, 1u, 1);
+        (void)remove(save);
+        CHECK_EQ_U64(consume(dir, rom), 0);
+        memset(expected, 0xFF, 2048);
+        expected[0] = 0;
+        exact_file(save, expected, 2048);
+        CHECK_EQ_U64(remove(save), 0);
+    }
     free(bytes);
     free(expected);
 }
@@ -311,6 +359,24 @@ static void faults(const char *dir)
     bytes[0]++;
     exact_file(save, bytes, sizeof bytes);
     CHECK_EQ_U64(remove(save), 0);
+    /* Every collision belongs to someone else and must survive exhaustion. */
+    char temporary[1100];
+#ifdef _WIN32
+    unsigned long pid = (unsigned long)GetCurrentProcessId();
+#else
+    unsigned long pid = (unsigned long)getpid();
+#endif
+    for (unsigned i = 0; i < 32; i++) {
+        snprintf(temporary, sizeof temporary, "%s.tmp.%lu.%u", save, pid, i);
+        write_bytes(temporary, bytes, 3);
+    }
+    CHECK_EQ_U64(consume(dir, rom), 1);
+    CHECK_EQ_U64(temp_opens, 0);
+    for (unsigned i = 0; i < 32; i++) {
+        snprintf(temporary, sizeof temporary, "%s.tmp.%lu.%u", save, pid, i);
+        exact_file(temporary, bytes, 3);
+        CHECK_EQ_U64(remove(temporary), 0);
+    }
 }
 
 #ifndef __wasi__
@@ -346,16 +412,90 @@ static void save_options(const char *dir)
     snprintf(rom, sizeof rom, "%s/option.a78", dir);
     cartridge(rom, 0u, 0);
     char *args[] = {"muhtari-run", "--frames", "1", "--port1", "savekey", rom};
-    uint8_t *blank = malloc(32768);
+    uint8_t *blank = malloc(34816);
     CHECK(blank != NULL);
     if (blank == NULL)
         return;
-    memset(blank, 0xFF, 32768);
+    memset(blank, 0xFF, 34816);
     expected_import = blank;
     expected_bytes = 32768;
     frames_run = 0;
     CHECK_EQ_U64(runner_entry(6, args), 0);
     CHECK_EQ_U64(frames_run, 1);
+    args[4] = "atarivox";
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(6, args), 0);
+    args[3] = "--port2";
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(6, args), 0);
+    args[4] = "savekey";
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(6, args), 0);
+    char *combined[] = {"muhtari-run", "--frames", "1", "--hsc", "on", "--port2", "savekey", rom};
+    expected_bytes = 34816;
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(8, combined), 0);
+    CHECK(notice_stub != 0u);
+    char *dual[] = {"muhtari-run", "--frames", "1",        "--port1",
+                    "savekey",     "--port2",  "atarivox", rom};
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(8, dual), 1);
+    CHECK_EQ_U64(frames_run, 0);
+    cartridge(rom, 2u, 0);
+    char *suppress[] = {"muhtari-run", "--frames", "1", "--port2", "none", rom};
+    expected_bytes = 0;
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(6, suppress), 0);
+    char movie[1024];
+    snprintf(movie, sizeof movie, "%s/device.movie", dir);
+    static const char text[] = "muhtari-movie 1\nport1 savekey\nport2 none\n|||...BB|\n";
+    write_bytes(movie, text, sizeof text - 1u);
+    char *replay_args[] = {"muhtari-run", "--movie", movie, "--port1", "savekey", rom};
+    expected_bytes = 32768;
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(6, replay_args), 0);
+    CHECK_EQ_U64(frames_run, 1);
+    replay_args[4] = "none";
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(6, replay_args), 2);
+    CHECK_EQ_U64(frames_run, 0);
+    char firmware[1024];
+    snprintf(firmware, sizeof firmware, "%s/firmware.bin", dir);
+    uint8_t bytes[4097];
+    memset(bytes, 0x64, sizeof bytes);
+    char *fw[] = {"muhtari-run", "--frames", "1", "--hsc", "on", "--hsc-rom", firmware, rom};
+    expected_bytes = 2048;
+    cartridge(rom, 0u, 0);
+    write_bytes(firmware, bytes, 4096);
+    expected_firmware = bytes;
+    frames_run = 0;
+    notice_unknown = notice_signature = notice_sha1 = 0;
+    CHECK_EQ_U64(runner_entry(8, fw), 0);
+    CHECK_EQ_U64(notice_unknown, 1);
+    CHECK_EQ_U64(notice_signature, 1);
+    CHECK_EQ_U64(notice_sha1, 1);
+    bytes[0x900] = 0xC6;
+    bytes[0x904] = 0xFE;
+    write_bytes(firmware, bytes, 4096);
+    frames_run = notice_signature = 0;
+    CHECK_EQ_U64(runner_entry(8, fw), 0);
+    CHECK_EQ_U64(notice_signature, 0);
+    expected_firmware = NULL;
+    size_t bad_sizes[] = {0, 4095, 4097};
+    for (unsigned i = 0; i < 3; i++) {
+        write_bytes(firmware, bytes, bad_sizes[i]);
+        frames_run = 0;
+        CHECK_EQ_U64(runner_entry(8, fw), 1);
+        CHECK_EQ_U64(frames_run, 0);
+    }
+    CHECK_EQ_U64(remove(firmware), 0);
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(8, fw), 1);
+    CHECK_EQ_U64(frames_run, 0);
+    write_bytes(firmware, bytes, 4096);
+    fw[4] = "off";
+    CHECK_EQ_U64(runner_entry(8, fw), 1);
+    CHECK_EQ_U64(frames_run, 0);
     expected_import = NULL;
     free(blank);
 }
