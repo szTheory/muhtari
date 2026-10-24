@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: 9
-status: executing
-stopped_at: Completed 07-09 final source acceptance; phase review and verification pending
-last_updated: "2026-10-24T13:40:09.419Z"
-state_head: 918b69841bb3c741409e8b84286dfcdf4cd18c85
+status: verifying
+stopped_at: Reviewed-source acceptance refreshed; phase verification pending
+last_updated: "2026-10-24T15:37:35.090Z"
+state_head: 832d0c96d64c0fbc49d2cc625b471e52a2c1de16
 progress:
   total_phases: 7
   completed_phases: 2
@@ -17,7 +17,7 @@ last_activity: 2026-10-24
 total_phases: 7
 current_phase: 07
 current_phase_name: Battery saves across hosts
-last_activity_desc: Phase 7 plans executed with exact-source acceptance; formal phase review and verification pending
+last_activity_desc: Reviewed source and acceptance correction pass final CI and nightly; phase verification pending
 ---
 
 # Project State
@@ -27,7 +27,7 @@ last_activity_desc: Phase 7 plans executed with exact-source acceptance; formal 
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: All nine Phase 7 plans are executed; formal phase review and verification remain.
+Current focus: All nine Phase 7 plans are executed, review is clean and final-source acceptance is refreshed; phase verification remains.
 Plans 07-01–08 prove evidence controls,
 HSC/EEPROM hardware, robustness, runner saves/controls, loaded libretro behavior,
 owned fixture admission and actual fresh-process RetroArch persistence.
@@ -44,7 +44,7 @@ Phase 7 has nine completed plans, making27/27 currently planned
 active slots complete. Phases 8–11 remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
-The execute-phase orchestrator continues this step's formal review and verification.
+The execute-phase orchestrator continues this step's formal phase verification.
 No next GSD step was invoked and the phase is not yet marked complete.
 
 ## Phase 7 Execution
@@ -53,8 +53,10 @@ Nine plans are committed; final local CI641+6 and exact inventories641/6 pass.
 Final local and hosted hygiene24 plus the complete tree scan pass.
 The owned battery fixture is admitted through actual producer/join evidence.
 SAVE-01–06 have complete actual contract evidence and are marked complete.
-No review-fix or gap round is consumed. Ten assumption flags remain for formal
-phase review disposition. Commands, exits and run URLs live in07-01–09-SUMMARY.md.
+Both allowed review-fix rounds are used and all three findings are fixed; final
+review12aca2a and disposition6784e47 are clean with zero open. The one gap round
+remains unused. Original flagged rows retain their serialized history and have
+agent intent disposition in that review. Commands, exits and run URLs live in07-01–09-SUMMARY.md.
 
 07-01 preserves actual producer/join authority with only named fixture and exact3-to-4
 annotation relations.07-02 adds API5/ABI1/behavior4, HSC/firmware and a frozen API4 client.
@@ -81,20 +83,30 @@ Windows archive407930>399937 and the pre-fix WASM getpid compilation. The WASI n
 exclusive-create fix is committed and existing consumers exercise that branch locally.
 07-09 resolves the size defect using top-level MSVC size options and a narrow Windows
 file-type probe, fixes complete-snapshot WASM test stack use and the legacy PPC stat ABI.
-Final source fae8e8f has CI40095781311 and Nightly40095782965 success:
-https://github.com/szTheory/muhtari/actions/runs/40095781311
-https://github.com/szTheory/muhtari/actions/runs/40095782965
+Pre-review fae8e8f acceptance remains historical. Reviewed product90b9b7a fixes
+native broken-pipe final saving and effective frontend input/Auto fallback.
+Final product/test checkout54485d6 adds only a narrow acceptance-test correction:
+the frame-heavy child wait now uses the already configured timeout scale13 on
+PPC, retaining native1 and every exit/raw-byte assertion. Actual QEMU passes4.92s;
+full final PPC controls pass7.82s; hung/wrong-exit controls retain bounded rejection.
+Final exact-source CI40104749040 attempt2 and Nightly40104750452 succeed:
+https://github.com/szTheory/muhtari/actions/runs/40104749040
+https://github.com/szTheory/muhtari/actions/runs/40104750452
 All six native current/base641+6 and complete native/PPC641+6 inventories pass;
 69-row equality retains47 old rows with only five named behavior annotations3->4.
 Final WASM580, ASan626, nofp,10000-case properties, vectors258 and fuzz10 pass.
 Actual two-case RetroArch and native Windows controls/replacement pass.
-Six actual current ZIP sums are284415/277585/230440/232667/371086/393959 for
-Linuxarm/Linuxx64/macOSarm/macOSx64/Windowsarm/Windowsx64; worst parent393990 also
-fits399937. The genuine independent parent is8d00518; raw policies and authority persist.
+Six actual current ZIP sums are284545/277824/230503/232671/371070/393952 for
+Linuxarm/Linuxx64/macOSarm/macOSx64/Windowsarm/Windowsx64; worst parent393994 also
+fits399937. The genuine independent parent is6784e47; raw policies and authority persist.
+Initial reviewed-source fullBE failure from the unscaled wait is preserved in
+Nightly40103107489. Final CI attempt1 Macx64 policy timeouts remain failed history;
+the identical-head single-job retry passes without changing source or timeouts.
+The separate broad local timeout attempt exits8; its bounded same-source retry exits0.
 
 Research/checked plans cover SAVE-01–06 and D-01–18; decision gate18/18 and post-plan
 coverage24/24 passed. Planning evidence remains in the phase planning artifacts.
-No owner UAT or hardware request remains. Formal phase review and verification are pending.
+No owner UAT or hardware request remains. Review is clean; formal phase verification is pending.
 
 ## Phase 6 Acceptance
 
@@ -150,9 +162,9 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-**Stopped at:** Completed 07-09 final source acceptance; phase review and verification pending
+**Stopped at:** Reviewed-source acceptance refreshed; phase verification pending
 
-Last session: 2026-10-24T13:40:09.332Z
+Last session: 2026-10-24T15:37:34.721Z
 Resume file: .planning/phases/07-battery-saves/07-09-SUMMARY.md
 
 ### Quick Tasks Completed
@@ -182,3 +194,4 @@ Resume file: .planning/phases/07-battery-saves/07-09-SUMMARY.md
 | Phase 07 P07 | 47min | 3 tasks | 8 files |
 | Phase 07 P08 | 304min | 3 tasks | 23 files |
 | Phase 07 P09 | 197min | 3 tasks | 16 files |
+| Phase 07 P09 | 328min | 3 tasks | 28 files |
