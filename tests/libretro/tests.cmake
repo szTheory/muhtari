@@ -143,6 +143,11 @@ if(TARGET muhtari_libretro)
   # file into its own directory under both names and removes it again.
   set(libretro_system ${PROJECT_BINARY_DIR}/tests/libretro-system)
   file(MAKE_DIRECTORY ${libretro_system})
+  set(libretro_hsc_system ${PROJECT_BINARY_DIR}/tests/libretro-hsc-system)
+  file(MAKE_DIRECTORY ${libretro_hsc_system})
+  muhtari_add_test(NAME libretro.host.hsc_firmware
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> hsc_firmware ${libretro_hsc_system}
+    LABELS libretro portable TIMEOUT 5)
   muhtari_add_test(NAME libretro.host.bios
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> bios
       ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78 ${MUHTARI_BUILT_DIR}/openbios/openbios.bin

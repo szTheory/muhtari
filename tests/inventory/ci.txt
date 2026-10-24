@@ -502,6 +502,7 @@ libretro.host.battery	libretro,portable
 libretro.host.battery_order	libretro,portable
 libretro.host.bios	libretro,portable
 libretro.host.devices	libretro,portable
+libretro.host.hsc_firmware	libretro,portable
 libretro.host.input	libretro,portable
 libretro.host.layout	libretro,portable
 libretro.host.memory_map	libretro,portable

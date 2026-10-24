@@ -1334,6 +1334,25 @@ static void case_battery_order(void)
     set_var("muhtari_battery_port2", "auto");
 }
 
+static void case_hsc_firmware(const char *dir)
+{
+    static uint8_t image[128u + 4096u];
+    struct retro_game_info game = {0};
+    game.data = image;
+    game.size = images_linear(image, 3u, 4096u);
+    image[128u] = 0x02u;
+    set_var("muhtari_hsc", "on");
+    system_dir = dir;
+    p_set_environment(env);
+    unsigned before = message_calls;
+    CHECK(p_load_game(&game));
+    CHECK_EQ_U64(message_calls, before + 1u);
+    CHECK(strstr(message, "stub") != NULL);
+    stop();
+    system_dir = NULL;
+    set_var("muhtari_hsc", "auto");
+}
+
 static void case_audio(void)
 {
     muhtari_config cfg = {0};
@@ -1441,6 +1460,10 @@ int main(int argc, char **argv)
         rgb565 = strcmp(argv[2], "rgb565") == 0;
         card();
         found = 1;
+    }
+    if (argc == 4 && strcmp(argv[2], "hsc_firmware") == 0) {
+        found = 1;
+        case_hsc_firmware(argv[3]);
     }
     /* bios <cart> <bios file> <system directory> */
     if (argc == 6 && strcmp(argv[2], "bios") == 0) {
