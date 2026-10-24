@@ -148,6 +148,11 @@ core.frame.pitch_336	core,portable
 core.frame.validate_first	core,portable
 core.get_memory.cart_ram	core,portable
 core.get_memory.spans	core,portable
+core.hsc.decode	core,portable
+core.hsc.firmware	core,portable
+core.hsc.sizes	core,portable
+core.hsc.topology	core,portable
+core.hsc.tracer	core,portable
 core.info	core,portable
 core.load.empty_refused	core,portable
 core.load.invalid_bios	core,portable

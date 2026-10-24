@@ -26,10 +26,16 @@ int main(void)
     cfg.allocator.free = api_free;
     muhtari *m = NULL;
     CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
-    uint8_t image[4096];
-    memset(image, 0xEA, sizeof image);
-    image[4092] = 0u;
-    image[4093] = 0xF0u;
+    uint8_t image[128 + 4096];
+    memset(image, 0, sizeof image);
+    image[0] = 3u;
+    memcpy(image + 1, "ATARI7800", 9);
+    image[51] = 0x10u;
+    image[55] = 1u;
+    image[56] = 1u;
+    memset(image + 128, 0xEA, 4096);
+    image[128 + 4092] = 0u;
+    image[128 + 4093] = 0xF0u;
     muhtari_media media;
     memset(&media, 0, sizeof media);
     media.size = (uint32_t)sizeof media;
@@ -61,7 +67,9 @@ int main(void)
     CHECK_EQ_U64(muhtari_get_hsc_rom(m, &rom), MUHTARI_STATUS_OK);
     CHECK(rom.data != NULL);
     CHECK_EQ_U64(rom.bytes, 4096);
-    CHECK_EQ_U64(rom.data[0x900], 0xC6);
+    if (rom.data != NULL) {
+        CHECK_EQ_U64(rom.data[0x900], 0xC6);
+    }
     muhtari_destroy(m);
     CHECK_DONE();
 }

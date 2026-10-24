@@ -60,7 +60,7 @@ set(abi_cmd ${CMAKE_COMMAND} -DHEADER=${PROJECT_BINARY_DIR}/tests/abi/extra_fiel
 string(REPLACE ";" "$<SEMICOLON>" abi_cmd "${abi_cmd}")
 muhtari_add_test(NAME abi.api_version.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${abi_cmd}" -DCODE=1
-    "-DREGEX=in no tests/api/vK.c with K <= 4: untested_field" -P ${abi_scripts}/expect_fail.cmake
+    "-DREGEX=in no tests/api/vK.c with K <= 5: untested_field" -P ${abi_scripts}/expect_fail.cmake
   LABELS abi TIMEOUT 10)
 
 # The frozen API v1 program: every function, field and constant of version 1.

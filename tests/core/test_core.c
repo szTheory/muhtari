@@ -1232,6 +1232,284 @@ static void hsc_tracer(void)
     muhtari_destroy(m);
 }
 
+static muhtari_battery_info battery_of(const muhtari *m)
+{
+    muhtari_battery_info b;
+    memset(&b, 0, sizeof b);
+    b.size = (uint32_t)sizeof b;
+    CHECK_EQ_U64(muhtari_get_battery(m, &b), MUHTARI_STATUS_OK);
+    return b;
+}
+
+static void test_hsc_decode(void)
+{
+    muhtari *m = make();
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    muhtari_media media = media_for(cart, sizeof cart);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    muhtari_battery_info b = battery_of(m);
+    CHECK(b.data == NULL);
+    CHECK_EQ_U64(b.bytes, 0);
+    m->bus.open_bus = 0x67u;
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x1000u), 0x67);
+    CHECK_EQ_HEX(muhtari__peek(m, 0x3000u), 0x67);
+    media.hsc_mode = MUHTARI_HSC_ON;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    b = battery_of(m);
+    for (uint32_t i = 0; i < 2048u; i++) {
+        uint16_t addr = (uint16_t)(0x1000u + i);
+        uint8_t v = (uint8_t)(i * 17u + 3u);
+        muhtari__bus_write(m, addr, v);
+        CHECK_EQ_HEX(b.data[i], v);
+        CHECK_EQ_HEX(muhtari__bus_read(m, addr), v);
+        CHECK_EQ_HEX(muhtari__peek(m, addr), v);
+        CHECK_EQ_HEX(muhtari__bus_peek(m, addr), v);
+        CHECK_EQ_HEX(muhtari__cart_read(m, addr, 1), v);
+    }
+    uint64_t changed = battery_of(m).generation;
+    for (uint32_t i = 0; i < 4096u; i++) {
+        uint16_t addr = (uint16_t)(0x3000u + i);
+        uint8_t want = i == 0x900u ? 0xC6u : i == 0x904u ? 0xFEu : 0xFFu;
+        CHECK_EQ_HEX(muhtari__bus_read(m, addr), want);
+        CHECK_EQ_HEX(muhtari__peek(m, addr), want);
+        CHECK_EQ_HEX(muhtari__bus_peek(m, addr), want);
+        CHECK_EQ_HEX(muhtari__cart_read(m, addr, 1), want);
+        muhtari__bus_write(m, addr, 0u);
+        CHECK_EQ_HEX(muhtari__bus_peek(m, addr), want);
+    }
+    CHECK_EQ_U64(battery_of(m).generation, changed);
+    m->battery.generation = UINT64_MAX;
+    muhtari__bus_write(m, 0x1000u, (uint8_t)(b.data[0] ^ 1u));
+    CHECK_EQ_U64(battery_of(m).generation, 0);
+    muhtari__bus_write(m, 0x1000u, b.data[0]);
+    CHECK_EQ_U64(battery_of(m).generation, 0);
+    /* Endpoints stay in their existing owners and MEN still gates both views. */
+    m->bus.open_bus = 0x67u;
+    CHECK_EQ_HEX(muhtari__peek(m, 0x0FFFu), 0x67);
+    CHECK_EQ_HEX(muhtari__peek(m, 0x2FFFu), 0x67);
+    CHECK_EQ_HEX(muhtari__peek(m, 0x4000u), 0x67);
+    m->ram[0] = 0x81u;
+    CHECK_EQ_HEX(muhtari__peek(m, 0x1800u), 0x81);
+    m->bus.inptctrl = 0u;
+    CHECK_EQ_HEX(muhtari__peek(m, 0x1000u), 0x67);
+    CHECK_EQ_HEX(muhtari__peek(m, 0x3900u), 0x67);
+    muhtari__bus_write(m, 0x1000u, 0x44u);
+    CHECK_EQ_U64(battery_of(m).generation, 0);
+    m->bios_size = 4096u;
+    memset(m->bios, 0x93, 4096u);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x3900u), 0x93);
+    m->bus.inptctrl = MUHTARI__INPTCTRL_MEN;
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x3900u), 0xC6);
+    /* The $0800 POKEY mirror ends at $0FFF, directly before HSC SRAM. */
+    m->bios_size = 0u;
+    m->cart.pokey_at[0] = 0x0800u;
+    muhtari__bus_write(m, 0x1000u, 0x55u);
+    CHECK_EQ_HEX(b.data[0], 0x55);
+    muhtari__bus_write(m, 0x0FFFu, 3u);
+    CHECK_EQ_HEX(b.data[0], 0x55);
+    muhtari_destroy(m);
+}
+
+static void test_hsc_firmware(void)
+{
+    uint8_t firmware[4096];
+    for (unsigned i = 0; i < sizeof firmware; i++) {
+        firmware[i] = (uint8_t)(i * 13u + 7u);
+    }
+    firmware[0x900] = 0xC6u;
+    firmware[0x904] = 0xFEu;
+    /* Independent hashlib SHA-1 of the above arithmetic fixture. */
+    static const uint8_t expected[20] = {
+        0xdc, 0xcb, 0x94, 0xa8, 0x31, 0xfc, 0x39, 0x16, 0x36, 0x7f,
+        0xef, 0xa8, 0xdc, 0x1e, 0x8f, 0x99, 0xe8, 0xe6, 0x2c, 0x1b
+    };
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    make_cart(cart, prog_count, sizeof prog_count, 0u);
+    muhtari_media media = media_for(cart, sizeof cart);
+    media.hsc_rom = firmware;
+    media.hsc_rom_size = sizeof firmware;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    muhtari_battery_info b = battery_of(m);
+    CHECK_EQ_U64(b.hsc_attached, 1);
+    CHECK_EQ_U64(b.firmware_flags, MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN);
+    CHECK(memcmp(b.hsc_sha1, expected, sizeof expected) == 0);
+    muhtari_const_span rom;
+    memset(&rom, 0, sizeof rom);
+    rom.size = (uint32_t)sizeof rom;
+    CHECK_EQ_U64(muhtari_get_hsc_rom(m, &rom), MUHTARI_STATUS_OK);
+    CHECK(rom.data != firmware);
+    CHECK(memcmp(rom.data, firmware, sizeof firmware) == 0);
+    for (unsigned i = 0; i < sizeof firmware; i++) {
+        uint16_t addr = (uint16_t)(0x3000u + i);
+        CHECK_EQ_HEX(muhtari__bus_read(m, addr), firmware[i]);
+        CHECK_EQ_HEX(muhtari__bus_peek(m, addr), firmware[i]);
+        CHECK_EQ_HEX(muhtari__peek(m, addr), firmware[i]);
+        CHECK_EQ_HEX(muhtari__cart_read(m, addr, 1), firmware[i]);
+    }
+    b.data[9] = 0x28u;
+    muhtari__bus_write(m, 0x100Au, 0x49u);
+    run(m, NULL);
+    muhtari *control = make();
+    CHECK_EQ_U64(muhtari_load(control, &media), MUHTARI_STATUS_OK);
+    for (unsigned i = 0; i < sizeof firmware; i++) {
+        (void)muhtari__bus_read(control, (uint16_t)(0x3000u + i));
+    }
+    muhtari__bus_write(control, 0x100Au, 0x49u);
+    run(control, NULL);
+    uint32_t calls = counts.allocs;
+    static const size_t bad_sizes[] = {0u, 4095u, 4097u, 16384u};
+    for (unsigned i = 0; i < sizeof bad_sizes / sizeof bad_sizes[0]; i++) {
+        media.hsc_rom_size = bad_sizes[i];
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_HSC);
+    }
+    media.hsc_rom = NULL;
+    media.hsc_rom_size = sizeof firmware;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_HSC);
+    media.hsc_rom = firmware;
+    media.hsc_mode = MUHTARI_HSC_OFF;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_HSC);
+    CHECK_EQ_U64(counts.allocs, calls);
+    CHECK_EQ_HEX(b.data[9], 0x28);
+    CHECK_EQ_U64(battery_of(m).generation, 1);
+    CHECK(battery_of(m).data == b.data);
+    CHECK(memcmp(m->battery.rom, firmware, sizeof firmware) == 0);
+    run(m, video);
+    run(control, video2);
+    CHECK(memcmp(video, video2, sizeof video) == 0);
+    CHECK(memcmp(m->ram, control->ram, sizeof m->ram) == 0);
+    media.hsc_mode = MUHTARI_HSC_AUTO;
+    counts.fail_from = calls + 1u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_NO_MEMORY);
+    CHECK_EQ_HEX(b.data[9], 0x28);
+    CHECK_EQ_U64(battery_of(m).generation, 1);
+    counts.fail_from = 0u;
+    /* Aliasing installed memory is staged before successful replacement. */
+    media.hsc_rom = rom.data;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(m->battery.rom, firmware, sizeof firmware) == 0);
+    CHECK_EQ_U64(battery_of(m).generation, 0);
+    CHECK_EQ_HEX(b.data[9], 0xFF);
+    for (unsigned signature = 0; signature < 2u; signature++) {
+        firmware[signature == 0u ? 0x900u : 0x904u] = 0u;
+        media.hsc_rom = firmware;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(battery_of(m).firmware_flags,
+            MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN | MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE);
+    }
+    CHECK_EQ_U64(battery_of(control).generation, 1);
+    muhtari_destroy(control);
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.frees + 1u, counts.allocs); /* one failed allocation */
+}
+
+static void test_hsc_topology(void)
+{
+    muhtari *m = make();
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    muhtari_media media = media_for(cart, sizeof cart);
+    for (unsigned h = 0; h < 2u; h++) {
+        for (unsigned p = 0; p < 3u; p++) {
+            media.hsc_mode = h != 0u ? MUHTARI_HSC_ON : MUHTARI_HSC_OFF;
+            media.port[0] = p == 1u ? MUHTARI_PORT_SAVEKEY : 0u;
+            media.port[1] = p == 2u ? MUHTARI_PORT_ATARIVOX : 0u;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            muhtari_battery_info b = battery_of(m);
+            CHECK_EQ_U64(b.bytes, (h != 0u ? 2048u : 0u) + (p != 0u ? 32768u : 0u));
+            CHECK_EQ_U64(b.eeprom_port, p);
+            CHECK_EQ_U64(b.hsc_attached, h);
+            CHECK_EQ_U64(b.eeprom_device,
+                p == 1u ? MUHTARI_PORT_SAVEKEY : p == 2u ? MUHTARI_PORT_ATARIVOX : 0u);
+        }
+    }
+    muhtari_battery_info before = battery_of(m);
+    before.data[2048] = 0x41u;
+    media.port[0] = MUHTARI_PORT_SAVEKEY;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+    CHECK(battery_of(m).data == before.data);
+    CHECK_EQ_HEX(before.data[2048], 0x41);
+    media = media_for(cart, sizeof cart);
+    cart[55] = MUHTARI_PORT_ATARIVOX;
+    cart[56] = MUHTARI_PORT_ATARIVOX;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+    media.port[0] = MUHTARI_PORT_UNPLUGGED;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(battery_of(m).eeprom_port, 2);
+    cart[55] = MUHTARI_PORT_PROLINE;
+    cart[56] = MUHTARI_PORT_PROLINE;
+    cart[58] = 2u; /* save hint defaults to port 2 */
+    media.port[0] = 0u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(battery_of(m).eeprom_port, 2);
+    media.port[1] = MUHTARI_PORT_UNPLUGGED;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(battery_of(m).bytes, 0);
+    media.port[1] = MUHTARI_PORT_JOYSTICK;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(battery_of(m).bytes, 0);
+    cart[58] = 1u;
+    media.hsc_mode = MUHTARI_HSC_OFF;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(battery_of(m).hsc_attached, 0);
+    muhtari_destroy(m);
+}
+
+static void test_hsc_sizes(void)
+{
+    muhtari *m = make();
+    make_cart(cart, prog_idle, sizeof prog_idle, 0u);
+    muhtari_media media = media_for(cart, sizeof cart);
+    media.hsc_mode = MUHTARI_HSC_ON;
+    uint32_t endpoints[] = {
+        MUHTARI__MEDIA_SIZE_FIRST, (uint32_t)offsetof(muhtari_media, hsc_mode),
+        (uint32_t)offsetof(muhtari_media, hsc_rom),
+        (uint32_t)offsetof(muhtari_media, hsc_rom_size),
+        (uint32_t)offsetof(muhtari_media, port), (uint32_t)sizeof media
+    };
+    for (unsigned i = 0; i < sizeof endpoints / sizeof endpoints[0]; i++) {
+        media.size = endpoints[i];
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(battery_of(m).hsc_attached,
+            endpoints[i] >= offsetof(muhtari_media, hsc_mode) + sizeof media.hsc_mode);
+    }
+    media.size = MUHTARI__MEDIA_SIZE_FIRST - 1u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    struct { muhtari_media media; uint8_t extra[8]; } future;
+    memset(&future, 0, sizeof future);
+    future.media = media;
+    future.media.size = (uint32_t)sizeof future;
+    CHECK_EQ_U64(muhtari_load(m, &future.media), MUHTARI_STATUS_OK);
+    future.extra[7] = 1u;
+    CHECK_EQ_U64(muhtari_load(m, &future.media), MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    struct { muhtari_battery_info info; uint8_t extra[8]; } out;
+    memset(&out, 0, sizeof out);
+    out.info.size = MUHTARI__BATTERY_SIZE_FIRST;
+    memset(out.extra, PAD_BYTE, sizeof out.extra);
+    CHECK_EQ_U64(muhtari_get_battery(m, &out.info), MUHTARI_STATUS_OK);
+    for (unsigned i = 0; i < sizeof out.extra; i++) {
+        CHECK_EQ_HEX(out.extra[i], PAD_BYTE);
+    }
+    out.info.size = MUHTARI__BATTERY_SIZE_FIRST - 1u;
+    CHECK_EQ_U64(muhtari_get_battery(m, &out.info), MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    memset(&out, 0, sizeof out);
+    out.info.size = (uint32_t)sizeof out;
+    CHECK_EQ_U64(muhtari_get_battery(m, &out.info), MUHTARI_STATUS_OK);
+    out.extra[0] = 1u;
+    CHECK_EQ_U64(muhtari_get_battery(m, &out.info), MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    CHECK_EQ_U64(muhtari_get_battery(NULL, &out.info), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_get_battery(m, NULL), MUHTARI_STATUS_ERR_ARGUMENT);
+    muhtari_const_span rom;
+    memset(&rom, 0, sizeof rom);
+    rom.size = (uint32_t)sizeof rom;
+    CHECK_EQ_U64(muhtari_get_hsc_rom(NULL, &rom), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_get_hsc_rom(m, NULL), MUHTARI_STATUS_ERR_ARGUMENT);
+    rom.size = MUHTARI__CONST_SPAN_SIZE_FIRST - 1u;
+    CHECK_EQ_U64(muhtari_get_hsc_rom(m, &rom), MUHTARI_STATUS_ERR_STRUCT_SIZE);
+    muhtari_destroy(m);
+}
+
 static void test_load_keeps_previous(void)
 {
     hsc_tracer();
@@ -1791,6 +2069,11 @@ static const struct {
     {"counters.frames_and_lag", test_counters_frames_and_lag},
     {"get_memory.cart_ram", test_get_memory_cart_ram},
     {"get_memory.spans", test_get_memory_spans},
+    {"hsc.tracer", hsc_tracer},
+    {"hsc.decode", test_hsc_decode},
+    {"hsc.firmware", test_hsc_firmware},
+    {"hsc.topology", test_hsc_topology},
+    {"hsc.sizes", test_hsc_sizes},
     {"load.empty_refused", test_load_empty_refused},
     {"load.invalid_bios", test_load_invalid_bios},
     {"load.keeps_previous", test_load_keeps_previous},

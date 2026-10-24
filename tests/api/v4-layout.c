@@ -53,10 +53,16 @@ int main(void)
     cfg.allocator.free = old_free;
     muhtari *m = NULL;
     CHECK_EQ_U64(muhtari_create(&cfg, &m), 0);
-    uint8_t image[4096];
-    memset(image, 0xEA, sizeof image);
-    image[0] = 0x4Cu; image[1] = 0u; image[2] = 0xF0u;
-    image[4092] = 0u; image[4093] = 0xF0u;
+    uint8_t image[128 + 4096];
+    memset(image, 0, sizeof image);
+    image[0] = 3u;
+    memcpy(image + 1, "ATARI7800", 9);
+    image[51] = 0x10u;
+    image[55] = 1u;
+    image[56] = 1u;
+    memset(image + 128, 0xEA, 4096);
+    image[128] = 0x4Cu; image[129] = 0u; image[130] = 0xF0u;
+    image[128 + 4092] = 0u; image[128 + 4093] = 0xF0u;
     uint32_t sizes[] = {(uint32_t)sizeof(muhtari_media),
         (uint32_t)(offsetof(muhtari_media, bios_size) + sizeof(size_t))};
     for (unsigned i = 0; i < 2u; i++) {

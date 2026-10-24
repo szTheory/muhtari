@@ -29,5 +29,9 @@ foreach(case IN ITEMS
   muhtari_add_test(NAME core.${case} COMMAND muhtari-test-core ${case}
     LABELS core portable TIMEOUT 1) # 2 x 0.06 s, Windows arm64, slowest of 31 runs, run 39375738182
 endforeach()
+foreach(case IN ITEMS tracer decode firmware topology sizes)
+  muhtari_add_test(NAME core.hsc.${case} COMMAND muhtari-test-core hsc.${case}
+    LABELS core portable TIMEOUT 10)
+endforeach()
 muhtari_add_test(NAME core.no_alloc_after_load COMMAND muhtari-test-core no_alloc_after_load
   LABELS perf portable TIMEOUT 10)
