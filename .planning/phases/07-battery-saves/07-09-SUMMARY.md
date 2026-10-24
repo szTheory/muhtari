@@ -22,6 +22,7 @@ key-files:
   modified:
     - tests/cmake/hashes.cmake
     - tests/runner/tests.cmake
+    - tests/runner/test_control.c
     - tests/policy/tests.cmake
     - libretro/muhtari_libretro.info.in
     - tests/cmake/info_claims.cmake
@@ -53,10 +54,10 @@ coverage:
     requirement: SAVE-01
     verification:
       - kind: integration
-        ref: "cmake --workflow --preset ci; complete inventories 641+6; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095781311"
+        ref: "cmake --workflow --preset ci; complete inventories 641+6; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104749040"
         status: pass
       - kind: integration
-        ref: "be-equality full native and PowerPC inventories 641+6 each, release floor and 69-row equality; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095782965/job/120877638097"
+        ref: "be-equality full native and PowerPC inventories 641+6 each, release floor and 69-row equality; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104750452/job/120904008838"
         status: pass
     human_judgment: false
   - id: serial-eeprom-contract
@@ -64,10 +65,10 @@ coverage:
     requirement: SAVE-02
     verification:
       - kind: integration
-        ref: "Nightly seeded properties MUHTARI_PROP_CASES=10000, all six property tests; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095782965/job/120877638072"
+        ref: "Nightly seeded properties MUHTARI_PROP_CASES=10000, all six property tests; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104750452/job/120904008627"
         status: pass
       - kind: integration
-        ref: "cmake --workflow --preset fuzz; loader/run/I2C fuzz and regression controls, exact inventory 10; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095782965/job/120877638037"
+        ref: "cmake --workflow --preset fuzz; loader/run/I2C fuzz and regression controls, exact inventory 10; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104750452/job/120904008773"
         status: pass
     human_judgment: false
   - id: stable-raw-media-and-equality
@@ -75,10 +76,10 @@ coverage:
     requirement: SAVE-03
     verification:
       - kind: integration
-        ref: "runner.hashes_file malformed/missing/duplicate/revision/numeric/media controls, six-native equality and full native/PowerPC byte equality of 69 rows; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095781311/job/120882923274"
+        ref: "runner.hashes_file malformed/missing/duplicate/revision/numeric/media controls, six-native equality and full native/PowerPC byte equality of 69 rows; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120911136284"
         status: pass
       - kind: integration
-        ref: "WASM exact inventory 580 and cmp against Linux x64 complete hash file; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095781311/job/120882923223"
+        ref: "WASM exact inventory 580 and cmp against Linux x64 complete hash file; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120911136298"
         status: pass
     human_judgment: false
   - id: runner-import-and-fresh-reload
@@ -86,7 +87,7 @@ coverage:
     requirement: SAVE-04
     verification:
       - kind: integration
-        ref: "Six actual native current and independently built parent workflows, each 641+6 including runner.save consumers and fresh battery observations; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095781311"
+        ref: "Six actual native current and independently built parent workflows, each 641+6 including runner.save consumers and fresh battery observations; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104749040"
         status: pass
     human_judgment: false
   - id: persistence-controls-and-replacement
@@ -94,10 +95,10 @@ coverage:
     requirement: SAVE-05
     verification:
       - kind: integration
-        ref: "Actual runner.save.controls and runner.save.faults in full Windows x64 current/base workflows; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095781311/job/120877658058"
+        ref: "Actual runner.save.controls and runner.save.faults in full Windows x64 current/base workflows; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120904022224"
         status: pass
       - kind: integration
-        ref: "Actual runner.save.controls and runner.save.faults in full Windows arm64 current/base workflows; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095781311/job/120877658046"
+        ref: "Actual runner.save.controls and runner.save.faults in full Windows arm64 current/base workflows; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120904022187"
         status: pass
     human_judgment: false
   - id: actual-frontend-save-roundtrip
@@ -105,10 +106,10 @@ coverage:
     requirement: SAVE-06
     verification:
       - kind: e2e
-        ref: "RetroArch 1.22.2 actual DMA and two-launch battery case, all 34816 bytes per host/launch, independent pixel oracle faults and retained DMA negative control; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095781311/job/120882923165"
+        ref: "RetroArch 1.22.2 actual DMA and two-launch battery case, all 34816 bytes per host/launch, independent pixel oracle faults and retained DMA negative control; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120911136203"
         status: pass
       - kind: automated_ui
-        ref: "Agent viewed final-source DMA and both battery screenshots; counter 1/1 then 2/2 and supplied marker 5A then stub FF; strict all-pixel comparisons and unsafe-path isolation controls pass; https://github.com/szTheory/muhtari/actions/runs/40095781311/job/120882923165"
+        ref: "Agent viewed final-source DMA and both battery screenshots; counter 1/1 then 2/2 and supplied marker 5A then stub FF; strict all-pixel comparisons and unsafe-path isolation controls pass; https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120911136203"
         status: pass
     human_judgment: false
   - id: truthful-capability-and-package-claims
@@ -116,17 +117,36 @@ coverage:
     requirement: SAVE-06
     verification:
       - kind: integration
-        ref: "info_claims actual host registrations and authenticated quality join: current worst 393959, independent parent worst 393990, both <=399937; exit 0; https://github.com/szTheory/muhtari/actions/runs/40095781311/job/120882923213"
+        ref: "info_claims actual host registrations and authenticated quality join: current worst 393952, independent parent worst 393994, both <=399937; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120911136250"
         status: pass
     human_judgment: false
-duration: 197min
+  - id: closed-pipe-portability-correction
+    description: Closed-pipe final and during-output child regressions retain every exit and raw-byte assertion while using the existing slow-lane scale in their bounded wait
+    requirement: SAVE-05
+    verification:
+      - kind: integration
+        ref: "Actual full PowerPC runner.save.controls passes in 7.82 seconds with existing scale 13 and all 34816-byte checks; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104750452/job/120904008838"
+        status: pass
+      - kind: other
+        ref: "Actual isolated qemu-ppc consumer exits 0 in 4.92 seconds; same native consumer rejects hung-child and wrong-exit wrappers with bounded cleanup, expected exit 1 at 13.36 and 0.23 seconds; probe exits 0; URL N/A-local"
+        status: pass
+    human_judgment: false
+  - id: reviewed-controller-regressions
+    description: Loaded-module held-A storage-request cases and 112 automatic-header combinations retain effective button mapping and core-matching fallback without input refusal
+    requirement: SAVE-06
+    verification:
+      - kind: integration
+        ref: "Full final-source native current/base inventories execute libretro.host.layout and libretro.host.devices including the reviewed semantic regressions; exit 0; https://github.com/szTheory/muhtari/actions/runs/40104749040"
+        status: pass
+    human_judgment: false
+duration: 328min
 completed: 2026-10-24
 actuals:
-  tokens: 12004
+  tokens: 31541
   tasks: 3
-  commits: 14
+  commits: 28
 plan_head_before: 4223f7ba8b8e17a42001dee029da1db7781e4fb3
-plan_head_after: fae8e8fb5010b38965f00c090de6bd564a01500a
+plan_head_after: 54485d630c421716d51a8d7919ded429742acf4a
 ---
 
 # Phase 7 Plan 9: Final Battery Acceptance Summary
@@ -135,14 +155,57 @@ Independently judged battery observations, truthful frontend claims and all six 
 
 ## Source and Authority
 
-Final tested source is `fae8e8fb5010b38965f00c090de6bd564a01500a`. Both final workflows completed successfully on that exact source:
+Final accepted product/test checkout is `54485d630c421716d51a8d7919ded429742acf4a`. Reviewed production source is `90b9b7a5f1f17f49f2133af17bb9e1e408fa21f1`; the only later non-planning difference is the four-line acceptance-test portability correction described below. Both final workflows completed successfully at the exact checkout:
 
-- `gh run view 40095781311 --json headSha,status,conclusion,jobs`: exit 0, CI success, including the advisory WASM job. https://github.com/szTheory/muhtari/actions/runs/40095781311
-- `gh run view 40095782965 --json headSha,status,conclusion,jobs`: exit 0, Nightly success. https://github.com/szTheory/muhtari/actions/runs/40095782965
+- `gh run view 40104749040 --json headSha,status,conclusion,jobs`: exit 0, CI success after the single-job same-head macOS retry, including advisory WASM. https://github.com/szTheory/muhtari/actions/runs/40104749040
+- `gh run view 40104750452 --json headSha,status,conclusion,jobs`: exit 0, Nightly success. https://github.com/szTheory/muhtari/actions/runs/40104750452
 
-The authenticated independent event parent is the genuine first parent `8d0051823cb3ec99ffac2fb817f58ffc9a21fc6f`, not a candidate-manufactured observation or substituted base. Every lane actually rebuilds it. Downloaded raw base policies are byte-exact with unchanged `quality.json`; all six base identity files match that parent. The existing producer and join retain source, SHA, platform, compiler, configuration, policy and fixture authority. Final archive metrics equal the sums of the actual downloaded three ZIPs on each lane.
+The genuine independently built event parent is `6784e4758ddb8e96a6048c986ff0e6b5e4248c01`. It contains the same reviewed production source. All six lane reports identify exactly this parent and the final checkout/run URL. Downloaded raw base policies are byte-exact with unchanged `quality.json`; actual three-ZIP sums equal their authenticated current metrics. Source, compiler, platform, configuration, fixture, policy and independent-parent authority remain unchanged.
 
-The performance dispatch retains its existing authority: the same head is measured three times, yielding `3837653,3837653,3837653 Ir/frame`, spread zero. It does not invent a comparative PR baseline; the unchanged join reports comparative Ir unavailable when not requested. Required/advisory status is unchanged. Compatibility retains its ledger judge, pins and allow file.
+Performance dispatch retains its existing same-head authority: `3837653,3837653,3837653 Ir/frame`, spread zero. It does not invent a comparative PR baseline; the unchanged join reports comparative Ir unavailable when not requested. Required/advisory status is unchanged. Compatibility retains its ledger judge, pins and allow file.
+
+## Post-review Acceptance Refresh
+
+The clean re-review at `12aca2a` and disposition at `6784e47` resolve all three findings, with zero open. Production fixes are `f8cc10f` (native broken-output-pipe final saving), `bd7e686` (effective frontend button device) and `90b9b7a` (core-matching Auto fallback). Full final-source CI executes their real closed-pipe/raw-media and loaded-module held-A/112-header-combination regressions. Both allowed review-fix rounds are used; the one gap round remains unused. This refresh does not create another review-fix round or alter the old finding outcomes.
+
+The first reviewed-source Nightly [40103107489](https://github.com/szTheory/muhtari/actions/runs/40103107489) failed only the full PPC `runner.save.controls`: the new frame-heavy child wait used 500 ten-millisecond polls regardless of the already configured `MUHTARI_TIMEOUT_SCALE=13`. Two during-output children were killed after the unscaled wait, then lacked final saves; the test took 13.92 seconds. This was actual new portability evidence, not a passing result or proof of wrong saved bytes. Its accompanying CI [40103105894](https://github.com/szTheory/muhtari/actions/runs/40103105894) was cancelled when superseded.
+
+Acceptance correction `54485d6` changes only `tests/runner/test_control.c` and the minimal existing CMake plumbing in `tests/runner/tests.cmake`: the affected child wait consumes the existing timeout scale. Native scale 1, PPC scale 13, outer CTest deadlines, other waits, workloads, exit assertions and every raw-byte assertion remain unchanged. No product semantics, new bound/grant, dependency, skip, replan or extra review/gap round was introduced.
+
+Targeted actual QEMU command in an isolated Ubuntu 26.04 build, exit 0, URL N/A-local:
+
+```sh
+/usr/bin/time -f 'qemu control elapsed=%e exit=%x' qemu-ppc -L /usr/powerpc-linux-gnu /work/build/tests/muhtari-test-control /work/save /src/tests/diag/battery.a78 qemu-ppc -L /usr/powerpc-linux-gnu /work/build/runner/muhtari-run
+```
+
+The build uses the existing PPC toolchain and `-DMUHTARI_TIMEOUT_SCALE=13`. The actual consumer passes all four default/inherited-ignore and final/during-output combinations, exit 1 for each runner and every one of 34816 saved bytes, in 4.92 seconds locally. One-off same-consumer wrappers deliberately hang the during-output child or exit with the wrong success status: expected consumer exit 1 occurs with bounded cleanup at 13.36 seconds and 0.23 seconds; the asserting Python probe exits 0. Initial isolated commands used the wrong runner build path and failed; only corrected `runner/muhtari-run` commands count as proof. These generated wrappers/logs/media remain ignored.
+
+The corrected full Nightly now passes native/PPC 641+6 each, both release floors and exact identity/69-row equality. Its real PPC control consumer passes in 7.82 seconds; the downloaded complete files also match the fresh local output. Six 10000-case properties, full vectors258, fuzz10 including I2C and all retained benchmarks pass at unchanged status.
+
+Final CI attempt 1 at the same immutable `54485d6` had two macOS x64 policy timeouts: publish130.38 seconds and quality30.18 seconds; the other639 normal tests, including the new control consumer, passed. No source or timeout changed. GitHub refused a job retry while the containing run was active; after both Windows parent workflows completed, `gh run rerun 40104749040 --job 120904022265` exited 0. Attempt2 reran that job and dependents, carrying prior successful jobs forward. Both current/base full inventories now pass; the retry's parent publish/quality controls pass at78.52/23.51 seconds. The authenticated join, six-native69 equality, actual two-case RetroArch and WASM580/byte comparison all pass. The failed attempt remains visible.
+
+Parent's separate local reviewed-source attempt with caffeinate `-i` exited8 after broad unrelated CTest timeouts at about998.76 seconds. Its bounded retry, `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- caffeinate -is cmake --workflow --preset ci`, exited0 with exact inventories641/6. After the acceptance correction, that same bounded command and the bounded hygiene workflow again exit0 with exact inventories641/6/24. The original failure is not counted as successful evidence.
+
+### Final actual archives after review and correction
+
+Run URL for every row: https://github.com/szTheory/muhtari/actions/runs/40104749040 . Download/enumeration/identity/raw-policy commands exit0. All sums fit the unchanged399937 ceiling.
+
+| Native lane | Library | Runner | Libretro | Current sum | Independently built parent sum |
+|---|---:|---:|---:|---:|---:|
+| Linux arm64 | 87845 | 104036 | 92664 | 284545 | 284545 |
+| Linux x64 | 85802 | 101953 | 90069 | 277824 | 277824 |
+| macOS arm64 | 72498 | 84370 | 73635 | 230503 | 230504 |
+| macOS x64 | 74095 | 84572 | 74004 | 232671 | 232674 |
+| Windows arm64 | 87121 | 153813 | 130136 | 371070 | 371131 |
+| Windows x64 | 88060 | 166307 | 139585 | 393952 | 393994 |
+
+The agent downloaded and viewed the new DMA and both battery screenshots from final [RetroArch job120911136203](https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120911136203). Hardware counters are1/1 then2/2 and marker5A thenFF; every complete34816-byte frontend/runner snapshot passes independent expectations. Strict frame comparisons, battery oracle faults, flipped DMA pixel7,3 and unsafe-path/private-launch isolation controls pass. Exactly two logical hosted cases and300 physical support lines remain.
+
+### Closure of earlier pending Windows proof
+
+The historical `07-06-SUMMARY.md` coverage row `windows-native-controls` intentionally recorded unknown runtime status and assigned execution to this plan. It is now fulfilled by actual final-source Windows [x64](https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120904022224) and [arm64](https://github.com/szTheory/muhtari/actions/runs/40104749040/job/120904022187) current/base641+6 workflows: real console BREAK/C, stop/cadence, during-write synchronization, replacement/failure and audio-stop consumers all pass. Full native/PPC evidence also closes its emulator-prefix execution cross-reference. The original historical row and serialized assumption/prohibition flags are preserved, not rewritten into invented earlier proof. Agent review disposition is clean; no owner UAT is requested.
+
+Earlier [CI40095781311](https://github.com/szTheory/muhtari/actions/runs/40095781311) and [Nightly40095782965](https://github.com/szTheory/muhtari/actions/runs/40095782965) cover only pre-review `fae8e8f`. Their measurements and experiments below remain historical; they do not validate the reviewed fixes or this correction.
 
 ## Completed Tasks and Commits
 
@@ -152,7 +215,7 @@ The performance dispatch retains its existing authority: the same head is measur
 | 2 | Enable proved battery/optional-firmware metadata and reconcile public/preparation prose | `9789903` |
 | 3 | Actual six-native/current/base, complete BE, nightly, WASM and frontend acceptance with size and portability fixes | `c03e212`, `a67bf64`, `061261b`, `88836c7`, `b404c03`, `a126aaa`, `400babb`, `788798a`, `4db85f1`, `8d00518`, `fae8e8f` |
 
-The persisted plan ledger measures 14 commits through the tested source. Actual tokens are 48016 realized diff characters divided by four, excluding this summary and subsequent tracking.
+The original execution measured14 commits and48016 realized diff characters through fae8e8f. The refreshed persisted ledger now measures28 commits through54485d6, including the intervening review/fix/report work; the realized source-span diff is126161 characters, rounded up after division by four to31541 tokens. The recorded before/after hashes make that measurement reproducible. This refreshed report and subsequent tracking commits are outside that measured span.
 
 ## Observations and Exact Inventories
 
@@ -162,7 +225,7 @@ The real producer rejects malformed, missing, duplicate, wrong-revision and inva
 
 `quality.json`, `pins.txt`, `quality_join.cmake`, `lane_equality.cmake`, platform-floor and performance predicates, performance/compatibility allows and the compatibility ledger are unchanged. Existing sample/frame/audio goldens are preserved except the previously authorized behavior metadata transition.
 
-## Actual Three-Component ZIP Measurements
+## Pre-review Three-Component ZIP Measurements
 
 All commands below exit 0. Run URL for every row: https://github.com/szTheory/muhtari/actions/runs/40095781311
 
@@ -177,11 +240,11 @@ All commands below exit 0. Run URL for every row: https://github.com/szTheory/mu
 
 `gh run download 40095781311 --name archives-<lane> --dir <ignored-build-dir>` and the corresponding `quality-<lane>` download exit 0. Python standard-library enumeration asserts exactly one library, runner and libretro ZIP per lane, sums their actual filesystem byte sizes, matches authenticated current metrics and asserts both current/base sums <=399937 with exact expected SHA/source identities. Separate byte comparison checks all six raw base policies and actual first-parent identities, exit 0.
 
-Early plan 07-02 measured local macOS arm64 218325 bytes. Final macOS arm64 is 230440. That early local result never established a worst-platform bound. The final Windows measurements, including intermediate failures, establish the actual feasibility result without a grant or rebaseline.
+Early plan 07-02 measured local macOS arm64 218325 bytes. Pre-review macOS arm64 is230440; final reviewed/corrected macOS arm64 is230503. That early local result never established a worst-platform bound. The final Windows measurements, including intermediate failures, establish the actual feasibility result without a grant or rebaseline.
 
 ## Verification Commands
 
-Local commands at the final source, run URL `N/A-local`, all exit 0:
+Historical original-execution commands at pre-review fae8e8f, run URL `N/A-local`, all exit0; refreshed local commands are recorded above:
 
 - `cmake --workflow --preset ci`: 641 normal plus 6 release checks pass.
 - `cmake --build --preset ci --target package` and `ctest --preset ci-release --output-on-failure`: actual packages and all 6 release checks pass.
@@ -190,9 +253,9 @@ Local commands at the final source, run URL `N/A-local`, all exit 0:
 - `cmake -DROOT=<absolute-project-root> -P tests/cmake/budgets.cmake`: 19 files within unchanged bounds. `git diff --check` passes.
 - Independent accepted-47/current-69 Python comparison and downloaded full native/PowerPC `cmp` checks pass. All created/modified paths and all 14 commits exist and are reachable.
 
-Final hosted CI command families, exit 0: `cmake --workflow --preset ci` or `ci-msvc` on all six targets and their independently built parent; exact normal/release inventories; ASan current/base 626 each; no-floating-point lanes; library-only; retained compatibility; six-native equality; authenticated quality join; real RetroArch; WASM. Source/run: https://github.com/szTheory/muhtari/actions/runs/40095781311 . WASM executes 580 once each and its complete output compares equal to Linux x64, preserving its advisory status.
+Pre-review hosted CI command families at fae8e8f, exit0: `cmake --workflow --preset ci` or `ci-msvc` on all six targets and their independently built parent; exact normal/release inventories; ASan current/base 626 each; no-floating-point lanes; library-only; retained compatibility; six-native equality; authenticated quality join; real RetroArch; WASM. Source/run: https://github.com/szTheory/muhtari/actions/runs/40095781311 . WASM executes 580 once each and its complete output compares equal to Linux x64, preserving its advisory status.
 
-Final Nightly command families, exit 0: full native and PowerPC `ci` inventories 641+6 each and 69-row equality; full-vector workflow and exact inventory 258; six seeded property tests with `MUHTARI_PROP_CASES=10000`; fuzz workflow and exact inventory 10, including actual loader/run/I2C fuzz runs and regression controls; all retained native/WASM benchmark jobs. Source/run: https://github.com/szTheory/muhtari/actions/runs/40095782965 . The full PPC package floor passes, not merely a cross-compile probe.
+Pre-review Nightly command families at fae8e8f, exit0: full native and PowerPC `ci` inventories 641+6 each and 69-row equality; full-vector workflow and exact inventory 258; six seeded property tests with `MUHTARI_PROP_CASES=10000`; fuzz workflow and exact inventory 10, including actual loader/run/I2C fuzz runs and regression controls; all retained native/WASM benchmark jobs. Source/run: https://github.com/szTheory/muhtari/actions/runs/40095782965 . The full PPC package floor passes, not merely a cross-compile probe.
 
 Actual Windows x64 and arm64 full current/base jobs execute runner console events, save replacement and failure controls and the real adapter file/allocation faults. The new Windows probe controls exercise normal/missing/path-missing/access/directory/pipe/character/unknown-type/close outcomes through the actual adapter public load consumer, asserting one close per successful probe and no firmware read after a refused type/probe. Both Windows jobs and inventories pass.
 
@@ -221,8 +284,8 @@ Intermediate authentic failures remain failures: CI40086636081 exposed size and 
 
 Storage and device semantics remain in their existing core owners, runner I/O remains in the host, and the adapter consumes public interfaces. The final file-type change is confined to the existing optional-firmware owner and its real consumer seam. Hash production reuses the existing independent driver, equality keeps full-file and identity authority, and all material checks exercise representative pass/fault behavior. No new trust input, registry, mandatory maintenance bound, architectural layer or dependency was added. Existing intentional stub limitations are product scope, not unfinished functionality. No security-relevant surface outside the assigned boundaries was introduced.
 
-No phase code-review fix round or gap round was consumed by this planned execution and measured feasibility work. Formal phase review/verifier/completion remain with the execute-phase orchestrator. No additional GSD step, PR, merge or ship was invoked; no phase-complete claim is made here.
+Original planned execution/feasibility work consumed no review-fix or gap round. Subsequent formal review used both allowed fix rounds and is clean with all three findings fixed. The narrowly authorized acceptance-test portability correction and same-head job retry do not add a third review-fix or consume/reset the gap allowance. Phase verification/completion remain with the orchestrator. No additional GSD step, PR, merge or ship was invoked; no phase-complete claim is made here.
 
 ## Self-Check: PASSED
 
-All 16 modified owners exist, all 14 measured commits are reachable, source/run SHAs match, final CI and Nightly are successful, all current/base native archives fit, complete inventories and required fault controls pass, and no unexpected deletion, committed log/runtime media, untracked generated file, unresolved implementation stub or unrun plan verification remains. This summary completes plan 07-09; phase review and verification remain pending.
+All28 changed tracked paths through54485d6 exist and all28 measured commits are reachable. Final CI and Nightly identify exact54485d6; all six current/base archives fit and raw policies, source/parent identities, complete inventories and required pass/fault controls pass. Final reviewed production source90b9b7a differs afterward only in the documented acceptance-test plumbing. No unexpected deletion, committed log/runtime media, untracked generated file, unresolved implementation stub or unrun plan verification remains. Plan07-09 acceptance is refreshed; review is clean and formal phase verification/completion remain pending.
