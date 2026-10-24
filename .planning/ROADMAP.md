@@ -180,7 +180,57 @@ Plans:
 **Goal:** Let software use light guns, analog and matrix controllers, quadrature devices and modern controller adapters.
 **Depends on:** Phase 7
 **Requirements:** INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05
-**Plans:** TBD — created by plan-phase.
+**Plans:** 14 plans in 14 sequential waves (parallelization disabled).
+
+Plans:
+**Wave 1**
+- [ ] 08-01-PLAN.md — Prove narrow controller fixture comparability.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 08-02-PLAN.md — Publish additive input and transactional lifecycle.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 08-03-PLAN.md — Prove a timed driving-controller path.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 08-04-PLAN.md — Deliver compact typed runner replay.
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 08-05-PLAN.md — Gate controller expansion on real host equality and packages.
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 08-06-PLAN.md — Correct TIA input memory and emit historical gun light.
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 08-07-PLAN.md — Prove XG-1 historical boundaries through every host.
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 08-08-PLAN.md — Deliver full-range timed paddles.
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [ ] 08-09-PLAN.md — Deliver elapsed-time keypad matrix behavior.
+
+**Wave 10** *(blocked on Wave 9 completion)*
+- [ ] 08-10-PLAN.md — Complete CX22 and ST/Amiga timed motion.
+
+**Wave 11** *(blocked on Wave 10 completion)*
+- [ ] 08-11-PLAN.md — Implement edge-clocked SNES2Atari and Mega7800.
+
+**Wave 12** *(blocked on Wave 11 completion)*
+- [ ] 08-12-PLAN.md — Prove complete adapter mappings and executable scans.
+
+**Wave 13** *(blocked on Wave 12 completion)*
+- [ ] 08-13-PLAN.md — Prove bounded hostile input, isolation and operating cost.
+
+**Wave 14** *(blocked on Wave 13 completion)*
+- [ ] 08-14-PLAN.md — Accept exact controller equality and six-native bounds.
+
+Each plan depends on the preceding plan because core, host, diagnostic and evidence owners overlap.
+08-01 proves narrow fixture comparability before fixture-dependent acceptance. 08-05 requires the
+first independently judged three-deliverable controller slice and fresh exact-source limiting-native
+candidate/base three-component packages before hardware expansion. Substantial slices repeat package
+measurements; 08-14 requires final actual six-native sums within the unchanged399937-byte ceiling.
+No limit increase, self-rebaseline, semantic weakening or advisory-lane promotion is authorized.
 
 **Success criteria:**
 

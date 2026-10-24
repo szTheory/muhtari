@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: ready_to_plan
-stopped_at: Phase 8 context gathered; ready for gsd-plan-phase 8
-last_updated: "2026-10-24T17:32:55.829Z"
+status: ready_to_execute
+stopped_at: Phase 8 planned and checked; ready for gsd-execute-phase 8
+last_updated: "2026-10-24T19:39:14.456Z"
 last_activity: 2026-10-24
-last_activity_desc: Phase 8 context gathered; no implementation started
-state_head: d0ed1ff2797b3cb91a762d543625d9c66c80e0a3
+last_activity_desc: Phase 8 research and 14 plans checked; no implementation started
+state_head: 8fee460838a5606beaedc4c78e673257cc474786
 progress:
   total_phases: 7
   completed_phases: 3
-  total_plans: 28
+  total_plans: 42
   completed_plans: 28
   percent: 43
 total_phases: 7
-current_phase: 08
 current_phase_name: Controllers at the pins
-current_plan: Not started
+current_phase: 08
+current_plan: "01"
 ---
 
 # Project State
@@ -27,25 +27,33 @@ current_plan: Not started
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 8 discussion complete; 20 decisions captured in phases/08-controllers-at-the-pins/08-CONTEXT.md. Research and planning are the next separate step. Phase 7 details below are historical acceptance/shipping records.
-The helper's next-phase pointer is parked at Phase 8; no Phase 8 work was started.
+Current focus: Phase 8 research and planning complete; 14 sequential plans and 38 tasks
+are ready for execution. The independent plan recheck passed after explicit research
+dispositions were added. All five INPUT requirements and 20 decisions are covered;
+no Phase 8 requirement is implemented or completed. Phase 7 details below are historical
+acceptance/shipping records.
 
 ## Current Position
 
 Phase 7 is complete: nine plans, SAVE-01–06 and35/35 verified must-haves.
-Phase 5–7 are3/7 milestone phases with27/27 currently planned active slots complete.
-Phases 8–11 remain unplanned. Runtime totals28/28 include the historical halted06-01
+Phase 5–7 are3/7 milestone phases with27/41 currently planned active slots complete.
+Phase 8 has14 unexecuted plans; Phases 9–11 remain unplanned. Runtime totals28/42 include the historical halted06-01
 SUMMARY; it remains excluded from accepted active outcomes and is not a budget grant.
 
-Status: ready_to_plan
-Last Activity: 2026-10-24 — Phase 8 context gathered; no implementation started
-Next command after shipping checks: $gsd-plan-phase 8
+Status: ready_to_execute
+Last Activity: 2026-10-24 — Phase 8 research and 14 plans checked; no implementation started
+Next command: $gsd-execute-phase 8
 Branch: `phase/08-controllers-at-the-pins`. No Phase 8 pull request yet; Phase 7 merged in PR #28.
-Squash auto-merge and final head CI are checked by this ship session; the release
-pull request is checked after merge. No Phase 8 work was started.
-Phase 6 package v0.5.0 remains the last published version at PR creation.
 
-Fresh ship checks: `cmake --workflow --preset ci` exits 0 (641+6 tests),
+Planning checks: `check.decision-coverage-plan` exits0 with20/20 covered;
+`check gap-analysis.plan-post` exits0 with25/25 source items covered. All38 automated
+commands pass `sh -n`; the failure-direction probe reports no findings. The path probe
+does not interpret CMake command forms; the independent checker reviewed actual/planned
+test registrations. These are local planning checks (run URL: N/A-local), not runtime
+or hosted acceptance. Archive fit and operating cost remain execution gates; hardware
+calibration remains deferred. No review-fix or gap-execution round was used here.
+
+Historical Phase 7 ship checks: `cmake --workflow --preset ci` exits 0 (641+6 tests),
 `git diff --check` exits 0, and `verification.status` exits 0 with `passed`.
 The existing CI/nightly run URLs below were rechecked as completed/success.
 The ship-note commit deliberately retains CI triggering so the final PR head has a run.
@@ -111,9 +119,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 8 context gathered; ready for gsd-plan-phase 8
-Last session: 2026-10-24T17:32:37.620Z
-Resume file: .planning/phases/08-controllers-at-the-pins/08-CONTEXT.md
+**Stopped at:** Phase 8 planned and checked; ready for gsd-execute-phase 8
+Last session: 2026-10-24T19:39:14.456Z
+Resume file: .planning/phases/08-controllers-at-the-pins/08-01-PLAN.md
 
 ### Quick Tasks Completed
 
