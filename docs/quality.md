@@ -119,6 +119,10 @@ still requires all six actual native totals, release-content checks and the
 authenticated worst-lane reduction at or below 399937, with exact event-base and
 head identities. Metric retirement is accepted only through the existing hosted
 observations and surviving guards; controlled local fixtures do not replace them.
+Top-level MSVC Release builds use the compiler's `/O1` minimum-size option set;
+embedded builds keep the consumer's options. The same objects run the full tests
+and enter all three component archives. A compiler setting alone proves no byte
+bound: acceptance measures the actual archives on each native target.
 
 Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
 ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and
