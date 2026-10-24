@@ -449,6 +449,7 @@ static void inptctrl_write(muhtari *m, uint8_t v)
         return;
     }
     b->inptctrl = (uint8_t)(v & MUHTARI__INPTCTRL_BITS);
+    muhtari__tia_pins_changed(m);
     if (b->halt_gate_writes < 2u) {
         b->halt_gate_writes++;
     }

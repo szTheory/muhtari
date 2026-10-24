@@ -56,6 +56,7 @@ void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
         /* Deliver every intermediate resolved level, even when an entire
            cycle returns to its starting tuple (controllers.md, Driving). */
         muhtari__riot_pins_changed(m);
+        muhtari__tia_pins_changed(m);
         ports_motion_rearm(m);
         next = muhtari__ports_next_event(m);
     }
@@ -455,6 +456,7 @@ void muhtari__ports_latch(muhtari *m)
     ports_motion_rearm(m);
     /* The new pins reach PA7's edge detector at this tick. */
     muhtari__riot_pins_changed(m);
+    muhtari__tia_pins_changed(m);
     muhtari__bus_rearm(m);
 }
 

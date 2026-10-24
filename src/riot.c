@@ -156,6 +156,7 @@ static void riot_io_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t tick)
         muhtari__savekey_pins(m, tick);
     }
     riot_pa7_update(m);
+    muhtari__tia_pins_changed(m);
 }
 
 uint8_t muhtari__riot_read(muhtari *m, uint16_t addr)

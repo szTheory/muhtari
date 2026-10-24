@@ -27,7 +27,14 @@ uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr)
     uint8_t driven = tia_driven[reg];
     uint8_t level = 0u;
     if (reg >= 0x08u && reg <= 0x0Du) {
-        level = (uint8_t)(muhtari__ports_inpt(m, reg - 0x08u) << 7);
+        unsigned input = reg - 0x08u;
+        uint8_t pin = muhtari__ports_inpt(m, input);
+        if (input < 4u && m->tia.input_dump != 0u) {
+            pin = 0u;
+        } else if (input >= 4u && m->tia.input_latch_enable != 0u) {
+            pin = m->tia.input_latch[input - 4u];
+        }
+        level = (uint8_t)(pin << 7);
     }
     return (uint8_t)((level & driven) | (m->bus.open_bus & (uint8_t)~driven));
 }
@@ -36,6 +43,8 @@ void muhtari__tia_reset(muhtari *m)
 {
     static const uint16_t phases[4] = {0u, 64u, 144u, 288u};
     memset(&m->tia, 0, sizeof m->tia);
+    m->tia.input_latch[0] = 1u;
+    m->tia.input_latch[1] = 1u;
     m->tia.initialized = 1u;
     m->tia.epoch_phase = (uint16_t)(m->profile.tia_phase % TIA_LINE_TICKS);
     unsigned phase = 0u;
@@ -44,6 +53,17 @@ void muhtari__tia_reset(muhtari *m)
     }
     m->tia.phase = (uint8_t)(phase & 3u);
     m->tia.next_tick = (phase == 4u ? TIA_LINE_TICKS : phases[phase]) - m->tia.epoch_phase;
+}
+
+/* Atari TIA input ports 8C: enabled latches retain every low until
+   disabled. Reads never capture or clear (tia.md, Input ports). */
+void muhtari__tia_pins_changed(muhtari *m)
+{
+    if (m->tia.input_latch_enable != 0u) {
+        for (unsigned p = 0u; p < 2u; p++) {
+            m->tia.input_latch[p] &= muhtari__ports_inpt(m, 4u + p);
+        }
+    }
 }
 
 static void tia_level(muhtari *m, unsigned ch, uint64_t tick)
@@ -127,6 +147,16 @@ void muhtari__tia_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick
 {
     muhtari__tia_catch_up(m, data_tick);
     unsigned reg = addr & 0x3Fu;
+    if (reg == 0x01u) {
+        muhtari__ports_catch_up(m, data_tick);
+        m->tia.input_dump = (uint8_t)((v >> 7) & 1u);
+        m->tia.input_latch_enable = (uint8_t)((v >> 6) & 1u);
+        if (m->tia.input_latch_enable == 0u) {
+            m->tia.input_latch[0] = 1u;
+            m->tia.input_latch[1] = 1u;
+        }
+        muhtari__tia_pins_changed(m);
+    }
     if (reg == TIA_RSYNC) {
         /* Complete old due phases first. Skip the new epoch's A at zero:
            resynchronization schedules future edges only (tia.md). */

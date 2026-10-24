@@ -70,6 +70,7 @@ struct muhtari__tia {
     uint64_t next_tick, epoch_tick;
     uint16_t epoch_phase;
     uint8_t phase, initialized;
+    uint8_t input_latch_enable, input_dump, input_latch[2];
     struct muhtari__tia_channel channel[2];
 };
 
@@ -658,6 +659,7 @@ uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr);
 void muhtari__tia_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick);
 void muhtari__tia_reset(muhtari *m);
 void muhtari__tia_catch_up(muhtari *m, uint64_t tick);
+void muhtari__tia_pins_changed(muhtari *m);
 
 /* The RIOT as the bus sees it (src/riot.c): A9 selects its ports and timer
    or its RAM, and A0-A6 the register or byte (docs/hardware/riot.md).
