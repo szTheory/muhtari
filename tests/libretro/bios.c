@@ -1,6 +1,9 @@
 /* Compile the real adapter with deterministic file/allocation faults. This
    exercises its public load entry point without platform-specific I/O tricks
    or test hooks in the shipped module. All images are generated in memory. */
+#if !defined(_WIN32) && !defined(_XOPEN_SOURCE)
+#define _XOPEN_SOURCE 700
+#endif
 #include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>

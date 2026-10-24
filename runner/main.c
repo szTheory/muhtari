@@ -833,7 +833,16 @@ static FILE *save_read_open(const char *path)
         errno = EINVAL;
         return NULL;
     }
-    return fopen(path, "rb");
+    int fd = _open(path, _O_RDONLY | _O_BINARY);
+    if (fd < 0)
+        return NULL;
+    FILE *f = _fdopen(fd, "rb");
+    if (f == NULL) {
+        int error = errno;
+        (void)_close(fd);
+        errno = error;
+    }
+    return f;
 #else
     /* Nonblocking open plus descriptor stat refuses FIFOs even after a path race. */
     int fd = open(path, O_RDONLY | O_NONBLOCK);
