@@ -1570,6 +1570,13 @@ static void test_battery_no_poll(void)
             m->savekey.busy_until = m->frame_deadline + 1u;
         }
         uint64_t due = m->savekey.busy_until;
+        muhtari_frame invalid;
+        frame_io(&invalid, video, WIDTH - 1u, NULL, 0u);
+        struct muhtari__savekey saved = m->savekey;
+        uint64_t tick = m->bus.ticks;
+        CHECK_EQ_U64(muhtari_run_frame(m, &invalid), MUHTARI_STATUS_ERR_ARGUMENT);
+        CHECK(memcmp(&saved, &m->savekey, sizeof saved) == 0);
+        CHECK_EQ_U64(m->bus.ticks, tick);
         run(m, NULL);
         if (mode != 3u) {
             CHECK(m->bus.ticks < due);
@@ -1589,6 +1596,27 @@ static void test_battery_no_poll(void)
         }
         muhtari_destroy(m);
     }
+    /* Resume a synthetic BIOS at a real lock-to-2600 write. Its partial
+       execution makes a page due even though the frame is refused. */
+    muhtari *m = make();
+    battery_load(m, 0x5Au, 0u);
+    const uint8_t reject[] = {0xA9u, 0x01u, 0x85u, 0x01u};
+    m->bios_size = 4096u;
+    memcpy(m->bios + (m->cpu.pc & 0x0FFFu), reject, sizeof reject);
+    m->boot.handoff_frame = 0u;
+    m->bus.inptctrl = 0u;
+    m->bus.halt_gate_writes = 0u;
+    m->savekey.busy_until = m->bus.ticks + 1u;
+    muhtari_frame io;
+    frame_io(&io, NULL, 0u, NULL, 0u);
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_ERR_BIOS_REJECTED_CART);
+    CHECK_EQ_HEX(battery_of(m).data[2051], 0x5Au);
+    CHECK_EQ_U64(battery_of(m).generation, 1u);
+    uint64_t tick = m->bus.ticks;
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_ERR_BIOS_REJECTED_CART);
+    CHECK_EQ_U64(m->bus.ticks, tick);
+    CHECK_EQ_U64(battery_of(m).generation, 1u);
+    muhtari_destroy(m);
 }
 
 static void test_battery_deadline(void)
