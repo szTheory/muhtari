@@ -13,6 +13,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include "../check.h"
 #include "../cart/images.h"
@@ -28,7 +31,16 @@ enum {
     READ_ERROR,
     OPEN_ERROR,
     NONREGULAR,
-    CLOSE_ERROR
+    CLOSE_ERROR,
+#ifdef _WIN32
+    PATH_ABSENT,
+    PROBE_ERROR,
+    TYPE_ERROR,
+    TYPE_PIPE,
+    TYPE_CHAR,
+    PROBE_CLOSE_ERROR,
+#endif
+    CASE_COUNT
 };
 static int candidates[2];
 static FILE *handles[2];
@@ -99,10 +111,46 @@ static void *bios_alloc(size_t size)
 }
 
 #ifdef _WIN32
-static int bios_stat(const char *path, struct _stat64 *info)
+static unsigned probe_opens, probe_closes;
+static HANDLE WINAPI bios_probe(LPCSTR path, DWORD access, DWORD share,
+                                LPSECURITY_ATTRIBUTES security, DWORD creation, DWORD flags,
+                                HANDLE template_file)
+{
+    CHECK(strstr(path, "highscre.bin") != NULL);
+    CHECK_EQ_U64(access, 0u);
+    CHECK_EQ_U64(share, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE);
+    CHECK(security == NULL);
+    CHECK_EQ_U64(creation, OPEN_EXISTING);
+    CHECK_EQ_U64(flags, FILE_ATTRIBUTE_NORMAL);
+    CHECK(template_file == NULL);
+    probe_opens++;
+    if (hsc_case == ABSENT || hsc_case == PATH_ABSENT || hsc_case == PROBE_ERROR ||
+        hsc_case == NONREGULAR) {
+        SetLastError(hsc_case == ABSENT        ? ERROR_FILE_NOT_FOUND
+                     : hsc_case == PATH_ABSENT ? ERROR_PATH_NOT_FOUND
+                                               : ERROR_ACCESS_DENIED);
+        return INVALID_HANDLE_VALUE;
+    }
+    return (HANDLE)(uintptr_t)1u;
+}
+
+static DWORD WINAPI bios_type(HANDLE handle)
+{
+    CHECK(handle == (HANDLE)(uintptr_t)1u);
+    return hsc_case == TYPE_ERROR  ? FILE_TYPE_UNKNOWN
+           : hsc_case == TYPE_PIPE ? FILE_TYPE_PIPE
+           : hsc_case == TYPE_CHAR ? FILE_TYPE_CHAR
+                                   : FILE_TYPE_DISK;
+}
+
+static BOOL WINAPI bios_probe_close(HANDLE handle)
+{
+    CHECK(handle == (HANDLE)(uintptr_t)1u);
+    probe_closes++;
+    return hsc_case != PROBE_CLOSE_ERROR;
+}
 #else
 static int bios_stat(const char *path, struct stat *info)
-#endif
 {
     (void)path;
     if (hsc_case == ABSENT) {
@@ -110,13 +158,10 @@ static int bios_stat(const char *path, struct stat *info)
         return -1;
     }
     memset(info, 0, sizeof *info);
-#ifdef _WIN32
-    info->st_mode = hsc_case == NONREGULAR ? _S_IFDIR : _S_IFREG;
-#else
     info->st_mode = hsc_case == NONREGULAR ? S_IFDIR : S_IFREG;
-#endif
     return 0;
 }
+#endif
 
 #define fopen bios_open
 #define fread bios_read
@@ -124,7 +169,9 @@ static int bios_stat(const char *path, struct stat *info)
 #define fclose bios_close
 #define malloc bios_alloc
 #ifdef _WIN32
-#define _stat64(path, info) bios_stat(path, info)
+#define CreateFileA bios_probe
+#define GetFileType bios_type
+#define CloseHandle bios_probe_close
 #else
 #define stat(path, info) bios_stat(path, info)
 #endif
@@ -135,7 +182,9 @@ static int bios_stat(const char *path, struct stat *info)
 #undef fclose
 #undef malloc
 #ifdef _WIN32
-#undef _stat64
+#undef CreateFileA
+#undef GetFileType
+#undef CloseHandle
 #else
 #undef stat
 #endif
@@ -303,7 +352,7 @@ int main(void)
     failed_frames();
     /* Present bad HSC firmware never becomes the missing-file fallback. */
     directory = "system";
-    for (unsigned test = ABSENT; test <= CLOSE_ERROR; test++) {
+    for (unsigned test = ABSENT; test < CASE_COUNT; test++) {
         if (test == BAD_VECTOR)
             continue;
         hsc_case = (int)test;
@@ -312,7 +361,21 @@ int main(void)
         fail_alloc = false;
         seen_log[0] = seen_message[0] = '\0';
         bool accepted = test == ABSENT || test == VALID;
+#ifdef _WIN32
+        accepted = accepted || test == PATH_ABSENT;
+        probe_opens = probe_closes = 0u;
+        opens = closes = 0u;
+#endif
         CHECK_EQ_U64(retro_load_game(&game), accepted);
+#ifdef _WIN32
+        CHECK_EQ_U64(probe_opens, 1u);
+        CHECK_EQ_U64(probe_closes, test == ABSENT || test == PATH_ABSENT || test == PROBE_ERROR ||
+                                           test == NONREGULAR
+                                       ? 0u
+                                       : 1u);
+        if (test >= PROBE_ERROR || test == NONREGULAR)
+            CHECK_EQ_U64(opens, 0u);
+#endif
         if (accepted) {
             muhtari_const_span rom = {0};
             rom.size = (uint32_t)sizeof rom;

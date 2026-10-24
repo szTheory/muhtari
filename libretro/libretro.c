@@ -25,7 +25,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <sys/stat.h>
+#endif
 
 /* LSB Core, __xstat: the stable binary stat interface. Modern glibc's
    public stat symbols need 2.33/2.34; retain the existing 2.17 floor.
@@ -795,8 +799,21 @@ static muhtari_status lr_load_hsc(muhtari_media *media, uint8_t **owned)
     if (n < 0 || (size_t)n >= sizeof path)
         return MUHTARI_STATUS_ERR_INVALID_HSC;
 #ifdef _WIN32
-    struct _stat64 info;
-    int found = _stat64(path, &info);
+    /* CreateFile without BACKUP_SEMANTICS refuses directories; GetFileType
+       distinguishes disk files from pipes/devices. No timestamps are needed.
+       Microsoft Learn: CreateFileA, GetFileType, CloseHandle. */
+    HANDLE probe = CreateFileA(path, 0u, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                               NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (probe == INVALID_HANDLE_VALUE) {
+        DWORD error = GetLastError();
+        return error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND
+                   ? MUHTARI_STATUS_OK
+                   : MUHTARI_STATUS_ERR_INVALID_HSC;
+    }
+    DWORD type = GetFileType(probe);
+    BOOL probe_closed = CloseHandle(probe);
+    if (type != FILE_TYPE_DISK || !probe_closed)
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
 #else
     struct stat info;
 #if defined(__GLIBC__) &&                                                                          \
@@ -814,13 +831,8 @@ static muhtari_status lr_load_hsc(muhtari_media *media, uint8_t **owned)
 #else
     int found = stat(path, &info);
 #endif
-#endif
     if (found != 0)
         return errno == ENOENT ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_INVALID_HSC;
-#ifdef _WIN32
-    if ((info.st_mode & _S_IFMT) != _S_IFREG)
-        return MUHTARI_STATUS_ERR_INVALID_HSC;
-#else
     if (!S_ISREG(info.st_mode))
         return MUHTARI_STATUS_ERR_INVALID_HSC;
 #endif
