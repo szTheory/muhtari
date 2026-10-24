@@ -20,8 +20,8 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | Phase | Deliverable | Requirements | Depends on | Status |
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
-| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipping pending |
-| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | 9/9 plans executed; verification pending |
+| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipped in PR24 |
+| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Complete; 35/35 verified; shipping pending |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
 | 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Not started |
@@ -136,8 +136,8 @@ Shared core, manifest and inventory ownership requires sequential execution.
 **Goal:** Keep HSC and SaveKey progress across process and frontend restarts without putting file I/O in the core.
 **Depends on:** Phase 6
 **Requirements:** SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06
-**Plans:** 9/9 plans executed in 9 sequential waves (parallelization disabled).
-**Status:** All plans executed with exact-source CI/nightly, independent fresh-process RetroArch, complete portability/equality and six current/base archive sums within399937. SAVE-01–06 have actual contract evidence; formal phase review and verification remain pending.
+**Plans:** 9/9 plans complete in 9 sequential waves (parallelization disabled).
+**Status:** Complete, 2026-10-24. All nine plans and SAVE-01–06 pass35/35 verified must-haves. Review is clean; exact-source CI/nightly, complete native/PowerPC/WASM evidence, actual fresh-process RetroArch and all six current/base archive sums pass within399937. Shipping is the next separate step.
 
 Plans:
 **Wave 1**
@@ -243,11 +243,11 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
-| 7. Battery saves across hosts | 9/9 | Verification pending | — |
+| 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-23; Phase7 research and nine sequential plans are checked, with SAVE-01–06 and D-01–18 covered. Phase5–6 retain18 completed active slots of27 now planned; no save requirement is complete. Historical failed evidence remains preserved. Next separate command: `$gsd-execute-phase 7`.*
+*Updated: 2026-10-24; Phase7 is verified complete (35/35), with SAVE-01–06 and D-01–18 covered. Phases5–7 have27 completed active slots; historical halted06-01 remains excluded. Next separate command: `$gsd-ship 7`. No later phase was started.*
