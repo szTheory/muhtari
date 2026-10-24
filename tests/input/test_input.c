@@ -551,6 +551,103 @@ static void input_dump(void)
     muhtari_destroy(m);
 }
 
+static muhtari *light_boot(unsigned port, uint8_t color, int rows, uint64_t *sample)
+{
+    muhtari *m = boot(&plain);
+    CHECK(m != NULL);
+    if (m == NULL) {
+        return NULL;
+    }
+    (void)input_access(m, 0x0001u, 1, 0x07u);
+    (void)input_access(m, 0x0020u, 1, color);
+    muhtari_input_ex in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.port[0].device = MUHTARI_PORT_UNPLUGGED;
+    in.port[1].device = MUHTARI_PORT_UNPLUGGED;
+    in.port[port].device = MUHTARI_PORT_LIGHTGUN;
+    in.port[port].gun_x = 100u;
+    in.port[port].gun_y = 20u;
+    in.port[port].buttons = port == 0u ? MUHTARI_BUTTON_1 : 0u;
+    muhtari_status st = muhtari_set_input_ex(m, &in);
+    CHECK_EQ_U64(st, MUHTARI_STATUS_OK);
+    if (st != MUHTARI_STATUS_OK) {
+        muhtari_destroy(m);
+        return NULL;
+    }
+    muhtari__ports_latch(m);
+    m->maria.rows = rows ? video : NULL;
+    m->maria.pitch = MUHTARI__WIDTH;
+    /* First eligible row is native16, raster32, not aim row20.
+       At x100 the existing raster emits at135+100. */
+    *sample = MUHTARI__TICKS_PER_FRAME_NTSC + 32u * 454u + 235u;
+    return m;
+}
+
+static uint8_t light_access_at(muhtari *m, uint16_t addr, uint64_t tick,
+                               int write, uint8_t value)
+{
+    CHECK(tick >= m->bus.ticks + 17u);
+    m->bus.ticks = tick - 17u;
+    uint8_t result = input_access(m, addr, write, value);
+    CHECK_EQ_U64(m->bus.ticks, tick + 1u);
+    return result;
+}
+
+static int lightgun(void)
+{
+    static const uint8_t colors[] = {0xA7u, 0xA8u, 0x08u};
+    static const unsigned offsets[] = {63u, 64u, 93u, 94u};
+    for (unsigned port = 0u; port < 2u; port++) {
+        for (unsigned rows = 0u; rows < 2u; rows++) {
+            for (unsigned color = 0u; color < sizeof colors; color++) {
+                for (unsigned edge = 0u; edge < 4u; edge++) {
+                    uint64_t sample;
+                    muhtari *m = light_boot(port, colors[color], (int)rows, &sample);
+                    if (m == NULL) {
+                        continue;
+                    }
+                    CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u), port == 0u ? 0xFFu : 0xFEu);
+                    (void)input_access(m, 0x0001u, 1, 0x02u);
+                    /* Darken after emission; TIA video blanking cannot hide
+                       MARIA light, and history survives palette changes. */
+                    (void)light_access_at(m, 0x0020u, sample + 1u, 1, 0u);
+                    uint8_t expected = color != 0u && edge != 0u && edge != 3u ? 0u : 0x80u;
+                    CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port),
+                                                sample + offsets[edge], 0, 0u), expected);
+                    if (rows != 0u) {
+                        CHECK_EQ_HEX(video[16u * MUHTARI__WIDTH + 100u], colors[color]);
+                    }
+                    muhtari_destroy(m);
+                }
+            }
+        }
+        uint64_t sample;
+        muhtari *m = light_boot(port, 0xA8u, 0, &sample);
+        if (m != NULL) {
+            (void)input_access(m, 0x0001u, 1, 0x40u);
+            m->ports.input_read = 0u;
+            m->cpu.jammed = 1u;
+            m->bus.ticks = sample - 20u;
+            while (m->bus.ticks < sample + 110u) {
+                muhtari__cpu_step(m);
+            }
+            struct muhtari__ports before = m->ports;
+            struct muhtari__tia tia = m->tia;
+            CHECK_EQ_HEX(muhtari__bus_peek(m, (uint16_t)(0x000Cu + port)) & 0x80u, 0u);
+            CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
+            CHECK(memcmp(&tia, &m->tia, sizeof tia) == 0);
+            CHECK_EQ_U64(m->ports.input_read, 0u);
+            m->cpu.jammed = 0u;
+            CHECK_EQ_HEX(input_access(m, (uint16_t)(0x000Cu + port), 0, 0u), 0u);
+            (void)input_access(m, 0x0001u, 1, 0u);
+            CHECK_EQ_HEX(input_access(m, (uint16_t)(0x000Cu + port), 0, 0u), 0x80u);
+            muhtari_destroy(m);
+        }
+    }
+    return check_failures == 0;
+}
+
 static int proline_two_button(void)
 {
     input_dump();
@@ -1308,6 +1405,7 @@ int main(int argc, char **argv)
         {"switches", switches},
         {"unplugged", unplugged},
         {"pa7_edge", pa7_edge},
+        {"lightgun", lightgun},
         {"savekey.pins", savekey_pins},
         {"savekey.protocol", savekey_protocol},
         {"savekey.wrap", savekey_wrap},
