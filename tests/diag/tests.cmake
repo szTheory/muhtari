@@ -18,7 +18,7 @@ if(DIAG_CONTROLLERS_RUN)
     message(FATAL_ERROR "controller actual runner: ${rc}\n${actual}${err}")
   endif()
   string(REGEX MATCH "diagnostic [0-9a-f]+\n" mailbox "${actual}")
-  file(WRITE "${OUT}/report.txt" "${mailbox}")
+  file(CONFIGURE OUTPUT "${OUT}/report.txt" CONTENT "${mailbox}" @ONLY NEWLINE_STYLE UNIX)
   execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/report.txt" motion0
     "${EXPECTED}" RESULT_VARIABLE rc TIMEOUT 10)
   if(NOT rc STREQUAL "0")
