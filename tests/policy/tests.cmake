@@ -108,12 +108,18 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
       -DWORK=${CMAKE_BINARY_DIR}/policy/publish_fixture -P ${CMAKE_CURRENT_LIST_DIR}/publish.cmake
     # Provisional max724.35s Windows/63.21s other, runs39876385414/39874751162.
     LABELS policy TIMEOUT ${publish_timeout} COST 725)
+  set(quality_timeout 30)
+  if(WIN32)
+    # Provisional 2 x 26.92s comparable Windows arm64 control, run40031550434;
+    # expanded native controls exceeded30s in run40077753682.
+    set(quality_timeout 54)
+  endif()
   muhtari_add_test(NAME policy.quality.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
       -DRUN=$<TARGET_FILE:muhtari-run> -DDRIVER=$<TARGET_FILE:muhtari-test-diag>
       "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
       -DWORK=${CMAKE_BINARY_DIR}/policy/quality_fixture -P ${CMAKE_CURRENT_LIST_DIR}/quality.cmake
-    LABELS policy TIMEOUT 30)
+    LABELS policy TIMEOUT ${quality_timeout})
   # Provisional n=1 per arm64 image: 20261013.183.4/20261018.189.1, runs 39699892851/39699026057.
   # Complete control max 103.28 s; ceil(2 x 103.28)=207 s, with all semantic cases retained.
   muhtari_add_test(NAME policy.digest.controls
