@@ -621,6 +621,9 @@ runner.probe.truncated	portable,runner
 runner.probe.unreadable	portable,runner
 runner.probe.unsupported_board	portable,runner
 runner.probe.usage	portable,runner
+runner.save.faults	portable,runner
+runner.save.import	portable,runner
+runner.save.nonregular	runner
 runner.save.roundtrip	portable,runner
 runner.stop	portable,runner
 runner.usage.boot_bios_no_file	portable,runner

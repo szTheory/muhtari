@@ -7,6 +7,22 @@
 # EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
 # runs its own guest binary.
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
+  if(CASE STREQUAL "save_roundtrip")
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" roundtrip RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "actual-main save roundtrip failed: ${rc}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --save-dir "${DIR}" "${DIR}/game.a78"
+      RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "fresh runner save restore failed: ${rc}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" verify RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "fresh process exact save bytes failed: ${rc}")
+    endif()
+    return()
+  endif()
   if(CASE STREQUAL "audio")
     string(REPEAT "|....12|......|...BB|\n" 60 audio_input)
     file(WRITE "${CAPTURE}.movie" "muhtari-movie 1\nport1 proline\nport2 proline\n${audio_input}")
@@ -668,6 +684,7 @@ foreach(case IN ITEMS hash hash.repeat usage.no_args usage.unknown usage.positio
     COMMAND ${runner_check} -DCASE=${case} -DFRAMES=${MUHTARI_LONG_RUN} -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 10)
 endforeach()
+
 muhtari_add_test(NAME runner.dump_png
   COMMAND ${runner_check} -DCASE=dump_png -DOUT=${PROJECT_BINARY_DIR}/tests/dump.png
     -P ${CMAKE_CURRENT_LIST_FILE}
@@ -958,6 +975,17 @@ target_compile_definitions(muhtari-test-save-runner PRIVATE _POSIX_C_SOURCE=2008
 set_target_properties(muhtari-test-save-runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-save-runner)
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-roundtrip)
-muhtari_add_test(NAME runner.save.roundtrip COMMAND muhtari-test-save-runner
-  ${PROJECT_BINARY_DIR}/tests/save-roundtrip $<TARGET_FILE:muhtari-run>
-  LABELS runner portable TIMEOUT 10)
+muhtari_add_test(NAME runner.save.roundtrip COMMAND ${CMAKE_COMMAND}
+  "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>"
+  "-DRUN=$<TARGET_FILE:muhtari-run>" "-DDIR=${PROJECT_BINARY_DIR}/tests/save-roundtrip"
+  -DCASE=save_roundtrip -P ${CMAKE_CURRENT_LIST_FILE} LABELS runner portable TIMEOUT 10)
+foreach(case IN ITEMS import faults)
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-${case})
+  muhtari_add_test(NAME runner.save.${case} COMMAND muhtari-test-save-runner
+    ${PROJECT_BINARY_DIR}/tests/save-${case} ${case} LABELS runner portable TIMEOUT 10)
+endforeach()
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI")
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-nonregular)
+  muhtari_add_test(NAME runner.save.nonregular COMMAND muhtari-test-save-runner
+    ${PROJECT_BINARY_DIR}/tests/save-nonregular nonregular LABELS runner TIMEOUT 10)
+endif()

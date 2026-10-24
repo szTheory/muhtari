@@ -3,11 +3,149 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#include <io.h>
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+#include "muhtari.h"
 #include "../check.h"
 
+enum {
+    IO_OK,
+    IMPORT_READ,
+    IMPORT_CLOSE,
+    SAVE_WRITE,
+    SAVE_FLUSH,
+    SAVE_SYNC,
+    SAVE_CLOSE,
+    SAVE_REPLACE
+};
+static int io_fault;
+static unsigned frames_run, temp_opens, replacements;
+static int reject_frame;
+static FILE *import_stream, *save_stream;
+static const uint8_t *expected_import;
+static size_t expected_bytes;
+
+static FILE *test_fopen(const char *path, const char *mode)
+{
+    FILE *f = fopen(path, mode);
+    if (strstr(path, ".sav") != NULL && strcmp(mode, "rb") == 0)
+        import_stream = f;
+    return f;
+}
+static FILE *test_fdopen(int fd, const char *mode)
+{
+#ifdef _WIN32
+    FILE *f = _fdopen(fd, mode);
+#else
+    FILE *f = fdopen(fd, mode);
+#endif
+    if (strcmp(mode, "rb") == 0)
+        import_stream = f;
+    else {
+        save_stream = f;
+        temp_opens++;
+    }
+    return f;
+}
+static size_t test_read(void *p, size_t n, size_t count, FILE *f)
+{
+    return f == import_stream && io_fault == IMPORT_READ ? 0u : fread(p, n, count, f);
+}
+static int test_error(FILE *f)
+{
+    return f == import_stream && io_fault == IMPORT_READ ? 1 : ferror(f);
+}
+static size_t test_write(const void *p, size_t n, size_t count, FILE *f)
+{
+    return f == save_stream && io_fault == SAVE_WRITE ? 0u : fwrite(p, n, count, f);
+}
+static int test_flush(FILE *f)
+{
+    return f == save_stream && io_fault == SAVE_FLUSH ? EOF : fflush(f);
+}
+static int test_close(FILE *f)
+{
+    int fail = (f == import_stream && io_fault == IMPORT_CLOSE) ||
+               (f == save_stream && io_fault == SAVE_CLOSE);
+    if (f == import_stream)
+        import_stream = NULL;
+    if (f == save_stream)
+        save_stream = NULL;
+    int rc = fclose(f);
+    return fail ? EOF : rc;
+}
+static int test_sync(int fd)
+{
+    if (io_fault == SAVE_SYNC)
+        return -1;
+#ifdef _WIN32
+    return _commit(fd);
+#else
+    return fsync(fd);
+#endif
+}
+#ifndef _WIN32
+static int test_rename(const char *from, const char *to)
+{
+    replacements++;
+    return io_fault == SAVE_REPLACE ? -1 : rename(from, to);
+}
+#else
+static BOOL test_move(LPCSTR from, LPCSTR to, DWORD flags)
+{
+    replacements++;
+    return io_fault == SAVE_REPLACE ? FALSE : MoveFileExA(from, to, flags);
+}
+#endif
+static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
+{
+    if (expected_import != NULL && frames_run == 0u) {
+        muhtari_battery_info b = {0};
+        b.size = (uint32_t)sizeof b;
+        CHECK_EQ_U64(muhtari_get_battery(m, &b), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(b.bytes, expected_bytes);
+        CHECK(memcmp(b.data, expected_import, expected_bytes) == 0);
+        CHECK_EQ_U64(b.generation, 0);
+    }
+    frames_run++;
+    muhtari_status st = muhtari_run_frame(m, io);
+    return reject_frame ? MUHTARI_STATUS_ERR_BIOS_REJECTED_CART : st;
+}
 int runner_entry(int argc, char **argv);
 #define main runner_entry
+#define fopen test_fopen
+#define fdopen test_fdopen
+#define _fdopen test_fdopen
+#define fread test_read
+#define ferror test_error
+#define fwrite test_write
+#define fflush test_flush
+#define fclose test_close
+#define fsync test_sync
+#define _commit test_sync
+#define rename test_rename
+#define MoveFileExA test_move
+#define muhtari_run_frame test_frame
 #include "../../runner/main.c"
+#undef muhtari_run_frame
+#undef rename
+#undef MoveFileExA
+#undef _commit
+#undef fsync
+#undef fclose
+#undef fflush
+#undef fwrite
+#undef ferror
+#undef fread
+#undef _fdopen
+#undef fdopen
+#undef fopen
 #undef main
 #include "../../runner/stop.c"
 
@@ -21,7 +159,7 @@ static void write_bytes(const char *path, const void *p, size_t n)
     }
 }
 
-static void cartridge(const char *path)
+static void cartridge(const char *path, uint8_t devices, int increment)
 {
     uint8_t bytes[128 + 4096];
     memset(bytes, 0, sizeof bytes);
@@ -29,37 +167,194 @@ static void cartridge(const char *path)
     memcpy(bytes + 1, "ATARI7800", 9);
     bytes[50] = 0x10;
     bytes[55] = bytes[56] = 1;
-    bytes[58] = 1;
+    bytes[58] = devices;
     memcpy(bytes + 100, "ACTUAL CART DATA STARTS HERE", 28);
     memset(bytes + 128, 0xEA, 4096);
     /* Increment imported SRAM once, then loop for the rest of the frame. */
     static const uint8_t code[] = {0xEE, 0x00, 0x10, 0x4C, 0x03, 0xF0};
     memcpy(bytes + 128, code, sizeof code);
+    if (!increment)
+        memcpy(bytes + 128, "\x4C\x00\xF0", 3);
     bytes[128 + 0xFFC] = 0;
     bytes[128 + 0xFFD] = 0xF0;
     write_bytes(path, bytes, sizeof bytes);
 }
 
+static void exact_file(const char *path, const uint8_t *want, size_t bytes)
+{
+    uint8_t *got = malloc(bytes + 1u);
+    CHECK(got != NULL);
+    FILE *f = fopen(path, "rb");
+    CHECK(f != NULL);
+    if (f != NULL && got != NULL) {
+        CHECK_EQ_U64(fread(got, 1, bytes + 1u, f), bytes);
+        CHECK(memcmp(want, got, bytes) == 0);
+    }
+    if (f != NULL)
+        CHECK_EQ_U64(fclose(f), 0);
+    free(got);
+}
+
+static int consume(const char *dir, const char *rom)
+{
+    char directory[1024], image[1024];
+    snprintf(directory, sizeof directory, "%s", dir);
+    snprintf(image, sizeof image, "%s", rom);
+    char *args[] = {"muhtari-run", "--frames", "1", "--save-dir", directory, image};
+    frames_run = temp_opens = replacements = 0;
+    import_stream = save_stream = NULL;
+    stop_flag = 0;
+    return runner_entry(6, args);
+}
+
+static void roundtrip(const char *dir, int verify)
+{
+    char rom[1024], save[1024];
+    snprintf(rom, sizeof rom, "%s/game.a78", dir);
+    snprintf(save, sizeof save, "%s/game.sav", dir);
+    uint8_t original[2048];
+    memset(original, 0x5A, sizeof original);
+    if (verify) {
+        original[0] += 2;
+        exact_file(save, original, sizeof original);
+        return;
+    }
+    cartridge(rom, 1u, 1);
+    write_bytes(save, original, sizeof original);
+    CHECK_EQ_U64(consume(dir, rom), 0);
+    CHECK_EQ_U64(frames_run, 1);
+    CHECK_EQ_U64(temp_opens, 1);
+    original[0]++;
+    exact_file(save, original, sizeof original);
+}
+
+static void imports(const char *dir)
+{
+    char rom[1024], save[1024];
+    snprintf(rom, sizeof rom, "%s/import.a78", dir);
+    snprintf(save, sizeof save, "%s/import.sav", dir);
+    static const size_t sizes[] = {2048, 32768, 34816};
+    uint8_t *bytes = malloc(70000);
+    uint8_t *expected = malloc(34816);
+    CHECK(bytes != NULL);
+    CHECK(expected != NULL);
+    if (bytes == NULL || expected == NULL) {
+        free(bytes);
+        free(expected);
+        return;
+    }
+    memset(bytes, 0x39, 70000);
+    for (unsigned layout = 0; layout < 3; layout++) {
+        size_t n = sizes[layout];
+        cartridge(rom, (uint8_t)(layout + 1u), 0);
+        size_t lengths[] = {0, 7, n, n + 1, 70000};
+        for (unsigned k = 0; k < 5; k++) {
+            memset(expected, 0xFF, n);
+            memcpy(expected, bytes, lengths[k] < n ? lengths[k] : n);
+            expected_import = expected;
+            expected_bytes = n;
+            write_bytes(save, bytes, lengths[k]);
+            CHECK_EQ_U64(consume(dir, rom), lengths[k] > n ? 4 : 0);
+            CHECK_EQ_U64(frames_run, lengths[k] > n ? 0 : 1);
+            CHECK_EQ_U64(temp_opens, 0);
+            exact_file(save, bytes, lengths[k]);
+        }
+        CHECK_EQ_U64(remove(save), 0);
+        memset(expected, 0xFF, n);
+        CHECK_EQ_U64(consume(dir, rom), 0);
+        CHECK_EQ_U64(temp_opens, 0);
+        FILE *f = fopen(save, "rb");
+        CHECK(f == NULL);
+        if (f != NULL)
+            fclose(f);
+    }
+    expected_import = NULL;
+    free(bytes);
+    free(expected);
+}
+
+static void faults(const char *dir)
+{
+    char rom[1024], save[1024];
+    snprintf(rom, sizeof rom, "%s/fault.a78", dir);
+    snprintf(save, sizeof save, "%s/fault.sav", dir);
+    cartridge(rom, 1u, 1);
+    uint8_t bytes[2048];
+    memset(bytes, 0x31, sizeof bytes);
+    for (int fault = IMPORT_READ; fault <= SAVE_REPLACE; fault++) {
+        write_bytes(save, bytes, sizeof bytes);
+        io_fault = fault;
+        CHECK_EQ_U64(consume(dir, rom), 1);
+        CHECK_EQ_U64(frames_run, fault <= IMPORT_CLOSE ? 0 : 1);
+        CHECK_EQ_U64(temp_opens, fault <= IMPORT_CLOSE ? 0 : 1);
+        io_fault = IO_OK;
+        exact_file(save, bytes, sizeof bytes);
+    }
+    CHECK_EQ_U64(consume("missing-save-directory", rom), 1);
+    CHECK_EQ_U64(frames_run, 0);
+    write_bytes(save, bytes, sizeof bytes);
+    reject_frame = 1;
+    CHECK_EQ_U64(consume(dir, rom), 77);
+    CHECK_EQ_U64(temp_opens, 0);
+    reject_frame = 0;
+    exact_file(save, bytes, sizeof bytes);
+    char *plain[] = {"muhtari-run", "--frames", "1", rom};
+    CHECK_EQ_U64(runner_entry(4, plain), 0);
+    exact_file(save, bytes, sizeof bytes);
+    char bad_dump[1100];
+    snprintf(bad_dump, sizeof bad_dump, "1:%s/missing/picture.png", dir);
+    char directory[1024];
+    snprintf(directory, sizeof directory, "%s", dir);
+    char *output[] = {"muhtari-run", "--frames",     "1",      "--save-dir",
+                      directory,     "--dump-frame", bad_dump, rom};
+    CHECK_EQ_U64(runner_entry(8, output), 1);
+    bytes[0]++;
+    exact_file(save, bytes, sizeof bytes);
+    CHECK_EQ_U64(remove(save), 0);
+}
+
+#ifndef __wasi__
+static void nonregular(const char *dir)
+{
+    char rom[1024], save[1024];
+    snprintf(rom, sizeof rom, "%s/fifo.a78", dir);
+    snprintf(save, sizeof save, "%s/fifo.sav", dir);
+    cartridge(rom, 1u, 1);
+    (void)remove(save);
+#ifdef _WIN32
+    CHECK_EQ_U64(_mkdir(save), 0);
+#else
+    CHECK_EQ_U64(mkdir(save, 0700), 0);
+#endif
+    CHECK_EQ_U64(consume(dir, rom), 1);
+    CHECK_EQ_U64(frames_run, 0);
+#ifdef _WIN32
+    CHECK_EQ_U64(_rmdir(save), 0);
+#else
+    CHECK_EQ_U64(rmdir(save), 0);
+    CHECK_EQ_U64(mkfifo(save, 0600), 0);
+    CHECK_EQ_U64(consume(dir, rom), 1);
+    CHECK_EQ_U64(frames_run, 0);
+    CHECK_EQ_U64(remove(save), 0);
+#endif
+}
+#endif
+
 int main(int argc, char **argv)
 {
     if (argc != 3)
         return 2;
-    char rom[1024], save[1024];
-    snprintf(rom, sizeof rom, "%s/game.a78", argv[1]);
-    snprintf(save, sizeof save, "%s/game.sav", argv[1]);
-    cartridge(rom);
-    uint8_t original[2048], got[2049];
-    memset(original, 0x5A, sizeof original);
-    write_bytes(save, original, sizeof original);
-    char *args[] = {"muhtari-run", "--frames", "1", "--save-dir", argv[1], rom};
-    CHECK_EQ_U64(runner_entry(6, args), 0);
-    FILE *f = fopen(save, "rb");
-    CHECK(f != NULL);
-    if (f != NULL) {
-        CHECK_EQ_U64(fread(got, 1, sizeof got, f), sizeof original);
-        CHECK_EQ_U64(fclose(f), 0);
-        original[0]++;
-        CHECK(memcmp(original, got, sizeof original) == 0);
-    }
+    if (strcmp(argv[2], "roundtrip") == 0 || strcmp(argv[2], "verify") == 0)
+        roundtrip(argv[1], strcmp(argv[2], "verify") == 0);
+    else if (strcmp(argv[2], "import") == 0)
+        imports(argv[1]);
+    else if (strcmp(argv[2], "faults") == 0)
+        faults(argv[1]);
+#ifndef __wasi__
+    else if (strcmp(argv[2], "nonregular") == 0)
+        nonregular(argv[1]);
+#endif
+    else
+        return 2;
     CHECK_DONE();
 }
