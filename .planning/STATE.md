@@ -4,20 +4,20 @@ milestone: v2.0
 milestone_name: The whole library
 current_plan: 9
 status: executing
-stopped_at: Completed 07-08 fixture and actual hosted persistence proof; final acceptance remains 07-09
-last_updated: "2026-10-24T09:55:05.871Z"
-state_head: 1e58f1bace9fa4946abccb62bccfbfdd01b939f9
+stopped_at: Completed 07-09 final source acceptance; phase review and verification pending
+last_updated: "2026-10-24T13:40:09.419Z"
+state_head: 918b69841bb3c741409e8b84286dfcdf4cd18c85
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 27
+  completed_plans: 28
   percent: 29
 last_activity: 2026-10-24
 total_phases: 7
 current_phase: 07
 current_phase_name: Battery saves across hosts
-last_activity_desc: Phase 7 actual hosted persistence verified; final acceptance plan remains
+last_activity_desc: Phase 7 plans executed with exact-source acceptance; formal phase review and verification pending
 ---
 
 # Project State
@@ -27,10 +27,11 @@ last_activity_desc: Phase 7 actual hosted persistence verified; final acceptance
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 7 execution is active. Plans 07-01–08 prove evidence controls,
+Current focus: All nine Phase 7 plans are executed; formal phase review and verification remain.
+Plans 07-01–08 prove evidence controls,
 HSC/EEPROM hardware, robustness, runner saves/controls, loaded libretro behavior,
 owned fixture admission and actual fresh-process RetroArch persistence.
-Final archive and portability acceptance remain07-09.
+Plan07-09 completes actual final archive, portability and frontend acceptance.
 
 ## Current Position
 
@@ -39,21 +40,21 @@ Total Plans in Phase: 9
 
 Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
 are complete. Phase 5 and6 are2/7 milestone phases with18 completed active plans;
-Phase 7 has eight completed plans and one pending plan, making26/27 currently planned
+Phase 7 has nine completed plans, making27/27 currently planned
 active slots complete. Phases 8–11 remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
-Next command: `$gsd-execute-phase 7`.
-No next GSD step was invoked.
+The execute-phase orchestrator continues this step's formal review and verification.
+No next GSD step was invoked and the phase is not yet marked complete.
 
 ## Phase 7 Execution
 
-Eight plans are committed; final local CI641+6 and exact inventories641/6 pass.
-Hosted hygiene passes; final local23 hygiene checks pass and the unchanged complete
-tree scan exits0 standalone after two60-second test timeouts under host load.
+Nine plans are committed; final local CI641+6 and exact inventories641/6 pass.
+Final local and hosted hygiene24 plus the complete tree scan pass.
 The owned battery fixture is admitted through actual producer/join evidence.
-No whole SAVE requirement is complete and no review-fix or gap round is consumed.
-Ten assumption flags remain unresolved. Commands, exits and run URLs live in07-01–08-SUMMARY.md.
+SAVE-01–06 have complete actual contract evidence and are marked complete.
+No review-fix or gap round is consumed. Ten assumption flags remain for formal
+phase review disposition. Commands, exits and run URLs live in07-01–09-SUMMARY.md.
 
 07-01 preserves actual producer/join authority with only named fixture and exact3-to-4
 annotation relations.07-02 adds API5/ABI1/behavior4, HSC/firmware and a frozen API4 client.
@@ -67,10 +68,10 @@ copied firmware and actual-main/fresh-process byte and failure tests. No clean r
 
 07-06 adds bounded cadence, synchronized requests, real POSIX child controls and expanded
 failure/commit-point tests. Actual Windows x64/arm64 current/base inventories now pass;
-final source acceptance remains07-09.
+final source acceptance is recorded in07-09.
 07-07 publishes final core-owned SAVE_RAM before execution, freezes late storage requests,
 copies optional HSC firmware and proves actual HSC descriptors through the pinned resolver.
-The .info save/optional-HSC claims remain gated until final acceptance.
+The .info save/optional-HSC claims are enabled after actual hosted proof in07-09.
 07-08 proves actual1/1 then2/2 HSC/EEPROM hardware counters, both34816-byte media
 snapshots and independent firmware5A/stubFF pixel fields through fresh runner and
 RetroArch processes. Exactly two hosted cases,300 lines and50-second launch bound remain.
@@ -78,13 +79,22 @@ CI40080473918 has six native current/base641+6, RetroArch, ASan, nofp and equali
 https://github.com/szTheory/muhtari/actions/runs/40080473918 . Overall CI correctly fails
 Windows archive407930>399937 and the pre-fix WASM getpid compilation. The WASI no-PID
 exclusive-create fix is committed and existing consumers exercise that branch locally.
-07-09 must resolve the unchanged archive ceiling and collect final actual WASM proof;
-it owns final native/BE,
-Windows, WASM, normal ASan/nofp,10000-case, hosted and six-native archive acceptance.
+07-09 resolves the size defect using top-level MSVC size options and a narrow Windows
+file-type probe, fixes complete-snapshot WASM test stack use and the legacy PPC stat ABI.
+Final source fae8e8f has CI40095781311 and Nightly40095782965 success:
+https://github.com/szTheory/muhtari/actions/runs/40095781311
+https://github.com/szTheory/muhtari/actions/runs/40095782965
+All six native current/base641+6 and complete native/PPC641+6 inventories pass;
+69-row equality retains47 old rows with only five named behavior annotations3->4.
+Final WASM580, ASan626, nofp,10000-case properties, vectors258 and fuzz10 pass.
+Actual two-case RetroArch and native Windows controls/replacement pass.
+Six actual current ZIP sums are284415/277585/230440/232667/371086/393959 for
+Linuxarm/Linuxx64/macOSarm/macOSx64/Windowsarm/Windowsx64; worst parent393990 also
+fits399937. The genuine independent parent is8d00518; raw policies and authority persist.
 
 Research/checked plans cover SAVE-01–06 and D-01–18; decision gate18/18 and post-plan
 coverage24/24 passed. Planning evidence remains in the phase planning artifacts.
-No owner UAT or hardware request is introduced; final source acceptance is still required.
+No owner UAT or hardware request remains. Formal phase review and verification are pending.
 
 ## Phase 6 Acceptance
 
@@ -140,10 +150,10 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-**Stopped at:** Completed 07-08 fixture and actual hosted persistence proof; final acceptance remains 07-09
+**Stopped at:** Completed 07-09 final source acceptance; phase review and verification pending
 
-Last session: 2026-10-24T09:55:05.758Z
-Resume file: .planning/phases/07-battery-saves/07-09-PLAN.md
+Last session: 2026-10-24T13:40:09.332Z
+Resume file: .planning/phases/07-battery-saves/07-09-SUMMARY.md
 
 ### Quick Tasks Completed
 
@@ -157,6 +167,7 @@ Resume file: .planning/phases/07-battery-saves/07-09-PLAN.md
 - [Phase 07]: HSC load stages firmware in a fixed unpublished instance buffer to avoid compiler stack helpers while keeping the one raw battery span authoritative.
 - [Phase 07]: Historical frame chains explicitly select no EEPROM; default metadata attachment is separately executed through real RIOT waveform tests, preserving every old digest.
 - [Phase 07]: Independent hardware counters and complete raw snapshots plus independent glyphs prove the exercised fresh-process save path; whole requirements await final acceptance.
+- [Phase 07]: Final acceptance preserves the actual independent event parent and 399937-byte ceiling; all six current/base archives fit after minimal MSVC sizing and Windows file-type ownership changes.
 
 ## Performance Metrics
 
@@ -170,3 +181,4 @@ Resume file: .planning/phases/07-battery-saves/07-09-PLAN.md
 | Phase 07 P06 | 10min | 3 tasks | 12 files |
 | Phase 07 P07 | 47min | 3 tasks | 8 files |
 | Phase 07 P08 | 304min | 3 tasks | 23 files |
+| Phase 07 P09 | 197min | 3 tasks | 16 files |

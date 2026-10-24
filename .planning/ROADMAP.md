@@ -21,7 +21,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipping pending |
-| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | In progress; 3/9 plans executed |
+| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | 9/9 plans executed; verification pending |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
 | 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Not started |
@@ -136,8 +136,8 @@ Shared core, manifest and inventory ownership requires sequential execution.
 **Goal:** Keep HSC and SaveKey progress across process and frontend restarts without putting file I/O in the core.
 **Depends on:** Phase 6
 **Requirements:** SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06
-**Plans:** 8/9 plans executed in 9 sequential waves (parallelization disabled).
-**Status:** Execution active; eight plans complete including actual independent fresh-process RetroArch proof. Final archive and portability acceptance remain07-09; no whole SAVE requirement is complete.
+**Plans:** 9/9 plans executed in 9 sequential waves (parallelization disabled).
+**Status:** All plans executed with exact-source CI/nightly, independent fresh-process RetroArch, complete portability/equality and six current/base archive sums within399937. SAVE-01–06 have actual contract evidence; formal phase review and verification remain pending.
 
 Plans:
 **Wave 1**
@@ -165,7 +165,7 @@ Plans:
 - [x] 07-08-PLAN.md — Admit one owned combined diagnostic and wire the two-case hosted persistence oracle.
 
 **Wave 9** *(blocked on Wave 8 completion)*
-- [ ] 07-09-PLAN.md — Complete equality/inventories, enable proved claims and accept final native/hosted bounds.
+- [x] 07-09-PLAN.md — Complete equality/inventories, enable proved claims and accept final native/hosted bounds.
 
 **Success criteria:**
 
@@ -243,7 +243,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
-| 7. Battery saves across hosts | 3/9 | In Progress | — |
+| 7. Battery saves across hosts | 9/9 | Verification pending | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
