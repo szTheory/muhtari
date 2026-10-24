@@ -136,12 +136,12 @@ Shared core, manifest and inventory ownership requires sequential execution.
 **Goal:** Keep HSC and SaveKey progress across process and frontend restarts without putting file I/O in the core.
 **Depends on:** Phase 6
 **Requirements:** SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06
-**Plans:** 9 plans in 9 sequential waves (parallelization disabled).
+**Plans:** 1/9 plans executed in 9 sequential waves (parallelization disabled).
 **Status:** Planned and independently checked; implementation not started.
 
 Plans:
 **Wave 1**
-- [ ] 07-01-PLAN.md — Prove scoped fixture admission and the narrow behavior-metadata transition.
+- [x] 07-01-PLAN.md — Prove scoped fixture admission and the narrow behavior-metadata transition.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 07-02-PLAN.md — Execute the HSC embedder tracer, preserve frozen clients and measure real packages early.
@@ -243,7 +243,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 |---|---|---|---|
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
-| 7. Battery saves across hosts | 0/9 | Planned | — |
+| 7. Battery saves across hosts | 0/9 | In Progress | — |
 | 8. Controllers at the pins | 0/TBD | Not started | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
