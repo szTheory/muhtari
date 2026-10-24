@@ -124,8 +124,6 @@ expansion limited to explicitly inline helpers;
 embedded builds keep the consumer's options. The same objects run the full tests
 and enter all three component archives. A compiler setting alone proves no byte
 bound: acceptance measures the actual archives on each native target.
-Only final MSVC runner/module targets use link-time optimization. The installed
-static library remains ordinary objects and imposes no LTO requirement on embedders.
 
 Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
 ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and
