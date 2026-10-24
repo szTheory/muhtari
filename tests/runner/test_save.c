@@ -13,6 +13,7 @@
 #include <unistd.h>
 #endif
 #include "muhtari.h"
+#include "internal.h"
 #include "../check.h"
 
 enum {
@@ -28,6 +29,11 @@ enum {
 static int io_fault;
 static int output_fault;
 static unsigned frames_run, temp_opens, replacements;
+static unsigned change_at, request_at, stop_at, request_during_write;
+static int change_every;
+static unsigned replaced_at[128];
+static void request_flush(void);
+static void request_stop(void);
 static int reject_frame;
 static FILE *import_stream, *save_stream;
 static const uint8_t *expected_import;
@@ -83,6 +89,10 @@ static int test_error(FILE *f)
 }
 static size_t test_write(const void *p, size_t n, size_t count, FILE *f)
 {
+    if (f == save_stream && request_during_write) {
+        request_during_write = 0;
+        request_flush();
+    }
     return f == save_stream && io_fault == SAVE_WRITE ? 0u : fwrite(p, n, count, f);
 }
 static int test_flush(FILE *f)
@@ -116,12 +126,16 @@ static int test_sync(int fd)
 static int test_rename(const char *from, const char *to)
 {
     replacements++;
+    if (replacements <= 128u)
+        replaced_at[replacements - 1u] = frames_run;
     return io_fault == SAVE_REPLACE ? -1 : rename(from, to);
 }
 #else
 static BOOL test_move(LPCSTR from, LPCSTR to, DWORD flags)
 {
     replacements++;
+    if (replacements <= 128u)
+        replaced_at[replacements - 1u] = frames_run;
     return io_fault == SAVE_REPLACE ? FALSE : MoveFileExA(from, to, flags);
 }
 #endif
@@ -145,6 +159,14 @@ static muhtari_status test_frame(muhtari *m, muhtari_frame *io)
     }
     frames_run++;
     muhtari_status st = muhtari_run_frame(m, io);
+    if (change_every || frames_run == change_at)
+        muhtari__bus_write(m, 0x1000u, (uint8_t)frames_run);
+    if (frames_run == request_at) {
+        request_flush();
+        request_flush();
+    }
+    if (frames_run == stop_at)
+        request_stop();
     return reject_frame ? MUHTARI_STATUS_ERR_BIOS_REJECTED_CART : st;
 }
 int runner_entry(int argc, char **argv);
@@ -180,6 +202,25 @@ int runner_entry(int argc, char **argv);
 #undef main
 #undef fprintf
 #include "../../runner/stop.c"
+
+static void request_flush(void)
+{
+#ifdef _WIN32
+    CHECK(on_console(CTRL_BREAK_EVENT));
+#elif defined(SIGUSR1)
+    on_signal(SIGUSR1);
+#else
+    flush_flag = 1;
+#endif
+}
+static void request_stop(void)
+{
+#ifdef _WIN32
+    CHECK(on_console(CTRL_C_EVENT));
+#else
+    on_signal(SIGINT);
+#endif
+}
 
 static void write_bytes(const char *path, const void *p, size_t n)
 {
@@ -236,6 +277,7 @@ static int consume(const char *dir, const char *rom)
     frames_run = temp_opens = replacements = 0;
     import_stream = save_stream = NULL;
     stop_flag = 0;
+    flush_flag = 0;
     return runner_entry(6, args);
 }
 
@@ -510,13 +552,83 @@ static void save_options(const char *dir)
 
 static void cadence(const char *dir)
 {
-    char rom[1024], directory[1024];
+    char rom[1024], save[1024], directory[1024];
     snprintf(rom, sizeof rom, "%s/cadence.a78", dir);
+    snprintf(save, sizeof save, "%s/cadence.sav", dir);
     snprintf(directory, sizeof directory, "%s", dir);
-    cartridge(rom, 1u, 1);
-    char *args[] = {"muhtari-run", "--frames", "2", "--save-dir", directory,
-                    "--save-interval", "1", rom};
+    cartridge(rom, 1u, 0);
+    char *args[] = {"muhtari-run", "--frames",        "9", "--save-dir",
+                    directory,     "--save-interval", "4", rom};
+    change_every = 1;
+    frames_run = temp_opens = replacements = 0;
+    (void)remove(save);
     CHECK_EQ_U64(runner_entry(8, args), 0);
+    CHECK_EQ_U64(replacements, 3);
+    CHECK_EQ_U64(replaced_at[0], 4);
+    CHECK_EQ_U64(replaced_at[1], 8);
+    CHECK_EQ_U64(replaced_at[2], 9);
+    args[2] = "3";
+    args[6] = "1";
+    frames_run = replacements = 0;
+    CHECK_EQ_U64(runner_entry(8, args), 0);
+    CHECK_EQ_U64(replacements, 3);
+    CHECK_EQ_U64(replaced_at[0], 1);
+    args[2] = "61";
+    char *default_args[] = {"muhtari-run", "--frames", "61", "--save-dir", directory, rom};
+    frames_run = replacements = 0;
+    CHECK_EQ_U64(runner_entry(6, default_args), 0);
+    CHECK_EQ_U64(replacements, 2);
+    CHECK_EQ_U64(replaced_at[0], 60);
+    args[2] = "2";
+    args[6] = "4294967295";
+    frames_run = replacements = 0;
+    CHECK_EQ_U64(runner_entry(8, args), 0);
+    CHECK_EQ_U64(replacements, 1);
+    CHECK_EQ_U64(replaced_at[0], 2);
+    /* A change just after frame four's clean cadence is persisted at frame eight. */
+    change_every = 0;
+    change_at = 5;
+    args[2] = "9";
+    args[6] = "4";
+    frames_run = replacements = 0;
+    CHECK_EQ_U64(runner_entry(8, args), 0);
+    CHECK_EQ_U64(replacements, 1);
+    CHECK_EQ_U64(replaced_at[0], 8);
+    change_at = 0;
+    request_at = 1;
+    args[2] = "2";
+    args[6] = "4294967295";
+    frames_run = replacements = 0;
+    CHECK_EQ_U64(runner_entry(8, args), 0);
+    CHECK_EQ_U64(replacements, 0);
+    change_every = 1;
+    request_during_write = 1;
+    args[2] = "3";
+    frames_run = replacements = 0;
+    CHECK_EQ_U64(runner_entry(8, args), 0);
+    CHECK_EQ_U64(replacements, 3);
+    CHECK_EQ_U64(replaced_at[0], 1);
+    CHECK_EQ_U64(replaced_at[1], 2);
+    CHECK_EQ_U64(replaced_at[2], 3);
+    request_at = stop_at = 3;
+    args[2] = "9";
+    frames_run = replacements = 0;
+    CHECK_EQ_U64(runner_entry(8, args), 0);
+    CHECK_EQ_U64(frames_run, 3);
+    CHECK_EQ_U64(replacements, 1);
+    CHECK_EQ_U64(replaced_at[0], 3);
+    stop_flag = flush_flag = 0;
+    request_at = stop_at = 0;
+    change_every = 0;
+    char *bad[] = {"0", "-1", "4294967296", "", "no"};
+    for (unsigned i = 0; i < sizeof bad / sizeof bad[0]; i++) {
+        args[6] = bad[i];
+        CHECK_EQ_U64(runner_entry(8, args), 2);
+    }
+    char *no_dir[] = {"muhtari-run", "--frames", "1", "--save-interval", "1", rom};
+    CHECK_EQ_U64(runner_entry(6, no_dir), 2);
+    char *missing[] = {"muhtari-run", "--frames", "1", "--save-interval"};
+    CHECK_EQ_U64(runner_entry(4, missing), 2);
 }
 
 int main(int argc, char **argv)

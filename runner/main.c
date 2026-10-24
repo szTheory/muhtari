@@ -98,6 +98,7 @@ static const char synopsis[] =
     "  --boot B             how the cartridge starts: fast (the default) or bios\n"
     "  --bios FILE          the BIOS image --boot bios runs\n"
     "  --save-dir DIR      restore and save raw battery RAM in an existing directory\n"
+    "  --save-interval F   dirty save cadence in completed frames (default 60)\n"
     "  --hsc M             high score cartridge: auto, on or off\n"
     "  --hsc-rom FILE      optional exact 4096-byte HSC firmware\n"
     "  --probe FILE         print the cartridge image's fields and hashes\n"
@@ -410,6 +411,7 @@ typedef struct options {
     uint32_t boot;     /* --boot: MUHTARI__MOVIE_BOOT_*, then the boot that runs */
     const char *bios;  /* --bios FILE, or NULL */
     const char *save_dir;
+    uint32_t save_interval;
     uint32_t hsc_mode;
     int has_hsc;
     const char *hsc_rom;
@@ -575,6 +577,10 @@ static int parse_options(int argc, char **argv, options *o)
                 return usage("--bios needs one FILE");
             }
             o->bios = value;
+        } else if (strcmp(arg, "--save-interval") == 0) {
+            if (o->save_interval != 0u ||
+                !parse_count(value, value == NULL ? 0u : strlen(value), &o->save_interval))
+                return usage("--save-interval needs one whole number of 1 or more");
         } else if (strcmp(arg, "--save-dir") == 0 || strcmp(arg, "--hsc-rom") == 0) {
             const char **out = strcmp(arg, "--save-dir") == 0 ? &o->save_dir : &o->hsc_rom;
             if (value == NULL || value[0] == '\0' || strncmp(value, "--", 2u) == 0 ||
@@ -611,6 +617,10 @@ static int parse_options(int argc, char **argv, options *o)
 static int check_options(options *o, const muhtari__movie_header *h, uint32_t movie_frames)
 {
     char why[128];
+    if (o->save_interval != 0u && o->save_dir == NULL)
+        return usage("--save-interval needs --save-dir");
+    if (o->save_interval == 0u)
+        o->save_interval = 60u;
     if ((o->save_dir != NULL || o->hsc_rom != NULL || o->has_hsc) && o->rom == NULL) {
         return usage("save and HSC options need a cartridge FILE");
     }
@@ -1236,6 +1246,7 @@ static int run(const options *opt, const replay *mv)
     uint32_t next_hash = 0;
     uint32_t timed = 0;
     uint64_t total_ns = 0;
+    uint32_t save_interval = opt->save_interval != 0u ? opt->save_interval : 60u;
     /* A 64-bit count, so the loop ends when --frames is 4294967295. */
     for (uint64_t n = 1;
          status == MUHTARI__EXIT_DONE && n <= opt->frames && !muhtari__stop_requested(); n++) {
@@ -1291,6 +1302,11 @@ static int run(const options *opt, const replay *mv)
                 status = dump_frame(video, opt->dump_paths[k], row);
             }
         }
+        /* Consume before I/O so a request arriving during a save remains pending. */
+        int requested = muhtari__flush_requested();
+        if ((requested || save.completed_frames % save_interval == 0u) &&
+            save_flush(&save, m) != 0 && status == 0)
+            status = MUHTARI__EXIT_FAILURE;
         /* A stop request ends the run only between whole frames, after the
            frame's outputs are written. */
         if (status != 0 || muhtari__stop_requested()) {

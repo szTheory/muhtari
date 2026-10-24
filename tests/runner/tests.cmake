@@ -898,8 +898,7 @@ muhtari_add_test(NAME runner.png
 add_executable(muhtari-test-runner
   ${CMAKE_CURRENT_LIST_DIR}/test_runner.c
   ${PROJECT_SOURCE_DIR}/runner/bench.c
-  ${PROJECT_SOURCE_DIR}/runner/md5.c
-  ${PROJECT_SOURCE_DIR}/runner/stop.c)
+  ${PROJECT_SOURCE_DIR}/runner/md5.c)
 target_compile_definitions(muhtari-test-runner PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-test-runner PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)

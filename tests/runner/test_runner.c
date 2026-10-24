@@ -8,6 +8,7 @@
 #include "../../runner/md5.h"
 #include "../../runner/stop.h"
 #include "../check.h"
+#include "../../runner/stop.c"
 
 static const uint32_t all_ppm[] = {500000u, 900000u, 990000u, 999000u, 999900u, 999990u, 1000000u};
 
@@ -75,7 +76,24 @@ static void stop(void)
     CHECK_EQ_U64(muhtari__stop_requested(), 0u);
     muhtari__stop_install();
     CHECK_EQ_U64(muhtari__stop_requested(), 0u);
+#ifdef _WIN32
+    CHECK(on_console(CTRL_BREAK_EVENT));
+    CHECK(on_console(CTRL_BREAK_EVENT));
+    CHECK_EQ_U64(muhtari__flush_requested(), 1u);
+    CHECK_EQ_U64(muhtari__flush_requested(), 0u);
+    CHECK_EQ_U64(muhtari__stop_requested(), 0u);
+    CHECK(on_console(CTRL_C_EVENT));
+#else
+#ifdef SIGUSR1
+    CHECK_EQ_U64(raise(SIGUSR1), 0u);
+    CHECK_EQ_U64(raise(SIGUSR1), 0u);
+    CHECK_EQ_U64(muhtari__flush_requested(), 1u);
+    CHECK_EQ_U64(muhtari__flush_requested(), 0u);
+    CHECK_EQ_U64(raise(SIGUSR1), 0u);
+    CHECK_EQ_U64(muhtari__flush_requested(), 1u);
+#endif
     CHECK_EQ_U64(raise(SIGINT), 0u);
+#endif
     CHECK_EQ_U64(muhtari__stop_requested(), 1u);
 }
 
