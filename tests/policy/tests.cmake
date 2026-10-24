@@ -108,12 +108,18 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
       -DWORK=${CMAKE_BINARY_DIR}/policy/publish_fixture -P ${CMAKE_CURRENT_LIST_DIR}/publish.cmake
     # Provisional max724.35s Windows/63.21s other, runs39876385414/39874751162.
     LABELS policy TIMEOUT ${publish_timeout} COST 725)
+  set(quality_timeout 30)
+  if(WIN32)
+    # Ceil(2 x 40.12s), maximum successful current/base Windows control in
+    # run40080473918; retain all producer/join cases and numeric predicates.
+    set(quality_timeout 81)
+  endif()
   muhtari_add_test(NAME policy.quality.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
       -DRUN=$<TARGET_FILE:muhtari-run> -DDRIVER=$<TARGET_FILE:muhtari-test-diag>
       "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
       -DWORK=${CMAKE_BINARY_DIR}/policy/quality_fixture -P ${CMAKE_CURRENT_LIST_DIR}/quality.cmake
-    LABELS policy TIMEOUT 30)
+    LABELS policy TIMEOUT ${quality_timeout})
   # Provisional n=1 per arm64 image: 20261013.183.4/20261018.189.1, runs 39699892851/39699026057.
   # Complete control max 103.28 s; ceil(2 x 103.28)=207 s, with all semantic cases retained.
   muhtari_add_test(NAME policy.digest.controls
@@ -123,6 +129,26 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
   # Fault prevented: comparing empty, duplicate or unrelated lane evidence.
   file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/policy/lane_equality_controls.cmake CONTENT [=[
 string(REPEAT "a" 40 sha)
+set(hashes "frame1 abc\nframe600 abc\npng abc\n")
+foreach(name soundtest pokey)
+  foreach(field transitions_sha256 pcm_sha256 frames samples rate behaviour_revision synthesis)
+    string(APPEND hashes "${name}.audio_${field} abc\n")
+  endforeach()
+endforeach()
+foreach(name activision absolute fractalus battery.first battery.second)
+  set(last 600)
+  if(name MATCHES "^battery[.]")
+    set(last 120)
+  endif()
+  string(APPEND hashes "${name}.frame1 abc\n${name}.frame${last} abc\n")
+  foreach(field transitions_sha256 pcm_sha256 frames samples rate behaviour_revision synthesis)
+    string(APPEND hashes "${name}.audio_${field} abc\n")
+  endforeach()
+  string(APPEND hashes "${name}.diagnostic abc\n")
+  if(last EQUAL 120)
+    string(APPEND hashes "${name}.save_sha256 abc\n")
+  endif()
+endforeach()
 foreach(path absolute relative)
 if(path STREQUAL "relative")
   file(RELATIVE_PATH WORK "${CMAKE_CURRENT_BINARY_DIR}" "${WORK}")
@@ -130,7 +156,7 @@ endif()
 foreach(case valid sha config empty missing extra duplicate difference)
   file(REMOVE_RECURSE "${WORK}")
   foreach(lane native be)
-    file(WRITE "${WORK}/${lane}/hashes.txt" "frame1 abc\n")
+    file(WRITE "${WORK}/${lane}/hashes.txt" "${hashes}")
     file(WRITE "${WORK}/${lane}/commit.txt" "${sha}\n")
     file(WRITE "${WORK}/${lane}/identity.txt" "fixtures abc\noptions Release full\n")
   endforeach()

@@ -2,7 +2,7 @@
 title: "Atari 7800 cartridges, boards, controllers, saves and hostile inputs"
 summary: "A78 header v1–v4, every board scheme with library share, pin-level controller map, HSC/SaveKey saves, commercial library, ROM-hack support and parser bounds for muhtari."
 read_when: "Before designing or changing cart.c/board_*.c, the A78/headerless probe, ports.c, saves (HSC, SaveKey, .srm), patch handling, or the loader fuzz targets."
-updated: 2026-10-19
+updated: 2026-10-24
 ---
 # Atari 7800 cartridges and peripherals (research R4)
 
@@ -183,10 +183,21 @@ The Software Guide requires a 400 µs wait between a row write and reading the c
 | ROM | Atari's copyrighted `highscre.bin`, 4096 B: user-supplied only. Identify by MD5 c8a73288ab97226c52602204ab894286 or SHA-1 a3af676991391a6dd716c79022d4947206b78164 (no SHA-256 is published) [CART.06][CART.18][CART.40]. The wiki disassembly has no licence [CART.07]. MiSTer's `rtl/mem4.hex` is the same ROM: never a source |
 | XM | same ROM (same SHA-1), enabled by XCTRL1 b3. Has a PAL-HSC register; the community PAL hack only lengthens gap zones [CART.06][CART.22] |
 
-**Recommendation:** in v2, use the user's ROM verified by hash. Without it, run a built-in clean-room "OpenHSC" 4K ROM written from [CART.06] (CC0/MIT, like OpenBIOS): signature bytes, the 7 vectors, the identical NVRAM format, our own font and screens, a PAL layout. Before OpenHSC exists, ship a stub with only the signature bytes, which is enough for 7800basic games. **Strongest alternative:** native HLE traps on the vectors. These are hard, because the screens are interactive, span many frames and build MARIA display lists. **Would change if:** OpenHSC costs more than its value; commercial callers are few, and PROPack carries "HSC Fix" hacks for PAL Dig Dug, Joust and Xevious.
+Implemented HSC mapping, supplied firmware validation/identity, signature-only stub and
+generation/reset semantics have graduated into [cartridge hardware](../../docs/hardware/cartridge.md#hsc)
+and [embedding](../../docs/embedding.md#battery-storage-and-hsc-firmware). The canonical SHA-1
+identifies firmware; explicitly supplied unknown bytes are accepted with warnings, not
+rejected by an allowlist. The shipped FF/signature stub implements no routines, screens,
+formatting or full OpenHSC. A future clean-room OpenHSC remains later scope; the unlicensed
+wiki disassembly and copyrighted hex ROM remain excluded.
 
 ### 4.2 SaveKey / AtariVox (24LC256, 32 KB) [CART.10][CART.28]
-**Wiring:** SDA = SWCHA b2 (port 2 pin 3), SCL = b3 (pin 4); 7800basic also has a port-1 variant. Software drives SDA open-drain by toggling the DDR with the output bit at 0. **Protocol:** START, then $A0 (write) or $A1 (read), then a 2-byte address, high byte first. Writes are buffered until STOP and wrap inside a 64-byte page. Reads are sequential, and a write with no data sets the address. Each byte is ACKed; the last read byte gets a NAK. **Datasheet (unverified [CART.38]):** 5 ms write cycle with NAK while busy; A15 is don't-care; erased bytes read $FF.
+Implemented wiring, ORA/DDRA data-tick observation, ACK/read turnaround, page/read wrap,
+bounded packet recovery and completion/reset semantics have graduated into
+[controller hardware](../../docs/hardware/controllers.md#serial-eeprom). The manufacturer
+protocol facts are verified against DS20001203Y sections 4–8 [CART.38]; its 5 ms maximum
+is implemented as a selected fixed 35796-tick NTSC compatibility interval, not a hardware
+measurement. One EEPROM is frozen on either port at load; AtariVox speech is not implemented.
 
 **Layout:** page 0 holds `ATARIVOX` plus a TV byte. AtariAge allocates $0000–$3FFF; $4000–$7FFF is the file area, and 7800basic keeps its tables at $6000+ in 32-byte records. **Licence:** MiSTer's `EEPROM_24LC256.sv` is GPL-3 (from NES_MiSTer) and is excluded [CART.40].
 
@@ -199,7 +210,11 @@ The Software Guide requires a 400 µs wait between a row write and reading the c
 
 No retail cart has battery-backed RAM; the exceptions are Harry Dodgson's Monitor cart (8K) [CART.03] and flash-cart features (Concerto "save game" is not working yet [CART.13]).
 
-**Recommendation:** `RETRO_MEMORY_SAVE_RAM` holds the HSC 2048 B when an HSC is present, the SaveKey 32768 B when only a SaveKey is present, and HSC ‖ SaveKey (34816 B) when both are, versioned as the battery layout. HSC saves are per game by default; the runner can optionally share one HSC file. **Strongest alternative:** keep SaveKey in its own file outside `.srm`, as Stella does. **Would change if:** RetroArch users ask for one HSC shared across games.
+The implemented core span is layout 1: HSC 2048 B, EEPROM 32768 B, or HSC ‖ EEPROM
+34816 B. Hosts restore a clean baseline before the first frame and own persistence;
+power cycle retains committed bytes and generation. Host integrations use per-game raw
+files, one writer per path, with separate directories for basename collisions. No optional
+shared-device file is planned. Frontend/runner acceptance remains with their phase plans.
 
 ## 5. Commercial library
 There are 58 retail titles: 57 NTSC (59 PROPack files, counting the Joystick/Lightgun pairs) and 49 PAL [CART.15][CART.18].
@@ -283,7 +298,7 @@ Fuzz targets: `muhtari_probe`, board construction with random bus traffic, the f
 | CART.35 | T4 | forums.atariage.com/topic/160424 (search snippet only) | accessed 2026-10-15 | v4 option draft, 7800GD |
 | CART.36 | T2 | Stella man page (hexmos mirror) | accessed 2026-10-15 | SaveKey file names |
 | CART.37 | T1 | github.com/7800-devtools/a78_asm_header README (repo has no licence) | abc32926402e | tooling, licence status |
-| CART.38 | T1 | Microchip 24LC256 datasheet (DS20001203) | not fetched (403) | tWC, wrap (unverified) |
+| CART.38 | T1 | Microchip [24LC256 datasheet](https://ww1.microchip.com/downloads/aemDocuments/documents/MPD/ProductDocuments/DataSheets/24AA256-24LC256-24FC256-256K-I2C-Serial-EEPROM-DS20001203.pdf) | DS20001203Y, 1998–2022, fetched 2026-10-24 | sections 4–8 protocol, 5 ms maximum, page/read wrap |
 | CART.39 | T2 | …/Converting_Rikki_&_Vikki_(Steam)_to_an_A78 | accessed 2026-10-15 | Souper music image |
 | CART.40 | T1/T2 | coordinator's provenance audit: MiSTer per-file licence history (lightgun.sv, mouse_st.sv and detect2600.sv unknown; EEPROM_24LC256.sv GPL-3; mem4.hex = HSC ROM); HSC hashes; libretro 7800 DAT | audit 2026-10-15; DAT 2026.10.07 | licence limits, DAT counts |
 | CART.41 | T4 | mametesters.org/view.php?id=6060 (trebor relaying RevEng, 2015-11-04; fixed in 0.168) | accessed 2026-10-15 | RIOT port B outputs high at power-on; One On One reads INPT4 |

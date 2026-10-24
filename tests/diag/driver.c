@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "palette.h"
 #ifdef DIAG_LIBRETRO
 #include "libretro.h"
 #ifdef _WIN32
@@ -67,6 +68,29 @@ static struct row rows[ROWS_MAX];
 static uint32_t nrows;
 static int alloc_fail;
 static uint32_t alloc_calls;
+static uint32_t battery_count = 1u, battery_marker = 255u;
+static const char *battery_import, *battery_export, *battery_firmware, *battery_bmp;
+
+/* Independent raw layout oracle: no header or firmware belongs in save RAM. */
+static int battery_bytes(const uint8_t *bytes, size_t n, uint32_t count)
+{
+    if (bytes == NULL || n != 34816u) {
+        fprintf(stderr, "battery: media length %zu, expected 34816\n", n);
+        return 1;
+    }
+    for (size_t i = 0; i < n; i++) {
+        uint8_t want = i == 256u || i == 26624u   ? (uint8_t)count
+                       : i == 257u || i == 26625u ? (uint8_t)(count >> 8)
+                                                  : 255u;
+        if (bytes[i] != want) {
+            fprintf(stderr, "battery: media byte %zu is %u, expected %u\n", i, (unsigned)bytes[i],
+                    (unsigned)want);
+            return 1;
+        }
+    }
+    printf("battery: all 34816 bytes match independent count %u\n", count);
+    return 0;
+}
 
 static void *diag_alloc(void *user, size_t size)
 {
@@ -173,6 +197,12 @@ static int read_expected(const char *path, const char *rom)
             fprintf(stderr, "%s:%lu: bad row\n", path, (unsigned long)ln);
             fclose(f);
             return 2;
+        }
+        if (strcmp(rom, "battery") == 0) {
+            if (strcmp(field[1], "hsc_count") == 0 || strcmp(field[1], "eeprom_count") == 0)
+                r->value.lo = r->value.hi = battery_count;
+            if (strcmp(field[1], "firmware_marker") == 0)
+                r->value.lo = r->value.hi = battery_marker;
         }
         memcpy(r->test, field[1], strlen(field[1]) + 1u);
         memcpy(r->source, field[3], strlen(field[3]) + 1u);
@@ -352,6 +382,112 @@ static uint8_t *read_file(const char *path, size_t *n)
     return buf;
 }
 
+static int battery_media_file(const char *path, uint32_t count)
+{
+    size_t n = 0;
+    uint8_t *bytes = read_file(path, &n);
+    int failed = bytes == NULL || battery_bytes(bytes, n, count);
+    free(bytes);
+    return failed;
+}
+
+static int battery_controls(const char *path, uint32_t count)
+{
+    size_t n = 0;
+    uint8_t *bytes = read_file(path, &n);
+    if (bytes == NULL || battery_bytes(bytes, n, count)) {
+        free(bytes);
+        return 1;
+    }
+    int failed = battery_bytes(bytes, n - 1u, count) == 0;
+    uint8_t oversized[34817];
+    memcpy(oversized, bytes, n);
+    oversized[n] = 255u;
+    failed |= battery_bytes(oversized, sizeof oversized, count) == 0;
+    static const size_t positions[] = {0u, 256u, 257u, 26624u, 26625u, 34815u};
+    for (size_t i = 0; i < sizeof positions / sizeof positions[0]; i++) {
+        bytes[positions[i]] ^= 1u;
+        failed |= battery_bytes(bytes, n, count) == 0;
+        bytes[positions[i]] ^= 1u;
+    }
+    failed |= battery_bytes(bytes, n, count + 1u) == 0;
+    free(bytes);
+    return failed;
+}
+
+static int battery_restore(uint8_t *bytes, size_t n)
+{
+    if (n != 34816u || bytes == NULL)
+        return 1;
+    if (battery_import != NULL) {
+        size_t size = 0;
+        uint8_t *input = read_file(battery_import, &size);
+        int failed = input == NULL || battery_bytes(input, size, battery_count - 1u);
+        if (!failed)
+            memcpy(bytes, input, size);
+        free(input);
+        return failed;
+    }
+    for (size_t i = 0; i < n; i++)
+        if (bytes[i] != 255u)
+            return 1;
+    return 0;
+}
+
+static int battery_observe(const uint8_t *bytes, size_t n)
+{
+    if (battery_bytes(bytes, n, battery_count))
+        return 1;
+    if (battery_export != NULL) {
+        FILE *f = fopen(battery_export, "wb");
+        if (f == NULL)
+            return 1;
+        int failed = fwrite(bytes, 1, n, f) != n;
+        failed |= fclose(f) != 0;
+        return failed;
+    }
+    return 0;
+}
+
+/* Portable screenshot for the shared BMP judge, from executed pixels rather
+   than the independent expected glyphs. */
+static int battery_picture(muhtari *m)
+{
+    uint8_t *pixels = malloc(320u * 242u);
+    if (pixels == NULL)
+        return 1;
+    muhtari_frame frame = {0};
+    frame.size = (uint32_t)sizeof frame;
+    frame.video = pixels;
+    frame.video_pitch = 320u;
+    int failed = 0;
+    for (unsigned i = 0; i < 4u; i++)
+        failed |= muhtari_run_frame(m, &frame) != MUHTARI_STATUS_OK;
+    FILE *f = failed ? NULL : fopen(battery_bmp, "wb");
+    failed |= f == NULL;
+    if (f != NULL) {
+        uint8_t header[54] = {0};
+        static const unsigned offsets[] = {2u, 10u, 14u, 18u, 22u};
+        static const uint32_t values[] = {54u + 320u * 242u * 3u, 54u, 40u, 320u, 0u - 242u};
+        header[0] = 'B';
+        header[1] = 'M';
+        header[26] = 1u;
+        header[28] = 24u;
+        for (unsigned i = 0; i < 5u; i++)
+            for (unsigned b = 0; b < 4u; b++)
+                header[offsets[i] + b] = (uint8_t)(values[i] >> (8u * b));
+        failed |= fwrite(header, 1, sizeof header, f) != sizeof header;
+        for (size_t i = 0; i < 320u * 242u && !failed; i++) {
+            uint32_t color = muhtari__palette_rgb(pixels[i]);
+            uint8_t bgr[] = {(uint8_t)color, (uint8_t)(color >> 8), (uint8_t)(color >> 16)};
+            failed |= fwrite(bgr, 1, 3, f) != 3u;
+        }
+        failed |= fclose(f) != 0;
+    }
+    free(pixels);
+    return failed;
+}
+
 /* The ROM's name: its file name up to the first dot. */
 static void rom_name(const char *path, char *out)
 {
@@ -375,6 +511,7 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "activision") == 0 ? 10u
            : strcmp(rom, "absolute") == 0   ? 11u
            : strcmp(rom, "fractalus") == 0  ? 12u
+           : strcmp(rom, "battery") == 0    ? 13u
                                             : 0u;
 }
 
@@ -462,12 +599,26 @@ static int retail_library(const uint8_t *image, size_t n, const char *rom)
     media.image = image;
     media.image_size = n;
     info.size = (uint32_t)sizeof info;
-    uint32_t board = strcmp(rom, "activision") == 0  ? MUHTARI_BOARD_ACTIVISION
-                     : strcmp(rom, "fractalus") == 0 ? MUHTARI_BOARD_FRACTALUS
-                                                     : MUHTARI_BOARD_ABSOLUTE;
+    size_t firmware_n = 0;
+    uint8_t *firmware = battery_firmware != NULL ? read_file(battery_firmware, &firmware_n) : NULL;
+    media.hsc_rom = firmware;
+    media.hsc_rom_size = firmware_n;
+    uint32_t board = strcmp(rom, "battery") == 0      ? MUHTARI_BOARD_LINEAR
+                     : strcmp(rom, "activision") == 0 ? MUHTARI_BOARD_ACTIVISION
+                     : strcmp(rom, "fractalus") == 0  ? MUHTARI_BOARD_FRACTALUS
+                                                      : MUHTARI_BOARD_ABSOLUTE;
     if (muhtari_probe(image, n, &info) != MUHTARI_STATUS_OK || info.board != board ||
         muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK ||
         muhtari_load(m, &media) != MUHTARI_STATUS_OK) {
+        free(firmware);
+        muhtari_destroy(m);
+        return 1;
+    }
+    free(firmware);
+    muhtari_battery_info battery = {0};
+    battery.size = (uint32_t)sizeof battery;
+    if (strcmp(rom, "battery") == 0 && (muhtari_get_battery(m, &battery) != MUHTARI_STATUS_OK ||
+                                        battery_restore(battery.data, battery.bytes))) {
         muhtari_destroy(m);
         return 1;
     }
@@ -477,6 +628,10 @@ static int retail_library(const uint8_t *image, size_t n, const char *rom)
         mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
     }
     failed |= retail_judge(mb, rom);
+    if (strcmp(rom, "battery") == 0)
+        failed |= battery_observe(battery.data, battery.bytes);
+    if (!failed && battery_bmp != NULL)
+        failed |= battery_picture(m);
     muhtari_destroy(m);
     return failed;
 }
@@ -488,7 +643,7 @@ static int retail_transaction(uint8_t *image)
     muhtari_versions versions = {0};
     versions.size = (uint32_t)sizeof versions;
     if (muhtari_get_versions(&versions) != MUHTARI_STATUS_OK || versions.abi != 1u ||
-        versions.behaviour_revision != 3u) {
+        versions.behaviour_revision != 4u) {
         return 1;
     }
     muhtari_config cfg = {0};
@@ -772,12 +927,25 @@ static int retail_libretro(const char *module_path, const char *path, const char
     int loaded = load_game(&game);
     int failed = 1;
     if (loaded) {
+        if (strcmp(rom, "battery") == 0 &&
+            battery_restore((uint8_t *)get_memory_data(RETRO_MEMORY_SAVE_RAM),
+                            get_memory_size(RETRO_MEMORY_SAVE_RAM))) {
+            unload_game();
+            deinit();
+            DIAG_CLOSE();
+            free(image);
+            return 1;
+        }
         for (uint32_t frame = 0; frame < FRAME_CAP; frame++) {
             module_run();
             const uint8_t *ram = (const uint8_t *)get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
             if (ram != NULL && get_memory_size(RETRO_MEMORY_SYSTEM_RAM) >= 0xB00u &&
                 memcmp(ram + 0xA00u, "M7DG", 4u) == 0 && ram[0xA05] == 0u) {
                 failed = retail_judge(ram + 0xA00u, rom);
+                if (strcmp(rom, "battery") == 0)
+                    failed |=
+                        battery_observe((const uint8_t *)get_memory_data(RETRO_MEMORY_SAVE_RAM),
+                                        get_memory_size(RETRO_MEMORY_SAVE_RAM));
                 if (strcmp(rom, "smoke") == 0 || strcmp(rom, "absolute") == 0) {
                     failed |= retail_absolute_map(image, n);
                 }
@@ -798,6 +966,55 @@ static int retail_libretro(const char *module_path, const char *path, const char
 int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
+    if (argc == 3 && strcmp(argv[1], "--battery-firmware") == 0) {
+        uint8_t firmware[4096];
+        memset(firmware, 255, sizeof firmware);
+        firmware[0x10] = 0x5Au;
+        firmware[0x900] = 0xC6u;
+        firmware[0x904] = 0xFEu;
+        FILE *f = fopen(argv[2], "wb");
+        if (f == NULL)
+            return 1;
+        int failed = fwrite(firmware, 1, sizeof firmware, f) != sizeof firmware;
+        failed |= fclose(f) != 0;
+        return failed;
+    }
+    int battery_hang = argc == 4 && strcmp(argv[1], "--battery-timeout") == 0;
+    if (battery_hang) {
+        argc--;
+        argv++;
+    }
+    while (argc > 2 &&
+           (strcmp(argv[1], "--battery-count") == 0 || strcmp(argv[1], "--battery-marker") == 0 ||
+            strcmp(argv[1], "--battery-import") == 0 || strcmp(argv[1], "--battery-export") == 0 ||
+            strcmp(argv[1], "--battery-bmp") == 0 || strcmp(argv[1], "--hsc-rom") == 0)) {
+        if (strcmp(argv[1], "--battery-count") == 0 || strcmp(argv[1], "--battery-marker") == 0) {
+            struct range r;
+            if (parse_range(argv[2], &r, 0) || r.lo != r.hi || r.lo > 65535u)
+                return 2;
+            if (strcmp(argv[1], "--battery-count") == 0)
+                battery_count = r.lo;
+            else
+                battery_marker = r.lo;
+        } else if (strcmp(argv[1], "--battery-import") == 0)
+            battery_import = argv[2];
+        else if (strcmp(argv[1], "--battery-export") == 0)
+            battery_export = argv[2];
+        else if (strcmp(argv[1], "--battery-bmp") == 0)
+            battery_bmp = argv[2];
+        else
+            battery_firmware = argv[2];
+        argc -= 2;
+        argv += 2;
+    }
+    if (argc == 4 &&
+        (strcmp(argv[1], "--battery-media") == 0 || strcmp(argv[1], "--battery-controls") == 0)) {
+        struct range r;
+        if (parse_range(argv[3], &r, 0) || r.lo != r.hi || r.lo > 65535u)
+            return 2;
+        return strcmp(argv[1], "--battery-media") == 0 ? battery_media_file(argv[2], r.lo)
+                                                       : battery_controls(argv[2], r.lo);
+    }
     if (argc == 3 && strcmp(argv[1], "--smoke") == 0) {
         return retail_smoke(argv[2]);
     }
@@ -825,6 +1042,13 @@ int main(int argc, char **argv)
     uint8_t *image = read_file(argv[1], &n);
     if (image == NULL) {
         return 2;
+    }
+    if (battery_hang && n >= 16384u + 128u) {
+        image[128] = 0x4Cu;
+        image[129] = 0x00u;
+        image[130] = 0xC0u;
+        image[n - 4u] = 0x00u;
+        image[n - 3u] = 0xC0u;
     }
     if (retail_id(rom) != 0u) {
         int failed = retail_library(image, n, rom);

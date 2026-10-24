@@ -37,15 +37,65 @@ muhtari-run --help | --version
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
 | `[--rom] FILE` | Load the cartridge image in FILE and run it. Give at most one FILE, with or without `--rom`. A refused image prints `muhtari-run: FILE: <message>` on standard error, with the messages of [Probing an image](#probing-an-image) or `unsupported region: PAL (planned)`, and runs no frame: a 2600 image, a board this version does not emulate or a PAL cartridge exits 77, and an image that is not a cartridge, is truncated or is too large exits 1. |
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
-| `--port1 D`, `--port2 D` | The device on port 1 or port 2: `auto` (the cartridge's, the default), `proline`, `joystick` or `none`. With a movie, the movie's header names the devices, and a `D` other than `auto` that differs from it is a usage error. |
+| `--port1 D`, `--port2 D` | The device on port 1 or port 2: `auto` (the cartridge's, the default), `proline`, `joystick`, `none`, `savekey` or `atarivox`. With a movie, the movie's header names the devices, and a `D` other than `auto` that differs from it is a usage error. Storage attaches before import; moving or adding it requires another load. AtariVox provides EEPROM only, without speech. |
 | `--region R` | `auto` (the cartridge's, the default) or `ntsc`, which runs the cartridge as NTSC. `pal` is refused as a usage error until PAL is emulated. |
 | `--boot B` | `fast` (the default) starts the cartridge from the fast-boot hand-off; `bios` boots it through the BIOS given by `--bios`, from power-on. `bios` without `--bios`, or `--bios` without `bios`, is a usage error. With a movie, the movie's `boot` key decides, and a different `--boot` is a usage error. |
 | `--bios FILE` | The BIOS image `--boot bios` runs: 4,096 or 16,384 bytes whose reset vector points inside it. Its SHA-256 is printed on standard error as `bios_sha256 <hex>`. Any other file exits 1 with `muhtari-run: FILE: not a 4 KiB or 16 KiB BIOS image`. A cartridge the BIOS rejects exits 77 with `muhtari-run: FILE: the BIOS rejected the cartridge`, after the frame in which it did. |
+| `--save-dir DIR` | Opt into per-game raw battery files in an existing accessible directory. Requires a cartridge, even when it has no battery. See [Battery files](#battery-files). |
+| `--save-interval F` | Persist dirty battery bytes every F completed frames, from 1 to 4294967295; default 60. Requires `--save-dir`. |
+| `--hsc auto\|on\|off` | Resolve HSC from cartridge metadata (default), force it on, or suppress it. Requires a cartridge. |
+| `--hsc-rom FILE` | Supply an exact 4,096-byte HSC firmware file, copied at load. Invalid size, unreadable file or an explicit `--hsc off` conflict exits 1 before import or execution. |
 | `--probe FILE` | Identify the cartridge image in FILE and print its fields and hashes. It takes exactly one file and no other option. |
 | `--help` | Print the usage text and the exit statuses. It takes no other arguments. |
 | `--version` | Print `muhtari-run` and the version. It takes no other arguments. |
 
 Anything else on the command line, including a second file name, is a usage error.
+
+## Battery files
+
+```sh
+muhtari-run --frames 600 --save-dir saves --hsc on game.a78
+```
+
+Create the directory before starting the runner. Without `--save-dir`, the runner reads and creates no save
+files. With it, a cartridge without battery storage runs without a save file after validating the directory.
+The file name uses only the final ROM component and removes its final extension: `game.a78` becomes
+`game.sav`, `game.rev.a78` becomes `game.rev.sav`, `.hidden` becomes `.hidden.sav`, and `game` becomes
+`game.sav`. Both native Windows path separators are accepted. Use one writer per save path. Games with the
+same basename and concurrent sessions need separate save directories; there is no locking or identity sidecar.
+
+The file is the library's raw layout version 1: HSC SRAM alone is 2,048 bytes, EEPROM alone is 32,768 bytes,
+and combined storage is 34,816 bytes with HSC first. Firmware is separate and never enters the save. Restore
+finishes before the first cartridge frame. Missing and zero-length files import all FF; short files retain
+their prefix and pad the rest with FF; exact files copy verbatim. An oversized file exits 4. Directory,
+non-regular-file, open, read and close errors exit 1 before any frame. Rejected imports never arm persistence.
+The import is clean: missing files stay absent and existing files stay unchanged until emulated bytes change.
+
+At each save cadence, on a save request and on normal or orderly stop exit, dirty committed bytes are written
+to an exclusively created sibling temporary, then checked
+for complete write, stdio flush, file sync and close. POSIX `rename`, or Windows `MoveFileEx` with replacement
+and write-through and no copy fallback, replaces the destination. That replacement is the commit point.
+Tests exercise previous-file preservation on every pre-replacement failure and ownership of temporary files.
+This is a local-filesystem guarantee, without a universal power-loss durability promise or a promise to retain
+old bytes after successful replacement followed by a later error. No directory sync is required.
+
+A save failure prints an error and exits 1 without a cleanup retry. Final flushing precedes destruction of
+valid state, including after an unrelated PNG or output error following valid frames; the original failure
+exit is preserved. Failed load, failed import and BIOS rejection suppress saving. Flushing never advances
+emulated time to finish a pending EEPROM write. The persisted generation is updated only after replacement.
+
+The default cadence is 60 completed frames; `--save-interval F` changes it to a positive frame count. A change
+waits at most F subsequently completed frames. Refused or failed frames do not advance the cadence. Clean
+cadences, requests and exits do not create or rewrite a file. On POSIX, SIGUSR1 requests a save; on Windows,
+console Ctrl+Break requests one. Requests coalesce and are consumed before file I/O, so a request received
+during a save remains pending for the next completed frame. Handlers only record requests; all core access
+and file I/O happen in the frame loop. Forced termination has no final-flush guarantee. No IPC endpoint is added.
+
+Without supplied HSC firmware, the runner warns that the signature-only stub supplies no firmware routines.
+This permits direct SRAM callers and does not implement HSC formatting, screens, routines or full OpenHSC.
+Supplied firmware prints `hsc_sha1 <40 lowercase hex digits>` and separate unknown-identity or missing-C6/FE
+signature warnings as applicable. Unknown exact-sized firmware remains accepted. See
+[the embedding contract](embedding.md) and [cartridge hardware](hardware/cartridge.md).
 
 ## Output
 
@@ -180,7 +230,7 @@ order and each key once. Blank lines and lines starting with `#` are allowed in 
 
 | Key | Value |
 |---|---|
-| `port1`, `port2` | Required: `proline`, `joystick` or `none`. |
+| `port1`, `port2` | Required: `proline`, `joystick`, `none`, `savekey` or `atarivox`. These explicit declarations provision storage before import. |
 | `rom-sha256` | Optional: 64 hex digits, the cartridge's headerless SHA-256, as `--probe` prints in `sha256_headerless`. A different cartridge exits 1, naming both digests. |
 | `region` | Optional: `ntsc`. `pal` is refused. |
 | `boot` | Optional: `fast` or `bios`; `bios` also needs a `bios-sha256` line. `bios` boots through the BIOS given by `--bios FILE`, and exits 2 without it. |
@@ -195,7 +245,7 @@ held, or `.` when it is not:
 |---|---|
 | ProLine | `UDLR12`: up, down, left, right, button 1 (right), button 2 (left) |
 | Joystick | `UDLR1`: up, down, left, right, fire |
-| `none` | empty |
+| `none`, `savekey`, `atarivox` | empty; save devices have no movie buttons or speech fields |
 | Console | `RSP`: Reset, Select and Pause, then the left and right difficulty switches as `A` or `B` |
 
 The difficulty switches are positions, not presses: each line gives where both switches stand.
@@ -228,9 +278,13 @@ muhtari-run: run.txt:4:2: letter out of place, expected U or .
 
 ## Stopping
 
-SIGINT (Ctrl+C) or SIGTERM ends the run after the frame in progress. That frame's hash and PNG are still written,
-`--bench` reports the frames that ran, output is flushed and the exit status is 0. A signal that was already
-ignored when the runner started, as under `nohup`, stays ignored.
+On POSIX, SIGINT (Ctrl+C) or SIGTERM ends the run after the frame in progress. On Windows, console Ctrl+C
+requests the same orderly stop. That frame's hash and PNG are still written, `--bench` reports the frames
+that ran, output is flushed and dirty battery bytes are saved before destruction. Exit 0 requires all required
+flushing to succeed; an earlier nonzero error keeps its status. A broken POSIX output pipe returns exit 1
+after saving dirty bytes. Stop/save signals inherited as ignored, as under `nohup`, remain ignored;
+Windows preserves its inherited Ctrl+C ignore attribute. Ctrl+Break saves without
+stopping. Forced process or console termination has no final-flush guarantee.
 
 ## Exit status
 
@@ -240,6 +294,7 @@ ignored when the runner started, as under `nohup`, stays ignored.
   0  done     every frame ran, or SIGINT or SIGTERM stopped the run after a whole frame
   1  failure  a file could not be read or written, an image or a movie is malformed, truncated or too large, a BIOS is invalid, a movie names another cartridge or BIOS, memory ran out or the core failed
   2  usage    the command line is invalid or conflicts with the movie's header, so nothing ran
+  4  save-size  the save file is larger than the attached battery RAM
  77  refused  the image is a 2600 cartridge, or uses a board or a region this version does not emulate, or the BIOS rejected it
 ```
 
@@ -291,7 +346,7 @@ int16 mono sample, including silence. Neither capacity padding nor stereo
 duplication enters it. Counts cover the entire completed run, including a
 partial first frame, with half-open transition ownership at each deadline.
 
-SIGINT/SIGTERM stops between completed frames. A stop before the first frame
+An orderly platform stop ends between completed frames. A stop before the first frame
 reports empty streams and zero counts; `--frames 0` remains a usage error.
 Ordinary rejected frame calls execute nothing. A sticky BIOS refusal may follow
 partial execution; its tentative transition hash is discarded. Any execution,

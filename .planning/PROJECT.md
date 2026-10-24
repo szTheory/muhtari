@@ -15,7 +15,8 @@ that any host can embed.
 
 ## Current State
 
-Planning milestone **v1.0** shipped 2026-10-21; the package release is **v0.4.0**.
+Planning milestone **v1.0** shipped 2026-10-21 with package **v0.4.0**.
+The currently published package is [v0.5.0](https://github.com/szTheory/muhtari/releases/tag/v0.5.0).
 Four phases, 73 plans and 149 recorded tasks deliver games with sound in RetroArch.
 [Release publication and latest-install run](https://github.com/szTheory/muhtari/actions/runs/39533130210) completed successfully; v0.4.0 is published with 19 assets.
 At that release, the C/header tree had 38,684 tracked lines, including 8,577 in src/;
@@ -39,11 +40,20 @@ is claimed. WR-01 and COST-01 remain deferred tooling seeds; raw monthly numeric
 cost totals are untrusted. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md).
 Phase 5 shipped at6d57d69. Phase 6 is verified complete: Activision, Absolute and
 Fractalus execute through all three deliverables, with identified-layout equivalence,
-physical RAM aliases, bounded hostile-input evidence and honest host maps. The working
-branch is API4/ABI1/behavior3. Verification passes33/33; all six native archive sums fit
+physical RAM aliases, bounded hostile-input evidence and honest host maps. That phase introduced
+API4/ABI1/behavior3. Verification passes33/33; all six native archive sums fit
 the unchanged399937-byte limit (worst375270). Direct CI40031550434, Nightly40031550533
 and Release40031550534 attempt2 pass, including confirmed rehearsal cleanup.
-Phase 6 is not merged or released; `$gsd-ship 6` is next. Published latest remainsv0.4.0.
+Phase 6 merged in [PR24](https://github.com/szTheory/muhtari/pull/24); v0.5.0 is published.
+
+Phase 7 is verified complete, pending `$gsd-ship 7`: API5/ABI1/behavior4 delivers
+HSC/SaveKey battery storage, checked runner persistence and real two-launch RetroArch saves.
+All nine plans and SAVE-01–06 pass35/35 must-haves. Final CI40104749040 attempt2 and
+Nightly40104750452 pass on source54485d6, with all six actual native archive sums
+within399937 (worst393952). Full native/PPC641+6 and69-row equality, WASM580,
+10000-case properties, fuzz and actual frontend/Windows controls pass. Review is clean
+after both allowed fix rounds; no owner verification remains. See
+[Phase 7 verification](phases/07-battery-saves/07-VERIFICATION.md).
 
 ## Current Milestone: v2.0 The whole library
 
@@ -86,11 +96,11 @@ save states and other later horizons remain deferred. Planning v2.0 does not sel
   headroom/width/carry proofs; hostile legal chip traffic stays bounded — v1.0, Phase 4
 
 - ✓ Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5 verified and shipped in PR #20.
-- ✓ Activision, Absolute and Fractalus banking, physical RAM and three-host behavior — BOARD-01–03, Phase 6 verified; shipping pending.
+- ✓ Activision, Absolute and Fractalus banking, physical RAM and three-host behavior — BOARD-01–03, Phase 6 shipped in PR24.
+- ✓ HSC/SaveKey battery data survives host and frontend restarts — SAVE-01–06, Phase 7 verified; shipping pending.
 
 ### Active
 
-- [ ] HSC/SaveKey battery data survives host restarts — SAVE-01–06, Phase 7.
 - [ ] Light gun and the other in-scope controllers — INPUT-01–05, Phase 8.
 - [ ] PAL timing, presentation and audio — PAL-01–03, Phase 9.
 - [ ] BankSet and XBoard/XM memory/POKEY/HSC — BOARD-04–05, Phase 10.
@@ -163,6 +173,9 @@ Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| One load-stable raw battery span and frozen attachment | Hosts restore directly before execution without mirrored storage or hot resizing | ✓ Phase 7: API5, layout1, exact HSC/EEPROM/combined lengths and old-layout linkage |
+| Core commits hardware bytes; runner and frontend own persistence | Keep deterministic emulation separate from host files and controls | ✓ Phase 7: real serial deadlines, checked replacement, native controls and fresh-process byte equality |
+| Require independent complete media and pixel expectations | Equal renderers or a successful exit alone cannot prove restoration | ✓ Phase 7: two fresh launches, both counters, all34816 bytes and oracle faults verified |
 | Freeze Phase 5 at existing 15/09; tighten scoped additions to actual size (D-35) | Stop repeated budget/replanning cycles while preserving every required check | ✓ Nine active outcomes accepted; actual 15287, 78 retired; no plan16 or allowance reset |
 | Keep conservative release rehearsals and advisory portability lanes (D-31) | Reuse needs independently proven input identity; lane promotion needs qualifying main history | ✓ Genuine current rehearsal accepted; no reuse state or unearned promotion |
 | Tooling review findings remain seeds (AGENTS rule 7) | Bound phase closure without hiding known limitations | ✓ WR-01/COST-01 deferred explicitly; no trusted raw monthly cost claim |
@@ -202,4 +215,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-23 after Phase 6 execution and verification; ship Phase 6 next*
+*Last updated: 2026-10-24 after Phase 7 execution and verification; ship Phase 7 next*

@@ -8,6 +8,16 @@
  * card; content is loaded through muhtari_load, by the fast boot or through
  * a BIOS file. The adapter copies the content, and the copy lives until the
  * game unloads: the ROM descriptors of the memory map point into it. */
+/* Ubuntu's PPC32 headers default to the newer time64 stat ABI. Request
+   the legacy layout before any headers so __xstat version 3 uses the
+   matching LSB Core PPC32 struct, retaining the GLIBC 2.17 floor.
+   This adapter inspects file type only, and reads at most 16 KiB firmware. */
+#if defined(__linux__) && defined(__powerpc__) && !defined(__powerpc64__)
+#undef _TIME_BITS
+#undef _FILE_OFFSET_BITS
+#define _TIME_BITS 32
+#define _FILE_OFFSET_BITS 32
+#endif
 #include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -15,6 +25,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/stat.h>
+#endif
+
+/* LSB Core, __xstat: the stable binary stat interface. Modern glibc's
+   public stat symbols need 2.33/2.34; retain the existing 2.17 floor.
+   Test builds that substitute stat keep that same file-fault seam. */
+#if defined(__GLIBC__) &&                                                                          \
+    (defined(__x86_64__) || defined(__aarch64__) ||                                                \
+     (defined(__powerpc__) && !defined(__powerpc64__))) &&                                         \
+    !defined(stat)
+extern int __xstat(int version, const char *path, struct stat *info);
+#endif
 
 #include "libretro.h"
 #include "muhtari.h"
@@ -48,6 +73,8 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #define LR_MAX_DESCRIPTORS 64u
 #define LR_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
 #define LR_PROLINE RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)
+#define LR_SAVEKEY RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2)
+#define LR_ATARIVOX RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3)
 
 #ifdef USE_RGB565
 typedef uint16_t lr_pixel;
@@ -85,6 +112,9 @@ static struct retro_memory_descriptor descs[LR_MAX_DESCRIPTORS];
 static struct retro_memory_map memory_map; /* outlives SET_MEMORY_MAPS */
 static unsigned desc_count;
 static uint32_t desc_next; /* the first CPU address no descriptor covers yet */
+static muhtari_battery_info battery;
+static uint32_t loaded_port[2], last_request[3];
+static bool request_seen;
 
 /* Writes a message to the frontend's log, when it has one (L1243). */
 #define LR_LOG(level, ...)                                                                         \
@@ -96,17 +126,19 @@ static uint32_t desc_next; /* the first CPU address no descriptor covers yet */
 
 /* ---- the frontend's view: devices, inputs and options ---- */
 
-/* SET_CONTROLLER_INFO (L1506): the same four choices on both ports. Auto
+/* SET_CONTROLLER_INFO (L1506): the same six choices on both ports. Auto
    follows the cartridge header's controller byte. */
 static const struct retro_controller_description pad_types[] = {
     {"Auto (cartridge header)", RETRO_DEVICE_JOYPAD},
     {"ProLine", LR_PROLINE},
     {"Joystick", LR_JOYSTICK},
     {"None", RETRO_DEVICE_NONE},
+    {"SaveKey", LR_SAVEKEY},
+    {"AtariVox EEPROM", LR_ATARIVOX},
 };
 static struct retro_controller_info ports[] = {
-    {pad_types, 4u},
-    {pad_types, 4u},
+    {pad_types, 6u},
+    {pad_types, 6u},
     {NULL, 0u},
 };
 
@@ -161,6 +193,29 @@ static struct retro_core_option_v2_definition options_v2[] = {
              "R flips it.",
      .values = {{"B", "B"}, {"A", "A"}, {NULL, NULL}},
      .default_value = "B"},
+    {.key = "muhtari_hsc",
+     .desc = "High Score Cartridge",
+     .info = "Storage attachment; changes require content reload.",
+     .values = {{"auto", "Auto"}, {"on", "On"}, {"off", "Off"}, {NULL, NULL}},
+     .default_value = "auto"},
+    {.key = "muhtari_battery_port1",
+     .desc = "Port 1 battery device",
+     .info = "Overrides controller selection at content load; changes require reload.",
+     .values = {{"auto", "Auto"},
+                {"none", "None"},
+                {"savekey", "SaveKey"},
+                {"atarivox", "AtariVox EEPROM"},
+                {NULL, NULL}},
+     .default_value = "auto"},
+    {.key = "muhtari_battery_port2",
+     .desc = "Port 2 battery device",
+     .info = "Overrides controller selection at content load; changes require reload.",
+     .values = {{"auto", "Auto"},
+                {"none", "None"},
+                {"savekey", "SaveKey"},
+                {"atarivox", "AtariVox EEPROM"},
+                {NULL, NULL}},
+     .default_value = "auto"},
     {.key = NULL},
 };
 static struct retro_core_options_v2 options = {option_categories, options_v2};
@@ -202,6 +257,10 @@ static void lr_release(void)
     desc_count = 0u;
     desc_next = 0u;
     run_failed = false;
+    memset(&battery, 0, sizeof battery);
+    memset(loaded_port, 0, sizeof loaded_port);
+    memset(last_request, 0, sizeof last_request);
+    request_seen = false;
 }
 
 /* Declares the options: v2 when the frontend has it (L1848), else v1. */
@@ -367,7 +426,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
     info->timing.sample_rate = 48000.0;
 }
 
-/* L7673: one of the four ids of pad_types; any other id means Auto. */
+/* L7673: one of pad_types; any other id means Auto. */
 void retro_set_controller_port_device(unsigned port, unsigned id)
 {
     if (port < 2u) {
@@ -386,8 +445,87 @@ static uint32_t lr_port_device(unsigned port)
         return MUHTARI_PORT_JOYSTICK;
     case RETRO_DEVICE_NONE:
         return MUHTARI_PORT_UNPLUGGED;
+    case LR_SAVEKEY:
+        return MUHTARI_PORT_SAVEKEY;
+    case LR_ATARIVOX:
+        return MUHTARI_PORT_ATARIVOX;
     default:
         return 0u;
+    }
+}
+
+static bool lr_serial(uint32_t d)
+{
+    return d == MUHTARI_PORT_SAVEKEY || d == MUHTARI_PORT_ATARIVOX;
+}
+
+/* Load options take precedence over controller requests, then cartridge metadata
+   (docs/libretro.md). An explicit none keeps an ordinary non-save controller. */
+static void lr_battery_request(muhtari_media *media)
+{
+    static const char *const keys[2] = {"muhtari_battery_port1", "muhtari_battery_port2"};
+    media->hsc_mode = lr_option_is("muhtari_hsc", "on")    ? MUHTARI_HSC_ON
+                      : lr_option_is("muhtari_hsc", "off") ? MUHTARI_HSC_OFF
+                                                           : MUHTARI_HSC_AUTO;
+    for (unsigned p = 0u; p < 2u; p++) {
+        uint32_t d = lr_port_device(p);
+        if (lr_option_is(keys[p], "savekey"))
+            d = MUHTARI_PORT_SAVEKEY;
+        else if (lr_option_is(keys[p], "atarivox"))
+            d = MUHTARI_PORT_ATARIVOX;
+        else if (lr_option_is(keys[p], "none")) {
+            if (d == 0u || lr_serial(d))
+                d = MUHTARI_PORT_PROLINE;
+        }
+        media->port[p] = d;
+    }
+}
+
+static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
+{
+    if (battery.eeprom_port == p + 1u)
+        return battery.eeprom_device;
+    uint32_t d = lr_serial(request->port[p]) ? loaded_port[p] : request->port[p];
+    if (d != 0u)
+        return d;
+    /* Match the core's Auto rules (docs/embedding.md, Input), rather than
+       passing an unimplemented header device as an explicit request. */
+    d = p == 0u ? cart.port1 : cart.port2;
+    if (d == MUHTARI_PORT_NONE && content != NULL)
+        return MUHTARI_PORT_UNPLUGGED;
+    return d == MUHTARI_PORT_JOYSTICK ? MUHTARI_PORT_JOYSTICK : MUHTARI_PORT_PROLINE;
+}
+
+static void lr_check_battery_request(const muhtari_media *request)
+{
+    uint32_t key[3] = {request->hsc_mode, request->port[0], request->port[1]};
+    if (request_seen && memcmp(key, last_request, sizeof key) == 0)
+        return;
+    memcpy(last_request, key, sizeof key);
+    request_seen = true;
+    bool hsc = request->hsc_mode == MUHTARI_HSC_ON ||
+               (request->hsc_mode == MUHTARI_HSC_AUTO && (cart.devices & MUHTARI_DEVICE_HSC) != 0u);
+    unsigned count = 0u, port = 0u;
+    uint32_t serial = 0u;
+    for (unsigned p = 0u; p < 2u; p++) {
+        uint32_t d = request->port[p] != 0u ? request->port[p] : p == 0u ? cart.port1 : cart.port2;
+        if (request->port[p] == 0u && battery.eeprom_port == p + 1u)
+            d = battery.eeprom_device;
+        if (lr_serial(d)) {
+            count++;
+            port = p + 1u;
+            serial = d;
+        }
+    }
+    if (count == 0u && (cart.devices & MUHTARI_DEVICE_SAVEKEY) != 0u && request->port[1] == 0u) {
+        count = 1u;
+        port = 2u;
+        serial = MUHTARI_PORT_SAVEKEY;
+    }
+    if (hsc != (battery.hsc_attached != 0u) || count > 1u || port != battery.eeprom_port ||
+        serial != battery.eeprom_device) {
+        LR_LOG(RETRO_LOG_WARN, "muhtari: battery device change requires content reload\n");
+        lr_message("Battery device change requires content reload");
     }
 }
 
@@ -400,15 +538,10 @@ static bool lr_held(unsigned port, unsigned id)
 /* The 7800 buttons held on a port: the D-pad is the stick, B button 1 and
    A button 2. A 2600 joystick has one button, so there A fires too
    (HOSTS-AND-INTEGRATION section 1, Input). */
-static uint32_t lr_buttons(unsigned port)
+static uint32_t lr_buttons(unsigned port, uint32_t d)
 {
-    uint32_t d = lr_port_device(port);
-    bool joystick;
+    bool joystick = d == MUHTARI_PORT_JOYSTICK;
     uint32_t b = 0u;
-    if (d == 0u) {
-        d = port == 0u ? cart.port1 : cart.port2;
-    }
-    joystick = d == MUHTARI_PORT_JOYSTICK;
     b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_UP) ? MUHTARI_BUTTON_UP : 0u;
     b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_DOWN) ? MUHTARI_BUTTON_DOWN : 0u;
     b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_LEFT) ? MUHTARI_BUTTON_LEFT : 0u;
@@ -444,23 +577,29 @@ static void lr_difficulty_edges(void)
 static void lr_input(void)
 {
     muhtari_input in;
+    muhtari_media request = {0};
     bool updated = false;
     if (env_cb != NULL && env_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
         lr_read_difficulty(false);
     }
     lr_difficulty_edges();
+    lr_battery_request(&request);
+    if (content != NULL)
+        lr_check_battery_request(&request);
     memset(&in, 0, sizeof in);
     in.size = (uint32_t)sizeof in;
-    in.device[0] = lr_port_device(0u);
-    in.device[1] = lr_port_device(1u);
-    in.buttons[0] = lr_buttons(0u);
-    in.buttons[1] = lr_buttons(1u);
+    for (unsigned p = 0u; p < 2u; p++) {
+        in.device[p] = lr_active_port(p, &request);
+        in.buttons[p] = lr_buttons(p, in.device[p]);
+    }
     in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_SELECT) ? MUHTARI_SWITCH_SELECT : 0u;
     in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_START) ? MUHTARI_SWITCH_PAUSE : 0u;
     in.switches |= lr_held(0u, RETRO_DEVICE_ID_JOYPAD_X) ? MUHTARI_SWITCH_RESET : 0u;
     in.switches |= difficulty_a[0] ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u;
     in.switches |= difficulty_a[1] ? MUHTARI_SWITCH_RIGHT_DIFFICULTY_A : 0u;
-    (void)muhtari_set_input(inst, &in);
+    if (muhtari_set_input(inst, &in) != MUHTARI_STATUS_OK) {
+        LR_LOG(RETRO_LOG_ERROR, "muhtari: input request refused\n");
+    }
 }
 
 /* Restart is a power cycle (HOSTS-AND-INTEGRATION section 1): the console's
@@ -646,6 +785,81 @@ static muhtari_status lr_load_bios(muhtari_media *media)
     return muhtari_load(inst, media);
 }
 
+/* Optional HSC firmware has one name and exact size. A present bad file
+   refuses loading; only absence selects the signature stub (docs/libretro.md). */
+static muhtari_status lr_load_hsc(muhtari_media *media, uint8_t **owned)
+{
+    const char *dir = NULL;
+    char path[4096];
+    FILE *f;
+    *owned = NULL;
+    bool attached =
+        media->hsc_mode == MUHTARI_HSC_ON ||
+        (media->hsc_mode == MUHTARI_HSC_AUTO && (cart.devices & MUHTARI_DEVICE_HSC) != 0u);
+    if (!attached || !env_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, (void *)&dir) || dir == NULL)
+        return MUHTARI_STATUS_OK;
+    int n = snprintf(path, sizeof path, "%s/highscre.bin", dir);
+    if (n < 0 || (size_t)n >= sizeof path)
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+#ifdef _WIN32
+    /* CreateFile without BACKUP_SEMANTICS refuses directories; GetFileType
+       distinguishes disk files from pipes/devices. No timestamps are needed.
+       Microsoft Learn: CreateFileA, GetFileType, CloseHandle. */
+    HANDLE probe = CreateFileA(path, 0u, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                               NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (probe == INVALID_HANDLE_VALUE) {
+        DWORD error = GetLastError();
+        return error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND
+                   ? MUHTARI_STATUS_OK
+                   : MUHTARI_STATUS_ERR_INVALID_HSC;
+    }
+    DWORD type = GetFileType(probe);
+    BOOL probe_closed = CloseHandle(probe);
+    if (type != FILE_TYPE_DISK || !probe_closed)
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+#else
+    struct stat info;
+#if defined(__GLIBC__) &&                                                                          \
+    (defined(__x86_64__) || defined(__aarch64__) ||                                                \
+     (defined(__powerpc__) && !defined(__powerpc64__))) &&                                         \
+    !defined(stat)
+    /* LSB stat layouts: x86-64 1, AArch64 0, legacy PPC32 3. */
+#ifdef __x86_64__
+    int found = __xstat(1, path, &info);
+#elif defined(__aarch64__)
+    int found = __xstat(0, path, &info);
+#else
+    int found = __xstat(3, path, &info);
+#endif
+#else
+    int found = stat(path, &info);
+#endif
+    if (found != 0)
+        return errno == ENOENT ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_INVALID_HSC;
+    if (!S_ISREG(info.st_mode))
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+#endif
+    f = fopen(path, "rb");
+    if (f == NULL)
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+    uint8_t *buf = (uint8_t *)malloc(4097u);
+    if (buf == NULL) {
+        (void)fclose(f);
+        return MUHTARI_STATUS_ERR_NO_MEMORY;
+    }
+    size_t bytes = fread(buf, 1u, 4097u, f);
+    int failed = ferror(f);
+    int closed = fclose(f);
+    if (bytes != 4096u || failed || closed != 0) {
+        free(buf);
+        return MUHTARI_STATUS_ERR_INVALID_HSC;
+    }
+    media->hsc_rom = buf;
+    media->hsc_rom_size = bytes;
+    *owned = buf;
+    return MUHTARI_STATUS_OK;
+}
+
 /* Loads the content copy into the instance, through a BIOS file when the
    boot option asks for one and there is one. Logs the BIOS file and its
    SHA-256, or the fast-boot fallback, or a refusal with its status text,
@@ -654,6 +868,7 @@ static bool lr_load_content(const struct retro_game_info *game)
 {
     muhtari_media media;
     muhtari_status st;
+    uint8_t *hsc = NULL;
 
     if (game->data == NULL || game->size == 0u || game->size > MUHTARI_IMAGE_SIZE_MAX) {
         LR_LOG(RETRO_LOG_ERROR, "muhtari: no content bytes, or more than %u\n",
@@ -676,11 +891,16 @@ static bool lr_load_content(const struct retro_game_info *game)
         media.size = (uint32_t)sizeof media;
         media.image = content;
         media.image_size = content_size;
-        if (lr_option_is("muhtari_boot", "bios")) {
+        lr_battery_request(&media);
+        loaded_port[0] = media.port[0];
+        loaded_port[1] = media.port[1];
+        st = lr_load_hsc(&media, &hsc);
+        if (st == MUHTARI_STATUS_OK && lr_option_is("muhtari_boot", "bios")) {
             st = lr_load_bios(&media);
-        } else {
+        } else if (st == MUHTARI_STATUS_OK) {
             st = muhtari_load(inst, &media);
         }
+        free(hsc);
     }
     if (st != MUHTARI_STATUS_OK) {
         LR_LOG(RETRO_LOG_ERROR, "muhtari: content refused: %s%s%s\n", muhtari__status_text(st),
@@ -688,6 +908,33 @@ static bool lr_load_content(const struct retro_game_info *game)
                st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ? muhtari__board_name(cart.board) : "");
         return false;
     }
+    battery.size = (uint32_t)sizeof battery;
+    (void)muhtari_get_battery(inst, &battery);
+    if ((battery.firmware_flags & MUHTARI_HSC_FIRMWARE_STUB) != 0u) {
+        LR_LOG(RETRO_LOG_WARN,
+               "muhtari: highscre.bin absent; signature-only HSC stub, no firmware routines\n");
+        lr_message("HSC signature-only stub: no firmware routines");
+    } else if (battery.hsc_attached != 0u) {
+        char hex[41];
+        static const char digits[] = "0123456789abcdef";
+        for (unsigned i = 0u; i < 20u; i++) {
+            hex[i * 2u] = digits[battery.hsc_sha1[i] >> 4];
+            hex[i * 2u + 1u] = digits[battery.hsc_sha1[i] & 15u];
+        }
+        hex[40] = '\0';
+        LR_LOG(RETRO_LOG_INFO, "muhtari: highscre.bin SHA-1 %s\n", hex);
+        if ((battery.firmware_flags &
+             (MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN | MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE)) != 0u) {
+            LR_LOG(RETRO_LOG_WARN, "muhtari: HSC firmware unknown identity%s\n",
+                   (battery.firmware_flags & MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE) != 0u
+                       ? "; missing signatures"
+                       : "");
+            lr_message((battery.firmware_flags & MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE) != 0u
+                           ? "HSC firmware unknown identity; missing signatures"
+                           : "HSC firmware unknown identity");
+        }
+    }
+    lr_check_battery_request(&media);
     return true;
 }
 
@@ -742,8 +989,9 @@ static uint8_t *lr_memory(uint32_t kind, size_t *bytes)
 /* The achievement map (HOSTS-AND-INTEGRATION section 2): the CPU bus as
    rcheevos' console 51 reads it. Page 0's and page 1's RAM shadow $2040-
    $20FF and $2140-$21FF; $2800-$2FFF repeats RAM's second half while the
-   bus there stays undecoded; registers, $3000-$3FFF and banked windows have
-   no memory behind them. Unbanked cartridge RAM sits at $4000 and the fixed
+   bus there stays undecoded; registers, absent HSC and banked windows have
+   no memory behind them. Installed HSC spans alias its actual RAM/ROM.
+   Unbanked cartridge RAM sits at $4000 and the fixed
    ROM is CONST. */
 static void lr_memory_maps(void)
 {
@@ -754,14 +1002,21 @@ static void lr_memory_maps(void)
     uint8_t *cart_ram = lr_memory(MUHTARI_MEMORY_CART_RAM, &cart_bytes);
     uint8_t *rom = content + ((cart.flags & MUHTARI_CART_HEADER) != 0u ? 128u : 0u);
     uint32_t rom_from = cart_ram != NULL ? 0x8000u : 0x4000u;
+    muhtari_const_span hsc_rom = {0};
+    hsc_rom.size = (uint32_t)sizeof hsc_rom;
+    (void)muhtari_get_hsc_rom(inst, &hsc_rom);
 
     desc_count = 0u;
     desc_next = 0u;
     lr_span(0x0040u, 0x0100u, ram, 0x0840u, 0u);
     lr_span(0x0140u, 0x0200u, ram, 0x0940u, 0u);
     lr_span(0x0480u, 0x0500u, riot, 0u, 0u);
+    if (battery.hsc_attached != 0u)
+        lr_span(0x1000u, 0x1800u, battery.data, 0u, 0u);
     lr_span(0x1800u, 0x2800u, ram, 0u, RETRO_MEMDESC_SYSTEM_RAM);
     lr_span(0x2800u, 0x3000u, ram, 0x0800u, 0u);
+    if (hsc_rom.data != NULL)
+        lr_span(0x3000u, 0x4000u, (uint8_t *)(uintptr_t)hsc_rom.data, 0u, RETRO_MEMDESC_CONST);
     if (cart.board == MUHTARI_BOARD_FRACTALUS && cart_ram != NULL) {
         /* Sixteen 256-byte aliases expose the eight physical pages twice.
            Higher bus mirrors remain descriptor holes to fit the pinned
@@ -905,6 +1160,8 @@ unsigned retro_get_region(void)
 void *retro_get_memory_data(unsigned id)
 {
     size_t bytes = 0u;
+    if (inst != NULL && id == RETRO_MEMORY_SAVE_RAM)
+        return battery.data;
     if (inst == NULL || id != RETRO_MEMORY_SYSTEM_RAM) {
         return NULL;
     }
@@ -914,6 +1171,8 @@ void *retro_get_memory_data(unsigned id)
 size_t retro_get_memory_size(unsigned id)
 {
     size_t bytes = 0u;
+    if (inst != NULL && id == RETRO_MEMORY_SAVE_RAM)
+        return battery.bytes;
     if (inst == NULL || id != RETRO_MEMORY_SYSTEM_RAM) {
         return 0u;
     }

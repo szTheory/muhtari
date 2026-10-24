@@ -10,7 +10,8 @@ if(LIBRETRO_RETAIL_RUN)
     message("${out}")
   endfunction()
   file(MAKE_DIRECTORY "${OUT}")
-  retail_command("${RESOLVER}" ${CARTS})
+  file(MAKE_DIRECTORY "${OUT}/hsc")
+  retail_command("${RESOLVER}" --hsc-dir "${OUT}/hsc" ${CARTS})
   retail_command("${RESOLVER}" --pair "${ROOT}/tests/diag/activision.a78" "${MODULE}" "${OUT}")
   foreach(extension IN ITEMS a78 bin)
     foreach(layout IN ITEMS om am)
@@ -72,6 +73,7 @@ if(LIBRETRO_RETAIL_RUN)
 endif()
 set(libretro_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
+
 muhtari_add_test(NAME libretro.vendored
   COMMAND ${CMAKE_COMMAND} -P ${libretro_scripts}/vendored.cmake
   LABELS libretro TIMEOUT 10)
@@ -94,6 +96,7 @@ if(TARGET muhtari_libretro)
     LABELS libretro portable TIMEOUT 10)
 
   add_executable(muhtari-test-libretro-host ${CMAKE_CURRENT_LIST_DIR}/host.c
+    ${PROJECT_SOURCE_DIR}/tests/cart/images.c
     ${PROJECT_SOURCE_DIR}/runner/sha256.c)
   target_include_directories(muhtari-test-libretro-host PRIVATE ${PROJECT_SOURCE_DIR}/libretro
     ${PROJECT_SOURCE_DIR}/runner)
@@ -105,6 +108,13 @@ if(TARGET muhtari_libretro)
   set_target_properties(muhtari-test-libretro-host PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-libretro-host)
+  # Final save storage must be visible before the first emulated frame.
+  muhtari_add_test(NAME libretro.host.battery
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> battery
+    LABELS libretro portable TIMEOUT 5)
+  muhtari_add_test(NAME libretro.host.battery_order
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> battery_order
+    LABELS libretro portable TIMEOUT 5)
   # Fault prevented: the core RetroArch loads shows a frame, timing or
   # geometry other than the library's, or needs content to start.
   muhtari_add_test(NAME libretro.host.xrgb8888
@@ -134,6 +144,11 @@ if(TARGET muhtari_libretro)
   # file into its own directory under both names and removes it again.
   set(libretro_system ${PROJECT_BINARY_DIR}/tests/libretro-system)
   file(MAKE_DIRECTORY ${libretro_system})
+  set(libretro_hsc_system ${PROJECT_BINARY_DIR}/tests/libretro-hsc-system)
+  file(MAKE_DIRECTORY ${libretro_hsc_system})
+  muhtari_add_test(NAME libretro.host.hsc_firmware
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> hsc_firmware ${libretro_hsc_system}
+    LABELS libretro portable TIMEOUT 5)
   muhtari_add_test(NAME libretro.host.bios
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> bios
       ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78 ${MUHTARI_BUILT_DIR}/openbios/openbios.bin
@@ -224,7 +239,7 @@ if(TARGET muhtari_libretro)
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari-test-diag-testdb PRIVATE ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/libretro ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(muhtari-test-diag-testdb PRIVATE ${CMAKE_DL_LIBS})
+  target_link_libraries(muhtari-test-diag-testdb PRIVATE muhtari_host ${CMAKE_DL_LIBS})
   set_target_properties(muhtari-test-diag-testdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-diag-testdb)
   set(libretro_retail ${PROJECT_BINARY_DIR}/tests/libretro-retail.cmake)

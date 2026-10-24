@@ -61,7 +61,7 @@ static int replay_file(const char *path)
 /* Runs every in-memory seed; returns the number run, 0 on failure. */
 static uint32_t replay_seeds(void)
 {
-    uint8_t *buf = (uint8_t *)malloc(SEEDS_SIZE_MAX);
+    uint8_t *buf = (uint8_t *)calloc(SEEDS_SIZE_MAX, 1u);
     if (buf == NULL) {
         fputs(MUHTARI_REPLAY_NAME ": out of memory building seeds\n", stderr);
         return 0;

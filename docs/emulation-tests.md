@@ -80,7 +80,10 @@ Every expected byte comes from `docs/hardware/controllers.md` and the cartridge 
 `basic.<name>` plays one 7800basic sample for 600 frames and checks them against a pin. There is one test for each
 row of `tests/built/expected.txt`, and the sample comes from that row's `built.<name>` fixture. The ROM is loaded with
 `muhtari_load` and fast-booted, with no input. `muhtari-test-chain` (`tests/built/chain.c`) hashes every frame into
-a chain:
+a chain. These historical pins use explicitly unplugged ports, retaining the original no-EEPROM topology when
+metadata now automatically attaches serial storage. Enabled devices and default metadata attachment execute through
+the real RIOT path in `input.savekey.protocol` and `input.savekey.pins`; the ROM bytes and existing frame pins stay
+unchanged:
 
     h_0 = 32 zero bytes
     h_i = SHA-256(h_(i-1) || frame_i), i = 1 .. 600
@@ -533,6 +536,14 @@ silent, so the empty raw-transition digest is expected; PCM bytes and counts sti
 participate. Existing command-boundary controls reject absent fixtures, wrong board
 or ROM identity, missing/extra reports and each omitted frame/audio field. All 17
 older test-card/PNG and soundtest/POKEY rows keep their byte meanings.
+
+`battery.first.` and `battery.second.` append eleven rows each: frame 1/120, the seven audio fields,
+mailbox and complete raw-save SHA-256. Two fresh runner processes share only their private save directory.
+The numeric driver first requires independent HSC and EEPROM counts 1/1 then 2/2; its media judge checks
+all 34,816 bytes, including every untouched FF byte. Only then may either process contribute hashes.
+The 47 retained observations keep their order and values; five behavior annotation rows advance from
+3 to 4 under the version policy. The complete ordered schema rejects missing or duplicate old or new rows,
+even when every lane repeats the same fault. Existing byte-difference and identity controls remain active.
 
 Pull requests require exactly six identical expanded native hash files and compile PowerPC.
 Nightly and release workflows additionally execute the full native/PowerPC inventories

@@ -1,6 +1,10 @@
 # Every test the fuzz preset registers: name<TAB>labels.
 # Sorted; configure fails when this differs from what is registered.
+fuzz.i2c	fuzz
+fuzz.i2c.seeds	fuzz
 fuzz.loader	fuzz
+fuzz.regress.i2c	fuzz
+fuzz.regress.i2c.self_test	fuzz
 fuzz.regress.loader	fuzz
 fuzz.regress.run	fuzz
 fuzz.run	fuzz

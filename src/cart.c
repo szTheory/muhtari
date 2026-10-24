@@ -899,6 +899,16 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
     if (c->rom == NULL) {
         return m->bus.open_bus;
     }
+    /* HSC pass-through decode (docs/hardware/cartridge.md, HSC). The bus
+       has already applied MEN/BIOS gates; CPU audio decode precedes this. */
+    if (m->battery.hsc_attached != 0u) {
+        if (addr >= 0x1000u && addr < 0x1800u) {
+            return m->battery.data[addr - 0x1000u];
+        }
+        if (addr >= 0x3000u && addr < 0x4000u) {
+            return m->battery.rom[addr - 0x3000u];
+        }
+    }
     const uint8_t *ram = cart_ram_at(c, addr);
     if (ram != NULL) {
         return *ram;
@@ -999,6 +1009,14 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
                                  m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u));
             return;
         }
+    }
+    if (m->battery.hsc_attached != 0u && addr >= 0x1000u && addr < 0x1800u) {
+        uint8_t *cell = &m->battery.data[addr - 0x1000u];
+        if (*cell != v) {
+            *cell = v;
+            m->battery.generation++;
+        }
+        return;
     }
     uint8_t *ram = cart_ram_at(c, addr);
     if (ram != NULL) {

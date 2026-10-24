@@ -113,7 +113,7 @@ macro(quality_observation json sha fields expected_source)
 endmacro()
 
 # Fault prevented: candidate fixture edits replacing the trusted comparison identity.
-# Remove only new owned board rows, then compare all remaining bytes with the base.
+# Remove only named new owned rows, then compare all remaining bytes with the base.
 function(quality_fixture_identity out candidate trusted)
   foreach(input candidate trusted)
     file(READ "${${input}}" ${input}_text)
@@ -139,7 +139,7 @@ function(quality_fixture_identity out candidate trusted)
         message(FATAL_ERROR "quality: deleted or changed trusted manifest ${path}")
       endif()
     endforeach()
-    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus)[.]a78$" OR
+    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery)[.]a78$" OR
         NOT row MATCHES "^[^\t]+\tthis-repo\t[^ \t\r\n;]+\tMIT\t([0-9a-f]+)\t-$")
       message(FATAL_ERROR "quality: unrelated fixture ${path}")
     endif()
@@ -157,7 +157,7 @@ function(quality_fixture_identity out candidate trusted)
 endfunction()
 
 # Fault prevented: sample edits hiding behind a behavior-annotation migration.
-# Only the unique exact revision-two to revision-three line may differ; all
+# Only unique exact 2-to-3 or 3-to-4 revision lines may differ; all
 # remaining bytes stay equal and identity always comes from the raw base file.
 function(quality_sample_identity out candidate trusted)
   foreach(input candidate trusted)
@@ -170,15 +170,16 @@ function(quality_sample_identity out candidate trusted)
       if(NOT count EQUAL 1)
         message(FATAL_ERROR "quality: sample annotation must be unique")
       endif()
-      set(revision 2)
-      if(input STREQUAL "candidate")
-        set(revision 3)
-      endif()
-      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ${revision}\n")
+      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([234])\n")
         message(FATAL_ERROR "quality: invalid sample revision transition")
       endif()
+      set(${input}_revision "${CMAKE_MATCH_2}")
     endforeach()
-    string(REGEX REPLACE "(^|\n)# behaviour_revision 3\n" "\\1# behaviour_revision 2\n"
+    if(NOT (trusted_revision EQUAL 2 AND candidate_revision EQUAL 3) AND
+        NOT (trusted_revision EQUAL 3 AND candidate_revision EQUAL 4))
+      message(FATAL_ERROR "quality: invalid sample revision transition")
+    endif()
+    string(REGEX REPLACE "(^|\n)# behaviour_revision ${candidate_revision}\n" "\\1# behaviour_revision ${trusted_revision}\n"
       normalized "${candidate_text}")
     if(NOT normalized STREQUAL trusted_text)
       message(FATAL_ERROR "quality: changed trusted samples")

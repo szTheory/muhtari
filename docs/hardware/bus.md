@@ -199,6 +199,10 @@ at the event and takes no CPU cycle; that is a model, not a measurement.
 
 ## The run loop
 
+RIOT ORA and DDRA writes pass their actual data tick to the serial EEPROM model in the port owner: start + 5 in a
+slow 6-tick cycle, after any bus hold. The device resolves host pin edges at that tick; reads and peeks create no
+edges (`docs/hardware/controllers.md`, Serial EEPROM).
+
 With content loaded, `muhtari_run_frame` runs SALLY from one VBLANK start, line 258, t 42, to the next: it steps the
 CPU until the tick reaches the frame's deadline. Every step makes at least one bus cycle of 4 ticks or more, a jammed
 CPU's read of `$FFFF` included, and every hold ends within about one line, so each frame ends for any program, jammed,
@@ -206,6 +210,13 @@ with DMA off or hostile. The loop stops at the first instruction boundary at or 
 absolute ticks, 119,402 apart, so the overshoot carries into the next frame and frames never drift. The audio count
 of a frame is (audio_rem + elapsed x 88) / 13,125, where elapsed is the distance between the two deadlines: 800 or
 801 for a full frame.
+
+After execution the EEPROM catches up to the actual bus tick, including the last completed instruction's overshoot,
+before returning battery memory to the host. This also runs when partial BIOS execution rejects a cartridge; an
+argument/buffer refusal that executes nothing leaves it unchanged. Consequently a due page commits even if software
+never polls, or the CPU jams or encounters DMA/WSYNC holds. The host's flush and the battery getter remain observers;
+they cannot finish a future page by advancing time. See `docs/hardware/controllers.md`, Serial EEPROM, for reset
+and the selected fixed programming interval.
 
 The fast-boot hand-off puts the machine where the NTSC BIOS leaves it as it jumps to the cartridge (System notes,
 section 7, C10): PC from `$FFFC`, S = X = `$16`, A = Y = 0, I and D set; INPTCTRL `$16` with the gate's two writes

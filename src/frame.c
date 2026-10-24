@@ -85,6 +85,9 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         m->maria.pitch = io->video_pitch;
         muhtari__observe_begin(m, audio_end);
         run_to_deadline(m);
+        /* Programming follows actual execution, including completed
+           instruction overshoot and BIOS refusal (controllers.md). */
+        muhtari__savekey_catch_up(m, m->bus.ticks);
         m->maria.rows = NULL;
         m->maria.pitch = 0u;
         muhtari__observe_end(m);

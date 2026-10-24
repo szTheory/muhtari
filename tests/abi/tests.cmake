@@ -60,7 +60,7 @@ set(abi_cmd ${CMAKE_COMMAND} -DHEADER=${PROJECT_BINARY_DIR}/tests/abi/extra_fiel
 string(REPLACE ";" "$<SEMICOLON>" abi_cmd "${abi_cmd}")
 muhtari_add_test(NAME abi.api_version.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${abi_cmd}" -DCODE=1
-    "-DREGEX=in no tests/api/vK.c with K <= 4: untested_field" -P ${abi_scripts}/expect_fail.cmake
+    "-DREGEX=in no tests/api/vK.c with K <= 5: untested_field" -P ${abi_scripts}/expect_fail.cmake
   LABELS abi TIMEOUT 10)
 
 # The frozen API v1 program: every function, field and constant of version 1.
@@ -98,6 +98,18 @@ set_target_properties(muhtari-test-api-v4 PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-api-v4)
 muhtari_add_test(NAME abi.api_v4 COMMAND muhtari-test-api-v4
+  LABELS abi portable TIMEOUT 10)
+
+foreach(version IN ITEMS v5 v4-layout)
+  add_executable(muhtari-test-api-${version} ${CMAKE_SOURCE_DIR}/tests/api/${version}.c)
+  target_link_libraries(muhtari-test-api-${version} PRIVATE muhtari::muhtari)
+  set_target_properties(muhtari-test-api-${version} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-api-${version})
+endforeach()
+muhtari_add_test(NAME abi.api_v5 COMMAND muhtari-test-api-v5
+  LABELS abi portable TIMEOUT 10)
+muhtari_add_test(NAME abi.api_v4_layout COMMAND muhtari-test-api-v4-layout
   LABELS abi portable TIMEOUT 10)
 
 # The public header compiles alone as C17 and as C++17 with warnings fatal.

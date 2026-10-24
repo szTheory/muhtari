@@ -21,8 +21,8 @@ static const struct {
     const char *expected; /* the values it takes */
 } movie_keys[KEY_COUNT] = {
     {"rom-sha256", "64 hex digits"},
-    {"port1", "proline, joystick or none"},
-    {"port2", "proline, joystick or none"},
+    {"port1", "proline, joystick, none, savekey or atarivox"},
+    {"port2", "proline, joystick, none, savekey or atarivox"},
     {"region", "ntsc"},
     {"boot", "fast or bios"},
     {"bios-sha256", "64 hex digits"},
@@ -213,6 +213,10 @@ static int movie_header_line(const movie_line *l, muhtari__movie_header *h, movi
             h->device[p] = MUHTARI_PORT_JOYSTICK;
         } else if (movie_equals(v, vn, "none")) {
             h->device[p] = MUHTARI_PORT_UNPLUGGED;
+        } else if (movie_equals(v, vn, "savekey")) {
+            h->device[p] = MUHTARI_PORT_SAVEKEY;
+        } else if (movie_equals(v, vn, "atarivox")) {
+            h->device[p] = MUHTARI_PORT_ATARIVOX;
         } else if (movie_equals(v, vn, "auto")) {
             /* A movie names its devices; auto is the command line's. */
             return movie_fail(err, l->number, col, "auto", expected);

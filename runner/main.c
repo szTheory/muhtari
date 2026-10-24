@@ -20,7 +20,7 @@
  * prints the BIOS's SHA-256 to standard error and, after the frames,
  * "handoff_frame K", the frame of the first cartridge opcode fetch.
  * SIGINT or SIGTERM ends the run after the frame in progress; output is
- * flushed and the status is 0.
+ * flushed. Required save failure returns 1; earlier output failure keeps its status.
  *
  * --probe FILE identifies a cartridge image with muhtari_probe and prints
  * its fields and eight hashes as "key value" lines; it runs no frames.
@@ -31,6 +31,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "bench.h"
 #include "clock.h"
@@ -83,10 +93,14 @@ static const char synopsis[] =
     "  [--rom] FILE         load the cartridge image FILE; without it no content runs\n"
     "  --movie FILE         replay the muhtari-movie 1 FILE, one line per frame;\n"
     "                       --frames defaults to its frame count\n"
-    "  --port1 D, --port2 D the device on a port: auto, proline, joystick or none\n"
+    "  --port1 D, --port2 D auto, proline, joystick, none, savekey or atarivox\n"
     "  --region R           the region: auto or ntsc\n"
     "  --boot B             how the cartridge starts: fast (the default) or bios\n"
     "  --bios FILE          the BIOS image --boot bios runs\n"
+    "  --save-dir DIR      restore and save raw battery RAM in an existing directory\n"
+    "  --save-interval F   dirty save cadence in completed frames (default 60)\n"
+    "  --hsc M             high score cartridge: auto, on or off\n"
+    "  --hsc-rom FILE      optional exact 4096-byte HSC firmware\n"
     "  --probe FILE         print the cartridge image's fields and hashes\n"
     "  --help               print this text and the exit statuses\n"
     "  --version            print the version\n";
@@ -396,7 +410,12 @@ typedef struct options {
     int has_boot;      /* --boot given */
     uint32_t boot;     /* --boot: MUHTARI__MOVIE_BOOT_*, then the boot that runs */
     const char *bios;  /* --bios FILE, or NULL */
-    int printed;       /* --help or --version ran; nothing else to do */
+    const char *save_dir;
+    uint32_t save_interval;
+    uint32_t hsc_mode;
+    int has_hsc;
+    const char *hsc_rom;
+    int printed; /* --help or --version ran; nothing else to do */
 } options;
 
 /* The values --port1 and --port2 take, and the movie's port keys. */
@@ -408,6 +427,8 @@ static const struct {
     {"proline", MUHTARI_PORT_PROLINE},
     {"joystick", MUHTARI_PORT_JOYSTICK},
     {"none", MUHTARI_PORT_UNPLUGGED},
+    {"savekey", MUHTARI_PORT_SAVEKEY},
+    {"atarivox", MUHTARI_PORT_ATARIVOX},
 };
 
 static const char *port_name(uint32_t device)
@@ -530,8 +551,9 @@ static int parse_options(int argc, char **argv, options *o)
                 v++;
             }
             if (v == sizeof port_values / sizeof port_values[0]) {
-                return usage(p == 0 ? "--port1 needs auto, proline, joystick or none"
-                                    : "--port2 needs auto, proline, joystick or none");
+                return usage(
+                    p == 0 ? "--port1 needs auto, proline, joystick, none, savekey or atarivox"
+                           : "--port2 needs auto, proline, joystick, none, savekey or atarivox");
             }
             o->port[p] = port_values[v].device;
         } else if (strcmp(arg, "--region") == 0) {
@@ -555,6 +577,27 @@ static int parse_options(int argc, char **argv, options *o)
                 return usage("--bios needs one FILE");
             }
             o->bios = value;
+        } else if (strcmp(arg, "--save-interval") == 0) {
+            if (o->save_interval != 0u ||
+                !parse_count(value, value == NULL ? 0u : strlen(value), &o->save_interval))
+                return usage("--save-interval needs one whole number of 1 or more");
+        } else if (strcmp(arg, "--save-dir") == 0 || strcmp(arg, "--hsc-rom") == 0) {
+            const char **out = strcmp(arg, "--save-dir") == 0 ? &o->save_dir : &o->hsc_rom;
+            if (value == NULL || value[0] == '\0' || strncmp(value, "--", 2u) == 0 ||
+                *out != NULL) {
+                return usage("--save-dir and --hsc-rom each need one path");
+            }
+            *out = value;
+        } else if (strcmp(arg, "--hsc") == 0) {
+            if (o->has_hsc || value == NULL ||
+                (strcmp(value, "auto") != 0 && strcmp(value, "on") != 0 &&
+                 strcmp(value, "off") != 0)) {
+                return usage("--hsc needs auto, on or off once");
+            }
+            o->has_hsc = 1;
+            o->hsc_mode = strcmp(value, "on") == 0    ? MUHTARI_HSC_ON
+                          : strcmp(value, "off") == 0 ? MUHTARI_HSC_OFF
+                                                      : MUHTARI_HSC_AUTO;
         } else if (strcmp(arg, "--probe") == 0) {
             return usage("--probe takes one file and no other option");
         } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0) {
@@ -574,6 +617,13 @@ static int parse_options(int argc, char **argv, options *o)
 static int check_options(options *o, const muhtari__movie_header *h, uint32_t movie_frames)
 {
     char why[128];
+    if (o->save_interval != 0u && o->save_dir == NULL)
+        return usage("--save-interval needs --save-dir");
+    if (o->save_interval == 0u)
+        o->save_interval = 60u;
+    if ((o->save_dir != NULL || o->hsc_rom != NULL || o->has_hsc) && o->rom == NULL) {
+        return usage("save and HSC options need a cartridge FILE");
+    }
     if (o->diagnostic && (o->rom == NULL || o->frames == 0u || o->bench)) {
         return usage("--diagnostic needs content and explicit --frames N");
     }
@@ -751,6 +801,229 @@ static uint8_t *read_bios(const char *path, const char *movie_path, const muhtar
     return bios;
 }
 
+/* Runner-owned host files; the core only owns the stable raw span. */
+typedef struct save_context {
+    char *path;
+    uint8_t *data;
+    size_t bytes;
+    uint64_t persisted_generation;
+    int armed;
+    int failed;
+    uint64_t completed_frames;
+} save_context;
+
+static int save_directory(const char *path)
+{
+#ifdef _WIN32
+    struct _stat64 st;
+    return _stat64(path, &st) == 0 && (st.st_mode & _S_IFMT) == _S_IFDIR && _access(path, 6) == 0;
+#else
+    struct stat st;
+    return stat(path, &st) == 0 && S_ISDIR(st.st_mode) && access(path, R_OK | W_OK | X_OK) == 0;
+#endif
+}
+
+static FILE *save_read_open(const char *path)
+{
+#ifdef _WIN32
+    struct _stat64 st;
+    if (_stat64(path, &st) != 0)
+        return NULL;
+    if ((st.st_mode & _S_IFMT) != _S_IFREG) {
+        errno = EINVAL;
+        return NULL;
+    }
+    int fd = _open(path, _O_RDONLY | _O_BINARY);
+    if (fd < 0)
+        return NULL;
+    FILE *f = _fdopen(fd, "rb");
+    if (f == NULL) {
+        int error = errno;
+        (void)_close(fd);
+        errno = error;
+    }
+    return f;
+#else
+    /* Nonblocking open plus descriptor stat refuses FIFOs even after a path race. */
+    int fd = open(path, O_RDONLY | O_NONBLOCK);
+    if (fd < 0)
+        return NULL;
+    struct stat st;
+    if (fstat(fd, &st) != 0 || !S_ISREG(st.st_mode)) {
+        (void)close(fd);
+        errno = EINVAL;
+        return NULL;
+    }
+    FILE *f = fdopen(fd, "rb");
+    if (f == NULL) {
+        int error = errno;
+        (void)close(fd);
+        errno = error;
+    }
+    return f;
+#endif
+}
+
+static int save_import(save_context *save, muhtari *m, const options *opt)
+{
+    if (opt->save_dir == NULL)
+        return 0;
+    if (!save_directory(opt->save_dir)) {
+        fprintf(stderr, "muhtari-run: save directory is not accessible\n");
+        return MUHTARI__EXIT_FAILURE;
+    }
+    muhtari_battery_info battery = {0};
+    battery.size = (uint32_t)sizeof battery;
+    if (muhtari_get_battery(m, &battery) != MUHTARI_STATUS_OK)
+        return MUHTARI__EXIT_FAILURE;
+    if (battery.bytes == 0u)
+        return 0;
+    const char *base = opt->rom;
+    for (const char *p = base; *p != '\0'; p++) {
+        if (*p == '/'
+#ifdef _WIN32
+            || *p == '\\'
+#endif
+        )
+            base = p + 1;
+    }
+    const char *dot = strrchr(base, '.');
+    size_t stem = dot != NULL && dot != base ? (size_t)(dot - base) : strlen(base);
+    size_t dir = strlen(opt->save_dir);
+    if (stem == 0u || dir > SIZE_MAX - 6u || stem > SIZE_MAX - dir - 6u)
+        return MUHTARI__EXIT_FAILURE;
+    save->path = (char *)malloc(dir + stem + 6u);
+    uint8_t *staging = (uint8_t *)malloc(battery.bytes + 1u);
+    if (save->path == NULL || staging == NULL) {
+        free(staging);
+        return MUHTARI__EXIT_FAILURE;
+    }
+    memcpy(save->path, opt->save_dir, dir);
+    save->path[dir] = '/';
+    memcpy(save->path + dir + 1u, base, stem);
+    memcpy(save->path + dir + stem + 1u, ".sav", 5u);
+    memset(staging, 0xFF, battery.bytes + 1u);
+    errno = 0;
+    FILE *f = save_read_open(save->path);
+    int status = 0;
+    if (f == NULL) {
+        if (errno != ENOENT)
+            status = MUHTARI__EXIT_FAILURE;
+    } else {
+        size_t n = 0u;
+        while (n < battery.bytes + 1u) {
+            size_t got = fread(staging + n, 1u, battery.bytes + 1u - n, f);
+            n += got;
+            if (got == 0u)
+                break;
+        }
+        int bad = ferror(f) != 0;
+        if (fclose(f) != 0)
+            bad = 1;
+        status = bad ? MUHTARI__EXIT_FAILURE : n > battery.bytes ? MUHTARI__EXIT_SAVE_SIZE : 0;
+    }
+    if (status == 0) {
+        memcpy(battery.data, staging, battery.bytes);
+        save->data = battery.data;
+        save->bytes = battery.bytes;
+        save->persisted_generation = battery.generation;
+        save->armed = 1;
+    } else {
+        fprintf(stderr, "muhtari-run: %s: %s\n", save->path,
+                status == MUHTARI__EXIT_SAVE_SIZE ? "save exceeds battery size"
+                                                  : "cannot import save");
+    }
+    free(staging);
+    return status;
+}
+
+static int save_replace(const char *temporary, const char *destination)
+{
+#ifdef _WIN32
+    return MoveFileExA(temporary, destination, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)
+               ? 0
+               : -1;
+#else
+    return rename(temporary, destination);
+#endif
+}
+
+static int save_flush(save_context *save, muhtari *m)
+{
+    if (!save->armed || save->failed)
+        return save->failed ? MUHTARI__EXIT_FAILURE : 0;
+    muhtari_battery_info battery = {0};
+    battery.size = (uint32_t)sizeof battery;
+    if (muhtari_get_battery(m, &battery) != MUHTARI_STATUS_OK) {
+        save->failed = 1;
+        return MUHTARI__EXIT_FAILURE;
+    }
+    if (battery.generation == save->persisted_generation)
+        return 0;
+    size_t len = strlen(save->path);
+    char *temporary = len <= SIZE_MAX - 48u ? (char *)malloc(len + 48u) : NULL;
+    FILE *f = NULL;
+    int owned = 0;
+    for (unsigned attempt = 0; temporary != NULL && attempt < 32u; attempt++) {
+#ifdef _WIN32
+        unsigned long pid = (unsigned long)GetCurrentProcessId();
+#elif defined(__wasi__)
+        /* WASI has no process IDs; exclusive creation still owns each candidate. */
+        unsigned long pid = 0;
+#else
+        unsigned long pid = (unsigned long)getpid();
+#endif
+        (void)snprintf(temporary, len + 48u, "%s.tmp.%lu.%u", save->path, pid, attempt);
+#ifdef _WIN32
+        int fd = _open(temporary, _O_CREAT | _O_EXCL | _O_WRONLY | _O_BINARY, _S_IREAD | _S_IWRITE);
+#else
+        int fd = open(temporary, O_CREAT | O_EXCL | O_WRONLY, 0600);
+#endif
+        if (fd < 0) {
+            if (errno == EEXIST)
+                continue;
+            break;
+        }
+        owned = 1;
+#ifdef _WIN32
+        f = _fdopen(fd, "wb");
+        if (f == NULL)
+            (void)_close(fd);
+#else
+        f = fdopen(fd, "wb");
+        if (f == NULL)
+            (void)close(fd);
+#endif
+        break;
+    }
+    int bad = f == NULL;
+    if (f != NULL) {
+        if (fwrite(save->data, 1u, save->bytes, f) != save->bytes || fflush(f) != 0)
+            bad = 1;
+        if (!bad) {
+#ifdef _WIN32
+            bad = _commit(_fileno(f)) != 0;
+#else
+            bad = fsync(fileno(f)) != 0;
+#endif
+        }
+        if (fclose(f) != 0)
+            bad = 1;
+    }
+    if (!bad && save_replace(temporary, save->path) != 0)
+        bad = 1;
+    if (owned && bad)
+        (void)remove(temporary);
+    free(temporary);
+    if (bad) {
+        save->failed = 1;
+        fprintf(stderr, "muhtari-run: %s: cannot commit save\n", save->path);
+        return MUHTARI__EXIT_FAILURE;
+    }
+    save->persisted_generation = battery.generation;
+    return 0;
+}
+
 /* Loads the cartridge image at path into m, in region (0 for the
    cartridge's), fast-booted, or booted through the BIOS image at
    bios_path when that is not NULL. When the movie header h names a
@@ -759,7 +1032,7 @@ static uint8_t *read_bios(const char *path, const char *movie_path, const muhtar
    exits 77, a mismatch, a malformed image, an invalid BIOS or any other
    failure 1. Returns the exit status. */
 static int load(muhtari *m, const char *path, uint32_t region, const char *movie_path,
-                const muhtari__movie_header *h, const char *bios_path)
+                const muhtari__movie_header *h, const char *bios_path, const options *opt)
 {
     size_t n = 0;
     uint8_t *image = read_image(path, &n);
@@ -802,10 +1075,60 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
     media.image_size = n;
     media.bios = bios;
     media.bios_size = bios_n;
+    media.hsc_mode = opt->hsc_mode;
+    media.port[0] = h != NULL ? h->device[0] : opt->port[0];
+    media.port[1] = h != NULL ? h->device[1] : opt->port[1];
+    uint8_t *firmware = NULL;
+    if (opt->hsc_rom != NULL) {
+        firmware = (uint8_t *)malloc(4097u);
+        FILE *f = save_read_open(opt->hsc_rom);
+        int bad = firmware == NULL || f == NULL;
+        size_t used = 0u;
+        if (f != NULL) {
+            while (firmware != NULL && used < 4097u) {
+                size_t got = fread(firmware + used, 1u, 4097u - used, f);
+                used += got;
+                if (got == 0u)
+                    break;
+            }
+            if (ferror(f) != 0 || used != 4096u)
+                bad = 1;
+            if (fclose(f) != 0)
+                bad = 1;
+        }
+        if (bad) {
+            fprintf(stderr, "muhtari-run: %s: HSC firmware must be a readable 4096-byte file\n",
+                    opt->hsc_rom);
+            free(firmware);
+            free(image);
+            free(bios);
+            return MUHTARI__EXIT_FAILURE;
+        }
+        media.hsc_rom = firmware;
+        media.hsc_rom_size = used;
+    }
     muhtari_status st = muhtari_load(m, &media);
     free(image);
     free(bios);
+    free(firmware);
     if (st == MUHTARI_STATUS_OK) {
+        muhtari_battery_info b = {0};
+        b.size = (uint32_t)sizeof b;
+        if (muhtari_get_battery(m, &b) != MUHTARI_STATUS_OK)
+            return MUHTARI__EXIT_FAILURE;
+        if (b.hsc_attached) {
+            if (b.firmware_flags & MUHTARI_HSC_FIRMWARE_STUB) {
+                fprintf(stderr, "muhtari-run: HSC signature-only stub; no firmware routines\n");
+            } else {
+                char hex[41];
+                to_hex(b.hsc_sha1, 20u, hex);
+                fprintf(stderr, "hsc_sha1 %s\n", hex);
+                if (b.firmware_flags & MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN)
+                    fprintf(stderr, "muhtari-run: unknown HSC firmware identity\n");
+                if (b.firmware_flags & MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE)
+                    fprintf(stderr, "muhtari-run: HSC firmware lacks C6/FE signatures\n");
+            }
+        }
         return MUHTARI__EXIT_DONE;
     }
     fprintf(stderr, "muhtari-run: %s: %s\n",
@@ -913,6 +1236,7 @@ static int run(const options *opt, const replay *mv)
     const muhtari__movie_header *h = mv != NULL ? &mv->header : NULL;
     uint32_t region = h != NULL && h->has_region ? h->region : opt->region;
     int status = MUHTARI__EXIT_DONE;
+    save_context save = {0};
     muhtari__sha256 raw_hash, pcm_hash, tentative;
     muhtari__sha256_init(&raw_hash);
     muhtari__sha256_init(&pcm_hash);
@@ -922,16 +1246,19 @@ static int run(const options *opt, const replay *mv)
         status = MUHTARI__EXIT_FAILURE;
     }
     if (status == 0 && opt->rom != NULL) {
-        status = load(m, opt->rom, region, opt->movie, h, opt->bios);
+        status = load(m, opt->rom, region, opt->movie, h, opt->bios, opt);
     } else if (h != NULL && h->has_rom_sha256) {
         fprintf(stderr, "muhtari-run: %s: rom-sha256 names a cartridge, and none was given\n",
                 opt->movie);
         status = MUHTARI__EXIT_FAILURE;
     }
+    if (status == 0 && opt->rom != NULL)
+        status = save_import(&save, m, opt);
     uint64_t audio_frames = 0u, audio_samples = 0u;
     uint32_t next_hash = 0;
     uint32_t timed = 0;
     uint64_t total_ns = 0;
+    uint32_t save_interval = opt->save_interval != 0u ? opt->save_interval : 60u;
     /* A 64-bit count, so the loop ends when --frames is 4294967295. */
     for (uint64_t n = 1;
          status == MUHTARI__EXIT_DONE && n <= opt->frames && !muhtari__stop_requested(); n++) {
@@ -958,6 +1285,7 @@ static int run(const options *opt, const replay *mv)
             total_ns += ns;
         }
         if (st == MUHTARI_STATUS_ERR_BIOS_REJECTED_CART) {
+            save.armed = 0;
             fprintf(stderr, "muhtari-run: %s: %s\n", opt->rom, muhtari__status_text(st));
             status = MUHTARI__EXIT_REFUSED;
             break;
@@ -968,6 +1296,7 @@ static int run(const options *opt, const replay *mv)
             status = MUHTARI__EXIT_FAILURE;
             break;
         }
+        save.completed_frames++;
         if (opt->hash_audio) {
             raw_hash = tentative;
             audio_pcm(&pcm_hash, audio, io.audio_count);
@@ -985,6 +1314,11 @@ static int run(const options *opt, const replay *mv)
                 status = dump_frame(video, opt->dump_paths[k], row);
             }
         }
+        /* Consume before I/O so a request arriving during a save remains pending. */
+        int requested = muhtari__flush_requested();
+        if ((requested || save.completed_frames % save_interval == 0u) &&
+            save_flush(&save, m) != 0 && status == 0)
+            status = MUHTARI__EXIT_FAILURE;
         /* A stop request ends the run only between whole frames, after the
            frame's outputs are written. */
         if (status != 0 || muhtari__stop_requested()) {
@@ -1047,6 +1381,11 @@ static int run(const options *opt, const replay *mv)
             }
         }
     }
+    if ((fflush(stdout) != 0 || ferror(stdout) != 0) && status == 0)
+        status = MUHTARI__EXIT_FAILURE;
+    if (save.completed_frames != 0u && save_flush(&save, m) != 0 && status == 0)
+        status = MUHTARI__EXIT_FAILURE;
+    free(save.path);
     muhtari_destroy(m);
     free(video);
     free(audio);

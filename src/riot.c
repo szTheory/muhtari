@@ -85,7 +85,12 @@ static uint8_t riot_port(uint8_t out, uint8_t ddr, uint8_t pins)
 /* Port A as it reads, with the controllers' pins on its input pins. */
 static uint8_t riot_port_a(const muhtari *m)
 {
-    return riot_port(m->riot.ora, m->riot.ddra, muhtari__ports_swcha(m));
+    uint8_t pins = riot_port(m->riot.ora, m->riot.ddra, muhtari__ports_swcha(m));
+    if (m->battery.eeprom_port != 0u && m->savekey.sda_low != 0u) {
+        uint8_t sda = m->battery.eeprom_port == 1u ? 0x40u : 0x04u;
+        pins = (uint8_t)(pins & (uint8_t)~sda);
+    }
+    return pins;
 }
 
 /* PA7's level: ORA's bit on an output pin, the right direction of port 0's
@@ -130,7 +135,7 @@ static uint8_t riot_io_read(const muhtari *m, uint16_t addr)
     }
 }
 
-static void riot_io_write(muhtari *m, uint16_t addr, uint8_t v)
+static void riot_io_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t tick)
 {
     struct muhtari__riot *r = &m->riot;
     switch (addr & 0x03u) {
@@ -146,6 +151,9 @@ static void riot_io_write(muhtari *m, uint16_t addr, uint8_t v)
     default:
         r->ddrb = v;
         break;
+    }
+    if ((addr & 0x02u) == 0u) {
+        muhtari__savekey_pins(m, tick);
     }
     riot_pa7_update(m);
 }
@@ -180,7 +188,7 @@ uint8_t muhtari__riot_peek(const muhtari *m, uint16_t addr)
                      (m->riot.pa7_flag != 0u ? 0x40u : 0x00u));
 }
 
-void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v)
+void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t tick)
 {
     struct muhtari__riot *r = &m->riot;
     if ((addr & RIOT_RS) == 0u) {
@@ -188,7 +196,7 @@ void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v)
         return;
     }
     if ((addr & RIOT_A2) == 0u) {
-        riot_io_write(m, addr, v);
+        riot_io_write(m, addr, v, tick);
         return;
     }
     if ((addr & RIOT_A4) != 0u) {

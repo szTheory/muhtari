@@ -445,7 +445,7 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
         inptctrl_write(m, v);
         rearm(m);
     } else if (dev == DEV_RIOT) {
-        muhtari__riot_write(m, addr, v);
+        muhtari__riot_write(m, addr, v, m->bus.ticks + data_at(len));
     } else if (dev == DEV_MARIA) {
         muhtari__maria_write(m, addr, v, m->bus.ticks + data_at(len));
         rearm(m);

@@ -6,6 +6,16 @@
 #include <string.h>
 #include "internal.h"
 #include "../check.h"
+#include "../../runner/stop.c"
+
+static void request_stop(void)
+{
+#ifdef _WIN32
+    CHECK(on_console(CTRL_C_EVENT));
+#else
+    CHECK_EQ_U64(raise(SIGINT), 0);
+#endif
+}
 
 static unsigned calls, stop_after, fail_after;
 static muhtari_status wrapped_frame(muhtari *m, muhtari_frame *io)
@@ -20,7 +30,7 @@ static muhtari_status wrapped_frame(muhtari *m, muhtari_frame *io)
         return MUHTARI_STATUS_ERR_BIOS_REJECTED_CART;
     }
     if (calls == stop_after)
-        CHECK_EQ_U64(raise(SIGINT), 0);
+        request_stop();
     return st;
 }
 int runner_entry(int argc, char **argv);
@@ -30,7 +40,6 @@ int runner_entry(int argc, char **argv);
 #undef muhtari_run_frame
 #undef main
 /* Test-local access resets the signal flag between independent runs. */
-#include "../../runner/stop.c"
 
 static void canonical(void)
 {
@@ -63,7 +72,7 @@ static void run_case(const char *capture, unsigned count, unsigned failure, int 
     fail_after = failure;
     muhtari__stop_install();
     if (count == 0u && failure == 0u && !dump)
-        CHECK_EQ_U64(raise(SIGINT), 0);
+        request_stop();
     options opt;
     memset(&opt, 0, sizeof opt);
     opt.frames = 10;

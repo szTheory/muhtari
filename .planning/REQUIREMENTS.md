@@ -25,12 +25,12 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21; no partial board 
 
 ### Battery saves
 
-- [ ] **SAVE-01**: HSC-compatible software can use its 2 KB SRAM and a validated user-supplied 4 KB ROM; the ROM-free signature stub supports direct-SRAM callers with its firmware limitation documented.
-- [ ] **SAVE-02**: SaveKey and AtariVox EEPROM users can read/write the 32 KB device through pin-level I2C, including repeated START, page wrap, sequential reads and bounded busy polling.
-- [ ] **SAVE-03**: Embedders receive a load-stable battery span with layout version 1 and a generation counter reflecting actual byte changes; power cycle retains battery bytes.
-- [ ] **SAVE-04**: The runner reloads per-game raw .sav data from --save-dir, pads short media with FF, rejects oversized data, and never silently discards a load error.
-- [ ] **SAVE-05**: Runner periodic, on-demand and orderly-exit flushing atomically replaces saves and preserves the previous valid file when persistence fails.
-- [ ] **SAVE-06**: RetroArch retains HSC/SaveKey bytes through SAVE_RAM across fresh launches, proven by the bounded second hosted save-round-trip case; raw .srm and runner .sav media agree.
+- [x] **SAVE-01**: HSC-compatible software can use its 2 KB SRAM and a validated user-supplied 4 KB ROM; the ROM-free signature stub supports direct-SRAM callers with its firmware limitation documented.
+- [x] **SAVE-02**: SaveKey and AtariVox EEPROM users can read/write the 32 KB device through pin-level I2C, including repeated START, page wrap, sequential reads and bounded busy polling.
+- [x] **SAVE-03**: Embedders receive a load-stable battery span with layout version 1 and a generation counter reflecting actual byte changes; power cycle retains battery bytes.
+- [x] **SAVE-04**: The runner reloads per-game raw .sav data from --save-dir, pads short media with FF, rejects oversized data, and never silently discards a load error.
+- [x] **SAVE-05**: Runner periodic, on-demand and orderly-exit flushing atomically replaces saves and preserves the previous valid file when persistence fails.
+- [x] **SAVE-06**: RetroArch retains HSC/SaveKey bytes through SAVE_RAM across fresh launches, proven by the bounded second hosted save-round-trip case; raw .srm and runner .sav media agree.
 
 ### Controllers
 
@@ -72,12 +72,12 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | BOARD-01 | Phase 6 | Complete |
 | BOARD-02 | Phase 6 | Complete |
 | BOARD-03 | Phase 6 | Complete |
-| SAVE-01 | Phase 7 | Pending |
-| SAVE-02 | Phase 7 | Pending |
-| SAVE-03 | Phase 7 | Pending |
-| SAVE-04 | Phase 7 | Pending |
-| SAVE-05 | Phase 7 | Pending |
-| SAVE-06 | Phase 7 | Pending |
+| SAVE-01 | Phase 7 | Complete |
+| SAVE-02 | Phase 7 | Complete |
+| SAVE-03 | Phase 7 | Complete |
+| SAVE-04 | Phase 7 | Complete |
+| SAVE-05 | Phase 7 | Complete |
+| SAVE-06 | Phase 7 | Complete |
 | INPUT-01 | Phase 8 | Pending |
 | INPUT-02 | Phase 8 | Pending |
 | INPUT-03 | Phase 8 | Pending |

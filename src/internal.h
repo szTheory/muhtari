@@ -359,6 +359,30 @@ void muhtari__synth_raw(muhtari *m, uint64_t tick, unsigned source, uint8_t raw)
 void muhtari__observe_begin(muhtari *m, uint64_t end);
 void muhtari__observe_end(muhtari *m);
 
+struct muhtari__battery {
+    uint8_t data[34816];
+    uint8_t rom[4096];
+    size_t bytes;
+    uint64_t generation;
+    uint32_t hsc_attached;
+    uint32_t eeprom_port;
+    uint32_t eeprom_device;
+    uint32_t firmware_flags;
+    uint8_t hsc_sha1[20];
+};
+
+/* One 24LC256 page and pin protocol; persistent bytes live only in battery
+   (docs/hardware/controllers.md, Serial EEPROM). The selected 5 ms model
+   rounds ceil(315000000 / 8800) half-crystal ticks upward. */
+#define MUHTARI__SAVEKEY_BUSY_TICKS 35796u
+struct muhtari__savekey {
+    uint64_t busy_until;
+    uint16_t address, page_base;
+    uint8_t host_scl, host_sda, sda_low;
+    uint8_t phase, next_phase, bits, shift, address_high, read_byte;
+    uint8_t page[64], touched[64], page_offset, pending, ack;
+};
+
 struct muhtari {
     muhtari__audio_observer observer;
     void *observer_user;
@@ -374,6 +398,9 @@ struct muhtari {
     struct muhtari__maria maria;
     struct muhtari__profile profile;
     struct muhtari__cart cart;
+    struct muhtari__battery battery;
+    struct muhtari__savekey savekey;
+    uint8_t hsc_load_rom[4096]; /* unpublished load staging; never a hardware/save view */
     struct muhtari__ports ports;
     struct muhtari__boot boot;
     struct muhtari__synth synth;
@@ -401,6 +428,9 @@ _Static_assert(sizeof(((muhtari *)0)->bios) == MUHTARI__BIOS_SIZE_MAX, "bios arr
 #define MUHTARI__CART_INFO_SIZE_FIRST                                                              \
     ((uint32_t)(offsetof(muhtari_cart_info, title) + sizeof(((muhtari_cart_info *)0)->title)))
 #define MUHTARI__MEDIA_SIZE_FIRST ((uint32_t)(offsetof(muhtari_media, bios_size) + sizeof(size_t)))
+#define MUHTARI__BATTERY_SIZE_FIRST ((uint32_t)(offsetof(muhtari_battery_info, hsc_sha1) + 20u))
+#define MUHTARI__CONST_SPAN_SIZE_FIRST                                                             \
+    ((uint32_t)(offsetof(muhtari_const_span, bytes) + sizeof(size_t)))
 #define MUHTARI__INPUT_SIZE_FIRST ((uint32_t)(offsetof(muhtari_input, switches) + sizeof(uint32_t)))
 #define MUHTARI__SPAN_SIZE_FIRST ((uint32_t)(offsetof(muhtari_span, bytes) + sizeof(size_t)))
 #define MUHTARI__COUNTERS_SIZE_FIRST                                                               \
@@ -491,7 +521,11 @@ _Static_assert(offsetof(muhtari_media, image) == 8, "media.image");
 _Static_assert(offsetof(muhtari_media, image_size) == 8 + MUHTARI__P, "media.image_size");
 _Static_assert(offsetof(muhtari_media, bios) == 8 + 2 * MUHTARI__P, "media.bios");
 _Static_assert(offsetof(muhtari_media, bios_size) == 8 + 3 * MUHTARI__P, "media.bios_size");
-_Static_assert(sizeof(muhtari_media) == 8 + 4 * MUHTARI__P, "media size");
+_Static_assert(offsetof(muhtari_media, hsc_mode) == 8 + 4 * MUHTARI__P, "media.hsc_mode");
+_Static_assert(offsetof(muhtari_media, hsc_rom) == 8 + 5 * MUHTARI__P, "media.hsc_rom");
+_Static_assert(offsetof(muhtari_media, hsc_rom_size) == 8 + 6 * MUHTARI__P, "media.hsc_rom_size");
+_Static_assert(offsetof(muhtari_media, port) == 8 + 7 * MUHTARI__P, "media.port");
+_Static_assert(sizeof(muhtari_media) == 16 + 7 * MUHTARI__P, "media size");
 
 /* muhtari_input is six uint32_t fields: 24 bytes on every target. */
 _Static_assert(offsetof(muhtari_input, size) == 0, "input.size");
@@ -611,7 +645,10 @@ void muhtari__tia_catch_up(muhtari *m, uint64_t tick);
    or its RAM, and A0-A6 the register or byte (docs/hardware/riot.md).
    reset puts it in its RES state under m->profile. */
 uint8_t muhtari__riot_read(muhtari *m, uint16_t addr);
-void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v);
+void muhtari__riot_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t tick);
+void muhtari__savekey_pins(muhtari *m, uint64_t tick);
+void muhtari__savekey_catch_up(muhtari *m, uint64_t tick);
+void muhtari__savekey_reset(muhtari *m);
 void muhtari__riot_reset(muhtari *m);
 /* Runs PA7's edge detector after the device pins change. */
 void muhtari__riot_pins_changed(muhtari *m);

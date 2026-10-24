@@ -413,6 +413,7 @@ jobs:
         run: |
           unzip -q build/archives/muhtari-libretro-macos-arm64.zip -d build/libretro
           unzip -q build/archives/muhtari-runner-macos-arm64.zip -d build/runner
+          unzip -q build/archives/muhtari-library-macos-arm64.zip -d build/library
       - name: RetroArch 1.22.2 from the pinned DMG
         run: |
           scripts/fetch-pin.sh retroarch-dmg build/dmg
@@ -422,40 +423,103 @@ jobs:
           version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/RetroArch.app/Contents/Info.plist)
           echo "RetroArch $version"
           test "$version" = 1.22.2
-      - name: RetroArch runs the core with no content
-        run: >-
-          cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch
-          -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info
-          -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra" -DFRAMES=5
-          "-DSHOT=$PWD/build/frames/shot.png" -P tests/retroarch/run_retroarch.cmake
+      - name: Independent numeric and pixel judges
+        run: |
+          mkdir -p build/frames
+          cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Ihost tests/diag/driver.c host/palette.c \
+            build/library/lib/libmuhtari.a -o build/frames/diag
+          cc -std=c17 -O2 -Wall -Wextra -Werror -o build/frames/compare tests/retroarch/bmp.c tests/retroarch/compare.c
       - name: RetroArch runs the dma diagnostic
         run: >-
           cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch
           -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info
           -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-dma" -DFRAMES=120 -DROM=tests/diag/dma.a78
+          "-DSAVE_DIR=$PWD/build/dma-saves"
           "-DSHOT=$PWD/build/frames/dma-shot.png" -P tests/retroarch/run_retroarch.cmake
-      - name: The screenshots equal the runner's frames
+      - name: DMA screenshot equals the retained runner frame pin
         working-directory: build/frames
         run: |
-          ../runner/bin/muhtari-run --frames 5 --dump-frame 5:runner.png
           ../runner/bin/muhtari-run --frames 120 --dump-frame 120:dma-runner.png --hash-frame 120 ../../tests/diag/dma.a78 | tee hash.txt
           grep "^diag/dma,.*,title@120=$(cut -d' ' -f4 hash.txt)," ../../tests/compat/ledger.csv
-          for f in runner shot dma-runner dma-shot; do
+          for f in dma-runner dma-shot; do
             sips --deleteColorManagementProperties "$f.png" > /dev/null
             sips -s format bmp "$f.png" --out "$f.bmp" > /dev/null
           done
-          cc -std=c17 -O2 -Wall -Wextra -Werror -o compare ../../tests/retroarch/bmp.c ../../tests/retroarch/compare.c
-          for pair in runner:shot dma-runner:dma-shot; do
-            ./compare "${pair%:*}.bmp" "${pair#*:}.bmp" | tee compare.txt
-            grep -q '^320x242, every pixel equal$' compare.txt
+          ./compare dma-runner.bmp dma-shot.bmp | tee compare.txt
+          grep -q '^320x242, every pixel equal$' compare.txt
+      - name: Fresh frontend and runner battery roundtrip
+        run: |
+          mkdir -p build/retroarch-saves build/runner-saves
+          test -z "$(ls -A build/retroarch-saves)"
+          test -z "$(ls -A build/runner-saves)"
+          build/frames/diag --battery-firmware build/frames/synthetic.bin
+          # Unsafe external inputs must fail before disposable launch cleanup.
+          mkdir -p build/unsafe-run
+          printf 'retain\n' > build/unsafe-run/sentinel
+          cp build/frames/synthetic.bin build/unsafe-run/highscre.bin
+          for scenario in equal child parent firmware; do
+            save="$PWD/build/retroarch-saves" hsc_guard=()
+            case $scenario in
+              equal) save="$PWD/build/unsafe-run" ;;
+              child) save="$PWD/build/unsafe-run/saves" ;;
+              parent) save="$PWD/build" ;;
+              firmware) hsc_guard=("-DHSC_ROM=$PWD/build/unsafe-run/highscre.bin") ;;
+            esac
+            rc=0
+            cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
+              -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
+              -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/unsafe-run" "-DSAVE_DIR=$save" \
+              "${hsc_guard[@]}" \
+              -DFRAMES=120 "-DSHOT=$PWD/build/frames/unsafe.png" \
+              -P tests/retroarch/run_retroarch.cmake > build/unsafe.txt 2>&1 || rc=$?
+            test "$rc" -eq 1
+            grep -Eq 'unsafe (save/run overlap|or absent HSC_ROM)' build/unsafe.txt
+            grep -q '^retain$' build/unsafe-run/sentinel
           done
+          for count in 1 2; do
+            marker=255
+            firmware=() runner_firmware=()
+            if [ "$count" = 1 ]; then
+              marker=90
+              firmware=("-DHSC_ROM=$PWD/build/frames/synthetic.bin")
+              runner_firmware=(--hsc-rom build/frames/synthetic.bin)
+            fi
+            cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
+              -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
+              -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-battery-$count" \
+              "-DSAVE_DIR=$PWD/build/retroarch-saves" "${firmware[@]}" -DFRAMES=120 -DROM=tests/diag/battery.a78 \
+              "-DSHOT=$PWD/build/frames/battery-shot-$count.png" -P tests/retroarch/run_retroarch.cmake
+            cp build/retroarch-saves/battery.srm "build/frames/frontend-$count.srm"
+            build/runner/bin/muhtari-run --frames 120 --diagnostic --save-dir "$PWD/build/runner-saves" \
+              "${runner_firmware[@]}" --dump-frame "120:build/frames/battery-runner-$count.png" \
+              tests/diag/battery.a78 > "build/frames/report-$count.txt"
+            cp build/runner-saves/battery.sav "build/frames/runner-$count.sav"
+            grep '^diagnostic ' "build/frames/report-$count.txt" > build/frames/mailbox.txt
+            build/frames/diag --battery-count "$count" --battery-marker "$marker" \
+              --mailbox build/frames/mailbox.txt battery tests/diag/expected.csv
+            for host in "frontend-$count.srm" "runner-$count.sav"; do
+              build/frames/diag --battery-media "build/frames/$host" "$count"
+            done
+            cmp "build/frames/frontend-$count.srm" "build/frames/runner-$count.sav"
+            for host in shot runner; do
+              f="build/frames/battery-$host-$count"
+              sips --deleteColorManagementProperties "$f.png" > /dev/null
+              sips -s format bmp "$f.png" --out "$f.bmp" > /dev/null
+            done
+            build/frames/compare --battery-controls "$count" "$marker" \
+              "build/frames/battery-runner-$count.bmp" "build/frames/battery-shot-$count.bmp"
+          done
+          grep -q 'HSC firmware unknown identity' build/ra-battery-1/retroarch.log
+          grep -q 'signature-only stub' build/ra-battery-2/retroarch.log
+          test ! -e build/ra-battery-2/system/highscre.bin
+          test "$(cat tests/retroarch/* | wc -l | tr -d ' ')" -le 300
       # Fault prevented: a compare that cannot fail. One byte of pixel (7,3)
       # in a copy of the runner's BMP is inverted, at an offset read from
       # the BMP header; the tool must exit 1 naming exactly that pixel.
       - name: The compare's negative control
         working-directory: build/frames
         run: |
-          cp runner.bmp flipped.bmp
+          cp dma-runner.bmp flipped.bmp
           field() { od -An -t "$1" -j "$2" -N "$3" flipped.bmp | tr -d ' \n'; }
           data=$(field u4 10 4) width=$(field u4 18 4) height=$(field d4 22 4) bpp=$(field u2 28 2)
           x=7 y=3 row=3
@@ -464,13 +528,13 @@ jobs:
           byte=$(field u1 "$off" 1)
           printf "$(printf '\\%03o' $((byte ^ 255)))" | dd of=flipped.bmp bs=1 seek="$off" conv=notrunc 2> /dev/null
           rc=0
-          out=$(./compare shot.bmp flipped.bmp) || rc=$?
+          out=$(./compare dma-shot.bmp flipped.bmp) || rc=$?
           echo "$out (exit $rc)"
           if [ "$rc" -ne 1 ]; then exit 1; fi
           case $out in "first difference at $x,$y: "*) ;; *) exit 1 ;; esac
       - name: RetroArch log
         if: failure()
-        run: cat build/ra/retroarch.log build/ra-dma/retroarch.log || true
+        run: cat build/ra-dma/retroarch.log build/ra-battery-1/retroarch.log build/ra-battery-2/retroarch.log || true
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

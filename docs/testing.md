@@ -66,7 +66,9 @@ Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` writes frame/PNG and 600-frame soundtest/POKEY audio hashes to `build/<preset>/hashes.txt`.
+`runner.hashes_file` writes `build/<preset>/hashes.txt`: 47 retained card/PNG/audio/board rows, then 22
+first/second battery rows. The driver independently judges both counters and all 34,816 bytes before hashing.
+The ordered 69-row schema and report controls reject omissions, duplicates, wrong revisions and bad mailboxes.
 
 CI collects the file from each lane, and the `hash-equality` job compares them:
 
@@ -330,38 +332,34 @@ sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `c
 
 ## Hosted RetroArch
 
-The `retroarch` job proves that a real frontend shows the frame the runner hashes. It is a CI step, not a CTest,
-so it never skips itself off macOS. On `macos-15` it:
+The `retroarch` job has two cases on `macos-15`: DMA equivalence and a battery roundtrip.
+It uses macOS arm64 build archives and pinned RetroArch 1.22.2 Metal. Every launch gets fresh home,
+configuration, system and output directories. `SAVE_DIR` is explicit, external to each disposable launch tree;
+overlapping paths fail before cleanup. Each process has the existing 50-second bound.
 
-1. unzips the core and the runner from the `archives-macos-arm64` artifact of the macOS arm64 `build` leg;
-2. fetches RetroArch 1.22.2 Metal with `scripts/fetch-pin.sh retroarch-dmg` (the `RetroArch_Metal.dmg` row in
-   `pins.txt`, checked by SHA-256), copies the app out of the image and checks its bundle version;
-3. runs `tests/retroarch/run_retroarch.cmake`: RetroArch gets its own `HOME`, `CFFIXED_USER_HOME` and the
-   configuration from `tests/retroarch/test.cfg.in`, and starts with `--verbose -L <core>`, no content,
-   `--max-frames=5 --max-frames-ss`. The launch is bounded at 50 seconds; a non-zero exit or a missing
-   screenshot fails with RetroArch's log;
-4. writes the runner's frame with `muhtari-run --frames 5 --dump-frame 5:runner.png`, decodes both PNGs with
-   `sips --deleteColorManagementProperties` and `sips -s format bmp`, and builds `tests/retroarch/compare.c` and
-   `bmp.c`. The compare must print `320x242, every pixel equal`;
-5. runs a negative control: it inverts one byte of pixel (7,3) in a copy of the runner's BMP, and the compare
-   must exit 1 and name that pixel first.
+DMA runs the committed diagnostic for 120 frames. Its runner hash retains the `diag/dma` ledger pin, and every
+screenshot pixel must match. A flipped pixel control must exit 1 naming exactly pixel (7,3).
 
-Steps 3 and 4 also run on the committed `tests/diag/dma.a78` for 120 frames (`-DROM=`), with an empty system
-directory so the fast boot runs without firmware, and the runner's `--hash-frame 120` must equal the `diag/dma`
-row's pin in `tests/compat/ledger.csv`, so two test cards cannot pass. The frames are kept as the
-`retroarch-frames` artifact. [docs/libretro.md](libretro.md) describes the core the job runs.
+The battery case starts two fresh RetroArch and two fresh runner processes from empty, separate save directories.
+Its owned diagnostic increments 16-bit HSC and EEPROM counters through SRAM stores and RIOT pins, waits for
+programming, reads back and draws them. First launches use owned synthetic C6/FE firmware with marker 5A and
+no routines; second launches use stub FF. Frontends share only save storage. Immutable snapshots must match
+all 34,816 independently expected bytes, counters 1/1 then 2/2, and corresponding runner saves. The mailbox
+judge checks runner hardware observations.
 
-`video_gpu_screenshot = "false"` makes RetroArch save the core's own frame at the size the core reports, with no
-scaling or on-screen text. The card is static, so five frames only need the core loaded.
+After `sips` converts PNG to BMP, independent glyphs judge both counters and the marker before whole-frame
+equality. Equal-black, wrong-counter and stale-one-medium controls must fail. Ordinary `diag.battery` runs
+the shared mailbox/media faults and pixel judge; loaded-module tests retain lifecycle/no-content coverage.
+Four hosted support files stay within 300 lines. Only owned diagnostic shots enter `retroarch-frames`;
+saves, firmware and logs stay uncommitted.
 
 **Rerunning it.** Rerun the job from the run page, or `gh run rerun <run-id> --failed`. On a Mac with a desktop
 session, the same steps run locally from the job's commands, with `-DRETROARCH` pointing at an installed
 `RetroArch.app/Contents/MacOS/RetroArch`.
 
-**If RetroArch will not start the core without content.** The job relies on RetroArch starting a core that
-reports no-game support when `-L` is given and no content. If it stops doing so, the log printed by
-`run_retroarch.cmake` shows it. The agent diagnoses it and records the command, exit status
-and run URL; owner action is needed only for a check on the owner's own hardware.
+**If a launch fails.** `run_retroarch.cmake` prints its private RetroArch log. The agent diagnoses it and records
+command, exit status and run URL; owner action is needed only for the owner's hardware. These diagnostics
+establish the exercised persistence and optional-firmware behavior, not general retail-game compatibility.
 
 ## Release archives
 

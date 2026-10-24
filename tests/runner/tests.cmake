@@ -7,6 +7,102 @@
 # EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
 # runs its own guest binary.
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
+  if(CASE STREQUAL "hashes_control")
+    set(HASHES_FUNCTIONS_ONLY ON)
+    include("${HASHES}")
+    file(READ "${REPORT}" observed)
+    hashes_diagnostic(battery battery.control 120 2 "${observed}" unused)
+    return()
+  endif()
+  if(CASE STREQUAL "hashes")
+    execute_process(COMMAND "${CMAKE_COMMAND}" -DMODE=write "-DRUN=${RUN}"
+      "-DDRIVER=${DRIVER}" "-DDIAG=${DIAG}" "-DOUT=${OUT}"
+      "-DEMULATOR=${EMULATOR}" "-DSOUNDTEST=${SOUNDTEST}" "-DPOKEY=${POKEY}"
+      -P "${HASHES}" COMMAND_ERROR_IS_FATAL ANY)
+    file(STRINGS "${OUT}/hashes.txt" rows)
+    list(LENGTH rows count)
+    if(NOT count EQUAL 69)
+      message(FATAL_ERROR "hashes: expected 69 complete observation rows, got ${count}")
+    endif()
+    foreach(launch first second)
+      foreach(field frame1 frame120 audio_transitions_sha256 audio_pcm_sha256 audio_frames
+          audio_samples audio_rate audio_behaviour_revision audio_synthesis diagnostic save_sha256)
+        set(found "${rows}")
+        list(FILTER found INCLUDE REGEX "^battery[.]${launch}[.]${field} ")
+        list(LENGTH found n)
+        if(NOT n EQUAL 1)
+          message(FATAL_ERROR "hashes: missing or duplicate battery.${launch}.${field}")
+        endif()
+      endforeach()
+    endforeach()
+    file(READ "${OUT}/hashes.txt" complete)
+    foreach(fault missing_old duplicate_old missing_new duplicate_new)
+      set(prefix frame1)
+      if(fault MATCHES "_new$")
+        set(prefix "battery[.]second[.]save_sha256")
+      endif()
+      string(REGEX MATCH "${prefix} [^\n]+\n" row "${complete}")
+      if(fault MATCHES "^missing_")
+        string(REPLACE "${row}" "" bad "${complete}")
+      else()
+        set(bad "${complete}${row}")
+      endif()
+      file(WRITE "${OUT}/hashes-battery/${fault}-a.txt" "${bad}")
+      file(WRITE "${OUT}/hashes-battery/${fault}-b.txt" "${bad}")
+      execute_process(COMMAND "${CMAKE_COMMAND}" -DMODE=compare -DCOUNT=2
+        "-DFILES=${OUT}/hashes-battery/${fault}-a.txt;${OUT}/hashes-battery/${fault}-b.txt"
+        -P "${HASHES}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "1" OR NOT err MATCHES "hashes: missing duplicate or reordered")
+        message(FATAL_ERROR "hashes: accepted ${fault} equality: ${rc} ${out}${err}")
+      endif()
+    endforeach()
+    set(report "")
+    foreach(row IN LISTS rows)
+      if(row MATCHES "^battery[.]second[.]" AND NOT row MATCHES "[.]save_sha256 ")
+        string(REGEX REPLACE "^battery[.]second[.]" "" row "${row}")
+        string(REGEX REPLACE "^frame(1|120) " "frame \\1 sha256 " row "${row}")
+        string(APPEND report "${row}\n")
+      endif()
+    endforeach()
+    foreach(fault valid missing duplicate revision mailbox)
+      set(bad "${report}")
+      if(fault STREQUAL "missing")
+        string(REGEX REPLACE "frame 120 [^\n]+\n" "" bad "${bad}")
+      elseif(fault STREQUAL "duplicate")
+        string(APPEND bad "${report}")
+      elseif(fault STREQUAL "revision")
+        string(REPLACE "audio_behaviour_revision 4" "audio_behaviour_revision 3" bad "${bad}")
+      elseif(fault STREQUAL "mailbox")
+        string(REPLACE "diagnostic 4d374447" "diagnostic 00000000" bad "${bad}")
+      endif()
+      file(WRITE "${OUT}/hashes-battery/control.txt" "${bad}")
+      execute_process(COMMAND "${CMAKE_COMMAND}" -DCASE=hashes_control "-DHASHES=${HASHES}"
+        "-DREPORT=${OUT}/hashes-battery/control.txt" "-DDRIVER=${DRIVER}" "-DDIAG=${DIAG}"
+        "-DOUT=${OUT}/hashes-battery" "-DEMULATOR=${EMULATOR}"
+        -P "${CMAKE_CURRENT_LIST_FILE}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      if((fault STREQUAL "valid" AND NOT rc STREQUAL "0") OR
+          (NOT fault STREQUAL "valid" AND (NOT rc STREQUAL "1" OR NOT err MATCHES "hashes:")))
+        message(FATAL_ERROR "hashes: report ${fault} control: ${rc} ${out}${err}")
+      endif()
+    endforeach()
+    return()
+  endif()
+  if(CASE STREQUAL "save_roundtrip")
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" roundtrip RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "actual-main save roundtrip failed: ${rc}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --save-dir "${DIR}" "${DIR}/game.a78"
+      RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "fresh runner save restore failed: ${rc}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" verify RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "fresh process exact save bytes failed: ${rc}")
+    endif()
+    return()
+  endif()
   if(CASE STREQUAL "audio")
     string(REPEAT "|....12|......|...BB|\n" 60 audio_input)
     file(WRITE "${CAPTURE}.movie" "muhtari-movie 1\nport1 proline\nport2 proline\n${audio_input}")
@@ -644,9 +740,9 @@ endfunction()
     expect_exit(2 "--boot needs fast or bios.*${usage_line}" --frames 1 --boot slow)
     expect_output("" --frames 1 --boot fast)
   elseif(CASE STREQUAL "usage.port")
-    expect_exit(2 "--port1 needs auto, proline, joystick or none.*${usage_line}"
+    expect_exit(2 "--port1 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}"
       --frames 1 --port1 paddle)
-    expect_exit(2 "--port2 needs auto, proline, joystick or none.*${usage_line}" --frames 1 --port2)
+    expect_exit(2 "--port2 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}" --frames 1 --port2)
     expect_output("" --frames 1 --port1 joystick --port2 none)
   elseif(CASE STREQUAL "usage.region_pal")
     expect_exit(2 "--region pal is not supported: give auto or ntsc.*${usage_line}"
@@ -668,6 +764,7 @@ foreach(case IN ITEMS hash hash.repeat usage.no_args usage.unknown usage.positio
     COMMAND ${runner_check} -DCASE=${case} -DFRAMES=${MUHTARI_LONG_RUN} -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 10)
 endforeach()
+
 muhtari_add_test(NAME runner.dump_png
   COMMAND ${runner_check} -DCASE=dump_png -DOUT=${PROJECT_BINARY_DIR}/tests/dump.png
     -P ${CMAKE_CURRENT_LIST_FILE}
@@ -837,10 +934,10 @@ endforeach()
 # hashes.txt, the file CI compares across lanes.
 set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
 muhtari_add_test(NAME runner.hashes_file
-  COMMAND ${runner_check} -DMODE=write -DOUT=${PROJECT_BINARY_DIR}
+  COMMAND ${runner_check} -DCASE=hashes -DOUT=${PROJECT_BINARY_DIR} -DHASHES=${runner_hashes}
     -DDRIVER=$<TARGET_FILE:muhtari-test-diag> -DDIAG=${PROJECT_SOURCE_DIR}/tests/diag
     "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
-    "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${runner_hashes}
+    "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner portable TIMEOUT 20)
 set_tests_properties(runner.hashes_file PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 # The comparison's self tests: two files where three are required, and two
@@ -881,8 +978,7 @@ muhtari_add_test(NAME runner.png
 add_executable(muhtari-test-runner
   ${CMAKE_CURRENT_LIST_DIR}/test_runner.c
   ${PROJECT_SOURCE_DIR}/runner/bench.c
-  ${PROJECT_SOURCE_DIR}/runner/md5.c
-  ${PROJECT_SOURCE_DIR}/runner/stop.c)
+  ${PROJECT_SOURCE_DIR}/runner/md5.c)
 target_compile_definitions(muhtari-test-runner PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-test-runner PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
@@ -945,3 +1041,42 @@ set_target_properties(muhtari-test-audio-runner PROPERTIES RUNTIME_OUTPUT_DIRECT
 muhtari_warnings(muhtari-test-audio-runner)
 muhtari_add_test(NAME runner.audio.stop_failure COMMAND muhtari-test-audio-runner
   ${PROJECT_BINARY_DIR}/tests/audio-stop.txt LABELS runner audio portable TIMEOUT 10)
+
+add_executable(muhtari-test-save-runner ${CMAKE_CURRENT_LIST_DIR}/test_save.c
+  ${PROJECT_SOURCE_DIR}/runner/bench.c ${PROJECT_SOURCE_DIR}/runner/clock.c
+  ${PROJECT_SOURCE_DIR}/runner/crc32.c ${PROJECT_SOURCE_DIR}/runner/md5.c
+  ${PROJECT_SOURCE_DIR}/runner/movie.c ${PROJECT_SOURCE_DIR}/runner/png.c
+  ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+target_include_directories(muhtari-test-save-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-save-runner PRIVATE muhtari::muhtari muhtari_host)
+target_compile_definitions(muhtari-test-save-runner PRIVATE _POSIX_C_SOURCE=200809L
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+set_target_properties(muhtari-test-save-runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-save-runner)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-roundtrip)
+muhtari_add_test(NAME runner.save.roundtrip COMMAND ${CMAKE_COMMAND}
+  "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>"
+  "-DRUN=$<TARGET_FILE:muhtari-run>" "-DDIR=${PROJECT_BINARY_DIR}/tests/save-roundtrip"
+  -DCASE=save_roundtrip -P ${CMAKE_CURRENT_LIST_FILE} LABELS runner portable TIMEOUT 10)
+foreach(case IN ITEMS import faults options cadence)
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-${case})
+  muhtari_add_test(NAME runner.save.${case} COMMAND muhtari-test-save-runner
+    ${PROJECT_BINARY_DIR}/tests/save-${case} ${case} LABELS runner portable TIMEOUT 10)
+endforeach()
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI")
+  add_executable(muhtari-test-control ${CMAKE_CURRENT_LIST_DIR}/test_control.c)
+  target_compile_definitions(muhtari-test-control PRIVATE _POSIX_C_SOURCE=200809L
+    MUHTARI_TIMEOUT_SCALE=${MUHTARI_TIMEOUT_SCALE}
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+  set_target_properties(muhtari-test-control PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-control)
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-controls)
+  # Fault prevented: an in-process callback passes while actual OS delivery cannot save/stop.
+  muhtari_add_test(NAME runner.save.controls COMMAND muhtari-test-control
+    ${PROJECT_BINARY_DIR}/tests/save-controls ${PROJECT_SOURCE_DIR}/tests/diag/battery.a78
+    ${CMAKE_CROSSCOMPILING_EMULATOR}
+    $<TARGET_FILE:muhtari-run> LABELS runner TIMEOUT 30)
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-nonregular)
+  muhtari_add_test(NAME runner.save.nonregular COMMAND muhtari-test-save-runner
+    ${PROJECT_BINARY_DIR}/tests/save-nonregular nonregular LABELS runner TIMEOUT 10)
+endif()

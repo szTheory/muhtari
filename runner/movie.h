@@ -17,9 +17,8 @@
 /* The boot key's values. */
 enum { MUHTARI__MOVIE_BOOT_FAST = 0, MUHTARI__MOVIE_BOOT_BIOS = 1 };
 
-/* The header. Each optional key has a has_ flag; device is
-   MUHTARI_PORT_PROLINE, _JOYSTICK or _UNPLUGGED for proline, joystick and
-   none. */
+/* Each optional key has a has_ flag; devices are explicit joystick,
+   unplugged, SaveKey or AtariVox selections. Save devices have empty frame fields. */
 typedef struct muhtari__movie_header {
     uint32_t version;
     uint32_t device[2];

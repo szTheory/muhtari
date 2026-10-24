@@ -22,13 +22,14 @@ An exact reason names the metric, old/new bound, rationale, grant and expiry dat
 its lifetime is at most 60 days. Inherited expiry and renewal are checked every run.
 
 Fixture comparison permits a narrow additive relation: only unique new rows for
-`tests/diag/activision.a78`, `tests/diag/absolute.a78` and
-`tests/diag/fractalus.a78` may be added. Each has exactly six tab-separated fields:
+`tests/diag/activision.a78`, `tests/diag/absolute.a78`,
+`tests/diag/fractalus.a78` and `tests/diag/battery.a78` may be added.
+Each has exactly six tab-separated fields:
 the named path, `this-repo`, a nonempty pin without whitespace, `MIT`, a 64-digit
 lowercase SHA-256 and `-`. All old rows and other manifest text remain byte-identical
 and in order. Changed, deleted or duplicate old paths, duplicate additions,
 unrelated paths, malformed fields and added comments fail. A later base containing
-any named board row protects it as an old row; that row cannot be edited or repeated.
+any named row protects it as an old row; that row cannot be edited or repeated.
 
 The producer obtains trusted manifest bytes directly from the independently resolved
 event-base Git commit, alongside the original base-policy and SHA authority. PRs use
@@ -42,15 +43,16 @@ manifest digest and provides no independent-base acceptance.
 
 Compiler identity/version and platform/architecture remain unchanged components
 of the environment. Built-sample expectations normally require raw byte equality.
-The sole annotation transition permits exactly one complete
-`# behaviour_revision 2` line to become `# behaviour_revision 3`, with its newline
-and every other byte unchanged. Missing or duplicate annotations, another revision,
+The only annotation transitions permit exactly one complete
+`# behaviour_revision 2` line to become `# behaviour_revision 3`, or exactly one
+revision 3 line to become revision 4, with its newline and every other byte unchanged.
+Missing or duplicate annotations, reverse or skipped transitions, another revision,
 changed rows, tool/source pins, hashes, comments or trailing bytes fail. An unchanged
 file retains ordinary raw equality; no general comment-stripping rule applies.
 
 Both current and recursive base production independently obtain the complete
 original `tests/built/expected.txt` with `git show` from the same authenticated
-event-base SHA. After proving raw equality or that exact annotation transition,
+event-base SHA. After proving raw equality or one of those exact annotation transitions,
 both use the raw trusted file's SHA-256 in the environment. No caller-supplied path
 or digest can replace it; sample pins and contents are not rewritten. Production
 without an event keeps the current raw sample digest and establishes no independent
@@ -59,6 +61,11 @@ every individual lane must validate before reduction. This comparison identity d
 bytes, validate licensing, prove a diagnostic's behavior or replace raw content
 hashes. Manifest admission, exact fixture digests, independent rebuilds and hash
 coverage retain their separate authority.
+The battery name is comparison permission only: admitting its actual bytes and
+proving battery behavior remain separate requirements. Supporting the annotation
+transition changes neither the live core revision nor its diagnostic report judge;
+both must advance together when the implementation lands. Existing frame/audio
+digests and source/tool pins remain protected.
 
 The maintenance-line metric and its exclusive counter, inventory and adoption
 handling are retired. The trusted-base key-retention check permits only the literal
@@ -100,11 +107,25 @@ The older test-card, soundtest and POKEY rows retain their byte meanings. The
 performance workload remains the test card. Diagnostic success does not establish
 untested retail gameplay, PAL execution or new physical hardware measurements.
 
+Battery equality appends first/second frame, raw-audio, PCM, mailbox and save observations after the
+numeric and all-byte media judges accept two fresh runner executions. The complete ordered 69-row
+schema includes every retained observation and refuses matching omissions or duplicates. The five
+retained behavior metadata rows advance from 3 to 4; all retained digest and numeric values remain
+unchanged. Optional HSC firmware and battery-save claims have loaded-module tests plus the separate
+two-launch RetroArch byte and pixel proof; neither implies save states, speech or firmware routines.
+
 A local package pass establishes only that lane's three-ZIP total. Acceptance
 still requires all six actual native totals, release-content checks and the
 authenticated worst-lane reduction at or below 399937, with exact event-base and
 head identities. Metric retirement is accepted only through the existing hosted
 observations and surviving guards; controlled local fixtures do not replace them.
+Top-level MSVC Release builds use `/O1 /Ob1`: minimum-size optimization with
+expansion limited to explicitly inline helpers;
+embedded builds keep the consumer's options. The same objects run the full tests
+and enter all three component archives. A compiler setting alone proves no byte
+bound: acceptance measures the actual archives on each native target.
+The Windows HSC loader probes disk-file type through Kernel32 and closes the
+probe before reading firmware; it does not request unused CRT time metadata.
 
 Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
 ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and

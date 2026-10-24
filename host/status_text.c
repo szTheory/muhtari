@@ -37,6 +37,8 @@ const char *muhtari__status_text(muhtari_status status)
         return "unsupported region: PAL (planned)";
     case MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE:
         return "unsupported controller";
+    case MUHTARI_STATUS_ERR_INVALID_HSC:
+        return "invalid HSC firmware or attachment";
     }
     return "unknown status";
 }

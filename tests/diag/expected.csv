@@ -1,4 +1,10 @@
 rom,test,value,source
+battery,hsc_signature_c6,198,guide
+battery,hsc_signature_fe,254,guide
+battery,hsc_count,1,guide
+battery,eeprom_count,1,guide
+battery,busy_complete,1,guide
+battery,firmware_marker,255,guide
 dma,null,241,hw
 dma,null_last,239,hw
 dma,off,245,guide

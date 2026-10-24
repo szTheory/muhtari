@@ -1,29 +1,40 @@
-# Runs the built libretro core in RetroArch, unattended, with no content or
-# with the cartridge ROM names, and keeps the screenshot RetroArch takes
-# after N frames.
-#
-#   cmake -DRETROARCH=<RetroArch.app/Contents/MacOS/RetroArch> -DCORE=<core>
-#         -DINFO=<.info> -DTEMPLATE=<test.cfg.in> -DRA_DIR=<run directory>
-#         -DFRAMES=<N> -DSHOT=<png> [-DROM=<cartridge>] -P run_retroarch.cmake
-#
-# Fault prevented: a core that a real frontend cannot start, or whose frame
-# there differs from the one the library produces. RetroArch gets a home,
-# configuration and every directory inside RA_DIR, so nothing outside it is
-# read or written. The launch is bounded at 50 seconds; any failure prints
-# RetroArch's verbose log. Needs a GUI session: RetroArch opens a window.
+# Isolated bounded frontend launch; shared save storage must survive launch cleanup.
 cmake_minimum_required(VERSION 3.25)
 foreach(var RETROARCH CORE INFO TEMPLATE RA_DIR FRAMES SHOT)
   if("${${var}}" STREQUAL "")
     message(FATAL_ERROR "run_retroarch: -D${var} is required")
   endif()
 endforeach()
+foreach(var RA_DIR SHOT SAVE_DIR HSC_ROM)
+  if(NOT "${${var}}" STREQUAL "")
+    get_filename_component(${var} "${${var}}" REALPATH)
+  endif()
+endforeach()
+if(NOT SAVE_DIR)
+  message(FATAL_ERROR "run_retroarch: external -DSAVE_DIR is required")
+endif()
+cmake_path(IS_PREFIX RA_DIR "${SAVE_DIR}" NORMALIZE nested)
+cmake_path(IS_PREFIX SAVE_DIR "${RA_DIR}" NORMALIZE parent)
+cmake_path(IS_PREFIX SAVE_DIR "${SHOT}" NORMALIZE shot_in_save)
+cmake_path(GET RA_DIR ROOT_PATH root)
+if(nested OR parent OR shot_in_save OR RA_DIR STREQUAL root)
+  message(FATAL_ERROR "run_retroarch: unsafe save/run overlap")
+endif()
+if(HSC_ROM)
+  cmake_path(IS_PREFIX RA_DIR "${HSC_ROM}" NORMALIZE inside)
+  if(inside OR NOT EXISTS "${HSC_ROM}" OR IS_DIRECTORY "${HSC_ROM}")
+    message(FATAL_ERROR "run_retroarch: unsafe or absent HSC_ROM")
+  endif()
+endif()
 
-# A fresh run directory holding every directory test.cfg names, so
-# RetroArch never falls back to a default location for a missing one.
 file(REMOVE_RECURSE "${RA_DIR}")
 foreach(sub home assets cache cores info logs playlists saves shots states system)
   file(MAKE_DIRECTORY "${RA_DIR}/${sub}")
 endforeach()
+file(MAKE_DIRECTORY "${SAVE_DIR}")
+if(HSC_ROM)
+  file(COPY_FILE "${HSC_ROM}" "${RA_DIR}/system/highscre.bin")
+endif()
 configure_file("${TEMPLATE}" "${RA_DIR}/test.cfg" @ONLY)
 file(COPY "${INFO}" DESTINATION "${RA_DIR}/info")
 file(REAL_PATH "${CORE}" core)
@@ -36,9 +47,6 @@ if(NOT "${ROM}" STREQUAL "")
   file(REAL_PATH "${ROM}" content)
 endif()
 
-# The macOS app creates first-run directories under its home folder even
-# when every configured path is redirected, so the child gets its own home
-# (HOME for POSIX calls, CFFIXED_USER_HOME for Foundation's).
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E env "HOME=${RA_DIR}/home" "CFFIXED_USER_HOME=${RA_DIR}/home"
     "${retroarch}" --verbose --config "${RA_DIR}/test.cfg" -L "${core}"
@@ -48,7 +56,6 @@ execute_process(
   ERROR_VARIABLE log
   TIMEOUT 50)
 file(WRITE "${RA_DIR}/retroarch.log" "${log}")
-
 if(NOT result STREQUAL "0")
   message(FATAL_ERROR "RetroArch exited with '${result}'. Its log:\n${log}")
 endif()
