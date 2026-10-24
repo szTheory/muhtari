@@ -818,6 +818,57 @@ static void case_devices(void)
     press(0u, BIT(UP), e);
     CHECK_EQ_HEX(e[E_SWCHA], 0xEFu);
     stop();
+
+    /* Auto keeps the core's ordinary-device fallback on either header port.
+       Unknown header bytes resolve to None; explicit None always unplugs. */
+    static const uint8_t headers[] = {MUHTARI_PORT_NONE,
+                                      MUHTARI_PORT_PROLINE,
+                                      MUHTARI_PORT_LIGHTGUN,
+                                      MUHTARI_PORT_PADDLE,
+                                      MUHTARI_PORT_TRAKBALL,
+                                      MUHTARI_PORT_JOYSTICK,
+                                      MUHTARI_PORT_DRIVING,
+                                      MUHTARI_PORT_KEYPAD,
+                                      MUHTARI_PORT_ST_MOUSE,
+                                      MUHTARI_PORT_AMIGA_MOUSE,
+                                      MUHTARI_PORT_SNES2ATARI,
+                                      MUHTARI_PORT_MEGA7800,
+                                      13u,
+                                      255u};
+    static const unsigned selections[] = {RETRO_DEVICE_JOYPAD, RETRO_DEVICE_NONE,
+                                          RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
+                                          UINT32_MAX};
+    for (port = 0u; port < 2u; port++) {
+        uint8_t original = files[0][55u + port];
+        for (size_t h = 0u; h < sizeof headers / sizeof headers[0]; h++) {
+            files[0][55u + port] = headers[h];
+            log_used = 0u;
+            log_text[0] = '\0';
+            start(0);
+            pad[0] = BIT(UP) | BIT(SELECT) | BIT(A);
+            pad[1] = BIT(UP) | BIT(A);
+            for (unsigned s = 0u; s < sizeof selections / sizeof selections[0]; s++) {
+                p_set_controller_port_device(port, selections[s]);
+                run_frames(3u);
+                bool unplugged = s == 1u || (s != 2u && (headers[h] == MUHTARI_PORT_NONE ||
+                                                         headers[h] > MUHTARI_PORT_MEGA7800));
+                bool joystick = s != 1u && s != 2u && headers[h] == MUHTARI_PORT_JOYSTICK;
+                const uint8_t *entry = last_entry();
+                CHECK_EQ_HEX(entry[E_SWCHA], unplugged ? (port == 0u ? 0xFEu : 0xEFu) : 0xEEu);
+                CHECK_EQ_HEX(entry[E_SWCHB], 0x3Du);
+                for (unsigned p = 0u; p < 2u; p++) {
+                    bool empty = p == port && unplugged;
+                    bool stick = p == port && joystick;
+                    CHECK_EQ_HEX(entry[p == 0u ? E_INPT4 : E_INPT5] & HI, empty ? HI : 0u);
+                    CHECK_EQ_HEX(entry[p == 0u ? E_INPT1 : E_INPT3] & HI, empty || stick ? 0u : HI);
+                }
+                CHECK(strstr(log_text, "input request refused") == NULL);
+            }
+            pad[0] = pad[1] = 0u;
+            stop();
+        }
+        files[0][55u + port] = original;
+    }
 }
 
 /* FNV-1a over the last frame received. */

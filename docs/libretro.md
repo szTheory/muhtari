@@ -29,7 +29,7 @@ Each port offers six devices in Quick Menu → Controls:
 
 | Device | What the game sees |
 |---|---|
-| Auto (cartridge header) | the controller the cartridge's header names; the default |
+| Auto (cartridge header) | the header's controller; unimplemented devices use ProLine, empty or unknown codes unplug; the default |
 | ProLine | the two-button 7800 controller |
 | Joystick | a one-button 2600 joystick; A fires too |
 | None | nothing plugged in |

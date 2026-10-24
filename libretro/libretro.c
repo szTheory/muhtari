@@ -486,7 +486,14 @@ static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
     if (battery.eeprom_port == p + 1u)
         return battery.eeprom_device;
     uint32_t d = lr_serial(request->port[p]) ? loaded_port[p] : request->port[p];
-    return d != 0u ? d : p == 0u ? cart.port1 : cart.port2;
+    if (d != 0u)
+        return d;
+    /* Match the core's Auto rules (docs/embedding.md, Input), rather than
+       passing an unimplemented header device as an explicit request. */
+    d = p == 0u ? cart.port1 : cart.port2;
+    if (d == MUHTARI_PORT_NONE && content != NULL)
+        return MUHTARI_PORT_UNPLUGGED;
+    return d == MUHTARI_PORT_JOYSTICK ? MUHTARI_PORT_JOYSTICK : MUHTARI_PORT_PROLINE;
 }
 
 static void lr_check_battery_request(const muhtari_media *request)
