@@ -17,6 +17,13 @@
 #include <string.h>
 #include <sys/stat.h>
 
+/* LSB Core, __xstat: the stable binary stat interface. Modern glibc's
+   public stat symbol needs 2.33; retain the module's existing 2.17 floor.
+   Test builds that substitute stat keep that same file-fault seam. */
+#if defined(__GLIBC__) && (defined(__x86_64__) || defined(__aarch64__)) && !defined(stat)
+extern int __xstat(int version, const char *path, struct stat *info);
+#endif
+
 #include "libretro.h"
 #include "muhtari.h"
 #include "muhtari_version.h"
@@ -779,7 +786,15 @@ static muhtari_status lr_load_hsc(muhtari_media *media, uint8_t **owned)
     int found = _stat64(path, &info);
 #else
     struct stat info;
+#if defined(__GLIBC__) && (defined(__x86_64__) || defined(__aarch64__)) && !defined(stat)
+#ifdef __x86_64__
+    int found = __xstat(1, path, &info);
+#else
+    int found = __xstat(0, path, &info);
+#endif
+#else
     int found = stat(path, &info);
+#endif
 #endif
     if (found != 0)
         return errno == ENOENT ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_INVALID_HSC;
