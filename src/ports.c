@@ -323,30 +323,12 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
     }
     muhtari_input_ex normalized;
     memset(&normalized, 0, sizeof normalized);
-    /* Fixed-size complete fields also keep the core's link surface to the
-       C memory functions, as media_copy does for the load boundary. */
-#define PORTS_FIELD(field)                                                                         \
-    do {                                                                                           \
-        if (in->size >= offsetof(muhtari_input_ex, field) + sizeof normalized.field) {             \
-            memcpy(&normalized.field, &in->field, sizeof normalized.field);                        \
-        }                                                                                          \
-    } while (0)
-#define PORTS_PORT(p)                                                                              \
-    PORTS_FIELD(port[p].device);                                                                   \
-    PORTS_FIELD(port[p].buttons);                                                                  \
-    PORTS_FIELD(port[p].paddle[0]);                                                                \
-    PORTS_FIELD(port[p].paddle[1]);                                                                \
-    PORTS_FIELD(port[p].keypad);                                                                   \
-    PORTS_FIELD(port[p].dx);                                                                       \
-    PORTS_FIELD(port[p].dy);                                                                       \
-    PORTS_FIELD(port[p].gun_x);                                                                    \
-    PORTS_FIELD(port[p].gun_y);                                                                    \
-    PORTS_FIELD(port[p].flags)
-    PORTS_PORT(0);
-    PORTS_PORT(1);
-    PORTS_FIELD(switches);
-#undef PORTS_PORT
-#undef PORTS_FIELD
+    /* Every payload field is one complete four-byte scalar. Fixed-size
+       copies preserve unaligned input and the restricted C memory surface. */
+    uint32_t end = in->size < sizeof normalized ? in->size : (uint32_t)sizeof normalized;
+    for (uint32_t at = 4u; at < end; at += 4u) {
+        memcpy((uint8_t *)&normalized + at, (const uint8_t *)in + at, 4u);
+    }
     normalized.size = (uint32_t)sizeof normalized;
     if ((normalized.switches & ~PORTS_SWITCHES) != 0u) {
         return MUHTARI_STATUS_ERR_ARGUMENT;
