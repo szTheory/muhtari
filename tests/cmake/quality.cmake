@@ -113,7 +113,7 @@ macro(quality_observation json sha fields expected_source)
 endmacro()
 
 # Fault prevented: candidate fixture edits replacing the trusted comparison identity.
-# Remove only new owned board rows, then compare all remaining bytes with the base.
+# Remove only named new owned rows, then compare all remaining bytes with the base.
 function(quality_fixture_identity out candidate trusted)
   foreach(input candidate trusted)
     file(READ "${${input}}" ${input}_text)
@@ -139,7 +139,7 @@ function(quality_fixture_identity out candidate trusted)
         message(FATAL_ERROR "quality: deleted or changed trusted manifest ${path}")
       endif()
     endforeach()
-    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus)[.]a78$" OR
+    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery)[.]a78$" OR
         NOT row MATCHES "^[^\t]+\tthis-repo\t[^ \t\r\n;]+\tMIT\t([0-9a-f]+)\t-$")
       message(FATAL_ERROR "quality: unrelated fixture ${path}")
     endif()
