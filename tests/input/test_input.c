@@ -905,8 +905,124 @@ static int savekey_recovery(void)
     return check_failures == 0;
 }
 
+/* Execute a real cartridge LDA absolute: three fast fetches, then the
+   slow input data at start+17 (controllers.md, Driving). */
+static uint8_t motion_read(muhtari *m, uint16_t addr, uint64_t tick)
+{
+    m->cart.rom[0] = 0xADu;
+    m->cart.rom[1] = (uint8_t)addr;
+    m->cart.rom[2] = (uint8_t)(addr >> 8);
+    m->cpu.pc = ROM_BASE;
+    CHECK(tick >= m->bus.ticks + 17u);
+    m->bus.ticks = tick - 17u;
+    muhtari__cpu_step(m);
+    CHECK_EQ_U64(m->bus.ticks, tick + 1u);
+    return m->cpu.a;
+}
+
+static void driving_timing(void)
+{
+    muhtari *m = boot(&plain);
+    CHECK(m != NULL);
+    if (m == NULL) {
+        return;
+    }
+    /* Keep MARIA's existing future event; use a small independent epoch. */
+    m->bus.ticks = 100u;
+    muhtari_input_ex in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.port[0].device = MUHTARI_PORT_DRIVING;
+    in.port[1].device = MUHTARI_PORT_DRIVING;
+    in.port[0].dx = 2;
+    in.port[1].dx = -1;
+    in.port[1].buttons = MUHTARI_BUTTON_1;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    muhtari__ports_latch(m);
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, 553u), 0xFFu);
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, 575u), 0xDEu);
+    CHECK_EQ_HEX(motion_read(m, 0x000Du, 600u) & 0x80u, 0u);
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, 1007u), 0xDEu);
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, 1030u), 0xCEu);
+    muhtari__ports_latch(m); /* no submission must not replay dx */
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, 2000u), 0xCEu);
+    /* Pending packets replace, rather than accumulate. Same-device phase
+       survives, while changing devices resets it to all high. */
+    in.port[0].dx = 2;
+    in.port[1].dx = 0;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    in.port[0].dx = -1;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    uint64_t at = m->bus.ticks;
+    muhtari__ports_latch(m);
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, at + 454u), 0xDEu);
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, at + 1000u), 0xDEu);
+    in.port[0].device = MUHTARI_PORT_UNPLUGGED;
+    in.port[0].dx = 0;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    muhtari__ports_latch(m);
+    in.port[0].device = MUHTARI_PORT_DRIVING;
+    in.port[0].dx = INT32_MAX;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    at = m->bus.ticks;
+    muhtari__ports_latch(m);
+    /* Addition saturates independently; opposite extremes cancel without
+       negating INT32_MIN. In-flight reversal retains the original tick. */
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    muhtari__ports_latch(m);
+    in.port[0].dx = INT32_MIN;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    muhtari__ports_latch(m);
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, at + 500u), 0xFEu);
+    in.port[0].dx = 1;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    at = m->bus.ticks;
+    muhtari__ports_latch(m);
+    (void)motion_read(m, 0x0280u, at + 100u);
+    in.port[0].dx = -2;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    muhtari__ports_latch(m);
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, at + 454u), 0xEEu);
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, at + 1000u), 0xEEu);
+    /* 255 negative edges, not 256 or a wrapped absolute value. */
+    in.port[0].dx = INT32_MIN;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    at = m->bus.ticks;
+    muhtari__ports_latch(m);
+    m->ports.input_read = 0u;
+    m->cpu.jammed = 1u;
+    while (m->bus.ticks < at + 255u * 454u + 8u) {
+        muhtari__cpu_step(m);
+    }
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x0280u), 0xFEu);
+    CHECK_EQ_U64(m->ports.input_read, 0u);
+    CHECK_EQ_U64(m->riot.pa7_flag, 0u); /* driving never drives pin 4 */
+    m->cpu.jammed = 0u;
+    CHECK_EQ_HEX(motion_read(m, 0x0280u, m->bus.ticks + 1000u), 0xFEu);
+    /* RDY and HALT keep device time running, including a whole cycle. */
+    in.port[0].dx = 4;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    at = m->bus.ticks;
+    muhtari__ports_latch(m);
+    m->bus.rdy_release = at + 2000u;
+    (void)muhtari__bus_read(m, ROM_BASE);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x0280u), 0xFEu);
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    at = m->bus.ticks;
+    muhtari__ports_latch(m);
+    CHECK_EQ_U64(muhtari__bus_request_halt(m, at, at + 2000u), 1u);
+    for (unsigned i = 0u; i < 3u; i++) {
+        (void)muhtari__bus_read(m, ROM_BASE);
+    }
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x0280u), 0xFEu);
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_HEX(muhtari__bus_peek(m, 0x0280u), 0xFFu);
+    muhtari_destroy(m);
+}
+
 static int pa7_edge(void)
 {
+    driving_timing();
     uint32_t count = parse(PROLINES "|...R..|......|...BB|\n");
     CHECK_EQ_U64(count, 2u);
     muhtari *m = boot(&plain);
