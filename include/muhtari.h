@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define MUHTARI_API_VERSION 5
+#define MUHTARI_API_VERSION 6
 #define MUHTARI_IMAGE_SIZE_MAX 1048704u /* 1 MiB of ROM plus a 128-byte header */
 
 typedef uint32_t muhtari_status;

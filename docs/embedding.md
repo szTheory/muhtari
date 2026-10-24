@@ -427,7 +427,18 @@ implemented. Other known devices return `ERR_UNSUPPORTED_DEVICE`, including Auto
 resolving to one; unknown IDs return `ERR_ARGUMENT`. Digital devices require all
 axes, keys, aim and flags zero; unplugged/EEPROM require zero buttons too. New
 adapter bits 6..11 are reserved for their named device: SNES Y/X/L/R/Select/Start
-and Mega C/X/Y/Z/Mode/Start, with primary buttons B/A. They never broaden the
+and Mega C/X/Y/Z/Mode/Start, with primary buttons B/A:
+
+| Bit | SNES | Mega |
+|---|---|---|
+| 6 | `MUHTARI_SNES_BUTTON_Y` | `MUHTARI_MEGA_BUTTON_C` |
+| 7 | `MUHTARI_SNES_BUTTON_X` | `MUHTARI_MEGA_BUTTON_X` |
+| 8 | `MUHTARI_SNES_BUTTON_L` | `MUHTARI_MEGA_BUTTON_Y` |
+| 9 | `MUHTARI_SNES_BUTTON_R` | `MUHTARI_MEGA_BUTTON_Z` |
+| 10 | `MUHTARI_SNES_BUTTON_SELECT` | `MUHTARI_MEGA_BUTTON_MODE` |
+| 11 | `MUHTARI_SNES_BUTTON_START` | `MUHTARI_MEGA_BUTTON_START` |
+
+These names never broaden the
 legacy mask. Gun trigger uses primary button 1; paddles use primary buttons 1/2.
 
 Known prefixes may end at any complete 4-byte scalar boundary, from size 4

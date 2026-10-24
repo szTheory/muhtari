@@ -13,7 +13,8 @@ _Static_assert(offsetof(muhtari_media, size) == 0, "media size first");
 _Static_assert(offsetof(muhtari_input, size) == 0, "input size first");
 _Static_assert(offsetof(muhtari_span, size) == 0, "span size first");
 _Static_assert(offsetof(muhtari_counters, size) == 0, "counters size first");
-_Static_assert(MUHTARI_API_VERSION == 5, "API version");
+_Static_assert(MUHTARI_API_VERSION == 6, "API version");
+_Static_assert(offsetof(muhtari_input_ex, size) == 0, "extended input size first");
 
 /* Each function keeps its declared signature. */
 static muhtari_status (*const get_versions_fn)(muhtari_versions *) = muhtari_get_versions;
@@ -25,6 +26,8 @@ static muhtari_status (*const probe_fn)(const void *, size_t, muhtari_cart_info 
 static muhtari_status (*const load_fn)(muhtari *, const muhtari_media *) = muhtari_load;
 static muhtari_status (*const power_cycle_fn)(muhtari *) = muhtari_power_cycle;
 static muhtari_status (*const set_input_fn)(muhtari *, const muhtari_input *) = muhtari_set_input;
+static muhtari_status (*const set_input_ex_fn)(muhtari *,
+                                               const muhtari_input_ex *) = muhtari_set_input_ex;
 static muhtari_status (*const get_memory_fn)(muhtari *, uint32_t,
                                              muhtari_span *) = muhtari_get_memory;
 static muhtari_status (*const get_counters_fn)(const muhtari *,
@@ -43,6 +46,7 @@ int header_check(muhtari_status st)
     (void)load_fn;
     (void)power_cycle_fn;
     (void)set_input_fn;
+    (void)set_input_ex_fn;
     (void)get_memory_fn;
     (void)get_counters_fn;
     /* A status compares against the constants without a sign or enum warning. */
