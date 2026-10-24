@@ -283,6 +283,8 @@ execute_process(COMMAND git -C "${repo}" rev-parse HEAD OUTPUT_VARIABLE newest_b
 # Use the admitted diagnostic's actual row and every unchanged old manifest byte
 # as well as the synthetic malformed-input matrix. Both sides still resolve
 # their trust independently through Git and the real recursive producer.
+# The existing additions and later-base passes cover these actual bytes;
+# reuse those recursive builds to retain the Windows control's time bound.
 file(READ "${ROOT}/tests/roms/manifest.txt" actual_manifest)
 string(REGEX MATCH "tests/diag/battery[.]a78\t[^\n]+\n" actual_battery "${actual_manifest}")
 if(actual_battery STREQUAL "")
