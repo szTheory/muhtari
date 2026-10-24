@@ -86,12 +86,12 @@ coverage:
         status: pass
     human_judgment: false
 actuals:
-  tokens: 10092
+  tokens: 10181
   tasks: 3
-  commits: 5
+  commits: 8
 plan_head_before: 6cff408e04b15bace6a784c8916db5892b7d2b46
-plan_head_after: a707137013c89077a563c3201f14b15cc505f902
-duration: 10min
+plan_head_after: 528006ce793ccbbb4119b49b1d1d06d7b60311b9
+duration: 12min
 started: 2026-10-24T03:29:12Z
 completed: 2026-10-24
 ---
@@ -111,10 +111,10 @@ completed: 2026-10-24
 ## Task Commits
 
 1. Task1 RED `996fe91`; GREEN `6a3532b` — cadence option, requests, synchronized platform implementation and adapted audio/stop consumers.
-2. Task2 `4d7557e` — actual OS child controls and expanded transaction failures. `a707137` corrects the child emulator prefix needed by the full BE inventory.
+2. Task2 `4d7557e` — actual OS child controls and expanded transaction failures. `a707137` corrects the child emulator prefix needed by the full BE inventory; `528006c` proves all prior destination bytes survive exactly 32 temporary collisions.
 3. Task3 `c5b7a83` — public cadence/control/durability semantics and graduated preparation pointer.
 
-The ledger measures five task commits from the recorded base through the final task head. Actual tokens are the realized diff's 40,368 characters divided by 4; summary and tracking are excluded.
+The ledger measures eight commits from the recorded base through the final task head: six task commits and two metadata commits interleaved before the last collision assertion. Actual tokens are the realized task-file diff's 40,724 characters divided by 4; summary and tracking text are excluded from that estimate. The commit count retains every reachable commit, as required by the ledger.
 
 ## Commands, exits and run URLs
 
@@ -152,4 +152,4 @@ The descriptor-less transparency prohibition remains flagged-unverified for phas
 
 ## Self-Check: PASSED
 
-Created native control source exists; all five task commits are ancestors of HEAD. Final focused checks, full CI, exact inventories and hygiene pass. No unexpected deletion, known stub, skipped local plan test, generated untracked file or unplanned threat surface remains. Windows and BE evidence remains explicitly assigned to the later final acceptance plan. Next incomplete plan 07-07 owns libretro provisioning and publication.
+Created native control source exists; all six task commits are ancestors of HEAD. Final focused checks, full CI, exact inventories and hygiene pass. No unexpected deletion, known stub, skipped local plan test, generated untracked file or unplanned threat surface remains. Windows and BE evidence remains explicitly assigned to the later final acceptance plan. Next incomplete plan 07-07 owns libretro provisioning and publication.
