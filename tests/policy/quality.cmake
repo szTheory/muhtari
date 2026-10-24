@@ -441,9 +441,19 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     quality_expect_failure("${regex}" ${produce})
     continue()
   endif()
-  # Only the preceding owned base worktree needs retiring before recursion;
-  # fail-fast input controls require neither pruning nor reconfiguration.
-  if(EXISTS "${repo}/build/ci/quality-base")
+  # Reuse real base observations only for the exact same independently
+  # resolved Git object. Every current producer and authenticated join still
+  # runs; a different PR/push/dispatch base always recurses from scratch.
+  set(rebuild_base TRUE)
+  if(EXISTS "${repo}/build/ci/quality-base-sha.txt")
+    file(READ "${repo}/build/ci/quality-base-sha.txt" observed_base)
+    string(STRIP "${observed_base}" observed_base)
+    if(observed_base STREQUAL event_base)
+      set(rebuild_base FALSE)
+      list(REMOVE_ITEM produce -DBUILD_BASE=ON)
+    endif()
+  endif()
+  if(rebuild_base AND EXISTS "${repo}/build/ci/quality-base")
     file(REMOVE_RECURSE "${repo}/build/ci/quality-base")
     execute_process(COMMAND git -C "${repo}" worktree prune COMMAND_ERROR_IS_FATAL ANY)
   endif()
