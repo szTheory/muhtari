@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 07-01 evidence prerequisite; phase execution remains active
-last_updated: "2026-10-24T02:26:54.720Z"
-state_head: 1779f92670f2de1650f7c521723413600a1df15a
+stopped_at: Completed 07-02 HSC embedder path; phase execution remains active
+last_updated: "2026-10-24T02:41:42.889Z"
+state_head: e54852f591a3a4faf9a98a0ee551a015810e5245
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 20
+  completed_plans: 21
   percent: 29
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 07
 current_phase_name: Battery saves across hosts
-last_activity_desc: Phase 7 evidence prerequisite verified; eight production and acceptance plans remain
+last_activity_desc: Phase 7 evidence and HSC embedder path verified; seven plans remain
 ---
 
 # Project State
@@ -27,17 +27,17 @@ last_activity_desc: Phase 7 evidence prerequisite verified; eight production and
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 7 execution is active. Plan 07-01 proves the evidence prerequisite;
-the core save implementation and host acceptance remain pending in plans 02–09.
+Current focus: Phase 7 execution is active. Plans 07-01/02 prove evidence controls
+and the HSC embedder path; serial hardware and host acceptance remain in plans 03–09.
 
 ## Current Position
 
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 9
 
 Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
 are complete. Phase 5 and6 are2/7 milestone phases,18/27 currently planned active
-slots; Phase 7 has one completed prerequisite and eight pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
+slots; Phase 7 has two completed plans and seven pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
 Next command: `$gsd-execute-phase 7`.
@@ -53,6 +53,9 @@ pass, including base/run/identity faults. Local CI passes612+6; exact JUnit inve
 and hygiene pass. No SAVE requirement is completed, no fixture is admitted, no hosted
 acceptance is claimed and no review-fix or gap round is consumed. See07-01-SUMMARY.md
 for commands, exits and local evidence identity. Ten assumption flags remain unresolved.
+
+Plan07-02: API5/ABI1/behavior4, HSC/firmware/battery, frozen API4 client; CI619+6, ZIP218325 <=399937.
+Old digests retained; commands/exits N/A-local in07-02-SUMMARY.md. Serial/host/whole SAVE acceptance pending.
 
 Research and nine plans in nine dependent waves cover SAVE-01–06 and D-01–18.
 The independent plan checker passed after one focused revision; no findings remain.
@@ -123,10 +126,10 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-**Stopped at:** Completed 07-01 evidence prerequisite; phase execution remains active
+**Stopped at:** Completed 07-02 HSC embedder path; phase execution remains active
 
-Last session: 2026-10-24T02:26:37.615Z
-Resume file: .planning/phases/07-battery-saves/07-02-PLAN.md
+Last session: 2026-10-24T02:41:24.088Z
+Resume file: .planning/phases/07-battery-saves/07-03-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -137,10 +140,11 @@ Resume file: .planning/phases/07-battery-saves/07-02-PLAN.md
 ## Decisions
 
 - [Phase 07]: The runtime counts 28 plans and 19 summaries including superseded 06-01; accepted active completion is 18/27 across phases 5–7. Phase 7 has nine checked plans and no completed save requirements. Percent reports two completed phases of seven.
+- [Phase 07]: HSC load stages firmware in a fixed unpublished instance buffer to avoid compiler stack helpers while keeping the one raw battery span authoritative.
 
 ## Performance Metrics
-
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 07 P01 | 6 min | 2 tasks | 3 files |
 | Phase 07 P01 | 3 min | 2 tasks | 3 files |
+| Phase 07 P02 | 11 min | 3 tasks | 22 files |
