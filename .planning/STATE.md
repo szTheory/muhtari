@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 5
+current_plan: 6
 status: executing
-stopped_at: Completed 07-04 battery robustness; phase execution remains active
-last_updated: "2026-10-24T03:13:11.001Z"
-state_head: 363802b6f10cdce68e791faf710bd22077ee7c7f
+stopped_at: Completed 07-05 runner saves; phase execution remains active
+last_updated: "2026-10-24T03:26:50.441Z"
+state_head: d3130adb71742a4ba69e0beac8920542a6c24f7b
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 23
+  completed_plans: 24
   percent: 29
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 07
 current_phase_name: Battery saves across hosts
-last_activity_desc: Phase 7 evidence hardware and robustness verified; five host acceptance plans remain
+last_activity_desc: Phase 7 runner import and normal save verified; four plans remain
 ---
 
 # Project State
@@ -27,63 +27,45 @@ last_activity_desc: Phase 7 evidence hardware and robustness verified; five host
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 7 execution is active. Plans 07-01–04 prove evidence controls,
-HSC and serial EEPROM hardware and robustness; host acceptance remains in plans 05–09.
+Current focus: Phase 7 execution is active. Plans 07-01–05 prove evidence controls,
+HSC/EEPROM hardware, robustness and runner raw saves; controls/host acceptance remain06–09.
 
 ## Current Position
 
-Current Plan: 5
+Current Plan: 6
 Total Plans in Phase: 9
 
 Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
 are complete. Phase 5 and6 are2/7 milestone phases,18/27 currently planned active
-slots; Phase 7 has four completed plans and five pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
+slots; Phase 7 has five completed plans and four pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
 Next command: `$gsd-execute-phase 7`.
-Phase 6 shipping PR: https://github.com/szTheory/muhtari/pull/24 .
-The ship step confirms the exact-head CI, squash merge and release-PR checks before reporting its outcome.
 No next GSD step was invoked.
 
-## Phase 7 Planning
+## Phase 7 Execution
 
-Execution evidence: 07-01 adds only the battery fixture name and exact 3-to-4 sample
-annotation relation. Actual producer recursion and unchanged authenticated join controls
-pass, including base/run/identity faults. Local CI passes612+6; exact JUnit inventories
-and hygiene pass. No SAVE requirement is completed, no fixture is admitted, no hosted
-acceptance is claimed and no review-fix or gap round is consumed. See07-01-SUMMARY.md
-for commands, exits and local evidence identity. Ten assumption flags remain unresolved.
+Five plans are committed; full local CI635+6, exact inventories635/6 and hygiene24 pass.
+Actual macOS arm64 ZIP sum225543 <=399937. No whole SAVE requirement is complete,
+no fixture is admitted, and no review-fix or gap round is consumed. Ten assumption
+flags remain unresolved. Commands, exit statuses and N/A-local URLs live in07-01–05-SUMMARY.md.
 
-Plan07-02: API5/ABI1/behavior4, HSC/firmware/battery, frozen API4 client; CI619+6, ZIP218325 <=399937.
-Old digests retained; commands/exits N/A-local in07-02-SUMMARY.md. Serial/host/whole SAVE acceptance pending.
+07-01 preserves actual producer/join authority with only named fixture and exact3-to-4
+annotation relations.07-02 adds API5/ABI1/behavior4, HSC/firmware and a frozen API4 client.
+07-03 implements RIOT data-tick serial EEPROM, exact deadlines/reset and no-poll completion.
+Historical no-EEPROM hashes retain explicit topology; default metadata has real-pin tests.
+07-04 passes1000-case lifecycle/observer properties and bounded4096-action I2C replay.
+Local UBSan/libFuzzer3236 runs/61s passes; ASan spins before main in runtime startup.
+07-05 implements opt-in exact raw import, final dirty replacement, CLI/movie provisioning,
+copied firmware and actual-main/fresh-process byte and failure tests. No clean rewrite.
 
-Plan07-03: actual ORA/DDRA serial EEPROM on either port; exact due/reset and no-poll
-semantics. CI626+6, exact inventories626/6, hygiene24 and ZIP223038 <=399937 pass.
-Old no-EEPROM frame pins retained with explicit topology; default metadata executes
-separate real-pin tests. Commands/exits N/A-local in07-03-SUMMARY.md; no review/gap
-round consumed. Host acceptance remains pending; SAVE IDs stay open.
+07-06 owns cadence, native requests and expanded failure controls.07-07 owns libretro;
+07-08 owns fixture admission/real fresh-process RetroArch;07-09 owns final native/BE,
+Windows, WASM, normal ASan/nofp,10000-case, hosted and six-native archive acceptance.
 
-Plan07-04: seeded lifecycle/observer properties pass1000 cases each; bounded4096-action
-I2C replay and specific mutation control pass. CI630+6, exact inventories630/6 and
-hygiene pass. Local UBSan/libFuzzer3236 runs/61s passes; local ASan spins before main
-in runtime initialization, and nofp correctly refuses AppleClang. Normal hosted
-ASan/nofp/10000-case/portability proof remains scheduled in07-09. Commands/exits
-N/A-local in07-04-SUMMARY.md. No whole SAVE requirement or review/gap round completed.
-
-Research and nine plans in nine dependent waves cover SAVE-01–06 and D-01–18.
-The independent plan checker passed after one focused revision; no findings remain.
-The decision gate passed18/18 and post-planning coverage passed24/24.
-Verification command probes report25 stated failure directions, no errors; their
-path parser does not interpret CMake/CTest commands. Structure and hygiene checks
-pass. No hosted run was started for this planning step and no save requirement is
-completed. Archive feasibility, actual fixture admission, native Windows controls
-and fresh-process RetroArch persistence remain mandatory execution evidence.
-
-Planning evidence (all exit0; run URL not applicable for local artifact checks):
-
-- `node ~/.codex/gsd-core/bin/gsd-tools.cjs query check.decision-coverage-plan .planning/phases/07-battery-saves .planning/phases/07-battery-saves/07-CONTEXT.md` — 18/18.
-- `node ~/.codex/gsd-core/bin/gsd-tools.cjs check gap-analysis-plan-post .planning/phases/07-battery-saves 'SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06' --raw` — 24/24.
-- `git diff --check` and `scripts/hygiene.sh --tree` — no findings.
+Research/checked plans cover SAVE-01–06 and D-01–18; decision gate18/18 and post-plan
+coverage24/24 passed. Planning evidence remains in the phase planning artifacts.
+No owner UAT or hardware request is introduced; final hosted evidence is still required.
 
 ## Phase 6 Acceptance
 
@@ -139,10 +121,10 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-**Stopped at:** Completed 07-04 battery robustness; phase execution remains active
+**Stopped at:** Completed 07-05 runner saves; phase execution remains active
 
-Last session: 2026-10-24T03:13:10.926Z
-Resume file: .planning/phases/07-battery-saves/07-05-PLAN.md
+Last session: 2026-10-24T03:26:50.357Z
+Resume file: .planning/phases/07-battery-saves/07-06-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -160,8 +142,8 @@ Resume file: .planning/phases/07-battery-saves/07-05-PLAN.md
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
-| Phase 07 P01 | 6 min | 2 tasks | 3 files |
 | Phase 07 P01 | 3 min | 2 tasks | 3 files |
 | Phase 07 P02 | 11 min | 3 tasks | 22 files |
 | Phase 07 P03 | 15 min | 3 tasks | 22 files |
 | Phase 07 P04 | 11min | 2 tasks | 9 files |
+| Phase 07 P05 | 11min | 3 tasks | 12 files |
