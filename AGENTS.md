@@ -36,7 +36,7 @@ evidence.
    bounds, follow `.planning/preparation/ENGINEERING.md` §11. At most two code-review fix rounds and one gap
    round per phase. Optional test/tooling improvements become seeds; violations of an existing required
    contract remain blocking wherever they live. Re-plan a gap only with new evidence.
-   When workflow retries or metadata repairs repeat, follow
+   During GSD execution, or when workflow retries or metadata repairs repeat, follow
    `.planning/preparation/GSD-HANDOFF.md` §3.1 and its bounded fan-out prompt.
 8. **One GSD step per session, then stop.** Report what finished and the exact next command. Never run
    `/gsd-next`, `/gsd-autonomous`, `/gsd-manager`, `/gsd-progress --next` or `--do`, any GSD command whose

@@ -1,20 +1,20 @@
 ---
 phase: 08-controllers-at-the-pins
 plan: "05"
-status: halted
-halted: true
-tasks_completed: 2
+status: complete
+halted: false
+tasks_completed: 3
 tasks_total: 3
-blocked_task: 3
 subsystem: input
-tags: [libretro, driving, diagnostics, packages, tdd, designed-stop]
+tags: [libretro, driving, diagnostics, packages, tdd, resolved-stop]
 requires:
   - phase: 08-04
     provides: Immutable typed runner replay and independently derived driving fixture
 provides:
   - Real base-MOUSE driving callbacks with device-aware console controls and descriptors
   - Independent numeric and native/audio evidence through all three deliverables
-  - Exact-source Windows package failure with component attribution and a retained narrow size repair
+  - Historical exact-source Windows package failure with component attribution and a retained narrow size repair
+  - Required authenticated package and CI acceptance after the separately authorized policy-purpose recovery
 affects: [08-06, 08-07, 08-08, 08-09, 08-10, 08-11, 08-12, 08-13, 08-14]
 tech-stack:
   added: []
@@ -22,7 +22,15 @@ tech-stack:
 key-files:
   created:
     - .planning/phases/08-controllers-at-the-pins/08-05-SUMMARY.md
+    - tools/check_ci_run.cmake
+    - tests/policy/ci_run.cmake
   modified:
+    - quality.json
+    - tests/cmake/quality.cmake
+    - tests/cmake/quality_join.cmake
+    - tests/policy/quality.cmake
+    - tests/policy/tests.cmake
+    - docs/maintaining.md
     - .github/workflows/ci.yml
     - libretro/libretro.c
     - tests/libretro/host.c
@@ -42,8 +50,9 @@ key-files:
     - docs/quality.md
 key-decisions:
   - Expose actual native bytes only in the existing test module because the frame core clears its temporary video pointer before the frontend callback.
-  - Retain the verified compact complete-field copy loop and its observed Windows savings without claiming the package gate passed.
-  - Preserve the 399937-byte ceiling and halt all dependent controller expansion until an evidence-backed resource resolution.
+  - Retain the verified compact complete-field copy loop; its earlier savings did not satisfy the former cutoff.
+  - Retain historical cutoff failures as failures and accept the separately authorized DEC.61 retirement with mandatory authenticated measurements.
+  - Close only the resolved package gate after exact-source required CI; retain advisory status and every independent domain guard.
 requirements-completed: []
 requirements-contributed: [INPUT-01, INPUT-04]
 coverage:
@@ -79,13 +88,19 @@ coverage:
         ref: diag.controllers numeric/protocol controls; exit 0; CI40132929297
         status: pass
     human_judgment: false
-  - id: limiting-package-envelope
-    description: Exact Windows x64 candidate and independently rebuilt parent exceed the unchanged archive ceiling and block expansion.
+  - id: authenticated-package-observations
+    description: Required native current/base package measurements pass after separately authorized cutoff retirement, with historical failures preserved.
     requirement: INPUT-04
     verification:
       - kind: integration
-        ref: Unchanged tests/cmake/quality_join.cmake over all eight actual corrected-source lane artifacts; exit 1, archive_bytes 401687 exceeds 399937; https://github.com/szTheory/muhtari/actions/runs/40135571745
-        status: fail
+        ref: "Actual eight-lane authenticated join at source62fa325f665984fadc6324d65a49baed77fb31d2/baseae71481227e38105ee51ca9e92f9cc5f85285b8d; exit0; peaks401683/401727 retained; https://github.com/szTheory/muhtari/actions/runs/40139744520"
+        status: pass
+      - kind: unit
+        ref: "policy.quality.controls retirement, above-old-cutoff and retained identity/type/status/deletion faults; exit0; https://github.com/szTheory/muhtari/actions/runs/40139744520"
+        status: pass
+      - kind: other
+        ref: "tools/check_ci_run.cmake exact source/attempt and every job; exit0 required verdict with advisory library failure exposed; https://github.com/szTheory/muhtari/actions/runs/40139744520"
+        status: pass
     human_judgment: false
   - id: retained-frontend-judge
     description: The existing standalone numeric and pixel judges link the owned digest helper before actual RetroArch execution.
@@ -97,16 +112,29 @@ coverage:
     human_judgment: false
 actuals:
   tokens: 19325
-  tasks: 2
-  commits: 11
+  tasks: 3
+  commits: 12
 plan_head_before: 0d2f8b877e6ba68cc4ccb803a6d4ed9cece13c36
-plan_head_after: 9a64bbc7aba72bf7ae98e2a3e796907a6eb04cb9
+plan_head_after: 62fa325f665984fadc6324d65a49baed77fb31d2
 duration: 101min
 started: 2026-10-24T20:39:15Z
 completed: 2026-10-24
+recovery_source: 62fa325f665984fadc6324d65a49baed77fb31d2
+recovery_run: https://github.com/szTheory/muhtari/actions/runs/40139744520
+
 ---
 
 # Phase 8 Plan 5: Real driving hosts and early package gate Summary
+
+**Current acceptance:** all3 tasks are complete under the separately authorized
+DEC.61 measurement contract. Required exact-source CI and actual package/evidence
+consumers pass. The former cutoff was exceeded and retired, not passed.
+Only plan05 closes; phase5/14, no INPUT requirement complete, next08-06 ready.
+
+## Historical execution and halt through9a64bbc
+
+The original observations, failed exits and halt rationale below remain historical.
+The policy-purpose resolution and new acceptance follow them at the end.
 
 **Real driving callbacks and independent three-deliverable observations pass; Windows x64 packages still exceed the fixed ceiling after a verified narrow size repair.**
 
@@ -413,3 +441,67 @@ with the measured actuals. query phase-plan-index 08 and query init.execute-phas
 both exit0: 08-05 is halted, all9 dependent plans08-06–08-14 carry blocked_by08-05,
 and runnable_plans is empty. This validates the durable stop; it does not claim
 the failed archive gate or plan is complete.
+
+## Policy-purpose recovery accepted, 2026-10-24
+
+The owner's separate review requested bounded specialist synthesis, adversarial
+assessment and adoption. DEC.61 retires only the unsupported historical compressed
+cutoff. It preserves required authenticated measurements, exactly3 component ZIPs,
+members/notices/prohibited-asset checks, raw policy/fixture/sample authority and
+every ABI/runtime/performance/required-lane contract. No replacement quota, report
+direction, advisory conversion, dependency or generic policy-deletion bypass was added.
+
+Recovery source: 62fa325f665984fadc6324d65a49baed77fb31d2; genuine independently rebuilt parent: ae71481227e38105ee51ca9e92f9cc5f85285b8d.
+Run/attempt: https://github.com/szTheory/muhtari/actions/runs/40139744520, attempt1, no retry. Required CI succeeds. Overall run
+conclusion is failure solely from advisory library timing; the complete audit
+exposes it. Existing2-second pokey/rmtramdemo tests timed out, leaving37/39 library
+results; these are unaccepted advisory evidence, not a proven flake or new gate.
+WASM585 and all required jobs, including quality and actual RetroArch, pass.
+
+All6 native current builds pass647+6; their genuine bases pass646+6. Hygiene24/24,
+ASan630/629, ABI17/17, both nofp lanes, BE32 compilation and native hash equality
+pass under retained status/authority. Actual RetroArch job121013890626 compiles
+the standalone judge, compares every DMA pixel, judges all34816 bytes in each of
+two fresh battery launches at1→2, and passes screenshot/negative controls.
+Dispatch perf3838334/3838334/3838334 has zero spread; it establishes repeatability,
+not phase-versus-main performance or whole-controller cost.
+
+| Native lane | Library ZIP | Runner ZIP | Libretro ZIP | Current sum | Genuine base sum |
+|---|---:|---:|---:|---:|---:|
+| linux-arm64 | 90695 | 110622 | 96714 | 298031 | 298031 |
+| linux-x64 | 88514 | 108535 | 93907 | 290956 | 290956 |
+| macos-arm64 | 75053 | 89650 | 77128 | 241831 | 241835 |
+| macos-x64 | 76500 | 89249 | 77528 | 243277 | 243279 |
+| windows-arm64 | 89380 | 156698 | 131752 | 377830 | 377874 |
+| windows-x64 | 90297 | 169903 | 141483 | 401683 | 401727 |
+
+The workflow publishes base totals rather than individual base ZIPs; no base
+component sizes are invented. All8 raw base policies match the genuine parent's
+Git object. Each of6 downloaded candidate sets has exactly3 files, correct actual
+sizes/CRCs and producer sums. Current/base source, run, compiler/configuration and
+raw manifest/sample identities are checked before reduction. Joined JSON retains
+both authenticated peaks401683/401727. They remain above the former cutoff.
+
+| Command or actual consumer | Exit | Run |
+|---|---:|---|
+| cmake --workflow --preset ci | 0;647+6 and3 packages | N/A-local |
+| check_junit.cmake with current native/release exact inventories | 0;647 and6 once each | N/A-local |
+| policy.ci_run.controls and policy.quality.controls | 0;22 audit pass/fault cases and retained quality faults | N/A-local and CI40139744520 |
+| gh run view40139744520 --json attempt,status,conclusion,headSha,url,jobs | 0 | https://github.com/szTheory/muhtari/actions/runs/40139744520 |
+| cmake -DINPUT=build/workflow-recovery-ci-run.json -DEXPECTED_SHA=62fa325f665984fadc6324d65a49baed77fb31d2 -P tools/check_ci_run.cmake | 0 required verdict; title skip/library failure visible | https://github.com/szTheory/muhtari/actions/runs/40139744520 |
+| Actual quality_join.cmake over build/workflow-recovery-62fa325/quality-inputs, exact source/base/SOURCE and genuine raw policy, PERF_REQUIRED=OFF | 0; per-lane reports and retained machine peaks | https://github.com/szTheory/muhtari/actions/runs/40139744520 |
+| Downloaded artifact audit and independent ZIP/raw-policy/peak assertions | 0 | https://github.com/szTheory/muhtari/actions/runs/40139744520 |
+
+The audit uses the existing unique CI required aggregate for membership; it adds
+no second job registry or promotion of advisory jobs. The Apple quality-control
+deadline uses existing measured policy, provisional46s with all workloads/oracles.
+This run's x64 current/base controls completed22.52/24.10s on the first attempt.
+The original19325 diff-token estimate and101min duration describe initial execution;
+recovery adds source62fa325 and Task3, without inventing model-token measurements.
+
+The canonical summary and failed history were preserved. Only after these new
+consumer results did status become complete/tasks3/3. Current phase acceptance is
+5/14; all five INPUT requirements remain incomplete. No phase completion, new
+controller hardware, other GSD step, PR, merge or release occurred in this recovery.
+
+Next separate command: `$gsd-execute-phase 8`, beginning with08-06.

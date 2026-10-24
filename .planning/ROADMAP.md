@@ -180,7 +180,7 @@ Plans:
 **Goal:** Let software use light guns, analog and matrix controllers, quadrature devices and modern controller adapters.
 **Depends on:** Phase 7
 **Requirements:** INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05
-**Plans:** 4/14 plans complete in 14 sequential waves (parallelization disabled). Plan08-05 halted with tasks1–2 complete; its required package gate failed.
+**Plans:** 5/14 plans complete in14 sequential waves. DEC.61 workflow recovery accepts revised08-05 Task3;08-06 is ready.
 
 Plans:
 **Wave 1**
@@ -195,10 +195,10 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 - [x] 08-04-PLAN.md — Deliver compact typed runner replay.
 
-**Wave 5** *(halted at the package gate)*
-- [ ] 08-05-PLAN.md — Driving and corrected actual RetroArch evidence pass; latest exact Windows candidate401687/base401724 exceed399937. Retained narrow repair saves570 bytes but leaves1750/1787 unfunded; all following waves remain blocked.
+**Wave 5** *(accepted after the separate DEC.61 policy recovery)*
+- [x] 08-05-PLAN.md — Driving, actual RetroArch and revised package/evidence acceptance pass at62fa325 in CI40139744520. Historical cutoff failures remain; required authenticated measurements and integrity are retained.08-06 is ready.
 
-**Wave 6** *(blocked on Wave 5 completion)*
+**Wave 6** *(ready)*
 - [ ] 08-06-PLAN.md — Correct TIA input memory and emit historical gun light.
 
 **Wave 7** *(blocked on Wave 6 completion)*
@@ -295,10 +295,10 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
-| 8. Controllers at the pins | 4/14 | Blocked at 08-05 package gate | — |
+| 8. Controllers at the pins | 5/14 | Ready for08-06 | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-24; Phases5–7 remain complete. Phase8 has4/14 accepted plans;08-05 is a durable designed stop at the exact-source archive bound, with08-06–08-14 blocked. All INPUT requirements remain pending. Next separate command: `$gsd-plan-phase 8` using the measured resource evidence; no gap or other GSD step was run here.*
+*Updated: 2026-10-24; Phases5–7 remain complete. Phase8 has5/14 accepted plans. The separately authorized DEC.61 recovery closes only08-05 after required exact-source CI/consumer acceptance;08-06 is ready. All INPUT requirements remain pending. Next separate command: $gsd-execute-phase 8. No later hardware/GSD step was run here.*

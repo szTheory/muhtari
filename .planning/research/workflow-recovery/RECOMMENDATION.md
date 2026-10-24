@@ -145,3 +145,24 @@ All local run URLs are N/A-local. No logs are committed.
 
 The new exact-source hosted result is recorded below after it completes. Until then,
 the canonical05 halt and accepted4/14 remain unchanged.
+
+### Exact-source required acceptance and actual recovery
+
+Source62fa325f665984fadc6324d65a49baed77fb31d2, genuine parentae71481227e38105ee51ca9e92f9cc5f85285b8d, https://github.com/szTheory/muhtari/actions/runs/40139744520, attempt1.
+Every required job passed without retry; overall run is failure solely from the
+advisory library timing checks. Two existing2s pokey/rmtramdemo timeouts leave
+37/39 library results and unaccepted advisory evidence. WASM585 and actual
+RetroArch complete-byte/pixel/negative-control checks pass.
+
+The complete saved-response CMake audit exits0 and exposes the advisory failure
+plus allowed title skip. Actual eight-lane quality_join replay exits0. Independent
+ZIP CRC/size/sum and all8 raw parent-policy checks exit0; joined JSON retains
+401683current/401727base authenticated peaks. All other thresholds are unchanged.
+Native current/base647+6/646+6, ASan630/629 and hygiene24/24 complete; nofp2,
+BE32 compilation, native equality and existing semantic/release predicates pass.
+Dispatch perf is same-head repeatability only; phase-versus-main performance
+acceptance remains the later PR boundary.
+
+The canonical05 halt was retained and resolved only after this evidence.
+Phase5/14, next08-06 ready, no INPUT or phase completion. The next allowed command
+is `$gsd-execute-phase 8`; this recovery runs no later hardware/GSD step.

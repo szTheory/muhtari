@@ -2,13 +2,13 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 5
-status: blocked
-stopped_at: 08-05 halted at package gate; corrected standalone RetroArch integration verified at9a64bbc in CI40135571745 attempt2
-last_updated: "2026-10-24T22:21:15.613Z"
+current_plan: 6
+status: ready_to_execute
+stopped_at: Workflow recovery accepted;08-05 complete and08-06 ready
+last_updated: "2026-10-24T23:15:22.184Z"
 last_activity: 2026-10-24
-last_activity_desc: 08-05 remains halted; corrected RetroArch passes, exact Windows ZIPs401687/401724 exceed399937
-state_head: 9a64bbc7aba72bf7ae98e2a3e796907a6eb04cb9
+last_activity_desc: DEC.61 recovery passes required CI;5/14 accepted, next08-06
+state_head: 62fa325f665984fadc6324d65a49baed77fb31d2
 progress:
   total_phases: 7
   completed_phases: 3
@@ -27,60 +27,54 @@ current_phase_name: Controllers at the pins
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 8 execution; 08-01 proves the controller evidence prerequisite,
-08-02 publishes API6, 08-03 proves timed driving with an admitted owned numeric executable,
-and 08-04 delivers immutable typed movie2 replay with real runner effects and measured bounds.
-08-05 tasks1–2 now prove real libretro driving and independent three-deliverable numeric/native/audio
-evidence. Its package gate failed: latest exact Windows x64 candidate401687/base401724 exceed399937 by1750/1787 bytes.
-The verified570-byte Windows normalization improvement is retained. No further optimization or device
-expansion proceeded;08-06–08-14 are durably blocked by the halted08-05 summary.
-All five INPUT requirements remain incomplete. Phase 7 details
-below are historical acceptance/shipping records.
+Current focus: Controllers at the pins. Plans01–05 are accepted; the first driving
+slice runs through library, immutable runner replay and actual libretro/RetroArch.
+A separately authorized DEC.61 review retired only the unsupported archive cutoff;
+required authenticated measurements and package integrity remain. No INPUT
+requirement is complete. Next is08-06 shared TIA input timing and emitted-light work.
 
 ## Current Position
 
-Current Plan: 5
+Current Plan: 6
 Total Plans in Phase: 14
 Progress: [████░░░░░░] 43%
 
-Phase 7 is complete: nine plans, SAVE-01–06 and35/35 verified must-haves.
-Phase 5–7 are3/7 milestone phases with31/41 currently planned active slots complete.
-Phase 8 has4/14 plans complete; current05 is halted with2/3 tasks complete. Phases9–11 remain unplanned.
-Runtime summarized totals33/42 include historical halted06-01 and current halted08-05; those summaries
-do not establish accepted completion. Accepted active progress remains31/41 and3/7 phases (43%).
+Phase8 has5/14 accepted plans;08-05 closes only after actual revised Task3 acceptance.
+Runtime summarized totals remain33/42, including historical halted06-01.
+Accepted active progress is32/41;3/7 milestone phases remain complete (43%).
+The runtime summary count is not an accepted-completion count.
 
-Status: Blocked at 08-05 package gate; do not execute08-06–08-14
-Last activity: 2026-10-24 — Real driving hosts pass; required exact-source package gate fails after narrow repair
-Next command: $gsd-plan-phase 8
-Branch: `phase/08-controllers-at-the-pins`. No Phase 8 pull request yet; Phase 7 merged in PR #28.
+Status: ready_to_execute;08-06 ready, no required blocker
+Last activity: 2026-10-24 — Specific workflow recovery accepted; no further hardware step run
+Next command: $gsd-execute-phase 8
+Branch: phase/08-controllers-at-the-pins. No Phase8 PR, merge or release.
 
-Initial measured source f7e369902f4b054d3fcd8a59c397ef881492a170, independently rebuilt event parent
-ce5397e5b52c2cfdc36058c55a6e012346c75a8f. CI40132929297 is completed/failure on the required
-archive ceiling and a standalone diagnostic SHA-helper link failure in RetroArch:
-https://github.com/szTheory/muhtari/actions/runs/40132929297.
-All six native current/base646+6, hygiene24+24, ASan, both GCC nofp lanes, BE32 compilation,
-native hash equality and WASM585 (including real controller library/runner batch) pass.
-The unchanged actual eight-lane quality_join replay exits1 on401690>399937 after full identity validation.
-Full source/base/component attribution and failed attempts are in08-05-SUMMARY.md; defect register entry51
-records the unmet bound. No requirement was completed and no code-review fix or gap round was consumed.
-The minimal workflow link correction9a64bbc passes the exact standalone compile and local
-DMA/battery judges, full646+6 CI and hygiene24. Corrected exact source
-9a64bbc7aba72bf7ae98e2a3e796907a6eb04cb9 / genuine parent
-986e4ddfb73c5edcb02c3ce98cfa959afbce7260 has actual RetroArch compile, DMA pixels and both
-fresh battery complete-byte/pixel launches passing in CI40135571745 attempt2:
-https://github.com/szTheory/muhtari/actions/runs/40135571745.
-Every latest job was audited: all native/current-base, hash, WASM and frontend work passes;
-quality fails on401687>399937 and the dependent CI required aggregate fails.
-The initial macOS x64 quality-control timeout was retried at unchanged source/checks and is
-preserved as failed history. New-source Windows components90300/169903/141484 total401687;
-base401724 also exceeds the bound. Defect52 is fixed; resource defect51 remains open.
+Tested source62fa325f665984fadc6324d65a49baed77fb31d2, genuine parentae71481227e38105ee51ca9e92f9cc5f85285b8d.
+https://github.com/szTheory/muhtari/actions/runs/40139744520 attempt1 passed every required job, including quality and actual RetroArch;
+native current/base647+6/646+6, hygiene24, ASan, nofp2, BE32 compilation and equality
+pass. WASM585 passes. Complete CMake outcome audit and actual eight-lane join exit0.
+Machine peaks401683/401727 remain reported above the retired historical cutoff.
+No retry or evidence normalization was used.
+
+Overall run conclusion is failure solely from advisory library2s pokey/rmtramdemo
+timeouts; missing results remain unaccepted advisory evidence. They are recorded
+without a proven-flake claim, retry or promotion into a new gate. The later cost
+profiling seed does not block development. Dispatch performance proves same-head
+repeatability, not phase-versus-main comparison. The armed PR+1% guard is unchanged.
+
+The canonical05 summary preserves all historical cutoff/link/timeout failures and
+adds explicit DEC.61 resolution. Defect51 is resolved by authorized policy retirement,
+not a claim the old cap passed. Defect52 remains fixed and hosted-verified.
+Only05 closes. All INPUT requirements and phase completion remain pending.
+Future slices keep local full-ci/package evidence; final08-14 owns the full exact-source
+hosted matrix, with earlier hosted probes for concrete platform/integration questions.
 
 Planning checks: `check.decision-coverage-plan` exits0 with20/20 covered;
 `check gap-analysis.plan-post` exits0 with25/25 source items covered. All38 automated
 commands pass `sh -n`; the failure-direction probe reports no findings. The path probe
 does not interpret CMake command forms; the independent checker reviewed actual/planned
 test registrations. These are local planning checks (run URL: N/A-local), not runtime
-or hosted acceptance. Archive fit and operating cost remain execution gates; hardware
+or hosted acceptance. Required package evidence and operating cost remain execution gates; hardware
 calibration remains deferred. No review-fix or gap-execution round was used here.
 
 Historical Phase 7 ship checks: `cmake --workflow --preset ci` exits 0 (641+6 tests),
@@ -149,9 +143,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** 08-05 halted at package gate; corrected standalone RetroArch integration verified at9a64bbc in CI40135571745 attempt2
+**Stopped at:** Workflow recovery accepted;08-06 ready
 Last session: 2026-10-24T22:21:15.223Z
-Resume file: None
+Resume file: .planning/phases/08-controllers-at-the-pins/08-06-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -167,7 +161,8 @@ Resume file: None
 | Phase 08 P02 | 7min | 3 tasks | 16 files |
 | Phase 08 P03 | 10min | 2 tasks | 12 files |
 | Phase 08 P04 | 14min | 2 tasks | 10 files |
-| Phase 08 P05 | 101min | 2 tasks | 17 files |
+| Phase 08 P05 initial halt | 101min | 2 tasks | 17 files |
+| Phase 08 P05 recovery | accepted separately | Task3 | source62fa325 |
 
 ## Decisions
 
@@ -180,9 +175,11 @@ Resume file: None
 - [Phase 08]: Exercise actual admitted controller rows through independent new-row and later-base producer controls.
 - [Phase 08]: Preserve movie1 parsing, allocation and legacy submission independently from immutable typed movie2 replay.
 - [Phase 08]: Typed syntax acceptance remains separate from physical-device capability refusal until each controller slice lands.
-- [Phase 08]: Retain verified compact scalar normalization, but preserve399937 and halt controller expansion on actual Windows401690/401726 evidence.
+- [Phase 08]: Historical399937 halt preserved; DEC.61 separately retires only that unsupported cutoff while preserving required measurements and all independent contracts.
 - [Phase 08]: Audit every required workflow job; standalone diagnostic consumers link the existing owned digest helper and actual RetroArch acceptance is verified separately from package metrics.
 
 ### Blockers
 
-- 08-05 Task3 failed: latest exact-source Windows x64 candidate401687/base401724 exceed399937 by1750/1787 bytes;08-06–08-14 blocked. RetroArch integration is repaired and hosted-verified. Next separate command: $gsd-plan-phase 8.
+None required. Advisory library timing evidence and measured publication-control
+cost remain in the existing seed; neither is promoted into a controller gate.
+Next command: $gsd-execute-phase 8.

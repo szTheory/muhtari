@@ -727,10 +727,10 @@ last_updated: 2026-10-24T22:19:18.466Z
     "file": "quality.json",
     "line": null,
     "description": "Exact-source Windows x64 candidate/base ZIP sums401690/401726 exceed399937 by1753/1789 bytes after verified narrow repair; controller expansion halted.",
-    "status": "open",
-    "reason": "",
+    "status": "fixed",
+    "reason": "Separately authorized DEC.61 retires only historical compressed cutoff; actual required authenticated measurements remain. Required CI40139744520/source62fa325 and actual8-lane join exit0, peaks401683/401727. Earlier excess remains a historical failure, not a byte-fit claim.",
     "recorded_at": "2026-10-24T21:38:39.360Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-24T23:15:22.184Z",
     "milestone": "v2.0"
   },
   {

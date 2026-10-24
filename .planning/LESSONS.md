@@ -120,3 +120,8 @@ the operative rules. A ledger alone is not a control.
 Control implementation acceptance is recorded with commands/exits and the new
 exact-source run in the recovery decision. Historical size/link/timeout failures
 remain failures; retirement does not retroactively make them pass.
+
+Recovery acceptance: commit62fa325, https://github.com/szTheory/muhtari/actions/runs/40139744520, attempt1. Required CI, exact-source
+outcome audit and actual8-lane join pass (exit0). Overall workflow remains failed
+from explicitly advisory library timing; no retry or proven-flake claim.
+Only plan05 closes to5/14, next08-06 ready. Prior threshold failures remain historical.

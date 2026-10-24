@@ -71,3 +71,9 @@ took0.28/0.27s. Before changing the DAG or matrix, identify redundant process wo
 and meaningful fault equivalence classes in the existing publication controls.
 Preserve Windows shell coverage and every required failure boundary. This optional
 cost improvement is not a condition for controller development.
+
+The single recovery run40139744520 also retains an advisory library timing miss:
+two existing2s pokey/rmtramdemo tests timed out and37/39 results remain. No numeric/
+hash fault was reported; a transient cause is unproven. Profile or recalibrate only
+with comparable completed timing evidence under existing timeout policy. Required
+CI passes; this advisory follow-up does not block controller development.
