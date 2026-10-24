@@ -945,3 +945,19 @@ set_target_properties(muhtari-test-audio-runner PROPERTIES RUNTIME_OUTPUT_DIRECT
 muhtari_warnings(muhtari-test-audio-runner)
 muhtari_add_test(NAME runner.audio.stop_failure COMMAND muhtari-test-audio-runner
   ${PROJECT_BINARY_DIR}/tests/audio-stop.txt LABELS runner audio portable TIMEOUT 10)
+
+add_executable(muhtari-test-save-runner ${CMAKE_CURRENT_LIST_DIR}/test_save.c
+  ${PROJECT_SOURCE_DIR}/runner/bench.c ${PROJECT_SOURCE_DIR}/runner/clock.c
+  ${PROJECT_SOURCE_DIR}/runner/crc32.c ${PROJECT_SOURCE_DIR}/runner/md5.c
+  ${PROJECT_SOURCE_DIR}/runner/movie.c ${PROJECT_SOURCE_DIR}/runner/png.c
+  ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+target_include_directories(muhtari-test-save-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-save-runner PRIVATE muhtari::muhtari muhtari_host)
+target_compile_definitions(muhtari-test-save-runner PRIVATE _POSIX_C_SOURCE=200809L
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+set_target_properties(muhtari-test-save-runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-save-runner)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-roundtrip)
+muhtari_add_test(NAME runner.save.roundtrip COMMAND muhtari-test-save-runner
+  ${PROJECT_BINARY_DIR}/tests/save-roundtrip $<TARGET_FILE:muhtari-run>
+  LABELS runner portable TIMEOUT 10)
