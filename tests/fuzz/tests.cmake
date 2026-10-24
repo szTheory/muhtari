@@ -41,6 +41,27 @@ set_target_properties(muhtari-fuzz-run-replay PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-fuzz-run-replay)
 
+# Fault prevented: malformed EEPROM pin packets publishing early, aliasing a
+# second instance/HSC bytes, or making traffic allocate after load. The same
+# bounded consumer runs in portable replay and the existing nightly fuzz lane.
+add_executable(muhtari-fuzz-i2c-replay ${fuzz_dir}/i2c.c)
+target_compile_definitions(muhtari-fuzz-i2c-replay PRIVATE MUHTARI_FUZZ_REPLAY
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+target_include_directories(muhtari-fuzz-i2c-replay PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-fuzz-i2c-replay PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-fuzz-i2c-replay PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-fuzz-i2c-replay)
+
+add_executable(muhtari-fuzz-i2c-fault ${fuzz_dir}/i2c.c)
+target_compile_definitions(muhtari-fuzz-i2c-fault PRIVATE MUHTARI_FUZZ_REPLAY MUHTARI_I2C_FAULT
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+target_include_directories(muhtari-fuzz-i2c-fault PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-fuzz-i2c-fault PRIVATE muhtari::muhtari)
+set_target_properties(muhtari-fuzz-i2c-fault PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-fuzz-i2c-fault)
+
 # Committed regressions, each an input that once broke an invariant. A
 # directory appears with its first one; the replays take files, not
 # directories, so they are listed here.
@@ -56,6 +77,28 @@ if(EXISTS ${fuzz_run_regress_dir})
 endif()
 
 if(MUHTARI_FUZZ)
+  add_executable(muhtari-fuzz-i2c ${fuzz_dir}/i2c.c)
+  target_include_directories(muhtari-fuzz-i2c PRIVATE ${CMAKE_SOURCE_DIR}/src)
+  target_link_libraries(muhtari-fuzz-i2c PRIVATE muhtari::muhtari)
+  target_compile_options(muhtari-fuzz-i2c PRIVATE -fsanitize=fuzzer)
+  target_link_options(muhtari-fuzz-i2c PRIVATE -fsanitize=fuzzer)
+  set_target_properties(muhtari-fuzz-i2c PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-fuzz-i2c)
+  set(i2c_work ${PROJECT_BINARY_DIR}/fuzz/i2c)
+  file(MAKE_DIRECTORY ${i2c_work}/corpus ${i2c_work}/seeds ${i2c_work}/crash)
+  muhtari_add_test(NAME fuzz.i2c.seeds
+    COMMAND muhtari-fuzz-i2c-replay --write-seeds ${i2c_work}/seeds LABELS fuzz TIMEOUT 30)
+  set_tests_properties(fuzz.i2c.seeds PROPERTIES FIXTURES_SETUP fuzz_i2c_seeds)
+  muhtari_add_test(NAME fuzz.i2c COMMAND muhtari-fuzz-i2c
+    ${i2c_work}/corpus ${i2c_work}/seeds -max_total_time=60 -timeout=2
+    -max_len=4096 -artifact_prefix=crash/ LABELS fuzz TIMEOUT 123)
+  set_tests_properties(fuzz.i2c PROPERTIES
+    FIXTURES_REQUIRED fuzz_i2c_seeds WORKING_DIRECTORY ${i2c_work})
+  # Native seed replay: 0.03 s in three repeats, versus run replay 0.04 s.
+  # The existing integer-second timeout floor leaves more than 2x headroom.
+  muhtari_add_test(NAME fuzz.regress.i2c COMMAND muhtari-fuzz-i2c-replay --seeds
+    LABELS fuzz TIMEOUT 1)
   # The libFuzzer binary keeps libFuzzer's main. The fuzz preset builds every
   # object with ASan, UBSan and coverage instrumentation, so the core's own
   # branches guide the fuzzer.
@@ -138,6 +181,8 @@ if(MUHTARI_FUZZ)
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
     LABELS fuzz TIMEOUT 1)  # 2 x 0.24 s, fuzz job, slowest of 11 runs, run 39377950042
 else()
+  muhtari_add_test(NAME fuzz.regress.i2c COMMAND muhtari-fuzz-i2c-replay --seeds
+    LABELS fuzz portable TIMEOUT 1)
   muhtari_add_test(NAME fuzz.regress.loader
     COMMAND muhtari-fuzz-loader-replay --seeds ${fuzz_regress}
     LABELS fuzz portable TIMEOUT 60)
@@ -162,3 +207,17 @@ else()
       "-DREGEX=no corpus inputs" -P ${CMAKE_SOURCE_DIR}/tests/cmake/expect_fail.cmake
     LABELS fuzz portable TIMEOUT 10)
 endif()
+
+set(i2c_fault_cmd ${CMAKE_CROSSCOMPILING_EMULATOR}
+  $<TARGET_FILE:muhtari-fuzz-i2c-fault> --seeds)
+string(REPLACE ";" "$<SEMICOLON>" i2c_fault_cmd "${i2c_fault_cmd}")
+if(MUHTARI_FUZZ)
+  set(i2c_labels fuzz)
+else()
+  set(i2c_labels fuzz portable)
+endif()
+muhtari_add_test(NAME fuzz.regress.i2c.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${i2c_fault_cmd}" -DCODE=1
+    "-DREGEX=i2c invariant: isolated instance changed"
+    -P ${CMAKE_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+  LABELS ${i2c_labels} TIMEOUT 10)

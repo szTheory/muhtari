@@ -471,6 +471,8 @@ frame.maria_wsync_releases_at_lrc	frame,portable
 frame.mstat_edges	frame,portable
 frame.null_video_same_state	frame,portable
 frame.sample_renders	built,portable
+fuzz.regress.i2c	fuzz,portable
+fuzz.regress.i2c.self_test	fuzz,portable
 fuzz.regress.loader	fuzz,portable
 fuzz.regress.loader.self_test	fuzz,portable
 fuzz.regress.run	fuzz,portable
