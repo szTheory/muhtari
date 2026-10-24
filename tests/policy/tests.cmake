@@ -110,9 +110,9 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
     LABELS policy TIMEOUT ${publish_timeout} COST 725)
   set(quality_timeout 30)
   if(WIN32)
-    # Provisional 2 x 26.92s comparable Windows arm64 control, run40031550434;
-    # expanded native controls exceeded30s in run40077753682.
-    set(quality_timeout 54)
+    # Ceil(2 x 40.12s), maximum successful current/base Windows control in
+    # run40080473918; retain all producer/join cases and numeric predicates.
+    set(quality_timeout 81)
   endif()
   muhtari_add_test(NAME policy.quality.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}

@@ -967,6 +967,9 @@ static int save_flush(save_context *save, muhtari *m)
     for (unsigned attempt = 0; temporary != NULL && attempt < 32u; attempt++) {
 #ifdef _WIN32
         unsigned long pid = (unsigned long)GetCurrentProcessId();
+#elif defined(__wasi__)
+        /* WASI has no process IDs; exclusive creation still owns each candidate. */
+        unsigned long pid = 0;
 #else
         unsigned long pid = (unsigned long)getpid();
 #endif

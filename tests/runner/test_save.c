@@ -432,6 +432,8 @@ static void faults(const char *dir)
     memset(bytes, 0x31, sizeof bytes);
 #ifdef _WIN32
     unsigned long pid = (unsigned long)GetCurrentProcessId();
+#elif defined(__wasi__)
+    unsigned long pid = 0;
 #else
     unsigned long pid = (unsigned long)getpid();
 #endif
