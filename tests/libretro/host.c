@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "../check.h"
+#include "../cart/images.h"
 #include "libretro.h"
 #include "muhtari.h"
 #include "palette.h"
@@ -199,10 +200,10 @@ static struct {
     const char *key;
     const char *value;
 } vars[] = {
-    {"muhtari_boot", "fast"},
-    {"muhtari_palette", "ntsc"},
-    {"muhtari_left_difficulty", "B"},
-    {"muhtari_right_difficulty", "B"},
+    {"muhtari_boot", "fast"},          {"muhtari_palette", "ntsc"},
+    {"muhtari_left_difficulty", "B"},  {"muhtari_right_difficulty", "B"},
+    {"muhtari_hsc", "auto"},           {"muhtari_battery_port1", "auto"},
+    {"muhtari_battery_port2", "auto"},
 };
 static bool vars_updated;
 
@@ -1128,6 +1129,40 @@ static void case_memory_map(void)
     }
 }
 
+/* Restore through the module's public memory interface before any run. */
+static void case_battery(void)
+{
+    static uint8_t image[128u + 4096u];
+    static const uint8_t program[] = {0xAD, 0x00, 0x10, 0x8D, 0x00, 0x18, 0xEE, 0x00, 0x10, 0x02};
+    struct retro_game_info game = {0};
+    game.data = image;
+    game.size = images_linear(image, 3u, 4096u);
+    memcpy(image + 128u, program, sizeof program);
+    p_set_environment(env);
+    p_init();
+    set_var("muhtari_hsc", "on");
+    CHECK(p_load_game(&game));
+    uint8_t *save = (uint8_t *)p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+    CHECK(save != NULL);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 2048u);
+    if (save != NULL) {
+        save[0] = 0x42u;
+        p_run();
+        CHECK_EQ_U64(((uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM))[0], 0x42u);
+        CHECK_EQ_U64(save[0], 0x43u);
+        p_reset();
+        CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == save);
+        CHECK_EQ_U64(save[0], 0x43u);
+    }
+    p_unload_game();
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 0u);
+    CHECK(p_load_game(NULL));
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+    stop();
+    set_var("muhtari_hsc", "auto");
+}
+
 static void case_audio(void)
 {
     muhtari_config cfg = {0};
@@ -1203,9 +1238,10 @@ int main(int argc, char **argv)
         void (*run)(void);
         int files;
     } cases[] = {
-        {"audio", case_audio, 1},           {"input", case_input, 1}, {"layout", case_layout, 1},
-        {"devices", case_devices, 1},       {"reset", case_reset, 1}, {"options", case_options, 1},
-        {"memory_map", case_memory_map, 3},
+        {"audio", case_audio, 1},           {"input", case_input, 1},
+        {"layout", case_layout, 1},         {"devices", case_devices, 1},
+        {"reset", case_reset, 1},           {"options", case_options, 1},
+        {"memory_map", case_memory_map, 3}, {"battery", case_battery, 0},
     };
     size_t i;
     int found = 0;

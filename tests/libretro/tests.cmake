@@ -72,6 +72,7 @@ if(LIBRETRO_RETAIL_RUN)
 endif()
 set(libretro_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
+
 muhtari_add_test(NAME libretro.vendored
   COMMAND ${CMAKE_COMMAND} -P ${libretro_scripts}/vendored.cmake
   LABELS libretro TIMEOUT 10)
@@ -94,6 +95,7 @@ if(TARGET muhtari_libretro)
     LABELS libretro portable TIMEOUT 10)
 
   add_executable(muhtari-test-libretro-host ${CMAKE_CURRENT_LIST_DIR}/host.c
+    ${PROJECT_SOURCE_DIR}/tests/cart/images.c
     ${PROJECT_SOURCE_DIR}/runner/sha256.c)
   target_include_directories(muhtari-test-libretro-host PRIVATE ${PROJECT_SOURCE_DIR}/libretro
     ${PROJECT_SOURCE_DIR}/runner)
@@ -105,6 +107,10 @@ if(TARGET muhtari_libretro)
   set_target_properties(muhtari-test-libretro-host PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-libretro-host)
+  # Final save storage must be visible before the first emulated frame.
+  muhtari_add_test(NAME libretro.host.battery
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> battery
+    LABELS libretro portable TIMEOUT 5)
   # Fault prevented: the core RetroArch loads shows a frame, timing or
   # geometry other than the library's, or needs content to start.
   muhtari_add_test(NAME libretro.host.xrgb8888
