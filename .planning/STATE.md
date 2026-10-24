@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 4
+current_plan: 5
 status: executing
-stopped_at: Completed 07-03 serial EEPROM; phase execution remains active
-last_updated: "2026-10-24T03:00:23.137Z"
-state_head: 1f6ca3c3d16937403c8b92693d395b5fd1fa0edf
+stopped_at: Completed 07-04 battery robustness; phase execution remains active
+last_updated: "2026-10-24T03:13:11.001Z"
+state_head: 363802b6f10cdce68e791faf710bd22077ee7c7f
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 28
-  completed_plans: 22
+  completed_plans: 23
   percent: 29
 last_activity: 2026-10-23
 total_phases: 7
 current_phase: 07
 current_phase_name: Battery saves across hosts
-last_activity_desc: Phase 7 evidence HSC and serial EEPROM verified; six plans remain
+last_activity_desc: Phase 7 evidence hardware and robustness verified; five host acceptance plans remain
 ---
 
 # Project State
@@ -27,17 +27,17 @@ last_activity_desc: Phase 7 evidence HSC and serial EEPROM verified; six plans r
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 7 execution is active. Plans 07-01–03 prove evidence controls,
-HSC and serial EEPROM hardware; robustness and host acceptance remain in plans 04–09.
+Current focus: Phase 7 execution is active. Plans 07-01–04 prove evidence controls,
+HSC and serial EEPROM hardware and robustness; host acceptance remains in plans 05–09.
 
 ## Current Position
 
-Current Plan: 4
+Current Plan: 5
 Total Plans in Phase: 9
 
 Phase 6 passed33/33 substantive truths: BOARD-01–03 and all9 active plans02–10
 are complete. Phase 5 and6 are2/7 milestone phases,18/27 currently planned active
-slots; Phase 7 has three completed plans and six pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
+slots; Phase 7 has four completed plans and five pending plans. Phases 8–11 remain unplanned. Historical halted plans remain excluded
 with their original records preserved.
 
 Next command: `$gsd-execute-phase 7`.
@@ -61,7 +61,14 @@ Plan07-03: actual ORA/DDRA serial EEPROM on either port; exact due/reset and no-
 semantics. CI626+6, exact inventories626/6, hygiene24 and ZIP223038 <=399937 pass.
 Old no-EEPROM frame pins retained with explicit topology; default metadata executes
 separate real-pin tests. Commands/exits N/A-local in07-03-SUMMARY.md; no review/gap
-round consumed. Robustness and host acceptance remain pending; SAVE IDs stay open.
+round consumed. Host acceptance remains pending; SAVE IDs stay open.
+
+Plan07-04: seeded lifecycle/observer properties pass1000 cases each; bounded4096-action
+I2C replay and specific mutation control pass. CI630+6, exact inventories630/6 and
+hygiene pass. Local UBSan/libFuzzer3236 runs/61s passes; local ASan spins before main
+in runtime initialization, and nofp correctly refuses AppleClang. Normal hosted
+ASan/nofp/10000-case/portability proof remains scheduled in07-09. Commands/exits
+N/A-local in07-04-SUMMARY.md. No whole SAVE requirement or review/gap round completed.
 
 Research and nine plans in nine dependent waves cover SAVE-01–06 and D-01–18.
 The independent plan checker passed after one focused revision; no findings remain.
@@ -132,10 +139,10 @@ No required acceptance is missing.
 
 ## Session Continuity
 
-**Stopped at:** Completed 07-03 serial EEPROM; phase execution remains active
+**Stopped at:** Completed 07-04 battery robustness; phase execution remains active
 
-Last session: 2026-10-24T03:00:23.053Z
-Resume file: .planning/phases/07-battery-saves/07-04-PLAN.md
+Last session: 2026-10-24T03:13:10.926Z
+Resume file: .planning/phases/07-battery-saves/07-05-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -157,3 +164,4 @@ Resume file: .planning/phases/07-battery-saves/07-04-PLAN.md
 | Phase 07 P01 | 3 min | 2 tasks | 3 files |
 | Phase 07 P02 | 11 min | 3 tasks | 22 files |
 | Phase 07 P03 | 15 min | 3 tasks | 22 files |
+| Phase 07 P04 | 11min | 2 tasks | 9 files |

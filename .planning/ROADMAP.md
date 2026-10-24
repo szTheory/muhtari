@@ -136,7 +136,7 @@ Shared core, manifest and inventory ownership requires sequential execution.
 **Goal:** Keep HSC and SaveKey progress across process and frontend restarts without putting file I/O in the core.
 **Depends on:** Phase 6
 **Requirements:** SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06
-**Plans:** 3/9 plans executed in 9 sequential waves (parallelization disabled).
+**Plans:** 4/9 plans executed in 9 sequential waves (parallelization disabled).
 **Status:** Execution active; evidence prerequisite and HSC embedder path verified, seven plans remain.
 
 Plans:
@@ -150,7 +150,7 @@ Plans:
 - [x] 07-03-PLAN.md — Implement timed pin-level EEPROM, frozen attachment and completion/reset edges.
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 07-04-PLAN.md — Prove battery lifecycle, isolation, no-allocation and bounded I2C properties/fuzz replay.
+- [x] 07-04-PLAN.md — Prove battery lifecycle, isolation, no-allocation and bounded I2C properties/fuzz replay.
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 07-05-PLAN.md — Deliver opt-in runner import, firmware provisioning and safe raw-save replacement.
