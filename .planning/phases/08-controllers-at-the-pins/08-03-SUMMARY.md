@@ -155,6 +155,8 @@ INPUT-01 and INPUT-04 remain incomplete: replay, frontend mappings, three-host d
 
 Next separate command: `$gsd-execute-phase 8`. No shipping or later GSD step was invoked.
 
+The SDK advanced Current Plan to4 and counted31/42 runtime summaries. Its roadmap helper updated the detail and checkbox but retained the old progress-table cell; reconciled that cell to3/14. Preserved3/7 completed milestone phases (43%) and30/41 active slots, excluding the historical halted06-01 outcome. No requirement was marked complete.
+
 ## Self-Check: PASSED
 
 All three created fixture paths exist. Every listed task commit is an ancestor of HEAD, and evaluation-scope resolves all five on this branch. Fresh full CI and required task commands pass; the registered native names/labels match the exact inventory. No requirement is prematurely marked complete.

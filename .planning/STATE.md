@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-10-24T20:04:24.377Z"
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-10-24T20:19:28.512Z"
 last_activity: 2026-10-24
-last_activity_desc: Completed 08-02 additive input boundary; full local CI passes 643+6
-state_head: f775bcc2257b3b452cce8a453a6165086a8e9b26
+last_activity_desc: Completed 08-03 timed driving and owned motion fixture; full local CI passes 643+6
+state_head: 49480033ee27af834f7fa3e17d2eb6a88971cce3
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 30
+  completed_plans: 31
   percent: 43
 total_phases: 7
 current_phase: 08
@@ -28,24 +28,24 @@ See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
 Current focus: Phase 8 execution; 08-01 proves the controller evidence prerequisite,
-and 08-02 publishes API6 with transactional digital input and lifecycle behavior.
-The remaining 12 sequential plans own device models, host input and final acceptance.
+08-02 publishes API6, and 08-03 proves timed driving with an admitted owned numeric executable.
+The remaining 11 sequential plans own replay, host input, other device models and final acceptance.
 All five INPUT requirements remain incomplete. Phase 7 details
 below are historical acceptance/shipping records.
 
 ## Current Position
 
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 14
 Progress: [████░░░░░░] 43%
 
 Phase 7 is complete: nine plans, SAVE-01–06 and35/35 verified must-haves.
-Phase 5–7 are3/7 milestone phases with29/41 currently planned active slots complete.
-Phase 8 has2/14 plans complete; Phases 9–11 remain unplanned. Runtime totals30/42 include the historical halted06-01
+Phase 5–7 are3/7 milestone phases with30/41 currently planned active slots complete.
+Phase 8 has3/14 plans complete; Phases 9–11 remain unplanned. Runtime totals31/42 include the historical halted06-01
 SUMMARY; it remains excluded from accepted active outcomes and is not a budget grant.
 
 Status: Ready to execute
-Last activity: 2026-10-24 — Completed 08-02 additive input boundary; full local CI passes643+6
+Last activity: 2026-10-24 — Completed 08-03 timed driving and owned motion fixture; full local CI passes643+6
 Next command: $gsd-execute-phase 8
 Branch: `phase/08-controllers-at-the-pins`. No Phase 8 pull request yet; Phase 7 merged in PR #28.
 
@@ -123,8 +123,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 08-02-PLAN.md
-Last session: 2026-10-24T20:04:24.268Z
+**Stopped at:** Completed 08-03-PLAN.md
+Last session: 2026-10-24T20:19:28.327Z
 Resume file: None
 
 ### Quick Tasks Completed
@@ -139,6 +139,7 @@ Resume file: None
 |------|----------|-------|-------|
 | Phase 08 P01 | 6min | 2 tasks | 3 files |
 | Phase 08 P02 | 7min | 3 tasks | 16 files |
+| Phase 08 P03 | 10min | 2 tasks | 12 files |
 
 ## Decisions
 
@@ -146,3 +147,6 @@ Resume file: None
 - [Phase 08]: Admit only the exact 4-to-5 annotation transition alongside existing equality and historical adjacent pairs.
 - [Phase 08]: Preserve the old input validator and Auto fallback independently of extended device support.
 - [Phase 08]: Normalize complete extended scalar fields with fixed-size copies to preserve the restricted core link surface.
+- [Phase 08]: Keep motion timing in the existing bus owner with cached idle deadlines and fixed instance state.
+- [Phase 08]: Decode the diagnostic selector before mailbox initialization can consume the short handoff frame.
+- [Phase 08]: Exercise actual admitted controller rows through independent new-row and later-base producer controls.
