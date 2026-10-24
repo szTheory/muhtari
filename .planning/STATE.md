@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 6
-status: ready_to_execute
-stopped_at: Workflow recovery accepted;08-05 complete and08-06 ready
-last_updated: "2026-10-24T23:15:22.184Z"
+current_plan: 7
+status: executing
+stopped_at: 08-06 verified;08-07 ready
+last_updated: "2026-10-24T23:41:20.019Z"
 last_activity: 2026-10-24
-last_activity_desc: DEC.61 recovery passes required CI;5/14 accepted, next08-06
-state_head: 62fa325f665984fadc6324d65a49baed77fb31d2
+last_activity_desc: 08-06 accepted after648+6 local checks;08-07 ready
+state_head: 3e376b4
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 33
+  completed_plans: 34
   percent: 43
 total_phases: 7
-current_phase: 08
 current_phase_name: Controllers at the pins
+current_phase: 08
 ---
 
 # Project State
@@ -27,29 +27,36 @@ current_phase_name: Controllers at the pins
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Controllers at the pins. Plans01–05 are accepted; the first driving
+Current focus: Controllers at the pins. Plans01–06 are accepted; the first driving
 slice runs through library, immutable runner replay and actual libretro/RetroArch.
 A separately authorized DEC.61 review retired only the unsupported archive cutoff;
 required authenticated measurements and package integrity remain. No INPUT
-requirement is complete. Next is08-06 shared TIA input timing and emitted-light work.
+requirement is complete. Next is08-07 lightgun boundary and three-host evidence.
 
 ## Current Position
 
-Current Plan: 6
+Current Plan: 7
 Total Plans in Phase: 14
 Progress: [████░░░░░░] 43%
 
-Phase8 has5/14 accepted plans;08-05 closes only after actual revised Task3 acceptance.
-Runtime summarized totals remain33/42, including historical halted06-01.
-Accepted active progress is32/41;3/7 milestone phases remain complete (43%).
+Phase8 has6/14 accepted plans;08-06 passes full local CI648+6 and package checks.
+Runtime summarized totals are34/42, including historical halted06-01.
+Accepted active progress is33/41;3/7 milestone phases remain complete (43%).
 The runtime summary count is not an accepted-completion count.
 
-Status: ready_to_execute;08-06 ready, no required blocker
-Last activity: 2026-10-24 — Specific workflow recovery accepted; no further hardware step run
+Status: Executing Phase 08;08-07 ready
+Last activity: 2026-10-24 —08-06 accepted; continuing the dependency-ready wave
 Next command: $gsd-execute-phase 8
 Branch: phase/08-controllers-at-the-pins. No Phase8 PR, merge or release.
 
-Tested source62fa325f665984fadc6324d65a49baed77fb31d2, genuine parentae71481227e38105ee51ca9e92f9cc5f85285b8d.
+08-06 implementation6fab3e0 and summary3e376b4 are accepted. Parent post-wave
+`gsd-tools.cjs run-with-timeout 60 -- cmake --workflow --preset ci` exits0 (648+6),
+run URL N/A-local. Native light timing and TIA latch corrections retain all69 prior
+digests/numbers; only seven named revision4→5 metadata values change. Local three-ZIP
+sum245942 bytes is authenticated by the actual producer. No hosted acceptance is
+claimed for this intermediate slice.
+
+Historical recovery tested source62fa325f665984fadc6324d65a49baed77fb31d2, genuine parentae71481227e38105ee51ca9e92f9cc5f85285b8d.
 https://github.com/szTheory/muhtari/actions/runs/40139744520 attempt1 passed every required job, including quality and actual RetroArch;
 native current/base647+6/646+6, hygiene24, ASan, nofp2, BE32 compilation and equality
 pass. WASM585 passes. Complete CMake outcome audit and actual eight-lane join exit0.
@@ -143,9 +150,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Workflow recovery accepted;08-06 ready
+**Stopped at:**08-06 verified;08-07 ready
 Last session: 2026-10-24T22:21:15.223Z
-Resume file: .planning/phases/08-controllers-at-the-pins/08-06-PLAN.md
+Resume file: .planning/phases/08-controllers-at-the-pins/08-07-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -163,6 +170,7 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-06-PLAN.md
 | Phase 08 P04 | 14min | 2 tasks | 10 files |
 | Phase 08 P05 initial halt | 101min | 2 tasks | 17 files |
 | Phase 08 P05 recovery | accepted separately | Task3 | source62fa325 |
+| Phase 08 P06 | 12min | 3 tasks | source6fab3e0 |
 
 ## Decisions
 
@@ -182,4 +190,4 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-06-PLAN.md
 
 None required. Advisory library timing evidence and measured publication-control
 cost remain in the existing seed; neither is promoted into a controller gate.
-Next command: $gsd-execute-phase 8.
+Current execution continues at08-07; no requirement is complete.
