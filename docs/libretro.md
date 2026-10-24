@@ -64,7 +64,7 @@ all `.srm` file I/O; the adapter has no save-file operations or mirror buffer. P
 stable until unload or reload. Restart retains committed battery bytes; it discards incomplete EEPROM
 programming without advancing emulated time. Save states remain unavailable.
 
-**Restart** power-cycles the console: memory is cleared, the cartridge starts again the way it was loaded, and the
+**Restart** power-cycles the console: volatile memory is cleared, the cartridge starts again the way it was loaded, and the
 difficulty switches go back to their options.
 
 If a frame fails, the core reports the error on screen and in the log once, and keeps presenting the last
@@ -85,7 +85,19 @@ and boots through the first usable file, showing the BIOS's own start-up screen 
 the file and its SHA-256, so a user can tell which image ran. Any valid 4 KiB or 16 KiB image is accepted, such
 as OpenBIOS. An invalid or unreadable file is named in the log and the next name is tried. With no usable file,
 the core boots fast and says so on screen and in the log. An allocation failure reports an error and refuses the
-load. Fast boot starts the cartridge where the console's BIOS hands over to it, with no firmware at all.
+load. Fast boot starts the cartridge where the console's BIOS hands over to it, without a console BIOS.
+
+When HSC is attached, optional `highscre.bin` in the system directory supplies its 4,096-byte ROM. Only
+absence selects the signature-only stub; a present unreadable, non-regular, short or oversized file refuses
+the load. Path/allocation failure also refuses. The core copies the ROM before host staging is freed,
+including when BIOS candidates are retried. The log records its SHA-1. Unknown firmware and missing
+signatures are accepted with distinct visible warnings. No BIOS reset-vector rule applies to the HSC ROM.
+No firmware is bundled. The stub exposes C6/FE signatures at $3900/$3904 and FF elsewhere; it contains no
+routines, formatting or high-score screens and does not provide full OpenHSC functionality.
+
+Detailed loaded-module persistence and firmware tests run locally. Actual fresh-process RetroArch save
+acceptance remains separate; the package's `libretro_saves` and optional HSC `.info` claims remain pending
+that hosted proof. Save states and AtariVox speech are unavailable.
 
 ## Achievements
 
@@ -97,12 +109,14 @@ Atari 7800 console (number 51) addresses memory, and tells the frontend that it 
 | $0040-$00FF | system RAM at $2040-$20FF, which the console also shows here |
 | $0140-$01FF | system RAM at $2140-$21FF, likewise |
 | $0480-$04FF | the RIOT's 128 bytes of RAM |
+| $1000-$17FF | attached HSC SRAM, directly aliasing the first 2,048 SAVE_RAM bytes |
 | $1800-$27FF | system RAM, 4 KiB, flagged as system RAM |
 | $2800-$2FFF | system RAM's second half, $2000-$27FF, again |
+| $3000-$3FFF | the installed HSC ROM or signature stub, read-only, only when HSC is attached |
 | $4000-$7FFF | cartridge RAM, when the board has unbanked RAM, except Fractalus as below |
 | ROM | the fixed ROM, read-only: linear ROM; SuperGame's last bank at $C000 and, without RAM, its fixed bank at $4000; Absolute and Fractalus at $8000-$FFFF; Activision's four fixed windows below |
 
-Everything else has no memory behind it: the TIA, MARIA and RIOT registers, $3000-$3FFF, banked windows and the
+Everything else has no memory behind it: the TIA, MARIA and RIOT registers, absent HSC ranges, banked windows and the
 rest of the address space. The map lists those spans too, as descriptors without a pointer, because rcheevos stops
 mapping a region at the first address no descriptor covers: without them, $0040 and $C000 would be out of its
 reach.
@@ -111,8 +125,9 @@ reach.
 written on other cores may read it. On the console, whether RAM answers there is not settled, and muhtari's bus
 leaves the range to the cartridge. The map follows rcheevos, so those achievements read the RAM they expect.
 
-**Why $3000-$3FFF is not.** rcheevos calls this range mirrored RAM too, but the 7800 Software Guide gives it to
-external devices, not RAM, so a byte read there would be invented. It stays without memory.
+**Why $3000-$3FFF depends on HSC.** rcheevos calls this range mirrored RAM too, but the 7800 Software Guide
+gives it to external devices. Only an attached HSC supplies bytes there; its descriptor points to the actual
+installed core-owned ROM, distinct from cartridge input. EEPROM remains serial and has no invented CPU range.
 
 Banked RAM and banked ROM windows are left out because a descriptor cannot say which bank is showing.
 Absolute descriptors point into original content at the same-numbered ROM
@@ -130,7 +145,7 @@ The switched $A000-$DFFF range stays unmapped.
 Fractalus exposes fixed ROM at $8000-$FFFF and sixteen 256-byte RAM aliases
 at $4000-$4FFF. Adjacent page pairs point to one physical 256-byte page;
 the library's physical cartridge-RAM span remains exactly 2,048 bytes. It is
-volatile RAM, so libretro's battery-save span remains absent. Its bus also
+volatile RAM; a battery-save span exists only when HSC or EEPROM is separately attached. Its bus also
 mirrors that RAM at $5000-$7FFF, but those higher mirrors are deliberately
 descriptor holes. These ranges provide partial achievement visibility,
 not a complete bus view. The pinned resolver is tested against every intended

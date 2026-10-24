@@ -102,7 +102,7 @@ static bool request_seen;
 
 /* ---- the frontend's view: devices, inputs and options ---- */
 
-/* SET_CONTROLLER_INFO (L1506): the same four choices on both ports. Auto
+/* SET_CONTROLLER_INFO (L1506): the same six choices on both ports. Auto
    follows the cartridge header's controller byte. */
 static const struct retro_controller_description pad_types[] = {
     {"Auto (cartridge header)", RETRO_DEVICE_JOYPAD},
@@ -402,7 +402,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
     info->timing.sample_rate = 48000.0;
 }
 
-/* L7673: one of the four ids of pad_types; any other id means Auto. */
+/* L7673: one of pad_types; any other id means Auto. */
 void retro_set_controller_port_device(unsigned port, unsigned id)
 {
     if (port < 2u) {
@@ -940,8 +940,9 @@ static uint8_t *lr_memory(uint32_t kind, size_t *bytes)
 /* The achievement map (HOSTS-AND-INTEGRATION section 2): the CPU bus as
    rcheevos' console 51 reads it. Page 0's and page 1's RAM shadow $2040-
    $20FF and $2140-$21FF; $2800-$2FFF repeats RAM's second half while the
-   bus there stays undecoded; registers, $3000-$3FFF and banked windows have
-   no memory behind them. Unbanked cartridge RAM sits at $4000 and the fixed
+   bus there stays undecoded; registers, absent HSC and banked windows have
+   no memory behind them. Installed HSC spans alias its actual RAM/ROM.
+   Unbanked cartridge RAM sits at $4000 and the fixed
    ROM is CONST. */
 static void lr_memory_maps(void)
 {
