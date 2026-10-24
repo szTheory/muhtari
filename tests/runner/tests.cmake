@@ -7,6 +7,29 @@
 # EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
 # runs its own guest binary.
 if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
+  if(CASE STREQUAL "hashes")
+    execute_process(COMMAND "${CMAKE_COMMAND}" -DMODE=write "-DRUN=${RUN}"
+      "-DDRIVER=${DRIVER}" "-DDIAG=${DIAG}" "-DOUT=${OUT}"
+      "-DEMULATOR=${EMULATOR}" "-DSOUNDTEST=${SOUNDTEST}" "-DPOKEY=${POKEY}"
+      -P "${HASHES}" COMMAND_ERROR_IS_FATAL ANY)
+    file(STRINGS "${OUT}/hashes.txt" rows)
+    list(LENGTH rows count)
+    if(NOT count EQUAL 69)
+      message(FATAL_ERROR "hashes: expected 69 complete observation rows, got ${count}")
+    endif()
+    foreach(launch first second)
+      foreach(field frame1 frame120 audio_transitions_sha256 audio_pcm_sha256 audio_frames
+          audio_samples audio_rate audio_behaviour_revision audio_synthesis diagnostic save_sha256)
+        set(found "${rows}")
+        list(FILTER found INCLUDE REGEX "^battery[.]${launch}[.]${field} ")
+        list(LENGTH found n)
+        if(NOT n EQUAL 1)
+          message(FATAL_ERROR "hashes: missing or duplicate battery.${launch}.${field}")
+        endif()
+      endforeach()
+    endforeach()
+    return()
+  endif()
   if(CASE STREQUAL "save_roundtrip")
     execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" roundtrip RESULT_VARIABLE rc)
     if(NOT rc STREQUAL "0")
@@ -854,10 +877,10 @@ endforeach()
 # hashes.txt, the file CI compares across lanes.
 set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
 muhtari_add_test(NAME runner.hashes_file
-  COMMAND ${runner_check} -DMODE=write -DOUT=${PROJECT_BINARY_DIR}
+  COMMAND ${runner_check} -DCASE=hashes -DOUT=${PROJECT_BINARY_DIR} -DHASHES=${runner_hashes}
     -DDRIVER=$<TARGET_FILE:muhtari-test-diag> -DDIAG=${PROJECT_SOURCE_DIR}/tests/diag
     "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
-    "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${runner_hashes}
+    "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${CMAKE_CURRENT_LIST_FILE}
   LABELS runner portable TIMEOUT 20)
 set_tests_properties(runner.hashes_file PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 # The comparison's self tests: two files where three are required, and two
