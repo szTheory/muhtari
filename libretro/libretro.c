@@ -8,6 +8,16 @@
  * card; content is loaded through muhtari_load, by the fast boot or through
  * a BIOS file. The adapter copies the content, and the copy lives until the
  * game unloads: the ROM descriptors of the memory map point into it. */
+/* Ubuntu's PPC32 headers default to the newer time64 stat ABI. Request
+   the legacy layout before any headers so __xstat version 3 uses the
+   matching LSB Core PPC32 struct, retaining the GLIBC 2.17 floor.
+   This adapter inspects file type only, and reads at most 16 KiB firmware. */
+#if defined(__linux__) && defined(__powerpc__) && !defined(__powerpc64__)
+#undef _TIME_BITS
+#undef _FILE_OFFSET_BITS
+#define _TIME_BITS 32
+#define _FILE_OFFSET_BITS 32
+#endif
 #include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -18,9 +28,12 @@
 #include <sys/stat.h>
 
 /* LSB Core, __xstat: the stable binary stat interface. Modern glibc's
-   public stat symbol needs 2.33; retain the module's existing 2.17 floor.
+   public stat symbols need 2.33/2.34; retain the existing 2.17 floor.
    Test builds that substitute stat keep that same file-fault seam. */
-#if defined(__GLIBC__) && (defined(__x86_64__) || defined(__aarch64__)) && !defined(stat)
+#if defined(__GLIBC__) &&                                                                          \
+    (defined(__x86_64__) || defined(__aarch64__) ||                                                \
+     (defined(__powerpc__) && !defined(__powerpc64__))) &&                                         \
+    !defined(stat)
 extern int __xstat(int version, const char *path, struct stat *info);
 #endif
 
@@ -786,12 +799,17 @@ static muhtari_status lr_load_hsc(muhtari_media *media, uint8_t **owned)
     int found = _stat64(path, &info);
 #else
     struct stat info;
-#if defined(__GLIBC__) && (defined(__x86_64__) || defined(__aarch64__)) && !defined(stat)
-    /* Native firmware tests cover the x86-64 (1) and AArch64 (0) layouts. */
+#if defined(__GLIBC__) &&                                                                          \
+    (defined(__x86_64__) || defined(__aarch64__) ||                                                \
+     (defined(__powerpc__) && !defined(__powerpc64__))) &&                                         \
+    !defined(stat)
+    /* LSB stat layouts: x86-64 1, AArch64 0, legacy PPC32 3. */
 #ifdef __x86_64__
     int found = __xstat(1, path, &info);
-#else
+#elif defined(__aarch64__)
     int found = __xstat(0, path, &info);
+#else
+    int found = __xstat(3, path, &info);
 #endif
 #else
     int found = stat(path, &info);
