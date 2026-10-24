@@ -66,12 +66,9 @@ Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` writes frame/PNG and 600-frame soundtest/POKEY audio hashes to `build/<preset>/hashes.txt`.
-The retained 47 rows are followed by 22 rows for two fresh battery runs: frame 1/120, seven audio fields,
-the numeric mailbox and the complete save SHA-256 for each. Both HSC and EEPROM counters and all 34,816
-bytes must independently satisfy the diagnostic driver before those rows enter equality. The comparison
-requires the complete ordered 69-row schema, so matching omissions or duplicates fail too. Report controls
-reject missing fields, duplicates, wrong behavior revisions and invalid mailboxes through the same consumer.
+`runner.hashes_file` writes `build/<preset>/hashes.txt`: 47 retained card/PNG/audio/board rows, then 22
+first/second battery rows. The driver independently judges both counters and all 34,816 bytes before hashing.
+The ordered 69-row schema and report controls reject omissions, duplicates, wrong revisions and bad mailboxes.
 
 CI collects the file from each lane, and the `hash-equality` job compares them:
 
@@ -343,20 +340,18 @@ overlapping paths fail before cleanup. Each process has the existing 50-second b
 DMA runs the committed diagnostic for 120 frames. Its runner hash retains the `diag/dma` ledger pin, and every
 screenshot pixel must match. A flipped pixel control must exit 1 naming exactly pixel (7,3).
 
-The battery case launches two new RetroArch processes and two new runner processes from empty, separate save
-directories. The owned diagnostic increments independent 16-bit HSC and EEPROM counters through actual SRAM
-stores and RIOT serial pins, waits for programming, reads back, and draws those observations. First launches
-use an owned synthetic HSC image with C6/FE signatures and marker 5A, without firmware routines; second launches
-use the signature-only stub with marker FF. Frontend launches share only save storage. Immutable first and
-second snapshots must each match all 34,816 independently expected bytes, with counter pairs 1/1 then 2/2,
-and equal the corresponding runner save. The mailbox judge also checks the runner's hardware observations.
+The battery case starts two fresh RetroArch and two fresh runner processes from empty, separate save directories.
+Its owned diagnostic increments 16-bit HSC and EEPROM counters through SRAM stores and RIOT pins, waits for
+programming, reads back and draws them. First launches use owned synthetic C6/FE firmware with marker 5A and
+no routines; second launches use stub FF. Frontends share only save storage. Immutable snapshots must match
+all 34,816 independently expected bytes, counters 1/1 then 2/2, and corresponding runner saves. The mailbox
+judge checks runner hardware observations.
 
-After PNG-to-BMP conversion with `sips`, whole-frame equality and independent glyph regions check both counters
-and the firmware marker in each image. Equal black, equal wrong-counter and one-medium-unchanged controls must
-fail. `diag.battery` runs the shared media/mailbox faults and pixel judge on portable library-generated pixels
-in ordinary CI; the detailed runner and module tests retain their lifecycle coverage. Hosted no-content was
-removed; loaded-module no-content tests remain. The four hosted support files stay within 300 physical lines.
-Only owned diagnostic screenshots enter `retroarch-frames`; saves, firmware and logs stay uncommitted.
+After `sips` converts PNG to BMP, independent glyphs judge both counters and the marker before whole-frame
+equality. Equal-black, wrong-counter and stale-one-medium controls must fail. Ordinary `diag.battery` runs
+the shared mailbox/media faults and pixel judge; loaded-module tests retain lifecycle/no-content coverage.
+Four hosted support files stay within 300 lines. Only owned diagnostic shots enter `retroarch-frames`;
+saves, firmware and logs stay uncommitted.
 
 **Rerunning it.** Rerun the job from the run page, or `gh run rerun <run-id> --failed`. On a Mac with a desktop
 session, the same steps run locally from the job's commands, with `-DRETROARCH` pointing at an installed
