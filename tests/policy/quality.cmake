@@ -444,6 +444,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
   # Reuse real base observations only for the exact same independently
   # resolved Git object. Every current producer and authenticated join still
   # runs; a different PR/push/dispatch base always recurses from scratch.
+  # Consumer faults below alter join copies, never these original base bytes.
   set(rebuild_base TRUE)
   if(EXISTS "${repo}/build/ci/quality-base-sha.txt")
     file(READ "${repo}/build/ci/quality-base-sha.txt" observed_base)
