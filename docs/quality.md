@@ -143,6 +143,8 @@ unchanged authenticated join. A dispatch or an older passing total supplies no a
 The actual three-ZIP ceiling remains 399937 bytes. If either comparable side exceeds it,
 attribute the component increase and stop further device expansion until a contract-preserving
 change fits; the observation grants neither a larger quota nor a new baseline.
+Attribute each ZIP's compressed payload, public headers/notices and container overhead
+separately when investigating growth; unchanged test-only code contributes no shipped payload.
 
 Performance keeps its comparator and `tests/perf/allow.txt`; compatibility keeps its
 ledger judge and `tests/compat/allow.txt`. Each store matches the domain identity and
