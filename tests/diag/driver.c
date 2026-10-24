@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "palette.h"
 #ifdef DIAG_LIBRETRO
 #include "libretro.h"
 #ifdef _WIN32
@@ -68,7 +69,7 @@ static uint32_t nrows;
 static int alloc_fail;
 static uint32_t alloc_calls;
 static uint32_t battery_count = 1u, battery_marker = 255u;
-static const char *battery_import, *battery_export, *battery_firmware;
+static const char *battery_import, *battery_export, *battery_firmware, *battery_bmp;
 
 /* Independent raw layout oracle: no header or firmware belongs in save RAM. */
 static int battery_bytes(const uint8_t *bytes, size_t n, uint32_t count)
@@ -448,6 +449,45 @@ static int battery_observe(const uint8_t *bytes, size_t n)
     return 0;
 }
 
+/* Portable screenshot for the shared BMP judge, from executed pixels rather
+   than the independent expected glyphs. */
+static int battery_picture(muhtari *m)
+{
+    uint8_t *pixels = malloc(320u * 242u);
+    if (pixels == NULL)
+        return 1;
+    muhtari_frame frame = {0};
+    frame.size = (uint32_t)sizeof frame;
+    frame.video = pixels;
+    frame.video_pitch = 320u;
+    int failed = 0;
+    for (unsigned i = 0; i < 4u; i++)
+        failed |= muhtari_run_frame(m, &frame) != MUHTARI_STATUS_OK;
+    FILE *f = failed ? NULL : fopen(battery_bmp, "wb");
+    failed |= f == NULL;
+    if (f != NULL) {
+        uint8_t header[54] = {0};
+        static const unsigned offsets[] = {2u, 10u, 14u, 18u, 22u};
+        static const uint32_t values[] = {54u + 320u * 242u * 3u, 54u, 40u, 320u, 0u - 242u};
+        header[0] = 'B';
+        header[1] = 'M';
+        header[26] = 1u;
+        header[28] = 24u;
+        for (unsigned i = 0; i < 5u; i++)
+            for (unsigned b = 0; b < 4u; b++)
+                header[offsets[i] + b] = (uint8_t)(values[i] >> (8u * b));
+        failed |= fwrite(header, 1, sizeof header, f) != sizeof header;
+        for (size_t i = 0; i < 320u * 242u && !failed; i++) {
+            uint32_t color = muhtari__palette_rgb(pixels[i]);
+            uint8_t bgr[] = {(uint8_t)color, (uint8_t)(color >> 8), (uint8_t)(color >> 16)};
+            failed |= fwrite(bgr, 1, 3, f) != 3u;
+        }
+        failed |= fclose(f) != 0;
+    }
+    free(pixels);
+    return failed;
+}
+
 /* The ROM's name: its file name up to the first dot. */
 static void rom_name(const char *path, char *out)
 {
@@ -590,6 +630,8 @@ static int retail_library(const uint8_t *image, size_t n, const char *rom)
     failed |= retail_judge(mb, rom);
     if (strcmp(rom, "battery") == 0)
         failed |= battery_observe(battery.data, battery.bytes);
+    if (!failed && battery_bmp != NULL)
+        failed |= battery_picture(m);
     muhtari_destroy(m);
     return failed;
 }
@@ -924,6 +966,19 @@ static int retail_libretro(const char *module_path, const char *path, const char
 int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
+    if (argc == 3 && strcmp(argv[1], "--battery-firmware") == 0) {
+        uint8_t firmware[4096];
+        memset(firmware, 255, sizeof firmware);
+        firmware[0x10] = 0x5Au;
+        firmware[0x900] = 0xC6u;
+        firmware[0x904] = 0xFEu;
+        FILE *f = fopen(argv[2], "wb");
+        if (f == NULL)
+            return 1;
+        int failed = fwrite(firmware, 1, sizeof firmware, f) != sizeof firmware;
+        failed |= fclose(f) != 0;
+        return failed;
+    }
     int battery_hang = argc == 4 && strcmp(argv[1], "--battery-timeout") == 0;
     if (battery_hang) {
         argc--;
@@ -932,7 +987,7 @@ int main(int argc, char **argv)
     while (argc > 2 &&
            (strcmp(argv[1], "--battery-count") == 0 || strcmp(argv[1], "--battery-marker") == 0 ||
             strcmp(argv[1], "--battery-import") == 0 || strcmp(argv[1], "--battery-export") == 0 ||
-            strcmp(argv[1], "--hsc-rom") == 0)) {
+            strcmp(argv[1], "--battery-bmp") == 0 || strcmp(argv[1], "--hsc-rom") == 0)) {
         if (strcmp(argv[1], "--battery-count") == 0 || strcmp(argv[1], "--battery-marker") == 0) {
             struct range r;
             if (parse_range(argv[2], &r, 0) || r.lo != r.hi || r.lo > 65535u)
@@ -945,6 +1000,8 @@ int main(int argc, char **argv)
             battery_import = argv[2];
         else if (strcmp(argv[1], "--battery-export") == 0)
             battery_export = argv[2];
+        else if (strcmp(argv[1], "--battery-bmp") == 0)
+            battery_bmp = argv[2];
         else
             battery_firmware = argv[2];
         argc -= 2;

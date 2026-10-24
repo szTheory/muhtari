@@ -1,18 +1,10 @@
-/* Reads an uncompressed BMP into RGB24, top row first. Test code for the
-   hosted RetroArch job, never linked into the library.
-
-   Accepts what sips writes: a 40, 108 or 124-byte info header, 24 bits per
-   pixel uncompressed, or 32 bits per pixel uncompressed or with the
-   standard red, green and blue byte masks; rows bottom-up (positive height)
-   or top-down (negative height), each padded to four bytes. Every field is
-   checked against the file's size before it is read. */
+/* Bounded uncompressed 24/32-bit BMP decoder; header fields are size-checked. */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+int bmp_read(const char *path, uint32_t *w, uint32_t *h, uint8_t **rgb);
 #define BMP_FILE_LIMIT (16ul * 1024ul * 1024ul)
 #define BMP_DIM_LIMIT 16384u
-
 static uint32_t bmp_get(const uint8_t *b, size_t off, unsigned bytes)
 {
     uint32_t v = 0;
@@ -20,7 +12,6 @@ static uint32_t bmp_get(const uint8_t *b, size_t off, unsigned bytes)
         v |= (uint32_t)b[off + i] << (8u * i);
     return v;
 }
-
 static int bmp_parse(const uint8_t *b, size_t n, uint32_t *w, uint32_t *h, uint8_t **rgb)
 {
     if (n < 70 || b[0] != 'B' || b[1] != 'M')
@@ -63,9 +54,7 @@ static int bmp_parse(const uint8_t *b, size_t n, uint32_t *w, uint32_t *h, uint8
     *rgb = out;
     return 0;
 }
-
-/* Returns 0 with *rgb allocated (the caller frees it), or 2 when the file
-   cannot be read or is not a BMP of the accepted kind. */
+/* Returns allocated RGB on success, 2 on an unreadable or invalid BMP. */
 int bmp_read(const char *path, uint32_t *w, uint32_t *h, uint8_t **rgb)
 {
     FILE *f = fopen(path, "rb");

@@ -42,6 +42,9 @@ if(DIAG_BATTERY_RUN)
     endforeach()
   endforeach()
   battery_exec(--battery-controls "${OUT}/runner-2.sav" 2)
+  battery_exec(--battery-bmp "${OUT}/pixels.bmp" "${ROOT}/tests/diag/battery.a78" "${EXPECTED}")
+  execute_process(COMMAND ${EMULATOR} "${COMPARE}" --battery-controls 1 255
+    "${OUT}/pixels.bmp" "${OUT}/pixels.bmp" COMMAND_ERROR_IS_FATAL ANY)
   foreach(fault missing short oversized crc unchanged)
     set(path "${OUT}/bad-report.txt")
     if(fault STREQUAL "missing")
@@ -180,7 +183,12 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${diag_dir}/expec
 # stats.csv gives for each DMA test, so each cost is recorded twice.
 add_executable(muhtari-test-diag ${diag_dir}/driver.c)
 target_include_directories(muhtari-test-diag PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(muhtari-test-diag PRIVATE muhtari::muhtari)
+target_link_libraries(muhtari-test-diag PRIVATE muhtari::muhtari muhtari_host)
+add_executable(muhtari-test-retroarch-compare ${PROJECT_SOURCE_DIR}/tests/retroarch/compare.c
+  ${PROJECT_SOURCE_DIR}/tests/retroarch/bmp.c)
+set_target_properties(muhtari-test-retroarch-compare PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-retroarch-compare)
 if(TARGET muhtari_libretro)
   target_include_directories(muhtari-test-diag PRIVATE ${PROJECT_SOURCE_DIR}/libretro)
   target_compile_definitions(muhtari-test-diag PRIVATE DIAG_LIBRETRO
@@ -190,6 +198,7 @@ if(TARGET muhtari_libretro)
   set(diag_battery ${PROJECT_BINARY_DIR}/tests/diag/battery.cmake)
   file(GENERATE OUTPUT ${diag_battery} CONTENT
 "set(DIAG_BATTERY_RUN TRUE)
+set(COMPARE [==[$<TARGET_FILE:muhtari-test-retroarch-compare>]==])
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
 set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/battery-roundtrip]==])
 set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])

@@ -239,7 +239,7 @@ if(TARGET muhtari_libretro)
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari-test-diag-testdb PRIVATE ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/libretro ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(muhtari-test-diag-testdb PRIVATE ${CMAKE_DL_LIBS})
+  target_link_libraries(muhtari-test-diag-testdb PRIVATE muhtari_host ${CMAKE_DL_LIBS})
   set_target_properties(muhtari-test-diag-testdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-diag-testdb)
   set(libretro_retail ${PROJECT_BINARY_DIR}/tests/libretro-retail.cmake)
