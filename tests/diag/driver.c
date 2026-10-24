@@ -602,7 +602,15 @@ static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
     memset(in, 0, sizeof *in);
     in->size = (uint32_t)sizeof *in;
     in->port[0].device = in->port[1].device = MUHTARI_PORT_DRIVING;
-    (void)frame;
+    if (frame == 3u) {
+        in->port[0].dx = 4;
+        in->port[1].dx = -4;
+        in->port[0].buttons = MUHTARI_BUTTON_1;
+    } else if (frame == 4u || frame == 5u) {
+        in->port[0].dx = frame == 4u ? -1 : 0;
+        in->port[1].dx = frame == 4u ? 1 : 0;
+        in->port[1].buttons = MUHTARI_BUTTON_1;
+    }
 }
 
 static void controller_raw_sample(void *user, uint64_t tick, uint8_t source, uint16_t raw)
@@ -640,7 +648,8 @@ static int controller_library(const char *path, const char *expected, const char
     media.image_size = n;
     media.port[0] = media.port[1] = MUHTARI_PORT_DRIVING;
     muhtari__sha256_init(&controller_raw);
-    int failed = image == NULL || retail_expected(expected, "motion0") != 0 ||
+    int failed =
+        image == NULL || retail_expected(expected, "motion0") != 0 ||
         muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK ||
         muhtari__synth_observe(m, controller_raw_sample, &controller_raw) != MUHTARI_STATUS_OK ||
         muhtari_load(m, &media) != MUHTARI_STATUS_OK;
@@ -653,7 +662,7 @@ static int controller_library(const char *path, const char *expected, const char
         io.video_pitch = 320u;
         io.audio = controller_pcm[f];
         io.audio_capacity = 801u;
-        failed = muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK ||
+        failed = (f != 4u && muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK) ||
                  muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         controller_counts[f] = io.audio_count;
     }
@@ -666,6 +675,30 @@ static int controller_library(const char *path, const char *expected, const char
     /* Numeric judgment precedes all equality evidence. */
     if (!failed) {
         char name[4096];
+        /* Real report consumers must reject even CRC-valid numeric faults. */
+        for (unsigned fault = 0u; fault < 5u; fault++) {
+            uint8_t bad[256];
+            memcpy(bad, mb, sizeof bad);
+            static const unsigned offsets[] = {4u, 6u, 20u, 38u, 8u};
+            bad[offsets[fault]] ^= 1u;
+            if (fault != 4u) {
+                uint16_t crc = retail_crc(bad);
+                bad[8] = (uint8_t)crc;
+                bad[9] = (uint8_t)(crc >> 8);
+            }
+            snprintf(name, sizeof name, "%s/fault-%u.txt", out, fault);
+            FILE *bad_file = fopen(name, "wb");
+            if (bad_file == NULL) {
+                failed = 1;
+                break;
+            }
+            fputs("diagnostic ", bad_file);
+            for (unsigned i = 0u; i < 256u; i++)
+                fprintf(bad_file, "%02x", (unsigned)bad[i]);
+            fputc('\n', bad_file);
+            failed |= ferror(bad_file) != 0;
+            failed |= fclose(bad_file) != 0;
+        }
         snprintf(name, sizeof name, "%s/reference.txt", out);
         FILE *f = fopen(name, "wb");
         if (f == NULL)
@@ -679,7 +712,7 @@ static int controller_library(const char *path, const char *expected, const char
                 muhtari__sha256 video_hash;
                 muhtari__sha256_init(&video_hash);
                 muhtari__sha256_update(&video_hash, controller_pixels + i * CONTROLLER_PIXELS,
-                                      CONTROLLER_PIXELS);
+                                       CONTROLLER_PIXELS);
                 snprintf(key, sizeof key, "frame %u sha256", i + 1u);
                 controller_digest(f, key, &video_hash);
                 samples += controller_counts[i];
@@ -704,9 +737,9 @@ static int controller_library(const char *path, const char *expected, const char
             for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
                 muhtari_input_ex in;
                 controller_stimulus(i, &in);
-                fprintf(f, "|driving:%d,0,%u|driving:%d,0,%u|...BB|\n",
-                        in.port[0].dx, in.port[0].buttons != 0u ? 1u : 0u,
-                        in.port[1].dx, in.port[1].buttons != 0u ? 1u : 0u);
+                fprintf(f, "|driving:%d,0,%u|driving:%d,0,%u|...BB|\n", in.port[0].dx,
+                        in.port[0].buttons != 0u ? 1u : 0u, in.port[1].dx,
+                        in.port[1].buttons != 0u ? 1u : 0u);
             }
             failed |= ferror(f) != 0;
             failed |= fclose(f) != 0;
@@ -1092,6 +1125,156 @@ static int retail_libretro(const char *module_path, const char *path, const char
     free(image);
     return failed;
 }
+
+static unsigned controller_frame, controller_errors, controller_videos, controller_audios;
+static const uint8_t *(*controller_native)(void);
+
+static void RETRO_CALLCONV controller_poll(void)
+{
+    controller_frame++;
+}
+
+static int16_t RETRO_CALLCONV controller_input(unsigned p, unsigned d, unsigned i, unsigned id)
+{
+    muhtari_input_ex in;
+    controller_stimulus(controller_frame, &in);
+    if (p >= 2u || d != RETRO_DEVICE_MOUSE || i != 0u)
+        return 0;
+    if (id == RETRO_DEVICE_ID_MOUSE_X)
+        return (int16_t)in.port[p].dx;
+    return id == RETRO_DEVICE_ID_MOUSE_LEFT && in.port[p].buttons != 0u ? 1 : 0;
+}
+
+static void RETRO_CALLCONV controller_video(const void *data, unsigned w, unsigned h, size_t pitch)
+{
+    controller_videos++;
+    if (controller_frame == 0u || controller_frame > CONTROLLER_FRAMES || data == NULL ||
+        w != 320u || h != 242u || pitch != 320u * sizeof(uint32_t)) {
+        controller_errors++;
+        return;
+    }
+    const uint8_t *expected = controller_pixels + (controller_frame - 1u) * CONTROLLER_PIXELS;
+    const uint8_t *native_bytes = controller_native();
+    if (native_bytes == NULL || memcmp(native_bytes, expected, CONTROLLER_PIXELS) != 0)
+        controller_errors++;
+    /* Public pixels are judged separately from the actual native bytes. */
+    for (unsigned y = 0u; y < 242u; y++)
+        for (unsigned x = 0u; x < 320u; x++) {
+            uint32_t pixel;
+            memcpy(&pixel, (const uint8_t *)data + y * pitch + x * sizeof pixel, sizeof pixel);
+            if (pixel != muhtari__palette_rgb(expected[y * 320u + x]))
+                controller_errors++;
+        }
+}
+
+static size_t RETRO_CALLCONV controller_audio(const int16_t *data, size_t frames)
+{
+    controller_audios++;
+    if (controller_frame == 0u || controller_frame > CONTROLLER_FRAMES ||
+        frames != controller_counts[controller_frame - 1u]) {
+        controller_errors++;
+        return frames;
+    }
+    for (size_t i = 0u; i < frames; i++) {
+        int16_t expected = controller_pcm[controller_frame - 1u][i];
+        if (data[2u * i] != expected || data[2u * i + 1u] != expected)
+            controller_errors++;
+    }
+    return frames;
+}
+
+static int controller_module(const char *module_path, const char *path)
+{
+    size_t n = 0u;
+    uint8_t *image = read_file(path, &n);
+#ifdef _WIN32
+    HMODULE module = LoadLibraryA(module_path);
+#define CONTROLLER_SYMBOL(key) FARPROC symbol = GetProcAddress(module, key)
+#define CONTROLLER_CLOSE() FreeLibrary(module)
+#else
+    void *module = dlopen(module_path, RTLD_NOW);
+#define CONTROLLER_SYMBOL(key) void *symbol = dlsym(module, key)
+#define CONTROLLER_CLOSE() ((void)dlclose(module))
+#endif
+    if (module == NULL || image == NULL) {
+        if (module != NULL)
+            CONTROLLER_CLOSE();
+        free(image);
+        return 1;
+    }
+#define CONTROLLER_LOAD(name, key, result, args)                                                   \
+    result(RETRO_CALLCONV *name) args;                                                             \
+    {                                                                                              \
+        CONTROLLER_SYMBOL(key);                                                                    \
+        if (symbol == NULL) {                                                                      \
+            CONTROLLER_CLOSE();                                                                    \
+            free(image);                                                                           \
+            return 1;                                                                              \
+        }                                                                                          \
+        memcpy(&name, &symbol, sizeof name);                                                       \
+    }
+    CONTROLLER_LOAD(set_environment, "retro_set_environment", void, (retro_environment_t));
+    CONTROLLER_LOAD(set_video, "retro_set_video_refresh", void, (retro_video_refresh_t));
+    CONTROLLER_LOAD(set_audio, "retro_set_audio_sample_batch", void, (retro_audio_sample_batch_t));
+    CONTROLLER_LOAD(set_poll, "retro_set_input_poll", void, (retro_input_poll_t));
+    CONTROLLER_LOAD(set_input, "retro_set_input_state", void, (retro_input_state_t));
+    CONTROLLER_LOAD(set_device, "retro_set_controller_port_device", void, (unsigned, unsigned));
+    CONTROLLER_LOAD(init, "retro_init", void, (void));
+    CONTROLLER_LOAD(deinit, "retro_deinit", void, (void));
+    CONTROLLER_LOAD(load, "retro_load_game", bool, (const struct retro_game_info *));
+    CONTROLLER_LOAD(unload, "retro_unload_game", void, (void));
+    CONTROLLER_LOAD(run_frame, "retro_run", void, (void));
+    CONTROLLER_LOAD(instance, "muhtari__libretro_instance", muhtari *, (void));
+    CONTROLLER_LOAD(observe, "muhtari__libretro_observe", void, (muhtari__audio_observer, void *));
+    CONTROLLER_LOAD(native_bytes, "muhtari__libretro_native", const uint8_t *, (void));
+#undef CONTROLLER_LOAD
+    controller_native = native_bytes;
+    controller_frame = controller_errors = controller_videos = controller_audios = 0u;
+    muhtari__sha256 raw;
+    muhtari__sha256_init(&raw);
+    set_environment(retail_env);
+    set_video(controller_video);
+    set_audio(controller_audio);
+    set_poll(controller_poll);
+    set_input(controller_input);
+    init();
+    observe(controller_raw_sample, &raw);
+    set_device(0u, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0));
+    set_device(1u, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0));
+    struct retro_game_info game = {path, image, n, NULL};
+    int failed = !load(&game);
+    if (!failed) {
+        for (unsigned i = 0u; i < CONTROLLER_FRAMES; i++)
+            run_frame();
+        muhtari *m = instance();
+        uint8_t mb[256];
+        if (m == NULL)
+            failed = 1;
+        else {
+            for (unsigned i = 0u; i < 256u; i++)
+                mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
+            failed = retail_judge(mb, "motion0");
+        }
+        /* Raw transition stream is observed, including load-time events;
+           silence means the actual empty stream, never an inferred pass. */
+        uint8_t a[32], b[32];
+        muhtari__sha256 expected_raw = controller_raw;
+        muhtari__sha256_final(&raw, a);
+        muhtari__sha256_final(&expected_raw, b);
+        failed |= memcmp(a, b, sizeof a) != 0 || controller_errors != 0u ||
+                  controller_videos != CONTROLLER_FRAMES || controller_audios != CONTROLLER_FRAMES;
+        unload();
+    }
+    deinit();
+    CONTROLLER_CLOSE();
+#undef CONTROLLER_SYMBOL
+#undef CONTROLLER_CLOSE
+    free(image);
+    if (failed)
+        fprintf(stderr, "controller module: %u video, %u audio, %u mismatches\n", controller_videos,
+                controller_audios, controller_errors);
+    return failed;
+}
 #endif
 
 int main(int argc, char **argv)
@@ -1103,6 +1286,13 @@ int main(int argc, char **argv)
         if (controller_pixels == NULL)
             return 1;
         int failed = controller_library(argv[4], argv[5], argv[6]);
+#ifdef DIAG_LIBRETRO
+        if (!failed && argc == 8)
+            failed = controller_module(argv[7], argv[4]);
+#else
+        if (argc == 8)
+            failed = 1;
+#endif
         free(controller_pixels);
         return failed;
     }

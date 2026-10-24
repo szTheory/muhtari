@@ -774,8 +774,8 @@ static int read_movie(const char *path, replay *mv)
             mv->bytes_count = n;
             return MUHTARI__EXIT_DONE;
         }
-        fprintf(stderr, "muhtari-run: %s:%lu:%lu: %s, expected %s\n", path,
-                (unsigned long)err.line, (unsigned long)err.column, err.what, err.expected);
+        fprintf(stderr, "muhtari-run: %s:%lu:%lu: %s, expected %s\n", path, (unsigned long)err.line,
+                (unsigned long)err.column, err.what, err.expected);
         free(bytes);
         return MUHTARI__EXIT_FAILURE;
     }
@@ -1307,8 +1307,8 @@ static int run(const options *opt, replay *mv)
             in.size = (uint32_t)sizeof in;
             if (mv != NULL) {
                 muhtari__movie_error err;
-                if (muhtari__movie_next_ex(mv->bytes, mv->bytes_count, &mv->header,
-                                           &mv->cursor, &in, &err) < 0) {
+                if (muhtari__movie_next_ex(mv->bytes, mv->bytes_count, &mv->header, &mv->cursor,
+                                           &in, &err) < 0) {
                     fprintf(stderr, "muhtari-run: validated movie decode failed\n");
                     status = MUHTARI__EXIT_FAILURE;
                     break;
@@ -1320,9 +1320,9 @@ static int run(const options *opt, replay *mv)
             st = muhtari_set_input_ex(m, &in);
         }
         if (st != MUHTARI_STATUS_OK) {
-            fprintf(stderr, mv != NULL && mv->header.version == 1u ?
-                    "muhtari-run: muhtari_set_input failed\n" :
-                    "muhtari-run: muhtari_set_input_ex failed\n");
+            fprintf(stderr, mv != NULL && mv->header.version == 1u
+                                ? "muhtari-run: muhtari_set_input failed\n"
+                                : "muhtari-run: muhtari_set_input_ex failed\n");
             status = MUHTARI__EXIT_FAILURE;
             break;
         }

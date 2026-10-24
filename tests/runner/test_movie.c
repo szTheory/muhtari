@@ -304,15 +304,17 @@ static void typed(void)
     uint32_t count;
     for (size_t i = 0u; i < sizeof good_rows / sizeof good_rows[0]; i++) {
         const char *d = good_rows[i].device;
-        snprintf(text, sizeof text, "muhtari-movie 2\r\nport1 %s\r\nport2 %s\r\n|%s:%s|%s:%s|RSPAA|\r\n",
-                 d, d, d, good_rows[i].payload, d, good_rows[i].payload);
-        CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h,
-                                               &count, &cursor, &err), 0);
+        snprintf(text, sizeof text,
+                 "muhtari-movie 2\r\nport1 %s\r\nport2 %s\r\n|%s:%s|%s:%s|RSPAA|\r\n", d, d, d,
+                 good_rows[i].payload, d, good_rows[i].payload);
+        CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h, &count,
+                                                &cursor, &err),
+                     0);
         CHECK_EQ_U64(count, 1u);
         CHECK_EQ_U64(h.version, 2u);
         CHECK_EQ_U64(cursor.frame, 0u);
-        CHECK_EQ_U64(muhtari__movie_next_ex((const uint8_t *)text, strlen(text), &h,
-                                           &cursor, &in, &err), 1);
+        CHECK_EQ_U64(
+            muhtari__movie_next_ex((const uint8_t *)text, strlen(text), &h, &cursor, &in, &err), 1);
         CHECK_EQ_U64(cursor.frame, 1u);
         CHECK_EQ_U64(in.size, sizeof in);
         CHECK_EQ_U64(in.port[0].device, good_rows[i].id);
@@ -359,8 +361,8 @@ static void typed(void)
             break;
         }
         muhtari_input_ex last = in;
-        CHECK_EQ_U64(muhtari__movie_next_ex((const uint8_t *)text, strlen(text), &h,
-                                           &cursor, &in, &err), 0);
+        CHECK_EQ_U64(
+            muhtari__movie_next_ex((const uint8_t *)text, strlen(text), &h, &cursor, &in, &err), 0);
         CHECK_EQ_U64(in.switches, 24u);
         for (unsigned p = 0u; p < 2u; p++) {
             CHECK_EQ_U64(in.port[p].buttons | in.port[p].keypad, 0u);
@@ -372,45 +374,66 @@ static void typed(void)
             CHECK_EQ_U64(in.port[p].flags, last.port[p].flags);
         }
     }
-    static const struct { const char *d, *v; uint32_t col; } faults[] = {
-        {"driving", "+1,0,0", 10}, {"driving", "01,0,0", 11},
-        {"driving", "-0,0,0", 10}, {"driving", " 1,0,0", 10},
-        {"driving", "1 ,0,0", 11}, {"driving", "2147483648,0,0", 19},
-        {"driving", "-2147483649,0,0", 20}, {"driving", "0,1,0", 12},
-        {"driving", "0,-0,0", 12}, {"driving", "0,0,2", 14},
-        {"driving", "0,0", 13}, {"driving", "0,0,0,0", 15},
-        {"driving", ",0,0", 10}, {"driving", "0,,0", 12},
-        {"lightgun", "320,0,2", 13}, {"lightgun", "0,242,2", 15},
-        {"lightgun", "0,0,4", 15}, {"paddle", "65536,0,0", 13},
-        {"paddle", "0,0,4", 13}, {"keypad", "4096", 12},
-        {"snes2atari", "4096", 16}, {"mega7800", "-1", 11},
-        {"none", "0", 7}, {"proline", "D.....", 10},
-        {"trakball", "0,0,2", 15}, {"amiga-mouse", "0,0,4", 18},
+    static const struct {
+        const char *d, *v;
+        uint32_t col;
+    } faults[] = {
+        {"driving", "+1,0,0", 10},
+        {"driving", "01,0,0", 11},
+        {"driving", "-0,0,0", 10},
+        {"driving", " 1,0,0", 10},
+        {"driving", "1 ,0,0", 11},
+        {"driving", "2147483648,0,0", 19},
+        {"driving", "-2147483649,0,0", 20},
+        {"driving", "0,1,0", 12},
+        {"driving", "0,-0,0", 12},
+        {"driving", "0,0,2", 14},
+        {"driving", "0,0", 13},
+        {"driving", "0,0,0,0", 15},
+        {"driving", ",0,0", 10},
+        {"driving", "0,,0", 12},
+        {"lightgun", "320,0,2", 13},
+        {"lightgun", "0,242,2", 15},
+        {"lightgun", "0,0,4", 15},
+        {"paddle", "65536,0,0", 13},
+        {"paddle", "0,0,4", 13},
+        {"keypad", "4096", 12},
+        {"snes2atari", "4096", 16},
+        {"mega7800", "-1", 11},
+        {"none", "0", 7},
+        {"proline", "D.....", 10},
+        {"trakball", "0,0,2", 15},
+        {"amiga-mouse", "0,0,4", 18},
     };
     for (size_t i = 0u; i < sizeof faults / sizeof faults[0]; i++) {
         snprintf(text, sizeof text, "muhtari-movie 2\nport1 %s\nport2 none\n|%s:%s|none:|...BB|\n",
                  faults[i].d, faults[i].d, faults[i].v);
-        CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h,
-                                               &count, &cursor, &err), -1);
+        CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h, &count,
+                                                &cursor, &err),
+                     -1);
         if (err.line != 4u || err.column != faults[i].col) {
             fprintf(stderr, "%s:%s refused %u:%u expected 4:%u\n", faults[i].d, faults[i].v,
                     (unsigned)err.line, (unsigned)err.column, (unsigned)faults[i].col);
             check_failures++;
         }
     }
-    snprintf(text, sizeof text, "muhtari-movie 2\nport1 amiga-mouse\nport2 amiga-mouse\n"
-             "|amiga-mouse:-2147483648,-2147483648,3|amiga-mouse:-2147483648,-2147483648,3|RSPAA|x\n");
-    CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h,
-                                           &count, &cursor, &err), -1);
+    snprintf(
+        text, sizeof text,
+        "muhtari-movie 2\nport1 amiga-mouse\nport2 amiga-mouse\n"
+        "|amiga-mouse:-2147483648,-2147483648,3|amiga-mouse:-2147483648,-2147483648,3|RSPAA|x\n");
+    CHECK_EQ_U64(
+        muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h, &count, &cursor, &err),
+        -1);
     CHECK_EQ_U64(err.line, 4u);
     CHECK_EQ_U64(err.column, 84u);
     CHECK(strcmp(err.what, "line over 83 bytes") == 0);
     static const char empty[] = "muhtari-movie 2\nport1 lightgun\nport2 paddle\n";
-    CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)empty, strlen(empty), &h,
-                                           &count, &cursor, &err), 0);
+    CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)empty, strlen(empty), &h, &count,
+                                            &cursor, &err),
+                 0);
     CHECK_EQ_U64(count, 0u);
-    CHECK_EQ_U64(muhtari__movie_next_ex((const uint8_t *)empty, strlen(empty), &h,
-                                       &cursor, &in, &err), 0);
+    CHECK_EQ_U64(
+        muhtari__movie_next_ex((const uint8_t *)empty, strlen(empty), &h, &cursor, &in, &err), 0);
     CHECK_EQ_U64(in.port[0].flags, MUHTARI_INPUT_GUN_OFFSCREEN);
 }
 

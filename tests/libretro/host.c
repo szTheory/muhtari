@@ -855,7 +855,8 @@ static void case_layout(void)
 static void case_devices(void)
 {
     static const char *const names[7] = {
-        "Auto (cartridge header)", "ProLine", "Joystick", "None", "SaveKey", "AtariVox EEPROM", "Driving"};
+        "Auto (cartridge header)", "ProLine", "Joystick", "None", "SaveKey",
+        "AtariVox EEPROM",         "Driving"};
     static const unsigned ids[7] = {RETRO_DEVICE_JOYPAD,
                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1),
@@ -926,12 +927,14 @@ static void case_devices(void)
             for (unsigned s = 0u; s < sizeof selections / sizeof selections[0]; s++) {
                 p_set_controller_port_device(port, selections[s]);
                 run_frames(3u);
-                bool unplugged = s == 1u || s == 3u || (s != 2u && (headers[h] == MUHTARI_PORT_NONE ||
-                                                         headers[h] > MUHTARI_PORT_MEGA7800));
+                bool unplugged = s == 1u || s == 3u ||
+                                 (s != 2u && (headers[h] == MUHTARI_PORT_NONE ||
+                                              headers[h] > MUHTARI_PORT_MEGA7800));
                 bool joystick = s != 1u && s != 2u && headers[h] == MUHTARI_PORT_JOYSTICK;
                 const uint8_t *entry = last_entry();
                 bool driving = s == 0u && headers[h] == MUHTARI_PORT_DRIVING;
-                CHECK_EQ_HEX(entry[E_SWCHA], unplugged || driving ? (port == 0u ? 0xFEu : 0xEFu) : 0xEEu);
+                CHECK_EQ_HEX(entry[E_SWCHA],
+                             unplugged || driving ? (port == 0u ? 0xFEu : 0xEFu) : 0xEEu);
                 CHECK_EQ_HEX(entry[E_SWCHB], port == 0u && (unplugged || driving) ? 0x3Fu : 0x3Du);
                 for (unsigned p = 0u; p < 2u; p++) {
                     bool empty = p == port && (unplugged || driving);

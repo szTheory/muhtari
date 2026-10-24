@@ -113,7 +113,7 @@ static uint32_t console_device;
 static unsigned console_ids[3];
 static bool console_changed;
 static void lr_refresh_inputs(void);
-static bool run_failed;        /* a failed frame was logged */
+static bool run_failed; /* a failed frame was logged */
 static struct retro_memory_descriptor descs[LR_MAX_DESCRIPTORS];
 static struct retro_memory_map memory_map; /* outlives SET_MEMORY_MAPS */
 static unsigned desc_count;
@@ -538,18 +538,22 @@ static void lr_refresh_inputs(void)
             provider = 1u;
     }
     uint32_t kind = lr_ordinary(active[provider]) || active[provider] == MUHTARI_PORT_DRIVING
-                        ? active[provider] : MUHTARI_PORT_UNPLUGGED;
+                        ? active[provider]
+                        : MUHTARI_PORT_UNPLUGGED;
     if (console_port != provider || console_device != kind)
         console_changed = true;
     console_port = provider;
     console_device = kind;
     bool driving = kind == MUHTARI_PORT_DRIVING;
     console_ids[0] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_START
-                     : driving ? RETRO_DEVICE_ID_MOUSE_MIDDLE : RETRO_DEVICE_ID_JOYPAD_L2;
+                     : driving         ? RETRO_DEVICE_ID_MOUSE_MIDDLE
+                                       : RETRO_DEVICE_ID_JOYPAD_L2;
     console_ids[1] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_SELECT
-                     : driving ? RETRO_DEVICE_ID_MOUSE_BUTTON_4 : RETRO_DEVICE_ID_JOYPAD_R2;
+                     : driving         ? RETRO_DEVICE_ID_MOUSE_BUTTON_4
+                                       : RETRO_DEVICE_ID_JOYPAD_R2;
     console_ids[2] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_X
-                     : driving ? RETRO_DEVICE_ID_MOUSE_RIGHT : RETRO_DEVICE_ID_JOYPAD_L3;
+                     : driving         ? RETRO_DEVICE_ID_MOUSE_RIGHT
+                                       : RETRO_DEVICE_ID_JOYPAD_L3;
     for (unsigned p = 0u; p < 2u; p++) {
         if (lr_ordinary(active[p])) {
             for (unsigned i = 0u; i < 6u; i++) {
@@ -557,10 +561,10 @@ static void lr_refresh_inputs(void)
                 inputs[n++].port = p;
             }
         } else if (active[p] == MUHTARI_PORT_DRIVING) {
+            inputs[n++] = (struct retro_input_descriptor){
+                p, RETRO_DEVICE_MOUSE, 0u, RETRO_DEVICE_ID_MOUSE_X, "Driving motion"};
             inputs[n++] = (struct retro_input_descriptor){p, RETRO_DEVICE_MOUSE, 0u,
-                RETRO_DEVICE_ID_MOUSE_X, "Driving motion"};
-            inputs[n++] = (struct retro_input_descriptor){p, RETRO_DEVICE_MOUSE, 0u,
-                RETRO_DEVICE_ID_MOUSE_LEFT, "Fire"};
+                                                          RETRO_DEVICE_ID_MOUSE_LEFT, "Fire"};
         }
     }
     if (lr_ordinary(kind)) {
@@ -569,15 +573,15 @@ static void lr_refresh_inputs(void)
             inputs[n++].port = provider;
         }
     } else {
-        inputs[n++] = (struct retro_input_descriptor){provider,
-            driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u,
-            console_ids[0], "Pause"};
-        inputs[n++] = (struct retro_input_descriptor){provider,
-            driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u,
-            console_ids[1], "Select"};
-        inputs[n++] = (struct retro_input_descriptor){provider,
-            driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u,
-            console_ids[2], "Reset"};
+        inputs[n++] = (struct retro_input_descriptor){
+            provider, driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u, console_ids[0],
+            "Pause"};
+        inputs[n++] = (struct retro_input_descriptor){
+            provider, driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u, console_ids[1],
+            "Select"};
+        inputs[n++] = (struct retro_input_descriptor){
+            provider, driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u, console_ids[2],
+            "Reset"};
     }
     memset(&inputs[n], 0, sizeof inputs[n]);
     (void)env_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, inputs);
@@ -684,16 +688,20 @@ static void lr_input(void)
             in.port[p].buttons = lr_buttons(p, in.port[p].device);
         else if (in.port[p].device == MUHTARI_PORT_DRIVING && input_state_cb != NULL) {
             in.port[p].dx = input_state_cb(p, RETRO_DEVICE_MOUSE, 0u, RETRO_DEVICE_ID_MOUSE_X);
-            in.port[p].buttons = input_state_cb(p, RETRO_DEVICE_MOUSE, 0u,
-                RETRO_DEVICE_ID_MOUSE_LEFT) != 0 ? MUHTARI_BUTTON_1 : 0u;
+            in.port[p].buttons =
+                input_state_cb(p, RETRO_DEVICE_MOUSE, 0u, RETRO_DEVICE_ID_MOUSE_LEFT) != 0
+                    ? MUHTARI_BUTTON_1
+                    : 0u;
         }
     }
     static const uint32_t switches[3] = {MUHTARI_SWITCH_PAUSE, MUHTARI_SWITCH_SELECT,
-                                        MUHTARI_SWITCH_RESET};
+                                         MUHTARI_SWITCH_RESET};
     for (unsigned i = 0u; i < 3u; i++) {
-        if (input_state_cb != NULL && input_state_cb(console_port,
-                console_device == MUHTARI_PORT_DRIVING ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD,
-                0u, console_ids[i]) != 0)
+        if (input_state_cb != NULL &&
+            input_state_cb(console_port,
+                           console_device == MUHTARI_PORT_DRIVING ? RETRO_DEVICE_MOUSE
+                                                                  : RETRO_DEVICE_JOYPAD,
+                           0u, console_ids[i]) != 0)
             in.switches |= switches[i];
     }
     in.switches |= difficulty_a[0] ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u;
@@ -1252,6 +1260,14 @@ void retro_unload_game(void)
 }
 
 #ifdef MUHTARI_LIBRETRO_TEST
+/* Test-only native buffer, independent of palette conversion. The frame core
+   clears maria.rows before the frontend callback, so the instance alone cannot
+   expose these bytes. This symbol is absent from installed modules. */
+RETRO_API const uint8_t *muhtari__libretro_native(void);
+RETRO_API const uint8_t *muhtari__libretro_native(void)
+{
+    return native;
+}
 /* The adapter's instance, for tests/libretro/rcheevos.c, which compiles this
    file into itself to compare the memory map with the core's own view of
    the bus. Never in the shipped module. */

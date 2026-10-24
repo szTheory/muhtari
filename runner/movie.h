@@ -63,11 +63,11 @@ typedef struct muhtari__movie_cursor {
 } muhtari__movie_cursor;
 
 int muhtari__movie_validate_ex(const uint8_t *bytes, size_t n, muhtari__movie_header *h,
-                              uint32_t *count, muhtari__movie_cursor *cursor,
-                              muhtari__movie_error *err);
+                               uint32_t *count, muhtari__movie_cursor *cursor,
+                               muhtari__movie_error *err);
 /* Returns 1 for a row, 0 for neutral EOF, -1 for invalid bytes. */
 int muhtari__movie_next_ex(const uint8_t *bytes, size_t n, const muhtari__movie_header *h,
-                          muhtari__movie_cursor *cursor, muhtari_input_ex *in,
-                          muhtari__movie_error *err);
+                           muhtari__movie_cursor *cursor, muhtari_input_ex *in,
+                           muhtari__movie_error *err);
 
 #endif /* MUHTARI_RUNNER_MOVIE_H */

@@ -53,6 +53,23 @@ from the beam in `docs/hardware/bus.md` and the line events in `docs/hardware/ma
 
 ## input
 
+`diag.controllers` executes the owned motion diagnostic's `motion0` schedule through the
+library, an actual `muhtari-run --movie --diagnostic` child, and the loaded libretro test
+module. The 19 independent pin values in `tests/diag/expected.csv` are derived in
+`hardware/controllers.md`, Motion diagnostic. Header, version, identity, count, record
+IDs and CRC are judged before frame/audio hashes. CRC-valid wrong numbers, duplicate
+records, count/version faults, damaged CRC, missing and truncated reports must fail.
+The native inventory includes all three hosts; WASM executes the library/runner subset
+and explicitly reports the unavailable module path.
+
+All twelve native frames and mono PCM samples/counts are captured from real library
+execution. The runner supplies each requested native frame hash and canonical raw-audio
+and PCM evidence. The module's test-only native-buffer accessor checks actual bytes;
+public palette pixels and stereo copies are judged separately, while its existing raw
+observer registers before load. The diagnostic is silent, so an actually observed empty
+transition stream is expected. Test exports do not enter installed modules. Frame 5
+omits library submission; movie and mouse paths retain held fire with zero new motion.
+
 `input.*` checks what a game reads from the controllers and the console switches. Each case builds a 48 KiB linear
 cartridge in memory from its own 6502 code and loads it through `muhtari_load`. Every frame the program waits for
 MSTAT's VBLANK, reads SWCHA, SWCHB and INPT0-INPT5 once into a ring in RAM, and then paints each byte as its own band of

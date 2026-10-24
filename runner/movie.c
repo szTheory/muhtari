@@ -131,12 +131,12 @@ static const struct {
     const char *name;
     uint32_t device;
 } movie_devices[] = {
-    {"proline", MUHTARI_PORT_PROLINE}, {"joystick", MUHTARI_PORT_JOYSTICK},
-    {"none", MUHTARI_PORT_UNPLUGGED}, {"savekey", MUHTARI_PORT_SAVEKEY},
-    {"atarivox", MUHTARI_PORT_ATARIVOX}, {"lightgun", MUHTARI_PORT_LIGHTGUN},
-    {"paddle", MUHTARI_PORT_PADDLE}, {"trakball", MUHTARI_PORT_TRAKBALL},
-    {"driving", MUHTARI_PORT_DRIVING}, {"keypad", MUHTARI_PORT_KEYPAD},
-    {"st-mouse", MUHTARI_PORT_ST_MOUSE}, {"amiga-mouse", MUHTARI_PORT_AMIGA_MOUSE},
+    {"proline", MUHTARI_PORT_PROLINE},       {"joystick", MUHTARI_PORT_JOYSTICK},
+    {"none", MUHTARI_PORT_UNPLUGGED},        {"savekey", MUHTARI_PORT_SAVEKEY},
+    {"atarivox", MUHTARI_PORT_ATARIVOX},     {"lightgun", MUHTARI_PORT_LIGHTGUN},
+    {"paddle", MUHTARI_PORT_PADDLE},         {"trakball", MUHTARI_PORT_TRAKBALL},
+    {"driving", MUHTARI_PORT_DRIVING},       {"keypad", MUHTARI_PORT_KEYPAD},
+    {"st-mouse", MUHTARI_PORT_ST_MOUSE},     {"amiga-mouse", MUHTARI_PORT_AMIGA_MOUSE},
     {"snes2atari", MUHTARI_PORT_SNES2ATARI}, {"mega7800", MUHTARI_PORT_MEGA7800},
 };
 
@@ -239,7 +239,8 @@ static int movie_header_line(const movie_line *l, muhtari__movie_header *h, movi
         uint32_t p = k == KEY_PORT1 ? 0u : 1u;
         if (h->version == 2u) {
             if (!movie_device(v, vn, &h->device[p])) {
-                return movie_fail(err, l->number, col, "unknown device", "an explicit movie2 device");
+                return movie_fail(err, l->number, col, "unknown device",
+                                  "an explicit movie2 device");
             }
             return 0;
         }
@@ -545,8 +546,7 @@ static int movie_decimal(const movie_line *l, uint32_t *at, int is_signed, uint3
     return 0;
 }
 
-static int movie_separator(const movie_line *l, uint32_t *at, uint8_t c,
-                           muhtari__movie_error *err)
+static int movie_separator(const movie_line *l, uint32_t *at, uint8_t c, muhtari__movie_error *err)
 {
     if (*at >= l->len || l->s[*at] != c) {
         return movie_fail(err, l->number, *at + 1u, "missing delimiter", c == ',' ? "," : "|");
@@ -555,13 +555,15 @@ static int movie_separator(const movie_line *l, uint32_t *at, uint8_t c,
     return 0;
 }
 
-static int movie_frame_ex(const movie_line *l, const muhtari__movie_header *h,
-                          muhtari_input_ex *in, muhtari__movie_error *err)
+static int movie_frame_ex(const movie_line *l, const muhtari__movie_header *h, muhtari_input_ex *in,
+                          muhtari__movie_error *err)
 {
-    static const uint32_t buttons[6] = {MUHTARI_BUTTON_UP, MUHTARI_BUTTON_DOWN,
-        MUHTARI_BUTTON_LEFT, MUHTARI_BUTTON_RIGHT, MUHTARI_BUTTON_1, MUHTARI_BUTTON_2};
+    static const uint32_t buttons[6] = {MUHTARI_BUTTON_UP,   MUHTARI_BUTTON_DOWN,
+                                        MUHTARI_BUTTON_LEFT, MUHTARI_BUTTON_RIGHT,
+                                        MUHTARI_BUTTON_1,    MUHTARI_BUTTON_2};
     static const uint32_t switches[5] = {MUHTARI_SWITCH_RESET, MUHTARI_SWITCH_SELECT,
-        MUHTARI_SWITCH_PAUSE, MUHTARI_SWITCH_LEFT_DIFFICULTY_A, MUHTARI_SWITCH_RIGHT_DIFFICULTY_A};
+                                         MUHTARI_SWITCH_PAUSE, MUHTARI_SWITCH_LEFT_DIFFICULTY_A,
+                                         MUHTARI_SWITCH_RIGHT_DIFFICULTY_A};
     memset(in, 0, sizeof *in);
     in->size = (uint32_t)sizeof *in;
     uint32_t at = 1u;
@@ -575,17 +577,21 @@ static int movie_frame_ex(const movie_line *l, const muhtari__movie_header *h,
             return movie_fail(err, l->number, at + 1u, "missing device tag", "device:payload");
         }
         if (!movie_device(l->s + start, at - start, &port->device)) {
-            return movie_fail(err, l->number, start + 1u, "unknown device tag", "the header's device");
+            return movie_fail(err, l->number, start + 1u, "unknown device tag",
+                              "the header's device");
         }
         if (port->device != h->device[p]) {
-            return movie_fail(err, l->number, start + 1u, "device tag mismatch", "the header's device");
+            return movie_fail(err, l->number, start + 1u, "device tag mismatch",
+                              "the header's device");
         }
         at++;
         uint32_t d = port->device;
         if (d == MUHTARI_PORT_PROLINE || d == MUHTARI_PORT_JOYSTICK ||
-            d == MUHTARI_PORT_UNPLUGGED || d == MUHTARI_PORT_SAVEKEY || d == MUHTARI_PORT_ATARIVOX) {
-            const char *letters = d == MUHTARI_PORT_PROLINE ? "UDLR12" :
-                                  d == MUHTARI_PORT_JOYSTICK ? "UDLR1" : "";
+            d == MUHTARI_PORT_UNPLUGGED || d == MUHTARI_PORT_SAVEKEY ||
+            d == MUHTARI_PORT_ATARIVOX) {
+            const char *letters = d == MUHTARI_PORT_PROLINE    ? "UDLR12"
+                                  : d == MUHTARI_PORT_JOYSTICK ? "UDLR1"
+                                                               : "";
             if (movie_field(l, &at, letters, "......", buttons, &port->buttons, err) != 0) {
                 return -1;
             }
@@ -594,8 +600,10 @@ static int movie_frame_ex(const movie_line *l, const muhtari__movie_header *h,
         int32_t v[3] = {0, 0, 0};
         int motion = d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_TRAKBALL ||
                      d == MUHTARI_PORT_ST_MOUSE || d == MUHTARI_PORT_AMIGA_MOUSE;
-        uint32_t fields = d == MUHTARI_PORT_KEYPAD || d == MUHTARI_PORT_SNES2ATARI ||
-                          d == MUHTARI_PORT_MEGA7800 ? 1u : 3u;
+        uint32_t fields =
+            d == MUHTARI_PORT_KEYPAD || d == MUHTARI_PORT_SNES2ATARI || d == MUHTARI_PORT_MEGA7800
+                ? 1u
+                : 3u;
         for (uint32_t k = 0u; k < fields; k++) {
             uint32_t max = fields == 1u ? 4095u : k == 2u ? 3u : 65535u;
             if (d == MUHTARI_PORT_LIGHTGUN && k < 2u) {
@@ -642,8 +650,8 @@ static int movie_frame_ex(const movie_line *l, const muhtari__movie_header *h,
 }
 
 int muhtari__movie_validate_ex(const uint8_t *bytes, size_t n, muhtari__movie_header *h,
-                              uint32_t *count, muhtari__movie_cursor *cursor,
-                              muhtari__movie_error *err)
+                               uint32_t *count, muhtari__movie_cursor *cursor,
+                               muhtari__movie_error *err)
 {
     memset(h, 0, sizeof *h);
     memset(cursor, 0, sizeof *cursor);
@@ -679,7 +687,8 @@ int muhtari__movie_validate_ex(const uint8_t *bytes, size_t n, muhtari__movie_he
         if (!in_frames) {
             if (l.len == 0u || l.s[0] != '|') {
                 if (++st.header_lines > MUHTARI__MOVIE_HEADER_LINES_MAX) {
-                    return movie_fail(err, number, 1u, "too many header lines", "at most 32 header lines");
+                    return movie_fail(err, number, 1u, "too many header lines",
+                                      "at most 32 header lines");
                 }
                 if (l.len != 0u && l.s[0] != '#' && movie_header_line(&l, h, &st, err) != 0) {
                     return -1;
@@ -722,12 +731,13 @@ int muhtari__movie_validate_ex(const uint8_t *bytes, size_t n, muhtari__movie_he
 }
 
 int muhtari__movie_next_ex(const uint8_t *bytes, size_t n, const muhtari__movie_header *h,
-                          muhtari__movie_cursor *cursor, muhtari_input_ex *in,
-                          muhtari__movie_error *err)
+                           muhtari__movie_cursor *cursor, muhtari_input_ex *in,
+                           muhtari__movie_error *err)
 {
     if (cursor->pos < n) {
         movie_line l;
-        if (movie_next_line(bytes, n, &cursor->pos, cursor->line, &l, MUHTARI__MOVIE_LINE_V2_MAX, err) != 0 ||
+        if (movie_next_line(bytes, n, &cursor->pos, cursor->line, &l, MUHTARI__MOVIE_LINE_V2_MAX,
+                            err) != 0 ||
             movie_frame_ex(&l, h, in, err) != 0) {
             return -1;
         }
