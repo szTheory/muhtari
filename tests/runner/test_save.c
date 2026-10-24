@@ -508,6 +508,17 @@ static void save_options(const char *dir)
     free(blank);
 }
 
+static void cadence(const char *dir)
+{
+    char rom[1024], directory[1024];
+    snprintf(rom, sizeof rom, "%s/cadence.a78", dir);
+    snprintf(directory, sizeof directory, "%s", dir);
+    cartridge(rom, 1u, 1);
+    char *args[] = {"muhtari-run", "--frames", "2", "--save-dir", directory,
+                    "--save-interval", "1", rom};
+    CHECK_EQ_U64(runner_entry(8, args), 0);
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 3)
@@ -520,6 +531,8 @@ int main(int argc, char **argv)
         faults(argv[1]);
     else if (strcmp(argv[2], "options") == 0)
         save_options(argv[1]);
+    else if (strcmp(argv[2], "cadence") == 0)
+        cadence(argv[1]);
 #ifndef __wasi__
     else if (strcmp(argv[2], "nonregular") == 0)
         nonregular(argv[1]);

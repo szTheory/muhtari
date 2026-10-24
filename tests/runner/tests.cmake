@@ -979,7 +979,7 @@ muhtari_add_test(NAME runner.save.roundtrip COMMAND ${CMAKE_COMMAND}
   "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>"
   "-DRUN=$<TARGET_FILE:muhtari-run>" "-DDIR=${PROJECT_BINARY_DIR}/tests/save-roundtrip"
   -DCASE=save_roundtrip -P ${CMAKE_CURRENT_LIST_FILE} LABELS runner portable TIMEOUT 10)
-foreach(case IN ITEMS import faults options)
+foreach(case IN ITEMS import faults options cadence)
   file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-${case})
   muhtari_add_test(NAME runner.save.${case} COMMAND muhtari-test-save-runner
     ${PROJECT_BINARY_DIR}/tests/save-${case} ${case} LABELS runner portable TIMEOUT 10)
