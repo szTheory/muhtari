@@ -5,7 +5,7 @@ titles: json
 findings:
   - id: CR-03
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "Resolving Auto to unsupported header codes rejects the whole frontend input update"
   - id: CR-01
     severity: critical
@@ -15,16 +15,16 @@ findings:
     severity: critical
     disposition: fixed
     title: "A refused late save-device request drops joystick A-button fire"
-open: 1
+open: 0
 total: 3
-recorded: 2026-10-24T14:05:06.692Z
+recorded: 2026-10-24T14:14:30.461Z
 ---
 
 # Phase 07: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-03 | critical | open | - |
+| CR-03 | critical | fixed | 07-REVIEW-FIX.md (not in the current review) |
 | CR-01 | critical | fixed | 07-REVIEW-FIX.md (not in the current review) |
 | CR-02 | critical | fixed | 07-REVIEW-FIX.md (not in the current review) |
 
