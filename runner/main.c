@@ -1353,7 +1353,7 @@ static int run(const options *opt, const replay *mv)
             }
         }
     }
-    if (fflush(stdout) != 0 && status == 0)
+    if ((fflush(stdout) != 0 || ferror(stdout) != 0) && status == 0)
         status = MUHTARI__EXIT_FAILURE;
     if (save.completed_frames != 0u && save_flush(&save, m) != 0 && status == 0)
         status = MUHTARI__EXIT_FAILURE;

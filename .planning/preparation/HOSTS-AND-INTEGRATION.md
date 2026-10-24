@@ -2,7 +2,7 @@
 title: "Hosts and integration: libretro, RetroAchievements, RetroArch on Mac, runner + Playstead, automation, WASM"
 summary: "What every host needs from muhtari (libretro adapter, rcheevos memory map, RetroArch on Apple Silicon, muhtari-run and Playstead's protocol, scripting, WASM) and which milestone each piece lands in."
 read_when: "Building the libretro adapter or .info, the runner CLI, saves, the RetroArch e2e job, a Playstead pin, scripting/Gym/TAS surfaces, or a web build."
-updated: 2026-10-15
+updated: 2026-10-24
 ---
 
 # Hosts and integration
@@ -118,6 +118,12 @@ Mirrors share one `ptr` with different `offset` ("overlapping descriptors … sa
 **Bounded hosted e2e** (RetroArch aborts in the agent sandbox → hosted only [HI.22]). One macos-15 arm64 job: fetch the pinned DMG, check SHA-256, `hdiutil attach`, `ditto`; isolated config (`config_save_on_exit=false`, `audio_driver=null`, `video_gpu_screenshot=false`, `pause_nonactive=false`, all dirs inside the job); `RetroArch -L CORE --max-frames=N --max-frames-ss --max-frames-ss-path=shot.png -c test.cfg ROM` [HI.22]. Case 1 (v1 P1 test card; v1 P3 an own diagnostic ROM): screenshot = runner `--dump-frame N` after the same palette, byte-exact. Case 2 (v2): an own cc65 ROM increments a counter in HSC/SaveKey at boot and draws it; run 1 (no `.srm`) shows 1, run 2 shows 2; compare both shots and the `.srm` bytes with the runner. Nothing else: no UDP commands, no frame-exact progression, no RetroArch rewind/run-ahead/netplay (prove those in-process). Budget ≤ 300 test lines, timeout 2× measured; nesturbator's grew to 7,706 lines over 53 commits [HI.22]. **Rec:** two cases. **Alt:** in-process only. **Would change if:** a RetroArch update breaks loading unnoticed (add a version check, not a case).
 
 ## 4. Runner `muhtari-run` and Playstead
+
+Implemented runner saves, HSC firmware selection, load-time save-device declarations, raw layout/import
+rules and normal-exit replacement have graduated to `docs/runner.md`, Battery files. The runner owns all
+file I/O; the core owns only the stable raw span and generation. Cadence/on-demand controls remain pending
+the following implementation slice; the horizon tables below are recommendations, not live capability claims.
+
 Exit statuses: one X-macro table, printed by `--help`, README equality test [HI.22]: **0** done (also SIGTERM/SIGINT: finish frame, flush, exit) · **1** failure (I/O, corrupt or hostile image, failure after fixture access) · **2** usage · **3** hash mismatch (`--expect`) · **4** `.sav` size mismatch · **5** state rejected · **77** capability refusal (2600 image, unsupported board/device, BIOS required but absent). 3 and 77 become live (reserved in nesturbator).
 
 | Option | Meaning | Lands |

@@ -26,6 +26,7 @@ enum {
     SAVE_REPLACE
 };
 static int io_fault;
+static int output_fault;
 static unsigned frames_run, temp_opens, replacements;
 static int reject_frame;
 static FILE *import_stream, *save_stream;
@@ -86,6 +87,8 @@ static size_t test_write(const void *p, size_t n, size_t count, FILE *f)
 }
 static int test_flush(FILE *f)
 {
+    if (f == stdout && output_fault)
+        return EOF;
     return f == save_stream && io_fault == SAVE_FLUSH ? EOF : fflush(f);
 }
 static int test_close(FILE *f)
@@ -356,6 +359,11 @@ static void faults(const char *dir)
     char *output[] = {"muhtari-run", "--frames",     "1",      "--save-dir",
                       directory,     "--dump-frame", bad_dump, rom};
     CHECK_EQ_U64(runner_entry(8, output), 1);
+    bytes[0]++;
+    exact_file(save, bytes, sizeof bytes);
+    output_fault = 1;
+    CHECK_EQ_U64(consume(dir, rom), 1);
+    output_fault = 0;
     bytes[0]++;
     exact_file(save, bytes, sizeof bytes);
     CHECK_EQ_U64(remove(save), 0);

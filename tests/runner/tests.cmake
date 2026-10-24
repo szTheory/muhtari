@@ -660,9 +660,9 @@ endfunction()
     expect_exit(2 "--boot needs fast or bios.*${usage_line}" --frames 1 --boot slow)
     expect_output("" --frames 1 --boot fast)
   elseif(CASE STREQUAL "usage.port")
-    expect_exit(2 "--port1 needs auto, proline, joystick or none.*${usage_line}"
+    expect_exit(2 "--port1 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}"
       --frames 1 --port1 paddle)
-    expect_exit(2 "--port2 needs auto, proline, joystick or none.*${usage_line}" --frames 1 --port2)
+    expect_exit(2 "--port2 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}" --frames 1 --port2)
     expect_output("" --frames 1 --port1 joystick --port2 none)
   elseif(CASE STREQUAL "usage.region_pal")
     expect_exit(2 "--region pal is not supported: give auto or ntsc.*${usage_line}"
