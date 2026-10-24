@@ -24,6 +24,10 @@ conversion. The renderer carries the original raster and absolute pixel
 tick, including x319 at the next line origin. Without caller rows it
 computes only the scheduled sensor pixels; a missing output buffer cannot
 change electrical input. See [controller timing](controllers.md#xg-1).
+Native row241 ends at raster258 tick0; MSTAT enters VBLANK at tick42.
+The renderer flushes the old raster before swapping line RAM, so the
+scheduled optical response at ticks64..93 retains that final visible
+pixel even when the host frame has already returned.
 
 MARIA answers $20-$3F of pages 0-3. `reg` holds the registers, indexed by address minus $20 (MARIA notes,
 section 2.4):

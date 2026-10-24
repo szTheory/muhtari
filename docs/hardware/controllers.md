@@ -64,6 +64,19 @@ These parameters derive from the [controller preparation, section3.4](../../.pla
 with brightness and aperture policy made explicit here; they establish
 deterministic diagnostic behavior, not hardware-calibrated retail accuracy.
 
+Independent timing vectors use 454 ticks/line, native row r at raster r+16,
+and emission s=origin+(r+16)*454+135+x. Aim(100,20) includes rows16..24,
+excluding15/25; y0 clips to0..4 and y241 to237..241. At raster100,
+x319 emits at origin+45854 (100*454+454), with response at origin+45918
+through45947 (raster-relative518..547). The last row241/raster257 at
+x319 emits at raster258 tick0; VBLANK starts at tick42 and the response
+is still due at ticks64..93, including after the host returns that frame.
+Tests isolate each bright sample by changing BACKGRND from dark before
+emission to dark at s+1, then observe s+63/64/93/94 on both ports with
+and without video. DMA is off; no completed framebuffer is the oracle.
+JAM/HALT and observer tests separately prove unpolled D6 capture and
+nonmutating peeks. These are arithmetic conformance vectors, not measurements.
+
 ## Serial EEPROM
 
 SaveKey and AtariVox share a 32 KiB 24LC256 model. AtariVox speech is unavailable. Port 2 uses SWCHA bit 2 for SDA

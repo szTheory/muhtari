@@ -602,8 +602,106 @@ static uint8_t light_access_at(muhtari *m, uint16_t addr, uint64_t tick, int wri
     return result;
 }
 
+static void light_raster_edges(void)
+{
+    static const struct {
+        uint32_t y, row;
+        int lit;
+    } cases[] = {{20u, 15u, 0},   {20u, 16u, 1},   {20u, 20u, 1},   {20u, 24u, 1},
+                 {20u, 25u, 0},   {0u, 0u, 1},     {0u, 4u, 1},     {0u, 5u, 0},
+                 {241u, 236u, 0}, {241u, 237u, 1}, {241u, 241u, 1}, {84u, 84u, 1}};
+    static const uint32_t xs[] = {0u, 100u, 319u};
+    static const uint32_t offsets[] = {63u, 64u, 93u, 94u};
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned rows = 0u; rows < 2u; rows++) {
+            for (unsigned c = 0u; c < sizeof cases / sizeof cases[0]; c++) {
+                for (unsigned xi = 0u; xi < sizeof xs / sizeof xs[0]; xi++) {
+                    uint32_t x = xs[xi];
+                    for (unsigned edge = 0u; edge < 4u; edge++) {
+                        uint64_t sample;
+                        muhtari *m = light_boot(p, 0u, (int)rows, &sample);
+                        if (m == NULL) {
+                            continue;
+                        }
+                        muhtari_input_ex in = m->ports.applied_ex;
+                        in.port[p].gun_x = x;
+                        in.port[p].gun_y = cases[c].y;
+                        CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                        muhtari__ports_latch(m);
+                        /* Independent geometry: visible row r is raster r+16,
+                           x0 at135, x319 at454 (next line tick0). */
+                        sample =
+                            MUHTARI__TICKS_PER_FRAME_NTSC + (cases[c].row + 16u) * 454u + 135u + x;
+                        (void)light_access_at(m, 0x0020u, sample - 32u, 1, 0xA8u);
+                        (void)light_access_at(m, 0x0020u, sample + 1u, 1, 0u);
+                        struct muhtari__ports ports = m->ports;
+                        struct muhtari__bus bus = m->bus;
+                        struct muhtari__tia tia = m->tia;
+                        (void)muhtari__bus_peek(m, (uint16_t)(12u + p));
+                        CHECK(memcmp(&ports, &m->ports, sizeof ports) == 0);
+                        CHECK(memcmp(&bus, &m->bus, sizeof bus) == 0);
+                        CHECK(memcmp(&tia, &m->tia, sizeof tia) == 0);
+                        uint8_t expected = cases[c].lit && (edge == 1u || edge == 2u) ? 0u : 128u;
+                        CHECK_EQ_HEX(
+                            light_access_at(m, (uint16_t)(12u + p), sample + offsets[edge], 0, 0u),
+                            expected);
+                        ports = m->ports;
+                        bus = m->bus;
+                        tia = m->tia;
+                        (void)muhtari__bus_peek(m, (uint16_t)(12u + p));
+                        CHECK(memcmp(&ports, &m->ports, sizeof ports) == 0);
+                        CHECK(memcmp(&bus, &m->bus, sizeof bus) == 0);
+                        CHECK(memcmp(&tia, &m->tia, sizeof tia) == 0);
+                        muhtari_destroy(m);
+                    }
+                }
+            }
+        }
+    }
+}
+
 static int lightgun(void)
 {
+    light_raster_edges();
+    /* Raster257 x319 emits at258*454; VBLANK returns at+42,
+       before the delayed sensor interval[+64,+94). No reads in between. */
+    for (unsigned port = 0u; port < 2u; port++) {
+        for (unsigned rows = 0u; rows < 2u; rows++) {
+            uint64_t sample;
+            muhtari *m = light_boot(port, 0x08u, (int)rows, &sample);
+            if (m == NULL) {
+                continue;
+            }
+            muhtari_input_ex in = m->ports.applied_ex;
+            in.port[port].gun_x = 319u;
+            in.port[port].gun_y = 241u;
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            muhtari__ports_latch(m);
+            sample = MUHTARI__TICKS_PER_FRAME_NTSC + 258u * 454u;
+            m->cpu.jammed = 1u;
+            muhtari_frame frame;
+            memset(&frame, 0, sizeof frame);
+            frame.size = (uint32_t)sizeof frame;
+            frame.video = rows != 0u ? video : NULL;
+            frame.video_pitch = MUHTARI__WIDTH;
+            CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+            CHECK(m->bus.ticks >= sample + 42u && m->bus.ticks < sample + 64u);
+            /* Dark/offscreen changes at the next VBLANK do not erase
+               the historical sample. */
+            in.port[port].flags = MUHTARI_INPUT_GUN_OFFSCREEN;
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            muhtari__ports_latch(m);
+            m->cpu.jammed = 0u;
+            CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port), sample + 64u, 0, 0u), 0u);
+            (void)input_access(m, 0x0001u, 1, 0x40u);
+            m->cpu.jammed = 1u;
+            CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+            m->cpu.jammed = 0u;
+            CHECK_EQ_HEX(input_access(m, (uint16_t)(0x000Cu + port), 0, 0u), 0u);
+            muhtari_destroy(m);
+        }
+    }
     static const uint8_t colors[] = {0xA7u, 0xA8u, 0x08u};
     static const unsigned offsets[] = {63u, 64u, 93u, 94u};
     for (unsigned port = 0u; port < 2u; port++) {
