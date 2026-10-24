@@ -575,6 +575,129 @@ endfunction()
         message(FATAL_ERROR "Activision missing assumption warning was accepted")
       endif()
     endif()
+  elseif(CASE STREQUAL "movie.v2_edges")
+    # Fault prevented: a late fault reaches media, creates/truncates an output
+    # or save, identity/conflict checks disappear, or typed EOF repeats motion.
+    set(v2_dir "${OUT}/typed-effects")
+    file(MAKE_DIRECTORY "${v2_dir}")
+    set(v2 "${v2_dir}/movie.txt")
+    set(header "muhtari-movie 2\nport1 driving\nport2 none\n")
+    set(valid "|driving:0,0,0|none:|...BB|\n")
+    set(save "${v2_dir}/input.sav")
+    set(png "${v2_dir}/out.png")
+    file(WRITE "${v2}" "${header}${valid}|driving:0,0,2|none:|...BB|\n")
+    foreach(existing IN ITEMS yes no)
+      file(REMOVE "${save}" "${png}")
+      if(existing STREQUAL "yes")
+        file(WRITE "${save}" "previous valid save bytes")
+        file(WRITE "${png}" "previous output")
+        file(SHA256 "${save}" save_before)
+        file(SHA256 "${png}" png_before)
+      endif()
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${v2}" --hsc on
+        --save-dir "${v2_dir}" --frames 2 --hash-frame 1 --dump-frame "1:${png}"
+        "${DIR}/input.a78" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "1" OR NOT out STREQUAL "" OR NOT err MATCHES
+          "movie.txt:5:14: decimal out of range, expected the device's range\n$")
+        message(FATAL_ERROR "late input fault reached output or wrong diagnostic: ${rc} ${out}${err}")
+      endif()
+      if(existing STREQUAL "yes")
+        file(SHA256 "${save}" save_after)
+        file(SHA256 "${png}" png_after)
+        if(NOT save_before STREQUAL save_after OR NOT png_before STREQUAL png_after)
+          message(FATAL_ERROR "late fault truncated existing save/output")
+        endif()
+      elseif(EXISTS "${save}" OR EXISTS "${png}")
+        message(FATAL_ERROR "late fault created save/output")
+      endif()
+    endforeach()
+    # A nonexistent ROM is not opened before the last row is validated.
+    expect_exit(1 "movie.txt:5:14: decimal out of range" --movie "${v2}"
+      "${v2_dir}/missing.a78")
+    foreach(pair IN ITEMS "driving;0,0,0" "proline;......" "joystick;....."
+        "none;" "savekey;" "atarivox;")
+      list(GET pair 0 device)
+      list(GET pair 1 payload)
+      file(WRITE "${v2}" "muhtari-movie 2\nport1 ${device}\nport2 none\n|${device}:${payload}|none:|...BB|\n")
+      expect_output("lag_frames 1\n" --movie "${v2}" --save-dir "${v2_dir}" "${DIR}/input.a78")
+    endforeach()
+    # Pure validation supports all declared syntax; physical support remains
+    # gated by the core, rather than silently falling back to a joystick.
+    foreach(pair IN ITEMS "lightgun;319,241,3" "paddle;65535,65535,3"
+        "trakball;-2147483648,2147483647,1" "st-mouse;2147483647,-2147483648,3"
+        "amiga-mouse;-2147483648,-2147483648,3" "keypad;4095"
+        "snes2atari;4095" "mega7800;4095")
+      list(GET pair 0 device)
+      list(GET pair 1 payload)
+      file(WRITE "${v2}" "muhtari-movie 2\nport1 ${device}\nport2 none\n|${device}:${payload}|none:|...BB|\n")
+      expect_exit(1 "unsupported controller" --movie "${v2}" "${DIR}/input.a78")
+    endforeach()
+    foreach(pair IN ITEMS "mouse:0;unknown device tag" "none:;device tag mismatch"
+        "driving:+1,0,0;not a decimal" "driving:00,0,0;not a canonical decimal"
+        "driving:-0,0,0;negative zero" "driving:2147483648,0,0;decimal out of range"
+        "driving:-2147483649,0,0;decimal out of range" "driving:0,1,0;decimal out of range"
+        "driving:0,0,2;decimal out of range" "driving:0,0;missing delimiter"
+        "driving:0,0,0,0;missing delimiter")
+      list(GET pair 0 field)
+      list(GET pair 1 reason)
+      file(WRITE "${v2}" "${header}|${field}|none:|...BB|\n")
+      expect_exit(1 "movie.txt:4:[0-9]+: ${reason}" --movie "${v2}" "${DIR}/input.a78")
+    endforeach()
+    foreach(pair IN ITEMS "lightgun;320,0,2" "lightgun;0,242,2" "lightgun;0,0,4"
+        "paddle;65536,0,0" "paddle;0,0,4" "keypad;4096" "snes2atari;4096"
+        "mega7800;4096" "trakball;0,0,2" "st-mouse;0,0,4" "amiga-mouse;0,0,4")
+      list(GET pair 0 device)
+      list(GET pair 1 payload)
+      file(WRITE "${v2}" "muhtari-movie 2\nport1 ${device}\nport2 none\n|${device}:${payload}|none:|...BB|\n")
+      expect_exit(1 "movie.txt:4:[0-9]+: decimal out of range" --movie "${v2}"
+        "${v2_dir}/missing.a78")
+    endforeach()
+    set(max_field "amiga-mouse:-2147483648,-2147483648,3")
+    set(max_header "muhtari-movie 2\nport1 amiga-mouse\nport2 amiga-mouse\n")
+    set(max_row "|${max_field}|${max_field}|...BB|")
+    string(LENGTH "${max_row}" max_len)
+    if(NOT max_len EQUAL 83)
+      message(FATAL_ERROR "canonical maximum derivation changed: ${max_len}")
+    endif()
+    file(WRITE "${v2}" "${max_header}${max_row}\n")
+    expect_exit(1 "unsupported controller" --movie "${v2}" "${DIR}/input.a78")
+    file(WRITE "${v2}" "${max_header}${max_row}x\n")
+    expect_exit(1 "movie.txt:4:84: line over 83 bytes" --movie "${v2}" "${v2_dir}/missing.a78")
+    file(WRITE "${v2}" "${header}${valid}")
+    expect_exit(2 "--port1 joystick conflicts with the movie's port1 driving"
+      --port1 joystick --movie "${v2}" --hsc on --save-dir "${v2_dir}" "${DIR}/input.a78")
+    if(EXISTS "${save}" OR EXISTS "${png}")
+      message(FATAL_ERROR "header conflict created save/output")
+    endif()
+    probe(input.a78)
+    probe_value(sha256_headerless digest)
+    string(REPEAT "0" 64 zeros)
+    file(WRITE "${v2}" "${header}rom-sha256 ${zeros}\n${valid}")
+    expect_exit(1 "rom-sha256 ${zeros}[^\n]* ${digest}" --movie "${v2}"
+      --hsc on --save-dir "${v2_dir}" --dump-frame "1:${png}" "${DIR}/input.a78")
+    if(EXISTS "${save}" OR EXISTS "${png}")
+      message(FATAL_ERROR "identity mismatch created save/output")
+    endif()
+    file(WRITE "${v2}" "${header}rom-sha256 ${digest}\nbehaviour 999999999\n${valid}")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${v2}" --port1 driving --port2 auto
+      "${DIR}/input.a78" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+    if(NOT rc STREQUAL "0" OR NOT out STREQUAL "lag_frames 1\n" OR NOT err MATCHES
+        "behaviour 999999999, this core's is [1-9][0-9]*; replaying anyway")
+      message(FATAL_ERROR "typed identity/warning path: ${rc} ${out}${err}")
+    endif()
+    file(WRITE "${v2}" "${header}")
+    expect_exit(2 "the movie has no frames: give --frames N" --movie "${v2}" "${DIR}/input.a78")
+    expect_output("lag_frames 1\n" --frames 1 --movie "${v2}" "${DIR}/input.a78")
+    # EOF and explicit release must produce identical frame and pin evidence.
+    set(held "|driving:4,0,1|none:|R..AB|\n")
+    set(neutral "|driving:0,0,0|none:|...AB|\n")
+    file(WRITE "${v2}" "${header}${valid}${held}")
+    run_twice(short --movie "${v2}" --frames 5 --hash-frame 5 "${DIR}/input.a78")
+    file(WRITE "${v2}" "${header}${valid}${held}${neutral}${neutral}${neutral}")
+    run_twice(long --movie "${v2}" --frames 5 --hash-frame 5 "${DIR}/input.a78")
+    if(NOT short STREQUAL long)
+      message(FATAL_ERROR "typed EOF differs from explicit release: ${short} ${long}")
+    endif()
   elseif(CASE STREQUAL "movie.lag")
     # Fault prevented: the runner miscounts or drops the frames in which the
     # game read no input. The input cart's even variant reads on even
@@ -805,7 +928,7 @@ muhtari_add_test(NAME runner.version
 # build tree (tests/input), each case writing its own movies into OUT.
 set(runner_movie_dir ${PROJECT_BINARY_DIR}/tests/runner-movies)
 file(MAKE_DIRECTORY ${runner_movie_dir})
-foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch conflict
+foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch conflict v2_edges
     behaviour_warning)
   muhtari_add_test(NAME runner.movie.${case}
     COMMAND ${runner_check} -DCASE=movie.${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
@@ -1001,11 +1124,26 @@ muhtari_add_test(NAME runner.png
 add_executable(muhtari-test-runner
   ${CMAKE_CURRENT_LIST_DIR}/test_runner.c
   ${PROJECT_SOURCE_DIR}/runner/bench.c
-  ${PROJECT_SOURCE_DIR}/runner/md5.c)
-target_compile_definitions(muhtari-test-runner PRIVATE _POSIX_C_SOURCE=200809L)
+  ${PROJECT_SOURCE_DIR}/runner/md5.c
+  ${PROJECT_SOURCE_DIR}/runner/clock.c
+  ${PROJECT_SOURCE_DIR}/runner/crc32.c
+  ${PROJECT_SOURCE_DIR}/runner/movie.c
+  ${PROJECT_SOURCE_DIR}/runner/png.c
+  ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+target_include_directories(muhtari-test-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-runner PRIVATE muhtari::muhtari muhtari_host)
+target_compile_definitions(muhtari-test-runner PRIVATE _POSIX_C_SOURCE=200809L
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 set_target_properties(muhtari-test-runner PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-runner)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/movie-owner)
+# Fault prevented: replay rereads mutable bytes, repeats relative fields,
+# skips first Auto, leaks on allocation refusal or allocates a packet array.
+muhtari_add_test(NAME runner.movie.owner COMMAND muhtari-test-runner movie
+  ${PROJECT_BINARY_DIR}/tests/movie-owner ${input_cart_dir}/input.a78
+  LABELS runner portable TIMEOUT 10)
+set_tests_properties(runner.movie.owner PROPERTIES FIXTURES_REQUIRED input_carts)
 muhtari_add_test(NAME runner.bench.percentile COMMAND muhtari-test-runner percentile
   LABELS runner bench portable TIMEOUT 10)
 # Fault prevented: on a 32-bit size_t, a large --bench count wraps the

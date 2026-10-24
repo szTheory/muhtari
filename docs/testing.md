@@ -461,6 +461,10 @@ To keep a lane's `hashes.txt`, mount a directory outside the repository and copy
 ("Function not implemented"); add `libarchive-tools` to the install list and run
 `ln -s /usr/bin/bsdtar /usr/local/bin/tar` before `fetch-pin.sh`.
 
+## Movie replay
+
+`runner.movie.owner` measures storage and cleanup; `runner.movie.v2_edges` checks child effects: `ctest --preset ci -R runner.movie -V`.
+
 ## One version source
 
 `version.txt` is the only file a person or release-please edits to change the version. CMake generates the

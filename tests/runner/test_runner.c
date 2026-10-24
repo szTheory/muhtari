@@ -2,6 +2,7 @@
    percentile, bytes, format, stop or md5. */
 #include <signal.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../../runner/bench.h"
@@ -9,6 +10,285 @@
 #include "../../runner/stop.h"
 #include "../check.h"
 #include "../../runner/stop.c"
+#include "internal.h"
+
+/* Reuse the actual runner owner, with finite allocation and frame seams.
+   Child-process refusal/identity checks remain in tests.cmake. */
+static struct { void *ptr; size_t bytes; } movie_allocations[64];
+static size_t movie_live, movie_peak, movie_largest;
+static unsigned movie_attempts, movie_fail_at, movie_loads, movie_frame_calls, movie_inputs;
+static muhtari_input_ex movie_packets[4];
+static uint32_t movie_first_device;
+static const char *movie_mutate;
+
+static void movie_track(void *ptr, size_t n)
+{
+    if (ptr == NULL) return;
+    for (unsigned i = 0u; i < 64u; i++) {
+        if (movie_allocations[i].ptr == NULL) {
+            movie_allocations[i].ptr = ptr;
+            movie_allocations[i].bytes = n;
+            movie_live += n;
+            if (movie_live > movie_peak) movie_peak = movie_live;
+            if (n > movie_largest) movie_largest = n;
+            return;
+        }
+    }
+    CHECK(0);
+}
+static void *movie_alloc(size_t n)
+{
+    movie_attempts++;
+    if (movie_attempts == movie_fail_at) return NULL;
+    void *p = malloc(n);
+    movie_track(p, n);
+    return p;
+}
+static void movie_free(void *p)
+{
+    if (p == NULL) return;
+    for (unsigned i = 0u; i < 64u; i++) {
+        if (movie_allocations[i].ptr == p) {
+            movie_live -= movie_allocations[i].bytes;
+            movie_allocations[i].ptr = NULL;
+            free(p);
+            return;
+        }
+    }
+    CHECK(0);
+}
+static void *movie_realloc(void *p, size_t n)
+{
+    movie_attempts++;
+    if (movie_attempts == movie_fail_at) return NULL;
+    for (unsigned i = 0u; i < 64u; i++) {
+        if (movie_allocations[i].ptr == p) {
+            void *next = realloc(p, n);
+            if (next != NULL) {
+                movie_live -= movie_allocations[i].bytes;
+                movie_allocations[i].ptr = NULL;
+                movie_track(next, n);
+            }
+            return next;
+        }
+    }
+    CHECK(0);
+    return NULL;
+}
+static muhtari_status movie_load(muhtari *m, const muhtari_media *media)
+{
+    movie_loads++;
+    return muhtari_load(m, media);
+}
+static muhtari_status movie_input(muhtari *m, const muhtari_input_ex *in)
+{
+    if (movie_inputs < 4u) movie_packets[movie_inputs] = *in;
+    movie_inputs++;
+    muhtari_status st = muhtari_set_input_ex(m, in);
+    if (movie_mutate != NULL) {
+        FILE *f = fopen(movie_mutate, "wb");
+        CHECK(f != NULL);
+        if (f != NULL) {
+            CHECK(fputs("replaced after validation\n", f) >= 0);
+            CHECK_EQ_U64(fclose(f), 0);
+        }
+        movie_mutate = NULL;
+    }
+    return st;
+}
+static muhtari_status movie_frame(muhtari *m, muhtari_frame *io)
+{
+    if (movie_frame_calls == 0u) movie_first_device = m->ports.pending_ex.port[0].device;
+    movie_frame_calls++;
+    return muhtari_run_frame(m, io);
+}
+int runner_entry(int argc, char **argv);
+#define main runner_entry
+#define malloc movie_alloc
+#define realloc movie_realloc
+#define free(p) movie_free(p)
+#define muhtari_load movie_load
+#define muhtari_set_input_ex movie_input
+#define muhtari_run_frame movie_frame
+#include "../../runner/main.c"
+#undef muhtari_run_frame
+#undef muhtari_set_input_ex
+#undef muhtari_load
+#undef free
+#undef realloc
+#undef malloc
+#undef main
+
+static void movie_reset(void)
+{
+    CHECK_EQ_U64(movie_live, 0u);
+    movie_attempts = movie_fail_at = movie_loads = movie_frame_calls = movie_inputs = 0u;
+    movie_peak = movie_largest = 0u;
+    movie_first_device = 0u;
+    movie_mutate = NULL;
+    memset(movie_packets, 0, sizeof movie_packets);
+}
+
+static void movie_write(const char *path, const char *text)
+{
+    FILE *f = fopen(path, "wb");
+    CHECK(f != NULL);
+    if (f != NULL) {
+        CHECK_EQ_U64(fwrite(text, 1u, strlen(text), f), strlen(text));
+        CHECK_EQ_U64(fclose(f), 0);
+    }
+}
+
+static void movie_owner(char *dir, char *rom)
+{
+    char path[1024];
+    snprintf(path, sizeof path, "%s/owner.txt", dir);
+    static const char text[] = "muhtari-movie 2\nport1 driving\nport2 none\n"
+                               "|driving:4,0,1|none:|R..AB|\n";
+    movie_write(path, text);
+    movie_reset();
+    movie_mutate = path;
+    char *args[] = {"muhtari-run", "--movie", path, "--frames", "3", rom};
+    CHECK_EQ_U64(runner_entry(6, args), 0);
+    CHECK_EQ_U64(movie_loads, 1u);
+    CHECK_EQ_U64(movie_frame_calls, 3u);
+    CHECK_EQ_U64(movie_inputs, 3u);
+    CHECK_EQ_U64(movie_packets[0].port[0].dx, 4u);
+    CHECK_EQ_U64(movie_packets[0].port[0].buttons, MUHTARI_BUTTON_1);
+    CHECK_EQ_U64(movie_packets[0].switches, MUHTARI_SWITCH_RESET | MUHTARI_SWITCH_LEFT_DIFFICULTY_A);
+    CHECK_EQ_U64(movie_packets[1].port[0].dx, 0u);
+    CHECK_EQ_U64(movie_packets[1].port[0].buttons, 0u);
+    CHECK_EQ_U64(movie_packets[1].switches, MUHTARI_SWITCH_LEFT_DIFFICULTY_A);
+    CHECK_EQ_U64(movie_packets[2].port[0].dx, 0u);
+    CHECK_EQ_U64(movie_live, 0u);
+
+    /* Modern neutral Auto resolves the load override in the short first frame. */
+    movie_reset();
+    char *automatic[] = {"muhtari-run", "--frames", "1", "--port1", "driving", rom};
+    CHECK_EQ_U64(runner_entry(6, automatic), 0);
+    CHECK_EQ_U64(movie_inputs, 1u);
+    CHECK_EQ_U64(movie_first_device, MUHTARI_PORT_DRIVING);
+    CHECK_EQ_U64(movie_live, 0u);
+
+    movie_write(path, text);
+    movie_reset();
+    char save_path[1024];
+    snprintf(save_path, sizeof save_path, "%s/input.sav", dir);
+    static const char old_save[] = "old save bytes";
+    movie_write(save_path, old_save);
+    char *saved[] = {"muhtari-run", "--movie", path, "--frames", "3", "--hsc", "on",
+                     "--save-dir", dir, rom};
+    CHECK_EQ_U64(runner_entry(10, saved), 0);
+    unsigned allocations = movie_attempts;
+    for (unsigned fail = 1u; fail <= allocations; fail++) {
+        movie_reset();
+        movie_fail_at = fail;
+        CHECK_EQ_U64(runner_entry(10, saved), 1);
+        CHECK_EQ_U64(movie_live, 0u);
+        FILE *save_file = fopen(save_path, "rb");
+        CHECK(save_file != NULL);
+        if (save_file != NULL) {
+            char bytes[sizeof old_save] = {0};
+            CHECK_EQ_U64(fread(bytes, 1u, sizeof bytes, save_file), sizeof old_save - 1u);
+            CHECK(memcmp(bytes, old_save, sizeof old_save) == 0);
+            CHECK_EQ_U64(fclose(save_file), 0);
+        }
+    }
+
+    /* Read/validate at the exact byte ceiling without a frame array. Header
+       comments account for the remainder, each within its old 64-byte cap. */
+    static const char head[] = "muhtari-movie 2\nport1 amiga-mouse\nport2 amiga-mouse\n";
+    static const char row[] = "|amiga-mouse:-2147483648,-2147483648,3|amiga-mouse:-2147483648,-2147483648,3|...BB|\n";
+    size_t padding = (MUHTARI__MOVIE_BYTES_MAX - (sizeof head - 1u)) % (sizeof row - 1u);
+    uint32_t rows = (uint32_t)((MUHTARI__MOVIE_BYTES_MAX - (sizeof head - 1u) - padding) / (sizeof row - 1u));
+    FILE *f = fopen(path, "wb");
+    CHECK(f != NULL);
+    if (f == NULL) return;
+    CHECK_EQ_U64(fwrite(head, 1u, sizeof head - 1u, f), sizeof head - 1u);
+    while (padding != 0u) {
+        size_t line = padding > 65u ? 65u : padding;
+        for (size_t i = 1u; i < line; i++) CHECK(fputc(i == 1u ? '#' : 'x', f) != EOF);
+        CHECK(fputc('\n', f) != EOF);
+        padding -= line;
+    }
+    for (uint32_t i = 0u; i < rows; i++)
+        CHECK_EQ_U64(fwrite(row, 1u, sizeof row - 1u, f), sizeof row - 1u);
+    CHECK_EQ_U64(fclose(f), 0);
+    movie_reset();
+    replay mv = {0};
+    uint64_t start = muhtari__clock_ns();
+    CHECK_EQ_U64(read_movie(path, &mv), 0);
+    CHECK_EQ_U64(mv.count, rows);
+    CHECK_EQ_U64(mv.bytes_count, MUHTARI__MOVIE_BYTES_MAX);
+    CHECK(mv.frames == NULL);
+    CHECK_EQ_U64(movie_live, MUHTARI__MOVIE_BYTES_MAX + 1u);
+    CHECK_EQ_U64(movie_largest, MUHTARI__MOVIE_BYTES_MAX + 1u);
+    printf("movie2 bytes %zu frames %u allocation_calls %u live %zu peak %zu cursor %zu packet %zu elapsed_ns %llu\n",
+           mv.bytes_count, (unsigned)mv.count, movie_attempts, movie_live, movie_peak,
+           sizeof mv.cursor, sizeof(muhtari_input_ex),
+           (unsigned long long)(muhtari__clock_ns() - start));
+    movie_free(mv.bytes);
+    CHECK_EQ_U64(movie_live, 0u);
+    unsigned file_allocations = movie_attempts;
+    for (unsigned fail = 1u; fail <= file_allocations; fail++) {
+        movie_reset();
+        movie_fail_at = fail;
+        memset(&mv, 0, sizeof mv);
+        CHECK_EQ_U64(read_movie(path, &mv), 1);
+        CHECK_EQ_U64(movie_live, 0u);
+    }
+    f = fopen(path, "ab");
+    CHECK(f != NULL);
+    if (f != NULL) {
+        CHECK(fputc('x', f) != EOF);
+        CHECK_EQ_U64(fclose(f), 0);
+    }
+    memset(&mv, 0, sizeof mv);
+    movie_reset();
+    CHECK_EQ_U64(read_movie(path, &mv), 1);
+    CHECK_EQ_U64(movie_loads, 0u);
+    CHECK_EQ_U64(movie_live, 0u);
+
+    static const char small_head[] = "muhtari-movie 2\nport1 none\nport2 none\n";
+    static const char small_row[] = "|none:|none:|...BB|\n";
+    f = fopen(path, "wb");
+    CHECK(f != NULL);
+    if (f == NULL) return;
+    CHECK_EQ_U64(fwrite(small_head, 1u, sizeof small_head - 1u, f), sizeof small_head - 1u);
+    for (uint32_t i = 0u; i < MUHTARI__MOVIE_FRAMES_MAX; i++)
+        CHECK_EQ_U64(fwrite(small_row, 1u, sizeof small_row - 1u, f), sizeof small_row - 1u);
+    CHECK_EQ_U64(fclose(f), 0);
+    movie_reset();
+    memset(&mv, 0, sizeof mv);
+    start = muhtari__clock_ns();
+    CHECK_EQ_U64(read_movie(path, &mv), 0);
+    CHECK_EQ_U64(mv.count, MUHTARI__MOVIE_FRAMES_MAX);
+    CHECK(mv.frames == NULL);
+    CHECK(movie_live <= (size_t)MUHTARI__MOVIE_BYTES_MAX + 1u);
+    muhtari_input_ex decoded;
+    muhtari__movie_error err;
+    for (uint32_t i = 0u; i < mv.count; i++) {
+        CHECK_EQ_U64(muhtari__movie_next_ex(mv.bytes, mv.bytes_count, &mv.header,
+                                           &mv.cursor, &decoded, &err), 1);
+    }
+    CHECK_EQ_U64(muhtari__movie_next_ex(mv.bytes, mv.bytes_count, &mv.header,
+                                       &mv.cursor, &decoded, &err), 0);
+    CHECK_EQ_U64(movie_attempts, 14u);
+    printf("movie2 bytes %zu frames %u allocation_calls %u live %zu peak %zu cursor %zu packet %zu elapsed_ns %llu\n",
+           mv.bytes_count, (unsigned)mv.count, movie_attempts, movie_live, movie_peak,
+           sizeof mv.cursor, sizeof decoded, (unsigned long long)(muhtari__clock_ns() - start));
+    movie_free(mv.bytes);
+    f = fopen(path, "ab");
+    CHECK(f != NULL);
+    if (f != NULL) {
+        CHECK_EQ_U64(fwrite(small_row, 1u, sizeof small_row - 1u, f), sizeof small_row - 1u);
+        CHECK_EQ_U64(fclose(f), 0);
+    }
+    movie_reset();
+    memset(&mv, 0, sizeof mv);
+    CHECK_EQ_U64(read_movie(path, &mv), 1);
+    CHECK_EQ_U64(movie_live, 0u);
+}
 
 static const uint32_t all_ppm[] = {500000u, 900000u, 990000u, 999000u, 999900u, 999990u, 1000000u};
 
@@ -161,6 +441,10 @@ static void md5(void)
 
 int main(int argc, char **argv)
 {
+    if (argc == 4 && strcmp(argv[1], "movie") == 0) {
+        movie_owner(argv[2], argv[3]);
+        CHECK_DONE();
+    }
     if (argc != 2) {
         fprintf(stderr, "usage: muhtari-test-runner percentile|bytes|format|stop|md5\n");
         return 2;

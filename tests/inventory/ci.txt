@@ -607,11 +607,13 @@ runner.movie.boot_conflict	portable,runner
 runner.movie.conflict	portable,runner
 runner.movie.lag	portable,runner
 runner.movie.malformed	portable,runner
+runner.movie.owner	portable,runner
 runner.movie.past_end	portable,runner
 runner.movie.ports	portable,runner
 runner.movie.replay	portable,runner
 runner.movie.rom_mismatch	portable,runner
 runner.movie.switches	portable,runner
+runner.movie.v2_edges	portable,runner
 runner.movie_parse	portable,runner
 runner.png	portable,runner
 runner.probe.2600	portable,runner
