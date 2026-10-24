@@ -181,6 +181,17 @@ if(MUHTARI_BUILD_LIBRETRO)
   add_subdirectory(libretro)
 endif()
 
+# Optimize final MSVC host programs across their translation units. The
+# installed core archive remains ordinary objects, so its consumers keep
+# their compiler and linker policy without an LTO requirement.
+if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+  set_property(TARGET muhtari-run PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+  if(MUHTARI_BUILD_LIBRETRO)
+    set_property(TARGET muhtari_libretro muhtari_libretro_rgb565
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+  endif()
+endif()
+
 # Release archives, one per install component.
 include(cmake/packaging.cmake)
 
