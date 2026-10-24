@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: ready_to_execute
-stopped_at: Phase 8 planned and checked; ready for gsd-execute-phase 8
-last_updated: "2026-10-24T19:39:14.456Z"
+current_plan: 2
+status: executing
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-10-24T19:52:35.616Z"
 last_activity: 2026-10-24
-last_activity_desc: Phase 8 research and 14 plans checked; no implementation started
-state_head: 8fee460838a5606beaedc4c78e673257cc474786
+last_activity_desc: Completed 08-01 evidence prerequisite; full local CI passes 641+6
+state_head: 0dba753b42737c1c3b8de834da31a57cc2f2d205
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 28
+  completed_plans: 29
   percent: 43
 total_phases: 7
-current_phase_name: Controllers at the pins
 current_phase: 08
-current_plan: "01"
+current_phase_name: Controllers at the pins
 ---
 
 # Project State
@@ -27,21 +27,24 @@ current_plan: "01"
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 8 research and planning complete; 14 sequential plans and 38 tasks
-are ready for execution. The independent plan recheck passed after explicit research
-dispositions were added. All five INPUT requirements and 20 decisions are covered;
-no Phase 8 requirement is implemented or completed. Phase 7 details below are historical
-acceptance/shipping records.
+Current focus: Phase 8 execution; 08-01 proves the controller evidence prerequisite
+through the actual producer and join. The remaining 13 sequential plans own controller
+behavior and acceptance. All five INPUT requirements remain incomplete. Phase 7 details
+below are historical acceptance/shipping records.
 
 ## Current Position
 
+Current Plan: 2
+Total Plans in Phase: 14
+Progress: [████░░░░░░] 43%
+
 Phase 7 is complete: nine plans, SAVE-01–06 and35/35 verified must-haves.
-Phase 5–7 are3/7 milestone phases with27/41 currently planned active slots complete.
-Phase 8 has14 unexecuted plans; Phases 9–11 remain unplanned. Runtime totals28/42 include the historical halted06-01
+Phase 5–7 are3/7 milestone phases with28/41 currently planned active slots complete.
+Phase 8 has1/14 plans complete; Phases 9–11 remain unplanned. Runtime totals29/42 include the historical halted06-01
 SUMMARY; it remains excluded from accepted active outcomes and is not a budget grant.
 
-Status: ready_to_execute
-Last Activity: 2026-10-24 — Phase 8 research and 14 plans checked; no implementation started
+Status: Ready to execute
+Last activity: 2026-10-24 — Completed 08-01 evidence prerequisite; full local CI passes641+6
 Next command: $gsd-execute-phase 8
 Branch: `phase/08-controllers-at-the-pins`. No Phase 8 pull request yet; Phase 7 merged in PR #28.
 
@@ -119,12 +122,23 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 8 planned and checked; ready for gsd-execute-phase 8
-Last session: 2026-10-24T19:39:14.456Z
-Resume file: .planning/phases/08-controllers-at-the-pins/08-01-PLAN.md
+**Stopped at:** Completed 08-01-PLAN.md
+Last session: 2026-10-24T19:52:04.213Z
+Resume file: None
 
 ### Quick Tasks Completed
 
 | Task | Description | Commit |
 |---|---|---|
 | 261023-jkd | Retire maintenance line budgets and adopt contract review | 2ab7e0d |
+
+## Performance Metrics
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 08 P01 | 6min | 2 tasks | 3 files |
+
+## Decisions
+
+- [Phase 08]: Preserve separate fixture admission, device behavior and evidence comparison authorities.
+- [Phase 08]: Admit only the exact 4-to-5 annotation transition alongside existing equality and historical adjacent pairs.

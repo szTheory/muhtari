@@ -85,6 +85,13 @@ completed: 2026-10-24
 
 The persisted per-plan ledger measures two task commits between the recorded heads. Actual tokens are the realized task diff's 24,895 characters divided by four, rounded upward; metadata is excluded.
 
+## Files Created/Modified
+
+- `tests/cmake/quality.cmake` — three-name fixture extension and exact annotation pair.
+- `tests/policy/quality.cmake` — retained producer/join matrix plus controller and revision-five controls.
+- `docs/quality.md` — comparison permissions, authority and shared TIA correction rationale.
+- `.planning/phases/08-controllers-at-the-pins/08-01-SUMMARY.md` — measured plan outcome and verification evidence.
+
 ## Commands, exits and run URLs
 
 Every run URL below is **N/A-local**. No hosted candidate/base or six-native acceptance is claimed, and no log is committed.
@@ -113,6 +120,8 @@ Followed the existing owner and consumer seams. No dependency, new lane, registr
 
 **[Rule 2 - Contract] Document fixture behavior in its owning task.** AGENTS rule 5 requires behavior and documentation to land together. The fixture paragraphs of `docs/quality.md` therefore landed in Task 1 (`20ae7ad`) instead of waiting for Task 2; Task 2 owns the annotation documentation. Verification and implementation scope are unchanged.
 
+**[Rule 3 - Blocking] Restore the state helper's labeled position and progress.** `state.advance-plan` returned `plan_position_unreadable`: the current STATE had only frontmatter position fields. Added its required `Current Plan` and `Total Plans in Phase` labels, then used the same SDK handler to advance normally. Added the missing body `Progress:` line for its progress handler. The roadmap helper updated the plan checkbox/detail and phase status but retained the `0/TBD` count, so reconciled that one cell to the observed 1/14. No product or evidence authority changed.
+
 ## Issues Encountered
 
 Git metadata writes required sandbox escalation. Both task commits then completed with hooks enabled; no authentication gate, owner verification, review-fix round or gap round was needed.
@@ -127,4 +136,4 @@ No known stub, skipped test, unrun plan verification or new unplanned trust-boun
 
 ## Self-Check: PASSED
 
-All four claimed files exist, both task commits are reachable from this branch, and committed task changes match the tested source. Focused controls, full CI, exact native/release inventories, hygiene and whitespace checks pass. No unexpected deletion or generated untracked file remains. The next incomplete plan is 08-02; phase completion is pending.
+All four claimed files exist, both task commits are reachable from this branch, and committed task changes match the tested source. Focused controls, full CI, exact native/release inventories, hygiene and whitespace checks pass. No unexpected deletion or generated untracked file remains. Next plan: 08-02; phase completion is pending.

@@ -180,11 +180,11 @@ Plans:
 **Goal:** Let software use light guns, analog and matrix controllers, quadrature devices and modern controller adapters.
 **Depends on:** Phase 7
 **Requirements:** INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05
-**Plans:** 14 plans in 14 sequential waves (parallelization disabled).
+**Plans:** 1/14 plans executed in 14 sequential waves (parallelization disabled).
 
 Plans:
 **Wave 1**
-- [ ] 08-01-PLAN.md — Prove narrow controller fixture comparability.
+- [x] 08-01-PLAN.md — Prove narrow controller fixture comparability.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 08-02-PLAN.md — Publish additive input and transactional lifecycle.
@@ -294,7 +294,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
-| 8. Controllers at the pins | 0/TBD | Not started | — |
+| 8. Controllers at the pins | 1/14 | In Progress | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
