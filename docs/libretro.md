@@ -25,7 +25,7 @@ The console's Reset is the switch a game reads; RetroArch's own Restart is a pow
 
 ## Devices
 
-Each port offers seven devices in Quick Menu → Controls:
+Each port offers eight devices in Quick Menu → Controls:
 
 | Device | What the game sees |
 |---|---|
@@ -36,6 +36,7 @@ Each port offers seven devices in Quick Menu → Controls:
 | SaveKey | one 32 KiB serial EEPROM |
 | AtariVox EEPROM | the same EEPROM interface; speech is unavailable |
 | Driving | relative MOUSE X moves the wheel; MOUSE LEFT fires; Y is ignored |
+| XG-1 | absolute LIGHTGUN SCREEN_X/Y aim; TRIGGER fires; IS_OFFSCREEN suppresses light; RELOAD fires offscreen |
 
 Driving uses `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)` for selection and base
 `RETRO_DEVICE_MOUSE` IDs for polling, once after each frame's input poll. The frontend
@@ -43,9 +44,26 @@ must bind that abstraction; an absolute steering wheel is not mapped automatical
 Auto selects driving when the header names it. Unknown callback identities log a warning
 and unplug ordinary input. Input descriptors refresh on load and device selection.
 
+XG-1 selects `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)` and polls the five
+base LIGHTGUN inputs in the table once per frame. Deprecated relative X/Y and
+PAUSE are unused. The frontend must provide absolute lightgun bindings; the
+adapter has no device or host-window geometry. For a valid coordinate v in
+[-32767,32767], the native coordinate is
+`floor((v+32767)*(dimension-1)/65534)`, with a 64-bit integer product over the
+core's current reported native width/height. Width320 maps -32767/0/32767 to
+0/159/319; height242 maps them to0/120/241. Either coordinate -32768 marks the
+aim offscreen before conversion, using neutral0/0 coordinates. Explicit offscreen
+and reload also suppress illumination; reload independently holds the trigger.
+Trigger state never implies sensed light. Missing input callbacks leave aim offscreen.
+The native D64/W30/L9/T8 optical model is explicitly unmeasured; see
+[controller hardware](hardware/controllers.md#xg-1). Auto activates header guns.
+
 Console controls come from the lowest numbered ordinary ProLine/joystick port, retaining
-port 1's preference when both are ordinary. Otherwise the active driving port supplies
-MIDDLE for Pause, BUTTON_4 for Select and RIGHT for Reset; LEFT remains fire. With neither
+port 1's preference when both are ordinary. Otherwise the lowest numbered active
+driving/gun port supplies console controls. Driving uses MIDDLE for Pause,
+BUTTON_4 for Select and RIGHT for Reset; LEFT remains fire. XG-1 uses LIGHTGUN
+START for Pause, SELECT for Select and AUX_A for Reset; these do not fire or reload.
+With neither
 port active, supplemental port 1 RetroPad L2/R2/L3 provide Pause/Select/Reset. Driving and
 supplemental controls use the difficulty options. A new ordinary console provider starts
 its L/R edge history at the currently held levels, so selection creates no synthetic toggle.

@@ -691,10 +691,11 @@ static int lightgun(void)
                the historical sample. */
             in.port[port].flags = MUHTARI_INPUT_GUN_OFFSCREEN;
             CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
-            muhtari__ports_latch(m);
             m->cpu.jammed = 0u;
-            CHECK_EQ_HEX(light_access_at(m, (uint16_t)(0x000Cu + port), sample + 64u, 0, 0u), 0u);
             (void)input_access(m, 0x0001u, 1, 0x40u);
+            CHECK(m->bus.ticks < sample + 64u);
+            /* No sensor read until the following host call has applied
+               the offscreen aim and completed the pending low under JAM. */
             m->cpu.jammed = 1u;
             CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
             m->cpu.jammed = 0u;

@@ -1157,6 +1157,9 @@ static int retail_libretro(const char *module_path, const char *path, const char
 
 static unsigned controller_frame, controller_errors, controller_videos, controller_audios;
 static const uint8_t *(*controller_native)(void);
+static int controller_gun_edges;
+static int16_t controller_gun_values[17];
+static unsigned controller_gun_queries[2][17];
 
 static void RETRO_CALLCONV controller_poll(void)
 {
@@ -1167,6 +1170,25 @@ static int16_t RETRO_CALLCONV controller_input(unsigned p, unsigned d, unsigned 
 {
     muhtari_input_ex in;
     controller_stimulus(controller_frame, &in);
+    if (controller_light) {
+        if (p >= 2u || d != RETRO_DEVICE_LIGHTGUN || i != 0u || id >= 17u) {
+            controller_errors++;
+            return 0;
+        }
+        controller_gun_queries[p][id]++;
+        if (id == RETRO_DEVICE_ID_LIGHTGUN_X || id == RETRO_DEVICE_ID_LIGHTGUN_Y ||
+            id == RETRO_DEVICE_ID_LIGHTGUN_PAUSE)
+            controller_errors++;
+        if (controller_gun_edges)
+            return controller_gun_values[id];
+        if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X)
+            return in.port[p].gun_x == 0u ? -32767 : in.port[p].gun_x == 319u ? 32767 : 0;
+        if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y)
+            return in.port[p].gun_y == 0u ? -32767 : in.port[p].gun_y == 241u ? 32767 : 0;
+        if (id == RETRO_DEVICE_ID_LIGHTGUN_TRIGGER)
+            return in.port[p].buttons != 0u ? 1 : 0;
+        return id == RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN && in.port[p].flags != 0u ? 1 : 0;
+    }
     if (p >= 2u || d != RETRO_DEVICE_MOUSE || i != 0u)
         return 0;
     if (id == RETRO_DEVICE_ID_MOUSE_X)
@@ -1268,8 +1290,11 @@ static int controller_module(const char *module_path, const char *path)
     set_input(controller_input);
     init();
     observe(controller_raw_sample, &raw);
-    set_device(0u, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0));
-    set_device(1u, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0));
+    unsigned selected = controller_light ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
+                                         : RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0);
+    controller_gun_edges = 0;
+    set_device(0u, selected);
+    set_device(1u, selected);
     struct retro_game_info game = {path, image, n, NULL};
     int failed = !load(&game);
     if (!failed) {
@@ -1282,7 +1307,7 @@ static int controller_module(const char *module_path, const char *path)
         else {
             for (unsigned i = 0u; i < 256u; i++)
                 mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
-            failed = retail_judge(mb, "motion0");
+            failed = retail_judge(mb, controller_name());
         }
         /* Raw transition stream is observed, including load-time events;
            silence means the actual empty stream, never an inferred pass. */
@@ -1292,6 +1317,49 @@ static int controller_module(const char *module_path, const char *path)
         muhtari__sha256_final(&expected_raw, b);
         failed |= memcmp(a, b, sizeof a) != 0 || controller_errors != 0u ||
                   controller_videos != CONTROLLER_FRAMES || controller_audios != CONTROLLER_FRAMES;
+        if (!failed && controller_light) {
+            /* The actual loaded module's accepted packets, independent
+               numeric endpoints and center; no conversion helper oracle. */
+            static const struct {
+                int16_t x, y, off, reload, trigger;
+                uint32_t px, py, flags, buttons;
+            } vectors[] = {
+                {-32767, -32767, 0, 0, 0, 0u, 0u, 0u, 0u},
+                {0, 0, 0, 0, 1, 159u, 120u, 0u, MUHTARI_BUTTON_1},
+                {32767, 32767, 0, 0, 0, 319u, 241u, 0u, 0u},
+                {-32768, 0, 0, 0, 1, 0u, 0u, MUHTARI_INPUT_GUN_OFFSCREEN, MUHTARI_BUTTON_1},
+                {0, -32768, 0, 0, 0, 0u, 0u, MUHTARI_INPUT_GUN_OFFSCREEN, 0u},
+                {0, 0, 1, 0, 0, 159u, 120u, MUHTARI_INPUT_GUN_OFFSCREEN, 0u},
+                {0, 0, 0, 1, 0, 159u, 120u, MUHTARI_INPUT_GUN_OFFSCREEN, MUHTARI_BUTTON_1},
+            };
+            static const unsigned ids[] = {
+                RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y,
+                RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN, RETRO_DEVICE_ID_LIGHTGUN_RELOAD,
+                RETRO_DEVICE_ID_LIGHTGUN_TRIGGER};
+            controller_gun_edges = 1;
+            set_video(NULL);
+            set_audio(NULL);
+            for (unsigned v = 0u; v < sizeof vectors / sizeof vectors[0]; v++) {
+                controller_gun_values[ids[0]] = vectors[v].x;
+                controller_gun_values[ids[1]] = vectors[v].y;
+                controller_gun_values[ids[2]] = vectors[v].off;
+                controller_gun_values[ids[3]] = vectors[v].reload;
+                controller_gun_values[ids[4]] = vectors[v].trigger;
+                memset(controller_gun_queries, 0, sizeof controller_gun_queries);
+                run_frame();
+                for (unsigned p = 0u; p < 2u; p++) {
+                    const muhtari_port_input *applied = &m->ports.applied_ex.port[p];
+                    failed |= applied->device != MUHTARI_PORT_LIGHTGUN ||
+                              applied->gun_x != vectors[v].px || applied->gun_y != vectors[v].py ||
+                              applied->flags != vectors[v].flags ||
+                              applied->buttons != vectors[v].buttons;
+                    for (unsigned id = 0u; id < sizeof ids / sizeof ids[0]; id++)
+                        failed |= controller_gun_queries[p][ids[id]] != 1u;
+                }
+            }
+            failed |= controller_errors != 0u;
+            controller_gun_edges = 0;
+        }
         unload();
     }
     deinit();

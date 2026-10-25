@@ -181,6 +181,8 @@ static int batch_nonzero;
 static uint32_t pad[2]; /* the RetroPad buttons held, bit n for id n */
 static int16_t mouse[2][11];
 static unsigned mouse_queries[2][11], poll_calls;
+static int16_t gun[2][17];
+static unsigned gun_queries[2][17];
 static char log_text[4096];
 static size_t log_used;
 
@@ -389,6 +391,10 @@ static void RETRO_CALLCONV on_poll(void)
 
 static int16_t RETRO_CALLCONV input(unsigned port, unsigned device, unsigned index, unsigned id)
 {
+    if (port < 2u && device == RETRO_DEVICE_LIGHTGUN && index == 0u && id < 17u) {
+        gun_queries[port][id]++;
+        return gun[port][id];
+    }
     if (port < 2u && device == RETRO_DEVICE_MOUSE && index == 0u && id < 11u) {
         mouse_queries[port][id]++;
         return mouse[port][id];
@@ -739,6 +745,63 @@ static void case_input(void)
         stop();
         memset(mouse, 0, sizeof mouse);
     }
+    for (unsigned port = 0u; port < 2u; port++) {
+        p_set_controller_port_device(port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0));
+        p_set_controller_port_device(1u - port, RETRO_DEVICE_NONE);
+        start(0);
+        gun[port][RETRO_DEVICE_ID_LIGHTGUN_TRIGGER] = 1;
+        gun[port][RETRO_DEVICE_ID_LIGHTGUN_X] = INT16_MIN;
+        gun[port][RETRO_DEVICE_ID_LIGHTGUN_Y] = INT16_MAX;
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHA], 0xFFu);
+        CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x3Fu);
+        memset(gun_queries, 0, sizeof gun_queries);
+        unsigned polls = poll_calls;
+        p_run();
+        CHECK_EQ_U64(poll_calls, polls + 1u);
+        static const unsigned ids[] = {
+            RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y,
+            RETRO_DEVICE_ID_LIGHTGUN_TRIGGER,  RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN,
+            RETRO_DEVICE_ID_LIGHTGUN_RELOAD,   RETRO_DEVICE_ID_LIGHTGUN_START,
+            RETRO_DEVICE_ID_LIGHTGUN_SELECT,   RETRO_DEVICE_ID_LIGHTGUN_AUX_A};
+        for (unsigned i = 0u; i < sizeof ids / sizeof ids[0]; i++)
+            CHECK_EQ_U64(gun_queries[port][ids[i]], 1u);
+        CHECK_EQ_U64(gun_queries[port][RETRO_DEVICE_ID_LIGHTGUN_X], 0u);
+        CHECK_EQ_U64(gun_queries[port][RETRO_DEVICE_ID_LIGHTGUN_Y], 0u);
+        CHECK_EQ_U64(input_descriptors, 8u);
+        for (int i = 0; i < input_descriptors; i++) {
+            CHECK_EQ_U64(input_list[i].port, port);
+            CHECK_EQ_U64(input_list[i].device, RETRO_DEVICE_LIGHTGUN);
+            CHECK_EQ_U64(input_list[i].index, 0u);
+            CHECK_EQ_U64(input_list[i].id, ids[i]);
+        }
+        gun[port][RETRO_DEVICE_ID_LIGHTGUN_START] = 1;
+        gun[port][RETRO_DEVICE_ID_LIGHTGUN_SELECT] = 1;
+        gun[port][RETRO_DEVICE_ID_LIGHTGUN_AUX_A] = 1;
+        gun[port][RETRO_DEVICE_ID_LIGHTGUN_TRIGGER] = 0;
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHA], port == 0u ? 0xEFu : 0xFEu);
+        CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x34u);
+        set_var("muhtari_left_difficulty", "A");
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x74u);
+        gun[port][RETRO_DEVICE_ID_LIGHTGUN_RELOAD] = 1;
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHA], 0xFFu);
+        CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x74u);
+        /* An ordinary port takes console ownership; gun controls stay
+           device-only and descriptors refresh to base IDs. */
+        p_set_controller_port_device(1u - port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0));
+        run_frames(3u);
+        CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x7Fu);
+        CHECK_EQ_U64(input_descriptors, 16u);
+        p_set_controller_port_device(port, UINT32_MAX);
+        run_frames(3u);
+        CHECK_EQ_U64(input_descriptors, 11u);
+        stop();
+        memset(gun, 0, sizeof gun);
+        set_var("muhtari_left_difficulty", "B");
+    }
 }
 
 /* ProSystem's RetroPad layout (HOSTS-AND-INTEGRATION section 1, Input) on
@@ -854,6 +917,8 @@ static void case_layout(void)
    descriptors name the 11 inputs of port 1 and the 6 of port 2. */
 static void case_devices(void)
 {
+    gun[0][RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN] = 1;
+    gun[1][RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN] = 1;
     static const char *const names[8] = {
         "Auto (cartridge header)", "ProLine", "Joystick", "None", "SaveKey",
         "AtariVox EEPROM",         "Driving", "XG-1"};
@@ -934,11 +999,13 @@ static void case_devices(void)
                 bool joystick = s != 1u && s != 2u && headers[h] == MUHTARI_PORT_JOYSTICK;
                 const uint8_t *entry = last_entry();
                 bool driving = s == 0u && headers[h] == MUHTARI_PORT_DRIVING;
+                bool light = s == 0u && headers[h] == MUHTARI_PORT_LIGHTGUN;
                 CHECK_EQ_HEX(entry[E_SWCHA],
                              unplugged || driving ? (port == 0u ? 0xFEu : 0xEFu) : 0xEEu);
-                CHECK_EQ_HEX(entry[E_SWCHB], port == 0u && (unplugged || driving) ? 0x3Fu : 0x3Du);
+                CHECK_EQ_HEX(entry[E_SWCHB],
+                             port == 0u && (unplugged || driving || light) ? 0x3Fu : 0x3Du);
                 for (unsigned p = 0u; p < 2u; p++) {
-                    bool empty = p == port && (unplugged || driving);
+                    bool empty = p == port && (unplugged || driving || light);
                     bool stick = p == port && joystick;
                     CHECK_EQ_HEX(entry[p == 0u ? E_INPT4 : E_INPT5] & HI, empty ? HI : 0u);
                     CHECK_EQ_HEX(entry[p == 0u ? E_INPT1 : E_INPT3] & HI, empty || stick ? 0u : HI);

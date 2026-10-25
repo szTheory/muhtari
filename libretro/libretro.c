@@ -76,6 +76,7 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #define LR_SAVEKEY RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2)
 #define LR_ATARIVOX RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3)
 #define LR_DRIVING RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)
+#define LR_LIGHTGUN RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
 
 #ifdef USE_RGB565
 typedef uint16_t lr_pixel;
@@ -132,7 +133,7 @@ static bool request_seen;
 
 /* ---- the frontend's view: devices, inputs and options ---- */
 
-/* SET_CONTROLLER_INFO (L1506): the same six choices on both ports. Auto
+/* SET_CONTROLLER_INFO (L1506): the same choices on both ports. Auto
    follows the cartridge header's controller byte. */
 static const struct retro_controller_description pad_types[] = {
     {"Auto (cartridge header)", RETRO_DEVICE_JOYPAD},
@@ -142,10 +143,11 @@ static const struct retro_controller_description pad_types[] = {
     {"SaveKey", LR_SAVEKEY},
     {"AtariVox EEPROM", LR_ATARIVOX},
     {"Driving", LR_DRIVING},
+    {"XG-1", LR_LIGHTGUN},
 };
 static struct retro_controller_info ports[] = {
-    {pad_types, 7u},
-    {pad_types, 7u},
+    {pad_types, 8u},
+    {pad_types, 8u},
     {NULL, 0u},
 };
 
@@ -469,6 +471,8 @@ static uint32_t lr_port_device(unsigned port)
         return MUHTARI_PORT_ATARIVOX;
     case LR_DRIVING:
         return MUHTARI_PORT_DRIVING;
+    case LR_LIGHTGUN:
+        return MUHTARI_PORT_LIGHTGUN;
     default:
         return 0u;
     }
@@ -513,12 +517,21 @@ static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
     d = p == 0u ? cart.port1 : cart.port2;
     if (d == MUHTARI_PORT_NONE && content != NULL)
         return MUHTARI_PORT_UNPLUGGED;
-    return d == MUHTARI_PORT_JOYSTICK || d == MUHTARI_PORT_DRIVING ? d : MUHTARI_PORT_PROLINE;
+    return d == MUHTARI_PORT_JOYSTICK || d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_LIGHTGUN
+               ? d
+               : MUHTARI_PORT_PROLINE;
 }
 
 static bool lr_ordinary(uint32_t d)
 {
     return d == MUHTARI_PORT_PROLINE || d == MUHTARI_PORT_JOYSTICK;
+}
+
+static unsigned lr_console_base(void)
+{
+    return console_device == MUHTARI_PORT_DRIVING    ? RETRO_DEVICE_MOUSE
+           : console_device == MUHTARI_PORT_LIGHTGUN ? RETRO_DEVICE_LIGHTGUN
+                                                     : RETRO_DEVICE_JOYPAD;
 }
 
 /* Descriptor storage outlives the environment callback. IDs are the base
@@ -534,10 +547,12 @@ static void lr_refresh_inputs(void)
     if (!lr_ordinary(active[0])) {
         if (lr_ordinary(active[1]))
             provider = 1u;
-        else if (active[0] != MUHTARI_PORT_DRIVING && active[1] == MUHTARI_PORT_DRIVING)
+        else if (active[0] != MUHTARI_PORT_DRIVING && active[0] != MUHTARI_PORT_LIGHTGUN &&
+                 (active[1] == MUHTARI_PORT_DRIVING || active[1] == MUHTARI_PORT_LIGHTGUN))
             provider = 1u;
     }
-    uint32_t kind = lr_ordinary(active[provider]) || active[provider] == MUHTARI_PORT_DRIVING
+    uint32_t kind = lr_ordinary(active[provider]) || active[provider] == MUHTARI_PORT_DRIVING ||
+                            active[provider] == MUHTARI_PORT_LIGHTGUN
                         ? active[provider]
                         : MUHTARI_PORT_UNPLUGGED;
     if (console_port != provider || console_device != kind)
@@ -545,14 +560,18 @@ static void lr_refresh_inputs(void)
     console_port = provider;
     console_device = kind;
     bool driving = kind == MUHTARI_PORT_DRIVING;
+    bool gun = kind == MUHTARI_PORT_LIGHTGUN;
     console_ids[0] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_START
                      : driving         ? RETRO_DEVICE_ID_MOUSE_MIDDLE
+                     : gun             ? RETRO_DEVICE_ID_LIGHTGUN_START
                                        : RETRO_DEVICE_ID_JOYPAD_L2;
     console_ids[1] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_SELECT
                      : driving         ? RETRO_DEVICE_ID_MOUSE_BUTTON_4
+                     : gun             ? RETRO_DEVICE_ID_LIGHTGUN_SELECT
                                        : RETRO_DEVICE_ID_JOYPAD_R2;
     console_ids[2] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_X
                      : driving         ? RETRO_DEVICE_ID_MOUSE_RIGHT
+                     : gun             ? RETRO_DEVICE_ID_LIGHTGUN_AUX_A
                                        : RETRO_DEVICE_ID_JOYPAD_L3;
     for (unsigned p = 0u; p < 2u; p++) {
         if (lr_ordinary(active[p])) {
@@ -560,6 +579,15 @@ static void lr_refresh_inputs(void)
                 inputs[n] = pad_inputs[i];
                 inputs[n++].port = p;
             }
+        } else if (active[p] == MUHTARI_PORT_LIGHTGUN) {
+            static const unsigned ids[] = {
+                RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y,
+                RETRO_DEVICE_ID_LIGHTGUN_TRIGGER, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN,
+                RETRO_DEVICE_ID_LIGHTGUN_RELOAD};
+            static const char *const names[] = {"Aim X", "Aim Y", "Trigger", "Offscreen", "Reload"};
+            for (unsigned i = 0u; i < sizeof ids / sizeof ids[0]; i++)
+                inputs[n++] =
+                    (struct retro_input_descriptor){p, RETRO_DEVICE_LIGHTGUN, 0u, ids[i], names[i]};
         } else if (active[p] == MUHTARI_PORT_DRIVING) {
             inputs[n++] = (struct retro_input_descriptor){
                 p, RETRO_DEVICE_MOUSE, 0u, RETRO_DEVICE_ID_MOUSE_X, "Driving motion"};
@@ -573,15 +601,12 @@ static void lr_refresh_inputs(void)
             inputs[n++].port = provider;
         }
     } else {
-        inputs[n++] = (struct retro_input_descriptor){
-            provider, driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u, console_ids[0],
-            "Pause"};
-        inputs[n++] = (struct retro_input_descriptor){
-            provider, driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u, console_ids[1],
-            "Select"};
-        inputs[n++] = (struct retro_input_descriptor){
-            provider, driving ? RETRO_DEVICE_MOUSE : RETRO_DEVICE_JOYPAD, 0u, console_ids[2],
-            "Reset"};
+        inputs[n++] = (struct retro_input_descriptor){provider, lr_console_base(), 0u,
+                                                      console_ids[0], "Pause"};
+        inputs[n++] = (struct retro_input_descriptor){provider, lr_console_base(), 0u,
+                                                      console_ids[1], "Select"};
+        inputs[n++] = (struct retro_input_descriptor){provider, lr_console_base(), 0u,
+                                                      console_ids[2], "Reset"};
     }
     memset(&inputs[n], 0, sizeof inputs[n]);
     (void)env_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, inputs);
@@ -644,6 +669,33 @@ static uint32_t lr_buttons(unsigned port, uint32_t d)
     return b;
 }
 
+/* Absolute base LIGHTGUN coordinates use the reported native dimensions.
+   Treat the -32768 sentinel as offscreen; exclude it before
+   arithmetic. Integer rounding and reload behavior: docs/libretro.md. */
+static void lr_gun(unsigned p, muhtari_port_input *in)
+{
+    in->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
+    if (input_state_cb == NULL)
+        return;
+    int32_t x = input_state_cb(p, RETRO_DEVICE_LIGHTGUN, 0u, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+    int32_t y = input_state_cb(p, RETRO_DEVICE_LIGHTGUN, 0u, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y);
+    bool trigger =
+        input_state_cb(p, RETRO_DEVICE_LIGHTGUN, 0u, RETRO_DEVICE_ID_LIGHTGUN_TRIGGER) != 0;
+    bool offscreen =
+        input_state_cb(p, RETRO_DEVICE_LIGHTGUN, 0u, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) != 0;
+    bool reload =
+        input_state_cb(p, RETRO_DEVICE_LIGHTGUN, 0u, RETRO_DEVICE_ID_LIGHTGUN_RELOAD) != 0;
+    in->buttons = trigger || reload ? MUHTARI_BUTTON_1 : 0u;
+    muhtari_info info = {0};
+    info.size = (uint32_t)sizeof info;
+    if (x == INT16_MIN || y == INT16_MIN || muhtari_get_info(inst, &info) != MUHTARI_STATUS_OK ||
+        info.width == 0u || info.height == 0u)
+        return;
+    in->gun_x = (uint32_t)((uint64_t)(x + 32767) * (info.width - 1u) / 65534u);
+    in->gun_y = (uint32_t)((uint64_t)(y + 32767) * (info.height - 1u) / 65534u);
+    in->flags = offscreen || reload ? MUHTARI_INPUT_GUN_OFFSCREEN : 0u;
+}
+
 /* Port 1's L and R flip the left and right difficulty switches on each
    press, with an on-screen message. */
 static void lr_difficulty_edges(void)
@@ -686,6 +738,8 @@ static void lr_input(void)
         in.port[p].device = lr_active_port(p, &request);
         if (lr_ordinary(in.port[p].device))
             in.port[p].buttons = lr_buttons(p, in.port[p].device);
+        else if (in.port[p].device == MUHTARI_PORT_LIGHTGUN)
+            lr_gun(p, &in.port[p]);
         else if (in.port[p].device == MUHTARI_PORT_DRIVING && input_state_cb != NULL) {
             in.port[p].dx = input_state_cb(p, RETRO_DEVICE_MOUSE, 0u, RETRO_DEVICE_ID_MOUSE_X);
             in.port[p].buttons =
@@ -698,10 +752,7 @@ static void lr_input(void)
                                          MUHTARI_SWITCH_RESET};
     for (unsigned i = 0u; i < 3u; i++) {
         if (input_state_cb != NULL &&
-            input_state_cb(console_port,
-                           console_device == MUHTARI_PORT_DRIVING ? RETRO_DEVICE_MOUSE
-                                                                  : RETRO_DEVICE_JOYPAD,
-                           0u, console_ids[i]) != 0)
+            input_state_cb(console_port, lr_console_base(), 0u, console_ids[i]) != 0)
             in.switches |= switches[i];
     }
     in.switches |= difficulty_a[0] ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u;
@@ -1230,8 +1281,11 @@ bool retro_load_game(const struct retro_game_info *game)
     muhtari_media request = {0};
     initial.size = (uint32_t)sizeof initial;
     lr_battery_request(&request);
-    for (unsigned p = 0u; p < 2u; p++)
+    for (unsigned p = 0u; p < 2u; p++) {
         initial.port[p].device = lr_active_port(p, &request);
+        if (initial.port[p].device == MUHTARI_PORT_LIGHTGUN)
+            initial.port[p].flags = MUHTARI_INPUT_GUN_OFFSCREEN;
+    }
     if (muhtari_set_input_ex(inst, &initial) != MUHTARI_STATUS_OK) {
         lr_release();
         return false;

@@ -1,4 +1,4 @@
-# Concrete fault: agreeing hosts masking wrong driving pin values or omitted native/audio evidence.
+# Concrete fault: agreeing hosts masking wrong controller numbers or omitted native/audio evidence.
 if(DIAG_CONTROLLERS_RUN)
   set(root_out "${OUT}")
   foreach(device IN ITEMS driving lightgun)
