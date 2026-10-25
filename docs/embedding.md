@@ -261,7 +261,10 @@ muhtari_status st = muhtari_load(m, &media);
 
 A refused load changes nothing: the previous cartridge, or the test card, keeps running as if the call had not
 been made. Once every check passes, the ROM is copied into one allocation, the only one a load makes, and
-any cartridge loaded before is freed. A BIOS is copied into a fixed 16 KiB array inside the instance. Without a
+any cartridge loaded before is freed. BIOS input may borrow an installed cartridge RAM, battery or HSC ROM
+span: its validated bytes are staged before installation can invalidate that span. A private fixed 16 KiB
+staging array keeps the running BIOS intact if allocation fails; successful loads copy it to the live BIOS
+array inside the instance. Without a
 BIOS the machine starts from the fast-boot hand-off, the state the NTSC BIOS leaves as it jumps to the cartridge;
 with one it boots through the BIOS, as [Booting with a BIOS](#booting-with-a-bios) describes. A successful load
 replaces any loaded content and power-cycles the machine.

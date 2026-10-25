@@ -183,6 +183,170 @@ static int k_window(void)
 #define ENTRIES 0x2000u
 static uint8_t cart[IMAGES_HEADER + CART_BODY];
 
+/* Keep a freed cartridge poisoned until the next free. The core must consume
+   borrowed RAM before releasing it; ordinary malloc reuse can hide that read. */
+struct boot_allocator {
+    alloc_counts calls;
+    void *released;
+};
+
+static void *boot_alloc(void *user, size_t size)
+{
+    struct boot_allocator *a = user;
+    return count_alloc(&a->calls, size);
+}
+
+static void boot_free(void *user, void *ptr, size_t size)
+{
+    struct boot_allocator *a = user;
+    a->calls.frees++;
+    a->calls.free_size = size;
+    free(a->released);
+    memset(ptr, 0xA5, size);
+    a->released = ptr;
+}
+
+/* An owned BIOS that writes a distinguishing byte, then loops in firmware. */
+static void build_loop_bios(size_t bytes, uint8_t marker)
+{
+    memset(bios, 0xEA, bytes);
+    /* Enable the 7800 map while keeping BIOS visible before writing RAM. */
+    const uint8_t code[] = {0xA9u, 0x02u, 0x85u, 0x01u, 0xA9u, marker,
+                            0x8Du, 0x00u, 0x20u, 0x4Cu, 0x04u, 0xF0u};
+    memcpy(bios + bytes - 4096u, code, sizeof code);
+    bios[bytes - 4u] = 0u;
+    bios[bytes - 3u] = 0xF0u;
+}
+
+/* Failed loads preserve all live state. The gap between battery/savekey and
+   ports is unpublished firmware staging, deliberately outside the contract. */
+static void boot_unchanged(const muhtari *m, const muhtari *before)
+{
+    CHECK(memcmp(m, before, offsetof(muhtari, hsc_load_rom)) == 0);
+    size_t at = offsetof(muhtari, ports);
+    CHECK(memcmp((const uint8_t *)m + at, (const uint8_t *)before + at, sizeof *m - at) == 0);
+}
+
+static void load_alias(uint32_t region, unsigned source, size_t bytes)
+{
+    struct boot_allocator a = {0};
+    muhtari_config cfg = alloc_config(&a.calls);
+    cfg.allocator.user = &a;
+    cfg.allocator.alloc = boot_alloc;
+    cfg.allocator.free = boot_free;
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL)
+        return;
+    size_t image_bytes = images_a78(cart, 3u, 32768u, 6u, 32768u);
+    build_loop_bios(bytes, 0x31u);
+    muhtari_media media = {0};
+    media.size = (uint32_t)sizeof media;
+    media.image = cart;
+    media.image_size = image_bytes;
+    media.region = region;
+    media.bios = bios;
+    media.bios_size = bytes;
+    media.port[1] = MUHTARI_PORT_SAVEKEY;
+    /* HSC is immutable to callers: install the candidate bytes up front. */
+    if (source == 2u) {
+        static uint8_t hsc_firmware[4096];
+        build_loop_bios(bytes, 0x72u);
+        memcpy(hsc_firmware, bios, bytes);
+        build_loop_bios(bytes, 0x31u);
+        media.hsc_rom = hsc_firmware;
+        media.hsc_rom_size = bytes;
+    }
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    build_loop_bios(bytes, 0x72u);
+    const uint8_t *borrowed = NULL;
+    if (source == 0u) {
+        muhtari_span memory = {0};
+        memory.size = (uint32_t)sizeof memory;
+        CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_CART_RAM, &memory), MUHTARI_STATUS_OK);
+        CHECK(memory.bytes >= bytes);
+        memcpy(memory.data, bios, bytes);
+        borrowed = memory.data;
+    } else if (source == 1u) {
+        muhtari_battery_info battery = {0};
+        battery.size = (uint32_t)sizeof battery;
+        CHECK_EQ_U64(muhtari_get_battery(m, &battery), MUHTARI_STATUS_OK);
+        CHECK(battery.bytes >= bytes);
+        memcpy(battery.data, bios, bytes);
+        borrowed = battery.data;
+    } else {
+        muhtari_const_span firmware = {0};
+        firmware.size = (uint32_t)sizeof firmware;
+        CHECK_EQ_U64(muhtari_get_hsc_rom(m, &firmware), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(firmware.bytes, bytes);
+        borrowed = firmware.data;
+    }
+    muhtari *before = malloc(sizeof *before);
+    CHECK(before != NULL);
+    if (before == NULL) {
+        muhtari_destroy(m);
+        free(a.released);
+        return;
+    }
+    memcpy(before, m, sizeof *before);
+    media.bios = borrowed;
+    media.region = region == MUHTARI_REGION_PAL ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
+    media.hsc_rom = NULL;
+    media.hsc_rom_size = 0u;
+    media.hsc_mode = MUHTARI_HSC_OFF;
+    uint32_t calls = a.calls.allocs;
+    media.bios_size = bytes - 1u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_BIOS);
+    boot_unchanged(m, before);
+    media.bios_size = bytes;
+    media.hsc_rom_size = 1u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_HSC);
+    boot_unchanged(m, before);
+    media.hsc_rom_size = 0u;
+    CHECK_EQ_U64(a.calls.allocs, calls);
+    a.calls.fail_from = calls + 1u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_NO_MEMORY);
+    boot_unchanged(m, before);
+    CHECK(memcmp(borrowed, bios, bytes) == 0);
+    CHECK_EQ_U64(a.calls.frees, 0u);
+    /* Failed staging did not replace the running firmware, including on RES. */
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(frame(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_HEX(m->ram[0x2000u - MUHTARI__RAM_BASE], 0x31u);
+    if (source == 0u)
+        memcpy((uint8_t *)(uintptr_t)borrowed, bios, bytes); /* power-on clears cart RAM */
+    a.calls.fail_from = 0u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(a.calls.allocs, calls + 2u); /* one failed and one successful allocation */
+    CHECK_EQ_U64(a.calls.frees, 1u);
+    CHECK(a.released != NULL);
+    CHECK_EQ_U64(m->bios_size, bytes);
+    CHECK(memcmp(m->bios, bios, bytes) == 0);
+    CHECK_EQ_U64(m->effective_region, media.region);
+    CHECK_EQ_HEX(m->cpu.pc, 0xF000u);
+    CHECK_EQ_U64(frame(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_HEX(m->ram[0x2000u - MUHTARI__RAM_BASE], 0x72u);
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(frame(m), MUHTARI_STATUS_OK);
+    CHECK_EQ_HEX(m->ram[0x2000u - MUHTARI__RAM_BASE], 0x72u);
+    free(before);
+    muhtari_destroy(m);
+    free(a.released);
+    CHECK_EQ_U64(a.calls.allocs, a.calls.frees + 1u);
+}
+
+static int load_aliases(void)
+{
+    for (uint32_t region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL; region++) {
+        for (unsigned source = 0u; source < 3u; source++) {
+            load_alias(region, source, 4096u);
+            if (source != 2u) /* public HSC ROM spans are exactly 4 KiB */
+                load_alias(region, source, 16384u);
+        }
+    }
+    return check_failures == 0;
+}
+
 static void put(uint16_t addr, const uint8_t *code, size_t n)
 {
     memcpy(cart + IMAGES_HEADER + (addr - CART_BASE), code, n);
@@ -414,7 +578,7 @@ int main(int argc, char **argv)
     } cases[] = {
         {"handoff_simple", handoff_simple, 1}, {"k_window", k_window, 0},
         {"k_first_fetch", k_first_fetch, 0},   {"splash_skip", splash_skip, 1},
-        {"rejects_cart", rejects_cart, 1},
+        {"rejects_cart", rejects_cart, 1},     {"load_aliases", load_aliases, 0},
     };
     size_t i = 0;
     while (i < sizeof cases / sizeof cases[0] &&

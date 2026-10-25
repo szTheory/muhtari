@@ -187,6 +187,7 @@ which list both fixtures. K is the hand-off frame (`docs/embedding.md`, Booting 
 - `bios.k_window`: the window's predicate passes 300 and 340 and fails 299 and 341.
 - `bios.k_first_fetch`: a 4 KiB BIOS and a cartridge built in memory hand control back and forth, each return to
   the cartridge after EXT rises again; K stays at the first.
+- `bios.load_aliases`: RAM/EEPROM/HSC BIOS reloads and failed-load preservation.
 - `bios.splash_skip`: Pause held on frames 1 to 3 gives K below 30. OpenBIOS first reads SWCHB in frame 3, measured
   with the lag counter, which counts no input read before it.
 - `bios.rejects_cart`: `simple` with bit 0 of `$FFF8` cleared fails OpenBIOS's region check, so the BIOS takes its

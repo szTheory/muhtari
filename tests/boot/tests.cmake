@@ -30,3 +30,6 @@ foreach(boot_case IN ITEMS k_window k_first_fetch)
   muhtari_add_test(NAME bios.${boot_case} COMMAND muhtari-test-boot ${boot_case}
     LABELS bios portable TIMEOUT 1)  # 2 x 0.10 s, macOS x64, slowest of 13 runs, run 39373524239
 endforeach()
+# Provisional: 0.02s locally for ten alias/region/size combinations.
+muhtari_add_test(NAME bios.load_aliases COMMAND muhtari-test-boot load_aliases
+  LABELS bios portable TIMEOUT 1)

@@ -343,6 +343,12 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
+    /* The BIOS may borrow cartridge RAM, battery bytes or HSC firmware.
+       Consume it before installation releases/clears those sources, but keep
+       the live BIOS intact until the last fallible allocation succeeds. */
+    if (media->bios != NULL) {
+        memcpy(m->bios_load_rom, media->bios, media->bios_size);
+    }
     /* The ROM and its RAM are the only allocation; the BIOS goes into the
        instance's fixed array. With a BIOS the machine boots through it,
        without one through the fast-boot hand-off. */
@@ -368,7 +374,7 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     }
     m->bios_size = 0u;
     if (media->bios != NULL) {
-        memcpy(m->bios, media->bios, media->bios_size);
+        memcpy(m->bios, m->bios_load_rom, media->bios_size);
         m->bios_size = (uint32_t)media->bios_size;
     }
     power_cycle(m);

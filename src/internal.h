@@ -455,6 +455,7 @@ struct muhtari {
     struct muhtari__battery battery;
     struct muhtari__savekey savekey;
     uint8_t hsc_load_rom[4096]; /* unpublished load staging; never a hardware/save view */
+    uint8_t bios_load_rom[MUHTARI__BIOS_SIZE_MAX]; /* same lifetime as HSC load staging */
     struct muhtari__ports ports;
     struct muhtari__boot boot;
     struct muhtari__synth synth;
