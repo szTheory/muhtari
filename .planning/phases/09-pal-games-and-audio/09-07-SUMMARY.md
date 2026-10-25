@@ -80,6 +80,14 @@ coverage:
         ref: runner.hashes_file and policy.lane_equality.controls
         status: pass
     human_judgment: false
+  - id: D5
+    description: Independent pre-plan package comparison remains unaccepted after repeated lightgun timeouts and an incomplete full retry.
+    requirement: PAL-03
+    verification:
+      - kind: integration
+        ref: tests/cmake/quality_evidence.cmake with genuine pre-plan 009f37e; producer exit1 and bounded full retry exit124; N/A-local
+        status: fail
+    human_judgment: false
 actuals:
   tokens: 13197
   tasks: 3
@@ -87,8 +95,10 @@ actuals:
 plan_head_before: 009f37ef1b9082c8825419735bfa050a89271f5d
 plan_head_after: 7ad503ca23428ac69edd928fecdb8e595dd98022
 duration: 15min
-completed: 2026-10-25
-status: complete
+implemented: 2026-10-25
+status: halted
+halted: true
+halt_reason: Independent pre-plan package evidence lacks a passing full inventory after two lightgun timeouts and one outer timeout.
 ---
 
 # Phase9 Plan07: Sustained owned PAL evidence Summary
@@ -236,16 +246,41 @@ verification or authentication gate remains for this local plan.
 
 ## Next Plan Readiness
 
-09-07 local obligations are implemented and verified. PAL-01–03 remain open for
-09-08 and final phase acceptance. Fast startup and analog85:342 balance remain
+09-07 implementation and current-source checks pass. Parent acceptance is halted
+on the independent pre-plan evidence below;09-08 is blocked and PAL-01–03 remain open. Fast startup and analog85:342 balance remain
 fitted/unverified qualifications; this diagnostic does not establish new hardware
 calibration. The parent exclusively owns STATE/ROADMAP/REQUIREMENTS updates and
 the ready-wave boundary. No later GSD step was invoked.
 
-## Self-Check: PASSED
+## Executor Self-Check: PASSED
 
 All16 task files exist and all four task commits are reachable ancestors of the
 phase branch. No task deletion or generated/unexpected untracked file remains.
 Exact committed-source653+6, full inventories, actual host/fixture/equality
 consumers and current ZIP integrity pass. The measured task range starts009f37e
 and ends7ad503c; the immediate summary commit contains only this artifact.
+
+
+## Parent Acceptance: HALTED
+
+The implementation remains committed and its current-source evidence passes.
+The independent pre-plan package comparison is required for slice acceptance;
+its full inventory has not passed. No phase requirement is complete and09-08
+must remain blocked. Two bounded read-only specialists confirmed the evidence
+contract and reviewed the timeout mechanism; neither found evidence supporting
+another unchanged retry. No product workload, deadline, threshold or policy changed.
+
+Fresh parent checks, all run URLs N/A-local:
+
+- `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake --workflow --preset ci` exits0:653 ordinary tests40.74s and6 release checks0.13s; PAL10.03s, quality16.88s. Both inventory judges exit0 and establish653+6 exactly once.
+- `check evaluation-scope --plan 09-07 --commits-only --milestone-bound --max-commits 30 --raw`, `git diff --check` and `scripts/hygiene.sh --tree` exit0. All16 declared task files, four task commits and the executor summary commit exist on this branch. The summary HEAD1061527 has unchanged source relative to task7ad503c.
+- The existing producer with actual event base009f37ef1b9082c8825419735bfa050a89271f5d measures candidate10615274789298f04f477baf7b1311014805bb7f:81763+87472+96375=265610 bytes. Python standard-library ZIP CRC checks exit0. Candidate counts are653+6 and source is N/A-local. Raw toolchain/manifest/sample identities are preserved. Candidate-only output does not establish the required comparison.
+- `env GITHUB_EVENT_PATH="$PWD/build/ci/quality-pal-local-event.json" node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake -DROOT=. -DBUILD=build/ci -DOUT=build/ci/quality-pal-local.json -DSHA="$(git rev-parse HEAD)" -DCONFIG=ci -DSOURCE=N/A-local -DBUILD_BASE=ON -P tests/cmake/quality_evidence.cmake` initially exits1 because sandbox permissions deny creation of the Git worktree. Repeating with the required Git filesystem access exits1 after the genuine pre-plan rebuild:651/652 ordinary tests pass in46.27s; `input.lightgun` times out at2.07303s. Publication controls pass45.30s. No baseline measurement is accepted.
+- In the unchanged pre-plan checkout, `ctest --preset ci -R '^input[.]lightgun$' --no-tests=error --output-on-failure --output-junit preplan-lightgun-focused.xml` exits0,1/1 in0.84s. Hypothesis for one full retry: transient contention in the cold parallel run. This isolated pass does not repair the failed full inventory.
+- One unchanged pre-plan full retry of the60s workflow command exits124. It had already repeated `input.lightgun` timeout2.01s;651 tests finished, including that failure, while publication remained unfinished. No second complete JUnit or release inventory resulted. The log also has a sandbox `/bin/ps` denial. Process inspection exits0 and finds no lingering CMake/CTest process; the GSD runner itself never invokes ps. No leak, sandbox-overhead cause or proven flake is established.
+- Publication's existing130s timeout derives from a measured63.21s non-Windows run; the separate60s workflow wrapper can terminate valid publication work. That scope conflict does not explain or waive either lightgun failure. Recovery needs a falsifiable changed condition or separately justified measured deadline decision before another full retry.
+- Initial failure JUnit and both command outputs remain only in ignored local build files. `git -C build/ci/quality-base status --short` exits0 with no changes; its HEAD is the exact pre-plan SHA. `git worktree remove build/ci/quality-base` exits0 after evidence preservation. No baseline JSON is fabricated and no failed reports are merged into a pass.
+
+Next separate command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence.
+Preserve this canonical halt. Close it only after independent candidate/base
+acceptance passes; then restore09-08 readiness without restarting completed tasks.

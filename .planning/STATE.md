@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: 7
-status: Ready to execute
-stopped_at: Phase 9 plan 09-06 accepted; 09-07 ready; next $gsd-execute-phase 9
-last_updated: "2026-10-25T18:34:55Z"
+status: halted
+stopped_at: Phase 9 plan 09-07 implemented; acceptance halted on independent pre-plan evidence; 09-08 blocked
+last_updated: "2026-10-25T19:02:32Z"
 last_activity: 2026-10-25
-last_activity_desc: Plan 09-06 accepted; 09-07 ready
-state_head: 2b3ddffbe9a48d1507a6dbfc836934f70230151a
+last_activity_desc: Plan 09-07 current-source checks pass; independent pre-plan acceptance halted
+state_head: 10615274789298f04f477baf7b1311014805bb7f
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 50
-  completed_plans: 48
+  completed_plans: 49
   percent: 57
 total_phases: 7
 current_phase_name: PAL games and audio
@@ -27,12 +27,13 @@ current_phase: 09
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase9 plans09-01–06 are accepted locally;09-07 is ready.
+Current focus: Phase9 plans09-01–06 are accepted locally;09-07 is implemented
+but its independent pre-plan evidence is halted.09-08 remains blocked.
 The library, automatic-region runner and both libretro formats execute PAL with
 selected timing/geometry and independently proved bounded audio storage/arithmetic.
 API6/ABI1/behavior5 and retained NTSC observations remain unchanged.
-PAL-01–03 remain pending the two successor plans and final hosted acceptance.
-Next separate command: $gsd-execute-phase 9.
+PAL-01–03 remain pending accepted09-07/08 and final hosted acceptance.
+Next separate command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence.
 
 ## Current Position
 
@@ -40,16 +41,16 @@ Current Plan: 7
 Total Plans in Phase: 8
 Progress: [██████░░░░] 57%
 
-Phase9 has6/8 accepted plans and16/22 tasks complete. Four of seven milestone
+Phase9 has6/8 accepted plans and16/22 accepted tasks;19/22 tasks are implemented. Four of seven milestone
 phases remain complete (57%); phases10–11 remain unstarted. Runtime totals are
-48 summarized active plans of50 planned, including historical halted06-01;
-accepted completed plans total47. These use the retained active-slot convention.
-The raw on-disk inventory is54 summaries and56 plans, including historical
+49 summarized active plans of50 planned, including halted06-01 and09-07;
+accepted completed plans remain47. These use the retained active-slot convention.
+The raw on-disk inventory is55 summaries and56 plans, including historical
 recovery artifacts. Summary existence alone is not phase acceptance.
 
-Status: Ready to execute09-07
-Last activity: 2026-10-25 — Plan09-06 accepted;09-07 ready
-Next command: $gsd-execute-phase 9
+Status: Halted09-07 acceptance;09-08 blocked
+Last activity: 2026-10-25 — Current653+6 pass; pre-plan comparison lacks a full pass
+Next command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence
 Branch: phase/09-pal-games-and-audio
 
 09-01 sourcead0d661 and summarya09ecc5 are committed. Task commits8b845bc
@@ -172,11 +173,26 @@ restoration failure remain in09-06-SUMMARY.md; no logs are committed.
 Actual owned PAL row/admission and sustained three-host observations remain09-07;
 complete hosted/current-base acceptance remains09-08. PAL requirements stay open.
 
-The installed execute-phase ready-wave gate requires dispatching the initially
-ready wave then re-running, and forbids dispatch of this run's not-ready plans.
-Only09-06 was initially ready. The fresh phase-plan-index now reports09-07 ready;
-09-08 awaits09-07. Stop at this boundary with no phase completion,
-review, verifier or requirement-completion claim. Review-fix and gap rounds unused.
+09-07 tasks37c4286/7bae373/c7867f2/7ad503c and executor summary1061527
+are committed. The601-call library, actual runner and loaded two-format paths
+agree on independent numeric/native/raw/PCM evidence; all342 old observation
+rows retain exact bytes and614 PAL rows are additive. Parent workflow exits0,
+653+6 (40.74s/0.13s), N/A-local. Scope, artifacts, inventories and hygiene pass.
+Candidate1061527 ZIPs81763+87472+96375=265610 have valid CRCs and measured
+producer identities; source is unchanged from7ad503c. No base comparison passes.
+
+The genuine pre-plan009f37e producer rebuild exits1 after651/652 pass;
+lightgun times out2.07303s. Isolated lightgun passes0.84s, but one bounded
+unchanged full retry exits124 and repeats lightgun2.01s before publication
+finishes. Initial JUnit and failed outputs remain ignored local evidence;
+commands/statuses are in09-07-SUMMARY.md. Publication's existing130s timeout
+can outlast the separate60s workflow wrapper. No cause or proven flake is
+established; no deadline, workload or policy changes. Two bounded read-only
+specialists confirm required base inventory is missing and advise against
+another unchanged retry. The clean temporary pre-plan worktree is removed.
+Canonical09-07 summary is halted;09-08 must remain blocked. Requirements,
+phase review and verification remain open. Review-fix/gap rounds remain unused.
+Next separate command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence.
 
 Fast PAL startup140016 and zero undocumented residue remain fitted policy;
 85:342 analog balance is unverified. The planned PAL-01 probe classification
@@ -373,9 +389,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 9 plan 09-04 accepted; 09-05 ready; next $gsd-execute-phase 9
-Last session: 2026-10-25T17:54:35.153Z
-Resume file: .planning/phases/09-pal-games-and-audio/09-05-PLAN.md
+**Stopped at:** Phase9 plan09-07 acceptance halted;09-08 blocked
+Last session: 2026-10-25T19:02:32Z
+Resume file: .planning/phases/09-pal-games-and-audio/09-07-SUMMARY.md
 
 ### Quick Tasks Completed
 
@@ -406,6 +422,7 @@ Resume file: .planning/phases/09-pal-games-and-audio/09-05-PLAN.md
 | Phase 09 P02 | 13min | 3 tasks | source634596b |
 | Phase 09 P03 | 16min | 3 tasks | sourceef95e37 |
 | Phase 09 P04 | 14min | 2 tasks | 3 files |
+| Phase 09 P07 | implementation complete; acceptance halted | 3 implemented tasks | source7ad503c |
 
 ## Decisions
 
@@ -423,8 +440,9 @@ Resume file: .planning/phases/09-pal-games-and-audio/09-05-PLAN.md
 
 ### Blockers
 
-No required09-04 blocker.09-05 is ready;four successor plans and final phase acceptance remain.
+Required09-07 blocker: independent pre-plan inventory failed twice; package comparison unaccepted.
+09-08 is blocked. Recover only with new evidence; preserve completed task commits and canonical halt.
 Current required phase verification has not run. Historical advisory items follow.
 None required for the prior phase. Current-source advisory10000-case isolation timing and earlier
 publication/library costs remain in SEED-009; unaccepted evidence is preserved.
-Next command: $gsd-execute-phase 9 in a new session. Phase9 review-fix and gap execution rounds remain unused.
+Next command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence in a new session. Phase9 review-fix and gap execution rounds remain unused.
