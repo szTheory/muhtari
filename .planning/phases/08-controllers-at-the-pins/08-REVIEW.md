@@ -1,6 +1,6 @@
 ---
 phase: 08-controllers-at-the-pins
-reviewed: 2026-10-25T03:05:38Z
+reviewed: 2026-10-25T03:15:34Z
 depth: standard
 files_reviewed: 72
 files_reviewed_list:
@@ -77,156 +77,121 @@ files_reviewed_list:
   - tests/runner/tests.cmake
   - tools/check_ci_run.cmake
 findings:
-  critical: 1
-  warning: 1
+  critical: 0
+  warning: 0
   info: 0
-  total: 2
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 8: Code Review Report
 
-**Reviewed:** 2026-10-25T03:05:38Z
+**Reviewed:** 2026-10-25T03:15:34Z
 **Depth:** standard
 **Files Reviewed:** 72
-**Status:** issues_found
+**Status:** clean
+**Re-review:** fix round 1, source `25690a1`
 
 ## Narrative Findings (AI reviewer)
 
-Reviewed the supplied 72-path scope at `f0ff2a8` against phase context, research,
-plans, summaries and the existing public contracts. The scope resolver was
-degraded (`no-task-commit-rows`); the supplied broader phase-range/summary union
-was retained without narrowing. Review used the changes since
-`0da9a8b7e330b7616cac2a10631e490c8b8925bf`, current source and relevant callers.
+No open findings remain. The original standard review's 72-path scope is
+retained. This re-review reused that review context and independently re-read
+all four changed source/test/document files: `src/ports.c`,
+`tests/input/test_input.c`, `tests/input/tests.cmake` and
+`docs/libretro.md`, plus their relevant contracts and callers.
 
-One accepted public input prefix produces incorrect sensor behavior. The
-libretro guide also retains reversed physical button labels. The passing
-existing checks below do not cover the failing gun-prefix boundary.
+The original resolver status remains degraded (`no-task-commit-rows`).
+The supplied broader phase-range/summary union was retained without narrowing.
+The initial review at `f0ff2a8` is preserved in
+[08-REVIEW.iter1.md](08-REVIEW.iter1.md); applied changes and their recorded RED
+evidence are in [08-REVIEW-FIX.md](08-REVIEW-FIX.md). The
+[disposition ledger](08-REVIEW-DISPOSITION.md) retains both finding IDs as fixed
+with zero open. The clean counts above describe current findings, not deletion
+of that history.
 
-## Critical Issues
+### Verified dispositions
 
-### CR-01: Complete short gun aim is incorrectly forced off-screen
+| Original finding | Original classification | Current disposition | Independent re-review |
+|---|---|---|---|
+| CR-01: complete short gun aim forced off-screen | BLOCKER | Fixed by `ac76249` | The fallback now ends at the complete `gun_y` field. Port-0 size 40 and port-1 size 80 preserve neutral zero flags with complete coordinates. Incomplete coordinates still default off-screen; explicit off-screen is retained. |
+| WR-01: reversed ProLine physical button labels | WARNING | Fixed by `463b3a0` | The guide now says B → button 1 (right), A → button 2 (left), matching the unchanged `lr_buttons` mapping and controller pin contract. |
 
-**Classification:** BLOCKER  
-**File:** `src/ports.c:634-636`  
-**Related contract:** `docs/embedding.md:451-454`; extended-input normalization
-in `08-02-PLAN.md`, Task 1.
+The added `light_prefixes` test executes 24 cases: both ports, explicit
+selection / Auto from load override / Auto from header, and incomplete aim /
+complete aim with absent flags / explicit zero flags / explicit off-screen.
+Its literal size calculation gives 36/40/44 on port 0 and 76/80/84 on port 1.
+Assertions cover accepted pending and applied values, then actual illumination
+and unpolled D6 capture through three real frame calls with bright native
+background, no video buffer and a jammed CPU. Incomplete and off-screen controls
+must keep the sensor high. Each fresh `boot` rebuilds the input image, so the
+header-resolution case does not leak into later cases.
 
-**Issue:** The short-packet fallback tests whether the entire 40-byte port block
-is present, including `flags`. A size-40 packet already includes both port-0
-coordinates (`gun_x` ends at byte 36 and `gun_y` at byte 40), but omits
-`flags`. Its absent flag should retain the documented neutral zero default:
-only an incomplete aim pair defaults off-screen. Instead the setter accepts the
-packet and overwrites `flags` with `MUHTARI_INPUT_GUN_OFFSCREEN`. Port 1 has
-the same defect at size 80. Consequently valid complete aim cannot sense light
-until the caller also supplies the otherwise optional flag field.
-
-**Executable evidence:** A standalone harness linked to the current
-`build/ci/libmuhtari.a` loaded the owned light diagnostic, submitted explicit
-aim (100,20), selected bright native background 8, enabled D6, jammed the CPU,
-and executed three real `muhtari_run_frame` calls. Command
-`/private/tmp/muhtari-review-prefix` exited 0 and observed:
+The original standalone reproduction was recompiled from its unchanged source
+against the rebuilt current library. It now observes:
 
 | Packet size | Normalized flags | Latched INPT4 D7 |
 |---|---:|---:|
-| 40, complete coordinates / absent flags | 1 | 128 |
+| 40, complete coordinates / absent flags | 0 | 0 |
 | 44, same coordinates / explicit zero flags | 0 | 0 |
 
-The smaller packet is suppressed while the equivalent zero-extended packet
-captures illumination. This is an input-normalization defect, independent of
-any hardware calibration assumption.
-
-**Fix:** Set the off-screen default only while the complete coordinate pair is
-absent; preserve zero normalization when only `flags` is missing. For example:
-
-```c
-uint32_t aim_end = (uint32_t)(offsetof(muhtari_input_ex, port) +
-                              p * sizeof(muhtari_port_input) +
-                              offsetof(muhtari_port_input, gun_y) +
-                              sizeof port->gun_y);
-if (gun && in->size < aim_end) {
-    port->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
-}
-```
-
-Add regression cases for port-0 sizes 36/40/44 and port-1 sizes 76/80/84:
-incomplete coordinates remain off-screen, complete coordinates plus absent flags
-equal explicit zero flags, and explicit off-screen remains suppressed. Exercise
-the actual sensor/latch path as well as normalized fields. The existing
-`extended_digital` prefix loop uses zero Auto packets; it does not exercise a
-resolved gun at this boundary.
-
-## Warnings
-
-### WR-01: Libretro guide reverses the ProLine physical button labels
-
-**Classification:** WARNING  
-**File:** `docs/libretro.md:15-16`  
-**Related source:** `libretro/libretro.c:762-778`;
-`docs/hardware/controllers.md:217-224`;
-`tests/input/test_input.c:1120-1144`.
-
-**Issue:** The public binding table labels RetroPad B as “button 1 (left)” and
-A as “button 2 (right)”. The adapter maps B to `MUHTARI_BUTTON_1` and A to
-`MUHTARI_BUTTON_2`; the controller contract and pin tests identify button 1
-as the ProLine right button and button 2 as its left button. Readers translating
-physical ProLine controls therefore receive the opposite labels. This text
-predates the phase but remains in a scoped host document whose accuracy is an
-explicit phase deliverable.
-
-**Fix:** Correct the parenthetical labels to B → “button 1 (right)” and
-A → “button 2 (left)”, preserving the existing tested RetroPad mapping.
-
-## Review Evidence and Limits
-
-All commands below were run during this review; local run URL is
-`N/A-local`.
-
-| Command or check | Exit | Result |
-|---|---:|---|
-| `ctest --preset ci -R '^(input\.|api\.v6|abi\.api|runner\.movie|diag\.controllers|policy\.ci_run|policy\.quality\.controls)' --output-on-failure` | 0 | 48 selected/fixture tests passed, including controller report mutants and real producer/join controls. |
-| `ctest --preset ci -R '^(libretro[.]host[.]input|runner[.]hashes_file|fuzz[.]regress[.]run|prop[.]instances_isolated)$' --output-on-failure` | 0 | Nine selected/fixture tests passed, including complete 342-row equality production and the retained-row digest guard. |
-| `/private/tmp/muhtari-review-prefix` | 0 | Reproduced CR-01 through real frame execution; result table above. The harness was compiled from stdin and did not change repository sources. |
-| In-memory Python manifest/sample comparison against `git show 0da9a8b:<path>`, with SHA-256 checks of the three controller fixtures | 0 | All old manifest bytes retained; three new 16,512-byte fixtures match their admitted digests. Built/audio expected bytes differ only in their explicit revision-4 → revision-5 annotations. |
-| `git diff --check` | 0 | No whitespace errors in the reviewed tree. |
-| `git check-ignore --stdin < build/phase08-review-files.txt` | 1 | No scoped path is ignored. |
-| `git diff --numstat 0da9a8b HEAD -- tests/retroarch`; `wc -l tests/retroarch/*` | 0 | Hosted frontend sources unchanged; 300 physical lines. |
-
-The parent supplied final CI run
-[40153312357](https://github.com/szTheory/muhtari/actions/runs/40153312357) and
-Nightly run
-[40153313963](https://github.com/szTheory/muhtari/actions/runs/40153313963).
-Those runs and the package cohort were not independently fetched again by this
-reviewer; their supplied acceptance evidence is not presented as a fresh
-reviewer execution.
+Thus the original wrong behavior no longer reproduces. Source inspection and
+the expanded regression establish the corresponding second-port and Auto cases;
+the standalone check provides an independent confirmation using the original
+trigger.
 
 ### Proportional architecture and bounds assessment
 
-The current implementation retains existing ownership: ports own device
-protocol/charge/motion state, TIA owns D6/D7, RIOT owns effective drive and PA7,
-MARIA supplies native emission, and the bus merges chronological deadlines.
-State remains instance-owned and fixed-size; accepted motion is clamped before
-addition and consumes finite residuals. Movie 2 reuses the bounded file reader
-with immutable bytes and one cursor. No new package or general event framework
-is introduced. The seven-node keypad closure, finite adapter scans, optical
-fit and motion cadence are explicit compatibility policies, not calibration.
+The production change is confined to the existing normalization owner and its
+actual coordinate boundary. It adds no state, allocation, dependency or
+interface and does not change full-packet handling. Existing mask/range checks,
+transactional pending replacement and device resolution remain intact. The
+regression extends the existing sensor test and uses literal boundary values
+and observable pin/latch outcomes.
 
-The evidence extensions reuse existing numeric judges, report consumers and
-authenticated producer/join controls with meaningful pass/fault cases.
-ENGINEERING §11 does not justify a new quota, abstraction or review framework
-here. The separately accepted DEC.61 archive-policy change was respected:
-actual authenticated current/base measurements and package integrity remain
-required, while the retired compressed-size cutoff was not reinstated.
-The substantive boundary defect is CR-01; no additional architecture, security
-or provenance defect was established in this scope. No GPL, LGPL or unlicensed
+Only `input.lightgun` moves from the shared one-second registration to its own
+two-second registration. Existing cases, assertions, labels and inventory remain.
+The existing `muhtari_add_test` still applies normal lane timeout scaling.
+The supplied calibration records complete successful work under DEC.47;
+the reviewer confirmed the configured native deadline is 2 seconds and ran the
+current sanitizer test successfully. No broader deadline or workload change
+was introduced.
+
+The initial ENGINEERING §11 assessment remains applicable: existing
+ports/TIA/RIOT/MARIA/bus ownership, fixed device state, bounded motion and movie
+storage, independent numeric judges and authenticated evidence consumers remain
+in place. DEC.61's separately accepted archive cutoff retirement is unchanged;
+required measurements and package integrity remain separate acceptance duties.
+No additional correctness, security, provenance or substantive architecture
+defect was established in the changed boundary. No GPL, LGPL or unlicensed
 emulator source was opened.
 
-Source files were not modified and no commit was created. The orchestrator owns
-fixes, any required rerun of final acceptance, and the bounded review-fix rounds.
+## Re-review Evidence and Limits
+
+The commands below were run by this reviewer at the corrected source.
+All local evidence has run URL `N/A-local`.
+
+| Command or check | Exit | Result |
+|---|---:|---|
+| Recompile the unchanged original harness from stdin against `build/ci/libmuhtari.a`, then run `/private/tmp/muhtari-review-prefix` | 0 | Both sizes 40 and 44 normalize flags to zero and capture light; table above. No repository source was written. |
+| `ctest --preset ci -R '^(input[.]|abi[.]api|libretro[.]host[.]input|runner[.]movie)' --output-on-failure` | 0 | 46 selected/fixture tests passed, including expanded gun prefixes, old input/API clients, real libretro mapping and replay tests. |
+| `build/asan/tests/muhtari-test-input lightgun` | 0 | Expanded prefix and existing optical/raster/latch cases passed under the current ASan/UBSan build. |
+| Parse `ctest --preset ci --show-only=json-v1` and inspect `input.lightgun` | 0 | Native TIMEOUT is 2.0 seconds. |
+| `git diff --quiet 9e76ca3 HEAD -- include/muhtari.h tests/api tests/inventory tests/roms/manifest.txt tests/diag/expected.csv tests/audio/expected.txt tests/built/expected.txt` | 0 | Public layout, frozen API clients, inventories, admitted fixtures and numeric/digest expectations unchanged by fixes. |
+| `git diff --check` | 0 | No whitespace errors. |
+
+The parent's complete local 649-test plus six-release-check result is recorded
+in the fix report; it was not rerun in full by this reviewer. No new hosted run
+or corrected-source package cohort was fetched or claimed here. Earlier hosted
+passes remain historical and do not establish final acceptance of these fixes.
+The parent owns corrected-source hosted acceptance after this clean review.
+
+Fix round 1 is complete; the second permitted review-fix round is unused.
+This reviewer modified only this canonical report and made no source edit or
+commit. No owner UAT is required.
 
 ---
 
-_Reviewed: 2026-10-25T03:05:38Z_  
-_Reviewer: gsd-code-reviewer_  
-_Depth: standard_
+_Reviewed: 2026-10-25T03:15:34Z_
+_Reviewer: gsd-code-reviewer_
+_Depth: standard; fix round 1 re-review_
 
