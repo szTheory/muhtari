@@ -470,6 +470,8 @@ Successful reload starts a fresh battery baseline and neutral controls; rejected
 loads and input leave execution and published storage intact. Console Reset is
 only a held switch. Calls on one instance are single-threaded; independent
 instances share no state. There is no shared-instance parallel-call guarantee.
+Extended setters, device changes, frame execution, peeks and power cycles use
+instance storage without allocating after load, including with an opposite EEPROM.
 
 ## Memory
 

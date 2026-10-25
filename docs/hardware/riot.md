@@ -91,6 +91,15 @@ cycle, after the output/direction register changes. ORB/DDRB do not clock it. Re
 creates a pin edge; PA7 still sees its resolved pin level. The separate host drive and device ACK/data behavior are
 specified in `docs/hardware/controllers.md`, Serial EEPROM.
 
+The same data-tick notification updates keypad connectivity and adapter host lines.
+Only changed effective ORA/DDRA levels clock adapters; duplicate writes and device
+response pins do not. Keypad driven-low rows propagate through held keys, while
+output readback still returns ORA on driven pins (controllers.md, Keypad and adapters).
+Autonomous motion delivers each chronological PA7 change even through JAM, HALT or
+RDY holds; a complete unpolled quadrature cycle can set the flag despite ending at
+its starting pin level. Peeks do not advance that history or clear TIMINT. Neither
+device events nor DMA count as CPU input polling for lag accounting.
+
 On the 7800 (system notes, section 6):
 
 - SWCHA bits 7-4 are the left joystick's right, left, down and up, and bits 3-0 are the right joystick's. Low means
