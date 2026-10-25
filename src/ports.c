@@ -41,6 +41,19 @@ void muhtari__ports_host_pins(muhtari *m, uint64_t tick)
                        s->position < 16u) {
                 s->position++;
             }
+        } else if (muhtari__ports_device(m, p) == MUHTARI_PORT_MEGA7800) {
+            /* Pin1 releases/aborts, pin2 rising advances. Low duplicates
+               cannot reenter a scan (controllers.md, Mega7800). */
+            if ((host & 1u) != 0u) {
+                s->scanning = 0u;
+                s->position = 0u;
+            } else if (s->scanning == 0u && host == 0u && s->host != 0u) {
+                s->scanning = 1u;
+                s->position = 0u;
+            } else if (s->scanning != 0u && (host & 2u) != 0u && (s->host & 2u) == 0u &&
+                       s->position < 6u) {
+                s->position++;
+            }
         }
         s->host = host;
     }
@@ -543,8 +556,8 @@ muhtari_status muhtari__ports_check_device_ex(uint32_t device)
         device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_KEYPAD ||
         device == MUHTARI_PORT_TRAKBALL || device == MUHTARI_PORT_ST_MOUSE ||
         device == MUHTARI_PORT_AMIGA_MOUSE || device == MUHTARI_PORT_UNPLUGGED ||
-        device == MUHTARI_PORT_SNES2ATARI || device == MUHTARI_PORT_SAVEKEY ||
-        device == MUHTARI_PORT_ATARIVOX) {
+        device == MUHTARI_PORT_SNES2ATARI || device == MUHTARI_PORT_MEGA7800 ||
+        device == MUHTARI_PORT_SAVEKEY || device == MUHTARI_PORT_ATARIVOX) {
         return MUHTARI_STATUS_OK;
     }
     return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
@@ -623,9 +636,10 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
             port->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
         }
         uint32_t buttons =
-            port->device == MUHTARI_PORT_SNES2ATARI ? 4095u
-            : keypad                                ? 0u
-            : paddle                                ? MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2
+            (port->device == MUHTARI_PORT_SNES2ATARI || port->device == MUHTARI_PORT_MEGA7800)
+                ? 4095u
+            : keypad ? 0u
+            : paddle ? MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2
                      : (port->device == MUHTARI_PORT_DRIVING || gun ||
                                 port->device == MUHTARI_PORT_TRAKBALL
                             ? MUHTARI_BUTTON_1
@@ -816,6 +830,21 @@ uint8_t muhtari__ports_swcha(const muhtari *m)
         uint32_t b = m->ports.buttons[p];
         if (device == MUHTARI_PORT_SNES2ATARI)
             continue;
+        if (device == MUHTARI_PORT_MEGA7800 && m->ports.adapter[p].scanning != 0u) {
+            unsigned pos = m->ports.adapter[p].position;
+            uint8_t low = 0u;
+            if (pos < 2u) {
+                low = 12u; /* six-button class00 and identification00 */
+            } else if (pos < 6u) {
+                /* Pin4 then pin3: C/B, Start/A, Y/Z, Mode/X. */
+                static const uint16_t pin4[4] = {64u, 2048u, 256u, 1024u};
+                static const uint16_t pin3[4] = {16u, 32u, 512u, 128u};
+                low = (uint8_t)(((b & pin4[pos - 2u]) != 0u ? 8u : 0u) |
+                                ((b & pin3[pos - 2u]) != 0u ? 4u : 0u));
+            }
+            pins &= (uint8_t)~(p == 0u ? low << 4 : low);
+            continue;
+        }
         if (device == MUHTARI_PORT_KEYPAD) {
             uint8_t low = m->ports.keypad_low[p] & 15u;
             pins &= (uint8_t)~(p == 0u ? low << 4 : low);
@@ -909,6 +938,12 @@ uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n)
     uint32_t port = n < 4u ? n / 2u : n - 4u;
     uint32_t device = muhtari__ports_device(m, port);
     uint32_t b = m->ports.buttons[port];
+    /* Mega B/C are ordinary ProLine fire buttons; A is extended-only
+       (controllers.md, Mega7800). */
+    if (device == MUHTARI_PORT_MEGA7800) {
+        b = (b & MUHTARI_BUTTON_1) | ((b & MUHTARI_MEGA_BUTTON_C) != 0u ? MUHTARI_BUTTON_2 : 0u);
+        device = MUHTARI_PORT_PROLINE;
+    }
     if (device == MUHTARI_PORT_SNES2ATARI) {
         if (n < 4u)
             return 0u;

@@ -621,19 +621,14 @@ endfunction()
       file(WRITE "${v2}" "muhtari-movie 2\nport1 ${device}\nport2 none\n|${device}:${payload}|none:|...BB|\n")
       expect_output("lag_frames 1\n" --movie "${v2}" --save-dir "${v2_dir}" "${DIR}/input.a78")
     endforeach()
-    # Pure validation supports all declared syntax; physical support remains
-    # gated by the core, rather than silently falling back to a joystick.
+    # Every typed device reaches the core rather than a joystick fallback.
     foreach(pair IN ITEMS "trakball;-2147483648,2147483647,1" "st-mouse;2147483647,-2147483648,3"
         "amiga-mouse;-2147483648,-2147483648,3"
         "snes2atari;4095" "mega7800;4095")
       list(GET pair 0 device)
       list(GET pair 1 payload)
       file(WRITE "${v2}" "muhtari-movie 2\nport1 ${device}\nport2 none\n|${device}:${payload}|none:|...BB|\n")
-      if(device STREQUAL "mega7800")
-        expect_exit(1 "unsupported controller" --movie "${v2}" "${DIR}/input.a78")
-      else()
-        expect_output("lag_frames 1\n" --movie "${v2}" "${DIR}/input.a78")
-      endif()
+      expect_output("lag_frames 1\n" --movie "${v2}" "${DIR}/input.a78")
     endforeach()
     foreach(pair IN ITEMS "mouse:0;unknown device tag" "none:;device tag mismatch"
         "driving:+1,0,0;not a decimal" "driving:00,0,0;not a canonical decimal"

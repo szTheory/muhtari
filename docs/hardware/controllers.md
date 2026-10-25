@@ -16,10 +16,10 @@ Sources:
 
 ## Devices
 
-Each port carries a ProLine, a 2600 joystick, a driving controller, CX22, ST/Amiga mouse, an XG-1, two paddles, a keypad, SNES2Atari,
-a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
+Each port carries a ProLine, a 2600 joystick, a driving controller, CX22, ST/Amiga mouse, an XG-1, two paddles, a keypad,
+SNES2Atari, Mega7800, a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
 cartridge's A78 header does. A header that names no controller leaves the port unplugged. A header device that is not
-modelled yet, such as Mega7800, is wired as a ProLine. The legacy setter retains
+modelled yet is wired as a ProLine. The legacy setter retains
 its ProLine fallback and explicit XG-1 refusal; extended input and load overrides
 can select the gun on either port.
 
@@ -381,7 +381,7 @@ completion and CRC are judged before any pixel/raw-transition/PCM equality.
 
 ## Not modelled
 
-- AtariVox speech and Mega7800
+- AtariVox speech
   (cartridge notes, section 3.2).
 
 ## SNES2Atari
@@ -414,6 +414,48 @@ selects one-button mode. Our explicit unmeasured contention policy masks
 DATA high while PB2/PB4 plus INPTCTRL select two-button mode. PB or
 INPTCTRL changes immediately update TIA D6's live/latched input. D6 must
 be disabled for ordinary serial reads. SNES2Atari++ is not emulated.
+
+## Mega7800
+
+The [manufacturer](https://www.retrohq.co.uk/products/mega-7800-atari-joypad-adapter)
+describes normal two-button and extended operation. The exact scan follows
+the [CC0 driver at e7c18d2ecdc6](https://github.com/7800-devtools/7800basic/blob/e7c18d2ecdc6/includes/mega7800.asm),
+including both ports and duplicate initial low writes. We emulate its
+six-button class only. In each observation, pin4 precedes pin3:
+
+| Position | Pin4 | Pin3 |
+|---|---|---|
+| 0 | 0 | 0 |
+| 1 | 0 | 0 |
+| 2 | C | B |
+| 3 | Start | A |
+| 4 | Y | Z |
+| 5 | Mode | X |
+
+Buttons are active-low. Released pairs00,00,11,11,11,11 assemble to
+state0/dataFF. C,B,Start,A,Y,Z,Mode,X respectively clear data bits7..0.
+Position0 is class00=six-button; class10 means three-button and01/11
+two-button in the driver's count table. Those other classes are source
+interpretation, not emulated downstream detection. Position1 identifies
+the adapter as00. Each response uses the currently held controls.
+
+Pin1 high means normal/rearmed. Actual entry to pin1=0,pin2=0 starts0;
+if pin1 falls with pin2 high, wait for pin2 falling. While pin1 stays low,
+pin2 rising advances and falling exposes the current observation, without
+restarting. The sixth advance saturates complete, releasing response
+pins3/4 high; extra strobes stay complete. Pin1 high aborts/rearms; DDR
+release also rearms. Selection/reload/power-cycle restore normal mode.
+No unchanged write or read/peek advances. Rapid/malformed restart and
+the released completion response are finite compatibility policies, not
+hardware captures. There is no timeout or pulse-width filter.
+
+Normal mode retains ordinary D-pad pins and maps B/C to ProLine right/left
+buttons with the current one/two-button electrical context; A appears
+only in the extended response. During scanning only that port's response
+nibble changes. Shared ORA/DDRA host levels remain separate from responses
+and the EEPROM's device-driven SDA. Both opposite SaveKey/AtariVox
+placements retain save identity/span/layout/bytes/generation and complete
+committed page programming during a scan. No adapter changes storage ownership.
 
 ## Motion
 

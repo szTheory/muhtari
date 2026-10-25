@@ -342,7 +342,7 @@ struct muhtari__pot {
 
 struct muhtari__adapter {
     uint32_t snapshot;
-    uint8_t host, position;
+    uint8_t host, position, scanning;
 };
 
 struct muhtari__ports {

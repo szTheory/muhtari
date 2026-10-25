@@ -71,7 +71,7 @@ int main(void)
     input.port[1].device = MUHTARI_PORT_MEGA7800;
     input.port[1].paddle[0] = 65535u;
     input.port[1].paddle[1] = 0u;
-    CHECK_EQ_U64(muhtari_set_input_ex(m, &input), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &input), MUHTARI_STATUS_ERR_ARGUMENT);
     input.port[1].device = MUHTARI_PORT_PROLINE;
     input.port[1].keypad = 1u;
     input.port[1].dx = -1;

@@ -334,6 +334,7 @@ static void extended_digital(void)
             break;
         case 1:
             bad.port[1].device = MUHTARI_PORT_MEGA7800;
+            bad.port[1].buttons = 4096u;
             break;
         case 2:
             bad.port[1].buttons = MUHTARI_SNES_BUTTON_Y;
@@ -363,9 +364,7 @@ static void extended_digital(void)
             bad.switches = 32u;
             break;
         }
-        CHECK_EQ_U64(muhtari_set_input_ex(m, &bad), fault == 1u
-                                                        ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
-                                                        : MUHTARI_STATUS_ERR_ARGUMENT);
+        CHECK_EQ_U64(muhtari_set_input_ex(m, &bad), MUHTARI_STATUS_ERR_ARGUMENT);
     }
     frame(m, video);
     const uint8_t *r = ram(m);
@@ -431,6 +430,7 @@ static void paddle_timing(void);
 static void keypad_timing(void);
 static void snes_scan(void);
 static void mega_scan(void);
+static void adapter_lifecycle(void);
 
 static int directions(void)
 {
@@ -439,6 +439,7 @@ static int directions(void)
     keypad_timing();
     snes_scan();
     mega_scan();
+    adapter_lifecycle();
     static const row rows[] = {
         {&plain, PROLINES "|U.....|......|...BB|\n", {0xEFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
         /* section 3.1: pin 1, SWCHA b4 */
@@ -675,6 +676,120 @@ static void mega_scan(void)
             CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u), 255u);
             (void)input_access(m, 0x0281u, 1, select | strobe);
             CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 0u);
+            muhtari_destroy(m);
+        }
+        /* Normal mode preserves D-pad and B/C electrical context. A is
+           extended-only; both primary buttons remain independent. */
+        for (unsigned fire = 0u; fire < 4u; fire++) {
+            muhtari *m = boot(&plain);
+            CHECK(m != NULL);
+            if (m == NULL)
+                return;
+            (void)input_access(m, 1u, 1, 7u);
+            uint32_t b = MUHTARI_BUTTON_UP | MUHTARI_BUTTON_RIGHT | MUHTARI_BUTTON_2;
+            if ((fire & 1u) != 0u)
+                b |= MUHTARI_BUTTON_1;
+            if ((fire & 2u) != 0u)
+                b |= MUHTARI_MEGA_BUTTON_C;
+            if (!adapter_submit(m, p, MUHTARI_PORT_MEGA7800, b)) {
+                muhtari_destroy(m);
+                return;
+            }
+            CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u), p == 0u ? 0x6Fu : 0xF6u);
+            uint16_t data = (uint16_t)(12u + p), pot = (uint16_t)(8u + 2u * p);
+            CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, fire != 0u ? L : H);
+            for (unsigned mode = 0u; mode < 2u; mode++) {
+                (void)input_access(m, 0x0282u, 1, 0u);
+                (void)input_access(m, 0x0283u, 1, mode != 0u ? (p == 0u ? 4u : 16u) : 0u);
+                CHECK_EQ_HEX(input_access(m, pot, 0, 0u) & H, (fire & 1u) != 0u ? H : L);
+                CHECK_EQ_HEX(input_access(m, (uint16_t)(pot + 1u), 0, 0u) & H,
+                             (fire & 2u) != 0u ? H : L);
+                CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, mode != 0u || fire == 0u ? H : L);
+            }
+            muhtari_destroy(m);
+        }
+        muhtari *m = boot(&plain);
+        CHECK(m != NULL);
+        if (m == NULL)
+            return;
+        (void)input_access(m, 1u, 1, 7u);
+        CHECK(adapter_submit(m, p, MUHTARI_PORT_MEGA7800, MUHTARI_BUTTON_1));
+        unsigned shift = p == 0u ? 4u : 0u;
+        uint8_t select = (uint8_t)(1u << shift), strobe = (uint8_t)(2u << shift);
+        (void)input_access(m, 0x0280u, 1, strobe);
+        (void)input_access(m, 0x0281u, 1, select); /* pin1 falls while pin2 high: wait */
+        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 3u);
+        (void)input_access(m, 0x0280u, 1, 0u); /* ORA on released pin2 is no edge */
+        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 3u);
+        (void)input_access(m, 0x0281u, 1, select | strobe); /* DDR-only entry */
+        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 0u);
+        for (unsigned pair = 1u; pair <= 2u; pair++) {
+            (void)input_access(m, 0x0281u, 1, select); /* DDR-only rise */
+            (void)input_access(m, 0x0281u, 1, select | strobe);
+            CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u,
+                         pair == 1u ? 0u : 2u); /* B only: C high/B low */
+        }
+        CHECK(adapter_submit(m, p, MUHTARI_PORT_MEGA7800, MUHTARI_MEGA_BUTTON_C));
+        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 1u);
+        muhtari_input_ex reset = m->ports.applied_ex;
+        reset.switches = MUHTARI_SWITCH_RESET;
+        CHECK_EQ_U64(muhtari_set_input_ex(m, &reset), MUHTARI_STATUS_OK);
+        muhtari__ports_latch(m);
+        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 1u);
+        (void)input_access(m, 0x0280u, 1, select); /* abort partial and rearm */
+        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 3u);
+        (void)input_access(m, 0x0280u, 1, 0u);
+        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 0u);
+        CHECK(adapter_submit(m, p, MUHTARI_PORT_UNPLUGGED, 0u));
+        CHECK(adapter_submit(m, p, MUHTARI_PORT_MEGA7800, MUHTARI_BUTTON_1));
+        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 3u);
+        (void)input_access(m, 0x0281u, 1, 0u);
+        (void)input_access(m, 0x0281u, 1, select | strobe);
+        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 0u);
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK(adapter_submit(m, p, MUHTARI_PORT_MEGA7800, 0u));
+        CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u), 255u);
+        muhtari_destroy(m);
+    }
+}
+
+static void adapter_lifecycle(void)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned family = 0u; family < 2u; family++) {
+            uint32_t device = family == 0u ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800;
+            muhtari *m = boot(&plain);
+            CHECK(m != NULL);
+            if (m == NULL)
+                return;
+            muhtari_media media = {0};
+            media.size = (uint32_t)sizeof media;
+            media.image = image;
+            media.image_size = sizeof image;
+            media.port[p] = device;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(muhtari__ports_device(m, p), device); /* override active immediately */
+            muhtari_input_ex in = {0};
+            in.size = (uint32_t)sizeof in;
+            in.port[p].buttons = MUHTARI_BUTTON_1;
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in),
+                         MUHTARI_STATUS_OK); /* Auto resolves override */
+            muhtari__ports_latch(m);
+            (void)input_access(m, 1u, 1, 7u);
+            unsigned shift = p == 0u ? 4u : 0u;
+            uint8_t lines = (uint8_t)(3u << shift);
+            (void)input_access(m, 0x0280u, 1, 0u);
+            (void)input_access(m, 0x0281u, 1, lines);
+            (void)input_access(m, 0x0280u, 1, lines);
+            (void)input_access(m, 0x0280u, 1, 0u);
+            CHECK_EQ_HEX(input_access(m, (uint16_t)(12u + p), 0, 0u) & H, L);
+            for (unsigned restart = 0u; restart < 2u; restart++) {
+                CHECK_EQ_U64(restart == 0u ? muhtari_power_cycle(m) : muhtari_load(m, &media),
+                             MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(muhtari__ports_device(m, p), device);
+                CHECK_EQ_HEX(muhtari__bus_peek(m, (uint16_t)(12u + p)) & H, H);
+                CHECK_EQ_HEX(muhtari__bus_peek(m, 0x0280u), 255u);
+            }
             muhtari_destroy(m);
         }
     }
@@ -1273,6 +1388,117 @@ static void serial_wait(muhtari *m)
     }
 }
 
+/* Opposite-port programming is an independent owner. Both adapter scans
+   cross a committed page's due tick, retaining the published save span. */
+static void adapter_storage(void)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned family = 0u; family < 2u; family++) {
+            for (unsigned kind = 0u; kind < 2u; kind++) {
+                unsigned eeprom = 2u - p;
+                uint32_t device = family == 0u ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800;
+                uint32_t storage = kind == 0u ? MUHTARI_PORT_SAVEKEY : MUHTARI_PORT_ATARIVOX;
+                muhtari *m = serial_boot(eeprom, storage);
+                CHECK(m != NULL);
+                if (m == NULL)
+                    return;
+                (void)input_access(m, 1u, 1, 7u);
+                muhtari_input_ex in = {0};
+                in.size = (uint32_t)sizeof in;
+                in.port[p].device = device;
+                in.port[p].buttons = MUHTARI_BUTTON_1;
+                in.port[1u - p].device = storage;
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                muhtari__ports_latch(m);
+                muhtari_battery_info initial = {0};
+                initial.size = (uint32_t)sizeof initial;
+                CHECK_EQ_U64(muhtari_get_battery(m, &initial), MUHTARI_STATUS_OK);
+                serial_drive_ora = 0u;
+                serial_address(m, eeprom, 0x20u);
+                CHECK_EQ_U64(serial_send(m, eeprom, 0x5Au), 0u);
+                CHECK_EQ_U64(serial_send(m, eeprom, 0xA5u), 0u);
+                serial_stop(m, eeprom);
+                CHECK_EQ_U64(m->savekey.pending, 1u);
+                uint64_t due = m->savekey.busy_until;
+                uint64_t generation = m->battery.generation;
+                unsigned shift = p == 0u ? 4u : 0u;
+                uint8_t first = (uint8_t)(1u << shift), second = (uint8_t)(2u << shift);
+                (void)input_access(m, 0x0281u, 1, first | second);
+                (void)input_access(m, 0x0280u, 1, first | second);
+                (void)input_access(m, 0x0280u, 1, 0u);
+                m->bus.ticks = due - 60u;
+                for (unsigned pos = 0u; pos < 24u; pos++) {
+                    if (family == 0u) {
+                        CHECK_EQ_HEX(input_access(m, (uint16_t)(12u + p), 0, 0u) & H,
+                                     pos == 0u || pos >= 16u ? L : H);
+                    } else {
+                        CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u,
+                                     pos < 2u ? 0u : (pos == 2u ? 2u : 3u));
+                    }
+                    (void)input_access(m, 0x0280u, 1, family == 0u ? first : second);
+                    (void)input_access(m, 0x0280u, 1, 0u);
+                }
+                CHECK(m->bus.ticks > due);
+                CHECK_EQ_U64(m->savekey.pending, 0u);
+                CHECK_EQ_U64(m->battery.generation, generation + 1u);
+                muhtari_battery_info after = {0};
+                after.size = (uint32_t)sizeof after;
+                CHECK_EQ_U64(muhtari_get_battery(m, &after), MUHTARI_STATUS_OK);
+                CHECK(after.data == initial.data);
+                CHECK_EQ_U64(after.bytes, initial.bytes);
+                CHECK_EQ_U64(after.layout_version, initial.layout_version);
+                CHECK_EQ_U64(m->battery.eeprom_port, eeprom);
+                CHECK_EQ_U64(m->battery.eeprom_device, storage);
+                for (unsigned i = 0u; i < 32768u; i++)
+                    CHECK_EQ_HEX(after.data[i], i == 0x20u ? 0x5Au : (i == 0x21u ? 0xA5u : 255u));
+                for (unsigned fault = 0u; fault < 4u; fault++) {
+                    struct muhtari__ports before = m->ports;
+                    muhtari_input_ex bad = in;
+                    bad.port[p].buttons = MUHTARI_BUTTON_2;
+                    if (fault == 0u)
+                        bad.port[1u - p].device = MUHTARI_PORT_UNPLUGGED;
+                    if (fault == 1u)
+                        bad.port[1u - p].device =
+                            kind == 0u ? MUHTARI_PORT_ATARIVOX : MUHTARI_PORT_SAVEKEY;
+                    if (fault == 2u)
+                        bad.port[p].device = storage;
+                    if (fault == 3u)
+                        bad.port[p].buttons = 4096u;
+                    CHECK_EQ_U64(muhtari_set_input_ex(m, &bad),
+                                 fault == 3u ? MUHTARI_STATUS_ERR_ARGUMENT
+                                             : MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+                    CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
+                }
+                /* Keep a real ACK asserted while scanning the other nibble.
+                   Releasing SDA must not turn the device's low into a host edge. */
+                serial_start(m, eeprom);
+                for (unsigned bit = 0u; bit < 8u; bit++) {
+                    unsigned value = (0xA0u >> (7u - bit)) & 1u;
+                    serial_pins(m, eeprom, 0u, value);
+                    serial_pins(m, eeprom, 1u, value);
+                    serial_pins(m, eeprom, 0u, value);
+                }
+                serial_pins(m, eeprom, 0u, 1u);
+                unsigned eshift = eeprom == 1u ? 4u : 0u;
+                uint8_t scl = (uint8_t)(8u << eshift), sda = (uint8_t)(4u << eshift);
+                (void)input_access(m, 0x0280u, 1, first | second);
+                (void)input_access(m, 0x0281u, 1, first | second | scl);
+                CHECK_EQ_U64(m->savekey.sda_low, 1u);
+                struct muhtari__savekey ack = m->savekey;
+                (void)input_access(m, 0x0280u, 1, 0u);
+                for (unsigned clock = 0u; clock < 20u; clock++) {
+                    CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u) & sda, 0u);
+                    (void)input_access(m, 0x0280u, 1, family == 0u ? first : second);
+                    (void)input_access(m, 0x0280u, 1, 0u);
+                }
+                CHECK(memcmp(&ack, &m->savekey, sizeof ack) == 0);
+                CHECK_EQ_U64(m->battery.generation, generation + 1u);
+                muhtari_destroy(m);
+            }
+        }
+    }
+}
+
 static int savekey_protocol(void)
 {
     for (unsigned p = 1u; p <= 2u; p++) {
@@ -1314,6 +1540,7 @@ static int savekey_protocol(void)
 
 static int savekey_pins(void)
 {
+    adapter_storage();
     serial_drive_ora = 1u;
     (void)savekey_protocol();
     serial_drive_ora = 0u;
