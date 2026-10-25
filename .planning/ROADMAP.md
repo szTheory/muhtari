@@ -23,7 +23,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipped in PR24 |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Complete; 35/35 verified; shipped in PR #28 (merge checks pending) |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Complete |
-| 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Ready to execute |
+| 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Executing; final verification pending |
 | 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Not started |
 | 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Not started |
 
@@ -249,7 +249,7 @@ failure. Package integrity, typed measurements and all other contracts remain.
 **Goal:** Run PAL content at the console timing and report matching video/audio geometry to every host.
 **Depends on:** Phase 8
 **Requirements:** PAL-01, PAL-02, PAL-03
-**Plans:** 7/8 locally accepted and summarized;09-08 ready
+**Plans:** 8/8 accepted at recorded sources; review fix source acceptance and goal verification pending
 
 Plans:
 
@@ -275,7 +275,7 @@ Plans:
 - [x] 09-07-PLAN.md — Owned numeric diagnostic and 600-full-frame three-host evidence.
 
 **Wave 8** *(ready)*
-- [ ] 09-08-PLAN.md — Honest capability claims and exact-source portability/package acceptance.
+- [x] 09-08-PLAN.md — Honest capability claims and exact-source portability/package acceptance.
 
 **Success criteria:**
 

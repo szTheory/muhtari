@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: 8
-status: ready
-stopped_at: Phase 9 plan 09-07 locally accepted after debug recovery; 09-08 ready
-last_updated: "2026-10-25T19:30:39Z"
+status: executing
+stopped_at: All eight Phase 9 plans accepted; review CR-01 fixed; source-fresh hosted acceptance pending
+last_updated: "2026-10-25T21:04:26.544758Z"
 last_activity: 2026-10-25
-last_activity_desc: Debug recovery accepts independent 09-07 candidate/base inventories and six actual ZIPs
-state_head: ddf51d4565596a8b8435e5977217482b1a542a12
+last_activity_desc: Review round 1 clean after BIOS staging fix; final acceptance refresh pending
+state_head: b3eb2ddd7d1c563a392de106e062764e09007e80
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 50
-  completed_plans: 49
+  completed_plans: 50
   percent: 57
 total_phases: 7
 current_phase_name: PAL games and audio
@@ -27,12 +27,11 @@ current_phase: 09
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase9 plans09-01–07 are accepted locally;09-07's independent
-pre-plan evidence passes after debug recovery.09-08 is ready.
-The library, automatic-region runner and both libretro formats execute PAL with
-selected timing/geometry and independently proved bounded audio storage/arithmetic.
-API6/ABI1/behavior5 and retained NTSC observations remain unchanged.
-PAL-01–03 remain pending09-08 and final hosted acceptance.
+Current focus: All eight Phase9 plans and22 tasks are implemented and accepted at their recorded sources.
+Final pre-review source9d5f3a8 has full native/PPC/package/frontend acceptance.
+CR-01 BIOS borrowed-media lifetime is fixed inaf9dc83; independent re-review is clean.
+The654-test local gate passes; source-fresh hosted acceptance and goal verification remain pending.
+One of two review-fix rounds is used; gap round unused. PAL-01–03 remain pending final verification.
 Next separate command: $gsd-execute-phase 9.
 
 ## Current Position
@@ -41,15 +40,13 @@ Current Plan: 8
 Total Plans in Phase: 8
 Progress: [██████░░░░] 57%
 
-Phase9 has7/8 accepted plans and19/22 accepted tasks;19/22 tasks are implemented. Four of seven milestone
-phases remain complete (57%); phases10–11 remain unstarted. Runtime totals are
-49 summarized active plans of50 planned, including historical halted06-01;
-accepted completed plans are48. These use the retained active-slot convention.
-The raw on-disk inventory is55 summaries and56 plans, including historical
-recovery artifacts. Summary existence alone is not phase acceptance.
+Phase9 has8/8 summarized plans and22/22 implemented tasks. Four of seven milestone
+phases remain complete (57%); phases10–11 remain unstarted. Active-slot runtime totals
+are50 summarized plans of50 planned, including historical halted06-01;49 accepted
+completed plans. Summary existence alone is not phase acceptance.
 
-Status: Accepted09-07;09-08 ready
-Last activity: 2026-10-25 — Committed current653+6 and unchanged pre-plan652+6 plus six-ZIP comparison pass
+Status: Review clean; source-fresh acceptance and verification pending
+Last activity: 2026-10-25 — BIOS lifetime fix passes654+6; clean independent re-review
 Next command: $gsd-execute-phase 9
 Branch: phase/09-pal-games-and-audio
 
