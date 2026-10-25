@@ -12,8 +12,8 @@ The RetroPad follows the ProSystem core's layout, so remaps made for it carry ov
 | RetroPad | Port 1 | Port 2 |
 |---|---|---|
 | D-pad | joystick | joystick |
-| B | button 1 (left) | button 1 |
-| A | button 2 (right) | button 2 |
+| B | button 1 (right) | button 1 |
+| A | button 2 (left) | button 2 |
 | Select | console Select | - |
 | Start | console Pause | - |
 | X | console Reset | - |
