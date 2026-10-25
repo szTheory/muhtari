@@ -430,6 +430,7 @@ static void extended_digital(void)
 static void paddle_timing(void);
 static void keypad_timing(void);
 static void snes_scan(void);
+static void mega_scan(void);
 
 static int directions(void)
 {
@@ -437,6 +438,7 @@ static int directions(void)
     paddle_timing();
     keypad_timing();
     snes_scan();
+    mega_scan();
     static const row rows[] = {
         {&plain, PROLINES "|U.....|......|...BB|\n", {0xEFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
         /* section 3.1: pin 1, SWCHA b4 */
@@ -616,6 +618,65 @@ static void snes_scan(void)
         (void)input_access(m, 0x0282u, 1, pb); /* ORB releases +5V */
         CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, L);
         muhtari_destroy(m);
+    }
+}
+
+/* Pin4 then pin3, six observations from the pinned CC0 driver's actual
+   shifts. Released class00/ID00/dataFF and every cleared bit are numeric
+   oracles independent of the production response expression. */
+static void mega_scan(void)
+{
+    static const uint32_t button[] = {MUHTARI_MEGA_BUTTON_C,     MUHTARI_BUTTON_1,
+                                      MUHTARI_MEGA_BUTTON_START, MUHTARI_BUTTON_2,
+                                      MUHTARI_MEGA_BUTTON_Y,     MUHTARI_MEGA_BUTTON_Z,
+                                      MUHTARI_MEGA_BUTTON_MODE,  MUHTARI_MEGA_BUTTON_X};
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned held = 0u; held <= 8u; held++) {
+            muhtari *m = boot(&plain);
+            CHECK(m != NULL);
+            if (m == NULL)
+                return;
+            (void)input_access(m, 1u, 1, 7u);
+            if (!adapter_submit(m, p, MUHTARI_PORT_MEGA7800, held == 8u ? 0u : button[held])) {
+                muhtari_destroy(m);
+                return;
+            }
+            unsigned shift = p == 0u ? 4u : 0u;
+            uint8_t select = (uint8_t)(1u << shift), strobe = (uint8_t)(2u << shift);
+            (void)input_access(m, 0x0280u, 1, select | strobe);
+            (void)input_access(m, 0x0281u, 1, select | strobe);
+            (void)input_access(m, 0x0280u, 1, 0u);
+            uint16_t assembled = 0u;
+            for (unsigned pair = 0u; pair < 9u; pair++) {
+                uint8_t expected = pair < 2u ? 0u : 3u;
+                if (pair >= 2u && pair < 6u && held < 8u && held / 2u == pair - 2u)
+                    expected &= (uint8_t)~(held % 2u == 0u ? 2u : 1u);
+                uint8_t got = input_access(m, 0x0280u, 0, 0u);
+                uint8_t response = (uint8_t)((got >> (shift + 2u)) & 3u);
+                CHECK_EQ_U64(response, expected);
+                CHECK_EQ_HEX(got & (p == 0u ? 15u : 240u), p == 0u ? 15u : 240u);
+                if (pair < 6u)
+                    assembled = (uint16_t)(((unsigned)assembled << 2) | response);
+                struct muhtari__ports before = m->ports;
+                for (unsigned repeat = 0u; repeat < 3u; repeat++) {
+                    (void)muhtari__bus_peek(m, 0x0280u);
+                    (void)input_access(m, 0x0280u, 0, 0u);
+                    (void)input_access(m, 0x0280u, 1, 0u);
+                }
+                CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
+                (void)input_access(m, 0x0280u, 1, strobe);
+                (void)input_access(m, 0x0280u, 1, strobe); /* duplicate rising write */
+                (void)input_access(m, 0x0280u, 1, 0u);
+            }
+            CHECK_EQ_HEX(assembled >> 8, 0u);
+            CHECK_EQ_HEX(assembled & 255u, held == 8u ? 255u : 255u ^ (128u >> held));
+            /* DDR releases pin1: normal/rearmed. A true low/low entry restarts. */
+            (void)input_access(m, 0x0281u, 1, 0u);
+            CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u), 255u);
+            (void)input_access(m, 0x0281u, 1, select | strobe);
+            CHECK_EQ_U64((input_access(m, 0x0280u, 0, 0u) >> (shift + 2u)) & 3u, 0u);
+            muhtari_destroy(m);
+        }
     }
 }
 
