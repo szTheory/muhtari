@@ -3,12 +3,12 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: Not started
-status: "Phase 8 shipped — PR #31; required CI and release confirmation pending"
-stopped_at: Phase 8 PR 31 opened; ship session tracks CI, merge and release; next $gsd-discuss-phase 9
-last_updated: "2026-10-25T13:41:19.915Z"
+status: Phase 9 context gathered — ready for planning
+stopped_at: Phase 9 context gathered; next $gsd-plan-phase 9
+last_updated: "2026-10-25T15:01:06.147Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 8 shipped in PR 31; CI, merge and release confirmation pending
-state_head: 2c10399522dd7bf16c3b5de7024f4ab30f8c4c71
+last_activity_desc: Phase9 discussion complete; context committed; no PAL implementation accepted
+state_head: ca92da3346d9d6aecd58f99b39d1e39f4a016615
 progress:
   total_phases: 7
   completed_phases: 4
@@ -44,10 +44,10 @@ milestone phases are complete (57%); phases9–11 remain unstarted. Runtime tota
 are42/42 summarized plans, including historical halted06-01; active accepted
 progress is41/41 known planned slots. These are not claims of milestone completion.
 
-Status: Phase 8 shipped — PR #31; required CI and release confirmation pending
-Last activity: 2026-10-25 — Phase8 shipping PR opened; fresh local gate passed
-Next command: $gsd-discuss-phase 9 (new session, after shipping confirmations)
-Branch: phase/08-controllers-at-the-pins. PR #31:
+Status: Phase 9 context gathered — ready for planning
+Last activity: 2026-10-25 — Phase9 discussion complete; context committed; no PAL implementation accepted
+Next command: $gsd-plan-phase 9
+Branch: phase/09-pal-games-and-audio
 https://github.com/szTheory/muhtari/pull/31
 This ship-note snapshot precedes required CI, squash auto-merge and release-PR
 confirmation; the current ship session owns those checks. No next GSD step runs here.
@@ -235,9 +235,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase8 PR #31 opened; current ship session tracks CI, merge and release
-Last session: 2026-10-25
-Resume file: None
+**Stopped at:** Phase 9 context gathered; next $gsd-plan-phase 9
+Last session: 2026-10-25T15:01:05.947Z
+Resume file: .planning/phases/09-pal-games-and-audio/09-CONTEXT.md
 
 ### Quick Tasks Completed
 
