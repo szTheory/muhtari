@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 8
-status: executing
-stopped_at: All eight Phase 9 plans accepted; review CR-01 fixed; source-fresh hosted acceptance pending
-last_updated: "2026-10-25T21:04:26.544758Z"
+current_plan: Not started
+status: ready
+stopped_at: Phase 9 complete and verified; ready to ship Phase 9
+last_updated: "2026-10-25T22:01:44.013609Z"
 last_activity: 2026-10-25
-last_activity_desc: Review round 1 clean after BIOS staging fix; final acceptance refresh pending
-state_head: b3eb2ddd7d1c563a392de106e062764e09007e80
+last_activity_desc: Phase 9 verified 42/42; PAL requirements complete; ship next
+state_head: 8814d3e80e1221cc0da71b84560c4f001852212a
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 50
   completed_plans: 50
-  percent: 57
+  percent: 71
 total_phases: 7
-current_phase_name: PAL games and audio
-current_phase: 09
+current_phase: 10
+current_phase_name: Homebrew and expansion memory
 ---
 
 # Project State
@@ -27,28 +27,77 @@ current_phase: 09
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: All eight Phase9 plans and22 tasks are implemented and accepted at their recorded sources.
-Final pre-review source9d5f3a8 has full native/PPC/package/frontend acceptance.
-CR-01 BIOS borrowed-media lifetime is fixed inaf9dc83; independent re-review is clean.
-The654-test local gate passes; source-fresh hosted acceptance and goal verification remain pending.
-One of two review-fix rounds is used; gap round unused. PAL-01–03 remain pending final verification.
-Next separate command: $gsd-execute-phase 9.
+Current focus: Phase9 is complete:8/8 plans,22/22 tasks and42/42 verified truths.
+PAL-01–03 are complete. The library, runner and both libretro formats execute PAL
+with selected timing/geometry and independently proved bounded audio arithmetic.
+API6/ABI1/behavior5 and all342 original NTSC observations remain unchanged.
+The one review-fix round resolves borrowed BIOS lifetime; no required blocker or owner UAT remains.
+Next separate command: $gsd-ship 9. Phases10–11 remain unstarted.
 
 ## Current Position
 
-Current Plan: 8
-Total Plans in Phase: 8
-Progress: [██████░░░░] 57%
+Current Phase: 10 — Homebrew and expansion memory (unstarted)
+Current Plan: Not started
+Total Plans in Phase: Not planned
+Progress: [███████░░░] 71%
 
-Phase9 has8/8 summarized plans and22/22 implemented tasks. Four of seven milestone
-phases remain complete (57%); phases10–11 remain unstarted. Active-slot runtime totals
+Phase9 has8/8 accepted plans and22/22 accepted tasks. Five of seven milestone
+phases are complete (71%); phases10–11 remain unstarted. Active-slot runtime totals
 are50 summarized plans of50 planned, including historical halted06-01;49 accepted
-completed plans. Summary existence alone is not phase acceptance.
+completed plans. The retained active-slot convention differs from raw historical artifacts.
 
-Status: Review clean; source-fresh acceptance and verification pending
-Last activity: 2026-10-25 — BIOS lifetime fix passes654+6; clean independent re-review
-Next command: $gsd-execute-phase 9
+Status: Phase9 verified; ready to ship
+Last activity: 2026-10-25 — Source-fresh acceptance and independent42/42 verification passed
+Next command: $gsd-ship 9
 Branch: phase/09-pal-games-and-audio
+
+## Phase 9 final acceptance
+
+All eight plans and PAL-01–03 pass. Independent09-VERIFICATION.md covers42/42
+truths and112 fingerprinted inputs. One of two permitted review-fix rounds was used;
+CR-01 is fixed, re-review is clean, and the gap round is unused. The BIOS alias
+regression exercises ten region/source/size combinations and transactional failures.
+The16KiB private staging adds no allocation, public ABI change or per-frame work.
+
+Final runtime fixaf9dc83 is accepted through branch head419bb31 and actual tested
+mergedf6aeefcd4e6e5f13c4350f3a6fe71d202a0940d; their complete trees match.
+Genuine main base2cbbd6a78dabe2bc098615d49f7118231cc05626 is rebuilt independently.
+CI40233948646 attempt1 and Nightly40233948516 attempt2 pass:
+https://github.com/szTheory/muhtari/actions/runs/40233948646
+https://github.com/szTheory/muhtari/actions/runs/40233948516/attempts/2
+Native current654/base649+6 in all six lanes, ASan637/base632, full native/PPC654+6,
+WASM592, all956 equality rows, vectors258, fuzz10, integer/ABI/architecture/hygiene,
+all18 actual candidate ZIPs, authenticated current/base join, armed+1% test-card
+performance and the two existing actual RetroArch cases pass. The old342-row
+prefix matches actual accepted main artifacts. Archive totals remain report-only.
+
+The delegated post-review regression command
+`node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 0 -- sh build/ci/task08-jobserver-gate.sh`
+exits0:654 ordinary45.13s, release6 in0.17s, explicit package/release6 in0.13s,
+complete JUnit and hygiene. It covers110 prior-phase test references; URL:N/A-local.
+The standard FIFO context caps local workers at4 without changing the configured
+workflow, presets, workloads or deadlines. Verifier spot checks5/5 exit0.
+`verification.status`, `git diff --check` and tree hygiene exit0; URL:N/A-local.
+
+Nightly attempt1 was preempted after apt consumed29m13s of its30m job budget;
+567 native cases passed, no source/test error occurred, and PPC did not run.
+One targeted same-source retry completed apt in13s and the full loop in9m47s.
+All failed/cancelled history remains in09-08-SUMMARY.md. The advisory10000-case
+isolation timeout390.00s remains unaccepted and advisory under SEED-009.
+PAL fast handoff, optical/RC fits and85:342 analog balance retain their documented
+confidence limits; no hardware calibration or universal retail playability is claimed.
+
+The completion helper's seven summary warnings reproduce its command-as-path
+heuristic. Actual declared files, reachable commits, consumers, inventories and the
+112-file fingerprint pass. Progress/current-position preservation fields are
+reconciled here. No new gate, quota, required debt or metadata-retry loop is added.
+Draft PR33 remains unmerged. Shipping and post-merge release confirmation are the
+next separate step, before starting Phase10.
+
+## Phase 9 execution history
+
+The following slice snapshots retain their original scope and pending statements;
+the final acceptance above supersedes them.
 
 09-01 sourcead0d661 and summarya09ecc5 are committed. Task commits8b845bc
 (RED),bb4e39c (GREEN),824a3ea (startup/lifecycle) andad0d661 (docs) resolve
@@ -392,7 +441,7 @@ Core state remains integer-only, bounded, instance-owned and allocation-free aft
 Battery layout1 is absent,2048,32768 or34816 bytes; attachment freezes at successful load.
 Fixed5ms EEPROM timing is a compatibility model, not a hardware measurement.
 The ROM-free stub supplies signatures only; AtariVox speech, full OpenHSC, save states,
-PAL completion, later controllers and broader retail playability remain outside this phase.
+broader retail playability and later expansion features remain outside Phase9.
 Historical no-EEPROM frame pins retain explicit topology; automatic save metadata has
 separate executed hardware tests. Archive/floor/performance guards remain unchanged.
 
@@ -402,9 +451,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase9 plan09-07 accepted after debugging;09-08 ready
-Last session: 2026-10-25T19:30:39Z
-Resume file: .planning/phases/09-pal-games-and-audio/09-08-PLAN.md
+**Stopped at:** Phase9 complete and verified; ready to ship Phase9
+Last session: 2026-10-25T22:01:44.013609Z
+Resume file: None
+Next command: $gsd-ship 9
 
 ### Quick Tasks Completed
 
@@ -439,6 +489,9 @@ Resume file: .planning/phases/09-pal-games-and-audio/09-08-PLAN.md
 
 ## Decisions
 
+- [Phase 09]: Keep one load-selected regional timing/geometry/audio profile and preserve existing NTSC outputs.
+- [Phase 09]: Judge independent startup plus600 full-frame numbers before956-row equality and authenticated main-base evidence.
+- [Phase 09]: Stage borrowed BIOS bytes in bounded unpublished instance storage before load commit; preserve live state on failure.
 - [Phase 08]: Preserve separate fixture admission, device behavior and evidence comparison authorities.
 - [Phase 08]: Admit only the exact 4-to-5 annotation transition alongside existing equality and historical adjacent pairs.
 - [Phase 08]: Preserve the old input validator and Auto fallback independently of extended device support.
@@ -453,9 +506,7 @@ Resume file: .planning/phases/09-pal-games-and-audio/09-08-PLAN.md
 
 ### Blockers
 
-No required09-07 blocker remains: independent pre-plan inventory and actual package
-comparison pass.09-08 is ready. Original failed evidence and task commits are preserved.
-Current required phase verification has not run. Historical advisory items follow.
-None required for the prior phase. Current-source advisory10000-case isolation timing and earlier
-publication/library costs remain in SEED-009; unaccepted evidence is preserved.
-Next command: $gsd-execute-phase 9 in a new session. Phase9 review-fix and gap execution rounds remain unused.
+No required blocker remains. Phase9 is complete with clean review and42/42
+verification; ship9 is the next separate command. Advisory10000-case isolation
+cost remains unaccepted in SEED-009. Hardware calibration, broader retail
+playability and existing historical deferrals retain their stated scope.

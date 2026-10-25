@@ -16,8 +16,8 @@ that any host can embed.
 ## Current State
 
 Planning milestone **v1.0** shipped 2026-10-21 with package **v0.4.0**.
-The currently published package is [v0.6.0](https://github.com/szTheory/muhtari/releases/tag/v0.6.0),
-published2026-10-24 after Phase7 merged in [PR28](https://github.com/szTheory/muhtari/pull/28).
+The currently published package is [v0.7.0](https://github.com/szTheory/muhtari/releases/tag/v0.7.0),
+published2026-10-25 after Phase8 merged in [PR31](https://github.com/szTheory/muhtari/pull/31). It has19 assets; no release pull request is pending at Phase9 closeout.
 Four phases, 73 plans and 149 recorded tasks deliver games with sound in RetroArch.
 [Release publication and latest-install run](https://github.com/szTheory/muhtari/actions/runs/39533130210) completed successfully; v0.4.0 is published with 19 assets.
 At that release, the C/header tree had 38,684 tracked lines, including 8,577 in src/;
@@ -56,7 +56,7 @@ within399937 (worst393952). Full native/PPC641+6 and69-row equality, WASM580,
 after both allowed fix rounds; no owner verification remains. See
 [Phase 7 verification](phases/07-battery-saves/07-VERIFICATION.md).
 
-Phase8 is verified complete and awaits `$gsd-ship 8`: API6/ABI1/behavior5 adds
+Phase8 is verified complete and shipped in PR31: API6/ABI1/behavior5 adds
 extended typed input, immutable movie2 replay and all in-scope controller models.
 All14 plans and INPUT-01–05 pass49/49 truths; one review-fix round corrected a
 short-packet aim boundary and physical button labels. Exact-source CI40157749294
@@ -65,8 +65,26 @@ passes native649+6 across six current/base lanes, full native/PPC649+6, WASM587,
 current/base measurements pass; DEC.61 keeps archive bytes report-only.
 Nightly40157750598 retains an explicitly unaccepted advisory10000-case isolation
 timeout; five other10000-case properties pass. Required isolation passes. Hardware
-fits remain unmeasured, and PR-base performance and post-merge truths remain for ship.
+fits remain unmeasured; the quoted execution evidence retains its original scope.
 See [Phase8 verification](phases/08-controllers-at-the-pins/08-VERIFICATION.md).
+
+Phase9 is verified complete and ready for `$gsd-ship 9`: all8 plans and PAL-01–03
+pass42/42 truths. Selected313-line timing,320x292 geometry/rational rates and warm
+PAL presentation reach the library, runner and both libretro formats. Independent
+startup plus600 full-frame evidence precedes956-row equality; all342 prior NTSC
+observations remain exact. API6/ABI1/behavior5 remains unchanged. One review-fix
+round adds16KiB private BIOS staging, resolving borrowed-media lifetime without
+extra allocation or per-frame work; a poison-based regression proves failure
+preservation and successful boot in both regions. Re-review is clean.
+
+Fresh CI40233948646 and Nightly40233948516 attempt2 accept the reviewed source:
+six native current654/base649+6, ASan637, full native/PPC654+6, WASM592, full vectors,
+fuzz, authenticated package/performance evidence and the two real frontend cases.
+One targeted PPC retry followed a29-minute external provisioning delay; the
+unchanged retry setup completed in13 seconds. The advisory isolation property
+still times out and remains unaccepted; model handoff/optical/RC fits and85:342
+analog balance retain explicit confidence limits. No routine owner UAT remains.
+See [Phase9 verification](phases/09-pal-games-and-audio/09-VERIFICATION.md).
 
 ## Current Milestone: v2.0 The whole library
 
@@ -111,11 +129,11 @@ save states and other later horizons remain deferred. Planning v2.0 does not sel
 - ✓ Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5 verified and shipped in PR #20.
 - ✓ Activision, Absolute and Fractalus banking, physical RAM and three-host behavior — BOARD-01–03, Phase 6 shipped in PR24.
 - ✓ HSC/SaveKey battery data survives host and frontend restarts — SAVE-01–06, Phase7 shipped in PR28.
-- ✓ Source-qualified lightgun, analog/matrix, timed motion and complete adapter inputs across all three deliverables — INPUT-01–05, Phase8 verified; shipping pending.
+- ✓ Source-qualified lightgun, analog/matrix, timed motion and complete adapter inputs across all three deliverables — INPUT-01–05, Phase8 shipped in PR31.
+- ✓ Selected PAL timing, presentation and audio across all three deliverables — PAL-01–03, Phase9 verified42/42; shipping next.
 
 ### Active
 
-- [ ] PAL timing, presentation and audio — PAL-01–03, Phase 9.
 - [ ] BankSet and XBoard/XM memory/POKEY/HSC — BOARD-04–05, Phase 10.
 - [ ] Evidence-backed library accounting — COMP-01–03, Phase 11.
 
@@ -186,6 +204,9 @@ Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| One load-selected regional profile | Keep integer timing, geometry and audio carry consistent across existing owners | ✓ Phase9: PAL and retained NTSC behavior verified across all hosts/platforms |
+| Judge numeric PAL behavior before hash agreement | Independent expectations catch errors shared by hosts | ✓ Phase9:601 calls,577879 samples,CRC52a5 precede956-row equality |
+| Stage borrowed firmware before load commit | Installation can invalidate public input spans while failure must preserve the live machine | ✓ Phase9:16KiB private BIOS staging, poison-based regression and both-region lifecycle proof |
 | Separate typed input from frozen legacy input | Preserve existing linkage while adding transactional selection and once-only motion | ✓ Phase8: API6,88-byte extended packet and linked old clients verified |
 | Sense native emission through existing chip/deadline owners | Retain historical light and bounded unpolled behavior independently of host buffers | ✓ Phase8: explicit unmeasured optical/RC/matrix/motion fits, complete adapter edges |
 | Judge independent controller numbers before hash agreement | Equal implementations alone can share an error | ✓ Phase8: thirteen scenarios,342 rows, actual library/runner/module and cross-platform evidence |
@@ -231,4 +252,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-25 after Phase8 execution and verification; ship Phase8 next*
+*Last updated: 2026-10-25 after Phase9 execution and verification; ship Phase9 next*
