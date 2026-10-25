@@ -102,6 +102,12 @@ then automatically exercise that row. Genuine temporary event-base Git commits
 drive the recursive producer and unchanged join; old-row edits, deletions and
 reordering, repeated paths, unrelated names, malformed fields and forged trust
 inputs must fail. Raw Git manifest and sample digests remain the comparison identity.
+PAL join controls mutate copies of actual recursive producer outputs: omitted
+lanes/files, mixed SHAs, wrong runs or raw comparison identities, forged base
+SHA/policy and missing/unavailable archive observations fail independently.
+Failed ordinary/release inventories and a missing component ZIP produce no fresh
+observation. Controlled eight-lane copies test the consumer; they establish no
+hosted native execution or PAL numeric/hash acceptance.
 Supporting the annotation
 transition changes neither the live core revision nor its diagnostic report judge;
 both must advance together when the implementation lands. Existing frame/audio
