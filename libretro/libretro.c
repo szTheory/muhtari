@@ -63,7 +63,7 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #define LR_HEIGHT 242u
 #define LR_MAX_HEIGHT 293u
 #define LR_PIXELS (LR_WIDTH * 292u)
-/* A frame yields 800 or 801 samples (muhtari_info.max_audio_samples). */
+/* PAL needs up to962 samples; selected.max_audio_samples bounds each run. */
 #define LR_AUDIO_CAPACITY 962u
 /* The larger BIOS image, 16 KiB; one byte more is read so that a longer
    file reaches muhtari_load, which refuses it. */
@@ -88,11 +88,11 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #ifdef USE_RGB565
 typedef uint16_t lr_pixel;
 #define LR_PIXEL_FORMAT RETRO_PIXEL_FORMAT_RGB565
-#define LR_PALETTE muhtari__palette_rgb565
+#define LR_PALETTE muhtari__palette_rgb565_region
 #else
 typedef uint32_t lr_pixel;
 #define LR_PIXEL_FORMAT RETRO_PIXEL_FORMAT_XRGB8888
-#define LR_PALETTE muhtari__palette_rgb
+#define LR_PALETTE muhtari__palette_rgb_region
 #endif
 
 /* All adapter state. A frontend may keep the module loaded between sessions,
@@ -108,6 +108,7 @@ static muhtari *inst;
 static muhtari_cart_info cart;
 static muhtari_info selected;
 static unsigned selected_region;
+static uint32_t selected_palette = MUHTARI_REGION_NTSC;
 static uint8_t *content;
 static size_t content_size;
 static uint8_t *native;
@@ -214,8 +215,8 @@ static const uint32_t adapter_buttons[2][12] = {
      MUHTARI_MEGA_BUTTON_X, MUHTARI_MEGA_BUTTON_Z, MUHTARI_MEGA_BUTTON_MODE,
      MUHTARI_MEGA_BUTTON_START}};
 
-/* The options (SET_CORE_OPTIONS_V2, L2339). No region option: PAL is
-   refused in this release. */
+/* The options (SET_CORE_OPTIONS_V2, L2339). Region is captured at load;
+   presentation may change while the selected console keeps running. */
 static struct retro_core_option_v2_category option_categories[] = {{NULL, NULL, NULL}};
 static struct retro_core_option_v2_definition options_v2[] = {
     {.key = "muhtari_boot",
@@ -225,11 +226,17 @@ static struct retro_core_option_v2_definition options_v2[] = {
              "content is loaded.",
      .values = {{"fast", "Fast"}, {"bios", "BIOS"}, {NULL, NULL}},
      .default_value = "fast"},
+    {.key = "muhtari_region",
+     .desc = "Region",
+     .info = "Auto follows cartridge metadata. Changes require content reload; Restart keeps "
+             "the loaded region.",
+     .values = {{"auto", "Auto"}, {"ntsc", "NTSC"}, {"pal", "PAL"}, {NULL, NULL}},
+     .default_value = "auto"},
     {.key = "muhtari_palette",
      .desc = "Palette",
-     .info = "The colours of the native frame.",
-     .values = {{"ntsc", "NTSC (warm)"}, {NULL, NULL}},
-     .default_value = "ntsc"},
+     .info = "Auto follows the loaded region. Explicit colours change presentation only.",
+     .values = {{"auto", "Auto"}, {"ntsc", "NTSC (warm)"}, {"pal", "PAL (warm)"}, {NULL, NULL}},
+     .default_value = "auto"},
     {.key = "muhtari_left_difficulty",
      .desc = "Left difficulty",
      .info = "The left difficulty switch at load and Restart; a change sets it at once. Port 1's "
@@ -303,6 +310,7 @@ static void lr_release(void)
     memset(&cart, 0, sizeof cart);
     memset(&selected, 0, sizeof selected);
     selected_region = RETRO_REGION_NTSC;
+    selected_palette = MUHTARI_REGION_NTSC;
     memset(descs, 0, sizeof descs);
     memset(&memory_map, 0, sizeof memory_map);
     desc_count = 0u;
@@ -345,6 +353,16 @@ static bool lr_option_is(const char *key, const char *value)
     var.value = NULL;
     return env_cb != NULL && env_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value != NULL &&
            strcmp(var.value, value) == 0;
+}
+
+/* Resolve presentation against the successful session, never a pending region
+   option. Missing/unknown values use Auto. */
+static void lr_read_palette(void)
+{
+    selected_palette = lr_option_is("muhtari_palette", "pal")    ? MUHTARI_REGION_PAL
+                       : lr_option_is("muhtari_palette", "ntsc") ? MUHTARI_REGION_NTSC
+                       : selected_region == RETRO_REGION_PAL     ? MUHTARI_REGION_PAL
+                                                                 : MUHTARI_REGION_NTSC;
 }
 
 /* Reads the difficulty options. At load and Restart (all) they set the
@@ -845,6 +863,7 @@ static void lr_input(void)
     bool updated = false;
     if (env_cb != NULL && env_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
         lr_read_difficulty(false);
+        lr_read_palette();
         lr_refresh_inputs();
     }
     if (lr_ordinary(console_device))
@@ -967,7 +986,7 @@ void retro_run(void)
         return;
     }
     for (i = 0; i < selected.width * selected.height; i++) {
-        pixels[i] = LR_PALETTE(native[i]);
+        pixels[i] = LR_PALETTE(native[i], selected_palette);
     }
     if (video_cb != NULL) {
         video_cb(pixels, selected.width, selected.height,
@@ -1250,6 +1269,7 @@ static bool lr_load_content(const struct retro_game_info *game)
         }
     }
     lr_check_battery_request(&media);
+    selected_region = cart.region == MUHTARI_REGION_PAL ? RETRO_REGION_PAL : RETRO_REGION_NTSC;
     return true;
 }
 
@@ -1436,8 +1456,7 @@ bool retro_load_game(const struct retro_game_info *game)
         lr_release();
         return false;
     }
-    selected_region =
-        game != NULL && cart.region == MUHTARI_REGION_PAL ? RETRO_REGION_PAL : RETRO_REGION_NTSC;
+    lr_read_palette();
     lr_refresh_inputs();
     muhtari_input_ex initial = {0};
     muhtari_media request = {0};

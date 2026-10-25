@@ -479,7 +479,7 @@ static void card(void)
     struct retro_system_av_info av;
     struct retro_game_info dummy;
     static const unsigned char dummy_bytes[16] = {0};
-    static uint8_t native[W * H];
+    static uint8_t native[W * 292u];
     static int16_t audio[801];
     char version[32];
     muhtari_versions v;
@@ -593,17 +593,27 @@ static void card(void)
     set_var("muhtari_palette", "auto");
 
     /* Automatic PAL uses the actual loaded module and both audio callback
-       paths. The owned loop leaves BACKGRND zero, including the last row. */
+       paths. The owned program sets BACKGRND and a nonzero TIA tone. */
     static uint8_t pal[128u + 4096u];
     images_header(pal, 3u, "Owned PAL", 4096u, 0u);
     pal[57] = 1u;
     memset(pal + 128u, 0xEA, 4096u);
-    static const uint8_t program[] = {0xA9u, 0x46u, 0x85u, 0x20u, 0x4Cu, 0x04u, 0xF0u};
+    static const uint8_t program[] = {0xA9u, 0x00u, 0x85u, 0x3Cu, /* DMA off */
+                                      0xA9u, 0x46u, 0x85u, 0x20u, /* BACKGRND */
+                                      0xA9u, 0x04u, 0x85u, 0x15u, /* AUDC0 */
+                                      0xA9u, 0x03u, 0x85u, 0x17u, /* AUDF0 */
+                                      0xA9u, 0x0Fu, 0x85u, 0x19u, /* AUDV0 */
+                                      0x4Cu, 0x14u, 0xF0u};
     memcpy(pal + 128u, program, sizeof program);
     images_footer(pal + 128u, 4096u);
     struct retro_game_info game = {0};
     game.data = pal;
     game.size = sizeof pal;
+    muhtari_media media = {0};
+    media.size = (uint32_t)sizeof media;
+    media.image = pal;
+    media.image_size = sizeof pal;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(p_load_game(&game), 1u);
     p_get_system_av_info(&av);
     CHECK_EQ_U64(p_get_region(), RETRO_REGION_PAL);
@@ -615,7 +625,16 @@ static void card(void)
     CHECK(av.geometry.aspect_ratio > 1.13933f && av.geometry.aspect_ratio < 1.13934f);
     CHECK_EQ_DBL(av.timing.sample_rate, 48000.0);
     static const uint32_t pal_samples[] = {960u, 962u, 961u};
-    for (unsigned f = 0u; f < 3u; f++) {
+    checking_audio = 1;
+    for (unsigned f = 0u; f < 5u; f++) {
+        uint32_t palette = f == 3u ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
+        set_var("muhtari_palette", f == 3u ? "ntsc" : f == 4u ? "pal" : "auto");
+        io.video = native;
+        io.audio = expected_audio;
+        io.audio_capacity = 962u;
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        expected_count = io.audio_count;
+        audio_position = 0u;
         memset(frame, 0xA5, sizeof frame);
         video_calls = 0;
         batch_frames = sample_frames = 0u;
@@ -624,8 +643,12 @@ static void card(void)
         CHECK_EQ_U64(video_height, 292u);
         CHECK_EQ_U64(video_width, 320u);
         CHECK_EQ_U64(video_pitch, 320u * (rgb565 ? 2u : 4u));
-        CHECK_EQ_U64(batch_frames, rgb565 ? 0u : pal_samples[f]);
-        CHECK_EQ_U64(sample_frames, rgb565 ? pal_samples[f] : 0u);
+        if (f < 3u)
+            CHECK_EQ_U64(io.audio_count, pal_samples[f]);
+        CHECK_EQ_U64(batch_frames, rgb565 ? 0u : io.audio_count);
+        CHECK_EQ_U64(sample_frames, rgb565 ? io.audio_count : 0u);
+        CHECK_EQ_U64(audio_position, io.audio_count);
+        compare_region_frame(native, 292u, palette);
         for (uint32_t px = 0u; px < 93440u; px++) {
             uint32_t got = 0u;
             if (rgb565) {
@@ -637,12 +660,18 @@ static void card(void)
             }
             /* Warm PAL index46 is B0,57,46 (approved palette oracle).
                Its independent RGB565 truncation is B2A8. */
-            if (got != (rgb565 ? 0xB2A8u : 0xB05746u)) {
+            if (native[px] != 0x46u) {
+                CHECK_EQ_U64(native[px], 0x46u);
+                break;
+            }
+            if (f != 3u && got != (rgb565 ? 0xB2A8u : 0xB05746u)) {
                 CHECK_EQ_HEX(got, rgb565 ? 0xB2A8u : 0xB05746u);
                 break;
             }
         }
     }
+    checking_audio = 0;
+    set_var("muhtari_palette", "auto");
     CHECK_EQ_U64(av_update_calls, 0u);
     p_unload_game();
     p_get_system_av_info(&av);
@@ -1657,12 +1686,13 @@ static void case_bios(const char *dir)
     system_dir = NULL;
 }
 
-/* The core declares its four options through SET_CORE_OPTIONS_V2, or the
+/* The core declares its options through SET_CORE_OPTIONS_V2, or the
    v1 call when the frontend has only that. The difficulty options set the
    switches at load and at Restart; a change mid-game sets them at once. */
 static void check_keys(void)
 {
-    static const char *const keys[7] = {"muhtari_boot",
+    static const char *const keys[8] = {"muhtari_boot",
+                                        "muhtari_region",
                                         "muhtari_palette",
                                         "muhtari_left_difficulty",
                                         "muhtari_right_difficulty",
@@ -1670,10 +1700,10 @@ static void check_keys(void)
                                         "muhtari_battery_port1",
                                         "muhtari_battery_port2"};
     unsigned k;
-    for (k = 0; k < 7u; k++) {
+    for (k = 0; k < 8u; k++) {
         check_string("option key", option_keys[k], keys[k]);
     }
-    CHECK(option_keys[7] == NULL);
+    CHECK(option_keys[8] == NULL);
 }
 
 static void case_options(void)

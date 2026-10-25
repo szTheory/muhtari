@@ -143,18 +143,26 @@ the two existing screenshot and save-roundtrip cases.
 | Option | Values | Applies |
 |---|---|---|
 | Boot (`muhtari_boot`) | Fast (default), BIOS | when content is loaded |
-| Palette (`muhtari_palette`) | NTSC (warm) | always |
+| Region (`muhtari_region`) | Auto (default), NTSC, PAL | when content is loaded; reload required |
+| Palette (`muhtari_palette`) | Auto (default), NTSC (warm), PAL (warm) | always; presentation only |
 | Left difficulty (`muhtari_left_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
 | Right difficulty (`muhtari_right_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
 | High Score Cartridge (`muhtari_hsc`) | Auto (default), On, Off | at content load |
 | Port 1/2 battery device (`muhtari_battery_port1`, `muhtari_battery_port2`) | Auto (default), None, SaveKey, AtariVox | at content load |
 
-There is no region option yet: console timing follows content metadata. PAL AV is
+Auto region follows content metadata; an explicit choice overrides it at load.
+Changing region during a session, including Restart, keeps the loaded timing and
+geometry until content is reloaded. No-content operation is always the NTSC test card.
+Auto palette follows the effective loaded region; explicit warm palettes only change
+colours, preserving native pixels, timing and audio. Missing or unknown option values
+use Auto. The existing `ntsc` palette spelling retains warm NTSC.
+
+PAL AV is
 320×292, maximum height 293, FPS 3546894/71051 and display aspect 147500000/129461631.
 The frontend queries AV after load; load sends no AV/geometry update callback.
 All 292 rows and up to 962 mono samples are retained in either pixel format.
 Unload, failed load and deinit clear the selected AV/region and output pointers;
-queries then report the NTSC fallback. The current palette remains warm NTSC.
+queries then report the NTSC fallback. The automatic palette cache also returns to NTSC.
 
 Battery options override controller requests supplied before load; Auto follows those requests, then
 cartridge metadata. A SaveKey hint without a location selects port 2. Battery None suppresses automatic
