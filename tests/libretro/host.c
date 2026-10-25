@@ -935,7 +935,7 @@ static void case_devices(void)
     start(0);
     CHECK(controller_info != NULL);
     for (port = 0; controller_info != NULL && port < 2u; port++) {
-        CHECK_EQ_U64(controller_info[port].num_types, 8u);
+        CHECK_EQ_U64(controller_info[port].num_types, 9u);
         for (t = 0; t < 8u && t < controller_info[port].num_types; t++) {
             check_string("controller", controller_info[port].types[t].desc, names[t]);
             CHECK_EQ_U64(controller_info[port].types[t].id, ids[t]);
