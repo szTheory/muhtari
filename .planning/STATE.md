@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: 14
-status: executing
-stopped_at: 08-13 verified;08-14 ready
-last_updated: "2026-10-25T01:43:47.246407+00:00"
+status: verifying
+stopped_at: 08-14 accepted;phase review and verifier pending
+last_updated: "2026-10-25T02:58:23.204777+00:00"
 last_activity: 2026-10-24
-last_activity_desc: 08-13 accepted after648+6 local checks;08-14 ready
-state_head: f08451c
+last_activity_desc: 08-14 exact-source hosted acceptance passes;phase gates pending
+state_head: dd541f5
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 41
+  completed_plans: 42
   percent: 43
 total_phases: 7
 current_phase_name: Controllers at the pins
@@ -27,11 +27,11 @@ current_phase: 08
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Controllers at the pins. Plans01–13 are accepted; the first driving
+Current focus: Controllers at the pins. Plans01–14 are accepted; the first driving
 slice runs through library, immutable runner replay and actual libretro/RetroArch.
 A separately authorized DEC.61 review retired only the unsupported archive cutoff;
 required authenticated measurements and package integrity remain. No INPUT
-requirement is complete. Next is08-14 exact-source hosted acceptance and controller equality.
+requirement is complete. Code review, regression and independent goal verification are pending.
 
 ## Current Position
 
@@ -39,15 +39,23 @@ Current Plan: 14
 Total Plans in Phase: 14
 Progress: [████░░░░░░] 43%
 
-Phase8 has13/14 accepted plans;08-13 passes full local CI648+6 and package checks.
-Runtime summarized totals are41/42, including historical halted06-01.
-Accepted active progress is40/41;3/7 milestone phases remain complete (43%).
+Phase8 has14/14 accepted plans; phase completion remains pending final gates.
+Runtime summarized totals are42/42, including historical halted06-01.
+Accepted active progress is41/41;3/7 milestone phases remain complete (43%).
 The runtime summary count is not an accepted-completion count.
 
-Status: Executing Phase 08;08-14 ready
-Last activity: 2026-10-24 —08-13 accepted; continuing the dependency-ready wave
+Status: Verifying Phase 08;formal review and goal verification pending
+Last activity: 2026-10-24 —08-14 accepted; continuing the dependency-ready wave
 Next command: $gsd-execute-phase 8
 Branch: phase/08-controllers-at-the-pins. No Phase8 PR, merge or release.
+
+08-14 tested sourcedf8f9a6 and genuine parent81eba27 have full exact-source
+CI40153312357 and Nightly40153313963 success, attempt1. Native649+6 in all six
+current/base lanes, full native/PPC649+6, WASM587 and342-row equality pass.
+Actual RetroArch pixel/battery cases pass. All18 current ZIPs and authenticated
+quality join pass; current/base peak414124/414132 bytes remains report-only.
+Canonical14 summary preserves every failed/cancelled attempt and measured fixes.
+Formal review and independent goal verification remain required before completion.
 
 08-13 source38ec251 and summaryf08451c are accepted. Parent post-wave full-ci
 gate exits0 (648+6), N/A-local. All-family transactional/noalloc/peek/storage, real
@@ -185,7 +193,7 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:**08-13 verified;08-14 ready
+**Stopped at:**08-14 accepted;phase review and verifier pending
 Last session: 2026-10-24T22:21:15.223Z
 Resume file: .planning/phases/08-controllers-at-the-pins/08-14-PLAN.md
 
@@ -213,6 +221,7 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-14-PLAN.md
 | Phase 08 P11 | 8min | 2 tasks | source70465c9 |
 | Phase 08 P12 | 14min | 3 tasks | source03b7f96 |
 | Phase 08 P13 | 15min | 3 tasks | source38ec251 |
+| Phase 08 P14 | 66min verification window | 3 tasks | sourcedf8f9a6 |
 
 ## Decisions
 
@@ -232,4 +241,4 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-14-PLAN.md
 
 None required. Advisory library timing evidence and measured publication-control
 cost remain in the existing seed; neither is promoted into a controller gate.
-Current execution continues at08-14; no requirement is complete.
+All plans accepted;formal phase gates pending;requirements remain pending.

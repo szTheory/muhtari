@@ -180,7 +180,7 @@ Plans:
 **Goal:** Let software use light guns, analog and matrix controllers, quadrature devices and modern controller adapters.
 **Depends on:** Phase 7
 **Requirements:** INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05
-**Plans:** 13/14 plans complete in14 sequential waves.08-13 passes648+6 local checks;08-14 is ready.
+**Plans:** 14/14 plans accepted; phase review, regression and independent goal verification pending.
 
 Plans:
 **Wave 1**
@@ -223,7 +223,7 @@ Plans:
 - [x] 08-13-PLAN.md — Hostile input, noalloc/isolation, real typed workloads and comparable slice costs pass at38ec251 (648+6).
 
 **Wave 14** *(blocked on Wave 13 completion)*
-- [ ] 08-14-PLAN.md — Accept exact controller equality and six-native bounds.
+- [x] 08-14-PLAN.md — Exact-source CI/nightly,342-row equality,actual RetroArch and authentic six-native package observations pass atdf8f9a6.
 
 Each plan depends on the preceding plan because core, host, diagnostic and evidence owners overlap.
 08-01 proves narrow fixture comparability before fixture-dependent acceptance. 08-05 requires the
@@ -295,10 +295,10 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
-| 8. Controllers at the pins | 13/14 | Executing08-14 | — |
+| 8. Controllers at the pins | 14/14 | Verifying | — |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-24; Phases5–7 remain complete. Phase8 has13/14 accepted plans. The separately authorized DEC.61 recovery closes only08-05 after required exact-source CI/consumer acceptance;08-06–13 accepted locally and08-14 ready. All INPUT requirements remain pending. Next separate command: $gsd-execute-phase 8. This execute step continues in dependency order; shipping remains separate.*
+*Updated: 2026-10-24; Phases5–7 remain complete. Phase8 has14/14 accepted plans;formal phase gates pending. The separately authorized DEC.61 recovery closes only08-05 after required exact-source CI/consumer acceptance;08-14 exact-source CI/nightly acceptance passes;formal phase gates remain. All INPUT requirements remain pending. Next separate command: $gsd-execute-phase 8. This execute step continues in dependency order; shipping remains separate.*
