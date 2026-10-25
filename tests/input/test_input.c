@@ -333,7 +333,7 @@ static void extended_digital(void)
             bad.port[1].device = 999u;
             break;
         case 1:
-            bad.port[1].device = MUHTARI_PORT_PADDLE;
+            bad.port[1].device = MUHTARI_PORT_KEYPAD;
             break;
         case 2:
             bad.port[1].buttons = MUHTARI_SNES_BUTTON_Y;
@@ -1301,6 +1301,94 @@ static void paddle_timing(void)
                     CHECK_EQ_HEX(input_access(m, (uint16_t)(12u + port), 0, 0u), 0x80u);
                     muhtari_destroy(m);
                 }
+            }
+        }
+    }
+    for (unsigned port = 0u; port < 2u; port++) {
+        for (unsigned poll = 0u; poll < 2u; poll++) {
+            for (unsigned edge = 0u; edge < 3u; edge++) {
+                muhtari *m = boot(&plain);
+                CHECK(m != NULL);
+                if (m == NULL) {
+                    return;
+                }
+                (void)input_access(m, 1u, 1, 7u);
+                muhtari_input_ex in;
+                memset(&in, 0, sizeof in);
+                in.size = (uint32_t)sizeof in;
+                in.port[port].device = MUHTARI_PORT_PADDLE;
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                muhtari__ports_latch(m);
+                uint64_t release = m->bus.ticks + 100u;
+                (void)light_access_at(m, 1u, release - 60u, 1, 0x80u);
+                (void)light_access_at(m, 1u, release - 30u, 1, 0xC0u);
+                (void)light_access_at(m, 1u, release, 1, 0x40u);
+                uint16_t reg = (uint16_t)(8u + 2u * port);
+                if (poll != 0u) {
+                    for (unsigned t = 40u; t < 950u; t += 40u) {
+                        CHECK_EQ_HEX(light_access_at(m, reg, release + t, 0, 0u) & 0x80u, 0u);
+                    }
+                }
+                (void)light_access_at(m, 1u, release + 980u, 1, 0x40u);
+                /* The previous slow write ends at release+981. Advance
+                   ordinary RAM cycles to exactly the setting-change tick. */
+                m->bus.ticks = release + 1000u;
+                in.port[port].paddle[0] = 65535u;
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                muhtari__ports_latch(m);
+                uint64_t crossing = release + 1000u + 88654u;
+                if (poll != 0u) {
+                    for (unsigned t = 1200u; t < 89000u; t += 1000u) {
+                        CHECK_EQ_HEX(light_access_at(m, reg, release + t, 0, 0u) & 0x80u, 0u);
+                    }
+                }
+                CHECK_EQ_HEX(light_access_at(m, reg, crossing + edge - 1u, 0, 0u) & 0x80u,
+                             edge == 0u ? 0u : 0x80u);
+                /* Other pot never changed; it already charged at1878. */
+                CHECK_EQ_HEX(input_access(m, reg + 1u, 0, 0u) & 0x80u, 0x80u);
+                if (edge != 0u) {
+                    in.port[port].paddle[0] = 0u;
+                    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                    muhtari__ports_latch(m);
+                    CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0x80u);
+                }
+                (void)input_access(m, 1u, 1, 0x80u);
+                CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
+                in.port[port].paddle[0] = 65535u;
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                muhtari__ports_latch(m);
+                (void)input_access(m, 1u, 1, 0u);
+                /* A JAM executes actual host frames without sensor polls;
+                   max travel crosses the first full frame boundary. */
+                m->cart.rom[0] = 0x02u;
+                m->cpu.pc = ROM_BASE;
+                frame(m, NULL);
+                frame(m, NULL);
+                frame(m, NULL);
+                frame(m, NULL);
+                CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0x80u);
+                struct muhtari__ports before = m->ports;
+                (void)muhtari__bus_peek(m, reg);
+                CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
+                in.port[port].device = MUHTARI_PORT_UNPLUGGED;
+                in.port[port].paddle[0] = 0u;
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                muhtari__ports_latch(m);
+                in.port[port].device = MUHTARI_PORT_PADDLE;
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                muhtari__ports_latch(m);
+                CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0u);
+                /* The CPU is already jammed. A real HALT interval still
+                   carries the crossing without an input read. */
+                uint64_t at = m->bus.ticks;
+                CHECK_EQ_U64(muhtari__bus_request_halt(m, at, at + 2000u), 1u);
+                while (m->bus.ticks < at + 2000u) {
+                    (void)muhtari__bus_read(m, ROM_BASE);
+                }
+                CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0x80u);
+                CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(m->ports.pot[port][0].action, 0u);
+                muhtari_destroy(m);
             }
         }
     }

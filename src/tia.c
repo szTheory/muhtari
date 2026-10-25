@@ -149,7 +149,11 @@ void muhtari__tia_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick
     unsigned reg = addr & 0x3Fu;
     if (reg == 0x01u) {
         muhtari__ports_catch_up(m, data_tick);
+        uint8_t previous_dump = m->tia.input_dump;
         m->tia.input_dump = (uint8_t)((v >> 7) & 1u);
+        if (previous_dump != m->tia.input_dump) {
+            muhtari__ports_dump(m, data_tick);
+        }
         m->tia.input_latch_enable = (uint8_t)((v >> 6) & 1u);
         if (m->tia.input_latch_enable == 0u) {
             m->tia.input_latch[0] = 1u;

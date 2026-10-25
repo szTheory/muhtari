@@ -16,10 +16,10 @@ Sources:
 
 ## Devices
 
-Each port carries a ProLine, a 2600 joystick, a driving controller, an XG-1,
+Each port carries a ProLine, a 2600 joystick, a driving controller, an XG-1, two paddles,
 a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
 cartridge's A78 header does. A header that names no controller leaves the port unplugged. A header device that is not
-modelled yet, such as paddles, is wired as a ProLine. The legacy setter retains
+modelled yet, such as a keypad, is wired as a ProLine. The legacy setter retains
 its ProLine fallback and explicit XG-1 refusal; extended input and load overrides
 can select the gun on either port.
 
@@ -266,8 +266,42 @@ frame-6 neutral ED and right fire 80. Fire records mask D7 so open-bus low bits 
 These 19 values follow the connector tuples and the selected cadence above, not a frame hash. The `motion0` rows
 in `tests/diag/expected.csv` label fitted timing policy separately from wiring facts; count and CRC cover all records.
 
+## Paddles
+
+Extended input and explicit load selection accept a pair on either port. Each
+`paddle[0/1]` is absolute travel0..65535; buttons1/2 ground connector pins4/3
+(SWCHA7/6 on the left,3/2 on the right). Pot0 is pin5/INPT0 or2; pot1 is
+pin9/INPT1 or3. Other payload fields and direction buttons must be zero.
+The legacy setter keeps its paddle refusal and automatic ProLine fallback.
+
+The original 7800 schematic C025231-001 (Stella system training manual PDF p69)
+specifies10kΩ series resistors R38–R41 and68nF capacitors C43–C46. The Atari
+VCS domestic field service manual figure7-4 describes the1MΩ pot and paired
+button wiring. These are circuit facts; comparator threshold0.32, immediate
+ideal dump and the setting-change policy below are unmeasured compatibility
+fits. There is no per-game polling-window scale or hardware-calibration claim.
+
+For position p, R=10000+floor(p*1000000/65535)Ω and the crossing duration is
+ceil(R*187747/1000000) master ticks. The coefficient approximates the68nF RC
+charge to the fitted threshold using the NTSC master clock. Independently
+computed vectors are p0/32767/32768/65535 →1878/95750/95753/189625 ticks.
+Release at100 therefore reads low at1977, high at1978 and1979 for p0.
+
+Each instance owns four finite Q32 action accumulators, durations, change
+epochs and projected crossing ticks. Action ranges0..2^32. Constant-rate
+progress is elapsed*2^32/duration, floored only when a setting changes; the
+new remaining delay is ceil((2^32-action)*new_duration/2^32). After1000 ticks
+at p0 action is2286990040; switching to65535 crosses another88654 ticks later.
+Reads project no new rounding. The existing bus deadline owner delivers only
+the four possible crossings, including under JAM/HALT and across host frames.
+A high capacitor remains high through setting changes until D7 grounds it.
+D7-high immediately clamps all four inputs low; repeated high writes retain
+zero, repeated low writes retain the charge epoch. Device replacement/reset
+clears action; same-device packets preserve it. D6 controls only trigger
+latches, independently of these pots. No allocation, floating point or
+per-tick analog iteration is used.
+
 ## Not modelled
 
-- The TIA's VBLANK D6 latch of INPT4 and INPT5, and its D7 dump of INPT0-INPT3, which paddles need.
-- The light gun, paddles, trak-ball, keypad, mice, AtariVox speech, SNES2Atari and Mega7800
+- Trak-ball, keypad, mice, AtariVox speech, SNES2Atari and Mega7800
   (cartridge notes, section 3.2).

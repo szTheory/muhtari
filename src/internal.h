@@ -335,9 +335,15 @@ struct muhtari__light {
     uint8_t delay, width, lines, threshold, low;
 };
 
+struct muhtari__pot {
+    uint64_t action, last_tick, crossing_tick;
+    uint32_t duration;
+};
+
 struct muhtari__ports {
     struct muhtari__motion motion[2];
     struct muhtari__light light[2];
+    struct muhtari__pot pot[2][2];
     uint64_t next_tick; /* zero when no controller deadline is armed */
     uint32_t device[2];
     uint32_t buttons[2];
@@ -764,6 +770,7 @@ uint8_t muhtari__peek(const muhtari *m, uint16_t addr);
    docs/embedding.md, Input). */
 void muhtari__ports_latch(muhtari *m);
 void muhtari__ports_reset(muhtari *m);
+void muhtari__ports_dump(muhtari *m, uint64_t tick);
 uint64_t muhtari__ports_next_event(const muhtari *m);
 void muhtari__ports_catch_up(muhtari *m, uint64_t tick);
 void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x, uint64_t tick,

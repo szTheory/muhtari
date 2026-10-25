@@ -15,11 +15,70 @@
 #define PORTS_MOTION_CADENCE_TICKS 454u
 #define PORTS_MOTION_RESIDUAL_MAX 255
 
+#define PORTS_CHARGED (UINT64_C(1) << 32)
+
+static void ports_rearm(muhtari *m);
+
+/* 7800 10k series + 1M pot, 68nF and fitted comparator threshold:
+   controllers.md, Paddles. Ceil to whole master ticks. */
+static uint32_t ports_pot_duration(uint32_t position)
+{
+    uint64_t resistance = 10000u + (uint64_t)position * 1000000u / 65535u;
+    return (uint32_t)((resistance * 187747u + 999999u) / 1000000u);
+}
+
+static void ports_pot_project(struct muhtari__pot *pot, uint64_t tick)
+{
+    uint64_t remaining = PORTS_CHARGED - pot->action;
+    pot->crossing_tick = tick + (remaining * pot->duration + PORTS_CHARGED - 1u) / PORTS_CHARGED;
+}
+
+/* Materialize only on electrical/setting changes. Bound elapsed before
+   multiplying; reads never round or move this epoch (controllers.md). */
+static void ports_pot_materialize(struct muhtari__pot *pot, uint64_t tick, uint8_t dump)
+{
+    if (dump == 0u && pot->duration != 0u) {
+        if (tick >= pot->crossing_tick) {
+            pot->action = PORTS_CHARGED;
+        } else {
+            pot->action += (tick - pot->last_tick) * PORTS_CHARGED / pot->duration;
+        }
+    }
+    pot->last_tick = tick;
+}
+
+void muhtari__ports_dump(muhtari *m, uint64_t tick)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned n = 0u; n < 2u; n++) {
+            struct muhtari__pot *pot = &m->ports.pot[p][n];
+            pot->action = 0u;
+            pot->last_tick = tick;
+            ports_pot_project(pot, tick);
+        }
+    }
+    ports_rearm(m);
+}
+
 void muhtari__ports_reset(muhtari *m)
 {
     memset(m->ports.motion, 0, sizeof m->ports.motion);
     memset(m->ports.light, 0, sizeof m->ports.light);
+    memset(m->ports.pot, 0, sizeof m->ports.pot);
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned n = 0u; n < 2u; n++) {
+            m->ports.pot[p][n].duration = ports_pot_duration(m->ports.applied_ex.port[p].paddle[n]);
+            ports_pot_project(&m->ports.pot[p][n], 0u);
+        }
+    }
     m->ports.next_tick = 0u;
+    /* Power-on clears TIA dump after resetting ports. An explicit load
+       choice must charge even before the first host packet. */
+    for (unsigned p = 0u; p < 2u; p++) {
+        if (muhtari__ports_device(m, p) == MUHTARI_PORT_PADDLE) {
+            m->ports.next_tick = m->ports.pot[p][0].crossing_tick;
+        }
+    }
 }
 
 uint64_t muhtari__ports_next_event(const muhtari *m)
@@ -36,6 +95,14 @@ static void ports_rearm(muhtari *m)
             next = at;
         }
         const struct muhtari__light *light = &m->ports.light[p];
+        if (muhtari__ports_device(m, p) == MUHTARI_PORT_PADDLE && m->tia.input_dump == 0u) {
+            for (unsigned n = 0u; n < 2u; n++) {
+                const struct muhtari__pot *pot = &m->ports.pot[p][n];
+                if (pot->action < PORTS_CHARGED && pot->crossing_tick < next) {
+                    next = pot->crossing_tick;
+                }
+            }
+        }
         const uint64_t deadlines[] = {light->sample_tick, light->response_tick, light->low_until};
         for (unsigned i = 0u; i < 3u; i++) {
             if (deadlines[i] != 0u && deadlines[i] < next) {
@@ -118,6 +185,14 @@ void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
     uint64_t next = muhtari__ports_next_event(m);
     while (next <= tick && next != UINT64_MAX) {
         for (unsigned p = 0u; p < 2u; p++) {
+            if (muhtari__ports_device(m, p) == MUHTARI_PORT_PADDLE && m->tia.input_dump == 0u) {
+                for (unsigned n = 0u; n < 2u; n++) {
+                    struct muhtari__pot *pot = &m->ports.pot[p][n];
+                    if (pot->crossing_tick == next) {
+                        pot->action = PORTS_CHARGED;
+                    }
+                }
+            }
             struct muhtari__light *light = &m->ports.light[p];
             if (light->sample_tick == next) {
                 muhtari__maria_flush(m, next);
@@ -376,8 +451,8 @@ muhtari_status muhtari__ports_check_device_ex(uint32_t device)
 {
     if (device == 0u || device == MUHTARI_PORT_PROLINE || device == MUHTARI_PORT_JOYSTICK ||
         device == MUHTARI_PORT_DRIVING || device == MUHTARI_PORT_LIGHTGUN ||
-        device == MUHTARI_PORT_UNPLUGGED || device == MUHTARI_PORT_SAVEKEY ||
-        device == MUHTARI_PORT_ATARIVOX) {
+        device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_UNPLUGGED ||
+        device == MUHTARI_PORT_SAVEKEY || device == MUHTARI_PORT_ATARIVOX) {
         return MUHTARI_STATUS_OK;
     }
     return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
@@ -446,13 +521,17 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
             return st;
         }
         int gun = port->device == MUHTARI_PORT_LIGHTGUN;
+        int paddle = port->device == MUHTARI_PORT_PADDLE;
         if (gun && in->size < offsetof(muhtari_input_ex, port) + p * sizeof(muhtari_port_input) +
                                   sizeof(muhtari_port_input)) {
             port->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
         }
-        uint32_t buttons =
-            port->device == MUHTARI_PORT_DRIVING || gun ? MUHTARI_BUTTON_1 : PORTS_BUTTONS;
-        if ((port->buttons & ~buttons) != 0u || port->paddle[0] != 0u || port->paddle[1] != 0u ||
+        uint32_t buttons = paddle ? MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2
+                                  : (port->device == MUHTARI_PORT_DRIVING || gun ? MUHTARI_BUTTON_1
+                                                                                 : PORTS_BUTTONS);
+        if ((port->buttons & ~buttons) != 0u ||
+            (paddle ? (port->paddle[0] > 65535u || port->paddle[1] > 65535u)
+                    : (port->paddle[0] != 0u || port->paddle[1] != 0u)) ||
             port->keypad != 0u || (port->device != MUHTARI_PORT_DRIVING && port->dx != 0) ||
             port->dy != 0 ||
             (gun ? (port->gun_x >= MUHTARI__WIDTH || port->gun_y >= MUHTARI__HEIGHT_NTSC ||
@@ -531,6 +610,20 @@ void muhtari__ports_latch(muhtari *m)
         }
         struct muhtari__motion *axis = &ports->motion[p];
         uint32_t device = muhtari__ports_device(m, p);
+        for (unsigned n = 0u; n < 2u; n++) {
+            struct muhtari__pot *pot = &ports->pot[p][n];
+            uint32_t position = ports->input_mode != 0u ? ports->pending_ex.port[p].paddle[n] : 0u;
+            if (previous != device) {
+                memset(pot, 0, sizeof *pot);
+                pot->last_tick = m->bus.ticks;
+            } else if (position == ports->applied_ex.port[p].paddle[n]) {
+                continue;
+            } else {
+                ports_pot_materialize(pot, m->bus.ticks, m->tia.input_dump);
+            }
+            pot->duration = ports_pot_duration(position);
+            ports_pot_project(pot, m->bus.ticks);
+        }
         if (previous != device) {
             memset(axis, 0, sizeof *axis);
             memset(&ports->light[p], 0, sizeof ports->light[p]);
@@ -605,6 +698,12 @@ uint8_t muhtari__ports_swcha(const muhtari *m)
             continue;
         }
         uint32_t b = m->ports.buttons[p];
+        if (device == MUHTARI_PORT_PADDLE) {
+            uint8_t low = (uint8_t)(((b & MUHTARI_BUTTON_1) != 0u ? 8u : 0u) |
+                                    ((b & MUHTARI_BUTTON_2) != 0u ? 4u : 0u));
+            pins &= (uint8_t)~(p == 0u ? low << 4 : low);
+            continue;
+        }
         if (device == MUHTARI_PORT_LIGHTGUN) {
             if ((b & MUHTARI_BUTTON_1) == 0u) {
                 pins &= (uint8_t)~(p == 0u ? 0x10u : 0x01u);
@@ -666,6 +765,10 @@ uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n)
     uint32_t device = muhtari__ports_device(m, port);
     uint32_t b = m->ports.buttons[port];
     if (n < 4u) {
+        if (device == MUHTARI_PORT_PADDLE) {
+            const struct muhtari__pot *pot = &m->ports.pot[port][n & 1u];
+            return (uint8_t)(m->tia.input_dump == 0u && pot->action == PORTS_CHARGED);
+        }
         uint32_t button = (n & 1u) == 0u ? MUHTARI_BUTTON_1 : MUHTARI_BUTTON_2;
         return (uint8_t)(device == MUHTARI_PORT_PROLINE && (b & button) != 0u);
     }
