@@ -636,6 +636,7 @@ runner.probe.truncated	portable,runner
 runner.probe.unreadable	portable,runner
 runner.probe.unsupported_board	portable,runner
 runner.probe.usage	portable,runner
+runner.region.pal	portable,runner
 runner.save.cadence	portable,runner
 runner.save.controls	runner
 runner.save.faults	portable,runner
@@ -650,7 +651,6 @@ runner.usage.frame_range	portable,runner
 runner.usage.no_args	portable,runner
 runner.usage.port	portable,runner
 runner.usage.positional	portable,runner
-runner.usage.region_pal	portable,runner
 runner.usage.unknown	portable,runner
 runner.version	portable,runner
 sally.irq	pokey,portable,sally

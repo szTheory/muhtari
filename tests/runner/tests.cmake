@@ -1017,9 +1017,19 @@ endfunction()
       --frames 1 --port1 mouse)
     expect_exit(2 "--port2 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}" --frames 1 --port2)
     expect_output("" --frames 1 --port1 joystick --port2 none)
-  elseif(CASE STREQUAL "usage.region_pal")
-    expect_exit(2 "--region pal is not supported: give auto or ntsc.*${usage_line}"
-      --frames 1 --region pal)
+  elseif(CASE STREQUAL "region.pal")
+    # Fault prevented: explicit selection diverges from automatic PAL, metadata
+    # describes the header instead of the session, or old output gains fields.
+    set(pal_info "region pal\nwidth 320\nheight 292\nfps_num 3546894\nfps_den 71051\npar_num 1843750\npar_den 1773447\npalette warm_pal\n")
+    set(ntsc_info "region ntsc\nwidth 320\nheight 242\nfps_num 39375000\nfps_den 656711\npar_num 6\npar_den 7\npalette warm_ntsc\n")
+    expect_output("${pal_info}" --frames 1 --info "${DIR}/linear-v3-16k-pal")
+    expect_output("${pal_info}" --info --frames 1 --region pal "${DIR}/linear-v3-16k")
+    expect_output("${pal_info}" --region pal --frames 1 --info "${DIR}/linear-v3-16k-pal")
+    expect_output("${ntsc_info}" --frames 1 --region ntsc --info "${DIR}/linear-v3-16k-pal")
+    expect_output("${ntsc_info}" --frames 1 --region pal --info)
+    expect_output("" --frames 1 --region pal "${DIR}/linear-v3-16k")
+    expect_exit(2 "duplicate --info" --frames 1 --info --info)
+    expect_exit(2 "--region needs auto, ntsc or pal" --frames 1 --region secam)
     expect_output("" --frames 1 --region ntsc)
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
@@ -1131,11 +1141,13 @@ runner_play_control(static_mutant "^mask 2:" static ${runner_play} ${runner_play
 runner_play_control(late_mutant "^mask 1:" late ${runner_play} ${runner_play_l} none input)
 
 # The device, region and boot options.
-foreach(case IN ITEMS usage.port usage.region_pal usage.boot_bios_no_file)
+foreach(case IN ITEMS usage.port region.pal usage.boot_bios_no_file)
   muhtari_add_test(NAME runner.${case}
-    COMMAND ${runner_check} -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE}
+    COMMAND ${runner_check} -DCASE=${case} -DDIR=${CMAKE_BINARY_DIR}/runner-probe
+      -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 1) # 2 x 0.16 s, macOS x64, slowest of 17 runs, run 39377950148
 endforeach()
+set_tests_properties(runner.region.pal PROPERTIES FIXTURES_REQUIRED probe_images)
 
 # --probe on the images muhtari-test-images writes into the build directory;
 # no image bytes are tracked.
