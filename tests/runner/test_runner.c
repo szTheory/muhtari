@@ -498,6 +498,25 @@ static void md5(void)
 
 int main(int argc, char **argv)
 {
+    if (argc == 4 && strcmp(argv[1], "solid-pal") == 0) {
+        FILE *from = fopen(argv[2], "rb");
+        FILE *to = fopen(argv[3], "wb");
+        CHECK(from != NULL && to != NULL);
+        if (from != NULL && to != NULL) {
+            int c;
+            while ((c = fgetc(from)) != EOF)
+                CHECK(fputc(c, to) != EOF);
+            CHECK(!ferror(from));
+            CHECK_EQ_U64(fseek(to, 128L, SEEK_SET), 0u);
+            static const uint8_t program[] = {0xa9, 0x46, 0x85, 0x20, 0x4c, 0x04, 0xc0};
+            CHECK_EQ_U64(fwrite(program, 1u, sizeof program, to), sizeof program);
+        }
+        if (from != NULL)
+            CHECK_EQ_U64(fclose(from), 0u);
+        if (to != NULL)
+            CHECK_EQ_U64(fclose(to), 0u);
+        CHECK_DONE();
+    }
     if (argc == 4 && strcmp(argv[1], "movie") == 0) {
         movie_owner(argv[2], argv[3]);
         CHECK_DONE();

@@ -13,9 +13,9 @@
  *
  *   frame <N> sha256 <64 lowercase hex digits>
  *
- * The hash is SHA-256 over the 320x242 native colour bytes, row-major, top
+ * The hash is SHA-256 over the effective native colour bytes, row-major, top
  * row first. For each --dump-frame N:FILE it writes frame N to FILE as a
- * 320x242 RGB PNG in the warm NTSC palette. --bench N also times each
+ * region-sized RGB PNG in the selected warm palette. --bench N also times each
  * frame and prints the report described in bench.h. With --boot bios it
  * prints the BIOS's SHA-256 to standard error and, after the frames,
  * "handoff_frame K", the frame of the first cartridge opcode fetch.
@@ -87,6 +87,7 @@ static const char synopsis[] =
     "  --frames N           run N frames (N >= 1)\n"
     "  --bench N            run N frames and report the time per frame\n"
     "  --hash-audio         print whole-run raw transition and mono PCM SHA-256 hashes\n"
+    "  --info               print effective region, geometry, rates and palette before frames\n"
     "  --diagnostic         report the fixed 256-byte diagnostic mailbox after --frames\n"
     "  --hash-frame N       print the SHA-256 of frame N (1 <= N <= --frames)\n"
     "  --dump-frame N:FILE  write frame N to FILE as a PNG (1 <= N <= --frames)\n"
@@ -97,7 +98,7 @@ static const char synopsis[] =
     "                      lightgun, paddle, trakball, driving, keypad, st-mouse,\n"
     "                      amiga-mouse, snes2atari or mega7800\n"
     "  Controller models are uncalibrated; see docs/hardware/controllers.md\n"
-    "  --region R           the region: auto or ntsc\n"
+    "  --region R           the region: auto, ntsc or pal\n"
     "  --boot B             how the cartridge starts: fast (the default) or bios\n"
     "  --bios FILE          the BIOS image --boot bios runs\n"
     "  --save-dir DIR      restore and save raw battery RAM in an existing directory\n"
@@ -174,7 +175,7 @@ static void hash_frame(const uint8_t *video, const muhtari_info *info, char hex[
    warm palette into R, G and B one row at a time. row has room for one row
    of RGB. Returns 0, or 1 after a message when the file cannot be written. */
 static int dump_frame(const uint8_t *video, const muhtari_info *info, const char *path,
-                      uint8_t *row)
+                      uint8_t *row, uint32_t region)
 {
     FILE *f = fopen(path, "wb");
     if (f == NULL) {
@@ -185,7 +186,7 @@ static int dump_frame(const uint8_t *video, const muhtari_info *info, const char
     int failed = muhtari__png_begin(&png, f, info->width, info->height) != 0;
     for (uint32_t y = 0; y < info->height && !failed; y++) {
         for (uint32_t x = 0; x < info->width; x++) {
-            uint32_t rgb = muhtari__palette_rgb(video[(size_t)y * info->width + x]);
+            uint32_t rgb = muhtari__palette_rgb_region(video[(size_t)y * info->width + x], region);
             row[3u * x] = (uint8_t)(rgb >> 16);
             row[3u * x + 1u] = (uint8_t)(rgb >> 8);
             row[3u * x + 2u] = (uint8_t)rgb;
@@ -400,6 +401,7 @@ typedef struct options {
     uint32_t frames;
     int bench;
     int hash_audio;
+    int info;
     int diagnostic;
     uint32_t *hash_frames;
     uint32_t hash_count;
@@ -410,7 +412,7 @@ typedef struct options {
     const char *rom;   /* [--rom] FILE, or NULL for no content */
     const char *movie; /* --movie FILE, or NULL */
     uint32_t port[2];  /* --port1, --port2: 0 for auto, else MUHTARI_PORT_* */
-    uint32_t region;   /* --region: 0 for auto, else MUHTARI_REGION_NTSC */
+    uint32_t region;   /* --region: 0 for auto, else MUHTARI_REGION_* */
     int has_boot;      /* --boot given */
     uint32_t boot;     /* --boot: MUHTARI__MOVIE_BOOT_*, then the boot that runs */
     const char *bios;  /* --bios FILE, or NULL */
@@ -533,6 +535,11 @@ static int parse_options(int argc, char **argv, options *o)
             }
             o->diagnostic = 1;
             i--;
+        } else if (strcmp(arg, "--info") == 0) {
+            if (o->info)
+                return usage("duplicate --info");
+            o->info = 1;
+            i--;
         } else if (strcmp(arg, "--hash-audio") == 0) {
             if (o->hash_audio)
                 return usage("duplicate --hash-audio");
@@ -573,14 +580,13 @@ static int parse_options(int argc, char **argv, options *o)
             }
             o->port[p] = port_values[v].device;
         } else if (strcmp(arg, "--region") == 0) {
-            /* PAL is refused everywhere until the core emulates it. */
-            if (value != NULL && strcmp(value, "pal") == 0) {
-                return usage("--region pal is not supported: give auto or ntsc");
+            if (value == NULL || (strcmp(value, "auto") != 0 && strcmp(value, "ntsc") != 0 &&
+                                  strcmp(value, "pal") != 0)) {
+                return usage("--region needs auto, ntsc or pal");
             }
-            if (value == NULL || (strcmp(value, "auto") != 0 && strcmp(value, "ntsc") != 0)) {
-                return usage("--region needs auto or ntsc");
-            }
-            o->region = strcmp(value, "ntsc") == 0 ? (uint32_t)MUHTARI_REGION_NTSC : 0u;
+            o->region = strcmp(value, "pal") == 0    ? (uint32_t)MUHTARI_REGION_PAL
+                        : strcmp(value, "ntsc") == 0 ? (uint32_t)MUHTARI_REGION_NTSC
+                                                     : 0u;
         } else if (strcmp(arg, "--boot") == 0) {
             if (value == NULL || (strcmp(value, "fast") != 0 && strcmp(value, "bios") != 0)) {
                 return usage("--boot needs fast or bios");
@@ -1088,6 +1094,7 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
             return MUHTARI__EXIT_FAILURE;
         }
     }
+
     size_t bios_n = 0;
     uint8_t *bios = NULL;
     if (bios_path != NULL) {
@@ -1303,6 +1310,14 @@ static int run(const options *opt, replay *mv)
             }
         }
     }
+    if (status == 0 && opt->info) {
+        int pal = m->effective_region == MUHTARI_REGION_PAL;
+        if (printf("region %s\nwidth %u\nheight %u\nfps_num %u\nfps_den %u\npar_num %u\n"
+                   "par_den %u\npalette %s\n",
+                   pal ? "pal" : "ntsc", info.width, info.height, info.fps_num, info.fps_den,
+                   info.par_num, info.par_den, pal ? "warm_pal" : "warm_ntsc") < 0)
+            status = MUHTARI__EXIT_FAILURE;
+    }
     uint64_t audio_frames = 0u, audio_samples = 0u;
     uint32_t next_hash = 0;
     uint32_t timed = 0;
@@ -1382,7 +1397,7 @@ static int run(const options *opt, replay *mv)
         }
         for (uint32_t k = 0; k < opt->dump_count && status == 0; k++) {
             if (opt->dump_frames[k] == f) {
-                status = dump_frame(video, &info, opt->dump_paths[k], row);
+                status = dump_frame(video, &info, opt->dump_paths[k], row, m->effective_region);
             }
         }
         /* Consume before I/O so a request arriving during a save remains pending. */

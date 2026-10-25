@@ -468,6 +468,7 @@ endfunction()
     # Independently SHA-256 over93440 zero native bytes, as this fixture's
     # jammed/default-background program emits;77440 zeros has a different hash.
     expect_output("${first}" ${args})
+    expect_output("${first}" --region pal ${args})
     file(READ "${DIR}/pal.png" header OFFSET 16 LIMIT 8 HEX)
     if(NOT header STREQUAL "0000014000000124")
       message(FATAL_ERROR "PAL PNG dimensions: ${header}")
@@ -476,6 +477,21 @@ endfunction()
       "${DIR}/linear-v3-16k-pal" OUTPUT_VARIABLE one ERROR_VARIABLE err RESULT_VARIABLE rc)
     if(NOT rc STREQUAL "0" OR NOT one MATCHES "audio_samples 960\n")
       message(FATAL_ERROR "PAL first audio count: ${rc} ${one}${err}")
+    endif()
+    # A private copy executes LDA #$46 / STA BACKGRND / JMP $C004. Its
+    # complete second raster is93440 native $46 bytes, through row291.
+    execute_process(COMMAND ${EMULATOR} "${HELPER}" solid-pal
+      "${DIR}/linear-v3-16k-pal" "${DIR}/solid-pal"
+      COMMAND_ERROR_IS_FATAL ANY)
+    expect_output("frame 2 sha256 e368f328c99ea02ea9bb57e5e4ee88efef6933601629f870e76b88fbaa651bb5\n"
+      --frames 2 --hash-frame 2 --dump-frame "2:${DIR}/solid-pal.png" "${DIR}/solid-pal")
+    # Independently constructed PNG:320x292 literal RGB B0,57,46, filter0,
+    # stored65535-byte blocks, standard CRC32 and Adler32. NTSC uses AF,51,63.
+    file(SHA256 "${DIR}/solid-pal.png" solid_digest)
+    file(SIZE "${DIR}/solid-pal.png" solid_bytes)
+    if(NOT solid_digest STREQUAL "5ff5356350d60a6e2ee8337cd06d8af38d00664b9ad718fc0da051eab354b2c4"
+        OR NOT solid_bytes EQUAL 280700)
+      message(FATAL_ERROR "PAL solid PNG palette/extent mismatch: ${solid_bytes} ${solid_digest}")
     endif()
   elseif(CASE STREQUAL "usage.frame_range")
     expect_exit(2 "${usage_line}" --frames 0)
@@ -1162,6 +1178,7 @@ set_tests_properties(runner.probe.images PROPERTIES FIXTURES_SETUP probe_images)
 foreach(case IN ITEMS hash pal)
   muhtari_add_test(NAME runner.load.${case}
     COMMAND ${runner_check} -DCASE=load.${case} -DDIR=${runner_probe_dir}
+      -DHELPER=$<TARGET_FILE:muhtari-test-runner>
       -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 1) # 2 x 0.35 s, macOS x64, slowest of 31 runs, run 39377950148
   set_tests_properties(runner.load.${case} PROPERTIES FIXTURES_REQUIRED probe_images)

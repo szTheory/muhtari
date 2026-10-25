@@ -11,10 +11,10 @@ power-on. Without one, every run shows the built-in test card (see
 (see [Movies](#movies)). `--probe` reads a cartridge image and reports what it is, without running it (see
 [Probing an image](#probing-an-image)).
 
-Automatic header/hash-selected PAL uses successful-load info for output allocation.
+Automatic header/hash-selected PAL and explicit `--region pal` use successful-load info for output allocation.
 Native hashes cover 93440 bytes, PNGs are 320×292, and audio has 960 samples in the
-fast first call then 961/962 per full frame. The current explicit CLI and movie
-region tokens remain NTSC-only, and presentation still uses the warm NTSC palette.
+fast first call then 961/962 per full frame. PNG presentation uses the selected region's warm palette.
+Embedding callers must likewise requery info after every successful content load.
 
 ## Synopsis
 
@@ -29,7 +29,7 @@ muhtari-run --probe FILE
 muhtari-run --help | --version
 ```
 
-`--port1`, `--port2`, `--region`, `--boot` and `--bios` may be added to any run.
+`--port1`, `--port2`, `--region`, `--boot`, `--bios` and `--info` may be added to any run.
 
 ## Options
 
@@ -43,7 +43,8 @@ muhtari-run --help | --version
 | `[--rom] FILE` | Load and run one cartridge image, with or without `--rom`. Automatic PAL selection is supported. A refused image prints `muhtari-run: FILE: <message>` on standard error and runs no frame: a 2600 image or unsupported board exits 77; malformed, truncated or oversized images exit1. |
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
 | `--port1 D`, `--port2 D` | `auto` (the cartridge's, the default), or an explicit movie2 device below. A value other than `auto` that differs from the movie header is a usage error. Storage attaches before import; moving or adding it requires another load. AtariVox provides EEPROM only, without speech. |
-| `--region R` | `auto` (the cartridge's, the default) or `ntsc`, which runs the cartridge as NTSC. `pal` is refused as a usage error by the current CLI parser. |
+| `--region R` | `auto` (the cartridge's, the default), `ntsc` or `pal`. An explicit value overrides cartridge metadata; a conflicting movie region is a usage error. Without content the test card remains NTSC. |
+| `--info` | Print effective region, geometry, exact frame rate, pixel aspect ratio and palette before frame output. Repeat use is a usage error; this is a run option, not an addition to `--probe`. |
 | `--boot B` | `fast` (the default) starts the cartridge from the fast-boot hand-off; `bios` boots it through the BIOS given by `--bios`, from power-on. `bios` without `--bios`, or `--bios` without `bios`, is a usage error. With a movie, the movie's `boot` key decides, and a different `--boot` is a usage error. |
 | `--bios FILE` | The BIOS image `--boot bios` runs: 4,096 or 16,384 bytes whose reset vector points inside it. Its SHA-256 is printed on standard error as `bios_sha256 <hex>`. Any other file exits 1 with `muhtari-run: FILE: not a 4 KiB or 16 KiB BIOS image`. A cartridge the BIOS rejects exits 77 with `muhtari-run: FILE: the BIOS rejected the cartridge`, after the frame in which it did. |
 | `--save-dir DIR` | Opt into per-game raw battery files in an existing accessible directory. Requires a cartridge, even when it has no battery. See [Battery files](#battery-files). |
@@ -104,6 +105,24 @@ signature warnings as applicable. Unknown exact-sized firmware remains accepted.
 
 ## Output
 
+`--info` adds these eight newline-terminated key/value lines, in this order, after successful
+load, validation and output allocation and before any frames run. For PAL:
+
+```text
+region pal
+width 320
+height 292
+fps_num 3546894
+fps_den 71051
+par_num 1843750
+par_den 1773447
+palette warm_pal
+```
+
+NTSC reports `ntsc`, 320, 242, 39375000, 656711, 6, 7 and `warm_ntsc`, respectively.
+Argument order does not change the report. It describes the effective successful session;
+`--probe` continues to describe the file. Without `--info`, ordinary output is unchanged.
+
 `--diagnostic` prints exactly `diagnostic `, 512 lowercase hexadecimal digits,
 then a newline. The digits encode the 256 bytes at CPU $2200-$22FF in address
 order, read through system RAM at offset $A00 after the requested run. It runs
@@ -123,7 +142,7 @@ The hash covers the 320×242 NTSC or 320×292 PAL native colour bytes (one byte 
 from the top. It is the same on every platform.
 
 `--dump-frame N:FILE` writes an unscaled 320×242 NTSC or 320×292 PAL RGB PNG with 8 bits per channel,
-through the current warm NTSC palette. The PNG carries no aspect-ratio metadata.
+through the effective region's warm NTSC or warm PAL palette. The PNG carries no aspect-ratio metadata.
 Data is uncompressed; an NTSC file is 232,645 bytes.
 
 With `--movie`, one more line follows the hash lines:
