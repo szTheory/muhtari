@@ -418,3 +418,37 @@ and minimum spacing bound work to263 transitions/axis/full NTSC frame,
 1052 total; this is an arithmetic bound, not measured operating cost.
 Cadence, initial CX22 lines and saturation are fitted compatibility policies,
 not calibrated physical speed; operating-cost measurement remains separate.
+
+### Mouse diagnostic
+
+Owned motion identity14 retains all19 driving scenario0 records. Fresh
+scenarios1=CX22,2=ST,3=Amiga fix both ports for the process. Frames1/2
+hold selector Reset/Select weights1/2; thereafter release it. Frame3
+moves X+4/-4 with left primary fire; frame4 reverses X-1/+1 with right
+primary fire; frame5 holds without a new library submission. Frame6 moves
+Y+4/-4, frame7 reverses Y-1/+1; both mouse right switches are held6/7.
+Frame8 releases. No startup motion is submitted.
+
+The27 sequential records are selector; idle255; both idle primary128;
+five X samples (before and four edges); primary0/128; reverse X before/
+after; primary128/0; held X; five Y samples; reverse Y before/after;
+PA7 flag64; right-switch samples0/0 from frame6; frame8 released right
+switches packed as0 for CX22's unused pins and3 for mice. PA7 history
+is cleared before frame3, so Amiga's X pin4 and ST/CX22 Y pin4 contribute.
+WSYNC sample data ticks are429..432 after VBLANK, plus successive454-tick
+lines: first is before454, then one sample after each successive edge.
+Independent SWCHA bytes follow connector wiring, without reading core tables:
+
+| Scenario | X five samples | Reversed X | Y five samples | Reversed Y |
+|---|---|---|---|---|
+| CX22 | FF,DC,FE,DC,FE | CD | CD,41,C9,41,C9 | 05 |
+| ST | FF,DE,CC,ED,FF | ED | ED,69,21,A5,ED | A5 |
+| Amiga | FF,D7,55,7D,FF | 7D | 7D,69,28,3C,7D | 3C |
+
+For example CX22 negative right-port X leaves direction pin1 low after
+four toggles, yielding FE, while quadrature completes at FF. Amiga
+Y uses pins1/3 while X uses2/4, so its numeric bytes differ from ST even
+where individual named two-pin waveforms resemble one another. CRC-valid
+wrong-family and axis-swapped tuples, damaged final values/IDs, duplicate
+IDs, wrong counts, corrupt CRC and missing/truncated reports are rejected
+by the actual judge before any agreeing-host hashes can establish success.

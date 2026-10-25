@@ -64,6 +64,8 @@ if(DIAG_CONTROLLERS_RUN)
   set(last_fault 4)
   if(device STREQUAL "keypad")
     set(last_fault 6)
+  elseif(device STREQUAL "trakball" OR device STREQUAL "st-mouse" OR device STREQUAL "amiga-mouse")
+    set(last_fault 8)
   endif()
   foreach(fault RANGE 0 ${last_fault})
     execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/fault-${fault}.txt"

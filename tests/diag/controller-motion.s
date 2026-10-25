@@ -72,7 +72,11 @@ reset SUBROUTINE
         ; invented records; a scenario judge must reject the mismatch.
         lda SCENARIO
         beq .driving
+        cmp #4
+        bcc .validmouse
         jmp .finish
+.validmouse
+        jmp mouse
 .driving
         READ $0280, 2
         FIRE $0C, 3
@@ -106,6 +110,78 @@ reset SUBROUTINE
         READ $0280, 18
         FIRE $0D, 19
 .finish
+        jsr mb_finish
+        jmp show
+
+; Fixed mouse scenarios1..3 share accesses, never a production pin table.
+mouse SUBROUTINE
+        READ $0280, 2
+        FIRE $0C, 3
+        FIRE $0D, 4
+        lda #0
+        sta $0284              ; falling PA7; clear prior history
+        lda $0285
+        jsr next_frame          ; frame3, opposite X four-edge cycles
+        SAMPLE 0
+        SAMPLE 1
+        SAMPLE 2
+        SAMPLE 3
+        SAMPLE 4
+        READ SAMPLES, 5
+        READ SAMPLES+1, 6
+        READ SAMPLES+2, 7
+        READ SAMPLES+3, 8
+        READ SAMPLES+4, 9
+        FIRE $0C, 10
+        FIRE $0D, 11
+        jsr next_frame          ; frame4, reverse X one unit
+        SAMPLE 0
+        SAMPLE 1
+        READ SAMPLES, 12
+        READ SAMPLES+1, 13
+        FIRE $0C, 14
+        FIRE $0D, 15
+        jsr next_frame          ; frame5, no new library submission
+        READ $0280, 16
+        jsr next_frame          ; frame6, opposite Y complete cycles
+        SAMPLE 0
+        SAMPLE 1
+        SAMPLE 2
+        SAMPLE 3
+        SAMPLE 4
+        READ SAMPLES, 17
+        READ SAMPLES+1, 18
+        READ SAMPLES+2, 19
+        READ SAMPLES+3, 20
+        READ SAMPLES+4, 21
+        lda $09
+        and #$80
+        sta SAMPLES+5
+        lda $0B
+        and #$80
+        sta SAMPLES+6
+        jsr next_frame          ; frame7, reverse Y one unit
+        SAMPLE 0
+        SAMPLE 1
+        READ SAMPLES, 22
+        READ SAMPLES+1, 23
+        lda $0285
+        and #$40
+        RECORD 24
+        READ SAMPLES+5, 25
+        READ SAMPLES+6, 26
+        jsr next_frame          ; frame8, released right switches
+        lda $09
+        and #$80
+        asl
+        rol TMP_LO
+        lda $0B
+        and #$80
+        asl
+        rol TMP_LO
+        lda TMP_LO
+        and #3
+        RECORD 27
         jsr mb_finish
         jmp show
 

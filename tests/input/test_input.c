@@ -1726,33 +1726,38 @@ static void mouse_timing(void)
     static const uint32_t devices[] = {MUHTARI_PORT_TRAKBALL, MUHTARI_PORT_ST_MOUSE,
                                        MUHTARI_PORT_AMIGA_MOUSE};
     static const uint8_t tuples[3][4][4] = {
-        {{13,15,13,15},{12,14,12,14},{7,15,7,15},{3,11,3,11}},
-        {{13,12,14,15},{14,12,13,15},{7,3,11,15},{11,3,7,15}},
-        {{13,5,7,15},{7,5,13,15},{14,10,11,15},{11,10,14,15}}
-    };
+        {{13, 15, 13, 15}, {12, 14, 12, 14}, {7, 15, 7, 15}, {3, 11, 3, 11}},
+        {{13, 12, 14, 15}, {14, 12, 13, 15}, {7, 3, 11, 15}, {11, 3, 7, 15}},
+        {{13, 5, 7, 15}, {7, 5, 13, 15}, {14, 10, 11, 15}, {11, 10, 14, 15}}};
     for (unsigned d = 0u; d < 3u; d++) {
         for (unsigned p = 0u; p < 2u; p++) {
             for (unsigned direction = 0u; direction < 4u; direction++) {
                 muhtari *m = boot(&plain);
                 CHECK(m != NULL);
-                if (m == NULL) return;
+                if (m == NULL)
+                    return;
                 m->bus.ticks = 100u;
                 muhtari_input_ex in;
                 memset(&in, 0, sizeof in);
                 in.size = (uint32_t)sizeof in;
                 in.port[p].device = devices[d];
                 int32_t delta = (direction & 1u) != 0u ? -4 : 4;
-                if (direction < 2u) in.port[p].dx = delta;
-                else in.port[p].dy = delta;
+                if (direction < 2u)
+                    in.port[p].dx = delta;
+                else
+                    in.port[p].dy = delta;
                 muhtari_status status = muhtari_set_input_ex(m, &in);
                 CHECK_EQ_U64(status, MUHTARI_STATUS_OK);
-                if (status != MUHTARI_STATUS_OK) { muhtari_destroy(m); return; }
+                if (status != MUHTARI_STATUS_OK) {
+                    muhtari_destroy(m);
+                    return;
+                }
                 muhtari__ports_latch(m);
                 CHECK_EQ_HEX(motion_read(m, 0x0280u, 530u), 0xFFu);
                 for (unsigned edge = 0u; edge < 4u; edge++) {
                     uint8_t nibble = tuples[d][direction][edge];
                     uint8_t expected = p == 0u ? (uint8_t)(((uint32_t)nibble << 4) | 15u)
-                                              : (uint8_t)(0xF0u | nibble);
+                                               : (uint8_t)(0xF0u | nibble);
                     CHECK_EQ_HEX(motion_read(m, 0x0280u, 554u + edge * 454u), expected);
                     struct muhtari__ports before = m->ports;
                     (void)muhtari__bus_peek(m, 0x0280u);
@@ -1789,7 +1794,8 @@ static void mouse_timing(void)
             for (unsigned stall = 0u; stall < 2u; stall++) {
                 muhtari *m = boot(&plain);
                 CHECK(m != NULL);
-                if (m == NULL) return;
+                if (m == NULL)
+                    return;
                 m->bus.ticks = 100u;
                 muhtari_input_ex in;
                 memset(&in, 0, sizeof in);
@@ -1801,9 +1807,12 @@ static void mouse_timing(void)
                 muhtari__riot_write(m, (uint16_t)(0x284u + rising), 0u, m->bus.ticks);
                 (void)muhtari__riot_read(m, 0x285u);
                 m->ports.input_read = 0u;
-                if (stall == 0u) m->cpu.jammed = 1u;
-                else CHECK_EQ_U64(muhtari__bus_request_halt(m, 100u, 2100u), 1u);
-                while (m->bus.ticks < 2200u) muhtari__cpu_step(m);
+                if (stall == 0u)
+                    m->cpu.jammed = 1u;
+                else
+                    CHECK_EQ_U64(muhtari__bus_request_halt(m, 100u, 2100u), 1u);
+                while (m->bus.ticks < 2200u)
+                    muhtari__cpu_step(m);
                 CHECK_EQ_U64(m->ports.input_read, 0u);
                 CHECK_EQ_HEX(muhtari__bus_peek(m, 0x280u), 0xFFu);
                 CHECK_EQ_U64(m->riot.pa7_flag, 1u);
