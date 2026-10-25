@@ -3,11 +3,11 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: Not started
-status: shipped
-stopped_at: Phase 9 shipped in PR 33; await required CI, merge and release confirmation
+status: shipping
+stopped_at: Phase 9 PR 33; measured deadline repair validated locally; corrected-source CI pending
 last_updated: "2026-10-25T22:08:31.374Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 9 shipped in PR 33; local 654+6 pass; required hosted CI and release confirmation pending
+last_activity_desc: Phase 9 ship CI failed twice on Windows PAL deadline; measured correction passes local 654+6; corrected-source acceptance pending
 state_head: 8814d3e80e1221cc0da71b84560c4f001852212a
 progress:
   total_phases: 7
@@ -47,7 +47,7 @@ phases are complete (71%); phases10–11 remain unstarted. Active-slot runtime t
 are50 summarized plans of50 planned, including historical halted06-01;49 accepted
 completed plans. The retained active-slot convention differs from raw historical artifacts.
 
-Status: Phase9 shipped — PR33; required CI, merge and release confirmation pending
+Status: Phase9 PR33; measured deadline correction locally verified; hosted acceptance pending
 Last activity: 2026-10-25 — Ship preflight passed; local654+6 and accepted hosted CI rechecked
 Next command after merge/release confirmation: $gsd-discuss-phase 10
 Branch: phase/09-pal-games-and-audio
@@ -69,10 +69,22 @@ https://github.com/szTheory/muhtari/actions/runs/40233948646
 Nightly40233948516 remains completed/success at attempt2 with its advisory
 property timeout explicitly unaccepted. No failure is relabeled as passing.
 
-The ship-note commit retains CI triggering so the final PR head receives required
-checks. Auto-merge is requested by the repository ship contract; merge and release
-PR checks are confirmed by live commands before the ship session ends. This note
-records the publication action; it does not pre-claim those future outcomes.
+CI40238824962 attempts1/2 fail on Windowsx64 PAL36.02s; attempt1 also has
+hash29.01s timeout, while attempt2 completes hash28.68s. Dependent quality and
+required aggregate failures remain failures. Complete job audit exits1 at each
+attempt; no third unchanged-source retry. Nightly40238825011 succeeds overall
+with required native/PPC equality; advisory isolation390.03s remains unaccepted.
+Canonical09-08-SUMMARY preserves the exact source, runs and failed history.
+
+Bounded independent evidence/build reviews select existing DEC.47 calibration:
+PAL53 from complete ASan52.64/scale2, hashes58 from complete Windows28.68.
+All660 registrations at scales1/2/13 retain labels, fixtures, costs and other
+deadlines;198 resolved commands match and source command text is unchanged.
+Generated inner PAL matches. Corrected local workflow exits0:
+654 ordinary25.77s and6 release0.11s; complete JUnit inventories pass. No runtime,
+workload, assertion, scale, required-membership or provenance change. Independent
+report revalidation precedes one corrected-source hosted acceptance. Auto-merge
+is temporarily disabled during repair; merge/release outcomes remain pending.
 No Phase10 workflow runs in this session. Next: $gsd-discuss-phase 10.
 
 ## Phase 9 final acceptance
@@ -475,7 +487,7 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase9 shipped in PR33; await required CI, merge and release confirmation
+**Stopped at:** Phase9 PR33; corrected-source CI, merge and release confirmation pending
 Last session: 2026-10-25T22:08:31.374Z
 Resume file: None
 Next command after merge/release confirmation: $gsd-discuss-phase 10

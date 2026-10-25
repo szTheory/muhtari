@@ -321,3 +321,74 @@ Ignored receipts use `build/ci/task08-refresh-*` and `build/ci/task08-refresh-ev
 ### Source-fresh self-check: PASSED
 
 The original summary prefix is byte-preserved. The BIOS fix is an ancestor of the accepted branch head. Actual source/tree/base identities, all required hosted jobs, the existing authenticated join, all 18 archives, four downloaded full inventories, both equality artifacts and actual main prefix have been checked. Only this evidence appendix is changed by the refresh; no new stub or security surface is introduced. Orchestrator state/roadmap closeout and the independent goal verifier remain with the parent.
+
+
+## Shipping deadline recovery
+
+The shipping step at head `d900bd0fae1e355ad46800dd72179e302d7cbc66`
+reused PR33 and ran one complete local workflow: exit0,654+6. Its final-head
+[CI40238824962](https://github.com/szTheory/muhtari/actions/runs/40238824962)
+then failed on Windows x64. Both attempts are retained as failed evidence:
+
+| Attempt | Direct result | Dependent outcomes |
+|---|---|---|
+| 1 | `diag.pal` timeout36.02s and `runner.hashes_file` timeout29.01s;652/654 pass | Missing Windows artifact correctly fails quality; equality/RetroArch/WASM skip; `CI required` fails |
+| 2, one targeted same-source retry | `diag.pal` again times out36.02s; hash writer completes28.68s;653/654 pass | Same missing-artifact quality failure and required aggregate rejection |
+
+`gh run view 40238824962 --json attempt,status,conclusion,headSha,url,jobs`
+followed by `cmake -DINPUT=build/ship-09-final-ci-attempt1-complete.json -DEXPECTED_SHA=d900bd0fae1e355ad46800dd72179e302d7cbc66 -P tools/check_ci_run.cmake`
+exits1. The equivalent attempt2-complete command exits1. Every failed/skipped job
+was inspected; neither attempt supplies accepted Windows/equality/package evidence.
+`gh run rerun 40238824962 --job 121307057552` exits0 only for submission; it does
+not establish acceptance. Its finite temporary-runner-slowdown hypothesis did not
+resolve the failure. No third unchanged-source retry was requested.
+
+[Shipping Nightly40238825011](https://github.com/szTheory/muhtari/actions/runs/40238825011)
+at the same head completes/success, attempt1: native/PPC equality, vectors, fuzz
+and all benches pass. Advisory isolation again times out390.03s, seven/eight pass;
+that result remains unaccepted and advisory. Complete responses/logs remain only
+under ignored `build/ship-09-*`; no log is committed.
+
+The bounded evidence and build specialists independently found that419bb31 through
+d900bd0 changes only seven planning files. Runtime, compiler, image, concurrency,
+workloads and registration deadlines are identical. Accepted Windows used AMD
+family26/model2; both failed attempts used family25/model1, with four processors,
+the same image20261021.278.1 and MSVC19.51.36260.0. CTest peaks at four with the
+same overlapping tests. Different regions refute region alone as an explanation.
+CPU-heavy checks slow consistently: coverage9.67 to22.42/22.11s and audio48.24
+to97.85/97.54s. CPU class is a plausible contributor, not an established sole cause.
+
+Following existing DEC.47, use complete uncensored comparable workloads:
+
+| Consumer | Complete observation | Existing normalization | New base deadline |
+|---|---|---|---:|
+| `diag.pal` | ASan52.64s, run40238824962/job121307057493; native macOSx6423.59, Linuxx6421.61, WindowsARM17.39 | ceil(2x52.64/2) | 53 |
+| `runner.hashes_file` | Windowsx6428.68s, attempt2/job121313488361; WindowsARM26.70 | ceil(2x28.68) | 58 |
+
+Only those two test registrations and the generated inner PAL deadline change.
+This is the existing measured operating allowance, not a new runtime/resource
+bound. Source semantics, all601 calls and600 full-frame intervals, protocol/value/
+shortened-session fault controls, fixtures, numeric judgments, equality, case
+counts, required membership, current/base provenance and lane scales remain.
+A larger concurrency/runner/global-scale change is rejected as unmeasured scope.
+Censored36.02/29.01 observations are not used as complete duration measurements.
+
+Local corrected-source checks, all exit0 with run URL N/A-local:
+
+- `cmake --preset ci -B build/ship-09-scale1 -DMUHTARI_TIMEOUT_SCALE=1`
+  and equivalent scales2/13, followed by `ctest --test-dir build/ship-09-scale1 --show-only=json-v1`
+  and equivalent directories, capture before/after registrations.
+- `python3 build/ship-09-check-deadlines.py`:660 identical names, labels, fixtures,
+  costs and unrelated deadlines at each scale. The198 resolved commands match;
+  command fields are equally absent for462 unbuilt executables. The narrow source
+  diff independently confirms unchanged command text. PAL53/106/689 and
+  hashes58/116/754 are the only outer changes; inner PAL matches each scale.
+- `cmake --workflow --preset ci`:654/654 ordinary in25.77s, six release in0.11s;
+  PAL7.67s and hash writer6.40s pass their unchanged numeric and fault controls.
+- Ordinary/release `check_junit.cmake` consumers validate complete654+6 inventories;
+  focused probes do not overwrite the full reports. `git diff --check` exits0.
+
+Independent scoped report revalidation and one corrected-source hosted acceptance
+follow this local evidence. Neither failed source is relabeled passing. If the
+corrected source still fails these consumers, stop shipping on that concrete
+failure; do not repeatedly increase margins or retry. No later GSD step runs.

@@ -514,7 +514,7 @@ set(diag_pal565 "")
 if(TARGET muhtari_libretro)
   set(diag_pal565 "$<TARGET_FILE:muhtari_libretro_testdb565>")
 endif()
-math(EXPR diag_pal_timeout "36 * ${MUHTARI_TIMEOUT_SCALE}")
+math(EXPR diag_pal_timeout "53 * ${MUHTARI_TIMEOUT_SCALE}")
 file(GENERATE OUTPUT ${diag_pal} CONTENT
 "set(DIAG_PAL_RUN TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
@@ -528,10 +528,10 @@ set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
 set(EXPECTED [==[${diag_dir}/expected.csv]==])
 include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
-# Provisional: ceil(2 * 17.69s), complete two-format/runner/controls,
-# Windows arm64, run 40227789474; existing lane scales and workload remain.
+# Provisional: ceil(2 * 52.64s / ASan scale 2), complete workload,
+# run 40238824962/job 121307057493; existing lane scales and workload remain.
 muhtari_add_test(NAME diag.pal COMMAND ${CMAKE_COMMAND} -P ${diag_pal}
-  LABELS diag portable TIMEOUT 36 COST 18)
+  LABELS diag portable TIMEOUT 53 COST 18)
 
 
 muhtari_add_test(NAME diag.dma
