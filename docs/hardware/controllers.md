@@ -16,10 +16,10 @@ Sources:
 
 ## Devices
 
-Each port carries a ProLine, a 2600 joystick, a driving controller, an XG-1, two paddles, a keypad,
+Each port carries a ProLine, a 2600 joystick, a driving controller, CX22, ST/Amiga mouse, an XG-1, two paddles, a keypad,
 a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
 cartridge's A78 header does. A header that names no controller leaves the port unplugged. A header device that is not
-modelled yet, such as a trakball, is wired as a ProLine. The legacy setter retains
+modelled yet, such as SNES2Atari, is wired as a ProLine. The legacy setter retains
 its ProLine fallback and explicit XG-1 refusal; extended input and load overrides
 can select the gun on either port.
 
@@ -383,3 +383,38 @@ completion and CRC are judged before any pixel/raw-transition/PCM equality.
 
 - Trak-ball, keypad, mice, AtariVox speech, SNES2Atari and Mega7800
   (cartridge notes, section 3.2).
+
+## Motion
+
+The [CX22 service manual](https://www.atarimania.com/documents/Atari-CX22-Trakball-Field-Service-Manual.pdf)
+Table2-1 and schematic5-3 specify direction plus toggles: pin1 X direction
+(high right/low left), pin2 X toggle; pin3 Y direction (high down/low up),
+pin4 Y toggle. Initial lines are high. Each unit changes the saved direction
+and flips its axis toggle; zero input preserves both. The two physical fire
+switches share pin6 and the extended primary button.
+
+The [ST hardware specification](https://www.temlib.org/AtariForumWiki/index.php/Engineering_Hardware_Specification)
+wires X to (pin1=XB,pin2=XA), Y to (pin3=YA,pin4=YB).
+For API right/down both named tuples walk11,10,00,01,11; reverse walks
+backward. The source's RIGHT/UP waveform requires reversing its vertical
+sense for API positive Y down.
+The [Amiga hardware manual](https://www.theflatnet.de/pub/cbm/amiga/AmigaDevDocs/hard_8.html),
+Figure8-2 and connector appendix, wires X to (pin2=H,pin4=HQ), Y to
+(pin1=V,pin3=VQ). Right/down tuples walk11,01,00,10,11, reverse backward.
+Both mouse left/right buttons pull pins6/9 low independently; the right
+button is INPT1/3 and dump D7 forces it low. Pin5 is unused. TIA D6 can
+retain primary fire lows. No port read advances a phase.
+
+Each relative unit is one transition, not a host pixel or revolution.
+Both axes use the existing454-master-tick cadence and input/residual
+saturation to±255 independently, discarding excess before overflow.
+An idle axis starts one cadence after latch; an in-flight axis retains
+its deadline through cancellation/reversal. New pending submissions replace,
+then transfer once at VBLANK; zero input preserves phase/direction.
+Device replacement/reload/power-cycle resets volatile state. Chronological
+resolved PA7 edges reach RIOT even through unpolled complete cycles and
+HALT/JAM. Same-tick axis updates resolve together. Fixed four-axis storage
+and minimum spacing bound work to263 transitions/axis/full NTSC frame,
+1052 total; this is an arithmetic bound, not measured operating cost.
+Cadence, initial CX22 lines and saturation are fitted compatibility policies,
+not calibrated physical speed; operating-cost measurement remains separate.

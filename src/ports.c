@@ -134,9 +134,9 @@ static void ports_rearm(muhtari *m)
 {
     uint64_t next = UINT64_MAX;
     for (unsigned p = 0u; p < 2u; p++) {
-        uint64_t at = m->ports.motion[p].next_tick;
-        if (at != 0u && at < next) {
-            next = at;
+        for (unsigned n = 0u; n < 2u; n++) {
+            uint64_t at = m->ports.motion[p][n].next_tick;
+            if (at != 0u && at < next) next = at;
         }
         const struct muhtari__light *light = &m->ports.light[p];
         uint32_t device = muhtari__ports_device(m, p);
@@ -262,14 +262,21 @@ void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
                 light->low = 0u;
                 light->low_until = 0u;
             }
-            struct muhtari__motion *axis = &m->ports.motion[p];
-            if (axis->next_tick == next) {
-                if (axis->residual != 0) {
-                    int32_t step = axis->residual > 0 ? 1 : -1;
-                    axis->phase = (uint8_t)(((int32_t)axis->phase + step + 4) & 3);
-                    axis->residual -= step;
+            for (unsigned n = 0u; n < 2u; n++) {
+                struct muhtari__motion *axis = &m->ports.motion[p][n];
+                if (axis->next_tick == next) {
+                    if (axis->residual != 0) {
+                        int32_t step = axis->residual > 0 ? 1 : -1;
+                        if (device == MUHTARI_PORT_TRAKBALL) {
+                            axis->negative = (uint8_t)(step < 0);
+                            axis->phase ^= 1u;
+                        } else {
+                            axis->phase = (uint8_t)(((int32_t)axis->phase + step + 4) & 3);
+                        }
+                        axis->residual -= step;
+                    }
+                    axis->next_tick = axis->residual != 0 ? next + PORTS_MOTION_CADENCE_TICKS : 0u;
                 }
-                axis->next_tick = axis->residual != 0 ? next + PORTS_MOTION_CADENCE_TICKS : 0u;
             }
         }
         /* Deliver every intermediate resolved level, even when an entire
@@ -504,7 +511,8 @@ muhtari_status muhtari__ports_check_device_ex(uint32_t device)
     if (device == 0u || device == MUHTARI_PORT_PROLINE || device == MUHTARI_PORT_JOYSTICK ||
         device == MUHTARI_PORT_DRIVING || device == MUHTARI_PORT_LIGHTGUN ||
         device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_KEYPAD ||
-        device == MUHTARI_PORT_UNPLUGGED || device == MUHTARI_PORT_SAVEKEY ||
+        device == MUHTARI_PORT_TRAKBALL || device == MUHTARI_PORT_ST_MOUSE ||
+        device == MUHTARI_PORT_AMIGA_MOUSE || device == MUHTARI_PORT_UNPLUGGED || device == MUHTARI_PORT_SAVEKEY ||
         device == MUHTARI_PORT_ATARIVOX) {
         return MUHTARI_STATUS_OK;
     }
@@ -576,6 +584,8 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
         int gun = port->device == MUHTARI_PORT_LIGHTGUN;
         int paddle = port->device == MUHTARI_PORT_PADDLE;
         int keypad = port->device == MUHTARI_PORT_KEYPAD;
+        int mouse = port->device == MUHTARI_PORT_TRAKBALL || port->device == MUHTARI_PORT_ST_MOUSE ||
+                    port->device == MUHTARI_PORT_AMIGA_MOUSE;
         if (gun && in->size < offsetof(muhtari_input_ex, port) + p * sizeof(muhtari_port_input) +
                                   sizeof(muhtari_port_input)) {
             port->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
@@ -584,12 +594,15 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
             keypad ? 0u
             : paddle
                 ? MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2
-                : (port->device == MUHTARI_PORT_DRIVING || gun ? MUHTARI_BUTTON_1 : PORTS_BUTTONS);
+                : (port->device == MUHTARI_PORT_DRIVING || gun || port->device == MUHTARI_PORT_TRAKBALL
+                       ? MUHTARI_BUTTON_1
+                       : (mouse ? MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2 : PORTS_BUTTONS));
         if ((port->buttons & ~buttons) != 0u ||
             (paddle ? (port->paddle[0] > 65535u || port->paddle[1] > 65535u)
                     : (port->paddle[0] != 0u || port->paddle[1] != 0u)) ||
             (keypad ? port->keypad > 4095u : port->keypad != 0u) ||
-            (port->device != MUHTARI_PORT_DRIVING && port->dx != 0) || port->dy != 0 ||
+            (port->device != MUHTARI_PORT_DRIVING && !mouse && port->dx != 0) ||
+            (!mouse && port->dy != 0) ||
             (gun ? (port->gun_x >= MUHTARI__WIDTH || port->gun_y >= MUHTARI__HEIGHT_NTSC ||
                     (port->flags & ~(uint32_t)MUHTARI_INPUT_GUN_OFFSCREEN) != 0u)
                  : (port->gun_x != 0u || port->gun_y != 0u || port->flags != 0u)) ||
@@ -664,7 +677,6 @@ void muhtari__ports_latch(muhtari *m)
             ports->device[p] = ports->pending_device[p];
             ports->buttons[p] = ports->pending_buttons[p];
         }
-        struct muhtari__motion *axis = &ports->motion[p];
         uint32_t device = muhtari__ports_device(m, p);
         ports->keypad_keys[p] =
             ports->input_mode != 0u ? (uint16_t)ports->pending_ex.port[p].keypad : 0u;
@@ -687,7 +699,7 @@ void muhtari__ports_latch(muhtari *m)
                 pot->crossing_tick = m->bus.ticks + 2864u;
         }
         if (previous != device) {
-            memset(axis, 0, sizeof *axis);
+            memset(ports->motion[p], 0, sizeof ports->motion[p]);
             memset(&ports->light[p], 0, sizeof ports->light[p]);
         }
         if (device == MUHTARI_PORT_LIGHTGUN && ports->light[p].delay == 0u) {
@@ -696,11 +708,17 @@ void muhtari__ports_latch(muhtari *m)
             ports->light[p].lines = 9u;
             ports->light[p].threshold = 8u;
         }
-        if (ports->input_mode != 0u && device == MUHTARI_PORT_DRIVING) {
-            int32_t delta = ports_motion_clamp(ports->pending_ex.port[p].dx);
-            axis->residual = ports_motion_clamp(axis->residual + delta);
-            if (axis->next_tick == 0u && axis->residual != 0) {
-                axis->next_tick = m->bus.ticks + PORTS_MOTION_CADENCE_TICKS;
+        if (ports->input_mode != 0u &&
+            (device == MUHTARI_PORT_DRIVING || device == MUHTARI_PORT_TRAKBALL ||
+             device == MUHTARI_PORT_ST_MOUSE || device == MUHTARI_PORT_AMIGA_MOUSE)) {
+            for (unsigned n = 0u; n < 2u; n++) {
+                struct muhtari__motion *axis = &ports->motion[p][n];
+                int32_t delta = ports_motion_clamp(n == 0u ? ports->pending_ex.port[p].dx
+                                                         : ports->pending_ex.port[p].dy);
+                axis->residual = ports_motion_clamp(axis->residual + delta);
+                if (axis->next_tick == 0u && axis->residual != 0) {
+                    axis->next_tick = m->bus.ticks + PORTS_MOTION_CADENCE_TICKS;
+                }
             }
         }
     }
@@ -782,8 +800,30 @@ uint8_t muhtari__ports_swcha(const muhtari *m)
             /* Connector (1,2): 11,10,00,01. Pin 1 is the low
                SWCHA bit in its nibble (controllers.md, Driving). */
             static const uint8_t closed[4] = {0u, 2u, 3u, 1u};
-            uint8_t low = closed[m->ports.motion[p].phase];
+            uint8_t low = closed[m->ports.motion[p][0].phase];
             pins = (uint8_t)(pins & (uint8_t)~(p == 0u ? low << 4 : low));
+            continue;
+        }
+        if (device == MUHTARI_PORT_TRAKBALL || device == MUHTARI_PORT_ST_MOUSE ||
+            device == MUHTARI_PORT_AMIGA_MOUSE) {
+            const struct muhtari__motion *x = &m->ports.motion[p][0];
+            const struct muhtari__motion *y = &m->ports.motion[p][1];
+            uint8_t low;
+            /* Connector-specific closures, controllers.md, Motion. ST's
+               RIGHT/UP convention is converted to API right/down here. */
+            if (device == MUHTARI_PORT_TRAKBALL) {
+                low = (uint8_t)(x->negative | (x->phase << 1) |
+                                (y->negative << 2) | (y->phase << 3));
+            } else if (device == MUHTARI_PORT_ST_MOUSE) {
+                static const uint8_t horizontal[4] = {0u, 2u, 3u, 1u};
+                static const uint8_t vertical_down[4] = {0u, 8u, 12u, 4u};
+                low = horizontal[x->phase] | vertical_down[y->phase];
+            } else {
+                static const uint8_t horizontal[4] = {0u, 2u, 10u, 8u};
+                static const uint8_t vertical[4] = {0u, 1u, 5u, 4u};
+                low = horizontal[x->phase] | vertical[y->phase];
+            }
+            pins &= (uint8_t)~(p == 0u ? low << 4 : low);
             continue;
         }
         uint8_t closed = (uint8_t)(((b & MUHTARI_BUTTON_UP) != 0u ? 0x1u : 0u) |
@@ -837,13 +877,19 @@ uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n)
             const struct muhtari__pot *pot = &m->ports.pot[port][n & 1u];
             return (uint8_t)(m->tia.input_dump == 0u && pot->action == PORTS_CHARGED);
         }
+        if (device == MUHTARI_PORT_ST_MOUSE || device == MUHTARI_PORT_AMIGA_MOUSE) {
+            return (uint8_t)((n & 1u) != 0u && m->tia.input_dump == 0u &&
+                             (b & MUHTARI_BUTTON_2) == 0u);
+        }
         uint32_t button = (n & 1u) == 0u ? MUHTARI_BUTTON_1 : MUHTARI_BUTTON_2;
         return (uint8_t)(device == MUHTARI_PORT_PROLINE && (b & button) != 0u);
     }
     if (device == MUHTARI_PORT_PROLINE && !ports_two_button(m, port)) {
         return (uint8_t)((b & (MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2)) == 0u);
     }
-    if (device == MUHTARI_PORT_JOYSTICK || device == MUHTARI_PORT_DRIVING) {
+    if (device == MUHTARI_PORT_JOYSTICK || device == MUHTARI_PORT_DRIVING ||
+        device == MUHTARI_PORT_TRAKBALL || device == MUHTARI_PORT_ST_MOUSE ||
+        device == MUHTARI_PORT_AMIGA_MOUSE) {
         return (uint8_t)((b & MUHTARI_BUTTON_1) == 0u);
     }
     if (device == MUHTARI_PORT_LIGHTGUN) {

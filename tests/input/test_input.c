@@ -333,7 +333,7 @@ static void extended_digital(void)
             bad.port[1].device = 999u;
             break;
         case 1:
-            bad.port[1].device = MUHTARI_PORT_TRAKBALL;
+            bad.port[1].device = MUHTARI_PORT_SNES2ATARI;
             break;
         case 2:
             bad.port[1].buttons = MUHTARI_SNES_BUTTON_Y;
@@ -1748,7 +1748,7 @@ static void mouse_timing(void)
                 CHECK_EQ_U64(status, MUHTARI_STATUS_OK);
                 if (status != MUHTARI_STATUS_OK) { muhtari_destroy(m); return; }
                 muhtari__ports_latch(m);
-                CHECK_EQ_HEX(motion_read(m, 0x0280u, 553u), 0xFFu);
+                CHECK_EQ_HEX(motion_read(m, 0x0280u, 530u), 0xFFu);
                 for (unsigned edge = 0u; edge < 4u; edge++) {
                     uint8_t nibble = tuples[d][direction][edge];
                     uint8_t expected = p == 0u ? (uint8_t)(((uint32_t)nibble << 4) | 15u)

@@ -326,7 +326,7 @@ struct muhtari__maria {
 struct muhtari__motion {
     uint64_t next_tick;
     int32_t residual;
-    uint8_t phase;
+    uint8_t phase, negative;
 };
 
 struct muhtari__light {
@@ -341,7 +341,7 @@ struct muhtari__pot {
 };
 
 struct muhtari__ports {
-    struct muhtari__motion motion[2];
+    struct muhtari__motion motion[2][2];
     struct muhtari__light light[2];
     struct muhtari__pot pot[2][2];
     uint16_t keypad_keys[2];
