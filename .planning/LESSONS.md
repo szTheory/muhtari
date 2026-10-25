@@ -158,3 +158,10 @@ no new orchestration framework or quota is introduced.
 | ID | Lesson | Evidence | Status |
 |---|---|---|---|
 | MU-CI-011 | Identical Windows image/toolchain and concurrency do not imply comparable host CPU class. Two attempts reproduced broad slowdown and a36s PAL timeout with unchanged runtime; another blind retry did not resolve it. | CI40238824962 attempts1/2: accepted AMD family26/model2 versus failed family25/model1; CPU causality remains unproved. Existing DEC.47 applied complete ASan52.64/scale2 and Windows hash28.68 to base53/58; owning registrations retain all workloads/scales. Canonical09-08-SUMMARY preserves failures, commands and acceptance scope. | reproduced |
+
+
+## Release citation ownership (2026-10-25)
+
+| ID | Lesson | Evidence | Status |
+|---|---|---|---|
+| MU-CI-012 | A future-product-version scan misclassified a pinned upstream oracle release in PROVENANCE.md only after the release bump. Scope version ownership explicitly; do not disguise the citation. Positive fixtures must match the scanner's real token boundaries. | ReleaseCI40245055377 and local VERSION0.8.0/NEXT reproduce exit1 on test7800 v0.9.0. Exact-root provenance exemption retains source/docs scanning and notes.md fault detection; corrected parenthesized current/minor/patch fixtures fail the old checker and pass the new one. Full local656+6 exits0; source repair still requires hosted release CI. | reproduced |

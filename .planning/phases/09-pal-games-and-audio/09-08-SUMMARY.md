@@ -392,3 +392,64 @@ Independent scoped report revalidation and one corrected-source hosted acceptanc
 follow this local evidence. Neither failed source is relabeled passing. If the
 corrected source still fails these consumers, stop shipping on that concrete
 failure; do not repeatedly increase margins or retry. No later GSD step runs.
+
+
+## Post-merge release scan recovery
+
+Phase PR33 merged as `e982181017509f217ca3abe81043fe4087c065fe` after the
+corrected head `7d8b3bf28b27fbcdabae304046ea103da4c86b0f` passed
+[CI40242459269](https://github.com/szTheory/muhtari/actions/runs/40242459269),
+attempt1. The complete saved-response CMake audit exits0. All required jobs,
+all six native current/base builds, authenticated quality join, actual RetroArch
+and equality pass; advisory WASM also passes. Windows x64 PAL26.56s and hash20.84s
+complete; current654+6 and genuine base649+6 pass. This observation does not
+prove the earlier failed CPU class's exact complete duration.
+[Corrected Nightly40242459348](https://github.com/szTheory/muhtari/actions/runs/40242459348)
+completes/success with required native/PPC equality, vectors, fuzz and benches;
+advisory isolation390.03s remains unaccepted. The merge push has
+[CI40245012617](https://github.com/szTheory/muhtari/actions/runs/40245012617).
+
+The App updates releasePR35 to0.8.0 at03a573c2046d0669403ef0b88e717ef1826d98c0.
+Its [CI40245055377](https://github.com/szTheory/muhtari/actions/runs/40245055377)
+fails `release.single_version_source.next`: legitimate upstream test7800 v0.9.0
+citations in root PROVENANCE.md are mistaken for duplicate product versions.
+Completed Linux/macOS/x64Windows and ASan logs all show only this test failure;
+WindowsARM was still running during the complete pre-fix audit and supplies no
+accepted terminal evidence. Saved-response audit exits1 and retains every job.
+The older release head is superseded by a source repair, never a blind retry.
+
+`cmake -DROOT=. -DVERSION=0.8.0 -DNEXT=ON -P tests/cmake/single_version.cmake`
+reproduces the exact false positive locally, exit1. The smallest correction
+exempts only root PROVENANCE.md, whose declared owner is upstream citations.
+README, source, other docs and similarly named nested paths remain in scope.
+No citation is rewritten or hidden, no release version or generated file changes,
+no dependency, parser grammar, general exemption or new check framework is added.
+The narrow document-scope tradeoff is explicit: product-version claims do not
+belong in provenance. Maintainer/ENGINEERING prose now describes that scope.
+
+Two ordinary current/next fixture tests exercise upstream current1.2.3,
+next-minor1.3.0 and next-patch1.2.4 citations. An adversarial review caught trailing
+periods that bypassed the scanner's boundary regex; the fixture was corrected to
+parenthesized versions before publication. Re-running the original checker against
+that exact regenerated fixture exits1 in both modes, naming all three expected
+versions across modes; the corrected checker exits0 in both. The existing notes.md
+second-version-source fault remains unchanged and passes its exact-message judge.
+All five focused checks pass. CI/WASM exact inventories add only the two cases.
+
+Local corrected-release checks, all exit0 with URL N/A-local:
+
+- Actual0.8.0 current and NEXT scans pass.
+- `ctest --test-dir build/ci -R '^release.single_version_source' --no-tests=error --output-on-failure --output-junit build/ship-09-provenance-green.xml`:5/5.
+- `cmake --workflow --preset ci`:656 ordinary in36.59s, all three packages,
+  six release checks in0.13s. Both complete JUnit consumers confirm656+6 once each.
+- The focused report is separate from full-inventory JUnit. The final fixture
+  blocker is independently rechecked as resolved; no extra general audit round.
+
+A local phase/09-release-version-scan branch starts at origin/main and fast-forwards
+the existing App release commit before this repair. Normal fast-forward publication
+back to releasePR35 preserves its generated version/changelog/manifest and required
+CI merge authority. No main commit, force push, new GSD step or manual release is
+used. The post-merge check change makes the phase fingerprint historical; accepted
+GSD-HANDOFF closeout policy requires merged-head CI and milestone audit, rather than
+another digest-refresh session. Final release CI/publication remains pending here;
+this receipt does not pre-claim it. Next separate command after shipping: $gsd-discuss-phase 10.

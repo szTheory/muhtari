@@ -6,7 +6,8 @@
 # either side. NEXT=ON checks the next minor and next patch instead, the
 # versions a release pull request writes. Out of scope: version.txt, the
 # release-please manifest, configuration (its initial-version is an input)
-# and changelog, and .planning/, whose records cite versions by design.
+# and changelog, .planning/ records, and the root PROVENANCE.md, whose
+# citations identify upstream releases independently of muhtari's version.
 if(NOT DEFINED ROOT)
   get_filename_component(ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 endif()
@@ -26,7 +27,7 @@ endif()
 list(JOIN versions "|" alternatives)
 string(REPLACE "." "\\." alternatives "${alternatives}")
 set(bounded "(^|[^0-9.])(${alternatives})([^0-9.]|$)")
-set(skip "^(version\\.txt|\\.release-please-manifest\\.json|release-please-config\\.json|CHANGELOG\\.md|\\.planning/.*)$")
+set(skip "^(version\\.txt|\\.release-please-manifest\\.json|release-please-config\\.json|CHANGELOG\\.md|PROVENANCE\\.md|\\.planning/.*)$")
 find_program(GIT git REQUIRED)
 execute_process(COMMAND ${GIT} -C ${ROOT} -c core.quotePath=false ls-files
   OUTPUT_VARIABLE listing COMMAND_ERROR_IS_FATAL ANY)
