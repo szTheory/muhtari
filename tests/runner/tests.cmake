@@ -733,7 +733,7 @@ endfunction()
         --info --hsc on --save-dir "${v2_dir}" --hash-frame 1 --dump-frame "1:${png}"
         "${DIR}/input.a78" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
       if(NOT rc STREQUAL "1" OR NOT out STREQUAL "" OR NOT err MATCHES
-          "gun row outside effective region")
+          "movie.txt:5:15: gun row outside effective region")
         message(FATAL_ERROR "late effective-height fault reached frames/output: ${rc} ${out}${err}")
       endif()
       if(existing STREQUAL "yes")
@@ -753,6 +753,8 @@ endfunction()
     expect_exit(1 "gun row outside effective region" --movie "${v2}" "${DIR}/input.a78")
     expect_exit(1 "gun row outside effective region" --region ntsc --movie "${v2}"
       "${PROBE_DIR}/linear-v3-16k-pal")
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 none\nport2 lightgun\n|none:|lightgun:0,242,0|...BB|\n")
+    expect_exit(1 "movie.txt:4:19: gun row outside effective region" --movie "${v2}" "${DIR}/input.a78")
     file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\nregion pal\n|lightgun:319,292,0|none:|...BB|\n")
     expect_exit(1 "decimal out of range" --movie "${v2}" "${v2_dir}/missing.a78")
     file(WRITE "${v2}" "${header}${valid}|driving:0,0,2|none:|...BB|\n")

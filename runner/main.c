@@ -821,6 +821,7 @@ static int movie_region(const options *opt, const replay *mv, const muhtari_info
     muhtari_input_ex in;
     for (uint32_t f = 0u; f < mv->count; f++) {
         uint32_t line = cursor.line;
+        size_t start = cursor.pos;
         if (muhtari__movie_next_ex(mv->bytes, mv->bytes_count, &mv->header, &cursor, &in, &err) !=
             1) {
             fprintf(stderr, "muhtari-run: validated movie decode failed\n");
@@ -828,8 +829,18 @@ static int movie_region(const options *opt, const replay *mv, const muhtari_info
         }
         for (unsigned p = 0u; p < 2u; p++) {
             if (in.port[p].device == MUHTARI_PORT_LIGHTGUN && in.port[p].gun_y >= info->height) {
-                fprintf(stderr, "muhtari-run: %s:%u: gun row outside effective region\n",
-                        opt->movie, line);
+                /* The immutable row already passed syntax validation. Locate
+                   this field's first comma to retain exact Y-column errors. */
+                size_t at = start + 1u;
+                for (unsigned field = 0u; field < p; field++) {
+                    while (at < mv->bytes_count && mv->bytes[at] != '|')
+                        at++;
+                    at++;
+                }
+                while (at < mv->bytes_count && mv->bytes[at] != ',')
+                    at++;
+                fprintf(stderr, "muhtari-run: %s:%u:%u: gun row outside effective region\n",
+                        opt->movie, line, (unsigned)(at - start + 2u));
                 return MUHTARI__EXIT_FAILURE;
             }
         }
