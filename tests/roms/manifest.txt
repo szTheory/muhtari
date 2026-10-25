@@ -36,3 +36,4 @@ tests/diag/fractalus.a78	this-repo	bc1657953ea2ef2f2e20d39b0dc22aaa9cc38581	MIT	
 tests/diag/linear16.a78	this-repo	95fe6a97e6febf3e14c65017972a83fe80eddce4	MIT	7e7f784cf3c8e840c45229f3bb2e0a6d426d2de0912a94c9b84fa8aed20dbcbf	-
 tests/diag/modes.a78	this-repo	b9d205e73b22e25eb0cbc41a6f7470f70c72d1bc	MIT	08ee858c0b045802a7ea11e208d28e6ab77a911cbb6d27dabd43857e80f4d9da	-
 tests/diag/sg144.a78	this-repo	95fe6a97e6febf3e14c65017972a83fe80eddce4	MIT	664747643d218ab5b66c3e274d9d2c169287f09fa4ad897681b102cdabdf793e	-
+tests/diag/pal.a78	this-repo	37c428687dd499caf5de14826a554136c46b6372	MIT	676381441af4dd33568f6d4adf7b84fc602f42606b87dc888f29c582af74b216	-
