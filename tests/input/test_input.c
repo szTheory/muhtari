@@ -1262,6 +1262,17 @@ static uint8_t motion_read(muhtari *m, uint16_t addr, uint64_t tick)
     return m->cpu.a;
 }
 
+static void keypad_submit(muhtari *m, unsigned p, uint32_t keys)
+{
+    muhtari_input_ex in;
+    memset(&in, 0, sizeof in);
+    in.size = (uint32_t)sizeof in;
+    in.port[p].device = MUHTARI_PORT_KEYPAD;
+    in.port[p].keypad = keys;
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    muhtari__ports_latch(m);
+}
+
 /* Independent graph/timing vectors: controllers.md, Keypad. CPU accesses
    sample real slow bus data ticks, independently of executed cycle count. */
 static void keypad_timing(void)
@@ -1271,7 +1282,8 @@ static void keypad_timing(void)
             for (unsigned edge = 0u; edge < 3u; edge++) {
                 muhtari *m = boot(&plain);
                 CHECK(m != NULL);
-                if (m == NULL) return;
+                if (m == NULL)
+                    return;
                 (void)input_access(m, 1u, 1, 7u);
                 muhtari_input_ex in;
                 memset(&in, 0, sizeof in);
@@ -1280,22 +1292,99 @@ static void keypad_timing(void)
                 in.port[p].keypad = 1u << key;
                 muhtari_status st = muhtari_set_input_ex(m, &in);
                 CHECK_EQ_U64(st, MUHTARI_STATUS_OK);
-                if (st != MUHTARI_STATUS_OK) { muhtari_destroy(m); return; }
+                if (st != MUHTARI_STATUS_OK) {
+                    muhtari_destroy(m);
+                    return;
+                }
                 muhtari__ports_latch(m);
                 unsigned shift = p == 0u ? 4u : 0u;
                 uint8_t row = (uint8_t)(1u << (shift + key / 3u));
                 (void)input_access(m, 0x0280u, 1, 0u);
                 (void)input_access(m, 0x0281u, 1, row);
-                uint16_t reg = (uint16_t)(key % 3u == 2u ? 12u + p : 8u + 2u*p + key%3u);
+                uint16_t reg = (uint16_t)(key % 3u == 2u ? 12u + p : 8u + 2u * p + key % 3u);
                 CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
                 uint64_t release = m->bus.ticks + 100u;
                 (void)light_access_at(m, 0x0281u, release, 1, 0u);
-                uint64_t delay = key%3u == 2u ? 30u : 2864u;
+                uint64_t delay = key % 3u == 2u ? 30u : 2864u;
                 CHECK_EQ_HEX(light_access_at(m, reg, release + delay + edge - 1u, 0, 0u) & 0x80u,
-                             key%3u == 2u || edge != 0u ? 0x80u : 0u);
+                             key % 3u == 2u || edge != 0u ? 0x80u : 0u);
                 muhtari_destroy(m);
             }
         }
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        muhtari *m = boot(&plain);
+        CHECK(m != NULL);
+        if (m == NULL)
+            return;
+        (void)input_access(m, 1u, 1, 7u);
+        unsigned shift = p == 0u ? 4u : 0u;
+        uint8_t row1 = (uint8_t)(1u << shift);
+        uint8_t row2 = (uint8_t)(2u << shift);
+        uint16_t pot0 = (uint16_t)(8u + 2u * p), pot1 = (uint16_t)(9u + 2u * p);
+        uint16_t trigger = (uint16_t)(12u + p);
+        keypad_submit(m, p, 0xBu); /* keys1,2,4; path row2-key4-col0-key1-row1-key2-col1 */
+        (void)input_access(m, 0x0280u, 1, 0u);
+        (void)input_access(m, 0x0281u, 1, row2);
+        CHECK_EQ_HEX(input_access(m, pot0, 0, 0u) & H, L);
+        CHECK_EQ_HEX(input_access(m, pot1, 0, 0u) & H, L);
+        CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u) & (row1 | row2), 0u);
+        /* A driven high reads its ORA, while the contended network stays low. */
+        (void)input_access(m, 0x0280u, 1, row1);
+        (void)input_access(m, 0x0281u, 1, (uint8_t)(row1 | row2));
+        CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u) & (row1 | row2), row1);
+        CHECK_EQ_HEX(input_access(m, pot1, 0, 0u) & H, L);
+        uint64_t release = m->bus.ticks + 100u;
+        (void)light_access_at(m, 0x0281u, release, 1, 0u);
+        for (unsigned i = 1u; i <= 6u; i++) {
+            (void)light_access_at(m, 0x0281u, release + i * 300u, 1, 0u);
+            CHECK_EQ_HEX(input_access(m, pot1, 0, 0u) & H, L);
+            keypad_submit(m, p, 0xBu); /* unchanged host polls retain the deadline */
+        }
+        CHECK_EQ_HEX(light_access_at(m, pot1, release + 2863u, 0, 0u) & H, L);
+        CHECK_EQ_HEX(light_access_at(m, pot0, release + 2864u + 30u, 0, 0u) & H, H);
+        CHECK_EQ_HEX(input_access(m, pot1, 0, 0u) & H, H);
+        /* Four held keys, D7 ground propagates to trigger via shared row. */
+        keypad_submit(m, p, 0x27u); /*1,2,3,6*/
+        (void)input_access(m, 1u, 1, 0xC0u);
+        CHECK_EQ_HEX(input_access(m, pot0, 0, 0u) & H, L);
+        CHECK_EQ_HEX(input_access(m, trigger, 0, 0u) & H, L);
+        (void)input_access(m, 1u, 1, 0x40u);
+        CHECK_EQ_HEX(input_access(m, trigger, 0, 0u) & H, L); /* D6 retained */
+        (void)input_access(m, 1u, 1, 0u);
+        CHECK_EQ_HEX(input_access(m, trigger, 0, 0u) & H, H); /* live release */
+        keypad_submit(m, p, 0u);
+        (void)input_access(m, 1u, 1, 0x80u);
+        CHECK_EQ_HEX(input_access(m, trigger, 0, 0u) & H, H);
+        /* Every key is legal; malformed/inapplicable fields preserve pending. */
+        keypad_submit(m, p, 4095u);
+        muhtari_input_ex bad = m->ports.applied_ex;
+        for (unsigned fault = 0u; fault < 3u; fault++) {
+            struct muhtari__ports before = m->ports;
+            bad = m->ports.applied_ex;
+            if (fault == 0u)
+                bad.port[p].keypad = 4096u;
+            if (fault == 1u)
+                bad.port[p].buttons = MUHTARI_BUTTON_1;
+            if (fault == 2u)
+                bad.port[p].paddle[0] = 1u;
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &bad), MUHTARI_STATUS_ERR_ARGUMENT);
+            CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
+        }
+        (void)input_access(m, 0x0281u, 1, 0u);
+        keypad_submit(m, p, 0u);
+        (void)input_access(m, 1u, 1, 0u);
+        uint64_t until = m->bus.ticks + 2864u;
+        m->cpu.jammed = 1u;
+        CHECK_EQ_U64(muhtari__bus_request_halt(m, m->bus.ticks, until + 100u), 1u);
+        while (m->bus.ticks < until + 100u)
+            muhtari__cpu_step(m);
+        CHECK_EQ_HEX(muhtari__tia_read(m, pot0) & H, H);
+        CHECK_EQ_HEX(muhtari__tia_read(m, pot1) & H, H);
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK_EQ_HEX(muhtari__tia_read(m, pot0) & H, L);
+        CHECK_EQ_HEX(muhtari__tia_read(m, trigger) & H, H);
+        muhtari_destroy(m);
     }
 }
 

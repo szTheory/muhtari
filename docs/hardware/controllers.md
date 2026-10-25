@@ -16,10 +16,10 @@ Sources:
 
 ## Devices
 
-Each port carries a ProLine, a 2600 joystick, a driving controller, an XG-1, two paddles,
+Each port carries a ProLine, a 2600 joystick, a driving controller, an XG-1, two paddles, a keypad,
 a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
 cartridge's A78 header does. A header that names no controller leaves the port unplugged. A header device that is not
-modelled yet, such as a keypad, is wired as a ProLine. The legacy setter retains
+modelled yet, such as a trakball, is wired as a ProLine. The legacy setter retains
 its ProLine fallback and explicit XG-1 refusal; extended input and load overrides
 can select the gun on either port.
 
@@ -145,6 +145,40 @@ discards the protocol, page buffer and future programming. Thus a reset one tick
 reset at or after completion retains its bytes and change token. Queries, host persistence and destruction never
 advance time to finish programming. The persistent array belongs to the existing instance battery span; the port
 owner adds only one fixed page and finite protocol state, with no allocation after load.
+
+## Keypad
+
+The original Atari VCS field service manual figure7-9 (PDF page141) wires
+four rows to pins1..4 and three columns to pins5,9,6, with4.7kΩ pot-column
+pullups and no isolation diodes. Row-major bits0..11 are1,2,3 /4,5,6 /
+7,8,9 /*,0,#. The extended packet accepts all twelve simultaneous keys;
+other payload fields must be zero. The legacy setter still refuses keypads.
+
+Effective ORA/DDRA outputs low supply ground, inputs release, outputs high
+and pullups supply high. Closed switches form a seven-node graph with at
+most seven fixed relaxation passes. A connected ground dominates mixed
+high/low drivers as an explicit compatibility policy. RIOT output readback
+still reads ORA; input rows can read low through connected keys. This is
+not diode isolation or a calibrated short-circuit-current model.
+
+Each pot column falls immediately. After its last ground disappears it
+recovers high exactly2864 master ticks later, ceil(400*315/44), derived from
+the7800 Software Guide's400µs settling interval. Reads, unchanged ORA/DDRA
+writes and unchanged input packets never restart recovery. Attachment and
+power cycle start discharged. D7 grounds both pots and propagates through
+closed keys to rows and trigger; retained capacitor low is not itself a
+new ground source. Trigger releases immediately and D6 can retain a real
+low. The existing event owner schedules at most four pot deadlines, even
+while SALLY is halted/jammed; no executed-cycle counter approximates400µs.
+
+Independent vectors: key1/row1 low grounds column0; releasing at100 leaves
+it low through2963 and high at2964. Key3 uses the live trigger column.
+Keys1,2,4 with row2 low also ground column1 through row1, the fourth-corner
+ghost. Four or twelve keys are legal. No keys plus D7 means both pots low
+and trigger high. Keys1,2,3,6 with D7 connect the trigger low even with all
+rows released. Early scans of another row retain low in the same column;
+waiting through recovery removes it. These are deterministic fitted
+recovery/contention rules, not measured charge-sharing voltages.
 
 ## Directions
 

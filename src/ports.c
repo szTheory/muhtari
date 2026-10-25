@@ -19,6 +19,42 @@
 
 static void ports_rearm(muhtari *m);
 
+/* Four rows and three columns, without diodes. Low dominates mixed
+   driven rows; this is the compatibility policy in controllers.md, Keypad.
+   A low can traverse at most six edges of this seven-node network. */
+void muhtari__ports_rows(muhtari *m, uint64_t tick)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        if (muhtari__ports_device(m, p) != MUHTARI_PORT_KEYPAD)
+            continue;
+        unsigned shift = p == 0u ? 4u : 0u;
+        uint8_t low = (uint8_t)((m->riot.ddra & (uint8_t)~m->riot.ora) >> shift) & 15u;
+        if (m->tia.input_dump != 0u)
+            low |= 0x30u;
+        for (unsigned pass = 0u; pass < 7u; pass++) {
+            uint8_t before = low;
+            for (unsigned key = 0u; key < 12u; key++) {
+                uint8_t pair = (uint8_t)((1u << (key / 3u)) | (1u << (4u + key % 3u)));
+                if ((m->ports.keypad_keys[p] & (1u << key)) != 0u && (low & pair) != 0u)
+                    low |= pair;
+            }
+            if (low == before)
+                break;
+        }
+        for (unsigned n = 0u; n < 2u; n++) {
+            uint8_t bit = (uint8_t)(0x10u << n);
+            struct muhtari__pot *pot = &m->ports.pot[p][n];
+            if ((low & bit) != 0u) {
+                pot->action = 0u;
+            } else if ((m->ports.keypad_low[p] & bit) != 0u) {
+                pot->crossing_tick = tick + 2864u;
+            }
+        }
+        m->ports.keypad_low[p] = low;
+    }
+    ports_rearm(m);
+}
+
 /* 7800 10k series + 1M pot, 68nF and fitted comparator threshold:
    controllers.md, Paddles. Ceil to whole master ticks. */
 static uint32_t ports_pot_duration(uint32_t position)
@@ -57,7 +93,7 @@ void muhtari__ports_dump(muhtari *m, uint64_t tick)
             ports_pot_project(pot, tick);
         }
     }
-    ports_rearm(m);
+    muhtari__ports_rows(m, tick);
 }
 
 void muhtari__ports_reset(muhtari *m)
@@ -65,10 +101,13 @@ void muhtari__ports_reset(muhtari *m)
     memset(m->ports.motion, 0, sizeof m->ports.motion);
     memset(m->ports.light, 0, sizeof m->ports.light);
     memset(m->ports.pot, 0, sizeof m->ports.pot);
+    memset(m->ports.keypad_low, 0, sizeof m->ports.keypad_low);
     for (unsigned p = 0u; p < 2u; p++) {
         for (unsigned n = 0u; n < 2u; n++) {
             m->ports.pot[p][n].duration = ports_pot_duration(m->ports.applied_ex.port[p].paddle[n]);
             ports_pot_project(&m->ports.pot[p][n], 0u);
+            if (muhtari__ports_device(m, p) == MUHTARI_PORT_KEYPAD)
+                m->ports.pot[p][n].crossing_tick = 2864u;
         }
     }
     m->ports.next_tick = 0u;
@@ -77,6 +116,8 @@ void muhtari__ports_reset(muhtari *m)
     for (unsigned p = 0u; p < 2u; p++) {
         if (muhtari__ports_device(m, p) == MUHTARI_PORT_PADDLE) {
             m->ports.next_tick = m->ports.pot[p][0].crossing_tick;
+        } else if (muhtari__ports_device(m, p) == MUHTARI_PORT_KEYPAD) {
+            m->ports.next_tick = 2864u;
         }
     }
 }
@@ -95,10 +136,14 @@ static void ports_rearm(muhtari *m)
             next = at;
         }
         const struct muhtari__light *light = &m->ports.light[p];
-        if (muhtari__ports_device(m, p) == MUHTARI_PORT_PADDLE && m->tia.input_dump == 0u) {
+        uint32_t device = muhtari__ports_device(m, p);
+        if ((device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_KEYPAD) &&
+            m->tia.input_dump == 0u) {
             for (unsigned n = 0u; n < 2u; n++) {
                 const struct muhtari__pot *pot = &m->ports.pot[p][n];
-                if (pot->action < PORTS_CHARGED && pot->crossing_tick < next) {
+                if (pot->action < PORTS_CHARGED && pot->crossing_tick < next &&
+                    (device != MUHTARI_PORT_KEYPAD ||
+                     (m->ports.keypad_low[p] & (0x10u << n)) == 0u)) {
                     next = pot->crossing_tick;
                 }
             }
@@ -185,10 +230,14 @@ void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
     uint64_t next = muhtari__ports_next_event(m);
     while (next <= tick && next != UINT64_MAX) {
         for (unsigned p = 0u; p < 2u; p++) {
-            if (muhtari__ports_device(m, p) == MUHTARI_PORT_PADDLE && m->tia.input_dump == 0u) {
+            uint32_t device = muhtari__ports_device(m, p);
+            if ((device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_KEYPAD) &&
+                m->tia.input_dump == 0u) {
                 for (unsigned n = 0u; n < 2u; n++) {
                     struct muhtari__pot *pot = &m->ports.pot[p][n];
-                    if (pot->crossing_tick == next) {
+                    if (pot->crossing_tick == next &&
+                        (device != MUHTARI_PORT_KEYPAD ||
+                         (m->ports.keypad_low[p] & (0x10u << n)) == 0u)) {
                         pot->action = PORTS_CHARGED;
                     }
                 }
@@ -451,8 +500,9 @@ muhtari_status muhtari__ports_check_device_ex(uint32_t device)
 {
     if (device == 0u || device == MUHTARI_PORT_PROLINE || device == MUHTARI_PORT_JOYSTICK ||
         device == MUHTARI_PORT_DRIVING || device == MUHTARI_PORT_LIGHTGUN ||
-        device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_UNPLUGGED ||
-        device == MUHTARI_PORT_SAVEKEY || device == MUHTARI_PORT_ATARIVOX) {
+        device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_KEYPAD ||
+        device == MUHTARI_PORT_UNPLUGGED || device == MUHTARI_PORT_SAVEKEY ||
+        device == MUHTARI_PORT_ATARIVOX) {
         return MUHTARI_STATUS_OK;
     }
     return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
@@ -522,18 +572,21 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
         }
         int gun = port->device == MUHTARI_PORT_LIGHTGUN;
         int paddle = port->device == MUHTARI_PORT_PADDLE;
+        int keypad = port->device == MUHTARI_PORT_KEYPAD;
         if (gun && in->size < offsetof(muhtari_input_ex, port) + p * sizeof(muhtari_port_input) +
                                   sizeof(muhtari_port_input)) {
             port->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
         }
-        uint32_t buttons = paddle ? MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2
-                                  : (port->device == MUHTARI_PORT_DRIVING || gun ? MUHTARI_BUTTON_1
-                                                                                 : PORTS_BUTTONS);
+        uint32_t buttons =
+            keypad ? 0u
+            : paddle
+                ? MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2
+                : (port->device == MUHTARI_PORT_DRIVING || gun ? MUHTARI_BUTTON_1 : PORTS_BUTTONS);
         if ((port->buttons & ~buttons) != 0u ||
             (paddle ? (port->paddle[0] > 65535u || port->paddle[1] > 65535u)
                     : (port->paddle[0] != 0u || port->paddle[1] != 0u)) ||
-            port->keypad != 0u || (port->device != MUHTARI_PORT_DRIVING && port->dx != 0) ||
-            port->dy != 0 ||
+            (keypad ? port->keypad > 4095u : port->keypad != 0u) ||
+            (port->device != MUHTARI_PORT_DRIVING && port->dx != 0) || port->dy != 0 ||
             (gun ? (port->gun_x >= MUHTARI__WIDTH || port->gun_y >= MUHTARI__HEIGHT_NTSC ||
                     (port->flags & ~(uint32_t)MUHTARI_INPUT_GUN_OFFSCREEN) != 0u)
                  : (port->gun_x != 0u || port->gun_y != 0u || port->flags != 0u)) ||
@@ -610,6 +663,10 @@ void muhtari__ports_latch(muhtari *m)
         }
         struct muhtari__motion *axis = &ports->motion[p];
         uint32_t device = muhtari__ports_device(m, p);
+        ports->keypad_keys[p] =
+            ports->input_mode != 0u ? (uint16_t)ports->pending_ex.port[p].keypad : 0u;
+        if (previous != device)
+            ports->keypad_low[p] = 0u;
         for (unsigned n = 0u; n < 2u; n++) {
             struct muhtari__pot *pot = &ports->pot[p][n];
             uint32_t position = ports->input_mode != 0u ? ports->pending_ex.port[p].paddle[n] : 0u;
@@ -623,6 +680,8 @@ void muhtari__ports_latch(muhtari *m)
             }
             pot->duration = ports_pot_duration(position);
             ports_pot_project(pot, m->bus.ticks);
+            if (device == MUHTARI_PORT_KEYPAD)
+                pot->crossing_tick = m->bus.ticks + 2864u;
         }
         if (previous != device) {
             memset(axis, 0, sizeof *axis);
@@ -655,6 +714,7 @@ void muhtari__ports_latch(muhtari *m)
         ports->switches = ports->pending_switches;
     }
     ports->pending = 0u;
+    muhtari__ports_rows(m, m->bus.ticks);
     for (unsigned p = 0u; p < 2u; p++) {
         ports_light_rearm(m, p, m->bus.ticks);
     }
@@ -698,6 +758,11 @@ uint8_t muhtari__ports_swcha(const muhtari *m)
             continue;
         }
         uint32_t b = m->ports.buttons[p];
+        if (device == MUHTARI_PORT_KEYPAD) {
+            uint8_t low = m->ports.keypad_low[p] & 15u;
+            pins &= (uint8_t)~(p == 0u ? low << 4 : low);
+            continue;
+        }
         if (device == MUHTARI_PORT_PADDLE) {
             uint8_t low = (uint8_t)(((b & MUHTARI_BUTTON_1) != 0u ? 8u : 0u) |
                                     ((b & MUHTARI_BUTTON_2) != 0u ? 4u : 0u));
@@ -765,7 +830,7 @@ uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n)
     uint32_t device = muhtari__ports_device(m, port);
     uint32_t b = m->ports.buttons[port];
     if (n < 4u) {
-        if (device == MUHTARI_PORT_PADDLE) {
+        if (device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_KEYPAD) {
             const struct muhtari__pot *pot = &m->ports.pot[port][n & 1u];
             return (uint8_t)(m->tia.input_dump == 0u && pot->action == PORTS_CHARGED);
         }
@@ -781,6 +846,8 @@ uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n)
     if (device == MUHTARI_PORT_LIGHTGUN) {
         return (uint8_t)(m->ports.light[port].low == 0u);
     }
+    if (device == MUHTARI_PORT_KEYPAD)
+        return (uint8_t)((m->ports.keypad_low[port] & 0x40u) == 0u);
     return 1u;
 }
 

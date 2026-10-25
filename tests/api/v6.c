@@ -68,7 +68,7 @@ int main(void)
     input.port[1].device = MUHTARI_PORT_UNPLUGGED;
     input.switches = MUHTARI_SWITCH_RESET;
     CHECK_EQ_U64(muhtari_set_input_ex(m, &input), MUHTARI_STATUS_OK);
-    input.port[1].device = MUHTARI_PORT_KEYPAD;
+    input.port[1].device = MUHTARI_PORT_TRAKBALL;
     input.port[1].paddle[0] = 65535u;
     input.port[1].paddle[1] = 0u;
     CHECK_EQ_U64(muhtari_set_input_ex(m, &input), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);

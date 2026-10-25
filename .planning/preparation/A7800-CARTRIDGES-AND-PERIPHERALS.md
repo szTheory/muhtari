@@ -167,9 +167,15 @@ One On One and Worm! set the DDR without ever writing SWCHB and rely on the defa
 **Recommendation (v2):** the sensor is lit iff the beam is inside an aim window (D ticks late, for W ticks over L lines) **and** the MARIA pixel actually output there has luma ≥ T. Use D = 64, W = 30, L = 9 (A7800Hawk) and a configurable T. Calibrate on the 10 entries plus Ducks Away until every hit offset is 0. **Strongest alternative:** a geometry-only window (a7800, A7800Hawk). **Would change if:** a hardware capture of XG-1 timing appears (AtariAge thread 353281).
 
 ### 3.5 Keypad
-The Software Guide requires a 400 µs wait between a row write and reading the columns: 716 CPU cycles, or 6.3 lines (derived) [CART.09]. Real Video Touch Pads show keys scanned after a pressed key in the same column as pressed too, and register at most 3 keys at once [CART.34]. 7800basic avoids the wait by selecting one row per frame [CART.28]. PROPack ships "Keypad Delay Test" and "Keypad Controller Test" [CART.15].
-
-**Recommendation:** the pot-line columns (INPT0/1) fall to low at once and take 716 cycles to rise, which also explains the same-column ghosts (derived); INPT4 is digital. **Strongest alternative:** an idealised keypad, as in a7800. **Would change if:** the Keypad Delay Test disagrees on real hardware.
+The implemented source-backed wiring and explicit compatibility policies have
+graduated into [controller hardware](../../docs/hardware/controllers.md#keypad).
+The Software Guide's400µs settling wait [CART.09] is2864 elapsed master ticks,
+not a fixed count of executed CPU cycles. Original field-manual figure7-9
+has no isolation diodes; held switches form a connected network. Low-dominant
+contention, immediate discharge and per-column timed recovery are derived
+policies, not measured analog charge sharing. Reports of three-key behavior
+[CART.34] do not establish an arbitrary software key cap. All twelve keys are
+accepted; same-column retained charge and fourth-corner ghosts are tested.
 
 ## 4. Saves
 ### 4.1 High Score Cartridge [CART.06]
