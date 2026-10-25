@@ -163,7 +163,7 @@ static void build(const settings *s)
 
 /* An instance running the program with settings s, loaded through
    muhtari_load and its fast boot. NULL on failure. */
-static muhtari *boot(const settings *s)
+static muhtari *boot_region(const settings *s, uint32_t region)
 {
     build(s);
     muhtari_config cfg = alloc_config(&counts);
@@ -177,12 +177,18 @@ static muhtari *boot(const settings *s)
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = sizeof image;
+    media.region = region;
     if (muhtari_load(m, &media) != MUHTARI_STATUS_OK) {
         fprintf(stderr, "muhtari_load failed\n");
         muhtari_destroy(m);
         return NULL;
     }
     return m;
+}
+
+static muhtari *boot(const settings *s)
+{
+    return boot_region(s, MUHTARI_REGION_NTSC);
 }
 
 /* Runs one frame into rows. */
@@ -1400,9 +1406,9 @@ static uint8_t serial_receive(muhtari *m, unsigned p, unsigned nak)
     return value;
 }
 
-static muhtari *serial_boot(unsigned p, uint32_t device)
+static muhtari *serial_boot_region(unsigned p, uint32_t device, uint32_t region)
 {
-    muhtari *m = boot(&plain);
+    muhtari *m = boot_region(&plain, region);
     if (m == NULL) {
         return NULL;
     }
@@ -1411,6 +1417,7 @@ static muhtari *serial_boot(unsigned p, uint32_t device)
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = sizeof image;
+    media.region = region;
     uint8_t old_port = image[55];
     uint8_t old_hint = image[58];
     if (device != 0u) {
@@ -1427,6 +1434,11 @@ static muhtari *serial_boot(unsigned p, uint32_t device)
     CHECK_EQ_U64(muhtari__ports_device(m, p - 1u), m->battery.eeprom_device);
     serial_write(m, 0x0280u, 0u);
     return m;
+}
+
+static muhtari *serial_boot(unsigned p, uint32_t device)
+{
+    return serial_boot_region(p, device, MUHTARI_REGION_NTSC);
 }
 
 static void serial_address(muhtari *m, unsigned p, uint16_t address)
@@ -1556,13 +1568,13 @@ static void adapter_storage(void)
     }
 }
 
-static int savekey_protocol(void)
+static void savekey_protocol_region(uint32_t region)
 {
     for (unsigned p = 1u; p <= 2u; p++) {
         for (unsigned kind = 0u; kind < 3u; kind++) {
-            muhtari *m = serial_boot(p, kind == 0u   ? MUHTARI_PORT_SAVEKEY
+            muhtari *m = serial_boot_region(p, kind == 0u   ? MUHTARI_PORT_SAVEKEY
                                         : kind == 1u ? MUHTARI_PORT_ATARIVOX
-                                                     : 0u);
+                                                     : 0u, region);
             CHECK(m != NULL);
             if (m == NULL) {
                 continue;
@@ -1573,7 +1585,7 @@ static int savekey_protocol(void)
             CHECK_EQ_U64(serial_send(m, p, 0x34u), 0u);
             CHECK_EQ_U64(serial_send(m, p, 0x5Au), 0u);
             serial_stop(m, p);
-            CHECK_EQ_U64(m->savekey.busy_until, serial_pin_tick + MUHTARI__SAVEKEY_BUSY_TICKS);
+            CHECK_EQ_U64(m->savekey.busy_until, serial_pin_tick + (region == MUHTARI_REGION_PAL ? 35469u : 35796u));
             CHECK_EQ_HEX(m->battery.data[0x1234u], 0xFFu);
             serial_start(m, p);
             CHECK_EQ_U64(serial_send(m, p, 0xA0u), 1u);
@@ -1592,6 +1604,12 @@ static int savekey_protocol(void)
             muhtari_destroy(m);
         }
     }
+}
+
+static int savekey_protocol(void)
+{
+    savekey_protocol_region(MUHTARI_REGION_NTSC);
+    savekey_protocol_region(MUHTARI_REGION_PAL);
     return check_failures == 0;
 }
 
@@ -1759,12 +1777,13 @@ static void keypad_submit(muhtari *m, unsigned p, uint32_t keys)
 
 /* Independent graph/timing vectors: controllers.md, Keypad. CPU accesses
    sample real slow bus data ticks, independently of executed cycle count. */
-static void keypad_timing(void)
+static void keypad_timing_region(uint32_t region)
 {
+    uint32_t recovery = region == MUHTARI_REGION_PAL ? 2838u : 2864u;
     for (unsigned p = 0u; p < 2u; p++) {
         for (unsigned key = 0u; key < 12u; key++) {
             for (unsigned edge = 0u; edge < 3u; edge++) {
-                muhtari *m = boot(&plain);
+                muhtari *m = boot_region(&plain, region);
                 CHECK(m != NULL);
                 if (m == NULL)
                     return;
@@ -1789,7 +1808,7 @@ static void keypad_timing(void)
                 CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
                 uint64_t release = m->bus.ticks + 100u;
                 (void)light_access_at(m, 0x0281u, release, 1, 0u);
-                uint64_t delay = key % 3u == 2u ? 30u : 2864u;
+                uint64_t delay = key % 3u == 2u ? 30u : recovery;
                 CHECK_EQ_HEX(light_access_at(m, reg, release + delay + edge - 1u, 0, 0u) & 0x80u,
                              key % 3u == 2u || edge != 0u ? 0x80u : 0u);
                 muhtari_destroy(m);
@@ -1797,7 +1816,7 @@ static void keypad_timing(void)
         }
     }
     for (unsigned p = 0u; p < 2u; p++) {
-        muhtari *m = boot(&plain);
+        muhtari *m = boot_region(&plain, region);
         CHECK(m != NULL);
         if (m == NULL)
             return;
@@ -1825,8 +1844,8 @@ static void keypad_timing(void)
             CHECK_EQ_HEX(input_access(m, pot1, 0, 0u) & H, L);
             keypad_submit(m, p, 0xBu); /* unchanged host polls retain the deadline */
         }
-        CHECK_EQ_HEX(light_access_at(m, pot1, release + 2863u, 0, 0u) & H, L);
-        CHECK_EQ_HEX(light_access_at(m, pot0, release + 2864u + 30u, 0, 0u) & H, H);
+        CHECK_EQ_HEX(light_access_at(m, pot1, release + (recovery - 1u), 0, 0u) & H, L);
+        CHECK_EQ_HEX(light_access_at(m, pot0, release + recovery + 30u, 0, 0u) & H, H);
         CHECK_EQ_HEX(input_access(m, pot1, 0, 0u) & H, H);
         /* Four held keys, D7 ground propagates to trigger via shared row. */
         keypad_submit(m, p, 0x27u); /*1,2,3,6*/
@@ -1858,7 +1877,7 @@ static void keypad_timing(void)
         (void)input_access(m, 0x0281u, 1, 0u);
         keypad_submit(m, p, 0u);
         (void)input_access(m, 1u, 1, 0u);
-        uint64_t until = m->bus.ticks + 2864u;
+        uint64_t until = m->bus.ticks + recovery;
         m->cpu.jammed = 1u;
         CHECK_EQ_U64(muhtari__bus_request_halt(m, m->bus.ticks, until + 100u), 1u);
         while (m->bus.ticks < until + 100u)
@@ -1881,9 +1900,9 @@ static void keypad_timing(void)
         muhtari__ports_reset(m);
         muhtari__power_on(m);
         muhtari__bus_write(m, 1u, 7u);
-        m->bus.ticks = 2864u - 5u;
+        m->bus.ticks = recovery - 5u;
         CHECK_EQ_HEX(muhtari__bus_read(m, pot0) & H, H);
-        CHECK_EQ_U64(m->bus.ticks, 2865u);
+        CHECK_EQ_U64(m->bus.ticks, recovery + 1u);
         uint16_t otherpot = (uint16_t)(8u + 2u * (1u - p));
         CHECK_EQ_HEX(muhtari__bus_read(m, otherpot) & H, L);
         CHECK_EQ_HEX(muhtari__bus_read(m, (uint16_t)(otherpot + 1u)) & H, H);
@@ -1893,15 +1912,17 @@ static void keypad_timing(void)
 
 /* Independent RC vectors in controllers.md; all observations execute real
    cartridge LDA/STA instructions at the slow input data tick. */
-static void paddle_timing(void)
+static void paddle_timing_region(uint32_t region)
 {
     static const uint32_t positions[] = {0u, 32767u, 32768u, 65535u};
-    static const uint32_t durations[] = {1878u, 95750u, 95753u, 189625u};
+    static const uint32_t ntsc[] = {1878u, 95750u, 95753u, 189625u};
+    static const uint32_t pal[] = {1861u, 94877u, 94879u, 187895u};
+    const uint32_t *durations = region == MUHTARI_REGION_PAL ? pal : ntsc;
     for (unsigned port = 0u; port < 2u; port++) {
         for (unsigned pot = 0u; pot < 2u; pot++) {
             for (unsigned v = 0u; v < 4u; v++) {
                 for (unsigned edge = 0u; edge < 3u; edge++) {
-                    muhtari *m = boot(&plain);
+                    muhtari *m = boot_region(&plain, region);
                     CHECK(m != NULL);
                     if (m == NULL) {
                         return;
@@ -1955,7 +1976,7 @@ static void paddle_timing(void)
     for (unsigned port = 0u; port < 2u; port++) {
         for (unsigned poll = 0u; poll < 2u; poll++) {
             for (unsigned edge = 0u; edge < 3u; edge++) {
-                muhtari *m = boot(&plain);
+                muhtari *m = boot_region(&plain, region);
                 CHECK(m != NULL);
                 if (m == NULL) {
                     return;
@@ -1984,9 +2005,9 @@ static void paddle_timing(void)
                 in.port[port].paddle[0] = 65535u;
                 CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
                 muhtari__ports_latch(m);
-                uint64_t crossing = release + 1000u + 88654u;
+                uint64_t crossing = release + 1000u + (region == MUHTARI_REGION_PAL ? 86931u : 88654u);
                 if (poll != 0u) {
-                    for (unsigned t = 1200u; t < 89000u; t += 1000u) {
+                    for (unsigned t = 1200u; t < (region == MUHTARI_REGION_PAL ? 87000u : 89000u); t += 1000u) {
                         CHECK_EQ_HEX(light_access_at(m, reg, release + t, 0, 0u) & 0x80u, 0u);
                     }
                 }
@@ -2012,7 +2033,7 @@ static void paddle_timing(void)
                 CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
                 muhtari__ports_latch(m);
                 (void)input_access(m, 1u, 1, 0u);
-                uint64_t charged_by = m->bus.ticks - 1u + 189625u;
+                uint64_t charged_by = m->bus.ticks - 1u + durations[3];
                 /* A JAM executes actual host frames without sensor polls;
                    max travel crosses the first full frame boundary. */
                 m->cart.rom[0] = 0x02u;
@@ -2050,6 +2071,18 @@ static void paddle_timing(void)
             }
         }
     }
+}
+
+static void keypad_timing(void)
+{
+    keypad_timing_region(MUHTARI_REGION_NTSC);
+    keypad_timing_region(MUHTARI_REGION_PAL);
+}
+
+static void paddle_timing(void)
+{
+    paddle_timing_region(MUHTARI_REGION_NTSC);
+    paddle_timing_region(MUHTARI_REGION_PAL);
 }
 
 static void driving_timing(void)
