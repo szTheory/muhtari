@@ -249,14 +249,14 @@ failure. Package integrity, typed measurements and all other contracts remain.
 **Goal:** Run PAL content at the console timing and report matching video/audio geometry to every host.
 **Depends on:** Phase 8
 **Requirements:** PAL-01, PAL-02, PAL-03
-**Plans:** 8 plans
+**Plans:** 1/8 plans executed
 
 Plans:
 
 **Wave 1**
-- [ ] 09-01-PLAN.md — Safe PAL timing/startup/arithmetic tracer and reachable host buffer/AV contracts.
+- [x] 09-01-PLAN.md — Safe PAL timing/startup/arithmetic tracer and reachable host buffer/AV contracts.
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Wave 2** *(ready; Wave 1 accepted)*
 - [ ] 09-02-PLAN.md — Physical-time devices, lower-raster light and battery lifecycle.
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -326,7 +326,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
-| 9. PAL games and audio | 0/8 | Ready to execute | — |
+| 9. PAL games and audio | 1/8 | In Progress | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
