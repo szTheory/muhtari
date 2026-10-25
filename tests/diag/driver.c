@@ -683,8 +683,9 @@ static int controller_library(const char *path, const char *expected, const char
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
-    media.port[0] = media.port[1] = controller_analog ? MUHTARI_PORT_PADDLE :
-        controller_light ? MUHTARI_PORT_LIGHTGUN : MUHTARI_PORT_DRIVING;
+    media.port[0] = media.port[1] = controller_analog  ? MUHTARI_PORT_PADDLE
+                                    : controller_light ? MUHTARI_PORT_LIGHTGUN
+                                                       : MUHTARI_PORT_DRIVING;
     muhtari__sha256_init(&controller_raw);
     int failed =
         image == NULL || retail_expected(expected, controller_name()) != 0 ||
@@ -700,8 +701,9 @@ static int controller_library(const char *path, const char *expected, const char
         io.video_pitch = 320u;
         io.audio = controller_pcm[f];
         io.audio_capacity = 801u;
-        failed = (f != 4u && muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK) ||
-                 muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        failed =
+            ((f != 4u || controller_analog) && muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK) ||
+            muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         controller_counts[f] = io.audio_count;
     }
     uint8_t mb[256];
@@ -772,15 +774,18 @@ static int controller_library(const char *path, const char *expected, const char
             failed = 1;
         else {
             fprintf(f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
-                    controller_analog ? "paddle" : controller_light ? "lightgun" : "driving",
-                    controller_analog ? "paddle" : controller_light ? "lightgun" : "driving");
+                    controller_analog  ? "paddle"
+                    : controller_light ? "lightgun"
+                                       : "driving",
+                    controller_analog  ? "paddle"
+                    : controller_light ? "lightgun"
+                                       : "driving");
             for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
                 muhtari_input_ex in;
                 controller_stimulus(i, &in);
                 if (controller_analog) {
-                    fprintf(f, "|paddle:%u,%u,%u|paddle:%u,%u,%u|...BB|\n",
-                            in.port[0].paddle[0], in.port[0].paddle[1],
-                            (in.port[0].buttons >> 4) & 3u,
+                    fprintf(f, "|paddle:%u,%u,%u|paddle:%u,%u,%u|...BB|\n", in.port[0].paddle[0],
+                            in.port[0].paddle[1], (in.port[0].buttons >> 4) & 3u,
                             in.port[1].paddle[0], in.port[1].paddle[1],
                             (in.port[1].buttons >> 4) & 3u);
                 } else if (controller_light) {

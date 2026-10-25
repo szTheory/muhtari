@@ -49,11 +49,45 @@ reset SUBROUTINE
         RECORD 3
         lda #0
         sta $01
-        ; The first executed test requires an elapsed finite charge wait.
+        ldx #5
+        jsr wait_lines          ; >1878, well below95750
         SENSOR $08, 4
         SENSOR $09, 5
         SENSOR $0A, 6
         SENSOR $0B, 7
+        ldx #210
+        jsr wait_lines          ; both midpoint comparators crossed
+        SENSOR $08, 8
+        SENSOR $09, 9
+        SENSOR $0A, 10
+        SENSOR $0B, 11
+        ldx #210
+        jsr wait_lines          ; >189625; full physical maximum
+        jsr all_pots
+        RECORD 12
+        jsr next_frame          ; frame5, opposite independent buttons
+        lda $0280
+        RECORD 13
+        jsr next_frame          ; frame6, swapped endpoint positions
+        lda #$80
+        sta $01
+        lda #0
+        sta $01
+        ldx #5
+        jsr wait_lines
+        SENSOR $08, 14
+        SENSOR $09, 15
+        SENSOR $0A, 16
+        SENSOR $0B, 17
+        ldx #210
+        jsr wait_lines
+        ldx #210
+        jsr wait_lines
+        jsr all_pots
+        RECORD 18
+        jsr next_frame          ; frame8, all buttons released
+        lda $0280
+        RECORD 19
 .finish
         jsr mb_finish
         jmp show
@@ -61,6 +95,12 @@ reset SUBROUTINE
 next_frame SUBROUTINE
         jsr wait_visible
         jmp wait_vblank
+
+wait_lines SUBROUTINE
+.line   sta WSYNC
+        dex
+        bne .line
+        rts
 
 ; Four D7 values as bits0..3, never the undriven open-bus bits.
 all_pots SUBROUTINE

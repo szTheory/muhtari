@@ -301,6 +301,32 @@ clears action; same-device packets preserve it. D6 controls only trigger
 latches, independently of these pots. No allocation, floating point or
 per-tick analog iteration is used.
 
+The owned `controller-analog` image uses mailbox version1, identity16 and
+scenario0 (`analog0`). It decodes the same fresh-load console selector as
+the motion diagnostic; future scenario1 has a separate record set and count.
+Frames1–5 hold left pots0/65535, right32767/32768. Frames6–12 hold left
+65535/0, right0/65535. Frame3–4 buttons are left1/right2, frame5–6 left2/right1;
+all others are released. This fixed schedule applies identically to library
+packets, immutable movie2 bytes and the loaded module.
+
+After frame3 VBLANK, the ROM dumps and records all pot bits as0, records
+SWCHA123 (7B), releases D7 and waits five native WSYNC lines. The first
+wait spans at least four full454-tick lines plus its first partial line.
+The LDX/JSR, WSYNC loop exit, RTS and first slow input access add more
+than84 ticks: the first INPT read is after1900 and before3000 ticks;
+all four reads finish before5000, well before95750.
+Independent records are128,0,0,0. Another210 lines plus record overhead puts
+the next four reads beyond95753 and below189625:128,0,128,128. Another210
+lines exceeds189625; all-pot bits are15. These inequalities follow454 ticks
+per WSYNC line, actual CPU data ticks and the mailbox routine's bounded
+instructions, rather than a game-specific pot scale. Exact±1 crossing and
+mid-charge vectors are checked separately by the CPU/bus tests.
+
+At frame5 SWCHA is183 (B7). At frame6 a fresh dump/release with swapped
+endpoints and five lines gives0,128,128,0. Another420 lines gives all-pot15;
+frame8 SWCHA is255. The19 sequential numeric records, protocol count,
+completion and CRC are judged before any pixel/raw-transition/PCM equality.
+
 ## Not modelled
 
 - Trak-ball, keypad, mice, AtariVox speech, SNES2Atari and Mega7800

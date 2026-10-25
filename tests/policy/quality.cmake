@@ -353,6 +353,8 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --workflow --preset ci WORKING_DIRECT
 foreach(case unchanged additions push dispatch later_base changed changed_later deleted duplicate_old duplicate_new duplicate_later unrelated malformed source pin license digest comment forged compiler platform producer_base producer_run producer_identity samples sample_revision sample_next sample_equal4 sample_reverse sample_reverse4 sample_revision4 sample_arbitrary sample_missing sample_missing4 sample_duplicate sample_duplicate4 sample_row sample_row4 sample_pin sample_pin4 sample_trailer sample_trailer4 sample_forged sample_forged4 actual_changed actual_duplicate actual_license actual_digest
     controller_additions controller_later controller_changed_light controller_duplicate_light
     controller_changed_light_later controller_duplicate_light_later controller_changed_old controller_deleted_old
+    controller_changed_analog controller_duplicate_analog
+    controller_changed_analog_later controller_duplicate_analog_later
     controller_changed_later controller_deleted_later controller_duplicate_old
     controller_duplicate_new controller_duplicate_later controller_unrelated
     controller_source controller_pin controller_license controller_digest controller_malformed
@@ -374,6 +376,8 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     set(changed "${controller_focus}")
     if(case MATCHES "_light")
       set(changed "${controller_light}")
+    elseif(case MATCHES "_analog")
+      set(changed "${controller_analog}")
     endif()
     if(case MATCHES "^controller_(changed_old|deleted_old|forged)$")
       set(changed "${actual_battery}")
@@ -381,7 +385,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     if(case MATCHES "^controller_(changed.*|forged)$")
       string(REPLACE "\tMIT\t" "\tunknown\t" replacement "${changed}")
       set(regex "quality: deleted or changed trusted manifest")
-      if(case STREQUAL "controller_changed_light")
+      if(case MATCHES "^controller_changed_(light|analog)$")
         set(regex "quality: unrelated fixture")
       endif()
     elseif(case MATCHES "^controller_deleted")
