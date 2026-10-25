@@ -333,7 +333,7 @@ static void extended_digital(void)
             bad.port[1].device = 999u;
             break;
         case 1:
-            bad.port[1].device = MUHTARI_PORT_KEYPAD;
+            bad.port[1].device = MUHTARI_PORT_TRAKBALL;
             break;
         case 2:
             bad.port[1].buttons = MUHTARI_SNES_BUTTON_Y;
@@ -428,11 +428,13 @@ static void extended_digital(void)
    Switches). Each direction also changes the picture of the frame that
    reads it. */
 static void paddle_timing(void);
+static void keypad_timing(void);
 
 static int directions(void)
 {
     extended_digital();
     paddle_timing();
+    keypad_timing();
     static const row rows[] = {
         {&plain, PROLINES "|U.....|......|...BB|\n", {0xEFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
         /* section 3.1: pin 1, SWCHA b4 */
@@ -1258,6 +1260,43 @@ static uint8_t motion_read(muhtari *m, uint16_t addr, uint64_t tick)
     muhtari__cpu_step(m);
     CHECK_EQ_U64(m->bus.ticks, tick + 1u);
     return m->cpu.a;
+}
+
+/* Independent graph/timing vectors: controllers.md, Keypad. CPU accesses
+   sample real slow bus data ticks, independently of executed cycle count. */
+static void keypad_timing(void)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned key = 0u; key < 12u; key++) {
+            for (unsigned edge = 0u; edge < 3u; edge++) {
+                muhtari *m = boot(&plain);
+                CHECK(m != NULL);
+                if (m == NULL) return;
+                (void)input_access(m, 1u, 1, 7u);
+                muhtari_input_ex in;
+                memset(&in, 0, sizeof in);
+                in.size = (uint32_t)sizeof in;
+                in.port[p].device = MUHTARI_PORT_KEYPAD;
+                in.port[p].keypad = 1u << key;
+                muhtari_status st = muhtari_set_input_ex(m, &in);
+                CHECK_EQ_U64(st, MUHTARI_STATUS_OK);
+                if (st != MUHTARI_STATUS_OK) { muhtari_destroy(m); return; }
+                muhtari__ports_latch(m);
+                unsigned shift = p == 0u ? 4u : 0u;
+                uint8_t row = (uint8_t)(1u << (shift + key / 3u));
+                (void)input_access(m, 0x0280u, 1, 0u);
+                (void)input_access(m, 0x0281u, 1, row);
+                uint16_t reg = (uint16_t)(key % 3u == 2u ? 12u + p : 8u + 2u*p + key%3u);
+                CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
+                uint64_t release = m->bus.ticks + 100u;
+                (void)light_access_at(m, 0x0281u, release, 1, 0u);
+                uint64_t delay = key%3u == 2u ? 30u : 2864u;
+                CHECK_EQ_HEX(light_access_at(m, reg, release + delay + edge - 1u, 0, 0u) & 0x80u,
+                             key%3u == 2u || edge != 0u ? 0x80u : 0u);
+                muhtari_destroy(m);
+            }
+        }
+    }
 }
 
 /* Independent RC vectors in controllers.md; all observations execute real
