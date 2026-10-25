@@ -115,9 +115,9 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
     LABELS policy TIMEOUT ${publish_timeout} COST 725)
   set(quality_timeout 30)
   if(APPLE)
-    # Provisional ceil(2 x 22.79s), complete current/base controls in
-    # CI40135571745 attempt2/job121002299364; all semantic cases remain.
-    set(quality_timeout 46)
+    # Provisional ceil(2 x 45.49s), complete current/base controls,
+    # run 40227151344/job121270952138; all semantic cases remain.
+    set(quality_timeout 91)
   elseif(WIN32)
     # Ceil(2 x 40.12s), maximum successful current/base Windows control in
     # run40080473918; retain all producer/join cases and numeric predicates.

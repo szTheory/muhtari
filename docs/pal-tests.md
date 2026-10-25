@@ -45,10 +45,13 @@ malformed, shortened and mutated reports also pass through that writer in
 fault controls. The existing real producer/join admits the exact owned PAL
 manifest row, retains it when present in a later base, and rejects changed
 source/license/digest identities and forged evidence. Rebuild and admission
-precede hash acceptance. Complete local two-format/runner/control execution
-measured8.75s under the full CI workload; provisional TIMEOUT18 (twice that,
-rounded up), COST9 and the
-existing lane timeout scale preserve the full workload. Hosted portability
-acceptance is recorded separately when those lanes actually execute.
+precede hash acceptance. The provisional diagnostic TIMEOUT35/COST18 uses
+complete two-format/runner/control execution:34.29s under ASan, divided by
+the existing scale2, then doubled and rounded up for the deadline.
+The expanded equality writer similarly uses TIMEOUT29 from28.91s at scale2.
+Existing lane scales and complete workloads remain unchanged. These are
+uncensored workload measurements; timeouts establish no duration sample or
+acceptance. Hosted portability acceptance is recorded separately when the
+complete exact-source lanes actually pass.
 
 

@@ -39,8 +39,9 @@ set_target_properties(muhtari-test-spectral PROPERTIES
 muhtari_warnings(muhtari-test-spectral)
 muhtari_add_test(NAME audio.spectral COMMAND muhtari-test-spectral production
   # Complete two-region capture measured20.08s locally; start it early.
-  # Existing120s deadline and slow-lane timeout scaling remain unchanged.
-  LABELS audio portable TIMEOUT 120 COST 21)
+  # Provisional ceil(2 x 105.20s), full two-region capture on macOS x64,
+  # run 40227081044; existing slow-lane scaling and all spectral judges remain.
+  LABELS audio portable TIMEOUT 211 COST 21)
 muhtari_add_test(NAME audio.spectral.controls COMMAND muhtari-test-spectral controls
   LABELS audio portable TIMEOUT 120)
 
