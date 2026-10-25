@@ -1052,10 +1052,10 @@ static void case_devices(void)
 {
     gun[0][RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN] = 1;
     gun[1][RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN] = 1;
-    static const char *const names[10] = {
+    static const char *const names[13] = {
         "Auto (cartridge header)", "ProLine", "Joystick", "None",        "SaveKey",
-        "AtariVox EEPROM",         "Driving", "XG-1",     "Paddle pair", "Keypad"};
-    static const unsigned ids[10] = {RETRO_DEVICE_JOYPAD,
+        "AtariVox EEPROM",         "Driving", "XG-1",     "Paddle pair", "Keypad", "CX22", "ST mouse", "Amiga mouse"};
+    static const unsigned ids[13] = {RETRO_DEVICE_JOYPAD,
                                      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
                                      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1),
                                      RETRO_DEVICE_NONE,
@@ -1064,14 +1064,17 @@ static void case_devices(void)
                                      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0),
                                      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0),
                                      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0),
-                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)};
+                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4),
+                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 1),
+                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 2),
+                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 3)};
     uint8_t e[8];
     unsigned port, t;
     start(0);
     CHECK(controller_info != NULL);
     for (port = 0; controller_info != NULL && port < 2u; port++) {
-        CHECK_EQ_U64(controller_info[port].num_types, 10u);
-        for (t = 0; t < 10u && t < controller_info[port].num_types; t++) {
+        CHECK_EQ_U64(controller_info[port].num_types, 13u);
+        for (t = 0; t < 13u && t < controller_info[port].num_types; t++) {
             check_string("controller", controller_info[port].types[t].desc, names[t]);
             CHECK_EQ_U64(controller_info[port].types[t].id, ids[t]);
         }
