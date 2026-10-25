@@ -249,7 +249,7 @@ failure. Package integrity, typed measurements and all other contracts remain.
 **Goal:** Run PAL content at the console timing and report matching video/audio geometry to every host.
 **Depends on:** Phase 8
 **Requirements:** PAL-01, PAL-02, PAL-03
-**Plans:** 3/8 plans executed
+**Plans:** 4/8 plans executed
 
 Plans:
 
@@ -262,10 +262,10 @@ Plans:
 **Wave 3** *(accepted)*
 - [x] 09-03-PLAN.md — Approved warm PAL palette, runner output and movie sessions.
 
-**Wave 4** *(ready; Wave 3 accepted)*
-- [ ] 09-04-PLAN.md — Load-stable libretro region, AV, palette and fallback.
+**Wave 4** *(accepted)*
+- [x] 09-04-PLAN.md — Load-stable libretro region, AV, palette and fallback.
 
-**Wave 5** *(blocked on Wave 4 completion)*
+**Wave 5** *(ready; Wave 4 accepted)*
 - [ ] 09-05-PLAN.md — Exact audio carry, real extremizers and retained quality controls.
 
 **Wave 6** *(blocked on Wave 5 completion)*
