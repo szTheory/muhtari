@@ -653,11 +653,11 @@ static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
             {64u, 16u, 2048u, 32u, 256u, 512u, 1024u, 128u, 1u, 2u, 4u, 8u}};
         in->port[0].device = in->port[1].device =
             controller_adapter == 1u ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800;
-        if (frame <= 2u)
-            in->switches = MUHTARI_SWITCH_PAUSE |
-                           (controller_adapter == 2u ? MUHTARI_SWITCH_RESET : 0u) |
-                           (controller_group == 1u ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u) |
-                           (controller_group == 2u ? MUHTARI_SWITCH_RIGHT_DIFFICULTY_A : 0u);
+        in->switches = (frame <= 2u ? MUHTARI_SWITCH_PAUSE |
+                                          (controller_adapter == 2u ? MUHTARI_SWITCH_RESET : 0u)
+                                    : 0u) |
+                       (controller_group == 1u ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u) |
+                       (controller_group == 2u ? MUHTARI_SWITCH_RIGHT_DIFFICULTY_A : 0u);
         for (unsigned p = 0u; p < 2u; p++)
             in->port[p].buttons =
                 frame >= 3u && frame <= 6u
@@ -820,8 +820,15 @@ static int controller_library(const char *path, const char *expected, const char
                 if (fault == 5u) { /* Missing 17th bit / wrong identification. */
                     bad[controller_adapter == 1u ? 30u : 27u] ^= 1u;
                 } else if (fault == 6u) { /* Adjacent pair/serial fields exchanged. */
-                    if (controller_adapter == 2u && controller_group == 2u) {
-                        bad[34] = (uint8_t)((bad[34] << 4) | (bad[34] >> 4));
+                    if (controller_adapter == 2u) {
+                        if (controller_group == 2u)
+                            bad[34] = (uint8_t)((bad[34] << 4) | (bad[34] >> 4));
+                        else if (controller_group == 0u)
+                            bad[26] = (uint8_t)(((bad[26] & 192u) >> 2) | ((bad[26] & 48u) << 2) |
+                                                (bad[26] & 15u));
+                        else
+                            bad[26] = (uint8_t)(((bad[26] & 12u) >> 2) | ((bad[26] & 3u) << 2) |
+                                                (bad[26] & 240u));
                     } else {
                         unsigned other = controller_adapter == 1u ? 34u : 30u;
                         uint8_t tmp = bad[26];
@@ -891,21 +898,30 @@ static int controller_library(const char *path, const char *expected, const char
         if (f == NULL)
             failed = 1;
         else {
-            fprintf(f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
-                    controller_motion != 0u ? controller_motion_tag()
-                    : controller_keypad     ? "keypad"
-                    : controller_analog     ? "paddle"
-                    : controller_light      ? "lightgun"
-                                            : "driving",
-                    controller_motion != 0u ? controller_motion_tag()
-                    : controller_keypad     ? "keypad"
-                    : controller_analog     ? "paddle"
-                    : controller_light      ? "lightgun"
-                                            : "driving");
+            fprintf(
+                f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
+                controller_adapter != 0u  ? (controller_adapter == 1u ? "snes2atari" : "mega7800")
+                : controller_motion != 0u ? controller_motion_tag()
+                : controller_keypad       ? "keypad"
+                : controller_analog       ? "paddle"
+                : controller_light        ? "lightgun"
+                                          : "driving",
+                controller_adapter != 0u  ? (controller_adapter == 1u ? "snes2atari" : "mega7800")
+                : controller_motion != 0u ? controller_motion_tag()
+                : controller_keypad       ? "keypad"
+                : controller_analog       ? "paddle"
+                : controller_light        ? "lightgun"
+                                          : "driving");
             for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
                 muhtari_input_ex in;
                 controller_stimulus(i, &in);
-                if (controller_motion != 0u) {
+                if (controller_adapter != 0u) {
+                    const char *tag = controller_adapter == 1u ? "snes2atari" : "mega7800";
+                    fprintf(f, "|%s:%u|%s:%u|%c.%c%c%c|\n", tag, in.port[0].buttons, tag,
+                            in.port[1].buttons, (in.switches & MUHTARI_SWITCH_RESET) ? 'R' : '.',
+                            (in.switches & MUHTARI_SWITCH_PAUSE) ? 'P' : '.',
+                            controller_group == 1u ? 'A' : 'B', controller_group == 2u ? 'A' : 'B');
+                } else if (controller_motion != 0u) {
                     static const char *switches[] = {"...BB", "R..BB", ".S.BB", "RS.BB"};
                     fprintf(f, "|%s:%d,%d,%u|%s:%d,%d,%u|%s|\n", controller_motion_tag(),
                             in.port[0].dx, in.port[0].dy, in.port[0].buttons >> 4,
@@ -1157,6 +1173,17 @@ static int retail_smoke(const char *path)
 static const struct retro_memory_map *retail_map;
 static bool RETRO_CALLCONV retail_env(unsigned cmd, void *data)
 {
+    if (controller_adapter != 0u && cmd == RETRO_ENVIRONMENT_GET_VARIABLE) {
+        struct retro_variable *v = data;
+        if (strcmp(v->key, "muhtari_left_difficulty") == 0) {
+            v->value = controller_group == 1u ? "A" : "B";
+            return true;
+        }
+        if (strcmp(v->key, "muhtari_right_difficulty") == 0) {
+            v->value = controller_group == 2u ? "A" : "B";
+            return true;
+        }
+    }
     if (cmd == RETRO_ENVIRONMENT_SET_MEMORY_MAPS) {
         retail_map = (const struct retro_memory_map *)data;
         return true;
@@ -1337,6 +1364,31 @@ static int16_t RETRO_CALLCONV controller_input(unsigned p, unsigned d, unsigned 
 {
     muhtari_input_ex in;
     controller_stimulus(controller_frame, &in);
+    if (controller_adapter != 0u) {
+        static const unsigned ids[2][12] = {
+            {RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_SELECT,
+             RETRO_DEVICE_ID_JOYPAD_START, RETRO_DEVICE_ID_JOYPAD_UP, RETRO_DEVICE_ID_JOYPAD_DOWN,
+             RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT, RETRO_DEVICE_ID_JOYPAD_A,
+             RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_R},
+            {RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_START,
+             RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_R,
+             RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_UP,
+             RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_LEFT,
+             RETRO_DEVICE_ID_JOYPAD_RIGHT}};
+        static const uint32_t masks[2][12] = {
+            {16u, 64u, 1024u, 2048u, 1u, 2u, 4u, 8u, 32u, 128u, 256u, 512u},
+            {64u, 16u, 2048u, 32u, 256u, 512u, 1024u, 128u, 1u, 2u, 4u, 8u}};
+        if (p >= 2u || d != RETRO_DEVICE_JOYPAD || i != 0u) {
+            controller_errors++;
+            return 0;
+        }
+        for (unsigned k = 0u; k < 12u; k++)
+            if (id == ids[controller_adapter - 1u][k])
+                return (in.port[p].buttons & masks[controller_adapter - 1u][k]) != 0u;
+        return p == 0u &&
+               ((id == RETRO_DEVICE_ID_JOYPAD_L2 && (in.switches & MUHTARI_SWITCH_PAUSE)) ||
+                (id == RETRO_DEVICE_ID_JOYPAD_L3 && (in.switches & MUHTARI_SWITCH_RESET)));
+    }
     if (controller_keypad) {
         static const unsigned ids[12] = {RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_UP,
                                          RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_LEFT,
@@ -1512,7 +1564,9 @@ static int controller_module(const char *module_path, const char *path)
     set_input(controller_input);
     init();
     observe(controller_raw_sample, &raw);
-    unsigned selected = controller_motion != 0u
+    unsigned selected = controller_adapter != 0u
+                            ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, controller_adapter + 4u)
+                        : controller_motion != 0u
                             ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, controller_motion)
                         : controller_keypad ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)
                         : controller_analog ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)

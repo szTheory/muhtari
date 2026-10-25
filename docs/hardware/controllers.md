@@ -539,7 +539,8 @@ protocol or mailbox capacity grows.
 Frames1/2 hold the selector with neutral controls. Frames3..6 hold four
 individual controls from the selected group; port2 uses reversed order.
 Frame7 releases every button; frame8 holds all twelve; subsequent frames
-release them. SNES group order is B,Y,Select,Start / Up,Down,Left,Right /
+release them. Group difficulty positions stay set throughout the execution;
+only the startup momentary selector releases. SNES group order is B,Y,Select,Start / Up,Down,Left,Right /
 A,X,L,R. Mega order is C,B,Start,A / Y,Z,Mode,X / Up,Down,Left,Right.
 The register loops finish in their own frame with DMA disabled.
 

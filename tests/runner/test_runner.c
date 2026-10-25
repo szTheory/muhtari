@@ -182,6 +182,42 @@ static void movie_owner(char *dir, char *rom)
     CHECK_EQ_U64(movie_first_device, MUHTARI_PORT_DRIVING);
     CHECK_EQ_U64(movie_live, 0u);
 
+    /* Actual runner decoding submits every adapter bit, then EOF releases
+       all native/momentary controls while retaining difficulty options. */
+    static char adapters[2][11] = {"snes2atari", "mega7800"};
+    static const uint32_t devices[2] = {MUHTARI_PORT_SNES2ATARI, MUHTARI_PORT_MEGA7800};
+    for (unsigned family = 0u; family < 2u; family++) {
+        for (unsigned port = 0u; port < 2u; port++) {
+            char typed[256];
+            const char *left = port == 0u ? adapters[family] : "none";
+            const char *right = port == 1u ? adapters[family] : "none";
+            snprintf(typed, sizeof typed,
+                     "muhtari-movie 2\nport1 %s\nport2 %s\n|%s:%s|%s:%s|RSPAB|\n", left, right,
+                     left, port == 0u ? "4095" : "", right, port == 1u ? "4095" : "");
+            movie_write(path, typed);
+            movie_reset();
+            char *adapter_args[] = {"muhtari-run", "--movie", path, "--frames", "3", rom};
+            CHECK_EQ_U64(runner_entry(6, adapter_args), 0u);
+            CHECK_EQ_U64(movie_inputs, 3u);
+            for (unsigned frame = 0u; frame < 3u; frame++) {
+                CHECK_EQ_U64(movie_packets[frame].port[port].device, devices[family]);
+                CHECK_EQ_U64(movie_packets[frame].port[port].buttons, frame == 0u ? 4095u : 0u);
+                CHECK_EQ_U64(movie_packets[frame].port[1u - port].device, MUHTARI_PORT_UNPLUGGED);
+                CHECK_EQ_U64(movie_packets[frame].switches,
+                             MUHTARI_SWITCH_LEFT_DIFFICULTY_A |
+                                 (frame == 0u ? MUHTARI_SWITCH_RESET | MUHTARI_SWITCH_SELECT |
+                                                    MUHTARI_SWITCH_PAUSE
+                                              : 0u));
+            }
+            CHECK_EQ_U64(movie_live, 0u);
+        }
+        movie_reset();
+        char *neutral_args[] = {"muhtari-run", "--frames", "1", "--port1", adapters[family], rom};
+        CHECK_EQ_U64(runner_entry(6, neutral_args), 0u);
+        CHECK_EQ_U64(movie_first_device, devices[family]);
+        CHECK_EQ_U64(movie_live, 0u);
+    }
+
     movie_write(path, text);
     movie_reset();
     char save_path[1024];

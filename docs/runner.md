@@ -308,6 +308,16 @@ absolute state; motion contributes once per frame, in connector edges:
 | `keypad` | Held-key decimal mask 0–4095, row-major low 12 bits |
 | `snes2atari`, `mega7800` | Decimal button mask 0–4095: low bits Up, Down, Left, Right, B, A; upper bits Y/X/L/R/Select/Start for SNES or C/X/Y/Z/Mode/Start for Mega |
 
+Both adapter tags execute on either port. For Mega the low B/A bits name
+native B/A, independent of frontend layout: B is the normal primary button,
+C is bit6, and A is extended-only. SNES uses the native B/A names. A typed
+adapter row never implies console switches; those remain the final explicit
+field. `4095` holds every direction and native button; `0` releases them all.
+The owned controller diagnostic checks complete serial/pair scans through
+actual replay, then compares all12 native frames, raw transitions and PCM
+with the library and loaded module. EOF is checked against explicit release
+on both ports. See [emulation tests](emulation-tests.md).
+
 Decimal integers have no whitespace, plus sign, leading zeros or negative zero.
 Signed motion accepts -2147483648 through 2147483647; the core applies its bounded
 motion policy. Empty, missing or extra fields, unknown/mismatched tags, invalid
