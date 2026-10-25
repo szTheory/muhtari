@@ -12,6 +12,14 @@
 
 SCENARIO = $90
 SAMPLES  = $91
+GROUP    = $99
+NEXT_ID  = $9A
+SCAN_N   = $9B
+BIT_N    = $9C
+LEFT_LO  = $9D
+LEFT_HI  = $9E
+RIGHT_LO = $9F
+RIGHT_HI = $A0
 
         MAC RECORD
         ldx #0
@@ -52,6 +60,12 @@ reset SUBROUTINE
         jsr wait_vblank
         ; First full-frame VBLANK start; selector still held in frame 2.
         lda $0282
+        rol
+        rol
+        rol
+        and #3
+        sta GROUP
+        lda $0282
         eor #$FF
         and #$0B
         sta SCENARIO
@@ -72,6 +86,14 @@ reset SUBROUTINE
         ; invented records; a scenario judge must reject the mismatch.
         lda SCENARIO
         beq .driving
+        cmp #4
+        bne .not_snes
+        jmp adapters
+.not_snes
+        cmp #5
+        bne .not_mega
+        jmp adapters
+.not_mega
         cmp #4
         bcc .validmouse
         jmp .finish
@@ -188,5 +210,145 @@ mouse SUBROUTINE
 next_frame SUBROUTINE
         jsr wait_visible
         jmp wait_vblank
+
+; Independent finite loops from the documented connector protocol, not a
+; copied driver. Three fresh groups keep each result within 27 records.
+; Frames3..6 press four single controls, frame7 releases, frame8 holds all.
+adapters SUBROUTINE
+        lda GROUP
+        RECORD 2
+        lda #3
+        sta NEXT_ID
+        lda #6
+        sta SCAN_N
+.frame
+        jsr next_frame
+        lda #0
+        sta LEFT_LO
+        sta LEFT_HI
+        sta RIGHT_LO
+        sta RIGHT_HI
+        sta $0281
+        sta $0280
+        lda #$33
+        sta $0281
+        lda SCENARIO
+        cmp #5
+        beq .mega
+        ; A partial scan followed by a new latch must restart. Clock
+        ; advances use only DDR release, with duplicate writes as observers.
+        lda #$22
+        sta $0280
+        lda #0
+        sta $0280
+        lda #$22
+        sta $0281
+        lda #$33
+        sta $0281
+        lda #$22
+        sta $0280
+        lda #0
+        sta $0280
+        lda #16
+        sta BIT_N
+.serial
+        lda $0C
+        asl
+        rol LEFT_LO
+        rol LEFT_HI
+        lda $0D
+        asl
+        rol RIGHT_LO
+        rol RIGHT_HI
+        lda #$22
+        sta $0281
+        sta $0281
+        lda #$33
+        sta $0281
+        dec BIT_N
+        bne .serial
+        lda LEFT_LO
+        ldx LEFT_HI
+        jsr adapter_record
+        lda $0C
+        and #$80
+        ldx #0
+        jsr adapter_record
+        lda RIGHT_LO
+        ldx RIGHT_HI
+        jsr adapter_record
+        lda $0D
+        and #$80
+        ldx #0
+        jsr adapter_record
+        jmp .advance
+.mega
+        lda #6
+        sta BIT_N
+.pairs
+        lda #0
+        sta $0280              ; duplicate low must not restart
+        lda $0280
+        asl
+        rol LEFT_LO
+        rol LEFT_HI
+        asl
+        rol LEFT_LO
+        rol LEFT_HI
+        lda $0280
+        asl
+        asl
+        asl
+        asl
+        asl
+        rol RIGHT_LO
+        rol RIGHT_HI
+        asl
+        rol RIGHT_LO
+        rol RIGHT_HI
+        lda #$22
+        sta $0280
+        sta $0280              ; duplicate high must not advance
+        lda #0
+        sta $0280
+        dec BIT_N
+        bne .pairs
+        lda LEFT_LO
+        ldx LEFT_HI
+        jsr adapter_record
+        lda RIGHT_LO
+        ldx RIGHT_HI
+        jsr adapter_record
+        lda #0
+        sta $0281              ; release aborts/rearms normal mode
+        lda $0280
+        ldx #0
+        jsr adapter_record
+        lda #0
+        sta LEFT_LO
+        ldy #0
+.normal
+        lda $08,y
+        asl
+        rol LEFT_LO
+        iny
+        cpy #6
+        bne .normal
+        lda LEFT_LO
+        ldx #0
+        jsr adapter_record
+.advance
+        dec SCAN_N
+        beq .done
+        jmp .frame
+.done
+        jsr mb_finish
+        jmp show
+
+adapter_record SUBROUTINE
+        ldy NEXT_ID
+        jsr mb_record
+        inc NEXT_ID
+        rts
 
         LIB_TAIL

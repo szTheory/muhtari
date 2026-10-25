@@ -525,3 +525,46 @@ where individual named two-pin waveforms resemble one another. CRC-valid
 wrong-family and axis-swapped tuples, damaged final values/IDs, duplicate
 IDs, wrong counts, corrupt CRC and missing/truncated reports are rejected
 by the actual judge before any agreeing-host hashes can establish success.
+
+### Adapter diagnostic
+
+The same owned motion ROM, identity14, adds scenarios4=SNES2Atari and
+5=Mega7800. Startup Pause selects4; Pause+Reset selects5. Startup left
+difficulty A selects group1, right difficulty A selects group2, neither
+selects group0. Each is a fresh execution with both ports fixed. Records1/2
+are the scenario/group; six scans then contribute four records each,
+remaining within the existing27-record screen/judge limit. No result
+protocol or mailbox capacity grows.
+
+Frames1/2 hold the selector with neutral controls. Frames3..6 hold four
+individual controls from the selected group; port2 uses reversed order.
+Frame7 releases every button; frame8 holds all twelve; subsequent frames
+release them. SNES group order is B,Y,Select,Start / Up,Down,Left,Right /
+A,X,L,R. Mega order is C,B,Start,A / Y,Z,Mode,X / Up,Down,Left,Right.
+The register loops finish in their own frame with DMA disabled.
+
+SNES records each port's first16 serial observations as an unsigned word
+(bit1 becomes bit15), followed by its separate17th-bit D7 observation.
+An individual position i=0..11 yields65535 XOR(32768>>i); released yields
+65535 and all held yields15 because positions13..16 remain high. Every
+17th observation is0. A partial scan/new latch precedes the loop, DDR-only
+clock rises advance, and duplicate DDR writes cannot advance again.
+These numbers derive from the cited SNES serial table, before output hashes.
+
+Mega records left/right six-pair words, then normal-mode SWCHA and a
+six-bit word made from INPT0..5 D7 in that order. The class/ID pairs00/00
+make the upper nibble zero. A single button in the stated first-eight
+order yields255 XOR(128>>i); released yields255, all held0. Duplicate
+low/low and high writes are observers; releasing DDRA rearms between
+scans. Normal directions pull bits4..7/0..3 low. B/C raise INPT0/1 or
+INPT2/3 respectively and either lowers INPT4/5; A does not. Both ports
+all held yield normal SWCHA0 and packed buttons60. Each named value in
+expected.csv follows these connector equations, independently of the core.
+
+CRC-valid missing-tail, wrong-identification, swapped-port words/pins and
+omitted-final-scan reports must fail the actual numeric judge. The existing
+input tests retain finer partial/extra-edge and pending EEPROM programming
+coverage. The dual-adapter ROM uses both connectors; opposite EEPROM
+topology and all saved bytes are checked separately by the loaded-module
+scan tests, with detailed in-flight programming checked by the storage owner.
+These are selected-model conformance observations, not physical captures.
