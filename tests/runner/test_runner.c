@@ -23,6 +23,7 @@ static unsigned movie_attempts, movie_fail_at, movie_loads, movie_frame_calls, m
 static muhtari_input_ex movie_packets[4];
 static uint32_t movie_first_device;
 static const char *movie_mutate;
+static unsigned movie_expect_pal, movie_video_allocs, movie_audio_allocs;
 
 static void movie_track(void *ptr, size_t n)
 {
@@ -48,6 +49,10 @@ static void *movie_alloc(size_t n)
     if (movie_attempts == movie_fail_at)
         return NULL;
     void *p = malloc(n);
+    if (p != NULL && n == 93440u)
+        movie_video_allocs++;
+    if (p != NULL && n == 1924u)
+        movie_audio_allocs++;
     movie_track(p, n);
     return p;
 }
@@ -108,10 +113,22 @@ static muhtari_status movie_input(muhtari *m, const muhtari_input_ex *in)
 }
 static muhtari_status movie_frame(muhtari *m, muhtari_frame *io)
 {
+    if (movie_expect_pal) {
+        CHECK_EQ_U64(m->effective_region, MUHTARI_REGION_PAL);
+        CHECK_EQ_U64(io->video_pitch, 320u);
+        CHECK_EQ_U64(io->audio_capacity, 962u);
+    }
     if (movie_frame_calls == 0u)
         movie_first_device = m->ports.pending_ex.port[0].device;
     movie_frame_calls++;
-    return muhtari_run_frame(m, io);
+    muhtari_status status = muhtari_run_frame(m, io);
+    if (movie_expect_pal && status == MUHTARI_STATUS_OK) {
+        static const uint32_t first_counts[] = {960u, 962u, 961u};
+        CHECK(movie_frame_calls <= 3u);
+        if (movie_frame_calls <= 3u)
+            CHECK_EQ_U64(io->audio_count, first_counts[movie_frame_calls - 1u]);
+    }
+    return status;
 }
 int runner_entry(int argc, char **argv);
 #define main runner_entry
@@ -137,6 +154,7 @@ static void movie_reset(void)
     movie_peak = movie_largest = 0u;
     movie_first_device = 0u;
     movie_mutate = NULL;
+    movie_expect_pal = movie_video_allocs = movie_audio_allocs = 0u;
     memset(movie_packets, 0, sizeof movie_packets);
 }
 
@@ -242,6 +260,37 @@ static void movie_owner(char *dir, char *rom)
             CHECK_EQ_U64(fclose(save_file), 0);
         }
     }
+
+    static const char gun_pal[] = "muhtari-movie 2\nport1 lightgun\nport2 none\n"
+                                  "|lightgun:0,0,0|none:|...BB|\n"
+                                  "|lightgun:319,291,1|none:|...BB|\n";
+    movie_write(path, gun_pal);
+    movie_reset();
+    movie_expect_pal = 1u;
+    movie_mutate = path;
+    char *pal_args[] = {"muhtari-run", "--region", "pal", "--movie", path, "--frames", "3", rom};
+    CHECK_EQ_U64(runner_entry(8, pal_args), 0u);
+    CHECK_EQ_U64(movie_video_allocs, 1u);
+    CHECK_EQ_U64(movie_audio_allocs, 1u);
+    CHECK_EQ_U64(movie_packets[0].port[0].gun_y, 0u);
+    CHECK_EQ_U64(movie_packets[1].port[0].gun_y, 291u);
+    CHECK_EQ_U64(movie_packets[2].port[0].gun_y, 291u);
+    CHECK_EQ_U64(movie_packets[2].port[0].buttons, 0u);
+    CHECK_EQ_U64(movie_frame_calls, 3u);
+    CHECK_EQ_U64(movie_live, 0u);
+    unsigned pal_allocations = movie_attempts;
+    movie_write(path, gun_pal);
+    for (unsigned fail = 1u; fail <= pal_allocations; fail++) {
+        movie_reset();
+        movie_fail_at = fail;
+        CHECK_EQ_U64(runner_entry(8, pal_args), 1u);
+        CHECK_EQ_U64(movie_live, 0u);
+    }
+    movie_reset();
+    char *ntsc_gun[] = {"muhtari-run", "--region", "ntsc", "--movie", path, rom};
+    CHECK_EQ_U64(runner_entry(6, ntsc_gun), 1u);
+    CHECK_EQ_U64(movie_inputs | movie_frame_calls | movie_video_allocs | movie_audio_allocs, 0u);
+    CHECK_EQ_U64(movie_live, 0u);
 
     /* Read/validate at the exact byte ceiling without a frame array. Header
        comments account for the remainder, each within its old 64-byte cap. */

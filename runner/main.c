@@ -807,6 +807,36 @@ static int read_movie(const char *path, replay *mv)
     return MUHTARI__EXIT_DONE;
 }
 
+/* A syntax-valid movie may omit region. Once load resolves the console,
+   check its complete immutable input before save import, output or execution.
+   A copied cursor leaves the replay's first row and EOF state untouched. */
+static int movie_region(const options *opt, const replay *mv, const muhtari_info *info)
+{
+    if (mv == NULL || mv->header.version != 2u ||
+        (mv->header.device[0] != MUHTARI_PORT_LIGHTGUN &&
+         mv->header.device[1] != MUHTARI_PORT_LIGHTGUN))
+        return MUHTARI__EXIT_DONE;
+    muhtari__movie_cursor cursor = mv->cursor;
+    muhtari__movie_error err;
+    muhtari_input_ex in;
+    for (uint32_t f = 0u; f < mv->count; f++) {
+        uint32_t line = cursor.line;
+        if (muhtari__movie_next_ex(mv->bytes, mv->bytes_count, &mv->header, &cursor, &in, &err) !=
+            1) {
+            fprintf(stderr, "muhtari-run: validated movie decode failed\n");
+            return MUHTARI__EXIT_FAILURE;
+        }
+        for (unsigned p = 0u; p < 2u; p++) {
+            if (in.port[p].device == MUHTARI_PORT_LIGHTGUN && in.port[p].gun_y >= info->height) {
+                fprintf(stderr, "muhtari-run: %s:%u: gun row outside effective region\n",
+                        opt->movie, line);
+                return MUHTARI__EXIT_FAILURE;
+            }
+        }
+    }
+    return MUHTARI__EXIT_DONE;
+}
+
 /* Reads the BIOS image at path into a new buffer and prints its SHA-256
    to standard error as "bios_sha256 <hex>". When the movie header h names
    a bios-sha256, the file's SHA-256 must match it. Returns NULL after a
@@ -1289,12 +1319,14 @@ static int run(const options *opt, replay *mv)
                 opt->movie);
         status = MUHTARI__EXIT_FAILURE;
     }
-    if (status == 0 && opt->rom != NULL)
-        status = save_import(&save, m, opt);
     muhtari_info info = {0};
     info.size = (uint32_t)sizeof info;
     if (status == 0 && muhtari_get_info(m, &info) != MUHTARI_STATUS_OK)
         status = MUHTARI__EXIT_FAILURE;
+    if (status == 0)
+        status = movie_region(opt, mv, &info);
+    if (status == 0 && opt->rom != NULL)
+        status = save_import(&save, m, opt);
     if (status == 0) {
         size_t width = info.width, height = info.height, capacity = info.max_audio_samples;
         if (height == 0u || width == 0u || width > SIZE_MAX / height || width > SIZE_MAX / 3u ||

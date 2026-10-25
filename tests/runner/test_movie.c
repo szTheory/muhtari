@@ -373,6 +373,24 @@ static void typed(void)
             CHECK_EQ_U64(in.port[p].flags, last.port[p].flags);
         }
     }
+    for (unsigned region = 0u; region < 3u; region++) {
+        const char *region_line = region == 0u   ? ""
+                                  : region == 1u ? "region ntsc\n"
+                                                 : "region pal\n";
+        snprintf(text, sizeof text,
+                 "muhtari-movie 2\nport1 lightgun\nport2 none\n%s"
+                 "|lightgun:319,291,0|none:|...BB|\n",
+                 region_line);
+        CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h, &count,
+                                                &cursor, &err),
+                     0u);
+        CHECK_EQ_U64(h.has_region, region != 0u);
+        CHECK_EQ_U64(h.region, region);
+        CHECK_EQ_U64(
+            muhtari__movie_next_ex((const uint8_t *)text, strlen(text), &h, &cursor, &in, &err),
+            1u);
+        CHECK_EQ_U64(in.port[0].gun_y, 291u);
+    }
     static const struct {
         const char *d, *v;
         uint32_t col;

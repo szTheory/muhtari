@@ -719,7 +719,8 @@ endfunction()
     expect_exit(2 "--region conflicts with the movie's region" --region ntsc
       --movie "${v2}" "${v2_dir}/missing.a78")
     file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\n|lightgun:0,0,0|none:|...BB|\n|lightgun:319,291,0|none:|...BB|\n")
-    expect_output("lag_frames 2\n" --region pal --movie "${v2}" "${DIR}/input.a78")
+    expect_output("lag_frames 1\n" --region pal --movie "${v2}" "${DIR}/input.a78")
+    expect_output("lag_frames 1\n" --movie "${v2}" "${PROBE_DIR}/linear-v3-16k-pal")
     foreach(existing IN ITEMS yes no)
       file(REMOVE "${save}" "${png}")
       if(existing STREQUAL "yes")
@@ -745,6 +746,15 @@ endfunction()
         message(FATAL_ERROR "effective-height fault created save/output")
       endif()
     endforeach()
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\n|lightgun:319,241,0|none:|...BB|\n")
+    expect_output("lag_frames 1\n" --region ntsc --movie "${v2}" "${DIR}/input.a78")
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\n|lightgun:319,242,0|none:|...BB|\n")
+    expect_exit(1 "gun row outside effective region" --region ntsc --movie "${v2}" "${DIR}/input.a78")
+    expect_exit(1 "gun row outside effective region" --movie "${v2}" "${DIR}/input.a78")
+    expect_exit(1 "gun row outside effective region" --region ntsc --movie "${v2}"
+      "${PROBE_DIR}/linear-v3-16k-pal")
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\nregion pal\n|lightgun:319,292,0|none:|...BB|\n")
+    expect_exit(1 "decimal out of range" --movie "${v2}" "${v2_dir}/missing.a78")
     file(WRITE "${v2}" "${header}${valid}|driving:0,0,2|none:|...BB|\n")
     foreach(existing IN ITEMS yes no)
       file(REMOVE "${save}" "${png}")
@@ -1120,10 +1130,12 @@ foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch 
     behaviour_warning)
   muhtari_add_test(NAME runner.movie.${case}
     COMMAND ${runner_check} -DCASE=movie.${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
+      -DPROBE_DIR=${CMAKE_BINARY_DIR}/runner-probe
       -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 3) # Family: 2 x 1.05 s, Windows x64, 7 runs; provisional, run 39617761785
   set_tests_properties(runner.movie.${case} PROPERTIES FIXTURES_REQUIRED input_carts)
 endforeach()
+set_tests_properties(runner.movie.v2_edges PROPERTIES FIXTURES_REQUIRED "input_carts;probe_images")
 
 # Movies and runs that boot through OpenBIOS, which built.openbios
 # assembles, with simple, which built.simple builds, or the input cart.

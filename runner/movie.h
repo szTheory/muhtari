@@ -26,7 +26,7 @@ typedef struct muhtari__movie_header {
     uint8_t has_rom_sha256;
     uint8_t rom_sha256[32];
     uint8_t has_region;
-    uint32_t region; /* MUHTARI_REGION_NTSC */
+    uint32_t region; /* MUHTARI_REGION_* */
     uint8_t has_boot;
     uint32_t boot; /* MUHTARI__MOVIE_BOOT_* */
     uint8_t has_bios_sha256;

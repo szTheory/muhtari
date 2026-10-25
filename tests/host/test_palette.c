@@ -1,3 +1,9 @@
+/* SPDX-License-Identifier: MIT AND BSD-3-Clause
+ * Copyright (c) 2026 muhtari contributors
+ * Derived from a7800 src/mame/drivers/a7800.cpp at 7a2afdc1ea08 (BSD-3-Clause),
+ * copyright-holders: Dan Boris, Fabio Priuli, Mike Saarna, Robert Tuccitto.
+ * Changes: warm PAL values as an independent test oracle.
+ * Texts: LICENSE, THIRD-PARTY-NOTICES.md. */
 /* The host palette. The expected colours are literals typed from the upstream
    warm NTSC rows (THIRD-PARTY-NOTICES.md names the file and commit), not values
    read back from the table, so a changed table entry fails here. */

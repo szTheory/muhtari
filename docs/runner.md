@@ -257,7 +257,7 @@ order and each key once. Blank lines and lines starting with `#` are allowed in 
 |---|---|
 | `port1`, `port2` | Required: `proline`, `joystick`, `none`, `savekey` or `atarivox`. These explicit declarations provision storage before import. |
 | `rom-sha256` | Optional: 64 hex digits, the cartridge's headerless SHA-256, as `--probe` prints in `sha256_headerless`. A different cartridge exits 1, naming both digests. |
-| `region` | Optional: `ntsc`. `pal` is refused. |
+| `region` | Optional: `ntsc` or `pal`. An explicit CLI region must agree. Without it, an explicit CLI selection wins, otherwise cartridge metadata selects the console. |
 | `boot` | Optional: `fast` or `bios`; `bios` also needs a `bios-sha256` line. `bios` boots through the BIOS given by `--bios FILE`, and exits 2 without it. |
 | `bios-sha256` | Optional: 64 hex digits, the BIOS file's SHA-256. With `boot bios`, a `--bios` file with another digest exits 1 before any frame runs, naming both digests. |
 | `behaviour` | Optional: the core behaviour revision the movie was recorded on, 1 to 999999999. A different revision prints one warning on standard error, and the replay continues. |
@@ -325,7 +325,7 @@ absolute state; motion contributes once per frame, in connector edges:
 |---|---|
 | `proline`, `joystick` | Existing `UDLR12` / `UDLR1` letter/dot fields |
 | `none`, `savekey`, `atarivox` | Empty, including the colon: `none:` |
-| `lightgun` | `x,y,flags`: native NTSC pixel coordinates 0–319 and 0–241; flags 0–3, bit 0 trigger, bit 1 off-screen |
+| `lightgun` | `x,y,flags`: native pixel coordinates x 0–319, y 0–241 for effective NTSC or 0–291 for effective PAL; flags 0–3, bit 0 trigger, bit 1 off-screen |
 | `paddle` | `pot0,pot1,buttons`: positions 0–65535, increasing resistance; buttons 0–3, low bits fire 1/2 |
 | `driving` | `dx,0,button`: signed 32-bit X motion, literal zero Y, button 0–1 |
 | `trakball` | `dx,dy,button`: signed 32-bit motion, button 0–1 |
@@ -350,7 +350,9 @@ masks and out-of-range values are refused. Off-screen aim remains within native
 bounds; use 0,0 when aim is unknown. Syntax support does not imply physical device
 support: a device not implemented by this core revision is still refused by the core.
 
-The whole immutable file is validated before loading media, importing saves or
+The whole immutable file's syntax is validated before loading media. Gun Y coordinates are decoded
+up to 291; after load resolves the effective region, a complete second pass checks its height before
+allocating frame outputs, printing `--info`, importing saves or
 creating outputs. Replay retains the bytes and one cursor with the last packet;
 it creates no per-frame packet array or index and never reopens the file. At EOF,
 buttons, keys and momentary console switches release; dx/dy become zero. Final
