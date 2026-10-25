@@ -164,6 +164,9 @@ core.load.invalid_bios	core,portable
 core.load.keeps_previous	core,portable
 core.load.supergame_one_allocation	core,portable
 core.no_alloc_after_load	perf,portable
+core.pal.bounds	core,portable
+core.pal.lifecycle	core,portable
+core.pal.tracer	core,portable
 core.set_input.latched_at_vblank	core,portable
 core.set_input.validates	core,portable
 core.testcard.all_colours	core,portable
