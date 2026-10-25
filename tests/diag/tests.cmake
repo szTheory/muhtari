@@ -1,8 +1,20 @@
 # Concrete fault: agreeing hosts masking wrong driving pin values or omitted native/audio evidence.
 if(DIAG_CONTROLLERS_RUN)
+  set(root_out "${OUT}")
+  foreach(device IN ITEMS driving lightgun)
+  set(OUT "${root_out}/${device}")
+  if(device STREQUAL "lightgun")
+    set(fixture controller-light)
+    set(scenario light0)
+    set(selected_module "")
+  else()
+    set(fixture controller-motion)
+    set(scenario motion0)
+    set(selected_module "${MODULE}")
+  endif()
   file(MAKE_DIRECTORY "${OUT}")
-  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --controller-case driving both
-    "${ROOT}/tests/diag/controller-motion.a78" "${EXPECTED}" "${OUT}" ${MODULE}
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --controller-case ${device} both
+    "${ROOT}/tests/diag/${fixture}.a78" "${EXPECTED}" "${OUT}" ${selected_module}
     RESULT_VARIABLE rc OUTPUT_VARIABLE report ERROR_VARIABLE err TIMEOUT 30)
   if(NOT rc STREQUAL "0")
     message(FATAL_ERROR "controller numeric/equality: ${rc}\n${report}${err}")
@@ -12,14 +24,14 @@ if(DIAG_CONTROLLERS_RUN)
     list(APPEND hashes --hash-frame ${frame})
   endforeach()
   execute_process(COMMAND ${EMULATOR} "${RUNNER}" --movie "${OUT}/input.txt"
-    --frames 12 ${hashes} --hash-audio --diagnostic "${ROOT}/tests/diag/controller-motion.a78"
+    --frames 12 ${hashes} --hash-audio --diagnostic "${ROOT}/tests/diag/${fixture}.a78"
     RESULT_VARIABLE rc OUTPUT_VARIABLE actual ERROR_VARIABLE err TIMEOUT 30)
   if(NOT rc STREQUAL "0")
     message(FATAL_ERROR "controller actual runner: ${rc}\n${actual}${err}")
   endif()
   string(REGEX MATCH "diagnostic [0-9a-f]+\n" mailbox "${actual}")
   file(CONFIGURE OUTPUT "${OUT}/report.txt" CONTENT "${mailbox}" @ONLY NEWLINE_STYLE UNIX)
-  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/report.txt" motion0
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/report.txt" ${scenario}
     "${EXPECTED}" RESULT_VARIABLE rc TIMEOUT 10)
   if(NOT rc STREQUAL "0")
     message(FATAL_ERROR "controller actual runner numeric judgment: ${rc}")
@@ -33,7 +45,7 @@ if(DIAG_CONTROLLERS_RUN)
   endforeach()
   foreach(fault RANGE 0 4)
     execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/fault-${fault}.txt"
-      motion0 "${EXPECTED}" RESULT_VARIABLE rc TIMEOUT 10)
+      ${scenario} "${EXPECTED}" RESULT_VARIABLE rc TIMEOUT 10)
     if(NOT rc STREQUAL "1")
       message(FATAL_ERROR "controller report accepted numeric/protocol fault ${fault}: ${rc}")
     endif()
@@ -45,16 +57,17 @@ if(DIAG_CONTROLLERS_RUN)
   file(REMOVE "${OUT}/missing.txt")
   foreach(fault IN ITEMS truncated missing)
     execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/${fault}.txt"
-      motion0 "${EXPECTED}" RESULT_VARIABLE rc TIMEOUT 10)
+      ${scenario} "${EXPECTED}" RESULT_VARIABLE rc TIMEOUT 10)
     if(NOT rc STREQUAL "1")
       message(FATAL_ERROR "controller report accepted ${fault}: ${rc}")
     endif()
   endforeach()
-  if(MODULE)
-    message("Driving: independent library/runner/module numbers, native/public pixels, raw transitions and exact PCM/counts pass")
+  if(selected_module)
+    message("${device}: independent library/runner/module numbers, native/public pixels, raw transitions and exact PCM/counts pass")
   else()
-    message("Driving: independent library/runner numbers and native/raw/PCM/counts pass; module unavailable on this configuration")
+    message("${device}: independent library/runner numbers and native/raw/PCM/counts pass; module unavailable on this configuration")
   endif()
+  endforeach()
   return()
 endif()
 

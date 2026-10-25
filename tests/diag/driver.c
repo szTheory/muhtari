@@ -514,6 +514,7 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "fractalus") == 0  ? 12u
            : strcmp(rom, "battery") == 0    ? 13u
            : strcmp(rom, "motion0") == 0    ? 14u
+           : strcmp(rom, "light0") == 0     ? 15u
                                             : 0u;
 }
 
@@ -596,11 +597,29 @@ static uint8_t *controller_pixels;
 static int16_t controller_pcm[CONTROLLER_FRAMES][801];
 static uint32_t controller_counts[CONTROLLER_FRAMES];
 static muhtari__sha256 controller_raw;
+static int controller_light;
+
+static const char *controller_name(void)
+{
+    return controller_light ? "light0" : "motion0";
+}
 
 static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
 {
     memset(in, 0, sizeof *in);
     in->size = (uint32_t)sizeof *in;
+    if (controller_light) {
+        in->port[0].device = in->port[1].device = MUHTARI_PORT_LIGHTGUN;
+        for (unsigned p = 0u; p < 2u; p++) {
+            in->port[p].gun_x = frame == 6u ? (p == 0u ? 0u : 319u) : 159u;
+            in->port[p].gun_y = frame == 6u ? (p == 0u ? 0u : 241u) : 120u;
+            in->port[p].flags = frame == 7u || (p == 1u && (frame == 4u || frame == 5u))
+                                    ? MUHTARI_INPUT_GUN_OFFSCREEN : 0u;
+        }
+        in->port[0].buttons = frame == 3u ? MUHTARI_BUTTON_1 : 0u;
+        in->port[1].buttons = frame == 4u || frame == 5u ? MUHTARI_BUTTON_1 : 0u;
+        return;
+    }
     in->port[0].device = in->port[1].device = MUHTARI_PORT_DRIVING;
     if (frame == 3u) {
         in->port[0].dx = 4;
@@ -646,10 +665,10 @@ static int controller_library(const char *path, const char *expected, const char
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
-    media.port[0] = media.port[1] = MUHTARI_PORT_DRIVING;
+    media.port[0] = media.port[1] = controller_light ? MUHTARI_PORT_LIGHTGUN : MUHTARI_PORT_DRIVING;
     muhtari__sha256_init(&controller_raw);
     int failed =
-        image == NULL || retail_expected(expected, "motion0") != 0 ||
+        image == NULL || retail_expected(expected, controller_name()) != 0 ||
         muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK ||
         muhtari__synth_observe(m, controller_raw_sample, &controller_raw) != MUHTARI_STATUS_OK ||
         muhtari_load(m, &media) != MUHTARI_STATUS_OK;
@@ -670,7 +689,7 @@ static int controller_library(const char *path, const char *expected, const char
     if (!failed) {
         for (unsigned i = 0u; i < 256u; i++)
             mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
-        failed = retail_judge(mb, "motion0");
+        failed = retail_judge(mb, controller_name());
     }
     /* Numeric judgment precedes all equality evidence. */
     if (!failed) {
@@ -733,11 +752,18 @@ static int controller_library(const char *path, const char *expected, const char
         if (f == NULL)
             failed = 1;
         else {
-            fputs("muhtari-movie 2\nport1 driving\nport2 driving\n", f);
+            fprintf(f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
+                    controller_light ? "lightgun" : "driving", controller_light ? "lightgun" : "driving");
             for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
                 muhtari_input_ex in;
                 controller_stimulus(i, &in);
-                fprintf(f, "|driving:%d,0,%u|driving:%d,0,%u|...BB|\n", in.port[0].dx,
+                if (controller_light) {
+                    fprintf(f, "|lightgun:%u,%u,%u|lightgun:%u,%u,%u|...BB|\n",
+                            in.port[0].gun_x, in.port[0].gun_y,
+                            in.port[0].flags * 2u + (in.port[0].buttons != 0u ? 1u : 0u),
+                            in.port[1].gun_x, in.port[1].gun_y,
+                            in.port[1].flags * 2u + (in.port[1].buttons != 0u ? 1u : 0u));
+                } else fprintf(f, "|driving:%d,0,%u|driving:%d,0,%u|...BB|\n", in.port[0].dx,
                         in.port[0].buttons != 0u ? 1u : 0u, in.port[1].dx,
                         in.port[1].buttons != 0u ? 1u : 0u);
             }
@@ -1281,7 +1307,8 @@ int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
     if ((argc == 7 || argc == 8) && strcmp(argv[1], "--controller-case") == 0 &&
-        strcmp(argv[2], "driving") == 0 && strcmp(argv[3], "both") == 0) {
+        (strcmp(argv[2], "driving") == 0 || strcmp(argv[2], "lightgun") == 0) && strcmp(argv[3], "both") == 0) {
+        controller_light = strcmp(argv[2], "lightgun") == 0;
         controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
         if (controller_pixels == NULL)
             return 1;
