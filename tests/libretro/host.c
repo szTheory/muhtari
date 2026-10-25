@@ -473,6 +473,68 @@ static void compare_region_frame(const uint8_t *native, unsigned height, uint32_
     CHECK_EQ_U64(mismatches, 0);
 }
 
+/* One actual module frame versus an independent library instance. Missing
+   callbacks must advance the same emulation, so the following frame still
+   agrees. Mode0 batch-only,1 sample-only,2 both (batch wins),3 neither. */
+static void session_frame(muhtari *m, unsigned height, uint32_t palette, unsigned mode)
+{
+    static struct {
+        uint8_t before[16];
+        uint8_t native[W * 292u];
+        uint8_t after[16];
+    } guarded;
+    memset(&guarded, 0xA5, sizeof guarded);
+    muhtari_frame io = {0};
+    io.size = (uint32_t)sizeof io;
+    io.video = guarded.native;
+    io.video_pitch = W;
+    io.audio = expected_audio;
+    io.audio_capacity = 962u;
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    checking_audio = 1;
+    expected_count = io.audio_count;
+    audio_position = 0u;
+    video_calls = batch_calls = 0;
+    batch_frames = sample_frames = 0u;
+    p_set_audio_sample(mode == 1u || mode == 2u ? sample : NULL);
+    p_set_audio_sample_batch(mode == 0u || mode == 2u ? batch : NULL);
+    p_set_video_refresh(mode == 3u ? NULL : video);
+    p_run();
+    checking_audio = 0;
+    CHECK_EQ_U64(audio_position, mode == 3u ? 0u : io.audio_count);
+    CHECK_EQ_U64(batch_calls, mode == 0u || mode == 2u ? 1u : 0u);
+    CHECK_EQ_U64(sample_frames, mode == 1u ? io.audio_count : 0u);
+    CHECK_EQ_U64(video_calls, mode == 3u ? 0u : 1u);
+    if (mode != 3u) {
+        CHECK_EQ_U64(video_height, height);
+        CHECK_EQ_U64(video_width, W);
+        CHECK_EQ_U64(video_pitch, W * (rgb565 ? 2u : 4u));
+        compare_region_frame(guarded.native, height, palette);
+    }
+    for (unsigned i = 0u; i < 16u; i++) {
+        CHECK_EQ_U64(guarded.before[i], 0xA5u);
+        CHECK_EQ_U64(guarded.after[i], 0xA5u);
+    }
+    for (unsigned i = W * height; i < sizeof guarded.native; i++)
+        CHECK_EQ_U64(guarded.native[i], 0xA5u);
+}
+
+static void session_av(unsigned region)
+{
+    struct retro_system_av_info av = {0};
+    p_get_system_av_info(&av);
+    bool pal = region == RETRO_REGION_PAL;
+    CHECK_EQ_U64(p_get_region(), region);
+    CHECK_EQ_U64(av.geometry.base_width, 320u);
+    CHECK_EQ_U64(av.geometry.base_height, pal ? 292u : 242u);
+    CHECK_EQ_U64(av.geometry.max_width, 320u);
+    CHECK_EQ_U64(av.geometry.max_height, 293u);
+    CHECK_EQ_DBL(av.timing.sample_rate, 48000.0);
+    CHECK_EQ_DBL(av.timing.fps, pal ? 3546894.0 / 71051.0 : 39375000.0 / 656711.0);
+    CHECK_EQ_DBL(av.geometry.aspect_ratio,
+                 pal ? (float)(147500000.0 / 129461631.0) : (float)(960.0 / 847.0));
+}
+
 static void card(void)
 {
     struct retro_system_info sys;
@@ -684,6 +746,91 @@ static void card(void)
     CHECK_EQ_U64(p_load_game(NULL), 1u);
     p_run();
     CHECK_EQ_U64(video_height, 242u);
+
+    /* Same module: NTSC card -> NTSC cart -> override PAL -> rejected load ->
+       NTSC fallback -> PAL -> unload -> NTSC card -> NTSC cart. */
+    pal[57] = 0u;
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_NTSC);
+    set_var("muhtari_region", "pal");
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_PAL);
+    media.region = MUHTARI_REGION_PAL;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    for (unsigned mode = 0u; mode < 4u; mode++)
+        session_frame(m, 292u, MUHTARI_REGION_PAL, mode);
+    set_var("muhtari_region", "ntsc");
+    session_frame(m, 292u, MUHTARI_REGION_PAL, 2u);
+    session_av(RETRO_REGION_PAL);
+    p_reset();
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    session_av(RETRO_REGION_PAL);
+    session_frame(m, 292u, MUHTARI_REGION_PAL, 1u);
+    /* Reload alone applies the option, including a reverse metadata override. */
+    pal[57] = 1u;
+    CHECK(p_load_game(&game));
+    media.region = MUHTARI_REGION_NTSC;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    session_av(RETRO_REGION_NTSC);
+    session_frame(m, 242u, MUHTARI_REGION_NTSC, 0u);
+    set_var("muhtari_region", "auto");
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_PAL);
+    CHECK(!p_load_game(&dummy));
+    session_av(RETRO_REGION_NTSC);
+    CHECK(p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM) == NULL);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SYSTEM_RAM), 0u);
+    video_calls = 0;
+    p_run();
+    p_reset();
+    CHECK_EQ_U64(video_calls, 0u);
+    CHECK(p_load_game(&game));
+    p_unload_game();
+    session_av(RETRO_REGION_NTSC);
+    /* A pending PAL option cannot retime the content-free test card. */
+    set_var("muhtari_region", "pal");
+    set_var("muhtari_palette", NULL);
+    CHECK(p_load_game(NULL));
+    session_av(RETRO_REGION_NTSC);
+    muhtari_destroy(m);
+    m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    session_frame(m, 242u, MUHTARI_REGION_NTSC, 2u);
+    set_var("muhtari_region", "unknown");
+    set_var("muhtari_palette", "unknown");
+    pal[57] = 0u;
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_NTSC);
+    media.region = 0u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    session_frame(m, 242u, MUHTARI_REGION_NTSC, 2u);
+
+    /* Deinit releases PAL caches and every callback; reinit needs fresh setters. */
+    pal[57] = 1u;
+    set_var("muhtari_region", NULL);
+    CHECK(p_load_game(&game));
+    p_deinit();
+    session_av(RETRO_REGION_NTSC);
+    CHECK(!p_load_game(&game));
+    p_set_environment(env);
+    p_init();
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_PAL);
+    video_calls = batch_calls = 0;
+    batch_frames = sample_frames = 0u;
+    p_run();
+    CHECK_EQ_U64(video_calls, 0u);
+    CHECK_EQ_U64(batch_calls, 0u);
+    CHECK_EQ_U64(sample_frames, 0u);
+    media.region = 0u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    muhtari_frame advance = {0};
+    advance.size = (uint32_t)sizeof advance;
+    CHECK_EQ_U64(muhtari_run_frame(m, &advance), MUHTARI_STATUS_OK);
+    session_frame(m, 292u, MUHTARI_REGION_PAL, 2u);
+    CHECK_EQ_U64(av_update_calls, 0u);
+    set_var("muhtari_region", "auto");
+    set_var("muhtari_palette", "auto");
 
     p_unload_game();
     p_deinit();
