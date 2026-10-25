@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 8
+current_plan: 9
 status: executing
-stopped_at: 08-07 verified;08-08 ready
-last_updated: "2026-10-25T00:13:20.977048+00:00"
+stopped_at: 08-08 verified;08-09 ready
+last_updated: "2026-10-25T00:27:23.926431+00:00"
 last_activity: 2026-10-24
-last_activity_desc: 08-07 accepted after648+6 local checks;08-08 ready
-state_head: 1d204a7
+last_activity_desc: 08-08 accepted after648+6 local checks;08-09 ready
+state_head: 10a2354
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 35
+  completed_plans: 36
   percent: 43
 total_phases: 7
 current_phase_name: Controllers at the pins
@@ -27,27 +27,32 @@ current_phase: 08
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Controllers at the pins. Plans01–07 are accepted; the first driving
+Current focus: Controllers at the pins. Plans01–08 are accepted; the first driving
 slice runs through library, immutable runner replay and actual libretro/RetroArch.
 A separately authorized DEC.61 review retired only the unsupported archive cutoff;
 required authenticated measurements and package integrity remain. No INPUT
-requirement is complete. Next is08-08 full-range timed paddles and three-host evidence.
+requirement is complete. Next is08-09 elapsed-time keypad matrix and three-host evidence.
 
 ## Current Position
 
-Current Plan: 8
+Current Plan: 9
 Total Plans in Phase: 14
 Progress: [████░░░░░░] 43%
 
-Phase8 has7/14 accepted plans;08-07 passes full local CI648+6 and package checks.
-Runtime summarized totals are35/42, including historical halted06-01.
-Accepted active progress is34/41;3/7 milestone phases remain complete (43%).
+Phase8 has8/14 accepted plans;08-08 passes full local CI648+6 and package checks.
+Runtime summarized totals are36/42, including historical halted06-01.
+Accepted active progress is35/41;3/7 milestone phases remain complete (43%).
 The runtime summary count is not an accepted-completion count.
 
-Status: Executing Phase 08;08-08 ready
-Last activity: 2026-10-24 —08-07 accepted; continuing the dependency-ready wave
+Status: Executing Phase 08;08-09 ready
+Last activity: 2026-10-24 —08-08 accepted; continuing the dependency-ready wave
 Next command: $gsd-execute-phase 8
 Branch: phase/08-controllers-at-the-pins. No Phase8 PR, merge or release.
+
+08-08 implementationf33ad71 and summary10a2354 are accepted. Parent post-wave
+full-ci gate exits0 (648+6), N/A-local. Full-range Q32 paddle charge, independent
+19-record analog diagnostic and three-host numbers/native/raw/PCM pass. Local
+three-ZIP sum250408 bytes (77799+81122+91487); hygiene24 passes.
 
 08-07 implementation9ca62b3 and summary1d204a7 are accepted. Parent post-wave
 full-ci gate exits0 (648+6), N/A-local. Owned19-record light diagnostic, actual
@@ -155,9 +160,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:**08-07 verified;08-08 ready
+**Stopped at:**08-08 verified;08-09 ready
 Last session: 2026-10-24T22:21:15.223Z
-Resume file: .planning/phases/08-controllers-at-the-pins/08-08-PLAN.md
+Resume file: .planning/phases/08-controllers-at-the-pins/08-09-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -177,6 +182,7 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-08-PLAN.md
 | Phase 08 P05 recovery | accepted separately | Task3 | source62fa325 |
 | Phase 08 P06 | 12min | 3 tasks | source6fab3e0 |
 | Phase 08 P07 | 14min | 3 tasks | source9ca62b3 |
+| Phase 08 P08 | 11min | 3 tasks | sourcef33ad71 |
 
 ## Decisions
 
@@ -196,4 +202,4 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-08-PLAN.md
 
 None required. Advisory library timing evidence and measured publication-control
 cost remain in the existing seed; neither is promoted into a controller gate.
-Current execution continues at08-08; no requirement is complete.
+Current execution continues at08-09; no requirement is complete.
