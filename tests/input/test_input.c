@@ -429,12 +429,14 @@ static void extended_digital(void)
    reads it. */
 static void paddle_timing(void);
 static void keypad_timing(void);
+static void snes_scan(void);
 
 static int directions(void)
 {
     extended_digital();
     paddle_timing();
     keypad_timing();
+    snes_scan();
     static const row rows[] = {
         {&plain, PROLINES "|U.....|......|...BB|\n", {0xEFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
         /* section 3.1: pin 1, SWCHA b4 */
@@ -478,6 +480,70 @@ static uint8_t input_access(muhtari *m, uint16_t addr, int write, uint8_t value)
     m->cpu.a = value;
     muhtari__cpu_step(m);
     return m->cpu.a;
+}
+
+static int adapter_submit(muhtari *m, unsigned p, uint32_t device, uint32_t buttons)
+{
+    muhtari_input_ex in = {0};
+    in.size = (uint32_t)sizeof in;
+    in.port[p].device = device;
+    in.port[p].buttons = buttons;
+    in.port[1u - p].device = MUHTARI_PORT_UNPLUGGED;
+    muhtari_status st = muhtari_set_input_ex(m, &in);
+    CHECK_EQ_U64(st, MUHTARI_STATUS_OK);
+    if (st != MUHTARI_STATUS_OK)
+        return 0;
+    muhtari__ports_latch(m);
+    return 1;
+}
+
+/* Serial order from the CC0 driver, not the core's state representation
+   (controllers.md, SNES2Atari). All accesses execute cartridge instructions. */
+static void snes_scan(void)
+{
+    static const uint32_t button[] = {
+        MUHTARI_BUTTON_1, MUHTARI_SNES_BUTTON_Y, MUHTARI_SNES_BUTTON_SELECT,
+        MUHTARI_SNES_BUTTON_START, MUHTARI_BUTTON_UP, MUHTARI_BUTTON_DOWN,
+        MUHTARI_BUTTON_LEFT, MUHTARI_BUTTON_RIGHT, MUHTARI_BUTTON_2,
+        MUHTARI_SNES_BUTTON_X, MUHTARI_SNES_BUTTON_L, MUHTARI_SNES_BUTTON_R};
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned held = 0u; held <= 12u; held++) {
+            muhtari *m = boot(&plain);
+            CHECK(m != NULL);
+            if (m == NULL)
+                return;
+            (void)input_access(m, 1u, 1, 7u);
+            if (!adapter_submit(m, p, MUHTARI_PORT_SNES2ATARI, held == 12u ? 0u : button[held])) {
+                muhtari_destroy(m);
+                return;
+            }
+            unsigned shift = p == 0u ? 4u : 0u;
+            uint8_t clock = (uint8_t)(1u << shift), latch = (uint8_t)(2u << shift);
+            uint16_t data = (uint16_t)(12u + p);
+            CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, H);
+            (void)input_access(m, 0x0280u, 1, 0u);
+            (void)input_access(m, 0x0281u, 1, clock | latch);
+            (void)input_access(m, 0x0280u, 1, clock | latch); /* simultaneous rise: latch wins */
+            (void)input_access(m, 0x0280u, 1, 0u);
+            for (unsigned bit = 0u; bit < 20u; bit++) {
+                uint8_t expected = bit >= 16u || (held < 12u && bit == held) ? L : H;
+                CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, expected);
+                struct muhtari__ports before = m->ports;
+                for (unsigned read = 0u; read < 3u; read++) {
+                    (void)muhtari__bus_peek(m, data);
+                    (void)input_access(m, 0x0280u, 0, 0u);
+                    (void)input_access(m, data, 0, 0u);
+                    (void)input_access(m, 0x0280u, 1, 0u); /* duplicate low */
+                }
+                CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
+                CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u), p == 0u ? 0xCFu : 0xFCu);
+                (void)input_access(m, 0x0280u, 1, clock);
+                (void)input_access(m, 0x0280u, 1, clock); /* duplicate high */
+                (void)input_access(m, 0x0280u, 1, 0u); /* fall does not advance */
+            }
+            muhtari_destroy(m);
+        }
+    }
 }
 
 static void input_buttons(muhtari *m, uint32_t left, uint32_t right)
