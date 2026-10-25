@@ -107,6 +107,11 @@ the publisher controls' 130s allowance. Measure complete expanded work before
 reusing a deadline. The full lightgun NTSC/PAL/prefix/wrap matrix measured 2.1942s
 alongside the complete CI workload on Apple Clang 21 arm64; its provisional 5s
 deadline follows twice-complete-success calibration and retains lane scaling.
+GSD's `workflow.test_gate_timeout` is deliberately 0 for this one-shot CMake
+workflow: its supported no-timer mode keeps execution in the foreground while
+each CTest test retains its enforced deadline. The outer watch-mode detector is
+redundant here and can otherwise preempt valid tests; no replacement cap is inferred
+from another timeout.
 
 Focused CTest runs need a separate report, for example
 `ctest --preset ci -R '^input[.]' --output-junit input-focused.xml`.

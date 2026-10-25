@@ -2,7 +2,7 @@
 title: "GSD hand-off: kickoff, per-phase routine, settings and owner tasks"
 summary: "How to start and run muhtari with OpenGSD one step at a time: the kickoff text, the settings and why, the per-phase and milestone routines, the owner's tasks, and what was checked before hand-off."
 read_when: "Before the kickoff, before each GSD step, and whenever a GSD step behaves unexpectedly."
-updated: 2026-10-24
+updated: 2026-10-25
 ---
 
 # GSD hand-off
@@ -165,7 +165,7 @@ leaked in, and read back with `config-get` (section 8).
 | `workflow.security_enforcement` | false | A web threat-model checklist; fuzz targets and sanitizer builds are requirements instead |
 | `workflow.nyquist_validation`, `pattern_mapper`, `tdd_mode` | false | GSD's own choice at coarse granularity; no code to map before phase 1 |
 | `workflow.test_command` | `cmake --workflow --preset ci` | Without it the test gate runs `true`. It fails until phase 1 creates the preset |
-| `workflow.test_gate_timeout` | 900 | Phase 1 replaces it with twice the measured gate time |
+| `workflow.test_gate_timeout` | 0 | Supported no-timer mode for the one-shot CMake workflow; each CTest test keeps its enforced deadline. The former60s outer cap could truncate allowed publication work; resolved debug session preplan-lightgun-evidence records the evidence. |
 | `git.branching_strategy`, `git.create_tag` | none, false | The agent branches before discuss, so planning and code share one pull request; release-please owns tags |
 | `git.base_branch`, `git.protected_branches` | main, [main] | Ship targets `main`; execute and ship warn if run on it |
 | `hooks.community` | true | Turns on GSD's Conventional Commit check |
