@@ -220,7 +220,7 @@ off-bin sine amplitude, aggregate physical-line leakage, an injected
 bypass at identical current-derived gain, Q30 blocker and int16 rounding.
 The deliberately aliased output must fail the same -80 dB judge.
 
-Each path evaluates exactly 132 distinct schedules: 96 TIA cases program
+Each path evaluates exactly 132 distinct schedules per region: 96 TIA cases program
 the real chip's AUDC4, AUDF0..31 and AUDV15, at epoch offsets0,7,137 master
 ticks, with both channels synchronous and no declared POKEY. Catch-up sends
 the actual chip's DAC changes through production synthesis. The other36 use equivalent
@@ -230,6 +230,21 @@ two-chip stress. Coordinate-derived case identities reject missing and
 duplicate evaluations. The diagnostic also reports the conservative
 nearest-bin TIA reference used by the feasibility research, separately
 from the validated exact-frequency reference used for acceptance.
+
+Both regions retain the full 12000-sample settling interval, 65536-sample capture,
+physical harmonic mask and strict -80 dB judge. PAL frequencies use 7093788 master
+ticks/second and output counts carry 4000/591149, including 88/89-sample capture
+chunks. The independent nearest-sample bypass uses the same selected rational and
+must fail all 132 cases in each region. The 72 actual fast/slow POKEY schedules and
+the mixed/high-pass representatives also run in each region, with independent
+falling-cycle PCM comparisons. No threshold is retuned for PAL.
+
+`audio.stress` runs the four existing real dual-POKEY/TIA programs in both regions,
+including slow writes, WSYNC, HALT across a logical horizon, JAM, split renders,
+NULL PCM and allocation/carry/work/clip checks. A separate all-ten-DAC volume-only
+case reaches mixed level18360 through real register writes and preserves identical
+history with discarded output. These are finite digital reconstruction tests;
+the retained PAL85:342 analog balance remains unverified.
 
 The TIA capture includes its real divider, feedback and uneven phase
 schedule; its independent vectors and confidence limits are documented in

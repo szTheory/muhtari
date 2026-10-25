@@ -838,9 +838,9 @@ static int reference_hashes(const char *path, const char *count, int fire)
         if (fire)
             input.buttons[0] = MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2;
         CHECK_EQ_U64(muhtari_set_input(m, &input), 0);
-        int16_t audio[801];
+        int16_t audio[962];
         muhtari_frame io;
-        frame_io(&io, NULL, 0, audio, 801);
+        frame_io(&io, NULL, 0, audio, 962);
         if (muhtari_run_frame(m, &io) != 0) {
             muhtari_destroy(m);
             return 1;

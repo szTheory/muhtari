@@ -140,16 +140,20 @@ static void observe(void *u, uint64_t tick, uint8_t source, uint16_t raw)
     t->hash = t->hash * UINT64_C(1099511628211) ^ tick ^ ((uint64_t)source << 8) ^ raw;
 }
 static uint64_t exercise(unsigned frames, unsigned seed, int dual, int checks, uint64_t *raw_count,
-                         uint64_t *pcm_hash)
+                         uint64_t *pcm_hash, unsigned pal)
 {
     program(seed, dual);
+    cart[57] = (uint8_t)pal;
+    uint32_t frame_ticks = pal != 0u ? 142102u : 119402u;
+    uint32_t capacity = pal != 0u ? 962u : 801u;
+    uint32_t carry = pal != 0u ? 141u : 139u;
     struct trace trace = {0};
     muhtari *m = make(observe, &trace), *off = checks ? make(NULL, NULL) : NULL,
             *split = checks ? make(NULL, NULL) : NULL;
     unsigned initial_allocations = allocations;
     uint64_t start = muhtari__clock_ns(), samples = 0;
     for (unsigned frame = 0; frame < frames; frame++) {
-        int16_t audio[3][801];
+        int16_t audio[3][962];
         uint32_t count = 0;
         for (unsigned k = 0; k < (checks ? 3u : 1u); k++) {
             muhtari *a = k == 0u ? m : k == 1u ? off : split;
@@ -174,13 +178,13 @@ static uint64_t exercise(unsigned frames, unsigned seed, int dual, int checks, u
                 n += muhtari__synth_render(a, end, audio[k] + n);
                 CHECK_EQ_U64(n, count);
                 a->frame_start = end;
-                a->frame_deadline += 119402u;
+                a->frame_deadline += frame_ticks;
             } else {
                 muhtari_frame io = {0};
                 io.size = sizeof io;
                 if (k == 0u || (frame & 1u)) {
                     io.audio = audio[k];
-                    io.audio_capacity = 801;
+                    io.audio_capacity = capacity;
                 }
                 CHECK_EQ_U64(muhtari_run_frame(a, &io), 0);
                 if (k == 0u)
@@ -189,9 +193,8 @@ static uint64_t exercise(unsigned frames, unsigned seed, int dual, int checks, u
                     CHECK_EQ_U64(io.audio_count, count);
             }
             CHECK(a->bus.ticks - a->frame_start <= MUHTARI__SYNTH_OVERSHOOT_TICKS);
-            CHECK(a->synth.pcm_count <= MUHTARI__SYNTH_CARRY_SAMPLES);
-            CHECK(a->synth.carry_high_water <=
-                  (k == 2u ? MUHTARI__SYNTH_PCM_CAPACITY : MUHTARI__SYNTH_CARRY_SAMPLES));
+            CHECK(a->synth.pcm_count <= carry);
+            CHECK(a->synth.carry_high_water <= (k == 2u ? MUHTARI__SYNTH_PCM_CAPACITY : carry));
             CHECK(a->synth.kernel_adds_per_sample <= 150u);
             CHECK_EQ_U64(a->synth.clipped_samples, 0);
             CHECK(a->synth.pre_clip_peak <= 29204u);
@@ -211,29 +214,79 @@ static uint64_t exercise(unsigned frames, unsigned seed, int dual, int checks, u
     uint64_t elapsed = muhtari__clock_ns() - start;
     CHECK_EQ_U64(allocations, initial_allocations);
     CHECK(trace.count > 0u && *pcm_hash != 0u);
-    CHECK_EQ_U64(samples, (UINT64_C(8190) + (uint64_t)(frames - 1u) * 119402u) * 88u / 13125u);
+    uint64_t elapsed_ticks = (pal != 0u ? 141960u : 8190u) + (uint64_t)(frames - 1u) * frame_ticks;
+    CHECK_EQ_U64(samples,
+                 elapsed_ticks * (pal != 0u ? 4000u : 88u) / (pal != 0u ? 591149u : 13125u));
     if (checks && dual)
         CHECK(m->ram[0] != 0u);
     *raw_count = trace.count;
-    printf("workload %s frames %u samples %llu raw_records %llu elapsed_ns %llu kernel_max %u "
+    printf("workload %s %s frames %u samples %llu raw_records %llu elapsed_ns %llu kernel_max %u "
            "carry_max %u peak %llu\n",
-           dual ? "dual-pokey-tia" : "tia-baseline", frames, (unsigned long long)samples,
-           (unsigned long long)trace.count, (unsigned long long)elapsed,
-           m->synth.kernel_adds_per_sample, m->synth.carry_high_water,
+           pal != 0u ? "PAL" : "NTSC", dual ? "dual-pokey-tia" : "tia-baseline", frames,
+           (unsigned long long)samples, (unsigned long long)trace.count,
+           (unsigned long long)elapsed, m->synth.kernel_adds_per_sample, m->synth.carry_high_water,
            (unsigned long long)m->synth.pre_clip_peak);
     muhtari_destroy(m);
     muhtari_destroy(off);
     muhtari_destroy(split);
     return elapsed;
 }
+
+/* All ten real DACs at their maximum, then JAM. The mixed node must
+   reach the declared full scale in both regions without clipping, and
+   discarding PCM must retain exactly the same reconstruction history. */
+static void maximum_current(unsigned pal)
+{
+    program(0u, 1);
+    cart[57] = (uint8_t)pal;
+    muhtari *a = make(NULL, NULL), *b = make(NULL, NULL);
+    unsigned initial_allocations = allocations;
+    for (unsigned k = 0u; k < 2u; k++) {
+        muhtari *m = k == 0u ? a : b;
+        m->cpu.jammed = 1u;
+        muhtari__bus_write(m, 1u, 7u);
+        for (unsigned ch = 0u; ch < 2u; ch++) {
+            muhtari__bus_write(m, (uint16_t)(0x15u + ch), 0u);
+            muhtari__bus_write(m, (uint16_t)(0x19u + ch), 15u);
+        }
+        for (unsigned chip = 0u; chip < 2u; chip++)
+            for (unsigned ch = 0u; ch < 4u; ch++)
+                muhtari__bus_write(m, (uint16_t)((chip == 0u ? 0x450u : 0x440u) + 2u * ch + 1u),
+                                   0x1Fu);
+    }
+    for (unsigned frame = 0u; frame < 4u; frame++) {
+        int16_t pcm[962];
+        muhtari_frame captured = {0}, discarded = {0};
+        captured.size = discarded.size = (uint32_t)sizeof captured;
+        captured.audio = pcm;
+        captured.audio_capacity = 962u;
+        CHECK_EQ_U64(muhtari_run_frame(a, &captured), 0u);
+        CHECK_EQ_U64(muhtari_run_frame(b, &discarded), 0u);
+        CHECK_EQ_U64(captured.audio_count, discarded.audio_count);
+        CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
+        CHECK_EQ_U64(a->synth.mixed_level, 18360u);
+        CHECK_EQ_U64(a->synth.raw[0], 15u);
+        CHECK_EQ_U64(a->synth.raw[1], 15u);
+        for (unsigned source = 2u; source < 10u; source++)
+            CHECK_EQ_U64(a->synth.raw[source], 206u);
+        CHECK_EQ_U64(a->synth.clipped_samples, 0u);
+        CHECK(a->synth.pre_clip_peak <= 29204u);
+        CHECK(a->synth.kernel_adds_per_sample <= 150u);
+        CHECK(a->synth.pcm_count <= (pal != 0u ? 141u : 139u));
+    }
+    CHECK_EQ_U64(allocations, initial_allocations);
+    muhtari_destroy(a);
+    muhtari_destroy(b);
+}
+
 int main(int argc, char **argv)
 {
     uint64_t raw_count = 0, hash = 0;
     if (argc == 3 && strcmp(argv[1], "--bench") == 0 && strcmp(argv[2], "600") == 0) {
-        uint64_t exact = exercise(600, 0, 1, 0, &raw_count, &hash);
+        uint64_t exact = exercise(600, 0, 1, 0, &raw_count, &hash, 0u);
         uint64_t exact_raw = raw_count, exact_hash = hash;
         hash = 0;
-        uint64_t baseline = exercise(600, 0, 0, 0, &raw_count, &hash);
+        uint64_t baseline = exercise(600, 0, 0, 0, &raw_count, &hash, 0u);
         CHECK(baseline > 0u);
 #ifdef __aarch64__
         const char *target = "aarch64";
@@ -255,9 +308,12 @@ int main(int argc, char **argv)
                (unsigned long long)(baseline ? exact * 1000u / baseline : 0u),
                (unsigned long long)exact_raw, (unsigned long long)exact_hash);
     } else if (argc == 1) {
-        for (unsigned seed = 0; seed < 4u; seed++) {
-            hash = 0;
-            (void)exercise(12, seed, 1, 1, &raw_count, &hash);
+        for (unsigned pal = 0u; pal < 2u; pal++) {
+            for (unsigned seed = 0; seed < 4u; seed++) {
+                hash = 0;
+                (void)exercise(12, seed, 1, 1, &raw_count, &hash, pal);
+            }
+            maximum_current(pal);
         }
     } else
         return 2;
