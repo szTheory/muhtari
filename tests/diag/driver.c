@@ -515,7 +515,7 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "battery") == 0    ? 13u
            : strcmp(rom, "motion0") == 0    ? 14u
            : strcmp(rom, "light0") == 0     ? 15u
-           : strcmp(rom, "analog0") == 0    ? 16u
+           : (strcmp(rom, "analog0") == 0 || strcmp(rom, "analog1") == 0) ? 16u
                                             : 0u;
 }
 
@@ -600,16 +600,23 @@ static uint32_t controller_counts[CONTROLLER_FRAMES];
 static muhtari__sha256 controller_raw;
 static int controller_light;
 static int controller_analog;
+static int controller_keypad;
 
 static const char *controller_name(void)
 {
-    return controller_analog ? "analog0" : controller_light ? "light0" : "motion0";
+    return controller_keypad ? "analog1" : controller_analog ? "analog0" : controller_light ? "light0" : "motion0";
 }
 
 static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
 {
     memset(in, 0, sizeof *in);
     in->size = (uint32_t)sizeof *in;
+    if (controller_keypad) {
+        in->port[0].device = in->port[1].device = MUHTARI_PORT_KEYPAD;
+        in->port[0].keypad = in->port[1].keypad = frame <= 3u ? 15u : frame == 5u ? 4095u : frame == 6u ? 36u : 0u;
+        in->switches = frame <= 2u ? MUHTARI_SWITCH_RESET : 0u;
+        return;
+    }
     if (controller_analog) {
         in->port[0].device = in->port[1].device = MUHTARI_PORT_PADDLE;
         in->port[0].paddle[0] = frame < 6u ? 0u : 65535u;
@@ -683,7 +690,7 @@ static int controller_library(const char *path, const char *expected, const char
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
-    media.port[0] = media.port[1] = controller_analog  ? MUHTARI_PORT_PADDLE
+    media.port[0] = media.port[1] = controller_keypad ? MUHTARI_PORT_KEYPAD : controller_analog  ? MUHTARI_PORT_PADDLE
                                     : controller_light ? MUHTARI_PORT_LIGHTGUN
                                                        : MUHTARI_PORT_DRIVING;
     muhtari__sha256_init(&controller_raw);
@@ -702,7 +709,7 @@ static int controller_library(const char *path, const char *expected, const char
         io.audio = controller_pcm[f];
         io.audio_capacity = 801u;
         failed =
-            ((f != 4u || controller_analog) && muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK) ||
+            ((f != 4u || controller_analog || controller_keypad) && muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK) ||
             muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         controller_counts[f] = io.audio_count;
     }
@@ -774,16 +781,19 @@ static int controller_library(const char *path, const char *expected, const char
             failed = 1;
         else {
             fprintf(f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
-                    controller_analog  ? "paddle"
+                    controller_keypad ? "keypad" : controller_analog  ? "paddle"
                     : controller_light ? "lightgun"
                                        : "driving",
-                    controller_analog  ? "paddle"
+                    controller_keypad ? "keypad" : controller_analog  ? "paddle"
                     : controller_light ? "lightgun"
                                        : "driving");
             for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
                 muhtari_input_ex in;
                 controller_stimulus(i, &in);
-                if (controller_analog) {
+                if (controller_keypad) {
+                    fprintf(f,"|keypad:%u|keypad:%u|%s|\n",in.port[0].keypad,in.port[1].keypad,
+                            in.switches != 0u ? "R..BB" : "...BB");
+                } else if (controller_analog) {
                     fprintf(f, "|paddle:%u,%u,%u|paddle:%u,%u,%u|...BB|\n", in.port[0].paddle[0],
                             in.port[0].paddle[1], (in.port[0].buttons >> 4) & 3u,
                             in.port[1].paddle[0], in.port[1].paddle[1],
@@ -1464,10 +1474,11 @@ int main(int argc, char **argv)
     char rom[FIELD_MAX];
     if ((argc == 7 || argc == 8) && strcmp(argv[1], "--controller-case") == 0 &&
         (strcmp(argv[2], "driving") == 0 || strcmp(argv[2], "lightgun") == 0 ||
-         strcmp(argv[2], "paddle") == 0) &&
+         strcmp(argv[2], "paddle") == 0 || strcmp(argv[2], "keypad") == 0) &&
         strcmp(argv[3], "both") == 0) {
         controller_light = strcmp(argv[2], "lightgun") == 0;
         controller_analog = strcmp(argv[2], "paddle") == 0;
+        controller_keypad = strcmp(argv[2], "keypad") == 0;
         controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
         if (controller_pixels == NULL)
             return 1;
