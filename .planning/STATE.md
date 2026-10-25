@@ -3,12 +3,12 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: Not started
-status: planning
-stopped_at: Phase 8 verified complete; next $gsd-ship 8
-last_updated: "2026-10-25T04:14:51.334469+00:00"
+status: "Phase 8 shipped — PR #31; required CI and release confirmation pending"
+stopped_at: Phase 8 PR 31 opened; ship session tracks CI, merge and release; next $gsd-discuss-phase 9
+last_updated: "2026-10-25T13:41:19.915Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 8 passes49/49; all INPUT requirements complete; ship pending
-state_head: 70366fdab87b2f83d65c3bf865c850b2f08d9f24
+last_activity_desc: Phase 8 shipped in PR 31; CI, merge and release confirmation pending
+state_head: 2c10399522dd7bf16c3b5de7024f4ab30f8c4c71
 progress:
   total_phases: 7
   completed_phases: 4
@@ -27,11 +27,11 @@ current_phase_name: PAL games and audio
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase8 is verified complete and awaits shipping on its existing branch.
+Current focus: Phase8 is verified complete and submitted in PR #31.
 API6/ABI1/behavior5 delivers typed input and movie2, native light sensing, timed
 paddles/keypads/motion and complete adapters through all three deliverables.
 All INPUT-01–05 requirements are complete. Phase9 is the next roadmap target,
-but has not started. Next command: $gsd-ship 8.
+but has not started. After shipping confirmations, next command: $gsd-discuss-phase 9.
 
 ## Current Position
 
@@ -44,10 +44,19 @@ milestone phases are complete (57%); phases9–11 remain unstarted. Runtime tota
 are42/42 summarized plans, including historical halted06-01; active accepted
 progress is41/41 known planned slots. These are not claims of milestone completion.
 
-Status: Phase8 verified; Phase9 not started; shipping8 is next
-Last activity: 2026-10-25 — Phase8 acceptance and requirement traceability closed
-Next command: $gsd-ship 8
-Branch: phase/08-controllers-at-the-pins. No Phase8 PR, merge or release yet.
+Status: Phase 8 shipped — PR #31; required CI and release confirmation pending
+Last activity: 2026-10-25 — Phase8 shipping PR opened; fresh local gate passed
+Next command: $gsd-discuss-phase 9 (new session, after shipping confirmations)
+Branch: phase/08-controllers-at-the-pins. PR #31:
+https://github.com/szTheory/muhtari/pull/31
+This ship-note snapshot precedes required CI, squash auto-merge and release-PR
+confirmation; the current ship session owns those checks. No next GSD step runs here.
+
+Fresh shipping checks: `cmake --workflow --preset ci` exits0 (649+6),
+`git diff --check` exits0, and `verification.status` exits0 with passed.
+Run URL: N/A-local. Prior exact-source hosted evidence remains below.
+The ship note retains CI triggering so the final PR head has required checks.
+Existing code review is closed, both findings fixed; no routine owner review remains.
 
 Final tested source70366fdab87b2f83d65c3bf865c850b2f08d9f24,
 genuine parent7887ad65e7c7887032601109449758d6a8b0e9a9.
@@ -226,8 +235,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase8 verified complete; next $gsd-ship 8
-Last session: 2026-10-25T04:14:51.334469+00:00
+**Stopped at:** Phase8 PR #31 opened; current ship session tracks CI, merge and release
+Last session: 2026-10-25
 Resume file: None
 
 ### Quick Tasks Completed
@@ -274,4 +283,4 @@ Resume file: None
 
 None required. Current-source advisory10000-case isolation timing and earlier
 publication/library costs remain in SEED-009; unaccepted evidence is preserved.
-Next command: $gsd-ship 8. Do not start Phase9 before shipping Phase8.
+Next command: $gsd-discuss-phase 9 in a new session after Phase8 shipping confirmations.

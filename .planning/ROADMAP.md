@@ -181,7 +181,7 @@ Plans:
 **Depends on:** Phase 7
 **Requirements:** INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05
 **Plans:** 14/14 complete; independent verification49/49 and all INPUT requirements complete.
-**Status:** Complete2026-10-25; clean review after one fix round, no owner UAT; `$gsd-ship 8` next.
+**Status:** Complete2026-10-25; clean review after one fix round, no owner UAT; shipping in [PR #31](https://github.com/szTheory/muhtari/pull/31). Next GSD step after shipping: `$gsd-discuss-phase 9` in a new session.
 
 Plans:
 **Wave 1**
