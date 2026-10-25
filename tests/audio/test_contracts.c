@@ -689,6 +689,18 @@ static void test_pal_clock_events(void)
     CHECK_EQ_U64(streams[0].item[3].tick, epoch + 162832u);
     CHECK_EQ_U64(muhtari__synth_render(m, epoch + 284204u, NULL), 962u);
     CHECK_EQ_U64(m->synth.phase, (284204u * 4000u) % 591149u);
+    /* Seed a silent completed prefix as well: origin-relative elapsed time
+       now overflows tick*4000, while quotient/remainder totals still fit.
+       Only the following bounded frame is actually synthesized. */
+    muhtari__synth_reset(m, 0u, 0u);
+    m->synth.tick = m->synth.horizon = epoch;
+    uint32_t phase = (uint32_t)((epoch % 591149u) * 4000u % 591149u);
+    m->synth.phase = phase;
+    uint32_t accumulator = phase + 142102u * 4000u;
+    CHECK(epoch > UINT64_MAX / 4000u);
+    CHECK_EQ_U64(muhtari__synth_render(m, epoch + 142102u, NULL), accumulator / 591149u);
+    CHECK_EQ_U64(m->synth.phase, accumulator % 591149u);
+    CHECK_EQ_U64(m->synth.pcm_count, 0u);
     muhtari_destroy(m);
 }
 
