@@ -669,10 +669,135 @@ static void press(unsigned port, uint32_t mask, uint8_t got[8])
 #define BIT(id) (1u << RETRO_DEVICE_ID_JOYPAD_##id)
 #define HI 0x80u /* TIA drives D7 alone of INPT0-INPT5 */
 
+static void adapter_write(uint8_t *code, size_t *n, uint16_t addr, uint8_t value)
+{
+    code[(*n)++] = 0xA9u;
+    code[(*n)++] = value;
+    code[(*n)++] = 0x8Du;
+    code[(*n)++] = (uint8_t)addr;
+    code[(*n)++] = (uint8_t)(addr >> 8);
+}
+
+static void adapter_read(uint8_t *code, size_t *n, uint16_t addr, uint8_t mask, unsigned slot)
+{
+    code[(*n)++] = 0xADu;
+    code[(*n)++] = (uint8_t)addr;
+    code[(*n)++] = (uint8_t)(addr >> 8);
+    code[(*n)++] = 0x29u;
+    code[(*n)++] = mask;
+    code[(*n)++] = 0x8Du;
+    code[(*n)++] = (uint8_t)slot;
+    code[(*n)++] = 0x18u;
+}
+
+/* Owned CPU scans, independently ordered from controllers.md. The program
+   repeats so host presses reach actual register observations after VBLANK. */
+static void adapter_controls(void)
+{
+    static const unsigned ids[2][12] = {
+        {BIT(B), BIT(Y), BIT(SELECT), BIT(START), BIT(UP), BIT(DOWN), BIT(LEFT), BIT(RIGHT),
+         BIT(A), BIT(X), BIT(L), BIT(R)},
+        {BIT(A), BIT(B), BIT(START), BIT(Y), BIT(X), BIT(R), BIT(SELECT), BIT(L),
+         BIT(UP), BIT(DOWN), BIT(LEFT), BIT(RIGHT)}};
+    static const char *const names[2][12] = {
+        {"Up", "Down", "Left", "Right", "B", "A", "Y", "X", "L", "R", "Select", "Start"},
+        {"Up", "Down", "Left", "Right", "B", "C", "A", "Y", "X", "Z", "Mode", "Start"}};
+    static const unsigned desc_ids[12] = {
+        RETRO_DEVICE_ID_JOYPAD_UP, RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_LEFT,
+        RETRO_DEVICE_ID_JOYPAD_RIGHT, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_A,
+        RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_L,
+        RETRO_DEVICE_ID_JOYPAD_R, RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START};
+    for (unsigned family = 0u; family < 2u; family++) {
+        for (unsigned port = 0u; port < 2u; port++) {
+            for (unsigned storage = 0u; storage < 2u; storage++) {
+                uint8_t image[128u + 4096u];
+                struct retro_game_info game = {0};
+                game.data = image;
+                game.size = images_linear(image, 3u, 4096u);
+                uint8_t *code = image + 128u;
+                size_t n = 0u;
+                unsigned shift = port == 0u ? 4u : 0u;
+                uint8_t clock = (uint8_t)(1u << shift), latch = (uint8_t)(2u << shift);
+                adapter_write(code, &n, 1u, 7u);
+                adapter_write(code, &n, 0x0281u, 0u);
+                adapter_write(code, &n, 0x0280u, 0u);
+                adapter_write(code, &n, 0x0281u, clock | latch);
+                if (family == 0u) {
+                    adapter_write(code, &n, 0x0280u, clock | latch);
+                    adapter_write(code, &n, 0x0280u, 0u);
+                }
+                for (unsigned bit = 0u; bit < (family == 0u ? 17u : 6u); bit++) {
+                    adapter_read(code, &n, family == 0u ? (uint16_t)(12u + port) : 0x0280u,
+                                 family == 0u ? 0x80u : (uint8_t)(12u << shift), bit);
+                    adapter_write(code, &n, 0x0280u, family == 0u ? clock : latch);
+                    adapter_write(code, &n, 0x0280u, 0u);
+                }
+                adapter_write(code, &n, 0x0281u, 0u);
+                adapter_read(code, &n, 0x0280u, 0xFFu, 20u);
+                adapter_read(code, &n, 0x0282u, 0xFFu, 21u);
+                code[n++] = 0x4Cu;
+                code[n++] = 0u;
+                code[n++] = 0xF0u;
+                CHECK(n < 4090u);
+                p_set_environment(env);
+                p_init();
+                p_set_input_poll(on_poll);
+                p_set_input_state(input);
+                p_set_controller_port_device(port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, family + 5u));
+                p_set_controller_port_device(1u - port, storage ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2) : RETRO_DEVICE_NONE);
+                CHECK(p_load_game(&game));
+                CHECK_EQ_U64(input_descriptors, 15u);
+                for (unsigned i = 0u; i < 12u; i++) {
+                    CHECK_EQ_U64(input_list[i].port, port);
+                    CHECK_EQ_U64(input_list[i].device, RETRO_DEVICE_JOYPAD);
+                    CHECK_EQ_U64(input_list[i].index, 0u);
+                    CHECK_EQ_U64(input_list[i].id, desc_ids[i]);
+                    check_string("adapter descriptor", input_list[i].description, names[family][i]);
+                }
+                uint8_t *save = p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+                if (storage && save != NULL)
+                    memset(save, 0xA5, 32768u);
+                for (unsigned held = 0u; held <= 12u; held++) {
+                    pad[port] = held == 12u ? 0u : ids[family][held];
+                    run_frames(3u);
+                    const uint8_t *ram = p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+                    for (unsigned bit = 0u; bit < (family == 0u ? 17u : 6u); bit++) {
+                        uint8_t want = family == 0u ? (bit == 16u || (held < 12u && held == bit) ? 0u : 128u)
+                                                   : (uint8_t)(bit < 2u ? 0u : 12u << shift);
+                        if (family != 0u && held < 8u && bit == 2u + held / 2u)
+                            want &= (uint8_t)~((held % 2u == 0u ? 8u : 4u) << shift);
+                        CHECK_EQ_HEX(ram[bit], want);
+                    }
+                    CHECK_EQ_HEX(ram[21], 0x3Fu);
+                    if (family != 0u)
+                        CHECK_EQ_HEX(ram[20], held >= 8u && held < 12u ? 255u ^ (1u << (shift + held - 8u)) : 255u);
+                }
+                pad[port] = BIT(L2) | BIT(R2) | BIT(L3);
+                run_frames(3u);
+                CHECK_EQ_HEX(((uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM))[21], 0x34u);
+                p_set_controller_port_device(1u - port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0));
+                pad[1u - port] = BIT(L) | BIT(R) | BIT(START) | BIT(SELECT) | BIT(X);
+                run_frames(3u);
+                CHECK_EQ_HEX(((uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM))[21], 0x34u);
+                if (storage) {
+                    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == save);
+                    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 32768u);
+                    CHECK(strstr(message, "reload") != NULL);
+                    for (unsigned i = 0u; save != NULL && i < 32768u; i++)
+                        CHECK_EQ_HEX(save[i], 0xA5u);
+                }
+                pad[0] = pad[1] = 0u;
+                stop();
+            }
+        }
+    }
+}
+
 /* Port 1's and port 2's Up reach SWCHA's bit 4 and bit 0, pulled to 0
    while held (docs/hardware/controllers.md). */
 static void case_input(void)
 {
+    adapter_controls();
     start(0);
     run_frames(3u);
     CHECK_EQ_HEX(last_entry()[E_SWCHA], 0xFFu);
@@ -1220,20 +1345,22 @@ static void case_devices(void)
                 bool light = s == 0u && headers[h] == MUHTARI_PORT_LIGHTGUN;
                 bool paddle = s == 0u && headers[h] == MUHTARI_PORT_PADDLE;
                 bool keypad = s == 0u && headers[h] == MUHTARI_PORT_KEYPAD;
+                bool snes = s == 0u && headers[h] == MUHTARI_PORT_SNES2ATARI;
+                bool mega = s == 0u && headers[h] == MUHTARI_PORT_MEGA7800;
                 bool mouse_device = s == 0u && (headers[h] == MUHTARI_PORT_TRAKBALL ||
                                                 headers[h] == MUHTARI_PORT_ST_MOUSE ||
                                                 headers[h] == MUHTARI_PORT_AMIGA_MOUSE);
                 bool mouse_pot = mouse_device && headers[h] != MUHTARI_PORT_TRAKBALL;
                 CHECK_EQ_HEX(entry[E_SWCHA], paddle ? (port == 0u ? 0xBEu : 0xEBu)
-                                             : unplugged || driving || keypad || mouse_device
+                                             : unplugged || driving || keypad || snes || mouse_device
                                                  ? (port == 0u ? 0xFEu : 0xEFu)
                                                  : 0xEEu);
                 CHECK_EQ_HEX(entry[E_SWCHB], port == 0u && (unplugged || driving || light ||
-                                                            paddle || keypad || mouse_device)
+                                                            paddle || keypad || snes || mega || mouse_device)
                                                  ? 0x3Fu
                                                  : 0x3Du);
                 for (unsigned p = 0u; p < 2u; p++) {
-                    bool empty = p == port && (unplugged || driving || light || mouse_device);
+                    bool empty = p == port && (unplugged || driving || light || snes || mouse_device);
                     bool stick = p == port && joystick;
                     CHECK_EQ_HEX(entry[p == 0u ? E_INPT4 : E_INPT5] & HI,
                                  empty || (p == port && (paddle || keypad)) ? HI : 0u);

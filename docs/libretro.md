@@ -25,7 +25,7 @@ The console's Reset is the switch a game reads; RetroArch's own Restart is a pow
 
 ## Devices
 
-Each port offers thirteen devices in Quick Menu → Controls:
+Each port offers fifteen devices in Quick Menu → Controls:
 
 | Device | What the game sees |
 |---|---|
@@ -42,6 +42,8 @@ Each port offers thirteen devices in Quick Menu → Controls:
 | CX22 | relative MOUSE X/Y; LEFT or RIGHT is shared fire |
 | ST mouse | relative MOUSE X/Y; independent LEFT/RIGHT fire |
 | Amiga mouse | relative MOUSE X/Y with Amiga wiring; independent LEFT/RIGHT fire |
+| SNES2Atari | RetroPad D-pad, B/Y/Select/Start/A/X/L/R retain their SNES names |
+| Mega7800 | D-pad; Y→A, B→B, A→C, L→X, X→Y, R→Z, Select→Mode, Start→Start |
 
 Driving uses `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)` for selection and base
 `RETRO_DEVICE_MOUSE` IDs for polling, once after each frame's input poll. The frontend
@@ -69,7 +71,7 @@ driving/mouse/CX22/gun/paddle/keypad port supplies console controls. Driving use
 BUTTON_4 for Select and RIGHT for Reset; LEFT remains fire. XG-1 uses LIGHTGUN
 START for Pause, SELECT for Select and AUX_A for Reset; these do not fire or reload.
 Paddles use RetroPad Start/Select/X for Pause/Select/Reset; B/A remain the two buttons.
-Keypad uses supplemental RetroPad L2/R2/L3 for Pause/Select/Reset; its keys
+Keypad, SNES2Atari and Mega7800 use supplemental RetroPad L2/R2/L3 for Pause/Select/Reset; their controls
 never operate console switches, and difficulties use options.
 With neither
 port active, supplemental port 1 RetroPad L2/R2/L3 provide Pause/Select/Reset. Driving, paddles and
@@ -119,6 +121,16 @@ and bind base relative MOUSE axes and the supplemental buttons; selection
 alone cannot make unsupported physical bindings available. Sensitivity is a
 frontend setting; the core uses its bounded, uncalibrated timing policy in
 [controller hardware](hardware/controllers.md#motion).
+
+SNES2Atari and Mega7800 select JOYPAD subclasses5/6 respectively, keeping
+all earlier subclass values. Polling uses base JOYPAD index0 once per native
+control per frame. Their Start, Select, X and shoulders operate only the
+adapter; difficulties use options. An ordinary controller on either port
+takes console priority. With two adapters the lowest numbered port supplies
+supplemental L2/R2/L3. Frontends must bind the complete RetroPad plus these
+supplemental controls; selecting a subclass supplies no physical adapter I/O.
+Missing callbacks release controls. Auto activates supported header adapters
+before the first frame, and an opposite EEPROM stays frozen until reload.
 
 ## Options
 

@@ -82,6 +82,8 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #define LR_LIGHTGUN RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
 #define LR_PADDLE RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)
 #define LR_KEYPAD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)
+#define LR_SNES2ATARI RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 5)
+#define LR_MEGA7800 RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 6)
 
 #ifdef USE_RGB565
 typedef uint16_t lr_pixel;
@@ -154,10 +156,12 @@ static const struct retro_controller_description pad_types[] = {
     {"CX22", LR_CX22},
     {"ST mouse", LR_ST_MOUSE},
     {"Amiga mouse", LR_AMIGA_MOUSE},
+    {"SNES2Atari", LR_SNES2ATARI},
+    {"Mega7800", LR_MEGA7800},
 };
 static struct retro_controller_info ports[] = {
-    {pad_types, 13u},
-    {pad_types, 13u},
+    {pad_types, 15u},
+    {pad_types, 15u},
     {NULL, 0u},
 };
 
@@ -191,6 +195,22 @@ static const unsigned keypad_ids[12] = {
     RETRO_DEVICE_ID_JOYPAD_L,      RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_R,
     RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_A,    RETRO_DEVICE_ID_JOYPAD_START};
 static struct retro_input_descriptor inputs[28];
+/* Conventional RetroPad layouts; the console uses separate supplemental
+   controls. See docs/libretro.md and libretro.h's base-device contract. */
+static const unsigned adapter_ids[12] = {
+    RETRO_DEVICE_ID_JOYPAD_UP, RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_LEFT,
+    RETRO_DEVICE_ID_JOYPAD_RIGHT, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_A,
+    RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_L,
+    RETRO_DEVICE_ID_JOYPAD_R, RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START};
+static const uint32_t adapter_buttons[2][12] = {
+    {MUHTARI_BUTTON_UP, MUHTARI_BUTTON_DOWN, MUHTARI_BUTTON_LEFT, MUHTARI_BUTTON_RIGHT,
+     MUHTARI_BUTTON_1, MUHTARI_BUTTON_2, MUHTARI_SNES_BUTTON_Y, MUHTARI_SNES_BUTTON_X,
+     MUHTARI_SNES_BUTTON_L, MUHTARI_SNES_BUTTON_R, MUHTARI_SNES_BUTTON_SELECT,
+     MUHTARI_SNES_BUTTON_START},
+    {MUHTARI_BUTTON_UP, MUHTARI_BUTTON_DOWN, MUHTARI_BUTTON_LEFT, MUHTARI_BUTTON_RIGHT,
+     MUHTARI_BUTTON_1, MUHTARI_MEGA_BUTTON_C, MUHTARI_BUTTON_2, MUHTARI_MEGA_BUTTON_Y,
+     MUHTARI_MEGA_BUTTON_X, MUHTARI_MEGA_BUTTON_Z, MUHTARI_MEGA_BUTTON_MODE,
+     MUHTARI_MEGA_BUTTON_START}};
 
 /* The options (SET_CORE_OPTIONS_V2, L2339). No region option: PAL is
    refused in this release. */
@@ -500,6 +520,10 @@ static uint32_t lr_port_device(unsigned port)
         return MUHTARI_PORT_PADDLE;
     case LR_KEYPAD:
         return MUHTARI_PORT_KEYPAD;
+    case LR_SNES2ATARI:
+        return MUHTARI_PORT_SNES2ATARI;
+    case LR_MEGA7800:
+        return MUHTARI_PORT_MEGA7800;
     default:
         return 0u;
     }
@@ -538,6 +562,11 @@ static bool lr_mouse(uint32_t d)
            d == MUHTARI_PORT_AMIGA_MOUSE;
 }
 
+static bool lr_adapter(uint32_t d)
+{
+    return d == MUHTARI_PORT_SNES2ATARI || d == MUHTARI_PORT_MEGA7800;
+}
+
 static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
 {
     if (battery.eeprom_port == p + 1u)
@@ -551,7 +580,7 @@ static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
     if (d == MUHTARI_PORT_NONE && content != NULL)
         return MUHTARI_PORT_UNPLUGGED;
     return d == MUHTARI_PORT_JOYSTICK || d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_LIGHTGUN ||
-                   d == MUHTARI_PORT_PADDLE || d == MUHTARI_PORT_KEYPAD || lr_mouse(d)
+                   d == MUHTARI_PORT_PADDLE || d == MUHTARI_PORT_KEYPAD || lr_mouse(d) || lr_adapter(d)
                ? d
                : MUHTARI_PORT_PROLINE;
 }
@@ -583,16 +612,17 @@ static void lr_refresh_inputs(void)
             provider = 1u;
         else if (!lr_mouse(active[0]) && active[0] != MUHTARI_PORT_DRIVING &&
                  active[0] != MUHTARI_PORT_LIGHTGUN && active[0] != MUHTARI_PORT_PADDLE &&
-                 active[0] != MUHTARI_PORT_KEYPAD &&
+                 active[0] != MUHTARI_PORT_KEYPAD && !lr_adapter(active[0]) &&
                  (lr_mouse(active[1]) || active[1] == MUHTARI_PORT_DRIVING ||
                   active[1] == MUHTARI_PORT_LIGHTGUN || active[1] == MUHTARI_PORT_PADDLE ||
-                  active[1] == MUHTARI_PORT_KEYPAD))
+                  active[1] == MUHTARI_PORT_KEYPAD || lr_adapter(active[1])))
             provider = 1u;
     }
     uint32_t kind = lr_ordinary(active[provider]) || active[provider] == MUHTARI_PORT_DRIVING ||
                             active[provider] == MUHTARI_PORT_LIGHTGUN ||
                             active[provider] == MUHTARI_PORT_PADDLE ||
-                            active[provider] == MUHTARI_PORT_KEYPAD || lr_mouse(active[provider])
+                            active[provider] == MUHTARI_PORT_KEYPAD || lr_mouse(active[provider]) ||
+                            lr_adapter(active[provider])
                         ? active[provider]
                         : MUHTARI_PORT_UNPLUGGED;
     if (console_port != provider || console_device != kind)
@@ -622,6 +652,14 @@ static void lr_refresh_inputs(void)
                 inputs[n] = pad_inputs[i];
                 inputs[n++].port = p;
             }
+        } else if (lr_adapter(active[p])) {
+            static const char *const names[2][12] = {
+                {"Up", "Down", "Left", "Right", "B", "A", "Y", "X", "L", "R", "Select", "Start"},
+                {"Up", "Down", "Left", "Right", "B", "C", "A", "Y", "X", "Z", "Mode", "Start"}};
+            unsigned family = active[p] == MUHTARI_PORT_MEGA7800 ? 1u : 0u;
+            for (unsigned i = 0u; i < 12u; i++)
+                inputs[n++] = (struct retro_input_descriptor){p, RETRO_DEVICE_JOYPAD, 0u,
+                                                              adapter_ids[i], names[family][i]};
         } else if (active[p] == MUHTARI_PORT_KEYPAD) {
             static const char *const names[12] = {"Key 1", "Key 2", "Key 3", "Key 4",
                                                   "Key 5", "Key 6", "Key 7", "Key 8",
@@ -808,7 +846,12 @@ static void lr_input(void)
         in.port[p].device = lr_active_port(p, &request);
         if (lr_ordinary(in.port[p].device))
             in.port[p].buttons = lr_buttons(p, in.port[p].device);
-        else if (in.port[p].device == MUHTARI_PORT_KEYPAD) {
+        else if (lr_adapter(in.port[p].device)) {
+            unsigned family = in.port[p].device == MUHTARI_PORT_MEGA7800 ? 1u : 0u;
+            for (unsigned i = 0u; i < 12u; i++)
+                if (lr_held(p, adapter_ids[i]))
+                    in.port[p].buttons |= adapter_buttons[family][i];
+        } else if (in.port[p].device == MUHTARI_PORT_KEYPAD) {
             for (unsigned i = 0u; i < 12u; i++)
                 if (lr_held(p, keypad_ids[i]))
                     in.port[p].keypad |= 1u << i;
