@@ -632,7 +632,7 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
                     port->device == MUHTARI_PORT_ST_MOUSE ||
                     port->device == MUHTARI_PORT_AMIGA_MOUSE;
         if (gun && in->size < offsetof(muhtari_input_ex, port) + p * sizeof(muhtari_port_input) +
-                                  sizeof(muhtari_port_input)) {
+                                  offsetof(muhtari_port_input, gun_y) + sizeof port->gun_y) {
             port->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
         }
         uint32_t buttons =

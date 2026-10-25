@@ -980,8 +980,65 @@ static void light_raster_edges(void)
     }
 }
 
+static void light_prefixes(void)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        /* Explicit device, Auto from load override, Auto from header. */
+        for (unsigned resolution = 0u; resolution < 3u; resolution++) {
+            for (unsigned prefix = 0u; prefix < 4u; prefix++) {
+                muhtari *m = boot(&plain);
+                CHECK(m != NULL);
+                if (m == NULL) {
+                    continue;
+                }
+                if (resolution != 0u) {
+                    if (resolution == 2u) {
+                        image[55u + p] = MUHTARI_PORT_LIGHTGUN;
+                    }
+                    muhtari_media media = {0};
+                    media.size = (uint32_t)sizeof media;
+                    media.image = image;
+                    media.image_size = sizeof image;
+                    media.port[p] = resolution == 1u ? MUHTARI_PORT_LIGHTGUN : 0u;
+                    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+                }
+                muhtari_input_ex in = {0};
+                /* X only, complete aim without flags, explicit zero flags,
+                   and explicit off-screen: bytes 36/40/44 on port 0. */
+                in.size = 36u + 40u * p + 4u * (prefix < 2u ? prefix : 2u);
+                in.port[p].device = resolution == 0u ? MUHTARI_PORT_LIGHTGUN : 0u;
+                in.port[p].gun_x = 100u;
+                in.port[p].gun_y = 20u;
+                in.port[p].flags = prefix == 3u ? MUHTARI_INPUT_GUN_OFFSCREEN : 0u;
+                uint32_t flags = prefix == 0u || prefix == 3u ? MUHTARI_INPUT_GUN_OFFSCREEN : 0u;
+                uint32_t y = prefix == 0u ? 0u : 20u;
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(m->ports.pending_ex.port[p].device, MUHTARI_PORT_LIGHTGUN);
+                CHECK_EQ_U64(m->ports.pending_ex.port[p].gun_x, 100u);
+                CHECK_EQ_U64(m->ports.pending_ex.port[p].gun_y, y);
+                CHECK_EQ_U64(m->ports.pending_ex.port[p].flags, flags);
+                (void)input_access(m, 0x0001u, 1, 0x07u);
+                (void)input_access(m, 0x0020u, 1, 0x08u); /* bright native background */
+                (void)input_access(m, 0x0001u, 1, 0x40u); /* D6 retains unpolled light */
+                m->cpu.jammed = 1u;
+                for (unsigned f = 0u; f < 3u; f++) {
+                    frame(m, NULL);
+                }
+                CHECK_EQ_U64(m->ports.applied_ex.port[p].gun_x, 100u);
+                CHECK_EQ_U64(m->ports.applied_ex.port[p].gun_y, y);
+                CHECK_EQ_U64(m->ports.applied_ex.port[p].flags, flags);
+                m->cpu.jammed = 0u;
+                CHECK_EQ_HEX(input_access(m, (uint16_t)(12u + p), 0, 0u) & 0x80u,
+                             flags != 0u ? 0x80u : 0u);
+                muhtari_destroy(m);
+            }
+        }
+    }
+}
+
 static int lightgun(void)
 {
+    light_prefixes();
     light_raster_edges();
     /* Raster257 x319 emits at258*454; VBLANK returns at+42,
        before the delayed sensor interval[+64,+94). No reads in between. */
