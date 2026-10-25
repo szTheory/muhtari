@@ -19,6 +19,33 @@
 
 static void ports_rearm(muhtari *m);
 
+/* Input DDR bits release high. Response pins never feed host clocks
+   (controllers.md, SNES2Atari). */
+static uint8_t ports_host(const muhtari *m, unsigned p)
+{
+    uint8_t drive = (uint8_t)(m->riot.ora | (uint8_t)~m->riot.ddra);
+    return (uint8_t)((drive >> (p == 0u ? 4u : 0u)) & 3u);
+}
+
+void muhtari__ports_host_pins(muhtari *m, uint64_t tick)
+{
+    muhtari__ports_catch_up(m, tick);
+    for (unsigned p = 0u; p < 2u; p++) {
+        struct muhtari__adapter *s = &m->ports.adapter[p];
+        uint8_t host = ports_host(m, p);
+        if (muhtari__ports_device(m, p) == MUHTARI_PORT_SNES2ATARI) {
+            if ((host & 2u) != 0u && (s->host & 2u) == 0u) {
+                s->snapshot = m->ports.buttons[p];
+                s->position = 0u;
+            } else if ((host & 2u) == 0u && (host & 1u) != 0u && (s->host & 1u) == 0u &&
+                       s->position < 16u) {
+                s->position++;
+            }
+        }
+        s->host = host;
+    }
+}
+
 /* Four rows and three columns, without diodes. Low dominates mixed
    driven rows; this is the compatibility policy in controllers.md, Keypad.
    A low can traverse at most six edges of this seven-node network. */
@@ -102,7 +129,9 @@ void muhtari__ports_reset(muhtari *m)
     memset(m->ports.light, 0, sizeof m->ports.light);
     memset(m->ports.pot, 0, sizeof m->ports.pot);
     memset(m->ports.keypad_low, 0, sizeof m->ports.keypad_low);
+    memset(m->ports.adapter, 0, sizeof m->ports.adapter);
     for (unsigned p = 0u; p < 2u; p++) {
+        m->ports.adapter[p].host = 3u;
         for (unsigned n = 0u; n < 2u; n++) {
             m->ports.pot[p][n].duration = ports_pot_duration(m->ports.applied_ex.port[p].paddle[n]);
             ports_pot_project(&m->ports.pot[p][n], 0u);
@@ -514,7 +543,8 @@ muhtari_status muhtari__ports_check_device_ex(uint32_t device)
         device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_KEYPAD ||
         device == MUHTARI_PORT_TRAKBALL || device == MUHTARI_PORT_ST_MOUSE ||
         device == MUHTARI_PORT_AMIGA_MOUSE || device == MUHTARI_PORT_UNPLUGGED ||
-        device == MUHTARI_PORT_SAVEKEY || device == MUHTARI_PORT_ATARIVOX) {
+        device == MUHTARI_PORT_SNES2ATARI || device == MUHTARI_PORT_SAVEKEY ||
+        device == MUHTARI_PORT_ATARIVOX) {
         return MUHTARI_STATUS_OK;
     }
     return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
@@ -593,8 +623,9 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
             port->flags = MUHTARI_INPUT_GUN_OFFSCREEN;
         }
         uint32_t buttons =
-            keypad   ? 0u
-            : paddle ? MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2
+            port->device == MUHTARI_PORT_SNES2ATARI ? 4095u
+            : keypad                                ? 0u
+            : paddle                                ? MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2
                      : (port->device == MUHTARI_PORT_DRIVING || gun ||
                                 port->device == MUHTARI_PORT_TRAKBALL
                             ? MUHTARI_BUTTON_1
@@ -703,6 +734,8 @@ void muhtari__ports_latch(muhtari *m)
         if (previous != device) {
             memset(ports->motion[p], 0, sizeof ports->motion[p]);
             memset(&ports->light[p], 0, sizeof ports->light[p]);
+            memset(&ports->adapter[p], 0, sizeof ports->adapter[p]);
+            ports->adapter[p].host = ports_host(m, p);
         }
         if (device == MUHTARI_PORT_LIGHTGUN && ports->light[p].delay == 0u) {
             ports->light[p].delay = 64u;
@@ -781,6 +814,8 @@ uint8_t muhtari__ports_swcha(const muhtari *m)
             continue;
         }
         uint32_t b = m->ports.buttons[p];
+        if (device == MUHTARI_PORT_SNES2ATARI)
+            continue;
         if (device == MUHTARI_PORT_KEYPAD) {
             uint8_t low = m->ports.keypad_low[p] & 15u;
             pins &= (uint8_t)~(p == 0u ? low << 4 : low);
@@ -874,6 +909,18 @@ uint8_t muhtari__ports_inpt(const muhtari *m, uint32_t n)
     uint32_t port = n < 4u ? n / 2u : n - 4u;
     uint32_t device = muhtari__ports_device(m, port);
     uint32_t b = m->ports.buttons[port];
+    if (device == MUHTARI_PORT_SNES2ATARI) {
+        if (n < 4u)
+            return 0u;
+        if (ports_two_button(m, port))
+            return 1u;
+        const struct muhtari__adapter *s = &m->ports.adapter[port];
+        /* Driver order and high16/low17 detection: controllers.md. */
+        static const uint16_t button[12] = {16u, 64u, 1024u, 2048u, 1u,   2u,
+                                            4u,  8u,  32u,   128u,  256u, 512u};
+        return (uint8_t)(s->position < 16u &&
+                         (s->position >= 12u || (s->snapshot & button[s->position]) == 0u));
+    }
     if (n < 4u) {
         if (device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_KEYPAD) {
             const struct muhtari__pot *pot = &m->ports.pot[port][n & 1u];

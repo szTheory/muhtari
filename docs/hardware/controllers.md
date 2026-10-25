@@ -16,10 +16,10 @@ Sources:
 
 ## Devices
 
-Each port carries a ProLine, a 2600 joystick, a driving controller, CX22, ST/Amiga mouse, an XG-1, two paddles, a keypad,
+Each port carries a ProLine, a 2600 joystick, a driving controller, CX22, ST/Amiga mouse, an XG-1, two paddles, a keypad, SNES2Atari,
 a SaveKey/AtariVox EEPROM, or nothing. The host names the device per port; when it names none, the
 cartridge's A78 header does. A header that names no controller leaves the port unplugged. A header device that is not
-modelled yet, such as SNES2Atari, is wired as a ProLine. The legacy setter retains
+modelled yet, such as Mega7800, is wired as a ProLine. The legacy setter retains
 its ProLine fallback and explicit XG-1 refusal; extended input and load overrides
 can select the gun on either port.
 
@@ -381,8 +381,39 @@ completion and CRC are judged before any pixel/raw-transition/PCM equality.
 
 ## Not modelled
 
-- Trak-ball, keypad, mice, AtariVox speech, SNES2Atari and Mega7800
+- AtariVox speech and Mega7800
   (cartridge notes, section 3.2).
+
+## SNES2Atari
+
+The [original design](https://7800.8bitdev.org/index.php?title=SNES2Atari&oldid=1002)
+wires connector1=CLOCK,2=LATCH,6=DATA through1kΩ; pins3/4/5/9 are unused.
+Both ports are supported by the [CC0 driver at e7c18d2ecdc6](https://github.com/7800-devtools/7800basic/blob/e7c18d2ecdc6/includes/snes2atari.asm).
+The [physical SNES implementation report, p5](https://pages.hmc.edu/harris/class/e155/projects02/snes.pdf)
+cross-checks positive latch/clock edges. These are protocol facts used by
+owned C code, with no imported assembly seed or excluded includes.
+
+An effective LATCH rise snapshots controls and presents bit1. LATCH high
+holds bit1; its falling edge keeps bit1. With LATCH low, only CLOCK rising
+advances. Simultaneous rises give LATCH priority. The active-low sequence is
+B,Y,Select,Start,Up,Down,Left,Right,A,X,L,R, then four highs, then low at17
+and every extra clock. Thus released controls yield16 highs then low;
+only B clears1, only R clears12. The detection tail follows the pinned
+driver, rather than a generic indefinitely high controller tail.
+
+The RIOT slow bus data tick observes host ORA|~DDRA, independent of device
+responses. Duplicate writes, falling clocks, reads and peeks do not shift;
+DDR-only effective edges do. No pulse-width filter is imposed. Fixed
+per-port snapshot/position/host state saturates; there is no allocation,
+timer or scan-length loop in production. Same-device input preserves an
+in-flight snapshot; selection, reload and power cycle release DATA high
+ready for a new latch. Directions are serial bits, not passive SWCHA pins.
+
+The original resistor protects DATA from two-button pin6 drive; its driver
+selects one-button mode. Our explicit unmeasured contention policy masks
+DATA high while PB2/PB4 plus INPTCTRL select two-button mode. PB or
+INPTCTRL changes immediately update TIA D6's live/latched input. D6 must
+be disabled for ordinary serial reads. SNES2Atari++ is not emulated.
 
 ## Motion
 

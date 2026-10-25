@@ -333,7 +333,7 @@ static void extended_digital(void)
             bad.port[1].device = 999u;
             break;
         case 1:
-            bad.port[1].device = MUHTARI_PORT_SNES2ATARI;
+            bad.port[1].device = MUHTARI_PORT_MEGA7800;
             break;
         case 2:
             bad.port[1].buttons = MUHTARI_SNES_BUTTON_Y;
@@ -502,10 +502,10 @@ static int adapter_submit(muhtari *m, unsigned p, uint32_t device, uint32_t butt
 static void snes_scan(void)
 {
     static const uint32_t button[] = {
-        MUHTARI_BUTTON_1, MUHTARI_SNES_BUTTON_Y, MUHTARI_SNES_BUTTON_SELECT,
-        MUHTARI_SNES_BUTTON_START, MUHTARI_BUTTON_UP, MUHTARI_BUTTON_DOWN,
-        MUHTARI_BUTTON_LEFT, MUHTARI_BUTTON_RIGHT, MUHTARI_BUTTON_2,
-        MUHTARI_SNES_BUTTON_X, MUHTARI_SNES_BUTTON_L, MUHTARI_SNES_BUTTON_R};
+        MUHTARI_BUTTON_1,          MUHTARI_SNES_BUTTON_Y, MUHTARI_SNES_BUTTON_SELECT,
+        MUHTARI_SNES_BUTTON_START, MUHTARI_BUTTON_UP,     MUHTARI_BUTTON_DOWN,
+        MUHTARI_BUTTON_LEFT,       MUHTARI_BUTTON_RIGHT,  MUHTARI_BUTTON_2,
+        MUHTARI_SNES_BUTTON_X,     MUHTARI_SNES_BUTTON_L, MUHTARI_SNES_BUTTON_R};
     for (unsigned p = 0u; p < 2u; p++) {
         for (unsigned held = 0u; held <= 12u; held++) {
             muhtari *m = boot(&plain);
@@ -539,10 +539,83 @@ static void snes_scan(void)
                 CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u), p == 0u ? 0xCFu : 0xFCu);
                 (void)input_access(m, 0x0280u, 1, clock);
                 (void)input_access(m, 0x0280u, 1, clock); /* duplicate high */
-                (void)input_access(m, 0x0280u, 1, 0u); /* fall does not advance */
+                (void)input_access(m, 0x0280u, 1, 0u);    /* fall does not advance */
             }
             muhtari_destroy(m);
         }
+        muhtari *m = boot(&plain);
+        CHECK(m != NULL);
+        if (m == NULL)
+            return;
+        (void)input_access(m, 1u, 1, 7u);
+        if (!adapter_submit(m, p, MUHTARI_PORT_SNES2ATARI, MUHTARI_BUTTON_1)) {
+            muhtari_destroy(m);
+            return;
+        }
+        unsigned shift = p == 0u ? 4u : 0u;
+        uint8_t clock = (uint8_t)(1u << shift), latch = (uint8_t)(2u << shift);
+        uint16_t data = (uint16_t)(12u + p);
+        (void)input_access(m, 0x0280u, 1, 0u);
+        (void)input_access(m, 0x0281u, 1, clock | latch);
+        (void)input_access(m, 0x0280u, 1, latch);
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, L);
+        CHECK(adapter_submit(m, p, MUHTARI_PORT_SNES2ATARI, MUHTARI_SNES_BUTTON_R));
+        (void)input_access(m, 0x0280u, 1, clock | latch);
+        (void)input_access(m, 0x0280u, 1, latch); /* clock while latch high holds B */
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, L);
+        (void)input_access(m, 0x0280u, 1, 0u);
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, L); /* old snapshot survives */
+        (void)input_access(m, 0x0281u, 1, latch);          /* DDR release CLOCK advances to Y */
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, H);
+        (void)input_access(m, 0x0281u, 1, clock | latch); /* falling only */
+        (void)input_access(m, 0x0280u, 1, latch);         /* new partial-scan latch snapshots R */
+        (void)input_access(m, 0x0280u, 1, 0u);
+        for (unsigned bit = 0u; bit < 12u; bit++) {
+            CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, bit == 11u ? L : H);
+            if (bit < 11u) {
+                (void)input_access(m, 0x0281u, 1, latch);
+                (void)input_access(m, 0x0281u, 1, clock | latch);
+            }
+        }
+        /* PB electrical mode changes reach TIA immediately, including D6. */
+        uint8_t pb = p == 0u ? 4u : 16u;
+        (void)input_access(m, 0x0282u, 1, 0u);
+        (void)input_access(m, 0x0283u, 1, pb);
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, H);
+        (void)input_access(m, 1u, 1, 0x40u);
+        (void)input_access(m, 0x0283u, 1, 0u); /* low captured without INPT read */
+        (void)input_access(m, 0x0283u, 1, pb);
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, L);
+        (void)input_access(m, 1u, 1, 0u);
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, H);
+        CHECK(adapter_submit(m, p, MUHTARI_PORT_UNPLUGGED, 0u));
+        CHECK(adapter_submit(m, p, MUHTARI_PORT_SNES2ATARI, MUHTARI_BUTTON_1));
+        (void)input_access(m, 0x0283u, 1, 0u);
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, H); /* replaced device released */
+        (void)input_access(m, 0x0280u, 1, latch);
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, L);
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK_EQ_HEX(muhtari__bus_peek(m, data) & H, H);
+        muhtari_destroy(m);
+        m = boot(&plain);
+        CHECK(m != NULL);
+        if (m == NULL)
+            return;
+        (void)input_access(m, 1u, 1, 6u); /* leave INPTCTRL unlocked */
+        CHECK(adapter_submit(m, p, MUHTARI_PORT_SNES2ATARI, MUHTARI_BUTTON_1));
+        (void)input_access(m, 0x0280u, 1, 0u);
+        (void)input_access(m, 0x0281u, 1, clock | latch);
+        (void)input_access(m, 0x0280u, 1, latch);
+        (void)input_access(m, 0x0282u, 1, 0u);
+        (void)input_access(m, 0x0283u, 1, pb);
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, H);
+        (void)input_access(m, 1u, 1, 14u); /* TIA-EN exposes serial low */
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, L);
+        (void)input_access(m, 1u, 1, 6u);
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, H);
+        (void)input_access(m, 0x0282u, 1, pb); /* ORB releases +5V */
+        CHECK_EQ_HEX(input_access(m, data, 0, 0u) & H, L);
+        muhtari_destroy(m);
     }
 }
 

@@ -154,6 +154,7 @@ static void riot_io_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t tick)
     }
     if ((addr & 0x02u) == 0u) {
         muhtari__savekey_pins(m, tick);
+        muhtari__ports_host_pins(m, tick);
         muhtari__ports_rows(m, tick);
     }
     riot_pa7_update(m);

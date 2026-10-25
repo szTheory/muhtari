@@ -340,10 +340,16 @@ struct muhtari__pot {
     uint32_t duration;
 };
 
+struct muhtari__adapter {
+    uint32_t snapshot;
+    uint8_t host, position;
+};
+
 struct muhtari__ports {
     struct muhtari__motion motion[2][2];
     struct muhtari__light light[2];
     struct muhtari__pot pot[2][2];
+    struct muhtari__adapter adapter[2];
     uint16_t keypad_keys[2];
     uint8_t keypad_low[2];
     uint64_t next_tick; /* zero when no controller deadline is armed */
@@ -774,6 +780,7 @@ void muhtari__ports_latch(muhtari *m);
 void muhtari__ports_reset(muhtari *m);
 void muhtari__ports_dump(muhtari *m, uint64_t tick);
 void muhtari__ports_rows(muhtari *m, uint64_t tick);
+void muhtari__ports_host_pins(muhtari *m, uint64_t tick);
 uint64_t muhtari__ports_next_event(const muhtari *m);
 void muhtari__ports_catch_up(muhtari *m, uint64_t tick);
 void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x, uint64_t tick,
