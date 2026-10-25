@@ -111,8 +111,7 @@ static uint32_t ports_pot_duration(const muhtari *m, uint32_t position)
         /* Scale the unrounded fit, then ceil once. Maximum numerator
            1233059473976330000 plus rounding fits uint64 (controllers.md). */
         uint64_t denominator = UINT64_C(6562500000000);
-        return (uint32_t)((resistance * 187747u * 6502639u + denominator - 1u) /
-                          denominator);
+        return (uint32_t)((resistance * 187747u * 6502639u + denominator - 1u) / denominator);
     }
     return (uint32_t)((resistance * 187747u + 999999u) / 1000000u);
 }
@@ -160,7 +159,8 @@ void muhtari__ports_reset(muhtari *m)
     for (unsigned p = 0u; p < 2u; p++) {
         m->ports.adapter[p].host = 3u;
         for (unsigned n = 0u; n < 2u; n++) {
-            m->ports.pot[p][n].duration = ports_pot_duration(m, m->ports.applied_ex.port[p].paddle[n]);
+            m->ports.pot[p][n].duration =
+                ports_pot_duration(m, m->ports.applied_ex.port[p].paddle[n]);
             ports_pot_project(&m->ports.pot[p][n], 0u);
             if (muhtari__ports_device(m, p) == MUHTARI_PORT_KEYPAD)
                 m->ports.pot[p][n].crossing_tick = ports_keypad_recovery(m);
@@ -419,7 +419,8 @@ static void savekey_stop(muhtari *m, uint64_t tick)
             if (s->touched[i] != 0u) {
                 s->pending = 1u;
                 s->busy_until = tick + (m->effective_region == MUHTARI_REGION_PAL
-                                            ? 35469u : MUHTARI__SAVEKEY_BUSY_TICKS);
+                                            ? 35469u
+                                            : MUHTARI__SAVEKEY_BUSY_TICKS);
                 break;
             }
         }

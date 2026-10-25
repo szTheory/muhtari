@@ -289,6 +289,15 @@ static void observed(void *user, uint64_t tick, uint8_t source, uint16_t raw)
     (*(uint32_t *)user)++;
 }
 
+static void observed_hash(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    uint32_t *hash = user;
+    *hash = (*hash ^ (uint32_t)tick) * 16777619u;
+    *hash = (*hash ^ (uint32_t)(tick >> 32)) * 16777619u;
+    *hash = (*hash ^ source) * 16777619u;
+    *hash = (*hash ^ raw) * 16777619u;
+}
+
 static void metadata(muhtari *m)
 {
     static uint8_t known[128u + 65536u];
@@ -397,8 +406,8 @@ static void discard_equivalence(void)
     alloc_counts ca, cb;
     muhtari *a = make(&ca), *b = make(&cb);
     uint32_t raw_a = 0u, raw_b = 0u;
-    CHECK_EQ_U64(muhtari__synth_observe(a, observed, &raw_a), MUHTARI_STATUS_OK);
-    CHECK_EQ_U64(muhtari__synth_observe(b, observed, &raw_b), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari__synth_observe(a, observed_hash, &raw_a), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari__synth_observe(b, observed_hash, &raw_b), MUHTARI_STATUS_OK);
     muhtari_media media = cartridge();
     CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari_load(b, &media), MUHTARI_STATUS_OK);
@@ -414,6 +423,10 @@ static void discard_equivalence(void)
     muhtari__bus_write(b, 0x20u, 8u);
     muhtari__bus_write(a, 1u, 0x40u);
     muhtari__bus_write(b, 1u, 0x40u);
+    muhtari__bus_write(a, 0x15u, 4u);
+    muhtari__bus_write(b, 0x15u, 4u);
+    muhtari__bus_write(a, 0x19u, 7u);
+    muhtari__bus_write(b, 0x19u, 7u);
     for (unsigned frame = 0u; frame < 3u; frame++) {
         int16_t peer_pcm[962];
         muhtari_frame output = {0}, discard = {0};
@@ -441,6 +454,7 @@ static void discard_equivalence(void)
     }
     CHECK_EQ_U64(ca.allocs, allocations_a);
     CHECK_EQ_U64(cb.allocs, allocations_b);
+    CHECK(raw_a != 0u);
     muhtari_destroy(a);
     muhtari_destroy(b);
 }
@@ -469,8 +483,10 @@ static void lifecycle(void)
     in.port[0].gun_x = 319u;
     in.port[0].gun_y = 291u;
     CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    struct muhtari__ports accepted = m->ports;
     in.port[0].gun_y = 292u;
     CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK(memcmp(&accepted, &m->ports, sizeof accepted) == 0);
     muhtari *before = malloc(sizeof *before);
     CHECK(before != NULL);
     if (before == NULL) {
@@ -558,8 +574,10 @@ static void lifecycle(void)
     CHECK_EQ_U64(info.height, 242u);
     in.port[0].gun_y = 241u;
     CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+    accepted = m->ports;
     in.port[0].gun_y = 242u;
     CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK(memcmp(&accepted, &m->ports, sizeof accepted) == 0);
     metadata(m);
     defaults_and_stalls(m);
     discard_equivalence();

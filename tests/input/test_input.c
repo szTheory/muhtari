@@ -877,7 +877,8 @@ static void input_dump(void)
     muhtari_destroy(m);
 }
 
-static muhtari *light_boot(uint32_t region, unsigned port, uint8_t color, int rows, uint64_t *sample)
+static muhtari *light_boot(uint32_t region, unsigned port, uint8_t color, int rows,
+                           uint64_t *sample)
 {
     muhtari *m = boot_region(&plain, region);
     CHECK(m != NULL);
@@ -935,9 +936,9 @@ static void light_raster_edges(uint32_t region)
     static const struct {
         uint32_t y, row;
         int lit;
-    } cases[] = {{20u, 15u, 0},   {20u, 16u, 1},   {20u, 20u, 1},   {20u, 24u, 1},
-                 {20u, 25u, 0},   {0u, 0u, 1},     {0u, 4u, 1},     {0u, 5u, 0},
-                 {241u, 236u, 0}, {241u, 237u, 1}, {241u, 241u, 1}, {84u, 84u, 1}};
+    } cases[] = {{20u, 15u, 0},   {20u, 16u, 1},   {20u, 20u, 1}, {20u, 24u, 1},   {20u, 25u, 0},
+                 {0u, 0u, 1},     {0u, 4u, 1},     {0u, 5u, 0},   {241u, 236u, 0}, {241u, 237u, 1},
+                 {241u, 241u, 1}, {241u, 242u, 0}, {84u, 84u, 1}};
     static const uint32_t xs[] = {0u, 100u, 319u};
     static const uint32_t offsets[] = {63u, 64u, 93u, 94u};
     for (unsigned p = 0u; p < 2u; p++) {
@@ -953,14 +954,15 @@ static void light_raster_edges(uint32_t region)
                         }
                         muhtari_input_ex in = m->ports.applied_ex;
                         in.port[p].gun_x = x;
-                        uint32_t extra = region == MUHTARI_REGION_PAL && cases[c].y == 241u ? 50u : 0u;
+                        uint32_t extra =
+                            region == MUHTARI_REGION_PAL && cases[c].y == 241u ? 50u : 0u;
                         in.port[p].gun_y = cases[c].y + extra;
                         CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
                         muhtari__ports_latch(m);
                         /* Independent geometry: visible row r is raster r+16,
                            x0 at135, x319 at454 (next line tick0). */
-                        sample =
-                            (region == MUHTARI_REGION_PAL ? 142102u : 119402u) + (cases[c].row + extra + 16u) * 454u + 135u + x;
+                        sample = (region == MUHTARI_REGION_PAL ? 142102u : 119402u) +
+                                 (cases[c].row + extra + 16u) * 454u + 135u + x;
                         (void)light_access_at(m, 0x0020u, sample - 32u, 1, 0xA8u);
                         (void)light_access_at(m, 0x0020u, sample + 1u, 1, 0u);
                         struct muhtari__ports ports = m->ports;
@@ -1142,7 +1144,10 @@ static void lightgun_region(uint32_t region)
                                                  sample + offsets[edge], 0, 0u),
                                  expected);
                     if (rows != 0u) {
-                        CHECK_EQ_HEX((region == MUHTARI_REGION_PAL ? pal_video : video)[16u * MUHTARI__WIDTH + 100u], colors[color]);
+                        CHECK_EQ_HEX((region == MUHTARI_REGION_PAL
+                                          ? pal_video
+                                          : video)[16u * MUHTARI__WIDTH + 100u],
+                                     colors[color]);
                     }
                     muhtari_destroy(m);
                 }
@@ -1209,8 +1214,7 @@ static int lightgun(void)
                     if (mode == 2u)
                         (void)input_access(m, 0x003Cu, 1, 0xE0u); /* native colour kill */
                     sample = 142102u + 308u * 454u;
-                    (void)light_access_at(m, 0x0020u, sample - 32u, 1,
-                                          mode == 1u ? 0xA7u : 0xA8u);
+                    (void)light_access_at(m, 0x0020u, sample - 32u, 1, mode == 1u ? 0xA7u : 0xA8u);
                     (void)light_access_at(m, 0x0020u, sample + 1u, 1, 0u);
                     if (mode == 4u) {
                         m->ports.light[p].response_tick = 2u * 142102u + 30u;
@@ -1220,14 +1224,16 @@ static int lightgun(void)
                     }
                     /* Sample ownership precedes LRC at raster308 tick0. */
                     if (rows != 0u)
-                        CHECK_EQ_HEX(pal_video[292u * 320u - 1u],
-                                     mode == 2u ? 0x08u : mode == 1u ? 0xA7u : 0xA8u);
+                        CHECK_EQ_HEX(pal_video[292u * 320u - 1u], mode == 2u   ? 0x08u
+                                                                  : mode == 1u ? 0xA7u
+                                                                               : 0xA8u);
                     static const uint32_t offsets[] = {0u, 1u, 30u, 31u};
                     uint64_t response = mode == 4u ? 2u * 142102u + 30u : sample + 64u;
                     if (mode == 4u)
                         CHECK(response > 2u * 142102u);
                     CHECK_EQ_HEX(light_access_at(m, (uint16_t)(12u + p),
-                                                 response + offsets[edge] - 1u, 0, 0u) & H,
+                                                 response + offsets[edge] - 1u, 0, 0u) &
+                                     H,
                                  mode != 1u && mode != 3u && (edge == 1u || edge == 2u) ? L : H);
                     muhtari_destroy(m);
                 }
@@ -1629,9 +1635,11 @@ static void savekey_protocol_region(uint32_t region)
 {
     for (unsigned p = 1u; p <= 2u; p++) {
         for (unsigned kind = 0u; kind < 3u; kind++) {
-            muhtari *m = serial_boot_region(p, kind == 0u   ? MUHTARI_PORT_SAVEKEY
-                                        : kind == 1u ? MUHTARI_PORT_ATARIVOX
-                                                     : 0u, region);
+            muhtari *m = serial_boot_region(p,
+                                            kind == 0u   ? MUHTARI_PORT_SAVEKEY
+                                            : kind == 1u ? MUHTARI_PORT_ATARIVOX
+                                                         : 0u,
+                                            region);
             CHECK(m != NULL);
             if (m == NULL) {
                 continue;
@@ -1642,7 +1650,8 @@ static void savekey_protocol_region(uint32_t region)
             CHECK_EQ_U64(serial_send(m, p, 0x34u), 0u);
             CHECK_EQ_U64(serial_send(m, p, 0x5Au), 0u);
             serial_stop(m, p);
-            CHECK_EQ_U64(m->savekey.busy_until, serial_pin_tick + (region == MUHTARI_REGION_PAL ? 35469u : 35796u));
+            CHECK_EQ_U64(m->savekey.busy_until,
+                         serial_pin_tick + (region == MUHTARI_REGION_PAL ? 35469u : 35796u));
             CHECK_EQ_HEX(m->battery.data[0x1234u], 0xFFu);
             serial_start(m, p);
             CHECK_EQ_U64(serial_send(m, p, 0xA0u), 1u);
@@ -1667,6 +1676,43 @@ static int savekey_protocol(void)
 {
     savekey_protocol_region(MUHTARI_REGION_NTSC);
     savekey_protocol_region(MUHTARI_REGION_PAL);
+    for (unsigned r = 0u; r < 2u; r++) {
+        uint32_t region = r == 0u ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
+        for (unsigned p = 1u; p <= 2u; p++) {
+            for (unsigned edge = 0u; edge < 3u; edge++) {
+                muhtari *m = serial_boot_region(p, MUHTARI_PORT_SAVEKEY, region);
+                if (m == NULL)
+                    continue;
+                serial_address(m, p, 3u);
+                CHECK_EQ_U64(serial_send(m, p, 0x69u), 0u);
+                serial_stop(m, p);
+                uint64_t due = m->savekey.busy_until;
+                CHECK_EQ_U64(due, serial_pin_tick + (r == 0u ? 35796u : 35469u));
+                serial_start(m, p);
+                /* Control A0: clock seven bits, then place the eighth
+                   rising edge at due-1/exact/+1 on the actual data tick. */
+                for (unsigned bit = 0u; bit < 7u; bit++) {
+                    unsigned value = (0xA0u >> (7u - bit)) & 1u;
+                    serial_pins(m, p, 0u, value);
+                    serial_pins(m, p, 1u, value);
+                    serial_pins(m, p, 0u, value);
+                }
+                serial_pins(m, p, 0u, 0u);
+                CHECK_EQ_HEX(m->battery.data[3], 0xFFu);
+                m->bus.ticks = due - 1u + edge - 25u;
+                serial_pins(m, p, 1u, 0u);
+                CHECK_EQ_U64(serial_pin_tick, due - 1u + edge);
+                serial_pins(m, p, 0u, 0u);
+                serial_pins(m, p, 0u, 1u);
+                serial_pins(m, p, 1u, 1u);
+                unsigned shift = p == 1u ? 4u : 0u;
+                CHECK_EQ_U64((serial_read(m) >> (shift + 2u)) & 1u, edge == 0u ? 1u : 0u);
+                CHECK_EQ_HEX(m->battery.data[3], 0x69u);
+                CHECK_EQ_U64(m->battery.generation, 1u);
+                muhtari_destroy(m);
+            }
+        }
+    }
     return check_failures == 0;
 }
 
@@ -2031,100 +2077,106 @@ static void paddle_timing_region(uint32_t region)
         }
     }
     for (unsigned port = 0u; port < 2u; port++) {
-        for (unsigned poll = 0u; poll < 2u; poll++) {
-            for (unsigned edge = 0u; edge < 3u; edge++) {
-                muhtari *m = boot_region(&plain, region);
-                CHECK(m != NULL);
-                if (m == NULL) {
-                    return;
-                }
-                (void)input_access(m, 1u, 1, 7u);
-                muhtari_input_ex in;
-                memset(&in, 0, sizeof in);
-                in.size = (uint32_t)sizeof in;
-                in.port[port].device = MUHTARI_PORT_PADDLE;
-                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
-                muhtari__ports_latch(m);
-                uint64_t release = m->bus.ticks + 100u;
-                (void)light_access_at(m, 1u, release - 60u, 1, 0x80u);
-                (void)light_access_at(m, 1u, release - 30u, 1, 0xC0u);
-                (void)light_access_at(m, 1u, release, 1, 0x40u);
-                uint16_t reg = (uint16_t)(8u + 2u * port);
-                if (poll != 0u) {
-                    for (unsigned t = 40u; t < 950u; t += 40u) {
-                        CHECK_EQ_HEX(light_access_at(m, reg, release + t, 0, 0u) & 0x80u, 0u);
+        for (unsigned pot = 0u; pot < 2u; pot++) {
+            for (unsigned poll = 0u; poll < 2u; poll++) {
+                for (unsigned edge = 0u; edge < 3u; edge++) {
+                    muhtari *m = boot_region(&plain, region);
+                    CHECK(m != NULL);
+                    if (m == NULL) {
+                        return;
                     }
-                }
-                (void)light_access_at(m, 1u, release + 980u, 1, 0x40u);
-                /* The previous slow write ends at release+981. Advance
-                   ordinary RAM cycles to exactly the setting-change tick. */
-                m->bus.ticks = release + 1000u;
-                in.port[port].paddle[0] = 65535u;
-                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
-                muhtari__ports_latch(m);
-                uint64_t crossing = release + 1000u + (region == MUHTARI_REGION_PAL ? 86931u : 88654u);
-                if (poll != 0u) {
-                    for (unsigned t = 1200u; t < (region == MUHTARI_REGION_PAL ? 87000u : 89000u); t += 1000u) {
-                        CHECK_EQ_HEX(light_access_at(m, reg, release + t, 0, 0u) & 0x80u, 0u);
-                    }
-                }
-                CHECK_EQ_HEX(light_access_at(m, reg, crossing + edge - 1u, 0, 0u) & 0x80u,
-                             edge == 0u ? 0u : 0x80u);
-                /* Other pot never changed; it already charged at1878. */
-                CHECK_EQ_HEX(input_access(m, reg + 1u, 0, 0u) & 0x80u, 0x80u);
-                if (edge != 0u) {
-                    in.port[port].paddle[0] = 0u;
+                    (void)input_access(m, 1u, 1, 7u);
+                    muhtari_input_ex in;
+                    memset(&in, 0, sizeof in);
+                    in.size = (uint32_t)sizeof in;
+                    in.port[port].device = MUHTARI_PORT_PADDLE;
                     CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
                     muhtari__ports_latch(m);
-                    CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0x80u);
-                }
-                (void)input_access(m, 1u, 1, 0x80u);
-                CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
-                if (poll == 0u && edge == 0u) {
-                    uint64_t held = m->bus.ticks;
-                    CHECK_EQ_HEX(light_access_at(m, reg, held + 190000u, 0, 0u) & 0x80u, 0u);
+                    uint64_t release = m->bus.ticks + 100u;
+                    (void)light_access_at(m, 1u, release - 60u, 1, 0x80u);
+                    (void)light_access_at(m, 1u, release - 30u, 1, 0xC0u);
+                    (void)light_access_at(m, 1u, release, 1, 0x40u);
+                    uint16_t reg = (uint16_t)(8u + 2u * port + pot);
+                    if (poll != 0u) {
+                        for (unsigned t = 40u; t < 950u; t += 40u) {
+                            CHECK_EQ_HEX(light_access_at(m, reg, release + t, 0, 0u) & 0x80u, 0u);
+                        }
+                    }
+                    (void)light_access_at(m, 1u, release + 980u, 1, 0x40u);
+                    /* The previous slow write ends at release+981. Advance
+                       ordinary RAM cycles to exactly the setting-change tick. */
+                    m->bus.ticks = release + 1000u;
+                    in.port[port].paddle[pot] = 65535u;
+                    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                    muhtari__ports_latch(m);
+                    uint64_t crossing =
+                        release + 1000u + (region == MUHTARI_REGION_PAL ? 86931u : 88654u);
+                    if (poll != 0u) {
+                        for (unsigned t = 1200u;
+                             t < (region == MUHTARI_REGION_PAL ? 87000u : 89000u); t += 1000u) {
+                            CHECK_EQ_HEX(light_access_at(m, reg, release + t, 0, 0u) & 0x80u, 0u);
+                        }
+                    }
+                    CHECK_EQ_HEX(light_access_at(m, reg, crossing + edge - 1u, 0, 0u) & 0x80u,
+                                 edge == 0u ? 0u : 0x80u);
+                    /* Other pot never changed; it already charged at1878. */
+                    CHECK_EQ_HEX(input_access(m, (uint16_t)(8u + 2u * port + (pot ^ 1u)), 0, 0u) &
+                                     0x80u,
+                                 0x80u);
+                    if (edge != 0u) {
+                        in.port[port].paddle[pot] = 0u;
+                        CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                        muhtari__ports_latch(m);
+                        CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0x80u);
+                    }
                     (void)input_access(m, 1u, 1, 0x80u);
                     CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
+                    if (poll == 0u && edge == 0u) {
+                        uint64_t held = m->bus.ticks;
+                        CHECK_EQ_HEX(light_access_at(m, reg, held + 190000u, 0, 0u) & 0x80u, 0u);
+                        (void)input_access(m, 1u, 1, 0x80u);
+                        CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
+                    }
+                    in.port[port].paddle[pot] = 65535u;
+                    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                    muhtari__ports_latch(m);
+                    (void)input_access(m, 1u, 1, 0u);
+                    uint64_t charged_by = m->bus.ticks - 1u + durations[3];
+                    /* A JAM executes actual host frames without sensor polls;
+                       max travel crosses the first full frame boundary. */
+                    m->cart.rom[0] = 0x02u;
+                    m->cpu.pc = ROM_BASE;
+                    /* Earlier synthetic access vectors may have advanced past
+                       several logical frame horizons. Eight calls reach the
+                       independently computed full-range bound in every case. */
+                    for (unsigned call = 0u; call < 8u; call++) {
+                        frame(m, NULL);
+                    }
+                    CHECK(m->bus.ticks >= charged_by);
+                    CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0x80u);
+                    struct muhtari__ports before = m->ports;
+                    (void)muhtari__bus_peek(m, reg);
+                    CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
+                    in.port[port].device = MUHTARI_PORT_UNPLUGGED;
+                    in.port[port].paddle[pot] = 0u;
+                    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                    muhtari__ports_latch(m);
+                    in.port[port].device = MUHTARI_PORT_PADDLE;
+                    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                    muhtari__ports_latch(m);
+                    CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0u);
+                    /* The CPU is already jammed. A real HALT interval still
+                       carries the crossing without an input read. */
+                    uint64_t at = m->bus.ticks;
+                    CHECK_EQ_U64(muhtari__bus_request_halt(m, at, at + 2000u), 1u);
+                    while (m->bus.ticks < at + 2000u) {
+                        (void)muhtari__bus_read(m, ROM_BASE);
+                    }
+                    CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0x80u);
+                    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+                    CHECK_EQ_U64(m->ports.pot[port][pot].action, 0u);
+                    muhtari_destroy(m);
                 }
-                in.port[port].paddle[0] = 65535u;
-                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
-                muhtari__ports_latch(m);
-                (void)input_access(m, 1u, 1, 0u);
-                uint64_t charged_by = m->bus.ticks - 1u + durations[3];
-                /* A JAM executes actual host frames without sensor polls;
-                   max travel crosses the first full frame boundary. */
-                m->cart.rom[0] = 0x02u;
-                m->cpu.pc = ROM_BASE;
-                /* Earlier synthetic access vectors may have advanced past
-                   several logical frame horizons. Eight calls reach the
-                   independently computed full-range bound in every case. */
-                for (unsigned call = 0u; call < 8u; call++) {
-                    frame(m, NULL);
-                }
-                CHECK(m->bus.ticks >= charged_by);
-                CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0x80u);
-                struct muhtari__ports before = m->ports;
-                (void)muhtari__bus_peek(m, reg);
-                CHECK(memcmp(&before, &m->ports, sizeof before) == 0);
-                in.port[port].device = MUHTARI_PORT_UNPLUGGED;
-                in.port[port].paddle[0] = 0u;
-                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
-                muhtari__ports_latch(m);
-                in.port[port].device = MUHTARI_PORT_PADDLE;
-                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
-                muhtari__ports_latch(m);
-                CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0u);
-                /* The CPU is already jammed. A real HALT interval still
-                   carries the crossing without an input read. */
-                uint64_t at = m->bus.ticks;
-                CHECK_EQ_U64(muhtari__bus_request_halt(m, at, at + 2000u), 1u);
-                while (m->bus.ticks < at + 2000u) {
-                    (void)muhtari__bus_read(m, ROM_BASE);
-                }
-                CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0x80u);
-                CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
-                CHECK_EQ_U64(m->ports.pot[port][0].action, 0u);
-                muhtari_destroy(m);
             }
         }
     }
