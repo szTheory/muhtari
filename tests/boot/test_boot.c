@@ -30,12 +30,13 @@
 #define HANDOFF_LIMIT 400u
 
 static alloc_counts counts;
-static uint8_t video[MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC];
+static uint8_t video[320u * 292u];
 static int16_t audio[2u * MUHTARI__MAX_AUDIO_SAMPLES];
 static uint8_t bios[MUHTARI__BIOS_SIZE_MAX + 1u];
 static size_t bios_n;
 static uint8_t *rom;
 static size_t rom_n;
+static uint32_t console_region;
 
 /* Whether OpenBIOS's hand-off frame K is in the window [300, 340]. */
 static int k_in_window(uint64_t k)
@@ -79,6 +80,7 @@ static muhtari *boot_bios(const uint8_t *img, size_t n)
     media.image_size = n;
     media.bios = bios;
     media.bios_size = bios_n;
+    media.region = console_region;
     muhtari_status st = muhtari_load(m, &media);
     if (st != MUHTARI_STATUS_OK) {
         fprintf(stderr, "muhtari_load failed with status %lu\n", (unsigned long)st);
@@ -143,6 +145,19 @@ static int handoff_simple(void)
     printf("handoff_frame %llu\n", (unsigned long long)k);
     CHECK(k_in_window(k));
     muhtari_destroy(m);
+    /* The same stripped OpenBIOS executes as PAL, independently of its
+       firmware geometry and without demanding the fast-boot snapshot. */
+    console_region = MUHTARI_REGION_PAL;
+    m = boot_bios(rom, rom_n);
+    CHECK(m != NULL);
+    if (m != NULL) {
+        CHECK_EQ_U64(m->frame_deadline, 139874u);
+        CHECK_EQ_U64(m->bus.ticks, 42u);
+        CHECK_EQ_U64(m->cpu.s, 0xFDu);
+        CHECK(k_in_window(run_to_handoff(m)));
+        muhtari_destroy(m);
+    }
+    console_region = 0u;
     return check_failures == 0;
 }
 
@@ -229,6 +244,68 @@ static int k_first_fetch(void)
     CHECK(m->ram[ENTRIES - MUHTARI__RAM_BASE] >= 3u);
     CHECK_EQ_U64(muhtari__boot_handoff_frame(m), k);
     muhtari_destroy(m);
+    /* Owned firmware puts INPTCTRL's data tick at72 and the first real
+       cartridge opcode fetch at76: seven slow RES cycles, LDA12, STA18.
+       Four/16 KiB changes mapping only, in either console region. */
+    for (unsigned region = 1u; region <= 2u; region++) {
+        for (unsigned large = 0u; large < 2u; large++) {
+            bios_n = large ? 16384u : 4096u;
+            memset(bios, 0xEA, bios_n);
+            bios[0] = 0xACu;
+            static const uint8_t code[] = {0xA9u, 0x06u, 0x85u, 0x01u};
+            memcpy(bios + bios_n - 4096u, code, sizeof code);
+            bios[bios_n - 4u] = 0u;
+            bios[bios_n - 3u] = 0xF0u;
+            images_header(cart, 3u, "Boot", CART_BODY, 0u);
+            memset(cart + 128u, 0xEA, CART_BODY);
+            images_footer(cart + 128u, CART_BODY);
+            console_region = region;
+            m = boot_bios(cart, sizeof cart);
+            CHECK(m != NULL);
+            if (m == NULL)
+                continue;
+            CHECK_EQ_U64(m->bus.ticks, 42u);
+            CHECK_EQ_U64(m->frame_start, 0u);
+            CHECK_EQ_U64(m->frame_deadline, region == 2u ? 139874u : 117174u);
+            CHECK_EQ_U64(m->cpu.pc, 0xF000u);
+            CHECK_EQ_U64(m->boot.handoff_frame, 0u);
+            muhtari__cpu_step(m);
+            CHECK_EQ_U64(m->bus.ticks, 54u);
+            muhtari__cpu_step(m);
+            CHECK_EQ_U64(m->bus.ticks, 72u);
+            CHECK_EQ_U64(m->boot.handoff_frame, 0u);
+            CHECK_EQ_U64(m->cpu.pc, 0xF004u);
+            /* Own the fetch itself to judge its actual data timestamp. */
+            m->bus.sync = 1u;
+            CHECK_EQ_U64(muhtari__bus_read(m, 0xF004u), 0xEAu);
+            CHECK_EQ_U64(m->bus.ticks, 76u);
+            CHECK_EQ_U64(m->boot.handoff_frame, 1u);
+            CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+            muhtari_frame io = {0};
+            io.size = (uint32_t)sizeof io;
+            CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(io.audio_count, region == 2u ? 946u : 785u);
+            if (region == 2u)
+                CHECK_EQ_U64(m->audio_rem, 269046u);
+            /* Mapping is the whole image when MEN is set, not a region
+               decision based on firmware size. */
+            m->bus.inptctrl = 2u;
+            CHECK_EQ_U64(muhtari__boot_bios_byte(m, 0xC000u), large ? 0xACu : 0xA9u);
+            muhtari_destroy(m);
+
+            bios[bios_n - 4096u + 1u] = 0xFDu;
+            m = boot_bios(cart, sizeof cart);
+            CHECK(m != NULL);
+            if (m != NULL) {
+                CHECK_EQ_U64(frame(m), MUHTARI_STATUS_ERR_BIOS_REJECTED_CART);
+                uint64_t stopped = m->bus.ticks;
+                CHECK_EQ_U64(frame(m), MUHTARI_STATUS_ERR_BIOS_REJECTED_CART);
+                CHECK_EQ_U64(m->bus.ticks, stopped);
+                muhtari_destroy(m);
+            }
+        }
+    }
+    console_region = 0u;
     return check_failures == 0;
 }
 

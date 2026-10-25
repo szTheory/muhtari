@@ -556,6 +556,19 @@ static void stats(void)
     expect("stored cost", m->maria.stats[20].cost, 9u + 55u);
     expect("stored bytes", m->maria.stats[20].bytes, 9u);
     expect("write mode after", m->maria.write_mode, 1u);
+    /* Physical PAL storage is313 entries, but NTSC must not write its tail.
+       The active last entry is writable; the first inactive one is not. */
+    m->maria.stats[263].cost = 0xBEEFu;
+    (void)muhtari__maria_dma_line(m, T0, LRC, 263u, &st);
+    expect("NTSC inactive tail", m->maria.stats[263].cost, 0xBEEFu);
+    m->effective_region = MUHTARI_REGION_PAL;
+    m->maria.stats[312].cost = 0xBEEFu;
+    (void)muhtari__maria_dma_line(m, T0, LRC, 312u, &st);
+    expect("PAL last statistics", m->maria.stats[312].cost, st.cost);
+    uint32_t features = m->maria.features;
+    (void)muhtari__maria_dma_line(m, T0, LRC, 313u, &st);
+    /* features follows stats in the instance; a past-end store corrupts it. */
+    expect("PAL inactive tail", m->maria.features, features);
     muhtari_destroy(m);
 }
 

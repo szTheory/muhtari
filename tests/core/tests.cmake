@@ -41,7 +41,7 @@ muhtari_add_test(NAME core.no_alloc_after_load COMMAND muhtari-test-core no_allo
   LABELS perf portable TIMEOUT 10)
 
 add_executable(muhtari-test-pal ${CMAKE_CURRENT_LIST_DIR}/test_pal.c
-  ${CMAKE_SOURCE_DIR}/tests/cart/images.c)
+  ${CMAKE_SOURCE_DIR}/tests/cart/images.c ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c)
 target_include_directories(muhtari-test-pal PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-pal PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-pal PROPERTIES
