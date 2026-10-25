@@ -9,7 +9,7 @@ function(hashes_diagnostic name prefix frames battery_count observed result)
   string(REGEX MATCHALL "[^\n]+" lines "${observed}")
   list(LENGTH lines count)
   if(NOT count EQUAL 10 OR NOT observed MATCHES "\n$"
-      OR observed MATCHES "\r")
+      OR observed MATCHES "\r|^\n|\n\n")
     message(FATAL_ERROR "hashes: ${name} expected complete ten-field diagnostic report: ${rc} ${err}")
   endif()
   set(patterns "^frame 1 sha256 ([0-9a-f]+)$" "^frame ${frames} sha256 ([0-9a-f]+)$"
