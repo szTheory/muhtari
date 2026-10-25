@@ -513,7 +513,8 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "absolute") == 0                                 ? 11u
            : strcmp(rom, "fractalus") == 0                                ? 12u
            : strcmp(rom, "battery") == 0                                  ? 13u
-           : strcmp(rom, "motion0") == 0                                  ? 14u
+           : (strncmp(rom, "motion", 6u) == 0 && strlen(rom) == 7u &&
+              rom[6] >= '0' && rom[6] <= '3') ? 14u
            : strcmp(rom, "light0") == 0                                   ? 15u
            : (strcmp(rom, "analog0") == 0 || strcmp(rom, "analog1") == 0) ? 16u
                                                                           : 0u;
@@ -601,10 +602,21 @@ static muhtari__sha256 controller_raw;
 static int controller_light;
 static int controller_analog;
 static int controller_keypad;
+static unsigned controller_motion;
+
+static const char *controller_motion_tag(void)
+{
+    return controller_motion == 1u ? "trakball" : controller_motion == 2u ? "st-mouse" : "amiga-mouse";
+}
+
+static uint32_t controller_motion_device(void)
+{
+    return controller_motion == 1u ? MUHTARI_PORT_TRAKBALL : controller_motion == 2u ? MUHTARI_PORT_ST_MOUSE : MUHTARI_PORT_AMIGA_MOUSE;
+}
 
 static const char *controller_name(void)
 {
-    return controller_keypad   ? "analog1"
+    return controller_motion == 1u ? "motion1" : controller_motion == 2u ? "motion2" : controller_motion == 3u ? "motion3" : controller_keypad   ? "analog1"
            : controller_analog ? "analog0"
            : controller_light  ? "light0"
                                : "motion0";
@@ -614,6 +626,24 @@ static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
 {
     memset(in, 0, sizeof *in);
     in->size = (uint32_t)sizeof *in;
+    if (controller_motion != 0u) {
+        in->port[0].device = in->port[1].device = controller_motion_device();
+        in->switches = frame <= 2u ? controller_motion : 0u;
+        if (frame == 3u) {
+            in->port[0].dx = 4; in->port[1].dx = -4;
+            in->port[0].buttons = MUHTARI_BUTTON_1;
+        } else if (frame == 4u || frame == 5u) {
+            in->port[0].dx = frame == 4u ? -1 : 0;
+            in->port[1].dx = frame == 4u ? 1 : 0;
+            in->port[1].buttons = MUHTARI_BUTTON_1;
+        } else if (frame == 6u || frame == 7u) {
+            in->port[0].dy = frame == 6u ? 4 : -1;
+            in->port[1].dy = frame == 6u ? -4 : 1;
+            if (controller_motion != 1u)
+                in->port[0].buttons = in->port[1].buttons = MUHTARI_BUTTON_2;
+        }
+        return;
+    }
     if (controller_keypad) {
         in->port[0].device = in->port[1].device = MUHTARI_PORT_KEYPAD;
         in->port[0].keypad = in->port[1].keypad = frame <= 3u   ? 15u
@@ -696,7 +726,7 @@ static int controller_library(const char *path, const char *expected, const char
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
-    media.port[0] = media.port[1] = controller_keypad   ? MUHTARI_PORT_KEYPAD
+    media.port[0] = media.port[1] = controller_motion != 0u ? controller_motion_device() : controller_keypad   ? MUHTARI_PORT_KEYPAD
                                     : controller_analog ? MUHTARI_PORT_PADDLE
                                     : controller_light  ? MUHTARI_PORT_LIGHTGUN
                                                         : MUHTARI_PORT_DRIVING;
@@ -788,18 +818,24 @@ static int controller_library(const char *path, const char *expected, const char
             failed = 1;
         else {
             fprintf(f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
-                    controller_keypad   ? "keypad"
+                    controller_motion != 0u ? controller_motion_tag() : controller_keypad   ? "keypad"
                     : controller_analog ? "paddle"
                     : controller_light  ? "lightgun"
                                         : "driving",
-                    controller_keypad   ? "keypad"
+                    controller_motion != 0u ? controller_motion_tag() : controller_keypad   ? "keypad"
                     : controller_analog ? "paddle"
                     : controller_light  ? "lightgun"
                                         : "driving");
             for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
                 muhtari_input_ex in;
                 controller_stimulus(i, &in);
-                if (controller_keypad) {
+                if (controller_motion != 0u) {
+                    static const char *switches[] = {"...BB", "R..BB", ".S.BB", "RS.BB"};
+                    fprintf(f, "|%s:%d,%d,%u|%s:%d,%d,%u|%s|\n", controller_motion_tag(),
+                            in.port[0].dx, in.port[0].dy, in.port[0].buttons >> 4,
+                            controller_motion_tag(), in.port[1].dx, in.port[1].dy,
+                            in.port[1].buttons >> 4, switches[in.switches]);
+                } else if (controller_keypad) {
                     fprintf(f, "|keypad:%u|keypad:%u|%s|\n", in.port[0].keypad, in.port[1].keypad,
                             in.switches != 0u ? "R..BB" : "...BB");
                 } else if (controller_analog) {
@@ -1524,8 +1560,10 @@ int main(int argc, char **argv)
     char rom[FIELD_MAX];
     if ((argc == 7 || argc == 8) && strcmp(argv[1], "--controller-case") == 0 &&
         (strcmp(argv[2], "driving") == 0 || strcmp(argv[2], "lightgun") == 0 ||
-         strcmp(argv[2], "paddle") == 0 || strcmp(argv[2], "keypad") == 0) &&
+         strcmp(argv[2], "paddle") == 0 || strcmp(argv[2], "keypad") == 0 ||
+         strcmp(argv[2], "trakball") == 0 || strcmp(argv[2], "st-mouse") == 0 || strcmp(argv[2], "amiga-mouse") == 0) &&
         strcmp(argv[3], "both") == 0) {
+        controller_motion = strcmp(argv[2], "trakball") == 0 ? 1u : strcmp(argv[2], "st-mouse") == 0 ? 2u : strcmp(argv[2], "amiga-mouse") == 0 ? 3u : 0u;
         controller_light = strcmp(argv[2], "lightgun") == 0;
         controller_analog = strcmp(argv[2], "paddle") == 0;
         controller_keypad = strcmp(argv[2], "keypad") == 0;
