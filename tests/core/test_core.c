@@ -1884,7 +1884,34 @@ static void extended_safety(void)
                     muhtari__bus_write(m[j], 0x0281u, 0xFFu);
                     muhtari__bus_write(m[j], 0x0281u, 0x55u);
                     muhtari__bus_write(m[j], 0x0281u, 0u);
-                    muhtari__ports_light_sample(m[j], 66u, 100u, m[j]->bus.ticks, 15u, 1);
+                    unsigned shift = p == 0u ? 4u : 0u;
+                    if (devices[d] == MUHTARI_PORT_LIGHTGUN) {
+                        muhtari__bus_write(m[j], 0x20u, 15u);
+                        uint64_t response = m[j]->ports.light[p].sample_tick + 64u;
+                        CHECK(response > m[j]->bus.ticks);
+                        m[j]->cpu.jammed = 1u;
+                        while (m[j]->bus.ticks < response)
+                            muhtari__cpu_step(m[j]);
+                        m[j]->cpu.jammed = 0u;
+                        CHECK_EQ_U64(m[j]->ports.light[p].low, 1u);
+                    } else if (devices[d] == MUHTARI_PORT_SNES2ATARI ||
+                               devices[d] == MUHTARI_PORT_MEGA7800) {
+                        muhtari__bus_write(m[j], 0x0280u, 0u);
+                        muhtari__bus_write(m[j], 0x0281u, (uint8_t)(3u << shift));
+                        muhtari__bus_write(m[j], 0x0280u, (uint8_t)(2u << shift));
+                        if (devices[d] == MUHTARI_PORT_SNES2ATARI) {
+                            muhtari__bus_write(m[j], 0x0280u, 0u);
+                            muhtari__bus_write(m[j], 0x0280u, (uint8_t)(1u << shift));
+                        }
+                        CHECK_EQ_U64(m[j]->ports.adapter[p].position, 1u);
+                    } else if (devices[d] == MUHTARI_PORT_PADDLE ||
+                               devices[d] == MUHTARI_PORT_KEYPAD) {
+                        muhtari__bus_write(m[j], 1u, 0x80u);
+                        muhtari__bus_write(m[j], 1u, 0u);
+                        CHECK(m[j]->ports.pot[p][0].crossing_tick > m[j]->bus.ticks);
+                    } else {
+                        CHECK(m[j]->ports.motion[p][0].residual != 0);
+                    }
                     /* A pending packet also owns one-shot displacement. */
                     CHECK_EQ_U64(muhtari_set_input_ex(m[j], &in), MUHTARI_STATUS_OK);
                 }
@@ -1915,6 +1942,7 @@ static void extended_safety(void)
                 }
                 /* Peeks must preserve history, latches, PA7 and lag. */
                 struct muhtari__riot riot = m[0]->riot;
+                struct muhtari__tia tia = m[0]->tia;
                 uint64_t ticks = m[0]->bus.ticks;
                 for (unsigned n = 0u; n < 64u; n++) {
                     (void)muhtari__bus_peek(m[0], 0x0280u);
@@ -1923,6 +1951,7 @@ static void extended_safety(void)
                 }
                 CHECK(memcmp(&before, &m[0]->ports, sizeof before) == 0);
                 CHECK(memcmp(&riot, &m[0]->riot, sizeof riot) == 0);
+                CHECK(memcmp(&tia, &m[0]->tia, sizeof tia) == 0);
                 CHECK_EQ_U64(m[0]->bus.ticks, ticks);
                 for (unsigned f = 0u; f < 3u; f++) {
                     int16_t peer_audio[AUDIO_CAP];
@@ -1937,6 +1966,9 @@ static void extended_safety(void)
                     CHECK(memcmp(m[0]->ram, m[1]->ram, sizeof m[0]->ram) == 0);
                     CHECK(memcmp(&m[0]->cpu, &m[1]->cpu, sizeof m[0]->cpu) == 0);
                     CHECK(memcmp(&m[0]->ports, &m[1]->ports, sizeof m[0]->ports) == 0);
+                    for (unsigned n = 0u; n < 6u; n++)
+                        CHECK_EQ_HEX(muhtari__bus_peek(m[0], (uint16_t)(8u + n)),
+                                     muhtari__bus_peek(m[1], (uint16_t)(8u + n)));
                 }
                 for (unsigned j = 0u; j < 2u; j++) {
                     CHECK_EQ_U64(counts[j].allocs, 2u);
