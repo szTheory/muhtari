@@ -28,8 +28,8 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       -P "${HASHES}" COMMAND_ERROR_IS_FATAL ANY)
     file(STRINGS "${OUT}/hashes.txt" rows)
     list(LENGTH rows count)
-    if(NOT count EQUAL 342)
-      message(FATAL_ERROR "hashes: expected 69 retained and 273 controller observation rows, got ${count}")
+    if(NOT count EQUAL 956)
+      message(FATAL_ERROR "hashes: expected69 retained,273 controller and614 PAL observation rows, got ${count}")
     endif()
     # Independent accepted source 54485d6, CI run 40104749040. Only the
     # seven named audio behaviour annotations advance from 4 to 5; all
@@ -39,6 +39,14 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     string(SHA256 retained_digest "${retained}\n")
     if(NOT retained_digest STREQUAL "c4c9c310418422c30bbf32b204a157a564d343aadfabee4d5654b97695461761")
       message(FATAL_ERROR "hashes: retained observations changed beyond the seven audio revision annotations")
+    endif()
+    # The pre-PAL writer at009f37e independently reproduces all342 old
+    # observations. The additive PAL path cannot rewrite controller rows.
+    list(SUBLIST rows 0 342 ntsc)
+    list(JOIN ntsc "\n" ntsc)
+    string(SHA256 ntsc_digest "${ntsc}\n")
+    if(NOT ntsc_digest STREQUAL "a036c0f9da8037b0581496182024f0b42de455e08576712e0cc890dd949462b5")
+      message(FATAL_ERROR "hashes: pre-PAL NTSC observation bytes changed")
     endif()
     foreach(launch first second)
       foreach(field frame1 frame120 audio_transitions_sha256 audio_pcm_sha256 audio_frames

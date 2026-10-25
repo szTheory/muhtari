@@ -66,8 +66,9 @@ Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` writes342 ordered rows:69 retained card/audio/board/battery observations and
-273 controller rows (13 fresh scenarios, both ports,12 frames, lag, raw/PCM and mailbox).
+`runner.hashes_file` writes956 rows:69 retained observations,273 controller rows
+(13 scenarios:12 frames,lag,raw/PCM,mailbox),614 [PAL rows](pal-tests.md)
+(601 frames,raw/PCM,mailbox,counters).
 Independent numeric/CRC judgment and library agreement precede controller rows. Silent raw streams remain empty.
 The retained69 match accepted source54485d6 except seven audio revision annotations4→5.
 Controls reject omitted, duplicated, reordered, malformed and wrong-family reports.

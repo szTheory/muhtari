@@ -174,12 +174,22 @@ foreach(scenario motion.driving light.lightgun analog.paddle analog.keypad
     "${prefix}.audio_behaviour_revision 5\n${prefix}.audio_synthesis exact-q23-16x64-dc20\n"
     "${prefix}.diagnostic ${mailbox}\n")
 endforeach()
+# The additive PAL schema must be complete even when two lanes agree on a fault.
+foreach(frame RANGE 1 601)
+  string(APPEND hashes "pal.frame${frame} ${digest}\n")
+endforeach()
+string(APPEND hashes "pal.audio_transitions_sha256 ${digest}\npal.audio_pcm_sha256 ${digest}\n"
+  "pal.audio_frames 601\npal.audio_samples 577879\npal.audio_rate 48000/1\n"
+  "pal.audio_behaviour_revision 5\npal.audio_synthesis exact-q23-16x64-dc20\n"
+  "pal.diagnostic ${mailbox}\npal.full_frames 600\npal.startup_samples 960\n"
+  "pal.startup_remainder 336960\npal.final_remainder 47029\npal.final_tick 85543176\n")
 foreach(path absolute relative)
 if(path STREQUAL "relative")
   file(RELATIVE_PATH WORK "${CMAKE_CURRENT_BINARY_DIR}" "${WORK}")
 endif()
 foreach(case valid sha config empty missing extra duplicate difference
-    controller_missing controller_duplicate controller_order controller_numeric controller_family)
+    controller_missing controller_duplicate controller_order controller_numeric controller_family
+    pal_missing pal_duplicate pal_order pal_numeric pal_digest pal_counter)
   file(REMOVE_RECURSE "${WORK}")
   foreach(lane native be)
     file(WRITE "${WORK}/${lane}/hashes.txt" "${hashes}")
@@ -208,6 +218,27 @@ foreach(case valid sha config empty missing extra duplicate difference
   elseif(case STREQUAL "difference")
     file(APPEND "${be}/hashes.txt" "changed\n")
     set(regex "differs from")
+  elseif(case MATCHES "^pal_")
+    set(bad "${hashes}")
+    set(row "pal.frame601 ${digest}\n")
+    if(case STREQUAL pal_missing OR case STREQUAL pal_order)
+      string(REPLACE "${row}" "" bad "${bad}")
+      if(case STREQUAL pal_order)
+        string(APPEND bad "${row}")
+      endif()
+    elseif(case STREQUAL pal_duplicate)
+      string(APPEND bad "${row}")
+    elseif(case STREQUAL pal_numeric)
+      string(REPLACE "pal.audio_samples 577879" "pal.audio_samples 577878" bad "${bad}")
+    elseif(case STREQUAL pal_digest)
+      string(REPLACE "${row}" "pal.frame601 abc\n" bad "${bad}")
+    else()
+      string(REPLACE "pal.full_frames 600" "pal.full_frames 599" bad "${bad}")
+    endif()
+    foreach(lane native be)
+      file(WRITE "${WORK}/${lane}/hashes.txt" "${bad}")
+    endforeach()
+    set(regex "hashes:")
   elseif(case MATCHES "^controller_")
     set(bad "${hashes}")
     set(row "controller.light.lightgun.both.frame1 ${digest}\n")
