@@ -515,6 +515,7 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "battery") == 0    ? 13u
            : strcmp(rom, "motion0") == 0    ? 14u
            : strcmp(rom, "light0") == 0     ? 15u
+           : strcmp(rom, "analog0") == 0    ? 16u
                                             : 0u;
 }
 
@@ -598,16 +599,32 @@ static int16_t controller_pcm[CONTROLLER_FRAMES][801];
 static uint32_t controller_counts[CONTROLLER_FRAMES];
 static muhtari__sha256 controller_raw;
 static int controller_light;
+static int controller_analog;
 
 static const char *controller_name(void)
 {
-    return controller_light ? "light0" : "motion0";
+    return controller_analog ? "analog0" : controller_light ? "light0" : "motion0";
 }
 
 static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
 {
     memset(in, 0, sizeof *in);
     in->size = (uint32_t)sizeof *in;
+    if (controller_analog) {
+        in->port[0].device = in->port[1].device = MUHTARI_PORT_PADDLE;
+        in->port[0].paddle[0] = frame < 6u ? 0u : 65535u;
+        in->port[0].paddle[1] = frame < 6u ? 65535u : 0u;
+        in->port[1].paddle[0] = frame < 6u ? 32767u : 0u;
+        in->port[1].paddle[1] = frame < 6u ? 32768u : 65535u;
+        if (frame == 3u || frame == 4u) {
+            in->port[0].buttons = MUHTARI_BUTTON_1;
+            in->port[1].buttons = MUHTARI_BUTTON_2;
+        } else if (frame == 5u || frame == 6u) {
+            in->port[0].buttons = MUHTARI_BUTTON_2;
+            in->port[1].buttons = MUHTARI_BUTTON_1;
+        }
+        return;
+    }
     if (controller_light) {
         in->port[0].device = in->port[1].device = MUHTARI_PORT_LIGHTGUN;
         for (unsigned p = 0u; p < 2u; p++) {
@@ -666,7 +683,8 @@ static int controller_library(const char *path, const char *expected, const char
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
-    media.port[0] = media.port[1] = controller_light ? MUHTARI_PORT_LIGHTGUN : MUHTARI_PORT_DRIVING;
+    media.port[0] = media.port[1] = controller_analog ? MUHTARI_PORT_PADDLE :
+        controller_light ? MUHTARI_PORT_LIGHTGUN : MUHTARI_PORT_DRIVING;
     muhtari__sha256_init(&controller_raw);
     int failed =
         image == NULL || retail_expected(expected, controller_name()) != 0 ||
@@ -754,12 +772,18 @@ static int controller_library(const char *path, const char *expected, const char
             failed = 1;
         else {
             fprintf(f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
-                    controller_light ? "lightgun" : "driving",
-                    controller_light ? "lightgun" : "driving");
+                    controller_analog ? "paddle" : controller_light ? "lightgun" : "driving",
+                    controller_analog ? "paddle" : controller_light ? "lightgun" : "driving");
             for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
                 muhtari_input_ex in;
                 controller_stimulus(i, &in);
-                if (controller_light) {
+                if (controller_analog) {
+                    fprintf(f, "|paddle:%u,%u,%u|paddle:%u,%u,%u|...BB|\n",
+                            in.port[0].paddle[0], in.port[0].paddle[1],
+                            (in.port[0].buttons >> 4) & 3u,
+                            in.port[1].paddle[0], in.port[1].paddle[1],
+                            (in.port[1].buttons >> 4) & 3u);
+                } else if (controller_light) {
                     fprintf(f, "|lightgun:%u,%u,%u|lightgun:%u,%u,%u|...BB|\n", in.port[0].gun_x,
                             in.port[0].gun_y,
                             in.port[0].flags * 2u + (in.port[0].buttons != 0u ? 1u : 0u),
@@ -1378,9 +1402,11 @@ int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
     if ((argc == 7 || argc == 8) && strcmp(argv[1], "--controller-case") == 0 &&
-        (strcmp(argv[2], "driving") == 0 || strcmp(argv[2], "lightgun") == 0) &&
+        (strcmp(argv[2], "driving") == 0 || strcmp(argv[2], "lightgun") == 0 ||
+         strcmp(argv[2], "paddle") == 0) &&
         strcmp(argv[3], "both") == 0) {
         controller_light = strcmp(argv[2], "lightgun") == 0;
+        controller_analog = strcmp(argv[2], "paddle") == 0;
         controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
         if (controller_pixels == NULL)
             return 1;

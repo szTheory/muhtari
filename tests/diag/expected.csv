@@ -187,3 +187,10 @@ light0,pixel_luma8_left,0,fit
 light0,pixel_luma8_right,0,fit
 light0,pixel_luma7_left,128,fit
 light0,pixel_luma7_right,128,fit
+analog0,scenario,0,fit
+analog0,dump,0,guide
+analog0,buttons_first,123,guide
+analog0,min_left0,128,fit
+analog0,max_left1_pending,0,fit
+analog0,mid_left_right0_pending,0,fit
+analog0,mid_right_right1_pending,0,fit
