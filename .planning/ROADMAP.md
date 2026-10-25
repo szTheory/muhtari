@@ -249,7 +249,7 @@ failure. Package integrity, typed measurements and all other contracts remain.
 **Goal:** Run PAL content at the console timing and report matching video/audio geometry to every host.
 **Depends on:** Phase 8
 **Requirements:** PAL-01, PAL-02, PAL-03
-**Plans:** 2/8 plans executed
+**Plans:** 3/8 plans executed
 
 Plans:
 
@@ -259,10 +259,10 @@ Plans:
 **Wave 2** *(accepted)*
 - [x] 09-02-PLAN.md — Physical-time devices, lower-raster light and battery lifecycle.
 
-**Wave 3** *(ready; Wave 2 accepted)*
-- [ ] 09-03-PLAN.md — Approved warm PAL palette, runner output and movie sessions.
+**Wave 3** *(accepted)*
+- [x] 09-03-PLAN.md — Approved warm PAL palette, runner output and movie sessions.
 
-**Wave 4** *(blocked on Wave 3 completion)*
+**Wave 4** *(ready; Wave 3 accepted)*
 - [ ] 09-04-PLAN.md — Load-stable libretro region, AV, palette and fallback.
 
 **Wave 5** *(blocked on Wave 4 completion)*
@@ -326,7 +326,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
-| 9. PAL games and audio | 1/8 | In Progress | — |
+| 9. PAL games and audio | 3/8 | In Progress | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
