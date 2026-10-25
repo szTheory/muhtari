@@ -3,21 +3,21 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: Not started
-status: Phase 9 context gathered — ready for planning
-stopped_at: Phase 9 context gathered; next $gsd-plan-phase 9
-last_updated: "2026-10-25T15:01:06.147Z"
+status: Ready to execute
+stopped_at: Phase 9 planned and checked; 09-01 ready; next $gsd-execute-phase 9
+last_updated: "2026-10-25T15:56:34.913Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase9 discussion complete; context committed; no PAL implementation accepted
-state_head: ca92da3346d9d6aecd58f99b39d1e39f4a016615
+last_activity_desc: Phase9 planning complete; 8 plans checked; no PAL implementation accepted
+state_head: a103c8a711d67a476b0369daadd7c8357507c897
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 42
+  total_plans: 50
   completed_plans: 42
   percent: 57
 total_phases: 7
-current_phase: 09
 current_phase_name: PAL games and audio
+current_phase: 09
 ---
 
 # Project State
@@ -27,30 +27,42 @@ current_phase_name: PAL games and audio
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase8 is verified complete and submitted in PR #31.
+Current focus: Phase9 is planned with eight sequential plans and22 tasks.
+Independent plan checking passed after one targeted revision;09-01 is ready.
 API6/ABI1/behavior5 delivers typed input and movie2, native light sensing, timed
 paddles/keypads/motion and complete adapters through all three deliverables.
-All INPUT-01–05 requirements are complete. Phase9 is the next roadmap target,
-but has not started. After shipping confirmations, next command: $gsd-discuss-phase 9.
+All INPUT-01–05 requirements are complete. PAL-01–03 remain pending execution.
+Next separate command: $gsd-execute-phase 9.
 
 ## Current Position
 
 Current Plan: Not started
-Total Plans in Phase: 0
+Total Plans in Phase: 8
 Progress: [██████░░░░] 57%
 
 Phase8 is complete:14/14 accepted plans and49/49 verified truths. Four of seven
-milestone phases are complete (57%); phases9–11 remain unstarted. Runtime totals
-are42/42 summarized plans, including historical halted06-01; active accepted
-progress is41/41 known planned slots. These are not claims of milestone completion.
+milestone phases are complete (57%); phase9 is ready to execute and phases10–11
+remain unstarted. Runtime totals are42 summarized plans of50 planned, including
+historical halted06-01; active accepted progress is41 prior slots plus8 pending
+Phase9 slots. These are not claims of implementation or milestone completion.
 
-Status: Phase 9 context gathered — ready for planning
-Last activity: 2026-10-25 — Phase9 discussion complete; context committed; no PAL implementation accepted
-Next command: $gsd-plan-phase 9
+Status: Ready to execute
+Last activity: 2026-10-25 — Phase9 planning complete; eight plans checked; no PAL implementation accepted
+Next command: $gsd-execute-phase 9
 Branch: phase/09-pal-games-and-audio
+Phase9 planning evidence (run URL N/A-local): `gsd-tools.cjs verify plan-structure`
+and `frontmatter validate --schema plan` exit0 for all8 plans; `sh -n` exit0
+for22 automated commands; `check verify-failure-directions 9` exits0 with22/22
+statements; `query check.decision-coverage-plan` exits0 with19/19 covered;
+`check gap-analysis.plan-post` exits0 with22/22 source items covered.
+The path probe exits0 with not_applicable for CMake forms; this is no path verdict.
+Independent checker passed all8 plans/22 tasks with0 blockers/warnings after one
+revision repaired enablement/host gate ordering and research-resolution markers.
+`git diff --check` and `scripts/hygiene.sh --tree` exit0. Research arithmetic and
+8-test baseline evidence remain in09-RESEARCH.md; no PAL runtime acceptance is claimed.
+
+Historical Phase8 ship snapshot (retained evidence):
 https://github.com/szTheory/muhtari/pull/31
-This ship-note snapshot precedes required CI, squash auto-merge and release-PR
-confirmation; the current ship session owns those checks. No next GSD step runs here.
 
 Fresh shipping checks: `cmake --workflow --preset ci` exits0 (649+6),
 `git diff --check` exits0, and `verification.status` exits0 with passed.
@@ -235,9 +247,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 9 context gathered; next $gsd-plan-phase 9
-Last session: 2026-10-25T15:01:05.947Z
-Resume file: .planning/phases/09-pal-games-and-audio/09-CONTEXT.md
+**Stopped at:** Phase 9 planned and checked;09-01 ready; next $gsd-execute-phase 9
+Last session: 2026-10-25T15:56:34.913Z
+Resume file: .planning/phases/09-pal-games-and-audio/09-01-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -283,4 +295,4 @@ Resume file: .planning/phases/09-pal-games-and-audio/09-CONTEXT.md
 
 None required. Current-source advisory10000-case isolation timing and earlier
 publication/library costs remain in SEED-009; unaccepted evidence is preserved.
-Next command: $gsd-discuss-phase 9 in a new session after Phase8 shipping confirmations.
+Next command: $gsd-execute-phase 9 in a new session. Phase9 review-fix and gap execution rounds remain unused.
