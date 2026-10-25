@@ -6,7 +6,10 @@ An Atari 7800 ProSystem emulator core in C: a small library, a headless runner a
 coverage remains limited; see the [compatibility ledger](docs/compatibility.md) for tested content. Releases are
 published automatically.
 NTSC board execution includes linear, SuperGame, Activision, Absolute and Fractalus cartridges.
-Board diagnostics establish memory behavior; the ledger records tested gameplay separately. PAL execution remains unsupported.
+Board diagnostics establish memory behavior; the ledger records tested gameplay separately.
+PAL runs in the library, runner and libretro core at the console's rational rate with 320×292 native video.
+The owned PAL diagnostic verifies raster timing and sustained audio; it does not establish retail playability
+or calibrated hardware accuracy. See [PAL evidence and limits](docs/pal-tests.md).
 Controller models include XG-1, paddles, keypad, driving, CX22/ST/Amiga motion and SNES2Atari/Mega7800.
 Owned diagnostics establish model conformance on both ports; physical calibration and universal game compatibility
 remain unmeasured. See [controls and bindings](docs/libretro.md#devices) and [typed runner replay](docs/runner.md#movies).
