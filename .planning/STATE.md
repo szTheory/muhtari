@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 14
-status: verifying
-stopped_at: 08-14 accepted;phase review and verifier pending
-last_updated: "2026-10-25T02:58:23.204777+00:00"
-last_activity: 2026-10-24
-last_activity_desc: 08-14 exact-source hosted acceptance passes;phase gates pending
-state_head: dd541f5
+current_plan: Not started
+status: planning
+stopped_at: Phase 8 verified complete; next $gsd-ship 8
+last_updated: "2026-10-25T04:14:51.334469+00:00"
+last_activity: 2026-10-25
+last_activity_desc: Phase 8 passes49/49; all INPUT requirements complete; ship pending
+state_head: 70366fdab87b2f83d65c3bf865c850b2f08d9f24
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 42
   completed_plans: 42
-  percent: 43
+  percent: 57
 total_phases: 7
-current_phase_name: Controllers at the pins
-current_phase: 08
+current_phase: 09
+current_phase_name: PAL games and audio
 ---
 
 # Project State
@@ -27,27 +27,60 @@ current_phase: 08
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Controllers at the pins. Plans01–14 are accepted; the first driving
-slice runs through library, immutable runner replay and actual libretro/RetroArch.
-A separately authorized DEC.61 review retired only the unsupported archive cutoff;
-required authenticated measurements and package integrity remain. No INPUT
-requirement is complete. Code review, regression and independent goal verification are pending.
+Current focus: Phase8 is verified complete and awaits shipping on its existing branch.
+API6/ABI1/behavior5 delivers typed input and movie2, native light sensing, timed
+paddles/keypads/motion and complete adapters through all three deliverables.
+All INPUT-01–05 requirements are complete. Phase9 is the next roadmap target,
+but has not started. Next command: $gsd-ship 8.
 
 ## Current Position
 
-Current Plan: 14
-Total Plans in Phase: 14
-Progress: [████░░░░░░] 43%
+Current Plan: Not started
+Total Plans in Phase: 0
+Progress: [██████░░░░] 57%
 
-Phase8 has14/14 accepted plans; phase completion remains pending final gates.
-Runtime summarized totals are42/42, including historical halted06-01.
-Accepted active progress is41/41;3/7 milestone phases remain complete (43%).
-The runtime summary count is not an accepted-completion count.
+Phase8 is complete:14/14 accepted plans and49/49 verified truths. Four of seven
+milestone phases are complete (57%); phases9–11 remain unstarted. Runtime totals
+are42/42 summarized plans, including historical halted06-01; active accepted
+progress is41/41 known planned slots. These are not claims of milestone completion.
 
-Status: Verifying Phase 08;formal review and goal verification pending
-Last activity: 2026-10-24 —08-14 accepted; continuing the dependency-ready wave
-Next command: $gsd-execute-phase 8
-Branch: phase/08-controllers-at-the-pins. No Phase8 PR, merge or release.
+Status: Phase8 verified; Phase9 not started; shipping8 is next
+Last activity: 2026-10-25 — Phase8 acceptance and requirement traceability closed
+Next command: $gsd-ship 8
+Branch: phase/08-controllers-at-the-pins. No Phase8 PR, merge or release yet.
+
+Final tested source70366fdab87b2f83d65c3bf865c850b2f08d9f24,
+genuine parent7887ad65e7c7887032601109449758d6a8b0e9a9.
+CI40157749294 attempt1 passes all required jobs, including actual RetroArch:
+https://github.com/szTheory/muhtari/actions/runs/40157749294
+Native current/base649+6 on six lanes, full native/PPC649+6, ASan632,
+hygiene24, nofp18/architecture, WASM587 and342-row equality pass. All18 actual
+candidate ZIPs and authenticated eight-lane join pass; peaks414114/414134 bytes
+remain report-only. Original69 observations retain all digests/numbers except
+seven explicit behavior4→5 annotations. Hardware fits remain unmeasured.
+
+Nightly40157750598 is completed/success with eight successful jobs and one failed
+advisory property job. Five10000-case properties pass; isolation10000 at seed
+40157750598 times out390.08s (CTest8, inventory1). That evidence is unaccepted,
+with no retry or flake claim. Required isolation passes; optional profiling is
+in SEED-009. No advisory lane was promoted into a phase gate.
+https://github.com/szTheory/muhtari/actions/runs/40157750598
+
+Code review is clean after one of two allowed fix rounds: complete short gun aim
+now retains zero absent flags, proved by24 regression cases and independent real
+sensor recheck; ProLine guide labels are corrected. The expanded gun deadline is
+measured2s with unchanged workload and lane scaling. Gap round unused.
+Independent verification passes49/49; all20 locked decisions honored, no owner UAT.
+The CLI-generated148-file fingerprint and exact evidence live in08-VERIFICATION.md.
+`verification.status` exits0 with passed. Parent regression gate exits0 (649+6),
+covering65 prior-phase test references; run URL N/A-local.
+
+Completion-scanner command-as-path warnings are the reproduced advisory heuristic,
+not missing implementation. Actual declared files/commits/consumers and the complete
+independent fingerprint pass. Metadata progress fields were reconciled after the
+helper's preserved-field warnings. No verification debt or required blocker remains.
+
+## Execution evidence (historical slices)
 
 08-14 tested sourcedf8f9a6 and genuine parent81eba27 have full exact-source
 CI40153312357 and Nightly40153313963 success, attempt1. Native649+6 in all six
@@ -55,7 +88,7 @@ current/base lanes, full native/PPC649+6, WASM587 and342-row equality pass.
 Actual RetroArch pixel/battery cases pass. All18 current ZIPs and authenticated
 quality join pass; current/base peak414124/414132 bytes remains report-only.
 Canonical14 summary preserves every failed/cancelled attempt and measured fixes.
-Formal review and independent goal verification remain required before completion.
+At that earlier acceptance point, formal review and independent goal verification remained pending.
 
 08-13 source38ec251 and summaryf08451c are accepted. Parent post-wave full-ci
 gate exits0 (648+6), N/A-local. All-family transactional/noalloc/peek/storage, real
@@ -115,7 +148,7 @@ repeatability, not phase-versus-main comparison. The armed PR+1% guard is unchan
 The canonical05 summary preserves all historical cutoff/link/timeout failures and
 adds explicit DEC.61 resolution. Defect51 is resolved by authorized policy retirement,
 not a claim the old cap passed. Defect52 remains fixed and hosted-verified.
-That recovery closed only05. All INPUT requirements and phase completion remain pending.
+That recovery closed only05; at that point all INPUT requirements and phase completion were pending.
 Future slices keep local full-ci/package evidence; final08-14 owns the full exact-source
 hosted matrix, with earlier hosted probes for concrete platform/integration questions.
 
@@ -193,9 +226,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:**08-14 accepted;phase review and verifier pending
-Last session: 2026-10-24T22:21:15.223Z
-Resume file: .planning/phases/08-controllers-at-the-pins/08-14-PLAN.md
+**Stopped at:** Phase8 verified complete; next $gsd-ship 8
+Last session: 2026-10-25T04:14:51.334469+00:00
+Resume file: None
 
 ### Quick Tasks Completed
 
@@ -239,6 +272,6 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-14-PLAN.md
 
 ### Blockers
 
-None required. Advisory library timing evidence and measured publication-control
-cost remain in the existing seed; neither is promoted into a controller gate.
-All plans accepted;formal phase gates pending;requirements remain pending.
+None required. Current-source advisory10000-case isolation timing and earlier
+publication/library costs remain in SEED-009; unaccepted evidence is preserved.
+Next command: $gsd-ship 8. Do not start Phase9 before shipping Phase8.

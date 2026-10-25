@@ -339,3 +339,48 @@ initial context loading and this metadata write are not separately timed.
 08-14 is complete and ready for the parent's independent review/verifier in this execution
 step. No later GSD step is invoked. The next separate command is `$gsd-verify-work 8`
 after the parent completes its phase acceptance; shipping remains separate.
+
+
+## Corrective final acceptance addendum — 2026-10-25T04:07:05Z UTC
+
+This append-only addendum records corrected-source acceptance after formal review; it does not rewrite any earlier outcome above. Earlier successful `df8f9a6` CI40153312357/Nightly40153313963 and every earlier failed/cancelled source remain historical evidence. The accepted implementation source for this addendum is `70366fdab87b2f83d65c3bf865c850b2f08d9f24`; its genuine first parent is `7887ad65e7c7887032601109449758d6a8b0e9a9`.
+
+CR-01's short complete gun-aim prefix defect is fixed atac76249 and exercised by24 actual regression cases: both ports, explicit/load/header selection, incomplete aim vs complete X/Y, light response and latch. WR-01's physical ProLine labels are corrected at463b3a0. The `input.lightgun`2s normal-scale timeout at3419436 follows twelve complete AppleClang ASan observations (max0.968114s) and complete accepted Windows0.97s. Re-review is clean at25690a1, one of two fix rounds used; no new gap round. Review/FIX/DISPOSITION reports are preserved.
+
+### Corrected-source run outcomes
+
+[CI40157749294](https://github.com/szTheory/muhtari/actions/runs/40157749294): attempt1, `workflow_dispatch`, completed/success at the exact source above. Actual jobs: `changes` success; `hygiene` success; `title` skipped; `perf` success; `asan` success; `library` success; `nofp (ubuntu-26.04)` success; `nofp (ubuntu-26.04-arm)` success; `build (windows-x64)` success; `be32` success; `build (linux-arm64)` success; `build (linux-x64)` success; `build (macos-x64)` success; `build (windows-arm64)` success; `build (macos-arm64)` success; `retroarch` success; `hash-equality` success; `quality` success; `wasm32` success; `CI required` success.
+
+[Nightly40157750598](https://github.com/szTheory/muhtari/actions/runs/40157750598): attempt1, `workflow_dispatch`, completed/success at the exact source above. Actual jobs: `fuzz` success; `be-equality / equality` success; `bench (macos-15)` success; `prop` failure; `bench (ubuntu-26.04)` success; `bench (ubuntu-26.04-arm)` success; `bench-wasm32` success; `vectors-full` success; `report` success.
+
+The verifier independently fetched raw run/attempt/source/job/step results and actual artifacts. Current-source downloads are isolated under ignored `build/phase08-verified/`; earlier `build/controller-acceptance/` evidence is preserved. No retry, cancelled job, dropped assertion, inventory waiver, normalized Nightly JSON or blank observation was substituted.
+
+The current Nightly **prop** job121062663058 is an explicit unaccepted advisory result: `prop.instances_isolated` at10000 cases/seed40157750598 times out at390.08s; CTest exits8 and the exact-inventory step exits1. Five other10000-case properties pass (164.01/205.40/210.81/116.63/93.58s);7/8 fixture-inclusive cases pass. No assertion failure, flake diagnosis, successful10000-case isolation run or repeat is claimed. Existing `continue-on-error` and exclusion from report needs remain unchanged. Required100-case isolation and the deterministic all-family active-state/peer tests pass; this advisory result is not promoted to a required gate or hidden by the overall Nightly success.
+
+### Actual current package observations
+
+| Native lane | Library ZIP | Libretro ZIP | Runner ZIP | Current total | Authenticated base total |
+|---|---:|---:|---:|---:|---:|
+| linux-arm64 | 98496 | 107086 | 118111 | 323693 | 323693 |
+| linux-x64 | 96120 | 103073 | 115759 | 314952 | 314952 |
+| macos-arm64 | 81321 | 85300 | 94866 | 261487 | 261489 |
+| macos-x64 | 82329 | 85204 | 94677 | 262210 | 262209 |
+| windows-arm64 | 94860 | 136644 | 160247 | 391751 | 391841 |
+| windows-x64 | 94784 | 146453 | 172877 | 414114 | 414134 |
+
+All18 actual current ZIPs pass CRC, exact notices and no-ROM/save-asset checks. Current peak414114/base peak414134 bytes is Windowsx64. Base component ZIPs are not published; no baseline component sizes are invented. Actual raw current/base producer JSON, raw parent policy/SHA, compiler/OS/architecture, fixture/sample identities and the exact eight-lane join are authenticated. The historical399937 cutoff remains exceeded and retired by CONTEXT D-20/DEC.61; these are required measurements and integrity, with no replacement quota.
+
+### Commands, exits and retained limits
+
+- `gh run view 40157749294 --json attempt,status,conclusion,headSha,url,jobs` and the corresponding Nightly command, plus raw REST run objects: exit0, attempt1 and exact source. Log downloads use `XDG_CACHE_HOME=/tmp/muhtari-gh-cache`; raw failures and failed steps before historical cancellations were inspected.
+- `cmake -DINPUT=build/phase08-verified/ci.json -DEXPECTED_SHA=70366fdab87b2f83d65c3bf865c850b2f08d9f24 -P tools/check_ci_run.cmake`: exit0 on the actual final CI JSON, not Nightly.
+- All six native current/base lanes execute649 ordinary+6 release; ASan632 current/base; hygiene24 current/base; no-fp18 per architecture; WASM587; library43 advisory. Exact once-only inventories and zero required findings remain.
+- Actual full native/PPC nightly XML independently rechecked649+6 each, and `tests/cmake/lane_equality.cmake` exits0 for two authenticated342-row files. All six native342-row outputs and actual WASM output match. Independent accepted old69 rows remain equal except seven exact4→5 behavior annotations; no candidate golden was regenerated.
+- Actual vectors-full258, fuzz10 and four300000-frame bench lanes pass. Advisory10000 isolation fails as detailed above. Dispatch perf medians3838688/3838688/3838688 prove repeatability only; the PR phase-v-main+1% guard remains armed for ship.
+- Fresh verifier `gsd_run run-with-timeout 60 -- cmake --workflow --preset ci`: exit0,649+6; `cmake --workflow --preset hygiene`: exit0,24;28 existing named behavioral checks exit0 each (max2.88409s); `build/asan/tests/muhtari-test-input lightgun`: exit0. Final exact local XML checks and actual quality producer also exit0. Local commands have N/A-local run URLs.
+- Actual eight-lane `tests/cmake/quality_join.cmake` replay: exit0 with raw genuine parent policy, source/base and run URL; actual18-ZIP audit and independent hash comparison exit0.
+- Actual RetroArch1.22.2 job121067368305 passes DMA120frames/full320x242 equality and a fresh two-launch battery roundtrip: counts1/1→2/2, marker90→255, all34816 bytes per host/launch, full pixels and changed-pixel/counter/marker/unsafe-input controls. Exactly two conceptual cases remain within300 physical lines. The agent opened all six actual current screenshots; no old screenshot or owner UAT was substituted.
+- Fresh matched current/slice-base one-time probes terminate with no runtime allocation and finite1020 fresh motion edges/115770 final tick/454 spacing; maximum32MiB replay has399456 rows,104-byte cursor and88-byte packet. Single operating-cost observations do not establish a speed threshold or phase-v-main result.
+- Final `git diff --check`, `sh scripts/hygiene.sh --tree`, owner `verification.status` and unchanged-source checks are recorded in08-VERIFICATION.md. No source code or parent-owned checklist was changed by the verifier.
+
+Fitted gun, analog, keypad and motion parameters remain explicitly unmeasured; protocol-model conformance and host agreement are not hardware calibration or universal retail playability. Descriptorless provenance/transparency intentions receive documented agent judgment, not a fabricated passed probe or owner UAT. No identity-bound action or owner-only hardware check is required. `requirements-completed: []` remains unchanged here for parent-owned final goal acceptance. The independent report covers all72 scoped files,49 current-contract truths,43 artifact declarations/26 paths,38 actual links and all INPUT-01..05 requirements; its fingerprint is computed **after this addendum**.

@@ -22,7 +22,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipped in PR24 |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Complete; 35/35 verified; shipped in PR #28 (merge checks pending) |
-| 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Not started |
+| 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Complete |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
 | 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Not started |
 | 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Not started |
@@ -104,16 +104,16 @@ construction record. It is not an active dependency or a completed BOARD outcome
 **Wave 5** *(ready after completed Wave 4)*
 - [x] 06-05-PLAN.md — Implement physical Fractalus aliases and independent retail-map/lifecycle vectors.
 
-**Wave 6** *(ready after completed Wave 5)*
+**Wave 6** *(complete)*
 - [x] 06-06-PLAN.md — Admit and execute three owned numeric board diagnostics.
 
-**Wave 7** *(ready after completed Wave 6)*
+**Wave 7** *(complete)*
 - [x] 06-07-PLAN.md — Verify truthful loaded achievement maps and identified-layout host equivalence.
 
-**Wave 8** *(ready after completed Wave 7)*
+**Wave 8** *(complete)*
 - [x] 06-08-PLAN.md — Prove bounded hostile/fuzz, transactional, allocation and instance-isolation behavior.
 
-**Wave 9** *(ready after completed Wave 8)*
+**Wave 9** *(complete)*
 - [x] 06-09-PLAN.md — Accept board portability, behavior evidence and unchanged six-native package bounds.
 
 **Cross-cutting constraints:**
@@ -155,16 +155,16 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 - [x] 07-05-PLAN.md — Deliver opt-in runner import, firmware provisioning and safe raw-save replacement.
 
-**Wave 6** *(blocked on Wave 5 completion)*
+**Wave 6** *(complete)*
 - [x] 07-06-PLAN.md — Complete cadence, native controls, coalescing and actual-consumer failure proofs.
 
-**Wave 7** *(blocked on Wave 6 completion)*
+**Wave 7** *(complete)*
 - [x] 07-07-PLAN.md — Publish load-time SAVE_RAM, optional HSC firmware and exact achievement maps.
 
-**Wave 8** *(blocked on Wave 7 completion)*
+**Wave 8** *(complete)*
 - [x] 07-08-PLAN.md — Admit one owned combined diagnostic and wire the two-case hosted persistence oracle.
 
-**Wave 9** *(blocked on Wave 8 completion)*
+**Wave 9** *(complete)*
 - [x] 07-09-PLAN.md — Complete equality/inventories, enable proved claims and accept final native/hosted bounds.
 
 **Success criteria:**
@@ -180,50 +180,51 @@ Plans:
 **Goal:** Let software use light guns, analog and matrix controllers, quadrature devices and modern controller adapters.
 **Depends on:** Phase 7
 **Requirements:** INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05
-**Plans:** 14/14 plans accepted; phase review, regression and independent goal verification pending.
+**Plans:** 14/14 complete; independent verification49/49 and all INPUT requirements complete.
+**Status:** Complete2026-10-25; clean review after one fix round, no owner UAT; `$gsd-ship 8` next.
 
 Plans:
 **Wave 1**
 - [x] 08-01-PLAN.md — Prove narrow controller fixture comparability.
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Wave 2** *(complete)*
 - [x] 08-02-PLAN.md — Publish additive input and transactional lifecycle.
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Wave 3** *(complete)*
 - [x] 08-03-PLAN.md — Prove a timed driving-controller path.
 
-**Wave 4** *(blocked on Wave 3 completion)*
+**Wave 4** *(complete)*
 - [x] 08-04-PLAN.md — Deliver compact typed runner replay.
 
 **Wave 5** *(accepted after the separate DEC.61 policy recovery)*
-- [x] 08-05-PLAN.md — Driving, actual RetroArch and revised package/evidence acceptance pass at62fa325 in CI40139744520. Historical cutoff failures remain; required authenticated measurements and integrity are retained.08-06 is ready.
+- [x] 08-05-PLAN.md — Driving, actual RetroArch and revised package/evidence acceptance pass at62fa325 in CI40139744520. Historical cutoff failures remain; required authenticated measurements and integrity are retained. Historical05 recovery precedes the completed later slices.
 
-**Wave 6** *(ready)*
+**Wave 6** *(complete)*
 - [x] 08-06-PLAN.md — TIA input memory and native gun emission verified locally at6fab3e0 (648+6); all historical digest/numeric pins retained.
 
-**Wave 7** *(blocked on Wave 6 completion)*
+**Wave 7** *(complete)*
 - [x] 08-07-PLAN.md — XG-1 raster boundaries, owned diagnostic and all three hosts pass at9ca62b3 (648+6).
 
-**Wave 8** *(blocked on Wave 7 completion)*
+**Wave 8** *(complete)*
 - [x] 08-08-PLAN.md — Full-range paddle charge, owned analog oracle and all three hosts pass atf33ad71 (648+6).
 
-**Wave 9** *(blocked on Wave 8 completion)*
+**Wave 9** *(complete)*
 - [x] 08-09-PLAN.md — Connected keypad matrix, independent records and all three hosts pass at2815568 (648+6).
 
-**Wave 10** *(blocked on Wave 9 completion)*
+**Wave 10** *(complete)*
 - [x] 08-10-PLAN.md — CX22/ST/Amiga timing, numeric oracles and all three hosts pass at0f590fe (648+6).
 
-**Wave 11** *(blocked on Wave 10 completion)*
+**Wave 11** *(complete)*
 - [x] 08-11-PLAN.md — Complete finite adapter scans and opposite EEPROM coexistence pass at70465c9 (648+6).
 
-**Wave 12** *(blocked on Wave 11 completion)*
+**Wave 12** *(complete)*
 - [x] 08-12-PLAN.md — Complete adapter host mappings and executable scans pass at03b7f96 (648+6).
 
-**Wave 13** *(blocked on Wave 12 completion)*
+**Wave 13** *(complete)*
 - [x] 08-13-PLAN.md — Hostile input, noalloc/isolation, real typed workloads and comparable slice costs pass at38ec251 (648+6).
 
-**Wave 14** *(blocked on Wave 13 completion)*
-- [x] 08-14-PLAN.md — Exact-source CI/nightly,342-row equality,actual RetroArch and authentic six-native package observations pass atdf8f9a6.
+**Wave 14** *(complete)*
+- [x] 08-14-PLAN.md — Exact-source CI/nightly,342-row equality,actual RetroArch and authentic six-native package observations initially pass atdf8f9a6; corrected-source70366fd acceptance and49/49 verification supersede the pre-review source.
 
 Each plan depends on the preceding plan because core, host, diagnostic and evidence owners overlap.
 08-01 proves narrow fixture comparability before fixture-dependent acceptance. 08-05 requires the
@@ -295,10 +296,10 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
-| 8. Controllers at the pins | 14/14 | Verifying | — |
+| 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 0/TBD | Not started | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-24; Phases5–7 remain complete. Phase8 has14/14 accepted plans;formal phase gates pending. The separately authorized DEC.61 recovery closes only08-05 after required exact-source CI/consumer acceptance;08-14 exact-source CI/nightly acceptance passes;formal phase gates remain. All INPUT requirements remain pending. Next separate command: $gsd-execute-phase 8. This execute step continues in dependency order; shipping remains separate.*
+*Updated: 2026-10-25; Phases5–8 are complete. Phase8 has14/14 accepted plans,49/49 verified truths and all five INPUT requirements complete. Current-source required CI, full native/PPC/WASM equality, actual RetroArch and authenticated native packages pass; advisory10000-case isolation timeout remains unaccepted and seeded. One review-fix round used, gap round unused. Next separate command: $gsd-ship 8. Phases9–11 remain unstarted.*

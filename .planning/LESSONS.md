@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-10-24
+updated: 2026-10-25
 ---
 
 # Lesson exchange
@@ -125,3 +125,16 @@ Recovery acceptance: commit62fa325, https://github.com/szTheory/muhtari/actions/
 outcome audit and actual8-lane join pass (exit0). Overall workflow remains failed
 from explicitly advisory library timing; no retry or proven-flake claim.
 Only plan05 closes to5/14, next08-06 ready. Prior threshold failures remain historical.
+
+## Reproduced controller execution lessons (2026-10-25)
+
+The existing fan-out prompt carries the process changes; executable regression and
+existing deadline/inventory mechanisms carry the controls. No new dependency or
+orchestration framework was introduced.
+
+| ID | Symptom and invariant | Fix and evidence | Status |
+|---|---|---|---|
+| MU-HOST-001 | An enclosing structure's end was used to decide whether an earlier required field pair was complete; absent optional flags changed the meaning of present coordinates. | ac76249 derives completeness from the required field end;24 prefix/explicit-default/negative cases fail before the fix and pass after it. Independent sensor harness and49/49 verifier pass; CI40157749294 succeeds. | adopted |
+| MU-CI-006 | Dispatch before push completion ran an older remote head; job cancellation also hid earlier failed test steps. | Await push, check advertised remote SHA, then verify actual run head/attempt. Audit failed steps before cancellation as well as terminal job outcomes. Corrected70366fd runs were pinned before dispatch; CI audit exits0 at https://github.com/szTheory/muhtari/actions/runs/40157749294. Earlier wrong-head and failed runs remain in14-SUMMARY. | adopted |
+| MU-CI-007 | Expanded host/gun/fuzz cases retained deadlines derived from smaller workloads, wasting hosted runs. Timed-out samples do not measure complete work. | Re-measure changed workloads before dispatch under DEC.47; owning test registrations retain all cases and lane scaling. Host5s, fuzz2s and gun2s derive from complete successful samples recorded in14-SUMMARY/REVIEW-FIX. Final required CI passes; advisory10000 isolation remains explicitly unaccepted. | adopted |
+| MU-TEST-002 | Scoped CTest overwrote the preset's full JUnit file; the exact-inventory consumer correctly rejected the partial report. | Use a distinct --output-junit path for focused evidence and preserve the full-inventory artifact. The verifier's single full cmake workflow exits0 with649+6 and restores complete evidence; N/A-local,08-VERIFICATION local checks. | reproduced |

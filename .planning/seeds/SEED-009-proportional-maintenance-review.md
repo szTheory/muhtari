@@ -77,3 +77,18 @@ two existing2s pokey/rmtramdemo tests timed out and37/39 results remain. No nume
 hash fault was reported; a transient cause is unproven. Profile or recalibrate only
 with comparable completed timing evidence under existing timeout policy. Required
 CI passes; this advisory follow-up does not block controller development.
+
+## Controller closeout advisory, 2026-10-25
+
+At corrected source70366fd, Nightly40157750598's advisory property job completes
+five10000-case properties but `prop.instances_isolated` reaches390.08s at seed
+40157750598 (CTest8, exact inventory1). This result is unaccepted; no assertion
+failure, flake diagnosis or retry is claimed. Required100-case isolation, full
+native/PPC649+6 and current-source required CI pass. Evidence and full authority
+are in [Phase8 verification](../phases/08-controllers-at-the-pins/08-VERIFICATION.md)
+and https://github.com/szTheory/muhtari/actions/runs/40157750598.
+
+At the existing tune-up, profile this complete seeded workload alongside the
+publication/library timing observations before changing scheduling or deadlines.
+Preserve every case and oracle and calibrate only from complete successful work.
+This optional cost/evidence follow-up does not block Phase8 or promote a lane.
