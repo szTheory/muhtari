@@ -1725,9 +1725,9 @@ static void keypad_timing(void)
                 }
                 muhtari__ports_latch(m);
                 unsigned shift = p == 0u ? 4u : 0u;
-                uint8_t row = (uint8_t)(1u << (shift + key / 3u));
+                uint8_t row_mask = (uint8_t)(1u << (shift + key / 3u));
                 (void)input_access(m, 0x0280u, 1, 0u);
-                (void)input_access(m, 0x0281u, 1, row);
+                (void)input_access(m, 0x0281u, 1, row_mask);
                 uint16_t reg = (uint16_t)(key % 3u == 2u ? 12u + p : 8u + 2u * p + key % 3u);
                 CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
                 uint64_t release = m->bus.ticks + 100u;
