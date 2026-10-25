@@ -1189,6 +1189,8 @@ static const uint8_t *(*controller_native)(void);
 static int controller_gun_edges;
 static int16_t controller_gun_values[17];
 static unsigned controller_gun_queries[2][17];
+static int controller_paddle_edges;
+static int16_t controller_paddle_values[2];
 
 static void RETRO_CALLCONV controller_poll(void)
 {
@@ -1199,6 +1201,27 @@ static int16_t RETRO_CALLCONV controller_input(unsigned p, unsigned d, unsigned 
 {
     muhtari_input_ex in;
     controller_stimulus(controller_frame, &in);
+    if (controller_analog) {
+        if (p >= 2u) {
+            controller_errors++;
+            return 0;
+        }
+        if (d == RETRO_DEVICE_ANALOG && i <= RETRO_DEVICE_INDEX_ANALOG_RIGHT &&
+            id == RETRO_DEVICE_ID_ANALOG_X) {
+            if (controller_paddle_edges)
+                return controller_paddle_values[i];
+            return (int16_t)((int32_t)in.port[p].paddle[i] - 32768);
+        }
+        if (d != RETRO_DEVICE_JOYPAD || i != 0u) {
+            controller_errors++;
+            return 0;
+        }
+        if (id == RETRO_DEVICE_ID_JOYPAD_B)
+            return (in.port[p].buttons & MUHTARI_BUTTON_1) != 0u;
+        if (id == RETRO_DEVICE_ID_JOYPAD_A)
+            return (in.port[p].buttons & MUHTARI_BUTTON_2) != 0u;
+        return 0;
+    }
     if (controller_light) {
         if (p >= 2u || d != RETRO_DEVICE_LIGHTGUN || i != 0u || id >= 17u) {
             controller_errors++;
@@ -1319,9 +1342,11 @@ static int controller_module(const char *module_path, const char *path)
     set_input(controller_input);
     init();
     observe(controller_raw_sample, &raw);
-    unsigned selected = controller_light ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
-                                         : RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0);
+    unsigned selected = controller_analog  ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)
+                        : controller_light ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
+                                           : RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0);
     controller_gun_edges = 0;
+    controller_paddle_edges = 0;
     set_device(0u, selected);
     set_device(1u, selected);
     struct retro_game_info game = {path, image, n, NULL};
@@ -1346,6 +1371,37 @@ static int controller_module(const char *module_path, const char *path)
         muhtari__sha256_final(&expected_raw, b);
         failed |= memcmp(a, b, sizeof a) != 0 || controller_errors != 0u ||
                   controller_videos != CONTROLLER_FRAMES || controller_audios != CONTROLLER_FRAMES;
+        if (!failed && controller_analog) {
+            static const struct {
+                int16_t left, right;
+                uint32_t pot0, pot1;
+            } vectors[] = {{INT16_MIN, INT16_MAX, 0u, 65535u},
+                           {-1, 0, 32767u, 32768u},
+                           {0, -1, 32768u, 32767u},
+                           {INT16_MAX, INT16_MIN, 65535u, 0u}};
+            controller_paddle_edges = 1;
+            set_video(NULL);
+            set_audio(NULL);
+            for (unsigned v = 0u; v < sizeof vectors / sizeof vectors[0]; v++) {
+                controller_paddle_values[0] = vectors[v].left;
+                controller_paddle_values[1] = vectors[v].right;
+                run_frame();
+                for (unsigned p = 0u; p < 2u; p++) {
+                    const muhtari_port_input *in = &m->ports.applied_ex.port[p];
+                    failed |= in->device != MUHTARI_PORT_PADDLE ||
+                              in->paddle[0] != vectors[v].pot0 ||
+                              in->paddle[1] != vectors[v].pot1 || in->buttons != 0u || in->dy != 0;
+                }
+            }
+            set_input(NULL);
+            run_frame();
+            for (unsigned p = 0u; p < 2u; p++) {
+                const muhtari_port_input *in = &m->ports.applied_ex.port[p];
+                failed |= in->paddle[0] != 0u || in->paddle[1] != 0u || in->buttons != 0u;
+            }
+            controller_paddle_edges = 0;
+            failed |= controller_errors != 0u;
+        }
         if (!failed && controller_light) {
             /* The actual loaded module's accepted packets, independent
                numeric endpoints and center; no conversion helper oracle. */

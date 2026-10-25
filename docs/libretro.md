@@ -25,7 +25,7 @@ The console's Reset is the switch a game reads; RetroArch's own Restart is a pow
 
 ## Devices
 
-Each port offers eight devices in Quick Menu → Controls:
+Each port offers nine devices in Quick Menu → Controls:
 
 | Device | What the game sees |
 |---|---|
@@ -37,6 +37,7 @@ Each port offers eight devices in Quick Menu → Controls:
 | AtariVox EEPROM | the same EEPROM interface; speech is unavailable |
 | Driving | relative MOUSE X moves the wheel; MOUSE LEFT fires; Y is ignored |
 | XG-1 | absolute LIGHTGUN SCREEN_X/Y aim; TRIGGER fires; IS_OFFSCREEN suppresses light; RELOAD fires offscreen |
+| Paddle pair | ANALOG left X/right X set pots1/2; RetroPad B/A press their independent buttons; Y is ignored |
 
 Driving uses `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)` for selection and base
 `RETRO_DEVICE_MOUSE` IDs for polling, once after each frame's input poll. The frontend
@@ -60,13 +61,26 @@ The native D64/W30/L9/T8 optical model is explicitly unmeasured; see
 
 Console controls come from the lowest numbered ordinary ProLine/joystick port, retaining
 port 1's preference when both are ordinary. Otherwise the lowest numbered active
-driving/gun port supplies console controls. Driving uses MIDDLE for Pause,
+driving/gun/paddle port supplies console controls. Driving uses MIDDLE for Pause,
 BUTTON_4 for Select and RIGHT for Reset; LEFT remains fire. XG-1 uses LIGHTGUN
 START for Pause, SELECT for Select and AUX_A for Reset; these do not fire or reload.
+Paddles use RetroPad Start/Select/X for Pause/Select/Reset; B/A remain the two buttons.
 With neither
-port active, supplemental port 1 RetroPad L2/R2/L3 provide Pause/Select/Reset. Driving and
+port active, supplemental port 1 RetroPad L2/R2/L3 provide Pause/Select/Reset. Driving, paddles and
 supplemental controls use the difficulty options. A new ordinary console provider starts
 its L/R edge history at the currently held levels, so selection creates no synthetic toggle.
+
+Paddle pair selection is `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)`;
+polling uses base ANALOG left/right index X plus base JOYPAD B/A, once per
+frame. Each signed axis v maps to the absolute physical range with
+`int32(v)+32768`: -32768/-1/0/32767 →0/32767/32768/65535. No game-specific
+scale or motion accumulation applies. Frontends must bind both analog X
+axes and the two RetroPad buttons; Y axes and L/R are ignored for paddles,
+and difficulties use options. Missing callbacks supply neutral positions0/0
+and released buttons. Auto activates header paddles, descriptors refresh
+on selection, and either paddle port may coexist with the opposite EEPROM.
+The RC threshold/dump model is unmeasured; see
+[controller hardware](hardware/controllers.md#paddles).
 
 ## Options
 

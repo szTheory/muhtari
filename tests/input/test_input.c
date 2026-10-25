@@ -1288,6 +1288,23 @@ static void paddle_timing(void)
                         muhtari_destroy(m);
                         return;
                     }
+                    if (v == 0u && edge == 0u) {
+                        struct muhtari__ports accepted = m->ports;
+                        for (unsigned fault = 0u; fault < 5u; fault++) {
+                            muhtari_input_ex bad = in;
+                            if (fault < 2u)
+                                bad.port[port].paddle[fault] = 65536u;
+                            else if (fault == 2u)
+                                bad.port[port].buttons |= MUHTARI_BUTTON_UP;
+                            else if (fault == 3u)
+                                bad.port[port].dx = 1;
+                            else
+                                bad.port[port].keypad = 1u;
+                            CHECK_EQ_U64(muhtari_set_input_ex(m, &bad),
+                                         MUHTARI_STATUS_ERR_ARGUMENT);
+                            CHECK(memcmp(&accepted, &m->ports, sizeof accepted) == 0);
+                        }
+                    }
                     muhtari__ports_latch(m);
                     uint64_t release = m->bus.ticks + 100u;
                     (void)light_access_at(m, 1u, release - 50u, 1, 0x80u);
@@ -1354,18 +1371,28 @@ static void paddle_timing(void)
                 }
                 (void)input_access(m, 1u, 1, 0x80u);
                 CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
+                if (poll == 0u && edge == 0u) {
+                    uint64_t held = m->bus.ticks;
+                    CHECK_EQ_HEX(light_access_at(m, reg, held + 190000u, 0, 0u) & 0x80u, 0u);
+                    (void)input_access(m, 1u, 1, 0x80u);
+                    CHECK_EQ_HEX(input_access(m, reg, 0, 0u) & 0x80u, 0u);
+                }
                 in.port[port].paddle[0] = 65535u;
                 CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
                 muhtari__ports_latch(m);
                 (void)input_access(m, 1u, 1, 0u);
+                uint64_t charged_by = m->bus.ticks - 1u + 189625u;
                 /* A JAM executes actual host frames without sensor polls;
                    max travel crosses the first full frame boundary. */
                 m->cart.rom[0] = 0x02u;
                 m->cpu.pc = ROM_BASE;
-                frame(m, NULL);
-                frame(m, NULL);
-                frame(m, NULL);
-                frame(m, NULL);
+                /* Earlier synthetic access vectors may have advanced past
+                   several logical frame horizons. Eight calls reach the
+                   independently computed full-range bound in every case. */
+                for (unsigned call = 0u; call < 8u; call++) {
+                    frame(m, NULL);
+                }
+                CHECK(m->bus.ticks >= charged_by);
                 CHECK_EQ_HEX(muhtari__bus_peek(m, reg) & 0x80u, 0x80u);
                 struct muhtari__ports before = m->ports;
                 (void)muhtari__bus_peek(m, reg);

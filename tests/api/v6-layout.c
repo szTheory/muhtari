@@ -83,7 +83,7 @@ int main(void)
     object.canary = 0xA5A5A5A5u;
     CHECK_EQ_U64(muhtari_set_input_ex(m, &object.input), 0u);
     object.input.port[1].device = 3u;
-    CHECK_EQ_U64(muhtari_set_input_ex(m, &object.input), 13u);
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &object.input), 0u);
     CHECK_EQ_HEX(object.canary, 0xA5A5A5A5u);
     muhtari_input old;
     memset(&old, 0, sizeof old);

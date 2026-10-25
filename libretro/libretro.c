@@ -77,6 +77,7 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #define LR_ATARIVOX RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3)
 #define LR_DRIVING RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)
 #define LR_LIGHTGUN RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
+#define LR_PADDLE RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)
 
 #ifdef USE_RGB565
 typedef uint16_t lr_pixel;
@@ -144,10 +145,11 @@ static const struct retro_controller_description pad_types[] = {
     {"AtariVox EEPROM", LR_ATARIVOX},
     {"Driving", LR_DRIVING},
     {"XG-1", LR_LIGHTGUN},
+    {"Paddle pair", LR_PADDLE},
 };
 static struct retro_controller_info ports[] = {
-    {pad_types, 8u},
-    {pad_types, 8u},
+    {pad_types, 9u},
+    {pad_types, 9u},
     {NULL, 0u},
 };
 
@@ -473,6 +475,8 @@ static uint32_t lr_port_device(unsigned port)
         return MUHTARI_PORT_DRIVING;
     case LR_LIGHTGUN:
         return MUHTARI_PORT_LIGHTGUN;
+    case LR_PADDLE:
+        return MUHTARI_PORT_PADDLE;
     default:
         return 0u;
     }
@@ -517,7 +521,8 @@ static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
     d = p == 0u ? cart.port1 : cart.port2;
     if (d == MUHTARI_PORT_NONE && content != NULL)
         return MUHTARI_PORT_UNPLUGGED;
-    return d == MUHTARI_PORT_JOYSTICK || d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_LIGHTGUN
+    return d == MUHTARI_PORT_JOYSTICK || d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_LIGHTGUN ||
+                   d == MUHTARI_PORT_PADDLE
                ? d
                : MUHTARI_PORT_PROLINE;
 }
@@ -548,11 +553,14 @@ static void lr_refresh_inputs(void)
         if (lr_ordinary(active[1]))
             provider = 1u;
         else if (active[0] != MUHTARI_PORT_DRIVING && active[0] != MUHTARI_PORT_LIGHTGUN &&
-                 (active[1] == MUHTARI_PORT_DRIVING || active[1] == MUHTARI_PORT_LIGHTGUN))
+                 active[0] != MUHTARI_PORT_PADDLE &&
+                 (active[1] == MUHTARI_PORT_DRIVING || active[1] == MUHTARI_PORT_LIGHTGUN ||
+                  active[1] == MUHTARI_PORT_PADDLE))
             provider = 1u;
     }
     uint32_t kind = lr_ordinary(active[provider]) || active[provider] == MUHTARI_PORT_DRIVING ||
-                            active[provider] == MUHTARI_PORT_LIGHTGUN
+                            active[provider] == MUHTARI_PORT_LIGHTGUN ||
+                            active[provider] == MUHTARI_PORT_PADDLE
                         ? active[provider]
                         : MUHTARI_PORT_UNPLUGGED;
     if (console_port != provider || console_device != kind)
@@ -561,24 +569,36 @@ static void lr_refresh_inputs(void)
     console_device = kind;
     bool driving = kind == MUHTARI_PORT_DRIVING;
     bool gun = kind == MUHTARI_PORT_LIGHTGUN;
-    console_ids[0] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_START
-                     : driving         ? RETRO_DEVICE_ID_MOUSE_MIDDLE
-                     : gun             ? RETRO_DEVICE_ID_LIGHTGUN_START
-                                       : RETRO_DEVICE_ID_JOYPAD_L2;
-    console_ids[1] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_SELECT
-                     : driving         ? RETRO_DEVICE_ID_MOUSE_BUTTON_4
-                     : gun             ? RETRO_DEVICE_ID_LIGHTGUN_SELECT
-                                       : RETRO_DEVICE_ID_JOYPAD_R2;
-    console_ids[2] = lr_ordinary(kind) ? RETRO_DEVICE_ID_JOYPAD_X
-                     : driving         ? RETRO_DEVICE_ID_MOUSE_RIGHT
-                     : gun             ? RETRO_DEVICE_ID_LIGHTGUN_AUX_A
-                                       : RETRO_DEVICE_ID_JOYPAD_L3;
+    bool pad_console = lr_ordinary(kind) || kind == MUHTARI_PORT_PADDLE;
+    console_ids[0] = pad_console ? RETRO_DEVICE_ID_JOYPAD_START
+                     : driving   ? RETRO_DEVICE_ID_MOUSE_MIDDLE
+                     : gun       ? RETRO_DEVICE_ID_LIGHTGUN_START
+                                 : RETRO_DEVICE_ID_JOYPAD_L2;
+    console_ids[1] = pad_console ? RETRO_DEVICE_ID_JOYPAD_SELECT
+                     : driving   ? RETRO_DEVICE_ID_MOUSE_BUTTON_4
+                     : gun       ? RETRO_DEVICE_ID_LIGHTGUN_SELECT
+                                 : RETRO_DEVICE_ID_JOYPAD_R2;
+    console_ids[2] = pad_console ? RETRO_DEVICE_ID_JOYPAD_X
+                     : driving   ? RETRO_DEVICE_ID_MOUSE_RIGHT
+                     : gun       ? RETRO_DEVICE_ID_LIGHTGUN_AUX_A
+                                 : RETRO_DEVICE_ID_JOYPAD_L3;
     for (unsigned p = 0u; p < 2u; p++) {
         if (lr_ordinary(active[p])) {
             for (unsigned i = 0u; i < 6u; i++) {
                 inputs[n] = pad_inputs[i];
                 inputs[n++].port = p;
             }
+        } else if (active[p] == MUHTARI_PORT_PADDLE) {
+            inputs[n++] = (struct retro_input_descriptor){
+                p, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X,
+                "Paddle 1 position"};
+            inputs[n++] = (struct retro_input_descriptor){
+                p, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X,
+                "Paddle 2 position"};
+            inputs[n++] = (struct retro_input_descriptor){
+                p, RETRO_DEVICE_JOYPAD, 0u, RETRO_DEVICE_ID_JOYPAD_B, "Paddle 1 button"};
+            inputs[n++] = (struct retro_input_descriptor){
+                p, RETRO_DEVICE_JOYPAD, 0u, RETRO_DEVICE_ID_JOYPAD_A, "Paddle 2 button"};
         } else if (active[p] == MUHTARI_PORT_LIGHTGUN) {
             static const unsigned ids[] = {
                 RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y,
@@ -740,7 +760,20 @@ static void lr_input(void)
             in.port[p].buttons = lr_buttons(p, in.port[p].device);
         else if (in.port[p].device == MUHTARI_PORT_LIGHTGUN)
             lr_gun(p, &in.port[p]);
-        else if (in.port[p].device == MUHTARI_PORT_DRIVING && input_state_cb != NULL) {
+        else if (in.port[p].device == MUHTARI_PORT_PADDLE && input_state_cb != NULL) {
+            in.port[p].paddle[0] =
+                (uint32_t)((int32_t)input_state_cb(p, RETRO_DEVICE_ANALOG,
+                                                   RETRO_DEVICE_INDEX_ANALOG_LEFT,
+                                                   RETRO_DEVICE_ID_ANALOG_X) +
+                           32768);
+            in.port[p].paddle[1] =
+                (uint32_t)((int32_t)input_state_cb(p, RETRO_DEVICE_ANALOG,
+                                                   RETRO_DEVICE_INDEX_ANALOG_RIGHT,
+                                                   RETRO_DEVICE_ID_ANALOG_X) +
+                           32768);
+            in.port[p].buttons = (lr_held(p, RETRO_DEVICE_ID_JOYPAD_B) ? MUHTARI_BUTTON_1 : 0u) |
+                                 (lr_held(p, RETRO_DEVICE_ID_JOYPAD_A) ? MUHTARI_BUTTON_2 : 0u);
+        } else if (in.port[p].device == MUHTARI_PORT_DRIVING && input_state_cb != NULL) {
             in.port[p].dx = input_state_cb(p, RETRO_DEVICE_MOUSE, 0u, RETRO_DEVICE_ID_MOUSE_X);
             in.port[p].buttons =
                 input_state_cb(p, RETRO_DEVICE_MOUSE, 0u, RETRO_DEVICE_ID_MOUSE_LEFT) != 0
