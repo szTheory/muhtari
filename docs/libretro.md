@@ -25,7 +25,7 @@ The console's Reset is the switch a game reads; RetroArch's own Restart is a pow
 
 ## Devices
 
-Each port offers nine devices in Quick Menu → Controls:
+Each port offers ten devices in Quick Menu → Controls:
 
 | Device | What the game sees |
 |---|---|
@@ -38,6 +38,7 @@ Each port offers nine devices in Quick Menu → Controls:
 | Driving | relative MOUSE X moves the wheel; MOUSE LEFT fires; Y is ignored |
 | XG-1 | absolute LIGHTGUN SCREEN_X/Y aim; TRIGGER fires; IS_OFFSCREEN suppresses light; RELOAD fires offscreen |
 | Paddle pair | ANALOG left X/right X set pots1/2; RetroPad B/A press their independent buttons; Y is ignored |
+| Keypad | twelve RetroPad controls map to all twelve held keys, independently |
 
 Driving uses `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)` for selection and base
 `RETRO_DEVICE_MOUSE` IDs for polling, once after each frame's input poll. The frontend
@@ -61,10 +62,12 @@ The native D64/W30/L9/T8 optical model is explicitly unmeasured; see
 
 Console controls come from the lowest numbered ordinary ProLine/joystick port, retaining
 port 1's preference when both are ordinary. Otherwise the lowest numbered active
-driving/gun/paddle port supplies console controls. Driving uses MIDDLE for Pause,
+driving/gun/paddle/keypad port supplies console controls. Driving uses MIDDLE for Pause,
 BUTTON_4 for Select and RIGHT for Reset; LEFT remains fire. XG-1 uses LIGHTGUN
 START for Pause, SELECT for Select and AUX_A for Reset; these do not fire or reload.
 Paddles use RetroPad Start/Select/X for Pause/Select/Reset; B/A remain the two buttons.
+Keypad uses supplemental RetroPad L2/R2/L3 for Pause/Select/Reset; its keys
+never operate console switches, and difficulties use options.
 With neither
 port active, supplemental port 1 RetroPad L2/R2/L3 provide Pause/Select/Reset. Driving, paddles and
 supplemental controls use the difficulty options. A new ordinary console provider starts
@@ -81,6 +84,23 @@ and released buttons. Auto activates header paddles, descriptors refresh
 on selection, and either paddle port may coexist with the opposite EEPROM.
 The RC threshold/dump model is unmeasured; see
 [controller hardware](hardware/controllers.md#paddles).
+
+Keypad selection is `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)`;
+polling uses base JOYPAD index0, once per key after each frame's input poll.
+The row-major mapping is:
+
+| Key | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | * | 0 | # |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| RetroPad | Y | Up | X | Left | B | Right | L | Down | R | Select | A | Start |
+
+All twelve can be held together; there is no three-key cap. Frontends must
+bind these RetroPad inputs plus the supplemental console controls. Auto
+activates header keypads, descriptors refresh on selection and missing
+callbacks release all keys. An EEPROM on the opposite port remains fixed
+until reload. Pot-column recovery and switch ghosts follow the explicit
+unmeasured analog compatibility policy in
+[controller hardware](hardware/controllers.md#keypad); matrix observations
+do not claim calibrated voltages or isolating diodes.
 
 ## Options
 

@@ -78,6 +78,7 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #define LR_DRIVING RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)
 #define LR_LIGHTGUN RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
 #define LR_PADDLE RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)
+#define LR_KEYPAD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)
 
 #ifdef USE_RGB565
 typedef uint16_t lr_pixel;
@@ -146,10 +147,11 @@ static const struct retro_controller_description pad_types[] = {
     {"Driving", LR_DRIVING},
     {"XG-1", LR_LIGHTGUN},
     {"Paddle pair", LR_PADDLE},
+    {"Keypad", LR_KEYPAD},
 };
 static struct retro_controller_info ports[] = {
-    {pad_types, 9u},
-    {pad_types, 9u},
+    {pad_types, 10u},
+    {pad_types, 10u},
     {NULL, 0u},
 };
 
@@ -175,7 +177,14 @@ static const struct retro_input_descriptor pad_inputs[] = {
     {1u, RETRO_DEVICE_JOYPAD, 0u, RETRO_DEVICE_ID_JOYPAD_A, "Button 2"},
     {0u, 0u, 0u, 0u, NULL},
 };
-static struct retro_input_descriptor inputs[23];
+/* Row-major keypad1..9,*,0,#. These are base RetroPad identities,
+   not a keyboard or raw physical-device abstraction (docs/libretro.md). */
+static const unsigned keypad_ids[12] = {
+    RETRO_DEVICE_ID_JOYPAD_Y,      RETRO_DEVICE_ID_JOYPAD_UP,   RETRO_DEVICE_ID_JOYPAD_X,
+    RETRO_DEVICE_ID_JOYPAD_LEFT,   RETRO_DEVICE_ID_JOYPAD_B,    RETRO_DEVICE_ID_JOYPAD_RIGHT,
+    RETRO_DEVICE_ID_JOYPAD_L,      RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_R,
+    RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_A,    RETRO_DEVICE_ID_JOYPAD_START};
+static struct retro_input_descriptor inputs[28];
 
 /* The options (SET_CORE_OPTIONS_V2, L2339). No region option: PAL is
    refused in this release. */
@@ -477,6 +486,8 @@ static uint32_t lr_port_device(unsigned port)
         return MUHTARI_PORT_LIGHTGUN;
     case LR_PADDLE:
         return MUHTARI_PORT_PADDLE;
+    case LR_KEYPAD:
+        return MUHTARI_PORT_KEYPAD;
     default:
         return 0u;
     }
@@ -522,7 +533,7 @@ static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
     if (d == MUHTARI_PORT_NONE && content != NULL)
         return MUHTARI_PORT_UNPLUGGED;
     return d == MUHTARI_PORT_JOYSTICK || d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_LIGHTGUN ||
-                   d == MUHTARI_PORT_PADDLE
+                   d == MUHTARI_PORT_PADDLE || d == MUHTARI_PORT_KEYPAD
                ? d
                : MUHTARI_PORT_PROLINE;
 }
@@ -553,14 +564,15 @@ static void lr_refresh_inputs(void)
         if (lr_ordinary(active[1]))
             provider = 1u;
         else if (active[0] != MUHTARI_PORT_DRIVING && active[0] != MUHTARI_PORT_LIGHTGUN &&
-                 active[0] != MUHTARI_PORT_PADDLE &&
+                 active[0] != MUHTARI_PORT_PADDLE && active[0] != MUHTARI_PORT_KEYPAD &&
                  (active[1] == MUHTARI_PORT_DRIVING || active[1] == MUHTARI_PORT_LIGHTGUN ||
-                  active[1] == MUHTARI_PORT_PADDLE))
+                  active[1] == MUHTARI_PORT_PADDLE || active[1] == MUHTARI_PORT_KEYPAD))
             provider = 1u;
     }
     uint32_t kind = lr_ordinary(active[provider]) || active[provider] == MUHTARI_PORT_DRIVING ||
                             active[provider] == MUHTARI_PORT_LIGHTGUN ||
-                            active[provider] == MUHTARI_PORT_PADDLE
+                            active[provider] == MUHTARI_PORT_PADDLE ||
+                            active[provider] == MUHTARI_PORT_KEYPAD
                         ? active[provider]
                         : MUHTARI_PORT_UNPLUGGED;
     if (console_port != provider || console_device != kind)
@@ -588,6 +600,13 @@ static void lr_refresh_inputs(void)
                 inputs[n] = pad_inputs[i];
                 inputs[n++].port = p;
             }
+        } else if (active[p] == MUHTARI_PORT_KEYPAD) {
+            static const char *const names[12] = {"Key 1", "Key 2", "Key 3", "Key 4",
+                                                  "Key 5", "Key 6", "Key 7", "Key 8",
+                                                  "Key 9", "Key *", "Key 0", "Key #"};
+            for (unsigned i = 0u; i < 12u; i++)
+                inputs[n++] = (struct retro_input_descriptor){p, RETRO_DEVICE_JOYPAD, 0u,
+                                                              keypad_ids[i], names[i]};
         } else if (active[p] == MUHTARI_PORT_PADDLE) {
             inputs[n++] = (struct retro_input_descriptor){
                 p, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X,
@@ -758,7 +777,11 @@ static void lr_input(void)
         in.port[p].device = lr_active_port(p, &request);
         if (lr_ordinary(in.port[p].device))
             in.port[p].buttons = lr_buttons(p, in.port[p].device);
-        else if (in.port[p].device == MUHTARI_PORT_LIGHTGUN)
+        else if (in.port[p].device == MUHTARI_PORT_KEYPAD) {
+            for (unsigned i = 0u; i < 12u; i++)
+                if (lr_held(p, keypad_ids[i]))
+                    in.port[p].keypad |= 1u << i;
+        } else if (in.port[p].device == MUHTARI_PORT_LIGHTGUN)
             lr_gun(p, &in.port[p]);
         else if (in.port[p].device == MUHTARI_PORT_PADDLE && input_state_cb != NULL) {
             in.port[p].paddle[0] =

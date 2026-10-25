@@ -1210,6 +1210,8 @@ static int16_t controller_gun_values[17];
 static unsigned controller_gun_queries[2][17];
 static int controller_paddle_edges;
 static int16_t controller_paddle_values[2];
+static int controller_keypad_edges;
+static uint32_t controller_keypad_mask;
 
 static void RETRO_CALLCONV controller_poll(void)
 {
@@ -1220,6 +1222,23 @@ static int16_t RETRO_CALLCONV controller_input(unsigned p, unsigned d, unsigned 
 {
     muhtari_input_ex in;
     controller_stimulus(controller_frame, &in);
+    if (controller_keypad) {
+        static const unsigned ids[12] = {RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_UP,
+                                         RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_LEFT,
+                                         RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_RIGHT,
+                                         RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_DOWN,
+                                         RETRO_DEVICE_ID_JOYPAD_R, RETRO_DEVICE_ID_JOYPAD_SELECT,
+                                         RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_START};
+        if (p >= 2u || d != RETRO_DEVICE_JOYPAD || i != 0u) {
+            controller_errors++;
+            return 0;
+        }
+        uint32_t mask = controller_keypad_edges ? controller_keypad_mask : in.port[p].keypad;
+        for (unsigned key = 0u; key < 12u; key++)
+            if (id == ids[key])
+                return (mask & (1u << key)) != 0u;
+        return id == RETRO_DEVICE_ID_JOYPAD_L3 && in.switches != 0u && !controller_keypad_edges;
+    }
     if (controller_analog) {
         if (p >= 2u) {
             controller_errors++;
@@ -1361,11 +1380,13 @@ static int controller_module(const char *module_path, const char *path)
     set_input(controller_input);
     init();
     observe(controller_raw_sample, &raw);
-    unsigned selected = controller_analog  ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)
-                        : controller_light ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
-                                           : RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0);
+    unsigned selected = controller_keypad   ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)
+                        : controller_analog ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)
+                        : controller_light  ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
+                                            : RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0);
     controller_gun_edges = 0;
     controller_paddle_edges = 0;
+    controller_keypad_edges = 0;
     set_device(0u, selected);
     set_device(1u, selected);
     struct retro_game_info game = {path, image, n, NULL};
@@ -1390,6 +1411,26 @@ static int controller_module(const char *module_path, const char *path)
         muhtari__sha256_final(&expected_raw, b);
         failed |= memcmp(a, b, sizeof a) != 0 || controller_errors != 0u ||
                   controller_videos != CONTROLLER_FRAMES || controller_audios != CONTROLLER_FRAMES;
+        if (!failed && controller_keypad) {
+            controller_keypad_edges = 1;
+            set_video(NULL);
+            set_audio(NULL);
+            for (unsigned v = 0u; v < 14u; v++) {
+                controller_keypad_mask = v < 12u ? 1u << v : v == 12u ? 15u : 4095u;
+                run_frame();
+                for (unsigned p = 0u; p < 2u; p++) {
+                    const muhtari_port_input *in = &m->ports.applied_ex.port[p];
+                    failed |= in->device != MUHTARI_PORT_KEYPAD ||
+                              in->keypad != controller_keypad_mask || in->buttons != 0u;
+                }
+                failed |= m->ports.switches != 0u;
+            }
+            set_input(NULL);
+            run_frame();
+            failed |= m->ports.applied_ex.port[0].keypad != 0u ||
+                      m->ports.applied_ex.port[1].keypad != 0u;
+            controller_keypad_edges = 0;
+        }
         if (!failed && controller_analog) {
             static const struct {
                 int16_t left, right;

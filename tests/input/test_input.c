@@ -1384,6 +1384,25 @@ static void keypad_timing(void)
         CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
         CHECK_EQ_HEX(muhtari__tia_read(m, pot0) & H, L);
         CHECK_EQ_HEX(muhtari__tia_read(m, trigger) & H, H);
+        muhtari_input_ex mixed = {0};
+        mixed.size = (uint32_t)sizeof mixed;
+        mixed.port[p].device = MUHTARI_PORT_KEYPAD;
+        mixed.port[1u - p].device = MUHTARI_PORT_PADDLE;
+        mixed.port[1u - p].paddle[0] = 65535u;
+        mixed.port[1u - p].paddle[1] = 0u;
+        CHECK_EQ_U64(muhtari_set_input_ex(m, &mixed), MUHTARI_STATUS_OK);
+        muhtari__ports_latch(m);
+        /* Exercise the component power-on epoch with the selected mixed
+           attachment before the boot hand-off advances past both edges. */
+        muhtari__ports_reset(m);
+        muhtari__power_on(m);
+        muhtari__bus_write(m, 1u, 7u);
+        m->bus.ticks = 2864u - 5u;
+        CHECK_EQ_HEX(muhtari__bus_read(m, pot0) & H, H);
+        CHECK_EQ_U64(m->bus.ticks, 2865u);
+        uint16_t otherpot = (uint16_t)(8u + 2u * (1u - p));
+        CHECK_EQ_HEX(muhtari__bus_read(m, otherpot) & H, L);
+        CHECK_EQ_HEX(muhtari__bus_read(m, (uint16_t)(otherpot + 1u)) & H, H);
         muhtari_destroy(m);
     }
 }

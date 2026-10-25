@@ -114,10 +114,13 @@ void muhtari__ports_reset(muhtari *m)
     /* Power-on clears TIA dump after resetting ports. An explicit load
        choice must charge even before the first host packet. */
     for (unsigned p = 0u; p < 2u; p++) {
-        if (muhtari__ports_device(m, p) == MUHTARI_PORT_PADDLE) {
-            m->ports.next_tick = m->ports.pot[p][0].crossing_tick;
-        } else if (muhtari__ports_device(m, p) == MUHTARI_PORT_KEYPAD) {
-            m->ports.next_tick = 2864u;
+        uint32_t device = muhtari__ports_device(m, p);
+        if (device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_KEYPAD) {
+            for (unsigned n = 0u; n < 2u; n++) {
+                uint64_t at = m->ports.pot[p][n].crossing_tick;
+                if (m->ports.next_tick == 0u || at < m->ports.next_tick)
+                    m->ports.next_tick = at;
+            }
         }
     }
 }
