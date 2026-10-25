@@ -128,7 +128,10 @@ if(TARGET muhtari_libretro)
   set(libretro_input_cart ${PROJECT_BINARY_DIR}/tests/input-carts/input.a78)
   muhtari_add_test(NAME libretro.host.input
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> input ${libretro_input_cart}
-    LABELS libretro portable TIMEOUT 1)  # 2 x 0.02 s, Windows x64, slowest of 10 runs, run 39381705491
+    LABELS libretro portable TIMEOUT 5)
+  # Provisional: ceil(2 x 2.1913 s), 12 complete AppleClang21 ASan/UBSan
+  # runs in batches of four; native Linux arm64 0.90 s, run 40152879574.
+  # The Linux 1 s / sanitizer 2 s timeouts are censored, not measurements.
   set_tests_properties(libretro.host.input PROPERTIES FIXTURES_REQUIRED input_carts)
   # Fault prevented: a control, device, option or Restart that behaves
   # otherwise than the RetroPad layout and options docs/libretro.md lists.
