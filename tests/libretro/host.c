@@ -854,23 +854,24 @@ static void case_layout(void)
    descriptors name the 11 inputs of port 1 and the 6 of port 2. */
 static void case_devices(void)
 {
-    static const char *const names[7] = {
+    static const char *const names[8] = {
         "Auto (cartridge header)", "ProLine", "Joystick", "None", "SaveKey",
-        "AtariVox EEPROM",         "Driving"};
-    static const unsigned ids[7] = {RETRO_DEVICE_JOYPAD,
+        "AtariVox EEPROM",         "Driving", "XG-1"};
+    static const unsigned ids[8] = {RETRO_DEVICE_JOYPAD,
                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1),
                                     RETRO_DEVICE_NONE,
                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2),
                                     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3),
-                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)};
+                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0),
+                                    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)};
     uint8_t e[8];
     unsigned port, t;
     start(0);
     CHECK(controller_info != NULL);
     for (port = 0; controller_info != NULL && port < 2u; port++) {
-        CHECK_EQ_U64(controller_info[port].num_types, 7u);
-        for (t = 0; t < 7u && t < controller_info[port].num_types; t++) {
+        CHECK_EQ_U64(controller_info[port].num_types, 8u);
+        for (t = 0; t < 8u && t < controller_info[port].num_types; t++) {
             check_string("controller", controller_info[port].types[t].desc, names[t]);
             CHECK_EQ_U64(controller_info[port].types[t].id, ids[t]);
         }
