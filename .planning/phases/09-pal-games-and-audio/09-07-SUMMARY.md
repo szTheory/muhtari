@@ -81,12 +81,12 @@ coverage:
         status: pass
     human_judgment: false
   - id: D5
-    description: Independent pre-plan package comparison remains unaccepted after repeated lightgun timeouts and an incomplete full retry.
+    description: Independent candidate and genuine pre-plan complete inventories and all six actual ZIPs pass after bounded timeout investigation; original failed history is retained below.
     requirement: PAL-03
     verification:
       - kind: integration
-        ref: tests/cmake/quality_evidence.cmake with genuine pre-plan 009f37e; producer exit1 and bounded full retry exit124; N/A-local
-        status: fail
+        ref: tests/cmake/quality_evidence.cmake; committed candidate a93a11d and unchanged pre-plan 009f37e; exit0; N/A-local; recovery acceptance below
+        status: pass
     human_judgment: false
 actuals:
   tokens: 13197
@@ -96,9 +96,10 @@ plan_head_before: 009f37ef1b9082c8825419735bfa050a89271f5d
 plan_head_after: 7ad503ca23428ac69edd928fecdb8e595dd98022
 duration: 15min
 implemented: 2026-10-25
-status: halted
-halted: true
-halt_reason: Independent pre-plan package evidence lacks a passing full inventory after two lightgun timeouts and one outer timeout.
+completed: 2026-10-25
+status: complete
+halted: false
+halt_resolved: 2026-10-25
 ---
 
 # Phase9 Plan07: Sustained owned PAL evidence Summary
@@ -244,7 +245,7 @@ The best-effort WINDOWS append encountered pre-existing ledger count drift
 that unrelated advisory metadata was attempted. No required check, stub, owner
 verification or authentication gate remains for this local plan.
 
-## Next Plan Readiness
+## Next Plan Readiness (at implementation handoff)
 
 09-07 implementation and current-source checks pass. Parent acceptance is halted
 on the independent pre-plan evidence below;09-08 is blocked and PAL-01–03 remain open. Fast startup and analog85:342 balance remain
@@ -261,7 +262,7 @@ consumers and current ZIP integrity pass. The measured task range starts009f37e
 and ends7ad503c; the immediate summary commit contains only this artifact.
 
 
-## Parent Acceptance: HALTED
+## Parent Acceptance: HALTED (historical; resolved below)
 
 The implementation remains committed and its current-source evidence passes.
 The independent pre-plan package comparison is required for slice acceptance;
@@ -284,3 +285,54 @@ Fresh parent checks, all run URLs N/A-local:
 Next separate command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence.
 Preserve this canonical halt. Close it only after independent candidate/base
 acceptance passes; then restore09-08 readiness without restarting completed tasks.
+
+## Recovery Acceptance: PASSED
+
+The separate debug step preserves all implementation commits and the failed
+history above. Commit `a93a11d4f7bb25e5334138bdc39261bc6ff173fa` changes only the
+lightgun registration/provenance and maintainer guidance. The earlier calibration
+predates expansion from714 to1484 instances. Complete valid co-scheduled work
+measured2.1942s, so the existing twice-complete-success rule gives provisional5s.
+All assertions, workload, inventory membership and lane scales remain. The precise
+historical host contention is unknown; no proven-flake claim is made. The independent
+60s outer-wrapper/130s publication conflict is avoided by foreground execution.
+Commit `ddf51d4565596a8b8435e5977217482b1a542a12` also fixes the actual saved
+GSD consumer: `workflow.test_gate_timeout: 0` uses its supported no-timer mode
+for this one-shot CMake workflow. All659 CTest deadlines remain positive,
+including the longest250s allowance. No replacement orchestration cap is guessed.
+
+Fresh parent acceptance, every command exit0 and run URL N/A-local:
+
+- `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 0 -- cmake --workflow --preset ci`
+  on the exact configuration/content committed as `ddf51d4` passes653 ordinary
+  tests53.53s plus6 release checks0.18s; lightgun2.35s. Focused input/docs uses
+  `--output-junit lightgun-parent-focused.xml` and passes2/2 without replacing full inventories.
+- `env GITHUB_EVENT_PATH="$PWD/build/ci/quality-pal-local-event.json" cmake -DROOT=. -DBUILD=build/ci -DOUT=build/ci/quality-debug-parent-current.json -DSHA=ddf51d4565596a8b8435e5977217482b1a542a12 -DCONFIG=ci -DSOURCE=N/A-local -P tests/cmake/quality_evidence.cmake`
+  freshly accepts653+6 exactly once and all three actual candidate ZIPs.
+- The same existing producer with `-DROOT=build/ci/quality-base`
+  `-DBUILD=build/ci/quality-base/build/ci`
+  `-DOUT=build/ci/quality-debug-parent-base.json`
+  `-DSHA=009f37ef1b9082c8825419735bfa050a89271f5d` accepts652+6 exactly once.
+  That exact clean base was independently rebuilt by the foreground recursive
+  producer during this debug step: ordinary34.23s, release0.13s, lightgun1.38419s
+  under its unchanged2s bound. No base source, registration or assertion was patched.
+- `python3 build/ci/lightgun-parent-verify.py` checks full unique successful JUnit
+  membership, producer SHA/environment/source/count/sum identity and all six actual
+  ZIP CRCs, all659 retained positive CTest deadlines and configured wrapper
+  pass/fault exit propagation0/1. Candidate library81763+libretro87472+runner96375=265610 bytes;
+  genuine base81753+87472+96375=265600 bytes. Shared environment is
+  AppleClang21.0.0.21000101/Darwin-arm64 with the trusted normalized manifest and
+  sample identities; raw manifest admission remains the existing producer's job.
+- `git diff --check` passes. Full commands, source/artifact identities, bounded
+  specialist synthesis and retained limitations are in
+  `.planning/debug/resolved/preplan-lightgun-evidence.md`. Logs and generated
+  observations remain ignored local files.
+- `scripts/hygiene.sh --tree` exits0. `query phase-plan-index 9 --pick ready_plans`
+  exits0 and returns only09-08. `git worktree remove build/ci/quality-base` exits0
+  after its clean status and accepted JUnit evidence are preserved locally.
+
+This is independent local slice acceptance, not hosted phase-versus-main evidence.
+Requirements PAL-01–03 remain open for09-08 and final phase review/verification.
+Local5s timing remains provisional pending hosted cohorts. No owner verification
+is required.09-07 is accepted;09-08 is ready. No later GSD step was invoked.
+Next separate command: `$gsd-execute-phase 9`.

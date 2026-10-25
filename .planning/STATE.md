@@ -2,13 +2,13 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 7
-status: halted
-stopped_at: Phase 9 plan 09-07 implemented; acceptance halted on independent pre-plan evidence; 09-08 blocked
-last_updated: "2026-10-25T19:02:32Z"
+current_plan: 8
+status: ready
+stopped_at: Phase 9 plan 09-07 locally accepted after debug recovery; 09-08 ready
+last_updated: "2026-10-25T19:30:39Z"
 last_activity: 2026-10-25
-last_activity_desc: Plan 09-07 current-source checks pass; independent pre-plan acceptance halted
-state_head: 10615274789298f04f477baf7b1311014805bb7f
+last_activity_desc: Debug recovery accepts independent 09-07 candidate/base inventories and six actual ZIPs
+state_head: ddf51d4565596a8b8435e5977217482b1a542a12
 progress:
   total_phases: 7
   completed_phases: 4
@@ -27,30 +27,30 @@ current_phase: 09
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase9 plans09-01–06 are accepted locally;09-07 is implemented
-but its independent pre-plan evidence is halted.09-08 remains blocked.
+Current focus: Phase9 plans09-01–07 are accepted locally;09-07's independent
+pre-plan evidence passes after debug recovery.09-08 is ready.
 The library, automatic-region runner and both libretro formats execute PAL with
 selected timing/geometry and independently proved bounded audio storage/arithmetic.
 API6/ABI1/behavior5 and retained NTSC observations remain unchanged.
-PAL-01–03 remain pending accepted09-07/08 and final hosted acceptance.
-Next separate command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence.
+PAL-01–03 remain pending09-08 and final hosted acceptance.
+Next separate command: $gsd-execute-phase 9.
 
 ## Current Position
 
-Current Plan: 7
+Current Plan: 8
 Total Plans in Phase: 8
 Progress: [██████░░░░] 57%
 
-Phase9 has6/8 accepted plans and16/22 accepted tasks;19/22 tasks are implemented. Four of seven milestone
+Phase9 has7/8 accepted plans and19/22 accepted tasks;19/22 tasks are implemented. Four of seven milestone
 phases remain complete (57%); phases10–11 remain unstarted. Runtime totals are
-49 summarized active plans of50 planned, including halted06-01 and09-07;
-accepted completed plans remain47. These use the retained active-slot convention.
+49 summarized active plans of50 planned, including historical halted06-01;
+accepted completed plans are48. These use the retained active-slot convention.
 The raw on-disk inventory is55 summaries and56 plans, including historical
 recovery artifacts. Summary existence alone is not phase acceptance.
 
-Status: Halted09-07 acceptance;09-08 blocked
-Last activity: 2026-10-25 — Current653+6 pass; pre-plan comparison lacks a full pass
-Next command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence
+Status: Accepted09-07;09-08 ready
+Last activity: 2026-10-25 — Committed current653+6 and unchanged pre-plan652+6 plus six-ZIP comparison pass
+Next command: $gsd-execute-phase 9
 Branch: phase/09-pal-games-and-audio
 
 09-01 sourcead0d661 and summarya09ecc5 are committed. Task commits8b845bc
@@ -179,7 +179,8 @@ agree on independent numeric/native/raw/PCM evidence; all342 old observation
 rows retain exact bytes and614 PAL rows are additive. Parent workflow exits0,
 653+6 (40.74s/0.13s), N/A-local. Scope, artifacts, inventories and hygiene pass.
 Candidate1061527 ZIPs81763+87472+96375=265610 have valid CRCs and measured
-producer identities; source is unchanged from7ad503c. No base comparison passes.
+producer identities; source is unchanged from7ad503c. At that original handoff,
+no base comparison passed; debug recovery below supersedes the acceptance halt.
 
 The genuine pre-plan009f37e producer rebuild exits1 after651/652 pass;
 lightgun times out2.07303s. Isolated lightgun passes0.84s, but one bounded
@@ -190,9 +191,24 @@ can outlast the separate60s workflow wrapper. No cause or proven flake is
 established; no deadline, workload or policy changes. Two bounded read-only
 specialists confirm required base inventory is missing and advise against
 another unchanged retry. The clean temporary pre-plan worktree is removed.
-Canonical09-07 summary is halted;09-08 must remain blocked. Requirements,
-phase review and verification remain open. Review-fix/gap rounds remain unused.
-Next separate command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence.
+That historical halt and all failures remain in canonical09-07 summary.
+The separate debug step found pre-expansion calibration on the doubled gun matrix;
+complete co-scheduled valid work2.1942s supports provisional5s, preserving all cases,
+assertions and lane scales. Exact historical host contention remains unknown.
+Foreground execution removes the independently inadequate60s outer wrapper.
+The genuine clean009f37e base independently passes652+6 (34.23s/0.13s), including
+lightgun1.38419s under its unchanged2s deadline. Fix a93a11d recalibrates the gun;
+ddf51d4 also removes GSD's redundant outer timer through supported config0.
+The configured foreground workflow passes653+6 (53.53s/0.18s), lightgun2.35s;
+all659 CTest deadlines remain positive and wrapper pass/fault exits propagate.
+Fresh existing producer observations accept
+both complete inventories with matching environment/fixture identities; all six ZIP
+CRCs pass. Current81763+87472+96375=265610 versus base81753+87472+96375=265600.
+Commands exit0, run URLs N/A-local; full evidence is in the09-07 summary and
+.planning/debug/resolved/preplan-lightgun-evidence.md. This is a local slice
+comparison, not hosted phase-versus-main acceptance.09-07 is accepted;09-08 ready.
+Requirements, hosted acceptance, phase review and verification remain open.
+Review-fix/gap rounds remain unused. Next separate command: $gsd-execute-phase 9.
 
 Fast PAL startup140016 and zero undocumented residue remain fitted policy;
 85:342 analog balance is unverified. The planned PAL-01 probe classification
@@ -389,9 +405,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase9 plan09-07 acceptance halted;09-08 blocked
-Last session: 2026-10-25T19:02:32Z
-Resume file: .planning/phases/09-pal-games-and-audio/09-07-SUMMARY.md
+**Stopped at:** Phase9 plan09-07 accepted after debugging;09-08 ready
+Last session: 2026-10-25T19:30:39Z
+Resume file: .planning/phases/09-pal-games-and-audio/09-08-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -422,7 +438,7 @@ Resume file: .planning/phases/09-pal-games-and-audio/09-07-SUMMARY.md
 | Phase 09 P02 | 13min | 3 tasks | source634596b |
 | Phase 09 P03 | 16min | 3 tasks | sourceef95e37 |
 | Phase 09 P04 | 14min | 2 tasks | 3 files |
-| Phase 09 P07 | implementation complete; acceptance halted | 3 implemented tasks | source7ad503c |
+| Phase 09 P07 | accepted after debug recovery | 3 accepted tasks | source7ad503c; recoverya93a11d/ddf51d4 |
 
 ## Decisions
 
@@ -440,9 +456,9 @@ Resume file: .planning/phases/09-pal-games-and-audio/09-07-SUMMARY.md
 
 ### Blockers
 
-Required09-07 blocker: independent pre-plan inventory failed twice; package comparison unaccepted.
-09-08 is blocked. Recover only with new evidence; preserve completed task commits and canonical halt.
+No required09-07 blocker remains: independent pre-plan inventory and actual package
+comparison pass.09-08 is ready. Original failed evidence and task commits are preserved.
 Current required phase verification has not run. Historical advisory items follow.
 None required for the prior phase. Current-source advisory10000-case isolation timing and earlier
 publication/library costs remain in SEED-009; unaccepted evidence is preserved.
-Next command: $gsd-debug Resolve phase 9 plan 09-07 pre-plan lightgun timeouts and incomplete package evidence in a new session. Phase9 review-fix and gap execution rounds remain unused.
+Next command: $gsd-execute-phase 9 in a new session. Phase9 review-fix and gap execution rounds remain unused.
