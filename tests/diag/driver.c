@@ -514,7 +514,8 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "fractalus") == 0  ? 12u
            : strcmp(rom, "battery") == 0    ? 13u
            : (strlen(rom) == 8u && strncmp(rom, "motion", 6u) == 0 &&
-              (rom[6] == '4' || rom[6] == '5') && rom[7] >= 'a' && rom[7] <= 'c') ? 14u
+              (rom[6] == '4' || rom[6] == '5') && rom[7] >= 'a' && rom[7] <= 'c')
+               ? 14u
            : (strncmp(rom, "motion", 6u) == 0 && strlen(rom) == 7u && rom[6] >= '0' &&
               rom[6] <= '3')
                ? 14u
@@ -541,7 +542,9 @@ static int retail_judge(const uint8_t mb[256], const char *rom)
     if (retail_id(rom) == 0u || count == 0u || count > 27u || memcmp(mb, "M7DG", 4u) != 0 ||
         mb[4] != 1u || mb[5] != 0u || mb[6] != count || mb[7] != retail_id(rom) ||
         ((uint32_t)mb[8] | ((uint32_t)mb[9] << 8)) != retail_crc(mb)) {
-        fprintf(stderr, "%s: invalid mailbox header/count/CRC (count %u expected %u, identity %u expected %u)\n",
+        fprintf(stderr,
+                "%s: invalid mailbox header/count/CRC (count %u expected %u, identity %u expected "
+                "%u)\n",
                 rom, (unsigned)mb[6], (unsigned)count, (unsigned)mb[7], (unsigned)retail_id(rom));
         return 1;
     }
@@ -648,17 +651,20 @@ static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
         static const uint32_t buttons[2][12] = {
             {16u, 64u, 1024u, 2048u, 1u, 2u, 4u, 8u, 32u, 128u, 256u, 512u},
             {64u, 16u, 2048u, 32u, 256u, 512u, 1024u, 128u, 1u, 2u, 4u, 8u}};
-        in->port[0].device = in->port[1].device = controller_adapter == 1u
-            ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800;
+        in->port[0].device = in->port[1].device =
+            controller_adapter == 1u ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800;
         if (frame <= 2u)
             in->switches = MUHTARI_SWITCH_PAUSE |
-                (controller_adapter == 2u ? MUHTARI_SWITCH_RESET : 0u) |
-                (controller_group == 1u ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u) |
-                (controller_group == 2u ? MUHTARI_SWITCH_RIGHT_DIFFICULTY_A : 0u);
+                           (controller_adapter == 2u ? MUHTARI_SWITCH_RESET : 0u) |
+                           (controller_group == 1u ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u) |
+                           (controller_group == 2u ? MUHTARI_SWITCH_RIGHT_DIFFICULTY_A : 0u);
         for (unsigned p = 0u; p < 2u; p++)
-            in->port[p].buttons = frame >= 3u && frame <= 6u
-                ? buttons[controller_adapter - 1u][controller_group * 4u + (p == 0u ? frame - 3u : 6u - frame)]
-                : frame == 8u ? 4095u : 0u;
+            in->port[p].buttons =
+                frame >= 3u && frame <= 6u
+                    ? buttons[controller_adapter - 1u]
+                             [controller_group * 4u + (p == 0u ? frame - 3u : 6u - frame)]
+                : frame == 8u ? 4095u
+                              : 0u;
         return;
     }
     if (controller_motion != 0u) {
@@ -762,13 +768,14 @@ static int controller_library(const char *path, const char *expected, const char
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
-    media.port[0] = media.port[1] = controller_adapter != 0u
-                                    ? (controller_adapter == 1u ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800)
-                                    : controller_motion != 0u ? controller_motion_device()
-                                    : controller_keypad     ? MUHTARI_PORT_KEYPAD
-                                    : controller_analog     ? MUHTARI_PORT_PADDLE
-                                    : controller_light      ? MUHTARI_PORT_LIGHTGUN
-                                                            : MUHTARI_PORT_DRIVING;
+    media.port[0] = media.port[1] =
+        controller_adapter != 0u
+            ? (controller_adapter == 1u ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800)
+        : controller_motion != 0u ? controller_motion_device()
+        : controller_keypad       ? MUHTARI_PORT_KEYPAD
+        : controller_analog       ? MUHTARI_PORT_PADDLE
+        : controller_light        ? MUHTARI_PORT_LIGHTGUN
+                                  : MUHTARI_PORT_DRIVING;
     muhtari__sha256_init(&controller_raw);
     int failed =
         image == NULL || retail_expected(expected, controller_name()) != 0 ||
@@ -799,22 +806,31 @@ static int controller_library(const char *path, const char *expected, const char
     if (!failed) {
         char name[4096];
         /* Real report consumers must reject even CRC-valid numeric faults. */
-        for (unsigned fault = 0u; fault < (controller_adapter != 0u ? 8u
+        for (unsigned fault = 0u; fault < (controller_adapter != 0u  ? 8u
                                            : controller_motion != 0u ? 9u
-                                           : controller_keypad     ? 7u
-                                                                   : 5u);
+                                           : controller_keypad       ? 7u
+                                                                     : 5u);
              fault++) {
             uint8_t bad[256];
             memcpy(bad, mb, sizeof bad);
             static const unsigned offsets[] = {4u, 6u, 20u, 38u, 8u, 122u, 120u, 86u, 38u};
-            bad[offsets[fault]] ^= 1u;
+            if (controller_adapter == 0u || fault < 5u)
+                bad[offsets[fault]] ^= 1u;
             if (controller_adapter != 0u && fault >= 5u) {
                 if (fault == 5u) { /* Missing 17th bit / wrong identification. */
-                    bad[controller_adapter == 1u ? 30u : 27u] ^= controller_adapter == 1u ? 1u : 1u;
+                    bad[controller_adapter == 1u ? 30u : 27u] ^= 1u;
                 } else if (fault == 6u) { /* Adjacent pair/serial fields exchanged. */
-                    uint8_t tmp = bad[26];
-                    bad[26] = bad[34];
-                    bad[34] = tmp;
+                    if (controller_adapter == 2u && controller_group == 2u) {
+                        bad[34] = (uint8_t)((bad[34] << 4) | (bad[34] >> 4));
+                    } else {
+                        unsigned other = controller_adapter == 1u ? 34u : 30u;
+                        uint8_t tmp = bad[26];
+                        bad[26] = bad[other];
+                        bad[other] = tmp;
+                        tmp = bad[27];
+                        bad[27] = bad[other + 1u];
+                        bad[other + 1u] = tmp;
+                    }
                 } else { /* Last scan omitted, even with recomputed CRC. */
                     bad[6]--;
                 }
@@ -1704,11 +1720,13 @@ int main(int argc, char **argv)
          strcmp(argv[2], "trakball") == 0 || strcmp(argv[2], "st-mouse") == 0 ||
          strcmp(argv[2], "amiga-mouse") == 0 || strcmp(argv[2], "snes2atari") == 0 ||
          strcmp(argv[2], "mega7800") == 0) &&
-        (strcmp(argv[3], "both") == 0 || strcmp(argv[3], "0") == 0 ||
-         strcmp(argv[3], "1") == 0 || strcmp(argv[3], "2") == 0)) {
+        (strcmp(argv[3], "both") == 0 || strcmp(argv[3], "0") == 0 || strcmp(argv[3], "1") == 0 ||
+         strcmp(argv[3], "2") == 0)) {
         controller_adapter = strcmp(argv[2], "snes2atari") == 0 ? 1u
-                             : strcmp(argv[2], "mega7800") == 0 ? 2u : 0u;
-        controller_group = argv[3][0] >= '0' && argv[3][0] <= '2' ? (unsigned)(argv[3][0] - '0') : 0u;
+                             : strcmp(argv[2], "mega7800") == 0 ? 2u
+                                                                : 0u;
+        controller_group =
+            argv[3][0] >= '0' && argv[3][0] <= '2' ? (unsigned)(argv[3][0] - '0') : 0u;
         controller_motion = strcmp(argv[2], "trakball") == 0      ? 1u
                             : strcmp(argv[2], "st-mouse") == 0    ? 2u
                             : strcmp(argv[2], "amiga-mouse") == 0 ? 3u

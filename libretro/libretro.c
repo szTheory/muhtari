@@ -198,10 +198,10 @@ static struct retro_input_descriptor inputs[28];
 /* Conventional RetroPad layouts; the console uses separate supplemental
    controls. See docs/libretro.md and libretro.h's base-device contract. */
 static const unsigned adapter_ids[12] = {
-    RETRO_DEVICE_ID_JOYPAD_UP, RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_LEFT,
-    RETRO_DEVICE_ID_JOYPAD_RIGHT, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_A,
-    RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_L,
-    RETRO_DEVICE_ID_JOYPAD_R, RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START};
+    RETRO_DEVICE_ID_JOYPAD_UP,    RETRO_DEVICE_ID_JOYPAD_DOWN,   RETRO_DEVICE_ID_JOYPAD_LEFT,
+    RETRO_DEVICE_ID_JOYPAD_RIGHT, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_DEVICE_ID_JOYPAD_A,
+    RETRO_DEVICE_ID_JOYPAD_Y,     RETRO_DEVICE_ID_JOYPAD_X,      RETRO_DEVICE_ID_JOYPAD_L,
+    RETRO_DEVICE_ID_JOYPAD_R,     RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START};
 static const uint32_t adapter_buttons[2][12] = {
     {MUHTARI_BUTTON_UP, MUHTARI_BUTTON_DOWN, MUHTARI_BUTTON_LEFT, MUHTARI_BUTTON_RIGHT,
      MUHTARI_BUTTON_1, MUHTARI_BUTTON_2, MUHTARI_SNES_BUTTON_Y, MUHTARI_SNES_BUTTON_X,
@@ -580,7 +580,8 @@ static uint32_t lr_active_port(unsigned p, const muhtari_media *request)
     if (d == MUHTARI_PORT_NONE && content != NULL)
         return MUHTARI_PORT_UNPLUGGED;
     return d == MUHTARI_PORT_JOYSTICK || d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_LIGHTGUN ||
-                   d == MUHTARI_PORT_PADDLE || d == MUHTARI_PORT_KEYPAD || lr_mouse(d) || lr_adapter(d)
+                   d == MUHTARI_PORT_PADDLE || d == MUHTARI_PORT_KEYPAD || lr_mouse(d) ||
+                   lr_adapter(d)
                ? d
                : MUHTARI_PORT_PROLINE;
 }
