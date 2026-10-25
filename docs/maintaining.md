@@ -101,6 +101,26 @@ Before a phase or milestone is called done:
 - the latest release is the expected version with 19 assets:
   `gh release view --json tagName,assets --jq '.tagName, (.assets | length)'`.
 
+Run local workflows in the foreground. An outer command deadline must cover the
+whole workflow, including its longest permitted test; a 60s wrapper cannot cover
+the publisher controls' 130s allowance. Measure complete expanded work before
+reusing a deadline. The full lightgun NTSC/PAL/prefix/wrap matrix measured 2.1942s
+alongside the complete CI workload on Apple Clang 21 arm64; its provisional 5s
+deadline follows twice-complete-success calibration and retains lane scaling.
+
+Focused CTest runs need a separate report, for example
+`ctest --preset ci -R '^input[.]' --output-junit input-focused.xml`.
+Keep `junit.xml` and `junit-release.xml` for complete inventory checks.
+The presets explicitly set `jobs: ""`; `CTEST_PARALLEL_LEVEL` does not override
+that choice. Use explicit `ctest --parallel N` when measuring worker limits.
+
+For a local current/base package comparison, use the existing
+`tests/cmake/quality_evidence.cmake` producer with the actual event base. Preserve
+failed outputs separately and use a fresh output path. Require exit 0 and freshly
+completed current/base inventories, matching source/toolchain/fixture identities
+and all three actual ZIPs on each side. A failed recursive invocation can leave
+partial current or older base files; their presence alone establishes no pass.
+
 ## Withdrawing a release
 
 A published release cannot be edited, so a bad one is withdrawn and fixed forward:

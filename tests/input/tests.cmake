@@ -22,11 +22,12 @@ foreach(input_case IN ITEMS directions proline_two_button proline_one_button joy
   muhtari_add_test(NAME input.${input_case} COMMAND muhtari-test-input ${input_case}
     LABELS input portable TIMEOUT 1)
 endforeach()
-# Provisional 2 x 0.97 s complete Windows x64 base, CI 40153312357; the
-# expanded prefix workload also passed 12 concurrent Apple Clang ASan/UBSan
-# samples (three batches of four), maximum 0.969 s. Retain normal lane scaling.
+# Provisional ceil(2 x 2.1942 s), complete NTSC/PAL/prefix/wrap workload
+# co-scheduled with all ci tests, Apple Clang 21 arm64, 2026-10-25 local.
+# The older 0.97 s calibration preceded the doubled raster/wrap matrix.
+# All scenarios and normal lane scaling remain; hosted calibration is pending.
 muhtari_add_test(NAME input.lightgun COMMAND muhtari-test-input lightgun
-  LABELS input portable TIMEOUT 2)
+  LABELS input portable TIMEOUT 5)
 foreach(input_case IN ITEMS pins protocol wrap recovery)
   muhtari_add_test(NAME input.savekey.${input_case}
     COMMAND muhtari-test-input savekey.${input_case} LABELS input portable TIMEOUT 10)
