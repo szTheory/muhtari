@@ -134,6 +134,7 @@ static const uint8_t program[] = {
 static alloc_counts counts;
 static uint8_t image[IMAGES_HEADER + BODY];
 static uint8_t video[MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC];
+static uint8_t pal_video[320u * 292u];
 static uint8_t baseline[MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC];
 static int16_t audio[2u * MUHTARI__MAX_AUDIO_SAMPLES];
 static muhtari_input frames[8];
@@ -876,9 +877,9 @@ static void input_dump(void)
     muhtari_destroy(m);
 }
 
-static muhtari *light_boot(unsigned port, uint8_t color, int rows, uint64_t *sample)
+static muhtari *light_boot(uint32_t region, unsigned port, uint8_t color, int rows, uint64_t *sample)
 {
-    muhtari *m = boot(&plain);
+    muhtari *m = boot_region(&plain, region);
     CHECK(m != NULL);
     if (m == NULL) {
         return NULL;
@@ -889,6 +890,7 @@ static muhtari *light_boot(unsigned port, uint8_t color, int rows, uint64_t *sam
         media.size = (uint32_t)sizeof media;
         media.image = image;
         media.image_size = sizeof image;
+        media.region = region;
         media.port[port] = MUHTARI_PORT_LIGHTGUN;
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     }
@@ -910,11 +912,11 @@ static muhtari *light_boot(unsigned port, uint8_t color, int rows, uint64_t *sam
         return NULL;
     }
     muhtari__ports_latch(m);
-    m->maria.rows = rows ? video : NULL;
+    m->maria.rows = rows ? (region == MUHTARI_REGION_PAL ? pal_video : video) : NULL;
     m->maria.pitch = MUHTARI__WIDTH;
     /* First eligible row is native16, raster32, not aim row20.
        At x100 the existing raster emits at135+100. */
-    *sample = MUHTARI__TICKS_PER_FRAME_NTSC + 32u * 454u + 235u;
+    *sample = (region == MUHTARI_REGION_PAL ? 142102u : 119402u) + 32u * 454u + 235u;
     return m;
 }
 
@@ -928,7 +930,7 @@ static uint8_t light_access_at(muhtari *m, uint16_t addr, uint64_t tick, int wri
     return result;
 }
 
-static void light_raster_edges(void)
+static void light_raster_edges(uint32_t region)
 {
     static const struct {
         uint32_t y, row;
@@ -945,19 +947,20 @@ static void light_raster_edges(void)
                     uint32_t x = xs[xi];
                     for (unsigned edge = 0u; edge < 4u; edge++) {
                         uint64_t sample;
-                        muhtari *m = light_boot(p, 0u, (int)rows, &sample);
+                        muhtari *m = light_boot(region, p, 0u, (int)rows, &sample);
                         if (m == NULL) {
                             continue;
                         }
                         muhtari_input_ex in = m->ports.applied_ex;
                         in.port[p].gun_x = x;
-                        in.port[p].gun_y = cases[c].y;
+                        uint32_t extra = region == MUHTARI_REGION_PAL && cases[c].y == 241u ? 50u : 0u;
+                        in.port[p].gun_y = cases[c].y + extra;
                         CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
                         muhtari__ports_latch(m);
                         /* Independent geometry: visible row r is raster r+16,
                            x0 at135, x319 at454 (next line tick0). */
                         sample =
-                            MUHTARI__TICKS_PER_FRAME_NTSC + (cases[c].row + 16u) * 454u + 135u + x;
+                            (region == MUHTARI_REGION_PAL ? 142102u : 119402u) + (cases[c].row + extra + 16u) * 454u + 135u + x;
                         (void)light_access_at(m, 0x0020u, sample - 32u, 1, 0xA8u);
                         (void)light_access_at(m, 0x0020u, sample + 1u, 1, 0u);
                         struct muhtari__ports ports = m->ports;
@@ -1042,33 +1045,35 @@ static void light_prefixes(void)
     }
 }
 
-static int lightgun(void)
+static void lightgun_region(uint32_t region)
 {
-    light_prefixes();
-    light_raster_edges();
+    light_raster_edges(region);
     /* Raster257 x319 emits at258*454; VBLANK returns at+42,
        before the delayed sensor interval[+64,+94). No reads in between. */
     for (unsigned port = 0u; port < 2u; port++) {
         for (unsigned rows = 0u; rows < 2u; rows++) {
             uint64_t sample;
-            muhtari *m = light_boot(port, 0x08u, (int)rows, &sample);
+            muhtari *m = light_boot(region, port, 0x08u, (int)rows, &sample);
             if (m == NULL) {
                 continue;
             }
             muhtari_input_ex in = m->ports.applied_ex;
             in.port[port].gun_x = 319u;
-            in.port[port].gun_y = 241u;
+            in.port[port].gun_y = region == MUHTARI_REGION_PAL ? 291u : 241u;
             CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
             muhtari__ports_latch(m);
-            sample = MUHTARI__TICKS_PER_FRAME_NTSC + 258u * 454u;
+            sample = (region == MUHTARI_REGION_PAL ? 142102u + 308u * 454u : 119402u + 258u * 454u);
             m->cpu.jammed = 1u;
             muhtari_frame frame;
             memset(&frame, 0, sizeof frame);
             frame.size = (uint32_t)sizeof frame;
-            frame.video = rows != 0u ? video : NULL;
+            frame.video = rows != 0u ? (region == MUHTARI_REGION_PAL ? pal_video : video) : NULL;
             frame.video_pitch = MUHTARI__WIDTH;
             CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
-            CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+            /* PAL fast boot starts after its same-origin VBLANK, so its
+               first call already reaches the next-origin last row. */
+            if (region == MUHTARI_REGION_NTSC)
+                CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
             CHECK(m->bus.ticks >= sample + 42u && m->bus.ticks < sample + 64u);
             /* Dark/offscreen changes at the next VBLANK do not erase
                the historical sample. */
@@ -1091,7 +1096,7 @@ static int lightgun(void)
     for (unsigned port = 0u; port < 2u; port++) {
         for (unsigned mode = 0u; mode < 5u; mode++) {
             uint64_t sample;
-            muhtari *m = light_boot(port, 0x08u, 0, &sample);
+            muhtari *m = light_boot(region, port, 0x08u, 0, &sample);
             if (m == NULL) {
                 continue;
             }
@@ -1123,7 +1128,7 @@ static int lightgun(void)
             for (unsigned color = 0u; color < sizeof colors; color++) {
                 for (unsigned edge = 0u; edge < 4u; edge++) {
                     uint64_t sample;
-                    muhtari *m = light_boot(port, colors[color], (int)rows, &sample);
+                    muhtari *m = light_boot(region, port, colors[color], (int)rows, &sample);
                     if (m == NULL) {
                         continue;
                     }
@@ -1137,14 +1142,14 @@ static int lightgun(void)
                                                  sample + offsets[edge], 0, 0u),
                                  expected);
                     if (rows != 0u) {
-                        CHECK_EQ_HEX(video[16u * MUHTARI__WIDTH + 100u], colors[color]);
+                        CHECK_EQ_HEX((region == MUHTARI_REGION_PAL ? pal_video : video)[16u * MUHTARI__WIDTH + 100u], colors[color]);
                     }
                     muhtari_destroy(m);
                 }
             }
         }
         uint64_t sample;
-        muhtari *m = light_boot(port, 0xA8u, 0, &sample);
+        muhtari *m = light_boot(region, port, 0xA8u, 0, &sample);
         if (m != NULL) {
             (void)input_access(m, 0x0001u, 1, 0x40u);
             m->ports.input_read = 0u;
@@ -1165,7 +1170,7 @@ static int lightgun(void)
             CHECK_EQ_HEX(input_access(m, (uint16_t)(0x000Cu + port), 0, 0u), 0x80u);
             muhtari_destroy(m);
         }
-        m = light_boot(port, 0x08u, 0, &sample);
+        m = light_boot(region, port, 0x08u, 0, &sample);
         if (m != NULL) {
             (void)input_access(m, 0x0001u, 1, 0x40u);
             m->bus.ticks = sample - 20u;
@@ -1175,6 +1180,58 @@ static int lightgun(void)
             }
             CHECK_EQ_HEX(muhtari__bus_peek(m, (uint16_t)(0x000Cu + port)) & 0x80u, 0u);
             muhtari_destroy(m);
+        }
+    }
+}
+
+static int lightgun(void)
+{
+    light_prefixes();
+    lightgun_region(MUHTARI_REGION_NTSC);
+    lightgun_region(MUHTARI_REGION_PAL);
+    /* The ordinary D64 pulse crosses VBLANK, not the physical frame end.
+       A seeded pending deadline separately proves origin-wrap retention;
+       it is not a claim that the fitted optical delay spans that gap. */
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned rows = 0u; rows < 2u; rows++) {
+            for (unsigned mode = 0u; mode < 5u; mode++) {
+                for (unsigned edge = 0u; edge < 4u; edge++) {
+                    uint64_t sample;
+                    muhtari *m = light_boot(MUHTARI_REGION_PAL, p, 0u, (int)rows, &sample);
+                    if (m == NULL)
+                        continue;
+                    muhtari_input_ex in = m->ports.applied_ex;
+                    in.port[p].gun_x = 319u;
+                    in.port[p].gun_y = 291u;
+                    in.port[p].flags = mode == 3u ? MUHTARI_INPUT_GUN_OFFSCREEN : 0u;
+                    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                    muhtari__ports_latch(m);
+                    if (mode == 2u)
+                        (void)input_access(m, 0x003Cu, 1, 0xE0u); /* native colour kill */
+                    sample = 142102u + 308u * 454u;
+                    (void)light_access_at(m, 0x0020u, sample - 32u, 1,
+                                          mode == 1u ? 0xA7u : 0xA8u);
+                    (void)light_access_at(m, 0x0020u, sample + 1u, 1, 0u);
+                    if (mode == 4u) {
+                        m->ports.light[p].response_tick = 2u * 142102u + 30u;
+                        m->ports.light[p].response_until = 2u * 142102u + 60u;
+                        m->ports.next_tick = m->ports.light[p].response_tick;
+                        muhtari__bus_rearm(m);
+                    }
+                    /* Sample ownership precedes LRC at raster308 tick0. */
+                    if (rows != 0u)
+                        CHECK_EQ_HEX(pal_video[292u * 320u - 1u],
+                                     mode == 2u ? 0x08u : mode == 1u ? 0xA7u : 0xA8u);
+                    static const uint32_t offsets[] = {0u, 1u, 30u, 31u};
+                    uint64_t response = mode == 4u ? 2u * 142102u + 30u : sample + 64u;
+                    if (mode == 4u)
+                        CHECK(response > 2u * 142102u);
+                    CHECK_EQ_HEX(light_access_at(m, (uint16_t)(12u + p),
+                                                 response + offsets[edge] - 1u, 0, 0u) & H,
+                                 mode != 1u && mode != 3u && (edge == 1u || edge == 2u) ? L : H);
+                    muhtari_destroy(m);
+                }
+            }
         }
     }
     return check_failures == 0;

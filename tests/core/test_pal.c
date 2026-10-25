@@ -396,29 +396,51 @@ static void discard_equivalence(void)
 {
     alloc_counts ca, cb;
     muhtari *a = make(&ca), *b = make(&cb);
+    uint32_t raw_a = 0u, raw_b = 0u;
+    CHECK_EQ_U64(muhtari__synth_observe(a, observed, &raw_a), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari__synth_observe(b, observed, &raw_b), MUHTARI_STATUS_OK);
     muhtari_media media = cartridge();
     CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari_load(b, &media), MUHTARI_STATUS_OK);
+    uint32_t allocations_a = ca.allocs, allocations_b = cb.allocs;
+    muhtari_input_ex input = {0};
+    input.size = (uint32_t)sizeof input;
+    input.port[0].device = MUHTARI_PORT_LIGHTGUN;
+    input.port[0].gun_x = 319u;
+    input.port[0].gun_y = 291u;
+    CHECK_EQ_U64(muhtari_set_input_ex(a, &input), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_set_input_ex(b, &input), MUHTARI_STATUS_OK);
+    muhtari__bus_write(a, 0x20u, 8u);
+    muhtari__bus_write(b, 0x20u, 8u);
+    muhtari__bus_write(a, 1u, 0x40u);
+    muhtari__bus_write(b, 1u, 0x40u);
     for (unsigned frame = 0u; frame < 3u; frame++) {
+        int16_t peer_pcm[962];
         muhtari_frame output = {0}, discard = {0};
         output.size = discard.size = (uint32_t)sizeof output;
         output.video = picture + 1u;
         output.video_pitch = 320u;
         output.audio = pcm;
         output.audio_capacity = 962u;
+        discard.audio = peer_pcm;
+        discard.audio_capacity = 962u;
         CHECK_EQ_U64(muhtari_run_frame(a, &output), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(muhtari_run_frame(b, &discard), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(output.audio_count, discard.audio_count);
+        CHECK(memcmp(pcm, peer_pcm, output.audio_count * sizeof pcm[0]) == 0);
         CHECK_EQ_U64(a->audio_rem, b->audio_rem);
         CHECK(memcmp(&a->bus, &b->bus, sizeof a->bus) == 0);
         CHECK(memcmp(&a->cpu, &b->cpu, sizeof a->cpu) == 0);
         CHECK(memcmp(&a->maria, &b->maria, sizeof a->maria) == 0);
         CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
         CHECK(memcmp(&a->tia, &b->tia, sizeof a->tia) == 0);
+        CHECK(memcmp(&a->ports, &b->ports, sizeof a->ports) == 0);
+        CHECK_EQ_U64(raw_a, raw_b);
+        CHECK_EQ_U64(muhtari__bus_peek(a, 12u), muhtari__bus_peek(b, 12u));
         CHECK(memcmp(a->pokey, b->pokey, sizeof a->pokey) == 0);
     }
-    CHECK_EQ_U64(ca.allocs, 2u);
-    CHECK_EQ_U64(cb.allocs, 2u);
+    CHECK_EQ_U64(ca.allocs, allocations_a);
+    CHECK_EQ_U64(cb.allocs, allocations_b);
     muhtari_destroy(a);
     muhtari_destroy(b);
 }

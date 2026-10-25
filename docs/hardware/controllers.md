@@ -66,6 +66,15 @@ deterministic diagnostic behavior, not hardware-calibrated retail accuracy.
 
 Independent timing vectors use 454 ticks/line, native row r at raster r+16,
 and emission s=origin+(r+16)*454+135+x. Aim(100,20) includes rows16..24,
+PAL accepts aim y0..291 and clips the lower aperture to row291 (raster307);
+NTSC retains y0..241. Invalid next-row aims leave pending input unchanged.
+PAL raster307 x319 emits at origin+139832 before the line-buffer swap.
+Its fitted response starts at+64 and ends at+94, after VBLANK+42.
+Pending absolute sensor deadlines survive the selected142102-tick origin wrap;
+the D64 last-row response itself finishes before that physical frame end.
+Brightness uses the emitted native low nibble after colour kill, including
+when output rows are NULL; host RGB palettes cannot enter the sensor path.
+These geometry/timing checks establish model conformance, not calibration.
 excluding15/25; y0 clips to0..4 and y241 to237..241. At raster100,
 x319 emits at origin+45854 (100*454+454), with response at origin+45918
 through45947 (raster-relative518..547). The last row241/raster257 at
