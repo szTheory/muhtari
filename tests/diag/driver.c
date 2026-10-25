@@ -614,7 +614,8 @@ static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
             in->port[p].gun_x = frame == 6u ? (p == 0u ? 0u : 319u) : 159u;
             in->port[p].gun_y = frame == 6u ? (p == 0u ? 0u : 241u) : 120u;
             in->port[p].flags = frame == 7u || (p == 1u && (frame == 4u || frame == 5u))
-                                    ? MUHTARI_INPUT_GUN_OFFSCREEN : 0u;
+                                    ? MUHTARI_INPUT_GUN_OFFSCREEN
+                                    : 0u;
         }
         in->port[0].buttons = frame == 3u ? MUHTARI_BUTTON_1 : 0u;
         in->port[1].buttons = frame == 4u || frame == 5u ? MUHTARI_BUTTON_1 : 0u;
@@ -753,19 +754,21 @@ static int controller_library(const char *path, const char *expected, const char
             failed = 1;
         else {
             fprintf(f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
-                    controller_light ? "lightgun" : "driving", controller_light ? "lightgun" : "driving");
+                    controller_light ? "lightgun" : "driving",
+                    controller_light ? "lightgun" : "driving");
             for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
                 muhtari_input_ex in;
                 controller_stimulus(i, &in);
                 if (controller_light) {
-                    fprintf(f, "|lightgun:%u,%u,%u|lightgun:%u,%u,%u|...BB|\n",
-                            in.port[0].gun_x, in.port[0].gun_y,
+                    fprintf(f, "|lightgun:%u,%u,%u|lightgun:%u,%u,%u|...BB|\n", in.port[0].gun_x,
+                            in.port[0].gun_y,
                             in.port[0].flags * 2u + (in.port[0].buttons != 0u ? 1u : 0u),
                             in.port[1].gun_x, in.port[1].gun_y,
                             in.port[1].flags * 2u + (in.port[1].buttons != 0u ? 1u : 0u));
-                } else fprintf(f, "|driving:%d,0,%u|driving:%d,0,%u|...BB|\n", in.port[0].dx,
-                        in.port[0].buttons != 0u ? 1u : 0u, in.port[1].dx,
-                        in.port[1].buttons != 0u ? 1u : 0u);
+                } else
+                    fprintf(f, "|driving:%d,0,%u|driving:%d,0,%u|...BB|\n", in.port[0].dx,
+                            in.port[0].buttons != 0u ? 1u : 0u, in.port[1].dx,
+                            in.port[1].buttons != 0u ? 1u : 0u);
             }
             failed |= ferror(f) != 0;
             failed |= fclose(f) != 0;
@@ -1307,7 +1310,8 @@ int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
     if ((argc == 7 || argc == 8) && strcmp(argv[1], "--controller-case") == 0 &&
-        (strcmp(argv[2], "driving") == 0 || strcmp(argv[2], "lightgun") == 0) && strcmp(argv[3], "both") == 0) {
+        (strcmp(argv[2], "driving") == 0 || strcmp(argv[2], "lightgun") == 0) &&
+        strcmp(argv[3], "both") == 0) {
         controller_light = strcmp(argv[2], "lightgun") == 0;
         controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
         if (controller_pixels == NULL)

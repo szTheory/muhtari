@@ -180,6 +180,10 @@ light0,offscreen_right,128,fit
 light0,repeat_latch_left,0,fit
 light0,repeat_latch_right,128,fit
 light0,first_pixel_latched,0,fit
-light0,last_pixel_pending,128,fit
+light0,last_pixel_after_vblank,0,fit
 light0,last_pixel_historical,0,fit
 light0,trigger_released,238,guide
+light0,pixel_luma8_left,0,fit
+light0,pixel_luma8_right,0,fit
+light0,pixel_luma7_left,128,fit
+light0,pixel_luma7_right,128,fit

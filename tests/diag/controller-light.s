@@ -54,7 +54,8 @@ reset SUBROUTINE
         SENSOR $0D, 3
         lda $0280
         RECORD 4
-        ; The bright-background step is added by the implementation.
+        lda #8
+        sta BACKGRND
         jsr next_frame          ; frame4, remember frame3 light
         SENSOR $0C, 5
         SENSOR $0D, 6
@@ -70,13 +71,35 @@ reset SUBROUTINE
         SENSOR $0D, 11
         jsr next_frame          ; frame6, both endpoint aims now active
         CLEAR
-        jsr next_frame          ; frame7, final pixel response still due
+        jsr next_frame          ; frame7, last pixel's response crossed VBLANK
         SENSOR $0C, 12
         SENSOR $0D, 13
         jsr next_frame          ; frame8, historical right pulse captured
         SENSOR $0D, 14
         lda $0280
         RECORD 15
+        ; Native pixels, with dark background: a 160A byte of $FF
+        ; covers x156..163 in every zone line, including x159.
+        lda #7
+        sta BACKGRND
+        lda #8
+        sta P0C3
+        lda #>light_dll
+        sta DPPH
+        lda #<light_dll
+        sta DPPL
+        lda #CTRL_ON
+        sta CTRL
+        CLEAR
+        jsr next_frame          ; frame9, native palette8 pixels lit
+        SENSOR $0C, 16
+        SENSOR $0D, 17
+        lda #7
+        sta P0C3
+        CLEAR
+        jsr next_frame          ; frame10, native palette7 pixels dark
+        SENSOR $0C, 18
+        SENSOR $0D, 19
 .finish
         jsr mb_finish
         jmp show
@@ -84,4 +107,18 @@ reset SUBROUTINE
 next_frame SUBROUTINE
         jsr wait_visible
         jmp wait_vblank
+
+light_dl
+        .byte <light_gfx, $40, >light_gfx, $1F, 78
+        .byte 0, 0, 0, 0
+light_dll
+        REPEAT 17
+        .byte $0F, >light_dl, <light_dl
+        REPEND
+        ALIGN 256
+light_gfx
+        REPEAT 16
+        .byte $FF
+        ds 255, 0
+        REPEND
         LIB_TAIL

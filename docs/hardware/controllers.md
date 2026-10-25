@@ -77,6 +77,40 @@ and without video. DMA is off; no completed framebuffer is the oracle.
 JAM/HALT and observer tests separately prove unpolled D6 capture and
 nonmutating peeks. These are arithmetic conformance vectors, not measurements.
 
+### Light diagnostic
+
+The owned `controller-light` executable has identity15 and scenario0. It
+decodes the held startup switches before mailbox initialization; a nonzero
+selector records its actual value and completes, so the judge rejects it.
+Each process keeps both devices fixed. Movie2/library/module frames1/2 are
+neutral with center aim(159,120). Frame3 pulls the left trigger; frame4
+releases it, pulls the right trigger and marks right aim offscreen; frame5
+holds that state without a library submission. Frame6 releases triggers
+and aims left(0,0), right(319,241); frame7 marks both offscreen. Frame8
+and subsequent frames return to center aim. Console switches remain released.
+
+The19 records, in order, are scenario0; luma7 sensor highs128/128;
+left-only trigger SWCHA254; luma8 captured lows0/0; right-only trigger
+SWCHA239; left-visible/right-offscreen sensors0/128; repeated D6 enables
+retain0/128; first/last-pixel lows0/0 after the frame7 VBLANK polling
+routine; historical right low0 in frame8; released triggers SWCHA238;
+native palette8 pixel lows0/0; and palette7 pixel highs128/128. Trigger
+values follow pin1's positive polarity: released bits4/0 are low. Luma7
+never reaches T8; luma8 does, even with DMA disabled. D6 clear/enable
+separates the illumination cases. The frame7 CPU mailbox reads finish
+after the last pixel's +64 response; the exact +42 host return and +63/64
+edges are independently checked by the CPU/bus tests above.
+
+The final two cases enable real DMA with a five-byte 160A object at hpos78,
+width1 byte, graphics FF at every zone offset. Its four160A pixels cover
+native x156..163, including159. Seventeen16-line zones cover the aiming
+rows. Background remains7; only the native P0C3 pixel changes8→7. The
+numbers follow the model before any cross-host hashes are compared.
+Mailbox magic/version/status/count, sequential record IDs and CRC are judged
+independently; CRC-valid wrong values, missing/duplicate IDs and wrong
+counts fail through the same actual report consumer. No retail or calibrated
+hardware claim follows from this diagnostic.
+
 ## Serial EEPROM
 
 SaveKey and AtariVox share a 32 KiB 24LC256 model. AtariVox speech is unavailable. Port 2 uses SWCHA bit 2 for SDA

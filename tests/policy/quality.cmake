@@ -351,7 +351,8 @@ set(run "https://github.com/example/public/actions/runs/1")
 file(MAKE_DIRECTORY "${repo}/build/pins")
 execute_process(COMMAND "${CMAKE_COMMAND}" --workflow --preset ci WORKING_DIRECTORY "${repo}" COMMAND_ERROR_IS_FATAL ANY OUTPUT_QUIET)
 foreach(case unchanged additions push dispatch later_base changed changed_later deleted duplicate_old duplicate_new duplicate_later unrelated malformed source pin license digest comment forged compiler platform producer_base producer_run producer_identity samples sample_revision sample_next sample_equal4 sample_reverse sample_reverse4 sample_revision4 sample_arbitrary sample_missing sample_missing4 sample_duplicate sample_duplicate4 sample_row sample_row4 sample_pin sample_pin4 sample_trailer sample_trailer4 sample_forged sample_forged4 actual_changed actual_duplicate actual_license actual_digest
-    controller_additions controller_later controller_changed_old controller_deleted_old
+    controller_additions controller_later controller_changed_light controller_duplicate_light
+    controller_changed_light_later controller_duplicate_light_later controller_changed_old controller_deleted_old
     controller_changed_later controller_deleted_later controller_duplicate_old
     controller_duplicate_new controller_duplicate_later controller_unrelated
     controller_source controller_pin controller_license controller_digest controller_malformed
@@ -371,12 +372,18 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
       set(event_base "${controller_base}")
     endif()
     set(changed "${controller_focus}")
+    if(case MATCHES "_light")
+      set(changed "${controller_light}")
+    endif()
     if(case MATCHES "^controller_(changed_old|deleted_old|forged)$")
       set(changed "${actual_battery}")
     endif()
     if(case MATCHES "^controller_(changed.*|forged)$")
       string(REPLACE "\tMIT\t" "\tunknown\t" replacement "${changed}")
       set(regex "quality: deleted or changed trusted manifest")
+      if(case STREQUAL "controller_changed_light")
+        set(regex "quality: unrelated fixture")
+      endif()
     elseif(case MATCHES "^controller_deleted")
       set(replacement "")
       set(regex "quality: deleted or changed trusted manifest")
@@ -384,7 +391,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
       if(case STREQUAL "controller_duplicate_old")
         string(APPEND candidate "${actual_battery}")
       else()
-        string(APPEND candidate "${controller_focus}")
+        string(APPEND candidate "${changed}")
       endif()
       set(regex "quality: duplicate fixture")
     elseif(case STREQUAL "controller_unrelated")
