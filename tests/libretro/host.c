@@ -172,7 +172,7 @@ static enum retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
 static int video_calls, video_null;
 static unsigned video_width, video_height;
 static size_t video_pitch;
-static unsigned char frame[W * H * 4u];
+static unsigned char frame[W * 292u * 4u];
 static size_t sample_frames;
 static int sample_nonzero;
 static int batch_calls;
@@ -340,10 +340,10 @@ static void RETRO_CALLCONV video(const void *data, unsigned width, unsigned heig
         video_null++;
         return;
     }
-    if (width != W || height != H || pitch < row) {
+    if (width != W || height > 292u || pitch < row) {
         return;
     }
-    for (y = 0; y < H; y++) {
+    for (y = 0; y < height; y++) {
         memcpy(&frame[y * row], (const unsigned char *)data + y * pitch, row);
     }
 }
@@ -571,6 +571,62 @@ static void card(void)
     }
     CHECK_EQ_U64(batch_nonzero, 0);
     CHECK_EQ_U64(sample_nonzero, 0);
+
+    /* Automatic PAL uses the actual loaded module and both audio callback
+       paths. The owned loop leaves BACKGRND zero, including the last row. */
+    static uint8_t pal[128u + 4096u];
+    images_header(pal, 3u, "Owned PAL", 4096u, 0u);
+    pal[57] = 1u;
+    memset(pal + 128u, 0xEA, 4096u);
+    pal[128] = 0x4Cu;
+    pal[129] = 0u;
+    pal[130] = 0xF0u;
+    images_footer(pal + 128u, 4096u);
+    struct retro_game_info game = {0};
+    game.data = pal;
+    game.size = sizeof pal;
+    CHECK_EQ_U64(p_load_game(&game), 1u);
+    p_get_system_av_info(&av);
+    CHECK_EQ_U64(p_get_region(), RETRO_REGION_PAL);
+    CHECK_EQ_U64(av.geometry.base_height, 292u);
+    CHECK_EQ_U64(av.geometry.max_height, 293u);
+    CHECK_EQ_DBL(av.timing.fps, 3546894.0 / 71051.0);
+    CHECK_EQ_DBL(av.geometry.aspect_ratio, (float)(147500000.0 / 129461631.0));
+    static const uint32_t pal_samples[] = {960u, 962u, 961u};
+    for (unsigned f = 0u; f < 3u; f++) {
+        memset(frame, 0xA5, sizeof frame);
+        video_calls = 0;
+        batch_frames = sample_frames = 0u;
+        p_run();
+        CHECK_EQ_U64(video_calls, 1u);
+        CHECK_EQ_U64(video_height, 292u);
+        CHECK_EQ_U64(video_width, 320u);
+        CHECK_EQ_U64(video_pitch, 320u * (rgb565 ? 2u : 4u));
+        CHECK_EQ_U64(batch_frames, rgb565 ? 0u : pal_samples[f]);
+        CHECK_EQ_U64(sample_frames, rgb565 ? pal_samples[f] : 0u);
+        for (uint32_t px = 0u; px < 93440u; px++) {
+            uint32_t got = 0u;
+            if (rgb565) {
+                uint16_t value;
+                memcpy(&value, frame + px * 2u, 2u);
+                got = value;
+            } else {
+                memcpy(&got, frame + px * 4u, 4u);
+            }
+            CHECK_EQ_U64(got, rgb565 ? muhtari__palette_rgb565(0u) : muhtari__palette_rgb(0u));
+        }
+    }
+    p_unload_game();
+    p_get_system_av_info(&av);
+    CHECK_EQ_U64(p_get_region(), RETRO_REGION_NTSC);
+    CHECK_EQ_U64(av.geometry.base_height, 242u);
+    CHECK_EQ_DBL(av.timing.fps, 39375000.0 / 656711.0);
+    CHECK_EQ_U64(p_load_game(&dummy), 0u);
+    p_get_system_av_info(&av);
+    CHECK_EQ_U64(av.geometry.base_height, 242u);
+    CHECK_EQ_U64(p_load_game(NULL), 1u);
+    p_run();
+    CHECK_EQ_U64(video_height, 242u);
 
     p_unload_game();
     p_deinit();

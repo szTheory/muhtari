@@ -218,8 +218,8 @@ static void ports_light_rearm(muhtari *m, unsigned p, uint64_t after)
     uint32_t half = light->lines / 2u;
     uint32_t first = 16u + (in->gun_y > half ? in->gun_y - half : 0u);
     uint32_t last = 16u + in->gun_y + half;
-    if (last >= 16u + MUHTARI__HEIGHT_NTSC) {
-        last = 15u + MUHTARI__HEIGHT_NTSC;
+    if (last >= 16u + muhtari__timing(m).height) {
+        last = 15u + muhtari__timing(m).height;
     }
     uint64_t origin = m->maria.origin;
     uint64_t row = after >= origin ? (after - origin) / 454u : 0u;
@@ -232,7 +232,7 @@ static void ports_light_rearm(muhtari *m, unsigned p, uint64_t after)
         at += 454u;
     }
     if (row > last) {
-        origin += MUHTARI__TICKS_PER_FRAME_NTSC;
+        origin += muhtari__timing(m).frame_ticks;
         row = first;
         at = origin + row * 454u + 135u + in->gun_x;
     }
@@ -650,7 +650,7 @@ muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in)
             (keypad ? port->keypad > 4095u : port->keypad != 0u) ||
             (port->device != MUHTARI_PORT_DRIVING && !mouse && port->dx != 0) ||
             (!mouse && port->dy != 0) ||
-            (gun ? (port->gun_x >= MUHTARI__WIDTH || port->gun_y >= MUHTARI__HEIGHT_NTSC ||
+            (gun ? (port->gun_x >= MUHTARI__WIDTH || port->gun_y >= muhtari__timing(m).height ||
                     (port->flags & ~(uint32_t)MUHTARI_INPUT_GUN_OFFSCREEN) != 0u)
                  : (port->gun_x != 0u || port->gun_y != 0u || port->flags != 0u)) ||
             ((port->device == MUHTARI_PORT_UNPLUGGED || port->device == MUHTARI_PORT_SAVEKEY ||

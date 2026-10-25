@@ -62,9 +62,9 @@ RETRO_API void muhtari__libretro_observe(muhtari__audio_observer callback, void 
 #define LR_WIDTH 320u
 #define LR_HEIGHT 242u
 #define LR_MAX_HEIGHT 293u
-#define LR_PIXELS (LR_WIDTH * LR_HEIGHT)
+#define LR_PIXELS (LR_WIDTH * 292u)
 /* A frame yields 800 or 801 samples (muhtari_info.max_audio_samples). */
-#define LR_AUDIO_CAPACITY 801u
+#define LR_AUDIO_CAPACITY 962u
 /* The larger BIOS image, 16 KiB; one byte more is read so that a longer
    file reaches muhtari_load, which refuses it. */
 #define LR_BIOS_MAX 16384u
@@ -106,6 +106,8 @@ static retro_input_state_t input_state_cb;
 static retro_log_printf_t log_cb;
 static muhtari *inst;
 static muhtari_cart_info cart;
+static muhtari_info selected;
+static unsigned selected_region;
 static uint8_t *content;
 static size_t content_size;
 static uint8_t *native;
@@ -299,6 +301,8 @@ static void lr_release(void)
     free(pixels);
     pixels = NULL;
     memset(&cart, 0, sizeof cart);
+    memset(&selected, 0, sizeof selected);
+    selected_region = RETRO_REGION_NTSC;
     memset(descs, 0, sizeof descs);
     memset(&memory_map, 0, sizeof memory_map);
     desc_count = 0u;
@@ -474,6 +478,14 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
     info->geometry.aspect_ratio = (float)(320.0 * 6.0 / (242.0 * 7.0));
     info->timing.fps = 39375000.0 / 656711.0;
     info->timing.sample_rate = 48000.0;
+    if (selected.height != 0u) {
+        info->geometry.base_width = selected.width;
+        info->geometry.base_height = selected.height;
+        info->geometry.aspect_ratio = (float)((double)selected.width * selected.par_num /
+                                              ((double)selected.height * selected.par_den));
+        info->timing.fps = (double)selected.fps_num / selected.fps_den;
+        info->timing.sample_rate = (double)selected.sample_rate_num / selected.sample_rate_den;
+    }
 }
 
 /* L7673: unknown identities safely unplug ordinary input. */
@@ -938,9 +950,9 @@ void retro_run(void)
     memset(&io, 0, sizeof io);
     io.size = (uint32_t)sizeof io;
     io.video = native;
-    io.video_pitch = LR_WIDTH;
+    io.video_pitch = selected.width;
     io.audio = mono;
-    io.audio_capacity = LR_AUDIO_CAPACITY;
+    io.audio_capacity = selected.max_audio_samples;
     st = muhtari_run_frame(inst, &io);
     if (st != MUHTARI_STATUS_OK) {
         if (!run_failed) {
@@ -949,15 +961,17 @@ void retro_run(void)
             run_failed = true;
         }
         if (video_cb != NULL) {
-            video_cb(pixels, LR_WIDTH, LR_HEIGHT, (size_t)LR_WIDTH * sizeof pixels[0]);
+            video_cb(pixels, selected.width, selected.height,
+                     (size_t)selected.width * sizeof pixels[0]);
         }
         return;
     }
-    for (i = 0; i < LR_PIXELS; i++) {
+    for (i = 0; i < selected.width * selected.height; i++) {
         pixels[i] = LR_PALETTE(native[i]);
     }
     if (video_cb != NULL) {
-        video_cb(pixels, LR_WIDTH, LR_HEIGHT, (size_t)LR_WIDTH * sizeof pixels[0]);
+        video_cb(pixels, selected.width, selected.height,
+                 (size_t)selected.width * sizeof pixels[0]);
     }
     for (i = 0; i < io.audio_count; i++) {
         stereo[2u * i] = mono[i];
@@ -1417,6 +1431,13 @@ bool retro_load_game(const struct retro_game_info *game)
         lr_release();
         return false;
     }
+    selected.size = (uint32_t)sizeof selected;
+    if (muhtari_get_info(inst, &selected) != MUHTARI_STATUS_OK) {
+        lr_release();
+        return false;
+    }
+    selected_region =
+        game != NULL && cart.region == MUHTARI_REGION_PAL ? RETRO_REGION_PAL : RETRO_REGION_NTSC;
     lr_refresh_inputs();
     muhtari_input_ex initial = {0};
     muhtari_media request = {0};
@@ -1473,10 +1494,10 @@ RETRO_API muhtari *muhtari__libretro_instance(void)
 }
 #endif
 
-/* L7812: 0 is NTSC, the only region this release runs. */
+/* Region follows the successful load; release restores no-content NTSC. */
 unsigned retro_get_region(void)
 {
-    return RETRO_REGION_NTSC;
+    return selected_region;
 }
 
 /* L7826: system RAM, the 4 KiB at $1800-$27FF, from the instance. */

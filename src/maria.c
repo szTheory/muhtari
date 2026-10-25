@@ -367,7 +367,7 @@ uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t
         ma->offset--;
     }
     st->cost = (uint16_t)(end - t0);
-    if (line < MUHTARI__LINES_NTSC) {
+    if (line < muhtari__timing(m).lines) {
         ma->stats[line] = *st;
     }
     return end;
@@ -393,7 +393,7 @@ enum maria_event { EV_LRC, EV_DMA, EV_MSTAT, EV_VBE, EV_COUNT };
 static const uint8_t maria_event_t[EV_COUNT] = {0u, MARIA_DMA_REQ_T, 42u, 43u};
 #define MARIA_FIRST_DMA_LINE 17u
 #define MARIA_VBE_LINE 16u
-#define MARIA_VBLANK_LINE 258u
+#define MARIA_VBLANK_LINE (muhtari__timing(m).lines - 5u)
 
 /* The picture (A7800-MARIA section 3.2, section 3.3 and section 6): pixel
    x of raster n, 0-319, plays at t 135 + x of line n from the line-RAM
@@ -450,7 +450,7 @@ static void render(muhtari *m, uint32_t line, uint32_t x_end)
     if (x_end <= ma->px) {
         return;
     }
-    if (line >= MARIA_FIRST_RASTER && line < MARIA_FIRST_RASTER + MUHTARI__HEIGHT_NTSC) {
+    if (line >= MARIA_FIRST_RASTER && line < MARIA_FIRST_RASTER + muhtari__timing(m).height) {
         uint8_t *row =
             ma->rows != NULL ? ma->rows + (size_t)(line - MARIA_FIRST_RASTER) * ma->pitch : NULL;
         const uint8_t *cells = ma->line_ram[(ma->write_buf ^ 1u) & 1u];
@@ -490,7 +490,7 @@ static void render_to(muhtari *m, uint64_t at)
 {
     uint64_t beam = at - m->maria.origin;
     uint64_t line = beam / MARIA_LINE_TICKS;
-    if (at >= m->maria.origin && line < MUHTARI__LINES_NTSC) {
+    if (at >= m->maria.origin && line < muhtari__timing(m).lines) {
         render(m, (uint32_t)line, pixels_by((uint32_t)(beam % MARIA_LINE_TICKS)));
     }
 }
@@ -501,7 +501,7 @@ void muhtari__maria_flush(muhtari *m, uint64_t tick)
 }
 
 /* Whether the event happens on line (A7800-MARIA section 4.1). */
-static int event_on(uint32_t line, uint32_t ev)
+static int event_on(const muhtari *m, uint32_t line, uint32_t ev)
 {
     switch (ev) {
     case EV_LRC:
@@ -517,10 +517,11 @@ static int event_on(uint32_t line, uint32_t ev)
 
 /* Arms the first event after tick t of line, or else the next line's t 0.
    Line 263 is line 0 of the next frame, whose t 0 moves the origin. */
-static void arm_after(struct muhtari__maria *ma, uint32_t line, uint32_t t)
+static void arm_after(muhtari *m, uint32_t line, uint32_t t)
 {
+    struct muhtari__maria *ma = &m->maria;
     for (uint32_t ev = 0u; ev < EV_COUNT; ev++) {
-        if (maria_event_t[ev] > t && event_on(line, ev)) {
+        if (maria_event_t[ev] > t && event_on(m, line, ev)) {
             ma->event_line = (uint16_t)line;
             ma->event_index = (uint8_t)ev;
             return;
@@ -541,7 +542,7 @@ void muhtari__maria_start(muhtari *m)
                  (line == MARIA_VBLANK_LINE && t >= maria_event_t[EV_MSTAT]);
     ma->mstat = vblank ? MARIA_VBLANK : 0u;
     ma->px = (uint16_t)pixels_by(t);
-    arm_after(ma, line, t);
+    arm_after(m, line, t);
 }
 
 uint64_t muhtari__maria_next_event(const muhtari *m)
@@ -557,6 +558,8 @@ uint64_t muhtari__maria_next_event(const muhtari *m)
 static void request_dma(muhtari *m, uint32_t line, uint64_t tick)
 {
     struct muhtari__maria *ma = &m->maria;
+    if (line >= muhtari__timing(m).lines)
+        return;
     struct muhtari__line_stats *st = &ma->stats[line];
     if ((ma->reg[MARIA_CTRL] & MARIA_CTRL_DM) == MARIA_DM_ON &&
         muhtari__bus_request_halt(m, tick, MUHTARI__HALT_UNTIL_MARIA)) {
@@ -606,8 +609,8 @@ void muhtari__maria_event(muhtari *m)
         render(m, line - 1u, MARIA_PIXELS);
         ma->px = 0u;
     }
-    if (line == MUHTARI__LINES_NTSC) {
-        ma->origin += MUHTARI__TICKS_PER_FRAME_NTSC;
+    if (line == muhtari__timing(m).lines) {
+        ma->origin += muhtari__timing(m).frame_ticks;
         line = 0u;
     }
     switch (ev) {
@@ -629,7 +632,7 @@ void muhtari__maria_event(muhtari *m)
         }
         break;
     }
-    arm_after(ma, line, maria_event_t[ev]);
+    arm_after(m, line, maria_event_t[ev]);
 }
 
 /* The DLI: a burst that read an entry with DLI set pulls NMI low from the
@@ -649,7 +652,7 @@ uint64_t muhtari__maria_burst(muhtari *m, uint64_t fall)
         muhtari__maria_dma_line(m, fall + MARIA_HALT_T0, ma->dma_lrc, ma->dma_line, &st);
     if ((st.flags & MUHTARI__LINE_DLI) != 0u) {
         uint64_t phi1 = c2 + ((haltrst - c2) / MARIA_CPU_CYCLE + MARIA_DLI_PHI1) * MARIA_CPU_CYCLE;
-        if (muhtari__bus_raise_nmi(m, phi1) && ma->dma_line < MUHTARI__LINES_NTSC) {
+        if (muhtari__bus_raise_nmi(m, phi1) && ma->dma_line < muhtari__timing(m).lines) {
             ma->stats[ma->dma_line].flags |= MUHTARI__LINE_DLI_QUEUED;
             ma->features |= MUHTARI__FEAT_DLI_QUEUED;
         }

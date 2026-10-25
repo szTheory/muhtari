@@ -154,6 +154,14 @@ muhtari_status muhtari_get_info(const muhtari *m, muhtari_info *out)
     info.sample_rate_num = 48000u;
     info.sample_rate_den = 1u;
     info.max_audio_samples = MUHTARI__MAX_AUDIO_SAMPLES;
+    if (m->effective_region == MUHTARI_REGION_PAL) {
+        info.height = 292u;
+        info.fps_num = 3546894u;
+        info.fps_den = 71051u;
+        info.par_num = 1843750u;
+        info.par_den = 1773447u;
+        info.max_audio_samples = 962u;
+    }
     muhtari__write_out(out, &info, (uint32_t)sizeof info);
     return MUHTARI_STATUS_OK;
 }
@@ -323,11 +331,8 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
         return st;
     }
     /* The region: the caller's, else the cartridge's, which the probe
-       resolved from the header, the hash list, then NTSC. PAL is refused. */
+       resolved from the header, the hash list, then NTSC. */
     uint32_t region = media->region != 0u ? media->region : info.region;
-    if (region != MUHTARI_REGION_NTSC) {
-        return MUHTARI_STATUS_ERR_UNSUPPORTED_REGION;
-    }
     if (media->bios != NULL && !bios_valid((const uint8_t *)media->bios, media->bios_size)) {
         return MUHTARI_STATUS_ERR_INVALID_BIOS;
     }
@@ -345,6 +350,7 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
+    m->effective_region = region;
     memset(&m->battery, 0, sizeof m->battery);
     memset(m->battery.data, 0xFF, sizeof m->battery.data);
     m->battery.bytes = battery.bytes;

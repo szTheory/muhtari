@@ -45,13 +45,14 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
        table). A frame with content spans the two VBLANK-start deadlines, so
        the hand-off's first frame of 8,190 ticks gives 54. The sum stays
        below 2^32. */
-    uint32_t elapsed = MUHTARI__TICKS_PER_FRAME_NTSC;
+    const struct muhtari__timing timing = muhtari__timing(m);
+    uint32_t elapsed = timing.frame_ticks;
     if (m->loaded) {
         elapsed = (uint32_t)(m->frame_deadline - m->frame_start);
     }
-    uint32_t acc = m->audio_rem + elapsed * MUHTARI__SAMPLES_PER_PERIOD;
-    uint32_t n = acc / MUHTARI__TICKS_PER_PERIOD;
-    uint32_t rem = acc % MUHTARI__TICKS_PER_PERIOD;
+    uint32_t acc = m->audio_rem + elapsed * timing.sample_num;
+    uint32_t n = acc / timing.sample_den;
+    uint32_t rem = acc % timing.sample_den;
     if (io->audio != NULL && io->audio_capacity < n) {
         io->audio_count = 0u;
         return MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL;
@@ -64,8 +65,7 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
        they apply from it (docs/runner.md, Movies). An initial extended
        packet also applies before fast boot's first opcode (embedding.md). */
     if ((m->frames == 0u && m->ports.input_mode != 0u && m->ports.initialized == 0u) ||
-        !m->loaded || elapsed == MUHTARI__TICKS_PER_FRAME_NTSC ||
-        elapsed == MUHTARI__VBLANK_START) {
+        !m->loaded || elapsed == timing.frame_ticks || elapsed == timing.vblank) {
         muhtari__ports_latch(m);
     }
     if (m->loaded) {
@@ -77,9 +77,8 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
            it (docs/hardware/maria.md, Rendering). A full frame scans every
            row; the first frame after a load starts mid-frame, and the rows
            the beam has not scanned since the load are written $00. */
-        if (io->video != NULL &&
-            m->frame_deadline - m->frame_start != MUHTARI__TICKS_PER_FRAME_NTSC) {
-            for (uint32_t y = 0; y < MUHTARI__HEIGHT_NTSC; y++) {
+        if (io->video != NULL && m->frame_deadline - m->frame_start != timing.frame_ticks) {
+            for (uint32_t y = 0; y < timing.height; y++) {
                 memset(io->video + (size_t)y * io->video_pitch, 0, MUHTARI__WIDTH);
             }
         }
@@ -104,7 +103,7 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
         assert(rendered == n);
         (void)rendered;
         m->frame_start = m->frame_deadline;
-        m->frame_deadline += MUHTARI__TICKS_PER_FRAME_NTSC;
+        m->frame_deadline += timing.frame_ticks;
     } else if (io->video != NULL) {
         for (uint32_t y = 0; y < MUHTARI__HEIGHT_NTSC; y++) {
             uint8_t *row = io->video + (size_t)y * io->video_pitch;

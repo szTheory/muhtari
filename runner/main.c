@@ -160,12 +160,12 @@ static int parse_count(const char *text, size_t len, uint32_t *out)
 
 /* SHA-256 of the native colour bytes, which are bytes, so the result does
    not depend on the host's byte order. */
-static void hash_frame(const uint8_t *video, char hex[65])
+static void hash_frame(const uint8_t *video, const muhtari_info *info, char hex[65])
 {
     muhtari__sha256 s;
     uint8_t digest[32];
     muhtari__sha256_init(&s);
-    muhtari__sha256_update(&s, video, (size_t)WIDTH * HEIGHT);
+    muhtari__sha256_update(&s, video, (size_t)info->width * info->height);
     muhtari__sha256_final(&s, digest);
     muhtari__sha256_hex(digest, hex);
 }
@@ -173,7 +173,8 @@ static void hash_frame(const uint8_t *video, char hex[65])
 /* Writes the native frame to path as a PNG, converting each byte through the
    warm palette into R, G and B one row at a time. row has room for one row
    of RGB. Returns 0, or 1 after a message when the file cannot be written. */
-static int dump_frame(const uint8_t *video, const char *path, uint8_t *row)
+static int dump_frame(const uint8_t *video, const muhtari_info *info, const char *path,
+                      uint8_t *row)
 {
     FILE *f = fopen(path, "wb");
     if (f == NULL) {
@@ -181,10 +182,10 @@ static int dump_frame(const uint8_t *video, const char *path, uint8_t *row)
         return MUHTARI__EXIT_FAILURE;
     }
     muhtari__png png;
-    int failed = muhtari__png_begin(&png, f, WIDTH, HEIGHT) != 0;
-    for (uint32_t y = 0; y < HEIGHT && !failed; y++) {
-        for (uint32_t x = 0; x < WIDTH; x++) {
-            uint32_t rgb = muhtari__palette_rgb(video[(size_t)y * WIDTH + x]);
+    int failed = muhtari__png_begin(&png, f, info->width, info->height) != 0;
+    for (uint32_t y = 0; y < info->height && !failed; y++) {
+        for (uint32_t x = 0; x < info->width; x++) {
+            uint32_t rgb = muhtari__palette_rgb(video[(size_t)y * info->width + x]);
             row[3u * x] = (uint8_t)(rgb >> 16);
             row[3u * x + 1u] = (uint8_t)(rgb >> 8);
             row[3u * x + 2u] = (uint8_t)rgb;
@@ -1229,15 +1230,15 @@ static void audio_digest(const char *key, muhtari__sha256 *hash)
    64 KiB stack, as wasm32's is). Returns the exit status. */
 static int run(const options *opt, replay *mv)
 {
-    uint8_t *video = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
-    int16_t *audio = (int16_t *)malloc(AUDIO_CAPACITY * sizeof *audio);
-    uint8_t *row = (uint8_t *)malloc(3u * WIDTH);
+    uint8_t *video = NULL;
+    int16_t *audio = NULL;
+    uint8_t *row = NULL;
     /* One microsecond sample per frame for --bench, on the heap: 300,000
        frames take 1.2 MB. A count whose buffer size does not fit in size_t
        is out of memory, not a wrapped, too-small allocation. */
     size_t sample_bytes = opt->bench ? muhtari__bench_bytes(opt->frames) : 0u;
     uint32_t *samples = sample_bytes != 0u ? (uint32_t *)malloc(sample_bytes) : NULL;
-    if (video == NULL || audio == NULL || row == NULL || (opt->bench && samples == NULL)) {
+    if (opt->bench && samples == NULL) {
         fprintf(stderr, "muhtari-run: out of memory\n");
         free(video);
         free(audio);
@@ -1283,6 +1284,25 @@ static int run(const options *opt, replay *mv)
     }
     if (status == 0 && opt->rom != NULL)
         status = save_import(&save, m, opt);
+    muhtari_info info = {0};
+    info.size = (uint32_t)sizeof info;
+    if (status == 0 && muhtari_get_info(m, &info) != MUHTARI_STATUS_OK)
+        status = MUHTARI__EXIT_FAILURE;
+    if (status == 0) {
+        size_t width = info.width, height = info.height, capacity = info.max_audio_samples;
+        if (height == 0u || width == 0u || width > SIZE_MAX / height || width > SIZE_MAX / 3u ||
+            capacity > SIZE_MAX / sizeof *audio) {
+            status = MUHTARI__EXIT_FAILURE;
+        } else {
+            video = (uint8_t *)malloc((size_t)info.width * info.height);
+            audio = (int16_t *)malloc((size_t)info.max_audio_samples * sizeof *audio);
+            row = (uint8_t *)malloc((size_t)3u * info.width);
+            if (video == NULL || audio == NULL || row == NULL) {
+                fprintf(stderr, "muhtari-run: out of memory\n");
+                status = MUHTARI__EXIT_FAILURE;
+            }
+        }
+    }
     uint64_t audio_frames = 0u, audio_samples = 0u;
     uint32_t next_hash = 0;
     uint32_t timed = 0;
@@ -1296,9 +1316,9 @@ static int run(const options *opt, replay *mv)
         memset(&io, 0, sizeof io);
         io.size = (uint32_t)sizeof io;
         io.video = video;
-        io.video_pitch = WIDTH;
+        io.video_pitch = info.width;
         io.audio = audio;
-        io.audio_capacity = AUDIO_CAPACITY;
+        io.audio_capacity = info.max_audio_samples;
         if (mv != NULL && mv->header.version == 1u) {
             muhtari_input in;
             (void)frame_input(opt, mv, f, &in);
@@ -1357,12 +1377,12 @@ static int run(const options *opt, replay *mv)
         if (next_hash < opt->hash_count && opt->hash_frames[next_hash] == f) {
             next_hash++;
             char hex[65];
-            hash_frame(video, hex);
+            hash_frame(video, &info, hex);
             printf("frame %lu sha256 %s\n", (unsigned long)f, hex);
         }
         for (uint32_t k = 0; k < opt->dump_count && status == 0; k++) {
             if (opt->dump_frames[k] == f) {
-                status = dump_frame(video, opt->dump_paths[k], row);
+                status = dump_frame(video, &info, opt->dump_paths[k], row);
             }
         }
         /* Consume before I/O so a request arriving during a save remains pending. */

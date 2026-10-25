@@ -91,10 +91,10 @@ static void coefficients(uint32_t phase, int32_t out[16])
     for (unsigned j = 0u; j < 16u; j++) {
         int32_t a = muhtari__synth_kernel[row][j];
         int32_t b = row < 63u ? muhtari__synth_kernel[row + 1u][j]
-                             : (j != 0u ? muhtari__synth_kernel[0][j - 1u] : 0);
+                              : (j != 0u ? muhtari__synth_kernel[0][j - 1u] : 0);
         int64_t product = (int64_t)(b - a) * fraction;
-        int64_t rounded = product < 0 ? -((-product + 295574) / 591149)
-                                      : (product + 295574) / 591149;
+        int64_t rounded =
+            product < 0 ? -((-product + 295574) / 591149) : (product + 295574) / 591149;
         out[j] = a + (int32_t)rounded;
         sum += out[j];
     }
@@ -121,8 +121,10 @@ static void bounds(void)
 {
     int64_t maximum = 0, positive = 0, negative = 0;
     for (uint32_t phase = 0u; phase < 591149u; phase++) {
-        int32_t c[16];
+        int32_t c[16], actual[16];
         coefficients(phase, c);
+        muhtari__synth_coefficients_for_period(phase, 591149u, actual);
+        CHECK(memcmp(c, actual, sizeof c) == 0);
         int64_t sum = 0;
         for (unsigned j = 0u; j < 16u; j++) {
             sum += c[j];
@@ -165,6 +167,15 @@ static void bounds(void)
     CHECK_EQ_U64(591148u + 142102u * 4000u, 568999148u);
     CHECK_EQ_U64(591148u * 64u, 37833472u);
     CHECK_EQ_U64((20730u * 4000u + 591148u) / 591149u, 141u);
+    CHECK_EQ_U64(MUHTARI__SYNTH_OVERSHOOT_TICKS, 20730u);
+    CHECK((591148u + 142102u * 4000u) < (1u << 30));
+    CHECK(591148u * 64u < (1u << 26));
+    uint64_t current =
+        (uint64_t)MUHTARI__MIX_Q24 * 85u + 2u * (uint64_t)muhtari__pokey_mix[824] * 342u;
+    CHECK(current < (UINT64_C(1) << 34));
+    CHECK(current * 18360u < (UINT64_C(1) << 49));
+    CHECK(2u * (uint64_t)muhtari__pokey_mix[824] * 342u * MUHTARI__CART_GAIN_Q12 <
+          (UINT64_C(1) << 49));
     CHECK(sizeof(((muhtari *)0)->maria.stats) / sizeof(struct muhtari__line_stats) >= 313u);
     CHECK(sizeof(((muhtari *)0)->audio_work) / sizeof(int16_t) >= 962u);
     CHECK(sizeof(((muhtari *)0)->synth.pcm) / sizeof(int16_t) >= 1103u);

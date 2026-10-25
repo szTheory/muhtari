@@ -115,6 +115,13 @@ with `audio` set, an `audio_capacity` below the frame's actual sample count retu
 arguments before it changes anything. Once `m` and `io` are not NULL and the size tag is accepted, it writes
 `audio_count` on every return, zero on an error.
 
+Requery info after each successful load. PAL reports 320×292, FPS3546894/71051,
+PAR1843750/1773447 and at most962 samples; NTSC and no-content defaults stay
+unchanged. Packed PAL video needs93440 bytes. With padding the accessible extent
+is `(height-1)*pitch+width`; the frame struct has no allocation-byte count and
+cannot detect an undersized allocation. PAL fast boot returns960 first-frame
+samples, then961 or962 per full frame, with fractional carry retained.
+
 ## Probing a cartridge image
 
 `muhtari_probe(image, n, &info)` reads the `n` bytes at `image` and fills a `muhtari_cart_info` with what the
@@ -230,8 +237,8 @@ muhtari_status st = muhtari_load(m, &media);
 4. The image, exactly as `muhtari_probe` judges it, with the same statuses. An empty image is
    `MUHTARI_STATUS_ERR_INVALID_IMAGE`, and a NULL image with a size is `MUHTARI_STATUS_ERR_ARGUMENT`.
 5. The region: `region` when it is not 0, else the cartridge's, which comes from its header, then the hash list,
-   then NTSC. PAL returns `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` until PAL timing is emulated, so no pinned NTSC
-   hash can change silently when it is.
+   then NTSC. Both NTSC and PAL execute; the selection commits only after successful
+   cartridge installation. Probe metadata remains descriptive when overridden.
 6. The BIOS, when `bios` is not NULL: it must be 4,096 or 16,384 bytes, and its reset vector, mapped to end at
    $FFFF, must point inside it. Otherwise `MUHTARI_STATUS_ERR_INVALID_BIOS`.
 7. HSC firmware and storage placement, described below. Invalid HSC media returns

@@ -454,10 +454,29 @@ endfunction()
     endif()
     expect_output("${first}" ${args})
     expect_output("${first}" --frames 120 --hash-frame 120 --rom "${DIR}/linear-v3-16k")
-  elseif(CASE STREQUAL "load.pal_refused")
-    # Fault prevented: a PAL cartridge runs on the NTSC timing, so its
-    # pinned hashes would change silently when PAL lands.
-    expect_exit(77 "linear-v3-16k-pal: unsupported region" --frames 1 "${DIR}/linear-v3-16k-pal")
+  elseif(CASE STREQUAL "load.pal")
+    # Fault prevented: automatic PAL retains NTSC buffer extents or sample
+    # counts in the real process. Hash repetition is additional evidence.
+    set(args --frames 2 --hash-frame 2 --hash-audio --dump-frame "2:${DIR}/pal.png"
+      "${DIR}/linear-v3-16k-pal")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" ${args}
+      OUTPUT_VARIABLE first ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT first MATCHES "audio_samples 1922\n" OR NOT first MATCHES
+        "frame 2 sha256 3aea76b218b6e0492af9bddc2a5609d8453624f1aaaccdc239a38effd91676b0\n")
+      message(FATAL_ERROR "PAL run failed: ${rc} ${first}${err}")
+    endif()
+    # Independently SHA-256 over93440 zero native bytes, as this fixture's
+    # jammed/default-background program emits;77440 zeros has a different hash.
+    expect_output("${first}" ${args})
+    file(READ "${DIR}/pal.png" header OFFSET 16 LIMIT 8 HEX)
+    if(NOT header STREQUAL "0000014000000124")
+      message(FATAL_ERROR "PAL PNG dimensions: ${header}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --hash-audio
+      "${DIR}/linear-v3-16k-pal" OUTPUT_VARIABLE one ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT one MATCHES "audio_samples 960\n")
+      message(FATAL_ERROR "PAL first audio count: ${rc} ${one}${err}")
+    endif()
   elseif(CASE STREQUAL "usage.frame_range")
     expect_exit(2 "${usage_line}" --frames 0)
     expect_exit(2 "${usage_line}" --frames 1 --hash-frame 0)
@@ -1128,7 +1147,7 @@ muhtari_add_test(NAME runner.probe.images
 set_tests_properties(runner.probe.images PROPERTIES FIXTURES_SETUP probe_images)
 # A cartridge FILE loaded and run: its hash is stable, and a PAL one is
 # refused.
-foreach(case IN ITEMS hash pal_refused)
+foreach(case IN ITEMS hash pal)
   muhtari_add_test(NAME runner.load.${case}
     COMMAND ${runner_check} -DCASE=load.${case} -DDIR=${runner_probe_dir}
       -P ${CMAKE_CURRENT_LIST_FILE}

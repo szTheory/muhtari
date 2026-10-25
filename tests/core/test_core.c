@@ -364,7 +364,8 @@ static void test_synth_bound(void)
     CHECK(13124u * MUHTARI__SYNTH_PHASES < (1u << 20));
     CHECK_EQ_U64(MUHTARI__SYNTH_OVERSHOOT_TICKS, 20730u);
     CHECK_EQ_U64(MUHTARI__SYNTH_CARRY_SAMPLES, 139u);
-    CHECK_EQ_U64(MUHTARI__SYNTH_PCM_CAPACITY, 940u);
+    CHECK_EQ_U64(801u + MUHTARI__SYNTH_CARRY_SAMPLES, 940u);
+    CHECK_EQ_U64(MUHTARI__SYNTH_PCM_CAPACITY, 1103u);
     CHECK(positive * MUHTARI__SYNTH_MAX_LEVEL * 128 < (INT64_C(1) << 45));
     CHECK((MUHTARI__SYNTH_Q30 - 1) * INT64_C(1070934451) < (INT64_C(1) << 60));
 }
@@ -2109,10 +2110,13 @@ static void test_load_keeps_previous(void)
     CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_2600);
     make_cart(other, prog_idle, sizeof prog_idle, 1u);
     media = media_for(other, sizeof other);
-    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_REGION);
+    media.region = 3u;
+    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_ARGUMENT);
     make_cart(other, prog_idle, sizeof prog_idle, 0u);
     media.region = MUHTARI_REGION_PAL;
-    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_REGION);
+    media.bios = bios;
+    media.bios_size = 8192u;
+    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_INVALID_BIOS);
     media.region = 0u;
     media.bios = bios;
     media.bios_size = 8192u;
