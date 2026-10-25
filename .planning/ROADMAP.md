@@ -249,17 +249,17 @@ failure. Package integrity, typed measurements and all other contracts remain.
 **Goal:** Run PAL content at the console timing and report matching video/audio geometry to every host.
 **Depends on:** Phase 8
 **Requirements:** PAL-01, PAL-02, PAL-03
-**Plans:** 1/8 plans executed
+**Plans:** 2/8 plans executed
 
 Plans:
 
 **Wave 1**
 - [x] 09-01-PLAN.md — Safe PAL timing/startup/arithmetic tracer and reachable host buffer/AV contracts.
 
-**Wave 2** *(ready; Wave 1 accepted)*
-- [ ] 09-02-PLAN.md — Physical-time devices, lower-raster light and battery lifecycle.
+**Wave 2** *(accepted)*
+- [x] 09-02-PLAN.md — Physical-time devices, lower-raster light and battery lifecycle.
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Wave 3** *(ready; Wave 2 accepted)*
 - [ ] 09-03-PLAN.md — Approved warm PAL palette, runner output and movie sessions.
 
 **Wave 4** *(blocked on Wave 3 completion)*
