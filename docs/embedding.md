@@ -91,6 +91,7 @@ ROM together with its RAM; each returns `MUHTARI_STATUS_ERR_NO_MEMORY` when `all
 ## A frame
 
 ```c
+/* No-content NTSC example. After loading content, requery info and resize buffers. */
 muhtari *m = NULL;
 cfg.allocator.alloc = host_alloc;
 cfg.allocator.free = host_free;
@@ -121,6 +122,19 @@ unchanged. Packed PAL video needs 93440 bytes. With padding the accessible exten
 is `(height-1)*pitch+width`; the frame struct has no allocation-byte count and
 cannot detect an undersized allocation. PAL fast boot returns 960 first-frame
 samples, then 961 or 962 per full frame, with fractional carry retained.
+Pitch validation precedes audio-capacity validation, and both precede input latching
+and execution. NULL outputs still advance identical video/audio state. A refused
+library load retains the prior effective region and running cartridge; the libretro
+adapter instead releases its old session before loading and falls back to NTSC on failure.
+
+PAL fast handoff at tick 140016 is selected compatibility policy, not a measured
+production BIOS snapshot. The warm PAL table is a licensed presentation seed;
+native hashes do not depend on it. Region is fixed at successful load and survives
+power cycle; libretro region changes require reload, while palette changes affect
+presentation immediately. See [PAL diagnostic evidence](pal-tests.md) and
+[audio model limits](hardware/audio.md). API 6, ABI 1 and behavior revision 5
+retain the append-only status and size-tag contracts; legacy API 3 callers can
+now load PAL, so hosts must query geometry rather than depend on its former refusal.
 
 ## Probing a cartridge image
 
