@@ -13,15 +13,15 @@ findings:
     title: "Libretro guide reverses the ProLine physical button labels"
 open: 0
 total: 2
-recorded: 2026-10-25T03:14:35.291Z
+recorded: 2026-10-25T03:18:01.511Z
 ---
 
 # Phase 08: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | fixed | 08-REVIEW-FIX.md |
-| WR-01 | warning | fixed | 08-REVIEW-FIX.md |
+| CR-01 | critical | fixed | 08-REVIEW-FIX.md (not in the current review) |
+| WR-01 | warning | fixed | 08-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
