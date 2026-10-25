@@ -377,7 +377,18 @@ endfunction()
   set(usage_line "usage: muhtari-run ")
   set(prolines "port1 proline\nport2 proline\n")
   set(released "|......|......|...BB|")
-  if(CASE STREQUAL "hash")
+  if(CASE STREQUAL "help")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --help
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+    foreach(claim IN ITEMS "muhtari-movie 1 or 2" lightgun paddle trakball driving keypad
+        st-mouse amiga-mouse snes2atari mega7800
+        "Controller models are uncalibrated; see docs/hardware/controllers.md")
+      string(FIND "${out}" "${claim}" found)
+      if(NOT rc STREQUAL "0" OR NOT err STREQUAL "" OR found EQUAL -1)
+        message(FATAL_ERROR "runner help lacks executed support or model qualification: ${claim}")
+      endif()
+    endforeach()
+  elseif(CASE STREQUAL "hash")
     # Fault prevented: the runner's printed hash, the line hosts and CI
     # compare, drifts from the pinned test card or exits non-zero, while the
     # library test still passes.
@@ -990,7 +1001,7 @@ endif()
 # never runs a host binary or fails to start a guest one.
 string(REPLACE ";" "$<SEMICOLON>" runner_emulator "${CMAKE_CROSSCOMPILING_EMULATOR}")
 set(runner_check ${CMAKE_COMMAND} -DRUN=$<TARGET_FILE:muhtari-run> "-DEMULATOR=${runner_emulator}")
-foreach(case IN ITEMS hash hash.repeat usage.no_args usage.unknown usage.positional
+foreach(case IN ITEMS hash hash.repeat help usage.no_args usage.unknown usage.positional
     usage.frame_range usage.dump_syntax)
   muhtari_add_test(NAME runner.${case}
     COMMAND ${runner_check} -DCASE=${case} -DFRAMES=${MUHTARI_LONG_RUN} -P ${CMAKE_CURRENT_LIST_FILE}

@@ -577,6 +577,7 @@ runner.hash.repeat	portable,runner
 runner.hashes_compare.byte.self_test	runner
 runner.hashes_compare.count.self_test	runner
 runner.hashes_file	portable,runner
+runner.help	portable,runner
 runner.load.hash	portable,runner
 runner.load.pal_refused	portable,runner
 runner.md5	portable,runner
