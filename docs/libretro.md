@@ -67,7 +67,7 @@ The native D64/W30/L9/T8 optical model is explicitly unmeasured; see
 
 Console controls come from the lowest numbered ordinary ProLine/joystick port, retaining
 port 1's preference when both are ordinary. Otherwise the lowest numbered active
-driving/mouse/CX22/gun/paddle/keypad port supplies console controls. Driving uses MIDDLE for Pause,
+driving/mouse/CX22/gun/paddle/keypad/adapter port supplies console controls. Driving uses MIDDLE for Pause,
 BUTTON_4 for Select and RIGHT for Reset; LEFT remains fire. XG-1 uses LIGHTGUN
 START for Pause, SELECT for Select and AUX_A for Reset; these do not fire or reload.
 Paddles use RetroPad Start/Select/X for Pause/Select/Reset; B/A remain the two buttons.
@@ -131,6 +131,12 @@ supplemental L2/R2/L3. Frontends must bind the complete RetroPad plus these
 supplemental controls; selecting a subclass supplies no physical adapter I/O.
 Missing callbacks release controls. Auto activates supported header adapters
 before the first frame, and an opposite EEPROM stays frozen until reload.
+Owned numeric diagnostics exercise every listed family and both ports through
+the library, actual movie2 runner and loaded module. This establishes the named
+models and mappings; fitted optical/charge/recovery/cadence parameters and
+adapter contention/restart policies remain unmeasured, without a universal
+retail-playability claim. Detailed cases stay in process; real RetroArch retains
+the two existing screenshot and save-roundtrip cases.
 
 ## Options
 

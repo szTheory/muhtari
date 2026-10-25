@@ -388,9 +388,9 @@ muhtari_status st = muhtari_set_input(m, &in);
 - **Devices.** `device[0]` and `device[1]` are 0 for the cartridge's choice, or `MUHTARI_PORT_PROLINE`,
   `MUHTARI_PORT_JOYSTICK` (a 2600 one-button stick) or `MUHTARI_PORT_UNPLUGGED`. The cartridge's choice comes
   from its header: a port the header leaves empty is unplugged, and a device this version does not model, such
-  as a light gun or paddles, is wired as a ProLine. That changes, with a behaviour revision, in the release that
-  models the device. The device is part of each input, not of the load, because a frontend may choose it after
-  loading. An explicit device this version does not model returns `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE`, and
+  as a light gun or paddles, is wired as a ProLine on this legacy path. Those frozen semantics remain even
+  when the extended API models the device. An explicit device outside the legacy supported set returns
+  `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE`, and
   any other value `MUHTARI_STATUS_ERR_ARGUMENT`.
 - **Buttons and switches.** A set bit is pressed, or held. `buttons[]` takes the `MUHTARI_BUTTON_*` bits:
   `MUHTARI_BUTTON_UP`, `MUHTARI_BUTTON_DOWN`, `MUHTARI_BUTTON_LEFT`, `MUHTARI_BUTTON_RIGHT`, `MUHTARI_BUTTON_1`
@@ -422,9 +422,9 @@ Within each port the scalar offsets are:
 | 28, 32 | `gun_x`, `gun_y` | Native image coordinates, zero-based |
 | 36 | `flags` | `MUHTARI_INPUT_GUN_OFFSCREEN` separates off-screen aim from trigger |
 
-ProLine, joystick, driving, unplugged and the already attached EEPROM are currently
-implemented. Other known devices return `ERR_UNSUPPORTED_DEVICE`, including Auto
-resolving to one; unknown IDs return `ERR_ARGUMENT`. Digital devices require all
+The extended path supports ProLine, joystick, XG-1, paddles, keypad, driving,
+CX22, ST/Amiga mice, SNES2Atari, Mega7800, unplugged and the already attached
+EEPROM on either connector; unknown IDs return `ERR_ARGUMENT`. Digital devices require all
 axes, keys, aim and flags zero; unplugged/EEPROM require zero buttons too. Driving
 accepts only button 1 and `dx`: positive is clockwise, one unit per pin transition,
 with the bounded cadence described in [Controllers](hardware/controllers.md#driving). New
@@ -442,6 +442,11 @@ and Mega C/X/Y/Z/Mode/Start, with primary buttons B/A:
 
 These names never broaden the
 legacy mask. Gun trigger uses primary button 1; paddles use primary buttons 1/2.
+Keypad uses its twelve-bit mask; CX22 shares button1, while ST/Amiga use
+buttons1/2. Gun aim, pot travel, motion cadence, keypad recovery/contention
+and adapter corner behavior follow the named unmeasured policies in
+[controller hardware](hardware/controllers.md). Numeric diagnostic conformance
+does not establish physical calibration or universal retail compatibility.
 
 Known prefixes may end at any complete 4-byte scalar boundary, from size 4
 through 88. Missing fields are neutral zero; a missing complete gun aim pair
@@ -532,7 +537,7 @@ Statuses are only ever added. Those after the probe's:
 | `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` | `muhtari_run_frame` | The BIOS took its 2600 path. It stays until the next load or power cycle. |
 | `MUHTARI_STATUS_ERR_INVALID_BIOS` | `muhtari_load` | The BIOS is not 4,096 or 16,384 bytes, or its reset vector points outside it. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | The content resolves to PAL. |
-| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | `muhtari_set_input` | An explicit controller this version does not model. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | input setters | A device outside the frozen legacy set, or an attempted change to load-frozen EEPROM topology. |
 | `MUHTARI_STATUS_ERR_INVALID_HSC` | `muhtari_load` | Invalid firmware size/pointer pair, HSC mode, or supplied firmware conflicting with OFF. |
 
 ## Version numbers

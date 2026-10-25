@@ -149,7 +149,7 @@ The softlist has no bankset, Souper, XM-required, YM2151, @800 or @440 titles. T
 | Keypad (7) | rows = SWCHA outputs, active low; columns = INPT0, INPT1, INPT4 [2, 3, 5]; pressed = low | §3.5 |
 | ST / Amiga mouse (8/9) | quadrature on ST X pins 1–2 / Y pins 3–4, Amiga X pins 2/4 / Y pins 1/3; left button = pin 6, right = pin 9 | homebrew |
 | SaveKey / AtariVox (10) | §4.2. AtariVox adds pin 1 = SpeakJet DATA out (19200 8N1 inverted = 93.2 CPU cycles per bit, derived) and pin 2 = READY in [CART.10] | — |
-| SNES2Atari (11, CC0) | port 2, one-button mode: pin 1 CLOCK, pin 2 LATCH, pin 6 DATA through 1 kΩ on INPT5; 16+1 bits; a full read takes 533 cycles ≈ 447 µs at 1.19 MHz, the source's figure (≈ 298 µs at 1.79 MHz, derived) [CART.11] | homebrew |
+| SNES2Atari (11, CC0) | either port, one-button mode: pin 1 CLOCK, pin 2 LATCH, pin 6 DATA through 1 kΩ on INPT4/5; 16+1 bits; a full read takes 533 cycles ≈ 447 µs at 1.19 MHz, the source's figure (≈ 298 µs at 1.79 MHz, derived) [CART.11] | homebrew |
 | Mega7800 (12) | pins 1–2 driven as select/strobe; pins 3–4 return 2 bits per step × 6 steps (ID, 3-button, 6-button) [CART.28] | homebrew |
 
 **Recommendation:** model ports at pin level. At the access tick each device sees RIOT PA output/DDR, the effective PB2/PB4 levels and the VBLANK dump/latch state, and returns pin levels; TIA and RIOT own the latching. Devices come from header bytes 55/56, and a host override wins. **Strongest alternative:** register-level shortcuts per device, as MAME and a7800 do. **Would change if:** profiling shows port reads above 1% of frame time.
@@ -164,7 +164,12 @@ One On One and Worm! set the DDR without ever writing SWCHB and rely on the defa
 
 **What emulators assume:** a7800 lights the sensor within 8 px of the beam, with an X offset of 95 units (~56 ticks) [CART.23]. A7800Hawk drops the sensor 64 ticks after the beam passes, for 30 ticks per line over 9 lines [CART.27]. Neither reads pixel brightness, and no source gives a luminance threshold. MiSTer's `lightgun.sv` has an unknown licence and was not opened [CART.40].
 
-**Recommendation (v2):** the sensor is lit iff the beam is inside an aim window (D ticks late, for W ticks over L lines) **and** the MARIA pixel actually output there has luma ≥ T. Use D = 64, W = 30, L = 9 (A7800Hawk) and a configurable T. Calibrate on the 10 entries plus Ducks Away until every hit offset is 0. **Strongest alternative:** a geometry-only window (a7800, A7800Hawk). **Would change if:** a hardware capture of XG-1 timing appears (AtariAge thread 353281).
+The implemented native-emission model has graduated into
+[controller hardware](../../docs/hardware/controllers.md#xg-1): D64/W30/L9/T8,
+clipped aim aperture and historical delayed pulses. These are named unmeasured
+compatibility policies. Independent owned numeric diagnostics establish model
+conformance; the earlier zero-offset retail calibration suggestion is superseded.
+Physical calibration and broader retail accuracy require later measurements.
 
 ### 3.5 Keypad
 The implemented source-backed wiring and explicit compatibility policies have

@@ -7,6 +7,9 @@ coverage remains limited; see the [compatibility ledger](docs/compatibility.md) 
 published automatically.
 NTSC board execution includes linear, SuperGame, Activision, Absolute and Fractalus cartridges.
 Board diagnostics establish memory behavior; the ledger records tested gameplay separately. PAL execution remains unsupported.
+Controller models include XG-1, paddles, keypad, driving, CX22/ST/Amiga motion and SNES2Atari/Mega7800.
+Owned diagnostics establish model conformance on both ports; physical calibration and universal game compatibility
+remain unmeasured. See [controls and bindings](docs/libretro.md#devices) and [typed runner replay](docs/runner.md#movies).
 
 ## Install in RetroArch (macOS, Apple Silicon)
 

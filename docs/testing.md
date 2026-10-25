@@ -66,19 +66,19 @@ Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` writes `build/<preset>/hashes.txt`: 47 retained card/PNG/audio/board rows, then 22
-first/second battery rows. The driver independently judges both counters and all 34,816 bytes before hashing.
-The ordered 69-row schema and report controls reject omissions, duplicates, wrong revisions and bad mailboxes.
+`runner.hashes_file` writes342 ordered rows:69 retained card/audio/board/battery observations and
+273 controller rows (13 fresh scenarios, both ports,12 frames, lag, raw/PCM and mailbox).
+Independent numeric/CRC judgment and library agreement precede controller rows. Silent raw streams remain empty.
+The retained69 match accepted source54485d6 except seven audio revision annotations4→5.
+Controls reject omitted, duplicated, reordered, malformed and wrong-family reports.
 
-CI collects the file from each lane, and the `hash-equality` job compares them:
+CI's `hash-equality` compares lane files:
 
 ```sh
 cmake "-DFILES=<file>;<file>;..." -DCOUNT=<n> -DMODE=compare -P tests/cmake/hashes.cmake
 ```
 
-The comparison passes only when it gets exactly `COUNT` files, all present and byte-identical. Otherwise it names
-the first file that differs. The fixed count means a lane that stops uploading fails the job, instead of silently
-dropping out.
+Comparison requires exactly `COUNT` present, byte-identical files with the complete schema.
 
 - **Required files.** PRs compare six native files and compile PowerPC. Nightly/release calls run full native/BE
   normal and package inventories, then require matching immutable SHA, fixtures and options for two-file hash

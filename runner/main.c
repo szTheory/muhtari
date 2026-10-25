@@ -96,6 +96,7 @@ static const char synopsis[] =
     "  --port1 D, --port2 D auto, proline, joystick, none, savekey, atarivox,\n"
     "                      lightgun, paddle, trakball, driving, keypad, st-mouse,\n"
     "                      amiga-mouse, snes2atari or mega7800\n"
+    "  Controller models are uncalibrated; see docs/hardware/controllers.md\n"
     "  --region R           the region: auto or ntsc\n"
     "  --boot B             how the cartridge starts: fast (the default) or bios\n"
     "  --bios FILE          the BIOS image --boot bios runs\n"

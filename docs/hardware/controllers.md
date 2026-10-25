@@ -298,12 +298,12 @@ The owned `controller-motion` executable uses mailbox version 1, ROM identity 14
 (driving on both ports). Each scenario is a fresh load with fixed device overrides. Reset/Select/Pause encode the
 scenario index with weights 1/2/4 (active-low SWCHB bits 0/1/3), held through frame 2 and released from frame 3.
 After reset the ROM waits through visible time to the first full-frame VBLANK start before decoding the selector.
-The first record is that decoded index. Scenario 0 is currently the only implemented family member.
+The first record is that decoded index. Scenario0 is driving; scenarios1–5 and adapter groups are described below.
 
 The stimulus schedule, declared independently of observations, is: frames 1–2 neutral; frame 3 left dx=+4 and
 fire, right dx=-4 without fire; frame 4 left dx=-1 without fire, right dx=+1 and fire; frame 5 has no submission;
 frame 6 submits zero deltas and released fire. Devices remain driving throughout. Frame numbers include the short
-first frame after fast boot. A following host integration slice supplies this schedule through all three hosts.
+first frame after fast boot. The library, actual movie2 runner and loaded module execute the same schedule.
 
 At each sampling boundary VBLANK starts at line 258 tick 42. `STA WSYNC` parks the next opcode until line 259 tick 0,
 412 master ticks later. The following `LDA $0280` has its data at opcode-start+17: three fast 4-tick fetches then
@@ -355,7 +355,7 @@ per-tick analog iteration is used.
 
 The owned `controller-analog` image uses mailbox version1, identity16 and
 scenario0 (`analog0`). It decodes the same fresh-load console selector as
-the motion diagnostic; future scenario1 has a separate record set and count.
+the motion diagnostic; implemented keypad scenario1 has a separate record set and count.
 Frames1–5 hold left pots0/65535, right32767/32768. Frames6–12 hold left
 65535/0, right0/65535. Frame3–4 buttons are left1/right2, frame5–6 left2/right1;
 all others are released. This fixed schedule applies identically to library
