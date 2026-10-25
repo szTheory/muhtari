@@ -250,3 +250,74 @@ No authentication gate, owner setup, routine owner UAT, merge, ship or post-merg
 ## Self-Check: PASSED
 
 All 17 task files and this canonical summary exist. All five task commits are ancestors of HEAD. The persisted ledger measures five commits from dff7433 through9d5f3a8. Actual artifacts, source/tree identities, authenticated join, complete downloaded inventories and equality checks were verified above. No source file is uncommitted; the pre-existing STATE change remains owned by the orchestrator.
+
+## Source-fresh acceptance after review fix 1
+
+This appended receipt supersedes the source applicability of the earlier acceptance. Everything above remains the original 9d5f3a8/69d9c0a execution and failure history; those runs predate the required BIOS lifetime correction and do not establish acceptance of that correction. The original task metrics and coverage references remain historical.
+
+Review fix `af9dc83f9ff68ea14c5a007218a3477a3c2f2218` stages at most 16 KiB of validated BIOS bytes privately before cartridge installation can release or reset an aliased public memory span. It publishes the staged firmware only after the final fallible allocation. Independent `bios.load_aliases` exercises ten region/source/size combinations, rejected input, allocation failure, poison/quarantine lifetime detection and actual old/new boot markers. The instance adds exactly 16384 bytes, with no new allocation or per-frame work. Implementation and RED/GREEN history are in `09-REVIEW-FIX.md`; the clean re-review has zero open findings. One of two review-fix rounds is used; the gap round remains unused. This refresh changes no runtime source, registration, timeout, fixture, policy or workflow.
+
+### Immutable source and regression gate
+
+Pushed branch head is `419bb31faa2b7dd0c1586879e478ae8dd4ab3d6e`. Actual CI producers, packages and native/PPC artifacts authenticate tested PR merge `df6aeefcd4e6e5f13c4350f3a6fe71d202a0940d`, whose parents are main `2cbbd6a78dabe2bc098615d49f7118231cc05626` and that branch head. Both full Git trees equal `f2e4a895cc9f4eaaf0e4108cda087f0ffc674c3c`. Tree-ID assertions, `git merge-base --is-ancestor <main> <head>` and `git diff --exit-code <head> <tested-merge> -- .` exit 0. The actual merge SHA is retained in every artifact consumer; it is not rewritten to the branch or runtime-fix SHA.
+
+After the clean review, the delegated prior-phase regression gate ran once:
+
+`node ~/.codex/gsd-core/bin/gsd-tools.cjs run-with-timeout 0 -- sh build/ci/task08-jobserver-gate.sh`
+
+Exit 0, run URL N/A-local. All 110 prior-phase test references recorded from four prior reports exist. The unchanged FIFO helper runs the exact configured `cmake --workflow --preset ci` sequence documented above: 654/654 ordinary tests in 45.13 seconds, six release checks in 0.17 seconds, explicit package plus six release checks in 0.13 seconds, complete ordinary/release JUnit and tree hygiene. `bios.load_aliases` passes in 0.02 seconds. Peak concurrency is four with zero residual tests. Outer timeout 0 is the supported unlimited wrapper; no competing local broad test run occurred.
+
+### Commands and terminal outcomes
+
+The one push triggered [CI 40233948646](https://github.com/szTheory/muhtari/actions/runs/40233948646) and [Nightly 40233948516](https://github.com/szTheory/muhtari/actions/runs/40233948516). No redundant workflow dispatch was issued. Complete per-attempt responses and failed-step logs are retained only in ignored local evidence.
+
+| Check | Command and result | Exit | Run |
+|---|---|---:|---|
+| Full CI audit | `cmake -DINPUT=build/ci/task08-refresh-ci.json -DEXPECTED_SHA=419bb31faa2b7dd0c1586879e478ae8dd4ab3d6e -P tools/check_ci_run.cmake`; attempt 1 completed/success, every job successful, required aggregate present | 0 | CI above |
+| Authenticated current/base join | `cmake -DDIRECTORY=build/ci/task08-refresh-evidence/join-inputs -DOUT=build/ci/task08-refresh-evidence/joined -DPOLICY=quality.json -DBASE_POLICY=build/ci/task08-refresh-evidence/trusted-quality.json -DEXPECTED_SHA=df6aeefcd4e6e5f13c4350f3a6fe71d202a0940d -DBASE_SHA=2cbbd6a78dabe2bc098615d49f7118231cc05626 -DPERF_REQUIRED=ON -DSOURCE=https://github.com/szTheory/muhtari/actions/runs/40233948646 -P tests/cmake/quality_join.cmake` | 0 | CI above |
+| Six native lanes | Existing `hashes.cmake` compare with `COUNT=6`; 956 equal rows per lane | 0 | CI above |
+| Actual archives | Python standard-library ZIP CRC, exact LICENSE/notices, three-component counts, measured sums and current/base SHA/run/environment assertions; all 18 candidate ZIPs pass | 0 | CI above |
+| WASM | 592/592 portable tests, including `bios.load_aliases`; `cmp` actual WASM/Linux-x64 hash artifacts | 0 | CI above |
+| Targeted native/PPC retry | `gh run rerun 40233948516 --job 121291391754`; only the required equality job executes again, unchanged source/base/workflow/deadlines | 0 | [Nightly attempt 2](https://github.com/szTheory/muhtari/actions/runs/40233948516/attempts/2) |
+| Full native/PPC equality | `cmake -DNATIVE=build/ci/task08-refresh-evidence/nightly/lane-equality/evidence/native -DBE=build/ci/task08-refresh-evidence/nightly/lane-equality/evidence/be -DEXPECTED_SHA=df6aeefcd4e6e5f13c4350f3a6fe71d202a0940d -P tests/cmake/lane_equality.cmake` | 0 | [Job 121299152510](https://github.com/szTheory/muhtari/actions/runs/40233948516/job/121299152510) |
+| Complete downloaded inventories | Four `check_junit.cmake` commands over `nightly/lane-equality/build/{ci,be32}/{junit.xml,junit-release.xml}`, inventory `tests/inventory/ci.txt`, ordinary `EXCLUDE=release` or release `LABELS=release`; 654+6 exactly once in each lane | 0 | Nightly attempt 2 above |
+| Actual main prefix | Download `hashes-linux-x64` from [main CI 40203183179](https://github.com/szTheory/muhtari/actions/runs/40203183179), authenticate commit 2cbbd6a, compare its entire 342-row file with the fresh 956-row prefix | 0 | Main CI linked here |
+
+Current/base ordinary native counts are 654/649 plus six release checks each on all six platforms. ASan is 637/632; hygiene 24/24; ABI 17, fuzz replay 6, title 3. Warning, ABI, analyzer and sanitizer findings are zero. Both no-floating-point lanes, architecture/build checks and existing armed performance comparator pass. Full vectors execute 258 registered checks and bounded fuzz executes ten. Library advisory passes. WASM retains its existing advisory authority despite its successful 592-test execution.
+
+Full native ordinary/release timings are 51.10/0.58 seconds; PPC timings are 511.87/0.13 seconds. `bios.load_aliases` appears exactly once, run without failure, in both downloaded ordinary inventories (0.0430272/0.302651 seconds). Both lane commit files identify df6aeef, fixture/config identities match, and all 956 rows equal one another, all six native artifacts and the entire old 9d5f3a8 observation file. Actual main's 342 rows have SHA-256 `a036c0f9da8037b0581496182024f0b42de455e08576712e0cc890dd949462b5` and match the prefix byte-for-byte. This is direct baseline-artifact comparison as well as the retained pin.
+
+The two real RetroArch cases pass again: DMA pixels and two fresh battery launches, every one of 34816 media bytes, all pixels, counters 1/1 to 2/2 and marker 5A to FF. The agent viewed all three fresh uploaded frontend PNGs and agrees with their independent numeric/pixel judges. Existing intentional wrong-pixel/media fault controls also pass. No diagnostic result is promoted to retail title playability.
+
+### Fresh actual package observations
+
+All six current/base environments match their pair, using the raw trusted main manifest/sample identities recorded above and the same compiler/platform versions. Values below come only from the new CI run and its authenticated producer/join.
+
+| Native lane | Library | Libretro | Runner | Candidate sum | Main base sum |
+|---|---:|---:|---:|---:|---:|
+| Linux arm64 | 99297 | 109310 | 120416 | 329023 | 323690 |
+| Linux x64 | 97177 | 106153 | 118406 | 321736 | 314951 |
+| macOS arm64 | 81517 | 86847 | 96473 | 264837 | 261502 |
+| macOS x64 | 83226 | 87722 | 96918 | 267866 | 262220 |
+| Windows arm64 | 96899 | 138779 | 162353 | 398031 | 391869 |
+| Windows x64 | 97180 | 148560 | 175079 | 420819 | 414117 |
+
+Peaks 420819/414117 bytes remain report-only. The existing producer measures exactly three genuine base ZIPs before summing; individual base component splits are unavailable in the existing upload. The earlier documented evidence-schema deviation remains unchanged, with no invented splits or extra archive-only probes. Integrity, floors and all existing required consumers remain authoritative.
+
+Fresh test-card performance is 3838448 Ir/frame versus actual main 3838688, with main repeat 3838688. Existing +1% comparison passes; raw observation availability stays advisory. No broader workload performance claim or timeout retuning follows from these passing samples.
+
+### Complete refresh failure and retry history
+
+| Attempt or command | Preserved outcome and classification |
+|---|---|
+| Nightly attempt 1, equality job 121291391754 | Cancelled at the unchanged 30-minute job deadline. The apt-only provisioning step took 29m13s (21:07:03–21:36:16 UTC); its download reports 79.5 MB in 29m4s at 45.6 kB/s. Packages installed successfully. The separate full source-work step began 21:36:18 and was preempted at 21:37:12 after 567 passing native tests, including the new BIOS test; PPC had not begun. No concrete compiler/test error or individual test timeout occurred. The job annotation explicitly reports the outer deadline. Missing final upload files are downstream of preemption and supply no acceptance evidence. |
+| One authorized targeted retry, attempt 2 | Job 121299152510 succeeds 21:39:34–21:49:41 UTC. Provisioning takes 13 seconds; the full native/PPC/equality step runs 21:39:51–21:49:38 (9m47s). The finite hypothesis was transient runner/package-mirror provisioning latency; its underlying network cause remains unknown. Source, base, workflow and every deadline are unchanged. No further retry was needed. |
+| Advisory properties, inherited from attempt 1 | `prop.instances_isolated` times out at 390.00 seconds; seven of eight pass at 10000 cases. It remains visible, unaccepted and advisory under existing policy. Attempt 2 carries inherited original property/fuzz timestamps despite assigning new job IDs; no property rerun was requested or executed. |
+| Existing audit applied to Nightly | `tools/check_ci_run.cmake` exits 1 after reporting every non-success: it requires a CI-only `CI required` aggregate and canonical run URL, whereas this Nightly response has no such aggregate and an attempts URL. It is not claimed as a Nightly pass. Complete actual Nightly jobs were instead checked against workflow membership: equality, fuzz, vectors and all benches pass, advisory property fails, PR report is skipped as designed. Overall attempt 2 is completed/success. No fabricated aggregate or weakened checker was added. |
+| Final local archive audit typo | A one-off Python assertion used `THIRD_PARTY_NOTICES` instead of the actual required `THIRD-PARTY-NOTICES.md`; Python exited 1. Corrected only the audit spelling; all 18 actual archives then pass CRC, exact notices and measurement checks with exit 0. No package or source change. |
+
+Ignored receipts use `build/ci/task08-refresh-*` and `build/ci/task08-refresh-evidence/`, separate from every earlier run. They retain complete CI and both Nightly attempt responses, terminal equality annotations/logs, raw current/base JSON, actual archives, hashes, JUnit and frontend PNGs. No log is committed. Draft PR33 remains unmerged; no ship or post-merge result is claimed.
+
+### Source-fresh self-check: PASSED
+
+The original summary prefix is byte-preserved. The BIOS fix is an ancestor of the accepted branch head. Actual source/tree/base identities, all required hosted jobs, the existing authenticated join, all 18 archives, four downloaded full inventories, both equality artifacts and actual main prefix have been checked. Only this evidence appendix is changed by the refresh; no new stub or security surface is introduced. Orchestrator state/roadmap closeout and the independent goal verifier remain with the parent.
