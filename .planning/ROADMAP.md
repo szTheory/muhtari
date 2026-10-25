@@ -23,7 +23,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipped in PR24 |
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Complete; 35/35 verified; shipped in PR #28 (merge checks pending) |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Complete |
-| 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Not started |
+| 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Complete; ready to ship |
 | 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Not started |
 | 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Not started |
 
@@ -86,6 +86,7 @@ retirement is demonstrated, including actual direct-PR performance/aggregate acc
 the hosted-retirement todo is completed.
 
 Plans:
+
 **Wave 1**
 - [x] 06-10-PLAN.md — Prove authenticated additive fixture comparability through the actual producer and unchanged join.
 
@@ -140,6 +141,7 @@ Shared core, manifest and inventory ownership requires sequential execution.
 **Status:** Complete, 2026-10-24. All nine plans and SAVE-01–06 pass35/35 verified must-haves. Review is clean; exact-source CI/nightly, complete native/PowerPC/WASM evidence, actual fresh-process RetroArch and all six current/base archive sums pass within399937. Shipping is the next separate step.
 
 Plans:
+
 **Wave 1**
 - [x] 07-01-PLAN.md — Prove scoped fixture admission and the narrow behavior-metadata transition.
 
@@ -184,6 +186,7 @@ Plans:
 **Status:** Complete2026-10-25; clean review after one fix round, no owner UAT; shipping in [PR #31](https://github.com/szTheory/muhtari/pull/31). Next GSD step after shipping: `$gsd-discuss-phase 9` in a new session.
 
 Plans:
+
 **Wave 1**
 - [x] 08-01-PLAN.md — Prove narrow controller fixture comparability.
 
@@ -246,7 +249,34 @@ failure. Package integrity, typed measurements and all other contracts remain.
 **Goal:** Run PAL content at the console timing and report matching video/audio geometry to every host.
 **Depends on:** Phase 8
 **Requirements:** PAL-01, PAL-02, PAL-03
-**Plans:** TBD — created by plan-phase.
+**Plans:** 8/8 accepted and summarized;42/42 verified truths
+**Status:** Complete — PAL-01–03 verified; one review-fix round, gap round unused; ready to ship.
+
+Plans:
+
+**Wave 1**
+- [x] 09-01-PLAN.md — Safe PAL timing/startup/arithmetic tracer and reachable host buffer/AV contracts.
+
+**Wave 2** *(accepted)*
+- [x] 09-02-PLAN.md — Physical-time devices, lower-raster light and battery lifecycle.
+
+**Wave 3** *(accepted)*
+- [x] 09-03-PLAN.md — Approved warm PAL palette, runner output and movie sessions.
+
+**Wave 4** *(accepted)*
+- [x] 09-04-PLAN.md — Load-stable libretro region, AV, palette and fallback.
+
+**Wave 5** *(accepted)*
+- [x] 09-05-PLAN.md — Exact audio carry, real extremizers and retained quality controls.
+
+**Wave 6** *(accepted)*
+- [x] 09-06-PLAN.md — Narrow PAL fixture admission through the real producer and join.
+
+**Wave 7** *(accepted after independent pre-plan evidence recovery)*
+- [x] 09-07-PLAN.md — Owned numeric diagnostic and 600-full-frame three-host evidence.
+
+**Wave 8** *(accepted)*
+- [x] 09-08-PLAN.md — Honest capability claims and exact-source portability/package acceptance.
 
 **Success criteria:**
 
@@ -297,9 +327,9 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
-| 9. PAL games and audio | 0/TBD | Not started | — |
+| 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-25; Phases5–8 are complete. Phase8 has14/14 accepted plans,49/49 verified truths and all five INPUT requirements complete. Current-source required CI, full native/PPC/WASM equality, actual RetroArch and authenticated native packages pass; advisory10000-case isolation timeout remains unaccepted and seeded. One review-fix round used, gap round unused. Next separate command: $gsd-ship 8. Phases9–11 remain unstarted.*
+*Updated: 2026-10-25; Phases5–9 are complete. Phase9 has8/8 accepted plans,22/22 tasks,42/42 verified truths and all three PAL requirements complete. Source-fresh CI40233948646 and Nightly40233948516 attempt2 pass: six native current/base lanes, full native/PPC654+6, WASM592/956-row equality, actual RetroArch and authenticated native packages. One review-fix round resolved BIOS input lifetime; re-review is clean, gap round unused. The advisory10000-case isolation timeout remains unaccepted. Phases10–11 remain unstarted. Next separate command: $gsd-ship 9.*

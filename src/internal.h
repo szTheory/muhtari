@@ -20,6 +20,22 @@
 #define MUHTARI__TICKS_PER_PERIOD 13125u
 #define MUHTARI__MAX_AUDIO_SAMPLES 801u
 
+/* Selected console timing; one scheduler and one sample lattice per machine
+   (docs/hardware/bus.md, audio.md). Zero/no-content selects NTSC. */
+struct muhtari__timing {
+    uint32_t lines, height, frame_ticks, vblank;
+    uint32_t sample_num, sample_den, max_samples;
+};
+static inline struct muhtari__timing muhtari__timing_for_region(uint32_t region)
+{
+    if (region == MUHTARI_REGION_PAL) {
+        const struct muhtari__timing pal = {313u, 292u, 142102u, 139874u, 4000u, 591149u, 962u};
+        return pal;
+    }
+    const struct muhtari__timing ntsc = {263u, 242u, 119402u, 117174u, 88u, 13125u, 801u};
+    return ntsc;
+}
+
 /* Compact support and the instruction-boundary overshoot proof are in
    docs/hardware/audio.md. A held access clears RDY and at most two DMA
    lines before its six-tick bus cycle; an opcode takes at most eight
@@ -40,10 +56,10 @@
       MUHTARI__SYNTH_ACCESS_TICKS) *                                                               \
      (MUHTARI__SYNTH_OPCODE_CYCLES + MUHTARI__SYNTH_INTERRUPT_CYCLES))
 #define MUHTARI__SYNTH_CARRY_SAMPLES ((MUHTARI__SYNTH_OVERSHOOT_TICKS * 88u + 13124u) / 13125u)
-#define MUHTARI__SYNTH_PCM_CAPACITY (801u + MUHTARI__SYNTH_CARRY_SAMPLES)
+#define MUHTARI__SYNTH_PCM_CAPACITY 1103u
 
 /* All synthesis history is owned by the machine. pcm is a FIFO: at most
-   801 current-frame samples plus separately bounded instruction carry.
+   962 current-frame samples plus 141 bounded PAL instruction-carry samples.
    horizon is the logical half-open output end, tick the hardware catch-up
    position; a pending mixed tick coalesces simultaneous source writes. */
 struct muhtari__synth {
@@ -53,6 +69,7 @@ struct muhtari__synth {
     int64_t integrator_q23, previous_q30, blocker_q30;
     uint64_t pre_clip_peak, clipped_samples;
     uint32_t phase, pcm_read, pcm_count;
+    uint32_t sample_num, sample_den, max_samples;
     uint32_t kernel_adds, kernel_adds_per_sample, carry_high_water;
     int32_t mixed_level;
     uint16_t raw[10];
@@ -105,6 +122,7 @@ void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys);
 void muhtari__synth_level(muhtari *m, uint64_t tick, unsigned source, uint16_t level);
 uint32_t muhtari__synth_render(muhtari *m, uint64_t end, int16_t *out);
 void muhtari__synth_coefficients(uint32_t phase, int32_t out[16]);
+void muhtari__synth_coefficients_for_period(uint32_t phase, uint32_t period, int32_t out[16]);
 int64_t muhtari__synth_round(int64_t value, int64_t divisor);
 
 /* The beam: a line is 454 ticks, and a frame's VBLANK starts at line 258,
@@ -304,7 +322,7 @@ struct muhtari__maria {
     uint8_t write_mode;
     uint8_t write_buf;
     uint8_t line_ram[2][MUHTARI__LINE_CELLS];
-    struct muhtari__line_stats stats[MUHTARI__LINES_NTSC];
+    struct muhtari__line_stats stats[313];
     uint32_t features;
     uint64_t origin;
     uint64_t dma_lrc;
@@ -424,6 +442,7 @@ struct muhtari {
     struct muhtari__observation *observation;
     muhtari_allocator allocator; /* the caller's, copied at create */
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
+    uint32_t effective_region;   /* committed with successful content installation */
     uint8_t loaded;              /* content is loaded and handed off */
     uint64_t frame_start;
     uint64_t frame_deadline;
@@ -436,12 +455,13 @@ struct muhtari {
     struct muhtari__battery battery;
     struct muhtari__savekey savekey;
     uint8_t hsc_load_rom[4096]; /* unpublished load staging; never a hardware/save view */
+    uint8_t bios_load_rom[MUHTARI__BIOS_SIZE_MAX]; /* same lifetime as HSC load staging */
     struct muhtari__ports ports;
     struct muhtari__boot boot;
     struct muhtari__synth synth;
     struct muhtari__tia tia;
     struct muhtari__pokey pokey[2];
-    int16_t audio_work[MUHTARI__MAX_AUDIO_SAMPLES];
+    int16_t audio_work[962];
     uint64_t frames;                /* frames run since the last load or power cycle */
     uint64_t lag_frames;            /* of those, frames with no CPU read of an input */
     uint8_t ram[MUHTARI__RAM_SIZE]; /* $1800-$27FF */
@@ -449,6 +469,11 @@ struct muhtari {
     uint8_t bios[16384];
 };
 _Static_assert(sizeof(((muhtari *)0)->bios) == MUHTARI__BIOS_SIZE_MAX, "bios array");
+
+static inline struct muhtari__timing muhtari__timing(const muhtari *m)
+{
+    return muhtari__timing_for_region(m->effective_region);
+}
 
 /* The size of each struct as first released: the end of its last field. A
    caller's size tag below this is rejected. */

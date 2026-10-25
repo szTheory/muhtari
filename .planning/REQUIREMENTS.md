@@ -42,9 +42,9 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21; no partial board 
 
 ### PAL
 
-- [ ] **PAL-01**: PAL content and an explicit PAL override use 313-line timing, PAL MSTAT/DMA/frame boundaries and documented fast/BIOS boot hand-off rather than NTSC defaults.
-- [ ] **PAL-02**: Library, runner and libretro expose the correct PAL geometry, rational frame rate, palette and aspect information.
-- [ ] **PAL-03**: Sustained PAL runs keep transition timestamps and PCM sample carry consistent with the PAL clock, with cross-platform frame/audio hashes.
+- [x] **PAL-01**: PAL content and an explicit PAL override use 313-line timing, PAL MSTAT/DMA/frame boundaries and documented fast/BIOS boot hand-off rather than NTSC defaults.
+- [x] **PAL-02**: Library, runner and libretro expose the correct PAL geometry, rational frame rate, palette and aspect information.
+- [x] **PAL-03**: Sustained PAL runs keep transition timestamps and PCM sample carry consistent with the PAL clock, with cross-platform frame/audio hashes.
 
 ### Compatibility and acceptance
 
@@ -83,16 +83,16 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | INPUT-03 | Phase 8 | Complete |
 | INPUT-04 | Phase 8 | Complete |
 | INPUT-05 | Phase 8 | Complete |
-| PAL-01 | Phase 9 | Pending |
-| PAL-02 | Phase 9 | Pending |
-| PAL-03 | Phase 9 | Pending |
+| PAL-01 | Phase 9 | Complete |
+| PAL-02 | Phase 9 | Complete |
+| PAL-03 | Phase 9 | Complete |
 | BOARD-04 | Phase 10 | Pending |
 | BOARD-05 | Phase 10 | Pending |
 | COMP-01 | Phase 11 | Pending |
 | COMP-02 | Phase 11 | Pending |
 | COMP-03 | Phase 11 | Pending |
 
-Coverage: 27 approved requirements; 27 mapped; 0 unmapped. Phase mapping approved on 2026-10-21. Five TUNE requirements are implemented and verified in Phase 5; BOARD-01–03 have complete semantic/three-host/hostile/portability and authenticated six-native package evidence in Phase6 plan09. Eight requirements are complete; 19 remain pending. Phase6 goal verification remains with the parent execution orchestrator.
+Coverage: 27 approved requirements;27 mapped;0 unmapped. Phases5–9 verify22 complete requirements;5 remain pending in Phases10–11. Phase9 verifies PAL-01–03 with42/42 truths, source-fresh native/PPC and all-host execution, retained NTSC predicates and authenticated package evidence. See [Phase9 verification](phases/09-pal-games-and-audio/09-VERIFICATION.md). Scope boundaries and historical policy revisions below remain unchanged.
 Phase 5 merged at 6d57d69; ci-only work cuts no package release. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md) for commands, exit statuses
 and run URLs. WR-01 and COST-01 remain deferred tooling seeds under AGENTS rule 7; raw monthly
 cost totals are untrusted, and no global hosted-cost reduction is claimed.

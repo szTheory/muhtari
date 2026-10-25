@@ -1,6 +1,6 @@
 # Testing
 
-Run CI locally, including inventory, controls and release checks.
+Run CI locally with inventory and release checks.
 
 ## The entry point
 
@@ -8,7 +8,7 @@ Run CI locally, including inventory, controls and release checks.
 cmake --workflow --preset ci
 ```
 
-Needs CMake 4.3+, Ninja and C/C++ compilers. The five steps:
+Needs CMake 4.3+, Ninja and C/C++ compilers:
 
 1. configure `build/ci` (Release, warnings fatal, macOS deployment target 10.13);
 2. build;
@@ -16,7 +16,7 @@ Needs CMake 4.3+, Ninja and C/C++ compilers. The five steps:
 4. package the three release zips into `build/ci`;
 5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
-Tests build 7800basic samples, OpenBIOS and rcheevos' resolver from pins. Fetch them first:
+Tests build samples, OpenBIOS and rcheevos' resolver from pins. Fetch them first:
 
 ```sh
 scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # for example wasmtime-aarch64-macos
@@ -25,9 +25,11 @@ scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
 scripts/fetch-pin.sh rcheevos build/pins/rcheevos
 ```
 
-Missing pins stop configure; sample tests are never skipped.
+Missing pins stop configure; no sample test is skipped.
 
 Owned board diagnostics add [numeric and portability checks](emulation-tests.md#diag).
+The [PAL diagnostic](pal-tests.md) runs startup plus 600 full frames even under ASan;
+arithmetic carry alone cannot replace execution.
 [Package acceptance](quality.md) still requires all six native lanes.
 
 `-DMUHTARI_TESTS=OFF` builds products without tests or sample tools. Used by `perf` (head/base), nightly's `bench` and `bench-wasm32`.
@@ -50,12 +52,12 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
 | `library` | The compatibility ledger holds: each `pr` row is judged afresh on its file under `MUHTARI_ROM_DIR` or `tests/diag`, on both boot paths, and the ratchet compares (label `library` below). Run the `ci` preset's `built` tests first, then `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library`. | `library` | `library` |
 
-On the two emulated lanes, CMake runs each test binary through `CMAKE_CROSSCOMPILING_EMULATOR`. Every script that
-starts `muhtari-run` takes the same emulator as `-DEMULATOR=`, so a test never runs a host binary in place of the
-guest one. The wasm32 emulator is `build/pins/wasmtime/wasmtime run --dir=<source>::<source>`. The build tree sits
-under the source tree, so this one preopen covers both, at the same paths inside the guest. Fetch the runtime first
-with `scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime`; configure stops with that command when the
-runtime is missing. WASI output files have no `.wasm` suffix.
+Emulated test binaries and runner subprocesses use `CMAKE_CROSSCOMPILING_EMULATOR`
+(scripts take `-DEMULATOR=`). wasm32 uses
+`build/pins/wasmtime/wasmtime run --dir=<source>::<source>`; the preopen includes
+the build tree at matching guest paths. Fetch with
+`scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime`; configure refuses
+a missing runtime. WASI outputs have no `.wasm` suffix.
 
 `MUHTARI_TIMEOUT_SCALE`: provisional `asan`/`be32`/`wasm32` scales 2/13/2; same-run Linux x64 duration-sum
 ratios max 1.713/12.127/1.612 (n=4/4/2). ASan keeps short runs. `audio.samples`: eight 600-frame driver/runner
@@ -66,8 +68,9 @@ Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` writes342 ordered rows:69 retained card/audio/board/battery observations and
-273 controller rows (13 fresh scenarios, both ports,12 frames, lag, raw/PCM and mailbox).
+`runner.hashes_file` writes956 rows:69 retained observations,273 controller rows
+(13 scenarios:12 frames,lag,raw/PCM,mailbox),614 [PAL rows](pal-tests.md)
+(601 frames,raw/PCM,mailbox,counters).
 Independent numeric/CRC judgment and library agreement precede controller rows. Silent raw streams remain empty.
 The retained69 match accepted source54485d6 except seven audio revision annotations4→5.
 Controls reject omitted, duplicated, reordered, malformed and wrong-family reports.
@@ -492,7 +495,9 @@ Actual WSYNC, RDY/HALT carry, accepted timer IRQs and JAM remain bounded.
 The recurring check compares normal, discarded and unevenly drained output,
 requires no allocation during frames, zero clips, ≤150 merged kernel additions
 per sample and ≤139 samples after each full frame drain. A partial drain can
-retain current-frame samples too; its high-water bound is the full940-cell FIFO.
+retain current-frame samples too. These are NTSC drain bounds; shared physical
+storage is 1103 FIFO cells, with 962 work samples and at most 141 future PAL samples.
+`core.pal.bounds` exhausts 591149 phases, 4000 alignments and 8000 signed-mass streams.
 Observation registration allocates its bounded private buffer before execution.
 
 `build/ci/tests/muhtari-test-audio-stress --bench 600` measures exact synthesis

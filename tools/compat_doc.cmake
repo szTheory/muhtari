@@ -66,7 +66,11 @@ Generated from `tests/compat/ledger.csv` by `tools/compat_doc.cmake`; do not edi
 
 NTSC board support includes linear, SuperGame, Activision, Absolute and Fractalus.
 Owned board diagnostics verify selected banking and physical RAM semantics; they do not promote an
-untested retail title to a passing gameplay result. PAL execution remains unsupported.
+untested retail title to a passing gameplay result. The owned PAL diagnostic verifies raster timing,
+native video and sustained audio across the library, runner and libretro core; it does not establish
+PAL retail playability or hardware calibration. Its local-tier mailbox record names the executed
+diagnostic predicate, separately from the NTSC title/BIOS predicates evaluated by the library preset.
+[PAL evidence and limits](pal-tests.md) describe the numeric checks and confidence.
 [Cartridge behavior](hardware/cartridge.md) describes identified-only Activision AM normalization,
 original image identity, physical 2 KiB Fractalus RAM and selected compatibility/profile policies.
 [Host memory maps](libretro.md#achievements) expose fixed ROM and only the documented RAM aliases;

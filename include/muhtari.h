@@ -26,7 +26,7 @@ enum {
     MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD = 9,
     MUHTARI_STATUS_ERR_BIOS_REJECTED_CART = 10, /* run_frame: the BIOS took its 2600 path */
     MUHTARI_STATUS_ERR_INVALID_BIOS = 11,       /* not 4,096 or 16,384 bytes, or a bad vector */
-    MUHTARI_STATUS_ERR_UNSUPPORTED_REGION = 12, /* resolves to PAL */
+    MUHTARI_STATUS_ERR_UNSUPPORTED_REGION = 12, /* reserved region refusal */
     MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE = 13, /* an explicit device this version lacks */
     MUHTARI_STATUS_ERR_INVALID_HSC = 14         /* invalid optional HSC media */
 };
@@ -54,11 +54,11 @@ typedef struct muhtari_versions {
 
 typedef struct muhtari_info {
     uint32_t size;
-    uint32_t width, height;                    /* 320, 242 */
-    uint32_t fps_num, fps_den;                 /* 39375000, 656711 */
-    uint32_t par_num, par_den;                 /* 6, 7 */
+    uint32_t width, height;                    /* selected native dimensions */
+    uint32_t fps_num, fps_den;                 /* exact selected frame rate */
+    uint32_t par_num, par_den;                 /* selected pixel aspect */
     uint32_t sample_rate_num, sample_rate_den; /* 48000, 1 */
-    uint32_t max_audio_samples;                /* per frame: 801 */
+    uint32_t max_audio_samples;                /* selected per-frame capacity */
 } muhtari_info;
 
 typedef struct muhtari_frame {

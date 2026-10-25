@@ -55,8 +55,21 @@ void muhtari__boot_fast(muhtari *m)
     m->maria.dll = BOOT_DLL;
     m->maria.offset = BOOT_OFFSET;
 
+    /* PAL handoff is a fitted compatibility snapshot, with no measured
+       undocumented DMA residue (docs/hardware/bus.md, PAL startup). */
+    int pal = m->effective_region == MUHTARI_REGION_PAL;
+    if (pal) {
+        m->maria.reg[REG_DPPH] = 0x27u;
+        m->maria.reg[REG_DPPL] = 0x07u;
+        m->maria.dl = 0u;
+        m->maria.dll = 0u;
+        m->maria.offset = 0u;
+        memset(m->ram + 0x800u, 0xFF, 64u);
+        memset(m->ram + 0x900u, 0xFF, 64u);
+    }
+
     m->maria.origin = 0u;
-    m->bus.ticks = m->maria.origin + BOOT_TICK;
+    m->bus.ticks = m->maria.origin + (pal ? 140016u : BOOT_TICK);
     /* TIA ran silently on its absolute lattice while fast boot skipped
        the CPU. Actual cartridge phi2 instead begins here at cycle zero;
        the released output grid begins here too (embedding.md). */
@@ -70,13 +83,16 @@ void muhtari__boot_fast(muhtari *m)
                            ((uint16_t)muhtari__cart_peek(m, 0xFFFDu) << 8));
     m->cpu.s = BOOT_SX;
     m->cpu.x = BOOT_SX;
-    m->cpu.a = 0u;
+    m->cpu.a = pal ? 0x60u : 0u;
     m->cpu.y = 0u;
     m->cpu.p = BOOT_P;
 
     /* Frame 1 is the 8,190 ticks from the hand-off to VBLANK start. */
     m->frame_start = m->bus.ticks;
-    m->frame_deadline = m->maria.origin + MUHTARI__VBLANK_START;
+    struct muhtari__timing timing = muhtari__timing(m);
+    m->frame_deadline = m->maria.origin + timing.vblank;
+    if (m->frame_deadline <= m->frame_start)
+        m->frame_deadline += timing.frame_ticks;
     m->audio_rem = 0u;
     m->loaded = 1u;
     m->boot.handoff_frame = 1u;
@@ -101,7 +117,7 @@ void muhtari__boot_bios(muhtari *m)
     /* Frame 1 runs from line 0, t 0 to the first VBLANK start, 117,174
        ticks; RES's seven cycles are its first. */
     m->frame_start = 0u;
-    m->frame_deadline = MUHTARI__VBLANK_START;
+    m->frame_deadline = muhtari__timing(m).vblank;
     m->audio_rem = 0u;
     m->loaded = 1u;
     muhtari__cpu_reset(m);

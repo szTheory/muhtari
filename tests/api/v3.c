@@ -79,7 +79,7 @@ int main(void)
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari_load(m, NULL), MUHTARI_STATUS_ERR_ARGUMENT);
     media.region = MUHTARI_REGION_PAL;
-    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_REGION);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari_power_cycle(NULL), MUHTARI_STATUS_ERR_ARGUMENT);
 

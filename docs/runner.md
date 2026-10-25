@@ -11,6 +11,11 @@ power-on. Without one, every run shows the built-in test card (see
 (see [Movies](#movies)). `--probe` reads a cartridge image and reports what it is, without running it (see
 [Probing an image](#probing-an-image)).
 
+Automatic header/hash-selected PAL and explicit `--region pal` use successful-load info for output allocation.
+Native hashes cover 93440 bytes, PNGs are 320×292, and audio has 960 samples in the
+fast first call then 961/962 per full frame. PNG presentation uses the selected region's warm palette.
+Embedding callers must likewise requery info after every successful content load.
+
 ## Synopsis
 
 ```text
@@ -24,7 +29,7 @@ muhtari-run --probe FILE
 muhtari-run --help | --version
 ```
 
-`--port1`, `--port2`, `--region`, `--boot` and `--bios` may be added to any run.
+`--port1`, `--port2`, `--region`, `--boot`, `--bios` and `--info` may be added to any run.
 
 ## Options
 
@@ -35,10 +40,11 @@ muhtari-run --help | --version
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--diagnostic` | After the run, report the fixed diagnostic mailbox. Requires content and explicit `--frames N` with the ordinary frame bounds; no `--bench` or implicit movie frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
-| `[--rom] FILE` | Load the cartridge image in FILE and run it. Give at most one FILE, with or without `--rom`. A refused image prints `muhtari-run: FILE: <message>` on standard error, with the messages of [Probing an image](#probing-an-image) or `unsupported region: PAL (planned)`, and runs no frame: a 2600 image, a board this version does not emulate or a PAL cartridge exits 77, and an image that is not a cartridge, is truncated or is too large exits 1. |
+| `[--rom] FILE` | Load and run one cartridge image, with or without `--rom`. Automatic PAL selection is supported. A refused image prints `muhtari-run: FILE: <message>` on standard error and runs no frame: a 2600 image or unsupported board exits 77; malformed, truncated or oversized images exit1. |
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
 | `--port1 D`, `--port2 D` | `auto` (the cartridge's, the default), or an explicit movie2 device below. A value other than `auto` that differs from the movie header is a usage error. Storage attaches before import; moving or adding it requires another load. AtariVox provides EEPROM only, without speech. |
-| `--region R` | `auto` (the cartridge's, the default) or `ntsc`, which runs the cartridge as NTSC. `pal` is refused as a usage error until PAL is emulated. |
+| `--region R` | `auto` (the cartridge's, the default), `ntsc` or `pal`. An explicit value overrides cartridge metadata; a conflicting movie region is a usage error. Without content the test card remains NTSC. |
+| `--info` | Print effective region, geometry, exact frame rate, pixel aspect ratio and palette before frame output. Repeat use is a usage error; this is a run option, not an addition to `--probe`. |
 | `--boot B` | `fast` (the default) starts the cartridge from the fast-boot hand-off; `bios` boots it through the BIOS given by `--bios`, from power-on. `bios` without `--bios`, or `--bios` without `bios`, is a usage error. With a movie, the movie's `boot` key decides, and a different `--boot` is a usage error. |
 | `--bios FILE` | The BIOS image `--boot bios` runs: 4,096 or 16,384 bytes whose reset vector points inside it. Its SHA-256 is printed on standard error as `bios_sha256 <hex>`. Any other file exits 1 with `muhtari-run: FILE: not a 4 KiB or 16 KiB BIOS image`. A cartridge the BIOS rejects exits 77 with `muhtari-run: FILE: the BIOS rejected the cartridge`, after the frame in which it did. |
 | `--save-dir DIR` | Opt into per-game raw battery files in an existing accessible directory. Requires a cartridge, even when it has no battery. See [Battery files](#battery-files). |
@@ -99,6 +105,24 @@ signature warnings as applicable. Unknown exact-sized firmware remains accepted.
 
 ## Output
 
+`--info` adds these eight newline-terminated key/value lines, in this order, after successful
+load, validation and output allocation and before any frames run. For PAL:
+
+```text
+region pal
+width 320
+height 292
+fps_num 3546894
+fps_den 71051
+par_num 1843750
+par_den 1773447
+palette warm_pal
+```
+
+NTSC reports `ntsc`, 320, 242, 39375000, 656711, 6, 7 and `warm_ntsc`, respectively.
+Argument order does not change the report. It describes the effective successful session;
+`--probe` continues to describe the file. Without `--info`, ordinary output is unchanged.
+
 `--diagnostic` prints exactly `diagnostic `, 512 lowercase hexadecimal digits,
 then a newline. The digits encode the 256 bytes at CPU $2200-$22FF in address
 order, read through system RAM at offset $A00 after the requested run. It runs
@@ -114,11 +138,12 @@ frame is requested twice:
 frame 1 sha256 9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4
 ```
 
-The hash covers the 320×242 native colour bytes (one byte per pixel, the console's colour number), row by row
+The hash covers the 320×242 NTSC or 320×292 PAL native colour bytes (one byte per pixel, the console's colour number), row by row
 from the top. It is the same on every platform.
 
-`--dump-frame N:FILE` writes an unscaled 320×242 RGB PNG with 8 bits per channel, through the warm NTSC palette.
-The PNG carries no aspect-ratio metadata. The data is stored uncompressed, so each file is 232,645 bytes.
+`--dump-frame N:FILE` writes an unscaled 320×242 NTSC or 320×292 PAL RGB PNG with 8 bits per channel,
+through the effective region's warm NTSC or warm PAL palette. The PNG carries no aspect-ratio metadata.
+Data is uncompressed; an NTSC file is 232,645 bytes.
 
 With `--movie`, one more line follows the hash lines:
 
@@ -232,7 +257,7 @@ order and each key once. Blank lines and lines starting with `#` are allowed in 
 |---|---|
 | `port1`, `port2` | Required: `proline`, `joystick`, `none`, `savekey` or `atarivox`. These explicit declarations provision storage before import. |
 | `rom-sha256` | Optional: 64 hex digits, the cartridge's headerless SHA-256, as `--probe` prints in `sha256_headerless`. A different cartridge exits 1, naming both digests. |
-| `region` | Optional: `ntsc`. `pal` is refused. |
+| `region` | Optional: `ntsc` or `pal`. An explicit CLI region must agree. Without it, an explicit CLI selection wins, otherwise cartridge metadata selects the console. |
 | `boot` | Optional: `fast` or `bios`; `bios` also needs a `bios-sha256` line. `bios` boots through the BIOS given by `--bios FILE`, and exits 2 without it. |
 | `bios-sha256` | Optional: 64 hex digits, the BIOS file's SHA-256. With `boot bios`, a `--bios` file with another digest exits 1 before any frame runs, naming both digests. |
 | `behaviour` | Optional: the core behaviour revision the movie was recorded on, 1 to 999999999. A different revision prints one warning on standard error, and the replay continues. |
@@ -300,7 +325,7 @@ absolute state; motion contributes once per frame, in connector edges:
 |---|---|
 | `proline`, `joystick` | Existing `UDLR12` / `UDLR1` letter/dot fields |
 | `none`, `savekey`, `atarivox` | Empty, including the colon: `none:` |
-| `lightgun` | `x,y,flags`: native NTSC pixel coordinates 0–319 and 0–241; flags 0–3, bit 0 trigger, bit 1 off-screen |
+| `lightgun` | `x,y,flags`: native pixel coordinates x 0–319, y 0–241 for effective NTSC or 0–291 for effective PAL; flags 0–3, bit 0 trigger, bit 1 off-screen |
 | `paddle` | `pot0,pot1,buttons`: positions 0–65535, increasing resistance; buttons 0–3, low bits fire 1/2 |
 | `driving` | `dx,0,button`: signed 32-bit X motion, literal zero Y, button 0–1 |
 | `trakball` | `dx,dy,button`: signed 32-bit motion, button 0–1 |
@@ -325,7 +350,9 @@ masks and out-of-range values are refused. Off-screen aim remains within native
 bounds; use 0,0 when aim is unknown. Syntax support does not imply physical device
 support: a device not implemented by this core revision is still refused by the core.
 
-The whole immutable file is validated before loading media, importing saves or
+The whole immutable file's syntax is validated before loading media. Gun Y coordinates are decoded
+up to 291; after load resolves the effective region, a complete second pass checks its height before
+allocating frame outputs, printing `--info`, importing saves or
 creating outputs. Replay retains the bytes and one cursor with the last packet;
 it creates no per-frame packet array or index and never reopens the file. At EOF,
 buttons, keys and momentary console switches release; dx/dy become zero. Final

@@ -28,8 +28,8 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       -P "${HASHES}" COMMAND_ERROR_IS_FATAL ANY)
     file(STRINGS "${OUT}/hashes.txt" rows)
     list(LENGTH rows count)
-    if(NOT count EQUAL 342)
-      message(FATAL_ERROR "hashes: expected 69 retained and 273 controller observation rows, got ${count}")
+    if(NOT count EQUAL 956)
+      message(FATAL_ERROR "hashes: expected69 retained,273 controller and614 PAL observation rows, got ${count}")
     endif()
     # Independent accepted source 54485d6, CI run 40104749040. Only the
     # seven named audio behaviour annotations advance from 4 to 5; all
@@ -39,6 +39,14 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     string(SHA256 retained_digest "${retained}\n")
     if(NOT retained_digest STREQUAL "c4c9c310418422c30bbf32b204a157a564d343aadfabee4d5654b97695461761")
       message(FATAL_ERROR "hashes: retained observations changed beyond the seven audio revision annotations")
+    endif()
+    # The pre-PAL writer at009f37e independently reproduces all342 old
+    # observations. The additive PAL path cannot rewrite controller rows.
+    list(SUBLIST rows 0 342 ntsc)
+    list(JOIN ntsc "\n" ntsc)
+    string(SHA256 ntsc_digest "${ntsc}\n")
+    if(NOT ntsc_digest STREQUAL "a036c0f9da8037b0581496182024f0b42de455e08576712e0cc890dd949462b5")
+      message(FATAL_ERROR "hashes: pre-PAL NTSC observation bytes changed")
     endif()
     foreach(launch first second)
       foreach(field frame1 frame120 audio_transitions_sha256 audio_pcm_sha256 audio_frames
@@ -454,10 +462,45 @@ endfunction()
     endif()
     expect_output("${first}" ${args})
     expect_output("${first}" --frames 120 --hash-frame 120 --rom "${DIR}/linear-v3-16k")
-  elseif(CASE STREQUAL "load.pal_refused")
-    # Fault prevented: a PAL cartridge runs on the NTSC timing, so its
-    # pinned hashes would change silently when PAL lands.
-    expect_exit(77 "linear-v3-16k-pal: unsupported region" --frames 1 "${DIR}/linear-v3-16k-pal")
+  elseif(CASE STREQUAL "load.pal")
+    # Fault prevented: automatic PAL retains NTSC buffer extents or sample
+    # counts in the real process. Hash repetition is additional evidence.
+    set(args --frames 2 --hash-frame 2 --hash-audio --dump-frame "2:${DIR}/pal.png"
+      "${DIR}/linear-v3-16k-pal")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" ${args}
+      OUTPUT_VARIABLE first ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT first MATCHES "audio_samples 1922\n" OR NOT first MATCHES
+        "frame 2 sha256 3aea76b218b6e0492af9bddc2a5609d8453624f1aaaccdc239a38effd91676b0\n")
+      message(FATAL_ERROR "PAL run failed: ${rc} ${first}${err}")
+    endif()
+    # Independently SHA-256 over93440 zero native bytes, as this fixture's
+    # jammed/default-background program emits;77440 zeros has a different hash.
+    expect_output("${first}" ${args})
+    expect_output("${first}" --region pal ${args})
+    file(READ "${DIR}/pal.png" header OFFSET 16 LIMIT 8 HEX)
+    if(NOT header STREQUAL "0000014000000124")
+      message(FATAL_ERROR "PAL PNG dimensions: ${header}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --hash-audio
+      "${DIR}/linear-v3-16k-pal" OUTPUT_VARIABLE one ERROR_VARIABLE err RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0" OR NOT one MATCHES "audio_samples 960\n")
+      message(FATAL_ERROR "PAL first audio count: ${rc} ${one}${err}")
+    endif()
+    # A private copy executes LDA #$46 / STA BACKGRND / JMP $C004. Its
+    # complete second raster is93440 native $46 bytes, through row291.
+    execute_process(COMMAND ${EMULATOR} "${HELPER}" solid-pal
+      "${DIR}/linear-v3-16k-pal" "${DIR}/solid-pal"
+      COMMAND_ERROR_IS_FATAL ANY)
+    expect_output("frame 2 sha256 e368f328c99ea02ea9bb57e5e4ee88efef6933601629f870e76b88fbaa651bb5\n"
+      --frames 2 --hash-frame 2 --dump-frame "2:${DIR}/solid-pal.png" "${DIR}/solid-pal")
+    # Independently constructed PNG:320x292 literal RGB B0,57,46, filter0,
+    # stored65535-byte blocks, standard CRC32 and Adler32. NTSC uses AF,51,63.
+    file(SHA256 "${DIR}/solid-pal.png" solid_digest)
+    file(SIZE "${DIR}/solid-pal.png" solid_bytes)
+    if(NOT solid_digest STREQUAL "5ff5356350d60a6e2ee8337cd06d8af38d00664b9ad718fc0da051eab354b2c4"
+        OR NOT solid_bytes EQUAL 280700)
+      message(FATAL_ERROR "PAL solid PNG palette/extent mismatch: ${solid_bytes} ${solid_digest}")
+    endif()
   elseif(CASE STREQUAL "usage.frame_range")
     expect_exit(2 "${usage_line}" --frames 0)
     expect_exit(2 "${usage_line}" --frames 1 --hash-frame 0)
@@ -675,6 +718,53 @@ endfunction()
     set(valid "|driving:0,0,0|none:|...BB|\n")
     set(save "${v2_dir}/input.sav")
     set(png "${v2_dir}/out.png")
+    # Both formats select PAL explicitly; the complete replay is validated
+    # against the effective session before output or persistence can change.
+    file(WRITE "${v2}" "muhtari-movie 1\nport1 none\nport2 none\nregion pal\n|||...BB|\n")
+    expect_output("lag_frames 1\n" --movie "${v2}" "${DIR}/input.a78")
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\nregion pal\n|lightgun:319,291,0|none:|...BB|\n")
+    expect_output("lag_frames 1\n" --movie "${v2}" "${DIR}/input.a78")
+    expect_exit(2 "--region conflicts with the movie's region" --region ntsc
+      --movie "${v2}" "${v2_dir}/missing.a78")
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\n|lightgun:0,0,0|none:|...BB|\n|lightgun:319,291,0|none:|...BB|\n")
+    expect_output("lag_frames 1\n" --region pal --movie "${v2}" "${DIR}/input.a78")
+    expect_output("lag_frames 1\n" --movie "${v2}" "${PROBE_DIR}/linear-v3-16k-pal")
+    foreach(existing IN ITEMS yes no)
+      file(REMOVE "${save}" "${png}")
+      if(existing STREQUAL "yes")
+        file(WRITE "${save}" "previous save")
+        file(WRITE "${png}" "previous output")
+        file(SHA256 "${save}" save_before)
+        file(SHA256 "${png}" png_before)
+      endif()
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --region ntsc --movie "${v2}"
+        --info --hsc on --save-dir "${v2_dir}" --hash-frame 1 --dump-frame "1:${png}"
+        "${DIR}/input.a78" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "1" OR NOT out STREQUAL "" OR NOT err MATCHES
+          "movie.txt:5:15: gun row outside effective region")
+        message(FATAL_ERROR "late effective-height fault reached frames/output: ${rc} ${out}${err}")
+      endif()
+      if(existing STREQUAL "yes")
+        file(SHA256 "${save}" save_after)
+        file(SHA256 "${png}" png_after)
+        if(NOT save_before STREQUAL save_after OR NOT png_before STREQUAL png_after)
+          message(FATAL_ERROR "effective-height fault changed existing save/output")
+        endif()
+      elseif(EXISTS "${save}" OR EXISTS "${png}")
+        message(FATAL_ERROR "effective-height fault created save/output")
+      endif()
+    endforeach()
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\n|lightgun:319,241,0|none:|...BB|\n")
+    expect_output("lag_frames 1\n" --region ntsc --movie "${v2}" "${DIR}/input.a78")
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\n|lightgun:319,242,0|none:|...BB|\n")
+    expect_exit(1 "gun row outside effective region" --region ntsc --movie "${v2}" "${DIR}/input.a78")
+    expect_exit(1 "gun row outside effective region" --movie "${v2}" "${DIR}/input.a78")
+    expect_exit(1 "gun row outside effective region" --region ntsc --movie "${v2}"
+      "${PROBE_DIR}/linear-v3-16k-pal")
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 none\nport2 lightgun\n|none:|lightgun:0,242,0|...BB|\n")
+    expect_exit(1 "movie.txt:4:19: gun row outside effective region" --movie "${v2}" "${DIR}/input.a78")
+    file(WRITE "${v2}" "muhtari-movie 2\nport1 lightgun\nport2 none\nregion pal\n|lightgun:319,292,0|none:|...BB|\n")
+    expect_exit(1 "decimal out of range" --movie "${v2}" "${v2_dir}/missing.a78")
     file(WRITE "${v2}" "${header}${valid}|driving:0,0,2|none:|...BB|\n")
     foreach(existing IN ITEMS yes no)
       file(REMOVE "${save}" "${png}")
@@ -731,7 +821,7 @@ endfunction()
       file(WRITE "${v2}" "${header}|${field}|none:|...BB|\n")
       expect_exit(1 "movie.txt:4:[0-9]+: ${reason}" --movie "${v2}" "${DIR}/input.a78")
     endforeach()
-    foreach(pair IN ITEMS "lightgun;320,0,2" "lightgun;0,242,2" "lightgun;0,0,4"
+    foreach(pair IN ITEMS "lightgun;320,0,2" "lightgun;0,292,2" "lightgun;0,0,4"
         "paddle;65536,0,0" "paddle;0,0,4" "keypad;4096" "snes2atari;4096"
         "mega7800;4096" "trakball;0,0,2" "st-mouse;0,0,4" "amiga-mouse;0,0,4")
       list(GET pair 0 device)
@@ -998,9 +1088,19 @@ endfunction()
       --frames 1 --port1 mouse)
     expect_exit(2 "--port2 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}" --frames 1 --port2)
     expect_output("" --frames 1 --port1 joystick --port2 none)
-  elseif(CASE STREQUAL "usage.region_pal")
-    expect_exit(2 "--region pal is not supported: give auto or ntsc.*${usage_line}"
-      --frames 1 --region pal)
+  elseif(CASE STREQUAL "region.pal")
+    # Fault prevented: explicit selection diverges from automatic PAL, metadata
+    # describes the header instead of the session, or old output gains fields.
+    set(pal_info "region pal\nwidth 320\nheight 292\nfps_num 3546894\nfps_den 71051\npar_num 1843750\npar_den 1773447\npalette warm_pal\n")
+    set(ntsc_info "region ntsc\nwidth 320\nheight 242\nfps_num 39375000\nfps_den 656711\npar_num 6\npar_den 7\npalette warm_ntsc\n")
+    expect_output("${pal_info}" --frames 1 --info "${DIR}/linear-v3-16k-pal")
+    expect_output("${pal_info}" --info --frames 1 --region pal "${DIR}/linear-v3-16k")
+    expect_output("${pal_info}" --region pal --frames 1 --info "${DIR}/linear-v3-16k-pal")
+    expect_output("${ntsc_info}" --frames 1 --region ntsc --info "${DIR}/linear-v3-16k-pal")
+    expect_output("${ntsc_info}" --frames 1 --region pal --info)
+    expect_output("" --frames 1 --region pal "${DIR}/linear-v3-16k")
+    expect_exit(2 "duplicate --info" --frames 1 --info --info)
+    expect_exit(2 "--region needs auto, ntsc or pal" --frames 1 --region secam)
     expect_output("" --frames 1 --region ntsc)
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
@@ -1040,10 +1140,12 @@ foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch 
     behaviour_warning)
   muhtari_add_test(NAME runner.movie.${case}
     COMMAND ${runner_check} -DCASE=movie.${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
+      -DPROBE_DIR=${CMAKE_BINARY_DIR}/runner-probe
       -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 3) # Family: 2 x 1.05 s, Windows x64, 7 runs; provisional, run 39617761785
   set_tests_properties(runner.movie.${case} PROPERTIES FIXTURES_REQUIRED input_carts)
 endforeach()
+set_tests_properties(runner.movie.v2_edges PROPERTIES FIXTURES_REQUIRED "input_carts;probe_images")
 
 # Movies and runs that boot through OpenBIOS, which built.openbios
 # assembles, with simple, which built.simple builds, or the input cart.
@@ -1112,11 +1214,13 @@ runner_play_control(static_mutant "^mask 2:" static ${runner_play} ${runner_play
 runner_play_control(late_mutant "^mask 1:" late ${runner_play} ${runner_play_l} none input)
 
 # The device, region and boot options.
-foreach(case IN ITEMS usage.port usage.region_pal usage.boot_bios_no_file)
+foreach(case IN ITEMS usage.port region.pal usage.boot_bios_no_file)
   muhtari_add_test(NAME runner.${case}
-    COMMAND ${runner_check} -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE}
+    COMMAND ${runner_check} -DCASE=${case} -DDIR=${CMAKE_BINARY_DIR}/runner-probe
+      -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 1) # 2 x 0.16 s, macOS x64, slowest of 17 runs, run 39377950148
 endforeach()
+set_tests_properties(runner.region.pal PROPERTIES FIXTURES_REQUIRED probe_images)
 
 # --probe on the images muhtari-test-images writes into the build directory;
 # no image bytes are tracked.
@@ -1128,9 +1232,10 @@ muhtari_add_test(NAME runner.probe.images
 set_tests_properties(runner.probe.images PROPERTIES FIXTURES_SETUP probe_images)
 # A cartridge FILE loaded and run: its hash is stable, and a PAL one is
 # refused.
-foreach(case IN ITEMS hash pal_refused)
+foreach(case IN ITEMS hash pal)
   muhtari_add_test(NAME runner.load.${case}
     COMMAND ${runner_check} -DCASE=load.${case} -DDIR=${runner_probe_dir}
+      -DHELPER=$<TARGET_FILE:muhtari-test-runner>
       -P ${CMAKE_CURRENT_LIST_FILE}
     LABELS runner portable TIMEOUT 1) # 2 x 0.35 s, macOS x64, slowest of 31 runs, run 39377950148
   set_tests_properties(runner.load.${case} PROPERTIES FIXTURES_REQUIRED probe_images)
@@ -1186,13 +1291,15 @@ foreach(case IN ITEMS sample_a78 sample_headerless sample_hash_match)
 endforeach()
 
 # hashes.txt, the file CI compares across lanes.
+# Provisional expanded-writer bound: ceil(2 * 28.68s), complete Windows x64
+# workload in run 40238824962/job 121313488361; existing lane scales still apply.
 set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
 muhtari_add_test(NAME runner.hashes_file
   COMMAND ${runner_check} -DCASE=hashes -DOUT=${PROJECT_BINARY_DIR} -DHASHES=${runner_hashes}
     -DDRIVER=$<TARGET_FILE:muhtari-test-diag> -DDIAG=${PROJECT_SOURCE_DIR}/tests/diag
     "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
     "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${CMAKE_CURRENT_LIST_FILE}
-  LABELS runner portable TIMEOUT 20)
+  LABELS runner portable TIMEOUT 58)
 set_tests_properties(runner.hashes_file PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 # The comparison's self tests: two files where three are required, and two
 # files one byte apart.

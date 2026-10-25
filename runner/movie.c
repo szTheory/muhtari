@@ -23,7 +23,7 @@ static const struct {
     {"rom-sha256", "64 hex digits"},
     {"port1", "proline, joystick, none, savekey or atarivox"},
     {"port2", "proline, joystick, none, savekey or atarivox"},
-    {"region", "ntsc"},
+    {"region", "ntsc or pal"},
     {"boot", "fast or bios"},
     {"bios-sha256", "64 hex digits"},
     {"behaviour", "a revision number from 1 to 999999999"},
@@ -263,14 +263,11 @@ static int movie_header_line(const movie_line *l, muhtari__movie_header *h, movi
         return 0;
     }
     case KEY_REGION:
-        if (movie_equals(v, vn, "pal")) {
-            return movie_fail(err, l->number, col, "pal is not supported", expected);
-        }
-        if (!movie_equals(v, vn, "ntsc")) {
+        if (!movie_equals(v, vn, "ntsc") && !movie_equals(v, vn, "pal")) {
             return movie_fail(err, l->number, col, "unknown region", expected);
         }
         h->has_region = 1u;
-        h->region = MUHTARI_REGION_NTSC;
+        h->region = movie_equals(v, vn, "pal") ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
         return 0;
     case KEY_BOOT:
         if (movie_equals(v, vn, "fast")) {
@@ -607,7 +604,9 @@ static int movie_frame_ex(const movie_line *l, const muhtari__movie_header *h, m
         for (uint32_t k = 0u; k < fields; k++) {
             uint32_t max = fields == 1u ? 4095u : k == 2u ? 3u : 65535u;
             if (d == MUHTARI_PORT_LIGHTGUN && k < 2u) {
-                max = k == 0u ? 319u : 241u;
+                /* Syntax covers both consoles. The runner checks every row
+                   against its effective session before execution or output. */
+                max = k == 0u ? 319u : 291u;
             } else if ((d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_TRAKBALL) && k == 2u) {
                 max = 1u;
             } else if (d == MUHTARI_PORT_DRIVING && k == 1u) {

@@ -513,6 +513,7 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "absolute") == 0   ? 11u
            : strcmp(rom, "fractalus") == 0  ? 12u
            : strcmp(rom, "battery") == 0    ? 13u
+           : strcmp(rom, "pal") == 0        ? 19u
            : (strlen(rom) == 8u && strncmp(rom, "motion", 6u) == 0 &&
               (rom[6] == '4' || rom[6] == '5') && rom[7] >= 'a' && rom[7] <= 'c')
                ? 14u
@@ -1765,9 +1766,461 @@ static int controller_module(const char *module_path, const char *path)
 }
 #endif
 
+/* Sustained PAL is a separate interval from the fast handoff. The literals
+   below are independently derived in docs/emulation-tests.md, PAL diagnostic;
+   no NTSC diagnostic buffer or frame cap is widened. */
+#define PAL_CALLS 601u
+#define PAL_PIXELS (320u * 292u)
+struct pal_trace {
+    muhtari__sha256 hash;
+    muhtari *machine;
+    uint64_t tick, tia_tick[2], count[10], pokey_tick;
+    uint8_t source, raw[2];
+    uint8_t pokey_raw;
+    unsigned errors, pokey_periods;
+};
+static uint8_t pal_pixels[PAL_PIXELS];
+static int16_t pal_pcm[962];
+static uint32_t pal_count;
+#ifdef DIAG_LIBRETRO
+static const uint8_t *(*pal_native)(void);
+static unsigned pal_format, pal_videos, pal_audios, pal_errors;
+#endif
+
+static void pal_raw(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    struct pal_trace *t = user;
+    controller_raw_sample(&t->hash, tick, source, raw);
+    if (source >= 10u || raw > 15u || tick < t->tick || (tick == t->tick && source < t->source)) {
+        t->errors++;
+        return;
+    }
+    t->count[source]++;
+    /* AUDC4/AUDF0 changes on TIA's B commits, independent of PAL lines.
+       Initial volume writes are excluded by the separately checked startup. */
+    if (source < 2u && tick >= 281976u) {
+        uint64_t phase = tick % 456u;
+        if (phase != 64u && phase != 288u)
+            t->errors++;
+        if (t->tia_tick[source] != 0u &&
+            (tick - t->tia_tick[source] != 224u && tick - t->tia_tick[source] != 232u))
+            t->errors++;
+        if (t->tia_tick[source] != 0u && raw == t->raw[source])
+            t->errors++;
+        if (raw != 0u && raw != 15u)
+            t->errors++;
+        t->tia_tick[source] = tick;
+        t->raw[source] = (uint8_t)raw;
+    }
+    /* Once the owned ROM has finished its CRC it runs only fast JMP
+       cycles. AUDF100 at the 28-phi2 prescaler toggles every11312 ticks.
+       The first done observation may straddle earlier six-tick IO. */
+    if (source == 2u && t->machine != NULL && muhtari__peek(t->machine, MB_STATUS) == 0u) {
+        if (t->pokey_tick != 0u) {
+            if (tick - t->pokey_tick != 11312u || raw == t->pokey_raw || (raw != 0u && raw != 15u))
+                t->errors++;
+            t->pokey_periods++;
+        }
+        t->pokey_tick = tick;
+        t->pokey_raw = (uint8_t)raw;
+    }
+    t->tick = tick;
+    t->source = source;
+}
+
+static void pal_pcm_hash(muhtari__sha256 *h, uint32_t count)
+{
+    for (uint32_t i = 0u; i < count; i++) {
+        uint16_t bits = (uint16_t)pal_pcm[i];
+        uint8_t bytes[2] = {(uint8_t)bits, (uint8_t)(bits >> 8)};
+        muhtari__sha256_update(h, bytes, sizeof bytes);
+    }
+}
+
+static void pal_mailbox_line(FILE *f, const uint8_t mb[256])
+{
+    fputs("diagnostic ", f);
+    for (unsigned i = 0u; i < 256u; i++)
+        fprintf(f, "%02x", mb[i]);
+    fputc('\n', f);
+}
+
+/* The same bounded parser judges the real runner and malformed reports.
+   It validates every native frame, not only the final two equal hashes. */
+static int pal_report(const char *path, const char *expected)
+{
+    FILE *f = fopen(path, "rb");
+    char line[526], prefix[80];
+    int failed = f == NULL;
+    for (unsigned frame = 1u; frame <= PAL_CALLS && !failed; frame++) {
+        snprintf(prefix, sizeof prefix, "frame %u sha256 ", frame);
+        size_t n = strlen(prefix);
+        failed = fgets(line, sizeof line, f) == NULL || strlen(line) != n + 65u ||
+                 memcmp(line, prefix, n) != 0 || line[n + 64u] != '\n' ||
+                 strspn(line + n, "0123456789abcdef") != 64u;
+    }
+    static const char *const fields[] = {"audio_transitions_sha256 ",
+                                         "audio_pcm_sha256 ",
+                                         "audio_frames 601\n",
+                                         "audio_samples 577879\n",
+                                         "audio_rate 48000/1\n",
+                                         "audio_behaviour_revision 5\n",
+                                         "audio_synthesis exact-q23-16x64-dc20\n"};
+    for (unsigned i = 0u; i < 7u && !failed; i++) {
+        size_t n = strlen(fields[i]);
+        failed = fgets(line, sizeof line, f) == NULL;
+        if (!failed && i < 2u)
+            failed = strlen(line) != n + 65u || memcmp(line, fields[i], n) != 0 ||
+                     strspn(line + n, "0123456789abcdef") != 64u || line[n + 64u] != '\n';
+        else if (!failed)
+            failed = strcmp(line, fields[i]) != 0;
+    }
+    uint8_t mb[256] = {0};
+    if (!failed) {
+        failed = fgets(line, sizeof line, f) == NULL || strlen(line) != 524u ||
+                 memcmp(line, "diagnostic ", 11u) != 0 || line[523] != '\n' ||
+                 strspn(line + 11u, "0123456789abcdef") != 512u || fgetc(f) != EOF;
+        for (unsigned i = 0u; i < 512u && !failed; i++) {
+            unsigned char c = (unsigned char)line[11u + i];
+            uint8_t v = (uint8_t)(c <= '9' ? c - '0' : c - 'a' + 10);
+            mb[i / 2u] = (uint8_t)((i & 1u) == 0u ? v << 4 : mb[i / 2u] | v);
+        }
+    }
+    if (f != NULL) {
+        failed |= ferror(f) != 0;
+        failed |= fclose(f) != 0;
+    }
+    if (!failed)
+        failed = retail_expected(expected, "pal") != 0 || retail_judge(mb, "pal") != 0;
+    if (failed)
+        fprintf(stderr, "pal: incomplete or invalid 601-call numeric report\n");
+    return failed;
+}
+
+static int pal_faults(const char *out, const uint8_t mb[256])
+{
+    for (unsigned fault = 0u; fault < 11u; fault++) {
+        uint8_t bad[256];
+        memcpy(bad, mb, sizeof bad);
+        if (fault < 8u)
+            bad[18u + fault * 4u] ^= 1u; /* CRC-valid wrong independent number. */
+        else if (fault == 8u)
+            bad[6]--;
+        else if (fault == 9u)
+            bad[4]++;
+        else
+            bad[8] ^= 1u;
+        if (fault < 8u) {
+            uint16_t crc = retail_crc(bad);
+            bad[8] = (uint8_t)crc;
+            bad[9] = (uint8_t)(crc >> 8);
+        }
+        char name[4096];
+        snprintf(name, sizeof name, "%s/fault-%u.txt", out, fault);
+        FILE *f = fopen(name, "wb");
+        if (f == NULL)
+            return 1;
+        pal_mailbox_line(f, bad);
+        if (fclose(f) != 0 || retail_judge(bad, "pal") == 0)
+            return 1;
+    }
+    return 0;
+}
+
+#ifdef DIAG_LIBRETRO
+static bool RETRO_CALLCONV pal_env(unsigned cmd, void *data)
+{
+    if (cmd == RETRO_ENVIRONMENT_SET_PIXEL_FORMAT) {
+        pal_format = *(const unsigned *)data;
+        return pal_format == RETRO_PIXEL_FORMAT_XRGB8888 || pal_format == RETRO_PIXEL_FORMAT_RGB565;
+    }
+    return retail_env(cmd, data);
+}
+static void RETRO_CALLCONV pal_video(const void *data, unsigned w, unsigned h, size_t pitch)
+{
+    pal_videos++;
+    unsigned bytes = pal_format == RETRO_PIXEL_FORMAT_RGB565 ? 2u : 4u;
+    const uint8_t *native = pal_native();
+    if (data == NULL || native == NULL || w != 320u || h != 292u || pitch != 320u * bytes ||
+        memcmp(native, pal_pixels, PAL_PIXELS) != 0) {
+        pal_errors++;
+        return;
+    }
+    for (unsigned i = 0u; i < PAL_PIXELS; i++) {
+        uint32_t rgb = muhtari__palette_rgb_region(pal_pixels[i], MUHTARI_REGION_PAL);
+        /* Derive channel truncation independently from the 24-bit colour. */
+        uint16_t rgb565 =
+            (uint16_t)(((rgb >> 19) & 31u) << 11 | ((rgb >> 10) & 63u) << 5 | ((rgb >> 3) & 31u));
+        if (bytes == 2u ? ((const uint16_t *)data)[i] != rgb565
+                        : ((const uint32_t *)data)[i] != rgb)
+            pal_errors++;
+    }
+}
+static size_t RETRO_CALLCONV pal_audio(const int16_t *data, size_t frames)
+{
+    pal_audios++;
+    if (data == NULL || frames != pal_count) {
+        pal_errors++;
+        return frames;
+    }
+    for (unsigned i = 0u; i < frames; i++)
+        if (data[2u * i] != pal_pcm[i] || data[2u * i + 1u] != pal_pcm[i])
+            pal_errors++;
+    return frames;
+}
+#endif
+
+static int pal_case(const char *path, const char *expected, const char *out,
+                    const char *module_path)
+{
+    size_t size = 0u;
+    uint8_t *image = read_file(path, &size);
+    muhtari_config cfg = {0};
+    muhtari_media media = {0};
+    muhtari *m = NULL;
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = diag_alloc;
+    cfg.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = size;
+    struct pal_trace trace = {0}, module_trace = {0};
+    muhtari__sha256 pcm;
+    muhtari__sha256_init(&trace.hash);
+    muhtari__sha256_init(&module_trace.hash);
+    muhtari__sha256_init(&pcm);
+    int failed = image == NULL || retail_expected(expected, "pal") != 0 || nrows != 8u ||
+                 muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK;
+    if (!failed) {
+        trace.machine = m;
+        failed = muhtari__synth_observe(m, pal_raw, &trace) != MUHTARI_STATUS_OK ||
+                 muhtari_load(m, &media) != MUHTARI_STATUS_OK;
+    }
+    if (!failed)
+        failed = m->effective_region != MUHTARI_REGION_PAL || m->bus.ticks != 140016u ||
+                 m->frame_start != 140016u || m->frame_deadline != 281976u ||
+                 m->synth.origin != 140016u;
+    muhtari_info info = {0};
+    info.size = (uint32_t)sizeof info;
+    if (!failed)
+        failed = muhtari_get_info(m, &info) != MUHTARI_STATUS_OK || info.width != 320u ||
+                 info.height != 292u || info.max_audio_samples != 962u ||
+                 info.fps_num != 3546894u || info.fps_den != 71051u;
+    char name[4096];
+    snprintf(name, sizeof name, "%s/reference.txt", out);
+    FILE *reference = failed ? NULL : fopen(name, "wb");
+    failed |= reference == NULL;
+#ifdef DIAG_LIBRETRO
+#ifdef _WIN32
+    HMODULE module = NULL;
+#define PAL_SYMBOL(key) FARPROC symbol = GetProcAddress(module, key)
+#define PAL_CLOSE() FreeLibrary(module)
+#else
+    void *module = NULL;
+#define PAL_SYMBOL(key) void *symbol = dlsym(module, key)
+#define PAL_CLOSE() ((void)dlclose(module))
+#endif
+    void(RETRO_CALLCONV * unload)(void) = NULL;
+    void(RETRO_CALLCONV * deinit)(void) = NULL;
+    void(RETRO_CALLCONV * module_run)(void) = NULL;
+    muhtari *(RETRO_CALLCONV * instance)(void) = NULL;
+    if (module_path != NULL && !failed) {
+#ifdef _WIN32
+        module = LoadLibraryA(module_path);
+#else
+        module = dlopen(module_path, RTLD_NOW);
+#endif
+        if (module == NULL)
+            failed = 1;
+    }
+#define PAL_LOAD(name_, key, result, args)                                                         \
+    result(RETRO_CALLCONV *name_) args;                                                            \
+    {                                                                                              \
+        PAL_SYMBOL(key);                                                                           \
+        if (symbol == NULL) {                                                                      \
+            failed = 1;                                                                            \
+            goto pal_cleanup;                                                                      \
+        }                                                                                          \
+        memcpy(&name_, &symbol, sizeof name_);                                                     \
+    }
+    if (module != NULL && !failed) {
+        PAL_LOAD(set_env, "retro_set_environment", void, (retro_environment_t));
+        PAL_LOAD(set_video, "retro_set_video_refresh", void, (retro_video_refresh_t));
+        PAL_LOAD(set_audio, "retro_set_audio_sample_batch", void, (retro_audio_sample_batch_t));
+        PAL_LOAD(set_poll, "retro_set_input_poll", void, (retro_input_poll_t));
+        PAL_LOAD(set_input, "retro_set_input_state", void, (retro_input_state_t));
+        PAL_LOAD(init, "retro_init", void, (void));
+        PAL_LOAD(load, "retro_load_game", bool, (const struct retro_game_info *));
+        PAL_LOAD(get_av, "retro_get_system_av_info", void, (struct retro_system_av_info *));
+        PAL_LOAD(native_bytes, "muhtari__libretro_native", const uint8_t *, (void));
+        PAL_LOAD(observe, "muhtari__libretro_observe", void, (muhtari__audio_observer, void *));
+        {
+            PAL_SYMBOL("retro_unload_game");
+            memcpy(&unload, &symbol, sizeof unload);
+        }
+        {
+            PAL_SYMBOL("retro_deinit");
+            memcpy(&deinit, &symbol, sizeof deinit);
+        }
+        {
+            PAL_SYMBOL("retro_run");
+            memcpy(&module_run, &symbol, sizeof module_run);
+        }
+        {
+            PAL_SYMBOL("muhtari__libretro_instance");
+            memcpy(&instance, &symbol, sizeof instance);
+        }
+        if (unload == NULL || deinit == NULL || module_run == NULL || instance == NULL) {
+            failed = 1;
+            goto pal_cleanup;
+        }
+        pal_native = native_bytes;
+        pal_videos = pal_audios = pal_errors = 0u;
+        set_env(pal_env);
+        set_video(pal_video);
+        set_audio(pal_audio);
+        set_poll(retail_poll);
+        set_input(retail_input);
+        init();
+        observe(pal_raw, &module_trace);
+        struct retro_game_info game = {path, image, size, NULL};
+        failed = !load(&game);
+        module_trace.machine = instance();
+        struct retro_system_av_info av = {0};
+        get_av(&av);
+        failed |= av.geometry.base_width != 320u || av.geometry.base_height != 292u ||
+                  av.timing.fps != 3546894.0 / 71051.0 || av.timing.sample_rate != 48000.0;
+    }
+#undef PAL_LOAD
+#else
+    if (module_path != NULL)
+        failed = 1;
+#endif
+    uint64_t samples = 0u;
+    uint32_t remainder = 0u, small = 0u, large = 0u;
+    for (unsigned frame = 1u; frame <= PAL_CALLS && !failed; frame++) {
+        uint32_t elapsed = frame == 1u ? 141960u : 142102u;
+        uint64_t acc = (uint64_t)remainder + (uint64_t)elapsed * 4000u;
+        uint32_t count = (uint32_t)(acc / 591149u);
+        remainder = (uint32_t)(acc % 591149u);
+        uint64_t start = m->frame_start;
+        muhtari_frame io = {0};
+        io.size = (uint32_t)sizeof io;
+        io.video = pal_pixels;
+        io.video_pitch = 320u;
+        io.audio = pal_pcm;
+        io.audio_capacity = 962u;
+        failed =
+            m->frame_deadline - start != elapsed || muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        pal_count = io.audio_count;
+        failed |= io.audio_count != count || m->audio_rem != remainder ||
+                  m->frame_start != start + elapsed || m->frames != frame || trace.errors != 0u ||
+                  m->pokey[0].cycle != m->bus.phi2 ||
+                  m->pokey[0].half != 2u * (m->bus.phi2 - m->bus.clock_origin_phi2);
+        if (frame == 1u)
+            failed |= io.audio_count != 960u || remainder != 336960u;
+        else {
+            small += io.audio_count == 961u;
+            large += io.audio_count == 962u;
+            unsigned nonzero = 0u;
+            for (unsigned i = 0u; i < io.audio_count; i++)
+                nonzero += pal_pcm[i] != 0;
+            failed |= nonzero == 0u;
+            /* The last requested DMA is raster308; raster309 is blank. */
+            failed |= m->maria.stats[308].cost == 0u || m->maria.stats[309].cost != 0u;
+            /* VBE16 loads the DLL; first DMA17 feeds raster18. */
+            for (unsigned y = 2u; y < 292u; y++)
+                failed |= pal_pixels[y * 320u] != 0x2Fu || pal_pixels[y * 320u + 319u] != 0x2Fu;
+        }
+#ifdef DIAG_LIBRETRO
+        if (module != NULL && !failed) {
+            module_run();
+            muhtari *other = instance();
+            failed |= other == NULL || pal_errors != 0u || module_trace.errors != 0u;
+            if (other != NULL)
+                failed |= other->frames != frame || other->frame_start != m->frame_start ||
+                          other->audio_rem != m->audio_rem;
+        }
+#endif
+        if (failed) {
+            fprintf(stderr, "pal frame%u count%u rem%u trace%u dma%u/%u lower%u/%u\n", frame,
+                    io.audio_count, m->audio_rem, trace.errors, m->maria.stats[308].cost,
+                    m->maria.stats[309].cost, pal_pixels[291u * 320u], pal_pixels[PAL_PIXELS - 1u]);
+            break;
+        }
+        samples += io.audio_count;
+        pal_pcm_hash(&pcm, io.audio_count);
+        muhtari__sha256 native;
+        muhtari__sha256_init(&native);
+        muhtari__sha256_update(&native, pal_pixels, PAL_PIXELS);
+        char key[40];
+        snprintf(key, sizeof key, "frame %u sha256", frame);
+        controller_digest(reference, key, &native);
+    }
+    uint8_t mb[256] = {0};
+    if (!failed) {
+        for (unsigned i = 0u; i < 256u; i++)
+            mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
+        failed = samples != 577879u || remainder != 47029u || small != 281u || large != 319u ||
+                 m->frame_start != 85543176u || m->frame_deadline != 85685278u ||
+                 trace.count[0] < 300000u || trace.count[1] != trace.count[0] ||
+                 trace.count[2] < 1000u || trace.pokey_periods < 2u || retail_judge(mb, "pal") != 0;
+        if (!failed)
+            failed = pal_faults(out, mb);
+    }
+#ifdef DIAG_LIBRETRO
+    if (module != NULL && !failed) {
+        uint8_t a[32], b[32];
+        muhtari__sha256 copy = trace.hash;
+        muhtari__sha256_final(&copy, a);
+        muhtari__sha256_final(&module_trace.hash, b);
+        failed = memcmp(a, b, sizeof a) != 0 || pal_videos != PAL_CALLS || pal_audios != PAL_CALLS;
+        muhtari *other = instance();
+        for (unsigned i = 0u; i < 256u && !failed; i++)
+            failed |= muhtari__peek(other, (uint16_t)(MB + i)) != mb[i];
+    }
+#endif
+    if (!failed) {
+        controller_digest(reference, "audio_transitions_sha256", &trace.hash);
+        controller_digest(reference, "audio_pcm_sha256", &pcm);
+        fputs("audio_frames 601\naudio_samples 577879\naudio_rate 48000/1\n"
+              "audio_behaviour_revision 5\naudio_synthesis exact-q23-16x64-dc20\n",
+              reference);
+        pal_mailbox_line(reference, mb);
+        printf("pal: startup960/rem336960 +600 full142102-tick frames; 281x961+319x962; "
+               "601 calls577879/rem47029 tick85543176; TIA%llu/%llu POKEY%llu ordered\n",
+               (unsigned long long)trace.count[0], (unsigned long long)trace.count[1],
+               (unsigned long long)trace.count[2]);
+    }
+#ifdef DIAG_LIBRETRO
+pal_cleanup:
+    if (module != NULL) {
+        if (unload != NULL)
+            unload();
+        if (deinit != NULL)
+            deinit();
+        PAL_CLOSE();
+    }
+#undef PAL_SYMBOL
+#undef PAL_CLOSE
+#endif
+    if (reference != NULL)
+        failed |= fclose(reference) != 0;
+    muhtari_destroy(m);
+    free(image);
+    if (!failed)
+        failed = pal_report(name, expected);
+    return failed;
+}
+
 int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
+    if (argc == 4 && strcmp(argv[1], "--pal-report") == 0)
+        return pal_report(argv[2], argv[3]);
+    if ((argc == 5 || argc == 6) && strcmp(argv[1], "--pal-case") == 0)
+        return pal_case(argv[2], argv[3], argv[4], argc == 6 ? argv[5] : NULL);
+
     if ((argc == 7 || argc == 8) && strcmp(argv[1], "--controller-case") == 0 &&
         (strcmp(argv[2], "driving") == 0 || strcmp(argv[2], "lightgun") == 0 ||
          strcmp(argv[2], "paddle") == 0 || strcmp(argv[2], "keypad") == 0 ||

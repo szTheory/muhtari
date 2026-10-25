@@ -6,11 +6,17 @@
 
 #include <stdint.h>
 
+#include "muhtari.h"
+
 /* The warm NTSC colour of a native byte $hl (hue high nibble, luma low
    nibble) as 0x00RRGGBB, the XRGB8888 pixel. */
 uint32_t muhtari__palette_rgb(uint8_t index);
 
 /* The same colour as RGB565, each channel truncated: r>>3, g>>2, b>>3. */
 uint16_t muhtari__palette_rgb565(uint8_t index);
+
+/* Warm PAL for PAL, warm NTSC otherwise. Presentation only. */
+uint32_t muhtari__palette_rgb_region(uint8_t index, uint32_t region);
+uint16_t muhtari__palette_rgb565_region(uint8_t index, uint32_t region);
 
 #endif /* MUHTARI_HOST_PALETTE_H */

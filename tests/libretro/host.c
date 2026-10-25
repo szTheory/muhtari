@@ -31,6 +31,7 @@
 
 #include "../check.h"
 #include "../cart/images.h"
+#include "../../src/internal.h"
 #include "libretro.h"
 #include "muhtari.h"
 #include "palette.h"
@@ -167,12 +168,12 @@ static void resolve_all(void)
 
 static int rgb565; /* the mode: 0 xrgb8888, 1 rgb565 */
 static int no_game_calls, no_game_value;
-static int pixel_format_calls;
+static int pixel_format_calls, av_update_calls;
 static enum retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
 static int video_calls, video_null;
 static unsigned video_width, video_height;
 static size_t video_pitch;
-static unsigned char frame[W * H * 4u];
+static unsigned char frame[W * 292u * 4u];
 static size_t sample_frames;
 static int sample_nonzero;
 static int batch_calls;
@@ -187,6 +188,25 @@ static int16_t analog[2][2][2];
 static unsigned analog_queries[2][2][2], pad_queries[2][16];
 static char log_text[4096];
 static size_t log_used;
+static const uint8_t *(*test_native)(void);
+static void (*test_observe)(muhtari__audio_observer, void *);
+static muhtari__sha256 raw_library, raw_module;
+static uint64_t raw_library_count, raw_module_count;
+
+static void raw_sample(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    uint8_t bytes[11];
+    for (unsigned i = 0u; i < 8u; i++)
+        bytes[i] = (uint8_t)(tick >> (8u * i));
+    bytes[8] = source;
+    bytes[9] = (uint8_t)raw;
+    bytes[10] = (uint8_t)(raw >> 8);
+    muhtari__sha256_update((muhtari__sha256 *)user, bytes, sizeof bytes);
+    if (user == &raw_library)
+        raw_library_count++;
+    else
+        raw_module_count++;
+}
 
 /* What the core told the frontend through the environment. */
 static const struct retro_controller_info *controller_info;
@@ -206,10 +226,10 @@ static struct {
     const char *key;
     const char *value;
 } vars[] = {
-    {"muhtari_boot", "fast"},          {"muhtari_palette", "ntsc"},
+    {"muhtari_boot", "fast"},          {"muhtari_palette", "auto"},
     {"muhtari_left_difficulty", "B"},  {"muhtari_right_difficulty", "B"},
     {"muhtari_hsc", "auto"},           {"muhtari_battery_port1", "auto"},
-    {"muhtari_battery_port2", "auto"},
+    {"muhtari_battery_port2", "auto"}, {"muhtari_region", "auto"},
 };
 static bool vars_updated;
 
@@ -241,6 +261,11 @@ static void RETRO_CALLCONV host_log(enum retro_log_level level, const char *fmt,
 
 static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 {
+    if (cmd == RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO || cmd == RETRO_ENVIRONMENT_SET_GEOMETRY) {
+        av_update_calls++;
+        CHECK(0); /* Reload uses the frontend's after-load AV query. */
+        return false;
+    }
     if (cmd == RETRO_ENVIRONMENT_GET_LOG_INTERFACE) {
         ((struct retro_log_callback *)data)->log = host_log;
         return true;
@@ -283,6 +308,14 @@ static bool RETRO_CALLCONV env(unsigned cmd, void *data)
         int k;
         for (k = 0; k < 15 && d[k].key != NULL; k++) {
             option_keys[k] = d[k].key;
+            if (strcmp(d[k].key, "muhtari_region") == 0 ||
+                strcmp(d[k].key, "muhtari_palette") == 0) {
+                CHECK(strcmp(d[k].default_value, "auto") == 0);
+                CHECK(strcmp(d[k].values[0].value, "auto") == 0);
+                CHECK(strcmp(d[k].values[1].value, "ntsc") == 0);
+                CHECK(strcmp(d[k].values[2].value, "pal") == 0);
+                CHECK(d[k].values[3].value == NULL);
+            }
         }
         option_set_with = 2;
         return true;
@@ -293,6 +326,14 @@ static bool RETRO_CALLCONV env(unsigned cmd, void *data)
         int k;
         for (k = 0; k < 15 && d[k].key != NULL; k++) {
             option_keys[k] = d[k].key;
+            if (strcmp(d[k].key, "muhtari_region") == 0 ||
+                strcmp(d[k].key, "muhtari_palette") == 0) {
+                CHECK(strcmp(d[k].default_value, "auto") == 0);
+                CHECK(strcmp(d[k].values[0].value, "auto") == 0);
+                CHECK(strcmp(d[k].values[1].value, "ntsc") == 0);
+                CHECK(strcmp(d[k].values[2].value, "pal") == 0);
+                CHECK(d[k].values[3].value == NULL);
+            }
         }
         option_set_with = 1;
         return true;
@@ -340,16 +381,16 @@ static void RETRO_CALLCONV video(const void *data, unsigned width, unsigned heig
         video_null++;
         return;
     }
-    if (width != W || height != H || pitch < row) {
+    if (width != W || height > 292u || pitch < row) {
         return;
     }
-    for (y = 0; y < H; y++) {
+    for (y = 0; y < height; y++) {
         memcpy(&frame[y * row], (const unsigned char *)data + y * pitch, row);
     }
 }
 
 static int checking_audio;
-static int16_t expected_audio[801];
+static int16_t expected_audio[962];
 static uint32_t expected_count, audio_position;
 static void check_audio_sample(int16_t left, int16_t right)
 {
@@ -442,19 +483,20 @@ static void host_free(void *user, void *ptr, size_t size)
 /* Compares the captured frame with the palette of each native byte, read as
    a native-endian uint32_t, or uint16_t in rgb565 mode. Prints the first
    mismatch. */
-static void compare_frame(const uint8_t *native)
+static void compare_region_frame(const uint8_t *native, unsigned height, uint32_t palette)
 {
     uint32_t i, mismatches = 0;
-    for (i = 0; i < W * H; i++) {
+    for (i = 0; i < W * height; i++) {
         uint32_t want, got;
         if (rgb565) {
             uint16_t px;
             memcpy(&px, &frame[2u * i], sizeof px);
             got = px;
-            want = muhtari__palette_rgb565(native[i]);
+            uint32_t rgb = muhtari__palette_rgb_region(native[i], palette);
+            want = ((rgb >> 8) & 0xF800u) | ((rgb >> 5) & 0x07E0u) | ((rgb >> 3) & 0x1Fu);
         } else {
             memcpy(&got, &frame[4u * i], sizeof got);
-            want = muhtari__palette_rgb(native[i]);
+            want = muhtari__palette_rgb_region(native[i], palette);
         }
         if (got != want) {
             if (mismatches == 0) {
@@ -467,13 +509,86 @@ static void compare_frame(const uint8_t *native)
     CHECK_EQ_U64(mismatches, 0);
 }
 
+/* One actual module frame versus an independent library instance. Missing
+   callbacks must advance the same emulation, so the following frame still
+   agrees. Mode0 batch-only,1 sample-only,2 both (batch wins),3 neither. */
+static void session_frame(muhtari *m, unsigned height, uint32_t palette, unsigned mode)
+{
+    static struct {
+        uint8_t before[16];
+        uint8_t native[W * 292u];
+        uint8_t after[16];
+    } guarded;
+    memset(&guarded, 0xA5, sizeof guarded);
+    muhtari_frame io = {0};
+    io.size = (uint32_t)sizeof io;
+    io.video = guarded.native;
+    io.video_pitch = W;
+    io.audio = expected_audio;
+    io.audio_capacity = 962u;
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    checking_audio = 1;
+    expected_count = io.audio_count;
+    audio_position = 0u;
+    video_calls = batch_calls = 0;
+    batch_frames = sample_frames = 0u;
+    p_set_audio_sample(mode == 1u || mode == 2u ? sample : NULL);
+    p_set_audio_sample_batch(mode == 0u || mode == 2u ? batch : NULL);
+    p_set_video_refresh(mode == 3u ? NULL : video);
+    p_run();
+    checking_audio = 0;
+    CHECK_EQ_U64(audio_position, mode == 3u ? 0u : io.audio_count);
+    CHECK_EQ_U64(batch_calls, mode == 0u || mode == 2u ? 1u : 0u);
+    CHECK_EQ_U64(sample_frames, mode == 1u ? io.audio_count : 0u);
+    CHECK_EQ_U64(video_calls, mode == 3u ? 0u : 1u);
+    if (test_native != NULL) {
+        CHECK(test_native() != NULL);
+        if (test_native() != NULL)
+            CHECK(memcmp(test_native(), guarded.native, W * height) == 0);
+        uint8_t library_digest[32], module_digest[32];
+        muhtari__sha256 library_hash = raw_library, module_hash = raw_module;
+        muhtari__sha256_final(&library_hash, library_digest);
+        muhtari__sha256_final(&module_hash, module_digest);
+        CHECK(memcmp(library_digest, module_digest, sizeof library_digest) == 0);
+        CHECK_EQ_U64(raw_library_count, raw_module_count);
+    }
+    if (mode != 3u) {
+        CHECK_EQ_U64(video_height, height);
+        CHECK_EQ_U64(video_width, W);
+        CHECK_EQ_U64(video_pitch, W * (rgb565 ? 2u : 4u));
+        compare_region_frame(guarded.native, height, palette);
+    }
+    for (unsigned i = 0u; i < 16u; i++) {
+        CHECK_EQ_U64(guarded.before[i], 0xA5u);
+        CHECK_EQ_U64(guarded.after[i], 0xA5u);
+    }
+    for (unsigned i = W * height; i < sizeof guarded.native; i++)
+        CHECK_EQ_U64(guarded.native[i], 0xA5u);
+}
+
+static void session_av(unsigned region)
+{
+    struct retro_system_av_info av = {0};
+    p_get_system_av_info(&av);
+    bool pal = region == RETRO_REGION_PAL;
+    CHECK_EQ_U64(p_get_region(), region);
+    CHECK_EQ_U64(av.geometry.base_width, 320u);
+    CHECK_EQ_U64(av.geometry.base_height, pal ? 292u : 242u);
+    CHECK_EQ_U64(av.geometry.max_width, 320u);
+    CHECK_EQ_U64(av.geometry.max_height, 293u);
+    CHECK_EQ_DBL(av.timing.sample_rate, 48000.0);
+    CHECK_EQ_DBL(av.timing.fps, pal ? 3546894.0 / 71051.0 : 39375000.0 / 656711.0);
+    CHECK_EQ_DBL(av.geometry.aspect_ratio,
+                 pal ? (float)(147500000.0 / 129461631.0) : (float)(960.0 / 847.0));
+}
+
 static void card(void)
 {
     struct retro_system_info sys;
     struct retro_system_av_info av;
     struct retro_game_info dummy;
     static const unsigned char dummy_bytes[16] = {0};
-    static uint8_t native[W * H];
+    static uint8_t native[W * 292u];
     static int16_t audio[801];
     char version[32];
     muhtari_versions v;
@@ -487,6 +602,19 @@ static void card(void)
     cfg.allocator.alloc = host_alloc;
     cfg.allocator.free = host_free;
     CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    /* Extra one-time executions may load the existing testdb module. Shipped
+       modules deliberately export neither private observation seam. */
+    void *native_symbol = module_sym("muhtari__libretro_native");
+    void *observe_symbol = module_sym("muhtari__libretro_observe");
+    memcpy(&test_native, &native_symbol, sizeof test_native);
+    memcpy(&test_observe, &observe_symbol, sizeof test_observe);
+    CHECK((test_native == NULL) == (test_observe == NULL));
+    muhtari__sha256_init(&raw_library);
+    muhtari__sha256_init(&raw_module);
+    if (test_observe != NULL) {
+        test_observe(raw_sample, &raw_module);
+        CHECK_EQ_U64(muhtari__synth_observe(m, raw_sample, &raw_library), MUHTARI_STATUS_OK);
+    }
     memset(&v, 0, sizeof v);
     v.size = (uint32_t)sizeof v;
     CHECK_EQ_U64(muhtari_get_versions(&v), MUHTARI_STATUS_OK);
@@ -557,7 +685,7 @@ static void card(void)
         CHECK_EQ_U64(video_width, W);
         CHECK_EQ_U64(video_height, H);
         CHECK_EQ_U64(video_pitch, W * (rgb565 ? 2u : 4u));
-        compare_frame(native);
+        compare_region_frame(native, H, MUHTARI_REGION_NTSC);
         /* 800 or 801 stereo frames, as many as the library wrote, through
            the one path this mode allows. */
         if (io.audio_count != 800u && io.audio_count != 801u) {
@@ -572,8 +700,215 @@ static void card(void)
     CHECK_EQ_U64(batch_nonzero, 0);
     CHECK_EQ_U64(sample_nonzero, 0);
 
+    /* The test card contains all256 native colours. Explicit PAL presentation
+       must convert every colour while emulation remains the NTSC test card. */
+    set_var("muhtari_palette", "pal");
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    p_run();
+    compare_region_frame(native, H, MUHTARI_REGION_PAL);
+    bool seen[256] = {false};
+    for (unsigned px = 0u; px < W * H; px++)
+        seen[native[px]] = true;
+    for (unsigned colour = 0u; colour < 256u; colour++)
+        CHECK(seen[colour]);
+    CHECK_EQ_U64(p_get_region(), RETRO_REGION_NTSC);
+    set_var("muhtari_palette", "auto");
+
+    /* Automatic PAL uses the actual loaded module and both audio callback
+       paths. The owned program sets BACKGRND and a nonzero TIA tone. */
+    static uint8_t pal[128u + 4096u];
+    images_header(pal, 3u, "Owned PAL", 4096u, 0u);
+    pal[57] = 1u;
+    memset(pal + 128u, 0xEA, 4096u);
+    static const uint8_t program[] = {0xA9u, 0x07u, 0x85u, 0x01u, /* lock7800 decode */
+                                      0xA9u, 0x00u, 0x85u, 0x3Cu, /* DMA off */
+                                      0xA9u, 0x46u, 0x85u, 0x20u, /* BACKGRND */
+                                      0xA9u, 0x04u, 0x85u, 0x15u, /* AUDC0 */
+                                      0xA9u, 0x03u, 0x85u, 0x17u, /* AUDF0 */
+                                      0xA9u, 0x0Fu, 0x85u, 0x19u, /* AUDV0 */
+                                      0x4Cu, 0x18u, 0xF0u};
+    memcpy(pal + 128u, program, sizeof program);
+    images_footer(pal + 128u, 4096u);
+    struct retro_game_info game = {0};
+    game.data = pal;
+    game.size = sizeof pal;
+    muhtari_media media = {0};
+    media.size = (uint32_t)sizeof media;
+    media.image = pal;
+    media.image_size = sizeof pal;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(p_load_game(&game), 1u);
+    p_get_system_av_info(&av);
+    CHECK_EQ_U64(p_get_region(), RETRO_REGION_PAL);
+    CHECK_EQ_U64(av.geometry.base_height, 292u);
+    CHECK_EQ_U64(av.geometry.max_height, 293u);
+    CHECK_EQ_DBL(av.timing.fps, 3546894.0 / 71051.0);
+    CHECK_EQ_DBL(av.geometry.aspect_ratio, (float)(147500000.0 / 129461631.0));
+    CHECK(av.timing.fps > 49.9203 && av.timing.fps < 49.9205);
+    CHECK(av.geometry.aspect_ratio > 1.13933f && av.geometry.aspect_ratio < 1.13934f);
+    CHECK_EQ_DBL(av.timing.sample_rate, 48000.0);
+    static const uint32_t pal_samples[] = {960u, 962u, 961u};
+    checking_audio = 1;
+    unsigned audible = 0u;
+    for (unsigned f = 0u; f < 5u; f++) {
+        uint32_t palette = f == 3u ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
+        set_var("muhtari_palette", f == 3u ? "ntsc" : f == 4u ? "pal" : "auto");
+        io.video = native;
+        io.audio = expected_audio;
+        io.audio_capacity = 962u;
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        expected_count = io.audio_count;
+        for (uint32_t i = 0u; i < io.audio_count; i++)
+            audible += expected_audio[i] != 0;
+        audio_position = 0u;
+        memset(frame, 0xA5, sizeof frame);
+        video_calls = 0;
+        batch_frames = sample_frames = 0u;
+        p_run();
+        CHECK_EQ_U64(video_calls, 1u);
+        CHECK_EQ_U64(video_height, 292u);
+        CHECK_EQ_U64(video_width, 320u);
+        CHECK_EQ_U64(video_pitch, 320u * (rgb565 ? 2u : 4u));
+        if (f < 3u)
+            CHECK_EQ_U64(io.audio_count, pal_samples[f]);
+        CHECK_EQ_U64(batch_frames, rgb565 ? 0u : io.audio_count);
+        CHECK_EQ_U64(sample_frames, rgb565 ? io.audio_count : 0u);
+        CHECK_EQ_U64(audio_position, io.audio_count);
+        compare_region_frame(native, 292u, palette);
+        for (uint32_t px = 0u; px < 93440u; px++) {
+            uint32_t got = 0u;
+            if (rgb565) {
+                uint16_t value;
+                memcpy(&value, frame + px * 2u, 2u);
+                got = value;
+            } else {
+                memcpy(&got, frame + px * 4u, 4u);
+            }
+            /* Warm PAL index46 is B0,57,46 (approved palette oracle).
+               Its independent RGB565 truncation is B2A8. */
+            if (native[px] != 0x46u) {
+                CHECK_EQ_U64(native[px], 0x46u);
+                break;
+            }
+            if (f != 3u && got != (rgb565 ? 0xB2A8u : 0xB05746u)) {
+                CHECK_EQ_HEX(got, rgb565 ? 0xB2A8u : 0xB05746u);
+                break;
+            }
+        }
+    }
+    checking_audio = 0;
+    CHECK(audible > 0u);
+    set_var("muhtari_palette", "auto");
+    CHECK_EQ_U64(av_update_calls, 0u);
+    p_unload_game();
+    if (test_native != NULL)
+        CHECK(test_native() == NULL);
+    p_get_system_av_info(&av);
+    CHECK_EQ_U64(p_get_region(), RETRO_REGION_NTSC);
+    CHECK_EQ_U64(av.geometry.base_height, 242u);
+    CHECK_EQ_DBL(av.timing.fps, 39375000.0 / 656711.0);
+    CHECK_EQ_U64(p_load_game(&dummy), 0u);
+    p_get_system_av_info(&av);
+    CHECK_EQ_U64(av.geometry.base_height, 242u);
+    CHECK_EQ_U64(p_load_game(NULL), 1u);
+    p_run();
+    CHECK_EQ_U64(video_height, 242u);
+
+    /* Same module: NTSC card -> NTSC cart -> override PAL -> rejected load ->
+       NTSC fallback -> PAL -> unload -> NTSC card -> NTSC cart. */
+    pal[57] = 0u;
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_NTSC);
+    set_var("muhtari_region", "pal");
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_PAL);
+    media.region = MUHTARI_REGION_PAL;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    for (unsigned mode = 0u; mode < 4u; mode++)
+        session_frame(m, 292u, MUHTARI_REGION_PAL, mode);
+    set_var("muhtari_region", "ntsc");
+    session_frame(m, 292u, MUHTARI_REGION_PAL, 2u);
+    session_av(RETRO_REGION_PAL);
+    p_reset();
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    session_av(RETRO_REGION_PAL);
+    session_frame(m, 292u, MUHTARI_REGION_PAL, 1u);
+    /* Reload alone applies the option, including a reverse metadata override. */
+    pal[57] = 1u;
+    CHECK(p_load_game(&game));
+    media.region = MUHTARI_REGION_NTSC;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    session_av(RETRO_REGION_NTSC);
+    session_frame(m, 242u, MUHTARI_REGION_NTSC, 0u);
+    set_var("muhtari_region", "auto");
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_PAL);
+    CHECK(!p_load_game(&dummy));
+    session_av(RETRO_REGION_NTSC);
+    CHECK(p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM) == NULL);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SYSTEM_RAM), 0u);
+    video_calls = 0;
+    p_run();
+    p_reset();
+    CHECK_EQ_U64(video_calls, 0u);
+    CHECK(p_load_game(&game));
+    p_unload_game();
+    session_av(RETRO_REGION_NTSC);
+    /* A pending PAL option cannot retime the content-free test card. */
+    set_var("muhtari_region", "pal");
+    set_var("muhtari_palette", NULL);
+    CHECK(p_load_game(NULL));
+    session_av(RETRO_REGION_NTSC);
+    muhtari_destroy(m);
+    m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (test_observe != NULL)
+        CHECK_EQ_U64(muhtari__synth_observe(m, raw_sample, &raw_library), MUHTARI_STATUS_OK);
+    session_frame(m, 242u, MUHTARI_REGION_NTSC, 2u);
+    set_var("muhtari_region", "unknown");
+    set_var("muhtari_palette", "unknown");
+    pal[57] = 0u;
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_NTSC);
+    media.region = 0u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    session_frame(m, 242u, MUHTARI_REGION_NTSC, 2u);
+
+    /* Deinit releases PAL caches and every callback; reinit needs fresh setters. */
+    pal[57] = 1u;
+    set_var("muhtari_region", NULL);
+    CHECK(p_load_game(&game));
+    p_deinit();
+    if (test_native != NULL)
+        CHECK(test_native() == NULL);
+    session_av(RETRO_REGION_NTSC);
+    CHECK(!p_load_game(&game));
+    p_set_environment(env);
+    p_init();
+    CHECK(p_load_game(&game));
+    session_av(RETRO_REGION_PAL);
+    video_calls = batch_calls = 0;
+    batch_frames = sample_frames = 0u;
+    p_run();
+    CHECK_EQ_U64(video_calls, 0u);
+    CHECK_EQ_U64(batch_calls, 0u);
+    CHECK_EQ_U64(sample_frames, 0u);
+    media.region = 0u;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    muhtari_frame advance = {0};
+    advance.size = (uint32_t)sizeof advance;
+    CHECK_EQ_U64(muhtari_run_frame(m, &advance), MUHTARI_STATUS_OK);
+    session_frame(m, 292u, MUHTARI_REGION_PAL, 2u);
+    CHECK_EQ_U64(av_update_calls, 0u);
+    set_var("muhtari_region", "auto");
+    set_var("muhtari_palette", "auto");
+
     p_unload_game();
     p_deinit();
+    if (test_observe != NULL) {
+        CHECK(raw_library_count > 0u);
+        test_observe(NULL, NULL);
+    }
     muhtari_destroy(m);
 }
 
@@ -1573,12 +1908,13 @@ static void case_bios(const char *dir)
     system_dir = NULL;
 }
 
-/* The core declares its four options through SET_CORE_OPTIONS_V2, or the
+/* The core declares its options through SET_CORE_OPTIONS_V2, or the
    v1 call when the frontend has only that. The difficulty options set the
    switches at load and at Restart; a change mid-game sets them at once. */
 static void check_keys(void)
 {
-    static const char *const keys[7] = {"muhtari_boot",
+    static const char *const keys[8] = {"muhtari_boot",
+                                        "muhtari_region",
                                         "muhtari_palette",
                                         "muhtari_left_difficulty",
                                         "muhtari_right_difficulty",
@@ -1586,10 +1922,10 @@ static void check_keys(void)
                                         "muhtari_battery_port1",
                                         "muhtari_battery_port2"};
     unsigned k;
-    for (k = 0; k < 7u; k++) {
+    for (k = 0; k < 8u; k++) {
         check_string("option key", option_keys[k], keys[k]);
     }
-    CHECK(option_keys[7] == NULL);
+    CHECK(option_keys[8] == NULL);
 }
 
 static void case_options(void)

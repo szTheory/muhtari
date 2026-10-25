@@ -3,21 +3,21 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: Not started
-status: "Phase 8 shipped — PR #31; required CI and release confirmation pending"
-stopped_at: Phase 8 PR 31 opened; ship session tracks CI, merge and release; next $gsd-discuss-phase 9
-last_updated: "2026-10-25T13:41:19.915Z"
+status: shipping
+stopped_at: Phase 9 PR 33; measured deadline repair validated locally; corrected-source CI pending
+last_updated: "2026-10-25T22:08:31.374Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 8 shipped in PR 31; CI, merge and release confirmation pending
-state_head: 2c10399522dd7bf16c3b5de7024f4ab30f8c4c71
+last_activity_desc: Phase 9 ship CI failed twice on Windows PAL deadline; measured correction passes local 654+6; corrected-source acceptance pending
+state_head: 8814d3e80e1221cc0da71b84560c4f001852212a
 progress:
   total_phases: 7
-  completed_phases: 4
-  total_plans: 42
-  completed_plans: 42
-  percent: 57
+  completed_phases: 5
+  total_plans: 50
+  completed_plans: 50
+  percent: 71
 total_phases: 7
-current_phase: 09
-current_phase_name: PAL games and audio
+current_phase: 10
+current_phase_name: Homebrew and expansion memory
 ---
 
 # Project State
@@ -27,30 +27,282 @@ current_phase_name: PAL games and audio
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase8 is verified complete and submitted in PR #31.
-API6/ABI1/behavior5 delivers typed input and movie2, native light sensing, timed
-paddles/keypads/motion and complete adapters through all three deliverables.
-All INPUT-01–05 requirements are complete. Phase9 is the next roadmap target,
-but has not started. After shipping confirmations, next command: $gsd-discuss-phase 9.
+Current focus: Phase9 is complete:8/8 plans,22/22 tasks and42/42 verified truths.
+PAL-01–03 are complete. The library, runner and both libretro formats execute PAL
+with selected timing/geometry and independently proved bounded audio arithmetic.
+API6/ABI1/behavior5 and all342 original NTSC observations remain unchanged.
+The one review-fix round resolves borrowed BIOS lifetime; no required blocker or owner UAT remains.
+Phase9 ships in PR33. After required CI, merge and release confirmation, the next
+separate command is $gsd-discuss-phase 10. Phases10–11 remain unstarted.
 
 ## Current Position
 
+Current Phase: 10 — Homebrew and expansion memory (unstarted)
 Current Plan: Not started
-Total Plans in Phase: 0
-Progress: [██████░░░░] 57%
+Total Plans in Phase: Not planned
+Progress: [███████░░░] 71%
 
-Phase8 is complete:14/14 accepted plans and49/49 verified truths. Four of seven
-milestone phases are complete (57%); phases9–11 remain unstarted. Runtime totals
-are42/42 summarized plans, including historical halted06-01; active accepted
-progress is41/41 known planned slots. These are not claims of milestone completion.
+Phase9 has8/8 accepted plans and22/22 accepted tasks. Five of seven milestone
+phases are complete (71%); phases10–11 remain unstarted. Active-slot runtime totals
+are50 summarized plans of50 planned, including historical halted06-01;49 accepted
+completed plans. The retained active-slot convention differs from raw historical artifacts.
 
-Status: Phase 8 shipped — PR #31; required CI and release confirmation pending
-Last activity: 2026-10-25 — Phase8 shipping PR opened; fresh local gate passed
-Next command: $gsd-discuss-phase 9 (new session, after shipping confirmations)
-Branch: phase/08-controllers-at-the-pins. PR #31:
+Status: Phase9 PR33; measured deadline correction locally verified; hosted acceptance pending
+Last activity: 2026-10-25 — Ship preflight passed; local654+6 and accepted hosted CI rechecked
+Next command after merge/release confirmation: $gsd-discuss-phase 10
+Branch: phase/09-pal-games-and-audio
+
+## Phase 9 shipping
+
+PR: https://github.com/szTheory/muhtari/pull/33
+Title: feat: add PAL timing and sustained audio across hosts
+Branch: phase/09-pal-games-and-audio -> main
+
+Ship preflight: `verification.status` exits0 with passed. The existing review is
+closed with0 open findings; no routine owner review or additional review round.
+`cmake --workflow --preset ci` exits0:654 tests in31.57s and6 release checks
+in0.14s. `git diff --check` and `scripts/hygiene.sh --tree` exit0. URL:N/A-local.
+`gh run view 40233948646 --json attempt,status,conclusion,headSha,url,jobs` and
+`cmake -DINPUT=build/ship-09-accepted-ci.json -DEXPECTED_SHA=419bb31faa2b7dd0c1586879e478ae8dd4ab3d6e -P tools/check_ci_run.cmake`
+exit0; the accepted CI required aggregate passes on attempt1:
+https://github.com/szTheory/muhtari/actions/runs/40233948646
+Nightly40233948516 remains completed/success at attempt2 with its advisory
+property timeout explicitly unaccepted. No failure is relabeled as passing.
+
+CI40238824962 attempts1/2 fail on Windowsx64 PAL36.02s; attempt1 also has
+hash29.01s timeout, while attempt2 completes hash28.68s. Dependent quality and
+required aggregate failures remain failures. Complete job audit exits1 at each
+attempt; no third unchanged-source retry. Nightly40238825011 succeeds overall
+with required native/PPC equality; advisory isolation390.03s remains unaccepted.
+Canonical09-08-SUMMARY preserves the exact source, runs and failed history.
+
+Bounded independent evidence/build reviews select existing DEC.47 calibration:
+PAL53 from complete ASan52.64/scale2, hashes58 from complete Windows28.68.
+All660 registrations at scales1/2/13 retain labels, fixtures, costs and other
+deadlines;198 resolved commands match and source command text is unchanged.
+Generated inner PAL matches. Corrected local workflow exits0:
+654 ordinary25.77s and6 release0.11s; complete JUnit inventories pass. No runtime,
+workload, assertion, scale, required-membership or provenance change. Independent
+report revalidation precedes one corrected-source hosted acceptance. Auto-merge
+is temporarily disabled during repair; merge/release outcomes remain pending.
+No Phase10 workflow runs in this session. Next: $gsd-discuss-phase 10.
+
+## Phase 9 final acceptance
+
+All eight plans and PAL-01–03 pass. Independent09-VERIFICATION.md covers42/42
+truths and112 fingerprinted inputs. One of two permitted review-fix rounds was used;
+CR-01 is fixed, re-review is clean, and the gap round is unused. The BIOS alias
+regression exercises ten region/source/size combinations and transactional failures.
+The16KiB private staging adds no allocation, public ABI change or per-frame work.
+
+Final runtime fixaf9dc83 is accepted through branch head419bb31 and actual tested
+mergedf6aeefcd4e6e5f13c4350f3a6fe71d202a0940d; their complete trees match.
+Genuine main base2cbbd6a78dabe2bc098615d49f7118231cc05626 is rebuilt independently.
+CI40233948646 attempt1 and Nightly40233948516 attempt2 pass:
+https://github.com/szTheory/muhtari/actions/runs/40233948646
+https://github.com/szTheory/muhtari/actions/runs/40233948516/attempts/2
+Native current654/base649+6 in all six lanes, ASan637/base632, full native/PPC654+6,
+WASM592, all956 equality rows, vectors258, fuzz10, integer/ABI/architecture/hygiene,
+all18 actual candidate ZIPs, authenticated current/base join, armed+1% test-card
+performance and the two existing actual RetroArch cases pass. The old342-row
+prefix matches actual accepted main artifacts. Archive totals remain report-only.
+
+The delegated post-review regression command
+`node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 0 -- sh build/ci/task08-jobserver-gate.sh`
+exits0:654 ordinary45.13s, release6 in0.17s, explicit package/release6 in0.13s,
+complete JUnit and hygiene. It covers110 prior-phase test references; URL:N/A-local.
+The standard FIFO context caps local workers at4 without changing the configured
+workflow, presets, workloads or deadlines. Verifier spot checks5/5 exit0.
+`verification.status`, `git diff --check` and tree hygiene exit0; URL:N/A-local.
+
+Nightly attempt1 was preempted after apt consumed29m13s of its30m job budget;
+567 native cases passed, no source/test error occurred, and PPC did not run.
+One targeted same-source retry completed apt in13s and the full loop in9m47s.
+All failed/cancelled history remains in09-08-SUMMARY.md. The advisory10000-case
+isolation timeout390.00s remains unaccepted and advisory under SEED-009.
+PAL fast handoff, optical/RC fits and85:342 analog balance retain their documented
+confidence limits; no hardware calibration or universal retail playability is claimed.
+
+The completion helper's seven summary warnings reproduce its command-as-path
+heuristic. Actual declared files, reachable commits, consumers, inventories and the
+112-file fingerprint pass. Progress/current-position preservation fields are
+reconciled here. No new gate, quota, required debt or metadata-retry loop is added.
+The earlier draft PR33 is promoted for shipping in this step. Required CI,
+squash auto-merge and post-merge release confirmation precede Phase10.
+
+## Phase 9 execution history
+
+The following slice snapshots retain their original scope and pending statements;
+the final acceptance above supersedes them.
+
+09-01 sourcead0d661 and summarya09ecc5 are committed. Task commits8b845bc
+(RED),bb4e39c (GREEN),824a3ea (startup/lifecycle) andad0d661 (docs) resolve
+on this branch. Focused checks23/23 and27/27 pass; final source workflow652+6
+and explicit package/release checks pass. Local candidate producer records
+81274+85807+94386=261467 bytes, with no independent-base or hosted claim.
+Independent literal edge/startup, full591149-phase/4000-alignment coefficients,
+physical buffers, failed loads, canaries and real host output are covered.
+
+09-02 source634596b and summaryaec0bb3 are committed. Task commitse770594
+(RED),a5dc4e2 (GREEN),81dca26 (optical) and634596b (lifecycle) resolve on
+this branch. Focused checks23/23,15/15 and24/24 pass; final source workflow
+652+6 and explicit package/release6/6 pass. PAL keypad2838, EEPROM35469 and
+single-ceil paddle fits preserve NTSC predicates. Both-region/both-placement
+battery, exact ACK/reset, failed-load and nine-family noalloc regressions pass.
+Native lower-row optical/NULL-video raw/PCM coverage passes. Real D64 crosses
+VBLANK; separately seeded pending deadlines prove physical-frame wrap retention.
+Neither establishes measured hardware calibration.
+
+Historical09-02 parent gate: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake --workflow --preset ci`
+exits0 (652 ordinary tests,27.62s;6 release checks,0.13s). Run URL:N/A-local.
+`check evaluation-scope --plan 09-02 --commits-only --raw`,
+`git diff --check` and `scripts/hygiene.sh --tree` exit0. All five declared
+modified files and committed summary exist; Self-Check is PASSED. No active
+wave-post hooks. Existing producer measures current 634596b: 262688 bytes versus
+actual preplan 2096b28: 261466 bytes, each independently652+6. This is a local
+slice comparison, not hosted or phase-versus-main acceptance. Temporary base
+measurement worktree is removed.
+
+09-03 sourceef95e37 and summaryd351008 are committed. Seven task commits
+resolve on this branch, including three RED/GREEN pairs and precise regional
+movie error columns. All256 approved warm PAL RGB entries, RGB565 truncation and
+legacy NTSC parity pass. The actual runner covers explicit regions, opt-in eight-key
+info, full93440-byte native/292-row PNG, raw/PCM identity and immutable movie row
+bounds before output allocation/save import. Every allocation failure is covered.
+PAL startup960/962/961 samples and unchanged legacy transcripts are retained.
+
+Historical09-03 parent gate: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake --workflow --preset ci`
+exits0 (652 ordinary tests,44.82s;6 release checks,0.20s). Run URL:N/A-local.
+`check evaluation-scope --plan 09-03 --commits-only --raw`,
+`git diff --check` and `scripts/hygiene.sh --tree` exit0. All14 modified files
+and committed summary exist; Self-Check is PASSED. No active wave-post hooks.
+Existing producer measures final sourceef95e37:265208 bytes versus genuine
+preplanba8c22e:262677 bytes, each independently652+6 with matching environment.
+Base's initial lightgun timeout remains recorded; isolated0.62s and one bounded
+unchanged-base full retry pass. No deadline/workload change or proven-flake claim.
+This is a local slice comparison, not hosted or phase-versus-main acceptance.
+Temporary base measurement worktree is removed. Full failure history remains
+in09-03-SUMMARY.md; no logs are committed.
+
+09-04 source03646b3 and summary98754eb are committed. RED/GREEN pairs
+(d20ae9e/fe65173 andd2b845d/03646b3) resolve on this branch. Both actual pixel
+modules prove load-captured auto/ntsc/pal selection, exact PAL AV/292 rows,
+all256 warm colours, nonzero exact stereo PCM and missing-callback advancement.
+Run/Restart never applies a pending region; reload does. Same-module override,
+failed-load/unload/test-card/reinit lifetimes retain clean NTSC fallback with no
+load-time AV/geometry callback. Native/raw/PCM observation seams pass both formats.
+
+Historical09-04 parent gate: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake --workflow --preset ci`
+exits0 (652 ordinary tests,25.23s;6 release checks,0.09s). Run URL:N/A-local.
+`check evaluation-scope --plan 09-04 --commits-only --raw`, `git diff --check`
+and `scripts/hygiene.sh --tree` exit0. All three modified files and committed
+summary exist; Self-Check is PASSED. No active wave-post hooks or gate failures.
+Existing producer measures exact source03646b3:265608 bytes versus genuine
+preplan472b7c6:265200 bytes, independently652+6 each with equal toolchain/fixture
+identity. This is a local slice comparison, not hosted or phase-versus-main
+acceptance; the clean temporary base worktree is removed. Required package,
+archive and release checks pass. Optional local sanitizer runs remain unaccepted:
+both focused cases time out60s and an empty instrumented program independently
+returns124 at5s before output. No sanitizer success or deadline change is claimed;
+final required hosted acceptance remains09-08. The best-effort WINDOWS append
+encountered existing count drift and wrote nothing. Full failed history remains
+in09-04-SUMMARY.md; no logs are committed. Shared progress fields were reconciled
+against the actual index after the helper's advisory percent0 output.
+
+09-05 sourceb8dbe18 and summaryafa03f4 are committed. Task commitsf4b0965,
+e70ae8c,7896e5f andb8dbe18 resolve on this branch. All591149 arithmetic carry
+steps and8000 actual signed-mass extremizers pass independently. Real startup,
+456-tick TIA/stretched-phi2 POKEY, half-open horizons, transactional capacity,
+NULL parity and long uint64 elapsed totals are covered. Both-region spectral
+judges reject every bypass; real maximum-current/hostile source paths remain
+bounded and allocation-free. No production code or quality threshold changed.
+Spectral COST21 reflects a complete20.08s local workload; deadlines are unchanged.
+
+Historical09-05 parent gate: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake --workflow --preset ci`
+exits0 (652 ordinary tests,34.25s;6 release checks,0.10s). Run URL:N/A-local.
+`check evaluation-scope --plan 09-05 --commits-only --milestone-bound --max-commits 30 --raw`,
+`git diff --check` and `scripts/hygiene.sh --tree` exit0. All six declared modified
+files, four task commits and committed summary exist; Self-Check is PASSED.
+No active wave-post hooks or gate failures. Existing producer measures exact
+sourceb8dbe18:265610 bytes versus genuine pre-task5678c7b:265598 bytes,
+independently652+6 each with matching toolchain/fixture identity. This is a local
+slice comparison, not hosted or phase-versus-main acceptance; the clean temporary
+base worktree is removed. Initial test-oracle and report-field assertion failures
+remain recorded in09-05-SUMMARY.md and are not claimed as RED evidence or passes.
+No logs are committed. PAL-03 classification and85:342 analog calibration remain
+unresolved; actual sustained three-host output and hosted acceptance remain09-07/08.
+
+09-06 source355d34b and summary2b3ddff are committed. RED7681723,
+GREEN0ef76dc and join-controls355d34b resolve on this branch. The sole production
+change adds the exact named owned PAL alternative. Real temporary Git event-base
+producer and unchanged join pass/fault controls retain old manifest/sample bytes,
+raw trusted identities, exact annotations and required measured three-ZIP evidence.
+Two focused read-only boundary/evidence specialists found no material defect.
+No deadline, COST, quota, threshold, lane or behavior revision changed.
+
+Fresh09-06 parent gate: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake --workflow --preset ci`
+exits0 (652 ordinary tests,35.71s;6 release checks,0.13s;quality14.25s).
+Run URL:N/A-local. `check evaluation-scope --plan 09-06 --commits-only --milestone-bound --max-commits 30 --raw`,
+`git diff --check` and `scripts/hygiene.sh --tree` exit0. All three declared
+modified files, task commits and committed summary exist; Self-Check is PASSED.
+No active wave-post hooks or gate failures. Existing producer measures exact
+source355d34b:265608 bytes versus genuine preplan4fb6302:265600 bytes,
+independently652+6 each with matching full environment/raw fixture identity.
+Explicit package/release6/6 and actual ZIP integrity pass. This is a local slice
+comparison, not hosted or phase-versus-main acceptance; the clean temporary base
+worktree is removed. Intentional admission RED and the corrected fault-input
+restoration failure remain in09-06-SUMMARY.md; no logs are committed.
+Actual owned PAL row/admission and sustained three-host observations remain09-07;
+complete hosted/current-base acceptance remains09-08. PAL requirements stay open.
+
+09-07 tasks37c4286/7bae373/c7867f2/7ad503c and executor summary1061527
+are committed. The601-call library, actual runner and loaded two-format paths
+agree on independent numeric/native/raw/PCM evidence; all342 old observation
+rows retain exact bytes and614 PAL rows are additive. Parent workflow exits0,
+653+6 (40.74s/0.13s), N/A-local. Scope, artifacts, inventories and hygiene pass.
+Candidate1061527 ZIPs81763+87472+96375=265610 have valid CRCs and measured
+producer identities; source is unchanged from7ad503c. At that original handoff,
+no base comparison passed; debug recovery below supersedes the acceptance halt.
+
+The genuine pre-plan009f37e producer rebuild exits1 after651/652 pass;
+lightgun times out2.07303s. Isolated lightgun passes0.84s, but one bounded
+unchanged full retry exits124 and repeats lightgun2.01s before publication
+finishes. Initial JUnit and failed outputs remain ignored local evidence;
+commands/statuses are in09-07-SUMMARY.md. Publication's existing130s timeout
+can outlast the separate60s workflow wrapper. No cause or proven flake is
+established; no deadline, workload or policy changes. Two bounded read-only
+specialists confirm required base inventory is missing and advise against
+another unchanged retry. The clean temporary pre-plan worktree is removed.
+That historical halt and all failures remain in canonical09-07 summary.
+The separate debug step found pre-expansion calibration on the doubled gun matrix;
+complete co-scheduled valid work2.1942s supports provisional5s, preserving all cases,
+assertions and lane scales. Exact historical host contention remains unknown.
+Foreground execution removes the independently inadequate60s outer wrapper.
+The genuine clean009f37e base independently passes652+6 (34.23s/0.13s), including
+lightgun1.38419s under its unchanged2s deadline. Fix a93a11d recalibrates the gun;
+ddf51d4 also removes GSD's redundant outer timer through supported config0.
+The configured foreground workflow passes653+6 (53.53s/0.18s), lightgun2.35s;
+all659 CTest deadlines remain positive and wrapper pass/fault exits propagate.
+Fresh existing producer observations accept
+both complete inventories with matching environment/fixture identities; all six ZIP
+CRCs pass. Current81763+87472+96375=265610 versus base81753+87472+96375=265600.
+Commands exit0, run URLs N/A-local; full evidence is in the09-07 summary and
+.planning/debug/resolved/preplan-lightgun-evidence.md. This is a local slice
+comparison, not hosted phase-versus-main acceptance.09-07 is accepted;09-08 ready.
+Requirements, hosted acceptance, phase review and verification remain open.
+Review-fix/gap rounds remain unused. Next separate command: $gsd-execute-phase 9.
+
+Fast PAL startup140016 and zero undocumented residue remain fitted policy;
+85:342 analog balance is unverified. The planned PAL-01 probe classification
+remains flagged. Diagnostic/trust acceptance and complete hosted/current-base evidence remain
+successor-plan work; expanded local audio evidence is accepted in09-05.
+
+Historical Phase9 planning evidence is retained in09-RESEARCH.md and the planning
+commit7019a6b:8 plans/22 tasks checked;19/19 decisions and22/22 source items
+covered. Those planning passes do not establish runtime or hosted acceptance.
+
+Historical Phase8 ship snapshot (retained evidence):
 https://github.com/szTheory/muhtari/pull/31
-This ship-note snapshot precedes required CI, squash auto-merge and release-PR
-confirmation; the current ship session owns those checks. No next GSD step runs here.
 
 Fresh shipping checks: `cmake --workflow --preset ci` exits0 (649+6),
 `git diff --check` exits0, and `verification.status` exits0 with passed.
@@ -225,7 +477,7 @@ Core state remains integer-only, bounded, instance-owned and allocation-free aft
 Battery layout1 is absent,2048,32768 or34816 bytes; attachment freezes at successful load.
 Fixed5ms EEPROM timing is a compatibility model, not a hardware measurement.
 The ROM-free stub supplies signatures only; AtariVox speech, full OpenHSC, save states,
-PAL completion, later controllers and broader retail playability remain outside this phase.
+broader retail playability and later expansion features remain outside Phase9.
 Historical no-EEPROM frame pins retain explicit topology; automatic save metadata has
 separate executed hardware tests. Archive/floor/performance guards remain unchanged.
 
@@ -235,9 +487,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase8 PR #31 opened; current ship session tracks CI, merge and release
-Last session: 2026-10-25
+**Stopped at:** Phase9 PR33; corrected-source CI, merge and release confirmation pending
+Last session: 2026-10-25T22:08:31.374Z
 Resume file: None
+Next command after merge/release confirmation: $gsd-discuss-phase 10
 
 ### Quick Tasks Completed
 
@@ -264,9 +517,17 @@ Resume file: None
 | Phase 08 P12 | 14min | 3 tasks | source03b7f96 |
 | Phase 08 P13 | 15min | 3 tasks | source38ec251 |
 | Phase 08 P14 | 66min verification window | 3 tasks | sourcedf8f9a6 |
+| Phase 09 P01 | 17min | 3 tasks | sourcead0d661 |
+| Phase 09 P02 | 13min | 3 tasks | source634596b |
+| Phase 09 P03 | 16min | 3 tasks | sourceef95e37 |
+| Phase 09 P04 | 14min | 2 tasks | 3 files |
+| Phase 09 P07 | accepted after debug recovery | 3 accepted tasks | source7ad503c; recoverya93a11d/ddf51d4 |
 
 ## Decisions
 
+- [Phase 09]: Keep one load-selected regional timing/geometry/audio profile and preserve existing NTSC outputs.
+- [Phase 09]: Judge independent startup plus600 full-frame numbers before956-row equality and authenticated main-base evidence.
+- [Phase 09]: Stage borrowed BIOS bytes in bounded unpublished instance storage before load commit; preserve live state on failure.
 - [Phase 08]: Preserve separate fixture admission, device behavior and evidence comparison authorities.
 - [Phase 08]: Admit only the exact 4-to-5 annotation transition alongside existing equality and historical adjacent pairs.
 - [Phase 08]: Preserve the old input validator and Auto fallback independently of extended device support.
@@ -281,6 +542,7 @@ Resume file: None
 
 ### Blockers
 
-None required. Current-source advisory10000-case isolation timing and earlier
-publication/library costs remain in SEED-009; unaccepted evidence is preserved.
-Next command: $gsd-discuss-phase 9 in a new session after Phase8 shipping confirmations.
+No required blocker remains. Phase9 is complete with clean review and42/42
+verification; PR33 is the shipping action. Advisory10000-case isolation
+cost remains unaccepted in SEED-009. Hardware calibration, broader retail
+playability and existing historical deferrals retain their stated scope.

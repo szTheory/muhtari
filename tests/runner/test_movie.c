@@ -32,8 +32,7 @@ static const bad bads[] = {
     {0, "muhtari-movie 1\nport1\n", 2, 6, "missing value"},
     {0, "muhtari-movie 1\nport2 none\n|||...BB|\n", 3, 1, "port1 missing, expected a port1 line"},
     {0, "muhtari-movie 1\nport1 none\n", 3, 1, "port2 missing, expected a port2 line"},
-    {0, HEAD "region pal\n", 4, 8, "pal is not supported, expected ntsc"},
-    {0, HEAD "region secam\n", 4, 8, "unknown region, expected ntsc"},
+    {0, HEAD "region secam\n", 4, 8, "unknown region, expected ntsc or pal"},
     {0, HEAD "boot bios\n|......|.....|...BB|\n", 4, 6, "boot bios without bios-sha256"},
     {0, HEAD "boot warm\n", 4, 6, "unknown boot, expected fast or bios"},
     {0, "muhtari-movie 1\nrom-sha256 abc\n", 2, 15, "too few hex digits, expected 64 hex digits"},
@@ -374,6 +373,24 @@ static void typed(void)
             CHECK_EQ_U64(in.port[p].flags, last.port[p].flags);
         }
     }
+    for (unsigned region = 0u; region < 3u; region++) {
+        const char *region_line = region == 0u   ? ""
+                                  : region == 1u ? "region ntsc\n"
+                                                 : "region pal\n";
+        snprintf(text, sizeof text,
+                 "muhtari-movie 2\nport1 lightgun\nport2 none\n%s"
+                 "|lightgun:319,291,0|none:|...BB|\n",
+                 region_line);
+        CHECK_EQ_U64(muhtari__movie_validate_ex((const uint8_t *)text, strlen(text), &h, &count,
+                                                &cursor, &err),
+                     0u);
+        CHECK_EQ_U64(h.has_region, region != 0u);
+        CHECK_EQ_U64(h.region, region);
+        CHECK_EQ_U64(
+            muhtari__movie_next_ex((const uint8_t *)text, strlen(text), &h, &cursor, &in, &err),
+            1u);
+        CHECK_EQ_U64(in.port[0].gun_y, 291u);
+    }
     static const struct {
         const char *d, *v;
         uint32_t col;
@@ -393,7 +410,7 @@ static void typed(void)
         {"driving", ",0,0", 10},
         {"driving", "0,,0", 12},
         {"lightgun", "320,0,2", 13},
-        {"lightgun", "0,242,2", 15},
+        {"lightgun", "0,292,2", 15},
         {"lightgun", "0,0,4", 15},
         {"paddle", "65536,0,0", 13},
         {"paddle", "0,0,4", 13},
@@ -439,6 +456,11 @@ static void typed(void)
 
 int main(void)
 {
+    muhtari__movie_header pal_header;
+    uint32_t pal_count = 0u;
+    CHECK_EQ_U64(parse_ok(HEAD "region pal\n|......|.....|...BB|\n", &pal_header, &pal_count), 0u);
+    CHECK_EQ_U64(pal_header.region, MUHTARI_REGION_PAL);
+    CHECK_EQ_U64(pal_count, 1u);
     for (size_t i = 0; i < sizeof bads / sizeof bads[0]; i++) {
         const bad *b = &bads[i];
         char name[32];

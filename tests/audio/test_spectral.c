@@ -25,6 +25,8 @@ struct spectrum {
 static double real_part[N], imaginary[N], window[N], window_sum;
 static int16_t pcm[N];
 static int failures;
+static unsigned pal;
+static uint32_t sample_num = 88u, sample_den = 13125u;
 
 static void source_level(muhtari *m, const struct tone *t, uint64_t tick, unsigned high);
 
@@ -74,7 +76,7 @@ static void transform(void)
 
 static double fundamental(const struct tone *t)
 {
-    const double tick_rate = 315000000.0 / 44.0;
+    const double tick_rate = pal != 0u ? 7093788.0 : 315000000.0 / 44.0;
     return t->tia != 0u ? tick_rate / (456u * (t->divisor + 1u))
                         : tick_rate / (8u * (t->divisor + 4u));
 }
@@ -110,6 +112,8 @@ static void capture_pokey(const struct tone *t, unsigned slow, unsigned word, un
     if (m == NULL || reference == NULL) {
         exit(1);
     }
+    m->effective_region = reference->effective_region =
+        pal != 0u ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
     muhtari__synth_reset(m, 0u, (uint8_t)t->chips);
     muhtari__synth_reset(reference, 0u, (uint8_t)t->chips);
     unsigned reference_high = 0u;
@@ -190,16 +194,20 @@ static void capture_pokey(const struct tone *t, unsigned slow, unsigned word, un
         }
         /* Do not emit the next rise speculatively across an output cut.
            TIA is silent here; bus integration tests exercise shared ties. */
-        int16_t chunk[88];
-        REQUIRE(muhtari__synth_render(m, end, chunk) == 88u);
+        int16_t chunk[89];
+        uint32_t count =
+            (uint32_t)(end * sample_num / sample_den - horizon * sample_num / sample_den);
+        REQUIRE(count >= 88u && count <= 89u);
+        REQUIRE(pal != 0u || count == 88u);
+        REQUIRE(muhtari__synth_render(m, end, chunk) == count);
         if (t->channels == 1u && hp == 0u) {
             /* Independent documented edge arithmetic, not chip-derived
                timestamps. A miss shared here localizes reconstruction. */
-            int16_t expected[88];
-            REQUIRE(muhtari__synth_render(reference, end, expected) == 88u);
-            REQUIRE(memcmp(chunk, expected, sizeof chunk) == 0);
+            int16_t expected[89];
+            REQUIRE(muhtari__synth_render(reference, end, expected) == count);
+            REQUIRE(memcmp(chunk, expected, count * sizeof chunk[0]) == 0);
         }
-        for (unsigned i = 0; i < 88u && samples < SETTLE + N; i++, samples++) {
+        for (unsigned i = 0; i < count && samples < SETTLE + N; i++, samples++) {
             if (samples >= SETTLE) {
                 pcm[samples - SETTLE] = chunk[i];
             }
@@ -303,6 +311,7 @@ static void capture(const struct tone *t, int alias)
         fprintf(stderr, "spectral instance allocation failed\n");
         exit(1);
     }
+    m->effective_region = pal != 0u ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
     muhtari__synth_reset(m, 0u, (uint8_t)t->chips);
     if (t->tia != 0u) {
         m->profile.tia_phase = (uint16_t)((456u - t->offset) % 456u);
@@ -331,9 +340,11 @@ static void capture(const struct tone *t, int alias)
                     source_level(m, t, tick, high);
                 }
             }
-            int16_t chunk[88];
+            int16_t chunk[89];
             uint32_t count = muhtari__synth_render(m, end, chunk);
-            REQUIRE(count == 88u);
+            REQUIRE(count == end * sample_num / sample_den - horizon * sample_num / sample_den);
+            REQUIRE(count >= 88u && count <= 89u);
+            REQUIRE(pal != 0u || count == 88u);
             REQUIRE(m->synth.mixed_level == (high != 0u ? amplitude : 0));
             for (uint32_t i = 0; i < count && samples < SETTLE + N; i++, samples++) {
                 if (samples >= SETTLE) {
@@ -344,7 +355,7 @@ static void capture(const struct tone *t, int alias)
         } else {
             /* Nearest-sample kernel bypass. Event rounding alone changes;
                gain, Q30 feedback truncation and int16 rounding match synth.c. */
-            while ((next_edge(t, edge) * 88u + 6562u) / 13125u <= samples) {
+            while ((next_edge(t, edge) * sample_num + sample_den / 2u) / sample_den <= samples) {
                 high ^= 1u;
                 edge++;
             }
@@ -458,92 +469,99 @@ int main(int argc, char **argv)
     }
     REQUIRE(fabs(window_sum - 0.35875 * N) < 0.000001);
     int controls = strcmp(argv[1], "controls") == 0;
-    if (controls != 0) {
-        analyzer_controls();
-    }
-    const unsigned offsets[] = {0u, 7u, 137u};
-    const unsigned divisors[] = {0u, 1u, 3u};
-    uint8_t seen[132] = {0};
-    double worst[3] = {-1000.0, -1000.0, -1000.0};
-    unsigned evaluated = 0, rejected = 0;
-    for (unsigned divisor = 0; divisor < 32u; divisor++) {
-        for (unsigned offset = 0; offset < 3u; offset++) {
-            struct tone t = {1u, divisor, 0u, 0u, offsets[offset]};
-            evaluate(&t, controls, seen, &rejected, worst);
+    for (pal = 0u; pal < 2u; pal++) {
+        sample_num = pal != 0u ? 4000u : 88u;
+        sample_den = pal != 0u ? 591149u : 13125u;
+        printf("region %s: physical clock %.9f Hz, samples %u/%u\n", pal != 0u ? "PAL" : "NTSC",
+               pal != 0u ? 7093788.0 : 315000000.0 / 44.0, sample_num, sample_den);
+        if (controls != 0) {
+            analyzer_controls();
         }
-    }
-    for (unsigned divisor = 0; divisor < 3u; divisor++) {
-        for (unsigned chips = 1u; chips <= 2u; chips++) {
-            for (unsigned channels = 1u; channels <= 4u; channels += 3u) {
-                for (unsigned offset = 0; offset < 3u; offset++) {
-                    struct tone t = {0u, divisors[divisor], chips, channels, offsets[offset]};
-                    evaluate(&t, controls, seen, &rejected, worst);
-                }
+        const unsigned offsets[] = {0u, 7u, 137u};
+        const unsigned divisors[] = {0u, 1u, 3u};
+        uint8_t seen[132] = {0};
+        double worst[3] = {-1000.0, -1000.0, -1000.0};
+        unsigned evaluated = 0, rejected = 0;
+        for (unsigned divisor = 0; divisor < 32u; divisor++) {
+            for (unsigned offset = 0; offset < 3u; offset++) {
+                struct tone t = {1u, divisor, 0u, 0u, offsets[offset]};
+                evaluate(&t, controls, seen, &rejected, worst);
             }
         }
-    }
-    for (unsigned id = 0; id < 132u; id++) {
-        REQUIRE(seen[id] == 1u);
-        evaluated += seen[id] == 1u;
-    }
-    REQUIRE(evaluated == 132u);
-    REQUIRE(controls == 0 || rejected == 132u);
-    if (controls == 0) {
-        double actual_worst = -INFINITY;
-        unsigned actual_cases = 0u;
         for (unsigned divisor = 0; divisor < 3u; divisor++) {
             for (unsigned chips = 1u; chips <= 2u; chips++) {
                 for (unsigned channels = 1u; channels <= 4u; channels += 3u) {
                     for (unsigned offset = 0; offset < 3u; offset++) {
-                        for (unsigned slow = 0; slow < 2u; slow++) {
-                            struct tone t = {0u, divisors[divisor], chips, channels,
-                                             offsets[offset]};
-                            capture_pokey(&t, slow, 0u, 0u, 0u);
-                            struct spectrum result = measure(&t);
-                            REQUIRE(result.db < -80.0);
-                            if (result.db > actual_worst) {
-                                actual_worst = result.db;
-                            }
-                            printf("actual POKEY AUDF%u chips%u active%u offset%u %s: %.5f dBFS "
-                                   "spur %.5f Hz\n",
-                                   t.divisor, chips, chips * channels, t.offset,
-                                   slow != 0u ? "slow" : "fast", result.db, result.frequency);
-                            actual_cases++;
-                        }
+                        struct tone t = {0u, divisors[divisor], chips, channels, offsets[offset]};
+                        evaluate(&t, controls, seen, &rejected, worst);
                     }
                 }
             }
         }
-        REQUIRE(actual_cases == 72u);
-        printf("actual POKEY: %u cases, worst %.5f dBFS\n", actual_cases, actual_worst);
-        /* Compact representatives from the bounded mixed-clock recovery
-           exploration. Both physical raw periods remain ultrasonic, so
-           the existing judge masks no intended lines. */
-        for (unsigned hp = 0u; hp < 2u; hp++) {
-            struct tone t = {0u, hp != 0u ? 2u : 1u, 2u, 1u, hp != 0u ? 661u : 29u};
-            capture_pokey(&t, 0u, 3u, 3u, hp);
-            struct spectrum result = measure(&t);
-            REQUIRE(result.db < -80.0);
-            printf("mixed representative HP%u: %.8f dBFS\n", hp, result.db);
+        for (unsigned id = 0; id < 132u; id++) {
+            REQUIRE(seen[id] == 1u);
+            evaluated += seen[id] == 1u;
         }
-    }
-    if (controls == 0u) {
-        /* Joined $0000+HP and two-tone AUDF0+HP repeat within28
-           clocks (manual chapter5). Even wholly slow gives >=42kHz:
-           no physical line is in the judged band and none is masked. */
-        for (unsigned mode = 2u; mode <= 3u; mode++) {
-            for (unsigned slow = 0u; slow < 2u; slow++) {
-                struct tone t = {0u, 0u, 2u, 1u, 29u};
-                capture_pokey(&t, slow, 0u, 0u, mode);
+        REQUIRE(evaluated == 132u);
+        REQUIRE(controls == 0 || rejected == 132u);
+        if (controls == 0) {
+            double actual_worst = -INFINITY;
+            unsigned actual_cases = 0u;
+            for (unsigned divisor = 0; divisor < 3u; divisor++) {
+                for (unsigned chips = 1u; chips <= 2u; chips++) {
+                    for (unsigned channels = 1u; channels <= 4u; channels += 3u) {
+                        for (unsigned offset = 0; offset < 3u; offset++) {
+                            for (unsigned slow = 0; slow < 2u; slow++) {
+                                struct tone t = {0u, divisors[divisor], chips, channels,
+                                                 offsets[offset]};
+                                capture_pokey(&t, slow, 0u, 0u, 0u);
+                                struct spectrum result = measure(&t);
+                                REQUIRE(result.db < -80.0);
+                                if (result.db > actual_worst) {
+                                    actual_worst = result.db;
+                                }
+                                printf(
+                                    "actual POKEY AUDF%u chips%u active%u offset%u %s: %.5f dBFS "
+                                    "spur %.5f Hz\n",
+                                    t.divisor, chips, chips * channels, t.offset,
+                                    slow != 0u ? "slow" : "fast", result.db, result.frequency);
+                                actual_cases++;
+                            }
+                        }
+                    }
+                }
+            }
+            REQUIRE(actual_cases == 72u);
+            printf("actual POKEY: %u cases, worst %.5f dBFS\n", actual_cases, actual_worst);
+            /* Compact representatives from the bounded mixed-clock recovery
+               exploration. Both physical raw periods remain ultrasonic, so
+               the existing judge masks no intended lines. */
+            for (unsigned hp = 0u; hp < 2u; hp++) {
+                struct tone t = {0u, hp != 0u ? 2u : 1u, 2u, 1u, hp != 0u ? 661u : 29u};
+                capture_pokey(&t, 0u, 3u, 3u, hp);
                 struct spectrum result = measure(&t);
                 REQUIRE(result.db < -80.0);
-                printf("joined/two-tone HP mode%u slow%u: %.8f dBFS\n", mode, slow, result.db);
+                printf("mixed representative HP%u: %.8f dBFS\n", hp, result.db);
             }
         }
+        if (controls == 0u) {
+            /* Joined $0000+HP and two-tone AUDF0+HP repeat within28
+               clocks (manual chapter5). Even wholly slow gives >=42kHz:
+               no physical line is in the judged band and none is masked. */
+            for (unsigned mode = 2u; mode <= 3u; mode++) {
+                for (unsigned slow = 0u; slow < 2u; slow++) {
+                    struct tone t = {0u, 0u, 2u, 1u, 29u};
+                    capture_pokey(&t, slow, 0u, 0u, mode);
+                    struct spectrum result = measure(&t);
+                    REQUIRE(result.db < -80.0);
+                    printf("joined/two-tone HP mode%u slow%u: %.8f dBFS\n", mode, slow, result.db);
+                }
+            }
+        }
+        printf("worst TIA %.5f dBc, POKEY-equivalent %.5f dBFS\n", worst[0], worst[1]);
+        printf("research nearest-bin reference cross-check: TIA %.5f dBc\n", worst[2]);
+        printf("%u evaluated, %u alias controls rejected, %d failures\n", evaluated, rejected,
+               failures);
     }
-    printf("worst TIA %.5f dBc, POKEY-equivalent %.5f dBFS\n", worst[0], worst[1]);
-    printf("research nearest-bin reference cross-check: TIA %.5f dBc\n", worst[2]);
-    printf("%u evaluated, %u alias controls rejected, %d failures\n", evaluated, rejected,
-           failures);
     return failures == 0 ? 0 : 1;
 }

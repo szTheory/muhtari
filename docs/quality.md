@@ -27,6 +27,25 @@ control flow, independent tests and recurring cost, within the existing finite
 review/gap rounds. The armed test-card +1% instruction guard measures that
 workload only; it does not establish a controller-workload speed limit.
 
+PAL retains the existing instance, bus, MARIA, synthesizer and port owners.
+Selected timing is committed only after load validation; hosts query that selection
+for storage and presentation. No new dispatch layer, dependency or per-frame
+allocation is needed. Fixed quotient/remainder arithmetic handles long audio epochs;
+streaming exhaustive bounds avoid denominator-sized tables. Independent literal
+edges, mailbox numbers, coefficient arithmetic and real host outputs constrain
+different failure mechanisms. Complete proof/diagnostic and policy workloads must
+be measured together before timeout changes; optional tooling becomes a seed.
+Review allows at most two fix rounds and one gap round. Existing required contract
+defects remain blocking wherever found; another gap needs new evidence.
+
+The PAL handoff at 140016, optical D64/W30/L9/T8 and paddle charge fit are selected
+compatibility policies. The retained 85:342 analog mix is explicitly unverified
+for production PAL hardware. A preliminary revision-2 schematic suggests 25:38,
+with unresolved production applicability; it changes neither clock nor mix.
+EEPROM's 5 ms remains a compatibility duration. Agent review judges docs against
+source and actual frontend output; only identity-bound consent or execution on
+the owner's hardware requires owner action.
+
 The root `quality.json` owns ordinary integer floors, ceilings and bounded dated reasons.
 Native, hygiene and ASan observations come from completed, inventory-checked JUnit;
 archive sizes come from the three validated zip files. Native counts cover ABI,
@@ -56,7 +75,7 @@ Fixture comparison permits a narrow additive relation: only unique new rows for
 `tests/diag/activision.a78`, `tests/diag/absolute.a78`,
 `tests/diag/fractalus.a78`, `tests/diag/battery.a78`,
 `tests/diag/controller-light.a78`, `tests/diag/controller-analog.a78` and
-`tests/diag/controller-motion.a78` may be added.
+`tests/diag/controller-motion.a78` and `tests/diag/pal.a78` may be added.
 Each has exactly six tab-separated fields:
 the named path, `this-repo`, a nonempty pin without whitespace, `MIT`, a 64-digit
 lowercase SHA-256 and `-`. All old rows and other manifest text remain byte-identical
@@ -95,8 +114,20 @@ every individual lane must validate before reduction. This comparison identity d
 bytes, validate licensing, prove a diagnostic's behavior or replace raw content
 hashes. Manifest admission, exact fixture digests, independent rebuilds and hash
 coverage retain their separate authority.
-The battery and controller names are comparison permission only: admitting their
-actual bytes and proving device behavior remain separate requirements. Supporting the annotation
+The battery, controller and PAL names are comparison permission only: admitting their
+actual bytes and proving diagnostic behavior remain separate requirements. PAL
+controls use a renamed owned manifest row until the actual PAL row is admitted,
+then automatically exercise that row. Genuine temporary event-base Git commits
+drive the recursive producer and unchanged join; old-row edits, deletions and
+reordering, repeated paths, unrelated names, malformed fields and forged trust
+inputs must fail. Raw Git manifest and sample digests remain the comparison identity.
+PAL join controls mutate copies of actual recursive producer outputs: omitted
+lanes/files, mixed SHAs, wrong runs or raw comparison identities, forged base
+SHA/policy and missing/unavailable archive observations fail independently.
+Failed ordinary/release inventories and a missing component ZIP produce no fresh
+observation. Controlled eight-lane copies test the consumer; they establish no
+hosted native execution or PAL numeric/hash acceptance.
+Supporting the annotation
 transition changes neither the live core revision nor its diagnostic report judge;
 both must advance together when the implementation lands. Existing frame/audio
 digests and source/tool pins remain protected.
@@ -143,7 +174,8 @@ before those rows enter equality. These diagnostics are silent; an empty raw
 transition stream is expected, while PCM bytes and sample counts still agree.
 The older test-card, soundtest and POKEY rows retain their byte meanings. The
 performance workload remains the test card. Diagnostic success does not establish
-untested retail gameplay, PAL execution or new physical hardware measurements.
+untested retail gameplay or new physical hardware measurements. PAL execution has
+its separate numeric and sustained-output predicate, not an inferred board claim.
 
 Battery equality appends first/second frame, raw-audio, PCM, mailbox and save observations after the
 numeric and all-byte media judges accept two fresh runner executions. The complete ordered 69-row

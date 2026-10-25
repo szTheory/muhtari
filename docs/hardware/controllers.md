@@ -66,7 +66,18 @@ deterministic diagnostic behavior, not hardware-calibrated retail accuracy.
 
 Independent timing vectors use 454 ticks/line, native row r at raster r+16,
 and emission s=origin+(r+16)*454+135+x. Aim(100,20) includes rows16..24,
-excluding15/25; y0 clips to0..4 and y241 to237..241. At raster100,
+excluding15/25; y0 clips to0..4 and y241 to237..241.
+
+PAL accepts aim y0..291 and clips the lower aperture to row291 (raster307);
+NTSC retains y0..241. Invalid next-row aims leave pending input unchanged.
+PAL raster307 x319 emits at origin+139832 before the line-buffer swap.
+Its fitted response starts at+64 and ends at+94, after VBLANK+42.
+Pending absolute sensor deadlines survive the selected142102-tick origin wrap;
+the D64 last-row response itself finishes before that physical frame end.
+Brightness uses the emitted native low nibble after colour kill, including
+when output rows are NULL; host RGB palettes cannot enter the sensor path.
+These geometry/timing checks establish model conformance, not calibration.
+At raster100,
 x319 emits at origin+45854 (100*454+454), with response at origin+45918
 through45947 (raster-relative518..547). The last row241/raster257 at
 x319 emits at raster258 tick0; VBLANK starts at tick42 and the response
@@ -133,8 +144,9 @@ without complete data bytes does not program. STOP schedules the completed data 
 over-page traffic overwrites page-buffer positions, without growing state.
 
 Microchip specifies a maximum 5 ms page write and no ACK during programming. muhtari selects that maximum as a
-fixed deterministic compatibility model: `MUHTARI__SAVEKEY_BUSY_TICKS = 35796`, the upward-rounded
-`315000000 / 8800` half-crystal ticks. This is a selected NTSC interval, not a hardware timing measurement. Pending
+fixed deterministic compatibility model: 35796 NTSC ticks, the upward-rounded
+`315000000 / 8800` half-crystal ticks, or 35469 PAL ticks, ceil(7093788*5/1000).
+These are selected intervals, not hardware timing measurements. Pending
 bytes are invisible in battery memory until the deadline. Completion increments generation once only if a byte
 changes; a same-value write is still busy and stays clean. Host import is clean and never starts programming.
 
@@ -162,7 +174,8 @@ still reads ORA; input rows can read low through connected keys. This is
 not diode isolation or a calibrated short-circuit-current model.
 
 Each pot column falls immediately. After its last ground disappears it
-recovers high exactly2864 master ticks later, ceil(400*315/44), derived from
+recovers high exactly2864 NTSC master ticks later, ceil(400*315/44), or2838 PAL
+ticks, ceil(7093788*400/1000000), derived from
 the7800 Software Guide's400µs settling interval. Reads, unchanged ORA/DDRA
 writes and unchanged input packets never restart recovery. Attachment and
 power cycle start discharged. D7 grounds both pots and propagates through
@@ -334,10 +347,19 @@ ideal dump and the setting-change policy below are unmeasured compatibility
 fits. There is no per-game polling-window scale or hardware-calibration claim.
 
 For position p, R=10000+floor(p*1000000/65535)Ω and the crossing duration is
-ceil(R*187747/1000000) master ticks. The coefficient approximates the68nF RC
+ceil(R*187747/1000000) NTSC master ticks. The coefficient approximates the68nF RC
 charge to the fitted threshold using the NTSC master clock. Independently
 computed vectors are p0/32767/32768/65535 →1878/95750/95753/189625 ticks.
 Release at100 therefore reads low at1977, high at1978 and1979 for p0.
+
+PAL scales the unrounded fit by6502639/6562500 before one final ceil:
+ceil(R*187747*6502639/6562500000000). Its independent positions
+0/32767/32768/65535 give1861/94877/94879/187895 ticks. The largest numerator
+is1233059473976330000; adding6562499999999 still fits uint64. Scaling an
+already rounded NTSC duration would introduce extra rounding and is not used.
+At1000 ticks p0 has Q32 action2307881405; switching to65535 crosses86931
+ticks later. These remain unmeasured comparator/charge fits. Motion retains
+454 ticks per transition and optical delay/width retain their native tick fits.
 
 Each instance owns four finite Q32 action accumulators, durations, change
 epochs and projected crossing ticks. Action ranges0..2^32. Constant-rate

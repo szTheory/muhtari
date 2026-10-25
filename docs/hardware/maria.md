@@ -178,7 +178,7 @@ a cell turns into pixels, never what the burst writes (section 3.2):
 ## Line events and the frame
 
 MARIA's clock is the tick count, never the DMA. `origin` is the tick of line 0, t 0 of the current frame; a line is
-454 ticks and a frame 263 lines, 119,402 ticks. The origin moves on by a frame when line 263's t 0, the next
+454 ticks and a frame 263 NTSC or 313 PAL lines, 119,402 or 142,102 ticks. The origin moves on by a frame when the active line count's t0, the next
 frame's line 0, is reached. Each line has up to four events (section 4.1):
 
 | t | Lines | Event |
@@ -203,6 +203,11 @@ MARIA writes the native colour byte of each pixel straight into the caller's row
 Pixel x of raster n, x from 0 to 319, plays at t 135 + x of line n, from the buffer that line n - 1's burst filled.
 Each 160-pixel cell gives two 320-pixel pixels. Frame rows 0-241 are rasters 16-257; rasters 258-262 and 0-15 are
 blanked and written nowhere (sections 3.3 and 6).
+
+PAL output has 292 rows, rasters 16–307; 308–312 and 0–15 are blanked. MSTAT
+sets on 308,t42 and clears on 16,t42; VBE remains 16,t43. DMA requests run 17–308
+inclusive, with none on 309. The pixel at x319/t454 is emitted with its previous
+raster ownership before LRC swaps line RAM, including the last PAL raster.
 
 **Spans.** Pixels are played in spans with the registers as they stand, so a mid-line colour change lands on the
 pixel it should (section 10):
@@ -262,9 +267,16 @@ C10). These conventions follow from that:
 - **The CPU's phase.** The hand-off fetch starts at t 24, a multiple of 4, so SALLY's cycle grid has offset 0
   against the beam. The value is derived from C10 and fitted; an RTL simulation would confirm it.
 
+PAL fast boot instead selects line 308,t184 and first future deadline 281976.
+The first interval is 141960 ticks/960 samples; subsequent full frames are 142102
+ticks/961–962 samples. All 292 rows are cleared before a partial first scan.
+DPP $2707 and zero undocumented DMA residue are fitted policy; see
+[PAL startup](bus.md#pal-startup).
+
 ## Statistics
 
-Every burst records its line in `stats`, one entry of 8 bytes for each of the 263 NTSC lines:
+Every burst records its line in `stats`, an 8-byte entry in physical 313-line storage.
+All reads/writes are bounded by the active 263 NTSC or 313 PAL lines:
 
 | Field | Meaning |
 |-------|---------|

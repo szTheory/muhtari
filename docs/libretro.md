@@ -1,7 +1,7 @@
 # The libretro core
 
 `muhtari_libretro` runs Atari 7800 cartridges in RetroArch or any other libretro frontend. It loads `.a78` images
-and headerless `.bin` images from memory, NTSC only; a PAL cartridge is refused. Started with no content, it shows
+and headerless `.bin` images from memory, including automatically selected PAL. Started with no content, it shows
 the built-in test card ([docs/runner.md](runner.md#test-card)). A refused image leaves a line in the frontend's
 log naming the reason, such as `muhtari: content refused: unsupported board: bankset`.
 
@@ -58,7 +58,7 @@ adapter has no device or host-window geometry. For a valid coordinate v in
 [-32767,32767], the native coordinate is
 `floor((v+32767)*(dimension-1)/65534)`, with a 64-bit integer product over the
 core's current reported native width/height. Width320 maps -32767/0/32767 to
-0/159/319; height242 maps them to0/120/241. Either coordinate -32768 marks the
+0/159/319; height242 maps them to 0/120/241 and PAL height 292 to 0/145/291. Either coordinate -32768 marks the
 aim offscreen before conversion, using neutral0/0 coordinates. Explicit offscreen
 and reload also suppress illumination; reload independently holds the trigger.
 Trigger state never implies sensed light. Missing input callbacks leave aim offscreen.
@@ -143,13 +143,30 @@ the two existing screenshot and save-roundtrip cases.
 | Option | Values | Applies |
 |---|---|---|
 | Boot (`muhtari_boot`) | Fast (default), BIOS | when content is loaded |
-| Palette (`muhtari_palette`) | NTSC (warm) | always |
+| Region (`muhtari_region`) | Auto (default), NTSC, PAL | when content is loaded; reload required |
+| Palette (`muhtari_palette`) | Auto (default), NTSC (warm), PAL (warm) | always; presentation only |
 | Left difficulty (`muhtari_left_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
 | Right difficulty (`muhtari_right_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
 | High Score Cartridge (`muhtari_hsc`) | Auto (default), On, Off | at content load |
 | Port 1/2 battery device (`muhtari_battery_port1`, `muhtari_battery_port2`) | Auto (default), None, SaveKey, AtariVox | at content load |
 
-There is no region option: this release runs NTSC only.
+Auto region follows content metadata; an explicit choice overrides it at load.
+Firmware names and sizes do not select the console region.
+Changing region during a session, including Restart, keeps the loaded timing and
+geometry until content is reloaded. No-content operation is always the NTSC test card.
+Auto palette follows the effective loaded region; explicit warm palettes only change
+colours, preserving native pixels, timing and audio. Missing or unknown option values
+use Auto. The existing `ntsc` palette spelling retains warm NTSC.
+
+PAL AV is
+320×292, maximum height 293, FPS 3546894/71051 and display aspect 147500000/129461631.
+The frontend queries AV after load; load sends no AV/geometry update callback.
+All 292 rows and up to 962 mono samples are retained in either pixel format.
+Unload, failed load and deinit clear the selected AV/region and output pointers;
+queries then report the NTSC fallback. The automatic palette cache also returns to NTSC.
+The adapter releases the previous session before loading another image: a failed
+load leaves that clean fallback, unlike the library's transactional load behavior.
+Frontends requery AV after each successful load and reload content to apply region changes.
 
 Battery options override controller requests supplied before load; Auto follows those requests, then
 cartridge metadata. A SaveKey hint without a location selects port 2. Battery None suppresses automatic
@@ -175,7 +192,8 @@ picture until Restart or a new load. Before the first successful frame, that pic
 sends actual pixels, including to frontends that do not support NULL-frame duplication, and sends 48 kHz audio
 as identical left/right copies of each mono core sample. Batch callbacks take priority; the single-sample
 callback is the fallback. Missing callbacks discard output while preserving future sound. Fast boot begins
-with 54 samples, then full NTSC frames provide 800 or 801. Restart and content reload reset synthesis history.
+with 54 NTSC or 960 PAL samples, then full frames provide 800/801 or 961/962 respectively.
+Restart and content reload reset synthesis history.
 
 ## BIOS files
 

@@ -80,7 +80,9 @@ static void frame_io(muhtari_frame *io, uint8_t *v, uint32_t pitch, int16_t *a, 
 static void run(muhtari *m, uint8_t *v)
 {
     muhtari_frame io;
-    frame_io(&io, v, WIDTH, audio, AUDIO_CAP);
+    int16_t pal_audio[962];
+    int pal = m->effective_region == MUHTARI_REGION_PAL;
+    frame_io(&io, v, WIDTH, pal ? pal_audio : audio, pal ? 962u : AUDIO_CAP);
     CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
 }
 
@@ -364,7 +366,8 @@ static void test_synth_bound(void)
     CHECK(13124u * MUHTARI__SYNTH_PHASES < (1u << 20));
     CHECK_EQ_U64(MUHTARI__SYNTH_OVERSHOOT_TICKS, 20730u);
     CHECK_EQ_U64(MUHTARI__SYNTH_CARRY_SAMPLES, 139u);
-    CHECK_EQ_U64(MUHTARI__SYNTH_PCM_CAPACITY, 940u);
+    CHECK_EQ_U64(801u + MUHTARI__SYNTH_CARRY_SAMPLES, 940u);
+    CHECK_EQ_U64(MUHTARI__SYNTH_PCM_CAPACITY, 1103u);
     CHECK(positive * MUHTARI__SYNTH_MAX_LEVEL * 128 < (INT64_C(1) << 45));
     CHECK((MUHTARI__SYNTH_Q30 - 1) * INT64_C(1070934451) < (INT64_C(1) << 60));
 }
@@ -1507,38 +1510,40 @@ static void battery_emit(uint16_t reg, uint8_t value)
     battery_program_bytes += sizeof code;
 }
 
-static void battery_pin(unsigned scl, unsigned sda)
+static void battery_pin(unsigned p, unsigned scl, unsigned sda)
 {
-    battery_emit(0x0281u, (uint8_t)((scl == 0u ? 8u : 0u) | (sda == 0u ? 4u : 0u)));
+    battery_emit(0x0281u,
+                 (uint8_t)(((scl == 0u ? 8u : 0u) | (sda == 0u ? 4u : 0u)) << (p == 0u ? 4u : 0u)));
 }
 
-static void battery_byte(uint8_t value)
+static void battery_byte(unsigned p, uint8_t value)
 {
     for (unsigned i = 0u; i < 8u; i++) {
         unsigned bit = (unsigned)(value >> (7u - i)) & 1u;
-        battery_pin(0u, bit);
-        battery_pin(1u, bit);
-        battery_pin(0u, bit);
+        battery_pin(p, 0u, bit);
+        battery_pin(p, 1u, bit);
+        battery_pin(p, 0u, bit);
     }
-    battery_pin(0u, 1u);
-    battery_pin(1u, 1u);
-    battery_pin(0u, 1u);
+    battery_pin(p, 0u, 1u);
+    battery_pin(p, 1u, 1u);
+    battery_pin(p, 0u, 1u);
 }
 
-static void battery_load_baseline(muhtari *m, uint8_t value, unsigned jam, uint8_t baseline)
+static void battery_load_baseline_region(muhtari *m, uint8_t value, unsigned jam, uint8_t baseline,
+                                         uint32_t region, unsigned p)
 {
     battery_program_bytes = 0u;
     battery_emit(0x0280u, 0u);
-    battery_pin(1u, 1u);
-    battery_pin(1u, 0u);
-    battery_pin(0u, 0u);
-    battery_byte(0xA0u);
-    battery_byte(0u);
-    battery_byte(3u);
-    battery_byte(value);
-    battery_pin(0u, 0u);
-    battery_pin(1u, 0u);
-    battery_pin(1u, 1u);
+    battery_pin(p, 1u, 1u);
+    battery_pin(p, 1u, 0u);
+    battery_pin(p, 0u, 0u);
+    battery_byte(p, 0xA0u);
+    battery_byte(p, 0u);
+    battery_byte(p, 3u);
+    battery_byte(p, value);
+    battery_pin(p, 0u, 0u);
+    battery_pin(p, 1u, 0u);
+    battery_pin(p, 1u, 1u);
     battery_stop_pc = (uint16_t)(0xF000u + battery_program_bytes);
     battery_program[battery_program_bytes++] = jam != 0u ? 0x02u : 0x4Cu;
     battery_program[battery_program_bytes++] = (uint8_t)battery_stop_pc;
@@ -1546,7 +1551,8 @@ static void battery_load_baseline(muhtari *m, uint8_t value, unsigned jam, uint8
     make_cart(cart, battery_program, battery_program_bytes, 0u);
     muhtari_media media = media_for(cart, sizeof cart);
     media.hsc_mode = MUHTARI_HSC_ON;
-    media.port[1] = MUHTARI_PORT_SAVEKEY;
+    media.region = region;
+    media.port[p] = MUHTARI_PORT_SAVEKEY;
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     battery_of(m).data[2051] = baseline;
     for (unsigned steps = 0u; steps < 1000u && m->cpu.pc != battery_stop_pc; steps++) {
@@ -1558,16 +1564,11 @@ static void battery_load_baseline(muhtari *m, uint8_t value, unsigned jam, uint8
     CHECK_EQ_U64(m->battery.generation, 0u);
 }
 
-static void battery_load(muhtari *m, uint8_t value, unsigned jam)
-{
-    battery_load_baseline(m, value, jam, 0xFFu);
-}
-
-static void test_battery_no_poll(void)
+static void battery_no_poll_region(uint32_t region, unsigned p)
 {
     for (unsigned mode = 0u; mode < 4u; mode++) {
         muhtari *m = make();
-        battery_load(m, 0x5Au, mode == 1u ? 1u : 0u);
+        battery_load_baseline_region(m, 0x5Au, mode == 1u ? 1u : 0u, 0xFFu, region, p);
         if (mode == 2u) {
             /* A real WSYNC hold, then MARIA's per-line DMA setup. */
             muhtari__bus_write(m, 0x0024u, 0u);
@@ -1587,14 +1588,22 @@ static void test_battery_no_poll(void)
         uint64_t due = m->savekey.busy_until;
         muhtari_frame invalid;
         frame_io(&invalid, video, WIDTH - 1u, NULL, 0u);
+        muhtari *unchanged = malloc(sizeof *unchanged);
+        CHECK(unchanged != NULL);
+        if (unchanged == NULL) {
+            muhtari_destroy(m);
+            return;
+        }
+        memcpy(unchanged, m, sizeof *unchanged);
         struct muhtari__savekey saved = m->savekey;
         uint64_t tick = m->bus.ticks;
         CHECK_EQ_U64(muhtari_run_frame(m, &invalid), MUHTARI_STATUS_ERR_ARGUMENT);
         CHECK(memcmp(&saved, &m->savekey, sizeof saved) == 0);
         CHECK_EQ_U64(m->bus.ticks, tick);
+        CHECK(memcmp(unchanged, m, sizeof *m) == 0);
+        free(unchanged);
         run(m, NULL);
-        if (mode != 3u) {
-            CHECK(m->bus.ticks < due);
+        if (mode != 3u && m->bus.ticks < due) {
             CHECK_EQ_HEX(battery_of(m).data[2051], 0xFFu);
             run(m, NULL);
         }
@@ -1604,7 +1613,7 @@ static void test_battery_no_poll(void)
         CHECK_EQ_U64(m->savekey.pending, 0u);
         if (mode == 2u) {
             unsigned dma_cost = 0u;
-            for (unsigned line = 0u; line < MUHTARI__LINES_NTSC; line++) {
+            for (unsigned line = 0u; line < muhtari__timing(m).lines; line++) {
                 dma_cost += m->maria.stats[line].cost;
             }
             CHECK(dma_cost != 0u);
@@ -1614,7 +1623,7 @@ static void test_battery_no_poll(void)
     /* Resume a synthetic BIOS at a real lock-to-2600 write. Its partial
        execution makes a page due even though the frame is refused. */
     muhtari *m = make();
-    battery_load(m, 0x5Au, 0u);
+    battery_load_baseline_region(m, 0x5Au, 0u, 0xFFu, region, p);
     const uint8_t reject[] = {0xA9u, 0x01u, 0x85u, 0x01u};
     m->bios_size = 4096u;
     memcpy(m->bios + (m->cpu.pc & 0x0FFFu), reject, sizeof reject);
@@ -1634,11 +1643,11 @@ static void test_battery_no_poll(void)
     muhtari_destroy(m);
 }
 
-static void test_battery_deadline(void)
+static void battery_deadline_region(uint32_t region, unsigned p)
 {
     for (unsigned edge = 0u; edge < 3u; edge++) {
         muhtari *m = make();
-        battery_load(m, 0x6Bu, 0u);
+        battery_load_baseline_region(m, 0x6Bu, 0u, 0xFFu, region, p);
         uint64_t due = m->savekey.busy_until;
         muhtari__savekey_catch_up(m, due - 1u + edge);
         CHECK_EQ_HEX(battery_of(m).data[2051], edge == 0u ? 0xFFu : 0x6Bu);
@@ -1649,7 +1658,7 @@ static void test_battery_deadline(void)
        tick, rather than its start or end. */
     for (unsigned edge = 0u; edge < 3u; edge++) {
         muhtari *m = make();
-        battery_load(m, 0x6Bu, 0u);
+        battery_load_baseline_region(m, 0x6Bu, 0u, 0xFFu, region, p);
         m->savekey.busy_until = m->bus.ticks + 6u - edge;
         muhtari__bus_write(m, 0x0280u, m->riot.ora);
         CHECK_EQ_HEX(battery_of(m).data[2051], edge == 0u ? 0xFFu : 0x6Bu);
@@ -1658,7 +1667,7 @@ static void test_battery_deadline(void)
     }
     for (unsigned same = 0u; same < 2u; same++) {
         muhtari *m = make();
-        battery_load_baseline(m, 0x5Au, 0u, same != 0u ? 0x5Au : 0xFFu);
+        battery_load_baseline_region(m, 0x5Au, 0u, same != 0u ? 0x5Au : 0xFFu, region, p);
         m->battery.generation = UINT64_MAX;
         muhtari__savekey_catch_up(m, m->savekey.busy_until - 1u);
         CHECK_EQ_U64(m->savekey.pending, 1u); /* same-value programming is busy */
@@ -1670,26 +1679,33 @@ static void test_battery_deadline(void)
     }
 }
 
-static void test_battery_reset(void)
+static void battery_reset_region(uint32_t region, unsigned p)
 {
     for (unsigned edge = 0u; edge < 3u; edge++) {
         muhtari *m = make();
-        battery_load(m, 0x73u, 0u);
-        uint8_t *pointer = battery_of(m).data;
+        battery_load_baseline_region(m, 0x73u, 0u, 0xFFu, region, p);
+        muhtari_battery_info original = battery_of(m);
+        uint8_t *pointer = original.data;
         m->bus.ticks = m->savekey.busy_until - 1u + edge;
         CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(m->effective_region, region);
+        muhtari_battery_info retained = battery_of(m);
+        original.generation = edge == 0u ? 0u : 1u;
+        CHECK(memcmp(&original, &retained, sizeof original) == 0);
         CHECK(battery_of(m).data == pointer);
         CHECK_EQ_HEX(pointer[2051], edge == 0u ? 0xFFu : 0x73u);
         CHECK_EQ_U64(battery_of(m).generation, edge == 0u ? 0u : 1u);
         CHECK_EQ_U64(m->savekey.pending, 0u);
         CHECK_EQ_U64(m->savekey.sda_low, 0u);
+        for (size_t at = 0u; at < retained.bytes; at++)
+            CHECK_EQ_HEX(pointer[at], at == 2051u && edge != 0u ? 0x73u : 0xFFu);
         CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
         CHECK_EQ_HEX(pointer[2051], edge == 0u ? 0xFFu : 0x73u);
         CHECK_EQ_U64(battery_of(m).generation, edge == 0u ? 0u : 1u);
         muhtari_destroy(m);
     }
     muhtari *m = make();
-    battery_load(m, 0x73u, 0u);
+    battery_load_baseline_region(m, 0x73u, 0u, 0xFFu, region, p);
     struct muhtari__savekey protocol = m->savekey;
     uint16_t pc = m->cpu.pc;
     muhtari_battery_info before = battery_of(m);
@@ -1706,10 +1722,12 @@ static void test_battery_reset(void)
     CHECK_EQ_U64(battery_of(m).generation, 1u);
     /* An already-due old page must never publish into a newly loaded
        baseline, even when its new topology is the same. */
-    battery_load(m, 0x73u, 0u);
+    battery_load_baseline_region(m, 0x73u, 0u, 0xFFu, region, p);
     m->bus.ticks = m->savekey.busy_until;
+    media.region = region == MUHTARI_REGION_PAL ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
     media.port[0] = 0u;
-    media.port[1] = MUHTARI_PORT_SAVEKEY;
+    media.port[1] = 0u;
+    media.port[p] = MUHTARI_PORT_SAVEKEY;
     media.hsc_mode = MUHTARI_HSC_ON;
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     CHECK_EQ_HEX(battery_of(m).data[2051], 0xFFu);
@@ -1718,7 +1736,31 @@ static void test_battery_reset(void)
     muhtari_destroy(m);
 }
 
-static void battery_allocation_lifecycle(void)
+static void test_battery_no_poll(void)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        battery_no_poll_region(MUHTARI_REGION_NTSC, p);
+        battery_no_poll_region(MUHTARI_REGION_PAL, p);
+    }
+}
+
+static void test_battery_deadline(void)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        battery_deadline_region(MUHTARI_REGION_NTSC, p);
+        battery_deadline_region(MUHTARI_REGION_PAL, p);
+    }
+}
+
+static void test_battery_reset(void)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        battery_reset_region(MUHTARI_REGION_NTSC, p);
+        battery_reset_region(MUHTARI_REGION_PAL, p);
+    }
+}
+
+static void battery_allocation_region(uint32_t region)
 {
     static uint8_t firmware[4096];
     memset(firmware, 0xFF, sizeof firmware);
@@ -1731,6 +1773,7 @@ static void battery_allocation_lifecycle(void)
         CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
         make_cart(cart, prog_idle, sizeof prog_idle, 0u);
         muhtari_media media = media_for(cart, sizeof cart);
+        media.region = region;
         media.hsc_mode = (layout & 1u) != 0u ? MUHTARI_HSC_ON : MUHTARI_HSC_OFF;
         if ((layout & 2u) != 0u)
             media.port[layout == 2u ? 0u : 1u] = MUHTARI_PORT_SAVEKEY;
@@ -1749,12 +1792,28 @@ static void battery_allocation_lifecycle(void)
         CHECK_EQ_U64(counts.allocs, calls);
         /* Allocation fails only after firmware validation/staging, before the
            loaded cartridge or published span can be replaced. */
+        muhtari *snapshot = malloc(sizeof *snapshot);
+        CHECK(snapshot != NULL);
+        if (snapshot == NULL) {
+            muhtari_destroy(m);
+            return;
+        }
+        memcpy(snapshot, m, sizeof *snapshot);
+        muhtari_media bad = media;
+        bad.region = region == MUHTARI_REGION_PAL ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
+        bad.image_size = 0u;
+        CHECK_EQ_U64(muhtari_load(m, &bad), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+        CHECK(memcmp(snapshot, m, sizeof *m) == 0);
         counts.fail_from = calls + 1u;
+        media.region = region == MUHTARI_REGION_PAL ? MUHTARI_REGION_NTSC : MUHTARI_REGION_PAL;
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_NO_MEMORY);
         CHECK_EQ_U64(counts.allocs, calls + 1u);
         CHECK(battery_of(m).data == before.data);
         CHECK_EQ_U64(battery_of(m).bytes, before.bytes);
         CHECK_EQ_U64(battery_of(m).generation, before.generation);
+        CHECK_EQ_U64(m->effective_region, region);
+        CHECK(memcmp(snapshot, m, sizeof *m) == 0);
+        free(snapshot);
         counts.fail_from = 0u;
         calls = counts.allocs;
         run(m, NULL);
@@ -1762,6 +1821,12 @@ static void battery_allocation_lifecycle(void)
         muhtari_destroy(m);
         CHECK_EQ_U64(counts.frees, calls - 1u);
     }
+}
+
+static void battery_allocation_lifecycle(void)
+{
+    battery_allocation_region(MUHTARI_REGION_NTSC);
+    battery_allocation_region(MUHTARI_REGION_PAL);
 }
 
 static void test_hsc_sizes(void)
@@ -1827,8 +1892,12 @@ static void test_hsc_sizes(void)
 /* Real packets, both connectors and every opposite save placement. The
    control receives no refused calls; compare future CPU state and output,
    not merely the immediate setter result (embedding.md, Input). */
-static void extended_safety(void)
+static void extended_safety_region(uint32_t region)
 {
+    static uint8_t pal_video[320u * 292u], pal_peer[320u * 292u];
+    uint8_t *first_video = region == MUHTARI_REGION_PAL ? pal_video : video;
+    uint8_t *second_video = region == MUHTARI_REGION_PAL ? pal_peer : video2;
+    size_t picture_bytes = region == MUHTARI_REGION_PAL ? sizeof pal_video : sizeof video;
     static const uint32_t devices[] = {
         MUHTARI_PORT_LIGHTGUN,    MUHTARI_PORT_PADDLE,     MUHTARI_PORT_KEYPAD,
         MUHTARI_PORT_DRIVING,     MUHTARI_PORT_TRAKBALL,   MUHTARI_PORT_ST_MOUSE,
@@ -1843,6 +1912,7 @@ static void extended_safety(void)
                 muhtari_battery_info original[2];
                 make_cart(cart, scan, sizeof scan, 0u);
                 muhtari_media media = media_for(cart, sizeof cart);
+                media.region = region;
                 media.port[p] = devices[d];
                 media.port[1u - p] = layout == 0u          ? MUHTARI_PORT_JOYSTICK
                                      : (layout & 1u) != 0u ? MUHTARI_PORT_SAVEKEY
@@ -1954,15 +2024,16 @@ static void extended_safety(void)
                 CHECK(memcmp(&tia, &m[0]->tia, sizeof tia) == 0);
                 CHECK_EQ_U64(m[0]->bus.ticks, ticks);
                 for (unsigned f = 0u; f < 3u; f++) {
-                    int16_t peer_audio[AUDIO_CAP];
+                    int16_t first_audio[962], peer_audio[962];
                     muhtari_frame first, second;
-                    frame_io(&first, video, WIDTH, audio, AUDIO_CAP);
-                    frame_io(&second, video2, WIDTH, peer_audio, AUDIO_CAP);
+                    frame_io(&first, first_video, WIDTH, first_audio, 962u);
+                    frame_io(&second, second_video, WIDTH, peer_audio, 962u);
                     CHECK_EQ_U64(muhtari_run_frame(m[0], &first), MUHTARI_STATUS_OK);
                     CHECK_EQ_U64(muhtari_run_frame(m[1], &second), MUHTARI_STATUS_OK);
                     CHECK_EQ_U64(first.audio_count, second.audio_count);
-                    CHECK(memcmp(video, video2, sizeof video) == 0);
-                    CHECK(memcmp(audio, peer_audio, first.audio_count * sizeof audio[0]) == 0);
+                    CHECK(memcmp(first_video, second_video, picture_bytes) == 0);
+                    CHECK(memcmp(first_audio, peer_audio,
+                                 first.audio_count * sizeof first_audio[0]) == 0);
                     CHECK(memcmp(m[0]->ram, m[1]->ram, sizeof m[0]->ram) == 0);
                     CHECK(memcmp(&m[0]->cpu, &m[1]->cpu, sizeof m[0]->cpu) == 0);
                     CHECK(memcmp(&m[0]->ports, &m[1]->ports, sizeof m[0]->ports) == 0);
@@ -1995,6 +2066,12 @@ static void extended_safety(void)
             }
         }
     }
+}
+
+static void extended_safety(void)
+{
+    extended_safety_region(MUHTARI_REGION_NTSC);
+    extended_safety_region(MUHTARI_REGION_PAL);
 }
 
 static void extended_lifecycle(void)
@@ -2109,10 +2186,13 @@ static void test_load_keeps_previous(void)
     CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_2600);
     make_cart(other, prog_idle, sizeof prog_idle, 1u);
     media = media_for(other, sizeof other);
-    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_REGION);
+    media.region = 3u;
+    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_ARGUMENT);
     make_cart(other, prog_idle, sizeof prog_idle, 0u);
     media.region = MUHTARI_REGION_PAL;
-    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_REGION);
+    media.bios = bios;
+    media.bios_size = 8192u;
+    CHECK_EQ_U64(muhtari_load(a, &media), MUHTARI_STATUS_ERR_INVALID_BIOS);
     media.region = 0u;
     media.bios = bios;
     media.bios_size = 8192u;

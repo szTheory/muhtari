@@ -23,3 +23,13 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Why not caught:** POSIX local controls/Linux preview missed native PATH/drive/CRLF behavior and complete Windows timing.
 - **Recurrence guard:** policy.digest.controls semicolon-PATH, CRLF proxy on POSIX/real native jq on Windows, relative/hyphen/CDPATH cases, all existing privilege/API/report assertions; separate image timing provenance in registration and resolved session.
 ---
+
+## preplan-lightgun-evidence — Expanded work retains an older deadline and an outer wrapper truncates complete evidence
+- **Date:** 2026-10-25
+- **Error patterns:** input.lightgun timeout2s, isolated pass, full inventory incomplete, outer timeout124, missing independent base packages
+- **Root cause(s):** Matrix expanded714→1484 instances without recalibration; valid complete co-scheduled work measured2.1942s. Separate60s wrapper conflicted with allowed130s publication work. Exact historical host pressure remains unknown.
+- **Fix:** Provisional5s from ceil(2×2.1942), same scenarios/assertions/scales; GSD config0 selects supported foreground/no-outer-timer execution for the one-shot workflow, preserving all659 per-test deadlines; separate focused reports and fresh complete producer acceptance.
+- **Files changed:** tests/input/tests.cmake, docs/maintaining.md, .planning/config.json, .planning/preparation/GSD-HANDOFF.md
+- **Why not caught:** The retained timing provenance described a smaller workload; an isolated pass neither calibrated full-suite work nor repaired the failed inventory.
+- **Recurrence guard:** Existing measured registration and docs/maintaining.md require complete-work timing, effective explicit CTest worker controls and distinct focused JUnit. Exact committed current653+6/unchanged base652+6 and all six ZIPs pass; hosted calibration remains the next plan.
+---

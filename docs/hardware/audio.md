@@ -9,6 +9,38 @@ discards samples while retaining identical history. The bus merges actual TIA
 and cartridge POKEY events on this timeline; no-content public frames retain
 their silent test card.
 
+PAL selects 4000/591149 samples per master tick with the same kernel, rounding,
+blocker and gain 18360. Its fast first interval 141960 produces 960 samples and
+remainder 336960; real BIOS first 139874 produces 946 and remainder 269046. Full
+142102-tick frames produce 961/962. No-content keeps NTSC silence and carry.
+
+As a prerequisite to PAL execution, `core.pal.bounds` independently enumerates all
+591149 interpolation phases and 4000 output alignments using streaming prefixes,
+signed ties-away rounding and tap 7/8 normalization. Every production coefficient
+matches the reference; row sums are 8388608, Cmax 7283993, P 10865492, N 2476884 and
+P+N 13342376. The complete bound with one PCM LSB is 29203.225609, below the existing
+29203.6 conservative limit and 29203.619490 (-1 dBFS) threshold. The test constructs
+both positive- and negative-mass 0/18360 streams for every one of the 4000 alignments
+from independent step-response differences. All 8000 streams traverse the actual
+mixed-delta, ring, integrator and blocker path: integrator endpoints equal P*M or
+-N*M for each alignment, with zero clipped samples and the existing work/width bounds.
+Silent prefixes drain in bounded intervals; no denominator-sized table is allocated.
+The complete 591149-frame carry sweep is arithmetic only: 568408000 samples and
+zero remainder. Separately, one zero-carry full frame gives 961/remainder313811,
+and 600 full frames give 576918/remainder301218. These counts exclude startup.
+
+The same bus/CPU tail bound `(456+2*454+12+6)*(8+7)=20730` ticks permits 141 PAL
+future samples. Fixed storage holds 962 work samples and 1103 FIFO cells for both
+regions. A PAL sample spans at most 148 ticks, below the conservative 150 additions.
+Local carry accumulation 568999148 fits below 2^30; interpolation numerator 37833472
+fits below 2^26. Signed differences multiply in int64 before division. The ring-cell
+bound `16*150*18360*7283993=320961867552000` is below 2^49; integrated magnitude is
+below 2^38 and times 128 below 2^45. Blocker sums stay below 2^47; remainder times pole
+1070934451 stays below 2^60. Mixed current stays below 2^34 and gain products below 2^49.
+Long output epochs split quotient/remainder before multiplying by the numerator.
+Retaining 85:342 for PAL is an explicitly unverified analog compatibility assumption;
+the preliminary PAL schematic does not establish production resistor values.
+
 The interpolation and 16-slot int64 impulse ring follow the approved MIT
 sibling at `9f9386c661f6`, `src/synth.c`. The historical Q15 coefficients are
 replaced by regenerated Q23 coefficients under the dated precision amendment
@@ -59,7 +91,7 @@ zero; final PCM rounds ties away from zero. Pre-clamp peak and clip counts
 are retained so saturation cannot conceal a failed bound.
 
 There is no event array. At most 150 merged ticks fit in a sample interval;
-each nonzero mixed delta adds 16 impulses. The FIFO holds at most 801 samples
+each nonzero mixed delta adds 16 impulses. NTSC needs at most 801 samples
 for the current logical frame and separately bounded future instruction
 carry. A conservative single held-access bound is 456 RDY ticks, two 454-tick
 DMA lines, 12 ticks for the nine-tick abort tail plus whole-cycle alignment,
@@ -70,7 +102,8 @@ two such lines. Eight opcode accesses plus seven interrupt-entry accesses
 therefore bound overshoot at 20,730 ticks, or ceil(20,730*88/13,125)=139
 future samples. These deliberately loose bounds follow `bus.c`'s held-cycle
 loop, `maria.c`'s burst cutoff, `tia.c`'s RDY release and `cpu.c`'s instruction
-and NMI entry; they are not observed maxima. The FIFO uses 801+139 cells,
+and NMI entry; they are not observed maxima. NTSC needs 801+139 cells within the
+physical 1103-cell FIFO shared with PAL,
 and current versus future samples are separated by the logical horizon.
 
 All persistent values, including fraction, integrator, blocker, raw levels,
@@ -187,7 +220,7 @@ off-bin sine amplitude, aggregate physical-line leakage, an injected
 bypass at identical current-derived gain, Q30 blocker and int16 rounding.
 The deliberately aliased output must fail the same -80 dB judge.
 
-Each path evaluates exactly 132 distinct schedules: 96 TIA cases program
+Each path evaluates exactly 132 distinct schedules per region: 96 TIA cases program
 the real chip's AUDC4, AUDF0..31 and AUDV15, at epoch offsets0,7,137 master
 ticks, with both channels synchronous and no declared POKEY. Catch-up sends
 the actual chip's DAC changes through production synthesis. The other36 use equivalent
@@ -197,6 +230,21 @@ two-chip stress. Coordinate-derived case identities reject missing and
 duplicate evaluations. The diagnostic also reports the conservative
 nearest-bin TIA reference used by the feasibility research, separately
 from the validated exact-frequency reference used for acceptance.
+
+Both regions retain the full 12000-sample settling interval, 65536-sample capture,
+physical harmonic mask and strict -80 dB judge. PAL frequencies use 7093788 master
+ticks/second and output counts carry 4000/591149, including 88/89-sample capture
+chunks. The independent nearest-sample bypass uses the same selected rational and
+must fail all 132 cases in each region. The 72 actual fast/slow POKEY schedules and
+the mixed/high-pass representatives also run in each region, with independent
+falling-cycle PCM comparisons. No threshold is retuned for PAL.
+
+`audio.stress` runs the four existing real dual-POKEY/TIA programs in both regions,
+including slow writes, WSYNC, HALT across a logical horizon, JAM, split renders,
+NULL PCM and allocation/carry/work/clip checks. A separate all-ten-DAC volume-only
+case reaches mixed level18360 through real register writes and preserves identical
+history with discarded output. These are finite digital reconstruction tests;
+the retained PAL85:342 analog balance remains unverified.
 
 The TIA capture includes its real divider, feedback and uneven phase
 schedule; its independent vectors and confidence limits are documented in

@@ -18,15 +18,19 @@ muhtari_warnings(muhtari-test-input)
 foreach(input_case IN ITEMS directions proline_two_button proline_one_button joystick_fire
     ctlswb_no_swchb_write tia_en_disables_two_button switches unplugged pa7_edge
     lag_even_frames lag_dma_and_peek)
-  # 2 x 0.20 s, macOS x64, slowest of 18 runs, run 39382016958
+  set(input_timeout 1)
+  if(input_case STREQUAL "directions")
+    # Provisional ceil(2 x 0.98s), macOS x64, run 40227151344.
+    set(input_timeout 2)
+  endif()
+  # Other cases: 2 x 0.20s, macOS x64, run 39382016958.
   muhtari_add_test(NAME input.${input_case} COMMAND muhtari-test-input ${input_case}
-    LABELS input portable TIMEOUT 1)
+    LABELS input portable TIMEOUT ${input_timeout})
 endforeach()
-# Provisional 2 x 0.97 s complete Windows x64 base, CI 40153312357; the
-# expanded prefix workload also passed 12 concurrent Apple Clang ASan/UBSan
-# samples (three batches of four), maximum 0.969 s. Retain normal lane scaling.
+# Provisional ceil(2 x 2.70s), complete NTSC/PAL/prefix/wrap workload,
+# macOS x64, run 40227081044. All scenarios and normal lane scaling remain.
 muhtari_add_test(NAME input.lightgun COMMAND muhtari-test-input lightgun
-  LABELS input portable TIMEOUT 2)
+  LABELS input portable TIMEOUT 6)
 foreach(input_case IN ITEMS pins protocol wrap recovery)
   muhtari_add_test(NAME input.savekey.${input_case}
     COMMAND muhtari-test-input savekey.${input_case} LABELS input portable TIMEOUT 10)

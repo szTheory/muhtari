@@ -155,19 +155,24 @@ int64_t muhtari__synth_round(int64_t value, int64_t divisor)
 
 void muhtari__synth_coefficients(uint32_t phase, int32_t out[16])
 {
+    muhtari__synth_coefficients_for_period(phase, 13125u, out);
+}
+
+void muhtari__synth_coefficients_for_period(uint32_t phase, uint32_t period, int32_t out[16])
+{
     uint32_t numerator = phase * MUHTARI__SYNTH_PHASES;
-    unsigned row = numerator / MUHTARI__TICKS_PER_PERIOD;
-    uint32_t fraction = numerator % MUHTARI__TICKS_PER_PERIOD;
+    unsigned row = numerator / period;
+    uint32_t fraction = numerator % period;
     int32_t sum = 0;
     for (unsigned j = 0; j < 16u; j++) {
         int32_t a = muhtari__synth_kernel[row][j];
         int32_t b = row + 1u < MUHTARI__SYNTH_PHASES
                         ? muhtari__synth_kernel[row + 1u][j]
                         : (j == 0u ? 0 : muhtari__synth_kernel[0][j - 1u]);
-        out[j] = a + (int32_t)muhtari__synth_round((int64_t)(b - a) * fraction, 13125);
+        out[j] = a + (int32_t)muhtari__synth_round((int64_t)(b - a) * fraction, period);
         sum += out[j];
     }
-    out[phase < 13125u / 2u ? 7u : 8u] += (int32_t)MUHTARI__SYNTH_Q23 - sum;
+    out[phase < period / 2u ? 7u : 8u] += (int32_t)MUHTARI__SYNTH_Q23 - sum;
 }
 
 static int64_t multiply_q30(int64_t value)
@@ -208,13 +213,13 @@ static void sample(struct muhtari__synth *s)
 static void advance(struct muhtari__synth *s, uint64_t end)
 {
     while (s->tick < end) {
-        uint32_t to_sample = (13125u - s->phase + 87u) / 88u;
+        uint32_t to_sample = (s->sample_den - s->phase + s->sample_num - 1u) / s->sample_num;
         uint64_t remaining = end - s->tick;
         uint32_t delta = remaining < to_sample ? (uint32_t)remaining : to_sample;
         s->tick += delta;
-        s->phase += delta * 88u;
-        if (s->phase >= 13125u) {
-            s->phase -= 13125u;
+        s->phase += delta * s->sample_num;
+        if (s->phase >= s->sample_den) {
+            s->phase -= s->sample_den;
             sample(s);
         }
     }
@@ -245,7 +250,7 @@ static void flush(struct muhtari__synth *s)
     int32_t delta = level - s->mixed_level;
     if (delta != 0) {
         int32_t coefficients[16];
-        muhtari__synth_coefficients(s->phase, coefficients);
+        muhtari__synth_coefficients_for_period(s->phase, s->sample_den, coefficients);
         for (unsigned j = 0; j < 16u; j++) {
             s->impulse[(s->head + j) & 15u] += (int64_t)delta * coefficients[j];
         }
@@ -372,6 +377,10 @@ void muhtari__synth_reset(muhtari *m, uint64_t origin, uint8_t pokeys)
     m->synth.tick = origin;
     m->synth.horizon = origin;
     m->synth.pokeys = pokeys;
+    struct muhtari__timing timing = muhtari__timing(m);
+    m->synth.sample_num = timing.sample_num;
+    m->synth.sample_den = timing.sample_den;
+    m->synth.max_samples = timing.max_samples;
 }
 
 void muhtari__synth_level(muhtari *m, uint64_t tick, unsigned source, uint16_t level)
@@ -402,9 +411,10 @@ uint32_t muhtari__synth_render(muhtari *m, uint64_t end, int16_t *out)
     advance(s, end);
     uint64_t a = s->horizon - s->origin;
     uint64_t b = end - s->origin;
-    uint64_t count = (b / 13125u) * 88u + (b % 13125u) * 88u / 13125u -
-                     ((a / 13125u) * 88u + (a % 13125u) * 88u / 13125u);
-    assert(count <= 801u && count <= s->pcm_count);
+    uint64_t count =
+        (b / s->sample_den) * s->sample_num + (b % s->sample_den) * s->sample_num / s->sample_den -
+        ((a / s->sample_den) * s->sample_num + (a % s->sample_den) * s->sample_num / s->sample_den);
+    assert(count <= s->max_samples && count <= s->pcm_count);
     for (uint32_t i = 0; i < (uint32_t)count; i++) {
         if (out != NULL) {
             out[i] = s->pcm[s->pcm_read];

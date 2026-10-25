@@ -91,6 +91,7 @@ ROM together with its RAM; each returns `MUHTARI_STATUS_ERR_NO_MEMORY` when `all
 ## A frame
 
 ```c
+/* No-content NTSC example. After loading content, requery info and resize buffers. */
 muhtari *m = NULL;
 cfg.allocator.alloc = host_alloc;
 cfg.allocator.free = host_free;
@@ -114,6 +115,26 @@ with `audio` set, an `audio_capacity` below the frame's actual sample count retu
 `MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL`, so size the buffer from `max_audio_samples`. `muhtari_run_frame` checks its
 arguments before it changes anything. Once `m` and `io` are not NULL and the size tag is accepted, it writes
 `audio_count` on every return, zero on an error.
+
+Requery info after each successful load. PAL reports 320×292, FPS 3546894/71051,
+PAR 1843750/1773447 and at most 962 samples; NTSC and no-content defaults stay
+unchanged. Packed PAL video needs 93440 bytes. With padding the accessible extent
+is `(height-1)*pitch+width`; the frame struct has no allocation-byte count and
+cannot detect an undersized allocation. PAL fast boot returns 960 first-frame
+samples, then 961 or 962 per full frame, with fractional carry retained.
+Pitch validation precedes audio-capacity validation, and both precede input latching
+and execution. NULL outputs still advance identical video/audio state. A refused
+library load retains the prior effective region and running cartridge; the libretro
+adapter instead releases its old session before loading and falls back to NTSC on failure.
+
+PAL fast handoff at tick 140016 is selected compatibility policy, not a measured
+production BIOS snapshot. The warm PAL table is a licensed presentation seed;
+native hashes do not depend on it. Region is fixed at successful load and survives
+power cycle; libretro region changes require reload, while palette changes affect
+presentation immediately. See [PAL diagnostic evidence](pal-tests.md) and
+[audio model limits](hardware/audio.md). API 6, ABI 1 and behavior revision 5
+retain the append-only status and size-tag contracts; legacy API 3 callers can
+now load PAL, so hosts must query geometry rather than depend on its former refusal.
 
 ## Probing a cartridge image
 
@@ -230,8 +251,8 @@ muhtari_status st = muhtari_load(m, &media);
 4. The image, exactly as `muhtari_probe` judges it, with the same statuses. An empty image is
    `MUHTARI_STATUS_ERR_INVALID_IMAGE`, and a NULL image with a size is `MUHTARI_STATUS_ERR_ARGUMENT`.
 5. The region: `region` when it is not 0, else the cartridge's, which comes from its header, then the hash list,
-   then NTSC. PAL returns `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` until PAL timing is emulated, so no pinned NTSC
-   hash can change silently when it is.
+   then NTSC. Both NTSC and PAL execute; the selection commits only after successful
+   cartridge installation. Probe metadata remains descriptive when overridden.
 6. The BIOS, when `bios` is not NULL: it must be 4,096 or 16,384 bytes, and its reset vector, mapped to end at
    $FFFF, must point inside it. Otherwise `MUHTARI_STATUS_ERR_INVALID_BIOS`.
 7. HSC firmware and storage placement, described below. Invalid HSC media returns
@@ -240,7 +261,10 @@ muhtari_status st = muhtari_load(m, &media);
 
 A refused load changes nothing: the previous cartridge, or the test card, keeps running as if the call had not
 been made. Once every check passes, the ROM is copied into one allocation, the only one a load makes, and
-any cartridge loaded before is freed. A BIOS is copied into a fixed 16 KiB array inside the instance. Without a
+any cartridge loaded before is freed. BIOS input may borrow an installed cartridge RAM, battery or HSC ROM
+span: its validated bytes are staged before installation can invalidate that span. A private fixed 16 KiB
+staging array keeps the running BIOS intact if allocation fails; successful loads copy it to the live BIOS
+array inside the instance. Without a
 BIOS the machine starts from the fast-boot hand-off, the state the NTSC BIOS leaves as it jumps to the cartridge;
 with one it boots through the BIOS, as [Booting with a BIOS](#booting-with-a-bios) describes. A successful load
 replaces any loaded content and power-cycles the machine.
@@ -325,15 +349,21 @@ by a query. Frames, serial traffic, reset and observers allocate no memory after
 
 ## The first frame after load
 
-A load without a BIOS leaves the machine at the fast-boot hand-off, 8,190 ticks before VBLANK start, not at a frame
+A load without a BIOS leaves the NTSC machine at the fast-boot hand-off, 8,190 ticks before VBLANK start, not at a frame
 boundary. The first `muhtari_run_frame` after a load or power cycle runs only those 8,190 ticks, so it returns 54
 audio samples rather than 800 or 801. Its picture shows only the rows the beam scanned since the hand-off; every
 other row is written $00. Every later frame runs from one VBLANK start to the next, a whole frame of 119,402 ticks.
 
+PAL selects the fitted [startup profile](hardware/bus.md#pal-startup) at tick 140016,
+first future deadline 281976: 141960 elapsed ticks and 960 samples. Later frames span
+142102 ticks and return 961/962 samples. Power cycle retains the successful region;
+failed loads retain region, content, battery and pending input. All 292 partial-frame
+rows clear before rendering. This fit is not a measured PAL BIOS snapshot.
+
 Loaded cartridges produce mono TIA and declared cartridge POKEY audio through the integer reconstruction and DC blocker. The sample grid
 starts at the fast-boot hand-off with zero fractional remainder. TIA's hidden zero-start logic has already run
 on its absolute 456-tick lattice from power-on; its volume remains zero until the cartridge writes it. Actual
-CPU cycle counting starts at zero at the hand-off tick (line 240, t 24), which is also the cartridge-audio clock
+CPU cycle counting starts at zero at the hand-off tick (NTSC line 240,t24; PAL line 308,t184), which is also the cartridge-audio clock
 segment's tick origin. Fast boot invents no skipped CPU cycles. These deterministic startup values are
 compatibility defaults, not measured physical power-on or skipped-BIOS residue.
 
@@ -536,7 +566,7 @@ Statuses are only ever added. Those after the probe's:
 |---|---|---|
 | `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` | `muhtari_run_frame` | The BIOS took its 2600 path. It stays until the next load or power cycle. |
 | `MUHTARI_STATUS_ERR_INVALID_BIOS` | `muhtari_load` | The BIOS is not 4,096 or 16,384 bytes, or its reset vector points outside it. |
-| `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | The content resolves to PAL. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | Reserved numeric region-refusal status; both current regions execute. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | input setters | A device outside the frozen legacy set, or an attempted change to load-frozen EEPROM topology. |
 | `MUHTARI_STATUS_ERR_INVALID_HSC` | `muhtari_load` | Invalid firmware size/pointer pair, HSC mode, or supplied firmware conflicting with OFF. |
 
@@ -562,7 +592,7 @@ are unchanged. API 4's Activision orientation constants remain available.
 header does not know stays at the zero you wrote. The library version numbers carry no such meaning.
 
 Sound output is fixed-rate 48,000/1 Hz mono signed int16. A fast-boot first
-frame returns 54 samples; full NTSC frames return 800 or 801. Use audio_count,
+frame returns 54 NTSC or 960 PAL samples; full frames return 800/801 or 961/962. Use audio_count,
 not the buffer capacity. Passing NULL for audio discards samples while preserving
 synthesis history and future output. Raw-transition observation is an internal
 runner seam; the installed library exposes no observer registration facility.

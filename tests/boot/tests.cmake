@@ -14,9 +14,14 @@ set(boot_bios ${MUHTARI_BUILT_DIR}/openbios/openbios.bin)
 set(boot_simple ${MUHTARI_BUILT_DIR}/simple/simple.bas.a78)
 # OpenBIOS booting simple, and simple with its region byte cleared.
 foreach(boot_case IN ITEMS handoff_simple splash_skip rejects_cart)
+  set(boot_timeout 1)
+  if(boot_case STREQUAL "handoff_simple")
+    # Provisional ceil(2 x 0.95s), macOS x64, run 40227081044.
+    set(boot_timeout 2)
+  endif()
   muhtari_add_test(NAME bios.${boot_case}
     COMMAND muhtari-test-boot ${boot_case} ${boot_bios} ${boot_simple}
-    LABELS bios portable TIMEOUT 1)  # 2 x 0.40 s, macOS x64, slowest of 14 runs, run 39382016958
+    LABELS bios portable TIMEOUT ${boot_timeout}) # Others: 2 x 0.40s, run 39382016958.
   set_tests_properties(bios.${boot_case} PROPERTIES
     FIXTURES_REQUIRED "built_openbios;built_simple")
 endforeach()
@@ -25,3 +30,6 @@ foreach(boot_case IN ITEMS k_window k_first_fetch)
   muhtari_add_test(NAME bios.${boot_case} COMMAND muhtari-test-boot ${boot_case}
     LABELS bios portable TIMEOUT 1)  # 2 x 0.10 s, macOS x64, slowest of 13 runs, run 39373524239
 endforeach()
+# Provisional: 0.02s locally for ten alias/region/size combinations.
+muhtari_add_test(NAME bios.load_aliases COMMAND muhtari-test-boot load_aliases
+  LABELS bios portable TIMEOUT 1)

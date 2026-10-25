@@ -5,25 +5,29 @@ Generated from `tests/compat/ledger.csv` by `tools/compat_doc.cmake`; do not edi
 
 NTSC board support includes linear, SuperGame, Activision, Absolute and Fractalus.
 Owned board diagnostics verify selected banking and physical RAM semantics; they do not promote an
-untested retail title to a passing gameplay result. PAL execution remains unsupported.
+untested retail title to a passing gameplay result. The owned PAL diagnostic verifies raster timing,
+native video and sustained audio across the library, runner and libretro core; it does not establish
+PAL retail playability or hardware calibration. Its local-tier mailbox record names the executed
+diagnostic predicate, separately from the NTSC title/BIOS predicates evaluated by the library preset.
+[PAL evidence and limits](pal-tests.md) describe the numeric checks and confidence.
 [Cartridge behavior](hardware/cartridge.md) describes identified-only Activision AM normalization,
 original image identity, physical 2 KiB Fractalus RAM and selected compatibility/profile policies.
 [Host memory maps](libretro.md#achievements) expose fixed ROM and only the documented RAM aliases;
 banked windows and Fractalus mirrors above $4FFF remain descriptor holes.
 
-The ledger has 42 rows. 8 are judged by the weak predicate `boots@F` (the game booted, drew and
+The ledger has 43 rows. 8 are judged by the weak predicate `boots@F` (the game booted, drew and
 kept running), not by a pinned title screen.
 
 | Status | Rows |
 |---|---|
-| pass | 39 |
+| pass | 40 |
 | skipped | 2 |
 | unsupported | 1 |
 
 | Board | Rows |
 |---|---|
 | banksets | 1 |
-| linear | 33 |
+| linear | 34 |
 | supergame | 1 |
 | supergame+bank6_at_4000 | 1 |
 | supergame+ram | 5 |
@@ -32,6 +36,7 @@ kept running), not by a pinned title screen.
 | Region | Rows |
 |---|---|
 | NTSC | 42 |
+| PAL | 1 |
 
 | Id | Title | Board | Region | Peripherals | Predicate | Status |
 |---|---|---|---|---|---|---|
@@ -77,3 +82,4 @@ kept running), not by a pinned title screen.
 | `diag/linear16` | muhtari linear16 diagnostic | linear | NTSC | - | title | pass |
 | `diag/modes` | muhtari modes diagnostic | supergame | NTSC | - | title | pass |
 | `diag/sg144` | muhtari sg144 diagnostic | supergame+rom_at_4000 | NTSC | - | title | pass |
+| `diag/pal` | muhtari PAL diagnostic | linear | PAL | pokey450 | mailbox | pass |

@@ -6,12 +6,13 @@ the licence text the upstream requires to travel with source and binaries.
 
 ## a7800 palette
 
-- **Applies to:** `host/palette.c`
+- **Applies to:** `host/palette.c`, `tests/host/test_palette.c`
 - **Upstream:** https://github.com/7800-devtools/a7800, file `src/mame/drivers/a7800.cpp` at commit
   `7a2afdc1ea08fc331b16b750d8c1f02d4ef62fc8`. The file's own header licenses it BSD-3-Clause.
 - **Upstream file SHA-256:** `504b221d6dd1726cabd600b795a0243a6353d4642827f7d1bc438ea1d8ce31c2`
-- **Changes:** warm NTSC table only (the 16 `ntsc_hue*_warm` rows of the block "26.7 PHASE SHIFT -
-  LUM3 from TREBORS PRO PALETTES V7"), as a C array of 0x00RRGGBB values.
+- **Changes:** warm NTSC and PAL tables (the 16 `ntsc_hue*_warm` and 16 `pal_hue*_warm` rows of the block "26.7 PHASE SHIFT -
+  LUM3 from TREBORS PRO PALETTES V7"), as C arrays of 0x00RRGGBB values;
+  independently transcribed warm PAL literals in the host palette test.
 - **Licence:** BSD-3-Clause
 
 ```
