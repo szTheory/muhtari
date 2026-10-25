@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/szTheory/muhtari/compare/v0.6.0...v0.7.0) (2026-10-25)
+
+
+### Features
+
+* emulate timed controllers and host adapters ([#31](https://github.com/szTheory/muhtari/issues/31)) ([a48c15a](https://github.com/szTheory/muhtari/commit/a48c15a701f751459f7a5cdc80851ef9f8b71e2d))
+
 ## [0.6.0](https://github.com/szTheory/muhtari/compare/v0.5.0...v0.6.0) (2026-10-24)
 
 
