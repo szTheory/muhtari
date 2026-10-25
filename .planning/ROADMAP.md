@@ -249,7 +249,7 @@ failure. Package integrity, typed measurements and all other contracts remain.
 **Goal:** Run PAL content at the console timing and report matching video/audio geometry to every host.
 **Depends on:** Phase 8
 **Requirements:** PAL-01, PAL-02, PAL-03
-**Plans:** 4/8 plans executed
+**Plans:** 5/8 plans executed
 
 Plans:
 
@@ -265,10 +265,10 @@ Plans:
 **Wave 4** *(accepted)*
 - [x] 09-04-PLAN.md — Load-stable libretro region, AV, palette and fallback.
 
-**Wave 5** *(ready; Wave 4 accepted)*
-- [ ] 09-05-PLAN.md — Exact audio carry, real extremizers and retained quality controls.
+**Wave 5** *(accepted)*
+- [x] 09-05-PLAN.md — Exact audio carry, real extremizers and retained quality controls.
 
-**Wave 6** *(blocked on Wave 5 completion)*
+**Wave 6** *(ready; Wave 5 accepted)*
 - [ ] 09-06-PLAN.md — Narrow PAL fixture admission through the real producer and join.
 
 **Wave 7** *(blocked on Wave 6 completion)*
@@ -326,9 +326,9 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
-| 9. PAL games and audio | 3/8 | In Progress | — |
+| 9. PAL games and audio | 5/8 | In Progress | — |
 | 10. Homebrew and expansion memory | 0/TBD | Not started | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-25; Phases5–8 are complete. Phase8 has14/14 accepted plans,49/49 verified truths and all five INPUT requirements complete. Current-source required CI, full native/PPC/WASM equality, actual RetroArch and authenticated native packages pass; advisory10000-case isolation timeout remains unaccepted and seeded. One review-fix round used, gap round unused. Phase9 has8 checked plans across8 sequential waves and is ready to execute; phases10–11 remain unstarted. Next separate command: $gsd-execute-phase 9.*
+*Updated: 2026-10-25; Phases5–8 are complete. Phase8 has14/14 accepted plans,49/49 verified truths and all five INPUT requirements complete. Current-source required CI, full native/PPC/WASM equality, actual RetroArch and authenticated native packages pass; advisory10000-case isolation timeout remains unaccepted and seeded. One review-fix round used, gap round unused. Phase9 has5/8 locally accepted plans across8 sequential waves;09-06 is ready; phases10–11 remain unstarted. Next separate command: $gsd-execute-phase 9.*
