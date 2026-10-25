@@ -156,6 +156,25 @@ static size_t activision_swapped(uint8_t *b)
     return n;
 }
 
+/* The loader corpus independently exercises typed header selection. */
+#define TYPED_SEED(name, device)                                                                   \
+    static size_t name(uint8_t *b)                                                                 \
+    {                                                                                              \
+        size_t n = images_linear(b, 3u, 16u * KIB);                                                \
+        b[55] = b[56] = device;                                                                    \
+        return n;                                                                                  \
+    }
+TYPED_SEED(lightgun, MUHTARI_PORT_LIGHTGUN)
+TYPED_SEED(paddle, MUHTARI_PORT_PADDLE)
+TYPED_SEED(keypad, MUHTARI_PORT_KEYPAD)
+TYPED_SEED(driving, MUHTARI_PORT_DRIVING)
+TYPED_SEED(trakball, MUHTARI_PORT_TRAKBALL)
+TYPED_SEED(st_mouse, MUHTARI_PORT_ST_MOUSE)
+TYPED_SEED(amiga_mouse, MUHTARI_PORT_AMIGA_MOUSE)
+TYPED_SEED(snes, MUHTARI_PORT_SNES2ATARI)
+TYPED_SEED(mega, MUHTARI_PORT_MEGA7800)
+#undef TYPED_SEED
+
 static const struct {
     const char *name;
     size_t (*build)(uint8_t *b);
@@ -191,6 +210,15 @@ static const struct {
     {"two-chip-48k", two_chip},
     {"mirrored-32k", mirrored},
     {"activision-swapped", activision_swapped},
+    {"typed-lightgun", lightgun},
+    {"typed-paddle", paddle},
+    {"typed-keypad", keypad},
+    {"typed-driving", driving},
+    {"typed-trakball", trakball},
+    {"typed-st-mouse", st_mouse},
+    {"typed-amiga-mouse", amiga_mouse},
+    {"typed-snes", snes},
+    {"typed-mega", mega},
 };
 
 uint32_t seeds_count(void)

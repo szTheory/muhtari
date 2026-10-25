@@ -92,6 +92,92 @@ static muhtari_status run_one(muhtari *m, uint8_t *video, int16_t *audio, uint32
     return st;
 }
 
+/* Nonneutral real devices, rather than digital fields masquerading as
+   extended coverage. Old cartridges and their first two frames stay above
+   this additional replay. All traffic remains bounded by fixed loop sizes. */
+static void run_typed(muhtari *m[2], alloc_counts counts[2], muhtari_media *media,
+                      const uint8_t *data, size_t size, uint8_t *video, int16_t *audio)
+{
+    static const uint32_t devices[] = {
+        MUHTARI_PORT_LIGHTGUN,    MUHTARI_PORT_PADDLE,     MUHTARI_PORT_KEYPAD,
+        MUHTARI_PORT_DRIVING,     MUHTARI_PORT_TRAKBALL,   MUHTARI_PORT_ST_MOUSE,
+        MUHTARI_PORT_AMIGA_MOUSE, MUHTARI_PORT_SNES2ATARI, MUHTARI_PORT_MEGA7800};
+    uint8_t selector = size != 0u ? data[0] : 0u;
+    uint8_t value = size > 1u ? data[1] : 0xA5u;
+    unsigned serial = (selector & 16u) != 0u;
+    unsigned save_port = (selector >> 5) & 1u;
+    muhtari_input_ex in = {0};
+    in.size = (uint32_t)sizeof in;
+    for (unsigned p = 0u; p < 2u; p++) {
+        muhtari_port_input *port = &in.port[p];
+        port->device = devices[(selector % 9u + p * 4u) % 9u];
+        if (serial != 0u && p == save_port) {
+            port->device = MUHTARI_PORT_SAVEKEY;
+            media->port[p] = MUHTARI_PORT_SAVEKEY;
+            continue;
+        }
+        if (port->device == MUHTARI_PORT_LIGHTGUN) {
+            port->gun_x = value != 0u ? 319u : 1u;
+            port->gun_y = value % 242u;
+            port->flags = value & 1u;
+            port->buttons = MUHTARI_BUTTON_1;
+        } else if (port->device == MUHTARI_PORT_PADDLE) {
+            port->paddle[0] = 65535u;
+            port->paddle[1] = (uint32_t)value * 257u;
+            port->buttons = MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2;
+        } else if (port->device == MUHTARI_PORT_KEYPAD) {
+            port->keypad = 3u | ((uint32_t)value << 4);
+        } else if (port->device == MUHTARI_PORT_SNES2ATARI ||
+                   port->device == MUHTARI_PORT_MEGA7800) {
+            port->buttons = 0xA00u | value;
+        } else {
+            port->dx = (value & 1u) != 0u ? INT32_MIN : INT32_MAX;
+            if (port->device != MUHTARI_PORT_DRIVING)
+                port->dy = (value & 2u) != 0u ? INT32_MAX : INT32_MIN;
+            port->buttons = MUHTARI_BUTTON_1;
+        }
+    }
+    uint8_t *battery[2];
+    for (unsigned j = 0u; j < 2u; j++) {
+        require(muhtari_load(m[j], media) == MUHTARI_STATUS_OK);
+        counts[j].fail_from = counts[j].allocs + 1u;
+        battery[j] = m[j]->battery.data;
+        require(muhtari_set_input_ex(m[j], &in) == MUHTARI_STATUS_OK);
+        muhtari_input_ex bad = in;
+        bad.port[1].flags = 2u;
+        struct muhtari__ports before = m[j]->ports;
+        require(muhtari_set_input_ex(m[j], &bad) == MUHTARI_STATUS_ERR_ARGUMENT);
+        for (unsigned n = 0u; n < 8u; n++)
+            (void)muhtari__bus_peek(m[j], (uint16_t)(8u + n % 6u));
+        require(memcmp(&before, &m[j]->ports, sizeof before) == 0);
+    }
+    for (unsigned f = 0u; f < 2u; f++) {
+        uint32_t count[2];
+        for (unsigned j = 0u; j < 2u; j++) {
+            for (unsigned n = 0u; n < 16u; n++) {
+                uint8_t byte = size != 0u ? data[n % size] : (uint8_t)(n * 17u);
+                muhtari__bus_write(m[j], 0x0280u, byte);
+                muhtari__bus_write(m[j], 0x0281u, (uint8_t)~byte);
+                muhtari__bus_write(m[j], 1u, (uint8_t)(byte & 0xC0u));
+            }
+            require(run_one(m[j], video + j * RUN_PICTURE, audio + j * MUHTARI__MAX_AUDIO_SAMPLES,
+                            &count[j]) == MUHTARI_STATUS_OK);
+            for (unsigned p = 0u; p < 2u; p++) {
+                for (unsigned axis = 0u; axis < 2u; axis++) {
+                    int32_t residual = m[j]->ports.motion[p][axis].residual;
+                    require(residual >= -255 && residual <= 255);
+                }
+            }
+            require(m[j]->battery.data == battery[j]);
+        }
+        require(count[0] == count[1] && count[0] <= MUHTARI__MAX_AUDIO_SAMPLES);
+        require(memcmp(video, video + RUN_PICTURE, RUN_PICTURE) == 0);
+        require(memcmp(audio, audio + MUHTARI__MAX_AUDIO_SAMPLES, count[0] * sizeof *audio) == 0);
+        require(memcmp(&m[0]->ports, &m[1]->ports, sizeof m[0]->ports) == 0);
+        require(memcmp(m[0]->battery.data, m[1]->battery.data, m[0]->battery.bytes) == 0);
+    }
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     uint8_t *cart = (uint8_t *)malloc(RUN_CART_BYTES);
@@ -127,10 +213,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         require(memcmp(video, video + RUN_PICTURE, RUN_PICTURE) == 0);
         require(memcmp(audio, audio + MUHTARI__MAX_AUDIO_SAMPLES, count[0] * sizeof *audio) == 0);
     }
+    run_typed(m, counts, &media, data, size, video, audio);
     for (uint32_t i = 0u; i < 2u; i++) {
-        require(counts[i].allocs == 2u && counts[i].frees == 0u);
+        require(counts[i].allocs == 3u && counts[i].frees == 1u);
         require(muhtari_power_cycle(m[i]) == MUHTARI_STATUS_OK);
-        require(counts[i].allocs == 2u && counts[i].frees == 0u);
+        require(counts[i].allocs == 3u && counts[i].frees == 1u);
     }
     muhtari_destroy(m[0]);
     muhtari_destroy(m[1]);

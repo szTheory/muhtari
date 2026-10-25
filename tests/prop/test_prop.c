@@ -385,6 +385,55 @@ static int peek_pure(uint64_t *rng, uint32_t size)
 
 /* Two instances on different cartridges, loaded, given input and run
    alternately call by call, equal each run alone. */
+static void typed_input(uint64_t *rng, uint32_t family, muhtari_input_ex *in)
+{
+    static const int32_t deltas[] = {INT32_MIN, INT32_MAX, 0, -1, 1};
+    memset(in, 0, sizeof *in);
+    in->size = (uint32_t)sizeof *in;
+    in->switches = prop_below(rng, 32u);
+    for (unsigned p = 0u; p < 2u; p++) {
+        muhtari_port_input *port = &in->port[p];
+        port->device = typed_devices[(family + p * 3u) % 9u];
+        switch (port->device) {
+        case MUHTARI_PORT_LIGHTGUN:
+            port->gun_x = prop_below(rng, WIDTH);
+            port->gun_y = prop_below(rng, HEIGHT);
+            port->flags = prop_below(rng, 2u);
+            port->buttons = MUHTARI_BUTTON_1;
+            break;
+        case MUHTARI_PORT_PADDLE:
+            port->paddle[0] = prop_below(rng, 2u) == 0u ? 0u : 65535u;
+            port->paddle[1] = 1u + prop_below(rng, 65535u);
+            port->buttons = MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2;
+            break;
+        case MUHTARI_PORT_KEYPAD:
+            port->keypad = 3u | prop_below(rng, 4096u);
+            break;
+        case MUHTARI_PORT_SNES2ATARI:
+        case MUHTARI_PORT_MEGA7800:
+            port->buttons = 64u | prop_below(rng, 4096u);
+            break;
+        default:
+            port->dx = deltas[prop_below(rng, 5u)];
+            if (port->device != MUHTARI_PORT_DRIVING)
+                port->dy = deltas[prop_below(rng, 5u)];
+            port->buttons = MUHTARI_BUTTON_1;
+            break;
+        }
+    }
+}
+
+/* The same bus traffic is replayed in isolated and interleaved order. It
+   changes effective rows, adapter clocks and TIA dump/latch at data ticks. */
+static void typed_traffic(muhtari *m, const uint8_t bytes[8])
+{
+    for (unsigned n = 0u; n < 8u; n++) {
+        muhtari__bus_write(m, 0x0280u, bytes[n]);
+        muhtari__bus_write(m, 0x0281u, (uint8_t)~bytes[n]);
+        muhtari__bus_write(m, 1u, (uint8_t)(bytes[n] & 0xC0u));
+    }
+}
+
 static int instances_isolated(uint64_t *rng, uint32_t size)
 {
     struct frame_out out[4][PROP_SIZE_MAX];
@@ -413,6 +462,46 @@ static int instances_isolated(uint64_t *rng, uint32_t size)
     }
     ok = ok && same_run(out[0], out[2], frames, m[0], m[2]) &&
          same_run(out[1], out[3], frames, m[1], m[3]);
+    /* Preserve the complete legacy workload above. Add two typed frames:
+       replacement before latch, then no submission (no repeated motion). */
+    muhtari_input_ex typed[2];
+    uint8_t traffic[2][2][8];
+    for (unsigned j = 0u; j < 2u; j++) {
+        typed_input(rng, (case_index - 1u + 4u * j) % 9u, &typed[j]);
+        for (unsigned f = 0u; f < 2u; f++)
+            for (unsigned n = 0u; n < 8u; n++)
+                traffic[j][f][n] = (uint8_t)prop_below(rng, 256u);
+    }
+    uint32_t calls = allocation_calls;
+    for (unsigned f = 0u; f < 2u; f++) {
+        for (unsigned j = 0u; j < 2u; j++) {
+            if (f == 0u) {
+                muhtari_input_ex replaced = typed[j];
+                replaced.switches ^= MUHTARI_SWITCH_RESET;
+                ok = muhtari_set_input_ex(m[j], &replaced) == MUHTARI_STATUS_OK && ok;
+                ok = muhtari_set_input_ex(m[j], &typed[j]) == MUHTARI_STATUS_OK && ok;
+                uint8_t before[32], after[32];
+                digest(m[j], 1, before);
+                muhtari_input_ex bad = typed[j];
+                bad.port[1].flags = 2u;
+                ok = muhtari_set_input_ex(m[j], &bad) == MUHTARI_STATUS_ERR_ARGUMENT && ok;
+                (void)peek_all(m[j]);
+                digest(m[j], 1, after);
+                ok = memcmp(before, after, sizeof before) == 0 && ok;
+            }
+            typed_traffic(m[j], traffic[j][f]);
+            run(m[j], WIDTH, &out[j][f]);
+        }
+    }
+    for (unsigned j = 2u; j < 4u; j++) {
+        ok = muhtari_set_input_ex(m[j], &typed[j - 2u]) == MUHTARI_STATUS_OK && ok;
+        for (unsigned f = 0u; f < 2u; f++) {
+            typed_traffic(m[j], traffic[j - 2u][f]);
+            run(m[j], WIDTH, &out[j][f]);
+        }
+    }
+    ok = allocation_calls == calls && ok && same_run(out[0], out[2], 2u, m[0], m[2]) &&
+         same_run(out[1], out[3], 2u, m[1], m[3]);
     return finish(m[0], m[2], finish(m[1], m[3], ok));
 }
 
