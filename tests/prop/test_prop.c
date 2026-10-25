@@ -434,6 +434,24 @@ static void typed_traffic(muhtari *m, const uint8_t bytes[8])
     }
 }
 
+/* A fresh bounded displacement drains in a full frame. The next frame
+   receives no packet: even equally wrong replay instances must not repeat
+   that movement (controllers.md, Motion). */
+static int typed_quiet(const muhtari *m, uint8_t phase[2][2], unsigned frame)
+{
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned axis = 0u; axis < 2u; axis++) {
+            const struct muhtari__motion *motion = &m->ports.motion[p][axis];
+            if (motion->residual != 0 || motion->next_tick != 0u)
+                return differ("bounded motion did not drain", frame);
+            if (frame != 0u && phase[p][axis] != motion->phase)
+                return differ("motion repeated without submission", frame);
+            phase[p][axis] = motion->phase;
+        }
+    }
+    return 1;
+}
+
 static int instances_isolated(uint64_t *rng, uint32_t size)
 {
     struct frame_out out[4][PROP_SIZE_MAX];
@@ -466,6 +484,7 @@ static int instances_isolated(uint64_t *rng, uint32_t size)
        replacement before latch, then no submission (no repeated motion). */
     muhtari_input_ex typed[2];
     uint8_t traffic[2][2][8];
+    uint8_t phase[4][2][2] = {0};
     for (unsigned j = 0u; j < 2u; j++) {
         typed_input(rng, (case_index - 1u + 4u * j) % 9u, &typed[j]);
         for (unsigned f = 0u; f < 2u; f++)
@@ -491,6 +510,7 @@ static int instances_isolated(uint64_t *rng, uint32_t size)
             }
             typed_traffic(m[j], traffic[j][f]);
             run(m[j], WIDTH, &out[j][f]);
+            ok = typed_quiet(m[j], phase[j], f) && ok;
         }
     }
     for (unsigned j = 2u; j < 4u; j++) {
@@ -498,6 +518,7 @@ static int instances_isolated(uint64_t *rng, uint32_t size)
         for (unsigned f = 0u; f < 2u; f++) {
             typed_traffic(m[j], traffic[j - 2u][f]);
             run(m[j], WIDTH, &out[j][f]);
+            ok = typed_quiet(m[j], phase[j], f) && ok;
         }
     }
     ok = allocation_calls == calls && ok && same_run(out[0], out[2], 2u, m[0], m[2]) &&
