@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 10
+current_plan: 11
 status: executing
-stopped_at: 08-09 verified;08-10 ready
-last_updated: "2026-10-25T00:42:51.635580+00:00"
+stopped_at: 08-10 verified;08-11 ready
+last_updated: "2026-10-25T00:54:53.359378+00:00"
 last_activity: 2026-10-24
-last_activity_desc: 08-09 accepted after648+6 local checks;08-10 ready
-state_head: 34e8e8e
+last_activity_desc: 08-10 accepted after648+6 local checks;08-11 ready
+state_head: 6621779
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 37
+  completed_plans: 38
   percent: 43
 total_phases: 7
 current_phase_name: Controllers at the pins
@@ -27,27 +27,32 @@ current_phase: 08
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Controllers at the pins. Plans01–09 are accepted; the first driving
+Current focus: Controllers at the pins. Plans01–10 are accepted; the first driving
 slice runs through library, immutable runner replay and actual libretro/RetroArch.
 A separately authorized DEC.61 review retired only the unsupported archive cutoff;
 required authenticated measurements and package integrity remain. No INPUT
-requirement is complete. Next is08-10 CX22 and ST/Amiga timed motion.
+requirement is complete. Next is08-11 edge-clocked SNES2Atari and Mega7800.
 
 ## Current Position
 
-Current Plan: 10
+Current Plan: 11
 Total Plans in Phase: 14
 Progress: [████░░░░░░] 43%
 
-Phase8 has9/14 accepted plans;08-09 passes full local CI648+6 and package checks.
-Runtime summarized totals are37/42, including historical halted06-01.
-Accepted active progress is36/41;3/7 milestone phases remain complete (43%).
+Phase8 has10/14 accepted plans;08-10 passes full local CI648+6 and package checks.
+Runtime summarized totals are38/42, including historical halted06-01.
+Accepted active progress is37/41;3/7 milestone phases remain complete (43%).
 The runtime summary count is not an accepted-completion count.
 
-Status: Executing Phase 08;08-10 ready
-Last activity: 2026-10-24 —08-09 accepted; continuing the dependency-ready wave
+Status: Executing Phase 08;08-11 ready
+Last activity: 2026-10-24 —08-10 accepted; continuing the dependency-ready wave
 Next command: $gsd-execute-phase 8
 Branch: phase/08-controllers-at-the-pins. No Phase8 PR, merge or release.
+
+08-10 implementation0f590fe and summary6621779 are accepted. Parent post-wave
+full-ci gate exits0 (648+6), N/A-local. Connector-specific CX22/ST/Amiga cycles,
+chronological PA7 and27 records/family pass all hosts; driving19 records persist.
+Local ZIPs79860+83497+93116=256473 bytes; hygiene24 passes.
 
 08-09 implementation2815568 and summary34e8e8e are accepted. Parent post-wave
 full-ci gate exits0 (648+6), N/A-local. Seven-node keypad connectivity, exact2864
@@ -165,9 +170,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:**08-09 verified;08-10 ready
+**Stopped at:**08-10 verified;08-11 ready
 Last session: 2026-10-24T22:21:15.223Z
-Resume file: .planning/phases/08-controllers-at-the-pins/08-10-PLAN.md
+Resume file: .planning/phases/08-controllers-at-the-pins/08-11-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -189,6 +194,7 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-10-PLAN.md
 | Phase 08 P07 | 14min | 3 tasks | source9ca62b3 |
 | Phase 08 P08 | 11min | 3 tasks | sourcef33ad71 |
 | Phase 08 P09 | 13min | 3 tasks | source2815568 |
+| Phase 08 P10 | 8min | 3 tasks | source0f590fe |
 
 ## Decisions
 
@@ -208,4 +214,4 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-10-PLAN.md
 
 None required. Advisory library timing evidence and measured publication-control
 cost remain in the existing seed; neither is promoted into a controller gate.
-Current execution continues at08-10; no requirement is complete.
+Current execution continues at08-11; no requirement is complete.
