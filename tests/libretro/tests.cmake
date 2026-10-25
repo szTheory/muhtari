@@ -235,6 +235,22 @@ if(TARGET muhtari_libretro)
     set_target_properties(muhtari_libretro_testdb PROPERTIES SUFFIX ".dylib")
   endif()
   muhtari_warnings(muhtari_libretro_testdb)
+  # Same test-only observation seam in the second pixel format; never installed.
+  add_library(muhtari_libretro_testdb565 MODULE ${PROJECT_SOURCE_DIR}/libretro/libretro.c
+    ${PROJECT_SOURCE_DIR}/runner/sha256.c ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
+    $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
+  target_compile_definitions(muhtari_libretro_testdb565 PRIVATE MUHTARI_LIBRETRO_TEST USE_RGB565
+    $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+  target_include_directories(muhtari_libretro_testdb565 PRIVATE ${PROJECT_SOURCE_DIR}/libretro
+    ${PROJECT_SOURCE_DIR}/runner ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/generated)
+  target_link_libraries(muhtari_libretro_testdb565 PRIVATE muhtari_host)
+  set_target_properties(muhtari_libretro_testdb565 PROPERTIES PREFIX "" C_VISIBILITY_PRESET hidden
+    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  if(APPLE)
+    set_target_properties(muhtari_libretro_testdb565 PROPERTIES SUFFIX ".dylib")
+  endif()
+  muhtari_warnings(muhtari_libretro_testdb565)
+
   add_executable(muhtari-test-diag-testdb ${PROJECT_SOURCE_DIR}/tests/diag/driver.c
     ${PROJECT_SOURCE_DIR}/runner/sha256.c
     ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c

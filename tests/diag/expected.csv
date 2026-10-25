@@ -470,3 +470,11 @@ motion5c,scan5_port0_pairs,0,fit
 motion5c,scan5_port1_pairs,0,fit
 motion5c,scan5_normal_dirs,0,fit
 motion5c,scan5_normal_buttons,60,fit
+pal,startup_blank,128,fit
+pal,first_visible,0,guide
+pal,last_visible,0,guide
+pal,terminal_blank,128,guide
+pal,next_line_blank,128,guide
+pal,wrap_blank,128,guide
+pal,full_progress,600,fit
+pal,final_visible,0,guide
