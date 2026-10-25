@@ -167,7 +167,7 @@ static void resolve_all(void)
 
 static int rgb565; /* the mode: 0 xrgb8888, 1 rgb565 */
 static int no_game_calls, no_game_value;
-static int pixel_format_calls;
+static int pixel_format_calls, av_update_calls;
 static enum retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
 static int video_calls, video_null;
 static unsigned video_width, video_height;
@@ -206,10 +206,10 @@ static struct {
     const char *key;
     const char *value;
 } vars[] = {
-    {"muhtari_boot", "fast"},          {"muhtari_palette", "ntsc"},
+    {"muhtari_boot", "fast"},          {"muhtari_palette", "auto"},
     {"muhtari_left_difficulty", "B"},  {"muhtari_right_difficulty", "B"},
     {"muhtari_hsc", "auto"},           {"muhtari_battery_port1", "auto"},
-    {"muhtari_battery_port2", "auto"},
+    {"muhtari_battery_port2", "auto"}, {"muhtari_region", "auto"},
 };
 static bool vars_updated;
 
@@ -241,6 +241,11 @@ static void RETRO_CALLCONV host_log(enum retro_log_level level, const char *fmt,
 
 static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 {
+    if (cmd == RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO || cmd == RETRO_ENVIRONMENT_SET_GEOMETRY) {
+        av_update_calls++;
+        CHECK(0); /* Reload uses the frontend's after-load AV query. */
+        return false;
+    }
     if (cmd == RETRO_ENVIRONMENT_GET_LOG_INTERFACE) {
         ((struct retro_log_callback *)data)->log = host_log;
         return true;
@@ -349,7 +354,7 @@ static void RETRO_CALLCONV video(const void *data, unsigned width, unsigned heig
 }
 
 static int checking_audio;
-static int16_t expected_audio[801];
+static int16_t expected_audio[962];
 static uint32_t expected_count, audio_position;
 static void check_audio_sample(int16_t left, int16_t right)
 {
@@ -442,19 +447,20 @@ static void host_free(void *user, void *ptr, size_t size)
 /* Compares the captured frame with the palette of each native byte, read as
    a native-endian uint32_t, or uint16_t in rgb565 mode. Prints the first
    mismatch. */
-static void compare_frame(const uint8_t *native)
+static void compare_region_frame(const uint8_t *native, unsigned height, uint32_t palette)
 {
     uint32_t i, mismatches = 0;
-    for (i = 0; i < W * H; i++) {
+    for (i = 0; i < W * height; i++) {
         uint32_t want, got;
         if (rgb565) {
             uint16_t px;
             memcpy(&px, &frame[2u * i], sizeof px);
             got = px;
-            want = muhtari__palette_rgb565(native[i]);
+            uint32_t rgb = muhtari__palette_rgb_region(native[i], palette);
+            want = ((rgb >> 8) & 0xF800u) | ((rgb >> 5) & 0x07E0u) | ((rgb >> 3) & 0x1Fu);
         } else {
             memcpy(&got, &frame[4u * i], sizeof got);
-            want = muhtari__palette_rgb(native[i]);
+            want = muhtari__palette_rgb_region(native[i], palette);
         }
         if (got != want) {
             if (mismatches == 0) {
@@ -557,7 +563,7 @@ static void card(void)
         CHECK_EQ_U64(video_width, W);
         CHECK_EQ_U64(video_height, H);
         CHECK_EQ_U64(video_pitch, W * (rgb565 ? 2u : 4u));
-        compare_frame(native);
+        compare_region_frame(native, H, MUHTARI_REGION_NTSC);
         /* 800 or 801 stereo frames, as many as the library wrote, through
            the one path this mode allows. */
         if (io.audio_count != 800u && io.audio_count != 801u) {
@@ -572,15 +578,28 @@ static void card(void)
     CHECK_EQ_U64(batch_nonzero, 0);
     CHECK_EQ_U64(sample_nonzero, 0);
 
+    /* The test card contains all256 native colours. Explicit PAL presentation
+       must convert every colour while emulation remains the NTSC test card. */
+    set_var("muhtari_palette", "pal");
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    p_run();
+    compare_region_frame(native, H, MUHTARI_REGION_PAL);
+    bool seen[256] = {false};
+    for (unsigned px = 0u; px < W * H; px++)
+        seen[native[px]] = true;
+    for (unsigned colour = 0u; colour < 256u; colour++)
+        CHECK(seen[colour]);
+    CHECK_EQ_U64(p_get_region(), RETRO_REGION_NTSC);
+    set_var("muhtari_palette", "auto");
+
     /* Automatic PAL uses the actual loaded module and both audio callback
        paths. The owned loop leaves BACKGRND zero, including the last row. */
     static uint8_t pal[128u + 4096u];
     images_header(pal, 3u, "Owned PAL", 4096u, 0u);
     pal[57] = 1u;
     memset(pal + 128u, 0xEA, 4096u);
-    pal[128] = 0x4Cu;
-    pal[129] = 0u;
-    pal[130] = 0xF0u;
+    static const uint8_t program[] = {0xA9u, 0x46u, 0x85u, 0x20u, 0x4Cu, 0x04u, 0xF0u};
+    memcpy(pal + 128u, program, sizeof program);
     images_footer(pal + 128u, 4096u);
     struct retro_game_info game = {0};
     game.data = pal;
@@ -592,6 +611,9 @@ static void card(void)
     CHECK_EQ_U64(av.geometry.max_height, 293u);
     CHECK_EQ_DBL(av.timing.fps, 3546894.0 / 71051.0);
     CHECK_EQ_DBL(av.geometry.aspect_ratio, (float)(147500000.0 / 129461631.0));
+    CHECK(av.timing.fps > 49.9203 && av.timing.fps < 49.9205);
+    CHECK(av.geometry.aspect_ratio > 1.13933f && av.geometry.aspect_ratio < 1.13934f);
+    CHECK_EQ_DBL(av.timing.sample_rate, 48000.0);
     static const uint32_t pal_samples[] = {960u, 962u, 961u};
     for (unsigned f = 0u; f < 3u; f++) {
         memset(frame, 0xA5, sizeof frame);
@@ -613,9 +635,15 @@ static void card(void)
             } else {
                 memcpy(&got, frame + px * 4u, 4u);
             }
-            CHECK_EQ_U64(got, rgb565 ? muhtari__palette_rgb565(0u) : muhtari__palette_rgb(0u));
+            /* Warm PAL index46 is B0,57,46 (approved palette oracle).
+               Its independent RGB565 truncation is B2A8. */
+            if (got != (rgb565 ? 0xB2A8u : 0xB05746u)) {
+                CHECK_EQ_HEX(got, rgb565 ? 0xB2A8u : 0xB05746u);
+                break;
+            }
         }
     }
+    CHECK_EQ_U64(av_update_calls, 0u);
     p_unload_game();
     p_get_system_av_info(&av);
     CHECK_EQ_U64(p_get_region(), RETRO_REGION_NTSC);
