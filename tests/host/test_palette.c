@@ -60,10 +60,18 @@ static uint32_t blue(uint32_t rgb)
 
 int main(void)
 {
-    /* Before region selection exists the host's only lookup is the legacy
-       NTSC helper; this assertion exposes its wrong PAL hue. */
-    for (unsigned i = 0; i < 256; ++i)
-        CHECK_EQ_HEX(muhtari__palette_rgb((uint8_t)i), expected_pal[i]);
+    for (unsigned i = 0; i < 256; ++i) {
+        uint8_t index = (uint8_t)i;
+        uint16_t packed = muhtari__palette_rgb565_region(index, MUHTARI_REGION_PAL);
+        CHECK_EQ_HEX(muhtari__palette_rgb_region(index, MUHTARI_REGION_PAL), expected_pal[i]);
+        CHECK_EQ_HEX((packed >> 11) & 31u, red(expected_pal[i]) >> 3);
+        CHECK_EQ_HEX((packed >> 5) & 63u, green(expected_pal[i]) >> 2);
+        CHECK_EQ_HEX(packed & 31u, blue(expected_pal[i]) >> 3);
+        CHECK_EQ_HEX(muhtari__palette_rgb_region(index, MUHTARI_REGION_NTSC),
+                     muhtari__palette_rgb(index));
+        CHECK_EQ_HEX(muhtari__palette_rgb565_region(index, MUHTARI_REGION_NTSC),
+                     muhtari__palette_rgb565(index));
+    }
     /* The test card draws $46 as its red band and $C6 as its green band, so
        red must be the largest channel of $46 and green the largest of $C6. */
     uint32_t c46 = muhtari__palette_rgb(0x46);
