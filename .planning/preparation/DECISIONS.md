@@ -2,7 +2,7 @@
 title: "Decisions already made"
 summary: "One line per settled choice for muhtari, with its reason and the file and section that support it; open questions at the end."
 read_when: "Before reopening any choice, and whenever a phase needs to know what is settled. Reopen a decision only with new evidence, and record the change here with its date."
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 
 # Decisions already made
@@ -87,6 +87,7 @@ evidence. IDs use a dot (`DEC.07`) so they never collide with GSD's `D-NN` phase
 | DEC.52 | One aggregate `quality.json` ratchet with one check in v2.0; 2026-10-22: defer performance/compatibility domain-policy centralization and retain their legacy stores/judges with explicit lifecycle limitations | Two named constructions exceeded the fixed allocation; preserve semantic guards and budget, without claiming unified exception governance | ENGINEERING 8; .planning/phases/05-pipeline-tune-up/05-CONTEXT.md D-09, D-10, D-21–23 |
 | DEC.53 | Docs budgets: user-facing README ≤ 12 KB; maintainer docs in `docs/`; public header ≤ 24 KB; hardware facts graduate to `docs/hardware/` as subsystems land | Sibling README reached 114 KB | ENGINEERING 11 |
 | DEC.54 | Each milestone opens with a tune-up phase (CI efficiency, weakest quality dimension, ratchets, freshness, roadmap and coverage refresh) | The owner's recurring audits, automated | SEED-007; ENGINEERING 12 |
+| DEC.61 | Accepted 2026-10-24: retire only the historical compressed archive cutoff; keep required authenticated three-component measurements and package integrity. Recover workflow stalls with complete job auditing, measured timeouts, one state owner and bounded specialist synthesis | Separate owner-authorized review reproduced proxy-budget and CI reporting loops; the399937 historical minimum establishes no present capacity. No replacement quota or advisory promotion | ENGINEERING 11; .planning/research/workflow-recovery/RECOMMENDATION.md; GSD-HANDOFF 3.1 |
 
 ## Hosts and integration
 | ID | Decision | Because | See |

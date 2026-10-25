@@ -13,7 +13,7 @@
 #include "run_cart.h"
 
 #define RUN_SEED_BYTES 49152u
-#define RUN_SEEDS 29u
+#define RUN_SEEDS 38u
 
 static const char *const names[RUN_SEEDS] = {"zero-48k",
                                              "jam-48k",
@@ -43,7 +43,16 @@ static const char *const names[RUN_SEEDS] = {"zero-48k",
                                              "fractalus-long",
                                              "sg-a8",
                                              "bankset-a8",
-                                             "magic-linear"};
+                                             "magic-linear",
+                                             "typed-lightgun",
+                                             "typed-paddle",
+                                             "typed-keypad",
+                                             "typed-driving",
+                                             "typed-trakball",
+                                             "typed-st-mouse",
+                                             "typed-amiga-mouse",
+                                             "typed-snes",
+                                             "typed-mega"};
 
 uint32_t seeds_count(void)
 {
@@ -57,6 +66,12 @@ const char *seeds_name(uint32_t i)
 
 size_t seeds_build(uint32_t i, uint8_t *buf)
 {
+    if (i >= 29u) {
+        memset(buf, 0x02, RUN_SEED_BYTES);
+        buf[0] = (uint8_t)(i - 29u);
+        buf[1] = (uint8_t)(0xA5u + i);
+        return RUN_SEED_BYTES;
+    }
     static const uint8_t fills[3] = {0x00u, 0x02u, 0xFFu};
     if (i < 3u) {
         memset(buf, fills[i], RUN_SEED_BYTES);

@@ -26,6 +26,7 @@
 
 #include "internal.h"
 #include "palette.h"
+#include "../../runner/sha256.h"
 #ifdef DIAG_LIBRETRO
 #include "libretro.h"
 #ifdef _WIN32
@@ -512,7 +513,15 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "absolute") == 0   ? 11u
            : strcmp(rom, "fractalus") == 0  ? 12u
            : strcmp(rom, "battery") == 0    ? 13u
-                                            : 0u;
+           : (strlen(rom) == 8u && strncmp(rom, "motion", 6u) == 0 &&
+              (rom[6] == '4' || rom[6] == '5') && rom[7] >= 'a' && rom[7] <= 'c')
+               ? 14u
+           : (strncmp(rom, "motion", 6u) == 0 && strlen(rom) == 7u && rom[6] >= '0' &&
+              rom[6] <= '3')
+               ? 14u
+           : strcmp(rom, "light0") == 0                                   ? 15u
+           : (strcmp(rom, "analog0") == 0 || strcmp(rom, "analog1") == 0) ? 16u
+                                                                          : 0u;
 }
 
 static uint16_t retail_crc(const uint8_t mb[256])
@@ -533,7 +542,10 @@ static int retail_judge(const uint8_t mb[256], const char *rom)
     if (retail_id(rom) == 0u || count == 0u || count > 27u || memcmp(mb, "M7DG", 4u) != 0 ||
         mb[4] != 1u || mb[5] != 0u || mb[6] != count || mb[7] != retail_id(rom) ||
         ((uint32_t)mb[8] | ((uint32_t)mb[9] << 8)) != retail_crc(mb)) {
-        fprintf(stderr, "%s: invalid mailbox header/count/CRC\n", rom);
+        fprintf(stderr,
+                "%s: invalid mailbox header/count/CRC (count %u expected %u, identity %u expected "
+                "%u)\n",
+                rom, (unsigned)mb[6], (unsigned)count, (unsigned)mb[7], (unsigned)retail_id(rom));
         return 1;
     }
     for (uint32_t i = 0; i < count; i++) {
@@ -584,6 +596,363 @@ static int retail_mailbox(const char *path, const char *rom, const char *expecte
         }
     }
     return retail_expected(expected, rom) != 0 || retail_judge(mb, rom) != 0;
+}
+
+/* Fixed stimulus, derived before execution in controllers.md, Motion diagnostic.
+   The two connectors move in opposite directions and fire on different frames. */
+#define CONTROLLER_FRAMES 12u
+#define CONTROLLER_PIXELS (320u * 242u)
+static uint8_t *controller_pixels;
+static int16_t controller_pcm[CONTROLLER_FRAMES][801];
+static uint32_t controller_counts[CONTROLLER_FRAMES];
+static muhtari__sha256 controller_raw;
+static int controller_light;
+static int controller_analog;
+static int controller_keypad;
+static unsigned controller_motion;
+static unsigned controller_adapter, controller_group;
+
+static const char *controller_motion_tag(void)
+{
+    return controller_motion == 1u   ? "trakball"
+           : controller_motion == 2u ? "st-mouse"
+                                     : "amiga-mouse";
+}
+
+static uint32_t controller_motion_device(void)
+{
+    return controller_motion == 1u   ? MUHTARI_PORT_TRAKBALL
+           : controller_motion == 2u ? MUHTARI_PORT_ST_MOUSE
+                                     : MUHTARI_PORT_AMIGA_MOUSE;
+}
+
+static const char *controller_name(void)
+{
+    static char adapter_name[9];
+    if (controller_adapter != 0u) {
+        snprintf(adapter_name, sizeof adapter_name, "motion%u%c", controller_adapter + 3u,
+                 (int)('a' + controller_group));
+        return adapter_name;
+    }
+    return controller_motion == 1u   ? "motion1"
+           : controller_motion == 2u ? "motion2"
+           : controller_motion == 3u ? "motion3"
+           : controller_keypad       ? "analog1"
+           : controller_analog       ? "analog0"
+           : controller_light        ? "light0"
+                                     : "motion0";
+}
+
+static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
+{
+    memset(in, 0, sizeof *in);
+    in->size = (uint32_t)sizeof *in;
+    if (controller_adapter != 0u) {
+        static const uint32_t buttons[2][12] = {
+            {16u, 64u, 1024u, 2048u, 1u, 2u, 4u, 8u, 32u, 128u, 256u, 512u},
+            {64u, 16u, 2048u, 32u, 256u, 512u, 1024u, 128u, 1u, 2u, 4u, 8u}};
+        in->port[0].device = in->port[1].device =
+            controller_adapter == 1u ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800;
+        in->switches = (frame <= 2u ? MUHTARI_SWITCH_PAUSE |
+                                          (controller_adapter == 2u ? MUHTARI_SWITCH_RESET : 0u)
+                                    : 0u) |
+                       (controller_group == 1u ? MUHTARI_SWITCH_LEFT_DIFFICULTY_A : 0u) |
+                       (controller_group == 2u ? MUHTARI_SWITCH_RIGHT_DIFFICULTY_A : 0u);
+        for (unsigned p = 0u; p < 2u; p++)
+            in->port[p].buttons =
+                frame >= 3u && frame <= 6u
+                    ? buttons[controller_adapter - 1u]
+                             [controller_group * 4u + (p == 0u ? frame - 3u : 6u - frame)]
+                : frame == 8u ? 4095u
+                              : 0u;
+        return;
+    }
+    if (controller_motion != 0u) {
+        in->port[0].device = in->port[1].device = controller_motion_device();
+        in->switches = frame <= 2u ? controller_motion : 0u;
+        if (frame == 3u) {
+            in->port[0].dx = 4;
+            in->port[1].dx = -4;
+            in->port[0].buttons = MUHTARI_BUTTON_1;
+        } else if (frame == 4u || frame == 5u) {
+            in->port[0].dx = frame == 4u ? -1 : 0;
+            in->port[1].dx = frame == 4u ? 1 : 0;
+            in->port[1].buttons = MUHTARI_BUTTON_1;
+        } else if (frame == 6u || frame == 7u) {
+            in->port[0].dy = frame == 6u ? 4 : -1;
+            in->port[1].dy = frame == 6u ? -4 : 1;
+            if (controller_motion != 1u)
+                in->port[0].buttons = in->port[1].buttons = MUHTARI_BUTTON_2;
+        }
+        return;
+    }
+    if (controller_keypad) {
+        in->port[0].device = in->port[1].device = MUHTARI_PORT_KEYPAD;
+        in->port[0].keypad = in->port[1].keypad = frame <= 3u   ? 15u
+                                                  : frame == 5u ? 4095u
+                                                  : frame == 6u ? 36u
+                                                                : 0u;
+        in->switches = frame <= 2u ? MUHTARI_SWITCH_RESET : 0u;
+        return;
+    }
+    if (controller_analog) {
+        in->port[0].device = in->port[1].device = MUHTARI_PORT_PADDLE;
+        in->port[0].paddle[0] = frame < 6u ? 0u : 65535u;
+        in->port[0].paddle[1] = frame < 6u ? 65535u : 0u;
+        in->port[1].paddle[0] = frame < 6u ? 32767u : 0u;
+        in->port[1].paddle[1] = frame < 6u ? 32768u : 65535u;
+        if (frame == 3u || frame == 4u) {
+            in->port[0].buttons = MUHTARI_BUTTON_1;
+            in->port[1].buttons = MUHTARI_BUTTON_2;
+        } else if (frame == 5u || frame == 6u) {
+            in->port[0].buttons = MUHTARI_BUTTON_2;
+            in->port[1].buttons = MUHTARI_BUTTON_1;
+        }
+        return;
+    }
+    if (controller_light) {
+        in->port[0].device = in->port[1].device = MUHTARI_PORT_LIGHTGUN;
+        for (unsigned p = 0u; p < 2u; p++) {
+            in->port[p].gun_x = frame == 6u ? (p == 0u ? 0u : 319u) : 159u;
+            in->port[p].gun_y = frame == 6u ? (p == 0u ? 0u : 241u) : 120u;
+            in->port[p].flags = frame == 7u || (p == 1u && (frame == 4u || frame == 5u))
+                                    ? MUHTARI_INPUT_GUN_OFFSCREEN
+                                    : 0u;
+        }
+        in->port[0].buttons = frame == 3u ? MUHTARI_BUTTON_1 : 0u;
+        in->port[1].buttons = frame == 4u || frame == 5u ? MUHTARI_BUTTON_1 : 0u;
+        return;
+    }
+    in->port[0].device = in->port[1].device = MUHTARI_PORT_DRIVING;
+    if (frame == 3u) {
+        in->port[0].dx = 4;
+        in->port[1].dx = -4;
+        in->port[0].buttons = MUHTARI_BUTTON_1;
+    } else if (frame == 4u || frame == 5u) {
+        in->port[0].dx = frame == 4u ? -1 : 0;
+        in->port[1].dx = frame == 4u ? 1 : 0;
+        in->port[1].buttons = MUHTARI_BUTTON_1;
+    }
+}
+
+static void controller_raw_sample(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    uint8_t bytes[11];
+    for (unsigned i = 0u; i < 8u; i++)
+        bytes[i] = (uint8_t)(tick >> (8u * i));
+    bytes[8] = source;
+    bytes[9] = (uint8_t)raw;
+    bytes[10] = (uint8_t)(raw >> 8);
+    muhtari__sha256_update(user, bytes, sizeof bytes);
+}
+
+static void controller_digest(FILE *f, const char *key, muhtari__sha256 *hash)
+{
+    uint8_t bytes[32];
+    char hex[65];
+    muhtari__sha256_final(hash, bytes);
+    muhtari__sha256_hex(bytes, hex);
+    fprintf(f, "%s %s\n", key, hex);
+}
+
+static int controller_library(const char *path, const char *expected, const char *out)
+{
+    size_t n = 0u;
+    uint8_t *image = read_file(path, &n);
+    muhtari_config cfg = {0};
+    muhtari_media media = {0};
+    muhtari *m = NULL;
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = diag_alloc;
+    cfg.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = n;
+    media.port[0] = media.port[1] =
+        controller_adapter != 0u
+            ? (controller_adapter == 1u ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800)
+        : controller_motion != 0u ? controller_motion_device()
+        : controller_keypad       ? MUHTARI_PORT_KEYPAD
+        : controller_analog       ? MUHTARI_PORT_PADDLE
+        : controller_light        ? MUHTARI_PORT_LIGHTGUN
+                                  : MUHTARI_PORT_DRIVING;
+    muhtari__sha256_init(&controller_raw);
+    int failed =
+        image == NULL || retail_expected(expected, controller_name()) != 0 ||
+        muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK ||
+        muhtari__synth_observe(m, controller_raw_sample, &controller_raw) != MUHTARI_STATUS_OK ||
+        muhtari_load(m, &media) != MUHTARI_STATUS_OK;
+    for (unsigned f = 0u; f < CONTROLLER_FRAMES && !failed; f++) {
+        muhtari_input_ex in;
+        controller_stimulus(f + 1u, &in);
+        muhtari_frame io = {0};
+        io.size = (uint32_t)sizeof io;
+        io.video = controller_pixels + f * CONTROLLER_PIXELS;
+        io.video_pitch = 320u;
+        io.audio = controller_pcm[f];
+        io.audio_capacity = 801u;
+        failed = ((f != 4u || controller_analog || controller_keypad || controller_adapter) &&
+                  muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK) ||
+                 muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        controller_counts[f] = io.audio_count;
+    }
+    uint8_t mb[256];
+    if (!failed) {
+        for (unsigned i = 0u; i < 256u; i++)
+            mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
+        failed = retail_judge(mb, controller_name());
+    }
+    /* Numeric judgment precedes all equality evidence. */
+    if (!failed) {
+        char name[4096];
+        /* Real report consumers must reject even CRC-valid numeric faults. */
+        for (unsigned fault = 0u; fault < (controller_adapter != 0u  ? 8u
+                                           : controller_motion != 0u ? 9u
+                                           : controller_keypad       ? 7u
+                                                                     : 5u);
+             fault++) {
+            uint8_t bad[256];
+            memcpy(bad, mb, sizeof bad);
+            static const unsigned offsets[] = {4u, 6u, 20u, 38u, 8u, 122u, 120u, 86u, 38u};
+            if (controller_adapter == 0u || fault < 5u)
+                bad[offsets[fault]] ^= 1u;
+            if (controller_adapter != 0u && fault >= 5u) {
+                if (fault == 5u) { /* Missing 17th bit / wrong identification. */
+                    bad[controller_adapter == 1u ? 30u : 27u] ^= 1u;
+                } else if (fault == 6u) { /* Adjacent pair/serial fields exchanged. */
+                    if (controller_adapter == 2u) {
+                        if (controller_group == 2u)
+                            bad[34] = (uint8_t)((bad[34] << 4) | (bad[34] >> 4));
+                        else if (controller_group == 0u)
+                            bad[26] = (uint8_t)(((bad[26] & 192u) >> 2) | ((bad[26] & 48u) << 2) |
+                                                (bad[26] & 15u));
+                        else
+                            bad[26] = (uint8_t)(((bad[26] & 12u) >> 2) | ((bad[26] & 3u) << 2) |
+                                                (bad[26] & 240u));
+                    } else {
+                        unsigned other = controller_adapter == 1u ? 34u : 30u;
+                        uint8_t tmp = bad[26];
+                        bad[26] = bad[other];
+                        bad[other] = tmp;
+                        tmp = bad[27];
+                        bad[27] = bad[other + 1u];
+                        bad[other + 1u] = tmp;
+                    }
+                } else { /* Last scan omitted, even with recomputed CRC. */
+                    bad[6]--;
+                }
+            }
+            if (controller_motion != 0u && fault == 7u)
+                bad[86] = 0xD7u; /* X tuple substituted for independently expected Y. */
+            if (controller_motion != 0u && fault == 8u)
+                bad[38] = controller_motion == 3u ? 0xDEu : 0xD7u; /* Wrong family. */
+            if (fault != 4u) {
+                uint16_t crc = retail_crc(bad);
+                bad[8] = (uint8_t)crc;
+                bad[9] = (uint8_t)(crc >> 8);
+            }
+            snprintf(name, sizeof name, "%s/fault-%u.txt", out, fault);
+            FILE *bad_file = fopen(name, "wb");
+            if (bad_file == NULL) {
+                failed = 1;
+                break;
+            }
+            fputs("diagnostic ", bad_file);
+            for (unsigned i = 0u; i < 256u; i++)
+                fprintf(bad_file, "%02x", (unsigned)bad[i]);
+            fputc('\n', bad_file);
+            failed |= ferror(bad_file) != 0;
+            failed |= fclose(bad_file) != 0;
+        }
+        snprintf(name, sizeof name, "%s/reference.txt", out);
+        FILE *f = fopen(name, "wb");
+        if (f == NULL)
+            failed = 1;
+        else {
+            muhtari__sha256 pcm, raw = controller_raw;
+            muhtari__sha256_init(&pcm);
+            uint32_t samples = 0u;
+            for (unsigned i = 0u; i < CONTROLLER_FRAMES; i++) {
+                char key[64];
+                muhtari__sha256 video_hash;
+                muhtari__sha256_init(&video_hash);
+                muhtari__sha256_update(&video_hash, controller_pixels + i * CONTROLLER_PIXELS,
+                                       CONTROLLER_PIXELS);
+                snprintf(key, sizeof key, "frame %u sha256", i + 1u);
+                controller_digest(f, key, &video_hash);
+                samples += controller_counts[i];
+                for (unsigned j = 0u; j < controller_counts[i]; j++) {
+                    uint16_t v = (uint16_t)controller_pcm[i][j];
+                    uint8_t bytes[2] = {(uint8_t)v, (uint8_t)(v >> 8)};
+                    muhtari__sha256_update(&pcm, bytes, sizeof bytes);
+                }
+            }
+            controller_digest(f, "audio_transitions_sha256", &raw);
+            controller_digest(f, "audio_pcm_sha256", &pcm);
+            fprintf(f, "audio_frames %u\naudio_samples %u\n", CONTROLLER_FRAMES, samples);
+            failed |= ferror(f) != 0;
+            failed |= fclose(f) != 0;
+        }
+        snprintf(name, sizeof name, "%s/input.txt", out);
+        f = fopen(name, "wb");
+        if (f == NULL)
+            failed = 1;
+        else {
+            fprintf(
+                f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
+                controller_adapter != 0u  ? (controller_adapter == 1u ? "snes2atari" : "mega7800")
+                : controller_motion != 0u ? controller_motion_tag()
+                : controller_keypad       ? "keypad"
+                : controller_analog       ? "paddle"
+                : controller_light        ? "lightgun"
+                                          : "driving",
+                controller_adapter != 0u  ? (controller_adapter == 1u ? "snes2atari" : "mega7800")
+                : controller_motion != 0u ? controller_motion_tag()
+                : controller_keypad       ? "keypad"
+                : controller_analog       ? "paddle"
+                : controller_light        ? "lightgun"
+                                          : "driving");
+            for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
+                muhtari_input_ex in;
+                controller_stimulus(i, &in);
+                if (controller_adapter != 0u) {
+                    const char *tag = controller_adapter == 1u ? "snes2atari" : "mega7800";
+                    fprintf(f, "|%s:%u|%s:%u|%c.%c%c%c|\n", tag, in.port[0].buttons, tag,
+                            in.port[1].buttons, (in.switches & MUHTARI_SWITCH_RESET) ? 'R' : '.',
+                            (in.switches & MUHTARI_SWITCH_PAUSE) ? 'P' : '.',
+                            controller_group == 1u ? 'A' : 'B', controller_group == 2u ? 'A' : 'B');
+                } else if (controller_motion != 0u) {
+                    static const char *switches[] = {"...BB", "R..BB", ".S.BB", "RS.BB"};
+                    fprintf(f, "|%s:%d,%d,%u|%s:%d,%d,%u|%s|\n", controller_motion_tag(),
+                            in.port[0].dx, in.port[0].dy, in.port[0].buttons >> 4,
+                            controller_motion_tag(), in.port[1].dx, in.port[1].dy,
+                            in.port[1].buttons >> 4, switches[in.switches]);
+                } else if (controller_keypad) {
+                    fprintf(f, "|keypad:%u|keypad:%u|%s|\n", in.port[0].keypad, in.port[1].keypad,
+                            in.switches != 0u ? "R..BB" : "...BB");
+                } else if (controller_analog) {
+                    fprintf(f, "|paddle:%u,%u,%u|paddle:%u,%u,%u|...BB|\n", in.port[0].paddle[0],
+                            in.port[0].paddle[1], (in.port[0].buttons >> 4) & 3u,
+                            in.port[1].paddle[0], in.port[1].paddle[1],
+                            (in.port[1].buttons >> 4) & 3u);
+                } else if (controller_light) {
+                    fprintf(f, "|lightgun:%u,%u,%u|lightgun:%u,%u,%u|...BB|\n", in.port[0].gun_x,
+                            in.port[0].gun_y,
+                            in.port[0].flags * 2u + (in.port[0].buttons != 0u ? 1u : 0u),
+                            in.port[1].gun_x, in.port[1].gun_y,
+                            in.port[1].flags * 2u + (in.port[1].buttons != 0u ? 1u : 0u));
+                } else
+                    fprintf(f, "|driving:%d,0,%u|driving:%d,0,%u|...BB|\n", in.port[0].dx,
+                            in.port[0].buttons != 0u ? 1u : 0u, in.port[1].dx,
+                            in.port[1].buttons != 0u ? 1u : 0u);
+            }
+            failed |= ferror(f) != 0;
+            failed |= fclose(f) != 0;
+        }
+    }
+    muhtari_destroy(m);
+    free(image);
+    return failed;
 }
 
 static int retail_library(const uint8_t *image, size_t n, const char *rom)
@@ -643,7 +1012,7 @@ static int retail_transaction(uint8_t *image)
     muhtari_versions versions = {0};
     versions.size = (uint32_t)sizeof versions;
     if (muhtari_get_versions(&versions) != MUHTARI_STATUS_OK || versions.abi != 1u ||
-        versions.behaviour_revision != 4u) {
+        versions.behaviour_revision != 5u) {
         return 1;
     }
     muhtari_config cfg = {0};
@@ -804,6 +1173,17 @@ static int retail_smoke(const char *path)
 static const struct retro_memory_map *retail_map;
 static bool RETRO_CALLCONV retail_env(unsigned cmd, void *data)
 {
+    if (controller_adapter != 0u && cmd == RETRO_ENVIRONMENT_GET_VARIABLE) {
+        struct retro_variable *v = data;
+        if (strcmp(v->key, "muhtari_left_difficulty") == 0) {
+            v->value = controller_group == 1u ? "A" : "B";
+            return true;
+        }
+        if (strcmp(v->key, "muhtari_right_difficulty") == 0) {
+            v->value = controller_group == 2u ? "A" : "B";
+            return true;
+        }
+    }
     if (cmd == RETRO_ENVIRONMENT_SET_MEMORY_MAPS) {
         retail_map = (const struct retro_memory_map *)data;
         return true;
@@ -961,11 +1341,467 @@ static int retail_libretro(const char *module_path, const char *path, const char
     free(image);
     return failed;
 }
+
+static unsigned controller_frame, controller_errors, controller_videos, controller_audios;
+static const uint8_t *(*controller_native)(void);
+static int controller_gun_edges;
+static int16_t controller_gun_values[17];
+static unsigned controller_gun_queries[2][17];
+static int controller_paddle_edges;
+static int16_t controller_paddle_values[2];
+static int controller_keypad_edges;
+static uint32_t controller_keypad_mask;
+static int controller_mouse_edges;
+static int16_t controller_mouse_values[11];
+static unsigned controller_mouse_queries[2][11];
+
+static void RETRO_CALLCONV controller_poll(void)
+{
+    controller_frame++;
+}
+
+static int16_t RETRO_CALLCONV controller_input(unsigned p, unsigned d, unsigned i, unsigned id)
+{
+    muhtari_input_ex in;
+    controller_stimulus(controller_frame, &in);
+    if (controller_adapter != 0u) {
+        static const unsigned ids[2][12] = {
+            {RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_SELECT,
+             RETRO_DEVICE_ID_JOYPAD_START, RETRO_DEVICE_ID_JOYPAD_UP, RETRO_DEVICE_ID_JOYPAD_DOWN,
+             RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT, RETRO_DEVICE_ID_JOYPAD_A,
+             RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_R},
+            {RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_START,
+             RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_R,
+             RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_UP,
+             RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_LEFT,
+             RETRO_DEVICE_ID_JOYPAD_RIGHT}};
+        static const uint32_t masks[2][12] = {
+            {16u, 64u, 1024u, 2048u, 1u, 2u, 4u, 8u, 32u, 128u, 256u, 512u},
+            {64u, 16u, 2048u, 32u, 256u, 512u, 1024u, 128u, 1u, 2u, 4u, 8u}};
+        if (p >= 2u || d != RETRO_DEVICE_JOYPAD || i != 0u) {
+            controller_errors++;
+            return 0;
+        }
+        for (unsigned k = 0u; k < 12u; k++)
+            if (id == ids[controller_adapter - 1u][k])
+                return (in.port[p].buttons & masks[controller_adapter - 1u][k]) != 0u;
+        return p == 0u &&
+               ((id == RETRO_DEVICE_ID_JOYPAD_L2 && (in.switches & MUHTARI_SWITCH_PAUSE)) ||
+                (id == RETRO_DEVICE_ID_JOYPAD_L3 && (in.switches & MUHTARI_SWITCH_RESET)));
+    }
+    if (controller_keypad) {
+        static const unsigned ids[12] = {RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_UP,
+                                         RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_LEFT,
+                                         RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_RIGHT,
+                                         RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_DOWN,
+                                         RETRO_DEVICE_ID_JOYPAD_R, RETRO_DEVICE_ID_JOYPAD_SELECT,
+                                         RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_START};
+        if (p >= 2u || d != RETRO_DEVICE_JOYPAD || i != 0u) {
+            controller_errors++;
+            return 0;
+        }
+        uint32_t mask = controller_keypad_edges ? controller_keypad_mask : in.port[p].keypad;
+        for (unsigned key = 0u; key < 12u; key++)
+            if (id == ids[key])
+                return (mask & (1u << key)) != 0u;
+        return id == RETRO_DEVICE_ID_JOYPAD_L3 && in.switches != 0u && !controller_keypad_edges;
+    }
+    if (controller_analog) {
+        if (p >= 2u) {
+            controller_errors++;
+            return 0;
+        }
+        if (d == RETRO_DEVICE_ANALOG && i <= RETRO_DEVICE_INDEX_ANALOG_RIGHT &&
+            id == RETRO_DEVICE_ID_ANALOG_X) {
+            if (controller_paddle_edges)
+                return controller_paddle_values[i];
+            return (int16_t)((int32_t)in.port[p].paddle[i] - 32768);
+        }
+        if (d != RETRO_DEVICE_JOYPAD || i != 0u) {
+            controller_errors++;
+            return 0;
+        }
+        if (id == RETRO_DEVICE_ID_JOYPAD_B)
+            return (in.port[p].buttons & MUHTARI_BUTTON_1) != 0u;
+        if (id == RETRO_DEVICE_ID_JOYPAD_A)
+            return (in.port[p].buttons & MUHTARI_BUTTON_2) != 0u;
+        return 0;
+    }
+    if (controller_light) {
+        if (p >= 2u || d != RETRO_DEVICE_LIGHTGUN || i != 0u || id >= 17u) {
+            controller_errors++;
+            return 0;
+        }
+        controller_gun_queries[p][id]++;
+        if (id == RETRO_DEVICE_ID_LIGHTGUN_X || id == RETRO_DEVICE_ID_LIGHTGUN_Y ||
+            id == RETRO_DEVICE_ID_LIGHTGUN_PAUSE)
+            controller_errors++;
+        if (controller_gun_edges)
+            return controller_gun_values[id];
+        if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X)
+            return in.port[p].gun_x == 0u ? -32767 : in.port[p].gun_x == 319u ? 32767 : 0;
+        if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y)
+            return in.port[p].gun_y == 0u ? -32767 : in.port[p].gun_y == 241u ? 32767 : 0;
+        if (id == RETRO_DEVICE_ID_LIGHTGUN_TRIGGER)
+            return in.port[p].buttons != 0u ? 1 : 0;
+        return id == RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN && in.port[p].flags != 0u ? 1 : 0;
+    }
+    if (p >= 2u || d != RETRO_DEVICE_MOUSE || i != 0u || id >= 11u) {
+        controller_errors++;
+        return 0;
+    }
+    controller_mouse_queries[p][id]++;
+    if (controller_mouse_edges)
+        return controller_mouse_values[id];
+    if (id == RETRO_DEVICE_ID_MOUSE_X)
+        return (int16_t)in.port[p].dx;
+    if (id == RETRO_DEVICE_ID_MOUSE_Y)
+        return (int16_t)in.port[p].dy;
+    if (id == RETRO_DEVICE_ID_MOUSE_LEFT)
+        return (in.port[p].buttons & MUHTARI_BUTTON_1) != 0u;
+    if (controller_motion != 0u && id == RETRO_DEVICE_ID_MOUSE_RIGHT)
+        return (in.port[p].buttons & MUHTARI_BUTTON_2) != 0u;
+    if (controller_motion != 0u && p == 0u) {
+        if (id == RETRO_DEVICE_ID_MOUSE_BUTTON_4)
+            return (in.switches & MUHTARI_SWITCH_SELECT) != 0u;
+        if (id == RETRO_DEVICE_ID_MOUSE_BUTTON_5)
+            return (in.switches & MUHTARI_SWITCH_RESET) != 0u;
+    }
+    return 0;
+}
+
+static void RETRO_CALLCONV controller_video(const void *data, unsigned w, unsigned h, size_t pitch)
+{
+    controller_videos++;
+    if (controller_frame == 0u || controller_frame > CONTROLLER_FRAMES || data == NULL ||
+        w != 320u || h != 242u || pitch != 320u * sizeof(uint32_t)) {
+        controller_errors++;
+        return;
+    }
+    const uint8_t *expected = controller_pixels + (controller_frame - 1u) * CONTROLLER_PIXELS;
+    const uint8_t *native_bytes = controller_native();
+    if (native_bytes == NULL || memcmp(native_bytes, expected, CONTROLLER_PIXELS) != 0)
+        controller_errors++;
+    /* Public pixels are judged separately from the actual native bytes. */
+    for (unsigned y = 0u; y < 242u; y++)
+        for (unsigned x = 0u; x < 320u; x++) {
+            uint32_t pixel;
+            memcpy(&pixel, (const uint8_t *)data + y * pitch + x * sizeof pixel, sizeof pixel);
+            if (pixel != muhtari__palette_rgb(expected[y * 320u + x]))
+                controller_errors++;
+        }
+}
+
+static size_t RETRO_CALLCONV controller_audio(const int16_t *data, size_t frames)
+{
+    controller_audios++;
+    if (controller_frame == 0u || controller_frame > CONTROLLER_FRAMES ||
+        frames != controller_counts[controller_frame - 1u]) {
+        controller_errors++;
+        return frames;
+    }
+    for (size_t i = 0u; i < frames; i++) {
+        int16_t expected = controller_pcm[controller_frame - 1u][i];
+        if (data[2u * i] != expected || data[2u * i + 1u] != expected)
+            controller_errors++;
+    }
+    return frames;
+}
+
+static int controller_module(const char *module_path, const char *path)
+{
+    size_t n = 0u;
+    uint8_t *image = read_file(path, &n);
+#ifdef _WIN32
+    HMODULE module = LoadLibraryA(module_path);
+#define CONTROLLER_SYMBOL(key) FARPROC symbol = GetProcAddress(module, key)
+#define CONTROLLER_CLOSE() FreeLibrary(module)
+#else
+    void *module = dlopen(module_path, RTLD_NOW);
+#define CONTROLLER_SYMBOL(key) void *symbol = dlsym(module, key)
+#define CONTROLLER_CLOSE() ((void)dlclose(module))
+#endif
+    if (module == NULL || image == NULL) {
+        if (module != NULL)
+            CONTROLLER_CLOSE();
+        free(image);
+        return 1;
+    }
+#define CONTROLLER_LOAD(name, key, result, args)                                                   \
+    result(RETRO_CALLCONV *name) args;                                                             \
+    {                                                                                              \
+        CONTROLLER_SYMBOL(key);                                                                    \
+        if (symbol == NULL) {                                                                      \
+            CONTROLLER_CLOSE();                                                                    \
+            free(image);                                                                           \
+            return 1;                                                                              \
+        }                                                                                          \
+        memcpy(&name, &symbol, sizeof name);                                                       \
+    }
+    CONTROLLER_LOAD(set_environment, "retro_set_environment", void, (retro_environment_t));
+    CONTROLLER_LOAD(set_video, "retro_set_video_refresh", void, (retro_video_refresh_t));
+    CONTROLLER_LOAD(set_audio, "retro_set_audio_sample_batch", void, (retro_audio_sample_batch_t));
+    CONTROLLER_LOAD(set_poll, "retro_set_input_poll", void, (retro_input_poll_t));
+    CONTROLLER_LOAD(set_input, "retro_set_input_state", void, (retro_input_state_t));
+    CONTROLLER_LOAD(set_device, "retro_set_controller_port_device", void, (unsigned, unsigned));
+    CONTROLLER_LOAD(init, "retro_init", void, (void));
+    CONTROLLER_LOAD(deinit, "retro_deinit", void, (void));
+    CONTROLLER_LOAD(load, "retro_load_game", bool, (const struct retro_game_info *));
+    CONTROLLER_LOAD(unload, "retro_unload_game", void, (void));
+    CONTROLLER_LOAD(run_frame, "retro_run", void, (void));
+    CONTROLLER_LOAD(instance, "muhtari__libretro_instance", muhtari *, (void));
+    CONTROLLER_LOAD(observe, "muhtari__libretro_observe", void, (muhtari__audio_observer, void *));
+    CONTROLLER_LOAD(native_bytes, "muhtari__libretro_native", const uint8_t *, (void));
+#undef CONTROLLER_LOAD
+    controller_native = native_bytes;
+    controller_frame = controller_errors = controller_videos = controller_audios = 0u;
+    muhtari__sha256 raw;
+    muhtari__sha256_init(&raw);
+    set_environment(retail_env);
+    set_video(controller_video);
+    set_audio(controller_audio);
+    set_poll(controller_poll);
+    set_input(controller_input);
+    init();
+    observe(controller_raw_sample, &raw);
+    unsigned selected = controller_adapter != 0u
+                            ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, controller_adapter + 4u)
+                        : controller_motion != 0u
+                            ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, controller_motion)
+                        : controller_keypad ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)
+                        : controller_analog ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)
+                        : controller_light  ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
+                                            : RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0);
+    controller_gun_edges = 0;
+    controller_paddle_edges = 0;
+    controller_keypad_edges = 0;
+    controller_mouse_edges = 0;
+    set_device(0u, selected);
+    set_device(1u, selected);
+    struct retro_game_info game = {path, image, n, NULL};
+    int failed = !load(&game);
+    if (!failed) {
+        for (unsigned i = 0u; i < CONTROLLER_FRAMES; i++)
+            run_frame();
+        muhtari *m = instance();
+        uint8_t mb[256];
+        if (m == NULL)
+            failed = 1;
+        else {
+            for (unsigned i = 0u; i < 256u; i++)
+                mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
+            failed = retail_judge(mb, controller_name());
+        }
+        /* Raw transition stream is observed, including load-time events;
+           silence means the actual empty stream, never an inferred pass. */
+        uint8_t a[32], b[32];
+        muhtari__sha256 expected_raw = controller_raw;
+        muhtari__sha256_final(&raw, a);
+        muhtari__sha256_final(&expected_raw, b);
+        failed |= memcmp(a, b, sizeof a) != 0 || controller_errors != 0u ||
+                  controller_videos != CONTROLLER_FRAMES || controller_audios != CONTROLLER_FRAMES;
+        if (!failed && controller_motion != 0u) {
+            set_video(NULL);
+            set_audio(NULL);
+            controller_mouse_edges = 1;
+            for (unsigned v = 0u; v < 12u; v++) {
+                memset(controller_mouse_values, 0, sizeof controller_mouse_values);
+                controller_mouse_values[RETRO_DEVICE_ID_MOUSE_X] = v == 0u   ? INT16_MIN
+                                                                   : v == 1u ? INT16_MAX
+                                                                             : -1;
+                controller_mouse_values[RETRO_DEVICE_ID_MOUSE_Y] = v == 0u   ? INT16_MAX
+                                                                   : v == 1u ? INT16_MIN
+                                                                             : 1;
+                if (v >= 2u)
+                    controller_mouse_values[v - 2u] = 1;
+                memset(controller_mouse_queries, 0, sizeof controller_mouse_queries);
+                unsigned before = controller_frame;
+                run_frame();
+                failed |= controller_frame != before + 1u;
+                bool left = controller_mouse_values[RETRO_DEVICE_ID_MOUSE_LEFT] != 0;
+                bool right = controller_mouse_values[RETRO_DEVICE_ID_MOUSE_RIGHT] != 0;
+                uint32_t buttons = controller_motion == 1u ? (left || right ? MUHTARI_BUTTON_1 : 0u)
+                                                           : (left ? MUHTARI_BUTTON_1 : 0u) |
+                                                                 (right ? MUHTARI_BUTTON_2 : 0u);
+                for (unsigned p = 0u; p < 2u; p++) {
+                    const muhtari_port_input *in = &m->ports.applied_ex.port[p];
+                    failed |= in->device != controller_motion_device() ||
+                              in->dx != controller_mouse_values[RETRO_DEVICE_ID_MOUSE_X] ||
+                              in->dy != controller_mouse_values[RETRO_DEVICE_ID_MOUSE_Y] ||
+                              in->buttons != buttons;
+                    for (unsigned id = 0u; id < 11u; id++) {
+                        bool used =
+                            id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y ||
+                            id == RETRO_DEVICE_ID_MOUSE_LEFT || id == RETRO_DEVICE_ID_MOUSE_RIGHT ||
+                            (p == 0u && (id == RETRO_DEVICE_ID_MOUSE_MIDDLE ||
+                                         id == RETRO_DEVICE_ID_MOUSE_BUTTON_4 ||
+                                         id == RETRO_DEVICE_ID_MOUSE_BUTTON_5));
+                        failed |= controller_mouse_queries[p][id] != (used ? 1u : 0u);
+                    }
+                }
+                uint32_t switches =
+                    (controller_mouse_values[RETRO_DEVICE_ID_MOUSE_MIDDLE] ? MUHTARI_SWITCH_PAUSE
+                                                                           : 0u) |
+                    (controller_mouse_values[RETRO_DEVICE_ID_MOUSE_BUTTON_4] ? MUHTARI_SWITCH_SELECT
+                                                                             : 0u) |
+                    (controller_mouse_values[RETRO_DEVICE_ID_MOUSE_BUTTON_5] ? MUHTARI_SWITCH_RESET
+                                                                             : 0u);
+                failed |= m->ports.switches != switches;
+            }
+            set_input(NULL);
+            run_frame();
+            for (unsigned p = 0u; p < 2u; p++)
+                failed |= m->ports.applied_ex.port[p].dx != 0 ||
+                          m->ports.applied_ex.port[p].dy != 0 ||
+                          m->ports.applied_ex.port[p].buttons != 0u;
+            failed |= m->ports.switches != 0u;
+            controller_mouse_edges = 0;
+        }
+        if (!failed && controller_keypad) {
+            controller_keypad_edges = 1;
+            set_video(NULL);
+            set_audio(NULL);
+            for (unsigned v = 0u; v < 14u; v++) {
+                controller_keypad_mask = v < 12u ? 1u << v : v == 12u ? 15u : 4095u;
+                run_frame();
+                for (unsigned p = 0u; p < 2u; p++) {
+                    const muhtari_port_input *in = &m->ports.applied_ex.port[p];
+                    failed |= in->device != MUHTARI_PORT_KEYPAD ||
+                              in->keypad != controller_keypad_mask || in->buttons != 0u;
+                }
+                failed |= m->ports.switches != 0u;
+            }
+            set_input(NULL);
+            run_frame();
+            failed |= m->ports.applied_ex.port[0].keypad != 0u ||
+                      m->ports.applied_ex.port[1].keypad != 0u;
+            controller_keypad_edges = 0;
+        }
+        if (!failed && controller_analog) {
+            static const struct {
+                int16_t left, right;
+                uint32_t pot0, pot1;
+            } vectors[] = {{INT16_MIN, INT16_MAX, 0u, 65535u},
+                           {-1, 0, 32767u, 32768u},
+                           {0, -1, 32768u, 32767u},
+                           {INT16_MAX, INT16_MIN, 65535u, 0u}};
+            controller_paddle_edges = 1;
+            set_video(NULL);
+            set_audio(NULL);
+            for (unsigned v = 0u; v < sizeof vectors / sizeof vectors[0]; v++) {
+                controller_paddle_values[0] = vectors[v].left;
+                controller_paddle_values[1] = vectors[v].right;
+                run_frame();
+                for (unsigned p = 0u; p < 2u; p++) {
+                    const muhtari_port_input *in = &m->ports.applied_ex.port[p];
+                    failed |= in->device != MUHTARI_PORT_PADDLE ||
+                              in->paddle[0] != vectors[v].pot0 ||
+                              in->paddle[1] != vectors[v].pot1 || in->buttons != 0u || in->dy != 0;
+                }
+            }
+            set_input(NULL);
+            run_frame();
+            for (unsigned p = 0u; p < 2u; p++) {
+                const muhtari_port_input *in = &m->ports.applied_ex.port[p];
+                failed |= in->paddle[0] != 0u || in->paddle[1] != 0u || in->buttons != 0u;
+            }
+            controller_paddle_edges = 0;
+            failed |= controller_errors != 0u;
+        }
+        if (!failed && controller_light) {
+            /* The actual loaded module's accepted packets, independent
+               numeric endpoints and center; no conversion helper oracle. */
+            static const struct {
+                int16_t x, y, off, reload, trigger;
+                uint32_t px, py, flags, buttons;
+            } vectors[] = {
+                {-32767, -32767, 0, 0, 0, 0u, 0u, 0u, 0u},
+                {0, 0, 0, 0, 1, 159u, 120u, 0u, MUHTARI_BUTTON_1},
+                {32767, 32767, 0, 0, 0, 319u, 241u, 0u, 0u},
+                {-32768, 0, 0, 0, 1, 0u, 0u, MUHTARI_INPUT_GUN_OFFSCREEN, MUHTARI_BUTTON_1},
+                {0, -32768, 0, 0, 0, 0u, 0u, MUHTARI_INPUT_GUN_OFFSCREEN, 0u},
+                {0, 0, 1, 0, 0, 159u, 120u, MUHTARI_INPUT_GUN_OFFSCREEN, 0u},
+                {0, 0, 0, 1, 0, 159u, 120u, MUHTARI_INPUT_GUN_OFFSCREEN, MUHTARI_BUTTON_1},
+            };
+            static const unsigned ids[] = {
+                RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y,
+                RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN, RETRO_DEVICE_ID_LIGHTGUN_RELOAD,
+                RETRO_DEVICE_ID_LIGHTGUN_TRIGGER};
+            controller_gun_edges = 1;
+            set_video(NULL);
+            set_audio(NULL);
+            for (unsigned v = 0u; v < sizeof vectors / sizeof vectors[0]; v++) {
+                controller_gun_values[ids[0]] = vectors[v].x;
+                controller_gun_values[ids[1]] = vectors[v].y;
+                controller_gun_values[ids[2]] = vectors[v].off;
+                controller_gun_values[ids[3]] = vectors[v].reload;
+                controller_gun_values[ids[4]] = vectors[v].trigger;
+                memset(controller_gun_queries, 0, sizeof controller_gun_queries);
+                run_frame();
+                for (unsigned p = 0u; p < 2u; p++) {
+                    const muhtari_port_input *applied = &m->ports.applied_ex.port[p];
+                    failed |= applied->device != MUHTARI_PORT_LIGHTGUN ||
+                              applied->gun_x != vectors[v].px || applied->gun_y != vectors[v].py ||
+                              applied->flags != vectors[v].flags ||
+                              applied->buttons != vectors[v].buttons;
+                    for (unsigned id = 0u; id < sizeof ids / sizeof ids[0]; id++)
+                        failed |= controller_gun_queries[p][ids[id]] != 1u;
+                }
+            }
+            failed |= controller_errors != 0u;
+            controller_gun_edges = 0;
+        }
+        unload();
+    }
+    deinit();
+    CONTROLLER_CLOSE();
+#undef CONTROLLER_SYMBOL
+#undef CONTROLLER_CLOSE
+    free(image);
+    if (failed)
+        fprintf(stderr, "controller module: %u video, %u audio, %u mismatches\n", controller_videos,
+                controller_audios, controller_errors);
+    return failed;
+}
 #endif
 
 int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
+    if ((argc == 7 || argc == 8) && strcmp(argv[1], "--controller-case") == 0 &&
+        (strcmp(argv[2], "driving") == 0 || strcmp(argv[2], "lightgun") == 0 ||
+         strcmp(argv[2], "paddle") == 0 || strcmp(argv[2], "keypad") == 0 ||
+         strcmp(argv[2], "trakball") == 0 || strcmp(argv[2], "st-mouse") == 0 ||
+         strcmp(argv[2], "amiga-mouse") == 0 || strcmp(argv[2], "snes2atari") == 0 ||
+         strcmp(argv[2], "mega7800") == 0) &&
+        (strcmp(argv[3], "both") == 0 || strcmp(argv[3], "0") == 0 || strcmp(argv[3], "1") == 0 ||
+         strcmp(argv[3], "2") == 0)) {
+        controller_adapter = strcmp(argv[2], "snes2atari") == 0 ? 1u
+                             : strcmp(argv[2], "mega7800") == 0 ? 2u
+                                                                : 0u;
+        controller_group =
+            argv[3][0] >= '0' && argv[3][0] <= '2' ? (unsigned)(argv[3][0] - '0') : 0u;
+        controller_motion = strcmp(argv[2], "trakball") == 0      ? 1u
+                            : strcmp(argv[2], "st-mouse") == 0    ? 2u
+                            : strcmp(argv[2], "amiga-mouse") == 0 ? 3u
+                                                                  : 0u;
+        controller_light = strcmp(argv[2], "lightgun") == 0;
+        controller_analog = strcmp(argv[2], "paddle") == 0;
+        controller_keypad = strcmp(argv[2], "keypad") == 0;
+        controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
+        if (controller_pixels == NULL)
+            return 1;
+        int failed = controller_library(argv[4], argv[5], argv[6]);
+#ifdef DIAG_LIBRETRO
+        if (!failed && argc == 8)
+            failed = controller_module(argv[7], argv[4]);
+#else
+        if (argc == 8)
+            failed = 1;
+#endif
+        free(controller_pixels);
+        return failed;
+    }
     if (argc == 3 && strcmp(argv[1], "--battery-firmware") == 0) {
         uint8_t firmware[4096];
         memset(firmware, 255, sizeof firmware);

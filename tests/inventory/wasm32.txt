@@ -8,6 +8,8 @@ abi.api_v3	abi,portable
 abi.api_v4	abi,portable
 abi.api_v4_layout	abi,portable
 abi.api_v5	abi,portable
+abi.api_v6	abi,portable
+abi.api_v6_layout	abi,portable
 abi.api_version	abi
 abi.api_version.self_test	abi
 abi.globals	abi
@@ -445,6 +447,7 @@ cpu.vectors.pin	vectors
 cpu.vectors.reader	portable,vectors
 cpu.vectors.self_test	portable,vectors
 diag.bank6	diag,portable
+diag.controllers	diag,portable
 diag.cpu	diag,portable
 diag.dli	diag,portable
 diag.dma	diag,portable
@@ -484,6 +487,7 @@ input.directions	input,portable
 input.joystick_fire	input,portable
 input.lag_dma_and_peek	input,portable
 input.lag_even_frames	input,portable
+input.lightgun	input,portable
 input.pa7_edge	input,portable
 input.proline_one_button	input,portable
 input.proline_two_button	input,portable
@@ -518,6 +522,7 @@ perf.gate.unstable	perf
 pokey.clock	pokey,portable
 pokey.logic	pokey,portable
 pokey.maps	pokey,portable
+policy.ci_run.controls	policy
 policy.compat_doc_fresh	policy
 policy.compat_doc_fresh.self_test	policy
 policy.no_skip	policy
@@ -572,6 +577,7 @@ runner.hash.repeat	portable,runner
 runner.hashes_compare.byte.self_test	runner
 runner.hashes_compare.count.self_test	runner
 runner.hashes_file	portable,runner
+runner.help	portable,runner
 runner.load.hash	portable,runner
 runner.load.pal_refused	portable,runner
 runner.md5	portable,runner
@@ -583,11 +589,13 @@ runner.movie.boot_conflict	portable,runner
 runner.movie.conflict	portable,runner
 runner.movie.lag	portable,runner
 runner.movie.malformed	portable,runner
+runner.movie.owner	portable,runner
 runner.movie.past_end	portable,runner
 runner.movie.ports	portable,runner
 runner.movie.replay	portable,runner
 runner.movie.rom_mismatch	portable,runner
 runner.movie.switches	portable,runner
+runner.movie.v2_edges	portable,runner
 runner.movie_parse	portable,runner
 runner.png	portable,runner
 runner.probe.2600	portable,runner

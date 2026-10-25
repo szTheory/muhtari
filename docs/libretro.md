@@ -12,8 +12,8 @@ The RetroPad follows the ProSystem core's layout, so remaps made for it carry ov
 | RetroPad | Port 1 | Port 2 |
 |---|---|---|
 | D-pad | joystick | joystick |
-| B | button 1 (left) | button 1 |
-| A | button 2 (right) | button 2 |
+| B | button 1 (right) | button 1 |
+| A | button 2 (left) | button 2 |
 | Select | console Select | - |
 | Start | console Pause | - |
 | X | console Reset | - |
@@ -25,7 +25,7 @@ The console's Reset is the switch a game reads; RetroArch's own Restart is a pow
 
 ## Devices
 
-Each port offers six devices in Quick Menu → Controls:
+Each port offers fifteen devices in Quick Menu → Controls:
 
 | Device | What the game sees |
 |---|---|
@@ -35,6 +35,108 @@ Each port offers six devices in Quick Menu → Controls:
 | None | nothing plugged in |
 | SaveKey | one 32 KiB serial EEPROM |
 | AtariVox EEPROM | the same EEPROM interface; speech is unavailable |
+| Driving | relative MOUSE X moves the wheel; MOUSE LEFT fires; Y is ignored |
+| XG-1 | absolute LIGHTGUN SCREEN_X/Y aim; TRIGGER fires; IS_OFFSCREEN suppresses light; RELOAD fires offscreen |
+| Paddle pair | ANALOG left X/right X set pots1/2; RetroPad B/A press their independent buttons; Y is ignored |
+| Keypad | twelve RetroPad controls map to all twelve held keys, independently |
+| CX22 | relative MOUSE X/Y; LEFT or RIGHT is shared fire |
+| ST mouse | relative MOUSE X/Y; independent LEFT/RIGHT fire |
+| Amiga mouse | relative MOUSE X/Y with Amiga wiring; independent LEFT/RIGHT fire |
+| SNES2Atari | RetroPad D-pad, B/Y/Select/Start/A/X/L/R retain their SNES names |
+| Mega7800 | D-pad; Y→A, B→B, A→C, L→X, X→Y, R→Z, Select→Mode, Start→Start |
+
+Driving uses `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)` for selection and base
+`RETRO_DEVICE_MOUSE` IDs for polling, once after each frame's input poll. The frontend
+must bind that abstraction; an absolute steering wheel is not mapped automatically.
+Auto selects driving when the header names it. Unknown callback identities log a warning
+and unplug ordinary input. Input descriptors refresh on load and device selection.
+
+XG-1 selects `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)` and polls the five
+base LIGHTGUN inputs in the table once per frame. Deprecated relative X/Y and
+PAUSE are unused. The frontend must provide absolute lightgun bindings; the
+adapter has no device or host-window geometry. For a valid coordinate v in
+[-32767,32767], the native coordinate is
+`floor((v+32767)*(dimension-1)/65534)`, with a 64-bit integer product over the
+core's current reported native width/height. Width320 maps -32767/0/32767 to
+0/159/319; height242 maps them to0/120/241. Either coordinate -32768 marks the
+aim offscreen before conversion, using neutral0/0 coordinates. Explicit offscreen
+and reload also suppress illumination; reload independently holds the trigger.
+Trigger state never implies sensed light. Missing input callbacks leave aim offscreen.
+The native D64/W30/L9/T8 optical model is explicitly unmeasured; see
+[controller hardware](hardware/controllers.md#xg-1). Auto activates header guns.
+
+Console controls come from the lowest numbered ordinary ProLine/joystick port, retaining
+port 1's preference when both are ordinary. Otherwise the lowest numbered active
+driving/mouse/CX22/gun/paddle/keypad/adapter port supplies console controls. Driving uses MIDDLE for Pause,
+BUTTON_4 for Select and RIGHT for Reset; LEFT remains fire. XG-1 uses LIGHTGUN
+START for Pause, SELECT for Select and AUX_A for Reset; these do not fire or reload.
+Paddles use RetroPad Start/Select/X for Pause/Select/Reset; B/A remain the two buttons.
+Keypad, SNES2Atari and Mega7800 use supplemental RetroPad L2/R2/L3 for Pause/Select/Reset; their controls
+never operate console switches, and difficulties use options.
+With neither
+port active, supplemental port 1 RetroPad L2/R2/L3 provide Pause/Select/Reset. Driving, paddles and
+supplemental controls use the difficulty options. A new ordinary console provider starts
+its L/R edge history at the currently held levels, so selection creates no synthetic toggle.
+
+Paddle pair selection is `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)`;
+polling uses base ANALOG left/right index X plus base JOYPAD B/A, once per
+frame. Each signed axis v maps to the absolute physical range with
+`int32(v)+32768`: -32768/-1/0/32767 →0/32767/32768/65535. No game-specific
+scale or motion accumulation applies. Frontends must bind both analog X
+axes and the two RetroPad buttons; Y axes and L/R are ignored for paddles,
+and difficulties use options. Missing callbacks supply neutral positions0/0
+and released buttons. Auto activates header paddles, descriptors refresh
+on selection, and either paddle port may coexist with the opposite EEPROM.
+The RC threshold/dump model is unmeasured; see
+[controller hardware](hardware/controllers.md#paddles).
+
+Keypad selection is `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)`;
+polling uses base JOYPAD index0, once per key after each frame's input poll.
+The row-major mapping is:
+
+| Key | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | * | 0 | # |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| RetroPad | Y | Up | X | Left | B | Right | L | Down | R | Select | A | Start |
+
+All twelve can be held together; there is no three-key cap. Frontends must
+bind these RetroPad inputs plus the supplemental console controls. Auto
+activates header keypads, descriptors refresh on selection and missing
+callbacks release all keys. An EEPROM on the opposite port remains fixed
+until reload. Pot-column recovery and switch ghosts follow the explicit
+unmeasured analog compatibility policy in
+[controller hardware](hardware/controllers.md#keypad); matrix observations
+do not claim calibrated voltages or isolating diodes.
+
+CX22, ST mouse and Amiga mouse use distinct MOUSE subclasses1/2/3
+(driving remains0). The frontend is queried through base MOUSE index0:
+X and Y once per frame, positive right/down, one unit per connector edge.
+CX22 LEFT or RIGHT is shared fire; ST/Amiga LEFT and RIGHT are independent.
+Wheels and extra buttons do not drive emulated pins. When this device supplies
+console controls, MIDDLE/BUTTON_4/BUTTON_5 are Pause/Select/Reset; RIGHT
+remains device fire. Ordinary pads retain priority and difficulty shortcuts;
+other providers use difficulty options. Auto follows supported header devices,
+descriptors refresh with selection, missing callbacks supply zero/released,
+and an opposite EEPROM remains frozen until reload. Frontends must support
+and bind base relative MOUSE axes and the supplemental buttons; selection
+alone cannot make unsupported physical bindings available. Sensitivity is a
+frontend setting; the core uses its bounded, uncalibrated timing policy in
+[controller hardware](hardware/controllers.md#motion).
+
+SNES2Atari and Mega7800 select JOYPAD subclasses5/6 respectively, keeping
+all earlier subclass values. Polling uses base JOYPAD index0 once per native
+control per frame. Their Start, Select, X and shoulders operate only the
+adapter; difficulties use options. An ordinary controller on either port
+takes console priority. With two adapters the lowest numbered port supplies
+supplemental L2/R2/L3. Frontends must bind the complete RetroPad plus these
+supplemental controls; selecting a subclass supplies no physical adapter I/O.
+Missing callbacks release controls. Auto activates supported header adapters
+before the first frame, and an opposite EEPROM stays frozen until reload.
+Owned numeric diagnostics exercise every listed family and both ports through
+the library, actual movie2 runner and loaded module. This establishes the named
+models and mappings; fitted optical/charge/recovery/cadence parameters and
+adapter contention/restart policies remain unmeasured, without a universal
+retail-playability claim. Detailed cases stay in process; real RetroArch retains
+the two existing screenshot and save-roundtrip cases.
 
 ## Options
 

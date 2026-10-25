@@ -139,7 +139,7 @@ function(quality_fixture_identity out candidate trusted)
         message(FATAL_ERROR "quality: deleted or changed trusted manifest ${path}")
       endif()
     endforeach()
-    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery)[.]a78$" OR
+    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion)[.]a78$" OR
         NOT row MATCHES "^[^\t]+\tthis-repo\t[^ \t\r\n;]+\tMIT\t([0-9a-f]+)\t-$")
       message(FATAL_ERROR "quality: unrelated fixture ${path}")
     endif()
@@ -157,7 +157,7 @@ function(quality_fixture_identity out candidate trusted)
 endfunction()
 
 # Fault prevented: sample edits hiding behind a behavior-annotation migration.
-# Only unique exact 2-to-3 or 3-to-4 revision lines may differ; all
+# Only unique exact 2-to-3, 3-to-4 or 4-to-5 revision lines may differ; all
 # remaining bytes stay equal and identity always comes from the raw base file.
 function(quality_sample_identity out candidate trusted)
   foreach(input candidate trusted)
@@ -170,13 +170,14 @@ function(quality_sample_identity out candidate trusted)
       if(NOT count EQUAL 1)
         message(FATAL_ERROR "quality: sample annotation must be unique")
       endif()
-      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([234])\n")
+      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([2345])\n")
         message(FATAL_ERROR "quality: invalid sample revision transition")
       endif()
       set(${input}_revision "${CMAKE_MATCH_2}")
     endforeach()
     if(NOT (trusted_revision EQUAL 2 AND candidate_revision EQUAL 3) AND
-        NOT (trusted_revision EQUAL 3 AND candidate_revision EQUAL 4))
+        NOT (trusted_revision EQUAL 3 AND candidate_revision EQUAL 4) AND
+        NOT (trusted_revision EQUAL 4 AND candidate_revision EQUAL 5))
       message(FATAL_ERROR "quality: invalid sample revision transition")
     endif()
     string(REGEX REPLACE "(^|\n)# behaviour_revision ${candidate_revision}\n" "\\1# behaviour_revision ${trusted_revision}\n"
@@ -222,8 +223,9 @@ if(count GREATER 0)
   math(EXPR last "${count}-1")
   foreach(i RANGE ${last})
     string(JSON key MEMBER "${BASE_POLICY}" metrics ${i})
-    # Only the retired maintenance metric may disappear from trusted policy.
-    if(key STREQUAL "gate_lines")
+    # Only the retired maintenance and compressed-size bounds may disappear.
+    # Archive observations remain required by the native join.
+    if(key STREQUAL "gate_lines" OR key STREQUAL "archive_bytes")
       continue()
     endif()
     quality_get(unused "${POLICY}" OBJECT metrics "${key}")

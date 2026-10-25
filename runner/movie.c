@@ -80,7 +80,7 @@ static uint32_t movie_limit(const uint8_t *s, uint32_t n)
    the LF. Each byte must be printable ASCII, and the line within its
    limit. */
 static int movie_next_line(const uint8_t *b, size_t n, size_t *pos, uint32_t number, movie_line *l,
-                           muhtari__movie_error *err)
+                           uint32_t record_limit, muhtari__movie_error *err)
 {
     size_t start = *pos;
     size_t end = start;
@@ -96,6 +96,9 @@ static int movie_next_line(const uint8_t *b, size_t n, size_t *pos, uint32_t num
     l->number = number;
     /* The file is at most 32 MiB, so a line's length fits 32 bits. */
     uint32_t limit = movie_limit(l->s, (uint32_t)len);
+    if (len != 0u && l->s[0] == '|') {
+        limit = record_limit;
+    }
     for (uint32_t i = 0; i < len && i < limit; i++) {
         uint8_t c = l->s[i];
         if (c == 0u) {
@@ -112,12 +115,39 @@ static int movie_next_line(const uint8_t *b, size_t n, size_t *pos, uint32_t num
         }
     }
     if (len > limit) {
+        if (limit == MUHTARI__MOVIE_LINE_V2_MAX) {
+            return movie_fail(err, number, limit + 1u, "line over 83 bytes", "at most 83 bytes");
+        }
         if (limit != MUHTARI__MOVIE_LINE_MAX) {
             return movie_fail(err, number, limit + 1u, "too many hex digits", "64 hex digits");
         }
         return movie_fail(err, number, limit + 1u, "line over 64 bytes", "at most 64 bytes");
     }
     l->len = (uint32_t)len;
+    return 0;
+}
+
+static const struct {
+    const char *name;
+    uint32_t device;
+} movie_devices[] = {
+    {"proline", MUHTARI_PORT_PROLINE},       {"joystick", MUHTARI_PORT_JOYSTICK},
+    {"none", MUHTARI_PORT_UNPLUGGED},        {"savekey", MUHTARI_PORT_SAVEKEY},
+    {"atarivox", MUHTARI_PORT_ATARIVOX},     {"lightgun", MUHTARI_PORT_LIGHTGUN},
+    {"paddle", MUHTARI_PORT_PADDLE},         {"trakball", MUHTARI_PORT_TRAKBALL},
+    {"driving", MUHTARI_PORT_DRIVING},       {"keypad", MUHTARI_PORT_KEYPAD},
+    {"st-mouse", MUHTARI_PORT_ST_MOUSE},     {"amiga-mouse", MUHTARI_PORT_AMIGA_MOUSE},
+    {"snes2atari", MUHTARI_PORT_SNES2ATARI}, {"mega7800", MUHTARI_PORT_MEGA7800},
+};
+
+static int movie_device(const uint8_t *s, uint32_t n, uint32_t *device)
+{
+    for (size_t i = 0; i < sizeof movie_devices / sizeof movie_devices[0]; i++) {
+        if (movie_equals(s, n, movie_devices[i].name)) {
+            *device = movie_devices[i].device;
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -207,6 +237,13 @@ static int movie_header_line(const movie_line *l, muhtari__movie_header *h, movi
     case KEY_PORT1:
     case KEY_PORT2: {
         uint32_t p = k == KEY_PORT1 ? 0u : 1u;
+        if (h->version == 2u) {
+            if (!movie_device(v, vn, &h->device[p])) {
+                return movie_fail(err, l->number, col, "unknown device",
+                                  "an explicit movie2 device");
+            }
+            return 0;
+        }
         if (movie_equals(v, vn, "proline")) {
             h->device[p] = MUHTARI_PORT_PROLINE;
         } else if (movie_equals(v, vn, "joystick")) {
@@ -418,7 +455,7 @@ int muhtari__movie_parse(const uint8_t *bytes, size_t n, muhtari__movie_header *
     while (pos < n) {
         movie_line l;
         number++;
-        if (movie_next_line(bytes, n, &pos, number, &l, err) != 0) {
+        if (movie_next_line(bytes, n, &pos, number, &l, MUHTARI__MOVIE_LINE_MAX, err) != 0) {
             return -1;
         }
         if (number == 1u) {
@@ -469,6 +506,253 @@ int muhtari__movie_parse(const uint8_t *bytes, size_t n, muhtari__movie_header *
     }
     if (!in_frames) {
         return movie_header_end(h, &st, number + 1u, err);
+    }
+    return 0;
+}
+
+/* Decimal fields are canonical and bounded before multiplication. Signed
+   magnitudes include INT32_MIN without negating it or overflowing int32. */
+static int movie_decimal(const movie_line *l, uint32_t *at, int is_signed, uint32_t max,
+                         int32_t *value, muhtari__movie_error *err)
+{
+    uint32_t start = *at, i = start, magnitude = 0u;
+    int negative = i < l->len && l->s[i] == '-';
+    if (negative && is_signed) {
+        i++;
+    }
+    uint32_t digits = i;
+    uint32_t limit = is_signed ? (negative ? 2147483648u : 2147483647u) : max;
+    if (i >= l->len || l->s[i] < '0' || l->s[i] > '9') {
+        return movie_fail(err, l->number, i + 1u, "not a decimal", "a canonical decimal integer");
+    }
+    while (i < l->len && l->s[i] != ',' && l->s[i] != '|') {
+        uint8_t c = l->s[i];
+        if (c < '0' || c > '9' || (i > digits && l->s[digits] == '0')) {
+            return movie_fail(err, l->number, i + 1u, "not a canonical decimal",
+                              "no padding, plus sign or leading zero");
+        }
+        uint32_t digit = (uint32_t)(c - '0');
+        if (digit > limit || magnitude > (limit - digit) / 10u) {
+            return movie_fail(err, l->number, i + 1u, "decimal out of range", "the device's range");
+        }
+        magnitude = magnitude * 10u + digit;
+        i++;
+    }
+    if (negative && magnitude == 0u) {
+        return movie_fail(err, l->number, start + 1u, "negative zero", "0");
+    }
+    *value = negative ? -(int32_t)(magnitude - 1u) - 1 : (int32_t)magnitude;
+    *at = i;
+    return 0;
+}
+
+static int movie_separator(const movie_line *l, uint32_t *at, uint8_t c, muhtari__movie_error *err)
+{
+    if (*at >= l->len || l->s[*at] != c) {
+        return movie_fail(err, l->number, *at + 1u, "missing delimiter", c == ',' ? "," : "|");
+    }
+    *at += 1u;
+    return 0;
+}
+
+static int movie_frame_ex(const movie_line *l, const muhtari__movie_header *h, muhtari_input_ex *in,
+                          muhtari__movie_error *err)
+{
+    static const uint32_t buttons[6] = {MUHTARI_BUTTON_UP,   MUHTARI_BUTTON_DOWN,
+                                        MUHTARI_BUTTON_LEFT, MUHTARI_BUTTON_RIGHT,
+                                        MUHTARI_BUTTON_1,    MUHTARI_BUTTON_2};
+    static const uint32_t switches[5] = {MUHTARI_SWITCH_RESET, MUHTARI_SWITCH_SELECT,
+                                         MUHTARI_SWITCH_PAUSE, MUHTARI_SWITCH_LEFT_DIFFICULTY_A,
+                                         MUHTARI_SWITCH_RIGHT_DIFFICULTY_A};
+    memset(in, 0, sizeof *in);
+    in->size = (uint32_t)sizeof *in;
+    uint32_t at = 1u;
+    for (uint32_t p = 0u; p < 2u; p++) {
+        muhtari_port_input *port = &in->port[p];
+        uint32_t start = at;
+        while (at < l->len && l->s[at] != ':' && l->s[at] != '|') {
+            at++;
+        }
+        if (at == l->len || l->s[at] != ':') {
+            return movie_fail(err, l->number, at + 1u, "missing device tag", "device:payload");
+        }
+        if (!movie_device(l->s + start, at - start, &port->device)) {
+            return movie_fail(err, l->number, start + 1u, "unknown device tag",
+                              "the header's device");
+        }
+        if (port->device != h->device[p]) {
+            return movie_fail(err, l->number, start + 1u, "device tag mismatch",
+                              "the header's device");
+        }
+        at++;
+        uint32_t d = port->device;
+        if (d == MUHTARI_PORT_PROLINE || d == MUHTARI_PORT_JOYSTICK ||
+            d == MUHTARI_PORT_UNPLUGGED || d == MUHTARI_PORT_SAVEKEY ||
+            d == MUHTARI_PORT_ATARIVOX) {
+            const char *letters = d == MUHTARI_PORT_PROLINE    ? "UDLR12"
+                                  : d == MUHTARI_PORT_JOYSTICK ? "UDLR1"
+                                                               : "";
+            if (movie_field(l, &at, letters, "......", buttons, &port->buttons, err) != 0) {
+                return -1;
+            }
+            continue;
+        }
+        int32_t v[3] = {0, 0, 0};
+        int motion = d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_TRAKBALL ||
+                     d == MUHTARI_PORT_ST_MOUSE || d == MUHTARI_PORT_AMIGA_MOUSE;
+        uint32_t fields =
+            d == MUHTARI_PORT_KEYPAD || d == MUHTARI_PORT_SNES2ATARI || d == MUHTARI_PORT_MEGA7800
+                ? 1u
+                : 3u;
+        for (uint32_t k = 0u; k < fields; k++) {
+            uint32_t max = fields == 1u ? 4095u : k == 2u ? 3u : 65535u;
+            if (d == MUHTARI_PORT_LIGHTGUN && k < 2u) {
+                max = k == 0u ? 319u : 241u;
+            } else if ((d == MUHTARI_PORT_DRIVING || d == MUHTARI_PORT_TRAKBALL) && k == 2u) {
+                max = 1u;
+            } else if (d == MUHTARI_PORT_DRIVING && k == 1u) {
+                max = 0u;
+            }
+            if (movie_decimal(l, &at, motion && k < 2u && !(d == MUHTARI_PORT_DRIVING && k == 1u),
+                              max, &v[k], err) != 0 ||
+                movie_separator(l, &at, k + 1u < fields ? ',' : '|', err) != 0) {
+                return -1;
+            }
+        }
+        if (d == MUHTARI_PORT_LIGHTGUN) {
+            port->gun_x = (uint32_t)v[0];
+            port->gun_y = (uint32_t)v[1];
+            port->buttons = (v[2] & 1) != 0 ? MUHTARI_BUTTON_1 : 0u;
+            port->flags = (v[2] & 2) != 0 ? MUHTARI_INPUT_GUN_OFFSCREEN : 0u;
+        } else if (d == MUHTARI_PORT_PADDLE) {
+            port->paddle[0] = (uint32_t)v[0];
+            port->paddle[1] = (uint32_t)v[1];
+        } else if (d == MUHTARI_PORT_KEYPAD) {
+            port->keypad = (uint32_t)v[0];
+        } else if (fields == 1u) {
+            port->buttons = (uint32_t)v[0];
+        } else {
+            port->dx = v[0];
+            port->dy = v[1];
+        }
+        if (d == MUHTARI_PORT_PADDLE || motion) {
+            port->buttons = ((v[2] & 1) != 0 ? MUHTARI_BUTTON_1 : 0u) |
+                            ((v[2] & 2) != 0 ? MUHTARI_BUTTON_2 : 0u);
+        }
+    }
+    if (movie_field(l, &at, "RSPAA", "...BB", switches, &in->switches, err) != 0) {
+        return -1;
+    }
+    if (at != l->len) {
+        return movie_fail(err, l->number, at + 1u, "text after the last field", "end of line");
+    }
+    return 0;
+}
+
+int muhtari__movie_validate_ex(const uint8_t *bytes, size_t n, muhtari__movie_header *h,
+                               uint32_t *count, muhtari__movie_cursor *cursor,
+                               muhtari__movie_error *err)
+{
+    memset(h, 0, sizeof *h);
+    memset(cursor, 0, sizeof *cursor);
+    *count = 0u;
+    if (n > MUHTARI__MOVIE_BYTES_MAX) {
+        return movie_fail(err, 1u, 1u, "file over 32 MiB", "at most 33554432 bytes");
+    }
+    if (n == 0u) {
+        return movie_fail(err, 1u, 1u, "empty file", "muhtari-movie 2");
+    }
+    if (n >= 3u && bytes[0] == 0xEFu && bytes[1] == 0xBBu && bytes[2] == 0xBFu) {
+        return movie_fail(err, 1u, 1u, "byte order mark", "muhtari-movie 2");
+    }
+    movie_state st = {0};
+    size_t pos = 0u;
+    uint32_t number = 0u;
+    int in_frames = 0;
+    while (pos < n) {
+        size_t start = pos;
+        movie_line l;
+        number++;
+        if (movie_next_line(bytes, n, &pos, number, &l, MUHTARI__MOVIE_LINE_V2_MAX, err) != 0) {
+            return -1;
+        }
+        if (number == 1u) {
+            if (!movie_equals(l.s, l.len, "muhtari-movie 2")) {
+                return movie_fail(err, 1u, 1u, "not a movie2", "muhtari-movie 2");
+            }
+            h->version = 2u;
+            st.header_lines = 1u;
+            continue;
+        }
+        if (!in_frames) {
+            if (l.len == 0u || l.s[0] != '|') {
+                if (++st.header_lines > MUHTARI__MOVIE_HEADER_LINES_MAX) {
+                    return movie_fail(err, number, 1u, "too many header lines",
+                                      "at most 32 header lines");
+                }
+                if (l.len != 0u && l.s[0] != '#' && movie_header_line(&l, h, &st, err) != 0) {
+                    return -1;
+                }
+                continue;
+            }
+            if (movie_header_end(h, &st, number, err) != 0) {
+                return -1;
+            }
+            cursor->pos = start;
+            cursor->line = number;
+            in_frames = 1;
+        } else if (movie_frames_only(&l, err) != 0) {
+            return -1;
+        }
+        if (*count >= MUHTARI__MOVIE_FRAMES_MAX) {
+            return movie_fail(err, number, 1u, "too many frames", "at most 1000000 frames");
+        }
+        muhtari_input_ex in;
+        if (movie_frame_ex(&l, h, &in, err) != 0) {
+            return -1;
+        }
+        *count += 1u;
+    }
+    if (!in_frames) {
+        if (movie_header_end(h, &st, number + 1u, err) != 0) {
+            return -1;
+        }
+        cursor->pos = n;
+        cursor->line = number + 1u;
+    }
+    cursor->last.size = (uint32_t)sizeof cursor->last;
+    for (uint32_t p = 0u; p < 2u; p++) {
+        cursor->last.port[p].device = h->device[p];
+        if (h->device[p] == MUHTARI_PORT_LIGHTGUN) {
+            cursor->last.port[p].flags = MUHTARI_INPUT_GUN_OFFSCREEN;
+        }
+    }
+    return 0;
+}
+
+int muhtari__movie_next_ex(const uint8_t *bytes, size_t n, const muhtari__movie_header *h,
+                           muhtari__movie_cursor *cursor, muhtari_input_ex *in,
+                           muhtari__movie_error *err)
+{
+    if (cursor->pos < n) {
+        movie_line l;
+        if (movie_next_line(bytes, n, &cursor->pos, cursor->line, &l, MUHTARI__MOVIE_LINE_V2_MAX,
+                            err) != 0 ||
+            movie_frame_ex(&l, h, in, err) != 0) {
+            return -1;
+        }
+        cursor->last = *in;
+        cursor->line++;
+        cursor->frame++;
+        return 1;
+    }
+    *in = cursor->last;
+    in->switches &= MUHTARI_SWITCH_LEFT_DIFFICULTY_A | MUHTARI_SWITCH_RIGHT_DIFFICULTY_A;
+    for (uint32_t p = 0u; p < 2u; p++) {
+        in->port[p].buttons = 0u;
+        in->port[p].keypad = 0u;
+        in->port[p].dx = 0;
+        in->port[p].dy = 0;
     }
     return 0;
 }

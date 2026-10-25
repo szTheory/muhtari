@@ -179,7 +179,10 @@ if(MUHTARI_FUZZ)
     FIXTURES_REQUIRED fuzz_run_seeds WORKING_DIRECTORY ${fuzz_run_work})
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
-    LABELS fuzz TIMEOUT 1)  # 2 x 0.24 s, fuzz job, slowest of 11 runs, run 39377950042
+    LABELS fuzz TIMEOUT 2)  # ceil(2 x 0.62 s), complete serial run 40152881373; provisional n=1
+  # The regression's short deadline must not compete with three active
+  # libFuzzer jobs (run 40152408965); keep the complete workload and bound.
+  set_tests_properties(fuzz.regress.run PROPERTIES RUN_SERIAL TRUE)
 else()
   muhtari_add_test(NAME fuzz.regress.i2c COMMAND muhtari-fuzz-i2c-replay --seeds
     LABELS fuzz portable TIMEOUT 1)

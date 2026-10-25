@@ -16,7 +16,8 @@ that any host can embed.
 ## Current State
 
 Planning milestone **v1.0** shipped 2026-10-21 with package **v0.4.0**.
-The currently published package is [v0.5.0](https://github.com/szTheory/muhtari/releases/tag/v0.5.0).
+The currently published package is [v0.6.0](https://github.com/szTheory/muhtari/releases/tag/v0.6.0),
+published2026-10-24 after Phase7 merged in [PR28](https://github.com/szTheory/muhtari/pull/28).
 Four phases, 73 plans and 149 recorded tasks deliver games with sound in RetroArch.
 [Release publication and latest-install run](https://github.com/szTheory/muhtari/actions/runs/39533130210) completed successfully; v0.4.0 is published with 19 assets.
 At that release, the C/header tree had 38,684 tracked lines, including 8,577 in src/;
@@ -46,7 +47,7 @@ the unchanged399937-byte limit (worst375270). Direct CI40031550434, Nightly40031
 and Release40031550534 attempt2 pass, including confirmed rehearsal cleanup.
 Phase 6 merged in [PR24](https://github.com/szTheory/muhtari/pull/24); v0.5.0 is published.
 
-Phase 7 is verified complete, pending `$gsd-ship 7`: API5/ABI1/behavior4 delivers
+Phase 7 is verified complete and shipped in PR28: API5/ABI1/behavior4 delivers
 HSC/SaveKey battery storage, checked runner persistence and real two-launch RetroArch saves.
 All nine plans and SAVE-01–06 pass35/35 must-haves. Final CI40104749040 attempt2 and
 Nightly40104750452 pass on source54485d6, with all six actual native archive sums
@@ -54,6 +55,18 @@ within399937 (worst393952). Full native/PPC641+6 and69-row equality, WASM580,
 10000-case properties, fuzz and actual frontend/Windows controls pass. Review is clean
 after both allowed fix rounds; no owner verification remains. See
 [Phase 7 verification](phases/07-battery-saves/07-VERIFICATION.md).
+
+Phase8 is verified complete and awaits `$gsd-ship 8`: API6/ABI1/behavior5 adds
+extended typed input, immutable movie2 replay and all in-scope controller models.
+All14 plans and INPUT-01–05 pass49/49 truths; one review-fix round corrected a
+short-packet aim boundary and physical button labels. Exact-source CI40157749294
+passes native649+6 across six current/base lanes, full native/PPC649+6, WASM587,
+342-row equality and actual RetroArch. All18 candidate ZIPs and authenticated
+current/base measurements pass; DEC.61 keeps archive bytes report-only.
+Nightly40157750598 retains an explicitly unaccepted advisory10000-case isolation
+timeout; five other10000-case properties pass. Required isolation passes. Hardware
+fits remain unmeasured, and PR-base performance and post-merge truths remain for ship.
+See [Phase8 verification](phases/08-controllers-at-the-pins/08-VERIFICATION.md).
 
 ## Current Milestone: v2.0 The whole library
 
@@ -97,11 +110,11 @@ save states and other later horizons remain deferred. Planning v2.0 does not sel
 
 - ✓ Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5 verified and shipped in PR #20.
 - ✓ Activision, Absolute and Fractalus banking, physical RAM and three-host behavior — BOARD-01–03, Phase 6 shipped in PR24.
-- ✓ HSC/SaveKey battery data survives host and frontend restarts — SAVE-01–06, Phase 7 verified; shipping pending.
+- ✓ HSC/SaveKey battery data survives host and frontend restarts — SAVE-01–06, Phase7 shipped in PR28.
+- ✓ Source-qualified lightgun, analog/matrix, timed motion and complete adapter inputs across all three deliverables — INPUT-01–05, Phase8 verified; shipping pending.
 
 ### Active
 
-- [ ] Light gun and the other in-scope controllers — INPUT-01–05, Phase 8.
 - [ ] PAL timing, presentation and audio — PAL-01–03, Phase 9.
 - [ ] BankSet and XBoard/XM memory/POKEY/HSC — BOARD-04–05, Phase 10.
 - [ ] Evidence-backed library accounting — COMP-01–03, Phase 11.
@@ -173,6 +186,9 @@ Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Separate typed input from frozen legacy input | Preserve existing linkage while adding transactional selection and once-only motion | ✓ Phase8: API6,88-byte extended packet and linked old clients verified |
+| Sense native emission through existing chip/deadline owners | Retain historical light and bounded unpolled behavior independently of host buffers | ✓ Phase8: explicit unmeasured optical/RC/matrix/motion fits, complete adapter edges |
+| Judge independent controller numbers before hash agreement | Equal implementations alone can share an error | ✓ Phase8: thirteen scenarios,342 rows, actual library/runner/module and cross-platform evidence |
 | One load-stable raw battery span and frozen attachment | Hosts restore directly before execution without mirrored storage or hot resizing | ✓ Phase 7: API5, layout1, exact HSC/EEPROM/combined lengths and old-layout linkage |
 | Core commits hardware bytes; runner and frontend own persistence | Keep deterministic emulation separate from host files and controls | ✓ Phase 7: real serial deadlines, checked replacement, native controls and fresh-process byte equality |
 | Require independent complete media and pixel expectations | Equal renderers or a successful exit alone cannot prove restoration | ✓ Phase 7: two fresh launches, both counters, all34816 bytes and oracle faults verified |
@@ -215,4 +231,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-24 after Phase 7 execution and verification; ship Phase 7 next*
+*Last updated: 2026-10-25 after Phase8 execution and verification; ship Phase8 next*

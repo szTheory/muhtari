@@ -97,10 +97,14 @@ enum halt_stage {
 /* Recomputes next_deadline from the pending events: MARIA's next line
    event, a HALT request, an NMI edge. While RDY is low or /HALT is low
    every cycle takes the slow path. */
-static void rearm(muhtari *m)
+void muhtari__bus_rearm(muhtari *m)
 {
     struct muhtari__bus *b = &m->bus;
     uint64_t d = muhtari__maria_next_event(m);
+    uint64_t ports = muhtari__ports_next_event(m);
+    if (ports < d) {
+        d = ports;
+    }
     if (b->rdy_release != 0u || b->halt_stage == HALT_LOW) {
         d = 0u;
     }
@@ -130,12 +134,22 @@ static uint64_t cycles_until(uint64_t from, uint64_t until)
     return until > from ? (until - from + BUS_FAST_TICKS - 1u) / BUS_FAST_TICKS : 0u;
 }
 
-/* Fires every MARIA line event at or before tick limit, in tick order
-   (docs/hardware/bus.md, Line events). */
-static void maria_events(muhtari *m, uint64_t limit)
+/* Merge line and controller events chronologically through the actual
+   access tick (bus.md, Line events; controllers.md, Driving). */
+static void timed_events(muhtari *m, uint64_t limit)
 {
-    while (muhtari__maria_next_event(m) <= limit) {
-        muhtari__maria_event(m);
+    for (;;) {
+        uint64_t maria = muhtari__maria_next_event(m);
+        uint64_t ports = muhtari__ports_next_event(m);
+        uint64_t next = maria < ports ? maria : ports;
+        if (next > limit) {
+            break;
+        }
+        if (maria <= ports) {
+            muhtari__maria_event(m);
+        } else {
+            muhtari__ports_catch_up(m, ports);
+        }
     }
 }
 
@@ -174,7 +188,7 @@ static uint64_t halt_cycle(muhtari *m)
 static uint64_t cycle_start(muhtari *m, uint32_t data)
 {
     m->bus.cycle_len = (uint8_t)(data == BUS_SLOW_DATA ? BUS_SLOW_TICKS : BUS_FAST_TICKS);
-    maria_events(m, m->bus.ticks + data);
+    timed_events(m, m->bus.ticks + data);
     return halt_cycle(m);
 }
 
@@ -198,6 +212,7 @@ static void advance(muhtari *m, uint64_t k)
     }
     b->ticks += k * BUS_FAST_TICKS;
     b->phi2 += k;
+    timed_events(m, b->ticks);
 }
 
 /* The held cycles to advance before the next cycle start a pending event
@@ -208,6 +223,10 @@ static uint64_t hold_step(const muhtari *m, uint64_t n)
     const struct muhtari__bus *b = &m->bus;
     uint64_t k = n;
     uint64_t e = muhtari__maria_next_event(m);
+    uint64_t ports = muhtari__ports_next_event(m);
+    if (ports < e) {
+        e = ports;
+    }
     if (e > b->ticks + 2u * BUS_FAST_TICKS) {
         uint64_t j = cycles_until(b->ticks + BUS_FAST_DATA, e);
         k = j < k ? j : k;
@@ -266,7 +285,7 @@ static void events(muhtari *m, int is_read, uint32_t data)
     if (b->nmi_pending != 0u && b->nmi_at <= b->ticks + data) {
         latch_nmi(m, b->phi2 + 1u);
     }
-    rearm(m);
+    muhtari__bus_rearm(m);
 }
 
 /* The tick, counted from a cycle's start, at which its data is on the bus. */
@@ -297,6 +316,12 @@ static void end(muhtari *m, uint32_t len)
 {
     m->bus.ticks += len;
     m->bus.phi2++;
+    /* A slow cycle finishes one tick after data. Motion due there must
+       complete even if execution stops at this instruction boundary. */
+    if (m->ports.next_tick != 0u && m->ports.next_tick <= m->bus.ticks) {
+        timed_events(m, m->bus.ticks);
+        muhtari__bus_rearm(m);
+    }
     /* Both chips have consumed this cycle's actual falling edge before
        the CPU can poll it (hardware/pokey.md, Interrupts). */
     unsigned requested = (unsigned)(((m->cart.irq_mask & 1u) != 0u && m->cart.pokey_at[0] != 0u &&
@@ -424,6 +449,7 @@ static void inptctrl_write(muhtari *m, uint8_t v)
         return;
     }
     b->inptctrl = (uint8_t)(v & MUHTARI__INPTCTRL_BITS);
+    muhtari__tia_pins_changed(m);
     if (b->halt_gate_writes < 2u) {
         b->halt_gate_writes++;
     }
@@ -443,12 +469,12 @@ void muhtari__bus_write(muhtari *m, uint16_t addr, uint8_t v)
     } else if (dev == DEV_TIA) {
         muhtari__tia_write(m, addr, v, m->bus.ticks + data_at(len));
         inptctrl_write(m, v);
-        rearm(m);
+        muhtari__bus_rearm(m);
     } else if (dev == DEV_RIOT) {
         muhtari__riot_write(m, addr, v, m->bus.ticks + data_at(len));
     } else if (dev == DEV_MARIA) {
         muhtari__maria_write(m, addr, v, m->bus.ticks + data_at(len));
-        rearm(m);
+        muhtari__bus_rearm(m);
     } else if (dev == DEV_CART) {
         muhtari__cart_write(m, addr, v);
     }
@@ -468,7 +494,7 @@ int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick)
     b->halt_at = at_tick;
     b->halt_until = until_tick;
     b->halt_stage = HALT_REQUESTED;
-    rearm(m);
+    muhtari__bus_rearm(m);
     return 1;
 }
 
@@ -483,7 +509,7 @@ int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick)
     }
     m->bus.nmi_at = at_tick;
     m->bus.nmi_pending = 1u;
-    rearm(m);
+    muhtari__bus_rearm(m);
     return 1;
 }
 

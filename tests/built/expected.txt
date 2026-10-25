@@ -4,7 +4,7 @@
 # frame chain, audio hash ("-" until the frame and audio are checked).
 # The frame chain is frames.cmake's 600-frame chain; it holds at the behaviour
 # revision below and is written only with -DWRITE=ON (docs/emulation-tests.md).
-# behaviour_revision 4
+# behaviour_revision 5
 # Every linear and SuperGame sample in 7800basic 0.41's samples/sizes.ref has
 # a row. POKEY declarations at $0450 are active. Only pokey's detection-dependent
 # video chain changed when register reads replaced open bus; fixed-address

@@ -20,6 +20,11 @@ review contract, with AGENTS rule7 pointing to it. The migration retires the
 line gate; it does not approve N654/C15941 or complete any board requirement.
 Historical measurements and acceptance remain historical.
 
+**Later separate review, 2026-10-24:** DEC.61 and the
+[workflow recovery](../workflow-recovery/RECOMMENDATION.md) retire only the archive
+cutoff while retaining authenticated observations. Statements below preserving
+399937 describe this earlier LOC migration's scope, not current archive policy.
+
 ## Why change the policy
 
 The goal was sound: keep support machinery from becoming harder to maintain than

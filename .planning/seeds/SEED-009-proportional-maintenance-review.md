@@ -56,3 +56,39 @@ counts to9/9 and18/18 planned slots; the103-file verification fingerprint still
 passes. The actual files and commands were verified. Consider a bounded scanner
 fix at this seed's existing trigger; do not rewrite valid evidence or introduce
 a product gate to silence these warnings.
+
+
+## Scoped recovery follow-up, 2026-10-24
+
+The separate [workflow recovery review](../research/workflow-recovery/RECOMMENDATION.md)
+disposes only the archive-cutoff question above through DEC.61. It preserves required
+authenticated observations and independent package/security/performance contracts.
+It does not dispose editorial limits, hosted-test limits or test-count policy.
+
+Measured CI cost warrants one later profiling slice: in run40135571745 Windowsarm64
+publication controls took756.47/744.81s across current/base; controller diagnostics
+took0.28/0.27s. Before changing the DAG or matrix, identify redundant process work
+and meaningful fault equivalence classes in the existing publication controls.
+Preserve Windows shell coverage and every required failure boundary. This optional
+cost improvement is not a condition for controller development.
+
+The single recovery run40139744520 also retains an advisory library timing miss:
+two existing2s pokey/rmtramdemo tests timed out and37/39 results remain. No numeric/
+hash fault was reported; a transient cause is unproven. Profile or recalibrate only
+with comparable completed timing evidence under existing timeout policy. Required
+CI passes; this advisory follow-up does not block controller development.
+
+## Controller closeout advisory, 2026-10-25
+
+At corrected source70366fd, Nightly40157750598's advisory property job completes
+five10000-case properties but `prop.instances_isolated` reaches390.08s at seed
+40157750598 (CTest8, exact inventory1). This result is unaccepted; no assertion
+failure, flake diagnosis or retry is claimed. Required100-case isolation, full
+native/PPC649+6 and current-source required CI pass. Evidence and full authority
+are in [Phase8 verification](../phases/08-controllers-at-the-pins/08-VERIFICATION.md)
+and https://github.com/szTheory/muhtari/actions/runs/40157750598.
+
+At the existing tune-up, profile this complete seeded workload alongside the
+publication/library timing observations before changing scheduling or deadlines.
+Preserve every case and oracle and calibrate only from complete successful work.
+This optional cost/evidence follow-up does not block Phase8 or promote a lane.

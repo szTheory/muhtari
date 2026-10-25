@@ -1,6 +1,11 @@
 # Repository policy tests: rules about the tests themselves.
 set(policy_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
+muhtari_add_test(NAME policy.ci_run.controls
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+    -DWORK=${CMAKE_BINARY_DIR}/policy/ci_run_fixture -P ${CMAKE_CURRENT_LIST_DIR}/ci_run.cmake
+  LABELS policy TIMEOUT 10)
+
 muhtari_add_test(NAME policy.no_skip
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/no_skip.cmake
   LABELS policy TIMEOUT 10)
@@ -109,7 +114,11 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
     # Provisional max724.35s Windows/63.21s other, runs39876385414/39874751162.
     LABELS policy TIMEOUT ${publish_timeout} COST 725)
   set(quality_timeout 30)
-  if(WIN32)
+  if(APPLE)
+    # Provisional ceil(2 x 22.79s), complete current/base controls in
+    # CI40135571745 attempt2/job121002299364; all semantic cases remain.
+    set(quality_timeout 46)
+  elseif(WIN32)
     # Ceil(2 x 40.12s), maximum successful current/base Windows control in
     # run40080473918; retain all producer/join cases and numeric predicates.
     set(quality_timeout 81)
@@ -149,11 +158,28 @@ foreach(name activision absolute fractalus battery.first battery.second)
     string(APPEND hashes "${name}.save_sha256 abc\n")
   endif()
 endforeach()
+string(REPEAT "a" 64 digest)
+string(REPEAT "a" 512 mailbox)
+foreach(scenario motion.driving light.lightgun analog.paddle analog.keypad
+    motion.trakball motion.st-mouse motion.amiga-mouse
+    motion.snes2atari.group0 motion.snes2atari.group1 motion.snes2atari.group2
+    motion.mega7800.group0 motion.mega7800.group1 motion.mega7800.group2)
+  set(prefix "controller.${scenario}.both")
+  foreach(frame RANGE 1 12)
+    string(APPEND hashes "${prefix}.frame${frame} ${digest}\n")
+  endforeach()
+  string(APPEND hashes "${prefix}.lag_frames 0\n${prefix}.audio_transitions_sha256 ${digest}\n"
+    "${prefix}.audio_pcm_sha256 ${digest}\n${prefix}.audio_frames 12\n"
+    "${prefix}.audio_samples 8861\n${prefix}.audio_rate 48000/1\n"
+    "${prefix}.audio_behaviour_revision 5\n${prefix}.audio_synthesis exact-q23-16x64-dc20\n"
+    "${prefix}.diagnostic ${mailbox}\n")
+endforeach()
 foreach(path absolute relative)
 if(path STREQUAL "relative")
   file(RELATIVE_PATH WORK "${CMAKE_CURRENT_BINARY_DIR}" "${WORK}")
 endif()
-foreach(case valid sha config empty missing extra duplicate difference)
+foreach(case valid sha config empty missing extra duplicate difference
+    controller_missing controller_duplicate controller_order controller_numeric controller_family)
   file(REMOVE_RECURSE "${WORK}")
   foreach(lane native be)
     file(WRITE "${WORK}/${lane}/hashes.txt" "${hashes}")
@@ -182,6 +208,25 @@ foreach(case valid sha config empty missing extra duplicate difference)
   elseif(case STREQUAL "difference")
     file(APPEND "${be}/hashes.txt" "changed\n")
     set(regex "differs from")
+  elseif(case MATCHES "^controller_")
+    set(bad "${hashes}")
+    set(row "controller.light.lightgun.both.frame1 ${digest}\n")
+    if(case STREQUAL "controller_missing" OR case STREQUAL "controller_order")
+      string(REPLACE "${row}" "" bad "${bad}")
+      if(case STREQUAL "controller_order")
+        string(APPEND bad "${row}")
+      endif()
+    elseif(case STREQUAL "controller_duplicate")
+      string(APPEND bad "${row}")
+    elseif(case STREQUAL "controller_numeric")
+      string(REPLACE "audio_frames 12" "audio_frames x" bad "${bad}")
+    else()
+      string(REPLACE "controller.light.lightgun." "controller.light.foreign." bad "${bad}")
+    endif()
+    foreach(lane native be)
+      file(WRITE "${WORK}/${lane}/hashes.txt" "${bad}")
+    endforeach()
+    set(regex "hashes:")
   endif()
   set(cmd "${CMAKE_COMMAND}" -DNATIVE=${WORK}/native -DBE=${be} -DEXPECTED_SHA=${sha}
     -P "${ROOT}/tests/cmake/lane_equality.cmake")

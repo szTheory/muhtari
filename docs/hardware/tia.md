@@ -1,4 +1,27 @@
-# TIA sound and horizontal timing
+# TIA input ports, sound and horizontal timing
+
+## Input ports
+
+The [Atari TIA input-port specification, sections8B–8C](https://www.blarworld.net/stella/8.%20Input%20ports.html)
+defines four dumped inputs and two low-memory inputs. VBLANK ($01, mirrored
+every64 addresses) D7 grounds INPT0–3, including a ProLine button's high
+source. Clearing D7 releases the ground; repeated zero or one writes retain
+the electrical condition. D7 never affects INPT4/5.
+
+VBLANK D6 enables the independent INPT4/5 low latches. Enabling captures an
+already-low pin; every later low captures without a CPU read, even during
+HALT/JAM. Repeated enable writes and reads retain a captured low. Disabling
+clears both stored latches high and bypasses them, so a currently low pin
+still reads low. Power-on disables and clears. Due pin events run through
+the write data tick before changing D6; a simultaneous low/enable captures,
+while low/disable leaves the live level. VBLANK-applied host controls and
+PB/INPTCTRL two-button mode changes deliver their electrical levels too.
+
+Reads and peeks only observe. INPT0–5 drive D7 alone; all other bits retain
+open bus. This shared correction applies to legacy and extended hosts and
+is identified by behavior revision5. TIA video blanking does not suppress
+MARIA emission. Input control leaves decode, WSYNC and the audio clock
+below unchanged.
 
 The TIA has its own 456-master-tick horizontal epoch. Audio phase A occurs at
 0 and 144, B at 64 and 288. B spacing alternates 224 and 232 ticks. This

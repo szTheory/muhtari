@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-status: ready_to_plan
-stopped_at: Phase 7 shipped in PR 28; squash auto-merge and release PR checks pending
-last_updated: "2026-10-24T15:56:23.485Z"
-state_head: 36a9b7f14153b65fa86dfb44b593f1ebe8e7c2a6
+current_plan: Not started
+status: "Phase 8 shipped — PR #31; required CI and release confirmation pending"
+stopped_at: Phase 8 PR 31 opened; ship session tracks CI, merge and release; next $gsd-discuss-phase 9
+last_updated: "2026-10-25T13:41:19.915Z"
+last_activity: 2026-10-25
+last_activity_desc: Phase 8 shipped in PR 31; CI, merge and release confirmation pending
+state_head: 2c10399522dd7bf16c3b5de7024f4ab30f8c4c71
 progress:
   total_phases: 7
-  completed_phases: 3
-  total_plans: 28
-  completed_plans: 28
-  percent: 43
-last_activity: 2026-10-24
+  completed_phases: 4
+  total_plans: 42
+  completed_plans: 42
+  percent: 57
 total_phases: 7
-current_phase: 08
-current_phase_name: Controllers at the pins
-current_plan: Not started
-last_activity_desc: Phase 7 shipped in PR 28 with 35/35 verified must-haves and all six SAVE requirements
+current_phase: 09
+current_phase_name: PAL games and audio
 ---
 
 # Project State
@@ -27,25 +27,149 @@ last_activity_desc: Phase 7 shipped in PR 28 with 35/35 verified must-haves and 
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: finish Phase 7 shipping checks for PR #28, then discuss Phase 8 in a separate session.
-The helper's next-phase pointer is parked at Phase 8; no Phase 8 work was started.
+Current focus: Phase8 is verified complete and submitted in PR #31.
+API6/ABI1/behavior5 delivers typed input and movie2, native light sensing, timed
+paddles/keypads/motion and complete adapters through all three deliverables.
+All INPUT-01–05 requirements are complete. Phase9 is the next roadmap target,
+but has not started. After shipping confirmations, next command: $gsd-discuss-phase 9.
 
 ## Current Position
 
-Phase 7 is complete: nine plans, SAVE-01–06 and35/35 verified must-haves.
-Phase 5–7 are3/7 milestone phases with27/27 currently planned active slots complete.
-Phases 8–11 remain unplanned. Runtime totals28/28 include the historical halted06-01
-SUMMARY; it remains excluded from accepted active outcomes and is not a budget grant.
+Current Plan: Not started
+Total Plans in Phase: 0
+Progress: [██████░░░░] 57%
 
-Status: Phase 7 shipped - PR #28.
-Last Activity: 2026-10-24.
-Next command after shipping checks: `$gsd-discuss-phase 8`.
-Branch: `phase/07-battery-saves`. PR: https://github.com/szTheory/muhtari/pull/28
-Squash auto-merge and final head CI are checked by this ship session; the release
-pull request is checked after merge. No Phase 8 work was started.
-Phase 6 package v0.5.0 remains the last published version at PR creation.
+Phase8 is complete:14/14 accepted plans and49/49 verified truths. Four of seven
+milestone phases are complete (57%); phases9–11 remain unstarted. Runtime totals
+are42/42 summarized plans, including historical halted06-01; active accepted
+progress is41/41 known planned slots. These are not claims of milestone completion.
 
-Fresh ship checks: `cmake --workflow --preset ci` exits 0 (641+6 tests),
+Status: Phase 8 shipped — PR #31; required CI and release confirmation pending
+Last activity: 2026-10-25 — Phase8 shipping PR opened; fresh local gate passed
+Next command: $gsd-discuss-phase 9 (new session, after shipping confirmations)
+Branch: phase/08-controllers-at-the-pins. PR #31:
+https://github.com/szTheory/muhtari/pull/31
+This ship-note snapshot precedes required CI, squash auto-merge and release-PR
+confirmation; the current ship session owns those checks. No next GSD step runs here.
+
+Fresh shipping checks: `cmake --workflow --preset ci` exits0 (649+6),
+`git diff --check` exits0, and `verification.status` exits0 with passed.
+Run URL: N/A-local. Prior exact-source hosted evidence remains below.
+The ship note retains CI triggering so the final PR head has required checks.
+Existing code review is closed, both findings fixed; no routine owner review remains.
+
+Final tested source70366fdab87b2f83d65c3bf865c850b2f08d9f24,
+genuine parent7887ad65e7c7887032601109449758d6a8b0e9a9.
+CI40157749294 attempt1 passes all required jobs, including actual RetroArch:
+https://github.com/szTheory/muhtari/actions/runs/40157749294
+Native current/base649+6 on six lanes, full native/PPC649+6, ASan632,
+hygiene24, nofp18/architecture, WASM587 and342-row equality pass. All18 actual
+candidate ZIPs and authenticated eight-lane join pass; peaks414114/414134 bytes
+remain report-only. Original69 observations retain all digests/numbers except
+seven explicit behavior4→5 annotations. Hardware fits remain unmeasured.
+
+Nightly40157750598 is completed/success with eight successful jobs and one failed
+advisory property job. Five10000-case properties pass; isolation10000 at seed
+40157750598 times out390.08s (CTest8, inventory1). That evidence is unaccepted,
+with no retry or flake claim. Required isolation passes; optional profiling is
+in SEED-009. No advisory lane was promoted into a phase gate.
+https://github.com/szTheory/muhtari/actions/runs/40157750598
+
+Code review is clean after one of two allowed fix rounds: complete short gun aim
+now retains zero absent flags, proved by24 regression cases and independent real
+sensor recheck; ProLine guide labels are corrected. The expanded gun deadline is
+measured2s with unchanged workload and lane scaling. Gap round unused.
+Independent verification passes49/49; all20 locked decisions honored, no owner UAT.
+The CLI-generated148-file fingerprint and exact evidence live in08-VERIFICATION.md.
+`verification.status` exits0 with passed. Parent regression gate exits0 (649+6),
+covering65 prior-phase test references; run URL N/A-local.
+
+Completion-scanner command-as-path warnings are the reproduced advisory heuristic,
+not missing implementation. Actual declared files/commits/consumers and the complete
+independent fingerprint pass. Metadata progress fields were reconciled after the
+helper's preserved-field warnings. No verification debt or required blocker remains.
+
+## Execution evidence (historical slices)
+
+08-14 tested sourcedf8f9a6 and genuine parent81eba27 have full exact-source
+CI40153312357 and Nightly40153313963 success, attempt1. Native649+6 in all six
+current/base lanes, full native/PPC649+6, WASM587 and342-row equality pass.
+Actual RetroArch pixel/battery cases pass. All18 current ZIPs and authenticated
+quality join pass; current/base peak414124/414132 bytes remains report-only.
+Canonical14 summary preserves every failed/cancelled attempt and measured fixes.
+At that earlier acceptance point, formal review and independent goal verification remained pending.
+
+08-13 source38ec251 and summaryf08451c are accepted. Parent post-wave full-ci
+gate exits0 (648+6), N/A-local. All-family transactional/noalloc/peek/storage, real
+typed generators,10000-case isolation and bounded event/allocation probes pass.
+Local ZIP sum259493 is unchanged. Cost basee83d478 is a local slice, not main.
+
+08-12 implementation03b7f96 and summaryb11fb48 are accepted. Parent post-wave
+full-ci gate exits0 (648+6), N/A-local. Conventional mappings and six fresh26-record
+adapter groups pass every deliverable; all earlier7 reports remain byte-identical.
+Local ZIPs80625+85066+93802=259493 bytes; hygiene24 passes.
+
+08-11 implementation70465c9 and summaryc38c669 are accepted. Parent post-wave
+full-ci gate exits0 (648+6), N/A-local. Complete17-bit SNES and six-pair Mega scans,
+effective DDR edges, finite completion and eight opposite-EEPROM placements pass.
+Local ZIPs80627+84195+93802=258624 bytes; hygiene24 passes.
+
+08-10 implementation0f590fe and summary6621779 are accepted. Parent post-wave
+full-ci gate exits0 (648+6), N/A-local. Connector-specific CX22/ST/Amiga cycles,
+chronological PA7 and27 records/family pass all hosts; driving19 records persist.
+Local ZIPs79860+83497+93116=256473 bytes; hygiene24 passes.
+
+08-09 implementation2815568 and summary34e8e8e are accepted. Parent post-wave
+full-ci gate exits0 (648+6), N/A-local. Seven-node keypad connectivity, exact2864
+tick recovery,27 new records and all12 key mappings pass every deliverable.
+Paddle19 records persist. Local ZIPs79429+82858+92800=255087 bytes; hygiene24 passes.
+
+08-08 implementationf33ad71 and summary10a2354 are accepted. Parent post-wave
+full-ci gate exits0 (648+6), N/A-local. Full-range Q32 paddle charge, independent
+19-record analog diagnostic and three-host numbers/native/raw/PCM pass. Local
+three-ZIP sum250408 bytes (77799+81122+91487); hygiene24 passes.
+
+08-07 implementation9ca62b3 and summary1d204a7 are accepted. Parent post-wave
+full-ci gate exits0 (648+6), N/A-local. Owned19-record light diagnostic, actual
+three-host numbers/native/raw/PCM, fixture rebuild/admission and absolute mappings
+pass. Local three-ZIP sum246732 bytes; calibration remains unmeasured.
+
+08-06 implementation6fab3e0 and summary3e376b4 are accepted. Parent post-wave
+`gsd-tools.cjs run-with-timeout 60 -- cmake --workflow --preset ci` exits0 (648+6),
+run URL N/A-local. Native light timing and TIA latch corrections retain all69 prior
+digests/numbers; only seven named revision4→5 metadata values change. Local three-ZIP
+sum245942 bytes is authenticated by the actual producer. No hosted acceptance is
+claimed for this intermediate slice.
+
+Historical recovery tested source62fa325f665984fadc6324d65a49baed77fb31d2, genuine parentae71481227e38105ee51ca9e92f9cc5f85285b8d.
+https://github.com/szTheory/muhtari/actions/runs/40139744520 attempt1 passed every required job, including quality and actual RetroArch;
+native current/base647+6/646+6, hygiene24, ASan, nofp2, BE32 compilation and equality
+pass. WASM585 passes. Complete CMake outcome audit and actual eight-lane join exit0.
+Machine peaks401683/401727 remain reported above the retired historical cutoff.
+No retry or evidence normalization was used.
+
+Overall run conclusion is failure solely from advisory library2s pokey/rmtramdemo
+timeouts; missing results remain unaccepted advisory evidence. They are recorded
+without a proven-flake claim, retry or promotion into a new gate. The later cost
+profiling seed does not block development. Dispatch performance proves same-head
+repeatability, not phase-versus-main comparison. The armed PR+1% guard is unchanged.
+
+The canonical05 summary preserves all historical cutoff/link/timeout failures and
+adds explicit DEC.61 resolution. Defect51 is resolved by authorized policy retirement,
+not a claim the old cap passed. Defect52 remains fixed and hosted-verified.
+That recovery closed only05; at that point all INPUT requirements and phase completion were pending.
+Future slices keep local full-ci/package evidence; final08-14 owns the full exact-source
+hosted matrix, with earlier hosted probes for concrete platform/integration questions.
+
+Planning checks: `check.decision-coverage-plan` exits0 with20/20 covered;
+`check gap-analysis.plan-post` exits0 with25/25 source items covered. All38 automated
+commands pass `sh -n`; the failure-direction probe reports no findings. The path probe
+does not interpret CMake command forms; the independent checker reviewed actual/planned
+test registrations. These are local planning checks (run URL: N/A-local), not runtime
+or hosted acceptance. Required package evidence and operating cost remain execution gates; hardware
+calibration remains deferred. No review-fix or gap-execution round was used here.
+
+Historical Phase 7 ship checks: `cmake --workflow --preset ci` exits 0 (641+6 tests),
 `git diff --check` exits 0, and `verification.status` exits 0 with `passed`.
 The existing CI/nightly run URLs below were rechecked as completed/success.
 The ship-note commit deliberately retains CI triggering so the final PR head has a run.
@@ -111,8 +235,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 7 shipped in PR #28; squash auto-merge and release PR checks pending
-Last session: 2026-10-24T15:56:23.485Z
+**Stopped at:** Phase8 PR #31 opened; current ship session tracks CI, merge and release
+Last session: 2026-10-25
 Resume file: None
 
 ### Quick Tasks Completed
@@ -120,3 +244,43 @@ Resume file: None
 | Task | Description | Commit |
 |---|---|---|
 | 261023-jkd | Retire maintenance line budgets and adopt contract review | 2ab7e0d |
+
+## Performance Metrics
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 08 P01 | 6min | 2 tasks | 3 files |
+| Phase 08 P02 | 7min | 3 tasks | 16 files |
+| Phase 08 P03 | 10min | 2 tasks | 12 files |
+| Phase 08 P04 | 14min | 2 tasks | 10 files |
+| Phase 08 P05 initial halt | 101min | 2 tasks | 17 files |
+| Phase 08 P05 recovery | accepted separately | Task3 | source62fa325 |
+| Phase 08 P06 | 12min | 3 tasks | source6fab3e0 |
+| Phase 08 P07 | 14min | 3 tasks | source9ca62b3 |
+| Phase 08 P08 | 11min | 3 tasks | sourcef33ad71 |
+| Phase 08 P09 | 13min | 3 tasks | source2815568 |
+| Phase 08 P10 | 8min | 3 tasks | source0f590fe |
+| Phase 08 P11 | 8min | 2 tasks | source70465c9 |
+| Phase 08 P12 | 14min | 3 tasks | source03b7f96 |
+| Phase 08 P13 | 15min | 3 tasks | source38ec251 |
+| Phase 08 P14 | 66min verification window | 3 tasks | sourcedf8f9a6 |
+
+## Decisions
+
+- [Phase 08]: Preserve separate fixture admission, device behavior and evidence comparison authorities.
+- [Phase 08]: Admit only the exact 4-to-5 annotation transition alongside existing equality and historical adjacent pairs.
+- [Phase 08]: Preserve the old input validator and Auto fallback independently of extended device support.
+- [Phase 08]: Normalize complete extended scalar fields with fixed-size copies to preserve the restricted core link surface.
+- [Phase 08]: Keep motion timing in the existing bus owner with cached idle deadlines and fixed instance state.
+- [Phase 08]: Decode the diagnostic selector before mailbox initialization can consume the short handoff frame.
+- [Phase 08]: Exercise actual admitted controller rows through independent new-row and later-base producer controls.
+- [Phase 08]: Preserve movie1 parsing, allocation and legacy submission independently from immutable typed movie2 replay.
+- [Phase 08]: Typed syntax acceptance remains separate from physical-device capability refusal until each controller slice lands.
+- [Phase 08]: Historical399937 halt preserved; DEC.61 separately retires only that unsupported cutoff while preserving required measurements and all independent contracts.
+- [Phase 08]: Audit every required workflow job; standalone diagnostic consumers link the existing owned digest helper and actual RetroArch acceptance is verified separately from package metrics.
+
+### Blockers
+
+None required. Current-source advisory10000-case isolation timing and earlier
+publication/library costs remain in SEED-009; unaccepted evidence is preserved.
+Next command: $gsd-discuss-phase 9 in a new session after Phase8 shipping confirmations.

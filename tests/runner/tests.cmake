@@ -14,6 +14,13 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     hashes_diagnostic(battery battery.control 120 2 "${observed}" unused)
     return()
   endif()
+  if(CASE STREQUAL "controller_hashes_control")
+    set(HASHES_FUNCTIONS_ONLY ON)
+    include("${HASHES}")
+    file(READ "${REPORT}" observed)
+    hashes_controller_report(controller.motion.driving.both "${SCENARIO}" "${observed}" unused)
+    return()
+  endif()
   if(CASE STREQUAL "hashes")
     execute_process(COMMAND "${CMAKE_COMMAND}" -DMODE=write "-DRUN=${RUN}"
       "-DDRIVER=${DRIVER}" "-DDIAG=${DIAG}" "-DOUT=${OUT}"
@@ -21,8 +28,17 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       -P "${HASHES}" COMMAND_ERROR_IS_FATAL ANY)
     file(STRINGS "${OUT}/hashes.txt" rows)
     list(LENGTH rows count)
-    if(NOT count EQUAL 69)
-      message(FATAL_ERROR "hashes: expected 69 complete observation rows, got ${count}")
+    if(NOT count EQUAL 342)
+      message(FATAL_ERROR "hashes: expected 69 retained and 273 controller observation rows, got ${count}")
+    endif()
+    # Independent accepted source 54485d6, CI run 40104749040. Only the
+    # seven named audio behaviour annotations advance from 4 to 5; all
+    # earlier numeric and digest bytes remain pinned together.
+    list(SUBLIST rows 0 69 retained)
+    list(JOIN retained "\n" retained)
+    string(SHA256 retained_digest "${retained}\n")
+    if(NOT retained_digest STREQUAL "c4c9c310418422c30bbf32b204a157a564d343aadfabee4d5654b97695461761")
+      message(FATAL_ERROR "hashes: retained observations changed beyond the seven audio revision annotations")
     endif()
     foreach(launch first second)
       foreach(field frame1 frame120 audio_transitions_sha256 audio_pcm_sha256 audio_frames
@@ -36,24 +52,83 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       endforeach()
     endforeach()
     file(READ "${OUT}/hashes.txt" complete)
-    foreach(fault missing_old duplicate_old missing_new duplicate_new)
+    foreach(fault missing_old duplicate_old missing_new duplicate_new missing_controller
+        duplicate_controller reordered_controller malformed_numeric wrong_family blank_controller)
       set(prefix frame1)
       if(fault MATCHES "_new$")
         set(prefix "battery[.]second[.]save_sha256")
+      elseif(fault MATCHES "controller$")
+        set(prefix "controller[.]light[.]lightgun[.]both[.]frame1")
       endif()
       string(REGEX MATCH "${prefix} [^\n]+\n" row "${complete}")
       if(fault MATCHES "^missing_")
         string(REPLACE "${row}" "" bad "${complete}")
-      else()
+      elseif(fault MATCHES "^duplicate_")
         set(bad "${complete}${row}")
+      elseif(fault STREQUAL "reordered_controller")
+        string(REPLACE "${row}" "" bad "${complete}")
+        string(APPEND bad "${row}")
+      elseif(fault STREQUAL "malformed_numeric")
+        string(REPLACE "controller.motion.driving.both.audio_frames 12"
+          "controller.motion.driving.both.audio_frames x" bad "${complete}")
+      elseif(fault STREQUAL "blank_controller")
+        string(REPLACE "controller.motion.driving.both.audio_frames 12\n"
+          "controller.motion.driving.both.audio_frames 12\n\n" bad "${complete}")
+      else()
+        string(REPLACE "controller.motion.driving.both." "controller.motion.foreign.both."
+          bad "${complete}")
       endif()
       file(WRITE "${OUT}/hashes-battery/${fault}-a.txt" "${bad}")
       file(WRITE "${OUT}/hashes-battery/${fault}-b.txt" "${bad}")
       execute_process(COMMAND "${CMAKE_COMMAND}" -DMODE=compare -DCOUNT=2
         "-DFILES=${OUT}/hashes-battery/${fault}-a.txt;${OUT}/hashes-battery/${fault}-b.txt"
         -P "${HASHES}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
-      if(NOT rc STREQUAL "1" OR NOT err MATCHES "hashes: missing duplicate or reordered")
+      if(NOT rc STREQUAL "1" OR NOT err MATCHES "hashes:")
         message(FATAL_ERROR "hashes: accepted ${fault} equality: ${rc} ${out}${err}")
+      endif()
+    endforeach()
+    file(READ "${OUT}/hashes-controllers/driving-0/hashes-report.txt" controller_report)
+    foreach(fault valid missing duplicate reordered blank leading_blank malformed_numeric short_digest version
+        crc numeric wrong_family)
+      set(bad "${controller_report}")
+      set(scenario motion0)
+      if(fault STREQUAL "blank")
+        string(REPLACE "audio_frames 12\n" "audio_frames 12\n\n" bad "${bad}")
+      elseif(fault STREQUAL "leading_blank")
+        set(bad "\n${bad}")
+      elseif(fault STREQUAL "missing")
+        string(REGEX REPLACE "frame 12 sha256 [^\n]+\n" "" bad "${bad}")
+      elseif(fault STREQUAL "duplicate")
+        string(APPEND bad "${bad}")
+      elseif(fault STREQUAL "reordered")
+        string(REGEX MATCH "frame 1 sha256 [^\n]+\n" first "${bad}")
+        string(REPLACE "${first}" "" bad "${bad}")
+        string(APPEND bad "${first}")
+      elseif(fault STREQUAL "malformed_numeric")
+        string(REGEX REPLACE "audio_samples [0-9]+" "audio_samples 0" bad "${bad}")
+      elseif(fault STREQUAL "short_digest")
+        string(REGEX REPLACE "audio_pcm_sha256 [^\n]+" "audio_pcm_sha256 a" bad "${bad}")
+      elseif(fault STREQUAL "version")
+        string(REPLACE "audio_behaviour_revision 5" "audio_behaviour_revision 4" bad "${bad}")
+      elseif(fault MATCHES "^(crc|numeric)$")
+        set(which 4)
+        if(fault STREQUAL "numeric")
+          set(which 2)
+        endif()
+        file(READ "${OUT}/hashes-controllers/driving-0/fault-${which}.txt" mailbox)
+        string(REGEX REPLACE "diagnostic [^\n]+\n" "${mailbox}" bad "${bad}")
+      elseif(fault STREQUAL "wrong_family")
+        set(scenario motion1)
+      endif()
+      file(WRITE "${OUT}/hashes-controllers/control.txt" "${bad}")
+      execute_process(COMMAND "${CMAKE_COMMAND}" -DCASE=controller_hashes_control
+        "-DHASHES=${HASHES}" "-DREPORT=${OUT}/hashes-controllers/control.txt"
+        "-DSCENARIO=${scenario}" "-DDRIVER=${DRIVER}" "-DDIAG=${DIAG}"
+        "-DOUT=${OUT}/hashes-controllers" "-DEMULATOR=${EMULATOR}"
+        -P "${CMAKE_CURRENT_LIST_FILE}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      if((fault STREQUAL "valid" AND NOT rc STREQUAL "0") OR
+          (NOT fault STREQUAL "valid" AND (NOT rc STREQUAL "1" OR NOT err MATCHES "hashes:")))
+        message(FATAL_ERROR "hashes: controller report ${fault} control: ${rc} ${out}${err}")
       endif()
     endforeach()
     set(report "")
@@ -64,14 +139,18 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
         string(APPEND report "${row}\n")
       endif()
     endforeach()
-    foreach(fault valid missing duplicate revision mailbox)
+    foreach(fault valid missing duplicate blank leading_blank revision mailbox)
       set(bad "${report}")
       if(fault STREQUAL "missing")
         string(REGEX REPLACE "frame 120 [^\n]+\n" "" bad "${bad}")
       elseif(fault STREQUAL "duplicate")
         string(APPEND bad "${report}")
+      elseif(fault STREQUAL "blank")
+        string(REPLACE "audio_frames 120\n" "audio_frames 120\n\n" bad "${bad}")
+      elseif(fault STREQUAL "leading_blank")
+        set(bad "\n${bad}")
       elseif(fault STREQUAL "revision")
-        string(REPLACE "audio_behaviour_revision 4" "audio_behaviour_revision 3" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 5" "audio_behaviour_revision 4" bad "${bad}")
       elseif(fault STREQUAL "mailbox")
         string(REPLACE "diagnostic 4d374447" "diagnostic 00000000" bad "${bad}")
       endif()
@@ -309,7 +388,18 @@ endfunction()
   set(usage_line "usage: muhtari-run ")
   set(prolines "port1 proline\nport2 proline\n")
   set(released "|......|......|...BB|")
-  if(CASE STREQUAL "hash")
+  if(CASE STREQUAL "help")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --help
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+    foreach(claim IN ITEMS "muhtari-movie 1 or 2" lightgun paddle trakball driving keypad
+        st-mouse amiga-mouse snes2atari mega7800
+        "Controller models are uncalibrated; see docs/hardware/controllers.md")
+      string(FIND "${out}" "${claim}" found)
+      if(NOT rc STREQUAL "0" OR NOT err STREQUAL "" OR found EQUAL -1)
+        message(FATAL_ERROR "runner help lacks executed support or model qualification: ${claim}")
+      endif()
+    endforeach()
+  elseif(CASE STREQUAL "hash")
     # Fault prevented: the runner's printed hash, the line hosts and CI
     # compare, drifts from the pinned test card or exits non-zero, while the
     # library test still passes.
@@ -575,6 +665,147 @@ endfunction()
         message(FATAL_ERROR "Activision missing assumption warning was accepted")
       endif()
     endif()
+  elseif(CASE STREQUAL "movie.v2_edges")
+    # Fault prevented: a late fault reaches media, creates/truncates an output
+    # or save, identity/conflict checks disappear, or typed EOF repeats motion.
+    set(v2_dir "${OUT}/typed-effects")
+    file(MAKE_DIRECTORY "${v2_dir}")
+    set(v2 "${v2_dir}/movie.txt")
+    set(header "muhtari-movie 2\nport1 driving\nport2 none\n")
+    set(valid "|driving:0,0,0|none:|...BB|\n")
+    set(save "${v2_dir}/input.sav")
+    set(png "${v2_dir}/out.png")
+    file(WRITE "${v2}" "${header}${valid}|driving:0,0,2|none:|...BB|\n")
+    foreach(existing IN ITEMS yes no)
+      file(REMOVE "${save}" "${png}")
+      if(existing STREQUAL "yes")
+        file(WRITE "${save}" "previous valid save bytes")
+        file(WRITE "${png}" "previous output")
+        file(SHA256 "${save}" save_before)
+        file(SHA256 "${png}" png_before)
+      endif()
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${v2}" --hsc on
+        --save-dir "${v2_dir}" --frames 2 --hash-frame 1 --dump-frame "1:${png}"
+        "${DIR}/input.a78" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "1" OR NOT out STREQUAL "" OR NOT err MATCHES
+          "movie.txt:5:14: decimal out of range, expected the device's range\n$")
+        message(FATAL_ERROR "late input fault reached output or wrong diagnostic: ${rc} ${out}${err}")
+      endif()
+      if(existing STREQUAL "yes")
+        file(SHA256 "${save}" save_after)
+        file(SHA256 "${png}" png_after)
+        if(NOT save_before STREQUAL save_after OR NOT png_before STREQUAL png_after)
+          message(FATAL_ERROR "late fault truncated existing save/output")
+        endif()
+      elseif(EXISTS "${save}" OR EXISTS "${png}")
+        message(FATAL_ERROR "late fault created save/output")
+      endif()
+    endforeach()
+    # A nonexistent ROM is not opened before the last row is validated.
+    expect_exit(1 "movie.txt:5:14: decimal out of range" --movie "${v2}"
+      "${v2_dir}/missing.a78")
+    foreach(pair IN ITEMS "driving;0,0,0" "lightgun;319,241,3" "paddle;65535,65535,3" "keypad;4095" "proline;......" "joystick;....."
+        "none;" "savekey;" "atarivox;")
+      list(GET pair 0 device)
+      list(GET pair 1 payload)
+      file(WRITE "${v2}" "muhtari-movie 2\nport1 ${device}\nport2 none\n|${device}:${payload}|none:|...BB|\n")
+      expect_output("lag_frames 1\n" --movie "${v2}" --save-dir "${v2_dir}" "${DIR}/input.a78")
+    endforeach()
+    # Every typed device reaches the core rather than a joystick fallback.
+    foreach(pair IN ITEMS "trakball;-2147483648,2147483647,1" "st-mouse;2147483647,-2147483648,3"
+        "amiga-mouse;-2147483648,-2147483648,3"
+        "snes2atari;4095" "mega7800;4095")
+      list(GET pair 0 device)
+      list(GET pair 1 payload)
+      file(WRITE "${v2}" "muhtari-movie 2\nport1 ${device}\nport2 none\n|${device}:${payload}|none:|...BB|\n")
+      expect_output("lag_frames 1\n" --movie "${v2}" "${DIR}/input.a78")
+    endforeach()
+    foreach(pair IN ITEMS "mouse:0;unknown device tag" "none:;device tag mismatch"
+        "driving:+1,0,0;not a decimal" "driving:00,0,0;not a canonical decimal"
+        "driving:-0,0,0;negative zero" "driving:2147483648,0,0;decimal out of range"
+        "driving:-2147483649,0,0;decimal out of range" "driving:0,1,0;decimal out of range"
+        "driving:0,0,2;decimal out of range" "driving:0,0;missing delimiter"
+        "driving:0,0,0,0;missing delimiter")
+      list(GET pair 0 field)
+      list(GET pair 1 reason)
+      file(WRITE "${v2}" "${header}|${field}|none:|...BB|\n")
+      expect_exit(1 "movie.txt:4:[0-9]+: ${reason}" --movie "${v2}" "${DIR}/input.a78")
+    endforeach()
+    foreach(pair IN ITEMS "lightgun;320,0,2" "lightgun;0,242,2" "lightgun;0,0,4"
+        "paddle;65536,0,0" "paddle;0,0,4" "keypad;4096" "snes2atari;4096"
+        "mega7800;4096" "trakball;0,0,2" "st-mouse;0,0,4" "amiga-mouse;0,0,4")
+      list(GET pair 0 device)
+      list(GET pair 1 payload)
+      file(WRITE "${v2}" "muhtari-movie 2\nport1 ${device}\nport2 none\n|${device}:${payload}|none:|...BB|\n")
+      expect_exit(1 "movie.txt:4:[0-9]+: decimal out of range" --movie "${v2}"
+        "${v2_dir}/missing.a78")
+    endforeach()
+    set(max_field "amiga-mouse:-2147483648,-2147483648,3")
+    set(max_header "muhtari-movie 2\nport1 amiga-mouse\nport2 amiga-mouse\n")
+    set(max_row "|${max_field}|${max_field}|...BB|")
+    string(LENGTH "${max_row}" max_len)
+    if(NOT max_len EQUAL 83)
+      message(FATAL_ERROR "canonical maximum derivation changed: ${max_len}")
+    endif()
+    file(WRITE "${v2}" "${max_header}${max_row}\n")
+    expect_output("lag_frames 1\n" --movie "${v2}" "${DIR}/input.a78")
+    file(WRITE "${v2}" "${max_header}${max_row}x\n")
+    expect_exit(1 "movie.txt:4:84: line over 83 bytes" --movie "${v2}" "${v2_dir}/missing.a78")
+    file(WRITE "${v2}" "${header}${valid}")
+    expect_exit(2 "--port1 joystick conflicts with the movie's port1 driving"
+      --port1 joystick --movie "${v2}" --hsc on --save-dir "${v2_dir}" "${DIR}/input.a78")
+    if(EXISTS "${save}" OR EXISTS "${png}")
+      message(FATAL_ERROR "header conflict created save/output")
+    endif()
+    probe(input.a78)
+    probe_value(sha256_headerless digest)
+    string(REPEAT "0" 64 zeros)
+    file(WRITE "${v2}" "${header}rom-sha256 ${zeros}\n${valid}")
+    expect_exit(1 "rom-sha256 ${zeros}[^\n]* ${digest}" --movie "${v2}"
+      --hsc on --save-dir "${v2_dir}" --dump-frame "1:${png}" "${DIR}/input.a78")
+    if(EXISTS "${save}" OR EXISTS "${png}")
+      message(FATAL_ERROR "identity mismatch created save/output")
+    endif()
+    file(WRITE "${v2}" "${header}rom-sha256 ${digest}\nbehaviour 999999999\n${valid}")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${v2}" --port1 driving --port2 auto
+      "${DIR}/input.a78" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+    if(NOT rc STREQUAL "0" OR NOT out STREQUAL "lag_frames 1\n" OR NOT err MATCHES
+        "behaviour 999999999, this core's is [1-9][0-9]*; replaying anyway")
+      message(FATAL_ERROR "typed identity/warning path: ${rc} ${out}${err}")
+    endif()
+    file(WRITE "${v2}" "${header}")
+    expect_exit(2 "the movie has no frames: give --frames N" --movie "${v2}" "${DIR}/input.a78")
+    expect_output("lag_frames 1\n" --frames 1 --movie "${v2}" "${DIR}/input.a78")
+    # EOF and explicit release must produce identical frame and pin evidence.
+    set(held "|driving:4,0,1|none:|R..AB|\n")
+    set(neutral "|driving:0,0,0|none:|...AB|\n")
+    file(WRITE "${v2}" "${header}${valid}${held}")
+    run_twice(short --movie "${v2}" --frames 5 --hash-frame 5 "${DIR}/input.a78")
+    file(WRITE "${v2}" "${header}${valid}${held}${neutral}${neutral}${neutral}")
+    run_twice(long --movie "${v2}" --frames 5 --hash-frame 5 "${DIR}/input.a78")
+    if(NOT short STREQUAL long)
+      message(FATAL_ERROR "typed EOF differs from explicit release: ${short} ${long}")
+    endif()
+    foreach(device IN ITEMS snes2atari mega7800)
+      foreach(port IN ITEMS 1 2)
+        if(port EQUAL 1)
+          set(adapters "port1 ${device}\nport2 none\n")
+          set(held "|${device}:4095|none:|RSPAB|\n")
+          set(released "|${device}:0|none:|...AB|\n")
+        else()
+          set(adapters "port1 none\nport2 ${device}\n")
+          set(held "|none:|${device}:4095|RSPAB|\n")
+          set(released "|none:|${device}:0|...AB|\n")
+        endif()
+        file(WRITE "${v2}" "muhtari-movie 2\n${adapters}${held}")
+        run_twice(short --movie "${v2}" --frames 5 --hash-frame 5 --hash-audio "${DIR}/input.a78")
+        file(WRITE "${v2}" "muhtari-movie 2\n${adapters}${held}${released}${released}${released}${released}")
+        run_twice(long --movie "${v2}" --frames 5 --hash-frame 5 --hash-audio "${DIR}/input.a78")
+        if(NOT short STREQUAL long)
+          message(FATAL_ERROR "${device} port${port} EOF differs from release: ${short} ${long}")
+        endif()
+      endforeach()
+    endforeach()
   elseif(CASE STREQUAL "movie.lag")
     # Fault prevented: the runner miscounts or drops the frames in which the
     # game read no input. The input cart's even variant reads on even
@@ -582,6 +813,29 @@ endfunction()
     write_movie(lag.txt "${prolines}" "60:${released}")
     expect_output("lag_frames 30\n" --frames 60 --movie "${movie}" "${DIR}/input-even.a78")
   elseif(CASE STREQUAL "movie.replay")
+    # The additive grammar must traverse the real runner, not just parse.
+    file(WRITE "${OUT}/typed.txt" "muhtari-movie 2\nport1 proline\nport2 proline\n|proline:U.....|proline:......|...AB|\n|proline:......|proline:......|...AB|\n")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${OUT}/typed.txt"
+      --frames 4 --hash-frame 4 "${DIR}/input.a78"
+      RESULT_VARIABLE typed_rc OUTPUT_VARIABLE typed ERROR_VARIABLE typed_err)
+    if(NOT typed_rc STREQUAL "0" OR NOT typed MATCHES "frame 4 sha256 [0-9a-f]+\nlag_frames 1\n$")
+      message(FATAL_ERROR "typed replay expected exit 0 and frame evidence: ${typed_rc}\n${typed}${typed_err}")
+    endif()
+    file(WRITE "${OUT}/driving.txt" "muhtari-movie 2\nport1 driving\nport2 driving\n|driving:0,0,0|driving:0,0,0|...BB|\n|driving:0,0,0|driving:0,0,0|...BB|\n|driving:4,0,1|driving:-4,0,0|...BB|\n|driving:-1,0,0|driving:1,0,1|...BB|\n|driving:0,0,0|driving:0,0,1|...BB|\n|driving:0,0,0|driving:0,0,0|...BB|\n")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --movie "${OUT}/driving.txt"
+      --frames 12 --diagnostic "${CMAKE_CURRENT_LIST_DIR}/../diag/controller-motion.a78"
+      RESULT_VARIABLE drive_rc OUTPUT_VARIABLE drive ERROR_VARIABLE drive_err)
+    string(REGEX MATCH "diagnostic ([0-9a-f]+)\n" found "${drive}")
+    set(mailbox "${CMAKE_MATCH_1}")
+    # Connector tuples independently derived in docs/hardware/controllers.md.
+    set(records "010100000201ff0003018000040180000501ff000601de000701cc000801ed000901ff000a0100000b0180000c01ff000d01ed000e0180000f0100001001ed00110100001201ed0013018000")
+    if(NOT drive_rc STREQUAL "0" OR NOT mailbox MATCHES "^4d3744470100130e")
+      message(FATAL_ERROR "driving replay mailbox absent: ${drive_rc} ${drive}${drive_err}")
+    endif()
+    string(SUBSTRING "${mailbox}" 32 152 observed_records)
+    if(NOT observed_records STREQUAL records)
+      message(FATAL_ERROR "driving replay pin records differ: ${observed_records}")
+    endif()
     # Fault prevented: the runner drops or shifts a movie's input, or a
     # replay is not repeatable. The input cart paints what it read, so a
     # frame inside the held lines differs from an empty movie's, and a frame
@@ -741,7 +995,7 @@ endfunction()
     expect_output("" --frames 1 --boot fast)
   elseif(CASE STREQUAL "usage.port")
     expect_exit(2 "--port1 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}"
-      --frames 1 --port1 paddle)
+      --frames 1 --port1 mouse)
     expect_exit(2 "--port2 needs auto, proline, joystick, none, savekey or atarivox.*${usage_line}" --frames 1 --port2)
     expect_output("" --frames 1 --port1 joystick --port2 none)
   elseif(CASE STREQUAL "usage.region_pal")
@@ -758,7 +1012,7 @@ endif()
 # never runs a host binary or fails to start a guest one.
 string(REPLACE ";" "$<SEMICOLON>" runner_emulator "${CMAKE_CROSSCOMPILING_EMULATOR}")
 set(runner_check ${CMAKE_COMMAND} -DRUN=$<TARGET_FILE:muhtari-run> "-DEMULATOR=${runner_emulator}")
-foreach(case IN ITEMS hash hash.repeat usage.no_args usage.unknown usage.positional
+foreach(case IN ITEMS hash hash.repeat help usage.no_args usage.unknown usage.positional
     usage.frame_range usage.dump_syntax)
   muhtari_add_test(NAME runner.${case}
     COMMAND ${runner_check} -DCASE=${case} -DFRAMES=${MUHTARI_LONG_RUN} -P ${CMAKE_CURRENT_LIST_FILE}
@@ -782,7 +1036,7 @@ muhtari_add_test(NAME runner.version
 # build tree (tests/input), each case writing its own movies into OUT.
 set(runner_movie_dir ${PROJECT_BINARY_DIR}/tests/runner-movies)
 file(MAKE_DIRECTORY ${runner_movie_dir})
-foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch conflict
+foreach(case IN ITEMS lag replay ports switches past_end malformed rom_mismatch conflict v2_edges
     behaviour_warning)
   muhtari_add_test(NAME runner.movie.${case}
     COMMAND ${runner_check} -DCASE=movie.${case} -DDIR=${input_cart_dir} -DOUT=${runner_movie_dir}
@@ -978,11 +1232,26 @@ muhtari_add_test(NAME runner.png
 add_executable(muhtari-test-runner
   ${CMAKE_CURRENT_LIST_DIR}/test_runner.c
   ${PROJECT_SOURCE_DIR}/runner/bench.c
-  ${PROJECT_SOURCE_DIR}/runner/md5.c)
-target_compile_definitions(muhtari-test-runner PRIVATE _POSIX_C_SOURCE=200809L)
+  ${PROJECT_SOURCE_DIR}/runner/md5.c
+  ${PROJECT_SOURCE_DIR}/runner/clock.c
+  ${PROJECT_SOURCE_DIR}/runner/crc32.c
+  ${PROJECT_SOURCE_DIR}/runner/movie.c
+  ${PROJECT_SOURCE_DIR}/runner/png.c
+  ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+target_include_directories(muhtari-test-runner PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-runner PRIVATE muhtari::muhtari muhtari_host)
+target_compile_definitions(muhtari-test-runner PRIVATE _POSIX_C_SOURCE=200809L
+  $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 set_target_properties(muhtari-test-runner PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-runner)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/movie-owner)
+# Fault prevented: replay rereads mutable bytes, repeats relative fields,
+# skips first Auto, leaks on allocation refusal or allocates a packet array.
+muhtari_add_test(NAME runner.movie.owner COMMAND muhtari-test-runner movie
+  ${PROJECT_BINARY_DIR}/tests/movie-owner ${input_cart_dir}/input.a78
+  LABELS runner portable TIMEOUT 10)
+set_tests_properties(runner.movie.owner PROPERTIES FIXTURES_REQUIRED input_carts)
 muhtari_add_test(NAME runner.bench.percentile COMMAND muhtari-test-runner percentile
   LABELS runner bench portable TIMEOUT 10)
 # Fault prevented: on a 32-bit size_t, a large --bench count wraps the

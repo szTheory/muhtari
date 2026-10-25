@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-10-15
+updated: 2026-10-25
 ---
 
 # Lesson exchange
@@ -99,3 +99,42 @@ Exported to the sibling projects on 2026-10-15 (preparation, `8ab05fa`). GSD fin
 | MU-TEST-001 | The `theft` property-testing library needs `fork`/`waitpid` (no MSVC); a ~60-line seeded splitmix64 harness covers the need on every platform | theft v0.4.5 `src/theft_run.c` | adopted (ENGINEERING 3) |
 | MU-GSD-008 | GSD's secret-read guard blocks agents from reading `.env.local` and key files (it fires even on a grep), so secret setup is an owner command, planned as such | observed in this session | adopted (GSD-HANDOFF 7) |
 | MU-REL-004 | GitHub's App manifest flow turns the release App into one owner command and two clicks: a local page posts the manifest (exact permissions, private, webhook off), and the conversion response (`POST /app-manifests/{code}/conversions`) carries the private key, which a short owner-run helper pipes into `gh secret set` for Actions and Dependabot with no file; the helper then mints an installation token with that key to prove it reaches only this repository. gh's OAuth token cannot list installations (`GET /user/installations` answers 403), so verify from the App's side | owner-run helper on 2026-10-15: App registered, variable and both secrets set, installation token listed only this repository and was revoked | adopted (GSD-HANDOFF 7) |
+
+## Reproduced workflow recovery lessons (2026-10-24)
+
+The owner requested separate purpose review and adoption of coherent recommendations.
+[Decision and evidence](research/workflow-recovery/RECOMMENDATION.md),
+[fan-out prompt](research/workflow-recovery/prompt.txt) and GSD-HANDOFF §3.1 carry
+the operative rules. A ledger alone is not a control.
+
+| ID | Symptom and invariant | Disposition and control |
+|---|---|---|
+| MU-GSD-009 | One known archive failure hid a required RetroArch linker failure. Native success is not a complete hosted outcome audit. | Reproduced run40132929297; full-job/source audit and changed standalone-consumer preflight, GSD-HANDOFF §3.1 |
+| MU-GSD-010 | Advisory prose scanning treated a command as a missing file; summarized counts include halted plans. Neither proves accepted outcomes. | Reproduced verify-summary03 and halted graph; declared files/commits/consumer evidence and one state owner |
+| MU-GSD-011 | Repeated unchanged polling, metadata reconciliation and general replanning did not change acceptance. | Observed execution/state mismatch; bounded relevant fan-out, one adversarial synthesis, explicit stop and single state writer |
+| MU-CI-004 | A30s Apple control deadline repeatedly killed otherwise passing work; timeout samples are censored. | Successful22.79s maximum in run40135571745/job121002299364; existing twice-observed-max gives provisional46s Apple-only, same cases/oracles |
+| MU-CI-005 | A~28s frontend waited behind~25min Windows publication controls across current/base. New emulator code was not the bottleneck. | Reproduced run40135571745; seed measured publication-control profiling before DAG redesign, preserve Windows failure coverage |
+| MU-ARCH-001 | Historical compressed minimum399937 blocked correct growth by1750bytes without a demonstrated capacity objective. | Reproduced9a64bbc/run40135571745; DEC.61 retires only cutoff, preserves required authenticated measurements/integrity, no replacement quota |
+| MU-TEST-001 | Same-head repeatability was initially overclaimed as performance comparison. | Corrected08-05 evidence; preserve armed PR+1% guard, label actual workload/base, stable PR-base acceptance |
+
+Control implementation acceptance is recorded with commands/exits and the new
+exact-source run in the recovery decision. Historical size/link/timeout failures
+remain failures; retirement does not retroactively make them pass.
+
+Recovery acceptance: commit62fa325, https://github.com/szTheory/muhtari/actions/runs/40139744520, attempt1. Required CI, exact-source
+outcome audit and actual8-lane join pass (exit0). Overall workflow remains failed
+from explicitly advisory library timing; no retry or proven-flake claim.
+Only plan05 closes to5/14, next08-06 ready. Prior threshold failures remain historical.
+
+## Reproduced controller execution lessons (2026-10-25)
+
+The existing fan-out prompt carries the process changes; executable regression and
+existing deadline/inventory mechanisms carry the controls. No new dependency or
+orchestration framework was introduced.
+
+| ID | Symptom and invariant | Fix and evidence | Status |
+|---|---|---|---|
+| MU-HOST-001 | An enclosing structure's end was used to decide whether an earlier required field pair was complete; absent optional flags changed the meaning of present coordinates. | ac76249 derives completeness from the required field end;24 prefix/explicit-default/negative cases fail before the fix and pass after it. Independent sensor harness and49/49 verifier pass; CI40157749294 succeeds. | adopted |
+| MU-CI-006 | Dispatch before push completion ran an older remote head; job cancellation also hid earlier failed test steps. | Await push, check advertised remote SHA, then verify actual run head/attempt. Audit failed steps before cancellation as well as terminal job outcomes. Corrected70366fd runs were pinned before dispatch; CI audit exits0 at https://github.com/szTheory/muhtari/actions/runs/40157749294. Earlier wrong-head and failed runs remain in14-SUMMARY. | adopted |
+| MU-CI-007 | Expanded host/gun/fuzz cases retained deadlines derived from smaller workloads, wasting hosted runs. Timed-out samples do not measure complete work. | Re-measure changed workloads before dispatch under DEC.47; owning test registrations retain all cases and lane scaling. Host5s, fuzz2s and gun2s derive from complete successful samples recorded in14-SUMMARY/REVIEW-FIX. Final required CI passes; advisory10000 isolation remains explicitly unaccepted. | adopted |
+| MU-TEST-002 | Scoped CTest overwrote the preset's full JUnit file; the exact-inventory consumer correctly rejected the partial report. | Use a distinct --output-junit path for focused evidence and preserve the full-inventory artifact. The verifier's single full cmake workflow exits0 with649+6 and restores complete evidence; N/A-local,08-VERIFICATION local checks. | reproduced |

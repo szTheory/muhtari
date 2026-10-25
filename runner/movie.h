@@ -12,6 +12,7 @@
 #define MUHTARI__MOVIE_BYTES_MAX (32u * 1024u * 1024u)
 #define MUHTARI__MOVIE_FRAMES_MAX 1000000u
 #define MUHTARI__MOVIE_LINE_MAX 64u
+#define MUHTARI__MOVIE_LINE_V2_MAX 83u
 #define MUHTARI__MOVIE_HEADER_LINES_MAX 32u
 
 /* The boot key's values. */
@@ -52,5 +53,21 @@ typedef struct muhtari__movie_error {
 int muhtari__movie_parse(const uint8_t *bytes, size_t n, muhtari__movie_header *h,
                          muhtari_input *frames, uint32_t cap, uint32_t *count,
                          muhtari__movie_error *err);
+
+/* Version 2 keeps only an offset and the last absolute state. The caller
+   owns immutable validated bytes for the cursor's entire lifetime. */
+typedef struct muhtari__movie_cursor {
+    size_t pos;
+    uint32_t line, frame;
+    muhtari_input_ex last;
+} muhtari__movie_cursor;
+
+int muhtari__movie_validate_ex(const uint8_t *bytes, size_t n, muhtari__movie_header *h,
+                               uint32_t *count, muhtari__movie_cursor *cursor,
+                               muhtari__movie_error *err);
+/* Returns 1 for a row, 0 for neutral EOF, -1 for invalid bytes. */
+int muhtari__movie_next_ex(const uint8_t *bytes, size_t n, const muhtari__movie_header *h,
+                           muhtari__movie_cursor *cursor, muhtari_input_ex *in,
+                           muhtari__movie_error *err);
 
 #endif /* MUHTARI_RUNNER_MOVIE_H */

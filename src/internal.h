@@ -70,6 +70,7 @@ struct muhtari__tia {
     uint64_t next_tick, epoch_tick;
     uint16_t epoch_phase;
     uint8_t phase, initialized;
+    uint8_t input_latch_enable, input_dump, input_latch[2];
     struct muhtari__tia_channel channel[2];
 };
 
@@ -322,13 +323,47 @@ struct muhtari__maria {
    the last input set, waiting for the next VBLANK start, while pending is
    set. Pending input is not machine state. input_read records a CPU read
    of SWCHA, SWCHB or INPT0-5 in the current frame. */
+struct muhtari__motion {
+    uint64_t next_tick;
+    int32_t residual;
+    uint8_t phase, negative;
+};
+
+struct muhtari__light {
+    uint64_t sample_tick, response_tick, response_until, low_until;
+    uint16_t sample_raster, sample_x;
+    uint8_t delay, width, lines, threshold, low;
+};
+
+struct muhtari__pot {
+    uint64_t action, last_tick, crossing_tick;
+    uint32_t duration;
+};
+
+struct muhtari__adapter {
+    uint32_t snapshot;
+    uint8_t host, position, scanning;
+};
+
 struct muhtari__ports {
+    struct muhtari__motion motion[2][2];
+    struct muhtari__light light[2];
+    struct muhtari__pot pot[2][2];
+    struct muhtari__adapter adapter[2];
+    uint16_t keypad_keys[2];
+    uint8_t keypad_low[2];
+    uint64_t next_tick; /* zero when no controller deadline is armed */
     uint32_t device[2];
     uint32_t buttons[2];
     uint32_t switches;
     uint32_t pending_device[2];
     uint32_t pending_buttons[2];
     uint32_t pending_switches;
+    uint32_t load_device[2];
+    muhtari_input_ex pending_ex;
+    muhtari_input_ex applied_ex;
+    uint8_t input_mode;  /* 0 legacy, 1 extended pending */
+    uint8_t initialized; /* an extended packet has activated initial pins */
     uint8_t pending;
     uint8_t input_read;
     uint64_t io_hazard; /* frames a 2600 stick's fire shorted a driven pin */
@@ -432,6 +467,7 @@ _Static_assert(sizeof(((muhtari *)0)->bios) == MUHTARI__BIOS_SIZE_MAX, "bios arr
 #define MUHTARI__CONST_SPAN_SIZE_FIRST                                                             \
     ((uint32_t)(offsetof(muhtari_const_span, bytes) + sizeof(size_t)))
 #define MUHTARI__INPUT_SIZE_FIRST ((uint32_t)(offsetof(muhtari_input, switches) + sizeof(uint32_t)))
+#define MUHTARI__INPUT_EX_SIZE_FIRST 4u
 #define MUHTARI__SPAN_SIZE_FIRST ((uint32_t)(offsetof(muhtari_span, bytes) + sizeof(size_t)))
 #define MUHTARI__COUNTERS_SIZE_FIRST                                                               \
     ((uint32_t)(offsetof(muhtari_counters, lag_frames) + sizeof(uint64_t)))
@@ -533,6 +569,10 @@ _Static_assert(offsetof(muhtari_input, device) == 4, "input.device");
 _Static_assert(offsetof(muhtari_input, buttons) == 12, "input.buttons");
 _Static_assert(offsetof(muhtari_input, switches) == 20, "input.switches");
 _Static_assert(sizeof(muhtari_input) == 24, "input size");
+_Static_assert(sizeof(muhtari_port_input) == 40, "port input size");
+_Static_assert(offsetof(muhtari_input_ex, port) == 4, "extended input ports");
+_Static_assert(offsetof(muhtari_input_ex, switches) == 84, "extended input switches");
+_Static_assert(sizeof(muhtari_input_ex) == 88, "extended input size");
 
 /* muhtari_span: the size, then a pointer and a size_t from P on, so 64-bit
    targets carry 4 alignment bytes after the size field. */
@@ -640,6 +680,7 @@ uint8_t muhtari__tia_read(const muhtari *m, uint16_t addr);
 void muhtari__tia_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_tick);
 void muhtari__tia_reset(muhtari *m);
 void muhtari__tia_catch_up(muhtari *m, uint64_t tick);
+void muhtari__tia_pins_changed(muhtari *m);
 
 /* The RIOT as the bus sees it (src/riot.c): A9 selects its ports and timer
    or its RAM, and A0-A6 the register or byte (docs/hardware/riot.md).
@@ -698,6 +739,7 @@ void muhtari__maria_write(muhtari *m, uint16_t addr, uint8_t v, uint64_t data_ti
 void muhtari__maria_start(muhtari *m);
 uint64_t muhtari__maria_next_event(const muhtari *m);
 void muhtari__maria_event(muhtari *m);
+void muhtari__maria_flush(muhtari *m, uint64_t tick);
 
 /* The burst the bus runs when MARIA's HALT window reaches c2: T0 is the
    /HALT fall plus 6, and the return is HALTRST (docs/hardware/maria.md, The
@@ -735,6 +777,16 @@ uint8_t muhtari__peek(const muhtari *m, uint16_t addr);
 /* Applies the pending input, if any, at a VBLANK start (src/ports.c;
    docs/embedding.md, Input). */
 void muhtari__ports_latch(muhtari *m);
+void muhtari__ports_reset(muhtari *m);
+void muhtari__ports_dump(muhtari *m, uint64_t tick);
+void muhtari__ports_rows(muhtari *m, uint64_t tick);
+void muhtari__ports_host_pins(muhtari *m, uint64_t tick);
+uint64_t muhtari__ports_next_event(const muhtari *m);
+void muhtari__ports_catch_up(muhtari *m, uint64_t tick);
+void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x, uint64_t tick,
+                                 uint8_t color, int visible);
+void muhtari__bus_rearm(muhtari *m);
+muhtari_status muhtari__ports_check_device_ex(uint32_t device);
 
 /* The device wired to port 0 or 1: MUHTARI_PORT_PROLINE, _JOYSTICK or
    _UNPLUGGED, the host's choice or else the cartridge's, where a header

@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define MUHTARI_API_VERSION 5
+#define MUHTARI_API_VERSION 6
 #define MUHTARI_IMAGE_SIZE_MAX 1048704u /* 1 MiB of ROM plus a 128-byte header */
 
 typedef uint32_t muhtari_status;
@@ -244,6 +244,40 @@ typedef struct muhtari_input {
     uint32_t buttons[2]; /* MUHTARI_BUTTON_*, pressed = 1 */
     uint32_t switches;   /* MUHTARI_SWITCH_*: held = 1; a difficulty bit set = A */
 } muhtari_input;
+
+enum { MUHTARI_INPUT_GUN_OFFSCREEN = 1u };
+enum {
+    MUHTARI_SNES_BUTTON_Y = 64u,
+    MUHTARI_SNES_BUTTON_X = 128u,
+    MUHTARI_SNES_BUTTON_L = 256u,
+    MUHTARI_SNES_BUTTON_R = 512u,
+    MUHTARI_SNES_BUTTON_SELECT = 1024u,
+    MUHTARI_SNES_BUTTON_START = 2048u
+};
+enum {
+    MUHTARI_MEGA_BUTTON_C = 64u,
+    MUHTARI_MEGA_BUTTON_X = 128u,
+    MUHTARI_MEGA_BUTTON_Y = 256u,
+    MUHTARI_MEGA_BUTTON_Z = 512u,
+    MUHTARI_MEGA_BUTTON_MODE = 1024u,
+    MUHTARI_MEGA_BUTTON_START = 2048u
+};
+
+typedef struct muhtari_port_input {
+    uint32_t device, buttons;
+    uint32_t paddle[2];
+    uint32_t keypad;
+    int32_t dx, dy;
+    uint32_t gun_x, gun_y, flags;
+} muhtari_port_input;
+
+typedef struct muhtari_input_ex {
+    uint32_t size;
+    muhtari_port_input port[2];
+    uint32_t switches;
+} muhtari_input_ex;
+
+muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in);
 
 enum { MUHTARI_MEMORY_SYSTEM_RAM = 1, MUHTARI_MEMORY_RIOT_RAM = 2, MUHTARI_MEMORY_CART_RAM = 3 };
 

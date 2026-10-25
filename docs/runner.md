@@ -37,7 +37,7 @@ muhtari-run --help | --version
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
 | `[--rom] FILE` | Load the cartridge image in FILE and run it. Give at most one FILE, with or without `--rom`. A refused image prints `muhtari-run: FILE: <message>` on standard error, with the messages of [Probing an image](#probing-an-image) or `unsupported region: PAL (planned)`, and runs no frame: a 2600 image, a board this version does not emulate or a PAL cartridge exits 77, and an image that is not a cartridge, is truncated or is too large exits 1. |
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
-| `--port1 D`, `--port2 D` | The device on port 1 or port 2: `auto` (the cartridge's, the default), `proline`, `joystick`, `none`, `savekey` or `atarivox`. With a movie, the movie's header names the devices, and a `D` other than `auto` that differs from it is a usage error. Storage attaches before import; moving or adding it requires another load. AtariVox provides EEPROM only, without speech. |
+| `--port1 D`, `--port2 D` | `auto` (the cartridge's, the default), or an explicit movie2 device below. A value other than `auto` that differs from the movie header is a usage error. Storage attaches before import; moving or adding it requires another load. AtariVox provides EEPROM only, without speech. |
 | `--region R` | `auto` (the cartridge's, the default) or `ntsc`, which runs the cartridge as NTSC. `pal` is refused as a usage error until PAL is emulated. |
 | `--boot B` | `fast` (the default) starts the cartridge from the fast-boot hand-off; `bios` boots it through the BIOS given by `--bios`, from power-on. `bios` without `--bios`, or `--bios` without `bios`, is a usage error. With a movie, the movie's `boot` key decides, and a different `--boot` is a usage error. |
 | `--bios FILE` | The BIOS image `--boot bios` runs: 4,096 or 16,384 bytes whose reset vector points inside it. Its SHA-256 is printed on standard error as `bios_sha256 <hex>`. Any other file exits 1 with `muhtari-run: FILE: not a 4 KiB or 16 KiB BIOS image`. A cartridge the BIOS rejects exits 77 with `muhtari-run: FILE: the BIOS rejected the cartridge`, after the frame in which it did. |
@@ -275,6 +275,72 @@ line and its column, both counted from 1:
 ```text
 muhtari-run: run.txt:4:2: letter out of place, expected U or .
 ```
+
+### Typed movies
+
+`muhtari-movie 2` adds typed controller packets. Version 1 above retains its grammar,
+diagnostics, legacy input path and EOF behavior. Version 2 uses the same header keys,
+but both required port declarations accept every explicit device in this table.
+`auto` is CLI-only. Each frame repeats exactly those devices; hotplug is refused:
+
+```text
+muhtari-movie 2
+port1 driving
+port2 none
+|driving:0,0,0|none:|...BB|
+|driving:4,0,1|none:|...AB|
+|driving:-1,0,0|none:|...AB|
+```
+
+Frames are `|device:payload|device:payload|RSPAA|`. The console positions retain
+the version 1 letters, dots and difficulty meanings. Payloads encode complete
+absolute state; motion contributes once per frame, in connector edges:
+
+| Device | Payload |
+|---|---|
+| `proline`, `joystick` | Existing `UDLR12` / `UDLR1` letter/dot fields |
+| `none`, `savekey`, `atarivox` | Empty, including the colon: `none:` |
+| `lightgun` | `x,y,flags`: native NTSC pixel coordinates 0–319 and 0–241; flags 0–3, bit 0 trigger, bit 1 off-screen |
+| `paddle` | `pot0,pot1,buttons`: positions 0–65535, increasing resistance; buttons 0–3, low bits fire 1/2 |
+| `driving` | `dx,0,button`: signed 32-bit X motion, literal zero Y, button 0–1 |
+| `trakball` | `dx,dy,button`: signed 32-bit motion, button 0–1 |
+| `st-mouse`, `amiga-mouse` | `dx,dy,buttons`: signed 32-bit motion, buttons 0–3 |
+| `keypad` | Held-key decimal mask 0–4095, row-major low 12 bits |
+| `snes2atari`, `mega7800` | Decimal button mask 0–4095: low bits Up, Down, Left, Right, B, A; upper bits Y/X/L/R/Select/Start for SNES or C/X/Y/Z/Mode/Start for Mega |
+
+Both adapter tags execute on either port. For Mega the low B/A bits name
+native B/A, independent of frontend layout: B is the normal primary button,
+C is bit6, and A is extended-only. SNES uses the native B/A names. A typed
+adapter row never implies console switches; those remain the final explicit
+field. `4095` holds every direction and native button; `0` releases them all.
+The owned controller diagnostic checks complete serial/pair scans through
+actual replay, then compares all12 native frames, raw transitions and PCM
+with the library and loaded module. EOF is checked against explicit release
+on both ports. See [emulation tests](emulation-tests.md).
+
+Decimal integers have no whitespace, plus sign, leading zeros or negative zero.
+Signed motion accepts -2147483648 through 2147483647; the core applies its bounded
+motion policy. Empty, missing or extra fields, unknown/mismatched tags, invalid
+masks and out-of-range values are refused. Off-screen aim remains within native
+bounds; use 0,0 when aim is unknown. Syntax support does not imply physical device
+support: a device not implemented by this core revision is still refused by the core.
+
+The whole immutable file is validated before loading media, importing saves or
+creating outputs. Replay retains the bytes and one cursor with the last packet;
+it creates no per-frame packet array or index and never reopens the file. At EOF,
+buttons, keys and momentary console switches release; dx/dy become zero. Final
+pot positions, gun aim/off-screen state and difficulty positions persist. Empty
+movies need an explicit `--frames N` and use neutral devices (gun off-screen).
+Non-movie sessions submit modern Auto before their first frame, even with no held
+controls; explicit load overrides take priority over cartridge device metadata.
+
+All existing total-file, frame and header limits apply. Version 2 frame lines allow
+83 bytes excluding LF/CRLF: two maximum 37-byte
+`amiga-mouse:-2147483648,-2147483648,3` fields, four delimiters and five console
+characters. Byte 84 is refused. Other header lines retain 64 bytes and hash lines
+retain their exact special limits. Refusals report the first invalid line and column
+from 1, before any frame runs. CLI/header conflicts exit 2; malformed files and
+identity mismatches exit 1. Behaviour revision mismatches still warn and replay.
 
 ## Stopping
 

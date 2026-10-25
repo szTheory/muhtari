@@ -34,11 +34,11 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21; no partial board 
 
 ### Controllers
 
-- [ ] **INPUT-01**: Hosts can select header defaults or explicit device overrides and supply the new device inputs through append-only API, runner replay and applicable libretro abstractions without changing old caller behavior.
-- [ ] **INPUT-02**: XG-1 software sees trigger and brightness-sensitive beam-timed sensor pins, with dark/off-screen/blanking controls and fitted latency parameters identified.
-- [ ] **INPUT-03**: Paddle and keypad software sees documented buttons, pot dump/charge and matrix behavior at access time, with fitted analog timing identified.
-- [ ] **INPUT-04**: Driving, CX22 trak-ball, ST mouse and Amiga mouse software sees their documented quadrature sequences and buttons, with bounded delta handling.
-- [ ] **INPUT-05**: SNES2Atari and Mega7800 software sees documented serial/select handshakes and button states through RIOT output/DDR pin transitions.
+- [x] **INPUT-01**: Hosts can select header defaults or explicit device overrides and supply the new device inputs through append-only API, runner replay and applicable libretro abstractions without changing old caller behavior.
+- [x] **INPUT-02**: XG-1 software sees trigger and brightness-sensitive beam-timed sensor pins, with dark/off-screen/blanking controls and fitted latency parameters identified.
+- [x] **INPUT-03**: Paddle and keypad software sees documented buttons, pot dump/charge and matrix behavior at access time, with fitted analog timing identified.
+- [x] **INPUT-04**: Driving, CX22 trak-ball, ST mouse and Amiga mouse software sees their documented quadrature sequences and buttons, with bounded delta handling.
+- [x] **INPUT-05**: SNES2Atari and Mega7800 software sees documented serial/select handshakes and button states through RIOT output/DDR pin transitions.
 
 ### PAL
 
@@ -78,11 +78,11 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | SAVE-04 | Phase 7 | Complete |
 | SAVE-05 | Phase 7 | Complete |
 | SAVE-06 | Phase 7 | Complete |
-| INPUT-01 | Phase 8 | Pending |
-| INPUT-02 | Phase 8 | Pending |
-| INPUT-03 | Phase 8 | Pending |
-| INPUT-04 | Phase 8 | Pending |
-| INPUT-05 | Phase 8 | Pending |
+| INPUT-01 | Phase 8 | Complete |
+| INPUT-02 | Phase 8 | Complete |
+| INPUT-03 | Phase 8 | Complete |
+| INPUT-04 | Phase 8 | Complete |
+| INPUT-05 | Phase 8 | Complete |
 | PAL-01 | Phase 9 | Pending |
 | PAL-02 | Phase 9 | Pending |
 | PAL-03 | Phase 9 | Pending |

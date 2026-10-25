@@ -61,8 +61,10 @@ muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io)
        frame but the first after a load. That first frame starts at the
        fast boot's hand-off, which latches nothing, or at the BIOS boot's
        power-on, whose inputs are what is held as the power comes on, so
-       they apply from it (docs/runner.md, Movies). */
-    if (!m->loaded || elapsed == MUHTARI__TICKS_PER_FRAME_NTSC ||
+       they apply from it (docs/runner.md, Movies). An initial extended
+       packet also applies before fast boot's first opcode (embedding.md). */
+    if ((m->frames == 0u && m->ports.input_mode != 0u && m->ports.initialized == 0u) ||
+        !m->loaded || elapsed == MUHTARI__TICKS_PER_FRAME_NTSC ||
         elapsed == MUHTARI__VBLANK_START) {
         muhtari__ports_latch(m);
     }

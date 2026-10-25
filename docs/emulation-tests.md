@@ -53,6 +53,26 @@ from the beam in `docs/hardware/bus.md` and the line events in `docs/hardware/ma
 
 ## input
 
+`input.directions` checks both keypads:2864-tick recovery, DDR, ghosts,
+all12 keys, contention, D7/D6 and HALT/JAM. `input.pa7_edge` checks motion
+connector cycles, exact flag-clear boundaries, four-axis extreme saturation/
+cancellation and JAM/HALT. Independent vectors: `hardware/controllers.md`.
+
+`diag.controllers` judges `expected.csv`:19 records each for motion0/light0/
+analog0;27 for analog1/motion1..3;26 each for SNES motion4a..c and Mega
+motion5a..c. Fresh groups reuse the three owned ROMs and27-record cap.
+Independent equations, schedules, adapter tails/pairs and normal pins are
+in `hardware/controllers.md`. Both ports and every control execute.
+
+Library, actual movie2 runner and loaded module compare all12 native frames,
+raw transitions and exact PCM/counts after numeric identity/count/IDs/CRC and
+values pass. WASM omits module; native/public pixels and stereo copies are
+checked. Real judges reject wrong values, swapped axes/families/pairs,
+damaged tails/identification, omissions, duplicates and missing/truncated
+reports, including CRC-valid faults. Motion/light frame5 omits submission;
+adapters submit absolute state. Runner tests cover4095 masks and EOF release
+on both ports; module tests cover mappings/providers and frozen SAVE_RAM.
+
 `input.*` checks what a game reads from the controllers and the console switches. Each case builds a 48 KiB linear
 cartridge in memory from its own 6502 code and loads it through `muhtari_load`. Every frame the program waits for
 MSTAT's VBLANK, reads SWCHA, SWCHB and INPT0-INPT5 once into a ring in RAM, and then paints each byte as its own band of

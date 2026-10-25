@@ -66,19 +66,19 @@ Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` writes `build/<preset>/hashes.txt`: 47 retained card/PNG/audio/board rows, then 22
-first/second battery rows. The driver independently judges both counters and all 34,816 bytes before hashing.
-The ordered 69-row schema and report controls reject omissions, duplicates, wrong revisions and bad mailboxes.
+`runner.hashes_file` writes342 ordered rows:69 retained card/audio/board/battery observations and
+273 controller rows (13 fresh scenarios, both ports,12 frames, lag, raw/PCM and mailbox).
+Independent numeric/CRC judgment and library agreement precede controller rows. Silent raw streams remain empty.
+The retained69 match accepted source54485d6 except seven audio revision annotations4→5.
+Controls reject omitted, duplicated, reordered, malformed and wrong-family reports.
 
-CI collects the file from each lane, and the `hash-equality` job compares them:
+CI's `hash-equality` compares lane files:
 
 ```sh
 cmake "-DFILES=<file>;<file>;..." -DCOUNT=<n> -DMODE=compare -P tests/cmake/hashes.cmake
 ```
 
-The comparison passes only when it gets exactly `COUNT` files, all present and byte-identical. Otherwise it names
-the first file that differs. The fixed count means a lane that stops uploading fails the job, instead of silently
-dropping out.
+Comparison requires exactly `COUNT` present, byte-identical files with the complete schema.
 
 - **Required files.** PRs compare six native files and compile PowerPC. Nightly/release calls run full native/BE
   normal and package inventories, then require matching immutable SHA, fixtures and options for two-file hash
@@ -114,8 +114,8 @@ Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vect
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
 | `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. `cart.identify.test_list` finds the built 7800basic sample through the test hash list. No image bytes are tracked. |
-| `fuzz` | The loader and run fuzz targets' invariants replayed over their seeds and committed regressions, and on the `fuzz` lane libFuzzer itself (`docs/emulation-tests.md`, fuzz). |
-| `prop` | Properties of the run loop over 100 generated cases each, 10,000 in nightly's `prop` job ([emulation tests, prop](emulation-tests.md#prop); [CI](#ci)). |
+| `fuzz` | Loader/run seeds and regressions; run adds typed devices, signed extrema, bounded pin traffic, EEPROM coexistence and output/allocation invariants. Linux also uses libFuzzer. |
+| `prop` | 100 seeded cases each; nightly 10,000. Isolation also replays all nine typed families with nonzero payloads, pin traffic, refusals and pure peeks. |
 | `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, the movie reader (`runner.movie_parse`: good movies, and each bad one refused at its exact line and column), and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
 | `built` | Samples built from pinned tools (`tests/built/`). `built.<name>` builds one 7800basic 0.41 sample per row of `expected.txt` under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/<name>/`, and checks the `.a78` and `.bin` SHA-256s in that row. `runner.probe.sample_*` then probe `simple`: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` ([emulation tests, basic](emulation-tests.md#basic)). |
@@ -460,6 +460,10 @@ To keep a lane's `hashes.txt`, mount a directory outside the repository and copy
 `cmake-linux-x86_64` row. Under Docker's x86_64 emulation on Apple Silicon, GNU tar cannot create nested folders
 ("Function not implemented"); add `libarchive-tools` to the install list and run
 `ln -s /usr/bin/bsdtar /usr/local/bin/tar` before `fetch-pin.sh`.
+
+## Movie replay
+
+`runner.movie.owner` measures storage and cleanup; `runner.movie.v2_edges` checks child effects: `ctest --preset ci -R runner.movie -V`.
 
 ## One version source
 

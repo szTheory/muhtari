@@ -2,7 +2,7 @@
 title: "GSD hand-off: kickoff, per-phase routine, settings and owner tasks"
 summary: "How to start and run muhtari with OpenGSD one step at a time: the kickoff text, the settings and why, the per-phase and milestone routines, the owner's tasks, and what was checked before hand-off."
 read_when: "Before the kickoff, before each GSD step, and whenever a GSD step behaves unexpectedly."
-updated: 2026-10-16
+updated: 2026-10-24
 ---
 
 # GSD hand-off
@@ -106,6 +106,37 @@ only a merge can show is confirmed at ship (step 8), never in UAT.
 **Closeout policy:** a fix merged after a phase's verification makes that verification "stale". Accept an
 override closeout at milestone end when CI passes on the merged head and the milestone audit covers the phase;
 do not spend sessions refreshing digests.
+
+## 3.1. Recover a stalled step without restarting the phase
+
+For repeated retries or metadata repairs, use the
+[bounded specialist prompt](../research/workflow-recovery/prompt.txt) and
+[recovery decision](../research/workflow-recovery/RECOMMENDATION.md).
+
+- Identify the failing consumer, source/run/attempt and contract. Audit every job
+  before attributing a run to one known failure. Keep the existing required
+  aggregate authoritative; keep advisory failures visible and advisory.
+  Save the complete response including attempt and run the CMake audit in
+  [maintaining](../../docs/maintaining.md#inspecting-a-ci-run) before the handoff.
+- Run changed standalone consumers locally, batch fixes, then run hosted acceptance.
+  A retry needs a transient hypothesis and finite attempt; preserve failures.
+  Calibrate deadlines from complete successful work under DEC.47.
+- The orchestrator owns STATE/ROADMAP position and accepted counts. Executors own
+  task commits and evidence. Establish required SDK labels once. Summarized counts
+  include designed stops; they do not establish accepted completion.
+- The installed summary scanner is advisory. Its backticked-prose heuristic can
+  mistake a command for a missing file. Check declared files, commits and consumers;
+  record a reproduced heuristic limitation once.
+- Keep canonical halted summaries and failed history. Revise only the changed
+  decision using new evidence; close a halt only after revised acceptance passes.
+  Assert the intended next plan is ready, then stop this GSD step.
+- Label dispatch's actual base/performance scope. Same-head repeatability proves
+  repeatability; stable PR-base comparison proves phase-versus-main behavior.
+  Avoid documentation commits solely to manufacture identical dispatch parents.
+- Report new evidence, changed blockers or material wait estimates. A mandatory
+  periodic heartbeat can be one short unchanged-status line.
+- Stop specialist expansion when another pass would not change a choice.
+  Optional publication-harness/DAG improvements become seeds, not recovery gates.
 
 ## 4. Milestone boundaries
 

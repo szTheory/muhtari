@@ -10,7 +10,7 @@
    absent; the behaviour revision changes when a frame, audio or state hash
    changes for the same inputs. */
 #define MUHTARI__ABI 1u
-#define MUHTARI__BEHAVIOUR_REVISION 4u
+#define MUHTARI__BEHAVIOUR_REVISION 5u
 
 /* The largest size tag accepted, far above any struct's planned growth. A tag
    promises that many readable bytes; the cap bounds how far a wrong tag can
@@ -175,6 +175,12 @@ static void power_cycle(muhtari *m)
     /* Settle only already-due programming before boot changes the tick
        epoch. Power-on discards all unfinished protocol (controllers.md). */
     muhtari__savekey_catch_up(m, m->bus.ticks);
+    uint32_t load_device[2] = {m->ports.load_device[0], m->ports.load_device[1]};
+    memset(&m->ports, 0, sizeof m->ports);
+    for (unsigned p = 0u; p < 2u; p++) {
+        m->ports.load_device[p] = load_device[p];
+        m->ports.device[p] = load_device[p];
+    }
     muhtari__ports_reset_counters(m);
     if (m->cart.rom != NULL && m->bios_size != 0u) {
         muhtari__boot_bios(m);
@@ -237,10 +243,9 @@ static muhtari_status battery_prepare(struct battery_candidate *b, uint8_t rom[4
                                   (info->devices & MUHTARI_DEVICE_HSC) != 0u));
     for (unsigned p = 0; p < 2u; p++) {
         uint32_t device = media->port[p];
-        if (device != 0u && device != MUHTARI_PORT_PROLINE && device != MUHTARI_PORT_JOYSTICK &&
-            device != MUHTARI_PORT_UNPLUGGED && !battery_serial(device)) {
-            return device <= MUHTARI_PORT_MEGA7800 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
-                                                   : MUHTARI_STATUS_ERR_ARGUMENT;
+        muhtari_status st = muhtari__ports_check_device_ex(device);
+        if (st != MUHTARI_STATUS_OK) {
+            return st;
         }
         if (device == 0u) {
             device = p == 0u ? info->port1 : info->port2;
@@ -353,8 +358,7 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
         memcpy(m->battery.rom, m->hsc_load_rom, sizeof m->battery.rom);
     }
     for (unsigned p = 0; p < 2u; p++) {
-        m->ports.device[p] = media->port[p];
-        m->ports.pending_device[p] = media->port[p];
+        m->ports.load_device[p] = media->port[p];
     }
     m->bios_size = 0u;
     if (media->bios != NULL) {

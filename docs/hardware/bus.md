@@ -69,6 +69,18 @@ At power-on every RAM byte is 0. Other fill patterns are a later profile option.
 
 ## Slow cycles
 
+Controller events share the existing cached deadline owner with MARIA.
+Before an access data tick, the bus merges native-light sample deadlines,
+delayed sensor low/release edges and motion edges chronologically with
+line events. A sample flushes MARIA only through its historical emission;
+line-origin rendering preserves the previous raster's x319 before swapping
+line RAM. Scheduled light continues across blanking and frame returns.
+Held RDY/HALT cycles and JAM retain these deadlines. A slow cycle also
+delivers events due in its final tick, so instruction overshoot cannot lose
+a sensor pulse. Each electrical low reaches TIA's D6 latch without a CPU
+read. Observer peeks never flush, clock or commit controller state, and
+automatic events never count as input reads for lag accounting.
+
 Every cycle that selects the TIA or the RIOT is slow: `$0000-$001F`, `$0280-$02FF` and `$0480-$04FF` with their
 mirrors. While MEN = 0, every cycle is slow, wherever it points. A slow cycle's data is on the bus at tick 5, so a
 write to the TIA lands there. `$0240-$027F` and `$0340-$037F` sit in the RIOT's pages but select nothing, so they
