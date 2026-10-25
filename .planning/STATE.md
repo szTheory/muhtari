@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 6
+current_plan: 7
 status: Ready to execute
-stopped_at: Phase 9 plan 09-05 accepted; 09-06 ready; next $gsd-execute-phase 9
-last_updated: "2026-10-25T18:16:32Z"
+stopped_at: Phase 9 plan 09-06 accepted; 09-07 ready; next $gsd-execute-phase 9
+last_updated: "2026-10-25T18:34:55Z"
 last_activity: 2026-10-25
-last_activity_desc: Plan 09-05 accepted; 09-06 ready
-state_head: afa03f4c66fcae0147bef99155a011ba0575766f
+last_activity_desc: Plan 09-06 accepted; 09-07 ready
+state_head: 2b3ddffbe9a48d1507a6dbfc836934f70230151a
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 50
-  completed_plans: 47
+  completed_plans: 48
   percent: 57
 total_phases: 7
-current_phase: 09
 current_phase_name: PAL games and audio
+current_phase: 09
 ---
 
 # Project State
@@ -27,28 +27,28 @@ current_phase_name: PAL games and audio
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase9 plans09-01–05 are accepted locally;09-06 is ready.
+Current focus: Phase9 plans09-01–06 are accepted locally;09-07 is ready.
 The library, automatic-region runner and both libretro formats execute PAL with
 selected timing/geometry and independently proved bounded audio storage/arithmetic.
 API6/ABI1/behavior5 and retained NTSC observations remain unchanged.
-PAL-01–03 remain pending the three successor plans and final hosted acceptance.
+PAL-01–03 remain pending the two successor plans and final hosted acceptance.
 Next separate command: $gsd-execute-phase 9.
 
 ## Current Position
 
-Current Plan: 6
+Current Plan: 7
 Total Plans in Phase: 8
 Progress: [██████░░░░] 57%
 
-Phase9 has5/8 accepted plans and14/22 tasks complete. Four of seven milestone
+Phase9 has6/8 accepted plans and16/22 tasks complete. Four of seven milestone
 phases remain complete (57%); phases10–11 remain unstarted. Runtime totals are
-47 summarized active plans of50 planned, including historical halted06-01;
-accepted completed plans total46. These use the retained active-slot convention.
-The raw on-disk inventory is53 summaries and56 plans, including historical
+48 summarized active plans of50 planned, including historical halted06-01;
+accepted completed plans total47. These use the retained active-slot convention.
+The raw on-disk inventory is54 summaries and56 plans, including historical
 recovery artifacts. Summary existence alone is not phase acceptance.
 
-Status: Ready to execute09-06
-Last activity: 2026-10-25 — Plan09-05 accepted;09-06 ready
+Status: Ready to execute09-07
+Last activity: 2026-10-25 — Plan09-06 accepted;09-07 ready
 Next command: $gsd-execute-phase 9
 Branch: phase/09-pal-games-and-audio
 
@@ -135,7 +135,7 @@ judges reject every bypass; real maximum-current/hostile source paths remain
 bounded and allocation-free. No production code or quality threshold changed.
 Spectral COST21 reflects a complete20.08s local workload; deadlines are unchanged.
 
-Fresh09-05 parent gate: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake --workflow --preset ci`
+Historical09-05 parent gate: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake --workflow --preset ci`
 exits0 (652 ordinary tests,34.25s;6 release checks,0.10s). Run URL:N/A-local.
 `check evaluation-scope --plan 09-05 --commits-only --milestone-bound --max-commits 30 --raw`,
 `git diff --check` and `scripts/hygiene.sh --tree` exit0. All six declared modified
@@ -149,10 +149,33 @@ remain recorded in09-05-SUMMARY.md and are not claimed as RED evidence or passes
 No logs are committed. PAL-03 classification and85:342 analog calibration remain
 unresolved; actual sustained three-host output and hosted acceptance remain09-07/08.
 
+09-06 source355d34b and summary2b3ddff are committed. RED7681723,
+GREEN0ef76dc and join-controls355d34b resolve on this branch. The sole production
+change adds the exact named owned PAL alternative. Real temporary Git event-base
+producer and unchanged join pass/fault controls retain old manifest/sample bytes,
+raw trusted identities, exact annotations and required measured three-ZIP evidence.
+Two focused read-only boundary/evidence specialists found no material defect.
+No deadline, COST, quota, threshold, lane or behavior revision changed.
+
+Fresh09-06 parent gate: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 60 -- cmake --workflow --preset ci`
+exits0 (652 ordinary tests,35.71s;6 release checks,0.13s;quality14.25s).
+Run URL:N/A-local. `check evaluation-scope --plan 09-06 --commits-only --milestone-bound --max-commits 30 --raw`,
+`git diff --check` and `scripts/hygiene.sh --tree` exit0. All three declared
+modified files, task commits and committed summary exist; Self-Check is PASSED.
+No active wave-post hooks or gate failures. Existing producer measures exact
+source355d34b:265608 bytes versus genuine preplan4fb6302:265600 bytes,
+independently652+6 each with matching full environment/raw fixture identity.
+Explicit package/release6/6 and actual ZIP integrity pass. This is a local slice
+comparison, not hosted or phase-versus-main acceptance; the clean temporary base
+worktree is removed. Intentional admission RED and the corrected fault-input
+restoration failure remain in09-06-SUMMARY.md; no logs are committed.
+Actual owned PAL row/admission and sustained three-host observations remain09-07;
+complete hosted/current-base acceptance remains09-08. PAL requirements stay open.
+
 The installed execute-phase ready-wave gate requires dispatching the initially
 ready wave then re-running, and forbids dispatch of this run's not-ready plans.
-Only09-05 was initially ready. The fresh phase-plan-index now reports09-06 ready;
-09-07–08 await09-06–07 respectively. Stop at this boundary with no phase completion,
+Only09-06 was initially ready. The fresh phase-plan-index now reports09-07 ready;
+09-08 awaits09-07. Stop at this boundary with no phase completion,
 review, verifier or requirement-completion claim. Review-fix and gap rounds unused.
 
 Fast PAL startup140016 and zero undocumented residue remain fitted policy;
