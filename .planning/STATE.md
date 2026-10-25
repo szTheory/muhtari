@@ -3,11 +3,11 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_plan: Not started
-status: ready
-stopped_at: Phase 9 complete and verified; ready to ship Phase 9
-last_updated: "2026-10-25T22:01:44.013609Z"
+status: shipped
+stopped_at: Phase 9 shipped in PR 33; await required CI, merge and release confirmation
+last_updated: "2026-10-25T22:08:31.374Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 9 verified 42/42; PAL requirements complete; ship next
+last_activity_desc: Phase 9 shipped in PR 33; local 654+6 pass; required hosted CI and release confirmation pending
 state_head: 8814d3e80e1221cc0da71b84560c4f001852212a
 progress:
   total_phases: 7
@@ -32,7 +32,8 @@ PAL-01–03 are complete. The library, runner and both libretro formats execute 
 with selected timing/geometry and independently proved bounded audio arithmetic.
 API6/ABI1/behavior5 and all342 original NTSC observations remain unchanged.
 The one review-fix round resolves borrowed BIOS lifetime; no required blocker or owner UAT remains.
-Next separate command: $gsd-ship 9. Phases10–11 remain unstarted.
+Phase9 ships in PR33. After required CI, merge and release confirmation, the next
+separate command is $gsd-discuss-phase 10. Phases10–11 remain unstarted.
 
 ## Current Position
 
@@ -46,10 +47,33 @@ phases are complete (71%); phases10–11 remain unstarted. Active-slot runtime t
 are50 summarized plans of50 planned, including historical halted06-01;49 accepted
 completed plans. The retained active-slot convention differs from raw historical artifacts.
 
-Status: Phase9 verified; ready to ship
-Last activity: 2026-10-25 — Source-fresh acceptance and independent42/42 verification passed
-Next command: $gsd-ship 9
+Status: Phase9 shipped — PR33; required CI, merge and release confirmation pending
+Last activity: 2026-10-25 — Ship preflight passed; local654+6 and accepted hosted CI rechecked
+Next command after merge/release confirmation: $gsd-discuss-phase 10
 Branch: phase/09-pal-games-and-audio
+
+## Phase 9 shipping
+
+PR: https://github.com/szTheory/muhtari/pull/33
+Title: feat: add PAL timing and sustained audio across hosts
+Branch: phase/09-pal-games-and-audio -> main
+
+Ship preflight: `verification.status` exits0 with passed. The existing review is
+closed with0 open findings; no routine owner review or additional review round.
+`cmake --workflow --preset ci` exits0:654 tests in31.57s and6 release checks
+in0.14s. `git diff --check` and `scripts/hygiene.sh --tree` exit0. URL:N/A-local.
+`gh run view 40233948646 --json attempt,status,conclusion,headSha,url,jobs` and
+`cmake -DINPUT=build/ship-09-accepted-ci.json -DEXPECTED_SHA=419bb31faa2b7dd0c1586879e478ae8dd4ab3d6e -P tools/check_ci_run.cmake`
+exit0; the accepted CI required aggregate passes on attempt1:
+https://github.com/szTheory/muhtari/actions/runs/40233948646
+Nightly40233948516 remains completed/success at attempt2 with its advisory
+property timeout explicitly unaccepted. No failure is relabeled as passing.
+
+The ship-note commit retains CI triggering so the final PR head receives required
+checks. Auto-merge is requested by the repository ship contract; merge and release
+PR checks are confirmed by live commands before the ship session ends. This note
+records the publication action; it does not pre-claim those future outcomes.
+No Phase10 workflow runs in this session. Next: $gsd-discuss-phase 10.
 
 ## Phase 9 final acceptance
 
@@ -91,8 +115,8 @@ The completion helper's seven summary warnings reproduce its command-as-path
 heuristic. Actual declared files, reachable commits, consumers, inventories and the
 112-file fingerprint pass. Progress/current-position preservation fields are
 reconciled here. No new gate, quota, required debt or metadata-retry loop is added.
-Draft PR33 remains unmerged. Shipping and post-merge release confirmation are the
-next separate step, before starting Phase10.
+The earlier draft PR33 is promoted for shipping in this step. Required CI,
+squash auto-merge and post-merge release confirmation precede Phase10.
 
 ## Phase 9 execution history
 
@@ -451,10 +475,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase9 complete and verified; ready to ship Phase9
-Last session: 2026-10-25T22:01:44.013609Z
+**Stopped at:** Phase9 shipped in PR33; await required CI, merge and release confirmation
+Last session: 2026-10-25T22:08:31.374Z
 Resume file: None
-Next command: $gsd-ship 9
+Next command after merge/release confirmation: $gsd-discuss-phase 10
 
 ### Quick Tasks Completed
 
@@ -507,6 +531,6 @@ Next command: $gsd-ship 9
 ### Blockers
 
 No required blocker remains. Phase9 is complete with clean review and42/42
-verification; ship9 is the next separate command. Advisory10000-case isolation
+verification; PR33 is the shipping action. Advisory10000-case isolation
 cost remains unaccepted in SEED-009. Hardware calibration, broader retail
 playability and existing historical deferrals retain their stated scope.
