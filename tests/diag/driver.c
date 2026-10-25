@@ -1267,6 +1267,9 @@ static int controller_paddle_edges;
 static int16_t controller_paddle_values[2];
 static int controller_keypad_edges;
 static uint32_t controller_keypad_mask;
+static int controller_mouse_edges;
+static int16_t controller_mouse_values[11];
+static unsigned controller_mouse_queries[2][11];
 
 static void RETRO_CALLCONV controller_poll(void)
 {
@@ -1334,11 +1337,28 @@ static int16_t RETRO_CALLCONV controller_input(unsigned p, unsigned d, unsigned 
             return in.port[p].buttons != 0u ? 1 : 0;
         return id == RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN && in.port[p].flags != 0u ? 1 : 0;
     }
-    if (p >= 2u || d != RETRO_DEVICE_MOUSE || i != 0u)
+    if (p >= 2u || d != RETRO_DEVICE_MOUSE || i != 0u || id >= 11u) {
+        controller_errors++;
         return 0;
+    }
+    controller_mouse_queries[p][id]++;
+    if (controller_mouse_edges)
+        return controller_mouse_values[id];
     if (id == RETRO_DEVICE_ID_MOUSE_X)
         return (int16_t)in.port[p].dx;
-    return id == RETRO_DEVICE_ID_MOUSE_LEFT && in.port[p].buttons != 0u ? 1 : 0;
+    if (id == RETRO_DEVICE_ID_MOUSE_Y)
+        return (int16_t)in.port[p].dy;
+    if (id == RETRO_DEVICE_ID_MOUSE_LEFT)
+        return (in.port[p].buttons & MUHTARI_BUTTON_1) != 0u;
+    if (controller_motion != 0u && id == RETRO_DEVICE_ID_MOUSE_RIGHT)
+        return (in.port[p].buttons & MUHTARI_BUTTON_2) != 0u;
+    if (controller_motion != 0u && p == 0u) {
+        if (id == RETRO_DEVICE_ID_MOUSE_BUTTON_4)
+            return (in.switches & MUHTARI_SWITCH_SELECT) != 0u;
+        if (id == RETRO_DEVICE_ID_MOUSE_BUTTON_5)
+            return (in.switches & MUHTARI_SWITCH_RESET) != 0u;
+    }
+    return 0;
 }
 
 static void RETRO_CALLCONV controller_video(const void *data, unsigned w, unsigned h, size_t pitch)
@@ -1435,13 +1455,16 @@ static int controller_module(const char *module_path, const char *path)
     set_input(controller_input);
     init();
     observe(controller_raw_sample, &raw);
-    unsigned selected = controller_keypad   ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)
+    unsigned selected = controller_motion != 0u
+                            ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, controller_motion)
+                        : controller_keypad ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)
                         : controller_analog ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 0)
                         : controller_light  ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
                                             : RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0);
     controller_gun_edges = 0;
     controller_paddle_edges = 0;
     controller_keypad_edges = 0;
+    controller_mouse_edges = 0;
     set_device(0u, selected);
     set_device(1u, selected);
     struct retro_game_info game = {path, image, n, NULL};
@@ -1466,6 +1489,63 @@ static int controller_module(const char *module_path, const char *path)
         muhtari__sha256_final(&expected_raw, b);
         failed |= memcmp(a, b, sizeof a) != 0 || controller_errors != 0u ||
                   controller_videos != CONTROLLER_FRAMES || controller_audios != CONTROLLER_FRAMES;
+        if (!failed && controller_motion != 0u) {
+            set_video(NULL);
+            set_audio(NULL);
+            controller_mouse_edges = 1;
+            for (unsigned v = 0u; v < 12u; v++) {
+                memset(controller_mouse_values, 0, sizeof controller_mouse_values);
+                controller_mouse_values[RETRO_DEVICE_ID_MOUSE_X] = v == 0u   ? INT16_MIN
+                                                                   : v == 1u ? INT16_MAX
+                                                                             : -1;
+                controller_mouse_values[RETRO_DEVICE_ID_MOUSE_Y] = v == 0u   ? INT16_MAX
+                                                                   : v == 1u ? INT16_MIN
+                                                                             : 1;
+                if (v >= 2u)
+                    controller_mouse_values[v - 2u] = 1;
+                memset(controller_mouse_queries, 0, sizeof controller_mouse_queries);
+                unsigned before = controller_frame;
+                run_frame();
+                failed |= controller_frame != before + 1u;
+                bool left = controller_mouse_values[RETRO_DEVICE_ID_MOUSE_LEFT] != 0;
+                bool right = controller_mouse_values[RETRO_DEVICE_ID_MOUSE_RIGHT] != 0;
+                uint32_t buttons = controller_motion == 1u ? (left || right ? MUHTARI_BUTTON_1 : 0u)
+                                                           : (left ? MUHTARI_BUTTON_1 : 0u) |
+                                                                 (right ? MUHTARI_BUTTON_2 : 0u);
+                for (unsigned p = 0u; p < 2u; p++) {
+                    const muhtari_port_input *in = &m->ports.applied_ex.port[p];
+                    failed |= in->device != controller_motion_device() ||
+                              in->dx != controller_mouse_values[RETRO_DEVICE_ID_MOUSE_X] ||
+                              in->dy != controller_mouse_values[RETRO_DEVICE_ID_MOUSE_Y] ||
+                              in->buttons != buttons;
+                    for (unsigned id = 0u; id < 11u; id++) {
+                        bool used =
+                            id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y ||
+                            id == RETRO_DEVICE_ID_MOUSE_LEFT || id == RETRO_DEVICE_ID_MOUSE_RIGHT ||
+                            (p == 0u && (id == RETRO_DEVICE_ID_MOUSE_MIDDLE ||
+                                         id == RETRO_DEVICE_ID_MOUSE_BUTTON_4 ||
+                                         id == RETRO_DEVICE_ID_MOUSE_BUTTON_5));
+                        failed |= controller_mouse_queries[p][id] != (used ? 1u : 0u);
+                    }
+                }
+                uint32_t switches =
+                    (controller_mouse_values[RETRO_DEVICE_ID_MOUSE_MIDDLE] ? MUHTARI_SWITCH_PAUSE
+                                                                           : 0u) |
+                    (controller_mouse_values[RETRO_DEVICE_ID_MOUSE_BUTTON_4] ? MUHTARI_SWITCH_SELECT
+                                                                             : 0u) |
+                    (controller_mouse_values[RETRO_DEVICE_ID_MOUSE_BUTTON_5] ? MUHTARI_SWITCH_RESET
+                                                                             : 0u);
+                failed |= m->ports.switches != switches;
+            }
+            set_input(NULL);
+            run_frame();
+            for (unsigned p = 0u; p < 2u; p++)
+                failed |= m->ports.applied_ex.port[p].dx != 0 ||
+                          m->ports.applied_ex.port[p].dy != 0 ||
+                          m->ports.applied_ex.port[p].buttons != 0u;
+            failed |= m->ports.switches != 0u;
+            controller_mouse_edges = 0;
+        }
         if (!failed && controller_keypad) {
             controller_keypad_edges = 1;
             set_video(NULL);

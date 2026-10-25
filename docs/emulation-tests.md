@@ -53,26 +53,25 @@ from the beam in `docs/hardware/bus.md` and the line events in `docs/hardware/ma
 
 ## input
 
-`input.directions` checks both keypads through slow CPU accesses:2864-tick
-recovery, unchanged writes/polls, DDR, ghosting, all12 keys, contention,
-D7/D6, HALT/JAM and mixed-device power-on. Vectors/schedules:
-`hardware/controllers.md`.
+`input.directions` checks both keypads:2864-tick recovery, DDR, ghosts,
+all12 keys, contention, D7/D6 and HALT/JAM. `input.pa7_edge` checks motion
+connector cycles, exact flag-clear boundaries, four-axis extreme saturation/
+cancellation and JAM/HALT. Independent vectors: `hardware/controllers.md`.
 
-`diag.controllers` independently judges `tests/diag/expected.csv`:19 records
-each for `motion0`, `light0`, `analog0` paddles, plus27 keypad `analog1`
-records selected by startup Reset. Fixed-device12-frame schedules run through
-library, actual movie2 runner and loaded module; WASM explicitly omits the
-unavailable module. Header/version/identity/count/IDs/CRC and numbers precede
-equality. CRC-valid wrong or missing new records, duplicate IDs, count/version,
-CRC, missing/truncated reports must fail. Keypad covers exact early/at/late
-recovery, retained charge, ghosts, contention and D7/D6. Module vectors cover
-every key,4/all12 masks and no console collisions; host tests cover descriptors,
-base queries, provider edges, options and EEPROM freeze on both ports.
-
-All12 native frames, raw transitions and PCM/counts must agree. Module native
-bytes, public pixels and stereo copies have separate checks; observers precede
-load. Silence requires an observed empty stream. Test exports stay uninstalled.
-Motion/light frame5 omits library submission; motion retains fire without movement.
+`diag.controllers` judges `tests/diag/expected.csv`:19 records each for
+driving `motion0`, `light0`, paddles `analog0`;27 each for keypad `analog1`
+and CX22/ST/Amiga `motion1..3`, selected by startup switches. Fixed-device
+12-frame schedules run through library, immutable movie2 runner and module;
+WASM omits the module. Identity/count/IDs/CRC and numbers
+precede equality. CRC-valid wrong values, axis/family swaps, missing/duplicate
+IDs, wrong counts, corrupt CRC and missing/truncated reports fail.
+Keypads cover ghosts/recovery; motion covers both axes/reversals/buttons/PA7.
+Module vectors check all keys, simultaneous masks, both base mouse axes once,
+all buttons, extrema, missing callbacks, descriptors/providers and EEPROM freeze.
+All12 native frames, raw transitions and exact PCM/counts agree. Module native
+bytes/public pixels/stereo copies are checked; observers precede
+load. Silence requires an observed empty stream. Exports stay uninstalled.
+Motion/light frame5 omits library submission without replaying motion.
 
 `input.*` checks what a game reads from the controllers and the console switches. Each case builds a 48 KiB linear
 cartridge in memory from its own 6502 code and loads it through `muhtari_load`. Every frame the program waits for

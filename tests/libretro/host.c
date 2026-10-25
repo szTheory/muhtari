@@ -753,6 +753,74 @@ static void case_input(void)
         stop();
         memset(mouse, 0, sizeof mouse);
     }
+    for (unsigned family = 1u; family <= 3u; family++) {
+        for (unsigned port = 0u; port < 2u; port++) {
+            unsigned other = 1u - port;
+            for (unsigned storage = 0u; storage < 2u; storage++) {
+                p_set_controller_port_device(port,
+                                             RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, family));
+                p_set_controller_port_device(other,
+                                             storage ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2)
+                                                     : RETRO_DEVICE_NONE);
+                start(0);
+                void *save = p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+                CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), storage ? 32768u : 0u);
+                run_frames(3u);
+                memset(mouse_queries, 0, sizeof mouse_queries);
+                unsigned before = poll_calls;
+                mouse[port][RETRO_DEVICE_ID_MOUSE_X] = 1;
+                mouse[port][RETRO_DEVICE_ID_MOUSE_Y] = 1;
+                mouse[port][RETRO_DEVICE_ID_MOUSE_RIGHT] = 1;
+                mouse[port][RETRO_DEVICE_ID_MOUSE_WHEELUP] = 1;
+                p_run();
+                CHECK_EQ_U64(poll_calls, before + 1u);
+                for (unsigned id = 0u; id < 11u; id++) {
+                    bool used = id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y ||
+                                id == RETRO_DEVICE_ID_MOUSE_LEFT ||
+                                id == RETRO_DEVICE_ID_MOUSE_RIGHT ||
+                                id == RETRO_DEVICE_ID_MOUSE_MIDDLE ||
+                                id == RETRO_DEVICE_ID_MOUSE_BUTTON_4 ||
+                                id == RETRO_DEVICE_ID_MOUSE_BUTTON_5;
+                    CHECK_EQ_U64(mouse_queries[port][id], used ? 1u : 0u);
+                }
+                mouse[port][RETRO_DEVICE_ID_MOUSE_X] = mouse[port][RETRO_DEVICE_ID_MOUSE_Y] = 0;
+                run_frames(3u);
+                uint8_t nibble = family == 3u ? 12u : 5u;
+                CHECK_EQ_HEX(last_entry()[E_SWCHA], port == 0u
+                                                        ? (uint8_t)((uint32_t)nibble * 16u + 15u)
+                                                        : (uint8_t)(240u + nibble));
+                CHECK_EQ_HEX(last_entry()[port == 0u ? E_INPT4 : E_INPT5] & HI,
+                             family == 1u ? 0u : HI);
+                CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x3Fu);
+                mouse[port][RETRO_DEVICE_ID_MOUSE_MIDDLE] = 1;
+                mouse[port][RETRO_DEVICE_ID_MOUSE_BUTTON_4] = 1;
+                mouse[port][RETRO_DEVICE_ID_MOUSE_BUTTON_5] = 1;
+                run_frames(3u);
+                CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x34u);
+                CHECK_EQ_U64(input_descriptors, 7u);
+                for (int i = 0; i < input_descriptors; i++) {
+                    CHECK_EQ_U64(input_list[i].port, port);
+                    CHECK_EQ_U64(input_list[i].device, RETRO_DEVICE_MOUSE);
+                    CHECK_EQ_U64(input_list[i].index, 0u);
+                }
+                if (storage) {
+                    p_set_controller_port_device(other, RETRO_DEVICE_NONE);
+                    run_frames(3u);
+                    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == save);
+                    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 32768u);
+                } else {
+                    p_set_controller_port_device(other,
+                                                 RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0));
+                    pad[other] = BIT(L);
+                    run_frames(3u);
+                    CHECK_EQ_HEX(last_entry()[E_SWCHB], 0x3Fu);
+                    pad[other] = 0u;
+                }
+                stop();
+                memset(mouse, 0, sizeof mouse);
+            }
+        }
+    }
     for (unsigned port = 0u; port < 2u; port++) {
         p_set_controller_port_device(port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0));
         p_set_controller_port_device(1u - port, RETRO_DEVICE_NONE);
@@ -1052,9 +1120,19 @@ static void case_devices(void)
 {
     gun[0][RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN] = 1;
     gun[1][RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN] = 1;
-    static const char *const names[13] = {
-        "Auto (cartridge header)", "ProLine", "Joystick", "None",        "SaveKey",
-        "AtariVox EEPROM",         "Driving", "XG-1",     "Paddle pair", "Keypad", "CX22", "ST mouse", "Amiga mouse"};
+    static const char *const names[13] = {"Auto (cartridge header)",
+                                          "ProLine",
+                                          "Joystick",
+                                          "None",
+                                          "SaveKey",
+                                          "AtariVox EEPROM",
+                                          "Driving",
+                                          "XG-1",
+                                          "Paddle pair",
+                                          "Keypad",
+                                          "CX22",
+                                          "ST mouse",
+                                          "Amiga mouse"};
     static const unsigned ids[13] = {RETRO_DEVICE_JOYPAD,
                                      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
                                      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1),
@@ -1140,20 +1218,25 @@ static void case_devices(void)
                 bool light = s == 0u && headers[h] == MUHTARI_PORT_LIGHTGUN;
                 bool paddle = s == 0u && headers[h] == MUHTARI_PORT_PADDLE;
                 bool keypad = s == 0u && headers[h] == MUHTARI_PORT_KEYPAD;
+                bool mouse_device = s == 0u && (headers[h] == MUHTARI_PORT_TRAKBALL ||
+                                                headers[h] == MUHTARI_PORT_ST_MOUSE ||
+                                                headers[h] == MUHTARI_PORT_AMIGA_MOUSE);
+                bool mouse_pot = mouse_device && headers[h] != MUHTARI_PORT_TRAKBALL;
                 CHECK_EQ_HEX(entry[E_SWCHA], paddle ? (port == 0u ? 0xBEu : 0xEBu)
-                                             : unplugged || driving || keypad
+                                             : unplugged || driving || keypad || mouse_device
                                                  ? (port == 0u ? 0xFEu : 0xEFu)
                                                  : 0xEEu);
-                CHECK_EQ_HEX(entry[E_SWCHB],
-                             port == 0u && (unplugged || driving || light || paddle || keypad)
-                                 ? 0x3Fu
-                                 : 0x3Du);
+                CHECK_EQ_HEX(entry[E_SWCHB], port == 0u && (unplugged || driving || light ||
+                                                            paddle || keypad || mouse_device)
+                                                 ? 0x3Fu
+                                                 : 0x3Du);
                 for (unsigned p = 0u; p < 2u; p++) {
-                    bool empty = p == port && (unplugged || driving || light);
+                    bool empty = p == port && (unplugged || driving || light || mouse_device);
                     bool stick = p == port && joystick;
                     CHECK_EQ_HEX(entry[p == 0u ? E_INPT4 : E_INPT5] & HI,
                                  empty || (p == port && (paddle || keypad)) ? HI : 0u);
-                    CHECK_EQ_HEX(entry[p == 0u ? E_INPT1 : E_INPT3] & HI, empty || stick ? 0u : HI);
+                    CHECK_EQ_HEX(entry[p == 0u ? E_INPT1 : E_INPT3] & HI,
+                                 (empty && !mouse_pot) || stick ? 0u : HI);
                 }
                 CHECK(strstr(log_text, "input request refused") == NULL);
             }

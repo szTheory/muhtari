@@ -1788,6 +1788,80 @@ static void mouse_timing(void)
                 muhtari_destroy(m);
             }
         }
+        for (unsigned sign = 0u; sign < 2u; sign++) {
+            muhtari *m = boot(&plain);
+            CHECK(m != NULL);
+            if (m == NULL)
+                return;
+            m->bus.ticks = 100u;
+            muhtari_input_ex in;
+            memset(&in, 0, sizeof in);
+            in.size = (uint32_t)sizeof in;
+            for (unsigned p = 0u; p < 2u; p++) {
+                in.port[p].device = devices[d];
+                in.port[p].dx = sign == 0u ? INT32_MIN : INT32_MAX;
+                in.port[p].dy = sign == 0u ? INT32_MAX : INT32_MIN;
+            }
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            muhtari__ports_latch(m);
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            muhtari__ports_latch(m); /* Residual saturation independent on all four axes. */
+            m->cpu.jammed = 1u;
+            while (m->bus.ticks < 120000u)
+                muhtari__cpu_step(m);
+            uint8_t expected =
+                d == 0u ? (sign == 0u ? 0x44u : 0x11u) : (sign == 0u ? 0x99u : 0x66u);
+            CHECK_EQ_HEX(muhtari__bus_peek(m, 0x280u), expected);
+            while (m->bus.ticks < 240000u)
+                muhtari__cpu_step(m);
+            CHECK_EQ_HEX(muhtari__bus_peek(m, 0x280u), expected);
+            memset(in.port, 0, sizeof in.port);
+            in.port[0].device = in.port[1].device = MUHTARI_PORT_UNPLUGGED;
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            muhtari__ports_latch(m);
+            in.port[0].device = in.port[1].device = devices[d];
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            muhtari__ports_latch(m);
+            CHECK_EQ_HEX(muhtari__bus_peek(m, 0x280u), 0xFFu);
+            /* Opposite extreme pending input cancels unspent motion;
+               neither axis gets a fresh deadline on unchanged selection. */
+            for (unsigned p = 0u; p < 2u; p++)
+                in.port[p].dx = in.port[p].dy = INT32_MAX;
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            muhtari__ports_latch(m);
+            for (unsigned p = 0u; p < 2u; p++)
+                in.port[p].dx = in.port[p].dy = INT32_MIN;
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            muhtari__ports_latch(m);
+            uint64_t end = m->bus.ticks + 1000u;
+            while (m->bus.ticks < end)
+                muhtari__cpu_step(m);
+            CHECK_EQ_HEX(muhtari__bus_peek(m, 0x280u), 0xFFu);
+            muhtari_destroy(m);
+        }
+        for (unsigned offset = 0u; offset < 3u; offset++) {
+            muhtari *m = boot(&plain);
+            CHECK(m != NULL);
+            if (m == NULL)
+                return;
+            m->bus.ticks = 100u;
+            muhtari_input_ex in;
+            memset(&in, 0, sizeof in);
+            in.size = (uint32_t)sizeof in;
+            in.port[0].device = devices[d];
+            if (d == 2u)
+                in.port[0].dx = 4;
+            else
+                in.port[0].dy = 4;
+            CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+            muhtari__ports_latch(m);
+            uint64_t edge = d == 2u ? 1008u : 554u;
+            CHECK_EQ_HEX(motion_read(m, 0x285u, edge - 1u + offset) & 64u, offset == 0u ? 0u : 64u);
+            /* A read one tick early clears before the edge at its
+               completion tick; at/after reads clear the delivered edge. */
+            CHECK_EQ_U64(m->riot.pa7_flag, offset == 0u ? 1u : 0u);
+            muhtari_destroy(m);
+        }
         /* Port1 pin4 edges survive a complete unpolled cycle. Both
            polarities, real JAM and HALT, with simultaneous X/Y deadlines. */
         for (unsigned rising = 0u; rising < 2u; rising++) {

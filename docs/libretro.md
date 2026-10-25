@@ -25,7 +25,7 @@ The console's Reset is the switch a game reads; RetroArch's own Restart is a pow
 
 ## Devices
 
-Each port offers ten devices in Quick Menu → Controls:
+Each port offers thirteen devices in Quick Menu → Controls:
 
 | Device | What the game sees |
 |---|---|
@@ -39,6 +39,9 @@ Each port offers ten devices in Quick Menu → Controls:
 | XG-1 | absolute LIGHTGUN SCREEN_X/Y aim; TRIGGER fires; IS_OFFSCREEN suppresses light; RELOAD fires offscreen |
 | Paddle pair | ANALOG left X/right X set pots1/2; RetroPad B/A press their independent buttons; Y is ignored |
 | Keypad | twelve RetroPad controls map to all twelve held keys, independently |
+| CX22 | relative MOUSE X/Y; LEFT or RIGHT is shared fire |
+| ST mouse | relative MOUSE X/Y; independent LEFT/RIGHT fire |
+| Amiga mouse | relative MOUSE X/Y with Amiga wiring; independent LEFT/RIGHT fire |
 
 Driving uses `RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0)` for selection and base
 `RETRO_DEVICE_MOUSE` IDs for polling, once after each frame's input poll. The frontend
@@ -62,7 +65,7 @@ The native D64/W30/L9/T8 optical model is explicitly unmeasured; see
 
 Console controls come from the lowest numbered ordinary ProLine/joystick port, retaining
 port 1's preference when both are ordinary. Otherwise the lowest numbered active
-driving/gun/paddle/keypad port supplies console controls. Driving uses MIDDLE for Pause,
+driving/mouse/CX22/gun/paddle/keypad port supplies console controls. Driving uses MIDDLE for Pause,
 BUTTON_4 for Select and RIGHT for Reset; LEFT remains fire. XG-1 uses LIGHTGUN
 START for Pause, SELECT for Select and AUX_A for Reset; these do not fire or reload.
 Paddles use RetroPad Start/Select/X for Pause/Select/Reset; B/A remain the two buttons.
@@ -101,6 +104,21 @@ until reload. Pot-column recovery and switch ghosts follow the explicit
 unmeasured analog compatibility policy in
 [controller hardware](hardware/controllers.md#keypad); matrix observations
 do not claim calibrated voltages or isolating diodes.
+
+CX22, ST mouse and Amiga mouse use distinct MOUSE subclasses1/2/3
+(driving remains0). The frontend is queried through base MOUSE index0:
+X and Y once per frame, positive right/down, one unit per connector edge.
+CX22 LEFT or RIGHT is shared fire; ST/Amiga LEFT and RIGHT are independent.
+Wheels and extra buttons do not drive emulated pins. When this device supplies
+console controls, MIDDLE/BUTTON_4/BUTTON_5 are Pause/Select/Reset; RIGHT
+remains device fire. Ordinary pads retain priority and difficulty shortcuts;
+other providers use difficulty options. Auto follows supported header devices,
+descriptors refresh with selection, missing callbacks supply zero/released,
+and an opposite EEPROM remains frozen until reload. Frontends must support
+and bind base relative MOUSE axes and the supplemental buttons; selection
+alone cannot make unsupported physical bindings available. Sensitivity is a
+frontend setting; the core uses its bounded, uncalibrated timing policy in
+[controller hardware](hardware/controllers.md#motion).
 
 ## Options
 
