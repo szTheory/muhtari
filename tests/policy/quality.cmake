@@ -386,7 +386,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     sample_row5 sample_pin5 sample_source5 sample_digest5 sample_numeric5 sample_trailer5
     sample_forged5 sample_annotation5 sample_unterminated5
     pal_addition pal_later pal_unchanged pal_changed_old pal_deleted_old pal_order
-    pal_duplicate_old pal_duplicate_new pal_duplicate_later pal_changed_later
+    pal_duplicate_old pal_duplicate_new pal_duplicate_later pal_changed_later pal_deleted_later
     pal_unrelated pal_source pal_pin pal_license pal_digest pal_digest_upper
     pal_malformed pal_trailer pal_comment pal_forged)
   set(candidate "${trusted}${additions}")
@@ -409,7 +409,7 @@ foreach(case unchanged additions push dispatch later_base changed changed_later 
     elseif(case MATCHES "^pal_(changed.*|forged)$")
       string(REPLACE "\tMIT\t" "\tunknown\t" replacement "${changed}")
       set(regex "quality: deleted or changed trusted manifest")
-    elseif(case STREQUAL "pal_deleted_old")
+    elseif(case MATCHES "^pal_deleted_")
       set(replacement "")
       set(regex "quality: deleted or changed trusted manifest")
     elseif(case STREQUAL "pal_order")
