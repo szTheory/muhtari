@@ -427,9 +427,12 @@ static void extended_digital(void)
    both difficulties B, SWCHB reads $3F (docs/hardware/controllers.md,
    Switches). Each direction also changes the picture of the frame that
    reads it. */
+static void paddle_timing(void);
+
 static int directions(void)
 {
     extended_digital();
+    paddle_timing();
     static const row rows[] = {
         {&plain, PROLINES "|U.....|......|...BB|\n", {0xEFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
         /* section 3.1: pin 1, SWCHA b4 */
@@ -1255,6 +1258,52 @@ static uint8_t motion_read(muhtari *m, uint16_t addr, uint64_t tick)
     muhtari__cpu_step(m);
     CHECK_EQ_U64(m->bus.ticks, tick + 1u);
     return m->cpu.a;
+}
+
+/* Independent RC vectors in controllers.md; all observations execute real
+   cartridge LDA/STA instructions at the slow input data tick. */
+static void paddle_timing(void)
+{
+    static const uint32_t positions[] = {0u, 32767u, 32768u, 65535u};
+    static const uint32_t durations[] = {1878u, 95750u, 95753u, 189625u};
+    for (unsigned port = 0u; port < 2u; port++) {
+        for (unsigned pot = 0u; pot < 2u; pot++) {
+            for (unsigned v = 0u; v < 4u; v++) {
+                for (unsigned edge = 0u; edge < 3u; edge++) {
+                    muhtari *m = boot(&plain);
+                    CHECK(m != NULL);
+                    if (m == NULL) {
+                        return;
+                    }
+                    (void)input_access(m, 1u, 1, 7u);
+                    muhtari_input_ex in;
+                    memset(&in, 0, sizeof in);
+                    in.size = (uint32_t)sizeof in;
+                    in.port[port].device = MUHTARI_PORT_PADDLE;
+                    in.port[port].paddle[pot] = positions[v];
+                    in.port[port].buttons = pot == 0u ? MUHTARI_BUTTON_1 : MUHTARI_BUTTON_2;
+                    muhtari_status st = muhtari_set_input_ex(m, &in);
+                    CHECK_EQ_U64(st, MUHTARI_STATUS_OK);
+                    if (st != MUHTARI_STATUS_OK) {
+                        muhtari_destroy(m);
+                        return;
+                    }
+                    muhtari__ports_latch(m);
+                    uint64_t release = m->bus.ticks + 100u;
+                    (void)light_access_at(m, 1u, release - 50u, 1, 0x80u);
+                    (void)light_access_at(m, 1u, release, 1, 0u);
+                    uint64_t crossing = release + durations[v];
+                    uint16_t reg = (uint16_t)(8u + port * 2u + pot);
+                    CHECK_EQ_HEX(light_access_at(m, reg, crossing + edge - 1u, 0, 0u) & 0x80u,
+                                 edge == 0u ? 0u : 0x80u);
+                    uint8_t mask = (uint8_t)((pot == 0u ? 0x80u : 0x40u) >> (port * 4u));
+                    CHECK_EQ_HEX(input_access(m, 0x0280u, 0, 0u), 0xFFu ^ mask);
+                    CHECK_EQ_HEX(input_access(m, (uint16_t)(12u + port), 0, 0u), 0x80u);
+                    muhtari_destroy(m);
+                }
+            }
+        }
+    }
 }
 
 static void driving_timing(void)
