@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_plan: 7
+current_plan: 8
 status: executing
-stopped_at: 08-06 verified;08-07 ready
-last_updated: "2026-10-24T23:41:20.019Z"
+stopped_at: 08-07 verified;08-08 ready
+last_updated: "2026-10-25T00:13:20.977048+00:00"
 last_activity: 2026-10-24
-last_activity_desc: 08-06 accepted after648+6 local checks;08-07 ready
-state_head: 3e376b4
+last_activity_desc: 08-07 accepted after648+6 local checks;08-08 ready
+state_head: 1d204a7
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 34
+  completed_plans: 35
   percent: 43
 total_phases: 7
 current_phase_name: Controllers at the pins
@@ -27,27 +27,32 @@ current_phase: 08
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Controllers at the pins. Plans01–06 are accepted; the first driving
+Current focus: Controllers at the pins. Plans01–07 are accepted; the first driving
 slice runs through library, immutable runner replay and actual libretro/RetroArch.
 A separately authorized DEC.61 review retired only the unsupported archive cutoff;
 required authenticated measurements and package integrity remain. No INPUT
-requirement is complete. Next is08-07 lightgun boundary and three-host evidence.
+requirement is complete. Next is08-08 full-range timed paddles and three-host evidence.
 
 ## Current Position
 
-Current Plan: 7
+Current Plan: 8
 Total Plans in Phase: 14
 Progress: [████░░░░░░] 43%
 
-Phase8 has6/14 accepted plans;08-06 passes full local CI648+6 and package checks.
-Runtime summarized totals are34/42, including historical halted06-01.
-Accepted active progress is33/41;3/7 milestone phases remain complete (43%).
+Phase8 has7/14 accepted plans;08-07 passes full local CI648+6 and package checks.
+Runtime summarized totals are35/42, including historical halted06-01.
+Accepted active progress is34/41;3/7 milestone phases remain complete (43%).
 The runtime summary count is not an accepted-completion count.
 
-Status: Executing Phase 08;08-07 ready
-Last activity: 2026-10-24 —08-06 accepted; continuing the dependency-ready wave
+Status: Executing Phase 08;08-08 ready
+Last activity: 2026-10-24 —08-07 accepted; continuing the dependency-ready wave
 Next command: $gsd-execute-phase 8
 Branch: phase/08-controllers-at-the-pins. No Phase8 PR, merge or release.
+
+08-07 implementation9ca62b3 and summary1d204a7 are accepted. Parent post-wave
+full-ci gate exits0 (648+6), N/A-local. Owned19-record light diagnostic, actual
+three-host numbers/native/raw/PCM, fixture rebuild/admission and absolute mappings
+pass. Local three-ZIP sum246732 bytes; calibration remains unmeasured.
 
 08-06 implementation6fab3e0 and summary3e376b4 are accepted. Parent post-wave
 `gsd-tools.cjs run-with-timeout 60 -- cmake --workflow --preset ci` exits0 (648+6),
@@ -72,7 +77,7 @@ repeatability, not phase-versus-main comparison. The armed PR+1% guard is unchan
 The canonical05 summary preserves all historical cutoff/link/timeout failures and
 adds explicit DEC.61 resolution. Defect51 is resolved by authorized policy retirement,
 not a claim the old cap passed. Defect52 remains fixed and hosted-verified.
-Only05 closes. All INPUT requirements and phase completion remain pending.
+That recovery closed only05. All INPUT requirements and phase completion remain pending.
 Future slices keep local full-ci/package evidence; final08-14 owns the full exact-source
 hosted matrix, with earlier hosted probes for concrete platform/integration questions.
 
@@ -150,9 +155,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:**08-06 verified;08-07 ready
+**Stopped at:**08-07 verified;08-08 ready
 Last session: 2026-10-24T22:21:15.223Z
-Resume file: .planning/phases/08-controllers-at-the-pins/08-07-PLAN.md
+Resume file: .planning/phases/08-controllers-at-the-pins/08-08-PLAN.md
 
 ### Quick Tasks Completed
 
@@ -171,6 +176,7 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-07-PLAN.md
 | Phase 08 P05 initial halt | 101min | 2 tasks | 17 files |
 | Phase 08 P05 recovery | accepted separately | Task3 | source62fa325 |
 | Phase 08 P06 | 12min | 3 tasks | source6fab3e0 |
+| Phase 08 P07 | 14min | 3 tasks | source9ca62b3 |
 
 ## Decisions
 
@@ -190,4 +196,4 @@ Resume file: .planning/phases/08-controllers-at-the-pins/08-07-PLAN.md
 
 None required. Advisory library timing evidence and measured publication-control
 cost remain in the existing seed; neither is promoted into a controller gate.
-Current execution continues at08-07; no requirement is complete.
+Current execution continues at08-08; no requirement is complete.
