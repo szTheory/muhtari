@@ -151,6 +151,7 @@ the two existing screenshot and save-roundtrip cases.
 | Port 1/2 battery device (`muhtari_battery_port1`, `muhtari_battery_port2`) | Auto (default), None, SaveKey, AtariVox | at content load |
 
 Auto region follows content metadata; an explicit choice overrides it at load.
+Firmware names and sizes do not select the console region.
 Changing region during a session, including Restart, keeps the loaded timing and
 geometry until content is reloaded. No-content operation is always the NTSC test card.
 Auto palette follows the effective loaded region; explicit warm palettes only change
@@ -163,6 +164,9 @@ The frontend queries AV after load; load sends no AV/geometry update callback.
 All 292 rows and up to 962 mono samples are retained in either pixel format.
 Unload, failed load and deinit clear the selected AV/region and output pointers;
 queries then report the NTSC fallback. The automatic palette cache also returns to NTSC.
+The adapter releases the previous session before loading another image: a failed
+load leaves that clean fallback, unlike the library's transactional load behavior.
+Frontends requery AV after each successful load and reload content to apply region changes.
 
 Battery options override controller requests supplied before load; Auto follows those requests, then
 cartridge metadata. A SaveKey hint without a location selects port 2. Battery None suppresses automatic

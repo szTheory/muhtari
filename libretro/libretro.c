@@ -1225,6 +1225,9 @@ static bool lr_load_content(const struct retro_game_info *game)
         media.size = (uint32_t)sizeof media;
         media.image = content;
         media.image_size = content_size;
+        media.region = lr_option_is("muhtari_region", "pal")    ? MUHTARI_REGION_PAL
+                       : lr_option_is("muhtari_region", "ntsc") ? MUHTARI_REGION_NTSC
+                                                                : 0u;
         lr_battery_request(&media);
         loaded_port[0] = media.port[0];
         loaded_port[1] = media.port[1];
@@ -1269,7 +1272,8 @@ static bool lr_load_content(const struct retro_game_info *game)
         }
     }
     lr_check_battery_request(&media);
-    selected_region = cart.region == MUHTARI_REGION_PAL ? RETRO_REGION_PAL : RETRO_REGION_NTSC;
+    uint32_t effective = media.region != 0u ? media.region : cart.region;
+    selected_region = effective == MUHTARI_REGION_PAL ? RETRO_REGION_PAL : RETRO_REGION_NTSC;
     return true;
 }
 
