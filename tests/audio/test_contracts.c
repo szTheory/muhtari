@@ -106,52 +106,60 @@ static void load_audio_program(muhtari *m)
 static void test_audio_boundaries(void)
 {
     muhtari *a = make(), *b = make();
-    int16_t whole[AUDIO_CAP], split[AUDIO_CAP];
-    for (unsigned offset = 0u; offset < 3u; offset++) {
-        const uint64_t end = TICKS_PER_FRAME;
-        const uint64_t event = end - 1u + offset;
-        muhtari__synth_reset(a, 0u, 0u);
-        muhtari__synth_reset(b, 0u, 0u);
-        muhtari__synth_level(a, event, 0u, 15u);
-        muhtari__synth_level(b, event, 0u, 15u);
-        CHECK_EQ_U64(muhtari__synth_render(a, end, whole), 800u);
-        CHECK_EQ_U64(muhtari__synth_render(b, end, NULL), 800u);
-        CHECK_EQ_U64(a->synth.pending, offset == 0u ? 0u : 1u);
-        CHECK_EQ_U64(a->synth.mixed_level, offset == 0u ? 12240u : 0u);
-        for (unsigned i = 0u; i < 800u; i++) {
-            CHECK_EQ_U64(whole[i], 0u);
-        }
-        uint32_t n = muhtari__synth_render(a, end + 13125u, whole);
-        CHECK_EQ_U64(muhtari__synth_render(b, end + 13125u, split), n);
-        CHECK_EQ_U64(n, 88u);
-        CHECK(memcmp(whole, split, n * sizeof whole[0]) == 0);
-        CHECK(a->synth.pre_clip_peak > 0u);
-        CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
-    }
-    const uint32_t future = TICKS_PER_FRAME + MUHTARI__SYNTH_OVERSHOOT_TICKS;
-    for (unsigned path = 0u; path < 2u; path++) {
-        muhtari *m = path == 0u ? a : b;
-        muhtari__synth_reset(m, 0u, 0u);
-        for (uint32_t tick = 0u; tick < future; tick += 17u) {
-            /* Before each flush, account for all samples it could append.
-               This fails as a test assertion even in NDEBUG builds. */
-            uint64_t produced = (uint64_t)tick * 88u / 13125u;
-            CHECK(produced <= MUHTARI__SYNTH_PCM_CAPACITY);
-            if (produced > MUHTARI__SYNTH_PCM_CAPACITY) {
-                break;
+    int16_t whole[962], split[962];
+    for (unsigned pal = 0u; pal < 2u; pal++) {
+        a->effective_region = b->effective_region =
+            pal != 0u ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC;
+        uint32_t frame_ticks = pal != 0u ? 142102u : TICKS_PER_FRAME;
+        uint32_t numerator = pal != 0u ? 4000u : 88u, denominator = pal != 0u ? 591149u : 13125u;
+        uint32_t frame_count = pal != 0u ? 961u : 800u;
+        for (unsigned offset = 0u; offset < 3u; offset++) {
+            const uint64_t end = frame_ticks;
+            const uint64_t event = end - 1u + offset;
+            muhtari__synth_reset(a, 0u, 0u);
+            muhtari__synth_reset(b, 0u, 0u);
+            muhtari__synth_level(a, event, 0u, 15u);
+            muhtari__synth_level(b, event, 0u, 15u);
+            CHECK_EQ_U64(muhtari__synth_render(a, end, whole), frame_count);
+            CHECK_EQ_U64(muhtari__synth_render(b, end, NULL), frame_count);
+            CHECK_EQ_U64(a->synth.pending, offset == 0u ? 0u : 1u);
+            CHECK_EQ_U64(a->synth.mixed_level, offset == 0u ? 12240u : 0u);
+            for (unsigned i = 0u; i < frame_count; i++) {
+                CHECK_EQ_U64(whole[i], 0u);
             }
-            muhtari__synth_level(m, tick, 0u, (uint16_t)((tick / 17u & 1u) * 15u));
+            uint32_t n = muhtari__synth_render(a, end + 13125u, whole);
+            CHECK_EQ_U64(muhtari__synth_render(b, end + 13125u, split), n);
+            CHECK_EQ_U64(n, pal != 0u ? 89u : 88u);
+            CHECK(memcmp(whole, split, n * sizeof whole[0]) == 0);
+            CHECK(a->synth.pre_clip_peak > 0u);
+            CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
         }
-        CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_PCM_CAPACITY);
+        const uint32_t future = frame_ticks + MUHTARI__SYNTH_OVERSHOOT_TICKS;
+        for (unsigned path = 0u; path < 2u; path++) {
+            muhtari *m = path == 0u ? a : b;
+            muhtari__synth_reset(m, 0u, 0u);
+            for (uint32_t tick = 0u; tick < future; tick += 17u) {
+                /* Before each flush, account for all samples it could append.
+                   This fails as a test assertion even in NDEBUG builds. */
+                uint64_t produced = (uint64_t)tick * numerator / denominator;
+                CHECK(produced <= MUHTARI__SYNTH_PCM_CAPACITY);
+                if (produced > MUHTARI__SYNTH_PCM_CAPACITY) {
+                    break;
+                }
+                muhtari__synth_level(m, tick, 0u, (uint16_t)((tick / 17u & 1u) * 15u));
+            }
+            CHECK(m->synth.pcm_count <= MUHTARI__SYNTH_PCM_CAPACITY);
+        }
+        CHECK_EQ_U64(muhtari__synth_render(a, frame_ticks, whole), frame_count);
+        CHECK_EQ_U64(muhtari__synth_render(b, frame_ticks, NULL), frame_count);
+        CHECK(a->synth.pcm_count > 0u);
+        CHECK(a->synth.pcm_count <= (pal != 0u ? 141u : 139u));
+        uint32_t n = muhtari__synth_render(a, future, whole);
+        CHECK_EQ_U64(muhtari__synth_render(b, future, split), n);
+        CHECK(memcmp(whole, split, n * sizeof whole[0]) == 0);
+        CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
+        CHECK(a->synth.carry_high_water <= (pal != 0u ? 141u : 139u));
     }
-    CHECK_EQ_U64(muhtari__synth_render(a, TICKS_PER_FRAME, whole), 800u);
-    CHECK_EQ_U64(muhtari__synth_render(b, TICKS_PER_FRAME, NULL), 800u);
-    CHECK(a->synth.pcm_count > 0u);
-    CHECK(a->synth.pcm_count <= MUHTARI__SYNTH_CARRY_SAMPLES);
-    uint32_t n = muhtari__synth_render(a, future, whole);
-    CHECK_EQ_U64(muhtari__synth_render(b, future, split), n);
-    CHECK(memcmp(whole, split, n * sizeof whole[0]) == 0);
-    CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
     muhtari_destroy(b);
     muhtari_destroy(a);
 }
@@ -480,6 +488,210 @@ static void collect(void *user, uint64_t tick, uint8_t source, uint16_t raw)
     e->item[e->count].source = source;
     e->item[e->count++].level = raw;
 }
+
+static void test_pal_frames(void)
+{
+    muhtari *a = make(), *b = make();
+    muhtari *before = malloc(sizeof *before);
+    CHECK(before != NULL);
+    if (before == NULL) {
+        muhtari_destroy(a);
+        muhtari_destroy(b);
+        return;
+    }
+    memset(streams, 0, sizeof streams);
+    CHECK_EQ_U64(muhtari__synth_observe(a, collect, &streams[0]), 0u);
+    CHECK_EQ_U64(muhtari__synth_observe(b, collect, &streams[1]), 0u);
+    make_cart(cart, tone, sizeof tone, 1u);
+    muhtari_media media = media_for(cart, sizeof cart);
+    CHECK_EQ_U64(muhtari_load(a, &media), 0u);
+    CHECK_EQ_U64(muhtari_load(b, &media), 0u);
+    CHECK_EQ_U64(a->synth.origin, 140016u);
+    muhtari *hidden = make();
+    muhtari__tia_reset(hidden);
+    muhtari__tia_catch_up(hidden, 140016u);
+    CHECK(memcmp(&a->tia, &hidden->tia, sizeof a->tia) == 0);
+    muhtari_destroy(hidden);
+    int16_t actual[963], peer[963];
+    static uint8_t video[320u * 292u];
+    uint32_t remainder = 0u;
+    uint64_t samples = 0u;
+    unsigned counts[2] = {0};
+    muhtari_input_ex input = {0};
+    input.size = (uint32_t)sizeof input;
+    input.port[0].buttons = MUHTARI_BUTTON_1;
+    CHECK_EQ_U64(muhtari_set_input_ex(a, &input), 0u);
+    CHECK_EQ_U64(muhtari_set_input_ex(b, &input), 0u);
+    for (unsigned frame = 0u; frame < 17u; frame++) {
+        uint32_t elapsed = frame == 0u ? 141960u : 142102u;
+        uint32_t accumulator = remainder + elapsed * 4000u;
+        uint32_t count = accumulator / 591149u;
+        remainder = accumulator % 591149u;
+        if (frame == 0u) {
+            CHECK_EQ_U64(count, 960u);
+            CHECK_EQ_U64(remainder, 336960u);
+        } else {
+            CHECK(count == 961u || count == 962u);
+            counts[count - 961u]++;
+        }
+        for (unsigned k = 0u; k < 2u; k++) {
+            muhtari *m = k == 0u ? a : b;
+            if (frame == 3u) {
+                uint64_t end = m->frame_deadline;
+                muhtari__observe_begin(m, end);
+                while (m->bus.ticks < end - 40u)
+                    muhtari__cpu_step(m);
+                muhtari__bus_write(m, 2u, 0u);
+                m->bus.rdy_release = end + 400u;
+                CHECK_EQ_U64(muhtari__bus_request_halt(m, end + 28u, end + 450u), 1u);
+            }
+            if (frame == 8u)
+                m->cpu.jammed = 1u;
+        }
+        muhtari_frame io;
+        memcpy(before, a, sizeof *a);
+        unsigned callbacks = streams[0].count;
+        frame_io(&io, video, 320u, actual, count - 1u);
+        CHECK_EQ_U64(muhtari_run_frame(a, &io), MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL);
+        CHECK_EQ_U64(io.audio_count, 0u);
+        CHECK_EQ_U64(streams[0].count, callbacks);
+        CHECK(memcmp(a, before, sizeof *a) == 0);
+        actual[count] = AUDIO_SENTINEL;
+        uint64_t end = a->frame_deadline;
+        frame_io(&io, video, 320u, actual, count);
+        CHECK_EQ_U64(muhtari_run_frame(a, &io), 0u);
+        CHECK_EQ_U64(io.audio_count, count);
+        CHECK_EQ_U64(actual[count], AUDIO_SENTINEL);
+        frame_io(&io, NULL, 0u, (frame & 1u) != 0u ? peer : NULL, count);
+        CHECK_EQ_U64(muhtari_run_frame(b, &io), 0u);
+        CHECK_EQ_U64(io.audio_count, count);
+        if ((frame & 1u) != 0u)
+            CHECK(memcmp(actual, peer, count * sizeof actual[0]) == 0);
+        CHECK_EQ_U64(a->audio_rem, remainder);
+        CHECK_EQ_U64(a->frames, b->frames);
+        CHECK_EQ_U64(a->lag_frames, b->lag_frames);
+        CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
+        CHECK(memcmp(&a->cpu, &b->cpu, sizeof a->cpu) == 0);
+        CHECK(memcmp(&a->bus, &b->bus, sizeof a->bus) == 0);
+        CHECK(memcmp(&a->tia, &b->tia, sizeof a->tia) == 0);
+        CHECK(memcmp(&a->ports, &b->ports, sizeof a->ports) == 0);
+        CHECK_EQ_U64(streams[0].count, streams[1].count);
+        CHECK(memcmp(streams[0].item, streams[1].item,
+                     streams[0].count * sizeof streams[0].item[0]) == 0);
+        CHECK(a->bus.ticks >= end && a->bus.ticks - end <= 20730u);
+        if (frame == 3u)
+            CHECK(a->bus.ticks > end + 400u);
+        CHECK(a->synth.carry_high_water <= 141u);
+        CHECK_EQ_U64(a->synth.clipped_samples, 0u);
+        samples += count;
+    }
+    CHECK(counts[0] != 0u && counts[1] != 0u);
+    CHECK_EQ_U64(samples, (UINT64_C(141960) + 16u * 142102u) * 4000u / 591149u);
+    /* Independently generated firmware, real RES and a separate zero epoch. */
+    memset(bios, 0xEA, sizeof bios);
+    static const uint8_t boot[] = {0xA9, 0x07, 0x85, 0x01};
+    memcpy(bios + 0x3000u, boot, sizeof boot);
+    bios[sizeof bios - 4u] = 0u;
+    bios[sizeof bios - 3u] = 0xF0u;
+    media.bios = bios;
+    media.bios_size = sizeof bios;
+    CHECK_EQ_U64(muhtari_load(a, &media), 0u);
+    CHECK_EQ_U64(a->synth.origin, 0u);
+    CHECK_EQ_U64(a->bus.phi2, 7u);
+    CHECK_EQ_U64(a->frame_deadline, 139874u);
+    muhtari_frame io;
+    frame_io(&io, NULL, 0u, actual, 946u);
+    CHECK_EQ_U64(muhtari_run_frame(a, &io), 0u);
+    CHECK_EQ_U64(io.audio_count, 946u);
+    CHECK_EQ_U64(a->audio_rem, 269046u);
+    free(before);
+    muhtari_destroy(a);
+    muhtari_destroy(b);
+}
+
+static void test_pal_clock_events(void)
+{
+    muhtari *m = make();
+    m->effective_region = MUHTARI_REGION_PAL;
+    CHECK_EQ_U64(muhtari__synth_observe(m, collect, &streams[0]), 0u);
+    muhtari__power_on(m);
+    m->bus.inptctrl = 7u;
+    m->bus.halt_gate_writes = 2u;
+    muhtari__synth_reset(m, 0u, 1u);
+    streams[0].count = 0u;
+    muhtari__observe_begin(m, 2000u);
+    for (unsigned ch = 0u; ch < 2u; ch++) {
+        muhtari__tia_write(m, (uint16_t)(0x15u + ch), 4u, 0u);
+        muhtari__tia_write(m, (uint16_t)(0x19u + ch), 15u, 0u);
+    }
+    muhtari__tia_catch_up(m, 1999u);
+    muhtari__observe_end(m);
+    CHECK_EQ_U64(streams[0].count, 12u);
+    for (unsigned i = 0u; i < 12u; i++) {
+        uint64_t b = 3u + i / 2u;
+        CHECK_EQ_U64(streams[0].item[i].tick, b / 2u * 456u + (b % 2u == 0u ? 64u : 288u));
+        CHECK_EQ_U64(streams[0].item[i].source, i % 2u);
+        CHECK_EQ_U64(streams[0].item[i].level, (i / 2u % 2u == 0u) ? 15u : 0u);
+    }
+    /* Reset to a real bus epoch. 100 slow cycles then 8 fast cycles:
+       timer100's first output is falling edge108 at632, not432. */
+    muhtari__power_on(m);
+    m->effective_region = MUHTARI_REGION_PAL;
+    m->bus.inptctrl = 7u;
+    m->bus.halt_gate_writes = 2u;
+    muhtari__synth_reset(m, 0u, 1u);
+    streams[0].count = 0u;
+    muhtari__observe_begin(m, 2000u);
+    muhtari__pokey_write(m, 0u, 8u, 64u, 0u);
+    muhtari__pokey_write(m, 0u, 0u, 100u, 0u);
+    muhtari__pokey_write(m, 0u, 1u, 0xAFu, 0u);
+    muhtari__pokey_write(m, 0u, 9u, 0u, 0u);
+    for (unsigned i = 0u; i < 108u; i++)
+        (void)muhtari__bus_read(m, i < 100u ? 0x280u : 0x1800u);
+    CHECK_EQ_U64(m->bus.ticks, 632u);
+    CHECK_EQ_U64(m->pokey[0].channel[0].last_fire, 632u);
+    /* HALT and WSYNC together leave CLK2 running in whole four-tick holds. */
+    CHECK_EQ_U64(muhtari__bus_request_halt(m, 632u, 1048u), 1u);
+    m->bus.rdy_release = 1048u;
+    (void)muhtari__bus_read(m, 0x1800u);
+    CHECK_EQ_U64(m->bus.ticks, 632u + 416u + 8u + 4u);
+    CHECK_EQ_U64(m->bus.phi2, 108u + 104u + 2u + 1u);
+    CHECK_EQ_U64(m->pokey[0].cycle, 215u);
+    CHECK_EQ_U64(m->pokey[0].channel[0].last_fire, 1048u);
+    muhtari__observe_end(m);
+    CHECK_EQ_U64(streams[0].count, 4u);
+    CHECK_EQ_U64(streams[0].item[0].tick, 0u);
+    CHECK_EQ_U64(streams[0].item[1].tick, 0u);
+    CHECK_EQ_U64(streams[0].item[2].tick, 632u);
+    CHECK_EQ_U64(streams[0].item[3].tick, 1048u);
+    CHECK_EQ_U64(streams[0].item[0].source, 2u);
+    CHECK_EQ_U64(streams[0].item[0].level, 15u);
+    CHECK_EQ_U64(streams[0].item[1].level, 0u);
+    CHECK_EQ_U64(streams[0].item[2].level, 15u);
+    CHECK_EQ_U64(streams[0].item[3].level, 0u);
+    /* Absolute epochs too large for tick*4000, with short bounded offsets. */
+    const uint64_t epoch = UINT64_MAX - UINT64_C(1000000);
+    muhtari__synth_reset(m, epoch, 0u);
+    streams[0].count = 0u;
+    muhtari__observe_begin(m, epoch + 142102u);
+    muhtari__synth_raw(m, epoch + 142101u, 7u, 5u);
+    muhtari__synth_raw(m, epoch + 142102u, 1u, 3u);
+    muhtari__synth_raw(m, epoch + 142102u, 0u, 4u);
+    muhtari__synth_raw(m, epoch + 162832u, 6u, 15u);
+    muhtari__observe_end(m);
+    CHECK_EQ_U64(streams[0].count, 1u);
+    CHECK_EQ_U64(muhtari__synth_render(m, epoch + 142102u, NULL), 961u);
+    muhtari__observe_begin(m, epoch + 284204u);
+    CHECK_EQ_U64(streams[0].count, 4u);
+    CHECK_EQ_U64(streams[0].item[1].tick, epoch + 142102u);
+    CHECK_EQ_U64(streams[0].item[1].source, 0u);
+    CHECK_EQ_U64(streams[0].item[2].source, 1u);
+    CHECK_EQ_U64(streams[0].item[3].tick, epoch + 162832u);
+    CHECK_EQ_U64(muhtari__synth_render(m, epoch + 284204u, NULL), 962u);
+    CHECK_EQ_U64(m->synth.phase, (284204u * 4000u) % 591149u);
+    muhtari_destroy(m);
+}
+
 static void test_observer_order(void)
 {
     muhtari *a = make(), *b = make();
@@ -657,6 +869,7 @@ int main(int argc, char **argv)
     if ((argc == 4 || argc == 5) && strcmp(argv[1], "--reference-hashes") == 0)
         return reference_hashes(argv[2], argv[3], argc == 5);
     if (argc == 2 && strcmp(argv[1], "observer") == 0) {
+        test_pal_clock_events();
         test_observer_order();
         test_observer_one();
         CHECK_DONE();
@@ -666,5 +879,6 @@ int main(int argc, char **argv)
     test_observer_one();
     test_audio_boundaries();
     test_public_audio();
+    test_pal_frames();
     CHECK_DONE();
 }

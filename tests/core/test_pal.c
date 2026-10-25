@@ -151,6 +151,26 @@ static int64_t step(uint32_t n, uint32_t tick)
 
 static void bounds(void)
 {
+    /* Arithmetic only: the coprime denominator is the complete carry cycle. */
+    uint32_t remainder = 0u;
+    uint64_t samples = 0u;
+    for (uint32_t frame = 0u; frame < 591149u; frame++) {
+        uint32_t accumulator = remainder + 142102u * 4000u;
+        uint32_t count = accumulator / 591149u;
+        CHECK(count == 961u || count == 962u);
+        samples += count;
+        remainder = accumulator % 591149u;
+        if (frame == 0u) {
+            CHECK_EQ_U64(samples, 961u);
+            CHECK_EQ_U64(remainder, 313811u);
+        }
+        if (frame == 599u) {
+            CHECK_EQ_U64(samples, 576918u);
+            CHECK_EQ_U64(remainder, 301218u);
+        }
+    }
+    CHECK_EQ_U64(samples, 568408000u);
+    CHECK_EQ_U64(remainder, 0u);
     int64_t maximum = 0, positive = 0, negative = 0;
     for (uint32_t phase = 0u; phase < 591149u; phase++) {
         int32_t c[16], actual[16];
