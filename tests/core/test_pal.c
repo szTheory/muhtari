@@ -171,6 +171,9 @@ static void bounds(void)
     }
     CHECK_EQ_U64(samples, 568408000u);
     CHECK_EQ_U64(remainder, 0u);
+    alloc_counts counts[2];
+    muhtari *adverse[2] = {make(&counts[0]), make(&counts[1])};
+    adverse[0]->effective_region = adverse[1]->effective_region = MUHTARI_REGION_PAL;
     int64_t maximum = 0, positive = 0, negative = 0;
     for (uint32_t phase = 0u; phase < 591149u; phase++) {
         int32_t c[16], actual[16];
@@ -189,6 +192,17 @@ static void bounds(void)
         uint32_t first = (uint32_t)((uint64_t)(n - 17u) * 591149u / 4000u);
         uint32_t last = (uint32_t)(((uint64_t)(n + 1u) * 591149u + 3999u) / 4000u - 1u);
         int64_t p = 0, minus = 0, previous = step(n, first);
+        for (unsigned sign = 0u; sign < 2u; sign++) {
+            muhtari__synth_reset(adverse[sign], 0u, 0u);
+            /* Drain the silent prefix in frame-sized intervals. The global
+               output grid stays fixed; no denominator-sized table is needed. */
+            uint64_t horizon = 0u;
+            while (horizon < first) {
+                uint64_t end = first - horizon > 142102u ? horizon + 142102u : first;
+                (void)muhtari__synth_render(adverse[sign], end, NULL);
+                horizon = end;
+            }
+        }
         for (uint32_t tick = first; tick <= last; tick++) {
             int64_t next = step(n, tick + 1u);
             int64_t weight = previous - next;
@@ -197,11 +211,31 @@ static void bounds(void)
                 p += weight;
             else
                 minus -= weight;
+            for (unsigned sign = 0u; sign < 2u; sign++) {
+                uint16_t raw = (uint16_t)((sign == 0u ? weight > 0 : weight < 0) ? 15u : 0u);
+                muhtari__synth_level(adverse[sign], tick, 0u, raw);
+                muhtari__synth_level(adverse[sign], tick, 1u, raw);
+            }
         }
         CHECK_EQ_U64(p - minus, 8388608);
         positive = p > positive ? p : positive;
         negative = minus > negative ? minus : negative;
+        for (unsigned sign = 0u; sign < 2u; sign++) {
+            struct muhtari__synth *s = &adverse[sign]->synth;
+            uint64_t before = (uint64_t)first * 4000u / 591149u;
+            CHECK_EQ_U64(muhtari__synth_render(adverse[sign], last + 1u, NULL), n + 1u - before);
+            int64_t endpoint = (sign == 0u ? p : -minus) * 18360;
+            CHECK_EQ_U64(s->integrator_q23, endpoint);
+            CHECK_EQ_U64(s->previous_q30, endpoint * 128);
+            CHECK(s->blocker_q30 > -(INT64_C(1) << 45));
+            CHECK(s->blocker_q30 < (INT64_C(1) << 45));
+            CHECK(s->kernel_adds_per_sample <= 150u);
+            CHECK(s->pre_clip_peak <= 29203u);
+            CHECK_EQ_U64(s->clipped_samples, 0u);
+        }
     }
+    muhtari_destroy(adverse[0]);
+    muhtari_destroy(adverse[1]);
     CHECK_EQ_U64(maximum, 7283993);
     CHECK_EQ_U64(positive, 10865492);
     CHECK_EQ_U64(negative, 2476884);

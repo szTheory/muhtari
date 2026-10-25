@@ -19,7 +19,15 @@ As a prerequisite to PAL execution, `core.pal.bounds` independently enumerates a
 signed ties-away rounding and tap 7/8 normalization. Every production coefficient
 matches the reference; row sums are 8388608, Cmax 7283993, P 10865492, N 2476884 and
 P+N 13342376. The complete bound with one PCM LSB is 29203.225609, below the existing
-29203.619490 limit. Full extremizer/spectral expansion is separate evidence.
+29203.6 conservative limit and 29203.619490 (-1 dBFS) threshold. The test constructs
+both positive- and negative-mass 0/18360 streams for every one of the 4000 alignments
+from independent step-response differences. All 8000 streams traverse the actual
+mixed-delta, ring, integrator and blocker path: integrator endpoints equal P*M or
+-N*M for each alignment, with zero clipped samples and the existing work/width bounds.
+Silent prefixes drain in bounded intervals; no denominator-sized table is allocated.
+The complete 591149-frame carry sweep is arithmetic only: 568408000 samples and
+zero remainder. Separately, one zero-carry full frame gives 961/remainder313811,
+and 600 full frames give 576918/remainder301218. These counts exclude startup.
 
 The same bus/CPU tail bound `(456+2*454+12+6)*(8+7)=20730` ticks permits 141 PAL
 future samples. Fixed storage holds 962 work samples and 1103 FIFO cells for both
