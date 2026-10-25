@@ -1,5 +1,32 @@
 # Quality evidence
 
+Controller operating cost is observed with the existing frame, allocator,
+property, fuzz and movie-owner seams. Compare neutral and ordinary input with
+four-axis saturated motion, gun sampling with/without caller video rows, and
+repeated keypad row changes on the same compiler, fixture and configuration.
+Keep exact iterations, emulated ticks, observed events and host cost in execution
+evidence; these observations do not create another speed threshold.
+
+Motion clamps each submitted delta and accumulated residual to ±255 before
+arithmetic. At minimum 454-tick spacing, 255 fresh steps drain in 115770 ticks.
+A 119402-tick full NTSC frame admits at most 263 transitions per axis, 1052 over
+four axes. Keypad closure visits a seven-node network for at most seven passes.
+These finite policies bound hostile host work, independently of CPU polling;
+the pin/timing tests retain their independent hardware-model expectations.
+Movie 2 validates at most 33554432 immutable bytes before execution and retains
+one cursor/packet, with no frame array. The existing file reader may allocate
+one extra byte for over-limit detection; report that allocation honestly rather
+than equating content bytes with buffer capacity. Late-invalid validation is
+measured on the same maximum file as valid validation.
+
+Ports retain device state and bounded deadlines; bus.c owns elapsed time and
+chronological delivery, MARIA owns emitted light, and RIOT/TIA own their latches.
+Generated replay extends those owners without a new abstraction or dependency.
+Architecture review follows preparation/ENGINEERING §11: ownership, coupling,
+control flow, independent tests and recurring cost, within the existing finite
+review/gap rounds. The armed test-card +1% instruction guard measures that
+workload only; it does not establish a controller-workload speed limit.
+
 The root `quality.json` owns ordinary integer floors, ceilings and bounded dated reasons.
 Native, hygiene and ASan observations come from completed, inventory-checked JUnit;
 archive sizes come from the three validated zip files. Native counts cover ABI,
