@@ -1791,8 +1791,7 @@ static void pal_raw(void *user, uint64_t tick, uint8_t source, uint16_t raw)
 {
     struct pal_trace *t = user;
     controller_raw_sample(&t->hash, tick, source, raw);
-    if (source >= 10u || raw > 15u || tick < t->tick ||
-        (tick == t->tick && source < t->source)) {
+    if (source >= 10u || raw > 15u || tick < t->tick || (tick == t->tick && source < t->source)) {
         t->errors++;
         return;
     }
@@ -1816,11 +1815,9 @@ static void pal_raw(void *user, uint64_t tick, uint8_t source, uint16_t raw)
     /* Once the owned ROM has finished its CRC it runs only fast JMP
        cycles. AUDF100 at the 28-phi2 prescaler toggles every11312 ticks.
        The first done observation may straddle earlier six-tick IO. */
-    if (source == 2u && t->machine != NULL &&
-        muhtari__peek(t->machine, MB_STATUS) == 0u) {
+    if (source == 2u && t->machine != NULL && muhtari__peek(t->machine, MB_STATUS) == 0u) {
         if (t->pokey_tick != 0u) {
-            if (tick - t->pokey_tick != 11312u || raw == t->pokey_raw ||
-                (raw != 0u && raw != 15u))
+            if (tick - t->pokey_tick != 11312u || raw == t->pokey_raw || (raw != 0u && raw != 15u))
                 t->errors++;
             t->pokey_periods++;
         }
@@ -1862,9 +1859,13 @@ static int pal_report(const char *path, const char *expected)
                  memcmp(line, prefix, n) != 0 || line[n + 64u] != '\n' ||
                  strspn(line + n, "0123456789abcdef") != 64u;
     }
-    static const char *const fields[] = {"audio_transitions_sha256 ", "audio_pcm_sha256 ",
-        "audio_frames 601\n", "audio_samples 577879\n", "audio_rate 48000/1\n",
-        "audio_behaviour_revision 5\n", "audio_synthesis exact-q23-16x64-dc20\n"};
+    static const char *const fields[] = {"audio_transitions_sha256 ",
+                                         "audio_pcm_sha256 ",
+                                         "audio_frames 601\n",
+                                         "audio_samples 577879\n",
+                                         "audio_rate 48000/1\n",
+                                         "audio_behaviour_revision 5\n",
+                                         "audio_synthesis exact-q23-16x64-dc20\n"};
     for (unsigned i = 0u; i < 7u && !failed; i++) {
         size_t n = strlen(fields[i]);
         failed = fgets(line, sizeof line, f) == NULL;
@@ -1948,8 +1949,8 @@ static void RETRO_CALLCONV pal_video(const void *data, unsigned w, unsigned h, s
     for (unsigned i = 0u; i < PAL_PIXELS; i++) {
         uint32_t rgb = muhtari__palette_rgb_region(pal_pixels[i], MUHTARI_REGION_PAL);
         /* Derive channel truncation independently from the 24-bit colour. */
-        uint16_t rgb565 = (uint16_t)(((rgb >> 19) & 31u) << 11 |
-                                    ((rgb >> 10) & 63u) << 5 | ((rgb >> 3) & 31u));
+        uint16_t rgb565 =
+            (uint16_t)(((rgb >> 19) & 31u) << 11 | ((rgb >> 10) & 63u) << 5 | ((rgb >> 3) & 31u));
         if (bytes == 2u ? ((const uint16_t *)data)[i] != rgb565
                         : ((const uint32_t *)data)[i] != rgb)
             pal_errors++;
@@ -1969,7 +1970,8 @@ static size_t RETRO_CALLCONV pal_audio(const int16_t *data, size_t frames)
 }
 #endif
 
-static int pal_case(const char *path, const char *expected, const char *out, const char *module_path)
+static int pal_case(const char *path, const char *expected, const char *out,
+                    const char *module_path)
 {
     size_t size = 0u;
     uint8_t *image = read_file(path, &size);
@@ -2018,10 +2020,10 @@ static int pal_case(const char *path, const char *expected, const char *out, con
 #define PAL_SYMBOL(key) void *symbol = dlsym(module, key)
 #define PAL_CLOSE() ((void)dlclose(module))
 #endif
-    void(RETRO_CALLCONV *unload)(void) = NULL;
-    void(RETRO_CALLCONV *deinit)(void) = NULL;
-    void(RETRO_CALLCONV *run)(void) = NULL;
-    muhtari *(RETRO_CALLCONV *instance)(void) = NULL;
+    void(RETRO_CALLCONV * unload)(void) = NULL;
+    void(RETRO_CALLCONV * deinit)(void) = NULL;
+    void(RETRO_CALLCONV * module_run)(void) = NULL;
+    muhtari *(RETRO_CALLCONV * instance)(void) = NULL;
     if (module_path != NULL && !failed) {
 #ifdef _WIN32
         module = LoadLibraryA(module_path);
@@ -2031,10 +2033,16 @@ static int pal_case(const char *path, const char *expected, const char *out, con
         if (module == NULL)
             failed = 1;
     }
-#define PAL_LOAD(name_, key, result, args) \
-    result(RETRO_CALLCONV *name_) args; \
-    { PAL_SYMBOL(key); if (symbol == NULL) { failed = 1; goto pal_cleanup; } \
-      memcpy(&name_, &symbol, sizeof name_); }
+#define PAL_LOAD(name_, key, result, args)                                                         \
+    result(RETRO_CALLCONV *name_) args;                                                            \
+    {                                                                                              \
+        PAL_SYMBOL(key);                                                                           \
+        if (symbol == NULL) {                                                                      \
+            failed = 1;                                                                            \
+            goto pal_cleanup;                                                                      \
+        }                                                                                          \
+        memcpy(&name_, &symbol, sizeof name_);                                                     \
+    }
     if (module != NULL && !failed) {
         PAL_LOAD(set_env, "retro_set_environment", void, (retro_environment_t));
         PAL_LOAD(set_video, "retro_set_video_refresh", void, (retro_video_refresh_t));
@@ -2046,17 +2054,33 @@ static int pal_case(const char *path, const char *expected, const char *out, con
         PAL_LOAD(get_av, "retro_get_system_av_info", void, (struct retro_system_av_info *));
         PAL_LOAD(native_bytes, "muhtari__libretro_native", const uint8_t *, (void));
         PAL_LOAD(observe, "muhtari__libretro_observe", void, (muhtari__audio_observer, void *));
-        { PAL_SYMBOL("retro_unload_game"); memcpy(&unload, &symbol, sizeof unload); }
-        { PAL_SYMBOL("retro_deinit"); memcpy(&deinit, &symbol, sizeof deinit); }
-        { PAL_SYMBOL("retro_run"); memcpy(&run, &symbol, sizeof run); }
-        { PAL_SYMBOL("muhtari__libretro_instance"); memcpy(&instance, &symbol, sizeof instance); }
-        if (unload == NULL || deinit == NULL || run == NULL || instance == NULL) {
-            failed = 1; goto pal_cleanup;
+        {
+            PAL_SYMBOL("retro_unload_game");
+            memcpy(&unload, &symbol, sizeof unload);
+        }
+        {
+            PAL_SYMBOL("retro_deinit");
+            memcpy(&deinit, &symbol, sizeof deinit);
+        }
+        {
+            PAL_SYMBOL("retro_run");
+            memcpy(&module_run, &symbol, sizeof module_run);
+        }
+        {
+            PAL_SYMBOL("muhtari__libretro_instance");
+            memcpy(&instance, &symbol, sizeof instance);
+        }
+        if (unload == NULL || deinit == NULL || module_run == NULL || instance == NULL) {
+            failed = 1;
+            goto pal_cleanup;
         }
         pal_native = native_bytes;
         pal_videos = pal_audios = pal_errors = 0u;
-        set_env(pal_env); set_video(pal_video); set_audio(pal_audio);
-        set_poll(retail_poll); set_input(retail_input);
+        set_env(pal_env);
+        set_video(pal_video);
+        set_audio(pal_audio);
+        set_poll(retail_poll);
+        set_input(retail_input);
         init();
         observe(pal_raw, &module_trace);
         struct retro_game_info game = {path, image, size, NULL};
@@ -2082,10 +2106,12 @@ static int pal_case(const char *path, const char *expected, const char *out, con
         uint64_t start = m->frame_start;
         muhtari_frame io = {0};
         io.size = (uint32_t)sizeof io;
-        io.video = pal_pixels; io.video_pitch = 320u;
-        io.audio = pal_pcm; io.audio_capacity = 962u;
-        failed = m->frame_deadline - start != elapsed ||
-                 muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        io.video = pal_pixels;
+        io.video_pitch = 320u;
+        io.audio = pal_pcm;
+        io.audio_capacity = 962u;
+        failed =
+            m->frame_deadline - start != elapsed || muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         pal_count = io.audio_count;
         failed |= io.audio_count != count || m->audio_rem != remainder ||
                   m->frame_start != start + elapsed || m->frames != frame || trace.errors != 0u ||
@@ -2108,7 +2134,7 @@ static int pal_case(const char *path, const char *expected, const char *out, con
         }
 #ifdef DIAG_LIBRETRO
         if (module != NULL && !failed) {
-            run();
+            module_run();
             muhtari *other = instance();
             failed |= other == NULL || pal_errors != 0u || module_trace.errors != 0u;
             if (other != NULL)
@@ -2138,8 +2164,7 @@ static int pal_case(const char *path, const char *expected, const char *out, con
         failed = samples != 577879u || remainder != 47029u || small != 281u || large != 319u ||
                  m->frame_start != 85543176u || m->frame_deadline != 85685278u ||
                  trace.count[0] < 300000u || trace.count[1] != trace.count[0] ||
-                 trace.count[2] < 1000u || trace.pokey_periods < 2u ||
-                 retail_judge(mb, "pal") != 0;
+                 trace.count[2] < 1000u || trace.pokey_periods < 2u || retail_judge(mb, "pal") != 0;
         if (!failed)
             failed = pal_faults(out, mb);
     }
@@ -2159,7 +2184,8 @@ static int pal_case(const char *path, const char *expected, const char *out, con
         controller_digest(reference, "audio_transitions_sha256", &trace.hash);
         controller_digest(reference, "audio_pcm_sha256", &pcm);
         fputs("audio_frames 601\naudio_samples 577879\naudio_rate 48000/1\n"
-              "audio_behaviour_revision 5\naudio_synthesis exact-q23-16x64-dc20\n", reference);
+              "audio_behaviour_revision 5\naudio_synthesis exact-q23-16x64-dc20\n",
+              reference);
         pal_mailbox_line(reference, mb);
         printf("pal: startup960/rem336960 +600 full142102-tick frames; 281x961+319x962; "
                "601 calls577879/rem47029 tick85543176; TIA%llu/%llu POKEY%llu ordered\n",
@@ -2169,8 +2195,10 @@ static int pal_case(const char *path, const char *expected, const char *out, con
 #ifdef DIAG_LIBRETRO
 pal_cleanup:
     if (module != NULL) {
-        if (unload != NULL) unload();
-        if (deinit != NULL) deinit();
+        if (unload != NULL)
+            unload();
+        if (deinit != NULL)
+            deinit();
         PAL_CLOSE();
     }
 #undef PAL_SYMBOL
