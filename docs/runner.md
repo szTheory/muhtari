@@ -12,8 +12,8 @@ power-on. Without one, every run shows the built-in test card (see
 [Probing an image](#probing-an-image)).
 
 Automatic header/hash-selected PAL uses successful-load info for output allocation.
-Native hashes cover93440 bytes, PNGs are320×292, and audio has960 samples in the
-fast first call then961/962 per full frame. The current explicit CLI and movie
+Native hashes cover 93440 bytes, PNGs are 320×292, and audio has 960 samples in the
+fast first call then 961/962 per full frame. The current explicit CLI and movie
 region tokens remain NTSC-only, and presentation still uses the warm NTSC palette.
 
 ## Synopsis
@@ -40,7 +40,7 @@ muhtari-run --help | --version
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--diagnostic` | After the run, report the fixed diagnostic mailbox. Requires content and explicit `--frames N` with the ordinary frame bounds; no `--bench` or implicit movie frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
-| `[--rom] FILE` | Load the cartridge image in FILE and run it. Give at most one FILE, with or without `--rom`. A refused image prints `muhtari-run: FILE: <message>` on standard error, with the messages of [Probing an image](#probing-an-image) , and runs no frame: a 2600 image, a board this version does not emulate exits 77, and an image that is not a cartridge, is truncated or is too large exits 1. |
+| `[--rom] FILE` | Load and run one cartridge image, with or without `--rom`. Automatic PAL selection is supported. A refused image prints `muhtari-run: FILE: <message>` on standard error and runs no frame: a 2600 image or unsupported board exits 77; malformed, truncated or oversized images exit1. |
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
 | `--port1 D`, `--port2 D` | `auto` (the cartridge's, the default), or an explicit movie2 device below. A value other than `auto` that differs from the movie header is a usage error. Storage attaches before import; moving or adding it requires another load. AtariVox provides EEPROM only, without speech. |
 | `--region R` | `auto` (the cartridge's, the default) or `ntsc`, which runs the cartridge as NTSC. `pal` is refused as a usage error by the current CLI parser. |
@@ -119,11 +119,12 @@ frame is requested twice:
 frame 1 sha256 9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4
 ```
 
-The hash covers the 320×242 native colour bytes (one byte per pixel, the console's colour number), row by row
+The hash covers the 320×242 NTSC or 320×292 PAL native colour bytes (one byte per pixel, the console's colour number), row by row
 from the top. It is the same on every platform.
 
-`--dump-frame N:FILE` writes an unscaled 320×242 RGB PNG with 8 bits per channel, through the warm NTSC palette.
-The PNG carries no aspect-ratio metadata. The data is stored uncompressed, so each file is 232,645 bytes.
+`--dump-frame N:FILE` writes an unscaled 320×242 NTSC or 320×292 PAL RGB PNG with 8 bits per channel,
+through the current warm NTSC palette. The PNG carries no aspect-ratio metadata.
+Data is uncompressed; an NTSC file is 232,645 bytes.
 
 With `--movie`, one more line follows the hash lines:
 

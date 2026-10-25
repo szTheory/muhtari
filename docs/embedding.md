@@ -115,12 +115,12 @@ with `audio` set, an `audio_capacity` below the frame's actual sample count retu
 arguments before it changes anything. Once `m` and `io` are not NULL and the size tag is accepted, it writes
 `audio_count` on every return, zero on an error.
 
-Requery info after each successful load. PAL reports 320×292, FPS3546894/71051,
-PAR1843750/1773447 and at most962 samples; NTSC and no-content defaults stay
-unchanged. Packed PAL video needs93440 bytes. With padding the accessible extent
+Requery info after each successful load. PAL reports 320×292, FPS 3546894/71051,
+PAR 1843750/1773447 and at most 962 samples; NTSC and no-content defaults stay
+unchanged. Packed PAL video needs 93440 bytes. With padding the accessible extent
 is `(height-1)*pitch+width`; the frame struct has no allocation-byte count and
-cannot detect an undersized allocation. PAL fast boot returns960 first-frame
-samples, then961 or962 per full frame, with fractional carry retained.
+cannot detect an undersized allocation. PAL fast boot returns 960 first-frame
+samples, then 961 or 962 per full frame, with fractional carry retained.
 
 ## Probing a cartridge image
 
@@ -332,15 +332,21 @@ by a query. Frames, serial traffic, reset and observers allocate no memory after
 
 ## The first frame after load
 
-A load without a BIOS leaves the machine at the fast-boot hand-off, 8,190 ticks before VBLANK start, not at a frame
+A load without a BIOS leaves the NTSC machine at the fast-boot hand-off, 8,190 ticks before VBLANK start, not at a frame
 boundary. The first `muhtari_run_frame` after a load or power cycle runs only those 8,190 ticks, so it returns 54
 audio samples rather than 800 or 801. Its picture shows only the rows the beam scanned since the hand-off; every
 other row is written $00. Every later frame runs from one VBLANK start to the next, a whole frame of 119,402 ticks.
 
+PAL selects the fitted [startup profile](hardware/bus.md#pal-startup) at tick 140016,
+first future deadline 281976: 141960 elapsed ticks and 960 samples. Later frames span
+142102 ticks and return 961/962 samples. Power cycle retains the successful region;
+failed loads retain region, content, battery and pending input. All 292 partial-frame
+rows clear before rendering. This fit is not a measured PAL BIOS snapshot.
+
 Loaded cartridges produce mono TIA and declared cartridge POKEY audio through the integer reconstruction and DC blocker. The sample grid
 starts at the fast-boot hand-off with zero fractional remainder. TIA's hidden zero-start logic has already run
 on its absolute 456-tick lattice from power-on; its volume remains zero until the cartridge writes it. Actual
-CPU cycle counting starts at zero at the hand-off tick (line 240, t 24), which is also the cartridge-audio clock
+CPU cycle counting starts at zero at the hand-off tick (NTSC line 240,t24; PAL line 308,t184), which is also the cartridge-audio clock
 segment's tick origin. Fast boot invents no skipped CPU cycles. These deterministic startup values are
 compatibility defaults, not measured physical power-on or skipped-BIOS residue.
 
@@ -543,7 +549,7 @@ Statuses are only ever added. Those after the probe's:
 |---|---|---|
 | `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` | `muhtari_run_frame` | The BIOS took its 2600 path. It stays until the next load or power cycle. |
 | `MUHTARI_STATUS_ERR_INVALID_BIOS` | `muhtari_load` | The BIOS is not 4,096 or 16,384 bytes, or its reset vector points outside it. |
-| `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | The content resolves to PAL. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | Reserved numeric region-refusal status; both current regions execute. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | input setters | A device outside the frozen legacy set, or an attempted change to load-frozen EEPROM topology. |
 | `MUHTARI_STATUS_ERR_INVALID_HSC` | `muhtari_load` | Invalid firmware size/pointer pair, HSC mode, or supplied firmware conflicting with OFF. |
 
@@ -569,7 +575,7 @@ are unchanged. API 4's Activision orientation constants remain available.
 header does not know stays at the zero you wrote. The library version numbers carry no such meaning.
 
 Sound output is fixed-rate 48,000/1 Hz mono signed int16. A fast-boot first
-frame returns 54 samples; full NTSC frames return 800 or 801. Use audio_count,
+frame returns 54 NTSC or 960 PAL samples; full frames return 800/801 or 961/962. Use audio_count,
 not the buffer capacity. Passing NULL for audio discards samples while preserving
 synthesis history and future output. Raw-transition observation is an internal
 runner seam; the installed library exposes no observer registration facility.

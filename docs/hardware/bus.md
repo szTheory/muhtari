@@ -18,7 +18,8 @@ Sources:
 
 ## Clocks
 
-One tick is one MARIA clock, the crystal divided by 2: 7,159,090.9 Hz on NTSC. `ticks` counts them from power-on in
+One tick is one MARIA clock, the crystal divided by 2: 315/44 MHz on NTSC or 7,093,788 Hz
+on PAL. `ticks` counts them from power-on in
 one 64-bit counter.
 
 A CPU cycle takes 4 ticks (1.79 MHz) or 6 ticks (1.19 MHz):
@@ -198,6 +199,10 @@ MARIA counts the beam from the tick count, never from DMA. `origin` is the tick 
 the line is (ticks - origin) / 454 and t is the remainder, and the origin moves on by 119,402 ticks when line 263's
 t 0, the next frame's line 0, is reached. Each line has up to four events (MARIA notes, section 4.1):
 
+PAL uses the same dispatcher, with 313 lines/142,102 ticks and terminal line 308.
+Its MSTAT clear/set ticks are 7306/139874, VBE is 7307, final DMA request 139860,
+and line 309 has no request. Event data ordering and 454-tick line lengths are common.
+
 | t | Lines | Event |
 |---|-------|-------|
 | 0 | every line | LRC: line RAM swaps and the new write buffer clears; MARIA's WSYNC releases; a burst's abort deadline |
@@ -223,6 +228,11 @@ absolute ticks, 119,402 apart, so the overshoot carries into the next frame and 
 of a frame is (audio_rem + elapsed x 88) / 13,125, where elapsed is the distance between the two deadlines: 800 or
 801 for a full frame.
 
+PAL VBLANK starts on line 308,t42; deadlines are 142,102 ticks apart. Sample count is
+`(audio_rem + elapsed*4000)/591149`, with the remainder carried. Full frames
+return 961 or962 samples. Both regions keep the same 20,730-tick instruction-tail
+bound, including WSYNC/HALT and interrupt entry; see [audio](audio.md).
+
 After execution the EEPROM catches up to the actual bus tick, including the last completed instruction's overshoot,
 before returning battery memory to the host. This also runs when partial BIOS execution rejects a cartridge; an
 argument/buffer refusal that executes nothing leaves it unchanged. Consequently a due page commits even if software
@@ -245,6 +255,23 @@ With a BIOS, the machine starts from power-on instead (System notes, section 8):
 117,174 ticks from power-on to the first VBLANK start, 785 samples. Line 0 lies inside vertical blank, which ends
 at line 16, t 42, so frame 1 does not start at a VBLANK start; input set before it applies from power-on, as what
 is held when the power comes on.
+
+### PAL startup
+
+PAL fast boot is an explicit fitted compatibility profile, not a measured BIOS
+snapshot. PC comes from reset, S=X=$16, A=$60, Y=0, P=$2C; INPTCTRL=$16 counts
+two gate writes, CTRL=$60 and DPP=$2707. RAM $2000–$203F/$2100–$213F is FF; RIOT
+keeps its power-on fill. Undocumented DL/DLL/OFFSET residue starts at zero.
+Line 308,t184 is tick 140016. The same-origin VBLANK 139874 is past, so the first
+strictly future deadline is 281976, an elapsed 141960 ticks. Output/cartridge
+epochs start at handoff; TIA catches up on its absolute 456-tick lattice.
+
+Actual BIOS boot begins at 0, runs real RES and uses first deadline 139874,
+946 PCM samples. Accepted 4/16 KiB geometry controls mirroring, never region.
+Synthetic firmware checks mapping, first cartridge opcode and sticky rejection;
+stripped OpenBIOS integration permits its distinct handoff state. No firmware,
+loader or splash bytes are reconstructed by fast boot. The unchanged EEPROM 5 ms
+duration is a compatibility policy, not a hardware latency measurement.
 
 ## NMI
 

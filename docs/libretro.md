@@ -58,7 +58,7 @@ adapter has no device or host-window geometry. For a valid coordinate v in
 [-32767,32767], the native coordinate is
 `floor((v+32767)*(dimension-1)/65534)`, with a 64-bit integer product over the
 core's current reported native width/height. Width320 maps -32767/0/32767 to
-0/159/319; height242 maps them to0/120/241. Either coordinate -32768 marks the
+0/159/319; height242 maps them to 0/120/241 and PAL height 292 to 0/145/291. Either coordinate -32768 marks the
 aim offscreen before conversion, using neutral0/0 coordinates. Explicit offscreen
 and reload also suppress illumination; reload independently holds the trigger.
 Trigger state never implies sensed light. Missing input callbacks leave aim offscreen.
@@ -150,9 +150,9 @@ the two existing screenshot and save-roundtrip cases.
 | Port 1/2 battery device (`muhtari_battery_port1`, `muhtari_battery_port2`) | Auto (default), None, SaveKey, AtariVox | at content load |
 
 There is no region option yet: console timing follows content metadata. PAL AV is
-320×292, maximum height293, FPS3546894/71051 and display aspect147500000/129461631.
+320×292, maximum height 293, FPS 3546894/71051 and display aspect 147500000/129461631.
 The frontend queries AV after load; load sends no AV/geometry update callback.
-All292 rows and up to962 mono samples are retained in either pixel format.
+All 292 rows and up to 962 mono samples are retained in either pixel format.
 Unload, failed load and deinit clear the selected AV/region and output pointers;
 queries then report the NTSC fallback. The current palette remains warm NTSC.
 
@@ -180,7 +180,7 @@ picture until Restart or a new load. Before the first successful frame, that pic
 sends actual pixels, including to frontends that do not support NULL-frame duplication, and sends 48 kHz audio
 as identical left/right copies of each mono core sample. Batch callbacks take priority; the single-sample
 callback is the fallback. Missing callbacks discard output while preserving future sound. Fast boot begins
-with54 NTSC or960 PAL samples, then full frames provide800/801 or961/962 respectively.
+with 54 NTSC or 960 PAL samples, then full frames provide 800/801 or 961/962 respectively.
 Restart and content reload reset synthesis history.
 
 ## BIOS files

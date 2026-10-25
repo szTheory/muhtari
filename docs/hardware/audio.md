@@ -9,28 +9,28 @@ discards samples while retaining identical history. The bus merges actual TIA
 and cartridge POKEY events on this timeline; no-content public frames retain
 their silent test card.
 
-PAL selects4000/591149 samples per master tick with the same kernel, rounding,
-blocker and gain18360. Its fast first interval141960 produces960 samples and
-remainder336960; real BIOS first139874 produces946 and remainder269046. Full
-142102-tick frames produce961/962. No-content keeps NTSC silence and carry.
+PAL selects 4000/591149 samples per master tick with the same kernel, rounding,
+blocker and gain 18360. Its fast first interval 141960 produces 960 samples and
+remainder 336960; real BIOS first 139874 produces 946 and remainder 269046. Full
+142102-tick frames produce 961/962. No-content keeps NTSC silence and carry.
 
-Before PAL execution is enabled, `core.pal.bounds` independently enumerates all
-591149 interpolation phases and4000 output alignments using streaming prefixes,
-signed ties-away rounding and tap7/8 normalization. Every production coefficient
-matches the reference; row sums are8388608, Cmax7283993, P10865492, N2476884 and
-P+N13342376. The complete bound with one PCM LSB is29203.225609, below the existing
+As a prerequisite to PAL execution, `core.pal.bounds` independently enumerates all
+591149 interpolation phases and 4000 output alignments using streaming prefixes,
+signed ties-away rounding and tap 7/8 normalization. Every production coefficient
+matches the reference; row sums are 8388608, Cmax 7283993, P 10865492, N 2476884 and
+P+N 13342376. The complete bound with one PCM LSB is 29203.225609, below the existing
 29203.619490 limit. Full extremizer/spectral expansion is separate evidence.
 
-The same bus/CPU tail bound `(456+2*454+12+6)*(8+7)=20730` ticks permits141 PAL
-future samples. Fixed storage holds962 work samples and1103 FIFO cells for both
-regions. A PAL sample spans at most148 ticks, below the conservative150 additions.
-Local carry accumulation568999148 fits below2^30; interpolation numerator37833472
-fits below2^26. Signed differences multiply in int64 before division. The ring-cell
-bound `16*150*18360*7283993=320961867552000` is below2^49; integrated magnitude is
-below2^38 and times128 below2^45. Blocker sums stay below2^47; remainder times pole
-1070934451 stays below2^60. Mixed current stays below2^34 and gain products below2^49.
+The same bus/CPU tail bound `(456+2*454+12+6)*(8+7)=20730` ticks permits 141 PAL
+future samples. Fixed storage holds 962 work samples and 1103 FIFO cells for both
+regions. A PAL sample spans at most 148 ticks, below the conservative 150 additions.
+Local carry accumulation 568999148 fits below 2^30; interpolation numerator 37833472
+fits below 2^26. Signed differences multiply in int64 before division. The ring-cell
+bound `16*150*18360*7283993=320961867552000` is below 2^49; integrated magnitude is
+below 2^38 and times 128 below 2^45. Blocker sums stay below 2^47; remainder times pole
+1070934451 stays below 2^60. Mixed current stays below 2^34 and gain products below 2^49.
 Long output epochs split quotient/remainder before multiplying by the numerator.
-Retaining85:342 for PAL is an explicitly unverified analog compatibility assumption;
+Retaining 85:342 for PAL is an explicitly unverified analog compatibility assumption;
 the preliminary PAL schematic does not establish production resistor values.
 
 The interpolation and 16-slot int64 impulse ring follow the approved MIT
@@ -83,7 +83,7 @@ zero; final PCM rounds ties away from zero. Pre-clamp peak and clip counts
 are retained so saturation cannot conceal a failed bound.
 
 There is no event array. At most 150 merged ticks fit in a sample interval;
-each nonzero mixed delta adds 16 impulses. The FIFO holds at most 801 samples
+each nonzero mixed delta adds 16 impulses. NTSC needs at most 801 samples
 for the current logical frame and separately bounded future instruction
 carry. A conservative single held-access bound is 456 RDY ticks, two 454-tick
 DMA lines, 12 ticks for the nine-tick abort tail plus whole-cycle alignment,
@@ -94,8 +94,8 @@ two such lines. Eight opcode accesses plus seven interrupt-entry accesses
 therefore bound overshoot at 20,730 ticks, or ceil(20,730*88/13,125)=139
 future samples. These deliberately loose bounds follow `bus.c`'s held-cycle
 loop, `maria.c`'s burst cutoff, `tia.c`'s RDY release and `cpu.c`'s instruction
-and NMI entry; they are not observed maxima. NTSC needs801+139 cells within the
-physical1103-cell FIFO shared with PAL,
+and NMI entry; they are not observed maxima. NTSC needs 801+139 cells within the
+physical 1103-cell FIFO shared with PAL,
 and current versus future samples are separated by the logical horizon.
 
 All persistent values, including fraction, integrator, blocker, raw levels,
