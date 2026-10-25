@@ -19,6 +19,13 @@
 
 static void ports_rearm(muhtari *m);
 
+/* The Software Guide's 400us wait uses the selected master clock;
+   controllers.md, Keypad. NTSC retains its released deadline. */
+static uint32_t ports_keypad_recovery(const muhtari *m)
+{
+    return m->effective_region == MUHTARI_REGION_PAL ? 2838u : 2864u;
+}
+
 /* Input DDR bits release high. Response pins never feed host clocks
    (controllers.md, SNES2Atari). */
 static uint8_t ports_host(const muhtari *m, unsigned p)
@@ -87,7 +94,7 @@ void muhtari__ports_rows(muhtari *m, uint64_t tick)
             if ((low & bit) != 0u) {
                 pot->action = 0u;
             } else if ((m->ports.keypad_low[p] & bit) != 0u) {
-                pot->crossing_tick = tick + 2864u;
+                pot->crossing_tick = tick + ports_keypad_recovery(m);
             }
         }
         m->ports.keypad_low[p] = low;
@@ -97,9 +104,16 @@ void muhtari__ports_rows(muhtari *m, uint64_t tick)
 
 /* 7800 10k series + 1M pot, 68nF and fitted comparator threshold:
    controllers.md, Paddles. Ceil to whole master ticks. */
-static uint32_t ports_pot_duration(uint32_t position)
+static uint32_t ports_pot_duration(const muhtari *m, uint32_t position)
 {
     uint64_t resistance = 10000u + (uint64_t)position * 1000000u / 65535u;
+    if (m->effective_region == MUHTARI_REGION_PAL) {
+        /* Scale the unrounded fit, then ceil once. Maximum numerator
+           1233059473976330000 plus rounding fits uint64 (controllers.md). */
+        uint64_t denominator = UINT64_C(6562500000000);
+        return (uint32_t)((resistance * 187747u * 6502639u + denominator - 1u) /
+                          denominator);
+    }
     return (uint32_t)((resistance * 187747u + 999999u) / 1000000u);
 }
 
@@ -146,10 +160,10 @@ void muhtari__ports_reset(muhtari *m)
     for (unsigned p = 0u; p < 2u; p++) {
         m->ports.adapter[p].host = 3u;
         for (unsigned n = 0u; n < 2u; n++) {
-            m->ports.pot[p][n].duration = ports_pot_duration(m->ports.applied_ex.port[p].paddle[n]);
+            m->ports.pot[p][n].duration = ports_pot_duration(m, m->ports.applied_ex.port[p].paddle[n]);
             ports_pot_project(&m->ports.pot[p][n], 0u);
             if (muhtari__ports_device(m, p) == MUHTARI_PORT_KEYPAD)
-                m->ports.pot[p][n].crossing_tick = 2864u;
+                m->ports.pot[p][n].crossing_tick = ports_keypad_recovery(m);
         }
     }
     m->ports.next_tick = 0u;
@@ -397,13 +411,15 @@ static void savekey_start(struct muhtari__savekey *s)
     }
 }
 
-static void savekey_stop(struct muhtari__savekey *s, uint64_t tick)
+static void savekey_stop(muhtari *m, uint64_t tick)
 {
+    struct muhtari__savekey *s = &m->savekey;
     if (s->pending == 0u) {
         for (unsigned i = 0u; i < 64u; i++) {
             if (s->touched[i] != 0u) {
                 s->pending = 1u;
-                s->busy_until = tick + MUHTARI__SAVEKEY_BUSY_TICKS;
+                s->busy_until = tick + (m->effective_region == MUHTARI_REGION_PAL
+                                            ? 35469u : MUHTARI__SAVEKEY_BUSY_TICKS);
                 break;
             }
         }
@@ -519,7 +535,7 @@ void muhtari__savekey_pins(muhtari *m, uint64_t tick)
         if (sda == 0u) {
             savekey_start(s);
         } else {
-            savekey_stop(s, tick);
+            savekey_stop(m, tick);
         }
     } else if (scl != s->host_scl) {
         if (scl != 0u) {
@@ -740,10 +756,10 @@ void muhtari__ports_latch(muhtari *m)
             } else {
                 ports_pot_materialize(pot, m->bus.ticks, m->tia.input_dump);
             }
-            pot->duration = ports_pot_duration(position);
+            pot->duration = ports_pot_duration(m, position);
             ports_pot_project(pot, m->bus.ticks);
             if (device == MUHTARI_PORT_KEYPAD)
-                pot->crossing_tick = m->bus.ticks + 2864u;
+                pot->crossing_tick = m->bus.ticks + ports_keypad_recovery(m);
         }
         if (previous != device) {
             memset(ports->motion[p], 0, sizeof ports->motion[p]);
