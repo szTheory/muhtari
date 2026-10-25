@@ -1,6 +1,6 @@
 ---
 phase: 09-pal-games-and-audio
-reviewed: 2026-10-25T20:50:30Z
+reviewed: 2026-10-25T21:02:07Z
 depth: standard
 files_reviewed: 65
 files_reviewed_list:
@@ -70,19 +70,19 @@ files_reviewed_list:
   - tests/runner/tests.cmake
   - tools/compat_doc.cmake
 findings:
-  critical: 1
+  critical: 0
   warning: 0
   info: 0
-  total: 1
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 9: Code Review Report
 
-**Reviewed:** 2026-10-25T20:50:30Z  
+**Reviewed:** 2026-10-25T21:02:07Z  
 **Depth:** standard  
 **Files Reviewed:** 65  
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
@@ -93,64 +93,46 @@ The scope resolver reports `degraded` / `phase-range` / `no-task-commit-rows`;
 the supplied explicit list and phase-range union agree, with no missing paths.
 This scope fallback is disclosed, not treated as a source defect.
 
-One existing memory-safety/load-lifecycle defect remains in the reviewed loader.
-It affects both regions and is not introduced by the PAL timing arithmetic.
-AGENTS rule 7 keeps existing required-contract violations blocking wherever found.
-No additional confirmed defect was identified in the selected timing, synthesis
-bounds, host geometry/palette selection, immutable movie validation, PAL numeric
-judges or narrow fixture-comparison changes.
-
-This review did not rerun tests or treat earlier green runs as proof of source
-correctness. The execution evidence and advisory property timeout retain the
-authority recorded in `09-08-SUMMARY.md`; the timeout is not accepted evidence.
+The original review is preserved at `c8e57aa`. This final verdict carries forward
+that 65-path review and independently rechecks fix-round 1 commit
+`af9dc83f9ff68ea14c5a007218a3477a3c2f2218`, covering its eight changed paths,
+the loader's candidate/install call chain and the regression-test helpers.
+No source changes followed that commit; only the fix report was added.
 
 ## Narrative Findings (AI reviewer)
 
-## Critical Issues
+No open findings. CR-01 is resolved by `af9dc83`: `src/instance.c:346-351`
+consumes the validated BIOS into private 16 KiB staging before installation can
+release cartridge RAM or overwrite battery/HSC storage. `src/instance.c:375-379`
+updates the live BIOS only after the final fallible cartridge allocation has
+succeeded. All accepted BIOS sizes fit staging, simultaneous HSC and BIOS
+candidates use separate scratch arrays, and failed loads leave live firmware,
+effective region and published state intact.
 
-### CR-01: BLOCKER — Load invalidates an aliased BIOS before consuming it
+The new `bios.load_aliases` test independently supplies synthetic firmware with
+different old/new execution markers. Its allocator poisons and quarantines the
+released cartridge allocation, making the original stale read observable rather
+than relying on malloc reuse. Ten combinations cover NTSC/PAL, 4/16 KiB BIOSes
+borrowed from cartridge RAM and EEPROM, and the supported 4 KiB HSC ROM span.
+Checks include invalid media, allocation failure, live-state and borrowed-byte
+preservation, exact installed bytes, reset PC, allocation/free counts and actual
+old/new firmware execution across power cycles. Its state comparison excludes
+only unpublished firmware staging. Both portable inventories register the case.
 
-**File:** `src/instance.c:349-371`  
-**Related:** `src/cart.c:805-806`, `src/ports.c:1051-1053`,
-`include/muhtari.h:182-190`, `src/instance.c:354-364`
+The ENGINEERING section 11 rationale in [09-REVIEW-FIX.md](09-REVIEW-FIX.md)
+addresses the existing loader ownership, separate candidate lifetimes, the
+measured 16,384-byte instance increase and the wider interface burden of splitting
+cartridge allocation/commit. The fix adds no dependency, large stack object,
+load allocation or per-frame work. No new material defect was identified in the
+fix or its tests and documentation.
 
-**Issue:** `muhtari_load` validates `media->bios` at lines 336–337 but retains
-only its pointer. It then installs the new cartridge, freeing the old combined
-ROM/RAM allocation, and clears/replaces battery and HSC storage. Only afterward,
-at line 371, does it copy the BIOS. Valid public inputs can therefore become
-invalid or change during the call itself:
-
-- Load a cartridge with at least 4096 bytes of cartridge RAM, obtain that span
-  through `muhtari_get_memory(..., MUHTARI_MEMORY_CART_RAM, ...)`, and fill its
-  first 4096 bytes with owned synthetic firmware whose reset vector is `$F000`.
-  Reload any valid cartridge with this span as `media.bios` and
-  `media.bios_size = 4096`. BIOS validation succeeds, then cartridge installation
-  frees that span before line 371 reads it: a use-after-free.
-- The same firmware placed in an attached EEPROM's public battery span is
-  overwritten with `$FF` at line 355 before the BIOS copy. Likewise, a BIOS
-  borrowed from `muhtari_get_hsc_rom` is cleared/replaced at lines 354–364.
-  The call returns success and boots bytes different from the validated input.
-
-The public media contract says the BIOS is copied at load and imposes no
-non-alias requirement. Exposed spans are usable inputs at call entry; the
-loader must consume borrowed bytes before its own installation invalidates
-them. The existing HSC staging already recognizes this problem for HSC firmware,
-but it does not protect the BIOS.
-
-**Impact:** A successful reload can read freed memory, crash, or silently boot
-corrupted firmware. This violates memory safety and the validated-media/load
-contract even though ordinary separate-buffer BIOS tests pass.
-
-**Fix:** Preserve validated BIOS bytes before any operation that can invalidate
-their source, while retaining transactional failure behavior. For example, use
-bounded instance-owned unpublished BIOS staging, or separate candidate cartridge
-allocation from its commit so the BIOS can be consumed after allocation succeeds
-and before old cartridge/battery storage is released. Do not overwrite the live
-BIOS before the last fallible operation; a rejected or allocation-failed reload
-must retain the previous running firmware. Add focused regression cases with
-synthetic BIOS bytes borrowed from old cartridge RAM, battery RAM and HSC ROM,
-including allocation failure and successful reload in both regions. Use an
-allocator free-poison/quarantine seam or ASan to expose the old-RAM read reliably.
+The fix report at `b1f4aa9` records meaningful RED/GREEN evidence, failed attempts
+and local 654-test/package/release/JUnit/hygiene acceptance. This reviewer inspected
+the code and evidence report without rerunning tests. Earlier hosted runs do not
+establish acceptance of the new source; refreshed hosted evidence remains the
+orchestrator's responsibility. The existing advisory property timeout remains
+unaccepted evidence. All reviewed files meet the reviewed contracts; no open
+issues were found.
 
 ---
 
