@@ -42,6 +42,11 @@ static int16_t audio[MUHTARI__MAX_AUDIO_SAMPLES];
 static struct muhtari scratch;
 static uint32_t allocation_calls, fail_allocation, case_index, retail_seen;
 static uint32_t retail_pool[3];
+static const uint32_t typed_devices[] = {
+    MUHTARI_PORT_LIGHTGUN,    MUHTARI_PORT_PADDLE,     MUHTARI_PORT_KEYPAD,
+    MUHTARI_PORT_DRIVING,     MUHTARI_PORT_TRAKBALL,   MUHTARI_PORT_ST_MOUSE,
+    MUHTARI_PORT_AMIGA_MOUSE, MUHTARI_PORT_SNES2ATARI, MUHTARI_PORT_MEGA7800};
+static uint32_t typed_seen;
 
 static void *prop_alloc(void *user, size_t size)
 {
@@ -123,6 +128,12 @@ static void run(muhtari *m, uint32_t pitch, struct frame_out *out)
     memset(out, 0, sizeof *out);
     uint32_t allocations = allocation_calls;
     out->status = muhtari_run_frame(m, &io);
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned d = 0u; d < sizeof typed_devices / sizeof typed_devices[0]; d++) {
+            if (muhtari__ports_device(m, p) == typed_devices[d])
+                typed_seen |= 1u << d;
+        }
+    }
     if (allocation_calls != allocations) {
         fputs("property frame allocated after load\n", stderr);
         exit(1);
@@ -795,6 +806,11 @@ int main(int argc, char **argv)
                 if (retail_pool[b] == UINT32_MAX)
                     return 1;
             int result = prop_run(props[i].name, props[i].fn);
+            if (strcmp(props[i].name, "instances_isolated") == 0 && typed_seen != 511u) {
+                fprintf(stderr, "executed typed device coverage: expected 511, got %u\n",
+                        typed_seen);
+                return 1;
+            }
             if (strncmp(props[i].name, "battery_", 8u) == 0) {
                 return result;
             }
