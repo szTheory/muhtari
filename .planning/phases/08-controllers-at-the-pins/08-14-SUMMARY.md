@@ -193,7 +193,7 @@ At final source, these commands exit0, URL **N/A-local**:
 - `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake`:649 tests executed once each.
 - `scripts/hygiene.sh --tree`, `cmake --workflow --preset hygiene`: tree clean and24 hygiene checks.
 - `cmake -DROOT=. -DBUILD=build/ci -DOUT=build/controller-acceptance/local-quality.json -DSHA=$(git rev-parse HEAD) -DCONFIG=ci -DSOURCE=local -P tests/cmake/quality_evidence.cmake`: real producer,649+6 inventory and actual local ZIP sum259548 (library80624, libretro85066, runner93858).
-- `cmake -DROOT=. -DWORK=build/controller-lane-final -P build/ci/policy/lane_equality_controls.cmake` and the standalone diagnostic compilation linking `runner/sha256.c`, followed by its actual motion0 mailbox judgment: exit0. The generated control's earlier explicit root was absolute; the final workflow uses the same registration.
+- `cmake -DROOT="$(pwd)" -DWORK="$(pwd)/build/controller-lane-final" -P build/ci/policy/lane_equality_controls.cmake` and the standalone diagnostic compilation linking `runner/sha256.c`, followed by its actual motion0 mailbox judgment: exit0. Both supplied paths resolve to the absolute checkout paths actually used; the final workflow uses the same registration.
 - `git diff --quiet 9931d86 HEAD -- src runner/movie.c libretro/libretro.c include/muhtari.h quality.json tests/perf/allow.txt tests/roms/manifest.txt tests/built/expected.txt tests/diag/expected.csv tests/diag/*.a78 tests/diag/*.s`, `git diff --check`, evaluation-scope and declared-file/commit checks: exit0.
 
 Hosted commands use the two exact-source URLs above:
