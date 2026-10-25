@@ -180,6 +180,24 @@ rows released. Early scans of another row retain low in the same column;
 waiting through recovery removes it. These are deterministic fitted
 recovery/contention rules, not measured charge-sharing voltages.
 
+The owned `controller-analog` executable keeps its19 paddle records in
+scenario0. Scenario1 selects with Reset held at startup, fresh fixed keypad
+devices on both ports. Frames1..3 hold keys1,2,3,4; frame4 releases all;
+frame5 holds all twelve; frame6 holds3,6; later frames release all. Reset
+is held only in frames1/2. Its27 required records include released pot
+mask15/trigger mask3; row1 low0/0; individual left/right column0 at
+release+2862/2864/2868 as0/128/128; early same-column history0 then15;
+fourth-corner ghost0; all-high15/3; all-low0/0; contended pots0 with
+RIOT output readback221; no-key D7 pots0/trigger3; all-key D7 trigger0;
+D6-retained0, live release3, recovered pots15; and row2 trigger-column0.
+Each exact edge starts a fresh discharge. LDX+140 DEX/BNE loops cost2804
+ticks; three slow BIT zero-page reads add42, release completion adds1
+and the absolute input read's data arrives17 later:2864. A fast RAM BIT
+subtracts2 for early; an absolute slow BIT adds4 for late. Page alignment
+prevents branch carry. The expected numbers are independent of host
+equality and do not replace any paddle observation. CRC-valid changes or
+missing IDs in newly required last records are rejected by the real judge.
+
 ## Directions
 
 Pins 1-4 are up, down, left and right. A pressed direction closes its switch and pulls the pin to 0. Port 0 drives

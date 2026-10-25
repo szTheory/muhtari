@@ -508,15 +508,15 @@ static void rom_name(const char *path, char *out)
    owned diagnostic identities, independent of the cartridge implementation. */
 static uint32_t retail_id(const char *rom)
 {
-    return strcmp(rom, "smoke") == 0        ? 9u
-           : strcmp(rom, "activision") == 0 ? 10u
-           : strcmp(rom, "absolute") == 0   ? 11u
-           : strcmp(rom, "fractalus") == 0  ? 12u
-           : strcmp(rom, "battery") == 0    ? 13u
-           : strcmp(rom, "motion0") == 0    ? 14u
-           : strcmp(rom, "light0") == 0     ? 15u
+    return strcmp(rom, "smoke") == 0                                      ? 9u
+           : strcmp(rom, "activision") == 0                               ? 10u
+           : strcmp(rom, "absolute") == 0                                 ? 11u
+           : strcmp(rom, "fractalus") == 0                                ? 12u
+           : strcmp(rom, "battery") == 0                                  ? 13u
+           : strcmp(rom, "motion0") == 0                                  ? 14u
+           : strcmp(rom, "light0") == 0                                   ? 15u
            : (strcmp(rom, "analog0") == 0 || strcmp(rom, "analog1") == 0) ? 16u
-                                            : 0u;
+                                                                          : 0u;
 }
 
 static uint16_t retail_crc(const uint8_t mb[256])
@@ -604,7 +604,10 @@ static int controller_keypad;
 
 static const char *controller_name(void)
 {
-    return controller_keypad ? "analog1" : controller_analog ? "analog0" : controller_light ? "light0" : "motion0";
+    return controller_keypad   ? "analog1"
+           : controller_analog ? "analog0"
+           : controller_light  ? "light0"
+                               : "motion0";
 }
 
 static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
@@ -613,7 +616,10 @@ static void controller_stimulus(unsigned frame, muhtari_input_ex *in)
     in->size = (uint32_t)sizeof *in;
     if (controller_keypad) {
         in->port[0].device = in->port[1].device = MUHTARI_PORT_KEYPAD;
-        in->port[0].keypad = in->port[1].keypad = frame <= 3u ? 15u : frame == 5u ? 4095u : frame == 6u ? 36u : 0u;
+        in->port[0].keypad = in->port[1].keypad = frame <= 3u   ? 15u
+                                                  : frame == 5u ? 4095u
+                                                  : frame == 6u ? 36u
+                                                                : 0u;
         in->switches = frame <= 2u ? MUHTARI_SWITCH_RESET : 0u;
         return;
     }
@@ -690,9 +696,10 @@ static int controller_library(const char *path, const char *expected, const char
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
-    media.port[0] = media.port[1] = controller_keypad ? MUHTARI_PORT_KEYPAD : controller_analog  ? MUHTARI_PORT_PADDLE
-                                    : controller_light ? MUHTARI_PORT_LIGHTGUN
-                                                       : MUHTARI_PORT_DRIVING;
+    media.port[0] = media.port[1] = controller_keypad   ? MUHTARI_PORT_KEYPAD
+                                    : controller_analog ? MUHTARI_PORT_PADDLE
+                                    : controller_light  ? MUHTARI_PORT_LIGHTGUN
+                                                        : MUHTARI_PORT_DRIVING;
     muhtari__sha256_init(&controller_raw);
     int failed =
         image == NULL || retail_expected(expected, controller_name()) != 0 ||
@@ -708,9 +715,9 @@ static int controller_library(const char *path, const char *expected, const char
         io.video_pitch = 320u;
         io.audio = controller_pcm[f];
         io.audio_capacity = 801u;
-        failed =
-            ((f != 4u || controller_analog || controller_keypad) && muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK) ||
-            muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
+        failed = ((f != 4u || controller_analog || controller_keypad) &&
+                  muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK) ||
+                 muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         controller_counts[f] = io.audio_count;
     }
     uint8_t mb[256];
@@ -723,10 +730,10 @@ static int controller_library(const char *path, const char *expected, const char
     if (!failed) {
         char name[4096];
         /* Real report consumers must reject even CRC-valid numeric faults. */
-        for (unsigned fault = 0u; fault < 5u; fault++) {
+        for (unsigned fault = 0u; fault < (controller_keypad ? 7u : 5u); fault++) {
             uint8_t bad[256];
             memcpy(bad, mb, sizeof bad);
-            static const unsigned offsets[] = {4u, 6u, 20u, 38u, 8u};
+            static const unsigned offsets[] = {4u, 6u, 20u, 38u, 8u, 122u, 120u};
             bad[offsets[fault]] ^= 1u;
             if (fault != 4u) {
                 uint16_t crc = retail_crc(bad);
@@ -781,17 +788,19 @@ static int controller_library(const char *path, const char *expected, const char
             failed = 1;
         else {
             fprintf(f, "muhtari-movie 2\nport1 %s\nport2 %s\n",
-                    controller_keypad ? "keypad" : controller_analog  ? "paddle"
-                    : controller_light ? "lightgun"
-                                       : "driving",
-                    controller_keypad ? "keypad" : controller_analog  ? "paddle"
-                    : controller_light ? "lightgun"
-                                       : "driving");
+                    controller_keypad   ? "keypad"
+                    : controller_analog ? "paddle"
+                    : controller_light  ? "lightgun"
+                                        : "driving",
+                    controller_keypad   ? "keypad"
+                    : controller_analog ? "paddle"
+                    : controller_light  ? "lightgun"
+                                        : "driving");
             for (unsigned i = 1u; i <= CONTROLLER_FRAMES; i++) {
                 muhtari_input_ex in;
                 controller_stimulus(i, &in);
                 if (controller_keypad) {
-                    fprintf(f,"|keypad:%u|keypad:%u|%s|\n",in.port[0].keypad,in.port[1].keypad,
+                    fprintf(f, "|keypad:%u|keypad:%u|%s|\n", in.port[0].keypad, in.port[1].keypad,
                             in.switches != 0u ? "R..BB" : "...BB");
                 } else if (controller_analog) {
                     fprintf(f, "|paddle:%u,%u,%u|paddle:%u,%u,%u|...BB|\n", in.port[0].paddle[0],
