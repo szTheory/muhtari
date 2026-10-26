@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "../alloc.h"
 
 static muhtari machine;
 
@@ -362,6 +363,66 @@ static int halt_gate_counts_rmw_dummy(void)
 /* A request at a phi2 fall: the cycle starting there (c0) and the next (c1)
    run in 4 ticks, and c2 is frozen for the m = 5 cycles HALT is held, 4 + 20
    ticks, each counted in phi2. */
+/* Owned 32 KiB CPU/MARIA sets. The CPU observes $51; DMA draws color 3,
+   where accidentally selecting CPU graphics would draw color 1. */
+static int bankset_frame(void)
+{
+    static uint8_t image[128u + 65536u];
+    static uint8_t video[320u * 292u];
+    static const uint8_t code[] = {
+        0xADu, 0x00u, 0xB0u, 0x8Du, 0x00u, 0x18u,
+        0xA9u, 0xA0u, 0x85u, 0x2Cu, 0xA9u, 0u, 0x85u, 0x30u,
+        0xA9u, 0x16u, 0x85u, 0x21u, 0xA9u, 0x38u, 0x85u, 0x23u,
+        0xA9u, 0x40u, 0x85u, 0x3Cu, 0x4Cu, 0x1Au, 0x80u
+    };
+    memset(image, 0, sizeof image);
+    image[0] = 3u;
+    memcpy(image + 1u, "ATARI7800", 9u);
+    image[50] = 1u; /* 65536-byte body, big endian */
+    image[53] = 0x20u; /* BankSet */
+    memcpy(image + 128u, code, sizeof code);
+    for (unsigned set = 0u; set < 2u; set++) {
+        uint8_t *p = image + 128u + set * 32768u;
+        for (unsigned zone = 0u; zone < 32u; zone++) {
+            p[0x2000u + zone * 3u] = 15u;
+            p[0x2001u + zone * 3u] = 0xA1u;
+        }
+        p[0x2101u] = 31u;
+        p[0x2102u] = 0xB1u;
+        memset(p + 0x3100u, set == 0u ? 0x40 : 0xC0, 4096u);
+    }
+    image[128u + 0x3000u] = 0x51u;
+    image[128u + 32768u + 0x3000u] = 0xA7u;
+    image[128u + 0x7FFDu] = 0x80u;
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    if (muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK) return 0;
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = sizeof image;
+    muhtari_status status = muhtari_load(m, &media);
+    int ok = expect_count("BankSet public load", "status", status, MUHTARI_STATUS_OK,
+                          "refused board", MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+    if (status == MUHTARI_STATUS_OK) {
+        muhtari_frame io;
+        memset(&io, 0, sizeof io);
+        io.size = (uint32_t)sizeof io;
+        io.video = video;
+        io.video_pitch = 320u;
+        for (unsigned frame = 0u; frame < 2u; frame++) {
+            ok &= muhtari_run_frame(m, &io) == MUHTARI_STATUS_OK;
+        }
+        ok &= expect_count("CPU sentinel", "byte", m->ram[0], 0x51u, "MARIA set", 0xA7u);
+        ok &= expect_count("native DMA pixel", "color", video[40u * 320u], 0x38u,
+                           "CPU graphics", 0x16u);
+    }
+    muhtari_destroy(m);
+    return ok;
+}
+
 static int halt_latency_two_cycles(void)
 {
     int ok = 1;
@@ -373,7 +434,7 @@ static int halt_latency_two_cycles(void)
     ok &= expect_ticks("c1", read_ticks(m), 4u, "one cycle of latency", 24u);
     ok &= expect_ticks("c2", read_ticks(m), 24u, "no freeze", 4u);
     ok &= expect_count("phi2 after c2", "cycles", m->bus.phi2, 9u, "frozen cycles uncounted", 4u);
-    return ok;
+    return bankset_frame() && ok;
 }
 
 /* A request at tick 2, inside a 6-tick cycle, takes effect at that cycle's
