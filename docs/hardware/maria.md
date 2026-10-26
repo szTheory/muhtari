@@ -134,18 +134,33 @@ HALTRST is T0 + 457, against T0 + 514 without the abort.
 ## The HALT handshake
 
 The burst does not start the moment MARIA asks for HALT. The bus lets SALLY run two more cycles after /HALT falls
-(`docs/hardware/bus.md`, HALT), and the PLA then starts at T0 = /HALT fall + 6. The 6 is fitted. With it, the first
-DMA address, T0 + 2 = fall + 8, is exactly the end of a fast second cycle, so a write the CPU makes in that cycle is
-visible to the line's fetch.
+(`docs/hardware/bus.md`, HALT). The PLA origin is T0 = max(/HALT fall + 6, c2 start - 2). The 6 is fitted.
+The first address, T0 + 2, follows both committed CPU cycles. Actual second falls and first fetches are:
 
-SALLY loses ceil((HALTRST - fall) / 4) whole cycles. For an empty DL:
+| c0 / c1 | Second fall | c2 start | First fetch |
+|---|---:|---:|---:|
+| fast / fast | 8 | 8 | 8 |
+| fast / slow | 9 | 10 | 10 |
+| slow / fast | 10 | 10 | 10 |
+| slow / slow | 11 | 12 | 12 |
+
+These ticks are relative to HALT fall. The slow-edge fit follows causal ordering in the batched implementation;
+it is derived compatibility timing, not hardware measurement. The CPU commits its c1 access before the same-tick
+memory selector change. Each DL, indirect, graphics and DLL fetch carries its own address tick. The final DLL
+byte is sampled before HALTRST releases the selected MARIA view on that tick. VBE without HALT uses CPU memory;
+observer peeks also use CPU memory without changing hardware. The bus owns that electrical selection interval.
+LRC remains the original absolute line deadline, including abort tails; delaying T0 never enlarges it.
+
+SALLY loses ceil((HALTRST - fall) / 4) whole cycles. For an empty DL with two fast CPU cycles:
 
 - ordinary line: HALTRST = T0 + 9 = fall + 6 + 9 = fall + 15, so ceil(15 / 4) = 4 cycles = 16 ticks;
 - last line: HALTRST = T0 + 15 = fall + 6 + 15 = fall + 21, so ceil(21 / 4) = 6 cycles = 24 ticks.
 
 Both match the 16 and 24 ticks measured on hardware for DLLs pointing at empty DLs, start-up and shut-down included
 (section 4.3). Measuring T0 from the fall rather than from t 28 keeps both totals independent of where t 28 falls
-within a CPU cycle.
+within a fast CPU cycle. The four-row bus test retains these all-fast values, absolute abort deadlines, and
+unequal CPU/MARIA sentinels. The three-host narrow tracer additionally judges actual native pixels before
+comparing output; it establishes only the 32 KiB-per-set/no-RAM path.
 
 ## Line RAM and read modes
 

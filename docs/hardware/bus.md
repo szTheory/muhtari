@@ -183,10 +183,33 @@ mask records it. The gate opens once and never shuts again, so a line refused fo
 request, before any burst; a window still in flight at the next t 28 means the CPU has not reached that line's c2.
 
 **MARIA's window.** MARIA asks at t 28 of each DMA line with no end tick. When the window reaches c2, the bus runs
-the line's burst there: the PLA starts at T0 = fall + 6, and the burst's HALTRST is the request's end, so SALLY
-loses ceil((HALTRST - fall) / 4) cycles. A store SALLY makes in c1 is in memory before the first fetch at T0 + 2 =
-fall + 8; a store in c2 comes after the burst. The 6 is fitted to the empty-DL 16 and 24 ticks measured on hardware
+the line's burst there: T0 = max(fall + 6, c2 start - 2), and the burst's HALTRST is the request's end, so SALLY
+loses ceil((HALTRST - fall) / 4) cycles. The CPU's c1 data sample or store commits before the selector changes at
+that same falling edge. The first fetch at T0 + 2 cannot precede c2; a store in c2 comes after the burst.
+The 6 is fitted to the empty-DL 16 and 24 ticks measured on hardware
 (`docs/hardware/maria.md`, The HALT handshake).
+
+| c0 / c1 | Second φ2 fall | c2 start | First fetch |
+|---|---:|---:|---:|
+| fast / fast | 8 | 8 | 8 |
+| fast / slow | 9 | 10 | 10 |
+| slow / fast | 10 | 10 | 10 |
+| slow / slow | 11 | 12 | 12 |
+
+Ticks are relative to HALT fall. The stretched-cycle correction is a derived compatibility fit, not a hardware
+measurement. The absolute line-reset deadline stays fixed; a delayed start gains no extra DMA budget.
+
+**Electrical memory selection.** BankSet selects its MARIA half from the actual second φ2 fall until HALT
+rises at HALTRST (cartridge preparation, section 2.1, Bankset). One instance-owned interval records these edges,
+separate from HALT scheduling. A DMA access carries its fetch tick; the last DLL byte is sampled before a
+coincident HALTRST release. Non-HALT VBE helpers select CPU memory. Logical observation peeks always select
+CPU memory and neither advance clocks nor change banks, registers or open bus. MEN and BIOS retain decode priority.
+
+The executable tracer supports two 32 KiB ROM sets with no cartridge RAM. `diag.bankset_tracer` generates owned
+instructions under the build directory, judges CPU numeric records and unequal-set native pixels, and compares
+the actual library, runner process and loaded module's native frames, raw audio records, PCM and sample counts.
+Missing reports, CRC-valid wrong values and CPU graphics substituted for MARIA graphics fail. This narrow check
+does not establish other BankSet geometries, RAM variants or expansion hardware.
 
 The two cycles of latency are fitted, not measured. They are MiSTer's figure, chosen so that a 46-cycle loop counts
 correctly. A scope shows the bus free by the second φ2 fall, and other emulators stop the CPU at once (System notes,

@@ -514,6 +514,7 @@ static uint32_t retail_id(const char *rom)
            : strcmp(rom, "fractalus") == 0  ? 12u
            : strcmp(rom, "battery") == 0    ? 13u
            : strcmp(rom, "pal") == 0        ? 19u
+           : strcmp(rom, "bankset0") == 0    ? 20u
            : (strlen(rom) == 8u && strncmp(rom, "motion", 6u) == 0 &&
               (rom[6] == '4' || rom[6] == '5') && rom[7] >= 'a' && rom[7] <= 'c')
                ? 14u
