@@ -433,12 +433,12 @@ static int bankset_ram_frame(void)
                                    0xA9u, 0x16u, 0x85u, 0x21u, 0xA9u, 0x38u, 0x85u, 0x23u, 0xA9u,
                                    0x40u, 0x85u, 0x3Cu, 0x4Cu, 0x1Eu, 0x80u};
     int ok = 1;
-    for (unsigned halt = 0u; halt < 2u; halt++) {
+    for (unsigned halt = 0u; halt < 3u; halt++) {
         memset(image, 0, sizeof image);
         image[0] = 3u;
         memcpy(image + 1u, "ATARI7800", 9u);
         image[50] = 1u;
-        image[53] = halt != 0u ? 0x60u : 0x20u;
+        image[53] = halt == 1u ? 0x60u : 0x20u;
         image[54] = halt != 0u ? 0u : 4u;
         memcpy(image + 128u, code, sizeof code);
         for (unsigned set = 0u; set < 2u; set++) {
@@ -460,13 +460,29 @@ static int bankset_ram_frame(void)
         media.size = (uint32_t)sizeof media;
         media.image = image;
         media.image_size = sizeof image;
+        media.expansion = halt == 2u ? MUHTARI_EXPANSION_XM : MUHTARI_EXPANSION_OFF;
         if (muhtari_load(m, &media) != MUHTARI_STATUS_OK) {
             muhtari_destroy(m);
             return 0;
         }
-        memset(m->cart.ram, 0x40, 16384u);
-        if (halt != 0u)
+        uint8_t *cpu_ram = halt == 2u ? m->cart.expansion.ram : m->cart.ram;
+        memset(cpu_ram, 0x40, 16384u);
+        if (halt == 1u)
             memset(m->cart.ram + 16384u, 0xC0, 16384u);
+        if (halt == 2u) {
+            memset(cpu_ram + 15u * 8192u, 0xC0, 8192u);
+            muhtari__bus_write(m, 0x0470u, 0x20u);
+            muhtari__bus_write(m, 0x0478u, 0u);
+            muhtari__bus_write(m, 0x047Cu, 15u);
+            /* VBE reads a DLL from CPU page0 while HALT is released. */
+            cpu_ram[0] = 7u;
+            cpu_ram[1] = 0xA1u;
+            cpu_ram[2] = 0u;
+            m->maria.reg[0x0Cu] = 0x40u;
+            m->maria.reg[0x10u] = 0u;
+            (void)muhtari__maria_vbe(m, m->bus.ticks);
+            ok &= m->maria.offset == 7u && m->maria.dl == 0xA100u;
+        }
         uint32_t allocations = counts.allocs;
         muhtari_frame io = {0};
         io.size = (uint32_t)sizeof io;
@@ -475,9 +491,9 @@ static int bankset_ram_frame(void)
         for (unsigned frame = 0u; frame < 2u; frame++) {
             ok &= muhtari_run_frame(m, &io) == MUHTARI_STATUS_OK;
         }
-        ok &= expect_count("CPU RAM store", "byte", m->cart.ram[256u], 0x40u, "redirected value",
+        ok &= expect_count("CPU RAM store", "byte", cpu_ram[256u], 0x40u, "redirected value",
                            0xC0u);
-        if (halt != 0u) {
+        if (halt == 1u) {
             ok &= expect_count("MARIA redirect", "byte", m->cart.ram[16640u], 0xC0u, "CPU value",
                                0x40u);
         }
