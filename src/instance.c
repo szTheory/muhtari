@@ -249,6 +249,12 @@ static muhtari_status battery_prepare(struct battery_candidate *b, uint8_t rom[4
     b->hsc_attached = (uint32_t)(media->hsc_mode == MUHTARI_HSC_ON || media->hsc_rom != NULL ||
                                  (media->hsc_mode == MUHTARI_HSC_AUTO &&
                                   (info->devices & MUHTARI_DEVICE_HSC) != 0u));
+    /* A 52 KiB BankSet set occupies the HSC ROM window at $3000. Resolve
+       physical attachment before allocation/staging (cartridge.md, BankSet). */
+    if (b->hsc_attached != 0u && info->board == MUHTARI_BOARD_BANKSET &&
+        info->rom_size == 106496u) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+    }
     for (unsigned p = 0; p < 2u; p++) {
         uint32_t device = media->port[p];
         muhtari_status st = muhtari__ports_check_device_ex(device);

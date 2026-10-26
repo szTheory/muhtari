@@ -2706,7 +2706,8 @@ static void bankset_memory_lifetime(void)
     muhtari_config cfg = alloc_config(&counts);
     muhtari *m = NULL;
     CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
-    if (m == NULL) return;
+    if (m == NULL)
+        return;
     for (uint8_t device = 1u; device <= 3u; device += 2u) {
         size_t n = images_bankset(image, 32u, device);
         muhtari_media media = media_for(image, n);
@@ -2714,13 +2715,14 @@ static void bankset_memory_lifetime(void)
         muhtari_span span = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
         uint32_t bytes = device == 1u ? 16384u : 32768u;
         CHECK_EQ_U64(span.bytes, bytes);
-        for (uint32_t i = 0u; i < bytes; i++) CHECK_EQ_U64(span.data[i], 0u);
+        for (uint32_t i = 0u; i < bytes; i++)
+            CHECK_EQ_U64(span.data[i], 0u);
         memset(span.data, 0x56, bytes);
         span.data[bytes - 1u] = 0xA9u;
         memcpy(saved, span.data, bytes);
         memcpy(&snapshot, m, sizeof snapshot);
         uint32_t allocations = counts.allocs;
-        /* Odd, truncated, forbidden RAM and unsupported device loads. */
+        /* Forbidden RAM geometry preserves the complete old machine. */
         n = images_bankset(image, 52u, 3u);
         media = media_for(image, n);
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_IMAGE);
@@ -2745,6 +2747,16 @@ static void bankset_memory_lifetime(void)
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
         CHECK_EQ_U64(counts.allocs, allocations);
         CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        static uint8_t firmware[4096u];
+        memset(firmware, 0x5Au, sizeof firmware);
+        media.hsc_rom = firmware;
+        media.hsc_rom_size = sizeof firmware;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+        CHECK_EQ_U64(counts.allocs, allocations);
+        CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        CHECK(memcmp(span.data, saved, bytes) == 0);
+        media.hsc_rom = NULL;
+        media.hsc_rom_size = 0u;
         muhtari_span again = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
         CHECK(again.data == span.data);
         CHECK_EQ_U64(again.bytes, bytes);
@@ -2752,7 +2764,8 @@ static void bankset_memory_lifetime(void)
         again = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
         CHECK(again.data == span.data);
         CHECK_EQ_U64(again.bytes, bytes);
-        for (uint32_t i = 0u; i < bytes; i++) CHECK_EQ_U64(span.data[i], 0u);
+        for (uint32_t i = 0u; i < bytes; i++)
+            CHECK_EQ_U64(span.data[i], 0u);
         CHECK_EQ_U64(m->cart.bank, 0u);
         media.hsc_mode = MUHTARI_HSC_OFF;
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);

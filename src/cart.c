@@ -145,7 +145,7 @@ static uint32_t cart_resolve_v3(uint32_t t, int *conflict)
         t |= CT_SUPERGAME;
     }
     /* POKEY at $4000 stays beside ROM at $4000, write-only. */
-    if ((t & CT_POKEY_4000) != 0u && (t & at_4000) != 0u) {
+    if ((t & CT_BANKSET) == 0u && (t & CT_POKEY_4000) != 0u && (t & at_4000) != 0u) {
         *conflict = 1;
         t &= ~CT_POKEY_4000;
     }
@@ -871,7 +871,7 @@ void muhtari__cart_reset(muhtari *m)
    with ram_size - 1, a power of two, so no header can reach outside RAM
    (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1,
    and section 7 for hostile input). */
-static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
+static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr, int maria)
 {
     if (c->ram == NULL || addr < 0x4000u || addr >= 0x8000u) {
         return NULL;
@@ -884,6 +884,9 @@ static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
     }
     if ((c->info.board_options & MUHTARI_BOARD_BANKED_RAM) != 0u) {
         i += (uint32_t)c->ram_bank * CART_BANK;
+    }
+    if (maria && (c->info.board_options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u) {
+        i += CART_BANK;
     }
     return &c->ram[i & (c->info.ram_size - 1u)];
 }
@@ -938,7 +941,7 @@ static const uint8_t *cart_bankset_rom_at(const struct muhtari__cart *c, uint16_
    RAM, where a board has it, answers at $4000-$7FFF instead of ROM. No
    function-pointer table: the board is a switch, so the core keeps no
    mutable global. */
-uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
+static uint8_t cart_peek_view(const muhtari *m, uint16_t addr, int maria)
 {
     const struct muhtari__cart *c = &m->cart;
     if (c->rom == NULL) {
@@ -954,13 +957,13 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
             return m->battery.rom[addr - 0x3000u];
         }
     }
-    const uint8_t *ram = cart_ram_at(c, addr);
+    const uint8_t *ram = cart_ram_at(c, addr, maria);
     if (ram != NULL) {
         return *ram;
     }
     switch (c->info.board) {
     case MUHTARI_BOARD_BANKSET: {
-        const uint8_t *rom = cart_bankset_rom_at(c, addr, 0);
+        const uint8_t *rom = cart_bankset_rom_at(c, addr, maria);
         if (rom != NULL)
             return *rom;
         break;
@@ -1012,13 +1015,15 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
     return m->bus.open_bus;
 }
 
+uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
+{
+    return cart_peek_view(m, addr, 0);
+}
+
 uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick)
 {
-    if (m->cart.rom != NULL && m->cart.info.board == MUHTARI_BOARD_BANKSET &&
-        muhtari__bus_maria_selected(m, tick)) {
-        const uint8_t *rom = cart_bankset_rom_at(&m->cart, addr, 1);
-        if (rom != NULL)
-            return *rom;
+    if (m->cart.info.board == MUHTARI_BOARD_BANKSET) {
+        return cart_peek_view(m, addr, muhtari__bus_maria_selected(m, tick));
     }
     return muhtari__cart_read(m, addr, 1);
 }
@@ -1039,6 +1044,8 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
                                 (MUHTARI_BOARD_ROM_AT_4000 | MUHTARI_BOARD_BANK6_AT_4000)) != 0u ||
                                m->cart.info.board == MUHTARI_BOARD_ABSOLUTE ||
                                m->cart.info.board == MUHTARI_BOARD_ACTIVISION ||
+                               (m->cart.info.board == MUHTARI_BOARD_BANKSET &&
+                                m->cart.info.rom_size / 2u > 32768u) ||
                                (m->cart.info.board == MUHTARI_BOARD_LINEAR &&
                                 m->cart.info.rom_size > 32768u));
                 if (!overlap) {
@@ -1069,7 +1076,8 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         if (at != 0u && addr >= at && (uint32_t)addr < (uint32_t)at + size) {
             muhtari__pokey_write(m, chip, (uint8_t)(addr & 15u), v,
                                  m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u));
-            return;
+            if (c->info.board != MUHTARI_BOARD_BANKSET)
+                return;
         }
     }
     if (m->battery.hsc_attached != 0u && addr >= 0x1000u && addr < 0x1800u) {
@@ -1080,7 +1088,14 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         }
         return;
     }
-    uint8_t *ram = cart_ram_at(c, addr);
+    /* BankSet CPU stores at $C000 redirect to the MARIA half, while reads
+       there remain ROM (cartridge.md, BankSet). No shared-RAM redirect. */
+    if (c->info.board == MUHTARI_BOARD_BANKSET &&
+        (c->info.board_options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u && addr >= 0xC000u) {
+        c->ram[CART_BANK + (uint32_t)addr - 0xC000u] = v;
+        return;
+    }
+    uint8_t *ram = cart_ram_at(c, addr, 0);
     if (ram != NULL) {
         *ram = v;
         return;

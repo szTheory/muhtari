@@ -369,16 +369,14 @@ static int bankset_frame(void)
 {
     static uint8_t image[128u + 65536u];
     static uint8_t video[320u * 292u];
-    static const uint8_t code[] = {
-        0xADu, 0x00u, 0xB0u, 0x8Du, 0x00u, 0x18u,
-        0xA9u, 0xA0u, 0x85u, 0x2Cu, 0xA9u, 0u, 0x85u, 0x30u,
-        0xA9u, 0x16u, 0x85u, 0x21u, 0xA9u, 0x38u, 0x85u, 0x23u,
-        0xA9u, 0x40u, 0x85u, 0x3Cu, 0x4Cu, 0x1Au, 0x80u
-    };
+    static const uint8_t code[] = {0xADu, 0x00u, 0xB0u, 0x8Du, 0x00u, 0x18u, 0xA9u, 0xA0u,
+                                   0x85u, 0x2Cu, 0xA9u, 0u,    0x85u, 0x30u, 0xA9u, 0x16u,
+                                   0x85u, 0x21u, 0xA9u, 0x38u, 0x85u, 0x23u, 0xA9u, 0x40u,
+                                   0x85u, 0x3Cu, 0x4Cu, 0x1Au, 0x80u};
     memset(image, 0, sizeof image);
     image[0] = 3u;
     memcpy(image + 1u, "ATARI7800", 9u);
-    image[50] = 1u; /* 65536-byte body, big endian */
+    image[50] = 1u;    /* 65536-byte body, big endian */
     image[53] = 0x20u; /* BankSet */
     memcpy(image + 128u, code, sizeof code);
     for (unsigned set = 0u; set < 2u; set++) {
@@ -397,7 +395,8 @@ static int bankset_frame(void)
     alloc_counts counts;
     muhtari_config cfg = alloc_config(&counts);
     muhtari *m = NULL;
-    if (muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK) return 0;
+    if (muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK)
+        return 0;
     muhtari_media media;
     memset(&media, 0, sizeof media);
     media.size = (uint32_t)sizeof media;
@@ -416,10 +415,87 @@ static int bankset_frame(void)
             ok &= muhtari_run_frame(m, &io) == MUHTARI_STATUS_OK;
         }
         ok &= expect_count("CPU sentinel", "byte", m->ram[0], 0x51u, "MARIA set", 0xA7u);
-        ok &= expect_count("native DMA pixel", "color", video[40u * 320u], 0x38u,
-                           "CPU graphics", 0x16u);
+        ok &= expect_count("native DMA pixel", "color", video[40u * 320u], 0x38u, "CPU graphics",
+                           0x16u);
     }
     muhtari_destroy(m);
+    return ok;
+}
+
+/* Execute CPU stores into each RAM owner, then DMA real graphics from RAM.
+   Shared RAM draws CPU color1; HALT RAM draws the unequal MARIA color3. */
+static int bankset_ram_frame(void)
+{
+    static uint8_t image[128u + 65536u];
+    static uint8_t video[320u * 292u];
+    static const uint8_t code[] = {0xA9u, 0x40u, 0x8Du, 0u,    0x41u, 0xA9u, 0xC0u, 0x8Du, 0u,
+                                   0xC1u, 0xA9u, 0xA0u, 0x85u, 0x2Cu, 0xA9u, 0u,    0x85u, 0x30u,
+                                   0xA9u, 0x16u, 0x85u, 0x21u, 0xA9u, 0x38u, 0x85u, 0x23u, 0xA9u,
+                                   0x40u, 0x85u, 0x3Cu, 0x4Cu, 0x1Eu, 0x80u};
+    int ok = 1;
+    for (unsigned halt = 0u; halt < 2u; halt++) {
+        memset(image, 0, sizeof image);
+        image[0] = 3u;
+        memcpy(image + 1u, "ATARI7800", 9u);
+        image[50] = 1u;
+        image[53] = halt != 0u ? 0x60u : 0x20u;
+        image[54] = halt != 0u ? 0u : 4u;
+        memcpy(image + 128u, code, sizeof code);
+        for (unsigned set = 0u; set < 2u; set++) {
+            uint8_t *p = image + 128u + set * 32768u;
+            for (unsigned zone = 0u; zone < 32u; zone++) {
+                p[0x2000u + zone * 3u] = 15u;
+                p[0x2001u + zone * 3u] = 0xA1u;
+            }
+            p[0x2101u] = 31u;
+            p[0x2102u] = 0x41u;
+        }
+        image[128u + 0x7FFDu] = 0x80u;
+        alloc_counts counts;
+        muhtari_config cfg = alloc_config(&counts);
+        muhtari *m = NULL;
+        if (muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK)
+            return 0;
+        muhtari_media media = {0};
+        media.size = (uint32_t)sizeof media;
+        media.image = image;
+        media.image_size = sizeof image;
+        if (muhtari_load(m, &media) != MUHTARI_STATUS_OK) {
+            muhtari_destroy(m);
+            return 0;
+        }
+        memset(m->cart.ram, 0x40, 16384u);
+        if (halt != 0u)
+            memset(m->cart.ram + 16384u, 0xC0, 16384u);
+        uint32_t allocations = counts.allocs;
+        muhtari_frame io = {0};
+        io.size = (uint32_t)sizeof io;
+        io.video = video;
+        io.video_pitch = 320u;
+        for (unsigned frame = 0u; frame < 2u; frame++) {
+            ok &= muhtari_run_frame(m, &io) == MUHTARI_STATUS_OK;
+        }
+        ok &= expect_count("CPU RAM store", "byte", m->cart.ram[256u], 0x40u, "redirected value",
+                           0xC0u);
+        if (halt != 0u) {
+            ok &= expect_count("MARIA redirect", "byte", m->cart.ram[16640u], 0xC0u, "CPU value",
+                               0x40u);
+        }
+        ok &=
+            expect_count("RAM native DMA pixel", "color", video[40u * 320u],
+                         halt != 0u ? 0x38u : 0x16u, "other RAM owner", halt != 0u ? 0x16u : 0x38u);
+        ok &= counts.allocs == allocations;
+        /* The bus owns MEN and BIOS priority above the cartridge decoder. */
+        m->bus.inptctrl = 0u;
+        m->bus.open_bus = 0xE7u;
+        ok &= muhtari__bus_peek(m, 0xB000u) == 0xE7u;
+        m->bus.inptctrl = 2u; /* MEN on, EXT off: BIOS answers upper ROM. */
+        m->bios_size = 4096u;
+        memset(m->bios, 0x6Bu, sizeof m->bios);
+        ok &= muhtari__bus_peek(m, 0xF000u) == 0x6Bu;
+        muhtari_destroy(m);
+        ok &= counts.allocs == counts.frees;
+    }
     return ok;
 }
 
@@ -456,8 +532,8 @@ static int halt_views(void)
         muhtari__bus_request_halt(m, 0u, MUHTARI__HALT_UNTIL_MARIA);
         (void)muhtari__bus_read(m, (row & 2u) != 0u ? 0x0480u : 0x1800u);
         (void)muhtari__bus_read(m, (row & 1u) != 0u ? 0x0480u : 0xB000u);
-        ok &= expect_ticks("actual second fall", m->bus.maria_from, second[row],
-                           "one fast edge", 4u);
+        ok &=
+            expect_ticks("actual second fall", m->bus.maria_from, second[row], "one fast edge", 4u);
         ok &= expect_ticks("c2 starts", m->bus.ticks, c2[row], "one cycle", 4u);
         ok &= muhtari__cart_dma_read(m, 0xB000u, second[row] - 1u) == 0x51u;
         ok &= muhtari__cart_dma_read(m, 0xB000u, second[row]) == 0xA7u;
@@ -472,10 +548,9 @@ static int halt_views(void)
         (void)muhtari__bus_read(m, 0x1800u);
         /* Empty DL: four fetches 2 ticks apart, then 1-tick tail.
            Thus HALTRST-7 is the observed first fetch, with no added LRC. */
-        ok &= expect_ticks("first fetch", m->bus.maria_until - 7u, c2[row],
-                           "retroactive fetch", 6u);
-        ok &= expect_ticks("HALTRST", m->bus.maria_until, release[row],
-                           "enlarged deadline", 454u);
+        ok &=
+            expect_ticks("first fetch", m->bus.maria_until - 7u, c2[row], "retroactive fetch", 6u);
+        ok &= expect_ticks("HALTRST", m->bus.maria_until, release[row], "enlarged deadline", 454u);
         ok &= muhtari__cart_dma_read(m, 0xB000u, release[row] - 1u) == 0xA7u;
         ok &= muhtari__cart_dma_read(m, 0xB000u, release[row]) == 0x51u;
         ok &= muhtari__cart_dma_read(m, 0x4000u, release[row] - 1u) == 0xA8u;
@@ -511,6 +586,20 @@ static int halt_views(void)
         (void)muhtari__bus_read(m, 0x1800u);
         (void)muhtari__bus_read(m, 0x1800u);
         ok &= m->maria.dl == 0x0069u && m->maria.offset == 3u;
+        /* The final DLL sample at HALTRST selects MARIA physical RAM too. */
+        m->maria.dl = 0x8000u;
+        m->maria.dll = 0x4000u;
+        m->maria.offset = 0u;
+        ram[16384u] = 3u;
+        ram[16385u] = 0u;
+        ram[16386u] = 0x6Au;
+        fall = m->bus.ticks;
+        m->maria.dma_lrc = fall + 454u;
+        muhtari__bus_request_halt(m, fall, MUHTARI__HALT_UNTIL_MARIA);
+        (void)muhtari__bus_read(m, 0x1800u);
+        (void)muhtari__bus_read(m, 0x1800u);
+        (void)muhtari__bus_read(m, 0x1800u);
+        ok &= m->maria.dl == 0x006Au && m->maria.offset == 3u;
         /* A delayed origin cannot extend the absolute LRC abort budget. */
         fall = m->bus.ticks;
         m->maria.dl = 0x8000u;
@@ -566,13 +655,11 @@ static int halt_stretched_costs(void)
     static const struct {
         uint8_t headers, width, five, last, slow_first;
         uint16_t cost, release, resume;
-    } rows[] = {
-        {0u, 0u, 0u, 0u, 0u, 9u, 17u, 30u},
-        {1u, 30u, 1u, 0u, 0u, 109u, 117u, 130u},
-        {1u, 32u, 1u, 1u, 0u, 121u, 129u, 142u},
-        {2u, 24u, 0u, 0u, 1u, 169u, 177u, 190u},
-        {2u, 29u, 0u, 0u, 0u, 199u, 207u, 218u}
-    };
+    } rows[] = {{0u, 0u, 0u, 0u, 0u, 9u, 17u, 30u},
+                {1u, 30u, 1u, 0u, 0u, 109u, 117u, 130u},
+                {1u, 32u, 1u, 1u, 0u, 121u, 129u, 142u},
+                {2u, 24u, 0u, 0u, 1u, 169u, 177u, 190u},
+                {2u, 29u, 0u, 0u, 0u, 199u, 207u, 218u}};
     static uint8_t rom[32768u];
     int ok = 1;
     for (unsigned i = 0u; i < sizeof rows / sizeof rows[0]; i++) {
@@ -605,8 +692,8 @@ static int halt_stretched_costs(void)
         (void)muhtari__bus_read(m, 0x1800u);
         ok &= expect_ticks("stretched HALTRST", m->bus.maria_until, rows[i].release,
                            "unclamped origin", (uint64_t)rows[i].release - 2u);
-        ok &= expect_ticks("stretched c2 completion", m->bus.ticks,
-                           (uint64_t)rows[i].resume + 4u, "early CPU resumption", 0u);
+        ok &= expect_ticks("stretched c2 completion", m->bus.ticks, (uint64_t)rows[i].resume + 4u,
+                           "early CPU resumption", 0u);
         ok &= m->maria.stats[20].cost == rows[i].cost;
         ok &= m->maria.stats[20].flags == (rows[i].last ? MUHTARI__LINE_LAST : 0u);
         ok &= m->bus.nmi_pending == 0u && m->bus.nmi_phi2 == 0u;
@@ -626,7 +713,8 @@ static int halt_latency_two_cycles(void)
     ok &= expect_ticks("c1", read_ticks(m), 4u, "one cycle of latency", 24u);
     ok &= expect_ticks("c2", read_ticks(m), 24u, "no freeze", 4u);
     ok &= expect_count("phi2 after c2", "cycles", m->bus.phi2, 9u, "frozen cycles uncounted", 4u);
-    return bankset_frame() && halt_views() && halt_store_order() && halt_stretched_costs() && ok;
+    return bankset_frame() && bankset_ram_frame() && halt_views() && halt_store_order() &&
+           halt_stretched_costs() && ok;
 }
 
 /* A request at tick 2, inside a 6-tick cycle, takes effect at that cycle's

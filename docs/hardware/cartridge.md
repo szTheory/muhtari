@@ -60,7 +60,7 @@ one was:
 1. More than one of Fractalus, Absolute, Activision, bankset and Souper is a conflict; the last in that list wins.
 2. Activision or Absolute clears bits 0-7.
 3. ROM at $4000, bank 6 or banked RAM without SuperGame sets SuperGame.
-4. POKEY at $4000 is dropped beside RAM, bank 6 or banked RAM at $4000. Beside ROM at $4000 it stays, as a
+4. Except on BankSet, POKEY at $4000 is dropped beside RAM, bank 6 or banked RAM at $4000. Beside ROM at $4000 it stays, as a
    write-only POKEY, which is no conflict.
 5. RAM at $4000 is dropped beside ROM at $4000, bank 6 or banked RAM.
 6. ROM at $4000 is dropped beside bank 6 or banked RAM.
@@ -215,7 +215,7 @@ $0450-$045F selects the primary chip and $0440-$044F the secondary chip,
 including the dual-chip declaration (cartridge notes, section 2.1).
 If a legacy header declares multiple primary locations, $0450 takes priority,
 then $4000, then $0800; the fixed slots bound the declaration to two chips.
-CPU writes select POKEY before board RAM or ROM. CPU reads select readable
+CPU writes select POKEY before board RAM or ROM; BankSet also applies its independent memory write. CPU reads select readable
 RAM or overlapping linear, Absolute or Activision ROM, EXROM or EXFIX before a write-only $4000 POKEY;
 otherwise POKEY answers. Peeks and MARIA fetches always observe board memory
 or open bus, without clocking or reading POKEY registers.
@@ -255,6 +255,21 @@ set and describes HALT RAM. The 256/512 KiB sizes and shared RAM support are
 producer/emulator extensions, not measured cartridge capacities or identical
 physical boards. The time-aware bus path uses the accepted electrical interval
 described in `bus.md`; a MARIA caller alone does not select the MARIA set.
+
+Shared RAM is one 16 KiB span at $4000–$7FFF for both readers. HALT RAM has
+two physical 16 KiB halves: CPU stores at $4000–$7FFF update the CPU half;
+CPU stores at $C000–$FFFF redirect to the MARIA half, while reads there
+remain ROM. MARIA reads its half at $4000–$7FFF only during the electrical
+interval. A write-only $4000 POKEY also receives stores without consuming the
+BankSet memory effect. `MUHTARI_MEMORY_CART_RAM` exposes all 16384 or 32768
+physical bytes, zero-filled on load/power cycle and stable until successful
+replacement or destroy. Refused loads preserve the pointer and every byte.
+
+A 52 KiB set overlaps HSC ROM at $3000–$3FFF. Effective standalone HSC
+attachment is refused before allocation, including Auto metadata and supplied
+firmware; explicit HSC Off removes the conflict. Expansion-driven attachment
+uses the same constraint when its load selection is available. MEN/BIOS decode
+retains bus priority over cartridge memory.
 
 ### Linear
 
