@@ -2,8 +2,13 @@
 # frames, canonical raw records, PCM and sample counts after numeric judgment.
 if(DIAG_BANKSET_RUN)
   file(MAKE_DIRECTORY "${OUT}")
-  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --bankset-image "${OUT}/bankset.a78"
-    RESULT_VARIABLE rc TIMEOUT 10)
+  if(BANKSET_EXPANDED)
+    file(COPY_FILE "${ROOT}/tests/diag/bankset.a78" "${OUT}/bankset.a78")
+    set(rc 0)
+  else()
+    execute_process(COMMAND ${EMULATOR} "${DRIVER}" --bankset-image "${OUT}/bankset.a78"
+      RESULT_VARIABLE rc TIMEOUT 10)
+  endif()
   if(NOT rc STREQUAL "0")
     message(FATAL_ERROR "bankset: image generation failed ${rc}")
   endif()
@@ -585,6 +590,14 @@ set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
 include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
 muhtari_add_test(NAME diag.bankset_tracer COMMAND ${CMAKE_COMMAND} -P ${diag_bankset}
+  LABELS diag portable TIMEOUT 30)
+set(diag_bankset_matrix ${PROJECT_BINARY_DIR}/tests/diag/bankset-matrix.cmake)
+file(GENERATE OUTPUT ${diag_bankset_matrix} CONTENT
+"set(BANKSET_EXPANDED TRUE)
+set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+include([==[${diag_bankset}]==])
+")
+muhtari_add_test(NAME diag.bankset COMMAND ${CMAKE_COMMAND} -P ${diag_bankset_matrix}
   LABELS diag portable TIMEOUT 30)
 
 set(diag_pal ${PROJECT_BINARY_DIR}/tests/diag/pal.cmake)

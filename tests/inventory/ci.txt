@@ -450,6 +450,7 @@ cpu.vectors.pin	vectors
 cpu.vectors.reader	portable,vectors
 cpu.vectors.self_test	portable,vectors
 diag.bank6	diag,portable
+diag.bankset	diag,portable
 diag.bankset_tracer	diag,portable
 diag.battery	diag,portable
 diag.controllers	diag,portable
