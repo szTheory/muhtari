@@ -2,7 +2,7 @@
 title: "A7800 audio: TIA, board mix, cartridge POKEY, XM, synthesis"
 summary: "Clock-exact facts and decisions for 7800 sound: TIA on its own 456-tick line, the 18 kOhm / 6.8 kOhm board mix, POKEY on the stretched cartridge phase 2, the POKEY seed, XM/YM2151 via ymfm, and integer band-limited synthesis with a transition-stream hash."
 read_when: "Before designing, implementing or testing TIA audio, pokey.c, synth.c, the mixer, A78 audio/IRQ flags, XM/YM2151, audio hashes or audio ledger predicates."
-updated: 2026-10-20
+updated: 2026-10-26
 ---
 
 # A7800 audio
@@ -121,8 +121,25 @@ Both MAME and a7800 carry the a7800 4.7–4.9 fixes; MAME upstream is the supers
 **SEED-v1 (implemented).** Owned integer C POKEY derives from the manual only; no emulator source was used. Small per-chip shift registers and four-stage history replace the earlier proposed tables, with no dependency or new provenance notice. The adopted behavior and documentary discrepancies live in [pokey.md](../../docs/hardware/pokey.md). **Strongest alternative:** port MAME v4.9 to integer C (the design spine's plan, but upstream rather than a7800), then fix the four deviations above. **Would change if:** by mid-P4 the own model still fails the §9 timer and RANDOM vectors.
 **SEED-v4.** **Recommendation:** run Verilated MiSTer `rtl/Pokey` (self-contained module, MIT) nightly on register-write traces recorded from E.X.O., A.R.T.I., Ballblazer and the RMT demos, comparing per-channel DAC edges cycle-for-cycle and allowing only documented deviations; add owner-console recordings. **Strongest alternative:** a7800 v5.2 black-box audio captures (no cycle timing). **Would change if:** Verilator harness effort exceeds 2 days.
 
-## 6. XM expansion and YM2151 (v4.0)
-- **Map:** POKEY at $0450 and an optional second POKEY at $0460, both enabled by XCTRL bit 4; XCTRL at $0470, bits 0–2 select the RAM bank and bit 3 enables RAM [AUD.09]. The YM2151 sits at $0460 (address) and $0461 (data); poll bit 7 of $0461 for busy. Writing $84 to $0470 maps the YM and cartridge ROM [AUD.17]. MAME enables the YM only on exactly $84 [AUD.09]; MiSTer uses XCTRL bit 7 or header bit 11 [AUD.03]. Official XM documents are unreachable (unverified) [AUD.35].
+## 6. Expansion POKEY and deferred YM2151
+The implemented [XBoard and XM subset](../../docs/hardware/cartridge.md#xboard)
+and [POKEY chip select](../../docs/hardware/pokey.md) now own the released maps
+and lifecycle. Both install one $0450 primary continuously; control bit 4 gates
+CPU register access, without stopping sound, clocks, IRQ history or mixer identity.
+A declared $0440 secondary can coexist; the optional $0460 chip is unsupported.
+Physical XM confidence remains medium, based on the separate BSD-3 XM implementation
+at a7800 `7a2afdc1ea08` (cartridge preparation CART.22), not hardware measurements.
+
+**Historical correction:** the former XM paragraph described the shared XBoard-style
+decoder in [AUD.09]. Its bits 0–2 bank / bit 3 RAM and $0470–$047F aliases belong
+to XBoard. Selected XM instead uses exact $0470 bits 5/6 for two RAM windows,
+$0478/$047C CPU/MARIA page nibbles, and bit 3 for both HSC windows. The primary
+XM specification remains inaccessible [AUD.35]; this is no full-XM service claim.
+
+**Deferred YM map evidence:** the YM2151 uses $0460/$0461 address/data and bit 7
+of $0461 for busy [AUD.17]. MAME's older decoder enables it on exactly $84 at
+$0470 [AUD.09]; MiSTer uses bit 7 or header bit 11 [AUD.03]. No YM or detection
+success is implemented by the RAM/POKEY/HSC subset.
 - **Clock:** MAME uses 2 × the slot clock = 3,579,545 Hz [AUD.09]; MiSTer clocks jt51 on both CPU phase enables, so it would stretch [AUD.03]. The real XM source is unverified. Detection check: Timer B with CLKB = 252 lasts 1,024 × 4/3,579,545 = 1.144 ms, which is 136.5 iterations of the 15-cycle poll loop, so the expected count is $88 ([AUD.17], derived).
 - **ymfm** (BSD-3, @81aec25ccbb9) is integer-only at runtime; its "floating point" is the DAC's 3.10 integer format. OPM uses ymfm.h 566 + ymfm_fm.h 463 + ymfm_fm.ipp 1,592 + ymfm_opm.h 322 + ymfm_opm.cpp 539 = 3,482 C++ lines of templates over register sets. A C port specialised to OPM should be ≈ 1,500–2,000 lines (estimate, untested). Output is one stereo sample per 64 YM clocks (128 ticks at 2×φ2). Nuked-OPM (LGPL) and jt51 (GPL) are excluded [AUD.21].
 

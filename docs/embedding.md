@@ -87,7 +87,7 @@ There is no init macro. The size tag lets a program built against one header run
   struct receives only its first `size` bytes.
 - A larger size from a newer header is accepted only if every byte the library does not know is zero; otherwise
   the call returns `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
-- A field added later always keeps the old behaviour when it is zero.
+- Omitted or incomplete optional fields take their zero defaults.
 
 ## The allocator
 
@@ -152,9 +152,9 @@ production BIOS snapshot. The warm PAL table is a licensed presentation seed;
 native hashes do not depend on it. Region is fixed at successful load and survives
 power cycle; libretro region changes require reload, while palette changes affect
 presentation immediately. See [PAL diagnostic evidence](pal-tests.md) and
-[audio model limits](hardware/audio.md). API 6, ABI 1 and behavior revision 5
-retain the append-only status and size-tag contracts; legacy API 3 callers can
-now load PAL, so hosts must query geometry rather than depend on its former refusal.
+[audio model limits](hardware/audio.md). API 7, ABI 1 and behavior revision 6
+retain old structure prefixes, status values and zero defaults. Query geometry
+rather than depend on the former PAL refusal.
 
 ## Probing a cartridge image
 
@@ -266,13 +266,12 @@ muhtari_status st = muhtari_load(m, &media);
 
 1. `m` or `media` is NULL: `MUHTARI_STATUS_ERR_ARGUMENT`.
 2. A bad size tag: `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
-3. `bios` is NULL with a non-zero `bios_size`, or `region` is neither 0 nor a `MUHTARI_REGION_*` value:
-   `MUHTARI_STATUS_ERR_ARGUMENT`.
+3. Bad BIOS pointer/length, region (0 or `MUHTARI_REGION_*`) or expansion value: `MUHTARI_STATUS_ERR_ARGUMENT`.
 4. The image, exactly as `muhtari_probe` judges it, with the same statuses. An empty image is
    `MUHTARI_STATUS_ERR_INVALID_IMAGE`, and a NULL image with a size is `MUHTARI_STATUS_ERR_ARGUMENT`.
-5. The region: `region` when it is not 0, else the cartridge's, which comes from its header, then the hash list,
-   then NTSC. Both NTSC and PAL execute; the selection commits only after successful
-   cartridge installation. Probe metadata remains descriptive when overridden.
+5. Resolve expansion and sound topology as above; unsupported sound returns
+   `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE`. Region uses the override, else the
+   probe region. Both NTSC and PAL execute; selection commits only on success.
 6. The BIOS, when `bios` is not NULL: it must be 4,096 or 16,384 bytes, and its reset vector, mapped to end at
    $FFFF, must point inside it. Otherwise `MUHTARI_STATUS_ERR_INVALID_BIOS`.
 7. HSC firmware and storage placement, described below. Invalid HSC media returns

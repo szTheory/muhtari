@@ -213,8 +213,8 @@ the header claims more bytes than the file holds, as invalid otherwise.
 Declared POKEY registers repeat every 16 bytes over $4000-$7FFF or $0800-$0FFF;
 $0450-$045F selects the primary chip and $0440-$044F the secondary chip,
 including the dual-chip declaration (cartridge notes, section 2.1).
-If a legacy header declares multiple primary locations, $0450 takes priority,
-then $4000, then $0800; the fixed slots bound the declaration to two chips.
+Probe preserves the normalized sound declaration. Loading refuses multiple
+primary locations; accepted content has at most one primary and one secondary.
 CPU writes select POKEY before board RAM or ROM; BankSet also applies its independent memory write. CPU reads select readable
 RAM or overlapping linear, Absolute or Activision ROM, EXROM or EXFIX before a write-only $4000 POKEY;
 otherwise POKEY answers. Peeks and MARIA fetches always observe board memory
@@ -287,7 +287,19 @@ unavailable. Probing them produces no synthetic service or detection behavior.
 
 ### BankSet
 
-The image contains equal CPU and MARIA ROM sets in that order. Linear 32, 48
+The image contains equal CPU and MARIA ROM sets in that order. The complete
+accepted matrix is below; sizes are per set, with twice that many image bytes.
+
+| Per-set ROM | No RAM | Shared 16 KiB RAM | HALT-selected 32 KiB RAM |
+|---|---|---|---|
+| 32 KiB | yes | yes | yes |
+| 48 KiB | yes | refused | refused |
+| 52 KiB | yes | refused | refused |
+| 128 KiB | yes | yes | yes |
+| 256 KiB | yes | yes | yes |
+| 512 KiB | yes | yes | yes |
+
+Linear 32, 48
 and 52 KiB sets end at $FFFF, beginning at $8000, $4000 and $3000. Switched
 128, 256 and 512 KiB sets use 16 KiB banks: $4000 holds the second-last bank,
 $8000 the selected bank and $C000 the last bank of the selected set. One shared
@@ -303,8 +315,14 @@ a valid unsupported v4 declaration cannot fall back to stale v3 metadata.
 The BankSet wiki (cartridge notes section 2.1) documents through 128 KiB per
 set and describes HALT RAM. The 256/512 KiB sizes and shared RAM support are
 producer/emulator extensions, not measured cartridge capacities or identical
-physical boards. The time-aware bus path uses the accepted electrical interval
-described in `bus.md`; a MARIA caller alone does not select the MARIA set.
+physical boards. The time-aware bus path selects MARIA memory from the actual
+second phi2 fall after HALT falls until its release; the c1 CPU store commits
+before selection changes at that same edge. Non-HALT VBE reads and peeks retain
+the CPU view. The first fetch cannot precede c2. For fast/fast, fast/slow,
+slow/fast and slow/slow c0/c1 pairs, second falls are 8/9/10/11 ticks and first
+fetches are 8/10/10/12 ticks after HALT fall. This slow-edge causal fit is derived,
+not measured; the absolute line-reset deadline stays fixed. See
+[bus timing](bus.md#halt) for the fit and independent timing controls.
 
 Shared RAM is one 16 KiB span at $4000–$7FFF for both readers. HALT RAM has
 two physical 16 KiB halves: CPU stores at $4000–$7FFF update the CPU half;
@@ -318,8 +336,18 @@ replacement or destroy. Refused loads preserve the pointer and every byte.
 A 52 KiB set overlaps HSC ROM at $3000–$3FFF. Effective HSC
 attachment is refused before allocation, including Auto metadata and supplied
 firmware and initially hidden XM Auto; explicit HSC Off removes the conflict.
-MEN/BIOS decode
-retains bus priority over cartridge memory.
+MEN/BIOS decode retains bus priority over cartridge memory. Enabled expansion
+RAM overlays take priority over cartridge RAM/ROM; disabling them reveals the
+underlying bytes. Bank stores at $8000–$BFFF and redirects at $C000–$FFFF remain
+outside those overlays. CPU audio decode precedes ordinary cartridge storage;
+BankSet preserves its independent memory write beside the write-only POKEY.
+
+The owned `bankset32n` through `bankset512h` diagnostic variants exercise all
+fourteen accepted geometries, tagged endpoints, all 256 selector values and
+shared/HALT stores. Their independently derived numeric records live in
+`tests/diag/expected.csv`; unequal CPU/MARIA graphics, ownership and host audio
+checks supplement those records. These checks establish the selected model,
+not universal gameplay or measured hardware accuracy.
 
 ### Linear
 
@@ -407,8 +435,8 @@ Bank-zero startup on load and power cycle is the deterministic profile. These
 policies are not new cartridge measurements. Console RESET input remains a
 switch read by software; it does not power-cycle the board.
 
-Behaviour revision 3 makes this board executable; the public API is 4 and
-ABI remains 1, with no public structure layout changes. The disposable Absolute
+Behaviour revision 3 first made this board executable. The current public API
+is 7, ABI 1 and behaviour revision 6. The disposable Absolute
 tracer copies a version-1 numeric mailbox from fixed ROM and replaces its
 record with a real $4000 read: the independently selected bank-zero tag $5A
 must report value 90. The library, runner and actual libretro module validate
@@ -474,12 +502,17 @@ load-time controls, stable raw layout and clean host import.
 
 ## Loading
 
-`muhtari_load` identifies the image exactly as `muhtari_probe` does and returns the same status. A refusal returns
-before anything is allocated and leaves the instance unchanged. An accepted image's mapped bytes, `rom_size` of them
+`muhtari_load` first identifies the image as `muhtari_probe` does, then validates
+effective hardware, firmware and sound topology. A descriptive successful probe
+does not guarantee a successful load: unsupported devices and conflicting
+attachments can refuse before allocation. Rejection or allocation failure leaves
+the live machine unchanged. An accepted image's mapped bytes, `rom_size` of them
 from after the header when there is one, are copied into one allocation through the instance's allocator, which
 replaces any cartridge loaded before; `muhtari_destroy` frees it. A board with RAM gets its ROM followed by its
-cartridge RAM, `ram_size` bytes, in the same single allocation, so a load allocates once and running allocates
-nothing. The RAM starts zeroed, and a power cycle zeroes it again.
+cartridge RAM, `ram_size` bytes, followed by 131,072 expansion bytes when installed,
+in the same checked allocation. A load allocates once and running allocates
+nothing. Volatile RAM starts zeroed, and a power cycle zeroes it again; battery
+storage has the separate retained lifetime described above.
 
 ## The board ROMs
 

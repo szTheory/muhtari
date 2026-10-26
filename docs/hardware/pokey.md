@@ -24,8 +24,9 @@ IDs 6–9 and its independent decode. A disabled write is ignored, and
 re-enabling reveals advanced state. Gate stores never reset synthesis.
 Power cycle clears chips and gates; console Reset leaves them running.
 
-The chip-select interpretation follows the individually permissive XBoard/XM
-implementations cited in cartridge preparation section 2.1; it has medium
+The chip-select interpretation follows the individually BSD-3-licensed XBoard
+implementation at MAME `dddf4cd1faee` and XM implementation at a7800
+`7a2afdc1ea08` (cartridge preparation CART.20/CART.22); it has medium
 confidence for physical XM behavior and is not a measured audio-mute circuit.
 Separate $4000/$0800 owners, independent duplicate primary declarations,
 an optional $0460 POKEY and third chips remain unsupported. No extra clock,
@@ -190,8 +191,9 @@ CPU writes select POKEY before ROM/RAM at a declared window. At $4000,
 CPU reads preserve overlapping linear ROM, EXROM, EXFIX or RAM; this makes
 the chip write-only there. Legacy RAM/bank6/banked-RAM conflicts drop the
 $4000 sound flag during header normalization; accepted v4 can explicitly
-combine those devices with POKEY. Multiple primary sound flags retain
-$0450 before $4000 before $0800, with at most one primary and one secondary.
+combine those devices with POKEY. Probe preserves normalized multiple-primary
+declarations, but load refuses them. Accepted content has at most one primary
+and one secondary; expansion installs the primary even without a declaration.
 A hash match overrides board/RAM/sound before this runtime selection.
 
 A CPU register access takes its real bus cycle, advancing both chip clocks.
