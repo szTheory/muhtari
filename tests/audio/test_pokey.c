@@ -905,8 +905,159 @@ static void map_overlaps(void)
     muhtari_destroy(m);
 }
 
+struct gate_record {
+    uint64_t tick;
+    uint8_t source;
+    uint16_t raw;
+};
+struct gate_capture {
+    struct gate_record records[8192];
+    unsigned count;
+};
+
+static void gate_record(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    struct gate_capture *capture = user;
+    CHECK(capture->count < 8192u);
+    if (capture->count < 8192u) {
+        struct gate_record *r = &capture->records[capture->count++];
+        r->tick = tick;
+        r->source = source;
+        r->raw = raw;
+    }
+}
+
+/* Compare independently loaded, continuously enabled tone controls. Gate
+   stores have matched bus cycles, including slow accesses and HALT holds. */
+static void expansion_continuity(void)
+{
+    static struct gate_capture capture[2];
+    int16_t pcm[2][1000];
+    for (uint32_t region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL; region++) {
+        for (unsigned dual = 0u; dual < 2u; dual++) {
+            for (uint32_t expansion = MUHTARI_EXPANSION_XBOARD;
+                 expansion <= MUHTARI_EXPANSION_XM; expansion++) {
+                memset(capture, 0, sizeof capture);
+                muhtari *pair[2] = {map_machine(), map_machine()};
+                size_t n = map_header(4u, 0u, dual != 0u ? 3u : 2u, MAP_BODY);
+                /* A self-loop leaves the already configured chips alone. */
+                map_image[128u] = 0x4Cu;
+                map_image[129u] = 0u;
+                map_image[130u] = 0xC0u;
+                map_image[69] = dual != 0u ? 3u : 1u;
+                muhtari_media media = {0};
+                media.size = (uint32_t)sizeof media;
+                media.image = map_image;
+                media.image_size = n;
+                media.region = region;
+                media.expansion = expansion;
+                for (unsigned i = 0u; i < 2u; i++) {
+                    muhtari *m = pair[i];
+                    CHECK_EQ_U64(muhtari__synth_observe(m, gate_record, &capture[i]),
+                                 MUHTARI_STATUS_OK);
+                    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+                    muhtari__bus_write(m, 1u, 7u);
+                    muhtari__bus_write(m, 0x0470u, 16u);
+                    for (unsigned chip = 0u; chip <= dual; chip++) {
+                        uint16_t at = chip == 0u ? 0x0450u : 0x0440u;
+                        muhtari__bus_write(m, (uint16_t)(at + 8u), 0x40u);
+                        muhtari__bus_write(m, at, chip == 0u ? 37u : 53u);
+                        muhtari__bus_write(m, (uint16_t)(at + 1u), 0xAFu);
+                        muhtari__bus_write(m, (uint16_t)(at + 14u), 1u);
+                        muhtari__bus_write(m, (uint16_t)(at + 9u), 0u);
+                    }
+                }
+                uint64_t start = pair[0]->pokey[0].cycle;
+                for (unsigned i = 0u; i < 512u; i++) {
+                    for (unsigned member = 0u; member < 2u; member++) {
+                        muhtari *m = pair[member];
+                        if (i == 0u || i == 1u || i == 255u)
+                            muhtari__bus_write(m, 0x0470u, member == 0u ? 0u : 16u);
+                        if (i == 8u) {
+                            /* A disabled store must not mute or enter INIT. */
+                            muhtari__bus_write(m, member == 0u ? 0x0451u : 0x0461u, 0u);
+                            muhtari__bus_write(m, member == 0u ? 0x045Fu : 0x046Fu, 0u);
+                        }
+                        if (i == 64u) {
+                            m->bus.halt_gate_writes = 2u;
+                            muhtari__bus_request_halt(m, m->bus.ticks, m->bus.ticks + 64u);
+                        }
+                        (void)muhtari__bus_read(m, i % 3u == 0u ? 0x0280u : 0x1800u);
+                    }
+                    CHECK(memcmp(pair[0]->pokey, pair[1]->pokey, sizeof pair[0]->pokey) == 0);
+                    CHECK_EQ_U64(pair[0]->bus.irq_level, pair[1]->bus.irq_level);
+                }
+                CHECK(pair[0]->pokey[0].cycle > start + 512u);
+                CHECK(pair[0]->pokey[0].channel[0].fires > 5u);
+                CHECK_EQ_U64(pair[0]->bus.irq_level, 1u);
+                CHECK_EQ_U64(pair[0]->pokey[0].channel[0].audc, 0xAFu);
+                muhtari_input input = {0};
+                input.size = (uint32_t)sizeof input;
+                input.switches = MUHTARI_SWITCH_RESET;
+                CHECK_EQ_U64(muhtari_set_input(pair[0], &input), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(muhtari_set_input(pair[1], &input), MUHTARI_STATUS_OK);
+                for (unsigned frame = 0u; frame < 2u; frame++) {
+                    uint32_t samples[2];
+                    for (unsigned i = 0u; i < 2u; i++) {
+                        muhtari_frame f = {0};
+                        f.size = (uint32_t)sizeof f;
+                        f.audio = pcm[i];
+                        f.audio_capacity = 1000u;
+                        CHECK_EQ_U64(muhtari_run_frame(pair[i], &f), MUHTARI_STATUS_OK);
+                        samples[i] = f.audio_count;
+                    }
+                    CHECK_EQ_U64(samples[0], samples[1]);
+                    CHECK(memcmp(pcm[0], pcm[1], samples[0] * sizeof(int16_t)) == 0);
+                    unsigned audible = 0u;
+                    for (unsigned i = 0u; i < samples[0]; i++)
+                        audible += pcm[0][i] != 0;
+                    CHECK(audible != 0u);
+                }
+                for (unsigned i = 0u; i < 2u; i++) {
+                    muhtari *m = pair[i];
+                    muhtari__bus_write(m, 0x0470u, 16u);
+                    CHECK_EQ_U64(m->synth.pokeys, 1u + dual);
+                    CHECK_EQ_U64(m->synth.secondary, 0u);
+                    CHECK_EQ_U64(m->cart.pokey_at[0], 0x0450u);
+                    CHECK_EQ_U64(m->cart.pokey_at[1], dual != 0u ? 0x0440u : 0u);
+                    CHECK_EQ_U64(m->cart.irq_mask, dual != 0u ? 3u : 1u);
+                }
+                CHECK_EQ_U64(muhtari__bus_read(pair[0], 0x045Au),
+                             muhtari__bus_read(pair[1], 0x045Au));
+                CHECK_EQ_U64(muhtari__bus_read(pair[0], 0x045Eu), 0xFEu);
+                CHECK_EQ_U64(muhtari__bus_read(pair[1], 0x045Eu), 0xFEu);
+                muhtari__observe_end(pair[0]);
+                muhtari__observe_end(pair[1]);
+                CHECK_EQ_U64(capture[0].count, capture[1].count);
+                CHECK(capture[0].count > 100u);
+                unsigned sources[10] = {0u};
+                for (unsigned i = 0u; i < capture[0].count; i++) {
+                    struct gate_record a = capture[0].records[i], b = capture[1].records[i];
+                    CHECK_EQ_U64(a.tick, b.tick);
+                    CHECK_EQ_U64(a.source, b.source);
+                    CHECK_EQ_U64(a.raw, b.raw);
+                    CHECK(a.source == 2u || (dual != 0u && a.source == 6u));
+                    CHECK(a.raw == 0u || a.raw == 15u);
+                    if (a.source < 10u)
+                        sources[a.source]++;
+                }
+                CHECK(sources[2] > 100u);
+                CHECK_EQ_U64(sources[6] != 0u, dual);
+                CHECK_EQ_U64(muhtari_power_cycle(pair[0]), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(pair[0]->cart.expansion.control, 0u);
+                CHECK_EQ_U64(pair[0]->pokey[0].channel[0].audc, 0u);
+                CHECK_EQ_U64(pair[0]->synth.raw[2], 0u);
+                CHECK_EQ_U64(pair[0]->synth.pokeys, 1u + dual);
+                muhtari_destroy(pair[0]);
+                muhtari_destroy(pair[1]);
+            }
+        }
+    }
+}
+
 static void map_normalization(void)
 {
+    expansion_continuity();
     muhtari *m = map_machine();
     /* Each individual primary can coexist with the secondary. Independent
        primary declarations are refused rather than silently discarded. */

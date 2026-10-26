@@ -1264,7 +1264,7 @@ static muhtari_battery_info battery_of(const muhtari *m)
 
 static void xm_hsc_lifecycle(void)
 {
-    static uint8_t image[128u + 4096u], saved[34816u], firmware[4096u];
+    static uint8_t image[128u + 4096u], saved[34816u], firmware[4096u], installed[4096u];
     static muhtari snapshot;
     static const uint8_t program[] = {0xA9, 8, 0x8D, 0x70, 4, 0xAD, 0, 0x10,
                                       0x8D, 0, 0x18, 0x4C, 0x0B, 0xF0};
@@ -1299,6 +1299,7 @@ static void xm_hsc_lifecycle(void)
             rom.size = (uint32_t)sizeof rom;
             CHECK_EQ_U64(muhtari_get_hsc_rom(m, &rom), MUHTARI_STATUS_OK);
             CHECK_EQ_U64(rom.bytes, 4096u);
+            memcpy(installed, rom.data, sizeof installed);
             /* Import before any execution, while both decode windows are hidden. */
             memset(saved, 0x69, sizeof saved);
             saved[0] = 0x5Au;
@@ -1336,7 +1337,12 @@ static void xm_hsc_lifecycle(void)
                 CHECK(memcmp(after.hsc_sha1, before.hsc_sha1, 20u) == 0);
                 CHECK_EQ_U64(after.generation, 1u);
                 CHECK(memcmp(after.data, saved, sizeof saved) == 0);
-                CHECK(memcmp(rom.data, m->battery.rom, 4096u) == 0);
+                muhtari_const_span current = {0};
+                current.size = (uint32_t)sizeof current;
+                CHECK_EQ_U64(muhtari_get_hsc_rom(m, &current), MUHTARI_STATUS_OK);
+                CHECK(current.data == rom.data);
+                CHECK_EQ_U64(current.bytes, rom.bytes);
+                CHECK(memcmp(current.data, installed, sizeof installed) == 0);
             }
             muhtari_input input = {0};
             input.size = (uint32_t)sizeof input;
@@ -1357,6 +1363,14 @@ static void xm_hsc_lifecycle(void)
             CHECK_EQ_U64(m->cart.expansion.maria_pages, 0u);
             CHECK_EQ_U64(physical[131071u], 0u);
             CHECK_EQ_U64(battery_of(m).generation, 1u);
+            muhtari_battery_info retained = battery_of(m);
+            CHECK(retained.data == before.data);
+            CHECK_EQ_U64(retained.bytes, before.bytes);
+            CHECK_EQ_U64(retained.layout_version, before.layout_version);
+            CHECK_EQ_U64(retained.hsc_attached, before.hsc_attached);
+            CHECK_EQ_U64(retained.firmware_flags, before.firmware_flags);
+            CHECK(memcmp(retained.hsc_sha1, before.hsc_sha1, 20u) == 0);
+            CHECK(memcmp(rom.data, installed, sizeof installed) == 0);
             CHECK(memcmp(before.data, saved, sizeof saved) == 0);
             CHECK_EQ_U64(counts.allocs, calls);
             memcpy(&snapshot, m, sizeof snapshot);
@@ -2318,6 +2332,19 @@ static void expansion_sound_refusals(void)
         muhtari_media media = media_for(image, n);
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
         CHECK_EQ_U64(counts.allocs, 1u);
+    }
+    static const uint16_t conflicts[] = {1u, 0x8000u, 0x41u, 0x8441u};
+    for (uint32_t expansion = MUHTARI_EXPANSION_XBOARD;
+         expansion <= MUHTARI_EXPANSION_XM; expansion++) {
+        for (unsigned i = 0u; i < sizeof conflicts / sizeof conflicts[0]; i++) {
+            n = images_linear(image, 3u, 32768u);
+            image[53] = (uint8_t)(conflicts[i] >> 8);
+            image[54] = (uint8_t)conflicts[i];
+            muhtari_media media = media_for(image, n);
+            media.expansion = expansion;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+            CHECK_EQ_U64(counts.allocs, 1u);
+        }
     }
     muhtari_destroy(m);
 }

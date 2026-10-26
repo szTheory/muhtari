@@ -268,8 +268,50 @@ static void test_cart_irq(void)
             }
 }
 
+static void expansion_irq(void)
+{
+    /* A real CPU enables timer1, hides its register window, then takes its
+       declared interrupt. The handler leaves it pending for observation. */
+    static const uint8_t program[] = {
+        0x78, 0xA9, 16, 0x8D, 0x70, 4,
+        0xA9, 64, 0x8D, 0x58, 4, 0xA9, 20, 0x8D, 0x50, 4,
+        0xA9, 1, 0x8D, 0x5E, 4, 0x8D, 0x59, 4,
+        0xA9, 0, 0x8D, 0x70, 4, 0x58, 0xEA, 0x4C, 0x1F, 0xF0
+    };
+    for (uint32_t region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL; region++) {
+        for (unsigned wired = 0u; wired < 2u; wired++) {
+            muhtari *m = make();
+            images_header(cart, 4u, "Gated timer", 4096u, 0u);
+            memset(cart + IMAGES_HEADER, 0xEA, 4096u);
+            memcpy(cart + IMAGES_HEADER, program, sizeof program);
+            cart[67] = 2u;
+            cart[69] = (uint8_t)wired;
+            cart[CART_SIZE - 4u] = 0u;
+            cart[CART_SIZE - 3u] = 0xF0u;
+            cart[CART_SIZE - 2u] = 0u;
+            cart[CART_SIZE - 1u] = 0xF1u;
+            muhtari_media media = media_for(cart, sizeof cart);
+            media.region = region;
+            media.expansion = MUHTARI_EXPANSION_XM;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            for (unsigned step = 0u; step < 200u && m->cpu.pc != 0xF100u; step++)
+                muhtari__cpu_step(m);
+            CHECK_EQ_U64(m->cpu.pc == 0xF100u, wired);
+            CHECK_EQ_U64(m->cart.expansion.control, 0u);
+            CHECK_EQ_U64(m->pokey[0].irqst, 0xFEu);
+            CHECK_EQ_U64(m->bus.irq_level, wired);
+            muhtari__bus_write(m, 0x045Eu, 0u);
+            CHECK_EQ_U64(m->pokey[0].irqst, 0xFEu);
+            muhtari__bus_write(m, 0x0470u, 16u);
+            CHECK_EQ_U64(muhtari__bus_read(m, 0x045Eu), 0xFEu);
+            muhtari_destroy(m);
+        }
+    }
+}
+
 int main(void)
 {
+    expansion_irq();
     test_cart_irq();
     timer_sources();
     enable_edges();

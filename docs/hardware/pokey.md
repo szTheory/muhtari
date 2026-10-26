@@ -15,6 +15,22 @@ Fast boot anchors cartridge clocks at tick108984, actual phi2 zero; BIOS
 starts at zero and counts its real reset and program cycles. RIOT and CPU
 cycle counts are never advanced to simulate a skipped BIOS.
 
+XBoard and the XM RAM/POKEY/HSC subset install one primary at $0450 and
+optionally the declared secondary at $0440. Declaring $0450 still means that
+same gated chip. $0470 bit 4 gates only CPU reads/writes at $0450–$045F;
+the installed chip keeps running and sounding with its phase, timer/IRQ
+history, source IDs 2–5 and mixer normalization intact. The secondary keeps
+IDs 6–9 and its independent decode. A disabled write is ignored, and
+re-enabling reveals advanced state. Gate stores never reset synthesis.
+Power cycle clears chips and gates; console Reset leaves them running.
+
+The chip-select interpretation follows the individually permissive XBoard/XM
+implementations cited in cartridge preparation section 2.1; it has medium
+confidence for physical XM behavior and is not a measured audio-mute circuit.
+Separate $4000/$0800 owners, independent duplicate primary declarations,
+an optional $0460 POKEY and third chips remain unsupported. No extra clock,
+mute circuit, firmware response or runtime probe fault is synthesized.
+
 Fast 8-bit timers use N+4 machine clocks. STIMER establishes output
 flip-flops at one, starts the reload pipeline at three clocks, and sends
 no timer pulse or IRQ itself. The first reload samples AUDF, then the
