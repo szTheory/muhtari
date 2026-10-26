@@ -2411,15 +2411,15 @@ static void hsc_firmware_profile(const char *dir, unsigned profile)
     uint64_t flags;
     uint8_t *save = (uint8_t *)p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
     for (uint32_t i = 0u; i < 2048u; i++) {
-        CHECK(resolve(0x1000u + i, &flags) == save + i);
+        CHECK(resolve(0x1000u + i, &flags) == (profile == 0u ? save + i : NULL));
         CHECK_EQ_U64(flags, 0u);
     }
     for (uint32_t i = 0u; i < 4096u; i++) {
         const uint8_t *rom = resolve(0x3000u + i, &flags);
-        CHECK(rom != NULL);
+        CHECK((rom != NULL) == (profile == 0u));
         if (rom != NULL)
             CHECK_EQ_U64(*rom, i == 0x900u ? 0xC6u : i == 0x904u ? 0xFEu : 0xFFu);
-        CHECK_EQ_U64(flags, RETRO_MEMDESC_CONST);
+        CHECK_EQ_U64(flags, profile == 0u ? RETRO_MEMDESC_CONST : 0u);
     }
     stop();
     char path[4096];
@@ -2448,13 +2448,16 @@ static void hsc_firmware_profile(const char *dir, unsigned profile)
             CHECK((strstr(message, "missing signatures") != NULL) == (test != 2u));
             for (uint32_t i = 0u; i < 4096u; i++) {
                 const uint8_t *rom = resolve(0x3000u + i, &flags);
-                CHECK(rom != NULL);
+                CHECK((rom != NULL) == (profile == 0u));
                 if (rom != NULL)
                     CHECK_EQ_U64(*rom, firmware[i]);
-                CHECK_EQ_U64(flags, RETRO_MEMDESC_CONST);
+                CHECK_EQ_U64(flags, profile == 0u ? RETRO_MEMDESC_CONST : 0u);
             }
             p_reset();
-            CHECK_EQ_U64(*resolve(0x3000u, &flags), firmware[0]);
+            if (profile == 0u)
+                CHECK_EQ_U64(*resolve(0x3000u, &flags), firmware[0]);
+            else
+                CHECK(resolve(0x3000u, &flags) == NULL);
         } else {
             CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
         }

@@ -266,6 +266,17 @@ gives it to external devices. Only an attached HSC supplies bytes there; its des
 installed core-owned ROM, distinct from cartridge input. EEPROM remains serial and has no invented CPU range.
 
 Banked RAM and banked ROM windows are left out because a descriptor cannot say which bank is showing.
+HALT-selected cartridge RAM also stays unmapped. With XBoard or XM installed,
+all cartridge windows at $4000-$7FFF remain holes for the entire session, even
+while expansion RAM is disabled. XM's HSC SRAM and ROM windows remain holes
+regardless of their gate. Physical cartridge/expansion RAM and HSC SAVE_RAM
+retain their dedicated storage access and lifetime independently of these holes.
+
+BankSet descriptors expose only the CPU ROM half: linear sets end at $FFFF,
+and switched sets expose the last bank at $C000 plus the second-to-last at
+$4000 when no RAM or expansion overlaps it. Bank counts and offsets use one
+set's size. The switched $8000-$BFFF window and MARIA half remain unmapped.
+The 52 KiB set also exposes $3000-$3FFF except with XM installed.
 Absolute descriptors point into original content at the same-numbered ROM
 offsets $8000-$FFFF; its switched $4000-$7FFF window stays unmapped. Restart
 restores bank zero, the same deterministic profile as a fresh load. Absolute

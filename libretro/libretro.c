@@ -1392,9 +1392,8 @@ static uint8_t *lr_memory(uint32_t kind, size_t *bytes)
    rcheevos' console 51 reads it. Page 0's and page 1's RAM shadow $2040-
    $20FF and $2140-$21FF; $2800-$2FFF repeats RAM's second half while the
    bus there stays undecoded; registers, absent HSC and banked windows have
-   no memory behind them. Installed HSC spans alias its actual RAM/ROM.
-   Unbanked cartridge RAM sits at $4000 and the fixed
-   ROM is CONST. */
+   no memory behind them. Only session-stable CPU windows are published;
+   expansion overlays and XM HSC gates remain holes (docs/libretro.md). */
 static void lr_memory_maps(void)
 {
     bool yes = true;
@@ -1403,7 +1402,10 @@ static void lr_memory_maps(void)
     uint8_t *riot = lr_memory(MUHTARI_MEMORY_RIOT_RAM, &riot_bytes);
     uint8_t *cart_ram = lr_memory(MUHTARI_MEMORY_CART_RAM, &cart_bytes);
     uint8_t *rom = content + ((cart.flags & MUHTARI_CART_HEADER) != 0u ? 128u : 0u);
-    uint32_t rom_from = cart_ram != NULL ? 0x8000u : 0x4000u;
+    bool overlay = selected.expansion != MUHTARI_EXPANSION_OFF;
+    bool xm = selected.expansion == MUHTARI_EXPANSION_XM;
+    uint32_t rom_bytes = cart.board == MUHTARI_BOARD_BANKSET ? cart.rom_size / 2u : cart.rom_size;
+    uint32_t rom_from = cart_ram != NULL || overlay ? 0x8000u : 0x4000u;
     muhtari_const_span hsc_rom = {0};
     hsc_rom.size = (uint32_t)sizeof hsc_rom;
     (void)muhtari_get_hsc_rom(inst, &hsc_rom);
@@ -1413,13 +1415,15 @@ static void lr_memory_maps(void)
     lr_span(0x0040u, 0x0100u, ram, 0x0840u, 0u);
     lr_span(0x0140u, 0x0200u, ram, 0x0940u, 0u);
     lr_span(0x0480u, 0x0500u, riot, 0u, 0u);
-    if (battery.hsc_attached != 0u)
+    if (battery.hsc_attached != 0u && !xm)
         lr_span(0x1000u, 0x1800u, battery.data, 0u, 0u);
     lr_span(0x1800u, 0x2800u, ram, 0u, RETRO_MEMDESC_SYSTEM_RAM);
     lr_span(0x2800u, 0x3000u, ram, 0x0800u, 0u);
-    if (hsc_rom.data != NULL)
+    if (hsc_rom.data != NULL && !xm)
         lr_span(0x3000u, 0x4000u, (uint8_t *)(uintptr_t)hsc_rom.data, 0u, RETRO_MEMDESC_CONST);
-    if (cart.board == MUHTARI_BOARD_FRACTALUS && cart_ram != NULL) {
+    if (cart.board == MUHTARI_BOARD_BANKSET && rom_bytes == 53248u && !xm)
+        lr_span(0x3000u, 0x4000u, rom, 0u, RETRO_MEMDESC_CONST);
+    if (!overlay && cart.board == MUHTARI_BOARD_FRACTALUS && cart_ram != NULL) {
         /* Sixteen 256-byte aliases expose the eight physical pages twice.
            Higher bus mirrors remain descriptor holes to fit the pinned
            resolver (cartridge preparation 2.1; docs/libretro.md). */
@@ -1427,12 +1431,14 @@ static void lr_memory_maps(void)
             uint32_t start = 0x4000u + page * 0x100u;
             lr_span(start, start + 0x100u, cart_ram, (size_t)(page / 2u) * 0x100u, 0u);
         }
-    } else if (cart_ram != NULL && (cart.board_options & MUHTARI_BOARD_BANKED_RAM) == 0u) {
+    } else if (!overlay && cart_ram != NULL &&
+               (cart.board_options & (MUHTARI_BOARD_BANKED_RAM | MUHTARI_BOARD_HALT_BANKED_RAM)) == 0u) {
         lr_span(0x4000u, 0x4000u + (uint32_t)(cart_bytes < 0x4000u ? cart_bytes : 0x4000u),
                 cart_ram, 0u, 0u);
     }
-    if (cart.board == MUHTARI_BOARD_LINEAR) {
-        uint32_t base = 0x10000u - cart.rom_size;
+    if (cart.board == MUHTARI_BOARD_LINEAR ||
+        (cart.board == MUHTARI_BOARD_BANKSET && rom_bytes <= 53248u)) {
+        uint32_t base = 0x10000u - rom_bytes;
         uint32_t from = base > rom_from ? base : rom_from;
         lr_span(from, 0x10000u, rom, from - base, RETRO_MEMDESC_CONST);
     } else if (cart.board == MUHTARI_BOARD_ACTIVISION) {
@@ -1442,6 +1448,8 @@ static void lr_memory_maps(void)
            half back to the identified input order (cartridge notes 1.4). */
         uint32_t half = (cart.flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) != 0u ? 0x2000u : 0u;
         for (uint32_t window = 0u; window < 4u; window++) {
+            if (overlay && windows[window] < 0x8000u)
+                continue;
             lr_span(windows[window], windows[window] + 0x2000u, rom, offsets[window] ^ half,
                     RETRO_MEMDESC_CONST);
         }
@@ -1451,11 +1459,11 @@ static void lr_memory_maps(void)
         /* Original-content offsets equal CPU addresses in the fixed upper
            32 KiB (docs/hardware/cartridge.md, Absolute). */
         lr_span(0x8000u, 0x10000u, rom, 0x8000u, RETRO_MEMDESC_CONST);
-    } else if (cart.board == MUHTARI_BOARD_SUPERGAME) {
+    } else if (cart.board == MUHTARI_BOARD_SUPERGAME || cart.board == MUHTARI_BOARD_BANKSET) {
         /* The fixed windows of A7800-CARTRIDGES-AND-PERIPHERALS section 2.1:
            the last bank at $C000, and at $4000 bank 0 on the 2^n + 1 board,
            bank 6 with that option, else the second-to-last. */
-        uint32_t banks = cart.rom_size / 0x4000u;
+        uint32_t banks = rom_bytes / 0x4000u;
         if (rom_from == 0x4000u) {
             uint32_t bank = banks - 2u;
             if ((cart.board_options & MUHTARI_BOARD_ROM_AT_4000) != 0u) {
