@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 10
-current_plan: 9
+current_plan: 10
 status: executing
-stopped_at: Phase 10 plans 01-08 accepted; plan 09 ready
-last_updated: "2026-10-26T20:41:20.065Z"
+stopped_at: Phase 10 plans 01-09 accepted; plan 10 ready
+last_updated: "2026-10-26T21:02:20.826Z"
 last_activity: 2026-10-26
-last_activity_desc: Phase 10 plans 01-08 accepted; 8 of 13 plans complete; plan 09 ready
-state_head: 9d1fe5e8a9e358b719703018d80ae9241a961d38
+last_activity_desc: Phase 10 plans 01-09 accepted; 9 of 13 plans complete; plan 10 ready
+state_head: 70973bca29a0dad753cfef168dc97b4c446a3e7b
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 63
-  completed_plans: 58
-  percent: 92
+  completed_plans: 59
+  percent: 94
 total_phases: 7
 current_phase_name: Homebrew and expansion memory
 ---
@@ -27,24 +27,24 @@ current_phase_name: Homebrew and expansion memory
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase10 execution, 8/13 accepted plans and 20/30 implemented tasks.
-Plan10-09 is ready. BOARD-04/05 remain pending; final hosted acceptance is later.
+Current focus: Phase10 execution, 9/13 accepted plans and 22/30 implemented tasks.
+Plan10-10 is ready. BOARD-04/05 remain pending; final hosted acceptance is later.
 Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
 remains recorded below; this step makes no new release claim.
 
 ## Current Position
 
 Current Phase: 10 — Homebrew and expansion memory
-Current Plan: 9
+Current Plan: 10
 Total Plans in Phase: 13
-Progress: [████████░░] 92%
+Progress: [████████░░] 94%
 
-Phase10 has8/13 accepted plans. Five of seven milestone phases are complete (71%).
-Active-slot totals are58 summarized plans of63 planned, including historical
-halted06-01;57 accepted plans. Summarized counts do not establish phase acceptance.
+Phase10 has9/13 accepted plans. Five of seven milestone phases are complete (71%).
+Active-slot totals are59 summarized plans of63 planned, including historical
+halted06-01;58 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Executing Phase10; plan10-09 ready
-Last activity: 2026-10-26 — Plan10-08 accepted with integrated expansion diagnostic
+Status: Executing Phase10; plan10-10 ready
+Last activity: 2026-10-26 — Plan10-09 accepted with strict judged expansion equality
 Next command: $gsd-execute-phase 10
 Branch: phase/10-homebrew-expansion-memory
 
@@ -132,6 +132,18 @@ pass. The only production correction names Souper in runner refusal. Final workf
 exits0:661+6; fresh producer versus genuine7d387d7 exits0,current661/base660+6,
 271392/271315 three-ZIP bytes report-only. Commands/exits/N/A-local and corrected
 stimulus/display/Reset faults remain in10-08-SUMMARY. Equality09/hosted13 pending.
+
+Plan10-09 source27e74d1 and summary70973bc are committed. Production writer
+runs independent actual judges then emits3088 exact ordered rows: original956
+byte-identical plus82declared groups*26. Real writer controls reject semantic/protocol
+and forged-digest faults. Existing six-native uploads gain identity.txt beside commit
+and hashes; both native/PPC consumers authenticate exact members/lanes against the
+immutable Git source/config/fixture object. Artifact comparison does not reconstruct
+numeric truth from arbitrary matching fabricated hashes. No new lane/harness.
+Final workflow exits0:661+6; fresh producer versus genuine9ef358e exits0,current/base
+661+6,271392/271361 three-ZIP bytes report-only. Complete lanecontrol27.42s calibrated
+55s; writer remains58s. Commands/exits/N/A-local are in10-09-SUMMARY. Actual hosted
+native/PPC acceptance remains mandatory13; no requirement completion is claimed.
 
 The following planning and earlier-phase receipts are historical; this execution
 receipt supersedes their former phase10 ready/not-started statements.
