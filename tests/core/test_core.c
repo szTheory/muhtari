@@ -2171,8 +2171,34 @@ static void extended_lifecycle(void)
     muhtari_destroy(m);
 }
 
+/* Probe keeps unsupported sound descriptive; load refuses before allocation. */
+static void expansion_sound_refusals(void)
+{
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    uint8_t image[128u + 32768u];
+    size_t n = images_linear(image, 4u, 32768u);
+    const uint8_t audio_bits[] = {8u, 16u, 32u};
+    const uint32_t sounds[] = {MUHTARI_SOUND_YM2151, MUHTARI_SOUND_COVOX, 64u};
+    for (unsigned i = 0u; i < 3u; i++) {
+        image[67] = audio_bits[i];
+        muhtari_cart_info info;
+        memset(&info, 0, sizeof info);
+        info.size = (uint32_t)sizeof info;
+        CHECK_EQ_U64(muhtari_probe(image, n, &info), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(info.sound, sounds[i]);
+        muhtari_media media = media_for(image, n);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+        CHECK_EQ_U64(counts.allocs, 1u);
+    }
+    muhtari_destroy(m);
+}
+
 static void test_load_keeps_previous(void)
 {
+    expansion_sound_refusals();
     extended_lifecycle();
     hsc_tracer();
     muhtari *a = make();
