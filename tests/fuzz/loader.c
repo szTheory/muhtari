@@ -179,6 +179,73 @@ static muhtari_status load_once(const uint8_t *data, size_t size, int fail,
     return st;
 }
 
+/* Effective host overrides can reject an otherwise probeable image. Test
+   every expansion/HSC combination against the public transaction owner. */
+static void public_overrides(const uint8_t *data, size_t size, const muhtari_cart_info *info,
+                             muhtari_status probed)
+{
+    uint8_t control[RUN_LINEAR_BYTES];
+    struct run_cart_info built = run_cart_control(control, MUHTARI_BOARD_LINEAR);
+    for (unsigned expansion = MUHTARI_EXPANSION_AUTO; expansion <= MUHTARI_EXPANSION_XM;
+         expansion++) {
+        for (unsigned hsc = MUHTARI_HSC_AUTO; hsc <= MUHTARI_HSC_OFF; hsc++) {
+            alloc_counts c;
+            muhtari_config cfg = alloc_config(&c);
+            muhtari *m = NULL;
+            require(muhtari_create(&cfg, &m) == MUHTARI_STATUS_OK);
+            muhtari_media media = {0};
+            media.size = (uint32_t)sizeof media;
+            media.image = control;
+            media.image_size = built.bytes;
+            require(muhtari_load(m, &media) == MUHTARI_STATUS_OK);
+            muhtari_frame io = {0};
+            io.size = (uint32_t)sizeof io;
+            require(muhtari_run_frame(m, &io) == MUHTARI_STATUS_OK);
+            media.image = data;
+            media.image_size = size;
+            media.expansion = expansion;
+            media.hsc_mode = hsc;
+            unsigned effective =
+                expansion == MUHTARI_EXPANSION_AUTO
+                    ? ((info->devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM
+                                                                 : MUHTARI_EXPANSION_OFF)
+                    : expansion;
+            muhtari_status want = probed;
+            if (want == MUHTARI_STATUS_OK) {
+                unsigned primary =
+                    info->sound &
+                    (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_450 | MUHTARI_SOUND_POKEY_800);
+                if ((info->sound &
+                     (MUHTARI_SOUND_YM2151 | MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM)) != 0u ||
+                    (primary != 0u && (primary & (primary - 1u)) != 0u) ||
+                    (effective != MUHTARI_EXPANSION_OFF &&
+                     (primary & (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_800)) != 0u))
+                    want = MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+                else if (info->board == MUHTARI_BOARD_BANKSET && info->rom_size == 106496u &&
+                         (hsc == MUHTARI_HSC_ON || (hsc == MUHTARI_HSC_AUTO &&
+                                                    (effective == MUHTARI_EXPANSION_XM ||
+                                                     (info->devices & MUHTARI_DEVICE_HSC) != 0u))))
+                    want = MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+                else if (info->port1 == MUHTARI_PORT_ATARIVOX &&
+                         info->port2 == MUHTARI_PORT_ATARIVOX)
+                    want = MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+            }
+            memcpy(&before, m, sizeof before);
+            require(muhtari_load(m, &media) == want);
+            if (want != MUHTARI_STATUS_OK) {
+                require(c.allocs == 2u && c.frees == 0u);
+                require(memcmp(&before, m, sizeof before) == 0);
+                require(memcmp(m->cart.rom, control, built.bytes) == 0);
+            } else {
+                require(m->cart.expansion.kind == effective);
+                require(c.alloc_size == (size_t)info->rom_size + info->ram_size +
+                                            (effective == MUHTARI_EXPANSION_OFF ? 0u : 131072u));
+            }
+            muhtari_destroy(m);
+        }
+    }
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     muhtari_cart_info a;
@@ -193,6 +260,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     require(load_once(data, size, 0, &a, first) == first);
     (void)load_once(data, size, 1, &a, first);
+    public_overrides(data, size, &a, first);
     static const uint32_t boards[] = {MUHTARI_BOARD_ACTIVISION, MUHTARI_BOARD_ABSOLUTE,
                                       MUHTARI_BOARD_FRACTALUS};
     warmed_failure(data, size, first, boards[size % 3u]);

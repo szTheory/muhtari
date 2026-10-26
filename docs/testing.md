@@ -131,6 +131,43 @@ Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vect
 | `policy` | Rules about the repository and the tests themselves. |
 | `release` | The packaged zips, run after the package step. |
 
+### Expansion replay and properties
+
+`fuzz.regress.run` retains its 38 earlier inputs and adds 84 generated BankSet
+profiles: all fourteen accepted ROM/RAM geometries, expansion off/XBoard/XM,
+and both regions. All 256 control values, exact/neighbor/absent registers,
+repeated stores, disabled overlays, CPU/MARIA windows and actual VBE/HALT run
+under loops or JAM. Physical page writes have independent offset assertions;
+status, ticks, native pixels and PCM agree between separately allocated instances.
+The 1 MiB ROM input cap and 32/128 KiB RAM capacities are physical limits, with
+regional 292-row/962-sample buffers and no allocation after load.
+
+`fuzz.regress.loader` adds twelve seeds for shared/HALT RAM, maximum storage,
+52 KiB/HSC conflicts, odd/truncated halves, invalid RAM, preserved unsupported
+v4 declarations, byte-63 warnings and YM/Covox/ADPCM (including audio 0x20).
+Every input also traverses all twelve effective expansion/HSC overrides through
+the public loader on a live machine: refusals preserve its complete instance,
+ROM and allocator counts; accepted loads allocate the exact physical backing.
+
+The existing frame properties force all 84 profiles before randomized selection.
+Their state digest includes the entire expansion backing, with instance pointers
+normalized. Seeded bank/page/gate traffic, failed loads and power cycles precede
+pure public spans/peeks and independent/interleaved execution. Battery properties
+retain the six old layouts and add expansion profiles, restore raw bytes before
+execution while XM HSC is hidden, check ignored hidden stores and changed/same-value
+visible stores, then preserve physical pointers, attachment and generation across
+controls, console Reset, power and refused loads. The fixed seed, failure printing
+and shrinking remain unchanged: 100 cases are required; nightly 10,000-case results
+remain advisory, including the previously recorded isolation timeout.
+
+One-off local fault controls substituted a wrong expansion-store byte (run replay
+abort), removed ADPCM refusal (loader replay abort), and ignored the XM HSC gate
+(battery lifecycle failure with seed 20261020, case 34, minimized size 1). These
+checks exercise the existing consumers without another framework or registration.
+Complete local run replay measured 1.21 seconds and loader replay 0.62 seconds;
+the run deadline is provisionally three seconds under the existing scaling.
+Final sanitizer and hosted platform calibration remain required.
+
 ## Negative controls
 
 A check that cannot fail proves nothing, so each repository check has a self test that feeds it a known fault.
