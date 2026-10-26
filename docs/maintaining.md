@@ -206,6 +206,12 @@ required gates. A passing audit establishes the required verdict, not that every
 every listed failure and its job log before claiming which checks failed. Keep prior attempts as failed evidence;
 retry only a classified transient failure at the same source, using the existing targeted job rerun.
 
+Final source acceptance uses the pull request's genuine stable `main` base. Await the push, verify the
+advertised branch SHA, and retain the run attempt, source head, tested merge commit and base separately.
+A dispatch that repeats one source does not establish phase-versus-base performance. Complete tracked
+acceptance changes before that run; its later planning receipt records the accepted source and does not
+claim that a subsequent metadata commit was independently tested.
+
 For final semantic acceptance, download all six `hashes-<os>-<arch>` artifacts and
 `lane-equality` from that exact commit. Each native artifact and each native/PowerPC
 lane contains exactly `commit.txt`, `hashes.txt`, `identity.txt`. The identity is
