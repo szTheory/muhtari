@@ -17,7 +17,18 @@ typedef struct alloc_counts {
     /* Nonzero: the call numbered fail_from (counting from 1) and every later
        one returns NULL. */
     uint32_t fail_from;
+    size_t live_bytes;
+    uint32_t size_errors;
+    uint32_t check_sizes;
+    /* Optional delayed free makes reads from replaced backing deterministic. */
+    uint32_t poison_frees;
+    void *retired;
 } alloc_counts;
+
+typedef union alloc_header {
+    max_align_t alignment;
+    size_t bytes;
+} alloc_header;
 
 static inline void *count_alloc(void *user, size_t size)
 {
@@ -27,7 +38,16 @@ static inline void *count_alloc(void *user, size_t size)
     if (c->fail_from != 0u && c->allocs >= c->fail_from) {
         return NULL;
     }
-    return malloc(size);
+    if (c->check_sizes == 0u)
+        return malloc(size);
+    if (size > SIZE_MAX - sizeof(alloc_header))
+        return NULL;
+    alloc_header *h = malloc(sizeof *h + size);
+    if (h == NULL)
+        return NULL;
+    h->bytes = size;
+    c->live_bytes += size;
+    return h + 1;
 }
 
 static inline void count_free(void *user, void *ptr, size_t size)
@@ -35,7 +55,27 @@ static inline void count_free(void *user, void *ptr, size_t size)
     alloc_counts *c = (alloc_counts *)user;
     c->frees++;
     c->free_size = size;
-    free(ptr);
+    if (c->check_sizes == 0u) {
+        free(ptr);
+        return;
+    }
+    alloc_header *h = (alloc_header *)ptr - 1;
+    if (h->bytes != size)
+        c->size_errors++;
+    c->live_bytes -= h->bytes;
+    if (c->poison_frees != 0u) {
+        free(c->retired);
+        memset(ptr, 0xDD, h->bytes);
+        c->retired = h;
+    } else {
+        free(h);
+    }
+}
+
+static inline void count_release_retired(alloc_counts *c)
+{
+    free(c->retired);
+    c->retired = NULL;
 }
 
 /* A zeroed config whose allocator counts into *c, itself zeroed. */
