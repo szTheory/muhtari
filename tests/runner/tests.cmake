@@ -1386,7 +1386,7 @@ muhtari_add_test(NAME runner.hashes_file
     -DDRIVER=$<TARGET_FILE:muhtari-test-diag> -DDIAG=${PROJECT_SOURCE_DIR}/tests/diag
     "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
     "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${CMAKE_CURRENT_LIST_FILE}
-  LABELS runner portable TIMEOUT 180) # Measurement allowance after censored58s full writer, run40412835933; all3088 rows retained.
+  LABELS runner portable TIMEOUT 143) # ceil(2 x 71.07s), complete Windows x64 run40414104123/job121892328427; all3088 rows retained.
 set_tests_properties(runner.hashes_file PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 # The comparison's self tests: two files where three are required, and two
 # files one byte apart.

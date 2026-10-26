@@ -135,13 +135,13 @@ if(MUHTARI_INVENTORY STREQUAL "ci")
     LABELS policy TIMEOUT ${publish_timeout} COST 725)
   set(quality_timeout 30)
   if(APPLE)
-    # Provisional ceil(2 x 45.49s), complete current/base controls,
-    # run 40227151344/job121270952138; all semantic cases remain.
-    set(quality_timeout 91)
+    # ceil(2 x 70.36s), complete expanded Intel current/base controls,
+    # run40412835933/job121887675359; all semantic cases remain.
+    set(quality_timeout 141)
   elseif(WIN32)
-    # Ceil(2 x 40.12s), maximum successful current/base Windows control in
-    # run40080473918; retain all producer/join cases and numeric predicates.
-    set(quality_timeout 81)
+    # ceil(2 x 78.61s), complete expanded Windows x64 controls,
+    # run40414104123/job121892328427; retain every producer/join predicate.
+    set(quality_timeout 158)
   endif()
   muhtari_add_test(NAME policy.quality.controls
     COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
@@ -451,8 +451,8 @@ endforeach()
       -DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78
       -DWORK=${CMAKE_BINARY_DIR}/policy/lane_equality_fixture
       -P ${CMAKE_BINARY_DIR}/policy/lane_equality_controls.cmake
-    # Measurement allowance after censored55s Intel run40411221332; the
-    # complete actual writer/native/PPC controls and lane scales are unchanged.
-    LABELS policy TIMEOUT 300)
+    # ceil(2 x 104.66s), complete actual writer/native/PPC controls,
+    # Intel run40412835933/job121887675359; workload and lane scales unchanged.
+    LABELS policy TIMEOUT 210)
   set_tests_properties(policy.lane_equality.controls PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 endif()

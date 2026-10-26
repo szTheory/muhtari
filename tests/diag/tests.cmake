@@ -848,7 +848,7 @@ set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
 include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
 muhtari_add_test(NAME diag.expansion COMMAND ${CMAKE_COMMAND} -P ${diag_expansion}
-  LABELS diag portable TIMEOUT 120) # Measurement allowance after censored 13s/26s, run40411221332; same full workload/scales.
+  LABELS diag portable TIMEOUT 81) # ceil(2 x 40.36s), complete66-group Intel run40412835933/job121887675359; scales retained.
 file(GENERATE OUTPUT ${diag_bankset} CONTENT
 "set(DIAG_BANKSET_RUN TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
@@ -869,7 +869,7 @@ set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
 include([==[${diag_bankset}]==])
 ")
 muhtari_add_test(NAME diag.bankset COMMAND ${CMAKE_COMMAND} -P ${diag_bankset_matrix}
-  LABELS diag portable TIMEOUT 60) # Measurement allowance after censored 5s/10s, run40411221332; same full workload/scales.
+  LABELS diag portable TIMEOUT 42) # ceil(2 x 20.89s), complete16-group Intel run40412835933/job121887675359; scales retained.
 
 set(diag_pal ${PROJECT_BINARY_DIR}/tests/diag/pal.cmake)
 set(diag_pal565 "")
@@ -948,7 +948,7 @@ set(diag_rebuild_script ${diag_out}/rebuild.cmake)
 file(WRITE ${diag_rebuild_script} "${diag_tools}set(OUT [==[${diag_out}/rebuild]==])\n"
   "set(MANIFEST [==[${diag_manifest}]==])\n${diag_rebuild}")
 muhtari_add_test(NAME diag.rebuild COMMAND ${CMAKE_COMMAND} -P ${diag_rebuild_script}
-  LABELS built portable TIMEOUT 120)  # Measurement allowance after censored22s expanded rebuild, run40412835933; all templates retained.
+  LABELS built portable TIMEOUT 26)  # ceil(2 x 12.96s), complete Intel rebuild, run40414104123/job121892328675; all templates retained.
 
 # Negative control: one digit of dma.a78's digest changed in a copy of the
 # manifest must fail by name.
