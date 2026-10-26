@@ -4,6 +4,7 @@
 #include <string.h>
 #include "muhtari.h"
 #include "../check.h"
+#include "../alloc.h"
 
 struct media_v6 {
     uint32_t size, region;
@@ -21,23 +22,23 @@ struct info_v6 {
     uint32_t sample_rate_num, sample_rate_den, max_audio_samples;
 };
 
-static uint8_t image[128u + 106496u];
+static uint8_t image[128u + 1048576u];
 static uint32_t allocations;
+static alloc_counts counts;
 static void *api_alloc(void *user, size_t n)
 {
     (void)user;
     allocations++;
-    return malloc(n);
+    return count_alloc(&counts, n);
 }
 static void api_free(void *user, void *p, size_t n)
 {
     (void)user;
-    (void)n;
-    free(p);
+    count_free(&counts, p, n);
 }
 static muhtari_media media_for(uint32_t body, uint16_t type, uint8_t xm)
 {
-    memset(image, 0, sizeof image);
+    memset(image, 0, 128u + body);
     image[0] = 3u;
     memcpy(image + 1u, "ATARI7800", 9u);
     for (unsigned i = 0u; i < 4u; i++)
@@ -84,6 +85,8 @@ static void sizes(muhtari *m)
     CHECK_EQ_U64(offsetof(muhtari_media, hsc_rom), offsetof(struct media_v6, hsc_rom));
     CHECK_EQ_U64(offsetof(muhtari_media, hsc_rom_size), offsetof(struct media_v6, hsc_rom_size));
     uint32_t first = (uint32_t)(offsetof(muhtari_media, bios_size) + sizeof(size_t));
+    CHECK_EQ_U64(first, offsetof(struct media_v6, bios_size) + sizeof(size_t));
+    CHECK_EQ_U64(first, sizeof(size_t) == 8u ? 40u : 24u);
     uint32_t end = (uint32_t)(offsetof(muhtari_media, expansion) + sizeof(uint32_t));
     for (unsigned xm = 0u; xm < 2u; xm++) {
         muhtari_media media = media_for(32768u, 0u, (uint8_t)xm);
@@ -100,6 +103,16 @@ static void sizes(muhtari *m)
         }
         media.size = end;
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_ARGUMENT);
+        for (uint32_t choice = MUHTARI_EXPANSION_AUTO; choice <= MUHTARI_EXPANSION_XM; choice++) {
+            media.expansion = choice;
+            for (uint32_t size = (uint32_t)offsetof(muhtari_media, expansion); size <= end;
+                 size++) {
+                media.size = size;
+                CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(expansion_of(m),
+                             size < end || choice == MUHTARI_EXPANSION_AUTO ? automatic : choice);
+            }
+        }
         media.expansion = MUHTARI_EXPANSION_XBOARD;
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(expansion_of(m), MUHTARI_EXPANSION_XBOARD);
@@ -236,6 +249,60 @@ static void topology(muhtari *m)
     CHECK_EQ_U64(allocations, calls);
 }
 
+/* The real physical maximum, through a client that includes only the public
+   header. The allocator independently remembers every requested free size. */
+static void capacity(muhtari *m)
+{
+    muhtari_media media = media_for(1048576u, 0x6002u, 0u);
+    media.expansion = MUHTARI_EXPANSION_XM;
+    media.hsc_mode = MUHTARI_HSC_ON;
+    media.port[1] = MUHTARI_PORT_SAVEKEY;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(counts.alloc_size, 1212416u);
+    muhtari_span cart = span_of(m, MUHTARI_MEMORY_CART_RAM);
+    muhtari_span expansion = span_of(m, MUHTARI_MEMORY_EXPANSION_RAM);
+    CHECK_EQ_U64(cart.bytes, 32768u);
+    CHECK_EQ_U64(expansion.bytes, 131072u);
+    CHECK(cart.data != NULL && expansion.data == cart.data + 32768u);
+    cart.data[32767] = 0x56u;
+    expansion.data[131071] = 0x87u;
+    muhtari_battery_info battery = {0};
+    battery.size = (uint32_t)sizeof battery;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(battery.bytes, 34816u);
+    CHECK_EQ_U64(battery.layout_version, 1u);
+    battery.data[34815] = 0x69u;
+    uint32_t calls = allocations;
+    counts.fail_from = counts.allocs + 1u;
+    media.expansion = MUHTARI_EXPANSION_XBOARD;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_NO_MEMORY);
+    CHECK_EQ_U64(allocations, calls + 1u);
+    CHECK_EQ_U64(counts.alloc_size, 1212416u);
+    CHECK_EQ_U64(expansion_of(m), MUHTARI_EXPANSION_XM);
+    CHECK(span_of(m, MUHTARI_MEMORY_CART_RAM).data == cart.data);
+    CHECK(span_of(m, MUHTARI_MEMORY_EXPANSION_RAM).data == expansion.data);
+    CHECK_EQ_U64(cart.data[32767], 0x56u);
+    CHECK_EQ_U64(expansion.data[131071], 0x87u);
+    muhtari_battery_info after = {0};
+    after.size = (uint32_t)sizeof after;
+    CHECK_EQ_U64(muhtari_get_battery(m, &after), MUHTARI_STATUS_OK);
+    CHECK(memcmp(&battery, &after, sizeof after) == 0);
+    CHECK_EQ_U64(after.data[34815], 0x69u);
+    counts.fail_from = 0u;
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK(span_of(m, MUHTARI_MEMORY_CART_RAM).data == cart.data);
+    CHECK(span_of(m, MUHTARI_MEMORY_EXPANSION_RAM).data == expansion.data);
+    CHECK_EQ_U64(cart.data[32767], 0u);
+    CHECK_EQ_U64(expansion.data[131071], 0u);
+    CHECK_EQ_U64(after.data[34815], 0x69u);
+    media.expansion = MUHTARI_EXPANSION_OFF;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(counts.free_size, 1212416u);
+    CHECK_EQ_U64(counts.alloc_size, 1081344u);
+    CHECK_EQ_U64(span_of(m, MUHTARI_MEMORY_EXPANSION_RAM).bytes, 0u);
+    CHECK_EQ_U64(counts.size_errors, 0u);
+}
+
 int main(void)
 {
     CHECK_EQ_U64(MUHTARI_API_VERSION, 7u);
@@ -250,11 +317,15 @@ int main(void)
     cfg.size = (uint32_t)sizeof cfg;
     cfg.allocator.alloc = api_alloc;
     cfg.allocator.free = api_free;
+    counts.check_sizes = 1u;
     muhtari *m = NULL;
     CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(expansion_of(m), MUHTARI_EXPANSION_OFF);
     sizes(m);
     topology(m);
+    capacity(m);
     muhtari_destroy(m);
+    CHECK_EQ_U64(counts.live_bytes, 0u);
+    CHECK_EQ_U64(counts.size_errors, 0u);
     CHECK_DONE();
 }

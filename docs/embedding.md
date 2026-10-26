@@ -563,6 +563,10 @@ library load preserves the previous spans; the libretro adapter releases its
 old session before attempting replacement, so failure or unload clears its map
 and SAVE_RAM. Reacquire frontend pointers only after another successful load.
 
+The largest backing is 1,048,576 ROM + 32,768 cartridge RAM + 131,072 expansion
+RAM = 1,212,416 bytes, checked and freed exactly. Both regions pass 600-frame
+dual-POKEY/gate/power/observer controls with no allocator calls after load.
+
 Libretro's static achievement descriptors omit banked/HALT RAM, all cartridge
 windows at $4000-$7FFF with XBoard/XM installed, and XM HSC windows regardless
 of gate state. HSC remains physically accessible through the battery API and

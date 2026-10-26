@@ -30,7 +30,7 @@ foreach(case IN ITEMS
     LABELS core portable TIMEOUT 1) # 2 x 0.06 s, Windows arm64, slowest of 31 runs, run 39375738182
 endforeach()
 muhtari_add_test(NAME core.load.keeps_previous COMMAND muhtari-test-core load.keeps_previous
-  LABELS core portable TIMEOUT 14) # 2 x complete 6.68 s macOS arm64 control, local 2026-10-26
+  LABELS core portable TIMEOUT 14) # 2 x complete 6.79 s macOS arm64 control, local 2026-10-26
 foreach(case IN ITEMS tracer decode firmware topology sizes)
   muhtari_add_test(NAME core.hsc.${case} COMMAND muhtari-test-core hsc.${case}
     LABELS core portable TIMEOUT 10)
@@ -40,7 +40,7 @@ foreach(case IN ITEMS deadline no_poll reset)
     LABELS core portable TIMEOUT 10)
 endforeach()
 muhtari_add_test(NAME core.no_alloc_after_load COMMAND muhtari-test-core no_alloc_after_load
-  LABELS perf portable TIMEOUT 10)
+  LABELS perf portable TIMEOUT 13) # 2 x complete 6.08 s macOS arm64 control, local 2026-10-26
 
 add_executable(muhtari-test-pal ${CMAKE_CURRENT_LIST_DIR}/test_pal.c
   ${CMAKE_SOURCE_DIR}/tests/cart/images.c ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c)
