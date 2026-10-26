@@ -129,7 +129,7 @@ static void sizes(muhtari *m)
     media.expansion = MUHTARI_EXPANSION_XBOARD;
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     union {
-        max_align_t alignment;
+        muhtari_info alignment;
         uint8_t bytes[sizeof(muhtari_info) + 16u];
     } output;
     for (uint32_t size = 39u; size <= sizeof output.bytes; size++) {

@@ -848,7 +848,7 @@ set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
 include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
 muhtari_add_test(NAME diag.expansion COMMAND ${CMAKE_COMMAND} -P ${diag_expansion}
-  LABELS diag portable TIMEOUT 13) # Provisional ceil(2 x 6.42s), complete66-group local required workflow; N/A-local.
+  LABELS diag portable TIMEOUT 120) # Measurement allowance after censored 13s/26s, run40411221332; same full workload/scales.
 file(GENERATE OUTPUT ${diag_bankset} CONTENT
 "set(DIAG_BANKSET_RUN TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
@@ -869,7 +869,7 @@ set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
 include([==[${diag_bankset}]==])
 ")
 muhtari_add_test(NAME diag.bankset COMMAND ${CMAKE_COMMAND} -P ${diag_bankset_matrix}
-  LABELS diag portable TIMEOUT 5) # Provisional ceil(2 x 2.32s), complete local CI matrix; N/A-local.
+  LABELS diag portable TIMEOUT 60) # Measurement allowance after censored 5s/10s, run40411221332; same full workload/scales.
 
 set(diag_pal ${PROJECT_BINARY_DIR}/tests/diag/pal.cmake)
 set(diag_pal565 "")

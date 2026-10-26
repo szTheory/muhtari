@@ -127,7 +127,7 @@ size_t images_bankset(uint8_t *buf, uint32_t half_kib, uint8_t ram)
     uint32_t half = half_kib * IMAGES_KIB;
     uint32_t block = half_kib < 128u ? 4096u : 16384u;
     images_header(buf, 4u, "BankSet tags", half * 2u, 0u);
-    buf[64] = half_kib < 128u ? 0u : 1u;
+    buf[64] = (uint8_t)(half_kib < 128u ? 0u : 1u);
     buf[65] = (uint8_t)(0x80u | ram);
     for (uint32_t set = 0u; set < 2u; set++) {
         for (uint32_t bank = 0u; bank < half / block; bank++) {

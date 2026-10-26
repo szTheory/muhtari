@@ -238,10 +238,9 @@ static int indirect(struct walk *w, uint16_t base, uint32_t width, uint8_t pal)
         if (!runs(w)) {
             return 0;
         }
-        addr =
-            (uint16_t)(((uint32_t)ma->reg[MARIA_CHARBASE] << 8) +
-                       (uint32_t)fetch(w->m, (uint16_t)(base + i), w->t) +
-                       ((uint32_t)ma->offset << 8));
+        addr = (uint16_t)(((uint32_t)ma->reg[MARIA_CHARBASE] << 8) +
+                          (uint32_t)fetch(w->m, (uint16_t)(base + i), w->t) +
+                          ((uint32_t)ma->offset << 8));
         w->st->bytes++;
         w->t += MARIA_CHARMAP;
         hole = holey(ma->entry, addr);
@@ -655,8 +654,7 @@ uint64_t muhtari__maria_burst(muhtari *m, uint64_t fall)
     if (c2 > t0 + MARIA_PLA_START) {
         t0 = c2 - MARIA_PLA_START;
     }
-    uint64_t haltrst =
-        muhtari__maria_dma_line(m, t0, ma->dma_lrc, ma->dma_line, &st);
+    uint64_t haltrst = muhtari__maria_dma_line(m, t0, ma->dma_lrc, ma->dma_line, &st);
     if ((st.flags & MUHTARI__LINE_DLI) != 0u) {
         uint64_t phi1 = c2 + ((haltrst - c2) / MARIA_CPU_CYCLE + MARIA_DLI_PHI1) * MARIA_CPU_CYCLE;
         if (muhtari__bus_raise_nmi(m, phi1) && ma->dma_line < muhtari__timing(m).lines) {

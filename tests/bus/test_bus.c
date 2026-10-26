@@ -491,8 +491,8 @@ static int bankset_ram_frame(void)
         for (unsigned frame = 0u; frame < 2u; frame++) {
             ok &= muhtari_run_frame(m, &io) == MUHTARI_STATUS_OK;
         }
-        ok &= expect_count("CPU RAM store", "byte", cpu_ram[256u], 0x40u, "redirected value",
-                           0xC0u);
+        ok &=
+            expect_count("CPU RAM store", "byte", cpu_ram[256u], 0x40u, "redirected value", 0xC0u);
         if (halt == 1u) {
             ok &= expect_count("MARIA redirect", "byte", m->cart.ram[16640u], 0xC0u, "CPU value",
                                0x40u);

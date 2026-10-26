@@ -935,8 +935,8 @@ static void expansion_continuity(void)
     int16_t pcm[2][1000];
     for (uint32_t region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL; region++) {
         for (unsigned dual = 0u; dual < 2u; dual++) {
-            for (uint32_t expansion = MUHTARI_EXPANSION_XBOARD;
-                 expansion <= MUHTARI_EXPANSION_XM; expansion++) {
+            for (uint32_t expansion = MUHTARI_EXPANSION_XBOARD; expansion <= MUHTARI_EXPANSION_XM;
+                 expansion++) {
                 memset(capture, 0, sizeof capture);
                 muhtari *pair[2] = {map_machine(), map_machine()};
                 size_t n = map_header(4u, 0u, dual != 0u ? 3u : 2u, MAP_BODY);

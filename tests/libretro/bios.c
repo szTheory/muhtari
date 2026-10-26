@@ -379,8 +379,8 @@ int main(void)
             CHECK_EQ_U64(retro_load_game(&game), accepted);
 #ifdef _WIN32
             CHECK_EQ_U64(probe_opens, 1u);
-            CHECK_EQ_U64(probe_closes, test == ABSENT || test == PATH_ABSENT || test == PROBE_ERROR ||
-                                               test == NONREGULAR
+            CHECK_EQ_U64(probe_closes, test == ABSENT || test == PATH_ABSENT ||
+                                               test == PROBE_ERROR || test == NONREGULAR
                                            ? 0u
                                            : 1u);
             if (test >= PROBE_ERROR || test == NONREGULAR)
@@ -392,7 +392,8 @@ int main(void)
                 CHECK_EQ_U64(muhtari_get_hsc_rom(inst, &rom), MUHTARI_STATUS_OK);
                 CHECK_EQ_U64(rom.bytes, 4096u);
                 CHECK_EQ_U64(rom.data[123], test == VALID ? 0x19u : 0xFFu);
-                CHECK(strstr(seen_log, test == VALID ? "unknown identity" : "signature-only") != NULL);
+                CHECK(strstr(seen_log, test == VALID ? "unknown identity" : "signature-only") !=
+                      NULL);
                 CHECK_EQ_U64(inst->bios_size, 4096u);
             } else {
                 CHECK(inst == NULL);

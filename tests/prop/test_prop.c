@@ -790,8 +790,8 @@ static int battery_pair(uint64_t *rng, uint32_t size, muhtari **a, muhtari **b,
         battery_expected[at] = (uint8_t)(at * 17u + prop_below(rng, 256u));
         first.data[at] = second.data[at] = battery_expected[at];
     }
-    if (memcmp(first.data, battery_expected, bytes) != 0 ||
-        memcmp(second.data, battery_expected, bytes) != 0)
+    if (bytes != 0u && (memcmp(first.data, battery_expected, bytes) != 0 ||
+                        memcmp(second.data, battery_expected, bytes) != 0))
         return differ("restored before execution", 0u);
     if ((*a)->cart.expansion.ram != NULL && (*a)->cart.expansion.ram == (*b)->cart.expansion.ram)
         return differ("battery expansion alias", 0u);
@@ -815,7 +815,8 @@ static int battery_pair(uint64_t *rng, uint32_t size, muhtari **a, muhtari **b,
         muhtari_battery_info now = battery_info(m);
         if (now.data != (peer == 0u ? first.data : second.data) || now.bytes != bytes ||
             now.hsc_attached != first.hsc_attached || now.eeprom_port != first.eeprom_port ||
-            now.generation != 0u || memcmp(now.data, battery_expected, bytes) != 0 ||
+            now.generation != 0u ||
+            (bytes != 0u && memcmp(now.data, battery_expected, bytes) != 0) ||
             allocation_calls != calls)
             return differ("gates changed restored save topology", 0u);
     }
@@ -894,7 +895,7 @@ static int battery_lifecycle(uint64_t *rng, uint32_t size)
     muhtari_battery_info after = battery_info(a);
     if (after.data != original.data || after.bytes != original.bytes ||
         after.generation != expected_generation ||
-        memcmp(a->battery.data, battery_expected, original.bytes) != 0)
+        (original.bytes != 0u && memcmp(a->battery.data, battery_expected, original.bytes) != 0))
         ok = differ("committed battery", 2u);
     /* Every refusal is transactional, including staging explicit firmware. */
     uint8_t before[32], refused[32];
@@ -935,7 +936,7 @@ static int battery_lifecycle(uint64_t *rng, uint32_t size)
         battery_info(a).generation != expected_generation ||
         battery_info(a).data != original.data || a->cart.rom != rom || a->cart.ram != ram ||
         a->cart.expansion.ram != expansion ||
-        memcmp(a->battery.data, battery_expected, original.bytes) != 0)
+        (original.bytes != 0u && memcmp(a->battery.data, battery_expected, original.bytes) != 0))
         ok = differ("battery reset retention", 3u);
     run(a, WIDTH, first);
     run(b, WIDTH, second);
@@ -948,7 +949,7 @@ static int battery_lifecycle(uint64_t *rng, uint32_t size)
             break;
         }
     }
-    if (memcmp(b->battery.data, battery_expected, original.bytes) != 0)
+    if (original.bytes != 0u && memcmp(b->battery.data, battery_expected, original.bytes) != 0)
         ok = differ("battery instance isolation", 0u);
     return finish(a, b, ok);
 }

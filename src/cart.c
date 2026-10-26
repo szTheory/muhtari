@@ -925,9 +925,8 @@ static int cart_pokey_decoded(const struct muhtari__cart *c, unsigned chip)
    attachment (cartridge.md, XM subset and HSC physical inference). */
 static int cart_hsc_decoded(const muhtari *m)
 {
-    return m->battery.hsc_attached != 0u &&
-           (m->cart.expansion.kind != MUHTARI_EXPANSION_XM ||
-            (m->cart.expansion.control & 8u) != 0u);
+    return m->battery.hsc_attached != 0u && (m->cart.expansion.kind != MUHTARI_EXPANSION_XM ||
+                                             (m->cart.expansion.control & 8u) != 0u);
 }
 
 /* The RAM byte a board drives at addr, or NULL. A board with RAM maps it

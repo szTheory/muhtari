@@ -272,12 +272,10 @@ static void expansion_irq(void)
 {
     /* A real CPU enables timer1, hides its register window, then takes its
        declared interrupt. The handler leaves it pending for observation. */
-    static const uint8_t program[] = {
-        0x78, 0xA9, 16, 0x8D, 0x70, 4,
-        0xA9, 64, 0x8D, 0x58, 4, 0xA9, 20, 0x8D, 0x50, 4,
-        0xA9, 1, 0x8D, 0x5E, 4, 0x8D, 0x59, 4,
-        0xA9, 0, 0x8D, 0x70, 4, 0x58, 0xEA, 0x4C, 0x1F, 0xF0
-    };
+    static const uint8_t program[] = {0x78, 0xA9, 16,   0x8D, 0x70, 4,    0xA9, 64,   0x8D,
+                                      0x58, 4,    0xA9, 20,   0x8D, 0x50, 4,    0xA9, 1,
+                                      0x8D, 0x5E, 4,    0x8D, 0x59, 4,    0xA9, 0,    0x8D,
+                                      0x70, 4,    0x58, 0xEA, 0x4C, 0x1F, 0xF0};
     for (uint32_t region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL; region++) {
         for (unsigned wired = 0u; wired < 2u; wired++) {
             muhtari *m = make();

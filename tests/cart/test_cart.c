@@ -1175,8 +1175,7 @@ static void xm_windows(void)
                 uint64_t tick = m->bus.ticks;
                 m->bus.maria_from = tick + 1u;
                 m->bus.maria_until = tick + 3u;
-                CHECK_EQ_U64(muhtari__cart_dma_read(m, (uint16_t)(first + 1u), tick),
-                             0x40u + page);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, (uint16_t)(first + 1u), tick), 0x40u + page);
                 CHECK_EQ_U64(muhtari__cart_dma_read(m, (uint16_t)(first + 1u), tick + 1u),
                              0x40u + dma);
                 CHECK_EQ_U64(muhtari__cart_dma_read(m, (uint16_t)(first + 1u), tick + 2u),

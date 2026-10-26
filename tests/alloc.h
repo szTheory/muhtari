@@ -26,7 +26,17 @@ typedef struct alloc_counts {
 } alloc_counts;
 
 typedef union alloc_header {
+#if defined(_MSC_VER)
+    /* MSVC's C headers omit max_align_t. Match malloc's fundamental alignment:
+       learn.microsoft.com/cpp/c-runtime-library/reference/malloc */
+#if defined(_WIN64)
+    _Alignas(16) uint8_t alignment;
+#else
+    _Alignas(8) uint8_t alignment;
+#endif
+#else
     max_align_t alignment;
+#endif
     size_t bytes;
 } alloc_header;
 

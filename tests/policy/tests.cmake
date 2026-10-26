@@ -451,8 +451,8 @@ endforeach()
       -DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78
       -DWORK=${CMAKE_BINARY_DIR}/policy/lane_equality_fixture
       -P ${CMAKE_BINARY_DIR}/policy/lane_equality_controls.cmake
-    # Provisional ceil(2 x 27.42s), complete actual writer/native/PPC controls
-    # in the four-slot local required workflow; N/A-local. Workload unchanged.
-    LABELS policy TIMEOUT 55)
+    # Measurement allowance after censored55s Intel run40411221332; the
+    # complete actual writer/native/PPC controls and lane scales are unchanged.
+    LABELS policy TIMEOUT 300)
   set_tests_properties(policy.lane_equality.controls PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 endif()

@@ -258,8 +258,11 @@ static struct retro_core_option_v2_definition options_v2[] = {
      .desc = "Expansion hardware",
      .info = "Load-time selection; changes require content reload. XM RAM/POKEY/HSC subset, "
              "without YM2151, Covox/ADPCM, internal BIOS or full-XM services.",
-     .values = {{"auto", "Auto (cartridge request)"}, {"off", "Off"},
-                {"xboard", "XBoard"}, {"xm", "XM RAM/POKEY/HSC subset"}, {NULL, NULL}},
+     .values = {{"auto", "Auto (cartridge request)"},
+                {"off", "Off"},
+                {"xboard", "XBoard"},
+                {"xm", "XM RAM/POKEY/HSC subset"},
+                {NULL, NULL}},
      .default_value = "auto"},
     {.key = "muhtari_battery_port1",
      .desc = "Port 1 battery device",
@@ -576,10 +579,10 @@ static bool lr_serial(uint32_t d)
 static void lr_battery_request(muhtari_media *media)
 {
     static const char *const keys[2] = {"muhtari_battery_port1", "muhtari_battery_port2"};
-    media->expansion = lr_option_is("muhtari_expansion", "off") ? MUHTARI_EXPANSION_OFF
+    media->expansion = lr_option_is("muhtari_expansion", "off")      ? MUHTARI_EXPANSION_OFF
                        : lr_option_is("muhtari_expansion", "xboard") ? MUHTARI_EXPANSION_XBOARD
-                       : lr_option_is("muhtari_expansion", "xm") ? MUHTARI_EXPANSION_XM
-                                                                 : MUHTARI_EXPANSION_AUTO;
+                       : lr_option_is("muhtari_expansion", "xm")     ? MUHTARI_EXPANSION_XM
+                                                                     : MUHTARI_EXPANSION_AUTO;
     media->hsc_mode = lr_option_is("muhtari_hsc", "on")    ? MUHTARI_HSC_ON
                       : lr_option_is("muhtari_hsc", "off") ? MUHTARI_HSC_OFF
                                                            : MUHTARI_HSC_AUTO;
@@ -768,16 +771,14 @@ static uint32_t lr_expansion(const muhtari_media *request)
 {
     if (request->expansion != MUHTARI_EXPANSION_AUTO)
         return request->expansion;
-    return (cart.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM
-                                                  : MUHTARI_EXPANSION_OFF;
+    return (cart.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM : MUHTARI_EXPANSION_OFF;
 }
 
 static bool lr_hsc_attached(const muhtari_media *request)
 {
-    return request->hsc_mode == MUHTARI_HSC_ON ||
-           (request->hsc_mode == MUHTARI_HSC_AUTO &&
-            ((cart.devices & MUHTARI_DEVICE_HSC) != 0u ||
-             lr_expansion(request) == MUHTARI_EXPANSION_XM));
+    return request->hsc_mode == MUHTARI_HSC_ON || (request->hsc_mode == MUHTARI_HSC_AUTO &&
+                                                   ((cart.devices & MUHTARI_DEVICE_HSC) != 0u ||
+                                                    lr_expansion(request) == MUHTARI_EXPANSION_XM));
 }
 
 static void lr_check_battery_request(const muhtari_media *request)
@@ -805,10 +806,10 @@ static void lr_check_battery_request(const muhtari_media *request)
         port = 2u;
         serial = MUHTARI_PORT_SAVEKEY;
     }
-    if (lr_expansion(request) != selected.expansion ||
-        hsc != (battery.hsc_attached != 0u) || count > 1u || port != battery.eeprom_port ||
-        serial != battery.eeprom_device) {
-        LR_LOG(RETRO_LOG_WARN, "muhtari: expansion or battery device change requires content reload\n");
+    if (lr_expansion(request) != selected.expansion || hsc != (battery.hsc_attached != 0u) ||
+        count > 1u || port != battery.eeprom_port || serial != battery.eeprom_device) {
+        LR_LOG(RETRO_LOG_WARN,
+               "muhtari: expansion or battery device change requires content reload\n");
         lr_message("Expansion or battery device change requires content reload");
     }
 }
@@ -1272,8 +1273,8 @@ static bool lr_load_content(const struct retro_game_info *game)
                st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ? muhtari__board_name(cart.board) : "");
         if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE) {
             bool named = false;
-            uint32_t refused = cart.sound &
-                               (MUHTARI_SOUND_YM2151 | MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM);
+            uint32_t refused =
+                cart.sound & (MUHTARI_SOUND_YM2151 | MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM);
             if (refused == 0u)
                 refused = cart.sound;
             for (uint32_t bit = 0u; bit < 32u; bit++) {
@@ -1326,8 +1327,9 @@ static bool lr_load_content(const struct retro_game_info *game)
     LR_LOG(RETRO_LOG_INFO,
            "muhtari: requested devices 0x%x, sound 0x%x; effective expansion %s, HSC %u\n",
            cart.devices, cart.sound,
-           selected.expansion == MUHTARI_EXPANSION_XM ? "xm" :
-           selected.expansion == MUHTARI_EXPANSION_XBOARD ? "xboard" : "off",
+           selected.expansion == MUHTARI_EXPANSION_XM       ? "xm"
+           : selected.expansion == MUHTARI_EXPANSION_XBOARD ? "xboard"
+                                                            : "off",
            battery.hsc_attached);
     if (selected.expansion == MUHTARI_EXPANSION_XM)
         LR_LOG(RETRO_LOG_INFO, "muhtari: XM RAM/POKEY/HSC subset; no full-XM services\n");

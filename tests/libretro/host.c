@@ -2254,9 +2254,9 @@ static void expansion_selection(void)
                 uint8_t *save = p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
                 CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), attached ? 2048u : 0u);
                 CHECK((save != NULL) == attached);
-                CHECK(strstr(log_text, xm ? "effective expansion xm" :
-                                          choice == 2u ? "effective expansion xboard" :
-                                                         "effective expansion off") != NULL);
+                CHECK(strstr(log_text, xm             ? "effective expansion xm"
+                                       : choice == 2u ? "effective expansion xboard"
+                                                      : "effective expansion off") != NULL);
                 if (raw == 2u)
                     CHECK(strstr(log_text, "xm_value") != NULL);
                 CHECK_EQ_U64(message_calls, before + (attached ? 1u : 0u));
