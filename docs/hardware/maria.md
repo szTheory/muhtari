@@ -133,9 +133,8 @@ HALTRST is T0 + 457, against T0 + 514 without the abort.
 
 ## The HALT handshake
 
-The burst does not start the moment MARIA asks for HALT. The bus lets SALLY run two more cycles after /HALT falls
-(`docs/hardware/bus.md`, HALT). The PLA origin is T0 = max(/HALT fall + 6, c2 start - 2). The 6 is fitted.
-The first address, T0 + 2, follows both committed CPU cycles. Actual second falls and first fetches are:
+The bus runs c0/c1 after HALT falls, then batches DMA at c2. T0 = max(fall + 6, c2 start - 2);
+the first fetch is T0 + 2. The 6 is fitted (bus.md, HALT). Ticks relative to HALT fall:
 
 | c0 / c1 | Second fall | c2 start | First fetch |
 |---|---:|---:|---:|
@@ -144,23 +143,14 @@ The first address, T0 + 2, follows both committed CPU cycles. Actual second fall
 | slow / fast | 10 | 10 | 10 |
 | slow / slow | 11 | 12 | 12 |
 
-These ticks are relative to HALT fall. The slow-edge fit follows causal ordering in the batched implementation;
-it is derived compatibility timing, not hardware measurement. The CPU commits its c1 access before the same-tick
-memory selector change. Each DL, indirect, graphics and DLL fetch carries its own address tick. The final DLL
-byte is sampled before HALTRST releases the selected MARIA view on that tick. VBE without HALT uses CPU memory;
-observer peeks also use CPU memory without changing hardware. The bus owns that electrical selection interval.
-LRC remains the original absolute line deadline, including abort tails; delaying T0 never enlarges it.
+Slow-edge timing is a derived compatibility fit, not hardware measurement. CPU c1 commits before
+same-tick selection; every fetch carries its tick. The last DLL byte precedes coincident HALTRST release.
+Non-HALT VBE and non-mutating peeks select CPU memory. The bus owns selection; absolute LRC and tails stay fixed.
 
-SALLY loses ceil((HALTRST - fall) / 4) whole cycles. For an empty DL with two fast CPU cycles:
-
-- ordinary line: HALTRST = T0 + 9 = fall + 6 + 9 = fall + 15, so ceil(15 / 4) = 4 cycles = 16 ticks;
-- last line: HALTRST = T0 + 15 = fall + 6 + 15 = fall + 21, so ceil(21 / 4) = 6 cycles = 24 ticks.
-
-Both match the 16 and 24 ticks measured on hardware for DLLs pointing at empty DLs, start-up and shut-down included
-(section 4.3). Measuring T0 from the fall rather than from t 28 keeps both totals independent of where t 28 falls
-within a fast CPU cycle. The four-row bus test retains these all-fast values, absolute abort deadlines, and
-unequal CPU/MARIA sentinels. The three-host narrow tracer additionally judges actual native pixels before
-comparing output; it establishes only the 32 KiB-per-set/no-RAM path.
+SALLY loses ceil((HALTRST - fall) / 4) cycles. Empty all-fast DLs retain ordinary fall + 15 → 16 ticks
+and last fall + 21 → 24 ticks, matching measured empty-DL totals (section 4.3), independent of fast-cycle
+request alignment. Bus tests retain these and abort predicates; diag.bankset_tracer judges unequal native
+pixels across hosts for the 32 KiB-per-set/no-RAM path only.
 
 ## Line RAM and read modes
 

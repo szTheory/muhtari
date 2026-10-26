@@ -306,7 +306,6 @@ static void test_unsupported_board(void)
         uint32_t board;
         uint32_t options;
     } boards[] = {
-        {"bankset", 0x2002u, 64u * IMAGES_KIB, MUHTARI_BOARD_BANKSET, 0u},
         {"halt-banked RAM", 0x4002u, 128u * IMAGES_KIB, MUHTARI_BOARD_SUPERGAME,
          MUHTARI_BOARD_HALT_BANKED_RAM},
         {"Souper, cart type", 0x1000u, 512u * IMAGES_KIB, MUHTARI_BOARD_SOUPER, 0u},
@@ -330,12 +329,12 @@ static void test_unsupported_board(void)
     n = images_headerless(buf, 32u * IMAGES_KIB);
     struct muhtari__cartdb_entry act;
     memset(&act, 0, sizeof act);
-    act.board = MUHTARI_BOARD_BANKSET;
+    act.board = MUHTARI_BOARD_SOUPER;
     act.flags = MUHTARI__CARTDB_NTSC;
     act.parts = 1u;
     CHECK_EQ_U64(identify_listed(buf, n, buf, n, act, 0, &out),
                  MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.board, MUHTARI_BOARD_BANKSET);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SOUPER);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
 }
 

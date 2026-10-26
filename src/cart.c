@@ -465,6 +465,9 @@ static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 /* Boards a loaded cartridge cannot run yet. */
 static int cart_refused(const struct cart_board *b)
 {
+    if (b->board == MUHTARI_BOARD_BANKSET && (b->options != 0u || b->ram != 0u)) {
+        return 1;
+    }
     return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME &&
             b->board != MUHTARI_BOARD_ABSOLUTE && b->board != MUHTARI_BOARD_ACTIVISION &&
             b->board != MUHTARI_BOARD_FRACTALUS && b->board != MUHTARI_BOARD_BANKSET) ||
@@ -544,7 +547,8 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
         out->warnings |= MUHTARI_CART_WARN_CART_TYPE_CONFLICT;
     }
     if (version >= 4u) {
-        if (cart_decode_v4(img, &v4) && (cart_refused(&v4) || cart_fits(&v4, mapped))) {
+        if (cart_decode_v4(img, &v4) &&
+            (v4.board == MUHTARI_BOARD_BANKSET || cart_refused(&v4) || cart_fits(&v4, mapped))) {
             b = v4;
         } else {
             out->warnings |= MUHTARI_CART_WARN_HEADER_V4_IGNORED;
