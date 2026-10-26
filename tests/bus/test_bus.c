@@ -515,6 +515,50 @@ static int bankset_ram_frame(void)
     return ok;
 }
 
+static int xm_halt_edges(void)
+{
+    static uint8_t rom[32768u], ram[131072u];
+    static const uint8_t second[] = {8u, 9u, 10u, 11u};
+    int ok = 1;
+    for (unsigned row = 0u; row < 4u; row++) {
+        muhtari *m = fresh(LOCKED_7800);
+        memset(rom, 0, sizeof rom);
+        memset(ram, 0, sizeof ram);
+        m->cart.rom = rom;
+        m->cart.info.board = MUHTARI_BOARD_LINEAR;
+        m->cart.info.rom_size = sizeof rom;
+        m->cart.expansion.kind = MUHTARI_EXPANSION_XM;
+        m->cart.expansion.ram = ram;
+        m->cart.expansion.control = 0x60u;
+        m->cart.expansion.cpu_pages = 0x10u;
+        m->cart.expansion.maria_pages = 0xFEu;
+        for (unsigned page = 0u; page < 16u; page++) {
+            ram[page * 8192u] = (uint8_t)(0x40u + page);
+            ram[(page + 1u) * 8192u - 1u] = (uint8_t)(0x80u + page);
+        }
+        m->bus.halt_gate_writes = 2u;
+        m->maria.dl = 0x8000u;
+        m->maria.offset = 1u;
+        m->maria.dma_lrc = 454u;
+        muhtari__bus_request_halt(m, 0u, MUHTARI__HALT_UNTIL_MARIA);
+        (void)muhtari__bus_read(m, row >= 2u ? 0x0480u : 0x1800u);
+        (void)muhtari__bus_read(m, (row & 1u) != 0u ? 0x0480u : 0x1800u);
+        for (unsigned window = 0u; window < 2u; window++) {
+            uint16_t first = (uint16_t)(0x4000u + window * 8192u);
+            ok &= muhtari__cart_dma_read(m, first, second[row] - 1u) == 0x40u + window;
+            ok &= muhtari__cart_dma_read(m, first, second[row]) == 0x4Eu + window;
+            ok &= muhtari__bus_peek(m, first) == 0x40u + window;
+        }
+        (void)muhtari__bus_read(m, 0x1800u);
+        for (unsigned window = 0u; window < 2u; window++) {
+            uint16_t last = (uint16_t)(0x5FFFu + window * 8192u);
+            ok &= muhtari__cart_dma_read(m, last, m->bus.maria_until - 1u) == 0x8Eu + window;
+            ok &= muhtari__cart_dma_read(m, last, m->bus.maria_until) == 0x80u + window;
+        }
+    }
+    return ok;
+}
+
 static int halt_views(void)
 {
     static uint8_t rom[65536u];
@@ -729,8 +773,8 @@ static int halt_latency_two_cycles(void)
     ok &= expect_ticks("c1", read_ticks(m), 4u, "one cycle of latency", 24u);
     ok &= expect_ticks("c2", read_ticks(m), 24u, "no freeze", 4u);
     ok &= expect_count("phi2 after c2", "cycles", m->bus.phi2, 9u, "frozen cycles uncounted", 4u);
-    return bankset_frame() && bankset_ram_frame() && halt_views() && halt_store_order() &&
-           halt_stretched_costs() && ok;
+    return bankset_frame() && bankset_ram_frame() && xm_halt_edges() && halt_views() &&
+           halt_store_order() && halt_stretched_costs() && ok;
 }
 
 /* A request at tick 2, inside a 6-tick cycle, takes effect at that cycle's

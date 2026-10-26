@@ -867,6 +867,8 @@ void muhtari__cart_reset(muhtari *m)
     m->cart.bank = 0u;
     m->cart.ram_bank = 0u;
     m->cart.expansion.control = 0u;
+    m->cart.expansion.cpu_pages = 0u;
+    m->cart.expansion.maria_pages = 0u;
     uint32_t sound = m->cart.info.sound;
     m->cart.pokey_at[0] = m->cart.expansion.kind >= MUHTARI_EXPANSION_XBOARD ||
                                   (sound & MUHTARI_SOUND_POKEY_450) != 0u
@@ -891,12 +893,22 @@ void muhtari__cart_reset(muhtari *m)
 
 /* XBoard's eight 16 KiB banks and RAM chip select (cartridge preparation
    section 2.1, XBoard). CPU and MARIA use the same physical bank. */
-static uint8_t *cart_expansion_at(const struct muhtari__cart *c, uint16_t addr)
+static uint8_t *cart_expansion_at(const struct muhtari__cart *c, uint16_t addr, int maria)
 {
     if (c->expansion.kind == MUHTARI_EXPANSION_XBOARD && (c->expansion.control & 8u) != 0u &&
         addr >= 0x4000u && addr < 0x8000u) {
         return &c->expansion.ram[(uint32_t)(c->expansion.control & 7u) * CART_BANK +
                                  (addr & (CART_BANK - 1u))];
+    }
+    /* XM has two independently enabled 8 KiB windows and separate page
+       nibbles for each electrical owner (cartridge.md, XM subset). */
+    if (c->expansion.kind == MUHTARI_EXPANSION_XM && addr >= 0x4000u && addr < 0x8000u) {
+        unsigned window = addr >= 0x6000u ? 1u : 0u;
+        if ((c->expansion.control & (32u << window)) != 0u) {
+            uint8_t pages = maria ? c->expansion.maria_pages : c->expansion.cpu_pages;
+            uint32_t page = (pages >> (window * 4u)) & 15u;
+            return &c->expansion.ram[page * 8192u + (addr & 8191u)];
+        }
     }
     return NULL;
 }
@@ -991,7 +1003,7 @@ static uint8_t cart_peek_view(const muhtari *m, uint16_t addr, int maria)
     if (c->rom == NULL) {
         return m->bus.open_bus;
     }
-    const uint8_t *expansion = cart_expansion_at(c, addr);
+    const uint8_t *expansion = cart_expansion_at(c, addr, maria);
     if (expansion != NULL) {
         return *expansion;
     }
@@ -1070,7 +1082,8 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
 
 uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick)
 {
-    if (m->cart.info.board == MUHTARI_BOARD_BANKSET) {
+    if (m->cart.info.board == MUHTARI_BOARD_BANKSET ||
+        m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
         return cart_peek_view(m, addr, muhtari__bus_maria_selected(m, tick));
     }
     return muhtari__cart_read(m, addr, 1);
@@ -1125,7 +1138,20 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         c->expansion.control = v;
         return;
     }
-    uint8_t *expansion = cart_expansion_at(c, addr);
+    if (c->expansion.kind == MUHTARI_EXPANSION_XM) {
+        if (addr == 0x0470u) {
+            c->expansion.control = v;
+            return;
+        }
+        if (addr == 0x0478u || addr == 0x047Cu) {
+            if (addr == 0x0478u)
+                c->expansion.cpu_pages = v;
+            else
+                c->expansion.maria_pages = v;
+            return;
+        }
+    }
+    uint8_t *expansion = cart_expansion_at(c, addr, 0);
     if (expansion != NULL) {
         *expansion = v;
         return;

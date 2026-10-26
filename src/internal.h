@@ -259,6 +259,7 @@ struct muhtari__cart {
         uint8_t *ram;
         uint32_t kind;
         uint8_t control;
+        uint8_t cpu_pages, maria_pages;
     } expansion;
     uint8_t bank;
     uint8_t ram_bank;

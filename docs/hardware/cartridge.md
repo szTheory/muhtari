@@ -253,6 +253,25 @@ cartridge preparation section 2.1 (CART.20), not a new physical measurement.
 The boards are one `switch` in `src/cart.c`, so the core keeps no table of function pointers. MARIA's fetches see the
 same bytes as the CPU except during BankSet's electrically selected MARIA interval.
 
+### XM RAM/POKEY/HSC subset
+
+XM has sixteen physical 8 KiB RAM pages. Exact writes at $0470 use bits 5/6
+to enable $4000–$5FFF/$6000–$7FFF independently. The low/high nibbles at
+$0478 select their CPU pages; $047C selects the MARIA pages during the same
+electrical HALT interval used by BankSet. Non-HALT MARIA reads and CPU peeks
+retain the CPU pages. Each offset is bounded through $1FFFF. Disabled windows
+reveal the cartridge, and mapper stores outside enabled overlays still work.
+Power cycle clears the page and control latches and zero-fills physical RAM.
+
+This is an implementation-backed compatibility profile with medium confidence
+for physical XM semantics, following the individually BSD-3-licensed `xm.cpp`
+at a7800 revision `7a2afdc1ea08` (cartridge preparation, CART.22). The original
+developer specification remains unavailable. Bits 0–2/7 at $0470, $0471/$0472
+and neighboring aliases have no implemented effect; absent register reads
+retain open bus. ROF aliases, internal BIOS/top-slot switching, flash, PIA,
+flat 48 KiB mode, protection, sticky locks and PAL firmware selection remain
+unavailable. Probing them produces no synthetic service or detection behavior.
+
 ### BankSet
 
 The image contains equal CPU and MARIA ROM sets in that order. Linear 32, 48
