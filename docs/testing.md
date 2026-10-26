@@ -68,12 +68,11 @@ Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` writes956 rows:69 retained observations,273 controller rows
-(13 scenarios:12 frames,lag,raw/PCM,mailbox),614 [PAL rows](pal-tests.md)
-(601 frames,raw/PCM,mailbox,counters).
-Independent numeric/CRC judgment and library agreement precede controller rows. Silent raw streams remain empty.
-The retained69 match accepted source54485d6 except seven audio revision annotations4→5.
-Controls reject omitted, duplicated, reordered, malformed and wrong-family reports.
+`runner.hashes_file` retains956 rows and appends2132:16 BankSet and66 expansion
+groups, each with12 native frames,lag,raw/PCM,samples,mailbox and five source/config/template/variant identities.
+The matrix fixes order/cardinality. Numeric/CRC/native judgments precede writing;
+controls reject wrong numbers, forged identities and missing/extra/duplicate/reordered fields.
+Silent raw stays empty; [PAL](pal-tests.md) keeps601 frames and counters.
 
 CI's `hash-equality` compares lane files:
 

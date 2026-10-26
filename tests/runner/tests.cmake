@@ -28,8 +28,8 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       -P "${HASHES}" COMMAND_ERROR_IS_FATAL ANY)
     file(STRINGS "${OUT}/hashes.txt" rows)
     list(LENGTH rows count)
-    if(NOT count EQUAL 956)
-      message(FATAL_ERROR "hashes: expected69 retained,273 controller and614 PAL observation rows, got ${count}")
+  if(NOT count EQUAL 3088)
+    message(FATAL_ERROR "hashes: expected956 retained and2132 BankSet/expansion observation rows, got ${count}")
     endif()
     # Retain the independent accepted digests, normalizing only the exact
     # causal slow-HALT audio changes and revision 6 back to their old rows.
