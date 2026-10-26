@@ -23,6 +23,7 @@
 #endif
 
 #include "../check.h"
+#include "../cart/images.h"
 #include "internal.h"
 #include "libretro.h"
 #include "rc_consoles.h"
@@ -38,6 +39,8 @@ static uint32_t observed_frames;
 static int capture;
 static bool hsc_enabled;
 static const char *hsc_directory;
+static const char *expansion_option;
+static bool hsc_off;
 
 static void raw_audio(void *user, uint64_t tick, uint8_t source, uint16_t value)
 {
@@ -63,6 +66,17 @@ static void pcm_audio(int16_t sample)
 
 static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 {
+    if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE && expansion_option != NULL) {
+        struct retro_variable *v = (struct retro_variable *)data;
+        if (strcmp(v->key, "muhtari_expansion") == 0) {
+            v->value = expansion_option;
+            return true;
+        }
+        if (hsc_off && strcmp(v->key, "muhtari_hsc") == 0) {
+            v->value = "off";
+            return true;
+        }
+    }
     if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE && hsc_enabled) {
         struct retro_variable *v = (struct retro_variable *)data;
         if (strcmp(v->key, "muhtari_hsc") == 0)
@@ -181,6 +195,15 @@ static int unmapped(uint32_t addr)
 static int cart_visible(const muhtari *m, uint32_t addr)
 {
     const muhtari_cart_info *c = &m->cart.info;
+    if (m->cart.expansion.kind != MUHTARI_EXPANSION_OFF && addr < 0x8000u)
+        return 0;
+    if (c->board == MUHTARI_BOARD_BANKSET) {
+        if (addr < 0x8000u && c->ram_size != 0u)
+            return (c->board_options & MUHTARI_BOARD_HALT_BANKED_RAM) == 0u;
+        uint32_t half = c->rom_size / 2u;
+        return half <= 53248u ? addr >= 0x10000u - half
+                             : addr < 0x8000u || addr >= 0xC000u;
+    }
     if (c->board == MUHTARI_BOARD_ACTIVISION) {
         return addr < 0xA000u || addr >= 0xE000u;
     }
@@ -191,7 +214,7 @@ static int cart_visible(const muhtari *m, uint32_t addr)
         return addr < 0x5000u || addr >= 0x8000u;
     }
     if (addr < 0x8000u && c->ram_size != 0u) {
-        return (c->board_options & MUHTARI_BOARD_BANKED_RAM) == 0u && addr - 0x4000u < c->ram_size;
+        return (c->board_options & (MUHTARI_BOARD_BANKED_RAM | MUHTARI_BOARD_HALT_BANKED_RAM)) == 0u && addr - 0x4000u < c->ram_size;
     }
     if (c->board == MUHTARI_BOARD_SUPERGAME) {
         return addr < 0x8000u || addr >= 0xC000u;
@@ -222,10 +245,16 @@ static uint32_t check_regions(muhtari *m, const struct retro_memory_map *map, in
     for (uint32_t addr = 0u; addr < 0x10000u; addr++) {
         const uint8_t *p = rc_libretro_memory_find(&regions, addr);
         int ok;
-        if (battery.hsc_attached != 0u && addr >= 0x1000u && addr < 0x1800u) {
+        if (m->cart.expansion.kind == MUHTARI_EXPANSION_XM &&
+            ((addr >= 0x1000u && addr < 0x1800u) || (addr >= 0x3000u && addr < 0x4000u))) {
+            ok = p == NULL;
+        } else if (battery.hsc_attached != 0u && addr >= 0x1000u && addr < 0x1800u) {
             ok = p == battery.data + (addr - 0x1000u);
         } else if (rom.data != NULL && addr >= 0x3000u && addr < 0x4000u) {
             ok = p == rom.data + (addr - 0x3000u) && *p == muhtari__peek(m, (uint16_t)addr);
+        } else if (m->cart.info.board == MUHTARI_BOARD_BANKSET && addr >= 0x3000u &&
+                   addr < 0x4000u && m->cart.info.rom_size == 106496u) {
+            ok = p != NULL && *p == m->cart.rom[addr - 0x3000u];
         } else if (addr >= 0x2800u && addr < 0x3000u) {
             ok = p == ram.data + (addr - 0x2000u);
         } else if (unmapped(addr) || (addr >= 0x4000u && !cart_visible(m, addr))) {
@@ -244,6 +273,48 @@ static uint32_t check_regions(muhtari *m, const struct retro_memory_map *map, in
                (unsigned)wrong);
     }
     return wrong;
+}
+
+/* Accepted per-set geometries and RAM declarations, independently constructed
+   by the shared image builders. Every sweep includes every byte and hole. */
+static void check_expansion_maps(void)
+{
+    static const uint32_t sizes[] = {32u, 48u, 52u, 128u, 256u, 512u};
+    static const uint8_t ram_codes[] = {0u, 1u, 3u};
+    static const char *const profiles[] = {"off", "xboard", "xm"};
+    uint8_t *image = malloc(128u + 1048576u);
+    CHECK(image != NULL);
+    if (image == NULL)
+        return;
+    retro_set_environment(env);
+    retro_init();
+    for (unsigned g = 0u; g < sizeof sizes / sizeof sizes[0]; g++) {
+        for (unsigned r = 0u; r < 3u; r++) {
+            if ((sizes[g] == 48u || sizes[g] == 52u) && r != 0u)
+                continue;
+            for (unsigned profile = 0u; profile < 3u; profile++) {
+                struct retro_game_info game = {0};
+                game.size = images_bankset(image, sizes[g], ram_codes[r]);
+                game.data = image;
+                expansion_option = profiles[profile];
+                hsc_off = sizes[g] == 52u;
+                seen_map = NULL;
+                CHECK(retro_load_game(&game));
+                muhtari *m = muhtari__libretro_instance();
+                CHECK(m != NULL && seen_map != NULL);
+                if (m != NULL && seen_map != NULL) {
+                    fill(m, MUHTARI_MEMORY_CART_RAM, 3u);
+                    printf("BankSet %u KiB RAM %u %s: ", sizes[g], ram_codes[r], profiles[profile]);
+                    CHECK_EQ_U64(check_regions(m, seen_map, 1), 0u);
+                }
+                retro_unload_game();
+            }
+        }
+    }
+    retro_deinit();
+    expansion_option = NULL;
+    hsc_off = false;
+    free(image);
 }
 
 /* Loads path, resolves the map with rcheevos for console 51 and checks it. */
@@ -691,6 +762,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "usage: muhtari-test-rcheevos <cartridge>...\n");
         return 2;
     }
+    check_expansion_maps();
     if (argc > 3 && strcmp(argv[1], "--hsc-dir") == 0) {
         hsc_directory = argv[2];
         i = 3;

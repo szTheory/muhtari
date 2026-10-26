@@ -206,6 +206,7 @@ if(TARGET muhtari_libretro)
   target_compile_options(muhtari_test_rcheevos PRIVATE $<$<C_COMPILER_ID:MSVC>:/W0>
     $<$<NOT:$<C_COMPILER_ID:MSVC>>:-w -fno-sanitize=all>)
   add_executable(muhtari-test-rcheevos ${CMAKE_CURRENT_LIST_DIR}/rcheevos.c
+    ${PROJECT_SOURCE_DIR}/tests/cart/images.c
     ${PROJECT_SOURCE_DIR}/libretro/libretro.c ${PROJECT_SOURCE_DIR}/runner/sha256.c
     ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
     $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
