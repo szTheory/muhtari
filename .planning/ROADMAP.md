@@ -321,7 +321,7 @@ Plans:
 - [x] 10-09-PLAN.md — Require complete semantic observations in strict native/PowerPC equality.
 
 **Wave 10** *(blocked on Wave 9 completion)*
-- [ ] 10-10-PLAN.md — Prove transactional lifetimes, physical accounting and no allocation after load.
+- [x] 10-10-PLAN.md — Prove transactional lifetimes, physical accounting and no allocation after load.
 
 **Wave 11** *(blocked on Wave 10 completion)*
 - [ ] 10-11-PLAN.md — Prove hostile regional execution, loader replay and isolation/lifecycle properties.
@@ -372,7 +372,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 9/13 | In progress | — |
+| 10. Homebrew and expansion memory | 10/13 | In progress | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
