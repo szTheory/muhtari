@@ -667,7 +667,7 @@ set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
 include([==[${diag_bankset}]==])
 ")
 muhtari_add_test(NAME diag.bankset COMMAND ${CMAKE_COMMAND} -P ${diag_bankset_matrix}
-  LABELS diag portable TIMEOUT 4) # Provisional ceil(2 x 1.85s), complete local matrix; N/A-local.
+  LABELS diag portable TIMEOUT 5) # Provisional ceil(2 x 2.32s), complete local CI matrix; N/A-local.
 
 set(diag_pal ${PROJECT_BINARY_DIR}/tests/diag/pal.cmake)
 set(diag_pal565 "")
