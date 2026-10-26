@@ -2697,8 +2697,74 @@ static void test_load_supergame_one_allocation(void)
 
 /* CART_RAM is the board's 16 KiB at $4000: a live, stable span equal to
    what the CPU reads there. */
+static void bankset_memory_lifetime(void)
+{
+    static uint8_t image[128u + 106496u];
+    static uint8_t saved[32768u];
+    static muhtari snapshot;
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL) return;
+    for (uint8_t device = 1u; device <= 3u; device += 2u) {
+        size_t n = images_bankset(image, 32u, device);
+        muhtari_media media = media_for(image, n);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        muhtari_span span = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+        uint32_t bytes = device == 1u ? 16384u : 32768u;
+        CHECK_EQ_U64(span.bytes, bytes);
+        for (uint32_t i = 0u; i < bytes; i++) CHECK_EQ_U64(span.data[i], 0u);
+        memset(span.data, 0x56, bytes);
+        span.data[bytes - 1u] = 0xA9u;
+        memcpy(saved, span.data, bytes);
+        memcpy(&snapshot, m, sizeof snapshot);
+        uint32_t allocations = counts.allocs;
+        /* Odd, truncated, forbidden RAM and unsupported device loads. */
+        n = images_bankset(image, 52u, 3u);
+        media = media_for(image, n);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+        CHECK_EQ_U64(counts.allocs, allocations);
+        CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        CHECK(memcmp(span.data, saved, bytes) == 0);
+        /* Effective standalone HSC conflicts at $3000; explicit Off removes it. */
+        n = images_bankset(image, 52u, 0u);
+        media = media_for(image, n);
+        media.hsc_mode = MUHTARI_HSC_ON;
+        muhtari_status conflict = muhtari_load(m, &media);
+        CHECK_EQ_U64(conflict, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+        if (conflict != MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) {
+            muhtari_destroy(m);
+            return;
+        }
+        CHECK_EQ_U64(counts.allocs, allocations);
+        CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        CHECK(memcmp(span.data, saved, bytes) == 0);
+        image[58] = 1u;
+        media.hsc_mode = MUHTARI_HSC_AUTO;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+        CHECK_EQ_U64(counts.allocs, allocations);
+        CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        muhtari_span again = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+        CHECK(again.data == span.data);
+        CHECK_EQ_U64(again.bytes, bytes);
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        again = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+        CHECK(again.data == span.data);
+        CHECK_EQ_U64(again.bytes, bytes);
+        for (uint32_t i = 0u; i < bytes; i++) CHECK_EQ_U64(span.data[i], 0u);
+        CHECK_EQ_U64(m->cart.bank, 0u);
+        media.hsc_mode = MUHTARI_HSC_OFF;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(m->battery.hsc_attached, 0u);
+    }
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+}
+
 static void test_get_memory_cart_ram(void)
 {
+    bankset_memory_lifetime();
     muhtari *m = make();
     make_sg(0x0006u, prog_cart_ram, sizeof prog_cart_ram);
     muhtari_media media = media_for(sg_image, sizeof sg_image);

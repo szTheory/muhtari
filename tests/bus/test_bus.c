@@ -426,6 +426,7 @@ static int bankset_frame(void)
 static int halt_views(void)
 {
     static uint8_t rom[65536u];
+    static uint8_t ram[32768u];
     static muhtari snapshot;
     static const uint8_t second[] = {8u, 9u, 10u, 11u};
     static const uint8_t c2[] = {8u, 10u, 10u, 12u};
@@ -437,6 +438,14 @@ static int halt_views(void)
         m->cart.rom = rom;
         m->cart.info.board = MUHTARI_BOARD_BANKSET;
         m->cart.info.rom_size = sizeof rom;
+        m->cart.ram = ram;
+        m->cart.info.ram_size = sizeof ram;
+        m->cart.info.board_options = MUHTARI_BOARD_HALT_BANKED_RAM;
+        memset(ram, 0, sizeof ram);
+        ram[0] = 0x52u;
+        ram[16383u] = 0x53u;
+        ram[16384u] = 0xA8u;
+        ram[32767u] = 0xA9u;
         rom[0x3000u] = 0x51u;
         rom[32768u + 0x3000u] = 0xA7u;
         m->bus.halt_gate_writes = 2u;
@@ -452,6 +461,10 @@ static int halt_views(void)
         ok &= expect_ticks("c2 starts", m->bus.ticks, c2[row], "one cycle", 4u);
         ok &= muhtari__cart_dma_read(m, 0xB000u, second[row] - 1u) == 0x51u;
         ok &= muhtari__cart_dma_read(m, 0xB000u, second[row]) == 0xA7u;
+        ok &= muhtari__cart_dma_read(m, 0x4000u, second[row] - 1u) == 0x52u;
+        ok &= muhtari__cart_dma_read(m, 0x7FFFu, second[row] - 1u) == 0x53u;
+        ok &= muhtari__cart_dma_read(m, 0x4000u, second[row]) == 0xA8u;
+        ok &= muhtari__cart_dma_read(m, 0x7FFFu, second[row]) == 0xA9u;
         memcpy(&snapshot, m, sizeof snapshot);
         ok &= muhtari__bus_peek(m, 0xB000u) == 0x51u;
         ok &= muhtari__peek(m, 0xB000u) == 0x51u;
@@ -465,6 +478,10 @@ static int halt_views(void)
                            "enlarged deadline", 454u);
         ok &= muhtari__cart_dma_read(m, 0xB000u, release[row] - 1u) == 0xA7u;
         ok &= muhtari__cart_dma_read(m, 0xB000u, release[row]) == 0x51u;
+        ok &= muhtari__cart_dma_read(m, 0x4000u, release[row] - 1u) == 0xA8u;
+        ok &= muhtari__cart_dma_read(m, 0x7FFFu, release[row] - 1u) == 0xA9u;
+        ok &= muhtari__cart_dma_read(m, 0x4000u, release[row]) == 0x52u;
+        ok &= muhtari__cart_dma_read(m, 0x7FFFu, release[row]) == 0x53u;
         /* Non-HALT VBE uses CPU DLL data despite being called by MARIA. */
         rom[0x2000u] = 7u;
         rom[32768u + 0x2000u] = 3u;
@@ -472,6 +489,16 @@ static int halt_views(void)
         m->maria.reg[0x10u] = 0u;
         (void)muhtari__maria_vbe(m, m->bus.ticks);
         ok &= m->maria.offset == 7u;
+        /* RAM DLL helpers also keep the CPU half outside HALT. */
+        m->maria.reg[0x0Cu] = 0x40u;
+        ram[0] = 7u;
+        ram[1] = 0x80u;
+        ram[2] = 0u;
+        ram[16384u] = 3u;
+        ram[16385u] = 0x81u;
+        ram[16386u] = 0u;
+        (void)muhtari__maria_vbe(m, m->bus.ticks);
+        ok &= m->maria.offset == 7u && m->maria.dl == 0x8000u;
         /* The next DLL's final byte is sampled on HALTRST, before release. */
         m->maria.dl = 0x8000u;
         m->maria.dll = 0xA000u;
