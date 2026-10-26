@@ -300,7 +300,7 @@ Plans:
 - [x] 10-02-PLAN.md — Complete checked BankSet geometry, shared/HALT RAM and redirects.
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 10-03-PLAN.md — Deliver additive selection, transactional XBoard and API/version evidence.
+- [x] 10-03-PLAN.md — Deliver additive selection, transactional XBoard and API/version evidence.
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 10-04-PLAN.md — Run XM pages, stable HSC and continuously clocked expansion POKEY.
@@ -372,7 +372,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 2/13 | In progress | — |
+| 10. Homebrew and expansion memory | 3/13 | In progress | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
