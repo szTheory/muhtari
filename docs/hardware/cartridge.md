@@ -251,7 +251,8 @@ This map follows the permissively licensed XBoard implementation cited in
 cartridge preparation section 2.1 (CART.20), not a new physical measurement.
 
 The boards are one `switch` in `src/cart.c`, so the core keeps no table of function pointers. MARIA's fetches see the
-same bytes as the CPU except during BankSet's electrically selected MARIA interval.
+same bytes as the CPU except for BankSet and XM during the shared electrically
+selected MARIA interval.
 
 ### XM RAM/POKEY/HSC subset
 

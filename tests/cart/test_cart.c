@@ -1193,6 +1193,29 @@ static void xm_windows(void)
             CHECK_EQ_U64(ram[page * 8192u], page + 1u);
         }
     }
+    /* Every nibble pair at both physical endpoints, independent of the
+       earlier middle-byte selection and store checks. */
+    for (unsigned cpu = 0u; cpu < 16u; cpu++) {
+        for (unsigned dma = 0u; dma < 16u; dma++) {
+            muhtari__bus_write(m, 0x0470u, 0x60u);
+            muhtari__bus_write(m, 0x0478u, (uint8_t)(cpu * 17u));
+            muhtari__bus_write(m, 0x047Cu, (uint8_t)(dma * 17u));
+            uint64_t tick = m->bus.ticks;
+            m->bus.maria_from = tick + 1u;
+            m->bus.maria_until = tick + 3u;
+            for (unsigned window = 0u; window < 2u; window++) {
+                uint16_t first = (uint16_t)(0x4000u + window * 8192u);
+                uint16_t last = (uint16_t)(first + 8191u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, first, tick), cpu + 1u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, last, tick), cpu + 0x80u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, first, tick + 1u), dma + 1u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, last, tick + 1u), dma + 0x80u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, first, tick + 3u), cpu + 1u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, last, tick + 3u), cpu + 0x80u);
+            }
+            m->bus.maria_from = m->bus.maria_until = 0u;
+        }
+    }
     muhtari__bus_write(m, 0x0478u, 0xF0u);
     muhtari__bus_write(m, 0x047Cu, 0x0Fu);
     muhtari__bus_write(m, 0x0470u, 0x60u);
