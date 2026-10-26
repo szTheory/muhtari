@@ -99,7 +99,8 @@ labels comma-separated. Configure fails when the registered tests differ from th
 test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
 Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
 Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt`, `library.txt`, one
-`library.<id>` per ledger row of tier `pr`, and `wasm32.txt`, which is the `ci` list without the `libretro` tests.
+`library.<id>` per ledger row of tier `pr`, and `wasm32.txt` for actual WASI registrations with the module
+disabled. Both lists retain portable BankSet/XBoard/XM diagnostics and their fault controls.
 
 | Label | Tests |
 |---|---|
