@@ -263,6 +263,18 @@ retain the CPU pages. Each offset is bounded through $1FFFF. Disabled windows
 reveal the cartridge, and mapper stores outside enabled overlays still work.
 Power cycle clears the page and control latches and zero-fills physical RAM.
 
+XM Auto physically provisions HSC at load unless the HSC override is Off.
+$0470 bit 3 gates both $1000–$17FF SRAM and $3000–$3FFF firmware. Both start
+hidden; save import is available before execution through the stable physical
+battery span. Hidden writes do nothing. Gate changes retain bytes, pointer,
+layout 1, firmware identity and generation. Power cycle retains attachment and
+committed battery bytes/token while clearing volatile XM state; the console
+Reset switch does not clear it. Standalone HSC remains always decoded.
+Gating both HSC windows is a physical inference with medium confidence: the
+reference implementation's always-on SRAM is explicitly a persistence
+workaround, which this profile does not reproduce. The signature-only stub
+and supplied-firmware validation retain their documented limits.
+
 This is an implementation-backed compatibility profile with medium confidence
 for physical XM semantics, following the individually BSD-3-licensed `xm.cpp`
 at a7800 revision `7a2afdc1ea08` (cartridge preparation, CART.22). The original
@@ -302,10 +314,10 @@ BankSet memory effect. `MUHTARI_MEMORY_CART_RAM` exposes all 16384 or 32768
 physical bytes, zero-filled on load/power cycle and stable until successful
 replacement or destroy. Refused loads preserve the pointer and every byte.
 
-A 52 KiB set overlaps HSC ROM at $3000–$3FFF. Effective standalone HSC
+A 52 KiB set overlaps HSC ROM at $3000–$3FFF. Effective HSC
 attachment is refused before allocation, including Auto metadata and supplied
-firmware; explicit HSC Off removes the conflict. Expansion-driven attachment
-uses the same constraint when its load selection is available. MEN/BIOS decode
+firmware and initially hidden XM Auto; explicit HSC Off removes the conflict.
+MEN/BIOS decode
 retains bus priority over cartridge memory.
 
 ### Linear

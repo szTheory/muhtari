@@ -298,7 +298,8 @@ load.
 
 API 5 appends `hsc_mode`, `hsc_rom`, `hsc_rom_size` and `port[2]` to `muhtari_media`.
 Old media objects keep their original minimum size; missing or incomplete appended fields
-take their zero defaults. `MUHTARI_HSC_AUTO` uses resolved cartridge metadata;
+take their zero defaults. `MUHTARI_HSC_AUTO` uses resolved cartridge metadata
+and provisions HSC when the effective expansion is XM;
 `MUHTARI_HSC_ON` forces attachment and `MUHTARI_HSC_OFF` disables it. A supplied ROM
 implies attachment and conflicts with OFF. Both pointer/length directions must agree,
 and firmware is exactly 4,096 bytes. HSC firmware has no BIOS reset-vector requirement.
@@ -333,6 +334,10 @@ Layout version 1 is exactly these raw bytes, with no header or host-endian field
 
 The pointer, length, layout and placement remain stable through frames and power cycles,
 until the next successful load or destroy. Firmware is outside the save span.
+XM starts with both HSC CPU windows hidden. Restore through this same physical
+span before execution; $0470 bit 3 only changes visibility. Gate stores never
+move or clear storage, change firmware identity, or increment generation. Hidden
+SRAM stores are ignored. Explicit HSC Off suppresses attachment even with XM.
 `muhtari_get_hsc_rom` fills a size-tagged `muhtari_const_span` with the installed read-only
 ROM/stub, or NULL/0 when HSC is absent. Both queries are bounded observers: they allocate
 nothing, scan no battery bytes and advance no emulated time.
@@ -345,6 +350,9 @@ stores leave it unchanged. It is a uint64 equality token with defined unsigned w
 compare for inequality, never ordering or elapsed writes. Power cycle retains bytes and
 generation. Successful load starts FF-filled storage with generation zero; refused load
 preserves bytes, pointers, topology, generation and subsequent execution. Hosts own files.
+Power cycle retains effective expansion/HSC attachment and committed EEPROM
+bytes, but clears volatile expansion RAM, controls/pages and POKEY state.
+The console Reset input is a physical switch and does not power cycle them.
 
 EEPROM page data becomes persistent only after completed programming in emulated time.
 Buffered or aborted serial traffic is outside the save span, and same-value programming

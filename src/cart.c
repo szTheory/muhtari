@@ -921,6 +921,15 @@ static int cart_pokey_decoded(const struct muhtari__cart *c, unsigned chip)
            (c->expansion.control & 16u) != 0u;
 }
 
+/* XM gates both HSC windows together, independently of physical battery
+   attachment (cartridge.md, XM subset and HSC physical inference). */
+static int cart_hsc_decoded(const muhtari *m)
+{
+    return m->battery.hsc_attached != 0u &&
+           (m->cart.expansion.kind != MUHTARI_EXPANSION_XM ||
+            (m->cart.expansion.control & 8u) != 0u);
+}
+
 /* The RAM byte a board drives at addr, or NULL. A board with RAM maps it
    at $4000-$7FFF; a banked-RAM board shows the 16 KiB half ram_bank there.
    Fractalus compresses the disconnected address bits; other boards mask
@@ -1009,7 +1018,7 @@ static uint8_t cart_peek_view(const muhtari *m, uint16_t addr, int maria)
     }
     /* HSC pass-through decode (docs/hardware/cartridge.md, HSC). The bus
        has already applied MEN/BIOS gates; CPU audio decode precedes this. */
-    if (m->battery.hsc_attached != 0u) {
+    if (cart_hsc_decoded(m)) {
         if (addr >= 0x1000u && addr < 0x1800u) {
             return m->battery.data[addr - 0x1000u];
         }
@@ -1167,7 +1176,7 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
                 return;
         }
     }
-    if (m->battery.hsc_attached != 0u && addr >= 0x1000u && addr < 0x1800u) {
+    if (cart_hsc_decoded(m) && addr >= 0x1000u && addr < 0x1800u) {
         uint8_t *cell = &m->battery.data[addr - 0x1000u];
         if (*cell != v) {
             *cell = v;

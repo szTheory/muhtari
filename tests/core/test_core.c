@@ -3021,7 +3021,8 @@ static void bankset_memory_lifetime(void)
         CHECK_EQ_U64(counts.allocs, allocations);
         CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
         CHECK(memcmp(span.data, saved, bytes) == 0);
-        image[58] = 0u;
+        n = images_bankset(image, 52u, 0u);
+        media = media_for(image, n);
         media.expansion = MUHTARI_EXPANSION_XM;
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
         CHECK_EQ_U64(counts.allocs, allocations);
@@ -3066,6 +3067,7 @@ static void bankset_memory_lifetime(void)
             CHECK_EQ_U64(span.data[i], 0u);
         CHECK_EQ_U64(m->cart.bank, 0u);
         media.hsc_mode = MUHTARI_HSC_OFF;
+        media.expansion = MUHTARI_EXPANSION_XM;
         CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(m->battery.hsc_attached, 0u);
     }
