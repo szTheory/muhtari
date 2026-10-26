@@ -230,6 +230,7 @@ static struct {
     {"muhtari_left_difficulty", "B"},  {"muhtari_right_difficulty", "B"},
     {"muhtari_hsc", "auto"},           {"muhtari_battery_port1", "auto"},
     {"muhtari_battery_port2", "auto"}, {"muhtari_region", "auto"},
+    {"muhtari_expansion", "auto"},
 };
 static bool vars_updated;
 
@@ -2156,6 +2157,94 @@ static void battery_read_program(uint8_t *code, unsigned port)
     CHECK(n < 4090u);
 }
 
+static void expansion_selection(void)
+{
+    static uint8_t image[128u + 106496u];
+    static const uint8_t program[] = {0xA9, 0x08, 0x8D, 0x70, 0x04, 0xAD, 0x00, 0x10,
+                                      0x8D, 0x00, 0x18, 0xEE, 0x00, 0x10, 0x02};
+    static const char *const choices[] = {"auto", "off", "xboard", "xm"};
+    static const char *const modes[] = {"auto", "on", "off"};
+    struct retro_game_info game = {0};
+    game.data = image;
+    p_set_environment(env);
+    for (unsigned raw = 0u; raw < 3u; raw++) {
+        game.size = images_linear(image, 4u, 4096u);
+        image[63] = (uint8_t)raw;
+        memcpy(image + 128u, program, sizeof program);
+        for (unsigned choice = 0u; choice < 4u; choice++) {
+            for (unsigned hsc = 0u; hsc < 3u; hsc++) {
+                set_var("muhtari_expansion", choices[choice]);
+                set_var("muhtari_hsc", modes[hsc]);
+                unsigned before = message_calls;
+                log_used = 0u;
+                log_text[0] = '\0';
+                CHECK(p_load_game(&game));
+                bool xm = choice == 3u || (choice == 0u && raw != 0u);
+                bool attached = hsc == 1u || (hsc == 0u && xm);
+                uint8_t *save = p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+                CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), attached ? 2048u : 0u);
+                CHECK((save != NULL) == attached);
+                CHECK(strstr(log_text, xm ? "effective expansion xm" :
+                                          choice == 2u ? "effective expansion xboard" :
+                                                         "effective expansion off") != NULL);
+                if (raw == 2u)
+                    CHECK(strstr(log_text, "xm_value") != NULL);
+                CHECK_EQ_U64(message_calls, before + (attached ? 1u : 0u));
+                if (save != NULL) {
+                    save[0] = 0x42u;
+                    p_run();
+                    CHECK_EQ_U64(((uint8_t *)p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM))[0], 0x42u);
+                    CHECK_EQ_U64(save[0], 0x43u);
+                    before = message_calls;
+                    /* Same effective topology does not need reload; changing
+                       only the expansion does, even with explicit HSC On. */
+                    set_var("muhtari_hsc", "on");
+                    set_var("muhtari_expansion", xm ? "xm" : choices[choice]);
+                    p_run();
+                    CHECK_EQ_U64(message_calls, before);
+                    set_var("muhtari_expansion", xm ? "off" : "xm");
+                    p_run();
+                    CHECK_EQ_U64(message_calls, before + 1u);
+                    CHECK(strstr(message, "reload") != NULL);
+                    p_run();
+                    CHECK_EQ_U64(message_calls, before + 1u);
+                    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == save);
+                    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 2048u);
+                    CHECK_EQ_U64(save[0], 0x43u);
+                }
+                p_unload_game();
+                CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+                CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 0u);
+            }
+        }
+    }
+    game.size = images_bankset(image, 52u, 0u);
+    set_var("muhtari_hsc", "auto");
+    set_var("muhtari_expansion", "xm");
+    CHECK(!p_load_game(&game));
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+    set_var("muhtari_hsc", "off");
+    CHECK(p_load_game(&game));
+    p_unload_game();
+    for (unsigned bit = 0u; bit < 3u; bit++) {
+        static const char *const names[] = {"ym2151", "covox", "adpcm"};
+        game.size = images_linear(image, 4u, 4096u);
+        image[67] = (uint8_t)(8u << bit);
+        for (unsigned off = 0u; off < 2u; off++) {
+            set_var("muhtari_expansion", off ? "off" : "auto");
+            log_used = 0u;
+            log_text[0] = '\0';
+            CHECK(!p_load_game(&game));
+            CHECK(strstr(log_text, names[bit]) != NULL);
+            CHECK(strstr(message, names[bit]) != NULL);
+            CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+        }
+    }
+    set_var("muhtari_expansion", "auto");
+    set_var("muhtari_hsc", "auto");
+    stop();
+}
+
 static void case_battery(void)
 {
     static uint8_t image[128u + 4096u];
@@ -2187,6 +2276,7 @@ static void case_battery(void)
     CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
     stop();
     set_var("muhtari_hsc", "auto");
+    expansion_selection();
 }
 
 /* Late storage changes cannot replace or reinterpret the published span. */
