@@ -139,13 +139,19 @@ function(quality_fixture_identity out candidate trusted)
         message(FATAL_ERROR "quality: deleted or changed trusted manifest ${path}")
       endif()
     endforeach()
-    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion|pal)[.]a78$" OR
+    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion|pal|bankset)[.]a78$" OR
         NOT row MATCHES "^[^\t]+\tthis-repo\t[^ \t\r\n;]+\tMIT\t([0-9a-f]+)\t-$")
       message(FATAL_ERROR "quality: unrelated fixture ${path}")
     endif()
     string(LENGTH "${CMAKE_MATCH_1}" length)
     if(NOT length EQUAL 64)
       message(FATAL_ERROR "quality: fixture digest ${path}")
+    endif()
+    # This owned template is immutable: derived cases are build output only.
+    # A syntactically plausible invented source pin/digest must not admit it.
+    if(path STREQUAL "tests/diag/bankset.a78" AND NOT row STREQUAL
+        "tests/diag/bankset.a78\tthis-repo\t6321fa62cf7cf29c7033b09931edb884079c1545\tMIT\t32f5870fbfcc4745967b8b94c69f87dac4879587c4b0561256cc5160d61a3390\t-")
+      message(FATAL_ERROR "quality: owned BankSet identity")
     endif()
     string(REPLACE "${row}\n" "" stripped "${stripped}")
   endforeach()
