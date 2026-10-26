@@ -933,8 +933,104 @@ static void retail_views(muhtari *m, uint16_t addr, uint8_t value)
     CHECK_EQ_U64(m->cart.bank, bank);
 }
 
+static void bankset_geometry(void)
+{
+    static const struct {
+        uint32_t kib;
+        uint16_t base;
+        uint8_t blocks, low, high;
+    } geometry[] = {
+        {32u, 0x8000u, 8u, 0u, 0u}, {48u, 0x4000u, 12u, 0u, 0u},
+        {52u, 0x3000u, 13u, 0u, 0u}, {128u, 0x4000u, 8u, 6u, 7u},
+        {256u, 0x4000u, 16u, 14u, 15u}, {512u, 0x4000u, 32u, 30u, 31u}
+    };
+    static const uint8_t ram_code[] = {0u, 1u, 3u};
+    static const uint32_t ram_bytes[] = {0u, 16384u, 32768u};
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL) return;
+    for (size_t g = 0u; g < sizeof geometry / sizeof geometry[0]; g++) {
+        for (size_t r = 0u; r < 3u; r++) {
+            size_t n = images_bankset(buf, geometry[g].kib, ram_code[r]);
+            int valid = r == 0u || g == 0u || g >= 3u;
+            uint32_t allocations = counts.allocs;
+            muhtari_status st = muhtari__cart_load(m, buf, n);
+            CHECK_EQ_U64(st, valid ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_INVALID_IMAGE);
+            if (!valid) {
+                CHECK_EQ_U64(counts.allocs, allocations);
+                continue;
+            }
+            if (st != MUHTARI_STATUS_OK) continue;
+            CHECK_EQ_U64(counts.allocs, allocations + 1u);
+            CHECK_EQ_U64(m->cart.info.ram_size, ram_bytes[r]);
+            CHECK_EQ_U64(m->cart.bank, 0u);
+            CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, n - IMAGES_HEADER) == 0);
+            if (r != 0u) continue; /* Physical RAM accesses are checked separately. */
+            m->bus.maria_from = 10u;
+            m->bus.maria_until = 20u;
+            m->bus.open_bus = 0xE7u;
+            CHECK_EQ_HEX(muhtari__cart_peek(m, (uint16_t)(geometry[g].base - 1u)), 0xE7u);
+            if (g < 3u) {
+                for (uint32_t b = 0u; b < geometry[g].blocks; b++) {
+                    uint16_t a = (uint16_t)(geometry[g].base + b * 4096u);
+                    retail_views(m, a, (uint8_t)(0x10u + b * 2u));
+                    retail_views(m, (uint16_t)(a + 4095u), (uint8_t)(0x11u + b * 2u));
+                    CHECK_EQ_HEX(muhtari__cart_dma_read(m, a, 10u), 0x90u + b * 2u);
+                    CHECK_EQ_HEX(muhtari__cart_dma_read(m, (uint16_t)(a + 4095u), 19u),
+                                 0x91u + b * 2u);
+                }
+            } else {
+                for (uint32_t b = 0u; b < 256u; b++) {
+                    muhtari__cart_write(m, 0x8000u, (uint8_t)b);
+                    uint8_t selected = (uint8_t)(b % geometry[g].blocks);
+                    static const uint16_t addresses[] = {0x4000u, 0x7FFFu, 0x8000u,
+                                                        0xBFFFu, 0xC000u, 0xFFFFu};
+                    uint8_t banks[] = {geometry[g].low, geometry[g].low, selected, selected,
+                                       geometry[g].high, geometry[g].high};
+                    for (size_t a = 0u; a < 6u; a++) {
+                        uint8_t tag = (uint8_t)(0x10u + banks[a] * 2u + (a & 1u));
+                        retail_views(m, addresses[a], tag);
+                        CHECK_EQ_HEX(muhtari__cart_dma_read(m, addresses[a], 10u), tag + 0x80u);
+                    }
+                }
+            }
+        }
+    }
+    /* Valid unsupported v4 declarations must not disappear into stale v3. */
+    for (uint8_t mapper = 0u; mapper < 5u; mapper++) {
+        for (uint8_t device = 0u; device < (mapper == 0u ? 4u : mapper == 1u ? 7u : 1u); device++) {
+            if (mapper <= 1u && (device == 0u || device == 1u || device == 3u)) continue;
+            size_t n = images_bankset(buf, 32u, 0u);
+            buf[64] = mapper;
+            buf[65] = (uint8_t)(0x80u | device);
+            muhtari_cart_info info = expect_written("BankSet unsupported option", buf, n,
+                                                     MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+            CHECK_EQ_U64(info.board, MUHTARI_BOARD_BANKSET);
+            CHECK_EQ_U64(info.warnings, 0u);
+            uint32_t allocations = counts.allocs;
+            CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+            CHECK_EQ_U64(counts.allocs, allocations);
+        }
+    }
+    static const uint32_t bad[] = {32768u, 65535u, 65537u, 73728u, 114688u, 196608u};
+    for (size_t i = 0u; i < sizeof bad / sizeof bad[0]; i++) {
+        size_t n = images_a78(buf, 4u, bad[i], 0u, bad[i]);
+        buf[65] = 0x80u;
+        uint32_t allocations = counts.allocs;
+        CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+        CHECK_EQ_U64(counts.allocs, allocations);
+    }
+    size_t n = images_bankset(buf, 48u, 0u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n - 1u), MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+}
+
 static void test_retail_boards(void)
 {
+    bankset_geometry();
     alloc_counts counts;
     muhtari_config cfg = alloc_config(&counts);
     muhtari *m = NULL;
