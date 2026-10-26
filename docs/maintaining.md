@@ -130,6 +130,14 @@ completed current/base inventories, matching source/toolchain/fixture identities
 and all three actual ZIPs on each side. A failed recursive invocation can leave
 partial current or older base files; their presence alone establishes no pass.
 
+The producer serializes only Windows baseline CTest steps to isolate contention
+from copied-tool startup cost. It checks the original five-step workflow shape,
+then uses its configure, build, normal-test, package and release-test presets in
+order. Source bytes, assertions, deadlines, scales and build options stay intact;
+fresh full reports and three-ZIP authentication remain required. Other lanes and
+the current-source workflow keep their scheduling. Serialization trades Windows
+baseline wall time for isolation; a failed baseline still blocks acceptance.
+
 ## Withdrawing a release
 
 A published release cannot be edited, so a bad one is withdrawn and fixed forward:

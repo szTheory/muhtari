@@ -1,6 +1,67 @@
 # Fault prevented: missing, failed or unrelated producer outputs becoming numeric passes.
 # ROOT/BUILD/OUT/SHA/CONFIG adapt completed workflow outputs; SOURCE identifies its run.
 cmake_minimum_required(VERSION 4.3)
+# Windows has no CTest jobserver integration. Isolate the genuine baseline's
+# tests to distinguish contention from the copied-tool context; all preset
+# definitions, deadlines, lane scales and product options remain authoritative.
+function(quality_base_workflow tree config)
+  if(NOT config STREQUAL "ci-msvc")
+    execute_process(COMMAND "${CMAKE_COMMAND}" --workflow --preset "${config}"
+      WORKING_DIRECTORY "${tree}" COMMAND_ERROR_IS_FATAL ANY)
+    return()
+  endif()
+  file(READ "${tree}/CMakePresets.json" presets)
+  string(JSON count LENGTH "${presets}" workflowPresets)
+  math(EXPR last "${count}-1")
+  set(matches 0)
+  foreach(i RANGE 0 ${last})
+    string(JSON name GET "${presets}" workflowPresets ${i} name)
+    if(name STREQUAL config)
+      math(EXPR matches "${matches}+1")
+      string(JSON fields LENGTH "${presets}" workflowPresets ${i})
+      if(NOT fields EQUAL 2)
+        message(FATAL_ERROR "quality_evidence: Windows baseline workflow profile changed")
+      endif()
+      string(JSON steps GET "${presets}" workflowPresets ${i} steps)
+    endif()
+  endforeach()
+  if(NOT matches EQUAL 1)
+    message(FATAL_ERROR "quality_evidence: Windows baseline workflow must be unique")
+  endif()
+  string(JSON count LENGTH "${steps}")
+  if(NOT count EQUAL 5)
+    message(FATAL_ERROR "quality_evidence: Windows baseline workflow must retain all five preset steps")
+  endif()
+  set(types configure build test package test)
+  set(names "${config}" "${config}" "${config}" "${config}" "${config}-release")
+  foreach(i RANGE 0 4)
+    string(JSON fields LENGTH "${steps}" ${i})
+    string(JSON type GET "${steps}" ${i} type)
+    string(JSON name GET "${steps}" ${i} name)
+    list(GET types ${i} expected_type)
+    list(GET names ${i} expected_name)
+    if(NOT fields EQUAL 2 OR NOT type STREQUAL expected_type OR NOT name STREQUAL expected_name)
+      message(FATAL_ERROR "quality_evidence: Windows baseline workflow step ${i} changed")
+    endif()
+  endforeach()
+  get_filename_component(tool_dir "${CMAKE_COMMAND}" DIRECTORY)
+  find_program(quality_ctest NAMES ctest HINTS "${tool_dir}" NO_DEFAULT_PATH REQUIRED)
+  find_program(quality_cpack NAMES cpack HINTS "${tool_dir}" NO_DEFAULT_PATH REQUIRED)
+  message(STATUS "quality_evidence: Windows baseline uses the five original preset steps; tests serialized")
+  execute_process(COMMAND "${CMAKE_COMMAND}" --preset "${config}"
+    WORKING_DIRECTORY "${tree}" COMMAND_ERROR_IS_FATAL ANY)
+  execute_process(COMMAND "${CMAKE_COMMAND}" --build --preset "${config}"
+    WORKING_DIRECTORY "${tree}" COMMAND_ERROR_IS_FATAL ANY)
+  execute_process(COMMAND "${quality_ctest}" --preset "${config}" --parallel 1
+    WORKING_DIRECTORY "${tree}" COMMAND_ERROR_IS_FATAL ANY)
+  execute_process(COMMAND "${quality_cpack}" --preset "${config}"
+    WORKING_DIRECTORY "${tree}" COMMAND_ERROR_IS_FATAL ANY)
+  execute_process(COMMAND "${quality_ctest}" --preset "${config}-release" --parallel 1
+    WORKING_DIRECTORY "${tree}" COMMAND_ERROR_IS_FATAL ANY)
+endfunction()
+if(QUALITY_BASE_WORKFLOW_ONLY)
+  return()
+endif()
 if(NOT EXISTS "${BUILD}/junit.xml")
   message(FATAL_ERROR "quality_evidence: missing junit")
 endif()
@@ -149,8 +210,7 @@ if(BUILD_BASE)
   set(tree "${BUILD}/quality-base")
   execute_process(COMMAND git -C "${ROOT}" worktree add --detach "${tree}" "${base}" COMMAND_ERROR_IS_FATAL ANY)
   file(COPY "${ROOT}/build/pins" DESTINATION "${tree}/build")
-  execute_process(COMMAND "${CMAKE_COMMAND}" --workflow --preset "${CONFIG}"
-    WORKING_DIRECTORY "${tree}" COMMAND_ERROR_IS_FATAL ANY)
+  quality_base_workflow("${tree}" "${CONFIG}")
   execute_process(COMMAND "${CMAKE_COMMAND}" -DROOT=${tree} -DBUILD=${tree}/build/${CONFIG}
     -DOUT=${BUILD}/quality-base.json -DSHA=${base} -DCONFIG=${CONFIG} -DSOURCE=${SOURCE}
     -P "${CMAKE_CURRENT_LIST_FILE}" COMMAND_ERROR_IS_FATAL ANY)
