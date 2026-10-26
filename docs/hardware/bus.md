@@ -312,3 +312,16 @@ Held RDY and HALT cycles each carry their own φ2 count. So an edge latched duri
 fell in, not the cycle that completes the access. After `STA WSYNC`, an edge at tick 100 falls in held cycle 25 of
 `CLC`'s opcode fetch, which completes at φ2 115. Where the CPU compares that count, and so after which instruction
 it takes the NMI, is in `docs/hardware/sally.md`, NMI.
+
+The run fuzz replay includes all fourteen accepted BankSet ROM/RAM geometries
+with expansion off, XBoard and XM in both regions (84 generated profiles plus
+38 prior inputs). It traverses every control byte, window boundaries, disabled
+overlays, absent registers and repeated stores before actual VBE/HALT execution
+under loops/JAM. Independent instances compare status, ticks, regional native
+video and PCM with no allocator calls after load. PAL buffers hold 320x292 pixels
+and 962 samples. The test input cap is the supported 1,048,576-byte ROM plus
+128-byte header, checked against the fuzzer configuration; backing remains at most
+1,212,416 bytes, including 32 KiB cart RAM and 128 KiB expansion RAM. The complete
+122-input local replay measured 1.21 seconds; its provisional three-second
+deadline retains the existing platform/sanitizer scaling and needs hosted
+calibration. The emulated four-line replay tail assertion is unchanged.

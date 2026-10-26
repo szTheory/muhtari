@@ -1,7 +1,7 @@
 /* Bounded execution cartridges: retain the original headerless 48 KiB
    linear builder, and honor explicit retail-board inputs with supported
    headers and fixed-window vectors. Every builder returns its actual
-   length and requested board; output storage never exceeds 131200 bytes. */
+   length and requested board; output storage is the supported image cap. */
 #ifndef MUHTARI_FUZZ_RUN_CART_H
 #define MUHTARI_FUZZ_RUN_CART_H
 
@@ -11,7 +11,7 @@
 
 #include "muhtari.h"
 
-#define RUN_CART_BYTES 131200u
+#define RUN_CART_BYTES MUHTARI_IMAGE_SIZE_MAX
 #define RUN_LINEAR_BYTES 49152u
 
 struct run_cart_info {
@@ -24,6 +24,8 @@ struct run_cart_info {
 static inline uint32_t run_cart_board(const uint8_t *data, size_t size)
 {
     if (size >= 128u && memcmp(data + 1u, "ATARI7800", 9u) == 0) {
+        if (data[0] >= 4u && (data[65] & 0x80u) != 0u && data[65] != 0x82u)
+            return MUHTARI_BOARD_BANKSET;
         if (data[53] == 1u)
             return MUHTARI_BOARD_ACTIVISION;
         if (data[53] == 2u)
@@ -41,6 +43,15 @@ static inline struct run_cart_info run_cart_build(const uint8_t *data, size_t si
     uint32_t body = board == MUHTARI_BOARD_ACTIVISION ? 131072u
                     : board == MUHTARI_BOARD_ABSOLUTE ? 65536u
                                                       : 32768u;
+    if (board == MUHTARI_BOARD_BANKSET) {
+        static const uint32_t halves[] = {32768u, 49152u, 53248u, 131072u, 262144u, 524288u};
+        uint32_t declared = ((uint32_t)data[49] << 24) | ((uint32_t)data[50] << 16) |
+                            ((uint32_t)data[51] << 8) | data[52];
+        body = 65536u;
+        for (size_t i = 0u; i < sizeof halves / sizeof halves[0]; i++)
+            if (declared == 2u * halves[i])
+                body = declared;
+    }
     if (board != MUHTARI_BOARD_LINEAR) {
         result.bytes = 128u + body;
         memset(cart, 0, result.bytes);
@@ -54,17 +65,32 @@ static inline struct run_cart_info run_cart_build(const uint8_t *data, size_t si
                    : board == MUHTARI_BOARD_ABSOLUTE ? 2u
                                                      : 0u;
         cart[54] = board == MUHTARI_BOARD_FRACTALUS ? 0x80u : 0u;
+        if (size >= 128u) {
+            cart[57] = data[57] & 1u;
+            if (board == MUHTARI_BOARD_BANKSET) {
+                cart[0] = 4u;
+                cart[64] = body / 2u >= 131072u ? 1u : 0u;
+                uint8_t ram = data[65] & 3u;
+                if (body == 98304u || body == 106496u || ram == 2u)
+                    ram = 0u;
+                cart[65] = 0x80u | ram;
+                cart[67] = 3u;
+            }
+        }
         if (size > 128u) {
             size_t copied = size - 128u < body ? size - 128u : body;
             memcpy(cart + 128u, data + 128u, copied);
         }
         /* All three boards have a fixed $E000 window; random execution
            starts there, never in a switched bank. */
-        uint8_t *f = cart + result.bytes - 8u;
-        f[0] = 0xFFu;
-        f[1] = 0xE7u;
-        f[4] = 0u;
-        f[5] = 0xE0u;
+        unsigned sets = board == MUHTARI_BOARD_BANKSET ? 2u : 1u;
+        for (unsigned set = 0u; set < sets; set++) {
+            uint8_t *f = cart + 128u + (set + 1u) * (body / sets) - 8u;
+            f[0] = 0xFFu;
+            f[1] = 0xE7u;
+            f[4] = 0u;
+            f[5] = 0xE0u;
+        }
         return result;
     }
     size_t n = size < RUN_LINEAR_BYTES ? size : RUN_LINEAR_BYTES;

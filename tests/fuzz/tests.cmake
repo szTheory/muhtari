@@ -173,13 +173,13 @@ if(MUHTARI_FUZZ)
   set_tests_properties(fuzz.run.seeds PROPERTIES FIXTURES_SETUP fuzz_run_seeds)
   muhtari_add_test(NAME fuzz.run
     COMMAND muhtari-fuzz-run ${fuzz_run_corpora}
-      -max_total_time=60 -timeout=2 -max_len=131200 -artifact_prefix=crash/
+      -max_total_time=60 -timeout=2 -max_len=1048704 -artifact_prefix=crash/
     LABELS fuzz TIMEOUT 123)  # 2 x 61.13 s, fuzz job, slowest of 11 runs, run 39381240735
   set_tests_properties(fuzz.run PROPERTIES
     FIXTURES_REQUIRED fuzz_run_seeds WORKING_DIRECTORY ${fuzz_run_work})
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
-    LABELS fuzz TIMEOUT 2)  # ceil(2 x 0.62 s), complete serial run 40152881373; provisional n=1
+    LABELS fuzz TIMEOUT 3)  # provisional ceil(2 x 1.21 s), complete 122-input local replay
   # The regression's short deadline must not compete with three active
   # libFuzzer jobs (run 40152408965); keep the complete workload and bound.
   set_tests_properties(fuzz.regress.run PROPERTIES RUN_SERIAL TRUE)
@@ -201,7 +201,7 @@ else()
   # The run target's seeds, an empty input among them, and its regressions.
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
-    LABELS fuzz portable TIMEOUT 1)  # 2 x 0.09 s, wasm32 0.26 s / 3, slowest of 8 runs, run 39377950148
+    LABELS fuzz portable TIMEOUT 3)  # provisional ceil(2 x 1.21 s), complete 122-input local replay
   # Fault prevented: the run replay passing having run nothing.
   set(fuzz_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-fuzz-run-replay>)
   string(REPLACE ";" "$<SEMICOLON>" fuzz_cmd "${fuzz_cmd}")
