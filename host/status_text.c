@@ -36,7 +36,7 @@ const char *muhtari__status_text(muhtari_status status)
     case MUHTARI_STATUS_ERR_UNSUPPORTED_REGION:
         return "unsupported region: PAL (planned)";
     case MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE:
-        return "unsupported controller";
+        return "unsupported device";
     case MUHTARI_STATUS_ERR_INVALID_HSC:
         return "invalid HSC firmware or attachment";
     }
@@ -94,7 +94,7 @@ const char *muhtari__bit_name(muhtari__bit_set set, uint32_t bit)
         "halt_banked_ram",
     };
     static const char *const sound[] = {
-        "pokey_4000", "pokey_450", "pokey_440", "pokey_800", "ym2151", "covox",
+        "pokey_4000", "pokey_450", "pokey_440", "pokey_800", "ym2151", "covox", "adpcm",
     };
     static const char *const devices[] = {"hsc", "savekey", "xm"};
     static const char *const flags[] = {"header", "hash_match", "activision_half_swapped"};

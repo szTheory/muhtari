@@ -104,6 +104,7 @@ static const char synopsis[] =
     "  --save-dir DIR      restore and save raw battery RAM in an existing directory\n"
     "  --save-interval F   dirty save cadence in completed frames (default 60)\n"
     "  --hsc M             high score cartridge: auto, on or off\n"
+    "  --expansion E       auto, off, xboard or xm (RAM/POKEY/HSC subset)\n"
     "  --hsc-rom FILE      optional exact 4096-byte HSC firmware\n"
     "  --probe FILE         print the cartridge image's fields and hashes\n"
     "  --help               print this text and the exit statuses\n"
@@ -419,6 +420,8 @@ typedef struct options {
     const char *save_dir;
     uint32_t save_interval;
     uint32_t hsc_mode;
+    uint32_t expansion;
+    int has_expansion;
     int has_hsc;
     const char *hsc_rom;
     int printed; /* --help or --version ran; nothing else to do */
@@ -610,6 +613,16 @@ static int parse_options(int argc, char **argv, options *o)
                 return usage("--save-dir and --hsc-rom each need one path");
             }
             *out = value;
+        } else if (strcmp(arg, "--expansion") == 0) {
+            if (o->has_expansion || value == NULL ||
+                (strcmp(value, "auto") != 0 && strcmp(value, "off") != 0 &&
+                 strcmp(value, "xboard") != 0 && strcmp(value, "xm") != 0))
+                return usage("--expansion needs auto, off, xboard or xm once");
+            o->has_expansion = 1;
+            o->expansion = strcmp(value, "off") == 0 ? MUHTARI_EXPANSION_OFF
+                           : strcmp(value, "xboard") == 0 ? MUHTARI_EXPANSION_XBOARD
+                           : strcmp(value, "xm") == 0 ? MUHTARI_EXPANSION_XM
+                                                       : MUHTARI_EXPANSION_AUTO;
         } else if (strcmp(arg, "--hsc") == 0) {
             if (o->has_hsc || value == NULL ||
                 (strcmp(value, "auto") != 0 && strcmp(value, "on") != 0 &&
@@ -643,7 +656,8 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
         return usage("--save-interval needs --save-dir");
     if (o->save_interval == 0u)
         o->save_interval = 60u;
-    if ((o->save_dir != NULL || o->hsc_rom != NULL || o->has_hsc) && o->rom == NULL) {
+    if ((o->save_dir != NULL || o->hsc_rom != NULL || o->has_hsc || o->has_expansion) &&
+        o->rom == NULL) {
         return usage("save and HSC options need a cartridge FILE");
     }
     if (o->diagnostic && (o->rom == NULL || o->frames == 0u || o->bench)) {
@@ -1108,6 +1122,12 @@ static int save_flush(save_context *save, muhtari *m)
    sha256_headerless, must match it. A refusal by kind, board or region
    exits 77, a mismatch, a malformed image, an invalid BIOS or any other
    failure 1. Returns the exit status. */
+static const char *expansion_name(uint32_t kind)
+{
+    return kind == MUHTARI_EXPANSION_XM ? "xm" : kind == MUHTARI_EXPANSION_XBOARD ? "xboard"
+                                           : kind == MUHTARI_EXPANSION_OFF ? "off" : "auto";
+}
+
 static int load(muhtari *m, const char *path, uint32_t region, const char *movie_path,
                 const muhtari__movie_header *h, const char *bios_path, const options *opt)
 {
@@ -1154,10 +1174,28 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
     media.bios = bios;
     media.bios_size = bios_n;
     media.hsc_mode = opt->hsc_mode;
+    media.expansion = opt->expansion;
     media.port[0] = h != NULL ? h->device[0] : opt->port[0];
     media.port[1] = h != NULL ? h->device[1] : opt->port[1];
     uint8_t *firmware = NULL;
+    muhtari_cart_info cart = {0};
+    cart.size = (uint32_t)sizeof cart;
+    muhtari_status probed = muhtari_probe(image, n, &cart);
+    uint32_t expansion = media.expansion;
+    if (expansion == MUHTARI_EXPANSION_AUTO)
+        expansion = (cart.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM
+                                                          : MUHTARI_EXPANSION_OFF;
+    int attached = media.hsc_mode == MUHTARI_HSC_ON ||
+                   (media.hsc_mode == MUHTARI_HSC_AUTO &&
+                    ((cart.devices & MUHTARI_DEVICE_HSC) != 0u ||
+                     expansion == MUHTARI_EXPANSION_XM));
     if (opt->hsc_rom != NULL) {
+        if (!attached || probed != MUHTARI_STATUS_OK) {
+            fprintf(stderr, "muhtari-run: HSC firmware requires attached HSC\n");
+            free(image);
+            free(bios);
+            return MUHTARI__EXIT_FAILURE;
+        }
         firmware = (uint8_t *)malloc(4097u);
         FILE *f = save_read_open(opt->hsc_rom);
         int bad = firmware == NULL || f == NULL;
@@ -1211,8 +1249,14 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
     }
     fprintf(stderr, "muhtari-run: %s: %s\n",
             st == MUHTARI_STATUS_ERR_INVALID_BIOS ? bios_path : path, muhtari__status_text(st));
+    if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE) {
+        for (uint32_t bit = 0u; bit < 32u; bit++)
+            if ((cart.sound >> bit) & 1u)
+                fprintf(stderr, "muhtari-run: unavailable sound configuration: %s\n",
+                        muhtari__bit_name(MUHTARI__BITS_SOUND, bit));
+    }
     if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_2600 || st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ||
-        st == MUHTARI_STATUS_ERR_UNSUPPORTED_REGION) {
+        st == MUHTARI_STATUS_ERR_UNSUPPORTED_REGION || st == MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE) {
         return MUHTARI__EXIT_REFUSED;
     }
     return MUHTARI__EXIT_FAILURE;
@@ -1359,6 +1403,14 @@ static int run(const options *opt, replay *mv)
                    "par_den %u\npalette %s\n",
                    pal ? "pal" : "ntsc", info.width, info.height, info.fps_num, info.fps_den,
                    info.par_num, info.par_den, pal ? "warm_pal" : "warm_ntsc") < 0)
+            status = MUHTARI__EXIT_FAILURE;
+        print_bits("requested_devices", MUHTARI__BITS_DEVICES, m->cart.info.devices);
+        print_bits("requested_sound", MUHTARI__BITS_SOUND, m->cart.info.sound);
+        muhtari_battery_info b = {0};
+        b.size = (uint32_t)sizeof b;
+        (void)muhtari_get_battery(m, &b);
+        if (printf("expansion %s\nhsc_attached %u\n", expansion_name(info.expansion),
+                   b.hsc_attached) < 0)
             status = MUHTARI__EXIT_FAILURE;
     }
     uint64_t audio_frames = 0u, audio_samples = 0u;

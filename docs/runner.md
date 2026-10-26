@@ -49,13 +49,17 @@ muhtari-run --help | --version
 | `--bios FILE` | The BIOS image `--boot bios` runs: 4,096 or 16,384 bytes whose reset vector points inside it. Its SHA-256 is printed on standard error as `bios_sha256 <hex>`. Any other file exits 1 with `muhtari-run: FILE: not a 4 KiB or 16 KiB BIOS image`. A cartridge the BIOS rejects exits 77 with `muhtari-run: FILE: the BIOS rejected the cartridge`, after the frame in which it did. |
 | `--save-dir DIR` | Opt into per-game raw battery files in an existing accessible directory. Requires a cartridge, even when it has no battery. See [Battery files](#battery-files). |
 | `--save-interval F` | Persist dirty battery bytes every F completed frames, from 1 to 4294967295; default 60. Requires `--save-dir`. |
-| `--hsc auto\|on\|off` | Resolve HSC from cartridge metadata (default), force it on, or suppress it. Requires a cartridge. |
+| `--hsc auto\|on\|off` | Auto attaches for an HSC request or effective XM; On forces attachment, Off suppresses it. Requires a cartridge. |
 | `--hsc-rom FILE` | Supply an exact 4,096-byte HSC firmware file, copied at load. Invalid size, unreadable file or an explicit `--hsc off` conflict exits 1 before import or execution. |
 | `--probe FILE` | Identify the cartridge image in FILE and print its fields and hashes. It takes exactly one file and no other option. |
 | `--help` | Print the usage text and the exit statuses. It takes no other arguments. |
 | `--version` | Print `muhtari-run` and the version. It takes no other arguments. |
 
 Anything else on the command line, including a second file name, is a usage error.
+
+`--expansion auto|off|xboard|xm` selects hardware at load. Auto follows any nonzero A78 XM request, otherwise Off; XBoard requires explicit selection. Off suppresses expansion only. Declared YM2151, Covox and ADPCM still refuse execution with exit77 and a named sound message.
+
+XM is a RAM/POKEY/HSC subset with medium physical confidence, without internal BIOS/top-slot switching, flash, PIA, flat48KiB mode, write protection, sticky locks, ROF aliases, PAL firmware selection or full-XM services. HSC firmware is read only for attached storage; a firmware request with detached HSC fails before file I/O. No gameplay compatibility is implied.
 
 ## Battery files
 
@@ -105,7 +109,7 @@ signature warnings as applicable. Unknown exact-sized firmware remains accepted.
 
 ## Output
 
-`--info` adds these eight newline-terminated key/value lines, in this order, after successful
+`--info` adds these newline-terminated key/value lines, in this order, after successful
 load, validation and output allocation and before any frames run. For PAL:
 
 ```text
@@ -121,6 +125,8 @@ palette warm_pal
 
 NTSC reports `ntsc`, 320, 242, 39375000, 656711, 6, 7 and `warm_ntsc`, respectively.
 Argument order does not change the report. It describes the effective successful session;
+After the palette line, `requested_devices` and `requested_sound` retain the probe requests, `expansion` reports `off`, `xboard` or `xm`, and `hsc_attached` reports physical attachment as0/1. These fields do not describe volatile CPU decode.
+
 `--probe` continues to describe the file. Without `--info`, ordinary output is unchanged.
 
 `--diagnostic` prints exactly `diagnostic `, 512 lowercase hexadecimal digits,
@@ -388,7 +394,7 @@ stopping. Forced process or console termination has no final-flush guarantee.
   1  failure  a file could not be read or written, an image or a movie is malformed, truncated or too large, a BIOS is invalid, a movie names another cartridge or BIOS, memory ran out or the core failed
   2  usage    the command line is invalid or conflicts with the movie's header, so nothing ran
   4  save-size  the save file is larger than the attached battery RAM
- 77  refused  the image is a 2600 cartridge, or uses a board or a region this version does not emulate, or the BIOS rejected it
+ 77  refused  the image is a 2600 cartridge, or uses a board, device or region this version does not emulate, or the BIOS rejected it
 ```
 
 Errors and usage messages go to standard error; standard output holds only the results above.

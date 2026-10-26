@@ -323,6 +323,45 @@ static void exact_file(const char *path, const uint8_t *want, size_t bytes)
     free(got);
 }
 
+static void expansion_images(const char *dir)
+{
+    char path[1024];
+    uint8_t image[128u + 106496u];
+    memset(image, 0, sizeof image);
+    image[0] = 4u;
+    memcpy(image + 1u, "ATARI7800", 9u);
+    image[51] = 0x40u;
+    image[55] = image[56] = 1u;
+    memset(image + 128u, 0x02, 16384u);
+    static const uint8_t program[] = {0xA9, 0x08, 0x8D, 0x70, 0x04, 0xEE, 0x00, 0x10, 0x02};
+    memcpy(image + 128u, program, sizeof program);
+    image[128u + 0x3FFCu] = 0u;
+    image[128u + 0x3FFDu] = 0xC0u;
+    for (unsigned value = 1u; value <= 2u; value++) {
+        image[63] = (uint8_t)value;
+        snprintf(path, sizeof path, "%s/xm%u.a78", dir, value);
+        write_bytes(path, image, 128u + 16384u);
+    }
+    image[63] = 0u;
+    static const char *const sounds[] = {"ym2151", "covox", "adpcm"};
+    for (unsigned bit = 0u; bit < 3u; bit++) {
+        image[67] = (uint8_t)(8u << bit);
+        snprintf(path, sizeof path, "%s/%s.a78", dir, sounds[bit]);
+        write_bytes(path, image, 128u + 16384u);
+    }
+    image[67] = 0u;
+    image[50] = 1u;
+    image[51] = 0xA0u;
+    image[65] = 0x80u;
+    snprintf(path, sizeof path, "%s/ram52.a78", dir);
+    write_bytes(path, image, sizeof image);
+    memset(image, 0x64, 4096u);
+    snprintf(path, sizeof path, "%s/hsc.bin", dir);
+    write_bytes(path, image, 4096u);
+    snprintf(path, sizeof path, "%s/bad-hsc.bin", dir);
+    write_bytes(path, image, 4095u);
+}
+
 static int consume(const char *dir, const char *rom)
 {
     char directory[1024], image[1024];
@@ -581,7 +620,7 @@ static void save_options(const char *dir)
     char *dual[] = {"muhtari-run", "--frames", "1",        "--port1",
                     "savekey",     "--port2",  "atarivox", rom};
     frames_run = 0;
-    CHECK_EQ_U64(runner_entry(8, dual), 1);
+    CHECK_EQ_U64(runner_entry(8, dual), 77);
     CHECK_EQ_U64(frames_run, 0);
     cartridge(rom, 2u, 0);
     char *suppress[] = {"muhtari-run", "--frames", "1", "--port2", "none", rom};
@@ -751,6 +790,8 @@ int main(int argc, char **argv)
         faults(argv[1]);
     else if (strcmp(argv[2], "options") == 0)
         save_options(argv[1]);
+    else if (strcmp(argv[2], "expansion") == 0)
+        expansion_images(argv[1]);
     else if (strcmp(argv[2], "cadence") == 0)
         cadence(argv[1]);
 #ifndef __wasi__
