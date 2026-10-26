@@ -73,7 +73,7 @@ _Static_assert(MARIA_TERMINATOR == 4u * MARIA_DL_BYTE, "a terminator is a full 4
    board, which answers MARIA as it answers the CPU (A7800-MARIA,
    section 4.7), or to the BIOS where it is mapped (src/boot.c). Every
    fetch puts its byte on the bus. */
-static uint8_t fetch(muhtari *m, uint16_t addr)
+static uint8_t fetch(muhtari *m, uint16_t addr, uint64_t tick)
 {
     uint8_t v = m->bus.open_bus;
     if (addr < 0x0200u && (addr & 0xFFu) >= 0x40u) {
@@ -82,7 +82,7 @@ static uint8_t fetch(muhtari *m, uint16_t addr)
         v = m->ram[(uint16_t)(addr - MUHTARI__RAM_BASE)];
     } else if (addr >= 0x0400u && !(addr < 0x0600u && (addr & 0x80u) != 0u)) {
         v = muhtari__boot_bios_maps(m, addr) ? muhtari__boot_bios_byte(m, addr)
-                                             : muhtari__cart_read(m, addr, 1);
+                                             : muhtari__cart_dma_read(m, addr, tick);
     }
     m->bus.open_bus = v;
     return v;
@@ -91,12 +91,12 @@ static uint8_t fetch(muhtari *m, uint16_t addr)
 /* Reads the DLL entry at dll and makes it the zone's: byte 0 sets OFFSET,
    H16, H8 and DLI, bytes 1 and 2 the DL address, high byte first
    (A7800-MARIA section 2.1). */
-static void read_entry(muhtari *m)
+static void read_entry(muhtari *m, uint64_t tick)
 {
     struct muhtari__maria *ma = &m->maria;
-    uint8_t b0 = fetch(m, ma->dll);
-    uint8_t hi = fetch(m, (uint16_t)(ma->dll + 1u));
-    uint8_t lo = fetch(m, (uint16_t)(ma->dll + 2u));
+    uint8_t b0 = fetch(m, ma->dll, tick);
+    uint8_t hi = fetch(m, (uint16_t)(ma->dll + 1u), tick + MARIA_DL_BYTE);
+    uint8_t lo = fetch(m, (uint16_t)(ma->dll + 2u), tick + 2u * MARIA_DL_BYTE);
     ma->dll = (uint16_t)(ma->dll + MARIA_DLL_ENTRY);
     ma->entry = b0;
     ma->offset = (uint8_t)(b0 & MARIA_ENTRY_OFFSET);
@@ -107,7 +107,7 @@ uint64_t muhtari__maria_vbe(muhtari *m, uint64_t t0)
 {
     struct muhtari__maria *ma = &m->maria;
     ma->dll = (uint16_t)(((uint16_t)ma->reg[MARIA_DPPH] << 8) | ma->reg[MARIA_DPPL]);
-    read_entry(m);
+    read_entry(m, t0 + MARIA_PLA_START);
     return t0 + MARIA_VBE_LEN;
 }
 
@@ -142,7 +142,7 @@ static int dl_byte(struct walk *w, uint8_t *v)
     if (!runs(w)) {
         return 0;
     }
-    *v = fetch(w->m, w->p);
+    *v = fetch(w->m, w->p, w->t);
     w->p = (uint16_t)(w->p + 1u);
     w->t += MARIA_DL_BYTE;
     return 1;
@@ -197,7 +197,7 @@ static int gfx(struct walk *w, uint16_t addr, int hole, uint8_t pal)
         return 0;
     }
     if (!hole) {
-        draw(w, pal, fetch(w->m, addr));
+        draw(w, pal, fetch(w->m, addr, w->t));
         w->st->bytes++;
     }
     w->t += MARIA_GFX_BYTE;
@@ -240,7 +240,8 @@ static int indirect(struct walk *w, uint16_t base, uint32_t width, uint8_t pal)
         }
         addr =
             (uint16_t)(((uint32_t)ma->reg[MARIA_CHARBASE] << 8) +
-                       (uint32_t)fetch(w->m, (uint16_t)(base + i)) + ((uint32_t)ma->offset << 8));
+                       (uint32_t)fetch(w->m, (uint16_t)(base + i), w->t) +
+                       ((uint32_t)ma->offset << 8));
         w->st->bytes++;
         w->t += MARIA_CHARMAP;
         hole = holey(ma->entry, addr);
@@ -358,7 +359,9 @@ uint64_t muhtari__maria_dma_line(muhtari *m, uint64_t t0, uint64_t lrc, uint32_t
     }
     if (last) {
         st->flags |= MUHTARI__LINE_LAST;
-        read_entry(m);
+        /* The third DLL byte is sampled before HALTRST on that tick
+           (A7800-MARIA section 4.2). */
+        read_entry(m, end - 2u * MARIA_DL_BYTE);
         if ((ma->entry & MARIA_ENTRY_DLI) != 0u) {
             st->flags |= MUHTARI__LINE_DLI;
             ma->features |= MUHTARI__FEAT_DLI;
@@ -648,8 +651,12 @@ uint64_t muhtari__maria_burst(muhtari *m, uint64_t fall)
     struct muhtari__maria *ma = &m->maria;
     struct muhtari__line_stats st;
     uint64_t c2 = m->bus.ticks;
+    uint64_t t0 = fall + MARIA_HALT_T0;
+    if (c2 > t0 + MARIA_PLA_START) {
+        t0 = c2 - MARIA_PLA_START;
+    }
     uint64_t haltrst =
-        muhtari__maria_dma_line(m, fall + MARIA_HALT_T0, ma->dma_lrc, ma->dma_line, &st);
+        muhtari__maria_dma_line(m, t0, ma->dma_lrc, ma->dma_line, &st);
     if ((st.flags & MUHTARI__LINE_DLI) != 0u) {
         uint64_t phi1 = c2 + ((haltrst - c2) / MARIA_CPU_CYCLE + MARIA_DLI_PHI1) * MARIA_CPU_CYCLE;
         if (muhtari__bus_raise_nmi(m, phi1) && ma->dma_line < muhtari__timing(m).lines) {

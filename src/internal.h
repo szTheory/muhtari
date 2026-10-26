@@ -176,6 +176,10 @@ struct muhtari__bus {
     uint64_t halt_at;
     uint64_t halt_until;
     uint64_t halt_fall;
+    /* Electrical MARIA interval, independent of the scheduling stage:
+       second actual phi2 fall through HALTRST (hardware/bus.md). */
+    uint64_t maria_from;
+    uint64_t maria_until;
     uint64_t nmi_at;
     uint8_t open_bus;
     uint8_t inptctrl;
@@ -658,6 +662,7 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
    at power-on and fills the RAM by ram_fill. */
 void muhtari__cart_reset(muhtari *m);
 uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria);
+uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick);
 void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v);
 uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr);
 
@@ -736,6 +741,7 @@ void muhtari__riot_pins_changed(muhtari *m);
    MUHTARI__LINE_DMA_BLOCKED flag. */
 #define MUHTARI__HALT_UNTIL_MARIA UINT64_MAX
 int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
+int muhtari__bus_maria_selected(const muhtari *m, uint64_t tick);
 int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
 
 /* The tick of SALLY's n-th phi1 after tick t, n >= 1: its cycle starts,

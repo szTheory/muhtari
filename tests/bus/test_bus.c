@@ -423,6 +423,114 @@ static int bankset_frame(void)
     return ok;
 }
 
+static int halt_views(void)
+{
+    static uint8_t rom[65536u];
+    static muhtari snapshot;
+    static const uint8_t second[] = {8u, 9u, 10u, 11u};
+    static const uint8_t c2[] = {8u, 10u, 10u, 12u};
+    static const uint8_t release[] = {15u, 17u, 17u, 19u};
+    int ok = 1;
+    for (unsigned row = 0u; row < 4u; row++) {
+        muhtari *m = fresh(LOCKED_7800);
+        memset(rom, 0, sizeof rom);
+        m->cart.rom = rom;
+        m->cart.info.board = MUHTARI_BOARD_BANKSET;
+        m->cart.info.rom_size = sizeof rom;
+        rom[0x3000u] = 0x51u;
+        rom[32768u + 0x3000u] = 0xA7u;
+        m->bus.halt_gate_writes = 2u;
+        m->maria.dl = 0x8000u; /* empty ordinary DL */
+        m->maria.offset = 1u;
+        m->maria.dma_lrc = 454u;
+        m->maria.dma_line = 20u;
+        muhtari__bus_request_halt(m, 0u, MUHTARI__HALT_UNTIL_MARIA);
+        (void)muhtari__bus_read(m, (row & 2u) != 0u ? 0x0480u : 0x1800u);
+        (void)muhtari__bus_read(m, (row & 1u) != 0u ? 0x0480u : 0xB000u);
+        ok &= expect_ticks("actual second fall", m->bus.maria_from, second[row],
+                           "one fast edge", 4u);
+        ok &= expect_ticks("c2 starts", m->bus.ticks, c2[row], "one cycle", 4u);
+        ok &= muhtari__cart_dma_read(m, 0xB000u, second[row] - 1u) == 0x51u;
+        ok &= muhtari__cart_dma_read(m, 0xB000u, second[row]) == 0xA7u;
+        memcpy(&snapshot, m, sizeof snapshot);
+        ok &= muhtari__bus_peek(m, 0xB000u) == 0x51u;
+        ok &= muhtari__peek(m, 0xB000u) == 0x51u;
+        ok &= memcmp(&snapshot, m, sizeof snapshot) == 0;
+        (void)muhtari__bus_read(m, 0x1800u);
+        /* Empty DL: four fetches 2 ticks apart, then 1-tick tail.
+           Thus HALTRST-7 is the observed first fetch, with no added LRC. */
+        ok &= expect_ticks("first fetch", m->bus.maria_until - 7u, c2[row],
+                           "retroactive fetch", 6u);
+        ok &= expect_ticks("HALTRST", m->bus.maria_until, release[row],
+                           "enlarged deadline", 454u);
+        ok &= muhtari__cart_dma_read(m, 0xB000u, release[row] - 1u) == 0xA7u;
+        ok &= muhtari__cart_dma_read(m, 0xB000u, release[row]) == 0x51u;
+        /* Non-HALT VBE uses CPU DLL data despite being called by MARIA. */
+        rom[0x2000u] = 7u;
+        rom[32768u + 0x2000u] = 3u;
+        m->maria.reg[0x0Cu] = 0xA0u;
+        m->maria.reg[0x10u] = 0u;
+        (void)muhtari__maria_vbe(m, m->bus.ticks);
+        ok &= m->maria.offset == 7u;
+        /* The next DLL's final byte is sampled on HALTRST, before release. */
+        m->maria.dl = 0x8000u;
+        m->maria.dll = 0xA000u;
+        m->maria.offset = 0u;
+        rom[32768u + 0x2002u] = 0x69u;
+        uint64_t fall = m->bus.ticks;
+        m->maria.dma_lrc = fall + 454u;
+        muhtari__bus_request_halt(m, fall, MUHTARI__HALT_UNTIL_MARIA);
+        (void)muhtari__bus_read(m, 0x1800u);
+        (void)muhtari__bus_read(m, 0x1800u);
+        (void)muhtari__bus_read(m, 0x1800u);
+        ok &= m->maria.dl == 0x0069u && m->maria.offset == 3u;
+        /* A delayed origin cannot extend the absolute LRC abort budget. */
+        fall = m->bus.ticks;
+        m->maria.dl = 0x8000u;
+        m->maria.offset = 1u;
+        m->maria.dma_lrc = fall + 10u;
+        muhtari__bus_request_halt(m, fall, MUHTARI__HALT_UNTIL_MARIA);
+        (void)muhtari__bus_read(m, 0x0480u);
+        (void)muhtari__bus_read(m, 0x0480u);
+        (void)muhtari__bus_read(m, 0x1800u);
+        ok &= m->bus.maria_until == fall + 13u;
+        ok &= (m->maria.stats[20].flags & MUHTARI__LINE_ABORTED) != 0u;
+    }
+    return ok;
+}
+
+/* Bus-level counterexample, not a demonstrated ROM instruction stream:
+   slow RIOT c0 then fast cartridge-RAM c1 commits at tick 10. */
+static int halt_store_order(void)
+{
+    static uint8_t rom[32768u], ram[16384u];
+    muhtari *m = fresh(LOCKED_7800);
+    memset(rom, 0, sizeof rom);
+    memset(ram, 0, sizeof ram);
+    m->bus.halt_gate_writes = 2u;
+    m->cart.rom = rom;
+    m->cart.ram = ram;
+    m->cart.info.board = MUHTARI_BOARD_LINEAR;
+    m->cart.info.rom_size = sizeof rom;
+    m->cart.info.ram_size = sizeof ram;
+    rom[256u] = 0x40u;
+    rom[257u] = 0xC0u;
+    ram[1u] = 31u;
+    ram[2u] = 0x80u;
+    m->maria.dl = 0x4000u;
+    m->maria.offset = 1u;
+    m->maria.dma_lrc = 454u;
+    m->maria.dma_line = 20u;
+    muhtari__bus_request_halt(m, 0u, MUHTARI__HALT_UNTIL_MARIA);
+    (void)muhtari__bus_read(m, 0x0480u);
+    muhtari__bus_write(m, 0x4000u, 1u);
+    int ok = m->bus.ticks == 10u && m->bus.maria_from == 10u && ram[0] == 1u;
+    (void)muhtari__bus_read(m, 0x1800u);
+    ok &= expect_count("committed c1 graphics", "cell", m->maria.line_ram[0][0], 3u,
+                       "pre-store graphics", 1u);
+    return ok;
+}
+
 static int halt_latency_two_cycles(void)
 {
     int ok = 1;
@@ -434,7 +542,7 @@ static int halt_latency_two_cycles(void)
     ok &= expect_ticks("c1", read_ticks(m), 4u, "one cycle of latency", 24u);
     ok &= expect_ticks("c2", read_ticks(m), 24u, "no freeze", 4u);
     ok &= expect_count("phi2 after c2", "cycles", m->bus.phi2, 9u, "frozen cycles uncounted", 4u);
-    return bankset_frame() && ok;
+    return bankset_frame() && halt_views() && halt_store_order() && ok;
 }
 
 /* A request at tick 2, inside a 6-tick cycle, takes effect at that cycle's

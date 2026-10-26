@@ -179,7 +179,13 @@ static uint64_t halt_cycle(muhtari *m)
     if (until == MUHTARI__HALT_UNTIL_MARIA) {
         until = muhtari__maria_burst(m, b->halt_fall);
     }
+    b->maria_until = until;
     return cycles_until(b->halt_fall, until);
+}
+
+int muhtari__bus_maria_selected(const muhtari *m, uint64_t tick)
+{
+    return tick >= m->bus.maria_from && tick < m->bus.maria_until;
 }
 
 /* Everything at a cycle's start whose data comes data ticks later: MARIA's
@@ -209,6 +215,12 @@ static void advance(muhtari *m, uint64_t k)
     if (b->nmi_pending != 0u && b->nmi_at <= b->ticks + k * BUS_FAST_TICKS) {
         uint64_t j = b->nmi_at > b->ticks ? (b->nmi_at - b->ticks - 1u) / BUS_FAST_TICKS : 0u;
         latch_nmi(m, b->phi2 + 1u + j);
+    }
+    /* RDY can already be holding c0/c1. Those still have real fast phi2
+       falls even though no CPU sample/store runs (bus.md, RDY and HALT). */
+    if (b->halt_stage == HALT_LOW && b->halt_cycles == HALT_RUN_CYCLES) {
+        b->maria_from = b->ticks + BUS_FAST_DATA;
+        b->maria_until = b->halt_until;
     }
     b->ticks += k * BUS_FAST_TICKS;
     b->phi2 += k;
@@ -314,6 +326,12 @@ static uint32_t begin(muhtari *m, enum bus_device dev, int is_read)
 
 static void end(muhtari *m, uint32_t len)
 {
+    /* The CPU sample/store has committed before this coincident selector
+       edge. Slow phi2 falls one tick before cycle completion (bus.md). */
+    if (m->bus.halt_stage == HALT_LOW && m->bus.halt_cycles == HALT_RUN_CYCLES) {
+        m->bus.maria_from = m->bus.ticks + data_at(len);
+        m->bus.maria_until = m->bus.halt_until;
+    }
     m->bus.ticks += len;
     m->bus.phi2++;
     /* A slow cycle finishes one tick after data. Motion due there must

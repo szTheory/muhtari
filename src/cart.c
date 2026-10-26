@@ -87,6 +87,9 @@ static uint32_t be32(const uint8_t *p)
    (docs/hardware/cartridge.md, Geometry). A refused board has none here. */
 static int cart_fits(const struct cart_board *b, size_t n)
 {
+    if (b->board == MUHTARI_BOARD_BANKSET) {
+        return n == 64u * CART_KIB && b->ram == 0u && b->options == 0u;
+    }
     if (b->board == MUHTARI_BOARD_FRACTALUS) {
         return n == 32u * CART_KIB && b->ram == 2u * CART_KIB && b->options == 0u;
     }
@@ -464,7 +467,7 @@ static int cart_refused(const struct cart_board *b)
 {
     return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME &&
             b->board != MUHTARI_BOARD_ABSOLUTE && b->board != MUHTARI_BOARD_ACTIVISION &&
-            b->board != MUHTARI_BOARD_FRACTALUS) ||
+            b->board != MUHTARI_BOARD_FRACTALUS && b->board != MUHTARI_BOARD_BANKSET) ||
            b->unsupported != 0u || (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
 }
 
@@ -914,6 +917,13 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
         return *ram;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_BANKSET:
+        /* CPU-then-MARIA halves; this linear profile ends at $FFFF
+           (cartridge preparation section 2.1, Bankset). */
+        if (addr >= 0x8000u) {
+            return c->rom[addr - 0x8000u];
+        }
+        break;
     case MUHTARI_BOARD_FRACTALUS:
         if (addr >= 0x8000u) {
             return c->rom[addr - 0x8000u];
@@ -959,6 +969,15 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
         break;
     }
     return m->bus.open_bus;
+}
+
+uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick)
+{
+    if (m->cart.rom != NULL && m->cart.info.board == MUHTARI_BOARD_BANKSET && addr >= 0x8000u &&
+        muhtari__bus_maria_selected(m, tick)) {
+        return m->cart.rom[32768u + (uint32_t)addr - 0x8000u];
+    }
+    return muhtari__cart_read(m, addr, 1);
 }
 
 uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
