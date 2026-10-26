@@ -214,12 +214,14 @@ frame's hash is the SHA-256 of its 320 x 242 colour bytes, as `muhtari-run --has
 - `boots@F`, the weak predicate: in the F frames from the hand-off (frame 1 on the fast boot, K with `--bios`),
   DMA ran, at least two distinct frames appeared and the CPU did not jam.
 
-A row whose title differs only because the BIOS left other state falls back to `boots@F;why=<reason>`, and the
-reason stays in the row. Five samples draw with `rand`, which 7800basic seeds from INTIM, and the BIOS leaves INTIM
-at another value than the fast boot does, so their screens differ between paths (`why=rng-seeded-from-intim`).
-`hiscoretable` shows one colour until frame 262, so its predicates use frame 300. `backuptest` and `languagetest` draw nothing by design and are
-`skipped`. `banksets` is `unsupported`, as the bankset board is refused. Every other row is `title@120` and passes
-on both paths.
+BIOS-dependent titles fall back to `boots@F;why=<reason>`. Five samples seed
+`rand` from INTIM, which differs between boot paths (`why=rng-seeded-from-intim`).
+`hiscoretable` draws after frame 262, so uses frame 300. `backuptest` and
+`languagetest` draw nothing and are skipped. The `banksets` sample remains
+unsupported because the pinned recipe does not assemble it; board support
+alone does not promote it. Old passing predicates are unchanged.
+Local diagnostic `mailbox@12` rows identify exact owned-template variants and
+numeric CRC evidence; see [compatibility](compatibility.md) for their scope.
 
 `title.simple.fast` and `title.simple.bios` evaluate `simple`'s row on both paths, reading its hash from the ledger
 at configure time. Every row of tier `pr` is evaluated on both paths by the `library` preset (ledger, below), in CI

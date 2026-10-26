@@ -64,17 +64,28 @@ file(WRITE "${OUT}" "# Compatibility
 Generated from `tests/compat/ledger.csv` by `tools/compat_doc.cmake`; do not edit it by hand.
 `docs/emulation-tests.md`, ledger, says what each column and status means and how a row is judged.
 
-NTSC board support includes linear, SuperGame, Activision, Absolute and Fractalus.
+Board support includes linear, SuperGame, Activision, Absolute, Fractalus and BankSet.
 Owned board diagnostics verify selected banking and physical RAM semantics; they do not promote an
 untested retail title to a passing gameplay result. The owned PAL diagnostic verifies raster timing,
 native video and sustained audio across the library, runner and libretro core; it does not establish
 PAL retail playability or hardware calibration. Its local-tier mailbox record names the executed
 diagnostic predicate, separately from the NTSC title/BIOS predicates evaluated by the library preset.
 [PAL evidence and limits](pal-tests.md) describe the numeric checks and confidence.
+Local mailbox@12 rows record representative owned BankSet32/no-RAM and page-zero
+XBoard/XM diagnostics executed by diag.bankset and diag.expansion. The same tests
+also cover all fourteen BankSet geometries, eight XBoard banks, both XM windows
+and sixteen pages, gate lifetimes, and selected PAL/dual-chip cases. These are
+model-conformance observations, not whole-library gameplay accounting. The historical
+7800basic banksets sample remains unexecuted because its pinned recipe does not
+assemble; board support does not promote its status or change old passing predicates.
+Metadata inclusion names capability, not gameplay acceptance. XM is a selected
+RAM/POKEY/HSC implementation profile with medium physical confidence; no YM2151,
+Covox/ADPCM, Souper/BupChip, internal XM firmware or full-XM services are available.
 [Cartridge behavior](hardware/cartridge.md) describes identified-only Activision AM normalization,
 original image identity, physical 2 KiB Fractalus RAM and selected compatibility/profile policies.
 [Host memory maps](libretro.md#achievements) expose fixed ROM and only the documented RAM aliases;
-banked windows and Fractalus mirrors above $4FFF remain descriptor holes.
+banked/HALT RAM, expansion-overlapped cartridge windows, XM HSC windows and Fractalus
+mirrors above $4FFF remain descriptor holes. Physical spans have separate lifetimes.
 
 The ledger has ${total} rows. ${weak} are judged by the weak predicate `boots@F` (the game booted, drew and
 kept running), not by a pinned title screen.

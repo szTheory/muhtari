@@ -5,8 +5,13 @@ An Atari 7800 ProSystem emulator core in C: a small library, a headless runner a
 **Status: early.** The core includes the CPU, graphics and TIA/POKEY sound. Cartridge-board and peripheral
 coverage remains limited; see the [compatibility ledger](docs/compatibility.md) for tested content. Releases are
 published automatically.
-NTSC board execution includes linear, SuperGame, Activision, Absolute and Fractalus cartridges.
+Board execution includes linear, SuperGame, Activision, Absolute, Fractalus and BankSet cartridges.
 Board diagnostics establish memory behavior; the ledger records tested gameplay separately.
+BankSet supports six ROM sizes per set and selected shared/HALT RAM combinations.
+XBoard and the XM RAM/POKEY/HSC subset are load-selected; XM metadata selects that subset automatically.
+These are owned diagnostic capabilities, with medium physical-XM confidence and no full-XM services,
+YM2151, Covox/ADPCM or Souper/BupChip. See [hardware limits](docs/hardware/cartridge.md#bankset)
+and [runner selection](docs/runner.md#options); they do not establish universal gameplay compatibility.
 PAL runs in the library, runner and libretro core at the console's rational rate with 320×292 native video.
 The owned PAL diagnostic verifies raster timing and sustained audio; it does not establish retail playability
 or calibrated hardware accuracy. See [PAL evidence and limits](docs/pal-tests.md).

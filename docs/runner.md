@@ -61,6 +61,19 @@ Anything else on the command line, including a second file name, is a usage erro
 
 XM is a RAM/POKEY/HSC subset with medium physical confidence, without internal BIOS/top-slot switching, flash, PIA, flat48KiB mode, write protection, sticky locks, ROF aliases, PAL firmware selection or full-XM services. HSC firmware is read only for attached storage; a firmware request with detached HSC fails before file I/O. No gameplay compatibility is implied.
 
+```sh
+muhtari-run --expansion xm --frames 12 --diagnostic game.a78
+```
+
+For an XM-declared image, Auto chooses the same hardware. Use `--expansion xboard`
+for XBoard or `--expansion off` to suppress expansion. `--probe` reports requests;
+the normal run reports committed selection and physical HSC attachment. Neither
+reports changing CPU gates as attachment changes. HSC starts hidden on XM;
+`--save-dir` can restore its physical bytes before software enables the windows.
+POKEY remains installed and sounding while register decode is off. See the
+[board maps and confidence limits](hardware/cartridge.md#xboard). BankSet 52 KiB
+sets require HSC Off when an expansion would otherwise attach it.
+
 ## Battery files
 
 ```sh
