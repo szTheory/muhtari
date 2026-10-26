@@ -367,18 +367,17 @@ cartridge. [MARIA expectations](hardware/maria.md) and
 | `tests/diag/activision.a78` | 27 records, mailbox ID 10: both tagged 8 KiB halves for all eight banks, four fixed windows, endpoints and hotspot neighbors; all executing code is fixed at $E000-$FFFF |
 | `tests/diag/absolute.a78` | 21 records, mailbox ID 11: bank-zero startup, D0/D1 selection and precedence, retain/high-bit policies, fixed ROM and nonselector writes |
 | `tests/diag/fractalus.a78` | 24 records, mailbox ID 12: initial zero RAM, adjacent-page aliases, upper mirrors, distinct physical locations, multiple patterns and fixed ROM |
+| `tests/diag/bankset.a78` | 17 CPU records, ID 20; bank sweeps, RAM/redirects and MARIA graphics |
 
-The three retail-board diagnostics use protocol version 1 and at most 27 records.
-Their numeric expectations precede first execution and follow the documented map
-and independently chosen fixture tags. Uncertain decoder edges, upper mirrors and
-startup state are selected compatibility/profile policies, not new cartridge
-measurements. Success proves these semantics rather than retail gameplay or PAL.
-`diag.retail` validates all three through the library, actual runner with
-`--frames 600 --diagnostic`, and the actual loaded libretro module. It also always
-runs the disposable Absolute tracer, so empty fixture admission cannot pass vacuously.
-The test owns numeric verdicts: magic, version, status, ROM identity, record count,
-CRC, record IDs, flags and values must all match. The runner only reports the fixed
-256 bytes at $2200-$22FF after its explicitly bounded normal run.
+[BankSet expectations and matrix](bankset-tests.md) precede three-host comparison.
+
+The retail diagnostics use protocol 1, at most 27 records and independent fixture
+tags. Decoder edges, mirrors and startup are compatibility/profile policies.
+`diag.retail` runs all three through the library, actual runner
+(`--frames 600 --diagnostic`) and loaded module, plus the persistent Absolute tracer.
+Its judge checks magic, version, status, identity, CRC, count, record order, flags
+and values. The runner reports the 256-byte mailbox after a bounded normal run.
+This proves the selected semantics, rather than retail gameplay or PAL.
 
 A diagnostic that defines `diag_nmi` gets it as its NMI vector; the others return from NMI at once.
 
@@ -442,6 +441,7 @@ commit the source, and then the `.a78` with its manifest row's digest and pin se
 | `diag.linear16`, `diag.bank6`, `diag.sg144` | the board ROMs' 4, 12 and 12 records against `expected.csv` |
 | `diag.modes` | the `modes` ROM's 2 records against `expected.csv` |
 | `diag.retail` | all three owned retail-board diagnostics through three actual deliverables, plus the persistent tracer and report/protocol fault controls |
+| `diag.bankset`, `diag.bankset_tracer` | complete geometry/RAM matrix and canonical three-host case |
 | `diag.rebuild` | the committed diagnostics and Clark's two builds rebuilt from source, byte for byte |
 | `diag.rebuild.self_test` | a manifest copy with one digit of `dma.a78`'s digest changed must fail with `tests/diag/dma.a78: SHA-256 drift` |
 | `diag.expected.self_test` | an `expected.csv` copy whose `null` value is 242 must fail on that record |

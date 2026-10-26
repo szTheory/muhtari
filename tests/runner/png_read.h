@@ -22,6 +22,10 @@ uint32_t png_read_crc(const uint8_t *p, size_t n);
    or -1 after naming the fault on standard error. */
 int png_read(const uint8_t *d, size_t n, uint8_t *raw);
 
+/* Same format checks for either supported native height, 242 or 292. raw
+   has height * PNG_READ_ROW bytes. Refuses every other height. */
+int png_read_height(const uint8_t *d, size_t n, uint8_t *raw, uint32_t height);
+
 /* Reads the file at path and parses it as png_read does. Returns 0, or -1
    after naming the fault on standard error. A row whose filter byte is not
    0 is a fault. */

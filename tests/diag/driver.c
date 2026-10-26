@@ -27,6 +27,7 @@
 #include "internal.h"
 #include "palette.h"
 #include "../../runner/sha256.h"
+#include "../runner/png_read.h"
 #ifdef DIAG_LIBRETRO
 #include "libretro.h"
 #ifdef _WIN32
@@ -508,13 +509,13 @@ static void rom_name(const char *path, char *out)
    owned diagnostic identities, independent of the cartridge implementation. */
 static uint32_t retail_id(const char *rom)
 {
-    return strcmp(rom, "smoke") == 0        ? 9u
-           : strcmp(rom, "activision") == 0 ? 10u
-           : strcmp(rom, "absolute") == 0   ? 11u
-           : strcmp(rom, "fractalus") == 0  ? 12u
-           : strcmp(rom, "battery") == 0    ? 13u
-           : strcmp(rom, "pal") == 0        ? 19u
-           : strcmp(rom, "bankset0") == 0    ? 20u
+    return strcmp(rom, "smoke") == 0          ? 9u
+           : strcmp(rom, "activision") == 0   ? 10u
+           : strcmp(rom, "absolute") == 0     ? 11u
+           : strcmp(rom, "fractalus") == 0    ? 12u
+           : strcmp(rom, "battery") == 0      ? 13u
+           : strcmp(rom, "pal") == 0          ? 19u
+           : strncmp(rom, "bankset", 7u) == 0 ? 20u
            : (strlen(rom) == 8u && strncmp(rom, "motion", 6u) == 0 &&
               (rom[6] == '4' || rom[6] == '5') && rom[7] >= 'a' && rom[7] <= 'c')
                ? 14u
@@ -560,18 +561,20 @@ static int retail_judge(const uint8_t mb[256], const char *rom)
         }
         printf("%s record %u value %u PASS\n", rom, i + 1u, value);
     }
+    if (strncmp(rom, "bankset", 7u) == 0) {
+        for (unsigned i = 10u; i < 256u; i++) {
+            if ((i < 16u || i >= 16u + 4u * count) && mb[i] != 0u) {
+                fprintf(stderr, "bankset: nonzero reserved or extra record bytes\n");
+                return 1;
+            }
+        }
+    }
     return 0;
 }
 
 static int retail_expected(const char *path, const char *rom)
 {
     nrows = 0u;
-    if (strcmp(rom, "bankset0") == 0) {
-        nrows = 6u;
-        for (unsigned i = 0u; i < nrows; i++)
-            rows[i].value.lo = rows[i].value.hi = 81u + i;
-        return 0;
-    }
     return strcmp(rom, "smoke") == 0 ? 0 : read_expected(path, rom);
 }
 
@@ -609,9 +612,15 @@ static int retail_mailbox(const char *path, const char *rom, const char *expecte
 /* Fixed stimulus, derived before execution in controllers.md, Motion diagnostic.
    The two connectors move in opposite directions and fire on different frames. */
 #define CONTROLLER_FRAMES 12u
-#define CONTROLLER_PIXELS (320u * 242u)
+static int bankset_pal, bankset_refusal;
+static char bankset_name[FIELD_MAX];
+#define CONTROLLER_HEIGHT (bankset_pal ? 292u : 242u)
+#define CONTROLLER_PIXELS (320u * CONTROLLER_HEIGHT)
 static uint8_t *controller_pixels;
-static int16_t controller_pcm[CONTROLLER_FRAMES][801];
+static uint8_t *bankset_module_pixels;
+static int16_t bankset_module_pcm[CONTROLLER_FRAMES][963];
+static uint32_t bankset_module_counts[CONTROLLER_FRAMES];
+static int16_t controller_pcm[CONTROLLER_FRAMES][963];
 static uint32_t controller_counts[CONTROLLER_FRAMES];
 static muhtari__sha256 controller_raw;
 static int controller_light;
@@ -639,7 +648,7 @@ static const char *controller_name(void)
 {
     static char adapter_name[9];
     if (bankset_tracer)
-        return "bankset0";
+        return bankset_name;
     if (controller_adapter != 0u) {
         snprintf(adapter_name, sizeof adapter_name, "motion%u%c", controller_adapter + 3u,
                  (int)('a' + controller_group));
@@ -766,6 +775,25 @@ static void controller_digest(FILE *f, const char *key, muhtari__sha256 *hash)
     fprintf(f, "%s %s\n", key, hex);
 }
 
+static int bankset_native_judge(const uint8_t *frames)
+{
+    /* DLL zone0 OFFSET15: DMA line32 reads OFFSET0 and raster33 plays it,
+       hence native row17 (hardware/maria.md, Rendering). The bounded CPU
+       sweeps and CRC finish by call4; calls5..12 are complete display frames. */
+    unsigned mode = (unsigned)bankset_name[strlen(bankset_name) - 1u];
+    uint8_t first = mode == 's' ? 0x16u : 0x38u;
+    uint8_t last = mode == 's' ? 0x27u : 0x38u;
+    for (unsigned f = 4u; f < CONTROLLER_FRAMES; f++) {
+        const uint8_t *p = frames + f * CONTROLLER_PIXELS + 17u * 320u;
+        if (p[0] != first || p[1] != first || p[2] != 0u || p[16] != last ||
+            p[20] != (mode == 's' ? 0u : 0x27u)) {
+            fprintf(stderr, "bankset: wrong native graphics sentinel on call %u\n", f + 1u);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int controller_library(const char *path, const char *expected, const char *out)
 {
     size_t n = 0u;
@@ -779,6 +807,16 @@ static int controller_library(const char *path, const char *expected, const char
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
+    if (bankset_refusal) {
+        int failed = image == NULL || muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK;
+        if (!failed)
+            failed = muhtari_load(m, &media) != (bankset_refusal == 2
+                                                     ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE
+                                                     : MUHTARI_STATUS_ERR_INVALID_IMAGE);
+        muhtari_destroy(m);
+        free(image);
+        return failed;
+    }
     media.port[0] = media.port[1] =
         controller_adapter != 0u
             ? (controller_adapter == 1u ? MUHTARI_PORT_SNES2ATARI : MUHTARI_PORT_MEGA7800)
@@ -801,29 +839,23 @@ static int controller_library(const char *path, const char *expected, const char
         io.video = controller_pixels + f * CONTROLLER_PIXELS;
         io.video_pitch = 320u;
         io.audio = controller_pcm[f];
-        io.audio_capacity = 801u;
+        io.audio_capacity = 963u;
         failed = ((f != 4u || controller_analog || controller_keypad || controller_adapter) &&
                   muhtari_set_input_ex(m, &in) != MUHTARI_STATUS_OK) ||
                  muhtari_run_frame(m, &io) != MUHTARI_STATUS_OK;
         controller_counts[f] = io.audio_count;
+        if (bankset_tracer && f == 3u && muhtari__peek(m, MB_STATUS) != 0u) {
+            fprintf(stderr, "bankset: measurement did not finish by call4\n");
+            failed = 1;
+        }
     }
     uint8_t mb[256];
     if (!failed) {
         for (unsigned i = 0u; i < 256u; i++)
             mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
         failed = retail_judge(mb, controller_name());
-        if (bankset_tracer) {
-            /* Literal 160A palette-3 pixels from the MARIA $C0 graphic;
-               CPU $40 would give $16. Judge before writing hashes. */
-            for (unsigned f = 1u; f < CONTROLLER_FRAMES; f++) {
-                const uint8_t *pixels = controller_pixels + f * CONTROLLER_PIXELS;
-                if (pixels[40u * 320u] != 0x38u || pixels[40u * 320u + 1u] != 0x38u ||
-                    pixels[40u * 320u + 2u] != 0u) {
-                    fprintf(stderr, "bankset: wrong native graphics sentinel on call %u\n", f + 1u);
-                    failed = 1;
-                }
-            }
-        }
+        if (bankset_tracer)
+            failed |= bankset_native_judge(controller_pixels);
     }
     /* Numeric judgment precedes all equality evidence. */
     if (!failed) {
@@ -832,12 +864,13 @@ static int controller_library(const char *path, const char *expected, const char
         for (unsigned fault = 0u; fault < (controller_adapter != 0u  ? 8u
                                            : controller_motion != 0u ? 9u
                                            : controller_keypad       ? 7u
+                                           : bankset_tracer          ? 12u
                                                                      : 5u);
              fault++) {
             uint8_t bad[256];
             memcpy(bad, mb, sizeof bad);
             static const unsigned offsets[] = {4u, 6u, 20u, 38u, 8u, 122u, 120u, 86u, 38u};
-            if (controller_adapter == 0u || fault < 5u)
+            if ((controller_adapter == 0u && !bankset_tracer) || fault < 5u)
                 bad[offsets[fault]] ^= 1u;
             if (controller_adapter != 0u && fault >= 5u) {
                 if (fault == 5u) { /* Missing 17th bit / wrong identification. */
@@ -869,6 +902,25 @@ static int controller_library(const char *path, const char *expected, const char
                 bad[86] = 0xD7u; /* X tuple substituted for independently expected Y. */
             if (controller_motion != 0u && fault == 8u)
                 bad[38] = controller_motion == 3u ? 0xDEu : 0xD7u; /* Wrong family. */
+            if (bankset_tracer && fault >= 5u) {
+                if (fault == 5u)
+                    bad[7] ^= 1u;
+                else if (fault == 6u)
+                    bad[6]++; /* Extra record. */
+                else if (fault == 7u)
+                    memcpy(bad + 20u, bad + 16u, 4u); /* Duplicate record. */
+                else if (fault == 8u) {
+                    uint8_t tmp[4];
+                    memcpy(tmp, bad + 16u, 4u);
+                    memcpy(bad + 16u, bad + 20u, 4u);
+                    memcpy(bad + 20u, tmp, 4u);
+                } else if (fault == 9u)
+                    bad[18] ^= 1u; /* CRC-valid wrong numeric value. */
+                else if (fault == 10u)
+                    bad[255] = 1u; /* Extra hidden record data with unchanged count. */
+                else
+                    bad[17] = 0u; /* Missing validity flag. */
+            }
             if (fault != 4u) {
                 uint16_t crc = retail_crc(bad);
                 bad[8] = (uint8_t)crc;
@@ -1126,82 +1178,128 @@ static int retail_transaction(uint8_t *image)
     return failed;
 }
 
-/* An owned disposable program: copy a complete mailbox from fixed $C100,
-   replace the record with a real bank-zero read, then publish status last.
-   The expected tag and CRC are derived from the mailbox protocol, never
-   from the production mapper. No ROM bytes enter the tracked workspace. */
-/* Owned BankSet instructions and data only, generated into the build tree.
-   CPU executes six reads from its set; MARIA reads unequal graphics. */
-static int bankset_image(const char *path, int wrong_graphics)
+/* Only this immutable owned template may seed transient geometry variants.
+   Byte construction follows the documented layout; expected.csv is independent.
+   Code stays at the same upper CPU addresses in every declared geometry. */
+static int bankset_image(const char *template_path, const char *path, unsigned kib, unsigned mode,
+                         unsigned pal, unsigned fault)
 {
-    uint8_t *image = calloc(65664u, 1u);
-    if (image == NULL)
+    size_t n = 0u;
+    uint8_t *template = read_file(template_path, &n);
+    uint8_t digest[32];
+    char hex[65];
+    muhtari__sha256 hash;
+    muhtari__sha256_init(&hash);
+    if (template == NULL)
         return 1;
-    image[0] = 3u;
-    memcpy(image + 1u, "ATARI7800", 9u);
-    image[50] = 1u;
-    image[53] = 0x20u;
-    uint8_t *body = image + 128u;
-    /* Template copy, then actual CPU observations overwrite the six
-       numeric fields. The precomputed CRC $C84C covers IDs 1..6, values
-       81..86 and zero padding; no production mapping derives expectations. */
-    static const uint8_t setup[] = {
-        0x78u, 0xD8u, 0xA2u, 0u, 0xBDu, 0u, 0x90u, 0x9Du, 0u, 0x22u,
-        0xE8u, 0xD0u, 0xF7u
-    };
-    memcpy(body, setup, sizeof setup);
-    size_t p = sizeof setup;
-    for (unsigned i = 0u; i < 6u; i++) {
-        const uint8_t read[] = {0xADu, (uint8_t)i, 0xB0u, 0x8Du,
-                                (uint8_t)(18u + 4u * i), 0x22u};
-        memcpy(body + p, read, sizeof read);
-        p += sizeof read;
-        body[0x3000u + i] = (uint8_t)(81u + i);
-        body[32768u + 0x3000u + i] = (uint8_t)(167u + i);
+    muhtari__sha256_update(&hash, template, n);
+    muhtari__sha256_final(&hash, digest);
+    muhtari__sha256_hex(digest, hex);
+    if (n != 65664u ||
+        strcmp(hex, "32f5870fbfcc4745967b8b94c69f87dac4879587c4b0561256cc5160d61a3390") != 0 ||
+        memcmp(template + 128u + 0x76F0u, "BANKSET1", 8u) != 0 ||
+        (kib != 32u && kib != 48u && kib != 52u && kib != 128u && kib != 256u && kib != 512u) ||
+        mode > 2u || pal > 1u || fault > 3u) {
+        free(template);
+        return 1;
     }
-    static const uint8_t display[] = {
-        0xA9u, 0xA0u, 0x85u, 0x2Cu, 0xA9u, 0u, 0x85u, 0x30u,
-        0xA9u, 0x16u, 0x85u, 0x21u, 0xA9u, 0x38u, 0x85u, 0x23u,
-        0xA9u, 0x40u, 0x85u, 0x3Cu, 0xA9u, 0u, 0x8Du, 5u, 0x22u
-    };
-    memcpy(body + p, display, sizeof display);
-    p += sizeof display;
-    body[p] = 0x4Cu;
-    body[p + 1u] = (uint8_t)p;
-    body[p + 2u] = 0x80u;
-    uint8_t *mb = body + 0x1000u;
-    memcpy(mb, "M7DG", 4u);
-    mb[4] = 1u;
-    mb[5] = 0x80u;
-    mb[6] = 6u;
-    mb[7] = 20u;
-    mb[8] = 0x4Cu;
-    mb[9] = 0xC8u;
-    for (unsigned i = 0u; i < 6u; i++) {
-        mb[16u + 4u * i] = (uint8_t)(i + 1u);
-        mb[17u + 4u * i] = 1u;
-        /* Numeric fields start poisoned, so skipping a CPU store fails. */
-        mb[18u + 4u * i] = 0xFFu;
+    size_t half = (size_t)kib * 1024u;
+    size_t size = 128u + 2u * half;
+    uint8_t *image = calloc(size, 1u);
+    if (image == NULL) {
+        free(template);
+        return 1;
     }
+    memcpy(image, template, 128u);
+    image[49] = (uint8_t)((size - 128u) >> 24);
+    image[50] = (uint8_t)((size - 128u) >> 16);
+    image[51] = (uint8_t)((size - 128u) >> 8);
+    image[52] = (uint8_t)(size - 128u);
+    image[57] = (uint8_t)pal;
+    image[64] = kib < 128u ? 0u : 1u;
+    image[65] = (uint8_t)(0x80u | (mode == 2u ? 3u : mode));
+    image[67] = mode != 0u ? 5u : 0u; /* Write-only POKEY overlap. */
     for (unsigned set = 0u; set < 2u; set++) {
-        uint8_t *rom = body + set * 32768u;
-        for (unsigned zone = 0u; zone < 32u; zone++) {
-            rom[0x2000u + zone * 3u] = 15u;
-            rom[0x2001u + zone * 3u] = 0xA1u;
+        uint8_t *body = image + 128u + set * half;
+        size_t extra = kib == 52u ? 4096u : 0u;
+        memset(body, set == 0u ? 0x30 : 0x90, extra);
+        for (size_t bank = 0u; bank < (half - extra) / 16384u; bank++) {
+            uint8_t *p = body + extra + bank * 16384u;
+            memset(p, (int)((set == 0u ? 0x40u : 0xA0u) + bank), 16384u);
+            p[16383u] = (uint8_t)((set == 0u ? 0x80u : 0xB0u) + bank);
         }
-        rom[0x2101u] = 31u;
-        rom[0x2102u] = 0xB1u;
-        memset(rom + 0x3100u, set == 0u || wrong_graphics ? 0x40 : 0xC0, 4096u);
+        memcpy(body + half - 16384u, template + 128u + set * 32768u + 16384u, 16384u);
     }
-    body[0x7FF8u] = 0xFFu;
-    body[0x7FF9u] = 0x87u;
-    body[0x7FFDu] = 0x80u;
+    uint8_t *upper = image + 128u + half - 16384u;
+    upper[0x3700u] = mode != 0u || kib >= 128u ? 0x40u
+                     : kib == 52u              ? 0x30u
+                     : kib == 48u              ? 0x40u
+                                               : 0x80u;
+    upper[0x3701u] = mode != 0u || kib >= 128u || kib == 48u ? 0x7Fu : kib == 52u ? 0x3Fu : 0xBFu;
+    upper[0x3702u] = (uint8_t)(kib >= 128u ? kib / 16u : 0u);
+    upper[0x3703u] = (uint8_t)mode;
+    if (fault == 1u)
+        image[128u + 2u * half - 8192u] = 0x40u; /* CPU graphics in MARIA ROM. */
+    if (fault == 2u)
+        image[51] ^= 1u; /* Header/body mismatch. */
+    if (fault == 3u)
+        size--; /* Odd/truncated body. */
+    if (fault == 0u && (mode == 0u || (kib != 48u && kib != 52u))) {
+        muhtari_cart_info info = {0};
+        info.size = (uint32_t)sizeof info;
+        if (muhtari_probe(image, size, &info) != MUHTARI_STATUS_OK ||
+            info.board != MUHTARI_BOARD_BANKSET || info.rom_size != 2u * half ||
+            info.ram_size != (mode == 0u   ? 0u
+                              : mode == 1u ? 16384u
+                                           : 32768u) ||
+            info.a78_mapper_options != (0x80u | (mode == 2u ? 3u : mode)) ||
+            info.a78_mapper != (kib < 128u ? 0u : 1u) || info.a78_tv != pal ||
+            memcmp(upper, template + 128u + 16384u, 0x3700u) != 0 ||
+            memcmp(upper + 0x3704u, template + 128u + 16384u + 0x3704u, 0x8FCu) != 0) {
+            free(image);
+            free(template);
+            return 1;
+        }
+    }
     FILE *f = fopen(path, "wb");
     int failed = f == NULL;
     if (f != NULL) {
-        failed = fwrite(image, 1u, 65664u, f) != 65664u;
+        failed = fwrite(image, 1u, size, f) != size;
         failed |= fclose(f) != 0;
     }
+    free(image);
+    free(template);
+    return failed;
+}
+
+/* The existing independent PNG reader verifies the actual runner dump. */
+static int bankset_png(const char *path, unsigned mode, unsigned pal)
+{
+    size_t n = 0u;
+    uint8_t *image = read_file(path, &n);
+    uint32_t height = pal != 0u ? 292u : 242u;
+    uint8_t *raw = malloc((size_t)height * PNG_READ_ROW);
+    int failed = image == NULL || raw == NULL || png_read_height(image, n, raw, height) < 0;
+    static const unsigned positions[] = {0u, 1u, 2u, 16u, 20u};
+    if (!failed) {
+        for (unsigned i = 0u; i < 5u; i++) {
+            uint8_t code = i < 2u    ? (mode == 1u ? 0x16u : 0x38u)
+                           : i == 2u ? 0u
+                           : i == 3u ? (mode == 1u ? 0x27u : 0x38u)
+                                     : (mode == 1u ? 0u : 0x27u);
+            uint32_t rgb = muhtari__palette_rgb_region(code, pal != 0u ? MUHTARI_REGION_PAL
+                                                                       : MUHTARI_REGION_NTSC);
+            const uint8_t *p = raw + 17u * PNG_READ_ROW + 1u + positions[i] * 3u;
+            failed |=
+                p[0] != (uint8_t)(rgb >> 16) || p[1] != (uint8_t)(rgb >> 8) || p[2] != (uint8_t)rgb;
+        }
+        /* Same bytes with a different supported or forbidden height refuse. */
+        failed |= png_read_height(image, n, raw, height == 242u ? 292u : 242u) >= 0;
+        failed |= png_read_height(image, n, raw, 243u) >= 0;
+        image[n - 1u] ^= 1u;
+        failed |= png_read_height(image, n, raw, height) >= 0;
+    }
+    free(raw);
     free(image);
     return failed;
 }
@@ -1573,20 +1671,31 @@ static void RETRO_CALLCONV controller_video(const void *data, unsigned w, unsign
 {
     controller_videos++;
     if (controller_frame == 0u || controller_frame > CONTROLLER_FRAMES || data == NULL ||
-        w != 320u || h != 242u || pitch != 320u * sizeof(uint32_t)) {
+        w != 320u || h != CONTROLLER_HEIGHT || pitch != 320u * sizeof(uint32_t)) {
         controller_errors++;
         return;
     }
     const uint8_t *expected = controller_pixels + (controller_frame - 1u) * CONTROLLER_PIXELS;
     const uint8_t *native_bytes = controller_native();
-    if (native_bytes == NULL || memcmp(native_bytes, expected, CONTROLLER_PIXELS) != 0)
+    if (native_bytes == NULL) {
+        controller_errors++;
+        return;
+    }
+    if (bankset_tracer) {
+        /* Capture now; compare hosts only after this host's numeric judgment. */
+        memcpy(bankset_module_pixels + (controller_frame - 1u) * CONTROLLER_PIXELS, native_bytes,
+               CONTROLLER_PIXELS);
+        expected = native_bytes;
+    } else if (memcmp(native_bytes, expected, CONTROLLER_PIXELS) != 0)
         controller_errors++;
     /* Public pixels are judged separately from the actual native bytes. */
-    for (unsigned y = 0u; y < 242u; y++)
+    for (unsigned y = 0u; y < CONTROLLER_HEIGHT; y++)
         for (unsigned x = 0u; x < 320u; x++) {
             uint32_t pixel;
             memcpy(&pixel, (const uint8_t *)data + y * pitch + x * sizeof pixel, sizeof pixel);
-            if (pixel != muhtari__palette_rgb(expected[y * 320u + x]))
+            if (pixel !=
+                muhtari__palette_rgb_region(expected[y * 320u + x],
+                                            bankset_pal ? MUHTARI_REGION_PAL : MUHTARI_REGION_NTSC))
                 controller_errors++;
         }
 }
@@ -1594,12 +1703,19 @@ static void RETRO_CALLCONV controller_video(const void *data, unsigned w, unsign
 static size_t RETRO_CALLCONV controller_audio(const int16_t *data, size_t frames)
 {
     controller_audios++;
-    if (controller_frame == 0u || controller_frame > CONTROLLER_FRAMES ||
-        frames != controller_counts[controller_frame - 1u]) {
+    if (controller_frame == 0u || controller_frame > CONTROLLER_FRAMES || frames > 963u ||
+        (!bankset_tracer && frames != controller_counts[controller_frame - 1u])) {
         controller_errors++;
         return frames;
     }
     for (size_t i = 0u; i < frames; i++) {
+        if (bankset_tracer) {
+            bankset_module_counts[controller_frame - 1u] = (uint32_t)frames;
+            bankset_module_pcm[controller_frame - 1u][i] = data[2u * i];
+            if (data[2u * i] != data[2u * i + 1u])
+                controller_errors++;
+            continue;
+        }
         int16_t expected = controller_pcm[controller_frame - 1u][i];
         if (data[2u * i] != expected || data[2u * i + 1u] != expected)
             controller_errors++;
@@ -1679,6 +1795,15 @@ static int controller_module(const char *module_path, const char *path)
     set_device(1u, selected);
     struct retro_game_info game = {path, image, n, NULL};
     int failed = !load(&game);
+    if (bankset_refusal) {
+        int accepted = !failed;
+        if (accepted)
+            unload();
+        deinit();
+        CONTROLLER_CLOSE();
+        free(image);
+        return accepted;
+    }
     if (!failed) {
         for (unsigned i = 0u; i < CONTROLLER_FRAMES; i++)
             run_frame();
@@ -1690,6 +1815,16 @@ static int controller_module(const char *module_path, const char *path)
             for (unsigned i = 0u; i < 256u; i++)
                 mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
             failed = retail_judge(mb, controller_name());
+        }
+        if (!failed && bankset_tracer) {
+            failed |= bankset_native_judge(bankset_module_pixels);
+            failed |= memcmp(bankset_module_pixels, controller_pixels,
+                             CONTROLLER_FRAMES * CONTROLLER_PIXELS) != 0;
+            for (unsigned i = 0u; i < CONTROLLER_FRAMES; i++) {
+                failed |= bankset_module_counts[i] != controller_counts[i];
+                failed |= memcmp(bankset_module_pcm[i], controller_pcm[i],
+                                 controller_counts[i] * sizeof(int16_t)) != 0;
+            }
         }
         /* Raw transition stream is observed, including load-time events;
            silence means the actual empty stream, never an inferred pass. */
@@ -2314,22 +2449,41 @@ pal_cleanup:
 int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
-    if ((argc == 3 || argc == 4) && strcmp(argv[1], "--bankset-image") == 0)
-        return bankset_image(argv[2], argc == 4);
-    if ((argc == 4 || argc == 5) && strcmp(argv[1], "--bankset-case") == 0) {
-        bankset_tracer = 1;
-        controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
-        if (controller_pixels == NULL)
-            return 1;
-        int failed = controller_library(argv[2], "", argv[3]);
+    if (argc == 5 && strcmp(argv[1], "--bankset-png") == 0)
+        return bankset_png(argv[2], (unsigned)strtoul(argv[3], NULL, 10),
+                           (unsigned)strtoul(argv[4], NULL, 10));
+    if ((argc == 4 || argc == 5) && strcmp(argv[1], "--bankset-refuse") == 0) {
+        bankset_refusal = strcmp(argv[3], "truncated") == 0 ? 2 : 1;
+        int failed = controller_library(argv[2], "", "");
 #ifdef DIAG_LIBRETRO
-        if (!failed && argc == 5)
-            failed = controller_module(argv[4], argv[2]);
+        if (argc == 5 && argv[4][0] != 0)
+            failed |= controller_module(argv[4], argv[2]);
+#endif
+        return failed;
+    }
+    if (argc == 8 && strcmp(argv[1], "--bankset-image") == 0)
+        return bankset_image(argv[2], argv[3], (unsigned)strtoul(argv[4], NULL, 10),
+                             (unsigned)strtoul(argv[5], NULL, 10),
+                             (unsigned)strtoul(argv[6], NULL, 10),
+                             (unsigned)strtoul(argv[7], NULL, 10));
+    if ((argc == 6 || argc == 7) && strcmp(argv[1], "--bankset-case") == 0) {
+        bankset_tracer = 1;
+        snprintf(bankset_name, sizeof bankset_name, "%s", argv[5]);
+        bankset_pal = strstr(argv[2], "-pal.") != NULL;
+        controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
+        bankset_module_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
+        if (controller_pixels == NULL || bankset_module_pixels == NULL)
+            return 1;
+        int failed = controller_library(argv[2], argv[4], argv[3]);
+#ifdef DIAG_LIBRETRO
+        if (!failed && argc == 7 && argv[6][0] != 0)
+            failed = controller_module(argv[6], argv[2]);
 #else
-        if (argc == 5)
+        if (argc == 7 && argv[6][0] != 0)
             failed = 1;
 #endif
         free(controller_pixels);
+        free(bankset_module_pixels);
         return failed;
     }
     if (argc == 4 && strcmp(argv[1], "--pal-report") == 0)

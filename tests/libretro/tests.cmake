@@ -257,6 +257,7 @@ if(TARGET muhtari_libretro)
   muhtari_warnings(muhtari_libretro_testdb565)
 
   add_executable(muhtari-test-diag-testdb ${PROJECT_SOURCE_DIR}/tests/diag/driver.c
+    ${PROJECT_SOURCE_DIR}/tests/runner/png_read.c
     ${PROJECT_SOURCE_DIR}/runner/sha256.c
     ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
     $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
