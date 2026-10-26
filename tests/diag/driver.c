@@ -1035,7 +1035,7 @@ static int retail_transaction(uint8_t *image)
     muhtari_versions versions = {0};
     versions.size = (uint32_t)sizeof versions;
     if (muhtari_get_versions(&versions) != MUHTARI_STATUS_OK || versions.abi != 1u ||
-        versions.behaviour_revision != 5u) {
+        versions.behaviour_revision != 6u) {
         return 1;
     }
     muhtari_config cfg = {0};
@@ -1962,7 +1962,7 @@ static int pal_report(const char *path, const char *expected)
                                          "audio_frames 601\n",
                                          "audio_samples 577879\n",
                                          "audio_rate 48000/1\n",
-                                         "audio_behaviour_revision 5\n",
+                                         "audio_behaviour_revision 6\n",
                                          "audio_synthesis exact-q23-16x64-dc20\n"};
     for (unsigned i = 0u; i < 7u && !failed; i++) {
         size_t n = strlen(fields[i]);
@@ -2282,7 +2282,7 @@ static int pal_case(const char *path, const char *expected, const char *out,
         controller_digest(reference, "audio_transitions_sha256", &trace.hash);
         controller_digest(reference, "audio_pcm_sha256", &pcm);
         fputs("audio_frames 601\naudio_samples 577879\naudio_rate 48000/1\n"
-              "audio_behaviour_revision 5\naudio_synthesis exact-q23-16x64-dc20\n",
+              "audio_behaviour_revision 6\naudio_synthesis exact-q23-16x64-dc20\n",
               reference);
         pal_mailbox_line(reference, mb);
         printf("pal: startup960/rem336960 +600 full142102-tick frames; 281x961+319x962; "

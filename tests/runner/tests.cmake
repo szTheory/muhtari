@@ -31,10 +31,34 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     if(NOT count EQUAL 956)
       message(FATAL_ERROR "hashes: expected69 retained,273 controller and614 PAL observation rows, got ${count}")
     endif()
-    # Independent accepted source 54485d6, CI run 40104749040. Only the
-    # seven named audio behaviour annotations advance from 4 to 5; all
-    # earlier numeric and digest bytes remain pinned together.
-    list(SUBLIST rows 0 69 retained)
+    # Retain the independent accepted digests, normalizing only the exact
+    # causal slow-HALT audio changes and revision 6 back to their old rows.
+    # The differential build restores these four rows; the other952 rows agree
+    # (hardware/bus.md, HALT); arbitrary values still fail the old aggregates.
+    set(historical "${rows}")
+    set(changes
+      "soundtest.audio_transitions_sha256;3c17a63845643d0c4ee1c2aab54c419a5d855f65654952efb60998c0ed17531e;5a59aaf84f22645bd6fa97232f3345fc4a031030e67fd55e72c8e074940420f9"
+      "soundtest.audio_pcm_sha256;8581cd5ba67cb0ece4fd0ffd8e772e612e08cf59bd3819597e438a8ea927609f;7707d18b44f54944ef3c5d841038a5f78ce22e08b37329374ee5ed329df318e1"
+      "pokey.audio_transitions_sha256;cf12ef42ad4f37b3c86597b352d0b49be4842d18eafe8801f915b9c86b47a7fa;b8db9d969f75cfe71baa90f7741ebdd527416c2693ed4c780b0020b536591431"
+      "pokey.audio_pcm_sha256;ec6cf133c0cedc991e7a135b3cfeefb119950964256e6c1e445d50f6f14b93c5;935ec19f67bc9e8d72ad3ecfeb0567434beed62e1fa743af21a2457da49ec688")
+    foreach(i RANGE 0 3)
+      math(EXPR p "${i}*3")
+      list(GET changes ${p} field)
+      math(EXPR p "${p}+1")
+      list(GET changes ${p} current)
+      math(EXPR p "${p}+1")
+      list(GET changes ${p} previous)
+      list(FIND historical "${field} ${current}" position)
+      if(position EQUAL -1)
+        message(FATAL_ERROR "hashes: causal audio transition missing or changed: ${field}")
+      endif()
+      list(REMOVE_AT historical ${position})
+      list(INSERT historical ${position} "${field} ${previous}")
+    endforeach()
+    list(TRANSFORM historical REPLACE "([.]audio_behaviour_revision) 6$" "\\1 5")
+    # Independent accepted source 54485d6, CI run 40104749040; the seven
+    # earlier revision4-to-5 annotations remain part of this historical pin.
+    list(SUBLIST historical 0 69 retained)
     list(JOIN retained "\n" retained)
     string(SHA256 retained_digest "${retained}\n")
     if(NOT retained_digest STREQUAL "c4c9c310418422c30bbf32b204a157a564d343aadfabee4d5654b97695461761")
@@ -42,7 +66,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
     # The pre-PAL writer at009f37e independently reproduces all342 old
     # observations. The additive PAL path cannot rewrite controller rows.
-    list(SUBLIST rows 0 342 ntsc)
+    list(SUBLIST historical 0 342 ntsc)
     list(JOIN ntsc "\n" ntsc)
     string(SHA256 ntsc_digest "${ntsc}\n")
     if(NOT ntsc_digest STREQUAL "a036c0f9da8037b0581496182024f0b42de455e08576712e0cc890dd949462b5")
@@ -117,7 +141,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       elseif(fault STREQUAL "short_digest")
         string(REGEX REPLACE "audio_pcm_sha256 [^\n]+" "audio_pcm_sha256 a" bad "${bad}")
       elseif(fault STREQUAL "version")
-        string(REPLACE "audio_behaviour_revision 5" "audio_behaviour_revision 4" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 6" "audio_behaviour_revision 5" bad "${bad}")
       elseif(fault MATCHES "^(crc|numeric)$")
         set(which 4)
         if(fault STREQUAL "numeric")
@@ -158,7 +182,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       elseif(fault STREQUAL "leading_blank")
         set(bad "\n${bad}")
       elseif(fault STREQUAL "revision")
-        string(REPLACE "audio_behaviour_revision 5" "audio_behaviour_revision 4" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 6" "audio_behaviour_revision 5" bad "${bad}")
       elseif(fault STREQUAL "mailbox")
         string(REPLACE "diagnostic 4d374447" "diagnostic 00000000" bad "${bad}")
       endif()

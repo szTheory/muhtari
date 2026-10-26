@@ -15,7 +15,7 @@ function(hashes_diagnostic name prefix frames battery_count observed result)
   set(patterns "^frame 1 sha256 ([0-9a-f]+)$" "^frame ${frames} sha256 ([0-9a-f]+)$"
     "^audio_transitions_sha256 ([0-9a-f]+)$" "^audio_pcm_sha256 ([0-9a-f]+)$"
     "^audio_frames ${frames}$" "^audio_samples [1-9][0-9]*$" "^audio_rate 48000/1$"
-    "^audio_behaviour_revision 5$" "^audio_synthesis exact-q23-16x64-dc20$"
+    "^audio_behaviour_revision 6$" "^audio_synthesis exact-q23-16x64-dc20$"
     "^diagnostic ([0-9a-f]+)$")
   set(content "")
   foreach(i RANGE 0 9)
@@ -118,7 +118,7 @@ function(hashes_controller_report prefix scenario observed result)
     "^audio_transitions_sha256 ([0-9a-f]+)$"
     "^audio_pcm_sha256 ([0-9a-f]+)$" "^audio_frames 12$"
     "^audio_samples [1-9][0-9]*$" "^audio_rate 48000/1$"
-    "^audio_behaviour_revision 5$" "^audio_synthesis exact-q23-16x64-dc20$"
+    "^audio_behaviour_revision 6$" "^audio_synthesis exact-q23-16x64-dc20$"
     "^diagnostic ([0-9a-f]+)$")
   set(content "")
   foreach(i RANGE 0 20)
@@ -231,7 +231,7 @@ function(hashes_validate content)
         if(NOT length EQUAL want_length)
           message(FATAL_ERROR "hashes: malformed PAL digest length")
         endif()
-      elseif(NOT row MATCHES "^pal[.]audio_(frames 601|samples 577879|rate 48000/1|behaviour_revision 5|synthesis exact-q23-16x64-dc20)$"
+      elseif(NOT row MATCHES "^pal[.]audio_(frames 601|samples 577879|rate 48000/1|behaviour_revision 6|synthesis exact-q23-16x64-dc20)$"
           AND NOT row MATCHES "^pal[.](full_frames 600|startup_samples 960|startup_remainder 336960|final_remainder 47029|final_tick 85543176)$")
         message(FATAL_ERROR "hashes: malformed PAL observation value")
       endif()
@@ -245,7 +245,7 @@ function(hashes_validate content)
         if(NOT length EQUAL want_length)
           message(FATAL_ERROR "hashes: malformed controller digest length")
         endif()
-      elseif(NOT row MATCHES "[.]audio_(frames 12|samples [1-9][0-9]*|rate 48000/1|behaviour_revision 5|synthesis exact-q23-16x64-dc20)$"
+      elseif(NOT row MATCHES "[.]audio_(frames 12|samples [1-9][0-9]*|rate 48000/1|behaviour_revision 6|synthesis exact-q23-16x64-dc20)$"
           AND NOT row MATCHES "[.]lag_frames (0|[1-9]|1[0-2])$")
         message(FATAL_ERROR "hashes: malformed controller observation value")
       endif()

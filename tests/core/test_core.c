@@ -820,7 +820,7 @@ static void test_info(void)
     CHECK_EQ_U64(v.api, MUHTARI_API_VERSION);
     CHECK_EQ_U64(v.api, 6);
     CHECK_EQ_U64(v.abi, 1);
-    CHECK_EQ_U64(v.behaviour_revision, 5u);
+    CHECK_EQ_U64(v.behaviour_revision, 6u);
     muhtari_destroy(m);
 }
 

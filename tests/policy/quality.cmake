@@ -11,6 +11,78 @@ endfunction()
 file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}")
 set(ENV{SOURCE_DATE_EPOCH} 1769904000)
+# Concrete fault: hiding arbitrary pin/content changes behind the causal
+# revision5-to-6 transition. Exercise the real identity consumer independently.
+function(quality_causal_sample_controls)
+  set(names colorfade fontcheck mousedemo screensafe)
+  set(old_pins
+    8a868b24329f4bd07636cf76da0669fc3ee7bc6bb0cdeeee447e7b662031c1a9
+    218471a10520aa82d1ac5dec41becb7165fa25b1974f8524f0988e285e17223a
+    c819552e2cb8b98e656581b3215a724ac747db6e9a40e87552b544728c520327
+    7cbf9f511a6c21f19ddc3053fb95451ddd3c5b464be331179fb9bb5ca9f1f700)
+  set(new_pins
+    c1b76f769fe8219ae0b92eaf17bdde65850903264bdeb0375e82d5d9c0911e60
+    70bbda24499a6428957037dfa2f653f66255b77cc2aa0a93875d9022f9b1eb17
+    df06e8d6cd68cf074d11e4500751da0eaa7f747334e28502e9464dcdd170c6d7
+    3d3cce4adb13b846363a0e5fb3f95c402bbfef1235ecd428e61fb80e15da4854)
+  set(old "# behaviour_revision 5\n")
+  set(new "# behaviour_revision 6\n")
+  foreach(i RANGE 0 3)
+    list(GET names ${i} name)
+    list(GET old_pins ${i} prior)
+    list(GET new_pins ${i} next)
+    string(APPEND old "${name} tool-pin source-pin source-hash rom-hash ${prior} -\n")
+    string(APPEND new "${name} tool-pin source-pin source-hash rom-hash ${next} -\n")
+  endforeach()
+  file(WRITE "${WORK}/sample-transition.cmake"
+    "set(QUALITY_FUNCTIONS_ONLY ON)\ninclude([==[${ROOT}/tests/cmake/quality.cmake]==])\nquality_sample_identity(identity \"\${CANDIDATE}\" \"\${TRUSTED}\")\nfile(SHA256 \"\${TRUSTED}\" raw)\nif(NOT identity STREQUAL raw)\nmessage(FATAL_ERROR \"wrong raw trusted identity\")\nendif()\n")
+  foreach(case valid equal missing duplicate reverse skipped pin tool source hash trailer forged-base annotation)
+    set(candidate "${new}")
+    set(trusted "${old}")
+    if(case STREQUAL equal)
+      set(trusted "${new}")
+    elseif(case STREQUAL missing)
+      string(REPLACE "# behaviour_revision 6\n" "" candidate "${candidate}")
+    elseif(case STREQUAL duplicate)
+      string(APPEND candidate "# behaviour_revision 6\n")
+    elseif(case STREQUAL reverse)
+      set(trusted "${new}")
+      set(candidate "${old}")
+    elseif(case STREQUAL skipped)
+      string(REPLACE "revision 5" "revision 4" trusted "${trusted}")
+    elseif(case STREQUAL pin)
+      list(GET new_pins 0 pin)
+      string(REPLACE "${pin}" "unattributed-frame-pin" candidate "${candidate}")
+    elseif(case STREQUAL tool OR case STREQUAL source OR case STREQUAL hash)
+      if(case STREQUAL tool)
+        set(field tool-pin)
+      elseif(case STREQUAL source)
+        set(field source-pin)
+      else()
+        set(field rom-hash)
+      endif()
+      string(REPLACE "${field}" "forged-${field}" candidate "${candidate}")
+    elseif(case STREQUAL trailer)
+      string(APPEND candidate "# changed trailer\n")
+    elseif(case STREQUAL forged-base)
+      list(GET old_pins 0 prior)
+      list(GET new_pins 0 next)
+      string(REPLACE "${prior}" "${next}" trusted "${trusted}")
+    elseif(case STREQUAL annotation)
+      string(REPLACE "revision 6\n" "revision 6 forged\n" candidate "${candidate}")
+    endif()
+    file(WRITE "${WORK}/sample-candidate.txt" "${candidate}")
+    file(WRITE "${WORK}/sample-trusted.txt" "${trusted}")
+    set(cmd "${CMAKE_COMMAND}" -DCANDIDATE=${WORK}/sample-candidate.txt
+      -DTRUSTED=${WORK}/sample-trusted.txt -P "${WORK}/sample-transition.cmake")
+    if(case MATCHES "^(valid|equal)$")
+      execute_process(COMMAND ${cmd} COMMAND_ERROR_IS_FATAL ANY)
+    else()
+      quality_expect_failure("quality: (invalid sample revision transition|sample annotation must be unique|changed trusted samples)" ${cmd})
+    endif()
+  endforeach()
+endfunction()
+quality_causal_sample_controls()
 # Exercise the actual board hash producer with a real passing runner report,
 # then fault its command boundary. The mailbox judge remains the built driver.
 execute_process(COMMAND ${EMULATOR} "${RUN}" --probe "${ROOT}/tests/diag/activision.a78"

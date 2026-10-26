@@ -191,7 +191,7 @@ foreach(scenario motion.driving light.lightgun analog.paddle analog.keypad
   string(APPEND hashes "${prefix}.lag_frames 0\n${prefix}.audio_transitions_sha256 ${digest}\n"
     "${prefix}.audio_pcm_sha256 ${digest}\n${prefix}.audio_frames 12\n"
     "${prefix}.audio_samples 8861\n${prefix}.audio_rate 48000/1\n"
-    "${prefix}.audio_behaviour_revision 5\n${prefix}.audio_synthesis exact-q23-16x64-dc20\n"
+    "${prefix}.audio_behaviour_revision 6\n${prefix}.audio_synthesis exact-q23-16x64-dc20\n"
     "${prefix}.diagnostic ${mailbox}\n")
 endforeach()
 # The additive PAL schema must be complete even when two lanes agree on a fault.
@@ -200,7 +200,7 @@ foreach(frame RANGE 1 601)
 endforeach()
 string(APPEND hashes "pal.audio_transitions_sha256 ${digest}\npal.audio_pcm_sha256 ${digest}\n"
   "pal.audio_frames 601\npal.audio_samples 577879\npal.audio_rate 48000/1\n"
-  "pal.audio_behaviour_revision 5\npal.audio_synthesis exact-q23-16x64-dc20\n"
+  "pal.audio_behaviour_revision 6\npal.audio_synthesis exact-q23-16x64-dc20\n"
   "pal.diagnostic ${mailbox}\npal.full_frames 600\npal.startup_samples 960\n"
   "pal.startup_remainder 336960\npal.final_remainder 47029\npal.final_tick 85543176\n")
 foreach(path absolute relative)
