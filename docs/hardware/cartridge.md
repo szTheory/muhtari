@@ -86,7 +86,7 @@ The specification names these options without specifying their wiring. Linear/A8
 as the physical 2 KiB Fractalus board described below; the name “8K EXRAM/A8” does not establish 8 KiB SRAM.
 Valid SuperGame/A8 and BankSet/A8 remain unsupported, even when the v3 header names a supported board;
 they do not fall back to v3. Malformed reserved v4 bits retain the ignored-block warning and v3 fallback.
-A hash match retains its existing override precedence. M2 remains unsupported; X2 uses the cartridge notes'
+A hash match retains its existing override precedence. M2 is supported on BankSet only; X2 uses the cartridge notes'
 banked-RAM interpretation (section 1.1). The audio POKEY codes are 1 at $0440, 2 at $0450, 3 at both, 4 at $0800 and 5 at $4000. The other
 mappers take no device. Otherwise the cart type applies and `MUHTARI_CART_WARN_HEADER_V4_IGNORED` is set. Ports, TV,
 save and XM always come from bytes 55-63.
@@ -190,6 +190,7 @@ The body sizes each board this library runs accepts:
 | Absolute | exactly 64 KiB, no board options or cartridge RAM |
 | Fractalus | exactly 32 KiB ROM and 2 KiB physical RAM, no board options |
 | Activision | exactly 128 KiB, no board options or cartridge RAM |
+| BankSet | equal CPU-then-MARIA halves of 32, 48, 52, 128, 256 or 512 KiB; at most 1 MiB total |
 
 The evidence is MAME's 7800 list, which gives these ROM sizes per slot:
 
@@ -227,12 +228,33 @@ Reload and power cycle restore declared chip count and the boot clock origin.
 
 ## Boards
 
-`MUHTARI_STATUS_OK` means linear, Absolute, Activision, Fractalus or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
-Bankset, halt-banked RAM and Souper are reported with
+`MUHTARI_STATUS_OK` includes linear, Absolute, Activision, Fractalus, BankSet and the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
+Non-BankSet halt-banked RAM and Souper are reported with
 `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. XM, YM2151 and Covox are reported in `devices` and `sound` and never refused.
 
 The boards are one `switch` in `src/cart.c`, so the core keeps no table of function pointers. MARIA's fetches see the
-same bytes as the CPU on every board here.
+same bytes as the CPU except during BankSet's electrically selected MARIA interval.
+
+### BankSet
+
+The image contains equal CPU and MARIA ROM sets in that order. Linear 32, 48
+and 52 KiB sets end at $FFFF, beginning at $8000, $4000 and $3000. Switched
+128, 256 and 512 KiB sets use 16 KiB banks: $4000 holds the second-last bank,
+$8000 the selected bank and $C000 the last bank of the selected set. One shared
+register starts at zero; stores at $8000–$BFFF select modulo the per-set bank
+count. Peeks retain the CPU view and change neither time nor the register.
+
+All six sizes accept no RAM. The 32/128/256/512 KiB sets also accept declared
+shared 16 KiB or HALT-selected 32 KiB RAM; 48/52 KiB sets refuse RAM. Omission
+creates none. A8, X2, EXROM and EXFIX combinations are unsupported. Odd,
+unsupported or header/body-mismatched BankSet sizes refuse before allocation;
+a valid unsupported v4 declaration cannot fall back to stale v3 metadata.
+
+The BankSet wiki (cartridge notes section 2.1) documents through 128 KiB per
+set and describes HALT RAM. The 256/512 KiB sizes and shared RAM support are
+producer/emulator extensions, not measured cartridge capacities or identical
+physical boards. The time-aware bus path uses the accepted electrical interval
+described in `bus.md`; a MARIA caller alone does not select the MARIA set.
 
 ### Linear
 

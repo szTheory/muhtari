@@ -88,7 +88,18 @@ static uint32_t be32(const uint8_t *p)
 static int cart_fits(const struct cart_board *b, size_t n)
 {
     if (b->board == MUHTARI_BOARD_BANKSET) {
-        return n == 64u * CART_KIB && b->ram == 0u && b->options == 0u;
+        /* Equal CPU-then-MARIA sets; sizes and RAM matrix are checked before
+           allocation (cartridge.md, BankSet). All runtime offsets use n/2. */
+        if ((n & 1u) != 0u || n > 1024u * CART_KIB) {
+            return 0;
+        }
+        size_t half = n / 2u;
+        int linear = half == 32u * CART_KIB || half == 48u * CART_KIB || half == 52u * CART_KIB;
+        int switched =
+            half == 128u * CART_KIB || half == 256u * CART_KIB || half == 512u * CART_KIB;
+        int ram = (b->options == 0u && (b->ram == 0u || b->ram == 16u * CART_KIB)) ||
+                  (b->options == MUHTARI_BOARD_HALT_BANKED_RAM && b->ram == 32u * CART_KIB);
+        return (linear || switched) && ram && (b->ram == 0u || half == 32u * CART_KIB || switched);
     }
     if (b->board == MUHTARI_BOARD_FRACTALUS) {
         return n == 32u * CART_KIB && b->ram == 2u * CART_KIB && b->options == 0u;
@@ -287,6 +298,7 @@ static int cart_decode_v4(const uint8_t *h, struct cart_board *b)
     }
     if ((opt & 0x80u) != 0u) {
         b->board = MUHTARI_BOARD_BANKSET;
+        b->unsupported = mapper > 1u || device == 2u;
     }
     return 1;
 }
@@ -465,8 +477,10 @@ static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 /* Boards a loaded cartridge cannot run yet. */
 static int cart_refused(const struct cart_board *b)
 {
-    if (b->board == MUHTARI_BOARD_BANKSET && (b->options != 0u || b->ram != 0u)) {
-        return 1;
+    if (b->board == MUHTARI_BOARD_BANKSET) {
+        return b->unsupported != 0u ||
+               (b->options & ~(uint32_t)MUHTARI_BOARD_HALT_BANKED_RAM) != 0u ||
+               (b->ram != 0u && b->ram != 16u * CART_KIB && b->ram != 32u * CART_KIB);
     }
     return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME &&
             b->board != MUHTARI_BOARD_ABSOLUTE && b->board != MUHTARI_BOARD_ACTIVISION &&
@@ -605,6 +619,9 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
     cart_set_board(out, &b);
     if (cart_refused(&b)) {
         return MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+    }
+    if (b.board == MUHTARI_BOARD_BANKSET && field != body) {
+        return field > body ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;
     }
     if (!cart_fits(&b, mapped)) {
         return field > body ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;
@@ -894,6 +911,27 @@ static uint32_t cart_sg_bank(const struct muhtari__cart *c, uint16_t addr)
     return banks - 2u;
 }
 
+/* BankSet geometry was checked before install. Fixed and switched offsets
+   are within one half, never the doubled image (cartridge.md, BankSet). */
+static const uint8_t *cart_bankset_rom_at(const struct muhtari__cart *c, uint16_t addr, int maria)
+{
+    uint32_t half = c->info.rom_size / 2u;
+    uint32_t offset;
+    if (half <= 52u * CART_KIB) {
+        uint32_t base = 0x10000u - half;
+        if (addr < base)
+            return NULL;
+        offset = (uint32_t)addr - base;
+    } else {
+        if (addr < 0x4000u)
+            return NULL;
+        uint32_t banks = half / CART_BANK;
+        uint32_t bank = addr >= 0xC000u ? banks - 1u : addr >= 0x8000u ? c->bank : banks - 2u;
+        offset = bank * CART_BANK + (addr & (CART_BANK - 1u));
+    }
+    return &c->rom[(maria ? half : 0u) + offset];
+}
+
 /* A linear board maps its ROM so that it ends at $FFFF; below the ROM's
    start nothing drives the bus. A SuperGame board maps three 16 KiB
    windows from $4000 (A7800-CARTRIDGES-AND-PERIPHERALS, section 2.1).
@@ -921,13 +959,12 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
         return *ram;
     }
     switch (c->info.board) {
-    case MUHTARI_BOARD_BANKSET:
-        /* CPU-then-MARIA halves; this linear profile ends at $FFFF
-           (cartridge preparation section 2.1, Bankset). */
-        if (addr >= 0x8000u) {
-            return c->rom[addr - 0x8000u];
-        }
+    case MUHTARI_BOARD_BANKSET: {
+        const uint8_t *rom = cart_bankset_rom_at(c, addr, 0);
+        if (rom != NULL)
+            return *rom;
         break;
+    }
     case MUHTARI_BOARD_FRACTALUS:
         if (addr >= 0x8000u) {
             return c->rom[addr - 0x8000u];
@@ -977,9 +1014,11 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
 
 uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick)
 {
-    if (m->cart.rom != NULL && m->cart.info.board == MUHTARI_BOARD_BANKSET && addr >= 0x8000u &&
+    if (m->cart.rom != NULL && m->cart.info.board == MUHTARI_BOARD_BANKSET &&
         muhtari__bus_maria_selected(m, tick)) {
-        return m->cart.rom[32768u + (uint32_t)addr - 0x8000u];
+        const uint8_t *rom = cart_bankset_rom_at(&m->cart, addr, 1);
+        if (rom != NULL)
+            return *rom;
     }
     return muhtari__cart_read(m, addr, 1);
 }
@@ -1047,6 +1086,11 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         return;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_BANKSET:
+        if (c->info.rom_size / 2u >= 128u * CART_KIB && addr >= 0x8000u && addr < 0xC000u) {
+            c->bank = (uint8_t)(v % (c->info.rom_size / 2u / CART_BANK));
+        }
+        break;
     case MUHTARI_BOARD_ACTIVISION:
         /* FF88-FF8F aliasing and bank-zero startup are selected compatibility
            profile policies, not new measurements (cartridge notes, Every scheme). */
