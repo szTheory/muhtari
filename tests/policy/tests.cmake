@@ -52,6 +52,26 @@ muhtari_add_test(NAME release.single_version_source.self_test
     "-DREGEX=notes.md holds 1.2.3" -P ${policy_scripts}/expect_fail.cmake
   LABELS policy TIMEOUT 30)
 
+# Upstream release citations are independent of the product's release version.
+set(policy_provenance ${CMAKE_BINARY_DIR}/policy/version_provenance_fixture)
+file(REMOVE_RECURSE ${policy_provenance})
+file(WRITE ${policy_provenance}/version.txt "1.2.3\n")
+file(WRITE ${policy_provenance}/PROVENANCE.md "Upstream current (v1.2.3)\nUpstream minor (v1.3.0)\nUpstream patch (v1.2.4)\n")
+execute_process(COMMAND ${GIT_EXECUTABLE} init -q WORKING_DIRECTORY ${policy_provenance}
+  COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND ${GIT_EXECUTABLE} add version.txt PROVENANCE.md
+  WORKING_DIRECTORY ${policy_provenance} COMMAND_ERROR_IS_FATAL ANY)
+foreach(mode IN ITEMS current next)
+  set(policy_next OFF)
+  if(mode STREQUAL next)
+    set(policy_next ON)
+  endif()
+  muhtari_add_test(NAME release.single_version_source.provenance.${mode}
+    COMMAND ${CMAKE_COMMAND} -DROOT=${policy_provenance} -DNEXT=${policy_next}
+      -P ${policy_scripts}/single_version.cmake
+    LABELS policy TIMEOUT 30)
+endforeach()
+
 muhtari_add_test(NAME docs.budgets
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/budgets.cmake
   LABELS policy TIMEOUT 10)

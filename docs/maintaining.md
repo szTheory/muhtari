@@ -32,6 +32,10 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
      `refs/heads/main`.
 7. `install-line-latest` runs the README's install line verbatim on `macos-15` against the latest release.
 
+The single-version check rejects duplicate product versions in source and user docs,
+including the next minor and patch. Root `PROVENANCE.md` is outside that scope:
+its upstream release citations are independent of the version in `version.txt`.
+
 Both Ubuntu publisher jobs fetch the SHA-256-verified GitHub CLI pin before use. Every
 attestation entrypoint rejects an unsupported or malformed version; stable gh 2.102.0
 or later is required. Genuine and downloaded assets require the full repository/signer

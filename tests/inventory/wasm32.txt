@@ -547,6 +547,8 @@ release.floor	release
 release.floor.self_test	release
 release.single_version_source	policy
 release.single_version_source.next	policy
+release.single_version_source.provenance.current	policy
+release.single_version_source.provenance.next	policy
 release.single_version_source.self_test	policy
 riot.pa7.edge_flag	portable,riot
 riot.power_on.defaults	portable,riot

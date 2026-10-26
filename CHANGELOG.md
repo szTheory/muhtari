@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/szTheory/muhtari/compare/v0.7.0...v0.8.0) (2026-10-25)
+
+
+### Features
+
+* add PAL timing and sustained audio across hosts ([#33](https://github.com/szTheory/muhtari/issues/33)) ([e982181](https://github.com/szTheory/muhtari/commit/e982181017509f217ca3abe81043fe4087c065fe))
+
 ## [0.7.0](https://github.com/szTheory/muhtari/compare/v0.6.0...v0.7.0) (2026-10-25)
 
 

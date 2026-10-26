@@ -4,10 +4,10 @@ milestone: v2.0
 milestone_name: The whole library
 current_plan: Not started
 status: shipping
-stopped_at: Phase 9 PR 33; measured deadline repair validated locally; corrected-source CI pending
-last_updated: "2026-10-25T22:08:31.374Z"
+stopped_at: Phase 9 merged in PR 33; release PR 35 scan repair locally verified; release CI pending
+last_updated: "2026-10-25T23:42:26.399Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 9 ship CI failed twice on Windows PAL deadline; measured correction passes local 654+6; corrected-source acceptance pending
+last_activity_desc: Phase 9 required CI green and merged; release version scan false positive repaired locally with 656+6 pass
 state_head: 8814d3e80e1221cc0da71b84560c4f001852212a
 progress:
   total_phases: 7
@@ -32,7 +32,7 @@ PAL-01–03 are complete. The library, runner and both libretro formats execute 
 with selected timing/geometry and independently proved bounded audio arithmetic.
 API6/ABI1/behavior5 and all342 original NTSC observations remain unchanged.
 The one review-fix round resolves borrowed BIOS lifetime; no required blocker or owner UAT remains.
-Phase9 ships in PR33. After required CI, merge and release confirmation, the next
+Phase9 merged in PR33. After releasePR35 CI and release confirmation, the next
 separate command is $gsd-discuss-phase 10. Phases10–11 remain unstarted.
 
 ## Current Position
@@ -47,10 +47,31 @@ phases are complete (71%); phases10–11 remain unstarted. Active-slot runtime t
 are50 summarized plans of50 planned, including historical halted06-01;49 accepted
 completed plans. The retained active-slot convention differs from raw historical artifacts.
 
-Status: Phase9 PR33; measured deadline correction locally verified; hosted acceptance pending
-Last activity: 2026-10-25 — Ship preflight passed; local654+6 and accepted hosted CI rechecked
+Status: Phase9 merged — PR33; releasePR35 scan repair locally verified; hosted release CI pending
+Last activity: 2026-10-25 — Phase9 merged; release provenance scan repair passes local656+6
 Next command after merge/release confirmation: $gsd-discuss-phase 10
-Branch: phase/09-pal-games-and-audio
+Branch: phase/09-release-version-scan (release PR35 repair)
+
+## Phase 9 post-merge release confirmation
+
+PR33 merged as e982181 after corrected-head7d8b3bf required CI40242459269 passes
+attempt1. Complete saved-response CMake audit exits0; all required jobs, six native
+current/base builds, quality, equality and actual RetroArch pass. Nightly40242459348
+succeeds overall with advisory isolation390.03s still unaccepted. Main CI40245012617
+exists. Exact commands, exits and URLs are in09-08-SUMMARY's post-merge receipt.
+
+App releasePR35 version0.8.0 at03a573c fails CI40245055377 on a version-scan false
+positive: root PROVENANCE.md legitimately cites upstream test7800 v0.9.0. The narrow
+repair exempts that citation owner, retains other source/docs scanning, and adds
+current/next provenance fixtures while preserving the notes.md duplicate-version
+fault. Corrected fixtures fail the old checker and pass the new one. Five focused
+checks and full local656+6 pass; both exact JUnit inventories pass. Generated release
+version/changelog/manifest edits are retained on the existing release PR.
+
+The repair's hosted release CI and final release outcome remain pending. Original
+phase verification is historical after this post-merge check change; use accepted
+GSD-HANDOFF closeout policy (merged-head CI plus milestone audit), with no routine
+owner verification or repeated digest refresh. No Phase10 step runs here.
 
 ## Phase 9 shipping
 
@@ -487,8 +508,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase9 PR33; corrected-source CI, merge and release confirmation pending
-Last session: 2026-10-25T22:08:31.374Z
+**Stopped at:** Phase9 merged in PR33; releasePR35 CI repair pending hosted confirmation
+Last session: 2026-10-25T23:42:26.399Z
 Resume file: None
 Next command after merge/release confirmation: $gsd-discuss-phase 10
 
@@ -542,7 +563,7 @@ Next command after merge/release confirmation: $gsd-discuss-phase 10
 
 ### Blockers
 
-No required blocker remains. Phase9 is complete with clean review and42/42
-verification; PR33 is the shipping action. Advisory10000-case isolation
-cost remains unaccepted in SEED-009. Hardware calibration, broader retail
-playability and existing historical deferrals retain their stated scope.
+Phase9 implementation is merged with required CI green. ReleasePR35 is awaiting
+hosted acceptance of its locally verified provenance/version-scan repair. Advisory
+10000-case isolation remains unaccepted in SEED-009. Hardware calibration, broader
+retail playability and historical deferrals retain their scope.
