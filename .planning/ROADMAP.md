@@ -306,7 +306,7 @@ Plans:
 - [x] 10-04-PLAN.md — Run XM pages, stable HSC and continuously clocked expansion POKEY.
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 10-05-PLAN.md — Match runner/libretro selection, firmware discovery and explicit refusals.
+- [x] 10-05-PLAN.md — Match runner/libretro selection, firmware discovery and explicit refusals.
 
 **Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 10-06-PLAN.md — Publish honest static maps and prove the actual rcheevos resolver.
@@ -372,7 +372,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 4/13 | In progress | — |
+| 10. Homebrew and expansion memory | 5/13 | In progress | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
