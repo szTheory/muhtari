@@ -2,13 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
+current_phase: 10
 current_plan: Not started
-status: shipping
-stopped_at: Phase 9 merged in PR 33; release PR 35 scan repair locally verified; release CI pending
-last_updated: "2026-10-25T23:42:26.399Z"
+status: planning
+stopped_at: Phase 10 context gathered; next $gsd-plan-phase 10; v0.8.0 publication failure remains separate
+last_updated: "2026-10-26T02:10:40.986Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 9 required CI green and merged; release version scan false positive repaired locally with 656+6 pass
-state_head: 8814d3e80e1221cc0da71b84560c4f001852212a
+last_activity_desc: Phase 10 context gathered with 20 decisions; planning next; v0.8.0 publication remains failed
+state_head: afcffe93b3d5fbd4c0c45a828a83ba56c4cc595e
 progress:
   total_phases: 7
   completed_phases: 5
@@ -16,7 +17,6 @@ progress:
   completed_plans: 50
   percent: 71
 total_phases: 7
-current_phase: 10
 current_phase_name: Homebrew and expansion memory
 ---
 
@@ -27,30 +27,58 @@ current_phase_name: Homebrew and expansion memory
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase9 is complete:8/8 plans,22/22 tasks and42/42 verified truths.
-PAL-01–03 are complete. The library, runner and both libretro formats execute PAL
-with selected timing/geometry and independently proved bounded audio arithmetic.
-API6/ABI1/behavior5 and all342 original NTSC observations remain unchanged.
-The one review-fix round resolves borrowed BIOS lifetime; no required blocker or owner UAT remains.
-Phase9 merged in PR33. After releasePR35 CI and release confirmation, the next
-separate command is $gsd-discuss-phase 10. Phases10–11 remain unstarted.
+Current focus: Phase10 discussion is complete, with20 delegated decisions in
+phases/10-homebrew-expansion-memory/10-CONTEXT.md. No plans, implementation or
+BOARD-04/05 acceptance are claimed. Next separate command: $gsd-plan-phase 10.
+Phase9 remains complete and merged in PR33. ReleasePR35 also merged with required
+CI green, but its v0.8.0 publication run failed and the release remains a draft.
+That release follow-up is independent of Phase10's recorded discussion.
 
 ## Current Position
 
-Current Phase: 10 — Homebrew and expansion memory (unstarted)
+Current Phase: 10 — Homebrew and expansion memory (context gathered)
 Current Plan: Not started
 Total Plans in Phase: Not planned
 Progress: [███████░░░] 71%
 
 Phase9 has8/8 accepted plans and22/22 accepted tasks. Five of seven milestone
-phases are complete (71%); phases10–11 remain unstarted. Active-slot runtime totals
+phases are complete (71%); phases10–11 have no implementation. Active-slot runtime totals
 are50 summarized plans of50 planned, including historical halted06-01;49 accepted
 completed plans. The retained active-slot convention differs from raw historical artifacts.
 
-Status: Phase9 merged — PR33; releasePR35 scan repair locally verified; hosted release CI pending
-Last activity: 2026-10-25 — Phase9 merged; release provenance scan repair passes local656+6
-Next command after merge/release confirmation: $gsd-discuss-phase 10
-Branch: phase/09-release-version-scan (release PR35 repair)
+Status: Phase10 context ready for planning; separate v0.8.0 publication failure open
+Last activity: 2026-10-25 — Phase10 specialist research and delegated synthesis captured
+Next command: $gsd-plan-phase 10
+Branch: phase/10-homebrew-expansion-memory
+
+## Phase 10 discussion and independent release follow-up
+
+The owner selected all four areas and delegated specialist research, adversarial
+synthesis and recommendation adoption. Three read-only reviews and one interaction
+pass produce20 decisions: checked BankSet geometry and causal HALT ownership;
+separate XBoard/XM profiles; additive load selection; stable HSC storage with runtime
+decode gates; continuous POKEY state and honest sound-owner limits; independent
+all-host evidence, bounded resource use and existing finite review policies.
+No new dependency, runtime acceptance or requirement completion is claimed.
+
+Context and discussion log committed as afcffe9. One-time structure/reference
+validation exits0:20 unique decisions, six balanced sections, every local canonical
+path exists. `git diff --check` and `scripts/hygiene.sh --tree` exit0 before the
+context commit; run URL:N/A-local. The next separate step is $gsd-plan-phase 10.
+
+Read-only `gh pr view 35 --json state,mergedAt,headRefOid,url,statusCheckRollup`
+exits0:merged, required CI40246033915 success:
+https://github.com/szTheory/muhtari/actions/runs/40246033915.
+`gh release view v0.8.0 --json tagName,isDraft,isPrerelease,publishedAt,url` exits0:
+draft, unpublished. `gh run view 40249027723 --json attempt,status,conclusion,headSha,url,jobs`
+with a complete-job projection exits0:attempt1, failed on merged9dcb224.
+Windowsx64 and macOSx64 quality-observation steps fail; quality and the required
+aggregate fail; publish is skipped. Other jobs and skips were inspected; no cause
+or transient classification is inferred, and no repair/retry is performed here.
+https://github.com/szTheory/muhtari/actions/runs/40249027723.
+
+The following Phase9 sections retain historical progress and failed-run evidence;
+their former pending/next-command statements are superseded by this receipt.
 
 ## Phase 9 post-merge release confirmation
 
@@ -508,10 +536,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase9 merged in PR33; releasePR35 CI repair pending hosted confirmation
-Last session: 2026-10-25T23:42:26.399Z
-Resume file: None
-Next command after merge/release confirmation: $gsd-discuss-phase 10
+**Stopped at:** Phase 10 context gathered; next $gsd-plan-phase 10; v0.8.0 publication failure remains separate
+Last session: 2026-10-26T02:10:40.665Z
+Resume file: .planning/phases/10-homebrew-expansion-memory/10-CONTEXT.md
+Next command: $gsd-plan-phase 10
 
 ### Quick Tasks Completed
 
