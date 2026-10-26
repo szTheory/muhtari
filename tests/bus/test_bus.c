@@ -531,6 +531,63 @@ static int halt_store_order(void)
     return ok;
 }
 
+/* Retained sample traces expose these ordinary/last costs at actual
+   stretched handoffs. Reproduce their fetch/release arithmetic without
+   depending on a sample's opaque frame or audio digest (bus.md, HALT). */
+static int halt_stretched_costs(void)
+{
+    static const struct {
+        uint8_t headers, width, five, last, slow_first;
+        uint16_t cost, release, resume;
+    } rows[] = {
+        {0u, 0u, 0u, 0u, 0u, 9u, 17u, 30u},
+        {1u, 30u, 1u, 0u, 0u, 109u, 117u, 130u},
+        {1u, 32u, 1u, 1u, 0u, 121u, 129u, 142u},
+        {2u, 24u, 0u, 0u, 1u, 169u, 177u, 190u},
+        {2u, 29u, 0u, 0u, 0u, 199u, 207u, 218u}
+    };
+    static uint8_t rom[32768u];
+    int ok = 1;
+    for (unsigned i = 0u; i < sizeof rows / sizeof rows[0]; i++) {
+        muhtari *m = fresh(LOCKED_7800);
+        memset(m->ram, 0, sizeof m->ram);
+        memset(rom, 0, sizeof rom);
+        m->cart.rom = rom;
+        m->cart.info.board = MUHTARI_BOARD_LINEAR;
+        m->cart.info.rom_size = sizeof rom;
+        m->bus.halt_gate_writes = 2u;
+        m->maria.dl = 0x1800u;
+        m->maria.dll = 0x1A00u;
+        m->maria.offset = rows[i].last ? 0u : 1u;
+        m->maria.dma_line = 20u;
+        m->maria.dma_lrc = 424u;
+        unsigned p = 0u;
+        for (unsigned h = 0u; h < rows[i].headers; h++) {
+            m->ram[p++] = 0u;
+            m->ram[p++] = rows[i].five ? 0x40u : (uint8_t)(32u - rows[i].width);
+            m->ram[p++] = 0x80u;
+            if (rows[i].five)
+                m->ram[p++] = (uint8_t)((32u - rows[i].width) & 31u);
+            m->ram[p++] = 0u;
+        }
+        muhtari__bus_request_halt(m, 0u, MUHTARI__HALT_UNTIL_MARIA);
+        (void)muhtari__bus_read(m, rows[i].slow_first ? 0x0480u : 0x1800u);
+        (void)muhtari__bus_read(m, rows[i].slow_first ? 0x1800u : 0x0480u);
+        ok &= m->bus.ticks == 10u;
+        ok &= m->bus.maria_from == (rows[i].slow_first ? 10u : 9u);
+        (void)muhtari__bus_read(m, 0x1800u);
+        ok &= expect_ticks("stretched HALTRST", m->bus.maria_until, rows[i].release,
+                           "unclamped origin", (uint64_t)rows[i].release - 2u);
+        ok &= expect_ticks("stretched c2 completion", m->bus.ticks,
+                           (uint64_t)rows[i].resume + 4u, "early CPU resumption", 0u);
+        ok &= m->maria.stats[20].cost == rows[i].cost;
+        ok &= m->maria.stats[20].flags == (rows[i].last ? MUHTARI__LINE_LAST : 0u);
+        ok &= m->bus.nmi_pending == 0u && m->bus.nmi_phi2 == 0u;
+        ok &= m->maria.dma_lrc == 424u;
+    }
+    return ok;
+}
+
 static int halt_latency_two_cycles(void)
 {
     int ok = 1;
@@ -542,7 +599,7 @@ static int halt_latency_two_cycles(void)
     ok &= expect_ticks("c1", read_ticks(m), 4u, "one cycle of latency", 24u);
     ok &= expect_ticks("c2", read_ticks(m), 24u, "no freeze", 4u);
     ok &= expect_count("phi2 after c2", "cycles", m->bus.phi2, 9u, "frozen cycles uncounted", 4u);
-    return bankset_frame() && halt_views() && halt_store_order() && ok;
+    return bankset_frame() && halt_views() && halt_store_order() && halt_stretched_costs() && ok;
 }
 
 /* A request at tick 2, inside a 6-tick cycle, takes effect at that cycle's
