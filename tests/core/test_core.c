@@ -821,7 +821,7 @@ static void test_info(void)
     CHECK_EQ_U64(muhtari_get_versions(NULL), MUHTARI_STATUS_ERR_ARGUMENT);
     CHECK_EQ_U64(muhtari_get_versions(&v), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(v.api, MUHTARI_API_VERSION);
-    CHECK_EQ_U64(v.api, 6);
+    CHECK_EQ_U64(v.api, 7);
     CHECK_EQ_U64(v.abi, 1);
     CHECK_EQ_U64(v.behaviour_revision, 6u);
     muhtari_destroy(m);

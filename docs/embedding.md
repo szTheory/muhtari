@@ -50,7 +50,7 @@ PKG_CONFIG_PATH=<unzipped directory>/lib/pkgconfig cc app.c $(pkg-config --cflag
 ## Expansion selection
 
 API 7 retains ABI 1 and behavior revision 6. The appended `muhtari_media.expansion`
-selects `MUHTARI_EXPANSION_AUTO`, `MUHTARI_EXPANSION_OFF`, `MUHTARI_EXPANSION_XBOARD`
+selects one of `MUHTARI_EXPANSION_*`: `MUHTARI_EXPANSION_AUTO`, `MUHTARI_EXPANSION_OFF`, `MUHTARI_EXPANSION_XBOARD`
 or `MUHTARI_EXPANSION_XM`. Zero, omitted and incomplete fields mean Auto. Explicit
 selection wins; Auto uses the resolved cartridge XM request, otherwise Off.
 `muhtari_info.expansion` reports the committed effective selection. Failed loads
@@ -588,7 +588,7 @@ Statuses are only ever added. Those after the probe's:
 | `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` | `muhtari_run_frame` | The BIOS took its 2600 path. It stays until the next load or power cycle. |
 | `MUHTARI_STATUS_ERR_INVALID_BIOS` | `muhtari_load` | The BIOS is not 4,096 or 16,384 bytes, or its reset vector points outside it. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | Reserved numeric region-refusal status; both current regions execute. |
-| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | input setters | A device outside the frozen legacy set, or an attempted change to load-frozen EEPROM topology. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | load, input setters | Unsupported declared sound/topology, a device outside the frozen legacy set, or an attempted change to load-frozen EEPROM topology. |
 | `MUHTARI_STATUS_ERR_INVALID_HSC` | `muhtari_load` | Invalid firmware size/pointer pair, HSC mode, or supplied firmware conflicting with OFF. |
 
 ## Version numbers
