@@ -206,6 +206,20 @@ required gates. A passing audit establishes the required verdict, not that every
 every listed failure and its job log before claiming which checks failed. Keep prior attempts as failed evidence;
 retry only a classified transient failure at the same source, using the existing targeted job rerun.
 
+For final semantic acceptance, download all six `hashes-<os>-<arch>` artifacts and
+`lane-equality` from that exact commit. Each native artifact and each native/PowerPC
+lane contains exactly `commit.txt`, `hashes.txt`, `identity.txt`. The identity is
+the source commit's existing fixture/configuration Git tree plus the full Release
+options; both consumers reject matching forged identities. Native comparison uses
+`cmake -DDIRECTORY=hashes -DEXPECTED_SHA=FULL_COMMIT_SHA -DMODE=compare -P tests/cmake/hashes.cmake`.
+The full native/PowerPC workflow uses `tests/cmake/lane_equality.cmake` after both
+normal and release inventories. Require all3088 observations:956 retained plus
+82 declared BankSet/expansion groups. Their actual numeric/native/raw/PCM judges
+run before writing, including under the PowerPC emulator. Fixture admission and
+current/base three-ZIP measurements remain separate authorities. Local schema
+controls do not replace full hosted execution. WASM/property remain advisory;
+the two existing RetroArch cases retain their own acceptance.
+
 ## Weekly digest
 
 `policy.digest.controls` uses CMake's native PATH modification so the same fake-API controls run on Windows
