@@ -565,6 +565,12 @@ static int retail_judge(const uint8_t mb[256], const char *rom)
 static int retail_expected(const char *path, const char *rom)
 {
     nrows = 0u;
+    if (strcmp(rom, "bankset0") == 0) {
+        nrows = 6u;
+        for (unsigned i = 0u; i < nrows; i++)
+            rows[i].value.lo = rows[i].value.hi = 81u + i;
+        return 0;
+    }
     return strcmp(rom, "smoke") == 0 ? 0 : read_expected(path, rom);
 }
 
@@ -610,6 +616,7 @@ static muhtari__sha256 controller_raw;
 static int controller_light;
 static int controller_analog;
 static int controller_keypad;
+static int bankset_tracer;
 static unsigned controller_motion;
 static unsigned controller_adapter, controller_group;
 
@@ -630,6 +637,8 @@ static uint32_t controller_motion_device(void)
 static const char *controller_name(void)
 {
     static char adapter_name[9];
+    if (bankset_tracer)
+        return "bankset0";
     if (controller_adapter != 0u) {
         snprintf(adapter_name, sizeof adapter_name, "motion%u%c", controller_adapter + 3u,
                  (int)('a' + controller_group));
@@ -802,6 +811,18 @@ static int controller_library(const char *path, const char *expected, const char
         for (unsigned i = 0u; i < 256u; i++)
             mb[i] = muhtari__peek(m, (uint16_t)(MB + i));
         failed = retail_judge(mb, controller_name());
+        if (bankset_tracer) {
+            /* Literal 160A palette-3 pixels from the MARIA $C0 graphic;
+               CPU $40 would give $16. Judge before writing hashes. */
+            for (unsigned f = 1u; f < CONTROLLER_FRAMES; f++) {
+                const uint8_t *pixels = controller_pixels + f * CONTROLLER_PIXELS;
+                if (pixels[40u * 320u] != 0x38u || pixels[40u * 320u + 1u] != 0x38u ||
+                    pixels[40u * 320u + 2u] != 0u) {
+                    fprintf(stderr, "bankset: wrong native graphics sentinel on call %u\n", f + 1u);
+                    failed = 1;
+                }
+            }
+        }
     }
     /* Numeric judgment precedes all equality evidence. */
     if (!failed) {
@@ -1108,6 +1129,82 @@ static int retail_transaction(uint8_t *image)
    replace the record with a real bank-zero read, then publish status last.
    The expected tag and CRC are derived from the mailbox protocol, never
    from the production mapper. No ROM bytes enter the tracked workspace. */
+/* Owned BankSet instructions and data only, generated into the build tree.
+   CPU executes six reads from its set; MARIA reads unequal graphics. */
+static int bankset_image(const char *path, int wrong_graphics)
+{
+    uint8_t *image = calloc(65664u, 1u);
+    if (image == NULL)
+        return 1;
+    image[0] = 3u;
+    memcpy(image + 1u, "ATARI7800", 9u);
+    image[50] = 1u;
+    image[53] = 0x20u;
+    uint8_t *body = image + 128u;
+    /* Template copy, then actual CPU observations overwrite the six
+       numeric fields. The precomputed CRC $C84C covers IDs 1..6, values
+       81..86 and zero padding; no production mapping derives expectations. */
+    static const uint8_t setup[] = {
+        0x78u, 0xD8u, 0xA2u, 0u, 0xBDu, 0u, 0x90u, 0x9Du, 0u, 0x22u,
+        0xE8u, 0xD0u, 0xF7u
+    };
+    memcpy(body, setup, sizeof setup);
+    size_t p = sizeof setup;
+    for (unsigned i = 0u; i < 6u; i++) {
+        const uint8_t read[] = {0xADu, (uint8_t)i, 0xB0u, 0x8Du,
+                                (uint8_t)(18u + 4u * i), 0x22u};
+        memcpy(body + p, read, sizeof read);
+        p += sizeof read;
+        body[0x3000u + i] = (uint8_t)(81u + i);
+        body[32768u + 0x3000u + i] = (uint8_t)(167u + i);
+    }
+    static const uint8_t display[] = {
+        0xA9u, 0xA0u, 0x85u, 0x2Cu, 0xA9u, 0u, 0x85u, 0x30u,
+        0xA9u, 0x16u, 0x85u, 0x21u, 0xA9u, 0x38u, 0x85u, 0x23u,
+        0xA9u, 0x40u, 0x85u, 0x3Cu, 0xA9u, 0u, 0x8Du, 5u, 0x22u
+    };
+    memcpy(body + p, display, sizeof display);
+    p += sizeof display;
+    body[p] = 0x4Cu;
+    body[p + 1u] = (uint8_t)p;
+    body[p + 2u] = 0x80u;
+    uint8_t *mb = body + 0x1000u;
+    memcpy(mb, "M7DG", 4u);
+    mb[4] = 1u;
+    mb[5] = 0x80u;
+    mb[6] = 6u;
+    mb[7] = 20u;
+    mb[8] = 0x4Cu;
+    mb[9] = 0xC8u;
+    for (unsigned i = 0u; i < 6u; i++) {
+        mb[16u + 4u * i] = (uint8_t)(i + 1u);
+        mb[17u + 4u * i] = 1u;
+        /* Numeric fields start poisoned, so skipping a CPU store fails. */
+        mb[18u + 4u * i] = 0xFFu;
+    }
+    for (unsigned set = 0u; set < 2u; set++) {
+        uint8_t *rom = body + set * 32768u;
+        for (unsigned zone = 0u; zone < 32u; zone++) {
+            rom[0x2000u + zone * 3u] = 15u;
+            rom[0x2001u + zone * 3u] = 0xA1u;
+        }
+        rom[0x2101u] = 31u;
+        rom[0x2102u] = 0xB1u;
+        memset(rom + 0x3100u, set == 0u || wrong_graphics ? 0x40 : 0xC0, 4096u);
+    }
+    body[0x7FF8u] = 0xFFu;
+    body[0x7FF9u] = 0x87u;
+    body[0x7FFDu] = 0x80u;
+    FILE *f = fopen(path, "wb");
+    int failed = f == NULL;
+    if (f != NULL) {
+        failed = fwrite(image, 1u, 65664u, f) != 65664u;
+        failed |= fclose(f) != 0;
+    }
+    free(image);
+    return failed;
+}
+
 static int retail_smoke(const char *path)
 {
     uint8_t *image = (uint8_t *)calloc(65664u, 1u);
@@ -2216,6 +2313,24 @@ pal_cleanup:
 int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
+    if ((argc == 3 || argc == 4) && strcmp(argv[1], "--bankset-image") == 0)
+        return bankset_image(argv[2], argc == 4);
+    if ((argc == 4 || argc == 5) && strcmp(argv[1], "--bankset-case") == 0) {
+        bankset_tracer = 1;
+        controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
+        if (controller_pixels == NULL)
+            return 1;
+        int failed = controller_library(argv[2], "", argv[3]);
+#ifdef DIAG_LIBRETRO
+        if (!failed && argc == 5)
+            failed = controller_module(argv[4], argv[2]);
+#else
+        if (argc == 5)
+            failed = 1;
+#endif
+        free(controller_pixels);
+        return failed;
+    }
     if (argc == 4 && strcmp(argv[1], "--pal-report") == 0)
         return pal_report(argv[2], argv[3]);
     if ((argc == 5 || argc == 6) && strcmp(argv[1], "--pal-case") == 0)

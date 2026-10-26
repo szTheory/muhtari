@@ -1,3 +1,68 @@
+# One owned narrow BankSet path. Existing taps compare executed native
+# frames, canonical raw records, PCM and sample counts after numeric judgment.
+if(DIAG_BANKSET_RUN)
+  file(MAKE_DIRECTORY "${OUT}")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --bankset-image "${OUT}/bankset.a78"
+    RESULT_VARIABLE rc TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "bankset: image generation failed ${rc}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --bankset-case "${OUT}/bankset.a78"
+    "${OUT}" ${MODULE} RESULT_VARIABLE rc OUTPUT_VARIABLE report ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "bankset: valid numeric/native library/module observation failed ${rc}: ${report}${err}")
+  endif()
+  set(hashes "")
+  foreach(frame RANGE 1 12)
+    list(APPEND hashes --hash-frame ${frame})
+  endforeach()
+  execute_process(COMMAND ${EMULATOR} "${RUNNER}" --movie "${OUT}/input.txt"
+    --frames 12 ${hashes} --hash-audio --diagnostic "${OUT}/bankset.a78"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE actual ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "bankset: actual runner failed ${rc}: ${err}")
+  endif()
+  string(REGEX MATCH "diagnostic [0-9a-f]+\n" mailbox "${actual}")
+  file(CONFIGURE OUTPUT "${OUT}/report.txt" CONTENT "${mailbox}" @ONLY NEWLINE_STYLE UNIX)
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/report.txt" bankset0 ""
+    RESULT_VARIABLE rc TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "bankset: actual runner numeric judgment failed ${rc}")
+  endif()
+  file(STRINGS "${OUT}/reference.txt" evidence)
+  foreach(line IN LISTS evidence)
+    string(FIND "${actual}" "${line}\n" found)
+    if(found EQUAL -1)
+      message(FATAL_ERROR "bankset: actual runner native/raw/PCM/sample mismatch: ${line}")
+    endif()
+  endforeach()
+  # Includes count, identity and CRC faults plus a CRC-valid wrong value.
+  foreach(fault RANGE 0 4)
+    execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/fault-${fault}.txt"
+      bankset0 "" RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET TIMEOUT 10)
+    if(NOT rc STREQUAL "1")
+      message(FATAL_ERROR "bankset: accepted report fault ${fault}: ${rc}")
+    endif()
+  endforeach()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --mailbox "${OUT}/absent.txt" bankset0 ""
+    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET TIMEOUT 10)
+  if(NOT rc STREQUAL "1")
+    message(FATAL_ERROR "bankset: accepted missing report ${rc}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --bankset-image "${OUT}/wrong.a78" cpu-graphics
+    RESULT_VARIABLE rc TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "bankset: wrong-view control could not be generated ${rc}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --bankset-case "${OUT}/wrong.a78" "${OUT}"
+    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "1" OR NOT err MATCHES "wrong native graphics sentinel")
+    message(FATAL_ERROR "bankset: accepted CPU graphics in MARIA set: ${rc} ${err}")
+  endif()
+  message("bankset: numeric/native library, real runner, loaded module, raw/PCM/sample equality and report/view faults pass")
+  return()
+endif()
+
 # Sustained acceptance is never shortened by MUHTARI_SHORT_RUNS. Numeric
 # startup/full-frame judgment runs before any native/raw/PCM equality row.
 if(DIAG_PAL_RUN)
@@ -507,6 +572,19 @@ set(EXPECTED [==[${diag_dir}/expected.csv]==])
 include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
 muhtari_add_test(NAME diag.controllers COMMAND ${CMAKE_COMMAND} -P ${diag_controllers}
+  LABELS diag portable TIMEOUT 30)
+
+set(diag_bankset ${PROJECT_BINARY_DIR}/tests/diag/bankset.cmake)
+file(GENERATE OUTPUT ${diag_bankset} CONTENT
+"set(DIAG_BANKSET_RUN TRUE)
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/bankset]==])
+set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
+set(RUNNER [==[$<TARGET_FILE:muhtari-run>]==])
+set(MODULE [==[${diag_controller_module}]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+muhtari_add_test(NAME diag.bankset_tracer COMMAND ${CMAKE_COMMAND} -P ${diag_bankset}
   LABELS diag portable TIMEOUT 30)
 
 set(diag_pal ${PROJECT_BINARY_DIR}/tests/diag/pal.cmake)
