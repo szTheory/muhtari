@@ -2525,6 +2525,9 @@ static muhtari_span span_of(muhtari *m, uint32_t kind, muhtari_status want)
 static void test_get_memory_spans(void)
 {
     muhtari *m = make();
+    muhtari_span expansion = span_of(m, MUHTARI_MEMORY_EXPANSION_RAM, MUHTARI_STATUS_OK);
+    CHECK(expansion.data == NULL);
+    CHECK_EQ_U64(expansion.bytes, 0u);
     muhtari_span ram = span_of(m, MUHTARI_MEMORY_SYSTEM_RAM, MUHTARI_STATUS_OK);
     CHECK(ram.data != NULL);
     CHECK_EQ_U64(ram.bytes, 4096);
@@ -2547,7 +2550,7 @@ static void test_get_memory_spans(void)
     CHECK(cart_ram.data == NULL);
     CHECK_EQ_U64(cart_ram.bytes, 0);
     (void)span_of(m, 0u, MUHTARI_STATUS_ERR_ARGUMENT);
-    (void)span_of(m, 4u, MUHTARI_STATUS_ERR_ARGUMENT);
+    (void)span_of(m, 5u, MUHTARI_STATUS_ERR_ARGUMENT);
     muhtari_span span;
     memset(&span, 0, sizeof span);
     span.size = (uint32_t)sizeof span;
@@ -2710,7 +2713,7 @@ static void retail_lifecycle(void)
         /* No battery memory kind exists in this API; Fractalus has no
            save-device declaration and only the volatile cart-RAM span. */
         CHECK_EQ_U64(m->cart.info.devices, 0u);
-        (void)span_of(m, 4u, MUHTARI_STATUS_ERR_ARGUMENT);
+        (void)span_of(m, 5u, MUHTARI_STATUS_ERR_ARGUMENT);
         uint32_t allocations = counts.allocs, frees = counts.frees;
         uint32_t peer_allocations = peer_counts.allocs;
         for (uint32_t cycle = 0u; cycle < 3u; cycle++) {
