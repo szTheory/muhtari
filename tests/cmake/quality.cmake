@@ -154,7 +154,7 @@ function(quality_fixture_identity out candidate trusted)
       message(FATAL_ERROR "quality: owned BankSet identity")
     endif()
     if(path STREQUAL "tests/diag/expansion.a78" AND NOT row STREQUAL
-        "tests/diag/expansion.a78\tthis-repo\tde267c734a8c3d86995c66dd9eb5aa2fab19a975\tMIT\ta81acf7900419e30fd08a95ae7db0deedeed4cbe2d1eefe8fec3535fd2054e6f\t-")
+        "tests/diag/expansion.a78\tthis-repo\t26357b8ef692de1d86a848992d6b679d9999f79b\tMIT\tb5164fe19df352231d2a6033d0349ff45019f2dcfb889f6d0d542879ae41ee9b\t-")
       message(FATAL_ERROR "quality: owned expansion identity")
     endif()
     string(REPLACE "${row}\n" "" stripped "${stripped}")
