@@ -290,7 +290,51 @@ Plans:
 **Goal:** Run BankSet and XBoard/XM memory/POKEY/HSC capabilities using the correct CPU/MARIA ownership.
 **Depends on:** Phase 9
 **Requirements:** BOARD-04, BOARD-05
-**Plans:** TBD — created by plan-phase.
+**Plans:** 13 plans in 13 sequential waves.
+
+Plans:
+**Wave 1**
+- [ ] 10-01-PLAN.md — Prove the causal electrical-owner tracer through all three deliverables.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 10-02-PLAN.md — Complete checked BankSet geometry, shared/HALT RAM and redirects.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 10-03-PLAN.md — Deliver additive selection, transactional XBoard and API/version evidence.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 10-04-PLAN.md — Run XM pages, stable HSC and continuously clocked expansion POKEY.
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 10-05-PLAN.md — Match runner/libretro selection, firmware discovery and explicit refusals.
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 10-06-PLAN.md — Publish honest static maps and prove the actual rcheevos resolver.
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 10-07-PLAN.md — Admit and independently judge owned BankSet geometry diagnostics.
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 10-08-PLAN.md — Admit and independently judge integrated expansion diagnostics.
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [ ] 10-09-PLAN.md — Require complete semantic observations in strict native/PowerPC equality.
+
+**Wave 10** *(blocked on Wave 9 completion)*
+- [ ] 10-10-PLAN.md — Prove transactional lifetimes, physical accounting and no allocation after load.
+
+**Wave 11** *(blocked on Wave 10 completion)*
+- [ ] 10-11-PLAN.md — Prove hostile regional execution, loader replay and isolation/lifecycle properties.
+
+**Wave 12** *(blocked on Wave 11 completion)*
+- [ ] 10-12-PLAN.md — Publish qualified hardware/API docs and executed compatibility claims.
+
+**Wave 13** *(blocked on Wave 12 completion)*
+- [ ] 10-13-PLAN.md — Accept exact-source inventories and preserved local/hosted contracts.
+
+**Cross-cutting constraints:**
+- 32-bit/native/PPC array and offset arithmetic is bounded by real1MiB ROM,32KiB cart HALT RAM and128KiB expansion capacities, without a new proxy limit.
+- Released capability and hardware documentation match executed BankSet/XBoard/XM subset behavior and preserve explicit physical/source confidence limits.
 
 **Success criteria:**
 
@@ -328,8 +372,8 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 0/TBD | Not started | — |
+| 10. Homebrew and expansion memory | 0/13 | Ready to execute | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-25; Phases5–9 are complete. Phase9 has8/8 accepted plans,22/22 tasks,42/42 verified truths and all three PAL requirements complete. Source-fresh CI40233948646 and Nightly40233948516 attempt2 pass: six native current/base lanes, full native/PPC654+6, WASM592/956-row equality, actual RetroArch and authenticated native packages. One review-fix round resolved BIOS input lifetime; re-review is clean, gap round unused. The advisory10000-case isolation timeout remains unaccepted. Phases10–11 remain unstarted. Next separate command: $gsd-ship 9.*
+*Updated: 2026-10-25; Phases5–9 are complete. Phase9 has8/8 accepted plans,22/22 tasks,42/42 verified truths and all three PAL requirements complete. Source-fresh CI40233948646 and Nightly40233948516 attempt2 pass: six native current/base lanes, full native/PPC654+6, WASM592/956-row equality, actual RetroArch and authenticated native packages. One review-fix round resolved BIOS input lifetime; re-review is clean, gap round unused. The advisory10000-case isolation timeout remains unaccepted. Phase10 is researched and planned (13 plans/30 tasks,13 sequential waves), with independent plan checking passed and20/20 decisions covered. Phase11 remains unplanned. Next separate command: $gsd-execute-phase 10.*

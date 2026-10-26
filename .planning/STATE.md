@@ -4,18 +4,18 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 10
 current_plan: Not started
-status: planning
-stopped_at: Phase 10 context gathered; next $gsd-plan-phase 10; v0.8.0 publication failure remains separate
-last_updated: "2026-10-26T02:10:40.986Z"
+status: ready_to_execute
+stopped_at: Phase 10 planned and independently checked; next $gsd-execute-phase 10; v0.8.0 publication failure remains separate
+last_updated: "2026-10-26T03:22:52.057Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 10 context gathered with 20 decisions; planning next; v0.8.0 publication remains failed
-state_head: afcffe93b3d5fbd4c0c45a828a83ba56c4cc595e
+last_activity_desc: Phase 10 research and 13 plans checked; ready to execute; v0.8.0 publication remains failed
+state_head: 3e548d42c365ef78e278f406e202e2f3688bebac
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 50
+  total_plans: 63
   completed_plans: 50
-  percent: 71
+  percent: 79
 total_phases: 7
 current_phase_name: Homebrew and expansion memory
 ---
@@ -27,29 +27,57 @@ current_phase_name: Homebrew and expansion memory
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase10 discussion is complete, with20 delegated decisions in
-phases/10-homebrew-expansion-memory/10-CONTEXT.md. No plans, implementation or
-BOARD-04/05 acceptance are claimed. Next separate command: $gsd-plan-phase 10.
+Current focus: Phase10 research and13 plans in13 sequential waves are ready to
+execute after independent plan verification. All20 context decisions and both
+requirements are covered; no implementation or BOARD-04/05 acceptance is claimed.
+Next separate command: $gsd-execute-phase 10.
 Phase9 remains complete and merged in PR33. ReleasePR35 also merged with required
 CI green, but its v0.8.0 publication run failed and the release remains a draft.
-That release follow-up is independent of Phase10's recorded discussion.
+That release follow-up is independent of Phase10's planning.
 
 ## Current Position
 
-Current Phase: 10 — Homebrew and expansion memory (context gathered)
+Current Phase: 10 — Homebrew and expansion memory (planned)
 Current Plan: Not started
-Total Plans in Phase: Not planned
-Progress: [███████░░░] 71%
+Total Plans in Phase: 13
+Progress: [████████░░] 79%
 
 Phase9 has8/8 accepted plans and22/22 accepted tasks. Five of seven milestone
 phases are complete (71%); phases10–11 have no implementation. Active-slot runtime totals
-are50 summarized plans of50 planned, including historical halted06-01;49 accepted
+are50 summarized plans of63 planned, including historical halted06-01;49 accepted
 completed plans. The retained active-slot convention differs from raw historical artifacts.
 
-Status: Phase10 context ready for planning; separate v0.8.0 publication failure open
-Last activity: 2026-10-25 — Phase10 specialist research and delegated synthesis captured
-Next command: $gsd-plan-phase 10
+Status: Phase10 ready to execute; separate v0.8.0 publication failure open
+Last activity: 2026-10-25 — Phase10 research,13 plans and independent plan verification complete
+Next command: $gsd-execute-phase 10
 Branch: phase/10-homebrew-expansion-memory
+
+## Phase 10 planning receipt
+
+Research and13 plans/30 tasks in13 sequential waves are ready. Independent
+plan-checking passed after one consolidated revision: two broad plans were split,
+cohesive scopes documented, research questions dispositioned for planning and
+sally.irq added to the focused POKEY check. Both requirements and all20 decisions
+have concrete coverage. No implementation, requirement acceptance, owner UAT or
+new review/gap execution round is claimed. The two unclassified spec-less rows
+remain flagged; XM physical evidence and separate publication limits remain.
+
+`verify plan-structure` for every phase10 plan exits0 (13/13); both
+`check verify-command-paths 10 --raw` and
+`check verify-failure-directions 10 --raw` exit0. The path probe does not interpret
+CMake commands; the independent checker verified existing/planned registrations.
+All30 commands have failure signals and pass `sh -n`.
+`query check.decision-coverage-plan` exits0 (20/20), and
+`check gap-analysis.plan-post` exits0 (22/22). `git diff --check` and
+`scripts/hygiene.sh --tree` exit0. Run URL:N/A-local for these planning checks.
+Research records its70 baseline tests and disposable bus counterexample with
+commands/exits; these do not accept new hardware behavior.
+
+The state helper updated counts but retained the old status/next command and
+reset progress to0. One scoped reconciliation retains the active-slot convention:
+50 summarized of63 planned (79%),49 accepted historical plans,5/7 completed
+milestone phases (71%). This is planning progress, not runtime completion.
+Next separate command: $gsd-execute-phase 10.
 
 ## Phase 10 discussion and independent release follow-up
 
@@ -77,7 +105,8 @@ aggregate fail; publish is skipped. Other jobs and skips were inspected; no caus
 or transient classification is inferred, and no repair/retry is performed here.
 https://github.com/szTheory/muhtari/actions/runs/40249027723.
 
-The following Phase9 sections retain historical progress and failed-run evidence;
+The discussion receipt above and following Phase9 sections retain historical
+progress, former next commands and failed-run evidence;
 their former pending/next-command statements are superseded by this receipt.
 
 ## Phase 9 post-merge release confirmation
@@ -536,10 +565,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 10 context gathered; next $gsd-plan-phase 10; v0.8.0 publication failure remains separate
-Last session: 2026-10-26T02:10:40.665Z
-Resume file: .planning/phases/10-homebrew-expansion-memory/10-CONTEXT.md
-Next command: $gsd-plan-phase 10
+**Stopped at:** Phase 10 planned and independently checked; next $gsd-execute-phase 10; v0.8.0 publication failure remains separate
+Last session: 2026-10-26T03:23:40Z
+Resume file: .planning/phases/10-homebrew-expansion-memory/10-01-PLAN.md
+Next command: $gsd-execute-phase 10
 
 ### Quick Tasks Completed
 
@@ -591,7 +620,7 @@ Next command: $gsd-plan-phase 10
 
 ### Blockers
 
-Phase9 implementation is merged with required CI green. ReleasePR35 is awaiting
-hosted acceptance of its locally verified provenance/version-scan repair. Advisory
+Phase9 implementation and releasePR35 are merged with required CI green. The
+v0.8.0 publication run failed and the release remains a draft, separately unresolved. Advisory
 10000-case isolation remains unaccepted in SEED-009. Hardware calibration, broader
 retail playability and historical deferrals retain their scope.
