@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 10
-current_plan: 7
+current_plan: 8
 status: executing
-stopped_at: Phase 10 plans 01-06 accepted; plan 07 ready
-last_updated: "2026-10-26T19:02:05.865Z"
+stopped_at: Phase 10 plans 01-07 accepted; plan 08 ready
+last_updated: "2026-10-26T19:54:05.074Z"
 last_activity: 2026-10-26
-last_activity_desc: Phase 10 plans 01-06 accepted; 6 of 13 plans complete; plan 07 ready
-state_head: 287dd49d9a507a3fee512f5e5582fb7c7157bc9a
+last_activity_desc: Phase 10 plans 01-07 accepted; 7 of 13 plans complete; plan 08 ready
+state_head: 85793c1e55ccdd468d0df22096963a7eb59010a9
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 63
-  completed_plans: 56
-  percent: 89
+  completed_plans: 57
+  percent: 90
 total_phases: 7
 current_phase_name: Homebrew and expansion memory
 ---
@@ -27,24 +27,24 @@ current_phase_name: Homebrew and expansion memory
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase10 execution, 6/13 accepted plans and 14/30 implemented tasks.
-Plan10-07 is ready. BOARD-04/05 remain pending; final hosted acceptance is later.
+Current focus: Phase10 execution, 7/13 accepted plans and 17/30 implemented tasks.
+Plan10-08 is ready. BOARD-04/05 remain pending; final hosted acceptance is later.
 Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
 remains recorded below; this step makes no new release claim.
 
 ## Current Position
 
 Current Phase: 10 — Homebrew and expansion memory
-Current Plan: 7
+Current Plan: 8
 Total Plans in Phase: 13
-Progress: [████████░░] 89%
+Progress: [████████░░] 90%
 
-Phase10 has6/13 accepted plans. Five of seven milestone phases are complete (71%).
-Active-slot totals are56 summarized plans of63 planned, including historical
-halted06-01;55 accepted plans. Summarized counts do not establish phase acceptance.
+Phase10 has7/13 accepted plans. Five of seven milestone phases are complete (71%).
+Active-slot totals are57 summarized plans of63 planned, including historical
+halted06-01;56 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Executing Phase10; plan10-07 ready
-Last activity: 2026-10-26 — Plan10-06 accepted with stable frontend memory maps
+Status: Executing Phase10; plan10-08 ready
+Last activity: 2026-10-26 — Plan10-07 accepted with owned BankSet three-host matrix
 Next command: $gsd-execute-phase 10
 Branch: phase/10-homebrew-expansion-memory
 
@@ -110,6 +110,18 @@ actual CPU controls, physical/save lifetimes and four false-descriptor controls.
 Targeted9 checks and final659+6 workflow exit0. Fresh producer versus genuinea41f777
 exits0,271343/271314 three-ZIP bytes report-only. Commands/exits/N/A-local are in
 10-06-SUMMARY; full BOARD acceptance and hosted evidence remain pending.
+
+Plan10-07 source3507558 and summary85793c1 are committed. Immutable sourcepin
+6321fa6 and canonical fixture2a093be rebuild exactly; exact admission retains old
+manifest/sample authority. Fourteen geometry/RAM variants plus two PAL representatives
+execute through all three real deliverables, with17 measured records, independent
+post-setup pixels and malformed/CRC-valid wrong-value/wrong-view/PNG controls before
+equality. Independent source review resolved row17/setup timing without pin changes.
+Module-free matrix also passes; portable inventory gains the two BankSet rows.
+Final workflow exits0:660+6; fresh producer versus genuinef124167 exits0,current660/
+base659+6,271344/271327 three-ZIP bytes report-only. Complete workload2.32s sets
+provisional5s via existing calibration. All failures/corrections and commands/exits/
+N/A-local are retained in10-07-SUMMARY. Equality09 and hosted13 remain pending.
 
 The following planning and earlier-phase receipts are historical; this execution
 receipt supersedes their former phase10 ready/not-started statements.

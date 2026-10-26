@@ -312,7 +312,7 @@ Plans:
 - [x] 10-06-PLAN.md — Publish honest static maps and prove the actual rcheevos resolver.
 
 **Wave 7** *(blocked on Wave 6 completion)*
-- [ ] 10-07-PLAN.md — Admit and independently judge owned BankSet geometry diagnostics.
+- [x] 10-07-PLAN.md — Admit and independently judge owned BankSet geometry diagnostics.
 
 **Wave 8** *(blocked on Wave 7 completion)*
 - [ ] 10-08-PLAN.md — Admit and independently judge integrated expansion diagnostics.
@@ -372,7 +372,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 6/13 | In progress | — |
+| 10. Homebrew and expansion memory | 7/13 | In progress | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
