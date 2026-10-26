@@ -76,7 +76,8 @@ reset SUBROUTINE
         adc #$A0
         sta $7FFF
 .dll    ; Every page owns a DLL; VBE must read the CPU page, later zones
-        ; the electrically HALTed MARIA page. OFFSET0 keeps endpoints exact.
+        ; the electrically HALTed MARIA page. Two-line zones cover PAL within
+        ; 256 entries; each OFFSET0 line reads the exact graphics endpoints.
         lda #0
         sta PTR
         lda #$41
@@ -97,7 +98,7 @@ reset SUBROUTINE
         sta DL+1
         ldx #0
 .zone   ldy #0
-        lda #0
+        lda #1
         sta (PTR),y
         iny
         lda DL+1
@@ -125,7 +126,7 @@ reset SUBROUTINE
         sta (PTR),y
         iny
         inx
-        cpx #16
+        cpx #17
         bne .object
         lda #0
         sta (PTR),y
@@ -133,7 +134,7 @@ reset SUBROUTINE
         sta (PTR),y
         lda PAGE
         asl
-        ldy #3
+        ldy #4
 .position
         sta (PTR),y
         clc
@@ -142,7 +143,7 @@ reset SUBROUTINE
         iny
         iny
         iny
-        cpy #19
+        cpy #20
         bne .position
         inc PAGE
         lda $F700
@@ -323,7 +324,9 @@ select SUBROUTINE
         sta $0470
         rts
 object_bytes
-        .byte 0,31,$40,0, $FF,31,$5F,8
+        ; The first five-byte header explicitly resets WM0. Four-byte headers
+        ; retain WM, including a floating pre-VBE list after DMA is enabled.
+        .byte 0,$40,$40,31,0, $FF,31,$5F,8
         .byte 0,31,$60,16, $FF,31,$7F,24
         ds $F6F0-*, 0
         .byte "EXPAND01"
