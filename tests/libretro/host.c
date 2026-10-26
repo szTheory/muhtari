@@ -260,6 +260,16 @@ static void RETRO_CALLCONV host_log(enum retro_log_level level, const char *fmt,
     }
 }
 
+static void expansion_values(const char *default_value,
+                             const struct retro_core_option_value *values)
+{
+    static const char *const expected[] = {"auto", "off", "xboard", "xm"};
+    CHECK(strcmp(default_value, "auto") == 0);
+    for (unsigned i = 0u; i < 4u; i++)
+        CHECK(values[i].value != NULL && strcmp(values[i].value, expected[i]) == 0);
+    CHECK(values[4].value == NULL);
+}
+
 static bool RETRO_CALLCONV env(unsigned cmd, void *data)
 {
     if (cmd == RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO || cmd == RETRO_ENVIRONMENT_SET_GEOMETRY) {
@@ -309,6 +319,8 @@ static bool RETRO_CALLCONV env(unsigned cmd, void *data)
         int k;
         for (k = 0; k < 15 && d[k].key != NULL; k++) {
             option_keys[k] = d[k].key;
+            if (strcmp(d[k].key, "muhtari_expansion") == 0)
+                expansion_values(d[k].default_value, d[k].values);
             if (strcmp(d[k].key, "muhtari_region") == 0 ||
                 strcmp(d[k].key, "muhtari_palette") == 0) {
                 CHECK(strcmp(d[k].default_value, "auto") == 0);
@@ -327,6 +339,8 @@ static bool RETRO_CALLCONV env(unsigned cmd, void *data)
         int k;
         for (k = 0; k < 15 && d[k].key != NULL; k++) {
             option_keys[k] = d[k].key;
+            if (strcmp(d[k].key, "muhtari_expansion") == 0)
+                expansion_values(d[k].default_value, d[k].values);
             if (strcmp(d[k].key, "muhtari_region") == 0 ||
                 strcmp(d[k].key, "muhtari_palette") == 0) {
                 CHECK(strcmp(d[k].default_value, "auto") == 0);
@@ -1914,19 +1928,20 @@ static void case_bios(const char *dir)
    switches at load and at Restart; a change mid-game sets them at once. */
 static void check_keys(void)
 {
-    static const char *const keys[8] = {"muhtari_boot",
+    static const char *const keys[9] = {"muhtari_boot",
                                         "muhtari_region",
                                         "muhtari_palette",
                                         "muhtari_left_difficulty",
                                         "muhtari_right_difficulty",
                                         "muhtari_hsc",
+                                        "muhtari_expansion",
                                         "muhtari_battery_port1",
                                         "muhtari_battery_port2"};
     unsigned k;
-    for (k = 0; k < 8u; k++) {
+    for (k = 0; k < 9u; k++) {
         check_string("option key", option_keys[k], keys[k]);
     }
-    CHECK(option_keys[8] == NULL);
+    CHECK(option_keys[9] == NULL);
 }
 
 static void case_options(void)
@@ -2162,7 +2177,7 @@ static void expansion_selection(void)
     static uint8_t image[128u + 106496u];
     static const uint8_t program[] = {0xA9, 0x08, 0x8D, 0x70, 0x04, 0xAD, 0x00, 0x10,
                                       0x8D, 0x00, 0x18, 0xEE, 0x00, 0x10, 0x02};
-    static const char *const choices[] = {"auto", "off", "xboard", "xm"};
+    static const char *const choices[] = {"auto", "off", "xboard", "xm", "unknown", NULL};
     static const char *const modes[] = {"auto", "on", "off"};
     struct retro_game_info game = {0};
     game.data = image;
@@ -2171,7 +2186,7 @@ static void expansion_selection(void)
         game.size = images_linear(image, 4u, 4096u);
         image[63] = (uint8_t)raw;
         memcpy(image + 128u, program, sizeof program);
-        for (unsigned choice = 0u; choice < 4u; choice++) {
+        for (unsigned choice = 0u; choice < 6u; choice++) {
             for (unsigned hsc = 0u; hsc < 3u; hsc++) {
                 set_var("muhtari_expansion", choices[choice]);
                 set_var("muhtari_hsc", modes[hsc]);
@@ -2179,7 +2194,7 @@ static void expansion_selection(void)
                 log_used = 0u;
                 log_text[0] = '\0';
                 CHECK(p_load_game(&game));
-                bool xm = choice == 3u || (choice == 0u && raw != 0u);
+                bool xm = choice == 3u || ((choice == 0u || choice >= 4u) && raw != 0u);
                 bool attached = hsc == 1u || (hsc == 0u && xm);
                 uint8_t *save = p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
                 CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), attached ? 2048u : 0u);
@@ -2377,14 +2392,16 @@ static void case_battery_order(void)
     set_var("muhtari_battery_port2", "auto");
 }
 
-static void case_hsc_firmware(const char *dir)
+static void hsc_firmware_profile(const char *dir, unsigned profile)
 {
     static uint8_t image[128u + 4096u];
     struct retro_game_info game = {0};
     game.data = image;
     game.size = images_linear(image, 3u, 4096u);
     image[128u] = 0x02u;
-    set_var("muhtari_hsc", "on");
+    set_var("muhtari_hsc", profile == 0u ? "on" : "auto");
+    set_var("muhtari_expansion", profile == 2u ? "xm" : "auto");
+    image[63] = profile == 1u ? 1u : 0u;
     system_dir = dir;
     p_set_environment(env);
     unsigned before = message_calls;
@@ -2446,6 +2463,48 @@ static void case_hsc_firmware(const char *dir)
     system_dir = NULL;
     set_var("muhtari_boot", "fast");
     set_var("muhtari_hsc", "auto");
+    set_var("muhtari_expansion", "auto");
+}
+
+static void case_hsc_firmware(const char *dir)
+{
+    for (unsigned profile = 0u; profile < 3u; profile++)
+        hsc_firmware_profile(dir, profile);
+    /* A malformed optional file is irrelevant when HSC is effectively Off. */
+    char path[4096];
+    CHECK(snprintf(path, sizeof path, "%s/highscre.bin", dir) > 0);
+    FILE *f = fopen(path, "wb");
+    CHECK(f != NULL);
+    if (f != NULL) {
+        CHECK_EQ_U64(fputc(0x64, f), 0x64);
+        CHECK_EQ_U64(fclose(f), 0u);
+    }
+    static uint8_t image[128u + 4096u];
+    struct retro_game_info game = {0};
+    game.data = image;
+    game.size = images_linear(image, 4u, 4096u);
+    image[63] = 1u;
+    image[128] = 0x02;
+    system_dir = dir;
+    p_set_environment(env);
+    set_var("muhtari_hsc", "off");
+    CHECK(p_load_game(&game));
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+    unsigned before = message_calls;
+    p_run();
+    CHECK_EQ_U64(message_calls, before);
+    p_unload_game();
+    set_var("muhtari_hsc", "auto");
+    CHECK(!p_load_game(&game));
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 0u);
+    CHECK_EQ_U64(remove(path), 0u);
+    CHECK(p_load_game(&game));
+    before = message_calls;
+    p_run();
+    CHECK_EQ_U64(message_calls, before);
+    stop();
+    system_dir = NULL;
 }
 
 static void case_audio(void)

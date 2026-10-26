@@ -44,7 +44,7 @@ muhtari-run --help | --version
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
 | `--port1 D`, `--port2 D` | `auto` (the cartridge's, the default), or an explicit movie2 device below. A value other than `auto` that differs from the movie header is a usage error. Storage attaches before import; moving or adding it requires another load. AtariVox provides EEPROM only, without speech. |
 | `--region R` | `auto` (the cartridge's, the default), `ntsc` or `pal`. An explicit value overrides cartridge metadata; a conflicting movie region is a usage error. Without content the test card remains NTSC. |
-| `--info` | Print effective region, geometry, exact frame rate, pixel aspect ratio and palette before frame output. Repeat use is a usage error; this is a run option, not an addition to `--probe`. |
+| `--info` | Print effective region, geometry, exact frame rate, pixel aspect ratio, palette and hardware selection before frame output. Repeat use is a usage error; this is a run option, not an addition to `--probe`. |
 | `--boot B` | `fast` (the default) starts the cartridge from the fast-boot hand-off; `bios` boots it through the BIOS given by `--bios`, from power-on. `bios` without `--bios`, or `--bios` without `bios`, is a usage error. With a movie, the movie's `boot` key decides, and a different `--boot` is a usage error. |
 | `--bios FILE` | The BIOS image `--boot bios` runs: 4,096 or 16,384 bytes whose reset vector points inside it. Its SHA-256 is printed on standard error as `bios_sha256 <hex>`. Any other file exits 1 with `muhtari-run: FILE: not a 4 KiB or 16 KiB BIOS image`. A cartridge the BIOS rejects exits 77 with `muhtari-run: FILE: the BIOS rejected the cartridge`, after the frame in which it did. |
 | `--save-dir DIR` | Opt into per-game raw battery files in an existing accessible directory. Requires a cartridge, even when it has no battery. See [Battery files](#battery-files). |
@@ -124,8 +124,8 @@ palette warm_pal
 ```
 
 NTSC reports `ntsc`, 320, 242, 39375000, 656711, 6, 7 and `warm_ntsc`, respectively.
-Argument order does not change the report. It describes the effective successful session;
-After the palette line, `requested_devices` and `requested_sound` retain the probe requests, `expansion` reports `off`, `xboard` or `xm`, and `hsc_attached` reports physical attachment as0/1. These fields do not describe volatile CPU decode.
+Argument order does not change the report. It describes the effective successful session.
+After the palette line, `requested_devices` and `requested_sound` retain the probe requests, `expansion` reports `off`, `xboard` or `xm`, and `hsc_attached` reports physical attachment as 0/1. These fields do not describe volatile CPU decode.
 
 `--probe` continues to describe the file. Without `--info`, ordinary output is unchanged.
 

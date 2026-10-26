@@ -47,6 +47,8 @@ static FILE *handles[2];
 static unsigned opens, closes;
 static bool fail_alloc;
 static int hsc_case = -1;
+static const char *hsc_option = "on";
+static const char *expansion_option = "auto";
 static const char *directory;
 static char seen_log[4096], seen_message[256];
 
@@ -220,7 +222,11 @@ static bool RETRO_CALLCONV bios_env(unsigned cmd, void *data)
             return true;
         }
         if (hsc_case >= 0 && strcmp(v->key, "muhtari_hsc") == 0) {
-            v->value = "on";
+            v->value = hsc_option;
+            return true;
+        }
+        if (strcmp(v->key, "muhtari_expansion") == 0) {
+            v->value = expansion_option;
             return true;
         }
     }
@@ -352,43 +358,48 @@ int main(void)
     failed_frames();
     /* Present bad HSC firmware never becomes the missing-file fallback. */
     directory = "system";
-    for (unsigned test = ABSENT; test < CASE_COUNT; test++) {
-        if (test == BAD_VECTOR)
-            continue;
-        hsc_case = (int)test;
-        candidates[0] = TRUNCATED;
-        candidates[1] = VALID;
-        fail_alloc = false;
-        seen_log[0] = seen_message[0] = '\0';
-        bool accepted = test == ABSENT || test == VALID;
+    for (unsigned profile = 0u; profile < 3u; profile++) {
+        hsc_option = profile == 0u ? "on" : "auto";
+        expansion_option = profile == 2u ? "xm" : "auto";
+        image[63] = profile == 1u ? 1u : 0u;
+        for (unsigned test = ABSENT; test < CASE_COUNT; test++) {
+            if (test == BAD_VECTOR)
+                continue;
+            hsc_case = (int)test;
+            candidates[0] = TRUNCATED;
+            candidates[1] = VALID;
+            fail_alloc = false;
+            seen_log[0] = seen_message[0] = '\0';
+            bool accepted = test == ABSENT || test == VALID;
 #ifdef _WIN32
-        accepted = accepted || test == PATH_ABSENT;
-        probe_opens = probe_closes = 0u;
-        opens = closes = 0u;
+            accepted = accepted || test == PATH_ABSENT;
+            probe_opens = probe_closes = 0u;
+            opens = closes = 0u;
 #endif
-        CHECK_EQ_U64(retro_load_game(&game), accepted);
+            CHECK_EQ_U64(retro_load_game(&game), accepted);
 #ifdef _WIN32
-        CHECK_EQ_U64(probe_opens, 1u);
-        CHECK_EQ_U64(probe_closes, test == ABSENT || test == PATH_ABSENT || test == PROBE_ERROR ||
-                                           test == NONREGULAR
-                                       ? 0u
-                                       : 1u);
-        if (test >= PROBE_ERROR || test == NONREGULAR)
-            CHECK_EQ_U64(opens, 0u);
+            CHECK_EQ_U64(probe_opens, 1u);
+            CHECK_EQ_U64(probe_closes, test == ABSENT || test == PATH_ABSENT || test == PROBE_ERROR ||
+                                               test == NONREGULAR
+                                           ? 0u
+                                           : 1u);
+            if (test >= PROBE_ERROR || test == NONREGULAR)
+                CHECK_EQ_U64(opens, 0u);
 #endif
-        if (accepted) {
-            muhtari_const_span rom = {0};
-            rom.size = (uint32_t)sizeof rom;
-            CHECK_EQ_U64(muhtari_get_hsc_rom(inst, &rom), MUHTARI_STATUS_OK);
-            CHECK_EQ_U64(rom.bytes, 4096u);
-            CHECK_EQ_U64(rom.data[123], test == VALID ? 0x19u : 0xFFu);
-            CHECK(strstr(seen_log, test == VALID ? "unknown identity" : "signature-only") != NULL);
-            CHECK_EQ_U64(inst->bios_size, 4096u);
-        } else {
-            CHECK(inst == NULL);
-            CHECK(strstr(seen_log, "signature-only") == NULL);
+            if (accepted) {
+                muhtari_const_span rom = {0};
+                rom.size = (uint32_t)sizeof rom;
+                CHECK_EQ_U64(muhtari_get_hsc_rom(inst, &rom), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(rom.bytes, 4096u);
+                CHECK_EQ_U64(rom.data[123], test == VALID ? 0x19u : 0xFFu);
+                CHECK(strstr(seen_log, test == VALID ? "unknown identity" : "signature-only") != NULL);
+                CHECK_EQ_U64(inst->bios_size, 4096u);
+            } else {
+                CHECK(inst == NULL);
+                CHECK(strstr(seen_log, "signature-only") == NULL);
+            }
+            retro_unload_game();
         }
-        retro_unload_game();
     }
     hsc_case = VALID;
     fail_alloc = true;

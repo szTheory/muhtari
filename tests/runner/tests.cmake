@@ -1170,6 +1170,8 @@ endfunction()
       expect_output("" --frames 1 --hsc-rom "${DIR}/hsc.bin" "${DIR}/xm${value}.a78")
       expect_exit(1 "HSC firmware requires attached HSC" --frames 1 --hsc off
         --hsc-rom "${DIR}/missing.bin" "${DIR}/xm${value}.a78")
+      expect_exit(1 "HSC firmware requires attached HSC" --frames 1 --expansion off
+        --hsc-rom "${DIR}/missing.bin" "${DIR}/xm${value}.a78")
       expect_exit(1 "HSC firmware must be" --frames 1 --hsc-rom "${DIR}/bad-hsc.bin" "${DIR}/xm${value}.a78")
       expect_output("" --frames 1 --hsc off "${DIR}/xm${value}.a78")
       file(WRITE "${DIR}/xm${value}.sav" "A")
