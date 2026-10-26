@@ -833,7 +833,7 @@ set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
 include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
 muhtari_add_test(NAME diag.expansion COMMAND ${CMAKE_COMMAND} -P ${diag_expansion}
-  LABELS diag portable TIMEOUT 12) # Provisional ceil(2 x 5.86s), complete66-group local CI workload; N/A-local.
+  LABELS diag portable TIMEOUT 13) # Provisional ceil(2 x 6.42s), complete66-group local required workflow; N/A-local.
 file(GENERATE OUTPUT ${diag_bankset} CONTENT
 "set(DIAG_BANKSET_RUN TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
