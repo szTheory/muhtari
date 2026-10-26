@@ -230,7 +230,25 @@ Reload and power cycle restore declared chip count and the boot clock origin.
 
 `MUHTARI_STATUS_OK` includes linear, Absolute, Activision, Fractalus, BankSet and the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
 Non-BankSet halt-banked RAM and Souper are reported with
-`MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. XM, YM2151 and Covox are reported in `devices` and `sound` and never refused.
+`MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. YM2151, Covox and ADPCM remain descriptive
+probe metadata; executable load refuses these unimplemented audio requests before
+allocation. Selecting expansion Off does not erase independent audio declarations.
+
+### XBoard
+
+XBoard has 128 KiB volatile RAM in eight 16 KiB banks. All writes at
+$0470–$047F select the same control latch: bits 0–2 choose the bank, bit 3
+enables the $4000–$7FFF overlay and bit 4 enables POKEY register decode at
+$0450–$045F. Disabled RAM windows pass through to the cartridge. Bank/gate
+changes retain stored bytes; power cycle zero-fills RAM and resets controls.
+The console Reset input does not power cycle this hardware. The installed
+POKEY keeps its clocks, timers, audio and IRQ identity while decode is off;
+off-window stores are ignored. A declared $0450 uses that same chip, and a
+declared secondary $0440 can coexist. Separate primary $4000/$0800 owners
+and the unverified optional $0460 XBoard POKEY are outside this profile.
+
+This map follows the permissively licensed XBoard implementation cited in
+cartridge preparation section 2.1 (CART.20), not a new physical measurement.
 
 The boards are one `switch` in `src/cart.c`, so the core keeps no table of function pointers. MARIA's fetches see the
 same bytes as the CPU except during BankSet's electrically selected MARIA interval.

@@ -47,6 +47,26 @@ target_link_libraries(app PRIVATE muhtari::muhtari)
 PKG_CONFIG_PATH=<unzipped directory>/lib/pkgconfig cc app.c $(pkg-config --cflags --libs muhtari)
 ```
 
+## Expansion selection
+
+API 7 retains ABI 1 and behavior revision 6. The appended `muhtari_media.expansion`
+selects `MUHTARI_EXPANSION_AUTO`, `MUHTARI_EXPANSION_OFF`, `MUHTARI_EXPANSION_XBOARD`
+or `MUHTARI_EXPANSION_XM`. Zero, omitted and incomplete fields mean Auto. Explicit
+selection wins; Auto uses the resolved cartridge XM request, otherwise Off.
+`muhtari_info.expansion` reports the committed effective selection. Failed loads
+retain the previous selection, storage, firmware and execution; power cycle retains
+the selection and battery storage while resetting volatile controls and RAM.
+
+XBoard provides eight 16 KiB RAM banks and one continuously installed POKEY at
+$0450, whose register decode starts disabled. A declared $0450 denotes that same
+chip; a secondary $0440 can coexist. Expansion with a separate $4000/$0800 primary,
+conflicting primary owners, YM2151, Covox or ADPCM returns
+`MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` before allocation. Probe remains descriptive,
+including `MUHTARI_SOUND_ADPCM` for A78 v4 audio bit $20. Selecting Off suppresses
+the expansion request without suppressing independently declared unsupported audio.
+XM Auto provisions HSC unless explicitly disabled; malformed requested firmware
+and a 52 KiB BankSet half with effective HSC refuse before replacement.
+
 ## Structs and sizes
 
 Every struct you pass starts with `uint32_t size`. Zero the whole struct, then set `size`:

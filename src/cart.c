@@ -267,6 +267,9 @@ static int cart_decode_v4(const uint8_t *h, struct cart_board *b)
     if ((audio & 0x10u) != 0u) {
         b->sound |= MUHTARI_SOUND_COVOX;
     }
+    if ((audio & 0x20u) != 0u) {
+        b->sound |= MUHTARI_SOUND_ADPCM;
+    }
     switch (device) {
     case 1u: /* 16K RAM */
         b->ram = 16u * CART_KIB;
@@ -800,14 +803,26 @@ muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n)
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
-    return muhtari__cart_install(m, image, &info);
+    return muhtari__cart_install(m, image, &info, MUHTARI_EXPANSION_OFF);
 }
 
-muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info)
+muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info,
+                                     uint32_t expansion)
 {
     muhtari_allocator a = m->allocator;
-    /* The ROM and the board's RAM share one allocation, RAM last. */
-    uint8_t *rom = (uint8_t *)a.alloc(a.user, (size_t)info->rom_size + info->ram_size);
+    /* ROM, cartridge RAM and physical expansion RAM share one checked
+       allocation. Record its exact length for replacement and destroy. */
+    size_t bytes = info->rom_size;
+    size_t expansion_bytes = expansion != MUHTARI_EXPANSION_OFF ? 131072u : 0u;
+    if (bytes > SIZE_MAX - info->ram_size) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE;
+    }
+    bytes += info->ram_size;
+    if (bytes > SIZE_MAX - expansion_bytes) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE;
+    }
+    bytes += expansion_bytes;
+    uint8_t *rom = (uint8_t *)a.alloc(a.user, bytes);
     if (rom == NULL) {
         return MUHTARI_STATUS_ERR_NO_MEMORY;
     }
@@ -827,10 +842,13 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
         }
     }
     if (m->cart.rom != NULL) {
-        a.free(a.user, m->cart.rom, (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
+        a.free(a.user, m->cart.rom, m->cart.allocation_bytes);
     }
     m->cart.rom = rom;
     m->cart.ram = info->ram_size != 0u ? rom + info->rom_size : NULL;
+    m->cart.allocation_bytes = bytes;
+    m->cart.expansion.ram = expansion_bytes != 0u ? rom + info->rom_size + info->ram_size : NULL;
+    m->cart.expansion.kind = expansion;
     m->cart.info = *info;
     /* Only an accepted v4 block supplies wiring; raw probe fields survive
        an ignored block (cartridge.md, The v4 block). */
@@ -848,8 +866,11 @@ void muhtari__cart_reset(muhtari *m)
 {
     m->cart.bank = 0u;
     m->cart.ram_bank = 0u;
+    m->cart.expansion.control = 0u;
     uint32_t sound = m->cart.info.sound;
-    m->cart.pokey_at[0] = (sound & MUHTARI_SOUND_POKEY_450) != 0u    ? 0x0450u
+    m->cart.pokey_at[0] = m->cart.expansion.kind >= MUHTARI_EXPANSION_XBOARD ||
+                                  (sound & MUHTARI_SOUND_POKEY_450) != 0u
+                              ? 0x0450u
                           : (sound & MUHTARI_SOUND_POKEY_4000) != 0u ? 0x4000u
                           : (sound & MUHTARI_SOUND_POKEY_800) != 0u  ? 0x0800u
                                                                      : 0u;
@@ -863,6 +884,29 @@ void muhtari__cart_reset(muhtari *m)
     if (m->cart.ram != NULL) {
         memset(m->cart.ram, 0, m->cart.info.ram_size);
     }
+    if (m->cart.expansion.ram != NULL) {
+        memset(m->cart.expansion.ram, 0, 131072u);
+    }
+}
+
+/* XBoard's eight 16 KiB banks and RAM chip select (cartridge preparation
+   section 2.1, XBoard). CPU and MARIA use the same physical bank. */
+static uint8_t *cart_expansion_at(const struct muhtari__cart *c, uint16_t addr)
+{
+    if (c->expansion.kind == MUHTARI_EXPANSION_XBOARD && (c->expansion.control & 8u) != 0u &&
+        addr >= 0x4000u && addr < 0x8000u) {
+        return &c->expansion.ram[(uint32_t)(c->expansion.control & 7u) * CART_BANK +
+                                 (addr & (CART_BANK - 1u))];
+    }
+    return NULL;
+}
+
+/* Expansion's chip select gates register access, never the installed chip
+   or its clocks/mixer identity (cartridge preparation section 2.1). */
+static int cart_pokey_decoded(const struct muhtari__cart *c, unsigned chip)
+{
+    return chip != 0u || c->expansion.kind < MUHTARI_EXPANSION_XBOARD ||
+           (c->expansion.control & 16u) != 0u;
 }
 
 /* The RAM byte a board drives at addr, or NULL. A board with RAM maps it
@@ -946,6 +990,10 @@ static uint8_t cart_peek_view(const muhtari *m, uint16_t addr, int maria)
     const struct muhtari__cart *c = &m->cart;
     if (c->rom == NULL) {
         return m->bus.open_bus;
+    }
+    const uint8_t *expansion = cart_expansion_at(c, addr);
+    if (expansion != NULL) {
+        return *expansion;
     }
     /* HSC pass-through decode (docs/hardware/cartridge.md, HSC). The bus
        has already applied MEN/BIOS gates; CPU audio decode precedes this. */
@@ -1035,7 +1083,8 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
         for (unsigned chip = 0; chip < 2u; chip++) {
             uint16_t at = m->cart.pokey_at[chip];
             uint16_t size = at == 0x4000u ? 0x4000u : at == 0x0800u ? 0x0800u : 16u;
-            if (at != 0u && addr >= at && (uint32_t)addr < (uint32_t)at + size) {
+            if (at != 0u && cart_pokey_decoded(&m->cart, chip) && addr >= at &&
+                (uint32_t)addr < (uint32_t)at + size) {
                 /* Overlapping ROM/RAM remains readable; POKEY is write-only
                    there (cartridge notes section 2.1). */
                 int overlap = at == 0x4000u &&
@@ -1070,10 +1119,22 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
     if (c->rom == NULL) {
         return;
     }
+    /* All sixteen control aliases drive the same XBoard latch
+       (cartridge preparation section 2.1, XBoard). */
+    if (c->expansion.kind == MUHTARI_EXPANSION_XBOARD && addr >= 0x0470u && addr <= 0x047Fu) {
+        c->expansion.control = v;
+        return;
+    }
+    uint8_t *expansion = cart_expansion_at(c, addr);
+    if (expansion != NULL) {
+        *expansion = v;
+        return;
+    }
     for (unsigned chip = 0; chip < 2u; chip++) {
         uint16_t at = c->pokey_at[chip];
         uint16_t size = at == 0x4000u ? 0x4000u : at == 0x0800u ? 0x0800u : 16u;
-        if (at != 0u && addr >= at && (uint32_t)addr < (uint32_t)at + size) {
+        if (at != 0u && cart_pokey_decoded(c, chip) && addr >= at &&
+            (uint32_t)addr < (uint32_t)at + size) {
             muhtari__pokey_write(m, chip, (uint8_t)(addr & 15u), v,
                                  m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u));
             if (c->info.board != MUHTARI_BOARD_BANKSET)

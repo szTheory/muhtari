@@ -908,9 +908,9 @@ static void map_overlaps(void)
 static void map_normalization(void)
 {
     muhtari *m = map_machine();
-    /* All primary flags resolve to one chip at450, then4000, then800;
-       the raw sound flags remain probe metadata. */
-    static const uint16_t types[] = {0x8441u, 0x8401u, 0x8400u};
+    /* Each individual primary can coexist with the secondary. Independent
+       primary declarations are refused rather than silently discarded. */
+    static const uint16_t types[] = {0x0440u, 0x0401u, 0x8400u};
     static const uint16_t at[] = {0x0450u, 0x4000u, 0x0800u};
     for (unsigned k = 0u; k < 3u; k++) {
         map_load(m, map_header(3u, types[k], 0u, MAP_BODY));
@@ -923,6 +923,23 @@ static void map_normalization(void)
             muhtari__bus_write(m, candidates[j], 91u);
             CHECK_EQ_U64(m->pokey[0].channel[0].audf, j == k ? 91u : 37u);
         }
+    }
+    static const uint16_t primary_conflicts[] = {0x8441u, 0x8401u, 0x0041u};
+    for (unsigned k = 0u; k < 3u; k++) {
+        muhtari_media media;
+        memset(&media, 0, sizeof media);
+        media.size = (uint32_t)sizeof media;
+        media.image = map_image;
+        media.image_size = map_header(3u, primary_conflicts[k], 0u, MAP_BODY);
+        muhtari_cart_info info;
+        memset(&info, 0, sizeof info);
+        info.size = (uint32_t)sizeof info;
+        CHECK_EQ_U64(muhtari_probe(media.image, media.image_size, &info), MUHTARI_STATUS_OK);
+        uint8_t *rom = m->cart.rom;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+        CHECK(m->cart.rom == rom);
+        CHECK_EQ_HEX(m->cart.pokey_at[0], 0x0800u);
+        CHECK_EQ_HEX(m->cart.pokey_at[1], 0x0440u);
     }
     static const uint16_t conflicts[] = {0x0007u, 0x0013u, 0x0023u};
     for (unsigned k = 0u; k < 3u; k++) {
@@ -957,7 +974,8 @@ static void map_normalization(void)
     CHECK_EQ_U64(info.source, MUHTARI_SOURCE_HASH);
     CHECK((info.warnings & MUHTARI_CART_WARN_HEADER_CORRECTED) != 0u);
     CHECK_EQ_U64(info.sound, entry.sound);
-    CHECK_EQ_U64(muhtari__cart_install(m, map_image, &info), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari__cart_install(m, map_image, &info, MUHTARI_EXPANSION_OFF),
+                 MUHTARI_STATUS_OK);
     CHECK_EQ_HEX(m->cart.pokey_at[0], 0x0450u);
     CHECK_EQ_HEX(m->cart.pokey_at[1], 0x0440u);
     CHECK_EQ_U64(m->synth.pokeys, 2u);
