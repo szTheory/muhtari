@@ -1,3 +1,14 @@
+# The real owned stimulus must have a numeric consumer before any equality.
+if(DIAG_EXPANSION_RUN)
+  file(MAKE_DIRECTORY "${OUT}")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --expansion-case
+    "${ROOT}/tests/diag/expansion.a78" "${OUT}" "${EXPECTED}" expansion-m0 "" "${OUT}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "expansion numeric contract: ${rc}: ${out}${err}")
+  endif()
+  return()
+endif()
 # One admitted template, independent numeric judgment, then real host equality.
 if(DIAG_BANKSET_RUN)
   file(MAKE_DIRECTORY "${OUT}")
@@ -647,6 +658,20 @@ muhtari_add_test(NAME diag.controllers COMMAND ${CMAKE_COMMAND} -P ${diag_contro
   LABELS diag portable TIMEOUT 30)
 
 set(diag_bankset ${PROJECT_BINARY_DIR}/tests/diag/bankset.cmake)
+set(diag_expansion ${PROJECT_BINARY_DIR}/tests/diag/expansion.cmake)
+file(GENERATE OUTPUT ${diag_expansion} CONTENT
+"set(DIAG_EXPANSION_RUN TRUE)
+set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(EXPECTED [==[${diag_dir}/expected.csv]==])
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/expansion]==])
+set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
+set(RUNNER [==[$<TARGET_FILE:muhtari-run>]==])
+set(MODULE [==[${diag_controller_module}]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+muhtari_add_test(NAME diag.expansion COMMAND ${CMAKE_COMMAND} -P ${diag_expansion}
+  LABELS diag portable TIMEOUT 30)
 file(GENERATE OUTPUT ${diag_bankset} CONTENT
 "set(DIAG_BANKSET_RUN TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])

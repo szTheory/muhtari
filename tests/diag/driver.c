@@ -629,6 +629,7 @@ static int controller_light;
 static int controller_analog;
 static int controller_keypad;
 static int bankset_tracer;
+static int expansion_case;
 static unsigned controller_motion;
 static unsigned controller_adapter, controller_group;
 
@@ -649,6 +650,8 @@ static uint32_t controller_motion_device(void)
 static const char *controller_name(void)
 {
     static char adapter_name[9];
+    if (expansion_case)
+        return "expansion-m0";
     if (bankset_tracer)
         return bankset_name;
     if (controller_adapter != 0u) {
@@ -809,6 +812,16 @@ static int controller_library(const char *path, const char *expected, const char
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
+    uint8_t expansion_firmware[4096];
+    if (expansion_case) {
+        memset(expansion_firmware, 255, sizeof expansion_firmware);
+        expansion_firmware[0x10] = 0x5Au;
+        expansion_firmware[0x900] = 0xC6u;
+        expansion_firmware[0x904] = 0xFEu;
+        media.expansion = MUHTARI_EXPANSION_XM;
+        media.hsc_rom = expansion_firmware;
+        media.hsc_rom_size = sizeof expansion_firmware;
+    }
     if (bankset_refusal) {
         int failed = image == NULL || muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK;
         if (!failed)
@@ -833,6 +846,17 @@ static int controller_library(const char *path, const char *expected, const char
         muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK ||
         muhtari__synth_observe(m, controller_raw_sample, &controller_raw) != MUHTARI_STATUS_OK ||
         muhtari_load(m, &media) != MUHTARI_STATUS_OK;
+    if (!failed && expansion_case) {
+        muhtari_battery_info b = {0};
+        b.size = (uint32_t)sizeof b;
+        failed = muhtari_get_battery(m, &b) != MUHTARI_STATUS_OK || b.bytes != 2048u;
+        if (!failed) {
+            memset(b.data, 255, b.bytes);
+            b.data[256] = 0xA5u;
+            b.data[257] = 0xC3u;
+            b.data[2047] = 0x5Au;
+        }
+    }
     for (unsigned f = 0u; f < CONTROLLER_FRAMES && !failed; f++) {
         muhtari_input_ex in;
         controller_stimulus(f + 1u, &in);
@@ -2489,6 +2513,15 @@ pal_cleanup:
 
 int main(int argc, char **argv)
 {
+    if (argc == 8 && strcmp(argv[1], "--expansion-case") == 0) {
+        expansion_case = 1;
+        controller_pixels = malloc(CONTROLLER_FRAMES * CONTROLLER_PIXELS);
+        if (controller_pixels == NULL)
+            return 1;
+        int failed = controller_library(argv[2], argv[4], argv[3]);
+        free(controller_pixels);
+        return failed;
+    }
     char rom[FIELD_MAX];
     if ((argc == 5 || argc == 6) && strcmp(argv[1], "--bankset-png") == 0)
         return bankset_png(argv[2], (unsigned)strtoul(argv[3], NULL, 10),
