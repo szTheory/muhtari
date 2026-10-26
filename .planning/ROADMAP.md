@@ -24,7 +24,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Complete; 35/35 verified; shipped in PR #28 (merge checks pending) |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Complete |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Complete; ready to ship |
-| 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Not started |
+| 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | In progress |
 | 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Not started |
 
 ## Phase details
@@ -294,7 +294,7 @@ Plans:
 
 Plans:
 **Wave 1**
-- [ ] 10-01-PLAN.md — Prove the causal electrical-owner tracer through all three deliverables.
+- [x] 10-01-PLAN.md — Prove the causal electrical-owner tracer through all three deliverables.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 10-02-PLAN.md — Complete checked BankSet geometry, shared/HALT RAM and redirects.
@@ -372,7 +372,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 0/13 | Ready to execute | — |
+| 10. Homebrew and expansion memory | 1/13 | In progress | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---

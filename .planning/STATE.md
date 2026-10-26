@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 10
-current_plan: Not started
-status: ready_to_execute
-stopped_at: Phase 10 planned and independently checked; next $gsd-execute-phase 10; v0.8.0 publication failure remains separate
-last_updated: "2026-10-26T03:22:52.057Z"
-last_activity: 2026-10-25
-last_activity_desc: Phase 10 research and 13 plans checked; ready to execute; v0.8.0 publication remains failed
-state_head: 3e548d42c365ef78e278f406e202e2f3688bebac
+current_plan: 2
+status: executing
+stopped_at: Phase 10 plan 01 accepted after attributed timing recovery; plan 02 ready
+last_updated: "2026-10-26T17:31:02.348Z"
+last_activity: 2026-10-26
+last_activity_desc: Phase 10 plan 01 accepted; 1 of 13 plans complete; plan 02 ready
+state_head: 5958e3cdc55aa7ca92a900967c28dbe72b05ae9a
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 63
-  completed_plans: 50
-  percent: 79
+  completed_plans: 51
+  percent: 81
 total_phases: 7
 current_phase_name: Homebrew and expansion memory
 ---
@@ -27,30 +27,52 @@ current_phase_name: Homebrew and expansion memory
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase10 research and13 plans in13 sequential waves are ready to
-execute after independent plan verification. All20 context decisions and both
-requirements are covered; no implementation or BOARD-04/05 acceptance is claimed.
-Next separate command: $gsd-execute-phase 10.
-Phase9 remains complete and merged in PR33. ReleasePR35 also merged with required
-CI green, but its v0.8.0 publication run failed and the release remains a draft.
-That release follow-up is independent of Phase10's planning.
+Current focus: Phase10 execution, 1/13 accepted plans and 2/30 implemented tasks.
+Plan10-02 is ready. BOARD-04/05 remain pending; final hosted acceptance is later.
+Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
+remains recorded below; this step makes no new release claim.
 
 ## Current Position
 
-Current Phase: 10 — Homebrew and expansion memory (planned)
-Current Plan: Not started
+Current Phase: 10 — Homebrew and expansion memory
+Current Plan: 2
 Total Plans in Phase: 13
-Progress: [████████░░] 79%
+Progress: [████████░░] 81%
 
-Phase9 has8/8 accepted plans and22/22 accepted tasks. Five of seven milestone
-phases are complete (71%); phases10–11 have no implementation. Active-slot runtime totals
-are50 summarized plans of63 planned, including historical halted06-01;49 accepted
-completed plans. The retained active-slot convention differs from raw historical artifacts.
+Phase10 has1/13 accepted plans. Five of seven milestone phases are complete (71%).
+Active-slot totals are51 summarized plans of63 planned, including historical
+halted06-01;50 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Phase10 ready to execute; separate v0.8.0 publication failure open
-Last activity: 2026-10-25 — Phase10 research,13 plans and independent plan verification complete
+Status: Executing Phase10; plan10-02 ready
+Last activity: 2026-10-26 — Plan10-01 accepted after bounded timing attribution
 Next command: $gsd-execute-phase 10
 Branch: phase/10-homebrew-expansion-memory
+
+## Phase 10 execution receipt
+
+Plan10-01 source59bad03 and closure5958e3c are committed. The narrow32KiB-per-set
+BankSet tracer runs through the library, runner and actual loaded module. Electrical
+selection follows actual second phi2 falls; four-row causal timing, CPU store order,
+VBE, absolute LRC, all-fast, DLI and RDY assertions are retained.
+
+The initial full-workflow failures and halted60b8917 remain reachable and recorded
+in10-01-SUMMARY. Two independent bounded reviews found the locked D-19 allowance
+for narrowly evidenced output revisions. Reversing only the T0 clamp restores all
+four old frame chains and all eight old audio rows; actual transfer/release traces
+precede the first output differences. Four of956 hash rows change,952 remain.
+Recurring exact release assertions and protected revision5-to6 transitions pass.
+No blanket regeneration, new timing fit, required-contract waiver or owner UAT.
+
+Source59bad03 workflow exits0:657 ordinary plus6 release tests. Fresh existing
+producer against genuine preplanf84b4dd exits0: current657+6/base656+6, with matching
+environment and fixture identities. Three actual ZIP sums are266041/265655 bytes,
+report-only. No hosted or phase-versus-main acceptance is claimed. Original failures,
+commands/exits and N/A-local URLs are retained in the canonical summary. Plan10-03
+must accommodate the already-completed minimal behavior6/evidence-consumer portion;
+no additive API or expansion implementation was pulled forward.
+
+The following planning and earlier-phase receipts are historical; this execution
+receipt supersedes their former phase10 ready/not-started statements.
 
 ## Phase 10 planning receipt
 
