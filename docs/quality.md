@@ -76,10 +76,13 @@ Fixture comparison permits a narrow additive relation: only unique new rows for
 `tests/diag/fractalus.a78`, `tests/diag/battery.a78`,
 `tests/diag/controller-light.a78`, `tests/diag/controller-analog.a78` and
 `tests/diag/controller-motion.a78`, `tests/diag/pal.a78` and
-`tests/diag/bankset.a78` may be added. BankSet additionally requires the exact
+`tests/diag/bankset.a78` and `tests/diag/expansion.a78` may be added.
+BankSet and expansion additionally require the exact
 owned source pin and digest recorded in the admission function; a plausible
 but forged pin or digest fails. Its source and config are committed before
 the signed fixture, and the existing rebuild recipe checks those bytes.
+Expansion pass/fault cases use its actual admitted row in recursive producer
+and join runs, including later bases that protect the addition as an old row.
 Each has exactly six tab-separated fields:
 the named path, `this-repo`, a nonempty pin without whitespace, `MIT`, a 64-digit
 lowercase SHA-256 and `-`. All old rows and other manifest text remain byte-identical

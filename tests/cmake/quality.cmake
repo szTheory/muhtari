@@ -139,7 +139,7 @@ function(quality_fixture_identity out candidate trusted)
         message(FATAL_ERROR "quality: deleted or changed trusted manifest ${path}")
       endif()
     endforeach()
-    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion|pal|bankset)[.]a78$" OR
+    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion|pal|bankset|expansion)[.]a78$" OR
         NOT row MATCHES "^[^\t]+\tthis-repo\t[^ \t\r\n;]+\tMIT\t([0-9a-f]+)\t-$")
       message(FATAL_ERROR "quality: unrelated fixture ${path}")
     endif()
@@ -152,6 +152,10 @@ function(quality_fixture_identity out candidate trusted)
     if(path STREQUAL "tests/diag/bankset.a78" AND NOT row STREQUAL
         "tests/diag/bankset.a78\tthis-repo\t6321fa62cf7cf29c7033b09931edb884079c1545\tMIT\t32f5870fbfcc4745967b8b94c69f87dac4879587c4b0561256cc5160d61a3390\t-")
       message(FATAL_ERROR "quality: owned BankSet identity")
+    endif()
+    if(path STREQUAL "tests/diag/expansion.a78" AND NOT row STREQUAL
+        "tests/diag/expansion.a78\tthis-repo\tde267c734a8c3d86995c66dd9eb5aa2fab19a975\tMIT\ta81acf7900419e30fd08a95ae7db0deedeed4cbe2d1eefe8fec3535fd2054e6f\t-")
+      message(FATAL_ERROR "quality: owned expansion identity")
     endif()
     string(REPLACE "${row}\n" "" stripped "${stripped}")
   endforeach()
