@@ -324,7 +324,7 @@ Plans:
 - [x] 10-10-PLAN.md — Prove transactional lifetimes, physical accounting and no allocation after load.
 
 **Wave 11** *(blocked on Wave 10 completion)*
-- [ ] 10-11-PLAN.md — Prove hostile regional execution, loader replay and isolation/lifecycle properties.
+- [x] 10-11-PLAN.md — Prove hostile regional execution, loader replay and isolation/lifecycle properties.
 
 **Wave 12** *(blocked on Wave 11 completion)*
 - [ ] 10-12-PLAN.md — Publish qualified hardware/API docs and executed compatibility claims.
@@ -372,7 +372,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 10/13 | In progress | — |
+| 10. Homebrew and expansion memory | 11/13 | In progress | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---

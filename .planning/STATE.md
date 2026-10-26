@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 10
-current_plan: 11
+current_plan: 12
 status: executing
-stopped_at: Phase 10 plans 01-10 accepted; plan 11 ready
-last_updated: "2026-10-26T21:29:40.673Z"
+stopped_at: Phase 10 plans 01-11 accepted; plan 12 ready
+last_updated: "2026-10-26T21:50:41.968Z"
 last_activity: 2026-10-26
-last_activity_desc: Phase 10 plans 01-10 accepted; 10 of 13 plans complete; plan 11 ready
-state_head: 6782b1657efc8110e6130146e8d8aec19d1a318e
+last_activity_desc: Phase 10 plans 01-11 accepted; 11 of 13 plans complete; plan 12 ready
+state_head: d65cd18d370944815b1472a58feb16a2d989aeef
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 63
-  completed_plans: 60
-  percent: 95
+  completed_plans: 61
+  percent: 97
 total_phases: 7
 current_phase_name: Homebrew and expansion memory
 ---
@@ -27,24 +27,24 @@ current_phase_name: Homebrew and expansion memory
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase10 execution, 10/13 accepted plans and 24/30 implemented tasks.
-Plan10-11 is ready. BOARD-04/05 remain pending; final hosted acceptance is later.
+Current focus: Phase10 execution, 11/13 accepted plans and 26/30 implemented tasks.
+Plan10-12 is ready. BOARD-04/05 remain pending; final hosted acceptance is later.
 Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
 remains recorded below; this step makes no new release claim.
 
 ## Current Position
 
 Current Phase: 10 — Homebrew and expansion memory
-Current Plan: 11
+Current Plan: 12
 Total Plans in Phase: 13
-Progress: [████████░░] 95%
+Progress: [████████░░] 97%
 
-Phase10 has10/13 accepted plans. Five of seven milestone phases are complete (71%).
-Active-slot totals are60 summarized plans of63 planned, including historical
-halted06-01;59 accepted plans. Summarized counts do not establish phase acceptance.
+Phase10 has11/13 accepted plans. Five of seven milestone phases are complete (71%).
+Active-slot totals are61 summarized plans of63 planned, including historical
+halted06-01;60 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Executing Phase10; plan10-11 ready
-Last activity: 2026-10-26 — Plan10-10 accepted with complete lifetime/noalloc controls
+Status: Executing Phase10; plan10-12 ready
+Last activity: 2026-10-26 — Plan10-11 accepted with bounded replay and lifecycle properties
 Next command: $gsd-execute-phase 10
 Branch: phase/10-homebrew-expansion-memory
 
@@ -155,6 +155,17 @@ metadata loop. Final workflow exits0:661+6; fresh producer versus genuine6f055d2
 exits0,current/base661+6,271388/271362 three-ZIP bytes report-only. Commands/exits/
 N/A-local, stimulus corrections and known advisory scanner/ledger limitations are in
 10-10-SUMMARY. Final sanitizer/nofp/native/PPC acceptance remains13.
+
+Plan10-11 source464b01c and summaryd65cd18 are committed. Hostile replay122
+inputs includes84 accepted geometry/RAM/expansion/region profiles; loader52inputs
+with12 public overrides and six seeded100case properties cover refusals, hidden saves,
+pure observers and independent physical state. Representative corrupted-store,
+ADPCM-refusal and HSC-gate faults are rejected by real consumers. Existing finite
+tail/noalloc/resource bounds and10000case advisory status are retained. Final workflow
+exits0:661+6; fresh producer versus genuine50f48ce exits0,271392/271369 three-ZIP bytes
+report-only. Inherited24 regressions pass. Commands/exits/N/A-local and corrected
+stimulus/status/docs-budget failures remain in10-11-SUMMARY. Production unchanged;
+final sanitizer/nofp/native/PPC acceptance13 remains pending.
 
 The following planning and earlier-phase receipts are historical; this execution
 receipt supersedes their former phase10 ready/not-started statements.
