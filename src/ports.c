@@ -1054,6 +1054,10 @@ muhtari_status muhtari_get_memory(muhtari *m, uint32_t kind, muhtari_span *out)
         span.data = m->cart.ram; /* NULL, and 0 bytes, on a board without RAM */
         span.bytes = m->cart.ram != NULL ? m->cart.info.ram_size : 0u;
         break;
+    case MUHTARI_MEMORY_EXPANSION_RAM:
+        span.data = m->cart.expansion.ram;
+        span.bytes = span.data != NULL ? 131072u : 0u;
+        break;
     default:
         return MUHTARI_STATUS_ERR_ARGUMENT;
     }

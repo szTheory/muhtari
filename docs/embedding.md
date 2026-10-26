@@ -536,7 +536,8 @@ instance storage without allocating after load, including with an opposite EEPRO
 |---|---|---|
 | `MUHTARI_MEMORY_SYSTEM_RAM` | System RAM, $1800-$27FF | 4,096 |
 | `MUHTARI_MEMORY_RIOT_RAM` | The RIOT's RAM, $0480-$04FF | 128 |
-| `MUHTARI_MEMORY_CART_RAM` | The cartridge's RAM at $4000 | `ram_size`, or 0 |
+| `MUHTARI_MEMORY_CART_RAM` | Physical cartridge RAM, including both HALT halves | `ram_size`, or 0 |
+| `MUHTARI_MEMORY_EXPANSION_RAM` | Physical volatile expansion RAM, independent of active windows and battery storage | 131,072, or 0 |
 
 The pointer is not const: a host may write through it, for cheats or achievements. It is the one deliberate
 exception to the rule that no struct carries a pointer into the library's state, because libretro memory maps
@@ -595,11 +596,12 @@ Statuses are only ever added. Those after the probe's:
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
 `muhtari_get_versions` fills a `muhtari_versions`:
 
-The current interface is API 5, ABI 1, behaviour revision 4. API 5 appends the
-load-time battery controls and adds battery/installed-ROM queries. The original
-media prefix, all prior size minima, signatures and constant values remain compatible.
-Revision 4 makes declared HSC storage executable; existing sample frame/audio digests
-are unchanged. API 4's Activision orientation constants remain available.
+The current interface is API 7, ABI 1, behaviour revision 6. API 7 appends
+expansion selection and effective information, ADPCM metadata and a distinct
+physical expansion memory kind. The original media/info prefixes, all prior
+size minima, signatures and constant values remain compatible. Revision 6
+includes the corrected slow-edge DMA handoff; versioned test observations
+retain their independently established values.
 
 | Field | Meaning |
 |---|---|

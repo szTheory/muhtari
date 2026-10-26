@@ -2241,7 +2241,14 @@ static void expansion_xboard(void)
         CHECK_EQ_U64(muhtari__bus_read(m, 0x4000u), image[128]);
         muhtari__bus_write(m, 0x0451u, 0x1Fu);
         CHECK_EQ_U64(m->pokey[0].channel[0].audc, 0u);
-        uint8_t *physical = m->cart.expansion.ram;
+        muhtari_span physical_span;
+        memset(&physical_span, 0, sizeof physical_span);
+        physical_span.size = (uint32_t)sizeof physical_span;
+        CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_EXPANSION_RAM, &physical_span),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(physical_span.bytes, 131072u);
+        uint8_t *physical = physical_span.data;
+        CHECK(physical == m->cart.expansion.ram);
         for (unsigned bank = 0u; bank < 8u; bank++) {
             for (unsigned alias = 0u; alias < 16u; alias++) {
                 muhtari__bus_write(m, (uint16_t)(0x0470u + alias), (uint8_t)(8u + bank));
@@ -2251,6 +2258,10 @@ static void expansion_xboard(void)
                 CHECK_EQ_U64(muhtari__cart_dma_read(m, 0x7FFFu, m->bus.ticks), bank + 0x80u);
                 CHECK_EQ_U64(physical[bank * 16384u], bank + 1u);
                 CHECK_EQ_U64(physical[(bank + 1u) * 16384u - 1u], bank + 0x80u);
+                CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_EXPANSION_RAM, &physical_span),
+                             MUHTARI_STATUS_OK);
+                CHECK(physical_span.data == physical);
+                CHECK_EQ_U64(physical_span.bytes, 131072u);
             }
         }
         for (unsigned bank = 0u; bank < 8u; bank++) {
