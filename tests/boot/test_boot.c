@@ -203,7 +203,7 @@ static void boot_free(void *user, void *ptr, size_t size)
     a->calls.free_size = size;
     free(a->released);
     memset(ptr, 0xA5, size);
-    a->released = ptr;
+    a->released = (alloc_header *)ptr - 1;
 }
 
 /* An owned BIOS that writes a distinguishing byte, then loops in firmware. */

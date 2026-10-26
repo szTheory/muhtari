@@ -998,12 +998,12 @@ static int controller_library(const char *path, const char *expected, const char
     }
     if (bankset_refusal) {
         int failed = image == NULL || muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK;
+        muhtari_status wanted = bankset_refusal == 4   ? MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD
+                                : bankset_refusal == 3 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
+                                : bankset_refusal == 2 ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE
+                                                       : MUHTARI_STATUS_ERR_INVALID_IMAGE;
         if (!failed)
-            failed = muhtari_load(m, &media) !=
-                     (bankset_refusal == 4   ? MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD
-                      : bankset_refusal == 3 ? MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE
-                      : bankset_refusal == 2 ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE
-                                             : MUHTARI_STATUS_ERR_INVALID_IMAGE);
+            failed = muhtari_load(m, &media) != wanted;
         muhtari_destroy(m);
         free(image);
         return failed;
@@ -1456,7 +1456,7 @@ static int bankset_image(const char *template_path, const char *path, unsigned k
     image[51] = (uint8_t)((size - 128u) >> 8);
     image[52] = (uint8_t)(size - 128u);
     image[57] = (uint8_t)pal;
-    image[64] = kib < 128u ? 0u : 1u;
+    image[64] = (uint8_t)(kib < 128u ? 0u : 1u);
     image[65] = (uint8_t)(0x80u | (mode == 2u ? 3u : mode));
     image[67] = mode != 0u ? 5u : 0u; /* Write-only POKEY overlap. */
     for (unsigned set = 0u; set < 2u; set++) {

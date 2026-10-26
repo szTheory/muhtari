@@ -948,7 +948,7 @@ set(diag_rebuild_script ${diag_out}/rebuild.cmake)
 file(WRITE ${diag_rebuild_script} "${diag_tools}set(OUT [==[${diag_out}/rebuild]==])\n"
   "set(MANIFEST [==[${diag_manifest}]==])\n${diag_rebuild}")
 muhtari_add_test(NAME diag.rebuild COMMAND ${CMAKE_COMMAND} -P ${diag_rebuild_script}
-  LABELS built portable TIMEOUT 22)  # 2 x 10.66 s, macOS x64, slowest of 26 runs, run 39362291672
+  LABELS built portable TIMEOUT 120)  # Measurement allowance after censored22s expanded rebuild, run40412835933; all templates retained.
 
 # Negative control: one digit of dma.a78's digest changed in a copy of the
 # manifest must fail by name.

@@ -25,6 +25,8 @@ typedef struct alloc_counts {
     void *retired;
 } alloc_counts;
 
+/* One backing layout keeps unchecked and checked frees at the malloc base.
+   check_sizes enables the judge, not a different pointer representation. */
 typedef union alloc_header {
 #if defined(_MSC_VER)
     /* MSVC's C headers omit max_align_t. Match malloc's fundamental alignment:
@@ -48,15 +50,14 @@ static inline void *count_alloc(void *user, size_t size)
     if (c->fail_from != 0u && c->allocs >= c->fail_from) {
         return NULL;
     }
-    if (c->check_sizes == 0u)
-        return malloc(size);
     if (size > SIZE_MAX - sizeof(alloc_header))
         return NULL;
     alloc_header *h = malloc(sizeof *h + size);
     if (h == NULL)
         return NULL;
     h->bytes = size;
-    c->live_bytes += size;
+    if (c->check_sizes != 0u)
+        c->live_bytes += size;
     return h + 1;
 }
 
@@ -65,11 +66,11 @@ static inline void count_free(void *user, void *ptr, size_t size)
     alloc_counts *c = (alloc_counts *)user;
     c->frees++;
     c->free_size = size;
+    alloc_header *h = (alloc_header *)ptr - 1;
     if (c->check_sizes == 0u) {
-        free(ptr);
+        free(h);
         return;
     }
-    alloc_header *h = (alloc_header *)ptr - 1;
     if (h->bytes != size)
         c->size_errors++;
     c->live_bytes -= h->bytes;

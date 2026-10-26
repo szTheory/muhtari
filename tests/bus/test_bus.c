@@ -732,7 +732,7 @@ static int halt_stretched_costs(void)
         m->bus.halt_gate_writes = 2u;
         m->maria.dl = 0x1800u;
         m->maria.dll = 0x1A00u;
-        m->maria.offset = rows[i].last ? 0u : 1u;
+        m->maria.offset = (uint8_t)(rows[i].last ? 0u : 1u);
         m->maria.dma_line = 20u;
         m->maria.dma_lrc = 424u;
         unsigned p = 0u;
