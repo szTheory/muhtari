@@ -638,6 +638,22 @@ static void save_options(const char *dir)
     fw[4] = "off";
     CHECK_EQ_U64(runner_entry(8, fw), 1);
     CHECK_EQ_U64(frames_run, 0);
+    /* XM Auto must discover supplied firmware and import physical HSC bytes
+       before the first frame even though both CPU windows begin hidden. */
+    char *xm[] = {"muhtari-run", "--frames", "1", "--expansion", "xm",
+                  "--hsc-rom", firmware, rom};
+    expected_firmware = bytes;
+    expected_bytes = 2048u;
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(8, xm), 0);
+    CHECK_EQ_U64(frames_run, 1);
+    expected_firmware = NULL;
+    xm[4] = "xboard";
+    frames_run = 0;
+    CHECK_EQ_U64(runner_entry(8, xm), 1);
+    CHECK_EQ_U64(frames_run, 0);
+    xm[4] = "off";
+    CHECK_EQ_U64(runner_entry(8, xm), 1);
     expected_import = NULL;
     free(blank);
 }
