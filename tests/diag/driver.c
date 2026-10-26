@@ -1273,7 +1273,7 @@ static int bankset_image(const char *template_path, const char *path, unsigned k
 }
 
 /* The existing independent PNG reader verifies the actual runner dump. */
-static int bankset_png(const char *path, unsigned mode, unsigned pal)
+static int bankset_png(const char *path, unsigned mode, unsigned pal, const char *filter_fault)
 {
     size_t n = 0u;
     uint8_t *image = read_file(path, &n);
@@ -1281,6 +1281,14 @@ static int bankset_png(const char *path, unsigned mode, unsigned pal)
     uint8_t *raw = malloc((size_t)height * PNG_READ_ROW);
     int failed = image == NULL || raw == NULL || png_read_height(image, n, raw, height) < 0;
     static const unsigned positions[] = {0u, 1u, 2u, 16u, 20u};
+    if (!failed) {
+        for (unsigned y = 0u; y < height; y++) {
+            if (raw[y * PNG_READ_ROW] != 0u) {
+                fprintf(stderr, "bankset: PNG row filter is not zero\n");
+                failed = 1;
+            }
+        }
+    }
     if (!failed) {
         for (unsigned i = 0u; i < 5u; i++) {
             uint8_t code = i < 2u    ? (mode == 1u ? 0x16u : 0x38u)
@@ -1298,6 +1306,37 @@ static int bankset_png(const char *path, unsigned mode, unsigned pal)
         failed |= png_read_height(image, n, raw, 243u) >= 0;
         image[n - 1u] ^= 1u;
         failed |= png_read_height(image, n, raw, height) >= 0;
+        image[n - 1u] ^= 1u;
+    }
+    if (!failed && filter_fault != NULL) {
+        /* A valid IDAT CRC and Adler-32 must not hide a changed row filter.
+           Row17 lies in the first stored block of the actual runner PNG. */
+        uint32_t first = image[44] | ((uint32_t)image[45] << 8);
+        uint32_t zn = ((uint32_t)image[33] << 24) | ((uint32_t)image[34] << 16) |
+                      ((uint32_t)image[35] << 8) | image[36];
+        if (first <= 17u * PNG_READ_ROW) {
+            failed = 1;
+        } else {
+            raw[17u * PNG_READ_ROW] = 1u;
+            image[48u + 17u * PNG_READ_ROW] = 1u;
+            uint32_t a = 1u, b = 0u;
+            for (uint32_t i = 0u; i < height * PNG_READ_ROW; i++) {
+                a = (a + raw[i]) % 65521u;
+                b = (b + a) % 65521u;
+            }
+            uint32_t adler = (b << 16) | a;
+            for (unsigned i = 0u; i < 4u; i++)
+                image[41u + zn - 4u + i] = (uint8_t)(adler >> (24u - 8u * i));
+            uint32_t crc = png_read_crc(image + 37u, zn + 4u);
+            for (unsigned i = 0u; i < 4u; i++)
+                image[41u + zn + i] = (uint8_t)(crc >> (24u - 8u * i));
+            FILE *f = fopen(filter_fault, "wb");
+            failed = f == NULL;
+            if (f != NULL) {
+                failed |= fwrite(image, 1u, n, f) != n;
+                failed |= fclose(f) != 0;
+            }
+        }
     }
     free(raw);
     free(image);
@@ -2449,9 +2488,9 @@ pal_cleanup:
 int main(int argc, char **argv)
 {
     char rom[FIELD_MAX];
-    if (argc == 5 && strcmp(argv[1], "--bankset-png") == 0)
+    if ((argc == 5 || argc == 6) && strcmp(argv[1], "--bankset-png") == 0)
         return bankset_png(argv[2], (unsigned)strtoul(argv[3], NULL, 10),
-                           (unsigned)strtoul(argv[4], NULL, 10));
+                           (unsigned)strtoul(argv[4], NULL, 10), argc == 6 ? argv[5] : NULL);
     if ((argc == 4 || argc == 5) && strcmp(argv[1], "--bankset-refuse") == 0) {
         bankset_refusal = strcmp(argv[3], "truncated") == 0 ? 2 : 1;
         int failed = controller_library(argv[2], "", "");

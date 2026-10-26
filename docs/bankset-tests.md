@@ -38,7 +38,8 @@ plus all 17 CSV values before native frame, canonical raw audio, PCM and sample-
 equality. Missing/truncated/extra reports, duplicate/reordered records, wrong identity,
 CRC corruption and CRC-valid wrong values fail the actual judge. Substituting CPU
 graphics into the MARIA set fails the native judge. Ordinary PNG malformed-input
-controls remain, with actual NTSC/PAL height and checksum faults also exercised here.
+controls remain, with actual NTSC/PAL height, checksum and CRC-valid nonzero-row-filter
+faults also exercised here.
 Exact HALT edges and four-pair arithmetic remain bus tests. Shared RAM and the larger
 256/512 KiB geometries are selected producer/emulator extensions; this evidence
 establishes model behavior, without a new physical-board capacity or timing fit.

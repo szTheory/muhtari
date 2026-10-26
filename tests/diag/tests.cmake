@@ -48,7 +48,13 @@ if(DIAG_BANKSET_RUN)
     string(REGEX MATCH "diagnostic [0-9a-f]+\n" mailbox "${actual}")
     file(CONFIGURE OUTPUT "${dir}/report.txt" CONTENT "${mailbox}" @ONLY NEWLINE_STYLE UNIX)
     bankset_exec(--mailbox "${dir}/report.txt" "${tag}" "${EXPECTED}")
-    bankset_exec(--bankset-png "${dir}/pixels.png" ${mode} ${pal})
+    bankset_exec(--bankset-png "${dir}/pixels.png" ${mode} ${pal} "${dir}/filter-fault.png")
+    execute_process(COMMAND ${EMULATOR} "${DRIVER}" --bankset-png
+      "${dir}/filter-fault.png" ${mode} ${pal}
+      RESULT_VARIABLE rc OUTPUT_QUIET ERROR_VARIABLE err TIMEOUT 10)
+    if(NOT rc STREQUAL "1" OR NOT err MATCHES "PNG row filter is not zero")
+      message(FATAL_ERROR "bankset accepted CRC-valid PNG filter fault: ${rc} ${err}")
+    endif()
     # All actual hosts have now passed numeric judgment. Compare actual taps.
     file(STRINGS "${dir}/reference.txt" evidence)
     foreach(line IN LISTS evidence)
@@ -661,7 +667,7 @@ set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
 include([==[${diag_bankset}]==])
 ")
 muhtari_add_test(NAME diag.bankset COMMAND ${CMAKE_COMMAND} -P ${diag_bankset_matrix}
-  LABELS diag portable TIMEOUT 3) # Provisional ceil(2 x 1.40s), complete local matrix; N/A-local.
+  LABELS diag portable TIMEOUT 4) # Provisional ceil(2 x 1.85s), complete local matrix; N/A-local.
 
 set(diag_pal ${PROJECT_BINARY_DIR}/tests/diag/pal.cmake)
 set(diag_pal565 "")

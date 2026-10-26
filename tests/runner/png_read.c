@@ -70,7 +70,7 @@ int png_read_height(const uint8_t *d, size_t n, uint8_t *raw, uint32_t height)
         return fault("bytes after IEND");
     }
 
-    /* IHDR: 320 x 242, depth 8, colour type 2, compression, filter and
+    /* IHDR: 320 x selected height, depth 8, colour type 2, compression, filter and
        interlace 0. */
     const uint8_t ihdr[13] = {0, 0, 1, 0x40, 0, 0, (uint8_t)(height >> 8), (uint8_t)height,
                               8, 2, 0, 0,    0};
