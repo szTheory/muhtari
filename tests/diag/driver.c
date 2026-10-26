@@ -618,8 +618,10 @@ static char bankset_name[FIELD_MAX];
 #define CONTROLLER_PIXELS (320u * CONTROLLER_HEIGHT)
 static uint8_t *controller_pixels;
 static uint8_t *bankset_module_pixels;
+#ifdef DIAG_LIBRETRO
 static int16_t bankset_module_pcm[CONTROLLER_FRAMES][963];
 static uint32_t bankset_module_counts[CONTROLLER_FRAMES];
+#endif
 static int16_t controller_pcm[CONTROLLER_FRAMES][963];
 static uint32_t controller_counts[CONTROLLER_FRAMES];
 static muhtari__sha256 controller_raw;
