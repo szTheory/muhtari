@@ -619,10 +619,10 @@ static int parse_options(int argc, char **argv, options *o)
                  strcmp(value, "xboard") != 0 && strcmp(value, "xm") != 0))
                 return usage("--expansion needs auto, off, xboard or xm once");
             o->has_expansion = 1;
-            o->expansion = strcmp(value, "off") == 0 ? MUHTARI_EXPANSION_OFF
+            o->expansion = strcmp(value, "off") == 0      ? MUHTARI_EXPANSION_OFF
                            : strcmp(value, "xboard") == 0 ? MUHTARI_EXPANSION_XBOARD
-                           : strcmp(value, "xm") == 0 ? MUHTARI_EXPANSION_XM
-                                                       : MUHTARI_EXPANSION_AUTO;
+                           : strcmp(value, "xm") == 0     ? MUHTARI_EXPANSION_XM
+                                                          : MUHTARI_EXPANSION_AUTO;
         } else if (strcmp(arg, "--hsc") == 0) {
             if (o->has_hsc || value == NULL ||
                 (strcmp(value, "auto") != 0 && strcmp(value, "on") != 0 &&
@@ -1124,8 +1124,10 @@ static int save_flush(save_context *save, muhtari *m)
    failure 1. Returns the exit status. */
 static const char *expansion_name(uint32_t kind)
 {
-    return kind == MUHTARI_EXPANSION_XM ? "xm" : kind == MUHTARI_EXPANSION_XBOARD ? "xboard"
-                                           : kind == MUHTARI_EXPANSION_OFF ? "off" : "auto";
+    return kind == MUHTARI_EXPANSION_XM       ? "xm"
+           : kind == MUHTARI_EXPANSION_XBOARD ? "xboard"
+           : kind == MUHTARI_EXPANSION_OFF    ? "off"
+                                              : "auto";
 }
 
 static int load(muhtari *m, const char *path, uint32_t region, const char *movie_path,
@@ -1183,12 +1185,12 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
     muhtari_status probed = muhtari_probe(image, n, &cart);
     uint32_t expansion = media.expansion;
     if (expansion == MUHTARI_EXPANSION_AUTO)
-        expansion = (cart.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM
-                                                          : MUHTARI_EXPANSION_OFF;
-    int attached = media.hsc_mode == MUHTARI_HSC_ON ||
-                   (media.hsc_mode == MUHTARI_HSC_AUTO &&
-                    ((cart.devices & MUHTARI_DEVICE_HSC) != 0u ||
-                     expansion == MUHTARI_EXPANSION_XM));
+        expansion =
+            (cart.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM : MUHTARI_EXPANSION_OFF;
+    int attached =
+        media.hsc_mode == MUHTARI_HSC_ON ||
+        (media.hsc_mode == MUHTARI_HSC_AUTO &&
+         ((cart.devices & MUHTARI_DEVICE_HSC) != 0u || expansion == MUHTARI_EXPANSION_XM));
     if (opt->hsc_rom != NULL) {
         if (!attached || probed != MUHTARI_STATUS_OK) {
             fprintf(stderr, "muhtari-run: HSC firmware requires attached HSC\n");
@@ -1247,8 +1249,10 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
         }
         return MUHTARI__EXIT_DONE;
     }
-    fprintf(stderr, "muhtari-run: %s: %s\n",
-            st == MUHTARI_STATUS_ERR_INVALID_BIOS ? bios_path : path, muhtari__status_text(st));
+    fprintf(stderr, "muhtari-run: %s: %s%s%s\n",
+            st == MUHTARI_STATUS_ERR_INVALID_BIOS ? bios_path : path, muhtari__status_text(st),
+            st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ? ": " : "",
+            st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ? muhtari__board_name(cart.board) : "");
     if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE) {
         for (uint32_t bit = 0u; bit < 32u; bit++)
             if ((cart.sound >> bit) & 1u)
@@ -1256,7 +1260,8 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
                         muhtari__bit_name(MUHTARI__BITS_SOUND, bit));
     }
     if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_2600 || st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ||
-        st == MUHTARI_STATUS_ERR_UNSUPPORTED_REGION || st == MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE) {
+        st == MUHTARI_STATUS_ERR_UNSUPPORTED_REGION ||
+        st == MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE) {
         return MUHTARI__EXIT_REFUSED;
     }
     return MUHTARI__EXIT_FAILURE;

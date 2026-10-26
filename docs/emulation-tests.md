@@ -369,7 +369,7 @@ cartridge. [MARIA expectations](hardware/maria.md) and
 | `tests/diag/fractalus.a78` | 24 records, mailbox ID 12: initial zero RAM, adjacent-page aliases, upper mirrors, distinct physical locations, multiple patterns and fixed ROM |
 | `tests/diag/bankset.a78` | 17 CPU records, ID 20; bank sweeps, RAM/redirects and MARIA graphics |
 
-[BankSet expectations and matrix](bankset-tests.md) precede three-host comparison.
+[BankSet](bankset-tests.md) and [expansion](expansion-tests.md) expectations precede host comparison.
 
 The retail diagnostics use protocol 1, at most 27 records and independent fixture
 tags. Decoder edges, mirrors and startup are compatibility/profile policies.
