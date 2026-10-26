@@ -525,6 +525,7 @@ libretro.host.xrgb8888	libretro,portable
 libretro.info_claims	libretro
 libretro.info_claims.self_test	libretro
 libretro.rcheevos	libretro,portable
+libretro.rcheevos.expansion	libretro,portable
 libretro.vendored	libretro
 maria.dma_line.abort	maria,portable
 maria.dma_line.empty_dl	maria,portable

@@ -1432,7 +1432,8 @@ static void lr_memory_maps(void)
             lr_span(start, start + 0x100u, cart_ram, (size_t)(page / 2u) * 0x100u, 0u);
         }
     } else if (!overlay && cart_ram != NULL &&
-               (cart.board_options & (MUHTARI_BOARD_BANKED_RAM | MUHTARI_BOARD_HALT_BANKED_RAM)) == 0u) {
+               (cart.board_options & (MUHTARI_BOARD_BANKED_RAM | MUHTARI_BOARD_HALT_BANKED_RAM)) ==
+                   0u) {
         lr_span(0x4000u, 0x4000u + (uint32_t)(cart_bytes < 0x4000u ? cart_bytes : 0x4000u),
                 cart_ram, 0u, 0u);
     }

@@ -554,6 +554,21 @@ the cartridge RAM's, below. A kind the loaded content does not have, such as car
 any, returns `MUHTARI_STATUS_OK` with a NULL `data` and zero `bytes`. Any other `kind` returns
 `MUHTARI_STATUS_ERR_ARGUMENT`.
 
+Physical cartridge and expansion spans describe storage, not permanently mapped
+CPU ranges. Bank/page and HALT selection or disabling an overlay does not replace
+their pointer or length. Expansion storage is volatile, remains separate from
+battery bytes, and survives gate/bank changes; power cycle clears it without
+replacing its pointer. Reacquire both spans after a successful load. A refused
+library load preserves the previous spans; the libretro adapter releases its
+old session before attempting replacement, so failure or unload clears its map
+and SAVE_RAM. Reacquire frontend pointers only after another successful load.
+
+Libretro's static achievement descriptors omit banked/HALT RAM, all cartridge
+windows at $4000-$7FFF with XBoard/XM installed, and XM HSC windows regardless
+of gate state. HSC remains physically accessible through the battery API and
+SAVE_RAM. BankSet's stable ROM descriptors use CPU-half geometry and omit its
+switched window and MARIA half; see [libretro memory maps](libretro.md#achievements).
+
 `MUHTARI_MEMORY_CART_RAM` is the RAM the cartridge info's `ram_size` names: 16,384 bytes on a SuperGame board with
 RAM, 32,768 with banked RAM (both halves, in order), and the list's size for a game the hash list knows. It lives in
 the cartridge's allocation, so a new load replaces it: ask again after each load. It starts zeroed, and a power cycle

@@ -2105,6 +2105,61 @@ static void case_memory_map(void)
         }
         stop();
     }
+    /* Real loaded-module replacement: restore the physical XM save before
+       its CPU program enables HSC, then unload/fail/reload another profile. */
+    static uint8_t image[128u + 262144u];
+    static const uint8_t program[] = {0xA9u, 0x68u, 0x8Du, 0x70u, 0x04u,
+                                      0xEEu, 0x00u, 0x10u, 0x02u};
+    static const char *const profiles[] = {"xm", "off", "xboard"};
+    want_span stable[] = {SHARED_SPANS,
+                          {0xC000u, 0x10000u, ROM, 128u + 114688u, RETRO_MEMDESC_CONST}};
+    for (unsigned profile = 0u; profile < 3u; profile++) {
+        struct retro_game_info game = {0};
+        game.data = image;
+        game.size = images_bankset(image, 128u, 3u);
+        memcpy(image + 128u + 114688u + 0x100u, program, sizeof program);
+        image[128u + 131072u - 4u] = 0u;
+        image[128u + 131072u - 3u] = 0xC1u;
+        set_var("muhtari_expansion", profiles[profile]);
+        set_var("muhtari_hsc", profile == 0u ? "auto" : "off");
+        p_set_environment(env);
+        CHECK(p_load_game(&game));
+        check_map(stable, 6u, image);
+        struct retro_memory_descriptor original[64];
+        CHECK(memory_map->num_descriptors <= 64u);
+        unsigned count = memory_map->num_descriptors;
+        if (count <= 64u)
+            memcpy(original, memory_map->descriptors, count * sizeof original[0]);
+        uint8_t *save = p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+        CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), profile == 0u ? 2048u : 0u);
+        CHECK((save != NULL) == (profile == 0u));
+        if (save != NULL)
+            save[0] = 0x43u;
+        p_run();
+        if (save != NULL) {
+            CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == save);
+            CHECK_EQ_U64(save[0], 0x44u);
+        }
+        check_map(stable, 6u, image);
+        p_reset();
+        if (save != NULL)
+            CHECK_EQ_U64(save[0], 0x44u);
+        check_map(stable, 6u, image);
+        CHECK_EQ_U64(memory_map->num_descriptors, count);
+        if (count <= 64u)
+            CHECK(memcmp(original, memory_map->descriptors, count * sizeof original[0]) == 0);
+        p_unload_game();
+        CHECK_EQ_U64(memory_map->num_descriptors, 0u);
+        CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+        CHECK(p_get_memory_data(RETRO_MEMORY_SYSTEM_RAM) == NULL);
+        game.size = 3u;
+        CHECK(!p_load_game(&game));
+        CHECK_EQ_U64(memory_map->num_descriptors, 0u);
+        CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 0u);
+    }
+    set_var("muhtari_expansion", "auto");
+    set_var("muhtari_hsc", "auto");
+    stop();
 }
 
 /* Restore through the module's public memory interface before any run. */

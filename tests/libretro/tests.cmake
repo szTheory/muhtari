@@ -1,6 +1,6 @@
 # The libretro core: its vendored header, its .info claims, and the core
 # called in-process as a frontend calls it.
-if(LIBRETRO_RETAIL_RUN)
+if(LIBRETRO_RETAIL_RUN OR LIBRETRO_EXPANSION_RUN)
   function(retail_command)
     execute_process(COMMAND ${EMULATOR} ${ARGV} RESULT_VARIABLE rc
       OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT ${HOST_TIMEOUT})
@@ -9,6 +9,10 @@ if(LIBRETRO_RETAIL_RUN)
     endif()
     message("${out}")
   endfunction()
+  if(LIBRETRO_EXPANSION_RUN)
+    retail_command("${RESOLVER}" --expansion)
+    return()
+  endif()
   file(MAKE_DIRECTORY "${OUT}")
   file(MAKE_DIRECTORY "${OUT}/hsc")
   retail_command("${RESOLVER}" --hsc-dir "${OUT}/hsc" ${CARTS})
@@ -287,6 +291,19 @@ include([==[${CMAKE_CURRENT_LIST_FILE}]==])
     LABELS libretro portable TIMEOUT 120) # bounded 600-frame comparisons, as diag.retail
   set_tests_properties(libretro.rcheevos PROPERTIES
     FIXTURES_REQUIRED "built_simple;built_doublebuffer")
+  # Faults: HALT/overlay storage claimed as fixed CPU memory, XM HSC exposed
+  # while gated, wrong CPU-half offsets, or a hole hiding later fixed ROM.
+  set(libretro_expansion ${PROJECT_BINARY_DIR}/tests/libretro-expansion.cmake)
+  file(GENERATE OUTPUT ${libretro_expansion} CONTENT
+"set(LIBRETRO_EXPANSION_RUN TRUE)
+set(RESOLVER [==[$<TARGET_FILE:muhtari-test-rcheevos>]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+set(HOST_TIMEOUT ${libretro_host_timeout})
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+  muhtari_add_test(NAME libretro.rcheevos.expansion
+    COMMAND ${CMAKE_COMMAND} -P ${libretro_expansion}
+    LABELS libretro portable TIMEOUT 120)
 
   set(libretro_inventory ${PROJECT_SOURCE_DIR}/tests/inventory/${MUHTARI_INVENTORY}.txt)
   muhtari_add_test(NAME libretro.info_claims
