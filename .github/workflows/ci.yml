@@ -135,7 +135,12 @@ jobs:
     if: needs.changes.outputs.heavy == 'true'
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 34 || 10 }}  # provisional 2 x Windows1013s/other286s, runs39876385414/39874751162
+    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 68 || 19 }}  # provisional 2 x Windows2021s/other567s, n=12/23, run 40725919037
+    # Intel macOS test durations vary up to 40x between runs (runs
+    # 40753756094, 40759364140); its current and base builds scale every
+    # test timeout by 2.
+    env:
+      MUHTARI_TIMEOUT_SCALE: ${{ matrix.timeout_scale || 1 }}
     strategy:
       fail-fast: false
       matrix:
@@ -143,7 +148,7 @@ jobs:
           - { runner: ubuntu-26.04, preset: ci, os: linux, arch: x64, wasmtime: x86_64-linux }
           - { runner: ubuntu-26.04-arm, preset: ci, os: linux, arch: arm64, wasmtime: aarch64-linux }
           - { runner: macos-15, preset: ci, os: macos, arch: arm64, wasmtime: aarch64-macos }
-          - { runner: macos-15-intel, preset: ci, os: macos, arch: x64, wasmtime: x86_64-macos }
+          - { runner: macos-15-intel, preset: ci, os: macos, arch: x64, wasmtime: x86_64-macos, timeout_scale: 2 }
           - { runner: windows-2025, preset: ci-msvc, os: windows, arch: x64, wasmtime: x86_64-windows }
           - { runner: windows-11-arm, preset: ci-msvc, os: windows, arch: arm64, wasmtime: aarch64-windows }
     steps:
@@ -226,7 +231,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 10  # provisional independent current/base work completed at 298s, cancelled at300s, run 39875580833
+    timeout-minutes: 14  # provisional 2 x 406s current/base work, n=5, run 40702203420
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

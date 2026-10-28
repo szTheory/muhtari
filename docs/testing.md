@@ -19,7 +19,7 @@ Needs CMake 4.3+, Ninja and C/C++ compilers:
 Tests build samples, OpenBIOS and rcheevos' resolver from pins. Fetch them first:
 
 ```sh
-scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # for example wasmtime-aarch64-macos
+scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # e.g. wasmtime-aarch64-macos
 scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic
 scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
 scripts/fetch-pin.sh rcheevos build/pins/rcheevos
@@ -59,7 +59,7 @@ the build tree at matching guest paths. Fetch with
 `scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime`; configure refuses
 a missing runtime. WASI outputs have no `.wasm` suffix.
 
-`MUHTARI_TIMEOUT_SCALE`: provisional `asan`/`be32`/`wasm32` scales 2/13/2; same-run Linux x64 duration-sum
+`MUHTARI_TIMEOUT_SCALE`: provisional `asan`/`be32`/`wasm32`/Intel macOS scales 2/13/2/2 (env); same-run Linux x64 duration-sum
 ratios max 1.713/12.127/1.612 (n=4/4/2). ASan keeps short runs. `audio.samples`: eight 600-frame driver/runner
 pairs, eight fixtures; 250 s = twice 124.92 s (11 Intel Mac successes, run 39617761785). COST 125 starts it early;
 builds/basic/coverage use costs 7/10/28 (control 27), basic/coverage bounds 19/55 s (control 53). Movies: 3 s from
@@ -306,7 +306,7 @@ and `NO_BASE` fail the job. Coverage is test-card-only; DMA/TIA/POKEY lack their
 integration fit. Native timings alone do not qualify them; no gameplay performance claim follows.
 
 **Exceptions.** A pull request that must be slower adds a line to `tests/perf/allow.txt`:
-`<rom> <max % × 100> <expiry YYYY-MM-DD> <reason>`, for example `testcard 250 2026-12-01 the new mixer`. It
+`<rom> <max % × 100> <expiry YYYY-MM-DD> <reason>`, e.g. `testcard 250 2026-12-01 the new mixer`. It
 raises that ROM's limit from the day it is checked through its expiry, at most 60 days away, and is removed after
 the pull request merges. `ctest -L perf` runs the gate's own tests on synthetic values.
 
@@ -459,7 +459,7 @@ Every lane but `nofp`, `hygiene` and `fuzz` builds the sample, so also run
 `scripts/fetch-pin.sh 7800basic-wasm build/pins/7800basic` and
 `scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios` before the workflow.
 
-To keep a lane's `hashes.txt`, mount a directory outside the repository and copy the file into it, for example
+To keep a lane's `hashes.txt`, mount a directory outside the repository and copy the file into it, e.g.
 `-v "$OUT:/out"` and then `cp build/be32/hashes.txt /out/`. On an x86_64 host use `--platform linux/amd64` and the
 `cmake-linux-x86_64` row. Under Docker's x86_64 emulation on Apple Silicon, GNU tar cannot create nested folders
 ("Function not implemented"); add `libarchive-tools` to the install list and run
