@@ -244,9 +244,14 @@ if(MUHTARI_FUZZ AND NOT CMAKE_C_COMPILER_ID STREQUAL "Clang")
 endif()
 
 # Tests. MUHTARI_TIMEOUT_SCALE multiplies every test's timeout on slow lanes;
-# MUHTARI_INVENTORY names the tests/inventory/<name>.txt the registered tests
-# must equal.
-set(MUHTARI_TIMEOUT_SCALE 1 CACHE STRING "Multiplier for every test timeout")
+# its default comes from the environment so a CI lane also scales the base
+# tree its quality step builds. MUHTARI_INVENTORY names the
+# tests/inventory/<name>.txt the registered tests must equal.
+set(muhtari_timeout_scale 1)
+if(DEFINED ENV{MUHTARI_TIMEOUT_SCALE})
+  set(muhtari_timeout_scale "$ENV{MUHTARI_TIMEOUT_SCALE}")
+endif()
+set(MUHTARI_TIMEOUT_SCALE ${muhtari_timeout_scale} CACHE STRING "Multiplier for every test timeout")
 # MUHTARI_SHORT_RUNS shortens the long runs from 600 frames to 60 on slow
 # lanes such as the sanitizers. Every test still runs.
 option(MUHTARI_SHORT_RUNS "Run long tests for 60 frames instead of 600" OFF)
