@@ -429,7 +429,7 @@ jobs:
       - name: Independent numeric and pixel judges
         run: |
           mkdir -p build/frames
-          cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Ihost tests/diag/driver.c host/palette.c runner/sha256.c \
+          cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Ihost tests/diag/driver.c tests/runner/png_read.c host/palette.c runner/sha256.c \
             build/library/lib/libmuhtari.a -o build/frames/diag
           cc -std=c17 -O2 -Wall -Wextra -Werror -o build/frames/compare tests/retroarch/bmp.c tests/retroarch/compare.c
       - name: RetroArch runs the dma diagnostic
