@@ -50,7 +50,7 @@ muhtari-run --help | --version
 | `--save-dir DIR` | Opt into per-game raw battery files in an existing accessible directory. Requires a cartridge, even when it has no battery. See [Battery files](#battery-files). |
 | `--save-interval F` | Persist dirty battery bytes every F completed frames, from 1 to 4294967295; default 60. Requires `--save-dir`. |
 | `--hsc auto\|on\|off` | Auto attaches for an HSC request or effective XM; On forces attachment, Off suppresses it. Requires a cartridge. |
-| `--hsc-rom FILE` | Supply an exact 4,096-byte HSC firmware file, copied at load. Invalid size, unreadable file or an explicit `--hsc off` conflict exits 1 before import or execution. |
+| `--hsc-rom FILE` | Supply an exact 4,096-byte HSC firmware file, copied at load. A 2600 image, an unsupported board or declared unsupported sound exits 77 with its usual message whatever `--hsc` says, and its firmware file is not read. A 52 KiB BankSet set is refused the same way (exit 77, firmware file not read) only when HSC attaches; HSC attaches with `--hsc on`, or with `--hsc auto` (the default) when the image uses the XM expansion or its header declares an HSC, and `--hsc off` detaches it, so the set is accepted and `--hsc-rom` exits 1. For any other image, an HSC that does not attach (such as explicit `--hsc off`), an unreadable file or a size other than 4,096 bytes exits 1 before import or execution. |
 | `--probe FILE` | Identify the cartridge image in FILE and print its fields and hashes. It takes exactly one file and no other option. |
 | `--help` | Print the usage text and the exit statuses. It takes no other arguments. |
 | `--version` | Print `muhtari-run` and the version. It takes no other arguments. |
@@ -59,7 +59,7 @@ Anything else on the command line, including a second file name, is a usage erro
 
 `--expansion auto|off|xboard|xm` selects hardware at load. Auto follows any nonzero A78 XM request, otherwise Off; XBoard requires explicit selection. Off suppresses expansion only. Declared YM2151, Covox and ADPCM still refuse execution with exit77 and a named sound message.
 
-XM is a RAM/POKEY/HSC subset with medium physical confidence, without internal BIOS/top-slot switching, flash, PIA, flat48KiB mode, write protection, sticky locks, ROF aliases, PAL firmware selection or full-XM services. HSC firmware is read only for attached storage; a firmware request with detached HSC fails before file I/O. No gameplay compatibility is implied.
+XM is a RAM/POKEY/HSC subset with medium physical confidence, without internal BIOS/top-slot switching, flash, PIA, flat48KiB mode, write protection, sticky locks, ROF aliases, PAL firmware selection or full-XM services. HSC firmware is read only for attached storage on an image the core accepts; a refused image keeps exit 77 without its firmware file being read, and a firmware request with detached HSC otherwise exits 1 before the firmware file is read. No gameplay compatibility is implied.
 
 ```sh
 muhtari-run --expansion xm --frames 12 --diagnostic game.a78
