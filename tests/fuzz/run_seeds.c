@@ -3,7 +3,8 @@
    from splitmix64, then one empty input, which the target pads to 48 KiB of
    $00. Eleven additional inputs explicitly select retail boards, malformed
    geometries and unsupported A8 combinations; one more retains an accidental
-   header prefix as a linear-builder regression. The property tests draw
+   header prefix as a linear-builder regression, and a last BankSet program
+   writes CTRL with DMA off. The property tests draw
    their cartridges from the same images. */
 #include "seeds.h"
 
@@ -13,7 +14,7 @@
 #include "run_cart.h"
 
 #define RUN_SEED_BYTES 49152u
-#define RUN_SEEDS 122u
+#define RUN_SEEDS 123u
 
 static const char *const names[RUN_SEEDS] = {"zero-48k",
                                              "jam-48k",
@@ -136,7 +137,8 @@ static const char *const names[RUN_SEEDS] = {"zero-48k",
                                              "bankset-256k-32k-xm-pal",
                                              "bankset-512k-0k-xm-pal",
                                              "bankset-512k-16k-xm-pal",
-                                             "bankset-512k-32k-xm-pal"};
+                                             "bankset-512k-32k-xm-pal",
+                                             "bankset-ctrl-dma-off"};
 
 uint32_t seeds_count(void)
 {
@@ -150,6 +152,20 @@ const char *seeds_name(uint32_t i)
 
 size_t seeds_build(uint32_t i, uint8_t *buf)
 {
+    if (i == RUN_SEEDS - 1u) {
+        /* LDA #$77, STA CTRL, JMP *: DMA mode 11 turns DMA off, a program's
+           right (docs/hardware/maria.md, Display lists), so the target must
+           not require DMA from hostile frames. Minimized from nightly fuzz
+           input; the fixed window is the last 8 KiB of the first half. */
+        static const uint8_t code[] = {0xA9, 0x77, 0x85, 0x3C, 0x4C, 0x04, 0xE0};
+        size_t at = 128u + 32768u - 8192u;
+        memset(buf, 0, at + sizeof code);
+        buf[0] = 4u;
+        memcpy(buf + 1u, "ATARI7800", 9u);
+        buf[65] = 0x80u;
+        memcpy(buf + at, code, sizeof code);
+        return at + sizeof code;
+    }
     if (i >= 38u) {
         static const uint32_t halves[] = {32u,  32u,  32u,  48u,  52u,  128u, 128u,
                                           128u, 256u, 256u, 256u, 512u, 512u, 512u};
