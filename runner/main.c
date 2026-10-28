@@ -1182,50 +1182,60 @@ static int load(muhtari *m, const char *path, uint32_t region, const char *movie
     uint8_t *firmware = NULL;
     muhtari_cart_info cart = {0};
     cart.size = (uint32_t)sizeof cart;
-    muhtari_status probed = muhtari_probe(image, n, &cart);
-    uint32_t expansion = media.expansion;
-    if (expansion == MUHTARI_EXPANSION_AUTO)
-        expansion =
-            (cart.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM : MUHTARI_EXPANSION_OFF;
-    int attached =
-        media.hsc_mode == MUHTARI_HSC_ON ||
-        (media.hsc_mode == MUHTARI_HSC_AUTO &&
-         ((cart.devices & MUHTARI_DEVICE_HSC) != 0u || expansion == MUHTARI_EXPANSION_XM));
+    (void)muhtari_probe(image, n, &cart);
+    muhtari_status st = MUHTARI_STATUS_OK;
+    /* The core decides the load and the HSC attachment without firmware
+       first, so a refused image or a detached HSC never reads the file, and
+       an accepted image is loaded again with it. The second load keeps the
+       first load's attachment: the core attaches HSC whenever firmware is
+       given, and firmware is given only when the first load reported HSC
+       attached (src/instance.c battery_prepare). */
     if (opt->hsc_rom != NULL) {
-        if (!attached || probed != MUHTARI_STATUS_OK) {
-            fprintf(stderr, "muhtari-run: HSC firmware requires attached HSC\n");
-            free(image);
-            free(bios);
-            return MUHTARI__EXIT_FAILURE;
-        }
-        firmware = (uint8_t *)malloc(4097u);
-        FILE *f = save_read_open(opt->hsc_rom);
-        int bad = firmware == NULL || f == NULL;
-        size_t used = 0u;
-        if (f != NULL) {
-            while (firmware != NULL && used < 4097u) {
-                size_t got = fread(firmware + used, 1u, 4097u - used, f);
-                used += got;
-                if (got == 0u)
-                    break;
+        st = muhtari_load(m, &media);
+        if (st == MUHTARI_STATUS_OK) {
+            muhtari_battery_info first = {0};
+            first.size = (uint32_t)sizeof first;
+            if (muhtari_get_battery(m, &first) != MUHTARI_STATUS_OK) {
+                free(image);
+                free(bios);
+                return MUHTARI__EXIT_FAILURE;
             }
-            if (ferror(f) != 0 || used != 4096u)
-                bad = 1;
-            if (fclose(f) != 0)
-                bad = 1;
+            if (!first.hsc_attached) {
+                fprintf(stderr, "muhtari-run: HSC firmware requires attached HSC\n");
+                free(image);
+                free(bios);
+                return MUHTARI__EXIT_FAILURE;
+            }
+            firmware = (uint8_t *)malloc(4097u);
+            FILE *f = save_read_open(opt->hsc_rom);
+            int bad = firmware == NULL || f == NULL;
+            size_t used = 0u;
+            if (f != NULL) {
+                while (firmware != NULL && used < 4097u) {
+                    size_t got = fread(firmware + used, 1u, 4097u - used, f);
+                    used += got;
+                    if (got == 0u)
+                        break;
+                }
+                if (ferror(f) != 0 || used != 4096u)
+                    bad = 1;
+                if (fclose(f) != 0)
+                    bad = 1;
+            }
+            if (bad) {
+                fprintf(stderr, "muhtari-run: %s: HSC firmware must be a readable 4096-byte file\n",
+                        opt->hsc_rom);
+                free(firmware);
+                free(image);
+                free(bios);
+                return MUHTARI__EXIT_FAILURE;
+            }
+            media.hsc_rom = firmware;
+            media.hsc_rom_size = used;
         }
-        if (bad) {
-            fprintf(stderr, "muhtari-run: %s: HSC firmware must be a readable 4096-byte file\n",
-                    opt->hsc_rom);
-            free(firmware);
-            free(image);
-            free(bios);
-            return MUHTARI__EXIT_FAILURE;
-        }
-        media.hsc_rom = firmware;
-        media.hsc_rom_size = used;
     }
-    muhtari_status st = muhtari_load(m, &media);
+    if (st == MUHTARI_STATUS_OK)
+        st = muhtari_load(m, &media);
     free(image);
     free(bios);
     free(firmware);

@@ -3,6 +3,7 @@
 # This file is also the command-line checks themselves, run as
 #   cmake -DRUN=<muhtari-run> [-DEMULATOR=<list>] -DCASE=<name> [-DOUT=<file>]
 #     [-DVERSION_FILE=<file>] [-DFRAMES=<long run>] [-DDIR=<image directory>]
+#     [-DWORK=<scratch directory>]
 #     -P tests/runner/tests.cmake
 # EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
 # runs its own guest binary.
@@ -1188,6 +1189,44 @@ endfunction()
     endforeach()
     expect_exit(77 "unsupported board" --frames 1 --expansion xm "${DIR}/ram52.a78")
     expect_output("" --frames 1 --expansion xm --hsc off "${DIR}/ram52.a78")
+  elseif(CASE STREQUAL "hsc_rom.refused")
+    # Fault prevented: an image the core refuses, given --hsc-rom, reports an
+    # HSC or firmware error and exits 1 instead of its documented refusal,
+    # or has its firmware file read although nothing attaches. The fixtures
+    # are written into WORK, a directory of its own.
+    file(MAKE_DIRECTORY "${WORK}")
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${WORK}" expansion
+      RESULT_VARIABLE generated)
+    if(NOT generated STREQUAL "0")
+      message(FATAL_ERROR "expansion fixtures failed: ${generated}")
+    endif()
+    # Four firmware requests per refused image: absent, wrong size and valid
+    # firmware, under every --hsc setting. The anchored pattern rejects any
+    # HSC or firmware message beside the refusal.
+    function(expect_refused regex image)
+      expect_exit(77 "${regex}" --frames 1 --hsc-rom "${WORK}/missing.bin" "${image}")
+      expect_exit(77 "${regex}" --frames 1 --hsc-rom "${WORK}/hsc.bin" "${image}")
+      expect_exit(77 "${regex}" --frames 1 --hsc on --hsc-rom "${WORK}/bad-hsc.bin" "${image}")
+      expect_exit(77 "${regex}" --frames 1 --hsc off --hsc-rom "${WORK}/missing.bin" "${image}")
+    endfunction()
+    expect_refused("^muhtari-run: [^\n]*/2600-4k: unsupported: 2600 \\(planned\\)\n$"
+      "${DIR}/2600-4k")
+    expect_refused("^muhtari-run: [^\n]*/souper-v4: unsupported board: souper\n$"
+      "${DIR}/souper-v4")
+    foreach(sound ym2151 covox adpcm)
+      expect_refused("^muhtari-run: [^\n]*/${sound}[.]a78: unsupported device\nmuhtari-run: unavailable sound configuration: ${sound}\n$"
+        "${WORK}/${sound}.a78")
+    endforeach()
+    # A 52 KiB BankSet set is refused when HSC attaches.
+    set(bankset "^muhtari-run: [^\n]*/ram52[.]a78: unsupported board: bankset\n$")
+    expect_exit(77 "${bankset}" --frames 1 --expansion xm --hsc-rom "${WORK}/missing.bin"
+      "${WORK}/ram52.a78")
+    expect_exit(77 "${bankset}" --frames 1 --expansion xm --hsc-rom "${WORK}/bad-hsc.bin"
+      "${WORK}/ram52.a78")
+    expect_exit(77 "${bankset}" --frames 1 --expansion xm --hsc-rom "${WORK}/hsc.bin"
+      "${WORK}/ram52.a78")
+    expect_exit(77 "${bankset}" --frames 1 --hsc on --hsc-rom "${WORK}/missing.bin"
+      "${WORK}/ram52.a78")
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
   endif()
@@ -1308,6 +1347,16 @@ foreach(case IN ITEMS usage.port region.pal usage.boot_bios_no_file)
     LABELS runner portable TIMEOUT 2) # ceil(2 x 0.98 s), Windows arm64 region.pal, slowest complete of 3 runs, runs 40414104123 and 40419374588; a 1 s deadline timed out at 1.03 s, run 40698007354
 endforeach()
 set_tests_properties(runner.region.pal PROPERTIES FIXTURES_REQUIRED probe_images)
+
+# Refused images given --hsc-rom keep exit 77; WORK keeps the fixtures this
+# test writes apart from runner.region.pal's.
+muhtari_add_test(NAME runner.hsc_rom.refused
+  COMMAND ${runner_check} -DCASE=hsc_rom.refused -DDIR=${CMAKE_BINARY_DIR}/runner-probe
+    -DWORK=${CMAKE_BINARY_DIR}/runner-hsc-refused
+    -DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>
+    -P ${CMAKE_CURRENT_LIST_FILE}
+  LABELS runner portable TIMEOUT 2) # ceil(2 x 0.09 s x 0.98/0.12), macOS arm64 slowest of 3 local runs, scaled by region.pal's Windows arm64 run; provisional, no hosted run
+set_tests_properties(runner.hsc_rom.refused PROPERTIES FIXTURES_REQUIRED probe_images)
 
 # --probe on the images muhtari-test-images writes into the build directory;
 # no image bytes are tracked.

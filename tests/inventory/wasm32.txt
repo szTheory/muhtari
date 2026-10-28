@@ -588,6 +588,7 @@ runner.hashes_compare.byte.self_test	runner
 runner.hashes_compare.count.self_test	runner
 runner.hashes_file	portable,runner
 runner.help	portable,runner
+runner.hsc_rom.refused	portable,runner
 runner.load.hash	portable,runner
 runner.load.pal	portable,runner
 runner.md5	portable,runner
