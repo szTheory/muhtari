@@ -326,7 +326,8 @@ static void exact_file(const char *path, const uint8_t *want, size_t bytes)
 static void expansion_images(const char *dir)
 {
     char path[1024];
-    uint8_t image[128u + 106496u];
+    /* Static: the wasm32 lane's 64 KiB stack is smaller than the 104 KiB image. */
+    static uint8_t image[128u + 106496u];
     memset(image, 0, sizeof image);
     image[0] = 4u;
     memcpy(image + 1u, "ATARI7800", 9u);
