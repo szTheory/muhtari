@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_phase: 10
-current_plan: 14
-status: verifying
-stopped_at: Completed 10-14-PLAN.md
-last_updated: "2026-10-28T16:13:02.467Z"
+current_phase: 11 — Full-library acceptance
+current_plan: Not started
+status: planning
+stopped_at: Phase 10 verified (passed) and marked complete; ready to ship phase 10
+last_updated: "2026-10-28T16:21:33.922Z"
 last_activity: 2026-10-28
-last_activity_desc: Phase 10 gap-closure plan 10-14 executed; refused images keep exit 77 under --hsc-rom
-state_head: 2c3a66fecc33bc644e23e8d32f0f631c97cb2864
+last_activity_desc: Phase 10 gap closure 10-14 executed; re-review and re-verification passed
+state_head: 2b4f4fb1e7d0ba29d36778f4da85a47106a11649
 progress:
   total_phases: 7
   completed_phases: 5
@@ -17,7 +17,7 @@ progress:
   completed_plans: 64
   percent: 71
 total_phases: 7
-current_phase_name: Homebrew and expansion memory
+current_phase_name: Full-library acceptance
 ---
 
 # Project State
@@ -27,25 +27,25 @@ current_phase_name: Homebrew and expansion memory
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase10 gap closure, 13/14 accepted plans; plan 10-14 (CR-01) ready to execute.
-Plan10-13 is ready. BOARD-04/05 remain pending; final hosted acceptance is later.
+Current focus: Phase 10 complete and verified (14/14 plans; CR-01 closed by 10-14); ship it next with /gsd-ship 10.
+BOARD-04/05 are marked Complete; final hosted acceptance is confirmed at ship and in Phase 11.
 Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
 remains recorded below; this step makes no new release claim.
 
 ## Current Position
 
-Current Phase: 10
-Current Plan: 14
+Current Phase: 11 — Full-library acceptance
+Current Plan: Not started
 Total Plans in Phase: 14
 Progress: [███████░░░] 71%
 
-Phase10 has13/14 accepted plans; gap-closure plan 10-14 is planned. Five of seven milestone phases are complete (71%).
-Active-slot totals are63 summarized plans of64 planned, including historical
-halted06-01;61 accepted plans. Summarized counts do not establish phase acceptance.
+Phase 10 has 14/14 accepted plans and verification passed. Six of seven milestone phases are complete once phase 10 ships.
+Active-slot totals are 64 summarized plans of 64 planned, including historical
+halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Phase complete — ready for verification
-Last activity: 2026-10-28 — Phase 10 gap-closure plan 10-14 executed (CR-01)
-Next command: /gsd-execute-phase 10 --gaps-only
+Status: Phase 10 complete, ready to ship
+Last activity: 2026-10-28 — Phase 10 gap closure executed (10-14), re-reviewed and re-verified (passed)
+Next command: /gsd-ship 10
 Branch: phase/10-homebrew-expansion-memory
 
 ## Phase 10 execution receipt
@@ -694,10 +694,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 10-14-PLAN.md
+**Stopped at:** Phase 10 verified and complete; ship phase 10 before planning Phase 11
 Last session: 2026-10-28T16:13:02.094Z
 Resume file: None
-Next command: /gsd-plan-phase 10 --gaps
+Next command: /gsd-ship 10
 
 ### Quick Tasks Completed
 

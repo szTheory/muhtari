@@ -131,10 +131,10 @@ save states and other later horizons remain deferred. Planning v2.0 does not sel
 - ✓ HSC/SaveKey battery data survives host and frontend restarts — SAVE-01–06, Phase7 shipped in PR28.
 - ✓ Source-qualified lightgun, analog/matrix, timed motion and complete adapter inputs across all three deliverables — INPUT-01–05, Phase8 shipped in PR31.
 - ✓ Selected PAL timing, presentation and audio across all three deliverables — PAL-01–03, Phase9 verified42/42; shipping next.
+- ✓ BankSet and XBoard/XM memory, POKEY and HSC with correct CPU/MARIA ownership — BOARD-04–05, Phase 10 verified 5/5; shipping next.
 
 ### Active
 
-- [ ] BankSet and XBoard/XM memory/POKEY/HSC — BOARD-04–05, Phase 10.
 - [ ] Evidence-backed library accounting — COMP-01–03, Phase 11.
 
 Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
@@ -252,4 +252,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-25 after Phase9 execution and verification; ship Phase9 next*
+*Last updated: 2026-10-28 after Phase 10 execution and verification; ship Phase 10 next*
