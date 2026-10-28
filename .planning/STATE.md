@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 10
-current_plan: 13
-status: executing
-stopped_at: Phase 10 gap-closure plan 10-14 ready to execute (CR-01)
-last_updated: "2026-10-28T15:52:32.495Z"
+current_plan: 14
+status: verifying
+stopped_at: Completed 10-14-PLAN.md
+last_updated: "2026-10-28T16:13:02.467Z"
 last_activity: 2026-10-28
-last_activity_desc: Phase 10 gap-closure plan 10-14 created; plan check passed with no blockers after owner gap-round exception
-state_head: ad615b7618e87705b7e585e97a97b32ad92a4cde
+last_activity_desc: Phase 10 gap-closure plan 10-14 executed; refused images keep exit 77 under --hsc-rom
+state_head: 2c3a66fecc33bc644e23e8d32f0f631c97cb2864
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 64
-  completed_plans: 63
+  completed_plans: 64
   percent: 71
 total_phases: 7
 current_phase_name: Homebrew and expansion memory
@@ -34,8 +34,8 @@ remains recorded below; this step makes no new release claim.
 
 ## Current Position
 
-Current Phase: 10 — Homebrew and expansion memory
-Current Plan: 13
+Current Phase: 10
+Current Plan: 14
 Total Plans in Phase: 14
 Progress: [███████░░░] 71%
 
@@ -43,8 +43,8 @@ Phase10 has13/14 accepted plans; gap-closure plan 10-14 is planned. Five of seve
 Active-slot totals are63 summarized plans of64 planned, including historical
 halted06-01;61 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Phase10 gap closure planned (10-14, CR-01); owner granted a second gap round 2026-10-28
-Last activity: 2026-10-28 — Phase 10 gap-closure plan 10-14 created and checked
+Status: Phase complete — ready for verification
+Last activity: 2026-10-28 — Phase 10 gap-closure plan 10-14 executed (CR-01)
 Next command: /gsd-execute-phase 10 --gaps-only
 Branch: phase/10-homebrew-expansion-memory
 
@@ -694,9 +694,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 10 planned and independently checked; next $gsd-execute-phase 10; v0.8.0 publication failure remains separate
-Last session: 2026-10-26T03:23:40Z
-Resume file: .planning/phases/10-homebrew-expansion-memory/10-01-PLAN.md
+**Stopped at:** Completed 10-14-PLAN.md
+Last session: 2026-10-28T16:13:02.094Z
+Resume file: None
 Next command: /gsd-plan-phase 10 --gaps
 
 ### Quick Tasks Completed
@@ -729,6 +729,7 @@ Next command: /gsd-plan-phase 10 --gaps
 | Phase 09 P03 | 16min | 3 tasks | sourceef95e37 |
 | Phase 09 P04 | 14min | 2 tasks | 3 files |
 | Phase 09 P07 | accepted after debug recovery | 3 accepted tasks | source7ad503c; recoverya93a11d/ddf51d4 |
+| Phase 10 P14 | 20 min | 2 tasks | 5 files |
 
 ## Decisions
 
@@ -746,6 +747,7 @@ Next command: /gsd-plan-phase 10 --gaps
 - [Phase 08]: Typed syntax acceptance remains separate from physical-device capability refusal until each controller slice lands.
 - [Phase 08]: Historical399937 halt preserved; DEC.61 separately retires only that unsupported cutoff while preserving required measurements and all independent contracts.
 - [Phase 08]: Audit every required workflow job; standalone diagnostic consumers link the existing owned digest helper and actual RetroArch acceptance is verified separately from package metrics.
+- [Phase 10]: 10-14: --hsc-rom loads without firmware first, reads HSC attachment from muhtari_get_battery, reads firmware only for an accepted attached image and loads again; refused images keep exit 77
 
 ### Blockers
 

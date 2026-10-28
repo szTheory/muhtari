@@ -18,8 +18,8 @@ Core value: 7800 games behave as they do on the console, identically on every pl
 - [x] **BOARD-01**: Activision cartridges run with correct banking and equivalent mapped behavior for the two identified dump layouts, while raw image identity remains inspectable.
 - [x] **BOARD-02**: Absolute cartridges run with documented fixed/switched windows and power-on banks.
 - [x] **BOARD-03**: Fractalus cartridges run with the documented mirrored physical RAM and bounded alias accesses.
-- [ ] **BOARD-04**: BankSet cartridges select the documented CPU/MARIA ROM and RAM views at both HALT transitions, with supported image geometries validated before load changes state.
-- [ ] **BOARD-05**: XBoard and the XM RAM/POKEY/HSC subset run with documented control registers and CPU/MARIA banking; unsupported sound expansions remain explicit.
+- [x] **BOARD-04**: BankSet cartridges select the documented CPU/MARIA ROM and RAM views at both HALT transitions, with supported image geometries validated before load changes state.
+- [x] **BOARD-05**: XBoard and the XM RAM/POKEY/HSC subset run with documented control registers and CPU/MARIA banking; unsupported sound expansions remain explicit.
 
 Souper/BupChip stays deferred by owner decision on 2026-10-21; no partial board support is counted as complete game support.
 
@@ -86,8 +86,8 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | PAL-01 | Phase 9 | Complete |
 | PAL-02 | Phase 9 | Complete |
 | PAL-03 | Phase 9 | Complete |
-| BOARD-04 | Phase 10 | Pending |
-| BOARD-05 | Phase 10 | Pending |
+| BOARD-04 | Phase 10 | Complete |
+| BOARD-05 | Phase 10 | Complete |
 | COMP-01 | Phase 11 | Pending |
 | COMP-02 | Phase 11 | Pending |
 | COMP-03 | Phase 11 | Pending |
