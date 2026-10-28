@@ -60,7 +60,7 @@ one was:
 1. More than one of Fractalus, Absolute, Activision, bankset and Souper is a conflict; the last in that list wins.
 2. Activision or Absolute clears bits 0-7.
 3. ROM at $4000, bank 6 or banked RAM without SuperGame sets SuperGame.
-4. POKEY at $4000 is dropped beside RAM, bank 6 or banked RAM at $4000. Beside ROM at $4000 it stays, as a
+4. Except on BankSet, POKEY at $4000 is dropped beside RAM, bank 6 or banked RAM at $4000. Beside ROM at $4000 it stays, as a
    write-only POKEY, which is no conflict.
 5. RAM at $4000 is dropped beside ROM at $4000, bank 6 or banked RAM.
 6. ROM at $4000 is dropped beside bank 6 or banked RAM.
@@ -86,7 +86,7 @@ The specification names these options without specifying their wiring. Linear/A8
 as the physical 2 KiB Fractalus board described below; the name “8K EXRAM/A8” does not establish 8 KiB SRAM.
 Valid SuperGame/A8 and BankSet/A8 remain unsupported, even when the v3 header names a supported board;
 they do not fall back to v3. Malformed reserved v4 bits retain the ignored-block warning and v3 fallback.
-A hash match retains its existing override precedence. M2 remains unsupported; X2 uses the cartridge notes'
+A hash match retains its existing override precedence. M2 is supported on BankSet only; X2 uses the cartridge notes'
 banked-RAM interpretation (section 1.1). The audio POKEY codes are 1 at $0440, 2 at $0450, 3 at both, 4 at $0800 and 5 at $4000. The other
 mappers take no device. Otherwise the cart type applies and `MUHTARI_CART_WARN_HEADER_V4_IGNORED` is set. Ports, TV,
 save and XM always come from bytes 55-63.
@@ -190,6 +190,7 @@ The body sizes each board this library runs accepts:
 | Absolute | exactly 64 KiB, no board options or cartridge RAM |
 | Fractalus | exactly 32 KiB ROM and 2 KiB physical RAM, no board options |
 | Activision | exactly 128 KiB, no board options or cartridge RAM |
+| BankSet | equal CPU-then-MARIA halves of 32, 48, 52, 128, 256 or 512 KiB; at most 1 MiB total |
 
 The evidence is MAME's 7800 list, which gives these ROM sizes per slot:
 
@@ -212,9 +213,9 @@ the header claims more bytes than the file holds, as invalid otherwise.
 Declared POKEY registers repeat every 16 bytes over $4000-$7FFF or $0800-$0FFF;
 $0450-$045F selects the primary chip and $0440-$044F the secondary chip,
 including the dual-chip declaration (cartridge notes, section 2.1).
-If a legacy header declares multiple primary locations, $0450 takes priority,
-then $4000, then $0800; the fixed slots bound the declaration to two chips.
-CPU writes select POKEY before board RAM or ROM. CPU reads select readable
+Probe preserves the normalized sound declaration. Loading refuses multiple
+primary locations; accepted content has at most one primary and one secondary.
+CPU writes select POKEY before board RAM or ROM; BankSet also applies its independent memory write. CPU reads select readable
 RAM or overlapping linear, Absolute or Activision ROM, EXROM or EXFIX before a write-only $4000 POKEY;
 otherwise POKEY answers. Peeks and MARIA fetches always observe board memory
 or open bus, without clocking or reading POKEY registers.
@@ -227,12 +228,126 @@ Reload and power cycle restore declared chip count and the boot clock origin.
 
 ## Boards
 
-`MUHTARI_STATUS_OK` means linear, Absolute, Activision, Fractalus or the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
-Bankset, halt-banked RAM and Souper are reported with
-`MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. XM, YM2151 and Covox are reported in `devices` and `sound` and never refused.
+`MUHTARI_STATUS_OK` includes linear, Absolute, Activision, Fractalus, BankSet and the SuperGame family: SuperGame, with RAM, SG9, bank 6 at $4000 and banked RAM.
+Non-BankSet halt-banked RAM and Souper are reported with
+`MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD`. YM2151, Covox and ADPCM remain descriptive
+probe metadata; executable load refuses these unimplemented audio requests before
+allocation. Selecting expansion Off does not erase independent audio declarations.
+
+### XBoard
+
+XBoard has 128 KiB volatile RAM in eight 16 KiB banks. All writes at
+$0470–$047F select the same control latch: bits 0–2 choose the bank, bit 3
+enables the $4000–$7FFF overlay and bit 4 enables POKEY register decode at
+$0450–$045F. Disabled RAM windows pass through to the cartridge. Bank/gate
+changes retain stored bytes; power cycle zero-fills RAM and resets controls.
+The console Reset input does not power cycle this hardware. The installed
+POKEY keeps its clocks, timers, audio and IRQ identity while decode is off;
+off-window stores are ignored. A declared $0450 uses that same chip, and a
+declared secondary $0440 can coexist. Separate primary $4000/$0800 owners
+and the unverified optional $0460 XBoard POKEY are outside this profile.
+
+This map follows the permissively licensed XBoard implementation cited in
+cartridge preparation section 2.1 (CART.20), not a new physical measurement.
 
 The boards are one `switch` in `src/cart.c`, so the core keeps no table of function pointers. MARIA's fetches see the
-same bytes as the CPU on every board here.
+same bytes as the CPU except for BankSet and XM during the shared electrically
+selected MARIA interval.
+
+### XM RAM/POKEY/HSC subset
+
+XM has sixteen physical 8 KiB RAM pages. Exact writes at $0470 use bits 5/6
+to enable $4000–$5FFF/$6000–$7FFF independently. The low/high nibbles at
+$0478 select their CPU pages; $047C selects the MARIA pages during the same
+electrical HALT interval used by BankSet. Non-HALT MARIA reads and CPU peeks
+retain the CPU pages. Each offset is bounded through $1FFFF. Disabled windows
+reveal the cartridge, and mapper stores outside enabled overlays still work.
+Power cycle clears the page and control latches and zero-fills physical RAM.
+
+XM Auto physically provisions HSC at load unless the HSC override is Off.
+$0470 bit 3 gates both $1000–$17FF SRAM and $3000–$3FFF firmware. Both start
+hidden; save import is available before execution through the stable physical
+battery span. Hidden writes do nothing. Gate changes retain bytes, pointer,
+layout 1, firmware identity and generation. Power cycle retains attachment and
+committed battery bytes/token while clearing volatile XM state; the console
+Reset switch does not clear it. Standalone HSC remains always decoded.
+Gating both HSC windows is a physical inference with medium confidence: the
+reference implementation's always-on SRAM is explicitly a persistence
+workaround, which this profile does not reproduce. The signature-only stub
+and supplied-firmware validation retain their documented limits.
+
+This is an implementation-backed compatibility profile with medium confidence
+for physical XM semantics, following the individually BSD-3-licensed `xm.cpp`
+at a7800 revision `7a2afdc1ea08` (cartridge preparation, CART.22). The original
+developer specification remains unavailable. Bits 0–2/7 at $0470, $0471/$0472
+and neighboring aliases have no implemented effect; absent register reads
+retain open bus. ROF aliases, internal BIOS/top-slot switching, flash, PIA,
+flat 48 KiB mode, protection, sticky locks and PAL firmware selection remain
+unavailable. Probing them produces no synthetic service or detection behavior.
+
+### BankSet
+
+The image contains equal CPU and MARIA ROM sets in that order. The complete
+accepted matrix is below; sizes are per set, with twice that many image bytes.
+
+| Per-set ROM | No RAM | Shared 16 KiB RAM | HALT-selected 32 KiB RAM |
+|---|---|---|---|
+| 32 KiB | yes | yes | yes |
+| 48 KiB | yes | refused | refused |
+| 52 KiB | yes | refused | refused |
+| 128 KiB | yes | yes | yes |
+| 256 KiB | yes | yes | yes |
+| 512 KiB | yes | yes | yes |
+
+Linear 32, 48
+and 52 KiB sets end at $FFFF, beginning at $8000, $4000 and $3000. Switched
+128, 256 and 512 KiB sets use 16 KiB banks: $4000 holds the second-last bank,
+$8000 the selected bank and $C000 the last bank of the selected set. One shared
+register starts at zero; stores at $8000–$BFFF select modulo the per-set bank
+count. Peeks retain the CPU view and change neither time nor the register.
+
+All six sizes accept no RAM. The 32/128/256/512 KiB sets also accept declared
+shared 16 KiB or HALT-selected 32 KiB RAM; 48/52 KiB sets refuse RAM. Omission
+creates none. A8, X2, EXROM and EXFIX combinations are unsupported. Odd,
+unsupported or header/body-mismatched BankSet sizes refuse before allocation;
+a valid unsupported v4 declaration cannot fall back to stale v3 metadata.
+
+The BankSet wiki (cartridge notes section 2.1) documents through 128 KiB per
+set and describes HALT RAM. The 256/512 KiB sizes and shared RAM support are
+producer/emulator extensions, not measured cartridge capacities or identical
+physical boards. The time-aware bus path selects MARIA memory from the actual
+second phi2 fall after HALT falls until its release; the c1 CPU store commits
+before selection changes at that same edge. Non-HALT VBE reads and peeks retain
+the CPU view. The first fetch cannot precede c2. For fast/fast, fast/slow,
+slow/fast and slow/slow c0/c1 pairs, second falls are 8/9/10/11 ticks and first
+fetches are 8/10/10/12 ticks after HALT fall. This slow-edge causal fit is derived,
+not measured; the absolute line-reset deadline stays fixed. See
+[bus timing](bus.md#halt) for the fit and independent timing controls.
+
+Shared RAM is one 16 KiB span at $4000–$7FFF for both readers. HALT RAM has
+two physical 16 KiB halves: CPU stores at $4000–$7FFF update the CPU half;
+CPU stores at $C000–$FFFF redirect to the MARIA half, while reads there
+remain ROM. MARIA reads its half at $4000–$7FFF only during the electrical
+interval. A write-only $4000 POKEY also receives stores without consuming the
+BankSet memory effect. `MUHTARI_MEMORY_CART_RAM` exposes all 16384 or 32768
+physical bytes, zero-filled on load/power cycle and stable until successful
+replacement or destroy. Refused loads preserve the pointer and every byte.
+
+A 52 KiB set overlaps HSC ROM at $3000–$3FFF. Effective HSC
+attachment is refused before allocation, including Auto metadata and supplied
+firmware and initially hidden XM Auto; explicit HSC Off removes the conflict.
+MEN/BIOS decode retains bus priority over cartridge memory. Enabled expansion
+RAM overlays take priority over cartridge RAM/ROM; disabling them reveals the
+underlying bytes. Bank stores at $8000–$BFFF and redirects at $C000–$FFFF remain
+outside those overlays. CPU audio decode precedes ordinary cartridge storage;
+BankSet preserves its independent memory write beside the write-only POKEY.
+
+The owned `bankset32n` through `bankset512h` diagnostic variants exercise all
+fourteen accepted geometries, tagged endpoints, all 256 selector values and
+shared/HALT stores. Their independently derived numeric records live in
+`tests/diag/expected.csv`; unequal CPU/MARIA graphics, ownership and host audio
+checks supplement those records. These checks establish the selected model,
+not universal gameplay or measured hardware accuracy.
 
 ### Linear
 
@@ -320,8 +435,8 @@ Bank-zero startup on load and power cycle is the deterministic profile. These
 policies are not new cartridge measurements. Console RESET input remains a
 switch read by software; it does not power-cycle the board.
 
-Behaviour revision 3 makes this board executable; the public API is 4 and
-ABI remains 1, with no public structure layout changes. The disposable Absolute
+Behaviour revision 3 first made this board executable. The current public API
+is 7, ABI 1 and behaviour revision 6. The disposable Absolute
 tracer copies a version-1 numeric mailbox from fixed ROM and replaces its
 record with a real $4000 read: the independently selected bank-zero tag $5A
 must report value 90. The library, runner and actual libretro module validate
@@ -387,12 +502,17 @@ load-time controls, stable raw layout and clean host import.
 
 ## Loading
 
-`muhtari_load` identifies the image exactly as `muhtari_probe` does and returns the same status. A refusal returns
-before anything is allocated and leaves the instance unchanged. An accepted image's mapped bytes, `rom_size` of them
+`muhtari_load` first identifies the image as `muhtari_probe` does, then validates
+effective hardware, firmware and sound topology. A descriptive successful probe
+does not guarantee a successful load: unsupported devices and conflicting
+attachments can refuse before allocation. Rejection or allocation failure leaves
+the live machine unchanged. An accepted image's mapped bytes, `rom_size` of them
 from after the header when there is one, are copied into one allocation through the instance's allocator, which
 replaces any cartridge loaded before; `muhtari_destroy` frees it. A board with RAM gets its ROM followed by its
-cartridge RAM, `ram_size` bytes, in the same single allocation, so a load allocates once and running allocates
-nothing. The RAM starts zeroed, and a power cycle zeroes it again.
+cartridge RAM, `ram_size` bytes, followed by 131,072 expansion bytes when installed,
+in the same checked allocation. A load allocates once and running allocates
+nothing. Volatile RAM starts zeroed, and a power cycle zeroes it again; battery
+storage has the separate retained lifetime described above.
 
 ## The board ROMs
 

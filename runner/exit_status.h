@@ -29,7 +29,8 @@ static const muhtari__exit_status muhtari__exit_statuses[] = {
      "the command line is invalid or conflicts with the movie's header, so nothing ran"},
     {MUHTARI__EXIT_SAVE_SIZE, "save-size", "the save file is larger than the attached battery RAM"},
     {MUHTARI__EXIT_REFUSED, "refused",
-     "the image is a 2600 cartridge, or uses a board or a region this version does not emulate, "
+     "the image is a 2600 cartridge, or uses a board, device or region this version does not "
+     "emulate, "
      "or the BIOS rejected it"},
 };
 

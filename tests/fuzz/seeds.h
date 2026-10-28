@@ -9,7 +9,8 @@
 
 #include "muhtari.h"
 
-/* The largest seed: one byte past the image cap. */
+/* The largest seed: one byte past the supported 1 MiB ROM plus header.
+   Expansion backing is allocated by load, never appended to an image. */
 #define SEEDS_SIZE_MAX (MUHTARI_IMAGE_SIZE_MAX + 1u)
 
 /* The number of seeds. */

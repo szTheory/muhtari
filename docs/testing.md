@@ -46,7 +46,7 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `asan` | No memory or undefined-behaviour fault, using clang-21 with AddressSanitizer and UndefinedBehaviorSanitizer. Any finding stops the test. Long runs drop from 600 frames to 60 (`MUHTARI_SHORT_RUNS`). | `ci` | all but `abi` and `release`, whose binary-shape checks the instrumentation changes |
 | `nofp` | The core uses no floating point. It is built with GCC's `-mgeneral-regs-only`, which rejects any floating-point type. | `nofp` | `abi` |
 | `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer, the pins file, and `src/cartdb.c` equal to `tools/cartdb.cmake`'s output over the two pinned MAME lists. Fetch those first with `scripts/fetch-pin.sh mame-a7800-xml build/pins/mame` and `scripts/fetch-pin.sh mame-a2600-xml build/pins/mame`; configure stops with both commands when either is missing. | `hygiene` | `hygiene` |
-| `fuzz` | The cartridge loader and the run loop keep their invariants on any input: libFuzzer runs `tests/fuzz/loader.c` and `tests/fuzz/run.c` for 60 seconds each with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, starting from the images `muhtari-test-images` writes. New inputs go to `build/fuzz/fuzz/corpus` and `build/fuzz/fuzz/run/corpus`, crashes to the `crash` directory beside each, never into the tree. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader` and `fuzz.regress.run` (`docs/emulation-tests.md`, fuzz). | `fuzz` | `fuzz` |
+| `fuzz` | libFuzzer runs `tests/fuzz/loader.c` and `tests/fuzz/run.c` for 60 seconds each with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, using generated seeds. Inputs stay in `build/fuzz/fuzz/{corpus,run/corpus}`, crashes beside them in `crash/`. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader` and `fuzz.regress.run` (`docs/emulation-tests.md`, fuzz). | `fuzz` | `fuzz` |
 | `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, about 1 GiB of disk and 90 s for the fetch. | `vectors-full` | `vectors-full` |
 | `be32-compile` / `be32-full` | Required PR PowerPC compilation; full nightly native/BE equality under qemu-ppc. | `ci` | compile only / all normal, package, release |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
@@ -68,12 +68,11 @@ Publisher controls start early (COST 725).
 
 ### Comparing hashes across lanes
 
-`runner.hashes_file` writes956 rows:69 retained observations,273 controller rows
-(13 scenarios:12 frames,lag,raw/PCM,mailbox),614 [PAL rows](pal-tests.md)
-(601 frames,raw/PCM,mailbox,counters).
-Independent numeric/CRC judgment and library agreement precede controller rows. Silent raw streams remain empty.
-The retained69 match accepted source54485d6 except seven audio revision annotations4→5.
-Controls reject omitted, duplicated, reordered, malformed and wrong-family reports.
+`runner.hashes_file` retains956 rows and appends2132:16 BankSet and66 expansion
+groups, each with12 native frames,lag,raw/PCM,samples,mailbox and five source/config/template/variant identities.
+The matrix fixes order/cardinality. Numeric/CRC/native judgments precede writing;
+controls reject wrong numbers, forged identities and missing/extra/duplicate/reordered fields.
+Silent raw stays empty; [PAL](pal-tests.md) keeps601 frames and counters.
 
 CI's `hash-equality` compares lane files:
 
@@ -100,7 +99,8 @@ labels comma-separated. Configure fails when the registered tests differ from th
 test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
 Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
 Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt`, `library.txt`, one
-`library.<id>` per ledger row of tier `pr`, and `wasm32.txt`, which is the `ci` list without the `libretro` tests.
+`library.<id>` per ledger row of tier `pr`, and `wasm32.txt` for actual WASI registrations with the module
+disabled. Both keep the portable BankSet/XBoard/XM diagnostics and fault controls.
 
 | Label | Tests |
 |---|---|
@@ -117,8 +117,8 @@ Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vect
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
 | `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. `cart.identify.test_list` finds the built 7800basic sample through the test hash list. No image bytes are tracked. |
-| `fuzz` | Loader/run seeds and regressions; run adds typed devices, signed extrema, bounded pin traffic, EEPROM coexistence and output/allocation invariants. Linux also uses libFuzzer. |
-| `prop` | 100 seeded cases each; nightly 10,000. Isolation also replays all nine typed families with nonzero payloads, pin traffic, refusals and pure peeks. |
+| `fuzz` | Loader/run replay, typed pin/EEPROM traffic and output/allocation invariants; Linux also uses libFuzzer. [Expansion coverage and fault evidence](hardware/bus.md#expansion-replay-and-properties). |
+| `prop` | 100 seeded cases; advisory nightly 10,000. Isolation covers nine typed families and all BankSet/expansion profiles, battery gates, refusals and pure observers. |
 | `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, the movie reader (`runner.movie_parse`: good movies, and each bad one refused at its exact line and column), and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
 | `built` | Samples built from pinned tools (`tests/built/`). `built.<name>` builds one 7800basic 0.41 sample per row of `expected.txt` under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/<name>/`, and checks the `.a78` and `.bin` SHA-256s in that row. `runner.probe.sample_*` then probe `simple`: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` ([emulation tests, basic](emulation-tests.md#basic)). |
@@ -155,6 +155,7 @@ output matches the expected message; a crash or a missing file does not count as
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
 | `policy.cartdb_generated.self_test` | A copy of `src/cartdb.c` with one byte changed; the check must exit 1 with `src/cartdb.c differs from the generator output`. |
 | `hygiene.firmware_scan.self_test` | The same synthetic file tracked in a fixture repository; the tracked-file scan must exit 1 with `matches synthetic (header stripped)`. |
+| `hygiene.history.self_test` | Deleting a listed binary passes; adding an unlisted one fails. |
 | `hygiene.no_float.self_test` | Seven float lines beside three look-alikes, among them an SPDX line naming `CC0-1.0`, and an SPDX line followed by `double`. |
 | `policy.publish_set.self_test` | 17 of the 18 release zips; `publish.sh prepare` must exit 1 naming the missing one. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |

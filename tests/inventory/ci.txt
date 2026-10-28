@@ -8,6 +8,7 @@ abi.api_v4_layout	abi,portable
 abi.api_v5	abi,portable
 abi.api_v6	abi,portable
 abi.api_v6_layout	abi,portable
+abi.api_v7	abi,portable
 abi.api_version	abi
 abi.api_version.self_test	abi
 abi.globals	abi
@@ -449,11 +450,14 @@ cpu.vectors.pin	vectors
 cpu.vectors.reader	portable,vectors
 cpu.vectors.self_test	portable,vectors
 diag.bank6	diag,portable
+diag.bankset	diag,portable
+diag.bankset_tracer	diag,portable
 diag.battery	diag,portable
 diag.controllers	diag,portable
 diag.cpu	diag,portable
 diag.dli	diag,portable
 diag.dma	diag,portable
+diag.expansion	diag,portable
 diag.expected.self_test	diag,portable
 diag.linear16	diag,portable
 diag.modes	diag,portable
@@ -523,6 +527,7 @@ libretro.host.xrgb8888	libretro,portable
 libretro.info_claims	libretro
 libretro.info_claims.self_test	libretro
 libretro.rcheevos	libretro,portable
+libretro.rcheevos.expansion	libretro,portable
 libretro.vendored	libretro
 maria.dma_line.abort	maria,portable
 maria.dma_line.empty_dl	maria,portable
@@ -607,6 +612,7 @@ runner.hashes_compare.byte.self_test	runner
 runner.hashes_compare.count.self_test	runner
 runner.hashes_file	portable,runner
 runner.help	portable,runner
+runner.hsc_rom.refused	portable,runner
 runner.load.hash	portable,runner
 runner.load.pal	portable,runner
 runner.md5	portable,runner

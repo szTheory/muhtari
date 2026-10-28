@@ -24,7 +24,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Complete; 35/35 verified; shipped in PR #28 (merge checks pending) |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Complete |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Complete; ready to ship |
-| 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Not started |
+| 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | In progress |
 | 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Not started |
 
 ## Phase details
@@ -290,7 +290,54 @@ Plans:
 **Goal:** Run BankSet and XBoard/XM memory/POKEY/HSC capabilities using the correct CPU/MARIA ownership.
 **Depends on:** Phase 9
 **Requirements:** BOARD-04, BOARD-05
-**Plans:** TBD — created by plan-phase.
+**Plans:** 14/14 plans complete in 13 sequential waves; gap closure 10-14 planned.
+
+Plans:
+**Wave 1**
+- [x] 10-01-PLAN.md — Prove the causal electrical-owner tracer through all three deliverables.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 10-02-PLAN.md — Complete checked BankSet geometry, shared/HALT RAM and redirects.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 10-03-PLAN.md — Deliver additive selection, transactional XBoard and API/version evidence.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 10-04-PLAN.md — Run XM pages, stable HSC and continuously clocked expansion POKEY.
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 10-05-PLAN.md — Match runner/libretro selection, firmware discovery and explicit refusals.
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [x] 10-06-PLAN.md — Publish honest static maps and prove the actual rcheevos resolver.
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [x] 10-07-PLAN.md — Admit and independently judge owned BankSet geometry diagnostics.
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [x] 10-08-PLAN.md — Admit and independently judge integrated expansion diagnostics.
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [x] 10-09-PLAN.md — Require complete semantic observations in strict native/PowerPC equality.
+
+**Wave 10** *(blocked on Wave 9 completion)*
+- [x] 10-10-PLAN.md — Prove transactional lifetimes, physical accounting and no allocation after load.
+
+**Wave 11** *(blocked on Wave 10 completion)*
+- [x] 10-11-PLAN.md — Prove hostile regional execution, loader replay and isolation/lifecycle properties.
+
+**Wave 12** *(blocked on Wave 11 completion)*
+- [x] 10-12-PLAN.md — Publish qualified hardware/API docs and executed compatibility claims.
+
+**Wave 13** *(blocked on Wave 12 completion)*
+- [x] 10-13-PLAN.md — Accept exact-source inventories and preserved local/hosted contracts.
+
+**Gap closure** *(owner exception 2026-10-28: second gap round)*
+- [x] 10-14-PLAN.md — Refused images exit 77 under --hsc-rom without reading firmware.
+
+**Cross-cutting constraints:**
+- 32-bit/native/PPC array and offset arithmetic is bounded by real1MiB ROM,32KiB cart HALT RAM and128KiB expansion capacities, without a new proxy limit.
+- Released capability and hardware documentation match executed BankSet/XBoard/XM subset behavior and preserve explicit physical/source confidence limits.
 
 **Success criteria:**
 
@@ -328,8 +375,8 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 0/TBD | Not started | — |
+| 10. Homebrew and expansion memory | 14/14 | Complete    | 2026-10-28 |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
-*Updated: 2026-10-25; Phases5–9 are complete. Phase9 has8/8 accepted plans,22/22 tasks,42/42 verified truths and all three PAL requirements complete. Source-fresh CI40233948646 and Nightly40233948516 attempt2 pass: six native current/base lanes, full native/PPC654+6, WASM592/956-row equality, actual RetroArch and authenticated native packages. One review-fix round resolved BIOS input lifetime; re-review is clean, gap round unused. The advisory10000-case isolation timeout remains unaccepted. Phases10–11 remain unstarted. Next separate command: $gsd-ship 9.*
+*Updated: 2026-10-25; Phases5–9 are complete. Phase9 has8/8 accepted plans,22/22 tasks,42/42 verified truths and all three PAL requirements complete. Source-fresh CI40233948646 and Nightly40233948516 attempt2 pass: six native current/base lanes, full native/PPC654+6, WASM592/956-row equality, actual RetroArch and authenticated native packages. One review-fix round resolved BIOS input lifetime; re-review is clean, gap round unused. The advisory10000-case isolation timeout remains unaccepted. Phase10 is researched and planned (13 plans/30 tasks,13 sequential waves), with independent plan checking passed and20/20 decisions covered. Phase11 remains unplanned. Next separate command: $gsd-execute-phase 10.*

@@ -648,10 +648,13 @@ static void size_cases(const char *name, uint32_t ours, int is_output,
         }
         tagged before = t;
         muhtari_status got = call(&t, m);
-        if (got != cases[i].want) {
+        muhtari_status want = cases[i].want;
+        if (strcmp(name, "info") == 0 && size >= MUHTARI__INFO_SIZE_FIRST && size <= ours) {
+            want = MUHTARI_STATUS_OK;
+        }
+        if (got != want) {
             fprintf(stderr, "%s size %u (tail byte %u): expected status %u, got %u\n", name,
-                    (unsigned)size, (unsigned)cases[i].nonzero, (unsigned)cases[i].want,
-                    (unsigned)got);
+                    (unsigned)size, (unsigned)cases[i].nonzero, (unsigned)want, (unsigned)got);
             check_failures++;
         }
         uint32_t keep = got != MUHTARI_STATUS_OK || !is_output ? 0u : (size < ours ? size : ours);
@@ -787,6 +790,22 @@ static void test_allocator(void)
     CHECK(c.alloc_size > 0u);
 
     muhtari_destroy(NULL);
+
+    /* Exercise the exact-size judge's fault path, and prove delayed poison
+       remains readable until the test explicitly releases it. */
+    cfg = alloc_config(&c);
+    c.check_sizes = c.poison_frees = 1u;
+    uint8_t *owned = count_alloc(&c, 13u);
+    CHECK(owned != NULL);
+    if (owned != NULL) {
+        memset(owned, 0x56, 13u);
+        count_free(&c, owned, 12u);
+        CHECK_EQ_U64(c.size_errors, 1u);
+        CHECK_EQ_U64(c.live_bytes, 0u);
+        for (unsigned i = 0u; i < 13u; i++)
+            CHECK_EQ_U64(owned[i], 0xDDu);
+        count_release_retired(&c);
+    }
 }
 
 /* The frame, rate and audio constants hosts size their output from, and the
@@ -818,9 +837,9 @@ static void test_info(void)
     CHECK_EQ_U64(muhtari_get_versions(NULL), MUHTARI_STATUS_ERR_ARGUMENT);
     CHECK_EQ_U64(muhtari_get_versions(&v), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(v.api, MUHTARI_API_VERSION);
-    CHECK_EQ_U64(v.api, 6);
+    CHECK_EQ_U64(v.api, 7);
     CHECK_EQ_U64(v.abi, 1);
-    CHECK_EQ_U64(v.behaviour_revision, 5u);
+    CHECK_EQ_U64(v.behaviour_revision, 6u);
     muhtari_destroy(m);
 }
 
@@ -829,6 +848,7 @@ static void test_info(void)
 static void retail_lifecycle(void);
 static void battery_allocation_lifecycle(void);
 static void extended_safety(void);
+static void expansion_noalloc(void);
 
 static void test_no_alloc_after_load(void)
 {
@@ -866,6 +886,7 @@ static void test_no_alloc_after_load(void)
     retail_lifecycle();
     battery_allocation_lifecycle();
     extended_safety();
+    expansion_noalloc();
 }
 
 /* A 4 KiB linear cartridge built in memory: an A78 version 3 header with
@@ -1259,8 +1280,145 @@ static muhtari_battery_info battery_of(const muhtari *m)
     return b;
 }
 
+static void xm_hsc_lifecycle(void)
+{
+    static uint8_t image[128u + 4096u], saved[34816u], firmware[4096u], installed[4096u];
+    static muhtari snapshot;
+    static const uint8_t program[] = {0xA9, 8,    0x8D, 0x70, 4,    0xAD, 0,
+                                      0x10, 0x8D, 0,    0x18, 0x4C, 0x0B, 0xF0};
+    for (unsigned region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL; region++) {
+        for (unsigned supplied = 0u; supplied < 2u; supplied++) {
+            alloc_counts counts;
+            muhtari_config cfg = alloc_config(&counts);
+            muhtari *m = NULL;
+            CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+            size_t n = images_linear(image, 4u, 4096u);
+            memcpy(image + 128u, program, sizeof program);
+            image[n - 4u] = 0u;
+            image[n - 3u] = 0xF0u;
+            memset(firmware, 0xA6, sizeof firmware);
+            firmware[0x900u] = 0xC6u;
+            firmware[0x904u] = 0xFEu;
+            muhtari_media media = media_for(image, n);
+            media.expansion = MUHTARI_EXPANSION_XM;
+            media.region = region;
+            media.port[1] = MUHTARI_PORT_SAVEKEY;
+            if (supplied != 0u) {
+                media.hsc_rom = firmware;
+                media.hsc_rom_size = sizeof firmware;
+            }
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            muhtari_battery_info before = battery_of(m);
+            CHECK_EQ_U64(before.hsc_attached, 1u);
+            CHECK_EQ_U64(before.bytes, sizeof saved);
+            CHECK_EQ_U64(before.layout_version, 1u);
+            CHECK_EQ_U64(before.eeprom_port, 2u);
+            muhtari_const_span rom = {0};
+            rom.size = (uint32_t)sizeof rom;
+            CHECK_EQ_U64(muhtari_get_hsc_rom(m, &rom), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(rom.bytes, 4096u);
+            memcpy(installed, rom.data, sizeof installed);
+            /* Import before any execution, while both decode windows are hidden. */
+            memset(saved, 0x69, sizeof saved);
+            saved[0] = 0x5Au;
+            saved[2047u] = 0xB7u;
+            memcpy(before.data, saved, sizeof saved);
+            m->bus.open_bus = 0x67u;
+            const uint16_t endpoints[] = {0x1000u, 0x17FFu, 0x3000u, 0x3FFFu};
+            for (unsigned i = 0u; i < 4u; i++)
+                CHECK_EQ_U64(muhtari__bus_peek(m, endpoints[i]), 0x67u);
+            muhtari__bus_write(m, 0x1000u, 0xEEu);
+            muhtari__bus_write(m, 0x17FFu, 0xEEu);
+            CHECK(memcmp(before.data, saved, sizeof saved) == 0);
+            CHECK_EQ_U64(battery_of(m).generation, 0u);
+            run(m, NULL);
+            CHECK_EQ_U64(m->ram[0], 0x5Au);
+            CHECK_EQ_U64(muhtari__bus_peek(m, 0x17FFu), 0xB7u);
+            CHECK_EQ_U64(muhtari__bus_peek(m, 0x3000u), supplied != 0u ? 0xA6u : 0xFFu);
+            CHECK_EQ_U64(muhtari__bus_peek(m, 0x3FFFu), supplied != 0u ? 0xA6u : 0xFFu);
+            CHECK_EQ_U64(muhtari__bus_peek(m, 0x3900u), 0xC6u);
+            muhtari__bus_write(m, 0x1000u, 0x5Au);
+            CHECK_EQ_U64(battery_of(m).generation, 0u);
+            muhtari__bus_write(m, 0x17FFu, 0x81u);
+            saved[2047u] = 0x81u;
+            for (unsigned gate = 0u; gate < 4u; gate++) {
+                uint8_t control = gate < 2u ? 0u : 8u;
+                muhtari__bus_write(m, 0x0470u, control);
+                if (control == 0u)
+                    muhtari__bus_write(m, 0x17FFu, 0xEEu);
+                muhtari_battery_info after = battery_of(m);
+                CHECK(after.data == before.data);
+                CHECK_EQ_U64(after.bytes, before.bytes);
+                CHECK_EQ_U64(after.layout_version, before.layout_version);
+                CHECK_EQ_U64(after.hsc_attached, before.hsc_attached);
+                CHECK_EQ_U64(after.firmware_flags, before.firmware_flags);
+                CHECK(memcmp(after.hsc_sha1, before.hsc_sha1, 20u) == 0);
+                CHECK_EQ_U64(after.generation, 1u);
+                CHECK(memcmp(after.data, saved, sizeof saved) == 0);
+                muhtari_const_span current = {0};
+                current.size = (uint32_t)sizeof current;
+                CHECK_EQ_U64(muhtari_get_hsc_rom(m, &current), MUHTARI_STATUS_OK);
+                CHECK(current.data == rom.data);
+                CHECK_EQ_U64(current.bytes, rom.bytes);
+                CHECK(memcmp(current.data, installed, sizeof installed) == 0);
+            }
+            muhtari_input input = {0};
+            input.size = (uint32_t)sizeof input;
+            input.switches = MUHTARI_SWITCH_RESET;
+            CHECK_EQ_U64(muhtari_set_input(m, &input), MUHTARI_STATUS_OK);
+            run(m, NULL);
+            CHECK_EQ_U64(m->cart.expansion.control, 8u);
+            uint8_t *physical = m->cart.expansion.ram;
+            physical[131071u] = 0x7Bu;
+            muhtari__bus_write(m, 0x0478u, 0xFEu);
+            muhtari__bus_write(m, 0x047Cu, 0xDCu);
+            uint32_t calls = counts.allocs;
+            CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+            CHECK(m->cart.expansion.ram == physical);
+            CHECK_EQ_U64(m->cart.expansion.kind, MUHTARI_EXPANSION_XM);
+            CHECK_EQ_U64(m->cart.expansion.control, 0u);
+            CHECK_EQ_U64(m->cart.expansion.cpu_pages, 0u);
+            CHECK_EQ_U64(m->cart.expansion.maria_pages, 0u);
+            CHECK_EQ_U64(physical[131071u], 0u);
+            CHECK_EQ_U64(battery_of(m).generation, 1u);
+            muhtari_battery_info retained = battery_of(m);
+            CHECK(retained.data == before.data);
+            CHECK_EQ_U64(retained.bytes, before.bytes);
+            CHECK_EQ_U64(retained.layout_version, before.layout_version);
+            CHECK_EQ_U64(retained.hsc_attached, before.hsc_attached);
+            CHECK_EQ_U64(retained.firmware_flags, before.firmware_flags);
+            CHECK(memcmp(retained.hsc_sha1, before.hsc_sha1, 20u) == 0);
+            CHECK(memcmp(rom.data, installed, sizeof installed) == 0);
+            CHECK(memcmp(before.data, saved, sizeof saved) == 0);
+            CHECK_EQ_U64(counts.allocs, calls);
+            memcpy(&snapshot, m, sizeof snapshot);
+            media.hsc_mode = MUHTARI_HSC_OFF;
+            media.hsc_rom = firmware;
+            media.hsc_rom_size = sizeof firmware;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_HSC);
+            media.hsc_mode = MUHTARI_HSC_AUTO;
+            media.hsc_rom_size = 4095u;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_HSC);
+            CHECK_EQ_U64(counts.allocs, calls);
+            CHECK(memcmp(&snapshot, m, sizeof snapshot) == 0);
+            media.hsc_mode = MUHTARI_HSC_OFF;
+            media.hsc_rom = NULL;
+            media.hsc_rom_size = 0u;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(battery_of(m).hsc_attached, 0u);
+            CHECK_EQ_U64(battery_of(m).bytes, 32768u);
+            muhtari__bus_write(m, 0x0470u, 8u);
+            m->bus.open_bus = 0x67u;
+            CHECK_EQ_U64(muhtari__bus_peek(m, 0x3900u), 0x67u);
+            muhtari_destroy(m);
+            CHECK_EQ_U64(counts.allocs, counts.frees);
+        }
+    }
+}
+
 static void test_hsc_decode(void)
 {
+    xm_hsc_lifecycle();
     muhtari *m = make();
     make_cart(cart, prog_idle, sizeof prog_idle, 0u);
     muhtari_media media = media_for(cart, sizeof cart);
@@ -2171,8 +2329,189 @@ static void extended_lifecycle(void)
     muhtari_destroy(m);
 }
 
+/* Probe keeps unsupported sound descriptive; load refuses before allocation. */
+static void expansion_sound_refusals(void)
+{
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    uint8_t image[128u + 32768u];
+    size_t n = images_linear(image, 4u, 32768u);
+    const uint8_t audio_bits[] = {8u, 16u, 32u};
+    const uint32_t sounds[] = {MUHTARI_SOUND_YM2151, MUHTARI_SOUND_COVOX, 64u};
+    for (unsigned i = 0u; i < 3u; i++) {
+        image[67] = audio_bits[i];
+        muhtari_cart_info info;
+        memset(&info, 0, sizeof info);
+        info.size = (uint32_t)sizeof info;
+        CHECK_EQ_U64(muhtari_probe(image, n, &info), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(info.sound, sounds[i]);
+        muhtari_media media = media_for(image, n);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+        CHECK_EQ_U64(counts.allocs, 1u);
+    }
+    static const uint16_t conflicts[] = {1u, 0x8000u, 0x41u, 0x8441u};
+    for (uint32_t expansion = MUHTARI_EXPANSION_XBOARD; expansion <= MUHTARI_EXPANSION_XM;
+         expansion++) {
+        for (unsigned i = 0u; i < sizeof conflicts / sizeof conflicts[0]; i++) {
+            n = images_linear(image, 3u, 32768u);
+            image[53] = (uint8_t)(conflicts[i] >> 8);
+            image[54] = (uint8_t)conflicts[i];
+            muhtari_media media = media_for(image, n);
+            media.expansion = expansion;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE);
+            CHECK_EQ_U64(counts.allocs, 1u);
+        }
+    }
+    muhtari_destroy(m);
+}
+
+/* Hardware endpoints and aliases are asserted through the real bus; the
+   allocator and borrowed input checks cover the installation boundary. */
+static void expansion_xboard(void)
+{
+    static uint8_t image[128u + 49152u];
+    for (uint32_t region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL; region++) {
+        alloc_counts counts;
+        muhtari_config cfg = alloc_config(&counts);
+        muhtari *m = NULL;
+        CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+        size_t n = images_linear(image, 3u, 49152u);
+        static const uint8_t program[] = {0xA9, 0x0B, 0x8D, 0x70, 0x04, 0xA9, 0x5C,
+                                          0x8D, 0x00, 0x40, 0xAD, 0x00, 0x40, 0x8D,
+                                          0x00, 0x18, 0x4C, 0x10, 0xF0};
+        memcpy(image + 128u + 45056u, program, sizeof program);
+        image[128u + 49148u] = 0u;
+        image[128u + 49149u] = 0xF0u;
+        muhtari_media media = media_for(image, n);
+        media.region = region;
+        media.expansion = MUHTARI_EXPANSION_XBOARD;
+        media.hsc_mode = MUHTARI_HSC_ON;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(counts.alloc_size, 49152u + 131072u);
+        CHECK_EQ_U64(m->cart.allocation_bytes, counts.alloc_size);
+        CHECK_EQ_U64(m->cart.info.ram_size, 0u);
+        CHECK_EQ_U64(m->cart.expansion.control, 0u);
+        CHECK_EQ_U64(m->synth.pokeys, 1u);
+        CHECK_EQ_U64(m->cart.pokey_at[0], 0x0450u);
+        run(m, NULL);
+        CHECK_EQ_U64(m->ram[0], 0x5Cu);
+        CHECK_EQ_U64(m->cart.expansion.control, 0x0Bu);
+        muhtari_input input;
+        memset(&input, 0, sizeof input);
+        input.size = (uint32_t)sizeof input;
+        input.switches = MUHTARI_SWITCH_RESET;
+        CHECK_EQ_U64(muhtari_set_input(m, &input), MUHTARI_STATUS_OK);
+        run(m, NULL);
+        CHECK_EQ_U64(m->cart.expansion.control, 0x0Bu);
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari__bus_read(m, 0x4000u), image[128]);
+        muhtari__bus_write(m, 0x0451u, 0x1Fu);
+        CHECK_EQ_U64(m->pokey[0].channel[0].audc, 0u);
+        muhtari_span physical_span;
+        memset(&physical_span, 0, sizeof physical_span);
+        physical_span.size = (uint32_t)sizeof physical_span;
+        CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_EXPANSION_RAM, &physical_span),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(physical_span.bytes, 131072u);
+        uint8_t *physical = physical_span.data;
+        CHECK(physical == m->cart.expansion.ram);
+        for (unsigned bank = 0u; bank < 8u; bank++) {
+            for (unsigned alias = 0u; alias < 16u; alias++) {
+                muhtari__bus_write(m, (uint16_t)(0x0470u + alias), (uint8_t)(8u + bank));
+                CHECK_EQ_U64(muhtari__bus_read(m, 0x4000u), alias == 0u ? 0u : bank + 1u);
+                muhtari__bus_write(m, 0x4000u, (uint8_t)(bank + 1u));
+                muhtari__bus_write(m, 0x7FFFu, (uint8_t)(bank + 0x80u));
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, 0x7FFFu, m->bus.ticks), bank + 0x80u);
+                CHECK_EQ_U64(physical[bank * 16384u], bank + 1u);
+                CHECK_EQ_U64(physical[(bank + 1u) * 16384u - 1u], bank + 0x80u);
+                CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_EXPANSION_RAM, &physical_span),
+                             MUHTARI_STATUS_OK);
+                CHECK(physical_span.data == physical);
+                CHECK_EQ_U64(physical_span.bytes, 131072u);
+            }
+        }
+        for (unsigned bank = 0u; bank < 8u; bank++) {
+            muhtari__bus_write(m, 0x047Fu, (uint8_t)bank);
+            CHECK_EQ_U64(muhtari__bus_read(m, 0x4000u), image[128]);
+            muhtari__bus_write(m, 0x4000u, 0xEEu);
+            muhtari__bus_write(m, 0x0470u, (uint8_t)(8u + bank));
+            CHECK_EQ_U64(muhtari__bus_read(m, 0x4000u), bank + 1u);
+        }
+        muhtari__bus_write(m, 0x0470u, 0x10u);
+        muhtari__bus_write(m, 0x0451u, 0x1Fu);
+        CHECK_EQ_U64(m->pokey[0].channel[0].audc, 0x1Fu);
+        muhtari__bus_write(m, 0x0470u, 0u);
+        muhtari__bus_write(m, 0x0451u, 0u);
+        CHECK_EQ_U64(m->pokey[0].channel[0].audc, 0x1Fu);
+        CHECK_EQ_U64(m->synth.pokeys, 1u);
+        uint64_t cycle = m->pokey[0].cycle;
+        for (unsigned i = 0u; i < 64u; i++)
+            (void)muhtari__bus_read(m, 0x8000u);
+        CHECK(m->pokey[0].cycle > cycle);
+        muhtari_battery_info battery = battery_of(m);
+        battery.data[0] = 0x5Au;
+        uint32_t calls = counts.allocs;
+        muhtari_media invalid = media;
+        invalid.expansion = 4u;
+        CHECK_EQ_U64(muhtari_load(m, &invalid), MUHTARI_STATUS_ERR_ARGUMENT);
+        CHECK_EQ_U64(counts.allocs, calls);
+        CHECK(m->cart.expansion.ram == physical);
+        CHECK_EQ_U64(battery_of(m).data[0], 0x5Au);
+        counts.fail_from = calls + 1u;
+        invalid = media;
+        invalid.expansion = MUHTARI_EXPANSION_OFF;
+        CHECK_EQ_U64(muhtari_load(m, &invalid), MUHTARI_STATUS_ERR_NO_MEMORY);
+        CHECK(m->cart.expansion.ram == physical);
+        CHECK_EQ_U64(m->cart.expansion.kind, MUHTARI_EXPANSION_XBOARD);
+        CHECK_EQ_U64(physical[131071], 0x87u);
+        CHECK_EQ_U64(battery_of(m).data[0], 0x5Au);
+        counts.fail_from = 0u;
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        CHECK(m->cart.expansion.ram == physical);
+        CHECK_EQ_U64(m->cart.expansion.kind, MUHTARI_EXPANSION_XBOARD);
+        CHECK_EQ_U64(m->cart.expansion.control, 0u);
+        CHECK_EQ_U64(physical[131071], 0u);
+        CHECK_EQ_U64(battery_of(m).data[0], 0x5Au);
+        CHECK_EQ_U64(battery_of(m).generation, battery.generation);
+        CHECK_EQ_U64(counts.allocs, calls + 1u);
+        /* All three sources borrow the backing that a successful reload frees. */
+        images_headerless(physical, 32768u);
+        memset(physical + 32768u, 0xA6, 4096u);
+        physical[32768u + 4092u] = 0u;
+        physical[32768u + 4093u] = 0xF0u;
+        memset(physical + 65536u, 0xFF, 4096u);
+        physical[65536u + 0x900u] = 0xC6u;
+        physical[65536u + 0x904u] = 0xFEu;
+        media.image = physical;
+        media.image_size = 32768u;
+        media.bios = physical + 32768u;
+        media.bios_size = 4096u;
+        media.hsc_rom = physical + 65536u;
+        media.hsc_rom_size = 4096u;
+        media.expansion = MUHTARI_EXPANSION_OFF;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(counts.free_size, 49152u + 131072u);
+        CHECK_EQ_U64(m->bios[0], 0xA6u);
+        CHECK_EQ_U64(m->battery.rom[0x900], 0xC6u);
+        CHECK_EQ_U64(m->cart.expansion.kind, MUHTARI_EXPANSION_OFF);
+        CHECK(m->cart.expansion.ram == NULL);
+        CHECK_EQ_U64(m->cart.allocation_bytes, 32768u);
+        muhtari_destroy(m);
+        CHECK_EQ_U64(counts.frees + 1u, counts.allocs);
+    }
+}
+
+static void expansion_transactions(void);
+static void expansion_borrowed(void);
+
 static void test_load_keeps_previous(void)
 {
+    expansion_transactions();
+    expansion_borrowed();
+    expansion_sound_refusals();
+    expansion_xboard();
     extended_lifecycle();
     hsc_tracer();
     muhtari *a = make();
@@ -2366,10 +2705,477 @@ static muhtari_span span_of(muhtari *m, uint32_t kind, muhtari_status want)
     return span;
 }
 
+/* Load failures must preserve both the published views and unobserved CPU,
+   device and filter history. Only unpublished firmware staging may change. */
+static void load_unchanged(muhtari *m, const muhtari *saved, const uint8_t *backing)
+{
+    CHECK(memcmp(m, saved, offsetof(muhtari, hsc_load_rom)) == 0);
+    size_t at = offsetof(muhtari, ports);
+    CHECK(memcmp((const uint8_t *)m + at, (const uint8_t *)saved + at, sizeof *m - at) == 0);
+    CHECK(memcmp(m->cart.rom, backing, m->cart.allocation_bytes) == 0);
+    for (uint32_t kind = MUHTARI_MEMORY_SYSTEM_RAM; kind <= MUHTARI_MEMORY_EXPANSION_RAM; kind++) {
+        muhtari_span live = span_of(m, kind, MUHTARI_STATUS_OK);
+        muhtari_span old = span_of((muhtari *)(uintptr_t)saved, kind, MUHTARI_STATUS_OK);
+        /* Instance-owned spans point into the snapshot; physical cart spans
+           must keep their actual old addresses, not just equal contents. */
+        if (kind >= MUHTARI_MEMORY_CART_RAM)
+            CHECK(live.data == old.data);
+        CHECK_EQ_U64(live.bytes, old.bytes);
+        if (kind < MUHTARI_MEMORY_CART_RAM)
+            CHECK(memcmp(live.data, old.data, live.bytes) == 0);
+    }
+    muhtari_info live = {0}, old = {0};
+    live.size = old.size = (uint32_t)sizeof live;
+    CHECK_EQ_U64(muhtari_get_info(m, &live), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_get_info(saved, &old), MUHTARI_STATUS_OK);
+    CHECK(memcmp(&live, &old, sizeof live) == 0);
+    muhtari_battery_info battery = battery_of(m), prior = battery_of((muhtari *)(uintptr_t)saved);
+    CHECK(battery.data == (prior.bytes != 0u ? m->battery.data : NULL));
+    prior.data = battery.data;
+    CHECK(memcmp(&battery, &prior, sizeof battery) == 0);
+    muhtari_const_span firmware = {0};
+    firmware.size = (uint32_t)sizeof firmware;
+    CHECK_EQ_U64(muhtari_get_hsc_rom(m, &firmware), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(firmware.bytes, saved->battery.hsc_attached != 0u ? 4096u : 0u);
+    CHECK(firmware.data == (firmware.bytes != 0u ? m->battery.rom : NULL));
+}
+
+struct load_raw {
+    uint64_t hash, count;
+    uint32_t audible_sources;
+};
+
+static void load_raw_event(void *user, uint64_t tick, uint8_t source, uint16_t level)
+{
+    struct load_raw *raw = user;
+    raw->hash = (raw->hash * UINT64_C(1099511628211)) ^ tick;
+    raw->hash = (raw->hash * UINT64_C(1099511628211)) ^ source;
+    raw->hash = (raw->hash * UINT64_C(1099511628211)) ^ level;
+    raw->count++;
+    if (level != 0u)
+        raw->audible_sources |= 1u << source;
+}
+
+static void load_continue(muhtari *a, muhtari *b)
+{
+    static uint8_t pictures[2][320u * 292u];
+    int16_t samples[2][962];
+    muhtari_frame frames[2];
+    frame_io(&frames[0], pictures[0], WIDTH, samples[0], 962u);
+    frame_io(&frames[1], pictures[1], WIDTH, samples[1], 962u);
+    CHECK_EQ_U64(muhtari_run_frame(a, &frames[0]), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_run_frame(b, &frames[1]), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(frames[0].audio_count, frames[1].audio_count);
+    CHECK(memcmp(samples[0], samples[1], frames[0].audio_count * sizeof(int16_t)) == 0);
+    size_t pixels = WIDTH * (a->effective_region == MUHTARI_REGION_PAL ? 292u : HEIGHT);
+    CHECK(memcmp(pictures[0], pictures[1], pixels) == 0);
+    CHECK(memcmp(&a->cpu, &b->cpu, sizeof a->cpu) == 0);
+    CHECK(memcmp(&a->synth, &b->synth, sizeof a->synth) == 0);
+    CHECK(memcmp(a->pokey, b->pokey, sizeof a->pokey) == 0);
+    CHECK(memcmp(a->ram, b->ram, sizeof a->ram) == 0);
+    CHECK_EQ_U64(a->frames, b->frames);
+    CHECK_EQ_U64(a->bus.ticks, b->bus.ticks);
+}
+
+/* Own executable firmware, not console bytes. It keeps BIOS visible and
+   produces distinguishable RAM and TIA history in either television region. */
+static void load_firmware(uint8_t *bytes, size_t n, uint8_t marker)
+{
+    memset(bytes, 0xEA, n);
+    const uint8_t code[] = {0x78,   0xD8, 0xA9, 3,    0x85, 1,    0xA9, 0x7F, 0x85, 0x3C, 0xA9,
+                            marker, 0x8D, 0,    0x20, 0xA9, 4,    0x85, 0x15, 0xA9, 5,    0x85,
+                            0x17,   0xA9, 15,   0x85, 0x19, 0xEE, 1,    0x20, 0x4C, 27,   0xF0};
+    memcpy(bytes + n - 4096u, code, sizeof code);
+    images_footer(bytes, n);
+    bytes[n - 4u] = 0u;
+    bytes[n - 3u] = 0xF0u;
+}
+
+static void expansion_transactions(void)
+{
+    static uint8_t image[128u + 1048576u], bad_image[128u + 106496u];
+    static uint8_t backing[1212416u], firmware[4096u], next_firmware[4096u], bad_bios[4096u];
+    static muhtari saved;
+    static const uint32_t halves[] = {32u, 48u, 52u, 128u, 256u, 512u};
+    load_firmware(firmware, sizeof firmware, 0x31u);
+    load_firmware(next_firmware, sizeof next_firmware, 0x72u);
+    memcpy(bad_bios, next_firmware, sizeof bad_bios);
+    bad_bios[4092] = bad_bios[4093] = 0u;
+    for (unsigned h = 0u; h < sizeof halves / sizeof halves[0]; h++)
+        for (unsigned ram = 0u; ram < 3u; ram++) {
+            if ((halves[h] == 48u || halves[h] == 52u) && ram != 0u)
+                continue;
+            for (uint32_t expansion = MUHTARI_EXPANSION_OFF; expansion <= MUHTARI_EXPANSION_XM;
+                 expansion++)
+                for (unsigned layout = 0u; layout < 4u; layout++)
+                    for (uint32_t region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL;
+                         region++) {
+                        if (halves[h] == 52u && (layout & 1u) != 0u)
+                            continue;
+                        alloc_counts counts[2];
+                        muhtari *m[2] = {NULL, NULL};
+                        struct load_raw raw[2] = {0};
+                        size_t n = images_bankset(image, halves[h], ram == 2u ? 3u : (uint8_t)ram);
+                        muhtari_media media = media_for(image, n);
+                        media.expansion = expansion;
+                        media.region = region;
+                        media.bios = firmware;
+                        media.bios_size = sizeof firmware;
+                        media.hsc_mode = (layout & 1u) != 0u ? MUHTARI_HSC_ON : MUHTARI_HSC_OFF;
+                        if ((layout & 1u) != 0u) {
+                            media.hsc_rom = firmware;
+                            media.hsc_rom_size = sizeof firmware;
+                        }
+                        if ((layout & 2u) != 0u)
+                            media.port[1] = MUHTARI_PORT_SAVEKEY;
+                        for (unsigned j = 0u; j < 2u; j++) {
+                            muhtari_config cfg = alloc_config(&counts[j]);
+                            counts[j].check_sizes = 1u;
+                            CHECK_EQ_U64(muhtari_create(&cfg, &m[j]), MUHTARI_STATUS_OK);
+                            CHECK_EQ_U64(muhtari__synth_observe(m[j], load_raw_event, &raw[j]),
+                                         MUHTARI_STATUS_OK);
+                            CHECK_EQ_U64(muhtari_load(m[j], &media), MUHTARI_STATUS_OK);
+                            if (m[j]->cart.ram != NULL)
+                                memset(m[j]->cart.ram, 0x56, m[j]->cart.info.ram_size);
+                            if (m[j]->cart.expansion.ram != NULL)
+                                memset(m[j]->cart.expansion.ram, 0x87, 131072u);
+                            memset(m[j]->battery.data, 0x69, sizeof m[j]->battery.data);
+                            m[j]->battery.generation = 17u;
+                        }
+                        load_continue(m[0], m[1]);
+                        memcpy(&saved, m[0], sizeof saved);
+                        memcpy(backing, m[0]->cart.rom, m[0]->cart.allocation_bytes);
+                        uint32_t frees = counts[0].frees;
+                        size_t live = counts[0].live_bytes;
+                        for (unsigned fault = 0u; fault < 15u; fault++) {
+                            uint32_t attempts = counts[0].allocs;
+                            muhtari_media bad = media;
+                            muhtari_status want = MUHTARI_STATUS_ERR_ARGUMENT;
+                            bad.bios = next_firmware;
+                            if (bad.hsc_rom != NULL)
+                                bad.hsc_rom = next_firmware;
+                            if (fault == 0u)
+                                bad.expansion = 4u;
+                            if (fault == 1u)
+                                bad.region = 3u;
+                            if (fault == 2u) {
+                                bad.size = MUHTARI__MEDIA_SIZE_FIRST - 1u;
+                                want = MUHTARI_STATUS_ERR_STRUCT_SIZE;
+                            }
+                            if (fault == 3u) {
+                                bad.image_size = n - 1u;
+                                want = MUHTARI_STATUS_ERR_TRUNCATED_IMAGE;
+                            }
+                            if (fault == 4u) {
+                                bad.bios_size = 4095u;
+                                want = MUHTARI_STATUS_ERR_INVALID_BIOS;
+                            }
+                            if (fault == 5u) {
+                                bad.hsc_mode = 3u;
+                                want = MUHTARI_STATUS_ERR_INVALID_HSC;
+                            }
+                            if (fault == 6u) {
+                                bad.hsc_rom = next_firmware;
+                                bad.hsc_rom_size = 4095u;
+                                want = MUHTARI_STATUS_ERR_INVALID_HSC;
+                            }
+                            if (fault == 7u) {
+                                bad.port[0] = 999u;
+                                want = MUHTARI_STATUS_ERR_ARGUMENT;
+                            }
+                            if (fault == 8u) {
+                                bad.port[0] = bad.port[1] = MUHTARI_PORT_SAVEKEY;
+                                want = MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+                            }
+                            if (fault >= 9u && fault <= 11u) {
+                                bad.image = bad_image;
+                                bad.image_size = images_bankset(bad_image, fault == 9u ? 52u : 32u,
+                                                                fault == 9u ? 3u : 0u);
+                                want = MUHTARI_STATUS_ERR_INVALID_IMAGE;
+                                if (fault == 10u) {
+                                    bad_image[67] = 0x20u;
+                                    want = MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+                                }
+                                if (fault == 11u) {
+                                    bad_image[67] = 5u;
+                                    bad.expansion = MUHTARI_EXPANSION_XBOARD;
+                                    want = MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+                                }
+                            }
+                            if (fault == 12u) {
+                                bad.bios = bad_bios;
+                                want = MUHTARI_STATUS_ERR_INVALID_BIOS;
+                            }
+                            if (fault >= 13u) {
+                                counts[0].fail_from = attempts + 1u;
+                                want = MUHTARI_STATUS_ERR_NO_MEMORY;
+                            }
+                            if (fault == 13u) {
+                                bad.size = (uint32_t)(offsetof(muhtari_media, expansion) +
+                                                      sizeof bad.expansion - 1u);
+                                bad.expansion = UINT32_MAX;
+                            }
+                            CHECK_EQ_U64(muhtari_load(m[0], &bad), want);
+                            CHECK_EQ_U64(counts[0].allocs, attempts + (fault >= 13u ? 1u : 0u));
+                            CHECK_EQ_U64(counts[0].frees, frees);
+                            CHECK_EQ_U64(counts[0].live_bytes, live);
+                            load_unchanged(m[0], &saved, backing);
+                        }
+                        CHECK_EQ_U64(raw[0].hash, raw[1].hash);
+                        CHECK_EQ_U64(raw[0].count, raw[1].count);
+                        load_continue(m[0], m[1]);
+                        CHECK_EQ_U64(raw[0].hash, raw[1].hash);
+                        CHECK_EQ_U64(raw[0].count, raw[1].count);
+                        if (raw[0].count == 0u)
+                            fprintf(stderr,
+                                    "silent half=%u ram=%u expansion=%u layout=%u region=%u pc=%x "
+                                    "tia=%u/%u/%u\n",
+                                    halves[h], ram, expansion, layout, region, m[0]->cpu.pc,
+                                    m[0]->tia.channel[0].audc, m[0]->tia.channel[0].audf,
+                                    m[0]->tia.channel[0].audv);
+                        CHECK(raw[0].count != 0u);
+                        for (unsigned j = 0u; j < 2u; j++) {
+                            CHECK_EQ_U64(muhtari_power_cycle(m[j]), MUHTARI_STATUS_OK);
+                        }
+                        load_continue(m[0], m[1]);
+                        CHECK_EQ_U64(m[0]->ram[0x800u], 0x31u);
+                        for (unsigned j = 0u; j < 2u; j++) {
+                            muhtari_destroy(m[j]);
+                            CHECK_EQ_U64(counts[j].size_errors, 0u);
+                            CHECK_EQ_U64(counts[j].live_bytes, 0u);
+                            CHECK_EQ_U64(counts[j].allocs, counts[j].frees + (j == 0u ? 2u : 0u));
+                        }
+                    }
+        }
+}
+
+/* Borrow the same owned program as image, BIOS and HSC from each live kind.
+   Retired allocations stay poisoned until destroy; embedded sources are
+   cleared by successful load/power, making a late consume equally visible. */
+static void expansion_borrowed(void)
+{
+    static uint8_t image[128u + 65536u], firmware[16384u], copies[3][16384u];
+    static uint8_t backing[65536u + 32768u + 131072u];
+    static muhtari saved;
+    for (uint32_t expansion = MUHTARI_EXPANSION_OFF; expansion <= MUHTARI_EXPANSION_XM; expansion++)
+        for (uint32_t region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL; region++)
+            for (unsigned source = 0u; source < 7u; source++) {
+                if (source == 2u && expansion == MUHTARI_EXPANSION_OFF)
+                    continue;
+                alloc_counts counts;
+                muhtari_config cfg = alloc_config(&counts);
+                counts.check_sizes = counts.poison_frees = 1u;
+                muhtari *m = NULL, *control = make();
+                CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+                load_firmware(firmware, sizeof firmware, 0x72u);
+                size_t n = images_bankset(image, 32u, 3u);
+                /* Install immutable ROM/HSC/BIOS sources with candidate bytes already
+                   present; the mutable storage cases write through public spans. */
+                memcpy(image + 128u, firmware, sizeof firmware);
+                muhtari_media media = media_for(image, n);
+                media.expansion = expansion;
+                media.region = region;
+                media.hsc_rom = firmware + 12288u;
+                media.hsc_rom_size = 4096u;
+                media.bios = firmware;
+                media.bios_size = sizeof firmware;
+                media.port[1] = MUHTARI_PORT_SAVEKEY;
+                CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+                const uint8_t *borrowed;
+                size_t bytes = source == 4u || source == 6u ? 4096u : 16384u;
+                if (source == 0u)
+                    borrowed = m->cart.rom;
+                else if (source == 1u)
+                    borrowed = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK).data;
+                else if (source == 2u)
+                    borrowed = span_of(m, MUHTARI_MEMORY_EXPANSION_RAM, MUHTARI_STATUS_OK).data;
+                else if (source == 3u)
+                    borrowed = battery_of(m).data;
+                else if (source == 4u)
+                    borrowed = m->battery.rom;
+                else if (source == 5u)
+                    borrowed = m->bios;
+                else
+                    borrowed = span_of(m, MUHTARI_MEMORY_SYSTEM_RAM, MUHTARI_STATUS_OK).data;
+                if ((source >= 1u && source <= 3u) || source == 6u)
+                    memcpy((uint8_t *)(uintptr_t)borrowed, firmware + sizeof firmware - bytes,
+                           bytes);
+                memcpy(copies[0], borrowed, bytes);
+                memcpy(copies[1], borrowed, bytes);
+                memcpy(copies[2], borrowed + bytes - 4096u, 4096u);
+                muhtari_media candidate = media_for(borrowed, bytes);
+                candidate.region = region;
+                candidate.expansion = expansion;
+                candidate.bios = borrowed;
+                candidate.bios_size = bytes;
+                candidate.hsc_rom = borrowed + bytes - 4096u;
+                candidate.hsc_rom_size = 4096u;
+                memcpy(&saved, m, sizeof saved);
+                memcpy(backing, m->cart.rom, m->cart.allocation_bytes);
+                counts.fail_from = counts.allocs + 1u;
+                CHECK_EQ_U64(muhtari_load(m, &candidate), MUHTARI_STATUS_ERR_NO_MEMORY);
+                load_unchanged(m, &saved, backing);
+                CHECK_EQ_U64(counts.frees, 0u);
+                /* Execute the failed-load machine against an independent copy of its
+                   original selection, firmware, volatile storage and battery state. */
+                CHECK_EQ_U64(muhtari_load(control, &media), MUHTARI_STATUS_OK);
+                memcpy(control->cart.rom, backing, m->cart.allocation_bytes);
+                memcpy(&control->battery, &saved.battery, sizeof saved.battery);
+                memcpy(control->ram, saved.ram, sizeof saved.ram);
+                load_continue(m, control);
+                if (source == 1u || source == 2u || source == 3u || source == 6u)
+                    memcpy((uint8_t *)(uintptr_t)borrowed, copies[0], bytes);
+                counts.fail_from = 0u;
+                size_t old_bytes = m->cart.allocation_bytes;
+                CHECK_EQ_U64(muhtari_load(m, &candidate), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(counts.free_size, old_bytes);
+                CHECK(memcmp(m->cart.rom, copies[0], bytes) == 0);
+                CHECK(memcmp(m->bios, copies[1], bytes) == 0);
+                CHECK(memcmp(m->battery.rom, copies[2], 4096u) == 0);
+                candidate.image = copies[0];
+                candidate.bios = copies[1];
+                candidate.hsc_rom = copies[2];
+                CHECK_EQ_U64(muhtari_load(control, &candidate), MUHTARI_STATUS_OK);
+                load_continue(m, control);
+                CHECK_EQ_U64(m->ram[0x800u], 0x72u);
+                CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(muhtari_power_cycle(control), MUHTARI_STATUS_OK);
+                load_continue(m, control);
+                CHECK_EQ_U64(m->ram[0x800u], 0x72u);
+                muhtari_destroy(control);
+                muhtari_destroy(m);
+                CHECK_EQ_U64(counts.live_bytes, 0u);
+                CHECK_EQ_U64(counts.size_errors, 0u);
+                CHECK_EQ_U64(counts.allocs, counts.frees + 1u);
+                count_release_retired(&counts);
+            }
+}
+
+/* Exercise the real maximum backing in the existing long-run contract.
+   Setup allocates observation storage before load. Every later public
+   observer, gate/page write, power cycle and frame must use that storage. */
+static void expansion_noalloc(void)
+{
+    static uint8_t image[128u + 1048576u];
+    for (uint32_t expansion = MUHTARI_EXPANSION_OFF; expansion <= MUHTARI_EXPANSION_XM; expansion++)
+        for (uint32_t region = MUHTARI_REGION_NTSC; region <= MUHTARI_REGION_PAL; region++) {
+            alloc_counts counts;
+            muhtari_config cfg = alloc_config(&counts);
+            counts.check_sizes = 1u;
+            muhtari *m = NULL;
+            struct load_raw raw = {0};
+            CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(muhtari__synth_observe(m, load_raw_event, &raw), MUHTARI_STATUS_OK);
+            size_t n = images_bankset(image, 512u, 3u);
+            image[67] = 3u; /* independently installed $0450 and $0440 */
+            memcpy(image + 128u + 524288u - 4096u, tone, sizeof tone);
+            image[128u + 524288u - 4u] = 0u;
+            image[128u + 524288u - 3u] = 0xF0u;
+            muhtari_media media = media_for(image, n);
+            media.expansion = expansion;
+            media.region = region;
+            media.hsc_mode = MUHTARI_HSC_ON;
+            media.port[1] = MUHTARI_PORT_SAVEKEY;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            size_t expected =
+                1048576u + 32768u + (expansion == MUHTARI_EXPANSION_OFF ? 0u : 131072u);
+            CHECK_EQ_U64(counts.alloc_size, expected);
+            CHECK_EQ_U64(m->cart.allocation_bytes, expected);
+            CHECK(m->cart.ram == m->cart.rom + 1048576u);
+            if (expansion != MUHTARI_EXPANSION_OFF)
+                CHECK(m->cart.expansion.ram == m->cart.ram + 32768u);
+            muhtari_span original[4];
+            for (uint32_t kind = 1u; kind <= 4u; kind++)
+                original[kind - 1u] = span_of(m, kind, MUHTARI_STATUS_OK);
+            muhtari_battery_info battery = battery_of(m);
+            battery.data[battery.bytes - 1u] = 0x69u;
+            uint32_t calls = counts.allocs, frees = counts.frees;
+            size_t live = counts.live_bytes;
+            counts.fail_from = calls + 1u;
+            for (uint32_t f = 0u; f < LONG_RUN; f++) {
+                if (f != 0u && f % 200u == 0u)
+                    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+                /* Gate each installed chip, change every physical RAM page and
+                   reopen it. Decode gating cannot deallocate the devices. */
+                uint8_t control = expansion == MUHTARI_EXPANSION_XBOARD
+                                      ? (uint8_t)(8u | (f & 7u) | ((f & 1u) != 0u ? 16u : 0u))
+                                      : (uint8_t)(0x60u | ((f & 1u) != 0u ? 16u : 0u));
+                if (expansion != MUHTARI_EXPANSION_OFF) {
+                    muhtari__bus_write(m, 0x0470u, control);
+                    if (expansion == MUHTARI_EXPANSION_XM) {
+                        muhtari__bus_write(m, 0x0470u,
+                                           (uint8_t)(control | ((f & 2u) != 0u ? 8u : 0u)));
+                        muhtari__bus_write(m, 0x0478u, (uint8_t)f);
+                        muhtari__bus_write(m, 0x047Cu, (uint8_t)~f);
+                    } else {
+                        muhtari__bus_write(m, 0x047Fu, control);
+                    }
+                    muhtari__bus_write(m, 0x4000u, (uint8_t)f);
+                    muhtari__bus_write(m, 0x7FFFu, (uint8_t)~f);
+                }
+                for (unsigned chip = 0u; chip < 2u; chip++) {
+                    uint16_t base = chip == 0u ? 0x0450u : 0x0440u;
+                    muhtari__bus_write(m, base, (uint8_t)(7u + (f & 7u)));
+                    muhtari__bus_write(m, (uint16_t)(base + 1u), 0xAFu);
+                }
+                muhtari_input_ex in = {0};
+                in.size = (uint32_t)sizeof in;
+                in.port[0].buttons = f & 15u;
+                in.switches = f % 71u == 0u ? MUHTARI_SWITCH_RESET : 0u;
+                CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(muhtari__synth_observe(m, load_raw_event, &raw), MUHTARI_STATUS_OK);
+                run(m, NULL);
+                for (uint32_t kind = 1u; kind <= 4u; kind++) {
+                    muhtari_span span = span_of(m, kind, MUHTARI_STATUS_OK);
+                    CHECK(span.data == original[kind - 1u].data);
+                    CHECK_EQ_U64(span.bytes, original[kind - 1u].bytes);
+                }
+                muhtari_battery_info now = battery_of(m);
+                CHECK(memcmp(&now, &battery, sizeof now) == 0);
+                CHECK_EQ_U64(now.data[now.bytes - 1u], 0x69u);
+                muhtari_info info = {0};
+                info.size = (uint32_t)sizeof info;
+                CHECK_EQ_U64(muhtari_get_info(m, &info), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(info.expansion, expansion);
+                muhtari_counters counters = {0};
+                counters.size = (uint32_t)sizeof counters;
+                CHECK_EQ_U64(muhtari_get_counters(m, &counters), MUHTARI_STATUS_OK);
+                CHECK_EQ_U64(counters.frames, f % 200u + 1u);
+                muhtari_const_span firmware = {0};
+                firmware.size = (uint32_t)sizeof firmware;
+                CHECK_EQ_U64(muhtari_get_hsc_rom(m, &firmware), MUHTARI_STATUS_OK);
+                CHECK(firmware.data == m->battery.rom);
+                CHECK_EQ_U64(firmware.bytes, 4096u);
+                CHECK_EQ_U64(counts.allocs, calls);
+                CHECK_EQ_U64(counts.frees, frees);
+                CHECK_EQ_U64(counts.live_bytes, live);
+            }
+            CHECK(raw.count != 0u);
+            CHECK((raw.audible_sources & (1u << 2u)) != 0u);
+            CHECK((raw.audible_sources & (1u << 6u)) != 0u);
+            CHECK_EQ_U64(m->synth.pokeys, 2u);
+            CHECK(m->pokey[0].cycle != 0u && m->pokey[1].cycle != 0u);
+            /* Replacement and destroy must pass the exact recorded physical
+               allocation length, not merely a size that happens to free safely. */
+            counts.fail_from = 0u;
+            media.expansion = MUHTARI_EXPANSION_OFF;
+            CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(counts.free_size, expected);
+            CHECK_EQ_U64(counts.alloc_size, 1048576u + 32768u);
+            muhtari_destroy(m);
+            CHECK_EQ_U64(counts.live_bytes, 0u);
+            CHECK_EQ_U64(counts.size_errors, 0u);
+            CHECK_EQ_U64(counts.allocs, counts.frees);
+        }
+}
+
 /* The spans are live, stable pointers into the machine's RAM. */
 static void test_get_memory_spans(void)
 {
     muhtari *m = make();
+    muhtari_span expansion = span_of(m, MUHTARI_MEMORY_EXPANSION_RAM, MUHTARI_STATUS_OK);
+    CHECK(expansion.data == NULL);
+    CHECK_EQ_U64(expansion.bytes, 0u);
     muhtari_span ram = span_of(m, MUHTARI_MEMORY_SYSTEM_RAM, MUHTARI_STATUS_OK);
     CHECK(ram.data != NULL);
     CHECK_EQ_U64(ram.bytes, 4096);
@@ -2392,7 +3198,7 @@ static void test_get_memory_spans(void)
     CHECK(cart_ram.data == NULL);
     CHECK_EQ_U64(cart_ram.bytes, 0);
     (void)span_of(m, 0u, MUHTARI_STATUS_ERR_ARGUMENT);
-    (void)span_of(m, 4u, MUHTARI_STATUS_ERR_ARGUMENT);
+    (void)span_of(m, 5u, MUHTARI_STATUS_ERR_ARGUMENT);
     muhtari_span span;
     memset(&span, 0, sizeof span);
     span.size = (uint32_t)sizeof span;
@@ -2555,7 +3361,7 @@ static void retail_lifecycle(void)
         /* No battery memory kind exists in this API; Fractalus has no
            save-device declaration and only the volatile cart-RAM span. */
         CHECK_EQ_U64(m->cart.info.devices, 0u);
-        (void)span_of(m, 4u, MUHTARI_STATUS_ERR_ARGUMENT);
+        (void)span_of(m, 5u, MUHTARI_STATUS_ERR_ARGUMENT);
         uint32_t allocations = counts.allocs, frees = counts.frees;
         uint32_t peer_allocations = peer_counts.allocs;
         for (uint32_t cycle = 0u; cycle < 3u; cycle++) {
@@ -2697,8 +3503,95 @@ static void test_load_supergame_one_allocation(void)
 
 /* CART_RAM is the board's 16 KiB at $4000: a live, stable span equal to
    what the CPU reads there. */
+static void bankset_memory_lifetime(void)
+{
+    static uint8_t image[128u + 106496u];
+    static uint8_t saved[32768u];
+    static muhtari snapshot;
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL)
+        return;
+    for (uint8_t device = 1u; device <= 3u; device += 2u) {
+        size_t n = images_bankset(image, 32u, device);
+        muhtari_media media = media_for(image, n);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        muhtari_span span = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+        uint32_t bytes = device == 1u ? 16384u : 32768u;
+        CHECK_EQ_U64(span.bytes, bytes);
+        for (uint32_t i = 0u; i < bytes; i++)
+            CHECK_EQ_U64(span.data[i], 0u);
+        memset(span.data, 0x56, bytes);
+        span.data[bytes - 1u] = 0xA9u;
+        memcpy(saved, span.data, bytes);
+        memcpy(&snapshot, m, sizeof snapshot);
+        uint32_t allocations = counts.allocs;
+        /* Forbidden RAM geometry preserves the complete old machine. */
+        n = images_bankset(image, 52u, 3u);
+        media = media_for(image, n);
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+        CHECK_EQ_U64(counts.allocs, allocations);
+        CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        CHECK(memcmp(span.data, saved, bytes) == 0);
+        n = images_bankset(image, 52u, 0u);
+        media = media_for(image, n);
+        media.expansion = MUHTARI_EXPANSION_XM;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+        CHECK_EQ_U64(counts.allocs, allocations);
+        CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        media.expansion = MUHTARI_EXPANSION_OFF;
+        /* Effective standalone HSC conflicts at $3000; explicit Off removes it. */
+        n = images_bankset(image, 52u, 0u);
+        media = media_for(image, n);
+        media.hsc_mode = MUHTARI_HSC_ON;
+        muhtari_status conflict = muhtari_load(m, &media);
+        CHECK_EQ_U64(conflict, MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+        if (conflict != MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD) {
+            muhtari_destroy(m);
+            return;
+        }
+        CHECK_EQ_U64(counts.allocs, allocations);
+        CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        CHECK(memcmp(span.data, saved, bytes) == 0);
+        image[58] = 1u;
+        media.hsc_mode = MUHTARI_HSC_AUTO;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+        CHECK_EQ_U64(counts.allocs, allocations);
+        CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        static uint8_t firmware[4096u];
+        memset(firmware, 0x5Au, sizeof firmware);
+        media.hsc_rom = firmware;
+        media.hsc_rom_size = sizeof firmware;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+        CHECK_EQ_U64(counts.allocs, allocations);
+        CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+        CHECK(memcmp(span.data, saved, bytes) == 0);
+        media.hsc_rom = NULL;
+        media.hsc_rom_size = 0u;
+        muhtari_span again = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+        CHECK(again.data == span.data);
+        CHECK_EQ_U64(again.bytes, bytes);
+        CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+        again = span_of(m, MUHTARI_MEMORY_CART_RAM, MUHTARI_STATUS_OK);
+        CHECK(again.data == span.data);
+        CHECK_EQ_U64(again.bytes, bytes);
+        for (uint32_t i = 0u; i < bytes; i++)
+            CHECK_EQ_U64(span.data[i], 0u);
+        CHECK_EQ_U64(m->cart.bank, 0u);
+        media.hsc_mode = MUHTARI_HSC_OFF;
+        media.expansion = MUHTARI_EXPANSION_XM;
+        CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(m->battery.hsc_attached, 0u);
+    }
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+}
+
 static void test_get_memory_cart_ram(void)
 {
+    bankset_memory_lifetime();
     muhtari *m = make();
     make_sg(0x0006u, prog_cart_ram, sizeof prog_cart_ram);
     muhtari_media media = media_for(sg_image, sizeof sg_image);

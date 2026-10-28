@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define MUHTARI_API_VERSION 6
+#define MUHTARI_API_VERSION 7
 #define MUHTARI_IMAGE_SIZE_MAX 1048704u /* 1 MiB of ROM plus a 128-byte header */
 
 typedef uint32_t muhtari_status;
@@ -59,6 +59,7 @@ typedef struct muhtari_info {
     uint32_t par_num, par_den;                 /* selected pixel aspect */
     uint32_t sample_rate_num, sample_rate_den; /* 48000, 1 */
     uint32_t max_audio_samples;                /* selected per-frame capacity */
+    uint32_t expansion;                        /* effective MUHTARI_EXPANSION_* */
 } muhtari_info;
 
 typedef struct muhtari_frame {
@@ -104,7 +105,8 @@ enum {
     MUHTARI_SOUND_POKEY_440 = 4u,
     MUHTARI_SOUND_POKEY_800 = 8u,
     MUHTARI_SOUND_YM2151 = 16u,
-    MUHTARI_SOUND_COVOX = 32u
+    MUHTARI_SOUND_COVOX = 32u,
+    MUHTARI_SOUND_ADPCM = 64u
 };
 enum { MUHTARI_DEVICE_HSC = 1u, MUHTARI_DEVICE_SAVEKEY = 2u, MUHTARI_DEVICE_XM = 4u };
 enum { /* the A78 byte 55/56 codes */
@@ -186,8 +188,16 @@ typedef struct muhtari_media {
     uint32_t hsc_mode;   /* 0 automatic, 1 on, 2 off */
     const void *hsc_rom; /* NULL: signature-only stub; copied at load */
     size_t hsc_rom_size;
-    uint32_t port[2]; /* 0 automatic; explicit device override */
+    uint32_t port[2];   /* 0 automatic; explicit device override */
+    uint32_t expansion; /* MUHTARI_EXPANSION_* */
 } muhtari_media;
+
+enum {
+    MUHTARI_EXPANSION_AUTO = 0,
+    MUHTARI_EXPANSION_OFF = 1,
+    MUHTARI_EXPANSION_XBOARD = 2,
+    MUHTARI_EXPANSION_XM = 3
+};
 
 enum { MUHTARI_HSC_AUTO = 0, MUHTARI_HSC_ON = 1, MUHTARI_HSC_OFF = 2 };
 enum {
@@ -279,7 +289,12 @@ typedef struct muhtari_input_ex {
 
 muhtari_status muhtari_set_input_ex(muhtari *m, const muhtari_input_ex *in);
 
-enum { MUHTARI_MEMORY_SYSTEM_RAM = 1, MUHTARI_MEMORY_RIOT_RAM = 2, MUHTARI_MEMORY_CART_RAM = 3 };
+enum {
+    MUHTARI_MEMORY_SYSTEM_RAM = 1,
+    MUHTARI_MEMORY_RIOT_RAM = 2,
+    MUHTARI_MEMORY_CART_RAM = 3,
+    MUHTARI_MEMORY_EXPANSION_RAM = 4
+};
 
 typedef struct muhtari_span {
     uint32_t size;

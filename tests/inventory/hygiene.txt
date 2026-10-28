@@ -5,6 +5,7 @@ hygiene.analyzer	hygiene
 hygiene.firmware_scan	hygiene
 hygiene.firmware_scan.self_test	hygiene
 hygiene.format	hygiene
+hygiene.history.self_test	hygiene
 hygiene.no_float	hygiene
 hygiene.no_float.self_test	hygiene
 hygiene.timeout_comments	hygiene

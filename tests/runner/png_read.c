@@ -33,8 +33,11 @@ static int fault(const char *why)
     return -1;
 }
 
-int png_read(const uint8_t *d, size_t n, uint8_t *raw)
+int png_read_height(const uint8_t *d, size_t n, uint8_t *raw, uint32_t height)
 {
+    if (height != 242u && height != 292u)
+        return fault("unsupported native height");
+    uint32_t raw_size = height * PNG_READ_ROW;
     static const uint8_t signature[8] = {0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'};
     if (n < 8u || memcmp(d, signature, 8) != 0) {
         return fault("no PNG signature");
@@ -67,11 +70,12 @@ int png_read(const uint8_t *d, size_t n, uint8_t *raw)
         return fault("bytes after IEND");
     }
 
-    /* IHDR: 320 x 242, depth 8, colour type 2, compression, filter and
+    /* IHDR: 320 x selected height, depth 8, colour type 2, compression, filter and
        interlace 0. */
-    static const uint8_t ihdr[13] = {0, 0, 1, 0x40, 0, 0, 0, 242, 8, 2, 0, 0, 0};
+    const uint8_t ihdr[13] = {0, 0, 1, 0x40, 0, 0, (uint8_t)(height >> 8), (uint8_t)height,
+                              8, 2, 0, 0,    0};
     if (chunk_len[0] != 13u || memcmp(chunk_data[0], ihdr, 13) != 0 || chunk_len[2] != 0u) {
-        return fault("not a 320 x 242 RGB image");
+        return fault("not a supported 320-pixel RGB image at the requested height");
     }
 
     /* IDAT: zlib header 78 01, stored blocks, Adler-32. */
@@ -90,7 +94,7 @@ int png_read(const uint8_t *d, size_t n, uint8_t *raw)
         uint32_t len = z[pos + 1] | ((uint32_t)z[pos + 2] << 8);
         uint32_t nlen = z[pos + 3] | ((uint32_t)z[pos + 4] << 8);
         pos += 5u;
-        if (nlen != (~len & 0xffffu) || len > zn - pos || len > PNG_READ_RAW_SIZE - got) {
+        if (nlen != (~len & 0xffffu) || len > zn - pos || len > raw_size - got) {
             return fault("a stored block's length is wrong");
         }
         memcpy(raw + got, z + pos, len);
@@ -98,7 +102,7 @@ int png_read(const uint8_t *d, size_t n, uint8_t *raw)
         got += len;
         blocks++;
     }
-    if (!final || got != PNG_READ_RAW_SIZE || pos + 4u != zn) {
+    if (!final || got != raw_size || pos + 4u != zn) {
         return fault("the image data is not one whole image");
     }
     uint32_t s1 = 1, s2 = 0;
@@ -110,6 +114,11 @@ int png_read(const uint8_t *d, size_t n, uint8_t *raw)
         return fault("Adler-32 mismatch");
     }
     return blocks;
+}
+
+int png_read(const uint8_t *d, size_t n, uint8_t *raw)
+{
+    return png_read_height(d, n, raw, PNG_READ_HEIGHT);
 }
 
 int png_read_file(const char *path, uint8_t *raw)

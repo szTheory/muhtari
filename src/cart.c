@@ -87,6 +87,20 @@ static uint32_t be32(const uint8_t *p)
    (docs/hardware/cartridge.md, Geometry). A refused board has none here. */
 static int cart_fits(const struct cart_board *b, size_t n)
 {
+    if (b->board == MUHTARI_BOARD_BANKSET) {
+        /* Equal CPU-then-MARIA sets; sizes and RAM matrix are checked before
+           allocation (cartridge.md, BankSet). All runtime offsets use n/2. */
+        if ((n & 1u) != 0u || n > 1024u * CART_KIB) {
+            return 0;
+        }
+        size_t half = n / 2u;
+        int linear = half == 32u * CART_KIB || half == 48u * CART_KIB || half == 52u * CART_KIB;
+        int switched =
+            half == 128u * CART_KIB || half == 256u * CART_KIB || half == 512u * CART_KIB;
+        int ram = (b->options == 0u && (b->ram == 0u || b->ram == 16u * CART_KIB)) ||
+                  (b->options == MUHTARI_BOARD_HALT_BANKED_RAM && b->ram == 32u * CART_KIB);
+        return (linear || switched) && ram && (b->ram == 0u || half == 32u * CART_KIB || switched);
+    }
     if (b->board == MUHTARI_BOARD_FRACTALUS) {
         return n == 32u * CART_KIB && b->ram == 2u * CART_KIB && b->options == 0u;
     }
@@ -131,7 +145,7 @@ static uint32_t cart_resolve_v3(uint32_t t, int *conflict)
         t |= CT_SUPERGAME;
     }
     /* POKEY at $4000 stays beside ROM at $4000, write-only. */
-    if ((t & CT_POKEY_4000) != 0u && (t & at_4000) != 0u) {
+    if ((t & CT_BANKSET) == 0u && (t & CT_POKEY_4000) != 0u && (t & at_4000) != 0u) {
         *conflict = 1;
         t &= ~CT_POKEY_4000;
     }
@@ -253,6 +267,9 @@ static int cart_decode_v4(const uint8_t *h, struct cart_board *b)
     if ((audio & 0x10u) != 0u) {
         b->sound |= MUHTARI_SOUND_COVOX;
     }
+    if ((audio & 0x20u) != 0u) {
+        b->sound |= MUHTARI_SOUND_ADPCM;
+    }
     switch (device) {
     case 1u: /* 16K RAM */
         b->ram = 16u * CART_KIB;
@@ -284,6 +301,7 @@ static int cart_decode_v4(const uint8_t *h, struct cart_board *b)
     }
     if ((opt & 0x80u) != 0u) {
         b->board = MUHTARI_BOARD_BANKSET;
+        b->unsupported = mapper > 1u || device == 2u;
     }
     return 1;
 }
@@ -462,9 +480,14 @@ static void cart_set_board(muhtari_cart_info *out, const struct cart_board *b)
 /* Boards a loaded cartridge cannot run yet. */
 static int cart_refused(const struct cart_board *b)
 {
+    if (b->board == MUHTARI_BOARD_BANKSET) {
+        return b->unsupported != 0u ||
+               (b->options & ~(uint32_t)MUHTARI_BOARD_HALT_BANKED_RAM) != 0u ||
+               (b->ram != 0u && b->ram != 16u * CART_KIB && b->ram != 32u * CART_KIB);
+    }
     return (b->board != MUHTARI_BOARD_LINEAR && b->board != MUHTARI_BOARD_SUPERGAME &&
             b->board != MUHTARI_BOARD_ABSOLUTE && b->board != MUHTARI_BOARD_ACTIVISION &&
-            b->board != MUHTARI_BOARD_FRACTALUS) ||
+            b->board != MUHTARI_BOARD_FRACTALUS && b->board != MUHTARI_BOARD_BANKSET) ||
            b->unsupported != 0u || (b->options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u;
 }
 
@@ -541,7 +564,8 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
         out->warnings |= MUHTARI_CART_WARN_CART_TYPE_CONFLICT;
     }
     if (version >= 4u) {
-        if (cart_decode_v4(img, &v4) && (cart_refused(&v4) || cart_fits(&v4, mapped))) {
+        if (cart_decode_v4(img, &v4) &&
+            (v4.board == MUHTARI_BOARD_BANKSET || cart_refused(&v4) || cart_fits(&v4, mapped))) {
             b = v4;
         } else {
             out->warnings |= MUHTARI_CART_WARN_HEADER_V4_IGNORED;
@@ -598,6 +622,9 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
     cart_set_board(out, &b);
     if (cart_refused(&b)) {
         return MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+    }
+    if (b.board == MUHTARI_BOARD_BANKSET && field != body) {
+        return field > body ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;
     }
     if (!cart_fits(&b, mapped)) {
         return field > body ? MUHTARI_STATUS_ERR_TRUNCATED_IMAGE : MUHTARI_STATUS_ERR_INVALID_IMAGE;
@@ -776,14 +803,26 @@ muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n)
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
-    return muhtari__cart_install(m, image, &info);
+    return muhtari__cart_install(m, image, &info, MUHTARI_EXPANSION_OFF);
 }
 
-muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info)
+muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info,
+                                     uint32_t expansion)
 {
     muhtari_allocator a = m->allocator;
-    /* The ROM and the board's RAM share one allocation, RAM last. */
-    uint8_t *rom = (uint8_t *)a.alloc(a.user, (size_t)info->rom_size + info->ram_size);
+    /* ROM, cartridge RAM and physical expansion RAM share one checked
+       allocation. Record its exact length for replacement and destroy. */
+    size_t bytes = info->rom_size;
+    size_t expansion_bytes = expansion != MUHTARI_EXPANSION_OFF ? 131072u : 0u;
+    if (bytes > SIZE_MAX - info->ram_size) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE;
+    }
+    bytes += info->ram_size;
+    if (bytes > SIZE_MAX - expansion_bytes) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE;
+    }
+    bytes += expansion_bytes;
+    uint8_t *rom = (uint8_t *)a.alloc(a.user, bytes);
     if (rom == NULL) {
         return MUHTARI_STATUS_ERR_NO_MEMORY;
     }
@@ -803,10 +842,13 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
         }
     }
     if (m->cart.rom != NULL) {
-        a.free(a.user, m->cart.rom, (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
+        a.free(a.user, m->cart.rom, m->cart.allocation_bytes);
     }
     m->cart.rom = rom;
     m->cart.ram = info->ram_size != 0u ? rom + info->rom_size : NULL;
+    m->cart.allocation_bytes = bytes;
+    m->cart.expansion.ram = expansion_bytes != 0u ? rom + info->rom_size + info->ram_size : NULL;
+    m->cart.expansion.kind = expansion;
     m->cart.info = *info;
     /* Only an accepted v4 block supplies wiring; raw probe fields survive
        an ignored block (cartridge.md, The v4 block). */
@@ -824,8 +866,13 @@ void muhtari__cart_reset(muhtari *m)
 {
     m->cart.bank = 0u;
     m->cart.ram_bank = 0u;
+    m->cart.expansion.control = 0u;
+    m->cart.expansion.cpu_pages = 0u;
+    m->cart.expansion.maria_pages = 0u;
     uint32_t sound = m->cart.info.sound;
-    m->cart.pokey_at[0] = (sound & MUHTARI_SOUND_POKEY_450) != 0u    ? 0x0450u
+    m->cart.pokey_at[0] = m->cart.expansion.kind >= MUHTARI_EXPANSION_XBOARD ||
+                                  (sound & MUHTARI_SOUND_POKEY_450) != 0u
+                              ? 0x0450u
                           : (sound & MUHTARI_SOUND_POKEY_4000) != 0u ? 0x4000u
                           : (sound & MUHTARI_SOUND_POKEY_800) != 0u  ? 0x0800u
                                                                      : 0u;
@@ -839,6 +886,47 @@ void muhtari__cart_reset(muhtari *m)
     if (m->cart.ram != NULL) {
         memset(m->cart.ram, 0, m->cart.info.ram_size);
     }
+    if (m->cart.expansion.ram != NULL) {
+        memset(m->cart.expansion.ram, 0, 131072u);
+    }
+}
+
+/* XBoard's eight 16 KiB banks and RAM chip select (cartridge preparation
+   section 2.1, XBoard). CPU and MARIA use the same physical bank. */
+static uint8_t *cart_expansion_at(const struct muhtari__cart *c, uint16_t addr, int maria)
+{
+    if (c->expansion.kind == MUHTARI_EXPANSION_XBOARD && (c->expansion.control & 8u) != 0u &&
+        addr >= 0x4000u && addr < 0x8000u) {
+        return &c->expansion.ram[(uint32_t)(c->expansion.control & 7u) * CART_BANK +
+                                 (addr & (CART_BANK - 1u))];
+    }
+    /* XM has two independently enabled 8 KiB windows and separate page
+       nibbles for each electrical owner (cartridge.md, XM subset). */
+    if (c->expansion.kind == MUHTARI_EXPANSION_XM && addr >= 0x4000u && addr < 0x8000u) {
+        unsigned window = addr >= 0x6000u ? 1u : 0u;
+        if ((c->expansion.control & (32u << window)) != 0u) {
+            uint8_t pages = maria ? c->expansion.maria_pages : c->expansion.cpu_pages;
+            uint32_t page = (pages >> (window * 4u)) & 15u;
+            return &c->expansion.ram[page * 8192u + (addr & 8191u)];
+        }
+    }
+    return NULL;
+}
+
+/* Expansion's chip select gates register access, never the installed chip
+   or its clocks/mixer identity (cartridge preparation section 2.1). */
+static int cart_pokey_decoded(const struct muhtari__cart *c, unsigned chip)
+{
+    return chip != 0u || c->expansion.kind < MUHTARI_EXPANSION_XBOARD ||
+           (c->expansion.control & 16u) != 0u;
+}
+
+/* XM gates both HSC windows together, independently of physical battery
+   attachment (cartridge.md, XM subset and HSC physical inference). */
+static int cart_hsc_decoded(const muhtari *m)
+{
+    return m->battery.hsc_attached != 0u && (m->cart.expansion.kind != MUHTARI_EXPANSION_XM ||
+                                             (m->cart.expansion.control & 8u) != 0u);
 }
 
 /* The RAM byte a board drives at addr, or NULL. A board with RAM maps it
@@ -847,7 +935,7 @@ void muhtari__cart_reset(muhtari *m)
    with ram_size - 1, a power of two, so no header can reach outside RAM
    (A7800-CARTRIDGES-AND-PERIPHERALS section 2.1,
    and section 7 for hostile input). */
-static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
+static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr, int maria)
 {
     if (c->ram == NULL || addr < 0x4000u || addr >= 0x8000u) {
         return NULL;
@@ -860,6 +948,9 @@ static uint8_t *cart_ram_at(const struct muhtari__cart *c, uint16_t addr)
     }
     if ((c->info.board_options & MUHTARI_BOARD_BANKED_RAM) != 0u) {
         i += (uint32_t)c->ram_bank * CART_BANK;
+    }
+    if (maria && (c->info.board_options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u) {
+        i += CART_BANK;
     }
     return &c->ram[i & (c->info.ram_size - 1u)];
 }
@@ -887,21 +978,46 @@ static uint32_t cart_sg_bank(const struct muhtari__cart *c, uint16_t addr)
     return banks - 2u;
 }
 
+/* BankSet geometry was checked before install. Fixed and switched offsets
+   are within one half, never the doubled image (cartridge.md, BankSet). */
+static const uint8_t *cart_bankset_rom_at(const struct muhtari__cart *c, uint16_t addr, int maria)
+{
+    uint32_t half = c->info.rom_size / 2u;
+    uint32_t offset;
+    if (half <= 52u * CART_KIB) {
+        uint32_t base = 0x10000u - half;
+        if (addr < base)
+            return NULL;
+        offset = (uint32_t)addr - base;
+    } else {
+        if (addr < 0x4000u)
+            return NULL;
+        uint32_t banks = half / CART_BANK;
+        uint32_t bank = addr >= 0xC000u ? banks - 1u : addr >= 0x8000u ? c->bank : banks - 2u;
+        offset = bank * CART_BANK + (addr & (CART_BANK - 1u));
+    }
+    return &c->rom[(maria ? half : 0u) + offset];
+}
+
 /* A linear board maps its ROM so that it ends at $FFFF; below the ROM's
    start nothing drives the bus. A SuperGame board maps three 16 KiB
    windows from $4000 (A7800-CARTRIDGES-AND-PERIPHERALS, section 2.1).
    RAM, where a board has it, answers at $4000-$7FFF instead of ROM. No
    function-pointer table: the board is a switch, so the core keeps no
    mutable global. */
-uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
+static uint8_t cart_peek_view(const muhtari *m, uint16_t addr, int maria)
 {
     const struct muhtari__cart *c = &m->cart;
     if (c->rom == NULL) {
         return m->bus.open_bus;
     }
+    const uint8_t *expansion = cart_expansion_at(c, addr, maria);
+    if (expansion != NULL) {
+        return *expansion;
+    }
     /* HSC pass-through decode (docs/hardware/cartridge.md, HSC). The bus
        has already applied MEN/BIOS gates; CPU audio decode precedes this. */
-    if (m->battery.hsc_attached != 0u) {
+    if (cart_hsc_decoded(m)) {
         if (addr >= 0x1000u && addr < 0x1800u) {
             return m->battery.data[addr - 0x1000u];
         }
@@ -909,11 +1025,17 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
             return m->battery.rom[addr - 0x3000u];
         }
     }
-    const uint8_t *ram = cart_ram_at(c, addr);
+    const uint8_t *ram = cart_ram_at(c, addr, maria);
     if (ram != NULL) {
         return *ram;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_BANKSET: {
+        const uint8_t *rom = cart_bankset_rom_at(c, addr, maria);
+        if (rom != NULL)
+            return *rom;
+        break;
+    }
     case MUHTARI_BOARD_FRACTALUS:
         if (addr >= 0x8000u) {
             return c->rom[addr - 0x8000u];
@@ -961,6 +1083,20 @@ uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
     return m->bus.open_bus;
 }
 
+uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr)
+{
+    return cart_peek_view(m, addr, 0);
+}
+
+uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick)
+{
+    if (m->cart.info.board == MUHTARI_BOARD_BANKSET ||
+        m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
+        return cart_peek_view(m, addr, muhtari__bus_maria_selected(m, tick));
+    }
+    return muhtari__cart_read(m, addr, 1);
+}
+
 uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
 {
     /* DMA and observation see board memory, never register side effects. */
@@ -968,7 +1104,8 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
         for (unsigned chip = 0; chip < 2u; chip++) {
             uint16_t at = m->cart.pokey_at[chip];
             uint16_t size = at == 0x4000u ? 0x4000u : at == 0x0800u ? 0x0800u : 16u;
-            if (at != 0u && addr >= at && (uint32_t)addr < (uint32_t)at + size) {
+            if (at != 0u && cart_pokey_decoded(&m->cart, chip) && addr >= at &&
+                (uint32_t)addr < (uint32_t)at + size) {
                 /* Overlapping ROM/RAM remains readable; POKEY is write-only
                    there (cartridge notes section 2.1). */
                 int overlap = at == 0x4000u &&
@@ -977,6 +1114,8 @@ uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria)
                                 (MUHTARI_BOARD_ROM_AT_4000 | MUHTARI_BOARD_BANK6_AT_4000)) != 0u ||
                                m->cart.info.board == MUHTARI_BOARD_ABSOLUTE ||
                                m->cart.info.board == MUHTARI_BOARD_ACTIVISION ||
+                               (m->cart.info.board == MUHTARI_BOARD_BANKSET &&
+                                m->cart.info.rom_size / 2u > 32768u) ||
                                (m->cart.info.board == MUHTARI_BOARD_LINEAR &&
                                 m->cart.info.rom_size > 32768u));
                 if (!overlap) {
@@ -1001,16 +1140,42 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
     if (c->rom == NULL) {
         return;
     }
-    for (unsigned chip = 0; chip < 2u; chip++) {
-        uint16_t at = c->pokey_at[chip];
-        uint16_t size = at == 0x4000u ? 0x4000u : at == 0x0800u ? 0x0800u : 16u;
-        if (at != 0u && addr >= at && (uint32_t)addr < (uint32_t)at + size) {
-            muhtari__pokey_write(m, chip, (uint8_t)(addr & 15u), v,
-                                 m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u));
+    /* All sixteen control aliases drive the same XBoard latch
+       (cartridge preparation section 2.1, XBoard). */
+    if (c->expansion.kind == MUHTARI_EXPANSION_XBOARD && addr >= 0x0470u && addr <= 0x047Fu) {
+        c->expansion.control = v;
+        return;
+    }
+    if (c->expansion.kind == MUHTARI_EXPANSION_XM) {
+        if (addr == 0x0470u) {
+            c->expansion.control = v;
+            return;
+        }
+        if (addr == 0x0478u || addr == 0x047Cu) {
+            if (addr == 0x0478u)
+                c->expansion.cpu_pages = v;
+            else
+                c->expansion.maria_pages = v;
             return;
         }
     }
-    if (m->battery.hsc_attached != 0u && addr >= 0x1000u && addr < 0x1800u) {
+    uint8_t *expansion = cart_expansion_at(c, addr, 0);
+    if (expansion != NULL) {
+        *expansion = v;
+        return;
+    }
+    for (unsigned chip = 0; chip < 2u; chip++) {
+        uint16_t at = c->pokey_at[chip];
+        uint16_t size = at == 0x4000u ? 0x4000u : at == 0x0800u ? 0x0800u : 16u;
+        if (at != 0u && cart_pokey_decoded(c, chip) && addr >= at &&
+            (uint32_t)addr < (uint32_t)at + size) {
+            muhtari__pokey_write(m, chip, (uint8_t)(addr & 15u), v,
+                                 m->bus.ticks + (m->bus.cycle_len == 6u ? 5u : 4u));
+            if (c->info.board != MUHTARI_BOARD_BANKSET)
+                return;
+        }
+    }
+    if (cart_hsc_decoded(m) && addr >= 0x1000u && addr < 0x1800u) {
         uint8_t *cell = &m->battery.data[addr - 0x1000u];
         if (*cell != v) {
             *cell = v;
@@ -1018,12 +1183,24 @@ void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v)
         }
         return;
     }
-    uint8_t *ram = cart_ram_at(c, addr);
+    /* BankSet CPU stores at $C000 redirect to the MARIA half, while reads
+       there remain ROM (cartridge.md, BankSet). No shared-RAM redirect. */
+    if (c->info.board == MUHTARI_BOARD_BANKSET &&
+        (c->info.board_options & MUHTARI_BOARD_HALT_BANKED_RAM) != 0u && addr >= 0xC000u) {
+        c->ram[CART_BANK + (uint32_t)addr - 0xC000u] = v;
+        return;
+    }
+    uint8_t *ram = cart_ram_at(c, addr, 0);
     if (ram != NULL) {
         *ram = v;
         return;
     }
     switch (c->info.board) {
+    case MUHTARI_BOARD_BANKSET:
+        if (c->info.rom_size / 2u >= 128u * CART_KIB && addr >= 0x8000u && addr < 0xC000u) {
+            c->bank = (uint8_t)(v % (c->info.rom_size / 2u / CART_BANK));
+        }
+        break;
     case MUHTARI_BOARD_ACTIVISION:
         /* FF88-FF8F aliasing and bank-zero startup are selected compatibility
            profile policies, not new measurements (cartridge notes, Every scheme). */

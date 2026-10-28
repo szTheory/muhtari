@@ -10,7 +10,7 @@
    absent; the behaviour revision changes when a frame, audio or state hash
    changes for the same inputs. */
 #define MUHTARI__ABI 1u
-#define MUHTARI__BEHAVIOUR_REVISION 5u
+#define MUHTARI__BEHAVIOUR_REVISION 6u
 
 /* The largest size tag accepted, far above any struct's planned growth. A tag
    promises that many readable bytes; the cap bounds how far a wrong tag can
@@ -85,6 +85,7 @@ muhtari_status muhtari_create(const muhtari_config *cfg, muhtari **out)
     }
     memset(m, 0, sizeof *m);
     m->allocator = a;
+    m->cart.expansion.kind = MUHTARI_EXPANSION_OFF;
     /* The default profile: the ANE and LXA constant three real SALLYs show
        (docs/hardware/sally.md, Unstable opcodes), port B's output register at
        its reset value, zero-filled RAM, and the TIA line at its origin. */
@@ -125,7 +126,7 @@ void muhtari_destroy(muhtari *m)
     muhtari_allocator a = m->allocator;
     (void)muhtari__synth_observe(m, NULL, NULL);
     if (m->cart.rom != NULL) {
-        a.free(a.user, m->cart.rom, (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
+        a.free(a.user, m->cart.rom, m->cart.allocation_bytes);
     }
     a.free(a.user, m, sizeof *m);
 }
@@ -154,6 +155,7 @@ muhtari_status muhtari_get_info(const muhtari *m, muhtari_info *out)
     info.sample_rate_num = 48000u;
     info.sample_rate_den = 1u;
     info.max_audio_samples = MUHTARI__MAX_AUDIO_SAMPLES;
+    info.expansion = m->cart.expansion.kind;
     if (m->effective_region == MUHTARI_REGION_PAL) {
         info.height = 292u;
         info.fps_num = 3546894u;
@@ -215,6 +217,7 @@ static void media_copy(muhtari_media *dst, const muhtari_media *src)
     MEDIA_FIELD(hsc_mode);
     MEDIA_FIELD(hsc_rom);
     MEDIA_FIELD(hsc_rom_size);
+    MEDIA_FIELD(expansion);
     for (unsigned p = 0; p < 2u; p++) {
         if (src->size >= offsetof(muhtari_media, port) + (p + 1u) * sizeof(uint32_t)) {
             memcpy(&dst->port[p], &src->port[p], sizeof dst->port[p]);
@@ -237,7 +240,8 @@ struct battery_candidate {
 };
 
 static muhtari_status battery_prepare(struct battery_candidate *b, uint8_t rom[4096],
-                                      const muhtari_media *media, const muhtari_cart_info *info)
+                                      const muhtari_media *media, const muhtari_cart_info *info,
+                                      uint32_t expansion)
 {
     if (media->hsc_mode > MUHTARI_HSC_OFF ||
         ((media->hsc_rom == NULL) != (media->hsc_rom_size == 0u)) ||
@@ -248,7 +252,14 @@ static muhtari_status battery_prepare(struct battery_candidate *b, uint8_t rom[4
     memset(b, 0, sizeof *b);
     b->hsc_attached = (uint32_t)(media->hsc_mode == MUHTARI_HSC_ON || media->hsc_rom != NULL ||
                                  (media->hsc_mode == MUHTARI_HSC_AUTO &&
-                                  (info->devices & MUHTARI_DEVICE_HSC) != 0u));
+                                  ((info->devices & MUHTARI_DEVICE_HSC) != 0u ||
+                                   expansion == MUHTARI_EXPANSION_XM)));
+    /* A 52 KiB BankSet set occupies the HSC ROM window at $3000. Resolve
+       physical attachment before allocation/staging (cartridge.md, BankSet). */
+    if (b->hsc_attached != 0u && info->board == MUHTARI_BOARD_BANKSET &&
+        info->rom_size == 106496u) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD;
+    }
     for (unsigned p = 0; p < 2u; p++) {
         uint32_t device = media->port[p];
         muhtari_status st = muhtari__ports_check_device_ex(device);
@@ -316,6 +327,7 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     media_copy(&candidate, media);
     media = &candidate;
     if ((media->bios == NULL && media->bios_size != 0u) ||
+        media->expansion > MUHTARI_EXPANSION_XM ||
         (media->region != 0u && media->region != MUHTARI_REGION_NTSC &&
          media->region != MUHTARI_REGION_PAL)) {
         return MUHTARI_STATUS_ERR_ARGUMENT;
@@ -330,6 +342,22 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
+    uint32_t expansion = media->expansion;
+    if (expansion == MUHTARI_EXPANSION_AUTO) {
+        expansion =
+            (info.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM : MUHTARI_EXPANSION_OFF;
+    }
+    /* Resolve physical owners before staging or allocating. Expansion's
+       $0450 is one installed chip; a secondary $0440 can coexist
+       (cartridge preparation section 2.1, XBoard). */
+    uint32_t primary =
+        info.sound & (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_450 | MUHTARI_SOUND_POKEY_800);
+    if ((info.sound & (MUHTARI_SOUND_YM2151 | MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM)) != 0u ||
+        (primary != 0u && (primary & (primary - 1u)) != 0u) ||
+        (expansion != MUHTARI_EXPANSION_OFF &&
+         (primary & (MUHTARI_SOUND_POKEY_4000 | MUHTARI_SOUND_POKEY_800)) != 0u)) {
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+    }
     /* The region: the caller's, else the cartridge's, which the probe
        resolved from the header, the hash list, then NTSC. */
     uint32_t region = media->region != 0u ? media->region : info.region;
@@ -339,7 +367,7 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     /* Unpublished fixed staging avoids large stack frames/compiler stack
        probe dependencies, and preserves aliased firmware until installation. */
     struct battery_candidate battery;
-    st = battery_prepare(&battery, m->hsc_load_rom, media, &info);
+    st = battery_prepare(&battery, m->hsc_load_rom, media, &info, expansion);
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }
@@ -352,7 +380,7 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
     /* The ROM and its RAM are the only allocation; the BIOS goes into the
        instance's fixed array. With a BIOS the machine boots through it,
        without one through the fast-boot hand-off. */
-    st = muhtari__cart_install(m, media->image, &info);
+    st = muhtari__cart_install(m, media->image, &info, expansion);
     if (st != MUHTARI_STATUS_OK) {
         return st;
     }

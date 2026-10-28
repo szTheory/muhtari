@@ -47,6 +47,26 @@ target_link_libraries(app PRIVATE muhtari::muhtari)
 PKG_CONFIG_PATH=<unzipped directory>/lib/pkgconfig cc app.c $(pkg-config --cflags --libs muhtari)
 ```
 
+## Expansion selection
+
+API 7 retains ABI 1 and behavior revision 6. The appended `muhtari_media.expansion`
+selects one of `MUHTARI_EXPANSION_*`: `MUHTARI_EXPANSION_AUTO`, `MUHTARI_EXPANSION_OFF`, `MUHTARI_EXPANSION_XBOARD`
+or `MUHTARI_EXPANSION_XM`. Zero, omitted and incomplete fields mean Auto. Explicit
+selection wins; Auto uses the resolved cartridge XM request, otherwise Off.
+`muhtari_info.expansion` reports the committed effective selection. Failed loads
+retain the previous selection, storage, firmware and execution; power cycle retains
+the selection and battery storage while resetting volatile controls and RAM.
+
+XBoard provides eight 16 KiB RAM banks and one continuously installed POKEY at
+$0450, whose register decode starts disabled. A declared $0450 denotes that same
+chip; a secondary $0440 can coexist. Expansion with a separate $4000/$0800 primary,
+conflicting primary owners, YM2151, Covox or ADPCM returns
+`MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` before allocation. Probe remains descriptive,
+including `MUHTARI_SOUND_ADPCM` for A78 v4 audio bit $20. Selecting Off suppresses
+the expansion request without suppressing independently declared unsupported audio.
+XM Auto provisions HSC unless explicitly disabled; malformed requested firmware
+and a 52 KiB BankSet half with effective HSC refuse before replacement.
+
 ## Structs and sizes
 
 Every struct you pass starts with `uint32_t size`. Zero the whole struct, then set `size`:
@@ -67,7 +87,7 @@ There is no init macro. The size tag lets a program built against one header run
   struct receives only its first `size` bytes.
 - A larger size from a newer header is accepted only if every byte the library does not know is zero; otherwise
   the call returns `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
-- A field added later always keeps the old behaviour when it is zero.
+- Omitted or incomplete optional fields take their zero defaults.
 
 ## The allocator
 
@@ -132,9 +152,9 @@ production BIOS snapshot. The warm PAL table is a licensed presentation seed;
 native hashes do not depend on it. Region is fixed at successful load and survives
 power cycle; libretro region changes require reload, while palette changes affect
 presentation immediately. See [PAL diagnostic evidence](pal-tests.md) and
-[audio model limits](hardware/audio.md). API 6, ABI 1 and behavior revision 5
-retain the append-only status and size-tag contracts; legacy API 3 callers can
-now load PAL, so hosts must query geometry rather than depend on its former refusal.
+[audio model limits](hardware/audio.md). API 7, ABI 1 and behavior revision 6
+retain old structure prefixes, status values and zero defaults. Query geometry
+rather than depend on the former PAL refusal.
 
 ## Probing a cartridge image
 
@@ -246,13 +266,12 @@ muhtari_status st = muhtari_load(m, &media);
 
 1. `m` or `media` is NULL: `MUHTARI_STATUS_ERR_ARGUMENT`.
 2. A bad size tag: `MUHTARI_STATUS_ERR_STRUCT_SIZE`.
-3. `bios` is NULL with a non-zero `bios_size`, or `region` is neither 0 nor a `MUHTARI_REGION_*` value:
-   `MUHTARI_STATUS_ERR_ARGUMENT`.
+3. Bad BIOS pointer/length, region (0 or `MUHTARI_REGION_*`) or expansion value: `MUHTARI_STATUS_ERR_ARGUMENT`.
 4. The image, exactly as `muhtari_probe` judges it, with the same statuses. An empty image is
    `MUHTARI_STATUS_ERR_INVALID_IMAGE`, and a NULL image with a size is `MUHTARI_STATUS_ERR_ARGUMENT`.
-5. The region: `region` when it is not 0, else the cartridge's, which comes from its header, then the hash list,
-   then NTSC. Both NTSC and PAL execute; the selection commits only after successful
-   cartridge installation. Probe metadata remains descriptive when overridden.
+5. Resolve expansion and sound topology as above; unsupported sound returns
+   `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE`. Region uses the override, else the
+   probe region. Both NTSC and PAL execute; selection commits only on success.
 6. The BIOS, when `bios` is not NULL: it must be 4,096 or 16,384 bytes, and its reset vector, mapped to end at
    $FFFF, must point inside it. Otherwise `MUHTARI_STATUS_ERR_INVALID_BIOS`.
 7. HSC firmware and storage placement, described below. Invalid HSC media returns
@@ -261,10 +280,10 @@ muhtari_status st = muhtari_load(m, &media);
 
 A refused load changes nothing: the previous cartridge, or the test card, keeps running as if the call had not
 been made. Once every check passes, the ROM is copied into one allocation, the only one a load makes, and
-any cartridge loaded before is freed. BIOS input may borrow an installed cartridge RAM, battery or HSC ROM
-span: its validated bytes are staged before installation can invalidate that span. A private fixed 16 KiB
-staging array keeps the running BIOS intact if allocation fails; successful loads copy it to the live BIOS
-array inside the instance. Without a
+any cartridge loaded before is freed. Image, BIOS and HSC inputs may borrow live ROM, cartridge or expansion
+RAM, battery or firmware storage where the required lengths fit. ROM is copied before free; BIOS and HSC
+bytes are staged before free or clearing. Failed staging/allocation preserves running firmware, physical
+spans, battery layout/bytes/generation and subsequent execution. Without a
 BIOS the machine starts from the fast-boot hand-off, the state the NTSC BIOS leaves as it jumps to the cartridge;
 with one it boots through the BIOS, as [Booting with a BIOS](#booting-with-a-bios) describes. A successful load
 replaces any loaded content and power-cycles the machine.
@@ -278,7 +297,8 @@ load.
 
 API 5 appends `hsc_mode`, `hsc_rom`, `hsc_rom_size` and `port[2]` to `muhtari_media`.
 Old media objects keep their original minimum size; missing or incomplete appended fields
-take their zero defaults. `MUHTARI_HSC_AUTO` uses resolved cartridge metadata;
+take their zero defaults. `MUHTARI_HSC_AUTO` uses resolved cartridge metadata
+and provisions HSC when the effective expansion is XM;
 `MUHTARI_HSC_ON` forces attachment and `MUHTARI_HSC_OFF` disables it. A supplied ROM
 implies attachment and conflicts with OFF. Both pointer/length directions must agree,
 and firmware is exactly 4,096 bytes. HSC firmware has no BIOS reset-vector requirement.
@@ -313,6 +333,10 @@ Layout version 1 is exactly these raw bytes, with no header or host-endian field
 
 The pointer, length, layout and placement remain stable through frames and power cycles,
 until the next successful load or destroy. Firmware is outside the save span.
+XM starts with both HSC CPU windows hidden. Restore through this same physical
+span before execution; $0470 bit 3 only changes visibility. Gate stores never
+move or clear storage, change firmware identity, or increment generation. Hidden
+SRAM stores are ignored. Explicit HSC Off suppresses attachment even with XM.
 `muhtari_get_hsc_rom` fills a size-tagged `muhtari_const_span` with the installed read-only
 ROM/stub, or NULL/0 when HSC is absent. Both queries are bounded observers: they allocate
 nothing, scan no battery bytes and advance no emulated time.
@@ -325,6 +349,9 @@ stores leave it unchanged. It is a uint64 equality token with defined unsigned w
 compare for inequality, never ordering or elapsed writes. Power cycle retains bytes and
 generation. Successful load starts FF-filled storage with generation zero; refused load
 preserves bytes, pointers, topology, generation and subsequent execution. Hosts own files.
+Power cycle retains effective expansion/HSC attachment and committed EEPROM
+bytes, but clears volatile expansion RAM, controls/pages and POKEY state.
+The console Reset input is a physical switch and does not power cycle them.
 
 EEPROM page data becomes persistent only after completed programming in emulated time.
 Buffered or aborted serial traffic is outside the save span, and same-value programming
@@ -516,7 +543,8 @@ instance storage without allocating after load, including with an opposite EEPRO
 |---|---|---|
 | `MUHTARI_MEMORY_SYSTEM_RAM` | System RAM, $1800-$27FF | 4,096 |
 | `MUHTARI_MEMORY_RIOT_RAM` | The RIOT's RAM, $0480-$04FF | 128 |
-| `MUHTARI_MEMORY_CART_RAM` | The cartridge's RAM at $4000 | `ram_size`, or 0 |
+| `MUHTARI_MEMORY_CART_RAM` | Physical cartridge RAM, including both HALT halves | `ram_size`, or 0 |
+| `MUHTARI_MEMORY_EXPANSION_RAM` | Physical volatile expansion RAM, independent of active windows and battery storage | 131,072, or 0 |
 
 The pointer is not const: a host may write through it, for cheats or achievements. It is the one deliberate
 exception to the rule that no struct carries a pointer into the library's state, because libretro memory maps
@@ -524,6 +552,25 @@ need live pointers. It stays valid from the load until `muhtari_destroy`, across
 the cartridge RAM's, below. A kind the loaded content does not have, such as cartridge RAM on a cartridge without
 any, returns `MUHTARI_STATUS_OK` with a NULL `data` and zero `bytes`. Any other `kind` returns
 `MUHTARI_STATUS_ERR_ARGUMENT`.
+
+Physical cartridge and expansion spans describe storage, not permanently mapped
+CPU ranges. Bank/page and HALT selection or disabling an overlay does not replace
+their pointer or length. Expansion storage is volatile, remains separate from
+battery bytes, and survives gate/bank changes; power cycle clears it without
+replacing its pointer. Reacquire both spans after a successful load. A refused
+library load preserves the previous spans; the libretro adapter releases its
+old session before attempting replacement, so failure or unload clears its map
+and SAVE_RAM. Reacquire frontend pointers only after another successful load.
+
+The largest backing is 1,048,576 ROM + 32,768 cartridge RAM + 131,072 expansion
+RAM = 1,212,416 bytes, checked and freed exactly. Both regions pass 600-frame
+dual-POKEY/gate/power/observer controls with no allocator calls after load.
+
+Libretro's static achievement descriptors omit banked/HALT RAM, all cartridge
+windows at $4000-$7FFF with XBoard/XM installed, and XM HSC windows regardless
+of gate state. HSC remains physically accessible through the battery API and
+SAVE_RAM. BankSet's stable ROM descriptors use CPU-half geometry and omit its
+switched window and MARIA half; see [libretro memory maps](libretro.md#achievements).
 
 `MUHTARI_MEMORY_CART_RAM` is the RAM the cartridge info's `ram_size` names: 16,384 bytes on a SuperGame board with
 RAM, 32,768 with banked RAM (both halves, in order), and the list's size for a game the hash list knows. It lives in
@@ -567,7 +614,7 @@ Statuses are only ever added. Those after the probe's:
 | `MUHTARI_STATUS_ERR_BIOS_REJECTED_CART` | `muhtari_run_frame` | The BIOS took its 2600 path. It stays until the next load or power cycle. |
 | `MUHTARI_STATUS_ERR_INVALID_BIOS` | `muhtari_load` | The BIOS is not 4,096 or 16,384 bytes, or its reset vector points outside it. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | Reserved numeric region-refusal status; both current regions execute. |
-| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | input setters | A device outside the frozen legacy set, or an attempted change to load-frozen EEPROM topology. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | load, input setters | Unsupported declared sound/topology, a device outside the frozen legacy set, or an attempted change to load-frozen EEPROM topology. |
 | `MUHTARI_STATUS_ERR_INVALID_HSC` | `muhtari_load` | Invalid firmware size/pointer pair, HSC mode, or supplied firmware conflicting with OFF. |
 
 ## Version numbers
@@ -575,11 +622,12 @@ Statuses are only ever added. Those after the probe's:
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
 `muhtari_get_versions` fills a `muhtari_versions`:
 
-The current interface is API 5, ABI 1, behaviour revision 4. API 5 appends the
-load-time battery controls and adds battery/installed-ROM queries. The original
-media prefix, all prior size minima, signatures and constant values remain compatible.
-Revision 4 makes declared HSC storage executable; existing sample frame/audio digests
-are unchanged. API 4's Activision orientation constants remain available.
+The current interface is API 7, ABI 1, behaviour revision 6. API 7 appends
+expansion selection and effective information, ADPCM metadata and a distinct
+physical expansion memory kind. The original media/info prefixes, all prior
+size minima, signatures and constant values remain compatible. Revision 6
+includes the corrected slow-edge DMA handoff; versioned test observations
+retain their independently established values.
 
 | Field | Meaning |
 |---|---|

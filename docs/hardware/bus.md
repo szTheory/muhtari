@@ -183,10 +183,33 @@ mask records it. The gate opens once and never shuts again, so a line refused fo
 request, before any burst; a window still in flight at the next t 28 means the CPU has not reached that line's c2.
 
 **MARIA's window.** MARIA asks at t 28 of each DMA line with no end tick. When the window reaches c2, the bus runs
-the line's burst there: the PLA starts at T0 = fall + 6, and the burst's HALTRST is the request's end, so SALLY
-loses ceil((HALTRST - fall) / 4) cycles. A store SALLY makes in c1 is in memory before the first fetch at T0 + 2 =
-fall + 8; a store in c2 comes after the burst. The 6 is fitted to the empty-DL 16 and 24 ticks measured on hardware
+the line's burst there: T0 = max(fall + 6, c2 start - 2), and the burst's HALTRST is the request's end, so SALLY
+loses ceil((HALTRST - fall) / 4) cycles. The CPU's c1 data sample or store commits before the selector changes at
+that same falling edge. The first fetch at T0 + 2 cannot precede c2; a store in c2 comes after the burst.
+The 6 is fitted to the empty-DL 16 and 24 ticks measured on hardware
 (`docs/hardware/maria.md`, The HALT handshake).
+
+| c0 / c1 | Second φ2 fall | c2 start | First fetch |
+|---|---:|---:|---:|
+| fast / fast | 8 | 8 | 8 |
+| fast / slow | 9 | 10 | 10 |
+| slow / fast | 10 | 10 | 10 |
+| slow / slow | 11 | 12 | 12 |
+
+Ticks are relative to HALT fall. The stretched-cycle correction is a derived compatibility fit, not a hardware
+measurement. The absolute line-reset deadline stays fixed; a delayed start gains no extra DMA budget.
+
+**Electrical memory selection.** BankSet selects its MARIA half from the actual second φ2 fall until HALT
+rises at HALTRST (cartridge preparation, section 2.1, Bankset). One instance-owned interval records these edges,
+separate from HALT scheduling. A DMA access carries its fetch tick; the last DLL byte is sampled before a
+coincident HALTRST release. Non-HALT VBE helpers select CPU memory. Logical observation peeks always select
+CPU memory and neither advance clocks nor change banks, registers or open bus. MEN and BIOS retain decode priority.
+
+The executable tracer supports two 32 KiB ROM sets with no cartridge RAM. `diag.bankset_tracer` generates owned
+instructions under the build directory, judges CPU numeric records and unequal-set native pixels, and compares
+the actual library, runner process and loaded module's native frames, raw audio records, PCM and sample counts.
+Missing reports, CRC-valid wrong values and CPU graphics substituted for MARIA graphics fail. This narrow check
+does not establish other BankSet geometries, RAM variants or expansion hardware.
 
 The two cycles of latency are fitted, not measured. They are MiSTer's figure, chosen so that a 46-cycle loop counts
 correctly. A scope shows the bus free by the second φ2 fall, and other emulators stop the CPU at once (System notes,
@@ -289,3 +312,53 @@ Held RDY and HALT cycles each carry their own φ2 count. So an edge latched duri
 fell in, not the cycle that completes the access. After `STA WSYNC`, an edge at tick 100 falls in held cycle 25 of
 `CLC`'s opcode fetch, which completes at φ2 115. Where the CPU compares that count, and so after which instruction
 it takes the NMI, is in `docs/hardware/sally.md`, NMI.
+
+The run fuzz replay includes all fourteen accepted BankSet ROM/RAM geometries
+with expansion off, XBoard and XM in both regions (84 generated profiles plus
+38 prior inputs). It traverses every control byte, window boundaries, disabled
+overlays, absent registers and repeated stores before actual VBE/HALT execution
+under loops/JAM. Independent instances compare status, ticks, regional native
+video and PCM with no allocator calls after load. PAL buffers hold 320x292 pixels
+and 962 samples. The test input cap is the supported 1,048,576-byte ROM plus
+128-byte header, checked against the fuzzer configuration; backing remains at most
+1,212,416 bytes, including 32 KiB cart RAM and 128 KiB expansion RAM. The complete
+122-input local replay measured 1.21 seconds; its provisional three-second
+deadline retains the existing platform/sanitizer scaling and needs hosted
+calibration. The emulated four-line replay tail assertion is unchanged.
+
+## Expansion replay and properties
+
+`fuzz.regress.run` retains its 38 earlier inputs and adds 84 generated BankSet
+profiles: all fourteen accepted ROM/RAM geometries, expansion off/XBoard/XM,
+and both regions. All 256 control values, exact/neighbor/absent registers,
+repeated stores, disabled overlays, CPU/MARIA windows and actual VBE/HALT run
+under loops or JAM. Physical page writes have independent offset assertions;
+status, ticks, native pixels and PCM agree between separately allocated instances.
+The 1 MiB ROM input cap and 32/128 KiB RAM capacities are physical limits, with
+regional 292-row/962-sample buffers and no allocation after load.
+
+`fuzz.regress.loader` adds twelve seeds for shared/HALT RAM, maximum storage,
+52 KiB/HSC conflicts, odd/truncated halves, invalid RAM, preserved unsupported
+v4 declarations, byte-63 warnings and YM/Covox/ADPCM (including audio 0x20).
+Every input also traverses all twelve effective expansion/HSC overrides through
+the public loader on a live machine: refusals preserve its complete instance,
+ROM and allocator counts; accepted loads allocate the exact physical backing.
+
+The existing frame properties force all 84 profiles before randomized selection.
+Their state digest includes the entire expansion backing, with instance pointers
+normalized. Seeded bank/page/gate traffic, failed loads and power cycles precede
+pure public spans/peeks and independent/interleaved execution. Battery properties
+retain the six old layouts and add expansion profiles, restore raw bytes before
+execution while XM HSC is hidden, check ignored hidden stores and changed/same-value
+visible stores, then preserve physical pointers, attachment and generation across
+controls, console Reset, power and refused loads. The fixed seed, failure printing
+and shrinking remain unchanged: 100 cases are required; nightly 10,000-case results
+remain advisory, including the previously recorded isolation timeout.
+
+One-off local fault controls substituted a wrong expansion-store byte (run replay
+abort), removed ADPCM refusal (loader replay abort), and ignored the XM HSC gate
+(battery lifecycle failure with seed 20261020, case 34, minimized size 1). These
+checks exercise the existing consumers without another framework or registration.
+Complete local run replay measured 1.21 seconds and loader replay 0.62 seconds;
+the run deadline is provisionally three seconds under the existing scaling.
+Final sanitizer and hosted platform calibration remain required.

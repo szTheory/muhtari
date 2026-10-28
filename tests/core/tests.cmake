@@ -23,12 +23,14 @@ foreach(case IN ITEMS
 endforeach()
 # Loading, input, memory spans and counters.
 foreach(case IN ITEMS
-    load.keeps_previous load.empty_refused load.invalid_bios set_input.validates
+    load.empty_refused load.invalid_bios set_input.validates
     set_input.latched_at_vblank get_memory.spans counters.frames_and_lag
     load.supergame_one_allocation get_memory.cart_ram)
   muhtari_add_test(NAME core.${case} COMMAND muhtari-test-core ${case}
     LABELS core portable TIMEOUT 1) # 2 x 0.06 s, Windows arm64, slowest of 31 runs, run 39375738182
 endforeach()
+muhtari_add_test(NAME core.load.keeps_previous COMMAND muhtari-test-core load.keeps_previous
+  LABELS core portable TIMEOUT 66) # ceil(2 x 32.86s), complete Windows x64 run40414104123/job121892328427; scales retained.
 foreach(case IN ITEMS tracer decode firmware topology sizes)
   muhtari_add_test(NAME core.hsc.${case} COMMAND muhtari-test-core hsc.${case}
     LABELS core portable TIMEOUT 10)
@@ -38,7 +40,7 @@ foreach(case IN ITEMS deadline no_poll reset)
     LABELS core portable TIMEOUT 10)
 endforeach()
 muhtari_add_test(NAME core.no_alloc_after_load COMMAND muhtari-test-core no_alloc_after_load
-  LABELS perf portable TIMEOUT 10)
+  LABELS perf portable TIMEOUT 63) # ceil(2 x 31.26s), complete Windows x64 run40414104123/job121892328427; scales retained.
 
 add_executable(muhtari-test-pal ${CMAKE_CURRENT_LIST_DIR}/test_pal.c
   ${CMAKE_SOURCE_DIR}/tests/cart/images.c ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c)

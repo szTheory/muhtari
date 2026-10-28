@@ -2,22 +2,22 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
+current_phase: 11 — Full-library acceptance
 current_plan: Not started
-status: shipping
-stopped_at: Phase 9 merged in PR 33; release PR 35 scan repair locally verified; release CI pending
-last_updated: "2026-10-25T23:42:26.399Z"
-last_activity: 2026-10-25
-last_activity_desc: Phase 9 required CI green and merged; release version scan false positive repaired locally with 656+6 pass
-state_head: 8814d3e80e1221cc0da71b84560c4f001852212a
+status: planning
+stopped_at: Phase 10 shipped as PR #36 (auto-merge armed); phase 11 next
+last_updated: "2026-10-28T16:25:16.693Z"
+last_activity: 2026-10-28
+last_activity_desc: "Phase 10 shipped as PR #36"
+state_head: 57737cd78b1a322e9b3fce3e6e9d0cd0c59f3b11
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 50
-  completed_plans: 50
+  total_plans: 64
+  completed_plans: 64
   percent: 71
 total_phases: 7
-current_phase: 10
-current_phase_name: Homebrew and expansion memory
+current_phase_name: Full-library acceptance
 ---
 
 # Project State
@@ -27,30 +27,216 @@ current_phase_name: Homebrew and expansion memory
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase9 is complete:8/8 plans,22/22 tasks and42/42 verified truths.
-PAL-01–03 are complete. The library, runner and both libretro formats execute PAL
-with selected timing/geometry and independently proved bounded audio arithmetic.
-API6/ABI1/behavior5 and all342 original NTSC observations remain unchanged.
-The one review-fix round resolves borrowed BIOS lifetime; no required blocker or owner UAT remains.
-Phase9 merged in PR33. After releasePR35 CI and release confirmation, the next
-separate command is $gsd-discuss-phase 10. Phases10–11 remain unstarted.
+Current focus: Phase 10 shipped as PR #36; phase 11 (full-library acceptance) is next.
+BOARD-04/05 are marked Complete; final hosted acceptance is confirmed at ship and in Phase 11.
+Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
+remains recorded below; this step makes no new release claim.
 
 ## Current Position
 
-Current Phase: 10 — Homebrew and expansion memory (unstarted)
+Current Phase: 11 — Full-library acceptance
 Current Plan: Not started
-Total Plans in Phase: Not planned
+Total Plans in Phase: 14
 Progress: [███████░░░] 71%
 
-Phase9 has8/8 accepted plans and22/22 accepted tasks. Five of seven milestone
-phases are complete (71%); phases10–11 remain unstarted. Active-slot runtime totals
-are50 summarized plans of50 planned, including historical halted06-01;49 accepted
-completed plans. The retained active-slot convention differs from raw historical artifacts.
+Phase 10 has 14/14 accepted plans and verification passed. Six of seven milestone phases are complete once phase 10 ships.
+Active-slot totals are 64 summarized plans of 64 planned, including historical
+halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Phase9 merged — PR33; releasePR35 scan repair locally verified; hosted release CI pending
-Last activity: 2026-10-25 — Phase9 merged; release provenance scan repair passes local656+6
-Next command after merge/release confirmation: $gsd-discuss-phase 10
-Branch: phase/09-release-version-scan (release PR35 repair)
+Status: Ready to plan
+Last activity: 2026-10-28 -- Phase 10 shipped as PR #36
+Next command: /gsd-discuss-phase 11 (after PR #36 merges)
+Branch: phase/10-homebrew-expansion-memory
+
+## Phase 10 execution receipt
+
+Plan10-01 source59bad03 and closure5958e3c are committed. The narrow32KiB-per-set
+BankSet tracer runs through the library, runner and actual loaded module. Electrical
+selection follows actual second phi2 falls; four-row causal timing, CPU store order,
+VBE, absolute LRC, all-fast, DLI and RDY assertions are retained.
+
+The initial full-workflow failures and halted60b8917 remain reachable and recorded
+in10-01-SUMMARY. Two independent bounded reviews found the locked D-19 allowance
+for narrowly evidenced output revisions. Reversing only the T0 clamp restores all
+four old frame chains and all eight old audio rows; actual transfer/release traces
+precede the first output differences. Four of956 hash rows change,952 remain.
+Recurring exact release assertions and protected revision5-to6 transitions pass.
+No blanket regeneration, new timing fit, required-contract waiver or owner UAT.
+
+Source59bad03 workflow exits0:657 ordinary plus6 release tests. Fresh existing
+producer against genuine preplanf84b4dd exits0: current657+6/base656+6, with matching
+environment and fixture identities. Three actual ZIP sums are266041/265655 bytes,
+report-only. No hosted or phase-versus-main acceptance is claimed. Original failures,
+commands/exits and N/A-local URLs are retained in the canonical summary. Plan10-03
+must accommodate the already-completed minimal behavior6/evidence-consumer portion;
+no additive API or expansion implementation was pulled forward.
+
+Plan10-02 sourcec066d07 and summary3877f06 are committed. Six ROM geometries,
+shared/HALT RAM, CPU redirects, POKEY overlaps and physical span lifetimes pass54
+focused checks. The necessary52KiB/HSC refusal is in the effective load owner before
+allocation. Timing/revision6 remain unchanged. Full workflow exits0:657+6;
+fresh producer versus genuinec54e6c6 exits0:267693/265992 three-ZIP bytes, report-only.
+Commands/exits and N/A-local URLs are in10-02-SUMMARY. BOARD-04/05 remain pending.
+
+Plan10-03 source862e6bb and summarycdfbffa are committed. API7/ABI1/behavior6,
+XBoard eight-bank RAM/POKEY, descriptive unsupported-sound refusals, staged candidate
+replacement, physical spans and new/frozen linked callers pass. Existing behavior6
+transition is verified without further expectation edits. Full workflow exits0:
+658 ordinary+6 release; fresh producer versus genuine4a3df69 exits0,269075/267639
+three-ZIP bytes report-only. Initial failures and necessary owner/version corrections
+are in10-03-SUMMARY with commands/exits/N/A-local. No XM or hosted acceptance.
+
+Plan10-04 sourcee082c3b and summary2025da6 are committed. Exact XM page/window
+controls use the shared electrical owner; hidden HSC import retains physical storage,
+firmware and generation through gates/power. Both-region XBoard/XM installed POKEY
+raw/PCM/timer/IRQ controls pass; an injected gate-off mute is rejected. The existing
+GREEN sound behavior is documented honestly. Final workflow exits0:658+6; fresh
+producer versus genuinef64d68f exits0,current658+6/base658+6,269735/269052 three-ZIP
+bytes report-only. All commands/exits/N/A-local and advisory ledger-count mismatch
+remain in10-04-SUMMARY. Physical XM confidence stays medium; no hosted acceptance.
+
+Plan10-05 sourcef9d451a and summary54bd7e1 are committed. Runner and libretro
+select/report effective expansion, resolve HSC before firmware/save setup, preserve
+saves and name unsupported sound refusals. Reload-only module controls, actual
+processes and RGB565 firmware/battery consumers pass. Targeted96 checks and final
+full658+6 workflow exit0. Fresh producer versus genuinef3747a8 exits0,271339/269706
+three-ZIP bytes report-only. Commands/exits/N/A-local and advisory ledger mismatch
+are in10-05-SUMMARY. No hosted or full requirement acceptance is claimed.
+
+Plan10-06 source8e41751 and summary287dd49 are committed. Session-static maps
+expose only stable CPU windows, CPU-half BankSet ROM and deliberate expansion/HSC
+holes. Pinned resolver checks42 BankSet and21 old-board/profile combinations with
+actual CPU controls, physical/save lifetimes and four false-descriptor controls.
+Targeted9 checks and final659+6 workflow exit0. Fresh producer versus genuinea41f777
+exits0,271343/271314 three-ZIP bytes report-only. Commands/exits/N/A-local are in
+10-06-SUMMARY; full BOARD acceptance and hosted evidence remain pending.
+
+Plan10-07 source3507558 and summary85793c1 are committed. Immutable sourcepin
+6321fa6 and canonical fixture2a093be rebuild exactly; exact admission retains old
+manifest/sample authority. Fourteen geometry/RAM variants plus two PAL representatives
+execute through all three real deliverables, with17 measured records, independent
+post-setup pixels and malformed/CRC-valid wrong-value/wrong-view/PNG controls before
+equality. Independent source review resolved row17/setup timing without pin changes.
+Module-free matrix also passes; portable inventory gains the two BankSet rows.
+Final workflow exits0:660+6; fresh producer versus genuinef124167 exits0,current660/
+base659+6,271344/271327 three-ZIP bytes report-only. Complete workload2.32s sets
+provisional5s via existing calibration. All failures/corrections and commands/exits/
+N/A-local are retained in10-07-SUMMARY. Equality09 and hosted13 remain pending.
+
+Plan10-08 sourceaf8a991 and summary9d1fe5e are committed. Corrected immutable
+source26357b8 and admission5bd8cbc preserve failed original stimulus history. Exact
+rebuild/admission and66 actual-host groups pass:19 measured records, all banks/pages,
+VBE/HALT pixels, hidden HSC restoration/lifetimes, single/dual POKEY continuity and
+semantic/protocol controls. Twelve named negative loads and the module-free matrix
+pass. The only production correction names Souper in runner refusal. Final workflow
+exits0:661+6; fresh producer versus genuine7d387d7 exits0,current661/base660+6,
+271392/271315 three-ZIP bytes report-only. Commands/exits/N/A-local and corrected
+stimulus/display/Reset faults remain in10-08-SUMMARY. Equality09/hosted13 pending.
+
+Plan10-09 source27e74d1 and summary70973bc are committed. Production writer
+runs independent actual judges then emits3088 exact ordered rows: original956
+byte-identical plus82declared groups*26. Real writer controls reject semantic/protocol
+and forged-digest faults. Existing six-native uploads gain identity.txt beside commit
+and hashes; both native/PPC consumers authenticate exact members/lanes against the
+immutable Git source/config/fixture object. Artifact comparison does not reconstruct
+numeric truth from arbitrary matching fabricated hashes. No new lane/harness.
+Final workflow exits0:661+6; fresh producer versus genuine9ef358e exits0,current/base
+661+6,271392/271361 three-ZIP bytes report-only. Complete lanecontrol27.42s calibrated
+55s; writer remains58s. Commands/exits/N/A-local are in10-09-SUMMARY. Actual hosted
+native/PPC acceptance remains mandatory13; no requirement completion is claimed.
+
+Plan10-10 sourceecb3fde and summary6782b16 are committed, with no production
+change. Existing load target covers324cases*15failures, complete public/live/backing
+snapshots and independent continuation;40 borrowed-media cases use poison retention
+and exact free-size controls. Maximum backing1212416bytes and six both-region
+600frame maximum-storage dual-POKEY/noalloc workloads pass. Complete measured targets
+support final16s/14s allowances; later successful variation does not trigger another
+metadata loop. Final workflow exits0:661+6; fresh producer versus genuine6f055d2
+exits0,current/base661+6,271388/271362 three-ZIP bytes report-only. Commands/exits/
+N/A-local, stimulus corrections and known advisory scanner/ledger limitations are in
+10-10-SUMMARY. Final sanitizer/nofp/native/PPC acceptance remains13.
+
+Plan10-11 source464b01c and summaryd65cd18 are committed. Hostile replay122
+inputs includes84 accepted geometry/RAM/expansion/region profiles; loader52inputs
+with12 public overrides and six seeded100case properties cover refusals, hidden saves,
+pure observers and independent physical state. Representative corrupted-store,
+ADPCM-refusal and HSC-gate faults are rejected by real consumers. Existing finite
+tail/noalloc/resource bounds and10000case advisory status are retained. Final workflow
+exits0:661+6; fresh producer versus genuine50f48ce exits0,271392/271369 three-ZIP bytes
+report-only. Inherited24 regressions pass. Commands/exits/N/A-local and corrected
+stimulus/status/docs-budget failures remain in10-11-SUMMARY. Production unchanged;
+final sanitizer/nofp/native/PPC acceptance13 remains pending.
+
+Plan10-12 source1a896ad and summary634ebb4 are committed. Hardware/API/preparation
+facts match actual implementation/tests and retain medium XM, derived slow-fit and
+producer-extension limits. All43 prior compatibility rows remain byte-identical;
+three local owned mailbox predicates from fresh diagnostics are added through the
+existing generator. Reachable README/runner/frontend claims exclude fullXM/universal
+gameplay and preserve the separate failed/draft publication. Final workflow exits0:
+661+6; fresh producer versus genuinea6dfa80 exits0,current/base661+6,271473/271367
+three-ZIP bytes report-only. Commands/exits/N/A-local and corrected api-name/docs-budget
+failures remain in10-12-SUMMARY. No runtime change or requirement acceptance; final
+exact-source native/PPC/sanitizer/performance/package/frontend acceptance is next.
+
+The following planning and earlier-phase receipts are historical; this execution
+receipt supersedes their former phase10 ready/not-started statements.
+
+## Phase 10 planning receipt
+
+Research and13 plans/30 tasks in13 sequential waves are ready. Independent
+plan-checking passed after one consolidated revision: two broad plans were split,
+cohesive scopes documented, research questions dispositioned for planning and
+sally.irq added to the focused POKEY check. Both requirements and all20 decisions
+have concrete coverage. No implementation, requirement acceptance, owner UAT or
+new review/gap execution round is claimed. The two unclassified spec-less rows
+remain flagged; XM physical evidence and separate publication limits remain.
+
+`verify plan-structure` for every phase10 plan exits0 (13/13); both
+`check verify-command-paths 10 --raw` and
+`check verify-failure-directions 10 --raw` exit0. The path probe does not interpret
+CMake commands; the independent checker verified existing/planned registrations.
+All30 commands have failure signals and pass `sh -n`.
+`query check.decision-coverage-plan` exits0 (20/20), and
+`check gap-analysis.plan-post` exits0 (22/22). `git diff --check` and
+`scripts/hygiene.sh --tree` exit0. Run URL:N/A-local for these planning checks.
+Research records its70 baseline tests and disposable bus counterexample with
+commands/exits; these do not accept new hardware behavior.
+
+The state helper updated counts but retained the old status/next command and
+reset progress to0. One scoped reconciliation retains the active-slot convention:
+50 summarized of63 planned (79%),49 accepted historical plans,5/7 completed
+milestone phases (71%). This is planning progress, not runtime completion.
+Next separate command: $gsd-execute-phase 10.
+
+## Phase 10 discussion and independent release follow-up
+
+The owner selected all four areas and delegated specialist research, adversarial
+synthesis and recommendation adoption. Three read-only reviews and one interaction
+pass produce20 decisions: checked BankSet geometry and causal HALT ownership;
+separate XBoard/XM profiles; additive load selection; stable HSC storage with runtime
+decode gates; continuous POKEY state and honest sound-owner limits; independent
+all-host evidence, bounded resource use and existing finite review policies.
+No new dependency, runtime acceptance or requirement completion is claimed.
+
+Context and discussion log committed as afcffe9. One-time structure/reference
+validation exits0:20 unique decisions, six balanced sections, every local canonical
+path exists. `git diff --check` and `scripts/hygiene.sh --tree` exit0 before the
+context commit; run URL:N/A-local. The next separate step is $gsd-plan-phase 10.
+
+Read-only `gh pr view 35 --json state,mergedAt,headRefOid,url,statusCheckRollup`
+exits0:merged, required CI40246033915 success:
+https://github.com/szTheory/muhtari/actions/runs/40246033915.
+`gh release view v0.8.0 --json tagName,isDraft,isPrerelease,publishedAt,url` exits0:
+draft, unpublished. `gh run view 40249027723 --json attempt,status,conclusion,headSha,url,jobs`
+with a complete-job projection exits0:attempt1, failed on merged9dcb224.
+Windowsx64 and macOSx64 quality-observation steps fail; quality and the required
+aggregate fail; publish is skipped. Other jobs and skips were inspected; no cause
+or transient classification is inferred, and no repair/retry is performed here.
+https://github.com/szTheory/muhtari/actions/runs/40249027723.
+
+The discussion receipt above and following Phase9 sections retain historical
+progress, former next commands and failed-run evidence;
+their former pending/next-command statements are superseded by this receipt.
 
 ## Phase 9 post-merge release confirmation
 
@@ -508,10 +694,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase9 merged in PR33; releasePR35 CI repair pending hosted confirmation
-Last session: 2026-10-25T23:42:26.399Z
+**Stopped at:** Phase 10 verified and complete; ship phase 10 before planning Phase 11
+Last session: 2026-10-28T16:13:02.094Z
 Resume file: None
-Next command after merge/release confirmation: $gsd-discuss-phase 10
+Next command: /gsd-discuss-phase 11 (after PR #36 merges)
 
 ### Quick Tasks Completed
 
@@ -543,6 +729,7 @@ Next command after merge/release confirmation: $gsd-discuss-phase 10
 | Phase 09 P03 | 16min | 3 tasks | sourceef95e37 |
 | Phase 09 P04 | 14min | 2 tasks | 3 files |
 | Phase 09 P07 | accepted after debug recovery | 3 accepted tasks | source7ad503c; recoverya93a11d/ddf51d4 |
+| Phase 10 P14 | 20 min | 2 tasks | 5 files |
 
 ## Decisions
 
@@ -560,10 +747,11 @@ Next command after merge/release confirmation: $gsd-discuss-phase 10
 - [Phase 08]: Typed syntax acceptance remains separate from physical-device capability refusal until each controller slice lands.
 - [Phase 08]: Historical399937 halt preserved; DEC.61 separately retires only that unsupported cutoff while preserving required measurements and all independent contracts.
 - [Phase 08]: Audit every required workflow job; standalone diagnostic consumers link the existing owned digest helper and actual RetroArch acceptance is verified separately from package metrics.
+- [Phase 10]: 10-14: --hsc-rom loads without firmware first, reads HSC attachment from muhtari_get_battery, reads firmware only for an accepted attached image and loads again; refused images keep exit 77
 
 ### Blockers
 
-Phase9 implementation is merged with required CI green. ReleasePR35 is awaiting
-hosted acceptance of its locally verified provenance/version-scan repair. Advisory
+Phase9 implementation and releasePR35 are merged with required CI green. The
+v0.8.0 publication run failed and the release remains a draft, separately unresolved. Advisory
 10000-case isolation remains unaccepted in SEED-009. Hardware calibration, broader
 retail playability and historical deferrals retain their scope.

@@ -148,6 +148,7 @@ the two existing screenshot and save-roundtrip cases.
 | Left difficulty (`muhtari_left_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
 | Right difficulty (`muhtari_right_difficulty`) | B (default), A | at load and Restart; a change sets the switch at once |
 | High Score Cartridge (`muhtari_hsc`) | Auto (default), On, Off | at content load |
+| Expansion (`muhtari_expansion`) | Auto (default), Off, XBoard, XM | at content load; reload required |
 | Port 1/2 battery device (`muhtari_battery_port1`, `muhtari_battery_port2`) | Auto (default), None, SaveKey, AtariVox | at content load |
 
 Auto region follows content metadata; an explicit choice overrides it at load.
@@ -176,6 +177,19 @@ No controller callback before load is required. A later request that changes sto
 must be reloaded and keeps the installed attachment and its button mapping. Auto and the installed save
 identity remain valid;
 ordinary non-save controller changes still work. A repeated unchanged request produces no repeated warning.
+
+Expansion Auto follows any nonzero A78 byte63 XM request, otherwise Off; XBoard requires explicit selection.
+Missing or unknown values use Auto. HSC Auto provisions storage for an HSC request or effective XM;
+HSC Off suppresses it. This physical attachment stays fixed even while XM's CPU windows are hidden.
+Firmware discovery uses that same effective attachment before load. Changing effective expansion or HSC
+requires reload, including Restart; no live option reinterprets SAVE_RAM. Equivalent explicit and Auto
+selections need no warning. Load logs distinguish cartridge requests from effective hardware, preserve
+noncanonical XM warnings and name refused sound devices. Off suppresses only expansion: independently
+declared YM2151, Covox and ADPCM still fail load with a named log/message.
+
+XM is an implementation-backed RAM/POKEY/HSC subset with medium physical confidence. Internal XM BIOS,
+top-slot switching, flash, PIA, flat48KiB mode, write protection, sticky locks, ROF aliases and PAL firmware
+selection are unavailable. No full-XM service or gameplay compatibility is claimed.
 
 `RETRO_MEMORY_SAVE_RAM` is the final core-owned raw span immediately after successful content load:
 2,048 HSC bytes, 32,768 EEPROM bytes, or HSC followed by EEPROM (34,816 bytes). Absent storage and
@@ -252,6 +266,17 @@ gives it to external devices. Only an attached HSC supplies bytes there; its des
 installed core-owned ROM, distinct from cartridge input. EEPROM remains serial and has no invented CPU range.
 
 Banked RAM and banked ROM windows are left out because a descriptor cannot say which bank is showing.
+HALT-selected cartridge RAM also stays unmapped. With XBoard or XM installed,
+all cartridge windows at $4000-$7FFF remain holes for the entire session, even
+while expansion RAM is disabled. XM's HSC SRAM and ROM windows remain holes
+regardless of their gate. Physical cartridge/expansion RAM and HSC SAVE_RAM
+retain their dedicated storage access and lifetime independently of these holes.
+
+BankSet descriptors expose only the CPU ROM half: linear sets end at $FFFF,
+and switched sets expose the last bank at $C000 plus the second-to-last at
+$4000 when no RAM or expansion overlaps it. Bank counts and offsets use one
+set's size. The switched $8000-$BFFF window and MARIA half remain unmapped.
+The 52 KiB set also exposes $3000-$3FFF except with XM installed.
 Absolute descriptors point into original content at the same-numbered ROM
 offsets $8000-$FFFF; its switched $4000-$7FFF window stays unmapped. Restart
 restores bank zero, the same deterministic profile as a fresh load. Absolute

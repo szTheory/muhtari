@@ -139,13 +139,23 @@ function(quality_fixture_identity out candidate trusted)
         message(FATAL_ERROR "quality: deleted or changed trusted manifest ${path}")
       endif()
     endforeach()
-    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion|pal)[.]a78$" OR
+    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion|pal|bankset|expansion)[.]a78$" OR
         NOT row MATCHES "^[^\t]+\tthis-repo\t[^ \t\r\n;]+\tMIT\t([0-9a-f]+)\t-$")
       message(FATAL_ERROR "quality: unrelated fixture ${path}")
     endif()
     string(LENGTH "${CMAKE_MATCH_1}" length)
     if(NOT length EQUAL 64)
       message(FATAL_ERROR "quality: fixture digest ${path}")
+    endif()
+    # This owned template is immutable: derived cases are build output only.
+    # A syntactically plausible invented source pin/digest must not admit it.
+    if(path STREQUAL "tests/diag/bankset.a78" AND NOT row STREQUAL
+        "tests/diag/bankset.a78\tthis-repo\t6321fa62cf7cf29c7033b09931edb884079c1545\tMIT\t32f5870fbfcc4745967b8b94c69f87dac4879587c4b0561256cc5160d61a3390\t-")
+      message(FATAL_ERROR "quality: owned BankSet identity")
+    endif()
+    if(path STREQUAL "tests/diag/expansion.a78" AND NOT row STREQUAL
+        "tests/diag/expansion.a78\tthis-repo\t26357b8ef692de1d86a848992d6b679d9999f79b\tMIT\tb5164fe19df352231d2a6033d0349ff45019f2dcfb889f6d0d542879ae41ee9b\t-")
+      message(FATAL_ERROR "quality: owned expansion identity")
     endif()
     string(REPLACE "${row}\n" "" stripped "${stripped}")
   endforeach()
@@ -157,8 +167,8 @@ function(quality_fixture_identity out candidate trusted)
 endfunction()
 
 # Fault prevented: sample edits hiding behind a behavior-annotation migration.
-# Only unique exact 2-to-3, 3-to-4 or 4-to-5 revision lines may differ; all
-# remaining bytes stay equal and identity always comes from the raw base file.
+# Unique adjacent revision transitions preserve every byte, except the four
+# independently attributed slow-HALT chains in 5-to-6. Identity is the raw base.
 function(quality_sample_identity out candidate trusted)
   foreach(input candidate trusted)
     file(READ "${${input}}" ${input}_text)
@@ -170,18 +180,42 @@ function(quality_sample_identity out candidate trusted)
       if(NOT count EQUAL 1)
         message(FATAL_ERROR "quality: sample annotation must be unique")
       endif()
-      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([2345])\n")
+      if(NOT "${${input}_text}" MATCHES "(^|\n)# behaviour_revision ([23456])\n")
         message(FATAL_ERROR "quality: invalid sample revision transition")
       endif()
       set(${input}_revision "${CMAKE_MATCH_2}")
     endforeach()
     if(NOT (trusted_revision EQUAL 2 AND candidate_revision EQUAL 3) AND
         NOT (trusted_revision EQUAL 3 AND candidate_revision EQUAL 4) AND
-        NOT (trusted_revision EQUAL 4 AND candidate_revision EQUAL 5))
+        NOT (trusted_revision EQUAL 4 AND candidate_revision EQUAL 5) AND
+        NOT (trusted_revision EQUAL 5 AND candidate_revision EQUAL 6))
       message(FATAL_ERROR "quality: invalid sample revision transition")
     endif()
     string(REGEX REPLACE "(^|\n)# behaviour_revision ${candidate_revision}\n" "\\1# behaviour_revision ${trusted_revision}\n"
       normalized "${candidate_text}")
+    if(trusted_revision EQUAL 5 AND candidate_revision EQUAL 6)
+      # Exact 600-frame chain transitions reproduced by reversing only the
+      # causal T0 clamp (hardware/bus.md, HALT). No source/tool/ROM pin changes.
+      set(names colorfade fontcheck mousedemo screensafe)
+      set(previous
+        8a868b24329f4bd07636cf76da0669fc3ee7bc6bb0cdeeee447e7b662031c1a9
+        218471a10520aa82d1ac5dec41becb7165fa25b1974f8524f0988e285e17223a
+        c819552e2cb8b98e656581b3215a724ac747db6e9a40e87552b544728c520327
+        7cbf9f511a6c21f19ddc3053fb95451ddd3c5b464be331179fb9bb5ca9f1f700)
+      set(current
+        c1b76f769fe8219ae0b92eaf17bdde65850903264bdeb0375e82d5d9c0911e60
+        70bbda24499a6428957037dfa2f653f66255b77cc2aa0a93875d9022f9b1eb17
+        df06e8d6cd68cf074d11e4500751da0eaa7f747334e28502e9464dcdd170c6d7
+        3d3cce4adb13b846363a0e5fb3f95c402bbfef1235ecd428e61fb80e15da4854)
+      foreach(i RANGE 0 3)
+        list(GET names ${i} name)
+        list(GET previous ${i} old)
+        list(GET current ${i} new)
+        string(REGEX REPLACE
+          "((^|\n)${name}[ \t]+[^ \t\n]+[ \t]+[^ \t\n]+[ \t]+[^ \t\n]+[ \t]+[^ \t\n]+[ \t]+)${new}([ \t])"
+          "\\1${old}\\3" normalized "${normalized}")
+      endforeach()
+    endif()
     if(NOT normalized STREQUAL trusted_text)
       message(FATAL_ERROR "quality: changed trusted samples")
     endif()

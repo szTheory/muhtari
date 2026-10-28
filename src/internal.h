@@ -176,6 +176,10 @@ struct muhtari__bus {
     uint64_t halt_at;
     uint64_t halt_until;
     uint64_t halt_fall;
+    /* Electrical MARIA interval, independent of the scheduling stage:
+       second actual phi2 fall through HALTRST (hardware/bus.md). */
+    uint64_t maria_from;
+    uint64_t maria_until;
     uint64_t nmi_at;
     uint8_t open_bus;
     uint8_t inptctrl;
@@ -250,6 +254,13 @@ struct muhtari__profile {
 struct muhtari__cart {
     uint8_t *rom;
     uint8_t *ram;
+    size_t allocation_bytes;
+    struct {
+        uint8_t *ram;
+        uint32_t kind;
+        uint8_t control;
+        uint8_t cpu_pages, maria_pages;
+    } expansion;
     uint8_t bank;
     uint8_t ram_bank;
     uint8_t irq_mask;
@@ -530,7 +541,7 @@ _Static_assert(offsetof(muhtari_info, par_den) == 24, "info.par_den");
 _Static_assert(offsetof(muhtari_info, sample_rate_num) == 28, "info.sample_rate_num");
 _Static_assert(offsetof(muhtari_info, sample_rate_den) == 32, "info.sample_rate_den");
 _Static_assert(offsetof(muhtari_info, max_audio_samples) == 36, "info.max_audio_samples");
-_Static_assert(sizeof(muhtari_info) == 40, "info size");
+_Static_assert(sizeof(muhtari_info) == 44, "info size");
 
 _Static_assert(offsetof(muhtari_frame, size) == 0, "frame.size");
 _Static_assert(offsetof(muhtari_frame, video_pitch) == 4, "frame.video_pitch");
@@ -586,7 +597,8 @@ _Static_assert(offsetof(muhtari_media, hsc_mode) == 8 + 4 * MUHTARI__P, "media.h
 _Static_assert(offsetof(muhtari_media, hsc_rom) == 8 + 5 * MUHTARI__P, "media.hsc_rom");
 _Static_assert(offsetof(muhtari_media, hsc_rom_size) == 8 + 6 * MUHTARI__P, "media.hsc_rom_size");
 _Static_assert(offsetof(muhtari_media, port) == 8 + 7 * MUHTARI__P, "media.port");
-_Static_assert(sizeof(muhtari_media) == 16 + 7 * MUHTARI__P, "media size");
+_Static_assert(offsetof(muhtari_media, expansion) == 16 + 7 * MUHTARI__P, "media.expansion");
+_Static_assert(sizeof(muhtari_media) == 16 + 8 * MUHTARI__P, "media size");
 
 /* muhtari_input is six uint32_t fields: 24 bytes on every target. */
 _Static_assert(offsetof(muhtari_input, size) == 0, "input.size");
@@ -648,7 +660,8 @@ muhtari_status muhtari__cart_load(muhtari *m, const void *image, size_t n);
 /* The second half of muhtari__cart_load: copies the ROM of image, which
    *info identifies, into one new allocation with its RAM and replaces any
    cartridge loaded before. ERR_NO_MEMORY leaves m unchanged. */
-muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info);
+muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtari_cart_info *info,
+                                     uint32_t expansion);
 
 /* The cartridge as the bus sees it, by board (docs/hardware/bus.md, Memory
    map). read returns the byte the board drives at addr, or the open-bus
@@ -658,6 +671,7 @@ muhtari_status muhtari__cart_install(muhtari *m, const void *image, const muhtar
    at power-on and fills the RAM by ram_fill. */
 void muhtari__cart_reset(muhtari *m);
 uint8_t muhtari__cart_read(muhtari *m, uint16_t addr, int by_maria);
+uint8_t muhtari__cart_dma_read(muhtari *m, uint16_t addr, uint64_t tick);
 void muhtari__cart_write(muhtari *m, uint16_t addr, uint8_t v);
 uint8_t muhtari__cart_peek(const muhtari *m, uint16_t addr);
 
@@ -736,6 +750,7 @@ void muhtari__riot_pins_changed(muhtari *m);
    MUHTARI__LINE_DMA_BLOCKED flag. */
 #define MUHTARI__HALT_UNTIL_MARIA UINT64_MAX
 int muhtari__bus_request_halt(muhtari *m, uint64_t at_tick, uint64_t until_tick);
+int muhtari__bus_maria_selected(const muhtari *m, uint64_t tick);
 int muhtari__bus_raise_nmi(muhtari *m, uint64_t at_tick);
 
 /* The tick of SALLY's n-th phi1 after tick t, n >= 1: its cycle starts,

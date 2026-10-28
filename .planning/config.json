@@ -1,5 +1,5 @@
 {
-  "model_profile": "inherit",
+  "model_profile": "adaptive",
   "commit_docs": true,
   "parallelization": false,
   "search_gitignored": false,
@@ -79,7 +79,14 @@
   },
   "mode": "interactive",
   "granularity": "coarse",
-  "resolve_model_ids": "omit",
+  "resolve_model_ids": false,
+  "effort": {
+    "routing_tier_defaults": {
+      "light": "xhigh",
+      "standard": "high",
+      "heavy": "high"
+    }
+  },
   "intel": {
     "enabled": false
   },

@@ -1,6 +1,6 @@
 # The libretro core: its vendored header, its .info claims, and the core
 # called in-process as a frontend calls it.
-if(LIBRETRO_RETAIL_RUN)
+if(LIBRETRO_RETAIL_RUN OR LIBRETRO_EXPANSION_RUN)
   function(retail_command)
     execute_process(COMMAND ${EMULATOR} ${ARGV} RESULT_VARIABLE rc
       OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT ${HOST_TIMEOUT})
@@ -9,6 +9,10 @@ if(LIBRETRO_RETAIL_RUN)
     endif()
     message("${out}")
   endfunction()
+  if(LIBRETRO_EXPANSION_RUN)
+    retail_command("${RESOLVER}" --expansion)
+    return()
+  endif()
   file(MAKE_DIRECTORY "${OUT}")
   file(MAKE_DIRECTORY "${OUT}/hsc")
   retail_command("${RESOLVER}" --hsc-dir "${OUT}/hsc" ${CARTS})
@@ -139,7 +143,7 @@ if(TARGET muhtari_libretro)
     muhtari_add_test(NAME libretro.host.${libretro_case}
       COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> ${libretro_case}
         ${libretro_input_cart}
-      LABELS libretro portable TIMEOUT 1)  # 2 x 0.10 s, macOS x64, slowest of 10 runs, run 39382016958
+      LABELS libretro portable TIMEOUT 2)  # ceil(2 x 0.87 s), Windows x64 devices, slowest complete of 4 runs, runs 40414104123 and 40419374588; a 1 s deadline timed out at 1.09 s, run 40698007354
     set_tests_properties(libretro.host.${libretro_case} PROPERTIES FIXTURES_REQUIRED input_carts)
   endforeach()
   # Fault prevented: a BIOS file in the system directory that is ignored,
@@ -206,6 +210,7 @@ if(TARGET muhtari_libretro)
   target_compile_options(muhtari_test_rcheevos PRIVATE $<$<C_COMPILER_ID:MSVC>:/W0>
     $<$<NOT:$<C_COMPILER_ID:MSVC>>:-w -fno-sanitize=all>)
   add_executable(muhtari-test-rcheevos ${CMAKE_CURRENT_LIST_DIR}/rcheevos.c
+    ${PROJECT_SOURCE_DIR}/tests/cart/images.c
     ${PROJECT_SOURCE_DIR}/libretro/libretro.c ${PROJECT_SOURCE_DIR}/runner/sha256.c
     ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
     $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
@@ -252,6 +257,7 @@ if(TARGET muhtari_libretro)
   muhtari_warnings(muhtari_libretro_testdb565)
 
   add_executable(muhtari-test-diag-testdb ${PROJECT_SOURCE_DIR}/tests/diag/driver.c
+    ${PROJECT_SOURCE_DIR}/tests/runner/png_read.c
     ${PROJECT_SOURCE_DIR}/runner/sha256.c
     ${PROJECT_SOURCE_DIR}/tests/cart/test_cartdb.c
     $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
@@ -286,6 +292,19 @@ include([==[${CMAKE_CURRENT_LIST_FILE}]==])
     LABELS libretro portable TIMEOUT 120) # bounded 600-frame comparisons, as diag.retail
   set_tests_properties(libretro.rcheevos PROPERTIES
     FIXTURES_REQUIRED "built_simple;built_doublebuffer")
+  # Faults: HALT/overlay storage claimed as fixed CPU memory, XM HSC exposed
+  # while gated, wrong CPU-half offsets, or a hole hiding later fixed ROM.
+  set(libretro_expansion ${PROJECT_BINARY_DIR}/tests/libretro-expansion.cmake)
+  file(GENERATE OUTPUT ${libretro_expansion} CONTENT
+"set(LIBRETRO_EXPANSION_RUN TRUE)
+set(RESOLVER [==[$<TARGET_FILE:muhtari-test-rcheevos>]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+set(HOST_TIMEOUT ${libretro_host_timeout})
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+  muhtari_add_test(NAME libretro.rcheevos.expansion
+    COMMAND ${CMAKE_COMMAND} -P ${libretro_expansion}
+    LABELS libretro portable TIMEOUT 120)
 
   set(libretro_inventory ${PROJECT_SOURCE_DIR}/tests/inventory/${MUHTARI_INVENTORY}.txt)
   muhtari_add_test(NAME libretro.info_claims

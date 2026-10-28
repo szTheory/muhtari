@@ -306,7 +306,6 @@ static void test_unsupported_board(void)
         uint32_t board;
         uint32_t options;
     } boards[] = {
-        {"bankset", 0x2002u, 64u * IMAGES_KIB, MUHTARI_BOARD_BANKSET, 0u},
         {"halt-banked RAM", 0x4002u, 128u * IMAGES_KIB, MUHTARI_BOARD_SUPERGAME,
          MUHTARI_BOARD_HALT_BANKED_RAM},
         {"Souper, cart type", 0x1000u, 512u * IMAGES_KIB, MUHTARI_BOARD_SOUPER, 0u},
@@ -330,12 +329,12 @@ static void test_unsupported_board(void)
     n = images_headerless(buf, 32u * IMAGES_KIB);
     struct muhtari__cartdb_entry act;
     memset(&act, 0, sizeof act);
-    act.board = MUHTARI_BOARD_BANKSET;
+    act.board = MUHTARI_BOARD_SOUPER;
     act.flags = MUHTARI__CARTDB_NTSC;
     act.parts = 1u;
     CHECK_EQ_U64(identify_listed(buf, n, buf, n, act, 0, &out),
                  MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
-    CHECK_EQ_U64(out.board, MUHTARI_BOARD_BANKSET);
+    CHECK_EQ_U64(out.board, MUHTARI_BOARD_SOUPER);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
 }
 
@@ -934,8 +933,326 @@ static void retail_views(muhtari *m, uint16_t addr, uint8_t value)
     CHECK_EQ_U64(m->cart.bank, bank);
 }
 
+static void bankset_geometry(void)
+{
+    static const struct {
+        uint32_t kib;
+        uint16_t base;
+        uint8_t blocks, low, high;
+    } geometry[] = {{32u, 0x8000u, 8u, 0u, 0u},     {48u, 0x4000u, 12u, 0u, 0u},
+                    {52u, 0x3000u, 13u, 0u, 0u},    {128u, 0x4000u, 8u, 6u, 7u},
+                    {256u, 0x4000u, 16u, 14u, 15u}, {512u, 0x4000u, 32u, 30u, 31u}};
+    static const uint8_t ram_code[] = {0u, 1u, 3u};
+    static const uint32_t ram_bytes[] = {0u, 16384u, 32768u};
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL)
+        return;
+    m->bus.inptctrl = 0x07u;
+    for (size_t g = 0u; g < sizeof geometry / sizeof geometry[0]; g++) {
+        for (size_t r = 0u; r < 3u; r++) {
+            size_t n = images_bankset(buf, geometry[g].kib, ram_code[r]);
+            int valid = r == 0u || g == 0u || g >= 3u;
+            uint32_t allocations = counts.allocs;
+            muhtari_status st = muhtari__cart_load(m, buf, n);
+            CHECK_EQ_U64(st, valid ? MUHTARI_STATUS_OK : MUHTARI_STATUS_ERR_INVALID_IMAGE);
+            if (!valid) {
+                CHECK_EQ_U64(counts.allocs, allocations);
+                continue;
+            }
+            if (st != MUHTARI_STATUS_OK)
+                continue;
+            CHECK_EQ_U64(counts.allocs, allocations + 1u);
+            CHECK_EQ_U64(m->cart.info.ram_size, ram_bytes[r]);
+            CHECK_EQ_U64(m->cart.bank, 0u);
+            CHECK(memcmp(m->cart.rom, buf + IMAGES_HEADER, n - IMAGES_HEADER) == 0);
+            muhtari_cart_info info = expect_written("BankSet v4", buf, n, MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(info.board, MUHTARI_BOARD_BANKSET);
+            CHECK_EQ_U64(info.a78_mapper_options, 0x80u | ram_code[r]);
+            CHECK_EQ_U64(info.ram_size, ram_bytes[r]);
+            CHECK_EQ_U64(info.warnings, 0u);
+            buf[0] = 3u;
+            uint16_t type = (uint16_t)(0x2000u | (r == 1u ? 4u : r == 2u ? 0x4000u : 0u));
+            buf[53] = (uint8_t)(type >> 8);
+            buf[54] = (uint8_t)type;
+            memset(buf + 64u, 0, 6u);
+            info = expect_written("BankSet v3", buf, n, MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(info.board, MUHTARI_BOARD_BANKSET);
+            CHECK_EQ_U64(info.a78_cart_type, type);
+            CHECK_EQ_U64(info.ram_size, ram_bytes[r]);
+            CHECK_EQ_U64(info.warnings, 0u);
+            if (r != 0u)
+                continue; /* Physical RAM accesses are checked separately. */
+            m->bus.maria_from = 10u;
+            m->bus.maria_until = 20u;
+            m->bus.open_bus = 0xE7u;
+            CHECK_EQ_HEX(muhtari__cart_peek(m, (uint16_t)(geometry[g].base - 1u)), 0xE7u);
+            if (g < 3u) {
+                for (uint32_t b = 0u; b < geometry[g].blocks; b++) {
+                    uint16_t a = (uint16_t)(geometry[g].base + b * 4096u);
+                    retail_views(m, a, (uint8_t)(0x10u + b * 2u));
+                    retail_views(m, (uint16_t)(a + 4095u), (uint8_t)(0x11u + b * 2u));
+                    CHECK_EQ_HEX(muhtari__cart_dma_read(m, a, 10u), 0x90u + b * 2u);
+                    CHECK_EQ_HEX(muhtari__cart_dma_read(m, (uint16_t)(a + 4095u), 19u),
+                                 0x91u + b * 2u);
+                }
+            } else {
+                for (uint32_t b = 0u; b < 256u; b++) {
+                    muhtari__cart_write(m, (b & 1u) != 0u ? 0xBFFFu : 0x8000u, (uint8_t)b);
+                    uint8_t selected = (uint8_t)(b % geometry[g].blocks);
+                    static const uint16_t addresses[] = {0x4000u, 0x7FFFu, 0x8000u,
+                                                         0xBFFFu, 0xC000u, 0xFFFFu};
+                    uint8_t banks[] = {geometry[g].low, geometry[g].low,  selected,
+                                       selected,        geometry[g].high, geometry[g].high};
+                    for (size_t a = 0u; a < 6u; a++) {
+                        uint8_t tag = (uint8_t)(0x10u + banks[a] * 2u + (a & 1u));
+                        retail_views(m, addresses[a], tag);
+                        CHECK_EQ_HEX(muhtari__cart_dma_read(m, addresses[a], 10u), tag + 0x80u);
+                    }
+                }
+            }
+        }
+    }
+    /* Valid unsupported v4 declarations must not disappear into stale v3. */
+    for (uint8_t mapper = 0u; mapper < 5u; mapper++) {
+        for (uint8_t device = 0u; device < (mapper == 0u ? 4u : mapper == 1u ? 7u : 1u); device++) {
+            if (mapper <= 1u && (device == 0u || device == 1u || device == 3u))
+                continue;
+            size_t n = images_bankset(buf, 32u, 0u);
+            buf[64] = mapper;
+            buf[65] = (uint8_t)(0x80u | device);
+            muhtari_cart_info info = expect_written("BankSet unsupported option", buf, n,
+                                                    MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+            CHECK_EQ_U64(info.board, MUHTARI_BOARD_BANKSET);
+            CHECK_EQ_U64(info.warnings, 0u);
+            uint32_t allocations = counts.allocs;
+            CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD);
+            CHECK_EQ_U64(counts.allocs, allocations);
+        }
+    }
+    static const uint32_t bad[] = {32768u, 65535u, 65537u, 73728u, 114688u, 196608u};
+    for (size_t i = 0u; i < sizeof bad / sizeof bad[0]; i++) {
+        size_t n = images_a78(buf, 4u, bad[i], 0u, bad[i]);
+        buf[65] = 0x80u;
+        uint32_t allocations = counts.allocs;
+        CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+        CHECK_EQ_U64(counts.allocs, allocations);
+    }
+    size_t n = images_bankset(buf, 48u, 0u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n - 1u), MUHTARI_STATUS_ERR_TRUNCATED_IMAGE);
+    buf[n] = 0u;
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n + 1u), MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+}
+
+static void bankset_ram(void)
+{
+    static const uint16_t edge[] = {0x4000u, 0x7FFFu};
+    static muhtari snapshot;
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    if (m == NULL)
+        return;
+    m->bus.inptctrl = 0x07u;
+    for (uint8_t device = 1u; device <= 3u; device += 2u) {
+        for (uint32_t kib = 32u; kib <= 512u; kib = kib == 32u ? 128u : kib * 2u) {
+            size_t n = images_bankset(buf, kib, device);
+            buf[67] = 5u; /* POKEY $4000 must not swallow memory writes. */
+            CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+            uint32_t bytes = device == 1u ? 16384u : 32768u;
+            for (uint32_t i = 0u; i < bytes; i++)
+                CHECK_EQ_U64(m->cart.ram[i], 0u);
+            m->bus.maria_from = 10u;
+            m->bus.maria_until = 20u;
+            for (size_t e = 0u; e < 2u; e++) {
+                uint8_t cpu = (uint8_t)(0x51u + e);
+                uint8_t maria = (uint8_t)(0xA6u + e);
+                muhtari__cart_write(m, edge[e], cpu);
+                muhtari__cart_write(m, (uint16_t)(edge[e] + 0x8000u), maria);
+                CHECK_EQ_HEX(muhtari__cart_read(m, edge[e], 0), cpu);
+                CHECK_EQ_HEX(muhtari__cart_dma_read(m, edge[e], 9u), cpu);
+                CHECK_EQ_HEX(muhtari__cart_dma_read(m, edge[e], 10u), device == 1u ? cpu : maria);
+                CHECK_EQ_HEX(muhtari__cart_dma_read(m, edge[e], 19u), device == 1u ? cpu : maria);
+                CHECK_EQ_HEX(muhtari__cart_dma_read(m, edge[e], 20u), cpu);
+                CHECK_EQ_HEX(m->cart.ram[e == 0u ? 0u : 16383u], cpu);
+                if (device == 3u)
+                    CHECK_EQ_HEX(m->cart.ram[e == 0u ? 16384u : 32767u], maria);
+            }
+            muhtari__cart_write(m, 0x4001u, 0xAFu);
+            CHECK_EQ_HEX(m->pokey[0].channel[0].audc, 0xAFu);
+            CHECK_EQ_HEX(muhtari__cart_read(m, 0x4001u, 0), 0xAFu);
+            CHECK_EQ_HEX(m->cart.ram[1], 0xAFu);
+            m->bus.open_bus = 0xE7u;
+            CHECK_EQ_HEX(muhtari__cart_read(m, 0x3FFFu, 0), 0xE7u);
+            CHECK_EQ_HEX(muhtari__cart_read(m, 0x8000u, 0), 0x10u);
+            CHECK_EQ_HEX(muhtari__cart_read(m, 0xBFFFu, 0), kib == 32u ? 0x17u : 0x11u);
+            CHECK_EQ_HEX(muhtari__cart_read(m, 0xC000u, 0), kib == 32u    ? 0x18u
+                                                            : kib == 128u ? 0x1Eu
+                                                            : kib == 256u ? 0x2Eu
+                                                                          : 0x4Eu);
+            CHECK_EQ_HEX(muhtari__cart_read(m, 0xFFFFu, 0), kib == 32u    ? 0x1Fu
+                                                            : kib == 128u ? 0x1Fu
+                                                            : kib == 256u ? 0x2Fu
+                                                                          : 0x4Fu);
+            memcpy(&snapshot, m, sizeof snapshot);
+            CHECK_EQ_HEX(muhtari__cart_peek(m, 0x4000u), 0x51u);
+            CHECK_EQ_HEX(muhtari__bus_peek(m, 0x4000u), 0x51u);
+            CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+            uint8_t *ram = m->cart.ram;
+            uint32_t allocations = counts.allocs;
+            /* Every rejected geometry preserves all physical bytes and state. */
+            static uint8_t saved[32768u];
+            memcpy(saved, ram, bytes);
+            images_bankset(buf, 48u, 3u);
+            CHECK_EQ_U64(muhtari__cart_load(m, buf, IMAGES_HEADER + 98304u),
+                         MUHTARI_STATUS_ERR_INVALID_IMAGE);
+            CHECK_EQ_U64(counts.allocs, allocations);
+            CHECK(m->cart.ram == ram);
+            CHECK(memcmp(ram, saved, bytes) == 0);
+            CHECK(memcmp(m, &snapshot, sizeof snapshot) == 0);
+            muhtari__cart_reset(m);
+            for (uint32_t i = 0u; i < bytes; i++)
+                CHECK_EQ_U64(ram[i], 0u);
+        }
+    }
+    /* Legacy declarations keep simultaneous RAM and write-only POKEY. */
+    size_t n = images_bankset(buf, 32u, 1u);
+    images_header(buf, 3u, "BankSet RAM POKEY", 65536u, 0x2005u);
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.info.sound, MUHTARI_SOUND_POKEY_4000);
+    muhtari__cart_write(m, 0x4001u, 0xB3u);
+    CHECK_EQ_HEX(muhtari__cart_read(m, 0x4001u, 0), 0xB3u);
+    CHECK_EQ_HEX(m->pokey[0].channel[0].audc, 0xB3u);
+    /* No RAM: readable ROM still owns the $4000 overlap. */
+    n = images_bankset(buf, 48u, 0u);
+    buf[67] = 5u;
+    CHECK_EQ_U64(muhtari__cart_load(m, buf, n), MUHTARI_STATUS_OK);
+    muhtari__cart_write(m, 0x4001u, 0xAFu);
+    CHECK_EQ_HEX(muhtari__cart_read(m, 0x4001u, 0), 0x10u);
+    CHECK_EQ_HEX(m->pokey[0].channel[0].audc, 0xAFu);
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+}
+
+static void xm_windows(void)
+{
+    alloc_counts counts;
+    muhtari_config cfg = alloc_config(&counts);
+    muhtari *m = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    size_t n = images_bankset(buf, 128u, 0u);
+    muhtari_media media = {0};
+    media.size = (uint32_t)sizeof media;
+    media.image = buf;
+    media.image_size = n;
+    media.expansion = MUHTARI_EXPANSION_XM;
+    media.hsc_mode = MUHTARI_HSC_OFF;
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    uint8_t *ram = m->cart.expansion.ram;
+    uint32_t calls = counts.allocs;
+    for (unsigned window = 0u; window < 2u; window++) {
+        uint16_t first = (uint16_t)(0x4000u + window * 8192u);
+        uint16_t last = (uint16_t)(first + 8191u);
+        uint8_t gate = (uint8_t)(32u << window);
+        for (unsigned page = 0u; page < 16u; page++) {
+            muhtari__bus_write(m, 0x0470u, gate);
+            muhtari__bus_write(m, 0x0478u, (uint8_t)(page << (window * 4u)));
+            muhtari__bus_write(m, first, (uint8_t)(page + 1u));
+            muhtari__bus_write(m, last, (uint8_t)(page + 0x80u));
+            CHECK_EQ_U64(ram[page * 8192u], page + 1u);
+            CHECK_EQ_U64(ram[(page + 1u) * 8192u - 1u], page + 0x80u);
+            CHECK_EQ_U64(muhtari__bus_read(m, first), page + 1u);
+            CHECK_EQ_U64(muhtari__bus_read(m, last), page + 0x80u);
+            /* Each MARIA nibble is independent of the CPU nibble. */
+            for (unsigned dma = 0u; dma < 16u; dma++) {
+                ram[dma * 8192u + 1u] = (uint8_t)(0x40u + dma);
+                muhtari__bus_write(m, 0x047Cu, (uint8_t)(dma << (window * 4u)));
+                uint64_t tick = m->bus.ticks;
+                m->bus.maria_from = tick + 1u;
+                m->bus.maria_until = tick + 3u;
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, (uint16_t)(first + 1u), tick), 0x40u + page);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, (uint16_t)(first + 1u), tick + 1u),
+                             0x40u + dma);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, (uint16_t)(first + 1u), tick + 2u),
+                             0x40u + dma);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, (uint16_t)(first + 1u), tick + 3u),
+                             0x40u + page);
+                CHECK_EQ_U64(muhtari__bus_peek(m, (uint16_t)(first + 1u)), 0x40u + page);
+                m->bus.maria_from = m->bus.maria_until = 0u;
+            }
+            muhtari__bus_write(m, 0x0470u, 0u);
+            uint8_t underlying = muhtari__bus_peek(m, first);
+            muhtari__bus_write(m, first, 0xEEu);
+            CHECK_EQ_U64(muhtari__bus_read(m, first), underlying);
+            CHECK_EQ_U64(ram[page * 8192u], page + 1u);
+        }
+    }
+    /* Every nibble pair at both physical endpoints, independent of the
+       earlier middle-byte selection and store checks. */
+    for (unsigned cpu = 0u; cpu < 16u; cpu++) {
+        for (unsigned dma = 0u; dma < 16u; dma++) {
+            muhtari__bus_write(m, 0x0470u, 0x60u);
+            muhtari__bus_write(m, 0x0478u, (uint8_t)(cpu * 17u));
+            muhtari__bus_write(m, 0x047Cu, (uint8_t)(dma * 17u));
+            uint64_t tick = m->bus.ticks;
+            m->bus.maria_from = tick + 1u;
+            m->bus.maria_until = tick + 3u;
+            for (unsigned window = 0u; window < 2u; window++) {
+                uint16_t first = (uint16_t)(0x4000u + window * 8192u);
+                uint16_t last = (uint16_t)(first + 8191u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, first, tick), cpu + 1u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, last, tick), cpu + 0x80u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, first, tick + 1u), dma + 1u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, last, tick + 1u), dma + 0x80u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, first, tick + 3u), cpu + 1u);
+                CHECK_EQ_U64(muhtari__cart_dma_read(m, last, tick + 3u), cpu + 0x80u);
+            }
+            m->bus.maria_from = m->bus.maria_until = 0u;
+        }
+    }
+    muhtari__bus_write(m, 0x0478u, 0xF0u);
+    muhtari__bus_write(m, 0x047Cu, 0x0Fu);
+    muhtari__bus_write(m, 0x0470u, 0x60u);
+    uint8_t before[6];
+    const uint16_t endpoints[] = {0x3FFFu, 0x4000u, 0x5FFFu, 0x6000u, 0x7FFFu, 0x8000u};
+    m->bus.open_bus = 0xD6u;
+    for (unsigned i = 0u; i < 6u; i++)
+        before[i] = muhtari__bus_peek(m, endpoints[i]);
+    for (unsigned addr = 0x046Fu; addr <= 0x047Du; addr++) {
+        if (addr == 0x0470u || addr == 0x0478u || addr == 0x047Cu)
+            continue;
+        muhtari__bus_write(m, (uint16_t)addr, 0xFFu);
+        m->bus.open_bus = 0xD6u;
+        for (unsigned i = 0u; i < 6u; i++)
+            CHECK_EQ_U64(muhtari__bus_peek(m, endpoints[i]), before[i]);
+    }
+    /* Unsupported control bits do not change either RAM window. */
+    muhtari__bus_write(m, 0x0470u, 0xE7u);
+    m->bus.open_bus = 0xD6u;
+    for (unsigned i = 0u; i < 6u; i++)
+        CHECK_EQ_U64(muhtari__bus_peek(m, endpoints[i]), before[i]);
+    for (uint16_t addr = 0x0470u; addr <= 0x047Fu; addr++) {
+        m->bus.open_bus = 0xD6u;
+        CHECK_EQ_U64(muhtari__bus_read(m, addr), 0xD6u);
+    }
+    muhtari__bus_write(m, 0x8000u, 3u);
+    CHECK_EQ_U64(m->cart.bank, 3u);
+    CHECK_EQ_U64(muhtari__bus_read(m, 0x8000u), 0x16u);
+    CHECK_EQ_U64(counts.allocs, calls);
+    muhtari_destroy(m);
+    CHECK_EQ_U64(counts.allocs, counts.frees);
+}
+
 static void test_retail_boards(void)
 {
+    xm_windows();
+    bankset_geometry();
+    bankset_ram();
     alloc_counts counts;
     muhtari_config cfg = alloc_config(&counts);
     muhtari *m = NULL;

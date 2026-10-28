@@ -130,7 +130,7 @@ static struct retro_memory_map memory_map; /* outlives SET_MEMORY_MAPS */
 static unsigned desc_count;
 static uint32_t desc_next; /* the first CPU address no descriptor covers yet */
 static muhtari_battery_info battery;
-static uint32_t loaded_port[2], last_request[3];
+static uint32_t loaded_port[2], last_request[4];
 static bool request_seen;
 
 /* Writes a message to the frontend's log, when it has one (L1243). */
@@ -253,6 +253,16 @@ static struct retro_core_option_v2_definition options_v2[] = {
      .desc = "High Score Cartridge",
      .info = "Storage attachment; changes require content reload.",
      .values = {{"auto", "Auto"}, {"on", "On"}, {"off", "Off"}, {NULL, NULL}},
+     .default_value = "auto"},
+    {.key = "muhtari_expansion",
+     .desc = "Expansion hardware",
+     .info = "Load-time selection; changes require content reload. XM RAM/POKEY/HSC subset, "
+             "without YM2151, Covox/ADPCM, internal BIOS or full-XM services.",
+     .values = {{"auto", "Auto (cartridge request)"},
+                {"off", "Off"},
+                {"xboard", "XBoard"},
+                {"xm", "XM RAM/POKEY/HSC subset"},
+                {NULL, NULL}},
      .default_value = "auto"},
     {.key = "muhtari_battery_port1",
      .desc = "Port 1 battery device",
@@ -569,6 +579,10 @@ static bool lr_serial(uint32_t d)
 static void lr_battery_request(muhtari_media *media)
 {
     static const char *const keys[2] = {"muhtari_battery_port1", "muhtari_battery_port2"};
+    media->expansion = lr_option_is("muhtari_expansion", "off")      ? MUHTARI_EXPANSION_OFF
+                       : lr_option_is("muhtari_expansion", "xboard") ? MUHTARI_EXPANSION_XBOARD
+                       : lr_option_is("muhtari_expansion", "xm")     ? MUHTARI_EXPANSION_XM
+                                                                     : MUHTARI_EXPANSION_AUTO;
     media->hsc_mode = lr_option_is("muhtari_hsc", "on")    ? MUHTARI_HSC_ON
                       : lr_option_is("muhtari_hsc", "off") ? MUHTARI_HSC_OFF
                                                            : MUHTARI_HSC_AUTO;
@@ -751,15 +765,30 @@ static void lr_refresh_inputs(void)
     (void)env_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, inputs);
 }
 
+/* Same load-time rule as the core (docs/libretro.md, Options). Firmware
+   discovery and reload checks must use physical attachment, not CPU visibility. */
+static uint32_t lr_expansion(const muhtari_media *request)
+{
+    if (request->expansion != MUHTARI_EXPANSION_AUTO)
+        return request->expansion;
+    return (cart.devices & MUHTARI_DEVICE_XM) != 0u ? MUHTARI_EXPANSION_XM : MUHTARI_EXPANSION_OFF;
+}
+
+static bool lr_hsc_attached(const muhtari_media *request)
+{
+    return request->hsc_mode == MUHTARI_HSC_ON || (request->hsc_mode == MUHTARI_HSC_AUTO &&
+                                                   ((cart.devices & MUHTARI_DEVICE_HSC) != 0u ||
+                                                    lr_expansion(request) == MUHTARI_EXPANSION_XM));
+}
+
 static void lr_check_battery_request(const muhtari_media *request)
 {
-    uint32_t key[3] = {request->hsc_mode, request->port[0], request->port[1]};
+    uint32_t key[4] = {request->hsc_mode, request->port[0], request->port[1], request->expansion};
     if (request_seen && memcmp(key, last_request, sizeof key) == 0)
         return;
     memcpy(last_request, key, sizeof key);
     request_seen = true;
-    bool hsc = request->hsc_mode == MUHTARI_HSC_ON ||
-               (request->hsc_mode == MUHTARI_HSC_AUTO && (cart.devices & MUHTARI_DEVICE_HSC) != 0u);
+    bool hsc = lr_hsc_attached(request);
     unsigned count = 0u, port = 0u;
     uint32_t serial = 0u;
     for (unsigned p = 0u; p < 2u; p++) {
@@ -777,10 +806,11 @@ static void lr_check_battery_request(const muhtari_media *request)
         port = 2u;
         serial = MUHTARI_PORT_SAVEKEY;
     }
-    if (hsc != (battery.hsc_attached != 0u) || count > 1u || port != battery.eeprom_port ||
-        serial != battery.eeprom_device) {
-        LR_LOG(RETRO_LOG_WARN, "muhtari: battery device change requires content reload\n");
-        lr_message("Battery device change requires content reload");
+    if (lr_expansion(request) != selected.expansion || hsc != (battery.hsc_attached != 0u) ||
+        count > 1u || port != battery.eeprom_port || serial != battery.eeprom_device) {
+        LR_LOG(RETRO_LOG_WARN,
+               "muhtari: expansion or battery device change requires content reload\n");
+        lr_message("Expansion or battery device change requires content reload");
     }
 }
 
@@ -1127,9 +1157,7 @@ static muhtari_status lr_load_hsc(muhtari_media *media, uint8_t **owned)
     char path[4096];
     FILE *f;
     *owned = NULL;
-    bool attached =
-        media->hsc_mode == MUHTARI_HSC_ON ||
-        (media->hsc_mode == MUHTARI_HSC_AUTO && (cart.devices & MUHTARI_DEVICE_HSC) != 0u);
+    bool attached = lr_hsc_attached(media);
     if (!attached || !env_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, (void *)&dir) || dir == NULL)
         return MUHTARI_STATUS_OK;
     int n = snprintf(path, sizeof path, "%s/highscre.bin", dir);
@@ -1243,6 +1271,28 @@ static bool lr_load_content(const struct retro_game_info *game)
         LR_LOG(RETRO_LOG_ERROR, "muhtari: content refused: %s%s%s\n", muhtari__status_text(st),
                st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ? ": " : "",
                st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ? muhtari__board_name(cart.board) : "");
+        if (st == MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE) {
+            bool named = false;
+            uint32_t refused =
+                cart.sound & (MUHTARI_SOUND_YM2151 | MUHTARI_SOUND_COVOX | MUHTARI_SOUND_ADPCM);
+            if (refused == 0u)
+                refused = cart.sound;
+            for (uint32_t bit = 0u; bit < 32u; bit++) {
+                if ((refused >> bit) & 1u) {
+                    const char *name = muhtari__bit_name(MUHTARI__BITS_SOUND, bit);
+                    LR_LOG(RETRO_LOG_ERROR, "muhtari: unavailable sound configuration: %s\n", name);
+                    if (!named) {
+                        char text[128];
+                        (void)snprintf(text, sizeof text, "Unavailable sound configuration: %s",
+                                       name);
+                        lr_message(text);
+                    }
+                    named = true;
+                }
+            }
+            if (!named)
+                lr_message("Unsupported device");
+        }
         return false;
     }
     battery.size = (uint32_t)sizeof battery;
@@ -1271,7 +1321,22 @@ static bool lr_load_content(const struct retro_game_info *game)
                            : "HSC firmware unknown identity");
         }
     }
+    selected.size = (uint32_t)sizeof selected;
+    (void)muhtari_get_info(inst, &selected);
     lr_check_battery_request(&media);
+    LR_LOG(RETRO_LOG_INFO,
+           "muhtari: requested devices 0x%x, sound 0x%x; effective expansion %s, HSC %u\n",
+           cart.devices, cart.sound,
+           selected.expansion == MUHTARI_EXPANSION_XM       ? "xm"
+           : selected.expansion == MUHTARI_EXPANSION_XBOARD ? "xboard"
+                                                            : "off",
+           battery.hsc_attached);
+    if (selected.expansion == MUHTARI_EXPANSION_XM)
+        LR_LOG(RETRO_LOG_INFO, "muhtari: XM RAM/POKEY/HSC subset; no full-XM services\n");
+    for (uint32_t bit = 0u; bit < 32u; bit++)
+        if ((cart.warnings >> bit) & 1u)
+            LR_LOG(RETRO_LOG_WARN, "muhtari: cartridge warning: %s\n",
+                   muhtari__bit_name(MUHTARI__BITS_WARNINGS, bit));
     uint32_t effective = media.region != 0u ? media.region : cart.region;
     selected_region = effective == MUHTARI_REGION_PAL ? RETRO_REGION_PAL : RETRO_REGION_NTSC;
     return true;
@@ -1329,9 +1394,8 @@ static uint8_t *lr_memory(uint32_t kind, size_t *bytes)
    rcheevos' console 51 reads it. Page 0's and page 1's RAM shadow $2040-
    $20FF and $2140-$21FF; $2800-$2FFF repeats RAM's second half while the
    bus there stays undecoded; registers, absent HSC and banked windows have
-   no memory behind them. Installed HSC spans alias its actual RAM/ROM.
-   Unbanked cartridge RAM sits at $4000 and the fixed
-   ROM is CONST. */
+   no memory behind them. Only session-stable CPU windows are published;
+   expansion overlays and XM HSC gates remain holes (docs/libretro.md). */
 static void lr_memory_maps(void)
 {
     bool yes = true;
@@ -1340,7 +1404,10 @@ static void lr_memory_maps(void)
     uint8_t *riot = lr_memory(MUHTARI_MEMORY_RIOT_RAM, &riot_bytes);
     uint8_t *cart_ram = lr_memory(MUHTARI_MEMORY_CART_RAM, &cart_bytes);
     uint8_t *rom = content + ((cart.flags & MUHTARI_CART_HEADER) != 0u ? 128u : 0u);
-    uint32_t rom_from = cart_ram != NULL ? 0x8000u : 0x4000u;
+    bool overlay = selected.expansion != MUHTARI_EXPANSION_OFF;
+    bool xm = selected.expansion == MUHTARI_EXPANSION_XM;
+    uint32_t rom_bytes = cart.board == MUHTARI_BOARD_BANKSET ? cart.rom_size / 2u : cart.rom_size;
+    uint32_t rom_from = cart_ram != NULL || overlay ? 0x8000u : 0x4000u;
     muhtari_const_span hsc_rom = {0};
     hsc_rom.size = (uint32_t)sizeof hsc_rom;
     (void)muhtari_get_hsc_rom(inst, &hsc_rom);
@@ -1350,13 +1417,15 @@ static void lr_memory_maps(void)
     lr_span(0x0040u, 0x0100u, ram, 0x0840u, 0u);
     lr_span(0x0140u, 0x0200u, ram, 0x0940u, 0u);
     lr_span(0x0480u, 0x0500u, riot, 0u, 0u);
-    if (battery.hsc_attached != 0u)
+    if (battery.hsc_attached != 0u && !xm)
         lr_span(0x1000u, 0x1800u, battery.data, 0u, 0u);
     lr_span(0x1800u, 0x2800u, ram, 0u, RETRO_MEMDESC_SYSTEM_RAM);
     lr_span(0x2800u, 0x3000u, ram, 0x0800u, 0u);
-    if (hsc_rom.data != NULL)
+    if (hsc_rom.data != NULL && !xm)
         lr_span(0x3000u, 0x4000u, (uint8_t *)(uintptr_t)hsc_rom.data, 0u, RETRO_MEMDESC_CONST);
-    if (cart.board == MUHTARI_BOARD_FRACTALUS && cart_ram != NULL) {
+    if (cart.board == MUHTARI_BOARD_BANKSET && rom_bytes == 53248u && !xm)
+        lr_span(0x3000u, 0x4000u, rom, 0u, RETRO_MEMDESC_CONST);
+    if (!overlay && cart.board == MUHTARI_BOARD_FRACTALUS && cart_ram != NULL) {
         /* Sixteen 256-byte aliases expose the eight physical pages twice.
            Higher bus mirrors remain descriptor holes to fit the pinned
            resolver (cartridge preparation 2.1; docs/libretro.md). */
@@ -1364,12 +1433,15 @@ static void lr_memory_maps(void)
             uint32_t start = 0x4000u + page * 0x100u;
             lr_span(start, start + 0x100u, cart_ram, (size_t)(page / 2u) * 0x100u, 0u);
         }
-    } else if (cart_ram != NULL && (cart.board_options & MUHTARI_BOARD_BANKED_RAM) == 0u) {
+    } else if (!overlay && cart_ram != NULL &&
+               (cart.board_options & (MUHTARI_BOARD_BANKED_RAM | MUHTARI_BOARD_HALT_BANKED_RAM)) ==
+                   0u) {
         lr_span(0x4000u, 0x4000u + (uint32_t)(cart_bytes < 0x4000u ? cart_bytes : 0x4000u),
                 cart_ram, 0u, 0u);
     }
-    if (cart.board == MUHTARI_BOARD_LINEAR) {
-        uint32_t base = 0x10000u - cart.rom_size;
+    if (cart.board == MUHTARI_BOARD_LINEAR ||
+        (cart.board == MUHTARI_BOARD_BANKSET && rom_bytes <= 53248u)) {
+        uint32_t base = 0x10000u - rom_bytes;
         uint32_t from = base > rom_from ? base : rom_from;
         lr_span(from, 0x10000u, rom, from - base, RETRO_MEMDESC_CONST);
     } else if (cart.board == MUHTARI_BOARD_ACTIVISION) {
@@ -1379,6 +1451,8 @@ static void lr_memory_maps(void)
            half back to the identified input order (cartridge notes 1.4). */
         uint32_t half = (cart.flags & MUHTARI_CART_ACTIVISION_HALF_SWAPPED) != 0u ? 0x2000u : 0u;
         for (uint32_t window = 0u; window < 4u; window++) {
+            if (overlay && windows[window] < 0x8000u)
+                continue;
             lr_span(windows[window], windows[window] + 0x2000u, rom, offsets[window] ^ half,
                     RETRO_MEMDESC_CONST);
         }
@@ -1388,11 +1462,11 @@ static void lr_memory_maps(void)
         /* Original-content offsets equal CPU addresses in the fixed upper
            32 KiB (docs/hardware/cartridge.md, Absolute). */
         lr_span(0x8000u, 0x10000u, rom, 0x8000u, RETRO_MEMDESC_CONST);
-    } else if (cart.board == MUHTARI_BOARD_SUPERGAME) {
+    } else if (cart.board == MUHTARI_BOARD_SUPERGAME || cart.board == MUHTARI_BOARD_BANKSET) {
         /* The fixed windows of A7800-CARTRIDGES-AND-PERIPHERALS section 2.1:
            the last bank at $C000, and at $4000 bank 0 on the 2^n + 1 board,
            bank 6 with that option, else the second-to-last. */
-        uint32_t banks = cart.rom_size / 0x4000u;
+        uint32_t banks = rom_bytes / 0x4000u;
         if (rom_from == 0x4000u) {
             uint32_t bank = banks - 2u;
             if ((cart.board_options & MUHTARI_BOARD_ROM_AT_4000) != 0u) {

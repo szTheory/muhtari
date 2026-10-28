@@ -67,4 +67,8 @@ void images_swap_halves(uint8_t *p, size_t n);
    and bank-five $C000 at CPU $2200/$2201. Returns 128 KiB. */
 size_t images_activision(uint8_t *buf);
 
+/* Equal CPU/MARIA sets with distinct first/last tags in every 4 KiB linear
+   block or 16 KiB switched bank. ram is the v4 device code (0, 1 or 3). */
+size_t images_bankset(uint8_t *buf, uint32_t half_kib, uint8_t ram);
+
 #endif /* MUHTARI_TEST_IMAGES_H */

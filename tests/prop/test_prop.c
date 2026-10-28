@@ -22,6 +22,8 @@
 
 #define WIDTH 320u
 #define HEIGHT 242u
+#define HEIGHT_MAX 292u
+#define AUDIO_MAX 962u
 #define WIDE 336u  /* a second pitch, wider than the picture */
 #define SAMPLES 2u /* simple and eightysix */
 
@@ -37,11 +39,12 @@ static uint8_t *samples[SAMPLES];
 static size_t sample_sizes[SAMPLES];
 static uint8_t *image;
 static uint8_t *raw;
-static uint8_t video[WIDE * HEIGHT];
-static int16_t audio[MUHTARI__MAX_AUDIO_SAMPLES];
+static uint8_t video[WIDE * HEIGHT_MAX];
+static int16_t audio[AUDIO_MAX];
 static struct muhtari scratch;
 static uint32_t allocation_calls, fail_allocation, case_index, retail_seen;
 static uint32_t retail_pool[3];
+static uint32_t pool_expansion;
 static const uint32_t typed_devices[] = {
     MUHTARI_PORT_LIGHTGUN,    MUHTARI_PORT_PADDLE,     MUHTARI_PORT_KEYPAD,
     MUHTARI_PORT_DRIVING,     MUHTARI_PORT_TRAKBALL,   MUHTARI_PORT_ST_MOUSE,
@@ -86,8 +89,14 @@ static uint32_t pool_count(void)
    takes its bytes from rng. */
 static size_t pool_build(uint32_t p, uint64_t *rng)
 {
+    pool_expansion = MUHTARI_EXPANSION_OFF;
     if (p < seeds_count()) {
-        return run_cart(raw, seeds_build(p, raw), image).bytes;
+        size_t n = seeds_build(p, raw);
+        struct run_cart_info built = run_cart(raw, n, image);
+        if (built.board == MUHTARI_BOARD_BANKSET && n >= 128u && raw[62] >= MUHTARI_EXPANSION_OFF &&
+            raw[62] <= MUHTARI_EXPANSION_XM)
+            pool_expansion = raw[62];
+        return built.bytes;
     }
     if (p == seeds_count()) {
         for (uint32_t at = 0; at < RUN_LINEAR_BYTES; at += 8u) {
@@ -112,6 +121,8 @@ static muhtari_status load(muhtari *m, size_t n)
     media.size = (uint32_t)sizeof media;
     media.image = image;
     media.image_size = n;
+    media.expansion = pool_expansion;
+    media.hsc_mode = MUHTARI_HSC_OFF;
     return muhtari_load(m, &media);
 }
 
@@ -124,7 +135,7 @@ static void run(muhtari *m, uint32_t pitch, struct frame_out *out)
     io.video_pitch = pitch;
     io.video = video;
     io.audio = audio;
-    io.audio_capacity = MUHTARI__MAX_AUDIO_SAMPLES;
+    io.audio_capacity = AUDIO_MAX;
     memset(out, 0, sizeof *out);
     uint32_t allocations = allocation_calls;
     out->status = muhtari_run_frame(m, &io);
@@ -141,7 +152,7 @@ static void run(muhtari *m, uint32_t pitch, struct frame_out *out)
     out->audio_count = io.audio_count;
     muhtari__sha256 s;
     muhtari__sha256_init(&s);
-    for (uint32_t y = 0; y < HEIGHT; y++) {
+    for (uint32_t y = 0; y < muhtari__timing(m).height; y++) {
         muhtari__sha256_update(&s, video + (size_t)y * pitch, WIDTH);
     }
     muhtari__sha256_final(&s, out->picture);
@@ -161,6 +172,7 @@ static void digest(const muhtari *m, int pending, uint8_t out[32])
     memset(&scratch.allocator, 0, sizeof scratch.allocator);
     scratch.cart.rom = NULL;
     scratch.cart.ram = NULL;
+    scratch.cart.expansion.ram = NULL;
     scratch.maria.rows = NULL;
     if (!pending) {
         memset(scratch.ports.pending_device, 0, sizeof scratch.ports.pending_device);
@@ -172,8 +184,7 @@ static void digest(const muhtari *m, int pending, uint8_t out[32])
     muhtari__sha256_init(&s);
     muhtari__sha256_update(&s, &scratch, sizeof scratch);
     if (m->cart.rom != NULL) {
-        muhtari__sha256_update(&s, m->cart.rom,
-                               (size_t)m->cart.info.rom_size + m->cart.info.ram_size);
+        muhtari__sha256_update(&s, m->cart.rom, m->cart.allocation_bytes);
     }
     muhtari__sha256_final(&s, out);
 }
@@ -207,7 +218,9 @@ static uint32_t select_pool(uint64_t *rng, uint32_t size)
 {
     /* Shrinking replays the same case and RNG stream at a smaller size. */
     uint32_t index = size == PROP_SIZE_MAX ? case_index++ : case_index - 1u;
-    return index < 3u ? retail_pool[index] : prop_below(rng, pool_count());
+    return index < 3u    ? retail_pool[index]
+           : index < 87u ? 38u + index - 3u
+                         : prop_below(rng, pool_count());
 }
 
 static int load_pair(uint32_t p, uint64_t *rng, muhtari **a, muhtari **b)
@@ -219,6 +232,51 @@ static int load_pair(uint32_t p, uint64_t *rng, muhtari **a, muhtari **b)
     if (first != MUHTARI_STATUS_OK || first != second)
         return differ("load status", 0u);
     uint32_t board = (*a)->cart.info.board;
+    if ((*a)->cart.rom == (*b)->cart.rom ||
+        ((*a)->cart.ram != NULL && (*a)->cart.ram == (*b)->cart.ram) ||
+        ((*a)->cart.expansion.ram != NULL && (*a)->cart.expansion.ram == (*b)->cart.expansion.ram))
+        return differ("independent physical backing", 0u);
+    if (board == MUHTARI_BOARD_BANKSET) {
+        uint8_t value = (uint8_t)prop_below(rng, 256u);
+        uint32_t calls = allocation_calls;
+        for (unsigned peer = 0u; peer < 2u; peer++) {
+            muhtari *m = peer == 0u ? *a : *b;
+            for (unsigned step = 0u; step < PROP_SIZE_MAX; step++) {
+                muhtari__cart_write(m, 0x8000u, (uint8_t)(value + step));
+                muhtari__cart_write(m, 0x0470u, (uint8_t)(value + step));
+                if (m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
+                    muhtari__cart_write(m, 0x0478u, value);
+                    muhtari__cart_write(m, 0x047Cu, (uint8_t)~value);
+                }
+                muhtari__cart_write(m, (uint16_t)(0x4000u + value * 31u), value);
+                muhtari__cart_write(m, (uint16_t)(0xC000u + value * 31u), value);
+            }
+        }
+        uint8_t before[32], after[32];
+        digest(*a, 1, before);
+        muhtari_media bad = {0};
+        bad.size = (uint32_t)sizeof bad;
+        bad.image = image;
+        bad.image_size = n - 1u;
+        if (muhtari_load(*a, &bad) != MUHTARI_STATUS_ERR_TRUNCATED_IMAGE)
+            return differ("expansion refused reload", 0u);
+        digest(*a, 1, after);
+        if (memcmp(before, after, sizeof before) != 0 || allocation_calls != calls)
+            return differ("expansion refusal state", 0u);
+        if (muhtari_power_cycle(*a) != MUHTARI_STATUS_OK ||
+            muhtari_power_cycle(*b) != MUHTARI_STATUS_OK || allocation_calls != calls)
+            return differ("expansion power allocation", 0u);
+        for (unsigned peer = 0u; peer < 2u; peer++) {
+            muhtari *m = peer == 0u ? *a : *b;
+            muhtari__cart_write(m, 0x0470u, (uint8_t)(value | 0x68u));
+            if (m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
+                muhtari__cart_write(m, 0x0478u, value);
+                muhtari__cart_write(m, 0x047Cu, (uint8_t)~value);
+            }
+            muhtari__cart_write(m, 0x4000u, value);
+            muhtari__cart_write(m, 0xC000u, (uint8_t)~value);
+        }
+    }
     if (p < seeds_count()) {
         uint32_t expected = run_cart_board(raw, seeds_build(p, raw));
         if (board != expected || (*b)->cart.info.board != expected)
@@ -339,8 +397,18 @@ static int split_run(uint64_t *rng, uint32_t size)
 }
 
 /* Every address through muhtari__peek and muhtari__bus_peek, summed. */
-static uint32_t peek_all(const muhtari *m)
+static uint32_t peek_all(muhtari *m)
 {
+    muhtari_info info = {0};
+    info.size = (uint32_t)sizeof info;
+    if (muhtari_get_info(m, &info) != MUHTARI_STATUS_OK)
+        return UINT32_MAX;
+    for (unsigned kind = MUHTARI_MEMORY_SYSTEM_RAM; kind <= MUHTARI_MEMORY_EXPANSION_RAM; kind++) {
+        muhtari_span span = {0};
+        span.size = (uint32_t)sizeof span;
+        if (muhtari_get_memory(m, kind, &span) != MUHTARI_STATUS_OK)
+            return UINT32_MAX;
+    }
     uint32_t sum = 0;
     for (uint32_t addr = 0; addr < 0x10000u; addr++) {
         sum = sum * 31u + muhtari__peek(m, (uint16_t)addr);
@@ -431,6 +499,16 @@ static void typed_traffic(muhtari *m, const uint8_t bytes[8])
         muhtari__bus_write(m, 0x0280u, bytes[n]);
         muhtari__bus_write(m, 0x0281u, (uint8_t)~bytes[n]);
         muhtari__bus_write(m, 1u, (uint8_t)(bytes[n] & 0xC0u));
+        if (m->cart.info.board == MUHTARI_BOARD_BANKSET) {
+            muhtari__cart_write(m, 0x0470u, bytes[n]);
+            if (m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
+                muhtari__cart_write(m, 0x0478u, bytes[n]);
+                muhtari__cart_write(m, 0x047Cu, (uint8_t)~bytes[n]);
+            }
+            muhtari__cart_write(m, 0x8000u, bytes[n]);
+            muhtari__cart_write(m, (uint16_t)(0x4000u + n * 2048u), bytes[n]);
+            muhtari__cart_write(m, (uint16_t)(0xC000u + n * 2048u), bytes[n]);
+        }
     }
 }
 
@@ -605,7 +683,7 @@ static muhtari_battery_info battery_info(const muhtari *m)
     return b;
 }
 
-static void battery_media(muhtari_media *media, unsigned layout, uint64_t *rng)
+static void battery_media(muhtari_media *media, unsigned layout, unsigned index, uint64_t *rng)
 {
     memset(image, 0, 128u + 4096u);
     image[0] = 3u;
@@ -622,6 +700,16 @@ static void battery_media(muhtari_media *media, unsigned layout, uint64_t *rng)
     media->image_size = 128u + 4096u;
     unsigned hsc = layout == 1u || layout >= 4u;
     unsigned port = layout >= 2u ? 1u + (layout & 1u) : 0u;
+    if (index >= 6u) {
+        unsigned profile = (index - 6u) % 84u;
+        /* The 52 KiB set really occupies the HSC firmware window. Keep
+           that geometry in the non-HSC cases rather than waive the conflict. */
+        if (hsc != 0u && profile % 14u == 4u)
+            profile -= 4u;
+        size_t n = seeds_build(38u + profile, raw);
+        media->image_size = run_cart(raw, n, image).bytes;
+        media->expansion = raw[62];
+    }
     media->hsc_mode = hsc != 0u ? MUHTARI_HSC_ON : MUHTARI_HSC_OFF;
     if (port != 0u) {
         if (prop_below(rng, 2u) != 0u) {
@@ -686,7 +774,7 @@ static int battery_pair(uint64_t *rng, uint32_t size, muhtari **a, muhtari **b,
 {
     uint32_t index = size == PROP_SIZE_MAX ? case_index++ : case_index - 1u;
     unsigned layout = index % 6u;
-    battery_media(media, layout, rng);
+    battery_media(media, layout, index, rng);
     *a = create();
     *b = create();
     if (muhtari_load(*a, media) != MUHTARI_STATUS_OK ||
@@ -702,6 +790,36 @@ static int battery_pair(uint64_t *rng, uint32_t size, muhtari **a, muhtari **b,
         battery_expected[at] = (uint8_t)(at * 17u + prop_below(rng, 256u));
         first.data[at] = second.data[at] = battery_expected[at];
     }
+    if (bytes != 0u && (memcmp(first.data, battery_expected, bytes) != 0 ||
+                        memcmp(second.data, battery_expected, bytes) != 0))
+        return differ("restored before execution", 0u);
+    if ((*a)->cart.expansion.ram != NULL && (*a)->cart.expansion.ram == (*b)->cart.expansion.ram)
+        return differ("battery expansion alias", 0u);
+    uint32_t calls = allocation_calls;
+    for (unsigned step = 0u; step < size; step++) {
+        uint8_t value = (uint8_t)prop_below(rng, 256u);
+        for (unsigned peer = 0u; peer < 2u; peer++) {
+            muhtari *m = peer == 0u ? *a : *b;
+            muhtari__cart_write(m, 0x0470u, value);
+            muhtari__cart_write(m, 0x0470u, value);
+            if (m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
+                muhtari__cart_write(m, 0x0478u, value);
+                muhtari__cart_write(m, 0x047Cu, (uint8_t)~value);
+            }
+            muhtari__cart_write(m, 0x8000u, value);
+        }
+    }
+    for (unsigned peer = 0u; peer < 2u; peer++) {
+        muhtari *m = peer == 0u ? *a : *b;
+        muhtari__cart_write(m, 0x0470u, 0u);
+        muhtari_battery_info now = battery_info(m);
+        if (now.data != (peer == 0u ? first.data : second.data) || now.bytes != bytes ||
+            now.hsc_attached != first.hsc_attached || now.eeprom_port != first.eeprom_port ||
+            now.generation != 0u ||
+            (bytes != 0u && memcmp(now.data, battery_expected, bytes) != 0) ||
+            allocation_calls != calls)
+            return differ("gates changed restored save topology", 0u);
+    }
     return battery_info(*a).generation == 0u && battery_info(*b).generation == 0u;
 }
 
@@ -716,6 +834,18 @@ static int battery_lifecycle(uint64_t *rng, uint32_t size)
     if (original.hsc_attached != 0u) {
         size_t at = prop_below(rng, 2048u);
         uint8_t value = (uint8_t)(battery_expected[at] ^ 0x80u);
+        for (unsigned peer = 0u; peer < 2u; peer++) {
+            muhtari *m = peer == 0u ? a : b;
+            if (m->cart.expansion.kind == MUHTARI_EXPANSION_XM) {
+                muhtari__bus_write(m, (uint16_t)(0x1000u + at), value);
+                if (m->battery.generation != expected_generation ||
+                    m->battery.data[at] != battery_expected[at])
+                    ok = differ("hidden HSC write changed save", 0u);
+                muhtari__cart_write(m, 0x0470u, 8u);
+            }
+            if (muhtari__bus_peek(m, (uint16_t)(0x1000u + at)) != battery_expected[at])
+                ok = differ("restored HSC read before execution", 0u);
+        }
         muhtari__bus_write(a, (uint16_t)(0x1000u + at), value);
         muhtari__bus_write(b, (uint16_t)(0x1000u + at), value);
         muhtari__bus_write(a, (uint16_t)(0x1000u + at), value);
@@ -765,7 +895,7 @@ static int battery_lifecycle(uint64_t *rng, uint32_t size)
     muhtari_battery_info after = battery_info(a);
     if (after.data != original.data || after.bytes != original.bytes ||
         after.generation != expected_generation ||
-        memcmp(a->battery.data, battery_expected, original.bytes) != 0)
+        (original.bytes != 0u && memcmp(a->battery.data, battery_expected, original.bytes) != 0))
         ok = differ("committed battery", 2u);
     /* Every refusal is transactional, including staging explicit firmware. */
     uint8_t before[32], refused[32];
@@ -790,12 +920,23 @@ static int battery_lifecycle(uint64_t *rng, uint32_t size)
     run(a, WIDTH, first);
     run(b, WIDTH, second);
     ok = same_run(first, second, 1u, a, b) && ok;
+    muhtari_input reset = {0};
+    reset.size = (uint32_t)sizeof reset;
+    reset.switches = MUHTARI_SWITCH_RESET;
+    if (muhtari_set_input(a, &reset) != MUHTARI_STATUS_OK ||
+        muhtari_set_input(b, &reset) != MUHTARI_STATUS_OK)
+        ok = differ("console reset input", 3u);
+    run(a, WIDTH, first);
+    run(b, WIDTH, second);
+    ok = same_run(first, second, 1u, a, b) && ok;
+    uint8_t *rom = a->cart.rom, *ram = a->cart.ram, *expansion = a->cart.expansion.ram;
     calls = allocation_calls;
     if (muhtari_power_cycle(a) != MUHTARI_STATUS_OK ||
         muhtari_power_cycle(b) != MUHTARI_STATUS_OK || allocation_calls != calls ||
         battery_info(a).generation != expected_generation ||
-        battery_info(a).data != original.data ||
-        memcmp(a->battery.data, battery_expected, original.bytes) != 0)
+        battery_info(a).data != original.data || a->cart.rom != rom || a->cart.ram != ram ||
+        a->cart.expansion.ram != expansion ||
+        (original.bytes != 0u && memcmp(a->battery.data, battery_expected, original.bytes) != 0))
         ok = differ("battery reset retention", 3u);
     run(a, WIDTH, first);
     run(b, WIDTH, second);
@@ -808,7 +949,7 @@ static int battery_lifecycle(uint64_t *rng, uint32_t size)
             break;
         }
     }
-    if (memcmp(b->battery.data, battery_expected, original.bytes) != 0)
+    if (original.bytes != 0u && memcmp(b->battery.data, battery_expected, original.bytes) != 0)
         ok = differ("battery instance isolation", 0u);
     return finish(a, b, ok);
 }

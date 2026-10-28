@@ -2,7 +2,7 @@
 title: "Atari 7800 cartridges, boards, controllers, saves and hostile inputs"
 summary: "A78 header v1–v4, every board scheme with library share, pin-level controller map, HSC/SaveKey saves, commercial library, ROM-hack support and parser bounds for muhtari."
 read_when: "Before designing or changing cart.c/board_*.c, the A78/headerless probe, ports.c, saves (HSC, SaveKey, .srm), patch handling, or the loader fuzz targets."
-updated: 2026-10-24
+updated: 2026-10-26
 ---
 # Atari 7800 cartridges and peripherals (research R4)
 
@@ -98,10 +98,10 @@ header lint (§6).
 | Activision (b8) | 128K; $A000–$DFFF switchable. A write to $FF80–$FF8F sets bank = A2–A0 (a7800/MiSTer); BizHawk decodes $FF80–$FF87, MAME any write to $E000–$FFFF. Double Dragon writes $FF88+ [CART.22][CART.24][CART.27] | bank 0; bank 6 at $4000–$7FFF; bank 7 at $8000–$9FFF and $E000–$FFFF (half order per 1.4) | Double Dragon, Rampage | 3 (3) |
 | Absolute (b9) | 64K; $4000–$7FFF = bank 0/1; $8000–$FFFF = image 32–64K. MAME: a write to $8000 with D0 → bank 0, D1 → bank 1. MiSTer: any write with A15 set, bank = D1 [CART.20][CART.24] | bank 0 | F-18 Hornet | 2 (2) |
 | Fractalus mirror RAM (b7, "EXRAM/A8") | 32K ROM at $8000; 2K RAM at $4000 with A8 ignored. MiSTer also ignores A12–A13, so the 2K repeats over $4000–$7FFF [CART.03][CART.24] | — | prototype | 1 (0) |
-| Bankset (b13; b14 RAM) | image = SALLY set ‖ MARIA set, each 32/48/52/128K (A7800DS up to 512K). The SG register is shared. MARIA's set is live from the 2nd φ2 fall after /HALT goes low until /HALT goes high. RAM is 2×16K at $4000: SALLY sees half A; SALLY writes to $C000–$FFFF go to MARIA's half B. 52K covers $3000–$FFFF, which excludes the HSC [CART.04][CART.24][CART.30] | bank 0 | POKEY@4000 is write-only where ROM sits at $4000 | 0 |
+| BankSet (b13; b14 RAM) | Graduated to [cartridge hardware](../../docs/hardware/cartridge.md#bankset): exact six-size/fourteen-geometry matrix, electrical ownership, redirects and overlap rules [CART.04][CART.24][CART.30]. Larger sizes and shared RAM are producer/emulator extensions; slow-edge causal timing is derived, not measured | bank 0 | physical spans and POKEY overlap documented there | 0 |
 | Souper (b12 / v4 4) | 512K ROM + 32K RAM. Regs $8000–$8007 repeat every 8 B to $FFFF: 0 bank D4–D0; 1/2 char A/B; 3 mode (S/C/E); 4/5 EXRAM 4K pages at $6000/$7000; 7 BupChip command. In S mode MARIA fetches remap: $8000 → fixed bank, $A000 → 2K char windows, $C000 → EXRAM [CART.25] | RAM at $4000, bank 0, last bank at $C000 | music needs the BupChip ARM soft-synth; the 1 MB A78 is 512K ROM + 512K music [CART.39] | 0 |
-| XBoard (internal) | 128K RAM at $4000 as 8×16K. $470: b0–2 bank, b3 RAM on, b4 POKEY at $450 (+ optional 2nd at $460) [CART.14][CART.20] | all off | — | 1 |
-| XM (pass-through) | $470: b3 HSC, b4 POKEY@450, b5/b6 8K RAM windows at $4000/$6000, b7 YM2151 at $460/1. $478 = SALLY 8K page, $47C = MARIA 8K page (halt-banked); $471/$472 flash/lock; 128K RAM (a7800) [CART.22]. MAME models XM as XBoard + YM, enabled by writing $84; MiSTer implements only $470 [CART.20][CART.24] | all 0 | YM detection expects the YM timer at 2× the CPU clock [CART.14] | 1 |
+| XBoard (internal) | Graduated to [XBoard](../../docs/hardware/cartridge.md#xboard): eight 16 KiB RAM banks, sixteen control aliases and continuously installed gated $0450 POKEY [CART.20]. Optional $0460 chip remains unverified and unsupported | all off | — | 1 |
+| XM (pass-through) | Graduated to [XM subset](../../docs/hardware/cartridge.md#xm-rampokeyhsc-subset): distinct exact-address two-window CPU/MARIA pages, gated HSC and POKEY [CART.22]. Medium-confidence implementation-backed profile; primary specification inaccessible. Older shared XBoard/XM decoder [CART.20] is not this map | all 0 | No YM2151, service/flash/lock/PIA/internal firmware or full-XM acceptance | 1 |
 | POKEY windows | @450 = $0450–$045F; @440 = $0440–$044F; @800 = $0800–$0FFF, 16-byte mirror [CART.22][CART.24] | stays silent (in reset) until software writes SKCTL. Flash carts release it at boot, and demos relied on that [CART.34] | — | — |
 | Other | ACE/SN Cart: MiSTer only; 4K windows + SN76489 at $043F. Covox at $0430–$0433, always on in MiSTer. Minnie (GCC 1730) was never released. "Matchbox": no source found | | | |
 

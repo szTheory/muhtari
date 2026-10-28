@@ -3,6 +3,7 @@
 # This file is also the command-line checks themselves, run as
 #   cmake -DRUN=<muhtari-run> [-DEMULATOR=<list>] -DCASE=<name> [-DOUT=<file>]
 #     [-DVERSION_FILE=<file>] [-DFRAMES=<long run>] [-DDIR=<image directory>]
+#     [-DWORK=<scratch directory>]
 #     -P tests/runner/tests.cmake
 # EMULATOR is the build's CMAKE_CROSSCOMPILING_EMULATOR, so an emulated lane
 # runs its own guest binary.
@@ -28,13 +29,37 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       -P "${HASHES}" COMMAND_ERROR_IS_FATAL ANY)
     file(STRINGS "${OUT}/hashes.txt" rows)
     list(LENGTH rows count)
-    if(NOT count EQUAL 956)
-      message(FATAL_ERROR "hashes: expected69 retained,273 controller and614 PAL observation rows, got ${count}")
+  if(NOT count EQUAL 3088)
+    message(FATAL_ERROR "hashes: expected956 retained and2132 BankSet/expansion observation rows, got ${count}")
     endif()
-    # Independent accepted source 54485d6, CI run 40104749040. Only the
-    # seven named audio behaviour annotations advance from 4 to 5; all
-    # earlier numeric and digest bytes remain pinned together.
-    list(SUBLIST rows 0 69 retained)
+    # Retain the independent accepted digests, normalizing only the exact
+    # causal slow-HALT audio changes and revision 6 back to their old rows.
+    # The differential build restores these four rows; the other952 rows agree
+    # (hardware/bus.md, HALT); arbitrary values still fail the old aggregates.
+    set(historical "${rows}")
+    set(changes
+      "soundtest.audio_transitions_sha256;3c17a63845643d0c4ee1c2aab54c419a5d855f65654952efb60998c0ed17531e;5a59aaf84f22645bd6fa97232f3345fc4a031030e67fd55e72c8e074940420f9"
+      "soundtest.audio_pcm_sha256;8581cd5ba67cb0ece4fd0ffd8e772e612e08cf59bd3819597e438a8ea927609f;7707d18b44f54944ef3c5d841038a5f78ce22e08b37329374ee5ed329df318e1"
+      "pokey.audio_transitions_sha256;cf12ef42ad4f37b3c86597b352d0b49be4842d18eafe8801f915b9c86b47a7fa;b8db9d969f75cfe71baa90f7741ebdd527416c2693ed4c780b0020b536591431"
+      "pokey.audio_pcm_sha256;ec6cf133c0cedc991e7a135b3cfeefb119950964256e6c1e445d50f6f14b93c5;935ec19f67bc9e8d72ad3ecfeb0567434beed62e1fa743af21a2457da49ec688")
+    foreach(i RANGE 0 3)
+      math(EXPR p "${i}*3")
+      list(GET changes ${p} field)
+      math(EXPR p "${p}+1")
+      list(GET changes ${p} current)
+      math(EXPR p "${p}+1")
+      list(GET changes ${p} previous)
+      list(FIND historical "${field} ${current}" position)
+      if(position EQUAL -1)
+        message(FATAL_ERROR "hashes: causal audio transition missing or changed: ${field}")
+      endif()
+      list(REMOVE_AT historical ${position})
+      list(INSERT historical ${position} "${field} ${previous}")
+    endforeach()
+    list(TRANSFORM historical REPLACE "([.]audio_behaviour_revision) 6$" "\\1 5")
+    # Independent accepted source 54485d6, CI run 40104749040; the seven
+    # earlier revision4-to-5 annotations remain part of this historical pin.
+    list(SUBLIST historical 0 69 retained)
     list(JOIN retained "\n" retained)
     string(SHA256 retained_digest "${retained}\n")
     if(NOT retained_digest STREQUAL "c4c9c310418422c30bbf32b204a157a564d343aadfabee4d5654b97695461761")
@@ -42,7 +67,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
     # The pre-PAL writer at009f37e independently reproduces all342 old
     # observations. The additive PAL path cannot rewrite controller rows.
-    list(SUBLIST rows 0 342 ntsc)
+    list(SUBLIST historical 0 342 ntsc)
     list(JOIN ntsc "\n" ntsc)
     string(SHA256 ntsc_digest "${ntsc}\n")
     if(NOT ntsc_digest STREQUAL "a036c0f9da8037b0581496182024f0b42de455e08576712e0cc890dd949462b5")
@@ -117,7 +142,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       elseif(fault STREQUAL "short_digest")
         string(REGEX REPLACE "audio_pcm_sha256 [^\n]+" "audio_pcm_sha256 a" bad "${bad}")
       elseif(fault STREQUAL "version")
-        string(REPLACE "audio_behaviour_revision 5" "audio_behaviour_revision 4" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 6" "audio_behaviour_revision 5" bad "${bad}")
       elseif(fault MATCHES "^(crc|numeric)$")
         set(which 4)
         if(fault STREQUAL "numeric")
@@ -158,7 +183,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       elseif(fault STREQUAL "leading_blank")
         set(bad "\n${bad}")
       elseif(fault STREQUAL "revision")
-        string(REPLACE "audio_behaviour_revision 5" "audio_behaviour_revision 4" bad "${bad}")
+        string(REPLACE "audio_behaviour_revision 6" "audio_behaviour_revision 5" bad "${bad}")
       elseif(fault STREQUAL "mailbox")
         string(REPLACE "diagnostic 4d374447" "diagnostic 00000000" bad "${bad}")
       endif()
@@ -1093,6 +1118,9 @@ endfunction()
     # describes the header instead of the session, or old output gains fields.
     set(pal_info "region pal\nwidth 320\nheight 292\nfps_num 3546894\nfps_den 71051\npar_num 1843750\npar_den 1773447\npalette warm_pal\n")
     set(ntsc_info "region ntsc\nwidth 320\nheight 242\nfps_num 39375000\nfps_den 656711\npar_num 6\npar_den 7\npalette warm_ntsc\n")
+    set(hardware "requested_devices none\nrequested_sound none\nexpansion off\nhsc_attached 0\n")
+    string(APPEND pal_info "${hardware}")
+    string(APPEND ntsc_info "${hardware}")
     expect_output("${pal_info}" --frames 1 --info "${DIR}/linear-v3-16k-pal")
     expect_output("${pal_info}" --info --frames 1 --region pal "${DIR}/linear-v3-16k")
     expect_output("${pal_info}" --region pal --frames 1 --info "${DIR}/linear-v3-16k-pal")
@@ -1102,6 +1130,103 @@ endfunction()
     expect_exit(2 "duplicate --info" --frames 1 --info --info)
     expect_exit(2 "--region needs auto, ntsc or pal" --frames 1 --region secam)
     expect_output("" --frames 1 --region ntsc)
+    # Fault prevented: explicit expansion is ignored, raw metadata is rewritten,
+    # or unsupported declared sound runs silently, including with expansion Off.
+    foreach(value auto off xboard xm)
+      set(effective "${value}")
+      set(hsc 0)
+      if(value STREQUAL "auto")
+        set(effective off)
+      elseif(value STREQUAL "xm")
+        set(hsc 1)
+      endif()
+      string(REPLACE "expansion off\nhsc_attached 0" "expansion ${effective}\nhsc_attached ${hsc}" expected "${ntsc_info}")
+      expect_output("${expected}" --frames 1 --info --expansion "${value}" "${DIR}/linear-v3-16k")
+    endforeach()
+    expect_exit(2 "--expansion needs" --frames 1 --expansion)
+    expect_exit(2 "--expansion needs" --frames 1 --expansion XM)
+    expect_exit(2 "--expansion needs" --frames 1 --expansion off --expansion xm)
+    expect_exit(2 "options need a cartridge" --frames 1 --expansion xm)
+    # CMake strings cannot hold NUL bytes: reuse the owned fixture generator
+    # to obtain the complete synthetic headers and firmware below.
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" expansion
+      RESULT_VARIABLE generated)
+    if(NOT generated STREQUAL "0")
+      message(FATAL_ERROR "expansion fixtures failed: ${generated}")
+    endif()
+    foreach(value 1 2)
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --probe "${DIR}/xm${value}.a78"
+        OUTPUT_VARIABLE raw RESULT_VARIABLE rc)
+      if(NOT rc STREQUAL "0" OR NOT raw MATCHES "devices xm\n" OR
+          NOT raw MATCHES "a78_xm 0x0${value}\n")
+        message(FATAL_ERROR "raw XM probe lost: ${rc} ${raw}")
+      endif()
+      if(value EQUAL 2 AND NOT raw MATCHES "warning xm_value\n")
+        message(FATAL_ERROR "noncanonical XM request lost its warning")
+      endif()
+      string(REPLACE "${hardware}" "requested_devices xm\nrequested_sound none\nexpansion xm\nhsc_attached 1\n" expected "${ntsc_info}")
+      expect_output("${expected}" --frames 1 --info "${DIR}/xm${value}.a78")
+      string(REPLACE "expansion xm\nhsc_attached 1" "expansion off\nhsc_attached 0" expected "${expected}")
+      expect_output("${expected}" --frames 1 --info --expansion off "${DIR}/xm${value}.a78")
+      expect_output("" --frames 1 --hsc-rom "${DIR}/hsc.bin" "${DIR}/xm${value}.a78")
+      expect_exit(1 "HSC firmware requires attached HSC" --frames 1 --hsc off
+        --hsc-rom "${DIR}/missing.bin" "${DIR}/xm${value}.a78")
+      expect_exit(1 "HSC firmware requires attached HSC" --frames 1 --expansion off
+        --hsc-rom "${DIR}/missing.bin" "${DIR}/xm${value}.a78")
+      expect_exit(1 "HSC firmware must be" --frames 1 --hsc-rom "${DIR}/bad-hsc.bin" "${DIR}/xm${value}.a78")
+      expect_output("" --frames 1 --hsc off "${DIR}/xm${value}.a78")
+      file(WRITE "${DIR}/xm${value}.sav" "A")
+      expect_output("" --frames 1 --save-dir "${DIR}" "${DIR}/xm${value}.a78")
+      file(READ "${DIR}/xm${value}.sav" saved HEX)
+      string(REPEAT "ff" 2047 tail)
+      if(NOT saved STREQUAL "42${tail}")
+        message(FATAL_ERROR "XM save import did not precede execution")
+      endif()
+    endforeach()
+    foreach(sound ym2151 covox adpcm)
+      expect_exit(77 "unavailable sound configuration: ${sound}" --frames 1 --expansion off "${DIR}/${sound}.a78")
+      expect_exit(77 "unavailable sound configuration: ${sound}" --frames 1 "${DIR}/${sound}.a78")
+    endforeach()
+    expect_exit(77 "unsupported board" --frames 1 --expansion xm "${DIR}/ram52.a78")
+    expect_output("" --frames 1 --expansion xm --hsc off "${DIR}/ram52.a78")
+  elseif(CASE STREQUAL "hsc_rom.refused")
+    # Fault prevented: an image the core refuses, given --hsc-rom, reports an
+    # HSC or firmware error and exits 1 instead of its documented refusal,
+    # or has its firmware file read although nothing attaches. The fixtures
+    # are written into WORK, a directory of its own.
+    file(MAKE_DIRECTORY "${WORK}")
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${WORK}" expansion
+      RESULT_VARIABLE generated)
+    if(NOT generated STREQUAL "0")
+      message(FATAL_ERROR "expansion fixtures failed: ${generated}")
+    endif()
+    # Four firmware requests per refused image: absent, wrong size and valid
+    # firmware, under every --hsc setting. The anchored pattern rejects any
+    # HSC or firmware message beside the refusal.
+    function(expect_refused regex image)
+      expect_exit(77 "${regex}" --frames 1 --hsc-rom "${WORK}/missing.bin" "${image}")
+      expect_exit(77 "${regex}" --frames 1 --hsc-rom "${WORK}/hsc.bin" "${image}")
+      expect_exit(77 "${regex}" --frames 1 --hsc on --hsc-rom "${WORK}/bad-hsc.bin" "${image}")
+      expect_exit(77 "${regex}" --frames 1 --hsc off --hsc-rom "${WORK}/missing.bin" "${image}")
+    endfunction()
+    expect_refused("^muhtari-run: [^\n]*/2600-4k: unsupported: 2600 \\(planned\\)\n$"
+      "${DIR}/2600-4k")
+    expect_refused("^muhtari-run: [^\n]*/souper-v4: unsupported board: souper\n$"
+      "${DIR}/souper-v4")
+    foreach(sound ym2151 covox adpcm)
+      expect_refused("^muhtari-run: [^\n]*/${sound}[.]a78: unsupported device\nmuhtari-run: unavailable sound configuration: ${sound}\n$"
+        "${WORK}/${sound}.a78")
+    endforeach()
+    # A 52 KiB BankSet set is refused when HSC attaches.
+    set(bankset "^muhtari-run: [^\n]*/ram52[.]a78: unsupported board: bankset\n$")
+    expect_exit(77 "${bankset}" --frames 1 --expansion xm --hsc-rom "${WORK}/missing.bin"
+      "${WORK}/ram52.a78")
+    expect_exit(77 "${bankset}" --frames 1 --expansion xm --hsc-rom "${WORK}/bad-hsc.bin"
+      "${WORK}/ram52.a78")
+    expect_exit(77 "${bankset}" --frames 1 --expansion xm --hsc-rom "${WORK}/hsc.bin"
+      "${WORK}/ram52.a78")
+    expect_exit(77 "${bankset}" --frames 1 --hsc on --hsc-rom "${WORK}/missing.bin"
+      "${WORK}/ram52.a78")
   else()
     message(FATAL_ERROR "unknown CASE '${CASE}'")
   endif()
@@ -1217,10 +1342,21 @@ runner_play_control(late_mutant "^mask 1:" late ${runner_play} ${runner_play_l} 
 foreach(case IN ITEMS usage.port region.pal usage.boot_bios_no_file)
   muhtari_add_test(NAME runner.${case}
     COMMAND ${runner_check} -DCASE=${case} -DDIR=${CMAKE_BINARY_DIR}/runner-probe
+      -DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>
       -P ${CMAKE_CURRENT_LIST_FILE}
-    LABELS runner portable TIMEOUT 1) # 2 x 0.16 s, macOS x64, slowest of 17 runs, run 39377950148
+    LABELS runner portable TIMEOUT 2) # ceil(2 x 0.98 s), Windows arm64 region.pal, slowest complete of 3 runs, runs 40414104123 and 40419374588; a 1 s deadline timed out at 1.03 s, run 40698007354
 endforeach()
 set_tests_properties(runner.region.pal PROPERTIES FIXTURES_REQUIRED probe_images)
+
+# Refused images given --hsc-rom keep exit 77; WORK keeps the fixtures this
+# test writes apart from runner.region.pal's.
+muhtari_add_test(NAME runner.hsc_rom.refused
+  COMMAND ${runner_check} -DCASE=hsc_rom.refused -DDIR=${CMAKE_BINARY_DIR}/runner-probe
+    -DWORK=${CMAKE_BINARY_DIR}/runner-hsc-refused
+    -DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>
+    -P ${CMAKE_CURRENT_LIST_FILE}
+  LABELS runner portable TIMEOUT 2) # ceil(2 x 0.09 s x 0.98/0.12), macOS arm64 slowest of 3 local runs, scaled by region.pal's Windows arm64 run; provisional, no hosted run
+set_tests_properties(runner.hsc_rom.refused PROPERTIES FIXTURES_REQUIRED probe_images)
 
 # --probe on the images muhtari-test-images writes into the build directory;
 # no image bytes are tracked.
@@ -1299,7 +1435,7 @@ muhtari_add_test(NAME runner.hashes_file
     -DDRIVER=$<TARGET_FILE:muhtari-test-diag> -DDIAG=${PROJECT_SOURCE_DIR}/tests/diag
     "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
     "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${CMAKE_CURRENT_LIST_FILE}
-  LABELS runner portable TIMEOUT 58)
+  LABELS runner portable TIMEOUT 143) # ceil(2 x 71.07s), complete Windows x64 run40414104123/job121892328427; all3088 rows retained.
 set_tests_properties(runner.hashes_file PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 # The comparison's self tests: two files where three are required, and two
 # files one byte apart.
