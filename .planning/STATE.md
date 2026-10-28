@@ -5,10 +5,10 @@ milestone_name: The whole library
 current_phase: 10
 current_plan: 13
 status: executing
-stopped_at: Phase 10 plans 01-13 summarized; phase gates (code review, verifier) running
+stopped_at: Phase 10 verification gaps_found (CR-01 runner --hsc-rom refusal exit status)
 last_updated: "2026-10-28T13:08:12.763Z"
 last_activity: 2026-10-28
-last_activity_desc: Plan 10-13 complete on ae4e9b7 (CI run 40702203420 success); phase gates running
+last_activity_desc: Phase 10 verified gaps_found (4/5); CR-01 blocks, WR-01/WR-02 recommended as seeds
 state_head: 2609719e98a18da3edc1a5131fcb85f01466a834
 progress:
   total_phases: 7
@@ -43,9 +43,9 @@ Phase10 has12/13 accepted plans. Five of seven milestone phases are complete (71
 Active-slot totals are62 summarized plans of63 planned, including historical
 halted06-01;61 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Executing Phase 10
+Status: Phase10 verification gaps_found; CR-01 runner --hsc-rom refusal exit status
 Last activity: 2026-10-28 — Phase 10 execution started
-Next command: $gsd-execute-phase 10
+Next command: /gsd-plan-phase 10 --gaps
 Branch: phase/10-homebrew-expansion-memory
 
 ## Phase 10 execution receipt
@@ -697,7 +697,7 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 **Stopped at:** Phase 10 planned and independently checked; next $gsd-execute-phase 10; v0.8.0 publication failure remains separate
 Last session: 2026-10-26T03:23:40Z
 Resume file: .planning/phases/10-homebrew-expansion-memory/10-01-PLAN.md
-Next command: $gsd-execute-phase 10
+Next command: /gsd-plan-phase 10 --gaps
 
 ### Quick Tasks Completed
 
