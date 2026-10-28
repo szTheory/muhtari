@@ -5,17 +5,17 @@ milestone_name: The whole library
 current_phase: 10
 current_plan: 13
 status: executing
-stopped_at: Phase 10 verification gaps_found (CR-01 runner --hsc-rom refusal exit status)
-last_updated: "2026-10-28T13:08:12.763Z"
+stopped_at: Phase 10 gap-closure plan 10-14 ready to execute (CR-01)
+last_updated: "2026-10-28T15:52:32.495Z"
 last_activity: 2026-10-28
-last_activity_desc: Phase 10 verified gaps_found (4/5); CR-01 blocks, WR-01/WR-02 recommended as seeds
-state_head: 2609719e98a18da3edc1a5131fcb85f01466a834
+last_activity_desc: Phase 10 gap-closure plan 10-14 created; plan check passed with no blockers after owner gap-round exception
+state_head: ad615b7618e87705b7e585e97a97b32ad92a4cde
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 63
+  total_plans: 64
   completed_plans: 63
-  percent: 100
+  percent: 71
 total_phases: 7
 current_phase_name: Homebrew and expansion memory
 ---
@@ -27,7 +27,7 @@ current_phase_name: Homebrew and expansion memory
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase10 execution, 12/13 accepted plans and 28/30 implemented tasks.
+Current focus: Phase10 gap closure, 13/14 accepted plans; plan 10-14 (CR-01) ready to execute.
 Plan10-13 is ready. BOARD-04/05 remain pending; final hosted acceptance is later.
 Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
 remains recorded below; this step makes no new release claim.
@@ -36,16 +36,16 @@ remains recorded below; this step makes no new release claim.
 
 Current Phase: 10 — Homebrew and expansion memory
 Current Plan: 13
-Total Plans in Phase: 13
-Progress: [██████████] 100%
+Total Plans in Phase: 14
+Progress: [███████░░░] 71%
 
-Phase10 has12/13 accepted plans. Five of seven milestone phases are complete (71%).
-Active-slot totals are62 summarized plans of63 planned, including historical
+Phase10 has13/14 accepted plans; gap-closure plan 10-14 is planned. Five of seven milestone phases are complete (71%).
+Active-slot totals are63 summarized plans of64 planned, including historical
 halted06-01;61 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Phase10 verification gaps_found; CR-01 runner --hsc-rom refusal exit status
-Last activity: 2026-10-28 — Phase 10 execution started
-Next command: /gsd-plan-phase 10 --gaps
+Status: Phase10 gap closure planned (10-14, CR-01); owner granted a second gap round 2026-10-28
+Last activity: 2026-10-28 — Phase 10 gap-closure plan 10-14 created and checked
+Next command: /gsd-execute-phase 10 --gaps-only
 Branch: phase/10-homebrew-expansion-memory
 
 ## Phase 10 execution receipt
