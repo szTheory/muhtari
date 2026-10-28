@@ -290,7 +290,7 @@ Plans:
 **Goal:** Run BankSet and XBoard/XM memory/POKEY/HSC capabilities using the correct CPU/MARIA ownership.
 **Depends on:** Phase 9
 **Requirements:** BOARD-04, BOARD-05
-**Plans:** 13 plans in 13 sequential waves.
+**Plans:** 13/13 plans executed in 13 sequential waves.
 
 Plans:
 **Wave 1**
@@ -330,7 +330,7 @@ Plans:
 - [x] 10-12-PLAN.md — Publish qualified hardware/API docs and executed compatibility claims.
 
 **Wave 13** *(blocked on Wave 12 completion)*
-- [ ] 10-13-PLAN.md — Accept exact-source inventories and preserved local/hosted contracts.
+- [x] 10-13-PLAN.md — Accept exact-source inventories and preserved local/hosted contracts.
 
 **Cross-cutting constraints:**
 - 32-bit/native/PPC array and offset arithmetic is bounded by real1MiB ROM,32KiB cart HALT RAM and128KiB expansion capacities, without a new proxy limit.
@@ -372,7 +372,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 12/13 | In progress | — |
+| 10. Homebrew and expansion memory | 13/13 | In progress | — |
 | 11. Full-library acceptance | 0/TBD | Not started | — |
 
 ---
