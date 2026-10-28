@@ -162,6 +162,8 @@ function(hashes_native_artifacts directory sha result)
   foreach(lane IN LISTS lanes)
     list(APPEND want "hashes-${lane}")
   endforeach()
+  # GLOB RELATIVE does not resolve a relative base against the working directory.
+  file(REAL_PATH "${directory}" directory)
   file(GLOB got RELATIVE "${directory}" "${directory}/*")
   list(SORT got)
   if(NOT got STREQUAL want)

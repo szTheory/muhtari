@@ -387,7 +387,7 @@ endforeach()
 # The real six-native consumer requires exactly the existing named artifacts,
 # each with the same three members as native/PowerPC evidence.
 set(native "${producer}/native-artifacts")
-foreach(case valid missing_artifact extra_artifact wrong_lane missing_member extra_member
+foreach(case valid relative missing_artifact extra_artifact wrong_lane missing_member extra_member
     source configuration fixture empty partial duplicate_file)
   file(REMOVE_RECURSE "${native}")
   foreach(lane linux-arm64 linux-x64 macos-arm64 macos-x64 windows-arm64 windows-x64)
@@ -435,7 +435,14 @@ foreach(case valid missing_artifact extra_artifact wrong_lane missing_member ext
     set(cmd "${CMAKE_COMMAND}" "-DFILES=${dir}/hashes.txt;${dir}/hashes.txt" -DCOUNT=2 -DMODE=compare
       -P "${ROOT}/tests/cmake/hashes.cmake")
   endif()
-  if(case STREQUAL valid)
+  if(case STREQUAL relative)
+    # Fault prevented: the workflow's relative artifact directory (-DDIRECTORY=hashes)
+    # listing no lanes, because CMake does not resolve a relative GLOB base.
+    cmake_path(GET native PARENT_PATH parent)
+    execute_process(COMMAND "${CMAKE_COMMAND}" -DDIRECTORY=native-artifacts -DEXPECTED_SHA=${sha}
+      -DMODE=compare -P "${ROOT}/tests/cmake/hashes.cmake" WORKING_DIRECTORY "${parent}"
+      COMMAND_ERROR_IS_FATAL ANY)
+  elseif(case STREQUAL valid)
     execute_process(COMMAND ${cmd} COMMAND_ERROR_IS_FATAL ANY)
   else()
     execute_process(COMMAND "${CMAKE_COMMAND}" "-DCMD=${cmd}" -DCODE=1 "-DREGEX=hashes:"
