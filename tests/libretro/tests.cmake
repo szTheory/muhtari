@@ -143,7 +143,7 @@ if(TARGET muhtari_libretro)
     muhtari_add_test(NAME libretro.host.${libretro_case}
       COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> ${libretro_case}
         ${libretro_input_cart}
-      LABELS libretro portable TIMEOUT 1)  # 2 x 0.10 s, macOS x64, slowest of 10 runs, run 39382016958
+      LABELS libretro portable TIMEOUT 2)  # ceil(2 x 0.87 s), Windows x64 devices, slowest complete of 4 runs, runs 40414104123 and 40419374588; a 1 s deadline timed out at 1.09 s, run 40698007354
     set_tests_properties(libretro.host.${libretro_case} PROPERTIES FIXTURES_REQUIRED input_carts)
   endforeach()
   # Fault prevented: a BIOS file in the system directory that is ignored,

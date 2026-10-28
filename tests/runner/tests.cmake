@@ -1305,7 +1305,7 @@ foreach(case IN ITEMS usage.port region.pal usage.boot_bios_no_file)
     COMMAND ${runner_check} -DCASE=${case} -DDIR=${CMAKE_BINARY_DIR}/runner-probe
       -DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>
       -P ${CMAKE_CURRENT_LIST_FILE}
-    LABELS runner portable TIMEOUT 1) # 2 x 0.16 s, macOS x64, slowest of 17 runs, run 39377950148
+    LABELS runner portable TIMEOUT 2) # ceil(2 x 0.98 s), Windows arm64 region.pal, slowest complete of 3 runs, runs 40414104123 and 40419374588; a 1 s deadline timed out at 1.03 s, run 40698007354
 endforeach()
 set_tests_properties(runner.region.pal PROPERTIES FIXTURES_REQUIRED probe_images)
 
