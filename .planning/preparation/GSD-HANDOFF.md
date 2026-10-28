@@ -159,7 +159,8 @@ leaked in, and read back with `config-get` (section 8).
 | `workflow.auto_advance`, `workflow._auto_chain_active` | false | Stops discuss, plan and execute from chaining |
 | `granularity` | coarse | About four phases per milestone |
 | `parallelization`, `workflow.use_worktrees` | false | A small, coupled codebase; no worktree paths in tracked files |
-| `model_profile`, `resolve_model_ids` | inherit, omit | Every GSD subagent uses the session's model, so switching the session model between steps switches everything; no model IDs in a public file. nesturbator later ran well on `adaptive` — the alternative if per-role models are wanted |
+| `model_profile`, `resolve_model_ids` | adaptive, false | Owner choice (2026-10-28): GSD subagents run in Claude Code on the opus, sonnet and haiku aliases by role tier (heavy, standard, light), which Claude Code resolves to the current models; aliases keep model IDs out of this public file. `inherit` with `omit` is the fallback when one session model should drive every subagent |
+| `effort.routing_tier_defaults` | light xhigh, standard high, heavy high | Matches the owner's global GSD agent install, so resolved and installed effort agree |
 | `workflow.research`, `plan_check`, `verifier`, `code_review` | true | GSD's own research and checks before and after every phase |
 | `workflow.ui_phase`, `ui_safety_gate`, `ui_review`, `ai_integration_phase`, `api_coverage_gate`, `schema_push_detection`, `schema_drift_gate` | false | Written for web projects; they react to words like "screen" and "vector" |
 | `workflow.security_enforcement` | false | A web threat-model checklist; fuzz targets and sanitizer builds are requirements instead |
@@ -170,7 +171,7 @@ leaked in, and read back with `config-get` (section 8).
 | `git.base_branch`, `git.protected_branches` | main, [main] | Ship targets `main`; execute and ship warn if run on it |
 | `hooks.community` | true | Turns on GSD's Conventional Commit check |
 
-Subagent reasoning effort comes from the owner's global GSD agent install, not from this repository.
+Subagent reasoning effort is set by `effort.routing_tier_defaults` above, matching the owner's global GSD agent install.
 
 ## 6. What keeps GSD from running on by itself
 
