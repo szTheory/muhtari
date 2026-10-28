@@ -157,8 +157,9 @@ case $mode in
       if git log -1 --format=%B "$c" | leaks "$EMAIL" "$EMAIL_OK"; then
         found 'email address' "message of $c"
       fi
-      # --numstat shows a binary file's line counts as "-".
-      for b in $(git diff-tree -r --root --no-commit-id --numstat "$c" |
+      # --numstat shows a binary file's line counts as "-". A deletion
+      # (--diff-filter=d) adds no bytes, so removing a listed binary and its row passes.
+      for b in $(git diff-tree -r --root --no-commit-id --diff-filter=d --numstat "$c" |
         awk -F '\t' '$1 == "-" && $2 == "-" { print $3 }'); do
         [ "$b" = "$SELF" ] || in_manifest "$b" || found 'binary file not in manifest' "$b (in history)"
       done

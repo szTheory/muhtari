@@ -6,6 +6,13 @@ muhtari_add_test(NAME hygiene.tree
   COMMAND ${MUHTARI_SH} ${CMAKE_SOURCE_DIR}/scripts/hygiene.sh --tree
   LABELS hygiene TIMEOUT 60)
 
+# The history scan passes a commit that deletes a listed binary with its row
+# and fails one that adds an unlisted binary.
+muhtari_add_test(NAME hygiene.history.self_test
+  COMMAND ${MUHTARI_SH} ${CMAKE_CURRENT_LIST_DIR}/history_control.sh
+    ${CMAKE_SOURCE_DIR}/scripts/hygiene.sh ${CMAKE_BINARY_DIR}/hygiene/history_fixture
+  LABELS hygiene TIMEOUT 30)
+
 # Every tracked C file but the vendored libretro.h is formatted as
 # .clang-format says.
 muhtari_add_test(NAME hygiene.format

@@ -100,7 +100,7 @@ test cannot be dropped, renamed or registered on one platform only without the f
 Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
 Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt`, `library.txt`, one
 `library.<id>` per ledger row of tier `pr`, and `wasm32.txt` for actual WASI registrations with the module
-disabled. Both lists retain portable BankSet/XBoard/XM diagnostics and their fault controls.
+disabled. Both keep the portable BankSet/XBoard/XM diagnostics and fault controls.
 
 | Label | Tests |
 |---|---|
@@ -155,6 +155,7 @@ output matches the expected message; a crash or a missing file does not count as
 | `policy.pins.self_test` | A pins row whose digest does not match its file; `fetch-pin.sh` must exit 1 with `sha256 mismatch`. |
 | `policy.cartdb_generated.self_test` | A copy of `src/cartdb.c` with one byte changed; the check must exit 1 with `src/cartdb.c differs from the generator output`. |
 | `hygiene.firmware_scan.self_test` | The same synthetic file tracked in a fixture repository; the tracked-file scan must exit 1 with `matches synthetic (header stripped)`. |
+| `hygiene.history.self_test` | Deleting a listed binary passes; adding an unlisted one fails. |
 | `hygiene.no_float.self_test` | Seven float lines beside three look-alikes, among them an SPDX line naming `CC0-1.0`, and an SPDX line followed by `double`. |
 | `policy.publish_set.self_test` | 17 of the 18 release zips; `publish.sh prepare` must exit 1 naming the missing one. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
