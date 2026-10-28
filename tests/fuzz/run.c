@@ -49,6 +49,20 @@ static muhtari *run_create(alloc_counts *counts)
     return m;
 }
 
+/* CTRL's DMA mode 10 turns DMA on, and the DLL at $1880 gives each of 20 zones
+   one blank 16-line entry (docs/hardware/maria.md, Display lists). */
+static void run_arm_dma(muhtari *m)
+{
+    m->maria.reg[0x1Cu] = 0x40u;
+    m->maria.reg[0x0Cu] = 0x18u;
+    m->maria.reg[0x10u] = 0x80u;
+    for (unsigned zone = 0u; zone < 20u; zone++) {
+        m->ram[0x80u + 3u * zone] = 15u;
+        m->ram[0x81u + 3u * zone] = 0x19u;
+        m->ram[0x82u + 3u * zone] = 0u;
+    }
+}
+
 static void run_traffic(muhtari *m)
 {
     uint8_t *rom = m->cart.rom, *ram = m->cart.ram, *expansion = m->cart.expansion.ram;
@@ -96,14 +110,7 @@ static void run_traffic(muhtari *m)
         require(m->cart.rom == rom && m->cart.ram == ram && m->cart.expansion.ram == expansion);
         /* Actual VBE and HALT requests traverse the scheduler while the
            generated fixed-window program loops or jams (bus.md). */
-        m->maria.reg[0x1Cu] = 0x40u;
-        m->maria.reg[0x0Cu] = 0x18u;
-        m->maria.reg[0x10u] = 0x80u;
-        for (unsigned zone = 0u; zone < 20u; zone++) {
-            m->ram[0x80u + 3u * zone] = 15u;
-            m->ram[0x81u + 3u * zone] = 0x19u;
-            m->ram[0x82u + 3u * zone] = 0u;
-        }
+        run_arm_dma(m);
     }
     static const uint16_t neighbors[] = {0x7FFFu, 0x8001u, 0xFF7Fu, 0xFF90u};
     for (uint32_t value = 0u; value < 256u; value++) {
@@ -285,7 +292,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     for (unsigned i = 0u; i < 2u; i++) {
         require(counts[i].allocs == loaded_allocs[i]);
         if (built.board == MUHTARI_BOARD_BANKSET) {
+            /* Coverage, not a hostile-program property: a program may write
+               CTRL with DMA off (maria.md, Display lists), so arm DMA again
+               and jam the CPU, which nothing but reset recovers, and require
+               the burst scheduler to run in one more frame. */
             unsigned dma = 0u;
+            uint32_t extra;
+            run_arm_dma(m[i]);
+            m[i]->cpu.jammed = 1u;
+            require(run_one(m[i], video + i * RUN_PICTURE, audio + i * RUN_AUDIO, &extra) ==
+                    MUHTARI_STATUS_OK);
             for (unsigned line = 0u; line < muhtari__timing(m[i]).lines; line++)
                 dma += m[i]->maria.stats[line].cost;
             require(dma != 0u);
