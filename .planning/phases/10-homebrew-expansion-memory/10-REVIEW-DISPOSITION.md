@@ -17,7 +17,7 @@ findings:
     title: "The `--hsc-rom` table cell is a single 900-character paragraph"
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
   - id: WR-01
     severity: warning
     disposition: open
@@ -36,7 +36,7 @@ findings:
   - id: IN-04
     severity: info
     disposition: open
-open: 10
+open: 9
 total: 10
 recorded: 2026-10-28T16:18:12.286Z
 ---
@@ -48,7 +48,7 @@ recorded: 2026-10-28T16:18:12.286Z
 | WR-03 | warning | open | - |
 | IN-05 | info | open | - |
 | IN-06 | info | open | - |
-| CR-01 | critical | open | runner/main.c:1195 exits 1 instead of the documented refused status 77 for a refused image with --hsc-rom; confirmed by reading the code (not in the current review) |
+| CR-01 | critical | fixed | fixed in e8a35a5 (runner asks the library for the load decision and HSC attachment before reading firmware; runner.hsc_rom.refused covers it); resolution confirmed by the e45590c re-review |
 | WR-01 | warning | open | runner/main.c and libretro/libretro.c report every UNSUPPORTED_DEVICE as an unsupported sound configuration (not in the current review) |
 | WR-02 | warning | open | scripts/hygiene.sh by-name history scan still flags a deleted listed ROM; control test uses a non-ROM name (not in the current review) |
 | IN-01 | info | open | tests/fuzz/run_seeds.c hard-coded seed index thresholds (not in the current review) |
