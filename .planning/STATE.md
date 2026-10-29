@@ -4,11 +4,11 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
 current_plan: 11
-status: verifying
+status: gaps_found
 stopped_at: Completed 11-11-PLAN.md
 last_updated: "2026-10-29T16:35:53.343Z"
 last_activity: 2026-10-29
-last_activity_desc: Phase 11 gap plan 11-11 complete
+last_activity_desc: Phase 11 gap round executed; re-verification found 2 gaps (review CR-01, CR-02)
 state_head: 916bbe2369232b731b84889cfc9909efdda0824d
 progress:
   total_phases: 7
@@ -27,7 +27,7 @@ current_phase_name: Full-library acceptance
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 11 (full-library acceptance) context gathered; planning is next.
+Current focus: Phase 11 (full-library acceptance) gap round executed; re-verification found 2 gaps, review fix round next.
 BOARD-04/05 are marked Complete; final hosted acceptance is confirmed at ship and in Phase 11.
 Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
 remains recorded below; this step makes no new release claim.
@@ -43,9 +43,9 @@ Phase 10 has 14/14 accepted plans and verification passed. Six of seven mileston
 Active-slot totals are 64 summarized plans of 64 planned, including historical
 halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Phase complete — ready for verification
-Last activity: 2026-10-29 — Phase 11 gap plan 11-11 complete; gap round plans 11-09, 11-10 and 11-11 done
-Next command: /gsd-execute-phase 11 --gaps-only
+Status: Gaps found — gap round done (11-09 to 11-11); re-verification 14/16, review fix round next
+Last activity: 2026-10-29 — Phase 11 gap round executed; full ci workflow exit 0 (673/673); re-verification gaps_found on review CR-01 (dead basic.* sample guard) and CR-02 (`;` in OUT deletes a sibling directory)
+Next command: /gsd-code-review 11 --fix
 Branch: phase/11-full-library-acceptance
 
 ## Phase 10 execution receipt
@@ -697,7 +697,7 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 **Stopped at:** Completed 11-11-PLAN.md
 Last session: 2026-10-29T16:35:53.064Z
 Resume file: None
-Next command: /gsd-execute-phase 11 --gaps-only
+Next command: /gsd-code-review 11 --fix
 
 ### Quick Tasks Completed
 
