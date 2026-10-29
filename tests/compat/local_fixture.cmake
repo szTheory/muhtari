@@ -8,8 +8,9 @@
 # harness fault, that passes on a bad BIOS, a malformed predicate or an
 # unwritable output, or that prints a path, a file name or an image hash.
 # The files are the test list's stripped sample (twice, with and without a
-# header), an image the list identifies and the core refuses, a file above
-# the image maximum and a text file.
+# header, one under a name with balanced brackets), an image the list
+# identifies and the core refuses, a file above the image maximum, a text
+# file, a dangling link, a valid link and a file the running user cannot read.
 foreach(var PREDICATE LOCAL BIOS BUILT PROBE WORK ROOT)
   if(NOT DEFINED ${var})
     message(FATAL_ERROR "local fixture: -D${var} is required")
@@ -25,6 +26,32 @@ file(COPY ${BUILT}/simple/simple.bas.bin ${BUILT}/simple/simple.bas.a78 ${PROBE}
 string(REPEAT "x" 1048705 big)
 file(WRITE ${WORK}/dir/big.rom "${big}")
 file(WRITE ${WORK}/dir/notes.txt "not a cartridge\n")
+# A space sorts before a dot, so this copy is the file the row is read from.
+file(COPY_FILE ${BUILT}/simple/simple.bas.a78 "${WORK}/dir/simple [!].a78")
+# A link is counted unread and never followed, dangling or not.
+set(unread_want 0)
+set(links_note "")
+file(CREATE_LINK "${WORK}/missing.a78" "${WORK}/dir/gone.a78" RESULT gone_rc SYMBOLIC)
+file(CREATE_LINK "${WORK}/dir/notes.txt" "${WORK}/dir/alias.a78" RESULT alias_rc SYMBOLIC)
+if(gone_rc STREQUAL "0" AND alias_rc STREQUAL "0")
+  math(EXPR unread_want "${unread_want} + 2")
+elseif(CMAKE_HOST_WIN32)
+  file(REMOVE "${WORK}/dir/gone.a78" "${WORK}/dir/alias.a78")
+  set(links_note "local fixture: links not created on this host")
+else()
+  message(FATAL_ERROR "local fixture: cannot create a symbolic link")
+endif()
+# A write-only file is unreadable to the user who owns it, and file(SIZE) on it
+# prints its full path. A user who ignores the mode bits (root) or a host with
+# no read bit (Windows) reads it like any other file.
+file(WRITE "${WORK}/dir/locked.a78" "locked file\n")
+file(CHMOD "${WORK}/dir/locked.a78" PERMISSIONS OWNER_WRITE)
+set(locked_note "")
+if(IS_READABLE "${WORK}/dir/locked.a78")
+  set(locked_note "local fixture: the write-only file is readable on this host")
+else()
+  math(EXPR unread_want "${unread_want} + 1")
+endif()
 file(WRITE ${WORK}/bios3 "abc")
 file(WRITE ${WORK}/afile "")
 
@@ -47,17 +74,20 @@ function(drive name ledger bios outfile)
       -P ${LOCAL}
     OUTPUT_VARIABLE o ERROR_VARIABLE o RESULT_VARIABLE r)
   # Nothing private reaches the log: no file name, no path, no image hash.
-  foreach(secret simple.bas not-a-cartridge ${WORK} ${PROBE} ${simple_sha} ${refused_sha})
+  foreach(secret simple.bas not-a-cartridge gone.a78 alias.a78 locked.a78 "[!]"
+      ${WORK} ${PROBE} ${simple_sha} ${refused_sha})
     string(FIND "${o}" "${secret}" at)
     if(NOT at EQUAL -1)
       message(FATAL_ERROR "local fixture: ${name}: the output names a file, a path or a hash")
     endif()
   endforeach()
-  # Every "local:" line is a counts line or one of the named faults.
+  # Every "local:" line is a counts line, the unread line or one of the named
+  # faults.
   string(REPLACE "\n" ";" o_lines "${o}")
   foreach(line IN LISTS o_lines)
     if(line MATCHES "local:" AND NOT line MATCHES
         "^(-- )?local: [0-9]+ of 2 present, [0-9]+ pass, [0-9]+ fail, [0-9]+ absent, commit=[0-9a-f]+ tree=(clean|dirty)$"
+        AND NOT line MATCHES "^(-- )?local: [0-9]+ files unread \\(links or unreadable\\)$"
         AND NOT line MATCHES
         "^ *local: (the BIOS is unreadable or invalid|cannot write the counts file|fixturepresent: evaluation ended without a result)$")
       message(FATAL_ERROR "local fixture: ${name}: unexpected line: ${line}")
@@ -73,6 +103,9 @@ function(expect_counts name pass fail status)
   endif()
   if(NOT out MATCHES "local: 1 of 2 present, ${pass} pass, ${fail} fail, 1 absent, commit=[0-9a-f]+ tree=(clean|dirty)\n")
     message(FATAL_ERROR "local fixture: ${name}: no counts line for ${pass} pass, ${fail} fail\n${out}")
+  endif()
+  if(NOT out MATCHES "local: ${unread_want} files unread \\(links or unreadable\\)\n")
+    message(FATAL_ERROR "local fixture: ${name}: no unread line for ${unread_want}\n${out}")
   endif()
   file(READ ${WORK}/${name}.out.csv csv)
   set(want "id,predicate,status\nfixtureabsent,boots@120,absent\nfixturepresent,${status}\n")
@@ -95,6 +128,9 @@ endfunction()
 write_ledger(base ${simple_sha} boots@120)
 drive(base base ${BIOS} ${WORK}/base.out.csv)
 expect_counts(base 1 0 "boots@120,pass")
+# The line itself, so the log shows what the base run counted as unread.
+string(REGEX MATCH "local: [0-9]+ files unread \\(links or unreadable\\)" unread_line "${out}")
+message(STATUS "${unread_line}")
 
 # 2. The present row's predicate fails: a verdict, not a fault.
 set(zeros 0000000000000000000000000000000000000000000000000000000000000000)
@@ -121,3 +157,8 @@ expect_fault(malformed "fixturepresent: evaluation ended without a result")
 drive(output base ${BIOS} ${WORK}/afile/local.csv)
 expect_fault(output "cannot write the counts file")
 message(STATUS "local fixture: six runs as expected")
+foreach(note "${links_note}" "${locked_note}")
+  if(NOT note STREQUAL "")
+    message(STATUS "${note}")
+  endif()
+endforeach()

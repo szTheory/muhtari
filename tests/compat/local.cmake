@@ -6,9 +6,10 @@
 #     -DROOT=<source tree> [-DEMULATOR=<wrapper command>] -P local.cmake
 # A file is matched to a row only through the core's own identification
 # (muhtari-test-predicate --identify), whose printed chip SHA-1 is the row's
-# first sha1_raw field. An unknown, present row is judged on the fast boot
-# and through the BIOS; a file the core identifies and then refuses to load
-# is a fail, since that is the verdict on the file.
+# first sha1_raw field. Every present row that is not skipped is judged on the
+# fast boot and through the BIOS; a file the core identifies and then refuses
+# to load is a fail, since that is the verdict on the file. Links and
+# unreadable entries of DIR are counted, never read or named.
 # Faults this prevents: a private run that silently skips a row, miscounts,
 # leaks a path, a file name or an image hash into a log, or reports a
 # harness fault (a bad BIOS, a usage error, a crash, a timeout, an unwritable
@@ -19,6 +20,7 @@ foreach(var LEDGER PREDICATE BIOS DIR OUT ROOT)
     message(FATAL_ERROR "local: -D${var} is required")
   endif()
 endforeach()
+include(${CMAKE_CURRENT_LIST_DIR}/files.cmake)
 
 # A BIOS is 4 KiB or 16 KiB mapped to end at $FFFF, and its reset vector,
 # the last bytes but two, must point inside it (A7800-SYSTEM section 7); the
@@ -93,16 +95,9 @@ foreach(line IN LISTS lines)
 endforeach()
 list(LENGTH ids total)
 
-# The regular files of DIR that the core can read, in sorted order.
-file(GLOB_RECURSE found LIST_DIRECTORIES false ${DIR}/*)
-list(SORT found)
-set(files "")
-foreach(file IN LISTS found)
-  file(SIZE ${file} size)
-  if(size GREATER 0 AND size LESS_EQUAL 1048704)
-    list(APPEND files ${file})
-  endif()
-endforeach()
+# The regular files of DIR that the core can read, in sorted order. Links and
+# unreadable entries are counted, never read or named (files.cmake).
+compat_files(local files unread ${DIR})
 
 # Identify them in batches; the first file of a key is the row's file.
 list(LENGTH files file_count)
@@ -200,4 +195,5 @@ if(NOT status_rc STREQUAL "0" OR NOT changes STREQUAL "")
   set(tree dirty)
 endif()
 math(EXPR absent "${total} - ${present}")
+message(STATUS "local: ${unread} files unread (links or unreadable)")
 message(STATUS "local: ${present} of ${total} present, ${pass} pass, ${fail} fail, ${absent} absent, commit=${commit} tree=${tree}")
