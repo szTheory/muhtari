@@ -260,12 +260,11 @@ declarations; `any` in `region` means the list names both systems or none.
 `unsupported` needs a board or peripheral the core refuses, and names it. `skipped` is deliberately not run, with
 the reason in the predicate, and is never in a CI tier. `infrastructure_error` means the harness broke.
 
-**Tiers.** `pr` rows are judged on every pull request by the `library` preset. There are no `nightly` rows yet.
+**Tiers.** `pr` rows are judged on every pull request by the `library` preset.
 `local` rows are not judged by it; `diag.bankset`, `diag.expansion` and `diag.pal` run the four `mailbox@` rows and compare
 the mailbox CRC with the row's evidence.
 
-**The library preset.** It finds each `pr` row's file by its SHA-1 (a headered file by `sha1_a78`, a headerless one
-by `sha1_raw`) in `MUHTARI_ROM_DIR`, then `build/ci/built`, then `tests/diag`; an empty file or one above the image
+**The library preset.** It finds each `pr` row's file by its SHA-1 in `MUHTARI_ROM_DIR`, then `build/ci/built`, then `tests/diag`; an empty file or one above the image
 maximum is skipped before hashing. `MUHTARI_BIOS` names the BIOS image, by default
 `build/ci/built/openbios/openbios.bin`. Configure fails when the directory, the BIOS image or any row's file is
 missing. After the `ci` preset's built tests have run:
@@ -280,7 +279,7 @@ MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
 - `library.results` joins the lines into `build/library/results.csv`, sorted by id, then predicate. It fails unless
   every row wrote one.
 - `library.ratchet` (`tests/cmake/compat_ratchet.cmake`) fails when the results and the ledger's `pr` rows differ in
-  either direction, by status or evidence, so a change that improves a row updates the ledger in its pull request.
+  either direction, by status or evidence.
 - With `MUHTARI_LEDGER_BASE` set to a commit at configure time, a row (id, predicate) that was `pass` in that
   commit's ledger must still be `pass`, and `pr` if it was. A changed predicate or a removed row counts as a fall. The exception is a
   line `<id> <predicate> <expiry YYYY-MM-DD> <reason>` in `tests/compat/allow.txt` whose expiry is between today and
@@ -308,9 +307,11 @@ ctest --test-dir build/library -R '^library[.]local$' -V | grep -E 'local: [0-9]
 ```
 
 `library.local` identifies each file through the core's cartridge list, judges each present softlist row on both
-boot paths, and prints `local: P of N present, X pass, Y fail, Z absent, commit=... tree=...`. The
-preset sets `outputOnFailure`, so the second command prints the counts line, without the dump directory. `build/library/local.csv` never enters `results.csv` or the ledger; a fail there is
-data, not a test failure.
+boot paths, and prints `local: P of N present, X pass, Y fail, Z absent, commit=... tree=...` and
+`local: U files unread (links or unreadable)`. Links are never followed and no file is named, so copy or hard-link
+dumps in rather than symlink them. A bracket or semicolon in the directory name, or an unmatched bracket or a semicolon
+in a file name, stops the run with a fixed message.
+`build/library/local.csv` never enters `results.csv` or the ledger; a fail there is data, not a test failure.
 
 ## boot to play
 
