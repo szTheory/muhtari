@@ -351,7 +351,7 @@ Plans:
 **Goal:** Account for the pinned library honestly and prove every new compatibility claim without private bytes in CI.
 **Depends on:** Phase 10
 **Requirements:** COMP-01, COMP-02, COMP-03
-**Plans:** 8/8 plans executed in 8 sequential waves.
+**Plans:** 8/11 plans executed; 8 sequential waves, then a gap round of 3 plans in 3 waves.
 
 Plans:
 **Wave 1**
@@ -377,6 +377,15 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 - [x] 11-08-PLAN.md — Align planning docs with the real local run and record the deferred ideas as seeds.
+
+**Gap round, wave 1**
+- [ ] 11-10-PLAN.md — Call title-frame passes a public title screen and name real backing tests per claim.
+
+**Gap round, wave 2** *(blocked on gap wave 1 completion: its library workflow compares the page 11-10 regenerates)*
+- [ ] 11-09-PLAN.md — Keep paths out of the local pass and the library scans on links, unreadable files and odd names; take OUT as an absolute path.
+
+**Gap round, wave 3** *(blocked on gap wave 2 completion)*
+- [ ] 11-11-PLAN.md — Measure the new test budgets (title.pal.bios to at least 4 s) and separate the bankset output trees.
 
 **Success criteria:**
 
