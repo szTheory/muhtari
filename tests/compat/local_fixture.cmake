@@ -6,7 +6,10 @@
 # Faults this prevents: a private run that counts a row present that is not,
 # or the reverse, that reports a refused image or a failing predicate as a
 # harness fault, that passes on a bad BIOS, a malformed predicate or an
-# unwritable output, or that prints a path, a file name or an image hash.
+# unwritable output, that treats a name CMake lists cannot carry as a file,
+# that lets a relative OUT delete a directory it did not create, that replaces
+# a scratch tree it did not make, or that prints a path, a file name or an
+# image hash.
 # The files are the test list's stripped sample (twice, with and without a
 # header, one under a name with balanced brackets), an image the list
 # identifies and the core refuses, a file above the image maximum, a text
@@ -67,11 +70,14 @@ function(write_ledger name sha predicate)
     "fixturepresent,Fixture present,${sha},-,-,-,linear,NTSC,-,${predicate},unknown,local,-,-,-,-\n")
 endfunction()
 
-# Runs the driver once; sets out, rc and the counts file's text in the caller.
+# Runs the driver once, from WORK, on drive_dir (a case may set it); sets out
+# and rc in the caller.
+set(drive_dir ${WORK}/dir)
 function(drive name ledger bios outfile)
   execute_process(COMMAND ${CMAKE_COMMAND} -DLEDGER=${WORK}/${ledger}.csv -DPREDICATE=${PREDICATE}
-      -DBIOS=${bios} -DDIR=${WORK}/dir -DOUT=${outfile} -DROOT=${ROOT} "-DEMULATOR=${EMULATOR}"
+      -DBIOS=${bios} "-DDIR=${drive_dir}" "-DOUT=${outfile}" -DROOT=${ROOT} "-DEMULATOR=${EMULATOR}"
       -P ${LOCAL}
+    WORKING_DIRECTORY ${WORK}
     OUTPUT_VARIABLE o ERROR_VARIABLE o RESULT_VARIABLE r)
   # Nothing private reaches the log: no file name, no path, no image hash.
   foreach(secret simple.bas not-a-cartridge gone.a78 alias.a78 locked.a78 "[!]"
@@ -89,7 +95,7 @@ function(drive name ledger bios outfile)
         "^(-- )?local: [0-9]+ of 2 present, [0-9]+ pass, [0-9]+ fail, [0-9]+ absent, commit=[0-9a-f]+ tree=(clean|dirty)$"
         AND NOT line MATCHES "^(-- )?local: [0-9]+ files unread \\(links or unreadable\\)$"
         AND NOT line MATCHES
-        "^ *local: (the BIOS is unreadable or invalid|cannot write the counts file|fixturepresent: evaluation ended without a result)$")
+        "^ *local: (the BIOS is unreadable or invalid|cannot write the counts file|fixturepresent: evaluation ended without a result|a file name holds an unmatched bracket or a semicolon|the directory name holds a bracket or a semicolon|the scratch directory beside OUT was not made by this pass)$")
       message(FATAL_ERROR "local fixture: ${name}: unexpected line: ${line}")
     endif()
   endforeach()
@@ -156,7 +162,51 @@ expect_fault(malformed "fixturepresent: evaluation ended without a result")
 # 6. An output beneath a regular file is a harness fault.
 drive(output base ${BIOS} ${WORK}/afile/local.csv)
 expect_fault(output "cannot write the counts file")
-message(STATUS "local fixture: six runs as expected")
+
+# 7. A file name with a ';' is a name CMake lists cannot carry.
+file(MAKE_DIRECTORY ${WORK}/semi)
+file(WRITE "${WORK}/semi/a;b.bin" "x")
+set(drive_dir ${WORK}/semi)
+drive(semi base ${BIOS} ${WORK}/semi.out.csv)
+expect_fault(semi "a file name holds an unmatched bracket or a semicolon")
+
+# 8. An unmatched '[' merges the names that follow it.
+file(MAKE_DIRECTORY ${WORK}/bracket)
+file(WRITE "${WORK}/bracket/b [x.bin" "x")
+file(WRITE "${WORK}/bracket/c.bin" "x")
+set(drive_dir ${WORK}/bracket)
+drive(bracket base ${BIOS} ${WORK}/bracket.out.csv)
+expect_fault(bracket "a file name holds an unmatched bracket or a semicolon")
+
+# 9. A directory name with a bracket stops the scan before any glob.
+file(MAKE_DIRECTORY "${WORK}/dir[x")
+set(drive_dir "${WORK}/dir[x")
+drive(dirname base ${BIOS} ${WORK}/dirname.out.csv)
+expect_fault(dirname "the directory name holds a bracket or a semicolon")
+set(drive_dir ${WORK}/dir)
+
+# 10. A relative OUT is taken from the working directory; the old scratch tree
+#     beside OUT, a directory named local, is not the pass's to delete.
+file(MAKE_DIRECTORY ${WORK}/sub/local)
+file(WRITE ${WORK}/sub/local/keep "keep")
+drive(sub/relative base ${BIOS} sub/relative.out.csv)
+expect_counts(sub/relative 1 0 "boots@120,pass")
+if(NOT EXISTS ${WORK}/sub/local/keep)
+  message(FATAL_ERROR "local fixture: relative: the run deleted a directory beside OUT")
+endif()
+
+# 11. A scratch tree of OUT's name that the pass did not make is left alone;
+#     the tree the pass made itself is replaced on a re-run.
+file(MAKE_DIRECTORY ${WORK}/foreign.out.csv.rows)
+file(WRITE ${WORK}/foreign.out.csv.rows/keep "keep")
+drive(foreign base ${BIOS} ${WORK}/foreign.out.csv)
+expect_fault(foreign "the scratch directory beside OUT was not made by this pass")
+if(NOT EXISTS ${WORK}/foreign.out.csv.rows/keep)
+  message(FATAL_ERROR "local fixture: foreign: the run deleted a directory it did not make")
+endif()
+drive(base base ${BIOS} ${WORK}/base.out.csv)
+expect_counts(base 1 0 "boots@120,pass")
+message(STATUS "local fixture: eleven runs as expected")
 foreach(note "${links_note}" "${locked_note}")
   if(NOT note STREQUAL "")
     message(STATUS "${note}")

@@ -4,6 +4,9 @@
 #   cmake -DLEDGER=<ledger.csv> -DPREDICATE=<muhtari-test-predicate>
 #     -DBIOS=<bios> -DDIR=<directory of files> -DOUT=<local.csv>
 #     -DROOT=<source tree> [-DEMULATOR=<wrapper command>] -P local.cmake
+# A relative OUT is taken from the working directory. The run keeps its
+# per-row results in <OUT>.rows, replaces only a tree it made itself, marked
+# by .local-pass, and stops on any other entry of that name.
 # A file is matched to a row only through the core's own identification
 # (muhtari-test-predicate --identify), whose printed chip SHA-1 is the row's
 # first sha1_raw field. Every present row that is not skipped is judged on the
@@ -48,10 +51,21 @@ endif()
 
 # The output is probed before any evaluation. file(WRITE) runs only after
 # this passes, so CMake's own error text, which names the path, never
-# reaches the log.
-get_filename_component(out_dir ${OUT} DIRECTORY)
-set(out_rows ${out_dir}/local)
-foreach(step "rm;-rf;${out_rows}" "make_directory;${out_rows}" "touch;${OUT}")
+# reaches the log. A relative OUT is taken from the working directory; the
+# per-row scratch tree is OUT's name plus ".rows", so it never shares a name
+# with a directory the pass did not make, and it is replaced only when it is
+# absent or holds this pass's marker.
+cmake_path(ABSOLUTE_PATH OUT NORMALIZE)
+cmake_path(GET OUT FILENAME out_name)
+if(out_name STREQUAL "")
+  message(FATAL_ERROR "local: cannot write the counts file")
+endif()
+set(out_rows "${OUT}.rows")
+if(IS_SYMLINK "${out_rows}" OR (EXISTS "${out_rows}" AND NOT EXISTS "${out_rows}/.local-pass"))
+  message(FATAL_ERROR "local: the scratch directory beside OUT was not made by this pass")
+endif()
+foreach(step "rm;-rf;${out_rows}" "make_directory;${out_rows}" "touch;${out_rows}/.local-pass"
+    "touch;${OUT}")
   execute_process(COMMAND ${CMAKE_COMMAND} -E ${step} RESULT_VARIABLE out_rc
     OUTPUT_QUIET ERROR_QUIET)
   if(NOT out_rc STREQUAL "0")
@@ -97,7 +111,7 @@ list(LENGTH ids total)
 
 # The regular files of DIR that the core can read, in sorted order. Links and
 # unreadable entries are counted, never read or named (files.cmake).
-compat_files(local files unread ${DIR})
+compat_files(local files unread "${DIR}")
 
 # Identify them in batches; the first file of a key is the row's file.
 list(LENGTH files file_count)
