@@ -49,7 +49,7 @@ from the beam in `docs/hardware/bus.md` and the line events in `docs/hardware/ma
 | `frame.null_video_same_state` | ten frames with and without video leave the same line RAM, statistics, CPU and RAM |
 | `frame.sample_renders` | 7800basic's `simple` sample, built by `built.simple`: two instances give the same 120 frames, and frame 120 holds more than one colour and is not the test card |
 
-`frame.sample_renders` carries the `built` label, because it needs the sample the pinned 7800basic builds.
+`frame.sample_renders` carries the `built` label: it needs the sample the pinned 7800basic builds.
 
 ## input
 
@@ -75,11 +75,11 @@ on both ports; module tests cover mappings/providers and frozen SAVE_RAM.
 
 `input.*` checks what a game reads from the controllers and the console switches. Each case builds a 48 KiB linear
 cartridge in memory from its own 6502 code and loads it through `muhtari_load`. Every frame the program waits for
-MSTAT's VBLANK, reads SWCHA, SWCHB and INPT0-INPT5 once into a ring in RAM, and then paints each byte as its own band of
-28 lines, so the picture shows every value read. The input comes from rows written as `muhtari-movie 1` text and read by
-the runner's own `runner/movie.c`, so the path from a movie's spelling to the register is the one the runner takes.
-Every expected byte comes from `docs/hardware/controllers.md` and the cartridge notes it cites, section 3.1 to section
-3.3, in a comment beside the row.
+MSTAT's VBLANK, reads SWCHA, SWCHB and INPT0-INPT5 once into a ring in RAM, and paints each byte as its own band of 28
+lines, so the picture shows every value read. The input comes from `muhtari-movie 1` rows read by the runner's own
+`runner/movie.c`, so the path from a movie's spelling to the register is the runner's.
+Every expected byte comes from `docs/hardware/controllers.md` and the cartridge notes it cites (sections 3.1 to 3.3),
+in a comment beside the row.
 
 | Case | Covers |
 |------|--------|
@@ -97,23 +97,22 @@ Every expected byte comes from `docs/hardware/controllers.md` and the cartridge 
 
 ## basic
 
-`basic.<name>` plays one 7800basic sample for 600 frames and checks them against a pin. There is one test for each
-row of `tests/built/expected.txt`, and the sample comes from that row's `built.<name>` fixture. The ROM is loaded with
+`basic.<name>` plays one 7800basic sample for 600 frames and checks them against a pin: one test for each row of
+`tests/built/expected.txt`, the sample coming from that row's `built.<name>` fixture. The ROM is loaded with
 `muhtari_load` and fast-booted, with no input. `muhtari-test-chain` (`tests/built/chain.c`) hashes every frame into
-a chain. These historical pins use explicitly unplugged ports, retaining the original no-EEPROM topology when
-metadata now automatically attaches serial storage. Enabled devices and default metadata attachment execute through
-the real RIOT path in `input.savekey.protocol` and `input.savekey.pins`; the ROM bytes and existing frame pins stay
-unchanged:
+a chain. These pins use explicitly unplugged ports, keeping the no-EEPROM topology though metadata now attaches serial
+storage by default. Enabled devices and default attachment run through the real RIOT path in
+`input.savekey.protocol` and `input.savekey.pins`; the ROM bytes and frame pins are unchanged:
 
     h_0 = 32 zero bytes
     h_i = SHA-256(h_(i-1) || frame_i), i = 1 .. 600
 
-Here frame_i is frame i's 320 x 242 native colour bytes. Frame 1 is the partial frame after the hand-off. Because the
-chain covers frame order, two swapped frames fail as surely as one changed frame. `tests/built/frames.cmake`
+Here frame_i is frame i's 320 x 242 native colour bytes. Frame 1 is the partial frame after the hand-off. The
+chain covers frame order, so two swapped frames fail like one changed frame. `tests/built/frames.cmake`
 compares h_600 with the row's sixth column, `frame`.
 
-The file holds a `# behaviour_revision N` line. Each check fails unless N equals the library's behaviour revision,
-so a pin holds only at the revision it was written under. `basic.revision.self_test` gives the check a copy whose
+The file holds a `# behaviour_revision N` line. Each check fails unless N equals the library's behaviour revision:
+a pin holds only at the revision it was written under. `basic.revision.self_test` gives the check a copy whose
 line says 0 and expects it to fail, naming the behaviour revision.
 
 When a check fails with `frame chain drift`, find the first frame that differs. Run
@@ -121,7 +120,7 @@ When a check fails with `frame chain drift`, find the first frame that differs. 
 
 ### Writing a pin
 
-Pins are only ever written by the core under test, never by hand:
+Pins are written only by the core under test, never by hand:
 
     cmake -DCHAIN=build/ci/tests/muhtari-test-chain -DROM=build/ci/built/<name>/<name>.bas.a78 \
           -DNAME=<name> -DEXPECTED=tests/built/expected.txt -DWRITE=ON -P tests/built/frames.cmake
@@ -129,7 +128,7 @@ Pins are only ever written by the core under test, never by hand:
 `-DWRITE=ON` fills a `-` column. If the column already holds a pin at the file's revision, it refuses
 (`refusing to rewrite a pin at behaviour revision N`), unless the core gives the same chain.
 
-An intended change that moves a pin is handled in one of two ways:
+An intended change that moves a pin goes one of two ways:
 
 - **Unreleased pin.** A pin is unreleased while `git show origin/main:tests/built/expected.txt` has `-` or no row in
   its place. Reset the column to `-`, run `-DWRITE=ON`, and record the row, the cause and the old and new chains.
@@ -159,8 +158,8 @@ To add a claim, run `build/ci/tests/muhtari-test-coverage FILE build/ci/built te
 names the ROM under the feature, read its mask, then add the ROM to the feature's line. A sample a line names becomes
 a fixture `basic.coverage` requires.
 
-`basic.coverage.self_test` appends `kangaroo 7800basic/simple` to a copy of the file. `simple` never uses kangaroo
-mode, so the run must fail on that claim.
+`basic.coverage.self_test` appends `kangaroo 7800basic/simple` to a copy of the file; `simple` never uses kangaroo
+mode, so that claim must fail.
 
 ### openbios
 
@@ -173,13 +172,12 @@ with the 7800basic package's dasm, and checks the image's SHA-256,
 `built.openbios.self_test` doubles one `incbin` line in a copy of the source and expects the build to fail naming it.
 
 The image is never committed or shipped. Both fills' digests are rows of `tests/release/firmware.txt`, so
-`release.firmware_scan` rejects a release zip that holds either, and CI uploads nothing from `build/*/built`.
+`release.firmware_scan` rejects a release zip holding either, and CI uploads nothing from `build/*/built`.
 
 ## bios
 
-`bios.*` boots through a BIOS (`tests/boot/test_boot.c`). The cases that need OpenBIOS take the image
-`built.openbios` builds and the `simple` sample `built.simple` builds, so they run on the ci and wasm32 inventories,
-which list both fixtures. K is the hand-off frame (`docs/embedding.md`, Booting with a BIOS).
+`bios.*` boots through a BIOS (`tests/boot/test_boot.c`). The cases that need OpenBIOS take the image `built.openbios`
+builds and the `simple` sample `built.simple` builds, so they run on the ci and wasm32 inventories, which list both. K is the hand-off frame (`docs/embedding.md`, Booting with a BIOS).
 
 - `bios.handoff_simple`: after power-on and RES, PC is the BIOS's reset vector, S is `$FD`, I is set, INPTCTRL and
   CTRL are `$00`, and frame 1 is 117,174 ticks. OpenBIOS then hands `simple` off with K from 300 to 340; it is 323.
@@ -258,18 +256,19 @@ recipe edits them: `cmake -DXML=build/pins/mame/a7800.xml -DLEDGER=tests/compat/
 -DOUT=tests/compat/ledger.csv -P tools/softlist_ledger.cmake`. Their `board` and `peripherals` repeat the list's
 declarations; `any` in `region` means the list names both systems or none.
 
-**Statuses.** `pass` and `fail` are the last evaluation on both paths. `unknown` has never been evaluated.
+**Statuses.** `pass` and `fail` are the last evaluation on both paths. `unknown` was never evaluated.
 `unsupported` needs a board or peripheral the core refuses, and names it. `skipped` is deliberately not run, with
 the reason in the predicate, and is never in a CI tier. `infrastructure_error` means the harness broke.
 
-**Tiers.** `pr` rows are judged on every pull request by the `library` preset. There are no `nightly` rows yet. `local`
-rows are not judged by it; `diag.bankset`, `diag.expansion` and `diag.pal` run the four `mailbox@` rows and compare
+**Tiers.** `pr` rows are judged on every pull request by the `library` preset. There are no `nightly` rows yet.
+`local` rows are not judged by it; `diag.bankset`, `diag.expansion` and `diag.pal` run the four `mailbox@` rows and compare
 the mailbox CRC with the row's evidence.
 
-**The library preset.** It reads `MUHTARI_ROM_DIR` from the environment and finds each `pr` row's file there or in
-`tests/diag` by its SHA-1: a headered file by `sha1_a78`, a headerless one by `sha1_raw`. `MUHTARI_BIOS` names the
-BIOS image, by default `build/ci/built/openbios/openbios.bin`. Configure fails when the directory, the BIOS image or
-any row's file is missing. After the `ci` preset's built tests have run:
+**The library preset.** It finds each `pr` row's file by its SHA-1 (a headered file by `sha1_a78`, a headerless one
+by `sha1_raw`) in `MUHTARI_ROM_DIR`, then `build/ci/built`, then `tests/diag`; an empty file or one above the image
+maximum is skipped before hashing. `MUHTARI_BIOS` names the BIOS image, by default
+`build/ci/built/openbios/openbios.bin`. Configure fails when the directory, the BIOS image or any row's file is
+missing. After the `ci` preset's built tests have run:
 
 ```sh
 MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
@@ -293,18 +292,30 @@ MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
   `docs/compatibility.md`.
 
 **In CI.** The `library` job (`docs/testing.md`, CI) builds the samples and OpenBIOS, then runs the preset with the
-pull request's base commit. It is part of `CI required`. `policy.compat_doc_fresh` also checks
-the page on every `ci` and `wasm32` lane. After a ledger change, regenerate the page:
+pull request's base commit, and is part of `CI required`. `policy.compat_doc_fresh` also checks the page on every
+`ci` and `wasm32` lane. After a ledger change, regenerate the page:
 
 ```sh
 cmake -DLEDGER=tests/compat/ledger.csv -DOUT=docs/compatibility.md -P tools/compat_doc.cmake
 ```
 
-A run over your own dumps is optional and local.
+**Your own dumps.** Optional; nothing waits on it. First build the samples and OpenBIOS under
+`build/ci/built` with `cmake --preset ci && cmake --build --preset ci && ctest --preset ci -L '^built$'`, then:
+
+```sh
+MUHTARI_ROM_DIR=<dump dir> [MUHTARI_BIOS=<file>] cmake --workflow --preset library
+ctest --test-dir build/library -R '^library[.]local$' -V | grep -E 'local: [0-9]+ of [0-9]+ present'
+```
+
+`library.local` identifies each file through the core's cartridge list, judges each present softlist row on both
+boot paths, and prints `local: P of N present, X pass, Y fail, Z absent, commit=... tree=...`. The
+preset sets `outputOnFailure`, so a pass shows only progress and exit status 0; the second command prints the counts
+line without the dump directory. `build/library/local.csv` never enters `results.csv` or the ledger; a fail there is
+data, not a test failure.
 
 ## boot to play
 
-`runner.boot_to_play` plays one game from boot through the real runner: the 7800basic `spacephysics` sample, which
+`runner.boot_to_play` plays one game from boot through the real runner: the 7800basic `spacephysics` sample
 `built.spacephysics` builds (fixture `built_spacephysics`), fast-booted. `tests/runner/boot_to_play.cmake` writes four
 movies into `build/<preset>/tests/boot-to-play/`, each releasing every control until frame F = 121, the frame after
 the sample's `title@120`, then holding one line for H = 60 frames:
@@ -337,8 +348,8 @@ and moves the ship right from frame 122; Left and Right turn it every eighth fra
 button 2 fires; Down, button 1 and every input on port 2 change nothing. Up and Left together thrust while turning,
 so the ship climbs, and Up and Right is its mirror.
 
-**Negative controls.** Each judges the recorded runs through `tests/cmake/expect_fail.cmake` and must exit 1 with its
-exact output:
+**Negative controls.** Each judges the recorded runs through `tests/cmake/expect_fail.cmake` and must exit 1 with this
+output:
 
 | Test | Judged | Output |
 |------|--------|--------|
@@ -348,8 +359,7 @@ exact output:
 | `runner.boot_to_play.static_mutant` | `input` with its frame 120 dump recoloured and repeated at 140, 160 and 180 | `mask 2` |
 | `runner.boot_to_play.late_mutant` | `input` with its hashes from frame F moved one frame later | `mask 1` |
 
-The mutants transform recorded output and never change the emulator. This test sets input only between frames;
-`prop.input_at_vblank` checks when the console applies it.
+The mutants only transform recorded output. This test sets input only between frames; `prop.input_at_vblank` checks when the console applies it.
 
 ## diag
 
@@ -378,13 +388,11 @@ cartridge. [MARIA expectations](hardware/maria.md) and
 
 [BankSet](bankset-tests.md) and [expansion](expansion-tests.md) expectations precede host comparison.
 
-The retail diagnostics use protocol 1, at most 27 records and independent fixture
-tags. Decoder edges, mirrors and startup are compatibility/profile policies.
-`diag.retail` runs all three through the library, actual runner
-(`--frames 600 --diagnostic`) and loaded module, plus the persistent Absolute tracer.
-Its judge checks magic, version, status, identity, CRC, count, record order, flags
-and values. The runner reports the 256-byte mailbox after a bounded normal run.
-This proves the selected semantics, rather than retail gameplay or PAL.
+The retail diagnostics use protocol 1, at most 27 records and independent fixture tags. Decoder edges, mirrors and
+startup are compatibility/profile policies. `diag.retail` runs all three through the library, actual runner
+(`--frames 600 --diagnostic`) and loaded module, plus the persistent Absolute tracer. Its judge checks magic,
+version, status, identity, CRC, count, record order, flags and values. The runner reports the 256-byte mailbox after
+a bounded normal run. This proves the selected semantics, not retail gameplay or PAL.
 
 A diagnostic that defines `diag_nmi` gets it as its NMI vector; the others return from NMI at once.
 
@@ -399,8 +407,8 @@ A diagnostic that defines `diag_nmi` gets it as its NMI vector; the others retur
 | $2208-$2209 | CRC-16 of $2210-$22FF, low byte first: polynomial $1021, initial $FFFF, no reflection, no final XOR |
 | $2210 + 4n | record n: test id n + 1, flags (bit 0 valid), a 16-bit value, low byte first |
 
-The results screen shows one row per record, `NN VVVV` in hex, and the CRC on the last row, so a photographed screen
-can be transcribed and checked.
+The results screen shows one row per record, `NN VVVV` in hex, and the CRC on the last row, so a photo can be
+transcribed and checked.
 
 **The driver.** `muhtari-test-diag ROM EXPECTED [STATS]` (`tests/diag/driver.c`) loads the ROM with `muhtari_load`,
 fast-boots it, and reads the mailbox at the end of each frame, the VBLANK start, through `muhtari__peek`, which
@@ -413,24 +421,22 @@ the ROM or the runner.
 **`expected.csv`** has the columns `rom,test,value,source`. The value is a number or an inclusive `lo-hi` range,
 where the hardware leaves a choice the ROM cannot see. The source is `hw` (a hardware measurement), `guide` (the
 Software Guide or a datasheet), `rtl` (the PLA re-simulation) or `fit` (a fitted value). A `hw` or `guide` value is
-derived in `docs/hardware/maria.md` and committed before the ROM that reports it first runs; only a `fit` value may
-be read off the emulator. `git log` shows the order.
+derived in `docs/hardware/maria.md` and committed before the ROM that reports it first runs (`git log` shows the
+order); only a `fit` value may be read off the emulator.
 
 **`stats.csv`**, `rom,test,ordinary,last,objects`, records each DMA test, and each DLI test that reaches a burst, a
-second time. On the frame where a record
-appears, the driver finds the first line from 17 to 258 that ran DMA and requires the core's statistics for it to
-show the row's cost for its kind, ordinary or last, and its objects; `-` means a line of that kind must not appear.
-It prints `stats agree` or `stats disagree` for each.
+second time. On the frame where a record appears, the driver finds the first line from 17 to 258 that ran DMA and
+requires the core's statistics for it to show the row's cost for its kind, ordinary or last, and its objects; `-`
+means a line of that kind must not appear. It prints `stats agree` or `stats disagree` for each.
 
 **Rebuilding.** `diag.rebuild` (label `built`) assembles each `tests/diag/*.s` that has a `.cfg`, and Bruce Clark's
 `tests/cpu/decimal/clark.s` as printed and as its 65C02 control, with the pinned `dasm.wasm -f3`, `7800sign.wasm -w`
 and `7800header.wasm` under wasmtime (`tests/diag/assemble.cmake`), and requires each result's SHA-256 to equal its
 manifest row's.
 
-Sample and diagnostic recipes share Wasmtime's compiled-module cache at
-`build/pins/wasmtime-cache`, with per-output/name configuration outside each
-fresh fixture directory. All source, assemble, sign and header stages still run;
-only pinned tool compilation is reused. No home cache or fixture bytes are cached.
+Sample and diagnostic recipes share Wasmtime's compiled-module cache at `build/pins/wasmtime-cache`, configured per
+output outside each fresh fixture directory. Every source, assemble, sign and header stage still runs; only pinned
+tool compilation is reused, and no home cache or fixture bytes are cached.
 
 After a source edit, derive and commit any new expected value first, then write the new bytes with
 
@@ -458,16 +464,15 @@ commit the source, and then the `.a78` with its manifest row's digest and pin se
 `prop.*` checks properties of the run loop over generated cases (`tests/prop/test_prop.c`, harness
 `tests/prop.h`). Each case fast-boots a cartridge drawn from a pool and runs at most 8 frames. The pool is the run
 fuzz target's 29 seed inputs and 48 KiB of random bytes from the case's stream, each made a cartridge as that target
-makes it (see fuzz), and the built `simple` and `eightysix` samples. Two runs are equal when every frame's status,
+does (see fuzz), and the built `simple` and `eightysix` samples. Two runs are equal when every frame's status,
 audio count and picture SHA-256 match, and so does the state digest: SHA-256 over the instance with its pointers
 cleared, then the cartridge's ROM and RAM.
 
-Each property explicitly selects Activision, Absolute and Fractalus in its first
-three cases; later cases draw from the existing pool. Switched banks and written
+Each property selects Activision, Absolute and Fractalus in its first three cases;
+later cases draw from the pool. Switched banks and written
 physical RAM enter the comparisons. PCM joins video, status and pointer-cleared
 deep state, including resumed execution after refused loads and allocation failure.
-Interleaved instances must match controls run independently. The fixed 100-case
-PR and 10,000-case advisory nightly budgets and shrinking behavior remain unchanged.
+
 
 | Test | Holds for every case |
 |------|----------------------|
@@ -476,12 +481,12 @@ PR and 10,000-case advisory nightly budgets and shrinking behavior remain unchan
 | `prop.instances_isolated` | Two instances on different cartridges, loaded, given random input and run alternately call by call, equal each run alone |
 | `prop.input_at_vblank` | One to three `muhtari_set_input` calls after frame k, k at least 1, change neither the digest without the pending copy nor SWCHA, SWCHB and INPT0-5 as `muhtari__bus_peek` reads them; the next frame applies the last call, and it and the frame after equal those of an instance given only that call |
 
-`prop.input_at_vblank` cannot test a call made during a frame: `muhtari_run_frame` returns before any other call
-can be made. k starts at 1 because the first frame after a fast-boot load starts at the hand-off, which latches
+`prop.input_at_vblank` cannot test a call made during a frame: `muhtari_run_frame` returns before any other call.
+k starts at 1 because the first frame after a fast-boot load starts at the hand-off, which latches
 nothing.
 
 **Cases.** A pull request runs 100 cases per property from a fixed seed on every lane that builds the samples. The
-nightly `prop` job runs 10,000 per property with the workflow run's ID as the seed. Both come from the test
+advisory nightly `prop` job runs 10,000 per property with the workflow run's ID as the seed. Both come from the test
 program's environment, `MUHTARI_PROP_CASES` and `MUHTARI_PROP_SEED` (decimal); the core reads no environment. Case
 c's stream depends only on the seed and c.
 
@@ -503,76 +508,59 @@ UndefinedBehaviorSanitizer (`docs/testing.md`, Lanes).
 | Target | Input | Invariants |
 |--------|-------|------------|
 | `loader` (`tests/fuzz/loader.c`) | any image up to the size cap, `-max_len=1048705` | two probes agree; the load returns probe's status; a refusal allocates nothing and changes nothing; destroy frees everything |
-| `run` (`tests/fuzz/run.c`) | explicit retail A78 inputs select supported fixed-geometry builders; other bytes retain the 49,152-byte linear interpretation; `-max_len=131200` | two instances, loaded and run 2 frames call by call, agree in board, load status, frame status, audio count, PCM and picture; each frame returns at the first instruction boundary at or after its deadline and less than four lines past it |
+| `run` (`tests/fuzz/run.c`) | explicit retail A78 inputs select fixed-geometry builders; other bytes are a 49,152-byte linear image; `-max_len=131200` | two instances, loaded and run 2 frames call by call, agree in board, load status, frame status, audio count, PCM and picture; each frame returns at the first instruction boundary at or after its deadline and less than four lines past it |
 
-Ordinary bytes keep the run target's original headerless 48 KiB linear construction:
-`tests/fuzz/run_cart.h` adjusts the final footer bytes needed for acceptance and clears
-accidental A78 magic. Explicit Activision, Absolute and Fractalus A78 declarations select
-their supported exact geometry and fixed-window reset vectors. The original all-$00, JAM,
-all-$FF, thirteen splitmix64 and empty seeds persist; eleven explicit retail/malformed/A8
-inputs and one accidental-header regression extend execution to 29 seeds. The loader has 31 seeds, including isolated identified AM/OM inputs, unsupported combinations
-and geometry boundaries. Normalization checks derive the expected private bytes
-independently and preserve the supplied buffer and raw identity. Refusals compare
+`tests/fuzz/run_cart.h` adjusts the footer bytes of ordinary bytes (headerless 48 KiB, linear) for acceptance and
+clears accidental A78 magic; explicit Activision, Absolute and Fractalus A78 declarations use their exact geometry
+and fixed-window reset vectors. The all-$00, JAM, all-$FF, thirteen splitmix64 and empty seeds persist; eleven
+explicit retail/malformed/A8 inputs and one accidental-header regression make 29 run seeds. The loader has 31,
+including isolated identified AM/OM inputs, unsupported combinations and geometry boundaries. Normalization checks
+derive expected private bytes independently and preserve the supplied buffer and raw identity. Refusals compare
 deep live ROM/RAM and resumed audible changing controls.
 
 **Adding a regression.** The nightly `fuzz` job uploads crashes as `fuzz-crash` from `build/fuzz/fuzz/crash/`
 (loader) and `build/fuzz/fuzz/run/crash/` (run). Minimise one with `muhtari-fuzz-<target> -minimize_crash=1
 -runs=10000 <file>`, commit it under `tests/fuzz/<target>/regress/` with its row in `tests/roms/manifest.txt`, and fix
-the core in the same pull request. Reconfigure to list it; `fuzz.regress.<target>` then replays it on every lane.
+the core in the same pull request. Reconfigure to list it; `fuzz.regress.<target>` then replays it.
 
-Boot-to-play also requests the runner's whole-run audio evidence. Its judge
-requires the exact completed frame/sample count, 48,000/1 rate, reported behavior
-revision and synthesis identity, and a PCM digest differing from SHA-256 over two
-zero bytes per completed sample. A muted control substitutes that same-count zero
-digest, keeps valid picture/input evidence and must fail only the audio predicate
-(mask 8). Existing image, timing, wrong-port and mirror controls remain required.
-This proves non-silence and delivery, not a listening comparison or hardware calibration.
+Boot-to-play also requests whole-run audio evidence. Its judge requires the exact frame/sample count, 48,000/1
+rate, behavior revision and synthesis identity, and a PCM digest differing from SHA-256 over two zero bytes per
+sample. A muted control substitutes that zero digest, keeps valid picture/input evidence and must fail only the
+audio predicate (mask 8). The image, timing, wrong-port and mirror controls remain required. This proves
+non-silence and delivery, not a listening comparison or calibration.
 
-`audio.samples` pins eight built 7800basic sound programs in
-`tests/audio/expected.txt`: soundtest, soundeffects, trackertest, eightysix,
-pokey, rmtramcompressiondemo, rmtramdemo and rmtromdemo. Each run completes
-600 fast-boot frames with both port1 ProLine buttons held for frames1–60 and
-released for61–600. The release starts rmtromdemo's selected song; the button
-press starts soundtest's generic-fire effect. Soundeffects and soundtest have
-identical source bytes and build output in the pinned package; both names are
-checked through the existing fixture recipe.
+`audio.samples` pins eight built 7800basic sound programs in `tests/audio/expected.txt`: soundtest, soundeffects,
+trackertest, eightysix, pokey, rmtramcompressiondemo, rmtramdemo and rmtromdemo. Each run completes 600 fast-boot
+frames with both port1 ProLine buttons held for frames1–60 and released for61–600. The release starts rmtromdemo's
+song; the press starts soundtest's generic-fire effect. Soundeffects and soundtest are byte-identical in the pinned
+package; both names go through the existing fixture recipe.
 
-Rows record name, frame count, actual mono sample count, rate, reported behavior
-revision, synthesis identity, raw digest and PCM digest. Pins are regression
-evidence, supported by documentary chip tests and alias-sensitive spectral
-checks. The shipped archive driver compares observed, unobserved and discarded
-output, repeats the first frame after reset, requires non-silence and zero
-pre-clamp clips, and bounds delivered/pre-clamp peak to 29,204 (−1 dBFS).
-Wrong-pin controls must fail. The real runner independently reproduces every
-row through a matching movie. No ROM or audio bytes are committed.
+Rows record name, frame count, mono sample count, rate, behavior revision, synthesis identity, raw digest and PCM
+digest. Pins are regression evidence, backed by documentary chip tests and alias-sensitive spectral checks. The
+archive driver compares observed, unobserved and discarded output, repeats the first frame after reset, requires
+non-silence and zero pre-clamp clips, and bounds delivered/pre-clamp peak to 29,204 (−1 dBFS). Wrong-pin controls
+must fail. The runner reproduces every row through a matching movie. No ROM or audio bytes are committed.
 
-For an intentional pin update, first run the production spectral/controls,
-TIA, POKEY and IRQ checks, then run `muhtari-test-audio-samples --measure ROM
-NAME unused` from the build's tests directory. Review identity, counts, raw
-changes and clipping audits before copying the measured row. A PCM synthesis
-change alone never justifies replacing raw or video evidence. The existing
-platform hashes file also includes soundtest and pokey's seven audio fields
-under their name prefixes, preserving the card/PNG rows and Unix newlines.
+For an intentional pin update, first run the production spectral/controls, TIA, POKEY and IRQ checks, then
+`muhtari-test-audio-samples --measure ROM NAME unused` from the build's tests directory. Review identity, counts,
+raw changes and clipping audits before copying the row. A PCM change alone never justifies replacing raw or video
+evidence. The platform hashes file also holds soundtest and pokey's seven audio fields under name prefixes, keeping
+the card/PNG rows and Unix newlines.
 
-It appends ten rows each under `activision.`, `absolute.` and `fractalus.`:
-frame 1, frame 600, all seven audio fields and a fixed numeric mailbox report.
-The actual runner must identify the expected board and the diagnostic driver must
-accept the complete mailbox before a row is written. These owned diagnostics are
-silent, so the empty raw-transition digest is expected; PCM bytes and counts still
-participate. Command-boundary controls reject absent fixtures, wrong board
-or ROM identity, missing/extra reports and each omitted frame/audio field. All 17
-older test-card/PNG and soundtest/POKEY rows keep their byte meanings.
+It appends ten rows each under `activision.`, `absolute.` and `fractalus.`: frame 1, frame 600, all seven audio
+fields and a fixed numeric mailbox report. The runner must identify the expected board and the driver must accept
+the complete mailbox before a row is written. These diagnostics are silent, so the empty raw-transition digest is
+expected; PCM bytes and counts still participate. Controls reject absent fixtures, wrong board or ROM identity,
+missing/extra reports and each omitted frame/audio field. All 17 older
+test-card/PNG and soundtest/POKEY rows keep their byte meanings.
 
 `battery.first.` and `battery.second.` append eleven rows each: frame 1/120, the seven audio fields,
 mailbox and complete raw-save SHA-256. Two fresh runner processes share only their private save directory.
-The numeric driver first requires independent HSC and EEPROM counts 1/1 then 2/2; its media judge checks
-all 34,816 bytes, including every untouched FF byte. Only then may either process contribute hashes.
-The 47 retained observations keep their order and values; five behavior annotation rows advance from
-3 to 4 under the version policy. The complete ordered schema rejects missing or duplicate old or new rows,
-even when every lane repeats the same fault.
+The driver first requires independent HSC and EEPROM counts 1/1 then 2/2; its media judge checks all 34,816 bytes,
+untouched FF bytes included. Only then may either process contribute hashes.
+The 47 retained observations keep their order and values; five behavior annotation rows advance from 3 to 4 under
+the version policy. The ordered schema rejects missing or duplicate rows, even when every lane repeats the fault.
 
-Pull requests require exactly six identical expanded native hash files and compile PowerPC.
-Nightly and release workflows additionally execute the full native/PowerPC inventories
-and compare a same-commit pair. WASM compares separately with Linux x64 and remains
-advisory. Hosted equality is checked in those workflows; merge-dependent results are
-confirmed at ship.
+Pull requests require exactly six identical expanded native hash files and compile PowerPC. Nightly and release
+workflows also execute the full native/PowerPC inventories and compare a same-commit pair; hosted equality is
+checked there and merge-dependent results are confirmed at ship. WASM compares with Linux x64 and stays advisory.

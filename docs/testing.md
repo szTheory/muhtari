@@ -50,7 +50,7 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, about 1 GiB of disk and 90 s for the fetch. | `vectors-full` | `vectors-full` |
 | `be32-compile` / `be32-full` | Required PR PowerPC compilation; full nightly native/BE equality under qemu-ppc. | `ci` | compile only / all normal, package, release |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
-| `library` | The compatibility ledger holds: each `pr` row is judged afresh on its file under `MUHTARI_ROM_DIR` or `tests/diag`, on both boot paths, and the ratchet compares (label `library` below). Run the `ci` preset's `built` tests first, then `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library`. | `library` | `library` |
+| `library` | The compatibility ledger holds: each `pr` row is judged on its file under `MUHTARI_ROM_DIR`, `build/ci/built` or `tests/diag`, on both boot paths, and the ratchet compares (label `library` below). Run the `ci` preset's `built` tests first, then `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library`. | `library` | `library` |
 
 Emulated test binaries and runner subprocesses use `CMAKE_CROSSCOMPILING_EMULATOR`
 (scripts take `-DEMULATOR=`). wasm32 uses
@@ -94,13 +94,13 @@ selects by label. `docs/emulation-tests.md` says what each emulation label's tes
 
 ## The inventory
 
-`tests/inventory/ci.txt` lists every registered test with its labels, one `name<TAB>labels` line each, sorted,
-labels comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
-test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
-Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
-Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt`, `library.txt`, one
-`library.<id>` per ledger row of tier `pr`, and `wasm32.txt` for actual WASI registrations with the module
-disabled. Both keep the portable BankSet/XBoard/XM diagnostics and fault controls.
+`tests/inventory/ci.txt` lists every registered test with its labels, one `name<TAB>labels` line each, sorted and
+comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
+test cannot be dropped, renamed or registered on one platform alone without the file changing with it.
+Every leg registers the same tests; a check only one platform can perform runs there as a CI step instead.
+Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt`, `library.txt` (one
+`library.<id>` per ledger row of tier `pr`, and `library.local`) and `wasm32.txt` for actual WASI registrations
+with the module disabled. Both keep the portable BankSet/XBoard/XM diagnostics and fault controls.
 
 | Label | Tests |
 |---|---|
@@ -124,7 +124,7 @@ disabled. Both keep the portable BankSet/XBoard/XM diagnostics and fault control
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` ([emulation tests, basic](emulation-tests.md#basic)). |
 | `diag` | Our own diagnostic ROMs judged through their mailbox against values derived beforehand, and the core's statistics ([emulation tests, diag](emulation-tests.md#diag)). `diag.rebuild` carries `built`. |
 | `title` | The ledger's title predicates on `simple`, on the fast boot and through OpenBIOS, and the pin writer's refusal of a blank screen ([emulation tests, title](emulation-tests.md#title)). |
-| `library` | The `library` lane: each `pr` ledger row judged afresh, the ratchet and the generated page, run by CI's `library` job ([emulation tests, ledger](emulation-tests.md#ledger); [CI](#ci)). |
+| `library` | The `library` lane: each `pr` ledger row, the ratchet and the generated page, run by CI's `library` job ([emulation tests, ledger](emulation-tests.md#ledger); [CI](#ci)). |
 | `bench` | The runner's benchmark report. |
 | `libretro` | The libretro core in an in-process host (content, controls, devices, Restart, BIOS files, options, the memory map), BIOS file/allocation/path faults (`libretro.bios_failures`), rcheevos' resolver over that map (`libretro.rcheevos`), its `.info` file and its vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
