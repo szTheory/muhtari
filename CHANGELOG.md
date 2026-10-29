@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/szTheory/muhtari/compare/v0.9.0...v0.10.0) (2026-10-29)
+
+
+### Features
+
+* account for library compatibility with public evidence ([#40](https://github.com/szTheory/muhtari/issues/40)) ([e0dc556](https://github.com/szTheory/muhtari/commit/e0dc556652d31c62b778b98dd8007085212fc873))
+
 ## [0.9.0](https://github.com/szTheory/muhtari/compare/v0.8.0...v0.9.0) (2026-10-28)
 
 
