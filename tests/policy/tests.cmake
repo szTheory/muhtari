@@ -123,6 +123,15 @@ muhtari_add_test(NAME policy.compat_doc_fresh.self_test
     "-DREGEX=compat_doc_fixture/compatibility.md.+is stale" -P ${policy_scripts}/expect_fail.cmake
   LABELS policy TIMEOUT 10)
 
+# The ratchet against a fixture repository: a lowered row, an exception
+# expiring today or yesterday, a demotion to local and an unchanged ledger.
+muhtari_add_test(NAME policy.compat_ratchet.controls
+  COMMAND ${CMAKE_COMMAND} -DRATCHET=${CMAKE_SOURCE_DIR}/tests/cmake/compat_ratchet.cmake
+    -DGIT=${GIT_EXECUTABLE} -DWORK=${CMAKE_BINARY_DIR}/policy/ratchet_controls
+    -DLEDGER=${CMAKE_SOURCE_DIR}/tests/compat/ledger.csv
+    -P ${CMAKE_SOURCE_DIR}/tests/cmake/compat_ratchet_controls.cmake
+  LABELS policy TIMEOUT 30)  # provisional, n=1, local
+
 if(MUHTARI_INVENTORY STREQUAL "ci")
   set(publish_timeout 130)
   if(WIN32)

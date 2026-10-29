@@ -553,6 +553,7 @@ pokey.maps	pokey,portable
 policy.ci_run.controls	policy
 policy.compat_doc_fresh	policy
 policy.compat_doc_fresh.self_test	policy
+policy.compat_ratchet.controls	policy
 policy.digest.controls	policy
 policy.lane_equality.controls	policy
 policy.no_skip	policy

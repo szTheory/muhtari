@@ -7,7 +7,8 @@
 # BASE, a row (id, predicate) that was pass there is pass now unless ALLOW has
 # "<id> <predicate> <expiry YYYY-MM-DD> <reason>" expiring from today (UTC, or
 # SOURCE_DATE_EPOCH) through 60 days on; unknown to anything and fail to pass
-# need nothing. A row with a field count other than the header's, a quote or a CR fails.
+# need nothing. A pass row of tier pr there stays tier pr: demoting it to local
+# is named too. A row with a field count other than the header's, a quote or a CR fails.
 cmake_minimum_required(VERSION 3.25)
 
 # Sets rows to the text in var's rows, ";" kept as <semicolon>; checks fields.
@@ -34,6 +35,7 @@ foreach(row IN LISTS rows)
   list(GET f 0 9 10 11 13 g)
   list(POP_FRONT g id predicate status tier evidence)
   set("now ${id} ${predicate}" ${status})
+  set("tier ${id} ${predicate}" ${tier})
   if(tier STREQUAL "pr" AND NOT status MATCHES "^(unsupported|skipped)$")
     set("ledger ${id} ${predicate}" "${status} ${evidence}")
     list(APPEND keys "${id} ${predicate}")
@@ -83,12 +85,16 @@ if(NOT "${BASE}" STREQUAL "")
   ratchet_rows("${BASE}:tests/compat/ledger.csv" text 16)
   foreach(row IN LISTS rows)
     string(REPLACE "," ";" f "${row}")
-    list(GET f 0 9 10 g)
-    list(POP_FRONT g id predicate status)
+    list(GET f 0 9 10 11 g)
+    list(POP_FRONT g id predicate status tier)
     set(name "now ${id} ${predicate}")
-    if(status STREQUAL "pass" AND NOT "${${name}}" STREQUAL "pass"
-       AND NOT "${id} ${predicate}" IN_LIST allowed)
-      list(APPEND bad "${id} ${predicate}: pass at ${BASE}, now '${${name}}' with no allow line")
+    set(kept "tier ${id} ${predicate}")
+    if(status STREQUAL "pass" AND NOT "${id} ${predicate}" IN_LIST allowed)
+      if(NOT "${${name}}" STREQUAL "pass")
+        list(APPEND bad "${id} ${predicate}: pass at ${BASE}, now '${${name}}' with no allow line")
+      elseif(tier STREQUAL "pr" AND NOT "${${kept}}" STREQUAL "pr")
+        list(APPEND bad "${id} ${predicate}: pr at ${BASE}, now '${${kept}}' with no allow line")
+      endif()
     endif()
   endforeach()
 endif()
