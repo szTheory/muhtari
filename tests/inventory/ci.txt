@@ -552,6 +552,8 @@ pokey.clock	pokey,portable
 pokey.logic	pokey,portable
 pokey.maps	pokey,portable
 policy.ci_run.controls	policy
+policy.claims_wording	policy
+policy.claims_wording.self_test	policy
 policy.compat_doc_fresh	policy
 policy.compat_doc_fresh.self_test	policy
 policy.compat_ratchet.controls	policy

@@ -24,6 +24,24 @@ muhtari_add_test(NAME policy.no_skip.self_test
     "-DREGEX=CMakeLists.txt:1: ${policy_rule}" -P ${policy_scripts}/expect_fail.cmake
   LABELS policy TIMEOUT 10)
 
+# User-facing files carry the disclaimer and none overclaims. The self test is
+# a tree whose README drops the disclaimer and whose page overclaims in mixed
+# case; both files must be named.
+muhtari_add_test(NAME policy.claims_wording
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/claims_wording.cmake
+  LABELS policy TIMEOUT 10)
+set(policy_claims ${CMAKE_BINARY_DIR}/policy/claims_wording_fixture)
+file(WRITE ${policy_claims}/README.md "A readme without the disclaimer.\n")
+file(WRITE ${policy_claims}/libretro/muhtari_libretro.info.in
+  "description = \"No universal title compatibility.\"\n")
+file(WRITE ${policy_claims}/docs/example.md "Plays Every game at speed.\n")
+set(policy_cmd ${CMAKE_COMMAND} -DROOT=${policy_claims} -P ${policy_scripts}/claims_wording.cmake)
+string(REPLACE ";" "$<SEMICOLON>" policy_cmd "${policy_cmd}")
+muhtari_add_test(NAME policy.claims_wording.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${policy_cmd}" -DCODE=1
+    "-DREGEX=README[.]md: missing.*docs/example[.]md: overclaims" -P ${policy_scripts}/expect_fail.cmake
+  LABELS policy TIMEOUT 10)
+
 # One version source. The tree is checked at the current version and at the
 # next minor and next patch, the versions a release pull request writes into
 # version.txt; the self test is a fixture repository holding its version in
