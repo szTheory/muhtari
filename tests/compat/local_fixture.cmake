@@ -283,6 +283,19 @@ expect_scan_fault(library-semi "a file name holds an unmatched bracket or a semi
 scan(library-dirname "${WORK}/dir[x")
 expect_scan_fault(library-dirname "the directory name holds a bracket or a semicolon")
 message(STATUS "local fixture: three library scans as expected")
+
+# The clause a missing-file error appends: empty when nothing was skipped, the
+# count otherwise.
+include(${compat_dir}/files.cmake)
+compat_unread_note(unread_note 0)
+if(NOT unread_note STREQUAL "")
+  message(FATAL_ERROR "local fixture: unread note: not empty for nothing skipped")
+endif()
+compat_unread_note(unread_note 2)
+if(NOT unread_note STREQUAL "; 2 links or unreadable entries were skipped, so copy or hard-link files in")
+  message(FATAL_ERROR "local fixture: unread note: not the count for two skipped")
+endif()
+message(STATUS "local fixture: the unread note as expected")
 foreach(note "${links_note}" "${locked_note}")
   if(NOT note STREQUAL "")
     message(STATUS "${note}")
@@ -322,7 +335,8 @@ endfunction()
 # calls; every loop that runs file(SHA1) over a list that one of those calls
 # returned, with the quoted loop variable as the file(SHA1) operand; and
 # compat_name_check(library "${library_dir}") before MUHTARI_ROM_DIR is made
-# absolute. The script-mode branch before the include is outside the check.
+# absolute; and the missing-file error appending the compat_unread_note clause.
+# The script-mode branch before the include is outside the check.
 # Deliberate pins, and how to update them: exactly two compat_files(library
 # calls (change the count here when a scan is added or removed), and file(SHA1)
 # operands that are quoted loop variables only (a new SHA-1 site must loop over
@@ -399,6 +413,12 @@ function(library_source_fault text result)
     set(${result} "the raw MUHTARI_ROM_DIR value is not name-checked before it is made absolute" PARENT_SCOPE)
     return()
   endif()
+  string(FIND "${region}" "compat_unread_note(library_unread_note \${library_unread})" noted)
+  string(FIND "${region}" "\${library_hint}\${library_unread_note}" appended)
+  if(noted EQUAL -1 OR appended EQUAL -1)
+    set(${result} "the missing-file error does not append the skipped-entry note" PARENT_SCOPE)
+    return()
+  endif()
 endfunction()
 
 file(READ ${compat_dir}/library.cmake library_text)
@@ -429,12 +449,14 @@ foreach(edit call name loop sha)
 endforeach()
 
 # Edits that bypass the rule must fail: a raw glob and size loop appended, the
-# name check removed, and a SHA-1 loop over the unchecked roots appended.
+# name check removed, a SHA-1 loop over the unchecked roots appended, and the
+# skipped-entry note dropped from the missing-file error.
 library_normalise("${library_text}" library_plain)
 set(a_copy "${library_text}\nfile(GLOB_RECURSE extra \"\${library_dir}/*\")\nforeach(file IN LISTS extra)\n  file(SIZE \"\${file}\" size)\nendforeach()\n")
 string(REPLACE "compat_name_check(library \"\${library_dir}\")" "" b_copy "${library_plain}")
 set(c_copy "${library_text}\nforeach(file IN LISTS library_roots)\n  file(SHA1 \"\${file}\" sha)\nendforeach()\n")
-foreach(fault_copy a b c)
+string(REPLACE "\${library_unread_note}" "" d_copy "${library_plain}")
+foreach(fault_copy a b c d)
   if(${fault_copy}_copy STREQUAL library_text OR ${fault_copy}_copy STREQUAL library_plain)
     message(FATAL_ERROR "local fixture: library source: a fault copy did not change")
   endif()

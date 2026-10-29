@@ -117,9 +117,10 @@ foreach(line IN LISTS library_lines)
 OpenBIOS come from `cmake --preset ci && cmake --build --preset ci && \
 ctest --preset ci -L '^built$'`, which creates build/ci/built")
     endif()
+    compat_unread_note(library_unread_note ${library_unread})
     list(JOIN library_roots ", " library_searched)
     message(FATAL_ERROR "library: ${id}: no file under ${library_searched} has "
-      "SHA-1 ${a78} (headered) or ${raw} (headerless)${library_hint}")
+      "SHA-1 ${a78} (headered) or ${raw} (headerless)${library_hint}${library_unread_note}")
   endif()
   string(REPLACE "/" "." name "library.${id}")
   string(REPLACE "<semicolon>" "$<SEMICOLON>" predicate "${predicate}")

@@ -25,6 +25,17 @@ function(compat_name_check prefix path)
   endif()
 endfunction()
 
+# Sets <var> to a clause for a missing-file error: empty when nothing was
+# skipped, otherwise how many links and unreadable entries were, so a file only
+# reachable through a link is not reported as plainly absent.
+function(compat_unread_note var count)
+  set(note "")
+  if(count GREATER 0)
+    set(note "; ${count} links or unreadable entries were skipped, so copy or hard-link files in")
+  endif()
+  set(${var} "${note}" PARENT_SCOPE)
+endfunction()
+
 # The roots are read from ARGV, not ARGN, so a ';' inside one root stays in it.
 function(compat_files prefix files_var unread_var)
   if(ARGC LESS 4)

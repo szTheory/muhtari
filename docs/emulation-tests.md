@@ -267,7 +267,10 @@ the mailbox CRC with the row's evidence.
 **The library preset.** It finds each `pr` row's file by its SHA-1 in `MUHTARI_ROM_DIR`, then `build/ci/built`, then `tests/diag`; an empty file or one above the image
 maximum is skipped before hashing. `MUHTARI_BIOS` names the BIOS image, by default
 `build/ci/built/openbios/openbios.bin`. Configure fails when the directory, the BIOS image or any row's file is
-missing. After the `ci` preset's built tests have run:
+missing. Links and unreadable entries are skipped, never followed, and the missing-file error says how many were, so
+copy or hard-link dumps in rather than symlink them. A bracket or semicolon in the directory name, or an unmatched
+bracket or a semicolon in a file name, also fails configure with a fixed message. After the `ci` preset's built tests
+have run:
 
 ```sh
 MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
