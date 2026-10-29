@@ -103,8 +103,8 @@ muhtari_add_test(NAME policy.notices
   LABELS policy TIMEOUT 10)
 
 # docs/compatibility.md equals tools/compat_doc.cmake's output over the
-# ledger. The self test checks a copy of the page whose not-evaluated count is changed
-# and expects that copy named stale.
+# ledger. The self test names a stale page and a
+# ledger that claims more than it shows.
 set(policy_compat_in -DLEDGER=${CMAKE_SOURCE_DIR}/tests/compat/ledger.csv
   -DEXPECTED=${CMAKE_SOURCE_DIR}/tests/diag/expected.csv
   -DINVENTORY=${CMAKE_SOURCE_DIR}/tests/inventory/ci.txt)
@@ -114,17 +114,12 @@ set(policy_compat_tool -P ${CMAKE_SOURCE_DIR}/tools/compat_doc.cmake)
 muhtari_add_test(NAME policy.compat_doc_fresh
   COMMAND ${policy_compat_cmd} -DCHECK=${CMAKE_SOURCE_DIR}/docs/compatibility.md ${policy_compat_tool}
   LABELS policy TIMEOUT 10)
-file(READ ${CMAKE_SOURCE_DIR}/docs/compatibility.md policy_page)
-string(REGEX REPLACE ", [0-9]+ not evaluated, " ", 0 not evaluated, " policy_page "${policy_page}")
-file(WRITE ${CMAKE_BINARY_DIR}/policy/compat_doc_fixture/compatibility.md "${policy_page}")
-set(policy_cmd ${CMAKE_COMMAND} ${policy_compat_in}
-  -DOUT=${CMAKE_BINARY_DIR}/policy/compat_doc_fixture/generated.md
-  -DCHECK=${CMAKE_BINARY_DIR}/policy/compat_doc_fixture/compatibility.md ${policy_compat_tool})
-string(REPLACE ";" "$<SEMICOLON>" policy_cmd "${policy_cmd}")
 muhtari_add_test(NAME policy.compat_doc_fresh.self_test
-  COMMAND ${CMAKE_COMMAND} "-DCMD=${policy_cmd}" -DCODE=1
-    "-DREGEX=compat_doc_fixture/compatibility.md.+is stale" -P ${policy_scripts}/expect_fail.cmake
-  LABELS policy TIMEOUT 10)
+  COMMAND ${CMAKE_COMMAND} -DTOOL=${CMAKE_SOURCE_DIR}/tools/compat_doc.cmake
+    ${policy_compat_in} -DPAGE=${CMAKE_SOURCE_DIR}/docs/compatibility.md
+    -DWORK=${CMAKE_BINARY_DIR}/policy/compat_doc_controls
+    -P ${policy_scripts}/compat_doc_controls.cmake
+  LABELS policy TIMEOUT 10)  # provisional, eight generator runs
 
 # The ratchet against a fixture repository: a lowered row, an exception
 # expiring today or yesterday, a demotion to local and an unchanged ledger.
