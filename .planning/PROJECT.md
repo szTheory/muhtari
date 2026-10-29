@@ -86,6 +86,17 @@ still times out and remains unaccepted; model handoff/optical/RC fits and85:342
 analog balance retain explicit confidence limits. No routine owner UAT remains.
 See [Phase9 verification](phases/09-pal-games-and-audio/09-VERIFICATION.md).
 
+Phase 11 is verified complete: all12 plans and COMP-01–03 pass16/16 truths.
+The204 pinned CC0 entries remain201 unknown and3 skipped, with no metadata
+counted as a gameplay pass. Public title-screen evidence, owned model conformance,
+and unsupported scope retain their explicit labels. Fresh local CI673+6 and
+public library47 pass; the counted run has0/204 present at0e86575f561b, with
+planning-only dirty state. Two carried claim/output faults are accepted through
+existing controls; no new review round or owner UAT. WR-02 helper/source-only
+coverage and COMP-03 unclassified assumption remain explicit; hosted outcomes
+are confirmed at ship. See [Phase11 verification](phases/11-full-library-acceptance/11-VERIFICATION.md).
+Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
+
 ## Current Milestone: v2.0 The whole library
 
 **Goal:** Expand 7800 library breadth with the remaining in-scope cartridge boards, persistent saves,
@@ -133,9 +144,11 @@ save states and other later horizons remain deferred. Planning v2.0 does not sel
 - ✓ Selected PAL timing, presentation and audio across all three deliverables — PAL-01–03, Phase9 verified42/42; shipping next.
 - ✓ BankSet and XBoard/XM memory, POKEY and HSC with correct CPU/MARIA ownership — BOARD-04–05, Phase 10 verified 5/5; shipping next.
 
+- ✓ Evidence-backed library accounting and isolated local evaluation — COMP-01–03, Phase 11 verified 16/16; ship next.
+
 ### Active
 
-- [ ] Evidence-backed library accounting — COMP-01–03, Phase 11.
+All v2.0 phase requirements are verified; Phase 11 shipping and milestone audit/archive remain.
 
 Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
 
@@ -252,4 +265,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-28 after Phase 10 execution and verification; ship Phase 10 next*
+*Last updated: 2026-10-29 after Phase 11 acceptance and verification; ship Phase 11 next*

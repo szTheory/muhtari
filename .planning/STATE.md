@@ -4,18 +4,18 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
 current_plan: 12
-status: verifying
-stopped_at: Planned 11-12-PLAN.md; acceptance pending
-last_updated: "2026-10-29T19:09:31.612Z"
+status: completed
+stopped_at: Phase 11 verified complete; ready to ship
+last_updated: "2026-10-29T19:18:07.178Z"
 last_activity: 2026-10-29
-last_activity_desc: Phase 11 execution started
-state_head: 2c9b924a2e778c259cf0db0b23b6007442dd14ad
+last_activity_desc: Phase 11 accepted 16/16; all COMP requirements complete; ready to ship
+state_head: 55fa33fd1773df6f03bd5d2004d860d3ea927aff
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 7
   total_plans: 76
-  completed_plans: 75
-  percent: 71
+  completed_plans: 76
+  percent: 100
 total_phases: 7
 current_phase_name: Full-library acceptance
 ---
@@ -27,26 +27,72 @@ current_phase_name: Full-library acceptance
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 11 committed-fix acceptance planned; 11-12 is ready to execute, with historical verification still gaps_found at 14/16.
-BOARD-04/05 are marked Complete; final hosted acceptance is confirmed at ship and in Phase 11.
+Current focus: Phase 11 verified complete at 16/16; COMP-01–03 accepted; ship Phase 11 next.
+BOARD-04/05 remain Complete; Phase 11 local acceptance is complete. Hosted PR/merge evidence is confirmed at ship.
 Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
 remains recorded below; this step makes no new release claim.
 
 ## Current Position
 
 Current Phase: 11
-Current Plan: 12
+Current Plan: 12 (complete)
 Total Plans in Phase: 12
-Progress: [███████░░░] 71%
+Progress: [██████████] 100%
 
-Phase 10 has 14/14 accepted plans and verification passed. Six of seven milestone phases are complete once phase 10 ships.
-Active-slot totals are 64 summarized plans of 64 planned, including historical
-halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
+All seven milestone phases are verified complete. Phase 11 has 12/12 accepted
+plans and 16/16 verified truths. Active-slot accounting retains 76 summarized
+plans, including the historical halted 06-01; 75 accepted plans. Six superseded
+Phase 5 recovery plans remain historical and outside active-slot totals.
+Summarized counts alone do not establish acceptance.
 
-Status: verifying
-Last activity: 2026-10-29 — Phase 11 execution started
-Next command: $gsd-execute-phase 11 --gaps-only
+Status: Phase 11 verified complete; ready to ship
+Last activity: 2026-10-29 — Phase 11 complete
+Next command: $gsd-ship 11
 Branch: phase/11-full-library-acceptance
+
+## Phase 11 execution and re-verification receipt
+
+Plan 11-12 is committed as 2c9b924. Acceptance source is
+0e86575f561bf9482ade97f2d1088e418256d51c; the tracked source diff was empty.
+The three pre-existing config/DECISIONS/GSD-HANDOFF edits remain uncommitted
+and preserved. Later changes are planning evidence and state only.
+
+Local command evidence, run URL N/A-local:
+
+- Focused configure/build/verbose claim, local fixture and docs tests — exit 0,
+  7/7; both sample/basic fault controls and all thirteen local runs accepted.
+- `cmake --workflow --preset ci` — exit 0, 673 CI plus 6 release checks.
+  This unchanged-source full run also supplies the regression gate for the
+  six prior reports' 120 existing test/source references; no extra rerun.
+- `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library` — exit 0,
+  47/47. The documented pipefail visible-count follow-up exits 0: 0 of 204
+  present, 0 pass, 0 fail, 204 absent, commit=0e86575f561b tree=dirty.
+- GSD `query verification.status` — exit 0, passed; 16/16 truths and 24/24
+  decisions. Both historical gaps closed; the prior 14/16 report stays in
+  Git at 0e86575. GSD `query phase.complete 11` — exit 0, 12/12 accepted;
+  COMP-01–03 are complete.
+
+Existing bounded reviews were dispositioned without another review round:
+8 fixed, 8 optional info findings deferred, 0 untriaged; four reused first-review
+info identities remain separately preserved. WR-02 retains helper/source-only
+missing-file diagnostic coverage; COMP-03 generic unclassified scope remains
+an explicit assumption. No private bytes, private compatibility pass, hosted
+outcome, owner UAT or publication success is claimed.
+
+The completion helper emitted advisory missing-file warnings for seven old
+summaries (01–05, 07–08): it treats backticked commands, ignored relative reports,
+negative fixtures and deliberately retired script names as live file references.
+This is the known GSD-HANDOFF 3.1 scanner limitation; declared current consumers
+and required workflows passed. It also preserved stale progress fields; one
+scoped reconciliation sets 7/7 phases, 76/76 summarized and 75 accepted active
+plans. No historical receipt was regenerated to silence those heuristics.
+
+No LEARNINGS files or matching resolves_phase todos were found for transition;
+global learning extraction is disabled. This is the final phase, but shipping
+and milestone audit/archive remain separate steps. Next: $gsd-ship 11.
+
+The acceptance-planning receipt and earlier next-command/status statements below
+are historical; this execution receipt supersedes their pending claims.
 
 ## Phase 11 acceptance planning receipt
 
@@ -719,10 +765,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Planned 11-12-PLAN.md; acceptance pending
-Last session: 2026-10-29T16:35:53.064Z
+**Stopped at:** Phase 11 verified complete; ready to ship
+Last session: 2026-10-29T19:19:25.232Z
 Resume file: None
-Next command: $gsd-execute-phase 11 --gaps-only
+Next command: $gsd-ship 11
 
 ### Quick Tasks Completed
 
