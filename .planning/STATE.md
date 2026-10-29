@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
 current_plan: 8
-status: executing
-stopped_at: Completed 11-07-PLAN.md
-last_updated: "2026-10-29T14:40:46.870Z"
+status: verifying
+stopped_at: Completed 11-08-PLAN.md
+last_updated: "2026-10-29T14:44:57.539Z"
 last_activity: 2026-10-29
 last_activity_desc: Phase 11 execution started
-state_head: a5f7f9db29a7923314473c097df701210109e318
+state_head: c4483b8d44cd7d20dfce4468f067cfa6cdc60613
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 72
-  completed_plans: 71
+  completed_plans: 72
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -43,7 +43,7 @@ Phase 10 has 14/14 accepted plans and verification passed. Six of seven mileston
 Active-slot totals are 64 summarized plans of 64 planned, including historical
 halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-29 — Phase 11 execution started
 Next command: /gsd-execute-phase 11
 Branch: phase/11-full-library-acceptance
@@ -694,8 +694,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-07-PLAN.md
-Last session: 2026-10-29T14:40:46.649Z
+**Stopped at:** Completed 11-08-PLAN.md
+Last session: 2026-10-29T14:44:57.321Z
 Resume file: None
 Next command: /gsd-plan-phase 11
 
@@ -737,6 +737,7 @@ Next command: /gsd-plan-phase 11
 | Phase 11 P05 | 45m | 2 tasks | 5 files |
 | Phase 11 P06 | 50m | 3 tasks | 9 files |
 | Phase 11 P07 | 30m | 2 tasks | 10 files |
+| Phase 11 P08 | 20m | 2 tasks | 10 files |
 
 ## Decisions
 
@@ -766,6 +767,8 @@ Next command: /gsd-plan-phase 11
 - [Phase 11]: Compatibility claim class is computed from expected.csv sources (fit rows outnumbering guide+hw+rtl is model-only), falling back to ledger evidence kind, else none
 - [Phase 11]: Owned diagnostics and any pass that is not a 7800basic title or boots row count as model conformance, never gameplay
 - [Phase 11]: 11-07: .info description cut to 317 characters, says diagnostics give model conformance only and ends with the short disclaimer; description bound read with file(READ) so semicolons cannot split it
+- [Phase 11]: is_experimental flip waits for pinned-list (commercial) evidence defined by a future milestone (SEED-012)
+- [Phase 11]: Ratchet judge hardening (push events, base-commit judge) is dormant SEED-014, not a task
 
 ### Blockers
 

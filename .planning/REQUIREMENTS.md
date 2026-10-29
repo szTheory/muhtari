@@ -48,7 +48,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21; no partial board 
 
 ### Compatibility and acceptance
 
-- [ ] **COMP-01**: Every entry of the pinned CC0 library is accounted for in the ledger with explicit pass/fail/unknown/unsupported status and evidence; metadata inclusion is never counted as a gameplay pass.
+- [x] **COMP-01**: Every entry of the pinned CC0 library is accounted for in the ledger with explicit pass/fail/unknown/unsupported status and evidence; metadata inclusion is never counted as a gameplay pass.
 - [x] **COMP-02**: Each newly claimed board/device/region has legally admissible automated behavioral evidence in public CI, and prior passing predicates remain protected by the existing ratchet.
 - [x] **COMP-03**: Available private cartridges run only through the isolated local library preset with reproducible command/exit/commit evidence, while public CI requires no private bytes or owner verification.
 
@@ -88,7 +88,7 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | PAL-03 | Phase 9 | Complete |
 | BOARD-04 | Phase 10 | Complete |
 | BOARD-05 | Phase 10 | Complete |
-| COMP-01 | Phase 11 | Pending |
+| COMP-01 | Phase 11 | Complete |
 | COMP-02 | Phase 11 | Complete |
 | COMP-03 | Phase 11 | Complete |
 
