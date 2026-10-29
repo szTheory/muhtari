@@ -253,17 +253,22 @@ needs. `predicate` is how the row is judged (title, above). `evidence_commit` is
 `evidence` the first 16 hex digits of the title hash, or `-`. `oracle` and `checked` record an outside emulator's
 agreement and its date; both are `-` for now.
 
+An id without `/` is a MAME short name. `tools/softlist_ledger.cmake` writes those rows; neither hand nor the pin
+recipe edits them: `cmake -DXML=build/pins/mame/a7800.xml -DLEDGER=tests/compat/ledger.csv -DCARTDB=src/cartdb.c
+-DOUT=tests/compat/ledger.csv -P tools/softlist_ledger.cmake`. Their `board` and `peripherals` repeat the list's
+declarations; `any` in `region` means the list names both systems or none.
+
 **Statuses.** `pass` and `fail` are the last evaluation on both paths. `unknown` has never been evaluated.
 `unsupported` needs a board or peripheral the core refuses, and names it. `skipped` is deliberately not run, with
 the reason in the predicate, and is never in a CI tier. `infrastructure_error` means the harness broke.
 
-**Tiers.** `pr` rows are judged on every pull request by the `library` preset. `nightly` rows would run nightly;
-there are none yet. `local` rows are never run in CI.
+**Tiers.** `pr` rows are judged on every pull request by the `library` preset. There are no `nightly` rows yet. `local` rows are never
+run in CI.
 
 **The library preset.** It reads `MUHTARI_ROM_DIR` from the environment and finds each `pr` row's file there or in
 `tests/diag` by its SHA-1: a headered file by `sha1_a78`, a headerless one by `sha1_raw`. `MUHTARI_BIOS` names the
 BIOS image, by default `build/ci/built/openbios/openbios.bin`. Configure fails when the directory, the BIOS image or
-any row's file is missing, so no row is skipped. After the `ci` preset's built tests have run:
+any row's file is missing. After the `ci` preset's built tests have run:
 
 ```sh
 MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
@@ -282,21 +287,19 @@ MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
   line `<id> <predicate> <expiry YYYY-MM-DD> <reason>` in `tests/compat/allow.txt` whose expiry is between today and
   60 days on. `unknown` to anything and `fail` to `pass` need no line. A base whose tree has no ledger protects
   nothing. A base missing from the clone fails.
-- `library.ratchet.self_test` gives the ratchet the ledger's own results with the first row's status flipped, and
-  expects that row named.
+- `library.ratchet.self_test` flips the first row's status and expects that row named.
 - `library.compat_doc` runs after the ratchet. It regenerates the page with `tools/compat_doc.cmake` and fails
   when the page differs from `docs/compatibility.md`.
 
 **In CI.** The `library` job (`docs/testing.md`, CI) builds the samples and OpenBIOS, then runs the preset with the
 pull request's base commit. It reports only until it has 10 green runs on `main`. `policy.compat_doc_fresh` checks
-the page on every `ci` and `wasm32` lane as well. Its self test expects a copy with a changed count to be named
-stale. After a ledger change, regenerate the page:
+the page on every `ci` and `wasm32` lane as well. After a ledger change, regenerate the page:
 
 ```sh
 cmake -DLEDGER=tests/compat/ledger.csv -DOUT=docs/compatibility.md -P tools/compat_doc.cmake
 ```
 
-A run over your own dumps is optional and stays local; nothing waits on it.
+A run over your own dumps is optional and local.
 
 ## boot to play
 
@@ -505,15 +508,14 @@ The run target retains its original headerless 48 KiB linear construction for or
 bytes: `tests/fuzz/run_cart.h` adjusts the final footer bytes needed for acceptance
 and clears accidental A78 magic so a linear payload remains headerless.
 Explicit Activision, Absolute and Fractalus A78 declarations instead select their
-supported exact geometry and fixed-window reset vectors. Storage is bounded at 131200
-bytes. The original all-$00, JAM, all-$FF, thirteen splitmix64 and empty seeds persist;
+supported exact geometry and fixed-window reset vectors. The original all-$00, JAM, all-$FF, thirteen splitmix64 and empty
+seeds persist;
 Eleven explicit retail/malformed/A8 inputs and one accidental-header regression
 extend execution to 29 seeds. The loader
 has 31 seeds, including isolated identified AM/OM inputs, unsupported combinations
 and geometry boundaries. Normalization checks derive the expected private bytes
 independently and preserve the supplied buffer and raw identity. Refusals compare
-deep live ROM/RAM and resumed audible changing controls. Both fuzz durations remain
-60 seconds; no input-byte or frame cap is raised beyond the declared execution bound.
+deep live ROM/RAM and resumed audible changing controls.
 
 **Adding a regression.** The nightly `fuzz` job uploads crashes as `fuzz-crash` from `build/fuzz/fuzz/crash/`
 (loader) and `build/fuzz/fuzz/run/crash/` (run). Minimise one with `muhtari-fuzz-<target> -minimize_crash=1
@@ -561,7 +563,7 @@ frame 1, frame 600, all seven audio fields and a fixed numeric mailbox report.
 The actual runner must identify the expected board and the diagnostic driver must
 accept the complete mailbox before a row is written. These owned diagnostics are
 silent, so the empty raw-transition digest is expected; PCM bytes and counts still
-participate. Existing command-boundary controls reject absent fixtures, wrong board
+participate. Command-boundary controls reject absent fixtures, wrong board
 or ROM identity, missing/extra reports and each omitted frame/audio field. All 17
 older test-card/PNG and soundtest/POKEY rows keep their byte meanings.
 
@@ -571,7 +573,7 @@ The numeric driver first requires independent HSC and EEPROM counts 1/1 then 2/2
 all 34,816 bytes, including every untouched FF byte. Only then may either process contribute hashes.
 The 47 retained observations keep their order and values; five behavior annotation rows advance from
 3 to 4 under the version policy. The complete ordered schema rejects missing or duplicate old or new rows,
-even when every lane repeats the same fault. Existing byte-difference and identity controls remain active.
+even when every lane repeats the same fault.
 
 Pull requests require exactly six identical expanded native hash files and compile PowerPC.
 Nightly and release workflows additionally execute the full native/PowerPC inventories
