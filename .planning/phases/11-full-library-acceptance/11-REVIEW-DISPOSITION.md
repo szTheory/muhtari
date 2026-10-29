@@ -5,23 +5,23 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "The sample-backed claim check never runs for `basic.*` tests, so most of its entries are unchecked"
   - id: CR-02
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "A `;` in `OUT` splits the `rm -rf` argument and deletes an unrelated directory"
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "An `OUT` that is an existing directory passes the writability probe and then leaks the full path"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The library preset now silently skips symlinked files, and its failure message and docs do not say so"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A root name containing `*` or `?` is accepted and matches other directories"
   - id: IN-01
     severity: info
@@ -60,20 +60,20 @@ findings:
   - id: IN-08
     severity: info
     disposition: open
-open: 16
+open: 11
 total: 16
-recorded: 2026-10-29T16:43:22.289Z
+recorded: 2026-10-29T17:05:51.143Z
 ---
 
 # Phase 11: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
-| CR-02 | critical | open | - |
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
+| CR-01 | critical | fixed | 11-REVIEW-FIX.md |
+| CR-02 | critical | fixed | 11-REVIEW-FIX.md |
+| WR-01 | warning | fixed | 11-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 11-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 11-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |

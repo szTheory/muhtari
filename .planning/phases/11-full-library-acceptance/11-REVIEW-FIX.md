@@ -26,7 +26,7 @@ WR-06 from the earlier review are not in the current REVIEW.md and were left alo
 
 ## Fixed Issues
 
-### CR-01: The sample-backed claim check never runs for `basic.*` tests
+### CR-01: The sample-backed claim check never runs for `basic.*` tests, so most of its entries are unchecked
 
 **Files modified:** `tools/compat_doc.cmake`, `tests/cmake/compat_doc_controls.cmake`
 **Commit:** e4356c6
@@ -38,7 +38,7 @@ sample has no ledger row) was not applied: the claims loop walks every claim wha
 small fixture ledgers in the controls (which hold no 7800basic rows) would then fail for an unrelated reason. A
 removed ledger row is still caught by the other generator guards.
 
-### CR-02: A `;` in `OUT` splits the `rm -rf` argument
+### CR-02: A `;` in `OUT` splits the `rm -rf` argument and deletes an unrelated directory
 
 **Files modified:** `tests/compat/local.cmake`, `tests/compat/local_fixture.cmake`
 **Commit:** 3890f3a
@@ -49,7 +49,7 @@ survive. Reverting only the guard makes the fixture fail.
 Status: fixed. The fix is a guard on input, not a logic change to the step list; the steps stay string-joined, which
 is safe now that no `;` can reach them.
 
-### WR-01: An `OUT` that is an existing directory passes the writability probe
+### WR-01: An `OUT` that is an existing directory passes the writability probe and then leaks the full path
 
 **Files modified:** `tests/compat/local.cmake`, `tests/compat/local_fixture.cmake`
 **Commit:** 3810fa9
@@ -57,7 +57,7 @@ is safe now that no `;` can reach them.
 message. Fixture run 13 passes an existing directory as `OUT`, expects the fault and requires that no `.rows` tree
 was made. Reverting the guard makes the fixture fail.
 
-### WR-02: The library preset silently skips symlinked files with no hint
+### WR-02: The library preset now silently skips symlinked files, and its failure message and docs do not say so
 
 **Files modified:** `tests/compat/files.cmake`, `tests/compat/library.cmake`, `tests/compat/local_fixture.cmake`,
 `docs/emulation-tests.md`
@@ -73,7 +73,7 @@ fit rather than raising the budget (`docs.budgets` failed on the first wording, 
 text itself is exercised only by the source check and the helper test, not end to end: the `library` configure in a
 tree that has `build/ci/built` finds every row's file, so there is no cheap way to reach that branch in `ci`.
 
-### WR-03: A root name containing `*` or `?` matches other directories
+### WR-03: A root name containing `*` or `?` is accepted and matches other directories
 
 **Files modified:** `tests/compat/files.cmake`, `tests/compat/local_fixture.cmake`, `docs/emulation-tests.md`
 **Commit:** e19eb6b
