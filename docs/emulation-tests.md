@@ -204,22 +204,21 @@ is 0; `runner.bios.invalid` exits 1 on a 1,000-byte BIOS; `runner.movie.boot_bio
 `.planning/preparation/CONFORMANCE.md` section 5, sorted by `id`, then `predicate`. No field holds a comma, quote or
 newline. The oracle columns are `-`. `muhtari-test-predicate ROM PREDICATE [--bios FILE]` (`tests/compat/predicate.c`)
 evaluates a row's predicate, prints `pass` or `fail <reason>`, and exits 0, 1, or 2 on a usage or load error. A
-frame's hash is the SHA-256 of its 320 x 242 colour bytes, as `muhtari-run --hash-frame` prints it.
+frame's hash is the SHA-256 of its colour bytes, 320 x 242 (NTSC) or 320 x 292 (PAL), as `muhtari-run --hash-frame`
+prints it.
 
 - `title@F=H`, on the fast boot: frame F hashes to H, the title the sample shows by then.
 - `title@F=H`, with `--bios`: the hand-off frame K comes by frame 600 and lies in [300, 340], and some frame from K
   to K + 299 hashes to H. K is the frame of the first cartridge opcode fetch after INPTCTRL's EXT goes from 0 to 1
   (`docs/embedding.md`, Booting with a BIOS). OpenBIOS shows its Fuji for about 320 frames, so the 300 frames count
-  from K. `bios.splash_skip` (above) shows that Pause held on frames 1-3 skips the Fuji.
+  from K.
 - `boots@F`, the weak predicate: in the F frames from the hand-off (frame 1 on the fast boot, K with `--bios`),
   DMA ran, at least two distinct frames appeared and the CPU did not jam.
 
 BIOS-dependent titles fall back to `boots@F;why=<reason>`. Five samples seed
 `rand` from INTIM, which differs between boot paths (`why=rng-seeded-from-intim`).
 `hiscoretable` draws after frame 262, so uses frame 300. `backuptest` and
-`languagetest` draw nothing and are skipped. The `banksets` sample remains
-unsupported because the pinned recipe does not assemble it; board support
-alone does not promote it. Old passing predicates are unchanged.
+`languagetest` draw nothing and are skipped, as is `banksets`: the pinned recipe does not assemble it.
 Local diagnostic `mailbox@12` rows identify exact owned-template variants and
 numeric CRC evidence; see [compatibility](compatibility.md) for their scope.
 
@@ -240,7 +239,9 @@ cmake -DPREDICATE=build/ci/tests/muhtari-test-predicate -DLEDGER=tests/compat/le
 
 It fills each `title@F=-` row, sets each `unknown` row's status from both paths, and fails by name when an
 evaluated row's status disagrees. A title not yet on `main` is unreleased: when an intended core change moves it,
-reset its predicate to `title@F=-` and run the recipe in the same commit. Never type a hash by hand.
+reset its predicate to `title@F=-` and run the recipe in the same commit. Never type a hash by hand. The recipe
+evaluates only `title@` and `boots@` rows and copies `mailbox@` rows, and rows whose id has no `/`, untouched;
+`-DCHECK=<file>` fails when the written ledger differs from it (`title.pin.order`).
 
 
 ## ledger

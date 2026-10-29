@@ -32,15 +32,13 @@ kept running), not by a pinned title screen.
 | Status | Rows |
 |---|---|
 | pass | 46 |
-| skipped | 2 |
-| unsupported | 1 |
+| skipped | 3 |
 
 | Board | Rows |
 |---|---|
 | absolute | 1 |
 | activision | 1 |
-| bankset | 1 |
-| banksets | 1 |
+| bankset | 2 |
 | fractalus | 1 |
 | linear | 34 |
 | linear+xboard | 1 |
@@ -60,7 +58,7 @@ kept running), not by a pinned title screen.
 | `7800basic-0.41/adventurer` | adventurer | linear | NTSC | - | title | pass |
 | `7800basic-0.41/atarivoxspeech` | atarivoxspeech | linear | NTSC | - | title | pass |
 | `7800basic-0.41/backuptest` | backuptest | linear | NTSC | - | boots (no-main-loop-jams) | skipped |
-| `7800basic-0.41/banksets` | banksets | banksets | NTSC | - | boots (bankset-board) | unsupported |
+| `7800basic-0.41/banksets` | banksets | bankset | NTSC | - | boots (recipe-does-not-assemble) | skipped |
 | `7800basic-0.41/banner` | banner | linear | NTSC | - | title | pass |
 | `7800basic-0.41/boxcollision` | boxcollision | linear | NTSC | - | title | pass |
 | `7800basic-0.41/colorfade` | colorfade | linear | NTSC | - | title | pass |

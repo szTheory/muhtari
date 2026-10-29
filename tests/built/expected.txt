@@ -9,8 +9,8 @@
 # a row. POKEY declarations at $0450 are active. Only pokey's detection-dependent
 # video chain changed when register reads replaced open bus; fixed-address
 # samples reproduced unchanged. Pins refer to the reported behaviour revision.
-# banksets has none: it fails to assemble with this recipe, and its bankset
-# board is refused.
+# banksets has none: it fails to assemble with this recipe, so the ledger
+# skips it.
 adventurer  7800basic-wasm@0.41,wasmtime@48.0.6  samples/adventurer/adventurer.bas  7dd09ae006f4514b0a41f31134dcf6a908c6bd891ee59093a3211460171e855d  e6915fccdf374074708e6025aa885bfd6ba1ba26b31e9f2f0454232fe68eee71  2ee28bc4fcaf2be8d392b56785b7f1b47b029f33f8dd41459b5e3790930c433c  -
 atarivoxspeech  7800basic-wasm@0.41,wasmtime@48.0.6  samples/atarivoxspeech/atarivoxspeech.bas  32e8ba92d7729cf6b6646fbd1d1306a033b79118da54d487a09025f09e193986  8af0d20a3b4fa36468ac94cf4c5c51fbefd1c90ea3b5d8c9c6328486b889a9a9  547356bc6a53c31285a5e634bce37d8b281c95c6dad2e4b7c61291eddf2c7e1a  -
 backuptest  7800basic-wasm@0.41,wasmtime@48.0.6  samples/backuptest/backuptest.bas  0e2372eb76f2befee28b453713eed70d7ed54b53b83ba9b254b4e8fadd04a8eb  cf0f21cad12ad5e6d84bc0053801780f0d036912b4760fbaa31a10dd80caabbb  defbbd061ad811c58d1fe2f4f8af556869eeee7efe997dd9565d76e5ba24f928  -
