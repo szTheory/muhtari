@@ -19,10 +19,9 @@
 /bios/
 /private/
 
-# Local configuration and secrets (12-factor: local values live in .env.local)
+# Local configuration and secrets: local values are passed inline on the command line, not kept in a dotenv file
 .env
 .env.*
-!.env.example
 
 # Build output
 /build/
