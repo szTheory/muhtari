@@ -667,6 +667,7 @@ runner.usage.unknown	portable,runner
 runner.version	portable,runner
 sally.irq	pokey,portable,sally
 tia.logic	portable,tia
+title.local.fixture	portable,title
 title.pal.bios	portable,title
 title.pal.fast	portable,title
 title.pin.order	portable,title

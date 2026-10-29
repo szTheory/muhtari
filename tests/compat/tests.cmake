@@ -117,3 +117,19 @@ muhtari_add_test(NAME title.pin.recipe
     -P ${CMAKE_CURRENT_LIST_DIR}/pin.cmake
   LABELS portable title TIMEOUT 3)  # provisional, not yet measured in CI
 set_tests_properties(title.pin.recipe PROPERTIES FIXTURES_REQUIRED built_openbios)
+
+# The local driver (local.cmake, the library preset's local pass) on public
+# bytes: the test list's sample identifies a present row, a failing predicate
+# and a loader refusal are verdicts, and a bad BIOS, a malformed predicate or
+# an unwritable output are named faults, with nothing private in the log.
+# Fault: a private run that miscounts, leaks a path, or passes on a harness
+# fault. The emulator wrapper reaches every predicate spawn.
+muhtari_add_test(NAME title.local.fixture
+  COMMAND ${CMAKE_COMMAND} -DPREDICATE=$<TARGET_FILE:muhtari-test-predicate-testdb>
+    -DLOCAL=${CMAKE_CURRENT_LIST_DIR}/local.cmake -DBIOS=${compat_bios}
+    -DBUILT=${MUHTARI_BUILT_DIR} -DPROBE=${CMAKE_BINARY_DIR}/runner-probe
+    -DWORK=${compat_pin_dir}/local_fixture -DROOT=${PROJECT_SOURCE_DIR}
+    "-DEMULATOR=${compat_emulator}" -P ${CMAKE_CURRENT_LIST_DIR}/local_fixture.cmake
+  LABELS portable title TIMEOUT 20)  # provisional, not yet measured in CI
+set_tests_properties(title.local.fixture PROPERTIES
+  FIXTURES_REQUIRED "built_simple;built_openbios;probe_images")
