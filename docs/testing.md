@@ -236,16 +236,16 @@ with its lane's inventory and labels.
 Windows legs load the native MSVC environment with `vswhere` and `vcvarsall`.
 Actions are pinned by full commit SHA.
 
-**The roll-up.** The ruleset requires one check, `CI required`. It always runs, and passes only when every job it
+**The roll-up.** The ruleset requires one check, `CI required`. It always runs and passes only when every job it
 needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which
 happens only when every changed path is under `.planning/`; `title` and `perf` may be skipped outside pull
-requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32`/`library` stay advisory: 9/5 distinct
-successful main executions as of 2026-10-22; ten are required. Skips, PR/branch controls and duplicate reruns do not count.
+requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` stays advisory: 9 distinct
+successful main executions as of 2026-10-22; ten are required. `library` is required (18, 2026-10-29). Skips, PR/branch controls and duplicate reruns do not count.
 
 **Tests of CI itself.** The hygiene lane checks the rules above. `policy.ci_required` reads the roll-up's `jq`
-program from `ci.yml` and runs it, with the step's own arguments, on synthetic job results; it also fails when a
-job other than `wasm32` and `library` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
-renamed, empty and planning-only path lists, and on a planning-only list from a pull request of more than 3000
+program from `ci.yml` and runs it, with the step's own arguments, on synthetic results; it also fails when a
+job other than `wasm32` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
+renamed, empty and planning-only path lists, and on a planning-only list from a pull request over 3000
 files, which the files API cuts short. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
 run/count comment. Bounds: twice the last 40 comparable successful job/runner/workload executions' maximum,
 rounded up to minutes; network/roll-up floor 5 min. n<10 is provisional. Toolchain/image/workload changes reset

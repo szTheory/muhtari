@@ -44,8 +44,8 @@ foreach(name IN LISTS names)
 endforeach()
 
 # name|event|heavy|called|job=result,...|want. Unlisted jobs succeeded.
-set(all changes hygiene title build asan nofp be32 hash-equality retroarch perf quality)
-set(light build=skipped,asan=skipped,nofp=skipped,be32=skipped,hash-equality=skipped,retroarch=skipped,perf=skipped,quality=skipped)
+set(all changes hygiene title build asan nofp be32 hash-equality library retroarch perf quality)
+set(light build=skipped,asan=skipped,nofp=skipped,be32=skipped,hash-equality=skipped,library=skipped,retroarch=skipped,perf=skipped,quality=skipped)
 set(cases
   "all succeeded|pull_request|true|false||pass"
   "light pull request|pull_request|false|false|${light}|pass"
@@ -62,6 +62,8 @@ set(cases
   "native hash comparison skipped|pull_request|true|false|hash-equality=skipped|fail"
   "asan failed|pull_request|true|false|asan=failure|fail"
   "quality failed|pull_request|true|false|quality=failure|fail"
+  "library failed|pull_request|true|false|library=failure|fail"
+  "library skipped when heavy=true|pull_request|true|false|library=skipped|fail"
   "quality skipped in a call|pull_request|true|true|quality=skipped,perf=skipped|fail"
   "quality omitted|pull_request|true|false|quality=omitted|fail"
   "build cancelled|push|true|false|build=cancelled|fail")

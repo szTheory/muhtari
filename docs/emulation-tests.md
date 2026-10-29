@@ -293,7 +293,7 @@ MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
   `docs/compatibility.md`.
 
 **In CI.** The `library` job (`docs/testing.md`, CI) builds the samples and OpenBIOS, then runs the preset with the
-pull request's base commit. It reports only until it has 10 green runs on `main`. `policy.compat_doc_fresh` also checks
+pull request's base commit. It is part of `CI required`. `policy.compat_doc_fresh` also checks
 the page on every `ci` and `wasm32` lane. After a ledger change, regenerate the page:
 
 ```sh
