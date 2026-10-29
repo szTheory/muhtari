@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
-current_plan: 1
+current_plan: 2
 status: executing
-stopped_at: Phase 11 planned (8 plans)
-last_updated: "2026-10-29T13:14:57.661Z"
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-10-29T13:20:46.708Z"
 last_activity: 2026-10-29
 last_activity_desc: Phase 11 execution started
-state_head: 24b49a7316859f6c48577df3c7ccd289560a8c91
+state_head: f56e1a61d5bd7f4a987c1c3732127c9c9a85cca8
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 72
-  completed_plans: 64
+  completed_plans: 65
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -35,7 +35,7 @@ remains recorded below; this step makes no new release claim.
 ## Current Position
 
 Current Phase: 11
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 8
 Progress: [███████░░░] 71%
 
@@ -43,7 +43,7 @@ Phase 10 has 14/14 accepted plans and verification passed. Six of seven mileston
 Active-slot totals are 64 summarized plans of 64 planned, including historical
 halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Executing Phase 11
+Status: Ready to execute
 Last activity: 2026-10-29 — Phase 11 execution started
 Next command: /gsd-execute-phase 11
 Branch: phase/11-full-library-acceptance
@@ -694,9 +694,9 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 11 context gathered
-Last session: 2026-10-29T11:12:47.952Z
-Resume file: .planning/phases/11-full-library-acceptance/11-CONTEXT.md
+**Stopped at:** Completed 11-01-PLAN.md
+Last session: 2026-10-29T13:20:46.482Z
+Resume file: None
 Next command: /gsd-plan-phase 11
 
 ### Quick Tasks Completed
@@ -730,6 +730,7 @@ Next command: /gsd-plan-phase 11
 | Phase 09 P04 | 14min | 2 tasks | 3 files |
 | Phase 09 P07 | accepted after debug recovery | 3 accepted tasks | source7ad503c; recoverya93a11d/ddf51d4 |
 | Phase 10 P14 | 20 min | 2 tasks | 5 files |
+| Phase 11 P01 | 35m | 3 tasks | 10 files |
 
 ## Decisions
 
@@ -748,6 +749,7 @@ Next command: /gsd-plan-phase 11
 - [Phase 08]: Historical399937 halt preserved; DEC.61 separately retires only that unsupported cutoff while preserving required measurements and all independent contracts.
 - [Phase 08]: Audit every required workflow job; standalone diagnostic consumers link the existing owned digest helper and actual RetroArch acceptance is verified separately from package metrics.
 - [Phase 10]: 10-14: --hsc-rom loads without firmware first, reads HSC attachment from muhtari_get_battery, reads firmware only for an accepted attached image and loads again; refused images keep exit 77
+- [Phase 11]: Pin recipe copies mailbox@ rows and bare-id rows untouched and evaluates only title@/boots@ rows; -DCHECK enforces pin order
 
 ### Blockers
 
