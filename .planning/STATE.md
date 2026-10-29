@@ -45,7 +45,7 @@ halted 06-01; 62 accepted plans. Summarized counts do not establish phase accept
 
 Status: Phase complete — ready for verification
 Last activity: 2026-10-29 — Phase 11 execution started
-Next command: /gsd-execute-phase 11
+Next command: /gsd-plan-phase 11 --gaps
 Branch: phase/11-full-library-acceptance
 
 ## Phase 10 execution receipt
@@ -697,7 +697,7 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 **Stopped at:** Completed 11-08-PLAN.md
 Last session: 2026-10-29T14:44:57.321Z
 Resume file: None
-Next command: /gsd-plan-phase 11
+Next command: /gsd-plan-phase 11 --gaps
 
 ### Quick Tasks Completed
 
