@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
-current_plan: 10
+current_plan: 11
 status: executing
-stopped_at: Completed 11-10-PLAN.md
-last_updated: "2026-10-29T16:15:39.073Z"
+stopped_at: Completed 11-09-PLAN.md
+last_updated: "2026-10-29T16:29:41.543Z"
 last_activity: 2026-10-29
 last_activity_desc: Phase 11 gap plan 11-10 complete
-state_head: ac2d04254c50810fa53b8cd3bde9bad5dc0d5638
+state_head: 0df42dff9658883c6b6f4fddc1f9ab4dd95a4e70
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 75
-  completed_plans: 73
+  completed_plans: 74
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -35,7 +35,7 @@ remains recorded below; this step makes no new release claim.
 ## Current Position
 
 Current Phase: 11
-Current Plan: 10
+Current Plan: 11
 Total Plans in Phase: 11
 Progress: [███████░░░] 71%
 
@@ -694,8 +694,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-10-PLAN.md
-Last session: 2026-10-29T16:15:38.686Z
+**Stopped at:** Completed 11-09-PLAN.md
+Last session: 2026-10-29T16:29:41.182Z
 Resume file: None
 Next command: /gsd-execute-phase 11 --gaps-only
 
@@ -739,6 +739,7 @@ Next command: /gsd-execute-phase 11 --gaps-only
 | Phase 11 P07 | 30m | 2 tasks | 10 files |
 | Phase 11 P08 | 20m | 2 tasks | 10 files |
 | Phase 11 P10 | 25min | 2 tasks | 4 files |
+| Phase 11 P09 | 35min | 3 tasks | 5 files |
 
 ## Decisions
 
@@ -771,6 +772,7 @@ Next command: /gsd-execute-phase 11 --gaps-only
 - [Phase 11]: is_experimental flip waits for pinned-list (commercial) evidence defined by a future milestone (SEED-012)
 - [Phase 11]: Ratchet judge hardening (push events, base-commit judge) is dormant SEED-014, not a task
 - [Phase 11]: Evidence kind for a 7800basic title pass is named public title screen, not gameplay; the sample guard checks only sample-backed claim tests (D-17 amendment)
+- [Phase 11]: Plan 11-09: the local pass and the library preset's configure-time scans share compat_files; links and unreadable entries are counted, never followed or named; the name rule tests for a semicolon or a non-absolute piece because CMake reports a write-only file as not existing
 
 ### Blockers
 
