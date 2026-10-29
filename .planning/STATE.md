@@ -50,6 +50,32 @@ Last activity: 2026-10-29 -- Phase 11 shipped as PR #40
 Next command: $gsd-ship 11
 Branch: phase/11-full-library-acceptance
 
+## Phase 11 shipping receipt
+
+PR #40: https://github.com/szTheory/muhtari/pull/40 targets the genuine
+main base a20ebbd34fbfa26622db524a5b4ec8f125d1a203. Squash auto-merge is enabled.
+Fresh ship `cmake --workflow --preset ci` exits 0: 673 CI tests and 6 release
+checks (run URL N/A-local). The three pre-existing runtime/documentation edits
+were temporarily stashed for clean preflight, then restored unchanged.
+
+Hosted source 58f50996842395afed8270c7ac93a584e88f37e8, attempt 1:
+https://github.com/szTheory/muhtari/actions/runs/40939948069.
+The quality producer exits 1 on `invalid sample revision transition` because
+a Phase 11 comment-only edit changed the frozen raw sample identity. No hash
+row changed. The existing `quality_sample_identity` consumer reproduces exit 1
+against `origin/main`; restoring the original `tests/built/expected.txt` bytes
+makes the same consumer exit 0 and `git diff --quiet origin/main --
+tests/built/expected.txt` exit 0. The corrected BankSet explanation remains
+in the ledger and docs; the old pinned comment is historical evidence.
+
+`ctest --preset ci -R '^policy[.](quality|lane_equality)[.]controls$'
+`--no-tests=error --output-on-failure` exits 0, 4/4 including two fixtures
+(run URL N/A-local). No hash, behavior revision, identity judge, deadline or
+required-job membership is changed. This is a concrete ship-contract repair,
+not another review or gap round. Final hosted acceptance and the release PR
+check remain pending in this receipt; final command/exit/run evidence belongs
+to the ship response. Next GSD step after shipping: `$gsd-audit-milestone`.
+
 ## Phase 11 execution and re-verification receipt
 
 Plan 11-12 is committed as 2c9b924. Acceptance source is
