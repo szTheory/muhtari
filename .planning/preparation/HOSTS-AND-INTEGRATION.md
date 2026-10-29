@@ -77,7 +77,7 @@ No save states or speech are claimed.
 | `core_options` + `core_options_version "2.0"` | v1 P3 | key list equals the one sent to rcheevos review |
 | `libretro_saves` | v2 | in-process `.srm` round trip + hosted case 2 (§3) |
 | `savestate`; `savestate_features` basic → serialized → deterministic | v3 | size constant; save+load every frame for 600 frames = straight run; six-platform state hashes |
-| `is_experimental "false"` | v2 | compatibility-ledger pass count ≥ threshold |
+| `is_experimental "false"` | v2 | compatibility-ledger pass count ≥ threshold; the flip needs pinned-list (commercial) evidence that a future milestone defines (SEED-012). Phase 11 accounts every pinned entry as not evaluated or skipped, so it does not flip |
 
 RetroArch disables features above the declared level (since 1.10.1), and only reads the level when the `.info` sits beside the core [HI.22].
 

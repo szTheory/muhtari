@@ -45,3 +45,5 @@ compatibility ledger over the whole CC0 list, after which the libretro `.info` d
 ## Notes
 
 BankSet and Souper depend on the exact HALT phase; schedule them after the v1.0 DMA timing has held for a phase.
+
+The `is_experimental` flip needs pinned-list (commercial) evidence that a future milestone defines (SEED-012). Phase 11 accounts every pinned entry as not evaluated or skipped, so the `.info` keeps `is_experimental` until then.
