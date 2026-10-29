@@ -217,8 +217,8 @@ BIOS-dependent titles fall back to `boots@F;why=<reason>`. Five samples seed
 `rand` from INTIM, which differs between boot paths (`why=rng-seeded-from-intim`).
 `hiscoretable` draws after frame 262, so uses frame 300. `backuptest` and
 `languagetest` draw nothing and are skipped, as is `banksets`: the pinned recipe does not assemble it.
-Local diagnostic `mailbox@12` rows identify exact owned-template variants and
-numeric CRC evidence; see [compatibility](compatibility.md) for their scope.
+Local diagnostic `mailbox@12` rows record owned-template CRC evidence;
+[compatibility](compatibility.md) gives their scope.
 
 `title.simple.fast` and `title.simple.bios` evaluate `simple`'s row on both paths, reading its hash from the ledger
 at configure time. Every row of tier `pr` is evaluated on both paths by the `library` preset (ledger, below), in CI
@@ -256,7 +256,7 @@ recipe edits them: `cmake -DXML=build/pins/mame/a7800.xml -DLEDGER=tests/compat/
 -DOUT=tests/compat/ledger.csv -P tools/softlist_ledger.cmake`. Their `board` and `peripherals` repeat the list's
 declarations; `any` in `region` means the list names both systems or none.
 
-**Statuses.** `pass` and `fail` are the last evaluation on both paths. `unknown` was never evaluated.
+**Statuses.** `pass` and `fail` are the last evaluation on both paths. `unknown` (shown as not evaluated) was never evaluated.
 `unsupported` needs a board or peripheral the core refuses, and names it. `skipped` is deliberately not run, with
 the reason in the predicate, and is never in a CI tier. `infrastructure_error` means the harness broke.
 
@@ -280,8 +280,7 @@ MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
 - `library.results` joins the lines into `build/library/results.csv`, sorted by id, then predicate. It fails unless
   every row wrote one.
 - `library.ratchet` (`tests/cmake/compat_ratchet.cmake`) fails when the results and the ledger's `pr` rows differ in
-  either direction, by status or evidence. A change that improves a row therefore updates the ledger in the same
-  pull request.
+  either direction, by status or evidence, so a change that improves a row updates the ledger in its pull request.
 - With `MUHTARI_LEDGER_BASE` set to a commit at configure time, a row (id, predicate) that was `pass` in that
   commit's ledger must still be `pass`, and `pr` if it was. A changed predicate or a removed row counts as a fall. The exception is a
   line `<id> <predicate> <expiry YYYY-MM-DD> <reason>` in `tests/compat/allow.txt` whose expiry is between today and
@@ -296,10 +295,11 @@ pull request's base commit, and is part of `CI required`. `policy.compat_doc_fre
 `ci` and `wasm32` lane. After a ledger change, regenerate the page:
 
 ```sh
-cmake -DLEDGER=tests/compat/ledger.csv -DOUT=docs/compatibility.md -P tools/compat_doc.cmake
+cmake -DLEDGER=tests/compat/ledger.csv -DEXPECTED=tests/diag/expected.csv \
+  -DINVENTORY=tests/inventory/ci.txt -DOUT=docs/compatibility.md -P tools/compat_doc.cmake
 ```
 
-**Your own dumps.** Optional; nothing waits on it. First build the samples and OpenBIOS under
+**Your own dumps.** Optional. First build the samples and OpenBIOS under
 `build/ci/built` with `cmake --preset ci && cmake --build --preset ci && ctest --preset ci -L '^built$'`, then:
 
 ```sh
@@ -309,8 +309,7 @@ ctest --test-dir build/library -R '^library[.]local$' -V | grep -E 'local: [0-9]
 
 `library.local` identifies each file through the core's cartridge list, judges each present softlist row on both
 boot paths, and prints `local: P of N present, X pass, Y fail, Z absent, commit=... tree=...`. The
-preset sets `outputOnFailure`, so a pass shows only progress and exit status 0; the second command prints the counts
-line without the dump directory. `build/library/local.csv` never enters `results.csv` or the ledger; a fail there is
+preset sets `outputOnFailure`, so the second command prints the counts line, without the dump directory. `build/library/local.csv` never enters `results.csv` or the ledger; a fail there is
 data, not a test failure.
 
 ## boot to play
