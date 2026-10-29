@@ -351,7 +351,7 @@ Plans:
 **Goal:** Account for the pinned library honestly and prove every new compatibility claim without private bytes in CI.
 **Depends on:** Phase 10
 **Requirements:** COMP-01, COMP-02, COMP-03
-**Plans:** 3/8 plans executed in 8 sequential waves.
+**Plans:** 4/8 plans executed in 8 sequential waves.
 
 Plans:
 **Wave 1**
@@ -364,7 +364,7 @@ Plans:
 - [x] 11-03-PLAN.md — Close the ratchet's tier-demotion hole, bind mailbox CRCs, promote the library job to required.
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 11-04-PLAN.md — Count a private local run through the core's own identification, proven by a public fixture.
+- [x] 11-04-PLAN.md — Count a private local run through the core's own identification, proven by a public fixture.
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 11-05-PLAN.md — Document the private command with its prerequisite, remove the dotenv drift, record the local run.

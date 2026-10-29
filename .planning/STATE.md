@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
-current_plan: 4
+current_plan: 5
 status: executing
-stopped_at: Completed 11-03-PLAN.md
-last_updated: "2026-10-29T13:53:50.601Z"
+stopped_at: Completed 11-04-PLAN.md
+last_updated: "2026-10-29T14:12:08.460Z"
 last_activity: 2026-10-29
 last_activity_desc: Phase 11 execution started
-state_head: 239ea56842b644facd04a5c26bd3a15c4ee2f313
+state_head: 6183c39f4ec1b90d508a6166091d3f15903ded82
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 72
-  completed_plans: 67
+  completed_plans: 68
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -35,7 +35,7 @@ remains recorded below; this step makes no new release claim.
 ## Current Position
 
 Current Phase: 11
-Current Plan: 4
+Current Plan: 5
 Total Plans in Phase: 8
 Progress: [███████░░░] 71%
 
@@ -694,8 +694,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-03-PLAN.md
-Last session: 2026-10-29T13:53:50.360Z
+**Stopped at:** Completed 11-04-PLAN.md
+Last session: 2026-10-29T14:12:08.228Z
 Resume file: None
 Next command: /gsd-plan-phase 11
 
@@ -733,6 +733,7 @@ Next command: /gsd-plan-phase 11
 | Phase 11 P01 | 35m | 3 tasks | 10 files |
 | Phase 11 P02 | 45m | 3 tasks | 8 files |
 | Phase 11 P03 | 30m | 3 tasks | 12 files |
+| Phase 11 P04 | 70m | 3 tasks | 14 files |
 
 ## Decisions
 
@@ -757,6 +758,7 @@ Next command: /gsd-plan-phase 11
 - [Phase 11]: Ratchet protects a passing pr row's tier on the BASE path; demotion to local needs a dated allow line
 - [Phase 11]: Local mailbox rows are bound to diag.bankset, diag.expansion and diag.pal through ledger_crc.cmake at the canonical case only; predicate.c gains no mailbox support
 - [Phase 11]: library job promoted into CI required after a recount of 18 distinct successful main runs
+- [Phase 11]: 11-04: private files are detected at test time and matched only through the core's own identification; a refused identified image is a fail, harness faults are named and fail the run
 
 ### Blockers
 
