@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
-current_plan: 8
+current_plan: 10
 status: executing
-stopped_at: Completed 11-08-PLAN.md
-last_updated: "2026-10-29T16:06:00.251Z"
+stopped_at: Completed 11-10-PLAN.md
+last_updated: "2026-10-29T16:15:39.073Z"
 last_activity: 2026-10-29
-last_activity_desc: Phase 11 gap round planned (11-09 to 11-11)
-state_head: 40278300185d17e4b21f6a7d4806d14400e22fff
+last_activity_desc: Phase 11 gap plan 11-10 complete
+state_head: ac2d04254c50810fa53b8cd3bde9bad5dc0d5638
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 75
-  completed_plans: 72
+  completed_plans: 73
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -35,7 +35,7 @@ remains recorded below; this step makes no new release claim.
 ## Current Position
 
 Current Phase: 11
-Current Plan: 8
+Current Plan: 10
 Total Plans in Phase: 11
 Progress: [███████░░░] 71%
 
@@ -44,7 +44,7 @@ Active-slot totals are 64 summarized plans of 64 planned, including historical
 halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
 
 Status: Ready to execute
-Last activity: 2026-10-29 — Phase 11 gap round planned: 11-10, then 11-09, then 11-11
+Last activity: 2026-10-29 — Phase 11 gap plan 11-10 complete; 11-09 then 11-11 remain
 Next command: /gsd-execute-phase 11 --gaps-only
 Branch: phase/11-full-library-acceptance
 
@@ -694,8 +694,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-08-PLAN.md
-Last session: 2026-10-29T14:44:57.321Z
+**Stopped at:** Completed 11-10-PLAN.md
+Last session: 2026-10-29T16:15:38.686Z
 Resume file: None
 Next command: /gsd-execute-phase 11 --gaps-only
 
@@ -738,6 +738,7 @@ Next command: /gsd-execute-phase 11 --gaps-only
 | Phase 11 P06 | 50m | 3 tasks | 9 files |
 | Phase 11 P07 | 30m | 2 tasks | 10 files |
 | Phase 11 P08 | 20m | 2 tasks | 10 files |
+| Phase 11 P10 | 25min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -769,6 +770,7 @@ Next command: /gsd-execute-phase 11 --gaps-only
 - [Phase 11]: 11-07: .info description cut to 317 characters, says diagnostics give model conformance only and ends with the short disclaimer; description bound read with file(READ) so semicolons cannot split it
 - [Phase 11]: is_experimental flip waits for pinned-list (commercial) evidence defined by a future milestone (SEED-012)
 - [Phase 11]: Ratchet judge hardening (push events, base-commit judge) is dormant SEED-014, not a task
+- [Phase 11]: Evidence kind for a 7800basic title pass is named public title screen, not gameplay; the sample guard checks only sample-backed claim tests (D-17 amendment)
 
 ### Blockers
 
