@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/szTheory/muhtari/compare/v0.8.0...v0.9.0) (2026-10-28)
+
+
+### Features
+
+* support BankSet and XBoard/XM memory profiles ([#36](https://github.com/szTheory/muhtari/issues/36)) ([949fc61](https://github.com/szTheory/muhtari/commit/949fc61b545761eaf76668d508a2ab5888f2894c))
+
 ## [0.8.0](https://github.com/szTheory/muhtari/compare/v0.7.0...v0.8.0) (2026-10-25)
 
 
