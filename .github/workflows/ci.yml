@@ -374,7 +374,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network floor; max 31 s, n=3, run 39617761785; provisional
+    timeout-minutes: 5  # network floor; max 31 s, n=3, run 39617761785; local max 9.2 s with library.local (+0.2 s), n=3, margin 290 s; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

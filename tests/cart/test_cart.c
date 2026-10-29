@@ -55,9 +55,14 @@ static muhtari_cart_info expect_written(const char *what, const void *img, size_
     return out;
 }
 
+/* The entry index the last identify_listed call reported. */
+static uint32_t listed_index;
+
 /* A one-entry test list: the 7800 key is the SHA-1 of n bytes at img,
    pointing at entry, and the 2600 list holds that SHA-1's first 8 bytes when
-   as_2600 is set. Returns identify's status. */
+   as_2600 is set. Returns identify's status, and sets listed_index to the
+   entry the accessor reports; the accessor's status and info must equal
+   identify's. */
 static muhtari_status identify_listed(const uint8_t *img, size_t n, const uint8_t *hashed,
                                       size_t hashed_n, struct muhtari__cartdb_entry entry,
                                       int as_2600, muhtari_cart_info *out)
@@ -70,8 +75,39 @@ static muhtari_status identify_listed(const uint8_t *img, size_t n, const uint8_
     muhtari__sha1_update(&ctx, hashed, hashed_n);
     muhtari__sha1_final(&ctx, key.sha1);
     memcpy(prefix[0], key.sha1, 8);
-    return muhtari__cart_identify(img, n, &key, as_2600 ? 0u : 1u, &entry, 1u, NULL, 0u,
-                                  (const uint8_t (*)[8])prefix, as_2600 ? 1u : 0u, out);
+    muhtari_cart_info plain;
+    muhtari_status st = muhtari__cart_identify(img, n, &key, as_2600 ? 0u : 1u, &entry, 1u, NULL,
+                                               0u, (const uint8_t (*)[8])prefix,
+                                               as_2600 ? 1u : 0u, &plain);
+    muhtari_status st_entry =
+        muhtari__cart_identify_entry(img, n, &key, as_2600 ? 0u : 1u, &entry, 1u, NULL, 0u,
+                                     (const uint8_t (*)[8])prefix, as_2600 ? 1u : 0u, out,
+                                     &listed_index);
+    CHECK_EQ_U64(st_entry, st);
+    CHECK(memcmp(&plain, out, sizeof plain) == 0);
+    return st_entry;
+}
+
+/* The index of the test list entry that the n bytes at img match, or
+   UINT32_MAX, with the accessor's status and info equal to identify's. */
+static uint32_t listed_entry(const uint8_t *img, size_t n)
+{
+    muhtari_cart_info plain;
+    muhtari_cart_info out;
+    uint32_t entry = 0u;
+    muhtari_status st = muhtari__cart_identify(
+        img, n, muhtari__cartdb_7800_keys, muhtari__cartdb_7800_key_count,
+        muhtari__cartdb_7800_entries, muhtari__cartdb_7800_entry_count,
+        muhtari__cartdb_7800_layouts, muhtari__cartdb_7800_layout_count,
+        muhtari__cartdb_2600_prefix, muhtari__cartdb_2600_prefix_count, &plain);
+    muhtari_status st_entry = muhtari__cart_identify_entry(
+        img, n, muhtari__cartdb_7800_keys, muhtari__cartdb_7800_key_count,
+        muhtari__cartdb_7800_entries, muhtari__cartdb_7800_entry_count,
+        muhtari__cartdb_7800_layouts, muhtari__cartdb_7800_layout_count,
+        muhtari__cartdb_2600_prefix, muhtari__cartdb_2600_prefix_count, &out, &entry);
+    CHECK_EQ_U64(st_entry, st);
+    CHECK(memcmp(&plain, &out, sizeof plain) == 0);
+    return entry;
 }
 
 /* A clean linear header over a valid body probes OK with every field from
@@ -208,7 +244,11 @@ static void test_accepted(void)
         e.board_options = geometry[i].options;
         e.parts = 1u;
         CHECK_EQ_U64(identify_listed(buf, n, buf, n, e, 0, &out), geometry[i].status);
+        CHECK_EQ_U64(listed_index, 0u); /* an entry the geometry refuses keeps its index */
     }
+    CHECK_EQ_U64(identify_listed(buf, n, buf + 1, n - 1u, e, 0, &out),
+                 MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    CHECK_EQ_U64(listed_index, UINT32_MAX);
 }
 
 /* The argument checks come first, and none of them writes out. */
@@ -564,6 +604,7 @@ static void test_hash_override(void)
     CHECK_EQ_U64(out.port1, MUHTARI_PORT_PROLINE); /* the entry's light gun is not used */
     CHECK_EQ_U64(out.port2, MUHTARI_PORT_JOYSTICK);
     CHECK_EQ_U64(out.region, MUHTARI_REGION_NTSC); /* the header's, not the PAL entry's */
+    CHECK_EQ_U64(listed_entry(buf, n), 1u);
 
     /* TV bit 2, multi-region: the header names no region, so the entry's. */
     n = override_image(0x0000u, 0x04u);
@@ -582,6 +623,7 @@ static void test_hash_override(void)
     /* One body byte changed: no match, so the header's linear board. */
     n = override_image(0x0000u, 0u);
     buf[IMAGES_HEADER + 5u] ^= 1u;
+    CHECK_EQ_U64(listed_entry(buf, n), UINT32_MAX);
     out = expect_written("override, no match", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HEADER);
     CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER);
@@ -602,6 +644,7 @@ static void test_slices(void)
     CHECK_EQ_U64(out.sound, MUHTARI_SOUND_POKEY_450);
     CHECK_EQ_U64(out.region, MUHTARI_REGION_PAL);
     CHECK_EQ_U64(out.rom_size, body);
+    CHECK_EQ_U64(listed_entry(buf, n), 4u); /* the two-chip entry, by its first chip */
     /* The same body under a header that says no POKEY: corrected. */
     images_header(buf, 3u, "Two chips", body, 0u);
     images_seeded(buf + IMAGES_HEADER, body, IMAGES_SEED_TWO_CHIP);
@@ -610,6 +653,7 @@ static void test_slices(void)
     CHECK_EQ_U64(out.flags, MUHTARI_CART_HEADER | MUHTARI_CART_HASH_MATCH);
     CHECK_EQ_U64(out.sound, MUHTARI_SOUND_POKEY_450);
     CHECK_EQ_HEX(out.warnings, MUHTARI_CART_WARN_HEADER_CORRECTED);
+    CHECK_EQ_U64(listed_entry(buf, IMAGES_HEADER + body), 4u);
     /* One byte changed in either slice: no match, so the footer test. */
     static const uint32_t changed[2] = {100u, 20u * IMAGES_KIB};
     for (size_t i = 0; i < 2u; i++) {
@@ -618,6 +662,7 @@ static void test_slices(void)
         out = expect_written("two chips, one changed", buf, n, MUHTARI_STATUS_OK);
         CHECK_EQ_U64(out.source, MUHTARI_SOURCE_FOOTER);
         CHECK_EQ_U64(out.sound, 0);
+        CHECK_EQ_U64(listed_entry(buf, n), UINT32_MAX);
     }
 
     /* 16 KiB + one 8 KiB chip mapped twice. */
@@ -625,11 +670,13 @@ static void test_slices(void)
     out = expect_written("mirrored chip", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+    CHECK_EQ_U64(listed_entry(buf, n), 5u);
     /* The two copies differ: no match, so the footer's linear board. */
     buf[16u * IMAGES_KIB] ^= 1u;
     out = expect_written("mirrored chip, copies differ", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_FOOTER);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_LINEAR);
+    CHECK_EQ_U64(listed_entry(buf, n), UINT32_MAX);
 }
 
 /* Independent OM half tags at both ends of each CPU window. Observations
@@ -660,7 +707,9 @@ static void test_activision_swap(void)
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_ACTIVISION);
     CHECK_EQ_U64(out.flags, MUHTARI_CART_HASH_MATCH);
+    CHECK_EQ_U64(listed_entry(buf, n), 6u);
     images_swap_halves(buf, n);
+    CHECK_EQ_U64(listed_entry(buf, n), 6u); /* found by the half-swapped pass */
     out = expect_written("swapped layout", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.kind, MUHTARI_KIND_7800);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_HASH);
@@ -681,6 +730,7 @@ static void test_activision_swap(void)
     out = expect_written("64 KiB", buf, n, MUHTARI_STATUS_OK);
     CHECK_EQ_U64(out.source, MUHTARI_SOURCE_FOOTER);
     CHECK_EQ_U64(out.board, MUHTARI_BOARD_SUPERGAME);
+    CHECK_EQ_U64(listed_entry(buf, n), UINT32_MAX); /* entry 7 is never reached by a swap */
 
     static uint8_t canonical[131072];
     static uint8_t original[131072 + IMAGES_HEADER];
@@ -846,8 +896,10 @@ static void test_not_a_cartridge(void)
 {
     size_t n = images_seeded(buf, 4u * IMAGES_KIB, IMAGES_SEED_NOT_CART);
     expect_untouched("not a cartridge", buf, n, MUHTARI_STATUS_ERR_INVALID_IMAGE);
+    CHECK_EQ_U64(listed_entry(buf, n), 8u); /* identified, then refused: the index stays */
     images_header(buf, 3u, "Not a cartridge", 4u * IMAGES_KIB, 0u);
     images_seeded(buf + IMAGES_HEADER, 4u * IMAGES_KIB, IMAGES_SEED_NOT_CART);
+    CHECK_EQ_U64(listed_entry(buf, IMAGES_HEADER + 4u * IMAGES_KIB), 8u);
     expect_untouched("not a cartridge, headered", buf, IMAGES_HEADER + 4u * IMAGES_KIB,
                      MUHTARI_STATUS_ERR_INVALID_IMAGE);
 }
