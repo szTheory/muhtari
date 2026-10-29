@@ -116,6 +116,7 @@ recorded in 11-DISCUSSION-LOG.md.
   mismatch); a predicate `fail` is data. Zero, some or all files configure identically, so "no silent
   skip" holds by counting. `pr` rows keep their hard configure failure. Only bare-id rows run here.
   The timeout scales with the present count; output prints ids and counts only, never paths.
+- **D-13 amendment (plan-phase, 2026-10-29):** detection runs at test time inside library.local, because the predicate binary that performs core identification (D-14) is built after configure; configure only counts candidate files to scale the CTest timeout. Evidence: 11-RESEARCH.md F4.
 - **D-14:** Matching a private file to a row goes through the core's own identification (the cartdb
   lookup that already handles multi-chip, 48K-on-64K and Activision half-swap layouts), not raw file
   SHA-1 equality against `sha1_raw`. The researcher confirms how `muhtari-test-predicate` or the runner

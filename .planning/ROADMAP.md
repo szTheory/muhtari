@@ -351,7 +351,32 @@ Plans:
 **Goal:** Account for the pinned library honestly and prove every new compatibility claim without private bytes in CI.
 **Depends on:** Phase 10
 **Requirements:** COMP-01, COMP-02, COMP-03
-**Plans:** TBD — created by plan-phase.
+**Plans:** 8 plans in 8 sequential waves.
+
+Plans:
+**Wave 1**
+- [ ] 11-01-PLAN.md — Repair the pin recipe, pin three owned retail diagnostics, fix PAL predicate hashing, correct banksets.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 11-02-PLAN.md — Generate one derived ledger row per pinned-list entry, checked against the pin on the hygiene lane.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 11-03-PLAN.md — Close the ratchet's tier-demotion hole, bind mailbox CRCs, promote the library job to required.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 11-04-PLAN.md — Count a private local run through the core's own identification, proven by a public fixture.
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 11-05-PLAN.md — Document the private command with its prerequisite, remove the dotenv drift, record the local run.
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 11-06-PLAN.md — Regenerate the compatibility page: two populations, derived headline, claims table, guards.
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 11-07-PLAN.md — Require the disclaimer and bound the .info description.
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 11-08-PLAN.md — Align planning docs with the real local run and record the deferred ideas as seeds.
 
 **Success criteria:**
 
@@ -376,7 +401,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
 | 10. Homebrew and expansion memory | 14/14 | Complete    | 2026-10-28 |
-| 11. Full-library acceptance | 0/TBD | Not started | — |
+| 11. Full-library acceptance | 0/8 | Not started | — |
 
 ---
 *Updated: 2026-10-25; Phases5–9 are complete. Phase9 has8/8 accepted plans,22/22 tasks,42/42 verified truths and all three PAL requirements complete. Source-fresh CI40233948646 and Nightly40233948516 attempt2 pass: six native current/base lanes, full native/PPC654+6, WASM592/956-row equality, actual RetroArch and authenticated native packages. One review-fix round resolved BIOS input lifetime; re-review is clean, gap round unused. The advisory10000-case isolation timeout remains unaccepted. Phase10 is researched and planned (13 plans/30 tasks,13 sequential waves), with independent plan checking passed and20/20 decisions covered. Phase11 remains unplanned. Next separate command: $gsd-execute-phase 10.*
