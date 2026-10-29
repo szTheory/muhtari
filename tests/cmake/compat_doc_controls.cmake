@@ -3,12 +3,12 @@
 #     -DEXPECTED=<tests/diag/expected.csv> -DINVENTORY=<tests/inventory/ci.txt>
 #     -DWORK=<scratch directory> -P tests/cmake/compat_doc_controls.cmake
 # Fault prevented: a committed page that disagrees with the ledger, or a
-# generator that accepts a ledger claiming more than it shows. Nine cases:
+# generator that accepts a ledger claiming more than it shows. Ten cases:
 # a stale page is named; a fixture with one row of each kind gets exact counts;
 # and each generator guard (status outside the vocabulary, skipped without
 # why=, a pr row that is unknown, a pinned-list pass, a token with no claim
 # entry, a backing test missing from the inventory, a sample-backed test whose
-# sample lacks the claim) fails with its message.
+# sample lacks the claim, for a title or a basic sample) fails with its message.
 cmake_minimum_required(VERSION 3.25)
 foreach(required TOOL LEDGER PAGE EXPECTED INVENTORY WORK)
   if("${${required}}" STREQUAL "")
@@ -131,3 +131,13 @@ if(sample STREQUAL ledger)
 endif()
 file(WRITE "${WORK}/sample.csv" "${sample}")
 expect_fail(sample "${WORK}/sample.csv" "${INVENTORY}" "linear names title[.]simple[.]fast, whose sample simple does not carry linear")
+
+# 10. The same check holds for a basic.<sample> test: a linear sample cannot
+# back the supergame claim.
+file(READ "${LEDGER}" ledger)
+string(REGEX REPLACE "(^|\n)(7800basic-0[.]41/rmtramdemo,[^,]*,[^,]*,[^,]*,[^,]*,[^,]*,)supergame[+]ram," "\\1\\2linear," basic "${ledger}")
+if(basic STREQUAL ledger)
+  message(FATAL_ERROR "compat_doc_controls: basic: the replacement left the ledger unchanged")
+endif()
+file(WRITE "${WORK}/basic.csv" "${basic}")
+expect_fail(basic "${WORK}/basic.csv" "${INVENTORY}" "names basic[.]rmtramdemo, whose sample rmtramdemo does not carry")
