@@ -502,7 +502,7 @@ static uint32_t cart_port(uint32_t code, muhtari_cart_info *out)
 
 /* An image whose bytes 1-9 are the A78 magic. */
 static muhtari_status cart_header(const uint8_t *img, size_t n, const struct cart_tables *t,
-                                  muhtari_cart_info *out)
+                                  muhtari_cart_info *out, uint32_t *entry)
 {
     if (n < CART_HEADER_SIZE) {
         return MUHTARI_STATUS_ERR_TRUNCATED_IMAGE;
@@ -601,6 +601,7 @@ static muhtari_status cart_header(const uint8_t *img, size_t n, const struct car
     const struct muhtari__cartdb_entry *e =
         cart_lookup(img + CART_HEADER_SIZE, mapped, t, digest, &orientation);
     if (e != NULL) {
+        *entry = (uint32_t)(e - t->entries);
         if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
             return MUHTARI_STATUS_ERR_INVALID_IMAGE;
         }
@@ -677,13 +678,14 @@ static int cart_2600_size(size_t n)
 /* An image without the A78 magic: the 7800 list, the 2600 list, the footer
    test and the 2600 sizes, in that order. n is at least 1. */
 static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct cart_tables *t,
-                                      muhtari_cart_info *out)
+                                      muhtari_cart_info *out, uint32_t *entry)
 {
     uint8_t digest[20];
     out->rom_size = (uint32_t)n;
     uint32_t orientation;
     const struct muhtari__cartdb_entry *e = cart_lookup(img, n, t, digest, &orientation);
     if (e != NULL) {
+        *entry = (uint32_t)(e - t->entries);
         if ((e->flags & MUHTARI__CARTDB_NOT_CART) != 0u) {
             return MUHTARI_STATUS_ERR_INVALID_IMAGE;
         }
@@ -731,14 +733,17 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct
     return MUHTARI_STATUS_ERR_INVALID_IMAGE;
 }
 
-muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
-                                      const struct muhtari__cartdb_key *keys, uint32_t key_count,
-                                      const struct muhtari__cartdb_entry *entries,
-                                      uint32_t entry_count,
-                                      const struct muhtari__cartdb_layout *layouts,
-                                      uint32_t layout_count, const uint8_t (*prefix)[8],
-                                      uint32_t prefix_count, muhtari_cart_info *out)
+muhtari_status
+muhtari__cart_identify_entry(const uint8_t *img, size_t n, const struct muhtari__cartdb_key *keys,
+                             uint32_t key_count, const struct muhtari__cartdb_entry *entries,
+                             uint32_t entry_count, const struct muhtari__cartdb_layout *layouts,
+                             uint32_t layout_count, const uint8_t (*prefix)[8],
+                             uint32_t prefix_count, muhtari_cart_info *out, uint32_t *entry)
 {
+    uint32_t matched = UINT32_MAX;
+    if (entry != NULL) {
+        *entry = UINT32_MAX;
+    }
     if (out == NULL || (img == NULL && n > 0u)) {
         return MUHTARI_STATUS_ERR_ARGUMENT;
     }
@@ -752,10 +757,28 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
     }
     struct cart_tables t = {keys,    key_count,    entries, entry_count,
                             layouts, layout_count, prefix,  prefix_count};
+    muhtari_status st;
     if (n >= 10u && memcmp(img + A78_MAGIC, cart_magic, sizeof cart_magic) == 0) {
-        return cart_header(img, n, &t, out);
+        st = cart_header(img, n, &t, out, &matched);
+    } else {
+        st = cart_headerless(img, n, &t, out, &matched);
     }
-    return cart_headerless(img, n, &t, out);
+    if (entry != NULL) {
+        *entry = matched;
+    }
+    return st;
+}
+
+muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
+                                      const struct muhtari__cartdb_key *keys, uint32_t key_count,
+                                      const struct muhtari__cartdb_entry *entries,
+                                      uint32_t entry_count,
+                                      const struct muhtari__cartdb_layout *layouts,
+                                      uint32_t layout_count, const uint8_t (*prefix)[8],
+                                      uint32_t prefix_count, muhtari_cart_info *out)
+{
+    return muhtari__cart_identify_entry(img, n, keys, key_count, entries, entry_count, layouts,
+                                        layout_count, prefix, prefix_count, out, NULL);
 }
 
 /* Identification against the bundled tables. */

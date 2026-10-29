@@ -47,17 +47,15 @@ Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build 
 | `nofp` | The core uses no floating point. It is built with GCC's `-mgeneral-regs-only`, which rejects any floating-point type. | `nofp` | `abi` |
 | `hygiene` | The repository is clean: the tree scan, formatting, the integer-only text scan, the analyzer, the pins file, and `src/cartdb.c` equal to `tools/cartdb.cmake`'s output over the two pinned MAME lists. Fetch those first with `scripts/fetch-pin.sh mame-a7800-xml build/pins/mame` and `scripts/fetch-pin.sh mame-a2600-xml build/pins/mame`; configure stops with both commands when either is missing. | `hygiene` | `hygiene` |
 | `fuzz` | libFuzzer runs `tests/fuzz/loader.c` and `tests/fuzz/run.c` for 60 seconds each with clang-21, AddressSanitizer and UndefinedBehaviorSanitizer, using generated seeds. Inputs stay in `build/fuzz/fuzz/{corpus,run/corpus}`, crashes beside them in `crash/`. Linux with clang-21 only; every other lane replays the same invariants as `fuzz.regress.loader` and `fuzz.regress.run` (`docs/emulation-tests.md`, fuzz). | `fuzz` | `fuzz` |
-| `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, about 1 GiB of disk and 90 s for the fetch. | `vectors-full` | `vectors-full` |
+| `vectors-full` | SALLY matches all 2,560,000 SingleStepTests 6502 tests at the pinned commit. `cpu.vectors-full.fetch` checks `6502/v1` out sparse and blobless into `build/vectors-full/vectors-full` (`MUHTARI_VECTORS_DIR`; a path in the source tree outside `build/` is refused), verifies each file against `tests/vectors/6502-v1.sha256` and fetches nothing when all verify. `cpu.vectors-full.sample_match` proves the committed sample is the first 100 tests of each file; `cmake -DWRITE=ON ... -P tests/cmake/vectors_sample_match.cmake` rewrites it for a pin bump. A failed fetch leaves the other 257 not run. Needs the network, 1 GiB of disk and 90 s. | `vectors-full` | `vectors-full` |
 | `be32-compile` / `be32-full` | Required PR PowerPC compilation; full nightly native/BE equality under qemu-ppc. | `ci` | compile only / all normal, package, release |
 | `wasm32` | The same hashes in WebAssembly. It builds with clang-21 for `wasm32-wasi` (`cmake/toolchains/wasm32-wasi.cmake`) and runs under the pinned wasmtime. WASI cannot load a libretro core, so this lane builds none. | `wasm32` | `portable` |
-| `library` | The compatibility ledger holds: each `pr` row is judged afresh on its file under `MUHTARI_ROM_DIR` or `tests/diag`, on both boot paths, and the ratchet compares (label `library` below). Run the `ci` preset's `built` tests first, then `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library`. | `library` | `library` |
+| `library` | The compatibility ledger holds: each `pr` row is judged on its file under `MUHTARI_ROM_DIR`, `build/ci/built` or `tests/diag`, on both boot paths, and the ratchet compares (label `library` below). Run the `ci` preset's `built` tests first, then `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library`. | `library` | `library` |
 
 Emulated test binaries and runner subprocesses use `CMAKE_CROSSCOMPILING_EMULATOR`
 (scripts take `-DEMULATOR=`). wasm32 uses
 `build/pins/wasmtime/wasmtime run --dir=<source>::<source>`; the preopen includes
-the build tree at matching guest paths. Fetch with
-`scripts/fetch-pin.sh wasmtime-<arch>-linux build/pins/wasmtime`; configure refuses
-a missing runtime. WASI outputs have no `.wasm` suffix.
+the build tree at matching guest paths. Configure refuses a missing runtime. WASI outputs have no `.wasm` suffix.
 
 `MUHTARI_TIMEOUT_SCALE`: provisional `asan`/`be32`/`wasm32`/Intel macOS scales 2/13/2/2 (env); same-run Linux x64 duration-sum
 ratios max 1.713/12.127/1.612 (n=4/4/2). ASan keeps short runs. `audio.samples`: eight 600-frame driver/runner
@@ -89,18 +87,17 @@ Comparison requires exactly `COUNT` present, byte-identical files with the compl
 - **wasm32.** It reports only, compared with the Linux x64 file outside the required check. Once it is promoted
   into `hash-equality`, the count goes up by one.
 
-`ctest --preset ci -R <regex>` reruns part of the suite after a build; `ctest --test-dir build/ci -L <label>`
-selects by label. `docs/emulation-tests.md` says what each emulation label's tests cover.
+`ctest --preset ci -R <regex>` reruns part of the suite; `ctest --test-dir build/ci -L <label>` selects by label. `docs/emulation-tests.md` says what each emulation label's tests cover.
 
 ## The inventory
 
-`tests/inventory/ci.txt` lists every registered test with its labels, one `name<TAB>labels` line each, sorted,
-labels comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
-test cannot be dropped, renamed or registered on one platform only without the file changing in the same commit.
-Every leg registers the same tests; a check that only one platform can perform runs there as a CI step instead.
-Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt`, `library.txt`, one
-`library.<id>` per ledger row of tier `pr`, and `wasm32.txt` for actual WASI registrations with the module
-disabled. Both keep the portable BankSet/XBoard/XM diagnostics and fault controls.
+`tests/inventory/ci.txt` lists every registered test with its labels, one `name<TAB>labels` line each, sorted and
+comma-separated. Configure fails when the registered tests differ from the file in either direction, so a
+test cannot be dropped, renamed or registered on one platform alone without the file changing with it.
+Every leg registers the same tests; a check only one platform can perform is a CI step instead.
+Six lanes register their own lists: `hygiene.txt`, `nofp.txt`, `fuzz.txt`, `vectors-full.txt`, `library.txt` (one
+`library.<id>` per ledger row of tier `pr`, and `library.local`) and `wasm32.txt` for actual WASI registrations
+with the module disabled. Both keep the portable BankSet/XBoard/XM diagnostics and fault controls.
 
 | Label | Tests |
 |---|---|
@@ -123,13 +120,13 @@ disabled. Both keep the portable BankSet/XBoard/XM diagnostics and fault control
 | `built` | Samples built from pinned tools (`tests/built/`). `built.<name>` builds one 7800basic 0.41 sample per row of `expected.txt` under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/<name>/`, and checks the `.a78` and `.bin` SHA-256s in that row. `runner.probe.sample_*` then probe `simple`: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` ([emulation tests, basic](emulation-tests.md#basic)). |
 | `diag` | Our own diagnostic ROMs judged through their mailbox against values derived beforehand, and the core's statistics ([emulation tests, diag](emulation-tests.md#diag)). `diag.rebuild` carries `built`. |
-| `title` | The ledger's title predicates on `simple`, on the fast boot and through OpenBIOS, and the pin writer's refusal of a blank screen ([emulation tests, title](emulation-tests.md#title)). |
-| `library` | The `library` lane: each `pr` ledger row judged afresh, the ratchet and the generated page, run by CI's `library` job ([emulation tests, ledger](emulation-tests.md#ledger); [CI](#ci)). |
+| `title` | The ledger's title predicates on `simple`, on the fast boot and through OpenBIOS, the pin writer's refusal of a blank screen, and the local driver on public bytes (`title.local.fixture`) ([emulation tests, title](emulation-tests.md#title)). |
+| `library` | Each `pr` ledger row, the ratchet (`policy.compat_ratchet.controls`) and the generated page, run by CI's `library` job ([emulation tests, ledger](emulation-tests.md#ledger); [CI](#ci)). |
 | `bench` | The runner's benchmark report. |
-| `libretro` | The libretro core in an in-process host (content, controls, devices, Restart, BIOS files, options, the memory map), BIOS file/allocation/path faults (`libretro.bios_failures`), rcheevos' resolver over that map (`libretro.rcheevos`), its `.info` file and its vendored header. |
+| `libretro` | The libretro core in an in-process host (content, controls, devices, Restart, BIOS files, options, the memory map), BIOS file/allocation/path faults (`libretro.bios_failures`), rcheevos' resolver over that map (`libretro.rcheevos`), its `.info` file (claims backed, description at most 512 characters) and its vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
 | `perf` | Allocation-free frames. |
-| `policy` | Rules about the repository and the tests themselves. |
+| `policy` | Rules about the repository and the tests themselves; `policy.claims_wording` requires the disclaimer and rejects overclaims in user-facing files (`tests/cmake/claims_wording.cmake`). |
 | `release` | The packaged zips, run after the package step. |
 
 ## Negative controls
@@ -160,6 +157,8 @@ output matches the expected message; a crash or a missing file does not count as
 | `policy.publish_set.self_test` | 17 of the 18 release zips; `publish.sh prepare` must exit 1 naming the missing one. |
 | `policy.no_skip.self_test` | A test file that sets a skip property. |
 | `libretro.info_claims.self_test` | An `.info` file claiming a capability no test covers. |
+| `libretro.info_claims.description.self_test` | A 513-character `.info` description. |
+| `policy.claims_wording.self_test` | A README without the disclaimer; a page overclaiming in mixed case. |
 | `release.archive_contents.self_test` | A libretro zip without `THIRD-PARTY-NOTICES.md`. |
 | `release.firmware_scan.self_test` | A zip holding a synthetic 256-byte A78 file and a list naming the SHA-1 of its last 128 bytes; the scan must exit 1 with `matches synthetic (header stripped)`. |
 | `release.floor.self_test` | An impossible floor: glibc 2.0, macOS 9.0, or no allowed Windows DLL. |
@@ -236,28 +235,27 @@ with its lane's inventory and labels.
 Windows legs load the native MSVC environment with `vswhere` and `vcvarsall`.
 Actions are pinned by full commit SHA.
 
-**The roll-up.** The ruleset requires one check, `CI required`. It always runs, and passes only when every job it
+**The roll-up.** The ruleset requires one check, `CI required`. It always runs and passes only when every job it
 needs succeeded, with three exceptions: the heavy jobs may be skipped when `changes` says `heavy=false`, which
 happens only when every changed path is under `.planning/`; `title` and `perf` may be skipped outside pull
-requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32`/`library` stay advisory: 9/5 distinct
-successful main executions as of 2026-10-22; ten are required. Skips, PR/branch controls and duplicate reruns do not count.
+requests; and `perf` may be skipped in a nested call that passes `ref`. `wasm32` stays advisory: 9 distinct
+successful main executions as of 2026-10-22; ten are required. `library` is required (18, 2026-10-29). Skips, PR/branch controls and duplicate reruns do not count.
 
 **Tests of CI itself.** The hygiene lane checks the rules above. `policy.ci_required` reads the roll-up's `jq`
-program from `ci.yml` and runs it, with the step's own arguments, on synthetic job results; it also fails when a
-job other than `wasm32` and `library` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
-renamed, empty and planning-only path lists, and on a planning-only list from a pull request of more than 3000
+program from `ci.yml` and runs it, with the step's own arguments, on synthetic results; it also fails when a
+job other than `wasm32` is missing from `CI required`'s needs. `ci.classify` runs the classifier on mixed,
+renamed, empty and planning-only path lists, and on a planning-only list from a pull request over 3000
 files, which the files API cuts short. `hygiene.timeout_comments` requires each `timeout-minutes` to carry a
 run/count comment. Bounds: twice the last 40 comparable successful job/runner/workload executions' maximum,
 rounded up to minutes; network/roll-up floor 5 min. n<10 is provisional. Toolchain/image/workload changes reset
 cohorts; direct/called CI stay separate. Timeouts are censored; skips and copied rerun timestamps add no samples.
-Historical bounds without current evidence say n=0. No cache is added or check removed.
+Historical bounds without current evidence say n=0.
 
 **The title.** The squash commit on `main` takes the pull request's title and body, and release-please reads its
 type. `title` passes a Conventional Commit title with a lower-case subject, such as `fix(runner): exit 2 on a
 missing file`. It fails a scope that starts with a digit (a plan number), a `Phase 1: Name` title, `feat`, `fix`
 or `perf` scoped `ci`, `release`, `build`, `test` or `docs` (pipeline work cuts no release), and any CI skip
-token in the title or body. Editing the title reruns it. Try one locally:
-`echo | sh scripts/check-title.sh 'fix: x'`.
+token in the title or body. Editing the title reruns it. Try one: `echo | sh scripts/check-title.sh 'fix: x'`.
 
 **Concurrency.** A new push to a pull request cancels that pull request's run in progress. Runs on `main` are never
 cancelled, and a call from another workflow does not queue behind the push run on the same commit.
@@ -268,8 +266,7 @@ cancelled, and a call from another workflow does not queue behind the push run o
   Rerun that lane's preset locally (see "Running the Linux lanes locally").
 - An "Every test ran" step fails: a test was missing, ran twice, or failed in the JUnit file. Compare
   `tests/inventory/<lane>.txt` with what the preset registers.
-- `hash-equality` fails: the message names the first file that differs and prints both files. The artifact name
-  names the lane.
+- `hash-equality` fails: the message names the first file that differs and prints both files.
 - `CI required` fails with every other job green: a job was skipped where the roll-up does not allow it. Its log
   prints each job's result.
 
@@ -306,9 +303,8 @@ and `NO_BASE` fail the job. Coverage is test-card-only; DMA/TIA/POKEY lack their
 integration fit. Native timings alone do not qualify them; no gameplay performance claim follows.
 
 **Exceptions.** A pull request that must be slower adds a line to `tests/perf/allow.txt`:
-`<rom> <max % × 100> <expiry YYYY-MM-DD> <reason>`, e.g. `testcard 250 2026-12-01 the new mixer`. It
-raises that ROM's limit from the day it is checked through its expiry, at most 60 days away, and is removed after
-the pull request merges. `ctest -L perf` runs the gate's own tests on synthetic values.
+`<rom> <max % × 100> <expiry YYYY-MM-DD> <reason>`. It
+raises that ROM's limit through its expiry, at most 60 days away, and is removed after the pull request merges. `ctest -L perf` runs the gate's own tests on synthetic values.
 
 **Nightly bench.** `.github/workflows/nightly.yml` runs `muhtari-run --bench 300000` every night on `ubuntu-26.04`,
 `ubuntu-26.04-arm` and `macos-15`, and under wasmtime 48.0.6 on `ubuntu-26.04` (row `wasm32-wasmtime-48.0.6`).
@@ -319,7 +315,7 @@ never committed. A failed night opens or comments on the one open issue labelled
 it; the report decides from the jobs' results. Dispatching the workflow with `force_failure` fails a run on purpose.
 The same workflow runs the `vectors-full` lane (`cmake --workflow --preset vectors-full`) and the `fuzz` lane (job
 `fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its inventory;
-`fuzz` uploads both targets' crash directories when it fails. Neither caches its vectors or corpus. The `prop` job
+`fuzz` uploads both targets' crash directories when it fails. The `prop` job
 builds the `ci` preset with `MUHTARI_TIMEOUT_SCALE=10` and runs `ctest -L prop` with `MUHTARI_PROP_CASES=10000` and
 the run's ID as `MUHTARI_PROP_SEED`; it stays advisory outside `report.needs`: 2/10 successful main runs as of
 2026-10-22. A pull request runs the whole workflow, writing no issue, when it changes a file listed in the trigger's
@@ -354,7 +350,7 @@ judge checks runner hardware observations.
 After `sips` converts PNG to BMP, independent glyphs judge both counters and the marker before whole-frame
 equality. Equal-black, wrong-counter and stale-one-medium controls must fail. Ordinary `diag.battery` runs
 the shared mailbox/media faults and pixel judge; loaded-module tests retain lifecycle/no-content coverage.
-Four hosted support files stay within 300 lines. Only owned diagnostic shots enter `retroarch-frames`;
+Hosted support files total at most 300 lines. Only owned diagnostic shots enter `retroarch-frames`;
 saves, firmware and logs stay uncommitted.
 
 **Rerunning it.** Rerun the job from the run page, or `gh run rerun <run-id> --failed`. On a Mac with a desktop
@@ -396,7 +392,7 @@ reused.
 |---|---|
 | `ci` | `ci.yml` on the pull request's head commit |
 | `equality` | full native/PowerPC normal and package inventories plus authenticated same-commit hash equality |
-| `rehearsal` | prepare exactly18 archives from the head commit with no firmware; upload and attest; verify with digest-pinned gh>=2.102.0 and full repository/signer/ref constraints, including changed-byte rejection; publish a non-latest prerelease; verify19 assets, downloaded hashes and attestations. Rehearsals use the PR merge ref; real releases require main. See [maintaining](maintaining.md#the-rehearsal) for the command sequence. |
+| `rehearsal` | prepare exactly18 archives from the head commit with no firmware; upload and attest; verify with digest-pinned gh>=2.102.0 and full repository/signer/ref constraints, including changed-byte rejection; publish a non-latest prerelease; verify19 assets, downloaded hashes and attestations. Rehearsals use the PR merge ref; real releases require main. [Commands](maintaining.md#the-rehearsal). |
 | `install-line` | the README install line on `macos-15` against the rehearsal's download URL |
 | `cleanup` | always, once `rehearsal` has started: `publish.sh rehearsal-delete TAG ID` confirms release absence before tag deletion, then exact-ID/tag and complete-list absence; API errors fail |
 
@@ -410,8 +406,8 @@ and install evidence; fake transport supplies argument and short-circuit control
 
 ## Supported systems
 
-The oldest systems the README lists are checked from the binaries, not run on these systems. `release.floor`
-(`tests/cmake/floor.cmake`, floors in one table at its top) unpacks the zips under `build/ci/release/floor` and
+The oldest systems the README lists are checked from the binaries, not run. `release.floor`
+(`tests/cmake/floor.cmake`, floors in a table at its top) unpacks the zips under `build/ci/release/floor` and
 reads what each OS loader enforces. On every system the libretro core exports only `retro_*` names.
 
 | System | Floor | Read with |
@@ -423,9 +419,8 @@ reads what each OS loader enforces. On every system the libretro core exports on
 ## Pinned downloads
 
 `pins.txt` lists every file a build or a CI job downloads, one `name version url sha256` row each.
-`scripts/fetch-pin.sh NAME DEST` downloads the row `NAME` into a temporary directory and checks its SHA-256 before
-anything else happens; only then does it unpack a `.tar.xz` or `.tar.gz` into `DEST`, top folder stripped, or
-copy any other file there. A `.zip` (the Windows wasmtime) is read with `cmake -E tar`, since Git Bash's tar cannot
+`scripts/fetch-pin.sh NAME DEST` downloads the row `NAME` into a temporary directory, checks its SHA-256, and only then unpacks a
+`.tar.xz` or `.tar.gz` into `DEST`, top folder stripped, or copies any other file there. A `.zip` (the Windows wasmtime) is read with `cmake -E tar`, since Git Bash's tar cannot
 read one, and must hold exactly one top folder, which is stripped. `policy.pins` (hygiene lane) requires four fields per row, a unique name, an `https://`
 URL and a 64-digit hex digest. A wrong digest exits 1 with `sha256 mismatch` and leaves `DEST` untouched. `PINS=<file>`
 reads another pins file. A bump is one `ci:` pull request that takes the new digest from the release API.
@@ -436,9 +431,9 @@ sample's manifest pin.
 
 ## Running the Linux lanes locally
 
-Every Linux lane runs on a Mac or any Docker host in an `ubuntu:26.04` container. The container's apt CMake is older
-than the presets need, so the recipe fetches the pinned CMake first. An anonymous volume over `build` keeps the
-container's build apart from the host's:
+Every Linux lane runs in an `ubuntu:26.04` container on a Mac or any Docker host. Its apt CMake is older than the
+presets need, so the recipe fetches the pinned CMake first. An anonymous volume over `build` keeps the container's
+build apart from the host's:
 
 ```sh
 docker run --rm --platform linux/arm64 -v "$PWD:/src" -v /src/build -w /src ubuntu:26.04 sh -c '
@@ -448,7 +443,7 @@ docker run --rm --platform linux/arm64 -v "$PWD:/src" -v /src/build -w /src ubun
   PATH=/opt/cmake/bin:$PATH cmake --workflow --preset ci'
 ```
 
-Replace `ci` with another workflow to run that lane. Some lanes need more packages in the install list:
+Replace `ci` to run another lane. Some lanes need more packages:
 
 - `asan`: `clang-21 lld-21 libclang-rt-21-dev`. The last holds the sanitizer runtimes.
 - `be32`: `gcc-powerpc-linux-gnu g++-powerpc-linux-gnu qemu-user`.
@@ -460,7 +455,7 @@ Every lane but `nofp`, `hygiene` and `fuzz` builds the sample, so also run
 `scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios` before the workflow.
 
 To keep a lane's `hashes.txt`, mount a directory outside the repository and copy the file into it, e.g.
-`-v "$OUT:/out"` and then `cp build/be32/hashes.txt /out/`. On an x86_64 host use `--platform linux/amd64` and the
+`-v "$OUT:/out"` and `cp build/be32/hashes.txt /out/`. On an x86_64 host use `--platform linux/amd64` and the
 `cmake-linux-x86_64` row. Under Docker's x86_64 emulation on Apple Silicon, GNU tar cannot create nested folders
 ("Function not implemented"); add `libarchive-tools` to the install list and run
 `ln -s /usr/bin/bsdtar /usr/local/bin/tar` before `fetch-pin.sh`.

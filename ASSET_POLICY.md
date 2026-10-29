@@ -39,7 +39,7 @@ A file whose licence is unstated or restricts redistribution is built or fetched
 - **Recommendation:** build OpenBIOS in CI. **Strongest alternative:** commit the KiloParsec-free binary, which CC0 allows. **Would change if:** the dasm build is not byte-identical on all six platforms.
 
 ## 4. Local only: your own dumps and BIOS
-- `.env.local` (git-ignored; template `.env.example`) sets `MUHTARI_ROM_DIR` (your cartridge dumps) and `MUHTARI_BIOS_DIR` (your BIOS and HSC dumps, recognised by digest). Local runs read these, and everything they produce stays on that machine.
+- The local run takes `MUHTARI_ROM_DIR` (a directory of your own cartridge dumps) and, optionally, `MUHTARI_BIOS` (a BIOS file) inline on the command line; the command is in [emulation tests, ledger](docs/emulation-tests.md#ledger). Everything it writes stays under the ignored `build/library/`.
 - Firmware is identified by digest. The digests are facts and may be committed; the bytes may not [AP.01][AP.02]:
 
 | Dump | Bytes | CRC32 | MD5 | SHA-1 |
@@ -54,7 +54,6 @@ No SHA-256 is published for these dumps (search on 2026-10-15) [AP.09]. The firs
 ## 5. How this is checked
 - `scripts/hygiene.sh` runs at pre-commit, at pre-push over all outgoing history, and in CI. Unless the manifest lists the file, it rejects ROM, BIOS and save extensions (`.a78 .a26 .bin .rom .hsc .sav .srm .state .eeprom`, as in `.gitignore`), the A78 magic `ATARI7800` at offset 1 [AP.06], and any file containing a NUL byte. `policy.rom_hash_coverage` ties manifest rows to files.
 - `tests/cmake/firmware_scan.cmake` hashes every member of every release zip and every tracked file (SHA-1, SHA-256): whole, and again without the first 128 bytes when an A78 header is present. It fails on any §4 digest or the Supercharger BIOS (`tests/release/firmware.txt`), any built-sample SHA-256 in `tests/built/expected.txt`, and any 7800 ROM SHA-1 or 2600 SHA-1 prefix from MAME's CC0 hash lists in `src/cartdb.c`. `release.firmware_scan` runs it over each build leg's zips, `hygiene.firmware_scan` over the tracked files, and `scripts/publish.sh prepare` over the 18 release zips before `SHA256SUMS`; `release.firmware_scan.self_test` and `hygiene.firmware_scan.self_test` are its negative controls, each a synthetic A78 file.
-- `local.firmware_window_scan` (local only, untested) fails if any 32-byte window of a dump in `MUHTARI_BIOS_DIR`, with at least 8 distinct byte values, appears in a built core, runner or libretro module.
 
 ## 6. Names
 "Atari", "7800" and "ProSystem" are used only to say what the core emulates. The project is not affiliated with or endorsed by Atari.

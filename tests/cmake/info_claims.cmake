@@ -2,7 +2,8 @@
 #   cmake -DINFO=<file.info> -DINVENTORY=<inventory.txt> -P info_claims.cmake
 # Fault prevented: the .info promises a capability no test exercises.
 # RetroArch turns features on from these keys, so every key set to "true"
-# must map to a test, and that test must be in the inventory.
+# must map to a test, and that test must be in the inventory. A description
+# over 512 characters, the core-info template's limit, fails too.
 foreach(var INFO INVENTORY)
   if(NOT DEFINED ${var} OR NOT EXISTS "${${var}}")
     message(FATAL_ERROR "info_claims: -D${var} must name an existing file")
@@ -38,5 +39,13 @@ foreach(line IN LISTS lines)
     message(FATAL_ERROR "info_claims: ${key} needs ${claim_${key}}, which is not in ${INVENTORY}")
   endif()
 endforeach()
+# A file without a description line is not this check's concern.
+file(READ "${INFO}" info_text)
+if(info_text MATCHES "(^|\n)description = \"([^\"\n]*)\"")
+  string(LENGTH "${CMAKE_MATCH_2}" description_length)
+  if(description_length GREATER 512)
+    message(FATAL_ERROR "info_claims: description is ${description_length} characters, over 512")
+  endif()
+endif()
 list(LENGTH lines count)
 message(STATUS "info_claims: ${count} \"true\" line(s), each backed by a test or exempt")

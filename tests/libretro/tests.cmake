@@ -322,4 +322,16 @@ include([==[${CMAKE_CURRENT_LIST_FILE}]==])
     COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
       "-DREGEX=savestate = .true. maps to no test" -P ${libretro_scripts}/expect_fail.cmake
     LABELS libretro TIMEOUT 10)
+  # A description one character over the limit must be named with its length.
+  set(libretro_fixture ${PROJECT_BINARY_DIR}/libretro/long_description.info)
+  string(REPEAT x 513 libretro_long)
+  file(WRITE ${libretro_fixture}
+    "supports_no_game = \"true\"\ndescription = \"${libretro_long}\"\n")
+  set(libretro_cmd ${CMAKE_COMMAND} -DINFO=${libretro_fixture}
+    -DINVENTORY=${libretro_inventory} -P ${libretro_scripts}/info_claims.cmake)
+  string(REPLACE ";" "$<SEMICOLON>" libretro_cmd "${libretro_cmd}")
+  muhtari_add_test(NAME libretro.info_claims.description.self_test
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
+      "-DREGEX=description is 513 characters, over 512" -P ${libretro_scripts}/expect_fail.cmake
+    LABELS libretro TIMEOUT 10)
 endif()

@@ -1,15 +1,19 @@
 # Fills the ledger's unpinned title rows, and with -DBIOS evaluates every
-# row on both paths (docs/emulation-tests.md, title). A fixture recipe, run
-# by hand on the core under test:
+# title@ and boots@ row on both paths (docs/emulation-tests.md, title). A
+# fixture recipe, run by hand on the core under test:
 #   cmake -DPREDICATE=<muhtari-test-predicate> -DLEDGER=tests/compat/ledger.csv
 #     -DBUILT=build/ci/built -DDIAG=tests/diag [-DBIOS=<openbios.bin>]
-#     [-DCOMMIT=<12 hex>] [-DDATE=<YYYY-MM-DD>] -P tests/compat/pin.cmake
+#     [-DCOMMIT=<12 hex>] [-DDATE=<YYYY-MM-DD>] [-DCHECK=<file>]
+#     -P tests/compat/pin.cmake
 # A title@F=- predicate becomes title@F=<the fast boot's frame F hash>, and
 # the driver refuses a frame of one colour, so no blank screen is pinned.
 # With BIOS, an unknown row's status becomes pass when the fast and BIOS
 # runs both pass and fail otherwise; any other evaluated row whose status
-# disagrees fails the run by name. unsupported and skipped rows are not run. Rows are
-# written sorted by id, then predicate.
+# disagrees fails the run by name. unsupported and skipped rows are not run,
+# a mailbox@ row is copied untouched (a scenario is not a boot), and a row
+# whose id has no "/" is copied untouched before any file rule is looked up.
+# Rows are written sorted by id, then predicate. With CHECK, the written
+# ledger must equal that file, so a committed ledger out of pin order fails.
 foreach(var PREDICATE LEDGER BUILT DIAG)
   if(NOT DEFINED ${var})
     message(FATAL_ERROR "pin: -D${var} is required")
@@ -44,6 +48,10 @@ foreach(line IN LISTS lines)
   endif()
   list(GET f 9 predicate)
   list(GET f 10 status)
+  if(NOT id MATCHES "/")
+    list(APPEND rows "${id} ${predicate}\t${line}")
+    continue()
+  endif()
   if(id MATCHES "^7800basic-0[.]41/(.+)$")
     set(rom ${BUILT}/${CMAKE_MATCH_1}/${CMAKE_MATCH_1}.bas.a78)
   elseif(id MATCHES "^diag/(.+)$")
@@ -64,7 +72,7 @@ foreach(line IN LISTS lines)
     list(INSERT f 9 "${predicate}")
     message(STATUS "pin: ${id}: ${predicate}")
   endif()
-  if(DEFINED BIOS AND NOT status MATCHES "^(unsupported|skipped)$")
+  if(DEFINED BIOS AND predicate MATCHES "^(title|boots)@" AND NOT status MATCHES "^(unsupported|skipped)$")
     drive(${rom} "${predicate}")
     set(fast "${out}")
     set(result pass)
@@ -101,6 +109,13 @@ list(TRANSFORM rows REPLACE "^[^\t]*\t" "")
 list(JOIN rows "\n" text)
 string(REPLACE "<semicolon>" ";" text "${header}\n${text}\n")
 file(WRITE ${LEDGER} "${text}")
+if(DEFINED CHECK)
+  file(READ ${LEDGER} written)
+  file(READ ${CHECK} expected)
+  if(NOT written STREQUAL expected)
+    message(FATAL_ERROR "pin: ${LEDGER} differs from ${CHECK}")
+  endif()
+endif()
 if(wrong)
   list(JOIN wrong "\n  " wrong)
   message(FATAL_ERROR "pin: rows whose status disagrees with the evaluation:\n  ${wrong}")

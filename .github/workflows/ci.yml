@@ -367,13 +367,14 @@ jobs:
   # The compatibility ledger judged afresh: every pr-tier row on its built
   # sample or diagnostic, on the fast boot and through OpenBIOS, then the
   # ratchet against the pull request's base ledger (docs/emulation-tests.md,
-  # ledger). The full history is fetched for git show of the base. Report-only:
-  # 5/10 distinct successful main executions as of 2026-10-22; ten required.
+  # ledger). The full history is fetched for git show of the base. Required
+  # through CI required: 18 distinct successful main executions as of
+  # 2026-10-29, newest run 40854285272; ten were needed.
   library:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 5  # network floor; max 31 s, n=3, run 39617761785; provisional
+    timeout-minutes: 5  # network floor; max 31 s, n=3, run 39617761785; local max 9.2 s with library.local (+0.2 s), n=3, margin 290 s; provisional
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -700,7 +701,7 @@ jobs:
   ci-required:
     name: CI required
     if: always()
-    needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality, retroarch, perf, quality]
+    needs: [changes, hygiene, title, build, asan, nofp, be32, hash-equality, library, retroarch, perf, quality]
     runs-on: ubuntu-26.04
     timeout-minutes: 5  # roll-up floor; max 4 s, n=4, run 39617860376; provisional
     steps:
@@ -711,7 +712,7 @@ jobs:
           HEAVY: ${{ needs.changes.outputs.heavy }}
           CALLED: ${{ inputs.ref && 'true' || 'false' }}
         run: |
-          echo "$NEEDS" | jq -e --arg event "$EVENT" --arg heavy "$HEAVY" --arg called "$CALLED" 'keys == ["asan","be32","build","changes","hash-equality","hygiene","nofp","perf","quality","retroarch","title"] and (to_entries | all(
+          echo "$NEEDS" | jq -e --arg event "$EVENT" --arg heavy "$HEAVY" --arg called "$CALLED" 'keys == ["asan","be32","build","changes","hash-equality","hygiene","library","nofp","perf","quality","retroarch","title"] and (to_entries | all(
             .value.result == "success"
             or (.key == "title" and .value.result == "skipped" and $event != "pull_request")
             or (.key == "perf" and .value.result == "skipped" and ($event != "pull_request" or $called == "true"))

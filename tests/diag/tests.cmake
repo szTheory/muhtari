@@ -1,3 +1,12 @@
+# A diagnostic's mailbox CRC must equal the ledger row's evidence, so a stale
+# or hand-edited ledger CRC fails here. Called only for the canonical case of
+# each tag: other cases emit the same tag with a different CRC.
+function(diag_ledger_crc id report)
+  execute_process(COMMAND ${CMAKE_COMMAND} -DLEDGER=${ROOT}/tests/compat/ledger.csv
+    -DID=${id} -DREPORT=${report} -P ${ROOT}/tests/diag/ledger_crc.cmake
+    COMMAND_ERROR_IS_FATAL ANY)
+endfunction()
+
 # Finite startup groups reuse the protocol/hosts/PNG consumer. Every run first
 # judges measurements and actual pages; matching hashes alone cannot admit it.
 if(DIAG_EXPANSION_RUN)
@@ -53,6 +62,11 @@ if(DIAG_EXPANSION_RUN)
     string(REGEX MATCH "diagnostic [0-9a-f]+\n" mailbox "${actual}")
     file(CONFIGURE OUTPUT "${dir}/report.txt" CONTENT "${mailbox}" @ONLY NEWLINE_STYLE UNIX)
     expansion_exec(--mailbox "${dir}/report.txt" "${tag}" "${EXPECTED}")
+    if(profile EQUAL 1 AND "${page}${window}${pal}${dual}${gate}" STREQUAL "00002")
+      diag_ledger_crc(diag/xboard "${dir}/report.txt")
+    elseif(profile EQUAL 2 AND "${page}${window}${pal}${dual}${gate}" STREQUAL "00002")
+      diag_ledger_crc(diag/xm "${dir}/report.txt")
+    endif()
     expansion_exec(--expansion-png "${dir}/pixels.png" "${tag}" ${window} ${pal})
     expansion_exec(--expansion-save-check "${dir}/save/expansion.sav")
     expansion_equal("${dir}/reference.txt" "${actual}" equal)
@@ -231,6 +245,9 @@ if(DIAG_BANKSET_RUN)
     string(REGEX MATCH "diagnostic [0-9a-f]+\n" mailbox "${actual}")
     file(CONFIGURE OUTPUT "${dir}/report.txt" CONTENT "${mailbox}" @ONLY NEWLINE_STYLE UNIX)
     bankset_exec(--mailbox "${dir}/report.txt" "${tag}" "${EXPECTED}")
+    if(case STREQUAL "32n")
+      diag_ledger_crc(diag/bankset "${dir}/report.txt")
+    endif()
     bankset_exec(--bankset-png "${dir}/pixels.png" ${mode} ${pal} "${dir}/filter-fault.png")
     execute_process(COMMAND ${EMULATOR} "${DRIVER}" --bankset-png
       "${dir}/filter-fault.png" ${mode} ${pal}
@@ -360,6 +377,7 @@ if(DIAG_PAL_RUN)
   if(NOT rc STREQUAL "0")
     message(FATAL_ERROR "pal actual runner numeric judgment: ${rc} ${report}${err}")
   endif()
+  diag_ledger_crc(diag/pal "${OUT}/runner.txt")
   execute_process(COMMAND ${CMAKE_COMMAND} -E compare_files "${OUT}/runner.txt" "${OUT}/reference.txt"
     RESULT_VARIABLE rc)
   if(NOT rc STREQUAL "0")
@@ -853,7 +871,9 @@ file(GENERATE OUTPUT ${diag_bankset} CONTENT
 "set(DIAG_BANKSET_RUN TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
 set(EXPECTED [==[${diag_dir}/expected.csv]==])
-set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/bankset]==])
+if(NOT DEFINED OUT)
+  set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/bankset]==])
+endif()
 set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
 set(RUNNER [==[$<TARGET_FILE:muhtari-run>]==])
 set(MODULE [==[${diag_controller_module}]==])
@@ -862,10 +882,12 @@ include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
 muhtari_add_test(NAME diag.bankset_tracer COMMAND ${CMAKE_COMMAND} -P ${diag_bankset}
   LABELS diag portable TIMEOUT 30)
+# Each test writes its own tree, so neither reads the other's half-written files under parallel ctest.
 set(diag_bankset_matrix ${PROJECT_BINARY_DIR}/tests/diag/bankset-matrix.cmake)
 file(GENERATE OUTPUT ${diag_bankset_matrix} CONTENT
 "set(BANKSET_EXPANDED TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/bankset-matrix]==])
 include([==[${diag_bankset}]==])
 ")
 muhtari_add_test(NAME diag.bankset COMMAND ${CMAKE_COMMAND} -P ${diag_bankset_matrix}
@@ -996,3 +1018,14 @@ muhtari_add_test(NAME diag.expected.self_test
     -DCODE=1 "-DREGEX=dma null: 241 expected 242 .hw. id 1 flags 01 FAIL.*exited 1"
     -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
   LABELS diag portable TIMEOUT 1)  # 2 x 0.26 s, macOS x64, slowest of 26 runs, run 39354563718
+
+# Negative control: a diagnostic line whose mailbox CRC bytes are 00 00 must
+# fail against the real ledger's diag/pal evidence, naming both values.
+string(REPEAT 0 512 diag_zeros)
+file(WRITE ${diag_out}/ledger_crc/report.txt "diagnostic ${diag_zeros}\n")
+muhtari_add_test(NAME diag.ledger_crc.self_test
+  COMMAND ${CMAKE_COMMAND}
+    "-DCMD=${CMAKE_COMMAND}$<SEMICOLON>-DLEDGER=${PROJECT_SOURCE_DIR}/tests/compat/ledger.csv$<SEMICOLON>-DID=diag/pal$<SEMICOLON>-DREPORT=${diag_out}/ledger_crc/report.txt$<SEMICOLON>-P$<SEMICOLON>${diag_dir}/ledger_crc.cmake"
+    -DCODE=1 "-DREGEX=diag/pal: ledger evidence 52a5, mailbox CRC 0000"
+    -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+  LABELS diag portable TIMEOUT 10)  # provisional, n=1, local

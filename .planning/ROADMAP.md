@@ -25,7 +25,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Complete |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Complete; ready to ship |
 | 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | In progress |
-| 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Not started |
+| 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Complete; 16/16 verified; ready to ship |
 
 ## Phase details
 
@@ -351,7 +351,44 @@ Plans:
 **Goal:** Account for the pinned library honestly and prove every new compatibility claim without private bytes in CI.
 **Depends on:** Phase 10
 **Requirements:** COMP-01, COMP-02, COMP-03
-**Plans:** TBD — created by plan-phase.
+**Plans:** 12/12 accepted; 8 sequential waves, then 3 gap plans and one committed-fix acceptance follow-up. Verification passed 16/16; COMP-01–03 complete. Historical 14/16 failures remain in Git; ship is next.
+
+Plans:
+**Wave 1**
+- [x] 11-01-PLAN.md — Repair the pin recipe, pin three owned retail diagnostics, fix PAL predicate hashing, correct banksets.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 11-02-PLAN.md — Generate one derived ledger row per pinned-list entry, checked against the pin on the hygiene lane.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 11-03-PLAN.md — Close the ratchet's tier-demotion hole, bind mailbox CRCs, promote the library job to required.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 11-04-PLAN.md — Count a private local run through the core's own identification, proven by a public fixture.
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 11-05-PLAN.md — Document the private command with its prerequisite, remove the dotenv drift, record the local run.
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [x] 11-06-PLAN.md — Regenerate the compatibility page: two populations, derived headline, claims table, guards.
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [x] 11-07-PLAN.md — Require the disclaimer and bound the .info description.
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [x] 11-08-PLAN.md — Align planning docs with the real local run and record the deferred ideas as seeds.
+
+**Gap round, wave 1**
+- [x] 11-10-PLAN.md — Call title-frame passes a public title screen and name real backing tests per claim.
+
+**Gap round, wave 2** *(blocked on gap wave 1 completion: its library workflow compares the page 11-10 regenerates)*
+- [x] 11-09-PLAN.md — Keep paths out of the local pass and the library scans on links, unreadable files and odd names; take OUT as an absolute path.
+
+**Gap round, wave 3** *(blocked on gap wave 2 completion)*
+- [x] 11-11-PLAN.md — Measure the new test budgets (title.pal.bios to at least 4 s) and separate the bankset output trees.
+
+**Committed-fix acceptance, gap wave 4** *(blocked on gap wave 3 completion)*
+- [x] 11-12-PLAN.md — Accept the existing claim/output review fixes through public controls, full CI and visible local counts; hand the receipt to execute-phase's built-in verifier.
 
 **Success criteria:**
 
@@ -376,7 +413,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
 | 10. Homebrew and expansion memory | 14/14 | Complete    | 2026-10-28 |
-| 11. Full-library acceptance | 0/TBD | Not started | — |
+| 11. Full-library acceptance | 12/12 | Complete    | 2026-10-29 |
 
 ---
-*Updated: 2026-10-25; Phases5–9 are complete. Phase9 has8/8 accepted plans,22/22 tasks,42/42 verified truths and all three PAL requirements complete. Source-fresh CI40233948646 and Nightly40233948516 attempt2 pass: six native current/base lanes, full native/PPC654+6, WASM592/956-row equality, actual RetroArch and authenticated native packages. One review-fix round resolved BIOS input lifetime; re-review is clean, gap round unused. The advisory10000-case isolation timeout remains unaccepted. Phase10 is researched and planned (13 plans/30 tasks,13 sequential waves), with independent plan checking passed and20/20 decisions covered. Phase11 remains unplanned. Next separate command: $gsd-execute-phase 10.*
+*Updated: 2026-10-29 after Phase 11 acceptance and re-verification. All seven milestone phases are verified complete; Phase 11 passes 16/16 with 12/12 accepted plans and COMP-01–03 complete. Fresh local CI673+6 and public library47 pass; 0/204 public local presence is accounting evidence, not a gameplay pass. Hosted checks and merge remain for ship. Next separate command: $gsd-ship 11.*

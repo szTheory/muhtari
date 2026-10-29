@@ -459,6 +459,7 @@ diag.dli	diag,portable
 diag.dma	diag,portable
 diag.expansion	diag,portable
 diag.expected.self_test	diag,portable
+diag.ledger_crc.self_test	diag,portable
 diag.linear16	diag,portable
 diag.modes	diag,portable
 diag.pal	diag,portable
@@ -525,6 +526,7 @@ libretro.host.reset	libretro,portable
 libretro.host.rgb565	libretro,portable
 libretro.host.xrgb8888	libretro,portable
 libretro.info_claims	libretro
+libretro.info_claims.description.self_test	libretro
 libretro.info_claims.self_test	libretro
 libretro.rcheevos	libretro,portable
 libretro.rcheevos.expansion	libretro,portable
@@ -551,8 +553,11 @@ pokey.clock	pokey,portable
 pokey.logic	pokey,portable
 pokey.maps	pokey,portable
 policy.ci_run.controls	policy
+policy.claims_wording	policy
+policy.claims_wording.self_test	policy
 policy.compat_doc_fresh	policy
 policy.compat_doc_fresh.self_test	policy
+policy.compat_ratchet.controls	policy
 policy.digest.controls	policy
 policy.lane_equality.controls	policy
 policy.no_skip	policy
@@ -665,6 +670,12 @@ runner.usage.unknown	portable,runner
 runner.version	portable,runner
 sally.irq	pokey,portable,sally
 tia.logic	portable,tia
+title.local.fixture	portable,title
+title.pal.bios	portable,title
+title.pal.fast	portable,title
+title.pin.order	portable,title
+title.pin.order.self_test	portable,title
+title.pin.recipe	portable,title
 title.pin.self_test	portable,title
 title.simple.bios	portable,title
 title.simple.fast	portable,title

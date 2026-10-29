@@ -1,6 +1,10 @@
 /* muhtari-test-predicate ROM PREDICATE [--bios FILE] [--pin]
      [--id ID --result FILE]: evaluates one compatibility-ledger predicate
    on ROM (docs/emulation-tests.md, title).
+   muhtari-test-predicate --identify FILE...: prints, for each file, the
+   40 hex digits of the part-0 chip SHA-1 of the cartridge-list entry the
+   core's own identification matches the file to, or "-" when it matches
+   none or the file cannot be read; never a path or a name.
 
      title@F=H  fast boot: frame F's SHA-256 equals H. With --bios: the
                 hand-off frame K comes by frame 600, lies in [300, 340],
@@ -10,12 +14,14 @@
                 two distinct frames appeared and the CPU is not jammed.
 
    A ";why=<reason>" suffix is the ledger's note and is not evaluated. A
-   frame's hash is the SHA-256 of its 320 x 242 native colour bytes.
+   frame's hash is the SHA-256 of the selected region's native colour bytes,
+   320 x 242 for NTSC and 320 x 292 for PAL (docs/emulation-tests.md, title).
    --pin prints title@F=<hex> for the fast boot's frame F, and fails with
    "single colour" when every byte of that frame is the same, so no blank
    screen is ever pinned. Prints "pass" or "fail <reason>"; exits 0 on a
-   pass, 1 on a fail, and 2 on a usage error or a file that cannot be read
-   or loaded.
+   pass, 1 on a fail, 2 on a usage error, a file that cannot be read, or a
+   BIOS or instance the core cannot use, and 3 when the core refuses the
+   image.
 
    With --result the library preset's form runs: the fast boot, then, with
    --bios, the BIOS path too, and FILE gets the one line
@@ -29,10 +35,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cartdb.h"
 #include "internal.h"
 #include "sha256.h"
 
-#define FRAME_BYTES ((size_t)MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC)
 #define AUDIO_CAPACITY (2u * MUHTARI__MAX_AUDIO_SAMPLES)
 
 /* OpenBIOS shows its Fuji for 320 frames, then hands off at the next
@@ -49,6 +55,10 @@
 
 static uint8_t *video;
 static int16_t *audio;
+
+/* The bytes of the loaded region's frame, width x height, read after each
+   load; hashing and scanning stop there, whatever the buffer holds. */
+static size_t frame_bytes;
 
 static void *pred_alloc(void *user, size_t size)
 {
@@ -159,16 +169,21 @@ static void frame_hash(char hex[65])
     uint8_t d[32];
     muhtari__sha256 s;
     muhtari__sha256_init(&s);
-    muhtari__sha256_update(&s, video, FRAME_BYTES);
+    muhtari__sha256_update(&s, video, frame_bytes);
     muhtari__sha256_final(&s, d);
     muhtari__sha256_hex(d, hex);
 }
 
 /* Whether the last frame's lines ran a DMA burst: a line with DMA off or
-   refused keeps zero cost (docs/hardware/maria.md, Statistics). */
+   refused keeps zero cost (docs/hardware/maria.md, Statistics). The lines
+   scanned are the selected region's, bounded by the statistics array. */
 static int dma_ran(const muhtari *m)
 {
-    for (uint32_t line = 0u; line < MUHTARI__LINES_NTSC; line++) {
+    uint32_t lines = muhtari__timing(m).lines;
+    if (lines > sizeof m->maria.stats / sizeof m->maria.stats[0]) {
+        lines = (uint32_t)(sizeof m->maria.stats / sizeof m->maria.stats[0]);
+    }
+    for (uint32_t line = 0u; line < lines; line++) {
         if (m->maria.stats[line].cost != 0u) {
             return 1;
         }
@@ -269,7 +284,7 @@ static int evaluate(muhtari *m, const struct predicate *pr, int bios, int pin)
         if (run_window(m, pr->f, pr->f, at_last) == 0) {
             return 1;
         }
-        for (size_t i = 1u; i < FRAME_BYTES; i++) {
+        for (size_t i = 1u; i < frame_bytes; i++) {
             if (video[i] != video[0]) {
                 char hex[65];
                 frame_hash(hex);
@@ -317,8 +332,20 @@ static int evaluate(muhtari *m, const struct predicate *pr, int bios, int pin)
     return 0;
 }
 
+/* Whether st is a refusal of the image itself, as opposed to a fault of the
+   arguments, the BIOS or the instance. */
+static int image_refused(muhtari_status st)
+{
+    return st == MUHTARI_STATUS_ERR_INVALID_IMAGE || st == MUHTARI_STATUS_ERR_TRUNCATED_IMAGE ||
+           st == MUHTARI_STATUS_ERR_UNSUPPORTED_SIZE || st == MUHTARI_STATUS_ERR_UNSUPPORTED_2600 ||
+           st == MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD ||
+           st == MUHTARI_STATUS_ERR_UNSUPPORTED_REGION ||
+           st == MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE;
+}
+
 /* Loads rom, with bios when it is not NULL, and evaluates pr; returns
-   evaluate's status, or 2 after a message when create or load fails. */
+   evaluate's status, 3 after a message when the core refuses the image, or
+   2 after a message when create or any other step fails. */
 static int run_path(const char *name, const uint8_t *rom, size_t rom_n, const uint8_t *bios,
                     size_t bios_n, const struct predicate *pr, int pin)
 {
@@ -337,12 +364,21 @@ static int run_path(const char *name, const uint8_t *rom, size_t rom_n, const ui
     muhtari *m = NULL;
     int status = 2;
     muhtari_status st = muhtari_create(&cfg, &m);
+    int created = st == MUHTARI_STATUS_OK;
     if (st == MUHTARI_STATUS_OK) {
         st = muhtari_load(m, &media);
     }
+    muhtari_info info;
+    memset(&info, 0, sizeof info);
+    info.size = (uint32_t)sizeof info;
     if (st == MUHTARI_STATUS_OK) {
+        st = muhtari_get_info(m, &info);
+    }
+    if (st == MUHTARI_STATUS_OK) {
+        frame_bytes = (size_t)info.width * info.height;
         status = evaluate(m, pr, bios != NULL, pin);
     } else {
+        status = created && image_refused(st) ? 3 : 2;
         fprintf(stderr, "muhtari-test-predicate: %s: create or load failed with status %lu\n", name,
                 (unsigned long)st);
     }
@@ -367,6 +403,9 @@ static int run_result(const char *name, const char *text, const uint8_t *rom, si
     if (fast == 2 || slow == 2) {
         return 2;
     }
+    if (fast == 3 || slow == 3) {
+        return 3;
+    }
     FILE *f = fopen(path, "wb");
     if (f == NULL) {
         fprintf(stderr, "muhtari-test-predicate: cannot write %s\n", path);
@@ -383,8 +422,46 @@ static int run_result(const char *name, const char *text, const uint8_t *rom, si
     return 0;
 }
 
+/* Prints the part-0 key of the list entry the core matches the file to. */
+static void identify_file(const char *path)
+{
+    size_t n = 0u;
+    uint8_t *img = read_file(path, MUHTARI_IMAGE_SIZE_MAX, &n);
+    uint32_t entry = UINT32_MAX;
+    if (img != NULL) {
+        muhtari_cart_info info;
+        (void)muhtari__cart_identify_entry(
+            img, n, muhtari__cartdb_7800_keys, muhtari__cartdb_7800_key_count,
+            muhtari__cartdb_7800_entries, muhtari__cartdb_7800_entry_count,
+            muhtari__cartdb_7800_layouts, muhtari__cartdb_7800_layout_count,
+            muhtari__cartdb_2600_prefix, muhtari__cartdb_2600_prefix_count, &info, &entry);
+        free(img);
+    }
+    for (uint32_t k = 0u; entry != UINT32_MAX && k < muhtari__cartdb_7800_key_count; k++) {
+        const struct muhtari__cartdb_key *key = &muhtari__cartdb_7800_keys[k];
+        if (key->entry == entry && key->part == 0u) {
+            for (size_t i = 0u; i < sizeof key->sha1; i++) {
+                printf("%02x", (unsigned)key->sha1[i]);
+            }
+            printf("\n");
+            return;
+        }
+    }
+    printf("-\n");
+}
+
 int main(int argc, char **argv)
 {
+    if (argc >= 3 && strcmp(argv[1], "--identify") == 0) {
+        for (int i = 2; i < argc; i++) {
+            identify_file(argv[i]);
+        }
+        return 0;
+    }
+    if (argc == 2 && strcmp(argv[1], "--identify") == 0) {
+        fprintf(stderr, "usage: muhtari-test-predicate --identify FILE...\n");
+        return 2;
+    }
     const char *bios_path = NULL;
     const char *id = NULL;
     const char *result = NULL;
@@ -409,7 +486,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "usage: muhtari-test-predicate ROM PREDICATE [--bios FILE] [--pin]\n"
                         "         [--id ID --result FILE]\n"
                         "  PREDICATE: title@F=H, title@F=- with --pin, or boots@F, F >= 1;\n"
-                        "  --pin takes no --bios and no --result\n");
+                        "  --pin takes no --bios and no --result\n"
+                        "       muhtari-test-predicate --identify FILE...\n");
         return 2;
     }
     if (result != NULL) {
@@ -420,8 +498,10 @@ int main(int argc, char **argv)
     uint8_t *rom = read_file(argv[1], MUHTARI_IMAGE_SIZE_MAX, &rom_n);
     uint8_t *bios =
         bios_path != NULL ? read_file(bios_path, MUHTARI__BIOS_SIZE_MAX, &bios_n) : NULL;
-    /* Frame and audio buffers on the heap: wasm32's stack is 64 KiB. */
-    video = (uint8_t *)malloc(FRAME_BYTES);
+    /* Frame and audio buffers on the heap: wasm32's stack is 64 KiB. The
+       video buffer holds the taller (PAL) region's frame. */
+    video = (uint8_t *)malloc((size_t)MUHTARI__WIDTH *
+                              muhtari__timing_for_region(MUHTARI_REGION_PAL).height);
     audio = (int16_t *)malloc(AUDIO_CAPACITY * sizeof *audio);
     int status = 2;
     if (rom != NULL && (bios_path == NULL || bios != NULL) && video != NULL && audio != NULL) {

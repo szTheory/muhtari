@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
-current_phase: 11 — Full-library acceptance
-current_plan: Not started
-status: planning
-stopped_at: Phase 10 shipped as PR #36 (auto-merge armed); phase 11 next
-last_updated: "2026-10-28T16:25:16.693Z"
-last_activity: 2026-10-28
-last_activity_desc: "Phase 10 shipped as PR #36"
-state_head: 57737cd78b1a322e9b3fce3e6e9d0cd0c59f3b11
+current_phase: 11
+current_plan: 12
+status: completed
+stopped_at: Phase 11 verified complete; ready to ship
+last_updated: "2026-10-29T19:25:06.010Z"
+last_activity: 2026-10-29
+last_activity_desc: "Phase 11 shipped as PR #40"
+state_head: ed72a18807ae2e8a06b50a5a195139fb1f389925
 progress:
   total_phases: 7
-  completed_phases: 5
-  total_plans: 64
-  completed_plans: 64
-  percent: 71
+  completed_phases: 7
+  total_plans: 76
+  completed_plans: 76
+  percent: 100
 total_phases: 7
 current_phase_name: Full-library acceptance
 ---
@@ -27,26 +27,123 @@ current_phase_name: Full-library acceptance
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 10 shipped as PR #36; phase 11 (full-library acceptance) is next.
-BOARD-04/05 are marked Complete; final hosted acceptance is confirmed at ship and in Phase 11.
+Current focus: Phase 11 verified complete at 16/16; COMP-01–03 accepted; ship Phase 11 next.
+BOARD-04/05 remain Complete; Phase 11 local acceptance is complete. Hosted PR/merge evidence is confirmed at ship.
 Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
 remains recorded below; this step makes no new release claim.
 
 ## Current Position
 
-Current Phase: 11 — Full-library acceptance
-Current Plan: Not started
-Total Plans in Phase: 14
-Progress: [███████░░░] 71%
+Current Phase: 11
+Current Plan: 12 (complete)
+Total Plans in Phase: 12
+Progress: [██████████] 100%
 
-Phase 10 has 14/14 accepted plans and verification passed. Six of seven milestone phases are complete once phase 10 ships.
-Active-slot totals are 64 summarized plans of 64 planned, including historical
-halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
+All seven milestone phases are verified complete. Phase 11 has 12/12 accepted
+plans and 16/16 verified truths. Active-slot accounting retains 76 summarized
+plans, including the historical halted 06-01; 75 accepted plans. Six superseded
+Phase 5 recovery plans remain historical and outside active-slot totals.
+Summarized counts alone do not establish acceptance.
 
-Status: Ready to plan
-Last activity: 2026-10-28 -- Phase 10 shipped as PR #36
-Next command: /gsd-discuss-phase 11 (after PR #36 merges)
-Branch: phase/10-homebrew-expansion-memory
+Status: Phase 11 verified complete; ready to ship
+Last activity: 2026-10-29 -- Phase 11 shipped as PR #40
+Next command: $gsd-ship 11
+Branch: phase/11-full-library-acceptance
+
+## Phase 11 shipping receipt
+
+PR #40: https://github.com/szTheory/muhtari/pull/40 targets the genuine
+main base a20ebbd34fbfa26622db524a5b4ec8f125d1a203. Squash auto-merge is enabled.
+Fresh ship `cmake --workflow --preset ci` exits 0: 673 CI tests and 6 release
+checks (run URL N/A-local). The three pre-existing runtime/documentation edits
+were temporarily stashed for clean preflight, then restored unchanged.
+
+Hosted source 58f50996842395afed8270c7ac93a584e88f37e8, attempt 1:
+https://github.com/szTheory/muhtari/actions/runs/40939948069.
+The quality producer exits 1 on `invalid sample revision transition` because
+a Phase 11 comment-only edit changed the frozen raw sample identity. No hash
+row changed. The existing `quality_sample_identity` consumer reproduces exit 1
+against `origin/main`; restoring the original `tests/built/expected.txt` bytes
+makes the same consumer exit 0 and `git diff --quiet origin/main --
+tests/built/expected.txt` exit 0. The corrected BankSet explanation remains
+in the ledger and docs; the old pinned comment is historical evidence.
+
+`ctest --preset ci -R '^policy[.](quality|lane_equality)[.]controls$'
+`--no-tests=error --output-on-failure` exits 0, 4/4 including two fixtures
+(run URL N/A-local). No hash, behavior revision, identity judge, deadline or
+required-job membership is changed. This is a concrete ship-contract repair,
+not another review or gap round. Final hosted acceptance and the release PR
+check remain pending in this receipt; final command/exit/run evidence belongs
+to the ship response. Next GSD step after shipping: `$gsd-audit-milestone`.
+
+## Phase 11 execution and re-verification receipt
+
+Plan 11-12 is committed as 2c9b924. Acceptance source is
+0e86575f561bf9482ade97f2d1088e418256d51c; the tracked source diff was empty.
+The three pre-existing config/DECISIONS/GSD-HANDOFF edits remain uncommitted
+and preserved. Later changes are planning evidence and state only.
+
+Local command evidence, run URL N/A-local:
+
+- Focused configure/build/verbose claim, local fixture and docs tests — exit 0,
+  7/7; both sample/basic fault controls and all thirteen local runs accepted.
+- `cmake --workflow --preset ci` — exit 0, 673 CI plus 6 release checks.
+  This unchanged-source full run also supplies the regression gate for the
+  six prior reports' 120 existing test/source references; no extra rerun.
+- `MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library` — exit 0,
+  47/47. The documented pipefail visible-count follow-up exits 0: 0 of 204
+  present, 0 pass, 0 fail, 204 absent, commit=0e86575f561b tree=dirty.
+- GSD `query verification.status` — exit 0, passed; 16/16 truths and 24/24
+  decisions. Both historical gaps closed; the prior 14/16 report stays in
+  Git at 0e86575. GSD `query phase.complete 11` — exit 0, 12/12 accepted;
+  COMP-01–03 are complete.
+
+Existing bounded reviews were dispositioned without another review round:
+8 fixed, 8 optional info findings deferred, 0 untriaged; four reused first-review
+info identities remain separately preserved. WR-02 retains helper/source-only
+missing-file diagnostic coverage; COMP-03 generic unclassified scope remains
+an explicit assumption. No private bytes, private compatibility pass, hosted
+outcome, owner UAT or publication success is claimed.
+
+The completion helper emitted advisory missing-file warnings for seven old
+summaries (01–05, 07–08): it treats backticked commands, ignored relative reports,
+negative fixtures and deliberately retired script names as live file references.
+This is the known GSD-HANDOFF 3.1 scanner limitation; declared current consumers
+and required workflows passed. It also preserved stale progress fields; one
+scoped reconciliation sets 7/7 phases, 76/76 summarized and 75 accepted active
+plans. No historical receipt was regenerated to silence those heuristics.
+
+No LEARNINGS files or matching resolves_phase todos were found for transition;
+global learning extraction is disabled. This is the final phase, but shipping
+and milestone audit/archive remain separate steps. Next: $gsd-ship 11.
+
+The acceptance-planning receipt and earlier next-command/status statements below
+are historical; this execution receipt supersedes their pending claims.
+
+## Phase 11 acceptance planning receipt
+
+Plan11-12 adds two acceptance tasks in gap wave4 after11-11. It accepts the
+existing committed fixes through the claim controls and public local fixture,
+then the full CI/public library workflows and visible local counts. Its SUMMARY
+feeds execute-phase's built-in verifier in the same step. No source changes,
+new review round, private-content requirement or owner UAT were introduced.
+The failed14/16 report, earlier summaries and review history remain intact;
+planning does not establish acceptance or complete any COMP requirement.
+
+The independent plan checker passed after one revision exposing the local
+counts and retaining execute-phase verification. Using the installed
+`gsd-tools.cjs` as `GSD_TOOLS`, local planning evidence (run URL: N/A-local):
+
+- `node "$GSD_TOOLS" query frontmatter.validate .planning/phases/11-full-library-acceptance/11-12-PLAN.md --schema plan-gap-closure` — exit0, valid.
+- `node "$GSD_TOOLS" query verify.plan-structure .planning/phases/11-full-library-acceptance/11-12-PLAN.md` — exit0, two tasks, no errors or warnings.
+- `node "$GSD_TOOLS" query check.decision-coverage-plan .planning/phases/11-full-library-acceptance .planning/phases/11-full-library-acceptance/11-CONTEXT.md` — exit0,24/24 decisions covered.
+- `node "$GSD_TOOLS" check gap-analysis-plan-post .planning/phases/11-full-library-acceptance 'COMP-01, COMP-02, COMP-03' --raw` — exit0,27/27 source items covered.
+
+Research was skipped for gap mode. The context-drift check warned that the
+historical research predates amended decisions; current source, context and
+review-fix evidence govern this acceptance-only plan. The path probe returns
+not_applicable for the CMake commands, not an affirmative path verdict; the
+checker checked their actual existing consumers. Failure-direction checks pass.
 
 ## Phase 10 execution receipt
 
@@ -694,10 +791,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Phase 10 verified and complete; ship phase 10 before planning Phase 11
-Last session: 2026-10-28T16:13:02.094Z
+**Stopped at:** Phase 11 verified complete; ready to ship
+Last session: 2026-10-29T19:19:25.232Z
 Resume file: None
-Next command: /gsd-discuss-phase 11 (after PR #36 merges)
+Next command: $gsd-ship 11
 
 ### Quick Tasks Completed
 
@@ -730,6 +827,17 @@ Next command: /gsd-discuss-phase 11 (after PR #36 merges)
 | Phase 09 P04 | 14min | 2 tasks | 3 files |
 | Phase 09 P07 | accepted after debug recovery | 3 accepted tasks | source7ad503c; recoverya93a11d/ddf51d4 |
 | Phase 10 P14 | 20 min | 2 tasks | 5 files |
+| Phase 11 P01 | 35m | 3 tasks | 10 files |
+| Phase 11 P02 | 45m | 3 tasks | 8 files |
+| Phase 11 P03 | 30m | 3 tasks | 12 files |
+| Phase 11 P04 | 70m | 3 tasks | 14 files |
+| Phase 11 P05 | 45m | 2 tasks | 5 files |
+| Phase 11 P06 | 50m | 3 tasks | 9 files |
+| Phase 11 P07 | 30m | 2 tasks | 10 files |
+| Phase 11 P08 | 20m | 2 tasks | 10 files |
+| Phase 11 P10 | 25min | 2 tasks | 4 files |
+| Phase 11 P09 | 35min | 3 tasks | 5 files |
+| Phase 11 P11 | 35min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -748,6 +856,22 @@ Next command: /gsd-discuss-phase 11 (after PR #36 merges)
 - [Phase 08]: Historical399937 halt preserved; DEC.61 separately retires only that unsupported cutoff while preserving required measurements and all independent contracts.
 - [Phase 08]: Audit every required workflow job; standalone diagnostic consumers link the existing owned digest helper and actual RetroArch acceptance is verified separately from package metrics.
 - [Phase 10]: 10-14: --hsc-rom loads without firmware first, reads HSC attachment from muhtari_get_battery, reads firmware only for an accepted attached image and loads again; refused images keep exit 77
+- [Phase 11]: Pin recipe copies mailbox@ rows and bare-id rows untouched and evaluates only title@/boots@ rows; -DCHECK enforces pin order
+- [Phase 11]: Softlist rows are fully generator-owned: boots@120 unknown local, with hiscore, xboard and xm skipped as expansion devices and none unsupported at this pin
+- [Phase 11]: The softlist generator cuts the XML by string search, not CMake lists, and names every id gained or lost by a pin bump in one error
+- [Phase 11]: Ratchet protects a passing pr row's tier on the BASE path; demotion to local needs a dated allow line
+- [Phase 11]: Local mailbox rows are bound to diag.bankset, diag.expansion and diag.pal through ledger_crc.cmake at the canonical case only; predicate.c gains no mailbox support
+- [Phase 11]: library job promoted into CI required after a recount of 18 distinct successful main runs
+- [Phase 11]: 11-04: private files are detected at test time and matched only through the core's own identification; a refused identified image is a fail, harness faults are named and fail the run
+- [Phase 11]: 11-05: the counts line is read with a follow-up ctest command because the library test preset hides a passing test's output; the dotenv template is deleted, local values are passed inline
+- [Phase 11]: Compatibility claim class is computed from expected.csv sources (fit rows outnumbering guide+hw+rtl is model-only), falling back to ledger evidence kind, else none
+- [Phase 11]: Owned diagnostics and any pass that is not a 7800basic title or boots row count as model conformance, never gameplay
+- [Phase 11]: 11-07: .info description cut to 317 characters, says diagnostics give model conformance only and ends with the short disclaimer; description bound read with file(READ) so semicolons cannot split it
+- [Phase 11]: is_experimental flip waits for pinned-list (commercial) evidence defined by a future milestone (SEED-012)
+- [Phase 11]: Ratchet judge hardening (push events, base-commit judge) is dormant SEED-014, not a task
+- [Phase 11]: Evidence kind for a 7800basic title pass is named public title screen, not gameplay; the sample guard checks only sample-backed claim tests (D-17 amendment)
+- [Phase 11]: Plan 11-09: the local pass and the library preset's configure-time scans share compat_files; links and unreadable entries are counted, never followed or named; the name rule tests for a semicolon or a non-absolute piece because CMake reports a write-only file as not existing
+- [Phase 11]: Bankset tests write separate output trees (bankset, bankset-matrix) instead of a RESOURCE_LOCK; no test budget lowered, title.pal.bios raised to 4 s
 
 ### Blockers
 

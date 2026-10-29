@@ -11,6 +11,9 @@ Nobody tags or uploads by hand. `.github/workflows/release.yml` does every step:
    that Conventional Commit to decide the next version: before 1.0, `feat` and a breaking change bump the minor
    version, `fix` and `perf` bump the patch, and `docs`, `chore`, `ci`, `test`, `build`, `refactor` and `style` cut
    no release. Write `ci:`, not `fix(ci):`, for pipeline work.
+   Milestone names in `.planning/` are planning labels, not release names, so a phase pull request keeps a
+   neutral Conventional Commit title and release-please picks the next 0.x version; no `Release-As` override or
+   package rename follows from a milestone.
 2. The push to `main` runs the `release-please` job. It mints a token for the project's GitHub App, then opens or
    updates the release pull request, labelled `autorelease: pending`, which edits only `version.txt`,
    `.release-please-manifest.json` and `CHANGELOG.md`. When it creates that pull request, the same job turns on

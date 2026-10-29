@@ -2,22 +2,10 @@
 
 An Atari 7800 ProSystem emulator core in C: a small library, a headless runner and a libretro core for RetroArch.
 
-**Status: early.** The core includes the CPU, graphics and TIA/POKEY sound. Cartridge-board and peripheral
-coverage remains limited; see the [compatibility ledger](docs/compatibility.md) for tested content. Releases are
-published automatically.
-Board execution includes linear, SuperGame, Activision, Absolute, Fractalus and BankSet cartridges.
-Board diagnostics establish memory behavior; the ledger records tested gameplay separately.
-BankSet supports six ROM sizes per set and selected shared/HALT RAM combinations.
-XBoard and the XM RAM/POKEY/HSC subset are load-selected; XM metadata selects that subset automatically.
-These are owned diagnostic capabilities, with medium physical-XM confidence and no full-XM services,
-YM2151, Covox/ADPCM or Souper/BupChip. See [hardware limits](docs/hardware/cartridge.md#bankset)
-and [runner selection](docs/runner.md#options); they do not establish universal gameplay compatibility.
-PAL runs in the library, runner and libretro core at the console's rational rate with 320×292 native video.
-The owned PAL diagnostic verifies raster timing and sustained audio; it does not establish retail playability
-or calibrated hardware accuracy. See [PAL evidence and limits](docs/pal-tests.md).
-Controller models include XG-1, paddles, keypad, driving, CX22/ST/Amiga motion and SNES2Atari/Mega7800.
-Owned diagnostics establish model conformance on both ports; physical calibration and universal game compatibility
-remain unmeasured. See [controls and bindings](docs/libretro.md#devices) and [typed runner replay](docs/runner.md#movies).
+**Status: early.** Evidence covers the rows listed; there is no claim of universal title compatibility.
+See the [compatibility page](docs/compatibility.md) for what has evidence and what does not, and
+[controls and bindings](docs/libretro.md#devices) for the devices the core exposes. Releases are published
+automatically.
 
 ## Install in RetroArch (macOS, Apple Silicon)
 

@@ -1,11 +1,16 @@
 # The library preset (docs/emulation-tests.md, ledger): every ledger row of
 # tier pr that is not unsupported or skipped is judged afresh on the file
 # whose SHA-1 the row names, on the fast boot and through a BIOS, and the
-# ratchet compares the results with the ledger. MUHTARI_ROM_DIR (required)
-# and tests/diag are searched; MUHTARI_BIOS names the BIOS image, by default
-# the ci preset's OpenBIOS. A relative path is taken from the source tree.
-# Configure fails on a missing directory, image or row file: nothing is
-# skipped.
+# ratchet compares the results with the ledger. The files are searched in
+# MUHTARI_ROM_DIR (required), then build/ci/built when it exists, then
+# tests/diag; a file above the image maximum is not hashed. MUHTARI_BIOS
+# names the BIOS image, by default the ci preset's OpenBIOS. A relative path
+# is taken from the source tree. Configure fails on a missing directory,
+# image or row file, and for a row file found nowhere names every root and
+# the ci build that creates build/ci/built: nothing is skipped.
+# library.local (local.cmake) then counts the softlist rows against the
+# files of MUHTARI_ROM_DIR at test time; its results stay in this build
+# directory and never enter results.csv or the ratchet.
 #
 # Run with -P, this file is library.results: it joins the per-row results
 # under -DDIR, which must number -DCOUNT, into -DOUT, sorted by id then
@@ -33,12 +38,14 @@ if(CMAKE_SCRIPT_MODE_FILE)
 endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/targets.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/files.cmake)
 
 set(library_dir "$ENV{MUHTARI_ROM_DIR}")
 if(library_dir STREQUAL "")
   message(FATAL_ERROR "library: set MUHTARI_ROM_DIR to the directory of ROMs to judge, "
     "such as build/ci/built after the ci preset's built tests")
 endif()
+compat_name_check(library "${library_dir}")
 cmake_path(ABSOLUTE_PATH library_dir BASE_DIRECTORY ${CMAKE_SOURCE_DIR} NORMALIZE)
 if(NOT IS_DIRECTORY ${library_dir})
   message(FATAL_ERROR "library: MUHTARI_ROM_DIR ${library_dir} is not a directory")
@@ -54,16 +61,27 @@ if(NOT EXISTS ${library_bios} OR IS_DIRECTORY ${library_bios})
 endif()
 
 # A file's SHA-1 is the row's headered SHA-1 for a headered file and its
-# headerless SHA-1 for a headerless one; a headered match is preferred.
-file(GLOB_RECURSE library_files LIST_DIRECTORIES false ${library_dir}/*
-  ${CMAKE_SOURCE_DIR}/tests/diag/*.a78)
-list(SORT library_files)
+# headerless SHA-1 for a headerless one; a headered match is preferred. The
+# roots are searched in order; the owned samples are in the ci preset's
+# build directory, and nothing is hashed above the image maximum. Links and
+# unreadable entries are skipped.
+set(library_roots ${library_dir})
+set(library_ci_built ${CMAKE_SOURCE_DIR}/build/ci/built)
+if(IS_DIRECTORY ${library_ci_built})
+  list(APPEND library_roots ${library_ci_built})
+endif()
+list(APPEND library_roots ${CMAKE_SOURCE_DIR}/tests/diag)
+list(REMOVE_DUPLICATES library_roots)
+compat_files(library library_files library_unread ${library_roots})
 foreach(file IN LISTS library_files)
-  file(SHA1 ${file} sha)
+  file(SHA1 "${file}" sha)
   if(NOT DEFINED library_sha_${sha})
-    set(library_sha_${sha} ${file})
+    set(library_sha_${sha} "${file}")
   endif()
 endforeach()
+# The candidates of the local pass: the files it can read in MUHTARI_ROM_DIR.
+compat_files(library library_dir_files library_dir_unread "${library_dir}")
+list(LENGTH library_dir_files library_candidates)
 
 set(library_results ${PROJECT_BINARY_DIR}/results)
 file(REMOVE_RECURSE ${library_results})
@@ -93,8 +111,16 @@ foreach(line IN LISTS library_lines)
   elseif(DEFINED library_sha_${raw})
     set(rom ${library_sha_${raw}})
   else()
-    message(FATAL_ERROR "library: ${id}: no file under ${library_dir} or tests/diag has "
-      "SHA-1 ${a78} (headered) or ${raw} (headerless)")
+    set(library_hint "")
+    if(NOT IS_DIRECTORY ${library_ci_built})
+      set(library_hint "; ${library_ci_built} does not exist: the owned samples and \
+OpenBIOS come from `cmake --preset ci && cmake --build --preset ci && \
+ctest --preset ci -L '^built$'`, which creates build/ci/built")
+    endif()
+    compat_unread_note(library_unread_note ${library_unread})
+    list(JOIN library_roots ", " library_searched)
+    message(FATAL_ERROR "library: ${id}: no file under ${library_searched} has "
+      "SHA-1 ${a78} (headered) or ${raw} (headerless)${library_hint}${library_unread_note}")
   endif()
   string(REPLACE "/" "." name "library.${id}")
   string(REPLACE "<semicolon>" "$<SEMICOLON>" predicate "${predicate}")
@@ -151,7 +177,22 @@ muhtari_add_test(NAME library.ratchet.self_test
 # ratchet has just proven equal to the fresh results, and compares it with
 # docs/compatibility.md.
 muhtari_add_test(NAME library.compat_doc
-  COMMAND ${CMAKE_COMMAND} -DLEDGER=${compat_ledger} -DOUT=${PROJECT_BINARY_DIR}/compatibility.md
+  COMMAND ${CMAKE_COMMAND} -DLEDGER=${compat_ledger}
+    -DEXPECTED=${CMAKE_SOURCE_DIR}/tests/diag/expected.csv
+    -DINVENTORY=${CMAKE_SOURCE_DIR}/tests/inventory/ci.txt -DOUT=${PROJECT_BINARY_DIR}/compatibility.md
     -DCHECK=${CMAKE_SOURCE_DIR}/docs/compatibility.md -P ${CMAKE_SOURCE_DIR}/tools/compat_doc.cmake
   LABELS library TIMEOUT 1)  # 2 x 0.01 s, Linux x64, library job, slowest of 6 runs, run 39380164010
 set_tests_properties(library.compat_doc PROPERTIES DEPENDS library.ratchet)
+
+# The local pass (local.cmake): which softlist rows MUHTARI_ROM_DIR holds, and
+# how each fares on the fast boot and through the BIOS, every row counted as
+# pass, fail or absent. It detects files at test time, so configure is the
+# same whatever the directory holds; the bound scales with the files it can
+# read. Fault: a private run that silently skips or miscounts a row.
+math(EXPR library_local_timeout "60 + 8 * ${library_candidates}")
+muhtari_add_test(NAME library.local
+  COMMAND ${CMAKE_COMMAND} -DLEDGER=${compat_ledger}
+    -DPREDICATE=$<TARGET_FILE:muhtari-test-predicate> -DBIOS=${library_bios}
+    -DDIR=${library_dir} -DOUT=${PROJECT_BINARY_DIR}/local.csv -DROOT=${CMAKE_SOURCE_DIR}
+    -P ${CMAKE_CURRENT_LIST_DIR}/local.cmake
+  LABELS library TIMEOUT ${library_local_timeout})  # provisional: 60 s plus 8 s per candidate file

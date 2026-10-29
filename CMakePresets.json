@@ -127,7 +127,7 @@
     {
       "name": "library",
       "inherits": "ci",
-      "$comment": "The compatibility ledger judged afresh over the ROMs in MUHTARI_ROM_DIR, read from the environment, and tests/diag; the BIOS path uses MUHTARI_BIOS, by default the ci preset's OpenBIOS (docs/emulation-tests.md, ledger).",
+      "$comment": "The compatibility ledger judged afresh over the ROMs in MUHTARI_ROM_DIR, read from the environment, then build/ci/built and tests/diag; the BIOS path uses MUHTARI_BIOS, by default the ci preset's OpenBIOS. library.local then counts every softlist row against MUHTARI_ROM_DIR, with ids and counts only (docs/emulation-tests.md, ledger).",
       "cacheVariables": {
         "MUHTARI_BUILD_LIBRETRO": "OFF",
         "MUHTARI_LIBRARY": "ON",

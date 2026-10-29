@@ -1,7 +1,7 @@
 # Every test the library preset registers: name<TAB>labels. One library.<id>
 # per ledger row of tier pr that is neither unsupported nor skipped, the id's
-# slashes as dots. Sorted; configure fails when this differs from what is
-# registered.
+# slashes as dots, and library.local, the counted pass over MUHTARI_ROM_DIR.
+# Sorted; configure fails when this differs from what is registered.
 library.7800basic-0.41.adventurer	library
 library.7800basic-0.41.atarivoxspeech	library
 library.7800basic-0.41.banner	library
@@ -35,13 +35,17 @@ library.7800basic-0.41.spacephysics	library
 library.7800basic-0.41.trackertest	library
 library.7800basic-0.41.underthehood	library
 library.compat_doc	library
+library.diag.absolute	library
+library.diag.activision	library
 library.diag.bank6	library
 library.diag.cpu	library
 library.diag.dli	library
 library.diag.dma	library
+library.diag.fractalus	library
 library.diag.linear16	library
 library.diag.modes	library
 library.diag.sg144	library
+library.local	library
 library.ratchet	library
 library.ratchet.self_test	library
 library.results	library
