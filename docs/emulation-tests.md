@@ -262,8 +262,9 @@ declarations; `any` in `region` means the list names both systems or none.
 `unsupported` needs a board or peripheral the core refuses, and names it. `skipped` is deliberately not run, with
 the reason in the predicate, and is never in a CI tier. `infrastructure_error` means the harness broke.
 
-**Tiers.** `pr` rows are judged on every pull request by the `library` preset. There are no `nightly` rows yet. `local` rows are never
-run in CI.
+**Tiers.** `pr` rows are judged on every pull request by the `library` preset. There are no `nightly` rows yet. `local`
+rows are not judged by it; `diag.bankset`, `diag.expansion` and `diag.pal` run the four `mailbox@` rows and compare
+the mailbox CRC with the row's evidence.
 
 **The library preset.** It reads `MUHTARI_ROM_DIR` from the environment and finds each `pr` row's file there or in
 `tests/diag` by its SHA-1: a headered file by `sha1_a78`, a headerless one by `sha1_raw`. `MUHTARI_BIOS` names the
@@ -283,17 +284,17 @@ MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library
   either direction, by status or evidence. A change that improves a row therefore updates the ledger in the same
   pull request.
 - With `MUHTARI_LEDGER_BASE` set to a commit at configure time, a row (id, predicate) that was `pass` in that
-  commit's ledger must still be `pass`. A changed predicate or a removed row counts as a fall. The exception is a
+  commit's ledger must still be `pass`, and `pr` if it was. A changed predicate or a removed row counts as a fall. The exception is a
   line `<id> <predicate> <expiry YYYY-MM-DD> <reason>` in `tests/compat/allow.txt` whose expiry is between today and
   60 days on. `unknown` to anything and `fail` to `pass` need no line. A base whose tree has no ledger protects
   nothing. A base missing from the clone fails.
 - `library.ratchet.self_test` flips the first row's status and expects that row named.
-- `library.compat_doc` runs after the ratchet. It regenerates the page with `tools/compat_doc.cmake` and fails
-  when the page differs from `docs/compatibility.md`.
+- `library.compat_doc` runs after the ratchet and fails when `tools/compat_doc.cmake`'s output differs from
+  `docs/compatibility.md`.
 
 **In CI.** The `library` job (`docs/testing.md`, CI) builds the samples and OpenBIOS, then runs the preset with the
-pull request's base commit. It reports only until it has 10 green runs on `main`. `policy.compat_doc_fresh` checks
-the page on every `ci` and `wasm32` lane as well. After a ledger change, regenerate the page:
+pull request's base commit. It reports only until it has 10 green runs on `main`. `policy.compat_doc_fresh` also checks
+the page on every `ci` and `wasm32` lane. After a ledger change, regenerate the page:
 
 ```sh
 cmake -DLEDGER=tests/compat/ledger.csv -DOUT=docs/compatibility.md -P tools/compat_doc.cmake
@@ -496,7 +497,7 @@ Rerun it with those two variables set before `ctest --test-dir build/ci -R '^pro
 
 `fuzz.regress.<target>` replays a fuzz target's invariants on every lane over its seeds and its committed
 regressions; `fuzz.regress.<target>.self_test` gives the replay no input and must fail with `no corpus inputs`. The
-`fuzz` lane runs libFuzzer itself for 60 s per target with `-timeout=2`, under clang-21 with AddressSanitizer and
+`fuzz` lane runs libFuzzer for 60 s per target with `-timeout=2`, under clang-21 with AddressSanitizer and
 UndefinedBehaviorSanitizer (`docs/testing.md`, Lanes).
 
 | Target | Input | Invariants |
@@ -504,15 +505,12 @@ UndefinedBehaviorSanitizer (`docs/testing.md`, Lanes).
 | `loader` (`tests/fuzz/loader.c`) | any image up to the size cap, `-max_len=1048705` | two probes agree; the load returns probe's status; a refusal allocates nothing and changes nothing; destroy frees everything |
 | `run` (`tests/fuzz/run.c`) | explicit retail A78 inputs select supported fixed-geometry builders; other bytes retain the 49,152-byte linear interpretation; `-max_len=131200` | two instances, loaded and run 2 frames call by call, agree in board, load status, frame status, audio count, PCM and picture; each frame returns at the first instruction boundary at or after its deadline and less than four lines past it |
 
-The run target retains its original headerless 48 KiB linear construction for ordinary
-bytes: `tests/fuzz/run_cart.h` adjusts the final footer bytes needed for acceptance
-and clears accidental A78 magic so a linear payload remains headerless.
-Explicit Activision, Absolute and Fractalus A78 declarations instead select their
-supported exact geometry and fixed-window reset vectors. The original all-$00, JAM, all-$FF, thirteen splitmix64 and empty
-seeds persist;
-Eleven explicit retail/malformed/A8 inputs and one accidental-header regression
-extend execution to 29 seeds. The loader
-has 31 seeds, including isolated identified AM/OM inputs, unsupported combinations
+Ordinary bytes keep the run target's original headerless 48 KiB linear construction:
+`tests/fuzz/run_cart.h` adjusts the final footer bytes needed for acceptance and clears
+accidental A78 magic. Explicit Activision, Absolute and Fractalus A78 declarations select
+their supported exact geometry and fixed-window reset vectors. The original all-$00, JAM,
+all-$FF, thirteen splitmix64 and empty seeds persist; eleven explicit retail/malformed/A8
+inputs and one accidental-header regression extend execution to 29 seeds. The loader has 31 seeds, including isolated identified AM/OM inputs, unsupported combinations
 and geometry boundaries. Normalization checks derive the expected private bytes
 independently and preserve the supplied buffer and raw identity. Refusals compare
 deep live ROM/RAM and resumed audible changing controls.
@@ -520,17 +518,15 @@ deep live ROM/RAM and resumed audible changing controls.
 **Adding a regression.** The nightly `fuzz` job uploads crashes as `fuzz-crash` from `build/fuzz/fuzz/crash/`
 (loader) and `build/fuzz/fuzz/run/crash/` (run). Minimise one with `muhtari-fuzz-<target> -minimize_crash=1
 -runs=10000 <file>`, commit it under `tests/fuzz/<target>/regress/` with its row in `tests/roms/manifest.txt`, and fix
-the core in the same pull request. Reconfigure to list the new file; `fuzz.regress.<target>` replays it on every
-lane from then on.
+the core in the same pull request. Reconfigure to list it; `fuzz.regress.<target>` then replays it on every lane.
 
 Boot-to-play also requests the runner's whole-run audio evidence. Its judge
 requires the exact completed frame/sample count, 48,000/1 rate, reported behavior
-revision and synthesis identity. The PCM digest must differ from SHA-256 over
-exactly two zero bytes per completed sample. A muted control substitutes that
-same-count zero digest while retaining valid picture/input evidence and must
-fail only the audio predicate (mask 8). Existing image, timing, wrong-port and
-mirror controls remain required. This proves non-silence and delivery, not a
-listening comparison or physical hardware calibration.
+revision and synthesis identity, and a PCM digest differing from SHA-256 over two
+zero bytes per completed sample. A muted control substitutes that same-count zero
+digest, keeps valid picture/input evidence and must fail only the audio predicate
+(mask 8). Existing image, timing, wrong-port and mirror controls remain required.
+This proves non-silence and delivery, not a listening comparison or hardware calibration.
 
 `audio.samples` pins eight built 7800basic sound programs in
 `tests/audio/expected.txt`: soundtest, soundeffects, trackertest, eightysix,
@@ -558,7 +554,7 @@ change alone never justifies replacing raw or video evidence. The existing
 platform hashes file also includes soundtest and pokey's seven audio fields
 under their name prefixes, preserving the card/PNG rows and Unix newlines.
 
-It also appends ten rows each under `activision.`, `absolute.` and `fractalus.`:
+It appends ten rows each under `activision.`, `absolute.` and `fractalus.`:
 frame 1, frame 600, all seven audio fields and a fixed numeric mailbox report.
 The actual runner must identify the expected board and the diagnostic driver must
 accept the complete mailbox before a row is written. These owned diagnostics are

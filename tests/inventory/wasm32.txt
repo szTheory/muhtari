@@ -459,6 +459,7 @@ diag.dli	diag,portable
 diag.dma	diag,portable
 diag.expansion	diag,portable
 diag.expected.self_test	diag,portable
+diag.ledger_crc.self_test	diag,portable
 diag.linear16	diag,portable
 diag.modes	diag,portable
 diag.pal	diag,portable
