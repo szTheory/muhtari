@@ -132,12 +132,13 @@ set(policy_compat_tool -P ${CMAKE_SOURCE_DIR}/tools/compat_doc.cmake)
 muhtari_add_test(NAME policy.compat_doc_fresh
   COMMAND ${policy_compat_cmd} -DCHECK=${CMAKE_SOURCE_DIR}/docs/compatibility.md ${policy_compat_tool}
   LABELS policy TIMEOUT 10)
+# provisional: 10 s kept, ceil(2 x 0.38 s) is 1 s for nine generator runs; macOS arm64 local, slowest of 10 runs alone (0.32 s) and one full ci run (0.38 s)
 muhtari_add_test(NAME policy.compat_doc_fresh.self_test
   COMMAND ${CMAKE_COMMAND} -DTOOL=${CMAKE_SOURCE_DIR}/tools/compat_doc.cmake
     ${policy_compat_in} -DPAGE=${CMAKE_SOURCE_DIR}/docs/compatibility.md
     -DWORK=${CMAKE_BINARY_DIR}/policy/compat_doc_controls
     -P ${policy_scripts}/compat_doc_controls.cmake
-  LABELS policy TIMEOUT 10)  # provisional, eight generator runs
+  LABELS policy TIMEOUT 10)
 
 # The ratchet against a fixture repository: a lowered row, an exception
 # expiring today or yesterday, a demotion to local and an unchanged ledger.

@@ -37,13 +37,16 @@ set_tests_properties(title.simple.fast title.simple.bios PROPERTIES
 # A PAL image on both boot paths. Fault: a predicate that crashes or hashes
 # the wrong rows on a PAL image, which would turn every PAL pinned-list entry
 # into a harness fault rather than a verdict.
+# provisional: 2 s kept, ceil(2 x 0.35 s) is 1 s; macOS arm64 local, slowest of 10 runs alone (0.24 s) and one full ci run (0.35 s)
 muhtari_add_test(NAME title.pal.fast
   COMMAND muhtari-test-predicate ${PROJECT_SOURCE_DIR}/tests/diag/pal.a78 boots@120
-  LABELS portable title TIMEOUT 2)  # provisional, not yet measured in CI
+  LABELS portable title TIMEOUT 2)
+# provisional: 4 s, ceil(2 x 1.49 s) is 3 s; macOS arm64 local, slowest of 10 runs alone (0.69 s) and one full ci run (1.49 s)
+# Budget floor 4 s, as for eightysix, the BIOS-path analogue: 1.23 s in run 39529469630 and a 2 s budget ran out twice in run 39530145463.
 muhtari_add_test(NAME title.pal.bios
   COMMAND muhtari-test-predicate ${PROJECT_SOURCE_DIR}/tests/diag/pal.a78 boots@120
     --bios ${compat_bios}
-  LABELS portable title TIMEOUT 2)  # provisional, not yet measured in CI
+  LABELS portable title TIMEOUT 4)
 set_tests_properties(title.pal.bios PROPERTIES FIXTURES_REQUIRED built_openbios)
 
 # Negative control for the pin writer: the linear seed cartridge, filler
@@ -70,11 +73,12 @@ string(REPLACE ";" "$<SEMICOLON>" compat_emulator "${CMAKE_CROSSCOMPILING_EMULAT
 # Fault: a committed ledger that is out of pin order, or that has a row the
 # recipe has no file rule for, so the next re-pin rewrites unrelated lines.
 configure_file(${compat_ledger} ${compat_pin_dir}/pin_order/ledger.csv COPYONLY)
+# provisional: 1 s = ceil(2 x 0.02 s); macOS arm64 local, slowest of 10 runs alone (0.02 s) and one full ci run (0.02 s)
 muhtari_add_test(NAME title.pin.order
   COMMAND ${CMAKE_COMMAND} ${compat_pin_inputs}
     -DLEDGER=${compat_pin_dir}/pin_order/ledger.csv -DCHECK=${compat_ledger}
     -P ${CMAKE_CURRENT_LIST_DIR}/pin.cmake
-  LABELS portable title TIMEOUT 1)  # provisional, not yet measured in CI
+  LABELS portable title TIMEOUT 1)
 
 # Fault: a check that passes on any ledger. The same copy with its last two
 # data rows swapped must fail by name.
@@ -93,10 +97,11 @@ set(compat_cmd ${CMAKE_COMMAND} ${compat_pin_inputs}
   -DLEDGER=${compat_pin_dir}/pin_swapped/ledger.csv -DCHECK=${compat_pin_dir}/pin_swapped/expected.csv
   -P ${CMAKE_CURRENT_LIST_DIR}/pin.cmake)
 string(REPLACE ";" "$<SEMICOLON>" compat_cmd "${compat_cmd}")
+# provisional: 1 s = ceil(2 x 0.02 s); macOS arm64 local, slowest of 10 runs alone (0.02 s) and one full ci run (0.02 s)
 muhtari_add_test(NAME title.pin.order.self_test
   COMMAND ${CMAKE_COMMAND} "-DCMD=${compat_cmd}" -DCODE=1 "-DREGEX=differs from"
     -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
-  LABELS portable title TIMEOUT 1)  # provisional, not yet measured in CI
+  LABELS portable title TIMEOUT 1)
 
 # Fault: the recipe dying on a mailbox@ row or on a row with no file rule.
 # The fixture is the four mailbox@ rows, diag/cpu and one bare row, in pin
@@ -110,12 +115,13 @@ endforeach()
 string(APPEND compat_fixture "\nfixture,-,-,-,-,-,-,-,-,boots@120,unknown,local,-,-,-,-\n")
 file(WRITE ${compat_pin_dir}/pin_recipe/ledger.csv "${compat_fixture}")
 file(WRITE ${compat_pin_dir}/pin_recipe/expected.csv "${compat_fixture}")
+# provisional: 3 s kept, ceil(2 x 0.15 s) is 1 s; macOS arm64 local, slowest of 10 runs alone (0.12 s) and one full ci run (0.15 s)
 muhtari_add_test(NAME title.pin.recipe
   COMMAND ${CMAKE_COMMAND} ${compat_pin_inputs}
     -DLEDGER=${compat_pin_dir}/pin_recipe/ledger.csv -DBIOS=${compat_bios}
     "-DEMULATOR=${compat_emulator}" -DCHECK=${compat_pin_dir}/pin_recipe/expected.csv
     -P ${CMAKE_CURRENT_LIST_DIR}/pin.cmake
-  LABELS portable title TIMEOUT 3)  # provisional, not yet measured in CI
+  LABELS portable title TIMEOUT 3)
 set_tests_properties(title.pin.recipe PROPERTIES FIXTURES_REQUIRED built_openbios)
 
 # The local driver (local.cmake, the library preset's local pass) on public
@@ -124,12 +130,13 @@ set_tests_properties(title.pin.recipe PROPERTIES FIXTURES_REQUIRED built_openbio
 # an unwritable output are named faults, with nothing private in the log.
 # Fault: a private run that miscounts, leaks a path, or passes on a harness
 # fault. The emulator wrapper reaches every predicate spawn.
+# provisional: 20 s kept, ceil(2 x 2.15 s) is 5 s; macOS arm64 local, slowest of 10 runs alone (1.53 s) and one full ci run (2.15 s)
 muhtari_add_test(NAME title.local.fixture
   COMMAND ${CMAKE_COMMAND} -DPREDICATE=$<TARGET_FILE:muhtari-test-predicate-testdb>
     -DLOCAL=${CMAKE_CURRENT_LIST_DIR}/local.cmake -DBIOS=${compat_bios}
     -DBUILT=${MUHTARI_BUILT_DIR} -DPROBE=${CMAKE_BINARY_DIR}/runner-probe
     -DWORK=${compat_pin_dir}/local_fixture -DROOT=${PROJECT_SOURCE_DIR}
     "-DEMULATOR=${compat_emulator}" -P ${CMAKE_CURRENT_LIST_DIR}/local_fixture.cmake
-  LABELS portable title TIMEOUT 20)  # provisional, not yet measured in CI
+  LABELS portable title TIMEOUT 20)
 set_tests_properties(title.local.fixture PROPERTIES
   FIXTURES_REQUIRED "built_simple;built_openbios;probe_images")
