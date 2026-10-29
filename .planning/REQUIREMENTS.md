@@ -50,7 +50,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21; no partial board 
 
 - [ ] **COMP-01**: Every entry of the pinned CC0 library is accounted for in the ledger with explicit pass/fail/unknown/unsupported status and evidence; metadata inclusion is never counted as a gameplay pass.
 - [ ] **COMP-02**: Each newly claimed board/device/region has legally admissible automated behavioral evidence in public CI, and prior passing predicates remain protected by the existing ratchet.
-- [ ] **COMP-03**: Available private cartridges run only through the isolated local library preset with reproducible command/exit/commit evidence, while public CI requires no private bytes or owner verification.
+- [x] **COMP-03**: Available private cartridges run only through the isolated local library preset with reproducible command/exit/commit evidence, while public CI requires no private bytes or owner verification.
 
 ## Deferred
 
@@ -90,7 +90,7 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | BOARD-05 | Phase 10 | Complete |
 | COMP-01 | Phase 11 | Pending |
 | COMP-02 | Phase 11 | Pending |
-| COMP-03 | Phase 11 | Pending |
+| COMP-03 | Phase 11 | Complete |
 
 Coverage: 27 approved requirements;27 mapped;0 unmapped. Phases5–9 verify22 complete requirements;5 remain pending in Phases10–11. Phase9 verifies PAL-01–03 with42/42 truths, source-fresh native/PPC and all-host execution, retained NTSC predicates and authenticated package evidence. See [Phase9 verification](phases/09-pal-games-and-audio/09-VERIFICATION.md). Scope boundaries and historical policy revisions below remain unchanged.
 Phase 5 merged at 6d57d69; ci-only work cuts no package release. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md) for commands, exit statuses

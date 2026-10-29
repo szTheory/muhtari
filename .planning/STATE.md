@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
-current_plan: 5
+current_plan: 6
 status: executing
-stopped_at: Completed 11-04-PLAN.md
-last_updated: "2026-10-29T14:12:08.460Z"
+stopped_at: Completed 11-05-PLAN.md
+last_updated: "2026-10-29T14:22:14.798Z"
 last_activity: 2026-10-29
 last_activity_desc: Phase 11 execution started
-state_head: 6183c39f4ec1b90d508a6166091d3f15903ded82
+state_head: 4db680899f3ca12a6d96c574cbf72004e2973bfc
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 72
-  completed_plans: 68
+  completed_plans: 69
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -35,7 +35,7 @@ remains recorded below; this step makes no new release claim.
 ## Current Position
 
 Current Phase: 11
-Current Plan: 5
+Current Plan: 6
 Total Plans in Phase: 8
 Progress: [███████░░░] 71%
 
@@ -694,8 +694,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-04-PLAN.md
-Last session: 2026-10-29T14:12:08.228Z
+**Stopped at:** Completed 11-05-PLAN.md
+Last session: 2026-10-29T14:22:14.431Z
 Resume file: None
 Next command: /gsd-plan-phase 11
 
@@ -734,6 +734,7 @@ Next command: /gsd-plan-phase 11
 | Phase 11 P02 | 45m | 3 tasks | 8 files |
 | Phase 11 P03 | 30m | 3 tasks | 12 files |
 | Phase 11 P04 | 70m | 3 tasks | 14 files |
+| Phase 11 P05 | 45m | 2 tasks | 5 files |
 
 ## Decisions
 
@@ -759,6 +760,7 @@ Next command: /gsd-plan-phase 11
 - [Phase 11]: Local mailbox rows are bound to diag.bankset, diag.expansion and diag.pal through ledger_crc.cmake at the canonical case only; predicate.c gains no mailbox support
 - [Phase 11]: library job promoted into CI required after a recount of 18 distinct successful main runs
 - [Phase 11]: 11-04: private files are detected at test time and matched only through the core's own identification; a refused identified image is a fail, harness faults are named and fail the run
+- [Phase 11]: 11-05: the counts line is read with a follow-up ctest command because the library test preset hides a passing test's output; the dotenv template is deleted, local values are passed inline
 
 ### Blockers
 
