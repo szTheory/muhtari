@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
-current_plan: 6
+current_plan: 7
 status: executing
-stopped_at: Completed 11-05-PLAN.md
-last_updated: "2026-10-29T14:22:14.798Z"
+stopped_at: Completed 11-06-PLAN.md
+last_updated: "2026-10-29T14:34:09.216Z"
 last_activity: 2026-10-29
 last_activity_desc: Phase 11 execution started
-state_head: 4db680899f3ca12a6d96c574cbf72004e2973bfc
+state_head: 3243cfcab52e573fd9613ac06a4c9772919b28c3
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 72
-  completed_plans: 69
+  completed_plans: 70
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -35,7 +35,7 @@ remains recorded below; this step makes no new release claim.
 ## Current Position
 
 Current Phase: 11
-Current Plan: 6
+Current Plan: 7
 Total Plans in Phase: 8
 Progress: [███████░░░] 71%
 
@@ -694,8 +694,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-05-PLAN.md
-Last session: 2026-10-29T14:22:14.431Z
+**Stopped at:** Completed 11-06-PLAN.md
+Last session: 2026-10-29T14:33:58.210Z
 Resume file: None
 Next command: /gsd-plan-phase 11
 
@@ -735,6 +735,7 @@ Next command: /gsd-plan-phase 11
 | Phase 11 P03 | 30m | 3 tasks | 12 files |
 | Phase 11 P04 | 70m | 3 tasks | 14 files |
 | Phase 11 P05 | 45m | 2 tasks | 5 files |
+| Phase 11 P06 | 50m | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -761,6 +762,8 @@ Next command: /gsd-plan-phase 11
 - [Phase 11]: library job promoted into CI required after a recount of 18 distinct successful main runs
 - [Phase 11]: 11-04: private files are detected at test time and matched only through the core's own identification; a refused identified image is a fail, harness faults are named and fail the run
 - [Phase 11]: 11-05: the counts line is read with a follow-up ctest command because the library test preset hides a passing test's output; the dotenv template is deleted, local values are passed inline
+- [Phase 11]: Compatibility claim class is computed from expected.csv sources (fit rows outnumbering guide+hw+rtl is model-only), falling back to ledger evidence kind, else none
+- [Phase 11]: Owned diagnostics and any pass that is not a 7800basic title or boots row count as model conformance, never gameplay
 
 ### Blockers
 

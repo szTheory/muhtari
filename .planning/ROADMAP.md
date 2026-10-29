@@ -351,7 +351,7 @@ Plans:
 **Goal:** Account for the pinned library honestly and prove every new compatibility claim without private bytes in CI.
 **Depends on:** Phase 10
 **Requirements:** COMP-01, COMP-02, COMP-03
-**Plans:** 5/8 plans executed in 8 sequential waves.
+**Plans:** 6/8 plans executed in 8 sequential waves.
 
 Plans:
 **Wave 1**
@@ -370,7 +370,7 @@ Plans:
 - [x] 11-05-PLAN.md — Document the private command with its prerequisite, remove the dotenv drift, record the local run.
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 11-06-PLAN.md — Regenerate the compatibility page: two populations, derived headline, claims table, guards.
+- [x] 11-06-PLAN.md — Regenerate the compatibility page: two populations, derived headline, claims table, guards.
 
 **Wave 7** *(blocked on Wave 6 completion)*
 - [ ] 11-07-PLAN.md — Require the disclaimer and bound the .info description.
@@ -401,7 +401,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
 | 10. Homebrew and expansion memory | 14/14 | Complete    | 2026-10-28 |
-| 11. Full-library acceptance | 2/8 | In Progress | — |
+| 11. Full-library acceptance | 6/8 | In Progress | — |
 
 ---
 *Updated: 2026-10-25; Phases5–9 are complete. Phase9 has8/8 accepted plans,22/22 tasks,42/42 verified truths and all three PAL requirements complete. Source-fresh CI40233948646 and Nightly40233948516 attempt2 pass: six native current/base lanes, full native/PPC654+6, WASM592/956-row equality, actual RetroArch and authenticated native packages. One review-fix round resolved BIOS input lifetime; re-review is clean, gap round unused. The advisory10000-case isolation timeout remains unaccepted. Phase10 is researched and planned (13 plans/30 tasks,13 sequential waves), with independent plan checking passed and20/20 decisions covered. Phase11 remains unplanned. Next separate command: $gsd-execute-phase 10.*
