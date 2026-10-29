@@ -76,13 +76,12 @@ static muhtari_status identify_listed(const uint8_t *img, size_t n, const uint8_
     muhtari__sha1_final(&ctx, key.sha1);
     memcpy(prefix[0], key.sha1, 8);
     muhtari_cart_info plain;
-    muhtari_status st = muhtari__cart_identify(img, n, &key, as_2600 ? 0u : 1u, &entry, 1u, NULL,
-                                               0u, (const uint8_t (*)[8])prefix,
-                                               as_2600 ? 1u : 0u, &plain);
-    muhtari_status st_entry =
-        muhtari__cart_identify_entry(img, n, &key, as_2600 ? 0u : 1u, &entry, 1u, NULL, 0u,
-                                     (const uint8_t (*)[8])prefix, as_2600 ? 1u : 0u, out,
-                                     &listed_index);
+    muhtari_status st =
+        muhtari__cart_identify(img, n, &key, as_2600 ? 0u : 1u, &entry, 1u, NULL, 0u,
+                               (const uint8_t (*)[8])prefix, as_2600 ? 1u : 0u, &plain);
+    muhtari_status st_entry = muhtari__cart_identify_entry(
+        img, n, &key, as_2600 ? 0u : 1u, &entry, 1u, NULL, 0u, (const uint8_t (*)[8])prefix,
+        as_2600 ? 1u : 0u, out, &listed_index);
     CHECK_EQ_U64(st_entry, st);
     CHECK(memcmp(&plain, out, sizeof plain) == 0);
     return st_entry;

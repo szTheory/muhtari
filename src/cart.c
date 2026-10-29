@@ -733,15 +733,12 @@ static muhtari_status cart_headerless(const uint8_t *img, size_t n, const struct
     return MUHTARI_STATUS_ERR_INVALID_IMAGE;
 }
 
-muhtari_status muhtari__cart_identify_entry(const uint8_t *img, size_t n,
-                                            const struct muhtari__cartdb_key *keys,
-                                            uint32_t key_count,
-                                            const struct muhtari__cartdb_entry *entries,
-                                            uint32_t entry_count,
-                                            const struct muhtari__cartdb_layout *layouts,
-                                            uint32_t layout_count, const uint8_t (*prefix)[8],
-                                            uint32_t prefix_count, muhtari_cart_info *out,
-                                            uint32_t *entry)
+muhtari_status
+muhtari__cart_identify_entry(const uint8_t *img, size_t n, const struct muhtari__cartdb_key *keys,
+                             uint32_t key_count, const struct muhtari__cartdb_entry *entries,
+                             uint32_t entry_count, const struct muhtari__cartdb_layout *layouts,
+                             uint32_t layout_count, const uint8_t (*prefix)[8],
+                             uint32_t prefix_count, muhtari_cart_info *out, uint32_t *entry)
 {
     uint32_t matched = UINT32_MAX;
     if (entry != NULL) {
