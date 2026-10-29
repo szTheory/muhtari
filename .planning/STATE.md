@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
-current_plan: 7
+current_plan: 8
 status: executing
-stopped_at: Completed 11-06-PLAN.md
-last_updated: "2026-10-29T14:34:09.216Z"
+stopped_at: Completed 11-07-PLAN.md
+last_updated: "2026-10-29T14:40:46.870Z"
 last_activity: 2026-10-29
 last_activity_desc: Phase 11 execution started
-state_head: 3243cfcab52e573fd9613ac06a4c9772919b28c3
+state_head: a5f7f9db29a7923314473c097df701210109e318
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 72
-  completed_plans: 70
+  completed_plans: 71
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -35,7 +35,7 @@ remains recorded below; this step makes no new release claim.
 ## Current Position
 
 Current Phase: 11
-Current Plan: 7
+Current Plan: 8
 Total Plans in Phase: 8
 Progress: [███████░░░] 71%
 
@@ -694,8 +694,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-06-PLAN.md
-Last session: 2026-10-29T14:33:58.210Z
+**Stopped at:** Completed 11-07-PLAN.md
+Last session: 2026-10-29T14:40:46.649Z
 Resume file: None
 Next command: /gsd-plan-phase 11
 
@@ -736,6 +736,7 @@ Next command: /gsd-plan-phase 11
 | Phase 11 P04 | 70m | 3 tasks | 14 files |
 | Phase 11 P05 | 45m | 2 tasks | 5 files |
 | Phase 11 P06 | 50m | 3 tasks | 9 files |
+| Phase 11 P07 | 30m | 2 tasks | 10 files |
 
 ## Decisions
 
@@ -764,6 +765,7 @@ Next command: /gsd-plan-phase 11
 - [Phase 11]: 11-05: the counts line is read with a follow-up ctest command because the library test preset hides a passing test's output; the dotenv template is deleted, local values are passed inline
 - [Phase 11]: Compatibility claim class is computed from expected.csv sources (fit rows outnumbering guide+hw+rtl is model-only), falling back to ledger evidence kind, else none
 - [Phase 11]: Owned diagnostics and any pass that is not a 7800basic title or boots row count as model conformance, never gameplay
+- [Phase 11]: 11-07: .info description cut to 317 characters, says diagnostics give model conformance only and ends with the short disclaimer; description bound read with file(READ) so semicolons cannot split it
 
 ### Blockers
 
