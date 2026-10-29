@@ -167,6 +167,7 @@ recorded in 11-DISCUSSION-LOG.md.
     must be updated for the new shape).
   - The hand-written Phase 10 detail prose moves out of the generator into `docs/bankset-tests.md`,
     `docs/expansion-tests.md` and `docs/pal-tests.md`, which already own it.
+- **D-17 amendment (gap round, 2026-10-29):** the evidence kind for a 7800basic title pass is named "public title screen", not gameplay; the rule is unchanged. Basis: D-17's premise misread the title@ predicate, a frame hash (docs/emulation-tests.md, title), as gameplay evidence; this corrects that reading and adds no new data. Cited by 11-VERIFICATION.md gap 2.
 - **D-18:** `is_experimental` stays `"true"`. A pass count is gameable (owned rows already meet any
   count), and D-05 means no pinned-list row can pass from public evidence, so no ledger-derived criterion
   can be met in this phase. Add no gate. Update `.planning/preparation/HOSTS-AND-INTEGRATION.md` §1 and

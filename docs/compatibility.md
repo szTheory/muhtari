@@ -47,11 +47,11 @@ Pinned list rows:
 | skipped (reason) | 3 |
 | unsupported (reason) | 0 |
 
-Owned rows (a diagnostic is never counted as gameplay):
+Owned rows (a diagnostic is model conformance, never a title screen):
 
 | Evidence kind | Rows |
 |---|---|
-| public gameplay | 27 |
+| public title screen | 27 |
 | public boot only | 5 |
 | model conformance | 14 |
 | fail | 0 |
@@ -63,8 +63,9 @@ Owned rows (a diagnostic is never counted as gameplay):
 
 Each claim names its evidence class and the tests that exercise it. owned-oracle: expected values taken
 from documents, hardware or RTL. model-only: mostly fitted values, so the model follows its documented
-sequences without hardware calibration. public gameplay and public boot only: ledger pass rows of public
-samples. none: no evidence. No real HSC ROM is exercised and PAL is not retail-verified. A class
+sequences without hardware calibration. public title screen: a ledger pass row whose frame hash matches
+the screen a public sample shows by that frame, which is not gameplay. public boot only: a ledger pass row
+that shows only that the sample boots. none: no evidence. No real HSC ROM is exercised and PAL is not retail-verified. A class
 describes the evidence, not a promise about any title.
 
 | Kind | Claim | Evidence class | Backing tests |
@@ -75,7 +76,7 @@ describes the evidence, not a promise about any title.
 | board | bankset | owned-oracle | diag.bankset, diag.bankset_tracer |
 | board | fractalus | owned-oracle | diag.retail |
 | board | linear | owned-oracle | diag.linear16, title.simple.fast |
-| board | ram | public gameplay | none |
+| board | ram | public title screen | none |
 | board | rom_at_4000 | owned-oracle | diag.sg144 |
 | board | supergame | owned-oracle | diag.sg144, title.simple.fast |
 | board | xboard | owned-oracle | diag.expansion |
@@ -88,11 +89,11 @@ describes the evidence, not a promise about any title.
 | peripheral | hsc | owned-oracle | core.hsc.decode, diag.battery |
 | peripheral | lightgun | model-only | input.lightgun, diag.controllers |
 | peripheral | pokey4000 | none | none |
-| peripheral | pokey450 | public gameplay | none |
+| peripheral | pokey450 | public title screen | none |
 | peripheral | savekey | owned-oracle | input.savekey.protocol, libretro.host.battery |
 | peripheral | xboard | owned-oracle | diag.expansion |
 | peripheral | xm | owned-oracle | diag.expansion |
-| region | NTSC | public gameplay | title.simple.fast |
+| region | NTSC | public title screen | title.simple.fast |
 | region | PAL | owned-oracle | diag.pal, runner.region.pal, title.pal.fast |
 | region | any | none | none |
 

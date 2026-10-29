@@ -148,8 +148,10 @@ foreach(line IN LISTS lines)
   endif()
   compat_inc(${pop}_total)
 
-  # Evidence kind by rule: an owned diagnostic is model conformance, never
-  # gameplay; only a pinned 7800basic title is public gameplay.
+  # Evidence kind by rule: an owned diagnostic is model conformance; a
+  # 7800basic title@ pass is a public title screen, the frame the sample shows
+  # by the predicate's frame (docs/emulation-tests.md, title), not gameplay; a
+  # boots@ pass is boot only.
   set(label "${status}")
   if(status STREQUAL "pass")
     if(id MATCHES "^diag/")
@@ -157,7 +159,7 @@ foreach(line IN LISTS lines)
     elseif(predicate MATCHES "^boots@")
       set(label boot)
     elseif(id MATCHES "^7800basic-0[.]41/" AND predicate MATCHES "^title@")
-      set(label gameplay)
+      set(label title)
     else()
       set(label model)
     endif()
@@ -250,7 +252,7 @@ compat_tiers(pinned pinned_tiers)
 compat_tiers(owned owned_tiers)
 compat_kinds(pinned pinned_kinds "pass=pass" "fail=fail" "unknown=not evaluated"
   "skipped=skipped (reason)" "unsupported=unsupported (reason)")
-compat_kinds(owned owned_kinds "gameplay=public gameplay" "boot=public boot only"
+compat_kinds(owned owned_kinds "title=public title screen" "boot=public boot only"
   "model=model conformance" "fail=fail" "unknown=not evaluated"
   "skipped=skipped (reason)" "unsupported=unsupported (reason)")
 
@@ -293,8 +295,8 @@ foreach(claim IN LISTS sorted)
     if(carried_${kind}_${name}_boot)
       set(class "public boot only")
     endif()
-    if(carried_${kind}_${name}_gameplay)
-      set(class "public gameplay")
+    if(carried_${kind}_${name}_title)
+      set(class "public title screen")
     endif()
   endif()
   string(REPLACE " " ", " tests "${tests}")
@@ -334,15 +336,16 @@ ${owned_tiers}
 Pinned list rows:
 
 ${pinned_kinds}
-Owned rows (a diagnostic is never counted as gameplay):
+Owned rows (a diagnostic is model conformance, never a title screen):
 
 ${owned_kinds}
 ## Claims
 
 Each claim names its evidence class and the tests that exercise it. owned-oracle: expected values taken
 from documents, hardware or RTL. model-only: mostly fitted values, so the model follows its documented
-sequences without hardware calibration. public gameplay and public boot only: ledger pass rows of public
-samples. none: no evidence. No real HSC ROM is exercised and PAL is not retail-verified. A class
+sequences without hardware calibration. public title screen: a ledger pass row whose frame hash matches
+the screen a public sample shows by that frame, which is not gameplay. public boot only: a ledger pass row
+that shows only that the sample boots. none: no evidence. No real HSC ROM is exercised and PAL is not retail-verified. A class
 describes the evidence, not a promise about any title.
 
 ${claim_table}
