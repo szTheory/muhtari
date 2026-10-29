@@ -24,4 +24,5 @@ policy.publish_set	hygiene,policy
 policy.publish_set.self_test	hygiene,policy
 policy.rom_hash_coverage	hygiene,policy
 policy.rom_hash_coverage.self_test	hygiene,policy
+policy.softlist_ledger	hygiene,policy
 policy.title	hygiene,policy

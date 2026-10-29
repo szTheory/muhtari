@@ -342,6 +342,21 @@ muhtari_add_test(NAME policy.cartdb_generated.self_test
     -P ${hygiene_scripts}/expect_fail.cmake
   LABELS hygiene policy TIMEOUT 30)
 
+# Fault prevented: a ledger whose pinned-list rows are edited by hand, left
+# behind by a pin bump, or claim a pass that only metadata supports. The
+# generator regenerates every row whose id has no "/" from the pinned MAME list
+# into the build directory, the committed ledger must equal that output, and
+# each row must be unknown, skipped or unsupported with no evidence.
+set(hygiene_softlist ${CMAKE_COMMAND} -DXML=${MUHTARI_MAME_PINS}/a7800.xml
+  -DLEDGER=${CMAKE_SOURCE_DIR}/tests/compat/ledger.csv -DCARTDB=${CMAKE_SOURCE_DIR}/src/cartdb.c)
+muhtari_add_test(NAME policy.softlist_ledger
+  COMMAND ${hygiene_softlist} -DOUT=${CMAKE_BINARY_DIR}/hygiene/softlist/ledger.csv
+    -DCHECK=${CMAKE_SOURCE_DIR}/tests/compat/ledger.csv
+    -P ${CMAKE_SOURCE_DIR}/tools/softlist_ledger.cmake
+  LABELS hygiene policy TIMEOUT 30)  # provisional, n=1, local
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  ${CMAKE_SOURCE_DIR}/tests/compat/ledger.csv ${MUHTARI_MAME_PINS}/a7800.xml)
+
 # No tracked file is firmware, a built sample or a known ROM. The self test
 # tracks a synthetic 256-byte A78 file in a fixture repository and lists the
 # SHA-1 of its last 128 bytes, which must be found once the header is

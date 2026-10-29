@@ -1,4 +1,6 @@
 id,title,sha1_raw,sha256_raw,sha1_a78,sha256_a78,board,region,peripherals,predicate,status,tier,evidence_commit,evidence,oracle,checked
+1on1,One On One (PAL),01dfc5e4e615cf20ee4f07245285f85684ee445d,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+1on1u,One On One (NTSC),46ceb458949759c4d379f543609aa622023e814e+79c2c75951ccf391e6ed4fbdf644e22f92c63864,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
 7800basic-0.41/adventurer,adventurer,76652840e7e9eaa2e06ea7eb3d20c6545c7617d3,e6915fccdf374074708e6025aa885bfd6ba1ba26b31e9f2f0454232fe68eee71,1e486df17fedc6f1c8c8ab435ad4e3c7ed686253,7dd09ae006f4514b0a41f31134dcf6a908c6bd891ee59093a3211460171e855d,linear,NTSC,-,title@120=896f0da4e0efc867d9425b387d3b61f037224ceca315806a67719281703849d6,pass,pr,e7c2c24eca3c,896f0da4e0efc867,-,2026-10-20
 7800basic-0.41/atarivoxspeech,atarivoxspeech,b7ec01c4c215b73b09c1274a34a9eb8691afd72e,8af0d20a3b4fa36468ac94cf4c5c51fbefd1c90ea3b5d8c9c6328486b889a9a9,2b7d010e1f008b2e436369c43615bb38f2a1ac6c,32e8ba92d7729cf6b6646fbd1d1306a033b79118da54d487a09025f09e193986,linear,NTSC,-,title@120=5aa54e19677716db8466b8bd653df106709c9b1815ff959333be63ce385f9635,pass,pr,e7c2c24eca3c,5aa54e19677716db,-,2026-10-20
 7800basic-0.41/backuptest,backuptest,e4df54b87340b2c864fa1f8a85dd9589d8a20362,cf0f21cad12ad5e6d84bc0053801780f0d036912b4760fbaa31a10dd80caabbb,4f563291d7a855e733eda2b7d9fed05e1589782e,0e2372eb76f2befee28b453713eed70d7ed54b53b83ba9b254b4e8fadd04a8eb,linear,NTSC,-,boots@120;why=no-main-loop-jams,skipped,local,-,-,-,-
@@ -34,6 +36,53 @@ id,title,sha1_raw,sha256_raw,sha1_a78,sha256_a78,board,region,peripherals,predic
 7800basic-0.41/spacephysics,spacephysics,537efa49be5279ff98da2d8bedc2c8d4d694f7e5,aee8f40a24b4a41473041ca65f112f29564648e1d47614559e4c434d43577c47,e934983736c299e4beb32dd97833374417ed2a54,eaea2c6a5bac8c56662f99d9693545f59429f300b2585f7b1c40ec0ea357cc4a,linear,NTSC,-,title@120=ac0001077c8d1b5c31e71d04f912baad35cc79de079c1059c09ae19ba0f18c5c,pass,pr,e7c2c24eca3c,ac0001077c8d1b5c,-,2026-10-20
 7800basic-0.41/trackertest,trackertest,943071cea5c854b26f45fccd44bbfec6dd309390,feb6de8b9b902fed27974e24455259ce09022da969edc4f3372d4ee2ac93ab0c,0071e0f9555e5504d9c46802f2ec76a476b58105,407f3a50b19d7badf2d0831b1c201b09dac06485e7e38cb8a0c4344ef0f4c6cc,linear,NTSC,-,title@120=38b58b8b17599733c75706ccd45a9d286fb0f9cf70d124cb5b6fb3206b4420b1,pass,pr,e7c2c24eca3c,38b58b8b17599733,-,2026-10-20
 7800basic-0.41/underthehood,underthehood,1ca4b610035833c100dd8dcefe0e8b7fe24e8eee,fbe85ac916bfc09e6f7cbf8a1b9adf820a8d31847ea49876e122e1eef9a5c4c3,ea0659c7f0419c32721c3afe6511841969bb4a3c,ade6d222f15644bf020f818c5a3139a6e5216ba33c1c16e798b340e73b35b100,linear,NTSC,-,title@120=6daeea9510aaab9f42edb28eeda8bf92ee5f3f03863f756a57f03964f11775a1,pass,pr,e7c2c24eca3c,6daeea9510aaab9f,-,2026-10-20
+aceoface,Ace of Aces (PAL),c43249ba2d38441461e5ffe07ad2e0b46ab1c6df,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+aceofaceu,Ace of Aces (NTSC),efd20bd321a81d67fb6430d9ba93d23fb90d8029,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+aerial,Aerial,af87626303bf076bb8f5250f14ab705b5ec218d3,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+alienbrg,Alien Brigade (PAL),990711ae451d901a960af8ad9ae70813f16257b1,-,-,-,supergame+rom_at_4000,PAL,lightgun,boots@120,unknown,local,-,-,-,-
+alienbrgu,Alien Brigade (NTSC),a8629fac962cc20b263a60bb2d2386d605713387,-,-,-,supergame+rom_at_4000,NTSC,lightgun,boots@120,unknown,local,-,-,-,-
+antiair,AntiAir,db1a4a63f481fa64b520d0d1c74905bad7d187e8,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+armora2,Armor Attack II,56f8bb2bc34ceba0c1107fcacab46dd0d4677075,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+ascend,Ascend,7d023f4bccff1eac5a1189742cbd180bc7945a4f,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+astdelux,Asteroids Deluxe (PAL),341c7be2823e69e95a61567cb79042c140278c4c,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+astdeluxu,Asteroids Deluxe (NTSC),514fb53dcd8c47251fcbe5047bb2d9d13ccf6aef,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+asteroid,Asteroids (NTSC),d96ec4e043fcdacab367d8a69d29904b3b2896f1,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+astrob,Astro Blaster (NTSC),51de38c2e1543d57f0b94edc58c2bb72dfb8b8d2,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+astrof,Astro Fighter (NTSC),f76de283a1ac539157b9a97870e70addaedaa55d,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+awass,Awass,4e02c582369b009bc767ad513dae686eb77c8eb4,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+ballblaz,Ballblazer (PAL),1aa1a508ada1521ae1d373a6860681093e3f851c,-,-,-,linear,PAL,pokey4000,boots@120,unknown,local,-,-,-,-
+ballblazu,Ballblazer (NTSC),4eb5424360691a38b199d91a0e2c9095d0862dbe,-,-,-,linear,NTSC,pokey4000,boots@120,unknown,local,-,-,-,-
+barnblst,Barnyard Blaster (PAL),c035ba99abc2eb5154f7f778189bef22cfbf0704+87e5c4e329b61bb262150bbb6b1fe2bbe91369b6,-,-,-,supergame,PAL,lightgun,boots@120,unknown,local,-,-,-,-
+barnblstu,Barnyard Blaster (NTSC),cbcde3d85c8778dea402394568677884cd781de3,-,-,-,supergame,NTSC,lightgun,boots@120,unknown,local,-,-,-,-
+baseball,Baseball (PAL),c44fe244206590abc26fbbd520a5726353899e35,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+baseballu,Pete Rose Baseball (NTSC),ffb4fbed8d8f28ea71668542b7ebd019955c5a11,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+battlot,Battlot,583ed08ecf5bdf71e563ea4d46fbfce15747a57e,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+beefdrop,Beef Drop (NTSC /  added POKEY Chip),a3eaff991cec95040aff53e0c26a862c3dfcc05e,-,-,-,linear,NTSC,pokey4000,boots@120,unknown,local,-,-,-,-
+bentley,Bentley Bear's Crystal Quest (NTSC),4a850d4b97bea621e9b6df142afeec8b398d6d6c,-,-,-,supergame+rom_at_4000,NTSC,pokey450,boots@120,unknown,local,-,-,-,-
+bonq,b*nQ (NTSC),379ae22a8c8a1c518ba5eb29ad0826dd2daca954,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+bootskell,Bootskell,7f4a7f9a8970f11a44b815476d49b640b7607855,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+bsktbrwl,Basketbrawl (PAL),e7ef6b11bb6836ff7d11a25f8d4e2c9361fa69b3,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+bsktbrwlu,Basketbrawl (NTSC),39877a4c88498bf6656451e3d1acaf7e8638bdfd,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+cacorm,Cacorm,98f946ff4f9ef420a2e76697d6cdf27d6a275337,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+cavit,Cavit,0bdccc6a4115177893d3841ce6ad0dcfcf21664a,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+centiped,Centipede (PAL),323f9fc4fde9aa6fcbaac8ae300aaa06bafa745a,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+centipedu,Centipede (NTSC),c8377ad7fb6afec5c88c14a23a68e2ecebba4e5a,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+choplift,Choplifter! (PAL),43bfff365d2104a98b1358f636e7138900538fea+f260a436687920f4f15d0452777aab1483e12168,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+chopliftu,Choplifter! (NTSC),6df15e73494d0a498dd044753a27544214210b14,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+commando,Commando (PAL),2bdad24967fe4f5492ae294b1ccf8f148930a419,-,-,-,supergame,PAL,pokey4000,boots@120,unknown,local,-,-,-,-
+commandou,Commando (NTSC),f8ae7da650ad38675b81675b77096794a9cd52e8,-,-,-,supergame,NTSC,pokey4000,boots@120,unknown,local,-,-,-,-
+cracked,Crack'ed (PAL),0c1a7806e431efbf0c826a11b92d74eb45e08661,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+crackedu,Crack'ed (NTSC),664d267d1245d5698cbf6ff0622ee0d629da3a11,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+cracky,Cracky,ccc90d001967904f7df04e1382736e76cd0d5dce,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+crazyotto,Crazy Otto (PAL /  Ms. Pac-Man hack),5fc657219e4e513bc6ef84f093ac17846b11e2c3,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+crazyottou,Crazy Otto (NTSC /  Ms. Pac-Man hack),c4af478c38d524f0f5c418f0dd51af38ea62c3ea,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+crossbow,Crossbow (PAL),e7df5ac0911f985aed3e0043e11d794d3539893b+8957f4e7f82c78a4f92d9ea7756feeb5114943a9,-,-,-,supergame+rom_at_4000,PAL,lightgun,boots@120,unknown,local,-,-,-,-
+crossbowu,Crossbow (NTSC),9fcb4672d8c43d7c744afa5f7b0f058b6ded07f7+a129cda5cafbc66d85dd8b46312494a7e6c03d44,-,-,-,supergame+rom_at_4000,NTSC,lightgun,boots@120,unknown,local,-,-,-,-
+darkcham,Dark Chambers (PAL),2b888c95b31109ffd0441f586ba18f21a3a4f22e,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+darkchamu,Dark Chambers (NTSC),848077f15114fec31f8290be2583566f4486fe65,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+ddragon,Double Dragon (PAL),da7d495ac858c3b1f66aeb6e981c25bd08d44bd8,-,-,-,activision,PAL,-,boots@120,unknown,local,-,-,-,-
+ddragonu,Double Dragon (NTSC),df67dad8bbf3813e7b96362c55ed4af40d831277,-,-,-,activision,NTSC,-,boots@120,unknown,local,-,-,-,-
+devcard,7800 Dev. Card,4df3657f57e3086bee26fb5c6ea946c509d08553,-,-,-,linear,any,pokey4000,boots@120,unknown,local,-,-,-,-
 diag/absolute,muhtari absolute diagnostic,a908a1ee93f5bf68d8387cfefe3cab4747c864d7,e30e43a823ef589115ca249c62426b8f78e14db6332288499a8a70d7176abf15,1913e4503bb6170707ecfe0ead098d3e5190a3a5,47b5dc6649fd7a19f50e6e01492c67c05dda1bd9ea933d5a738a33845567c123,absolute,NTSC,-,title@120=563d57b1652dc78e3d3a33cc3efef13ee0570a9ae16b0c2bdda73716a49eb341,pass,pr,71d81177ec0b,563d57b1652dc78e,-,2026-10-29
 diag/activision,muhtari activision diagnostic,cfbfdf09bd8775710536891621506973d25c005c,be4f0b78368f7eefc468039c22af4c3799d85bd3acd50437e5e71b6e816aa2e0,3b206e449075e007321207eeef44daba1a5b7ade,7656d3f24d717637aa2621dd761541ed715f414c0e8171dd49d28da44fe24b03,activision,NTSC,-,title@120=2caefc270d2bcdfdfc3490d55cbf861b136697025a77196902338fae53d77903,pass,pr,71d81177ec0b,2caefc270d2bcdfd,-,2026-10-29
 diag/bank6,muhtari bank6 diagnostic,7dd59cc28c0a8ba5f61909bffe00b6e10a5c3c13,afcf98bac3520cc05fd13ec627a26136e4e78005acfee926fcc41b04b194d2ca,ca004ba207b061b0c9cb88e376357107c68599cb,e963101c06f1e6e22dbe35847a264778b7165efdf3117e7a208feda79c5c7587,supergame+bank6_at_4000,NTSC,-,title@120=5fc5f42f97facb74de5dc33ae8445b313bfa2f66795e66408b3395d77ac8c052,pass,pr,e7c2c24eca3c,5fc5f42f97facb74,-,2026-10-20
@@ -48,3 +97,158 @@ diag/pal,muhtari PAL diagnostic,320c0b94b8a3c04d3cf98c8766fa0b9444dd5736,a2f2636
 diag/sg144,muhtari sg144 diagnostic,e69d61672e0f2197216b9dadefb35ebe9db9ee99,1c453630e39aa15e20454c5693b052f862ead0a4a4fad045de9bd2c7db13823f,979b232a5ea5a7808909e7434b5bd234a592fa74,664747643d218ab5b66c3e274d9d2c169287f09fa4ad897681b102cdabdf793e,supergame+rom_at_4000,NTSC,-,title@120=d7ae3912f76575a158604d296c62936ddbbc8f1158cc5839c8a4fe0d02ab8ce7,pass,pr,e7c2c24eca3c,d7ae3912f76575a1,-,2026-10-20
 diag/xboard,muhtari xboard diagnostic,509b710807d216e923c4c05e48598b63b20af45a,a82c45a30c7bd3d3c467763195e5265fe8b7325097e91436b62fdebfc9e39207,b151aea35c8be509a87535200dc98cf438822ba4,3796a02b1921bca342fa32b894ac61a44d734249fdb8d449fb1a7127b90d5ec8,linear+xboard,NTSC,pokey450+hsc,mailbox@12;why=expansion-x0,pass,local,ebd6c371a5c8,f157,-,2026-10-26
 diag/xm,muhtari xm diagnostic,de94badf2105a19c748427c85440b69820fa8305,2eccc6db6955d4646b2e2cade818e8c52d2d3b206c92c2e10c7772ae4ecf262f,26241c17774734f908d2fb64b288e2880777e9d0,f9a2becfaed06393e22a2438e3a8c2079790cd565d63df68941ea5d651e4e8d2,linear+xm,NTSC,pokey450+hsc,mailbox@12;why=expansion-m0,pass,local,ebd6c371a5c8,9354,-,2026-10-26
+diagtest,7800 Pro System Diagnostic Test (v1.0),76ec76c423d88bdf739e673c051c5b9c174881c6,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+diagtestp,7800 Pro System Diagnostic Test (prototype),ea4df28c6bedc09f7013013f257c984aed9b5319,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+digdug,Dig Dug (PAL),ce05d3270b0e0d36d80a4f0731d0173cb5921bce,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+digdugu,Dig Dug (NTSC),19cee8dc40fabd7022bedc27e4896c09e3cadfdd,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+dkong,Donkey Kong (PAL),511f5cd8428f47c5dcd51c44fc37d31234e3311e,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+dkongjr,Donkey Kong Jr. (PAL),28891404f825608c92ca69457ce2b6bd370e345e,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+dkongjru,Donkey Kong Jr. (NTSC),0a1ac22a699a2a9705cd19953d61b95101bc3007,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+dkongu,Donkey Kong (NTSC),1ecec7224368ab454e8d4ef29b1393e446ac87fb,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+dkongxm,Donkey Kong (PAL /  demo /  XM enhanced /  V1.2),18409eace880dda3646792f9ec050a87a3b1b382,-,-,-,supergame+rom_at_4000,PAL,-,boots@120,unknown,local,-,-,-,-
+dkongxmcc,Donkey Kong (PAL/NTSC /  demo /  XM enhanced /  older /  for CC2 board),454d754a0c4603323e476d9418f343a6a1a0d017,-,-,-,supergame+rom_at_4000,any,-,boots@120,unknown,local,-,-,-,-
+dkongxmo,Donkey Kong (PAL /  demo /  XM enhanced /  older),118c462d6698bd23c378785f80062fdd7d65ca00,-,-,-,supergame+rom_at_4000,PAL,-,boots@120,unknown,local,-,-,-,-
+dkongxmou,Donkey Kong (NTSC /  demo /  XM enhanced /  older),f4da231312da06ff9e8af5681b5013b14886b455,-,-,-,supergame+rom_at_4000,NTSC,-,boots@120,unknown,local,-,-,-,-
+dkongxmps,Donkey Kong (PAL /  demo /  XM enhanced /  V1.2 /  for ProSystem Emulator),65b723b470d287af51e9888813149c43fb11ac26,-,-,-,supergame+rom_at_4000,PAL,-,boots@120,unknown,local,-,-,-,-
+dkongxmu,Donkey Kong (NTSC /  demo /  XM enhanced /  V1.2),3129cbc91dc8f223f00db5c3273a4a330320be99,-,-,-,supergame+rom_at_4000,NTSC,-,boots@120,unknown,local,-,-,-,-
+dkongxmups,Donkey Kong (NTSC /  demo /  XM enhanced /  V1.2 /  for ProSystem Emulator),7825c1946e3c7492fa9bbfae33029cd68c0d1135,-,-,-,supergame+rom_at_4000,NTSC,-,boots@120,unknown,local,-,-,-,-
+dsrtflcn,Desert Falcon (PAL),c2fff2cce82310396a749dc2a37feba80c35c82f,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+dsrtflcna,Desert Falcon (NTSC /  alternate),12320d6069c5dd2b7edc171a79a2f159c557c869,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+dsrtflcnu,Desert Falcon (NTSC),aa22b7c1af19b39243e30f05a9d65d20d3aa430f,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+f18,F-18 Hornet (PAL),673d912b2f9ab7a43f95e0e90bd80249b360fe0d,-,-,-,absolute,PAL,-,boots@120,unknown,local,-,-,-,-
+f18u,F-18 Hornet (NTSC),13a18a6b85db6222b01d37800e5e57db616a85a6,-,-,-,absolute,NTSC,-,boots@120,unknown,local,-,-,-,-
+failsafe,FailSafe (PAL),2d810a0e521e06ce560fe42f9e1c15d759071d4d,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+failsafeu,FailSafe (NTSC),e3221e285adaee30f36b60e85a35b63cb4d63292,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+fatalrun,Fatal Run (PAL),f23173d2e42bca0767f3d8ecb6bb1c0d23dde996,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+fatalrunu,Fatal Run (NTSC),69aab1e6ef332c6844c693ac41965e4c33ff822a,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+fightn,Fight Night (PAL),ded89f3a4ac0d95aa158c98302b7939e5b89e4c6,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+fightnu,Fight Night (NTSC),1e8a8704a77b15e70cbc72b0ae9bc25fb91d7c21,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+foodf,Food Fight (PAL),40b8e5eeb9e9ad7239963ed79dc085092ccbec4c,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+foodfu,Food Fight (NTSC),3f5f42d5aaf6ccd4979658a1387aac5933549357,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+foodfup,Food Fight (NTSC /  prototype),48539447a5a247c57faadd7236281844609e8fc0+fa2fa3c5aa20ebd5f55d8182dadc822bdbba1ac5,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+fractal,Rescue on Fractalus (NTSC /  prototype),6653022f38e553d475896a918850158eaf8f77ff,-,-,-,fractalus,NTSC,-,boots@120,unknown,local,-,-,-,-
+froggie,Froggie,586b43ca3acd35307bb58f32d08649c755944c5e,-,-,-,linear,any,pokey4000,boots@120,unknown,local,-,-,-,-
+galaga,Galaga (PAL),530ac5e76d4d6054f35649cbd0aad0e440506fc2+c6edd56ed74928c09e362de4973e43f915968b10,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+galagau,Galaga (NTSC),33178d682564d70955e13d0633359e87b512253b,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+gatop1,GATO (NTSC /  prototype /  198801xx),e153927b3463148d3fbeef2d28980c281562cc09,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+gatop2,GATO (NTSC /  prototype /  198712xx),5784f40216dbc487e80dabd532ae89b2de4bdcc4,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+gatop3,GATO (NTSC /  prototype /  198711xx),b365d2bf0a5b238eff5f1a4cdc9b7ece2cace38d,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+gatop4,GATO (NTSC /  prototype /  19870727),c5793c362a69c7e82191caffa0a830e67fe21dc5,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+gatop5,GATO (NTSC /  prototype /  19870623),1c536bb5870f315eecbdea6660beb7de9371f0f8,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+gatop6,GATO (NTSC /  prototype /  19870611),f644c5d071c49d75e1487cd06b91da778697ff23,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+gatop7,GATO (NTSC /  prototype /  19870523),78eaa5c8e89129596f2f9a7a4517e51eefbd857f,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+gatop8,GATO (NTSC /  prototype /  19870424),e8d29920fe466ea8bfe292e0f135c0e24a48aaad,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+guntus,Guntus,4e7b98f00c956928a0443fc513da6699b5d50417,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+hangly,Hangly-Man (NTSC),f8654387ff648abbe1e6d8f49b8f8b33f803b917,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+hattrick,Hat Trick (PAL),1c67bb2e5e9726be47615ae833677b6dcb8ba2b1,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+hattricku,Hat Trick (NTSC),31c8b61d502c48ad0fd40ee18408953b821ab10d,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+hiscore,High Score Cartridge,a3af676991391a6dd716c79022d4947206b78164,-,-,-,-,any,hsc,boots@120;why=expansion-device,skipped,local,-,-,-,-
+hopman,Hopman,48cd71a5f1ecf0ee58e4cdb95cd3ef8504eeccff,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+ikari,Ikari Warriors (PAL),275cae6c693d9bd1906fdc684460ec596869bbad,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+ikariu,Ikari Warriors (NTSC),e368c6c7ffca5ffac314dec1effea4e2c809519a,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+impetus,Impetus,7f879b35e749f8030fe5787d2fde2644fac62ec8,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+impmiss,Impossible Mission (PAL),9770b61472510aba1cf3ea35ceca1859c3493676,-,-,-,supergame+ram,PAL,-,boots@120,unknown,local,-,-,-,-
+impmissbf,Impossible Mission (NTSC /  bug-fix),a27c0c376ac10245f53818acb7462dcd2735da2d,-,-,-,supergame+ram,NTSC,-,boots@120,unknown,local,-,-,-,-
+impmissu,Impossible Mission (NTSC),5437c0efb63a349953ec047efe6ec24144ed6914,-,-,-,supergame+ram,NTSC,-,boots@120,unknown,local,-,-,-,-
+jinks,Jinks (PAL),eb16de0c3d5c4e769ae2314ba21c4dd3bca33c88,-,-,-,supergame+ram,PAL,-,boots@120,unknown,local,-,-,-,-
+jinksu,Jinks (NTSC),472bc12c437b015a9e317bac092529f3295033b8,-,-,-,supergame+ram,NTSC,-,boots@120,unknown,local,-,-,-,-
+joust,Joust (PAL),aae5b9ee00c39d577858aba9d1fd791194be2c0c,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+joustu,Joust (NTSC),1ccd7c232bcfd5a65d26b9decfe4eceadcbe314c,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+jrpacman,Jr. Pac-Man (NTSC),f6d51d9c0eaf03c47e1e2d3774fd16c3ba3a59e3,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+karateka,Karateka (PAL),c5f25c88eefe0c7b3571ab3c3ec5185e537eb151,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+karatekau,Karateka (NTSC),40ccda4a0f7bc434c8823f3e60e2b9a9d60bb26f+89f24abb4efb373d6b7e9ecf567ebf74436a5725,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+kcmunch,K.C. Munchkin!,13a19fc0be062952a93359020778d04705b0b75d,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+klax,Klax (NTSC /  prototype),0ea6a04b8f9713040ce57b6f23a6589f98409d46,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+kungfum,Kung-Fu Master (PAL),0f0e24246d9e684b7f900a362fb08878b232580c,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+kungfumu,Kung-Fu Master (NTSC),8824bffdf4f30a8191e581752a75259a663092ca,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+lift,Lift,57e4b7db1071a2b68cf4afa6bf8751cd540ca8c4,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+mario,Mario Bros. (PAL),881beff5103713e655fed80b32e0bbd774e78ee8,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+mariou,Mario Bros. (NTSC),dce85872a8e8e9d250fd34cb946070c80c3e5eed,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+matmania,Mat Mania Challenge (PAL),119bb784f1a0638cc6778841131ca1766e94a112,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+matmaniau,Mat Mania Challenge (NTSC),bb849b603cf1091e4f032936b209ff33fc3b714e,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+mazy,Mazy,b9843548636a954b2e8d78282082c7699ed56280,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+mazy2,Mazy 2,8623981e67db9a2d796012303ab2c31c423fbca7,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+mean18,Mean 18 (PAL),47702ee71c64af4ada09cd41122c779c7d8d94f1,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+mean18u,Mean 18 (NTSC),a3e50c0e56c9675ffb1b6439f40789bc64c606b2,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+meltdown,Meltdown (PAL),ac448f369c3c6334415095e4ff344fdd73b473be,-,-,-,supergame,PAL,lightgun,boots@120,unknown,local,-,-,-,-
+meltdownu,Meltdown (NTSC),e601c45aaa1cc25f01493867664c8b9fefeca70e,-,-,-,supergame,NTSC,lightgun,boots@120,unknown,local,-,-,-,-
+meteorsh,Meteor Shower (PAL),5e06ce4a823407234e9c784ba51bbe6edd7ae7cf,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+meteorshu,Meteor Shower (NTSC),fe49cc7b92b3f1d44c91b4f645ee8348ebe7e017,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+mia,Missing In Action (prototype),26b0b187a43bf9a9397cb5e8b0033e8833f48f88,-,-,-,supergame+rom_at_4000,any,-,boots@120,unknown,local,-,-,-,-
+midnight,Midnight Mutants (PAL),85f0e0556df65c0732f71ab3f2bbde3615355f72,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+midnightu,Midnight Mutants (NTSC),db5ea4c1456f3b403f6b8978432ecbcdac89d432,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+mieyen,Mieyen,c173ff433b4a469eba1730a91b5003fb3b6973af,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+mooncrst,Moon Cresta (PAL),916ed56c5b4fe93f7371200a91b6f208894af445,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+mooncrstu,Moon Cresta (NTSC),b94a015d2d77d5854bba6c3abfe6141f1af446c9,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+mpsycho,Motor Psycho (PAL),3b72d6b3e28ca9182f1f25dc57115d2ec33aa63e,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+mpsychou,Motor Psycho (NTSC),b9381f4d0413b6c48e27f26ed94c7a9eb1a49624,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+mspacatk,Ms. Pac-Attack (NTSC),446660edd243da39602d1b673ff13a84239b66d4,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+mspacman,Ms. Pac-Man (PAL),a5b0826a130acf8b8dbc59ef980d40b802c22b30,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+mspacmanu,Ms. Pac-Man (NTSC),ff22e21fc953a288453c40eb6fc5378d42b871f6,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+neuras,Neuras,7be4ae126825318fed16442fd2afffd130f05af4,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+ninjaglf,Ninja Golf (PAL),99ce5711e38ff7ef3311216f954cf0ab70e289cf,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+ninjaglfu,Ninja Golf (NTSC),96d0e59e703770eea8d8d9c2c4e5a87ce6f2de76,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+osotos,Osotos,8ac41eb9a1964b70da1c14b14c451f4577e256d6,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+paccoll,Pac-Man Collection! (PAL),ed0414e4b7c5ac10b0d7a5e19ee9c8e9ee61442f,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+paccollu,Pac-Man Collection! (NTSC),3b579d8827898a94b16225632a9870d22224b6bc,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+pacman,Pac-Man (NTSC),f427806eae13e3c4ab8afdbe366ab1ec219d0047,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+pacplus,Pac-Man Plus (NTSC),7dd18c8c7e82c813531f80ef2fe981c340f41c20,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+pacpolux,Pac-Pollux (NTSC),2f079cd0fb6d92fd5261fe567ae0a6407a722f44,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+pitfight,Pit Fighter (prototype),378addef67aca55500f0f5f9f0075dcb177406b5,-,-,-,supergame,any,-,boots@120,unknown,local,-,-,-,-
+planetsm,Planet Smashers (PAL),f12cbb576607ec38d6111f4346412ccc5bfbcf42,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+planetsmu,Planet Smashers (NTSC),503b975fc1f8edc16110ac2c5b884c4e8b2b6efb,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+plutos,Plutos (prototype),fa55d6a366b237917f18487fc51817394839a3bc,-,-,-,supergame+ram,any,-,boots@120,unknown,local,-,-,-,-
+polepos2,Pole Position II (PAL),268e53b5b2117bf853e0aae6adb0b2d3aad8ad5c,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+polepos2p,Pole Position II (prototype),ae00f45eefd37d39ac26092b2a2c82d252714582+f7122f917a37d176960e81bdb0d68e8877cfa5e6,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+polepos2u,Pole Position II (NTSC),ccfa6f3f83ddbed2a2fb32735fea316a718fbaaa,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+prowres,Title Match Pro Wrestling (PAL),7ab281c9b69692823b3b6b594856172363c507b5,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+prowresu,Title Match Pro Wrestling (NTSC),80d11bcbb953ccd8bf3c3e64162711e7edb95090,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+rampage,Rampage (NTSC),17401f85fe8b453a6b43b3d0035d993b90568efc,-,-,-,activision,NTSC,-,boots@120,unknown,local,-,-,-,-
+rampart,Rampart (prototype),53516794cb442208af5d54760324c006510553b3,-,-,-,supergame,any,-,boots@120,unknown,local,-,-,-,-
+readriot,Read RIOT,c57c8041d67d100aefe91286acbcdd8dafd48181,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+ripoff,Rip-Off (PAL),52ddb5fdf55c5862dc435dfec37d0c59948dcb19,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+ripoffu,Rip-Off (NTSC),6c377ef750c8a7eebccde2c6cdaa3c0d0df65852,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+robotron,Robotron: 2084 (NTSC),ccc9753cdcbd2a2f8cb7966b8227801ba0bfd41d,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+rsbaseb,RealSports Baseball (NTSC),9a9f60251d049630099f56d2d3efb013828b8a2c,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+ruptus,Ruptus,6c5cccbdcb64aff62883542c043b5baa7f233ccc,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+santasim,Santa Simon (NTSC),610e08f226c66b15ff699b02c736ce5ce7a8a862,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+scramble,Scramble (NTSC),65d12610c14a44ab86c481dbb0fa9e562930a0e9,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+scrapdog,Scrapyard Dog (PAL),ebfed67cfeebc6a558dbb087e4784e5e5258c2e1,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+scrapdogu,Scrapyard Dog (NTSC),f2249321d0cc296b9f9e516bbc5ecc9aab56ca22,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+sentinel,Sentinel (PAL),6d85a73a56d2f02ff439736eace86691aa613444,-,-,-,supergame,PAL,lightgun,boots@120,unknown,local,-,-,-,-
+sentinelu,Sentinel (NTSC),8e3a2547c389394fd2626c9cbb85927ee6a8d48c+28e3835e9d4cf31c60ce01dbcdd14ee8b16ed2f8,-,-,-,supergame,NTSC,lightgun,boots@120,unknown,local,-,-,-,-
+sirius,Sirius (prototype),cd9f6dea96f102262065d7472e73121b67f9e244,-,-,-,supergame+ram,any,-,boots@120,unknown,local,-,-,-,-
+spacduel,Space Duel (PAL),03d3c7e6255fc6f1b8bbf6dc3ccdbaf51b7eabf7,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+spacduelu,Space Duel (NTSC),199d06cf7f54bb0a1fa328d3cff955f4bcf90450,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+spaceinv,Space Invader (PAL),0b17368b9f3328f41d29ca4f0d04ab25e1aad55e,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+spaceinvu,Space Invader (NTSC),167c06a5d9364f3359bb531d5533f4ff49283d47,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+starwars,Star Wars 7800 (PAL /  hack),9ac24aa0563be93d72bcf83c52a8acdbbfc63729,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+starwarsu,Star Wars 7800 (NTSC /  hack),f76f2a212747e06ac452da8dbeb0ad093b24d793,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+sumgames,Summer Games (NTSC),31d46b32a2aa8d5bd6028cff1f41037426b22409,-,-,-,supergame+ram,NTSC,-,boots@120,unknown,local,-,-,-,-
+superpac,Super Pac-Man (PAL),58375542cb3c2ecf2e2800d280c2d56a58804e77,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+superpacu,Super Pac-Man (NTSC),e1c51fa453b8dc600e5d7f46df1443b99a1507d0,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+suphuey,Super Huey (PAL),469e03ee1e22ef0978c8095a38d662d34a413723,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+suphueyu,Super Huey (NTSC),29aea9e90c446942001fd08d3c4c929f4ce048d7,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+supskate,Super Skateboardin' (PAL),fab349584af7b6b3f9b034af3034f43257e2c25f,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+supskateu,Super Skateboardin' (NTSC),666d9383c112b66026898e6002b803801e269c51,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+svellas,Svellas,d98d0b48e59a43dba1bbeb72fd0f5637e316222f,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+tank,Tank Command (NTSC),1d2975d754806416a25a821db6a9fe389bf5d946,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+tdown,Touchdown Football (NTSC),364bf0fef8a67f7e66761c76a3a6a0dd186f04aa,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+tomcat,Tomcat - The F-14 Fighter Simulator (PAL),825381773593365b5ca7eeca968cca00879eee71,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+tomcatu,Tomcat - The F-14 Fighter Simulator (NTSC),80c615fb60d0004c1accde25e42759572e030928,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+towertop,Tower Toppler (PAL),56e1b795e80382edb376e4536d1dee539d4ac548,-,-,-,supergame+ram,PAL,-,boots@120,unknown,local,-,-,-,-
+towertopu,Tower Toppler (NTSC),53976013986e0ad3694ab9c021420b8172465de7,-,-,-,supergame+ram,NTSC,-,boots@120,unknown,local,-,-,-,-
+ultrapac,Ultra Pac-Man (NTSC),63a98f74ada1ce08ee0137e437395cc17b67a4d9,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+wasp,Wasp!,4e259a2a01e86e970aa58acd94325f8a37eea1cc,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+waterski,Water Ski (NTSC),621c67c2228843405445222743ba3d7c1f04a3c4,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+wingames,Winter Games (NTSC),b3725d6f0834c68ac62ce13eb9eb0d01d1124e5e,-,-,-,supergame+ram,NTSC,-,boots@120,unknown,local,-,-,-,-
+wingameso,Winter Games (NTSC /  older?),361501982f4795c2d79fb6519e5c56452ebc5774,-,-,-,supergame+ram,NTSC,-,boots@120,unknown,local,-,-,-,-
+worm,Worm!,d1b7cd5c27c2ec39cba55542eb1f90b027abd50b,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
+xboard,XBoarD Expansion,-,-,-,-,-,any,xboard,boots@120;why=expansion-device,skipped,local,-,-,-,-
+xenophob,Xenophobe (PAL),b2cf7d6164d6e5acd47e9f6d7cf60bb0f775b4a3,-,-,-,supergame,PAL,-,boots@120,unknown,local,-,-,-,-
+xenophobu,Xenophobe (NTSC),867adbfd7539ff81e68726ed6f5ff7326409539f,-,-,-,supergame,NTSC,-,boots@120,unknown,local,-,-,-,-
+xevious,Xevious (PAL),b03efeb6bf573da212800045697b71aaebeb46fe,-,-,-,linear,PAL,-,boots@120,unknown,local,-,-,-,-
+xeviousu,Xevious (NTSC),1d4f0335b152239553534fcbbacdca273802e3bd,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+xeviousup,Xevious (NTSC /  prototype),b94959e60e84c97dabc002f39f03c781376c35f7+5cc9585f8c3f5dd0106990fde24883756868f437,-,-,-,linear,NTSC,-,boots@120,unknown,local,-,-,-,-
+xm,XM Expansion Module,a3af676991391a6dd716c79022d4947206b78164,-,-,-,-,any,xm,boots@120;why=expansion-device,skipped,local,-,-,-,-
+yewdow,Yewdow,6a0ce23aa25b624bdea13d7f3dccebcf167ec63d,-,-,-,linear,any,-,boots@120,unknown,local,-,-,-,-
