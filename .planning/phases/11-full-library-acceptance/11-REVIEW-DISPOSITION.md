@@ -1,28 +1,91 @@
 ---
-phase: 11-full-library-acceptance
+phase: 11
 review: 11-REVIEW.md
-recorded: 2026-10-29
-open: 15 of 15
+titles: json
+findings:
+  - id: CR-01
+    severity: critical
+    disposition: open
+    title: "The sample-backed claim check never runs for `basic.*` tests, so most of its entries are unchecked"
+  - id: CR-02
+    severity: critical
+    disposition: open
+    title: "A `;` in `OUT` splits the `rm -rf` argument and deletes an unrelated directory"
+  - id: WR-01
+    severity: warning
+    disposition: open
+    title: "An `OUT` that is an existing directory passes the writability probe and then leaks the full path"
+  - id: WR-02
+    severity: warning
+    disposition: open
+    title: "The library preset now silently skips symlinked files, and its failure message and docs do not say so"
+  - id: WR-03
+    severity: warning
+    disposition: open
+    title: "A root name containing `*` or `?` is accepted and matches other directories"
+  - id: IN-01
+    severity: info
+    disposition: open
+    title: "`library_source_fault` is bypassed by `file (GLOB ...)` with a space before the parenthesis"
+  - id: IN-02
+    severity: info
+    disposition: open
+    title: "The budget evidence is a local macOS run and an unreferenced \"full ci run\""
+  - id: IN-03
+    severity: info
+    disposition: open
+    title: "The image maximum is a bare literal in two places, and `local.cmake` does not check that `DIR` exists"
+  - id: IN-04
+    severity: info
+    disposition: open
+    title: "Unused outputs of the new scans"
+  - id: WR-04
+    severity: warning
+    disposition: open
+  - id: WR-05
+    severity: warning
+    disposition: open
+  - id: WR-06
+    severity: warning
+    disposition: open
+  - id: IN-05
+    severity: info
+    disposition: open
+  - id: IN-06
+    severity: info
+    disposition: open
+  - id: IN-07
+    severity: info
+    disposition: open
+  - id: IN-08
+    severity: info
+    disposition: open
+open: 16
+total: 16
+recorded: 2026-10-29T16:43:22.289Z
 ---
 
-# Phase 11: Review Disposition
+# Phase 11: Code Review Disposition
 
-Each finding defaults to `open` until a fix round (`/gsd-code-review 11 --fix`) records `fixed` or `skipped`.
+| Finding | Severity | Disposition | Source |
+|---------|----------|-------------|--------|
+| CR-01 | critical | open | - |
+| CR-02 | critical | open | - |
+| WR-01 | warning | open | - |
+| WR-02 | warning | open | - |
+| WR-03 | warning | open | - |
+| IN-01 | info | open | - |
+| IN-02 | info | open | - |
+| IN-03 | info | open | - |
+| IN-04 | info | open | - |
+| WR-04 | warning | open | contradicts phase disclaimer (not in the current review) |
+| WR-05 | warning | open | SuperGame names title.simple.fast (not in the current review) |
+| WR-06 | warning | open | title.pal.fast, title.pin.*, title.local.fixture (not in the current review) |
+| IN-05 | info | open | - (not in the current review) |
+| IN-06 | info | open | - (not in the current review) |
+| IN-07 | info | open | - (not in the current review) |
+| IN-08 | info | open | - (not in the current review) |
 
-| ID | Title | Disposition | Note |
-|----|-------|-------------|------|
-| CR-01 | title.pal.bios 2 s timeout is below observed PAL+POKEY BIOS cost | open | timed out 3+ times locally under load; precedent raised to 4 s |
-| WR-01 | local pass leaks full paths and miscounts on dangling symlink, unreadable file, `;` or `[` in names | open | breaks the no-path contract of the local run |
-| WR-02 | local.cmake rm -rf on path derived from unchecked OUT | open | bare file name targets /local |
-| WR-03 | diag.bankset and diag.bankset_tracer race on one output tree; phase added a reader | open | race predates phase (949fc61), phase widened it |
-| WR-04 | compatibility page labels title-frame hashes "public gameplay" | open | contradicts phase disclaimer |
-| WR-05 | claims table backing test mismatch and gameplay classes with no backing test | open | SuperGame names title.simple.fast |
-| WR-06 | new test budgets with no measurement | open | title.pal.fast, title.pin.*, title.local.fixture |
-| IN-01 | "N of N accounted for" headline cannot report a gap | open | |
-| IN-02 | commas in titles become a double space | open | |
-| IN-03 | local driver header disagrees with code; skipped rows read as absent | open | |
-| IN-04 | wording deny list is substring-based and skips subdirectories | open | |
-| IN-05 | .info description length check passes silently on no regex match | open | |
-| IN-06 | docs/testing.md lists a test under the wrong label | open | |
-| IN-07 | expansion CRC check could stop running unnoticed | open | |
-| IN-08 | generator guard without a control | open | |
+Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
+Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
+Re-running the gate keeps every row it can. A row the current review no longer reports is kept and its Source cell flagged, so a finding does not leave this record silently. ONE exception: when a finding id is REUSED by a different finding, the earlier decision cannot keep a row — the id is taken — and it is dropped. A RECORDED decision (anything but `open`) is named on the console when that happens; a row still at `open` is replaced silently, because `open` records no decision to lose.
