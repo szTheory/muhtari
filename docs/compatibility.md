@@ -26,19 +26,22 @@ original image identity, physical 2 KiB Fractalus RAM and selected compatibility
 banked/HALT RAM, expansion-overlapped cartridge windows, XM HSC windows and Fractalus
 mirrors above $4FFF remain descriptor holes. Physical spans have separate lifetimes.
 
-The ledger has 46 rows. 8 are judged by the weak predicate `boots@F` (the game booted, drew and
+The ledger has 49 rows. 8 are judged by the weak predicate `boots@F` (the game booted, drew and
 kept running), not by a pinned title screen.
 
 | Status | Rows |
 |---|---|
-| pass | 43 |
+| pass | 46 |
 | skipped | 2 |
 | unsupported | 1 |
 
 | Board | Rows |
 |---|---|
+| absolute | 1 |
+| activision | 1 |
 | bankset | 1 |
 | banksets | 1 |
+| fractalus | 1 |
 | linear | 34 |
 | linear+xboard | 1 |
 | linear+xm | 1 |
@@ -49,7 +52,7 @@ kept running), not by a pinned title screen.
 
 | Region | Rows |
 |---|---|
-| NTSC | 45 |
+| NTSC | 48 |
 | PAL | 1 |
 
 | Id | Title | Board | Region | Peripherals | Predicate | Status |
@@ -89,14 +92,17 @@ kept running), not by a pinned title screen.
 | `7800basic-0.41/spacephysics` | spacephysics | linear | NTSC | - | title | pass |
 | `7800basic-0.41/trackertest` | trackertest | linear | NTSC | - | title | pass |
 | `7800basic-0.41/underthehood` | underthehood | linear | NTSC | - | title | pass |
+| `diag/absolute` | muhtari absolute diagnostic | absolute | NTSC | - | title | pass |
+| `diag/activision` | muhtari activision diagnostic | activision | NTSC | - | title | pass |
 | `diag/bank6` | muhtari bank6 diagnostic | supergame+bank6_at_4000 | NTSC | - | title | pass |
+| `diag/bankset` | muhtari bankset diagnostic | bankset | NTSC | - | mailbox (bankset32n) | pass |
 | `diag/cpu` | muhtari cpu diagnostic | linear | NTSC | - | title | pass |
 | `diag/dli` | muhtari dli diagnostic | linear | NTSC | - | title | pass |
 | `diag/dma` | muhtari dma diagnostic | linear | NTSC | - | title | pass |
+| `diag/fractalus` | muhtari fractalus diagnostic | fractalus | NTSC | - | title | pass |
 | `diag/linear16` | muhtari linear16 diagnostic | linear | NTSC | - | title | pass |
 | `diag/modes` | muhtari modes diagnostic | supergame | NTSC | - | title | pass |
-| `diag/sg144` | muhtari sg144 diagnostic | supergame+rom_at_4000 | NTSC | - | title | pass |
 | `diag/pal` | muhtari PAL diagnostic | linear | PAL | pokey450 | mailbox | pass |
-| `diag/bankset` | muhtari bankset diagnostic | bankset | NTSC | - | mailbox (bankset32n) | pass |
+| `diag/sg144` | muhtari sg144 diagnostic | supergame+rom_at_4000 | NTSC | - | title | pass |
 | `diag/xboard` | muhtari xboard diagnostic | linear+xboard | NTSC | pokey450+hsc | mailbox (expansion-x0) | pass |
 | `diag/xm` | muhtari xm diagnostic | linear+xm | NTSC | pokey450+hsc | mailbox (expansion-m0) | pass |

@@ -35,10 +35,13 @@ library.7800basic-0.41.spacephysics	library
 library.7800basic-0.41.trackertest	library
 library.7800basic-0.41.underthehood	library
 library.compat_doc	library
+library.diag.absolute	library
+library.diag.activision	library
 library.diag.bank6	library
 library.diag.cpu	library
 library.diag.dli	library
 library.diag.dma	library
+library.diag.fractalus	library
 library.diag.linear16	library
 library.diag.modes	library
 library.diag.sg144	library
