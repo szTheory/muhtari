@@ -66,6 +66,11 @@ if(out_name STREQUAL "")
   message(FATAL_ERROR "local: cannot write the counts file")
 endif()
 set(out_rows "${OUT}.rows")
+# touch succeeds on a directory, so a directory OUT is refused here, before the
+# file(WRITE) at the end would fail with CMake's own text naming the path.
+if(IS_DIRECTORY "${OUT}")
+  message(FATAL_ERROR "local: cannot write the counts file")
+endif()
 if(IS_SYMLINK "${out_rows}" OR (EXISTS "${out_rows}" AND NOT EXISTS "${out_rows}/.local-pass"))
   message(FATAL_ERROR "local: the scratch directory beside OUT was not made by this pass")
 endif()

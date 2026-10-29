@@ -6,10 +6,11 @@
 # Faults this prevents: a private run that counts a row present that is not,
 # or the reverse, that reports a refused image or a failing predicate as a
 # harness fault, that passes on a bad BIOS, a malformed predicate or an
-# unwritable output, that treats a name CMake lists cannot carry as a file,
-# that lets a relative OUT, or one holding a semicolon, delete a directory it
-# did not create, that replaces a scratch tree it did not make, or that prints
-# a path, a file name or an image hash.
+# unwritable output (beneath a file, holding a semicolon or naming a directory),
+# that treats a name CMake lists cannot carry as a file, that lets a relative
+# OUT, or one holding a semicolon, delete a directory it did not create, that
+# replaces a scratch tree it did not make, or that prints a path, a file name or
+# an image hash.
 # The files are the test list's stripped sample (twice, with and without a
 # header, one under a name with balanced brackets), an image the list
 # identifies and the core refuses, a file above the image maximum, a text
@@ -220,7 +221,15 @@ expect_fault(semiout "cannot write the counts file")
 if(NOT EXISTS ${WORK}/victim/keep)
   message(FATAL_ERROR "local fixture: semiout: the run deleted a directory a split OUT named")
 endif()
-message(STATUS "local fixture: twelve runs as expected")
+
+# 13. An OUT that is a directory is refused before any row is judged.
+file(MAKE_DIRECTORY ${WORK}/outdir)
+drive(outdir base ${BIOS} ${WORK}/outdir)
+expect_fault(outdir "cannot write the counts file")
+if(EXISTS ${WORK}/outdir.rows)
+  message(FATAL_ERROR "local fixture: outdir: the run made a scratch tree for a directory OUT")
+endif()
+message(STATUS "local fixture: thirteen runs as expected")
 
 # The shared rule under the library prefix, through files.cmake's -P entry; the
 # fixture runs it from the source tree, so a fault's call stack names only
