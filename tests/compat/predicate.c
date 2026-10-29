@@ -10,7 +10,8 @@
                 two distinct frames appeared and the CPU is not jammed.
 
    A ";why=<reason>" suffix is the ledger's note and is not evaluated. A
-   frame's hash is the SHA-256 of its 320 x 242 native colour bytes.
+   frame's hash is the SHA-256 of the selected region's native colour bytes,
+   320 x 242 for NTSC and 320 x 292 for PAL (docs/emulation-tests.md, title).
    --pin prints title@F=<hex> for the fast boot's frame F, and fails with
    "single colour" when every byte of that frame is the same, so no blank
    screen is ever pinned. Prints "pass" or "fail <reason>"; exits 0 on a
@@ -32,7 +33,6 @@
 #include "internal.h"
 #include "sha256.h"
 
-#define FRAME_BYTES ((size_t)MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC)
 #define AUDIO_CAPACITY (2u * MUHTARI__MAX_AUDIO_SAMPLES)
 
 /* OpenBIOS shows its Fuji for 320 frames, then hands off at the next
@@ -49,6 +49,10 @@
 
 static uint8_t *video;
 static int16_t *audio;
+
+/* The bytes of the loaded region's frame, width x height, read after each
+   load; hashing and scanning stop there, whatever the buffer holds. */
+static size_t frame_bytes;
 
 static void *pred_alloc(void *user, size_t size)
 {
@@ -159,16 +163,21 @@ static void frame_hash(char hex[65])
     uint8_t d[32];
     muhtari__sha256 s;
     muhtari__sha256_init(&s);
-    muhtari__sha256_update(&s, video, FRAME_BYTES);
+    muhtari__sha256_update(&s, video, frame_bytes);
     muhtari__sha256_final(&s, d);
     muhtari__sha256_hex(d, hex);
 }
 
 /* Whether the last frame's lines ran a DMA burst: a line with DMA off or
-   refused keeps zero cost (docs/hardware/maria.md, Statistics). */
+   refused keeps zero cost (docs/hardware/maria.md, Statistics). The lines
+   scanned are the selected region's, bounded by the statistics array. */
 static int dma_ran(const muhtari *m)
 {
-    for (uint32_t line = 0u; line < MUHTARI__LINES_NTSC; line++) {
+    uint32_t lines = muhtari__timing(m).lines;
+    if (lines > sizeof m->maria.stats / sizeof m->maria.stats[0]) {
+        lines = (uint32_t)(sizeof m->maria.stats / sizeof m->maria.stats[0]);
+    }
+    for (uint32_t line = 0u; line < lines; line++) {
         if (m->maria.stats[line].cost != 0u) {
             return 1;
         }
@@ -269,7 +278,7 @@ static int evaluate(muhtari *m, const struct predicate *pr, int bios, int pin)
         if (run_window(m, pr->f, pr->f, at_last) == 0) {
             return 1;
         }
-        for (size_t i = 1u; i < FRAME_BYTES; i++) {
+        for (size_t i = 1u; i < frame_bytes; i++) {
             if (video[i] != video[0]) {
                 char hex[65];
                 frame_hash(hex);
@@ -340,7 +349,14 @@ static int run_path(const char *name, const uint8_t *rom, size_t rom_n, const ui
     if (st == MUHTARI_STATUS_OK) {
         st = muhtari_load(m, &media);
     }
+    muhtari_info info;
+    memset(&info, 0, sizeof info);
+    info.size = (uint32_t)sizeof info;
     if (st == MUHTARI_STATUS_OK) {
+        st = muhtari_get_info(m, &info);
+    }
+    if (st == MUHTARI_STATUS_OK) {
+        frame_bytes = (size_t)info.width * info.height;
         status = evaluate(m, pr, bios != NULL, pin);
     } else {
         fprintf(stderr, "muhtari-test-predicate: %s: create or load failed with status %lu\n", name,
@@ -420,8 +436,10 @@ int main(int argc, char **argv)
     uint8_t *rom = read_file(argv[1], MUHTARI_IMAGE_SIZE_MAX, &rom_n);
     uint8_t *bios =
         bios_path != NULL ? read_file(bios_path, MUHTARI__BIOS_SIZE_MAX, &bios_n) : NULL;
-    /* Frame and audio buffers on the heap: wasm32's stack is 64 KiB. */
-    video = (uint8_t *)malloc(FRAME_BYTES);
+    /* Frame and audio buffers on the heap: wasm32's stack is 64 KiB. The
+       video buffer holds the taller (PAL) region's frame. */
+    video = (uint8_t *)malloc((size_t)MUHTARI__WIDTH *
+                              muhtari__timing_for_region(MUHTARI_REGION_PAL).height);
     audio = (int16_t *)malloc(AUDIO_CAPACITY * sizeof *audio);
     int status = 2;
     if (rom != NULL && (bios_path == NULL || bios != NULL) && video != NULL && audio != NULL) {

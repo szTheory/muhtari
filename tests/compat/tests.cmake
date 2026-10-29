@@ -21,6 +21,18 @@ muhtari_add_test(NAME title.simple.bios
 set_tests_properties(title.simple.fast title.simple.bios PROPERTIES
   FIXTURES_REQUIRED "built_simple;built_openbios")
 
+# A PAL image on both boot paths. Fault: a predicate that crashes or hashes
+# the wrong rows on a PAL image, which would turn every PAL pinned-list entry
+# into a harness fault rather than a verdict.
+muhtari_add_test(NAME title.pal.fast
+  COMMAND muhtari-test-predicate ${PROJECT_SOURCE_DIR}/tests/diag/pal.a78 boots@120
+  LABELS portable title TIMEOUT 2)  # provisional, not yet measured in CI
+muhtari_add_test(NAME title.pal.bios
+  COMMAND muhtari-test-predicate ${PROJECT_SOURCE_DIR}/tests/diag/pal.a78 boots@120
+    --bios ${compat_bios}
+  LABELS portable title TIMEOUT 2)  # provisional, not yet measured in CI
+set_tests_properties(title.pal.bios PROPERTIES FIXTURES_REQUIRED built_openbios)
+
 # Negative control for the pin writer: the linear seed cartridge, filler
 # bytes behind a valid footer, shows one colour at frame 120, so --pin must
 # refuse it rather than pin a blank screen. The image comes from

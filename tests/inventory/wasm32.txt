@@ -639,6 +639,8 @@ runner.usage.unknown	portable,runner
 runner.version	portable,runner
 sally.irq	pokey,portable,sally
 tia.logic	portable,tia
+title.pal.bios	portable,title
+title.pal.fast	portable,title
 title.pin.order	portable,title
 title.pin.order.self_test	portable,title
 title.pin.recipe	portable,title
