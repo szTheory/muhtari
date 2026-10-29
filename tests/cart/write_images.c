@@ -4,8 +4,9 @@
    and linear-v3-16k-body, that seed's image without its 128-byte header,
    whose hashes the runner tests compare with --probe's headerless ones, and
    magic-only-128, a header and nothing more, the one length at which the
-   headerless hashes cover the whole file although the magic is there. The
-   images exist only in the build directory; none is tracked. Exit 0 when
+   headerless hashes cover the whole file although the magic is there, and
+   not-a-cartridge-4k, an image the test hash list identifies and the core
+   refuses (the local driver's fixture). The images exist only in the build directory; none is tracked. Exit 0 when
    every file is written, 1 on a write failure, 2 on usage. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,6 +70,11 @@ int main(int argc, char **argv)
     if (ok) {
         images_header(buf, 3u, "Magic only", 16u * IMAGES_KIB, 0u);
         ok = write_one(argv[1], "magic-only-128", buf, IMAGES_HEADER);
+        written++;
+    }
+    if (ok) {
+        size_t n = images_seeded(buf, 4u * IMAGES_KIB, IMAGES_SEED_NOT_CART);
+        ok = write_one(argv[1], "not-a-cartridge-4k", buf, n);
         written++;
     }
     for (uint32_t swapped = 0u; ok && swapped < 2u; swapped++) {

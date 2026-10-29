@@ -648,6 +648,18 @@ muhtari_status muhtari__cart_identify(const uint8_t *img, size_t n,
                                       uint32_t layout_count, const uint8_t (*prefix)[8],
                                       uint32_t prefix_count, muhtari_cart_info *out);
 
+/* muhtari__cart_identify, and when entry is not NULL, *entry is the index of
+   the table entry that matched the image, refused or not, else UINT32_MAX. */
+muhtari_status muhtari__cart_identify_entry(const uint8_t *img, size_t n,
+                                            const struct muhtari__cartdb_key *keys,
+                                            uint32_t key_count,
+                                            const struct muhtari__cartdb_entry *entries,
+                                            uint32_t entry_count,
+                                            const struct muhtari__cartdb_layout *layouts,
+                                            uint32_t layout_count, const uint8_t (*prefix)[8],
+                                            uint32_t prefix_count, muhtari_cart_info *out,
+                                            uint32_t *entry);
+
 /* Loads the n bytes at image into m: the status is muhtari_probe's for the
    same bytes. Every refusal returns before anything is allocated and leaves
    m unchanged. On OK the mapped ROM is copied into one allocation of

@@ -2,6 +2,19 @@
 # title), on the fast boot and through a BIOS.
 include(${CMAKE_CURRENT_LIST_DIR}/targets.cmake)
 
+# The driver against the test hash list in place of the bundled tables (the
+# link-time substitution muhtari-test-cart uses), so public CI identifies
+# public samples and needs no private bytes. Fault: a private-file matcher
+# that nothing public exercises.
+add_executable(muhtari-test-predicate-testdb ${CMAKE_CURRENT_LIST_DIR}/predicate.c
+  ${CMAKE_SOURCE_DIR}/runner/sha256.c ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c
+  $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
+target_include_directories(muhtari-test-predicate-testdb PRIVATE ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/runner)
+set_target_properties(muhtari-test-predicate-testdb PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-predicate-testdb)
+
 # simple's title on both paths, its predicate read from the ledger here, so
 # a re-pinned row reaches the tests at the next configure.
 file(STRINGS ${compat_ledger} compat_simple REGEX "^7800basic-0[.]41/simple,")
