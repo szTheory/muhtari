@@ -86,7 +86,7 @@ coverage:
         ref: title.local.fixture runs 4, 5 and 6
         status: pass
       - kind: other
-        ref: ctest --preset ci -R title.local.fixture with the exit-3 branch of local.cmake replaced by if(FALSE) (exit 8, "refused: exit 1, not 0"), then restored
+        ref: "ctest --preset ci -R title.local.fixture with the exit-3 branch of local.cmake replaced by if(FALSE) (exit 8, \"refused: exit 1, not 0\"), then restored"
         status: pass
     human_judgment: false
   - id: C6
@@ -121,7 +121,7 @@ coverage:
     requirement: COMP-03
     verification:
       - kind: integration
-        ref: MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library (exit 0, 47 tests); ctest --test-dir build/library -R '^library[.]local$' -V printed "local: 0 of 204 present, 0 pass, 0 fail, 204 absent, commit=6c23a463bc01 tree=dirty"
+        ref: "MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library (exit 0, 47 tests); ctest --test-dir build/library -R '^library[.]local$' -V printed \"local: 0 of 204 present, 0 pass, 0 fail, 204 absent, commit=6c23a463bc01 tree=dirty\""
         status: pass
       - kind: unit
         ref: cmake -DJUNIT=build/library/junit.xml -DINVENTORY=tests/inventory/library.txt -P tests/cmake/check_junit.cmake (47 tests ran once each)

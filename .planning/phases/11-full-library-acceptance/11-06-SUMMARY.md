@@ -40,7 +40,7 @@ coverage:
     requirement: COMP-01
     verification:
       - kind: unit
-        ref: grep -c on docs/compatibility.md for the exact headline line (1), 'Pinned CC0 list: 204 entries' (1), 'Owned samples and diagnostics: 49 rows' (1); grep -c 204 tools/compat_doc.cmake (0)
+        ref: "grep -c on docs/compatibility.md for the exact headline line (1), 'Pinned CC0 list: 204 entries' (1), 'Owned samples and diagnostics: 49 rows' (1); grep -c 204 tools/compat_doc.cmake (0)"
         status: pass
       - kind: unit
         ref: policy.compat_doc_fresh.self_test case kinds (a six-row fixture yields the exact headline, tier tables and kind counts)

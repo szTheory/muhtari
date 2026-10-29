@@ -1,6 +1,6 @@
 # Requirements: muhtari v2.0 — The whole library
 
-Defined and approved: 2026-10-21. Milestone v2.0; Phase 5 shipped in PR #20. BOARD-01–03 implementation acceptance is recorded in Phase 6 summaries; phases 7–11 are not started.
+Defined and approved: 2026-10-21. Milestone v2.0; all seven phases are verified and merged. The milestone audit reconciles all27 requirement IDs against verification and summary evidence.
 Core value: 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
 
 ## Milestone requirements
@@ -92,7 +92,7 @@ Three deliverables; no device I/O in core; integer-only, instance-owned, bounded
 | COMP-02 | Phase 11 | Complete |
 | COMP-03 | Phase 11 | Complete |
 
-Coverage: 27 approved requirements;27 mapped;0 unmapped. Phases5–9 verify22 complete requirements;5 remain pending in Phases10–11. Phase9 verifies PAL-01–03 with42/42 truths, source-fresh native/PPC and all-host execution, retained NTSC predicates and authenticated package evidence. See [Phase9 verification](phases/09-pal-games-and-audio/09-VERIFICATION.md). Scope boundaries and historical policy revisions below remain unchanged.
+Coverage:27 approved requirements;27 mapped;27 satisfied under the accepted scope;0 unmapped or orphaned. The v2.0 audit cross-references all seven VERIFICATION reports and all82 SUMMARY frontmatters, including historical halted records without counting them as accepted outcomes. Phase8's five final completion IDs are reconciled in08-14-SUMMARY. See [milestone audit](v2.0-MILESTONE-AUDIT.md) for current evidence and preserved debt.
 Phase 5 merged at 6d57d69; ci-only work cuts no package release. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md) for commands, exit statuses
 and run URLs. WR-01 and COST-01 remain deferred tooling seeds under AGENTS rule 7; raw monthly
 cost totals are untrusted, and no global hosted-cost reduction is claimed.

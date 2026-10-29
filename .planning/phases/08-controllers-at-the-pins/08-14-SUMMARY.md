@@ -40,7 +40,12 @@ key-decisions:
   - Judge complete actual controller reports before emitting equality rows; keep silent raw streams truthful.
   - Pin the retained69 against independent accepted source54485d6 with only seven named revision annotations.
   - Calibrate existing test deadlines from complete work; keep workloads, assertions and lane authority.
-requirements-completed: []
+requirements-completed:
+  - INPUT-01
+  - INPUT-02
+  - INPUT-03
+  - INPUT-04
+  - INPUT-05
 requirements-contributed: [INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05]
 coverage:
   - id: controller-equality
@@ -384,3 +389,20 @@ All18 actual current ZIPs pass CRC, exact notices and no-ROM/save-asset checks. 
 - Final `git diff --check`, `sh scripts/hygiene.sh --tree`, owner `verification.status` and unchanged-source checks are recorded in08-VERIFICATION.md. No source code or parent-owned checklist was changed by the verifier.
 
 Fitted gun, analog, keypad and motion parameters remain explicitly unmeasured; protocol-model conformance and host agreement are not hardware calibration or universal retail playability. Descriptorless provenance/transparency intentions receive documented agent judgment, not a fabricated passed probe or owner UAT. No identity-bound action or owner-only hardware check is required. `requirements-completed: []` remains unchanged here for parent-owned final goal acceptance. The independent report covers all72 scoped files,49 current-contract truths,43 artifact declarations/26 paths,38 actual links and all INPUT-01..05 requirements; its fingerprint is computed **after this addendum**.
+
+
+## Milestone audit reconciliation — 2026-10-29
+
+The final completion field now records INPUT-01–05 after the independent Phase8
+49/49 acceptance and milestone integration audit. Earlier statements that left
+these IDs pending describe executor-time ownership and remain historical. The
+coverage entries, runtime observations, failed advisory property evidence and
+original receipts above are unchanged. Fresh integration CTest exits0,55/55,
+including controller/host/battery/PAL paths (run URL N/A-local). Merged-source
+CI40946368330 at e0dc556652d31c62b778b98dd8007085212fc873 passes the existing
+required aggregate; the read-only production run audit exits0:
+https://github.com/szTheory/muhtari/actions/runs/40946368330.
+
+This is parent-owned metadata reconciliation, not a new behavior change or a
+renewal of the historical verification fingerprint. GSD-HANDOFF §3 permits
+explicit milestone override closeout using merged CI and current integration.

@@ -67,7 +67,7 @@ coverage:
     requirement: COMP-01
     verification:
       - kind: other
-        ref: ls .planning/seeds/SEED-01[1-4]-*.md gives 4 files and grep -l '^status: dormant$' gives 4; git diff --stat over both task commits lists only .planning files
+        ref: "ls .planning/seeds/SEED-01[1-4]-*.md gives 4 files and grep -l '^status: dormant$' gives 4; git diff --stat over both task commits lists only .planning files"
         status: pass
     human_judgment: false
   - id: C5

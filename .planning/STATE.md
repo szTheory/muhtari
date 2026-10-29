@@ -5,11 +5,11 @@ milestone_name: The whole library
 current_phase: 11
 current_plan: 12
 status: completed
-stopped_at: Phase 11 verified complete; ready to ship
-last_updated: "2026-10-29T19:25:06.010Z"
+stopped_at: Milestone v2.0 audited; tech debt retained; archive next
+last_updated: "2026-10-29T21:33:45Z"
 last_activity: 2026-10-29
-last_activity_desc: "Phase 11 shipped as PR #40"
-state_head: ed72a18807ae2e8a06b50a5a195139fb1f389925
+last_activity_desc: "Milestone v2.0 audit complete; 27/27 scoped requirements"
+state_head: d5fd241e3f4d701d73867cc2e465c56a6fe6793d
 progress:
   total_phases: 7
   completed_phases: 7
@@ -21,6 +21,35 @@ current_phase_name: Full-library acceptance
 ---
 
 # Project State
+
+## Current milestone audit receipt — 2026-10-29
+
+Milestone v2.0 audit is complete with `tech_debt`:27/27 requirements,7/7
+accepted phase goals,0 orphaned requirements and0 broken core/host flows.
+Integration finds25 fully wired requirement paths and two accepted Phase5
+warnings; eight flows complete and one monthly numeric-report flow qualified.
+The55-test focused integration command exits0. Merged implementation source
+e0dc556652d31c62b778b98dd8007085212fc873 has passing required CI40946368330,
+validated by the existing check_ci_run consumer (exit0). Release PR41 is merged
+and green; v0.10.0 is draft and Release40956113369 is still in progress.
+
+Report: `.planning/v2.0-MILESTONE-AUDIT.md`. All82 summaries are cross-referenced.
+Five Phase8 completion IDs and six malformed YAML refs were reconciled without
+changing runtime evidence. Seven historical verifier fingerprints are stale
+after later accepted changes, including these summary repairs; retain the
+explicit override-closeout policy rather than replaying phases. COST-01, WR-01,
+advisory property calibration, optional review findings and confidence limits
+remain documented. The204 pinned entries remain201 unknown/3 skipped.
+
+Current branch: `milestone/v2.0-the-whole-library`, based on origin/main
+d5fd241. The three pre-existing config/DECISIONS/GSD-HANDOFF edits are preserved
+and excluded from the audit commit. No source change, new review/gap round,
+owner UAT, archive, tag or new milestone was performed. Publication success is
+not inferred from the draft. Next separate command:
+`$gsd-complete-milestone v2.0`.
+
+Earlier phase-position and next-command statements below are historical; this
+receipt supersedes their current-position claims.
 
 ## Project Reference
 

@@ -46,7 +46,7 @@ coverage:
     requirement: COMP-03
     verification:
       - kind: integration
-        ref: cmake --preset ci && cmake --build --preset ci && ctest --preset ci -L '^built$' (exit 0); MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library (exit 0, no counts line in its output); ctest --test-dir build/library -R '^library[.]local$' -V piped to grep -E 'local: [0-9]+ of [0-9]+ present' (exit 0, one line, local: 0 of 204 present, 0 pass, 0 fail, 204 absent, commit=28689dffd4a6 tree=dirty)
+        ref: "cmake --preset ci && cmake --build --preset ci && ctest --preset ci -L '^built$' (exit 0); MUHTARI_ROM_DIR=build/ci/built cmake --workflow --preset library (exit 0, no counts line in its output); ctest --test-dir build/library -R '^library[.]local$' -V piped to grep -E 'local: [0-9]+ of [0-9]+ present' (exit 0, one line, local: 0 of 204 present, 0 pass, 0 fail, 204 absent, commit=28689dffd4a6 tree=dirty)"
         status: pass
     human_judgment: false
   - id: C3

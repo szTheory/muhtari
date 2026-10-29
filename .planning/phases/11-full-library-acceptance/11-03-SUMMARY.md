@@ -65,7 +65,7 @@ coverage:
     requirement: COMP-02
     verification:
       - kind: other
-        ref: ctest --preset ci -R policy.compat_ratchet.controls with the tier branch replaced by elseif(FALSE) (exit 1, "demotion to local is named: want exit 1, got 0"), then restored
+        ref: "ctest --preset ci -R policy.compat_ratchet.controls with the tier branch replaced by elseif(FALSE) (exit 1, \"demotion to local is named: want exit 1, got 0\"), then restored"
         status: pass
     human_judgment: false
   - id: C4

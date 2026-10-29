@@ -61,7 +61,7 @@ coverage:
     requirement: COMP-02
     verification:
       - kind: integration
-        ref: ctest --preset ci -R '^policy[.]compat_doc_fresh[.]self_test$' -V lists nine cases including 'compat_doc_controls: sample ok'; N/A-local, no run URL
+        ref: "ctest --preset ci -R '^policy[.]compat_doc_fresh[.]self_test$' -V lists nine cases including 'compat_doc_controls: sample ok'; N/A-local, no run URL"
         status: pass
       - kind: other
         ref: fault direction - with the guard's FATAL_ERROR turned into a STATUS message locally, ctest --preset ci -R '^policy[.]compat_doc_fresh[.]self_test$' exited 8 and named case sample as unexpected; restored, ctest --preset ci -R '^policy[.]compat_doc_fresh' exited 0

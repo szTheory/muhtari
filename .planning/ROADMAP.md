@@ -21,11 +21,11 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 |---|---|---|---|---|
 | 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
 | 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipped in PR24 |
-| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Complete; 35/35 verified; shipped in PR #28 (merge checks pending) |
+| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Complete; 35/35 verified; merged PR #28 |
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Complete |
-| 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Complete; ready to ship |
-| 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | In progress |
-| 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Complete; 16/16 verified; ready to ship |
+| 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Complete; merged PR #33 |
+| 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | Complete; merged PR #36 |
+| 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Complete; 16/16 verified; merged PR #40 |
 
 ## Phase details
 
@@ -417,3 +417,22 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 
 ---
 *Updated: 2026-10-29 after Phase 11 acceptance and re-verification. All seven milestone phases are verified complete; Phase 11 passes 16/16 with 12/12 accepted plans and COMP-01–03 complete. Fresh local CI673+6 and public library47 pass; 0/204 public local presence is accounting evidence, not a gameplay pass. Hosted checks and merge remain for ship. Next separate command: $gsd-ship 11.*
+
+
+## Milestone audit — 2026-10-29
+
+All27 approved requirements and seven phase goals are satisfied within the
+accepted scope. [The audit](v2.0-MILESTONE-AUDIT.md) is `tech_debt`:25/27
+integration paths fully wired plus two already accepted Phase5 warnings,
+8/9 flows complete plus the qualified monthly-report flow,0 broken flows.
+Fresh integration tests pass55/55; merged implementation CI40946368330 passes
+the required aggregate. Seven historical fingerprints remain explicitly stale
+under GSD-HANDOFF §3's override-closeout policy; no verdict was regenerated.
+Phase8 completion metadata and six summary YAML quoting faults are reconciled.
+Earlier ready-to-ship statements above describe their original acceptance time.
+
+PR40 and release PR41 are merged and the release PR's required CI is green.
+v0.10.0 remains draft with its release run in progress; latest published is
+v0.9.0. Milestone archival and tagging have not run. Next separate command:
+`$gsd-complete-milestone v2.0`. Confirm the publication outcome there and retain
+all known debt; do not infer completion from a draft release.
