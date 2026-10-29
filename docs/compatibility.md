@@ -76,9 +76,9 @@ describes the evidence, not a promise about any title.
 | board | bankset | owned-oracle | diag.bankset, diag.bankset_tracer |
 | board | fractalus | owned-oracle | diag.retail |
 | board | linear | owned-oracle | diag.linear16, title.simple.fast |
-| board | ram | public title screen | none |
+| board | ram | public title screen | basic.rmtramdemo, basic.rmtramcompressiondemo |
 | board | rom_at_4000 | owned-oracle | diag.sg144 |
-| board | supergame | owned-oracle | diag.sg144, title.simple.fast |
+| board | supergame | owned-oracle | diag.sg144, basic.rmtramdemo |
 | board | xboard | owned-oracle | diag.expansion |
 | board | xm | owned-oracle | diag.expansion |
 | controller | SNES2Atari and Mega7800 | model-only | diag.controllers |
@@ -89,7 +89,7 @@ describes the evidence, not a promise about any title.
 | peripheral | hsc | owned-oracle | core.hsc.decode, diag.battery |
 | peripheral | lightgun | model-only | input.lightgun, diag.controllers |
 | peripheral | pokey4000 | none | none |
-| peripheral | pokey450 | public title screen | none |
+| peripheral | pokey450 | public title screen | basic.pokey, basic.rmtromdemo, diag.pal |
 | peripheral | savekey | owned-oracle | input.savekey.protocol, libretro.host.battery |
 | peripheral | xboard | owned-oracle | diag.expansion |
 | peripheral | xm | owned-oracle | diag.expansion |

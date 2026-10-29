@@ -9,8 +9,10 @@
 # pass/fail/unknown/unsupported/skipped, on unsupported or skipped without
 # why=, on a pr row that is unknown, on a pinned-list row (an id without "/")
 # that is pass or fail or carries evidence, on a board, peripheral or region
-# token with no claim entry, and on a claim whose backing test is not in the
-# inventory.
+# token with no claim entry, on a claim whose backing test is not in the
+# inventory, and on a claim whose sample-backed test (basic.<sample>,
+# title.<sample>.fast or title.<sample>.bios) runs a sample whose ledger row
+# lacks the claim's token.
 cmake_minimum_required(VERSION 3.25)
 foreach(required LEDGER OUT EXPECTED INVENTORY)
   if("${${required}}" STREQUAL "")
@@ -29,9 +31,9 @@ set(claims
   "board:bankset:^bankset:diag.bankset diag.bankset_tracer"
   "board:fractalus:^fractalus$:diag.retail"
   "board:linear:^linear16$:diag.linear16 title.simple.fast"
-  "board:ram:-:-"
+  "board:ram:-:basic.rmtramdemo basic.rmtramcompressiondemo"
   "board:rom_at_4000:^sg144$:diag.sg144"
-  "board:supergame:^(sg144|bank6)$:diag.sg144 title.simple.fast"
+  "board:supergame:^(sg144|bank6)$:diag.sg144 basic.rmtramdemo"
   "board:xboard:^expansion-x:diag.expansion"
   "board:xm:^expansion-m:diag.expansion"
   "controller:SNES2Atari and Mega7800:^motion[45]:diag.controllers"
@@ -41,7 +43,7 @@ set(claims
   "controller:trak-ball and ST/Amiga motion:^motion[1-3]$:diag.controllers"
   "peripheral:hsc:^battery$:core.hsc.decode diag.battery"
   "peripheral:lightgun:^light0$:input.lightgun diag.controllers"
-  "peripheral:pokey450:-:-"
+  "peripheral:pokey450:-:basic.pokey basic.rmtromdemo diag.pal"
   "peripheral:pokey4000:-:-"
   "peripheral:savekey:^battery$:input.savekey.protocol libretro.host.battery"
   "peripheral:xboard:^expansion-x:diag.expansion"
@@ -75,6 +77,9 @@ foreach(line IN LISTS expected_lines)
 endforeach()
 
 # Each backing test must be an inventory name, as info_claims.cmake checks.
+# A sample-backed test must also load a sample whose ledger row carries the
+# claim, so a linear sample cannot back a supergame claim. That check runs
+# after the ledger loop, which records each sample's columns.
 file(STRINGS "${INVENTORY}" inventory)
 foreach(claim IN LISTS claims)
   string(REPLACE ":" ";" f "${claim}")
@@ -147,6 +152,11 @@ foreach(line IN LISTS lines)
     compat_inc(pinned_accounted)
   endif()
   compat_inc(${pop}_total)
+  if(id MATCHES "^7800basic-0[.]41/(.+)$")
+    set(sample_board_${CMAKE_MATCH_1} "${board}")
+    set(sample_peripheral_${CMAKE_MATCH_1} "${peripherals}")
+    set(sample_region_${CMAKE_MATCH_1} "${region}")
+  endif()
 
   # Evidence kind by rule: an owned diagnostic is model conformance; a
   # 7800basic title@ pass is a public title screen, the frame the sample shows
@@ -304,6 +314,27 @@ foreach(claim IN LISTS sorted)
     set(tests none)
   endif()
   string(APPEND claim_table "| ${kind} | ${name} | ${class} | ${tests} |\n")
+endforeach()
+
+foreach(claim IN LISTS claims)
+  string(REPLACE ":" ";" f "${claim}")
+  list(GET f 0 1 3 g)
+  list(POP_FRONT g kind name tests)
+  if(kind STREQUAL "controller" OR tests STREQUAL "-")
+    continue()
+  endif()
+  string(REPLACE " " ";" tests "${tests}")
+  foreach(test IN LISTS tests)
+    if(test MATCHES "^basic[.](.+)$" OR test MATCHES "^title[.](.+)[.](fast|bios)$")
+      set(sample "${CMAKE_MATCH_1}")
+      if(DEFINED sample_${kind}_${sample})
+        string(REPLACE "+" ";" tokens "${sample_${kind}_${sample}}")
+        if(NOT name IN_LIST tokens)
+          message(FATAL_ERROR "compat_doc: ${name} names ${test}, whose sample ${sample} does not carry ${name}")
+        endif()
+      endif()
+    endif()
+  endforeach()
 endforeach()
 
 set(columns "| Id | Title | Board | Region | Peripherals | Predicate kind | Status |
