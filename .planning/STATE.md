@@ -4,17 +4,17 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
 current_plan: 11
-status: executing
-stopped_at: Completed 11-09-PLAN.md
-last_updated: "2026-10-29T16:29:41.543Z"
+status: verifying
+stopped_at: Completed 11-11-PLAN.md
+last_updated: "2026-10-29T16:35:53.343Z"
 last_activity: 2026-10-29
-last_activity_desc: Phase 11 gap plan 11-10 complete
-state_head: 0df42dff9658883c6b6f4fddc1f9ab4dd95a4e70
+last_activity_desc: Phase 11 gap plan 11-11 complete
+state_head: 916bbe2369232b731b84889cfc9909efdda0824d
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 75
-  completed_plans: 74
+  completed_plans: 75
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -43,8 +43,8 @@ Phase 10 has 14/14 accepted plans and verification passed. Six of seven mileston
 Active-slot totals are 64 summarized plans of 64 planned, including historical
 halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Ready to execute
-Last activity: 2026-10-29 — Phase 11 gap plan 11-10 complete; 11-09 then 11-11 remain
+Status: Phase complete — ready for verification
+Last activity: 2026-10-29 — Phase 11 gap plan 11-11 complete; gap round plans 11-09, 11-10 and 11-11 done
 Next command: /gsd-execute-phase 11 --gaps-only
 Branch: phase/11-full-library-acceptance
 
@@ -694,8 +694,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-09-PLAN.md
-Last session: 2026-10-29T16:29:41.182Z
+**Stopped at:** Completed 11-11-PLAN.md
+Last session: 2026-10-29T16:35:53.064Z
 Resume file: None
 Next command: /gsd-execute-phase 11 --gaps-only
 
@@ -740,6 +740,7 @@ Next command: /gsd-execute-phase 11 --gaps-only
 | Phase 11 P08 | 20m | 2 tasks | 10 files |
 | Phase 11 P10 | 25min | 2 tasks | 4 files |
 | Phase 11 P09 | 35min | 3 tasks | 5 files |
+| Phase 11 P11 | 35min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -773,6 +774,7 @@ Next command: /gsd-execute-phase 11 --gaps-only
 - [Phase 11]: Ratchet judge hardening (push events, base-commit judge) is dormant SEED-014, not a task
 - [Phase 11]: Evidence kind for a 7800basic title pass is named public title screen, not gameplay; the sample guard checks only sample-backed claim tests (D-17 amendment)
 - [Phase 11]: Plan 11-09: the local pass and the library preset's configure-time scans share compat_files; links and unreadable entries are counted, never followed or named; the name rule tests for a semicolon or a non-absolute piece because CMake reports a write-only file as not existing
+- [Phase 11]: Bankset tests write separate output trees (bankset, bankset-matrix) instead of a RESOURCE_LOCK; no test budget lowered, title.pal.bios raised to 4 s
 
 ### Blockers
 
