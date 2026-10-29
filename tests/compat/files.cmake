@@ -6,7 +6,7 @@
 # in the order given, a repeated file at its first place) and <unread_var> to
 # the count of links and unreadable entries it skipped. A link, dangling or not,
 # is never followed, and nothing skipped is named. A root whose own name holds
-# '[', ']' or ';' stops the scan (compat_name_check does that alone).
+# '[', ']', '*', '?' or ';' stops the scan (compat_name_check does that alone).
 # Faults this prevents: a scan that hands a link, an unreadable entry or a name
 # a CMake list cannot carry to file(SIZE) or file(SHA1), whose own error text
 # prints the full private path, or that miscounts files. IS_READABLE needs
@@ -17,11 +17,12 @@
 #   cmake -DPREFIX=<prefix> -DDIR=<directory> -P files.cmake
 # prints "<prefix>: <K> files kept, <U> unread".
 
-# A bracket or a semicolon in a root is also a glob metacharacter or a list
-# separator, so a path holding one would be split or matched wrongly.
+# A bracket, an asterisk or a question mark in a root is a glob metacharacter and
+# a semicolon a list separator, so a path holding one would be split or matched
+# against other directories.
 function(compat_name_check prefix path)
-  if("${path}" MATCHES "[][;]")
-    message(FATAL_ERROR "${prefix}: the directory name holds a bracket or a semicolon")
+  if("${path}" MATCHES "[][;*?]")
+    message(FATAL_ERROR "${prefix}: the directory name holds a bracket, wildcard or semicolon")
   endif()
 endfunction()
 

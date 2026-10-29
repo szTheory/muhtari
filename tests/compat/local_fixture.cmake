@@ -100,7 +100,7 @@ function(drive name ledger bios outfile)
         "^(-- )?local: [0-9]+ of 2 present, [0-9]+ pass, [0-9]+ fail, [0-9]+ absent, commit=[0-9a-f]+ tree=(clean|dirty)$"
         AND NOT line MATCHES "^(-- )?local: [0-9]+ files unread \\(links or unreadable\\)$"
         AND NOT line MATCHES
-        "^ *local: (the BIOS is unreadable or invalid|cannot write the counts file|fixturepresent: evaluation ended without a result|a file name holds an unmatched bracket or a semicolon|the directory name holds a bracket or a semicolon|the scratch directory beside OUT was not made by this pass)$")
+        "^ *local: (the BIOS is unreadable or invalid|cannot write the counts file|fixturepresent: evaluation ended without a result|a file name holds an unmatched bracket or a semicolon|the directory name holds a bracket, wildcard or semicolon|the scratch directory beside OUT was not made by this pass)$")
       message(FATAL_ERROR "local fixture: ${name}: unexpected line: ${line}")
     endif()
   endforeach()
@@ -187,7 +187,14 @@ expect_fault(bracket "a file name holds an unmatched bracket or a semicolon")
 file(MAKE_DIRECTORY "${WORK}/dir[x")
 set(drive_dir "${WORK}/dir[x")
 drive(dirname base ${BIOS} ${WORK}/dirname.out.csv)
-expect_fault(dirname "the directory name holds a bracket or a semicolon")
+expect_fault(dirname "the directory name holds a bracket, wildcard or semicolon")
+# The same for a glob wildcard: the name is refused before any glob, so the
+# directory need not exist (and '*' and '?' are not valid names on Windows).
+foreach(wild "dir*x" "dir?x")
+  set(drive_dir "${WORK}/${wild}")
+  drive(wild base ${BIOS} ${WORK}/wild.out.csv)
+  expect_fault(wild "the directory name holds a bracket, wildcard or semicolon")
+endforeach()
 set(drive_dir ${WORK}/dir)
 
 # 10. A relative OUT is taken from the working directory; the old scratch tree
@@ -250,7 +257,7 @@ function(scan name dir)
     if(line MATCHES "library:" AND NOT line MATCHES
         "^(-- )?library: [0-9]+ files kept, [0-9]+ unread$"
         AND NOT line MATCHES
-        "^ *library: (a file name holds an unmatched bracket or a semicolon|the directory name holds a bracket or a semicolon)$")
+        "^ *library: (a file name holds an unmatched bracket or a semicolon|the directory name holds a bracket, wildcard or semicolon)$")
       message(FATAL_ERROR "local fixture: ${name}: unexpected line: ${line}")
     endif()
   endforeach()
@@ -281,8 +288,12 @@ endif()
 scan(library-semi ${WORK}/semi)
 expect_scan_fault(library-semi "a file name holds an unmatched bracket or a semicolon")
 scan(library-dirname "${WORK}/dir[x")
-expect_scan_fault(library-dirname "the directory name holds a bracket or a semicolon")
-message(STATUS "local fixture: three library scans as expected")
+expect_scan_fault(library-dirname "the directory name holds a bracket, wildcard or semicolon")
+foreach(wild "dir*x" "dir?x")
+  scan(library-wild "${WORK}/${wild}")
+  expect_scan_fault(library-wild "the directory name holds a bracket, wildcard or semicolon")
+endforeach()
+message(STATUS "local fixture: the library scans as expected")
 
 # The clause a missing-file error appends: empty when nothing was skipped, the
 # count otherwise.
