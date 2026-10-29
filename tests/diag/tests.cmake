@@ -871,7 +871,9 @@ file(GENERATE OUTPUT ${diag_bankset} CONTENT
 "set(DIAG_BANKSET_RUN TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
 set(EXPECTED [==[${diag_dir}/expected.csv]==])
-set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/bankset]==])
+if(NOT DEFINED OUT)
+  set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/bankset]==])
+endif()
 set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
 set(RUNNER [==[$<TARGET_FILE:muhtari-run>]==])
 set(MODULE [==[${diag_controller_module}]==])
@@ -880,10 +882,12 @@ include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
 muhtari_add_test(NAME diag.bankset_tracer COMMAND ${CMAKE_COMMAND} -P ${diag_bankset}
   LABELS diag portable TIMEOUT 30)
+# Each test writes its own tree, so neither reads the other's half-written files under parallel ctest.
 set(diag_bankset_matrix ${PROJECT_BINARY_DIR}/tests/diag/bankset-matrix.cmake)
 file(GENERATE OUTPUT ${diag_bankset_matrix} CONTENT
 "set(BANKSET_EXPANDED TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/bankset-matrix]==])
 include([==[${diag_bankset}]==])
 ")
 muhtari_add_test(NAME diag.bankset COMMAND ${CMAKE_COMMAND} -P ${diag_bankset_matrix}
