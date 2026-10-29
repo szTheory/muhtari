@@ -55,6 +55,11 @@ endif()
 # per-row scratch tree is OUT's name plus ".rows", so it never shares a name
 # with a directory the pass did not make, and it is replaced only when it is
 # absent or holds this pass's marker.
+# A ';' in OUT would split the string-joined steps below into extra paths,
+# one of them a directory the pass did not make, so it is refused first.
+if("${OUT}" MATCHES ";")
+  message(FATAL_ERROR "local: cannot write the counts file")
+endif()
 cmake_path(ABSOLUTE_PATH OUT NORMALIZE)
 cmake_path(GET OUT FILENAME out_name)
 if(out_name STREQUAL "")

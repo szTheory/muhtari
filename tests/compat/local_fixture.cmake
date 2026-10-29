@@ -7,9 +7,9 @@
 # or the reverse, that reports a refused image or a failing predicate as a
 # harness fault, that passes on a bad BIOS, a malformed predicate or an
 # unwritable output, that treats a name CMake lists cannot carry as a file,
-# that lets a relative OUT delete a directory it did not create, that replaces
-# a scratch tree it did not make, or that prints a path, a file name or an
-# image hash.
+# that lets a relative OUT, or one holding a semicolon, delete a directory it
+# did not create, that replaces a scratch tree it did not make, or that prints
+# a path, a file name or an image hash.
 # The files are the test list's stripped sample (twice, with and without a
 # header, one under a name with balanced brackets), an image the list
 # identifies and the core refuses, a file above the image maximum, a text
@@ -210,7 +210,17 @@ if(NOT EXISTS ${WORK}/foreign.out.csv.rows/keep)
 endif()
 drive(base base ${BIOS} ${WORK}/base.out.csv)
 expect_counts(base 1 0 "boots@120,pass")
-message(STATUS "local fixture: eleven runs as expected")
+
+# 12. A ';' in OUT would split the scratch tree's path into a second path; the
+#     run stops before any step, and the directory the first piece names stays.
+file(MAKE_DIRECTORY ${WORK}/victim)
+file(WRITE ${WORK}/victim/keep "keep")
+drive(semiout base ${BIOS} "${WORK}/victim;x/out.csv")
+expect_fault(semiout "cannot write the counts file")
+if(NOT EXISTS ${WORK}/victim/keep)
+  message(FATAL_ERROR "local fixture: semiout: the run deleted a directory a split OUT named")
+endif()
+message(STATUS "local fixture: twelve runs as expected")
 
 # The shared rule under the library prefix, through files.cmake's -P entry; the
 # fixture runs it from the source tree, so a fault's call stack names only
