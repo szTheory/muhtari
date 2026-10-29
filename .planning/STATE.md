@@ -4,12 +4,12 @@ milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
 current_plan: 12
-status: ready_to_execute
+status: verifying
 stopped_at: Planned 11-12-PLAN.md; acceptance pending
-last_updated: "2026-10-29T18:56:52.907Z"
+last_updated: "2026-10-29T19:09:31.612Z"
 last_activity: 2026-10-29
-last_activity_desc: Phase 11 committed-fix acceptance planned; 11-12 ready, historical verification remains 14/16
-state_head: 12c136a131b8c5f0de793de8fed83049ff058acb
+last_activity_desc: Phase 11 execution started
+state_head: 2c9b924a2e778c259cf0db0b23b6007442dd14ad
 progress:
   total_phases: 7
   completed_phases: 5
@@ -43,8 +43,8 @@ Phase 10 has 14/14 accepted plans and verification passed. Six of seven mileston
 Active-slot totals are 64 summarized plans of 64 planned, including historical
 halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Ready to execute 11-12 — committed-fix acceptance only; historical verification gaps_found at 14/16
-Last activity: 2026-10-29 — One acceptance plan checked after the committed CR-01/CR-02 and related warning fixes; 11/12 plans summarized, no new acceptance claimed
+Status: verifying
+Last activity: 2026-10-29 — Phase 11 execution started
 Next command: $gsd-execute-phase 11 --gaps-only
 Branch: phase/11-full-library-acceptance
 

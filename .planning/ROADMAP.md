@@ -351,7 +351,7 @@ Plans:
 **Goal:** Account for the pinned library honestly and prove every new compatibility claim without private bytes in CI.
 **Depends on:** Phase 10
 **Requirements:** COMP-01, COMP-02, COMP-03
-**Plans:** 11/12 plans summarized; 8 sequential waves, then a gap round of 3 plans in 3 waves. Plan 11-12 is a committed-fix acceptance follow-up in gap wave 4; verification remains gaps_found (14/16) until execute-phase re-verifies.
+**Plans:** 12/12 plans executed summarized; 8 sequential waves, then a gap round of 3 plans in 3 waves. Plan 11-12 is a committed-fix acceptance follow-up in gap wave 4; verification remains gaps_found (14/16) until execute-phase re-verifies.
 
 Plans:
 **Wave 1**
@@ -388,7 +388,7 @@ Plans:
 - [x] 11-11-PLAN.md — Measure the new test budgets (title.pal.bios to at least 4 s) and separate the bankset output trees.
 
 **Committed-fix acceptance, gap wave 4** *(blocked on gap wave 3 completion)*
-- [ ] 11-12-PLAN.md — Accept the existing claim/output review fixes through public controls, full CI and visible local counts; hand the receipt to execute-phase's built-in verifier.
+- [x] 11-12-PLAN.md — Accept the existing claim/output review fixes through public controls, full CI and visible local counts; hand the receipt to execute-phase's built-in verifier.
 
 **Success criteria:**
 
