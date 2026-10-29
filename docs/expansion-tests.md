@@ -94,3 +94,12 @@ RAM/POKEY/HSC and gating retain medium physical confidence; its primary develope
 specification remains inaccessible. ROF aliases, internal BIOS/top-slot, flash,
 PIA, flat48KiB, protection/locks, PAL firmware selection and full-XM services are
 absent. Unsupported controls are absence probes, never invented detection success.
+
+## Ledger rows
+
+The local `mailbox@12` rows of `diag/xboard` and `diag/xm` record the page-zero cases that `diag.expansion`
+runs; the test also covers all eight XBoard banks, both XM windows, sixteen pages, gate lifetimes and selected
+PAL and dual-chip cases. These are model-conformance observations, not gameplay results, and metadata
+inclusion names a capability, not gameplay acceptance. XM is a selected RAM/POKEY/HSC implementation profile
+with medium physical confidence; there is no YM2151, Covox/ADPCM, Souper/BupChip, internal XM firmware or
+full-XM services.

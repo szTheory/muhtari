@@ -188,7 +188,9 @@ muhtari_add_test(NAME library.ratchet.self_test
 # ratchet has just proven equal to the fresh results, and compares it with
 # docs/compatibility.md.
 muhtari_add_test(NAME library.compat_doc
-  COMMAND ${CMAKE_COMMAND} -DLEDGER=${compat_ledger} -DOUT=${PROJECT_BINARY_DIR}/compatibility.md
+  COMMAND ${CMAKE_COMMAND} -DLEDGER=${compat_ledger}
+    -DEXPECTED=${CMAKE_SOURCE_DIR}/tests/diag/expected.csv
+    -DINVENTORY=${CMAKE_SOURCE_DIR}/tests/inventory/ci.txt -DOUT=${PROJECT_BINARY_DIR}/compatibility.md
     -DCHECK=${CMAKE_SOURCE_DIR}/docs/compatibility.md -P ${CMAKE_SOURCE_DIR}/tools/compat_doc.cmake
   LABELS library TIMEOUT 1)  # 2 x 0.01 s, Linux x64, library job, slowest of 6 runs, run 39380164010
 set_tests_properties(library.compat_doc PROPERTIES DEPENDS library.ratchet)

@@ -43,3 +43,10 @@ faults also exercised here.
 Exact HALT edges and four-pair arithmetic remain bus tests. Shared RAM and the larger
 256/512 KiB geometries are selected producer/emulator extensions; this evidence
 establishes model behavior, without a new physical-board capacity or timing fit.
+
+## Ledger rows
+
+The local `mailbox@12` row of `diag/bankset` records the BankSet32 no-RAM case that `diag.bankset` runs; the
+test also covers all fourteen geometries. These are model-conformance observations, not gameplay results. The
+7800basic `banksets` sample stays skipped in the ledger because its pinned recipe does not assemble; diagnostic
+evidence for a board changes no other row's status or predicate.

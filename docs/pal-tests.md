@@ -56,3 +56,10 @@ acceptance. Hosted portability acceptance is recorded separately when the
 complete exact-source lanes actually pass.
 
 
+
+## Ledger row
+
+The local `mailbox@601` row of `diag/pal` names the diagnostic predicate that `diag.pal` runs, separately from
+the NTSC title and BIOS predicates the library preset evaluates. It shows raster timing, native video and
+sustained audio across the library, runner and libretro core; it does not establish PAL retail playability or
+hardware calibration.
