@@ -357,6 +357,103 @@ muhtari_add_test(NAME policy.softlist_ledger
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
   ${CMAKE_SOURCE_DIR}/tests/compat/ledger.csv ${MUHTARI_MAME_PINS}/a7800.xml)
 
+# The text of FILE with the first NEEDLE replaced by REPLACEMENT, written to
+# DEST. A replacement that changes nothing stops the configure, so a control
+# can never compare equal inputs.
+function(hygiene_softlist_edit file needle replacement dest)
+  file(READ ${file} text)
+  string(FIND "${text}" "${needle}" at)
+  if(at EQUAL -1 OR needle STREQUAL replacement)
+    message(FATAL_ERROR "policy.softlist_ledger: '${needle}' does not change ${file}")
+  endif()
+  string(SUBSTRING "${text}" 0 ${at} head)
+  string(LENGTH "${needle}" length)
+  math(EXPR at "${at} + ${length}")
+  string(SUBSTRING "${text}" ${at} -1 tail)
+  file(WRITE ${dest} "${head}${replacement}${tail}")
+  set(hygiene_softlist_head "${head}" PARENT_SCOPE)
+endfunction()
+
+set(hygiene_slfix ${CMAKE_BINARY_DIR}/hygiene/softlist_fixture)
+set(hygiene_sl_ledger ${CMAKE_SOURCE_DIR}/tests/compat/ledger.csv)
+set(hygiene_pinned_xml ${MUHTARI_MAME_PINS}/a7800.xml)
+file(READ ${hygiene_pinned_xml} hygiene_sl_xml)
+string(REGEX MATCH "<software name=\"([^\"]*)\"" hygiene_unused "${hygiene_sl_xml}")
+set(hygiene_first_entry "${CMAKE_MATCH_1}")
+if(hygiene_first_entry STREQUAL "")
+  message(FATAL_ERROR "policy.softlist_ledger: no <software> entry in ${hygiene_pinned_xml}")
+endif()
+
+# A pinned-list row set to pass must be named.
+hygiene_softlist_edit(${hygiene_sl_ledger} ",unknown,local,-,-,-,-\n" ",pass,local,-,-,-,-\n"
+  ${hygiene_slfix}/pass/ledger.csv)
+string(REGEX REPLACE "^.*\n" "" hygiene_row "${hygiene_softlist_head}")
+string(REGEX REPLACE ",.*$" "" hygiene_row_id "${hygiene_row}")
+set(hygiene_cmd ${hygiene_softlist} -DOUT=${hygiene_slfix}/pass/out.csv
+  -DCHECK=${hygiene_slfix}/pass/ledger.csv -P ${CMAKE_SOURCE_DIR}/tools/softlist_ledger.cmake)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.softlist_ledger.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=${hygiene_row_id}: a pinned-list row is pass"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)  # provisional, n=1, local
+
+# An entry renamed by a pin bump must be named.
+hygiene_softlist_edit(${hygiene_pinned_xml} "<software name=\"${hygiene_first_entry}\""
+  "<software name=\"${hygiene_first_entry}renamed\"" ${hygiene_slfix}/rename/a7800.xml)
+set(hygiene_cmd ${CMAKE_COMMAND} -DXML=${hygiene_slfix}/rename/a7800.xml -DLEDGER=${hygiene_sl_ledger}
+  -DCARTDB=${CMAKE_SOURCE_DIR}/src/cartdb.c -DOUT=${hygiene_slfix}/rename/out.csv
+  -DCHECK=${hygiene_sl_ledger} -P ${CMAKE_SOURCE_DIR}/tools/softlist_ledger.cmake)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.softlist_ledger.rename.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=${hygiene_first_entry}: row has no entry in the pinned list"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)  # provisional, n=1, local
+
+# A slot the generator does not know must be named.
+hygiene_softlist_edit(${hygiene_pinned_xml} "<feature name=\"slot\" value=\"a78_"
+  "<feature name=\"slot\" value=\"a78_fixture_" ${hygiene_slfix}/slot/a7800.xml)
+set(hygiene_cmd ${CMAKE_COMMAND} -DXML=${hygiene_slfix}/slot/a7800.xml -DLEDGER=${hygiene_sl_ledger}
+  -DCARTDB=${CMAKE_SOURCE_DIR}/src/cartdb.c -DOUT=${hygiene_slfix}/slot/out.csv
+  -P ${CMAKE_SOURCE_DIR}/tools/softlist_ledger.cmake)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.softlist_ledger.slot.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=unknown slot.*a78_fixture_"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)  # provisional, n=1, local
+
+# A cartridge table whose first entry disagrees with the slot table must be
+# named by that entry's id. The board digit follows the array's first brace.
+file(READ ${CMAKE_SOURCE_DIR}/src/cartdb.c hygiene_cartdb_text)
+string(FIND "${hygiene_cartdb_text}" "muhtari__cartdb_7800_entries[] = {\n{" hygiene_at)
+if(hygiene_at EQUAL -1)
+  message(FATAL_ERROR "policy.softlist_ledger.board.self_test: no entries array in src/cartdb.c")
+endif()
+string(SUBSTRING "${hygiene_cartdb_text}" ${hygiene_at} -1 hygiene_sl_tail)
+string(REGEX MATCH "^[^\n]*\n[{][0-9]+, ([0-9]+)" hygiene_unused "${hygiene_sl_tail}")
+set(hygiene_board "${CMAKE_MATCH_1}")
+math(EXPR hygiene_other "${hygiene_board} % 5 + 1")
+string(LENGTH "${CMAKE_MATCH_0}" hygiene_len)
+string(LENGTH "${hygiene_board}" hygiene_digits)
+math(EXPR hygiene_len "${hygiene_len} - ${hygiene_digits}")
+string(SUBSTRING "${hygiene_sl_tail}" 0 ${hygiene_len} hygiene_before)
+string(SUBSTRING "${hygiene_sl_tail}" ${hygiene_len} -1 hygiene_after)
+string(SUBSTRING "${hygiene_after}" ${hygiene_digits} -1 hygiene_after)
+string(SUBSTRING "${hygiene_cartdb_text}" 0 ${hygiene_at} hygiene_sl_head)
+file(WRITE ${hygiene_slfix}/board/cartdb.c
+  "${hygiene_sl_head}${hygiene_before}${hygiene_other}${hygiene_after}")
+set(hygiene_cmd ${CMAKE_COMMAND} -DXML=${hygiene_pinned_xml} -DLEDGER=${hygiene_sl_ledger}
+  -DCARTDB=${hygiene_slfix}/board/cartdb.c -DOUT=${hygiene_slfix}/board/out.csv
+  -P ${CMAKE_SOURCE_DIR}/tools/softlist_ledger.cmake)
+string(REPLACE ";" "$<SEMICOLON>" hygiene_cmd "${hygiene_cmd}")
+muhtari_add_test(NAME policy.softlist_ledger.board.self_test
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${hygiene_cmd}" -DCODE=1
+    "-DREGEX=${hygiene_first_entry}: board is ${hygiene_other} in"
+    -P ${hygiene_scripts}/expect_fail.cmake
+  LABELS hygiene policy TIMEOUT 30)  # provisional, n=1, local
+
 # No tracked file is firmware, a built sample or a known ROM. The self test
 # tracks a synthetic 256-byte A78 file in a fixture repository and lists the
 # SHA-1 of its last 128 bytes, which must be found once the header is
