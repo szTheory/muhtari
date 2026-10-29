@@ -351,7 +351,7 @@ Plans:
 **Goal:** Account for the pinned library honestly and prove every new compatibility claim without private bytes in CI.
 **Depends on:** Phase 10
 **Requirements:** COMP-01, COMP-02, COMP-03
-**Plans:** 2/8 plans executed in 8 sequential waves.
+**Plans:** 3/8 plans executed in 8 sequential waves.
 
 Plans:
 **Wave 1**
@@ -361,7 +361,7 @@ Plans:
 - [x] 11-02-PLAN.md — Generate one derived ledger row per pinned-list entry, checked against the pin on the hygiene lane.
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 11-03-PLAN.md — Close the ratchet's tier-demotion hole, bind mailbox CRCs, promote the library job to required.
+- [x] 11-03-PLAN.md — Close the ratchet's tier-demotion hole, bind mailbox CRCs, promote the library job to required.
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 11-04-PLAN.md — Count a private local run through the core's own identification, proven by a public fixture.

@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: Completed 11-02-PLAN.md
-last_updated: "2026-10-29T13:29:48.262Z"
+stopped_at: Completed 11-03-PLAN.md
+last_updated: "2026-10-29T13:53:50.601Z"
 last_activity: 2026-10-29
 last_activity_desc: Phase 11 execution started
-state_head: c223150b8620559ebfc21c10e3e7dbbde3c983b7
+state_head: 239ea56842b644facd04a5c26bd3a15c4ee2f313
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 72
-  completed_plans: 66
+  completed_plans: 67
   percent: 71
 total_phases: 7
 current_phase_name: Full-library acceptance
@@ -35,7 +35,7 @@ remains recorded below; this step makes no new release claim.
 ## Current Position
 
 Current Phase: 11
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 8
 Progress: [███████░░░] 71%
 
@@ -694,8 +694,8 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-02-PLAN.md
-Last session: 2026-10-29T13:29:48.035Z
+**Stopped at:** Completed 11-03-PLAN.md
+Last session: 2026-10-29T13:53:50.360Z
 Resume file: None
 Next command: /gsd-plan-phase 11
 
@@ -732,6 +732,7 @@ Next command: /gsd-plan-phase 11
 | Phase 10 P14 | 20 min | 2 tasks | 5 files |
 | Phase 11 P01 | 35m | 3 tasks | 10 files |
 | Phase 11 P02 | 45m | 3 tasks | 8 files |
+| Phase 11 P03 | 30m | 3 tasks | 12 files |
 
 ## Decisions
 
@@ -753,6 +754,9 @@ Next command: /gsd-plan-phase 11
 - [Phase 11]: Pin recipe copies mailbox@ rows and bare-id rows untouched and evaluates only title@/boots@ rows; -DCHECK enforces pin order
 - [Phase 11]: Softlist rows are fully generator-owned: boots@120 unknown local, with hiscore, xboard and xm skipped as expansion devices and none unsupported at this pin
 - [Phase 11]: The softlist generator cuts the XML by string search, not CMake lists, and names every id gained or lost by a pin bump in one error
+- [Phase 11]: Ratchet protects a passing pr row's tier on the BASE path; demotion to local needs a dated allow line
+- [Phase 11]: Local mailbox rows are bound to diag.bankset, diag.expansion and diag.pal through ledger_crc.cmake at the canonical case only; predicate.c gains no mailbox support
+- [Phase 11]: library job promoted into CI required after a recount of 18 distinct successful main runs
 
 ### Blockers
 
