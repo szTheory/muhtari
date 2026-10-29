@@ -25,7 +25,7 @@ Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM
 | 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Complete |
 | 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Complete; ready to ship |
 | 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | In progress |
-| 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Not started |
+| 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Acceptance plan ready; historical verification 14/16 |
 
 ## Phase details
 
@@ -351,7 +351,7 @@ Plans:
 **Goal:** Account for the pinned library honestly and prove every new compatibility claim without private bytes in CI.
 **Depends on:** Phase 10
 **Requirements:** COMP-01, COMP-02, COMP-03
-**Plans:** 11/11 plans executed; 8 sequential waves, then a gap round of 3 plans in 3 waves.
+**Plans:** 11/12 plans summarized; 8 sequential waves, then a gap round of 3 plans in 3 waves. Plan 11-12 is a committed-fix acceptance follow-up in gap wave 4; verification remains gaps_found (14/16) until execute-phase re-verifies.
 
 Plans:
 **Wave 1**
@@ -387,6 +387,9 @@ Plans:
 **Gap round, wave 3** *(blocked on gap wave 2 completion)*
 - [x] 11-11-PLAN.md — Measure the new test budgets (title.pal.bios to at least 4 s) and separate the bankset output trees.
 
+**Committed-fix acceptance, gap wave 4** *(blocked on gap wave 3 completion)*
+- [ ] 11-12-PLAN.md — Accept the existing claim/output review fixes through public controls, full CI and visible local counts; hand the receipt to execute-phase's built-in verifier.
+
 **Success criteria:**
 
 1. Every entry in the pinned CC0 library has an explicit ledger disposition, with untested and unsupported entries distinguished from passes.
@@ -410,7 +413,7 @@ The v1.0 stale verification fingerprints and accepted deferrals remain historica
 | 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
 | 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
 | 10. Homebrew and expansion memory | 14/14 | Complete    | 2026-10-28 |
-| 11. Full-library acceptance | 8/8 | In Progress | — |
+| 11. Full-library acceptance | 11/12 summarized | Acceptance plan ready; verification 14/16 | — |
 
 ---
 *Updated: 2026-10-25; Phases5–9 are complete. Phase9 has8/8 accepted plans,22/22 tasks,42/42 verified truths and all three PAL requirements complete. Source-fresh CI40233948646 and Nightly40233948516 attempt2 pass: six native current/base lanes, full native/PPC654+6, WASM592/956-row equality, actual RetroArch and authenticated native packages. One review-fix round resolved BIOS input lifetime; re-review is clean, gap round unused. The advisory10000-case isolation timeout remains unaccepted. Phase10 is researched and planned (13 plans/30 tasks,13 sequential waves), with independent plan checking passed and20/20 decisions covered. Phase11 remains unplanned. Next separate command: $gsd-execute-phase 10.*

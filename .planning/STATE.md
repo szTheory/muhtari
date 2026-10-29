@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v2.0
 milestone_name: The whole library
 current_phase: 11
-current_plan: 11
-status: gaps_found
-stopped_at: Completed 11-11-PLAN.md
-last_updated: "2026-10-29T16:35:53.343Z"
+current_plan: 12
+status: ready_to_execute
+stopped_at: Planned 11-12-PLAN.md; acceptance pending
+last_updated: "2026-10-29T18:56:52.907Z"
 last_activity: 2026-10-29
-last_activity_desc: Phase 11 gap round executed; re-verification found 2 gaps (review CR-01, CR-02)
-state_head: 916bbe2369232b731b84889cfc9909efdda0824d
+last_activity_desc: Phase 11 committed-fix acceptance planned; 11-12 ready, historical verification remains 14/16
+state_head: 12c136a131b8c5f0de793de8fed83049ff058acb
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 75
+  total_plans: 76
   completed_plans: 75
   percent: 71
 total_phases: 7
@@ -27,7 +27,7 @@ current_phase_name: Full-library acceptance
 See PROJECT.md, REQUIREMENTS.md, ROADMAP.md and preparation/DECISIONS.md.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 11 (full-library acceptance) gap round executed; re-verification found 2 gaps, review fix round next.
+Current focus: Phase 11 committed-fix acceptance planned; 11-12 is ready to execute, with historical verification still gaps_found at 14/16.
 BOARD-04/05 are marked Complete; final hosted acceptance is confirmed at ship and in Phase 11.
 Phase9 remains complete and merged in PR33. The separate v0.8.0 publication failure
 remains recorded below; this step makes no new release claim.
@@ -35,18 +35,43 @@ remains recorded below; this step makes no new release claim.
 ## Current Position
 
 Current Phase: 11
-Current Plan: 11
-Total Plans in Phase: 11
+Current Plan: 12
+Total Plans in Phase: 12
 Progress: [███████░░░] 71%
 
 Phase 10 has 14/14 accepted plans and verification passed. Six of seven milestone phases are complete once phase 10 ships.
 Active-slot totals are 64 summarized plans of 64 planned, including historical
 halted 06-01; 62 accepted plans. Summarized counts do not establish phase acceptance.
 
-Status: Gaps found — gap round done (11-09 to 11-11); re-verification 14/16, review fix round next
-Last activity: 2026-10-29 — Phase 11 gap round executed; full ci workflow exit 0 (673/673); re-verification gaps_found on review CR-01 (dead basic.* sample guard) and CR-02 (`;` in OUT deletes a sibling directory)
-Next command: /gsd-code-review 11 --fix
+Status: Ready to execute 11-12 — committed-fix acceptance only; historical verification gaps_found at 14/16
+Last activity: 2026-10-29 — One acceptance plan checked after the committed CR-01/CR-02 and related warning fixes; 11/12 plans summarized, no new acceptance claimed
+Next command: $gsd-execute-phase 11 --gaps-only
 Branch: phase/11-full-library-acceptance
+
+## Phase 11 acceptance planning receipt
+
+Plan11-12 adds two acceptance tasks in gap wave4 after11-11. It accepts the
+existing committed fixes through the claim controls and public local fixture,
+then the full CI/public library workflows and visible local counts. Its SUMMARY
+feeds execute-phase's built-in verifier in the same step. No source changes,
+new review round, private-content requirement or owner UAT were introduced.
+The failed14/16 report, earlier summaries and review history remain intact;
+planning does not establish acceptance or complete any COMP requirement.
+
+The independent plan checker passed after one revision exposing the local
+counts and retaining execute-phase verification. Using the installed
+`gsd-tools.cjs` as `GSD_TOOLS`, local planning evidence (run URL: N/A-local):
+
+- `node "$GSD_TOOLS" query frontmatter.validate .planning/phases/11-full-library-acceptance/11-12-PLAN.md --schema plan-gap-closure` — exit0, valid.
+- `node "$GSD_TOOLS" query verify.plan-structure .planning/phases/11-full-library-acceptance/11-12-PLAN.md` — exit0, two tasks, no errors or warnings.
+- `node "$GSD_TOOLS" query check.decision-coverage-plan .planning/phases/11-full-library-acceptance .planning/phases/11-full-library-acceptance/11-CONTEXT.md` — exit0,24/24 decisions covered.
+- `node "$GSD_TOOLS" check gap-analysis-plan-post .planning/phases/11-full-library-acceptance 'COMP-01, COMP-02, COMP-03' --raw` — exit0,27/27 source items covered.
+
+Research was skipped for gap mode. The context-drift check warned that the
+historical research predates amended decisions; current source, context and
+review-fix evidence govern this acceptance-only plan. The path probe returns
+not_applicable for the CMake commands, not an affirmative path verdict; the
+checker checked their actual existing consumers. Failure-direction checks pass.
 
 ## Phase 10 execution receipt
 
@@ -694,10 +719,10 @@ remains retired; no replacement quota or global hosted-cost reduction is claimed
 
 ## Session Continuity
 
-**Stopped at:** Completed 11-11-PLAN.md
+**Stopped at:** Planned 11-12-PLAN.md; acceptance pending
 Last session: 2026-10-29T16:35:53.064Z
 Resume file: None
-Next command: /gsd-code-review 11 --fix
+Next command: $gsd-execute-phase 11 --gaps-only
 
 ### Quick Tasks Completed
 
