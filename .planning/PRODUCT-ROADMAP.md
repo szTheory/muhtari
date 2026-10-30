@@ -17,55 +17,68 @@ visible, re-ranks the horizons, records why the order changed or stayed, present
 alternatives, and moves only owner-approved scope into Immediate. The file is snapshotted as
 `milestones/vX.Y-PRODUCT-ROADMAP.md` at close. Future horizons stay less detailed than the current one.
 
-## Immediate — select the next milestone (scope not yet approved)
+## Immediate — v3.0 Playstead-ready play and states
 
-All seven phases (5–11) are verified and merged. The milestone audit accepts
-27/27 requirements under the approved contract, with explicit tooling debt and
-no broken core/host flow. It retains seven stale verification fingerprints under
-the existing override-closeout policy rather than rewriting historical evidence.
-See [the audit](milestones/v2.0-MILESTONE-AUDIT.md) for command/exit/run evidence.
+**Approved 2026-10-29.** Ordinary gaming through Playstead and safe save/load take
+priority over movie authoring, AI and TAS. The active [requirements](REQUIREMENTS.md)
+and [roadmap](ROADMAP.md) are the execution contract; no implementation is claimed.
 
-The shipped implementation covers Activision/Absolute/Fractalus and BankSet,
-XBoard/XM RAM/POKEY/HSC, battery persistence, the scoped controllers and PAL
-through library, runner and libretro. Whole-library accounting is 204 pinned
-entries: 201 unknown,3 skipped,0 gameplay passes. Model conformance and public
-title screens do not establish universal compatibility or hardware calibration.
-Souper/BupChip, YM2151, AtariVox speech and full OpenHSC remain deferred.
+Start with a bounded measured tune-up and gamer-facing delivery/readiness, then
+portable validated states across library/runner/libretro, followed by frontend
+save/load, rewind and run-ahead. Use existing replay where it supplies repeatable
+verification; do not make full recording a launch prerequisite.
 
-Planning milestone v2.0 is complete and archived on 2026-10-29. Phase 11 PR #40
-and release PR #41 are merged. Package [v0.10.0](https://github.com/szTheory/muhtari/releases/tag/v0.10.0)
-is published with 19 assets; [Release40956113369](https://github.com/szTheory/muhtari/actions/runs/40956113369)
-passes publication and latest-install checks. No next milestone scope has been approved.
+The quickest Playstead route is its adapter launching separately pinned RetroArch
+and muhtari artifacts. Muhtari supplies core/release readiness; Playstead owns its
+installer, cache, controller handoff, lifecycle and progress UI. Actual Playstead
+launch/return/save acceptance remains a separate cross-project dependency, not a
+result inferred from a runner or RetroArch-only test. See the [handoff](research/PLAYSTEAD-HANDOFF.md).
 
-At the next milestone discussion, prefer a measured tune-up (SEED-007/009/010)
-followed by states/movies (SEED-002). Battery/device/region state now supplies the
-needed foundation. The browser (SEED-008) remains an explicit high-priority
-alternative for the owner to weigh; retain its advisory WASM equality evidence.
-No browser or state implementation is promoted into Immediate by this closeout.
+Shipped baseline remains package v0.10.0, API7/ABI1/behavior6: scoped boards, PAL,
+controllers, sound and battery storage. Formal pinned-list evidence remains
+201 unknown/3 skipped; two voluntary local gameplay reports are separate evidence.
+Retain COST-01/WR-01, advisory property evidence and hardware/HSC limits until new
+acceptance changes their dispositions. The [v2.0 archive](milestones/v2.0-ROADMAP.md)
+and [research snapshot](milestones/v2.0-research/SUMMARY.md) preserve prior context.
 
-## Near — v3.0 "States and movies" (SEED-002)
+## Next — easier access and tighter Playstead play
 
-Validated fixed-size save states, rewind/run-ahead support, deterministic movie recording and Playstead's
-continuation protocol follow library breadth. A sub-frame input queue requires demonstrated need.
-**Trigger:** v2.0 closeout (now surfaced), or a frontend needs save states first. **Why next:** persistence and device state
-will then be settled across the supported boards and regions.
+**Preferred next candidate:** efficient browser/WebAssembly play (SEED-008),
+reweighed at v3.0 close. It lowers installation friction and reuses the core's
+portability; its existing WASM equality evidence stays advisory. No date or fixed
+future milestone number is promised.
 
-## Mid — v4.0 "Measured accuracy" (SEED-003)
+**Competing priority:** Playstead's native one-app play/Continue experience. A
+Playstead-owned in-process libretro host is the candidate north star: library to
+play in one calm flow, responsive controls, sound/picture and safe state capture
+without exposing emulator plumbing. Promote a focused Playstead host spike if
+external-window/focus/controller friction recurs, state capture cannot serve the
+chosen Continue promise, or a one-app flow becomes an explicit release requirement.
+This does not add GUI/device code or another deliverable to muhtari.
 
-FPGA-RTL reference comparisons, diagnostic results from hardware, measured POKEY/timing improvements, XM
-YM2151, complete Souper/BupChip and the composite artifact filter. Full clean-room OpenHSC and AtariVox speech
-remain candidates, not commitments.
-**Trigger:** v3.0 shipped, or a measured accuracy gap blocks a known game. Souper/BupChip stays here by the
-owner's explicit v2.0 scope decision; memory mapping alone is not complete game/audio support.
+## Mid-term — measured accuracy and qualified progress
 
-## Long — v5.0 "Tools" (SEED-004), v6.0 "Everywhere" (SEED-005), 2600 mode (SEED-006)
+Measured hardware/FPGA/diagnostic comparisons, timing/POKEY corrections, deferred
+YM2151 and complete Souper/BupChip, and the composite filter retain SEED-003.
+Full clean-room OpenHSC and AtariVox speech stay candidates. Promote a specific
+measured gap sooner if it blocks an actually played title.
 
-v5.0: inspection and hook APIs, breakpoints, DMA/display-list views, traces with symbols, homebrew lint, Python
-bindings with a vectorised AI environment, Lua scripting in the runner, speedrun and TAS aids.
-v6.0: console and handheld ports with measured frame-time and battery budgets, a supported big-endian tier, a
-Raspberry Pi budget, Playstead integration (the browser build moved to SEED-008).
-2600 mode: the 7800's backward compatibility with Atari 2600 cartridges — owner decision 2026-10-15: after the
-7800 library is complete. **Trigger:** v2.0 closed and the owner promotes it; metadata accounting alone does not establish complete 7800 gameplay coverage.
+Playstead-managed state history/exact Continue follows a supported host capture/
+load boundary and a policy preserving newer durable progress. Cross-device state
+custody needs identity/compatibility/recovery evidence. A recent-play shelf or
+fresh process alone does not establish restoration of the interrupted game point.
+
+## Long-term — tools, emulator family and more devices
+
+Inspection/hooks, Python/AI environments, Lua on demand, full recording, BK2/TAS
+and speedrun tooling follow demonstrated users (SEED-002/004). Ports, handheld
+frame-time/power budgets and broader platforms retain SEED-005. 2600 mode remains
+owner-promoted scope under SEED-006; metadata accounting is not gameplay proof.
+
+Muhtari is the current leading example for a family of console cores sharing
+[product/engineering intent](INTENT.md). Exchange high-signal evidence and lessons
+bidirectionally with NES, Game Boy, Neo Geo and later siblings; reproduce mechanisms
+locally and keep console-specific facts distinct. No shared framework is presumed.
 
 ## Decision log
 
@@ -79,6 +92,7 @@ Raspberry Pi budget, Playstead integration (the browser build moved to SEED-008)
 | 2026-10-29 | Reconciled merged v2.0 breadth and accounting; keep closeout Immediate and surface tune-up/states/browser choices | Audit27/27 with known reporting/property/tooling debt; no universal gameplay claim. States retain their place because device/save/PAL ownership is established; browser stays an explicit alternative until the next scope decision. v0.10.0 publication was pending at audit time. |
 
 | 2026-10-29 | Archived v2.0; confirmed v0.10.0 publication and retained horizon order | Release publication/latest-install and merged CI pass. Tune-up remains first in the next milestone; states/movies are preferred and browser remains the high-priority alternative. No future scope promoted. |
+| 2026-10-29 | Approved v3.0 gamer-first Playstead readiness and states; browser remains preferred next candidate, native Playstead hosting is an explicit competing priority | Owner approved researched recommendations and prioritized actual Playstead play/save-load over AI/TAS. Read-only Playstead inspection found external-process adapters and narrow existing state support; quick route and north star now have separate ownership and triggers. Refresh this horizon at every milestone start and close. |
 
 ## Debt and fired triggers at v2.0 closeout
 
@@ -88,7 +102,7 @@ Raspberry Pi budget, Playstead integration (the browser build moved to SEED-008)
   equal-base edge; neither was repaired by later capability phases.
 - Phase 10's nine optional review findings and Phase 11's twelve optional info
   identities retain their existing dispositions. The current audit links them.
-- SEED-002 is ready to discuss after closeout; SEED-008 must be weighed again.
+- SEED-002 state work is now scoped in v3.0; full recording remains later. SEED-008 is the preferred next candidate, reweighed at closeout.
   SEED-006's promotion condition is eligible to discuss, but complete7800
   gameplay coverage is not proven and2600 scope is not approved.
 - SEED-011–014 retain their own triggers: richer device evidence, a later legally

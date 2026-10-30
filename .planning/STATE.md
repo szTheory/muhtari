@@ -1,9 +1,9 @@
 ---
 gsd_state_version: "1.0"
 milestone: v3.0
-milestone_name: States and movies
+milestone_name: Playstead-ready play and states
 status: planning
-last_updated: "2026-10-30T01:21:38.351Z"
+last_updated: "2026-10-30T01:44:59.893Z"
 last_activity: 2026-10-29
 progress:
   total_phases: 0

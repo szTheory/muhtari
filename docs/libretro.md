@@ -5,6 +5,35 @@ and headerless `.bin` images from memory, including automatically selected PAL. 
 the built-in test card ([docs/runner.md](runner.md#test-card)). A refused image leaves a line in the frontend's
 log naming the reason, such as `muhtari: content refused: unsupported board: bankset`.
 
+## Launching a game
+
+Install the libretro archive for your system using the [README](../README.md#install-in-retroarch-macos-apple-silicon).
+In RetroArch, select **Load Core → Atari - 7800 (muhtari)**, then **Load Content** and your `.a78` or `.bin` image.
+The loader checks the image's bytes, including any cartridge header; the extension alone does not establish
+its format. A headerless dump needs a recognised image or an inferred supported layout. A refused image
+reports its reason in the frontend log. Atari 2600 images are not supported.
+
+The command-line equivalent is `retroarch -L CORE GAME`, with paths quoted when they contain spaces:
+
+```sh
+# macOS, using the standard installation paths
+/Applications/RetroArch.app/Contents/MacOS/RetroArch -L "$HOME/Library/Application Support/RetroArch/cores/muhtari_libretro.dylib" "/path/to/game.a78"
+
+# Linux: substitute the installed core path and your game path
+retroarch -L "/path/to/muhtari_libretro.so" "/path/to/game.a78"
+```
+
+On Windows, use `retroarch.exe -L "C:\path\to\muhtari_libretro.dll" "C:\path\to\game.a78"`.
+Omit GAME for the no-content test card. The core architecture must match the frontend: for example, an arm64
+core needs an arm64 RetroArch process. `muhtari-run` is headless; interactive play uses the libretro core.
+
+If muhtari is missing from Load Core, check **Settings → Directory → Cores** and **Core Info**, copy the
+archive's corresponding files there, then restart RetroArch. When stale core information persists after an
+update, close RetroArch and remove only `core_info.cache` from its Core Info directory; it is rebuilt.
+Keep **Boot: Fast** for a first launch; no BIOS is needed. Firmware setup is [below](#bios-files).
+For a load failure, use `--verbose --log-file "/path/to/local-retroarch.log"` on the launch command and inspect
+the `muhtari:` lines. Keep personal game files, firmware, saves, screenshots and logs outside this repository.
+
 ## Controls
 
 The RetroPad follows the ProSystem core's layout, so remaps made for it carry over.

@@ -121,7 +121,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 </details>
 
-## Current Milestone: v3.0 States and movies
+## Current Milestone: v3.0 Playstead-ready play and states
 
 **Goal:** Make muhtari useful for everyday 7800 play through Playstead, with reliable
 save/load states and an automated end-to-end launch and resume path.
@@ -132,8 +132,8 @@ save/load states and an automated end-to-end launch and resume path.
 - Playstead integration based on its actual launcher/adapter and product context;
   first-party local game launch and resume are the immediate consumer outcome.
 - RetroArch save/load, rewind and run-ahead backed by deterministic state.
-- Deterministic recording/replay and continuation only as needed for the gamer/host
-  outcome and reproducible verification; advanced AI play, TAS and speedrun tools remain later.
+- Existing deterministic replay supports state verification. Full recording, generalized
+  continuation, advanced AI play, TAS and speedrun tools remain later unless a concrete consumer needs them.
 
 **Owner direction (2026-10-29):** Follow coherent researched recommendations inside this
 milestone step; prioritize actual gamers and early Playstead use. Refresh the rolling
@@ -177,8 +177,10 @@ actual integration before fixing its contract in this milestone.
 
 ### Active
 
-Milestone v3.0 scope is approved; atomic requirements are being derived from the
-Playstead consumer and milestone research, then mapped in REQUIREMENTS.md.
+The 16 scoped requirements are defined in [REQUIREMENTS.md](REQUIREMENTS.md): bounded
+tune-up/player onboarding, Playstead host readiness, safe portable state across all
+three deliverables, frontend save/load and rewind/run-ahead. Playstead adapter work
+and final cross-project acceptance remain explicitly owned by the sibling project.
 
 Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0-REQUIREMENTS.md).
 
@@ -194,7 +196,7 @@ Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0
 - Signed or notarised macOS artifacts — the script install path does not need them.
 - A test framework dependency — plain CTest executables with an in-repo check header cover the need.
 - Atari 2600 cartridges, Souper/BupChip, YM2151, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech,
-  measured-accuracy oracles, the browser player, advanced AI/TAS tools and ports — later milestones;
+  measured-accuracy oracles, the browser player, full movie recording/generalized continuation, advanced AI/TAS tools and ports — later milestones;
   see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
 
 ## Context
@@ -207,6 +209,9 @@ Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0
   this project's API conventions and engineering; nesturbator's own MIT code seeds the CPU, synthesiser, state,
   runner, libretro adapter and CI. Playstead, the owner's host, launches emulator processes and needs
   deterministic input replay and safe battery saves from them.
+- **Project memory entry.** Start at [the planning index](README.md) and [shared intent](INTENT.md).
+  Muhtari currently leads the owner's emulator family; learning flows both ways, with local
+  reproduction before adopting sibling mechanisms or hardware claims.
 - **Research recall.** Use `.planning/research/fan-out/prompt.txt` for milestone/advisory fan-out.
   Relevant roles examine real decisions, compare alternatives and perform one adversarial synthesis;
   expand only when new evidence could change a recommendation. Reuse permissive seeds and standard

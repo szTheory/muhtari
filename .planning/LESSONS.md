@@ -188,3 +188,49 @@ gate, dependency or repeated phase-verification requirement. Source: audit commi
 | ID | Symptom and invariant | Fix and evidence | Status |
 |---|---|---|---|
 | MU-GSD-014 | OpenGSD 1.19.0 milestone dry-run counts six tasks from prose headings, ignoring frontmatter actuals/tasks_completed; it also counts summarized slots rather than accepted outcomes. | `query milestone.complete v2.0 --dry-run` exits 0 with tasks=6. A one-time Python parse of all 82 SUMMARY frontmatters, preferring actuals.tasks then tasks_completed and checking agreeing duplicates, exits 0 with 192 recorded tasks. Archive records use that historical count and retain 75 accepted plans separately; no halted outcome is promoted. Run URL N/A-local. | reproduced |
+
+## Local player onboarding (2026-10-29)
+
+| ID | Lesson | Evidence | Status |
+|---|---|---|---|
+| MU-HOST-002 | A working release and install line did not make the next player action clear: the README stopped at the test card. Document Load Content, keyboard Reset versus Pause, optional BIOS and direct `RetroArch -L CORE GAME` launch together. Local convenience launchers and personal media belong outside the repository. | `sh /tmp/muhtari-onboarding-release/verify-local.sh` exits 0: installed v0.10.0 test card and locally built smasteroids each run 120 frames in RetroArch 1.22.2 and match the release runner at all 320x242 pixels. The unchanged README install-line consumer exits 0 against the downloaded ZIP; both release ZIP digests match GitHub's asset digests. Run URL N/A-local. | reproduced; README and libretro guide updated |
+
+### Voluntary gameplay observation: Choplifter! (USA)
+
+The owner played a local cartridge dump with keyboard controls through the released
+v0.10.0 arm64 core in RetroArch 1.22.2 on Apple Silicon. They reported that graphics,
+sound and speed looked good, with no visual, audio or timing issues noticed during
+casual play. They also successfully loaded Choplifter through RetroArch's GUI.
+Session duration and game progress were not recorded. This is positive
+human gameplay feedback for this image and setup, not calibrated timing, a complete
+playthrough, cross-platform evidence or a recurring manual verification obligation.
+It does not change the generated compatibility ledger's automated statuses.
+
+Reproduction command used (personal paths expressed through `$HOME`):
+
+```sh
+/Applications/RetroArch.app/Contents/MacOS/RetroArch --verbose --log-file "$HOME/Documents/muhtari/Logs/launch.log" --config "$HOME/Library/Application Support/muhtari-play/retroarch.cfg" -L "$HOME/Library/Application Support/RetroArch/cores/muhtari_libretro.dylib" "$HOME/Documents/muhtari/Games/Choplifter! (USA).a78"
+```
+
+Exit 0 after the owner's session; run URL N/A-local. The dump was hash-identified
+as NTSC linear 32 KiB despite its `.a78` extension having no A78 header. ROM bytes,
+launch logs and any future personal results stay outside the repository.
+
+### Voluntary gameplay observation: Ninja Golf (NTSC)
+
+On 2026-10-29 the owner reported playing Ninja Golf (NTSC): "played great".
+This is positive voluntary human gameplay feedback in the ongoing local onboarding
+session. Controls, duration, progress and image identity were not specified; no
+separate agent-run command or exit status is claimed. Run URL N/A-local.
+Retain the observation without creating recurring owner UAT or changing the
+generated compatibility ledger's automated statuses.
+
+## Owner intent and sibling transfer (2026-10-29)
+
+[INTENT.md](INTENT.md) preserves the owner's gamer-first priorities, Playstead
+quick path/north star, writing voice, bounded primary-source fan-out and two-way
+emulator-family learning. These are dated instructions, not reproduced technical
+results. The [planning index](README.md) makes their sources and related lessons
+discoverable. Current source-backed [research](research/SUMMARY.md) separates
+inspection from inference and leaves implementation acceptance to later phases.
+No new hardware or integration lesson is declared reproduced by this scoping step.

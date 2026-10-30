@@ -1,65 +1,61 @@
 # muhtari
 
-An Atari 7800 ProSystem emulator core in C: a small library, a headless runner and a libretro core for RetroArch.
+Play Atari 7800 games in RetroArch with muhtari, an MIT-licensed emulator core.
+RetroArch provides the window, sound and controls; you supply your game files.
 
-**Status: early.** Evidence covers the rows listed; there is no claim of universal title compatibility.
-See the [compatibility page](docs/compatibility.md) for what has evidence and what does not, and
-[controls and bindings](docs/libretro.md#devices) for the devices the core exposes. Releases are published
-automatically.
+**Early release:** NTSC and PAL, sound, supported controllers and cartridge battery saves are available.
+Save states, rewind and run-ahead are next. Compatibility varies; check the [evidence](docs/compatibility.md).
+Evidence covers the rows listed; there is no claim of universal title compatibility.
 
 ## Install in RetroArch (macOS, Apple Silicon)
 
-Paste this line into Terminal. It puts the core and its information file into RetroArch's folders:
+Install the [RetroArch Metal build](https://www.retroarch.com/?page=platforms), then paste this into Terminal:
 
 ```sh
 mkdir -p ~/Library/Application\ Support/RetroArch && curl -fsSL https://github.com/szTheory/muhtari/releases/latest/download/muhtari-libretro-macos-arm64.zip | tar -xf - -C ~/Library/Application\ Support/RetroArch cores info
 ```
 
-On other systems, download `muhtari-libretro-<os>-<arch>.zip` from the
-[latest release](https://github.com/szTheory/muhtari/releases/latest) (`<os>` is `linux`, `macos` or `windows`;
-`<arch>` is `x64` or `arm64`) and copy its `cores` and `info` folders into the folders RetroArch lists under
-Settings → Directory → Cores and Core Info.
+**Windows, Linux or Intel Mac:** download `muhtari-libretro-<os>-<arch>.zip` from the
+[latest release](https://github.com/szTheory/muhtari/releases/latest). Choose `linux`, `macos` or `windows`
+and `x64` or `arm64` to match RetroArch. Copy the archive's `cores` and `info` contents into the folders
+shown under **Settings → Directory → Cores / Core Info**, then restart RetroArch.
+
+## Start playing
+
+1. **Load Core → Atari - 7800 (muhtari)**.
+2. **Load Content** → your Atari 7800 `.a78` or `.bin` file. Extract ZIP downloads first.
+   Choose muhtari if asked which core to use. **No BIOS is required** with the default Fast boot setting.
+3. Use the D-pad and fire buttons. Some games start with the console **Reset** switch.
+
+Default keyboard controls: **arrows** move, **Z/X** fire, **S** is Reset, **Right Shift** is Select,
+**Enter** is Pause, and **F1** opens RetroArch's Quick Menu.
+[Gamepad bindings, BIOS setup and troubleshooting](docs/libretro.md) cover the other options.
+
+No game yet? After loading muhtari, choose **Start Core** to see its built-in test card.
+
+### Start a game from Terminal (macOS)
+
+Replace the last path with your game file; omit it to show the test card:
+
+```sh
+/Applications/RetroArch.app/Contents/MacOS/RetroArch -L "$HOME/Library/Application Support/RetroArch/cores/muhtari_libretro.dylib" "/path/to/game.a78"
+```
 
 ## Requirements
 
-- Linux x64/arm64: glibc 2.17+ for the core, 2.34+ for `muhtari-run`; musl: build from source.
-- macOS 10.13+ (Intel) or 11+ (Apple Silicon).
-- Windows 10+ x64/arm64, with no runtime install.
+Linux x64/arm64: glibc 2.17+ for the core, 2.34+ for the runner; musl users build from source.
+macOS: 10.13+ on Intel, 11+ on Apple Silicon. Windows: 10+ x64/arm64, no runtime install.
 
-## Quick start: RetroArch
+## For hosts and developers
 
-1. Main Menu → Load Core → **Atari - 7800 (muhtari)**.
-2. Main Menu → **Start Core**.
-3. The test card appears: a white border, a 16×16 colour chart, a red band at the top and a green band at the
-   bottom. [docs/runner.md](docs/runner.md#test-card) explains what each part checks.
+muhtari also ships a C library and headless `muhtari-run` binaries in each release.
+The runner has no interactive window or controls.
 
-## Quick start: runner
+- [Runner](docs/runner.md): probe a game, run frames and compare hashes.
+- [Embedding](docs/embedding.md): use the library from CMake or pkg-config.
+- [Testing](docs/testing.md): build and test the core.
 
-Download `muhtari-runner-<os>-<arch>.zip` from the same release, unzip it, and run one frame:
+## License and game files
 
-```sh
-bin/muhtari-run --frames 1 --hash-frame 1
-```
-
-It prints the SHA-256 of the frame's picture, the same on every platform:
-
-```text
-frame 1 sha256 9eb011e22feb3f48da2c0abf3dd8d5236d4d0f5c0e67a732eb2172259e0a05c4
-```
-
-## Documentation
-
-- [docs/libretro.md](docs/libretro.md): the RetroArch core's controls, devices, options, BIOS files and achievements.
-- [docs/runner.md](docs/runner.md): `muhtari-run` options, output, exit statuses and the test card.
-- [docs/embedding.md](docs/embedding.md): using the C library from CMake or pkg-config.
-- [docs/compatibility.md](docs/compatibility.md): which games and test ROMs run, generated from the compatibility ledger.
-- [docs/testing.md](docs/testing.md): building, testing and the checks CI runs.
-
-## Legal
-
-muhtari ships no game, BIOS or high-score-cartridge images. See [PROVENANCE.md](PROVENANCE.md) for how code from
-other projects is reused and [ASSET_POLICY.md](ASSET_POLICY.md) for which files may enter the repository.
-
-## License
-
-[MIT](LICENSE). Every release archive also carries [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+[MIT](LICENSE). No games, BIOS or high-score-cartridge firmware are bundled.
+See [PROVENANCE.md](PROVENANCE.md) and [ASSET_POLICY.md](ASSET_POLICY.md) for source and asset rules.
