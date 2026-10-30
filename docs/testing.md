@@ -337,10 +337,10 @@ Launches isolate home/config/system/output, share only external `SAVE_DIR`, and 
 overlap fails before cleanup; hosted support stays ≤300 lines.
 
 DMA retains the 120-frame `diag/dma` hash pin and pixel equality. A flipped-pixel control exits 1 naming (7,3).
-The generated input cartridge shows port-1 Up/button 1 held at frame 40 and
-released by frame 120 through the host's test joypad. Runner movies and independent SWCHA/SWCHB/six-INPT band
-predicates judge both shots. `input.proline_one_button` checks registers and pixel faults:
-missing/wrong-port/wrong-button input, stuck release, changed band pixels and neighboring invalid dimensions.
+Input is blocked: the pinned app lacks the optional test joypad requested here.
+The generated cartridge should show port-1 Up/button 1 held at frame 40 and released by 120. Runner movies
+and independent SWCHA/SWCHB/six-INPT predicates judge both shots. `input.proline_one_button` rejects missing,
+wrong-port/wrong-button input, stuck release, pixel faults and invalid dimensions.
 `INPUT_SCRIPT` must be a regular file outside disposable `RA_DIR`; absent/directory/nested controls retain a
 sentinel before cleanup.
 
@@ -353,9 +353,9 @@ judge counters/marker before whole-frame equality. Equal-black, wrong-counter an
 must fail. `diag.battery` retains mailbox/media/pixel faults; module tests retain lifecycle/no-content coverage.
 Only owned shots enter `retroarch-frames`; saves, firmware and logs stay uncommitted.
 
-**Rerunning:** run page or `gh run rerun <run-id> --failed`; on a Mac desktop, replay job commands with
-`-DRETROARCH` pointing at `RetroArch.app/Contents/MacOS/RetroArch`. For failures, `run_retroarch.cmake` prints
-its log; the agent records command, exit and run URL. Owner action is only for owner hardware.
+The failure step prints every launch's config/log and the input schedule, including failures in later judges;
+`policy.retroarch.report` tests empty, partial and complete evidence. Fix the mechanism before
+another host run; retain spent gates. Record command, exit and run URL. Owner action is only for owner hardware.
 Candidate proof covers those bytes only; replay against verified published app/core at ship. Retail
 compatibility, Playstead focus/lifecycle, ergonomics and audible quality need separate evidence.
 

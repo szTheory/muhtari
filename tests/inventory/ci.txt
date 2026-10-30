@@ -565,6 +565,7 @@ policy.no_skip.self_test	policy
 policy.notices	policy
 policy.publish.controls	policy
 policy.quality.controls	policy
+policy.retroarch.report	policy
 prop.battery_lifecycle	portable,prop
 prop.battery_observers	portable,prop
 prop.input_at_vblank	portable,prop

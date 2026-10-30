@@ -601,7 +601,7 @@ jobs:
           case $out in "first difference at $x,$y: "*) ;; *) exit 1 ;; esac
       - name: RetroArch log
         if: failure()
-        run: cat build/ra-dma/retroarch.log build/ra-battery-1/retroarch.log build/ra-battery-2/retroarch.log || true
+        run: cmake -DBUILD=build -P tests/retroarch/report.cmake
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

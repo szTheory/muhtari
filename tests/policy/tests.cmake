@@ -1,6 +1,11 @@
 # Repository policy tests: rules about the tests themselves.
 set(policy_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
+muhtari_add_test(NAME policy.retroarch.report
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+    -DWORK=${CMAKE_BINARY_DIR}/policy/retroarch_report -P ${CMAKE_CURRENT_LIST_DIR}/retroarch_report.cmake
+  LABELS policy TIMEOUT 10) # Provisional local bound; no host process is launched.
+
 muhtari_add_test(NAME policy.ci_run.controls
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
     -DWORK=${CMAKE_BINARY_DIR}/policy/ci_run_fixture -P ${CMAKE_CURRENT_LIST_DIR}/ci_run.cmake
