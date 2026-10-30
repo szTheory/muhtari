@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-10-25
+updated: 2026-10-29
 ---
 
 # Lesson exchange
@@ -12,6 +12,10 @@ read those files; this ledger records where each rule came from and whether it h
 
 ## Protocol
 
+- **Project memory.** This ledger is the durable source for future sessions. AGENTS.md directs recall before
+  phase planning or related subsystem work. Save new reproduced lessons here with evidence; retain their
+  uncertainty and scope. The owner's preference (2026-10-29) is automatic project recall, with export only
+  on explicit request. This does not require enabling MemPalace or copying lessons by hand.
 - **Inbound.** A sibling's lesson is a hypothesis until its mechanism is shown to apply here. Record the source
   project and revision, whether it was implemented or only planned there, how this project differs, and the
   local decision. Supersede entries; do not erase them.
@@ -165,3 +169,15 @@ no new orchestration framework or quota is introduced.
 | ID | Lesson | Evidence | Status |
 |---|---|---|---|
 | MU-CI-012 | A future-product-version scan misclassified a pinned upstream oracle release in PROVENANCE.md only after the release bump. Scope version ownership explicitly; do not disguise the citation. Positive fixtures must match the scanner's real token boundaries. | ReleaseCI40245055377 and local VERSION0.8.0/NEXT reproduce exit1 on test7800 v0.9.0. Exact-root provenance exemption retains source/docs scanning and notes.md fault detection; corrected parenthesized current/minor/patch fixtures fail the old checker and pass the new one. Full local656+6 exits0; source repair still requires hosted release CI. | reproduced |
+
+
+## Reproduced milestone audit lessons (2026-10-29)
+
+These lessons supplement the existing workflow controls; they introduce no new
+gate, dependency or repeated phase-verification requirement. Source: audit commit
+`3f0117f`, `.planning/v2.0-MILESTONE-AUDIT.md`.
+
+| ID | Symptom and invariant | Fix and evidence | Status |
+|---|---|---|---|
+| MU-GSD-012 | Six summary frontmatters looked readable but the actual GSD parser rejected seven unquoted command references containing colon-space. Text search alone did not establish usable workflow metadata. | Quote the seven scalar values without changing their decoded contents. `node <GSD_TOOLS> query summary-extract <summary> --fields requirements_completed` then succeeds for all82 summaries; value-preservation and cross-reference assertions exit0. Run URL N/A-local; audit records the six files and exact consumer. | reproduced |
+| MU-GSD-013 | Five requirements were verified and checked complete but absent from every summary completion field because executors deferred final acceptance to the parent. Separately, summarized slots included halted plans. | Reconcile the final summary against independent verification and current integration, retaining historical pending/halt receipts. Three-source assertions exit0 for27/27 IDs with0 orphaned; accepted active plans remain75, distinct from76 summarized active slots and82 total summaries. Existing `check_ci_run.cmake` exits0 for merged source in https://github.com/szTheory/muhtari/actions/runs/40946368330. This establishes metadata consistency, not fresh hardware calibration. | reproduced |

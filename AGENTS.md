@@ -49,8 +49,9 @@ evidence.
    `gh pr merge --auto --squash` in a shell (never inside GSD command text), and confirm a CI run exists on the
    head commit; after the merge, confirm the release pull request is green.
 10. **Evidence is a command, an exit status and a run URL**, never a committed log.
-11. **Lessons.** Inbound lessons in `.planning/LESSONS.md` are hypotheses until reproduced here. When the owner
-    asks to "export lessons", produce a pasteable block from that file's template.
+11. **Lessons.** Before planning a phase or changing a subsystem, read relevant entries in `.planning/LESSONS.md`;
+    record newly reproduced lessons there with evidence. Inbound lessons remain hypotheses until reproduced here.
+    Keep lessons in project memory by default; export from the ledger's template only when explicitly requested.
 
 ## GSD summaries
 
