@@ -136,6 +136,19 @@ browser/port/energy/state/accuracy scope. Triage/monthly delivery exists;
 COST-01 still excludes raw numeric-cost conclusions.
 
 The milestone audit records27/27 approved requirements, current integration
-and merged required CI. Phase11 and release PR41 are merged; v0.10.0 remains
-draft while its release workflow runs. Use the audit's exact commands/exits
+and merged required CI. Phase11 and release PR41 are merged; final v0.10.0 publication and latest-install
+are confirmed in Release40956113369 (exit 0, attempt 1 success). Use the audit's exact commands/exits
 and run URLs; historical reports and failed attempts remain intact.
+
+
+## v2.0 closeout receipt — 2026-10-29
+
+All 53 numbered homes and the 47 Documented / 3 Partial / 3 Later totals remain.
+Completed scope and every checked requirement are archived in
+`../milestones/v2.0-REQUIREMENTS.md`; fresh requirements belong to the next separate
+`$gsd-new-milestone`. API 7/ABI 1/behavior 6 ships in v0.10.0 with 19 assets.
+Publication and latest-install pass in https://github.com/szTheory/muhtari/actions/runs/40956113369;
+merged required CI passes in https://github.com/szTheory/muhtari/actions/runs/40956113335.
+No future horizon is promoted: tune-up triggers fire, states/movies remain preferred
+for discussion, browser remains the high-priority alternative, and partial handheld/
+energy/browser asks retain their explicit gaps. Lessons stay local; export is optional.

@@ -5,6 +5,10 @@ planted: 2026-10-28
 planted_during: phase 10 final acceptance
 trigger_when: next milestone tune-up, or the nightly property job is promoted from advisory
 scope: small
+audit_acknowledged:
+  milestone: v2.0
+  at: 2026-10-29
+  status: dormant
 ---
 
 # Nightly property job exceeds its deadlines

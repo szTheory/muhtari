@@ -5,6 +5,10 @@ planted: 2026-10-29
 planted_during: phase 11 full library acceptance
 trigger_when: a milestone that asks for peripheral or save evidence beyond the boot predicates
 scope: small
+audit_acknowledged:
+  milestone: v2.0
+  at: 2026-10-29
+  status: dormant
 ---
 
 # Movie-driven independent-consumer device checks

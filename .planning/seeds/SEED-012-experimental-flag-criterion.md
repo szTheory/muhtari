@@ -5,6 +5,10 @@ planted: 2026-10-29
 planted_during: phase 11 full library acceptance
 trigger_when: a milestone defines pinned-list (commercial) evidence, or the ratchet has passing rows for most evaluable pinned-list entries
 scope: small
+audit_acknowledged:
+  milestone: v2.0
+  at: 2026-10-29
+  status: dormant
 ---
 
 # Criterion for flipping is_experimental

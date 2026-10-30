@@ -49,10 +49,64 @@ Model mix and total session count are not reliably recorded; no estimate is asse
 The summaries record 149 tasks across 73 plans. Shared-file dependencies made
 the 17 sound waves sequential even when one command dispatched the full phase.
 
+## Milestone: v2.0 — The whole library
+
+**Shipped:** 2026-10-29
+**Phases:** 7 | **Plans:** 75 accepted / 76 summarized active slots / 82 historical summaries
+**Recorded tasks:** 192 across all summary records, including superseded partial work
+
+### What Was Built
+
+- Shipped Activision, Absolute, Fractalus, BankSet and the XBoard/XM RAM/POKEY/HSC subset through all three deliverables.
+- Added load-stable HSC/SaveKey battery storage, checked runner saves and real fresh-launch RetroArch persistence.
+- Delivered typed controller input and movie2 replay for lightgun, paddle/keypad, quadrature and modern adapters, with independent pin-level diagnostics.
+- Added PAL timing, geometry, boot and sustained audio carry while retaining existing NTSC observations.
+- Accounted for every pinned-list entry, bound compatibility claims to public evidence and made the library ratchet required in CI.
+- Improved pipeline reliability, armed the controlled performance comparison and completed automated release/install verification.
+
+### What Worked
+
+Independent numeric/media/pixel judgments precede equality. Real runner/module and
+fresh-process frontend tests expose host seams. Existing CMake inventories, fault
+controls, scoped API additions and source-bound evidence keep three deliverables
+aligned. Release publication and latest-install close the post-merge evidence.
+
+### What Was Inefficient
+
+Fixed LOC and compressed-byte cutoffs repeatedly halted otherwise coherent work
+before their accepted retirement. Long publication controls and provisional bounds
+exposed recurring platform friction. Historical fingerprints and prose-only task
+counting required explicit closeout reconciliation; neither proves acceptance.
+
+### Patterns Established
+
+Preserve halted history, actual base/source/attempt identity and every required
+fault control. Give concurrent consumers independent output paths; calibrate bounds
+from complete work. Keep debt explicit and optional improvements in seeds. Metadata,
+model conformance, public title screens and gameplay remain distinct evidence classes.
+
+### Key Lessons
+
+Use the actual metadata consumer, cross-reference requirements/verification/summaries,
+and count accepted plans separately from records (LESSONS MU-GSD-012–014). Follow
+bounded recovery rather than repeating general replanning. Keep final package
+publication separate from pre-merge and audit-time receipts.
+
+### Cost Observations
+
+Model mix and session counts are not reliably recorded. COST-01 monthly numeric
+totals remain untrusted. The 18.24% local same-workload scheduling improvement is
+historical Phase 5 evidence; no global hosted-cost reduction is claimed.
+Timeline: eight calendar days from initialized v2.0 to shipped package.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |
 |-----------|--------|-------|--------------|---------------|----------|
 | v1.0 | 4 | 73 | 25/25 scoped | 605 regular + 6 archive checks in milestone audit; green published-release run | Override: 15 deferred artifacts and four stale fingerprints |
 
-Only one milestone has completed; no cross-milestone lesson is yet established.
+| v2.0 | 7 | 75 accepted; 82 historical summaries | 27/27 scoped | 673 regular + 6 package checks in final phase; 55 audit integration checks; published-release run | Override: 15 newly deferred, 13 carried, seven stale fingerprints |
+
+Both milestones required explicit historical-fingerprint overrides and post-merge
+publication checks. Repeated output/deadline friction favors existing independent
+output paths and measured calibration; aggregate record counts never prove acceptance.

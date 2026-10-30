@@ -7,6 +7,9 @@ files:
   - tools/compat_doc.cmake
   - tests/compat/local.cmake
   - tests/cmake/claims_wording.cmake
+audit_acknowledged:
+  milestone: v2.0
+  at: 2026-10-29
 ---
 
 ## Problem

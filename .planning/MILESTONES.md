@@ -1,5 +1,63 @@
 # Project Milestones: muhtari
 
+## v2.0 — The whole library (Shipped: 2026-10-29)
+
+**Delivered:** Expanded boards, persistent saves, scoped controllers and PAL across all three deliverables, with honest library evidence.
+**Package release:** [v0.10.0](https://github.com/szTheory/muhtari/releases/tag/v0.10.0), 19 assets; planning v2.0 is separate from package semver.
+**Closeout type:** override_closeout under AGENTS rules 6–7 and GSD-HANDOFF §3; audit status tech_debt.
+**Phases completed:** 5–11; 7 phase goals and 27/27 scoped requirements.
+**Plans:** 75 accepted; 76 summarized active slots; 82 total historical summaries.
+**Recorded tasks:** 192 across all 82 summaries, including superseded/partial work; no halted plan is counted as accepted.
+
+**Key accomplishments:**
+
+- Shipped Activision, Absolute, Fractalus, BankSet and the XBoard/XM RAM/POKEY/HSC subset through all three deliverables.
+- Added load-stable HSC/SaveKey battery storage, checked runner saves and real fresh-launch RetroArch persistence.
+- Delivered typed controller input and movie2 replay for lightgun, paddle/keypad, quadrature and modern adapters, with independent pin-level diagnostics.
+- Added PAL timing, geometry, boot and sustained audio carry while retaining existing NTSC observations.
+- Accounted for every pinned-list entry, bound compatibility claims to public evidence and made the library ratchet required in CI.
+- Improved pipeline reliability, armed the controlled performance comparison and completed automated release/install verification.
+
+**Stats:** 469 files changed, 85,109 insertions and 1,737 deletions from initialized
+v2.0 `65b360d` to shipped `d5fd241`; 58,665 tracked C/header lines, including 10,263
+in src/. Timeline: 2026-10-21 to 2026-10-29, eight elapsed calendar days. Counts
+exclude this closeout. The helper's six-task prose-only count is superseded by
+82 parsed summary actuals/tasks_completed values totaling 192.
+
+### Known verification overrides and debt
+
+Known verification overrides: 15 newly acknowledged, 13 carried forward from a prior close
+(see STATE.md Deferred Items). Separately, all seven historical phase fingerprints remain
+stale after later accepted changes. No fingerprint or failed verdict was rewritten.
+The audit reports 25 fully wired paths plus two accepted Phase 5 warnings; eight complete
+flows plus one qualified monthly-report flow; no broken core/host flow or requirement gap.
+COST-01 raw monthly numeric totals, WR-01 delayed-release equal-base selection, advisory
+property calibration, optional Phase 10/11 findings and hardware/HSC limits remain deferred.
+The cancelled Nightly remains cancelled; current release success does not renew that evidence.
+Pinned-list status remains 201 unknown/3 skipped, with no gameplay passes.
+
+**Release evidence:** `gh run view 40956113369 --json attempt,status,conclusion,headSha,url,jobs`
+— exit 0, attempt 1 success at d5fd241, including publish and install-line-latest:
+[release run](https://github.com/szTheory/muhtari/actions/runs/40956113369).
+`gh release view v0.10.0 --json tagName,isDraft,publishedAt,targetCommitish,url,assets`
+— exit 0, published with 19 assets. `cmake -DINPUT=/tmp/muhtari-v2-main-ci.json -DEXPECTED_SHA=d5fd241e3f4d701d73867cc2e465c56a6fe6793d -P tools/check_ci_run.cmake`
+— exit 0, [merged CI](https://github.com/szTheory/muhtari/actions/runs/40956113335).
+Release PR41 merged green: [PR CI](https://github.com/szTheory/muhtari/actions/runs/40946415397).
+
+**Archives:** [roadmap](milestones/v2.0-ROADMAP.md),
+[requirements/outcomes](milestones/v2.0-REQUIREMENTS.md),
+[audit](milestones/v2.0-MILESTONE-AUDIT.md),
+[phase records](milestones/v2.0-phases/),
+[product direction](milestones/v2.0-PRODUCT-ROADMAP.md),
+[historical position receipts](milestones/v2.0-STATE.md).
+
+**Next:** `$gsd-new-milestone` selects scope and creates fresh requirements. Tune-up first;
+states/movies and browser remain alternatives for that discussion. No new milestone begins here.
+Tag creation is disabled; release-please owns package tags. Completed quick-task history stays in place.
+Lesson export is available with `export lessons`; lessons remain project-local by default.
+
+---
+
 ## v1.0 — 7800 games play with sound in RetroArch (Shipped: 2026-10-21)
 
 **Delivered:** NTSC linear and SuperGame cartridges play with TIA and POKEY audio through all three deliverables.

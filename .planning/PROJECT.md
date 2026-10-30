@@ -15,6 +15,28 @@ that any host can embed.
 
 ## Current State
 
+Planning milestone **v2.0 — The whole library** shipped 2026-10-29 as package
+[v0.10.0](https://github.com/szTheory/muhtari/releases/tag/v0.10.0), with 19 published assets.
+The C17 library, headless runner and libretro core expose API 7, ABI 1 and behavior revision 6.
+The tracked C/header tree has 58,665 lines, including 10,263 in `src/` at shipped commit `d5fd241`.
+Integer-only, instance-owned, bounded execution and no allocation after load remain binding.
+
+Seven phases (5–11) deliver all 27 scoped requirements. There are 75 accepted plans,
+76 summarized active slots and 82 total historical summaries, retaining halted and superseded work.
+The 82 summaries record 192 tasks; this is a historical record count, not 192 newly accepted outcomes.
+The [audit](milestones/v2.0-MILESTONE-AUDIT.md) retains **tech_debt** and **override_closeout**:
+seven stale verification fingerprints, 15 newly acknowledged artifacts and 13 carried acknowledgments.
+COST-01 monthly numeric totals, WR-01 delayed-release base selection, advisory property calibration
+and optional review findings remain deferred. Hardware fits and HSC stub limits remain explicit.
+
+All 204 pinned CC0 entries are accounted for: 201 unknown, 3 skipped and no gameplay passes.
+Owned model conformance and public title screens remain separate evidence classes.
+[Final release and latest-install](https://github.com/szTheory/muhtari/actions/runs/40956113369)
+and [merged-head CI](https://github.com/szTheory/muhtari/actions/runs/40956113335) pass.
+
+<details>
+<summary>Historical v1.0 and v2.0 phase-position receipts (superseded at milestone close)</summary>
+
 Planning milestone **v1.0** shipped 2026-10-21 with package **v0.4.0**.
 The currently published package is [v0.7.0](https://github.com/szTheory/muhtari/releases/tag/v0.7.0),
 published2026-10-25 after Phase8 merged in [PR31](https://github.com/szTheory/muhtari/pull/31). It has19 assets; no release pull request is pending at Phase9 closeout.
@@ -38,7 +60,7 @@ these historical quantities are not current limits. The controlled
 test-card performance comparison is armed; WASM/library/property remain advisory.
 Matched local scheduling improves wall time 18.24%; no global hosted-cost reduction
 is claimed. WR-01 and COST-01 remain deferred tooling seeds; raw monthly numeric
-cost totals are untrusted. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md).
+cost totals are untrusted. See [Phase 5 verification](milestones/v2.0-phases/05-pipeline-tune-up/05-VERIFICATION.md).
 Phase 5 shipped at6d57d69. Phase 6 is verified complete: Activision, Absolute and
 Fractalus execute through all three deliverables, with identified-layout equivalence,
 physical RAM aliases, bounded hostile-input evidence and honest host maps. That phase introduced
@@ -54,7 +76,7 @@ Nightly40104750452 pass on source54485d6, with all six actual native archive sum
 within399937 (worst393952). Full native/PPC641+6 and69-row equality, WASM580,
 10000-case properties, fuzz and actual frontend/Windows controls pass. Review is clean
 after both allowed fix rounds; no owner verification remains. See
-[Phase 7 verification](phases/07-battery-saves/07-VERIFICATION.md).
+[Phase 7 verification](milestones/v2.0-phases/07-battery-saves/07-VERIFICATION.md).
 
 Phase8 is verified complete and shipped in PR31: API6/ABI1/behavior5 adds
 extended typed input, immutable movie2 replay and all in-scope controller models.
@@ -66,7 +88,7 @@ current/base measurements pass; DEC.61 keeps archive bytes report-only.
 Nightly40157750598 retains an explicitly unaccepted advisory10000-case isolation
 timeout; five other10000-case properties pass. Required isolation passes. Hardware
 fits remain unmeasured; the quoted execution evidence retains its original scope.
-See [Phase8 verification](phases/08-controllers-at-the-pins/08-VERIFICATION.md).
+See [Phase8 verification](milestones/v2.0-phases/08-controllers-at-the-pins/08-VERIFICATION.md).
 
 Phase9 is verified complete and ready for `$gsd-ship 9`: all8 plans and PAL-01–03
 pass42/42 truths. Selected313-line timing,320x292 geometry/rational rates and warm
@@ -84,7 +106,7 @@ One targeted PPC retry followed a29-minute external provisioning delay; the
 unchanged retry setup completed in13 seconds. The advisory isolation property
 still times out and remains unaccepted; model handoff/optical/RC fits and85:342
 analog balance retain explicit confidence limits. No routine owner UAT remains.
-See [Phase9 verification](phases/09-pal-games-and-audio/09-VERIFICATION.md).
+See [Phase9 verification](milestones/v2.0-phases/09-pal-games-and-audio/09-VERIFICATION.md).
 
 Phase 11 is verified complete: all12 plans and COMP-01–03 pass16/16 truths.
 The204 pinned CC0 entries remain201 unknown and3 skipped, with no metadata
@@ -94,24 +116,17 @@ public library47 pass; the counted run has0/204 present at0e86575f561b, with
 planning-only dirty state. Two carried claim/output faults are accepted through
 existing controls; no new review round or owner UAT. WR-02 helper/source-only
 coverage and COMP-03 unclassified assumption remain explicit; hosted outcomes
-are confirmed at ship. See [Phase11 verification](phases/11-full-library-acceptance/11-VERIFICATION.md).
+are confirmed at ship. See [Phase11 verification](milestones/v2.0-phases/11-full-library-acceptance/11-VERIFICATION.md).
 Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
-## Current Milestone: v2.0 The whole library
+</details>
 
-**Goal:** Expand 7800 library breadth with the remaining in-scope cartridge boards, persistent saves,
-controllers and full PAL, beginning with a measured pipeline tune-up.
+## Next Milestone Goals
 
-**Target features:**
-- Activision, Absolute, Fractalus and BankSet boards; XBoard/XM RAM, POKEY and HSC support.
-- HSC and SaveKey/AtariVox EEPROM with stable battery memory, runner saves and RetroArch persistence.
-- XG-1 light gun, paddles, keypad, quadrature devices, SNES2Atari and Mega7800 at the pins.
-- PAL timing, boot, video and audio across all three deliverables.
-- Weekly triage/monthly CI-efficiency reporting, a quality ratchet and honest whole-library evidence.
-
-The owner approved the 27 requirements and seven phases (5–11) on 2026-10-21. Souper/BupChip remains
-with the later accuracy milestone; XM excludes YM2151 and AtariVox excludes speech. The browser player,
-save states and other later horizons remain deferred. Planning v2.0 does not select a package version.
+No new milestone scope is approved. The next separate command is `$gsd-new-milestone`,
+which defines fresh requirements. Start with the recurring measured tune-up (SEED-007/009/010),
+then weigh states/movies (SEED-002) against the high-priority browser alternative (SEED-008).
+The [rolling product roadmap](PRODUCT-ROADMAP.md) retains all later horizons and unresolved debt.
 
 ## Requirements
 
@@ -137,20 +152,20 @@ save states and other later horizons remain deferred. Planning v2.0 does not sel
 - ✓ Owned exact-q23-16x64-dc20 synthesis passes the production spectral/alias judge with renewed integer
   headroom/width/carry proofs; hostile legal chip traffic stays bounded — v1.0, Phase 4
 
-- ✓ Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5 verified and shipped in PR #20.
-- ✓ Activision, Absolute and Fractalus banking, physical RAM and three-host behavior — BOARD-01–03, Phase 6 shipped in PR24.
-- ✓ HSC/SaveKey battery data survives host and frontend restarts — SAVE-01–06, Phase7 shipped in PR28.
-- ✓ Source-qualified lightgun, analog/matrix, timed motion and complete adapter inputs across all three deliverables — INPUT-01–05, Phase8 shipped in PR31.
-- ✓ Selected PAL timing, presentation and audio across all three deliverables — PAL-01–03, Phase9 verified42/42; shipping next.
-- ✓ BankSet and XBoard/XM memory, POKEY and HSC with correct CPU/MARIA ownership — BOARD-04–05, Phase 10 verified 5/5; shipping next.
+- ✓ Reliable, measured pipeline and current release docs — TUNE-01–05, Phase 5 verified and shipped in PR #20 — v2.0.
+- ✓ Activision, Absolute and Fractalus banking, physical RAM and three-host behavior — BOARD-01–03, Phase 6 shipped in PR24 — v2.0.
+- ✓ HSC/SaveKey battery data survives host and frontend restarts — SAVE-01–06, Phase7 shipped in PR28 — v2.0.
+- ✓ Source-qualified lightgun, analog/matrix, timed motion and complete adapter inputs across all three deliverables — INPUT-01–05, Phase8 shipped in PR31 — v2.0.
+- ✓ Selected PAL timing, presentation and audio across all three deliverables — PAL-01–03 — v2.0, Phase 9 merged in PR33.
+- ✓ BankSet and XBoard/XM memory, POKEY and HSC with correct CPU/MARIA ownership — BOARD-04–05 — v2.0, Phase 10 merged in PR36.
 
-- ✓ Evidence-backed library accounting and isolated local evaluation — COMP-01–03, Phase 11 verified 16/16; ship next.
+- ✓ Evidence-backed library accounting and isolated local evaluation — COMP-01–03 — v2.0, Phase 11 merged in PR40.
 
 ### Active
 
-All v2.0 phase requirements are verified; Phase 11 shipping and milestone audit/archive remain.
+None until the next milestone is scoped.
 
-Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
+Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0-REQUIREMENTS.md).
 
 ### Out of Scope
 
@@ -217,6 +232,10 @@ Full requirements and scope boundaries: [REQUIREMENTS.md](REQUIREMENTS.md).
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Install expansion topology once and share the electrical bus owner | Preserve physical storage and CPU/MARIA ownership without a second scheduler | ✓ v2.0 Phase 10: BankSet/XBoard/XM diagnostics and 3088 retained observations |
+| Judge claims by public evidence class | Metadata and title screens cannot establish gameplay | ✓ v2.0 Phase 11: generated claims, 204 explicit dispositions and required ratchet |
+| Load/refuse before optional firmware I/O in the runner | Preserve canonical refused-image exits and avoid irrelevant file reads | ✓ v2.0 Phase 10: exit77 regression coverage |
+| Keep deferred tooling debt and historical failures visible | Bounded closure must preserve evidence | ⚠ v2.0 override closeout retains COST-01, WR-01 and optional follow-ups |
 | One load-selected regional profile | Keep integer timing, geometry and audio carry consistent across existing owners | ✓ Phase9: PAL and retained NTSC behavior verified across all hosts/platforms |
 | Judge numeric PAL behavior before hash agreement | Independent expectations catch errors shared by hosts | ✓ Phase9:601 calls,577879 samples,CRC52a5 precede956-row equality |
 | Stage borrowed firmware before load commit | Installation can invalidate public input spans while failure must preserve the live machine | ✓ Phase9:16KiB private BIOS staging, poison-based regression and both-region lifecycle proof |
@@ -265,4 +284,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-29 after Phase 11 acceptance and verification; ship Phase 11 next*
+*Last updated: 2026-10-29 after v2.0 milestone closeout*

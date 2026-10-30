@@ -181,3 +181,10 @@ gate, dependency or repeated phase-verification requirement. Source: audit commi
 |---|---|---|---|
 | MU-GSD-012 | Six summary frontmatters looked readable but the actual GSD parser rejected seven unquoted command references containing colon-space. Text search alone did not establish usable workflow metadata. | Quote the seven scalar values without changing their decoded contents. `node <GSD_TOOLS> query summary-extract <summary> --fields requirements_completed` then succeeds for all82 summaries; value-preservation and cross-reference assertions exit0. Run URL N/A-local; audit records the six files and exact consumer. | reproduced |
 | MU-GSD-013 | Five requirements were verified and checked complete but absent from every summary completion field because executors deferred final acceptance to the parent. Separately, summarized slots included halted plans. | Reconcile the final summary against independent verification and current integration, retaining historical pending/halt receipts. Three-source assertions exit0 for27/27 IDs with0 orphaned; accepted active plans remain75, distinct from76 summarized active slots and82 total summaries. Existing `check_ci_run.cmake` exits0 for merged source in https://github.com/szTheory/muhtari/actions/runs/40946368330. This establishes metadata consistency, not fresh hardware calibration. | reproduced |
+
+
+## Reproduced milestone archival lesson (2026-10-29)
+
+| ID | Symptom and invariant | Fix and evidence | Status |
+|---|---|---|---|
+| MU-GSD-014 | OpenGSD 1.19.0 milestone dry-run counts six tasks from prose headings, ignoring frontmatter actuals/tasks_completed; it also counts summarized slots rather than accepted outcomes. | `query milestone.complete v2.0 --dry-run` exits 0 with tasks=6. A one-time Python parse of all 82 SUMMARY frontmatters, preferring actuals.tasks then tasks_completed and checking agreeing duplicates, exits 0 with 192 recorded tasks. Archive records use that historical count and retain 75 accepted plans separately; no halted outcome is promoted. Run URL N/A-local. | reproduced |
