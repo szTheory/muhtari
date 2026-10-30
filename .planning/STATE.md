@@ -5,11 +5,11 @@ milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
 status: blocked
-stopped_at: "12-01 halted after failed hosted feasibility attempt; scoped recovery next"
-last_updated: "2026-10-30T12:42:16Z"
+stopped_at: "12-01 recovery reached actual host; held input remained idle; both gates spent"
+last_updated: "2026-10-30T14:04:40Z"
 last_activity: 2026-10-30
-last_activity_desc: 12-01 tracer implemented and corrected locally; hosted proof unmet; 0 of 4 accepted
-state_head: 31b12c39b02f477ad8777fee4363b7e325cab460
+last_activity_desc: 12-01 corrected-source host input failed; local 673+6 pass; 0 of 4 accepted
+state_head: fa8fafa845d7a55278da6300059a470826cde19a
 progress:
   total_phases: 3
   completed_phases: 0
@@ -25,14 +25,14 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-10-29.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: v3.0 Phase 12 — recover the halted packaged RetroArch input tracer; 0 of 4 plans accepted.
+Current focus: v3.0 Phase 12 — diagnose actual pinned RetroArch input no-delivery; 0 of 4 plans accepted.
 
 ## Current Position
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — HALTED
 Plan: 0 of 4 accepted; 12-01 partially implemented and halted
 Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 not started
-Last activity: 2026-10-30 — Hosted run 41056151292 failed before RetroArch; local correction passes 673+6 tests
+Last activity: 2026-10-30 — Recovery run 41062201311 reached RetroArch; held input showed idle pixels; local 673+6 pass
 Progress: [░░░░░░░░░░] 0%; requirements 0/16 complete, 16 pending
 
 ## Performance Metrics
@@ -60,7 +60,7 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ### Blockers/Concerns
 
-- 12-01 is canonically halted: run 41056151292 attempt 1/source bf21fc3 failed generation on a stale BMP source path and hygiene formatting; RetroArch skipped. Correction b360017 passes local 673+6 and comparator build, but is unpushed/unverified on the host. The plan's sole feasibility attempt is spent; no transient setup retry applies. Preserve the halt and failed run; scoped recovery must establish exact corrected-source host evidence before closing it. Accepted 0/4, PLAY-03 pending, all three dependent plans blocked. See 12-01-SUMMARY.md.
+- 12-01 remains canonically halted. Original run 41056151292/source bf21fc3 failed before RetroArch. Scoped recovery run 41062201311 attempt 1/source 28e13e1 builds successfully, but actual RetroArch held input produces idle pixels; independent comparator exits 1. DMA passes; release/battery/later controls skip. All other required jobs and both advisory jobs pass. Local full workflow passes 673+6; independent wrong-button controls strengthened. Original and revised one-attempt gates are spent; no retry. Missing input-launch log/config prevents driver/config/event diagnosis. Summary-only handoff fa8fafa is pushed. Accepted 0/4, PLAY-03 pending, all dependent plans blocked. Preserve both failed receipts; next scoped diagnosis must establish new evidence and a bounded decision before another host launch. See 12-01-SUMMARY.md and debug/phase12-packaged-input-tracer.md.
 - Phase 12 execution gates: pinned RetroArch test-joypad delivery needs hosted proof within existing bounds; the Windows publication-control remedy needs complete comparable measurements. Research establishes neither runtime success nor a measured improvement.
 - External dependency: actual Playstead → RetroArch → muhtari launch/input/orderly return/battery continuity needs paired current-source/pin evidence; muhtari readiness does not prove it. Track [handoff](research/PLAYSTEAD-HANDOFF.md). Independent muhtari state work can proceed.
 - COST-01 monthly totals untrusted; WR-01 delayed-release equal-base edge unresolved/fail-closed; property isolation advisory/unaccepted until qualifying evidence. Phase 12 must ship an actual improvement, not only dispositions.
@@ -69,10 +69,10 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-10-30T12:42:16Z
-Stopped at: 12-01 hosted feasibility halt; local correction retained, no downstream work
+Last session: 2026-10-30T14:04:40Z
+Stopped at: 12-01 actual held-input failure; both gates spent, no downstream work
 Resume file: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md
-Next separate command: `$gsd-debug "Recover phase 12-01 halted packaged RetroArch input tracer"`
+Next separate command: `$gsd-debug continue phase12-packaged-input-tracer`
 
 ## Deferred Items
 

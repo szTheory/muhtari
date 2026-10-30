@@ -310,4 +310,20 @@ decision. No GPL/LGPL/unlicensed emulator source is opened.
 Accepted **0/4**; PLAY-03 stays pending and 12-02 through 12-04 stay blocked.
 Candidate results establish no published-byte or actual Playstead acceptance.
 Dispatch perf remains same-head repeatability; PR-base comparison is still later.
-Next separate command: `$gsd-debug "Diagnose pinned RetroArch held-input no-delivery from run 41062201311; preserve both spent gates and establish the next scoped decision"`.
+Next separate command: `$gsd-debug continue phase12-packaged-input-tracer`.
+
+### Recovery orchestrator handoff
+
+Fresh complete run response saved as `/tmp/muhtari-recovery-final-run.json`
+with `gh run view 41062201311 --repo szTheory/muhtari --json
+headSha,status,conclusion,attempt,url,jobs` exits0. Existing `check_ci_run.cmake`
+against that response and exact source28e13e1 exits1, naming only allowed title
+skip, RetroArch failure and required-aggregate failure.
+[Run41062201311](https://github.com/szTheory/muhtari/actions/runs/41062201311).
+Fresh focused19-test CTest with distinct `phase12-final-input.xml` exits0.
+Replaying downloaded images through `--input-controls held` exits1 with SWCHA
+mismatch; the idle/released predicate on the same host image twice exits0.
+Local replay URLs N/A-local. Absolute-root docs budgets and `git diff --check`
+exit0. No code changed after hosted acceptance; STATE/ROADMAP retain0/4 and
+all dependents blocked. Active debug checkpoint preserves the undiagnosed cause
+and spent gates for the separate continuation; no later GSD step ran.

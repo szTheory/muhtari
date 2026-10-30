@@ -59,10 +59,13 @@ Plans:
 
 - [ ] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
 
-Execution halted: run 41056151292 attempt 1 failed before RetroArch launched.
-The tracer and local build correction are committed; accepted 0/4 and PLAY-03
-remain pending. Preserve the [canonical halt](phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md)
-and recover its hosted proof before dispatching dependent plans.
+Execution halted: original run 41056151292 failed before RetroArch; scoped recovery
+41062201311 attempt 1/source 28e13e1 reached the host but held input produced idle
+pixels. DMA passed; later release/battery controls skipped. Both finite gates are
+spent; accepted 0/4 and PLAY-03 remain pending. Preserve the
+[canonical halt](phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md)
+and diagnose driver/config/event delivery with new evidence before any new bounded
+host test or dependent plan.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
