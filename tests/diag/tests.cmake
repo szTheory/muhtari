@@ -787,7 +787,8 @@ add_executable(muhtari-test-diag ${diag_dir}/driver.c ${PROJECT_SOURCE_DIR}/runn
 target_include_directories(muhtari-test-diag PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-diag PRIVATE muhtari::muhtari muhtari_host)
 add_executable(muhtari-test-retroarch-compare ${PROJECT_SOURCE_DIR}/tests/retroarch/compare.c
-  ${PROJECT_SOURCE_DIR}/tests/retroarch/bmp.c)
+  ${PROJECT_SOURCE_DIR}/tests/common/bmp.c)
+target_link_libraries(muhtari-test-retroarch-compare PRIVATE muhtari_host)
 target_compile_definitions(muhtari-test-retroarch-compare PRIVATE
   $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 set_target_properties(muhtari-test-retroarch-compare PROPERTIES

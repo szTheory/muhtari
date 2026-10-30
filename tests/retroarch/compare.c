@@ -53,7 +53,8 @@ static int input_bit(const uint8_t *pixel, int high)
 {
     int seen = -1;
     for (unsigned value = 0; value < 256u; value++)
-        if (compare_hex(pixel) == muhtari__palette_rgb_region((uint8_t)value, MUHTARI_REGION_NTSC)) {
+        if (compare_hex(pixel) ==
+            muhtari__palette_rgb_region((uint8_t)value, MUHTARI_REGION_NTSC)) {
             int bit = (value & 0x80u) != 0u;
             if (seen >= 0 && seen != bit)
                 return 0;
@@ -103,7 +104,9 @@ int main(int argc, char **argv)
         argv += 3;
     }
     if (argc != 3) {
-        fprintf(stderr, "usage: compare [--battery-controls count marker | --input-controls held|released] EXPECTED.bmp ACTUAL.bmp\n");
+        fprintf(stderr,
+                "usage: compare [--battery-controls count marker | --input-controls held|released] "
+                "EXPECTED.bmp ACTUAL.bmp\n");
         return 2;
     }
     uint32_t w[2], h[2];
