@@ -56,6 +56,22 @@ states/movies and browser remain alternatives for that discussion. No new milest
 Tag creation is disabled; release-please owns package tags. Completed quick-task history stays in place.
 Lesson export is available with `export lessons`; lessons remain project-local by default.
 
+
+### v2.0 closeout verification
+
+| Command | Exit / result | Run URL |
+|---|---|---|
+| `cmake --workflow --preset ci` | 0; 673 CI tests and 6 release/archive checks after requirements removal | N/A-local |
+| `cmake --workflow --preset hygiene` | 0; 30/30 checks | N/A-local |
+| `sh scripts/hygiene.sh --tree` with stable index | 0; an earlier scan overlapping staging reported old missing paths and remains an unaccepted scan | N/A-local |
+| `python3 /tmp/muhtari-v2-verify.py` | 0; 221 phase files preserved, 82 plans/summaries, 7 verifications, 27/27 requirements, links resolve, originals safely archived, user edits/implementation unchanged | N/A-local |
+| `node <GSD_TOOLS> query summary-extract <archived-summary> --fields requirements_completed` for all 82 summaries | 0 each; every archived frontmatter parses | N/A-local |
+| `node <GSD_TOOLS> query audit-open --json` | 0; zero open, 28 acknowledged (15 new, 13 carried) | N/A-local |
+| `git diff --check` and `git diff --cached --check` | 0 | N/A-local |
+
+The safety commit `98dd410` contains the archive before active REQUIREMENTS deletion.
+No verification log, raw API payload or JUnit is committed.
+
 ---
 
 ## v1.0 — 7800 games play with sound in RetroArch (Shipped: 2026-10-21)
