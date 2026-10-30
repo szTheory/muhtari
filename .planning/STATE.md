@@ -74,6 +74,7 @@ Last session: 2026-10-30T18:12:45Z
 Stopped at: 12-01 renewed attempt audited; native corrections pass, outer job cancellation blocks host; allowance spent
 Resume file: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md
 Next separate command: `$gsd-debug continue phase12-packaged-input-tracer`
+Context handoff: ready to clear now. The next agent checks service health and reconciles receipts; no owner review is a prerequisite to running the command. A new live attempt still requires a concrete renewed allowance.
 
 ## Deferred Items
 
