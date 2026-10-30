@@ -18,6 +18,7 @@ struct keyboard_event {
 static struct keyboard_event event;
 static int permitted, calls, forks, ticks, finish, child_status, fail_fork, fail_wait, fail_event;
 static int fail_sleep, allocations, posts, frees, downs, ups, kills, bad, shots_down, shots_up;
+static int child_mode, execs, waits;
 
 int CGPreflightPostEventAccess(void)
 {
@@ -59,23 +60,35 @@ void CFRelease(CGEventRef e)
 pid_t keyboard_fork(void)
 {
     forks++;
-    return fail_fork ? -1 : 100;
+    return fail_fork ? -1 : child_mode ? 0 : 100;
 }
 int keyboard_exec(const char *path, char *const *args)
 {
     (void)path;
     (void)args;
+    execs++;
+    if (child_mode)
+        bad |= strcmp(path, "/fixture/retroarch") != 0 ||
+               strcmp(args[0], "/fixture/retroarch") != 0 ||
+               strcmp(args[1], "--max-frames=600") != 0 || strcmp(args[2], "--config") != 0 ||
+               strcmp(args[3], "isolated.cfg") != 0 || args[4] != NULL;
     /* Failed exec returns; the helper's following _exit must remain reachable. */
     return -1;
 }
 void keyboard_exit(int code)
 {
-    (void)code;
+    if (child_mode) {
+        if (code != 127 || execs != 1 || posts != 0 || waits != 0 || kills != 0 || bad)
+            exit(1);
+        puts("child exec failure: argv preserved, no input or wait");
+        exit(127);
+    }
     abort();
 }
 pid_t keyboard_wait(pid_t pid, int *status, int flags)
 {
     bad |= pid != 100;
+    waits++;
     *status = child_status;
     return flags == 0 || ticks >= finish ? 100 : fail_wait ? -1 : 0;
 }
@@ -97,6 +110,7 @@ static void reset(void)
     calls = forks = ticks = child_status = fail_fork = fail_wait = fail_event = fail_sleep = 0;
     allocations = posts = frees = downs = ups = kills = bad = 0;
     shots_down = shots_up = 0;
+    child_mode = execs = waits = 0;
     finish = 20;
 }
 #define CHECK(test)                                                                                \
@@ -106,7 +120,7 @@ static void reset(void)
             return 1;                                                                              \
         }                                                                                          \
     } while (0)
-int main(void)
+int main(int argc, char **argv)
 {
     char *preflight[] = {"keyboard", "--preflight", NULL};
     char *unknown[] = {"keyboard", "--request", NULL};
@@ -115,6 +129,15 @@ int main(void)
     char *probe[] = {"keyboard", "--probe", "/fixture/retroarch", NULL};
     CHECK(keyboard_exec(held[2], held + 2) == -1);
     reset();
+    if (argc != 1) {
+        if (argc != 2 || strcmp(argv[1], "--child-exec-failure") != 0)
+            return 2;
+        char *child[] = {
+            "keyboard",     "--held", "/fixture/retroarch", "--max-frames=600", "--config",
+            "isolated.cfg", NULL};
+        child_mode = 1;
+        return preflight_main(6, child);
+    }
     CHECK(preflight_main(0, NULL) == 2 && preflight_main(1, held) == 2 &&
           preflight_main(2, held) == 2 && preflight_main(3, unknown) == 2 && calls == 0);
     permitted = 0;

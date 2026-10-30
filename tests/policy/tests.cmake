@@ -31,6 +31,13 @@ target_include_directories(muhtari-test-preflight PRIVATE ${preflight_include})
 muhtari_warnings(muhtari-test-preflight)
 muhtari_add_test(NAME policy.retroarch.preflight_api COMMAND muhtari-test-preflight
   LABELS policy portable TIMEOUT 5)
+# A failed child exec must terminate before pid0 can reach input or cleanup.
+set(child_failure_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-test-preflight> --child-exec-failure)
+string(REPLACE ";" "$<SEMICOLON>" child_failure_cmd "${child_failure_cmd}")
+muhtari_add_test(NAME policy.retroarch.child_failure
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${child_failure_cmd}" -DCODE=127
+    "-DREGEX=child exec failure: argv preserved, no input or wait" -P ${policy_scripts}/expect_fail.cmake
+  LABELS policy portable TIMEOUT 5)
 muhtari_add_test(NAME policy.retroarch.preflight_gate
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
     -DWORK=${CMAKE_BINARY_DIR}/policy/retroarch_preflight -P ${CMAKE_CURRENT_LIST_DIR}/retroarch_preflight.cmake
