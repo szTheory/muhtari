@@ -420,12 +420,14 @@ jobs:
           path: build/archives
       - name: Core and runner from the build
         run: |
+          shasum -a 256 build/archives/muhtari-libretro-macos-arm64.zip
           unzip -q build/archives/muhtari-libretro-macos-arm64.zip -d build/libretro
           unzip -q build/archives/muhtari-runner-macos-arm64.zip -d build/runner
           unzip -q build/archives/muhtari-library-macos-arm64.zip -d build/library
       - name: RetroArch 1.22.2 from the pinned DMG
         run: |
           scripts/fetch-pin.sh retroarch-dmg build/dmg
+          shasum -a 256 build/dmg/RetroArch_Metal.dmg
           hdiutil attach build/dmg/RetroArch_Metal.dmg -nobrowse -readonly -mountpoint build/mount
           ditto build/mount/RetroArch.app build/RetroArch.app
           hdiutil detach build/mount
@@ -435,9 +437,13 @@ jobs:
       - name: Independent numeric and pixel judges
         run: |
           mkdir -p build/frames
+          echo "Candidate source $(git rev-parse HEAD)"
           cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Ihost tests/diag/driver.c tests/runner/png_read.c host/palette.c runner/sha256.c \
             build/library/lib/libmuhtari.a -o build/frames/diag
-          cc -std=c17 -O2 -Wall -Wextra -Werror -o build/frames/compare tests/retroarch/bmp.c tests/retroarch/compare.c
+          cc -std=c17 -O2 -Wall -Wextra -Werror -Iinclude -Ihost -o build/frames/compare tests/common/bmp.c tests/retroarch/compare.c host/palette.c
+          cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Irunner tests/input/test_input.c tests/cart/images.c runner/movie.c \
+            build/library/lib/libmuhtari.a -o build/frames/input-fixture
+          build/frames/input-fixture --write-cart build/frames/input.a78
       - name: RetroArch runs the dma diagnostic
         run: >-
           cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch
@@ -456,6 +462,43 @@ jobs:
           done
           ./compare dma-runner.bmp dma-shot.bmp | tee compare.txt
           grep -q '^320x242, every pixel equal$' compare.txt
+      - name: RetroArch holds and releases input on the owned diagnostic
+        run: |
+          cat > build/frames/input.ratst <<'EOF'
+          [
+            {"action":16,"param_num":16,"frame":10},
+            {"action":16,"param_num":1,"frame":11},
+            {"action":32,"param_num":16,"frame":80},
+            {"action":32,"param_num":1,"frame":81}
+          ]
+          EOF
+          printf 'muhtari-movie 1\nport1 proline\nport2 proline\n|......|......|...BB|\n' > build/frames/input-held.movie
+          frame=2
+          while [ "$frame" -le 40 ]; do
+            printf '|U...1.|......|...BB|\n' >> build/frames/input-held.movie
+            frame=$((frame + 1))
+          done
+          printf 'muhtari-movie 1\nport1 proline\nport2 proline\n|......|......|...BB|\n' > build/frames/input-released.movie
+          mkdir -p build/input-saves
+          for mode in held released; do
+            frames=40
+            if [ "$mode" = released ]; then frames=120; fi
+            cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
+              -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
+              -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-input-$mode" \
+              "-DSAVE_DIR=$PWD/build/input-saves" -DFRAMES="$frames" -DROM=build/frames/input.a78 \
+              "-DINPUT_SCRIPT=$PWD/build/frames/input.ratst" "-DSHOT=$PWD/build/frames/input-shot-$mode.png" \
+              -P tests/retroarch/run_retroarch.cmake
+            runner_movie="build/frames/input-$mode.movie"
+            build/runner/bin/muhtari-run --movie "$runner_movie" --frames "$frames" \
+              --dump-frame "$frames:build/frames/input-runner-$mode.png" build/frames/input.a78
+            for source in input-runner-$mode input-shot-$mode; do
+              sips --deleteColorManagementProperties "build/frames/$source.png" > /dev/null
+              sips -s format bmp "build/frames/$source.png" --out "build/frames/$source.bmp" > /dev/null
+            done
+            build/frames/compare --input-controls "$mode" "build/frames/input-runner-$mode.bmp" \
+              "build/frames/input-shot-$mode.bmp"
+          done
       - name: Fresh frontend and runner battery roundtrip
         run: |
           mkdir -p build/retroarch-saves build/runner-saves
@@ -483,6 +526,21 @@ jobs:
               -P tests/retroarch/run_retroarch.cmake > build/unsafe.txt 2>&1 || rc=$?
             test "$rc" -eq 1
             grep -Eq 'unsafe (save/run overlap|or absent HSC_ROM)' build/unsafe.txt
+            grep -q '^retain$' build/unsafe-run/sentinel
+          done
+          mkdir -p build/unsafe-run/input-directory
+          printf '[]\n' > build/unsafe-run/input.ratst
+          for input in "$PWD/build/missing.ratst" "$PWD/build/unsafe-run/input-directory" \
+            "$PWD/build/unsafe-run/input.ratst"; do
+            rc=0
+            cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
+              -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
+              -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/unsafe-run" \
+              "-DSAVE_DIR=$PWD/build/retroarch-saves" -DFRAMES=120 -DROM=tests/diag/dma.a78 \
+              "-DINPUT_SCRIPT=$input" "-DSHOT=$PWD/build/frames/unsafe.png" \
+              -P tests/retroarch/run_retroarch.cmake > build/input-unsafe.txt 2>&1 || rc=$?
+            test "$rc" -eq 1
+            grep -Eq 'INPUT_SCRIPT|INPUT_SCRIPT is inside' build/input-unsafe.txt
             grep -q '^retain$' build/unsafe-run/sentinel
           done
           for count in 1 2; do

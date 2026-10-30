@@ -27,3 +27,4 @@ screenshot_directory = "@RA_DIR@/shots"
 system_directory = "@RA_DIR@/system"
 log_dir = "@RA_DIR@/logs"
 bundle_assets_extract_enable = "false"
+@INPUT_JOYPAD_CONFIG@
