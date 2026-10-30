@@ -5,10 +5,10 @@ milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
 status: blocked
-stopped_at: "12-01 targeted retry cancelled during Intel base/quality work; host skipped; allowance spent"
-last_updated: "2026-10-30T20:06:46Z"
+stopped_at: "12-01 approved local Intel37m correction verified; hosted input unproved; live allowance spent"
+last_updated: "2026-10-30T21:14:41Z"
 last_activity: 2026-10-30
-last_activity_desc: 12-01 targeted retry audited; current/base tests pass, Intel producer cancels, required CI fails and host skips; 0 of 4 accepted
+last_activity_desc: 12-01 Intel-only37m correction locally verified and reviewed; no live action; 0 of 4 accepted
 state_head: a0834db21b2b22f30d2147458aeec27df6ae1530
 progress:
   total_phases: 3
@@ -32,7 +32,7 @@ Current focus: v3.0 Phase 12 — prove actual pinned RetroArch keyboard held/rel
 Phase: 12 (Player-ready delivery and Playstead bridge) — HALTED
 Plan: 0 of 4 accepted; 12-01 partially implemented and halted
 Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 not started
-Last activity: 2026-10-30 — Run41099366366 attempt2 audited; Intel current/base677+6 pass but quality producer cancels at outer limit, host skips and live allowance is spent
+Last activity: 2026-10-30 — Approved Intel-only37m correction passes local workflow, exact inventories and bounded review; hosted producer/input remain unproved, live allowance spent
 Progress: [░░░░░░░░░░] 0%; requirements 0/16 complete, 16 pending
 
 ## Performance Metrics
@@ -60,7 +60,8 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ### Blockers/Concerns
 
-- Latest receipt: run41099366366/sourcea0834db attempt2 is completed/cancelled after the one explicitly authorized targeted Intel retry and five automatic dependents; all20 terminal outcomes audited, required aggregate fails. Intel current/base677+6 pass, with ordinary suites533.41s/545.41s and PAL BIOS7.10s/6.03s; the19m outer limit cancels unfinished quality production before all uploads. All20 original artifacts remain unchanged/nonexpired; quality joins retained same-source evidence, not new Intel production. Fourteen copied successful/skipped peer receipts are not reexecutions. RetroArch/equality/advisoryWASM skip; zero new content/image. Official health is operational and prior incident resolved, so transient-only retry is insufficient; slowdown and attempt1's distinct discrepancy remain unproved. No further push/dispatch/rerun/cancel allowance or acknowledgment is needed to preserve halt. Next local action: review the Intel-only outer budget using complete comparable producer work under DEC.47; the cancelled whole-job duration is censored and cannot itself set a new deadline. Local receipts stay unpushed; accepted0/4 and downstream blocks remain. Canonical12-01 summary retains both attempts, commands/exits and links.
+- Approved local Intel-only37m correction is verified: [report and receipt](debug/phase12-intel-budget-review.md). Forty complete successful Intel jobs reach1085s; DEC.47 gives37m. Actual-expression pass/fault checks, existing timeout/policy consumers, schema validation, full local677+6 workflow and exact inventories pass; one bounded review PASS. Windows68m/other19m, all tests/scales/producer/join/pin/permission contracts stay unchanged. Historical margin remains provisional for expanded work; no exact-current hosted success or keyboard delivery exists. ZERO live authority remains. Next separate continuation prepares corrected-source/parent/closure/budget/content scope and fresh health/receipt checks read-only, accounting for18 additional Intel runner-minutes before any new live decision.
+- Latest receipt: run41099366366/sourcea0834db attempt2 is completed/cancelled after the one explicitly authorized targeted Intel retry and five automatic dependents; all20 terminal outcomes audited, required aggregate fails. Intel current/base677+6 pass, with ordinary suites533.41s/545.41s and PAL BIOS7.10s/6.03s; the19m outer limit cancels unfinished quality production before all uploads. All20 original artifacts remain unchanged/nonexpired; quality joins retained same-source evidence, not new Intel production. Fourteen copied successful/skipped peer receipts are not reexecutions. RetroArch/equality/advisoryWASM skip; zero new content/image. Official health is operational and prior incident resolved, so transient-only retry is insufficient; slowdown and attempt1's distinct discrepancy remain unproved. No further push/dispatch/rerun/cancel allowance or acknowledgment is needed to preserve halt. Follow-up Intel budget review and the owner-approved local correction are recorded above; cancelled whole-job durations remain excluded from calibration. Local receipts stay unpushed; accepted0/4 and downstream blocks remain. Canonical12-01 summary retains both attempts, commands/exits and links.
 - Historical host failure remains: run41062201311/source28e13e1 held input produced idle pixels; DMA passed and later controls skipped. Subsequent static diagnosis found the exact pinned package lacks the optional test joypad; its reporting defect is repaired. The replacement bounded PID-targeted keyboard path remains unproved because later scoped dispatches stopped before content. Preserve every failed receipt in12-01-SUMMARY.md and debug/phase12-packaged-input-tracer.md; PLAY-03 remains pending.
 - Phase 12 execution gates: the pinned package's replacement keyboard delivery needs actual held/released proof within existing bounds; the Windows publication-control remedy needs complete comparable measurements. Research and producer-test success establish neither host delivery nor a measured product improvement.
 - External dependency: actual Playstead → RetroArch → muhtari launch/input/orderly return/battery continuity needs paired current-source/pin evidence; muhtari readiness does not prove it. Track [handoff](research/PLAYSTEAD-HANDOFF.md). Independent muhtari state work can proceed.
@@ -70,11 +71,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-10-30T20:06:46Z
-Stopped at: 12-01 targeted retry audited; complete current/base tests, incomplete Intel producer and outer cancellation; host skipped; allowance spent
+Last session: 2026-10-30T21:14:41Z
+Stopped at: 12-01 approved local Intel37m correction verified; host unproved and allowance spent
 Resume file: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md
 Next separate command: `$gsd-debug continue phase12-packaged-input-tracer`
-Context handoff: ready to clear now. The next agent owns the local Intel job-budget review, service health and receipt checks; no owner review is a prerequisite to running the command. Do not request another identical retry. Keep every lane/test/join unchanged until a measured correction is separately authorized; this resume command grants no live allowance. A new live attempt requires a concrete source/budget scope after review.
+Context handoff: ready to clear now. Approved local correction, offline verification/full workflow and one bounded review are complete; no owner verification or acknowledgment is needed. Next agent prepares a concrete future live source/parent, dependent-job closure, finite runner budget/window and content scope read-only, and owns health/receipt checks. Present a new live decision only after that proposal is reviewable. This command grants no live allowance. Preserve tests/joins, accepted0/4 and all failed receipts; local correction and receipts remain unpushed.
 
 ## Deferred Items
 

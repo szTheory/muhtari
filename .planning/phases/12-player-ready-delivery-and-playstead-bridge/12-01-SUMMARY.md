@@ -693,3 +693,83 @@ Local handoff validation: `sh scripts/hygiene.sh --tree`,
 each exit0 (run URL N/A-local). Summary completion remains empty; append-only
 history, original planning edits, exact tested source, blocked counts and spent
 allowance assertions pass. No code or workflow behavior changed in this session.
+
+## Read-only Intel outer-budget review
+
+The [focused review](../../debug/phase12-intel-budget-review.md) selected40
+distinct successful complete Intel jobs from72 inspected latest-job lists within
+100 newest CI run records. The maximum1085s is
+[run40783431377/job123150624076](https://github.com/szTheory/muhtari/actions/runs/40783431377/job/123150624076),
+giving37m under DEC.47. Direct maximum/newest successful logs establish complete
+current/base tests, quality production and uploads. Actual maximum merge-tree
+identity, image revision/compiler and unchanged producer contracts are checked.
+The maximum ran662+6; the newest success ran676+6. No complete successful677+6
+job exists, so this supports historical reliability margin, provisional for the
+expanded workload. Neither cancelled attempt calibrates the bound. Attempt1's
+completion discrepancy, slowdown cause and actual keyboard delivery remain
+unproved. One other historical log returned503 twice; its contents are not inferred.
+
+`python3 /tmp/muhtari-intel-budget.VY2XZc/audit.py` exits0 for selected sample
+ordering, complete producer receipts, arithmetic, source comparisons and available
+direct logs; the linked report retains command/exit/run evidence. Raw responses
+and logs stay scratch only. Fresh official status API reports operational; no
+causal claim follows. No source/workflow change, commit or remote mutation occurred.
+
+The next proposed scope is local-only Intel37m timeout/provenance correction,
+existing offline consumers, full local workflow and bounded review. All other
+deadlines, tests and joins stay unchanged. The saved stop explicitly excludes
+deadline changes, so that local correction awaits owner authorization. A future
+live request is separate and must account for18 additional Intel runner-minutes;
+no new live total or window is proposed here. Accepted0/4, pending requirements,
+downstream blocks and every failed receipt remain authoritative.
+
+Waiting for the owner on this new local scope decision. Context may be cleared;
+after authorization the exact next command is
+`$gsd-debug continue phase12-packaged-input-tracer`. The agent owns implementation,
+verification and service-health/receipt checks; the command grants no live allowance.
+
+## Approved local Intel deadline correction
+
+The owner answered **"yes i approve"** to the Intel-only19m-to37m timeout/comment
+correction, existing offline checks/full workflow and one bounded review. This
+supersedes only the prior local deadline-change stop. The implementation in
+`.github/workflows/ci.yml` gives Intel37m, Windows68m and other native lanes19m;
+the comment cites1085s/n=40/run40783431377 and preserves provisional status for
+the expanded workload. Commands, tests, per-test timeouts/scales, matrix, producer,
+joins, pins and permissions are unchanged. The
+[appended verification receipt](../../debug/phase12-intel-budget-review.md)
+contains the exact commands/exits and historical source/run evidence.
+
+Local commands, all exit0, run URL N/A-local:
+
+- `python3 /tmp/muhtari-intel-local.748pDp/verify.py`: actual six-lane expression,
+  old/wrong-runner/changed-Windows-budget variants, complete workflow comparison,
+  original planning edits, canonical prefix and blocked-count assertions.
+- `cmake -DDIR=.github/workflows -P tests/cmake/timeouts.cmake`, existing
+  `hygiene.timeout_comments` plus self-test, and `policy.ci_run.controls` plus
+  `policy.retroarch.preflight_gate`: existing pass/fault consumers; focused JUnit
+  reports stay scratch and separate from full inventories.
+- `actionlint -shellcheck= -ignore 'label ".*" is unknown'
+  .github/workflows/ci.yml`: workflow schema/expression check, with only inherited
+  unsupported labels/shellcheck diagnostics excluded.
+- `python3 /tmp/muhtari-intel-local.748pDp/workflow.py`: foreground
+  `cmake --workflow --preset ci` with four-worker FIFO jobserver; full677 ordinary
+  tests, packaging and6 release tests pass. Both exact `check_junit.cmake`
+  consumers pass with the existing `tests/inventory/ci.txt` and ordinary/release
+  filters, proving every required test ran exactly once.
+- Existing document budgets, tree hygiene and `git diff --check` pass. One bounded
+  independent diff review returns PASS with no substantive findings.
+
+Only the approved local correction is complete. No push, dispatch, rerun, cancel
+or actual content process occurred; no live spending window was renewed. All
+failed receipts, accepted0/4, pending requirements and downstream blocks remain.
+No exact-current-workload successful hosted Intel producer or keyboard delivery
+is claimed, and the historical margin remains provisional for expanded work.
+MU-CI-013 in LESSONS records the reproduced pooled-budget limitation and scope.
+
+Context may be cleared. Next separate command:
+`$gsd-debug continue phase12-packaged-input-tracer`. The agent owns read-only
+preparation of a concrete corrected-source/parent, dependent-job closure, runner
+budget/window and content proposal, plus fresh service-health/receipt checks;
+no owner review is a prerequisite. A later live proposal must account for18 extra
+Intel runner-minutes and receive separate authority. This command grants none.
