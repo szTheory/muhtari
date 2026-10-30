@@ -5,11 +5,12 @@
 # what the cartridge read (docs/hardware/controllers.md).
 add_executable(muhtari-test-input
   ${CMAKE_CURRENT_LIST_DIR}/test_input.c
+  ${CMAKE_CURRENT_LIST_DIR}/pixels.c
   ${CMAKE_SOURCE_DIR}/tests/cart/images.c
   ${CMAKE_SOURCE_DIR}/runner/movie.c)
 target_include_directories(muhtari-test-input PRIVATE ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_SOURCE_DIR}/runner)
-target_link_libraries(muhtari-test-input PRIVATE muhtari::muhtari)
+target_link_libraries(muhtari-test-input PRIVATE muhtari::muhtari muhtari_host)
 set_target_properties(muhtari-test-input PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-input)

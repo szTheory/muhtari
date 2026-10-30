@@ -147,3 +147,65 @@ MU-GSD-009 records this reproduced standalone-consumer preflight lesson.
 Accepted 0/4; PLAY-03 remains pending. Plans 12-02, 12-03 and 12-04 are blocked by
 this canonical halt. No phase verification, completion or later GSD step ran.
 Next separate command: `$gsd-debug "Recover phase 12-01 halted packaged RetroArch input tracer"`.
+
+## Scoped recovery decision (2026-10-30)
+
+The original feasibility gate is spent and remains failed. This recovery revises
+only its stop boundary under ENGINEERING §11/GSD-HANDOFF §3.1: permit **one new
+exact corrected-source hosted acceptance**, after complete local preflight. It is
+not a transient retry or a retroactive pass. No further hosted attempt is
+authorized here if actual host semantics, required consumers or existing bounds
+fail; retain the new failure and halt with its concrete next action.
+
+New evidence: complete job/step audit of run 41056151292 attempt 1 shows all six
+native builds, ASan, BE32 and advisory library failing the same stale BMP source
+path before compilation; hygiene fails exactly two comparator format lines.
+Quality rejects missing producer artifacts and CI required rejects failed needs.
+There is no host-driver verdict because RetroArch never executes. The complete
+response audit (`gh run view 41056151292 --json
+attempt,status,conclusion,headSha,url,jobs` then existing `check_ci_run.cmake`
+with exact bf21fc3 SHA) exits 1 as required; transport exits 0. Logs stay scratch.
+
+Doing nothing preserves an honest unverified halt. Changing host input seams or
+raising quotas has no new supporting evidence. The smallest useful action is to
+preflight corrected direct consumers, close the independently reproduced oracle
+gap below, and run the existing CI once. A bounded independent read-only review
+found no ownership, oracle or bound defect in this choice. Any actual-host semantic
+failure overturns feasibility and stops recovery; no blind retry follows.
+
+### Semantic correction and local evidence
+
+The old independent predicate accepted equally wrong Up/button-2 images on both
+operands (exit 0), because it sampled SWCHA and the ORed INPT4 alone. The cartridge
+already exposes distinct INPT0/1 values. A shared pure `tests/input/pixels.c` judge
+now independently checks all eight register bands, exact dimensions and driven
+INPT D7. This is C test semantics shared with the comparator, not host automation
+outside its bound. Existing `input.proline_one_button` uses actual cartridge frames
+to require held/released numeric values, an idle unrelated port, and named
+missing/wrong-port/wrong-button/stuck-release/pixel/dimension fault rejection.
+No fixture mode, inventory item, installed surface or dependency was added.
+
+- Replaying all three CI standalone `cc -std=c17 -O2 -Wall -Wextra -Werror`
+  commands with the local library into `build/recovery-preflight`, then generating
+  `input.a78` and running `proline_one_button`: exit 0, N/A-local. All direct
+  consumers include the shared oracle/palette; the diagnostic CMake target builds.
+- `ctest --test-dir build/ci -R
+  '^(input[.]|runner[.]movie[.]replay$|libretro[.]host[.]input$)'
+  --no-tests=error --output-on-failure --output-junit phase12-input.xml`: exit 0,
+  19/19. Focused report is separate from full inventory evidence.
+- Old comparator compiled from b360017 accepts the wrong-button image twice
+  (exit 0); corrected comparator rejects it with `INPT0 mismatch` (exit 1), and
+  accepts the actual held image (exit 0). This counterfactual preserves both
+  observations without reverting shared working files.
+- Existing unsafe-input commands with missing/directory/nested schedules: each
+  refused with exit 1 before cleanup, retained sentinel; control harness exit 0.
+- First fresh full local workflow exited 8 solely on added prose exceeding
+  `docs/testing.md`'s unchanged 40960-byte ceiling. Condensed host documentation;
+  absolute-root budget check now exits 0. No ceiling changed.
+- Fresh `cmake --workflow --preset ci`: exit 0, all 673 normal tests, three ZIPs
+  and 6 release tests. `tests/retroarch/*` totals 268 lines; two cases, 50-second
+  launch and five-minute job bounds remain unchanged. Run URL N/A-local.
+
+Hosted recovery evidence is pending. Candidate archive results will not establish
+published-byte or actual Playstead acceptance. Dispatch performance is same-head
+repeatability; stable PR-base performance remains the later PR boundary.

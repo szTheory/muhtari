@@ -120,6 +120,7 @@ the operative rules. A ledger alone is not a control.
 | MU-CI-005 | A~28s frontend waited behind~25min Windows publication controls across current/base. New emulator code was not the bottleneck. | Reproduced run40135571745; seed measured publication-control profiling before DAG redesign, preserve Windows failure coverage |
 | MU-ARCH-001 | Historical compressed minimum399937 blocked correct growth by1750bytes without a demonstrated capacity objective. | Reproduced9a64bbc/run40135571745; DEC.61 retires only cutoff, preserves required authenticated measurements/integrity, no replacement quota |
 | MU-TEST-001 | Same-head repeatability was initially overclaimed as performance comparison. | Corrected08-05 evidence; preserve armed PR+1% guard, label actual workload/base, stable PR-base acceptance |
+| MU-TEST-002 | Whole-frame equality cannot detect equally wrong operands; an ORed fire pin does not distinguish button 1 from button 2. | Reproduced with owned Up/button-2 frames: old `compare --input-controls held` accepts both identical operands (exit 0), corrected judge rejects INPT0 (exit 1), N/A-local. Shared `tests/input/pixels.c` independently checks all eight bands; existing `input.proline_one_button` exercises held/release, wrong port/button, missing/stuck input and pixel/dimension faults in CI. |
 
 Control implementation acceptance is recorded with commands/exits and the new
 exact-source run in the recovery decision. Historical size/link/timeout failures

@@ -28,6 +28,9 @@
 #include "../check.h"
 #include "internal.h"
 #include "movie.h"
+#include "palette.h"
+
+unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held);
 
 /* A 48 KiB linear body maps $4000-$FFFF; the program starts at $4000. */
 #define BODY (48u * IMAGES_KIB)
@@ -1272,9 +1275,57 @@ static int proline_two_button(void)
 /* One-button mode: either button pulls INPT4 [INPT5] to 0. INPT0-INPT3
    follow the buttons in both modes, as section 3.2 says MAME, a7800 and
    MiSTer have it; the console's one-button readings are unverified. */
+static void input_pixels(void)
+{
+    static const struct {
+        const char *movie;
+        int held;
+        unsigned fault;
+    } cases[] = {
+        {PROLINES "|U...1.|......|...BB|\n", 1, 0u},
+        {PROLINES "|......|......|...BB|\n", 1, 2u}, /* missing input */
+        {PROLINES "|......|U...1.|...BB|\n", 1, 2u}, /* wrong port */
+        {PROLINES "|U....2|......|...BB|\n", 1, 4u}, /* wrong button */
+        {PROLINES "|U...1.|......|...BB|\n", 0, 2u}, /* stuck-held release */
+        {PROLINES "|U...1.|......|...BB|\n|......|......|...BB|\n", 0, 0u},
+    };
+    static uint8_t rgb[MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC * 3u];
+    for (unsigned i = 0; i < sizeof cases / sizeof cases[0]; i++) {
+        uint8_t got[ENTRY];
+        (void)play(&plain, parse(cases[i].movie), video, got);
+        if (cases[i].fault == 0u) {
+            const uint8_t want[ENTRY] = {
+                cases[i].held ? 0xEFu : 0xFFu, 0x3Fu, cases[i].held ? H : L, L, L, L,
+                cases[i].held ? L : H,         H};
+            for (unsigned field = 0; field < ENTRY; field++)
+                CHECK_EQ_HEX(got[field] & entry_mask[field], want[field]);
+        }
+        for (size_t p = 0; p < sizeof video; p++) {
+            uint32_t color = muhtari__palette_rgb_region(video[p], MUHTARI_REGION_NTSC);
+            rgb[p * 3u] = (uint8_t)(color >> 16);
+            rgb[p * 3u + 1u] = (uint8_t)(color >> 8);
+            rgb[p * 3u + 2u] = (uint8_t)color;
+        }
+        CHECK_EQ_U64(input_response(rgb, 320u, 242u, cases[i].held), cases[i].fault);
+        if (cases[i].fault != 0u)
+            continue;
+        for (unsigned field = 0; field < ENTRY; field++) {
+            size_t at = ((size_t)(24u + 28u * field) * 320u + 160u) * 3u;
+            rgb[at] ^= 255u;
+            CHECK_EQ_U64(input_response(rgb, 320u, 242u, cases[i].held), field + 2u);
+            rgb[at] ^= 255u;
+        }
+        for (unsigned width = 319u; width <= 321u; width++)
+            for (unsigned height = 241u; height <= 243u; height++)
+                CHECK_EQ_U64(input_response(rgb, width, height, cases[i].held),
+                             width == 320u && height == 242u ? 0u : 1u);
+    }
+}
+
 static int proline_one_button(void)
 {
     input_latches();
+    input_pixels();
     static const row rows[] = {
         /* section 3.2: either button pulls INPT4 low */
         {&plain, PROLINES "|....1.|......|...BB|\n", {0xFFu, 0x3Fu, H, L, L, L, L, H}, 0u, 0u},

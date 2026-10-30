@@ -4,9 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "palette.h"
-
 int bmp_read(const char *path, uint32_t *w, uint32_t *h, uint8_t **rgb);
+unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held);
 
 static unsigned compare_hex(const uint8_t *p)
 {
@@ -46,33 +45,6 @@ static int battery(const uint8_t *rgb, uint32_t w, uint32_t h, unsigned count, u
             }
         }
     }
-    return 0;
-}
-
-static int input_bit(const uint8_t *pixel, int high)
-{
-    int seen = -1;
-    for (unsigned value = 0; value < 256u; value++)
-        if (compare_hex(pixel) ==
-            muhtari__palette_rgb_region((uint8_t)value, MUHTARI_REGION_NTSC)) {
-            int bit = (value & 0x80u) != 0u;
-            if (seen >= 0 && seen != bit)
-                return 0;
-            seen = bit;
-        }
-    return seen == high;
-}
-
-static unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held)
-{
-    static const unsigned x = 160u, y[2] = {24u, 192u};
-    if (w != 320u || h != 242u)
-        return 1;
-    if (compare_hex(rgb + ((size_t)y[0] * w + x) * 3u) !=
-        muhtari__palette_rgb_region(held ? 0xEFu : 0xFFu, MUHTARI_REGION_NTSC))
-        return 2u;
-    if (!input_bit(rgb + ((size_t)y[1] * w + x) * 3u, !held))
-        return 3u;
     return 0;
 }
 
@@ -130,8 +102,11 @@ int main(int argc, char **argv)
         for (unsigned i = 0; i < 2u && rc == 0; i++) {
             unsigned failed = input_response(rgb[i], w[i], h[i], held);
             if (failed != 0u) {
-                static const char *const faults[] = {"invalid", "image dimensions", "SWCHA",
-                                                     "button1 INPT4"};
+                static const char *const faults[] = {"invalid", "image dimensions",
+                                                     "SWCHA",   "SWCHB",
+                                                     "INPT0",   "INPT1",
+                                                     "INPT2",   "INPT3",
+                                                     "INPT4",   "INPT5"};
                 printf("input-control: %s mismatch\n", faults[failed]);
                 rc = 1;
             }

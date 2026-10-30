@@ -332,34 +332,32 @@ sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `c
 
 ## Hosted RetroArch
 
-The `retroarch` job has two cases on `macos-15`: DMA equivalence and a battery roundtrip.
-It uses macOS arm64 build archives and pinned RetroArch 1.22.2 Metal. Every launch gets fresh home,
-configuration, system and output directories. `SAVE_DIR` is explicit, external to each disposable launch tree;
-overlapping paths fail before cleanup. Each process has the existing 50-second bound.
+Two macos-15 `retroarch` cases (DMA/input and battery) use arm64 archives and pinned RetroArch 1.22.2 Metal.
+Launches isolate home/config/system/output, share only external `SAVE_DIR`, and time out at 50s. Save/run
+overlap fails before cleanup; hosted support stays ≤300 lines.
 
-DMA runs the committed diagnostic for 120 frames. Its runner hash retains the `diag/dma` ledger pin, and every
-screenshot pixel must match. A flipped pixel control must exit 1 naming exactly pixel (7,3).
+DMA retains the 120-frame `diag/dma` hash pin and pixel equality. A flipped-pixel control exits 1 naming (7,3).
+The generated input cartridge shows port-1 Up/button 1 held at frame 40 and
+released by frame 120 through the host's test joypad. Runner movies and independent SWCHA/SWCHB/six-INPT band
+predicates judge both shots. `input.proline_one_button` checks registers and pixel faults:
+missing/wrong-port/wrong-button input, stuck release, changed band pixels and neighboring invalid dimensions.
+`INPUT_SCRIPT` must be a regular file outside disposable `RA_DIR`; absent/directory/nested controls retain a
+sentinel before cleanup.
 
-The battery case starts two fresh RetroArch and two fresh runner processes from empty, separate save directories.
-Its owned diagnostic increments 16-bit HSC and EEPROM counters through SRAM stores and RIOT pins, waits for
-programming, reads back and draws them. First launches use owned synthetic C6/FE firmware with marker 5A and
-no routines; second launches use stub FF. Frontends share only save storage. Immutable snapshots must match
-all 34,816 independently expected bytes, counters 1/1 then 2/2, and corresponding runner saves. The mailbox
-judge checks runner hardware observations.
+Battery uses two fresh frontend and two fresh runner processes with separate empty save stores. The owned
+diagnostic increments/draws 16-bit HSC/EEPROM counters through SRAM/RIOT after programming. First launches use
+owned synthetic C6/FE firmware, marker 5A, no routines; second launches use stub FF.
+Snapshots match all 34,816 independent expected bytes, counters 1/1 then 2/2, and runner saves.
+The mailbox judge checks runner hardware observations; after `sips` PNG-to-BMP conversion, independent glyphs
+judge counters/marker before whole-frame equality. Equal-black, wrong-counter and stale-one-medium controls
+must fail. `diag.battery` retains mailbox/media/pixel faults; module tests retain lifecycle/no-content coverage.
+Only owned shots enter `retroarch-frames`; saves, firmware and logs stay uncommitted.
 
-After `sips` converts PNG to BMP, independent glyphs judge both counters and the marker before whole-frame
-equality. Equal-black, wrong-counter and stale-one-medium controls must fail. Ordinary `diag.battery` runs
-the shared mailbox/media faults and pixel judge; loaded-module tests retain lifecycle/no-content coverage.
-Hosted support files total at most 300 lines. Only owned diagnostic shots enter `retroarch-frames`;
-saves, firmware and logs stay uncommitted.
-
-**Rerunning it.** Rerun the job from the run page, or `gh run rerun <run-id> --failed`. On a Mac with a desktop
-session, the same steps run locally from the job's commands, with `-DRETROARCH` pointing at an installed
-`RetroArch.app/Contents/MacOS/RetroArch`.
-
-**If a launch fails.** `run_retroarch.cmake` prints its private RetroArch log. The agent diagnoses it and records
-command, exit status and run URL; owner action is needed only for the owner's hardware. These diagnostics
-establish the exercised persistence and optional-firmware behavior, not general retail-game compatibility.
+**Rerunning:** run page or `gh run rerun <run-id> --failed`; on a Mac desktop, replay job commands with
+`-DRETROARCH` pointing at `RetroArch.app/Contents/MacOS/RetroArch`. For failures, `run_retroarch.cmake` prints
+its log; the agent records command, exit and run URL. Owner action is only for owner hardware.
+Candidate proof covers those bytes only; replay against verified published app/core at ship. Retail
+compatibility, Playstead focus/lifecycle, ergonomics and audible quality need separate evidence.
 
 ## Release archives
 

@@ -440,8 +440,8 @@ jobs:
           echo "Candidate source $(git rev-parse HEAD)"
           cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Ihost tests/diag/driver.c tests/runner/png_read.c host/palette.c runner/sha256.c \
             build/library/lib/libmuhtari.a -o build/frames/diag
-          cc -std=c17 -O2 -Wall -Wextra -Werror -Iinclude -Ihost -o build/frames/compare tests/common/bmp.c tests/retroarch/compare.c host/palette.c
-          cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Irunner tests/input/test_input.c tests/cart/images.c runner/movie.c \
+          cc -std=c17 -O2 -Wall -Wextra -Werror -Iinclude -Ihost -o build/frames/compare tests/common/bmp.c tests/retroarch/compare.c tests/input/pixels.c host/palette.c
+          cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Irunner -Ihost tests/input/test_input.c tests/input/pixels.c tests/cart/images.c runner/movie.c host/palette.c \
             build/library/lib/libmuhtari.a -o build/frames/input-fixture
           build/frames/input-fixture --write-cart build/frames/input.a78
       - name: RetroArch runs the dma diagnostic
