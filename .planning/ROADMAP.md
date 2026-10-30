@@ -51,7 +51,26 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** TBD — no execution plans yet.
+**Plans:** 4 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 12-02-PLAN.md — Ship a small measured Windows publication-control improvement with complete fault/current-base evidence.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 12-03-PLAN.md — Complete the current player/launch contract and source-linked Playstead handoff.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 12-04-PLAN.md — Record the exact six-property evidence deferral and its bounded close revisit.
+
 **Canonical refs:** [owner intent](INTENT.md), [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#implications-for-roadmap), [feature ownership](research/FEATURES.md), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [hosts §3–4](preparation/HOSTS-AND-INTEGRATION.md#3-retroarch-on-apple-silicon), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [tune-up seed](seeds/SEED-007-milestone-tune-up.md), [maintenance seed](seeds/SEED-009-proportional-maintenance-review.md), [property seed](seeds/SEED-010-nightly-prop-calibration.md), [lessons](LESSONS.md#local-player-onboarding-2026-10-29).
 **UI hint:** no
 
@@ -150,8 +169,8 @@ steps/sessions under [GSD-HANDOFF §3](preparation/GSD-HANDOFF.md#3-each-phase--
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 0/TBD | Not started | - |
+| 12. Player-ready delivery and Playstead bridge | 0/4 | Ready to execute | - |
 | 13. Portable save/load across three interfaces | 0/TBD | Not started | - |
 | 14. Proven frontend states and responsive play | 0/TBD | Not started | - |
 
-Next separate command: `$gsd-discuss-phase 12`.
+Next separate command: `$gsd-execute-phase 12`.
