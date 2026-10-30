@@ -121,12 +121,26 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 </details>
 
-## Next Milestone Goals
+## Current Milestone: v3.0 States and movies
 
-No new milestone scope is approved. The next separate command is `$gsd-new-milestone`,
-which defines fresh requirements. Start with the recurring measured tune-up (SEED-007/009/010),
-then weigh states/movies (SEED-002) against the high-priority browser alternative (SEED-008).
-The [rolling product roadmap](PRODUCT-ROADMAP.md) retains all later horizons and unresolved debt.
+**Goal:** Make muhtari useful for everyday 7800 play through Playstead, with reliable
+save/load states and an automated end-to-end launch and resume path.
+
+**Target features:**
+- A measured recurring tune-up, retaining known debt and improving demonstrated friction.
+- Portable validated save states across library, runner and libretro.
+- Playstead integration based on its actual launcher/adapter and product context;
+  first-party local game launch and resume are the immediate consumer outcome.
+- RetroArch save/load, rewind and run-ahead backed by deterministic state.
+- Deterministic recording/replay and continuation only as needed for the gamer/host
+  outcome and reproducible verification; advanced AI play, TAS and speedrun tools remain later.
+
+**Owner direction (2026-10-29):** Follow coherent researched recommendations inside this
+milestone step; prioritize actual gamers and early Playstead use. Refresh the rolling
+Immediate / Next / Mid / Long roadmap at every milestone start and close. Persist
+high-signal source-backed findings, decisions, revisit conditions and reproduced
+lessons so later sessions build on them. Read Playstead's product/brand context and
+actual integration before fixing its contract in this milestone.
 
 ## Requirements
 
@@ -163,7 +177,8 @@ The [rolling product roadmap](PRODUCT-ROADMAP.md) retains all later horizons and
 
 ### Active
 
-None until the next milestone is scoped.
+Milestone v3.0 scope is approved; atomic requirements are being derived from the
+Playstead consumer and milestone research, then mapped in REQUIREMENTS.md.
 
 Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0-REQUIREMENTS.md).
 
@@ -178,8 +193,8 @@ Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0
 - A separate fast or low-accuracy mode — one accurate core keeps one set of bugs and one set of hashes.
 - Signed or notarised macOS artifacts — the script install path does not need them.
 - A test framework dependency — plain CTest executables with an in-repo check header cover the need.
-- Atari 2600 cartridges, Souper/BupChip, YM2151, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech, save states,
-  movie recording, measured-accuracy oracles, the browser player, developer tools and ports — later milestones;
+- Atari 2600 cartridges, Souper/BupChip, YM2151, Covox/ADPCM, ACE, full OpenHSC, AtariVox speech,
+  measured-accuracy oracles, the browser player, advanced AI/TAS tools and ports — later milestones;
   see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
 
 ## Context
@@ -192,6 +207,11 @@ Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0
   this project's API conventions and engineering; nesturbator's own MIT code seeds the CPU, synthesiser, state,
   runner, libretro adapter and CI. Playstead, the owner's host, launches emulator processes and needs
   deterministic input replay and safe battery saves from them.
+- **Research recall.** Use `.planning/research/fan-out/prompt.txt` for milestone/advisory fan-out.
+  Relevant roles examine real decisions, compare alternatives and perform one adversarial synthesis;
+  expand only when new evidence could change a recommendation. Reuse permissive seeds and standard
+  facilities before adding dependencies. Store source-backed takeaways with confidence and revisit
+  triggers; keep untested ideas distinct from reproduced LESSONS. Detailed execution stays downstream.
 - **How releases are tried.** In RetroArch (Metal build) on an Apple Silicon Mac, installed by a one-line script.
 - **Reference material.** Each file states facts with sources and one recommendation per choice. Open the one that
   matches the work before designing or building. Index: `.planning/preparation/README.md`.
@@ -225,6 +245,9 @@ Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0
 - **Privacy**: no personal paths, addresses or names in tracked files, commits or release artifacts.
 - **Verification**: every behaviour is shown by a command; nothing waits on a person except identity-bound
   consent.
+- **Onboarding**: reduce repeated player setup through verified install and launch commands, alongside a GUI
+  path. Agents automate local setup and smoke checks, keep personal game data outside the repository, and
+  turn reproduced friction into short user docs and project-local lessons (owner, 2026-10-29).
 - **Delivery**: each phase is one branch and one pull request into a green `main`, released automatically — each
   phase ends in something to download and run.
 
@@ -284,4 +307,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-29 after v2.0 milestone closeout*
+*Last updated: 2026-10-29 during v3.0 milestone scoping*

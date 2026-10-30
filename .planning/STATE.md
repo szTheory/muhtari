@@ -1,21 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v2.0
-milestone_name: The whole library
-current_phase: null
-current_plan: null
-status: completed
-stopped_at: "Milestone v2.0 archived; awaiting new-milestone"
-last_updated: "2026-10-30T00:34:22Z"
+milestone: v3.0
+milestone_name: States and movies
+status: planning
+last_updated: "2026-10-30T01:21:38.351Z"
 last_activity: 2026-10-29
-last_activity_desc: "Milestone v2.0 archived; v0.10.0 publication confirmed"
-state_head: d5fd241e3f4d701d73867cc2e465c56a6fe6793d
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 75
-  completed_plans: 75
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -30,29 +25,10 @@ Current focus: select the next milestone and define fresh requirements.
 
 ## Current Position
 
-Planning milestone v2.0 — The whole library is complete and archived.
-Seven phase goals, 27/27 requirements and 75 accepted plans; 76 summarized active
-slots and 82 historical summaries remain distinct from acceptance. The summaries
-record 192 tasks, including superseded partial work. Historical phase reports
-and failures remain unchanged in [phase records](milestones/v2.0-phases/).
-Earlier next-command/position receipts are [historical](milestones/v2.0-STATE.md).
-
-Closeout type: override_closeout; [audit](milestones/v2.0-MILESTONE-AUDIT.md) status tech_debt.
-All seven phase fingerprints are stale under the explicit existing policy;
-merged required CI and current milestone integration supply closeout evidence.
-15 artifacts newly acknowledged; 13 prior acknowledgments remain carried forward.
-No requirement gap, orphaned requirement or broken core/host flow was found.
-
-Package v0.10.0 is published, with 19 assets, at d5fd241. `gh release view` and
-`gh run view` exit 0; [Release40956113369](https://github.com/szTheory/muhtari/actions/runs/40956113369)
-attempt 1 succeeds through publish/install-line-latest. Existing check_ci_run
-exits 0 for [merged CI40956113335](https://github.com/szTheory/muhtari/actions/runs/40956113335).
-Release PR41 is merged green; the old v0.8.0 draft/failed history is not erased.
-
-Branch: milestone/v2.0-the-whole-library, based on origin/main d5fd241.
-Next separate command: `$gsd-new-milestone`.
-No next scope, owner UAT, package tag, PR merge or GSD chaining is performed here.
-The three pre-existing config/DECISIONS/GSD-HANDOFF edits remain outside closeout commits.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-10-29 — Milestone v3.0 started
 
 ## Decisions and Limits
 
