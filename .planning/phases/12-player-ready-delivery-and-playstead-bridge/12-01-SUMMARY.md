@@ -611,3 +611,85 @@ No acknowledgment is needed merely to preserve the halt. Next separate command:
 `$gsd-debug continue phase12-packaged-input-tracer`, beginning with service-status
 and receipt reconciliation; another live attempt needs an explicit new bounded
 scope/window after the external incident is assessed. No later GSD step ran.
+
+## Targeted retry receipt: Intel cancels again after service recovery
+
+The owner explicitly answered **yes** to one targeted Intel retry plus its five
+automatic dependent jobs at the original source and inputs. The existing limits
+remained: at most44 summed runner-minutes excluding queue, one50s RetroArch child
+after nonprompting access preflight, no further retry or cancellation, and no
+deadline, permission, pin or phase-acceptance change. The sole submission was
+reserved before sending. No push or new dispatch occurred.
+
+Commands and outcomes for
+[attempt2](https://github.com/szTheory/muhtari/actions/runs/41099366366/attempts/2):
+
+- Fresh official status/incident `curl --fail --silent --show-error --max-time 30`
+  reads: exit0 each. Actions was operational; incident `pwxsjgnvrk6b` was resolved
+  at19:23:40UTC. Exact source/attempt1/job/artifact/workflow reads and scope
+  assertions: exit0. Original event inputs bind the durable dispatch command
+  (`keyboard_probe_only=true`), not an independently exposed fresh API payload.
+- `gh run rerun 41099366366 --repo szTheory/muhtari --job 124213483910`:
+  exit0, the sole live command. Exact source remains
+  `a0834db21b2b22f30d2147458aeec27df6ae1530`, attempt2.
+- `gh run view 41099366366 --repo szTheory/muhtari --json
+  headSha,attempt,url,status,conclusion,jobs` and attempt-specific job/attempt
+  APIs: exit0. `python3 /tmp/muhtari-targeted-retry.AyJcIO/audit.py`: exit0;
+  all20 terminal jobs reconcile, with14success/4skipped/1cancelled/1failure.
+  Fourteen peer receipts have new IDs but identical original completed times,
+  runner identities and steps; these are copied results, not new executions.
+  The initial name-only scope assertion rejected copied IDs; the corrected
+  execution-time/step assertion passes without another live action.
+- `cmake -DINPUT=<complete-attempt2-response>
+  -DEXPECTED_SHA=a0834db21b2b22f30d2147458aeec27df6ae1530
+  -P tools/check_ci_run.cmake`: exit1, correctly rejecting required CI failure.
+- Direct Intel, quality and required-aggregate logs plus Intel check/annotations:
+  exit0 each. A log read while Intel was still active returned404/exit1; the
+  terminal log read succeeds. Raw logs/responses remain scratch only.
+
+### Every new execution and retained artifact accounted for
+
+- [Intel124275528706](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124275528706)
+  is cancelled. Current677+6 passes, packages and exact inventories pass; base677+6
+  also passes and packages. Ordinary-suite real times are533.41s/current and
+  545.41s/base; PAL BIOS7.10s/6.03s passes. No individual test failure appears.
+  The current workflow step runs19:43:21–19:53:20UTC; the base/quality step is
+  cancelled at20:03:11UTC after base release inventory output. The annotation
+  names the19m job limit. Quality production does not complete; all three
+  artifact uploads skip. Complete tests are not a completed native producer.
+- [Quality124284846572](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124284846572)
+  succeeds using the retained original same-source observations. All20 original
+  artifact IDs/digests/sizes remain unchanged/nonexpired, with no new artifact:
+  six archives, six hashes and eight quality. This is not fresh Intel production
+  or evidence that the cancelled job succeeded.
+- [Required aggregate124284917898](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124284917898)
+  fails, exit1, on build/cancelled and required RetroArch/hash-equality skips.
+  Advisory WASM skips and remains advisory. Title remains an allowed non-PR skip.
+- [RetroArch124284849352](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124284849352),
+  hash-equality and WASM skip. No access preflight, actual RetroArch child,
+  screenshot or keyboard delivery verdict occurs in this attempt.
+
+Official health still reports operational while this retry cancels. The former
+transient-only hypothesis is insufficient as a recovery strategy. This attempt
+demonstrates outer-budget exhaustion during real unfinished producer work;
+underlying slowdown and the first attempt's distinct completion discrepancy
+remain unexplained. The cancelled whole job is a censored timing sample, not a
+complete-job measurement for selecting a new deadline. The next local review
+should calibrate the Intel-only outer budget from complete comparable producer
+work under DEC.47, preserving all tests, required joins and failure detection.
+Do not widen unrelated lanes or request another identical retry.
+
+The single targeted allowance is spent. Accepted0/4, PLAY-03 pending and all
+dependent blocks remain. No source/deadline/pin/permission change, ordinary host
+launch, additional retry/cancel or later GSD step occurred. The receipt stays
+unpushed; the debug checkpoint stays nonterminal. No acknowledgment is needed
+to preserve the stop. Context may be cleared; next separate command:
+`$gsd-debug continue phase12-packaged-input-tracer`. The agent owns the local
+budget review and receipt checks; that command grants no live allowance.
+
+Local handoff validation: `sh scripts/hygiene.sh --tree`,
+`cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake`, `git diff --check` and
+`node <GSD_TOOLS> query summary-extract <this-summary> --fields requirements_completed`
+each exit0 (run URL N/A-local). Summary completion remains empty; append-only
+history, original planning edits, exact tested source, blocked counts and spent
+allowance assertions pass. No code or workflow behavior changed in this session.

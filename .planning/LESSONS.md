@@ -138,6 +138,19 @@ with a reported Actions incident. Passing executor logs do not supersede a
 failed required aggregate; the complete20-job audit still exits1 and host skips.
 The incident's causal role remains a hypothesis, not a reproduced core defect.
 
+The separately authorized single targeted Intel retry in
+[attempt2](https://github.com/szTheory/muhtari/actions/runs/41099366366/attempts/2)
+cancels again after official Actions recovery. Direct Intel log/annotations and
+the complete20-job/artifact audit exit0; `check_ci_run.cmake` exits1. Current and
+base677+6 pass (ordinary suites533.41s/545.41s), but the19m outer limit cancels
+remaining quality production and all uploads skip. All20 original artifacts are
+retained unchanged; the passing quality join consumes prior same-source evidence,
+not a fresh producer. The broader job remains incomplete despite passing tests;
+its censored duration cannot select a new deadline. Review complete comparable
+Intel producer work under DEC.47 before another scope request; service recovery
+does not establish that an unchanged retry will fit. No new keyboard child/image
+exists, no cause of underlying slowdown is proved, and the allowance stays spent.
+
 Control implementation acceptance is recorded with commands/exits and the new
 exact-source run in the recovery decision. Historical size/link/timeout failures
 remain failures; retirement does not retroactively make them pass.
