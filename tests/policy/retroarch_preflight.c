@@ -65,7 +65,8 @@ int keyboard_exec(const char *path, char *const *args)
 {
     (void)path;
     (void)args;
-    abort();
+    /* Failed exec returns; the helper's following _exit must remain reachable. */
+    return -1;
 }
 void keyboard_exit(int code)
 {
@@ -112,6 +113,7 @@ int main(void)
     char *held[] = {"keyboard", "--held", "/fixture/retroarch", NULL};
     char *released[] = {"keyboard", "--released", "/fixture/retroarch", NULL};
     char *probe[] = {"keyboard", "--probe", "/fixture/retroarch", NULL};
+    CHECK(keyboard_exec(held[2], held + 2) == -1);
     reset();
     CHECK(preflight_main(0, NULL) == 2 && preflight_main(1, held) == 2 &&
           preflight_main(2, held) == 2 && preflight_main(3, unknown) == 2 && calls == 0);
