@@ -118,3 +118,32 @@ These local checks verify the comparator build only; they do not substitute for 
 - Summary file exists at the required path.
 - Task commits `bf21fc3` and `b360017` are ancestors of the current branch head.
 - `tests/retroarch` contains 293 lines, within the 300-line bound.
+
+## Orchestrator closeout verification
+
+The halt remains open. On corrected source `b360017` (with summary-only successor
+`31b12c3`), `cmake --workflow --preset ci` exits 0: all 673 normal tests, three ZIP
+packages and all 6 release tests pass. The existing `check_junit.cmake` consumers
+with `-DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release`
+and `-DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release`
+each exit 0, accepting exactly 673 and 6 tests once each. Run URL N/A-local.
+`cmake --build --preset ci --target muhtari-test-retroarch-compare` and
+`git diff --check` also exit 0.
+
+A fresh complete response saved with `gh run view 41056151292 --repo
+szTheory/muhtari --json headSha,status,conclusion,attempt,url,jobs` exits 0.
+`cmake -DINPUT=build/phase12-halt-run.json
+-DEXPECTED_SHA=bf21fc3ae7d89f4e03f61f1f7a2426dc4af5df29
+-P tools/check_ci_run.cmake` exits 1 and prints every failed/skipped job before
+rejecting the required aggregate. [Run 41056151292](https://github.com/szTheory/muhtari/actions/runs/41056151292),
+attempt 1, remains the sole hosted attempt. Raw responses/logs remain scratch.
+
+ENGINEERING §11 boundary finding: the generic BMP reader relocation requires
+all existing build consumers to follow its new path and link dependencies.
+The corrected local consumer now builds; no driver, scheduling, elapsed-host-work
+or host-bound feasibility conclusion follows because RetroArch never executed.
+MU-GSD-009 records this reproduced standalone-consumer preflight lesson.
+
+Accepted 0/4; PLAY-03 remains pending. Plans 12-02, 12-03 and 12-04 are blocked by
+this canonical halt. No phase verification, completion or later GSD step ran.
+Next separate command: `$gsd-debug "Recover phase 12-01 halted packaged RetroArch input tracer"`.

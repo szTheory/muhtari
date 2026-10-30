@@ -59,6 +59,11 @@ Plans:
 
 - [ ] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
 
+Execution halted: run 41056151292 attempt 1 failed before RetroArch launched.
+The tracer and local build correction are committed; accepted 0/4 and PLAY-03
+remain pending. Preserve the [canonical halt](phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md)
+and recover its hosted proof before dispatching dependent plans.
+
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [ ] 12-02-PLAN.md — Ship a small measured Windows publication-control improvement with complete fault/current-base evidence.
@@ -169,7 +174,7 @@ steps/sessions under [GSD-HANDOFF §3](preparation/GSD-HANDOFF.md#3-each-phase--
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 0/4 | Ready to execute | - |
+| 12. Player-ready delivery and Playstead bridge | 0/4 | Halted at 12-01 | - |
 | 13. Portable save/load across three interfaces | 0/TBD | Not started | - |
 | 14. Proven frontend states and responsive play | 0/TBD | Not started | - |
 
