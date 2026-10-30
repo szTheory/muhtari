@@ -41,12 +41,13 @@ set_tests_properties(title.simple.fast title.simple.bios PROPERTIES
 muhtari_add_test(NAME title.pal.fast
   COMMAND muhtari-test-predicate ${PROJECT_SOURCE_DIR}/tests/diag/pal.a78 boots@120
   LABELS portable title TIMEOUT 2)
-# provisional: 4 s, ceil(2 x 1.49 s) is 3 s; macOS arm64 local, slowest of 10 runs alone (0.69 s) and one full ci run (1.49 s)
-# Budget floor 4 s, as for eightysix, the BIOS-path analogue: 1.23 s in run 39529469630 and a 2 s budget ran out twice in run 39530145463.
+# provisional: base 6 s; Intel's scale 2 gives 12 s = ceil(2 x 5.66 s),
+# slowest of 7 complete Intel current/base samples, run 41062201311/job 124084546980.
+# The 8.72 s timeout in run 41090838885 is censored and excluded.
 muhtari_add_test(NAME title.pal.bios
   COMMAND muhtari-test-predicate ${PROJECT_SOURCE_DIR}/tests/diag/pal.a78 boots@120
     --bios ${compat_bios}
-  LABELS portable title TIMEOUT 4)
+  LABELS portable title TIMEOUT 6)
 set_tests_properties(title.pal.bios PROPERTIES FIXTURES_REQUIRED built_openbios)
 
 # Negative control for the pin writer: the linear seed cartridge, filler

@@ -466,3 +466,60 @@ No published-byte or actual Playstead acceptance is established. A future
 `$gsd-debug continue phase12-packaged-input-tracer` must begin with an explicitly
 renewed host scope/window and the unresolved required Intel result; the command
 alone does not renew this exhausted allowance.
+
+## Local Intel deadline calibration after the halt
+
+The owner agreed to follow the recommendations. This continuation investigates
+and prepares local corrections only; it does not infer renewed push, dispatch,
+rerun, cancel or RetroArch authority from that general agreement.
+
+The Intel lane already applies scale2 to the PAL BIOS test's former base4s.
+Historical complete current/base observations of the unchanged workload are:
+
+| Run / Intel job | Current seconds | Base seconds |
+|---|---:|---:|
+| [40946368330 / 123702751369](https://github.com/szTheory/muhtari/actions/runs/40946368330/job/123702751369) | 3.05 | Not comparable: preceding phase lacks this test |
+| [40956113335 / 123736612675](https://github.com/szTheory/muhtari/actions/runs/40956113335/job/123736612675) | 3.61 | 4.11 |
+| [41062201311 / 124084546980](https://github.com/szTheory/muhtari/actions/runs/41062201311/job/124084546980) | 4.24 | 5.66 |
+| [41086569269 / 124169251753](https://github.com/szTheory/muhtari/actions/runs/41086569269/job/124169251753) | 3.53 | 3.09 |
+
+These seven completed observations support the existing twice-observed-max
+policy: ceil(2 x5.66)=12s effective Intel deadline, hence base6s with unchanged
+scale2. The later8.72s timeout remains failed and censored, excluded from that
+calculation. `git diff 28e13e1..HEAD -- src tests/compat/predicate.c
+tests/diag/pal.a78 tests/built/openbios.cmake tests/compat/tests.cmake` was empty
+before the calibration (exit0,N/A-local); the predicate/ROM/OpenBIOS diff from
+`e0dc556` was also empty. No core failure has been reproduced locally and no
+claim is made that the failed Intel execution would finish within12s.
+
+Only the owning timeout registration and its measurement comment change.
+The command,120-frame predicate, BIOS fixture, workload, labels, inventory,
+lane multipliers and all assertions remain. One bounded independent evidence
+review initially rejected a deadline change on the smaller supplied sample,
+then accepted the arithmetic and source comparability after the5.66s completed
+observation was found. No new workflow, check or dependency is introduced.
+
+Verification (all exit0, run URL N/A-local):
+
+- `ctest --test-dir build/ci -R '^title.pal.bios$' --no-tests=error
+  --output-on-failure --repeat until-fail:3`: complete predicate passes after
+  calibration; before-calibration focused repetitions also pass locally.
+- `cmake --preset ci` and a separate scratch configure with
+  `-DMUHTARI_TIMEOUT_SCALE=2`, followed by `ctest --show-only=json-v1` and
+  property assertions: timeout6/12s, same BIOS fixture and command,683 registered
+  tests including release on both configurations. Scratch output remains local.
+- `cmake --workflow --preset ci`:677 ordinary tests, three archives and6
+  release tests pass. Both existing `check_junit.cmake` consumers verify exact
+  ordinary/release inventories. Focused reports did not overwrite full JUnit.
+
+This is local calibration, with native Intel and Windows acceptance outstanding
+and keyboard delivery still unproved. Accepted0/4, PLAY-03 pending and all
+dependent plan blocks remain. Prior failed receipts and the exhausted live
+window remain authoritative. The next proposed decision is one push of the
+batched local corrections and one `ci.yml` dispatch with
+`keyboard_probe_only=true`, no rerun/cancel or repeat dispatch even after a
+producer failure, at most one actual RetroArch child after nonprompting access
+preflight, no permission/pin changes and no ordinary content launches. Audit
+every job and retain the designed scoped stop even if keyboard pixels pass;
+this would establish feasibility only, not full host or phase acceptance.
+That proposal is pending owner authorization, not an active allowance.
