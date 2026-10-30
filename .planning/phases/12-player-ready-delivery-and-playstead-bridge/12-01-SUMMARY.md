@@ -327,3 +327,142 @@ Local replay URLs N/A-local. Absolute-root docs budgets and `git diff --check`
 exit0. No code changed after hosted acceptance; STATE/ROADMAP retain0/4 and
 all dependents blocked. Active debug checkpoint preserves the undiagnosed cause
 and spent gates for the separate continuation; no later GSD step ran.
+
+## Keyboard feasibility continuation: halt retained (2026-10-30)
+
+Later inspection of the exact pinned released executable established that the
+optional test joypad is absent. The launch reporter now retains each actual
+launch's config/log rather than attributing DMA logs to input. These findings do
+not make either historical failed receipt pass.
+
+The owner authorized pinned-release keyboard feasibility: nonprompting access
+preflight under the intended hosted identity, no permission request/grant/change,
+and at most **one actual RetroArch content process**. Local denial was not treated
+as a hosted verdict. The keyboard scope produced **zero content processes**:
+permission succeeded, but two successive producer faults prevented the host job.
+The final live window is spent; no further dispatch, rerun, owner test or later
+plan is authorized by this handoff. Keeping the halt needs no acknowledgment.
+
+### Hosted receipts and complete audits
+
+All three runs below are attempt1 and are preserved as failures. Each complete
+`gh run view RUN --json attempt,status,conclusion,headSha,url,jobs` response was
+retrieved with exit0. The existing `tools/check_ci_run.cmake` consumer, with its
+matching full `EXPECTED_SHA`, exits1 for each failed required aggregate. Direct
+completed-job logs were retrieved with `gh api --allow-escape-sequences
+repos/szTheory/muhtari/actions/jobs/JOB/logs` (exit0). Logs and responses remain
+scratch; no logs, ROM bytes or screenshots are committed.
+
+| Scope/run | Exact source | Decisive outcome |
+| --- | --- | --- |
+| [Permission only,41075600234](https://github.com/szTheory/muhtari/actions/runs/41075600234) | `cb68bd0c6fe1d83ab1165479b4242256219de674` | Actual macos-15-arm64 preflight reports permitted, then intentionally exits1 before all host/content operations |
+| [First content dispatch,41086569269](https://github.com/szTheory/muhtari/actions/runs/41086569269) | `a7aa88994f6f2d5df5c3dcc9c22cc1887bd76fc5` | Both Windows producers reject an unreachable child-exec fallback; RetroArch skips |
+| [Final corrected dispatch,41090838885](https://github.com/szTheory/muhtari/actions/runs/41090838885) | `abc4f570d2ccc6d7198c41d47ba0a1ba6797decf` | Both Windows policy checks fail; Intel Mac independently times out; RetroArch skips |
+
+Permission-only [job124150451124](https://github.com/szTheory/muhtari/actions/runs/41075600234/job/124150451124)
+uses macos-15-arm64 image20261028.0489.1. Its native helper returns0 with
+`post-event-access=permitted`; the explicit permission-only stop then exits1.
+Every artifact extraction, app install, DMA, input and battery step skips.
+The reporter confirms no launch evidence. All other jobs succeed apart from the
+allowed title skip and required aggregate. This establishes permission only.
+
+In41086569269, Windows x64/arm64 jobs124169251845/124169251932 report MSVC
+C4702 at the helper's `_exit(127)`: the test mock for `execv` always aborted,
+incorrectly making a failed exec nonreturning. Quality rejects the missing exact
+producer artifact set; the required aggregate rejects failed build/quality and
+skipped dependencies. All other executed jobs succeed, including advisory
+library. RetroArch, advisory WASM and equality skip. No new permission or input
+verdict follows from this pre-host failure.
+
+The manager authorized one final corrected-source dispatch within the still
+unconsumed one-process scope. Genuine code/test commits39879d8 andabc4f57 correct
+the mock and exercise the actual failed-child ownership boundary. The actual
+dispatch parent is corrected39879d8, without history rewrite or a documentation
+fence. The final allowance explicitly forbids any further dispatch, even after
+another pre-host failure.
+
+All20 jobs in41090838885 were audited before attributing the outcome:
+
+- Windows [x64 job124184107734](https://github.com/szTheory/muhtari/actions/runs/41090838885/job/124184107734)
+  and [arm64 job124184107661](https://github.com/szTheory/muhtari/actions/runs/41090838885/job/124184107661)
+  compile successfully and pass the API and child-exec tests. Their sole native
+  failure is `policy.retroarch.preflight_gate`: `missed short_movie:0`.
+  The fault is generated on every platform, but its recipe-execution validation
+  was Unix-only. Thus the MSVC correction is verified; the later portable-check
+  fault is distinct.
+- Intel Mac [job124184107566](https://github.com/szTheory/muhtari/actions/runs/41090838885/job/124184107566)
+  independently fails only `title.pal.bios`, timeout8.72s. This required failure
+  remains unresolved and blocking. Its censored duration does not calibrate a new
+  deadline; no timeout, case or assertion was changed.
+- Linux x64/arm64, Apple arm64, ASan, hygiene, nofp, BE32, perf and advisory
+  library succeed. Quality rejects the absent exact native artifact set.
+  Required aggregate fails on build/quality and skipped required dependencies.
+  Actual RetroArch, advisory WASM and equality skip; advisory outcomes remain
+  advisory, with no invented WASM or host success.
+
+`gh run watch` for both content dispatches uses `--interval120 --exit-status`
+and exits1 on their actual failures. The earlier permission-only observer's API
+rate-limit exit was kept separate; its completed job and full audit were later
+retrieved successfully. No job was rerun or canceled.
+
+### Concrete implementation and local-only repair
+
+The candidate keyboard path remains within the existing two ordinary host cases,
+296/300 support lines, 50-second process and five-minute host-job limits. A
+dispatch-only `keyboard_probe_only` branch excludes all ordinary DMA/input-loop/
+battery launches, invokes one private RetroArch child, targets only that PID with
+Up/Z, requests an F8 software screenshot while held, releases at5s and requires a
+terminal600-frame released observation. Early exit before release fails. Raw F8
+images would be retained even if a later judge failed. This path has **no actual
+keyboard image or input-delivery verdict** because the host never ran.
+
+The pure battery RGB oracle and its existing faults moved to the diagnostic test
+owner, with independent executed-pixel/count/dimension faults added. No launch or
+event automation moved outside the counted host consumer. Both standalone and
+CMake comparator consumers were compiled locally. The existing independent
+SWCHA/SWCHB/six-INPT input predicates and ordinary DMA/battery assertions remain.
+
+Scoped review caught a one-row held runner movie before dispatch. An actual
+600-frame headless replay rejects the old movie with SWCHA mismatch (exit1),
+while the workflow's600-row producer passes the independent held judge (exit0).
+The actual producer and one-row fault are covered by the existing policy test.
+No actual RetroArch process was used for these local checks.
+
+Local commit `7e07c4cb8890227eea1eeef1eda1a5d7cad58217` repairs the portable
+policy check without a new hosted attempt. Common validation derives row count
+from the actual producer's start/stop/stride and append destination, compares it
+with the actual runner-frame window, and checks actual held/released bindings.
+Unix recipe execution is retained. The original checker forced through its
+non-Unix branch fails1; the corrected branch passes0. An equivalent shifted
+600-row window passes0, while truncated/binding/window/stride faults each fail1.
+This models the checker branch, not a new native Windows verdict.
+
+Final local evidence for that repair (run URL N/A-local):
+
+- `cmake --workflow --preset ci`: exit0,677 ordinary tests, three archives and6
+  release tests; both existing exact JUnit/inventory consumers exit0.
+- Focused `policy.retroarch` tests and native clang-cl-compatible fixture
+  compile/run: exit0. The latter uses the native Apple SDK/ABI and is not an
+  MSVC-backend substitute. Real final-run Windows results above verify the prior
+  exec-mock correction separately.
+- Failed-exec subprocess contract requires complete argv, exit127 and no input,
+  wait or kill; wrong-argv, child-fallthrough and child-input mutations each make
+  the existing expected-code/marker consumer fail1.
+- `git diff --check`, `scripts/hygiene.sh --tree`, unchanged documentation budgets
+  and formatting checks: exit0. Reproduced lessons remain in the local ledger.
+
+### Preserved boundary and next action
+
+The local portable-check repair and this append-only handoff are not a hosted
+acceptance or a renewed budget. The independent Intel Mac PAL BIOS timeout also
+remains blocking. Active `.planning/debug/phase12-packaged-input-tracer.md` stays
+nonterminal for a genuine future scope/window decision; no owner verification or
+acknowledgment is needed merely to retain the halt. No further push, dispatch,
+rerun, permission change, host-pin change or later GSD step ran after the final
+stop. No GPL/LGPL/unlicensed emulator source was opened or retained.
+
+Accepted **0/4**; PLAY-03 stays pending and plans12-02 through12-04 stay blocked.
+No published-byte or actual Playstead acceptance is established. A future
+`$gsd-debug continue phase12-packaged-input-tracer` must begin with an explicitly
+renewed host scope/window and the unresolved required Intel result; the command
+alone does not renew this exhausted allowance.
