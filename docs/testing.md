@@ -337,25 +337,25 @@ Isolated home/config/system/output share only external `SAVE_DIR`; save/run over
 Launches time out at 50s; hosted support stays ≤300 lines.
 
 DMA retains its 120-frame hash pin and pixel equality; flipped-pixel rejection names (7,3).
-Input remains blocked: the pinned app lacks the requested optional test joypad. Owned cartridge observations
-require port-1 Up/button 1 held at 40, released by 120; runner movies and independent SWCHA/SWCHB/six-INPT judges
-check both shots. `input.proline_one_button` rejects absent/wrong-port/wrong-button input, stuck release,
-pixel faults and invalid dimensions.
-`INPUT_SCRIPT` must be a regular file outside disposable `RA_DIR`; absent/directory/nested controls retain a
-sentinel before cleanup.
+Keyboard proof is pending. Authorized `keyboard_probe_only=true`: one child, Up/Z, F8 shot at 2s, release at 5s,
+terminal 600-frame shot. Ordinary launches skip; success also stops the probe. Early exit before release fails;
+own-child error/deadline cleanup stays within 50s. Runner movies and
+independent SWCHA/SWCHB/six-INPT judges check both shots. `input.proline_one_button` rejects missing/wrong input,
+stuck release and pixel/dimension faults. Regular `KEYBOARD` stays outside disposable `RA_DIR`; unsafe controls
+retain a sentinel before cleanup.
 
 Battery uses two fresh frontend/runner pairs and empty stores. The owned cartridge programs/increments
-16-bit HSC/EEPROM counters through SRAM/RIOT: counters 1/1 then 2/2, independently judged 34,816 bytes and
-runner saves. First launches use owned C6/FE firmware (marker 5A, no routines); second uses stub FF.
-Mailbox hardware and `sips`-converted counter/marker glyphs precede pixel equality. Equal-black, wrong-counter
-and stale-medium controls fail; `diag.battery` covers mailbox/media/pixel faults, modules lifecycle/no-content.
+16-bit HSC/EEPROM counters through SRAM/RIOT: 1/1 then 2/2, independently judged 34,816 bytes and runner saves.
+First launches use owned C6/FE firmware (marker 5A, no routines); second uses stub FF. Mailbox hardware and
+`sips`-converted counter/marker glyphs precede pixel equality. Black/wrong-counter/stale-medium faults fail;
+`diag.battery` covers mailbox/media/pixels, modules lifecycle/no-content.
 Only owned PNGs enter `retroarch-frames`; saves, firmware and logs stay uncommitted.
 
-Failure prints every launch's config/log and schedule; `policy.retroarch.report` tests empty/partial/full evidence.
-Authorized dispatch `keyboard_preflight_only=true` runs nonprompting `CGPreflightPostEventAccess` in this Mac job
-before all content: denied exits 77; granted also stops. No request or event posting. CI checks API grant/denial/
-usage and workflow fallthrough/order faults. Permission is not input delivery. Preserve spent gates; no automatic
-retry or permission change. Evidence is command, exit and run URL.
+Failure prints config/logs; `policy.retroarch.report` checks empty/partial/full evidence. Before content,
+nonprompting access denial exits77; authorized `keyboard_preflight_only=true` also stops on grant. No requests or
+permission changes. CI mocks permission/events/child/time and checks release neighbors, cleanup faults and
+workflow fallthrough/order. Shared battery RGB predicates retain existing controls plus held-out pixel faults.
+Permission is not input proof; preserve spent gates. Evidence is command, exit and run URL.
 Candidate proof covers those bytes only; replay against verified published app/core at ship. Retail
 compatibility, Playstead focus/lifecycle, ergonomics and audible quality need separate evidence.
 

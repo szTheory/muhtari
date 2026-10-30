@@ -3,7 +3,29 @@ set(policy_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
 set(preflight_include ${CMAKE_BINARY_DIR}/policy/preflight-include)
 file(WRITE ${preflight_include}/ApplicationServices/ApplicationServices.h
-  "int CGPreflightPostEventAccess(void);\n")
+  [=[#include <stdint.h>
+typedef unsigned short CGKeyCode;
+typedef struct keyboard_event *CGEventRef;
+int CGPreflightPostEventAccess(void);
+CGEventRef CGEventCreateKeyboardEvent(void *, CGKeyCode, int);
+void CGEventSetFlags(CGEventRef, uint64_t);
+void CGEventPostToPid(int, CGEventRef);
+void CFRelease(CGEventRef);
+]=])
+file(WRITE ${preflight_include}/unistd.h [=[typedef int pid_t;
+pid_t fork(void);
+int execv(const char *, char *const *);
+void _exit(int);
+struct timespec;
+int nanosleep(const struct timespec *, struct timespec *);
+]=])
+file(WRITE ${preflight_include}/signal.h "#define SIGKILL 9\nint kill(int, int);\n")
+file(WRITE ${preflight_include}/sys/wait.h [=[typedef int pid_t;
+pid_t waitpid(pid_t, int *, int);
+#define WNOHANG 1
+#define WIFEXITED(s) (((s) & 255) == 0)
+#define WEXITSTATUS(s) ((s) >> 8)
+]=])
 add_executable(muhtari-test-preflight ${CMAKE_CURRENT_LIST_DIR}/retroarch_preflight.c)
 target_include_directories(muhtari-test-preflight PRIVATE ${preflight_include})
 muhtari_warnings(muhtari-test-preflight)

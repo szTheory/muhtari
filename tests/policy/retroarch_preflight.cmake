@@ -1,18 +1,20 @@
 # Fault prevented: an access denial falls through to any hosted content launch.
+# Additional launches and truncated expected movies must also fail offline.
 cmake_minimum_required(VERSION 3.25)
 if(NOT DEFINED WORKFLOW)
   set(WORKFLOW "${ROOT}/.github/workflows/ci.yml")
 endif()
 file(READ "${WORKFLOW}" workflow)
-set(gate [=[      - name: Keyboard access preflight only
-        if: github.event_name == 'workflow_dispatch' && inputs.keyboard_preflight_only
+set(gate [=[      - name: Keyboard access preflight before all content
         run: |
           mkdir -p build/frames
           cc -std=c17 -Wall -Wextra -Werror tests/retroarch/keyboard_preflight.c \
             -framework ApplicationServices -o build/frames/keyboard-preflight
           build/frames/keyboard-preflight --preflight
-          echo "Access permitted; permission-only stop before any RetroArch/content launch"
-          exit 1]=])
+          if [ "${{ inputs.keyboard_preflight_only }}" = true ]; then
+            echo "Access permitted; permission-only stop before any RetroArch/content launch"
+            exit 1
+          fi]=])
 string(FIND "${workflow}" "${gate}" at)
 string(FIND "${workflow}" "  retroarch:\n" job)
 string(FIND "${workflow}" "      - name: Core and runner from the build" content)
@@ -20,18 +22,73 @@ if(at LESS job OR at GREATER content OR at EQUAL -1 OR content EQUAL -1 OR
     NOT workflow MATCHES "keyboard_preflight_only:[\n ]+description: [^\n]+[\n ]+type: boolean[\n ]+required: false[\n ]+default: false")
   message(FATAL_ERROR "keyboard preflight must stop before all content in the existing Mac job")
 endif()
+set(ordinary "RetroArch runs the dma diagnostic" "DMA screenshot equals the retained runner frame pin"
+  "RetroArch holds and releases input on the owned diagnostic" "Fresh frontend and runner battery roundtrip"
+  "The compare's negative control")
+foreach(name IN LISTS ordinary)
+  set(guard "      - name: ${name}\n        if: \${{ !inputs.keyboard_probe_only }}")
+  string(FIND "${workflow}" "${guard}" guarded)
+  if(guarded EQUAL -1)
+    message(FATAL_ERROR "keyboard preflight must stop: ordinary ${name} can fall through")
+  endif()
+endforeach()
+string(REGEX MATCH "      - name: One-process keyboard feasibility\n        if: inputs.keyboard_probe_only\n        run: [|]\n(.*)      - name: Fresh frontend" probe "${workflow}")
+string(REGEX MATCHALL "-P tests/retroarch/run_retroarch[.]cmake" launches "${probe}")
+list(LENGTH launches launch_count)
+string(FIND "${probe}" "for mode in held released" observations)
+string(FIND "${probe}" "-P tests/retroarch/run_retroarch.cmake" launched)
+if(launched GREATER 0)
+  string(SUBSTRING "${probe}" 0 ${launched} before_launch)
+endif()
+if(NOT launch_count EQUAL 1 OR observations LESS launched OR
+    before_launch MATCHES "\n +(for|while|until) " OR
+    NOT probe MATCHES "-DINPUT_MODE=probe" OR NOT probe MATCHES "-DFRAMES=600" OR
+    NOT workflow MATCHES "\n            build/ra-input-probe/shots/[*][.]png\n" OR
+    NOT probe MATCHES "One-process keyboard pixels passed; scoped stop, full host acceptance remains pending\"\n          exit 1")
+  message(FATAL_ERROR "keyboard preflight must stop: probe needs exactly one content process and scoped stop")
+endif()
+file(READ "${ROOT}/tests/retroarch/run_retroarch.cmake" launch)
+foreach(binding "input_player1_up = \\\"up\\\"" "input_player1_b = \\\"z\\\""
+    "video_vsync = \\\"true\\\"" "set(launcher \"\${input_script}\" \"--\${INPUT_MODE}\")"
+    "\${launcher} \"\${retroarch}\" --verbose")
+  string(FIND "${launch}" "${binding}" bound)
+  if(bound EQUAL -1)
+    message(FATAL_ERROR "keyboard launch binding absent: ${binding}")
+  endif()
+endforeach()
+if(launch MATCHES "input_joypad_driver|test_input_file")
+  message(FATAL_ERROR "keyboard launch still requests an absent test driver")
+endif()
 if(DEFINED WORK)
   file(MAKE_DIRECTORY "${WORK}")
-  foreach(fault IN ITEMS denial_fallthrough grant_fallthrough late_gate)
+  foreach(fault IN ITEMS denial_fallthrough grant_fallthrough late_gate ordinary_dma ordinary_input ordinary_battery two_processes probe_loop short_movie lost_shots)
     set(bad "${workflow}")
     if(fault STREQUAL denial_fallthrough)
       string(REPLACE "keyboard-preflight --preflight\n" "keyboard-preflight --preflight || true\n" bad "${bad}")
     elseif(fault STREQUAL grant_fallthrough)
       string(REPLACE "exit 1" "exit 0" bad_gate "${gate}")
       string(REPLACE "${gate}" "${bad_gate}" bad "${bad}")
-    else()
+    elseif(fault STREQUAL late_gate)
       string(REPLACE "${gate}" "" bad "${bad}")
       string(APPEND bad "\n${gate}\n")
+    elseif(fault MATCHES "^ordinary_")
+      set(name "Fresh frontend and runner battery roundtrip")
+      if(fault STREQUAL ordinary_dma)
+        set(name "RetroArch runs the dma diagnostic")
+      elseif(fault STREQUAL ordinary_input)
+        set(name "RetroArch holds and releases input on the owned diagnostic")
+      endif()
+      string(REPLACE "      - name: ${name}\n        if: \${{ !inputs.keyboard_probe_only }}"
+        "      - name: ${name}" bad "${bad}")
+    elseif(fault STREQUAL two_processes)
+      string(REPLACE "-DINPUT_MODE=probe" "-DINPUT_MODE=probe -P tests/retroarch/run_retroarch.cmake" bad "${bad}")
+    elseif(fault STREQUAL probe_loop)
+      string(REPLACE "One-process keyboard feasibility\n        if: inputs.keyboard_probe_only\n        run: |"
+        "One-process keyboard feasibility\n        if: inputs.keyboard_probe_only\n        run: |\n          for attempt in 1 2; do" bad "${bad}")
+    elseif(fault STREQUAL short_movie)
+      string(REPLACE "\"$frame\" -lt 600" "\"$frame\" -lt 1" bad "${bad}")
+    else()
+      string(REPLACE "            build/ra-input-probe/shots/*.png\n" "" bad "${bad}")
     endif()
     file(WRITE "${WORK}/${fault}.yml" "${bad}")
     execute_process(COMMAND "${CMAKE_COMMAND}" "-DROOT=${ROOT}" "-DWORKFLOW=${WORK}/${fault}.yml"
@@ -39,5 +96,87 @@ if(DEFINED WORK)
     if(NOT rc STREQUAL "1" OR NOT "${out}${err}" MATCHES "keyboard preflight must stop")
       message(FATAL_ERROR "keyboard preflight missed ${fault}: ${rc} ${out}${err}")
     endif()
+  endforeach()
+  if(UNIX)
+    set(fixture "${WORK}/launch")
+    file(MAKE_DIRECTORY "${fixture}")
+    file(WRITE "${fixture}/keyboard" [=[#!/bin/sh
+[ "$1" = --probe ] || exit 2
+shift
+printf 'keyboard\n' >> "${0%/*}/calls"
+exec "$@"
+]=])
+    file(WRITE "${fixture}/frontend" [=[#!/bin/sh
+printf 'frontend\n' >> "${0%/*}/calls"
+for arg do
+  case $arg in --max-frames-ss-path=*) printf fixture > "${arg#*=}" ;; esac
+done
+]=])
+    file(CHMOD "${fixture}/keyboard" "${fixture}/frontend" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+    file(WRITE "${fixture}/core" "fixture")
+    file(WRITE "${fixture}/core.info" "fixture")
+    file(REMOVE "${fixture}/calls")
+    set(common "-DRETROARCH=${fixture}/frontend" "-DCORE=${fixture}/core" "-DINFO=${fixture}/core.info"
+      "-DTEMPLATE=${ROOT}/tests/retroarch/test.cfg.in" "-DRA_DIR=${fixture}/ra"
+      "-DSAVE_DIR=${fixture}/saves" -DFRAMES=600 "-DSHOT=${fixture}/shot.png")
+    foreach(case valid missing directory inside mode)
+      set(keyboard "${fixture}/keyboard")
+      set(mode probe)
+      if(case STREQUAL missing)
+        set(keyboard "${fixture}/missing")
+      elseif(case STREQUAL directory)
+        set(keyboard "${fixture}")
+      elseif(case STREQUAL inside)
+        set(keyboard "${fixture}/ra/keyboard")
+        file(COPY_FILE "${fixture}/keyboard" "${keyboard}")
+      elseif(case STREQUAL "mode")
+        set(mode invalid)
+      endif()
+      file(WRITE "${fixture}/ra/sentinel" "retain")
+      execute_process(COMMAND "${CMAKE_COMMAND}" ${common} "-DKEYBOARD=${keyboard}" "-DINPUT_MODE=${mode}"
+        -P "${ROOT}/tests/retroarch/run_retroarch.cmake" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+      if(case STREQUAL valid)
+        if(NOT rc STREQUAL "0")
+          message(FATAL_ERROR "keyboard fixture launch failed: ${rc} ${out}${err}")
+        endif()
+      elseif(NOT rc STREQUAL "1" OR NOT "${out}${err}" MATCHES "KEYBOARD" OR NOT EXISTS "${fixture}/ra/sentinel")
+        message(FATAL_ERROR "keyboard unsafe ${case} did not refuse before cleanup: ${rc} ${out}${err}")
+      endif()
+    endforeach()
+    file(READ "${fixture}/calls" calls)
+    if(NOT calls STREQUAL "keyboard\nfrontend\n")
+      message(FATAL_ERROR "keyboard fixture did not invoke exactly one wrapped child: ${calls}")
+    endif()
+  endif()
+endif()
+if(UNIX)
+  string(REGEX MATCH "# Expected movie spans all 600 observed runner frames[.]\n(.*)# Judge the independent runner frame[.]" recipe "${probe}")
+  set(recipe "${CMAKE_MATCH_1}")
+  if(recipe STREQUAL "")
+    message(FATAL_ERROR "keyboard preflight must stop: expected movie producer absent")
+  endif()
+  set(movie_work "${CMAKE_CURRENT_BINARY_DIR}/keyboard-movie-fixture")
+  if(DEFINED WORK)
+    set(movie_work "${WORK}/movie")
+  endif()
+  file(MAKE_DIRECTORY "${movie_work}/build/frames")
+  foreach(mode held released)
+    set(buttons "|U...1.|......|...BB|")
+    if(mode STREQUAL released)
+      set(buttons "|......|......|...BB|")
+    endif()
+    execute_process(COMMAND /bin/sh -c "mode=$1; buttons=$2; ${recipe}" _ "${mode}" "${buttons}"
+      WORKING_DIRECTORY "${movie_work}" RESULT_VARIABLE rc TIMEOUT 5)
+    file(STRINGS "${movie_work}/build/frames/input-${mode}.movie" records)
+    list(LENGTH records count)
+    if(NOT rc STREQUAL "0" OR NOT count EQUAL 603)
+      message(FATAL_ERROR "keyboard preflight must stop: ${mode} movie does not span600 frames")
+    endif()
+    list(SUBLIST records 3 600 rows)
+    foreach(row IN LISTS rows)
+      if(NOT row STREQUAL buttons)
+        message(FATAL_ERROR "keyboard preflight must stop: wrong ${mode} movie row")
+      endif()
+    endforeach()
   endforeach()
 endif()

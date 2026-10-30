@@ -646,6 +646,8 @@ if(DIAG_BATTERY_RUN)
   battery_exec(--battery-bmp "${OUT}/pixels.bmp" "${ROOT}/tests/diag/battery.a78" "${EXPECTED}")
   execute_process(COMMAND ${EMULATOR} "${COMPARE}" --battery-controls 1 255
     "${OUT}/pixels.bmp" "${OUT}/pixels.bmp" COMMAND_ERROR_IS_FATAL ANY)
+  execute_process(COMMAND ${EMULATOR} "${PIXEL_CONTROLS}" "${OUT}/pixels.bmp"
+    COMMAND_ERROR_IS_FATAL ANY)
   foreach(fault missing short oversized crc unchanged)
     set(path "${OUT}/bad-report.txt")
     if(fault STREQUAL "missing")
@@ -787,13 +789,17 @@ add_executable(muhtari-test-diag ${diag_dir}/driver.c ${PROJECT_SOURCE_DIR}/runn
 target_include_directories(muhtari-test-diag PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(muhtari-test-diag PRIVATE muhtari::muhtari muhtari_host)
 add_executable(muhtari-test-retroarch-compare ${PROJECT_SOURCE_DIR}/tests/retroarch/compare.c
-  ${PROJECT_SOURCE_DIR}/tests/common/bmp.c ${PROJECT_SOURCE_DIR}/tests/input/pixels.c)
+  ${PROJECT_SOURCE_DIR}/tests/common/bmp.c ${PROJECT_SOURCE_DIR}/tests/input/pixels.c
+  ${PROJECT_SOURCE_DIR}/tests/diag/battery_pixels.c)
 target_link_libraries(muhtari-test-retroarch-compare PRIVATE muhtari_host)
 target_compile_definitions(muhtari-test-retroarch-compare PRIVATE
   $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 set_target_properties(muhtari-test-retroarch-compare PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-retroarch-compare)
+add_executable(muhtari-test-battery-pixels ${diag_dir}/test_battery_pixels.c
+  ${diag_dir}/battery_pixels.c ${PROJECT_SOURCE_DIR}/tests/common/bmp.c)
+muhtari_warnings(muhtari-test-battery-pixels)
 if(TARGET muhtari_libretro)
   target_include_directories(muhtari-test-diag PRIVATE ${PROJECT_SOURCE_DIR}/libretro)
   target_compile_definitions(muhtari-test-diag PRIVATE DIAG_LIBRETRO
@@ -804,6 +810,7 @@ if(TARGET muhtari_libretro)
   file(GENERATE OUTPUT ${diag_battery} CONTENT
 "set(DIAG_BATTERY_RUN TRUE)
 set(COMPARE [==[$<TARGET_FILE:muhtari-test-retroarch-compare>]==])
+set(PIXEL_CONTROLS [==[$<TARGET_FILE:muhtari-test-battery-pixels>]==])
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
 set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/battery-roundtrip]==])
 set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])

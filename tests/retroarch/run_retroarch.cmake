@@ -11,21 +11,26 @@ foreach(var RA_DIR SHOT SAVE_DIR HSC_ROM)
   endif()
 endforeach()
 set(INPUT_JOYPAD_CONFIG "")
-if(NOT "${INPUT_SCRIPT}" STREQUAL "")
-  if(NOT EXISTS "${INPUT_SCRIPT}" OR IS_DIRECTORY "${INPUT_SCRIPT}")
-    message(FATAL_ERROR "run_retroarch: absent or directory INPUT_SCRIPT")
+set(launcher "")
+if(NOT "${KEYBOARD}" STREQUAL "")
+  if(NOT EXISTS "${KEYBOARD}" OR IS_DIRECTORY "${KEYBOARD}")
+    message(FATAL_ERROR "run_retroarch: absent or directory KEYBOARD")
   endif()
-  get_filename_component(input_argument "${INPUT_SCRIPT}" ABSOLUTE)
-  file(REAL_PATH "${INPUT_SCRIPT}" input_script)
+  get_filename_component(input_argument "${KEYBOARD}" ABSOLUTE)
+  file(REAL_PATH "${KEYBOARD}" input_script)
   cmake_path(IS_PREFIX RA_DIR "${input_argument}" NORMALIZE argument_inside)
   cmake_path(IS_PREFIX RA_DIR "${input_script}" NORMALIZE input_inside)
   execute_process(COMMAND /bin/sh -c "test -f \"$1\"" _ "${input_script}"
     RESULT_VARIABLE input_regular)
   if(argument_inside OR input_inside OR NOT input_regular STREQUAL "0")
-    message(FATAL_ERROR "run_retroarch: INPUT_SCRIPT must be a regular file outside disposable RA_DIR")
+    message(FATAL_ERROR "run_retroarch: KEYBOARD must be a regular file outside disposable RA_DIR")
   endif()
+  if(NOT INPUT_MODE MATCHES "^(held|released|probe)$")
+    message(FATAL_ERROR "run_retroarch: KEYBOARD requires held/released/probe INPUT_MODE")
+  endif()
+  set(launcher "${input_script}" "--${INPUT_MODE}")
   set(INPUT_JOYPAD_CONFIG
-    "input_joypad_driver = \"test\"\ntest_input_file_joypad = \"${input_script}\"\ninput_player1_up_btn = \"4\"\ninput_player1_b_btn = \"0\"")
+    "input_player1_up = \"up\"\ninput_player1_b = \"z\"\ninput_screenshot = \"f8\"\nvideo_vsync = \"true\"\nvideo_swap_interval = \"1\"")
 endif()
 if(NOT SAVE_DIR)
   message(FATAL_ERROR "run_retroarch: external -DSAVE_DIR is required")
@@ -66,7 +71,7 @@ endif()
 
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E env "HOME=${RA_DIR}/home" "CFFIXED_USER_HOME=${RA_DIR}/home"
-    "${retroarch}" --verbose --config "${RA_DIR}/test.cfg" -L "${core}"
+    ${launcher} "${retroarch}" --verbose --config "${RA_DIR}/test.cfg" -L "${core}"
     "--max-frames=${FRAMES}" --max-frames-ss "--max-frames-ss-path=${SHOT}" ${content}
   RESULT_VARIABLE result
   OUTPUT_VARIABLE log

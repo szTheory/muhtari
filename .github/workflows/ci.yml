@@ -15,6 +15,11 @@ on:
         type: boolean
         required: false
         default: false
+      keyboard_probe_only:
+        description: "One keyboard content process only; stop before ordinary host acceptance"
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       ref:
@@ -420,15 +425,16 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
-      - name: Keyboard access preflight only
-        if: github.event_name == 'workflow_dispatch' && inputs.keyboard_preflight_only
+      - name: Keyboard access preflight before all content
         run: |
           mkdir -p build/frames
           cc -std=c17 -Wall -Wextra -Werror tests/retroarch/keyboard_preflight.c \
             -framework ApplicationServices -o build/frames/keyboard-preflight
           build/frames/keyboard-preflight --preflight
-          echo "Access permitted; permission-only stop before any RetroArch/content launch"
-          exit 1
+          if [ "${{ inputs.keyboard_preflight_only }}" = true ]; then
+            echo "Access permitted; permission-only stop before any RetroArch/content launch"
+            exit 1
+          fi
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: archives-macos-arm64
@@ -455,11 +461,12 @@ jobs:
           echo "Candidate source $(git rev-parse HEAD)"
           cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Ihost tests/diag/driver.c tests/runner/png_read.c host/palette.c runner/sha256.c \
             build/library/lib/libmuhtari.a -o build/frames/diag
-          cc -std=c17 -O2 -Wall -Wextra -Werror -Iinclude -Ihost -o build/frames/compare tests/common/bmp.c tests/retroarch/compare.c tests/input/pixels.c host/palette.c
+          cc -std=c17 -O2 -Wall -Wextra -Werror -Iinclude -Ihost -o build/frames/compare tests/common/bmp.c tests/retroarch/compare.c tests/input/pixels.c tests/diag/battery_pixels.c host/palette.c
           cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Irunner -Ihost tests/input/test_input.c tests/input/pixels.c tests/cart/images.c runner/movie.c host/palette.c \
             build/library/lib/libmuhtari.a -o build/frames/input-fixture
           build/frames/input-fixture --write-cart build/frames/input.a78
       - name: RetroArch runs the dma diagnostic
+        if: ${{ !inputs.keyboard_probe_only }}
         run: >-
           cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch
           -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info
@@ -467,6 +474,7 @@ jobs:
           "-DSAVE_DIR=$PWD/build/dma-saves"
           "-DSHOT=$PWD/build/frames/dma-shot.png" -P tests/retroarch/run_retroarch.cmake
       - name: DMA screenshot equals the retained runner frame pin
+        if: ${{ !inputs.keyboard_probe_only }}
         working-directory: build/frames
         run: |
           ../runner/bin/muhtari-run --frames 120 --dump-frame 120:dma-runner.png --hash-frame 120 ../../tests/diag/dma.a78 | tee hash.txt
@@ -478,31 +486,24 @@ jobs:
           ./compare dma-runner.bmp dma-shot.bmp | tee compare.txt
           grep -q '^320x242, every pixel equal$' compare.txt
       - name: RetroArch holds and releases input on the owned diagnostic
+        if: ${{ !inputs.keyboard_probe_only }}
         run: |
-          cat > build/frames/input.ratst <<'EOF'
-          [
-            {"action":16,"param_num":16,"frame":10},
-            {"action":16,"param_num":1,"frame":11},
-            {"action":32,"param_num":16,"frame":80},
-            {"action":32,"param_num":1,"frame":81}
-          ]
-          EOF
           printf 'muhtari-movie 1\nport1 proline\nport2 proline\n|......|......|...BB|\n' > build/frames/input-held.movie
           frame=2
-          while [ "$frame" -le 40 ]; do
+          while [ "$frame" -le 120 ]; do
             printf '|U...1.|......|...BB|\n' >> build/frames/input-held.movie
             frame=$((frame + 1))
           done
           printf 'muhtari-movie 1\nport1 proline\nport2 proline\n|......|......|...BB|\n' > build/frames/input-released.movie
           mkdir -p build/input-saves
           for mode in held released; do
-            frames=40
-            if [ "$mode" = released ]; then frames=120; fi
+            frames=120
+            if [ "$mode" = released ]; then frames=600; fi
             cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
               -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
               -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-input-$mode" \
               "-DSAVE_DIR=$PWD/build/input-saves" -DFRAMES="$frames" -DROM=build/frames/input.a78 \
-              "-DINPUT_SCRIPT=$PWD/build/frames/input.ratst" "-DSHOT=$PWD/build/frames/input-shot-$mode.png" \
+              "-DKEYBOARD=$PWD/build/frames/keyboard-preflight" -DINPUT_MODE="$mode" "-DSHOT=$PWD/build/frames/input-shot-$mode.png" \
               -P tests/retroarch/run_retroarch.cmake
             runner_movie="build/frames/input-$mode.movie"
             build/runner/bin/muhtari-run --movie "$runner_movie" --frames "$frames" \
@@ -514,7 +515,43 @@ jobs:
             build/frames/compare --input-controls "$mode" "build/frames/input-runner-$mode.bmp" \
               "build/frames/input-shot-$mode.bmp"
           done
+      - name: One-process keyboard feasibility
+        if: inputs.keyboard_probe_only
+        run: |
+          cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
+            -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
+            -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-input-probe" \
+            "-DSAVE_DIR=$PWD/build/input-saves" -DFRAMES=600 -DROM=build/frames/input.a78 \
+            "-DKEYBOARD=$PWD/build/frames/keyboard-preflight" -DINPUT_MODE=probe \
+            "-DSHOT=$PWD/build/frames/input-shot-released.png" -P tests/retroarch/run_retroarch.cmake
+          shots=(build/ra-input-probe/shots/*.png)
+          test "${#shots[@]}" -eq 1
+          test -f "${shots[0]}"
+          cp "${shots[0]}" build/frames/input-shot-held.png
+          for mode in held released; do
+            buttons='|U...1.|......|...BB|'
+            if [ "$mode" = released ]; then buttons='|......|......|...BB|'; fi
+            # Expected movie spans all 600 observed runner frames.
+            printf 'muhtari-movie 1\nport1 proline\nport2 proline\n' > "build/frames/input-$mode.movie"
+            frame=0
+            while [ "$frame" -lt 600 ]; do
+              printf '%s\n' "$buttons" >> "build/frames/input-$mode.movie"
+              frame=$((frame + 1))
+            done
+            # Judge the independent runner frame.
+            build/runner/bin/muhtari-run --movie "build/frames/input-$mode.movie" --frames 600 \
+              --dump-frame "600:build/frames/input-runner-$mode.png" build/frames/input.a78
+            for source in input-runner-$mode input-shot-$mode; do
+              sips --deleteColorManagementProperties "build/frames/$source.png" > /dev/null
+              sips -s format bmp "build/frames/$source.png" --out "build/frames/$source.bmp" > /dev/null
+            done
+            build/frames/compare --input-controls "$mode" "build/frames/input-runner-$mode.bmp" \
+              "build/frames/input-shot-$mode.bmp"
+          done
+          echo "One-process keyboard pixels passed; scoped stop, full host acceptance remains pending"
+          exit 1
       - name: Fresh frontend and runner battery roundtrip
+        if: ${{ !inputs.keyboard_probe_only }}
         run: |
           mkdir -p build/retroarch-saves build/runner-saves
           test -z "$(ls -A build/retroarch-saves)"
@@ -552,10 +589,10 @@ jobs:
               -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
               -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/unsafe-run" \
               "-DSAVE_DIR=$PWD/build/retroarch-saves" -DFRAMES=120 -DROM=tests/diag/dma.a78 \
-              "-DINPUT_SCRIPT=$input" "-DSHOT=$PWD/build/frames/unsafe.png" \
+              "-DKEYBOARD=$input" -DINPUT_MODE=held "-DSHOT=$PWD/build/frames/unsafe.png" \
               -P tests/retroarch/run_retroarch.cmake > build/input-unsafe.txt 2>&1 || rc=$?
             test "$rc" -eq 1
-            grep -Eq 'INPUT_SCRIPT|INPUT_SCRIPT is inside' build/input-unsafe.txt
+            grep -Eq 'KEYBOARD|KEYBOARD is inside' build/input-unsafe.txt
             grep -q '^retain$' build/unsafe-run/sentinel
           done
           for count in 1 2; do
@@ -599,6 +636,7 @@ jobs:
       # in a copy of the runner's BMP is inverted, at an offset read from
       # the BMP header; the tool must exit 1 naming exactly that pixel.
       - name: The compare's negative control
+        if: ${{ !inputs.keyboard_probe_only }}
         working-directory: build/frames
         run: |
           cp dma-runner.bmp flipped.bmp
@@ -621,7 +659,9 @@ jobs:
         if: always()
         with:
           name: retroarch-frames
-          path: build/frames/*.png
+          path: |
+            build/frames/*.png
+            build/ra-input-probe/shots/*.png
 
   # Cachegrind instructions per frame of the test card, the pull request's
   # merge commit against its first parent measured twice (docs/testing.md,
