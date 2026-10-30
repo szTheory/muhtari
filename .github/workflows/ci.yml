@@ -9,6 +9,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      keyboard_preflight_only:
+        description: "Permission-only Mac keyboard feasibility; stop before all host/content launches"
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       ref:
@@ -414,6 +420,15 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
+      - name: Keyboard access preflight only
+        if: github.event_name == 'workflow_dispatch' && inputs.keyboard_preflight_only
+        run: |
+          mkdir -p build/frames
+          cc -std=c17 -Wall -Wextra -Werror tests/retroarch/keyboard_preflight.c \
+            -framework ApplicationServices -o build/frames/keyboard-preflight
+          build/frames/keyboard-preflight --preflight
+          echo "Access permitted; permission-only stop before any RetroArch/content launch"
+          exit 1
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: archives-macos-arm64

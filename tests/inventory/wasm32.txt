@@ -540,6 +540,8 @@ policy.compat_ratchet.controls	policy
 policy.no_skip	policy
 policy.no_skip.self_test	policy
 policy.notices	policy
+policy.retroarch.preflight_api	policy,portable
+policy.retroarch.preflight_gate	policy
 policy.retroarch.report	policy
 prop.battery_lifecycle	portable,prop
 prop.battery_observers	portable,prop

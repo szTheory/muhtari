@@ -332,30 +332,30 @@ sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `c
 
 ## Hosted RetroArch
 
-Two macos-15 `retroarch` cases (DMA/input and battery) use arm64 archives and pinned RetroArch 1.22.2 Metal.
-Launches isolate home/config/system/output, share only external `SAVE_DIR`, and time out at 50s. Save/run
-overlap fails before cleanup; hosted support stays ≤300 lines.
+Two macos-15 cases (DMA/input and battery) use candidate arm64 archives and pinned RetroArch 1.22.2 Metal.
+Isolated home/config/system/output share only external `SAVE_DIR`; save/run overlap fails before cleanup.
+Launches time out at 50s; hosted support stays ≤300 lines.
 
-DMA retains the 120-frame `diag/dma` hash pin and pixel equality. A flipped-pixel control exits 1 naming (7,3).
-Input is blocked: the pinned app lacks the optional test joypad requested here.
-The generated cartridge should show port-1 Up/button 1 held at frame 40 and released by 120. Runner movies
-and independent SWCHA/SWCHB/six-INPT predicates judge both shots. `input.proline_one_button` rejects missing,
-wrong-port/wrong-button input, stuck release, pixel faults and invalid dimensions.
+DMA retains its 120-frame hash pin and pixel equality; flipped-pixel rejection names (7,3).
+Input remains blocked: the pinned app lacks the requested optional test joypad. Owned cartridge observations
+require port-1 Up/button 1 held at 40, released by 120; runner movies and independent SWCHA/SWCHB/six-INPT judges
+check both shots. `input.proline_one_button` rejects absent/wrong-port/wrong-button input, stuck release,
+pixel faults and invalid dimensions.
 `INPUT_SCRIPT` must be a regular file outside disposable `RA_DIR`; absent/directory/nested controls retain a
 sentinel before cleanup.
 
-Battery uses two fresh frontend and two fresh runner processes with separate empty save stores. The owned
-diagnostic increments/draws 16-bit HSC/EEPROM counters through SRAM/RIOT after programming. First launches use
-owned synthetic C6/FE firmware, marker 5A, no routines; second launches use stub FF.
-Snapshots match all 34,816 independent expected bytes, counters 1/1 then 2/2, and runner saves.
-The mailbox judge checks runner hardware observations; after `sips` PNG-to-BMP conversion, independent glyphs
-judge counters/marker before whole-frame equality. Equal-black, wrong-counter and stale-one-medium controls
-must fail. `diag.battery` retains mailbox/media/pixel faults; module tests retain lifecycle/no-content coverage.
-Only owned shots enter `retroarch-frames`; saves, firmware and logs stay uncommitted.
+Battery uses two fresh frontend/runner pairs and empty stores. The owned cartridge programs/increments
+16-bit HSC/EEPROM counters through SRAM/RIOT: counters 1/1 then 2/2, independently judged 34,816 bytes and
+runner saves. First launches use owned C6/FE firmware (marker 5A, no routines); second uses stub FF.
+Mailbox hardware and `sips`-converted counter/marker glyphs precede pixel equality. Equal-black, wrong-counter
+and stale-medium controls fail; `diag.battery` covers mailbox/media/pixel faults, modules lifecycle/no-content.
+Only owned PNGs enter `retroarch-frames`; saves, firmware and logs stay uncommitted.
 
-The failure step prints every launch's config/log and the input schedule, including failures in later judges;
-`policy.retroarch.report` tests empty, partial and complete evidence. Fix the mechanism before
-another host run; retain spent gates. Record command, exit and run URL. Owner action is only for owner hardware.
+Failure prints every launch's config/log and schedule; `policy.retroarch.report` tests empty/partial/full evidence.
+Authorized dispatch `keyboard_preflight_only=true` runs nonprompting `CGPreflightPostEventAccess` in this Mac job
+before all content: denied exits 77; granted also stops. No request or event posting. CI checks API grant/denial/
+usage and workflow fallthrough/order faults. Permission is not input delivery. Preserve spent gates; no automatic
+retry or permission change. Evidence is command, exit and run URL.
 Candidate proof covers those bytes only; replay against verified published app/core at ship. Retail
 compatibility, Playstead focus/lifecycle, ergonomics and audible quality need separate evidence.
 

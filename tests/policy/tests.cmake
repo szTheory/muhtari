@@ -1,6 +1,19 @@
 # Repository policy tests: rules about the tests themselves.
 set(policy_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
+set(preflight_include ${CMAKE_BINARY_DIR}/policy/preflight-include)
+file(WRITE ${preflight_include}/ApplicationServices/ApplicationServices.h
+  "int CGPreflightPostEventAccess(void);\n")
+add_executable(muhtari-test-preflight ${CMAKE_CURRENT_LIST_DIR}/retroarch_preflight.c)
+target_include_directories(muhtari-test-preflight PRIVATE ${preflight_include})
+muhtari_warnings(muhtari-test-preflight)
+muhtari_add_test(NAME policy.retroarch.preflight_api COMMAND muhtari-test-preflight
+  LABELS policy portable TIMEOUT 5)
+muhtari_add_test(NAME policy.retroarch.preflight_gate
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+    -DWORK=${CMAKE_BINARY_DIR}/policy/retroarch_preflight -P ${CMAKE_CURRENT_LIST_DIR}/retroarch_preflight.cmake
+  LABELS policy TIMEOUT 10)
+
 muhtari_add_test(NAME policy.retroarch.report
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
     -DWORK=${CMAKE_BINARY_DIR}/policy/retroarch_report -P ${CMAKE_CURRENT_LIST_DIR}/retroarch_report.cmake
