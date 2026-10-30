@@ -523,3 +523,91 @@ preflight, no permission/pin changes and no ordinary content launches. Audit
 every job and retain the designed scoped stop even if keyboard pixels pass;
 this would establish feasibility only, not full host or phase acceptance.
 That proposal is pending owner authorization, not an active allowance.
+
+## Renewed one-attempt receipt: native corrections pass, host skipped
+
+The owner explicitly answered **yes** to the proposal above: one push and one
+`keyboard_probe_only=true` dispatch, at most one RetroArch process and no retry,
+including after a producer failure. This superseded the pending proposal only
+for this one attempt. No later phase, ordinary host acceptance, permission/pin
+change, rerun or cancellation was authorized.
+
+The pushed and independently advertised source is
+`a0834db21b2b22f30d2147458aeec27df6ae1530`; its genuine parent is
+`753bf4acd7ec7a438dd7ce0da87bf5879ca9f0f3`. No history rewrite or extra source
+fence was used. [Run41099366366](https://github.com/szTheory/muhtari/actions/runs/41099366366),
+attempt1, independently reports that exact source.
+
+Commands and outcomes:
+
+- Fresh `cmake --workflow --preset ci`: exit0,677 ordinary tests, three archives
+  and6 release tests. Both ordinary/release `check_junit.cmake` consumers exit0;
+  `git diff --check` exits0. Run URL N/A-local for these pre-push checks.
+- `git push origin HEAD:refs/heads/phase/12-player-ready-delivery-and-playstead-bridge`:
+  exit0; `git ls-remote` independently confirms the full source above (exit0).
+- `gh workflow run ci.yml --ref phase/12-player-ready-delivery-and-playstead-bridge
+  -f keyboard_probe_only=true`: exit0, the single run linked above. The allowance
+  was reserved before sending; no second dispatch, rerun or cancel followed.
+- `gh run view 41099366366 --json attempt,status,conclusion,headSha,url,jobs`:
+  exit0, completed/cancelled, exact source/attempt1, all20 jobs terminal.
+  Independent source/attempt/job-count/terminal assertions exit0.
+- `cmake -DINPUT=<saved-complete-response> -DEXPECTED_SHA=a0834db21b2b22f30d2147458aeec27df6ae1530
+  -P tools/check_ci_run.cmake`: exit1, rejecting the failed required aggregate.
+  The complete response remains scratch evidence, not a committed log.
+
+### Every job accounted for
+
+- [Intel Mac124213483910](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124213483910)
+  is **cancelled**. Its direct log passes current677+6 and independent-base677+6;
+  `title.pal.bios` completes in4.85s/current and4.34s/base. Artifact uploads and
+  orphan cleanup end17:43:29Z after a17:30:23Z job start. Its check annotation
+  nevertheless says `The job has exceeded the maximum execution time of 19m0s`,
+  with completed_at17:50:00Z. This outer-job failure remains required and
+  blocking; passing test logs do not turn the cancelled job green.
+- [Windows x64124213483752](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124213483752)
+  and [Windows arm64124213483909](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124213483909)
+  are successful. Both current/base677+6 workflows and API/child-failure/portable
+  preflight checks pass. This supplies the previously missing native verdict
+  for the portable movie-span repair, retaining its faults and strict warnings.
+- Apple arm64, Linux x64/arm64, hygiene, ASan, both nofp jobs, PowerPC compile,
+  changes, perf and advisory library succeed. The dispatch perf mode repeats
+  the head only; it establishes no phase-versus-main performance improvement.
+- [Quality124227569556](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124227569556)
+  succeeds with the required native/current-base observations. Its native base
+  is the genuine parent above; comparable perf is not requested in this dispatch.
+- [CI required124227785689](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124227785689)
+  fails, exit1. Its actual `NEEDS` names build/cancelled, hash-equality/skipped
+  and retroarch/skipped; the remaining required consumers succeed. Title's
+  non-PR skip is allowed. Advisory WASM skips and stays advisory.
+- [RetroArch124228103951](https://github.com/szTheory/muhtari/actions/runs/41099366366/job/124228103951)
+  skips before preflight/content. There is **no new actual RetroArch process,
+  keyboard screenshot or delivery verdict**. Hash equality also skips, so no
+  new equality acceptance is inferred from the native artifacts alone.
+
+All direct Intel/Windows/quality/aggregate log reads and Intel check annotation
+reads exit0. Both read-only `gh run watch --interval120 --exit-status` observers
+exit1 on GitHub job-list502 errors; those are observer failures, separate from
+the final run verdict. API status also lagged completed executor logs before
+the complete terminal response became available.
+
+GitHub's [Actions/Webhooks incident](https://www.githubstatus.com/incidents/pwxsjgnvrk6b)
+was reported at17:50Z during this attempt. This supports an infrastructure
+hypothesis for the contradictory completion/cancellation evidence; the specific
+causal mechanism is **not established**. No timeout was raised from this
+cancelled job, no failure was waived and no service recovery was assumed.
+
+### Preserved stop
+
+The Windows portable correction and Intel predicate calibration now have direct
+native passing evidence. Historical failures remain failed receipts. Actual
+keyboard feasibility and ordinary DMA/input/battery host acceptance remain
+unproved. Accepted **0/4**, PLAY-03 pending and plans12-02 through12-04 blocked.
+
+The one push and one dispatch are spent, even though this attempt launched zero
+content processes. No further push, dispatch, rerun or cancel is authorized.
+This local receipt and STATE handoff stay unpushed; the active debug session
+stays nonterminal/untracked and the original three planning edits remain intact.
+No acknowledgment is needed merely to preserve the halt. Next separate command:
+`$gsd-debug continue phase12-packaged-input-tracer`, beginning with service-status
+and receipt reconciliation; another live attempt needs an explicit new bounded
+scope/window after the external incident is assessed. No later GSD step ran.

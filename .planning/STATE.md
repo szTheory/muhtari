@@ -5,11 +5,11 @@ milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
 status: blocked
-stopped_at: "12-01 recovery reached actual host; held input remained idle; both gates spent"
-last_updated: "2026-10-30T14:04:40Z"
+stopped_at: "12-01 native corrections pass; renewed run cancelled on Intel outer deadline; host skipped; allowance spent"
+last_updated: "2026-10-30T18:12:45Z"
 last_activity: 2026-10-30
-last_activity_desc: 12-01 corrected-source host input failed; local 673+6 pass; 0 of 4 accepted
-state_head: fa8fafa845d7a55278da6300059a470826cde19a
+last_activity_desc: 12-01 renewed attempt audited; native corrections pass, required CI fails and host skips; 0 of 4 accepted
+state_head: a0834db21b2b22f30d2147458aeec27df6ae1530
 progress:
   total_phases: 3
   completed_phases: 0
@@ -25,14 +25,14 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-10-29.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: v3.0 Phase 12 — diagnose actual pinned RetroArch input no-delivery; 0 of 4 plans accepted.
+Current focus: v3.0 Phase 12 — prove actual pinned RetroArch keyboard held/released input; 0 of 4 plans accepted.
 
 ## Current Position
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — HALTED
 Plan: 0 of 4 accepted; 12-01 partially implemented and halted
 Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 not started
-Last activity: 2026-10-30 — Recovery run 41062201311 reached RetroArch; held input showed idle pixels; local 673+6 pass
+Last activity: 2026-10-30 — Renewed run 41099366366 audited; native corrections pass, Intel outer job cancels and host skips; local 677+6 pass
 Progress: [░░░░░░░░░░] 0%; requirements 0/16 complete, 16 pending
 
 ## Performance Metrics
@@ -60,8 +60,9 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ### Blockers/Concerns
 
-- 12-01 remains canonically halted. Original run 41056151292/source bf21fc3 failed before RetroArch. Scoped recovery run 41062201311 attempt 1/source 28e13e1 builds successfully, but actual RetroArch held input produces idle pixels; independent comparator exits 1. DMA passes; release/battery/later controls skip. All other required jobs and both advisory jobs pass. Local full workflow passes 673+6; independent wrong-button controls strengthened. Original and revised one-attempt gates are spent; no retry. Missing input-launch log/config prevents driver/config/event diagnosis. Summary-only handoff fa8fafa is pushed. Accepted 0/4, PLAY-03 pending, all dependent plans blocked. Preserve both failed receipts; next scoped diagnosis must establish new evidence and a bounded decision before another host launch. See 12-01-SUMMARY.md and debug/phase12-packaged-input-tracer.md.
-- Phase 12 execution gates: pinned RetroArch test-joypad delivery needs hosted proof within existing bounds; the Windows publication-control remedy needs complete comparable measurements. Research establishes neither runtime success nor a measured improvement.
+- Latest receipt: renewed run41099366366/sourcea0834db attempt1 is completed/cancelled; all20 jobs audited, required aggregate fails. Both Windows current/base677+6 and repaired preflight checks pass; Intel current/base677+6 and PAL BIOS4.85s/4.34s pass in direct logs, but Intel job is cancelled for its19m outer deadline. Concurrent official Actions/Webhooks incident supports an infrastructure hypothesis, not proven causality. Quality and other executed jobs succeed; RetroArch/equality/WASM skip. No new actual keyboard process or image exists. One approved push/dispatch is spent; no rerun/cancel/repeat allowance or acknowledgment needed to preserve halt. Local receipt stays unpushed; reconcile service status and obtain a new bounded live scope before another attempt. Canonical12-01 summary retains all commands, exits and run/job/incident links; accepted0/4 and downstream blocks unchanged.
+- Historical host failure remains: run41062201311/source28e13e1 held input produced idle pixels; DMA passed and later controls skipped. Subsequent static diagnosis found the exact pinned package lacks the optional test joypad; its reporting defect is repaired. The replacement bounded PID-targeted keyboard path remains unproved because later scoped dispatches stopped before content. Preserve every failed receipt in12-01-SUMMARY.md and debug/phase12-packaged-input-tracer.md; PLAY-03 remains pending.
+- Phase 12 execution gates: the pinned package's replacement keyboard delivery needs actual held/released proof within existing bounds; the Windows publication-control remedy needs complete comparable measurements. Research and producer-test success establish neither host delivery nor a measured product improvement.
 - External dependency: actual Playstead → RetroArch → muhtari launch/input/orderly return/battery continuity needs paired current-source/pin evidence; muhtari readiness does not prove it. Track [handoff](research/PLAYSTEAD-HANDOFF.md). Independent muhtari state work can proceed.
 - COST-01 monthly totals untrusted; WR-01 delayed-release equal-base edge unresolved/fail-closed; property isolation advisory/unaccepted until qualifying evidence. Phase 12 must ship an actual improvement, not only dispositions.
 - Keep optional Phase 10/11 findings, hardware/PAL fit confidence and HSC stub/unsupported sound limits. Pinned accounting remains 201 unknown/3 skipped of 204; conformance/title screens and voluntary gameplay reports are separate evidence.
@@ -69,8 +70,8 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-10-30T14:04:40Z
-Stopped at: 12-01 actual held-input failure; both gates spent, no downstream work
+Last session: 2026-10-30T18:12:45Z
+Stopped at: 12-01 renewed attempt audited; native corrections pass, outer job cancellation blocks host; allowance spent
 Resume file: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md
 Next separate command: `$gsd-debug continue phase12-packaged-input-tracer`
 

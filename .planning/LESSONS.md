@@ -129,6 +129,15 @@ the operative rules. A ledger alone is not a control.
 | MU-TEST-006 | Fault generation and validation must have the same platform applicability. A Mac-only full run and review did not exercise a portable check's non-Unix branch. | [Run41090838885/job124184107734](https://github.com/szTheory/muhtari/actions/runs/41090838885/job/124184107734): real MSVC compile/API/child-exec tests pass, but the shared policy check fails because its short-movie mutant is generated everywhere while execution-based validation is Unix-only. Forcing the original checker's non-Unix branch reproduces1; local common validation of actual producer start/stop/stride/destination, runner window and mode bindings passes0. A shifted equivalent600-row span passes; truncation/binding/window/stride faults reject1, with Unix execution retained. Full local677+6 and exact inventories pass; this repair has no new hosted verdict. |
 | MU-CI-012 | A slow-lane multiplier does not establish twice-complete-work margin: the Intel PAL BIOS test allowed8s although unchanged work had completed in5.66s. A later8.72s timeout cannot measure completion. | Seven historical complete Intel current/base observations reach5.66s in [run41062201311/job124084546980](https://github.com/szTheory/muhtari/actions/runs/41062201311/job/124084546980). The owning registration now uses base6s, giving12s with unchanged Intel scale2; generated properties, unchanged predicate/fixture and full local workflow/inventories pass0,N/A-local. This restores measured margin, not proof of the failed execution's cause or native acceptance. |
 
+The local-only verdicts above retain their original checkpoint scope. In
+[renewed run41099366366](https://github.com/szTheory/muhtari/actions/runs/41099366366),
+both native Windows current/base workflows pass the portable preflight/API/child
+controls; Intel's current/base PAL BIOS predicates complete in4.85s/4.34s.
+The Intel job is nevertheless cancelled by its outer19m deadline, concurrent
+with a reported Actions incident. Passing executor logs do not supersede a
+failed required aggregate; the complete20-job audit still exits1 and host skips.
+The incident's causal role remains a hypothesis, not a reproduced core defect.
+
 Control implementation acceptance is recorded with commands/exits and the new
 exact-source run in the recovery decision. Historical size/link/timeout failures
 remain failures; retirement does not retroactively make them pass.
