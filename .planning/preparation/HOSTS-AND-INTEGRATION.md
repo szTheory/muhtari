@@ -2,7 +2,7 @@
 title: "Hosts and integration: libretro, RetroAchievements, RetroArch on Mac, runner + Playstead, automation, WASM"
 summary: "What every host needs from muhtari (libretro adapter, rcheevos memory map, RetroArch on Apple Silicon, muhtari-run and Playstead's protocol, scripting, WASM) and which milestone each piece lands in."
 read_when: "Building the libretro adapter or .info, the runner CLI, saves, the RetroArch e2e job, a Playstead pin, scripting/Gym/TAS surfaces, or a web build."
-updated: 2026-10-24
+updated: 2026-10-29
 ---
 
 # Hosts and integration
@@ -19,6 +19,32 @@ Markers: (tested) run here on 2026-10-15, (derived), (untested), (unverified). "
 | Inspection/hooks, Python vs Lua, Gym env, movies, lag, debugger | 5 |
 | Web build | 6 |
 | Feature → host or core | 7 |
+
+## Current scope update (2026-10-29)
+
+The approved [v3.0 requirements](../REQUIREMENTS.md) now prioritize Playstead-ready
+ordinary play and save/load. Earlier v3 movie/continuation placements below are
+historical direction: full recording and generalized continuation are deferred.
+The [current research](../research/FEATURES.md) inspected newer Playstead product,
+brand and adapter sources; it supersedes the old single-runner integration assumption.
+The immediate interactive route is Playstead launching separate verified RetroArch
+and muhtari artifacts; the headless runner remains an automation interface.
+Actual Playstead adapter and paired E2E acceptance remain sibling-owned. Initial
+state UI is RetroArch-managed; native Playstead hosting/Continue has separate triggers.
+
+Keep the settled LE visitor, three deliverables and host ownership. Derive the full
+state inventory, media/firmware binding and battery/dirty-token semantics from current
+code and STATE requirements during phase design; the old proposed header/field list
+is not proof that current pending input/device/audio state is covered.
+
+Actual RetroArch save/load is a new consumer boundary in FRONT-02; exhaustive
+rewind/run-ahead semantics stay in-process, with host claims limited to qualified
+evidence. Preserve the existing two-case/300-line host-test and measured resource
+contracts unless a separate evidence-backed revision is justified under ENGINEERING
+§11. Do not silently expand the harness or weaken acceptance to fit a proxy.
+Local release-core launches also succeeded outside the agent sandbox during
+onboarding (LESSONS MU-HOST-002); the earlier sandbox-only failure does not mean the
+owner must perform verification. Recurring host regression checks still belong in CI.
 
 ## 1. libretro contract
 **Exports.** All 25 entry points (L7511–7840) in nesturbator's 352-line adapter shape [HI.22]: one instance `retro_init`→`retro_deinit`, statics reset in deinit, no game → test card (`SET_SUPPORT_NO_GAME` 18), XRGB8888 (`SET_PIXEL_FORMAT` 10) plus RGB565 when `USE_RGB565` is defined (the PSP template passes it [HI.09]), mono → stereo batch audio, ROM copied at load. 7800 changes: `retro_get_region` 0/1 from the loaded region; `retro_reset` = power cycle (battery media kept), because the console Reset is a game-read switch (RetroPad X). **Rec:** power cycle. **Alt:** hold the Reset switch for 2 frames. **Would change if:** users expect RetroArch's Restart to keep RAM.

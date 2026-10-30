@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
 status: planning
-last_updated: "2026-10-30T01:44:59.893Z"
+last_updated: "2026-10-30T01:50:10Z"
 last_activity: 2026-10-29
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,29 +17,54 @@ progress:
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [ROADMAP.md](ROADMAP.md) and
-[archived requirements](milestones/v2.0-REQUIREMENTS.md), updated 2026-10-29.
+See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-10-29.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: select the next milestone and define fresh requirements.
+Current focus: v3.0 Phase 12 — Player-ready delivery and Playstead bridge; ready for a separate discussion step.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-10-29 — Milestone v3.0 started
+Phase: 12 — Player-ready delivery and Playstead bridge (1 of 3 in v3.0)
+Plan: 0 of 0 — no execution plans yet
+Status: Planning — ready for Phase 12 discussion; no phase implementation or plan complete
+Last activity: 2026-10-29 — Approved 16 atomic requirements mapped to three coarse phases (12–14)
+Progress: [░░░░░░░░░░] 0%; requirements 0/16 complete, 16 pending
 
-## Decisions and Limits
+## Performance Metrics
 
-- Keep COST-01 raw monthly totals untrusted and WR-01 delayed-release base edge deferred.
-- Retain advisory property isolation calibration, optional Phase 10/11 findings and inherited todos.
-- Keep fitted hardware confidence, PAL analog assumptions and HSC stub/unsupported sound limits explicit.
-- Pinned library accounting is 201 unknown/3 skipped out of 204; model conformance/title screens are not gameplay.
-- Read existing decisions and reproduced LESSONS before changing a subsystem; never reopen settled scope without evidence.
-- SEED-007/009/010 fire for the next milestone's first tune-up. Discuss SEED-002 states/movies and SEED-008 browser next.
-- SEED-006 is unpromoted; SEED-011–014 retain optional triggers. No future requirement is silently added.
-- Tag creation is disabled; release-please owns package versions. Completed quick tasks remain in place.
+Current milestone: 0 completed plans; duration and trend not measured. Historical counts stay in [MILESTONES.md](MILESTONES.md).
+
+| Phase | Plans | Total | Avg/Plan |
+|---|---|---|---|
+| 12–14 | 0 complete; total TBD | — | — |
+
+## Accumulated Context
+
+### Decisions
+
+- Gamer-first order: useful release/readiness plus demonstrated small tune-up → portable states in all three interfaces → proven RetroArch save/load, rewind/run-ahead. No new dependency by default.
+- Preserve the three deliverables, integer-only instance ownership, bounded work and no allocation after load; shipped baseline API7/ABI1/behavior6/package v0.10.0.
+- State includes emulated battery bytes and pending work; host dirty tokens are not restored, changed bytes notify dirty tracking, and speculative work cannot commit durable files. Layout/pins are downstream design.
+- Playstead owns actual adapter/install/input/session changes in a separate session; initial state UI is RetroArch-managed. Full recording/AI/TAS/generalized continuation and native Continue/history remain later.
+- Read settled decisions and reproduced LESSONS before subsystem work. One GSD step/session; tag creation disabled, release-please owns packages; completed quick tasks stay in place.
+
+### Pending Todos
+
+Inherited todos and optional seeds retain their dispositions; no extra milestone requirement is inferred. [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) carries future horizons.
+
+### Blockers/Concerns
+
+- External dependency: actual Playstead → RetroArch → muhtari launch/input/orderly return/battery continuity needs paired current-source/pin evidence; muhtari readiness does not prove it. Track [handoff](research/PLAYSTEAD-HANDOFF.md). Independent muhtari state work can proceed.
+- COST-01 monthly totals untrusted; WR-01 delayed-release equal-base edge unresolved/fail-closed; property isolation advisory/unaccepted until qualifying evidence. Phase 12 must ship an actual improvement, not only dispositions.
+- Keep optional Phase 10/11 findings, hardware/PAL fit confidence and HSC stub/unsupported sound limits. Pinned accounting remains 201 unknown/3 skipped of 204; conformance/title screens and voluntary gameplay reports are separate evidence.
+- SEED-007/009/010 inform bounded Phase 12 work; SEED-008 is preferred next candidate. SEED-006 unpromoted; SEED-011–014 retain optional triggers.
+
+## Session Continuity
+
+Last session: 2026-10-29
+Stopped at: v3.0 requirements and roadmap initialized; no implementation, phase plans or execution acceptance
+Resume file: None
+Next separate command: `$gsd-discuss-phase 12`
 
 ## Deferred Items
 

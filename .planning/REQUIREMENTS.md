@@ -67,10 +67,26 @@ Only read-only Playstead research and a handoff occur in this milestone-start st
 
 ## Traceability
 
-Filled by the milestone roadmapper. Every requirement maps to exactly one phase.
+Every requirement maps to exactly one phase. All 16 remain pending; no implementation or plan is complete.
 
 | Requirement | Phase | Status |
 |---|---|---|
+| TUNE-06 | Phase 12 | Pending |
+| TUNE-07 | Phase 12 | Pending |
+| PLAY-01 | Phase 12 | Pending |
+| PLAY-02 | Phase 12 | Pending |
+| PLAY-03 | Phase 12 | Pending |
+| PLAY-04 | Phase 12 | Pending |
+| STATE-01 | Phase 13 | Pending |
+| STATE-02 | Phase 13 | Pending |
+| STATE-03 | Phase 13 | Pending |
+| STATE-04 | Phase 13 | Pending |
+| STATE-05 | Phase 13 | Pending |
+| STATE-06 | Phase 13 | Pending |
+| FRONT-01 | Phase 13 | Pending |
+| FRONT-02 | Phase 14 | Pending |
+| FRONT-03 | Phase 14 | Pending |
+| FRONT-04 | Phase 14 | Pending |
 
 ---
 Research: [summary](research/SUMMARY.md); owner intent: [INTENT.md](INTENT.md).

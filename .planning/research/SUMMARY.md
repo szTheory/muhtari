@@ -186,3 +186,27 @@ Persist these cross-project engineering patterns with their source and limits: o
 ---
 *Research completed: 2026-10-29*
 *Ready for roadmap: yes*
+
+## Milestone initialization verification
+
+Scoping only: three phases, 16 requirements pending, no implementation or execution
+plans completed. The approved [roadmap](../ROADMAP.md) is authoritative; research
+phase labels above are recommendations. Five inherited pending todos were reviewed;
+none directly matches a newly required change, so none was silently promoted/tagged.
+The three incoming config/decision/runtime-handoff edits remain unchanged and outside
+these milestone commits. Prior research was preserved in `milestones/v2.0-research/`.
+
+| Command / observation | Exit / result | Run URL |
+|---|---|---|
+| `cmake --workflow --preset ci` | 0; 673 CI tests plus 6 release/archive checks | N/A-local |
+| `cmake --workflow --preset hygiene` | 0; 30/30 | N/A-local |
+| `cmake -DREADME="$PWD/README.md" -DBASE_URL=file:///tmp/muhtari-onboarding-release/ -DHOME_DIR=/tmp/muhtari-v3-install-check -P tests/cmake/install_line.cmake` | 0; current README installs downloaded core and info | N/A-local |
+| `python3 /tmp/muhtari-v3-roadmap-check.py` | 0; 16/16 unique mappings, all pending, prior deferred items byte-identical | N/A-local |
+| `node <GSD_TOOLS> query validate.consistency` | 0; passed, zero warnings | N/A-local |
+| `node <GSD_TOOLS> query roadmap.analyze` | 0; phases12–14, zero plans, next12 | N/A-local |
+| One-off Python checks of current-step Markdown file targets and incoming-edit SHA-256 values | 0; 20 current documents resolve, three incoming files preserved | N/A-local |
+| `git diff --check` | 0 | N/A-local |
+
+Raw verification logs and API responses stay outside Git. No current hosted run,
+new package publication, actual Playstead adapter or state feature is claimed by
+this milestone-start check. Next separate command: `$gsd-discuss-phase 12`.
