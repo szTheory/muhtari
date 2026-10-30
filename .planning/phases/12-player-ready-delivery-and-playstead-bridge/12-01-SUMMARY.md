@@ -17,26 +17,30 @@ tech_stack:
 key_files:
   created:
     - tests/common/bmp.c
+    - tests/input/pixels.c
   modified:
     - .github/workflows/ci.yml
     - tests/diag/tests.cmake
     - tests/retroarch/compare.c
     - tests/retroarch/run_retroarch.cmake
     - tests/retroarch/test.cfg.in
+    - tests/input/test_input.c
+    - tests/input/tests.cmake
+    - docs/testing.md
 decisions:
   - Move the generic BMP reader to tests/common so tests/retroarch remains within its 300-line bound.
   - Keep this plan halted after its sole hosted attempt failed before the RetroArch host job could run.
+  - Permit one scoped corrected-source acceptance after complete failed-job audit and local preflight; halt again when actual held input fails.
 metrics:
-  duration: "At least 7m22s from the first task commit to halt; pre-commit work began earlier."
+  duration: "Original halt at least 7m22s; scoped recovery includes the roughly 40-minute revised hosted run."
   completed_date: 2026-10-30
 status: halted
 actuals:
-  tokens: 2983
-  tasks: 1
-  commits: 2
-commits: 2
+  tasks: 2
+  commits: 3
+commits: 3
 plan_head_before: 0ca7c9aa92152b09a277388e0fb2c977601016fa
-plan_head_after: b36001767b97060d9c5830bec504cba797a8255e
+plan_head_after: 28e13e1cb7da122d72d1c83d438861001b503504
 requirements-completed: []
 coverage:
   - id: PLAY-03-packaged-host-input
@@ -44,16 +48,28 @@ coverage:
     requirement: PLAY-03
     verification:
       kind: e2e
-      ref: "gh run watch 41056151292 --exit-status (exit 1); https://github.com/szTheory/muhtari/actions/runs/41056151292"
+      ref: "gh run watch 41062201311 --exit-status (exit 1); https://github.com/szTheory/muhtari/actions/runs/41062201311; original pre-host failure 41056151292 retained below"
       status: fail
+    human_judgment: false
+  - id: PLAY-03-input-oracles
+    description: Existing C input case independently checks held/released registers, idle unrelated port and input-band fault predicates.
+    requirement: PLAY-03
+    verification:
+      kind: unit
+      ref: "ctest --test-dir build/ci -R '^(input[.]|runner[.]movie[.]replay$|libretro[.]host[.]input$)' --no-tests=error --output-on-failure --output-junit phase12-input.xml (exit 0, 19/19); cmake --workflow --preset ci (exit 0, 673+6); N/A-local"
+      status: pass
     human_judgment: false
 ---
 
 # Phase 12 Plan 01: Player-ready delivery and Playstead bridge Summary
 
-The held/released input tracer was implemented, but its only hosted run failed during CMake generation before RetroArch launched, so PLAY-03 remains unverified.
+The original run failed before host execution. After scoped recovery, corrected
+source builds and local input-oracle controls pass, but actual pinned RetroArch
+produces idle pixels during the held-input interval. The independent judge rejects
+them; the plan remains halted and PLAY-03 remains unverified. Both failed hosted
+receipts are retained below. No retry or downstream plan ran.
 
-## Plan Status
+## Original Plan Status (historical)
 
 - Task 1 implementation was committed as `bf21fc3`, then a CMake target regression and formatting issues found in its hosted run were corrected in `b360017`.
 - The hosted run tested exact source SHA `bf21fc3ae7d89f4e03f61f1f7a2426dc4af5df29`, attempt 1. The actual `retroarch` job was skipped because `build (macos-arm64)` failed.
@@ -119,7 +135,7 @@ These local checks verify the comparator build only; they do not substitute for 
 - Task commits `bf21fc3` and `b360017` are ancestors of the current branch head.
 - `tests/retroarch` contains 293 lines, within the 300-line bound.
 
-## Orchestrator closeout verification
+## Original Orchestrator Closeout Verification (historical)
 
 The halt remains open. On corrected source `b360017` (with summary-only successor
 `31b12c3`), `cmake --workflow --preset ci` exits 0: all 673 normal tests, three ZIP
@@ -206,6 +222,92 @@ No fixture mode, inventory item, installed surface or dependency was added.
   and 6 release tests. `tests/retroarch/*` totals 268 lines; two cases, 50-second
   launch and five-minute job bounds remain unchanged. Run URL N/A-local.
 
-Hosted recovery evidence is pending. Candidate archive results will not establish
-published-byte or actual Playstead acceptance. Dispatch performance is same-head
-repeatability; stable PR-base performance remains the later PR boundary.
+### Revised acceptance receipt: semantic halt
+
+The one corrected-source acceptance is **failed and spent**. Command
+`gh run watch 41062201311 --exit-status` exits 1.
+[Run 41062201311](https://github.com/szTheory/muhtari/actions/runs/41062201311),
+attempt 1, tests source `28e13e1cb7da122d72d1c83d438861001b503504`.
+This is a distinct corrected-source run, not a rerun of the original attempt.
+
+| Identity | Verified value |
+| --- | --- |
+| Actual host job | `124101716926`, failure in held/released input step |
+| App | RetroArch 1.22.2, git `69a4f0ea` |
+| DMG SHA256 | `81b79121ba26d539064ae13b4d0419a120c3d165afbe656cf5f5412b15fdb434` |
+| Candidate archive | `muhtari-libretro-macos-arm64.zip`, artifact `12981635606` |
+| Candidate ZIP SHA256 | `2cfdd05fd0314ae960b67d53e1a02d4c9905793499af39c753d7b9ea77b12fd7` |
+| Owned screenshots | `retroarch-frames`, artifact `12984065197` |
+| Frames artifact SHA256 | `627468475c06a3ba6be7abf414e886f3a3a5a1b63e35b910b2bcc3cd88228b7e` |
+
+The actual job validates the app version/DMG digest, extracts the exact candidate
+ZIP with the digest above, and builds all three standalone consumers. DMA runs
+120 frames successfully: retained hash
+`145799ed1868d43e10f18fdcd1529120274fe5c142957962760c02da6cb67955`
+matches the ledger and every screenshot pixel equals the runner. The held-input
+launch runs 40 frames, exits 0 and writes its 320×242 screenshot. The independent
+comparison then exits 1 with `input-control: SWCHA mismatch`.
+
+The agent downloaded and visually inspected both held PNGs. `sips` conversion
+and standard-library BMP/palette sampling exit 0 and establish these values at
+the independently specified band samples:
+
+| Sample | Actual host held | Expected runner held |
+| --- | --- | --- |
+| SWCHA | FF | EF |
+| SWCHB | 3F | 3F |
+| INPT0 | 08 (D7 low) | 88 (D7 high) |
+| INPT1/2/3 | 09/0A/0B (D7 low) | 09/0A/0B (D7 low) |
+| INPT4 | 8C (D7 high) | 0C (D7 low) |
+| INPT5 | 8D (D7 high) | 8D (D7 high) |
+
+Replaying `build/ci/tests/muhtari-test-retroarch-compare --input-controls held`
+on the downloaded runner/host BMPs exits 1; `--input-controls released` on the
+actual held image twice exits 0. The host image independently matches idle, so
+neither scheduled Up nor button 1 reached this visible observation. The exact
+driver/config/event cause is **not diagnosed**. Existing failure output cats only
+DMA/battery logs; its `mfi` driver messages belong to DMA, not the input launch.
+The input launch log/config were not uploaded, so they cannot establish whether
+the test driver is unavailable, unselected or receiving an unusable schedule.
+
+The fail-fast step never reaches the released iteration. The battery roundtrip,
+unsafe-path host controls and final DMA flipped-pixel step are skipped. Their
+source remains intact and local C tests pass, but this run supplies no current
+hosted result for those skipped controls. The host job lasts 32s; no line/case/
+process/job bound was exceeded or raised.
+
+Complete terminal response command `gh run view 41062201311 --json
+attempt,status,conclusion,headSha,url,jobs` exits 0. Running
+`cmake -DINPUT=/tmp/muhtari-recovery-run.json
+-DEXPECTED_SHA=28e13e1cb7da122d72d1c83d438861001b503504
+-P tools/check_ci_run.cmake` exits 1. Every job was audited: all six native builds,
+ASan, hygiene, BE32, both nofp lanes, dispatch perf, quality, native hash equality,
+advisory library and advisory WASM succeed; title is the allowed dispatch skip.
+WASM job `124101717068` completes 604/604 with exact inventory. The only failed
+jobs are actual RetroArch `124101716926` and aggregate `124102011116`; the latter's
+log identifies RetroArch as the sole failed need. Advisory status was preserved.
+Completed-job logs were fetched with `gh api --allow-escape-sequences
+repos/szTheory/muhtari/actions/jobs/JOB_ID/logs` into scratch (exit 0); this avoids
+the local `gh run view --log` cache-path write refusal. No logs/media are committed.
+
+### Durable stopping point
+
+ENGINEERING §11 finding: the build-consumer fault is repaired, but the pinned
+test-joypad seam has now actually failed its intended held-input oracle. Preserved
+timeouts and test bounds are not the failure. No second revised acceptance,
+same-source retry, alternative seam, owner test or quota change is authorized by
+this receipt. Task-2 independent C oracles/docs are implemented and locally/native
+verified; the full host acceptance remains unmet, so neither task closes the plan.
+
+Next recovery action: in a separate scoped debug session, inspect the pinned
+released binary's test-joypad availability and official configuration/event
+contract, and include the actual input launch's log/config in existing failure
+evidence before any newly authorized host feasibility test. Decide a concrete
+viable correction or seam within the retained bounds, or retain the boundary
+halt. Do not repeat this schedule without new evidence and an explicit scoped
+decision. No GPL/LGPL/unlicensed emulator source is opened.
+
+Accepted **0/4**; PLAY-03 stays pending and 12-02 through 12-04 stay blocked.
+Candidate results establish no published-byte or actual Playstead acceptance.
+Dispatch perf remains same-head repeatability; PR-base comparison is still later.
+Next separate command: `$gsd-debug "Diagnose pinned RetroArch held-input no-delivery from run 41062201311; preserve both spent gates and establish the next scoped decision"`.
