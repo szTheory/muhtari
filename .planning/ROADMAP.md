@@ -51,7 +51,7 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 4 plans
+**Plans:** 6 plans (4 acceptance plans and 2 additive gap plans; accepted 0/4)
 
 Plans:
 
@@ -66,6 +66,11 @@ spent; accepted 0/4 and PLAY-03 remain pending. Preserve the
 [canonical halt](phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md)
 and diagnose driver/config/event delivery with new evidence before any new bounded
 host test or dependent plan.
+
+**Additive gap plans** *(diagnostic dispositions only; original acceptance halt and successor blocks remain)*
+
+- [x] 12-05-PLAN.md — Published the prior portability repair; its single diagnostic failed Linux preflight before RetroArch and its allowance is spent.
+- [ ] 12-06-PLAN.md — After a later explicit gaps-only execution decision, publish the current reviewed ownership repair and reconcile one bounded diagnostic or its unresolved endpoint; no ordinary-package acceptance.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
