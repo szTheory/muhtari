@@ -5,7 +5,7 @@ foreach(var RETROARCH CORE INFO TEMPLATE RA_DIR FRAMES SHOT)
     message(FATAL_ERROR "run_retroarch: -D${var} is required")
   endif()
 endforeach()
-foreach(var RA_DIR SHOT SAVE_DIR HSC_ROM RAW_SHOTS)
+foreach(var RA_DIR SHOT SAVE_DIR HSC_ROM RAW_SHOTS TRACE_DIR)
   if(NOT "${${var}}" STREQUAL "")
     get_filename_component(${var} "${${var}}" REALPATH)
   endif()
@@ -62,6 +62,25 @@ if(HSC_ROM)
   endif()
 endif()
 
+# An explicitly selected diagnostic helper/core only. Never enabled by CI defaults.
+set(trace_environment "")
+if(NOT "${TRACE_DIR}" STREQUAL "")
+  if("${KEYBOARD}" STREQUAL "" OR NOT EXISTS "${TRACE_PARSER}")
+    message(FATAL_ERROR "run_retroarch: trace requires diagnostic KEYBOARD and TRACE_PARSER")
+  endif()
+  cmake_path(IS_PREFIX RA_DIR "${TRACE_DIR}" NORMALIZE trace_nested)
+  cmake_path(IS_PREFIX TRACE_DIR "${RA_DIR}" NORMALIZE trace_parent)
+  cmake_path(IS_PREFIX TRACE_DIR "${SAVE_DIR}" NORMALIZE trace_save)
+  cmake_path(IS_PREFIX SAVE_DIR "${TRACE_DIR}" NORMALIZE save_trace)
+  cmake_path(IS_PREFIX TRACE_DIR "${SHOT}" NORMALIZE trace_shot)
+  if(trace_nested OR trace_parent OR trace_save OR save_trace OR trace_shot OR EXISTS "${TRACE_DIR}")
+    message(FATAL_ERROR "run_retroarch: trace directory must be fresh and outside disposable/save paths")
+  endif()
+  file(MAKE_DIRECTORY "${TRACE_DIR}")
+  file(CHMOD "${TRACE_DIR}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+  list(APPEND trace_environment "MUHTARI_INPUT_TRACE_DIR=${TRACE_DIR}")
+endif()
+
 file(REMOVE_RECURSE "${RA_DIR}")
 foreach(sub home assets cache cores info logs playlists saves shots states system)
   file(MAKE_DIRECTORY "${RA_DIR}/${sub}")
@@ -84,6 +103,7 @@ endif()
 
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E env "HOME=${RA_DIR}/home" "CFFIXED_USER_HOME=${RA_DIR}/home"
+    ${trace_environment}
     ${launcher} "${retroarch}" --verbose --config "${RA_DIR}/test.cfg" -L "${core}"
     "--max-frames=${FRAMES}" --max-frames-ss "--max-frames-ss-path=${SHOT}" ${content}
   RESULT_VARIABLE result
@@ -91,6 +111,18 @@ execute_process(
   ERROR_VARIABLE log
   TIMEOUT 50)
 file(WRITE "${RA_DIR}/retroarch.log" "${log}")
+if(NOT "${TRACE_DIR}" STREQUAL "")
+  # Collect before handling a failed launch; exclusive trace files survive RA_DIR cleanup.
+  execute_process(COMMAND "${TRACE_PARSER}" --collect "${TRACE_DIR}"
+    RESULT_VARIABLE trace_result OUTPUT_VARIABLE trace_report ERROR_VARIABLE trace_error TIMEOUT 5)
+  message(STATUS "Input diagnostic retained at ${TRACE_DIR}: ${trace_report}${trace_error}")
+  if(log MATCHES "input trace: write failed or short")
+    message(FATAL_ERROR "Input diagnostic writer failure; retained prefix cannot establish missing input")
+  endif()
+  if(NOT trace_result STREQUAL "0")
+    message(FATAL_ERROR "Input diagnostic invalid or unavailable: ${trace_result}; launch=${result}")
+  endif()
+endif()
 if(NOT result STREQUAL "0")
   message(FATAL_ERROR "RetroArch exited with '${result}'. Its log:\n${log}")
 endif()

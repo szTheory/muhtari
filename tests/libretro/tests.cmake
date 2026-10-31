@@ -84,6 +84,30 @@ muhtari_add_test(NAME libretro.vendored
 
 # The rest needs the built core.
 if(TARGET muhtari_libretro)
+  if(TARGET muhtari_libretro_input_trace)
+    foreach(trace_target IN ITEMS protocol host helper)
+      if(trace_target STREQUAL "protocol")
+        set(trace_source ${CMAKE_CURRENT_LIST_DIR}/test_input_trace.c)
+        set(trace_extra "")
+      elseif(trace_target STREQUAL "host")
+        set(trace_source ${CMAKE_CURRENT_LIST_DIR}/input_trace_host.c)
+        set(trace_extra ${CMAKE_CURRENT_LIST_DIR}/input_trace.c)
+      else()
+        set(trace_source ${PROJECT_SOURCE_DIR}/tests/retroarch/test_input_trace_helper.c)
+        set(trace_extra ${CMAKE_CURRENT_LIST_DIR}/input_trace.c)
+      endif()
+      add_executable(muhtari-test-trace-${trace_target} ${trace_source} ${trace_extra})
+      target_include_directories(muhtari-test-trace-${trace_target} PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR} ${PROJECT_SOURCE_DIR}/libretro)
+      target_link_libraries(muhtari-test-trace-${trace_target} PRIVATE ${CMAKE_DL_LIBS})
+      set_target_properties(muhtari-test-trace-${trace_target} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+      muhtari_warnings(muhtari-test-trace-${trace_target})
+    endforeach()
+    # Only the platform API declarations are mocked; POSIX descriptors/fork/exec are real.
+    set(trace_include ${PROJECT_BINARY_DIR}/tests/trace-include)
+    target_include_directories(muhtari-test-trace-helper PRIVATE ${trace_include})
+  endif()
   # Fault prevented: unusable BIOS candidates hiding the next file, or
   # allocation/I/O/path failures being mistaken for missing firmware.
   add_executable(muhtari-test-libretro-bios ${CMAKE_CURRENT_LIST_DIR}/bios.c

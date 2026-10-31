@@ -38,13 +38,32 @@ pid_t waitpid(pid_t, int *, int);
 add_executable(muhtari-test-preflight ${CMAKE_CURRENT_LIST_DIR}/retroarch_preflight.c)
 target_include_directories(muhtari-test-preflight PRIVATE ${preflight_include})
 muhtari_warnings(muhtari-test-preflight)
-muhtari_add_test(NAME policy.retroarch.preflight_api COMMAND muhtari-test-preflight
+set(preflight_api_command muhtari-test-preflight)
+if(TARGET muhtari_libretro_input_trace)
+  file(COPY ${preflight_include}/ApplicationServices DESTINATION ${PROJECT_BINARY_DIR}/tests/trace-include)
+  set(preflight_api_command ${CMAKE_COMMAND}
+    "-DMOCK=$<TARGET_FILE:muhtari-test-preflight>"
+    "-DPROTOCOL=$<TARGET_FILE:muhtari-test-trace-protocol>"
+    "-DHOST=$<TARGET_FILE:muhtari-test-trace-host>"
+    "-DHELPER=$<TARGET_FILE:muhtari-test-trace-helper>"
+    "-DNORMAL=$<TARGET_FILE:muhtari_libretro>"
+    "-DMODULE=$<TARGET_FILE:muhtari_libretro_input_trace>"
+    "-DINFO=${PROJECT_BINARY_DIR}/libretro/muhtari_libretro.info"
+    "-DROOT=${PROJECT_SOURCE_DIR}"
+    "-DWORK=${PROJECT_BINARY_DIR}/tests/input-trace"
+    -P ${PROJECT_SOURCE_DIR}/tests/libretro/input_trace.cmake)
+endif()
+muhtari_add_test(NAME policy.retroarch.preflight_api COMMAND ${preflight_api_command}
   LABELS policy portable TIMEOUT 5)
 # A failed child exec must terminate before pid0 can reach input or cleanup.
+set(child_failure_code 127)
+if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
+  set(child_failure_code 125)
+endif()
 set(child_failure_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-test-preflight> --child-exec-failure)
 string(REPLACE ";" "$<SEMICOLON>" child_failure_cmd "${child_failure_cmd}")
 muhtari_add_test(NAME policy.retroarch.child_failure
-  COMMAND ${CMAKE_COMMAND} "-DCMD=${child_failure_cmd}" -DCODE=127
+  COMMAND ${CMAKE_COMMAND} "-DCMD=${child_failure_cmd}" "-DCODE=${child_failure_code}"
     "-DREGEX=child exec failure: argv preserved, no input or wait" -P ${policy_scripts}/expect_fail.cmake
   LABELS policy portable TIMEOUT 5)
 muhtari_add_test(NAME policy.retroarch.preflight_gate

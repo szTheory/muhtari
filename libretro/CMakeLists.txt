@@ -27,6 +27,16 @@ muhtari_libretro_module(muhtari_libretro)
 muhtari_libretro_module(muhtari_libretro_rgb565)
 target_compile_definitions(muhtari_libretro_rgb565 PRIVATE USE_RGB565)
 
+# POSIX local diagnostic only; no install/package rule and no platform input API.
+if(MUHTARI_TESTS AND UNIX)
+  muhtari_libretro_module(muhtari_libretro_input_trace)
+  target_sources(muhtari_libretro_input_trace PRIVATE
+    ${PROJECT_SOURCE_DIR}/tests/libretro/input_trace.c)
+  target_include_directories(muhtari_libretro_input_trace PRIVATE
+    ${PROJECT_SOURCE_DIR}/tests/libretro)
+  target_compile_definitions(muhtari_libretro_input_trace PRIVATE MUHTARI_INPUT_TRACE)
+endif()
+
 # Core information for RetroArch's info directory, with display_version
 # taken from version.txt.
 configure_file(muhtari_libretro.info.in

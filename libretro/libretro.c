@@ -47,6 +47,23 @@ extern int __xstat(int version, const char *path, struct stat *info);
 #include "palette.h"
 #include "sha256.h"
 #include "status_text.h"
+#ifdef MUHTARI_INPUT_TRACE
+#include <limits.h>
+#include <unistd.h>
+#include "input_trace.h"
+static it_writer lr_trace = {.fd = -1, .disabled = 1};
+static int lr_trace_poll = -1, lr_trace_available = -1;
+static bool lr_trace_buttons, lr_trace_seen[2];
+static int16_t lr_trace_values[2];
+static void lr_trace_unavailable(int reason, uint32_t detail)
+{
+    if (lr_trace_available != reason) {
+        it_emit(&lr_trace, IT_UNAVAILABLE, (uint32_t)reason, detail, 0);
+        lr_trace_available = reason;
+        memset(lr_trace_seen, 0, sizeof lr_trace_seen);
+    }
+}
+#endif
 #ifdef MUHTARI_LIBRETRO_TEST
 #include "internal.h"
 static muhtari__audio_observer lr_test_observer;
@@ -442,11 +459,29 @@ void retro_set_input_state(retro_input_state_t cb)
 /* L7580: the instance is created at load, so there is nothing to do here. */
 void retro_init(void)
 {
+#ifdef MUHTARI_INPUT_TRACE
+    const char *text = getenv("MUHTARI_INPUT_TRACE_FD");
+    char *end = NULL;
+    errno = 0;
+    long fd = text ? strtol(text, &end, 10) : -1;
+    if (text && text[0] >= '0' && text[0] <= '9' && end && *end == '\0' && errno == 0 && fd >= 3 &&
+        fd <= INT_MAX)
+        (void)it_begin(&lr_trace, (int)fd, IT_CORE, (uint32_t)getppid());
+    lr_trace_poll = lr_trace_available = -1;
+    memset(lr_trace_seen, 0, sizeof lr_trace_seen);
+#endif
 }
 
 /* L7594: reset every global; the module may be used again. */
 void retro_deinit(void)
 {
+#ifdef MUHTARI_INPUT_TRACE
+    it_emit(&lr_trace, IT_END, 0, 0, 0);
+    if (lr_trace.fd >= 3)
+        (void)close(lr_trace.fd);
+    lr_trace.fd = -1;
+    lr_trace.disabled = 1;
+#endif
     lr_release();
     env_cb = NULL;
     video_cb = NULL;
@@ -817,7 +852,23 @@ static void lr_check_battery_request(const muhtari_media *request)
 /* Whether RetroPad button id is held on port. */
 static bool lr_held(unsigned port, unsigned id)
 {
+#ifdef MUHTARI_INPUT_TRACE
+    if (input_state_cb == NULL)
+        return false;
+    int16_t value = input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, id);
+    if (lr_trace_buttons && port == 0u &&
+        (id == RETRO_DEVICE_ID_JOYPAD_UP || id == RETRO_DEVICE_ID_JOYPAD_B)) {
+        unsigned slot = id == RETRO_DEVICE_ID_JOYPAD_UP ? 0u : 1u;
+        if (!lr_trace_seen[slot] || lr_trace_values[slot] != value) {
+            it_emit(&lr_trace, IT_STATE, id, (uint32_t)(uint16_t)value, port);
+            lr_trace_values[slot] = value;
+            lr_trace_seen[slot] = true;
+        }
+    }
+    return value != 0;
+#else
     return input_state_cb != NULL && input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, id) != 0;
+#endif
 }
 
 /* The 7800 buttons held on a port: the D-pad is the stick, B button 1 and
@@ -825,6 +876,9 @@ static bool lr_held(unsigned port, unsigned id)
    (HOSTS-AND-INTEGRATION section 1, Input). */
 static uint32_t lr_buttons(unsigned port, uint32_t d)
 {
+#ifdef MUHTARI_INPUT_TRACE
+    lr_trace_buttons = true;
+#endif
     bool joystick = d == MUHTARI_PORT_JOYSTICK;
     uint32_t b = 0u;
     b |= lr_held(port, RETRO_DEVICE_ID_JOYPAD_UP) ? MUHTARI_BUTTON_UP : 0u;
@@ -835,6 +889,9 @@ static uint32_t lr_buttons(unsigned port, uint32_t d)
     if (lr_held(port, RETRO_DEVICE_ID_JOYPAD_A)) {
         b |= joystick ? MUHTARI_BUTTON_1 : MUHTARI_BUTTON_2;
     }
+#ifdef MUHTARI_INPUT_TRACE
+    lr_trace_buttons = false;
+#endif
     return b;
 }
 
@@ -906,6 +963,16 @@ static void lr_input(void)
     in.size = (uint32_t)sizeof in;
     for (unsigned p = 0u; p < 2u; p++) {
         in.port[p].device = lr_active_port(p, &request);
+#ifdef MUHTARI_INPUT_TRACE
+        if (p == 0u) {
+            if (!lr_ordinary(in.port[p].device))
+                lr_trace_unavailable(3, in.port[p].device);
+            else if (input_state_cb == NULL)
+                lr_trace_unavailable(2, 0);
+            else
+                lr_trace_available = 0;
+        }
+#endif
         if (lr_ordinary(in.port[p].device))
             in.port[p].buttons = lr_buttons(p, in.port[p].device);
         else if (lr_adapter(in.port[p].device)) {
@@ -992,7 +1059,17 @@ void retro_run(void)
     if (input_poll_cb != NULL) {
         input_poll_cb();
     }
+#ifdef MUHTARI_INPUT_TRACE
+    int polled = input_poll_cb != NULL;
+    if (lr_trace_poll != polled) {
+        it_emit(&lr_trace, IT_POLL, (uint32_t)polled, 0, 0);
+        lr_trace_poll = polled;
+    }
+#endif
     if (inst == NULL) {
+#ifdef MUHTARI_INPUT_TRACE
+        lr_trace_unavailable(1, 0);
+#endif
         return;
     }
     lr_input();

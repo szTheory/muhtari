@@ -1,4 +1,7 @@
 /* Nonprompting access gate, then bounded events to our own frontend child only. */
+#ifdef MUHTARI_INPUT_TRACE
+#define _DARWIN_C_SOURCE
+#endif
 #define _POSIX_C_SOURCE 200809L
 #include <ApplicationServices/ApplicationServices.h>
 #include <dirent.h>
@@ -10,6 +13,9 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#ifdef MUHTARI_INPUT_TRACE
+#include "input_trace_helper.h"
+#endif
 
 static int captures(const char *path)
 {
@@ -37,6 +43,13 @@ static void report(const char *reason, int64_t elapsed, int shots, int error, in
     char child_status[32] = "unknown";
     if (observed)
         snprintf(child_status, sizeof child_status, "%d", status);
+#ifdef MUHTARI_INPUT_TRACE
+    /* Fixed reason strings have stable FNV-1a identities, independent of logging. */
+    uint32_t reason_id = 2166136261u;
+    for (const char *p = reason; *p; p++)
+        reason_id = (reason_id ^ (uint8_t)*p) * 16777619u;
+    keyboard_trace_finish(reason_id, (uint32_t)error);
+#endif
     fprintf(stderr, "keyboard: reason=%s elapsed_ms=%lld capture=%d errno=%d child_status=%s\n",
             reason, (long long)elapsed, shots, error, child_status);
 }
@@ -60,10 +73,20 @@ int main(int argc, char **argv)
             return 2;
         }
     }
+#ifdef MUHTARI_INPUT_TRACE
+    if (!keyboard_trace_setup()) {
+        report("trace-setup", -1, shots, errno, 0, 0);
+        return 2;
+    }
+#endif
     int permitted = CGPreflightPostEventAccess();
     printf("post-event-access=%s\n", permitted ? "permitted" : "denied");
-    if (!permitted || preflight)
+    if (!permitted || preflight) {
+#ifdef MUHTARI_INPUT_TRACE
+        keyboard_trace_finish(permitted ? 0u : 77u, 0);
+#endif
         return permitted ? 0 : 77;
+    }
     fflush(stdout);
     struct timespec start, now;
     if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
@@ -76,9 +99,16 @@ int main(int argc, char **argv)
         return 1;
     }
     if (child == 0) {
+#ifdef MUHTARI_INPUT_TRACE
+        if (!keyboard_trace_inherit())
+            _exit(127);
+#endif
         execv(argv[2 + probe], argv + 2 + probe);
         _exit(127);
     }
+#ifdef MUHTARI_INPUT_TRACE
+    keyboard_trace_parent(child);
+#endif
     int status = 0, acknowledged = 0, holding = 1;
     int64_t elapsed = -1;
     const char *reason = "iteration-limit";
@@ -143,6 +173,10 @@ int main(int argc, char **argv)
             }
             CGEventSetFlags(event, 0);
             CGEventPostToPid(child, event);
+#ifdef MUHTARI_INPUT_TRACE
+            it_emit(&keyboard_trace, IT_POST, (uint32_t)keys[i],
+                    (uint32_t)(i == 2 ? shots == 0 : down), (uint32_t)child);
+#endif
             CFRelease(event);
             if (i == 2 || tick == 0 || (released && holding && !down))
                 printf("keyboard target=%ld elapsed_ms=%lld key=%u down=%d capture=%d\n",

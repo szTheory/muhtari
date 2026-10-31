@@ -172,7 +172,12 @@ void keyboard_exit(int code)
         if (code != 127 || execs != 1 || posts != 0 || waits != 0 || kills != 0 || bad)
             exit(1);
         puts("child exec failure: argv preserved, no input or wait");
+#ifdef __wasi__
+        /* Transport the checked result without asking WASI to export status 127. */
+        exit(125);
+#else
         exit(127);
+#endif
     }
     abort();
 }

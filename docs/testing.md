@@ -1,7 +1,5 @@
 # Testing
 
-Run CI locally with inventory and release checks.
-
 ## The entry point
 
 ```sh
@@ -36,7 +34,7 @@ arithmetic carry alone cannot replace execution.
 
 ## Lanes
 
-Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build goes to `build/<name>`.
+Each `cmake --workflow --preset <name>` lane builds in `build/<name>`.
 
 | Preset | What it proves | Inventory | Tests run |
 |---|---|---|---|
@@ -332,42 +330,45 @@ sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `c
 
 ## Hosted RetroArch
 
-macos-15 DMA/input and battery cases use arm64 candidates, pinned RetroArch 1.22.2 Metal.
-Isolated home/config/system/output share only external `SAVE_DIR`; save/run overlap fails before cleanup.
-Launches time out at 50s; support lines are reported.
+macos-15 arm64, pinned RetroArch1.22.2 Metal; isolated home/config/system/output, external `SAVE_DIR`.
+Overlap fails before cleanup; cap50s; support lines reported.
 
-DMA retains its 120-frame hash pin and pixel equality; flipped-pixel rejection names (7,3).
-Keyboard proof is pending. `keyboard_probe_only=true`: one child, isolated `RAW_SHOTS`, hold Up/Z,
-repeat F8-down until one capture before 5s, F8-up, release Up/Z at 5s, terminal 600-frame shot. Missing/multiple
-captures or early exit fail; cap 45s. Reports: stop reason, last valid monotonic ms/captures (-1 unknown),
-saved API errno (0 inapplicable), child status (unknown unless polled before cleanup).
-Ordinary launches skip; success stops. Runner movies and independent register/pixel judges check both shots.
-`input.proline_one_button` rejects wrong/missing/stuck input and pixel/dimension faults. `KEYBOARD` must be
-regular/outside `RA_DIR`; unsafe controls retain a sentinel before cleanup.
+DMA keeps its120-frame hash/pixel pin; flipped-pixel rejection names(7,3).
+Keyboard pending. `keyboard_probe_only=true`: one child, isolated `RAW_SHOTS`, hold Up/Z;
+F8-downs until one capture before5s, F8-up; release Up/Z at5s; terminal600-frame shot.
+Missing/multiple captures/early exit fail; cap45s. Reports: reason, monotonic ms/captures(-1 unknown),
+errno(0 inapplicable), child status(unknown until polled). Ordinary launches skip; success stops.
+Runner movies and independent register/pixel judges check both shots.
+`input.proline_one_button` rejects input/pixel/dimension faults. `KEYBOARD`: regular/outside `RA_DIR`;
+unsafe controls preserve a sentinel before cleanup.
 
-Battery: two fresh frontend/runner pairs, empty stores. The owned cartridge increments 16-bit HSC/EEPROM
-counters through SRAM/RIOT: 1/1 then 2/2; independently judge 34,816 bytes and runner saves.
-First launches use owned C6/FE firmware (marker 5A, no routines); second uses stub FF. Mailbox and
-`sips`-converted counter/marker glyphs precede equality. Black/wrong-counter/stale-medium and held-out pixel faults fail;
-`diag.battery` covers mailbox/media/pixels, modules lifecycle/no-content.
-Only owned PNGs enter `retroarch-frames`; saves, firmware and logs remain local.
+Battery: two fresh frontend/runner pairs, empty stores; owned SRAM/RIOT cartridge increments16-bit
+HSC/EEPROM counters1/1 then2/2; judge34,816 bytes/runner saves. Owned C6/FE firmware(marker5A, no routines),
+then stubFF; mailbox/`sips` glyphs precede equality. Black/counter/stale-medium/pixel faults fail;
+`diag.battery` covers mailbox/media/pixels/lifecycle/no-content. `retroarch-frames` holds only owned PNGs.
 
-Failure prints config/logs; `policy.retroarch.report` checks empty/partial/full evidence. Nonprompting denial
-exits77 before content; `keyboard_preflight_only=true` stops on grant. No requests/permission changes.
-Mocks cover access/events/child/time/captures: cutoff/release neighbors, cleanup, workflow guards/order and
-distinct reports. Mock clocks keep the target type or missing-clock integer fallback.
-Permission is not input proof; preserve spent gates.
-Proof is byte-specific; replay verified published app/core at ship. Retail compatibility,
-Playstead focus/lifecycle, ergonomics and audio need evidence.
+`policy.retroarch.report`: empty/partial/full config/logs. Nonprompting denial77 stops before content;
+`keyboard_preflight_only=true` stops on grant; no permission changes. Mocks cover access/events/child/time/
+capture/cleanup/order/reports; clocks retain target types or missing-clock fallback.
+Child-exec checks helper127/argv/ownership, exports WASI125/native127; exact status+marker required.
+Real helper stays127. Access is not delivery; spent gates persist. Replay published bytes at ship.
+Retail compatibility, Playstead focus/lifecycle, ergonomics and audio need evidence.
+
+Manual `input_trace_diagnostic=true` requires probe=true/preflight=false. Same-run arm64 diagnostic
+module/parser/source hashes stay outside ZIPs. Always upload raw traces/logs/`input-dump.txt` in
+`retroarch-input-diagnostic`. `muhtari-test-trace-protocol --dump DIR` lists statuses/all valid-prefix
+records/PIDs/clock errors;≤64×64bytes/stream. Saturation limits coverage; unfinished health is unknown.
+Same-host clock provenance is required; missing records are inconclusive. Writes alter timing;
+diagnostic modules prove neither delivery nor packaged-core acceptance.
 
 ## Release archives
 
-`release.archive_contents` unpacks the three zips under `build/ci/release/extract` and requires:
+`release.archive_contents` unpacks three zips in `build/ci/release/extract`, requiring:
 
-- the names `muhtari-{library,runner,libretro}-<os>-<arch>.zip`, with no version and no other `muhtari-*.zip`;
-- exactly the expected members at the root, with no top-level folder;
-- `LICENSE` and `THIRD-PARTY-NOTICES.md` byte-identical to the source tree's;
-- no file containing the absolute source or build directory.
+- exactly `muhtari-{library,runner,libretro}-<os>-<arch>.zip`, unversioned;
+- expected root members, no top-level folder;
+- source-identical `LICENSE` and `THIRD-PARTY-NOTICES.md`;
+- no absolute source/build paths.
 
 The README's install line is checked on macOS arm64 against the locally built zip:
 

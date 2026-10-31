@@ -20,6 +20,11 @@ on:
         type: boolean
         required: false
         default: false
+      input_trace_diagnostic:
+        description: "Diagnostic core input records for the single scoped keyboard probe"
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       ref:
@@ -193,7 +198,28 @@ jobs:
           scripts/fetch-pin.sh 7800openbios-asm build/pins/openbios
           scripts/fetch-pin.sh rcheevos build/pins/rcheevos
       - name: Build, test, package
-        run: cmake --workflow --preset ${{ matrix.preset }}
+        run: |
+          if [ "${{ inputs.input_trace_diagnostic }}" = true ]; then
+            cmake --preset ${{ matrix.preset }} -DMUHTARI_TESTS=ON
+          fi
+          cmake --workflow --preset ${{ matrix.preset }}
+      - name: Separate input diagnostic from the same source
+        if: github.event_name == 'workflow_dispatch' && inputs.input_trace_diagnostic && inputs.keyboard_probe_only && !inputs.keyboard_preflight_only && matrix.os == 'macos' && matrix.arch == 'arm64'
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          cmake --build --preset ci --target muhtari_libretro_input_trace muhtari-test-trace-protocol
+          mkdir -p build/input-diagnostic
+          cp build/ci/libretro/muhtari_libretro_input_trace.dylib build/input-diagnostic/
+          cp build/ci/tests/muhtari-test-trace-protocol build/input-diagnostic/
+          printf '%s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > build/input-diagnostic/identity.txt
+          git ls-tree -r HEAD -- .github/workflows/ci.yml libretro/CMakeLists.txt libretro/libretro.c tests/libretro/tests.cmake tests/libretro/input_trace.c tests/libretro/input_trace.h tests/libretro/input_trace.cmake tests/libretro/test_input_trace.c tests/libretro/input_trace_host.c tests/retroarch/input_trace_helper.h tests/retroarch/test_input_trace_helper.c tests/retroarch/keyboard_preflight.c tests/retroarch/run_retroarch.cmake tests/policy/retroarch_preflight.c tests/policy/retroarch_preflight.cmake tests/policy/tests.cmake docs/testing.md > build/input-diagnostic/sources.txt
+          (cd build/input-diagnostic && shasum -a 256 muhtari_libretro_input_trace.dylib muhtari-test-trace-protocol identity.txt sources.txt > SHA256SUMS)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name == 'workflow_dispatch' && inputs.input_trace_diagnostic && inputs.keyboard_probe_only && !inputs.keyboard_preflight_only && matrix.os == 'macos' && matrix.arch == 'arm64'
+        with:
+          name: input-diagnostic-macos-arm64
+          path: build/input-diagnostic/*
+          if-no-files-found: error
       - name: Every test ran
         run: >-
           cmake -DJUNIT=build/${{ matrix.preset }}/junit.xml -DINVENTORY=tests/inventory/ci.txt
@@ -428,6 +454,16 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || '' }}
+      - name: Validate input diagnostic scope before preflight or content
+        env:
+          TRACE: ${{ inputs.input_trace_diagnostic }}
+          EVENT: ${{ github.event_name }}
+          PROBE: ${{ inputs.keyboard_probe_only }}
+          PREFLIGHT: ${{ inputs.keyboard_preflight_only }}
+        run: |
+          if [ "$TRACE" = true ]; then
+            test "$EVENT" = workflow_dispatch && test "$PROBE" = true && test "$PREFLIGHT" != true
+          fi
       - name: Keyboard access preflight before all content
         run: |
           mkdir -p build/frames
@@ -448,6 +484,29 @@ jobs:
           unzip -q build/archives/muhtari-libretro-macos-arm64.zip -d build/libretro
           unzip -q build/archives/muhtari-runner-macos-arm64.zip -d build/runner
           unzip -q build/archives/muhtari-library-macos-arm64.zip -d build/library
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: inputs.input_trace_diagnostic
+        with:
+          name: input-diagnostic-macos-arm64
+          path: build/input-diagnostic
+      - name: Verify input diagnostic identity and build its helper
+        if: inputs.input_trace_diagnostic
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          printf '%s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > build/input-identity.txt
+          cmp build/input-identity.txt build/input-diagnostic/identity.txt
+          git ls-tree -r HEAD -- .github/workflows/ci.yml libretro/CMakeLists.txt libretro/libretro.c tests/libretro/tests.cmake tests/libretro/input_trace.c tests/libretro/input_trace.h tests/libretro/input_trace.cmake tests/libretro/test_input_trace.c tests/libretro/input_trace_host.c tests/retroarch/input_trace_helper.h tests/retroarch/test_input_trace_helper.c tests/retroarch/keyboard_preflight.c tests/retroarch/run_retroarch.cmake tests/policy/retroarch_preflight.c tests/policy/retroarch_preflight.cmake tests/policy/tests.cmake docs/testing.md > build/input-sources.txt
+          cmp build/input-sources.txt build/input-diagnostic/sources.txt
+          (cd build/input-diagnostic && shasum -a 256 muhtari_libretro_input_trace.dylib muhtari-test-trace-protocol identity.txt sources.txt > observed-SHA256SUMS)
+          cmp build/input-diagnostic/SHA256SUMS build/input-diagnostic/observed-SHA256SUMS
+          test -f build/input-diagnostic/muhtari_libretro_input_trace.dylib
+          test -f build/input-diagnostic/muhtari-test-trace-protocol
+          if cmp -s build/libretro/cores/muhtari_libretro.dylib build/input-diagnostic/muhtari_libretro_input_trace.dylib; then exit 1; fi
+          chmod +x build/input-diagnostic/muhtari-test-trace-protocol
+          cc -std=c17 -Wall -Wextra -Werror -DMUHTARI_INPUT_TRACE tests/retroarch/keyboard_preflight.c \
+            tests/libretro/input_trace.c -framework ApplicationServices -o build/frames/keyboard-input-trace
+          shasum -a 256 build/frames/keyboard-input-trace > build/input-diagnostic/helper-SHA256.txt
+          touch build/input-diagnostic-verified
       - name: RetroArch 1.22.2 from the pinned DMG
         run: |
           scripts/fetch-pin.sh retroarch-dmg build/dmg
@@ -521,13 +580,24 @@ jobs:
       - name: One-process keyboard feasibility
         if: inputs.keyboard_probe_only
         run: |
+          core=build/libretro/cores/muhtari_libretro.dylib
+          keyboard="$PWD/build/frames/keyboard-preflight"
+          trace_args=()
+          if [ "${{ inputs.input_trace_diagnostic }}" = true ]; then
+            core=build/input-diagnostic/muhtari_libretro_input_trace.dylib
+            keyboard="$PWD/build/frames/keyboard-input-trace"
+            trace_args=("-DTRACE_DIR=$PWD/build/input-trace" "-DTRACE_PARSER=$PWD/build/input-diagnostic/muhtari-test-trace-protocol")
+          fi
+          rc=0
           cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
-            -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
+            -DCORE="$core" -DINFO=build/libretro/info/muhtari_libretro.info \
             -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-input-probe" \
             "-DSAVE_DIR=$PWD/build/input-saves" -DFRAMES=600 -DROM=build/frames/input.a78 \
-            "-DKEYBOARD=$PWD/build/frames/keyboard-preflight" -DINPUT_MODE=probe \
+            "-DKEYBOARD=$keyboard" -DINPUT_MODE=probe "${trace_args[@]}" \
             "-DRAW_SHOTS=$PWD/build/ra-input-probe/shots" \
-            "-DSHOT=$PWD/build/frames/input-shot-released.png" -P tests/retroarch/run_retroarch.cmake
+            "-DSHOT=$PWD/build/frames/input-shot-released.png" -P tests/retroarch/run_retroarch.cmake > build/frames/input-wrapper.log 2>&1 || rc=$?
+          cat build/frames/input-wrapper.log
+          test "$rc" -eq 0
           shots=(build/ra-input-probe/shots/*.png)
           test "${#shots[@]}" -eq 1
           test -f "${shots[0]}"
@@ -554,6 +624,35 @@ jobs:
           done
           echo "One-process keyboard pixels passed; scoped stop, full host acceptance remains pending"
           exit 1
+      - name: Retain bounded input diagnostic after any stopping reason
+        if: always() && inputs.input_trace_diagnostic
+        run: |
+          rc=0
+          shasum -a 256 build/dmg/RetroArch_Metal.dmg build/archives/muhtari-libretro-macos-arm64.zip > build/input-runtime.txt || rc=$?
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/RetroArch.app/Contents/Info.plist >> build/input-runtime.txt || rc=$?
+          if [ -f build/input-diagnostic-verified ]; then
+            build/input-diagnostic/muhtari-test-trace-protocol --dump build/input-trace > build/input-dump.txt 2>&1 || rc=$?
+          else
+            echo 'Diagnostic identity/setup unverified; parser not executed' > build/input-dump.txt
+            rc=1
+          fi
+          cat build/input-dump.txt
+          test "$rc" -eq 0
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && inputs.input_trace_diagnostic
+        with:
+          name: retroarch-input-diagnostic
+          path: |
+            build/input-trace/*.trace
+            build/input-dump.txt
+            build/input-runtime.txt
+            build/input-diagnostic/identity.txt
+            build/input-diagnostic/sources.txt
+            build/input-diagnostic/SHA256SUMS
+            build/input-diagnostic/helper-SHA256.txt
+            build/frames/input-wrapper.log
+            build/ra-input-probe/retroarch.log
+          if-no-files-found: error
       - name: Fresh frontend and runner battery roundtrip
         if: ${{ !inputs.keyboard_probe_only }}
         run: |
