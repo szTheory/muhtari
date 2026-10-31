@@ -20,6 +20,15 @@ struct timespec;
 int nanosleep(const struct timespec *, struct timespec *);
 ]=])
 file(WRITE ${preflight_include}/signal.h "#define SIGKILL 9\nint kill(int, int);\n")
+file(WRITE ${preflight_include}/dirent.h [=[#ifndef MUHTARI_PREFLIGHT_DIRENT_H
+#define MUHTARI_PREFLIGHT_DIRENT_H
+typedef struct keyboard_directory DIR;
+struct dirent { char d_name[32]; };
+DIR *opendir(const char *);
+struct dirent *readdir(DIR *);
+int closedir(DIR *);
+#endif
+]=])
 file(WRITE ${preflight_include}/sys/wait.h [=[typedef int pid_t;
 pid_t waitpid(pid_t, int *, int);
 #define WNOHANG 1

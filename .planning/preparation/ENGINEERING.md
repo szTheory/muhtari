@@ -2,7 +2,7 @@
 title: "Engineering: C rules, tests, CI, release, repo settings and quality loops"
 summary: "Build, test, CI, release, repository, triage, performance and documentation decisions for muhtari, with mutable facts re-verified on 2026-10-15."
 read_when: "Before creating or changing CMake files, presets, tests, workflows, repository settings, the release pipeline, quality gates or engineering docs."
-updated: 2026-10-24
+updated: 2026-10-30
 ---
 
 # Engineering: C rules, tests, CI, release, repo settings and quality loops
@@ -281,6 +281,14 @@ package members, notices, prohibited assets and release integrity remain blockin
 This changes no runtime bound or performance/ABI/test/provenance contract.
 The [recovery decision](../research/workflow-recovery/RECOMMENDATION.md) records
 the reproduced gate/workflow failures, alternatives and preserved controls.
+
+**Accepted separate hosted-support review, 2026-10-30 (DEC.56):** retire only
+the numeric300-line hosted-support ceiling, with no replacement quota. Report
+line totals; preserve two host cases, runtime/frame bounds, isolated ownership,
+independent pixel/media judges and their fault controls. Ordinary architecture
+review above addresses harness growth. The owner-approved
+[local amendment](../debug/phase12-held-capture-diagnosis.md) preserves the failed
+347/300 receipt; it grants no live allowance or hosted acceptance.
 
 Follow the dependency ladder in AGENTS. Prefer a narrow permissive seed when its surface is understandable,
 updates are manageable and local ownership is credible; a package can be cheaper and safer for substantial

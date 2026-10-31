@@ -4,6 +4,14 @@
 **Domain:** Libretro/RetroArch packaging and host acceptance, release documentation, bounded CI maintenance  
 **Confidence:** MEDIUM
 
+**Subsequent scoped amendment (2026-10-30):** the owner approved retiring only
+the numeric hosted-support line ceiling after the reviewed capture repair hit
+347/300. DEC.56 and D-06 now require reported totals, existing architecture review
+and unchanged cases/runtime/ownership/pixel controls, with no replacement quota.
+The original research and cap observations below remain historical; the
+[diagnostic report](../../debug/phase12-held-capture-diagnosis.md) records the
+separate evidence and decision. No live allowance or acceptance follows.
+
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
 

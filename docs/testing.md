@@ -334,15 +334,15 @@ sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `c
 
 Two macos-15 cases (DMA/input and battery) use candidate arm64 archives and pinned RetroArch 1.22.2 Metal.
 Isolated home/config/system/output share only external `SAVE_DIR`; save/run overlap fails before cleanup.
-Launches time out at 50s; hosted support stays ≤300 lines.
+Launches time out at 50s; support lines are reported.
 
 DMA retains its 120-frame hash pin and pixel equality; flipped-pixel rejection names (7,3).
-Keyboard proof is pending. Authorized `keyboard_probe_only=true`: one child, Up/Z, F8 shot at 2s, release at 5s,
-terminal 600-frame shot. Ordinary launches skip; success also stops the probe. Early exit before release fails;
-own-child error/deadline cleanup stays within 50s. Runner movies and
-independent SWCHA/SWCHB/six-INPT judges check both shots. `input.proline_one_button` rejects missing/wrong input,
-stuck release and pixel/dimension faults. Regular `KEYBOARD` stays outside disposable `RA_DIR`; unsafe controls
-retain a sentinel before cleanup.
+Keyboard proof is pending. `keyboard_probe_only=true` uses one child and isolated `RAW_SHOTS`: hold Up/Z,
+repeat F8-down until one capture before 5s, F8-up, release Up/Z at 5s, terminal 600-frame shot. Missing/multiple
+captures or early exit fail. Logs use monotonic ms; helper cap 45s. Ordinary launches
+skip; success stops. Runner movies and independent register/pixel judges check both shots.
+`input.proline_one_button` rejects wrong/missing/stuck input and pixel/dimension faults. `KEYBOARD` must be
+regular/outside `RA_DIR`; unsafe controls retain a sentinel before cleanup.
 
 Battery uses two fresh frontend/runner pairs and empty stores. The owned cartridge programs/increments
 16-bit HSC/EEPROM counters through SRAM/RIOT: 1/1 then 2/2, independently judged 34,816 bytes and runner saves.
@@ -353,8 +353,8 @@ Only owned PNGs enter `retroarch-frames`; saves, firmware and logs stay uncommit
 
 Failure prints config/logs; `policy.retroarch.report` checks empty/partial/full evidence. Before content,
 nonprompting access denial exits77; authorized `keyboard_preflight_only=true` also stops on grant. No requests or
-permission changes. CI mocks permission/events/child/time and checks release neighbors, cleanup faults and
-workflow fallthrough/order. Shared battery RGB predicates retain existing controls plus held-out pixel faults.
+permission changes. CI mocks access/events/child/time/captures; checks cutoff/release neighbors, cleanup and
+workflow guards/order. Shared battery RGB predicates include held-out pixel faults.
 Permission is not input proof; preserve spent gates. Evidence is command, exit and run URL.
 Candidate proof covers those bytes only; replay against verified published app/core at ship. Retail
 compatibility, Playstead focus/lifecycle, ergonomics and audible quality need separate evidence.

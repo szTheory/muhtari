@@ -2,7 +2,7 @@
 title: "Decisions already made"
 summary: "One line per settled choice for muhtari, with its reason and the file and section that support it; open questions at the end."
 read_when: "Before reopening any choice, and whenever a phase needs to know what is settled. Reopen a decision only with new evidence, and record the change here with its date."
-updated: 2026-10-24
+updated: 2026-10-30
 ---
 
 # Decisions already made
@@ -93,7 +93,7 @@ evidence. IDs use a dot (`DEC.07`) so they never collide with GSD's `D-NN` phase
 | ID | Decision | Because | See |
 |---|---|---|---|
 | DEC.55 | libretro: ProSystem-compatible RetroPad layout and BIOS names, optional firmware, few core options, rcheevos memory descriptors tested with rcheevos' own resolver | Remaps and achievements carry over | HOSTS-AND-INTEGRATION 1, 2 |
-| DEC.56 | Real-RetroArch end-to-end stays two hosted cases (screenshot compare in v1.0, save round trip in v2.0), ≤ 300 test lines; semantics are proven in-process | A sibling's RetroArch e2e grew to 7,706 lines and stalled a milestone | HOSTS-AND-INTEGRATION 3 |
+| DEC.56 | Real-RetroArch end-to-end stays two hosted cases (screenshot compare in v1.0, save round trip in v2.0); semantics are proven in-process. Support line totals are reported, with no numeric ceiling; ENGINEERING §11 review and runtime/ownership/pixel controls remain binding | Owner-approved separate revision2026-10-30 after reviewed347-line capture repair hit300; sibling7706-line growth remains the maintenance warning, not a replacement quota. Historical failures retained in debug/phase12-held-capture-diagnosis.md | HOSTS-AND-INTEGRATION 3 |
 | DEC.57 | Runner exit statuses 0, 1, 2, 3, 4, 5, 77 in one table; `--probe` prints headered and headerless hashes incl. the RetroAchievements MD5; Playstead's continuation protocol lands in v3.0 | Playstead's adapter contract; headered and headerless dumps both exist | HOSTS-AND-INTEGRATION 4 |
 | DEC.58 | Scripting order: inspection (v1.0–v3.0) → hooks, Python bindings and a vectorised Gymnasium environment (v5.0) → Lua on demand; an own text movie format with BK2 import later | YAGNI order by demand | HOSTS-AND-INTEGRATION 5 |
 | DEC.59 | ROM patching stays in the host (RetroArch soft-patching); `muhtari-run --patch` (IPS/BPS, fuzzed) comes with the v5.0 tools | Core stays minimal | A7800-CARTRIDGES-AND-PERIPHERALS 6 |

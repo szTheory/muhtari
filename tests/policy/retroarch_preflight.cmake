@@ -1,5 +1,6 @@
 # Fault prevented: an access denial falls through to any hosted content launch.
 # Additional launches and truncated expected movies must also fail offline.
+# Support reporting must accept valid growth and still reject missing inputs.
 cmake_minimum_required(VERSION 3.25)
 if(NOT DEFINED WORKFLOW)
   set(WORKFLOW "${ROOT}/.github/workflows/ci.yml")
@@ -43,6 +44,7 @@ endif()
 if(NOT launch_count EQUAL 1 OR observations LESS launched OR
     before_launch MATCHES "\n +(for|while|until) " OR
     NOT probe MATCHES "-DINPUT_MODE=probe" OR NOT probe MATCHES "-DFRAMES=600" OR
+    NOT probe MATCHES "-DRAW_SHOTS=[$]PWD/build/ra-input-probe/shots" OR
     NOT workflow MATCHES "\n            build/ra-input-probe/shots/[*][.]png\n" OR
     NOT probe MATCHES "One-process keyboard pixels passed; scoped stop, full host acceptance remains pending\"\n          exit 1")
   message(FATAL_ERROR "keyboard preflight must stop: probe needs exactly one content process and scoped stop")
@@ -85,9 +87,14 @@ endforeach()
 if(launch MATCHES "input_joypad_driver|test_input_file")
   message(FATAL_ERROR "keyboard launch still requests an absent test driver")
 endif()
+string(REGEX MATCH "\n          (wc -l tests/retroarch/[*])\n" support_report "${workflow}")
+set(support_report "${CMAKE_MATCH_1}")
+if(support_report STREQUAL "")
+  message(FATAL_ERROR "keyboard preflight must stop: support line reporting is absent")
+endif()
 if(DEFINED WORK)
   file(MAKE_DIRECTORY "${WORK}")
-  foreach(fault IN ITEMS valid_span denial_fallthrough grant_fallthrough late_gate ordinary_dma ordinary_input ordinary_battery two_processes probe_loop short_movie lost_shots movie_binding movie_window movie_stride)
+  foreach(fault IN ITEMS valid_span denial_fallthrough grant_fallthrough late_gate ordinary_dma ordinary_input ordinary_battery two_processes probe_loop short_movie lost_shots movie_binding movie_window movie_stride missing_raw support_cap)
     set(bad "${workflow}")
     if(fault STREQUAL "valid_span")
       string(REPLACE "frame=0" "frame=1" shifted "${recipe}")
@@ -124,6 +131,10 @@ if(DEFINED WORK)
     elseif(fault STREQUAL movie_window)
       string(REPLACE "--frames 600" "--frames 601" bad_probe "${probe}")
       string(REPLACE "${probe}" "${bad_probe}" bad "${bad}")
+    elseif(fault STREQUAL missing_raw)
+      string(REPLACE "-DRAW_SHOTS=$PWD/build/ra-input-probe/shots" "-DUNUSED_SHOTS=missing" bad "${bad}")
+    elseif(fault STREQUAL support_cap)
+      string(REPLACE "${support_report}" [=[test "$(cat tests/retroarch/* | wc -l | tr -d ' ')" -le 300]=] bad "${bad}")
     else()
       string(REPLACE "frame + 1" "frame + 2" bad_recipe "${recipe}")
       string(REPLACE "${recipe}" "${bad_recipe}" bad "${bad}")
@@ -140,16 +151,48 @@ if(DEFINED WORK)
     endif()
   endforeach()
   if(UNIX)
+    set(support_fixture "${WORK}/support")
+    file(MAKE_DIRECTORY "${support_fixture}/tests/retroarch")
+    string(REPEAT "fixture\n" 301 support_lines)
+    file(WRITE "${support_fixture}/tests/retroarch/support.txt" "${support_lines}")
+    execute_process(COMMAND /bin/sh -ec "${support_report}" WORKING_DIRECTORY "${support_fixture}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+    if(NOT rc STREQUAL "0" OR NOT out MATCHES "301[ \t]+tests/retroarch/support[.]txt")
+      message(FATAL_ERROR "support report rejects valid growth: ${rc} ${out}${err}")
+    endif()
+    file(REMOVE_RECURSE "${support_fixture}/tests")
+    execute_process(COMMAND /bin/sh -ec "${support_report}" WORKING_DIRECTORY "${support_fixture}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+    if(rc STREQUAL "0")
+      message(FATAL_ERROR "support report accepted missing inputs")
+    endif()
     set(fixture "${WORK}/launch")
     file(MAKE_DIRECTORY "${fixture}")
+    string(REGEX MATCH "          shots=([(][^\n]+\n)([^\n]+\n)+          cp [^\n]+" capture_recipe "${probe}")
+    if(capture_recipe STREQUAL "")
+      message(FATAL_ERROR "keyboard capture count/file consumer is absent")
+    endif()
+    string(REPLACE "build/ra-input-probe/shots" "${fixture}/ra/shots" capture_recipe "${capture_recipe}")
+    string(REPLACE "build/frames/input-shot-held.png" "${fixture}/held.png" capture_recipe "${capture_recipe}")
     file(WRITE "${fixture}/keyboard" [=[#!/bin/sh
 [ "$1" = --probe ] || exit 2
 shift
+raw=$1
+shift
+[ "$raw" = "${0%/*}/ra/shots" ] && [ -d "$raw" ] || exit 2
 printf 'keyboard\n' >> "${0%/*}/calls"
+case $(cat "${0%/*}/fault") in
+  capture_missing) ;;
+  capture_multiple) printf fixture > "$raw/one.png"; printf fixture > "$raw/two.png" ;;
+  capture_directory) mkdir "$raw/one.png" ;;
+  *) printf fixture > "$raw/held.png" ;;
+esac
 exec "$@"
 ]=])
     file(WRITE "${fixture}/frontend" [=[#!/bin/sh
 printf 'frontend\n' >> "${0%/*}/calls"
+[ "$1" = --verbose ] && [ "$2" = --config ] || exit 2
+grep -F "screenshot_directory = \"${0%/*}/ra/shots\"" "$3" || exit 2
 for arg do
   case $arg in --max-frames-ss-path=*) printf fixture > "${arg#*=}" ;; esac
 done
@@ -161,9 +204,11 @@ done
     set(common "-DRETROARCH=${fixture}/frontend" "-DCORE=${fixture}/core" "-DINFO=${fixture}/core.info"
       "-DTEMPLATE=${ROOT}/tests/retroarch/test.cfg.in" "-DRA_DIR=${fixture}/ra"
       "-DSAVE_DIR=${fixture}/saves" -DFRAMES=600 "-DSHOT=${fixture}/shot.png")
-    foreach(case valid missing directory inside mode)
+    foreach(case valid missing directory inside mode raw_missing raw_outside terminal_raw capture_missing capture_multiple capture_directory)
       set(keyboard "${fixture}/keyboard")
       set(mode probe)
+      set(raw "${fixture}/ra/shots")
+      set(shot "${fixture}/shot.png")
       if(case STREQUAL missing)
         set(keyboard "${fixture}/missing")
       elseif(case STREQUAL directory)
@@ -173,22 +218,45 @@ done
         file(COPY_FILE "${fixture}/keyboard" "${keyboard}")
       elseif(case STREQUAL "mode")
         set(mode invalid)
+      elseif(case STREQUAL raw_missing)
+        set(raw "")
+      elseif(case STREQUAL raw_outside)
+        set(raw "${fixture}/other")
+      elseif(case STREQUAL terminal_raw)
+        set(shot "${raw}/terminal.png")
       endif()
       file(WRITE "${fixture}/ra/sentinel" "retain")
+      file(WRITE "${fixture}/fault" "${case}")
+      file(REMOVE "${fixture}/calls")
       execute_process(COMMAND "${CMAKE_COMMAND}" ${common} "-DKEYBOARD=${keyboard}" "-DINPUT_MODE=${mode}"
+        "-DRAW_SHOTS=${raw}" "-DSHOT=${shot}"
         -P "${ROOT}/tests/retroarch/run_retroarch.cmake" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
       if(case STREQUAL valid)
         if(NOT rc STREQUAL "0")
           message(FATAL_ERROR "keyboard fixture launch failed: ${rc} ${out}${err}")
         endif()
-      elseif(NOT rc STREQUAL "1" OR NOT "${out}${err}" MATCHES "KEYBOARD" OR NOT EXISTS "${fixture}/ra/sentinel")
+      elseif(case MATCHES "^capture_")
+        if(NOT rc STREQUAL "0")
+          message(FATAL_ERROR "keyboard ${case} mock wrapper failed: ${rc} ${out}${err}")
+        endif()
+      elseif(NOT rc STREQUAL "1" OR NOT "${out}${err}" MATCHES "KEYBOARD|RAW_SHOTS" OR NOT EXISTS "${fixture}/ra/sentinel")
         message(FATAL_ERROR "keyboard unsafe ${case} did not refuse before cleanup: ${rc} ${out}${err}")
       endif()
+      if(case STREQUAL "valid" OR case MATCHES "^capture_")
+        execute_process(COMMAND /bin/bash -ec "${capture_recipe}" RESULT_VARIABLE captured
+          OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+        if((case STREQUAL "valid" AND NOT captured STREQUAL "0") OR
+            (case MATCHES "^capture_" AND NOT captured STREQUAL "1"))
+          message(FATAL_ERROR "keyboard actual capture consumer ${case}: ${captured} ${out}${err}")
+        endif()
+        file(READ "${fixture}/calls" calls)
+        if(NOT calls STREQUAL "keyboard\nfrontend\n")
+          message(FATAL_ERROR "keyboard ${case} did not invoke exactly one wrapped child: ${calls}")
+        endif()
+      elseif(EXISTS "${fixture}/calls")
+        message(FATAL_ERROR "keyboard unsafe ${case} launched a child")
+      endif()
     endforeach()
-    file(READ "${fixture}/calls" calls)
-    if(NOT calls STREQUAL "keyboard\nfrontend\n")
-      message(FATAL_ERROR "keyboard fixture did not invoke exactly one wrapped child: ${calls}")
-    endif()
   endif()
 endif()
 if(UNIX)

@@ -147,8 +147,9 @@ jobs:
     name: build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     # Intel: 2 x 1085s, n=40 successful jobs, run 40783431377;
-    # provisional for expanded current/base workload. Windows/other unchanged.
-    timeout-minutes: ${{ startsWith(matrix.os, 'windows') && 68 || matrix.runner == 'macos-15-intel' && 37 || 19 }}  # 2 x Windows2021s/other567s, n=12/23, run 40725919037; Intel run 40783431377
+    # ARM64: 2 x 2324s, n=40 successful jobs, run 40783431377;
+    # both historical margins provisional for expanded current/base workload.
+    timeout-minutes: ${{ matrix.runner == 'windows-11-arm' && 78 || startsWith(matrix.os, 'windows') && 68 || matrix.runner == 'macos-15-intel' && 37 || 19 }}  # Windows x64/other unchanged: run 40725919037; Intel/ARM64 run 40783431377
     # Intel macOS test durations vary up to 40x between runs (runs
     # 40753756094, 40759364140); its current and base builds scale every
     # test timeout by 2.
@@ -525,6 +526,7 @@ jobs:
             -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-input-probe" \
             "-DSAVE_DIR=$PWD/build/input-saves" -DFRAMES=600 -DROM=build/frames/input.a78 \
             "-DKEYBOARD=$PWD/build/frames/keyboard-preflight" -DINPUT_MODE=probe \
+            "-DRAW_SHOTS=$PWD/build/ra-input-probe/shots" \
             "-DSHOT=$PWD/build/frames/input-shot-released.png" -P tests/retroarch/run_retroarch.cmake
           shots=(build/ra-input-probe/shots/*.png)
           test "${#shots[@]}" -eq 1
@@ -633,7 +635,7 @@ jobs:
           grep -q 'HSC firmware unknown identity' build/ra-battery-1/retroarch.log
           grep -q 'signature-only stub' build/ra-battery-2/retroarch.log
           test ! -e build/ra-battery-2/system/highscre.bin
-          test "$(cat tests/retroarch/* | wc -l | tr -d ' ')" -le 300
+          wc -l tests/retroarch/*
       # Fault prevented: a compare that cannot fail. One byte of pixel (7,3)
       # in a copy of the runner's BMP is inverted, at an offset read from
       # the BMP header; the tool must exit 1 naming exactly that pixel.

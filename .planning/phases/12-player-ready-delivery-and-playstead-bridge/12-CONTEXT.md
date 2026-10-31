@@ -78,8 +78,10 @@ These are discussion decisions, not implementation or hosted acceptance evidence
   Do not freeze an unproven movie/playback mechanism, OS permission
   setup or synthetic core-side input shortcut. Missing host input proof remains a
   PLAY-03 gap, rather than being silently deferred or equated with callback success.
-- **D-06 (PLAY-03):** Keep the two actual-host cases, existing no-UDP approach,
-  hosted-test line bound and timeouts. Put exhaustive semantics and fault cases in
+- **D-06 (PLAY-03):** Keep the two actual-host cases, existing no-UDP approach
+  and runtime bounds. The separately approved2026-10-30 DEC.56 amendment retires
+  only the numeric hosted-test line ceiling; report totals with no replacement
+  quota and retain ENGINEERING §11 architecture review. Put exhaustive semantics and fault cases in
   existing C/CTest consumers. Research must establish a viable input seam and its
   bounded recurring cost before planning it. If a required outcome demonstrably
   conflicts with an existing bound, return the concrete evidence and apply
