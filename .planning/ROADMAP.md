@@ -67,10 +67,10 @@ spent; accepted 0/4 and PLAY-03 remain pending. Preserve the
 and diagnose driver/config/event delivery with new evidence before any new bounded
 host test or dependent plan.
 
-**Additive gap plans** *(diagnostic dispositions only; original acceptance halt and successor blocks remain)*
+**Additive gap plans** *(direct ordinary host observation pending; original acceptance halt and successor blocks remain)*
 
 - [x] 12-05-PLAN.md — Published the prior portability repair; its single diagnostic failed Linux preflight before RetroArch and its allowance is spent.
-- [ ] 12-06-PLAN.md — After a later explicit gaps-only execution decision, publish the current reviewed ownership repair and reconcile one bounded diagnostic or its unresolved endpoint; no ordinary-package acceptance.
+- [ ] 12-06-PLAN.md — After one explicit gaps-only execution invocation, wire/test/review the existing one-process input capture into the normal packaged-host case, publish exact source and observe one standard full CI run with held/released, DMA, fresh battery and aggregate evidence; no retry or automatic acceptance.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
