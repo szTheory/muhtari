@@ -128,6 +128,53 @@ static int dump_fixtures(const char *dir)
     }
     return 0;
 }
+static int killed_prefix(const char *path, int ack_fault)
+{
+    int fd = create(path);
+    REQUIRE(fd >= 3);
+    int sync[2];
+    REQUIRE(pipe(sync) == 0);
+    pid_t child = fork();
+    REQUIRE(child >= 0);
+    if (child == 0) {
+        close(sync[0]);
+        it_writer w;
+        (void)it_begin(&w, fd, IT_CORE, (uint32_t)getppid());
+        it_emit(&w, IT_POLL, 1, 0, 0);
+        it_emit(&w, IT_STATE, 4, 1, 0);
+        /* Invalid descriptor is a real negative write; zero models a short write. */
+        ssize_t sent = ack_fault == 2 ? 0 : write(ack_fault == 1 ? -1 : sync[1], "!", 1);
+        if (sent != 1)
+            _exit(1);
+        for (;;)
+            pause();
+    }
+    close(sync[1]);
+    char ack;
+    ssize_t received = read(ack_fault == 3 ? -1 : sync[0], &ack, 1);
+    int read_error = errno;
+    close(sync[0]);
+    close(fd);
+    int killed = kill(child, SIGKILL);
+    int status;
+    pid_t reaped = waitpid(child, &status, 0);
+    int cleanup = waitpid(child, NULL, WNOHANG) == -1 && errno == ECHILD;
+    REQUIRE(killed == 0 && reaped == child && cleanup);
+    if (received != 1) {
+        REQUIRE((ack_fault == 1 || ack_fault == 2) ? received == 0
+                                                   : received == -1 && read_error == EBADF);
+        REQUIRE(ack_fault == 3 ? WIFSIGNALED(status)
+                               : WIFEXITED(status) && WEXITSTATUS(status) == 1);
+        REQUIRE(unlink(path) == 0);
+        return 2; /* Distinct from REQUIRE failure, so the fault oracle cannot pass vacuously. */
+    }
+    REQUIRE(ack_fault == 0 && ack == '!' && WIFSIGNALED(status));
+    it_trace t;
+    it_read(path, IT_CORE, &t);
+    REQUIRE(t.status == IT_UNFINISHED && t.count == 3 && t.records[2].b == 1);
+    REQUIRE(unlink(path) == 0);
+    return 0;
+}
 int main(int argc, char **argv)
 {
     if (argc == 3 && strcmp(argv[1], "--collect") == 0)
@@ -233,32 +280,9 @@ int main(int argc, char **argv)
     unlink(path);
     REQUIRE(dump_fixtures(argv[1]) == 0);
     /* A killed synthetic child retains its last complete record without END. */
-    fd = create(path);
-    REQUIRE(fd >= 3);
-    int sync[2];
-    REQUIRE(pipe(sync) == 0);
-    pid_t child = fork();
-    REQUIRE(child >= 0);
-    if (child == 0) {
-        close(sync[0]);
-        (void)it_begin(&w, fd, IT_CORE, (uint32_t)getppid());
-        it_emit(&w, IT_POLL, 1, 0, 0);
-        it_emit(&w, IT_STATE, 4, 1, 0);
-        (void)write(sync[1], "!", 1);
-        for (;;)
-            pause();
-    }
-    close(sync[1]);
-    char ack;
-    REQUIRE(read(sync[0], &ack, 1) == 1);
-    REQUIRE(kill(child, SIGKILL) == 0);
-    int status;
-    REQUIRE(waitpid(child, &status, 0) == child && WIFSIGNALED(status));
-    it_read(path, IT_CORE, &t);
-    REQUIRE(t.status == IT_UNFINISHED && t.count == 3 && t.records[2].b == 1);
-    close(sync[0]);
-    close(fd);
-    unlink(path);
+    REQUIRE(killed_prefix(path, 0) == 0);
+    for (int ack_fault = 1; ack_fault <= 3; ack_fault++)
+        REQUIRE(killed_prefix(path, ack_fault) == 2);
     puts("bounded encoding/parser/write/clock/saturation/kill controls passed");
     return 0;
 }

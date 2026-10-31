@@ -99,6 +99,11 @@ static int helper_sleep(const struct timespec *delay, struct timespec *remaining
     const struct timespec short_delay = {0, 1000000};
     return real_sleep(&short_delay);
 }
+static int directory_template(char *dir, size_t capacity, const char *root)
+{
+    int n = snprintf(dir, capacity, "%s/helper-trace-XXXXXX", root);
+    return n >= 0 && (size_t)n < capacity;
+}
 int main(int argc, char **argv)
 {
     if (argc > 1 && strcmp(argv[1], "--probe") == 0) {
@@ -133,12 +138,31 @@ int main(int argc, char **argv)
             pause();
     }
     REQUIRE(argc == 3);
-    char dir[4096], helper[4096], core[4096], raw[4096];
-    snprintf(dir, sizeof dir, "%s/helper-trace-XXXXXX", argv[1]);
+    char dir[4096];
+    char helper[sizeof dir + sizeof "/helper.trace" - 1];
+    char core[sizeof dir + sizeof "/core.trace" - 1];
+    char raw[sizeof dir + sizeof "/raw" - 1];
+    /* Formatting-only neighbors never reach the filesystem with long paths. */
+    char root[sizeof dir];
+    size_t fit = sizeof dir - sizeof "/helper-trace-XXXXXX";
+    memset(root, 'x', sizeof root);
+    root[fit] = '\0';
+    REQUIRE(directory_template(dir, sizeof dir, root) && strlen(dir) == sizeof dir - 1);
+    REQUIRE(snprintf(helper, sizeof helper, "%s/helper.trace", dir) == (int)sizeof helper - 1);
+    REQUIRE(snprintf(core, sizeof core, "%s/core.trace", dir) == (int)sizeof core - 1);
+    REQUIRE(snprintf(raw, sizeof raw, "%s/raw", dir) == (int)sizeof raw - 1);
+    root[fit] = 'x';
+    root[fit + 1] = '\0';
+    REQUIRE(!directory_template(dir, sizeof dir, root));
+    REQUIRE(directory_template(dir, sizeof dir, "") && strcmp(dir, "/helper-trace-XXXXXX") == 0);
+    REQUIRE(directory_template(dir, sizeof dir, "x") && strcmp(dir, "x/helper-trace-XXXXXX") == 0);
+    REQUIRE(directory_template(dir, sizeof dir, argv[1]));
     REQUIRE(mkdtemp(dir) != NULL);
-    snprintf(helper, sizeof helper, "%s/helper.trace", dir);
-    snprintf(core, sizeof core, "%s/core.trace", dir);
-    snprintf(raw, sizeof raw, "%s/raw", dir);
+    REQUIRE(snprintf(helper, sizeof helper, "%s/helper.trace", dir) ==
+            (int)(strlen(dir) + sizeof "/helper.trace" - 1));
+    REQUIRE(snprintf(core, sizeof core, "%s/core.trace", dir) ==
+            (int)(strlen(dir) + sizeof "/core.trace" - 1));
+    REQUIRE(snprintf(raw, sizeof raw, "%s/raw", dir) == (int)(strlen(dir) + sizeof "/raw" - 1));
     REQUIRE(setenv("MUHTARI_INPUT_TRACE_DIR", dir, 1) == 0);
     REQUIRE(keyboard_trace_setup());
     REQUIRE((fcntl(keyboard_trace.fd, F_GETFD) & FD_CLOEXEC) != 0);
