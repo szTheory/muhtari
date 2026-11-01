@@ -242,9 +242,9 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       return()
     endif()
     file(WRITE "${DIR}/full.movie"
-      "muhtari-movie 1\nport1 joystick\nport2 joystick\n|||...BB|\n|||.....|\n")
+      "muhtari-movie 1\nport1 proline\nport2 joystick\n|...R1.|.....|...BB|\n|U.L..2|U...1|RS.AB|\n")
     file(WRITE "${DIR}/suffix.movie"
-      "muhtari-movie 1\nport1 joystick\nport2 joystick\n|||.....|\n")
+      "muhtari-movie 1\nport1 proline\nport2 joystick\n|U.L..2|U...1|RS.AB|\n")
     execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 2 --movie "${DIR}/full.movie"
       --state-at-frame "1:${DIR}/resume.state" --hash-state 2 --hash-frame 2 "${image}"
       RESULT_VARIABLE rc OUTPUT_VARIABLE uninterrupted ERROR_VARIABLE err)
@@ -262,6 +262,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     string(REPLACE "state 2 " "state 1 " state_full "${state_full}")
     string(REGEX MATCH "frame 2 sha256 [0-9a-f]+" frame_full "${uninterrupted}")
     string(REGEX MATCH "frame 1 sha256 [0-9a-f]+" frame_resumed "${resumed}")
+    string(REPLACE "frame 2 " "frame 1 " frame_full "${frame_full}")
     if(state_full STREQUAL "" OR NOT state_full STREQUAL state_resumed OR
         frame_full STREQUAL "" OR NOT frame_full STREQUAL frame_resumed)
       message(FATAL_ERROR "state/frame continuation differs\nfull:\n${uninterrupted}\nresumed:\n${resumed}")

@@ -668,7 +668,6 @@ runner.save.import	portable,runner
 runner.save.nonregular	runner
 runner.save.options	portable,runner
 runner.save.roundtrip	portable,runner
-runner.state.files	portable,runner
 runner.state.options	portable,runner
 runner.state.roundtrip	portable,runner
 runner.stop	portable,runner

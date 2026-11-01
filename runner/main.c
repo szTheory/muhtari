@@ -61,6 +61,11 @@
 #define HEIGHT 242u
 #define AUDIO_CAPACITY 801u
 
+typedef struct state_output {
+    uint32_t frame;
+    const char *path;
+} state_output;
+
 /* The allocator the runner hands the core: the C library's malloc and free. */
 static void *run_alloc(void *user, size_t size)
 {
@@ -106,6 +111,10 @@ static const char synopsis[] =
     "  --hsc M             high score cartridge: auto, on or off\n"
     "  --expansion E       auto, off, xboard or xm (RAM/POKEY/HSC subset)\n"
     "  --hsc-rom FILE      optional exact 4096-byte HSC firmware\n"
+    "  --load-state FILE   restore one compatible canonical machine state\n"
+    "  --state-at-frame N:FILE  atomically save the state after N completed frames\n"
+    "  --hash-state N      print the canonical state SHA-256 at completed frame N\n"
+    "  --frames0           run no frames; use only with content and state options\n"
     "  --probe FILE         print the cartridge image's fields and hashes\n"
     "  --help               print this text and the exit statuses\n"
     "  --version            print the version\n";
@@ -157,6 +166,23 @@ static int parse_count(const char *text, size_t len, uint32_t *out)
         return 0;
     }
     *out = (uint32_t)v;
+    return 1;
+}
+
+/* Parses a decimal completed-frame point from 0 to 4294967295. */
+static int parse_state_point(const char *text, size_t len, uint32_t *out)
+{
+    uint64_t value = 0u;
+    if (text == NULL || len == 0u)
+        return 0;
+    for (const char *p = text; p < text + len; p++) {
+        if (*p < '0' || *p > '9')
+            return 0;
+        value = value * 10u + (uint64_t)(*p - '0');
+        if (value > UINT32_MAX)
+            return 0;
+    }
+    *out = (uint32_t)value;
     return 1;
 }
 
@@ -400,6 +426,7 @@ static int probe(const char *path)
 /* The runner's options. Each list has room for one entry per argument. */
 typedef struct options {
     uint32_t frames;
+    int frames0;
     int bench;
     int hash_audio;
     int info;
@@ -409,6 +436,11 @@ typedef struct options {
     uint32_t *dump_frames;
     const char **dump_paths;
     uint32_t dump_count;
+    state_output *state_outputs;
+    uint32_t state_output_count;
+    uint32_t *hash_state_frames;
+    uint32_t hash_state_count;
+    const char *load_state;
     const char *probe; /* --probe FILE, the whole command line */
     const char *rom;   /* [--rom] FILE, or NULL for no content */
     const char *movie; /* --movie FILE, or NULL */
@@ -476,6 +508,11 @@ static int compare_u32(const void *a, const void *b)
     return (x > y) - (x < y);
 }
 
+static int same_lexical_path(const char *left, const char *right)
+{
+    return left != NULL && right != NULL && strcmp(left, right) == 0;
+}
+
 /* Returns 0 when the options are spelled right, 2 after a usage message, 1
    when out of memory. check_options checks them against each other once a
    movie, if any, has been read. */
@@ -484,7 +521,10 @@ static int parse_options(int argc, char **argv, options *o)
     o->hash_frames = (uint32_t *)malloc((size_t)argc * sizeof *o->hash_frames);
     o->dump_frames = (uint32_t *)malloc((size_t)argc * sizeof *o->dump_frames);
     o->dump_paths = (const char **)malloc((size_t)argc * sizeof *o->dump_paths);
-    if (o->hash_frames == NULL || o->dump_frames == NULL || o->dump_paths == NULL) {
+    o->state_outputs = (state_output *)malloc((size_t)argc * sizeof *o->state_outputs);
+    o->hash_state_frames = (uint32_t *)malloc((size_t)argc * sizeof *o->hash_state_frames);
+    if (o->hash_frames == NULL || o->dump_frames == NULL || o->dump_paths == NULL ||
+        o->state_outputs == NULL || o->hash_state_frames == NULL) {
         fprintf(stderr, "muhtari-run: out of memory\n");
         return MUHTARI__EXIT_FAILURE;
     }
@@ -524,7 +564,7 @@ static int parse_options(int argc, char **argv, options *o)
                 return usage("option needs a whole number of 1 or more");
             }
             if (strcmp(arg, "--hash-frame") != 0) {
-                if (o->frames != 0u) {
+                if (o->frames != 0u || o->frames0) {
                     return usage("give --frames or --bench once");
                 }
                 o->frames = n;
@@ -532,6 +572,23 @@ static int parse_options(int argc, char **argv, options *o)
             } else {
                 o->hash_frames[o->hash_count++] = n;
             }
+        } else if (strcmp(arg, "--frames0") == 0) {
+            if (o->frames0 || o->frames != 0u || o->bench)
+                return usage("--frames0 conflicts with --frames or --bench");
+            o->frames0 = 1;
+            i--;
+        } else if (strcmp(arg, "--hash-state") == 0) {
+            if (!parse_state_point(value, value == NULL ? 0u : strlen(value), &n))
+                return usage("--hash-state needs a whole number from 0 to 4294967295");
+            o->hash_state_frames[o->hash_state_count++] = n;
+        } else if (strcmp(arg, "--state-at-frame") == 0) {
+            const char *colon = value == NULL ? NULL : strchr(value, ':');
+            if (colon == NULL || colon[1] == '\0' || strcmp(colon + 1, "-") == 0 ||
+                !parse_state_point(value, colon == NULL ? 0u : (size_t)(colon - value), &n))
+                return usage("--state-at-frame needs N:FILE with N from 0 to --frames");
+            o->state_outputs[o->state_output_count].frame = n;
+            o->state_outputs[o->state_output_count].path = colon + 1;
+            o->state_output_count++;
         } else if (strcmp(arg, "--diagnostic") == 0) {
             if (o->diagnostic) {
                 return usage("duplicate --diagnostic");
@@ -569,6 +626,11 @@ static int parse_options(int argc, char **argv, options *o)
                 return usage("--movie needs one FILE");
             }
             o->movie = value;
+        } else if (strcmp(arg, "--load-state") == 0) {
+            if (value == NULL || value[0] == '\0' || strcmp(value, "-") == 0 ||
+                strncmp(value, "--", 2u) == 0 || o->load_state != NULL)
+                return usage("--load-state needs one nonempty FILE");
+            o->load_state = value;
         } else if (strcmp(arg, "--port1") == 0 || strcmp(arg, "--port2") == 0) {
             int p = arg[6] - '1';
             size_t v = 0;
@@ -652,6 +714,16 @@ static int parse_options(int argc, char **argv, options *o)
 static int check_options(options *o, const muhtari__movie_header *h, uint32_t movie_frames)
 {
     char why[128];
+    int state_operation = o->load_state != NULL || o->state_output_count != 0u ||
+                          o->hash_state_count != 0u;
+    if (state_operation && o->rom == NULL)
+        return usage("state options need a cartridge FILE");
+    if (state_operation && o->bench)
+        return usage("state options cannot be combined with --bench");
+    if (o->frames0 &&
+        (o->rom == NULL || !state_operation || h != NULL || o->info || o->diagnostic ||
+         o->hash_audio || o->hash_count != 0u || o->dump_count != 0u))
+        return usage("--frames0 needs content and state options without frame or movie output");
     if (o->save_interval != 0u && o->save_dir == NULL)
         return usage("--save-interval needs --save-dir");
     if (o->save_interval == 0u)
@@ -663,6 +735,8 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
     if (o->diagnostic && (o->rom == NULL || o->frames == 0u || o->bench)) {
         return usage("--diagnostic needs content and explicit --frames N");
     }
+    if (o->frames0 && h != NULL)
+        return usage("--frames0 cannot be combined with --movie");
     if (h != NULL) {
         for (int p = 0; p < 2; p++) {
             if (o->port[p] != 0u && o->port[p] != h->device[p]) {
@@ -693,7 +767,7 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
             o->frames = movie_frames;
         }
     }
-    if (o->frames == 0u) {
+    if (o->frames == 0u && !o->frames0) {
         return usage("--frames N, --bench N or --movie FILE is required");
     }
     if (o->boot == MUHTARI__MOVIE_BOOT_BIOS && o->bios == NULL) {
@@ -715,6 +789,35 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
             return usage("--dump-frame is beyond --frames");
         }
     }
+    for (uint32_t i = 0; i < o->state_output_count; i++) {
+        const state_output *output = &o->state_outputs[i];
+        if (output->frame > o->frames)
+            return usage("--state-at-frame is beyond --frames");
+        for (uint32_t j = 0; j < i; j++) {
+            if (output->frame == o->state_outputs[j].frame)
+                return usage("duplicate --state-at-frame point");
+            if (same_lexical_path(output->path, o->state_outputs[j].path))
+                return usage("duplicate state output path");
+        }
+        for (uint32_t j = 0; j < o->dump_count; j++) {
+            if (same_lexical_path(output->path, o->dump_paths[j]))
+                return usage("state output path conflicts with --dump-frame");
+        }
+        if (same_lexical_path(output->path, o->load_state) ||
+            same_lexical_path(output->path, o->movie) || same_lexical_path(output->path, o->rom) ||
+            same_lexical_path(output->path, o->bios) || same_lexical_path(output->path, o->hsc_rom))
+            return usage("state output path conflicts with an input file");
+    }
+    for (uint32_t i = 0; i < o->hash_state_count; i++) {
+        if (o->hash_state_frames[i] > o->frames)
+            return usage("--hash-state is beyond --frames");
+        for (uint32_t j = 0; j < i; j++) {
+            if (o->hash_state_frames[i] == o->hash_state_frames[j])
+                return usage("duplicate --hash-state point");
+        }
+    }
+    if (o->hash_state_count > 0u)
+        qsort(o->hash_state_frames, o->hash_state_count, sizeof o->hash_state_frames[0], compare_u32);
     if (o->hash_count > 0u) {
         qsort(o->hash_frames, o->hash_count, sizeof o->hash_frames[0], compare_u32);
         uint32_t kept = 1;
@@ -1039,19 +1142,11 @@ static int save_replace(const char *temporary, const char *destination)
 #endif
 }
 
-static int save_flush(save_context *save, muhtari *m)
+/* Writes an already-owned byte span through an exclusive sibling temporary.
+   The destination changes only after write, flush, sync and close succeed. */
+static int write_sibling_atomic(const char *destination, const void *bytes, size_t count)
 {
-    if (!save->armed || save->failed)
-        return save->failed ? MUHTARI__EXIT_FAILURE : 0;
-    muhtari_battery_info battery = {0};
-    battery.size = (uint32_t)sizeof battery;
-    if (muhtari_get_battery(m, &battery) != MUHTARI_STATUS_OK) {
-        save->failed = 1;
-        return MUHTARI__EXIT_FAILURE;
-    }
-    if (battery.generation == save->persisted_generation)
-        return 0;
-    size_t len = strlen(save->path);
+    size_t len = strlen(destination);
     char *temporary = len <= SIZE_MAX - 48u ? (char *)malloc(len + 48u) : NULL;
     FILE *f = NULL;
     int owned = 0;
@@ -1064,7 +1159,7 @@ static int save_flush(save_context *save, muhtari *m)
 #else
         unsigned long pid = (unsigned long)getpid();
 #endif
-        (void)snprintf(temporary, len + 48u, "%s.tmp.%lu.%u", save->path, pid, attempt);
+        (void)snprintf(temporary, len + 48u, "%s.tmp.%lu.%u", destination, pid, attempt);
 #ifdef _WIN32
         int fd = _open(temporary, _O_CREAT | _O_EXCL | _O_WRONLY | _O_BINARY, _S_IREAD | _S_IWRITE);
 #else
@@ -1089,7 +1184,7 @@ static int save_flush(save_context *save, muhtari *m)
     }
     int bad = f == NULL;
     if (f != NULL) {
-        if (fwrite(save->data, 1u, save->bytes, f) != save->bytes || fflush(f) != 0)
+        if (fwrite(bytes, 1u, count, f) != count || fflush(f) != 0)
             bad = 1;
         if (!bad) {
 #ifdef _WIN32
@@ -1101,18 +1196,105 @@ static int save_flush(save_context *save, muhtari *m)
         if (fclose(f) != 0)
             bad = 1;
     }
-    if (!bad && save_replace(temporary, save->path) != 0)
+    if (!bad && save_replace(temporary, destination) != 0)
         bad = 1;
     if (owned && bad)
         (void)remove(temporary);
     free(temporary);
-    if (bad) {
+    return bad ? -1 : 0;
+}
+
+static int save_flush(save_context *save, muhtari *m)
+{
+    if (!save->armed || save->failed)
+        return save->failed ? MUHTARI__EXIT_FAILURE : 0;
+    muhtari_battery_info battery = {0};
+    battery.size = (uint32_t)sizeof battery;
+    if (muhtari_get_battery(m, &battery) != MUHTARI_STATUS_OK) {
+        save->failed = 1;
+        return MUHTARI__EXIT_FAILURE;
+    }
+    if (battery.generation == save->persisted_generation)
+        return 0;
+    if (write_sibling_atomic(save->path, save->data, save->bytes) != 0) {
         save->failed = 1;
         fprintf(stderr, "muhtari-run: %s: cannot commit save\n", save->path);
         return MUHTARI__EXIT_FAILURE;
     }
     save->persisted_generation = battery.generation;
     return 0;
+}
+
+/* Reads no more than the installed canonical size plus one trailing byte.
+   The caller checks the complete read and close before asking the core to load. */
+static int read_state_file(const char *path, uint8_t *buffer, size_t bytes)
+{
+    FILE *f = save_read_open(path);
+    if (f == NULL) {
+        fprintf(stderr, "muhtari-run: %s: cannot read state file\n", path);
+        return MUHTARI__EXIT_FAILURE;
+    }
+    size_t used = 0u;
+    while (used < bytes) {
+        size_t got = fread(buffer + used, 1u, bytes - used, f);
+        used += got;
+        if (got == 0u)
+            break;
+    }
+    uint8_t extra = 0u;
+    size_t trailing = used == bytes ? fread(&extra, 1u, 1u, f) : 0u;
+    int io_failed = ferror(f) != 0;
+    if (fclose(f) != 0)
+        io_failed = 1;
+    if (io_failed) {
+        fprintf(stderr, "muhtari-run: %s: cannot read state file\n", path);
+        return MUHTARI__EXIT_FAILURE;
+    }
+    if (used != bytes || trailing != 0u) {
+        fprintf(stderr, "muhtari-run: %s: state file length does not match installed machine\n", path);
+        return MUHTARI__EXIT_FAILURE;
+    }
+    return MUHTARI__EXIT_DONE;
+}
+
+static int state_capture(const options *opt, muhtari *m, uint8_t *buffer, size_t bytes,
+                         uint32_t point)
+{
+    int save_point = 0;
+    int hash_point = 0;
+    for (uint32_t i = 0; i < opt->state_output_count; i++)
+        save_point |= opt->state_outputs[i].frame == point;
+    for (uint32_t i = 0; i < opt->hash_state_count; i++)
+        hash_point |= opt->hash_state_frames[i] == point;
+    if (!save_point && !hash_point)
+        return MUHTARI__EXIT_DONE;
+
+    muhtari_status st = muhtari_save_state(m, buffer, bytes);
+    if (st != MUHTARI_STATUS_OK) {
+        fprintf(stderr, "muhtari-run: cannot capture state: %s\n", muhtari__status_text(st));
+        return MUHTARI__EXIT_FAILURE;
+    }
+    for (uint32_t i = 0; i < opt->state_output_count; i++) {
+        if (opt->state_outputs[i].frame == point &&
+            write_sibling_atomic(opt->state_outputs[i].path, buffer, bytes) != 0) {
+            fprintf(stderr, "muhtari-run: %s: cannot commit state file\n", opt->state_outputs[i].path);
+            return MUHTARI__EXIT_FAILURE;
+        }
+    }
+    for (uint32_t i = 0; i < opt->hash_state_count; i++) {
+        if (opt->hash_state_frames[i] == point) {
+            uint8_t digest[32];
+            char hex[65];
+            muhtari__sha256 hash;
+            muhtari__sha256_init(&hash);
+            muhtari__sha256_update(&hash, buffer, bytes);
+            muhtari__sha256_final(&hash, digest);
+            to_hex(digest, sizeof digest, hex);
+            if (printf("state %lu sha256 %s\n", (unsigned long)point, hex) < 0)
+                return MUHTARI__EXIT_FAILURE;
+        }
+    }
+    return MUHTARI__EXIT_DONE;
 }
 
 /* Loads the cartridge image at path into m, in region (0 for the
@@ -1340,6 +1522,8 @@ static int run(const options *opt, replay *mv)
     uint8_t *video = NULL;
     int16_t *audio = NULL;
     uint8_t *row = NULL;
+    uint8_t *state_buffer = NULL;
+    size_t state_bytes = 0u;
     /* One microsecond sample per frame for --bench, on the heap: 300,000
        frames take 1.2 MB. A count whose buffer size does not fit in size_t
        is out of memory, not a wrapped, too-small allocation. */
@@ -1367,6 +1551,7 @@ static int run(const options *opt, replay *mv)
         free(audio);
         free(row);
         free(samples);
+        free(state_buffer);
         return MUHTARI__EXIT_FAILURE;
     }
 
@@ -1397,7 +1582,26 @@ static int run(const options *opt, replay *mv)
         status = movie_region(opt, mv, &info);
     if (status == 0 && opt->rom != NULL)
         status = save_import(&save, m, opt);
-    if (status == 0) {
+    if (status == 0 &&
+        (opt->load_state != NULL || opt->state_output_count != 0u || opt->hash_state_count != 0u)) {
+        state_bytes = muhtari_state_size(m);
+        state_buffer = state_bytes != 0u ? (uint8_t *)malloc(state_bytes) : NULL;
+        if (state_buffer == NULL) {
+            fprintf(stderr, "muhtari-run: cannot allocate canonical state buffer\n");
+            status = MUHTARI__EXIT_FAILURE;
+        } else if (opt->load_state != NULL) {
+            status = read_state_file(opt->load_state, state_buffer, state_bytes);
+            if (status == 0) {
+                st = muhtari_load_state(m, state_buffer, state_bytes);
+                if (st != MUHTARI_STATUS_OK) {
+                    fprintf(stderr, "muhtari-run: %s: state refused: %s\n", opt->load_state,
+                            muhtari__status_text(st));
+                    status = MUHTARI__EXIT_FAILURE;
+                }
+            }
+        }
+    }
+    if (status == 0 && !opt->frames0) {
         size_t width = info.width, height = info.height, capacity = info.max_audio_samples;
         if (height == 0u || width == 0u || width > SIZE_MAX / height || width > SIZE_MAX / 3u ||
             capacity > SIZE_MAX / sizeof *audio) {
@@ -1433,6 +1637,8 @@ static int run(const options *opt, replay *mv)
     uint32_t timed = 0;
     uint64_t total_ns = 0;
     uint32_t save_interval = opt->save_interval != 0u ? opt->save_interval : 60u;
+    if (status == 0 && state_buffer != NULL)
+        status = state_capture(opt, m, state_buffer, state_bytes, 0u);
     /* A 64-bit count, so the loop ends when --frames is 4294967295. */
     for (uint64_t n = 1;
          status == MUHTARI__EXIT_DONE && n <= opt->frames && !muhtari__stop_requested(); n++) {
@@ -1493,6 +1699,11 @@ static int run(const options *opt, replay *mv)
             break;
         }
         save.completed_frames++;
+        if (state_buffer != NULL &&
+            state_capture(opt, m, state_buffer, state_bytes, (uint32_t)save.completed_frames) != 0) {
+            status = MUHTARI__EXIT_FAILURE;
+            break;
+        }
         if (opt->hash_audio) {
             raw_hash = tentative;
             audio_pcm(&pcm_hash, audio, io.audio_count);
@@ -1587,6 +1798,7 @@ static int run(const options *opt, replay *mv)
     free(audio);
     free(row);
     free(samples);
+    free(state_buffer);
     return status;
 }
 
@@ -1630,6 +1842,8 @@ int main(int argc, char **argv)
     free(opt.hash_frames);
     free(opt.dump_frames);
     free(opt.dump_paths);
+    free(opt.state_outputs);
+    free(opt.hash_state_frames);
     if (fflush(stdout) != 0) {
         fprintf(stderr, "muhtari-run: cannot write output\n");
         return MUHTARI__EXIT_FAILURE;
