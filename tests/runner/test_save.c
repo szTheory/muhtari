@@ -28,7 +28,9 @@ enum {
     SAVE_FLUSH,
     SAVE_SYNC,
     SAVE_CLOSE,
-    SAVE_REPLACE
+    SAVE_REPLACE,
+    STATE_READ,
+    STATE_CLOSE
 };
 static int io_fault;
 static int output_fault;
@@ -49,6 +51,10 @@ static DWORD WINAPI concurrent_flush(LPVOID unused)
 #endif
 static int reject_frame;
 static FILE *import_stream, *save_stream;
+static int state_fd = -1;
+static FILE *state_stream;
+static size_t state_read_requested;
+static unsigned state_probe_reads;
 static const uint8_t *expected_import;
 static size_t expected_bytes;
 static const uint8_t *expected_firmware;
@@ -697,6 +703,155 @@ static void save_options(const char *dir)
     free(blank);
 }
 
+static size_t state_file_size(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    CHECK(f != NULL);
+    if (f == NULL)
+        return 0u;
+    CHECK_EQ_U64(fseek(f, 0L, SEEK_END), 0u);
+    long end = ftell(f);
+    CHECK(end > 0);
+    CHECK_EQ_U64(fclose(f), 0u);
+    return end > 0 ? (size_t)end : 0u;
+}
+
+static uint8_t *state_file_read(const char *path, size_t bytes)
+{
+    uint8_t *data = (uint8_t *)malloc(bytes);
+    FILE *f = fopen(path, "rb");
+    CHECK(data != NULL && f != NULL);
+    if (data != NULL && f != NULL) {
+        CHECK_EQ_U64(fread(data, 1u, bytes, f), bytes);
+        CHECK_EQ_U64(fclose(f), 0u);
+    } else if (f != NULL) {
+        fclose(f);
+    }
+    return data;
+}
+
+static int runner_save_state_zero(const char *rom, const char *path)
+{
+    char point[1200];
+    snprintf(point, sizeof point, "0:%s", path);
+    char *args[] = {"muhtari-run", "--frames0", "--state-at-frame", point, (char *)rom};
+    frames_run = 0u;
+    return runner_entry(5, args);
+}
+
+static int runner_load_state_one(const char *rom, const char *path)
+{
+    char *args[] = {"muhtari-run", "--frames", "1", "--load-state", (char *)path, (char *)rom};
+    frames_run = 0u;
+    return runner_entry(6, args);
+}
+
+static void state_files(const char *dir)
+{
+    char rom[1024], state[1024], save[1024], nonregular[1024];
+    snprintf(rom, sizeof rom, "%s/state-files.a78", dir);
+    snprintf(state, sizeof state, "%s/restore.state", dir);
+    snprintf(save, sizeof save, "%s/state-files.sav", dir);
+    snprintf(nonregular, sizeof nonregular, "%s/nonregular.state", dir);
+    cartridge(rom, 1u, 1);
+    CHECK_EQ_U64(runner_save_state_zero(rom, state), 0u);
+    CHECK_EQ_U64(frames_run, 0u);
+
+    size_t bytes = state_file_size(state);
+    uint8_t *valid = state_file_read(state, bytes);
+    CHECK(valid != NULL);
+    if (valid == NULL)
+        return;
+
+    char *exact[] = {"muhtari-run", "--frames0", "--load-state", state, (char *)rom};
+    state_fd = -1;
+    state_stream = NULL;
+    state_probe_reads = 0u;
+    state_read_requested = 0u;
+    frames_run = 0u;
+    CHECK_EQ_U64(runner_entry(5, exact), 0u);
+    CHECK_EQ_U64(frames_run, 0u);
+    CHECK_EQ_U64(state_probe_reads, 1u);
+    CHECK_EQ_U64(state_read_requested, bytes + 1u);
+    CHECK(state_fd == -1);
+    CHECK(state_stream == NULL);
+    if (state_probe_reads != 1u || state_read_requested != bytes + 1u) {
+        free(valid);
+        return;
+    }
+
+    write_bytes(state, valid, bytes - 1u);
+    CHECK_EQ_U64(runner_load_state_one(rom, state), 1u);
+    CHECK_EQ_U64(frames_run, 0u);
+    uint8_t *longer = (uint8_t *)malloc(bytes + 1u);
+    CHECK(longer != NULL);
+    if (longer != NULL) {
+        memcpy(longer, valid, bytes);
+        longer[bytes] = 0u;
+        write_bytes(state, longer, bytes + 1u);
+        CHECK_EQ_U64(runner_load_state_one(rom, state), 1u);
+        CHECK_EQ_U64(frames_run, 0u);
+        free(longer);
+    }
+
+    write_bytes(state, valid, bytes);
+    for (int fault = STATE_READ; fault <= STATE_CLOSE; fault++) {
+        io_fault = fault;
+        CHECK_EQ_U64(runner_load_state_one(rom, state), 1u);
+        CHECK_EQ_U64(frames_run, 0u);
+        io_fault = IO_OK;
+    }
+    char *missing[] = {"muhtari-run", "--frames", "1", "--load-state",
+                       nonregular, (char *)rom};
+    CHECK_EQ_U64(runner_entry(6, missing), 1u);
+    CHECK_EQ_U64(frames_run, 0u);
+
+#ifndef __wasi__
+#ifdef _WIN32
+    CHECK_EQ_U64(_mkdir(nonregular), 0u);
+#else
+    CHECK_EQ_U64(mkdir(nonregular, 0700), 0u);
+#endif
+    CHECK_EQ_U64(runner_entry(6, missing), 1u);
+    CHECK_EQ_U64(frames_run, 0u);
+#ifdef _WIN32
+    CHECK_EQ_U64(_rmdir(nonregular), 0u);
+#else
+    CHECK_EQ_U64(rmdir(nonregular), 0u);
+#endif
+#endif
+
+    uint8_t previous[8] = {0x31u, 0x32u, 0x33u, 0x34u, 0x35u, 0x36u, 0x37u, 0x38u};
+    static const int write_faults[] = {SAVE_CREATE, SAVE_FDOPEN, SAVE_PARTIAL, SAVE_WRITE,
+                                       SAVE_FLUSH, SAVE_SYNC, SAVE_CLOSE, SAVE_REPLACE};
+    for (size_t i = 0; i < sizeof write_faults / sizeof write_faults[0]; i++) {
+        write_bytes(state, previous, sizeof previous);
+        io_fault = write_faults[i];
+        temp_opens = create_calls = replacements = 0u;
+        CHECK_EQ_U64(runner_save_state_zero(rom, state), 1u);
+        CHECK_EQ_U64(frames_run, 0u);
+        CHECK_EQ_U64(temp_opens, write_faults[i] == SAVE_CREATE || write_faults[i] == SAVE_FDOPEN ? 0u : 1u);
+        CHECK_EQ_U64(replacements, write_faults[i] == SAVE_REPLACE ? 1u : 0u);
+        io_fault = IO_OK;
+        exact_file(state, previous, sizeof previous);
+    }
+
+    write_bytes(state, valid, bytes);
+    uint8_t newer[2048];
+    memset(newer, 0x5Au, sizeof newer);
+    write_bytes(save, newer, sizeof newer);
+    char *rollback_zero[] = {"muhtari-run", "--frames0", "--save-dir", (char *)dir,
+                             "--load-state", state, rom};
+    temp_opens = replacements = 0u;
+    CHECK_EQ_U64(runner_entry(7, rollback_zero), 0u);
+    CHECK_EQ_U64(frames_run, 0u);
+    CHECK_EQ_U64(temp_opens, 0u);
+    CHECK_EQ_U64(replacements, 0u);
+    exact_file(save, newer, sizeof newer);
+
+    free(valid);
+}
+
 static void cadence(const char *dir)
 {
     char rom[1024], save[1024], directory[1024];
@@ -790,6 +945,8 @@ int main(int argc, char **argv)
         faults(argv[1]);
     else if (strcmp(argv[2], "options") == 0)
         save_options(argv[1]);
+    else if (strcmp(argv[2], "files") == 0)
+        state_files(argv[1]);
     else if (strcmp(argv[2], "expansion") == 0)
         expansion_images(argv[1]);
     else if (strcmp(argv[2], "cadence") == 0)
