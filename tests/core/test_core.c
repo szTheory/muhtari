@@ -852,6 +852,9 @@ static void expansion_noalloc(void);
 
 static void test_no_alloc_after_load(void)
 {
+    static uint8_t state_bytes[307932u];
+    static uint8_t expected_video[FRAME_BYTES];
+    static int16_t expected_audio[962u];
     alloc_counts c;
     memset(&c, 0, sizeof c);
     muhtari_config cfg;
@@ -878,6 +881,48 @@ static void test_no_alloc_after_load(void)
         run(m, NULL);
     }
     CHECK(m->synth.pre_clip_peak > 0u);
+
+    size_t state_size = muhtari__state_payload_size(m);
+    CHECK_EQ_U64(state_size, 10972u + m->cart.info.ram_size + m->battery.bytes);
+    if (state_size <= sizeof state_bytes) {
+        muhtari *peer = make();
+        load_audio_program(peer);
+        run(peer, NULL);
+        static muhtari peer_before;
+        static uint8_t peer_storage[8192u];
+        memcpy(&peer_before, peer, sizeof peer_before);
+        memcpy(peer_storage, peer->cart.rom, peer->cart.allocation_bytes);
+
+        const size_t mailbox = 0x345u;
+        m->ram[mailbox] = 0x5Au;
+        uint64_t saved_frames = m->frames;
+        c.fail_from = c.allocs + 1u;
+        CHECK(muhtari__state_payload_write(m, state_bytes, state_size));
+        CHECK(muhtari__state_payload_validate(m, state_bytes, state_size));
+
+        muhtari_frame io;
+        frame_io(&io, expected_video, WIDTH, audio, AUDIO_CAP);
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        uint32_t expected_audio_count = io.audio_count;
+        memcpy(expected_audio, audio, (size_t)expected_audio_count * sizeof audio[0]);
+
+        m->ram[mailbox] = 0xA6u;
+        muhtari__state_payload_apply(m, state_bytes, state_size);
+        CHECK_EQ_U64(m->frames, saved_frames);
+        CHECK_EQ_HEX(m->ram[mailbox], 0x5Au);
+        frame_io(&io, video, WIDTH, audio, AUDIO_CAP);
+        CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(io.audio_count, expected_audio_count);
+        CHECK(memcmp(video, expected_video, sizeof expected_video) == 0);
+        CHECK(memcmp(audio, expected_audio, (size_t)expected_audio_count * sizeof audio[0]) ==
+              0);
+        CHECK(memcmp(peer, &peer_before, sizeof peer_before) == 0);
+        CHECK(memcmp(peer->cart.rom, peer_storage, peer->cart.allocation_bytes) == 0);
+        CHECK_EQ_U64(c.allocs, 2u);
+        CHECK_EQ_U64(c.frees, 0u);
+        c.fail_from = 0u;
+        muhtari_destroy(peer);
+    }
     CHECK_EQ_U64(c.allocs, 2);
     CHECK_EQ_U64(c.frees, 0);
     muhtari_destroy(m);

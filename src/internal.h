@@ -835,6 +835,10 @@ void muhtari__ports_catch_up(muhtari *m, uint64_t tick);
 void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x, uint64_t tick,
                                  uint8_t color, int visible);
 void muhtari__bus_rearm(muhtari *m);
+size_t muhtari__state_payload_size(const muhtari *m);
+int muhtari__state_payload_write(const muhtari *m, uint8_t *bytes, size_t size);
+int muhtari__state_payload_validate(const muhtari *m, const uint8_t *bytes, size_t size);
+void muhtari__state_payload_apply(muhtari *m, const uint8_t *bytes, size_t size);
 muhtari_status muhtari__ports_check_device_ex(uint32_t device);
 
 /* The device wired to port 0 or 1: MUHTARI_PORT_PROLINE, _JOYSTICK or
