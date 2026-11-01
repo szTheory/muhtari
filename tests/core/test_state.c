@@ -497,6 +497,26 @@ static void test_topologies(void)
     CHECK(bytes + STATE_HEADER_BYTES < STATE_MAX_BYTES);
     CHECK(muhtari__state_payload_write(m, first, bytes));
     CHECK(muhtari__state_payload_validate(m, first, bytes));
+
+    /* Exercise the source-supported 128 KiB cart-RAM extent without carrying
+       a database ROM fixture: the internal installer receives the same
+       normalized linear-cart shape, then adds XM and SaveKey storage. */
+    muhtari_cart_info largest = m->cart.info;
+    largest.kind = MUHTARI_KIND_7800;
+    largest.board = MUHTARI_BOARD_LINEAR;
+    largest.board_options = 0u;
+    largest.rom_size = 4096u;
+    largest.ram_size = 131072u;
+    largest.sound = 0u;
+    CHECK_EQ_U64(muhtari__cart_install(m, image, &largest, MUHTARI_EXPANSION_XM),
+                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.info.ram_size, 131072u);
+    CHECK_EQ_U64(m->battery.bytes, 34816u);
+    bytes = muhtari__state_payload_size(m);
+    CHECK_EQ_U64(bytes, STATE_FIXED_BYTES + 131072u + STATE_EXPANSION_BYTES + 34816u);
+    CHECK_EQ_U64(bytes + STATE_HEADER_BYTES, STATE_MAX_BYTES);
+    CHECK(muhtari__state_payload_write(m, first, bytes));
+    CHECK(muhtari__state_payload_validate(m, first, bytes));
     muhtari_destroy(m);
 }
 
