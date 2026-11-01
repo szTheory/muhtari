@@ -641,6 +641,9 @@ runner.save.faults	portable,runner
 runner.save.import	portable,runner
 runner.save.options	portable,runner
 runner.save.roundtrip	portable,runner
+runner.state.files	portable,runner
+runner.state.options	portable,runner
+runner.state.roundtrip	portable,runner
 runner.stop	portable,runner
 runner.usage.boot_bios_no_file	portable,runner
 runner.usage.dump_syntax	portable,runner

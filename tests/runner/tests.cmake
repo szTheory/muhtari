@@ -215,6 +215,48 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
     return()
   endif()
+  if(CASE STREQUAL "state_roundtrip" OR CASE STREQUAL "state_options")
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" roundtrip RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "generated state fixture failed: ${rc}")
+    endif()
+    set(image "${DIR}/game.a78")
+    if(CASE STREQUAL "state_options")
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --hash-state 1 --hash-state 0
+        --state-at-frame "0:${DIR}/zero.state" --state-at-frame "1:${DIR}/one.state" "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "0" OR NOT out MATCHES "state 0 sha256 [0-9a-f]+\nstate 1 sha256 [0-9a-f]+\n")
+        message(FATAL_ERROR "state option pass case failed: ${rc}\n${out}${err}")
+      endif()
+      return()
+    endif()
+    file(WRITE "${DIR}/full.movie"
+      "muhtari-movie 1\nport1 joystick\nport2 joystick\n|||...BB|\n|||.....|\n")
+    file(WRITE "${DIR}/suffix.movie"
+      "muhtari-movie 1\nport1 joystick\nport2 joystick\n|||.....|\n")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 2 --movie "${DIR}/full.movie"
+      --state-at-frame "1:${DIR}/resume.state" --hash-state 2 --hash-frame 2 "${image}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE uninterrupted ERROR_VARIABLE err)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "uninterrupted state run failed: ${rc}\n${uninterrupted}${err}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --movie "${DIR}/suffix.movie"
+      --load-state "${DIR}/resume.state" --hash-state 1 --hash-frame 1 "${image}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE resumed ERROR_VARIABLE err)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "fresh-process state continuation failed: ${rc}\n${resumed}${err}")
+    endif()
+    string(REGEX MATCH "state 2 sha256 [0-9a-f]+" state_full "${uninterrupted}")
+    string(REGEX MATCH "state 1 sha256 [0-9a-f]+" state_resumed "${resumed}")
+    string(REPLACE "state 2 " "state 1 " state_full "${state_full}")
+    string(REGEX MATCH "frame 2 sha256 [0-9a-f]+" frame_full "${uninterrupted}")
+    string(REGEX MATCH "frame 1 sha256 [0-9a-f]+" frame_resumed "${resumed}")
+    if(state_full STREQUAL "" OR NOT state_full STREQUAL state_resumed OR
+        frame_full STREQUAL "" OR NOT frame_full STREQUAL frame_resumed)
+      message(FATAL_ERROR "state/frame continuation differs\nfull:\n${uninterrupted}\nresumed:\n${resumed}")
+    endif()
+    return()
+  endif()
   if(CASE STREQUAL "audio")
     string(REPEAT "|....12|......|...BB|\n" 60 audio_input)
     file(WRITE "${CAPTURE}.movie" "muhtari-movie 1\nport1 proline\nport2 proline\n${audio_input}")
@@ -1570,6 +1612,18 @@ muhtari_add_test(NAME runner.save.roundtrip COMMAND ${CMAKE_COMMAND}
   "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>"
   "-DRUN=$<TARGET_FILE:muhtari-run>" "-DDIR=${PROJECT_BINARY_DIR}/tests/save-roundtrip"
   -DCASE=save_roundtrip -P ${CMAKE_CURRENT_LIST_FILE} LABELS runner portable TIMEOUT 10)
+foreach(case IN ITEMS state_roundtrip state_options)
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/${case})
+  if(case STREQUAL "state_roundtrip")
+    set(state_case roundtrip)
+  else()
+    set(state_case options)
+  endif()
+  muhtari_add_test(NAME runner.state.${state_case} COMMAND ${CMAKE_COMMAND}
+    "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>"
+    "-DRUN=$<TARGET_FILE:muhtari-run>" "-DDIR=${PROJECT_BINARY_DIR}/tests/${case}"
+    -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE} LABELS runner portable TIMEOUT 10)
+endforeach()
 foreach(case IN ITEMS import faults options cadence)
   file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-${case})
   muhtari_add_test(NAME runner.save.${case} COMMAND muhtari-test-save-runner
