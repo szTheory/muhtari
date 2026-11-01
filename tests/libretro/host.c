@@ -40,6 +40,8 @@
 #define W 320u
 #define H 242u
 #define RUNS 3u
+/* Match the conservative state-format ceiling; bound allocations on 32-bit hosts. */
+#define TEST_STATE_MAX_BYTES 307932u
 
 /* a == b as doubles, printed with every digit. */
 #define CHECK_EQ_DBL(a, b)                                                                         \
@@ -2824,9 +2826,10 @@ static void case_state(void)
     CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), battery_info.bytes);
 
     bytes = muhtari_state_size(m);
-    CHECK(bytes > 0u);
+    CHECK(bytes > 0u && bytes <= TEST_STATE_MAX_BYTES);
     CHECK_EQ_U64(p_serialize_size(), bytes);
-    if (bytes == 0u || p_serialize_size() != bytes || module_battery == NULL) {
+    if (bytes == 0u || bytes > TEST_STATE_MAX_BYTES || p_serialize_size() != bytes ||
+        module_battery == NULL) {
         muhtari_destroy(m);
         stop();
         return;
