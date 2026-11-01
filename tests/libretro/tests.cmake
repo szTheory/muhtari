@@ -119,6 +119,12 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.host.battery_order
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> battery_order
     LABELS libretro portable TIMEOUT 5)
+  # Fault prevented: a loaded module save that differs from the library's
+  # canonical bytes, loses continuation state, or leaves stale state after load.
+  muhtari_add_test(NAME libretro.host.state
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> state
+      ${PROJECT_SOURCE_DIR}/tests/diag/battery.a78
+    LABELS libretro portable TIMEOUT 10)
   # Fault prevented: the core RetroArch loads shows a frame, timing or
   # geometry other than the library's, or needs content to start.
   muhtari_add_test(NAME libretro.host.xrgb8888

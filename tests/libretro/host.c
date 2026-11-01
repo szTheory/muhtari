@@ -217,6 +217,8 @@ static int achievements = -1;
 static char message[256];
 static unsigned message_calls;
 static unsigned options_version = 2u; /* what GET_CORE_OPTIONS_VERSION answers */
+static bool savestate_context_available;
+static enum retro_savestate_context savestate_context = RETRO_SAVESTATE_CONTEXT_NORMAL;
 static const char *option_keys[16];   /* the keys the core declared */
 static int option_set_with;           /* 2 for SET_CORE_OPTIONS_V2, 1 for v1 */
 static const char *system_dir;
@@ -311,6 +313,12 @@ static bool RETRO_CALLCONV env(unsigned cmd, void *data)
     }
     if (cmd == RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION) {
         *(unsigned *)data = options_version;
+        return true;
+    }
+    if (cmd == RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT) {
+        if (!savestate_context_available)
+            return false;
+        *(enum retro_savestate_context *)data = savestate_context;
         return true;
     }
     if (cmd == RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 && options_version >= 2u) {
@@ -2633,6 +2641,355 @@ static void case_audio(void)
     muhtari_destroy(m);
 }
 
+/* A second, independent library instance is the serialization and continuation
+   oracle for the module that a frontend actually loads. */
+static uint8_t state_reference_native[2][W * 292u];
+static int16_t state_reference_audio[2][962u];
+static uint32_t state_reference_audio_count[2];
+static uint32_t state_device[2];
+
+static void state_library_input(muhtari *m)
+{
+    muhtari_input_ex in = {0};
+    in.size = (uint32_t)sizeof in;
+    for (unsigned p = 0u; p < 2u; p++) {
+        uint32_t buttons = pad[p];
+        in.port[p].device = state_device[p];
+        in.port[p].buttons =
+            ((buttons >> RETRO_DEVICE_ID_JOYPAD_UP) & 1u) != 0u ? MUHTARI_BUTTON_UP : 0u;
+        in.port[p].buttons |=
+            ((buttons >> RETRO_DEVICE_ID_JOYPAD_DOWN) & 1u) != 0u ? MUHTARI_BUTTON_DOWN : 0u;
+        in.port[p].buttons |=
+            ((buttons >> RETRO_DEVICE_ID_JOYPAD_LEFT) & 1u) != 0u ? MUHTARI_BUTTON_LEFT : 0u;
+        in.port[p].buttons |=
+            ((buttons >> RETRO_DEVICE_ID_JOYPAD_RIGHT) & 1u) != 0u ? MUHTARI_BUTTON_RIGHT : 0u;
+        in.port[p].buttons |=
+            ((buttons >> RETRO_DEVICE_ID_JOYPAD_B) & 1u) != 0u ? MUHTARI_BUTTON_1 : 0u;
+        in.port[p].buttons |=
+            ((buttons >> RETRO_DEVICE_ID_JOYPAD_A) & 1u) != 0u ? MUHTARI_BUTTON_2 : 0u;
+    }
+    CHECK_EQ_U64(muhtari_set_input_ex(m, &in), MUHTARI_STATUS_OK);
+}
+
+static void state_check_battery(muhtari *m, const void *module_battery)
+{
+    muhtari_battery_info battery_info = {0};
+    battery_info.size = (uint32_t)sizeof battery_info;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery_info), MUHTARI_STATUS_OK);
+    uint8_t *live = (uint8_t *)p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+    CHECK(live == module_battery);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), battery_info.bytes);
+    CHECK((live == NULL) == (battery_info.data == NULL));
+    if (live != NULL && battery_info.data != NULL)
+        CHECK(memcmp(live, battery_info.data, battery_info.bytes) == 0);
+}
+
+static void state_frame(muhtari *m, uint32_t buttons, int reference_slot, bool capture)
+{
+    static uint8_t native[W * 292u];
+    muhtari_frame io = {0};
+    muhtari_info info = {0};
+    pad[0] = buttons;
+    pad[1] = 0u;
+    state_library_input(m);
+    io.size = (uint32_t)sizeof io;
+    io.video = native;
+    io.video_pitch = W;
+    io.audio = expected_audio;
+    io.audio_capacity = 962u;
+    CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
+    checking_audio = 1;
+    expected_count = io.audio_count;
+    audio_position = 0u;
+    video_calls = batch_calls = 0;
+    batch_frames = sample_frames = 0u;
+    p_run();
+    checking_audio = 0;
+    CHECK_EQ_U64(video_calls, 1u);
+    CHECK_EQ_U64(video_width, W);
+    CHECK_EQ_U64(video_height, 242u);
+    CHECK_EQ_U64(audio_position, io.audio_count);
+    CHECK_EQ_U64(batch_calls, 1u);
+    CHECK_EQ_U64(batch_frames, io.audio_count);
+    compare_region_frame(native, 242u, MUHTARI_REGION_NTSC);
+    CHECK_EQ_U64(muhtari_get_info(m, &info), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(info.width, W);
+    CHECK_EQ_U64(info.height, 242u);
+    CHECK_EQ_U64(p_serialize_size(), muhtari_state_size(m));
+    if (reference_slot >= 0 && reference_slot < 2) {
+        unsigned slot = (unsigned)reference_slot;
+        if (capture) {
+            memcpy(state_reference_native[slot], native, W * 242u);
+            memcpy(state_reference_audio[slot], expected_audio,
+                   io.audio_count * sizeof expected_audio[0]);
+            state_reference_audio_count[slot] = io.audio_count;
+        } else {
+            CHECK(memcmp(state_reference_native[slot], native, W * 242u) == 0);
+            CHECK_EQ_U64(state_reference_audio_count[slot], io.audio_count);
+            CHECK(memcmp(state_reference_audio[slot], expected_audio,
+                         io.audio_count * sizeof expected_audio[0]) == 0);
+        }
+    }
+}
+
+static void state_check_current(muhtari *m, const uint8_t *expected, size_t bytes)
+{
+    uint8_t *library = (uint8_t *)malloc(bytes);
+    uint8_t *module_state = (uint8_t *)malloc(bytes);
+    CHECK(library != NULL);
+    CHECK(module_state != NULL);
+    if (library != NULL && module_state != NULL) {
+        CHECK_EQ_U64(muhtari_save_state(m, library, bytes), MUHTARI_STATUS_OK);
+        CHECK(p_serialize(module_state, bytes));
+        CHECK(memcmp(library, expected, bytes) == 0);
+        CHECK(memcmp(module_state, expected, bytes) == 0);
+    }
+    free(library);
+    free(module_state);
+}
+
+static void state_check_unavailable(const uint8_t *state, size_t bytes)
+{
+    uint8_t out[16];
+    memset(out, 0xA5, sizeof out);
+    CHECK_EQ_U64(p_serialize_size(), 0u);
+    CHECK(!p_serialize(out, sizeof out));
+    for (size_t i = 0u; i < sizeof out; i++)
+        CHECK_EQ_U64(out[i], 0xA5u);
+    CHECK(!p_unserialize(state, bytes));
+}
+
+static void case_state(void)
+{
+    static const uint8_t invalid[16] = {0};
+    static const uint32_t replay_buttons[2] = {
+        (1u << RETRO_DEVICE_ID_JOYPAD_UP) | (1u << RETRO_DEVICE_ID_JOYPAD_B),
+        (1u << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1u << RETRO_DEVICE_ID_JOYPAD_A)};
+    static const enum retro_savestate_context contexts[3] = {
+        RETRO_SAVESTATE_CONTEXT_NORMAL, RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE,
+        RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY};
+    struct retro_game_info game = {0}, bad = {0};
+    muhtari_config cfg = {0};
+    muhtari_media media = {0};
+    muhtari_cart_info cart = {0};
+    muhtari_battery_info battery_info = {0};
+    muhtari *m = NULL;
+    uint8_t *saved = NULL, *current = NULL, *extra = NULL, *again = NULL;
+    uint8_t *saved_battery = NULL;
+    uint8_t *module_battery = NULL;
+    size_t bytes = 0u;
+
+    savestate_context_available = false;
+    p_set_environment(env);
+    p_init();
+    p_set_video_refresh(video);
+    p_set_audio_sample(sample);
+    p_set_audio_sample_batch(batch);
+    p_set_input_poll(on_poll);
+    p_set_input_state(input);
+    CHECK_EQ_U64(p_serialize_size(), 0u);
+    bad.data = invalid;
+    bad.size = sizeof invalid;
+    CHECK_EQ_U64(p_load_game(&bad), 0u);
+    CHECK_EQ_U64(p_serialize_size(), 0u);
+
+    game.data = files[0];
+    game.size = file_sizes[0];
+    CHECK_EQ_U64(p_load_game(&game), 1u);
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = host_alloc;
+    cfg.allocator.free = host_free;
+    CHECK_EQ_U64(muhtari_create(&cfg, &m), MUHTARI_STATUS_OK);
+    media.size = (uint32_t)sizeof media;
+    media.image = files[0];
+    media.image_size = file_sizes[0];
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    cart.size = (uint32_t)sizeof cart;
+    CHECK_EQ_U64(muhtari_probe(files[0], file_sizes[0], &cart), MUHTARI_STATUS_OK);
+    battery_info.size = (uint32_t)sizeof battery_info;
+    CHECK_EQ_U64(muhtari_get_battery(m, &battery_info), MUHTARI_STATUS_OK);
+    for (unsigned p = 0u; p < 2u; p++) {
+        state_device[p] = p == 0u ? cart.port1 : cart.port2;
+        if (battery_info.eeprom_port == p + 1u)
+            state_device[p] = battery_info.eeprom_device;
+        if (state_device[p] == MUHTARI_PORT_NONE)
+            state_device[p] = MUHTARI_PORT_UNPLUGGED;
+    }
+    module_battery = (uint8_t *)p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+    CHECK(module_battery != NULL);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), battery_info.bytes);
+
+    bytes = muhtari_state_size(m);
+    CHECK(bytes > 0u);
+    CHECK_EQ_U64(p_serialize_size(), bytes);
+    if (bytes == 0u || p_serialize_size() != bytes || module_battery == NULL) {
+        muhtari_destroy(m);
+        stop();
+        return;
+    }
+    saved = (uint8_t *)malloc(bytes);
+    current = (uint8_t *)malloc(bytes);
+    extra = (uint8_t *)malloc(bytes + 1u);
+    again = (uint8_t *)malloc(bytes + 16u);
+    saved_battery = (uint8_t *)malloc(battery_info.bytes);
+    CHECK(saved != NULL && current != NULL && extra != NULL && again != NULL &&
+          saved_battery != NULL);
+    if (saved == NULL || current == NULL || extra == NULL || again == NULL ||
+        saved_battery == NULL) {
+        free(saved);
+        free(current);
+        free(extra);
+        free(again);
+        free(saved_battery);
+        muhtari_destroy(m);
+        stop();
+        return;
+    }
+    CHECK_EQ_U64(muhtari_save_state(m, saved, bytes), MUHTARI_STATUS_OK);
+    memcpy(saved_battery, battery_info.data, battery_info.bytes);
+    memset(again, 0xA5, bytes + 16u);
+    CHECK(p_serialize(again, bytes + 16u));
+    CHECK(memcmp(again, saved, bytes) == 0);
+    for (size_t i = bytes; i < bytes + 16u; i++)
+        CHECK_EQ_U64(again[i], 0xA5u);
+    CHECK_EQ_U64(muhtari_save_state(m, current, bytes), MUHTARI_STATUS_OK);
+    CHECK(memcmp(saved, current, bytes) == 0);
+    state_check_battery(m, module_battery);
+
+    state_frame(m, (1u << RETRO_DEVICE_ID_JOYPAD_B) | (1u << RETRO_DEVICE_ID_JOYPAD_UP),
+                -1, false);
+    CHECK_EQ_U64(muhtari_save_state(m, saved, bytes), MUHTARI_STATUS_OK);
+    memcpy(saved_battery, battery_info.data, battery_info.bytes);
+    memset(again, 0xA5, bytes + 16u);
+    CHECK(p_serialize(again, bytes + 16u));
+    CHECK(memcmp(again, saved, bytes) == 0);
+    for (size_t i = bytes; i < bytes + 16u; i++)
+        CHECK_EQ_U64(again[i], 0xA5u);
+
+    for (unsigned i = 0u; i < 2u; i++)
+        state_frame(m, replay_buttons[i], (int)i, true);
+    CHECK_EQ_U64(muhtari_save_state(m, current, bytes), MUHTARI_STATUS_OK);
+    CHECK(p_serialize(again, bytes));
+    CHECK(memcmp(current, again, bytes) == 0);
+
+    savestate_context_available = true;
+    for (unsigned c = 0u; c < 4u; c++) {
+        if (c < 3u) {
+            savestate_context = contexts[c];
+        } else {
+            savestate_context_available = false;
+        }
+        CHECK_EQ_U64(p_serialize_size(), bytes);
+        CHECK(!p_unserialize(NULL, bytes));
+        CHECK(!p_unserialize(saved, bytes - 1u));
+        memcpy(extra, saved, bytes);
+        extra[bytes] = 0x5Au;
+        CHECK(!p_unserialize(extra, bytes + 1u));
+        state_check_current(m, current, bytes);
+        memset(again, 0xA5, bytes + 16u);
+        CHECK(p_serialize(again, bytes + 16u));
+        CHECK(memcmp(again, current, bytes) == 0);
+        for (size_t i = bytes; i < bytes + 16u; i++)
+            CHECK_EQ_U64(again[i], 0xA5u);
+    }
+
+    uint8_t *live_module_bytes = (uint8_t *)p_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+    muhtari_battery_info before_restore = {0};
+    before_restore.size = (uint32_t)sizeof before_restore;
+    CHECK_EQ_U64(muhtari_get_battery(m, &before_restore), MUHTARI_STATUS_OK);
+    CHECK(live_module_bytes == module_battery);
+    CHECK(before_restore.data != NULL && before_restore.bytes != 0u);
+    if (before_restore.data != NULL && before_restore.bytes != 0u) {
+        uint8_t changed = saved_battery[0] ^ 1u;
+        before_restore.data[0] = changed;
+        live_module_bytes[0] = changed;
+    }
+    uint64_t generation_before_restore = before_restore.generation;
+    for (unsigned c = 0u; c < 4u; c++) {
+        if (c < 3u) {
+            savestate_context_available = true;
+            savestate_context = contexts[c];
+        } else {
+            savestate_context_available = false;
+        }
+        CHECK(p_unserialize(saved, bytes));
+        CHECK_EQ_U64(muhtari_load_state(m, saved, bytes), MUHTARI_STATUS_OK);
+        CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == module_battery);
+        state_check_battery(m, module_battery);
+        muhtari_battery_info after_restore = {0};
+        after_restore.size = (uint32_t)sizeof after_restore;
+        CHECK_EQ_U64(muhtari_get_battery(m, &after_restore), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(after_restore.generation,
+                     generation_before_restore + (c == 0u ? 1u : 0u));
+        state_check_current(m, saved, bytes);
+    }
+
+    savestate_context_available = true;
+    savestate_context = RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
+    CHECK_EQ_U64(p_serialize_size(), 0u);
+    memset(again, 0x5A, bytes + 16u);
+    CHECK(!p_serialize(again, bytes + 16u));
+    for (size_t i = 0u; i < bytes + 16u; i++)
+        CHECK_EQ_U64(again[i], 0x5Au);
+    CHECK(!p_unserialize(saved, bytes));
+    savestate_context_available = false;
+    state_check_current(m, saved, bytes);
+
+    for (unsigned i = 0u; i < 2u; i++)
+        state_frame(m, replay_buttons[i], (int)i, false);
+    CHECK_EQ_U64(muhtari_save_state(m, current, bytes), MUHTARI_STATUS_OK);
+    CHECK(p_serialize(again, bytes));
+    CHECK(memcmp(current, again, bytes) == 0);
+    state_check_battery(m, module_battery);
+
+    p_unload_game();
+    state_check_unavailable(saved, bytes);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 0u);
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+    CHECK_EQ_U64(p_load_game(&bad), 0u);
+    state_check_unavailable(saved, bytes);
+
+    CHECK_EQ_U64(p_load_game(NULL), 1u);
+    CHECK(p_serialize_size() > 0u);
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == NULL);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), 0u);
+    muhtari *card = NULL;
+    CHECK_EQ_U64(muhtari_create(&cfg, &card), MUHTARI_STATUS_OK);
+    if (card != NULL) {
+        muhtari_input_ex card_input = {0};
+        card_input.size = (uint32_t)sizeof card_input;
+        card_input.port[0].device = MUHTARI_PORT_PROLINE;
+        card_input.port[1].device = MUHTARI_PORT_PROLINE;
+        CHECK_EQ_U64(muhtari_set_input_ex(card, &card_input), MUHTARI_STATUS_OK);
+        size_t card_bytes = muhtari_state_size(card);
+        uint8_t *card_state = (uint8_t *)malloc(card_bytes);
+        uint8_t *module_state = (uint8_t *)malloc(card_bytes);
+        CHECK(card_state != NULL && module_state != NULL);
+        if (card_state != NULL && module_state != NULL) {
+            CHECK_EQ_U64(muhtari_save_state(card, card_state, card_bytes), MUHTARI_STATUS_OK);
+            CHECK(p_serialize(module_state, card_bytes));
+            CHECK(memcmp(card_state, module_state, card_bytes) == 0);
+        }
+        free(card_state);
+        free(module_state);
+        muhtari_destroy(card);
+    }
+    CHECK_EQ_U64(p_load_game(&bad), 0u);
+    state_check_unavailable(saved, bytes);
+    p_unload_game();
+    state_check_unavailable(saved, bytes);
+    stop();
+    CHECK_EQ_U64(p_serialize_size(), 0u);
+    muhtari_destroy(m);
+    free(saved);
+    free(current);
+    free(extra);
+    free(again);
+    free(saved_battery);
+    savestate_context_available = false;
+    savestate_context = RETRO_SAVESTATE_CONTEXT_NORMAL;
+}
+
 int main(int argc, char **argv)
 {
     static const struct {
@@ -2649,6 +3006,7 @@ int main(int argc, char **argv)
         {"memory_map", case_memory_map, 3},
         {"battery", case_battery, 0},
         {"battery_order", case_battery_order, 0},
+        {"state", case_state, 1},
     };
     size_t i;
     int found = 0;
