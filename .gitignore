@@ -34,6 +34,7 @@ compile_commands.json
 /.planning/milestone.lock
 /.planning/research/.cache/
 /.gsd/
+/.worktrees/
 /.claude/worktrees/
 /.claude/settings.local.json
 

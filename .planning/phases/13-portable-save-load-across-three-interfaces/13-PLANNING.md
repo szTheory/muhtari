@@ -31,8 +31,14 @@ All commands below ran in the isolated Phase 13 checkout. Run URL: N/A-local. No
 
 ## Next session and stops
 
-Context may be cleared. Open the existing isolated `.claude/worktrees/phase-13` checkout on `phase/13-portable-save-load-across-three-interfaces`, then invoke `$gsd-execute-phase 13`. The agent owns source/environment/service/receipt checks when applicable and executes the plans within that separate invocation. No owner verification or acknowledgment is needed now.
+Context may be cleared. Open the existing isolated `.worktrees/phase-13` checkout on `phase/13-portable-save-load-across-three-interfaces`, then invoke `$gsd-execute-phase 13`. The agent owns source/environment/service/receipt checks when applicable and executes the plans within that separate invocation. No owner verification or acknowledgment is needed now.
 
 Exact-source executed native/PowerPC equality remains mandatory. PR PowerPC compilation does not execute the tests; native PR equality, advisory nightly execution and release publication gates retain their actual labels. Plan 13-08 first uses an already installed authorized environment; unavailable sanitizer/BE tooling or receipts cause an explicit evidence checkpoint. No installation, new container image, publication or hosted attempt is authorized implicitly. A future release is not present proof.
 
 Phase 12 remains halted at accepted 0/4 with causes unknown and every hosted allowance spent. Its failure history, source/index and downstream halt are preserved; this independent phase does not waive any v3.0 requirement. Actual RetroArch save/load, rewind and run-ahead qualification remains Phase 14. Stop after this planning step; the user starts the separate execute step when ready.
+
+## Checkout location update
+
+The owner chose a repository-local `.worktrees/` directory on 2026-11-01. Git moved the existing Phase 13 checkout from its original agent-branded location to `.worktrees/phase-13`; its branch, commits and plans are unchanged. The discussion log retains the original creation location as history. Current handoff paths and the ignore rule follow the new convention.
+
+Relocation checks: `git worktree move .claude/worktrees/phase-13 .worktrees/phase-13`, `git worktree list`, `git check-ignore -q .worktrees/phase-13/.git` (from the primary checkout), scoped `git diff --check`, and one-time primary file/index and branch preservation inspection each exited 0. Run URL: N/A-local. Git resolves the new checkout and handoff copies agree; the original discussion path remains historical.

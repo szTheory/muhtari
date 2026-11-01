@@ -2,6 +2,8 @@
 
 ## Communication and workflow preferences
 
+- Keep isolated Git checkouts inside the repository under `.worktrees/`, using an ignored directory, so they stay together without cluttering the parent projects folder.
+
 - Speak to the user as a software engineer and colleague. Use plain, direct language. Keep necessary technical terms and explain unfamiliar workflow language through its practical consequence.
 - End with the actual outcome, what remains broken or blocked, and the next useful action. Usually one short paragraph or at most three short bullets is enough. State clearly when no user action is needed.
 - At handoff, say explicitly when context can be cleared and give the exact next command. The agent owns service-health and receipt checks in the next session; the user should not have to interpret a vague review prerequisite before resuming. Preserve any exhausted live allowance until a new concrete scope is authorized.

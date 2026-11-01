@@ -25,7 +25,7 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-10-29.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 13 has eight checked sequential plans in [the phase directory](phases/13-portable-save-load-across-three-interfaces/13-PLANNING.md), ready for the separate execute step on phase/13-portable-save-load-across-three-interfaces. Use the existing isolated .claude/worktrees/phase-13 checkout, based directly on shipped origin/main; never execute the state work from the halted Phase 12 branch. Primary Phase 12 source/index are unchanged. Phase 12 remains halted at accepted 0/4 with causes unknown and all hosted allowances spent.
+Current focus: Phase 13 has eight checked sequential plans in [the phase directory](phases/13-portable-save-load-across-three-interfaces/13-PLANNING.md), ready for the separate execute step on phase/13-portable-save-load-across-three-interfaces. Use the existing isolated .worktrees/phase-13 checkout, based directly on shipped origin/main; never execute the state work from the halted Phase 12 branch. Primary Phase 12 source/index are unchanged. Phase 12 remains halted at accepted 0/4 with causes unknown and all hosted allowances spent.
 
 ## Current Position
 
@@ -161,7 +161,7 @@ Last session: 2026-11-01T19:15:53.923Z
 Stopped at: Phase 13 plans independently checked and ready on isolated shipped-v2 baseline; no implementation executed. Phase 12 remains halted at 0/4 and all hosted allowances remain spent. Next separate command: $gsd-execute-phase 13 from the existing isolated Phase 13 checkout. Context may be cleared; agent owns preflight and evidence checks, no owner verification needed.
 Resume file: .planning/phases/13-portable-save-load-across-three-interfaces/13-PLANNING.md
 Next separate command: `$gsd-execute-phase 13`
-Context handoff: Work in the existing isolated .claude/worktrees/phase-13 checkout; the primary checkout remains on the Phase 12 branch with its pre-existing edits preserved. Research, exact design, eight plans and current planning references are carried on the isolated branch; matching new phase artifacts are discoverable in the primary checkout. Context may be cleared. The next agent owns all checks and execution within the new invocation; no owner acknowledgment or manual verification is needed. No Phase 12 action, hosted/publication authority or exhausted allowance is renewed.
+Context handoff: Work in the existing isolated .worktrees/phase-13 checkout; the primary checkout remains on the Phase 12 branch with its pre-existing edits preserved. Research, exact design, eight plans and current planning references are carried on the isolated branch; matching new phase artifacts are discoverable in the primary checkout. Context may be cleared. The next agent owns all checks and execution within the new invocation; no owner acknowledgment or manual verification is needed. No Phase 12 action, hosted/publication authority or exhausted allowance is renewed.
 
 ## Deferred Items
 
