@@ -53,6 +53,10 @@ foreach(case IN ITEMS aliases battery fields lifecycle payload topologies)
   muhtari_add_test(NAME core.state.${case} COMMAND muhtari-test-state ${case}
     LABELS core portable TIMEOUT 10)
 endforeach()
+muhtari_add_test(NAME core.state.equality_report COMMAND muhtari-test-state topologies
+  LABELS core portable TIMEOUT 10)
+set_tests_properties(core.state.equality_report PROPERTIES
+  PASS_REGULAR_EXPRESSION "state[.]linear_ntsc[.]bytes_sha256 [0-9a-f]+")
 
 add_executable(muhtari-test-pal ${CMAKE_CURRENT_LIST_DIR}/test_pal.c
   ${CMAKE_SOURCE_DIR}/tests/cart/images.c ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c)
