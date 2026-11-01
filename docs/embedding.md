@@ -624,6 +624,16 @@ state. Immutable media and host persistence metadata are outside the snapshot.
 The frontend or runner remains responsible for storing bytes and deciding when
 to restore them.
 
+The live battery generation is host metadata and is not restored from the
+snapshot. A restore advances it once when committed battery bytes change,
+including normal unsigned wrap; equal, repeated and refused restores preserve
+it. SaveKey pins, protocol state, pending page and busy deadline are part of the
+snapshot. Restoring a pending write with unchanged committed bytes stays clean
+until the existing EEPROM commit path changes them. An accepted rollback can
+therefore replace newer durable progress when the host next flushes the battery
+span. The core never reads or writes save files, and state sizing, save and load
+do not invoke observers.
+
 ## Counters
 
 `muhtari_get_counters` fills a `muhtari_counters`. `frames` counts the frames run since the last load or power
