@@ -99,28 +99,30 @@ muhtari_add_test(NAME built.samples.self_test
 
 # built.openbios: the CC0 OpenBIOS image from its pinned source with $FF fill
 # (openbios.cmake), the BIOS the BIOS-path tests boot. It sets up built_openbios.
+set(built_openbios_trace ${PROJECT_BINARY_DIR}/openbios-stage.txt)
 muhtari_add_test(NAME built.openbios
   COMMAND ${CMAKE_COMMAND} ${built_tools} -DASM=${MUHTARI_OPENBIOS_ASM} -DFILL=FF
-    -DOUT=${MUHTARI_BUILT_DIR}/openbios/openbios.bin -P ${CMAKE_CURRENT_LIST_DIR}/openbios.cmake
+    -DOUT=${MUHTARI_BUILT_DIR}/openbios/openbios.bin "-DTRACE=${built_openbios_trace}"
+    -P ${CMAKE_CURRENT_LIST_DIR}/openbios.cmake
   LABELS built portable TIMEOUT 1)  # 2 x 0.40 s, Windows arm64, slowest of 16 runs, run 39381266556
 set_tests_properties(built.openbios PROPERTIES FIXTURES_SETUP built_openbios)
 
 # Negative control: a source whose first incbin line occurs twice must fail
 # naming the line, so a changed source never assembles with a binary left out
 # of the fill.
-file(READ ${MUHTARI_OPENBIOS_ASM} built_text)
-string(REPLACE "incbin \"kiloparsec.bl1\"" "incbin \"kiloparsec.bl1\"\n incbin \"kiloparsec.bl1\""
-  built_text "${built_text}")
-set(built_openbios_twice ${PROJECT_BINARY_DIR}/tests/built/openbios_twice.asm)
-file(WRITE ${built_openbios_twice} "${built_text}")
-set(built_cmd ${CMAKE_COMMAND} ${built_tools} -DASM=${built_openbios_twice} -DFILL=FF
-  -DOUT=${PROJECT_BINARY_DIR}/tests/built/openbios_twice/openbios.bin
-  -P ${CMAKE_CURRENT_LIST_DIR}/openbios.cmake)
-string(REPLACE ";" "$<SEMICOLON>" built_cmd "${built_cmd}")
+set(built_openbios_fault_trace ${PROJECT_BINARY_DIR}/openbios-fault-stage.txt)
 muhtari_add_test(NAME built.openbios.self_test
-  COMMAND ${CMAKE_COMMAND} "-DCMD=${built_cmd}" -DCODE=1
-    "-DREGEX=kiloparsec[.]bl1[^ ]* occurs 2 times" -P ${PROJECT_SOURCE_DIR}/tests/cmake/expect_fail.cmake
+  COMMAND ${CMAKE_COMMAND}
+    "-DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/openbios.cmake"
+    "-DWASMTIME=${MUHTARI_WASMTIME}"
+    "-DPKG=${MUHTARI_7800BASIC}"
+    "-DASM=${MUHTARI_OPENBIOS_ASM}"
+    "-DOUT_DIR=${PROJECT_BINARY_DIR}/tests/built/openbios-trace"
+    "-DPASS_TRACE=${built_openbios_trace}"
+    "-DFAULT_TRACE=${built_openbios_fault_trace}"
+    -P ${CMAKE_CURRENT_LIST_DIR}/openbios_trace.cmake
   LABELS built portable TIMEOUT 1)  # 2 x 0.11 s, Windows arm64, slowest of 16 runs, run 39375738182
+set_tests_properties(built.openbios.self_test PROPERTIES FIXTURES_REQUIRED built_openbios)
 
 # The simple sample through the internal load and the fast-boot hand-off:
 # 120 frames, two instances in step, and frame 120 a real picture

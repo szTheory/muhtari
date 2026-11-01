@@ -1,6 +1,6 @@
 # Build the 7800 OpenBIOS image from its pinned CC0 source, run as
 #   cmake -DWASMTIME=<wasmtime> -DPKG=<7800basic package> -DASM=<7800openbios.asm>
-#         -DOUT=<dir>/openbios.bin -DFILL=FF|00 -P openbios.cmake
+#         -DOUT=<dir>/openbios.bin -DTRACE=<stage-file> -DFILL=FF|00 -P openbios.cmake
 # Fault prevented: a BIOS image that differs between legs or from the pinned
 # source. The BIOS-path tests boot this image, so every platform must build
 # the same bytes.
@@ -11,11 +11,15 @@
 # package's dasm assembles the result under wasmtime in a fresh directory, as
 # build.cmake does. The image stays in the build tree.
 cmake_minimum_required(VERSION 3.25)
-foreach(var WASMTIME PKG ASM OUT FILL)
+foreach(var WASMTIME PKG ASM OUT FILL TRACE)
   if("${${var}}" STREQUAL "")
     message(FATAL_ERROR "openbios: -D${var} is required")
   endif()
 endforeach()
+
+function(record_stage stage)
+  file(APPEND "${TRACE}" "stage=${stage}\n")
+endfunction()
 
 # SHA-256 of the 16 KiB image for each fill. Both are rows of
 # tests/release/firmware.txt, so a release archive can carry neither.
@@ -29,11 +33,16 @@ file(TO_CMAKE_PATH "${PKG}" pkg)
 file(TO_CMAKE_PATH "${OUT}" out)
 get_filename_component(dir "${out}" DIRECTORY)
 get_filename_component(bin "${out}" NAME)
+# TRACE is outside dir because the recipe removes and recreates dir. If CTest
+# kills this script, its last marker identifies the stage that was active.
+file(WRITE "${TRACE}" "")
+record_stage("prepare-output")
 file(REMOVE_RECURSE "${dir}")
 file(MAKE_DIRECTORY "${dir}")
 
 # Each binary and the fill that takes its place: 8 KiB of graphics at $C000
 # and 896 bytes of game code.
+record_stage("transform-source")
 file(READ "${ASM}" text)
 foreach(pair "kiloparsec.bl1=8192" "kiloparsec.bl2=896")
   string(REPLACE "=" ";" pair "${pair}")
@@ -62,9 +71,11 @@ function(stage name)
   endforeach()
 endfunction()
 
+record_stage("assemble")
 stage(assemble OUTPUT_FILE assemble.log
   COMMAND "${WASMTIME}" run --dir=. ${pkg}/dasm.wasm 7800openbios.asm -f3 -o${bin})
 
+record_stage("verify-output")
 if(NOT EXISTS "${out}")
   message(FATAL_ERROR "openbios: the build wrote no ${bin}")
 endif()
@@ -73,4 +84,5 @@ if(NOT got STREQUAL want_${FILL})
   message(FATAL_ERROR "openbios: SHA-256 drift for the ${FILL} fill: expected ${want_${FILL}}, "
     "the build gave ${got}")
 endif()
+record_stage("complete")
 message(STATUS "openbios: ${bin} ${got} as expected")
