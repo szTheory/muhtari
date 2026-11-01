@@ -1,0 +1,43 @@
+Start with the user's current objective, real consumers, existing implementation,
+binding contracts and settled decisions. Use relevant project memory before new
+research; sanity-check it where age or new evidence matters. Adapt roles to the
+problem rather than enumerating unrelated specialties.
+
+Fan out independent questions with explicit ownership and disjoint deliverables.
+For emulator work, relevant lenses can include players/host ergonomics, hardware
+and state correctness, API/lifecycle design, security/provenance, deterministic
+verification, performance/resource costs and build/release operations. Read-only
+reviews can run together. Do not implement or plan downstream phases prematurely.
+
+For each decision, identify the objective, consumer and concrete failure boundary.
+Compare doing nothing, the smallest useful change and the strongest alternative.
+Explain meaningful pros/cons, examples, patterns, footguns, migration/maintenance
+cost and the evidence that could overturn the recommendation. Separate reproduced
+facts, source-backed facts, inference and unknowns. Prefer reputable primary
+sources, record exact links or source revisions, and observe the project's source
+licensing restrictions even for research.
+
+Follow the dependency ladder: remove the need, reuse this repository, use standard
+facilities, use the platform, then write the minimum. A small understood permissive
+copy can be better than another dependency; retain its provenance and update duty.
+Use a package when substantial present correctness/security work justifies its
+runtime/build/transitive scope. A flatter tree alone is not a safety proof.
+
+Synthesize one coherent recommendation per decision and across interactions. Run
+one adversarial pass. Expand only when unresolved evidence could change scope,
+ordering or acceptance, then stop at diminishing returns. Prefer present player
+and host outcomes over speculative infrastructure or unrequested abstractions.
+
+Persist high-signal findings, rationale, source confidence, rejected alternatives
+and revisit triggers in the milestone's research/summary and rolling roadmap.
+Record newly reproduced lessons in LESSONS; untested inbound takeaways stay
+hypotheses. Refresh Immediate / Next / Mid / Long horizons at each milestone
+start and close, keeping later horizons directional rather than execution plans.
+
+Recommend acceptance observable by existing tests, hosts or CI, with commands,
+exit statuses and run URLs. Preserve required contracts and advisory distinctions.
+The owner verifies nothing by default; voluntary gameplay feedback is scoped
+evidence, not recurring UAT. Keep ROMs, firmware and personal results local.
+
+Follow approved recommendations within the active GSD step without routine
+reconfirmation. One writer owns shared planning state. Do not chain GSD steps.

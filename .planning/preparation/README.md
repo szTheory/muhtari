@@ -2,7 +2,7 @@
 title: "Preparation index"
 summary: "Which preparation file answers which question, and the conventions every file in this directory shares."
 read_when: "First, before opening any other file in this directory; again when adding, renaming or retiring one."
-updated: 2026-10-24
+updated: 2026-10-29
 ---
 
 # Preparation index
@@ -12,9 +12,13 @@ and oracle plan, engineering, host and process decisions, and how GSD is run. It
 brain: each file opens with frontmatter saying when to read it and a Where to look table, cites tiered, pinned
 sources, and gives one recommendation per choice. Open the file a question points to; none needs reading end to end.
 
+Start with the [planning memory index](../README.md) for current scope and the
+[shared intent](../INTENT.md) for gamer priorities, research posture and sibling reuse.
+
 ## Files
 | File | Holds | Read when |
 |---|---|---|
+| [../README.md](../README.md) and [../INTENT.md](../INTENT.md) | Discoverable memory index and dated owner intent with sources, transfer rules and research posture | Before milestone work or adapting muhtari practices to a sibling core |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | The core's design spine: tick time base and frame boundary, chip modules and the bus, the public C API, state, observability | Before designing a core subsystem, the public header, the libretro adapter or the runner |
 | [DECISIONS.md](DECISIONS.md) | One row per settled choice (`DEC.NN`) with its reason and supporting section; open questions at the end | Before reopening a choice, or when a phase needs to know what is settled |
 | [A7800-SYSTEM.md](A7800-SYSTEM.md) | Clocks and the master tick, the per-line timeline, SALLY HALT/RDY/NMI, memory map, INPTCTRL, RIOT, boot and HLE, power-on profile | Changing the time base, bus, CPU wrapper, RIOT, boot path or any timing that crosses chips |
@@ -37,6 +41,7 @@ sources, and gives one recommendation per choice. Open the file a question point
 ## Where to look
 | Question | File and section |
 |---|---|
+| Where are shared product goals, owner intent and reusable research guidance? | [Planning index](../README.md), [INTENT](../INTENT.md), [fan-out prompt](../research/fan-out/prompt.txt) |
 | What is one tick, what happens at each tick of a line, and when does HALT stop SALLY? | A7800-SYSTEM 1–3 |
 | What answers each address, which cycles are slow, and what does INPTCTRL do? | A7800-SYSTEM 4, 5 |
 | What do the BIOSes do, what must fast boot reproduce, which power-on facts are profile fields? | A7800-SYSTEM 7, 8 |

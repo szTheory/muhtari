@@ -1,3 +1,23 @@
+# Working preferences
+
+## Communication and workflow preferences
+
+- Speak to the user as a software engineer and colleague. Use plain, direct language. Keep necessary technical terms and explain unfamiliar workflow language through its practical consequence.
+- End with the actual outcome, what remains broken or blocked, and the next useful action. Usually one short paragraph or at most three short bullets is enough. State clearly when no user action is needed.
+- At handoff, say explicitly when context can be cleared and give the exact next command. The agent owns service-health and receipt checks in the next session; the user should not have to interpret a vague review prerequisite before resuming. Preserve any exhausted live allowance until a new concrete scope is authorized.
+- Keep hashes, internal task and threat IDs, exhaustive test counts, audit history, and workflow metadata in linked artifacts unless they are needed for a real decision or explicitly requested. Say what the checks establish in ordinary language.
+- Give progress updates when there is new information. When a required update interval arrives during a long wait, use one brief factual line; do not repeat the whole plan or invent progress.
+- Ask for user input only when the answer changes scope, authority, risk, cost, an irreversible action, or a required phase/milestone boundary. Explain the concrete choice and why it matters. Continue routine authorized work and bookkeeping without asking for acknowledgments or exact phrases.
+- Owner preference (2026-10-31): when given a concrete, bounded recommendation, proceed with that recommended scope by default instead of requesting another approval at each internal step. Ask again only when a failed gate requires a changed scope, an unlisted live/remote/identity-bound or irreversible action is introduced, or the work would exceed a stated attempt or allowance cap. This is not open-ended authorization for side effects outside the described scope.
+- Preserve an existing safety stop automatically when its cause remains unresolved. A confirmation merely to keep work stopped is unnecessary. Removing redundant confirmation does not authorize live tests, accept risk, renew a budget/window, or start another phase.
+- Record explicit user corrections in durable instructions. Apply these preferences to OpenGSD planning, execution, reviews, progress updates, and final summaries. Keep detailed evidence available without making the user translate process records into takeaways.
+- When authorized work remains and no user action is needed, keep working. Carry planning through implementation, tests and review within the selected phase; stop for a real decision or phase/milestone boundary. Removing an unnecessary confirmation is not a reason to leave the task idle.
+- At every pause or handoff, state in chat what is happening, the concrete blocker and consequence, your recommended next step, and exactly who acts next. Explicitly say when waiting for the user versus continuing work.
+- Summarize every risk or decision in plain language before asking; make linked documents optional detail. When the user has no strong preference, recommend a concrete path. An uninformed or indifferent response is not risk acceptance.
+- Prefer the least disruptive evidence-supported remedy. For stuck project tests, inspect attributable processes and consider targeted cleanup first; recommend a whole-machine restart only when its necessity and impact are established.
+
+--- project-doc ---
+
 # muhtari
 
 An Atari 7800 emulator core in C. This repository ships three things: a C library, a headless
@@ -28,8 +48,10 @@ evidence.
    catch recurring regressions; a check with no recurring value is run once by the agent and recorded as a
    command and an exit status. The agent makes the judgement calls itself: it reads docs against the code, views
    images and screenshots, and runs RetroArch. What only a merge can show is confirmed at ship (rule 9), not in
-   UAT. Ask the owner only for identity-bound consent (the App key, admin settings, a merge) or a run on their
-   own hardware, and say why.
+   UAT. During `$gsd-verify-work`, the agent gathers and records every result it can verify from local checks,
+   CI receipts, logs, screenshots and project artifacts; do not ask for blanket UAT confirmation when no item
+   requires human judgment. Ask the owner only for identity-bound consent (the App key, admin settings, a merge)
+   or a run on their own hardware, and say why.
 7. **Proportional gates.** Repository checks use CMake `-P` or POSIX sh and reuse existing mechanisms.
    A new or materially changed check names its concrete fault and exercises representative pass/fault behavior;
    consolidation preserves required behavior and fault detection. For architecture review and new resource
@@ -38,19 +60,30 @@ evidence.
    contract remain blocking wherever they live. Re-plan a gap only with new evidence.
    During GSD execution, or when workflow retries or metadata repairs repeat, follow
    `.planning/preparation/GSD-HANDOFF.md` §3.1 and its bounded fan-out prompt.
-8. **One GSD step per session, then stop.** Report what finished and the exact next command. Never run
-   `/gsd-next`, `/gsd-autonomous`, `/gsd-manager`, `/gsd-progress --next` or `--do`, any GSD command whose
+8. **One major OpenGSD step per session, then stop.** Major steps include discuss, plan, execute, phase or
+   milestone management, audit, ship and archive. Report what finished and the exact next major command. A
+   `gsd-debug continue` or other micro-step inside an already authorized scope is not a new major step; carry the
+   approved scope through its listed gates, implementation, controls, review and evidence without routine prompts.
+   Before each `gsd-debug continue`, compare `Current Focus` with the checkpoint's latest dated closeout and the
+   relevant phase summary/STATE. Each continuation must add evidence, complete an authorized action, or resolve a
+   blocker. If the same blocker remains, hand off its exact missing input, consequence, next action and command;
+   resume only after new evidence or authority arrives.
+   Never run `/gsd-next`, `/gsd-autonomous`, `/gsd-manager`, `/gsd-progress --next` or `--do`, any GSD command whose
    arguments contain `--auto` or `--chain`, or `/gsd-profile-user`, and never set the hygiene bypasses `MUHTARI_ALLOW_CHAIN` or
-   `MUHTARI_ALLOW_MAIN_COMMIT`. Inside a step, proceed without routine
-   confirmations.
+   `MUHTARI_ALLOW_MAIN_COMMIT`. Stop inside a scope only at a real decision boundary, failed gate requiring changed
+   scope, exhausted attempt cap, or an action excluded from the approval.
 9. **Branch, then pull request.** Never commit on `main` once a remote exists. Before the first GSD step that
    commits, branch off `origin/main`: `phase/NN-slug` for a phase, `milestone/vX.Y-slug` for milestone steps,
    `gsd/roadmap` for the kickoff. After `/gsd-ship`, give the pull request a Conventional Commit title, run
    `gh pr merge --auto --squash` in a shell (never inside GSD command text), and confirm a CI run exists on the
-   head commit; after the merge, confirm the release pull request is green.
+   head commit; after the merge, confirm the release pull request is green. Whenever reviewing a running or
+   completed CI/release run, inspect its queue, critical path, job durations and cancelled work for low-effort
+   efficiency gains. Preserve test/fault coverage and release evidence; require measured, multi-run evidence for
+   structural, timeout or cache changes, and record when the run supports no safe improvement.
 10. **Evidence is a command, an exit status and a run URL**, never a committed log.
-11. **Lessons.** Inbound lessons in `.planning/LESSONS.md` are hypotheses until reproduced here. When the owner
-    asks to "export lessons", produce a pasteable block from that file's template.
+11. **Lessons.** Before planning a phase or changing a subsystem, read relevant entries in `.planning/LESSONS.md`;
+    record newly reproduced lessons there with evidence. Inbound lessons remain hypotheses until reproduced here.
+    Keep lessons in project memory by default; export from the ledger's template only when explicitly requested.
 
 ## GSD summaries
 
