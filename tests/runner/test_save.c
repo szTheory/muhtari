@@ -851,6 +851,8 @@ static void state_files(char *dir)
     CHECK_EQ_U64(rmdir(nonregular), 0u);
 #endif
 #endif
+    /* A nonregular state path is rejected and closed before fdopen. */
+    state_fd = -1;
 
     uint8_t previous[8] = {0x31u, 0x32u, 0x33u, 0x34u, 0x35u, 0x36u, 0x37u, 0x38u};
     static const int write_faults[] = {SAVE_CREATE, SAVE_FDOPEN, SAVE_PARTIAL, SAVE_WRITE,
