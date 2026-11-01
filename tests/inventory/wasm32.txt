@@ -553,6 +553,8 @@ prop.input_at_vblank	portable,prop
 prop.instances_isolated	portable,prop
 prop.peek_pure	portable,prop
 prop.split_run	portable,prop
+prop.state_continuation	portable,prop
+prop.state_refusal	portable,prop
 release.archive_contents	release
 release.archive_contents.self_test	release
 release.firmware_scan	release

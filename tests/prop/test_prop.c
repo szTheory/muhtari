@@ -19,6 +19,7 @@
 #include "internal.h"
 #include "muhtari.h"
 #include "sha256.h"
+#include "crc32.h"
 
 #define WIDTH 320u
 #define HEIGHT 242u
@@ -671,6 +672,8 @@ static int input_at_vblank(uint64_t *rng, uint32_t size)
    absent, HSC, EEPROM on either port, and both combined placements. */
 static uint8_t battery_expected[34816];
 static uint8_t battery_firmware[4096];
+static uint8_t state_firmware_other[4096];
+static uint32_t state_mutation_seen;
 
 static muhtari_battery_info battery_info(const muhtari *m)
 {
@@ -989,6 +992,440 @@ static int battery_observers(uint64_t *rng, uint32_t size)
     return finish(a, b, same_run(&first, &second, 1u, a, b) && ok);
 }
 
+static size_t state_build_linear(uint64_t *rng)
+{
+    for (uint32_t at = 0u; at < RUN_LINEAR_BYTES; at += 8u) {
+        uint64_t value = prop_next(rng);
+        for (uint32_t byte = 0u; byte < 8u; byte++)
+            raw[at + byte] = (uint8_t)(value >> (8u * byte));
+    }
+    pool_expansion = MUHTARI_EXPANSION_OFF;
+    return run_cart(raw, RUN_LINEAR_BYTES, image).bytes;
+}
+
+static int state_load_pair(uint64_t *rng, muhtari **a, muhtari **b, size_t *image_bytes)
+{
+    *image_bytes = state_build_linear(rng);
+    *a = create();
+    *b = create();
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = *image_bytes;
+    media.region = MUHTARI_REGION_NTSC;
+    media.expansion = MUHTARI_EXPANSION_OFF;
+    media.hsc_mode = MUHTARI_HSC_OFF;
+    if (muhtari_load(*a, &media) != MUHTARI_STATUS_OK ||
+        muhtari_load(*b, &media) != MUHTARI_STATUS_OK)
+        return differ("state generated load", 0u);
+    if ((*a)->cart.rom == (*b)->cart.rom ||
+        ((*a)->cart.ram != NULL && (*a)->cart.ram == (*b)->cart.ram))
+        return differ("state independent backing", 0u);
+    return 1;
+}
+
+static int state_spans(muhtari *m, muhtari_span spans[4])
+{
+    for (uint32_t kind = MUHTARI_MEMORY_SYSTEM_RAM; kind <= MUHTARI_MEMORY_EXPANSION_RAM;
+         kind++) {
+        memset(&spans[kind - 1u], 0, sizeof spans[kind - 1u]);
+        spans[kind - 1u].size = (uint32_t)sizeof spans[kind - 1u];
+        if (muhtari_get_memory(m, kind, &spans[kind - 1u]) != MUHTARI_STATUS_OK)
+            return 0;
+    }
+    return 1;
+}
+
+static int state_same_spans(const muhtari_span a[4], const muhtari_span b[4])
+{
+    for (unsigned i = 0u; i < 4u; i++)
+        if (a[i].data != b[i].data || a[i].bytes != b[i].bytes)
+            return 0;
+    return 1;
+}
+
+static uint32_t state_crc(const uint8_t *bytes, size_t size)
+{
+    static const uint8_t zero_crc[4] = {0u, 0u, 0u, 0u};
+    uint32_t crc = muhtari__crc32(0u, bytes, 24u);
+    crc = muhtari__crc32(crc, zero_crc, sizeof zero_crc);
+    return muhtari__crc32(crc, bytes + 28u, size - 28u);
+}
+
+static void state_put_u32(uint8_t *bytes, uint32_t value)
+{
+    bytes[0] = (uint8_t)value;
+    bytes[1] = (uint8_t)(value >> 8);
+    bytes[2] = (uint8_t)(value >> 16);
+    bytes[3] = (uint8_t)(value >> 24);
+}
+
+static void state_put_u64(uint8_t *bytes, uint64_t value)
+{
+    state_put_u32(bytes, (uint32_t)value);
+    state_put_u32(bytes + 4u, (uint32_t)(value >> 32));
+}
+
+static void state_rechecksum(uint8_t *bytes, size_t size)
+{
+    state_put_u32(bytes + 24u, 0u);
+    state_put_u32(bytes + 24u, state_crc(bytes, size));
+}
+
+static int state_continuation(uint64_t *rng, uint32_t size)
+{
+    muhtari *source, *restored;
+    size_t image_bytes;
+    int ok = state_load_pair(rng, &source, &restored, &image_bytes);
+    muhtari *observer = create();
+    muhtari_media observer_media;
+    memset(&observer_media, 0, sizeof observer_media);
+    observer_media.size = (uint32_t)sizeof observer_media;
+    observer_media.image = image;
+    observer_media.image_size = image_bytes;
+    observer_media.region = MUHTARI_REGION_NTSC;
+    observer_media.expansion = MUHTARI_EXPANSION_OFF;
+    observer_media.hsc_mode = MUHTARI_HSC_OFF;
+    if (muhtari_load(observer, &observer_media) != MUHTARI_STATUS_OK)
+        ok = differ("state independent observer load", 0u);
+    if (observer->cart.rom == source->cart.rom)
+        ok = differ("state independent observer backing", 0u);
+    muhtari_input_ex input;
+    uint32_t family = prop_below(rng, 9u);
+    typed_input(rng, family, &input);
+    if (muhtari_set_input_ex(source, &input) != MUHTARI_STATUS_OK)
+        ok = differ("state pending input", 0u);
+    muhtari_input_ex observer_input;
+    typed_input(rng, (family + 1u) % 9u, &observer_input);
+    if (muhtari_set_input_ex(observer, &observer_input) != MUHTARI_STATUS_OK)
+        ok = differ("state independent observer input", 0u);
+
+    size_t state_bytes = muhtari_state_size(source);
+    uint8_t *first_state = (uint8_t *)malloc(state_bytes + 1u);
+    uint8_t *second_state = (uint8_t *)malloc(state_bytes + 1u);
+    if (first_state == NULL || second_state == NULL || state_bytes == 0u) {
+        free(first_state);
+        free(second_state);
+        muhtari_destroy(observer);
+        return finish(source, restored, differ("state buffers", 0u));
+    }
+    if (muhtari_save_state(source, first_state, state_bytes) != MUHTARI_STATUS_OK ||
+        muhtari_save_state(source, second_state, state_bytes) != MUHTARI_STATUS_OK ||
+        memcmp(first_state, second_state, state_bytes) != 0)
+        ok = differ("state repeated canonical save", 0u);
+    muhtari_span before[4], after[4];
+    if (!state_spans(restored, before))
+        ok = differ("state spans before load", 0u);
+    uint32_t calls = allocation_calls;
+    if (muhtari_load_state(restored, first_state, state_bytes) != MUHTARI_STATUS_OK ||
+        allocation_calls != calls)
+        ok = differ("state independent load allocation/status", 0u);
+    if (!state_spans(restored, after) || !state_same_spans(before, after))
+        ok = differ("state stable spans", 0u);
+    if (muhtari_save_state(restored, second_state, state_bytes) != MUHTARI_STATUS_OK ||
+        memcmp(first_state, second_state, state_bytes) != 0)
+        ok = differ("state canonical replay", 0u);
+
+    struct frame_out one[PROP_SIZE_MAX], two[PROP_SIZE_MAX], unrelated;
+    uint32_t frames = 1u + prop_below(rng, size > 1u ? size - 1u : 1u);
+    for (uint32_t frame = 0u; frame < frames; frame++) {
+        run(source, WIDTH, &one[frame]);
+        run(observer, WIDTH, &unrelated);
+        run(restored, WIDTH, &two[frame]);
+        if (memcmp(&one[frame], &two[frame], sizeof one[frame]) != 0)
+            ok = differ("state resumed frame", frame + 1u);
+    }
+    ok = same_run(one, two, frames, source, restored) && ok;
+    free(first_state);
+    free(second_state);
+    muhtari_destroy(observer);
+    return finish(source, restored, ok);
+}
+
+static int state_battery_roundtrip(uint64_t *rng);
+
+static int state_refusal(uint64_t *rng, uint32_t size)
+{
+    (void)size;
+    muhtari *source, *restored;
+    size_t image_bytes;
+    int ok = state_load_pair(rng, &source, &restored, &image_bytes);
+    muhtari_input pending = {0};
+    pending.size = (uint32_t)sizeof pending;
+    pending.device[0] = MUHTARI_PORT_JOYSTICK;
+    pending.buttons[0] = MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1;
+    pending.switches = MUHTARI_SWITCH_SELECT;
+    if (muhtari_set_input(source, &pending) != MUHTARI_STATUS_OK)
+        ok = differ("state refusal pending input", 0u);
+
+    size_t state_bytes = muhtari_state_size(source);
+    uint8_t *candidate = (uint8_t *)malloc(state_bytes + 1u);
+    uint8_t *before_bytes = (uint8_t *)malloc(state_bytes);
+    uint8_t *after_bytes = (uint8_t *)malloc(state_bytes);
+    if (candidate == NULL || before_bytes == NULL || after_bytes == NULL || state_bytes < 116u) {
+        free(candidate);
+        free(before_bytes);
+        free(after_bytes);
+        return finish(source, restored, differ("state refusal buffers", 0u));
+    }
+    if (muhtari_save_state(source, candidate, state_bytes) != MUHTARI_STATUS_OK ||
+        muhtari_load_state(restored, candidate, state_bytes) != MUHTARI_STATUS_OK)
+        ok = differ("state refusal control restore", 0u);
+    muhtari_span before_spans[4], after_spans[4];
+    if (!state_spans(restored, before_spans) ||
+        muhtari_save_state(restored, before_bytes, state_bytes) != MUHTARI_STATUS_OK)
+        ok = differ("state refusal baseline", 0u);
+
+    muhtari *mismatch = create();
+    muhtari *mismatch_control = create();
+    muhtari_media wrong_media;
+    memset(&wrong_media, 0, sizeof wrong_media);
+    wrong_media.size = (uint32_t)sizeof wrong_media;
+    wrong_media.image = image;
+    wrong_media.image_size = image_bytes;
+    wrong_media.region = MUHTARI_REGION_PAL;
+    wrong_media.expansion = MUHTARI_EXPANSION_OFF;
+    wrong_media.hsc_mode = MUHTARI_HSC_OFF;
+    if (muhtari_load(mismatch, &wrong_media) != MUHTARI_STATUS_OK ||
+        muhtari_load(mismatch_control, &wrong_media) != MUHTARI_STATUS_OK)
+        ok = differ("state mismatch load", 0u);
+    uint8_t mismatch_before[32], mismatch_after[32];
+    digest(mismatch, 1, mismatch_before);
+    if (muhtari_load_state(mismatch, candidate, state_bytes) != MUHTARI_STATUS_ERR_STATE_MISMATCH)
+        ok = differ("state media/region mismatch", 0u);
+    digest(mismatch, 1, mismatch_after);
+    if (memcmp(mismatch_before, mismatch_after, sizeof mismatch_before) != 0)
+        ok = differ("state mismatch preservation", 0u);
+
+    uint32_t calls = allocation_calls;
+    memcpy(candidate, before_bytes, state_bytes);
+    state_put_u32(candidate + 8u, 2u);
+    state_rechecksum(candidate, state_bytes);
+    if (muhtari_load_state(restored, candidate, state_bytes) !=
+        MUHTARI_STATUS_ERR_UNSUPPORTED_STATE)
+        ok = differ("state format mismatch", 0u);
+    memcpy(candidate, before_bytes, state_bytes);
+    state_put_u32(candidate + 20u, 7u);
+    state_rechecksum(candidate, state_bytes);
+    if (muhtari_load_state(restored, candidate, state_bytes) !=
+        MUHTARI_STATUS_ERR_UNSUPPORTED_STATE)
+        ok = differ("state behavior mismatch", 0u);
+    if (allocation_calls != calls)
+        ok = differ("state header refusal allocation", 0u);
+
+    memcpy(candidate, before_bytes, state_bytes);
+    if (muhtari_load_state(restored, candidate, state_bytes - 1u) !=
+            MUHTARI_STATUS_ERR_INVALID_STATE ||
+        muhtari_load_state(restored, candidate, state_bytes + 1u) !=
+            MUHTARI_STATUS_ERR_INVALID_STATE ||
+        muhtari_load_state(restored, restored->cart.rom, state_bytes) !=
+            MUHTARI_STATUS_ERR_ARGUMENT)
+        ok = differ("state length/alias refusal", 0u);
+
+    uint32_t mutation = prop_below(rng, 3u);
+    if (size == PROP_SIZE_MAX)
+        state_mutation_seen |= 1u << mutation;
+    memcpy(candidate, before_bytes, state_bytes);
+    if (mutation == 0u) {
+        candidate[115u] = 2u; /* CPU jammed must be boolean. */
+    } else if (mutation == 1u) {
+        candidate[216u] = 1u;
+        state_put_u64(candidate + 165u, UINT64_MAX); /* HALT release is source-bounded. */
+    } else {
+        state_put_u32(candidate + 8066u, MUHTARI__SYNTH_PCM_CAPACITY);
+    }
+    state_rechecksum(candidate, state_bytes);
+    if (state_crc(candidate, state_bytes) !=
+        ((uint32_t)candidate[24u] | ((uint32_t)candidate[25u] << 8) |
+         ((uint32_t)candidate[26u] << 16) | ((uint32_t)candidate[27u] << 24)))
+        ok = differ("state repaired checksum", 0u);
+    calls = allocation_calls;
+    if (muhtari_load_state(restored, candidate, state_bytes) != MUHTARI_STATUS_ERR_INVALID_STATE ||
+        allocation_calls != calls)
+        ok = differ("state repaired hostile field", 0u);
+    if (!state_spans(restored, after_spans) || !state_same_spans(before_spans, after_spans) ||
+        muhtari_save_state(restored, after_bytes, state_bytes) != MUHTARI_STATUS_OK ||
+        memcmp(before_bytes, after_bytes, state_bytes) != 0)
+        ok = differ("state refused preservation", 0u);
+
+    muhtari_counters before_counters = {0}, after_counters = {0};
+    before_counters.size = after_counters.size = (uint32_t)sizeof before_counters;
+    if (muhtari_get_counters(restored, &before_counters) != MUHTARI_STATUS_OK)
+        ok = differ("state refusal counters before", 0u);
+    struct frame_out source_frame, restored_frame;
+    run(source, WIDTH, &source_frame);
+    run(restored, WIDTH, &restored_frame);
+    if (memcmp(&source_frame, &restored_frame, sizeof source_frame) != 0)
+        ok = differ("state refusal next frame", 1u);
+    if (muhtari_get_counters(restored, &after_counters) != MUHTARI_STATUS_OK ||
+        after_counters.frames != before_counters.frames + 1u)
+        ok = differ("state refusal counter preservation", 1u);
+    struct frame_out wrong_frame, wrong_control_frame;
+    run(mismatch, WIDTH, &wrong_frame);
+    run(mismatch_control, WIDTH, &wrong_control_frame);
+    if (memcmp(&wrong_frame, &wrong_control_frame, sizeof wrong_frame) != 0)
+        ok = differ("state mismatch next frame", 1u);
+
+    free(candidate);
+    free(before_bytes);
+    free(after_bytes);
+    muhtari_destroy(mismatch);
+    muhtari_destroy(mismatch_control);
+    (void)image_bytes;
+    ok = state_battery_roundtrip(rng) && ok;
+    return finish(source, restored, ok);
+}
+
+static int state_battery_roundtrip(uint64_t *rng)
+{
+    muhtari_media media;
+    battery_media(&media, 4u, 0u, rng);
+    memset(battery_firmware, 0xFF, sizeof battery_firmware);
+    battery_firmware[0x900u] = 0xC6u;
+    battery_firmware[0x904u] = 0xFEu;
+    media.hsc_rom = battery_firmware;
+    media.hsc_rom_size = sizeof battery_firmware;
+    media.port[0] = MUHTARI_PORT_SAVEKEY;
+    media.port[1] = MUHTARI_PORT_PROLINE;
+    media.region = MUHTARI_REGION_NTSC;
+    muhtari *source = create();
+    muhtari *restored = create();
+    if (muhtari_load(source, &media) != MUHTARI_STATUS_OK ||
+        muhtari_load(restored, &media) != MUHTARI_STATUS_OK)
+        return finish(source, restored, differ("state battery load", 0u));
+    muhtari_battery_info source_info = battery_info(source);
+    muhtari_battery_info restored_info = battery_info(restored);
+    if (source_info.bytes == 0u || source_info.eeprom_port != 1u ||
+        source_info.data == restored_info.data)
+        return finish(source, restored, differ("state battery topology", 0u));
+    for (size_t i = 0u; i < source_info.bytes; i++) {
+        source_info.data[i] = (uint8_t)prop_below(rng, 256u);
+        restored_info.data[i] = (uint8_t)(source_info.data[i] ^ 0x5Au);
+    }
+    size_t state_bytes = muhtari_state_size(source);
+    uint8_t *state = (uint8_t *)malloc(state_bytes);
+    uint8_t *before = (uint8_t *)malloc(state_bytes);
+    uint8_t *after = (uint8_t *)malloc(state_bytes);
+    if (state == NULL || before == NULL || after == NULL) {
+        free(state);
+        free(before);
+        free(after);
+        return finish(source, restored, differ("state battery buffers", 0u));
+    }
+    if (muhtari_save_state(source, state, state_bytes) != MUHTARI_STATUS_OK) {
+        free(state);
+        free(before);
+        free(after);
+        return finish(source, restored, differ("state battery save", 0u));
+    }
+
+    memset(state_firmware_other, 0xFF, sizeof state_firmware_other);
+    state_firmware_other[0x900u] = 0xC6u;
+    state_firmware_other[0x904u] = 0xFEu;
+    state_firmware_other[0x905u] = 0x55u;
+    muhtari_media firmware_media = media;
+    firmware_media.hsc_rom = state_firmware_other;
+    muhtari *wrong_firmware = create();
+    muhtari *firmware_control = create();
+    if (muhtari_load(wrong_firmware, &firmware_media) != MUHTARI_STATUS_OK ||
+        muhtari_load(firmware_control, &firmware_media) != MUHTARI_STATUS_OK) {
+        muhtari_destroy(wrong_firmware);
+        muhtari_destroy(firmware_control);
+        free(state);
+        free(before);
+        free(after);
+        return finish(source, restored, differ("state firmware mismatch load", 0u));
+    }
+    uint8_t firmware_before[32], firmware_after[32];
+    digest(wrong_firmware, 1, firmware_before);
+    if (muhtari_load_state(wrong_firmware, state, state_bytes) !=
+        MUHTARI_STATUS_ERR_STATE_MISMATCH) {
+        muhtari_destroy(wrong_firmware);
+        muhtari_destroy(firmware_control);
+        free(state);
+        free(before);
+        free(after);
+        return finish(source, restored, differ("state firmware identity mismatch", 0u));
+    }
+    digest(wrong_firmware, 1, firmware_after);
+    if (memcmp(firmware_before, firmware_after, sizeof firmware_before) != 0) {
+        muhtari_destroy(wrong_firmware);
+        muhtari_destroy(firmware_control);
+        free(state);
+        free(before);
+        free(after);
+        return finish(source, restored, differ("state firmware mismatch preservation", 0u));
+    }
+    struct frame_out firmware_one, firmware_two;
+    run(wrong_firmware, WIDTH, &firmware_one);
+    run(firmware_control, WIDTH, &firmware_two);
+    if (memcmp(&firmware_one, &firmware_two, sizeof firmware_one) != 0 ||
+        !same_run(&firmware_one, &firmware_two, 1u, wrong_firmware, firmware_control)) {
+        muhtari_destroy(wrong_firmware);
+        muhtari_destroy(firmware_control);
+        free(state);
+        free(before);
+        free(after);
+        return finish(source, restored, differ("state firmware mismatch next frame", 1u));
+    }
+    muhtari_destroy(wrong_firmware);
+    muhtari_destroy(firmware_control);
+
+    uint64_t generation = restored_info.generation;
+    uint32_t calls = allocation_calls;
+    if (muhtari_load_state(restored, state, state_bytes) != MUHTARI_STATUS_OK ||
+        allocation_calls != calls || restored_info.data != restored->battery.data ||
+        memcmp(restored->battery.data, source_info.data, source_info.bytes) != 0 ||
+        restored->battery.generation != generation + 1u) {
+        free(state);
+        free(before);
+        free(after);
+        return finish(source, restored, differ("state changed battery restore", 0u));
+    }
+    generation = restored->battery.generation;
+    calls = allocation_calls;
+    if (muhtari_load_state(restored, state, state_bytes) != MUHTARI_STATUS_OK ||
+        allocation_calls != calls || restored->battery.generation != generation) {
+        free(state);
+        free(before);
+        free(after);
+        return finish(source, restored, differ("state equal battery restore", 0u));
+    }
+    memcpy(before, state, state_bytes);
+    state[115u] = 2u;
+    state_rechecksum(state, state_bytes);
+    calls = allocation_calls;
+    if (muhtari_save_state(restored, after, state_bytes) != MUHTARI_STATUS_OK ||
+        muhtari_load_state(restored, state, state_bytes) != MUHTARI_STATUS_ERR_INVALID_STATE ||
+        allocation_calls != calls || restored->battery.generation != generation ||
+        memcmp(restored->battery.data, source_info.data, source_info.bytes) != 0 ||
+        muhtari_save_state(restored, before, state_bytes) != MUHTARI_STATUS_OK ||
+        memcmp(after, before, state_bytes) != 0) {
+        free(state);
+        free(before);
+        free(after);
+        return finish(source, restored, differ("state refused battery restore", 0u));
+    }
+    /* Keep the host token aligned to exercise identical future machine state. */
+    source->battery.generation = restored->battery.generation;
+    struct frame_out one, two;
+    run(source, WIDTH, &one);
+    run(restored, WIDTH, &two);
+    int equal = memcmp(&one, &two, sizeof one) == 0;
+    if (muhtari_save_state(source, before, state_bytes) != MUHTARI_STATUS_OK ||
+        muhtari_save_state(restored, after, state_bytes) != MUHTARI_STATUS_OK ||
+        memcmp(before, after, state_bytes) != 0 ||
+        source->battery.generation != restored->battery.generation ||
+        source->battery.bytes != restored->battery.bytes ||
+        memcmp(source->battery.data, restored->battery.data, source->battery.bytes) != 0)
+        equal = differ("state battery continuation", 1u);
+    free(state);
+    free(before);
+    free(after);
+    return finish(source, restored, equal);
+}
+
 /* Reads BUILT_DIR/name/name.bas.a78 into samples[i]. */
 static int read_sample(const char *dir, const char *name, uint32_t i)
 {
@@ -1027,6 +1464,8 @@ static const struct {
     {"input_at_vblank", input_at_vblank},
     {"battery_lifecycle", battery_lifecycle},
     {"battery_observers", battery_observers},
+    {"state_continuation", state_continuation},
+    {"state_refusal", state_refusal},
 };
 
 int main(int argc, char **argv)
@@ -1037,32 +1476,43 @@ int main(int argc, char **argv)
     }
     image = (uint8_t *)malloc(SEEDS_SIZE_MAX);
     raw = (uint8_t *)malloc(SEEDS_SIZE_MAX);
-    if (image == NULL || raw == NULL || !read_sample(argv[2], "simple", 0u) ||
-        !read_sample(argv[2], "eightysix", 1u)) {
+    int state_property = strncmp(argv[1], "state_", 6u) == 0;
+    if (image == NULL || raw == NULL ||
+        (!state_property && (!read_sample(argv[2], "simple", 0u) ||
+                             !read_sample(argv[2], "eightysix", 1u)))) {
         return 1;
     }
     for (size_t i = 0; i < sizeof props / sizeof props[0]; i++) {
         if (strcmp(argv[1], props[i].name) == 0) {
-            for (uint32_t b = 0u; b < 3u; b++)
-                retail_pool[b] = UINT32_MAX;
-            for (uint32_t p = 0u; p < seeds_count(); p++) {
-                if (strcmp(seeds_name(p), "activision") == 0)
-                    retail_pool[0] = p;
-                if (strcmp(seeds_name(p), "absolute") == 0)
-                    retail_pool[1] = p;
-                if (strcmp(seeds_name(p), "fractalus") == 0)
-                    retail_pool[2] = p;
+            if (!state_property) {
+                for (uint32_t b = 0u; b < 3u; b++)
+                    retail_pool[b] = UINT32_MAX;
+                for (uint32_t p = 0u; p < seeds_count(); p++) {
+                    if (strcmp(seeds_name(p), "activision") == 0)
+                        retail_pool[0] = p;
+                    if (strcmp(seeds_name(p), "absolute") == 0)
+                        retail_pool[1] = p;
+                    if (strcmp(seeds_name(p), "fractalus") == 0)
+                        retail_pool[2] = p;
+                }
+                for (uint32_t b = 0u; b < 3u; b++)
+                    if (retail_pool[b] == UINT32_MAX)
+                        return 1;
             }
-            for (uint32_t b = 0u; b < 3u; b++)
-                if (retail_pool[b] == UINT32_MAX)
-                    return 1;
             int result = prop_run(props[i].name, props[i].fn);
+            if (strcmp(props[i].name, "state_refusal") == 0 &&
+                prop_env(PROP_ENV_SEED, PROP_SEED) == PROP_SEED &&
+                prop_env(PROP_ENV_CASES, 100u) >= 100u && state_mutation_seen != 7u) {
+                fprintf(stderr, "state mutation coverage: expected 7, got %u\n",
+                        state_mutation_seen);
+                return 1;
+            }
             if (strcmp(props[i].name, "instances_isolated") == 0 && typed_seen != 511u) {
                 fprintf(stderr, "executed typed device coverage: expected 511, got %u\n",
                         typed_seen);
                 return 1;
             }
-            if (strncmp(props[i].name, "battery_", 8u) == 0) {
+            if (strncmp(props[i].name, "battery_", 8u) == 0 || state_property) {
                 return result;
             }
             if (retail_seen != 7u) {

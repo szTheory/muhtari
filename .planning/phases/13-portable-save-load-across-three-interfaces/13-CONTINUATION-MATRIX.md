@@ -62,6 +62,19 @@ repeated restore, observer isolation and stable spans. These checks complement
 the generated continuation rows; they do not replace the independent
 mailbox, pin or pixel observations above.
 
+`prop.state_continuation` replays seeded pending extended input from a generated
+linear cartridge into a separate instance, requires identical repeated
+canonical writes, stable memory spans, no allocator callbacks during restore,
+and matching future public video/raw PCM/counters while an independently loaded
+third instance receives a different extended input between matching frames.
+`prop.state_refusal` varies
+the CRC-repaired CPU boolean, PCM count and HALT deadline validators; it also
+checks format and behavior version rejection, truncation, extra bytes, input
+aliasing, PAL/NTSC identity mismatch, a distinct generated HSC firmware digest,
+next-frame preservation and battery changed/equal/refused restores. The exact
+property names are listed in both native and WASI inventories with the existing
+`portable,prop` labels and deterministic seed/shrink runner.
+
 The test preserves the current MARIA event cursor and continues through
 actual frame execution after restore. The explicit bus HALT/NMI values are
 scheduled through the bus owners to test that pending deadline boundary; this

@@ -33,3 +33,11 @@ foreach(prop IN ITEMS battery_lifecycle battery_observers)
     LABELS portable prop TIMEOUT 39)
   set_tests_properties(prop.${prop} PROPERTIES FIXTURES_REQUIRED "built_simple;built_eightysix")
 endforeach()
+
+# Generated-media state properties need no built sample fixtures. They replay
+# independent instances and checksum-repaired refusals through the same seed
+# and shrink contract as the existing properties.
+foreach(prop IN ITEMS state_continuation state_refusal)
+  muhtari_add_test(NAME prop.${prop} COMMAND muhtari-test-prop ${prop} ${MUHTARI_BUILT_DIR}
+    LABELS portable prop TIMEOUT 39)
+endforeach()
