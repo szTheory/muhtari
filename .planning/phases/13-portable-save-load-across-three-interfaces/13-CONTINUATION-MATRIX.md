@@ -67,13 +67,23 @@ linear cartridge into a separate instance, requires identical repeated
 canonical writes, stable memory spans, no allocator callbacks during restore,
 and matching future public video/raw PCM/counters while an independently loaded
 third instance receives a different extended input between matching frames.
-`prop.state_refusal` varies
-the CRC-repaired CPU boolean, PCM count and HALT deadline validators; it also
+`prop.state_refusal` exercises the CRC-repaired CPU boolean, PCM count and HALT
+deadline validators in every seeded case; it also
 checks format and behavior version rejection, truncation, extra bytes, input
 aliasing, PAL/NTSC identity mismatch, a distinct generated HSC firmware digest,
 next-frame preservation and battery changed/equal/refused restores. The exact
 property names are listed in both native and WASI inventories with the existing
 `portable,prop` labels and deterministic seed/shrink runner.
+
+`fuzz.regress.run` now reuses its existing in-memory run seeds as bounded state
+recipe selectors. `zero-48k` selects an invalid HALT deadline, `jam-48k` selects
+an out-of-range PCM count, and the first BankSet seed selects a near-overflow
+cross-owner clock tuple; each candidate has a repaired envelope CRC. Every run
+also accepts a valid `UINT64_MAX` MARIA-terminated HALT sentinel before applying
+the hostile recipe. Refusal must preserve canonical bytes, spans, battery
+metadata and the next frame's video/audio/counters. The consumer allocates no
+state-sized buffers: three fixed 307,932-byte slices fit in its existing
+1,048,704-byte cartridge scratch allocation.
 
 The test preserves the current MARIA event cursor and continues through
 actual frame execution after restore. The explicit bus HALT/NMI values are
@@ -99,11 +109,58 @@ evidence.
 
 ## Local verification
 
-The exact-source test executable was compiled directly with the project C17
-warning flags against `build/ci/libmuhtari.a`. The `topologies`, `fields` and
-`battery` cases each exited 0. The initial PCM continuation test was RED:
-source save succeeded but the independent peer returned
-`MUHTARI_STATUS_ERR_INVALID_STATE` for a nonempty saved FIFO. After the
-validator used the candidate's ring cursor/count, the focused cases passed.
-No full CI configuration was repeated; the required pinned build assets are
-unavailable locally, as recorded by the phase execution constraints.
+Direct exact-source core harness build and selectors:
+
+```text
+cc -std=c17 -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wstrict-prototypes -Wmissing-prototypes -Wvla -Wundef -Wcast-qual -Wimplicit-fallthrough -Wmissing-variable-declarations -Iinclude -Isrc -Irunner -Itests/core -Itests/cart tests/core/test_state.c tests/cart/images.c build/ci/libmuhtari.a -o /private/tmp/muhtari-state-13-04/test-state
+/private/tmp/muhtari-state-13-04/test-state topologies
+/private/tmp/muhtari-state-13-04/test-state fields
+/private/tmp/muhtari-state-13-04/test-state battery
+```
+
+Each command exited 0.
+
+Property consumer build and both registered cases (100 cases each, seed
+20261020):
+
+```text
+cc -std=c17 -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wstrict-prototypes -Wmissing-prototypes -Wvla -Wundef -Wcast-qual -Wimplicit-fallthrough -Wmissing-variable-declarations -Iinclude -Isrc -Irunner -Itests/prop -Itests/fuzz tests/prop/test_prop.c tests/fuzz/run_seeds.c runner/sha256.c build/ci/libmuhtari.a -o /private/tmp/muhtari-state-13-04/test-prop
+/private/tmp/muhtari-state-13-04/test-prop state_continuation /does/not/exist
+/private/tmp/muhtari-state-13-04/test-prop state_refusal /does/not/exist
+```
+
+The build exited 0. Both cases exited 0 after 100 cases each with seed
+20261020.
+
+Run-fuzz replay build and complete in-memory seed replay:
+
+```text
+cc -std=c17 -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wstrict-prototypes -Wmissing-prototypes -Wvla -Wundef -Wcast-qual -Wimplicit-fallthrough -Wmissing-variable-declarations -DMUHTARI_FUZZ_REPLAY -Iinclude -Isrc -Irunner -Itests/fuzz tests/fuzz/run.c tests/fuzz/run_seeds.c build/ci/libmuhtari.a -o /private/tmp/muhtari-state-13-04/test-fuzz-run
+/private/tmp/muhtari-state-13-04/test-fuzz-run --seeds
+```
+
+Both commands exited 0; the replay processed 123 inputs in 2.29 seconds. The
+same run harness compiled with AddressSanitizer and UndefinedBehaviorSanitizer
+against the existing non-instrumented `build/ci/libmuhtari.a` also passed all
+123 inputs in 2.95 seconds:
+
+```text
+cc -std=c17 -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wstrict-prototypes -Wmissing-prototypes -Wvla -Wundef -Wcast-qual -Wimplicit-fallthrough -Wmissing-variable-declarations -fsanitize=address,undefined -fno-omit-frame-pointer -DMUHTARI_FUZZ_REPLAY -Iinclude -Isrc -Irunner -Itests/fuzz tests/fuzz/run.c tests/fuzz/run_seeds.c build/ci/libmuhtari.a -o /private/tmp/muhtari-state-13-04/test-fuzz-run-sanitized
+/private/tmp/muhtari-state-13-04/test-fuzz-run-sanitized --seeds
+```
+
+Both sanitizer harness commands exited 0. Its pre-change native replay
+baseline was 1.96 seconds. Existing CTest timeout budgets remain unchanged; the
+recorded CMake settings are 14 seconds for the emulated lane and 18 seconds
+for the nightly instrumented lane. No complete CI configuration was repeated.
+The pinned assets (`build/pins/wasmtime`, `build/pins/7800basic`, and
+`build/pins/openbios`) are unavailable, so full CI and rcheevos integration are
+not locally runnable. The existing build cache has `MUHTARI_TESTS=OFF`, so
+CTest selectors were unavailable without a new CI configuration. The CMake
+registrations and inventory rows were checked in source. These local runs have
+no hosted URL (N/A-local).
+
+The initial PCM continuation test was RED: source save succeeded but the
+independent peer returned `MUHTARI_STATUS_ERR_INVALID_STATE` for a nonempty
+saved FIFO. After the validator used the candidate's ring cursor/count, the
+focused cases passed. The unresolved STATE-02 classification remains flagged.

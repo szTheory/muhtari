@@ -78,3 +78,22 @@ mailbox and electrical observations; and resumed PCM, frame/audio counters,
 video, canonical bytes and span identity. MARIA's pending cursor continues
 through normal frame execution. Separate bus-owner HALT/NMI deadlines exercise
 those pending boundaries without claiming a mid-burst MARIA snapshot.
+
+## Fuzz state recipe boundary (plan 13-04)
+
+The existing `fuzz.regress.run` consumer now saves from one installed instance,
+restores into its independent peer, and applies one fixed-size mutation recipe
+selected by the fuzz input's first byte. The state bytes themselves never
+control loop counts, buffer sizes or emulated lengths. Three slices of the
+compiled 307,932-byte public state ceiling reuse the existing 1,048,704-byte
+cartridge scratch buffer, checked at compile time; the recipe adds no allocator
+callbacks. A valid HALT-until-MARIA `UINT64_MAX` sentinel is accepted before the
+recipe branches to a CRC-repaired future HALT deadline, near-overflow
+cross-owner clock tuple, or invalid PCM count. After refusal the harness checks
+canonical bytes, memory spans, battery data/metadata, allocator counts, and the
+next frame's video, PCM, clocks and counters against the unaffected peer.
+
+The full existing in-memory replay consumer ran 123 inputs in 2.29 seconds
+after the recipe; its pre-change baseline was 1.96 seconds. Existing CI and
+instrumented-lane timeouts remain unchanged. This local run does not claim a
+sanitized libFuzzer campaign or a hosted/Windows/wasm32 result.
