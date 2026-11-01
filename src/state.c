@@ -10,6 +10,10 @@
 #define STATE_TOTAL_FIXED_BYTES 10972u
 #define STATE_FIXED_BYTES (STATE_TOTAL_FIXED_BYTES - STATE_HEADER_BYTES)
 #define STATE_EXPANSION_BYTES 131072u
+#define STATE_SYNTH_IMPULSE_LIMIT INT64_C(320961867552000)
+#define STATE_SYNTH_INTEGRATOR_LIMIT INT64_C(274877906944)
+#define STATE_SYNTH_PREVIOUS_Q30_LIMIT INT64_C(35184372088832)
+#define STATE_SYNTH_BLOCKER_Q30_LIMIT INT64_C(140737488355328)
 
 enum state_mode { STATE_SIZE, STATE_WRITE, STATE_VALIDATE, STATE_APPLY, STATE_LIVE };
 enum state_rule {
@@ -19,13 +23,31 @@ enum state_rule {
     STATE_RANGE,
     STATE_SIGNED_RANGE,
     STATE_PORT_DEVICE,
+    STATE_INPUT_DEVICE,
+    STATE_INPUT_BUTTONS,
+    STATE_INPUT_PADDLE,
+    STATE_INPUT_KEYPAD,
+    STATE_INPUT_DX,
+    STATE_INPUT_DY,
+    STATE_INPUT_GUN_X,
+    STATE_INPUT_GUN_Y,
+    STATE_INPUT_FLAGS,
     STATE_POT_ACTION,
+    STATE_RIOT_TIMER_N,
+    STATE_RIOT_TIMER_SHIFT,
+    STATE_BUS_CYCLE_LEN,
+    STATE_TIA_EPOCH_PHASE,
+    STATE_CART_BANK,
+    STATE_CART_RAM_BANK,
+    STATE_EXPANSION_CONTROL,
+    STATE_EXPANSION_PAGES,
     STATE_MARIA_LINE,
     STATE_MARIA_EVENT,
     STATE_MARIA_PIXEL,
+    STATE_SYNTH_RAW,
+    STATE_SYNTH_HEAD,
     STATE_SYNTH_PCM_READ,
     STATE_SYNTH_PCM_COUNT,
-    STATE_SYNTH_SAMPLE_CONFIG,
     STATE_POKEY_POLY17,
     STATE_POKEY_POLY4,
     STATE_POKEY_POLY5,
@@ -55,6 +77,8 @@ enum state_mark {
     MARK_SYNTH_SAMPLE_DEN,
     MARK_SYNTH_MAX_SAMPLES,
     MARK_SYNTH_PENDING,
+    MARK_SYNTH_POKEYS,
+    MARK_SYNTH_SECONDARY,
     MARK_COUNT
 };
 
@@ -66,6 +90,9 @@ struct state_cursor {
     size_t limit;
     size_t offset;
     uint64_t marks[MARK_COUNT];
+    uint32_t input_device;
+    uint8_t input_port;
+    uint8_t field_index;
     uint8_t valid;
 };
 
@@ -165,6 +192,34 @@ static int state_port_device_valid(uint64_t value)
            value == MUHTARI_PORT_SAVEKEY;
 }
 
+static int state_input_device_valid(const struct state_cursor *cursor, uint64_t value)
+{
+    const muhtari *m = cursor->source;
+    if (state_port_device_valid(value) == 0 && value != MUHTARI_PORT_ATARIVOX)
+        return 0;
+    if (value == 0u)
+        return 1;
+    if (m->battery.eeprom_port == (uint32_t)cursor->input_port + 1u)
+        return value == m->battery.eeprom_device;
+    return value != MUHTARI_PORT_SAVEKEY && value != MUHTARI_PORT_ATARIVOX;
+}
+
+static uint32_t state_input_button_mask(uint32_t device)
+{
+    if (device == MUHTARI_PORT_SNES2ATARI || device == MUHTARI_PORT_MEGA7800)
+        return 4095u;
+    if (device == MUHTARI_PORT_KEYPAD || device == MUHTARI_PORT_UNPLUGGED ||
+        device == MUHTARI_PORT_SAVEKEY || device == MUHTARI_PORT_ATARIVOX)
+        return 0u;
+    if (device == MUHTARI_PORT_PADDLE || device == MUHTARI_PORT_ST_MOUSE ||
+        device == MUHTARI_PORT_AMIGA_MOUSE)
+        return MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2;
+    if (device == MUHTARI_PORT_DRIVING || device == MUHTARI_PORT_LIGHTGUN ||
+        device == MUHTARI_PORT_TRAKBALL)
+        return MUHTARI_BUTTON_1;
+    return 0x3Fu;
+}
+
 static int state_rule_valid(const struct state_cursor *cursor, enum state_rule rule, uint64_t value,
                             unsigned width, int is_signed, uint64_t lower, uint64_t upper)
 {
@@ -187,23 +242,90 @@ static int state_rule_valid(const struct state_cursor *cursor, enum state_rule r
         }
         return 0;
     case STATE_PORT_DEVICE:
-        return state_port_device_valid(value);
+        return state_input_device_valid(cursor, value);
+    case STATE_INPUT_DEVICE:
+        return state_input_device_valid(cursor, value);
+    case STATE_INPUT_BUTTONS:
+        return (value & ~(uint64_t)state_input_button_mask(cursor->input_device)) == 0u;
+    case STATE_INPUT_PADDLE:
+        return cursor->input_device == MUHTARI_PORT_PADDLE ? value <= 65535u : value == 0u;
+    case STATE_INPUT_KEYPAD:
+        return cursor->input_device == MUHTARI_PORT_KEYPAD ? value <= 4095u : value == 0u;
+    case STATE_INPUT_DX:
+        return cursor->input_device == MUHTARI_PORT_DRIVING ||
+                       cursor->input_device == MUHTARI_PORT_TRAKBALL ||
+                       cursor->input_device == MUHTARI_PORT_ST_MOUSE ||
+                       cursor->input_device == MUHTARI_PORT_AMIGA_MOUSE
+                   ? 1
+                   : value == 0u;
+    case STATE_INPUT_DY:
+        return cursor->input_device == MUHTARI_PORT_TRAKBALL ||
+                       cursor->input_device == MUHTARI_PORT_ST_MOUSE ||
+                       cursor->input_device == MUHTARI_PORT_AMIGA_MOUSE
+                   ? 1
+                   : value == 0u;
+    case STATE_INPUT_GUN_X:
+        return cursor->input_device == MUHTARI_PORT_LIGHTGUN ? value < MUHTARI__WIDTH
+                                                              : value == 0u;
+    case STATE_INPUT_GUN_Y:
+        return cursor->input_device == MUHTARI_PORT_LIGHTGUN
+                   ? value < muhtari__timing(cursor->source).height
+                   : value == 0u;
+    case STATE_INPUT_FLAGS:
+        return cursor->input_device == MUHTARI_PORT_LIGHTGUN ? (value & ~UINT64_C(1)) == 0u
+                                                              : value == 0u;
     case STATE_POT_ACTION:
         return value <= (UINT64_C(1) << 32);
+    case STATE_RIOT_TIMER_N:
+        return value <= 256u;
+    case STATE_RIOT_TIMER_SHIFT:
+        return value == 0u || value == 3u || value == 6u || value == 10u;
+    case STATE_BUS_CYCLE_LEN:
+        return value == 0u || value == 4u || value == 6u;
+    case STATE_TIA_EPOCH_PHASE:
+        return value < 456u;
+    case STATE_CART_BANK: {
+        const muhtari_cart_info *info = &cursor->source->cart.info;
+        if (info->board == MUHTARI_BOARD_BANKSET) {
+            uint32_t half = info->rom_size / 2u;
+            if (half < 128u * 1024u)
+                return value == 0u;
+            return value < half / 16384u;
+        }
+        if (info->board == MUHTARI_BOARD_ACTIVISION)
+            return value <= 7u;
+        if (info->board == MUHTARI_BOARD_ABSOLUTE)
+            return value <= 1u;
+        if (info->board == MUHTARI_BOARD_SUPERGAME) {
+            uint32_t banks = info->rom_size / 16384u;
+            uint32_t available =
+                (info->board_options & MUHTARI_BOARD_ROM_AT_4000) != 0u ? banks - 1u : banks;
+            return value < available;
+        }
+        return value == 0u;
+    }
+    case STATE_CART_RAM_BANK:
+        return (cursor->source->cart.info.board_options & MUHTARI_BOARD_BANKED_RAM) != 0u
+                   ? value <= 1u
+                   : value == 0u;
+    case STATE_EXPANSION_CONTROL:
+        return cursor->source->cart.expansion.kind != MUHTARI_EXPANSION_OFF || value == 0u;
+    case STATE_EXPANSION_PAGES:
+        return cursor->source->cart.expansion.kind == MUHTARI_EXPANSION_XM || value == 0u;
     case STATE_MARIA_LINE:
         return value <= muhtari__timing(cursor->source).lines;
     case STATE_MARIA_EVENT:
         return value <= 3u;
     case STATE_MARIA_PIXEL:
         return value <= MUHTARI__WIDTH;
+    case STATE_SYNTH_RAW:
+        return value <= (cursor->field_index < 2u ? 15u : 206u);
+    case STATE_SYNTH_HEAD:
+        return value <= 15u;
     case STATE_SYNTH_PCM_READ:
         return value < MUHTARI__SYNTH_PCM_CAPACITY;
     case STATE_SYNTH_PCM_COUNT:
         return value <= MUHTARI__SYNTH_PCM_CAPACITY;
-    case STATE_SYNTH_SAMPLE_CONFIG: {
-        struct muhtari__timing timing = muhtari__timing(cursor->source);
-        return value == timing.sample_num || value == timing.sample_den || value == timing.max_samples;
-    }
     case STATE_POKEY_POLY17:
         return (value & ~UINT64_C(0x1FFFF)) == 0u;
     case STATE_POKEY_POLY4:
@@ -239,15 +361,15 @@ static int state_reserve(struct state_cursor *cursor, size_t bytes, size_t *at)
     return 1;
 }
 
-static void state_scalar(struct state_cursor *cursor, const void *source, void *target,
-                         unsigned width, int is_signed, enum state_rule rule, uint64_t lower,
-                         uint64_t upper, enum state_mark mark, int force_zero)
+static uint64_t state_scalar(struct state_cursor *cursor, const void *source, void *target,
+                             unsigned width, int is_signed, enum state_rule rule, uint64_t lower,
+                             uint64_t upper, enum state_mark mark, int force_zero)
 {
     size_t at;
     if (state_reserve(cursor, (size_t)width, &at) == 0)
-        return;
+        return 0u;
     if (cursor->mode == STATE_SIZE)
-        return;
+        return 0u;
 
     uint64_t value = 0u;
     if (cursor->mode == STATE_WRITE) {
@@ -262,7 +384,7 @@ static void state_scalar(struct state_cursor *cursor, const void *source, void *
         } else {
             state_put_u64(cursor->output + at, value);
         }
-        return;
+        return value;
     }
 
     if (cursor->mode == STATE_LIVE) {
@@ -287,6 +409,7 @@ static void state_scalar(struct state_cursor *cursor, const void *source, void *
             value = 0u;
         state_store_native(target, width, is_signed, value);
     }
+    return value;
 }
 
 static void state_bytes(struct state_cursor *cursor, const uint8_t *source, uint8_t *target,
@@ -320,23 +443,30 @@ static void state_bytes(struct state_cursor *cursor, const uint8_t *source, uint
     }
 }
 
-static void state_input_port(struct state_cursor *cursor, const muhtari_port_input *source,
-                             muhtari_port_input *target)
+static void state_input_port(struct state_cursor *cursor, unsigned port,
+                             const muhtari_port_input *source, muhtari_port_input *target)
 {
-#define INPUT_FIELD(name, width, is_signed)                                                        \
-    state_scalar(cursor, &source->name, target != NULL ? &target->name : NULL, width, is_signed,   \
-                 STATE_ANY, 0u, 0u, MARK_COUNT, 0)
-    INPUT_FIELD(device, 4u, 0);
-    INPUT_FIELD(buttons, 4u, 0);
-    INPUT_FIELD(paddle[0], 4u, 0);
-    INPUT_FIELD(paddle[1], 4u, 0);
-    INPUT_FIELD(keypad, 4u, 0);
-    INPUT_FIELD(dx, 4u, 1);
-    INPUT_FIELD(dy, 4u, 1);
-    INPUT_FIELD(gun_x, 4u, 0);
-    INPUT_FIELD(gun_y, 4u, 0);
-    INPUT_FIELD(flags, 4u, 0);
-#undef INPUT_FIELD
+    cursor->input_port = (uint8_t)port;
+    cursor->input_device = (uint32_t)state_scalar(
+        cursor, &source->device, target != NULL ? &target->device : NULL, 4u, 0,
+        STATE_INPUT_DEVICE, 0u, 0u, MARK_COUNT, 0);
+    state_scalar(cursor, &source->buttons, target != NULL ? &target->buttons : NULL, 4u, 0,
+                 STATE_INPUT_BUTTONS, 0u, 0u, MARK_COUNT, 0);
+    for (unsigned axis = 0u; axis < 2u; axis++)
+        state_scalar(cursor, &source->paddle[axis], target != NULL ? &target->paddle[axis] : NULL,
+                     4u, 0, STATE_INPUT_PADDLE, 0u, 0u, MARK_COUNT, 0);
+    state_scalar(cursor, &source->keypad, target != NULL ? &target->keypad : NULL, 4u, 0,
+                 STATE_INPUT_KEYPAD, 0u, 0u, MARK_COUNT, 0);
+    state_scalar(cursor, &source->dx, target != NULL ? &target->dx : NULL, 4u, 1,
+                 STATE_INPUT_DX, 0u, 0u, MARK_COUNT, 0);
+    state_scalar(cursor, &source->dy, target != NULL ? &target->dy : NULL, 4u, 1,
+                 STATE_INPUT_DY, 0u, 0u, MARK_COUNT, 0);
+    state_scalar(cursor, &source->gun_x, target != NULL ? &target->gun_x : NULL, 4u, 0,
+                 STATE_INPUT_GUN_X, 0u, 0u, MARK_COUNT, 0);
+    state_scalar(cursor, &source->gun_y, target != NULL ? &target->gun_y : NULL, 4u, 0,
+                 STATE_INPUT_GUN_Y, 0u, 0u, MARK_COUNT, 0);
+    state_scalar(cursor, &source->flags, target != NULL ? &target->flags : NULL, 4u, 0,
+                 STATE_INPUT_FLAGS, 0u, 0u, MARK_COUNT, 0);
 }
 
 static void state_pokey(struct state_cursor *cursor, const struct muhtari__pokey *source,
@@ -361,20 +491,23 @@ static void state_pokey(struct state_cursor *cursor, const struct muhtari__pokey
     POKEY_FIELD(poly5, 1u, 0, STATE_POKEY_POLY5, 0u, 0u);
     state_bytes(cursor, source->noise, target != NULL ? target->noise : NULL, sizeof source->noise,
                 SIZE_MAX);
-    POKEY_FIELD(prescale28, 2u, 0, STATE_ANY, 0u, 0u);
-    POKEY_FIELD(prescale114, 2u, 0, STATE_ANY, 0u, 0u);
+    POKEY_FIELD(prescale28, 2u, 0, STATE_RANGE, 0u, 28u);
+    POKEY_FIELD(prescale114, 2u, 0, STATE_RANGE, 0u, 114u);
     POKEY_FIELD(audctl, 1u, 0, STATE_ANY, 0u, 0u);
     POKEY_FIELD(skctl, 1u, 0, STATE_ANY, 0u, 0u);
-    POKEY_FIELD(irqen, 1u, 0, STATE_MASK, 7u, 0u);
+    POKEY_FIELD(irqen, 1u, 0, STATE_ANY, 0u, 0u);
     POKEY_FIELD(irqst, 1u, 0, STATE_ANY, 0u, 0u);
     POKEY_FIELD(initialized, 1u, 0, STATE_BOOL, 0u, 0u);
-    state_bytes(cursor, source->hp_delay, target != NULL ? target->hp_delay : NULL,
-                sizeof source->hp_delay, SIZE_MAX);
-    state_bytes(cursor, source->hp_capture, target != NULL ? target->hp_capture : NULL,
-                sizeof source->hp_capture, SIZE_MAX);
+    for (unsigned i = 0u; i < 2u; i++) {
+        state_scalar(cursor, &source->hp_delay[i], target != NULL ? &target->hp_delay[i] : NULL,
+                     1u, 0, STATE_RANGE, 0u, 3u, MARK_COUNT, 0);
+        state_scalar(cursor, &source->hp_capture[i],
+                     target != NULL ? &target->hp_capture[i] : NULL, 1u, 0, STATE_BOOL, 0u, 0u,
+                     MARK_COUNT, 0);
+    }
     for (unsigned i = 0u; i < 3u; i++) {
         state_scalar(cursor, &source->irq_enable[i], target != NULL ? &target->irq_enable[i] : NULL,
-                     1u, 0, STATE_MASK, 7u, 0u, MARK_COUNT, 0);
+                     1u, 0, STATE_ANY, 0u, 0u, MARK_COUNT, 0);
     }
     POKEY_FIELD(irq_signal, 1u, 0, STATE_BOOL, 0u, 0u);
     for (unsigned ch = 0u; ch < 4u; ch++) {
@@ -447,14 +580,14 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
     CHECK_U8(bus.halt_stage, STATE_RANGE, 0u, 2u);
     CHECK_U8(bus.halt_cycles, STATE_RANGE, 0u, 2u);
     CHECK_U8(bus.nmi_pending, STATE_BOOL, 0u, 0u);
-    CHECK_U8(bus.cycle_len, STATE_MASK, 6u, 0u);
+    CHECK_U8(bus.cycle_len, STATE_BUS_CYCLE_LEN, 0u, 0u);
     CHECK_U8(bus.sync, STATE_BOOL, 0u, 0u);
     CHECK_U8(bus.irq_pipe, STATE_MASK, 7u, 0u);
     CHECK_U8(bus.irq_level, STATE_BOOL, 0u, 0u);
 
     U64(riot.timer_phi2);
-    U16(riot.timer_n);
-    CHECK_U8(riot.timer_shift, STATE_MASK, 15u, 0u);
+    CHECK_U16(riot.timer_n, STATE_RIOT_TIMER_N, 0u, 0u);
+    CHECK_U8(riot.timer_shift, STATE_RIOT_TIMER_SHIFT, 0u, 0u);
     CHECK_U8(riot.timer_cleared, STATE_BOOL, 0u, 0u);
     U8(riot.ora);
     U8(riot.ddra);
@@ -509,11 +642,11 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
     CHECK_U8(maria.event_index, STATE_MARIA_EVENT, 0u, 0u);
     CHECK_U8(maria.mstat, STATE_MASK, 0x80u, 0u);
     CHECK_U16(maria.px, STATE_MARIA_PIXEL, 0u, 0u);
-    U8(cart.bank);
-    U8(cart.ram_bank);
-    U8(cart.expansion.control);
-    U8(cart.expansion.cpu_pages);
-    U8(cart.expansion.maria_pages);
+    CHECK_U8(cart.bank, STATE_CART_BANK, 0u, 0u);
+    CHECK_U8(cart.ram_bank, STATE_CART_RAM_BANK, 0u, 0u);
+    CHECK_U8(cart.expansion.control, STATE_EXPANSION_CONTROL, 0u, 0u);
+    CHECK_U8(cart.expansion.cpu_pages, STATE_EXPANSION_PAGES, 0u, 0u);
+    CHECK_U8(cart.expansion.maria_pages, STATE_EXPANSION_PAGES, 0u, 0u);
     for (unsigned p = 0u; p < 2u; p++) {
         for (unsigned a = 0u; a < 2u; a++) {
             const struct muhtari__motion *sm = &source->ports.motion[p][a];
@@ -584,15 +717,19 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
                      0x7Fu, 0u, MARK_COUNT, 0);
     }
     for (unsigned p = 0u; p < 2u; p++) {
-        state_scalar(cursor, &source->ports.device[p], target != NULL ? &target->ports.device[p] : NULL,
-                     4u, 0, STATE_PORT_DEVICE, 0u, 0u, MARK_COUNT, 0);
+        cursor->input_port = (uint8_t)p;
+        cursor->input_device = (uint32_t)state_scalar(
+            cursor, &source->ports.device[p], target != NULL ? &target->ports.device[p] : NULL,
+            4u, 0, STATE_PORT_DEVICE, 0u, 0u, MARK_COUNT, 0);
     }
     for (unsigned p = 0u; p < 2u; p++) {
-        state_scalar(cursor, &source->ports.buttons[p], target != NULL ? &target->ports.buttons[p] : NULL,
-                     4u, 0, STATE_MASK, 4095u, 0u, MARK_COUNT, 0);
+        state_scalar(cursor, &source->ports.buttons[p],
+                     target != NULL ? &target->ports.buttons[p] : NULL, 4u, 0,
+                     STATE_MASK, 4095u, 0u, MARK_COUNT, 0);
     }
     CHECK_U32(ports.switches, STATE_MASK, 0x1Fu, 0u);
     for (unsigned p = 0u; p < 2u; p++) {
+        cursor->input_port = (uint8_t)p;
         state_scalar(cursor, &source->ports.pending_device[p],
                      target != NULL ? &target->ports.pending_device[p] : NULL, 4u, 0,
                      STATE_PORT_DEVICE, 0u, 0u, MARK_COUNT, 0);
@@ -604,13 +741,13 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
     }
     CHECK_U32(ports.pending_switches, STATE_MASK, 0x1Fu, 0u);
     for (unsigned p = 0u; p < 2u; p++)
-        state_input_port(cursor, &source->ports.pending_ex.port[p],
+        state_input_port(cursor, p, &source->ports.pending_ex.port[p],
                          target != NULL ? &target->ports.pending_ex.port[p] : NULL);
-    U32(ports.pending_ex.switches);
+    CHECK_U32(ports.pending_ex.switches, STATE_MASK, 0x1Fu, 0u);
     for (unsigned p = 0u; p < 2u; p++)
-        state_input_port(cursor, &source->ports.applied_ex.port[p],
+        state_input_port(cursor, p, &source->ports.applied_ex.port[p],
                          target != NULL ? &target->ports.applied_ex.port[p] : NULL);
-    U32(ports.applied_ex.switches);
+    CHECK_U32(ports.applied_ex.switches, STATE_MASK, 0x1Fu, 0u);
     CHECK_U8(ports.input_mode, STATE_BOOL, 0u, 0u);
     CHECK_U8(ports.initialized, STATE_BOOL, 0u, 0u);
     CHECK_U8(ports.pending, STATE_BOOL, 0u, 0u);
@@ -626,11 +763,19 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
     for (unsigned i = 0u; i < 16u; i++) {
         state_scalar(cursor, &source->synth.impulse[i], target != NULL ? &target->synth.impulse[i]
                                                                           : NULL,
-                     8u, 1, STATE_ANY, 0u, 0u, MARK_COUNT, 0);
+                     8u, 1, STATE_SIGNED_RANGE,
+                     (uint64_t)(int64_t)-STATE_SYNTH_IMPULSE_LIMIT,
+                     STATE_SYNTH_IMPULSE_LIMIT, MARK_COUNT, 0);
     }
-    FIELD(synth.integrator_q23, 8u, 1, STATE_ANY, 0u, 0u, MARK_COUNT);
-    FIELD(synth.previous_q30, 8u, 1, STATE_ANY, 0u, 0u, MARK_COUNT);
-    FIELD(synth.blocker_q30, 8u, 1, STATE_ANY, 0u, 0u, MARK_COUNT);
+    FIELD(synth.integrator_q23, 8u, 1, STATE_SIGNED_RANGE,
+          (uint64_t)(int64_t)-STATE_SYNTH_INTEGRATOR_LIMIT,
+          STATE_SYNTH_INTEGRATOR_LIMIT, MARK_COUNT);
+    FIELD(synth.previous_q30, 8u, 1, STATE_SIGNED_RANGE,
+          (uint64_t)(int64_t)-STATE_SYNTH_PREVIOUS_Q30_LIMIT,
+          STATE_SYNTH_PREVIOUS_Q30_LIMIT, MARK_COUNT);
+    FIELD(synth.blocker_q30, 8u, 1, STATE_SIGNED_RANGE,
+          (uint64_t)(int64_t)-STATE_SYNTH_BLOCKER_Q30_LIMIT,
+          STATE_SYNTH_BLOCKER_Q30_LIMIT, MARK_COUNT);
     U64(synth.pre_clip_peak);
     U64(synth.clipped_samples);
     FIELD(synth.phase, 4u, 0, STATE_RANGE, 0u, muhtari__timing(source).sample_den - 1u,
@@ -646,13 +791,14 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
     FIELD(synth.mixed_level, 4u, 1, STATE_SIGNED_RANGE,
           (uint64_t)(int64_t)-MUHTARI__SYNTH_MAX_LEVEL, MUHTARI__SYNTH_MAX_LEVEL, MARK_COUNT);
     for (unsigned i = 0u; i < 10u; i++) {
+        cursor->field_index = (uint8_t)i;
         state_scalar(cursor, &source->synth.raw[i], target != NULL ? &target->synth.raw[i] : NULL,
-                     2u, 0, STATE_ANY, 0u, 0u, MARK_COUNT, 0);
+                     2u, 0, STATE_SYNTH_RAW, 0u, 0u, MARK_COUNT, 0);
     }
-    CHECK_U8(synth.head, STATE_RANGE, 0u, 9u);
+    CHECK_U8(synth.head, STATE_SYNTH_HEAD, 0u, 0u);
     FIELD(synth.pending, 1u, 0, STATE_BOOL, 0u, 0u, MARK_SYNTH_PENDING);
-    CHECK_U8(synth.pokeys, STATE_RANGE, 0u, 2u);
-    CHECK_U8(synth.secondary, STATE_RANGE, 0u, 1u);
+    FIELD(synth.pokeys, 1u, 0, STATE_RANGE, 0u, 2u, MARK_SYNTH_POKEYS);
+    FIELD(synth.secondary, 1u, 0, STATE_RANGE, 0u, 1u, MARK_SYNTH_SECONDARY);
     for (unsigned i = 0u; i < MUHTARI__SYNTH_PCM_CAPACITY; i++) {
         uint32_t distance = (i + MUHTARI__SYNTH_PCM_CAPACITY - source->synth.pcm_read) %
                             MUHTARI__SYNTH_PCM_CAPACITY;
@@ -662,28 +808,31 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
     }
     U64(tia.next_tick);
     U64(tia.epoch_tick);
-    U16(tia.epoch_phase);
+    CHECK_U16(tia.epoch_phase, STATE_TIA_EPOCH_PHASE, 0u, 0u);
     CHECK_U8(tia.phase, STATE_RANGE, 0u, 3u);
     CHECK_U8(tia.initialized, STATE_BOOL, 0u, 0u);
     CHECK_U8(tia.input_latch_enable, STATE_BOOL, 0u, 0u);
     CHECK_U8(tia.input_dump, STATE_BOOL, 0u, 0u);
-    state_bytes(cursor, source->tia.input_latch, target != NULL ? target->tia.input_latch : NULL,
-                sizeof source->tia.input_latch, SIZE_MAX);
+    for (unsigned i = 0u; i < 2u; i++) {
+        state_scalar(cursor, &source->tia.input_latch[i],
+                     target != NULL ? &target->tia.input_latch[i] : NULL, 1u, 0, STATE_BOOL,
+                     0u, 0u, MARK_COUNT, 0);
+    }
     for (unsigned ch = 0u; ch < 2u; ch++) {
         const struct muhtari__tia_channel *sc = &source->tia.channel[ch];
         struct muhtari__tia_channel *tc = target != NULL ? &target->tia.channel[ch] : NULL;
 #define TIA_FIELD(name, rule, lower, upper)                                                         \
         state_scalar(cursor, &sc->name, tc != NULL ? &tc->name : NULL, 1u, 0, rule, lower, upper, \
                      MARK_COUNT, 0)
-        TIA_FIELD(audc, STATE_ANY, 0u, 0u);
-        TIA_FIELD(audf, STATE_ANY, 0u, 0u);
+        TIA_FIELD(audc, STATE_RANGE, 0u, 15u);
+        TIA_FIELD(audf, STATE_RANGE, 0u, 31u);
         TIA_FIELD(audv, STATE_RANGE, 0u, 15u);
-        TIA_FIELD(count, STATE_ANY, 0u, 0u);
+        TIA_FIELD(count, STATE_RANGE, 0u, 31u);
         TIA_FIELD(enabled, STATE_BOOL, 0u, 0u);
         TIA_FIELD(output, STATE_BOOL, 0u, 0u);
-        TIA_FIELD(noise, STATE_ANY, 0u, 0u);
-        TIA_FIELD(pulse, STATE_ANY, 0u, 0u);
-        TIA_FIELD(noise_input, STATE_ANY, 0u, 0u);
+        TIA_FIELD(noise, STATE_RANGE, 0u, 31u);
+        TIA_FIELD(pulse, STATE_RANGE, 0u, 15u);
+        TIA_FIELD(noise_input, STATE_BOOL, 0u, 0u);
         TIA_FIELD(pulse_gate, STATE_BOOL, 0u, 0u);
 #undef TIA_FIELD
     }
@@ -758,22 +907,44 @@ static int state_relationships(const struct state_cursor *cursor)
     if (v[MARK_SYNTH_PENDING] != 0u &&
         v[MARK_SYNTH_PENDING_TICK] < v[MARK_SYNTH_TICK])
         return 0;
+    if (v[MARK_SYNTH_POKEYS] != 1u && v[MARK_SYNTH_SECONDARY] != 0u)
+        return 0;
     return 1;
 }
 
 static int state_topology_valid(const muhtari *m)
 {
-    if (m == NULL || m->loaded == 0u || m->cart.rom == NULL ||
-        m->cart.info.ram_size > m->cart.allocation_bytes ||
+    if (m == NULL || m->loaded == 0u || m->cart.rom == NULL || m->cart.info.rom_size == 0u ||
         m->battery.bytes > sizeof m->battery.data)
         return 0;
     if (m->cart.expansion.kind != MUHTARI_EXPANSION_OFF &&
         m->cart.expansion.kind != MUHTARI_EXPANSION_XBOARD &&
         m->cart.expansion.kind != MUHTARI_EXPANSION_XM)
         return 0;
-    if (m->cart.info.ram_size != 0u && m->cart.ram == NULL)
+    size_t expansion_bytes = m->cart.expansion.kind == MUHTARI_EXPANSION_OFF
+                                 ? 0u
+                                 : STATE_EXPANSION_BYTES;
+    size_t expected_allocation = m->cart.info.rom_size;
+    if (m->cart.info.ram_size > SIZE_MAX - expected_allocation)
         return 0;
-    if (m->cart.expansion.kind != MUHTARI_EXPANSION_OFF && m->cart.expansion.ram == NULL)
+    expected_allocation += m->cart.info.ram_size;
+    if (expansion_bytes > SIZE_MAX - expected_allocation)
+        return 0;
+    expected_allocation += expansion_bytes;
+    if (m->cart.allocation_bytes != expected_allocation)
+        return 0;
+    uintptr_t rom = (uintptr_t)m->cart.rom;
+    if (expected_allocation > UINTPTR_MAX - rom)
+        return 0;
+    uintptr_t ram = rom + m->cart.info.rom_size;
+    if ((m->cart.info.ram_size != 0u && (uintptr_t)m->cart.ram != ram) ||
+        (m->cart.info.ram_size == 0u && m->cart.ram != NULL))
+        return 0;
+    if (m->cart.info.ram_size > UINTPTR_MAX - ram)
+        return 0;
+    uintptr_t expansion = ram + m->cart.info.ram_size;
+    if ((expansion_bytes != 0u && (uintptr_t)m->cart.expansion.ram != expansion) ||
+        (expansion_bytes == 0u && m->cart.expansion.ram != NULL))
         return 0;
     if (m->synth.sample_num != muhtari__timing(m).sample_num ||
         m->synth.sample_den != muhtari__timing(m).sample_den ||
