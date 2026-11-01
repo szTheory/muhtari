@@ -15,9 +15,15 @@
 #define STATE_EXPANSION_BYTES 131072u
 #define STATE_MAX_BYTES 307932u
 
-enum state_fixture { STATE_LINEAR, STATE_CART_RAM, STATE_XBOARD, STATE_XM };
+enum state_fixture {
+    STATE_LINEAR,
+    STATE_CART_RAM,
+    STATE_XBOARD,
+    STATE_XM,
+    STATE_LARGEST_GENERATED
+};
 
-static uint8_t image[IMAGES_HEADER + 104u * IMAGES_KIB];
+static uint8_t image[IMAGES_HEADER + 1024u * IMAGES_KIB];
 static uint8_t first[STATE_MAX_BYTES];
 static uint8_t second[STATE_MAX_BYTES];
 static uint8_t invalid_image[4] = {0u, 0u, 0u, 0u};
@@ -62,7 +68,10 @@ static void expect_invalid_u8(muhtari *m, size_t bytes, size_t absolute_offset, 
     size_t at = payload_index(absolute_offset);
     uint8_t saved = first[at];
     first[at] = value;
-    CHECK(!muhtari__state_payload_validate(m, first, bytes));
+    int accepted = muhtari__state_payload_validate(m, first, bytes);
+    if (accepted != 0)
+        fprintf(stderr, "u8 mutation accepted: offset=%zu value=%u\n", absolute_offset, value);
+    CHECK(!accepted);
     first[at] = saved;
 }
 
@@ -112,6 +121,9 @@ static muhtari_status state_load(muhtari *m, enum state_fixture fixture, int sav
     media.size = (uint32_t)sizeof media;
     if (fixture == STATE_CART_RAM) {
         image_bytes = images_bankset(image, 32u, 3u);
+    } else if (fixture == STATE_LARGEST_GENERATED) {
+        image_bytes = images_bankset(image, 512u, 3u);
+        media.expansion = MUHTARI_EXPANSION_XM;
     } else if (fixture == STATE_XBOARD) {
         image_bytes = images_linear(image, 3u, 49152u);
         media.expansion = MUHTARI_EXPANSION_XBOARD;
@@ -122,7 +134,7 @@ static muhtari_status state_load(muhtari *m, enum state_fixture fixture, int sav
     }
     media.image = image;
     media.image_size = image_bytes;
-    if (savekey != 0)
+    if (savekey != 0 || fixture == STATE_LARGEST_GENERATED)
         media.port[1] = MUHTARI_PORT_SAVEKEY;
     return muhtari_load(m, &media);
 }
@@ -155,6 +167,9 @@ static void test_payload(void)
     size_t inactive = payload_index(4826u + 300u * 8u);
     for (size_t i = 0u; i < 8u; i++)
         CHECK_EQ_U64(first[inactive + i], 0u);
+    size_t inactive_pcm = payload_index(8126u);
+    for (size_t i = 0u; i < sizeof m->synth.pcm; i++)
+        CHECK_EQ_U64(first[inactive_pcm + i], 0u);
     CHECK(muhtari__state_payload_write(m, second, bytes));
     CHECK(memcmp(first, second, bytes) == 0);
     muhtari__state_payload_apply(m, first, bytes);
@@ -225,13 +240,55 @@ static void test_fields(void)
     expect_invalid_u8(m, bytes, 233u, 11u);       /* RIOT uses 1, 8, 64, 1024. */
     expect_invalid_u8(m, bytes, 219u, 2u);        /* Bus cycles are 4 or 6 ticks. */
     expect_invalid_u8(m, bytes, 115u, 2u);        /* CPU jammed is a boolean. */
+    expect_invalid_u8(m, bytes, 116u, 2u);        /* CPU IRQ sample is a boolean. */
+    expect_invalid_u8(m, bytes, 214u, 0x10u);     /* INPTCTRL has four defined bits. */
+    expect_invalid_u8(m, bytes, 215u, 3u);       /* HALT gate count has three states. */
+    expect_invalid_u8(m, bytes, 218u, 2u);       /* Bus NMI pending is a boolean. */
+    expect_invalid_u8(m, bytes, 221u, 8u);       /* Bus IRQ pipe has three stages. */
+    expect_invalid_u8(m, bytes, 222u, 2u);       /* Bus IRQ level is a boolean. */
+    expect_invalid_u8(m, bytes, 234u, 2u);       /* RIOT timer clear is a boolean. */
+    expect_invalid_u8(m, bytes, 239u, 2u);       /* RIOT PA7 flag is a boolean. */
+    expect_invalid_u8(m, bytes, 240u, 2u);       /* RIOT PA7 polarity is a boolean. */
+    expect_invalid_u8(m, bytes, 241u, 2u);       /* RIOT PA7 detect is a boolean. */
+    expect_invalid_u8(m, bytes, 4504u, 2u);      /* MARIA write mode is a boolean. */
+    expect_invalid_u8(m, bytes, 4505u, 2u);      /* MARIA write buffer has two slots. */
+    expect_invalid_u16(m, bytes, 4826u, 455u);   /* MARIA line cost is at most 454 ticks. */
+    expect_invalid_u32(m, bytes, 7330u, UINT32_MAX); /* MARIA feature mask has reserved bits. */
+    expect_invalid_u16(m, bytes, 7350u, 313u);  /* MARIA line index is region-bounded. */
+    expect_invalid_u16(m, bytes, 7352u, 313u);  /* MARIA DMA line is region-bounded. */
+    expect_invalid_u8(m, bytes, 7355u, 1u);      /* MARIA status only drives VBLANK. */
+    expect_invalid_u16(m, bytes, 7356u, 321u);  /* MARIA pixel cursor cannot exceed width. */
     expect_invalid_u8(m, bytes, 7358u, 1u);      /* Linear carts have no bank register. */
+    expect_invalid_u8(m, bytes, 7359u, 1u);      /* Linear carts have no RAM bank. */
     expect_invalid_u8(m, bytes, 7360u, 1u);      /* No expansion latch when absent. */
+    expect_invalid_u8(m, bytes, 7361u, 1u);      /* No XM page selector when absent. */
+    expect_invalid_u8(m, bytes, 7375u, 4u);      /* Motion phase has four positions. */
+    expect_invalid_u8(m, bytes, 7376u, 2u);      /* Motion direction is a boolean. */
+    expect_invalid_u16(m, bytes, 7451u, 313u);  /* Light sensor raster is bounded. */
+    expect_invalid_u16(m, bytes, 7453u, 320u);  /* Light sensor x is within the frame. */
+    expect_invalid_u8(m, bytes, 7459u, 2u);      /* Light sensor low state is a boolean. */
+    expect_invalid_u64(m, bytes, 7501u, (UINT64_C(1) << 32) + 1u);
+    expect_invalid_u8(m, bytes, 7617u, 4u);      /* Adapter host has two pins. */
+    expect_invalid_u8(m, bytes, 7618u, 17u);     /* Adapter position is at most 16. */
+    expect_invalid_u8(m, bytes, 7619u, 2u);      /* Adapter scan state is a boolean. */
+    expect_invalid_u16(m, bytes, 7627u, 0x1000u); /* Keypad keys are twelve bits. */
+    expect_invalid_u8(m, bytes, 7631u, 0x80u);   /* Keypad low state is seven bits. */
+    expect_invalid_u32(m, bytes, 7633u, UINT32_MAX); /* Unknown active device. */
+    expect_invalid_u32(m, bytes, 7641u, 0x1000u); /* Legacy buttons are twelve bits. */
+    expect_invalid_u32(m, bytes, 7653u, UINT32_MAX); /* Unknown pending legacy device. */
     expect_invalid_u8(m, bytes, 10436u, 16u);    /* POKEY poly4 is four bits. */
+    expect_invalid_u32(m, bytes, 10432u, 0x20000u); /* POKEY poly17 is seventeen bits. */
+    expect_invalid_u8(m, bytes, 10437u, 32u);    /* POKEY poly5 is five bits. */
+    expect_invalid_u16(m, bytes, 10443u, 115u);  /* POKEY /114 prescaler. */
+    expect_invalid_u8(m, bytes, 10449u, 2u);     /* POKEY initialized is a boolean. */
     expect_invalid_u8(m, bytes, 7354u, 4u);      /* MARIA has four line events. */
     expect_invalid_u32(m, bytes, 7673u, UINT32_MAX); /* Unknown pending device. */
     expect_invalid_u32(m, bytes, 7677u, MUHTARI_BUTTON_UP); /* Driving supports fire only. */
+    expect_invalid_u32(m, bytes, 7681u, 1u);      /* Driving has no paddle values. */
+    expect_invalid_u32(m, bytes, 7689u, 1u);      /* Driving has no keypad values. */
     expect_invalid_u32(m, bytes, 7697u, 1u);     /* Driving has no Y delta. */
+    expect_invalid_u32(m, bytes, 7701u, 1u);     /* Driving has no gun coordinates. */
+    expect_invalid_u32(m, bytes, 7709u, 2u);     /* Extended input flags are device-bound. */
     expect_invalid_u32(m, bytes, 7753u, 0x20u);  /* Reserved switch bit. */
     expect_invalid_u16(m, bytes, 231u, 257u);    /* RIOT interval is at most 256. */
     expect_invalid_u16(m, bytes, 10348u, 456u);  /* TIA line phase is 0..455. */
@@ -243,6 +300,37 @@ static void test_fields(void)
     expect_invalid_u16(m, bytes, 8102u, 16u);    /* TIA synth source is 0..15. */
     expect_invalid_u16(m, bytes, 8106u, 207u);   /* POKEY synth source is 0..206. */
     expect_invalid_u8(m, bytes, 8125u, 1u);      /* No secondary chip without one POKEY. */
+    expect_invalid_u8(m, bytes, 7861u, 2u);      /* Boot rejection flag is a boolean. */
+    expect_invalid_u64(m, bytes, 7894u, UINT64_C(320961867552001));
+    expect_invalid_u64(m, bytes, 8022u, UINT64_C(274877906945));
+    expect_invalid_u64(m, bytes, 8030u, UINT64_C(35184372088833));
+    expect_invalid_u64(m, bytes, 8038u, UINT64_C(140737488355329));
+    expect_invalid_u32(m, bytes, 8062u, m->synth.sample_den);
+    expect_invalid_u32(m, bytes, 8066u, MUHTARI__SYNTH_PCM_CAPACITY);
+    expect_invalid_u32(m, bytes, 8070u, MUHTARI__SYNTH_PCM_CAPACITY + 1u);
+    expect_invalid_u32(m, bytes, 8074u, 1u);      /* Sample clock is identity-bound. */
+    expect_invalid_u32(m, bytes, 8098u, 18361u);  /* Mixed level is within DAC scale. */
+    expect_invalid_u8(m, bytes, 8123u, 2u);      /* Synth pending is a boolean. */
+    expect_invalid_u8(m, bytes, 8124u, 3u);      /* At most two installed POKEYs. */
+    expect_invalid_u8(m, bytes, 7841u, 2u);      /* Input mode is a boolean. */
+    expect_invalid_u8(m, bytes, 7842u, 2u);      /* Port timing state is initialized or not. */
+    expect_invalid_u8(m, bytes, 7843u, 2u);      /* Pending-input state is a boolean. */
+    expect_invalid_u8(m, bytes, 7844u, 2u);      /* Input-read state is a boolean. */
+    expect_invalid_u8(m, bytes, 10354u, 2u);     /* TIA input latch is a boolean. */
+    expect_invalid_u8(m, bytes, 10357u, 32u);    /* TIA AUDF is five bits. */
+    expect_invalid_u8(m, bytes, 10358u, 16u);    /* TIA AUDV is four bits. */
+    expect_invalid_u8(m, bytes, 10359u, 32u);    /* TIA divider is five bits. */
+    expect_invalid_u8(m, bytes, 10360u, 2u);     /* TIA enabled is a boolean. */
+    expect_invalid_u8(m, bytes, 10361u, 2u);     /* TIA output is a boolean. */
+    expect_invalid_u8(m, bytes, 10362u, 32u);    /* TIA noise state is five bits. */
+    expect_invalid_u8(m, bytes, 10363u, 16u);    /* TIA pulse state is four bits. */
+    expect_invalid_u8(m, bytes, 10365u, 2u);     /* TIA pulse gate is a boolean. */
+    expect_invalid_u8(m, bytes, 10452u, 2u);    /* POKEY high-pass capture is a boolean. */
+    expect_invalid_u8(m, bytes, 10457u, 2u);    /* POKEY IRQ output is a boolean. */
+    expect_invalid_u16(m, bytes, 10486u, 256u); /* POKEY channel counter is eight bits. */
+    expect_invalid_u8(m, bytes, 10490u, 2u);    /* POKEY output is a boolean. */
+    expect_invalid_u8(m, bytes, 10491u, 2u);    /* POKEY high-pass state is a boolean. */
+    expect_invalid_u8(m, bytes, 10492u, 2u);    /* POKEY start state is a boolean. */
 
     size_t deadline = payload_index(76u);
     expect_invalid_u64(m, bytes, 68u, get_u64(first + deadline) + 1u);
@@ -340,6 +428,19 @@ static void test_battery(void)
     CHECK_EQ_HEX(first[battery], 0x5Au);
     CHECK_EQ_HEX(first[battery + m->battery.bytes - 1u], 0xA5u);
     CHECK(muhtari__state_payload_validate(m, first, bytes));
+    expect_invalid_u16(m, bytes, 10828u, 0x8000u); /* SaveKey address is fifteen bits. */
+    expect_invalid_u16(m, bytes, 10830u, 0x7FC1u); /* Page base is aligned within 32 KiB. */
+    expect_invalid_u8(m, bytes, 10832u, 2u);      /* Host SCL is a boolean. */
+    expect_invalid_u8(m, bytes, 10833u, 2u);      /* Host SDA is a boolean. */
+    expect_invalid_u8(m, bytes, 10834u, 2u);      /* Driven SDA is a boolean. */
+    expect_invalid_u8(m, bytes, 10835u, 12u);     /* EEPROM phase has twelve states. */
+    expect_invalid_u8(m, bytes, 10836u, 12u);     /* Next EEPROM phase has twelve states. */
+    expect_invalid_u8(m, bytes, 10837u, 9u);      /* I2C byte transfer has eight bits. */
+    expect_invalid_u8(m, bytes, 10839u, 0x80u);   /* SaveKey address-high is seven bits. */
+    expect_invalid_u8(m, bytes, 10905u, 2u);      /* Touched-page flags are booleans. */
+    expect_invalid_u8(m, bytes, 10969u, 64u);     /* EEPROM page offset selects 64 bytes. */
+    expect_invalid_u8(m, bytes, 10970u, 2u);      /* Pending EEPROM write is a boolean. */
+    expect_invalid_u8(m, bytes, 10971u, 2u);      /* EEPROM acknowledge is a boolean. */
 
     m->battery.data[0] = 0u;
     m->battery.data[m->battery.bytes - 1u] = 0u;
@@ -385,6 +486,17 @@ static void test_topologies(void)
     muhtari__state_payload_apply(m, first, bytes);
     CHECK_EQ_HEX(m->cart.expansion.ram[0], 0xC3u);
     CHECK_EQ_HEX(m->cart.expansion.ram[STATE_EXPANSION_BYTES - 1u], 0xD4u);
+
+    CHECK_EQ_U64(state_load(m, STATE_LARGEST_GENERATED, 0), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.info.ram_size, 32768u);
+    CHECK_EQ_U64(m->cart.expansion.kind, MUHTARI_EXPANSION_XM);
+    CHECK_EQ_U64(m->battery.bytes, 34816u);
+    bytes = muhtari__state_payload_size(m);
+    CHECK_EQ_U64(bytes, STATE_FIXED_BYTES + 32768u + STATE_EXPANSION_BYTES + 34816u);
+    CHECK_EQ_U64(bytes + STATE_HEADER_BYTES, 209628u);
+    CHECK(bytes + STATE_HEADER_BYTES < STATE_MAX_BYTES);
+    CHECK(muhtari__state_payload_write(m, first, bytes));
+    CHECK(muhtari__state_payload_validate(m, first, bytes));
     muhtari_destroy(m);
 }
 
