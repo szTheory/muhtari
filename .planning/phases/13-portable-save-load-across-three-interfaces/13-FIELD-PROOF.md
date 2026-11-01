@@ -60,3 +60,21 @@ The cache is instance metadata, not part of the packed payload. The payload stil
 ## Scope boundary and remaining proof
 
 The private tracer demonstrates a canonical fixed-width payload, field-domain rejection, bounded installed-size traversal, no-allocation restore, loaded generated-machine continuation and cached effective identity. Plan 13-03 adds the 64-byte envelope, CRC, public API and battery rollback/continuation checks. Public validation keeps the private format's full-width representation but accepts clock relationships only when the next frame and scheduler work remain bounded. Checksummed far-future HALT, stale TIA/synth and near-limit overflow tuples fail before machine mutation; generated-machine save/load/continuation and no-allocation checks pass. The source still has no global emulated-time cap. STATE-02 remains explicitly unclassified in the phase design; this ledger does not resolve it by inference. No Phase 12, hosted BE, RetroArch or real-ROM action was run.
+
+## Independent continuation boundary (plan 13-04)
+
+`core.state.topologies` seeds a valid two-entry PCM ring window in the source
+and restores it into an independently loaded destination. The payload's
+`synth.pcm_read` and `synth.pcm_count` define active FIFO cells during
+validation; the destination's live cursor is not authoritative for candidate
+classification. This is tested with source cursor 5/count 2 while the
+destination begins with an empty ring. The earlier validator rejected this
+valid state with `MUHTARI_STATUS_ERR_INVALID_STATE`; after classifying cells
+from the candidate cursor/count, `topologies`, `fields` and `battery` pass.
+
+The continuation matrix also checks the first and last bytes of installed cart
+RAM, expansion RAM and battery spans; a raw TIA-to-mixer transition; independent
+mailbox and electrical observations; and resumed PCM, frame/audio counters,
+video, canonical bytes and span identity. MARIA's pending cursor continues
+through normal frame execution. Separate bus-owner HALT/NMI deadlines exercise
+those pending boundaries without claiming a mid-burst MARIA snapshot.

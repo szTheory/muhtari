@@ -886,8 +886,16 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
     U64(synth.clipped_samples);
     FIELD(synth.phase, 4u, 0, STATE_RANGE, 0u, muhtari__timing(source).sample_den - 1u,
           MARK_SYNTH_PHASE);
-    CHECK_U32(synth.pcm_read, STATE_SYNTH_PCM_READ, 0u, 0u);
-    CHECK_U32(synth.pcm_count, STATE_SYNTH_PCM_COUNT, 0u, 0u);
+    uint64_t saved_pcm_read = state_scalar(cursor, &source->synth.pcm_read,
+                                           target != NULL ? &target->synth.pcm_read : NULL, 4u, 0,
+                                           STATE_SYNTH_PCM_READ, 0u, 0u, MARK_COUNT, 0);
+    uint64_t saved_pcm_count = state_scalar(cursor, &source->synth.pcm_count,
+                                            target != NULL ? &target->synth.pcm_count : NULL, 4u,
+                                            0, STATE_SYNTH_PCM_COUNT, 0u, 0u, MARK_COUNT, 0);
+    uint32_t pcm_read = cursor->mode == STATE_SIZE ? source->synth.pcm_read
+                                                   : (uint32_t)saved_pcm_read;
+    uint32_t pcm_count = cursor->mode == STATE_SIZE ? source->synth.pcm_count
+                                                    : (uint32_t)saved_pcm_count;
     FIELD(synth.sample_num, 4u, 0, STATE_ANY, 0u, 0u, MARK_SYNTH_SAMPLE_NUM);
     FIELD(synth.sample_den, 4u, 0, STATE_ANY, 0u, 0u, MARK_SYNTH_SAMPLE_DEN);
     FIELD(synth.max_samples, 4u, 0, STATE_ANY, 0u, 0u, MARK_SYNTH_MAX_SAMPLES);
@@ -906,9 +914,11 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
     FIELD(synth.pokeys, 1u, 0, STATE_RANGE, 0u, 2u, MARK_SYNTH_POKEYS);
     FIELD(synth.secondary, 1u, 0, STATE_RANGE, 0u, 1u, MARK_SYNTH_SECONDARY);
     for (unsigned i = 0u; i < MUHTARI__SYNTH_PCM_CAPACITY; i++) {
-        uint32_t distance = (i + MUHTARI__SYNTH_PCM_CAPACITY - source->synth.pcm_read) %
+        /* During independent restore validation, the ring's active window
+           belongs to the candidate bytes, not the destination's live cursor. */
+        uint32_t distance = (i + MUHTARI__SYNTH_PCM_CAPACITY - pcm_read) %
                             MUHTARI__SYNTH_PCM_CAPACITY;
-        int inactive = distance >= source->synth.pcm_count;
+        int inactive = distance >= pcm_count;
         state_scalar(cursor, &source->synth.pcm[i], target != NULL ? &target->synth.pcm[i] : NULL,
                      2u, 1, STATE_ANY, 0u, 0u, MARK_COUNT, inactive);
     }

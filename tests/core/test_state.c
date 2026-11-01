@@ -372,6 +372,404 @@ static size_t expected_payload_size(const muhtari *m)
     return STATE_FIXED_BYTES + m->cart.info.ram_size + expansion + m->battery.bytes;
 }
 
+struct continuation_row {
+    const char *name;
+    uint32_t board;
+    uint32_t cart_type;
+    uint32_t rom_bytes;
+    uint32_t region;
+    uint32_t expansion;
+    uint32_t hsc_mode;
+    uint32_t port[2];
+    uint32_t input[2];
+    uint32_t legacy;
+    uint32_t bios;
+    uint32_t firmware;
+};
+
+/* Cart type fields follow docs/hardware/cartridge.md, Cart type. The synthetic
+   HSC/BIOS vectors below are generated in memory and are not firmware assets. */
+static size_t continuation_image(const struct continuation_row *row)
+{
+    if (row->board == MUHTARI_BOARD_BANKSET) {
+        size_t bytes = images_bankset(image, 32u, 3u);
+        image[67] = 3u; /* Both documented POKEY windows. */
+        return bytes;
+    }
+    if (row->board == MUHTARI_BOARD_SUPERGAME && row->rom_bytes == 0u) {
+        return images_headerless(image, 64u * IMAGES_KIB);
+    }
+    size_t body = row->rom_bytes != 0u ? row->rom_bytes : 4096u;
+    uint16_t cart_type = (uint16_t)row->cart_type;
+    size_t bytes = images_a78(image, 3u, (uint32_t)body, cart_type, (uint32_t)body);
+    images_footer(image + IMAGES_HEADER, body);
+    return bytes;
+}
+
+static int continuation_observation_matches(const muhtari *m, const struct continuation_row *row,
+                                            uint8_t ram_byte, uint8_t cart_byte,
+                                            uint8_t expansion_byte)
+{
+    if (m->loaded == 0u || m->cart.info.board != row->board || m->ram[0x40u] != ram_byte)
+        return 0;
+    if (m->cart.ram != NULL && m->cart.ram[0] != cart_byte)
+        return 0;
+    if (m->cart.ram != NULL &&
+        m->cart.ram[m->cart.info.ram_size - 1u] != (uint8_t)(cart_byte + 1u))
+        return 0;
+    if (m->cart.expansion.ram != NULL && m->cart.expansion.ram[0] != expansion_byte)
+        return 0;
+    if (m->cart.expansion.ram != NULL &&
+        m->cart.expansion.ram[STATE_EXPANSION_BYTES - 1u] !=
+            (uint8_t)(expansion_byte + 1u))
+        return 0;
+    if (m->battery.bytes != 0u &&
+        (m->battery.data[0] != 0x39u || m->battery.data[m->battery.bytes - 1u] != 0x93u))
+        return 0;
+    if (m->synth.raw[0] != 15u || m->synth.pending == 0u || m->synth.pcm_read != 5u ||
+        m->synth.pcm_count != 2u || m->synth.pcm[5] != -1234 || m->synth.pcm[6] != 2345)
+        return 0;
+    if (row->legacy != 0u &&
+        (m->ports.pending == 0u || m->ports.pending_device[0] != MUHTARI_PORT_JOYSTICK ||
+         m->ports.pending_buttons[0] != (MUHTARI_BUTTON_UP | MUHTARI_BUTTON_2) ||
+         m->ports.pending_switches != MUHTARI_SWITCH_SELECT))
+        return 0;
+    if (row->input[0] != 0u) {
+        const muhtari_port_input *pending = &m->ports.pending_ex.port[0];
+        if (m->ports.pending == 0u || pending->device != row->input[0])
+            return 0;
+        switch (row->input[0]) {
+        case MUHTARI_PORT_LIGHTGUN:
+            if (pending->gun_x != 77u || pending->gun_y != 41u ||
+                pending->buttons != MUHTARI_BUTTON_1)
+                return 0;
+            break;
+        case MUHTARI_PORT_PADDLE:
+            if (pending->paddle[0] != 0u || pending->paddle[1] != 32768u)
+                return 0;
+            break;
+        case MUHTARI_PORT_KEYPAD:
+            if (pending->keypad != 0xA5u)
+                return 0;
+            break;
+        case MUHTARI_PORT_ST_MOUSE:
+        case MUHTARI_PORT_AMIGA_MOUSE:
+            if (pending->dx != 13 || pending->dy != -7 ||
+                pending->buttons != MUHTARI_BUTTON_1)
+                return 0;
+            break;
+        case MUHTARI_PORT_DRIVING:
+            if (pending->dx != 13 || pending->dy != 0 ||
+                pending->buttons != MUHTARI_BUTTON_1)
+                return 0;
+            break;
+        case MUHTARI_PORT_TRAKBALL:
+            if (pending->dx != 13 || pending->dy != -7 ||
+                pending->buttons != MUHTARI_BUTTON_1)
+                return 0;
+            break;
+        default:
+            if (pending->buttons != (MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2))
+                return 0;
+            break;
+        }
+        if (row->input[1] != 0u &&
+            (m->ports.pending_ex.port[1].device != row->input[1] ||
+             m->ports.pending_ex.port[1].buttons !=
+                 (MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2 | MUHTARI_SNES_BUTTON_START)))
+            return 0;
+    }
+    return 1;
+}
+
+static void continuation_row_run(const struct continuation_row *row, muhtari *source,
+                                 muhtari *restored, alloc_counts *source_counts,
+                                 alloc_counts *restored_counts)
+{
+    size_t image_bytes = continuation_image(row);
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = image_bytes;
+    media.region = row->region;
+    media.expansion = row->expansion;
+    media.hsc_mode = row->hsc_mode;
+    media.port[0] = row->port[0];
+    media.port[1] = row->port[1];
+    if (row->bios != 0u) {
+        memset(identity_bios, 0xEA, sizeof identity_bios);
+        identity_bios[sizeof identity_bios - 4u] = 0x00u;
+        identity_bios[sizeof identity_bios - 3u] = 0xF0u;
+        media.bios = identity_bios;
+        media.bios_size = sizeof identity_bios;
+    }
+    if (row->firmware != 0u) {
+        memset(identity_firmware, 0x31, sizeof identity_firmware);
+        media.hsc_rom = identity_firmware;
+        media.hsc_rom_size = sizeof identity_firmware;
+    }
+    muhtari_status source_load = muhtari_load(source, &media);
+    muhtari_status restored_load = muhtari_load(restored, &media);
+    if (source_load != MUHTARI_STATUS_OK || restored_load != MUHTARI_STATUS_OK) {
+        fprintf(stderr, "continuation row %s load failed: %u/%u\n", row->name,
+                (unsigned)source_load, (unsigned)restored_load);
+        CHECK_EQ_U64(source_load, MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(restored_load, MUHTARI_STATUS_OK);
+        return;
+    }
+    CHECK_EQ_U64(source->cart.info.board, row->board);
+    CHECK_EQ_U64(source->effective_region, row->region == 0u ? MUHTARI_REGION_NTSC : row->region);
+    CHECK(memcmp(source->state_identity, restored->state_identity,
+                 sizeof source->state_identity) == 0);
+
+    uint8_t ram_byte = 0x65u;
+    uint8_t cart_byte = 0xA7u;
+    uint8_t expansion_byte = 0xD3u;
+    source->ram[0x40u] = ram_byte;
+    if (source->cart.ram != NULL) {
+        source->cart.ram[0] = cart_byte;
+        source->cart.ram[source->cart.info.ram_size - 1u] = (uint8_t)(cart_byte + 1u);
+    }
+    if (source->cart.expansion.ram != NULL) {
+        source->cart.expansion.ram[0] = expansion_byte;
+        source->cart.expansion.ram[STATE_EXPANSION_BYTES - 1u] = (uint8_t)(expansion_byte + 1u);
+    }
+    if (source->battery.bytes != 0u) {
+        source->battery.data[0] = 0x39u;
+        source->battery.data[source->battery.bytes - 1u] = 0x93u;
+    }
+    if (row->legacy != 0u) {
+        muhtari_input input;
+        memset(&input, 0, sizeof input);
+        input.size = (uint32_t)sizeof input;
+        input.device[0] = MUHTARI_PORT_JOYSTICK;
+        input.device[1] = MUHTARI_PORT_JOYSTICK;
+        input.buttons[0] = MUHTARI_BUTTON_UP | MUHTARI_BUTTON_2;
+        input.switches = MUHTARI_SWITCH_SELECT;
+        muhtari_status input_status = muhtari_set_input(source, &input);
+        if (input_status != MUHTARI_STATUS_OK) {
+            fprintf(stderr, "continuation row %s legacy input failed: %u\n", row->name,
+                    (unsigned)input_status);
+            CHECK_EQ_U64(input_status, MUHTARI_STATUS_OK);
+            return;
+        }
+    } else if (row->input[0] != 0u) {
+        muhtari_input_ex input;
+        memset(&input, 0, sizeof input);
+        input.size = (uint32_t)sizeof input;
+        input.port[0].device = row->input[0];
+        input.port[1].device = row->input[1];
+        input.switches = MUHTARI_SWITCH_SELECT;
+        if (input.port[0].device == MUHTARI_PORT_LIGHTGUN) {
+            input.port[0].gun_x = 77u;
+            input.port[0].gun_y = 41u;
+            input.port[0].buttons = MUHTARI_BUTTON_1;
+        } else if (input.port[0].device == MUHTARI_PORT_PADDLE) {
+            input.port[0].paddle[0] = 0u;
+            input.port[0].paddle[1] = 32768u;
+        } else if (input.port[0].device == MUHTARI_PORT_KEYPAD) {
+            input.port[0].keypad = 0xA5u;
+        } else if (input.port[0].device == MUHTARI_PORT_ST_MOUSE ||
+                   input.port[0].device == MUHTARI_PORT_AMIGA_MOUSE) {
+            input.port[0].dx = 13;
+            input.port[0].dy = -7;
+            input.port[0].buttons = MUHTARI_BUTTON_1;
+        } else if (input.port[0].device == MUHTARI_PORT_DRIVING) {
+            input.port[0].dx = 13;
+            input.port[0].buttons = MUHTARI_BUTTON_1;
+        } else if (input.port[0].device == MUHTARI_PORT_TRAKBALL) {
+            input.port[0].dx = 13;
+            input.port[0].dy = -7;
+            input.port[0].buttons = MUHTARI_BUTTON_1;
+        } else {
+            input.port[0].buttons = MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2;
+        }
+        if (input.port[1].device == MUHTARI_PORT_MEGA7800 ||
+            input.port[1].device == MUHTARI_PORT_SNES2ATARI)
+            input.port[1].buttons = MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2 | MUHTARI_SNES_BUTTON_START;
+        muhtari_status input_status = muhtari_set_input_ex(source, &input);
+        if (input_status != MUHTARI_STATUS_OK) {
+            fprintf(stderr, "continuation row %s extended input failed: %u\n", row->name,
+                    (unsigned)input_status);
+            CHECK_EQ_U64(input_status, MUHTARI_STATUS_OK);
+            return;
+        }
+    }
+
+    uint64_t halt_at = 0u;
+    uint64_t halt_until = 0u;
+    uint64_t nmi_at = 0u;
+    if (row->board == MUHTARI_BOARD_SUPERGAME) {
+        source->bus.inptctrl |= MUHTARI__INPTCTRL_MEN;
+        source->bus.halt_gate_writes = 2u;
+        halt_at = source->bus.ticks + 8u;
+        halt_until = halt_at + 20u;
+        nmi_at = halt_at + 4u;
+        CHECK(muhtari__bus_request_halt(source, halt_at, halt_until));
+        CHECK(muhtari__bus_raise_nmi(source, nmi_at));
+    }
+    muhtari__synth_level(source, source->synth.tick, 0u, 15u);
+    CHECK_EQ_U64(source->synth.pending, 1u);
+    CHECK_EQ_U64(source->synth.raw[0], 15u);
+    /* Seed a valid active FIFO carry. The public resume path must classify
+       active slots from the saved cursor, not the destination's live cursor. */
+    source->synth.pcm_read = 5u;
+    source->synth.pcm_count = 2u;
+    source->synth.pcm[5] = -1234;
+    source->synth.pcm[6] = 2345;
+    muhtari_span spans[3];
+    const uint32_t kinds[] = {MUHTARI_MEMORY_SYSTEM_RAM, MUHTARI_MEMORY_CART_RAM,
+                              MUHTARI_MEMORY_EXPANSION_RAM};
+    for (unsigned i = 0u; i < 3u; i++) {
+        memset(&spans[i], 0, sizeof spans[i]);
+        spans[i].size = (uint32_t)sizeof spans[i];
+        CHECK_EQ_U64(muhtari_get_memory(restored, kinds[i], &spans[i]), MUHTARI_STATUS_OK);
+    }
+    size_t bytes = muhtari_state_size(source);
+    CHECK(bytes > STATE_HEADER_BYTES && bytes <= STATE_MAX_BYTES);
+    CHECK_EQ_U64(muhtari_save_state(source, public_first, bytes), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(source, public_second, bytes), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_first, public_second, bytes) == 0);
+    uint32_t source_allocations = source_counts->allocs;
+    uint32_t restored_allocations = restored_counts->allocs;
+    CHECK_EQ_U64(muhtari_load_state(restored, public_first, bytes), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(source_counts->allocs, source_allocations);
+    CHECK_EQ_U64(restored_counts->allocs, restored_allocations);
+    CHECK(continuation_observation_matches(restored, row, ram_byte, cart_byte, expansion_byte));
+    if (row->board == MUHTARI_BOARD_SUPERGAME) {
+        CHECK_EQ_U64(restored->bus.halt_at, halt_at);
+        CHECK_EQ_U64(restored->bus.halt_until, halt_until);
+        CHECK_EQ_U64(restored->bus.nmi_at, nmi_at);
+        CHECK_EQ_U64(restored->bus.nmi_pending, 1u);
+    }
+
+    /* The independent mailbox oracle must reject a split run with one omitted field. */
+    uint8_t saved = restored->ram[0x40u];
+    restored->ram[0x40u] ^= 1u;
+    CHECK(!continuation_observation_matches(restored, row, ram_byte, cart_byte, expansion_byte));
+    restored->ram[0x40u] = saved;
+
+    for (unsigned i = 0u; i < 3u; i++) {
+        muhtari_span after;
+        memset(&after, 0, sizeof after);
+        after.size = (uint32_t)sizeof after;
+        CHECK_EQ_U64(muhtari_get_memory(restored, kinds[i], &after), MUHTARI_STATUS_OK);
+        CHECK(after.data == spans[i].data);
+        CHECK_EQ_U64(after.bytes, spans[i].bytes);
+    }
+
+    for (unsigned frame = 0u; frame < 2u; frame++) {
+        memset(public_video_a, 0, sizeof public_video_a);
+        memset(public_video_b, 0, sizeof public_video_b);
+        memset(public_audio_a, 0, sizeof public_audio_a);
+        memset(public_audio_b, 0, sizeof public_audio_b);
+        uint32_t a_count = state_run_frame(source, public_video_a, public_audio_a);
+        uint32_t b_count = state_run_frame(restored, public_video_b, public_audio_b);
+        CHECK_EQ_U64(a_count, b_count);
+        CHECK(memcmp(public_video_a, public_video_b, 320u *
+                     (size_t)muhtari__timing(source).height) == 0);
+        CHECK(memcmp(public_audio_a, public_audio_b,
+                     (size_t)a_count * sizeof public_audio_a[0]) == 0);
+        if (frame == 0u) {
+            CHECK(public_audio_a[0] == -1234);
+            CHECK(public_audio_a[1] == 2345);
+        }
+        CHECK_EQ_U64(source->synth.pcm_count, restored->synth.pcm_count);
+        CHECK_EQ_U64(source->synth.pcm_read, restored->synth.pcm_read);
+        if (row->board == MUHTARI_BOARD_LINEAR && frame == 0u) {
+            /* With MARIA DMA disabled, the untouched border is background 0
+               (docs/hardware/maria.md, Rendering). */
+            CHECK_EQ_U64(public_video_a[0], 0u);
+        }
+        if (frame == 0u) {
+            if (row->input[0] == MUHTARI_PORT_PADDLE) {
+                /* At NTSC, position 0's 10 kOhm path charges before the
+                   first handoff frame ends; position 32768 does not. */
+                CHECK_EQ_U64(muhtari__ports_inpt(source, 0u), 1u);
+                CHECK_EQ_U64(muhtari__ports_inpt(source, 1u), 0u);
+            }
+            if (row->input[0] == MUHTARI_PORT_KEYPAD) {
+                CHECK_EQ_U64(source->ports.keypad_keys[0], 0xA5u);
+                CHECK_EQ_U64(muhtari__ports_inpt(source, 4u), 1u);
+            }
+            if (row->input[0] == MUHTARI_PORT_LIGHTGUN) {
+                uint64_t expected_sample = source->maria.origin + 53u * 454u + 135u + 77u;
+                uint64_t frame_ticks = muhtari__timing(source).frame_ticks;
+                while (expected_sample <= source->bus.ticks)
+                    expected_sample += frame_ticks;
+                CHECK_EQ_U64(source->ports.light[0].sample_x, 77u);
+                CHECK_EQ_U64(source->ports.light[0].sample_raster, 53u);
+                CHECK_EQ_U64(source->ports.light[0].sample_tick, expected_sample);
+            }
+            if (row->input[0] == MUHTARI_PORT_SNES2ATARI) {
+                static const uint16_t scan[] = {0x0280u, 0x0281u, 0x0280u, 0x0280u, 0x0280u};
+                static const uint8_t values[] = {0u, 0x30u, 0x20u, 0u, 0x10u};
+                for (unsigned write = 0u; write < sizeof scan / sizeof scan[0]; write++) {
+                    muhtari__bus_write(source, scan[write], values[write]);
+                    muhtari__bus_write(restored, scan[write], values[write]);
+                }
+                CHECK_EQ_U64(source->ports.adapter[0].snapshot,
+                             MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2);
+                CHECK_EQ_U64(source->ports.adapter[0].position, 1u);
+                CHECK_EQ_U64(muhtari__ports_inpt(source, 4u), 1u);
+            }
+            if (row->input[1] == MUHTARI_PORT_MEGA7800) {
+                muhtari__bus_write(source, 0x0281u, 0x03u);
+                muhtari__bus_write(restored, 0x0281u, 0x03u);
+                CHECK_EQ_U64(source->ports.adapter[1].scanning, 1u);
+                CHECK_EQ_U64(source->ports.adapter[1].position, 0u);
+            }
+            /* Snapshot the now-active optical/pot/adapter/mixed-audio state and
+               restore it again before the second resumed frame. */
+            size_t snapshot_bytes = muhtari_state_size(source);
+            CHECK_EQ_U64(muhtari_save_state(source, public_first, snapshot_bytes),
+                         MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(muhtari_save_state(source, public_second, snapshot_bytes),
+                         MUHTARI_STATUS_OK);
+            CHECK(memcmp(public_first, public_second, snapshot_bytes) == 0);
+            uint32_t source_allocs = source_counts->allocs;
+            uint32_t restored_allocs = restored_counts->allocs;
+            CHECK_EQ_U64(muhtari_load_state(restored, public_first, snapshot_bytes),
+                         MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(source_counts->allocs, source_allocs);
+            CHECK_EQ_U64(restored_counts->allocs, restored_allocs);
+            CHECK_EQ_U64(restored->synth.pcm_count, source->synth.pcm_count);
+            CHECK_EQ_U64(restored->synth.pcm_read, source->synth.pcm_read);
+            CHECK_EQ_U64(restored->ports.adapter[0].position,
+                         source->ports.adapter[0].position);
+            CHECK_EQ_U64(restored->ports.light[0].sample_tick,
+                         source->ports.light[0].sample_tick);
+        }
+        if (row->input[0] == MUHTARI_PORT_DRIVING ||
+            row->input[0] == MUHTARI_PORT_TRAKBALL ||
+            row->input[0] == MUHTARI_PORT_ST_MOUSE ||
+            row->input[0] == MUHTARI_PORT_AMIGA_MOUSE) {
+            CHECK_EQ_U64(source->ports.motion[0][0].residual, 0u);
+            CHECK_EQ_U64(source->ports.motion[0][1].residual, 0u);
+            CHECK_EQ_U64(source->ports.motion[0][0].next_tick, 0u);
+            CHECK_EQ_U64(source->ports.motion[0][1].next_tick, 0u);
+        }
+        if (row->legacy != 0u && frame == 1u) {
+            CHECK_EQ_HEX(muhtari__ports_swcha(source), 0xEFu);
+            CHECK_EQ_HEX(muhtari__ports_swchb(source), 0x3Du);
+        }
+    }
+    muhtari_counters source_counters, restored_counters;
+    memset(&source_counters, 0, sizeof source_counters);
+    memset(&restored_counters, 0, sizeof restored_counters);
+    source_counters.size = (uint32_t)sizeof source_counters;
+    restored_counters.size = (uint32_t)sizeof restored_counters;
+    CHECK_EQ_U64(muhtari_get_counters(source, &source_counters), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_get_counters(restored, &restored_counters), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(source_counters.frames, restored_counters.frames);
+    CHECK_EQ_U64(source_counters.frames, 2u);
+    CHECK_EQ_U64(source_counters.lag_frames, restored_counters.lag_frames);
+    CHECK_EQ_U64(muhtari_save_state(source, public_first, bytes), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(restored, public_second, bytes), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_first, public_second, bytes) == 0);
+}
+
 static void test_payload(void)
 {
     alloc_counts counts;
@@ -1188,6 +1586,48 @@ static void test_battery(void)
 
 static void test_topologies(void)
 {
+    static const struct continuation_row continuation_rows[] = {
+        {"linear-ntsc-legacy", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
+         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {0u, 0u}, 1u, 0u, 0u},
+        {"supergame-pal-lightgun", MUHTARI_BOARD_SUPERGAME, 0x0462u, 64u * IMAGES_KIB,
+         MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+         {MUHTARI_PORT_LIGHTGUN, MUHTARI_PORT_MEGA7800}, 0u, 1u, 0u},
+        {"activision-pokey", MUHTARI_BOARD_ACTIVISION, 0x0101u, 128u * IMAGES_KIB,
+         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_PADDLE, 0u}, 0u, 0u, 0u},
+        {"absolute-keypad", MUHTARI_BOARD_ABSOLUTE, 0x0240u, 64u * IMAGES_KIB,
+         MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_KEYPAD, 0u}, 0u, 0u, 0u},
+        {"fractalus-motion", MUHTARI_BOARD_FRACTALUS, 0x0480u, 32u * IMAGES_KIB,
+         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_ST_MOUSE, 0u}, 0u, 0u, 0u},
+        {"bankset-xboard", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
+         MUHTARI_EXPANSION_XBOARD, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_SNES2ATARI, 0u}, 0u, 0u, 0u},
+        {"bankset-xm-savekey-port2", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_PAL,
+         MUHTARI_EXPANSION_XM, MUHTARI_HSC_ON,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY}, {MUHTARI_PORT_JOYSTICK, 0u}, 0u, 0u, 1u},
+        {"bankset-hsc-stub-savekey-port1", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
+         MUHTARI_EXPANSION_OFF, MUHTARI_HSC_ON,
+         {MUHTARI_PORT_SAVEKEY, MUHTARI_PORT_PROLINE}, {0u, 0u}, 0u, 0u, 0u},
+        {"linear-bios", MUHTARI_BOARD_LINEAR, 0u, 4u * IMAGES_KIB, MUHTARI_REGION_PAL,
+         MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_AMIGA_MOUSE, 0u}, 0u, 1u, 0u},
+        {"bankset-hsc-firmware", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
+         MUHTARI_EXPANSION_OFF, MUHTARI_HSC_ON,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY}, {MUHTARI_PORT_KEYPAD, 0u}, 0u, 0u, 1u},
+        {"linear-proline", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
+         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_PROLINE, 0u}, 0u, 0u, 0u},
+        {"linear-driving", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
+         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_DRIVING, 0u}, 0u, 0u, 0u},
+        {"linear-trakball", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
+         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_TRAKBALL, 0u}, 0u, 0u, 0u},
+    };
     alloc_counts counts;
     alloc_counts peer_counts;
     muhtari *m = state_create(&counts);
@@ -1236,6 +1676,12 @@ static void test_topologies(void)
     CHECK(bytes + STATE_HEADER_BYTES < STATE_MAX_BYTES);
     CHECK(muhtari__state_payload_write(m, first, bytes));
     CHECK(muhtari__state_payload_validate(m, first, bytes));
+
+    /* Each supported board/topology row gets a distinct machine and an
+       independently checked RAM mailbox before resumed output comparison. */
+    for (size_t i = 0u; i < sizeof continuation_rows / sizeof continuation_rows[0]; i++) {
+        continuation_row_run(&continuation_rows[i], m, peer, &counts, &peer_counts);
+    }
 
     /* Header metadata, caller representation and Auto spelling do not alter
        an otherwise identical installed machine. */
