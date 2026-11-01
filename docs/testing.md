@@ -438,7 +438,7 @@ build apart from the host's:
 ```sh
 docker run --rm --platform linux/arm64 -v "$PWD:/src" -v /src/build -w /src ubuntu:26.04 sh -c '
   apt-get update -qq &&
-  apt-get install -y -qq --no-install-recommends ca-certificates curl xz-utils git ninja-build gcc g++ binutils &&
+  apt-get install -y -qq --no-install-recommends ca-certificates curl xz-utils git ninja-build gcc g++ binutils jq &&
   scripts/fetch-pin.sh cmake-linux-aarch64 /opt/cmake &&
   PATH=/opt/cmake/bin:$PATH cmake --workflow --preset ci'
 ```

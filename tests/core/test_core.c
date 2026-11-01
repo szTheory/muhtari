@@ -652,6 +652,9 @@ static void size_cases(const char *name, uint32_t ours, int is_output,
         if (strcmp(name, "info") == 0 && size >= MUHTARI__INFO_SIZE_FIRST && size <= ours) {
             want = MUHTARI_STATUS_OK;
         }
+        if (strcmp(name, "versions") == 0 && size >= MUHTARI__VERSIONS_SIZE_FIRST && size <= ours) {
+            want = MUHTARI_STATUS_OK;
+        }
         if (got != want) {
             fprintf(stderr, "%s size %u (tail byte %u): expected status %u, got %u\n", name,
                     (unsigned)size, (unsigned)cases[i].nonzero, (unsigned)want, (unsigned)got);
@@ -837,7 +840,7 @@ static void test_info(void)
     CHECK_EQ_U64(muhtari_get_versions(NULL), MUHTARI_STATUS_ERR_ARGUMENT);
     CHECK_EQ_U64(muhtari_get_versions(&v), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(v.api, MUHTARI_API_VERSION);
-    CHECK_EQ_U64(v.api, 7);
+    CHECK_EQ_U64(v.api, 8);
     CHECK_EQ_U64(v.abi, 1);
     CHECK_EQ_U64(v.behaviour_revision, 6u);
     muhtari_destroy(m);
