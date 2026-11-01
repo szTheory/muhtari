@@ -2249,7 +2249,25 @@ static void test_topologies(void)
     image[IMAGES_HEADER + 1024u] = saved_max_byte;
 
     CHECK_EQ_U64(state_load(m, STATE_LARGEST_GENERATED, 0), MUHTARI_STATUS_OK);
+    uint32_t largest_allocations = counts.allocs;
+    uint32_t largest_frees = counts.frees;
     check_public_roundtrip(m);
+    CHECK_EQ_U64(counts.allocs, largest_allocations);
+    CHECK_EQ_U64(counts.frees, largest_frees);
+
+    /* Reject the last fixed-width field after walking this full legal
+       topology's appended cartridge, expansion and battery spans. Repair the
+       envelope CRC so refusal must come from the payload validator. */
+    size_t largest_total = muhtari_state_size(m);
+    CHECK_EQ_U64(largest_total, 209628u);
+    CHECK_EQ_U64(muhtari_save_state(m, public_control, largest_total), MUHTARI_STATUS_OK);
+    size_t last_fixed_field = 10971u;
+    CHECK(last_fixed_field < largest_total);
+    public_control[last_fixed_field] = 2u;
+    state_rechecksum(public_control, largest_total);
+    expect_state_refusal(m, public_control, largest_total, MUHTARI_STATUS_ERR_INVALID_STATE);
+    CHECK_EQ_U64(counts.allocs, largest_allocations);
+    CHECK_EQ_U64(counts.frees, largest_frees);
 
     /* Exercise the source-supported 128 KiB cart-RAM extent without carrying
        a database ROM fixture: the internal installer receives the same
