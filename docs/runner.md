@@ -74,6 +74,10 @@ long, unreadable, corrupt, unsupported or incompatible files before running a fr
 owned files. A state write replaces its destination only after the sibling temporary is fully written, flushed,
 synced and closed. A failed write leaves an existing destination intact.
 
+The versioned state bytes are little-endian, carry a SHA-256 effective machine identity, and use CRC-32 for
+corruption detection only; CRC-32 does not authenticate a file. The core validates saved clocks against the
+installed hardware's producer ranges and relationships rather than an arbitrary absolute tick limit.
+
 `--load-state` runs after the cartridge, selected hardware and optional battery file are loaded, and before any
 movie input or frame. `N` on `--state-at-frame` and `--hash-state` counts successful frame calls in this
 invocation, from zero through its frame count. Point 0 is after initial loading (including an optional state

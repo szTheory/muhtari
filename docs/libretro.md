@@ -206,6 +206,10 @@ non-null buffer at least that large and leaves any extra capacity untouched; res
 of exactly that length. Invalid, short or oversized states are rejected without changing the machine. Unloaded,
 failed-load and no-content test-card sessions report size zero and refuse save/load callbacks.
 
+The versioned bytes are little-endian and bound to a SHA-256 effective machine identity. Their CRC-32 detects
+corruption but does not authenticate a state file; unsupported format or behavior revisions are refused without
+migration.
+
 Normal disk states, run-ahead contexts 1 and 2, and an unavailable context query all use the library's fully
 validated little-endian format. If the frontend explicitly requests rollback-netplay context 3, the callbacks
 report size zero and refuse save/load because that context requires big-endian integers. There is no second
