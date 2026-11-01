@@ -672,8 +672,6 @@ static int input_at_vblank(uint64_t *rng, uint32_t size)
    absent, HSC, EEPROM on either port, and both combined placements. */
 static uint8_t battery_expected[34816];
 static uint8_t battery_firmware[4096];
-static uint8_t state_firmware_other[4096];
-static uint32_t state_mutation_seen;
 
 static muhtari_battery_info battery_info(const muhtari *m)
 {
@@ -1223,31 +1221,32 @@ static int state_refusal(uint64_t *rng, uint32_t size)
             MUHTARI_STATUS_ERR_ARGUMENT)
         ok = differ("state length/alias refusal", 0u);
 
-    uint32_t mutation = prop_below(rng, 3u);
-    if (size == PROP_SIZE_MAX)
-        state_mutation_seen |= 1u << mutation;
-    memcpy(candidate, before_bytes, state_bytes);
-    if (mutation == 0u) {
-        candidate[115u] = 2u; /* CPU jammed must be boolean. */
-    } else if (mutation == 1u) {
-        candidate[216u] = 1u;
-        state_put_u64(candidate + 165u, UINT64_MAX); /* HALT release is source-bounded. */
-    } else {
-        state_put_u32(candidate + 8066u, MUHTARI__SYNTH_PCM_CAPACITY);
+    for (uint32_t mutation = 0u; mutation < 3u; mutation++) {
+        memcpy(candidate, before_bytes, state_bytes);
+        if (mutation == 0u) {
+            candidate[115u] = 2u; /* CPU jammed must be boolean. */
+        } else if (mutation == 1u) {
+            candidate[216u] = 1u;
+            state_put_u64(candidate + 165u, UINT64_MAX); /* HALT release is source-bounded. */
+        } else {
+            state_put_u32(candidate + 8066u, MUHTARI__SYNTH_PCM_CAPACITY);
+        }
+        state_rechecksum(candidate, state_bytes);
+        if (state_crc(candidate, state_bytes) !=
+            ((uint32_t)candidate[24u] | ((uint32_t)candidate[25u] << 8) |
+             ((uint32_t)candidate[26u] << 16) | ((uint32_t)candidate[27u] << 24)))
+            ok = differ("state repaired checksum", mutation);
+        calls = allocation_calls;
+        if (muhtari_load_state(restored, candidate, state_bytes) !=
+                MUHTARI_STATUS_ERR_INVALID_STATE ||
+            allocation_calls != calls)
+            ok = differ("state repaired hostile field", mutation);
+        if (!state_spans(restored, after_spans) ||
+            !state_same_spans(before_spans, after_spans) ||
+            muhtari_save_state(restored, after_bytes, state_bytes) != MUHTARI_STATUS_OK ||
+            memcmp(before_bytes, after_bytes, state_bytes) != 0)
+            ok = differ("state refused preservation", mutation);
     }
-    state_rechecksum(candidate, state_bytes);
-    if (state_crc(candidate, state_bytes) !=
-        ((uint32_t)candidate[24u] | ((uint32_t)candidate[25u] << 8) |
-         ((uint32_t)candidate[26u] << 16) | ((uint32_t)candidate[27u] << 24)))
-        ok = differ("state repaired checksum", 0u);
-    calls = allocation_calls;
-    if (muhtari_load_state(restored, candidate, state_bytes) != MUHTARI_STATUS_ERR_INVALID_STATE ||
-        allocation_calls != calls)
-        ok = differ("state repaired hostile field", 0u);
-    if (!state_spans(restored, after_spans) || !state_same_spans(before_spans, after_spans) ||
-        muhtari_save_state(restored, after_bytes, state_bytes) != MUHTARI_STATUS_OK ||
-        memcmp(before_bytes, after_bytes, state_bytes) != 0)
-        ok = differ("state refused preservation", 0u);
 
     muhtari_counters before_counters = {0}, after_counters = {0};
     before_counters.size = after_counters.size = (uint32_t)sizeof before_counters;
@@ -1320,6 +1319,7 @@ static int state_battery_roundtrip(uint64_t *rng)
         return finish(source, restored, differ("state battery save", 0u));
     }
 
+    uint8_t state_firmware_other[4096];
     memset(state_firmware_other, 0xFF, sizeof state_firmware_other);
     state_firmware_other[0x900u] = 0xC6u;
     state_firmware_other[0x904u] = 0xFEu;
@@ -1500,13 +1500,6 @@ int main(int argc, char **argv)
                         return 1;
             }
             int result = prop_run(props[i].name, props[i].fn);
-            if (strcmp(props[i].name, "state_refusal") == 0 &&
-                prop_env(PROP_ENV_SEED, PROP_SEED) == PROP_SEED &&
-                prop_env(PROP_ENV_CASES, 100u) >= 100u && state_mutation_seen != 7u) {
-                fprintf(stderr, "state mutation coverage: expected 7, got %u\n",
-                        state_mutation_seen);
-                return 1;
-            }
             if (strcmp(props[i].name, "instances_isolated") == 0 && typed_seen != 511u) {
                 fprintf(stderr, "executed typed device coverage: expected 511, got %u\n",
                         typed_seen);
