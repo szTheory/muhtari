@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define MUHTARI_API_VERSION 7
+#define MUHTARI_API_VERSION 8
 #define MUHTARI_IMAGE_SIZE_MAX 1048704u /* 1 MiB of ROM plus a 128-byte header */
 
 typedef uint32_t muhtari_status;
@@ -28,7 +28,11 @@ enum {
     MUHTARI_STATUS_ERR_INVALID_BIOS = 11,       /* not 4,096 or 16,384 bytes, or a bad vector */
     MUHTARI_STATUS_ERR_UNSUPPORTED_REGION = 12, /* reserved region refusal */
     MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE = 13, /* an explicit device this version lacks */
-    MUHTARI_STATUS_ERR_INVALID_HSC = 14         /* invalid optional HSC media */
+    MUHTARI_STATUS_ERR_INVALID_HSC = 14,        /* invalid optional HSC media */
+    MUHTARI_STATUS_ERR_STATE_UNAVAILABLE = 15,
+    MUHTARI_STATUS_ERR_INVALID_STATE = 16,
+    MUHTARI_STATUS_ERR_UNSUPPORTED_STATE = 17,
+    MUHTARI_STATUS_ERR_STATE_MISMATCH = 18
 };
 
 typedef struct muhtari muhtari;
@@ -50,6 +54,7 @@ typedef struct muhtari_versions {
     uint32_t api;                /* MUHTARI_API_VERSION */
     uint32_t abi;                /* 1 */
     uint32_t behaviour_revision; /* reported by muhtari_get_versions */
+    uint32_t state_format;       /* 1 */
 } muhtari_versions;
 
 typedef struct muhtari_info {
@@ -76,6 +81,9 @@ muhtari_status muhtari_create(const muhtari_config *cfg, muhtari **out);
 void muhtari_destroy(muhtari *m); /* NULL-safe */
 muhtari_status muhtari_get_info(const muhtari *m, muhtari_info *out);
 muhtari_status muhtari_run_frame(muhtari *m, muhtari_frame *io);
+size_t muhtari_state_size(const muhtari *m);
+muhtari_status muhtari_save_state(const muhtari *m, void *buffer, size_t capacity);
+muhtari_status muhtari_load_state(muhtari *m, const void *buffer, size_t bytes);
 
 enum { MUHTARI_KIND_7800 = 1, MUHTARI_KIND_2600 = 2 };
 enum {

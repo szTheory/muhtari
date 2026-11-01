@@ -9,23 +9,12 @@
 #include "../alloc.h"
 #include "../cart/images.h"
 #include "../check.h"
+#include "../../runner/crc32.h"
 
 #define STATE_HEADER_BYTES 64u
 #define STATE_FIXED_BYTES 10908u
 #define STATE_EXPANSION_BYTES 131072u
 #define STATE_MAX_BYTES 307932u
-
-/* The RED harness for plan 13-03 substitutes the not-yet-implemented public
-   size query with an unavailable result. This keeps the test executable and
-   makes the behavioral assertion, rather than a link error, fail first. */
-#ifdef MUHTARI_STATE_RED_STUB
-size_t muhtari_state_size(const muhtari *m);
-size_t muhtari_state_size(const muhtari *m)
-{
-    (void)m;
-    return 0u;
-}
-#endif
 
 enum state_fixture {
     STATE_LINEAR,
@@ -44,8 +33,25 @@ static uint8_t identity_firmware[4096u];
 static uint8_t identity_other_firmware[4096u];
 static uint8_t first[STATE_MAX_BYTES];
 static uint8_t second[STATE_MAX_BYTES];
+static uint8_t public_first[STATE_MAX_BYTES];
+static uint8_t public_second[STATE_MAX_BYTES];
+static uint8_t public_snapshot[STATE_MAX_BYTES];
+static uint8_t public_video_a[320u * 292u];
+static uint8_t public_video_b[320u * 292u];
+static int16_t public_audio_a[962u];
+static int16_t public_audio_b[962u];
 static uint8_t invalid_image[4] = {0u, 0u, 0u, 0u};
 static muhtari snapshot;
+
+enum boundary_mode { BOUNDARY_AFTER_INSTANCE, BOUNDARY_AFTER_CART };
+struct boundary_allocator {
+    enum boundary_mode mode;
+    uint32_t calls;
+    muhtari *instance;
+    uint8_t *cart;
+    _Alignas(max_align_t) uint8_t storage[2u * STATE_MAX_BYTES + sizeof(muhtari) + 8192u];
+};
+static struct boundary_allocator boundary;
 
 static size_t payload_index(size_t absolute_offset)
 {
@@ -79,6 +85,76 @@ static uint64_t get_u64(const uint8_t *bytes)
     uint64_t hi = (uint64_t)bytes[4] | ((uint64_t)bytes[5] << 8) |
                   ((uint64_t)bytes[6] << 16) | ((uint64_t)bytes[7] << 24);
     return lo | (hi << 32);
+}
+
+static uint32_t get_u32(const uint8_t *bytes)
+{
+    return (uint32_t)bytes[0] | ((uint32_t)bytes[1] << 8) | ((uint32_t)bytes[2] << 16) |
+           ((uint32_t)bytes[3] << 24);
+}
+
+static uint32_t state_crc(const uint8_t *bytes, size_t size)
+{
+    static const uint8_t zero_crc[4] = {0u, 0u, 0u, 0u};
+    uint32_t crc = muhtari__crc32(0u, bytes, 24u);
+    crc = muhtari__crc32(crc, zero_crc, sizeof zero_crc);
+    return muhtari__crc32(crc, bytes + 28u, size - 28u);
+}
+
+static void state_rechecksum(uint8_t *bytes, size_t size)
+{
+    put_u32(bytes + 24u, 0u);
+    put_u32(bytes + 24u, state_crc(bytes, size));
+}
+
+static void expect_state_refusal(muhtari *m, uint8_t *candidate, size_t bytes,
+                                 muhtari_status expected)
+{
+    size_t total = muhtari_state_size(m);
+    CHECK_EQ_U64(muhtari_save_state(m, first, total), MUHTARI_STATUS_OK);
+    memcpy(public_second, candidate, bytes);
+    CHECK_EQ_U64(muhtari_load_state(m, candidate, bytes), expected);
+    CHECK(memcmp(public_second, candidate, bytes) == 0);
+    CHECK_EQ_U64(muhtari_save_state(m, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(first, public_second, total) == 0);
+}
+
+static void check_public_roundtrip(muhtari *m)
+{
+    size_t bytes = muhtari_state_size(m);
+    CHECK(bytes != 0u);
+    if (bytes == 0u)
+        return;
+    CHECK_EQ_U64(muhtari_save_state(m, public_first, bytes), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(m, public_second, bytes), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_first, public_second, bytes) == 0);
+    CHECK_EQ_U64(muhtari_load_state(m, public_first, bytes), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(m, public_second, bytes), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_first, public_second, bytes) == 0);
+}
+
+static void *boundary_alloc(void *user, size_t bytes)
+{
+    struct boundary_allocator *context = (struct boundary_allocator *)user;
+    context->calls++;
+    if (context->calls == 1u) {
+        if (context->mode == BOUNDARY_AFTER_CART)
+            context->instance = (muhtari *)malloc(bytes);
+        return context->instance;
+    }
+    if (context->calls == 2u)
+        return context->cart;
+    return NULL;
+}
+
+static void boundary_free(void *user, void *ptr, size_t bytes)
+{
+    struct boundary_allocator *context = (struct boundary_allocator *)user;
+    (void)bytes;
+    if (ptr == context->cart ||
+        (context->mode == BOUNDARY_AFTER_INSTANCE && ptr == context->instance))
+        return;
+    free(ptr);
 }
 
 static void expect_invalid_u8(muhtari *m, size_t bytes, size_t absolute_offset, uint8_t value)
@@ -198,8 +274,8 @@ static void test_payload(void)
     /* NTSC has no raster row 300. The packed form writes its inactive
        statistics as zero while the live producer may retain old counters. */
     m->maria.stats[300].cost = 1u;
-    uint32_t allocations = counts.allocs;
-    uint32_t frees = counts.frees;
+    uint32_t public_allocations = counts.allocs;
+    uint32_t public_frees = counts.frees;
     CHECK(muhtari__state_payload_write(m, first, bytes));
     CHECK(muhtari__state_payload_validate(m, first, bytes));
     size_t inactive = payload_index(4826u + 300u * 8u);
@@ -212,14 +288,94 @@ static void test_payload(void)
     CHECK(memcmp(first, second, bytes) == 0);
     muhtari__state_payload_apply(m, first, bytes);
     CHECK_EQ_U64(m->maria.stats[300].cost, 0u);
-    CHECK_EQ_U64(counts.allocs, allocations);
-    CHECK_EQ_U64(counts.frees, frees);
+    CHECK_EQ_U64(counts.allocs, public_allocations);
+    CHECK_EQ_U64(counts.frees, public_frees);
 
     first[inactive] = 1u;
     CHECK(!muhtari__state_payload_validate(m, first, bytes));
     memcpy(&snapshot, m, sizeof snapshot);
     muhtari__state_payload_apply(m, first, bytes);
     CHECK(memcmp(&snapshot, m, sizeof snapshot) == 0);
+
+    size_t total = muhtari_state_size(m);
+    CHECK_EQ_U64(total, bytes + STATE_HEADER_BYTES);
+    memset(public_first, 0x3Cu, total);
+    memcpy(public_snapshot, public_first, total);
+    CHECK_EQ_U64(muhtari_save_state(m, public_first, total - 1u),
+                 MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL);
+    CHECK(memcmp(public_first, public_snapshot, total) == 0);
+    muhtari_span system_before;
+    memset(&system_before, 0, sizeof system_before);
+    system_before.size = (uint32_t)sizeof system_before;
+    CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_SYSTEM_RAM, &system_before),
+                 MUHTARI_STATUS_OK);
+    memset(public_first, 0xA5, total + 4u);
+    uint32_t allocations = counts.allocs;
+    uint32_t frees = counts.frees;
+    CHECK_EQ_U64(muhtari_save_state(m, public_first, total + 4u), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_first, "MUHTST01", 8u) == 0);
+    CHECK_EQ_U64(get_u32(public_first + 8u), 1u);
+    CHECK_EQ_U64(get_u32(public_first + 12u), STATE_HEADER_BYTES);
+    CHECK_EQ_U64(get_u32(public_first + 16u), total);
+    CHECK_EQ_U64(get_u32(public_first + 20u), 6u);
+    CHECK_EQ_U64(get_u32(public_first + 24u), state_crc(public_first, total));
+    CHECK(memcmp(public_first + 28u, m->state_identity, sizeof m->state_identity) == 0);
+    CHECK_EQ_U64(get_u32(public_first + 60u), 0u);
+    CHECK_EQ_HEX(public_first[total], 0xA5u);
+    CHECK_EQ_HEX(public_first[total + 1u], 0xA5u);
+    CHECK_EQ_HEX(public_first[total + 2u], 0xA5u);
+    CHECK_EQ_HEX(public_first[total + 3u], 0xA5u);
+    CHECK_EQ_U64(muhtari_save_state(m, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_first, public_second, total) == 0);
+    CHECK_EQ_U64(muhtari_load_state(m, public_first, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(m, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_first, public_second, total) == 0);
+    muhtari_span system_after;
+    memset(&system_after, 0, sizeof system_after);
+    system_after.size = (uint32_t)sizeof system_after;
+    CHECK_EQ_U64(muhtari_get_memory(m, MUHTARI_MEMORY_SYSTEM_RAM, &system_after),
+                 MUHTARI_STATUS_OK);
+    CHECK(system_after.data == system_before.data);
+    CHECK_EQ_U64(system_after.bytes, system_before.bytes);
+    CHECK_EQ_U64(counts.allocs, allocations);
+    CHECK_EQ_U64(counts.frees, frees);
+
+    alloc_counts peer_counts;
+    muhtari *peer = state_create(&peer_counts);
+    if (peer != NULL) {
+        CHECK_EQ_U64(state_load(peer, STATE_LINEAR, 0), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_load_state(peer, public_first, total), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_save_state(peer, public_second, total), MUHTARI_STATUS_OK);
+        CHECK(memcmp(public_first, public_second, total) == 0);
+
+        muhtari_frame frame;
+        memset(&frame, 0, sizeof frame);
+        frame.size = (uint32_t)sizeof frame;
+        frame.video_pitch = 320u;
+        frame.video = public_video_a;
+        frame.audio = public_audio_a;
+        frame.audio_capacity = (uint32_t)(sizeof public_audio_a / sizeof public_audio_a[0]);
+        CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_save_state(m, public_first, total), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_load_state(peer, public_first, total), MUHTARI_STATUS_OK);
+
+        memset(public_video_a, 0, sizeof public_video_a);
+        memset(public_video_b, 0, sizeof public_video_b);
+        memset(public_audio_a, 0, sizeof public_audio_a);
+        memset(public_audio_b, 0, sizeof public_audio_b);
+        frame.video = public_video_a;
+        frame.audio = public_audio_a;
+        CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+        uint32_t samples = frame.audio_count;
+        frame.video = public_video_b;
+        frame.audio = public_audio_b;
+        CHECK_EQ_U64(muhtari_run_frame(peer, &frame), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(frame.audio_count, samples);
+        CHECK(memcmp(public_video_a, public_video_b, sizeof public_video_a) == 0);
+        CHECK(memcmp(public_audio_a, public_audio_b, (size_t)samples * sizeof public_audio_a[0]) ==
+              0);
+        muhtari_destroy(peer);
+    }
     muhtari_destroy(m);
 }
 
@@ -390,6 +546,132 @@ static void test_fields(void)
     CHECK_EQ_U64(m->ports.pending_ex.size, sizeof m->ports.pending_ex);
     CHECK_EQ_U64(m->bus.halt_at, UINT64_MAX);
     CHECK_EQ_U64(m->pokey[0].carry[0], UINT64_MAX);
+
+    size_t total = muhtari_state_size(m);
+    CHECK_EQ_U64(total, bytes + STATE_HEADER_BYTES);
+    CHECK_EQ_U64(muhtari_save_state(m, public_snapshot, total), MUHTARI_STATUS_OK);
+
+    memset(public_first, 0xC3, total);
+    memcpy(public_second, public_first, total);
+    uint8_t jammed = m->cpu.jammed;
+    m->cpu.jammed = 2u;
+    CHECK_EQ_U64(muhtari_save_state(m, public_first, total), MUHTARI_STATUS_ERR_INVALID_STATE);
+    CHECK(memcmp(public_first, public_second, total) == 0);
+    m->cpu.jammed = jammed;
+
+    CHECK_EQ_U64(muhtari_load_state(m, public_snapshot, 1u), MUHTARI_STATUS_ERR_INVALID_STATE);
+    CHECK_EQ_U64(muhtari_load_state(m, public_snapshot, STATE_HEADER_BYTES),
+                 MUHTARI_STATUS_ERR_INVALID_STATE);
+    CHECK_EQ_U64(muhtari_load_state(m, public_snapshot, SIZE_MAX), MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    memcpy(public_first, public_snapshot, total);
+    public_first[0] ^= 1u;
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    memcpy(public_first, public_snapshot, total);
+    put_u32(public_first + 12u, STATE_HEADER_BYTES - 1u);
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    memcpy(public_first, public_snapshot, total);
+    put_u32(public_first + 8u, 2u);
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_UNSUPPORTED_STATE);
+
+    memcpy(public_first, public_snapshot, total);
+    put_u32(public_first + 20u, 7u);
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_UNSUPPORTED_STATE);
+
+    memcpy(public_first, public_snapshot, total);
+    put_u32(public_first + 16u, (uint32_t)(total + 1u));
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    memcpy(public_first, public_snapshot, total);
+    put_u32(public_first + 60u, 1u);
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    memcpy(public_first, public_snapshot, total);
+    public_first[40] ^= 1u;
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    memcpy(public_first, public_snapshot, total);
+    public_first[28] ^= 1u;
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_STATE_MISMATCH);
+
+    memcpy(public_first, public_snapshot, total);
+    public_first[115] = 2u; /* A checksum-valid non-boolean CPU field remains untrusted. */
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+    expect_state_refusal(m, public_snapshot, total - 1u, MUHTARI_STATUS_ERR_INVALID_STATE);
+    public_snapshot[total] = 0u;
+    expect_state_refusal(m, public_snapshot, total + 1u, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    /* The private payload keeps unrestricted u64 values, while public restore
+       refuses a checksummed clock tuple that would make audio catch-up grow
+       without bound. Other clocks stay mutually ordered and in this frame. */
+    memcpy(public_first, public_snapshot, total);
+    const uint64_t far_tick = UINT64_C(1) << 40;
+    put_u64(public_first + 68u, far_tick);
+    put_u64(public_first + 76u,
+            far_tick + muhtari__timing(m).frame_ticks);
+    put_u64(public_first + 117u, far_tick);
+    put_u64(public_first + 149u, far_tick);
+    put_u64(public_first + 7334u, far_tick);
+    put_u64(public_first + 7862u, 0u);
+    put_u64(public_first + 10332u, far_tick + 64u);
+    put_u64(public_first + 10340u, far_tick);
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    /* A stale TIA clock is independently bounded even when synthesis is
+       aligned with the restored bus clock. */
+    memcpy(public_first, public_snapshot, total);
+    put_u64(public_first + 68u, far_tick);
+    put_u64(public_first + 76u, far_tick + muhtari__timing(m).frame_ticks);
+    put_u64(public_first + 117u, far_tick);
+    put_u64(public_first + 149u, far_tick);
+    put_u64(public_first + 7334u, far_tick);
+    put_u64(public_first + 7862u, far_tick);
+    put_u64(public_first + 7870u, far_tick);
+    put_u64(public_first + 7878u, far_tick);
+    put_u64(public_first + 10332u, 0u);
+    put_u64(public_first + 10340u, far_tick);
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    /* Absolute time itself has no format ceiling, but public restore refuses
+       a tuple without enough producer-derived room for the next calls. */
+    memcpy(public_first, public_snapshot, total);
+    uint64_t margin = 2u * muhtari__timing(m).frame_ticks +
+                      MUHTARI__SYNTH_OVERSHOOT_TICKS + UINT32_MAX;
+    uint64_t near_limit = UINT64_MAX - margin + 1u;
+    put_u64(public_first + 68u, near_limit);
+    put_u64(public_first + 76u, near_limit + muhtari__timing(m).frame_ticks);
+    put_u64(public_first + 117u, near_limit);
+    put_u64(public_first + 149u, near_limit);
+    put_u64(public_first + 7334u, near_limit);
+    put_u64(public_first + 7862u, near_limit);
+    put_u64(public_first + 7870u, near_limit);
+    put_u64(public_first + 7878u, near_limit);
+    put_u64(public_first + 10332u, near_limit + 64u);
+    put_u64(public_first + 10340u, near_limit);
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    /* A pending HALT with a hostile far-future release would keep frame
+       execution inside the hold loop; the finite deadline is source-bounded. */
+    memcpy(public_first, public_snapshot, total);
+    public_first[216u] = 1u;
+    put_u64(public_first + 165u, UINT64_MAX);
+    state_rechecksum(public_first, total);
+    expect_state_refusal(m, public_first, total, MUHTARI_STATUS_ERR_INVALID_STATE);
+
+    CHECK_EQ_U64(muhtari_save_state(m, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_second, public_snapshot, total) == 0);
     muhtari_destroy(m);
 }
 
@@ -413,7 +695,58 @@ static void test_aliases(void)
     CHECK(!muhtari__state_payload_validate(m, m->cart.rom, bytes));
     muhtari__state_payload_apply(m, m->cart.rom, bytes);
     CHECK(memcmp(&snapshot, m, sizeof snapshot) == 0);
+
+    size_t total = muhtari_state_size(m);
+    CHECK_EQ_U64(muhtari_save_state(m, public_snapshot, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_save_state(m, m, total), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_save_state(m, m->cart.rom, total), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_load_state(m, m, total), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_load_state(m, m->cart.rom, total), MUHTARI_STATUS_ERR_ARGUMENT);
+    uintptr_t wrapped_address = UINTPTR_MAX - (uintptr_t)total + 1u;
+    CHECK_EQ_U64(muhtari_save_state(m, (void *)wrapped_address, total),
+                 MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_load_state(m, (const void *)wrapped_address, total),
+                 MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_save_state(m, public_second, total), MUHTARI_STATUS_OK);
+    CHECK(memcmp(public_snapshot, public_second, total) == 0);
     muhtari_destroy(m);
+
+    for (unsigned mode = BOUNDARY_AFTER_INSTANCE; mode <= BOUNDARY_AFTER_CART; mode++) {
+        memset(&boundary, 0, sizeof boundary);
+        boundary.mode = (enum boundary_mode)mode;
+        uintptr_t align = (uintptr_t)_Alignof(max_align_t);
+        if (boundary.mode == BOUNDARY_AFTER_INSTANCE) {
+            uintptr_t candidate = (uintptr_t)boundary.storage + STATE_MAX_BYTES;
+            uintptr_t instance = (candidate + align - 1u) & ~(align - 1u);
+            boundary.instance = (muhtari *)instance;
+            uintptr_t cart = instance + sizeof(muhtari) + STATE_MAX_BYTES;
+            cart = (cart + align - 1u) & ~(align - 1u);
+            boundary.cart = (uint8_t *)cart;
+        } else {
+            boundary.cart = boundary.storage;
+        }
+
+        muhtari_config config;
+        memset(&config, 0, sizeof config);
+        config.size = (uint32_t)sizeof config;
+        config.allocator.alloc = boundary_alloc;
+        config.allocator.free = boundary_free;
+        config.allocator.user = &boundary;
+        muhtari *adjacent = NULL;
+        CHECK_EQ_U64(muhtari_create(&config, &adjacent), MUHTARI_STATUS_OK);
+        if (adjacent != NULL) {
+            CHECK_EQ_U64(state_load(adjacent, STATE_LINEAR, 0), MUHTARI_STATUS_OK);
+            size_t adjacent_size = muhtari_state_size(adjacent);
+            uint8_t *adjacent_bytes = boundary.mode == BOUNDARY_AFTER_INSTANCE
+                                          ? (uint8_t *)adjacent + sizeof *adjacent
+                                          : adjacent->cart.rom + adjacent->cart.allocation_bytes;
+            CHECK_EQ_U64(muhtari_save_state(adjacent, adjacent_bytes, adjacent_size),
+                         MUHTARI_STATUS_OK);
+            CHECK_EQ_U64(muhtari_load_state(adjacent, adjacent_bytes, adjacent_size),
+                         MUHTARI_STATUS_OK);
+            muhtari_destroy(adjacent);
+        }
+    }
 }
 
 static void test_lifecycle(void)
@@ -423,6 +756,17 @@ static void test_lifecycle(void)
     if (m == NULL)
         return;
     CHECK_EQ_U64(muhtari__state_payload_size(m), 0u);
+    CHECK_EQ_U64(muhtari_state_size(NULL), 0u);
+    CHECK_EQ_U64(muhtari_state_size(m), 0u);
+    memset(public_first, 0x5Au, sizeof public_first);
+    CHECK_EQ_U64(muhtari_save_state(NULL, public_first, 0u), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_save_state(m, NULL, 0u), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_load_state(NULL, public_first, 0u), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_load_state(m, NULL, 0u), MUHTARI_STATUS_ERR_ARGUMENT);
+    CHECK_EQ_U64(muhtari_save_state(m, public_first, sizeof public_first),
+                 MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
+    CHECK_EQ_U64(muhtari_load_state(m, public_first, 0u), MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
+    CHECK_EQ_HEX(public_first[0], 0x5Au);
     uint8_t empty_identity[sizeof m->state_identity] = {0};
     CHECK(memcmp(m->state_identity, empty_identity, sizeof empty_identity) == 0);
     muhtari_media refused;
@@ -432,9 +776,31 @@ static void test_lifecycle(void)
     refused.image_size = sizeof invalid_image;
     CHECK(muhtari_load(m, &refused) != MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari__state_payload_size(m), 0u);
+    CHECK_EQ_U64(muhtari_state_size(m), 0u);
+    CHECK_EQ_U64(muhtari_save_state(m, public_first, sizeof public_first),
+                 MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
     CHECK(memcmp(m->state_identity, empty_identity, sizeof empty_identity) == 0);
     CHECK_EQ_U64(state_load(m, STATE_LINEAR, 0), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari_state_size(m), muhtari__state_payload_size(m) + STATE_HEADER_BYTES);
+    size_t linear_state_bytes = muhtari_state_size(m);
+    CHECK_EQ_U64(muhtari_save_state(m, public_snapshot, linear_state_bytes), MUHTARI_STATUS_OK);
+    alloc_counts peer_counts;
+    muhtari *peer = state_create(&peer_counts);
+    if (peer != NULL) {
+        size_t other_image_bytes = state_make_identity_image(identity_other, "Other state", 3u, 0u);
+        identity_other[IMAGES_HEADER + 37u] ^= 1u;
+        muhtari_media other_media = state_media_for_image(identity_other, other_image_bytes);
+        CHECK_EQ_U64(muhtari_load(peer, &other_media), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_state_size(peer), linear_state_bytes);
+        CHECK_EQ_U64(muhtari_save_state(peer, public_first, linear_state_bytes),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_load_state(peer, public_snapshot, linear_state_bytes),
+                     MUHTARI_STATUS_ERR_STATE_MISMATCH);
+        CHECK_EQ_U64(muhtari_save_state(peer, public_second, linear_state_bytes),
+                     MUHTARI_STATUS_OK);
+        CHECK(memcmp(public_first, public_second, linear_state_bytes) == 0);
+        muhtari_destroy(peer);
+    }
     uint8_t identity[sizeof m->state_identity];
     memcpy(identity, m->state_identity, sizeof identity);
     CHECK(memcmp(identity, empty_identity, sizeof identity) != 0);
@@ -741,6 +1107,7 @@ static void test_topologies(void)
     image[IMAGES_HEADER + 1024u] = saved_max_byte;
 
     CHECK_EQ_U64(state_load(m, STATE_LARGEST_GENERATED, 0), MUHTARI_STATUS_OK);
+    check_public_roundtrip(m);
 
     /* Exercise the source-supported 128 KiB cart-RAM extent without carrying
        a database ROM fixture: the internal installer receives the same

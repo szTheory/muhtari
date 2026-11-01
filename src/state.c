@@ -4,19 +4,33 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "crc32.h"
 #include "internal.h"
 #include "sha256.h"
 
 #define STATE_HEADER_BYTES 64u
 #define STATE_TOTAL_FIXED_BYTES 10972u
 #define STATE_FIXED_BYTES (STATE_TOTAL_FIXED_BYTES - STATE_HEADER_BYTES)
+#define STATE_FORMAT 1u
+#define STATE_BEHAVIOUR_REVISION 6u
 #define STATE_EXPANSION_BYTES 131072u
 #define STATE_SYNTH_IMPULSE_LIMIT INT64_C(320961867552000)
 #define STATE_SYNTH_INTEGRATOR_LIMIT INT64_C(274877906944)
 #define STATE_SYNTH_PREVIOUS_Q30_LIMIT INT64_C(35184372088832)
 #define STATE_SYNTH_BLOCKER_Q30_LIMIT INT64_C(140737488355328)
 
-enum state_mode { STATE_SIZE, STATE_WRITE, STATE_VALIDATE, STATE_APPLY, STATE_LIVE };
+_Static_assert(STATE_TOTAL_FIXED_BYTES == STATE_HEADER_BYTES + STATE_FIXED_BYTES,
+               "state fixed size includes exactly one envelope");
+
+enum state_mode {
+    STATE_SIZE,
+    STATE_WRITE,
+    STATE_VALIDATE,
+    STATE_PUBLIC_VALIDATE,
+    STATE_PUBLIC_LIVE,
+    STATE_APPLY,
+    STATE_LIVE
+};
 enum state_rule {
     STATE_ANY,
     STATE_BOOL,
@@ -80,6 +94,22 @@ enum state_mark {
     MARK_SYNTH_PENDING,
     MARK_SYNTH_POKEYS,
     MARK_SYNTH_SECONDARY,
+    MARK_BUS_RDY_RELEASE,
+    MARK_BUS_HALT_AT,
+    MARK_BUS_HALT_UNTIL,
+    MARK_BUS_HALT_FALL,
+    MARK_BUS_NMI_AT,
+    MARK_BUS_HALT_STAGE,
+    MARK_BUS_NMI_PENDING,
+    MARK_RIOT_TIMER_PHI2,
+    MARK_TIA_NEXT_TICK,
+    MARK_TIA_EPOCH_TICK,
+    MARK_POKEY_CYCLE_0,
+    MARK_POKEY_CYCLE_1,
+    MARK_POKEY_TICK_0,
+    MARK_POKEY_TICK_1,
+    MARK_SAVEKEY_BUSY_UNTIL,
+    MARK_SAVEKEY_PENDING,
     MARK_COUNT
 };
 
@@ -421,7 +451,8 @@ static int state_reserve(struct state_cursor *cursor, size_t bytes, size_t *at)
     }
     *at = cursor->offset;
     cursor->offset += bytes;
-    if (cursor->mode == STATE_SIZE || cursor->mode == STATE_LIVE)
+    if (cursor->mode == STATE_SIZE || cursor->mode == STATE_LIVE ||
+        cursor->mode == STATE_PUBLIC_LIVE)
         return 1;
     if (*at > cursor->limit || bytes > cursor->limit - *at) {
         cursor->valid = 0u;
@@ -456,7 +487,7 @@ static uint64_t state_scalar(struct state_cursor *cursor, const void *source, vo
         return value;
     }
 
-    if (cursor->mode == STATE_LIVE) {
+    if (cursor->mode == STATE_LIVE || cursor->mode == STATE_PUBLIC_LIVE) {
         value = state_native_value(source, width, is_signed);
     } else if (width == 1u) {
         value = cursor->input[at];
@@ -468,7 +499,8 @@ static uint64_t state_scalar(struct state_cursor *cursor, const void *source, vo
         value = state_get_u64(cursor->input + at);
     }
 
-    if ((cursor->mode == STATE_VALIDATE && force_zero != 0 && value != 0u) ||
+    if (((cursor->mode == STATE_VALIDATE || cursor->mode == STATE_PUBLIC_VALIDATE) &&
+         force_zero != 0 && value != 0u) ||
         state_rule_valid(cursor, rule, value, width, is_signed, lower, upper) == 0)
         cursor->valid = 0u;
     if (mark < MARK_COUNT)
@@ -496,9 +528,9 @@ static void state_bytes(struct state_cursor *cursor, const uint8_t *source, uint
             memcpy(cursor->output + at, source, zero_from);
             memset(cursor->output + at + zero_from, 0, bytes - zero_from);
         }
-    } else if (cursor->mode == STATE_LIVE) {
+    } else if (cursor->mode == STATE_LIVE || cursor->mode == STATE_PUBLIC_LIVE) {
         return;
-    } else if (cursor->mode == STATE_VALIDATE) {
+    } else if (cursor->mode == STATE_VALIDATE || cursor->mode == STATE_PUBLIC_VALIDATE) {
         if (zero_from < bytes) {
             for (size_t i = zero_from; i < bytes; i++) {
                 if (cursor->input[at + i] != 0u)
@@ -539,13 +571,16 @@ static void state_input_port(struct state_cursor *cursor, unsigned port,
 }
 
 static void state_pokey(struct state_cursor *cursor, const struct muhtari__pokey *source,
-                        struct muhtari__pokey *target)
+                        struct muhtari__pokey *target, unsigned chip)
 {
 #define POKEY_FIELD(name, width, is_signed, rule, lower, upper)                                    \
     state_scalar(cursor, &source->name, target != NULL ? &target->name : NULL, width, is_signed,   \
                  rule, lower, upper, MARK_COUNT, 0)
-    POKEY_FIELD(cycle, 8u, 0, STATE_ANY, 0u, 0u);
-    POKEY_FIELD(tick, 8u, 0, STATE_ANY, 0u, 0u);
+    state_scalar(cursor, &source->cycle, target != NULL ? &target->cycle : NULL, 8u, 0,
+                 STATE_ANY, 0u, 0u,
+                 chip == 0u ? MARK_POKEY_CYCLE_0 : MARK_POKEY_CYCLE_1, 0);
+    state_scalar(cursor, &source->tick, target != NULL ? &target->tick : NULL, 8u, 0, STATE_ANY,
+                 0u, 0u, chip == 0u ? MARK_POKEY_TICK_0 : MARK_POKEY_TICK_1, 0);
     POKEY_FIELD(half, 8u, 0, STATE_ANY, 0u, 0u);
     for (unsigned i = 0u; i < 2u; i++) {
         state_scalar(cursor, &source->carry[i], target != NULL ? &target->carry[i] : NULL, 8u, 0,
@@ -638,25 +673,25 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
     CHECK_U64(bus.phi2, STATE_ANY, 0u, 0u, MARK_BUS_PHI2);
     U64(bus.nmi_phi2);
     CHECK_U64(bus.ticks, STATE_ANY, 0u, 0u, MARK_BUS_TICKS);
-    U64(bus.rdy_release);
-    U64(bus.halt_at);
-    U64(bus.halt_until);
-    U64(bus.halt_fall);
+    CHECK_U64(bus.rdy_release, STATE_ANY, 0u, 0u, MARK_BUS_RDY_RELEASE);
+    CHECK_U64(bus.halt_at, STATE_ANY, 0u, 0u, MARK_BUS_HALT_AT);
+    CHECK_U64(bus.halt_until, STATE_ANY, 0u, 0u, MARK_BUS_HALT_UNTIL);
+    CHECK_U64(bus.halt_fall, STATE_ANY, 0u, 0u, MARK_BUS_HALT_FALL);
     U64(bus.maria_from);
     U64(bus.maria_until);
-    U64(bus.nmi_at);
+    CHECK_U64(bus.nmi_at, STATE_ANY, 0u, 0u, MARK_BUS_NMI_AT);
     U8(bus.open_bus);
     CHECK_U8(bus.inptctrl, STATE_MASK, MUHTARI__INPTCTRL_BITS, 0u);
     CHECK_U8(bus.halt_gate_writes, STATE_RANGE, 0u, 2u);
-    CHECK_U8(bus.halt_stage, STATE_RANGE, 0u, 2u);
+    FIELD(bus.halt_stage, 1u, 0, STATE_RANGE, 0u, 2u, MARK_BUS_HALT_STAGE);
     CHECK_U8(bus.halt_cycles, STATE_RANGE, 0u, 2u);
-    CHECK_U8(bus.nmi_pending, STATE_BOOL, 0u, 0u);
+    FIELD(bus.nmi_pending, 1u, 0, STATE_BOOL, 0u, 0u, MARK_BUS_NMI_PENDING);
     CHECK_U8(bus.cycle_len, STATE_BUS_CYCLE_LEN, 0u, 0u);
     CHECK_U8(bus.sync, STATE_BOOL, 0u, 0u);
     CHECK_U8(bus.irq_pipe, STATE_MASK, 7u, 0u);
     CHECK_U8(bus.irq_level, STATE_BOOL, 0u, 0u);
 
-    U64(riot.timer_phi2);
+    CHECK_U64(riot.timer_phi2, STATE_ANY, 0u, 0u, MARK_RIOT_TIMER_PHI2);
     CHECK_U16(riot.timer_n, STATE_RIOT_TIMER_N, 0u, 0u);
     CHECK_U8(riot.timer_shift, STATE_RIOT_TIMER_SHIFT, 0u, 0u);
     CHECK_U8(riot.timer_cleared, STATE_BOOL, 0u, 0u);
@@ -877,8 +912,8 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
         state_scalar(cursor, &source->synth.pcm[i], target != NULL ? &target->synth.pcm[i] : NULL,
                      2u, 1, STATE_ANY, 0u, 0u, MARK_COUNT, inactive);
     }
-    U64(tia.next_tick);
-    U64(tia.epoch_tick);
+    CHECK_U64(tia.next_tick, STATE_ANY, 0u, 0u, MARK_TIA_NEXT_TICK);
+    CHECK_U64(tia.epoch_tick, STATE_ANY, 0u, 0u, MARK_TIA_EPOCH_TICK);
     CHECK_U16(tia.epoch_phase, STATE_TIA_EPOCH_PHASE, 0u, 0u);
     CHECK_U8(tia.phase, STATE_RANGE, 0u, 3u);
     CHECK_U8(tia.initialized, STATE_BOOL, 0u, 0u);
@@ -908,9 +943,9 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
 #undef TIA_FIELD
     }
 
-    state_pokey(cursor, &source->pokey[0], target != NULL ? &target->pokey[0] : NULL);
-    state_pokey(cursor, &source->pokey[1], target != NULL ? &target->pokey[1] : NULL);
-    U64(savekey.busy_until);
+    state_pokey(cursor, &source->pokey[0], target != NULL ? &target->pokey[0] : NULL, 0u);
+    state_pokey(cursor, &source->pokey[1], target != NULL ? &target->pokey[1] : NULL, 1u);
+    CHECK_U64(savekey.busy_until, STATE_ANY, 0u, 0u, MARK_SAVEKEY_BUSY_UNTIL);
     CHECK_U16(savekey.address, STATE_SAVEKEY_ADDRESS, 0u, 0u);
     CHECK_U16(savekey.page_base, STATE_SAVEKEY_PAGE_BASE, 0u, 0u);
     CHECK_U8(savekey.host_scl, STATE_BOOL, 0u, 0u);
@@ -930,7 +965,7 @@ static void state_visit(const muhtari *source, muhtari *target, struct state_cur
                      0u, MARK_COUNT, 0);
     }
     CHECK_U8(savekey.page_offset, STATE_RANGE, 0u, 63u);
-    CHECK_U8(savekey.pending, STATE_BOOL, 0u, 0u);
+    FIELD(savekey.pending, 1u, 0, STATE_BOOL, 0u, 0u, MARK_SAVEKEY_PENDING);
     CHECK_U8(savekey.ack, STATE_BOOL, 0u, 0u);
     if (cursor->offset != STATE_FIXED_BYTES)
         cursor->valid = 0u;
@@ -980,6 +1015,90 @@ static int state_relationships(const struct state_cursor *cursor)
         return 0;
     if (v[MARK_SYNTH_POKEYS] != 1u && v[MARK_SYNTH_SECONDARY] != 0u)
         return 0;
+    return 1;
+}
+
+/* The private payload visitor preserves the complete u64 representation.
+   Public restore also has to prove that the next frame cannot turn those
+   values into hostile catch-up work or unchecked clock overflow. Each
+   margin below comes from a current producer: one frame plus the documented
+   instruction overshoot, the u32 paddle-duration domain, and two frame
+   deadlines so a restored frame can complete and advance its next deadline. */
+static int state_public_resume_safe(const muhtari *m, const uint64_t *v)
+{
+    const struct muhtari__timing timing = muhtari__timing(m);
+    const uint64_t frame = timing.frame_ticks;
+    const uint64_t overshoot = MUHTARI__SYNTH_OVERSHOOT_TICKS;
+    const uint64_t clock_margin = 2u * frame + overshoot + UINT32_MAX;
+    const uint64_t tick = v[MARK_BUS_TICKS];
+    const uint64_t phi2 = v[MARK_BUS_PHI2];
+    const uint64_t frame_start = v[MARK_FRAME_START];
+    const uint64_t deadline = v[MARK_FRAME_DEADLINE];
+
+    if (deadline - frame_start > frame || deadline > UINT64_MAX - frame ||
+        tick > UINT64_MAX - clock_margin ||
+        phi2 > UINT64_MAX - (clock_margin / 4u + 2u))
+        return 0;
+    if (tick - v[MARK_MARIA_ORIGIN] > frame + overshoot ||
+        v[MARK_TIA_EPOCH_TICK] > tick)
+        return 0;
+
+    uint64_t tia_next = v[MARK_TIA_NEXT_TICK];
+    if ((tia_next > tick && tia_next - tick > 168u) ||
+        (tia_next <= tick && tick - tia_next > 168u))
+        return 0;
+
+    uint64_t synth_tick = v[MARK_SYNTH_TICK];
+    if ((synth_tick > tick && synth_tick - tick > overshoot) ||
+        (synth_tick <= tick && tick - synth_tick > frame + overshoot))
+        return 0;
+    if (v[MARK_SYNTH_PENDING] != 0u && v[MARK_SYNTH_PENDING_TICK] > tick &&
+        v[MARK_SYNTH_PENDING_TICK] - tick > overshoot)
+        return 0;
+
+    if (v[MARK_SYNTH_POKEYS] != 0u) {
+        uint64_t first_cycle = v[MARK_POKEY_CYCLE_0];
+        uint64_t first_tick = v[MARK_POKEY_TICK_0];
+        if ((first_cycle > phi2 && first_cycle - phi2 > 1u) ||
+            (first_cycle <= phi2 && phi2 - first_cycle > 1u))
+            return 0;
+        if ((first_tick > tick && first_tick - tick > 2u) ||
+            (first_tick <= tick && tick - first_tick > 2u) ||
+            (v[MARK_SYNTH_POKEYS] > 1u &&
+             ((v[MARK_POKEY_CYCLE_1] > phi2 && v[MARK_POKEY_CYCLE_1] - phi2 > 1u) ||
+              (v[MARK_POKEY_CYCLE_1] <= phi2 && phi2 - v[MARK_POKEY_CYCLE_1] > 1u) ||
+              (v[MARK_POKEY_TICK_1] > tick && v[MARK_POKEY_TICK_1] - tick > 2u) ||
+              (v[MARK_POKEY_TICK_1] <= tick && tick - v[MARK_POKEY_TICK_1] > 2u))))
+            return 0;
+    }
+
+    if (v[MARK_RIOT_TIMER_PHI2] > phi2 + 1u)
+        return 0;
+    if (v[MARK_BUS_RDY_RELEASE] > tick && v[MARK_BUS_RDY_RELEASE] - tick > 456u)
+        return 0;
+    if (v[MARK_BUS_NMI_PENDING] != 0u && v[MARK_BUS_NMI_AT] > tick &&
+        v[MARK_BUS_NMI_AT] - tick > 454u)
+        return 0;
+    if (v[MARK_BUS_HALT_STAGE] == 1u && v[MARK_BUS_HALT_AT] > tick &&
+        v[MARK_BUS_HALT_AT] - tick > 454u)
+        return 0;
+    if (v[MARK_BUS_HALT_STAGE] != 0u &&
+        v[MARK_BUS_HALT_UNTIL] != MUHTARI__HALT_UNTIL_MARIA &&
+        v[MARK_BUS_HALT_UNTIL] > tick && v[MARK_BUS_HALT_UNTIL] - tick > 454u)
+        return 0;
+    if (v[MARK_BUS_HALT_STAGE] == 2u) {
+        if (v[MARK_BUS_HALT_FALL] > tick || tick - v[MARK_BUS_HALT_FALL] > 12u)
+            return 0;
+    }
+
+    if (v[MARK_SAVEKEY_PENDING] != 0u) {
+        uint64_t busy = v[MARK_SAVEKEY_BUSY_UNTIL];
+        uint64_t duration = m->effective_region == MUHTARI_REGION_PAL
+                                ? 35469u
+                                : MUHTARI__SAVEKEY_BUSY_TICKS;
+        if (busy <= tick || busy - tick > duration)
+            return 0;
+    }
     return 1;
 }
 
@@ -1061,8 +1180,14 @@ static int state_walk(const muhtari *m, muhtari *target, enum state_mode mode,
     state_visit(m, target, &cursor);
     if (cursor.offset != size)
         cursor.valid = 0u;
-    if (cursor.valid != 0u && (mode == STATE_VALIDATE || mode == STATE_LIVE) &&
+    if (cursor.valid != 0u &&
+        (mode == STATE_VALIDATE || mode == STATE_PUBLIC_VALIDATE || mode == STATE_LIVE ||
+         mode == STATE_PUBLIC_LIVE) &&
         state_relationships(&cursor) == 0)
+        cursor.valid = 0u;
+    if (cursor.valid != 0u &&
+        (mode == STATE_PUBLIC_VALIDATE || mode == STATE_PUBLIC_LIVE) &&
+        state_public_resume_safe(m, cursor.marks) == 0)
         cursor.valid = 0u;
     return cursor.valid != 0u;
 }
@@ -1119,4 +1244,91 @@ void muhtari__state_payload_apply(muhtari *m, const uint8_t *bytes, size_t size)
         m->battery.generation++;
     muhtari__ports_rearm(m);
     muhtari__bus_rearm(m);
+}
+
+static uint32_t state_crc32(const uint8_t *bytes, size_t size)
+{
+    static const uint8_t zero_crc[4] = {0u, 0u, 0u, 0u};
+    uint32_t crc = muhtari__crc32(0u, bytes, 24u);
+    crc = muhtari__crc32(crc, zero_crc, sizeof zero_crc);
+    return muhtari__crc32(crc, bytes + 28u, size - 28u);
+}
+
+size_t muhtari_state_size(const muhtari *m)
+{
+    size_t payload = muhtari__state_payload_size(m);
+    if (payload == 0u || payload > SIZE_MAX - STATE_HEADER_BYTES ||
+        payload + STATE_HEADER_BYTES > UINT32_MAX)
+        return 0u;
+    return payload + STATE_HEADER_BYTES;
+}
+
+muhtari_status muhtari_save_state(const muhtari *m, void *buffer, size_t capacity)
+{
+    static const uint8_t magic[8] = {'M', 'U', 'H', 'T', 'S', 'T', '0', '1'};
+    if (m == NULL || buffer == NULL)
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    if (m->loaded == 0u)
+        return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
+
+    size_t total = muhtari_state_size(m);
+    if (total == 0u)
+        return MUHTARI_STATUS_ERR_INVALID_STATE;
+    if (capacity < total)
+        return MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL;
+    if (state_buffer_disjoint(m, buffer, total) == 0)
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+
+    size_t payload = total - STATE_HEADER_BYTES;
+    if (state_walk(m, NULL, STATE_PUBLIC_LIVE, NULL, NULL, payload) == 0)
+        return MUHTARI_STATUS_ERR_INVALID_STATE;
+
+    uint8_t *output = (uint8_t *)buffer;
+    /* SIZE and LIVE have proved this fixed visitor's exact extent and every
+       live field before WRITE touches caller memory. WRITE has no fallible
+       branch for that same source-defined layout. */
+    (void)state_walk(m, NULL, STATE_WRITE, NULL, output + STATE_HEADER_BYTES, payload);
+    memcpy(output, magic, sizeof magic);
+    state_put_u32(output + 8u, STATE_FORMAT);
+    state_put_u32(output + 12u, STATE_HEADER_BYTES);
+    state_put_u32(output + 16u, (uint32_t)total);
+    state_put_u32(output + 20u, STATE_BEHAVIOUR_REVISION);
+    state_put_u32(output + 24u, 0u);
+    memcpy(output + 28u, m->state_identity, sizeof m->state_identity);
+    state_put_u32(output + 60u, 0u);
+    state_put_u32(output + 24u, state_crc32(output, total));
+    return MUHTARI_STATUS_OK;
+}
+
+muhtari_status muhtari_load_state(muhtari *m, const void *buffer, size_t bytes)
+{
+    static const uint8_t magic[8] = {'M', 'U', 'H', 'T', 'S', 'T', '0', '1'};
+    if (m == NULL || buffer == NULL)
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+    if (m->loaded == 0u)
+        return MUHTARI_STATUS_ERR_STATE_UNAVAILABLE;
+
+    size_t expected = muhtari_state_size(m);
+    if (expected == 0u || bytes != expected)
+        return MUHTARI_STATUS_ERR_INVALID_STATE;
+    if (state_buffer_disjoint(m, buffer, expected) == 0)
+        return MUHTARI_STATUS_ERR_ARGUMENT;
+
+    const uint8_t *input = (const uint8_t *)buffer;
+    if (memcmp(input, magic, sizeof magic) != 0 || state_get_u32(input + 12u) != STATE_HEADER_BYTES ||
+        state_get_u32(input + 16u) != expected)
+        return MUHTARI_STATUS_ERR_INVALID_STATE;
+    if (state_get_u32(input + 8u) != STATE_FORMAT ||
+        state_get_u32(input + 20u) != STATE_BEHAVIOUR_REVISION)
+        return MUHTARI_STATUS_ERR_UNSUPPORTED_STATE;
+    if (state_get_u32(input + 60u) != 0u || state_get_u32(input + 24u) != state_crc32(input, expected))
+        return MUHTARI_STATUS_ERR_INVALID_STATE;
+    if (memcmp(input + 28u, m->state_identity, sizeof m->state_identity) != 0)
+        return MUHTARI_STATUS_ERR_STATE_MISMATCH;
+
+    size_t payload = expected - STATE_HEADER_BYTES;
+    if (state_walk(m, NULL, STATE_PUBLIC_VALIDATE, input + STATE_HEADER_BYTES, NULL, payload) == 0)
+        return MUHTARI_STATUS_ERR_INVALID_STATE;
+    muhtari__state_payload_apply(m, input + STATE_HEADER_BYTES, payload);
+    return MUHTARI_STATUS_OK;
 }

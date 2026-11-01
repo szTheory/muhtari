@@ -493,6 +493,8 @@ static inline struct muhtari__timing muhtari__timing(const muhtari *m)
     ((uint32_t)(offsetof(muhtari_config, allocator) + sizeof(muhtari_allocator)))
 #define MUHTARI__VERSIONS_SIZE_FIRST                                                               \
     ((uint32_t)(offsetof(muhtari_versions, behaviour_revision) + sizeof(uint32_t)))
+_Static_assert(offsetof(muhtari_versions, state_format) == MUHTARI__VERSIONS_SIZE_FIRST,
+               "state format must append after the frozen version prefix");
 #define MUHTARI__INFO_SIZE_FIRST                                                                   \
     ((uint32_t)(offsetof(muhtari_info, max_audio_samples) + sizeof(uint32_t)))
 #define MUHTARI__FRAME_SIZE_FIRST                                                                  \
@@ -530,7 +532,7 @@ _Static_assert(offsetof(muhtari_versions, library_patch) == 12, "versions.librar
 _Static_assert(offsetof(muhtari_versions, api) == 16, "versions.api");
 _Static_assert(offsetof(muhtari_versions, abi) == 20, "versions.abi");
 _Static_assert(offsetof(muhtari_versions, behaviour_revision) == 24, "versions.behaviour_revision");
-_Static_assert(sizeof(muhtari_versions) == 28, "versions size");
+_Static_assert(sizeof(muhtari_versions) == 32, "versions size");
 
 _Static_assert(offsetof(muhtari_info, size) == 0, "info.size");
 _Static_assert(offsetof(muhtari_info, width) == 4, "info.width");

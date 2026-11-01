@@ -593,6 +593,37 @@ cartridge state intact unless the game's own code changes it. The libretro
 adapter's `retro_reset` calls `muhtari_power_cycle`, so a frontend Restart
 restores that deterministic profile.
 
+## Portable state snapshots
+
+API 8 adds `muhtari_state_size`, `muhtari_save_state` and `muhtari_load_state`.
+The size query is zero for a NULL instance or an instance without loaded content.
+For loaded content, the exact byte count stays fixed until another successful
+load or destruction. Callers own the buffer; the core does not allocate, advance
+emulated time, call observers or access files while sizing, saving or restoring.
+
+The saved bytes use the exact `MUHTST01` envelope and the installed machine's
+effective identity. Save accepts any capacity at least the queried size and
+writes only that prefix, leaving the caller's tail untouched. Load requires the
+exact queried length. It validates the complete envelope, installed identity
+and every payload field before applying anything. It rejects input/output ranges
+that overlap the instance or its cartridge/expansion allocation. All RAM and
+battery span addresses remain stable across a restore.
+
+Both functions return `MUHTARI_STATUS_ERR_ARGUMENT` for a NULL instance or
+buffer. A non-NULL instance without content returns
+`MUHTARI_STATUS_ERR_STATE_UNAVAILABLE`; a short save capacity returns
+`MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL`. Short, trailing, corrupt or internally
+invalid state bytes return `MUHTARI_STATUS_ERR_INVALID_STATE`. Unknown state
+format or behaviour revisions return `MUHTARI_STATUS_ERR_UNSUPPORTED_STATE`,
+and a valid state for different effective media or configuration returns
+`MUHTARI_STATUS_ERR_STATE_MISMATCH`. Every refusal preserves the live machine;
+save errors leave the caller's output bytes unchanged.
+
+State snapshots include mutable emulated chip, device, board, input and battery
+state. Immutable media and host persistence metadata are outside the snapshot.
+The frontend or runner remains responsible for storing bytes and deciding when
+to restore them.
+
 ## Counters
 
 `muhtari_get_counters` fills a `muhtari_counters`. `frames` counts the frames run since the last load or power
@@ -616,18 +647,21 @@ Statuses are only ever added. Those after the probe's:
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | Reserved numeric region-refusal status; both current regions execute. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | load, input setters | Unsupported declared sound/topology, a device outside the frozen legacy set, or an attempted change to load-frozen EEPROM topology. |
 | `MUHTARI_STATUS_ERR_INVALID_HSC` | `muhtari_load` | Invalid firmware size/pointer pair, HSC mode, or supplied firmware conflicting with OFF. |
+| `MUHTARI_STATUS_ERR_STATE_UNAVAILABLE` | state save/load | The instance has no successfully loaded content. |
+| `MUHTARI_STATUS_ERR_INVALID_STATE` | state save/load | A state envelope or field is invalid, or the live machine cannot be represented canonically. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_STATE` | state load | The state format or behaviour revision is unsupported. |
+| `MUHTARI_STATUS_ERR_STATE_MISMATCH` | state load | The state belongs to different effective media or machine configuration. |
 
 ## Version numbers
 
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
 `muhtari_get_versions` fills a `muhtari_versions`:
 
-The current interface is API 7, ABI 1, behaviour revision 6. API 7 appends
-expansion selection and effective information, ADPCM metadata and a distinct
-physical expansion memory kind. The original media/info prefixes, all prior
-size minima, signatures and constant values remain compatible. Revision 6
-includes the corrected slow-edge DMA handoff; versioned test observations
-retain their independently established values.
+The current interface is API 8, ABI 1, behaviour revision 6 and state format 1.
+API 8 appends portable state operations and the state-format version field.
+The earlier API 7 additions, original media/info prefixes, prior status values
+and size minima remain compatible. Revision 6 includes the corrected slow-edge
+DMA handoff; state format 1 does not change emulation behavior.
 
 | Field | Meaning |
 |---|---|
@@ -635,9 +669,12 @@ retain their independently established values.
 | `api` | The API the library implements. |
 | `abi` | The binary interface: struct layouts and calling conventions. |
 | `behaviour_revision` | Changes when the same inputs give a different frame, audio or state hash. |
+| `state_format` | The version of the portable state byte format. |
 
 `api`, `abi` and `behaviour_revision` start at 1, so zero means absent: a field that a library older than your
-header does not know stays at the zero you wrote. The library version numbers carry no such meaning.
+header does not know stays at the zero you wrote. The same applies to `state_format`; the library version
+numbers carry no such meaning. API 8 appends `state_format` at byte 28 and preserves the older 28-byte
+`muhtari_versions` prefix for callers with that size tag.
 
 Sound output is fixed-rate 48,000/1 Hz mono signed int16. A fast-boot first
 frame returns 54 NTSC or 960 PAL samples; full frames return 800/801 or 961/962. Use audio_count,
