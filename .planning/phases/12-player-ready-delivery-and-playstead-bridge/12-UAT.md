@@ -130,7 +130,6 @@ blocked: 4
     - "12-VERIFICATION.md"
     - "../debug/phase12-packaged-input-tracer.md"
   missing:
-    - "A bounded diagnosis of the Windows ARM64 test slowdown."
     - "A separately authorized successful full CI receipt with host images, comparators, DMA, both battery checks, and aggregate."
   debug_session: "phase12-packaged-input-tracer"
 - gap_id: G-12-4
@@ -158,7 +157,7 @@ blocked: 4
     - "12-06-SUMMARY.md"
     - "../debug/phase12-packaged-input-tracer.md"
   missing:
-    - "A separately approved bounded diagnosis before considering another hosted attempt."
+    - "A new, separately authorized full hosted acceptance attempt if the owner chooses to continue; the prior allowance is spent."
   debug_session: "phase12-packaged-input-tracer"
 - gap_id: G-12-12
   truth: "The plan 12-01 summary's bounded commit count matches its recorded commit window."
@@ -180,4 +179,4 @@ blocked: 4
 - The latest hosted run lasted about 16 minutes. The Windows ARM64 job ran about 14 minutes before failing; macOS x64 was the longest successful job at about 13 minutes. Jobs were parallel, and the failure triggered cancellation of dependent work. One failed sample does not justify changing timeouts, caching, matrix shape, or fail-fast behavior; those changes could reduce diagnostics or coverage. No safe low-hanging CI/CD change was supported by this run. Revisit against comparable multi-run data.
 - `built.openbios` hit the existing one-second CTest timeout (reported elapsed time 1.53 seconds), not the overall Actions job limit. The prior comparable Windows ARM64 sample set had 16 successful runs with a 0.40-second maximum; the cause of this slowdown remains undiagnosed.
 - The plan 12-01 commit-window discrepancy is a workflow blocker and is separate from emulator behavior.
-- The existing Phase 12 safety stop requires separate owner scope approval before the proposed bounded Windows ARM64 timeout diagnosis. No timeout change, retry, source edit, publication, or allowance renewal follows from this UAT.
+- The bounded read-only Windows ARM64 timeout review was already authorized and completed: it inspected the failed job and one matching successful log, kept `TIMEOUT1`, and found no causal explanation. The proposed 40-log sweep was not performed; the debug record says no further log reads in that scope. The 12-06 summary's “pending diagnosis” wording is superseded by that later review. No timeout change, retry, source edit, publication, or allowance renewal follows from this UAT.
