@@ -15,6 +15,18 @@
 #define STATE_EXPANSION_BYTES 131072u
 #define STATE_MAX_BYTES 307932u
 
+/* The RED harness for plan 13-03 substitutes the not-yet-implemented public
+   size query with an unavailable result. This keeps the test executable and
+   makes the behavioral assertion, rather than a link error, fail first. */
+#ifdef MUHTARI_STATE_RED_STUB
+size_t muhtari_state_size(const muhtari *m);
+size_t muhtari_state_size(const muhtari *m)
+{
+    (void)m;
+    return 0u;
+}
+#endif
+
 enum state_fixture {
     STATE_LINEAR,
     STATE_CART_RAM,
@@ -422,6 +434,7 @@ static void test_lifecycle(void)
     CHECK_EQ_U64(muhtari__state_payload_size(m), 0u);
     CHECK(memcmp(m->state_identity, empty_identity, sizeof empty_identity) == 0);
     CHECK_EQ_U64(state_load(m, STATE_LINEAR, 0), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_state_size(m), muhtari__state_payload_size(m) + STATE_HEADER_BYTES);
     uint8_t identity[sizeof m->state_identity];
     memcpy(identity, m->state_identity, sizeof identity);
     CHECK(memcmp(identity, empty_identity, sizeof identity) != 0);
