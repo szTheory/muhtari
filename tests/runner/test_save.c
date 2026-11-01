@@ -85,6 +85,7 @@ static FILE *test_fopen(const char *path, const char *mode)
 }
 static FILE *test_fdopen(int fd, const char *mode)
 {
+    int is_state = strcmp(mode, "rb") == 0 && fd == state_fd;
     if (strcmp(mode, "rb") != 0 && io_fault == SAVE_FDOPEN)
         return NULL;
 #ifdef _WIN32
@@ -92,7 +93,10 @@ static FILE *test_fdopen(int fd, const char *mode)
 #else
     FILE *f = fdopen(fd, mode);
 #endif
-    if (strcmp(mode, "rb") == 0)
+    if (is_state) {
+        state_fd = -1;
+        state_stream = f;
+    } else if (strcmp(mode, "rb") == 0)
         import_stream = f;
     else {
         save_stream = f;
@@ -102,10 +106,19 @@ static FILE *test_fdopen(int fd, const char *mode)
 }
 static size_t test_read(void *p, size_t n, size_t count, FILE *f)
 {
+    if (f == state_stream) {
+        state_read_requested += n * count;
+        if (n == 1u && count == 1u)
+            state_probe_reads++;
+        if (io_fault == STATE_READ)
+            return 0u;
+    }
     return f == import_stream && io_fault == IMPORT_READ ? 0u : fread(p, n, count, f);
 }
 static int test_error(FILE *f)
 {
+    if (f == state_stream && io_fault == STATE_READ)
+        return 1;
     return f == import_stream && io_fault == IMPORT_READ ? 1 : ferror(f);
 }
 static size_t test_write(const void *p, size_t n, size_t count, FILE *f)
@@ -147,10 +160,13 @@ static int test_open(const char *path, int flags, ...)
         va_end(args);
     }
 #ifdef _WIN32
-    return _open(path, flags, mode);
+    int fd = _open(path, flags, mode);
 #else
-    return open(path, flags, (mode_t)mode);
+    int fd = open(path, flags, (mode_t)mode);
 #endif
+    if (fd >= 0 && !creating && strstr(path, ".state") != NULL)
+        state_fd = fd;
+    return fd;
 }
 static int test_flush(FILE *f)
 {
@@ -161,11 +177,14 @@ static int test_flush(FILE *f)
 static int test_close(FILE *f)
 {
     int fail = (f == import_stream && io_fault == IMPORT_CLOSE) ||
-               (f == save_stream && io_fault == SAVE_CLOSE);
+               (f == save_stream && io_fault == SAVE_CLOSE) ||
+               (f == state_stream && io_fault == STATE_CLOSE);
     if (f == import_stream)
         import_stream = NULL;
     if (f == save_stream)
         save_stream = NULL;
+    if (f == state_stream)
+        state_stream = NULL;
     int rc = fclose(f);
     return fail ? EOF : rc;
 }
@@ -730,23 +749,24 @@ static uint8_t *state_file_read(const char *path, size_t bytes)
     return data;
 }
 
-static int runner_save_state_zero(const char *rom, const char *path)
+static int runner_save_state_zero(char *rom, char *path)
 {
     char point[1200];
     snprintf(point, sizeof point, "0:%s", path);
-    char *args[] = {"muhtari-run", "--frames0", "--state-at-frame", point, (char *)rom};
+    char *args[] = {"muhtari-run", "--frames0", "--state-at-frame", point, rom};
     frames_run = 0u;
     return runner_entry(5, args);
 }
 
-static int runner_load_state_one(const char *rom, const char *path)
+static int runner_load_state_one_with_save(char *dir, char *rom, char *path)
 {
-    char *args[] = {"muhtari-run", "--frames", "1", "--load-state", (char *)path, (char *)rom};
-    frames_run = 0u;
-    return runner_entry(6, args);
+    char *args[] = {"muhtari-run", "--frames", "1", "--save-dir", dir,
+                    "--load-state", path, rom};
+    frames_run = temp_opens = replacements = 0u;
+    return runner_entry(8, args);
 }
 
-static void state_files(const char *dir)
+static void state_files(char *dir)
 {
     char rom[1024], state[1024], save[1024], nonregular[1024];
     snprintf(rom, sizeof rom, "%s/state-files.a78", dir);
@@ -780,29 +800,40 @@ static void state_files(const char *dir)
         return;
     }
 
+    uint8_t newer[2048];
+    memset(newer, 0x5Au, sizeof newer);
+    write_bytes(save, newer, sizeof newer);
     write_bytes(state, valid, bytes - 1u);
-    CHECK_EQ_U64(runner_load_state_one(rom, state), 1u);
+    CHECK_EQ_U64(runner_load_state_one_with_save(dir, rom, state), 1u);
     CHECK_EQ_U64(frames_run, 0u);
+    CHECK_EQ_U64(temp_opens, 0u);
+    CHECK_EQ_U64(replacements, 0u);
+    exact_file(save, newer, sizeof newer);
     uint8_t *longer = (uint8_t *)malloc(bytes + 1u);
     CHECK(longer != NULL);
     if (longer != NULL) {
         memcpy(longer, valid, bytes);
         longer[bytes] = 0u;
         write_bytes(state, longer, bytes + 1u);
-        CHECK_EQ_U64(runner_load_state_one(rom, state), 1u);
+        CHECK_EQ_U64(runner_load_state_one_with_save(dir, rom, state), 1u);
         CHECK_EQ_U64(frames_run, 0u);
+        CHECK_EQ_U64(temp_opens, 0u);
+        CHECK_EQ_U64(replacements, 0u);
+        exact_file(save, newer, sizeof newer);
         free(longer);
     }
 
     write_bytes(state, valid, bytes);
     for (int fault = STATE_READ; fault <= STATE_CLOSE; fault++) {
         io_fault = fault;
-        CHECK_EQ_U64(runner_load_state_one(rom, state), 1u);
+        CHECK_EQ_U64(runner_load_state_one_with_save(dir, rom, state), 1u);
         CHECK_EQ_U64(frames_run, 0u);
+        CHECK_EQ_U64(temp_opens, 0u);
+        CHECK_EQ_U64(replacements, 0u);
+        exact_file(save, newer, sizeof newer);
         io_fault = IO_OK;
     }
-    char *missing[] = {"muhtari-run", "--frames", "1", "--load-state",
-                       nonregular, (char *)rom};
+    char *missing[] = {"muhtari-run", "--frames", "1", "--load-state", nonregular, rom};
     CHECK_EQ_U64(runner_entry(6, missing), 1u);
     CHECK_EQ_U64(frames_run, 0u);
 
@@ -837,10 +868,8 @@ static void state_files(const char *dir)
     }
 
     write_bytes(state, valid, bytes);
-    uint8_t newer[2048];
-    memset(newer, 0x5Au, sizeof newer);
     write_bytes(save, newer, sizeof newer);
-    char *rollback_zero[] = {"muhtari-run", "--frames0", "--save-dir", (char *)dir,
+    char *rollback_zero[] = {"muhtari-run", "--frames0", "--save-dir", dir,
                              "--load-state", state, rom};
     temp_opens = replacements = 0u;
     CHECK_EQ_U64(runner_entry(7, rollback_zero), 0u);
