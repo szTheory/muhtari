@@ -1,9 +1,9 @@
 /* muhtari-test-prop NAME BUILT_DIR: runs one property (tests/prop.h) over
-   its cases. Each case draws its cartridge from a pool: the run fuzz
-   target's explicit linear/retail seed images and 48 KiB of random bytes
-   from the case's stream, each made a cartridge as that target makes it
-   (tests/fuzz/run_cart.h), and the built simple and eightysix samples under
-   BUILT_DIR. Every load is a fast boot, and a case runs at most 8 frames.
+   its cases. Frame and battery properties draw cartridges from the run
+   fuzz target's explicit linear/retail seed images, 48 KiB of random bytes
+   from the case's stream, and the built simple and eightysix samples under
+   BUILT_DIR. The state properties build generated media in memory and do not
+   read those samples. Every load is a fast boot, and a case runs at most 8 frames.
    Two runs are equal when every frame's status, audio count and picture
    match and so does the state digest: SHA-256 over struct muhtari with its
    pointers cleared, then the cartridge's ROM and RAM. Exits 0 when the
