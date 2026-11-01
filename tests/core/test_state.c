@@ -31,16 +31,21 @@ static uint8_t identity_raw[32u * IMAGES_KIB];
 static uint8_t identity_bios[4096u];
 static uint8_t identity_firmware[4096u];
 static uint8_t identity_other_firmware[4096u];
+static uint8_t battery_program[1024u];
 static uint8_t first[STATE_MAX_BYTES];
 static uint8_t second[STATE_MAX_BYTES];
 static uint8_t public_first[STATE_MAX_BYTES];
 static uint8_t public_second[STATE_MAX_BYTES];
 static uint8_t public_snapshot[STATE_MAX_BYTES];
+static uint8_t public_control[STATE_MAX_BYTES];
 static uint8_t public_video_a[320u * 292u];
 static uint8_t public_video_b[320u * 292u];
+static uint8_t public_video_reference[3u][320u * 292u];
 static int16_t public_audio_a[962u];
 static int16_t public_audio_b[962u];
+static int16_t public_audio_reference[3u][962u];
 static uint8_t invalid_image[4] = {0u, 0u, 0u, 0u};
+static uint8_t battery_control[34816u];
 static muhtari snapshot;
 
 enum boundary_mode { BOUNDARY_AFTER_INSTANCE, BOUNDARY_AFTER_CART };
@@ -105,6 +110,14 @@ static void state_rechecksum(uint8_t *bytes, size_t size)
 {
     put_u32(bytes + 24u, 0u);
     put_u32(bytes + 24u, state_crc(bytes, size));
+}
+
+static size_t public_battery_offset(const muhtari *m)
+{
+    size_t expansion = m->cart.expansion.kind == MUHTARI_EXPANSION_OFF
+                           ? 0u
+                           : STATE_EXPANSION_BYTES;
+    return STATE_HEADER_BYTES + STATE_FIXED_BYTES + m->cart.info.ram_size + expansion;
 }
 
 static void expect_state_refusal(muhtari *m, uint8_t *candidate, size_t bytes,
@@ -251,6 +264,104 @@ static muhtari_status state_load(muhtari *m, enum state_fixture fixture, int sav
     if (savekey != 0 || fixture == STATE_LARGEST_GENERATED)
         media.port[1] = MUHTARI_PORT_SAVEKEY;
     return muhtari_load(m, &media);
+}
+
+static size_t battery_program_bytes;
+static uint16_t battery_stop_pc;
+
+static void battery_emit(uint16_t reg, uint8_t value)
+{
+    const uint8_t code[] = {0xA9u, value, 0x8Du, (uint8_t)reg, (uint8_t)(reg >> 8)};
+    CHECK(battery_program_bytes + sizeof code < sizeof battery_program);
+    memcpy(battery_program + battery_program_bytes, code, sizeof code);
+    battery_program_bytes += sizeof code;
+}
+
+static void battery_pin(unsigned port, unsigned scl, unsigned sda)
+{
+    uint8_t value = (uint8_t)(((scl == 0u ? 8u : 0u) | (sda == 0u ? 4u : 0u))
+                              << (port == 0u ? 4u : 0u));
+    battery_emit(0x0281u, value);
+}
+
+static void battery_byte(unsigned port, uint8_t value)
+{
+    for (unsigned i = 0u; i < 8u; i++) {
+        unsigned bit = (unsigned)(value >> (7u - i)) & 1u;
+        battery_pin(port, 0u, bit);
+        battery_pin(port, 1u, bit);
+        battery_pin(port, 0u, bit);
+    }
+    battery_pin(port, 0u, 1u);
+    battery_pin(port, 1u, 1u);
+    battery_pin(port, 0u, 1u);
+}
+
+static muhtari_status state_load_hsc_savekey_program(muhtari *m, uint8_t value, int execute)
+{
+    size_t image_bytes = images_linear(image, 4u, 4096u);
+    battery_program_bytes = 0u;
+    battery_emit(0x0280u, 0u);
+    battery_pin(1u, 1u, 1u);
+    battery_pin(1u, 1u, 0u);
+    battery_pin(1u, 0u, 0u);
+    battery_byte(1u, 0xA0u);
+    battery_byte(1u, 0u);
+    battery_byte(1u, 3u);
+    battery_byte(1u, value);
+    battery_pin(1u, 0u, 0u);
+    battery_pin(1u, 1u, 0u);
+    battery_pin(1u, 1u, 1u);
+    battery_stop_pc = (uint16_t)(0xF000u + battery_program_bytes);
+    battery_program[battery_program_bytes++] = 0x4Cu;
+    battery_program[battery_program_bytes++] = (uint8_t)battery_stop_pc;
+    battery_program[battery_program_bytes++] = (uint8_t)(battery_stop_pc >> 8);
+    memcpy(image + IMAGES_HEADER, battery_program, battery_program_bytes);
+
+    muhtari_media media = state_media_for_image(image, image_bytes);
+    media.hsc_mode = MUHTARI_HSC_ON;
+    media.expansion = MUHTARI_EXPANSION_XM;
+    media.port[1] = MUHTARI_PORT_SAVEKEY;
+    muhtari_status status = muhtari_load(m, &media);
+    if (status != MUHTARI_STATUS_OK)
+        return status;
+    CHECK_EQ_U64(m->battery.bytes, 34816u);
+    CHECK_EQ_U64(m->battery.hsc_attached, 1u);
+    CHECK_EQ_U64(m->battery.eeprom_port, 2u);
+    m->battery.data[0] = 0xC1u;
+    m->battery.data[2051u] = 0xFFu;
+    m->battery.generation = 0u;
+
+    if (execute != 0) {
+        for (unsigned steps = 0u; steps < 1000u && m->cpu.pc != battery_stop_pc; steps++)
+            muhtari__cpu_step(m);
+        CHECK_EQ_U64(m->cpu.pc, battery_stop_pc);
+        CHECK_EQ_U64(m->savekey.pending, 1u);
+        CHECK_EQ_HEX(m->battery.data[2051u], 0xFFu);
+        CHECK_EQ_U64(m->battery.generation, 0u);
+    }
+    return status;
+}
+
+static void count_state_observation(void *user, uint64_t tick, uint8_t source, uint16_t raw)
+{
+    (void)tick;
+    (void)source;
+    (void)raw;
+    (*(uint32_t *)user)++;
+}
+
+static uint32_t state_run_frame(muhtari *m, uint8_t *video, int16_t *audio)
+{
+    muhtari_frame frame;
+    memset(&frame, 0, sizeof frame);
+    frame.size = (uint32_t)sizeof frame;
+    frame.video = video;
+    frame.video_pitch = 320u;
+    frame.audio = audio;
+    frame.audio_capacity = 962u;
+    CHECK_EQ_U64(muhtari_run_frame(m, &frame), MUHTARI_STATUS_OK);
+    return frame.audio_count;
 }
 
 static size_t expected_payload_size(const muhtari *m)
@@ -895,6 +1006,184 @@ static void test_battery(void)
     muhtari__state_payload_apply(m, first, bytes);
     CHECK_EQ_U64(m->battery.generation, 8u);
     muhtari_destroy(m);
+
+    alloc_counts source_counts;
+    alloc_counts peer_counts;
+    muhtari *source = state_create(&source_counts);
+    muhtari *peer = state_create(&peer_counts);
+    if (source == NULL || peer == NULL) {
+        muhtari_destroy(source);
+        muhtari_destroy(peer);
+        return;
+    }
+
+    uint32_t source_observations = 0u;
+    uint32_t peer_observations = 0u;
+    CHECK_EQ_U64(muhtari__synth_observe(source, count_state_observation, &source_observations),
+                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari__synth_observe(peer, count_state_observation, &peer_observations),
+                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(state_load_hsc_savekey_program(source, 0x5Au, 1), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(state_load_hsc_savekey_program(peer, 0x5Au, 0), MUHTARI_STATUS_OK);
+    CHECK(memcmp(source->state_identity, peer->state_identity, sizeof source->state_identity) == 0);
+
+    uint8_t *source_battery = source->battery.data;
+    uint8_t *peer_battery = peer->battery.data;
+    uint8_t *peer_expansion = peer->cart.expansion.ram;
+    uint8_t *peer_rom = peer->cart.rom;
+    struct muhtari__observation *peer_observation = peer->observation;
+    CHECK(source_battery != peer_battery);
+    CHECK(source->cart.expansion.ram != peer_expansion);
+    CHECK_EQ_U64(source->battery.eeprom_port, 2u);
+    CHECK_EQ_U64(source->battery.data[0], 0xC1u);
+
+    uint32_t source_calls = source_observations;
+    size_t total = muhtari_state_size(source);
+    CHECK_EQ_U64(source_observations, source_calls);
+    size_t battery_at = public_battery_offset(source);
+    CHECK(total >= battery_at + source->battery.bytes);
+    CHECK_EQ_U64(muhtari_save_state(source, public_snapshot, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(source_observations, source_calls);
+    struct muhtari__savekey pending_snapshot = source->savekey;
+
+    static const uint8_t file_marker[] = "host owns battery persistence";
+    FILE *host_file = tmpfile();
+    CHECK(host_file != NULL);
+    long host_position = -1;
+    if (host_file != NULL) {
+        CHECK_EQ_U64(fwrite(file_marker, 1u, sizeof file_marker, host_file), sizeof file_marker);
+        CHECK_EQ_U64(fflush(host_file), 0u);
+        host_position = ftell(host_file);
+    }
+
+    peer->battery.generation = UINT64_MAX;
+    source_calls = source_observations;
+    uint32_t peer_calls = peer_observations;
+    CHECK_EQ_U64(muhtari_load_state(peer, public_snapshot, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(source_observations, source_calls);
+    CHECK_EQ_U64(peer_observations, peer_calls);
+    CHECK(peer->observer == count_state_observation);
+    CHECK(peer->observer_user == &peer_observations);
+    CHECK(peer->observation == peer_observation);
+    CHECK(peer->battery.data == peer_battery);
+    CHECK(peer->cart.expansion.ram == peer_expansion);
+    CHECK(peer->cart.rom == peer_rom);
+    CHECK_EQ_U64(peer->battery.generation, UINT64_MAX);
+    CHECK_EQ_HEX(peer->battery.data[0], 0xC1u);
+    CHECK_EQ_HEX(peer->battery.data[2051u], 0xFFu);
+    CHECK(memcmp(&peer->savekey, &pending_snapshot, sizeof pending_snapshot) == 0);
+    CHECK_EQ_U64(peer->riot.ora, source->riot.ora);
+    CHECK_EQ_U64(peer->riot.ddra, source->riot.ddra);
+
+    /* The private observer seam only checks state-call isolation. Branch and
+       replay execution below run without any host callback installed. */
+    CHECK_EQ_U64(muhtari__synth_observe(source, NULL, NULL), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari__synth_observe(peer, NULL, NULL), MUHTARI_STATUS_OK);
+
+    uint32_t replay_audio_counts[3] = {0u, 0u, 0u};
+    uint32_t source_audio_count =
+        state_run_frame(source, public_video_a, public_audio_a);
+    replay_audio_counts[0] = source_audio_count;
+    uint32_t peer_audio_count = state_run_frame(peer, public_video_b, public_audio_b);
+    CHECK_EQ_U64(peer_audio_count, source_audio_count);
+    size_t video_bytes = (size_t)320u * muhtari__timing(source).height;
+    CHECK(memcmp(public_video_a, public_video_b, video_bytes) == 0);
+    CHECK(memcmp(public_audio_a, public_audio_b,
+                 (size_t)source_audio_count * sizeof public_audio_a[0]) == 0);
+    memcpy(public_video_reference[0], public_video_a, video_bytes);
+    memcpy(public_audio_reference[0], public_audio_a,
+           (size_t)source_audio_count * sizeof public_audio_a[0]);
+
+    unsigned replay_frames = 1u;
+    while ((source->savekey.pending != 0u || peer->savekey.pending != 0u) &&
+           replay_frames < 3u) {
+        source_audio_count = state_run_frame(source, public_video_a, public_audio_a);
+        replay_audio_counts[replay_frames] = source_audio_count;
+        peer_audio_count = state_run_frame(peer, public_video_b, public_audio_b);
+        CHECK_EQ_U64(peer_audio_count, source_audio_count);
+        CHECK(memcmp(public_video_a, public_video_b, video_bytes) == 0);
+        CHECK(memcmp(public_audio_a, public_audio_b,
+                     (size_t)source_audio_count * sizeof public_audio_a[0]) == 0);
+        memcpy(public_video_reference[replay_frames], public_video_a, video_bytes);
+        memcpy(public_audio_reference[replay_frames], public_audio_a,
+               (size_t)source_audio_count * sizeof public_audio_a[0]);
+        replay_frames++;
+    }
+    CHECK(replay_frames <= 3u);
+    CHECK_EQ_HEX(source->battery.data[2051u], 0x5Au);
+    CHECK_EQ_HEX(peer->battery.data[2051u], 0x5Au);
+    CHECK_EQ_U64(source->battery.generation, 1u);
+    CHECK_EQ_U64(peer->battery.generation, 0u);
+    CHECK_EQ_U64(source->savekey.pending, 0u);
+    CHECK_EQ_U64(peer->savekey.pending, 0u);
+
+    peer_calls = peer_observations;
+    CHECK_EQ_U64(muhtari_save_state(peer, public_second, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(peer_observations, peer_calls);
+    CHECK_EQ_U64(muhtari_load_state(peer, public_second, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_load_state(peer, public_second, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(peer_observations, peer_calls);
+    CHECK_EQ_U64(peer->battery.generation, 0u);
+    CHECK_EQ_HEX(peer->battery.data[2051u], 0x5Au);
+
+    memcpy(public_first, public_second, total);
+    public_first[battery_at + 2051u] = 0xA5u;
+    public_first[115u] = 2u;
+    state_rechecksum(public_first, total);
+    memcpy(public_control, public_first, total);
+    memcpy(battery_control, peer->battery.data, peer->battery.bytes);
+    peer_calls = peer_observations;
+    CHECK_EQ_U64(muhtari_load_state(peer, public_first, total), MUHTARI_STATUS_ERR_INVALID_STATE);
+    CHECK_EQ_U64(peer_observations, peer_calls);
+    CHECK(memcmp(public_first, public_control, total) == 0);
+    CHECK_EQ_U64(peer->battery.generation, 0u);
+    CHECK(memcmp(peer->battery.data, battery_control, peer->battery.bytes) == 0);
+    CHECK(peer->battery.data == peer_battery);
+
+    /* Rewind the accepted page snapshot over newer committed data. The live
+       generation is host-owned and wraps once for this changed restore. */
+    peer->battery.generation = UINT64_MAX;
+    peer_calls = peer_observations;
+    CHECK_EQ_U64(muhtari_load_state(peer, public_snapshot, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(peer_observations, peer_calls);
+    CHECK_EQ_U64(peer->battery.generation, 0u);
+    CHECK_EQ_HEX(peer->battery.data[2051u], 0xFFu);
+    CHECK_EQ_U64(peer->savekey.pending, 1u);
+    CHECK_EQ_U64(muhtari_load_state(peer, public_snapshot, total), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(peer->battery.generation, 0u);
+    CHECK_EQ_HEX(peer->battery.data[0], 0xC1u);
+
+    for (unsigned replay = 0u; replay < replay_frames; replay++) {
+        peer_audio_count = state_run_frame(peer, public_video_b, public_audio_b);
+        CHECK_EQ_U64(peer_audio_count, replay_audio_counts[replay]);
+        CHECK(memcmp(public_video_reference[replay], public_video_b, video_bytes) == 0);
+        CHECK(memcmp(public_audio_reference[replay], public_audio_b,
+                     (size_t)peer_audio_count * sizeof public_audio_b[0]) == 0);
+    }
+    CHECK_EQ_HEX(peer->battery.data[2051u], 0x5Au);
+    CHECK_EQ_U64(peer->battery.generation, 1u);
+    CHECK_EQ_U64(peer->savekey.pending, 0u);
+    CHECK(peer->battery.data == peer_battery);
+    CHECK(peer->cart.expansion.ram == peer_expansion);
+
+    (void)state_run_frame(source, public_video_a, public_audio_a);
+    (void)state_run_frame(peer, public_video_b, public_audio_b);
+    CHECK(memcmp(public_video_a, public_video_b, video_bytes) == 0);
+    CHECK_EQ_U64(source->battery.generation, 1u);
+    CHECK_EQ_U64(peer->battery.generation, 1u);
+    CHECK_EQ_HEX(peer->battery.data[2051u], 0x5Au);
+
+    if (host_file != NULL) {
+        CHECK_EQ_U64(ftell(host_file), host_position);
+        CHECK_EQ_U64(fseek(host_file, 0L, SEEK_SET), 0u);
+        uint8_t file_after[sizeof file_marker];
+        CHECK_EQ_U64(fread(file_after, 1u, sizeof file_after, host_file), sizeof file_marker);
+        CHECK(memcmp(file_marker, file_after, sizeof file_marker) == 0);
+        CHECK_EQ_U64(fclose(host_file), 0u);
+    }
+
+    muhtari_destroy(peer);
+    muhtari_destroy(source);
 }
 
 static void test_topologies(void)
