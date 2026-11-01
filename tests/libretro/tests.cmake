@@ -320,16 +320,32 @@ include([==[${CMAKE_CURRENT_LIST_FILE}]==])
     COMMAND ${CMAKE_COMMAND} -DINFO=${PROJECT_BINARY_DIR}/libretro/muhtari_libretro.info
       -DINVENTORY=${libretro_inventory} -P ${libretro_scripts}/info_claims.cmake
     LABELS libretro TIMEOUT 10)
-  # The self test checks a .info whose "true" claim maps to no test and
-  # expects that claim named.
+  # Exercise the actual claim consumer with state support and with its backing
+  # test row removed, so metadata cannot outlive its executable evidence.
+  set(libretro_state_claim ${PROJECT_BINARY_DIR}/libretro/savestate_claim.info)
+  file(WRITE ${libretro_state_claim} "savestate = \"true\"\n")
+  muhtari_add_test(NAME libretro.info_claims.savestate
+    COMMAND ${CMAKE_COMMAND} -DINFO=${libretro_state_claim}
+      -DINVENTORY=${libretro_inventory} -P ${libretro_scripts}/info_claims.cmake
+    LABELS libretro TIMEOUT 10)
+  set(libretro_missing_inventory ${PROJECT_BINARY_DIR}/libretro/state_missing_inventory.txt)
+  file(WRITE ${libretro_missing_inventory} "libretro.host.battery\tlibretro,portable\n")
+  set(libretro_cmd ${CMAKE_COMMAND} -DINFO=${libretro_state_claim}
+    -DINVENTORY=${libretro_missing_inventory} -P ${libretro_scripts}/info_claims.cmake)
+  string(REPLACE ";" "$<SEMICOLON>" libretro_cmd "${libretro_cmd}")
+  muhtari_add_test(NAME libretro.info_claims.missing_state.self_test
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
+      "-DREGEX=savestate needs libretro.host.state" -P ${libretro_scripts}/expect_fail.cmake
+    LABELS libretro TIMEOUT 10)
+  # Unknown capabilities remain rejected after savestate is a recognized claim.
   set(libretro_fixture ${PROJECT_BINARY_DIR}/libretro/unmapped_claim.info)
-  file(WRITE ${libretro_fixture} "supports_no_game = \"true\"\nsavestate = \"true\"\n")
+  file(WRITE ${libretro_fixture} "supports_no_game = \"true\"\nnetplay = \"true\"\n")
   set(libretro_cmd ${CMAKE_COMMAND} -DINFO=${libretro_fixture}
     -DINVENTORY=${libretro_inventory} -P ${libretro_scripts}/info_claims.cmake)
   string(REPLACE ";" "$<SEMICOLON>" libretro_cmd "${libretro_cmd}")
   muhtari_add_test(NAME libretro.info_claims.self_test
     COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
-      "-DREGEX=savestate = .true. maps to no test" -P ${libretro_scripts}/expect_fail.cmake
+      "-DREGEX=netplay = .true. maps to no test" -P ${libretro_scripts}/expect_fail.cmake
     LABELS libretro TIMEOUT 10)
   # A description one character over the limit must be named with its length.
   set(libretro_fixture ${PROJECT_BINARY_DIR}/libretro/long_description.info)

@@ -535,6 +535,8 @@ libretro.host.state	libretro,portable
 libretro.host.xrgb8888	libretro,portable
 libretro.info_claims	libretro
 libretro.info_claims.description.self_test	libretro
+libretro.info_claims.missing_state.self_test	libretro
+libretro.info_claims.savestate	libretro
 libretro.info_claims.self_test	libretro
 libretro.rcheevos	libretro,portable
 libretro.rcheevos.expansion	libretro,portable
