@@ -43,18 +43,17 @@ muhtari_add_test(NAME core.no_alloc_after_load COMMAND muhtari-test-core no_allo
   LABELS perf portable TIMEOUT 63) # ceil(2 x 31.26s), complete Windows x64 run40414104123/job121892328427; scales retained.
 
 add_executable(muhtari-test-state ${CMAKE_CURRENT_LIST_DIR}/test_state.c
-  ${CMAKE_SOURCE_DIR}/tests/cart/images.c)
-target_include_directories(muhtari-test-state PRIVATE ${CMAKE_SOURCE_DIR}/src)
+  ${CMAKE_SOURCE_DIR}/tests/cart/images.c ${CMAKE_SOURCE_DIR}/runner/sha256.c)
+target_include_directories(muhtari-test-state PRIVATE ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/runner)
 target_link_libraries(muhtari-test-state PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-state PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-state)
-foreach(case IN ITEMS aliases battery fields lifecycle payload topologies)
+foreach(case IN ITEMS aliases battery fields lifecycle payload topologies equality_report)
   muhtari_add_test(NAME core.state.${case} COMMAND muhtari-test-state ${case}
     LABELS core portable TIMEOUT 10)
 endforeach()
-muhtari_add_test(NAME core.state.equality_report COMMAND muhtari-test-state topologies
-  LABELS core portable TIMEOUT 10)
 set_tests_properties(core.state.equality_report PROPERTIES
   PASS_REGULAR_EXPRESSION "state[.]linear_ntsc[.]bytes_sha256 [0-9a-f]+")
 

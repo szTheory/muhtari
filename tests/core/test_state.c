@@ -10,6 +10,7 @@
 #include "../cart/images.h"
 #include "../check.h"
 #include "../../runner/crc32.h"
+#include "../../runner/sha256.h"
 
 #define STATE_HEADER_BYTES 64u
 #define STATE_FIXED_BYTES 10908u
@@ -387,6 +388,109 @@ struct continuation_row {
     uint32_t firmware;
 };
 
+static const struct continuation_row continuation_rows[] = {
+    {"linear-ntsc-legacy", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {0u, 0u}, 1u, 0u, 0u},
+    {"supergame-pal-lightgun", MUHTARI_BOARD_SUPERGAME, 0x0462u, 64u * IMAGES_KIB,
+     MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_LIGHTGUN, MUHTARI_PORT_MEGA7800}, 0u, 1u, 0u},
+    {"activision-pokey", MUHTARI_BOARD_ACTIVISION, 0x0101u, 128u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_PADDLE, 0u}, 0u, 0u, 0u},
+    {"absolute-keypad", MUHTARI_BOARD_ABSOLUTE, 0x0240u, 64u * IMAGES_KIB,
+     MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_KEYPAD, 0u}, 0u, 0u, 0u},
+    {"fractalus-motion", MUHTARI_BOARD_FRACTALUS, 0x0480u, 32u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_ST_MOUSE, 0u}, 0u, 0u, 0u},
+    {"bankset-plain", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {0u, 0u}, 0u, 0u, 0u},
+    {"bankset-xboard", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_XBOARD, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_SNES2ATARI, 0u}, 0u, 0u, 0u},
+    {"bankset-xm-savekey-port2", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_PAL,
+     MUHTARI_EXPANSION_XM, MUHTARI_HSC_ON,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY}, {MUHTARI_PORT_JOYSTICK, 0u}, 0u, 0u, 1u},
+    {"bankset-hsc-stub-savekey-port1", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF, MUHTARI_HSC_ON,
+     {MUHTARI_PORT_SAVEKEY, MUHTARI_PORT_PROLINE}, {0u, 0u}, 0u, 0u, 0u},
+    {"linear-bios", MUHTARI_BOARD_LINEAR, 0u, 4u * IMAGES_KIB, MUHTARI_REGION_PAL,
+     MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_AMIGA_MOUSE, 0u}, 0u, 1u, 0u},
+    {"linear-pal-bios-pokey", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
+     MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_AMIGA_MOUSE, 0u}, 0u, 1u, 0u},
+    {"bankset-hsc-firmware", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF, MUHTARI_HSC_ON,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY}, {MUHTARI_PORT_KEYPAD, 0u}, 0u, 0u, 1u},
+    {"linear-proline", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_PROLINE, 0u}, 0u, 0u, 0u},
+    {"linear-driving", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_DRIVING, 0u}, 0u, 0u, 0u},
+    {"linear-trakball", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_TRAKBALL, 0u}, 0u, 0u, 0u},
+};
+
+struct state_report_scenario {
+    const char *name;
+    const char *topology;
+};
+
+static const struct state_report_scenario state_report_scenarios[] = {
+    {"linear_ntsc", "linear-ntsc-legacy"},
+    {"supergame_banked", "supergame-pal-lightgun"},
+    {"activision", "activision-pokey"},
+    {"absolute", "absolute-keypad"},
+    {"fractalus", "fractalus-motion"},
+    {"bankset", "bankset-plain"},
+    {"pal_bios_pokey", "linear-pal-bios-pokey"},
+    {"xboard", "bankset-xboard"},
+    {"xm_hsc", "bankset-xm-savekey-port2"},
+    {"savekey_port1", "bankset-hsc-stub-savekey-port1"},
+    {"savekey_port2", "bankset-hsc-firmware"},
+    {"pending_motion", "linear-driving"},
+    {"pending_audio", "linear-proline"},
+};
+
+enum { STATE_REPORT_FIELD_COUNT = 6, STATE_REPORT_LINE_BYTES = 128 };
+
+struct state_report_audio {
+    muhtari__sha256 hash;
+    uint32_t transitions;
+};
+
+struct state_report_capture {
+    const struct state_report_scenario *scenario;
+    struct state_report_audio source_audio;
+    struct state_report_audio restored_audio;
+    muhtari__sha256 source_frames;
+    muhtari__sha256 restored_frames;
+    muhtari__sha256 source_pcm;
+    muhtari__sha256 restored_pcm;
+    muhtari__sha256 semantic;
+    muhtari__sha256 state;
+    muhtari__sha256 counters;
+    uint8_t digests[STATE_REPORT_FIELD_COUNT][32];
+    uint32_t source_pcm_samples;
+    uint32_t restored_pcm_samples;
+    uint32_t frame_count;
+    uint8_t oracle_fault;
+    uint8_t oracle_rejected;
+    uint8_t ready;
+    uint8_t audio_expected;
+};
+
+struct state_report_text {
+    char bytes[STATE_REPORT_FIELD_COUNT][STATE_REPORT_LINE_BYTES];
+    size_t total_bytes;
+};
+
 /* Cart type fields follow docs/hardware/cartridge.md, Cart type. The synthetic
    HSC/BIOS vectors below are generated in memory and are not firmware assets. */
 static size_t continuation_image(const struct continuation_row *row)
@@ -411,6 +515,10 @@ static int continuation_observation_matches(const muhtari *m, const struct conti
                                             uint8_t expansion_byte)
 {
     if (m->loaded == 0u || m->cart.info.board != row->board || m->ram[0x40u] != ram_byte)
+        return 0;
+    if (row->board == MUHTARI_BOARD_SUPERGAME &&
+        (m->cart.ram == NULL || m->cart.info.ram_size != 32768u || m->cart.bank != 1u ||
+         m->cart.ram_bank != 1u))
         return 0;
     if (m->cart.ram != NULL && m->cart.ram[0] != cart_byte)
         return 0;
@@ -482,10 +590,169 @@ static int continuation_observation_matches(const muhtari *m, const struct conti
     return 1;
 }
 
+static void state_report_hash_u8(muhtari__sha256 *hash, uint8_t value)
+{
+    muhtari__sha256_update(hash, &value, sizeof value);
+}
+
+static void state_report_hash_u16(muhtari__sha256 *hash, uint16_t value)
+{
+    uint8_t bytes[2] = {(uint8_t)value, (uint8_t)(value >> 8)};
+    muhtari__sha256_update(hash, bytes, sizeof bytes);
+}
+
+static void state_report_hash_u32(muhtari__sha256 *hash, uint32_t value)
+{
+    uint8_t bytes[4] = {(uint8_t)value, (uint8_t)(value >> 8),
+                        (uint8_t)(value >> 16), (uint8_t)(value >> 24)};
+    muhtari__sha256_update(hash, bytes, sizeof bytes);
+}
+
+static void state_report_hash_u64(muhtari__sha256 *hash, uint64_t value)
+{
+    state_report_hash_u32(hash, (uint32_t)value);
+    state_report_hash_u32(hash, (uint32_t)(value >> 32));
+}
+
+static void state_report_audio_transition(void *user, uint64_t tick, uint8_t source,
+                                          uint16_t raw)
+{
+    struct state_report_audio *audio = (struct state_report_audio *)user;
+    state_report_hash_u64(&audio->hash, tick);
+    state_report_hash_u8(&audio->hash, source);
+    state_report_hash_u16(&audio->hash, raw);
+    audio->transitions++;
+}
+
+static const struct continuation_row *state_report_topology(const char *name)
+{
+    for (size_t i = 0u; i < sizeof continuation_rows / sizeof continuation_rows[0]; i++) {
+        if (strcmp(continuation_rows[i].name, name) == 0)
+            return &continuation_rows[i];
+    }
+    return NULL;
+}
+
+static const struct state_report_scenario *state_report_scenario_find(const char *name)
+{
+    for (size_t i = 0u; i < sizeof state_report_scenarios / sizeof state_report_scenarios[0]; i++) {
+        if (strcmp(state_report_scenarios[i].name, name) == 0)
+            return &state_report_scenarios[i];
+    }
+    return NULL;
+}
+
+static void state_report_semantic_hash(muhtari__sha256 *hash, const muhtari *m,
+                                       const struct continuation_row *row,
+                                       const struct state_report_scenario *scenario)
+{
+    state_report_hash_u32(hash, m->cart.info.board);
+    state_report_hash_u32(hash, m->effective_region);
+    state_report_hash_u8(hash, m->cart.bank);
+    state_report_hash_u8(hash, m->cart.ram_bank);
+    state_report_hash_u8(hash, m->ram[0x40u]);
+    state_report_hash_u8(hash, (uint8_t)(m->cart.ram != NULL));
+    if (m->cart.ram != NULL) {
+        state_report_hash_u8(hash, m->cart.ram[0]);
+        state_report_hash_u8(hash, m->cart.ram[m->cart.info.ram_size - 1u]);
+    }
+    state_report_hash_u8(hash, (uint8_t)(m->cart.expansion.ram != NULL));
+    if (m->cart.expansion.ram != NULL) {
+        state_report_hash_u8(hash, m->cart.expansion.ram[0]);
+        state_report_hash_u8(hash, m->cart.expansion.ram[STATE_EXPANSION_BYTES - 1u]);
+    }
+    state_report_hash_u64(hash, (uint64_t)m->battery.bytes);
+    state_report_hash_u8(hash, m->battery.bytes == 0u ? 0u : m->battery.data[0]);
+    state_report_hash_u8(hash, m->battery.bytes == 0u ? 0u : m->battery.data[m->battery.bytes - 1u]);
+    state_report_hash_u8(hash, (uint8_t)row->legacy);
+    if (row->legacy != 0u) {
+        state_report_hash_u32(hash, m->ports.pending_device[0]);
+        state_report_hash_u32(hash, m->ports.pending_buttons[0]);
+        state_report_hash_u32(hash, m->ports.pending_switches);
+    } else {
+        state_report_hash_u8(hash, m->ports.pending);
+        for (unsigned port = 0u; port < 2u; port++) {
+            const muhtari_port_input *input = &m->ports.pending_ex.port[port];
+            state_report_hash_u32(hash, input->device);
+            state_report_hash_u32(hash, input->buttons);
+            state_report_hash_u32(hash, (uint32_t)input->dx);
+            state_report_hash_u32(hash, (uint32_t)input->dy);
+            state_report_hash_u16(hash, (uint16_t)input->gun_x);
+            state_report_hash_u16(hash, (uint16_t)input->gun_y);
+            state_report_hash_u16(hash, (uint16_t)input->paddle[0]);
+            state_report_hash_u16(hash, (uint16_t)input->paddle[1]);
+            state_report_hash_u16(hash, (uint16_t)input->keypad);
+        }
+        state_report_hash_u32(hash, m->ports.pending_ex.switches);
+    }
+    state_report_hash_u8(hash, (uint8_t)m->synth.raw[0]);
+    state_report_hash_u8(hash, m->synth.pending);
+    state_report_hash_u32(hash, m->synth.pcm_read);
+    state_report_hash_u32(hash, m->synth.pcm_count);
+    state_report_hash_u16(hash, (uint16_t)m->synth.pcm[5]);
+    state_report_hash_u16(hash, (uint16_t)m->synth.pcm[6]);
+    state_report_hash_u64(hash, m->bus.halt_at);
+    state_report_hash_u64(hash, m->bus.halt_until);
+    state_report_hash_u64(hash, m->bus.nmi_at);
+    state_report_hash_u8(hash, m->bus.nmi_pending);
+    muhtari__sha256_update(hash, scenario->name, strlen(scenario->name));
+}
+
+static void state_report_digest_finalize(muhtari__sha256 *hash, uint8_t output[32])
+{
+    muhtari__sha256_final(hash, output);
+}
+
+static int state_report_row_format(const char *scenario, const char *field,
+                                   const uint8_t digest[32], char line[STATE_REPORT_LINE_BYTES])
+{
+    char hex[65];
+    muhtari__sha256_hex(digest, hex);
+    int length = snprintf(line, STATE_REPORT_LINE_BYTES, "state.%s.%s %s\n", scenario, field,
+                          hex);
+    return length > 0 && (size_t)length < STATE_REPORT_LINE_BYTES ? length : -1;
+}
+
+static int state_report_text_valid(const struct state_report_text *report,
+                                   const struct state_report_scenario *scenario)
+{
+    static const char *const fields[] = {"bytes_sha256", "frame_sha256",
+                                         "audio_transitions_sha256", "audio_pcm_sha256",
+                                         "counters_sha256", "semantic_sha256"};
+    size_t total = 0u;
+    for (size_t row = 0u; row < STATE_REPORT_FIELD_COUNT; row++) {
+        char expected[64];
+        int prefix = snprintf(expected, sizeof expected, "state.%s.%s ", scenario->name,
+                              fields[row]);
+        if (prefix < 0 || (size_t)prefix >= sizeof expected)
+            return 0;
+        const char *line = report->bytes[row];
+        size_t length = strlen(line);
+        if (length != (size_t)prefix + 65u || strncmp(line, expected, (size_t)prefix) != 0 ||
+            line[length - 1u] != '\n')
+            return 0;
+        for (size_t i = (size_t)prefix; i < (size_t)prefix + 64u; i++) {
+            if (!((line[i] >= '0' && line[i] <= '9') || (line[i] >= 'a' && line[i] <= 'f')))
+                return 0;
+        }
+        total += length;
+    }
+    return total == report->total_bytes;
+}
+
 static void continuation_row_run(const struct continuation_row *row, muhtari *source,
                                  muhtari *restored, alloc_counts *source_counts,
-                                 alloc_counts *restored_counts)
+                                 alloc_counts *restored_counts,
+                                 struct state_report_capture *capture)
 {
+    if (capture != NULL) {
+        CHECK_EQ_U64(muhtari__synth_observe(source, state_report_audio_transition,
+                                            &capture->source_audio),
+                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari__synth_observe(restored, state_report_audio_transition,
+                                            &capture->restored_audio),
+                     MUHTARI_STATUS_OK);
+    }
     size_t image_bytes = continuation_image(row);
     muhtari_media media;
     memset(&media, 0, sizeof media);
@@ -522,6 +789,18 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
     CHECK_EQ_U64(source->effective_region, row->region == 0u ? MUHTARI_REGION_NTSC : row->region);
     CHECK(memcmp(source->state_identity, restored->state_identity,
                  sizeof source->state_identity) == 0);
+
+    if (row->board == MUHTARI_BOARD_SUPERGAME) {
+        CHECK(source->cart.ram != NULL);
+        CHECK_EQ_U64(source->cart.info.ram_size, 32768u);
+        /* The generated BIOS temporarily overlays $8000-$FFFF, so select the
+           banked RAM half directly in this private fixture instead of sending
+           a mapper write that the BIOS would consume. */
+        source->cart.bank = 1u;
+        source->cart.ram_bank = 1u;
+        CHECK_EQ_U64(source->cart.bank, 1u);
+        CHECK_EQ_U64(source->cart.ram_bank, 1u);
+    }
 
     uint8_t ram_byte = 0x65u;
     uint8_t cart_byte = 0xA7u;
@@ -636,7 +915,50 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
     CHECK_EQ_U64(muhtari_load_state(restored, public_first, bytes), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(source_counts->allocs, source_allocations);
     CHECK_EQ_U64(restored_counts->allocs, restored_allocations);
+    if (capture != NULL && capture->oracle_fault != 0u) {
+        restored->ram[0x40u] ^= 1u;
+        capture->oracle_rejected =
+            (uint8_t)!continuation_observation_matches(restored, row, ram_byte, cart_byte,
+                                                       expansion_byte);
+        restored->ram[0x40u] ^= 1u;
+        return;
+    }
     CHECK(continuation_observation_matches(restored, row, ram_byte, cart_byte, expansion_byte));
+    if (capture != NULL) {
+        CHECK(continuation_observation_matches(source, row, ram_byte, cart_byte, expansion_byte));
+        muhtari__sha256_init(&capture->state);
+        muhtari__sha256_update(&capture->state, public_first, bytes);
+        muhtari__sha256_init(&capture->semantic);
+        state_report_semantic_hash(&capture->semantic, restored, row, capture->scenario);
+        capture->audio_expected =
+            (uint8_t)(source->cart.pokey_at[0] != 0u || source->cart.pokey_at[1] != 0u);
+        muhtari__sha256_init(&capture->source_audio.hash);
+        muhtari__sha256_init(&capture->restored_audio.hash);
+        capture->source_audio.transitions = 0u;
+        capture->restored_audio.transitions = 0u;
+        muhtari__sha256_init(&capture->source_frames);
+        muhtari__sha256_init(&capture->restored_frames);
+        muhtari__sha256_init(&capture->source_pcm);
+        muhtari__sha256_init(&capture->restored_pcm);
+        muhtari__sha256_init(&capture->counters);
+        if (capture->audio_expected != 0u) {
+            unsigned chip = source->cart.pokey_at[0] != 0u ? 0u : 1u;
+            uint16_t pokey = source->cart.pokey_at[chip];
+            CHECK(pokey != 0u);
+            if (pokey != 0u) {
+                /* Drive one real volume-only POKEY write on both sides of the
+                   restore so the transition report has observed coverage even
+                   when the generated ROM never programs its sound chip. */
+                unsigned audio_chip = source->synth.secondary;
+                CHECK_EQ_U64(source->synth.pokeys, restored->synth.pokeys);
+                CHECK_EQ_U64(source->synth.secondary, restored->synth.secondary);
+                muhtari__pokey_write(source, audio_chip, 1u, 0x1Fu,
+                                     source->synth.tick);
+                muhtari__pokey_write(restored, audio_chip, 1u, 0x1Fu,
+                                     restored->synth.tick);
+            }
+        }
+    }
     if (row->board == MUHTARI_BOARD_SUPERGAME) {
         CHECK_EQ_U64(restored->bus.halt_at, halt_at);
         CHECK_EQ_U64(restored->bus.halt_until, halt_until);
@@ -659,6 +981,7 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
         CHECK_EQ_U64(after.bytes, spans[i].bytes);
     }
 
+    size_t frame_bytes = 320u * (size_t)muhtari__timing(source).height;
     for (unsigned frame = 0u; frame < 2u; frame++) {
         memset(public_video_a, 0, sizeof public_video_a);
         memset(public_video_b, 0, sizeof public_video_b);
@@ -667,10 +990,26 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
         uint32_t a_count = state_run_frame(source, public_video_a, public_audio_a);
         uint32_t b_count = state_run_frame(restored, public_video_b, public_audio_b);
         CHECK_EQ_U64(a_count, b_count);
-        CHECK(memcmp(public_video_a, public_video_b, 320u *
-                     (size_t)muhtari__timing(source).height) == 0);
+        CHECK(memcmp(public_video_a, public_video_b, frame_bytes) == 0);
         CHECK(memcmp(public_audio_a, public_audio_b,
                      (size_t)a_count * sizeof public_audio_a[0]) == 0);
+        if (capture != NULL) {
+            state_report_hash_u32(&capture->source_frames, frame);
+            state_report_hash_u32(&capture->source_frames, (uint32_t)frame_bytes);
+            muhtari__sha256_update(&capture->source_frames, public_video_a, frame_bytes);
+            state_report_hash_u32(&capture->restored_frames, frame);
+            state_report_hash_u32(&capture->restored_frames, (uint32_t)frame_bytes);
+            muhtari__sha256_update(&capture->restored_frames, public_video_b, frame_bytes);
+            state_report_hash_u32(&capture->source_pcm, a_count);
+            state_report_hash_u32(&capture->restored_pcm, b_count);
+            for (uint32_t sample = 0u; sample < a_count; sample++) {
+                state_report_hash_u16(&capture->source_pcm, (uint16_t)public_audio_a[sample]);
+                state_report_hash_u16(&capture->restored_pcm, (uint16_t)public_audio_b[sample]);
+            }
+            capture->source_pcm_samples += a_count;
+            capture->restored_pcm_samples += b_count;
+            capture->frame_count++;
+        }
         if (frame == 0u) {
             CHECK(public_audio_a[0] == -1234);
             CHECK(public_audio_a[1] == 2345);
@@ -765,9 +1104,119 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
     CHECK_EQ_U64(source_counters.frames, restored_counters.frames);
     CHECK_EQ_U64(source_counters.frames, 2u);
     CHECK_EQ_U64(source_counters.lag_frames, restored_counters.lag_frames);
+    if (capture != NULL) {
+        muhtari__sha256 source_frames = capture->source_frames;
+        muhtari__sha256 restored_frames = capture->restored_frames;
+        muhtari__sha256 source_transitions = capture->source_audio.hash;
+        muhtari__sha256 restored_transitions = capture->restored_audio.hash;
+        muhtari__sha256 source_pcm = capture->source_pcm;
+        muhtari__sha256 restored_pcm = capture->restored_pcm;
+        uint8_t source_digest[32];
+        uint8_t restored_digest[32];
+        muhtari__sha256_final(&source_frames, source_digest);
+        muhtari__sha256_final(&restored_frames, restored_digest);
+        CHECK(memcmp(source_digest, restored_digest, sizeof source_digest) == 0);
+        memcpy(capture->digests[1], source_digest, sizeof source_digest);
+        muhtari__sha256_final(&source_transitions, source_digest);
+        muhtari__sha256_final(&restored_transitions, restored_digest);
+        CHECK(memcmp(source_digest, restored_digest, sizeof source_digest) == 0);
+        memcpy(capture->digests[2], source_digest, sizeof source_digest);
+        muhtari__sha256_final(&source_pcm, source_digest);
+        muhtari__sha256_final(&restored_pcm, restored_digest);
+        CHECK(memcmp(source_digest, restored_digest, sizeof source_digest) == 0);
+        memcpy(capture->digests[3], source_digest, sizeof source_digest);
+        CHECK_EQ_U64(capture->source_audio.transitions, capture->restored_audio.transitions);
+        CHECK_EQ_U64(capture->source_pcm_samples, capture->restored_pcm_samples);
+        CHECK_EQ_U64(capture->frame_count, 2u);
+        if (capture->audio_expected != 0u) {
+            CHECK(capture->source_audio.transitions != 0u);
+            CHECK(capture->source_pcm_samples != 0u);
+        }
+        state_report_hash_u64(&capture->counters, source_counters.frames);
+        state_report_hash_u64(&capture->counters, source_counters.lag_frames);
+        state_report_digest_finalize(&capture->state, capture->digests[0]);
+        state_report_digest_finalize(&capture->counters, capture->digests[4]);
+        state_report_digest_finalize(&capture->semantic, capture->digests[5]);
+        CHECK_EQ_U64(muhtari__synth_observe(source, NULL, NULL), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari__synth_observe(restored, NULL, NULL), MUHTARI_STATUS_OK);
+        capture->ready = 1u;
+    }
     CHECK_EQ_U64(muhtari_save_state(source, public_first, bytes), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari_save_state(restored, public_second, bytes), MUHTARI_STATUS_OK);
     CHECK(memcmp(public_first, public_second, bytes) == 0);
+}
+
+static int state_report_generate(const struct state_report_scenario *scenario,
+                                 struct state_report_text *report, int inject_fault,
+                                 int *oracle_rejected)
+{
+    static const char *const fields[] = {"bytes_sha256", "frame_sha256",
+                                         "audio_transitions_sha256", "audio_pcm_sha256",
+                                         "counters_sha256", "semantic_sha256"};
+    if (scenario == NULL || report == NULL)
+        return 0;
+    const struct continuation_row *row = state_report_topology(scenario->topology);
+    if (row == NULL)
+        return 0;
+
+    memset(report, 0, sizeof *report);
+    if (oracle_rejected != NULL)
+        *oracle_rejected = 0;
+    int failures_before = check_failures;
+    alloc_counts source_counts;
+    alloc_counts restored_counts;
+    memset(&source_counts, 0, sizeof source_counts);
+    memset(&restored_counts, 0, sizeof restored_counts);
+    muhtari *source = state_create(&source_counts);
+    muhtari *restored = state_create(&restored_counts);
+    if (source == NULL || restored == NULL) {
+        if (source != NULL)
+            muhtari_destroy(source);
+        if (restored != NULL)
+            muhtari_destroy(restored);
+        return 0;
+    }
+
+    struct state_report_capture capture;
+    memset(&capture, 0, sizeof capture);
+    capture.scenario = scenario;
+    capture.oracle_fault = (uint8_t)(inject_fault != 0);
+    continuation_row_run(row, source, restored, &source_counts, &restored_counts, &capture);
+    muhtari_destroy(restored);
+    muhtari_destroy(source);
+    if (check_failures != failures_before)
+        return 0;
+
+    if (inject_fault != 0) {
+        if (capture.oracle_rejected == 0u)
+            return 0;
+        if (oracle_rejected != NULL)
+            *oracle_rejected = 1;
+        return 1;
+    }
+    if (capture.ready == 0u)
+        return 0;
+
+    size_t total = 0u;
+    for (size_t field = 0u; field < STATE_REPORT_FIELD_COUNT; field++) {
+        int length = state_report_row_format(scenario->name, fields[field],
+                                             capture.digests[field], report->bytes[field]);
+        if (length < 0)
+            return 0;
+        total += (size_t)length;
+    }
+    report->total_bytes = total;
+    return state_report_text_valid(report, scenario);
+}
+
+static int state_report_write(const struct state_report_text *report)
+{
+    for (size_t row = 0u; row < STATE_REPORT_FIELD_COUNT; row++) {
+        size_t length = strlen(report->bytes[row]);
+        if (fwrite(report->bytes[row], 1u, length, stdout) != length)
+            return 0;
+    }
+    return 1;
 }
 
 static void test_payload(void)
@@ -1586,48 +2035,6 @@ static void test_battery(void)
 
 static void test_topologies(void)
 {
-    static const struct continuation_row continuation_rows[] = {
-        {"linear-ntsc-legacy", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
-         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {0u, 0u}, 1u, 0u, 0u},
-        {"supergame-pal-lightgun", MUHTARI_BOARD_SUPERGAME, 0x0462u, 64u * IMAGES_KIB,
-         MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
-         {MUHTARI_PORT_LIGHTGUN, MUHTARI_PORT_MEGA7800}, 0u, 1u, 0u},
-        {"activision-pokey", MUHTARI_BOARD_ACTIVISION, 0x0101u, 128u * IMAGES_KIB,
-         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_PADDLE, 0u}, 0u, 0u, 0u},
-        {"absolute-keypad", MUHTARI_BOARD_ABSOLUTE, 0x0240u, 64u * IMAGES_KIB,
-         MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_KEYPAD, 0u}, 0u, 0u, 0u},
-        {"fractalus-motion", MUHTARI_BOARD_FRACTALUS, 0x0480u, 32u * IMAGES_KIB,
-         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_ST_MOUSE, 0u}, 0u, 0u, 0u},
-        {"bankset-xboard", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
-         MUHTARI_EXPANSION_XBOARD, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_SNES2ATARI, 0u}, 0u, 0u, 0u},
-        {"bankset-xm-savekey-port2", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_PAL,
-         MUHTARI_EXPANSION_XM, MUHTARI_HSC_ON,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY}, {MUHTARI_PORT_JOYSTICK, 0u}, 0u, 0u, 1u},
-        {"bankset-hsc-stub-savekey-port1", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
-         MUHTARI_EXPANSION_OFF, MUHTARI_HSC_ON,
-         {MUHTARI_PORT_SAVEKEY, MUHTARI_PORT_PROLINE}, {0u, 0u}, 0u, 0u, 0u},
-        {"linear-bios", MUHTARI_BOARD_LINEAR, 0u, 4u * IMAGES_KIB, MUHTARI_REGION_PAL,
-         MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_AMIGA_MOUSE, 0u}, 0u, 1u, 0u},
-        {"bankset-hsc-firmware", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
-         MUHTARI_EXPANSION_OFF, MUHTARI_HSC_ON,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY}, {MUHTARI_PORT_KEYPAD, 0u}, 0u, 0u, 1u},
-        {"linear-proline", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
-         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_PROLINE, 0u}, 0u, 0u, 0u},
-        {"linear-driving", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
-         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_DRIVING, 0u}, 0u, 0u, 0u},
-        {"linear-trakball", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
-         MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-         {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_TRAKBALL, 0u}, 0u, 0u, 0u},
-    };
     alloc_counts counts;
     alloc_counts peer_counts;
     muhtari *m = state_create(&counts);
@@ -1680,7 +2087,7 @@ static void test_topologies(void)
     /* Each supported board/topology row gets a distinct machine and an
        independently checked RAM mailbox before resumed output comparison. */
     for (size_t i = 0u; i < sizeof continuation_rows / sizeof continuation_rows[0]; i++) {
-        continuation_row_run(&continuation_rows[i], m, peer, &counts, &peer_counts);
+        continuation_row_run(&continuation_rows[i], m, peer, &counts, &peer_counts, NULL);
     }
 
     /* Header metadata, caller representation and Auto spelling do not alter
@@ -1874,10 +2281,66 @@ static const struct {
               {"aliases", test_aliases},       {"lifecycle", test_lifecycle},
               {"battery", test_battery},       {"topologies", test_topologies} };
 
+static void test_equality_report(void)
+{
+    struct state_report_text reports[sizeof state_report_scenarios / sizeof state_report_scenarios[0]];
+    size_t rows = 0u;
+    int failures_before = check_failures;
+    for (size_t scenario = 0u;
+         scenario < sizeof state_report_scenarios / sizeof state_report_scenarios[0];
+         scenario++) {
+        struct state_report_text repeated;
+        const struct state_report_scenario *entry = &state_report_scenarios[scenario];
+        CHECK(state_report_generate(entry, &reports[scenario], 0, NULL));
+        CHECK(state_report_generate(entry, &repeated, 0, NULL));
+        CHECK(state_report_text_valid(&reports[scenario], entry));
+        CHECK(state_report_text_valid(&repeated, entry));
+        CHECK_EQ_U64(reports[scenario].total_bytes, repeated.total_bytes);
+        CHECK(memcmp(&reports[scenario], &repeated, sizeof repeated) == 0);
+        rows += STATE_REPORT_FIELD_COUNT;
+    }
+    CHECK_EQ_U64(rows, 78u);
+
+    struct state_report_text rejected_report;
+    int oracle_rejected = 0;
+    CHECK(state_report_generate(&state_report_scenarios[0], &rejected_report, 1,
+                                &oracle_rejected));
+    CHECK_EQ_U64(oracle_rejected, 1u);
+    CHECK_EQ_U64(rejected_report.total_bytes, 0u);
+
+    if (check_failures == failures_before) {
+        for (size_t scenario = 0u;
+             scenario < sizeof state_report_scenarios / sizeof state_report_scenarios[0];
+             scenario++)
+            CHECK(state_report_write(&reports[scenario]));
+    }
+}
+
+static int state_report_cli(const char *scenario_name)
+{
+    const struct state_report_scenario *scenario = state_report_scenario_find(scenario_name);
+    if (scenario == NULL) {
+        fprintf(stderr, "muhtari-test-state: unknown report scenario %s\n", scenario_name);
+        return 2;
+    }
+    struct state_report_text report;
+    if (!state_report_generate(scenario, &report, 0, NULL) || check_failures != 0) {
+        fprintf(stderr, "muhtari-test-state: report oracle failed for %s\n", scenario_name);
+        return 1;
+    }
+    if (!state_report_write(&report)) {
+        fprintf(stderr, "muhtari-test-state: report write failed for %s\n", scenario_name);
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc == 3 && strcmp(argv[1], "--report") == 0)
+        return state_report_cli(argv[2]);
     if (argc != 2) {
-        fprintf(stderr, "usage: muhtari-test-state <case>\n");
+        fprintf(stderr, "usage: muhtari-test-state <case> | --report <scenario>\n");
         return 2;
     }
     for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {
@@ -1885,6 +2348,10 @@ int main(int argc, char **argv)
             cases[i].run();
             CHECK_DONE();
         }
+    }
+    if (strcmp(argv[1], "equality_report") == 0) {
+        test_equality_report();
+        CHECK_DONE();
     }
     fprintf(stderr, "muhtari-test-state: unknown case %s\n", argv[1]);
     return 2;

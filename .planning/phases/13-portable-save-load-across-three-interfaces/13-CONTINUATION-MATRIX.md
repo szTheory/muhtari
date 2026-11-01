@@ -34,6 +34,40 @@ The battery case already drives a real SaveKey program, saves a pending page,
 restores it into another machine, and verifies the commit and generation
 behavior, so the matrix does not duplicate serial packet traffic.
 
+## Canonical equality report scenarios
+
+`muhtari-test-state --report SCENARIO` selects these existing in-memory rows.
+Each report contains exactly six LF-terminated lowercase SHA-256 rows, in
+field order: complete saved `bytes_sha256`, resumed `frame_sha256`, observed
+`audio_transitions_sha256`, resumed `audio_pcm_sha256`, public frame and lag
+`counters_sha256`, and independently inspected `semantic_sha256`.
+
+| Report scenario | Continuation row | Sound coverage |
+|---|---|---|
+| `linear_ntsc` | `linear-ntsc-legacy` | Legacy input, Linear dual POKEY |
+| `supergame_banked` | `supergame-pal-lightgun` | Banked RAM, PAL, BIOS, lightgun, POKEY |
+| `activision` | `activision-pokey` | Paddle, POKEY |
+| `absolute` | `absolute-keypad` | Keypad, POKEY |
+| `fractalus` | `fractalus-motion` | Motion input, POKEY |
+| `bankset` | `bankset-plain` | BankSet dual POKEY |
+| `pal_bios_pokey` | `linear-pal-bios-pokey` | PAL BIOS handoff, dual POKEY |
+| `xboard` | `bankset-xboard` | XBoard, dual POKEY |
+| `xm_hsc` | `bankset-xm-savekey-port2` | XM, HSC stub, SaveKey port 2, dual POKEY |
+| `savekey_port1` | `bankset-hsc-stub-savekey-port1` | HSC stub, SaveKey port 1, dual POKEY |
+| `savekey_port2` | `bankset-hsc-firmware` | HSC firmware, SaveKey port 2, dual POKEY |
+| `pending_motion` | `linear-driving` | Pending driving motion, dual POKEY |
+| `pending_audio` | `linear-proline` | Pending ProLine input, dual POKEY |
+
+The byte row hashes the full public state envelope before continuation. Both
+machines then receive the same volume-only POKEY register write after restore;
+this guarantees a real observed sound transition even when a generated ROM
+does not program its sound chip. Their frame pixels, PCM samples and transition
+tuples are compared before formatting either report. Numeric semantic fields
+are hashed through explicit little-endian widths, never through a native
+structure representation. The registered equality test regenerates all 13
+reports twice, checks the exact 78-row count and uses a corrupted mailbox to
+prove the independent semantic oracle withholds the report.
+
 Accepted board classes are Linear, SuperGame, Activision, Absolute, Fractalus
 and BankSet. SOUPER remains a refused board in the current profile and is not
 claimed as a continuation class. ProLine, joystick, lightgun/XG-1, paddles,
