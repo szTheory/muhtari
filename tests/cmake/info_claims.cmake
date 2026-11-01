@@ -20,6 +20,7 @@ set(claim_firmware0_opt libretro.host.bios)
 set(claim_firmware1_opt libretro.host.bios)
 set(claim_firmware2_opt libretro.host.hsc_firmware)
 set(claim_libretro_saves libretro.host.battery)
+set(claim_savestate libretro.host.state)
 set(exempt is_experimental)
 
 file(STRINGS "${INVENTORY}" inventory)
