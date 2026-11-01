@@ -139,3 +139,12 @@ steps in `.github/workflows/be-equality.yml`, check both complete inventories an
 evidence members, then run `tests/cmake/lane_equality.cmake` against this source SHA. No publication,
 dispatch, installation, RetroArch run, or Phase 12 allowance renewal occurred. `STATE-02` remains
 unclassified, and the phase-design prohibitions remain flagged as unverified.
+
+## Unresolved design assumptions and prohibitions
+
+These remain unverified judgments; the local tests and documentation do not resolve them:
+
+- State delivery must not commit immutable/proprietary media or personal durable save/state bytes as fixtures.
+- State rollback must not assume that durable files, frontend recovery, or Playstead history share ownership with live machine state.
+- Callback, compile-only, or advisory evidence must not be promoted to actual-host, required-lane, or publication acceptance, and does not renew any Phase 12 allowance.
+- `STATE-02` remains unclassified; no absolute emulated-time ceiling or additional host guarantee is inferred from the producer-derived clock checks.
