@@ -1399,7 +1399,7 @@ add_executable(muhtari-run-testdb
   $<TARGET_OBJECTS:muhtari_objs>
   $<TARGET_OBJECTS:muhtari_cpu>)
 target_include_directories(muhtari-run-testdb PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(muhtari-run-testdb PRIVATE muhtari_host)
+target_link_libraries(muhtari-run-testdb PRIVATE muhtari_host muhtari::muhtari)
 target_compile_definitions(muhtari-run-testdb PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-run-testdb PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)

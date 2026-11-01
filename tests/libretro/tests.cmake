@@ -220,7 +220,8 @@ if(TARGET muhtari_libretro)
     ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/runner ${PROJECT_BINARY_DIR}/generated)
   target_include_directories(muhtari-test-rcheevos SYSTEM PRIVATE ${libretro_rc}/include
     ${libretro_rc}/src)
-  target_link_libraries(muhtari-test-rcheevos PRIVATE muhtari_test_rcheevos muhtari_host ${CMAKE_DL_LIBS})
+  target_link_libraries(muhtari-test-rcheevos PRIVATE muhtari_test_rcheevos muhtari_host
+    muhtari::muhtari ${CMAKE_DL_LIBS})
   set_target_properties(muhtari-test-rcheevos PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-rcheevos)
@@ -232,7 +233,7 @@ if(TARGET muhtari_libretro)
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari_libretro_testdb PRIVATE ${PROJECT_SOURCE_DIR}/libretro
     ${PROJECT_SOURCE_DIR}/runner ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/generated)
-  target_link_libraries(muhtari_libretro_testdb PRIVATE muhtari_host)
+  target_link_libraries(muhtari_libretro_testdb PRIVATE muhtari_host muhtari::muhtari)
   set_target_properties(muhtari_libretro_testdb PROPERTIES PREFIX "" C_VISIBILITY_PRESET hidden
     LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
@@ -248,7 +249,7 @@ if(TARGET muhtari_libretro)
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari_libretro_testdb565 PRIVATE ${PROJECT_SOURCE_DIR}/libretro
     ${PROJECT_SOURCE_DIR}/runner ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/generated)
-  target_link_libraries(muhtari_libretro_testdb565 PRIVATE muhtari_host)
+  target_link_libraries(muhtari_libretro_testdb565 PRIVATE muhtari_host muhtari::muhtari)
   set_target_properties(muhtari_libretro_testdb565 PROPERTIES PREFIX "" C_VISIBILITY_PRESET hidden
     LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   if(APPLE)
@@ -265,7 +266,8 @@ if(TARGET muhtari_libretro)
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari-test-diag-testdb PRIVATE ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/libretro ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(muhtari-test-diag-testdb PRIVATE muhtari_host ${CMAKE_DL_LIBS})
+  target_link_libraries(muhtari-test-diag-testdb PRIVATE muhtari_host muhtari::muhtari
+    ${CMAKE_DL_LIBS})
   set_target_properties(muhtari-test-diag-testdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-diag-testdb)
   set(libretro_retail ${PROJECT_BINARY_DIR}/tests/libretro-retail.cmake)
