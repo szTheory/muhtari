@@ -501,6 +501,8 @@ static void state_pokey(struct state_cursor *cursor, const struct muhtari__pokey
     for (unsigned i = 0u; i < 2u; i++) {
         state_scalar(cursor, &source->hp_delay[i], target != NULL ? &target->hp_delay[i] : NULL,
                      1u, 0, STATE_RANGE, 0u, 3u, MARK_COUNT, 0);
+    }
+    for (unsigned i = 0u; i < 2u; i++) {
         state_scalar(cursor, &source->hp_capture[i],
                      target != NULL ? &target->hp_capture[i] : NULL, 1u, 0, STATE_BOOL, 0u, 0u,
                      MARK_COUNT, 0);
