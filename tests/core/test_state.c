@@ -24,6 +24,12 @@ enum state_fixture {
 };
 
 static uint8_t image[IMAGES_HEADER + 1024u * IMAGES_KIB];
+static uint8_t identity_image[IMAGES_HEADER + 32u * IMAGES_KIB];
+static uint8_t identity_other[IMAGES_HEADER + 32u * IMAGES_KIB];
+static uint8_t identity_raw[32u * IMAGES_KIB];
+static uint8_t identity_bios[4096u];
+static uint8_t identity_firmware[4096u];
+static uint8_t identity_other_firmware[4096u];
 static uint8_t first[STATE_MAX_BYTES];
 static uint8_t second[STATE_MAX_BYTES];
 static uint8_t invalid_image[4] = {0u, 0u, 0u, 0u};
@@ -111,6 +117,26 @@ static muhtari *state_create(alloc_counts *counts)
     muhtari *m = NULL;
     CHECK_EQ_U64(muhtari_create(&config, &m), MUHTARI_STATUS_OK);
     return m;
+}
+
+static muhtari_media state_media_for_image(const void *source, size_t bytes)
+{
+    muhtari_media media;
+    memset(&media, 0, sizeof media);
+    media.size = (uint32_t)sizeof media;
+    media.image = source;
+    media.image_size = bytes;
+    return media;
+}
+
+static size_t state_make_identity_image(uint8_t *target, const char *title, uint8_t version,
+                                        uint16_t cart_type)
+{
+    const uint32_t body = 32u * 1024u;
+    images_header(target, version, title, body, cart_type);
+    images_fill(target + IMAGES_HEADER, body, 0x1302u);
+    images_footer(target + IMAGES_HEADER, body);
+    return IMAGES_HEADER + body;
 }
 
 static muhtari_status state_load(muhtari *m, enum state_fixture fixture, int savekey)
@@ -385,10 +411,38 @@ static void test_lifecycle(void)
     if (m == NULL)
         return;
     CHECK_EQ_U64(muhtari__state_payload_size(m), 0u);
+    uint8_t empty_identity[sizeof m->state_identity] = {0};
+    CHECK(memcmp(m->state_identity, empty_identity, sizeof empty_identity) == 0);
+    muhtari_media refused;
+    memset(&refused, 0, sizeof refused);
+    refused.size = (uint32_t)sizeof refused;
+    refused.image = invalid_image;
+    refused.image_size = sizeof invalid_image;
+    CHECK(muhtari_load(m, &refused) != MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari__state_payload_size(m), 0u);
+    CHECK(memcmp(m->state_identity, empty_identity, sizeof empty_identity) == 0);
     CHECK_EQ_U64(state_load(m, STATE_LINEAR, 0), MUHTARI_STATUS_OK);
+    uint8_t identity[sizeof m->state_identity];
+    memcpy(identity, m->state_identity, sizeof identity);
+    CHECK(memcmp(identity, empty_identity, sizeof identity) != 0);
     size_t first_size = muhtari__state_payload_size(m);
     CHECK_EQ_U64(first_size, expected_payload_size(m));
     CHECK(muhtari__state_payload_write(m, first, first_size));
+
+    /* Once copied, caller storage is no longer an identity source. Repeated
+       state queries use the same cache and retain the no-allocation contract. */
+    uint8_t saved_rom_byte = image[IMAGES_HEADER + 17u];
+    uint32_t allocations = counts.allocs;
+    uint32_t frees = counts.frees;
+    image[IMAGES_HEADER + 17u] ^= 0xFFu;
+    CHECK(memcmp(identity, m->state_identity, sizeof identity) == 0);
+    CHECK_EQ_U64(muhtari__state_payload_size(m), first_size);
+    CHECK(muhtari__state_payload_write(m, second, first_size));
+    CHECK(muhtari__state_payload_validate(m, second, first_size));
+    CHECK(memcmp(identity, m->state_identity, sizeof identity) == 0);
+    CHECK_EQ_U64(counts.allocs, allocations);
+    CHECK_EQ_U64(counts.frees, frees);
+    image[IMAGES_HEADER + 17u] = saved_rom_byte;
 
     memcpy(&snapshot, m, sizeof snapshot);
     muhtari_media invalid;
@@ -400,13 +454,24 @@ static void test_lifecycle(void)
     CHECK_EQ_U64(muhtari__state_payload_size(m), first_size);
     CHECK(memcmp(&snapshot, m, sizeof snapshot) == 0);
 
+    invalid.image = image;
+    invalid.image_size = images_linear(image, 4u, 4096u);
+    invalid.bios = invalid_image;
+    invalid.bios_size = sizeof invalid_image;
+    CHECK_EQ_U64(muhtari_load(m, &invalid), MUHTARI_STATUS_ERR_INVALID_BIOS);
+    CHECK(memcmp(&snapshot, m, sizeof snapshot) == 0);
+
     CHECK_EQ_U64(state_load(m, STATE_XM, 1), MUHTARI_STATUS_OK);
+    CHECK(memcmp(identity, m->state_identity, sizeof identity) != 0);
     size_t replacement_size = muhtari__state_payload_size(m);
     CHECK_EQ_U64(replacement_size, expected_payload_size(m));
     CHECK(replacement_size > first_size);
     CHECK(!muhtari__state_payload_validate(m, first, first_size));
     CHECK(muhtari__state_payload_write(m, second, replacement_size));
     CHECK(muhtari__state_payload_validate(m, second, replacement_size));
+    memcpy(identity, m->state_identity, sizeof identity);
+    CHECK_EQ_U64(muhtari_power_cycle(m), MUHTARI_STATUS_OK);
+    CHECK(memcmp(identity, m->state_identity, sizeof identity) == 0);
     muhtari_destroy(m);
 }
 
@@ -456,9 +521,15 @@ static void test_battery(void)
 static void test_topologies(void)
 {
     alloc_counts counts;
+    alloc_counts peer_counts;
     muhtari *m = state_create(&counts);
     if (m == NULL)
         return;
+    muhtari *peer = state_create(&peer_counts);
+    if (peer == NULL) {
+        muhtari_destroy(m);
+        return;
+    }
     CHECK_EQ_U64(state_load(m, STATE_LINEAR, 0), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(muhtari__state_payload_size(m), STATE_FIXED_BYTES);
 
@@ -498,6 +569,166 @@ static void test_topologies(void)
     CHECK(muhtari__state_payload_write(m, first, bytes));
     CHECK(muhtari__state_payload_validate(m, first, bytes));
 
+    /* Header metadata, caller representation and Auto spelling do not alter
+       an otherwise identical installed machine. */
+    size_t identity_bytes =
+        state_make_identity_image(identity_image, "Identity A", 3u, 0u);
+    muhtari_media media = state_media_for_image(identity_image, identity_bytes);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    uint8_t baseline[sizeof m->state_identity];
+    memcpy(baseline, m->state_identity, sizeof baseline);
+    static const uint8_t identity_vector[32] = {
+        0x81u, 0xC9u, 0xA4u, 0xA6u, 0xA7u, 0x1Cu, 0x18u, 0x54u,
+        0xEDu, 0xA7u, 0x45u, 0x45u, 0xFBu, 0x95u, 0x56u, 0x3Au,
+        0x98u, 0x69u, 0xFFu, 0xFCu, 0xC3u, 0x3Fu, 0x9Du, 0x38u,
+        0x73u, 0x95u, 0x19u, 0x32u, 0xC8u, 0x2Fu, 0x08u, 0xE0u,
+    };
+    CHECK(memcmp(baseline, identity_vector, sizeof identity_vector) == 0);
+    memcpy(identity_raw, identity_image + IMAGES_HEADER, identity_bytes - IMAGES_HEADER);
+    media = state_media_for_image(identity_raw, identity_bytes - IMAGES_HEADER);
+    media.expansion = MUHTARI_EXPANSION_OFF;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) == 0);
+
+    size_t equivalent_bytes =
+        state_make_identity_image(identity_other, "Identity B", 3u, 0u);
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    media.expansion = MUHTARI_EXPANSION_OFF;
+    media.port[0] = MUHTARI_PORT_PROLINE;
+    media.port[1] = MUHTARI_PORT_PROLINE;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) == 0);
+
+    /* Every encoded immutable attachment/configuration change below has a
+       separate comparison against the baseline. */
+    identity_other[IMAGES_HEADER + 21u] ^= 1u;
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    media.expansion = MUHTARI_EXPANSION_OFF;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    equivalent_bytes =
+        state_make_identity_image(identity_other, "Identity B", 3u, 0x0002u);
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    equivalent_bytes =
+        state_make_identity_image(identity_other, "Identity B", 3u, 0x0010u);
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    equivalent_bytes =
+        state_make_identity_image(identity_other, "Identity B", 3u, 0x0004u);
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    equivalent_bytes =
+        state_make_identity_image(identity_other, "Identity B", 3u, 0x0001u);
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    equivalent_bytes =
+        state_make_identity_image(identity_other, "Identity B", 4u, 0u);
+    identity_other[69] = 1u; /* Accepted v4 IRQ mask bit zero. */
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(peer->cart.irq_mask, 1u);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    equivalent_bytes =
+        state_make_identity_image(identity_other, "Identity B", 3u, 0u);
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    media.region = MUHTARI_REGION_PAL;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    media.port[0] = MUHTARI_PORT_JOYSTICK;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    media.expansion = MUHTARI_EXPANSION_XBOARD;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    media.port[1] = MUHTARI_PORT_SAVEKEY;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    memset(identity_bios, 0xA6, sizeof identity_bios);
+    identity_bios[sizeof identity_bios - 4u] = 0x00u;
+    identity_bios[sizeof identity_bios - 3u] = 0xF0u;
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    media.bios = identity_bios;
+    media.bios_size = sizeof identity_bios;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    uint8_t bios_identity[sizeof peer->state_identity];
+    memcpy(bios_identity, peer->state_identity, sizeof bios_identity);
+    CHECK(memcmp(baseline, bios_identity, sizeof baseline) != 0);
+    identity_bios[0] ^= 1u;
+    CHECK(memcmp(bios_identity, peer->state_identity, sizeof bios_identity) == 0);
+    identity_bios[0] ^= 1u;
+
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    media.hsc_mode = MUHTARI_HSC_ON;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    uint8_t stub_identity[sizeof peer->state_identity];
+    memcpy(stub_identity, peer->state_identity, sizeof stub_identity);
+    CHECK(memcmp(baseline, stub_identity, sizeof baseline) != 0);
+    memset(identity_firmware, 0x31, sizeof identity_firmware);
+    media.hsc_rom = identity_firmware;
+    media.hsc_rom_size = sizeof identity_firmware;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    uint8_t firmware_identity[sizeof peer->state_identity];
+    memcpy(firmware_identity, peer->state_identity, sizeof firmware_identity);
+    CHECK(memcmp(stub_identity, firmware_identity, sizeof stub_identity) != 0);
+    identity_firmware[0] ^= 1u;
+    CHECK(memcmp(firmware_identity, peer->state_identity, sizeof firmware_identity) == 0);
+    identity_firmware[0] ^= 1u;
+    memset(identity_other_firmware, 0x32, sizeof identity_other_firmware);
+    media.hsc_rom = identity_other_firmware;
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(firmware_identity, peer->state_identity, sizeof firmware_identity) != 0);
+
+    /* A modified private profile is still installed machine behavior and is
+       included even when all media choices match. */
+    peer->profile.ane_lxa_constant ^= 1u;
+    media = state_media_for_image(identity_other, equivalent_bytes);
+    CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
+    CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
+
+    /* The accepted maximum input hashes its full installed 1 MiB ROM once;
+       subsequent state queries only visit mutable payload fields. */
+    const uint32_t max_rom_bytes = 1024u * IMAGES_KIB;
+    images_header(image, 3u, "Maximum ROM", max_rom_bytes, 0x0002u);
+    images_fill(image + IMAGES_HEADER, max_rom_bytes, 0x1303u);
+    images_footer(image + IMAGES_HEADER, max_rom_bytes);
+    media = state_media_for_image(image, IMAGES_HEADER + max_rom_bytes);
+    CHECK_EQ_U64(media.image_size, MUHTARI_IMAGE_SIZE_MAX);
+    CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(m->cart.info.rom_size, max_rom_bytes);
+    uint8_t max_identity[sizeof m->state_identity];
+    memcpy(max_identity, m->state_identity, sizeof max_identity);
+    uint32_t max_allocations = counts.allocs;
+    uint32_t max_frees = counts.frees;
+    uint8_t saved_max_byte = image[IMAGES_HEADER + 1024u];
+    image[IMAGES_HEADER + 1024u] ^= 1u;
+    size_t max_payload = muhtari__state_payload_size(m);
+    CHECK(muhtari__state_payload_write(m, first, max_payload));
+    CHECK(muhtari__state_payload_validate(m, first, max_payload));
+    CHECK(memcmp(max_identity, m->state_identity, sizeof max_identity) == 0);
+    CHECK_EQ_U64(counts.allocs, max_allocations);
+    CHECK_EQ_U64(counts.frees, max_frees);
+    image[IMAGES_HEADER + 1024u] = saved_max_byte;
+
+    CHECK_EQ_U64(state_load(m, STATE_LARGEST_GENERATED, 0), MUHTARI_STATUS_OK);
+
     /* Exercise the source-supported 128 KiB cart-RAM extent without carrying
        a database ROM fixture: the internal installer receives the same
        normalized linear-cart shape, then adds XM and SaveKey storage. */
@@ -517,6 +748,7 @@ static void test_topologies(void)
     CHECK_EQ_U64(bytes + STATE_HEADER_BYTES, STATE_MAX_BYTES);
     CHECK(muhtari__state_payload_write(m, first, bytes));
     CHECK(muhtari__state_payload_validate(m, first, bytes));
+    muhtari_destroy(peer);
     muhtari_destroy(m);
 }
 

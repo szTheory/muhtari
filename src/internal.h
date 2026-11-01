@@ -455,6 +455,7 @@ struct muhtari {
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
     uint32_t effective_region;   /* committed with successful content installation */
     uint8_t loaded;              /* content is loaded and handed off */
+    uint8_t state_identity[32];  /* installed immutable machine identity */
     uint64_t frame_start;
     uint64_t frame_deadline;
     struct muhtari__cpu cpu;
@@ -837,6 +838,7 @@ void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x, uint64
 void muhtari__bus_rearm(muhtari *m);
 void muhtari__ports_rearm(muhtari *m);
 size_t muhtari__state_payload_size(const muhtari *m);
+void muhtari__state_bind_identity(muhtari *m);
 int muhtari__state_payload_write(const muhtari *m, uint8_t *bytes, size_t size);
 int muhtari__state_payload_validate(const muhtari *m, const uint8_t *bytes, size_t size);
 void muhtari__state_payload_apply(muhtari *m, const uint8_t *bytes, size_t size);

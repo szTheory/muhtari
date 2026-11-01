@@ -406,6 +406,7 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
         m->bios_size = (uint32_t)media->bios_size;
     }
     power_cycle(m);
+    muhtari__state_bind_identity(m);
     return MUHTARI_STATUS_OK;
 }
 

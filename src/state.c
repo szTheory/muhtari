@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "sha256.h"
 
 #define STATE_HEADER_BYTES 64u
 #define STATE_TOTAL_FIXED_BYTES 10972u
@@ -119,6 +120,74 @@ static void state_put_u64(uint8_t *bytes, uint64_t value)
 {
     state_put_u32(bytes, (uint32_t)value);
     state_put_u32(bytes + 4u, (uint32_t)(value >> 32));
+}
+
+static void state_identity_u32(muhtari__sha256 *hash, uint32_t tag, uint32_t value)
+{
+    uint8_t record[12];
+    state_put_u32(record, tag);
+    state_put_u32(record + 4u, 4u);
+    state_put_u32(record + 8u, value);
+    muhtari__sha256_update(hash, record, sizeof record);
+}
+
+static void state_identity_bytes(muhtari__sha256 *hash, uint32_t tag, const void *bytes,
+                                 uint32_t size)
+{
+    uint8_t header[8];
+    state_put_u32(header, tag);
+    state_put_u32(header + 4u, size);
+    muhtari__sha256_update(hash, header, sizeof header);
+    muhtari__sha256_update(hash, bytes, size);
+}
+
+void muhtari__state_bind_identity(muhtari *m)
+{
+    static const uint8_t domain[] = "MUHTARI-STATE-IDENTITY";
+    muhtari__sha256 hash;
+    uint8_t sound[8];
+    uint8_t profile[6];
+    uint32_t boot_mode = m->bios_size == 0u ? 0u : 1u;
+    uint32_t hsc_mode = m->battery.hsc_attached == 0u
+                            ? 0u
+                            : (m->battery.firmware_flags & MUHTARI_HSC_FIRMWARE_STUB) != 0u ? 1u
+                                                                                             : 2u;
+
+    muhtari__sha256_init(&hash);
+    muhtari__sha256_update(&hash, domain, sizeof domain);
+
+    state_put_u32(sound, m->cart.pokey_at[0]);
+    state_put_u32(sound + 4u, m->cart.pokey_at[1]);
+    profile[0] = m->profile.ane_lxa_constant;
+    profile[1] = m->profile.riot_orb_power_on;
+    profile[2] = m->profile.ram_fill;
+    profile[3] = (uint8_t)m->profile.tia_phase;
+    profile[4] = (uint8_t)(m->profile.tia_phase >> 8);
+    profile[5] = m->profile.pokey_init;
+
+    state_identity_bytes(&hash, 1u, m->cart.rom, m->cart.info.rom_size);
+    state_identity_u32(&hash, 2u, m->cart.info.kind);
+    state_identity_u32(&hash, 3u, m->cart.info.board);
+    state_identity_u32(&hash, 4u, m->cart.info.board_options);
+    state_identity_u32(&hash, 5u, m->cart.info.ram_size);
+    state_identity_u32(&hash, 6u, m->effective_region);
+    state_identity_bytes(&hash, 7u, sound, sizeof sound);
+    state_identity_u32(&hash, 8u, m->cart.irq_mask);
+    state_identity_u32(&hash, 9u, m->cart.expansion.kind);
+    state_identity_u32(&hash, 10u, muhtari__ports_device(m, 0u));
+    state_identity_u32(&hash, 11u, muhtari__ports_device(m, 1u));
+    state_identity_u32(&hash, 12u, m->battery.hsc_attached);
+    state_identity_u32(&hash, 13u, m->battery.eeprom_port);
+    state_identity_u32(&hash, 14u, m->battery.eeprom_device);
+    state_identity_u32(&hash, 15u, (uint32_t)m->battery.bytes);
+    state_identity_u32(&hash, 16u, boot_mode);
+    state_identity_bytes(&hash, 17u, m->bios, boot_mode == 0u ? 0u : m->bios_size);
+    state_identity_u32(&hash, 18u, hsc_mode);
+    state_identity_bytes(&hash, 19u, m->battery.rom, hsc_mode == 0u ? 0u : sizeof m->battery.rom);
+    state_identity_bytes(&hash, 20u, profile, sizeof profile);
+    state_identity_u32(&hash, 21u, m->synth.pokeys);
+    state_identity_u32(&hash, 22u, m->synth.secondary);
+    muhtari__sha256_final(&hash, m->state_identity);
 }
 
 static int32_t state_i32_from_bits(uint32_t bits)
