@@ -2,6 +2,7 @@
 #
 # This file is also the command-line checks themselves, run as
 #   cmake -DRUN=<muhtari-run> [-DEMULATOR=<list>] -DCASE=<name> [-DOUT=<file>]
+#     [-DSTATE_TEST=<muhtari-test-state>]
 #     [-DVERSION_FILE=<file>] [-DFRAMES=<long run>] [-DDIR=<image directory>]
 #     [-DWORK=<scratch directory>]
 #     -P tests/runner/tests.cmake
@@ -36,7 +37,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     if(NOT valid)
       message(FATAL_ERROR "hashes: rejected valid state report rows")
     endif()
-    string(REGEX REPLACE "state[.]supergame_banked[.][a-z_]+ [0-9a-f]+\n" "" bad "${expected}")
+    string(REGEX REPLACE "state[.]supergame_banked[.][a-z0-9_]+ [0-9a-f]+\n" "" bad "${expected}")
     hashes_state_validate("${bad}" valid)
     if(valid)
       message(FATAL_ERROR "hashes: accepted missing state scenario")
@@ -148,33 +149,52 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endforeach()
     file(READ "${OUT}/hashes.txt" complete)
     foreach(fault missing_old duplicate_old missing_new duplicate_new missing_controller
-        duplicate_controller reordered_controller malformed_numeric wrong_family blank_controller)
+        duplicate_controller reordered_controller malformed_numeric wrong_family blank_controller
+        missing_state_scenario missing_state_field duplicate_state_field malformed_state_digest
+        changed_state_digest)
       set(prefix frame1)
-      if(fault MATCHES "_new$")
+      if(fault STREQUAL "missing_state_scenario")
+        string(REGEX REPLACE "state[.]supergame_banked[.][^\n]+\n" "" bad "${complete}")
+      elseif(fault STREQUAL "missing_state_field")
+        string(REGEX REPLACE "state[.]linear_ntsc[.]frame_sha256 [^\n]+\n" "" bad "${complete}")
+      elseif(fault STREQUAL "malformed_state_digest")
+        string(REGEX REPLACE "(state[.]linear_ntsc[.]bytes_sha256 )[0-9a-f]+" "\\1a" bad "${complete}")
+      elseif(fault STREQUAL "changed_state_digest")
+        string(REPEAT "0" 64 zero)
+        string(REGEX REPLACE "(state[.]linear_ntsc[.]bytes_sha256 )[0-9a-f]+" "\\1${zero}" bad "${complete}")
+      elseif(fault MATCHES "_new$")
         set(prefix "battery[.]second[.]save_sha256")
+      elseif(fault STREQUAL "duplicate_state_field")
+        set(prefix "state[.]linear_ntsc[.]bytes_sha256")
       elseif(fault MATCHES "controller$")
         set(prefix "controller[.]light[.]lightgun[.]both[.]frame1")
       endif()
-      string(REGEX MATCH "${prefix} [^\n]+\n" row "${complete}")
-      if(fault MATCHES "^missing_")
-        string(REPLACE "${row}" "" bad "${complete}")
-      elseif(fault MATCHES "^duplicate_")
-        set(bad "${complete}${row}")
-      elseif(fault STREQUAL "reordered_controller")
-        string(REPLACE "${row}" "" bad "${complete}")
-        string(APPEND bad "${row}")
-      elseif(fault STREQUAL "malformed_numeric")
-        string(REPLACE "controller.motion.driving.both.audio_frames 12"
-          "controller.motion.driving.both.audio_frames x" bad "${complete}")
-      elseif(fault STREQUAL "blank_controller")
-        string(REPLACE "controller.motion.driving.both.audio_frames 12\n"
-          "controller.motion.driving.both.audio_frames 12\n\n" bad "${complete}")
-      else()
-        string(REPLACE "controller.motion.driving.both." "controller.motion.foreign.both."
-          bad "${complete}")
+      if(NOT fault MATCHES "^(missing_state_scenario|missing_state_field|malformed_state_digest|changed_state_digest)$")
+        string(REGEX MATCH "${prefix} [^\n]+\n" row "${complete}")
+        if(fault MATCHES "^missing_")
+          string(REPLACE "${row}" "" bad "${complete}")
+        elseif(fault MATCHES "^duplicate_")
+          set(bad "${complete}${row}")
+        elseif(fault STREQUAL "reordered_controller")
+          string(REPLACE "${row}" "" bad "${complete}")
+          string(APPEND bad "${row}")
+        elseif(fault STREQUAL "malformed_numeric")
+          string(REPLACE "controller.motion.driving.both.audio_frames 12"
+            "controller.motion.driving.both.audio_frames x" bad "${complete}")
+        elseif(fault STREQUAL "blank_controller")
+          string(REPLACE "controller.motion.driving.both.audio_frames 12\n"
+            "controller.motion.driving.both.audio_frames 12\n\n" bad "${complete}")
+        else()
+          string(REPLACE "controller.motion.driving.both." "controller.motion.foreign.both."
+            bad "${complete}")
+        endif()
+      endif()
+      set(second "${bad}")
+      if(fault STREQUAL "changed_state_digest")
+        set(second "${complete}")
       endif()
       file(WRITE "${OUT}/hashes-battery/${fault}-a.txt" "${bad}")
-      file(WRITE "${OUT}/hashes-battery/${fault}-b.txt" "${bad}")
+      file(WRITE "${OUT}/hashes-battery/${fault}-b.txt" "${second}")
       execute_process(COMMAND "${CMAKE_COMMAND}" -DMODE=compare -DCOUNT=2
         "-DFILES=${OUT}/hashes-battery/${fault}-a.txt;${OUT}/hashes-battery/${fault}-b.txt"
         -P "${HASHES}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
@@ -259,6 +279,13 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
         message(FATAL_ERROR "hashes: report ${fault} control: ${rc} ${out}${err}")
       endif()
     endforeach()
+    execute_process(COMMAND "${CMAKE_COMMAND}" -DCASE=hashes_state_control
+      "-DHASHES=${HASHES}" "-DSTATE_TEST=${STATE_TEST}" "-DEMULATOR=${EMULATOR}"
+      "-DOUT=${OUT}" -P "${CMAKE_CURRENT_LIST_FILE}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 60)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "hashes: state report/fault controls failed: ${rc} ${out}${err}")
+    endif()
     return()
   endif()
   if(CASE STREQUAL "save_roundtrip")
@@ -1625,9 +1652,10 @@ set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
 muhtari_add_test(NAME runner.hashes_file
   COMMAND ${runner_check} -DCASE=hashes -DOUT=${PROJECT_BINARY_DIR} -DHASHES=${runner_hashes}
     -DDRIVER=$<TARGET_FILE:muhtari-test-diag> -DDIAG=${PROJECT_SOURCE_DIR}/tests/diag
+    -DSTATE_TEST=$<TARGET_FILE:muhtari-test-state>
     "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
     "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${CMAKE_CURRENT_LIST_FILE}
-  LABELS runner portable TIMEOUT 143) # ceil(2 x 71.07s), complete Windows x64 run40414104123/job121892328427; all3088 rows retained.
+  LABELS runner portable TIMEOUT 143) # ceil(2 x 71.07s), complete Windows x64 run40414104123/job121892328427; all3088 old rows plus78 state rows.
 set_tests_properties(runner.hashes_file PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 # The comparison's self tests: two files where three are required, and two
 # files one byte apart.
