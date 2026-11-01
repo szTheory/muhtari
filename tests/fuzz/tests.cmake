@@ -26,6 +26,7 @@ add_executable(muhtari-fuzz-loader-replay
   $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
 target_compile_definitions(muhtari-fuzz-loader-replay PRIVATE MUHTARI_FUZZ_REPLAY)
 target_include_directories(muhtari-fuzz-loader-replay PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(muhtari-fuzz-loader-replay PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-fuzz-loader-replay PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-fuzz-loader-replay)

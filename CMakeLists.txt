@@ -98,11 +98,18 @@ add_library(muhtari_cartdb OBJECT src/cartdb.c)
 add_library(muhtari STATIC
   $<TARGET_OBJECTS:muhtari_objs>
   $<TARGET_OBJECTS:muhtari_cpu>
-  $<TARGET_OBJECTS:muhtari_cartdb>)
+  $<TARGET_OBJECTS:muhtari_cartdb>
+  runner/crc32.c
+  runner/sha256.c)
 add_library(muhtari::muhtari ALIAS muhtari)
 target_include_directories(muhtari PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
+# State identity reuses the runner's owned algorithms through private headers.
+# Only the state source sees those headers. The archive owns separate objects;
+# object-library test consumers link it as a fallback for unresolved symbols.
+set_source_files_properties(src/state.c PROPERTIES
+  INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/runner)
 foreach(core_target IN ITEMS muhtari muhtari_objs muhtari_cpu muhtari_cartdb)
   muhtari_core_options(${core_target})
 endforeach()
