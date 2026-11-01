@@ -222,11 +222,22 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endif()
     set(image "${DIR}/game.a78")
     if(CASE STREQUAL "state_options")
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --frames0 --hash-state 0
+        --state-at-frame "0:${DIR}/zero.state" "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE zero_out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "0" OR NOT zero_out MATCHES "^state 0 sha256 [0-9a-f]+\n$")
+        message(FATAL_ERROR "zero-frame state-only operation failed: ${rc}\n${zero_out}${err}")
+      endif()
       execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --hash-state 1 --hash-state 0
         --state-at-frame "0:${DIR}/zero.state" --state-at-frame "1:${DIR}/one.state" "${image}"
         RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
       if(NOT rc STREQUAL "0" OR NOT out MATCHES "state 0 sha256 [0-9a-f]+\nstate 1 sha256 [0-9a-f]+\n")
         message(FATAL_ERROR "state option pass case failed: ${rc}\n${out}${err}")
+      endif()
+      string(REGEX MATCH "state 0 sha256 [0-9a-f]+" zero_digest "${zero_out}")
+      string(REGEX MATCH "state 0 sha256 [0-9a-f]+" initial_digest "${out}")
+      if(NOT zero_digest STREQUAL initial_digest)
+        message(FATAL_ERROR "state hash changed across same-content point zero output paths\n${zero_out}\n${out}")
       endif()
       return()
     endif()
