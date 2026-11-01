@@ -550,26 +550,35 @@ jobs:
       - name: RetroArch holds and releases input on the owned diagnostic
         if: ${{ !inputs.keyboard_probe_only }}
         run: |
-          printf 'muhtari-movie 1\nport1 proline\nport2 proline\n|......|......|...BB|\n' > build/frames/input-held.movie
-          frame=2
-          while [ "$frame" -le 120 ]; do
-            printf '|U...1.|......|...BB|\n' >> build/frames/input-held.movie
-            frame=$((frame + 1))
-          done
-          printf 'muhtari-movie 1\nport1 proline\nport2 proline\n|......|......|...BB|\n' > build/frames/input-released.movie
           mkdir -p build/input-saves
+          rc=0
+          cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
+            -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
+            -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-input-probe" \
+            "-DSAVE_DIR=$PWD/build/input-saves" -DFRAMES=600 -DROM=build/frames/input.a78 \
+            "-DKEYBOARD=$PWD/build/frames/keyboard-preflight" -DINPUT_MODE=probe \
+            "-DRAW_SHOTS=$PWD/build/ra-input-probe/shots" \
+            "-DSHOT=$PWD/build/frames/input-shot-released.png" -P tests/retroarch/run_retroarch.cmake \
+            > build/frames/input-wrapper.log 2>&1 || rc=$?
+          cat build/frames/input-wrapper.log
+          test "$rc" -eq 0
+          shots=(build/ra-input-probe/shots/*.png)
+          test "${#shots[@]}" -eq 1
+          test -f "${shots[0]}"
+          cp "${shots[0]}" build/frames/input-shot-held.png
           for mode in held released; do
-            frames=120
-            if [ "$mode" = released ]; then frames=600; fi
-            cmake -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
-              -DCORE=build/libretro/cores/muhtari_libretro.dylib -DINFO=build/libretro/info/muhtari_libretro.info \
-              -DTEMPLATE=tests/retroarch/test.cfg.in "-DRA_DIR=$PWD/build/ra-input-$mode" \
-              "-DSAVE_DIR=$PWD/build/input-saves" -DFRAMES="$frames" -DROM=build/frames/input.a78 \
-              "-DKEYBOARD=$PWD/build/frames/keyboard-preflight" -DINPUT_MODE="$mode" "-DSHOT=$PWD/build/frames/input-shot-$mode.png" \
-              -P tests/retroarch/run_retroarch.cmake
-            runner_movie="build/frames/input-$mode.movie"
-            build/runner/bin/muhtari-run --movie "$runner_movie" --frames "$frames" \
-              --dump-frame "$frames:build/frames/input-runner-$mode.png" build/frames/input.a78
+            buttons='|U...1.|......|...BB|'
+            if [ "$mode" = released ]; then buttons='|......|......|...BB|'; fi
+            # Expected movie spans all 600 observed runner frames.
+            printf 'muhtari-movie 1\nport1 proline\nport2 proline\n' > "build/frames/input-$mode.movie"
+            frame=0
+            while [ "$frame" -lt 600 ]; do
+              printf '%s\n' "$buttons" >> "build/frames/input-$mode.movie"
+              frame=$((frame + 1))
+            done
+            # Judge the independent runner frame.
+            build/runner/bin/muhtari-run --movie "build/frames/input-$mode.movie" --frames 600 \
+              --dump-frame "600:build/frames/input-runner-$mode.png" build/frames/input.a78
             for source in input-runner-$mode input-shot-$mode; do
               sips --deleteColorManagementProperties "build/frames/$source.png" > /dev/null
               sips -s format bmp "build/frames/$source.png" --out "build/frames/$source.bmp" > /dev/null
@@ -765,6 +774,9 @@ jobs:
           path: |
             build/frames/*.png
             build/ra-input-probe/shots/*.png
+            build/frames/input-wrapper.log
+            build/ra-input-probe/test.cfg
+            build/ra-input-probe/retroarch.log
 
   # Cachegrind instructions per frame of the test card, the pull request's
   # merge commit against its first parent measured twice (docs/testing.md,

@@ -2,7 +2,9 @@
 #define _DARWIN_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -104,8 +106,280 @@ static int directory_template(char *dir, size_t capacity, const char *root)
     int n = snprintf(dir, capacity, "%s/helper-trace-XXXXXX", root);
     return n >= 0 && (size_t)n < capacity;
 }
+static int same_file(const struct stat *left, const struct stat *right)
+{
+    return left->st_dev == right->st_dev && left->st_ino == right->st_ino;
+}
+static int descriptor_check(int core_fd, int ack_fd)
+{
+    const char *dir = getenv("MUHTARI_INPUT_TRACE_DIR");
+    char path[4096 + sizeof "/helper.trace"];
+    struct stat core, helper, directory, info;
+    REQUIRE(dir != NULL);
+    int n = snprintf(path, sizeof path, "%s/helper.trace", dir);
+    REQUIRE(n >= 0 && (size_t)n < sizeof path);
+    /* stat does not add an inspector descriptor to the observed fd3..127 set. */
+    REQUIRE(fstat(core_fd, &core) == 0 && stat(path, &helper) == 0 && stat(dir, &directory) == 0);
+    for (int i = 3; i < 128; i++) {
+        if (i == core_fd || i == ack_fd || fstat(i, &info) != 0)
+            continue;
+        const char *kind = same_file(&info, &helper)      ? "helper file"
+                           : same_file(&info, &directory) ? "trace directory"
+                           : same_file(&info, &core)      ? "extra core alias"
+                                                          : NULL;
+        if (kind != NULL) {
+            fprintf(stderr, "trace helper leaked %s descriptor\n", kind);
+            return 1;
+        }
+    }
+    return 0;
+}
+struct child_calls {
+    pid_t (*wait)(pid_t, int *, int);
+    int (*signal)(pid_t, int);
+    int (*clock)(clockid_t, struct timespec *);
+};
+static pid_t descriptor_reap(pid_t child, int *status, const struct timespec *deadline,
+                             const struct child_calls *calls)
+{
+    const struct timespec delay = {0, 1000000};
+    for (;;) {
+        pid_t result = calls->wait(child, status, WNOHANG);
+        if (result == child)
+            return child;
+        if (result < 0 && errno != EINTR) {
+            fprintf(stderr, "descriptor child wait failed: %d\n", errno);
+            return -1;
+        }
+        struct timespec now;
+        if (calls->clock(CLOCK_MONOTONIC, &now) != 0 || now.tv_sec > deadline->tv_sec ||
+            (now.tv_sec == deadline->tv_sec && now.tv_nsec >= deadline->tv_nsec)) {
+            int sent;
+            do {
+                sent = calls->signal(child, SIGKILL);
+            } while (sent < 0 && errno == EINTR);
+            /* ESRCH can mean the exact owned child exited between wait and kill. */
+            if (sent < 0 && errno != ESRCH) {
+                fprintf(stderr, "descriptor child kill failed: %d\n", errno);
+                return -1;
+            }
+            /* The unchanged enclosing five-second consumer bounds a stalled kernel wait.
+             * SIGKILL alone is not reap confirmation; only this exact PID is success. */
+            do {
+                result = calls->wait(child, status, 0);
+            } while (result < 0 && errno == EINTR);
+            if (result != child) {
+                fprintf(stderr, "descriptor child reap unconfirmed: %ld\n", (long)result);
+                return -1;
+            }
+            return child;
+        }
+        real_sleep(&delay);
+    }
+}
+enum reap_case {
+    REAP_NORMAL,
+    REAP_BEFORE,
+    REAP_DEADLINE,
+    REAP_CLOCK_ERROR,
+    REAP_POLL_INTERRUPTED,
+    REAP_KILL_INTERRUPTED,
+    REAP_KILL_ABSENT,
+    REAP_KILL_ERROR,
+    REAP_WAIT_INTERRUPTED,
+    REAP_WAIT_ERROR,
+    REAP_WAIT_ZERO,
+    REAP_WAIT_OTHER,
+    REAP_POLL_ERROR
+};
+static enum reap_case reap_case;
+static int reap_waits, reap_signals, reap_clocks, reap_bad;
+static pid_t reap_wait(pid_t child, int *status, int options)
+{
+    reap_waits++;
+    reap_bad |= child != 42 || status == NULL;
+    if (reap_waits == 1) {
+        reap_bad |= options != WNOHANG;
+        if (reap_case == REAP_NORMAL)
+            return child;
+        if (reap_case == REAP_POLL_ERROR || reap_case == REAP_POLL_INTERRUPTED) {
+            errno = reap_case == REAP_POLL_ERROR ? ECHILD : EINTR;
+            return -1;
+        }
+        return 0;
+    }
+    reap_bad |= options != (reap_case == REAP_BEFORE ? WNOHANG : 0);
+    if (reap_case == REAP_WAIT_INTERRUPTED && reap_waits == 2) {
+        errno = EINTR;
+        return -1;
+    }
+    if (reap_case == REAP_WAIT_ERROR) {
+        errno = ECHILD;
+        return -1;
+    }
+    if (reap_case == REAP_WAIT_ZERO)
+        return 0;
+    if (reap_case == REAP_WAIT_OTHER)
+        return child + 1;
+    *status = SIGKILL;
+    return child;
+}
+static int reap_signal(pid_t child, int signal)
+{
+    reap_signals++;
+    reap_bad |= child != 42 || signal != SIGKILL;
+    if (reap_case == REAP_KILL_INTERRUPTED && reap_signals == 1) {
+        errno = EINTR;
+        return -1;
+    }
+    if (reap_case == REAP_KILL_ABSENT || reap_case == REAP_KILL_ERROR) {
+        errno = reap_case == REAP_KILL_ABSENT ? ESRCH : EPERM;
+        return -1;
+    }
+    return 0;
+}
+static int reap_clock(clockid_t id, struct timespec *now)
+{
+    reap_clocks++;
+    reap_bad |= id != CLOCK_MONOTONIC;
+    now->tv_sec = 4;
+    now->tv_nsec = reap_case == REAP_BEFORE ? 6 : 7;
+    return reap_case == REAP_CLOCK_ERROR ? -1 : 0;
+}
+static int reap_controls(void)
+{
+    const struct child_calls calls = {reap_wait, reap_signal, reap_clock};
+    const struct timespec deadline = {4, 7};
+    for (reap_case = REAP_NORMAL; reap_case <= REAP_POLL_ERROR; reap_case++) {
+        reap_waits = reap_signals = reap_clocks = reap_bad = 0;
+        int status = 0;
+        pid_t result = descriptor_reap(42, &status, &deadline, &calls);
+        int failure = reap_case == REAP_KILL_ERROR || reap_case == REAP_WAIT_ERROR ||
+                      reap_case == REAP_WAIT_ZERO || reap_case == REAP_WAIT_OTHER ||
+                      reap_case == REAP_POLL_ERROR;
+        int no_kill =
+            reap_case == REAP_NORMAL || reap_case == REAP_BEFORE || reap_case == REAP_POLL_ERROR;
+        REQUIRE(result == (failure ? -1 : 42) && !reap_bad);
+        REQUIRE(reap_signals == (no_kill ? 0 : reap_case == REAP_KILL_INTERRUPTED ? 2 : 1));
+        REQUIRE(reap_waits == (reap_case == REAP_NORMAL || reap_case == REAP_POLL_ERROR ||
+                                       reap_case == REAP_KILL_ERROR
+                                   ? 1
+                               : reap_case == REAP_WAIT_INTERRUPTED ? 3
+                                                                    : 2));
+        REQUIRE(reap_clocks == (reap_case == REAP_NORMAL || reap_case == REAP_POLL_ERROR ? 0 : 1));
+        if (!failure && reap_case != REAP_NORMAL)
+            REQUIRE(WIFSIGNALED(status) && WTERMSIG(status) == SIGKILL);
+    }
+    puts("owned child deadline, interrupt and terminal-error reap controls passed");
+    return 0;
+}
+static int descriptor_control(const char *exe, const char *root, const char *mode)
+{
+    char dir[4096], path[sizeof dir + sizeof "/helper.trace"];
+    REQUIRE(directory_template(dir, sizeof dir, root) && mkdtemp(dir) != NULL);
+    REQUIRE(setenv("MUHTARI_INPUT_TRACE_DIR", dir, 1) == 0);
+    REQUIRE(snprintf(path, sizeof path, "%s/core.trace", dir) > 0);
+    int core = open(path, O_CREAT | O_EXCL | O_RDWR, 0600);
+    REQUIRE(core >= 3 && fcntl(core, F_SETFD, 0) == 0);
+    REQUIRE(snprintf(path, sizeof path, "%s/helper.trace", dir) > 0);
+    int helper = open(path, O_CREAT | O_EXCL | O_RDWR, 0600);
+    REQUIRE(helper >= 3 && close(helper) == 0);
+    REQUIRE(snprintf(path, sizeof path, "%s/sentinel", dir) > 0);
+    int sentinel = open(path, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
+    REQUIRE(sentinel >= 3 && write(sentinel, "keep", 4) == 4);
+    int alias = -1;
+    const char *diagnostic = NULL;
+    if (strcmp(mode, "inherit") == 0) {
+        REQUIRE(fcntl(sentinel, F_SETFD, 0) == 0);
+    } else if (strcmp(mode, "helper") == 0) {
+        REQUIRE(snprintf(path, sizeof path, "%s/helper.trace", dir) > 0);
+        alias = open(path, O_RDONLY);
+        diagnostic = "trace helper leaked helper file descriptor\n";
+    } else if (strcmp(mode, "directory") == 0) {
+        alias = open(dir, O_RDONLY);
+        diagnostic = "trace helper leaked trace directory descriptor\n";
+    } else if (strcmp(mode, "core") == 0) {
+        alias = dup(core);
+        diagnostic = "trace helper leaked extra core alias descriptor\n";
+    } else {
+        REQUIRE(strcmp(mode, "clean") == 0 || strcmp(mode, "cloexec") == 0);
+    }
+    REQUIRE((diagnostic == NULL || alias >= 3) && sentinel < 128 && alias < 128);
+    int ack[2], errors[2];
+    REQUIRE(pipe(ack) == 0 && pipe(errors) == 0);
+    char core_text[32], ack_text[32];
+    snprintf(core_text, sizeof core_text, "%d", core);
+    snprintf(ack_text, sizeof ack_text, "%d", ack[1]);
+    REQUIRE(setenv("MUHTARI_INPUT_TRACE_FD", core_text, 1) == 0);
+    struct timespec deadline;
+    REQUIRE(clock_gettime(CLOCK_MONOTONIC, &deadline) == 0);
+    deadline.tv_sec += 4;
+    pid_t child = native_fork();
+    REQUIRE(child >= 0);
+    if (child == 0) {
+        close(ack[0]);
+        close(errors[0]);
+        if (strcmp(mode, "clean") == 0)
+            close(sentinel);
+        if (dup2(errors[1], STDERR_FILENO) == -1)
+            _exit(126);
+        close(errors[1]);
+        execl(exe, exe, "--fixture", ack_text, (char *)NULL);
+        _exit(127);
+    }
+    close(ack[1]);
+    close(errors[1]);
+    close(core);
+    struct pollfd ready = {ack[0], POLLIN, 0};
+    char byte = 0;
+    ssize_t count = poll(&ready, 1, 3000) > 0 ? read(ack[0], &byte, 1) : -1;
+    int killed = 0;
+    if (count != 0)
+        killed = kill(child, SIGKILL) == 0;
+    int status = 0;
+    const struct child_calls calls = {waitpid, kill, clock_gettime};
+    pid_t reaped = descriptor_reap(child, &status, &deadline, &calls);
+    char error[256] = {0}, bytes[4];
+    ssize_t length = -1;
+    if (reaped == child)
+        length = read(errors[0], error, sizeof error - 1);
+    int retained = lseek(sentinel, 0, SEEK_SET) == 0 && read(sentinel, bytes, 4) == 4 &&
+                   memcmp(bytes, "keep", 4) == 0;
+    close(ack[0]);
+    close(errors[0]);
+    close(sentinel);
+    if (alias >= 0)
+        close(alias);
+    REQUIRE(reaped == child && retained);
+    if (diagnostic != NULL) {
+        REQUIRE(count == 0 && WIFEXITED(status) && WEXITSTATUS(status) == 1 &&
+                length == (ssize_t)strlen(diagnostic) && strcmp(error, diagnostic) == 0);
+    } else {
+        REQUIRE(count == 1 && byte == '!' && killed && WIFSIGNALED(status) &&
+                WTERMSIG(status) == SIGKILL && length == 0);
+    }
+    printf("descriptor %s: exact oracle, child reaped, sentinel retained\n", mode);
+    return 0;
+}
 int main(int argc, char **argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--identity") == 0) {
+        REQUIRE(reap_controls() == 0);
+        struct stat left = {0}, right = {0};
+        left.st_dev = 1;
+        left.st_ino = 7;
+        right = left;
+        REQUIRE(same_file(&left, &right));
+        right.st_dev = 2;
+        REQUIRE(!same_file(&left, &right));
+        right = left;
+        right.st_ino = 8;
+        REQUIRE(!same_file(&left, &right));
+        puts("device and inode identity passed");
+        return 0;
+    }
+    if (argc == 4 && strcmp(argv[1], "--descriptor-control") == 0)
+        return descriptor_control(argv[0], argv[3], argv[2]);
     if (argc > 1 && strcmp(argv[1], "--probe") == 0) {
         REQUIRE(pipe(sync_pipe) == 0);
         char value[32];
@@ -121,12 +395,9 @@ int main(int argc, char **argv)
         const char *ack_text =
             strcmp(argv[1], "--fixture") == 0 ? argv[2] : getenv("MUHTARI_TRACE_SYNC_FD");
         REQUIRE(ack_text != NULL);
-        /* Helper file and directory cannot leak through exec. */
-        struct stat info, trace_info;
-        REQUIRE(fstat(fd, &trace_info) == 0);
-        for (int i = 3; i < 128; i++)
-            if (i != fd && i != atoi(ack_text) && fstat(i, &info) == 0 && S_ISREG(info.st_mode))
-                REQUIRE(info.st_ino != trace_info.st_ino && (fcntl(i, F_GETFD) & FD_CLOEXEC));
+        /* Unrelated inherited descriptors are allowed; owned trace aliases are not. */
+        if (descriptor_check(fd, atoi(ack_text)) != 0)
+            return 1;
         it_writer w;
         REQUIRE(it_begin(&w, fd, IT_CORE, (uint32_t)getppid()));
         if (getenv("MUHTARI_TRACE_FIXTURE_WRITE_FAILURE") != NULL)
