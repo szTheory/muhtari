@@ -124,6 +124,7 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.host.state
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> state
       ${PROJECT_SOURCE_DIR}/tests/diag/battery.a78
+      ${PROJECT_SOURCE_DIR}/tests/diag/linear16.a78
     LABELS libretro portable TIMEOUT 10)
   # Fault prevented: the core RetroArch loads shows a frame, timing or
   # geometry other than the library's, or needs content to start.
