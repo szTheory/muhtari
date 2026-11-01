@@ -17,7 +17,7 @@
 
 #define PORTS_CHARGED (UINT64_C(1) << 32)
 
-static void ports_rearm(muhtari *m);
+void muhtari__ports_rearm(muhtari *m);
 
 /* The Software Guide's 400us wait uses the selected master clock;
    controllers.md, Keypad. NTSC retains its released deadline. */
@@ -99,7 +99,7 @@ void muhtari__ports_rows(muhtari *m, uint64_t tick)
         }
         m->ports.keypad_low[p] = low;
     }
-    ports_rearm(m);
+    muhtari__ports_rearm(m);
 }
 
 /* 7800 10k series + 1M pot, 68nF and fitted comparator threshold:
@@ -186,7 +186,7 @@ uint64_t muhtari__ports_next_event(const muhtari *m)
     return m->ports.next_tick != 0u ? m->ports.next_tick : UINT64_MAX;
 }
 
-static void ports_rearm(muhtari *m)
+void muhtari__ports_rearm(muhtari *m)
 {
     uint64_t next = UINT64_MAX;
     for (unsigned p = 0u; p < 2u; p++) {
@@ -282,7 +282,7 @@ void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x, uint64
             }
         }
     }
-    ports_rearm(m);
+    muhtari__ports_rearm(m);
 }
 
 void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
@@ -340,7 +340,7 @@ void muhtari__ports_catch_up(muhtari *m, uint64_t tick)
            cycle returns to its starting tuple (controllers.md, Driving). */
         muhtari__riot_pins_changed(m);
         muhtari__tia_pins_changed(m);
-        ports_rearm(m);
+        muhtari__ports_rearm(m);
         next = muhtari__ports_next_event(m);
     }
 }
@@ -805,7 +805,7 @@ void muhtari__ports_latch(muhtari *m)
     for (unsigned p = 0u; p < 2u; p++) {
         ports_light_rearm(m, p, m->bus.ticks);
     }
-    ports_rearm(m);
+    muhtari__ports_rearm(m);
     /* The new pins reach PA7's edge detector at this tick. */
     muhtari__riot_pins_changed(m);
     muhtari__tia_pins_changed(m);

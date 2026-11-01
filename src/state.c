@@ -1,34 +1,880 @@
-/* Private state payload visitor. The canonical field traversal is introduced
-   after its continuation test; public serialization remains unavailable. */
+/* The private packed machine visitor. Its fields and order are specified in
+   the Phase 13 execution design; this file exposes no host state API. */
+#include <limits.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "internal.h"
 
+#define STATE_HEADER_BYTES 64u
+#define STATE_TOTAL_FIXED_BYTES 10972u
+#define STATE_FIXED_BYTES (STATE_TOTAL_FIXED_BYTES - STATE_HEADER_BYTES)
+#define STATE_EXPANSION_BYTES 131072u
+
+enum state_mode { STATE_SIZE, STATE_WRITE, STATE_VALIDATE, STATE_APPLY, STATE_LIVE };
+enum state_rule {
+    STATE_ANY,
+    STATE_BOOL,
+    STATE_MASK,
+    STATE_RANGE,
+    STATE_SIGNED_RANGE,
+    STATE_PORT_DEVICE,
+    STATE_POT_ACTION,
+    STATE_MARIA_LINE,
+    STATE_MARIA_EVENT,
+    STATE_MARIA_PIXEL,
+    STATE_SYNTH_PCM_READ,
+    STATE_SYNTH_PCM_COUNT,
+    STATE_SYNTH_SAMPLE_CONFIG,
+    STATE_POKEY_POLY17,
+    STATE_POKEY_POLY4,
+    STATE_POKEY_POLY5,
+    STATE_SAVEKEY_PHASE,
+    STATE_SAVEKEY_ADDRESS,
+    STATE_SAVEKEY_PAGE_BASE,
+    STATE_SAVEKEY_BITS
+};
+enum state_mark {
+    MARK_AUDIO_REM,
+    MARK_FRAME_START,
+    MARK_FRAME_DEADLINE,
+    MARK_FRAMES,
+    MARK_LAG_FRAMES,
+    MARK_CPU_PHI2,
+    MARK_BUS_ORIGIN_TICK,
+    MARK_BUS_ORIGIN_PHI2,
+    MARK_BUS_PHI2,
+    MARK_BUS_TICKS,
+    MARK_MARIA_ORIGIN,
+    MARK_SYNTH_TICK,
+    MARK_SYNTH_ORIGIN,
+    MARK_SYNTH_HORIZON,
+    MARK_SYNTH_PENDING_TICK,
+    MARK_SYNTH_PHASE,
+    MARK_SYNTH_SAMPLE_NUM,
+    MARK_SYNTH_SAMPLE_DEN,
+    MARK_SYNTH_MAX_SAMPLES,
+    MARK_SYNTH_PENDING,
+    MARK_COUNT
+};
+
+struct state_cursor {
+    enum state_mode mode;
+    const muhtari *source;
+    const uint8_t *input;
+    uint8_t *output;
+    size_t limit;
+    size_t offset;
+    uint64_t marks[MARK_COUNT];
+    uint8_t valid;
+};
+
+static uint32_t state_get_u32(const uint8_t *bytes)
+{
+    return (uint32_t)bytes[0] | ((uint32_t)bytes[1] << 8) | ((uint32_t)bytes[2] << 16) |
+           ((uint32_t)bytes[3] << 24);
+}
+
+static uint64_t state_get_u64(const uint8_t *bytes)
+{
+    return (uint64_t)state_get_u32(bytes) | ((uint64_t)state_get_u32(bytes + 4u) << 32);
+}
+
+static void state_put_u32(uint8_t *bytes, uint32_t value)
+{
+    bytes[0] = (uint8_t)value;
+    bytes[1] = (uint8_t)(value >> 8);
+    bytes[2] = (uint8_t)(value >> 16);
+    bytes[3] = (uint8_t)(value >> 24);
+}
+
+static void state_put_u64(uint8_t *bytes, uint64_t value)
+{
+    state_put_u32(bytes, (uint32_t)value);
+    state_put_u32(bytes + 4u, (uint32_t)(value >> 32));
+}
+
+static int32_t state_i32_from_bits(uint32_t bits)
+{
+    if (bits <= (uint32_t)INT32_MAX)
+        return (int32_t)bits;
+    return (int32_t)(-1 - (int32_t)~bits);
+}
+
+static int64_t state_i64_from_bits(uint64_t bits)
+{
+    if (bits <= (uint64_t)INT64_MAX)
+        return (int64_t)bits;
+    return -1 - (int64_t)~bits;
+}
+
+static uint64_t state_native_value(const void *source, unsigned width, int is_signed)
+{
+    if (width == 1u)
+        return *(const uint8_t *)source;
+    if (width == 2u) {
+        uint16_t value;
+        memcpy(&value, source, sizeof value);
+        return value;
+    }
+    if (width == 4u) {
+        if (is_signed != 0) {
+            int32_t value;
+            memcpy(&value, source, sizeof value);
+            return (uint32_t)value;
+        }
+        uint32_t value;
+        memcpy(&value, source, sizeof value);
+        return value;
+    }
+    if (is_signed != 0) {
+        int64_t value;
+        memcpy(&value, source, sizeof value);
+        return (uint64_t)value;
+    }
+    uint64_t value;
+    memcpy(&value, source, sizeof value);
+    return value;
+}
+
+static void state_store_native(void *target, unsigned width, int is_signed, uint64_t value)
+{
+    if (width == 1u) {
+        uint8_t decoded = (uint8_t)value;
+        memcpy(target, &decoded, sizeof decoded);
+    } else if (width == 2u) {
+        uint16_t decoded = (uint16_t)value;
+        memcpy(target, &decoded, sizeof decoded);
+    } else if (width == 4u && is_signed != 0) {
+        int32_t decoded = state_i32_from_bits((uint32_t)value);
+        memcpy(target, &decoded, sizeof decoded);
+    } else if (width == 4u) {
+        uint32_t decoded = (uint32_t)value;
+        memcpy(target, &decoded, sizeof decoded);
+    } else if (is_signed != 0) {
+        int64_t decoded = state_i64_from_bits(value);
+        memcpy(target, &decoded, sizeof decoded);
+    } else {
+        memcpy(target, &value, sizeof value);
+    }
+}
+
+static int state_port_device_valid(uint64_t value)
+{
+    return value <= MUHTARI_PORT_MEGA7800 || value == MUHTARI_PORT_UNPLUGGED ||
+           value == MUHTARI_PORT_SAVEKEY;
+}
+
+static int state_rule_valid(const struct state_cursor *cursor, enum state_rule rule, uint64_t value,
+                            unsigned width, int is_signed, uint64_t lower, uint64_t upper)
+{
+    switch (rule) {
+    case STATE_ANY:
+        return 1;
+    case STATE_BOOL:
+        return value <= 1u;
+    case STATE_MASK:
+        return (value & ~lower) == 0u;
+    case STATE_RANGE:
+        return value >= lower && value <= upper;
+    case STATE_SIGNED_RANGE:
+        if (is_signed != 0) {
+            int64_t signed_value = width == 4u ? state_i32_from_bits((uint32_t)value)
+                                               : state_i64_from_bits(value);
+            int64_t signed_lower = state_i64_from_bits(lower);
+            int64_t signed_upper = state_i64_from_bits(upper);
+            return signed_value >= signed_lower && signed_value <= signed_upper;
+        }
+        return 0;
+    case STATE_PORT_DEVICE:
+        return state_port_device_valid(value);
+    case STATE_POT_ACTION:
+        return value <= (UINT64_C(1) << 32);
+    case STATE_MARIA_LINE:
+        return value <= muhtari__timing(cursor->source).lines;
+    case STATE_MARIA_EVENT:
+        return value <= 3u;
+    case STATE_MARIA_PIXEL:
+        return value <= MUHTARI__WIDTH;
+    case STATE_SYNTH_PCM_READ:
+        return value < MUHTARI__SYNTH_PCM_CAPACITY;
+    case STATE_SYNTH_PCM_COUNT:
+        return value <= MUHTARI__SYNTH_PCM_CAPACITY;
+    case STATE_SYNTH_SAMPLE_CONFIG: {
+        struct muhtari__timing timing = muhtari__timing(cursor->source);
+        return value == timing.sample_num || value == timing.sample_den || value == timing.max_samples;
+    }
+    case STATE_POKEY_POLY17:
+        return (value & ~UINT64_C(0x1FFFF)) == 0u;
+    case STATE_POKEY_POLY4:
+        return value <= 15u;
+    case STATE_POKEY_POLY5:
+        return value <= 31u;
+    case STATE_SAVEKEY_PHASE:
+        return value <= 11u;
+    case STATE_SAVEKEY_ADDRESS:
+        return value <= 0x7FFFu;
+    case STATE_SAVEKEY_PAGE_BASE:
+        return value <= 0x7FC0u && (value & 63u) == 0u;
+    case STATE_SAVEKEY_BITS:
+        return value <= 8u;
+    }
+    return 0;
+}
+
+static int state_reserve(struct state_cursor *cursor, size_t bytes, size_t *at)
+{
+    if (bytes > SIZE_MAX - cursor->offset) {
+        cursor->valid = 0u;
+        return 0;
+    }
+    *at = cursor->offset;
+    cursor->offset += bytes;
+    if (cursor->mode == STATE_SIZE || cursor->mode == STATE_LIVE)
+        return 1;
+    if (*at > cursor->limit || bytes > cursor->limit - *at) {
+        cursor->valid = 0u;
+        return 0;
+    }
+    return 1;
+}
+
+static void state_scalar(struct state_cursor *cursor, const void *source, void *target,
+                         unsigned width, int is_signed, enum state_rule rule, uint64_t lower,
+                         uint64_t upper, enum state_mark mark, int force_zero)
+{
+    size_t at;
+    if (state_reserve(cursor, (size_t)width, &at) == 0)
+        return;
+    if (cursor->mode == STATE_SIZE)
+        return;
+
+    uint64_t value = 0u;
+    if (cursor->mode == STATE_WRITE) {
+        value = force_zero != 0 ? 0u : state_native_value(source, width, is_signed);
+        if (width == 1u) {
+            cursor->output[at] = (uint8_t)value;
+        } else if (width == 2u) {
+            cursor->output[at] = (uint8_t)value;
+            cursor->output[at + 1u] = (uint8_t)(value >> 8);
+        } else if (width == 4u) {
+            state_put_u32(cursor->output + at, (uint32_t)value);
+        } else {
+            state_put_u64(cursor->output + at, value);
+        }
+        return;
+    }
+
+    if (cursor->mode == STATE_LIVE) {
+        value = state_native_value(source, width, is_signed);
+    } else if (width == 1u) {
+        value = cursor->input[at];
+    } else if (width == 2u) {
+        value = (uint64_t)cursor->input[at] | ((uint64_t)cursor->input[at + 1u] << 8);
+    } else if (width == 4u) {
+        value = state_get_u32(cursor->input + at);
+    } else {
+        value = state_get_u64(cursor->input + at);
+    }
+
+    if ((cursor->mode == STATE_VALIDATE && force_zero != 0 && value != 0u) ||
+        state_rule_valid(cursor, rule, value, width, is_signed, lower, upper) == 0)
+        cursor->valid = 0u;
+    if (mark < MARK_COUNT)
+        cursor->marks[mark] = value;
+    if (cursor->mode == STATE_APPLY && target != NULL) {
+        if (force_zero != 0)
+            value = 0u;
+        state_store_native(target, width, is_signed, value);
+    }
+}
+
+static void state_bytes(struct state_cursor *cursor, const uint8_t *source, uint8_t *target,
+                        size_t bytes, size_t zero_from)
+{
+    size_t at;
+    if (state_reserve(cursor, bytes, &at) == 0 || bytes == 0u)
+        return;
+    if (cursor->mode == STATE_SIZE)
+        return;
+    if (cursor->mode == STATE_WRITE) {
+        if (zero_from >= bytes) {
+            memcpy(cursor->output + at, source, bytes);
+        } else {
+            memcpy(cursor->output + at, source, zero_from);
+            memset(cursor->output + at + zero_from, 0, bytes - zero_from);
+        }
+    } else if (cursor->mode == STATE_LIVE) {
+        return;
+    } else if (cursor->mode == STATE_VALIDATE) {
+        if (zero_from < bytes) {
+            for (size_t i = zero_from; i < bytes; i++) {
+                if (cursor->input[at + i] != 0u)
+                    cursor->valid = 0u;
+            }
+        }
+    } else if (target != NULL) {
+        memcpy(target, cursor->input + at, bytes);
+        if (zero_from < bytes)
+            memset(target + zero_from, 0, bytes - zero_from);
+    }
+}
+
+static void state_input_port(struct state_cursor *cursor, const muhtari_port_input *source,
+                             muhtari_port_input *target)
+{
+#define INPUT_FIELD(name, width, is_signed)                                                        \
+    state_scalar(cursor, &source->name, target != NULL ? &target->name : NULL, width, is_signed,   \
+                 STATE_ANY, 0u, 0u, MARK_COUNT, 0)
+    INPUT_FIELD(device, 4u, 0);
+    INPUT_FIELD(buttons, 4u, 0);
+    INPUT_FIELD(paddle[0], 4u, 0);
+    INPUT_FIELD(paddle[1], 4u, 0);
+    INPUT_FIELD(keypad, 4u, 0);
+    INPUT_FIELD(dx, 4u, 1);
+    INPUT_FIELD(dy, 4u, 1);
+    INPUT_FIELD(gun_x, 4u, 0);
+    INPUT_FIELD(gun_y, 4u, 0);
+    INPUT_FIELD(flags, 4u, 0);
+#undef INPUT_FIELD
+}
+
+static void state_pokey(struct state_cursor *cursor, const struct muhtari__pokey *source,
+                        struct muhtari__pokey *target)
+{
+#define POKEY_FIELD(name, width, is_signed, rule, lower, upper)                                    \
+    state_scalar(cursor, &source->name, target != NULL ? &target->name : NULL, width, is_signed,   \
+                 rule, lower, upper, MARK_COUNT, 0)
+    POKEY_FIELD(cycle, 8u, 0, STATE_ANY, 0u, 0u);
+    POKEY_FIELD(tick, 8u, 0, STATE_ANY, 0u, 0u);
+    POKEY_FIELD(half, 8u, 0, STATE_ANY, 0u, 0u);
+    for (unsigned i = 0u; i < 2u; i++) {
+        state_scalar(cursor, &source->carry[i], target != NULL ? &target->carry[i] : NULL, 8u, 0,
+                     STATE_ANY, 0u, 0u, MARK_COUNT, 0);
+    }
+    for (unsigned i = 0u; i < 2u; i++) {
+        state_scalar(cursor, &source->resync[i], target != NULL ? &target->resync[i] : NULL, 8u, 0,
+                     STATE_ANY, 0u, 0u, MARK_COUNT, 0);
+    }
+    POKEY_FIELD(poly17, 4u, 0, STATE_POKEY_POLY17, 0u, 0u);
+    POKEY_FIELD(poly4, 1u, 0, STATE_POKEY_POLY4, 0u, 0u);
+    POKEY_FIELD(poly5, 1u, 0, STATE_POKEY_POLY5, 0u, 0u);
+    state_bytes(cursor, source->noise, target != NULL ? target->noise : NULL, sizeof source->noise,
+                SIZE_MAX);
+    POKEY_FIELD(prescale28, 2u, 0, STATE_ANY, 0u, 0u);
+    POKEY_FIELD(prescale114, 2u, 0, STATE_ANY, 0u, 0u);
+    POKEY_FIELD(audctl, 1u, 0, STATE_ANY, 0u, 0u);
+    POKEY_FIELD(skctl, 1u, 0, STATE_ANY, 0u, 0u);
+    POKEY_FIELD(irqen, 1u, 0, STATE_MASK, 7u, 0u);
+    POKEY_FIELD(irqst, 1u, 0, STATE_ANY, 0u, 0u);
+    POKEY_FIELD(initialized, 1u, 0, STATE_BOOL, 0u, 0u);
+    state_bytes(cursor, source->hp_delay, target != NULL ? target->hp_delay : NULL,
+                sizeof source->hp_delay, SIZE_MAX);
+    state_bytes(cursor, source->hp_capture, target != NULL ? target->hp_capture : NULL,
+                sizeof source->hp_capture, SIZE_MAX);
+    for (unsigned i = 0u; i < 3u; i++) {
+        state_scalar(cursor, &source->irq_enable[i], target != NULL ? &target->irq_enable[i] : NULL,
+                     1u, 0, STATE_MASK, 7u, 0u, MARK_COUNT, 0);
+    }
+    POKEY_FIELD(irq_signal, 1u, 0, STATE_BOOL, 0u, 0u);
+    for (unsigned ch = 0u; ch < 4u; ch++) {
+        const struct muhtari__pokey_channel *sc = &source->channel[ch];
+        struct muhtari__pokey_channel *tc = target != NULL ? &target->channel[ch] : NULL;
+#define CHANNEL_FIELD(name, width, rule, lower, upper)                                              \
+        state_scalar(cursor, &sc->name, tc != NULL ? &tc->name : NULL, width, 0, rule, lower,     \
+                     upper, MARK_COUNT, 0)
+        CHANNEL_FIELD(reload, 8u, STATE_ANY, 0u, 0u);
+        CHANNEL_FIELD(fire, 8u, STATE_ANY, 0u, 0u);
+        CHANNEL_FIELD(last_fire, 8u, STATE_ANY, 0u, 0u);
+        CHANNEL_FIELD(fires, 4u, STATE_ANY, 0u, 0u);
+        CHANNEL_FIELD(count, 2u, STATE_RANGE, 0u, 255u);
+        CHANNEL_FIELD(audf, 1u, STATE_ANY, 0u, 0u);
+        CHANNEL_FIELD(audc, 1u, STATE_ANY, 0u, 0u);
+        CHANNEL_FIELD(output, 1u, STATE_BOOL, 0u, 0u);
+        CHANNEL_FIELD(hp, 1u, STATE_BOOL, 0u, 0u);
+        CHANNEL_FIELD(starting, 1u, STATE_BOOL, 0u, 0u);
+#undef CHANNEL_FIELD
+    }
+#undef POKEY_FIELD
+}
+
+static void state_visit(const muhtari *source, muhtari *target, struct state_cursor *cursor)
+{
+#define FIELD(member, width, is_signed, rule, lower, upper, mark)                                  \
+    state_scalar(cursor, &source->member, target != NULL ? &target->member : NULL, width,          \
+                 is_signed, rule, lower, upper, mark, 0)
+#define U8(member) FIELD(member, 1u, 0, STATE_ANY, 0u, 0u, MARK_COUNT)
+#define U16(member) FIELD(member, 2u, 0, STATE_ANY, 0u, 0u, MARK_COUNT)
+#define U32(member) FIELD(member, 4u, 0, STATE_ANY, 0u, 0u, MARK_COUNT)
+#define U64(member) FIELD(member, 8u, 0, STATE_ANY, 0u, 0u, MARK_COUNT)
+#define CHECK_U8(member, rule, lower, upper) FIELD(member, 1u, 0, rule, lower, upper, MARK_COUNT)
+#define CHECK_U16(member, rule, lower, upper) FIELD(member, 2u, 0, rule, lower, upper, MARK_COUNT)
+#define CHECK_U32(member, rule, lower, upper) FIELD(member, 4u, 0, rule, lower, upper, MARK_COUNT)
+#define CHECK_U64(member, rule, lower, upper, mark) FIELD(member, 8u, 0, rule, lower, upper, mark)
+
+    FIELD(audio_rem, 4u, 0, STATE_RANGE, 0u, muhtari__timing(source).sample_den - 1u,
+          MARK_AUDIO_REM);
+    CHECK_U64(frame_start, STATE_ANY, 0u, 0u, MARK_FRAME_START);
+    CHECK_U64(frame_deadline, STATE_ANY, 0u, 0u, MARK_FRAME_DEADLINE);
+    CHECK_U64(frames, STATE_ANY, 0u, 0u, MARK_FRAMES);
+    CHECK_U64(lag_frames, STATE_ANY, 0u, 0u, MARK_LAG_FRAMES);
+
+    CHECK_U64(cpu.poll_phi2, STATE_ANY, 0u, 0u, MARK_CPU_PHI2);
+    U16(cpu.pc);
+    U8(cpu.a);
+    U8(cpu.x);
+    U8(cpu.y);
+    U8(cpu.s);
+    U8(cpu.p);
+    CHECK_U8(cpu.jammed, STATE_BOOL, 0u, 0u);
+    CHECK_U8(cpu.irq_sampled, STATE_BOOL, 0u, 0u);
+
+    CHECK_U64(bus.clock_origin_tick, STATE_ANY, 0u, 0u, MARK_BUS_ORIGIN_TICK);
+    CHECK_U64(bus.clock_origin_phi2, STATE_ANY, 0u, 0u, MARK_BUS_ORIGIN_PHI2);
+    CHECK_U64(bus.phi2, STATE_ANY, 0u, 0u, MARK_BUS_PHI2);
+    U64(bus.nmi_phi2);
+    CHECK_U64(bus.ticks, STATE_ANY, 0u, 0u, MARK_BUS_TICKS);
+    U64(bus.rdy_release);
+    U64(bus.halt_at);
+    U64(bus.halt_until);
+    U64(bus.halt_fall);
+    U64(bus.maria_from);
+    U64(bus.maria_until);
+    U64(bus.nmi_at);
+    U8(bus.open_bus);
+    CHECK_U8(bus.inptctrl, STATE_MASK, MUHTARI__INPTCTRL_BITS, 0u);
+    CHECK_U8(bus.halt_gate_writes, STATE_RANGE, 0u, 2u);
+    CHECK_U8(bus.halt_stage, STATE_RANGE, 0u, 2u);
+    CHECK_U8(bus.halt_cycles, STATE_RANGE, 0u, 2u);
+    CHECK_U8(bus.nmi_pending, STATE_BOOL, 0u, 0u);
+    CHECK_U8(bus.cycle_len, STATE_MASK, 6u, 0u);
+    CHECK_U8(bus.sync, STATE_BOOL, 0u, 0u);
+    CHECK_U8(bus.irq_pipe, STATE_MASK, 7u, 0u);
+    CHECK_U8(bus.irq_level, STATE_BOOL, 0u, 0u);
+
+    U64(riot.timer_phi2);
+    U16(riot.timer_n);
+    CHECK_U8(riot.timer_shift, STATE_MASK, 15u, 0u);
+    CHECK_U8(riot.timer_cleared, STATE_BOOL, 0u, 0u);
+    U8(riot.ora);
+    U8(riot.ddra);
+    U8(riot.orb);
+    U8(riot.ddrb);
+    CHECK_U8(riot.pa7_flag, STATE_BOOL, 0u, 0u);
+    CHECK_U8(riot.pa7_positive, STATE_BOOL, 0u, 0u);
+    CHECK_U8(riot.pa7_detect, STATE_BOOL, 0u, 0u);
+    state_bytes(cursor, source->riot.ram, target != NULL ? target->riot.ram : NULL,
+                sizeof source->riot.ram, SIZE_MAX);
+    state_bytes(cursor, source->ram, target != NULL ? target->ram : NULL, sizeof source->ram,
+                SIZE_MAX);
+
+    state_bytes(cursor, source->maria.reg, target != NULL ? target->maria.reg : NULL,
+                sizeof source->maria.reg, SIZE_MAX);
+    U16(maria.dll);
+    U16(maria.dl);
+    U8(maria.entry);
+    U8(maria.offset);
+    CHECK_U8(maria.write_mode, STATE_BOOL, 0u, 0u);
+    CHECK_U8(maria.write_buf, STATE_RANGE, 0u, 1u);
+    state_bytes(cursor, &source->maria.line_ram[0][0],
+                target != NULL ? &target->maria.line_ram[0][0] : NULL,
+                sizeof source->maria.line_ram, SIZE_MAX);
+    for (unsigned i = 0u; i < 313u; i++) {
+        const struct muhtari__line_stats *ss = &source->maria.stats[i];
+        struct muhtari__line_stats *ts = target != NULL ? &target->maria.stats[i] : NULL;
+        int inactive = i >= muhtari__timing(source).lines;
+        state_scalar(cursor, &ss->cost, ts != NULL ? &ts->cost : NULL, 2u, 0, STATE_RANGE, 0u,
+                     MUHTARI__LINE_TICKS, MARK_COUNT, inactive);
+        state_scalar(cursor, &ss->bytes, ts != NULL ? &ts->bytes : NULL, 2u, 0, STATE_ANY, 0u,
+                     0u, MARK_COUNT, inactive);
+        state_scalar(cursor, &ss->headers, ts != NULL ? &ts->headers : NULL, 1u, 0, STATE_ANY,
+                     0u, 0u, MARK_COUNT, inactive);
+        state_scalar(cursor, &ss->objects, ts != NULL ? &ts->objects : NULL, 1u, 0, STATE_ANY,
+                     0u, 0u, MARK_COUNT, inactive);
+        state_scalar(cursor, &ss->flags, ts != NULL ? &ts->flags : NULL, 2u, 0, STATE_MASK,
+                     MUHTARI__LINE_LAST | MUHTARI__LINE_ABORTED | MUHTARI__LINE_DLI |
+                         MUHTARI__LINE_DLI_QUEUED | MUHTARI__LINE_DMA_BLOCKED | MUHTARI__LINE_DMA_OFF,
+                     0u, MARK_COUNT, inactive);
+    }
+    CHECK_U32(maria.features, STATE_MASK,
+              MUHTARI__FEAT_RM0 | MUHTARI__FEAT_RM2 | MUHTARI__FEAT_RM3 |
+                  MUHTARI__FEAT_WRITE_MODE | MUHTARI__FEAT_KANGAROO | MUHTARI__FEAT_HOLEY8 |
+                  MUHTARI__FEAT_HOLEY16 | MUHTARI__FEAT_IND1 | MUHTARI__FEAT_IND2 |
+                  MUHTARI__FEAT_DLI | MUHTARI__FEAT_DLI_QUEUED | MUHTARI__FEAT_DMA_BLOCKED,
+              0u);
+    CHECK_U64(maria.origin, STATE_ANY, 0u, 0u, MARK_MARIA_ORIGIN);
+    U64(maria.dma_lrc);
+    CHECK_U16(maria.event_line, STATE_MARIA_LINE, 0u, 0u);
+    CHECK_U16(maria.dma_line, STATE_MARIA_LINE, 0u, 0u);
+    CHECK_U8(maria.event_index, STATE_MARIA_EVENT, 0u, 0u);
+    CHECK_U8(maria.mstat, STATE_MASK, 0x80u, 0u);
+    CHECK_U16(maria.px, STATE_MARIA_PIXEL, 0u, 0u);
+    U8(cart.bank);
+    U8(cart.ram_bank);
+    U8(cart.expansion.control);
+    U8(cart.expansion.cpu_pages);
+    U8(cart.expansion.maria_pages);
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned a = 0u; a < 2u; a++) {
+            const struct muhtari__motion *sm = &source->ports.motion[p][a];
+            struct muhtari__motion *tm = target != NULL ? &target->ports.motion[p][a] : NULL;
+            state_scalar(cursor, &sm->next_tick, tm != NULL ? &tm->next_tick : NULL, 8u, 0,
+                         STATE_ANY, 0u, 0u, MARK_COUNT, 0);
+            state_scalar(cursor, &sm->residual, tm != NULL ? &tm->residual : NULL, 4u, 1,
+                         STATE_SIGNED_RANGE, (uint64_t)(int64_t)-255, 255u, MARK_COUNT, 0);
+            state_scalar(cursor, &sm->phase, tm != NULL ? &tm->phase : NULL, 1u, 0, STATE_RANGE,
+                         0u, 3u, MARK_COUNT, 0);
+            state_scalar(cursor, &sm->negative, tm != NULL ? &tm->negative : NULL, 1u, 0,
+                         STATE_BOOL, 0u, 0u, MARK_COUNT, 0);
+        }
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        const struct muhtari__light *sl = &source->ports.light[p];
+        struct muhtari__light *tl = target != NULL ? &target->ports.light[p] : NULL;
+#define LIGHT_FIELD(name, width, rule, lower, upper)                                               \
+        state_scalar(cursor, &sl->name, tl != NULL ? &tl->name : NULL, width, 0, rule, lower,      \
+                     upper, MARK_COUNT, 0)
+        LIGHT_FIELD(sample_tick, 8u, STATE_ANY, 0u, 0u);
+        LIGHT_FIELD(response_tick, 8u, STATE_ANY, 0u, 0u);
+        LIGHT_FIELD(response_until, 8u, STATE_ANY, 0u, 0u);
+        LIGHT_FIELD(low_until, 8u, STATE_ANY, 0u, 0u);
+        LIGHT_FIELD(sample_raster, 2u, STATE_RANGE, 0u, 312u);
+        LIGHT_FIELD(sample_x, 2u, STATE_RANGE, 0u, MUHTARI__WIDTH - 1u);
+        LIGHT_FIELD(delay, 1u, STATE_ANY, 0u, 0u);
+        LIGHT_FIELD(width, 1u, STATE_ANY, 0u, 0u);
+        LIGHT_FIELD(lines, 1u, STATE_ANY, 0u, 0u);
+        LIGHT_FIELD(threshold, 1u, STATE_ANY, 0u, 0u);
+        LIGHT_FIELD(low, 1u, STATE_BOOL, 0u, 0u);
+#undef LIGHT_FIELD
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        for (unsigned a = 0u; a < 2u; a++) {
+            const struct muhtari__pot *sp = &source->ports.pot[p][a];
+            struct muhtari__pot *tp = target != NULL ? &target->ports.pot[p][a] : NULL;
+#define POT_FIELD(name, width, rule, lower, upper)                                                 \
+            state_scalar(cursor, &sp->name, tp != NULL ? &tp->name : NULL, width, 0, rule, lower, \
+                         upper, MARK_COUNT, 0)
+            POT_FIELD(action, 8u, STATE_POT_ACTION, 0u, 0u);
+            POT_FIELD(last_tick, 8u, STATE_ANY, 0u, 0u);
+            POT_FIELD(crossing_tick, 8u, STATE_ANY, 0u, 0u);
+            POT_FIELD(duration, 4u, STATE_ANY, 0u, 0u);
+#undef POT_FIELD
+        }
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        const struct muhtari__adapter *sa = &source->ports.adapter[p];
+        struct muhtari__adapter *ta = target != NULL ? &target->ports.adapter[p] : NULL;
+        state_scalar(cursor, &sa->snapshot, ta != NULL ? &ta->snapshot : NULL, 4u, 0, STATE_ANY,
+                     0u, 0u, MARK_COUNT, 0);
+        state_scalar(cursor, &sa->host, ta != NULL ? &ta->host : NULL, 1u, 0, STATE_MASK, 3u, 0u,
+                     MARK_COUNT, 0);
+        state_scalar(cursor, &sa->position, ta != NULL ? &ta->position : NULL, 1u, 0, STATE_RANGE,
+                     0u, 16u, MARK_COUNT, 0);
+        state_scalar(cursor, &sa->scanning, ta != NULL ? &ta->scanning : NULL, 1u, 0, STATE_BOOL,
+                     0u, 0u, MARK_COUNT, 0);
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        state_scalar(cursor, &source->ports.keypad_keys[p],
+                     target != NULL ? &target->ports.keypad_keys[p] : NULL, 2u, 0, STATE_MASK,
+                     0x0FFFu, 0u, MARK_COUNT, 0);
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        state_scalar(cursor, &source->ports.keypad_low[p],
+                     target != NULL ? &target->ports.keypad_low[p] : NULL, 1u, 0, STATE_MASK,
+                     0x7Fu, 0u, MARK_COUNT, 0);
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        state_scalar(cursor, &source->ports.device[p], target != NULL ? &target->ports.device[p] : NULL,
+                     4u, 0, STATE_PORT_DEVICE, 0u, 0u, MARK_COUNT, 0);
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        state_scalar(cursor, &source->ports.buttons[p], target != NULL ? &target->ports.buttons[p] : NULL,
+                     4u, 0, STATE_MASK, 4095u, 0u, MARK_COUNT, 0);
+    }
+    CHECK_U32(ports.switches, STATE_MASK, 0x1Fu, 0u);
+    for (unsigned p = 0u; p < 2u; p++) {
+        state_scalar(cursor, &source->ports.pending_device[p],
+                     target != NULL ? &target->ports.pending_device[p] : NULL, 4u, 0,
+                     STATE_PORT_DEVICE, 0u, 0u, MARK_COUNT, 0);
+    }
+    for (unsigned p = 0u; p < 2u; p++) {
+        state_scalar(cursor, &source->ports.pending_buttons[p],
+                     target != NULL ? &target->ports.pending_buttons[p] : NULL, 4u, 0,
+                     STATE_MASK, 0x3Fu, 0u, MARK_COUNT, 0);
+    }
+    CHECK_U32(ports.pending_switches, STATE_MASK, 0x1Fu, 0u);
+    for (unsigned p = 0u; p < 2u; p++)
+        state_input_port(cursor, &source->ports.pending_ex.port[p],
+                         target != NULL ? &target->ports.pending_ex.port[p] : NULL);
+    U32(ports.pending_ex.switches);
+    for (unsigned p = 0u; p < 2u; p++)
+        state_input_port(cursor, &source->ports.applied_ex.port[p],
+                         target != NULL ? &target->ports.applied_ex.port[p] : NULL);
+    U32(ports.applied_ex.switches);
+    CHECK_U8(ports.input_mode, STATE_BOOL, 0u, 0u);
+    CHECK_U8(ports.initialized, STATE_BOOL, 0u, 0u);
+    CHECK_U8(ports.pending, STATE_BOOL, 0u, 0u);
+    CHECK_U8(ports.input_read, STATE_BOOL, 0u, 0u);
+    U64(ports.io_hazard);
+    U64(boot.handoff_frame);
+    CHECK_U8(boot.rejected, STATE_BOOL, 0u, 0u);
+
+    CHECK_U64(synth.tick, STATE_ANY, 0u, 0u, MARK_SYNTH_TICK);
+    CHECK_U64(synth.origin, STATE_ANY, 0u, 0u, MARK_SYNTH_ORIGIN);
+    CHECK_U64(synth.horizon, STATE_ANY, 0u, 0u, MARK_SYNTH_HORIZON);
+    CHECK_U64(synth.pending_tick, STATE_ANY, 0u, 0u, MARK_SYNTH_PENDING_TICK);
+    for (unsigned i = 0u; i < 16u; i++) {
+        state_scalar(cursor, &source->synth.impulse[i], target != NULL ? &target->synth.impulse[i]
+                                                                          : NULL,
+                     8u, 1, STATE_ANY, 0u, 0u, MARK_COUNT, 0);
+    }
+    FIELD(synth.integrator_q23, 8u, 1, STATE_ANY, 0u, 0u, MARK_COUNT);
+    FIELD(synth.previous_q30, 8u, 1, STATE_ANY, 0u, 0u, MARK_COUNT);
+    FIELD(synth.blocker_q30, 8u, 1, STATE_ANY, 0u, 0u, MARK_COUNT);
+    U64(synth.pre_clip_peak);
+    U64(synth.clipped_samples);
+    FIELD(synth.phase, 4u, 0, STATE_RANGE, 0u, muhtari__timing(source).sample_den - 1u,
+          MARK_SYNTH_PHASE);
+    CHECK_U32(synth.pcm_read, STATE_SYNTH_PCM_READ, 0u, 0u);
+    CHECK_U32(synth.pcm_count, STATE_SYNTH_PCM_COUNT, 0u, 0u);
+    FIELD(synth.sample_num, 4u, 0, STATE_ANY, 0u, 0u, MARK_SYNTH_SAMPLE_NUM);
+    FIELD(synth.sample_den, 4u, 0, STATE_ANY, 0u, 0u, MARK_SYNTH_SAMPLE_DEN);
+    FIELD(synth.max_samples, 4u, 0, STATE_ANY, 0u, 0u, MARK_SYNTH_MAX_SAMPLES);
+    U32(synth.kernel_adds);
+    U32(synth.kernel_adds_per_sample);
+    U32(synth.carry_high_water);
+    FIELD(synth.mixed_level, 4u, 1, STATE_SIGNED_RANGE,
+          (uint64_t)(int64_t)-MUHTARI__SYNTH_MAX_LEVEL, MUHTARI__SYNTH_MAX_LEVEL, MARK_COUNT);
+    for (unsigned i = 0u; i < 10u; i++) {
+        state_scalar(cursor, &source->synth.raw[i], target != NULL ? &target->synth.raw[i] : NULL,
+                     2u, 0, STATE_ANY, 0u, 0u, MARK_COUNT, 0);
+    }
+    CHECK_U8(synth.head, STATE_RANGE, 0u, 9u);
+    FIELD(synth.pending, 1u, 0, STATE_BOOL, 0u, 0u, MARK_SYNTH_PENDING);
+    CHECK_U8(synth.pokeys, STATE_RANGE, 0u, 2u);
+    CHECK_U8(synth.secondary, STATE_RANGE, 0u, 1u);
+    for (unsigned i = 0u; i < MUHTARI__SYNTH_PCM_CAPACITY; i++) {
+        uint32_t distance = (i + MUHTARI__SYNTH_PCM_CAPACITY - source->synth.pcm_read) %
+                            MUHTARI__SYNTH_PCM_CAPACITY;
+        int inactive = distance >= source->synth.pcm_count;
+        state_scalar(cursor, &source->synth.pcm[i], target != NULL ? &target->synth.pcm[i] : NULL,
+                     2u, 1, STATE_ANY, 0u, 0u, MARK_COUNT, inactive);
+    }
+    U64(tia.next_tick);
+    U64(tia.epoch_tick);
+    U16(tia.epoch_phase);
+    CHECK_U8(tia.phase, STATE_RANGE, 0u, 3u);
+    CHECK_U8(tia.initialized, STATE_BOOL, 0u, 0u);
+    CHECK_U8(tia.input_latch_enable, STATE_BOOL, 0u, 0u);
+    CHECK_U8(tia.input_dump, STATE_BOOL, 0u, 0u);
+    state_bytes(cursor, source->tia.input_latch, target != NULL ? target->tia.input_latch : NULL,
+                sizeof source->tia.input_latch, SIZE_MAX);
+    for (unsigned ch = 0u; ch < 2u; ch++) {
+        const struct muhtari__tia_channel *sc = &source->tia.channel[ch];
+        struct muhtari__tia_channel *tc = target != NULL ? &target->tia.channel[ch] : NULL;
+#define TIA_FIELD(name, rule, lower, upper)                                                         \
+        state_scalar(cursor, &sc->name, tc != NULL ? &tc->name : NULL, 1u, 0, rule, lower, upper, \
+                     MARK_COUNT, 0)
+        TIA_FIELD(audc, STATE_ANY, 0u, 0u);
+        TIA_FIELD(audf, STATE_ANY, 0u, 0u);
+        TIA_FIELD(audv, STATE_RANGE, 0u, 15u);
+        TIA_FIELD(count, STATE_ANY, 0u, 0u);
+        TIA_FIELD(enabled, STATE_BOOL, 0u, 0u);
+        TIA_FIELD(output, STATE_BOOL, 0u, 0u);
+        TIA_FIELD(noise, STATE_ANY, 0u, 0u);
+        TIA_FIELD(pulse, STATE_ANY, 0u, 0u);
+        TIA_FIELD(noise_input, STATE_ANY, 0u, 0u);
+        TIA_FIELD(pulse_gate, STATE_BOOL, 0u, 0u);
+#undef TIA_FIELD
+    }
+
+    state_pokey(cursor, &source->pokey[0], target != NULL ? &target->pokey[0] : NULL);
+    state_pokey(cursor, &source->pokey[1], target != NULL ? &target->pokey[1] : NULL);
+    U64(savekey.busy_until);
+    CHECK_U16(savekey.address, STATE_SAVEKEY_ADDRESS, 0u, 0u);
+    CHECK_U16(savekey.page_base, STATE_SAVEKEY_PAGE_BASE, 0u, 0u);
+    CHECK_U8(savekey.host_scl, STATE_BOOL, 0u, 0u);
+    CHECK_U8(savekey.host_sda, STATE_BOOL, 0u, 0u);
+    CHECK_U8(savekey.sda_low, STATE_BOOL, 0u, 0u);
+    CHECK_U8(savekey.phase, STATE_SAVEKEY_PHASE, 0u, 0u);
+    CHECK_U8(savekey.next_phase, STATE_SAVEKEY_PHASE, 0u, 0u);
+    CHECK_U8(savekey.bits, STATE_SAVEKEY_BITS, 0u, 0u);
+    U8(savekey.shift);
+    CHECK_U8(savekey.address_high, STATE_MASK, 0x7Fu, 0u);
+    U8(savekey.read_byte);
+    state_bytes(cursor, source->savekey.page, target != NULL ? target->savekey.page : NULL,
+                sizeof source->savekey.page, SIZE_MAX);
+    for (unsigned i = 0u; i < sizeof source->savekey.touched; i++) {
+        state_scalar(cursor, &source->savekey.touched[i],
+                     target != NULL ? &target->savekey.touched[i] : NULL, 1u, 0, STATE_BOOL, 0u,
+                     0u, MARK_COUNT, 0);
+    }
+    CHECK_U8(savekey.page_offset, STATE_RANGE, 0u, 63u);
+    CHECK_U8(savekey.pending, STATE_BOOL, 0u, 0u);
+    CHECK_U8(savekey.ack, STATE_BOOL, 0u, 0u);
+    if (cursor->offset != STATE_FIXED_BYTES)
+        cursor->valid = 0u;
+    size_t cart_ram = source->cart.info.ram_size;
+    size_t expansion_ram = source->cart.expansion.kind == MUHTARI_EXPANSION_OFF
+                               ? 0u
+                               : STATE_EXPANSION_BYTES;
+    state_bytes(cursor, source->cart.ram, target != NULL ? target->cart.ram : NULL, cart_ram,
+                SIZE_MAX);
+    state_bytes(cursor, source->cart.expansion.ram,
+                target != NULL ? target->cart.expansion.ram : NULL, expansion_ram, SIZE_MAX);
+    state_bytes(cursor, source->battery.data,
+                target != NULL ? target->battery.data : NULL, source->battery.bytes, SIZE_MAX);
+
+#undef CHECK_U64
+#undef CHECK_U32
+#undef CHECK_U16
+#undef CHECK_U8
+#undef U64
+#undef U32
+#undef U16
+#undef U8
+#undef FIELD
+}
+
+static int state_relationships(const struct state_cursor *cursor)
+{
+    const uint64_t *v = cursor->marks;
+    if (v[MARK_LAG_FRAMES] > v[MARK_FRAMES] || v[MARK_FRAME_START] > v[MARK_FRAME_DEADLINE] ||
+        v[MARK_FRAME_START] > v[MARK_BUS_TICKS] || v[MARK_BUS_TICKS] > v[MARK_FRAME_DEADLINE] ||
+        v[MARK_CPU_PHI2] > v[MARK_BUS_PHI2] ||
+        v[MARK_BUS_ORIGIN_TICK] > v[MARK_BUS_TICKS] ||
+        v[MARK_BUS_ORIGIN_PHI2] > v[MARK_BUS_PHI2] ||
+        v[MARK_MARIA_ORIGIN] > v[MARK_BUS_TICKS] ||
+        v[MARK_SYNTH_ORIGIN] > v[MARK_SYNTH_HORIZON] ||
+        v[MARK_SYNTH_HORIZON] > v[MARK_SYNTH_TICK] ||
+        (v[MARK_SYNTH_PHASE] >= v[MARK_SYNTH_SAMPLE_DEN]) ||
+        v[MARK_SYNTH_SAMPLE_NUM] == 0u || v[MARK_SYNTH_SAMPLE_DEN] == 0u ||
+        v[MARK_AUDIO_REM] >= v[MARK_SYNTH_SAMPLE_DEN])
+        return 0;
+    if (v[MARK_SYNTH_SAMPLE_NUM] != muhtari__timing(cursor->source).sample_num ||
+        v[MARK_SYNTH_SAMPLE_DEN] != muhtari__timing(cursor->source).sample_den ||
+        v[MARK_SYNTH_MAX_SAMPLES] != muhtari__timing(cursor->source).max_samples)
+        return 0;
+    if (v[MARK_SYNTH_PENDING] != 0u &&
+        v[MARK_SYNTH_PENDING_TICK] < v[MARK_SYNTH_TICK])
+        return 0;
+    return 1;
+}
+
+static int state_topology_valid(const muhtari *m)
+{
+    if (m == NULL || m->loaded == 0u || m->cart.rom == NULL ||
+        m->cart.info.ram_size > m->cart.allocation_bytes ||
+        m->battery.bytes > sizeof m->battery.data)
+        return 0;
+    if (m->cart.expansion.kind != MUHTARI_EXPANSION_OFF &&
+        m->cart.expansion.kind != MUHTARI_EXPANSION_XBOARD &&
+        m->cart.expansion.kind != MUHTARI_EXPANSION_XM)
+        return 0;
+    if (m->cart.info.ram_size != 0u && m->cart.ram == NULL)
+        return 0;
+    if (m->cart.expansion.kind != MUHTARI_EXPANSION_OFF && m->cart.expansion.ram == NULL)
+        return 0;
+    if (m->synth.sample_num != muhtari__timing(m).sample_num ||
+        m->synth.sample_den != muhtari__timing(m).sample_den ||
+        m->synth.max_samples != muhtari__timing(m).max_samples)
+        return 0;
+    return 1;
+}
+
+static int state_buffer_disjoint(const muhtari *m, const void *buffer, size_t bytes)
+{
+    uintptr_t start = (uintptr_t)buffer;
+    if (bytes > UINTPTR_MAX - start)
+        return 0;
+    uintptr_t end = start + bytes;
+    uintptr_t instance = (uintptr_t)m;
+    if (sizeof *m > UINTPTR_MAX - instance)
+        return 0;
+    uintptr_t instance_end = instance + sizeof *m;
+    if (start < instance_end && instance < end)
+        return 0;
+    if (m->cart.allocation_bytes != 0u) {
+        uintptr_t allocation = (uintptr_t)m->cart.rom;
+        if (m->cart.rom == NULL || m->cart.allocation_bytes > UINTPTR_MAX - allocation)
+            return 0;
+        uintptr_t allocation_end = allocation + m->cart.allocation_bytes;
+        if (start < allocation_end && allocation < end)
+            return 0;
+    }
+    return 1;
+}
+
+static int state_walk(const muhtari *m, muhtari *target, enum state_mode mode,
+                      const uint8_t *input, uint8_t *output, size_t size)
+{
+    struct state_cursor cursor;
+    memset(&cursor, 0, sizeof cursor);
+    cursor.mode = mode;
+    cursor.source = m;
+    cursor.input = input;
+    cursor.output = output;
+    cursor.limit = size;
+    cursor.valid = 1u;
+    state_visit(m, target, &cursor);
+    if (cursor.offset != size)
+        cursor.valid = 0u;
+    if (cursor.valid != 0u && (mode == STATE_VALIDATE || mode == STATE_LIVE) &&
+        state_relationships(&cursor) == 0)
+        cursor.valid = 0u;
+    return cursor.valid != 0u;
+}
+
 size_t muhtari__state_payload_size(const muhtari *m)
 {
-    if (m == NULL || m->loaded == 0u)
+    if (state_topology_valid(m) == 0)
         return 0u;
-    return 10972u + (size_t)m->cart.info.ram_size +
-           (m->cart.expansion.kind == MUHTARI_EXPANSION_OFF ? 0u : 131072u) + m->battery.bytes;
+    struct state_cursor cursor;
+    memset(&cursor, 0, sizeof cursor);
+    cursor.mode = STATE_SIZE;
+    cursor.source = m;
+    cursor.valid = 1u;
+    state_visit(m, NULL, &cursor);
+    if (cursor.valid == 0u || cursor.offset > UINT32_MAX)
+        return 0u;
+    return cursor.offset;
 }
 
 int muhtari__state_payload_write(const muhtari *m, uint8_t *bytes, size_t size)
 {
     size_t expected = muhtari__state_payload_size(m);
-    if (bytes == NULL || expected == 0u || size != expected)
+    if (expected == 0u || bytes == NULL || size != expected ||
+        state_buffer_disjoint(m, bytes, size) == 0 ||
+        state_walk(m, NULL, STATE_LIVE, NULL, NULL, size) == 0)
         return 0;
-    memset(bytes, 0, size);
-    return 1;
+    return state_walk(m, NULL, STATE_WRITE, NULL, bytes, size);
 }
 
 int muhtari__state_payload_validate(const muhtari *m, const uint8_t *bytes, size_t size)
 {
-    return m != NULL && m->loaded != 0u && bytes != NULL && size == muhtari__state_payload_size(m);
+    if (state_topology_valid(m) == 0 || bytes == NULL ||
+        size != muhtari__state_payload_size(m) || state_buffer_disjoint(m, bytes, size) == 0)
+        return 0;
+    return state_walk(m, NULL, STATE_VALIDATE, bytes, NULL, size);
 }
 
 void muhtari__state_payload_apply(muhtari *m, const uint8_t *bytes, size_t size)
 {
-    (void)m;
-    (void)bytes;
-    (void)size;
+    if (state_topology_valid(m) == 0 ||
+        muhtari__state_payload_validate(m, bytes, size) == 0)
+        return;
+    size_t battery_at = STATE_FIXED_BYTES + (size_t)m->cart.info.ram_size +
+                        (m->cart.expansion.kind == MUHTARI_EXPANSION_OFF
+                             ? 0u
+                             : STATE_EXPANSION_BYTES);
+    int battery_changed = memcmp(m->battery.data, bytes + battery_at, m->battery.bytes) != 0;
+    (void)state_walk(m, m, STATE_APPLY, bytes, NULL, size);
+    m->ports.pending_ex.size = (uint32_t)sizeof m->ports.pending_ex;
+    m->ports.applied_ex.size = (uint32_t)sizeof m->ports.applied_ex;
+    m->maria.rows = NULL;
+    m->maria.pitch = 0u;
+    if (battery_changed != 0)
+        m->battery.generation++;
+    muhtari__ports_rearm(m);
+    muhtari__bus_rearm(m);
 }

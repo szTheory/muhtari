@@ -883,7 +883,7 @@ static void test_no_alloc_after_load(void)
     CHECK(m->synth.pre_clip_peak > 0u);
 
     size_t state_size = muhtari__state_payload_size(m);
-    CHECK_EQ_U64(state_size, 10972u + m->cart.info.ram_size + m->battery.bytes);
+    CHECK_EQ_U64(state_size, 10908u + m->cart.info.ram_size + m->battery.bytes);
     if (state_size <= sizeof state_bytes) {
         muhtari *peer = make();
         load_audio_program(peer);
