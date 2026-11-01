@@ -21,9 +21,14 @@ Embedding callers must likewise requery info after every successful content load
 ```text
 muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--rom] FILE
 muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]...
+muhtari-run --frames N [--hash-frame N]... [--dump-frame N:FILE]... [--load-state FILE]
+            [--state-at-frame N:FILE]... [--hash-state N]... [[--rom] FILE]
 muhtari-run --bench N [--hash-frame N]... [--dump-frame N:FILE]... [[--rom] FILE]
 muhtari-run --movie FILE [--frames N | --bench N] [--hash-frame N]...
             [--dump-frame N:FILE]... [[--rom] FILE]
+muhtari-run --movie FILE --frames N [--load-state FILE] [--state-at-frame N:FILE]...
+            [--hash-state N]... [[--rom] FILE]
+muhtari-run --frames0 [--load-state FILE] [--state-at-frame N:FILE]... [--hash-state N]... FILE
 muhtari-run --frames N --boot bios --bios FILE [--hash-frame N]... [--rom] FILE
 muhtari-run --probe FILE
 muhtari-run --help | --version
@@ -40,6 +45,10 @@ muhtari-run --help | --version
 | `--hash-frame N` | After frame N, print the SHA-256 of its picture. Repeat the option for more frames. N is from 1 to the frame count. |
 | `--diagnostic` | After the run, report the fixed diagnostic mailbox. Requires content and explicit `--frames N` with the ordinary frame bounds; no `--bench` or implicit movie frame count. |
 | `--dump-frame N:FILE` | After frame N, write its picture to FILE as a PNG. Repeat the option for more frames or files. |
+| `--load-state FILE` | Restore one compatible canonical state before the next input or frame. Requires a cartridge; at most one state file may be loaded. |
+| `--state-at-frame N:FILE` | Atomically write canonical state after invocation frame N. Repeat at distinct points and paths; N is from 0 through the frame count. |
+| `--hash-state N` | Print the canonical state SHA-256 after invocation frame N. Repeat at distinct points; output is sorted by N. |
+| `--frames0` | Run no frames for a content-loaded state operation. Requires at least one state option and disallows frame/movie-dependent output. |
 | `[--rom] FILE` | Load and run one cartridge image, with or without `--rom`. Automatic PAL selection is supported. A refused image prints `muhtari-run: FILE: <message>` on standard error and runs no frame: a 2600 image or unsupported board exits 77; malformed, truncated or oversized images exit1. |
 | `--movie FILE` | Replay the movie in FILE, described under [Movies](#movies). The whole file is checked before the first frame runs. |
 | `--port1 D`, `--port2 D` | `auto` (the cartridge's, the default), or an explicit movie2 device below. A value other than `auto` that differs from the movie header is a usage error. Storage attaches before import; moving or adding it requires another load. AtariVox provides EEPROM only, without speech. |
@@ -56,6 +65,64 @@ muhtari-run --help | --version
 | `--version` | Print `muhtari-run` and the version. It takes no other arguments. |
 
 Anything else on the command line, including a second file name, is a usage error.
+
+## State files
+
+State files contain the core's canonical bytes for the installed machine and effective configuration. They must
+have that machine's exact canonical size; the runner reads at most that size plus one byte and refuses short,
+long, unreadable, corrupt, unsupported or incompatible files before running a frame. State reads and writes use
+owned files. A state write replaces its destination only after the sibling temporary is fully written, flushed,
+synced and closed. A failed write leaves an existing destination intact.
+
+`--load-state` runs after the cartridge, selected hardware and optional battery file are loaded, and before any
+movie input or frame. `N` on `--state-at-frame` and `--hash-state` counts successful frame calls in this
+invocation, from zero through its frame count. Point 0 is after initial loading (including an optional state
+restore) and before input row 0. Point N is after the Nth successful frame and before the next input row.
+Restored public frame counters do not change these invocation-local points. State hash lines have this form:
+
+```text
+state 1 sha256 6b7f4d4d01478178a65a422cb034a2184618f7200da4b0dc965f3957ebfbb3a2
+```
+
+The digest covers only canonical state bytes. It does not include output file names or the runner's host-side
+battery persistence generation. Emulated battery contents remain part of machine state, so different saved RAM
+can produce a different digest. State saves and hashes may use the same point. Duplicate state points, duplicate
+output paths, empty paths, `-`, and lexical path collisions with inputs or frame outputs are usage errors.
+
+For example, with a locally generated `game.a78`, make these movie files, save after the first input, then
+continue in a new process with only the remaining input row and the same movie metadata:
+
+```text
+full.movie:
+muhtari-movie 1
+port1 proline
+port2 joystick
+|...R1.|.....|...BB|
+|U.L..2|U...1|RS.AB|
+
+suffix.movie:
+muhtari-movie 1
+port1 proline
+port2 joystick
+|U.L..2|U...1|RS.AB|
+```
+
+```sh
+muhtari-run --frames 2 --movie full.movie --state-at-frame 1:resume.state \
+  --hash-state 2 --hash-frame 2 game.a78
+muhtari-run --frames 1 --movie suffix.movie --load-state resume.state \
+  --hash-state 1 --hash-frame 1 game.a78
+```
+
+The second movie starts at its own row 0; state does not store or seek a movie cursor. `--movie` can be used with
+state options for positive-frame runs. `--frames0` is explicit and requires a cartridge plus a state option; it
+cannot be combined with a movie, bench, frame hashes, PNGs or other frame-dependent output. Ordinary runs still
+require positive `--frames N`, `--bench N` or a movie.
+
+State restore also restores emulated battery contents. With `--save-dir`, a later dirty save after frames have
+run can therefore replace newer disk bytes with the restored timeline's bytes. A zero-frame state-only run
+does not flush those rolled-back bytes. State I/O and state refusals exit 1, command-line conflicts exit 2, and
+the existing unsupported-media refusal remains exit 77.
 
 `--expansion auto|off|xboard|xm` selects hardware at load. Auto follows any nonzero A78 XM request, otherwise Off; XBoard requires explicit selection. Off suppresses expansion only. Declared YM2151, Covox and ADPCM still refuse execution with exit77 and a named sound message.
 
@@ -404,7 +471,7 @@ stopping. Forced process or console termination has no final-flush guarantee.
 
 ```text
   0  done     every frame ran, or SIGINT or SIGTERM stopped the run after a whole frame
-  1  failure  a file could not be read or written, an image or a movie is malformed, truncated or too large, a BIOS is invalid, a movie names another cartridge or BIOS, memory ran out or the core failed
+  1  failure  a file could not be read or written, a state is malformed, unsupported or incompatible, an image or a movie is malformed, truncated or too large, a BIOS is invalid, a movie names another cartridge or BIOS, memory ran out or the core failed
   2  usage    the command line is invalid or conflicts with the movie's header, so nothing ran
   4  save-size  the save file is larger than the attached battery RAM
  77  refused  the image is a 2600 cartridge, or uses a board, device or region this version does not emulate, or the BIOS rejected it

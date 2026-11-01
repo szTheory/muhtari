@@ -229,7 +229,7 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
         message(FATAL_ERROR "zero-frame state-only operation failed: ${rc}\n${zero_out}${err}")
       endif()
       execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --hash-state 1 --hash-state 0
-        --state-at-frame "0:${DIR}/zero.state" --state-at-frame "1:${DIR}/one.state" "${image}"
+        --state-at-frame "0:${DIR}/other-zero.state" --state-at-frame "1:${DIR}/one.state" "${image}"
         RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
       if(NOT rc STREQUAL "0" OR NOT out MATCHES "state 0 sha256 [0-9a-f]+\nstate 1 sha256 [0-9a-f]+\n")
         message(FATAL_ERROR "state option pass case failed: ${rc}\n${out}${err}")
@@ -239,6 +239,82 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
       if(NOT zero_digest STREQUAL initial_digest)
         message(FATAL_ERROR "state hash changed across same-content point zero output paths\n${zero_out}\n${out}")
       endif()
+
+      file(SHA256 "${DIR}/zero.state" initial_state_file_hash)
+      file(SHA256 "${DIR}/other-zero.state" alternate_state_file_hash)
+      if(NOT initial_state_file_hash STREQUAL alternate_state_file_hash)
+        message(FATAL_ERROR "state bytes changed when only the output filename changed")
+      endif()
+
+      set(battery_dir "${DIR}/battery-generation")
+      file(MAKE_DIRECTORY "${battery_dir}")
+      string(REPEAT "b" 2048 imported_battery)
+      file(WRITE "${battery_dir}/game.sav" "${imported_battery}")
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --frames0 --save-dir "${battery_dir}"
+        --load-state "${DIR}/zero.state" --hash-state 0
+        --state-at-frame "0:${DIR}/restored-zero.state" "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE restored_out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "0" OR NOT restored_out MATCHES "^state 0 sha256 [0-9a-f]+\n$")
+        message(FATAL_ERROR "zero-frame restore with imported battery failed: ${rc}\n${restored_out}${err}")
+      endif()
+      string(REGEX MATCH "state 0 sha256 [0-9a-f]+" restored_digest "${restored_out}")
+      if(NOT zero_digest STREQUAL restored_digest)
+        message(FATAL_ERROR "host battery import generation changed the canonical state hash\n${zero_out}\n${restored_out}")
+      endif()
+      file(SHA256 "${DIR}/zero.state" initial_state_file_hash)
+      file(SHA256 "${DIR}/restored-zero.state" restored_state_file_hash)
+      if(NOT initial_state_file_hash STREQUAL restored_state_file_hash)
+        message(FATAL_ERROR "restored canonical state bytes changed across host battery generation")
+      endif()
+
+      function(require_state_usage label)
+        execute_process(COMMAND ${EMULATOR} "${RUN}" ${ARGN}
+          RESULT_VARIABLE rejected_rc OUTPUT_VARIABLE rejected_out ERROR_VARIABLE rejected_err)
+        if(NOT "${rejected_rc}" STREQUAL "2" OR NOT "${rejected_err}" MATCHES "usage: muhtari-run")
+          message(FATAL_ERROR "${label} was not rejected with a usage diagnostic: ${rejected_rc}\n${rejected_out}${rejected_err}")
+        endif()
+      endfunction()
+
+      set(state_path "${DIR}/negative.state")
+      set(movie_path "${DIR}/negative.movie")
+      file(WRITE "${movie_path}"
+        "muhtari-movie 1\nport1 proline\nport2 joystick\n|...R1.|.....|...BB|\n")
+      require_state_usage("duplicate load-state" --frames 1 --load-state "${DIR}/zero.state"
+        --load-state "${DIR}/zero.state" "${image}")
+      require_state_usage("duplicate hash-state point" --frames 1 --hash-state 0 --hash-state 0 "${image}")
+      require_state_usage("duplicate state-save point" --frames 1
+        --state-at-frame "0:${DIR}/a.state" --state-at-frame "0:${DIR}/b.state" "${image}")
+      require_state_usage("duplicate state output path" --frames 1
+        --state-at-frame "0:${state_path}" --state-at-frame "1:${state_path}" "${image}")
+      require_state_usage("state output and dump path collision" --frames 1
+        --state-at-frame "0:${DIR}/shared.output" --dump-frame "1:${DIR}/shared.output" "${image}")
+      require_state_usage("state output and load path collision" --frames 1
+        --load-state "${DIR}/zero.state" --state-at-frame "0:${DIR}/zero.state" "${image}")
+      require_state_usage("state output and movie path collision" --movie "${movie_path}" --frames 1
+        --state-at-frame "0:${movie_path}" "${image}")
+      require_state_usage("state output and content path collision" --frames 1
+        --state-at-frame "0:${image}" "${image}")
+      require_state_usage("state output and BIOS path collision" --frames 1 --boot bios
+        --bios "${state_path}" --state-at-frame "0:${state_path}" "${image}")
+      require_state_usage("state output and HSC path collision" --frames 1 --hsc on
+        --hsc-rom "${state_path}" --state-at-frame "0:${state_path}" "${image}")
+      require_state_usage("empty state output path" --frames 1 --state-at-frame 0: "${image}")
+      require_state_usage("dash state output path" --frames 1 --state-at-frame 0:- "${image}")
+      require_state_usage("empty load-state path" --frames 1 --load-state "" "${image}")
+      require_state_usage("dash load-state path" --frames 1 --load-state - "${image}")
+      require_state_usage("state point overflow" --frames 1 --hash-state 4294967296 "${image}")
+      require_state_usage("state output point overflow" --frames 1
+        --state-at-frame "4294967296:${state_path}" "${image}")
+      require_state_usage("out-of-range hash-state point" --frames 1 --hash-state 2 "${image}")
+      require_state_usage("out-of-range state-save point" --frames 1
+        --state-at-frame "2:${state_path}" "${image}")
+      require_state_usage("state without content" --frames 1 --hash-state 0)
+      require_state_usage("state with bench" --bench 1 --hash-state 0 "${image}")
+      require_state_usage("state with probe" --probe "${image}" --load-state "${DIR}/zero.state")
+      require_state_usage("frames0 without state operation" --frames0 "${image}")
+      require_state_usage("frames0 with movie output" --frames0 --movie "${movie_path}"
+        --hash-state 0 "${image}")
+      require_state_usage("frames0 with frame output" --frames0 --hash-state 0 --hash-frame 1 "${image}")
       return()
     endif()
     file(WRITE "${DIR}/full.movie"
