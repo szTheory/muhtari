@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/szTheory/muhtari/compare/v0.11.0...v0.11.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* guard tmpfile use in WASI state tests ([#44](https://github.com/szTheory/muhtari/issues/44)) ([531be06](https://github.com/szTheory/muhtari/commit/531be06bf3144e733addf2324099605c2f858d90))
+
 ## [0.11.0](https://github.com/szTheory/muhtari/compare/v0.10.0...v0.11.0) (2026-11-02)
 
 
