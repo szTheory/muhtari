@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/szTheory/muhtari/compare/v0.10.0...v0.11.0) (2026-11-02)
+
+
+### Features
+
+* add portable save/load across library, runner, and libretro ([#42](https://github.com/szTheory/muhtari/issues/42)) ([3cf1914](https://github.com/szTheory/muhtari/commit/3cf1914b916771a0f0090a60477e6815b4b74875))
+
 ## [0.10.0](https://github.com/szTheory/muhtari/compare/v0.9.0...v0.10.0) (2026-10-29)
 
 
