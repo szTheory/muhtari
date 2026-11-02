@@ -2,418 +2,218 @@
 
 ## Milestones
 
-- [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4, archived in [v1.0 roadmap](milestones/v1.0-ROADMAP.md).
-- [ ] **v2.0 — The whole library** — phases 5–11, current milestone.
+- [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4, shipped 2026-10-21; [archive](milestones/v1.0-ROADMAP.md).
+- [x] **v2.0 — The whole library** — phases 5–11, shipped 2026-10-29; [archive](milestones/v2.0-ROADMAP.md).
+- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted, and Phase 14 pending.
 
-## v2.0 The whole library
+## v3.0 — Playstead-ready play and states
 
-### Goal
+Make ordinary 7800 play easier to reach, then make progress safe to save and load.
+Ship useful player documentation and release-qualified RetroArch readiness with a
+small demonstrated tune-up first. Deliver one portable machine-state contract
+through the library, runner and libretro core, then prove the frontend consumers.
+The source baseline is package v0.10.0, API 7, ABI 1 and behavior revision 6;
+planning v3.0 is independent of package versions. Seven of 16 requirements are
+complete; the remaining Phase 12 and Phase 14 requirements are pending.
 
-Expand 7800 library breadth with the remaining in-scope boards, battery saves, controllers and PAL, beginning with a pipeline tune-up. Planning milestone v2.0 is separate from pre-1.0 package semver. Every phase ships a usable release through all three deliverables.
+### Ownership and external dependency
 
-## Scope boundaries
+Muhtari owns its existing three deliverables, release artifacts, launch contract
+and actual RetroArch host-readiness evidence. Playstead owns its adapter/installer,
+verified two-artifact cache, `a7800` readiness, controller/focus handoff, child
+lifecycle and progress UI. Those sibling changes happen in a separate session.
 
-Souper/BupChip stays deferred by owner decision on 2026-10-21. XM here means RAM/POKEY/HSC, not YM2151; AtariVox here means EEPROM, not speech. Full OpenHSC, browser player, save states, rewind/run-ahead, movie recording, 2600 mode, tools and ports remain deferred. Library metadata coverage and verified gameplay are reported separately.
+The actual Playstead → RetroArch → muhtari launch/input/orderly-return and
+fresh-process battery flow needs paired evidence from the current Playstead
+revision and exact host/core pins. It is an explicit external integration
+dependency: muhtari readiness can ship before it, but cannot establish that the
+Playstead flow passed. Track its status and evidence in the
+[handoff](research/PLAYSTEAD-HANDOFF.md); do not mark it complete from a runner,
+callback or RetroArch-only result. This dependency does not block independent
+muhtari state development. Initial save/load UI belongs to RetroArch;
+Playstead-native exact Continue and state history remain later work.
 
-## Phase overview
+## Phases
 
-| Phase | Deliverable | Requirements | Depends on | Status |
-|---|---|---|---|---|
-| 5 | Pipeline tune-up | TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05 | v1.0 | Complete |
-| 6 | Retail cartridge boards | BOARD-01, BOARD-02, BOARD-03 | Phase 5 | Complete; shipped in PR24 |
-| 7 | Battery saves across hosts | SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06 | Phase 6 | Complete; 35/35 verified; shipped in PR #28 (merge checks pending) |
-| 8 | Controllers at the pins | INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05 | Phase 7 | Complete |
-| 9 | PAL games and audio | PAL-01, PAL-02, PAL-03 | Phase 8 | Complete; ready to ship |
-| 10 | Homebrew and expansion memory | BOARD-04, BOARD-05 | Phase 9 | In progress |
-| 11 | Full-library acceptance | COMP-01, COMP-02, COMP-03 | Phase 10 | Complete; 16/16 verified; ready to ship |
+- [ ] **Phase 12: Player-ready delivery and Playstead bridge** — Ship clear onboarding, release-qualified host readiness and one measured tune-up, with the sibling handoff explicit.
+- [x] **Phase 13: Portable save/load across three interfaces** — Save, validate and restore the complete supported machine through the library, runner and libretro callbacks. (completed 2026-11-01)
+- [ ] **Phase 14: Proven frontend states and responsive play** — Demonstrate actual RetroArch save/load, rewind and supported run-ahead without speculative persistent writes.
 
-## Phase details
+## Phase Details
 
-### Phase 5: Pipeline tune-up
+### Phase 12: Player-ready delivery and Playstead bridge
 
-**Goal:** Make the next capabilities ship through a measured, reliable pipeline with current docs and proportional gates.
-**Depends on:** v1.0 closeout
-**Requirements:** TUNE-01, TUNE-02, TUNE-03, TUNE-04, TUNE-05
-**Status:** Complete — nine active slots accepted, goal verification 20/20; shipped in PR #20.
-
-Plans:
-- [x] 05-01-PLAN.md — Audit the boundary, retain savings and allocate additions.
-- [x] 05-02-PLAN.md — Isolate freshness writers and measure scheduling/bounds.
-- [x] 05-10-PLAN.md — Retain full native/PowerPC equality outside ordinary PR execution.
-- [x] 05-04-PLAN.md — Hosted triage/monthly digest and guarded publication.
-- [x] 05-05-PLAN.md — Typed ordinary quality policy and independent measured observations.
-- [x] 05-13-PLAN.md — Finite aggregate recovery with retained legacy domain guards.
-- [x] 05-07-PLAN.md — Arm controlled performance comparison; audit advisory lanes.
-- [x] 05-15-PLAN.md — Complete release lifecycle/provisioning and actual hosted acceptance.
-- [x] 05-09-PLAN.md — Final docs/install/settings, tightened actual and outcome evidence.
-
-D-35 resumes15 and stages09 final edits before shared acceptance under the approved
-15365 maximum; current actual 15287 retires 78 lines. Current direct/called/rehearsal
-acceptance succeeds; final phase-goal verification passes 20/20. No new discussion, plan16 or review/gap reset is authorized.
-Historical03/06/11/12/08/14 halts and their original evidence remain in their own
-artifacts; they do not schedule another execution. Runtime canonical counts may
-include halted 14; only the nine active slots above count as accepted outcomes.
-
-**Success criteria:**
-
-1. Weekly triage and monthly CI-efficiency evidence from hosted runs.
-2. Measured timeout/workload bounds and repaired audio/freshness reliability, with retained signals.
-3. An ordinary aggregate quality ratchet, explicit legacy domain limits, controlled performance arming and audited final line budget.
-4. Accurate docs/install/settings and evidenced improvement in the weakest dimension.
-
-### Phase 6: Retail cartridge boards
-
-**Goal:** Run Activision, Absolute and Fractalus cartridges with correct banking and physical RAM behavior.
-**Depends on:** Phase 5
-**Requirements:** BOARD-01, BOARD-02, BOARD-03
-**Plans:** 9/9 active plans complete in9 sequential waves; active02–10, historical01 superseded.
-**Status:** Complete; independent goal verification passed33/33. BOARD-01–03 complete; shipping remains separate.
-Three owned diagnostic identities produce9 complete numeric host observations plus persistent smoke; linked API1–4 smoke clients,
-identified Activision AM/OM map/CPU equivalence and original probe identities,
-physical Fractalus alias/lifecycle vectors, mandatory all-byte loaded maps and identified AM/OM host equivalence,
-full local CI612+6, exact inventories, hygiene and local three-ZIP213899 <=399937
-pass;06-09 appends30 validated equality rows after17 unchanged old rows and corrects fixture source pins.
-At source25919fe/base617dfa7, calledCI40031550534 passes all six native three-ZIP sums
-(worst375263 <=399937), authenticated quality and existing frontend/portability jobs.
-Nightly40031550533 passes full native/PowerPC612+6,47-row equality, fuzz/property and vectors.
-The accepted contract-based policy, old predicates/pins and ordinary guards persist.
-Direct CI40031550434 passes its authenticated aggregate (worst375270 <=399937),
-required performance and frontend jobs. Release40031550534 attempt2 passes full
-equality, publication/install and confirmed cleanup. All final runs are successful.
-**History:** Original01 halt and the665/654-line constructions remain preserved;
-the N654 allocation question is superseded, not approved. Actual legacy-base
-retirement is demonstrated, including actual direct-PR performance/aggregate acceptance;
-the hosted-retirement todo is completed.
+**Goal:** Gamers can reach the current playable release easily, and a frontend integrator can use a proven muhtari/RetroArch launch boundary while maintainers ship a small measured reliability or efficiency improvement.
+**Depends on:** v2.0 shipped baseline (Phase 11); actual Playstead adapter completion is an external dependency, tracked separately.
+**Requirements:** TUNE-06, TUNE-07, PLAY-01, PLAY-02, PLAY-03, PLAY-04
+**Success Criteria** (what must be TRUE):
+1. A gamer can follow the short current README to find/install the correct core, load a local game by GUI or CLI, understand controls and optional BIOS, and distinguish battery saves, unavailable states and qualified compatibility claims.
+2. An integrator can identify and verify the separate RetroArch/core artifacts and use a documented launch/refusal contract for content, per-game saves, optional firmware, usable input and orderly process exit; the source-linked Playstead handoff names sibling responsibilities, current missing paired evidence and native-host promotion triggers.
+3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
+4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
+5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
+**Plans:** 3/8 active plans executed (4 acceptance plans and 4 active additive gap plans; 12-08 is superseded and excluded from the active count; accepted 0/4)
 
 Plans:
 
 **Wave 1**
-- [x] 06-10-PLAN.md — Prove authenticated additive fixture comparability through the actual producer and unchanged join.
 
-Historical06-01-PLAN.md is superseded;06-01-SUMMARY.md remains the original failed
-construction record. It is not an active dependency or a completed BOARD outcome.
+- [ ] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
 
-**Wave 2** *(ready after completed Wave 1)*
-- [x] 06-02-PLAN.md — Run the Absolute tracer through all three deliverables with behavior docs and package measurement.
+Execution halted: original run 41056151292 failed before RetroArch; scoped recovery
+41062201311 attempt 1/source 28e13e1 reached the host but held input produced idle
+pixels. DMA passed; later release/battery controls skipped. Both finite gates are
+spent; accepted 0/4 and PLAY-03 remain pending. Preserve the
+[canonical halt](phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md)
+and diagnose driver/config/event delivery with new evidence before any new bounded
+host test or dependent plan.
 
-**Wave 3** *(ready after completed Wave 2)*
-- [x] 06-03-PLAN.md — Publish the additive API, linked smoke coverage, exact inventories and embedding contract together.
+**Additive gap plans** *(direct ordinary host observation pending; 12-08 is superseded and excluded from the active count; original acceptance halt and successor blocks remain)*
 
-**Wave 4** *(ready after completed Wave 3)*
-- [x] 06-04-PLAN.md — Normalize identified Activision layouts and prove map/probe identity with matching behavior docs.
-
-**Wave 5** *(ready after completed Wave 4)*
-- [x] 06-05-PLAN.md — Implement physical Fractalus aliases and independent retail-map/lifecycle vectors.
-
-**Wave 6** *(complete)*
-- [x] 06-06-PLAN.md — Admit and execute three owned numeric board diagnostics.
-
-**Wave 7** *(complete)*
-- [x] 06-07-PLAN.md — Verify truthful loaded achievement maps and identified-layout host equivalence.
-
-**Wave 8** *(complete)*
-- [x] 06-08-PLAN.md — Prove bounded hostile/fuzz, transactional, allocation and instance-isolation behavior.
-
-**Wave 9** *(complete)*
-- [x] 06-09-PLAN.md — Accept board portability, behavior evidence and unchanged six-native package bounds.
-
-**Cross-cutting constraints:**
-- D-18: each slice measures exactly three component ZIPs against unchanged archive_bytes=399937; six native lanes remain the final authority.
-
-Each wave depends on the previous plan. Plan06-10 has proven the narrow authenticated fixture relation;
-current ENGINEERING §11 governs architecture review, with no maintenance-line allocation. The independent archive ceiling remains399937 bytes
-per native lane's three-component sum; all6 existing native lanes must fit before final acceptance.
-Shared core, manifest and inventory ownership requires sequential execution.
-
-**Success criteria:**
-
-1. Activision image layouts produce equivalent mapped reads after identified normalization, with original hashes still available to hosts.
-2. Absolute and Fractalus diagnostics exercise fixed/switched banks, initial state and RAM aliases through CPU-visible accesses.
-3. Malformed sizes and random bank traffic stay bounded without out-of-range reads or state changes on a refused load.
-4. New board fixtures run through library, runner and libretro; prior frame/audio predicates retain their passing behavior.
-
-### Phase 7: Battery saves across hosts
-
-**Goal:** Keep HSC and SaveKey progress across process and frontend restarts without putting file I/O in the core.
-**Depends on:** Phase 6
-**Requirements:** SAVE-01, SAVE-02, SAVE-03, SAVE-04, SAVE-05, SAVE-06
-**Plans:** 9/9 plans complete in 9 sequential waves (parallelization disabled).
-**Status:** Complete, 2026-10-24. All nine plans and SAVE-01–06 pass35/35 verified must-haves. Review is clean; exact-source CI/nightly, complete native/PowerPC/WASM evidence, actual fresh-process RetroArch and all six current/base archive sums pass within399937. Shipping is the next separate step.
-
-Plans:
-
-**Wave 1**
-- [x] 07-01-PLAN.md — Prove scoped fixture admission and the narrow behavior-metadata transition.
+- [x] 12-05-PLAN.md — Published the prior portability repair; its single diagnostic failed Linux preflight before RetroArch and its allowance is spent.
+- [ ] 12-06-PLAN.md — Wired the ordinary one-process capture and controls; its single full CI run timed out on Windows ARM64 before RetroArch, so PLAY-03 remains pending and the allowance is spent.
+- [ ] 12-07-PLAN.md — Reconcile the new Windows ARM64 timeout and 12-01 commit ledger; permit one ordinary acceptance run only after a causal finding and all local gates pass.
+- [ ] 12-08-PLAN.md — Superseded and excluded from the active count; its blocked attempt and evidence remain immutable history.
+- [ ] 12-09-PLAN.md — Reconcile current source identities and check local docs readiness; next command is `$gsd-execute-phase 12 --gaps-only --wave 2`, then stop. Wave 3/12-07 requires a separate scope.
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [x] 07-02-PLAN.md — Execute the HSC embedder tracer, preserve frozen clients and measure real packages early.
+
+- [ ] 12-02-PLAN.md — Ship a small measured Windows publication-control improvement with complete fault/current-base evidence.
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [x] 07-03-PLAN.md — Implement timed pin-level EEPROM, frozen attachment and completion/reset edges.
+
+- [ ] 12-03-PLAN.md — Complete the current player/launch contract and source-linked Playstead handoff.
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [x] 07-04-PLAN.md — Prove battery lifecycle, isolation, no-allocation and bounded I2C properties/fuzz replay.
 
-**Wave 5** *(blocked on Wave 4 completion)*
-- [x] 07-05-PLAN.md — Deliver opt-in runner import, firmware provisioning and safe raw-save replacement.
+- [ ] 12-04-PLAN.md — Record the exact six-property evidence deferral and its bounded close revisit.
 
-**Wave 6** *(complete)*
-- [x] 07-06-PLAN.md — Complete cadence, native controls, coalescing and actual-consumer failure proofs.
+**Canonical refs:** [owner intent](INTENT.md), [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#implications-for-roadmap), [feature ownership](research/FEATURES.md), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [hosts §3–4](preparation/HOSTS-AND-INTEGRATION.md#3-retroarch-on-apple-silicon), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [tune-up seed](seeds/SEED-007-milestone-tune-up.md), [maintenance seed](seeds/SEED-009-proportional-maintenance-review.md), [property seed](seeds/SEED-010-nightly-prop-calibration.md), [lessons](LESSONS.md#local-player-onboarding-2026-10-29).
+**UI hint:** no
 
-**Wave 7** *(complete)*
-- [x] 07-07-PLAN.md — Publish load-time SAVE_RAM, optional HSC firmware and exact achievement maps.
+**Acceptance boundary:** Reuse the existing README install-line, package identity,
+RetroArch screenshot/input/battery and CMake/CTest consumers. New or materially
+changed checks name the concrete fault and exercise representative pass/fault
+behavior through that consumer. Run recurring regressions in CI and keep one-off
+agent judgments as command/exit/run evidence. Select the tune-up from demonstrated
+friction in the recurring seeds; optional debt review cannot substitute for an
+actual improvement. Use completed comparable work for measurements under DEC.47.
+COST-01 monthly totals remain untrusted, WR-01's delayed-release equal-base edge
+remains unresolved and fail-closed, and unaccepted property attempts remain
+unaccepted unless new scoped evidence changes the disposition. No general audit,
+new framework or advisory promotion is implied. The handoff must carry the
+external Playstead flow as pending until paired consumer evidence exists.
 
-**Wave 8** *(complete)*
-- [x] 07-08-PLAN.md — Admit one owned combined diagnostic and wire the two-case hosted persistence oracle.
+### Phase 13: Portable save/load across three interfaces
 
-**Wave 9** *(complete)*
-- [x] 07-09-PLAN.md — Complete equality/inventories, enable proved claims and accept final native/hosted bounds.
-
-**Success criteria:**
-
-1. HSC SRAM and supplied-ROM mapping work; the ROM-free signature stub is explicitly limited to compatible direct-SRAM software.
-2. SaveKey/AtariVox EEPROM diagnostics cover repeated START, page wrap, sequential reads and emulated-time busy polling.
-3. The load-stable battery span has layout version 1, a correct change generation and power-cycle retention; raw .sav/.srm bytes agree.
-4. Runner reload, periodic/on-demand/exit flush and failed atomic-replace tests preserve existing progress, including short/oversized inputs.
-5. The second bounded hosted RetroArch case proves a save survives two fresh launches; existing in-process checks carry the detailed semantics.
-
-### Phase 8: Controllers at the pins
-
-**Goal:** Let software use light guns, analog and matrix controllers, quadrature devices and modern controller adapters.
-**Depends on:** Phase 7
-**Requirements:** INPUT-01, INPUT-02, INPUT-03, INPUT-04, INPUT-05
-**Plans:** 14/14 complete; independent verification49/49 and all INPUT requirements complete.
-**Status:** Complete2026-10-25; clean review after one fix round, no owner UAT; shipping in [PR #31](https://github.com/szTheory/muhtari/pull/31). Next GSD step after shipping: `$gsd-discuss-phase 9` in a new session.
-
-Plans:
-
+**Goal:** Hosts and runner users can restore a complete compatible machine point safely and continue identically through one bounded library-owned state contract.
+**Depends on:** shipped v2.0 baseline
+**Requirements:** STATE-01, STATE-02, STATE-03, STATE-04, STATE-05, STATE-06, FRONT-01
+**Success Criteria** (what must be TRUE):
+1. A library or libretro caller can query a size fixed for the loaded machine and save/restore a complete versioned byte-wise little-endian snapshot in caller-owned buffers, covering mutable supported chip/device/board/region state, pending work and emulated battery bytes; unloaded and failed-load callbacks behave safely and declarations match proven support.
+2. A caller can refuse truncated, corrupt, unsupported, incompatible and checksum-valid hostile states before any live mutation, then obtain the same subsequent execution and host-visible storage metadata as if the rejected restore had not occurred.
+3. A caller can save, restore and continue each supported machine topology with matching independent semantic observations, frame output and raw/PCM audio against uninterrupted execution; state bytes and continuation agree across the existing required native and big-endian lanes, with advisory evidence still labeled.
+4. A host can repeatedly save/load without core allocation after content load or unbounded work, including hostile restored clocks, deadlines and lengths; changed restored battery bytes notify live dirty tracking without restoring an old token, equal/refused restores preserve the appropriate metadata, and speculative work cannot commit durable save files.
+5. A runner user can save at a chosen frame, load in a fresh process and hash state for repeatable continuation, with checked file I/O, explicit refusal status and preservation of the live machine and durable files on failure.
+**Plans:** 8/8 plans complete in 8 sequential waves.
 **Wave 1**
-- [x] 08-01-PLAN.md — Prove narrow controller fixture comparability.
-
-**Wave 2** *(complete)*
-- [x] 08-02-PLAN.md — Publish additive input and transactional lifecycle.
-
-**Wave 3** *(complete)*
-- [x] 08-03-PLAN.md — Prove a timed driving-controller path.
-
-**Wave 4** *(complete)*
-- [x] 08-04-PLAN.md — Deliver compact typed runner replay.
-
-**Wave 5** *(accepted after the separate DEC.61 policy recovery)*
-- [x] 08-05-PLAN.md — Driving, actual RetroArch and revised package/evidence acceptance pass at62fa325 in CI40139744520. Historical cutoff failures remain; required authenticated measurements and integrity are retained. Historical05 recovery precedes the completed later slices.
-
-**Wave 6** *(complete)*
-- [x] 08-06-PLAN.md — TIA input memory and native gun emission verified locally at6fab3e0 (648+6); all historical digest/numeric pins retained.
-
-**Wave 7** *(complete)*
-- [x] 08-07-PLAN.md — XG-1 raster boundaries, owned diagnostic and all three hosts pass at9ca62b3 (648+6).
-
-**Wave 8** *(complete)*
-- [x] 08-08-PLAN.md — Full-range paddle charge, owned analog oracle and all three hosts pass atf33ad71 (648+6).
-
-**Wave 9** *(complete)*
-- [x] 08-09-PLAN.md — Connected keypad matrix, independent records and all three hosts pass at2815568 (648+6).
-
-**Wave 10** *(complete)*
-- [x] 08-10-PLAN.md — CX22/ST/Amiga timing, numeric oracles and all three hosts pass at0f590fe (648+6).
-
-**Wave 11** *(complete)*
-- [x] 08-11-PLAN.md — Complete finite adapter scans and opposite EEPROM coexistence pass at70465c9 (648+6).
-
-**Wave 12** *(complete)*
-- [x] 08-12-PLAN.md — Complete adapter host mappings and executable scans pass at03b7f96 (648+6).
-
-**Wave 13** *(complete)*
-- [x] 08-13-PLAN.md — Hostile input, noalloc/isolation, real typed workloads and comparable slice costs pass at38ec251 (648+6).
-
-**Wave 14** *(complete)*
-- [x] 08-14-PLAN.md — Exact-source CI/nightly,342-row equality,actual RetroArch and authentic six-native package observations initially pass atdf8f9a6; corrected-source70366fd acceptance and49/49 verification supersede the pre-review source.
-
-Each plan depends on the preceding plan because core, host, diagnostic and evidence owners overlap.
-08-01 proves narrow fixture comparability before fixture-dependent acceptance. 08-05 requires the
-first independently judged three-deliverable controller slice and fresh exact-source limiting-native
-candidate/base three-component packages before hardware expansion. Substantial slices repeat package
-measurements;08-14 requires final authenticated six-native current/base observations.
-DEC.61 separately retires the historical compressed cutoff after its reproduced
-failure. Package integrity, typed measurements and all other contracts remain.
-
-**Success criteria:**
-
-1. Header defaults and host overrides select the devices consistently through append-only API, deterministic runner input and applicable libretro mappings; old callers retain behavior.
-2. XG-1 trigger/sensor diagnostics distinguish lit targets, dark/blanked pixels and off-screen aim with fitted timing parameters identified.
-3. Paddles and keypad diagnostics exercise dump/charge and matrix behavior at actual access ticks, including the documented timing qualifications.
-4. Driving, CX22, ST/Amiga mice, SNES2Atari and Mega7800 diagnostics observe the documented pin sequences and bounded motion/button handling.
-
-### Phase 9: PAL games and audio
-
-**Goal:** Run PAL content at the console timing and report matching video/audio geometry to every host.
-**Depends on:** Phase 8
-**Requirements:** PAL-01, PAL-02, PAL-03
-**Plans:** 8/8 accepted and summarized;42/42 verified truths
-**Status:** Complete — PAL-01–03 verified; one review-fix round, gap round unused; ready to ship.
-
-Plans:
-
-**Wave 1**
-- [x] 09-01-PLAN.md — Safe PAL timing/startup/arithmetic tracer and reachable host buffer/AV contracts.
-
-**Wave 2** *(accepted)*
-- [x] 09-02-PLAN.md — Physical-time devices, lower-raster light and battery lifecycle.
-
-**Wave 3** *(accepted)*
-- [x] 09-03-PLAN.md — Approved warm PAL palette, runner output and movie sessions.
-
-**Wave 4** *(accepted)*
-- [x] 09-04-PLAN.md — Load-stable libretro region, AV, palette and fallback.
-
-**Wave 5** *(accepted)*
-- [x] 09-05-PLAN.md — Exact audio carry, real extremizers and retained quality controls.
-
-**Wave 6** *(accepted)*
-- [x] 09-06-PLAN.md — Narrow PAL fixture admission through the real producer and join.
-
-**Wave 7** *(accepted after independent pre-plan evidence recovery)*
-- [x] 09-07-PLAN.md — Owned numeric diagnostic and 600-full-frame three-host evidence.
-
-**Wave 8** *(accepted)*
-- [x] 09-08-PLAN.md — Honest capability claims and exact-source portability/package acceptance.
-
-**Success criteria:**
-
-1. PAL content/override executes 313-line frames with PAL MSTAT/DMA boundaries and documented fast/BIOS hand-off behavior.
-2. Library, runner and libretro agree on PAL height, rational frame rate, palette and aspect information.
-3. Sustained PAL runs retain correct audio sample carry and identical frame/raw-audio/PCM hashes across supported platforms.
-4. NTSC regression fixtures retain their existing output unless an evidence-backed behavior revision explicitly changes it.
-
-### Phase 10: Homebrew and expansion memory
-
-**Goal:** Run BankSet and XBoard/XM memory/POKEY/HSC capabilities using the correct CPU/MARIA ownership.
-**Depends on:** Phase 9
-**Requirements:** BOARD-04, BOARD-05
-**Plans:** 14/14 plans complete in 13 sequential waves; gap closure 10-14 planned.
-
-Plans:
-**Wave 1**
-- [x] 10-01-PLAN.md — Prove the causal electrical-owner tracer through all three deliverables.
+- [x] 13-01-PLAN.md — Complete private visitor and field proofs.
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [x] 10-02-PLAN.md — Complete checked BankSet geometry, shared/HALT RAM and redirects.
+- [x] 13-02-PLAN.md — Shared digests and effective machine identity.
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [x] 10-03-PLAN.md — Deliver additive selection, transactional XBoard and API/version evidence.
+- [x] 13-03-PLAN.md — Public state API and live battery metadata.
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [x] 10-04-PLAN.md — Run XM pages, stable HSC and continuously clocked expansion POKEY.
+- [x] 13-04-PLAN.md — Independent continuation and hostile-state evidence.
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [x] 10-05-PLAN.md — Match runner/libretro selection, firmware discovery and explicit refusals.
+- [x] 13-05-PLAN.md — Runner state files, frame points and hashes.
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [x] 10-06-PLAN.md — Publish honest static maps and prove the actual rcheevos resolver.
+- [x] 13-06-PLAN.md — Libretro serialization and truthful basic claims.
 
 **Wave 7** *(blocked on Wave 6 completion)*
-- [x] 10-07-PLAN.md — Admit and independently judge owned BankSet geometry diagnostics.
+- [x] 13-07-PLAN.md — State and continuation rows in existing equality producers.
 
 **Wave 8** *(blocked on Wave 7 completion)*
-- [x] 10-08-PLAN.md — Admit and independently judge integrated expansion diagnostics.
+- [x] 13-08-PLAN.md — Resource/docs verification and exact-source executed BE evidence.
+**Canonical refs:** [accepted requirements](REQUIREMENTS.md), [state research](research/ARCHITECTURE.md), [pitfalls](research/PITFALLS.md), [stack](research/STACK.md), [architecture §7](preparation/ARCHITECTURE.md#7-state-and-saves), [settled decisions](preparation/DECISIONS.md#architecture), [hosts §1/4](preparation/HOSTS-AND-INTEGRATION.md#1-libretro-contract), [state seed](seeds/SEED-002-states-and-movies.md), [lessons](LESSONS.md), [engineering §11](preparation/ENGINEERING.md#11-docs-standards).
+**UI hint:** no
 
-**Wave 9** *(blocked on Wave 8 completion)*
-- [x] 10-09-PLAN.md — Require complete semantic observations in strict native/PowerPC equality.
+**Acceptance boundary:** Extend the existing native tests, seeded hostile-input
+checks, runner file controls, loaded libretro-module tests and required
+native/big-endian equality producer. Pair split-run equality with an independent
+owned semantic oracle so common omissions cannot pass by agreement alone. Cover
+wrong media/firmware/effective configuration, complete pending device work,
+validate-before-apply preservation, battery bytes versus dirty metadata, and
+checked host file failure. Exact byte layout, field inventory, compatibility
+bindings and measured bounds belong to phase discussion/design; keep existing
+DEC.26/35 contracts and update stale preparation detail against current code.
+State format, API, ABI, behavior and battery versions remain separate. No full
+recording protocol or new dependency is needed; use existing replay when useful.
+Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 
-**Wave 10** *(blocked on Wave 9 completion)*
-- [x] 10-10-PLAN.md — Prove transactional lifetimes, physical accounting and no allocation after load.
+### Phase 14: Proven frontend states and responsive play
 
-**Wave 11** *(blocked on Wave 10 completion)*
-- [x] 10-11-PLAN.md — Prove hostile regional execution, loader replay and isolation/lifecycle properties.
+**Goal:** Gamers can save/load, rewind and use the supported run-ahead path in the pinned RetroArch host with deterministic progress and safe persistent storage.
+**Depends on:** Phase 13
+**Requirements:** FRONT-02, FRONT-03, FRONT-04
+**Success Criteria** (what must be TRUE):
+1. A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip using the released core rather than only callback-level agreement.
+2. A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing and battery semantics remain correct; the frontend owns rewind storage and UI.
+3. A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative durable writes, and comparable completed-work performance evidence; capability declarations and user instructions claim only the qualified host path.
+**Plans:** TBD — no execution plans yet.
+**Canonical refs:** [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#phase-14-state-consumers-and-continuation-proof), [feature ownership](research/FEATURES.md), [state/battery pitfalls](research/PITFALLS.md), [hosts §1/3](preparation/HOSTS-AND-INTEGRATION.md#1-libretro-contract), [settled host decisions](preparation/DECISIONS.md#hosts-and-integration), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [lessons](LESSONS.md).
+**UI hint:** no
 
-**Wave 12** *(blocked on Wave 11 completion)*
-- [x] 10-12-PLAN.md — Publish qualified hardware/API docs and executed compatibility claims.
-
-**Wave 13** *(blocked on Wave 12 completion)*
-- [x] 10-13-PLAN.md — Accept exact-source inventories and preserved local/hosted contracts.
-
-**Gap closure** *(owner exception 2026-10-28: second gap round)*
-- [x] 10-14-PLAN.md — Refused images exit 77 under --hsc-rom without reading firmware.
-
-**Cross-cutting constraints:**
-- 32-bit/native/PPC array and offset arithmetic is bounded by real1MiB ROM,32KiB cart HALT RAM and128KiB expansion capacities, without a new proxy limit.
-- Released capability and hardware documentation match executed BankSet/XBoard/XM subset behavior and preserve explicit physical/source confidence limits.
-
-**Success criteria:**
-
-1. BankSet diagnostics exercise separate CPU/MARIA ROM and RAM views on both HALT edges for each supported checked geometry.
-2. XBoard and the XM subset respond to documented control registers and banked CPU/MARIA accesses, including integrated HSC/POKEY use.
-3. Owned integration fixtures exercise the new board paths through library, runner and libretro with bounded hostile bank traffic.
-4. Souper/BupChip, YM2151 and other unimplemented expansion audio remain explicitly unsupported; no incomplete configuration is advertised as supported.
-
-### Phase 11: Full-library acceptance
-
-**Goal:** Account for the pinned library honestly and prove every new compatibility claim without private bytes in CI.
-**Depends on:** Phase 10
-**Requirements:** COMP-01, COMP-02, COMP-03
-**Plans:** 12/12 accepted; 8 sequential waves, then 3 gap plans and one committed-fix acceptance follow-up. Verification passed 16/16; COMP-01–03 complete. Historical 14/16 failures remain in Git; ship is next.
-
-Plans:
-**Wave 1**
-- [x] 11-01-PLAN.md — Repair the pin recipe, pin three owned retail diagnostics, fix PAL predicate hashing, correct banksets.
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [x] 11-02-PLAN.md — Generate one derived ledger row per pinned-list entry, checked against the pin on the hygiene lane.
-
-**Wave 3** *(blocked on Wave 2 completion)*
-- [x] 11-03-PLAN.md — Close the ratchet's tier-demotion hole, bind mailbox CRCs, promote the library job to required.
-
-**Wave 4** *(blocked on Wave 3 completion)*
-- [x] 11-04-PLAN.md — Count a private local run through the core's own identification, proven by a public fixture.
-
-**Wave 5** *(blocked on Wave 4 completion)*
-- [x] 11-05-PLAN.md — Document the private command with its prerequisite, remove the dotenv drift, record the local run.
-
-**Wave 6** *(blocked on Wave 5 completion)*
-- [x] 11-06-PLAN.md — Regenerate the compatibility page: two populations, derived headline, claims table, guards.
-
-**Wave 7** *(blocked on Wave 6 completion)*
-- [x] 11-07-PLAN.md — Require the disclaimer and bound the .info description.
-
-**Wave 8** *(blocked on Wave 7 completion)*
-- [x] 11-08-PLAN.md — Align planning docs with the real local run and record the deferred ideas as seeds.
-
-**Gap round, wave 1**
-- [x] 11-10-PLAN.md — Call title-frame passes a public title screen and name real backing tests per claim.
-
-**Gap round, wave 2** *(blocked on gap wave 1 completion: its library workflow compares the page 11-10 regenerates)*
-- [x] 11-09-PLAN.md — Keep paths out of the local pass and the library scans on links, unreadable files and odd names; take OUT as an absolute path.
-
-**Gap round, wave 3** *(blocked on gap wave 2 completion)*
-- [x] 11-11-PLAN.md — Measure the new test budgets (title.pal.bios to at least 4 s) and separate the bankset output trees.
-
-**Committed-fix acceptance, gap wave 4** *(blocked on gap wave 3 completion)*
-- [x] 11-12-PLAN.md — Accept the existing claim/output review fixes through public controls, full CI and visible local counts; hand the receipt to execute-phase's built-in verifier.
-
-**Success criteria:**
-
-1. Every entry in the pinned CC0 library has an explicit ledger disposition, with untested and unsupported entries distinguished from passes.
-2. Each newly claimed board/controller/region has legally admissible automated behavioral evidence and existing passing predicates remain protected.
-3. Available private content runs only through the isolated local library preset with command/exit/commit evidence; public CI and releases contain no private bytes.
-4. Generated compatibility docs and host capability metadata match the evidence; the whole-library milestone name does not imply universal expansion or title accuracy.
+**Acceptance boundary:** Revalidate exact RetroArch/core pins and supported modes
+during phase design. Put exhaustive semantics and isolation in existing in-process
+tests; extend the bounded actual-host consumer only for the recurring feature
+boundary it must establish. Actual host save/load and supported rewind/run-ahead
+evidence are required for their claims; a successful exit or state-byte equality
+alone is insufficient. Preserve existing host-test/resource bounds unless a
+separate evidence-backed change under ENGINEERING §11 is needed. Measure complete
+work for the supported responsiveness path without inventing a platform budget.
+Battery rollback remains emulated state, dirty metadata remains live, and no
+speculative pass writes durable files. RetroArch-managed states do not establish
+Playstead-native Continue or close the external launch dependency by implication.
 
 ## Coverage and verification
 
-27 approved requirements map to exactly one phase each; no unmapped requirements. Every behavior change lands with tests in the CMake CI workflow and matching docs. Evidence uses command, exit status and hosted run URL; no committed logs. Existing deterministic, bounded-core, no-private-bytes and permissive-source constraints remain in force. Two code-review fix rounds and one gap round per phase; tooling findings remain seeds.
+All 16 approved requirements map exactly once: Phase 12 has six, Phase 13 seven,
+and Phase 14 three. [REQUIREMENTS.md](REQUIREMENTS.md#traceability) is the status
+ledger: Phase 13's seven requirements are complete; Phase 12's six and Phase 14's
+three remain pending. Phase 13's eight plans and implementation are complete.
 
-The v1.0 stale verification fingerprints and accepted deferrals remain historical closeout facts. New milestone evidence neither rewrites nor implicitly renews those verdicts.
+Every behavior change includes its test in `cmake --workflow --preset ci` and
+affected documentation. Preserve required correctness, determinism, hostile-input,
+provenance, package identity, release and evidence contracts and the existing
+required-versus-advisory lane distinctions. Use CMake `-P`/POSIX sh and existing
+mechanisms; add no dependency, quota, generic audit or tests-of-tests framework by
+default. Apply ENGINEERING §11 to changed boundaries and new measured resource
+bounds. Keep at most two review-fix rounds and one gap round per phase; optional
+improvements become seeds, existing required contract violations remain blocking.
+Record evidence as command, exit status and run URL, never committed logs.
+
+Full recording, generalized continuation, AI/TAS, browser play, native Playstead
+hosting/history and unrelated hardware work retain their
+[rolling-horizon](PRODUCT-ROADMAP.md) triggers. Historical scopes, failed attempts,
+audit overrides and deferred dispositions remain in their original archives;
+this roadmap does not retroactively qualify them.
 
 ## Progress
 
-| Phase | Plans complete | Status | Completed |
-|---|---|---|---|
-| 5. Pipeline tune-up | 9/9 active slots | Complete    | 2026-10-22 |
-| 6. Retail cartridge boards | 9/9 | Complete    | 2026-10-23 |
-| 7. Battery saves across hosts | 9/9 | Complete    | 2026-10-24 |
-| 8. Controllers at the pins | 14/14 | Complete    | 2026-10-25 |
-| 9. PAL games and audio | 8/8 | Complete    | 2026-10-25 |
-| 10. Homebrew and expansion memory | 14/14 | Complete    | 2026-10-28 |
-| 11. Full-library acceptance | 12/12 | Complete    | 2026-10-29 |
+Phase 12's player-readiness evidence and Phase 13's state foundation may proceed
+independently from the shipped v2.0 baseline; Phase 14 follows Phase 13. All
+approved phase requirements remain mandatory for v3.0 completion. Discuss, plan,
+execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](preparation/GSD-HANDOFF.md#3-each-phase--one-session-per-step-so-the-model-can-change-between-steps).
 
----
-*Updated: 2026-10-29 after Phase 11 acceptance and re-verification. All seven milestone phases are verified complete; Phase 11 passes 16/16 with 12/12 accepted plans and COMP-01–03 complete. Fresh local CI673+6 and public library47 pass; 0/204 public local presence is accounting evidence, not a gameplay pass. Hosted checks and merge remain for ship. Next separate command: $gsd-ship 11.*
+| Phase | Plans Complete | Status | Completed |
+|---|---|---|---|
+| 12. Player-ready delivery and Playstead bridge | 3/9 | Halted at 12-01 | - |
+| 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
+| 14. Proven frontend states and responsive play | 0/TBD | Not started | - |
+
+Next separate command, only after a new Phase 12 scope is authorized: `$gsd-discuss-phase 12`. Phase 13 is complete. Phase 12 remains halted at 0/4, is not accepted or waived, and all hosted allowances remain spent; no Phase 12 execution or hosted action is authorized by this handoff.

@@ -2,7 +2,7 @@
 title: "Hosts and integration: libretro, RetroAchievements, RetroArch on Mac, runner + Playstead, automation, WASM"
 summary: "What every host needs from muhtari (libretro adapter, rcheevos memory map, RetroArch on Apple Silicon, muhtari-run and Playstead's protocol, scripting, WASM) and which milestone each piece lands in."
 read_when: "Building the libretro adapter or .info, the runner CLI, saves, the RetroArch e2e job, a Playstead pin, scripting/Gym/TAS surfaces, or a web build."
-updated: 2026-10-24
+updated: 2026-10-30
 ---
 
 # Hosts and integration
@@ -19,6 +19,35 @@ Markers: (tested) run here on 2026-10-15, (derived), (untested), (unverified). "
 | Inspection/hooks, Python vs Lua, Gym env, movies, lag, debugger | 5 |
 | Web build | 6 |
 | Feature → host or core | 7 |
+
+## Current scope update (2026-10-29)
+
+The approved [v3.0 requirements](../REQUIREMENTS.md) now prioritize Playstead-ready
+ordinary play and save/load. Earlier v3 movie/continuation placements below are
+historical direction: full recording and generalized continuation are deferred.
+The [current research](../research/FEATURES.md) inspected newer Playstead product,
+brand and adapter sources; it supersedes the old single-runner integration assumption.
+The immediate interactive route is Playstead launching separate verified RetroArch
+and muhtari artifacts; the headless runner remains an automation interface.
+Actual Playstead adapter and paired E2E acceptance remain sibling-owned. Initial
+state UI is RetroArch-managed; native Playstead hosting/Continue has separate triggers.
+
+Keep the settled LE visitor, three deliverables and host ownership. Phase 13 now records
+the complete state inventory, effective media/firmware identity, battery rollback and
+core-owned pending input in `13-FIELD-PROOF.md`; pending host input and callbacks remain
+host-owned. That source ledger establishes local implementation coverage, not exact-source
+native/PowerPC execution or phase acceptance.
+
+Actual RetroArch save/load is a new consumer boundary in FRONT-02; exhaustive
+rewind/run-ahead semantics stay in-process, with host claims limited to qualified
+evidence. Preserve the existing two-case host-test and measured resource contracts.
+The owner-approved separate2026-10-30 DEC.56 revision retires only the numeric300-line
+ceiling; report support line totals without a replacement quota. ENGINEERING §11
+architecture review and all runtime/ownership/pixel controls remain binding.
+Do not silently expand the harness or weaken acceptance to fit a proxy.
+Local release-core launches also succeeded outside the agent sandbox during
+onboarding (LESSONS MU-HOST-002); the earlier sandbox-only failure does not mean the
+owner must perform verification. Recurring host regression checks still belong in CI.
 
 ## 1. libretro contract
 **Exports.** All 25 entry points (L7511–7840) in nesturbator's 352-line adapter shape [HI.22]: one instance `retro_init`→`retro_deinit`, statics reset in deinit, no game → test card (`SET_SUPPORT_NO_GAME` 18), XRGB8888 (`SET_PIXEL_FORMAT` 10) plus RGB565 when `USE_RGB565` is defined (the PSP template passes it [HI.09]), mono → stereo batch audio, ROM copied at load. 7800 changes: `retro_get_region` 0/1 from the loaded region; `retro_reset` = power cycle (battery media kept), because the console Reset is a game-read switch (RetroPad X). **Rec:** power cycle. **Alt:** hold the Reset switch for 2 frames. **Would change if:** users expect RetroArch's Restart to keep RAM.
@@ -62,11 +91,12 @@ Port devices are `SET_CONTROLLER_INFO` (35) subclasses, not options: ProLine (de
 **Saves and HSC (implemented):** [docs/libretro.md](../../docs/libretro.md) owns load-time option/controller/metadata
 precedence, exact immediately published SAVE_RAM, reload-only changes, optional copied `highscre.bin` and
 truthful HSC SRAM/ROM descriptors. The frontend owns per-game raw `.srm` I/O; the adapter owns no save files.
-Detailed loaded-module and pinned-resolver tests cover this path. The two-launch hosted RetroArch proof
-checks independent counters, complete media and pixels; `.info` declares saves and optional HSC firmware.
-No save states or speech are claimed.
+Detailed loaded-module and pinned-resolver tests cover this path. `.info` also declares serialized state, backed
+by `libretro.host.state` and the capability-claim checks. Those are in-process callback checks; actual RetroArch
+save/load remains a separate host boundary for FRONT-02. The two-launch hosted RetroArch proof covers battery
+counters, media and pixels, not serialized states.
 
-**Serialize.** Size constant between load and unload (L7699), 0 without content; no `SET_SERIALIZATION_QUIRKS` (44); byte-wise little-endian; savestate context ignored although `ROLLBACK_NETPLAY` (L5707) asks for big-endian. Run-ahead (same or second instance) and rewind need only speed + determinism; netplay compares content, core version and states [HI.22] → byte-identical states on six platforms + BE qemu. XM's 128 KB RAM dominates size (derived). **Rec:** LE always. **Alt:** BE in context 3. **Would change if:** a frontend really exchanges context-3 states across machines.
+**Serialize.** Size is constant while content is loaded and zero otherwise (L7699); the callbacks use the versioned little-endian core format and do not advertise `SET_SERIALIZATION_QUIRKS` (44). They ignore context, including `ROLLBACK_NETPLAY` (L5707), which requests big-endian; context 3 therefore reports size zero and refuses save/load. `libretro.host.state` covers byte delegation, refusal and continuation in-process. Exact-source native/PowerPC state-byte and continuation equality still requires the full executed lane receipts; compile-only or local callback evidence cannot establish it. XM's 128 KB RAM dominates ordinary state size (derived). **Rec:** keep one LE format. **Alt:** a separate BE format only if an actual frontend exchanges context-3 states across machines.
 
 **`.info`.** `display_name "Atari - 7800 (muhtari)"`, `corename "muhtari"`, `systemname "Atari 7800"`, `systemid "atari_7800"`, `database "Atari - 7800"`, `manufacturer "Atari"`, `supported_extensions "a78|bin"`, `license "MIT"`, `needs_fullpath`/`hw_render`/`cheats`/`disk_control`/`load_subsystem` false, `display_version` generated from `version.txt` (ProSystem: `serialized`, `memory_descriptors true`, `core_options false` [HI.02]). Each claim maps to its proving tests at configure time (nesturbator pattern [HI.22]):
 
@@ -120,7 +150,7 @@ Mirrors share one `ptr` with different `offset` ("overlapping descriptors … sa
 
 **Rec:** preemptive frames 1 + auto frame delay + Vulkan swapchain 2. **Alt:** run-ahead 1 in second-instance mode (hides audio glitches after a state load) [HI.06]. **Would change if:** RetroArch's latency statistics show stalls at muhtari's frame cost, or the 7800 game in question has 0 internal lag frames (frame-advance count per [HI.06]).
 
-**Bounded hosted e2e** (RetroArch aborts in the agent sandbox → hosted only [HI.22]). One macos-15 arm64 job: fetch the pinned DMG, check SHA-256, `hdiutil attach`, `ditto`; isolated config (`config_save_on_exit=false`, `audio_driver=null`, `video_gpu_screenshot=false`, `pause_nonactive=false`, all dirs inside the job); `RetroArch -L CORE --max-frames=N --max-frames-ss --max-frames-ss-path=shot.png -c test.cfg ROM` [HI.22]. Case 1 (v1 P1 test card; v1 P3 an own diagnostic ROM): screenshot = runner `--dump-frame N` after the same palette, byte-exact. Case 2 (v2): an own cc65 ROM increments a counter in HSC/SaveKey at boot and draws it; run 1 (no `.srm`) shows 1, run 2 shows 2; compare both shots and the `.srm` bytes with the runner. Nothing else: no UDP commands, no frame-exact progression, no RetroArch rewind/run-ahead/netplay (prove those in-process). Budget ≤ 300 test lines, timeout 2× measured; nesturbator's grew to 7,706 lines over 53 commits [HI.22]. **Rec:** two cases. **Alt:** in-process only. **Would change if:** a RetroArch update breaks loading unnoticed (add a version check, not a case).
+**Bounded hosted e2e** (RetroArch aborts in the agent sandbox → hosted only [HI.22]). One macos-15 arm64 job: fetch the pinned DMG, check SHA-256, `hdiutil attach`, `ditto`; isolated config (`config_save_on_exit=false`, `audio_driver=null`, `video_gpu_screenshot=false`, `pause_nonactive=false`, all dirs inside the job); `RetroArch -L CORE --max-frames=N --max-frames-ss --max-frames-ss-path=shot.png -c test.cfg ROM` [HI.22]. Case 1 (v1 P1 test card; v1 P3 an own diagnostic ROM): screenshot = runner `--dump-frame N` after the same palette, byte-exact. Case 2 (v2): an own cc65 ROM increments a counter in HSC/SaveKey at boot and draws it; run 1 (no `.srm`) shows 1, run 2 shows 2; compare both shots and the `.srm` bytes with the runner. Nothing else: no UDP commands, no frame-exact progression, no RetroArch rewind/run-ahead/netplay (prove those in-process). Timeout 2× measured; report support line totals and review ownership, control flow, independent tests and recurring cost under ENGINEERING §11. The owner-approved2026-10-30 revision retires only the300-line ceiling, without a replacement quota; nesturbator's7706-line growth over53 commits remains the maintenance warning [HI.22]. Runtime/frame bounds, isolated paths, owned-child cleanup and independent pixel/media judges remain binding. **Rec:** two cases. **Alt:** in-process only. **Would change if:** a RetroArch update breaks loading unnoticed (add a version check, not a case).
 
 ## 4. Runner `muhtari-run` and Playstead
 

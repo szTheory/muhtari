@@ -61,6 +61,7 @@ muhtari_status muhtari_get_versions(muhtari_versions *out)
     v.api = MUHTARI_API_VERSION;
     v.abi = MUHTARI__ABI;
     v.behaviour_revision = MUHTARI__BEHAVIOUR_REVISION;
+    v.state_format = 1u;
     muhtari__write_out(out, &v, (uint32_t)sizeof v);
     return MUHTARI_STATUS_OK;
 }
@@ -406,6 +407,7 @@ muhtari_status muhtari_load(muhtari *m, const muhtari_media *media)
         m->bios_size = (uint32_t)media->bios_size;
     }
     power_cycle(m);
+    muhtari__state_bind_identity(m);
     return MUHTARI_STATUS_OK;
 }
 

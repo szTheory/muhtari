@@ -1,118 +1,92 @@
-# Requirements: muhtari v2.0 — The whole library
+# Requirements: muhtari v3.0 — Playstead-ready play and states
 
-Defined and approved: 2026-10-21. Milestone v2.0; Phase 5 shipped in PR #20. BOARD-01–03 implementation acceptance is recorded in Phase 6 summaries; phases 7–11 are not started.
-Core value: 7800 games behave as they do on the console, identically on every platform, from a small MIT-licensed C library that any host can embed.
+**Defined:** 2026-10-29
+**Core value:** 7800 games behave as on the console, identically across platforms,
+from a small MIT-licensed C library hosts can embed.
 
-## Milestone requirements
+Owner approved researched recommendations, then prioritized ordinary gaming through
+Playstead and save/load states over recording, AI and TAS. This supersedes the
+initial broad “States and movies” label. The existing three deliverables remain.
 
-### Pipeline tune-up
+## v3.0 Requirements
 
-- [x] **TUNE-01**: Maintainers receive a weekly triage digest with a monthly CI-efficiency section derived from hosted runs, without a new service dependency.
-- [x] **TUNE-02**: CI uses measured timeout and workload bounds, resolves reproduced flakes and overlapping-output races, and records the stronger signal for any removed check.
-- [x] **TUNE-03**: One aggregate quality.json ratchet consumes measured existing outputs, rejects unexplained regressions and permits explicit dated exceptions for its metrics; performance and compatibility retain their independent semantic guards and existing domain exception stores. Repository checks preserve concrete contracts and use the bounded architecture review in ENGINEERING §11; maintenance-line allocations and their exclusive accounting machinery are retired by the accepted 2026-10-23 policy revision.
-- [x] **TUNE-04**: Performance comparisons are armed only after the documented deterministic controls pass; the resulting state and supported/advisory portability lanes are explicit.
-- [x] **TUNE-05**: User and maintainer docs, install instructions and repository-setting checks match the released behavior; the measured weakest quality dimension receives a shipped improvement.
+### Player-ready delivery and bounded tune-up
 
-### Cartridge boards and expansion memory
+- [ ] **TUNE-06**: Maintainers can ship a small improvement to demonstrated pipeline friction selected from the recurring tune-up seeds, with representative pass/fault evidence and preserved required contracts; unselected COST-01, WR-01 and optional debt keep explicit dispositions rather than becoming a general audit.
+- [ ] **TUNE-07**: Maintainers can distinguish complete successful nightly-property measurements from censored or cancelled work, and receive evidence-based deadlines or a bounded explicit deferral while every case/oracle and advisory status is preserved.
+- [ ] **PLAY-01**: A gamer can find the current binaries, install the correct RetroArch core, load a local game through GUI or CLI, understand controls and optional BIOS, and find honest save/compatibility limits from a short current README whose install command is automatically checked.
+- [ ] **PLAY-02**: A frontend integrator can consume a release-qualified external RetroArch/muhtari launch contract covering exact artifact identity, per-game content/save paths, optional firmware, usable input, process exit and refusal reporting, without treating the headless runner as an interactive player.
+- [ ] **PLAY-03**: A frontend integrator has automated owned-fixture evidence of visible output, input delivery and fresh-process battery continuity through the released libretro core and actual RetroArch; final Playstead launch/input/exit acceptance is separately identified and never inferred from these host-readiness checks.
+- [ ] **PLAY-04**: The Playstead team can use a source-linked handoff that identifies its adapter/pin/readiness/state responsibilities, the quickest playable route, a native-host north star and its promotion triggers, and the exact evidence still needed for the actual cross-project flow.
 
-- [x] **BOARD-01**: Activision cartridges run with correct banking and equivalent mapped behavior for the two identified dump layouts, while raw image identity remains inspectable.
-- [x] **BOARD-02**: Absolute cartridges run with documented fixed/switched windows and power-on banks.
-- [x] **BOARD-03**: Fractalus cartridges run with the documented mirrored physical RAM and bounded alias accesses.
-- [x] **BOARD-04**: BankSet cartridges select the documented CPU/MARIA ROM and RAM views at both HALT transitions, with supported image geometries validated before load changes state.
-- [x] **BOARD-05**: XBoard and the XM RAM/POKEY/HSC subset run with documented control registers and CPU/MARIA banking; unsupported sound expansions remain explicit.
+### Portable and safe machine state
 
-Souper/BupChip stays deferred by owner decision on 2026-10-21; no partial board support is counted as complete game support.
+- [x] **STATE-01**: A library caller can query a state size fixed for the loaded machine and save/restore a complete versioned byte-wise little-endian snapshot, including mutable supported chip/device/board/region state, pending work and emulated battery data, using caller-owned buffers.
+- [x] **STATE-02**: A caller can reject truncated, corrupt, unsupported or checksum-valid hostile states and incompatible media/firmware/configuration before any live-machine mutation; a failed restore preserves subsequent execution and host-visible storage metadata.
+- [x] **STATE-03**: A caller can save, restore and continue supported machine topologies with the same independent semantic observations, frame output and raw/PCM audio as an uninterrupted run, with portable bytes and equality across the existing required native/big-endian lanes; advisory lanes remain labeled.
+- [x] **STATE-04**: A host can use save/load repeatedly without core allocation after content load or unbounded work; hostile restored clocks, device deadlines and lengths cannot hang or overrun the core.
+- [x] **STATE-05**: A host can distinguish restored emulated battery bytes from durable save files: changed restores notify dirty tracking without restoring an old generation token, equal/refused restores preserve the appropriate metadata, and speculative execution cannot commit battery writes to host files.
+- [x] **STATE-06**: A runner user can save at a chosen frame, load a state in a fresh process and hash state for repeatable continuation, with checked file I/O, explicit failure status and preservation of live state/durable files on refusal.
 
-### Battery saves
+### Frontend save/load and responsive play
 
-- [x] **SAVE-01**: HSC-compatible software can use its 2 KB SRAM and a validated user-supplied 4 KB ROM; the ROM-free signature stub supports direct-SRAM callers with its firmware limitation documented.
-- [x] **SAVE-02**: SaveKey and AtariVox EEPROM users can read/write the 32 KB device through pin-level I2C, including repeated START, page wrap, sequential reads and bounded busy polling.
-- [x] **SAVE-03**: Embedders receive a load-stable battery span with layout version 1 and a generation counter reflecting actual byte changes; power cycle retains battery bytes.
-- [x] **SAVE-04**: The runner reloads per-game raw .sav data from --save-dir, pads short media with FF, rejects oversized data, and never silently discards a load error.
-- [x] **SAVE-05**: Runner periodic, on-demand and orderly-exit flushing atomically replaces saves and preserves the previous valid file when persistence fails.
-- [x] **SAVE-06**: RetroArch retains HSC/SaveKey bytes through SAVE_RAM across fresh launches, proven by the bounded second hosted save-round-trip case; raw .srm and runner .sav media agree.
+- [x] **FRONT-01**: A libretro host can query stable serialization size and save/load through the same library state contract, with truthful version/feature declarations and safe unloaded/failed-load behavior.
+- [ ] **FRONT-02**: A gamer can save and load through the pinned RetroArch host and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip rather than only an in-process callback test.
+- [ ] **FRONT-03**: A gamer can use RetroArch rewind with repeated restores preserving deterministic input, audio, timing and battery semantics; rewind storage and UI remain frontend-owned.
+- [ ] **FRONT-04**: A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative persistent writes and measured completed-work performance; capability claims match the pinned host evidence.
 
-### Controllers
+## Cross-project acceptance boundary
 
-- [x] **INPUT-01**: Hosts can select header defaults or explicit device overrides and supply the new device inputs through append-only API, runner replay and applicable libretro abstractions without changing old caller behavior.
-- [x] **INPUT-02**: XG-1 software sees trigger and brightness-sensitive beam-timed sensor pins, with dark/off-screen/blanking controls and fitted latency parameters identified.
-- [x] **INPUT-03**: Paddle and keypad software sees documented buttons, pot dump/charge and matrix behavior at access time, with fitted analog timing identified.
-- [x] **INPUT-04**: Driving, CX22 trak-ball, ST mouse and Amiga mouse software sees their documented quadrature sequences and buttons, with bounded delta handling.
-- [x] **INPUT-05**: SNES2Atari and Mega7800 software sees documented serial/select handshakes and button states through RIOT output/DDR pin transitions.
+This repository owns muhtari capabilities, release artifacts and host-readiness
+evidence. Playstead owns its adapter/installer, verified cache, `a7800` readiness,
+controller/focus handoff, session lifecycle and progress UI. It must demonstrate
+the actual Playstead → RetroArch → muhtari launch and orderly return using current
+sources/pins; this is an external integration dependency, not a muhtari-only pass.
+Initial state UI is RetroArch-managed; Playstead-managed exact Continue/history
+requires a supported capture/load boundary and recovery of newer durable progress.
+Only read-only Playstead research and a handoff occur in this milestone-start step.
 
-### PAL
+## Future Requirements
 
-- [x] **PAL-01**: PAL content and an explicit PAL override use 313-line timing, PAL MSTAT/DMA/frame boundaries and documented fast/BIOS boot hand-off rather than NTSC defaults.
-- [x] **PAL-02**: Library, runner and libretro expose the correct PAL geometry, rational frame rate, palette and aspect information.
-- [x] **PAL-03**: Sustained PAL runs keep transition timestamps and PCM sample carry consistent with the PAL clock, with cross-platform frame/audio hashes.
+- Browser/WebAssembly player: preferred next milestone candidate, reweighed at v3.0 close.
+- Playstead-owned native libretro hosting, integrated state history and one-app Continue: promote from measured external-host friction or an explicit product requirement.
+- Full movie recording, generalized continuation, BK2 import, AI/Gymnasium, TAS and speedrun tools: real consumer need; existing replay can serve state verification.
+- Measured hardware accuracy, deferred audio/boards, ports, power budgets and 2600 mode: retain existing horizon/seed triggers.
 
-### Compatibility and acceptance
+## Out of Scope
 
-- [x] **COMP-01**: Every entry of the pinned CC0 library is accounted for in the ledger with explicit pass/fail/unknown/unsupported status and evidence; metadata inclusion is never counted as a gameplay pass.
-- [x] **COMP-02**: Each newly claimed board/device/region has legally admissible automated behavioral evidence in public CI, and prior passing predicates remain protected by the existing ratchet.
-- [x] **COMP-03**: Available private cartridges run only through the isolated local library preset with reproducible command/exit/commit evidence, while public CI requires no private bytes or owner verification.
-
-## Deferred
-
-Browser player; state serialization, rewind/run-ahead and movie recording; YM2151, Covox/ADPCM, ACE; full clean-room OpenHSC; AtariVox speech; 2600 mode; ports and developer/AI tooling. Souper/BupChip remains deferred to the later accuracy milestone.
-
-## Constraints inherited
-
-Three deliverables; no device I/O in core; integer-only, instance-owned, bounded and no allocation after load; permissive provenance; no unlicensed emulator source or firmware bytes; behavior changes tested and documented in the same phase; at most two review fix rounds and one gap round; two hosted RetroArch cases total and at most 300 test lines. Existing timing decisions change only with new evidence.
+| Feature | Reason |
+|---|---|
+| muhtari GUI, audio/input devices, rewind buffers or frontend state UI | Host-owned; preserve three deliverables. |
+| Implementation in the Playstead checkout during milestone scoping | Separate session/owner; handoff and explicit paired acceptance only. |
+| Full recording/AI/TAS before ordinary play and save/load | Gamer-first owner steering; not needed for first viable integration. |
+| Cross-version state migration or universal netplay/state compatibility | No demonstrated consumer; refuse incompatible formats honestly. |
+| Bundled ROMs, BIOS, personal saves/states or commercial captures | Existing asset/provenance policy. |
+| New general audit, metrics framework, quotas or extra review rounds | Proportional gates and existing bounded review/gap policy. |
+| Automatic advisory-lane promotion or universal gameplay claims | Requires independent qualifying evidence, not milestone scope alone. |
 
 ## Traceability
 
+Every requirement maps to exactly one phase. All 16 remain pending; no implementation or plan is complete.
+
 | Requirement | Phase | Status |
 |---|---|---|
-| TUNE-01 | Phase 5 | Complete |
-| TUNE-02 | Phase 5 | Complete |
-| TUNE-03 | Phase 5 | Complete |
-| TUNE-04 | Phase 5 | Complete |
-| TUNE-05 | Phase 5 | Complete |
-| BOARD-01 | Phase 6 | Complete |
-| BOARD-02 | Phase 6 | Complete |
-| BOARD-03 | Phase 6 | Complete |
-| SAVE-01 | Phase 7 | Complete |
-| SAVE-02 | Phase 7 | Complete |
-| SAVE-03 | Phase 7 | Complete |
-| SAVE-04 | Phase 7 | Complete |
-| SAVE-05 | Phase 7 | Complete |
-| SAVE-06 | Phase 7 | Complete |
-| INPUT-01 | Phase 8 | Complete |
-| INPUT-02 | Phase 8 | Complete |
-| INPUT-03 | Phase 8 | Complete |
-| INPUT-04 | Phase 8 | Complete |
-| INPUT-05 | Phase 8 | Complete |
-| PAL-01 | Phase 9 | Complete |
-| PAL-02 | Phase 9 | Complete |
-| PAL-03 | Phase 9 | Complete |
-| BOARD-04 | Phase 10 | Complete |
-| BOARD-05 | Phase 10 | Complete |
-| COMP-01 | Phase 11 | Complete |
-| COMP-02 | Phase 11 | Complete |
-| COMP-03 | Phase 11 | Complete |
+| TUNE-06 | Phase 12 | Pending |
+| TUNE-07 | Phase 12 | Pending |
+| PLAY-01 | Phase 12 | Pending |
+| PLAY-02 | Phase 12 | Pending |
+| PLAY-03 | Phase 12 | Pending |
+| PLAY-04 | Phase 12 | Pending |
+| STATE-01 | Phase 13 | Complete |
+| STATE-02 | Phase 13 | Complete |
+| STATE-03 | Phase 13 | Complete |
+| STATE-04 | Phase 13 | Complete |
+| STATE-05 | Phase 13 | Complete |
+| STATE-06 | Phase 13 | Complete |
+| FRONT-01 | Phase 13 | Complete |
+| FRONT-02 | Phase 14 | Pending |
+| FRONT-03 | Phase 14 | Pending |
+| FRONT-04 | Phase 14 | Pending |
 
-Coverage: 27 approved requirements;27 mapped;0 unmapped. Phases5–9 verify22 complete requirements;5 remain pending in Phases10–11. Phase9 verifies PAL-01–03 with42/42 truths, source-fresh native/PPC and all-host execution, retained NTSC predicates and authenticated package evidence. See [Phase9 verification](phases/09-pal-games-and-audio/09-VERIFICATION.md). Scope boundaries and historical policy revisions below remain unchanged.
-Phase 5 merged at 6d57d69; ci-only work cuts no package release. See [Phase 5 verification](phases/05-pipeline-tune-up/05-VERIFICATION.md) for commands, exit statuses
-and run URLs. WR-01 and COST-01 remain deferred tooling seeds under AGENTS rule 7; raw monthly
-cost totals are untrusted, and no global hosted-cost reduction is claimed.
-
-Historical 2026-10-21 policy revision: the owner delegated adoption of recommendations after refreshed Phase 5 research.
-TUNE-03 replaces the hard tenth-of-source ceiling with the absolute ratchet specified in
-`.planning/phases/05-pipeline-tune-up/05-CONTEXT.md` D-17, D-19–20. All five pipeline outcomes remain required;
-this is an explicit budget-contract change, not a claim that the old limit was met or proved impossible.
-
-Historical 2026-10-22 scope revision: after two measured migration halts, the owner delegated recommendation adoption.
-TUNE-03 explicitly defers performance/compatibility domain-policy centralization and retirement of their two
-legacy stores. It does not promise the central aggregate's immutable grant/from/to/renewal protections for
-those legacy domains; a waived compatibility loss can become the next base's nonpass state. Existing semantic
-faults remain guarded; TUNE-04 readiness, aggregate controls, fixed allocations and final acceptance remain
-required. See Phase 5 CONTEXT D-21–23. This historical scope discussion alone marked no requirement complete; final Phase 5 verification now accepts TUNE-01–05.
-
-2026-10-23 accepted policy revision: the owner accepted the [proportional-gates recommendation](research/proportional-gates/RECOMMENDATION.md)
-and authorized its bounded migration. ENGINEERING §11 replaces maintenance LOC ceilings, allocation/admission,
-counting and final tightening with concrete contract checks and bounded architecture review. This supersedes
-the historical fixed-allocation obligation above and Phase 6's N654 proposal; it does not approve that grant.
-Phase 5's accepted completion and its original evidence remain historical facts. Ordinary aggregate bounds,
-dated exceptions and independent performance/compatibility authorities remain binding; no BOARD requirement
-is completed by this revision.
+---
+Research: [summary](research/SUMMARY.md); owner intent: [INTENT.md](INTENT.md).

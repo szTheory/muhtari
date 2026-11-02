@@ -196,7 +196,29 @@ selection are unavailable. No full-XM service or gameplay compatibility is claim
 unloaded/no-content sessions return NULL/0. The frontend restores bytes before the first frame and owns
 all `.srm` file I/O; the adapter has no save-file operations or mirror buffer. Pointer and length remain
 stable until unload or reload. Restart retains committed battery bytes; it discards incomplete EEPROM
-programming without advancing emulated time. Save states remain unavailable.
+programming without advancing emulated time.
+
+## Save states
+
+For loaded content, `retro_serialize_size`, `retro_serialize` and `retro_unserialize` use the same canonical
+bytes as the library state API. The reported size stays fixed until unload or reload. Serialization accepts a
+non-null buffer at least that large and leaves any extra capacity untouched; restore requires a non-null buffer
+of exactly that length. Invalid, short or oversized states are rejected without changing the machine. Unloaded,
+failed-load and no-content test-card sessions report size zero and refuse save/load callbacks.
+
+The versioned bytes are little-endian and bound to a SHA-256 effective machine identity. Their CRC-32 detects
+corruption but does not authenticate a state file; unsupported format or behavior revisions are refused without
+migration.
+
+Normal disk states, run-ahead contexts 1 and 2, and an unavailable context query all use the library's fully
+validated little-endian format. If the frontend explicitly requests rollback-netplay context 3, the callbacks
+report size zero and refuse save/load because that context requires big-endian integers. There is no second
+netplay codec.
+
+State bytes include emulated battery contents. Restore updates the live `RETRO_MEMORY_SAVE_RAM` span in place;
+the core does not read or write `.srm` files, which remain the frontend's responsibility. The `.info`
+`savestate = "true"` claim covers the loaded callback path exercised by the host harness. It does not qualify
+actual RetroArch use, rewind, run-ahead or rollback netplay; actual-host qualification is left to Phase 14.
 
 **Restart** power-cycles the console: volatile memory is cleared, the cartridge starts again the way it was loaded, and the
 difficulty switches go back to their options.
@@ -233,7 +255,8 @@ routines, formatting or high-score screens and does not provide full OpenHSC fun
 Loaded-module tests cover persistence and firmware failures. A separate automated RetroArch roundtrip
 starts two fresh frontend processes, checks independently drawn HSC and EEPROM counters from 1 to 2,
 and compares every saved byte with independent expectations and fresh runner processes. The package
-declares battery saves and optional HSC firmware. Save states and AtariVox speech are unavailable.
+declares battery saves, basic savestate callback support and optional HSC firmware. AtariVox speech is
+unavailable.
 
 ## Achievements
 

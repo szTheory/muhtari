@@ -101,7 +101,7 @@ with the module disabled. Both keep the portable BankSet/XBoard/XM diagnostics a
 
 | Label | Tests |
 |---|---|
-| `core` | The library's behaviour: sizes, allocation, the frame and the test card hash. |
+| `core` | The library's behaviour: sizes, allocation, frame/test-card hashes, and state payload, lifecycle, battery, topology and refusal cases. |
 | `vectors` | SALLY against public tests. `cpu.vectors.<op>`, one per opcode, runs the committed sample, the first 100 SingleStepTests `6502/v1` tests of that opcode, and checks every bus cycle, the final registers and RAM, and the cycle where the instruction polls NMI. `cpu.decimal.clark` runs Bruce Clark's decimal-mode test to `ERROR` = 0. `cpu.unstable.sally_constant` pins the ANE and LXA constant. The rest test the vector tooling: the reader, the converter and the pin. |
 | `vectors-full` | The `vectors-full` lane: the fetch, the sample match, and `cpu.vectors-full.<op>` over all 10,000 tests of each opcode's file. |
 | `sally` | SALLY on the 7800's bus (`docs/hardware/bus.md`): 4- and 6-tick cycles, RDY holding reads only, the HALT gate and its two-cycle latency, and the NMI latch, with `cpu.nmi.*` for the instruction after which an edge is taken. |
@@ -110,20 +110,20 @@ with the module disabled. Both keep the portable BankSet/XBoard/XM diagnostics a
 | `frame` | Whole frames through the run loop: SALLY, the bus and MARIA together ([emulation tests, frame](emulation-tests.md#frame)). |
 | `input` | Controllers and console switches as a game reads them, driven by movie rows ([emulation tests, input](emulation-tests.md#input)). |
 | `bios` | The boot through OpenBIOS and through a BIOS built in memory ([emulation tests, bios](emulation-tests.md#bios)). |
-| `portable` | Tests that hold on every platform, including the frame and audio hashes. |
+| `portable` | Tests common to every platform, including frame/audio hashes and state-byte/continuation report rows. |
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
 | `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. `cart.identify.test_list` finds the built 7800basic sample through the test hash list. No image bytes are tracked. |
 | `fuzz` | Loader/run replay, typed pin/EEPROM traffic and output/allocation invariants; Linux also uses libFuzzer. [Expansion coverage and fault evidence](hardware/bus.md#expansion-replay-and-properties). |
-| `prop` | 100 seeded cases; advisory nightly 10,000. Isolation covers nine typed families and all BankSet/expansion profiles, battery gates, refusals and pure observers. |
-| `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, the movie reader (`runner.movie_parse`: good movies, and each bad one refused at its exact line and column), and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
+| `prop` | 100 seeded cases; advisory nightly 10,000. Isolation covers nine typed families and all BankSet/expansion profiles, battery gates, state continuation/refusal and pure observers. |
+| `runner` | `muhtari-run` options/output/statuses, PNG/MD5, `runner.movie_parse` exact bad-line locations, `runner.state.*`, and `--probe` generated-image order/digests/refusals. |
 | `built` | Samples built from pinned tools (`tests/built/`). `built.<name>` builds one 7800basic 0.41 sample per row of `expected.txt` under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/<name>/`, and checks the `.a78` and `.bin` SHA-256s in that row. `runner.probe.sample_*` then probe `simple`: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` ([emulation tests, basic](emulation-tests.md#basic)). |
 | `diag` | Our own diagnostic ROMs judged through their mailbox against values derived beforehand, and the core's statistics ([emulation tests, diag](emulation-tests.md#diag)). `diag.rebuild` carries `built`. |
 | `title` | The ledger's title predicates on `simple`, on the fast boot and through OpenBIOS, the pin writer's refusal of a blank screen, and the local driver on public bytes (`title.local.fixture`) ([emulation tests, title](emulation-tests.md#title)). |
 | `library` | Each `pr` ledger row, the ratchet (`policy.compat_ratchet.controls`) and the generated page, run by CI's `library` job ([emulation tests, ledger](emulation-tests.md#ledger); [CI](#ci)). |
 | `bench` | The runner's benchmark report. |
-| `libretro` | The libretro core in an in-process host (content, controls, devices, Restart, BIOS files, options, the memory map), BIOS file/allocation/path faults (`libretro.bios_failures`), rcheevos' resolver over that map (`libretro.rcheevos`), its `.info` file (claims backed, description at most 512 characters) and its vendored header. |
+| `libretro` | In-process host (content, controls, devices, Restart, BIOS/options/memory/state); `libretro.bios_failures`, `libretro.rcheevos`, `.info` claim/description checks and vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
 | `perf` | Allocation-free frames. |
 | `policy` | Rules about the repository and the tests themselves; `policy.claims_wording` requires the disclaimer and rejects overclaims in user-facing files (`tests/cmake/claims_wording.cmake`). |
@@ -438,7 +438,7 @@ build apart from the host's:
 ```sh
 docker run --rm --platform linux/arm64 -v "$PWD:/src" -v /src/build -w /src ubuntu:26.04 sh -c '
   apt-get update -qq &&
-  apt-get install -y -qq --no-install-recommends ca-certificates curl xz-utils git ninja-build gcc g++ binutils &&
+  apt-get install -y -qq --no-install-recommends ca-certificates curl xz-utils git ninja-build gcc g++ binutils jq &&
   scripts/fetch-pin.sh cmake-linux-aarch64 /opt/cmake &&
   PATH=/opt/cmake/bin:$PATH cmake --workflow --preset ci'
 ```

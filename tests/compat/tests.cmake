@@ -11,6 +11,7 @@ add_executable(muhtari-test-predicate-testdb ${CMAKE_CURRENT_LIST_DIR}/predicate
   $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
 target_include_directories(muhtari-test-predicate-testdb PRIVATE ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/runner)
+target_link_libraries(muhtari-test-predicate-testdb PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-predicate-testdb PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-predicate-testdb)

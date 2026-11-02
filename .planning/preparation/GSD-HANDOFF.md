@@ -2,7 +2,7 @@
 title: "GSD hand-off: kickoff, per-phase routine, settings and owner tasks"
 summary: "How to start and run muhtari with OpenGSD one step at a time: the kickoff text, the settings and why, the per-phase and milestone routines, the owner's tasks, and what was checked before hand-off."
 read_when: "Before the kickoff, before each GSD step, and whenever a GSD step behaves unexpectedly."
-updated: 2026-10-25
+updated: 2026-10-31
 ---
 
 # GSD hand-off
@@ -23,6 +23,10 @@ muhtari is built with OpenGSD (`@opengsd/gsd-core`). Preparation wrote the files
 asking questions — `PROJECT.md`, `REQUIREMENTS.md`, `config.json`, `research/SUMMARY.md` and `STACK.md` — so the
 kickoff resumes at roadmap creation [GH.01]. GSD's own researcher still runs before every phase
 (`workflow.research: true`), which is where it does its own research and sanity checks from here on.
+
+**Active runtime (2026-10-29): Codex**, with OpenGSD 1.19.0 installed. The owner switches between
+Codex and Claude Code; both installs remain available. Section 5 records the active routing. The kickoff
+instructions below describe the original Claude setup, not a prerequisite for continuing in Codex.
 
 ## 2. Kickoff
 
@@ -100,8 +104,12 @@ node ~/.claude/gsd-core/bin/gsd-tools.cjs query config-get workflow.test_command
 in local tests; integration, end-to-end, smoke and seam checks go in CI when they catch recurring regressions; a
 one-time hosted outcome is collected by a read-only evidence command. Passing results are recorded as command,
 exit status and run URL. The owner is asked only for identity-bound consent or a run on their own hardware, with
-the reason stated. Narrowed 2026-10-16: judging docs, images and RetroArch's menus is the agent's job, and a truth
-only a merge can show is confirmed at ship (step 8), never in UAT.
+the reason stated. Narrowed 2026-10-16 and reaffirmed 2026-10-31: UAT is an agent-owned evidence register, not a
+blanket owner questionnaire. The agent closes every item with `human_judgment: false` using available checks and
+receipts, and leaves genuinely human-only items blocked. Judging docs, images and RetroArch's menus is the agent's
+job; a truth only a merge can show is confirmed at ship (step 8), never in UAT. At each CI/release run, inspect
+observed queue, durations, critical path and cancelled work for quality-preserving efficiency gains; change
+timeouts, caches or workflow structure only when evidence supports the improvement.
 
 **Closeout policy:** a fix merged after a phase's verification makes that verification "stale". Accept an
 override closeout at milestone end when CI passes on the merged head and the milestone audit covers the phase;
@@ -159,8 +167,9 @@ leaked in, and read back with `config-get` (section 8).
 | `workflow.auto_advance`, `workflow._auto_chain_active` | false | Stops discuss, plan and execute from chaining |
 | `granularity` | coarse | About four phases per milestone |
 | `parallelization`, `workflow.use_worktrees` | false | A small, coupled codebase; no worktree paths in tracked files |
-| `model_profile`, `resolve_model_ids` | adaptive, false | Owner choice (2026-10-28): GSD subagents run in Claude Code on the opus, sonnet and haiku aliases by role tier (heavy, standard, light), which Claude Code resolves to the current models; aliases keep model IDs out of this public file. `inherit` with `omit` is the fallback when one session model should drive every subagent |
-| `effort.routing_tier_defaults` | light xhigh, standard high, heavy high | Matches the owner's global GSD agent install, so resolved and installed effort agree |
+| `runtime`, `model_profile`, `resolve_model_ids` | codex, adaptive, false | Owner choice (2026-10-29): Codex is active until switched again; role tiers select separate models. `inherit` is the fallback when one session model should drive every subagent |
+| `model_profile_overrides.codex` | opus gpt-6.1-sol; sonnet/haiku gpt-6-luna | Explicit project overrides are required: OpenGSD 1.19.0 ignores global model overrides when project config exists. The Claude install and its global overrides remain available |
+| `effort.routing_tier_defaults` | light xhigh, standard xhigh, heavy high | Owner's requested effort levels, also saved in the global defaults |
 | `workflow.research`, `plan_check`, `verifier`, `code_review` | true | GSD's own research and checks before and after every phase |
 | `workflow.ui_phase`, `ui_safety_gate`, `ui_review`, `ai_integration_phase`, `api_coverage_gate`, `schema_push_detection`, `schema_drift_gate` | false | Written for web projects; they react to words like "screen" and "vector" |
 | `workflow.security_enforcement` | false | A web threat-model checklist; fuzz targets and sanitizer builds are requirements instead |
@@ -171,7 +180,10 @@ leaked in, and read back with `config-get` (section 8).
 | `git.base_branch`, `git.protected_branches` | main, [main] | Ship targets `main`; execute and ship warn if run on it |
 | `hooks.community` | true | Turns on GSD's Conventional Commit check |
 
-Subagent reasoning effort is set by `effort.routing_tier_defaults` above, matching the owner's global GSD agent install.
+Subagent reasoning effort is set by `effort.routing_tier_defaults` above. Codex dispatch passes the resolved
+model and effort explicitly; installed agent TOML files need no model pins. When switching runtimes, update
+`runtime` in the project config and global defaults, then check `query resolve-model` through that install.
+Keep each runtime's model overrides under its own key so switching preserves the other runtime's choices.
 
 ## 6. What keeps GSD from running on by itself
 

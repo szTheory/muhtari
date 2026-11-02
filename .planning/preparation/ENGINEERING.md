@@ -2,7 +2,7 @@
 title: "Engineering: C rules, tests, CI, release, repo settings and quality loops"
 summary: "Build, test, CI, release, repository, triage, performance and documentation decisions for muhtari, with mutable facts re-verified on 2026-10-15."
 read_when: "Before creating or changing CMake files, presets, tests, workflows, repository settings, the release pipeline, quality gates or engineering docs."
-updated: 2026-10-24
+updated: 2026-10-31
 ---
 
 # Engineering: C rules, tests, CI, release, repo settings and quality loops
@@ -282,6 +282,14 @@ This changes no runtime bound or performance/ABI/test/provenance contract.
 The [recovery decision](../research/workflow-recovery/RECOMMENDATION.md) records
 the reproduced gate/workflow failures, alternatives and preserved controls.
 
+**Accepted separate hosted-support review, 2026-10-30 (DEC.56):** retire only
+the numeric300-line hosted-support ceiling, with no replacement quota. Report
+line totals; preserve two host cases, runtime/frame bounds, isolated ownership,
+independent pixel/media judges and their fault controls. Ordinary architecture
+review above addresses harness growth. The owner-approved
+[local amendment](../debug/phase12-held-capture-diagnosis.md) preserves the failed
+347/300 receipt; it grants no live allowance or hosted acceptance.
+
 Follow the dependency ladder in AGENTS. Prefer a narrow permissive seed when its surface is understandable,
 updates are manageable and local ownership is credible; a package can be cheaper and safer for substantial
 present correctness/security work. Compare runtime, build and transitive scope, execution privileges, authentic
@@ -294,6 +302,12 @@ restrictions, derived-code treatment, notices and unchanged vendor hashes; this 
 
 ## 12. Recurring loops
 At each milestone close (about four phases), one tune-up phase, fed by the monthly section of the digest:
+For every CI or release run already under review, the agent also checks that run's queue time, critical path,
+job durations, runner-minute use and cancelled work for a low-effort improvement that keeps the same test,
+failure-control and release-evidence coverage. A single noisy or failed run does not justify a timeout, cache,
+matrix or workflow restructuring; use comparable runs for those decisions, and record when there is no safe,
+evidence-backed change.
+
 | Loop | Data | Output |
 |---|---|---|
 | CI efficiency | per-job p50/p95 duration and queue time (`started_at − created_at`) over 30 days; flake rate (runs with `run_attempt` > 1 that later passed, plus `suite-flake` failures); runner-minutes per merged PR; critical-path job; cores used = Σ test durations in JUnit ÷ `ctest` wall time; compile share for the caching rule, and caching correctness (a cached build must equal a cold one, if a cache is ever adopted); lowest-value tests (never failed in 90 days and duplicated by a stronger signal) | timeouts re-derived; caching decision; tests removed only with the redundant signal named |

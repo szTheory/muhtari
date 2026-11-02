@@ -1,8 +1,8 @@
 # Property tests (tests/prop.h): one executable, one property per test. A
 # pull request runs 100 cases from the fixed seed; the nightly prop job sets
 # MUHTARI_PROP_CASES and MUHTARI_PROP_SEED for the same tests. The pool
-# includes the built simple and eightysix samples, so these run on the lanes
-# that build them.
+# includes the built simple and eightysix samples for the frame and battery
+# properties; generated-media state properties need no sample fixtures.
 add_executable(muhtari-test-prop ${CMAKE_CURRENT_LIST_DIR}/test_prop.c
   ${CMAKE_SOURCE_DIR}/tests/fuzz/run_seeds.c ${CMAKE_SOURCE_DIR}/runner/sha256.c)
 target_include_directories(muhtari-test-prop PRIVATE ${CMAKE_SOURCE_DIR}/runner
@@ -32,4 +32,12 @@ foreach(prop IN ITEMS battery_lifecycle battery_observers)
   muhtari_add_test(NAME prop.${prop} COMMAND muhtari-test-prop ${prop} ${MUHTARI_BUILT_DIR}
     LABELS portable prop TIMEOUT 39)
   set_tests_properties(prop.${prop} PROPERTIES FIXTURES_REQUIRED "built_simple;built_eightysix")
+endforeach()
+
+# Generated-media state properties need no built sample fixtures. They replay
+# independent instances and checksum-repaired refusals through the same seed
+# and shrink contract as the existing properties.
+foreach(prop IN ITEMS state_continuation state_refusal)
+  muhtari_add_test(NAME prop.${prop} COMMAND muhtari-test-prop ${prop} ${MUHTARI_BUILT_DIR}
+    LABELS portable prop TIMEOUT 39)
 endforeach()

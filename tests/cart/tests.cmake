@@ -21,6 +21,7 @@ add_executable(muhtari-test-cart
   $<TARGET_OBJECTS:muhtari_objs>
   $<TARGET_OBJECTS:muhtari_cpu>)
 target_include_directories(muhtari-test-cart PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(muhtari-test-cart PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-cart PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-cart)
