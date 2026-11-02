@@ -2022,8 +2022,13 @@ static void test_battery(void)
     FILE *host_file = NULL;
     long host_position = -1;
 #ifndef __wasi__
+#if defined(_MSC_VER)
+    CHECK_EQ_U64(tmpfile_s(&host_file), 0u);
+    CHECK(host_file != NULL);
+#else
     host_file = tmpfile();
     CHECK(host_file != NULL);
+#endif
     if (host_file != NULL) {
         CHECK_EQ_U64(fwrite(file_marker, 1u, sizeof file_marker, host_file), sizeof file_marker);
         CHECK_EQ_U64(fflush(host_file), 0u);
