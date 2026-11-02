@@ -176,3 +176,26 @@ references and absence of phase plans were verified. `git diff --check`,
 `cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake` exited0; the budget check covered
 22 files. These are local documentation/workflow checks, not product acceptance
 or hosted tests. Run URL: N/A-local. No execution logs are committed.
+
+
+---
+
+## Update — 2026-11-01: PLAY-03 input proof
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Keep investigating the test joypad for the exact pinned RetroArch binary | The upstream PR describes the driver, but inspection of the shipped pinned binary found no test-input keys or test joypad. | |
+| Retire that route for the current pin; keep independent held/released visible output as the acceptance bar | Removes stale guidance while preserving the actual product proof required by PLAY-03. | ✓ |
+| Select a different input route or authorize another hosted run in this context update | No replacement seam is proven, and all hosted allowances are spent. A new bounded scope and explicit authority would be required. | |
+
+**User's choice:** Update the existing Phase 12 context. The previously recorded owner direction to consider all relevant areas and adopt coherent recommendations applies to this evidence-driven refresh.
+
+**Notes:** Three read-only advisor reviews examined host acceptance, diagnostic proof limits, and CI/release cost. All recommended updating D-05 in place, retaining the held/released pixel criterion, and preserving the halt. Run 41323089043 recorded 34 F8-down posts, zero captures, and unknown child status; run 41329055050 skipped RetroArch after the Windows ARM64 OpenBIOS timeout and produced no input observation. No test, build, hosted action, or RetroArch run was performed in this discussion.
+
+## the agent's Discretion
+
+Update D-05 in place with an explicit date and evidence. Leave every other locked decision unchanged. No new hosted scope or implementation authority follows from this context update.
+
+## Deferred Ideas
+
+None added; existing deferred items remain unchanged.

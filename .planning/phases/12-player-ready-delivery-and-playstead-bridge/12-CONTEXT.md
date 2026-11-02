@@ -1,7 +1,8 @@
 # Phase 12: Player-ready delivery and Playstead bridge - Context
 
-**Gathered:** 2026-10-29
-**Status:** Ready for planning
+**Gathered:** 2026-10-29; updated 2026-11-01
+**Status:** Updated; Phase 12 remains blocked at 0/4 accepted plans.
+The Phase Boundary and D-05 preserve the current stop.
 
 <domain>
 ## Phase Boundary
@@ -10,13 +11,20 @@ Deliver TUNE-06, TUNE-07 and PLAY-01 through PLAY-04: current player onboarding,
 a release-qualified external RetroArch launch contract, automated owned-fixture
 host-readiness evidence, an explicit Playstead handoff and one measured small
 pipeline improvement. The baseline is package v0.10.0, API7/ABI1/behavior6.
-All six requirements remain pending implementation and verification.
+All six requirements remain unaccepted; required implementation and evidence
+remain incomplete.
 
 Muhtari owns the library, headless runner and libretro core. Playstead owns its
 adapter, installer, verified cache, readiness, input/focus and child lifecycle.
 Its actual launch/input/orderly-return/battery flow is an external dependency;
 independent muhtari state work can proceed while it is pending. Portable states
 belong to Phase 13 and actual frontend state consumers to Phase 14.
+
+Phase 12 remains halted at 0/4 accepted plans; the PLAY-03 host-input cause is
+unresolved and all hosted allowances are spent. This context refresh authorizes
+no implementation, local test/build, hosted run, RetroArch launch, publication,
+or allowance renewal. Resume only under a newly defined, explicitly authorized
+bounded scope.
 
 </domain>
 
@@ -66,18 +74,32 @@ These are discussion decisions, not implementation or hosted acceptance evidence
   PR candidate-archive evidence and published-download evidence are distinct;
   truths available only after publication are confirmed at ship using the existing
   release/install path. Never label a source-build-only result as released-core proof.
-- **D-05 (PLAY-03):** Close the actual-host input gap: an owned diagnostic must
-  visibly respond to delivered gameplay input, with an independent expected result
-  that distinguishes the intended held/released input from missing or misrouted
-  input. Reuse an existing hosted case and the in-process input tests. Loaded-module
-  callback tests are supporting semantics evidence; they do not establish that
-  RetroArch delivered input. Input-driver automation is a focused research question,
-  not an owner task. Investigate RetroArch's JSON-driven `test` joypad driver first:
-  its upstream PR describes press/release/axis events that can reach a loaded core,
-  but availability and scheduling in the pinned release binary are unverified.
-  Do not freeze an unproven movie/playback mechanism, OS permission
-  setup or synthetic core-side input shortcut. Missing host input proof remains a
-  PLAY-03 gap, rather than being silently deferred or equated with callback success.
+- **D-05 (PLAY-03, updated 2026-11-01):** Retire the test joypad investigation
+  for the current pinned RetroArch 1.22.2 binary. Inspection of the exact released
+  executable matching the pinned DMG found no test-input keys or test joypad;
+  reconsider availability only after a host pin changes. Keep the ordinary
+  candidate-core RetroArch case and the existing owned input-sensing fixture.
+  Acceptance still requires independently judged visible held and released input
+  through the actual packaged core and host. In-process callback checks and local
+  traces are supporting diagnostics only; they do not prove input reached the
+  emulated game or changed its visible result. Missing, empty, truncated, invalid,
+  unpaired, or unfinished trace data means unknown and never proves input absence.
+  Run [41062201311](https://github.com/szTheory/muhtari/actions/runs/41062201311)
+  showed idle pixels for held input. [Run 41323089043](https://github.com/szTheory/muhtari/actions/runs/41323089043)
+  recorded 34 F8-down posts to one child (last at 4961 ms), zero captures, and
+  an acknowledgment deadline at 5061 ms; the child's status was unknown.
+  [Run 41329055050](https://github.com/szTheory/muhtari/actions/runs/41329055050)
+  skipped RetroArch after the Windows ARM64 OpenBIOS timeout, so it produced no
+  input observation. Local diagnostic-retention changes can preserve the
+  prepared command and child streams but do not explain those failures or
+  establish host-input acceptance. Preserve the 0/4 halt, blocked successors, failed receipts, and
+  exhausted hosted allowances. Do not substitute movie/playback, OS-level event
+  injection, or core-side synthetic input for actual host delivery; no new
+  permission grant is authorized. This discussion authorizes no retry, rerun,
+  new workflow, hosted dispatch, RetroArch launch, publication, pin/dependency/
+  permission change, or allowance renewal. Any later hosted action needs a
+  separate bounded scope that names the unresolved observation, source/artifact,
+  cost and stopping rule.
 - **D-06 (PLAY-03):** Keep the two actual-host cases, existing no-UDP approach
   and runtime bounds. The separately approved2026-10-30 DEC.56 amendment retires
   only the numeric hosted-test line ceiling; report totals with no replacement
@@ -197,14 +219,19 @@ changes feasibility, safety, scope or acceptance; stop fan-out after this synthe
 - `.github/workflows/nightly.yml`, `tests/prop/tests.cmake`,
   `tests/inventory/ci.txt` — actual current six-property workload and advisory authority.
 
+### Current status and input acceptance
+- `.planning/STATE.md` — current phase halt and hosted-allowance boundary; recheck its live status before any later action.
+- `.planning/phases/12-player-ready-delivery-and-playstead-bridge/12-VERIFICATION.md` — remaining PLAY-03 host truth and blocked dependent plans.
+- `.planning/LESSONS.md` — exact pinned-binary finding for the unavailable test joypad and diagnostic evidence limits.
+
 ### External primary references reviewed
 - [Libretro CLI guide](https://docs.libretro.com/guides/cli-intro/),
   [directory guide](https://docs.libretro.com/guides/change-directories/) and
   [logging guide](https://docs.libretro.com/guides/generating-retroarch-logs/) —
   documented launch/config/logging surface; exact pinned-binary behavior needs proof.
 - [Upstream test-input-driver PR](https://github.com/libretro/RetroArch/pull/16370)
-  — candidate non-network input seam; description/discussion only, no GPL source
-  inspection and no claim of availability in the pinned binary.
+  — describes an optional driver absent from the inspected current pin; reconsider
+  only if the host pin changes. No GPL source was inspected.
 - [CTest TIMEOUT](https://cmake.org/cmake/help/latest/prop_test/TIMEOUT.html) and
   [GitHub workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax)
   — timeout/cancellation semantics, not successful workload measurements.
@@ -225,7 +252,9 @@ changes feasibility, safety, scope or acceptance; stop fan-out after this synthe
 - `tests/libretro/host.c` — real loaded-module input callbacks and semantic controls;
   reuse its expectations without relabeling it as RetroArch input delivery.
 - `tests/input/test_input.c` — existing owned cartridge generator with visible bands
-  reflecting input-register values, a candidate independent host-input oracle.
+  reflecting input-register values; supplies independent expected pixels when
+  loaded through the actual host, but generating or in-process execution alone
+  does not prove host input delivery.
 - `tests/policy/publish.cmake`, `scripts/publish.sh` — current production consumer
   and synthetic lifecycle/attestation fault rows; scope the tune-up here.
 - `tests/prop/test_prop.c`, `tests/prop/tests.cmake`, `tests/cmake/check_junit.cmake`
@@ -259,7 +288,9 @@ roles, prefer primary sources, compare meaningful alternatives, perform an
 adversarial synthesis and follow the coherent recommendations. Another small,
 understood permissive copy can be preferable to another dependency; copied code
 still needs provenance and maintenance. Preserve useful findings in local project
-memory without exporting lessons or manufacturing new reproduced results.
+memory without exporting lessons or manufacturing new reproduced results. The
+2026-11-01 refresh changes D-05 only; all other settled decisions remain
+locked.
 
 </specifics>
 
@@ -294,4 +325,4 @@ historical optional label cannot excuse a newly reproduced required defect.
 ---
 
 *Phase: 12-player-ready-delivery-and-playstead-bridge*
-*Context gathered: 2026-10-29*
+*Context gathered: 2026-10-29; updated: 2026-11-01*
