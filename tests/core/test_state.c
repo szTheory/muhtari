@@ -716,7 +716,7 @@ static int continuation_observation_matches(const muhtari *m, const struct conti
         if (row->input[1] != 0u &&
             (m->ports.pending_ex.port[1].device != row->input[1] ||
              m->ports.pending_ex.port[1].buttons !=
-                 (MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2 | MUHTARI_SNES_BUTTON_START)))
+                 (MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2 | (uint32_t)MUHTARI_SNES_BUTTON_START)))
             return 0;
     }
     return 1;
@@ -997,7 +997,8 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
         }
         if (input.port[1].device == MUHTARI_PORT_MEGA7800 ||
             input.port[1].device == MUHTARI_PORT_SNES2ATARI)
-            input.port[1].buttons = MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2 | MUHTARI_SNES_BUTTON_START;
+            input.port[1].buttons =
+                MUHTARI_BUTTON_1 | MUHTARI_BUTTON_2 | (uint32_t)MUHTARI_SNES_BUTTON_START;
         muhtari_status input_status = muhtari_set_input_ex(source, &input);
         if (input_status != MUHTARI_STATUS_OK) {
             fprintf(stderr, "continuation row %s extended input failed: %u\n", row->name,
