@@ -59,21 +59,31 @@ foreach(pair "kiloparsec.bl1=8192" "kiloparsec.bl2=896")
 endforeach()
 file(WRITE "${dir}/7800openbios.asm" "${text}")
 
-# stage(<name> [OUTPUT_FILE f] COMMAND ...), as in build.cmake: fails naming
-# the stage and its status unless it is 0.
+# Persist the prepared argv and both child streams before waiting for status.
+# A CTest kill may leave a partial or empty stream; the command alone does not
+# prove the child launched. Explicit paths keep the files beside the output.
 function(stage name)
-  execute_process(${ARGN} WORKING_DIRECTORY "${dir}"
-    RESULTS_VARIABLE statuses ERROR_VARIABLE err)
+  set(command "Prepared command; not proof of child launch.\nworking_directory=${dir}\n")
+  set(index 0)
+  foreach(arg IN LISTS ARGN)
+    string(APPEND command "argv[${index}]=${arg}\n")
+    math(EXPR index "${index} + 1")
+  endforeach()
+  file(WRITE "${dir}/${name}-command.txt" "${command}")
+  execute_process(COMMAND ${ARGN} WORKING_DIRECTORY "${dir}"
+    OUTPUT_FILE "${dir}/${name}.log" ERROR_FILE "${dir}/${name}.stderr.log"
+    RESULTS_VARIABLE statuses)
   foreach(status IN LISTS statuses)
     if(NOT status STREQUAL "0")
-      message(FATAL_ERROR "openbios: stage ${name} exited ${statuses} (${dir}/${name}.log)\n${err}")
+      file(READ "${dir}/${name}.stderr.log" err)
+      message(FATAL_ERROR "openbios: stage ${name} exited ${statuses} "
+        "(${dir}/${name}.log, ${dir}/${name}.stderr.log)\n${err}")
     endif()
   endforeach()
 endfunction()
 
 record_stage("assemble")
-stage(assemble OUTPUT_FILE assemble.log
-  COMMAND "${WASMTIME}" run --dir=. ${pkg}/dasm.wasm 7800openbios.asm -f3 -o${bin})
+stage(assemble "${WASMTIME}" run --dir=. ${pkg}/dasm.wasm 7800openbios.asm -f3 -o${bin})
 
 record_stage("verify-output")
 if(NOT EXISTS "${out}")

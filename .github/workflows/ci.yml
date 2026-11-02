@@ -203,8 +203,8 @@ jobs:
             cmake --preset ${{ matrix.preset }} -DMUHTARI_TESTS=ON
           fi
           cmake --workflow --preset ${{ matrix.preset }}
-      # Keep the active OpenBIOS test stage when the short CTest deadline kills
-      # the recipe before its normal package artifacts can be produced.
+      # Keep the OpenBIOS stage, prepared command and child streams when the
+      # short CTest deadline kills the recipe before it reports child status.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always() && matrix.os == 'windows' && matrix.arch == 'arm64'
         continue-on-error: true
@@ -212,6 +212,9 @@ jobs:
           name: openbios-stage-windows-arm64
           path: |
             build/${{ matrix.preset }}/openbios-stage.txt
+            build/${{ matrix.preset }}/built/openbios/assemble-command.txt
+            build/${{ matrix.preset }}/built/openbios/assemble.log
+            build/${{ matrix.preset }}/built/openbios/assemble.stderr.log
             build/${{ matrix.preset }}/Testing/Temporary/LastTest.log
             build/${{ matrix.preset }}/Testing/Temporary/LastTestsFailed.log
           if-no-files-found: warn

@@ -109,7 +109,8 @@ set_tests_properties(built.openbios PROPERTIES FIXTURES_SETUP built_openbios)
 
 # Negative control: a source whose first incbin line occurs twice must fail
 # naming the line, so a changed source never assembles with a binary left out
-# of the fill.
+# of the fill. Also check persistent command/stdout/stderr capture on success
+# and on a missing-module child failure, without accepting that failure.
 set(built_openbios_fault_trace ${PROJECT_BINARY_DIR}/openbios-fault-stage.txt)
 muhtari_add_test(NAME built.openbios.self_test
   COMMAND ${CMAKE_COMMAND}
@@ -118,6 +119,7 @@ muhtari_add_test(NAME built.openbios.self_test
     "-DPKG=${MUHTARI_7800BASIC}"
     "-DASM=${MUHTARI_OPENBIOS_ASM}"
     "-DOUT_DIR=${PROJECT_BINARY_DIR}/tests/built/openbios-trace"
+    "-DPASS_DIR=${MUHTARI_BUILT_DIR}/openbios"
     "-DPASS_TRACE=${built_openbios_trace}"
     "-DFAULT_TRACE=${built_openbios_fault_trace}"
     -P ${CMAKE_CURRENT_LIST_DIR}/openbios_trace.cmake
