@@ -6,10 +6,10 @@ current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
 status: blocked
 stopped_at: Phase 13 is complete. The next scheduled Phase 12 remains halted at 0/4 acceptance because its hosted input proof is unresolved and all hosted allowances are spent. Do not resume Phase 12 without a new bounded scope and authority.
-last_updated: "2026-11-02T00:18:22Z"
-last_activity: 2026-11-01
-last_activity_desc: Phase 13 complete; preserved the existing Phase 12 halt
-state_head: 13bb1af4e7b63fb727854d42ad4431091f2083cc
+last_updated: "2026-11-02T16:31:32.092Z"
+last_activity: 2026-11-02
+last_activity_desc: "Phase 13 shipped as PR #42"
+state_head: cb100f68e87bec38a137de27f6ba6d39cd52e4ab
 progress:
   total_phases: 3
   completed_phases: 1
@@ -80,7 +80,7 @@ linked outcome; earlier unchanged-source preservation checks are historical.
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
 Plan: 0 of 4 acceptance plans accepted; gap plans 12-05 and 12-06 executed with failed hosted evidence; 12-09 complete; 12-07 remains halted after a non-reproducing OpenBIOS diagnostic; 12-08 is superseded for scheduling
 Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 remain blocked
-Last activity: 2026-11-01 — Phase 13 complete, transitioned to Phase 12
+Last activity: 2026-11-02 -- Phase 13 shipped as PR #42
 Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
