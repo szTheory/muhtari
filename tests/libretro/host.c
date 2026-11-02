@@ -221,8 +221,8 @@ static unsigned message_calls;
 static unsigned options_version = 2u; /* what GET_CORE_OPTIONS_VERSION answers */
 static bool savestate_context_available;
 static enum retro_savestate_context savestate_context = RETRO_SAVESTATE_CONTEXT_NORMAL;
-static const char *option_keys[16];   /* the keys the core declared */
-static int option_set_with;           /* 2 for SET_CORE_OPTIONS_V2, 1 for v1 */
+static const char *option_keys[16]; /* the keys the core declared */
+static int option_set_with;         /* 2 for SET_CORE_OPTIONS_V2, 1 for v1 */
 static const char *system_dir;
 
 /* The frontend's option values, changed by the cases. */
@@ -2863,8 +2863,7 @@ static void case_state(void)
     CHECK(memcmp(saved, current, bytes) == 0);
     state_check_battery(m, module_battery);
 
-    state_frame(m, (1u << RETRO_DEVICE_ID_JOYPAD_B) | (1u << RETRO_DEVICE_ID_JOYPAD_UP),
-                -1, false);
+    state_frame(m, (1u << RETRO_DEVICE_ID_JOYPAD_B) | (1u << RETRO_DEVICE_ID_JOYPAD_UP), -1, false);
     CHECK_EQ_U64(muhtari_save_state(m, saved, bytes), MUHTARI_STATUS_OK);
     memcpy(saved_battery, battery_info.data, battery_info.bytes);
     memset(again, 0xA5, bytes + 16u);
@@ -3009,8 +3008,9 @@ static void case_state(void)
                 if (i >= 24u && i < 28u)
                     continue;
                 if (replacement_state[i] != module_state[i]) {
-                    fprintf(stderr, "replacement state differs at byte %zu: library %02x module %02x\n",
-                            i, (unsigned)replacement_state[i], (unsigned)module_state[i]);
+                    fprintf(stderr,
+                            "replacement state differs at byte %zu: library %02x module %02x\n", i,
+                            (unsigned)replacement_state[i], (unsigned)module_state[i]);
                     break;
                 }
             }

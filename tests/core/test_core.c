@@ -917,8 +917,7 @@ static void test_no_alloc_after_load(void)
         CHECK_EQ_U64(muhtari_run_frame(m, &io), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(io.audio_count, expected_audio_count);
         CHECK(memcmp(video, expected_video, sizeof expected_video) == 0);
-        CHECK(memcmp(audio, expected_audio, (size_t)expected_audio_count * sizeof audio[0]) ==
-              0);
+        CHECK(memcmp(audio, expected_audio, (size_t)expected_audio_count * sizeof audio[0]) == 0);
         CHECK(memcmp(peer, &peer_before, sizeof peer_before) == 0);
         CHECK(memcmp(peer->cart.rom, peer_storage, peer->cart.allocation_bytes) == 0);
         CHECK_EQ_U64(c.allocs, 2u);

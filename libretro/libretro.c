@@ -1041,8 +1041,7 @@ void retro_run(void)
 static bool lr_netplay_state_context(void)
 {
     enum retro_savestate_context context = RETRO_SAVESTATE_CONTEXT_NORMAL;
-    return env_cb != NULL &&
-           env_cb(RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT, &context) &&
+    return env_cb != NULL && env_cb(RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT, &context) &&
            context == RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
 }
 

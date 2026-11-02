@@ -55,7 +55,7 @@ struct boundary_allocator {
     uint32_t calls;
     muhtari *instance;
     uint8_t *cart;
-    _Alignas(max_align_t) uint8_t storage[2u * STATE_MAX_BYTES + sizeof(muhtari) + 8192u];
+    _Alignas(alloc_header) uint8_t storage[2u * STATE_MAX_BYTES + sizeof(muhtari) + 8192u];
 };
 static struct boundary_allocator boundary;
 
@@ -86,10 +86,10 @@ static void put_u64(uint8_t *bytes, uint64_t value)
 
 static uint64_t get_u64(const uint8_t *bytes)
 {
-    uint64_t lo = (uint64_t)bytes[0] | ((uint64_t)bytes[1] << 8) |
-                  ((uint64_t)bytes[2] << 16) | ((uint64_t)bytes[3] << 24);
-    uint64_t hi = (uint64_t)bytes[4] | ((uint64_t)bytes[5] << 8) |
-                  ((uint64_t)bytes[6] << 16) | ((uint64_t)bytes[7] << 24);
+    uint64_t lo = (uint64_t)bytes[0] | ((uint64_t)bytes[1] << 8) | ((uint64_t)bytes[2] << 16) |
+                  ((uint64_t)bytes[3] << 24);
+    uint64_t hi = (uint64_t)bytes[4] | ((uint64_t)bytes[5] << 8) | ((uint64_t)bytes[6] << 16) |
+                  ((uint64_t)bytes[7] << 24);
     return lo | (hi << 32);
 }
 
@@ -115,9 +115,7 @@ static void state_rechecksum(uint8_t *bytes, size_t size)
 
 static size_t public_battery_offset(const muhtari *m)
 {
-    size_t expansion = m->cart.expansion.kind == MUHTARI_EXPANSION_OFF
-                           ? 0u
-                           : STATE_EXPANSION_BYTES;
+    size_t expansion = m->cart.expansion.kind == MUHTARI_EXPANSION_OFF ? 0u : STATE_EXPANSION_BYTES;
     return STATE_HEADER_BYTES + STATE_FIXED_BYTES + m->cart.info.ram_size + expansion;
 }
 
@@ -280,8 +278,8 @@ static void battery_emit(uint16_t reg, uint8_t value)
 
 static void battery_pin(unsigned port, unsigned scl, unsigned sda)
 {
-    uint8_t value = (uint8_t)(((scl == 0u ? 8u : 0u) | (sda == 0u ? 4u : 0u))
-                              << (port == 0u ? 4u : 0u));
+    uint8_t value =
+        (uint8_t)(((scl == 0u ? 8u : 0u) | (sda == 0u ? 4u : 0u)) << (port == 0u ? 4u : 0u));
     battery_emit(0x0281u, value);
 }
 
@@ -367,9 +365,7 @@ static uint32_t state_run_frame(muhtari *m, uint8_t *video, int16_t *audio)
 
 static size_t expected_payload_size(const muhtari *m)
 {
-    size_t expansion = m->cart.expansion.kind == MUHTARI_EXPANSION_OFF
-                           ? 0u
-                           : STATE_EXPANSION_BYTES;
+    size_t expansion = m->cart.expansion.kind == MUHTARI_EXPANSION_OFF ? 0u : STATE_EXPANSION_BYTES;
     return STATE_FIXED_BYTES + m->cart.info.ram_size + expansion + m->battery.bytes;
 }
 
@@ -389,52 +385,186 @@ struct continuation_row {
 };
 
 static const struct continuation_row continuation_rows[] = {
-    {"linear-ntsc-legacy", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
-     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {0u, 0u}, 1u, 0u, 0u},
-    {"supergame-pal-lightgun", MUHTARI_BOARD_SUPERGAME, 0x0462u, 64u * IMAGES_KIB,
-     MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
+    {"linear-ntsc-legacy",
+     MUHTARI_BOARD_LINEAR,
+     0x0440u,
+     4u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
      {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
-     {MUHTARI_PORT_LIGHTGUN, MUHTARI_PORT_MEGA7800}, 0u, 1u, 0u},
-    {"activision-pokey", MUHTARI_BOARD_ACTIVISION, 0x0101u, 128u * IMAGES_KIB,
-     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_PADDLE, 0u}, 0u, 0u, 0u},
-    {"absolute-keypad", MUHTARI_BOARD_ABSOLUTE, 0x0240u, 64u * IMAGES_KIB,
-     MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_KEYPAD, 0u}, 0u, 0u, 0u},
-    {"fractalus-motion", MUHTARI_BOARD_FRACTALUS, 0x0480u, 32u * IMAGES_KIB,
-     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_ST_MOUSE, 0u}, 0u, 0u, 0u},
-    {"bankset-plain", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
-     MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {0u, 0u}, 0u, 0u, 0u},
-    {"bankset-xboard", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
-     MUHTARI_EXPANSION_XBOARD, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_SNES2ATARI, 0u}, 0u, 0u, 0u},
-    {"bankset-xm-savekey-port2", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_PAL,
-     MUHTARI_EXPANSION_XM, MUHTARI_HSC_ON,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY}, {MUHTARI_PORT_JOYSTICK, 0u}, 0u, 0u, 1u},
-    {"bankset-hsc-stub-savekey-port1", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
-     MUHTARI_EXPANSION_OFF, MUHTARI_HSC_ON,
-     {MUHTARI_PORT_SAVEKEY, MUHTARI_PORT_PROLINE}, {0u, 0u}, 0u, 0u, 0u},
-    {"linear-bios", MUHTARI_BOARD_LINEAR, 0u, 4u * IMAGES_KIB, MUHTARI_REGION_PAL,
-     MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_AMIGA_MOUSE, 0u}, 0u, 1u, 0u},
-    {"linear-pal-bios-pokey", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
-     MUHTARI_REGION_PAL, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_AMIGA_MOUSE, 0u}, 0u, 1u, 0u},
-    {"bankset-hsc-firmware", MUHTARI_BOARD_BANKSET, 0u, 0u, MUHTARI_REGION_NTSC,
-     MUHTARI_EXPANSION_OFF, MUHTARI_HSC_ON,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY}, {MUHTARI_PORT_KEYPAD, 0u}, 0u, 0u, 1u},
-    {"linear-proline", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
-     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_PROLINE, 0u}, 0u, 0u, 0u},
-    {"linear-driving", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
-     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_DRIVING, 0u}, 0u, 0u, 0u},
-    {"linear-trakball", MUHTARI_BOARD_LINEAR, 0x0440u, 4u * IMAGES_KIB,
-     MUHTARI_REGION_NTSC, MUHTARI_EXPANSION_OFF, MUHTARI_HSC_OFF,
-     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE}, {MUHTARI_PORT_TRAKBALL, 0u}, 0u, 0u, 0u},
+     {0u, 0u},
+     1u,
+     0u,
+     0u},
+    {"supergame-pal-lightgun",
+     MUHTARI_BOARD_SUPERGAME,
+     0x0462u,
+     64u * IMAGES_KIB,
+     MUHTARI_REGION_PAL,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_LIGHTGUN, MUHTARI_PORT_MEGA7800},
+     0u,
+     1u,
+     0u},
+    {"activision-pokey",
+     MUHTARI_BOARD_ACTIVISION,
+     0x0101u,
+     128u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_PADDLE, 0u},
+     0u,
+     0u,
+     0u},
+    {"absolute-keypad",
+     MUHTARI_BOARD_ABSOLUTE,
+     0x0240u,
+     64u * IMAGES_KIB,
+     MUHTARI_REGION_PAL,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_KEYPAD, 0u},
+     0u,
+     0u,
+     0u},
+    {"fractalus-motion",
+     MUHTARI_BOARD_FRACTALUS,
+     0x0480u,
+     32u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_ST_MOUSE, 0u},
+     0u,
+     0u,
+     0u},
+    {"bankset-plain",
+     MUHTARI_BOARD_BANKSET,
+     0u,
+     0u,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {0u, 0u},
+     0u,
+     0u,
+     0u},
+    {"bankset-xboard",
+     MUHTARI_BOARD_BANKSET,
+     0u,
+     0u,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_XBOARD,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_SNES2ATARI, 0u},
+     0u,
+     0u,
+     0u},
+    {"bankset-xm-savekey-port2",
+     MUHTARI_BOARD_BANKSET,
+     0u,
+     0u,
+     MUHTARI_REGION_PAL,
+     MUHTARI_EXPANSION_XM,
+     MUHTARI_HSC_ON,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY},
+     {MUHTARI_PORT_JOYSTICK, 0u},
+     0u,
+     0u,
+     1u},
+    {"bankset-hsc-stub-savekey-port1",
+     MUHTARI_BOARD_BANKSET,
+     0u,
+     0u,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_ON,
+     {MUHTARI_PORT_SAVEKEY, MUHTARI_PORT_PROLINE},
+     {0u, 0u},
+     0u,
+     0u,
+     0u},
+    {"linear-bios",
+     MUHTARI_BOARD_LINEAR,
+     0u,
+     4u * IMAGES_KIB,
+     MUHTARI_REGION_PAL,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_AMIGA_MOUSE, 0u},
+     0u,
+     1u,
+     0u},
+    {"linear-pal-bios-pokey",
+     MUHTARI_BOARD_LINEAR,
+     0x0440u,
+     4u * IMAGES_KIB,
+     MUHTARI_REGION_PAL,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_AMIGA_MOUSE, 0u},
+     0u,
+     1u,
+     0u},
+    {"bankset-hsc-firmware",
+     MUHTARI_BOARD_BANKSET,
+     0u,
+     0u,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_ON,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_SAVEKEY},
+     {MUHTARI_PORT_KEYPAD, 0u},
+     0u,
+     0u,
+     1u},
+    {"linear-proline",
+     MUHTARI_BOARD_LINEAR,
+     0x0440u,
+     4u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_PROLINE, 0u},
+     0u,
+     0u,
+     0u},
+    {"linear-driving",
+     MUHTARI_BOARD_LINEAR,
+     0x0440u,
+     4u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_DRIVING, 0u},
+     0u,
+     0u,
+     0u},
+    {"linear-trakball",
+     MUHTARI_BOARD_LINEAR,
+     0x0440u,
+     4u * IMAGES_KIB,
+     MUHTARI_REGION_NTSC,
+     MUHTARI_EXPANSION_OFF,
+     MUHTARI_HSC_OFF,
+     {MUHTARI_PORT_PROLINE, MUHTARI_PORT_PROLINE},
+     {MUHTARI_PORT_TRAKBALL, 0u},
+     0u,
+     0u,
+     0u},
 };
 
 struct state_report_scenario {
@@ -522,14 +652,12 @@ static int continuation_observation_matches(const muhtari *m, const struct conti
         return 0;
     if (m->cart.ram != NULL && m->cart.ram[0] != cart_byte)
         return 0;
-    if (m->cart.ram != NULL &&
-        m->cart.ram[m->cart.info.ram_size - 1u] != (uint8_t)(cart_byte + 1u))
+    if (m->cart.ram != NULL && m->cart.ram[m->cart.info.ram_size - 1u] != (uint8_t)(cart_byte + 1u))
         return 0;
     if (m->cart.expansion.ram != NULL && m->cart.expansion.ram[0] != expansion_byte)
         return 0;
     if (m->cart.expansion.ram != NULL &&
-        m->cart.expansion.ram[STATE_EXPANSION_BYTES - 1u] !=
-            (uint8_t)(expansion_byte + 1u))
+        m->cart.expansion.ram[STATE_EXPANSION_BYTES - 1u] != (uint8_t)(expansion_byte + 1u))
         return 0;
     if (m->battery.bytes != 0u &&
         (m->battery.data[0] != 0x39u || m->battery.data[m->battery.bytes - 1u] != 0x93u))
@@ -562,18 +690,15 @@ static int continuation_observation_matches(const muhtari *m, const struct conti
             break;
         case MUHTARI_PORT_ST_MOUSE:
         case MUHTARI_PORT_AMIGA_MOUSE:
-            if (pending->dx != 13 || pending->dy != -7 ||
-                pending->buttons != MUHTARI_BUTTON_1)
+            if (pending->dx != 13 || pending->dy != -7 || pending->buttons != MUHTARI_BUTTON_1)
                 return 0;
             break;
         case MUHTARI_PORT_DRIVING:
-            if (pending->dx != 13 || pending->dy != 0 ||
-                pending->buttons != MUHTARI_BUTTON_1)
+            if (pending->dx != 13 || pending->dy != 0 || pending->buttons != MUHTARI_BUTTON_1)
                 return 0;
             break;
         case MUHTARI_PORT_TRAKBALL:
-            if (pending->dx != 13 || pending->dy != -7 ||
-                pending->buttons != MUHTARI_BUTTON_1)
+            if (pending->dx != 13 || pending->dy != -7 || pending->buttons != MUHTARI_BUTTON_1)
                 return 0;
             break;
         default:
@@ -603,8 +728,8 @@ static void state_report_hash_u16(muhtari__sha256 *hash, uint16_t value)
 
 static void state_report_hash_u32(muhtari__sha256 *hash, uint32_t value)
 {
-    uint8_t bytes[4] = {(uint8_t)value, (uint8_t)(value >> 8),
-                        (uint8_t)(value >> 16), (uint8_t)(value >> 24)};
+    uint8_t bytes[4] = {(uint8_t)value, (uint8_t)(value >> 8), (uint8_t)(value >> 16),
+                        (uint8_t)(value >> 24)};
     muhtari__sha256_update(hash, bytes, sizeof bytes);
 }
 
@@ -614,8 +739,7 @@ static void state_report_hash_u64(muhtari__sha256 *hash, uint64_t value)
     state_report_hash_u32(hash, (uint32_t)(value >> 32));
 }
 
-static void state_report_audio_transition(void *user, uint64_t tick, uint8_t source,
-                                          uint16_t raw)
+static void state_report_audio_transition(void *user, uint64_t tick, uint8_t source, uint16_t raw)
 {
     struct state_report_audio *audio = (struct state_report_audio *)user;
     state_report_hash_u64(&audio->hash, tick);
@@ -663,7 +787,8 @@ static void state_report_semantic_hash(muhtari__sha256 *hash, const muhtari *m,
     }
     state_report_hash_u64(hash, (uint64_t)m->battery.bytes);
     state_report_hash_u8(hash, m->battery.bytes == 0u ? 0u : m->battery.data[0]);
-    state_report_hash_u8(hash, m->battery.bytes == 0u ? 0u : m->battery.data[m->battery.bytes - 1u]);
+    state_report_hash_u8(hash,
+                         m->battery.bytes == 0u ? 0u : m->battery.data[m->battery.bytes - 1u]);
     state_report_hash_u8(hash, (uint8_t)row->legacy);
     if (row->legacy != 0u) {
         state_report_hash_u32(hash, m->ports.pending_device[0]);
@@ -708,22 +833,21 @@ static int state_report_row_format(const char *scenario, const char *field,
 {
     char hex[65];
     muhtari__sha256_hex(digest, hex);
-    int length = snprintf(line, STATE_REPORT_LINE_BYTES, "state.%s.%s %s\n", scenario, field,
-                          hex);
+    int length = snprintf(line, STATE_REPORT_LINE_BYTES, "state.%s.%s %s\n", scenario, field, hex);
     return length > 0 && (size_t)length < STATE_REPORT_LINE_BYTES ? length : -1;
 }
 
 static int state_report_text_valid(const struct state_report_text *report,
                                    const struct state_report_scenario *scenario)
 {
-    static const char *const fields[] = {"bytes_sha256", "frame_sha256",
-                                         "audio_transitions_sha256", "audio_pcm_sha256",
-                                         "counters_sha256", "semantic_sha256"};
+    static const char *const fields[] = {
+        "bytes_sha256",     "frame_sha256",    "audio_transitions_sha256",
+        "audio_pcm_sha256", "counters_sha256", "semantic_sha256"};
     size_t total = 0u;
     for (size_t row = 0u; row < STATE_REPORT_FIELD_COUNT; row++) {
         char expected[64];
-        int prefix = snprintf(expected, sizeof expected, "state.%s.%s ", scenario->name,
-                              fields[row]);
+        int prefix =
+            snprintf(expected, sizeof expected, "state.%s.%s ", scenario->name, fields[row]);
         if (prefix < 0 || (size_t)prefix >= sizeof expected)
             return 0;
         const char *line = report->bytes[row];
@@ -746,9 +870,9 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
                                  struct state_report_capture *capture)
 {
     if (capture != NULL) {
-        CHECK_EQ_U64(muhtari__synth_observe(source, state_report_audio_transition,
-                                            &capture->source_audio),
-                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(
+            muhtari__synth_observe(source, state_report_audio_transition, &capture->source_audio),
+            MUHTARI_STATUS_OK);
         CHECK_EQ_U64(muhtari__synth_observe(restored, state_report_audio_transition,
                                             &capture->restored_audio),
                      MUHTARI_STATUS_OK);
@@ -787,8 +911,8 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
     }
     CHECK_EQ_U64(source->cart.info.board, row->board);
     CHECK_EQ_U64(source->effective_region, row->region == 0u ? MUHTARI_REGION_NTSC : row->region);
-    CHECK(memcmp(source->state_identity, restored->state_identity,
-                 sizeof source->state_identity) == 0);
+    CHECK(memcmp(source->state_identity, restored->state_identity, sizeof source->state_identity) ==
+          0);
 
     if (row->board == MUHTARI_BOARD_SUPERGAME) {
         CHECK(source->cart.ram != NULL);
@@ -917,9 +1041,8 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
     CHECK_EQ_U64(restored_counts->allocs, restored_allocations);
     if (capture != NULL && capture->oracle_fault != 0u) {
         restored->ram[0x40u] ^= 1u;
-        capture->oracle_rejected =
-            (uint8_t)!continuation_observation_matches(restored, row, ram_byte, cart_byte,
-                                                       expansion_byte);
+        capture->oracle_rejected = (uint8_t)!continuation_observation_matches(
+            restored, row, ram_byte, cart_byte, expansion_byte);
         restored->ram[0x40u] ^= 1u;
         return;
     }
@@ -952,10 +1075,8 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
                 unsigned audio_chip = source->synth.secondary;
                 CHECK_EQ_U64(source->synth.pokeys, restored->synth.pokeys);
                 CHECK_EQ_U64(source->synth.secondary, restored->synth.secondary);
-                muhtari__pokey_write(source, audio_chip, 1u, 0x1Fu,
-                                     source->synth.tick);
-                muhtari__pokey_write(restored, audio_chip, 1u, 0x1Fu,
-                                     restored->synth.tick);
+                muhtari__pokey_write(source, audio_chip, 1u, 0x1Fu, source->synth.tick);
+                muhtari__pokey_write(restored, audio_chip, 1u, 0x1Fu, restored->synth.tick);
             }
         }
     }
@@ -991,8 +1112,8 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
         uint32_t b_count = state_run_frame(restored, public_video_b, public_audio_b);
         CHECK_EQ_U64(a_count, b_count);
         CHECK(memcmp(public_video_a, public_video_b, frame_bytes) == 0);
-        CHECK(memcmp(public_audio_a, public_audio_b,
-                     (size_t)a_count * sizeof public_audio_a[0]) == 0);
+        CHECK(memcmp(public_audio_a, public_audio_b, (size_t)a_count * sizeof public_audio_a[0]) ==
+              0);
         if (capture != NULL) {
             state_report_hash_u32(&capture->source_frames, frame);
             state_report_hash_u32(&capture->source_frames, (uint32_t)frame_bytes);
@@ -1075,15 +1196,11 @@ static void continuation_row_run(const struct continuation_row *row, muhtari *so
             CHECK_EQ_U64(restored_counts->allocs, restored_allocs);
             CHECK_EQ_U64(restored->synth.pcm_count, source->synth.pcm_count);
             CHECK_EQ_U64(restored->synth.pcm_read, source->synth.pcm_read);
-            CHECK_EQ_U64(restored->ports.adapter[0].position,
-                         source->ports.adapter[0].position);
-            CHECK_EQ_U64(restored->ports.light[0].sample_tick,
-                         source->ports.light[0].sample_tick);
+            CHECK_EQ_U64(restored->ports.adapter[0].position, source->ports.adapter[0].position);
+            CHECK_EQ_U64(restored->ports.light[0].sample_tick, source->ports.light[0].sample_tick);
         }
-        if (row->input[0] == MUHTARI_PORT_DRIVING ||
-            row->input[0] == MUHTARI_PORT_TRAKBALL ||
-            row->input[0] == MUHTARI_PORT_ST_MOUSE ||
-            row->input[0] == MUHTARI_PORT_AMIGA_MOUSE) {
+        if (row->input[0] == MUHTARI_PORT_DRIVING || row->input[0] == MUHTARI_PORT_TRAKBALL ||
+            row->input[0] == MUHTARI_PORT_ST_MOUSE || row->input[0] == MUHTARI_PORT_AMIGA_MOUSE) {
             CHECK_EQ_U64(source->ports.motion[0][0].residual, 0u);
             CHECK_EQ_U64(source->ports.motion[0][1].residual, 0u);
             CHECK_EQ_U64(source->ports.motion[0][0].next_tick, 0u);
@@ -1150,9 +1267,9 @@ static int state_report_generate(const struct state_report_scenario *scenario,
                                  struct state_report_text *report, int inject_fault,
                                  int *oracle_rejected)
 {
-    static const char *const fields[] = {"bytes_sha256", "frame_sha256",
-                                         "audio_transitions_sha256", "audio_pcm_sha256",
-                                         "counters_sha256", "semantic_sha256"};
+    static const char *const fields[] = {
+        "bytes_sha256",     "frame_sha256",    "audio_transitions_sha256",
+        "audio_pcm_sha256", "counters_sha256", "semantic_sha256"};
     if (scenario == NULL || report == NULL)
         return 0;
     const struct continuation_row *row = state_report_topology(scenario->topology);
@@ -1199,8 +1316,8 @@ static int state_report_generate(const struct state_report_scenario *scenario,
 
     size_t total = 0u;
     for (size_t field = 0u; field < STATE_REPORT_FIELD_COUNT; field++) {
-        int length = state_report_row_format(scenario->name, fields[field],
-                                             capture.digests[field], report->bytes[field]);
+        int length = state_report_row_format(scenario->name, fields[field], capture.digests[field],
+                                             report->bytes[field]);
         if (length < 0)
             return 0;
         total += (size_t)length;
@@ -1389,70 +1506,70 @@ static void test_fields(void)
     CHECK_EQ_U64(get_u64(first + payload_index(10466u)), UINT64_MAX);
     CHECK_EQ_U64(get_u64(first + payload_index(10563u)), UINT64_MAX);
 
-    expect_invalid_u8(m, bytes, 233u, 11u);       /* RIOT uses 1, 8, 64, 1024. */
-    expect_invalid_u8(m, bytes, 219u, 2u);        /* Bus cycles are 4 or 6 ticks. */
-    expect_invalid_u8(m, bytes, 115u, 2u);        /* CPU jammed is a boolean. */
-    expect_invalid_u8(m, bytes, 116u, 2u);        /* CPU IRQ sample is a boolean. */
-    expect_invalid_u8(m, bytes, 214u, 0x10u);     /* INPTCTRL has four defined bits. */
-    expect_invalid_u8(m, bytes, 215u, 3u);       /* HALT gate count has three states. */
-    expect_invalid_u8(m, bytes, 218u, 2u);       /* Bus NMI pending is a boolean. */
-    expect_invalid_u8(m, bytes, 221u, 8u);       /* Bus IRQ pipe has three stages. */
-    expect_invalid_u8(m, bytes, 222u, 2u);       /* Bus IRQ level is a boolean. */
-    expect_invalid_u8(m, bytes, 234u, 2u);       /* RIOT timer clear is a boolean. */
-    expect_invalid_u8(m, bytes, 239u, 2u);       /* RIOT PA7 flag is a boolean. */
-    expect_invalid_u8(m, bytes, 240u, 2u);       /* RIOT PA7 polarity is a boolean. */
-    expect_invalid_u8(m, bytes, 241u, 2u);       /* RIOT PA7 detect is a boolean. */
-    expect_invalid_u8(m, bytes, 4504u, 2u);      /* MARIA write mode is a boolean. */
-    expect_invalid_u8(m, bytes, 4505u, 2u);      /* MARIA write buffer has two slots. */
-    expect_invalid_u16(m, bytes, 4826u, 455u);   /* MARIA line cost is at most 454 ticks. */
+    expect_invalid_u8(m, bytes, 233u, 11u);          /* RIOT uses 1, 8, 64, 1024. */
+    expect_invalid_u8(m, bytes, 219u, 2u);           /* Bus cycles are 4 or 6 ticks. */
+    expect_invalid_u8(m, bytes, 115u, 2u);           /* CPU jammed is a boolean. */
+    expect_invalid_u8(m, bytes, 116u, 2u);           /* CPU IRQ sample is a boolean. */
+    expect_invalid_u8(m, bytes, 214u, 0x10u);        /* INPTCTRL has four defined bits. */
+    expect_invalid_u8(m, bytes, 215u, 3u);           /* HALT gate count has three states. */
+    expect_invalid_u8(m, bytes, 218u, 2u);           /* Bus NMI pending is a boolean. */
+    expect_invalid_u8(m, bytes, 221u, 8u);           /* Bus IRQ pipe has three stages. */
+    expect_invalid_u8(m, bytes, 222u, 2u);           /* Bus IRQ level is a boolean. */
+    expect_invalid_u8(m, bytes, 234u, 2u);           /* RIOT timer clear is a boolean. */
+    expect_invalid_u8(m, bytes, 239u, 2u);           /* RIOT PA7 flag is a boolean. */
+    expect_invalid_u8(m, bytes, 240u, 2u);           /* RIOT PA7 polarity is a boolean. */
+    expect_invalid_u8(m, bytes, 241u, 2u);           /* RIOT PA7 detect is a boolean. */
+    expect_invalid_u8(m, bytes, 4504u, 2u);          /* MARIA write mode is a boolean. */
+    expect_invalid_u8(m, bytes, 4505u, 2u);          /* MARIA write buffer has two slots. */
+    expect_invalid_u16(m, bytes, 4826u, 455u);       /* MARIA line cost is at most 454 ticks. */
     expect_invalid_u32(m, bytes, 7330u, UINT32_MAX); /* MARIA feature mask has reserved bits. */
-    expect_invalid_u16(m, bytes, 7350u, 313u);  /* MARIA line index is region-bounded. */
-    expect_invalid_u16(m, bytes, 7352u, 313u);  /* MARIA DMA line is region-bounded. */
-    expect_invalid_u8(m, bytes, 7355u, 1u);      /* MARIA status only drives VBLANK. */
-    expect_invalid_u16(m, bytes, 7356u, 321u);  /* MARIA pixel cursor cannot exceed width. */
-    expect_invalid_u8(m, bytes, 7358u, 1u);      /* Linear carts have no bank register. */
-    expect_invalid_u8(m, bytes, 7359u, 1u);      /* Linear carts have no RAM bank. */
-    expect_invalid_u8(m, bytes, 7360u, 1u);      /* No expansion latch when absent. */
-    expect_invalid_u8(m, bytes, 7361u, 1u);      /* No XM page selector when absent. */
-    expect_invalid_u8(m, bytes, 7375u, 4u);      /* Motion phase has four positions. */
-    expect_invalid_u8(m, bytes, 7376u, 2u);      /* Motion direction is a boolean. */
-    expect_invalid_u16(m, bytes, 7451u, 313u);  /* Light sensor raster is bounded. */
-    expect_invalid_u16(m, bytes, 7453u, 320u);  /* Light sensor x is within the frame. */
-    expect_invalid_u8(m, bytes, 7459u, 2u);      /* Light sensor low state is a boolean. */
+    expect_invalid_u16(m, bytes, 7350u, 313u);       /* MARIA line index is region-bounded. */
+    expect_invalid_u16(m, bytes, 7352u, 313u);       /* MARIA DMA line is region-bounded. */
+    expect_invalid_u8(m, bytes, 7355u, 1u);          /* MARIA status only drives VBLANK. */
+    expect_invalid_u16(m, bytes, 7356u, 321u);       /* MARIA pixel cursor cannot exceed width. */
+    expect_invalid_u8(m, bytes, 7358u, 1u);          /* Linear carts have no bank register. */
+    expect_invalid_u8(m, bytes, 7359u, 1u);          /* Linear carts have no RAM bank. */
+    expect_invalid_u8(m, bytes, 7360u, 1u);          /* No expansion latch when absent. */
+    expect_invalid_u8(m, bytes, 7361u, 1u);          /* No XM page selector when absent. */
+    expect_invalid_u8(m, bytes, 7375u, 4u);          /* Motion phase has four positions. */
+    expect_invalid_u8(m, bytes, 7376u, 2u);          /* Motion direction is a boolean. */
+    expect_invalid_u16(m, bytes, 7451u, 313u);       /* Light sensor raster is bounded. */
+    expect_invalid_u16(m, bytes, 7453u, 320u);       /* Light sensor x is within the frame. */
+    expect_invalid_u8(m, bytes, 7459u, 2u);          /* Light sensor low state is a boolean. */
     expect_invalid_u64(m, bytes, 7501u, (UINT64_C(1) << 32) + 1u);
-    expect_invalid_u8(m, bytes, 7617u, 4u);      /* Adapter host has two pins. */
-    expect_invalid_u8(m, bytes, 7618u, 17u);     /* Adapter position is at most 16. */
-    expect_invalid_u8(m, bytes, 7619u, 2u);      /* Adapter scan state is a boolean. */
-    expect_invalid_u16(m, bytes, 7627u, 0x1000u); /* Keypad keys are twelve bits. */
-    expect_invalid_u8(m, bytes, 7631u, 0x80u);   /* Keypad low state is seven bits. */
-    expect_invalid_u32(m, bytes, 7633u, UINT32_MAX); /* Unknown active device. */
-    expect_invalid_u32(m, bytes, 7641u, 0x1000u); /* Legacy buttons are twelve bits. */
-    expect_invalid_u32(m, bytes, 7653u, UINT32_MAX); /* Unknown pending legacy device. */
-    expect_invalid_u8(m, bytes, 10436u, 16u);    /* POKEY poly4 is four bits. */
-    expect_invalid_u32(m, bytes, 10432u, 0x20000u); /* POKEY poly17 is seventeen bits. */
-    expect_invalid_u8(m, bytes, 10437u, 32u);    /* POKEY poly5 is five bits. */
-    expect_invalid_u16(m, bytes, 10443u, 115u);  /* POKEY /114 prescaler. */
-    expect_invalid_u8(m, bytes, 10449u, 2u);     /* POKEY initialized is a boolean. */
-    expect_invalid_u8(m, bytes, 7354u, 4u);      /* MARIA has four line events. */
-    expect_invalid_u32(m, bytes, 7673u, UINT32_MAX); /* Unknown pending device. */
+    expect_invalid_u8(m, bytes, 7617u, 4u);                 /* Adapter host has two pins. */
+    expect_invalid_u8(m, bytes, 7618u, 17u);                /* Adapter position is at most 16. */
+    expect_invalid_u8(m, bytes, 7619u, 2u);                 /* Adapter scan state is a boolean. */
+    expect_invalid_u16(m, bytes, 7627u, 0x1000u);           /* Keypad keys are twelve bits. */
+    expect_invalid_u8(m, bytes, 7631u, 0x80u);              /* Keypad low state is seven bits. */
+    expect_invalid_u32(m, bytes, 7633u, UINT32_MAX);        /* Unknown active device. */
+    expect_invalid_u32(m, bytes, 7641u, 0x1000u);           /* Legacy buttons are twelve bits. */
+    expect_invalid_u32(m, bytes, 7653u, UINT32_MAX);        /* Unknown pending legacy device. */
+    expect_invalid_u8(m, bytes, 10436u, 16u);               /* POKEY poly4 is four bits. */
+    expect_invalid_u32(m, bytes, 10432u, 0x20000u);         /* POKEY poly17 is seventeen bits. */
+    expect_invalid_u8(m, bytes, 10437u, 32u);               /* POKEY poly5 is five bits. */
+    expect_invalid_u16(m, bytes, 10443u, 115u);             /* POKEY /114 prescaler. */
+    expect_invalid_u8(m, bytes, 10449u, 2u);                /* POKEY initialized is a boolean. */
+    expect_invalid_u8(m, bytes, 7354u, 4u);                 /* MARIA has four line events. */
+    expect_invalid_u32(m, bytes, 7673u, UINT32_MAX);        /* Unknown pending device. */
     expect_invalid_u32(m, bytes, 7677u, MUHTARI_BUTTON_UP); /* Driving supports fire only. */
-    expect_invalid_u32(m, bytes, 7681u, 1u);      /* Driving has no paddle values. */
-    expect_invalid_u32(m, bytes, 7689u, 1u);      /* Driving has no keypad values. */
-    expect_invalid_u32(m, bytes, 7697u, 1u);     /* Driving has no Y delta. */
-    expect_invalid_u32(m, bytes, 7701u, 1u);     /* Driving has no gun coordinates. */
-    expect_invalid_u32(m, bytes, 7709u, 2u);     /* Extended input flags are device-bound. */
-    expect_invalid_u32(m, bytes, 7753u, 0x20u);  /* Reserved switch bit. */
-    expect_invalid_u16(m, bytes, 231u, 257u);    /* RIOT interval is at most 256. */
-    expect_invalid_u16(m, bytes, 10348u, 456u);  /* TIA line phase is 0..455. */
-    expect_invalid_u16(m, bytes, 10441u, 29u);   /* POKEY /28 prescaler. */
-    expect_invalid_u8(m, bytes, 10356u, 16u);    /* TIA AUDC is four bits. */
-    expect_invalid_u8(m, bytes, 10364u, 2u);     /* TIA noise input is boolean. */
-    expect_invalid_u8(m, bytes, 10450u, 4u);     /* High-pass delay is at most three. */
-    expect_invalid_u8(m, bytes, 8122u, 16u);     /* Synth ring head selects 16 cells. */
-    expect_invalid_u16(m, bytes, 8102u, 16u);    /* TIA synth source is 0..15. */
-    expect_invalid_u16(m, bytes, 8106u, 207u);   /* POKEY synth source is 0..206. */
-    expect_invalid_u8(m, bytes, 8125u, 1u);      /* No secondary chip without one POKEY. */
-    expect_invalid_u8(m, bytes, 7861u, 2u);      /* Boot rejection flag is a boolean. */
+    expect_invalid_u32(m, bytes, 7681u, 1u);                /* Driving has no paddle values. */
+    expect_invalid_u32(m, bytes, 7689u, 1u);                /* Driving has no keypad values. */
+    expect_invalid_u32(m, bytes, 7697u, 1u);                /* Driving has no Y delta. */
+    expect_invalid_u32(m, bytes, 7701u, 1u);                /* Driving has no gun coordinates. */
+    expect_invalid_u32(m, bytes, 7709u, 2u);    /* Extended input flags are device-bound. */
+    expect_invalid_u32(m, bytes, 7753u, 0x20u); /* Reserved switch bit. */
+    expect_invalid_u16(m, bytes, 231u, 257u);   /* RIOT interval is at most 256. */
+    expect_invalid_u16(m, bytes, 10348u, 456u); /* TIA line phase is 0..455. */
+    expect_invalid_u16(m, bytes, 10441u, 29u);  /* POKEY /28 prescaler. */
+    expect_invalid_u8(m, bytes, 10356u, 16u);   /* TIA AUDC is four bits. */
+    expect_invalid_u8(m, bytes, 10364u, 2u);    /* TIA noise input is boolean. */
+    expect_invalid_u8(m, bytes, 10450u, 4u);    /* High-pass delay is at most three. */
+    expect_invalid_u8(m, bytes, 8122u, 16u);    /* Synth ring head selects 16 cells. */
+    expect_invalid_u16(m, bytes, 8102u, 16u);   /* TIA synth source is 0..15. */
+    expect_invalid_u16(m, bytes, 8106u, 207u);  /* POKEY synth source is 0..206. */
+    expect_invalid_u8(m, bytes, 8125u, 1u);     /* No secondary chip without one POKEY. */
+    expect_invalid_u8(m, bytes, 7861u, 2u);     /* Boot rejection flag is a boolean. */
     expect_invalid_u64(m, bytes, 7894u, UINT64_C(320961867552001));
     expect_invalid_u64(m, bytes, 8022u, UINT64_C(274877906945));
     expect_invalid_u64(m, bytes, 8030u, UINT64_C(35184372088833));
@@ -1460,8 +1577,8 @@ static void test_fields(void)
     expect_invalid_u32(m, bytes, 8062u, m->synth.sample_den);
     expect_invalid_u32(m, bytes, 8066u, MUHTARI__SYNTH_PCM_CAPACITY);
     expect_invalid_u32(m, bytes, 8070u, MUHTARI__SYNTH_PCM_CAPACITY + 1u);
-    expect_invalid_u32(m, bytes, 8074u, 1u);      /* Sample clock is identity-bound. */
-    expect_invalid_u32(m, bytes, 8098u, 18361u);  /* Mixed level is within DAC scale. */
+    expect_invalid_u32(m, bytes, 8074u, 1u);     /* Sample clock is identity-bound. */
+    expect_invalid_u32(m, bytes, 8098u, 18361u); /* Mixed level is within DAC scale. */
     expect_invalid_u8(m, bytes, 8123u, 2u);      /* Synth pending is a boolean. */
     expect_invalid_u8(m, bytes, 8124u, 3u);      /* At most two installed POKEYs. */
     expect_invalid_u8(m, bytes, 7841u, 2u);      /* Input mode is a boolean. */
@@ -1477,12 +1594,12 @@ static void test_fields(void)
     expect_invalid_u8(m, bytes, 10362u, 32u);    /* TIA noise state is five bits. */
     expect_invalid_u8(m, bytes, 10363u, 16u);    /* TIA pulse state is four bits. */
     expect_invalid_u8(m, bytes, 10365u, 2u);     /* TIA pulse gate is a boolean. */
-    expect_invalid_u8(m, bytes, 10452u, 2u);    /* POKEY high-pass capture is a boolean. */
-    expect_invalid_u8(m, bytes, 10457u, 2u);    /* POKEY IRQ output is a boolean. */
-    expect_invalid_u16(m, bytes, 10486u, 256u); /* POKEY channel counter is eight bits. */
-    expect_invalid_u8(m, bytes, 10490u, 2u);    /* POKEY output is a boolean. */
-    expect_invalid_u8(m, bytes, 10491u, 2u);    /* POKEY high-pass state is a boolean. */
-    expect_invalid_u8(m, bytes, 10492u, 2u);    /* POKEY start state is a boolean. */
+    expect_invalid_u8(m, bytes, 10452u, 2u);     /* POKEY high-pass capture is a boolean. */
+    expect_invalid_u8(m, bytes, 10457u, 2u);     /* POKEY IRQ output is a boolean. */
+    expect_invalid_u16(m, bytes, 10486u, 256u);  /* POKEY channel counter is eight bits. */
+    expect_invalid_u8(m, bytes, 10490u, 2u);     /* POKEY output is a boolean. */
+    expect_invalid_u8(m, bytes, 10491u, 2u);     /* POKEY high-pass state is a boolean. */
+    expect_invalid_u8(m, bytes, 10492u, 2u);     /* POKEY start state is a boolean. */
 
     size_t deadline = payload_index(76u);
     expect_invalid_u64(m, bytes, 68u, get_u64(first + deadline) + 1u);
@@ -1490,7 +1607,7 @@ static void test_fields(void)
     /* The accepted clock relationships use inclusive u64 boundaries and
        do not impose a global tick ceiling. */
     memcpy(second, first, bytes);
-    static const size_t near_max_fields[] = {68u,  76u,  100u, 117u, 125u, 133u,
+    static const size_t near_max_fields[] = {68u,  76u,   100u,  117u,  125u,  133u,
                                              149u, 7334u, 7862u, 7870u, 7878u, 7886u};
     for (size_t i = 0u; i < sizeof near_max_fields / sizeof near_max_fields[0]; i++)
         put_u64(second + payload_index(near_max_fields[i]), UINT64_MAX);
@@ -1520,7 +1637,8 @@ static void test_fields(void)
     CHECK_EQ_U64(muhtari_load_state(m, public_snapshot, 1u), MUHTARI_STATUS_ERR_INVALID_STATE);
     CHECK_EQ_U64(muhtari_load_state(m, public_snapshot, STATE_HEADER_BYTES),
                  MUHTARI_STATUS_ERR_INVALID_STATE);
-    CHECK_EQ_U64(muhtari_load_state(m, public_snapshot, SIZE_MAX), MUHTARI_STATUS_ERR_INVALID_STATE);
+    CHECK_EQ_U64(muhtari_load_state(m, public_snapshot, SIZE_MAX),
+                 MUHTARI_STATUS_ERR_INVALID_STATE);
 
     memcpy(public_first, public_snapshot, total);
     public_first[0] ^= 1u;
@@ -1574,8 +1692,7 @@ static void test_fields(void)
     memcpy(public_first, public_snapshot, total);
     const uint64_t far_tick = UINT64_C(1) << 40;
     put_u64(public_first + 68u, far_tick);
-    put_u64(public_first + 76u,
-            far_tick + muhtari__timing(m).frame_ticks);
+    put_u64(public_first + 76u, far_tick + muhtari__timing(m).frame_ticks);
     put_u64(public_first + 117u, far_tick);
     put_u64(public_first + 149u, far_tick);
     put_u64(public_first + 7334u, far_tick);
@@ -1604,8 +1721,8 @@ static void test_fields(void)
     /* Absolute time itself has no format ceiling, but public restore refuses
        a tuple without enough producer-derived room for the next calls. */
     memcpy(public_first, public_snapshot, total);
-    uint64_t margin = 2u * muhtari__timing(m).frame_ticks +
-                      MUHTARI__SYNTH_OVERSHOOT_TICKS + UINT32_MAX;
+    uint64_t margin =
+        2u * muhtari__timing(m).frame_ticks + MUHTARI__SYNTH_OVERSHOOT_TICKS + UINT32_MAX;
     uint64_t near_limit = UINT64_MAX - margin + 1u;
     put_u64(public_first + 68u, near_limit);
     put_u64(public_first + 76u, near_limit + muhtari__timing(m).frame_ticks);
@@ -1672,7 +1789,7 @@ static void test_aliases(void)
     for (unsigned mode = BOUNDARY_AFTER_INSTANCE; mode <= BOUNDARY_AFTER_CART; mode++) {
         memset(&boundary, 0, sizeof boundary);
         boundary.mode = (enum boundary_mode)mode;
-        uintptr_t align = (uintptr_t)_Alignof(max_align_t);
+        uintptr_t align = (uintptr_t)_Alignof(alloc_header);
         if (boundary.mode == BOUNDARY_AFTER_INSTANCE) {
             uintptr_t candidate = (uintptr_t)boundary.storage + STATE_MAX_BYTES;
             uintptr_t instance = (candidate + align - 1u) & ~(align - 1u);
@@ -1750,8 +1867,7 @@ static void test_lifecycle(void)
         muhtari_media other_media = state_media_for_image(identity_other, other_image_bytes);
         CHECK_EQ_U64(muhtari_load(peer, &other_media), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(muhtari_state_size(peer), linear_state_bytes);
-        CHECK_EQ_U64(muhtari_save_state(peer, public_first, linear_state_bytes),
-                     MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(muhtari_save_state(peer, public_first, linear_state_bytes), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(muhtari_load_state(peer, public_snapshot, linear_state_bytes),
                      MUHTARI_STATUS_ERR_STATE_MISMATCH);
         CHECK_EQ_U64(muhtari_save_state(peer, public_second, linear_state_bytes),
@@ -1832,17 +1948,17 @@ static void test_battery(void)
     CHECK(muhtari__state_payload_validate(m, first, bytes));
     expect_invalid_u16(m, bytes, 10828u, 0x8000u); /* SaveKey address is fifteen bits. */
     expect_invalid_u16(m, bytes, 10830u, 0x7FC1u); /* Page base is aligned within 32 KiB. */
-    expect_invalid_u8(m, bytes, 10832u, 2u);      /* Host SCL is a boolean. */
-    expect_invalid_u8(m, bytes, 10833u, 2u);      /* Host SDA is a boolean. */
-    expect_invalid_u8(m, bytes, 10834u, 2u);      /* Driven SDA is a boolean. */
-    expect_invalid_u8(m, bytes, 10835u, 12u);     /* EEPROM phase has twelve states. */
-    expect_invalid_u8(m, bytes, 10836u, 12u);     /* Next EEPROM phase has twelve states. */
-    expect_invalid_u8(m, bytes, 10837u, 9u);      /* I2C byte transfer has eight bits. */
-    expect_invalid_u8(m, bytes, 10839u, 0x80u);   /* SaveKey address-high is seven bits. */
-    expect_invalid_u8(m, bytes, 10905u, 2u);      /* Touched-page flags are booleans. */
-    expect_invalid_u8(m, bytes, 10969u, 64u);     /* EEPROM page offset selects 64 bytes. */
-    expect_invalid_u8(m, bytes, 10970u, 2u);      /* Pending EEPROM write is a boolean. */
-    expect_invalid_u8(m, bytes, 10971u, 2u);      /* EEPROM acknowledge is a boolean. */
+    expect_invalid_u8(m, bytes, 10832u, 2u);       /* Host SCL is a boolean. */
+    expect_invalid_u8(m, bytes, 10833u, 2u);       /* Host SDA is a boolean. */
+    expect_invalid_u8(m, bytes, 10834u, 2u);       /* Driven SDA is a boolean. */
+    expect_invalid_u8(m, bytes, 10835u, 12u);      /* EEPROM phase has twelve states. */
+    expect_invalid_u8(m, bytes, 10836u, 12u);      /* Next EEPROM phase has twelve states. */
+    expect_invalid_u8(m, bytes, 10837u, 9u);       /* I2C byte transfer has eight bits. */
+    expect_invalid_u8(m, bytes, 10839u, 0x80u);    /* SaveKey address-high is seven bits. */
+    expect_invalid_u8(m, bytes, 10905u, 2u);       /* Touched-page flags are booleans. */
+    expect_invalid_u8(m, bytes, 10969u, 64u);      /* EEPROM page offset selects 64 bytes. */
+    expect_invalid_u8(m, bytes, 10970u, 2u);       /* Pending EEPROM write is a boolean. */
+    expect_invalid_u8(m, bytes, 10971u, 2u);       /* EEPROM acknowledge is a boolean. */
 
     m->battery.data[0] = 0u;
     m->battery.data[m->battery.bytes - 1u] = 0u;
@@ -1928,8 +2044,7 @@ static void test_battery(void)
     CHECK_EQ_U64(muhtari__synth_observe(peer, NULL, NULL), MUHTARI_STATUS_OK);
 
     uint32_t replay_audio_counts[3] = {0u, 0u, 0u};
-    uint32_t source_audio_count =
-        state_run_frame(source, public_video_a, public_audio_a);
+    uint32_t source_audio_count = state_run_frame(source, public_video_a, public_audio_a);
     replay_audio_counts[0] = source_audio_count;
     uint32_t peer_audio_count = state_run_frame(peer, public_video_b, public_audio_b);
     CHECK_EQ_U64(peer_audio_count, source_audio_count);
@@ -1942,8 +2057,7 @@ static void test_battery(void)
            (size_t)source_audio_count * sizeof public_audio_a[0]);
 
     unsigned replay_frames = 1u;
-    while ((source->savekey.pending != 0u || peer->savekey.pending != 0u) &&
-           replay_frames < 3u) {
+    while ((source->savekey.pending != 0u || peer->savekey.pending != 0u) && replay_frames < 3u) {
         source_audio_count = state_run_frame(source, public_video_a, public_audio_a);
         replay_audio_counts[replay_frames] = source_audio_count;
         peer_audio_count = state_run_frame(peer, public_video_b, public_audio_b);
@@ -2092,17 +2206,15 @@ static void test_topologies(void)
 
     /* Header metadata, caller representation and Auto spelling do not alter
        an otherwise identical installed machine. */
-    size_t identity_bytes =
-        state_make_identity_image(identity_image, "Identity A", 3u, 0u);
+    size_t identity_bytes = state_make_identity_image(identity_image, "Identity A", 3u, 0u);
     muhtari_media media = state_media_for_image(identity_image, identity_bytes);
     CHECK_EQ_U64(muhtari_load(m, &media), MUHTARI_STATUS_OK);
     uint8_t baseline[sizeof m->state_identity];
     memcpy(baseline, m->state_identity, sizeof baseline);
     static const uint8_t identity_vector[32] = {
-        0x81u, 0xC9u, 0xA4u, 0xA6u, 0xA7u, 0x1Cu, 0x18u, 0x54u,
-        0xEDu, 0xA7u, 0x45u, 0x45u, 0xFBu, 0x95u, 0x56u, 0x3Au,
-        0x98u, 0x69u, 0xFFu, 0xFCu, 0xC3u, 0x3Fu, 0x9Du, 0x38u,
-        0x73u, 0x95u, 0x19u, 0x32u, 0xC8u, 0x2Fu, 0x08u, 0xE0u,
+        0x81u, 0xC9u, 0xA4u, 0xA6u, 0xA7u, 0x1Cu, 0x18u, 0x54u, 0xEDu, 0xA7u, 0x45u,
+        0x45u, 0xFBu, 0x95u, 0x56u, 0x3Au, 0x98u, 0x69u, 0xFFu, 0xFCu, 0xC3u, 0x3Fu,
+        0x9Du, 0x38u, 0x73u, 0x95u, 0x19u, 0x32u, 0xC8u, 0x2Fu, 0x08u, 0xE0u,
     };
     CHECK(memcmp(baseline, identity_vector, sizeof identity_vector) == 0);
     memcpy(identity_raw, identity_image + IMAGES_HEADER, identity_bytes - IMAGES_HEADER);
@@ -2111,8 +2223,7 @@ static void test_topologies(void)
     CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
     CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) == 0);
 
-    size_t equivalent_bytes =
-        state_make_identity_image(identity_other, "Identity B", 3u, 0u);
+    size_t equivalent_bytes = state_make_identity_image(identity_other, "Identity B", 3u, 0u);
     media = state_media_for_image(identity_other, equivalent_bytes);
     media.expansion = MUHTARI_EXPANSION_OFF;
     media.port[0] = MUHTARI_PORT_PROLINE;
@@ -2128,40 +2239,34 @@ static void test_topologies(void)
     CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
     CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
 
-    equivalent_bytes =
-        state_make_identity_image(identity_other, "Identity B", 3u, 0x0002u);
+    equivalent_bytes = state_make_identity_image(identity_other, "Identity B", 3u, 0x0002u);
     media = state_media_for_image(identity_other, equivalent_bytes);
     CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
     CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
 
-    equivalent_bytes =
-        state_make_identity_image(identity_other, "Identity B", 3u, 0x0010u);
+    equivalent_bytes = state_make_identity_image(identity_other, "Identity B", 3u, 0x0010u);
     media = state_media_for_image(identity_other, equivalent_bytes);
     CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
     CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
 
-    equivalent_bytes =
-        state_make_identity_image(identity_other, "Identity B", 3u, 0x0004u);
+    equivalent_bytes = state_make_identity_image(identity_other, "Identity B", 3u, 0x0004u);
     media = state_media_for_image(identity_other, equivalent_bytes);
     CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
     CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
 
-    equivalent_bytes =
-        state_make_identity_image(identity_other, "Identity B", 3u, 0x0001u);
+    equivalent_bytes = state_make_identity_image(identity_other, "Identity B", 3u, 0x0001u);
     media = state_media_for_image(identity_other, equivalent_bytes);
     CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
     CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
 
-    equivalent_bytes =
-        state_make_identity_image(identity_other, "Identity B", 4u, 0u);
+    equivalent_bytes = state_make_identity_image(identity_other, "Identity B", 4u, 0u);
     identity_other[69] = 1u; /* Accepted v4 IRQ mask bit zero. */
     media = state_media_for_image(identity_other, equivalent_bytes);
     CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(peer->cart.irq_mask, 1u);
     CHECK(memcmp(baseline, peer->state_identity, sizeof baseline) != 0);
 
-    equivalent_bytes =
-        state_make_identity_image(identity_other, "Identity B", 3u, 0u);
+    equivalent_bytes = state_make_identity_image(identity_other, "Identity B", 3u, 0u);
     media = state_media_for_image(identity_other, equivalent_bytes);
     media.region = MUHTARI_REGION_PAL;
     CHECK_EQ_U64(muhtari_load(peer, &media), MUHTARI_STATUS_OK);
@@ -2295,18 +2400,18 @@ static void test_topologies(void)
 static const struct {
     const char *name;
     void (*run)(void);
-} cases[] = { {"payload", test_payload},       {"fields", test_fields},
-              {"aliases", test_aliases},       {"lifecycle", test_lifecycle},
-              {"battery", test_battery},       {"topologies", test_topologies} };
+} cases[] = {{"payload", test_payload}, {"fields", test_fields},
+             {"aliases", test_aliases}, {"lifecycle", test_lifecycle},
+             {"battery", test_battery}, {"topologies", test_topologies}};
 
 static void test_equality_report(void)
 {
-    struct state_report_text reports[sizeof state_report_scenarios / sizeof state_report_scenarios[0]];
+    struct state_report_text
+        reports[sizeof state_report_scenarios / sizeof state_report_scenarios[0]];
     size_t rows = 0u;
     int failures_before = check_failures;
     for (size_t scenario = 0u;
-         scenario < sizeof state_report_scenarios / sizeof state_report_scenarios[0];
-         scenario++) {
+         scenario < sizeof state_report_scenarios / sizeof state_report_scenarios[0]; scenario++) {
         struct state_report_text repeated;
         const struct state_report_scenario *entry = &state_report_scenarios[scenario];
         CHECK(state_report_generate(entry, &reports[scenario], 0, NULL));
@@ -2321,8 +2426,7 @@ static void test_equality_report(void)
 
     struct state_report_text rejected_report;
     int oracle_rejected = 0;
-    CHECK(state_report_generate(&state_report_scenarios[0], &rejected_report, 1,
-                                &oracle_rejected));
+    CHECK(state_report_generate(&state_report_scenarios[0], &rejected_report, 1, &oracle_rejected));
     CHECK_EQ_U64(oracle_rejected, 1u);
     CHECK_EQ_U64(rejected_report.total_bytes, 0u);
 

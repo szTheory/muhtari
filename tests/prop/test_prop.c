@@ -1025,8 +1025,7 @@ static int state_load_pair(uint64_t *rng, muhtari **a, muhtari **b, size_t *imag
 
 static int state_spans(muhtari *m, muhtari_span spans[4])
 {
-    for (uint32_t kind = MUHTARI_MEMORY_SYSTEM_RAM; kind <= MUHTARI_MEMORY_EXPANSION_RAM;
-         kind++) {
+    for (uint32_t kind = MUHTARI_MEMORY_SYSTEM_RAM; kind <= MUHTARI_MEMORY_EXPANSION_RAM; kind++) {
         memset(&spans[kind - 1u], 0, sizeof spans[kind - 1u]);
         spans[kind - 1u].size = (uint32_t)sizeof spans[kind - 1u];
         if (muhtari_get_memory(m, kind, &spans[kind - 1u]) != MUHTARI_STATUS_OK)
@@ -1241,8 +1240,7 @@ static int state_refusal(uint64_t *rng, uint32_t size)
                 MUHTARI_STATUS_ERR_INVALID_STATE ||
             allocation_calls != calls)
             ok = differ("state repaired hostile field", mutation);
-        if (!state_spans(restored, after_spans) ||
-            !state_same_spans(before_spans, after_spans) ||
+        if (!state_spans(restored, after_spans) || !state_same_spans(before_spans, after_spans) ||
             muhtari_save_state(restored, after_bytes, state_bytes) != MUHTARI_STATUS_OK ||
             memcmp(before_bytes, after_bytes, state_bytes) != 0)
             ok = differ("state refused preservation", mutation);
@@ -1478,8 +1476,8 @@ int main(int argc, char **argv)
     raw = (uint8_t *)malloc(SEEDS_SIZE_MAX);
     int state_property = strncmp(argv[1], "state_", 6u) == 0;
     if (image == NULL || raw == NULL ||
-        (!state_property && (!read_sample(argv[2], "simple", 0u) ||
-                             !read_sample(argv[2], "eightysix", 1u)))) {
+        (!state_property &&
+         (!read_sample(argv[2], "simple", 0u) || !read_sample(argv[2], "eightysix", 1u)))) {
         return 1;
     }
     for (size_t i = 0; i < sizeof props / sizeof props[0]; i++) {

@@ -714,8 +714,8 @@ static int parse_options(int argc, char **argv, options *o)
 static int check_options(options *o, const muhtari__movie_header *h, uint32_t movie_frames)
 {
     char why[128];
-    int state_operation = o->load_state != NULL || o->state_output_count != 0u ||
-                          o->hash_state_count != 0u;
+    int state_operation =
+        o->load_state != NULL || o->state_output_count != 0u || o->hash_state_count != 0u;
     if (state_operation && o->rom == NULL)
         return usage("state options need a cartridge FILE");
     if (state_operation && o->bench)
@@ -817,7 +817,8 @@ static int check_options(options *o, const muhtari__movie_header *h, uint32_t mo
         }
     }
     if (o->hash_state_count > 0u)
-        qsort(o->hash_state_frames, o->hash_state_count, sizeof o->hash_state_frames[0], compare_u32);
+        qsort(o->hash_state_frames, o->hash_state_count, sizeof o->hash_state_frames[0],
+              compare_u32);
     if (o->hash_count > 0u) {
         qsort(o->hash_frames, o->hash_count, sizeof o->hash_frames[0], compare_u32);
         uint32_t kept = 1;
@@ -1251,7 +1252,8 @@ static int read_state_file(const char *path, uint8_t *buffer, size_t bytes)
         return MUHTARI__EXIT_FAILURE;
     }
     if (used != bytes || trailing != 0u) {
-        fprintf(stderr, "muhtari-run: %s: state file length does not match installed machine\n", path);
+        fprintf(stderr, "muhtari-run: %s: state file length does not match installed machine\n",
+                path);
         return MUHTARI__EXIT_FAILURE;
     }
     return MUHTARI__EXIT_DONE;
@@ -1277,7 +1279,8 @@ static int state_capture(const options *opt, muhtari *m, uint8_t *buffer, size_t
     for (uint32_t i = 0; i < opt->state_output_count; i++) {
         if (opt->state_outputs[i].frame == point &&
             write_sibling_atomic(opt->state_outputs[i].path, buffer, bytes) != 0) {
-            fprintf(stderr, "muhtari-run: %s: cannot commit state file\n", opt->state_outputs[i].path);
+            fprintf(stderr, "muhtari-run: %s: cannot commit state file\n",
+                    opt->state_outputs[i].path);
             return MUHTARI__EXIT_FAILURE;
         }
     }
@@ -1699,8 +1702,8 @@ static int run(const options *opt, replay *mv)
             break;
         }
         save.completed_frames++;
-        if (state_buffer != NULL &&
-            state_capture(opt, m, state_buffer, state_bytes, (uint32_t)save.completed_frames) != 0) {
+        if (state_buffer != NULL && state_capture(opt, m, state_buffer, state_bytes,
+                                                  (uint32_t)save.completed_frames) != 0) {
             status = MUHTARI__EXIT_FAILURE;
             break;
         }

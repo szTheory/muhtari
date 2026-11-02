@@ -279,8 +279,7 @@ static void run_state_rechecksum(uint8_t *bytes, size_t size)
 
 static void run_state_spans(muhtari *m, muhtari_span spans[4])
 {
-    for (uint32_t kind = MUHTARI_MEMORY_SYSTEM_RAM; kind <= MUHTARI_MEMORY_EXPANSION_RAM;
-         kind++) {
+    for (uint32_t kind = MUHTARI_MEMORY_SYSTEM_RAM; kind <= MUHTARI_MEMORY_EXPANSION_RAM; kind++) {
         memset(&spans[kind - 1u], 0, sizeof spans[kind - 1u]);
         spans[kind - 1u].size = (uint32_t)sizeof spans[kind - 1u];
         require(muhtari_get_memory(m, kind, &spans[kind - 1u]) == MUHTARI_STATUS_OK);
@@ -358,7 +357,8 @@ static void run_state_recipe(muhtari *m[2], alloc_counts counts[2], uint8_t *scr
     run_state_spans(m[1], spans_after);
     require(memcmp(spans_before, spans_after, sizeof spans_before) == 0);
     require(muhtari_get_battery(m[1], &battery_after) == MUHTARI_STATUS_OK);
-    require(battery_before.data == battery_after.data && battery_before.bytes == battery_after.bytes &&
+    require(battery_before.data == battery_after.data &&
+            battery_before.bytes == battery_after.bytes &&
             battery_before.generation == battery_after.generation &&
             battery_before.layout_version == battery_after.layout_version &&
             battery_before.eeprom_port == battery_after.eeprom_port &&
@@ -377,8 +377,7 @@ static void run_state_recipe(muhtari *m[2], alloc_counts counts[2], uint8_t *scr
     status[1] = run_one(m[1], video + RUN_PICTURE, audio + RUN_AUDIO, &audio_count[1]);
     require(status[0] == MUHTARI_STATUS_OK && status[1] == MUHTARI_STATUS_OK);
     require(audio_count[0] == audio_count[1]);
-    require(memcmp(video, video + RUN_PICTURE,
-                   MUHTARI__WIDTH * muhtari__timing(m[0]).height) == 0);
+    require(memcmp(video, video + RUN_PICTURE, MUHTARI__WIDTH * muhtari__timing(m[0]).height) == 0);
     require(memcmp(audio, audio + RUN_AUDIO, audio_count[0] * sizeof *audio) == 0);
     require(m[0]->bus.ticks == m[1]->bus.ticks);
     require(m[0]->battery.generation == m[1]->battery.generation);

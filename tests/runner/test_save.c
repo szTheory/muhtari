@@ -760,8 +760,7 @@ static int runner_save_state_zero(char *rom, char *path)
 
 static int runner_load_state_one_with_save(char *dir, char *rom, char *path)
 {
-    char *args[] = {"muhtari-run", "--frames", "1", "--save-dir", dir,
-                    "--load-state", path, rom};
+    char *args[] = {"muhtari-run", "--frames", "1", "--save-dir", dir, "--load-state", path, rom};
     frames_run = temp_opens = replacements = 0u;
     return runner_entry(8, args);
 }
@@ -856,14 +855,15 @@ static void state_files(char *dir)
 
     uint8_t previous[8] = {0x31u, 0x32u, 0x33u, 0x34u, 0x35u, 0x36u, 0x37u, 0x38u};
     static const int write_faults[] = {SAVE_CREATE, SAVE_FDOPEN, SAVE_PARTIAL, SAVE_WRITE,
-                                       SAVE_FLUSH, SAVE_SYNC, SAVE_CLOSE, SAVE_REPLACE};
+                                       SAVE_FLUSH,  SAVE_SYNC,   SAVE_CLOSE,   SAVE_REPLACE};
     for (size_t i = 0; i < sizeof write_faults / sizeof write_faults[0]; i++) {
         write_bytes(state, previous, sizeof previous);
         io_fault = write_faults[i];
         temp_opens = create_calls = replacements = 0u;
         CHECK_EQ_U64(runner_save_state_zero(rom, state), 1u);
         CHECK_EQ_U64(frames_run, 0u);
-        CHECK_EQ_U64(temp_opens, write_faults[i] == SAVE_CREATE || write_faults[i] == SAVE_FDOPEN ? 0u : 1u);
+        CHECK_EQ_U64(temp_opens,
+                     write_faults[i] == SAVE_CREATE || write_faults[i] == SAVE_FDOPEN ? 0u : 1u);
         CHECK_EQ_U64(replacements, write_faults[i] == SAVE_REPLACE ? 1u : 0u);
         io_fault = IO_OK;
         exact_file(state, previous, sizeof previous);
@@ -871,8 +871,8 @@ static void state_files(char *dir)
 
     write_bytes(state, valid, bytes);
     write_bytes(save, newer, sizeof newer);
-    char *rollback_zero[] = {"muhtari-run", "--frames0", "--save-dir", dir,
-                             "--load-state", state, rom};
+    char *rollback_zero[] = {"muhtari-run",  "--frames0", "--save-dir", dir,
+                             "--load-state", state,       rom};
     temp_opens = replacements = 0u;
     CHECK_EQ_U64(runner_entry(7, rollback_zero), 0u);
     CHECK_EQ_U64(frames_run, 0u);

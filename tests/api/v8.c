@@ -42,8 +42,7 @@ static void api_surface(void)
     } older;
     memset(&older, 0xA5, sizeof older);
     older.old.size = (uint32_t)sizeof older.old;
-    CHECK_EQ_U64(muhtari_get_versions((muhtari_versions *)(void *)&older.old),
-                 MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(muhtari_get_versions((muhtari_versions *)(void *)&older.old), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(older.old.api, 8u);
     CHECK_EQ_U64(older.old.abi, 1u);
     CHECK_EQ_U64(older.old.behaviour_revision, 6u);
@@ -65,10 +64,8 @@ static void state_surface(void)
     CHECK_EQ_U64(muhtari_load_state(NULL, bytes, sizeof bytes), MUHTARI_STATUS_ERR_ARGUMENT);
     CHECK_EQ_U64(muhtari_save_state(m, NULL, sizeof bytes), MUHTARI_STATUS_ERR_ARGUMENT);
     CHECK_EQ_U64(muhtari_load_state(m, NULL, sizeof bytes), MUHTARI_STATUS_ERR_ARGUMENT);
-    CHECK_EQ_U64(muhtari_save_state(m, bytes, sizeof bytes),
-                 MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
-    CHECK_EQ_U64(muhtari_load_state(m, bytes, sizeof bytes),
-                 MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
+    CHECK_EQ_U64(muhtari_save_state(m, bytes, sizeof bytes), MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
+    CHECK_EQ_U64(muhtari_load_state(m, bytes, sizeof bytes), MUHTARI_STATUS_ERR_STATE_UNAVAILABLE);
     for (size_t i = 0u; i < sizeof bytes; i++)
         CHECK_EQ_U64(bytes[i], 0xA5u);
     muhtari_destroy(m);
