@@ -2,38 +2,38 @@
 gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
-current_phase: 13
-current_phase_name: Portable save/load across three interfaces
-status: ready_to_execute
-stopped_at: "Phase 13 plans independently checked and ready on isolated shipped-v2 baseline; no implementation executed. Phase 12 remains halted at 0/4 and all hosted allowances remain spent. Next separate command: $gsd-execute-phase 13 from the existing isolated Phase 13 checkout. Context may be cleared; agent owns preflight and evidence checks, no owner verification needed."
-last_updated: "2026-11-01T19:15:53.923Z"
+current_phase: 12
+current_phase_name: Player-ready delivery and Playstead bridge
+status: blocked
+stopped_at: Phase 13 is complete. The next scheduled Phase 12 remains halted at 0/4 acceptance because its hosted input proof is unresolved and all hosted allowances are spent. Do not resume Phase 12 without a new bounded scope and authority.
+last_updated: "2026-11-02T00:18:22Z"
 last_activity: 2026-11-01
-last_activity_desc: Phase 13 planning/checking complete; execution pending; Phase 12 safety stop unchanged
-state_head: 44da6010c4399101430184de1979a43bac08548e
+last_activity_desc: Phase 13 complete; preserved the existing Phase 12 halt
+state_head: 13bb1af4e7b63fb727854d42ad4431091f2083cc
 progress:
   total_phases: 3
-  completed_phases: 0
-  total_plans: 17
-  completed_plans: 3
-  percent: 0
+  completed_phases: 1
+  total_plans: 8
+  completed_plans: 8
+  percent: 33
 ---
 
 # Project State
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-10-29.
+See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 13 has eight checked sequential plans in [the phase directory](phases/13-portable-save-load-across-three-interfaces/13-PLANNING.md), ready for the separate execute step on phase/13-portable-save-load-across-three-interfaces. Use the existing isolated .worktrees/phase-13 checkout, based directly on shipped origin/main; never execute the state work from the halted Phase 12 branch. Primary Phase 12 source/index are unchanged. Phase 12 remains halted at accepted 0/4 with causes unknown and all hosted allowances spent.
+Current focus: Phase 13 is complete on `phase/13-portable-save-load-across-three-interfaces`. The next scheduled Phase 12 remains halted at accepted 0/4 with its input-proof cause unresolved and all hosted allowances spent. Do not resume it or spend those allowances without a newly authorized bounded scope. Phase 14 remains after Phase 13, and no Phase 14 work has started.
 
 ## Current Position
 
-Phase: 13 (Portable save/load across three interfaces) — READY TO EXECUTE
-Plan: 0 of 8 executed; all eight plans independently checked
-Status: Planning complete; implementation and behavior evidence pending
-Next separate command: `$gsd-execute-phase 13` from the isolated Phase 13 checkout.
-Boundary: missing installed sanitizer or executed-BE tools/receipts are explicit evidence stops; no install, publication, actual RetroArch attempt or Phase 12 allowance renewal is inferred. The agent owns fresh source, environment, service and receipt checks when relevant. No owner verification is required.
+Phase: 12 — Player-ready delivery and Playstead bridge
+Plan: Blocked at 12-01 hosted input proof; Phase 13 is complete
+Status: Blocked; no new Phase 12 scope is authorized
+Next action: Preserve the halt. If the owner chooses to resume Phase 12, first define a new bounded evidence/repair scope and authority; only then use `$gsd-discuss-phase 12` in a new session.
+Boundary: Phase 13's native, PowerPC/QEMU, complete normal/release, equality and ASan/UBSan gates passed locally and are documented in its verification/resource evidence. Phase 12 remains halted at accepted 0/4 with causes unresolved and all hosted allowances spent. No Phase 12 execution, hosted action, PR publication, RetroArch run or allowance renewal is authorized by this handoff.
 
 ## Preserved Phase 12 position — halt remains binding
 
@@ -80,17 +80,17 @@ linked outcome; earlier unchanged-source preservation checks are historical.
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
 Plan: 0 of 4 acceptance plans accepted; gap plans 12-05 and 12-06 executed with failed hosted evidence; 12-09 complete; 12-07 remains halted after a non-reproducing OpenBIOS diagnostic; 12-08 is superseded for scheduling
 Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 remain blocked
-Last activity: 2026-11-01 — Phase 13 discussion captured with delegated recommendations; ready for separate planning; Phase 12 halt and spent allowances preserved
-Progress: [░░░░░░░░░░] 0%
+Last activity: 2026-11-01 — Phase 13 complete, transitioned to Phase 12
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
-Current milestone: 0 completed plans; duration and trend not measured. Historical counts stay in [MILESTONES.md](MILESTONES.md).
+Current milestone: 8 completed plans in Phase 13; duration and trend not measured. Historical counts stay in [MILESTONES.md](MILESTONES.md).
 
 | Phase | Plans | Total | Avg/Plan |
 |---|---|---|---|
 | 12 | 0 complete; 4 acceptance plans plus 4 gap plans | — | — |
-| 13 | 0 complete; 8 planned | — | — |
+| 13 | 8 | - | - |
 | 14 | 0 complete; total TBD | — | — |
 
 ## Accumulated Context
@@ -157,11 +157,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-01T19:15:53.923Z
-Stopped at: Phase 13 plans independently checked and ready on isolated shipped-v2 baseline; no implementation executed. Phase 12 remains halted at 0/4 and all hosted allowances remain spent. Next separate command: $gsd-execute-phase 13 from the existing isolated Phase 13 checkout. Context may be cleared; agent owns preflight and evidence checks, no owner verification needed.
-Resume file: .planning/phases/13-portable-save-load-across-three-interfaces/13-PLANNING.md
-Next separate command: `$gsd-execute-phase 13`
-Context handoff: Work in the existing isolated .worktrees/phase-13 checkout; the primary checkout remains on the Phase 12 branch with its pre-existing edits preserved. Research, exact design, eight plans and current planning references are carried on the isolated branch; matching new phase artifacts are discoverable in the primary checkout. Context may be cleared. The next agent owns all checks and execution within the new invocation; no owner acknowledgment or manual verification is needed. No Phase 12 action, hosted/publication authority or exhausted allowance is renewed.
+Last session: 2026-11-02T00:18:22Z
+Stopped at: Phase 13 complete; Phase 12's existing 0/4 halt and spent hosted allowances remain in force.
+Resume file: .planning/phases/13-portable-save-load-across-three-interfaces/13-VERIFICATION.md
+Next separate command: If the owner later authorizes a new bounded Phase 12 scope, start with `$gsd-discuss-phase 12` in a new session. Do not resume execution or use hosted allowances without that scope.
+Context handoff: Phase 13 is complete and its local native, PowerPC/QEMU, release, equality, and sanitizer evidence is in `13-RESOURCE-EVIDENCE.md`; receipts are under ignored `build/phase13-local/`. No Phase 13 work remains. No action is needed to preserve the Phase 12 halt. Phase 12 can resume only after its unresolved input-proof cause is addressed under a newly authorized bounded scope. Phase 14 has not started.
 
 ## Deferred Items
 

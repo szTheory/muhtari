@@ -4,7 +4,7 @@
 
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4, shipped 2026-10-21; [archive](milestones/v1.0-ROADMAP.md).
 - [x] **v2.0 — The whole library** — phases 5–11, shipped 2026-10-29; [archive](milestones/v2.0-ROADMAP.md).
-- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; planning, no implementation complete.
+- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted, and Phase 14 pending.
 
 ## v3.0 — Playstead-ready play and states
 
@@ -13,7 +13,8 @@ Ship useful player documentation and release-qualified RetroArch readiness with 
 small demonstrated tune-up first. Deliver one portable machine-state contract
 through the library, runner and libretro core, then prove the frontend consumers.
 The source baseline is package v0.10.0, API 7, ABI 1 and behavior revision 6;
-planning v3.0 is independent of package versions. All 16 requirements are pending.
+planning v3.0 is independent of package versions. Seven of 16 requirements are
+complete; the remaining Phase 12 and Phase 14 requirements are pending.
 
 ### Ownership and external dependency
 
@@ -35,7 +36,7 @@ Playstead-native exact Continue and state history remain later work.
 ## Phases
 
 - [ ] **Phase 12: Player-ready delivery and Playstead bridge** — Ship clear onboarding, release-qualified host readiness and one measured tune-up, with the sibling handoff explicit.
-- [ ] **Phase 13: Portable save/load across three interfaces** — Save, validate and restore the complete supported machine through the library, runner and libretro callbacks.
+- [x] **Phase 13: Portable save/load across three interfaces** — Save, validate and restore the complete supported machine through the library, runner and libretro callbacks. (completed 2026-11-01)
 - [ ] **Phase 14: Proven frontend states and responsive play** — Demonstrate actual RetroArch save/load, rewind and supported run-ahead without speculative persistent writes.
 
 ## Phase Details
@@ -114,30 +115,30 @@ external Playstead flow as pending until paired consumer evidence exists.
 3. A caller can save, restore and continue each supported machine topology with matching independent semantic observations, frame output and raw/PCM audio against uninterrupted execution; state bytes and continuation agree across the existing required native and big-endian lanes, with advisory evidence still labeled.
 4. A host can repeatedly save/load without core allocation after content load or unbounded work, including hostile restored clocks, deadlines and lengths; changed restored battery bytes notify live dirty tracking without restoring an old token, equal/refused restores preserve the appropriate metadata, and speculative work cannot commit durable save files.
 5. A runner user can save at a chosen frame, load in a fresh process and hash state for repeatable continuation, with checked file I/O, explicit refusal status and preservation of the live machine and durable files on failure.
-**Plans:** 8 plans in 8 sequential waves.
+**Plans:** 8/8 plans complete in 8 sequential waves.
 **Wave 1**
-- [ ] 13-01-PLAN.md — Complete private visitor and field proofs.
+- [x] 13-01-PLAN.md — Complete private visitor and field proofs.
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 13-02-PLAN.md — Shared digests and effective machine identity.
+- [x] 13-02-PLAN.md — Shared digests and effective machine identity.
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 13-03-PLAN.md — Public state API and live battery metadata.
+- [x] 13-03-PLAN.md — Public state API and live battery metadata.
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 13-04-PLAN.md — Independent continuation and hostile-state evidence.
+- [x] 13-04-PLAN.md — Independent continuation and hostile-state evidence.
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 13-05-PLAN.md — Runner state files, frame points and hashes.
+- [x] 13-05-PLAN.md — Runner state files, frame points and hashes.
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 13-06-PLAN.md — Libretro serialization and truthful basic claims.
+- [x] 13-06-PLAN.md — Libretro serialization and truthful basic claims.
 
 **Wave 7** *(blocked on Wave 6 completion)*
-- [ ] 13-07-PLAN.md — State and continuation rows in existing equality producers.
+- [x] 13-07-PLAN.md — State and continuation rows in existing equality producers.
 
 **Wave 8** *(blocked on Wave 7 completion)*
-- [ ] 13-08-PLAN.md — Resource/docs verification and exact-source executed BE evidence.
+- [x] 13-08-PLAN.md — Resource/docs verification and exact-source executed BE evidence.
 **Canonical refs:** [accepted requirements](REQUIREMENTS.md), [state research](research/ARCHITECTURE.md), [pitfalls](research/PITFALLS.md), [stack](research/STACK.md), [architecture §7](preparation/ARCHITECTURE.md#7-state-and-saves), [settled decisions](preparation/DECISIONS.md#architecture), [hosts §1/4](preparation/HOSTS-AND-INTEGRATION.md#1-libretro-contract), [state seed](seeds/SEED-002-states-and-movies.md), [lessons](LESSONS.md), [engineering §11](preparation/ENGINEERING.md#11-docs-standards).
 **UI hint:** no
 
@@ -183,7 +184,8 @@ Playstead-native Continue or close the external launch dependency by implication
 
 All 16 approved requirements map exactly once: Phase 12 has six, Phase 13 seven,
 and Phase 14 three. [REQUIREMENTS.md](REQUIREMENTS.md#traceability) is the status
-ledger; all remain Pending. No phase implementation or plan is complete.
+ledger: Phase 13's seven requirements are complete; Phase 12's six and Phase 14's
+three remain pending. Phase 13's eight plans and implementation are complete.
 
 Every behavior change includes its test in `cmake --workflow --preset ci` and
 affected documentation. Preserve required correctness, determinism, hostile-input,
@@ -211,7 +213,7 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 12. Player-ready delivery and Playstead bridge | 3/9 | Halted at 12-01 | - |
-| 13. Portable save/load across three interfaces | 0/8 | Planned; ready to execute | - |
+| 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
 | 14. Proven frontend states and responsive play | 0/TBD | Not started | - |
 
-Next separate command: `$gsd-execute-phase 13` in the existing isolated Phase 13 checkout. Planning/checking is complete; implementation has not started. Phase 12 remains halted at 0/4, is not accepted or waived, and all hosted allowances remain spent.
+Next separate command, only after a new Phase 12 scope is authorized: `$gsd-discuss-phase 12`. Phase 13 is complete. Phase 12 remains halted at 0/4, is not accepted or waived, and all hosted allowances remain spent; no Phase 12 execution or hosted action is authorized by this handoff.

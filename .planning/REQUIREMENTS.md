@@ -21,16 +21,16 @@ initial broad “States and movies” label. The existing three deliverables rem
 
 ### Portable and safe machine state
 
-- [ ] **STATE-01**: A library caller can query a state size fixed for the loaded machine and save/restore a complete versioned byte-wise little-endian snapshot, including mutable supported chip/device/board/region state, pending work and emulated battery data, using caller-owned buffers.
-- [ ] **STATE-02**: A caller can reject truncated, corrupt, unsupported or checksum-valid hostile states and incompatible media/firmware/configuration before any live-machine mutation; a failed restore preserves subsequent execution and host-visible storage metadata.
-- [ ] **STATE-03**: A caller can save, restore and continue supported machine topologies with the same independent semantic observations, frame output and raw/PCM audio as an uninterrupted run, with portable bytes and equality across the existing required native/big-endian lanes; advisory lanes remain labeled.
-- [ ] **STATE-04**: A host can use save/load repeatedly without core allocation after content load or unbounded work; hostile restored clocks, device deadlines and lengths cannot hang or overrun the core.
-- [ ] **STATE-05**: A host can distinguish restored emulated battery bytes from durable save files: changed restores notify dirty tracking without restoring an old generation token, equal/refused restores preserve the appropriate metadata, and speculative execution cannot commit battery writes to host files.
-- [ ] **STATE-06**: A runner user can save at a chosen frame, load a state in a fresh process and hash state for repeatable continuation, with checked file I/O, explicit failure status and preservation of live state/durable files on refusal.
+- [x] **STATE-01**: A library caller can query a state size fixed for the loaded machine and save/restore a complete versioned byte-wise little-endian snapshot, including mutable supported chip/device/board/region state, pending work and emulated battery data, using caller-owned buffers.
+- [x] **STATE-02**: A caller can reject truncated, corrupt, unsupported or checksum-valid hostile states and incompatible media/firmware/configuration before any live-machine mutation; a failed restore preserves subsequent execution and host-visible storage metadata.
+- [x] **STATE-03**: A caller can save, restore and continue supported machine topologies with the same independent semantic observations, frame output and raw/PCM audio as an uninterrupted run, with portable bytes and equality across the existing required native/big-endian lanes; advisory lanes remain labeled.
+- [x] **STATE-04**: A host can use save/load repeatedly without core allocation after content load or unbounded work; hostile restored clocks, device deadlines and lengths cannot hang or overrun the core.
+- [x] **STATE-05**: A host can distinguish restored emulated battery bytes from durable save files: changed restores notify dirty tracking without restoring an old generation token, equal/refused restores preserve the appropriate metadata, and speculative execution cannot commit battery writes to host files.
+- [x] **STATE-06**: A runner user can save at a chosen frame, load a state in a fresh process and hash state for repeatable continuation, with checked file I/O, explicit failure status and preservation of live state/durable files on refusal.
 
 ### Frontend save/load and responsive play
 
-- [ ] **FRONT-01**: A libretro host can query stable serialization size and save/load through the same library state contract, with truthful version/feature declarations and safe unloaded/failed-load behavior.
+- [x] **FRONT-01**: A libretro host can query stable serialization size and save/load through the same library state contract, with truthful version/feature declarations and safe unloaded/failed-load behavior.
 - [ ] **FRONT-02**: A gamer can save and load through the pinned RetroArch host and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip rather than only an in-process callback test.
 - [ ] **FRONT-03**: A gamer can use RetroArch rewind with repeated restores preserving deterministic input, audio, timing and battery semantics; rewind storage and UI remain frontend-owned.
 - [ ] **FRONT-04**: A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative persistent writes and measured completed-work performance; capability claims match the pinned host evidence.
@@ -77,13 +77,13 @@ Every requirement maps to exactly one phase. All 16 remain pending; no implement
 | PLAY-02 | Phase 12 | Pending |
 | PLAY-03 | Phase 12 | Pending |
 | PLAY-04 | Phase 12 | Pending |
-| STATE-01 | Phase 13 | Pending |
-| STATE-02 | Phase 13 | Pending |
-| STATE-03 | Phase 13 | Pending |
-| STATE-04 | Phase 13 | Pending |
-| STATE-05 | Phase 13 | Pending |
-| STATE-06 | Phase 13 | Pending |
-| FRONT-01 | Phase 13 | Pending |
+| STATE-01 | Phase 13 | Complete |
+| STATE-02 | Phase 13 | Complete |
+| STATE-03 | Phase 13 | Complete |
+| STATE-04 | Phase 13 | Complete |
+| STATE-05 | Phase 13 | Complete |
+| STATE-06 | Phase 13 | Complete |
+| FRONT-01 | Phase 13 | Complete |
 | FRONT-02 | Phase 14 | Pending |
 | FRONT-03 | Phase 14 | Pending |
 | FRONT-04 | Phase 14 | Pending |
