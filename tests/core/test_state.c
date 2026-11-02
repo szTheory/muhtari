@@ -55,9 +55,16 @@ struct boundary_allocator {
     uint32_t calls;
     muhtari *instance;
     uint8_t *cart;
-    _Alignas(alloc_header) uint8_t storage[2u * STATE_MAX_BYTES + sizeof(muhtari) + 8192u];
+    uint8_t storage[2u * STATE_MAX_BYTES + sizeof(muhtari) + 8192u];
 };
 static struct boundary_allocator boundary;
+
+static uint8_t *boundary_storage_base(void)
+{
+    uintptr_t address = (uintptr_t)boundary.storage;
+    uintptr_t alignment = _Alignof(alloc_header);
+    return (uint8_t *)((address + alignment - 1u) & ~(alignment - 1u));
+}
 
 static size_t payload_index(size_t absolute_offset)
 {
@@ -1789,16 +1796,17 @@ static void test_aliases(void)
     for (unsigned mode = BOUNDARY_AFTER_INSTANCE; mode <= BOUNDARY_AFTER_CART; mode++) {
         memset(&boundary, 0, sizeof boundary);
         boundary.mode = (enum boundary_mode)mode;
+        uint8_t *storage = boundary_storage_base();
         uintptr_t align = (uintptr_t)_Alignof(alloc_header);
         if (boundary.mode == BOUNDARY_AFTER_INSTANCE) {
-            uintptr_t candidate = (uintptr_t)boundary.storage + STATE_MAX_BYTES;
+            uintptr_t candidate = (uintptr_t)storage + STATE_MAX_BYTES;
             uintptr_t instance = (candidate + align - 1u) & ~(align - 1u);
             boundary.instance = (muhtari *)instance;
             uintptr_t cart = instance + sizeof(muhtari) + STATE_MAX_BYTES;
             cart = (cart + align - 1u) & ~(align - 1u);
             boundary.cart = (uint8_t *)cart;
         } else {
-            boundary.cart = boundary.storage;
+            boundary.cart = storage;
         }
 
         muhtari_config config;
