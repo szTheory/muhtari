@@ -4,7 +4,7 @@
 
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4, shipped 2026-10-21; [archive](milestones/v1.0-ROADMAP.md).
 - [x] **v2.0 — The whole library** — phases 5–11, shipped 2026-10-29; [archive](milestones/v2.0-ROADMAP.md).
-- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted, and Phase 14 gap plans ready for separately authorized execution.
+- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted, and Phase 14 blocked with additive follow-up plans awaiting their separate authority gates.
 
 ## v3.0 — Playstead-ready play and states
 
@@ -164,14 +164,7 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 1. A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip using the released core rather than only callback-level agreement.
 2. A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing and battery semantics remain correct; the frontend owns rewind storage and UI.
 3. A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative durable writes, and comparable completed-work performance evidence; capability declarations and user instructions claim only the qualified host path.
-**Plans:** 12 plans; 9 complete. Plan 14-10 remains halted; additive Plan 14-12 awaits separate diagnostic execution authority, and Plan 14-11 remains blocked. FRONT-02/03/04 are pending.
-- [x] 14-06-PLAN.md
-- [x] 14-07-PLAN.md
-- [x] 14-08-PLAN.md — Isolate the normal portable replay, preflight exact source/parent, then audit one newly authorized host-enabled attempt.
-- [x] 14-09-PLAN.md — Replace the retired host line ceiling with reporting and recurring fault controls.
-- [ ] 14-10-PLAN.md — HALTED after its bounded Task 1: no cause was attributed, so no BIOS registration remedy was applied.
-- [ ] 14-11-PLAN.md — BLOCKED by halted Plan 14-10 and follow-up Plan 14-12; its full local workflow and existing host-authority checkpoint are unchanged.
-- [ ] 14-12-PLAN.md — NEW additive evidence-only investigation: one separately authorized process-observable local observation; no retry, remedy or full workflow.
+**Plans:** 13 plans; 9 complete. Plan 14-10 remains halted; additive Plan 14-12 awaits separate diagnostic authority, conditional Plan 14-13 requires attributable evidence and fresh exact-remedy authority, and Plan 14-11 remains blocked. FRONT-02/03/04 are pending.
 **Wave 1**
 - [x] 14-01-PLAN.md
 
@@ -186,6 +179,30 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [x] 14-05-PLAN.md
+
+**Wave 6**
+- [x] 14-06-PLAN.md
+
+**Wave 7**
+- [x] 14-07-PLAN.md
+
+**Wave 8**
+- [x] 14-08-PLAN.md — Isolate the normal portable replay, preflight exact source/parent, then audit one newly authorized host-enabled attempt; its allowance is spent.
+
+**Wave 9**
+- [x] 14-09-PLAN.md — Replace the retired host line ceiling with reporting and recurring fault controls.
+
+**Wave 10** *(immutable halted history; no resumption)*
+- [ ] 14-10-PLAN.md — HALTED after its bounded Task 1: no cause was attributed, no BIOS remedy was applied, and its three-pair cap is spent.
+
+**Wave 11** *(depends on completed 14-09; fresh diagnostic authority required)*
+- [ ] 14-12-PLAN.md — Additive evidence-only investigation: one separately authorized process-observable local observation; no retry, remedy or full workflow.
+
+**Wave 12** *(conditional on attributable 14-12 evidence and fresh exact-remedy authority)*
+- [ ] 14-13-PLAN.md — Apply only a separately approved cause-specific local remedy and prove its property with bounded focused validation; inconclusive observation halts without remediation.
+
+**Wave 13** *(blocked until 14-12/13 succeed; no dependency on halted 14-10 completion)*
+- [ ] 14-11-PLAN.md — Preserve complete source/first-parent local regression and the existing separate actual-host authority checkpoint; consume 14-13's property producer.
 
 **Canonical refs:** [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#phase-14-state-consumers-and-continuation-proof), [feature ownership](research/FEATURES.md), [state/battery pitfalls](research/PITFALLS.md), [hosts §1/3](preparation/HOSTS-AND-INTEGRATION.md#1-libretro-contract), [settled host decisions](preparation/DECISIONS.md#hosts-and-integration), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [lessons](LESSONS.md).
 **UI hint:** no
@@ -236,6 +253,6 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 |---|---|---|---|
 | 12. Player-ready delivery and Playstead bridge | 3/9 | Halted at 12-01 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
-| 14. Proven frontend states and responsive play | 9/12 | Blocked; 14-12 awaits diagnostic authority | - |
+| 14. Proven frontend states and responsive play | 9/13 | Blocked; 14-12 diagnosis and conditional 14-13 remedy require separate authority | - |
 
 Phase 14 verification remains `gaps_found` (19/27 must-haves verified). Run 41656505025 reached the pinned host and passed its battery checks, then failed the existing RetroArch input line-count guard before state-mode checks; FRONT-02/03/04 remain pending. The required local `cmake --workflow --preset ci` gate also exited 8 twice on the same five one-second BIOS timeouts. Plan 14-10's focused command passed and two valid bounded default/serial pairs passed, but neither attributed the earlier failures; process ownership and per-process CPU were unavailable, and the third pair was invalid. Its three-pair cap is spent, the plan is halted, and Plan 14-11 is blocked. No full workflow or registration change followed. The completed [14-08 scheduling plan](phases/14-proven-frontend-states-and-responsive-play/14-08-PLAN.md) used its single authorized push and host-enabled dispatch allowance. No new push, dispatch, rerun, cancel, post-run push, local RetroArch, PR/merge/release or Phase 12 work is authorized. The next useful step is a new bounded local cause investigation in a process-observable environment; until then Phase 14 remains blocked with FRONT-02/03/04 pending. Phase 13 is complete; Phase 12 remains halted at 0/4, unaccepted and unwaived, with its hosted allowances spent.
