@@ -11,9 +11,14 @@
 - Give progress updates when there is new information. When a required update interval arrives during a long wait, use one brief factual line; do not repeat the whole plan or invent progress.
 - Ask for user input only when the answer changes scope, authority, risk, cost, an irreversible action, or a required phase/milestone boundary. Explain the concrete choice and why it matters. Continue routine authorized work and bookkeeping without asking for acknowledgments or exact phrases.
 - Owner preference (2026-10-31): when given a concrete, bounded recommendation, proceed with that recommended scope by default instead of requesting another approval at each internal step. Ask again only when a failed gate requires a changed scope, an unlisted live/remote/identity-bound or irreversible action is introduced, or the work would exceed a stated attempt or allowance cap. This is not open-ended authorization for side effects outside the described scope.
+- Owner preference (2026-11-02): when the owner says to keep going or asks to batch an authorized workflow, carry that scope through dependent GSD steps, implementation, local verification, review and bookkeeping without routine handoffs. Select the full runnable scope instead of requiring wave-by-wave invocations. Keep real dependencies, failed gates, explicit caps, host/CI stops and identity-bound or irreversible authorization boundaries intact.
+- Owner preference (2026-11-03): give one concise recommendation and the exact next command, or say plainly that no command is valid under the current stop. Assume the owner will follow the recommendation; proceed without confirmation for internal steps. Ask only when a serious scope, authority, risk or explicit-cap boundary changes. Avoid workflow jargon, long evidence dumps and multiple command options; link details instead.
+- Owner preference (2026-11-03): never end with "do nothing." Find and take the next safe, authorized action that advances the goal, including independent roadmap work when the current path is blocked. If every path needs new authority, name the exact blocker and give the single recommended decision and command that resumes progress.
 - Preserve an existing safety stop automatically when its cause remains unresolved. A confirmation merely to keep work stopped is unnecessary. Removing redundant confirmation does not authorize live tests, accept risk, renew a budget/window, or start another phase.
 - Record explicit user corrections in durable instructions. Apply these preferences to OpenGSD planning, execution, reviews, progress updates, and final summaries. Keep detailed evidence available without making the user translate process records into takeaways.
 - When authorized work remains and no user action is needed, keep working. Carry planning through implementation, tests and review within the selected phase; stop for a real decision or phase/milestone boundary. Removing an unnecessary confirmation is not a reason to leave the task idle.
+- Halt scope: name the specific prohibited action. A spent host or CI allowance blocks reuse of that allowance; it does not stop independent authorized local work or read-only investigation. Continue that work and give its concrete next action. Never describe a scope-specific stop as a project-wide idle state.
+- Directory handoff: when the next command must run outside the current working directory, name the exact directory and give the `cd <absolute-path>` command immediately before the work command. State explicitly when the command runs in the current directory.
 - At every pause or handoff, state in chat what is happening, the concrete blocker and consequence, your recommended next step, and exactly who acts next. Explicitly say when waiting for the user versus continuing work.
 - Summarize every risk or decision in plain language before asking; make linked documents optional detail. When the user has no strong preference, recommend a concrete path. An uninformed or indifferent response is not risk acceptance.
 - Prefer the least disruptive evidence-supported remedy. For stuck project tests, inspect attributable processes and consider targeted cleanup first; recommend a whole-machine restart only when its necessity and impact are established.
@@ -62,10 +67,13 @@ evidence.
    contract remain blocking wherever they live. Re-plan a gap only with new evidence.
    During GSD execution, or when workflow retries or metadata repairs repeat, follow
    `.planning/preparation/GSD-HANDOFF.md` §3.1 and its bounded fan-out prompt.
-8. **One major OpenGSD step per session, then stop.** Major steps include discuss, plan, execute, phase or
-   milestone management, audit, ship and archive. Report what finished and the exact next major command. A
-   `gsd-debug continue` or other micro-step inside an already authorized scope is not a new major step; carry the
-   approved scope through its listed gates, implementation, controls, review and evidence without routine prompts.
+8. **OpenGSD step boundaries.** Major steps include discuss, plan, execute, phase or milestone management, audit,
+   ship and archive. One major step per session is the default, but an explicit owner request to keep going or batch
+   an already authorized scope overrides that handoff: continue through dependent steps and all runnable waves without
+   requiring another invocation. Report concrete progress and stop only at a real decision boundary, failed gate that
+   requires changed scope, exhausted attempt cap, or an action excluded from approval. A `gsd-debug continue` or other
+   micro-step inside an authorized scope is not a new major step; carry the approved scope through its gates,
+   implementation, controls, review and evidence without routine prompts.
    Before each `gsd-debug continue`, compare `Current Focus` with the checkpoint's latest dated closeout and the
    relevant phase summary/STATE. Each continuation must add evidence, complete an authorized action, or resolve a
    blocker. If the same blocker remains, hand off its exact missing input, consequence, next action and command;

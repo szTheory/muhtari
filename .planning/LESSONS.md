@@ -465,3 +465,10 @@ pass and owned-alias fault controls, full local workflow, hygiene, budget checks
 and bounded independent review pass locally. See the [phase 12 debug record](debug/phase12-packaged-input-tracer.md).
 The hosted descriptor's exact identity and the original RetroArch input cause
 remain unknown; no second hosted attempt is claimed.
+
+## Concise owner handoffs (2026-11-03)
+
+| ID | Symptom and invariant | Fix and evidence | Status |
+|---|---|---|---|
+| MU-GSD-018 | Long, jargon-heavy handoffs with several candidate commands made the owner translate state after the work was complete. A workflow-suggested command can be invalid under an already-used cap. | Reproduced in the Phase 12 closeout: verification was `gaps_found`, execution had zero runnable plans, and the one allowed gap round was spent. Give one short recommendation and its exact valid command; when none is valid, say so and identify the authority needed. Assume the owner follows the recommendation; ask only at a serious scope, authority, risk or explicit-cap boundary. | adopted |
+| MU-GSD-019 | A blocked phase must not leave the owner without a forward path, and a stale branch can make completed work look runnable. | Reproduced 2026-11-03: the current Phase 12 branch still described Phase 13 as next work, but `origin/main`'s roadmap and Phase 13 verification show Phase 13 shipped and Phase 14 pending; Phase 12's host allowance remains spent. Reconcile against `origin/main` and the roadmap before recommending a stop or next phase. Continue independent approved work; if all paths need new authority, give the exact decision and resume command. | adopted |
