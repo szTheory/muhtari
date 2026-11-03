@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
-current_phase_name: GAPS FOUND — HOST EVIDENCE REQUIRED
-status: blocked
-stopped_at: Phase 14 verification found missing actual-host evidence; the one dispatch is spent
-last_updated: "2026-11-03T12:43:44Z"
+current_phase_name: GAPS FOUND — SCHEDULING PLAN PREPARED
+status: planning
+stopped_at: Phase 14 plan 14-08 prepared for validation; prior host allowance remains spent
+last_updated: "2026-11-03T14:00:02Z"
 last_activity: 2026-11-03
 state_head: 496826e22afa5c04ba3a0a25d0995d84edb6ccd3
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 15
+  total_plans: 16
   completed_plans: 15
   percent: 33
 ---
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 verification is gaps_found. Run 41629846188 passed Windows x64/ARM64 and Ubuntu x64 ASan but timed out in the macOS Intel parent baseline, so the quality join failed and RetroArch was skipped. FRONT-02/03/04 remain pending; Phase 12 remains halted.
+Current focus: Phase 14 verification remains gaps_found. Plan 14-08 is prepared for validation under new explicit authority: isolate only the normal portable replay and, after complete local source/immediate-parent gates and review, permit at most one normal push and one fresh host-enabled dispatch. Scheduling efficacy is unproven; FRONT-02/03/04 remain pending. Prior allowances stay spent and Phase 12 remains halted.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — GAPS FOUND
-Plan: 7 of 7
-Status: Blocked on actual pinned-host evidence
-Next action: No host command is valid under the spent allowance. Any further attempt requires a new separately authorized scope after the macOS parent-baseline timeout is addressed.
-Boundary: The one 14-07 dispatch is spent: no retry, rerun, dispatch, local RetroArch launch, PR/merge/release, or post-run push. FRONT-02/03/04 remain pending. Phase 12 remains halted.
+Plan: 8 of 8 prepared; 7 executed
+Status: Plan validation pending; actual pinned-host evidence still absent
+Next action: The orchestrator validates 14-08, then carries its authorized scope through execution and final verification with `$gsd-execute-phase 14` in the current checkout. Planning changes no source and starts no run.
+Boundary: The distinct 14-08 allowance is unused: at most one normal push and one fresh `workflow_dispatch phase14_host=true`, only after every local source/immediate-parent inventory, scheduling, hygiene and review gate passes. The 14-07 allowance remains spent. No second push/dispatch, rerun, cancel, post-run push, local RetroArch, PR/merge/release or Phase 12 work. Any failed, skipped or ambiguous new run exhausts the new allowance. FRONT-02/03/04 remain pending unless actual-host evidence and final verification pass.
 
 ## Preserved Phase 12 position — halt remains binding
 
@@ -132,6 +132,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: FRONT-02, FRONT-03, and FRONT-04 remain pending until fresh actual-host observations exist.
 - [Phase 14]: Run 41629846188 skipped RetroArch after a macOS Intel parent-baseline timeout; FRONT-02/03/04 remain pending and the one dispatch is spent.
 - [Phase 14]: Do not change CI deadlines, topology, or caching from the single macOS Intel baseline timeout.
+- [Phase 14]: The owner separately authorized 14-08's one-test portable RUN_SERIAL scheduling amendment, complete local source/parent preflight and at most one normal push plus one fresh host-enabled dispatch. This does not reset prior allowances or review counters; local Rosetta success did not reproduce hosted slowness or establish causation.
 
 ### Pending Todos
 
@@ -176,7 +177,7 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 - Keep optional Phase 10/11 findings, hardware/PAL fit confidence and HSC stub/unsupported sound limits. Pinned accounting remains 201 unknown/3 skipped of 204; conformance/title screens and voluntary gameplay reports are separate evidence.
 - SEED-007/009/010 inform bounded Phase 12 work; SEED-008 is preferred next candidate. SEED-006 unpromoted; SEED-011–014 retain optional triggers.
 - Owner-requested [browser-player](seeds/SEED-261030-tt4-browser-libretro-player.md) and [optional-interface](seeds/SEED-261030-zk3-emulator-interface.md) ideas are dormant, indexed research with future-session prompts. They start no project or specification, change no active roadmap/acceptance, and include read-only dirty-snapshot Playstead context.
-- Phase 14 actual-host qualification remains pending: the one source-bound workflow run failed upstream and skipped RetroArch before host observations. Do not retry or launch locally under the spent allowance.
+- Phase 14 actual-host qualification remains pending: run 41629846188 failed upstream and skipped RetroArch. Its allowance stays spent. Plan 14-08's separately authorized single new attempt is available only after its complete preflight; no local frontend launch is permitted.
 
 ### Roadmap Evolution
 
@@ -184,11 +185,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T12:43:44Z
-Stopped at: Phase 14 verifier recorded gaps_found after confirming the host job was skipped
+Last session: 2026-11-03T14:00:02Z
+Stopped at: Phase 14 plan 14-08 prepared; awaiting orchestrator plan validation, not user approval
 Resume file: None
-Next separate command: No command is valid under the current stop. A future host attempt requires a new separately authorized, cause-addressed scope; do not reuse run 41629846188.
-Context handoff: Phase 14 verification is complete with gaps_found. Run 41629846188 (https://github.com/szTheory/muhtari/actions/runs/41629846188) passed Windows x64/ARM64 and Ubuntu x64 ASan but timed out in the macOS Intel independent-parent baseline; the required artifact join failed and RetroArch was skipped. FRONT-02/03/04 remain pending, the one dispatch is spent, and Phase 12 remains halted. No owner UAT is needed.
+Next separate command: After the orchestrator validates 14-08, `$gsd-execute-phase 14` runs in the current Phase 14 checkout. No renewed user acknowledgment is needed for routine authorized steps; every remote preflight gate and attempt cap remains binding.
+Context handoff: Plan 14-08 records a new, expressly authorized scheduling hypothesis after run 41629846188 (https://github.com/szTheory/muhtari/actions/runs/41629846188). Current hosted replay passed in 14.60 seconds while parent replay timed out at 28.06 seconds during overlap; local Rosetta observations did not reproduce the slowdown. Change only normal portable RUN_SERIAL, preserving timeout/work, then require full exact-source/immediate-parent local gates before one normal push and one fresh host-enabled dispatch. Neither new allowance has been used. Prior failed history, local ASan unavailability and Phase 12's halt remain; fresh hosted Ubuntu x64 ASan and actual host evidence plus final verification are required. The orchestrator acts next with plan validation and authorized execution; no user input or UAT is pending.
 
 ## Deferred Items
 
