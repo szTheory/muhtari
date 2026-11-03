@@ -24,6 +24,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <errno.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
 
 #include "internal.h"
 #include "palette.h"
@@ -2904,8 +2910,375 @@ pal_cleanup:
     return failed;
 }
 
+/* The owned frontend fixture puts "MUHT" at $2300 and its little-endian
+   committed frame counter at $2304. Its display is lib.s's 3x5 hex font at
+   the existing battery comparator's value field (x=40, row=2). HSC is the
+   complete, unformatted 2048-byte SRAM image: FF except at offsets 256-257.
+   These expectations come from frontend-states.s, lib.s and the HSC contract
+   in docs/hardware/cartridge.md; none is learned from captured output. */
+#define FRONTEND_MARKER 0x2300u
+#define FRONTEND_COUNTER 0x2304u
+#define FRONTEND_MAP 0x1811u
+#define FRONTEND_HSC_BYTES 2048u
+#define FRONTEND_HSC_COUNTER 0x100u
+#define FRONTEND_PIXELS (320u * 242u)
+#define FRONTEND_MAX_PROGRESS 64u
+
+static const uint8_t frontend_marker[4] = {'M', 'U', 'H', 'T'};
+static const uint8_t frontend_hex[16][5] = {
+    {7, 5, 5, 5, 7}, {2, 6, 2, 2, 7}, {7, 1, 7, 4, 7}, {7, 1, 7, 1, 7},
+    {5, 5, 7, 1, 1}, {7, 4, 7, 1, 7}, {7, 4, 7, 5, 7}, {7, 1, 1, 1, 1},
+    {7, 5, 7, 5, 7}, {7, 5, 7, 1, 7}, {7, 5, 7, 5, 5}, {6, 5, 6, 5, 6},
+    {7, 4, 4, 4, 7}, {6, 5, 5, 5, 6}, {7, 4, 7, 4, 7}, {7, 4, 7, 4, 4}};
+
+static const char *frontend_out;
+
+static uint16_t frontend_value(const muhtari *m)
+{
+    return (uint16_t)(muhtari__peek(m, FRONTEND_COUNTER) |
+                      ((uint16_t)muhtari__peek(m, FRONTEND_COUNTER + 1u) << 8));
+}
+
+static int frontend_check_identity(const muhtari *m, uint16_t expected)
+{
+    for (unsigned i = 0u; i < sizeof frontend_marker; i++) {
+        if (muhtari__peek(m, (uint16_t)(FRONTEND_MARKER + i)) != frontend_marker[i]) {
+            fprintf(stderr, "frontend progress: marker byte %u at $%04X is %02X, expected %02X\n", i,
+                    FRONTEND_MARKER + i,
+                    (unsigned)muhtari__peek(m, (uint16_t)(FRONTEND_MARKER + i)),
+                    (unsigned)frontend_marker[i]);
+            return 1;
+        }
+    }
+    uint16_t got = frontend_value(m);
+    if (got != expected) {
+        fprintf(stderr, "frontend progress: RAM counter is %04X, expected %04X\n", got, expected);
+        return 1;
+    }
+    return 0;
+}
+
+static int frontend_check_hsc(const muhtari_battery_info *battery, uint16_t expected)
+{
+    if (battery->data == NULL || battery->bytes != FRONTEND_HSC_BYTES || battery->hsc_attached != 1u) {
+        fprintf(stderr, "frontend progress: HSC span is %zu bytes, attached=%u; expected 2048 attached\n",
+                battery->bytes, battery->hsc_attached);
+        return 1;
+    }
+    for (size_t i = 0u; i < FRONTEND_HSC_BYTES; i++) {
+        uint8_t want = i == FRONTEND_HSC_COUNTER     ? (uint8_t)expected
+                       : i == FRONTEND_HSC_COUNTER + 1u ? (uint8_t)(expected >> 8)
+                                                       : 0xFFu;
+        if (battery->data[i] != want) {
+            fprintf(stderr, "frontend progress: HSC byte %zu is %02X, expected %02X for %04X\n", i,
+                    (unsigned)battery->data[i], (unsigned)want, expected);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int frontend_path(char *path, size_t capacity, const char *name)
+{
+    int n = snprintf(path, capacity, "%s/%s", frontend_out, name);
+    if (n < 0 || (size_t)n >= capacity) {
+        fprintf(stderr, "frontend progress: output path is too long\n");
+        return 1;
+    }
+    return 0;
+}
+
+static int frontend_write_bytes(const char *name, const uint8_t *bytes, size_t n)
+{
+    char path[4096];
+    if (frontend_path(path, sizeof path, name))
+        return 1;
+    FILE *f = fopen(path, "wb");
+    if (f == NULL) {
+        fprintf(stderr, "frontend progress: cannot write %s\n", name);
+        return 1;
+    }
+    int failed = fwrite(bytes, 1u, n, f) != n;
+    failed |= fclose(f) != 0;
+    return failed;
+}
+
+static void frontend_expected_picture(uint16_t value, uint8_t *pixels)
+{
+    memset(pixels, 0, FRONTEND_PIXELS);
+    for (unsigned digit = 0u; digit < 4u; digit++) {
+        unsigned nibble = (value >> (12u - digit * 4u)) & 15u;
+        for (unsigned y = 0u; y < 8u; y++) {
+            for (unsigned x = 0u; x < 8u; x++) {
+                int on = y >= 1u && y <= 5u && x < 6u &&
+                         (frontend_hex[nibble][y - 1u] & (4u >> (x / 2u))) != 0u;
+                if (on)
+                    pixels[(26u + y) * 320u + 40u + digit * 8u + x] = 0x0Fu;
+            }
+        }
+    }
+}
+
+static int frontend_check_picture(uint16_t value, const uint8_t *pixels)
+{
+    uint8_t *expected = (uint8_t *)malloc(FRONTEND_PIXELS);
+    if (expected == NULL)
+        return 1;
+    frontend_expected_picture(value, expected);
+    int failed = 0;
+    for (size_t i = 0u; i < FRONTEND_PIXELS; i++) {
+        if (pixels[i] != expected[i]) {
+            fprintf(stderr, "frontend progress: picture %04X differs at (%zu,%zu): %02X, expected %02X\n",
+                    value, i % 320u, i / 320u, (unsigned)pixels[i], (unsigned)expected[i]);
+            failed = 1;
+            break;
+        }
+    }
+    free(expected);
+    return failed;
+}
+
+static int frontend_write_bmp(const char *name, const uint8_t *pixels)
+{
+    char path[4096];
+    if (frontend_path(path, sizeof path, name))
+        return 1;
+    FILE *f = fopen(path, "wb");
+    if (f == NULL) {
+        fprintf(stderr, "frontend progress: cannot write %s\n", name);
+        return 1;
+    }
+    uint8_t header[54] = {0};
+    static const unsigned offsets[] = {2u, 10u, 14u, 18u, 22u};
+    static const uint32_t values[] = {54u + FRONTEND_PIXELS * 3u, 54u, 40u, 320u, 0u - 242u};
+    header[0] = 'B';
+    header[1] = 'M';
+    header[26] = 1u;
+    header[28] = 24u;
+    for (unsigned i = 0u; i < sizeof offsets / sizeof offsets[0]; i++)
+        for (unsigned b = 0u; b < 4u; b++)
+            header[offsets[i] + b] = (uint8_t)(values[i] >> (8u * b));
+    int failed = fwrite(header, 1u, sizeof header, f) != sizeof header;
+    for (size_t i = 0u; i < FRONTEND_PIXELS && !failed; i++) {
+        uint32_t color = muhtari__palette_rgb(pixels[i]);
+        uint8_t bgr[3] = {(uint8_t)color, (uint8_t)(color >> 8), (uint8_t)(color >> 16)};
+        failed |= fwrite(bgr, 1u, sizeof bgr, f) != sizeof bgr;
+    }
+    failed |= fclose(f) != 0;
+    return failed;
+}
+
+static void frontend_set_progress(muhtari *m, uint16_t value, muhtari_battery_info *battery)
+{
+    for (unsigned i = 0u; i < sizeof frontend_marker; i++)
+        m->ram[FRONTEND_MARKER - 0x1800u + i] = frontend_marker[i];
+    m->ram[FRONTEND_COUNTER - 0x1800u] = (uint8_t)value;
+    m->ram[FRONTEND_COUNTER - 0x1800u + 1u] = (uint8_t)(value >> 8);
+    /* Hpos 8 offsets the map 16 pixels; cell three begins at screen x=40. */
+    m->ram[FRONTEND_MAP - 0x1800u] = (uint8_t)((value >> 12) & 15u);
+    m->ram[FRONTEND_MAP - 0x1800u + 1u] = (uint8_t)((value >> 8) & 15u);
+    m->ram[FRONTEND_MAP - 0x1800u + 2u] = (uint8_t)((value >> 4) & 15u);
+    m->ram[FRONTEND_MAP - 0x1800u + 3u] = (uint8_t)(value & 15u);
+    memset(battery->data, 0xFF, battery->bytes);
+    battery->data[FRONTEND_HSC_COUNTER] = (uint8_t)value;
+    battery->data[FRONTEND_HSC_COUNTER + 1u] = (uint8_t)(value >> 8);
+}
+
+static int frontend_save_raw(const muhtari_battery_info *battery, const char *name,
+                             uint16_t expected)
+{
+    if (frontend_check_hsc(battery, expected))
+        return 1;
+    return frontend_write_bytes(name, battery->data, battery->bytes);
+}
+
+static int frontend_run_one(muhtari *m, muhtari_battery_info *battery, uint16_t before,
+                            uint16_t expected, uint8_t *pixels)
+{
+    if (frontend_check_identity(m, before) || frontend_check_hsc(battery, before))
+        return 1;
+    muhtari_frame frame = {0};
+    frame.size = (uint32_t)sizeof frame;
+    frame.video = pixels;
+    frame.video_pitch = 320u;
+    if (muhtari_run_frame(m, &frame) != MUHTARI_STATUS_OK) {
+        fprintf(stderr, "frontend progress: muhtari_run_frame failed\n");
+        return 1;
+    }
+    int failed = frontend_check_identity(m, expected) || frontend_check_hsc(battery, expected);
+    int picture_failed = frontend_check_picture(expected, pixels);
+    if (picture_failed)
+        (void)frontend_write_bmp("picture-mismatch.bmp", pixels);
+    return failed || picture_failed;
+}
+
+static int frontend_make_directory(const char *path)
+{
+#ifdef _WIN32
+    int rc = _mkdir(path);
+#else
+    int rc = mkdir(path, 0777);
+#endif
+    if (rc != 0 && errno != EEXIST) {
+        fprintf(stderr, "frontend progress: cannot create output directory\n");
+        return 1;
+    }
+    return 0;
+}
+
+static int frontend_progress(const char *rom_path, const char *out)
+{
+    frontend_out = out;
+    if (out[0] == '\0' || frontend_make_directory(out))
+        return 2;
+    size_t image_size = 0u;
+    uint8_t *image = read_file(rom_path, &image_size);
+    uint8_t *pixels = (uint8_t *)malloc(FRONTEND_PIXELS);
+    uint8_t *replay = (uint8_t *)malloc(FRONTEND_PIXELS);
+    muhtari_config cfg = {0};
+    muhtari_media media = {0};
+    muhtari_cart_info cart = {0};
+    muhtari_battery_info battery = {0};
+    muhtari *m = NULL;
+    uint8_t *state = NULL;
+    uint8_t replay_raw[FRONTEND_HSC_BYTES];
+    size_t state_size = 0u;
+    int failed = 1;
+    cfg.size = (uint32_t)sizeof cfg;
+    cfg.allocator.alloc = diag_alloc;
+    cfg.allocator.free = diag_free;
+    media.size = (uint32_t)sizeof media;
+    media.image = image;
+    media.image_size = image_size;
+    cart.size = (uint32_t)sizeof cart;
+    battery.size = (uint32_t)sizeof battery;
+    if (image == NULL || pixels == NULL || replay == NULL ||
+        muhtari_probe(image, image_size, &cart) != MUHTARI_STATUS_OK ||
+        cart.board != MUHTARI_BOARD_LINEAR || muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK ||
+        muhtari_load(m, &media) != MUHTARI_STATUS_OK ||
+        muhtari_get_battery(m, &battery) != MUHTARI_STATUS_OK || battery.hsc_attached != 1u ||
+        battery.bytes != FRONTEND_HSC_BYTES) {
+        fprintf(stderr, "frontend progress: fixture load or HSC setup failed\n");
+        goto done;
+    }
+    for (size_t i = 0u; i < FRONTEND_HSC_BYTES; i++) {
+        if (battery.data[i] != 0xFFu) {
+            fprintf(stderr, "frontend progress: initial HSC byte %zu is not FF\n", i);
+            goto done;
+        }
+    }
+    if (frontend_write_bytes("initial.raw", battery.data, battery.bytes))
+        goto done;
+
+    /* Fast boot's first interval is 8,190 ticks to VBLANK. This partial call
+       executes reset and reaches the first VBLANK; startup remains at zero. */
+    muhtari_frame first = {0};
+    first.size = (uint32_t)sizeof first;
+    if (muhtari_run_frame(m, &first) != MUHTARI_STATUS_OK ||
+        frontend_check_identity(m, 0u) || frontend_check_hsc(&battery, 0u))
+        goto done;
+
+    frontend_set_progress(m, 0u, &battery);
+    if (frontend_check_identity(m, 0u) || frontend_check_hsc(&battery, 0u) ||
+        frontend_save_raw(&battery, "progress-0000.raw", 0u))
+        goto done;
+    state_size = muhtari_state_size(m);
+    state = state_size != 0u ? (uint8_t *)malloc(state_size) : NULL;
+    if (state == NULL || muhtari_save_state(m, state, state_size) != MUHTARI_STATUS_OK)
+        goto done;
+
+    if (frontend_run_one(m, &battery, 0u, 0u, pixels) ||
+        frontend_write_bmp("progress-0000.bmp", pixels) ||
+        frontend_save_raw(&battery, "committed-0000.raw", 0u))
+        goto done;
+    if (muhtari_save_state(m, state, state_size) != MUHTARI_STATUS_OK)
+        goto done;
+
+    if (frontend_run_one(m, &battery, 0u, 1u, pixels) ||
+        frontend_write_bmp("progress-0001.bmp", pixels) ||
+        frontend_save_raw(&battery, "committed-0001.raw", 1u))
+        goto done;
+    memcpy(replay, pixels, FRONTEND_PIXELS);
+    memcpy(replay_raw, battery.data, sizeof replay_raw);
+    if (muhtari_load_state(m, state, state_size) != MUHTARI_STATUS_OK ||
+        frontend_check_identity(m, 0u) || frontend_check_hsc(&battery, 0u) ||
+        frontend_run_one(m, &battery, 0u, 1u, pixels) ||
+        memcmp(replay, pixels, FRONTEND_PIXELS) != 0 ||
+        memcmp(replay_raw, battery.data, sizeof replay_raw) != 0 ||
+        frontend_write_bmp("replay-0001.bmp", pixels) ||
+        frontend_save_raw(&battery, "replay.raw", 1u)) {
+        fprintf(stderr, "frontend progress: restore/replay did not reproduce progress 1\n");
+        goto done;
+    }
+
+    for (uint16_t value = 2u; value <= FRONTEND_MAX_PROGRESS; value++) {
+        char name[40];
+        if (frontend_run_one(m, &battery, (uint16_t)(value - 1u), value, pixels))
+            goto done;
+        snprintf(name, sizeof name, "progress-%04X.bmp", (unsigned)value);
+        if (frontend_write_bmp(name, pixels))
+            goto done;
+        snprintf(name, sizeof name, "committed-%04X.raw", (unsigned)value);
+        if (frontend_save_raw(&battery, name, value))
+            goto done;
+    }
+
+    frontend_set_progress(m, 0x00FFu, &battery);
+    if (frontend_run_one(m, &battery, 0x00FFu, 0x0100u, pixels) ||
+        frontend_write_bmp("progress-0100.bmp", pixels) ||
+        frontend_save_raw(&battery, "committed-0100.raw", 0x0100u))
+        goto done;
+    frontend_set_progress(m, 0xFFFFu, &battery);
+    if (frontend_run_one(m, &battery, 0xFFFFu, 0u, pixels) ||
+        frontend_write_bmp("progress-0000-wrap.bmp", pixels) ||
+        frontend_save_raw(&battery, "committed-0000.raw", 0u))
+        goto done;
+    printf("frontend progress: startup, 0000..0040, 00FF carry, FFFF wrap, HSC and save/restore/replay PASS\n");
+    failed = 0;
+done:
+    free(state);
+    free(pixels);
+    free(replay);
+    muhtari_destroy(m);
+    free(image);
+    return failed;
+}
+
+static int frontend_progress_media(const char *path, uint32_t count)
+{
+    size_t n = 0u;
+    uint8_t *bytes = read_file(path, &n);
+    if (bytes == NULL)
+        return 1;
+    int failed = n != FRONTEND_HSC_BYTES;
+    for (size_t i = 0u; i < FRONTEND_HSC_BYTES && !failed; i++) {
+        uint8_t want = i == FRONTEND_HSC_COUNTER     ? (uint8_t)count
+                       : i == FRONTEND_HSC_COUNTER + 1u ? (uint8_t)(count >> 8)
+                                                       : 0xFFu;
+        if (bytes[i] != want) {
+            fprintf(stderr, "frontend media: byte %zu is %02X, expected %02X\n", i,
+                    (unsigned)bytes[i], (unsigned)want);
+            failed = 1;
+        }
+    }
+    if (n != FRONTEND_HSC_BYTES)
+        fprintf(stderr, "frontend media: length %zu, expected 2048\n", n);
+    if (!failed)
+        printf("frontend media: all 2048 HSC bytes match %04X\n", count);
+    free(bytes);
+    return failed;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc == 4 && strcmp(argv[1], "--frontend-progress") == 0)
+        return frontend_progress(argv[2], argv[3]);
+    if (argc == 4 && strcmp(argv[1], "--frontend-progress-media") == 0) {
+        struct range count;
+        if (parse_range(argv[3], &count, 0) || count.lo != count.hi || count.lo > 65535u)
+            return 2;
+        return frontend_progress_media(argv[2], count.lo);
+    }
     if ((argc == 6 || argc == 7) && strcmp(argv[1], "--expansion-refuse") == 0) {
         expansion_case = 1;
         expansion_profile =
