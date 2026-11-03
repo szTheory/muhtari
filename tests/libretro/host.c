@@ -2718,7 +2718,17 @@ static void state_frame(muhtari *m, uint32_t buttons, int reference_slot, bool c
     CHECK_EQ_U64(muhtari_get_info(m, &info), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(info.width, W);
     CHECK_EQ_U64(info.height, 242u);
+    CHECK_EQ_U64(info.fps_num, 39375000u);
+    CHECK_EQ_U64(info.fps_den, 656711u);
+    CHECK_EQ_U64(info.par_num, 6u);
+    CHECK_EQ_U64(info.par_den, 7u);
+    CHECK_EQ_U64(info.sample_rate_num, 48000u);
+    CHECK_EQ_U64(info.sample_rate_den, 1u);
     CHECK_EQ_U64(p_serialize_size(), muhtari_state_size(m));
+    struct retro_system_av_info av = {0};
+    p_get_system_av_info(&av);
+    CHECK_EQ_DBL(av.timing.fps, 39375000.0 / 656711.0);
+    CHECK_EQ_DBL(av.timing.sample_rate, 48000.0);
     if (reference_slot >= 0 && reference_slot < 2) {
         unsigned slot = (unsigned)reference_slot;
         if (capture) {
@@ -2931,14 +2941,114 @@ static void case_state(void)
 
     savestate_context_available = true;
     savestate_context = RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
+    muhtari_battery_info refused_before = {0};
+    refused_before.size = (uint32_t)sizeof refused_before;
+    CHECK_EQ_U64(muhtari_get_battery(m, &refused_before), MUHTARI_STATUS_OK);
+    uint8_t *refused_bytes = (uint8_t *)malloc(refused_before.bytes);
+    CHECK(refused_bytes != NULL);
+    if (refused_bytes != NULL)
+        memcpy(refused_bytes, refused_before.data, refused_before.bytes);
     CHECK_EQ_U64(p_serialize_size(), 0u);
     memset(again, 0x5A, bytes + 16u);
     CHECK(!p_serialize(again, bytes + 16u));
     for (size_t i = 0u; i < bytes + 16u; i++)
         CHECK_EQ_U64(again[i], 0x5Au);
     CHECK(!p_unserialize(saved, bytes));
+    muhtari_battery_info refused_after = {0};
+    refused_after.size = (uint32_t)sizeof refused_after;
+    CHECK_EQ_U64(muhtari_get_battery(m, &refused_after), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(refused_after.generation, refused_before.generation);
+    CHECK(refused_bytes != NULL && memcmp(refused_after.data, refused_bytes, refused_after.bytes) == 0);
+    free(refused_bytes);
     savestate_context_available = false;
     state_check_current(m, saved, bytes);
+
+    /* Three backwards restores replay the same two-frame input sequence from
+       one committed point, covering audio cadence as well as frame pixels. */
+    savestate_context_available = true;
+    savestate_context = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY;
+    for (unsigned cycle = 0u; cycle < 3u; cycle++) {
+        state_frame(m, replay_buttons[0], 0, false);
+        state_frame(m, replay_buttons[1], 1, false);
+        muhtari_battery_info branch_battery = {0};
+        branch_battery.size = (uint32_t)sizeof branch_battery;
+        CHECK_EQ_U64(muhtari_get_battery(m, &branch_battery), MUHTARI_STATUS_OK);
+        bool battery_changed = memcmp(branch_battery.data, saved_battery, branch_battery.bytes) != 0;
+        uint64_t branch_generation = branch_battery.generation;
+        CHECK(p_unserialize(saved, bytes));
+        CHECK_EQ_U64(muhtari_load_state(m, saved, bytes), MUHTARI_STATUS_OK);
+        CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == module_battery);
+        state_check_battery(m, module_battery);
+        muhtari_battery_info rewound_battery = {0};
+        rewound_battery.size = (uint32_t)sizeof rewound_battery;
+        CHECK_EQ_U64(muhtari_get_battery(m, &rewound_battery), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(rewound_battery.generation,
+                     battery_changed ? branch_generation + 1u : branch_generation);
+        CHECK_EQ_U64(muhtari_load_state(m, saved, bytes), MUHTARI_STATUS_OK);
+        muhtari_battery_info equal_battery = {0};
+        equal_battery.size = (uint32_t)sizeof equal_battery;
+        CHECK_EQ_U64(muhtari_get_battery(m, &equal_battery), MUHTARI_STATUS_OK);
+        CHECK_EQ_U64(equal_battery.generation, rewound_battery.generation);
+    }
+
+    /* One same-instance speculative frame must not replace the committed
+       battery bytes. The independent library reference is restored below so
+       this boundary compares the loaded module with its owning API. */
+    muhtari_battery_info committed_battery = {0};
+    committed_battery.size = (uint32_t)sizeof committed_battery;
+    CHECK_EQ_U64(muhtari_get_battery(m, &committed_battery), MUHTARI_STATUS_OK);
+    memcpy(saved_battery, committed_battery.data, committed_battery.bytes);
+    CHECK_EQ_U64(muhtari_save_state(m, saved, bytes), MUHTARI_STATUS_OK);
+    CHECK(p_serialize(current, bytes));
+    CHECK(memcmp(saved, current, bytes) == 0);
+    uint64_t committed_generation = committed_battery.generation;
+    savestate_context_available = true;
+    savestate_context = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE;
+    state_frame(m, replay_buttons[0], 0, true);
+
+    muhtari_battery_info speculative_battery = {0};
+    speculative_battery.size = (uint32_t)sizeof speculative_battery;
+    CHECK_EQ_U64(muhtari_get_battery(m, &speculative_battery), MUHTARI_STATUS_OK);
+    uint64_t speculative_generation = speculative_battery.generation;
+    CHECK(speculative_generation >= committed_generation);
+    uint8_t speculative_byte = saved_battery[0] ^ 0x5Au;
+    speculative_battery.data[0] = speculative_byte;
+    module_battery[0] = speculative_byte;
+    CHECK(p_unserialize(saved, bytes));
+    /* RED: p_unserialize restored the module, but the independent library
+       must also return to the committed point before its raw bytes are judged. */
+    CHECK(memcmp(module_battery, speculative_battery.data, speculative_battery.bytes) == 0);
+    CHECK_EQ_U64(muhtari_load_state(m, saved, bytes), MUHTARI_STATUS_OK);
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == module_battery);
+    CHECK(memcmp(module_battery, saved_battery, committed_battery.bytes) == 0);
+    state_check_battery(m, module_battery);
+
+    muhtari_battery_info restored_battery = {0};
+    restored_battery.size = (uint32_t)sizeof restored_battery;
+    CHECK_EQ_U64(muhtari_get_battery(m, &restored_battery), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(restored_battery.generation, speculative_generation + 1u);
+    state_frame(m, replay_buttons[0], 0, false);
+    CHECK_EQ_U64(muhtari_save_state(m, current, bytes), MUHTARI_STATUS_OK);
+    CHECK(p_serialize(again, bytes));
+    CHECK(memcmp(current, again, bytes) == 0);
+    state_check_current(m, current, bytes);
+    muhtari_battery_info before_equal_restore = {0};
+    before_equal_restore.size = (uint32_t)sizeof before_equal_restore;
+    CHECK_EQ_U64(muhtari_get_battery(m, &before_equal_restore), MUHTARI_STATUS_OK);
+    bool replay_changed_battery =
+        memcmp(before_equal_restore.data, saved_battery, before_equal_restore.bytes) != 0;
+    CHECK(p_unserialize(saved, bytes));
+    CHECK_EQ_U64(muhtari_load_state(m, saved, bytes), MUHTARI_STATUS_OK);
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == module_battery);
+    state_check_battery(m, module_battery);
+    muhtari_battery_info equal_speculative_restore = {0};
+    equal_speculative_restore.size = (uint32_t)sizeof equal_speculative_restore;
+    CHECK_EQ_U64(muhtari_get_battery(m, &equal_speculative_restore), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(equal_speculative_restore.generation,
+                 before_equal_restore.generation + (replay_changed_battery ? 1u : 0u));
+    state_check_current(m, saved, bytes);
+    savestate_context_available = false;
+    savestate_context = RETRO_SAVESTATE_CONTEXT_NORMAL;
 
     for (unsigned i = 0u; i < 2u; i++)
         state_frame(m, replay_buttons[i], (int)i, false);
