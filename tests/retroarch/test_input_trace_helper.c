@@ -528,8 +528,8 @@ int main(int argc, char **argv)
     close(sync_pipe[0]);
 
     char raw_release[4096], capture_release[4096];
-    REQUIRE(snprintf(raw_release, sizeof raw_release, "%s/raw-release", argv[1]) > 0);
-    REQUIRE(mkdir(raw_release, 0700) == 0 && pipe(sync_pipe) == 0);
+    REQUIRE(snprintf(raw_release, sizeof raw_release, "%s/helper-release-XXXXXX", argv[1]) > 0);
+    REQUIRE(mkdtemp(raw_release) != NULL && pipe(sync_pipe) == 0);
     REQUIRE(snprintf(capture_release, sizeof capture_release, "%s/capture.png", raw_release) > 0);
     char release_sync_fd[32];
     snprintf(release_sync_fd, sizeof release_sync_fd, "%d", sync_pipe[1]);
