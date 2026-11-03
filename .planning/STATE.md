@@ -6,9 +6,9 @@ current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: verifying
 stopped_at: Completed 14-05-PLAN.md
-last_updated: "2026-11-03T06:03:46.747Z"
+last_updated: "2026-11-03T06:05:06.673Z"
 last_activity: 2026-11-03
-state_head: 1bb568b32175f9869738004c66435af34638eabd
+state_head: 2bd74803cd316e97d40d236207a9aee6fdaabc1d
 progress:
   total_phases: 3
   completed_phases: 1
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 plans 14-01 through 14-04 are complete; plan 14-05 remains for the source-bound pinned-host evidence. Phase 13 is complete on `phase/13-portable-save-load-across-three-interfaces`. Phase 12 remains halted at accepted 0/4 with its input-proof cause unresolved and all hosted allowances spent. Do not resume it or use those allowances.
+Current focus: Phase 14 plans 14-01 through 14-05 are complete; the single source-bound host run skipped RetroArch, leaving FRONT-02/03/04 pending. Phase 12 remains halted with all allowances spent.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — EXECUTING
 Plan: 5 of 5
 Status: Phase complete — ready for verification
-Next action: From the Phase 14 worktree, run `$gsd-execute-phase 14` to continue with plan 14-05. Its source-bound host attempt and any CI action remain subject to that plan's gates. No Phase 12 plan or allowance may be resumed.
-Boundary: Phase 13's native, PowerPC/QEMU, complete normal/release, equality and ASan/UBSan gates passed locally and are documented in its verification/resource evidence. Phase 14 plan 14-04's selected local tests passed; it launched no RetroArch process or CI dispatch. Phase 12 remains halted at accepted 0/4 with causes unresolved and all hosted allowances spent. The Phase 12 allowance remains unavailable.
+Next action: From the Phase 14 worktree, run $gsd-verify-work 14 to assess the unresolved host outcome and remaining phase requirements. Do not dispatch or launch RetroArch again under this spent allowance.
+Boundary: Phase 13 verification remains documented. Phase 14 plans 14-01 through 14-05 are complete; the final local checks passed, but the one source-bound workflow run failed upstream before RetroArch, leaving FRONT-02/03/04 pending (see 14-05-SUMMARY.md and 14-RESOURCE-EVIDENCE.md). Phase 12 remains halted at 0/4 with all hosted allowances spent and unavailable.
 
 ## Preserved Phase 12 position — halt remains binding
 
