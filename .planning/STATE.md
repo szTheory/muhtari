@@ -4,12 +4,11 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
-status: blocked
+status: executing
 stopped_at: "Phase 12 discussion refreshed; trace observability defect identified; accepted remains 0/4. Next separate command: $gsd-plan-phase 12 --gaps for local diagnostic repair and controls; no hosted action is authorized."
-last_updated: "2026-11-03T01:22:32.808Z"
+last_updated: "2026-11-03T01:23:56.009Z"
 last_activity: 2026-11-02
-last_activity_desc: "Phase 13 shipped as PR #42; Phase 12 context and lesson updated; local diagnostic repair planning next"
-state_head: 2f768de0b3c21ad9995bba53c3aefed3a3a926f5
+state_head: 27ae140b53935548c52c31b19a2c2d7525ef890b
 progress:
   total_phases: 3
   completed_phases: 1
@@ -29,9 +28,9 @@ Current focus: Phase 13 shipped in PR #42 and v0.11.1. Phase 12 is current and r
 
 ## Current Position
 
-Phase: 12 (Player-ready delivery and Playstead bridge) — READY TO EXECUTE
-Plan: 0 of 4 acceptance plans accepted; 12-01 remains blocked on actual-host input proof
-Status: blocked
+Phase: 12 (Player-ready delivery and Playstead bridge) — EXECUTING
+Plan: 2 of 9
+Status: Executing Phase 12
 Next separate command: $gsd-execute-phase 12 --gaps-only
 Boundary: The previous host allowance is spent and cannot be reused. Local diagnosis/planning continue; no new RetroArch or CI run, publication, retry, timeout change or allowance renewal is authorized.
 
@@ -82,7 +81,7 @@ linked outcome; earlier unchanged-source preservation checks are historical.
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
 Plan: 0 of 4 acceptance plans accepted; gap plans 12-05 and 12-06 executed with failed hosted evidence; 12-09 complete; 12-07 remains halted after a non-reproducing OpenBIOS diagnostic; 12-08 is superseded for scheduling
 Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 remain blocked
-Last activity: 2026-11-01 — Phase 13 discussion captured with delegated recommendations; ready for separate planning; Phase 12 halt and spent allowances preserved
+Last activity: 2026-11-02
 Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
