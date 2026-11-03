@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
-current_phase_name: Proven frontend states and responsive play
+current_phase_name: AWAITING FINAL VERIFIER
 status: executing
-stopped_at: 14-VERIFICATION.md — gaps_found
-last_updated: "2026-11-03T11:15:14.185Z"
+stopped_at: Completed 14-07-PLAN.md; final Phase 14 verifier remains
+last_updated: "2026-11-03T12:36:06.910Z"
 last_activity: 2026-11-03
-state_head: df3988a2341b29e42fd50d6da988c1b778de06d7
+state_head: 496826e22afa5c04ba3a0a25d0995d84edb6ccd3
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 15
-  completed_plans: 14
+  completed_plans: 15
   percent: 33
 ---
 
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 plans 14-01 through 14-06 are complete. Local CI and hygiene pass; the hosted run failed Windows state-test builds, and verification found 15/21 truths. FRONT-02/03/04 remain pending. Phase 12 remains halted with all allowances spent.
+Current focus: Plan 14-07 is executed. Run 41629846188 passed Windows x64/ARM64 and Ubuntu x64 ASan but failed the macOS Intel parent baseline, so RetroArch was skipped. FRONT-02/03/04 remain pending; Phase 12 remains halted.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — READY TO EXECUTE
-Plan: 6 of 7
+Phase: 14 (Proven frontend states and responsive play) — AWAITING FINAL VERIFIER
+Plan: 7 of 7
 Status: Executing
-Next action: Run $gsd-execute-phase 14; plan 14-07 has exactly one normal push and one dispatch authorized.
-Boundary: Phase 14 verification found 15/21 truths. Run 41618546347 failed Windows x64 and ARM64 builds on MSVC C4100 for unused self_path parameters; the required artifact join failed and RetroArch was skipped, so FRONT-02/03/04 remain pending. Local CI, hygiene, and hosted Ubuntu x64 ASan passed; local macOS arm64 ASan was unavailable because processes hung before main. No retry, rerun, RetroArch launch, or post-run push is authorized. Phase 12 remains halted with all allowances spent.
+Next action: The orchestrator runs the final Phase 14 verifier using the 14-07 summary and run 41629846188; keep FRONT-02/03/04 pending unless qualifying host evidence exists.
+Boundary: The one 14-07 dispatch is spent: no retry, rerun, local RetroArch launch, or post-run push. FRONT-02/03/04 remain pending. Phase 12 remains halted.
 
 ## Preserved Phase 12 position — halt remains binding
 
@@ -100,6 +100,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 | Phase 14 P03 | 29min | 2 tasks | 8 files |
 | Phase 14 P04 | 14min | 3 tasks | 7 files |
 | Phase 14 P05 | 29min | 2 tasks | 10 files |
+| Phase 14 P07 | 57min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,8 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: Keep FRONT-02, FRONT-03, and FRONT-04 pending until plan 14-05 reviews source-bound pinned-host evidence.
 - [Phase 14]: The single Phase 14 source-bound host dispatch is spent; its RetroArch job skipped, so no retry or frontend launch follows.
 - [Phase 14]: FRONT-02, FRONT-03, and FRONT-04 remain pending until fresh actual-host observations exist.
+- [Phase 14]: Run 41629846188 skipped RetroArch after a macOS Intel parent-baseline timeout; FRONT-02/03/04 remain pending and the one dispatch is spent.
+- [Phase 14]: Do not change CI deadlines, topology, or caching from the single macOS Intel baseline timeout.
 
 ### Pending Todos
 
@@ -181,11 +184,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T06:03:46.667Z
-Stopped at: Completed 14-05-PLAN.md
+Last session: 2026-11-03T12:34:58.637Z
+Stopped at: Completed 14-07-PLAN.md; final Phase 14 verifier remains
 Resume file: None
-Next separate command: From the Phase 14 worktree, run `$gsd-execute-phase 14` to continue with plan 14-05. Do not run any Phase 12 plan or reuse its spent hosted allowance.
-Context handoff: Phase 14 plans 14-01 through 14-04 are complete. Plan 14-04 adds local proof for three rewind reversals, active one-frame run-ahead, and explicit HSC persistence, plus deterministic metadata proof gates. The combined selected local checks pass. The environment denied the local sandbox helper preflight in plan 14-03, so the host case remains disabled until plan 14-05 proves hosted containment before its single source-bound invocation. No RetroArch launch, CI dispatch, push, or Phase 12 input attempt occurred. Continue with plan 14-05 in this Phase 14 worktree; Phase 12 remains halted at 0/4 with every hosted allowance spent.
+Next separate command: The orchestrator performs final Phase 14 verification using 14-07-SUMMARY.md; no new host command is valid under the spent allowance.
+Context handoff: Plan 14-07 is locally complete. Run 41629846188 passed both Windows builds and Ubuntu x64 ASan, but the macOS Intel independent-parent baseline timed out; required artifact join failed and RetroArch was skipped. FRONT-02/03/04 remain pending, the one dispatch is spent, and Phase 12 remains halted. Orchestrator final verification is next.
 
 ## Deferred Items
 
