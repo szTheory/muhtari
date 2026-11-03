@@ -5,8 +5,8 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: blocked
-stopped_at: Phase 14 planning complete; Plan 14-12 requires a fresh authorization before any observation
-last_updated: "2026-11-03T19:41:56Z"
+stopped_at: Phase 14 recovery-plan review complete; the mitigation still awaits its exact source/test decision
+last_updated: "2026-11-03T20:02:54Z"
 last_activity: 2026-11-03
 state_head: 6a95a5f61ec4e446f56e858e03a9077f911ed5f3
 progress:
@@ -24,21 +24,21 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 remains blocked after additive planning. Plan 14-10 is terminal halted history; its third comparison launched no tests but the plan's three-pair cap was charged. Plan 14-12 now qualifies command, identity and process visibility before asking or spending its one observation. This sandbox still denies `ps`, so no observation can run here without changing the environment or violating the no-bypass boundary. Plan 14-13 and Plan 14-11 remain downstream; FRONT-02/03/04 remain pending.
+Current focus: Phase 14 remains blocked because the complete local workflow failed twice on the same five BIOS cases and actual-host state evidence is still missing. Plan 14-10 is terminal halted history; its invalid third pair launched no tests but was charged to its three-pair cap. That cap is not the acceptance blocker. The revised route records the evidence, then offers a reversible `RUN_SERIAL` mitigation for those five tests while preserving their one-second deadlines. Its historical cause remains unknown. Plan 14-13 requires a fresh exact decision before its source edit and focused test; Plan 14-11 owns the later complete workflows and separate host decision. FRONT-02/03/04 remain pending.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — BLOCKED
-Plan: 9 of 13 complete; Plan 14-10 remains terminal halted history; Plan 14-12 awaits its fresh authorization checkpoint; conditional 14-13 and downstream 14-11 are blocked.
-Status: Blocked on attributable evidence for the five existing one-second BIOS timeouts and a separately approved cause-specific remedy/property producer. FRONT-02/03/04 remain pending.
-Next action: No diagnostic command is valid in this process-restricted environment: a current read-only `ps` probe exited 127 with “operation not permitted,” and Plan 14-12 forbids elevation or bypass. Do not rerun tests here. Once a normal process-observable local environment is available, run `$gsd-execute-phase 14 --gaps-only --wave 10`; it selects the Plan 14-12 prerequisite only, qualifies source/command/process visibility without tests, then asks for one exact observation. A failure before the first selected test starts does not consume that observation; any outcome after test start does.
-Boundary: Never resume Plan 14-10 or spend its exhausted three-pair cap. Plan 14-13 requires a separately authorized exact remedy after attributable evidence; Plan 14-11 waits for both plans and retains its complete local regression and separate actual-host authority checkpoints. No observation, remedy, Plan 14-11 full workflow, push, hosted CI, cancel/rerun, local RetroArch, PR/merge/release, or Phase 12 work is authorized by planning.
+Plan: 9 of 13 complete; Plan 14-10 remains terminal halted history; Plan 14-12 is a documentation-only evidence review; Plan 14-13 has the source/test decision gate; Plan 14-11 remains downstream.
+Status: Blocked on the required full local workflow and actual-host state evidence, not on the exhausted diagnostic cap. FRONT-02/03/04 remain pending.
+Next action: From this Phase 14 checkout, run `$gsd-execute-phase 14 --gaps-only`. It runs the evidence review and advances to the exact Plan 14-13 decision. No source change or CTest workload starts before that decision; Plan 14-11 still requires two complete local workflows and a separate actual-host decision.
+Boundary: Never resume Plan 14-10 or reuse its spent cap. The new Plan 14-13 decision covers only the five RUN_SERIAL properties, metadata controls and one focused BIOS batch; it does not authorize full workflows, host/CI, push, cancel/rerun, local RetroArch, PR/merge/release or Phase 12. Plan 14-11's local full-workflow gate and separate actual-host checkpoint remain intact.
 
 ## Current Blockers
 
-- The required full local workflow failed twice on the same five BIOS timeouts. Plan 14-10's two valid default/serial pairs passed without reproducing them. The third pair was invalid and not retried. `ps`, `pgrep`, `top`, and `sysctl -n hw.ncpu` were denied, so PID ownership, parentage, and per-process CPU remain unknown. Its cap remains spent; no supported remedy is established.
-- Plan 14-12 has not started its observation. In this environment, `ps` remains denied. Its first task must qualify the exact source/build/environment packet before a fresh decision; planning and standing preferences do not authorize the test. Prelaunch command or capability failures do not consume the one observation, and no permission workaround is allowed. If qualified and separately authorized, a launched observation remains single-use and stops unresolved on missing attribution or non-reproduction.
-- Plan 14-13 requires attributable evidence and its own exact-remedy decision. Plan 14-11's coordinated full local preflight remains blocked until 14-12/13 produce their required evidence; its actual-host checkpoint remains separate. FRONT-02, FRONT-03, and FRONT-04 remain pending, and the 14-08 actual-host allowance remains spent.
+- The required full local workflow failed twice on the same five BIOS timeouts. Plan 14-10's two valid default/serial pairs passed without reproducing them. The invalid third pair launched no tests but was charged to Plan 14-10's now-spent cap. `ps`, `pgrep`, `top`, and `sysctl -n hw.ncpu` were denied, so process attribution remains unknown. This blocks further diagnosis in this sandbox but does not prevent evaluating the scheduling mitigation.
+- Plan 14-12 records the existing evidence only; it launches no diagnostic or test. Plan 14-13 requires a fresh exact decision before adding `RUN_SERIAL` to the five named tests and running one focused BIOS batch. Preserve the one-second deadlines and do not claim this proves historical cause.
+- Plan 14-11 remains blocked until the mitigation and metadata controls pass, then requires full ordinary/release workflows on the repaired candidate and a frozen evidence commit whose immediate first parent is that candidate. Its actual-host decision is separate; the earlier host allowance remains spent. FRONT-02, FRONT-03, and FRONT-04 remain pending.
 
 ## Preserved Phase 12 position — halt remains binding
 
@@ -141,8 +141,8 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: Run 41629846188 skipped RetroArch after a macOS Intel parent-baseline timeout; FRONT-02/03/04 remain pending and the one dispatch is spent.
 - [Phase 14]: Do not change CI deadlines, topology, or caching from the single macOS Intel baseline timeout.
 - [Phase 14]: The owner separately authorized 14-08's one-test portable RUN_SERIAL scheduling amendment, complete local source/parent preflight and at most one normal push plus one fresh host-enabled dispatch. This does not reset prior allowances or review counters; local Rosetta success did not reproduce hosted slowness or establish causation.
-- [Phase 14]: Keep the five BIOS commands, fixtures, labels, and one-second deadlines unchanged because two valid paired passes did not establish a cause.
-- [Phase 14]: Keep FRONT-02, FRONT-03, and FRONT-04 pending and block Plan 14-11 until process-attributable evidence resolves the local regression gate.
+- [Phase 14]: Preserve the five BIOS commands, fixtures, labels, assertions, and one-second deadlines. A separately authorized RUN_SERIAL property on only those tests is a reversible scheduling mitigation, not proof of the historical cause.
+- [Phase 14]: Keep FRONT-02/03/04 pending. Plan 14-11 may proceed only after the repaired candidate passes complete local workflows; process attribution is not a prerequisite, and its actual-host decision remains separate.
 
 ### Pending Todos
 
@@ -195,11 +195,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T19:41:56Z
+Last session: 2026-11-03T20:02:54Z
 Stopped at: Phase 14 recovery approach review; no test launched and phase remains blocked
 Resume file: None
-Next separate command: No command should be run in the current sandbox: ordinary `ps` is still denied, so Plan 14-12's required capability preflight cannot pass. After switching to a process-observable local session, run `$gsd-execute-phase 14 --gaps-only --wave 10` from this Phase 14 checkout. This runs only the prerequisite plan, does not imply Phase 14 acceptance is ready, and stops for an exact owner decision before any project test. No owner decision is needed just to preserve the stop.
-Context handoff: Phase 14 has nine of thirteen plans complete. Plan 14-10 stays terminal halted history: two valid default/serial pairs did not reproduce the five BIOS timeouts, and pair 3 used an invalid option, launched no tests, but was charged against the arbitrary three-pair cap. Do not reopen it. Plan 14-12 was corrected so command/identity/process capability checks happen before consent and before the one observation is charged; a real test failure or non-reproduction after launch still consumes it. This current sandbox denies `ps` (`operation not permitted`), and no elevation/bypass is allowed, so do not run the diagnostic here. In a process-observable local session, the command above selects only Plan 14-12 to qualify/present the exact one-observation scope; a new explicit owner decision is still required before CTest. Plan 14-13 would require separate remedy authority; Plan 14-11 still needs both plans and retains full local regression and actual-host checkpoints. Keep FRONT-02/03/04 pending and all host allowances spent. No code, emulator tests, CI, host, or diagnostic workload ran in this review.
+Next separate command: Run in the current Phase 14 checkout: `$gsd-execute-phase 14 --gaps-only`. This records the existing evidence, then stops at Plan 14-13's exact source/test decision before any edit or focused CTest workload. Phase 14 acceptance remains blocked.
+Context handoff: Phase 14 has nine of thirteen plans complete. Plan 14-10 stays terminal halted history: two valid default/serial pairs did not reproduce the five BIOS timeouts; its invalid third pair launched no tests but consumed the three-pair allowance. Do not reopen it or treat its cap as the acceptance blocker. The denied `ps` probe means the process cause remains unknown, but the revised route does not require another process diagnosis. Plan 14-12 is an evidence-only review. Plan 14-13 proposes `RUN_SERIAL` on exactly the five affected tests, retaining one-second deadlines, with a fresh decision before source/test work. If authorized and successful, Plan 14-11 runs full workflows on the repaired candidate and the frozen evidence commit whose immediate first parent is that candidate, then reaches its separate host decision. Keep FRONT-02/03/04 pending and all old host allowances spent. This planning review ran no emulator tests, full workflow, CI or host action.
 
 ## Deferred Items
 
