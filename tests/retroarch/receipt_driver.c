@@ -21,6 +21,20 @@ int main(int argc, char **argv)
         failed = 1;
     if (failed)
         return 4;
+    char save_path[4096];
+    int save_length = snprintf(save_path, sizeof save_path, "%s/frontend-states.srm", argv[8]);
+    if (save_length < 0 || (size_t)save_length >= sizeof save_path)
+        return 5;
+    FILE *save = fopen(save_path, "wb");
+    if (save == NULL)
+        return 6;
+    unsigned char media[2048];
+    memset(media, 0x5a, sizeof media);
+    failed = fwrite(media, 1u, sizeof media, save) != sizeof media;
+    if (fclose(save) != 0)
+        failed = 1;
+    if (failed)
+        return 7;
     puts("states host: MOCK_SUCCESS explicit_advances=41/64 presented_budget=109/120");
     return 0;
 }

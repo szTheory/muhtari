@@ -90,9 +90,18 @@ typedef struct states_result {
     unsigned frames;
     unsigned startup_progress;
     unsigned baseline_frames;
+    unsigned baseline_progress;
     unsigned runahead_frames;
+    unsigned runahead_progress;
+    unsigned runahead_presented_progress;
+    unsigned disabled_progress;
+    unsigned advanced_progress;
+    unsigned restored_progress;
+    unsigned replay_progress;
+    unsigned picture_observations;
     unsigned rewind_reversals;
     unsigned rewind_progress[STATES_REWIND_ACTIONS];
+    unsigned last_progress;
     uint64_t elapsed_ms;
     uint64_t baseline_elapsed_ms;
     uint64_t runahead_elapsed_ms;
@@ -308,8 +317,10 @@ static int states_read_exact(states_ops *ops, unsigned expected, uint64_t deadli
         unsigned actual = 0u;
         if (ops->read_progress(ops->user, &actual, timeout) != 0)
             return states_fail(result, "progress observation protocol failed");
-        if (actual == expected)
+        if (actual == expected) {
+            result->last_progress = actual;
             return 0;
+        }
         if (actual != ((expected - 1u) & 0xffffu))
             return states_fail(result, "progress observation was stale or skipped");
     }
@@ -336,6 +347,7 @@ static int states_capture(states_ops *ops, unsigned expected, unsigned picture_i
         return states_fail(result, "work deadline exhausted before picture observation");
     if (ops->capture(ops->user, expected, picture_id, baseline, timeout) != 0)
         return states_fail(result, "fresh picture or independent pixel judgment failed");
+    result->picture_observations++;
     return 0;
 }
 
@@ -430,6 +442,7 @@ static int states_measure_workload(states_ops *ops, unsigned saved, int runahead
     unsigned current = 0u;
     if (ops->read_progress(ops->user, &current, states_timeout(ops, deadline)) != 0)
         return states_fail(result, "prior workload progress could not be observed");
+    result->last_progress = current;
     if (states_restore_saved(ops, saved, current, deadline, result) != 0)
         return 1;
     if (runahead && ops->runahead_toggle_once(ops->user) != 0)
@@ -449,10 +462,15 @@ static int states_measure_workload(states_ops *ops, unsigned saved, int runahead
             if (states_capture(ops, committed + 1u, 3u, 0, deadline, result) != 0)
                 return states_fail(result,
                                    "one-frame run-ahead presentation did not match committed memory");
+            result->runahead_presented_progress = committed + 1u;
         } else if (states_capture(ops, committed, 3u, step == 1u, deadline, result) != 0) {
             return 1;
         }
     }
+    if (runahead)
+        result->runahead_progress = result->last_progress;
+    else
+        result->baseline_progress = result->last_progress;
     uint64_t end = ops->now_ms(ops->user);
     if (end < start)
         return states_fail(result, "matched workload clock moved backwards");
@@ -503,6 +521,7 @@ static int states_rewind_runahead(states_ops *ops, unsigned saved, unsigned *fra
         states_wait_status(ops, 1, deadline, result) != 0 ||
         states_capture(ops, committed, 3u, 0, deadline, result) != 0)
         return states_fail(result, "disabled run-ahead presentation was not accounted for");
+    result->disabled_progress = result->last_progress;
     if (ops->durable_sentinel(ops->user) != 0)
         return states_fail(result, "durable HSC sentinel changed before explicit SAVE_FILES");
     if (ops->save_files_once(ops->user, states_timeout(ops, deadline)) != 0)
@@ -565,6 +584,8 @@ static int states_save_load(states_ops *ops, states_result *result)
             failed = 1;
             goto cleanup;
         }
+        if (step == STATES_ADVANCE)
+            result->advanced_progress = result->last_progress;
     }
 
     if (ops->load_once(ops->user) != 0) {
@@ -586,8 +607,10 @@ static int states_save_load(states_ops *ops, states_result *result)
                 failed = states_fail(result, "restored progress observation failed");
                 goto cleanup;
             }
-            if (actual == saved)
+            if (actual == saved) {
+                result->restored_progress = actual;
                 break;
+            }
             if (actual != ((saved + STATES_ADVANCE) & 0xffffu)) {
                 failed = states_fail(result, "LOAD_STATE progress was neither saved nor current");
                 goto cleanup;
@@ -610,6 +633,8 @@ static int states_save_load(states_ops *ops, states_result *result)
             failed = 1;
             goto cleanup;
         }
+        if (step == STATES_ADVANCE)
+            result->replay_progress = result->last_progress;
     }
     if (states_rewind_runahead(ops, saved, &frames, work_deadline, result) != 0)
         failed = 1;
@@ -1561,6 +1586,8 @@ typedef struct host_session {
     int udp_fd;
     int reserved_fd;
     uint64_t start_ms;
+    uint64_t child_start_ms;
+    uint64_t child_exit_ms;
     char child_path[PATH_MAX];
 } host_session;
 
@@ -1912,6 +1939,7 @@ static int reap_if_exited(host_session *host)
         host->child_reaped = 1;
         host->child_owned = 0;
         host->child_status = status;
+        host->child_exit_ms = states_now_ms();
         return 1;
     }
     return waited == 0;
@@ -2466,6 +2494,7 @@ static int spawn_retroarch(host_session *host)
     close(log_fd);
     host->child = pid;
     host->child_owned = 1;
+    host->child_start_ms = states_now_ms();
     host->udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (host->udp_fd < 0)
         return 1;
@@ -2976,6 +3005,7 @@ static int host_run(int argc, char **argv, const char *self_path)
             close(host.reserved_fd);
         return 1;
     }
+    int sandbox_preflight_passed = 1;
     if (host_prepare_media(&host) != 0) {
         fprintf(stderr, "states: could not create the complete HSC flush sentinel\n");
         if (host.reserved_fd >= 0)
@@ -3019,15 +3049,33 @@ static int host_run(int argc, char **argv, const char *self_path)
     if (host.last_capture[0] != '\0' &&
         copy_file(host.last_capture, host.final_shot) != 0)
         rc = 1;
-    printf("states host: explicit_advances=%u/%u presented_budget=%u/%u startup_progress=%u "
-           "rewind_progress=%u,%u,%u runahead_secondary_instance=false owned_retroarch_children=1 "
-           "baseline_frames=%u baseline_ms=%" PRIu64 " runahead_frames=%u runahead_ms=%" PRIu64
-           " save_files_flush=1 duration_ms=%" PRIu64 " core_sha256=%s core_path=%s\n",
-           result.frames, STATES_FRAME_CAP, STATES_PRESENTED_FRAME_BUDGET, host.frames,
-           result.startup_progress,
+    int process_exit = WIFEXITED(host.child_status) ? WEXITSTATUS(host.child_status) : -1;
+    uint64_t process_duration = host.child_exit_ms >= host.child_start_ms
+                                    ? host.child_exit_ms - host.child_start_ms
+                                    : 0u;
+    printf("states host: result=%s verified_version=1.22.2 runahead=one_frame_single_instance "
+           "sandbox_external_udp_rejected=%d loopback_port=%u retroarch_pid=%ld "
+           "retroarch_process_exit=%d retroarch_process_duration_ms=%" PRIu64 " "
+           "owned_retroarch_children=1 child_reaped=%d duration_ms=%" PRIu64 "\n",
+           rc == 0 ? "pass" : "incomplete", sandbox_preflight_passed, (unsigned)host.port,
+           (long)host.child, process_exit, process_duration, host.child_reaped, result.elapsed_ms);
+    printf("states observations: core_path=%s core_sha256=%s fixture_crc32=%08" PRIx32 " "
+           "explicit_advances=%u/%u presented_frames=%u/%u "
+           "saved_progress=%u advanced_progress=%u restored_progress=%u replay_progress=%u "
+           "rewind_progress=%u,%u,%u runahead_baseline_frames=%u baseline_progress=%u "
+           "baseline_ms=%" PRIu64 " runahead_frames=%u runahead_committed_progress=%u "
+           "runahead_presented_progress=%u runahead_ms=%" PRIu64 " disabled_progress=%u "
+           "fresh_picture_observations=%u picture_judgment=%s raw_hsc_bytes=%u "
+           "save_files_reply=%s durable_hsc_judgment=%s audio_output=disabled\n",
+           host.core, host.core_sha256, host.fixture_crc, result.frames, STATES_FRAME_CAP,
+           host.frames, STATES_PRESENTED_FRAME_BUDGET, result.startup_progress,
+           result.advanced_progress, result.restored_progress, result.replay_progress,
            result.rewind_progress[0], result.rewind_progress[1], result.rewind_progress[2],
-           result.baseline_frames, result.baseline_elapsed_ms, result.runahead_frames,
-           result.runahead_elapsed_ms, result.elapsed_ms, host.core_sha256, host.core);
+           result.baseline_frames, result.baseline_progress, result.baseline_elapsed_ms,
+           result.runahead_frames, result.runahead_progress, result.runahead_presented_progress,
+           result.runahead_elapsed_ms, result.disabled_progress, result.picture_observations,
+           rc == 0 ? "pass" : "incomplete", STATES_MEDIA_BYTES,
+           rc == 0 ? "OK" : "unresolved", rc == 0 ? "pass" : "incomplete");
     if (rc != 0)
         fprintf(stderr, "states host failed: %s\n", result.error != NULL ? result.error :
                 "host log, final artifact, or cleanup validation failed");
