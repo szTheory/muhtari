@@ -37,6 +37,8 @@
 #define STATES_OBSERVE_MS 1000u
 #define STATES_FRAME_CAP 64u
 #define STATES_ADVANCE 8u
+#define STATES_REWIND_ACTIONS 3u
+#define STATES_MEDIA_BYTES 2048u
 
 typedef struct states_ops {
     void *user;
@@ -52,12 +54,24 @@ typedef struct states_ops {
     int (*load_once)(void *user);
     int (*capture)(void *user, unsigned expected, unsigned picture_id, int baseline,
                    unsigned timeout_ms);
+    int (*status)(void *user, unsigned timeout_ms, int *paused);
+    int (*pause_toggle_once)(void *user);
+    int (*rewind_once)(void *user);
+    int (*runahead_toggle_once)(void *user);
+    int (*durable_sentinel)(void *user);
+    int (*save_files_once)(void *user, unsigned timeout_ms);
+    int (*durable_committed)(void *user, unsigned expected);
     int (*cleanup)(void *user, unsigned timeout_ms);
 } states_ops;
 
 typedef struct states_result {
     unsigned frames;
+    unsigned baseline_frames;
+    unsigned runahead_frames;
+    unsigned rewind_reversals;
     uint64_t elapsed_ms;
+    uint64_t baseline_elapsed_ms;
+    uint64_t runahead_elapsed_ms;
     const char *error;
 } states_result;
 
@@ -433,21 +447,39 @@ enum mock_fault {
     MOCK_FAULT_LOAD_UNCHANGED,
     MOCK_FAULT_STALE_CAPTURE,
     MOCK_FAULT_INTERRUPTED_PROGRESS,
+    MOCK_FAULT_REWIND_IGNORED,
+    MOCK_FAULT_RUNAHEAD_TOGGLE_IGNORED,
+    MOCK_FAULT_AHEAD_MEDIA,
+    MOCK_FAULT_SAVE_FILES_NO,
+    MOCK_FAULT_SAVE_FILES_SILENT,
+    MOCK_FAULT_WRONG_REPLAY,
+    MOCK_FAULT_INCOMPLETE_WORK,
 };
 
 typedef struct mock_session {
     uint64_t now;
     unsigned progress;
     unsigned saved;
+    unsigned presented;
     unsigned picture_generation;
-    unsigned pictures[3];
+    unsigned pictures[4];
+    uint8_t durable[STATES_MEDIA_BYTES];
     unsigned frames;
     unsigned progress_reads;
     unsigned save_calls;
     unsigned load_calls;
     unsigned frame_calls;
     unsigned capture_calls;
+    unsigned rewind_calls;
+    unsigned pause_calls;
+    unsigned runahead_toggle_calls;
+    unsigned save_files_calls;
+    unsigned baseline_frames;
+    unsigned runahead_frames;
+    unsigned explicit_advances;
     enum mock_fault fault;
+    int paused;
+    int runahead_enabled;
     int child_owned;
     int child_hangs;
     int state_exists;
@@ -557,13 +589,18 @@ static int mock_frame(void *user)
 {
     mock_session *mock = user;
     mock->frame_calls++;
-    if (mock->fault == MOCK_FAULT_FRAME_SILENCE) {
+    mock->explicit_advances++;
+    if (mock->fault == MOCK_FAULT_FRAME_SILENCE ||
+        (mock->fault == MOCK_FAULT_INCOMPLETE_WORK && mock->frame_calls >= 25u)) {
         mock->now += 1u;
         return 1;
     }
     mock->progress = (mock->progress + 1u) & 0xffffu;
+    mock->presented = mock->runahead_enabled ? (mock->progress + 1u) & 0xffffu : mock->progress;
     if (mock->fault == MOCK_FAULT_OUT_OF_ORDER_PROGRESS)
         mock->progress = (mock->progress + 1u) & 0xffffu;
+    if (mock->fault == MOCK_FAULT_AHEAD_MEDIA && mock->runahead_enabled)
+        memset(mock->durable, 0, sizeof mock->durable);
     mock->frames++;
     mock->now += 1u;
     return 0;
@@ -578,6 +615,7 @@ static int mock_load(void *user)
         return 0;
     }
     mock->progress = mock->saved;
+    mock->presented = mock->progress;
     mock->now += 1u;
     return mock->fault == MOCK_FAULT_LOAD_SILENCE ? 1 : 0;
 }
@@ -591,15 +629,102 @@ static int mock_capture(void *user, unsigned expected, unsigned picture_id, int 
     mock->now += 1u;
     if (mock->fault == MOCK_FAULT_STALE_CAPTURE)
         return 1;
-    if (mock->progress != expected || picture_id == 0u || picture_id > 2u)
+    if (mock->presented != expected || picture_id == 0u || picture_id > 3u)
         return 1;
     mock->picture_generation++;
-    unsigned picture = expected;
     if (baseline) {
-        mock->pictures[picture_id] = picture;
+        mock->pictures[picture_id] = 1u;
         return 0;
     }
-    return mock->pictures[picture_id] == picture ? 0 : 1;
+    if (mock->fault == MOCK_FAULT_WRONG_REPLAY && mock->capture_calls <= 4u)
+        return 1;
+    return mock->pictures[picture_id] == 1u ? 0 : 1;
+}
+
+static void mock_media_set(mock_session *mock, unsigned progress)
+{
+    memset(mock->durable, 0xff, sizeof mock->durable);
+    mock->durable[0x100u] = (uint8_t)(progress & 0xffu);
+    mock->durable[0x101u] = (uint8_t)((progress >> 8) & 0xffu);
+}
+
+static int mock_status(void *user, unsigned timeout_ms, int *paused)
+{
+    mock_session *mock = user;
+    if (timeout_ms == 0u)
+        return 1;
+    *paused = mock->paused;
+    mock->now += 1u;
+    return 0;
+}
+
+static int mock_pause_toggle(void *user)
+{
+    mock_session *mock = user;
+    mock->pause_calls++;
+    mock->paused = !mock->paused;
+    mock->now += 1u;
+    return 0;
+}
+
+static int mock_rewind(void *user)
+{
+    mock_session *mock = user;
+    mock->rewind_calls++;
+    mock->now += 1u;
+    if (mock->paused)
+        return 1;
+    if (mock->fault != MOCK_FAULT_REWIND_IGNORED && mock->progress > 0u) {
+        mock->progress--;
+        mock->presented = mock->progress;
+    }
+    return 0;
+}
+
+static int mock_runahead_toggle(void *user)
+{
+    mock_session *mock = user;
+    mock->runahead_toggle_calls++;
+    mock->now += 1u;
+    if (mock->fault != MOCK_FAULT_RUNAHEAD_TOGGLE_IGNORED)
+        mock->runahead_enabled = !mock->runahead_enabled;
+    return 0;
+}
+
+static int mock_durable_sentinel(void *user)
+{
+    mock_session *mock = user;
+    for (size_t i = 0u; i < sizeof mock->durable; i++)
+        if (mock->durable[i] != 0xffu)
+            return 1;
+    return 0;
+}
+
+static int mock_save_files(void *user, unsigned timeout_ms)
+{
+    mock_session *mock = user;
+    mock->save_files_calls++;
+    mock->now += 1u;
+    if (timeout_ms == 0u || mock->fault == MOCK_FAULT_SAVE_FILES_NO ||
+        mock->fault == MOCK_FAULT_SAVE_FILES_SILENT)
+        return 1;
+    mock_media_set(mock, mock->progress);
+    return 0;
+}
+
+static int mock_durable_committed(void *user, unsigned expected)
+{
+    mock_session *mock = user;
+    for (size_t i = 0u; i < sizeof mock->durable; i++) {
+        uint8_t wanted = 0xffu;
+        if (i == 0x100u)
+            wanted = (uint8_t)(expected & 0xffu);
+        else if (i == 0x101u)
+            wanted = (uint8_t)((expected >> 8) & 0xffu);
+        if (mock->durable[i] != wanted)
+            return 1;
+    }
+    return 0;
 }
 
 #if STATES_POSIX
@@ -880,6 +1005,13 @@ static states_ops mock_operations(mock_session *mock)
         .frame_once = mock_frame,
         .load_once = mock_load,
         .capture = mock_capture,
+        .status = mock_status,
+        .pause_toggle_once = mock_pause_toggle,
+        .rewind_once = mock_rewind,
+        .runahead_toggle_once = mock_runahead_toggle,
+        .durable_sentinel = mock_durable_sentinel,
+        .save_files_once = mock_save_files,
+        .durable_committed = mock_durable_committed,
         .cleanup = mock_cleanup,
     };
     return ops;
@@ -895,6 +1027,101 @@ static void tap_result(unsigned *count, unsigned *failures, const char *name, in
         (*failures)++;
         printf("not ok %u - %s\n  ---\n  error: %s\n  ...\n", *count, name,
                detail != NULL ? detail : "assertion failed");
+    }
+}
+
+static int run_complete_workload_control(enum mock_fault fault, const char *expected_error,
+                                         const char *self_path,
+                                         const protected_fixture *protected,
+                                         char *detail, size_t detail_capacity)
+{
+    mock_session mock;
+    memset(&mock, 0, sizeof mock);
+    mock.progress = 12u;
+    mock.presented = mock.progress;
+    mock.paused = 1;
+    mock.fault = fault;
+    memset(mock.durable, 0xff, sizeof mock.durable);
+#if STATES_POSIX
+    if (strlen(self_path) >= sizeof mock.self_path)
+        return 0;
+    memcpy(mock.self_path, self_path, strlen(self_path) + 1u);
+    if (spawn_mock_child(&mock) != 0)
+        return 0;
+#else
+    mock.child_owned = 1;
+#endif
+    states_ops ops = mock_operations(&mock);
+    states_result result;
+    int rc = states_save_load(&ops, &result);
+    int passed = !mock.child_owned && mock.child_reaped;
+    if (expected_error == NULL) {
+        passed = passed && rc == 0 && result.error == NULL && mock.progress == 21u &&
+                 mock.frames == 41u && result.frames == 41u &&
+                 result.rewind_reversals == STATES_REWIND_ACTIONS && mock.rewind_calls == 3u &&
+                 mock.runahead_toggle_calls == 2u && mock.save_files_calls == 1u &&
+                 result.baseline_frames == STATES_ADVANCE &&
+                 result.runahead_frames == STATES_ADVANCE &&
+                 result.baseline_elapsed_ms > 0u && result.runahead_elapsed_ms > 0u &&
+                 mock.paused && !mock.runahead_enabled &&
+                 mock_durable_committed(&mock, mock.progress) == 0;
+    } else {
+        passed = passed && rc != 0 && result.error != NULL &&
+                 strcmp(result.error, expected_error) == 0;
+    }
+#if STATES_POSIX
+    passed = passed && protected_unchanged(protected, self_path);
+#else
+    (void)protected;
+#endif
+    if (!passed && detail != NULL && detail_capacity > 0u)
+        (void)snprintf(detail, detail_capacity,
+                       "error=%s rc=%d progress=%u frames=%u rewinds=%u toggles=%u flushes=%u baseline=%u/%llu enabled=%u/%llu reaped=%d",
+                       result.error != NULL ? result.error : "valid full sequence was not observed",
+                       rc, mock.progress, result.frames, mock.rewind_calls,
+                       mock.runahead_toggle_calls, mock.save_files_calls,
+                       result.baseline_frames, (unsigned long long)result.baseline_elapsed_ms,
+                       result.runahead_frames, (unsigned long long)result.runahead_elapsed_ms,
+                       mock.child_reaped);
+    return passed;
+}
+
+static void complete_workload_controls(unsigned *count, unsigned *failures, const char *self_path,
+                                       const protected_fixture *protected)
+{
+    char detail[512];
+    memset(detail, 0, sizeof detail);
+    int passed = run_complete_workload_control(MOCK_FAULT_NONE, NULL, self_path, protected,
+                                               detail, sizeof detail);
+    tap_result(count, failures,
+               "complete controller observes three rewind reversals and active one-frame run-ahead",
+               passed, passed ? NULL : detail);
+    static const struct {
+        const char *name;
+        enum mock_fault fault;
+        const char *error;
+    } cases[] = {
+        {"ignored REWIND action fails observed reversal", MOCK_FAULT_REWIND_IGNORED,
+         "REWIND did not reverse fixture progress"},
+        {"ignored run-ahead toggle fails the presented-ahead proof",
+         MOCK_FAULT_RUNAHEAD_TOGGLE_IGNORED,
+         "one-frame run-ahead presentation did not match committed memory"},
+        {"speculative HSC bytes cannot replace the flush sentinel", MOCK_FAULT_AHEAD_MEDIA,
+         "speculative progress reached durable HSC bytes"},
+        {"wrong replay picture is rejected", MOCK_FAULT_WRONG_REPLAY,
+         "fresh picture or independent pixel judgment failed"},
+        {"incomplete eight-frame workload is rejected", MOCK_FAULT_INCOMPLETE_WORK,
+         "FRAMEADVANCE send failed"},
+        {"SAVE_FILES NO reply fails before durable judgement", MOCK_FAULT_SAVE_FILES_NO,
+         "SAVE_FILES did not return exact OK"},
+        {"silent SAVE_FILES fails before durable judgement", MOCK_FAULT_SAVE_FILES_SILENT,
+         "SAVE_FILES did not return exact OK"},
+    };
+    for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {
+        memset(detail, 0, sizeof detail);
+        passed = run_complete_workload_control(cases[i].fault, cases[i].error, self_path,
+                                               protected, detail, sizeof detail);
+        tap_result(count, failures, cases[i].name, passed, passed ? NULL : detail);
     }
 }
 
@@ -1057,6 +1284,7 @@ static int run_fault_controls(const char *self_path)
         tap_result(&count, &failures, cases[i].name, passed,
                    "sequence cause, single-send count, child reap, or unrelated sentinel check failed");
     }
+    complete_workload_controls(&count, &failures, self_path, &protected);
 #if STATES_POSIX
     int cleanup_ok = protected_destroy(&protected, self_path) == 0;
     tap_result(&count, &failures, "test-owned unrelated child and save sentinel clean up", cleanup_ok,
