@@ -17,6 +17,8 @@ supports_no_game = "true"
 needs_fullpath = "false"
 hw_render = "false"
 savestate = "true"
+# Deterministic state support is advertised only with recurring proof tests.
+savestate_features = "deterministic"
 libretro_saves = "true"
 memory_descriptors = "true"
 input_descriptors = "true"
