@@ -470,7 +470,14 @@ int main(int argc, char **argv)
     REQUIRE(waitpid(owned, NULL, WNOHANG) == -1); /* helper reaped exactly its own killed child */
     it_read(helper, IT_HELPER, &h);
     it_read(core, IT_CORE, &c);
-    REQUIRE(h.status == IT_FULL && c.status == IT_UNFINISHED && c.count == 3);
+    REQUIRE(h.status == IT_COMPLETE && h.count == 7 && c.status == IT_UNFINISHED && c.count == 3);
+    REQUIRE(h.records[3].type == IT_POST && h.records[3].a == 126u && h.records[3].b == 1u &&
+            h.records[3].c == (uint32_t)owned);
+    REQUIRE(h.records[4].type == IT_POST && h.records[4].a == 6u && h.records[4].b == 1u &&
+            h.records[4].c == (uint32_t)owned);
+    REQUIRE(h.records[5].type == IT_POST && h.records[5].a == 100u && h.records[5].b == 1u &&
+            h.records[5].c == (uint32_t)owned);
+    REQUIRE(h.records[6].type == IT_END);
     REQUIRE(it_pair(&h, &c));
     /* The collection command itself rejects a helper interrupted before a terminal record. */
     fd = open(helper, O_RDWR | O_CLOEXEC);

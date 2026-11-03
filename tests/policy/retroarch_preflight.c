@@ -40,6 +40,7 @@ static int fail_sleep, allocations, posts, frees, downs, ups, kills, bad, shots_
 static int child_mode, execs, waits;
 static int ready, capture_tick, shot_fault, stale, dir_index, dir_shots, clock_calls, fail_clock;
 static int step_ms;
+static int clock_adjust_ms, last_elapsed_ms, cutoff_wait_error, cutoff_waits;
 static char diagnostic[256];
 static int reports;
 struct keyboard_directory {
@@ -97,8 +98,9 @@ int keyboard_close(DIR *dir)
 int keyboard_clock(keyboard_clockid_t id, struct timespec *value)
 {
     bad |= id != CLOCK_MONOTONIC;
-    value->tv_sec = ticks * step_ms / 1000;
-    value->tv_nsec = (ticks * step_ms % 1000) * 1000000L;
+    last_elapsed_ms = ticks * step_ms + (ticks >= 5 ? clock_adjust_ms : 0);
+    value->tv_sec = last_elapsed_ms / 1000;
+    value->tv_nsec = (last_elapsed_ms % 1000) * 1000000L;
     if (++clock_calls == fail_clock) {
         errno = EIO;
         return -1;
@@ -186,6 +188,13 @@ pid_t keyboard_wait(pid_t pid, int *status, int flags)
     bad |= pid != 100;
     waits++;
     *status = child_status;
+    if (flags == WNOHANG && last_elapsed_ms >= 5000) {
+        cutoff_waits++;
+        if (cutoff_wait_error) {
+            errno = ECHILD;
+            return -1;
+        }
+    }
     if (fail_wait)
         errno = ECHILD;
     return flags == 0 || ticks >= finish ? 100 : fail_wait ? -1 : 0;
@@ -217,6 +226,7 @@ static void reset(void)
     capture_tick = -1;
     shot_fault = stale = dir_index = dir_shots = clock_calls = fail_clock = 0;
     step_ms = 100;
+    clock_adjust_ms = last_elapsed_ms = cutoff_wait_error = cutoff_waits = 0;
     diagnostic[0] = '\0';
     reports = 0;
 }
@@ -378,12 +388,30 @@ int main(int argc, char **argv)
     CHECK(preflight_main(3, held) == 1 && posts == 0 && !bad);
     CHECK(reported("child-completion", 0, -1, 0, "0"));
     reset();
+    for (int boundary = -1; boundary <= 1; boundary++) {
+        reset();
+        step_ms = 1000;
+        clock_adjust_ms = boundary;
+        finish = boundary > 0 ? 6 : 5;
+        child_status = 256;
+        CHECK(preflight_main(4, probe) == 1 && posts == frees && !bad);
+        if (boundary < 0) {
+            CHECK(cutoff_waits == 0 && kills == 0);
+            CHECK(reported("child-completion", 4999, 0, 0, "256"));
+        } else if (boundary == 0) {
+            CHECK(cutoff_waits == 1 && waits == 6 && kills == 0);
+            CHECK(reported("acknowledgment-deadline", 5000, 0, 0, "256"));
+        } else {
+            CHECK(cutoff_waits == 1 && waits == 7 && kills == 1);
+            CHECK(reported("acknowledgment-deadline", 5001, 0, 0, "unknown"));
+        }
+    }
+    reset();
     step_ms = 1000;
-    shot_fault = 1;
-    /* The acknowledgment guard still precedes a simultaneously completed child. */
-    finish = 5;
-    CHECK(preflight_main(4, probe) == 1 && waits == 6 && kills == 1 && !bad);
-    CHECK(reported("acknowledgment-deadline", 5000, 0, 0, "unknown"));
+    finish = 6;
+    cutoff_wait_error = 1;
+    CHECK(preflight_main(4, probe) == 1 && cutoff_waits == 1 && waits == 7 && kills == 1 && !bad);
+    CHECK(reported("acknowledgment-deadline", 5000, 0, ECHILD, "unknown"));
     reset();
     step_ms = 1125;
     ready = 0;

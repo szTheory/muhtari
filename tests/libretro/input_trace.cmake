@@ -86,7 +86,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}"
   "-DRAW_SHOTS=${run}/shots" "-DTRACE_DIR=${trace}" "-DTRACE_PARSER=${PROTOCOL}"
   -P "${ROOT}/tests/retroarch/run_retroarch.cmake"
   RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
-if(NOT rc STREQUAL "1" OR NOT out MATCHES "Input diagnostic retained.*helper=saturated.*core=unfinished" OR
+if(NOT rc STREQUAL "1" OR NOT out MATCHES "Input diagnostic retained.*helper=complete.*core=unfinished" OR
     NOT err MATCHES "RetroArch exited with '1'" OR NOT EXISTS "${trace}/core.trace")
   message(FATAL_ERROR "synthetic wrapper did not retain/collect before launch error: ${rc}\n${out}${err}")
 endif()
@@ -129,7 +129,7 @@ foreach(fault IN ITEMS existing nested parent symlink)
 endforeach()
 execute_process(COMMAND "${PROTOCOL}" --collect "${helper_trace}"
     RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
-  if(NOT rc STREQUAL "0" OR NOT out MATCHES "helper=saturated.*core=unfinished.*last_type=6.*paired_identity_clock_ok=yes")
+  if(NOT rc STREQUAL "0" OR NOT out MATCHES "helper=complete.*core=unfinished.*last_type=6.*paired_identity_clock_ok=yes")
     message(FATAL_ERROR "killed child's final records not collected: ${rc}\n${out}${err}")
   endif()
 message("${out}")
