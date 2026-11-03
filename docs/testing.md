@@ -356,9 +356,7 @@ identity. Limits: five-minute job, 50-second child, 45-second work plus five-sec
 64 forward actions. The sandbox probe rejects external UDP before launch. Failed or incomplete evidence leaves
 qualification pending; never rerun or launch locally. Record command, exit and run URL.
 
-Prior host state job skipped on [run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188);
-dispatch exited 0, run watch and the required aggregate exited 1. Exact commands and receipts for both attempts
-are in the [Phase 14 resource evidence](../.planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md).
+Run 41733613173 passed the main builds, ASan, quality and hash checks, but states-mode startup stopped at an opaque fail-closed preflight. WASI advisory failed on `tmpfile`. No state capture exists; FRONT-02/03/04 remain pending and the allowance is spent. See [receipt](../.planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md).
 
 For the existing DMA and battery cases, `run_retroarch.cmake` prints the private RetroArch log. Record the
 command, exit and run URL; those results do not establish general retail-game compatibility.

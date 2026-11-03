@@ -593,3 +593,27 @@ All local run URLs: N/A-local. The isolation property is a bounded scheduling
 mitigation only; the historical timeout cause remains unknown. Plan 14-11 owns
 the later complete ordinary/release workflows and its distinct host decision.
 FRONT-02, FRONT-03, and FRONT-04 remain pending.
+
+## Plan 14-11 authorized host attempt result (2026-11-03)
+
+### Source, publication, and run identity
+
+The owner explicitly authorized Task 2's concrete one-attempt scope. The single normal push of `phase/14-proven-frontend-states-and-responsive-play` succeeded and the remote branch matched the frozen source. The single `gh workflow run ci.yml --ref phase/14-proven-frontend-states-and-responsive-play -f phase14_host=true` invocation exited 0. No second push or dispatch, rerun, job rerun, cancellation, local RetroArch launch, PR/merge, or Phase 12 operation occurred. This allowance is consumed.
+
+The authenticated attempt is [GitHub Actions run 41733613173](https://github.com/szTheory/muhtari/actions/runs/41733613173): event `workflow_dispatch`, branch `phase/14-proven-frontend-states-and-responsive-play`, attempt 1, exact source `a05965953bf34bbb3bdff4bf57118e491a525204`, whose first parent is `b323ee2dac038cd4574cec35c824c06c5b3cc583`. The API receipt and complete run/job/step receipts are under ignored `build/phase14-gap11-evidence/`. `gh run watch 41733613173 --exit-status` exited 1; the run API records a completed failure and the job receipt records the failed required aggregate.
+
+The run lasted 2,060 seconds (34m20s). The Windows ARM64 build was the critical path at 2,003 seconds (33m23s). Its quality-observation step passed, along with the remaining builds, hosted Ubuntu x64 ASan, quality join, and hash equality. No job or step was cancelled. The required RetroArch job failed and the `CI required` aggregate failed; the separate advisory WASI job also failed. This single run does not justify timeout, cache, or topology changes.
+
+### Host result and exact failure boundary
+
+The `retroarch-frames` artifact and its `host-receipt.txt` are from the same run and source. The artifact API identifies `archives-macos-arm64` ID `13277937921`, `hashes-macos-arm64` ID `13277128464`, and `retroarch-frames` ID `13279667108`; each is unexpired and matches the run/source. All three macOS arm64 package hashes match the receipt. The receipt identifies RetroArch 1.22.2, `state_mode=states`, `driver_result=1`, and `host_step_exit=1`; the loaded core digest before and after the failed driver is unchanged.
+
+The pre-existing DMA screenshot and fresh battery roundtrip steps passed. The opt-in states driver printed `states: fail-closed sandbox UDP containment preflight` and returned 1. It failed before `host_prepare_media` and before the states-mode RetroArch spawn. The screenshots and saves in this artifact belong to the earlier DMA/battery steps; there is no states-mode `final.bmp` or committed raw save to judge, and no state-mode image/progress/save, rewind, run-ahead, replay, durability, or process-containment assertion completed.
+
+In `tests/retroarch/states.c:3028-3031`, this message follows a compound condition covering `/usr/bin/sandbox-exec` availability, the sandbox helper result, the remaining work-time bound, `update_config_port`, and `host_validate_runahead_config`. The receipt does not identify which member failed. Do not attribute the result to sandbox capability, UDP containment, or any other single member. The identity checks and earlier normal host controls do not resolve that missing distinction.
+
+The advisory `wasm32` job failed compilation at `tests/core/test_state.c:2022`: WASI marks `tmpfile` deprecated because it is not defined for that target, and `-Werror` rejects the diagnostic. Keep this job advisory and retain the failure without a source change or retry.
+
+### Outcome
+
+The authorized hosted attempt is spent. No fresh states-mode screenshot or save exists, so no independent frontend-state judgment was possible. FRONT-02, FRONT-03, and FRONT-04 remain pending; no frontend behavior or capability is qualified by this run. Earlier failures and spent allowances remain recorded. No new lesson was added because the exact failed preflight condition is still unknown.

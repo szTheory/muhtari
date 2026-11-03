@@ -225,6 +225,8 @@ loaded callback, repeated-continuation, and host-control test registrations. The
 contract; they are not evidence that a frontend has exercised it. Actual pinned RetroArch save/load, rewind,
 and run-ahead qualification remains pending. In [run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188), the Windows x64 and ARM64 builds and hosted Ubuntu x64 ASan passed, but the macOS Intel independent-parent baseline timed out in `fuzz.regress.run`. The exact artifact join failed and the dependent RetroArch host job was skipped; no actual-host result is claimed.
 
+The later authorized attempt, [run 41733613173](https://github.com/szTheory/muhtari/actions/runs/41733613173), authenticated the pinned source and same-run macOS arm64 artifacts, but its states driver exited before state-mode media preparation and RetroArch launch. It emitted a fail-closed preflight message from a compound check; the exact failing condition is unknown. No state-mode save/load, rewind, run-ahead, picture, progress, or durability observation was collected, so these declarations remain unqualified for an actual frontend.
+
 **Restart** power-cycles the console: volatile memory is cleared, the cartridge starts again the way it was loaded, and the
 difficulty switches go back to their options.
 
