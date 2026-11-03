@@ -7,6 +7,25 @@ function(diag_ledger_crc id report)
     COMMAND_ERROR_IS_FATAL ANY)
 endfunction()
 
+# The owned progress fixture includes B, which exposes an incorrect independent
+# glyph row even when both compared pictures are the same.
+if(DIAG_FRONTEND_STATES_RUN)
+  file(MAKE_DIRECTORY "${OUT}")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress
+    "${ROOT}/tests/diag/frontend-states.a78" "${OUT}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 30)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "frontend progress fixture failed: ${rc}\n${out}${err}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${COMPARE}" --battery 11 0
+    "${OUT}/progress-000B.bmp" "${OUT}/progress-000B.bmp"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(NOT rc STREQUAL "0")
+    message(FATAL_ERROR "frontend progress glyph B judgment failed: ${rc}\n${out}${err}")
+  endif()
+  return()
+endif()
+
 # Finite startup groups reuse the protocol/hosts/PNG consumer. Every run first
 # judges measurements and actual pages; matching hashes alone cannot admit it.
 if(DIAG_EXPANSION_RUN)
@@ -800,6 +819,7 @@ if(TARGET muhtari_libretro)
   target_link_libraries(muhtari-test-diag PRIVATE ${CMAKE_DL_LIBS})
   set(diag_retail ${PROJECT_BINARY_DIR}/tests/diag/retail.cmake)
   set(diag_battery ${PROJECT_BINARY_DIR}/tests/diag/battery.cmake)
+  set(diag_frontend_states ${PROJECT_BINARY_DIR}/tests/diag/frontend_states.cmake)
   file(GENERATE OUTPUT ${diag_battery} CONTENT
 "set(DIAG_BATTERY_RUN TRUE)
 set(COMPARE [==[$<TARGET_FILE:muhtari-test-retroarch-compare>]==])
@@ -812,8 +832,19 @@ set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
 set(EXPECTED [==[${diag_dir}/expected.csv]==])
 include([==[${CMAKE_CURRENT_LIST_FILE}]==])
 ")
+  file(GENERATE OUTPUT ${diag_frontend_states} CONTENT
+"set(DIAG_FRONTEND_STATES_RUN TRUE)
+set(COMPARE [==[$<TARGET_FILE:muhtari-test-retroarch-compare>]==])
+set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/frontend-states]==])
+set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
   muhtari_add_test(NAME diag.battery COMMAND ${CMAKE_COMMAND} -P ${diag_battery}
     LABELS diag portable TIMEOUT 30)
+  muhtari_add_test(NAME diag.frontend_states COMMAND ${CMAKE_COMMAND} -P ${diag_frontend_states}
+    LABELS diag portable TIMEOUT 45)
   file(GENERATE OUTPUT ${diag_retail} CONTENT
 "set(DIAG_RETAIL_RUN TRUE)
 set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
