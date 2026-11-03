@@ -164,7 +164,7 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 1. A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip using the released core rather than only callback-level agreement.
 2. A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing and battery semantics remain correct; the frontend owns rewind storage and UI.
 3. A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative durable writes, and comparable completed-work performance evidence; capability declarations and user instructions claim only the qualified host path.
-**Plans:** 13 plans; 9 complete. Plan 14-10 remains halted; additive Plan 14-12 awaits separate diagnostic authority, conditional Plan 14-13 requires attributable evidence and fresh exact-remedy authority, and Plan 14-11 remains blocked. FRONT-02/03/04 are pending.
+**Plans:** 13 plans in 12 dependency-derived waves; 9 complete. Plan 14-10 remains halted; additive Plan 14-12 awaits separate diagnostic authority, conditional Plan 14-13 requires attributable evidence and fresh exact-remedy authority, and Plan 14-11 remains blocked. FRONT-02/03/04 are pending.
 **Wave 1**
 - [x] 14-01-PLAN.md
 
@@ -192,16 +192,14 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 **Wave 9**
 - [x] 14-09-PLAN.md — Replace the retired host line ceiling with reporting and recurring fault controls.
 
-**Wave 10** *(immutable halted history; no resumption)*
+**Wave 10** *(14-10 is skipped as terminal halted history; independent 14-12 is ready only at its fresh diagnostic authorization checkpoint after completed 14-09)*
 - [ ] 14-10-PLAN.md — HALTED after its bounded Task 1: no cause was attributed, no BIOS remedy was applied, and its three-pair cap is spent.
-
-**Wave 11** *(depends on completed 14-09; fresh diagnostic authority required)*
 - [ ] 14-12-PLAN.md — Additive evidence-only investigation: one separately authorized process-observable local observation; no retry, remedy or full workflow.
 
-**Wave 12** *(conditional on attributable 14-12 evidence and fresh exact-remedy authority)*
+**Wave 11** *(conditional on attributable 14-12 evidence and fresh exact-remedy authority)*
 - [ ] 14-13-PLAN.md — Apply only a separately approved cause-specific local remedy and prove its property with bounded focused validation; inconclusive observation halts without remediation.
 
-**Wave 13** *(blocked until 14-12/13 succeed; no dependency on halted 14-10 completion)*
+**Wave 12** *(blocked until 14-12/13 succeed; no dependency on halted 14-10 completion)*
 - [ ] 14-11-PLAN.md — Preserve complete source/first-parent local regression and the existing separate actual-host authority checkpoint; consume 14-13's property producer.
 
 **Canonical refs:** [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#phase-14-state-consumers-and-continuation-proof), [feature ownership](research/FEATURES.md), [state/battery pitfalls](research/PITFALLS.md), [hosts §1/3](preparation/HOSTS-AND-INTEGRATION.md#1-libretro-contract), [settled host decisions](preparation/DECISIONS.md#hosts-and-integration), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [lessons](LESSONS.md).
