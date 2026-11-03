@@ -158,3 +158,24 @@ Current-source checks on macOS arm64:
 | `git diff --check` | 0 | No whitespace errors. |
 
 Local macOS arm64 ASan remains unavailable after the already documented pre-main hangs in unrelated instrumented binaries. It was not retried; the new hosted Ubuntu x64 ASan result remains required for acceptance.
+
+### Plan 14-07 exact-parent and publication preflight
+
+The repaired source commit is `234c81abd5bb80b72b56c851b4031867a9a236cc` on `phase/14-proven-frontend-states-and-responsive-play`. An independent detached checkout at that exact commit was created at `.worktrees/phase-14-gap07-parent`; its tracked tree is clean. This is the verified immediate-parent candidate for the separate evidence-only dispatch commit. `tests/cmake/quality_evidence.cmake` selects `HEAD^1` for `workflow_dispatch`; the evidence-only commit will therefore resolve to this independently tested commit, and the frozen dispatch identity will record both hashes.
+
+The first cold parallel exact-parent `cmake --workflow --preset ci` exited 8. Its JUnit and CTest failure receipts are preserved under ignored `build/phase14-gap07-evidence/parent-ci-cold/`. Sixteen otherwise passing fixture-backed cases timed out under the initial cold parallel load: `frame.sample_renders`, six `bios.*` cases, four `title.*` cases, and five `maria.dma_line.*` cases. The failed JUnit inventory consumer also exited 1 and identified those same 16 failures. No assertion failure or source warning was reported. A bounded serial diagnostic covering those cases and their fixture prerequisites passed 19/19 with exit 0; the exact captured command and output are in ignored `parent-ci-serial-diagnostic.log`. After those passes warmed the build and fixtures, the full exact-parent `cmake --workflow --preset ci` passed with captured exit 0: all 693 ordinary tests, package generation and all six release tests completed. No timeout, source behavior or CI policy was changed.
+
+Remaining exact-parent checks, all run after the successful full workflow and before focused CTest could replace test receipts:
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `cmake --workflow --preset ci` (warm exact-parent run) | 0 | All required stages passed; 693 ordinary tests and six release tests passed. |
+| `cmake --workflow --preset hygiene` | 0 | All 30 hygiene checks passed. |
+| `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 0 | Independent ordinary inventory: 693 tests, each once. |
+| `cmake -DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release -P tests/cmake/check_junit.cmake` | 0 | Independent release inventory: six tests, each once. |
+| `cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake` | 0 | Independent hygiene inventory: 30 checks, each once. |
+| `ctest --test-dir build/ci -R '^retroarch\.states\.controls$' --no-tests=error --output-on-failure` | 0 | Exact-parent mock-only state controls passed; no RetroArch process was launched. |
+
+The complete warm CI output and each command's captured exit are retained in ignored `build/phase14-gap07-evidence/parent-*.log`. The exact-parent checkout's own build directory generated the JUnit files; no prior checkout receipt was reused. No local macOS arm64 ASan run was repeated. These local results establish neither Windows compiler acceptance nor hosted ASan.
+
+Read-only publication checks on 2026-11-03: `gh auth status` succeeded (exit 0); `gh pr list --head phase/14-proven-frontend-states-and-responsive-play --state open --json number,url,state,headRefName,baseRefName` returned `[]` (exit 0); the branch workflow listing contained only preserved, completed dispatch runs `41585416888` and `41618546347`, with no active run (exit 0). `git ls-remote origin refs/heads/phase/14-proven-frontend-states-and-responsive-play refs/heads/main` showed branch SHA `0869c655008fc5344c428313ae519a91f5e9db42`; it is an ancestor of the local repair commit and there is no remote-only branch commit. `.github/workflows/ci.yml` triggers `push` only on `main`, while `workflow_dispatch` exposes the boolean `phase14_host` input. The authorized new push and dispatch remain unused at this preflight point. These remote and PR checks will be repeated immediately before the single push.
