@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
-current_phase: 12
-current_phase_name: Player-ready delivery and Playstead bridge
+current_phase: 14
+current_phase_name: Proven frontend states and responsive play
 status: blocked
-stopped_at: Phase 14 context gathered
-last_updated: "2026-11-03T02:47:31.178Z"
+stopped_at: Phase 14 plan complete
+last_updated: "2026-11-03T03:54:46.000Z"
 last_activity: 2026-11-02
-last_activity_desc: "Phase 13 shipped as PR #42"
-state_head: 45f3ec86b59eb7906562f3c4de18f264633e36fe
+last_activity_desc: "Phase 14 planned; five execution plans ready while the Phase 12 halt remains in force"
+state_head: 78dd28e1cc5b3ab269efbbf65f9ad6f73b643353
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 8
+  total_plans: 13
   completed_plans: 8
   percent: 33
 ---
@@ -25,15 +25,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 13 is complete on `phase/13-portable-save-load-across-three-interfaces`. The next scheduled Phase 12 remains halted at accepted 0/4 with its input-proof cause unresolved and all hosted allowances spent. Do not resume it or spend those allowances without a newly authorized bounded scope. Phase 14 remains after Phase 13, and no Phase 14 work has started.
+Current focus: Phase 14 is planned in five sequential plans and is ready to execute; Phase 13 is complete on `phase/13-portable-save-load-across-three-interfaces`. Phase 12 remains halted at accepted 0/4 with its input-proof cause unresolved and all hosted allowances spent. Do not resume it or use those allowances.
 
 ## Current Position
 
-Phase: 12 — Player-ready delivery and Playstead bridge
-Plan: Blocked at 12-01 hosted input proof; Phase 13 is complete
-Status: Blocked; no new Phase 12 scope is authorized
-Next action: Preserve the halt. If the owner chooses to resume Phase 12, first define a new bounded evidence/repair scope and authority; only then use `$gsd-discuss-phase 12` in a new session.
-Boundary: Phase 13's native, PowerPC/QEMU, complete normal/release, equality and ASan/UBSan gates passed locally and are documented in its verification/resource evidence. Phase 12 remains halted at accepted 0/4 with causes unresolved and all hosted allowances spent. No Phase 12 execution, hosted action, PR publication, RetroArch run or allowance renewal is authorized by this handoff.
+Phase: 14 (Proven frontend states and responsive play) — READY TO EXECUTE
+Plan: 0 of 5 Phase 14 plans executed; all five are ready. Phase 12 remains blocked at 12-01.
+Status: Phase 14 planned; the Phase 12 halt remains in force.
+Next action: From the Phase 14 worktree, run `$gsd-execute-phase 14` once. It executes the five plans continuously; the final plan permits one source-bound Phase 14 CI dispatch. No wave-by-wave commands are needed.
+Boundary: Phase 13's native, PowerPC/QEMU, complete normal/release, equality and ASan/UBSan gates passed locally and are documented in its verification/resource evidence. Phase 12 remains halted at accepted 0/4 with causes unresolved and all hosted allowances spent. Phase 14 planning ran no tests, RetroArch or CI. The Phase 12 allowance remains unavailable.
 
 ## Preserved Phase 12 position — halt remains binding
 
@@ -157,11 +157,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T02:47:31.049Z
-Stopped at: Phase 14 context gathered
+Last session: 2026-11-03T03:54:46.000Z
+Stopped at: Phase 14 plan complete
 Resume file: .planning/phases/14-proven-frontend-states-and-responsive-play/14-CONTEXT.md
-Next separate command: If the owner later authorizes a new bounded Phase 12 scope, start with `$gsd-discuss-phase 12` in a new session. Do not resume execution or use hosted allowances without that scope.
-Context handoff: Phase 13 is complete and its local native, PowerPC/QEMU, release, equality, and sanitizer evidence is in `13-RESOURCE-EVIDENCE.md`; receipts are under ignored `build/phase13-local/`. No Phase 13 work remains. No action is needed to preserve the Phase 12 halt. Phase 12 can resume only after its unresolved input-proof cause is addressed under a newly authorized bounded scope. Phase 14 has not started.
+Next separate command: From the Phase 14 worktree, run `$gsd-execute-phase 14` once to execute all five plans continuously. Do not run any Phase 12 plan or reuse its spent hosted allowance.
+Context handoff: Phase 14 planning is complete with five sequential plans; no implementation, tests, RetroArch or CI ran. The final plan contains one bounded source-bound Phase 14 CI dispatch. Phase 13 is complete and its local native, PowerPC/QEMU, release, equality, and sanitizer evidence is in `13-RESOURCE-EVIDENCE.md`; receipts are under ignored `build/phase13-local/`. Phase 12 remains halted at 0/4 with every hosted allowance spent.
 
 ## Deferred Items
 

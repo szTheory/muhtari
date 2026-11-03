@@ -4,7 +4,7 @@
 
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4, shipped 2026-10-21; [archive](milestones/v1.0-ROADMAP.md).
 - [x] **v2.0 — The whole library** — phases 5–11, shipped 2026-10-29; [archive](milestones/v2.0-ROADMAP.md).
-- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted, and Phase 14 pending.
+- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted, and Phase 14 planned.
 
 ## v3.0 — Playstead-ready play and states
 
@@ -164,7 +164,22 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 1. A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip using the released core rather than only callback-level agreement.
 2. A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing and battery semantics remain correct; the frontend owns rewind storage and UI.
 3. A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative durable writes, and comparable completed-work performance evidence; capability declarations and user instructions claim only the qualified host path.
-**Plans:** TBD — no execution plans yet.
+**Plans:** 5 plans across 5 sequential waves.
+**Wave 1**
+- [ ] 14-01-PLAN.md
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 14-02-PLAN.md
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 14-03-PLAN.md
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 14-04-PLAN.md
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 14-05-PLAN.md
+
 **Canonical refs:** [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#phase-14-state-consumers-and-continuation-proof), [feature ownership](research/FEATURES.md), [state/battery pitfalls](research/PITFALLS.md), [hosts §1/3](preparation/HOSTS-AND-INTEGRATION.md#1-libretro-contract), [settled host decisions](preparation/DECISIONS.md#hosts-and-integration), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [lessons](LESSONS.md).
 **UI hint:** no
 
@@ -214,6 +229,6 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 |---|---|---|---|
 | 12. Player-ready delivery and Playstead bridge | 3/9 | Halted at 12-01 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
-| 14. Proven frontend states and responsive play | 0/TBD | Not started | - |
+| 14. Proven frontend states and responsive play | 0/5 | Planned     | - |
 
-Next separate command, only after a new Phase 12 scope is authorized: `$gsd-discuss-phase 12`. Phase 13 is complete. Phase 12 remains halted at 0/4, is not accepted or waived, and all hosted allowances remain spent; no Phase 12 execution or hosted action is authorized by this handoff.
+Next separate command: from the Phase 14 worktree, run `$gsd-execute-phase 14` once to execute all five Phase 14 plans continuously. The final plan contains one bounded source-bound Phase 14 CI dispatch. Phase 13 is complete. Phase 12 remains halted at 0/4, is not accepted or waived, and all its hosted allowances remain spent; do not resume Phase 12 or reuse those allowances.
