@@ -608,7 +608,7 @@ The run lasted 2,060 seconds (34m20s). The Windows ARM64 build was the critical 
 
 The `retroarch-frames` artifact and its `host-receipt.txt` are from the same run and source. The artifact API identifies `archives-macos-arm64` ID `13277937921`, `hashes-macos-arm64` ID `13277128464`, and `retroarch-frames` ID `13279667108`; each is unexpired and matches the run/source. All three macOS arm64 package hashes match the receipt. The receipt identifies RetroArch 1.22.2, `state_mode=states`, `driver_result=1`, and `host_step_exit=1`; the loaded core digest before and after the failed driver is unchanged.
 
-The pre-existing DMA screenshot and fresh battery roundtrip steps passed. The opt-in states driver printed `states: fail-closed sandbox UDP containment preflight` and returned 1. It failed before `host_prepare_media` and before the states-mode RetroArch spawn. The screenshots and saves in this artifact belong to the earlier DMA/battery steps; there is no states-mode `final.bmp` or committed raw save to judge, and no state-mode image/progress/save, rewind, run-ahead, replay, durability, or process-containment assertion completed.
+The pre-existing DMA screenshot and fresh battery roundtrip steps passed. The opt-in states driver printed `states: fail-closed sandbox UDP containment preflight` and returned 1. It failed before `host_prepare_media` and before the states-mode RetroArch spawn. The screenshots in this artifact belong to the earlier DMA/battery steps; the artifact includes no save files. There is no states-mode `final.bmp` or committed raw save to judge, and no state-mode image/progress/save, rewind, run-ahead, replay, durability, or process-containment assertion completed.
 
 In `tests/retroarch/states.c:3028-3031`, this message follows a compound condition covering `/usr/bin/sandbox-exec` availability, the sandbox helper result, the remaining work-time bound, `update_config_port`, and `host_validate_runahead_config`. The receipt does not identify which member failed. Do not attribute the result to sandbox capability, UDP containment, or any other single member. The identity checks and earlier normal host controls do not resolve that missing distinction.
 
@@ -617,3 +617,15 @@ The advisory `wasm32` job failed compilation at `tests/core/test_state.c:2022`: 
 ### Outcome
 
 The authorized hosted attempt is spent. No fresh states-mode screenshot or save exists, so no independent frontend-state judgment was possible. FRONT-02, FRONT-03, and FRONT-04 remain pending; no frontend behavior or capability is qualified by this run. Earlier failures and spent allowances remain recorded. No new lesson was added because the exact failed preflight condition is still unknown.
+
+### Outcome-only documentation verification
+
+The first prescribed docs-filter run exited 8 because the initial `docs/testing.md` outcome note exceeded the existing budget by 1,344 bytes. The note was shortened to link to this evidence record, and the same filter then passed:
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `ctest --preset ci -R '^docs\.(budgets|api_names(\.self_test)?)$' --no-tests=error --output-on-failure --output-junit build/ci/junit-gap11-docs.xml` (initial note) | 8 | `docs.budgets` rejected the over-budget note. |
+| Same docs-filter command after shortening the note | 0 | All three selected documentation checks passed. The JUnit output is under ignored `build/ci/build/ci/junit-gap11-docs.xml` because the preset resolves the relative output path from `build/ci`. |
+| `git diff --check` | 0 | No whitespace errors. |
+
+No full workflow or host command was repeated for these outcome-only edits.
