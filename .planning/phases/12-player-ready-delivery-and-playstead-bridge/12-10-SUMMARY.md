@@ -27,7 +27,7 @@ key-files:
     - tests/input/tests.cmake
 key-decisions:
   - Keep the repair local and diagnostic-only; PLAY-03 acceptance remains pending at 0/4
-  - Preserve the helper protocol, input schedule, existing CTest identities and time limits
+  - Preserve the helper protocol, input schedule, and existing CTest identities and time limits
 metrics:
   duration: 24m
   completed: 2026-11-02
@@ -47,6 +47,12 @@ coverage:
     verification:
       - kind: integration
         ref: "tests/input/test_input.c#proline_one_button"
+        status: pass
+      - kind: integration
+        ref: "tests/input/tests.cmake#input.history_cart"
+        status: pass
+      - kind: integration
+        ref: "tests/libretro/input_trace.cmake#helper-high"
         status: pass
       - kind: e2e
         ref: "https://github.com/szTheory/muhtari/actions/runs/41461948345 (historical failed, incomplete host observation)"
@@ -73,6 +79,7 @@ Primary implementation files: `tests/retroarch/input_trace_helper.h` and `tests/
 - Helper diagnostic POST records now retain first observations and down/up transitions, with fixed-size per-key/state counts and observed first/last times. The mocked event schedule and the 64-record/4096-byte protocol remain unchanged. At the no-ack cutoff, the preflight checks the exact child with `waitpid(..., WNOHANG)` before cleanup and preserves either the observed raw status, an unknown still-running status, or the wait error.
 - The input test generator accepts `--write-cart FILE history` and writes an ignored generated cartridge. Its sampled state moves from waiting to held only for exact P1 Up plus button 1 with other controls idle, and reaches sticky completion only after a later neutral sample. The independent four-band RGB judge accepts actual completed pixels and classifies waiting, held, dimensions, and corrupted signatures separately.
 - Actual cartridge controls cover idle-only, early release without a later release, stuck-held, wrong port, wrong button, partial chords, a delayed valid sequence, next-sampled-frame release, and 260 neutral frames across the frame counter wrap. Existing plain/even cartridge outputs are byte-identical to their private pre-change baselines.
+- Post-review controls read back the generated history cartridge and compare its complete serialized bytes with the expected history image. The descriptor audit now enumerates open descriptors, checks a leaked alias at fd 128 or above, and fails if directory enumeration is incomplete.
 - The full local `ci` workflow and exact ordinary/release inventories pass. No RetroArch process, hosted job, remote service, publication, or acceptance action ran.
 
 ## TDD Evidence
@@ -94,13 +101,23 @@ Primary implementation files: `tests/retroarch/input_trace_helper.h` and `tests/
 
 | Check | Command | Result | Run URL |
 |---|---|---:|---|
-| Full local workflow | `cmake --workflow --preset ci` | Exit 0; 677 ordinary tests and 6 release tests passed; three local packages built | N/A-local |
-| Ordinary inventory | `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | Exit 0; 677 tests ran once each | N/A-local |
+| Full local workflow | `cmake --workflow --preset ci` | Exit 0; 678 ordinary tests and 6 release tests passed; three local packages built | N/A-local |
+| Ordinary inventory | `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | Exit 0; 678 tests ran once each | N/A-local |
 | Release inventory | `cmake -DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release -P tests/cmake/check_junit.cmake` | Exit 0; 6 tests ran once each | N/A-local |
 | Committed diff whitespace | `git diff --check 66a320d..HEAD` | Exit 0 | N/A-local |
 | Working-tree whitespace | `git diff --check HEAD` | Exit 0 | N/A-local |
 | Stub scan | Added-line scan of the eight scoped source/control files for TODO/FIXME/placeholders/empty rendered values | No matches | N/A-local |
-| Independent bounded review | Read-only review of the eight-file source diff | No blocking findings | N/A-local |
+| Independent bounded review | `$gsd-code-review 12 --depth=standard` on the ten-file final scope after two bounded fix rounds | Clean; no findings remain | N/A-local |
+
+## Post-review Fixes
+
+The standard code review found three issues, all resolved in `db134c4`:
+
+- `WR-01`: the helper descriptor audit stopped at fd 127. It now enumerates the process's open descriptors, fails on enumeration errors, and has a high-fd leak control.
+- `WR-02`: the generated history cartridge was not consumed. A fixture-dependent test now reads it back and checks its full serialized image against the expected history cartridge.
+- `IN-01`: the two history response codes could drift. Their declarations now live in `tests/input/input_pixels.h`, shared by the judge and consumer.
+
+The final standard-depth review covered ten files and found no remaining issues. The follow-up local `ci` workflow passed with 678 ordinary tests, 6 release tests and all three packages; both exact-inventory checks passed.
 
 The full workflow output, exact focused JUnit reports, inventory outputs, and byte-identity receipts are retained privately at `/private/tmp/muhtari-phase12-10-RjNszgLd/`. Full local workflow is not hosted CI.
 
@@ -118,10 +135,10 @@ The plan ledger measured 5 task commits from `66a320d3661de23aba9dd42b48f0baa77e
 
 - `tests/retroarch/input_trace_helper.h` — fixed-size transition and repeat aggregates without per-repeat record growth.
 - `tests/retroarch/keyboard_preflight.c` — exact-child status observation at the acknowledgment cutoff before cleanup.
-- `tests/retroarch/test_input_trace_helper.c`, `tests/policy/retroarch_preflight.c`, `tests/libretro/input_trace.cmake` — synthetic, cutoff, and actual-wrapper controls.
-- `tests/input/test_input.c` — generated history variant and real-cartridge state/fault schedules.
-- `tests/input/pixels.c` — independent fixed-RGB state and failure-class judge.
-- `tests/input/tests.cmake` — added the generated history file to the existing cartridge fixture setup; no new test identity or timeout.
+- `tests/retroarch/test_input_trace_helper.c`, `tests/policy/retroarch_preflight.c`, `tests/libretro/input_trace.cmake` — synthetic, cutoff, high-descriptor, and actual-wrapper controls.
+- `tests/input/test_input.c` — generated history variant, serialized-image check, and real-cartridge state/fault schedules.
+- `tests/input/input_pixels.h` and `tests/input/pixels.c` — shared private response codes and independent fixed-RGB state/failure judge.
+- `tests/input/tests.cmake` and `tests/inventory/ci.txt` — registered the history-cart byte check under the generated cartridge fixture and exact CI inventory.
 - `12-10-SUMMARY.md` — local-only execution record.
 
 ## Decisions Made
