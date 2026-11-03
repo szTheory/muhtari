@@ -74,7 +74,7 @@ host test or dependent plan.
 - [x] 12-07-PLAN.md — Reconcile the new Windows ARM64 timeout and 12-01 commit ledger; permit one ordinary acceptance run only after a causal finding and all local gates pass.
 - [ ] 12-08-PLAN.md — Superseded and excluded from the active count; its blocked attempt and evidence remain immutable history.
 - [x] 12-09-PLAN.md — Reconcile current source identities and check local docs readiness; next command is `$gsd-execute-phase 12 --gaps-only --wave 2`, then stop. Wave 3/12-07 requires a separate scope.
-- [ ] 12-10-PLAN.md — Repair helper trace observability and child-status cutoff locally; add generated held/released input controls; no host or CI action.
+- [x] 12-10-PLAN.md — Repair helper trace observability and child-status cutoff locally; add generated held/released input controls; no host or CI action.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -211,7 +211,7 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 5/9 | Halted at 12-01 | - |
+| 12. Player-ready delivery and Playstead bridge | 6/9 | Halted at 12-01 | - |
 | 13. Portable save/load across three interfaces | 0/8 | Planned; ready to execute | - |
 | 14. Proven frontend states and responsive play | 0/TBD | Not started | - |
 
