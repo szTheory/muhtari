@@ -4,7 +4,7 @@
 
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4, shipped 2026-10-21; [archive](milestones/v1.0-ROADMAP.md).
 - [x] **v2.0 — The whole library** — phases 5–11, shipped 2026-10-29; [archive](milestones/v2.0-ROADMAP.md).
-- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted, and Phase 14 planned.
+- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted, and Phase 14 gap plans ready for separately authorized execution.
 
 ## v3.0 — Playstead-ready play and states
 
@@ -164,10 +164,13 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 1. A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip using the released core rather than only callback-level agreement.
 2. A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing and battery semantics remain correct; the frontend owns rewind storage and UI.
 3. A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative durable writes, and comparable completed-work performance evidence; capability declarations and user instructions claim only the qualified host path.
-**Plans:** 8/8 plans executed; 14-08 is planned in wave 8 after the completed prerequisite plans.
-- [x] 14-08-PLAN.md — Isolate the normal portable replay, preflight exact source/parent, then audit one newly authorized host-enabled attempt.
-- [x] 14-07-PLAN.md
+**Plans:** 8/11 plans executed; three sequential gap-closure plans are ready, with FRONT-02/03/04 still pending.
 - [x] 14-06-PLAN.md
+- [x] 14-07-PLAN.md
+- [x] 14-08-PLAN.md — Isolate the normal portable replay, preflight exact source/parent, then audit one newly authorized host-enabled attempt.
+- [ ] 14-09-PLAN.md — Replace the retired host line ceiling with reporting and recurring fault controls.
+- [ ] 14-10-PLAN.md — Diagnose BIOS timeouts with bounded comparative evidence and a narrow supported remedy.
+- [ ] 14-11-PLAN.md — Complete exact-source/parent local gates, then require fresh owner approval before any host attempt.
 **Wave 1**
 - [x] 14-01-PLAN.md
 
@@ -232,6 +235,6 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 |---|---|---|---|
 | 12. Player-ready delivery and Playstead bridge | 3/9 | Halted at 12-01 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
-| 14. Proven frontend states and responsive play | 8/8 | In Progress | - |
+| 14. Proven frontend states and responsive play | 8/11 | In Progress | - |
 
-Phase 14 verification remains `gaps_found` (19/27 must-haves verified). Run 41656505025 reached the pinned host and passed its battery checks, then failed the existing RetroArch input line-count guard before state-mode checks; FRONT-02/03/04 remain pending. The required local `cmake --workflow --preset ci` gate also exited 8 twice on the same five one-second BIOS timeouts; the focused serial diagnostic passed, but the cause is unresolved. The completed [14-08 scheduling plan](phases/14-proven-frontend-states-and-responsive-play/14-08-PLAN.md) used its single authorized push and host-enabled dispatch allowance. No further hosted action, rerun, cancel, post-run push, local RetroArch, PR/merge/release or Phase 12 work is authorized. Phase 14 remains In Progress at 8/8 plans; after a separately scoped cause-addressed gap plan, run `$gsd-plan-phase 14 --gaps` in the current Phase 14 checkout. Phase 13 is complete; Phase 12 remains halted at 0/4, unaccepted and unwaived, with its hosted allowances spent.
+Phase 14 verification remains `gaps_found` (19/27 must-haves verified). Run 41656505025 reached the pinned host and passed its battery checks, then failed the existing RetroArch input line-count guard before state-mode checks; FRONT-02/03/04 remain pending. The required local `cmake --workflow --preset ci` gate also exited 8 twice on the same five one-second BIOS timeouts; the focused serial diagnostic passed, but the cause is unresolved. The completed [14-08 scheduling plan](phases/14-proven-frontend-states-and-responsive-play/14-08-PLAN.md) used its single authorized push and host-enabled dispatch allowance. No new push, dispatch, rerun, cancel, post-run push, local RetroArch, PR/merge/release or Phase 12 work is authorized. Phase 14 remains In Progress at 8/11 plans, with 14-09 through 14-11 ready in sequential gap-closure waves. After separate authorization for local gap-plan execution, run `$gsd-execute-phase 14 --gaps-only` in the current Phase 14 checkout; any future host attempt remains behind the fresh-owner decision in 14-11 after complete local preflight. Phase 13 is complete; Phase 12 remains halted at 0/4, unaccepted and unwaived, with its hosted allowances spent.

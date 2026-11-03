@@ -3,12 +3,12 @@ gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
-current_phase_name: GAPS FOUND — HOST CONTROL SKIPPED; REGRESSION GATE FAILED
-status: planning — verification gaps found; separate gap-plan authorization required
-stopped_at: Phase 14 verifier found gaps; all plans executed, but the local full CI regression gate failed twice and hosted state-mode checks were skipped. Awaiting separately scoped gap-plan authorization.
-last_updated: "2026-11-03T16:04:07.483Z"
+current_phase_name: GAPS FOUND — THREE GAP PLANS READY
+status: planning — gap plans checked; local execution requires separate scope authorization
+stopped_at: Phase 14 gap planning and independent plan review completed; 14-09 through 14-11 are ready, while local regression and actual-host evidence remain unresolved.
+last_updated: "2026-11-03T16:38:22.000Z"
 last_activity: 2026-11-03
-state_head: f3852fc735f8b6a17780d3ac0d801a95d36f19ee
+state_head: b8e5dfda56ab5c077b2f718ab0ab19fee6502992
 progress:
   total_phases: 3
   completed_phases: 1
@@ -24,14 +24,14 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 verification is gaps_found (19/27). The host run failed its line-count guard before savestate, rewind and run-ahead checks; the full local CI gate failed twice on the same five one-second BIOS timeouts. FRONT-02/03/04 remain pending; all 14-08 remote allowance is spent and Phase 12 remains halted.
+Current focus: Phase 14 verification is gaps_found (19/27). Three gap-closure plans now address the retired host line-count guard, unresolved BIOS timeouts, and complete local/conditional host evidence. FRONT-02/03/04 remain pending; the 14-08 remote allowance is spent and Phase 12 remains halted.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — GAPS FOUND
-Plan: 8 of 8 executed; phase verification gaps_found
-Status: planning — verification gaps found; separate gap-plan authorization required
-Next action: After separately scoped cause-addressed gap-plan authorization, run `$gsd-plan-phase 14 --gaps` in the current Phase 14 checkout. No new hosted allowance or local frontend launch is available.
+Phase: 14 (Proven frontend states and responsive play) — GAP PLANS READY
+Plan: 8 of 11 executed; 14-09 through 14-11 are planned, and phase verification remains gaps_found
+Status: planning — local gap-plan execution requires separate scope authorization
+Next action: After separate authorization for local gap-plan execution, run `$gsd-execute-phase 14 --gaps-only` in the current Phase 14 checkout. This does not authorize a host attempt; Plan 14-11 requires a fresh owner decision after every local gate passes.
 Boundary: No further Phase 14 push, dispatch, rerun, cancel, post-run push, local RetroArch, PR/merge/release, or Phase 12 work is authorized. Any later hosted action needs separate scope and a fresh allowance.
 
 ## Preserved Phase 12 position — halt remains binding
@@ -186,11 +186,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T16:03:18.075Z
-Stopped at: Phase 14 verifier found gaps; all plans executed, but the local full CI regression gate failed twice and hosted state-mode checks were skipped. Awaiting separately scoped gap-plan authorization.
+Last session: 2026-11-03T16:38:22.000Z
+Stopped at: Phase 14 gap planning and independent plan review completed; 14-09 through 14-11 are ready, with local regression and actual-host evidence still unresolved.
 Resume file: None
-Next separate command: After separately scoped authorization, `$gsd-plan-phase 14 --gaps` runs in the current Phase 14 checkout.
-Context handoff: Phase 14 has 8/8 plans executed, but verification is gaps_found (19/27). Run 41656505025 failed the existing host line-count guard before state-mode tests. Two phase-level full local CI runs exited 8 on the same five BIOS timeouts; focused serial diagnostics passed and cause remains unresolved. The one 14-08 dispatch allowance is spent. Do not rerun, dispatch, push, launch RetroArch locally, or work on Phase 12. After separate authorization for cause-addressed gap planning, run `$gsd-plan-phase 14 --gaps` in this checkout.
+Next separate command: After separate authorization for local gap-plan execution, run `$gsd-execute-phase 14 --gaps-only` in the current Phase 14 checkout.
+Context handoff: Phase 14 has 8/11 plans executed and remains `gaps_found` (19/27). Run 41656505025 failed the existing host line-count guard before state-mode tests. Two phase-level full local CI runs exited 8 on the same five BIOS timeouts; focused serial diagnostics passed and cause remains unresolved. Plans 14-09 through 14-11 are ready in sequence. The 14-08 dispatch allowance is spent. Do not push, dispatch, rerun, cancel, launch RetroArch locally, or work on Phase 12. Any future host attempt needs the fresh explicit owner decision in 14-11 after its complete local preflight.
 
 ## Deferred Items
 
