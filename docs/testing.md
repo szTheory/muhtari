@@ -332,35 +332,33 @@ sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `c
 
 ## Hosted RetroArch
 
-The `retroarch` job has two cases on `macos-15`: DMA equivalence and a battery roundtrip.
-It uses macOS arm64 build archives and pinned RetroArch 1.22.2 Metal. Every launch gets fresh home,
-configuration, system and output directories. `SAVE_DIR` is explicit, external to each disposable launch tree;
-overlapping paths fail before cleanup. Each process has the existing 50-second bound.
+On `macos-15`, `retroarch` tests DMA equivalence and a battery roundtrip using macOS arm64 archives and
+pinned RetroArch 1.22.2 Metal. Each launch has fresh home, config, system and output directories;
+`SAVE_DIR` stays outside each disposable tree, overlaps fail before cleanup, and processes retain the
+50-second bound.
 
 DMA runs the committed diagnostic for 120 frames. Its runner hash retains the `diag/dma` ledger pin, and every
 screenshot pixel must match. A flipped pixel control must exit 1 naming exactly pixel (7,3).
 
-The battery case starts two fresh RetroArch and two fresh runner processes from empty, separate save directories.
-Its owned diagnostic increments 16-bit HSC and EEPROM counters through SRAM stores and RIOT pins, waits for
-programming, reads back and draws them. First launches use owned synthetic C6/FE firmware with marker 5A and
-no routines; second launches use stub FF. Frontends share only save storage. Immutable snapshots must match
-all 34,816 independently expected bytes, counters 1/1 then 2/2, and corresponding runner saves. The mailbox
-judge checks runner hardware observations.
+Two fresh RetroArch and runner launches start with separate empty saves. The owned diagnostic increments
+16-bit HSC and EEPROM counters through SRAM and RIOT writes, waits for programming, then reads and draws them.
+It tests owned C6/FE firmware with marker 5A and no routines, then FF stubs. Immutable snapshots must match
+all 34,816 expected bytes, counters 1/1 then 2/2, and runner saves; the mailbox judge checks runner hardware.
 
-After `sips` converts PNG to BMP, independent glyphs judge both counters and the marker before whole-frame
-equality. Equal-black, wrong-counter and stale-one-medium controls must fail. Ordinary `diag.battery` runs
-the shared mailbox/media faults and pixel judge; loaded-module tests retain lifecycle/no-content coverage.
-Hosted support files total at most 300 lines. Only owned diagnostic shots enter `retroarch-frames`;
-saves, firmware and logs stay uncommitted.
+After PNG-to-BMP conversion, independent glyphs judge counters and marker before pixel equality; equal-black,
+wrong-counter and stale-one-medium controls must fail. Ordinary `diag.battery` runs shared mailbox/media faults
+and the pixel judge; loaded-module tests cover lifecycle/no-content. Hosted support files stay at most 300 lines.
+Only owned diagnostic shots enter `retroarch-frames`; saves, firmware and logs stay uncommitted.
 
 **Phase 14 state case.** One `workflow_dispatch` uses same-run macOS arm64 artifacts for `GITHUB_SHA`.
-Accept `retroarch-frames` only from a completed host job with matching receipt event, head SHA, attempt and
-artifact identity; a skipped job or absent artifact is not host evidence. Limits: five-minute job, 50-second
-child, 45-second work plus five-second cleanup, 120 frames and 64 forward actions. The owned sandbox probe
-rejects external UDP before launch. Failed, skipped or incomplete evidence leaves qualification pending; never
-rerun or launch locally. Record command, exit and run URL.
+Accept `retroarch-frames` only from a completed job with matching receipt event, SHA, attempt and artifact
+identity. Limits: five-minute job, 50-second child, 45-second work plus five-second cleanup, 120 frames and
+64 forward actions. The sandbox probe rejects external UDP before launch. Failed or incomplete evidence leaves
+qualification pending; never rerun or launch locally. Record command, exit and run URL.
 
-Host job skipped (41629846188).
+Prior host state job skipped on [run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188);
+dispatch exited 0, run watch and the required aggregate exited 1. Exact commands and receipts for both attempts
+are in the [Phase 14 resource evidence](../.planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md).
 
 For the existing DMA and battery cases, `run_retroarch.cmake` prints the private RetroArch log. Record the
 command, exit and run URL; those results do not establish general retail-game compatibility.
