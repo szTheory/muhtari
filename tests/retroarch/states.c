@@ -1191,6 +1191,7 @@ static int run_controls(const char *self_path)
         return 1;
     }
 #else
+    (void)self_path;
     mock.child_owned = 1;
 #endif
     states_ops ops = {
@@ -1306,6 +1307,7 @@ static int run_complete_workload_control(enum mock_fault fault, const char *expe
     if (spawn_mock_child(&mock) != 0)
         return 0;
 #else
+    (void)self_path;
     mock.child_owned = 1;
 #endif
     states_ops ops = mock_operations(&mock);
@@ -1468,6 +1470,7 @@ static int run_engine_control(const mock_control_case *test, const char *self_pa
     if (spawn_mock_child(&mock) != 0)
         return 0;
 #else
+    (void)self_path;
     mock.child_owned = 1;
 #endif
     states_ops ops = mock_operations(&mock);

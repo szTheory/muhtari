@@ -138,3 +138,23 @@ Both Windows build jobs fail compiling `tests/retroarch/states.c`: MSVC `/W4 /WX
 The artifact API returned 14 artifacts. Same-run `archives-macos-arm64` (artifact 13223615092) and `hashes-macos-arm64` (artifact 13223081611) were available and downloaded with exit 0. The archive's `commit.txt` equals the frozen source SHA. The macOS arm64 archive SHA-256 values are library `7aedd1e651b3d670a551d64096344d5b4bd8a1270570b725372598b6240d7b09`, libretro `aceb29604b092eaec32ed6dbb633f6fa84c05da9de637c5d2de3dbfb077a5185`, and runner `20aa096f47bda970888c1b151f339f365cdd61e48c928ee49c30c4993ac28981`. No `retroarch-frames` artifact exists, so there is no host receipt, screenshot, or save to authenticate or inspect.
 
 FRONT-02, FRONT-03, and FRONT-04 remain pending. The local fixture, mock controls, native contracts, parent checkout, and hosted ASan do not establish actual RetroArch behavior. The one additional allowance is consumed; do not dispatch again, rerun a job, or launch RetroArch locally. Closing the Windows warnings and obtaining fresh host evidence require a new separately authorized scope.
+
+## Plan 14-07 warning repair and local preflight
+
+The owner separately authorized this Phase 14 gap-closure scope on 2026-11-03 after run `41618546347`: one ordinary push of the frozen Phase 14 branch and one explicit `workflow_dispatch` with `phase14_host=true`, after all source and exact-parent gates pass. This is a new allowance distinct from 14-06. At Task 1 completion, the new push and dispatch remain unused. Phase 12 remains halted; runs `41585416888` and `41618546347` and their records remain unchanged.
+
+The only source change is `(void)self_path;` in the existing non-POSIX branches of `run_controls`, `run_complete_workload_control`, and `run_engine_control` in `tests/retroarch/states.c`. Their POSIX path checks, path copies, child spawning, protected-fixture checks, mock assignments, assertions, and fault cases are unchanged. A focused read-only review of this exact diff passed with zero findings and zero fixes; this consumed no review-fix round and did not modify the preserved phase review or verification.
+
+Current-source checks on macOS arm64:
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `cmake --workflow --preset ci` | 0 | All five workflow stages passed; 693 ordinary tests and six release tests passed. |
+| `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 0 | Ordinary inventory complete: 693 tests, each once. |
+| `cmake -DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release -P tests/cmake/check_junit.cmake` | 0 | Release inventory complete: six tests, each once. |
+| `cmake --workflow --preset hygiene` | 0 | All 30 hygiene checks passed, including pinned formatting. |
+| `cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake` | 0 | Hygiene inventory complete: 30 checks, each once. |
+| `ctest --test-dir build/ci -R '^retroarch\.states\.controls$' --no-tests=error --output-on-failure` | 0 | The existing fixture/controller mock controls passed; no RetroArch process was launched. |
+| `git diff --check` | 0 | No whitespace errors. |
+
+Local macOS arm64 ASan remains unavailable after the already documented pre-main hangs in unrelated instrumented binaries. It was not retried; the new hosted Ubuntu x64 ASan result remains required for acceptance.
