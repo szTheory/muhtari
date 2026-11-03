@@ -334,3 +334,51 @@ The execute-phase regression gate resolved `workflow.test_command` to `cmake --w
 The first `cmake --workflow --preset ci` run reached CTest's 693 ordinary-test suite. The log records five failures at the existing one-second CTest limit: `bios.splash_skip`, `bios.rejects_cart`, `bios.k_window`, `bios.k_first_fetch`, and `bios.load_aliases`. The wrapper did not preserve the top-level exit because zsh rejected its variable name `status` as read-only; the CTest failure and all five timed-out tests are in ignored `build/phase14-gap08-evidence/regression-gate.log`. The focused diagnostic command `ctest --test-dir build/ci -R '^bios\.(splash_skip|rejects_cart|k_window|k_first_fetch|load_aliases)$' --output-on-failure -j1` ran both fixture prerequisites and all five BIOS tests, 7/7 in 0.52 seconds, exit 0.
 
 The one bounded warm full-workflow retest, `cmake --workflow --preset ci` under `run-with-timeout 600`, exited 8. It reproduced the same five BIOS timeouts; the other 688 ordinary tests passed, including `fuzz.regress.run`, and the release suite did not run. Its exit and log are ignored `build/phase14-gap08-evidence/regression-gate-warm.exit` and `.log`. No source or timeout change followed, and no further full local workflow was run. The isolated diagnostic supports a scheduling/load explanation but does not establish the cause; the phase-level regression gate remains failed. This is separate from the exact-source CI preflight, which passed before the later phase-level gate.
+
+## Plan 14-09 local hosted-support ceiling repair (2026-11-03)
+
+This local change removes only the retired line-count blocker from the existing
+RetroArch battery step. The prior source total of 3,845 remains historical
+evidence. The report-only command now returns 3,897 newline characters after its
+52-line addition; it compares the total with no quota. No actual RetroArch,
+full-workflow, host, publication, or remote action was run here. Results are
+N/A-local; run URL: N/A-local.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| cmake --preset ci && cmake --build --preset ci && ctest --preset ci -R '^policy\.host_support\.controls$' --no-tests=error --output-on-failure --output-junit build/ci/junit-gap09-policy.xml | 0 | The recurring CMake control passed in 0.24 seconds. It independently counted each copied support file and the aggregate, accepted 301 added newline characters, rejected missing states.c, checked comments and unrelated jobs, and required failures for the restored 300-line gate, a different numeric ceiling, and a missing reporter. |
+| cmake -DMODE=inspect -DWORKFLOW=build/ci/policy/host_support_pre-repair.yml -P build/ci/policy/host_support_controls.cmake | 1 (expected) | A snapshot of the pre-repair workflow failed specifically on -le 300, proving the retired guard was the blocker. |
+| cmake -DMODE=support-report -DROOT="$PWD" -P tests/retroarch/run_retroarch.cmake | 0 | Reported bmp.c 76, compare.c 319, receipt_driver.c 40, run_retroarch.cmake 281, states.c 3,145, and test.cfg.in 36 newline characters; aggregate 3,897. |
+| ctest --preset ci -R '^retroarch\.states\.controls$' --no-tests=error --output-on-failure --output-junit build/ci/junit-gap09-host-controls.xml | 0 | Existing mock containment, identity, progress, image, storage, workload, and cleanup controls passed in 0.47 seconds; this supplies no real-host proof. |
+| actionlint -shellcheck='' -ignore 'label "ubuntu-26\.04' -ignore 'label "ubuntu-26\.04-arm' .github/workflows/ci.yml | 0 | Workflow syntax and action expressions passed with the existing runner-label allowances. |
+| git diff --check | 0 | No whitespace errors. |
+| cmake -DROOT="$PWD" -DBUILD="$SAFE_GUARD_DIR" -DWORK="$SAFE_GUARD_DIR" -P build/ci/policy/host_support_controls.cmake, with SAFE_GUARD_DIR="$PWD/build/ci/policy/gap09-scratch-guard-check" | 1 (expected) | The strict-child scratch guard rejected targeting the build directory itself before cleanup; its sentinel remained present. |
+
+The first two policy-control runs exposed assertion-handling defects in the
+new control itself: CMake wrapped the missing-input and mutation diagnostics
+across lines. The report correctly rejected the missing path, but the original
+assertions did not match the wrapped text. The assertions now search for the
+specific missing path and normalize wrapped diagnostics; the final focused
+control above passes. The expected pre-repair rejection is separate from those
+test-authoring failures.
+
+### Boundary review
+
+The changed workflow boundary is one command: the existing battery step still
+runs its DMA and battery judges, then calls the report-only mode immediately
+before the unchanged opt-in state step. The launcher checks the six currently
+admitted support inputs, sorts and reports regular non-symlink files, and
+returns before frontend argument validation, cleanup, config generation, or
+process launch. Existing legacy/state launch guards, firmware and pixel/media
+judges, runner/core pins, job and child deadlines, frame/action limits, and
+fixture ownership remain unchanged. The policy control reads and mutates only
+copies under the ignored build tree; its own cleanup is confined to a strict
+child of the project build directory. The focused control took 0.24 seconds;
+no dependency or broader harness was added. One review finding tightened that
+scratch-path boundary; no further required finding remains.
+
+The local regression gate recorded above is still failed on five existing
+one-second BIOS timeouts. This gap plan did not rerun the complete workflow or
+change those limits. FRONT-02, FRONT-03, and FRONT-04 remain pending; the
+14-08 hosted allowance remains spent, Phase 12 remains halted, and no new host
+or remote allowance was created.
