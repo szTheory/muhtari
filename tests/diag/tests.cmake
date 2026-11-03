@@ -7,22 +7,83 @@ function(diag_ledger_crc id report)
     COMMAND_ERROR_IS_FATAL ANY)
 endfunction()
 
-# The owned progress fixture includes B, which exposes an incorrect independent
-# glyph row even when both compared pictures are the same.
+# An independent visual progress judge checks the owned fixture counter before
+# comparing complete pictures and exercises falsifiable media/pixel controls.
 if(DIAG_FRONTEND_STATES_RUN)
   file(MAKE_DIRECTORY "${OUT}")
-  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress
-    "${ROOT}/tests/diag/frontend-states.a78" "${OUT}"
-    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 30)
-  if(NOT rc STREQUAL "0")
-    message(FATAL_ERROR "frontend progress fixture failed: ${rc}\n${out}${err}")
-  endif()
-  execute_process(COMMAND ${EMULATOR} "${COMPARE}" --battery 11 0
+  function(frontend_exec)
+    execute_process(COMMAND ${EMULATOR} "${DRIVER}" ${ARGV}
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 30)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "frontend states ${ARGV}: ${rc}\n${out}${err}")
+    endif()
+  endfunction()
+  function(frontend_compare)
+    execute_process(COMMAND ${EMULATOR} "${COMPARE}" ${ARGV}
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "frontend picture judgment ${ARGV}: ${rc}\n${out}${err}")
+    endif()
+  endfunction()
+  frontend_exec(--frontend-progress "${ROOT}/tests/diag/frontend-states.a78" "${OUT}")
+  foreach(value IN ITEMS 0000 000B 0040 0100)
+    frontend_compare(--progress ${value} "${OUT}/progress-${value}.bmp"
+      "${OUT}/progress-${value}.bmp")
+  endforeach()
+  execute_process(COMMAND ${EMULATOR} "${COMPARE}" --progress-controls 000B
     "${OUT}/progress-000B.bmp" "${OUT}/progress-000B.bmp"
     RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
-  if(NOT rc STREQUAL "0")
-    message(FATAL_ERROR "frontend progress glyph B judgment failed: ${rc}\n${out}${err}")
+  if(NOT rc STREQUAL "0" OR NOT out MATCHES
+      "equal wrong glyph, changed counter, and unrelated pixel rejected")
+    message(FATAL_ERROR "frontend progress comparator controls failed: ${rc}\n${out}${err}")
   endif()
+  execute_process(COMMAND ${EMULATOR} "${COMPARE}" --progress 000C
+    "${OUT}/progress-000B.bmp" "${OUT}/progress-000B.bmp"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT out MATCHES "progress counter image 0 is 000B, expected 000C")
+    message(FATAL_ERROR "frontend accepted changed expected progress counter: ${rc}\n${out}${err}")
+  endif()
+
+  foreach(media IN ITEMS committed-0000.raw committed-0001.raw committed-0100.raw replay.raw)
+    set(value 1)
+    if(media STREQUAL "committed-0000.raw")
+      set(value 0)
+    elseif(media STREQUAL "committed-0100.raw")
+      set(value 256)
+    endif()
+    frontend_exec(--frontend-progress-media "${OUT}/${media}" ${value})
+  endforeach()
+  execute_process(COMMAND ${CMAKE_COMMAND} -E compare_files
+    "${OUT}/replay.raw" "${OUT}/committed-0001.raw" RESULT_VARIABLE same)
+  if(NOT same STREQUAL "0")
+    message(FATAL_ERROR "frontend one-frame speculative HSC value escaped state restore")
+  endif()
+
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress-media
+    "${OUT}/replay.raw" 2 RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT err MATCHES "frontend media: byte 256 is 01, expected 02")
+    message(FATAL_ERROR "frontend accepted one-frame speculative HSC value: ${rc}\n${out}${err}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress-media
+    "${OUT}/missing.raw" 1 RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0")
+    message(FATAL_ERROR "frontend accepted missing HSC save media")
+  endif()
+  file(READ "${OUT}/committed-0001.raw" short LIMIT 2047)
+  file(WRITE "${OUT}/truncated.raw" "${short}")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress-media
+    "${OUT}/truncated.raw" 1 RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT err MATCHES "frontend media: length 2047, expected 2048")
+    message(FATAL_ERROR "frontend accepted truncated HSC save media: ${rc}\n${out}${err}")
+  endif()
+  file(COPY_FILE "${OUT}/committed-0001.raw" "${OUT}/trailing.raw")
+  file(APPEND "${OUT}/trailing.raw" "x")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress-media
+    "${OUT}/trailing.raw" 1 RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT err MATCHES "frontend media: length 2049, expected 2048")
+    message(FATAL_ERROR "frontend accepted trailing HSC save data: ${rc}\n${out}${err}")
+  endif()
+  message("frontend states: independent progress, whole picture and complete HSC save judgments pass")
   return()
 endif()
 
