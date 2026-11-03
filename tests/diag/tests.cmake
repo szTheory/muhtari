@@ -873,6 +873,13 @@ target_compile_definitions(muhtari-test-retroarch-compare PRIVATE
 set_target_properties(muhtari-test-retroarch-compare PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-retroarch-compare)
+add_executable(muhtari-test-retroarch-states ${PROJECT_SOURCE_DIR}/tests/retroarch/states.c)
+set_target_properties(muhtari-test-retroarch-states PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-retroarch-states)
+muhtari_add_test(NAME retroarch.states.controls
+  COMMAND $<TARGET_FILE:muhtari-test-retroarch-states> --fault-controls
+  LABELS diag portable TIMEOUT 20)
 if(TARGET muhtari_libretro OR CMAKE_CROSSCOMPILING_EMULATOR)
   set(diag_frontend_states ${PROJECT_BINARY_DIR}/tests/diag/frontend_states.cmake)
   file(GENERATE OUTPUT ${diag_frontend_states} CONTENT

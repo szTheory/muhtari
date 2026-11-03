@@ -248,6 +248,7 @@ typedef struct mock_session {
     unsigned picture_generation;
     unsigned pictures[3];
     unsigned frames;
+    int identity_fault;
     int child_owned;
     int state_exists;
     int child_reaped;
@@ -277,6 +278,8 @@ static int mock_identity(void *user, unsigned timeout_ms)
     mock_session *mock = user;
     (void)timeout_ms;
     mock->now += 1u;
+    if (mock->identity_fault != 0)
+        return mock->identity_fault;
     return mock->child_owned ? 0 : 1;
 }
 
@@ -507,6 +510,51 @@ static int run_controls(const char *self_path)
            "  ---\n  error: %s progress=%u frames=%u child_owned=%d reaped=%d\n  ...\n",
            result.error != NULL ? result.error : "valid mock scenario produced wrong result",
            mock.progress, mock.frames, mock.child_owned, mock.child_reaped);
+    return 1;
+}
+
+static int run_fault_controls(const char *self_path)
+{
+    mock_session mock;
+    memset(&mock, 0, sizeof mock);
+    mock.progress = 12u;
+    mock.identity_fault = 1;
+#if STATES_POSIX
+    if (strlen(self_path) >= sizeof mock.self_path)
+        return 2;
+    strcpy(mock.self_path, self_path);
+    if (spawn_mock_child(&mock) != 0)
+        return 2;
+#else
+    mock.child_owned = 1;
+#endif
+    states_ops ops = {
+        .user = &mock,
+        .now_ms = mock_now,
+        .preflight = mock_preflight,
+        .verify_identity = mock_identity,
+        .read_progress = mock_progress,
+        .state_absent = mock_state_absent,
+        .save_once = mock_save,
+        .state_created = mock_state_created,
+        .frame_once = mock_frame,
+        .load_once = mock_load,
+        .capture = mock_capture,
+        .cleanup = mock_cleanup,
+    };
+    states_result result;
+    int rc = states_save_load(&ops, &result);
+    puts("TAP version 13\n1..1");
+    if (rc != 0 && result.error != NULL &&
+        strcmp(result.error, "RetroArch VERSION reply was not 1.22.2") == 0 &&
+        !mock.child_owned && mock.child_reaped) {
+        puts("ok 1 - wrong version has a named cause and reaps its owned child");
+        return 0;
+    }
+    printf("not ok 1 - wrong version has a named cause and reaps its owned child\n"
+           "  ---\n  error: got %s, child_owned=%d reaped=%d\n  ...\n",
+           result.error != NULL ? result.error : "no sequence failure", mock.child_owned,
+           mock.child_reaped);
     return 1;
 }
 
@@ -1062,6 +1110,9 @@ static int nonloopback_ipv4(struct in_addr *address)
 
 static int sandbox_helper(host_session *host, const char *self_path)
 {
+    char self_exec[PATH_MAX];
+    if (copy_path(self_exec, sizeof self_exec, self_path) != 0)
+        return 1;
     int port_fd = -1;
     uint16_t selected = 0u;
     if (reserve_port(0u, &port_fd, &selected) != 0)
@@ -1093,7 +1144,7 @@ static int sandbox_helper(host_session *host, const char *self_path)
             _exit(126);
         close(out_pipe[1]);
         char *argv[] = {"/usr/bin/sandbox-exec", "-f", host->profile_path,
-                        (char *)self_path, "--udp-helper", port_text, NULL};
+                        self_exec, "--udp-helper", port_text, NULL};
         execv(argv[0], argv);
         _exit(127);
     }
@@ -1558,9 +1609,13 @@ static int compare_capture(host_session *host, unsigned expected, unsigned pictu
                            int baseline, const char *path)
 {
     char value[8];
+    char reference_path[PATH_MAX], image_path[PATH_MAX];
     (void)snprintf(value, sizeof value, "%04X", expected & 0xffffu);
     const char *reference = baseline ? path : host->captures[picture_id];
-    char *argv[] = {host->compare, "--progress", value, (char *)reference, (char *)path, NULL};
+    if (copy_path(reference_path, sizeof reference_path, reference) != 0 ||
+        copy_path(image_path, sizeof image_path, path) != 0)
+        return 1;
+    char *argv[] = {host->compare, "--progress", value, reference_path, image_path, NULL};
     char output[1024] = {0};
     int status = 0;
     if (run_capture(argv, output, sizeof output, STATES_OBSERVE_MS, &status) != 0 || status != 0)
@@ -1778,7 +1833,10 @@ static int digest_is_hex(const char *digest)
 
 static int core_digest_matches(const char *path, const char *expected)
 {
-    char *argv[] = {"/usr/bin/shasum", "-a", "256", (char *)path, NULL};
+    char image_path[PATH_MAX];
+    if (copy_path(image_path, sizeof image_path, path) != 0)
+        return 1;
+    char *argv[] = {"/usr/bin/shasum", "-a", "256", image_path, NULL};
     char output[1024] = {0};
     int status = 0;
     if (!digest_is_hex(expected) ||
@@ -1902,6 +1960,8 @@ int main(int argc, char **argv)
 #endif
     if (argc == 2 && strcmp(argv[1], "--controls") == 0)
         return run_controls(self);
+    if (argc == 2 && strcmp(argv[1], "--fault-controls") == 0)
+        return run_fault_controls(self);
 #if defined(__APPLE__)
     if (argc == 3 && strcmp(argv[1], "--preflight") == 0)
         return preflight_only(self, argv[2]);
