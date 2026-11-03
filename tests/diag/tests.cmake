@@ -877,8 +877,58 @@ add_executable(muhtari-test-retroarch-states ${PROJECT_SOURCE_DIR}/tests/retroar
 set_target_properties(muhtari-test-retroarch-states PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-retroarch-states)
-muhtari_add_test(NAME retroarch.states.controls
-  COMMAND $<TARGET_FILE:muhtari-test-retroarch-states> --fault-controls
+set(states_controls_template [=[
+set(DRIVER "@DRIVER@")
+set(ROOT "@ROOT@")
+set(CMAKE_BIN "@CMAKE_BIN@")
+set(OUT "@OUT@")
+execute_process(COMMAND "${DRIVER}" --fault-controls RESULT_VARIABLE rc
+  OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 15)
+if(NOT rc STREQUAL "0")
+  message(FATAL_ERROR "RetroArch state fault controls failed: ${rc}\n${out}${err}")
+endif()
+file(REMOVE_RECURSE "${OUT}")
+set(state_root "${OUT}/state-root")
+set(ra_real "${state_root}/ra-real")
+set(ra_link "${state_root}/ra-alias")
+file(MAKE_DIRECTORY "${ra_real}/shots" "${ra_real}/states" "${state_root}")
+file(WRITE "${ra_real}/sentinel" "keep\\n")
+file(WRITE "${OUT}/core" "core\\n")
+file(WRITE "${OUT}/info" "info\\n")
+file(WRITE "${OUT}/state-driver" "driver\\n")
+file(WRITE "${OUT}/compare" "compare\\n")
+file(CREATE_LINK "${ra_real}" "${ra_link}" SYMBOLIC RESULT link_result)
+if(NOT link_result STREQUAL "0")
+  message(FATAL_ERROR "Could not create the symlink alias fault fixture: ${link_result}")
+endif()
+execute_process(COMMAND "${CMAKE_BIN}" -DRETROARCH=/bin/false "-DCORE=${OUT}/core"
+  "-DINFO=${OUT}/info" -DINFO_NAME=muhtari_libretro.info
+  "-DTEMPLATE=${ROOT}/tests/retroarch/test.cfg.in"
+  "-DSTATE_DRIVER=${OUT}/state-driver" "-DCOMPARE=${OUT}/compare"
+  "-DSTATE_OUT=${state_root}" "-DRA_DIR=${ra_link}"
+  "-DSAVE_DIR=${state_root}/save" -DFRAMES=120
+  "-DROM=${ROOT}/tests/diag/frontend-states.a78"
+  "-DSHOT=${state_root}/final.bmp" -DMODE=states
+  -P "${ROOT}/tests/retroarch/run_retroarch.cmake"
+  RESULT_VARIABLE path_rc OUTPUT_VARIABLE path_out ERROR_VARIABLE path_err TIMEOUT 10)
+if(path_rc STREQUAL "0" OR
+   NOT "${path_out}${path_err}" MATCHES "symlink or path alias rejected before cleanup")
+  message(FATAL_ERROR "Symlink alias did not fail at the pre-cleanup guard: ${path_rc}\\n${path_out}${path_err}")
+endif()
+file(READ "${ra_real}/sentinel" sentinel)
+if(NOT sentinel STREQUAL "keep\\n")
+  message(FATAL_ERROR "Symlink path rejection removed or changed its unrelated sentinel")
+endif()
+message("retroarch states: strict replies, owned-child faults, and symlink cleanup guard pass")
+]=])
+set(DRIVER "$<TARGET_FILE:muhtari-test-retroarch-states>")
+set(ROOT "${PROJECT_SOURCE_DIR}")
+set(CMAKE_BIN "${CMAKE_COMMAND}")
+set(OUT "${PROJECT_BINARY_DIR}/tests/retroarch/states-path-controls")
+string(CONFIGURE "${states_controls_template}" states_controls_content @ONLY)
+set(states_controls_script ${PROJECT_BINARY_DIR}/tests/diag/retroarch_states_controls.cmake)
+file(GENERATE OUTPUT ${states_controls_script} CONTENT "${states_controls_content}")
+muhtari_add_test(NAME retroarch.states.controls COMMAND ${CMAKE_COMMAND} -P ${states_controls_script}
   LABELS diag portable TIMEOUT 20)
 if(TARGET muhtari_libretro OR CMAKE_CROSSCOMPILING_EMULATOR)
   set(diag_frontend_states ${PROJECT_BINARY_DIR}/tests/diag/frontend_states.cmake)

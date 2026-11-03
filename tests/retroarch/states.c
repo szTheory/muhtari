@@ -61,6 +61,22 @@ typedef struct states_result {
     const char *error;
 } states_result;
 
+enum states_identity_result {
+    STATES_IDENTITY_OK = 0,
+    STATES_IDENTITY_VERSION = 1,
+    STATES_IDENTITY_CORE = 2,
+    STATES_IDENTITY_CONTENT = 3,
+    STATES_IDENTITY_CRC = 4,
+    STATES_IDENTITY_STATUS = 5,
+};
+
+enum states_progress_result {
+    STATES_PROGRESS_OK = 0,
+    STATES_PROGRESS_PROTOCOL = 1,
+    STATES_PROGRESS_MARKER = 2,
+    STATES_PROGRESS_COUNTER = 3,
+};
+
 static uint64_t states_now_ms(void)
 {
     struct timespec ts;
@@ -82,6 +98,163 @@ static int states_fail(states_result *result, const char *message)
 {
     result->error = message;
     return 1;
+}
+
+static int states_ascii_equal(const char *left, size_t left_len, const char *right)
+{
+    size_t right_len = strlen(right);
+    if (left_len != right_len)
+        return 0;
+    for (size_t i = 0u; i < left_len; i++) {
+        char a = left[i], b = right[i];
+        if (a >= 'A' && a <= 'Z')
+            a = (char)(a + ('a' - 'A'));
+        if (b >= 'A' && b <= 'Z')
+            b = (char)(b + ('a' - 'A'));
+        if (a != b)
+            return 0;
+    }
+    return 1;
+}
+
+static int states_next_token(const char **cursor, const char **token, size_t *token_len)
+{
+    while (**cursor == ' ' || **cursor == '\t' || **cursor == '\r' || **cursor == '\n')
+        (*cursor)++;
+    if (**cursor == '\0')
+        return 0;
+    *token = *cursor;
+    while (**cursor != '\0' && **cursor != ' ' && **cursor != '\t' && **cursor != '\r' &&
+           **cursor != '\n')
+        (*cursor)++;
+    *token_len = (size_t)(*cursor - *token);
+    return 1;
+}
+
+static int states_parse_version(const char *reply)
+{
+    return strcmp(reply, "1.22.2") == 0 ? STATES_IDENTITY_OK : STATES_IDENTITY_VERSION;
+}
+
+static int states_parse_status(const char *reply, uint32_t expected_crc, int *paused)
+{
+    static const char prefix[] = "GET_STATUS ";
+    if (strncmp(reply, prefix, sizeof prefix - 1u) != 0)
+        return STATES_IDENTITY_STATUS;
+    const char *body = reply + sizeof prefix - 1u;
+    const char *space = strchr(body, ' ');
+    if (space == NULL)
+        return STATES_IDENTITY_STATUS;
+    size_t state_len = (size_t)(space - body);
+    if (states_ascii_equal(body, state_len, "PAUSED"))
+        *paused = 1;
+    else if (states_ascii_equal(body, state_len, "PLAYING"))
+        *paused = 0;
+    else
+        return STATES_IDENTITY_STATUS;
+    body = space + 1;
+    const char *comma = strchr(body, ',');
+    if (comma == NULL)
+        return STATES_IDENTITY_STATUS;
+    if (!states_ascii_equal(body, (size_t)(comma - body), "atari_7800"))
+        return STATES_IDENTITY_CORE;
+    const char *name = comma + 1;
+    const char *next = strchr(name, ',');
+    if (next == NULL)
+        return STATES_IDENTITY_STATUS;
+    if ((size_t)(next - name) != strlen("frontend-states.a78") ||
+        memcmp(name, "frontend-states.a78", strlen("frontend-states.a78")) != 0)
+        return STATES_IDENTITY_CONTENT;
+    const char *crc = next + 1;
+    if (strncmp(crc, "crc32=", 6u) != 0 || strlen(crc + 6) != 8u)
+        return STATES_IDENTITY_STATUS;
+    uint32_t actual = 0u;
+    for (unsigned i = 0u; i < 8u; i++) {
+        char c = crc[6u + i];
+        unsigned digit;
+        if (c >= '0' && c <= '9')
+            digit = (unsigned)(c - '0');
+        else if (c >= 'a' && c <= 'f')
+            digit = (unsigned)(c - 'a') + 10u;
+        else if (c >= 'A' && c <= 'F')
+            digit = (unsigned)(c - 'A') + 10u;
+        else
+            return STATES_IDENTITY_STATUS;
+        actual = (actual << 4) | digit;
+    }
+    return actual == expected_crc ? STATES_IDENTITY_OK : STATES_IDENTITY_CRC;
+}
+
+static int states_hex_byte(const char *token, size_t token_len, unsigned *value)
+{
+    if (token_len != 2u)
+        return 1;
+    unsigned result = 0u;
+    for (size_t i = 0u; i < token_len; i++) {
+        char c = token[i];
+        unsigned digit;
+        if (c >= '0' && c <= '9')
+            digit = (unsigned)(c - '0');
+        else if (c >= 'a' && c <= 'f')
+            digit = (unsigned)(c - 'a') + 10u;
+        else if (c >= 'A' && c <= 'F')
+            digit = (unsigned)(c - 'A') + 10u;
+        else
+            return 1;
+        result = (result << 4) | digit;
+    }
+    *value = result;
+    return 0;
+}
+
+static int states_parse_progress(const char *reply, unsigned *progress)
+{
+    const char *cursor = reply, *token = NULL;
+    size_t length = 0u;
+    if (!states_next_token(&cursor, &token, &length) ||
+        !states_ascii_equal(token, length, "READ_CORE_MEMORY"))
+        return STATES_PROGRESS_PROTOCOL;
+    if (!states_next_token(&cursor, &token, &length) || length != 4u ||
+        !states_ascii_equal(token, length, "2300"))
+        return STATES_PROGRESS_PROTOCOL;
+    unsigned bytes[6];
+    for (size_t i = 0u; i < 6u; i++) {
+        if (!states_next_token(&cursor, &token, &length))
+            return STATES_PROGRESS_PROTOCOL;
+        if (states_hex_byte(token, length, &bytes[i]) != 0)
+            return STATES_PROGRESS_COUNTER;
+    }
+    if (states_next_token(&cursor, &token, &length))
+        return STATES_PROGRESS_PROTOCOL;
+    static const unsigned marker[4] = {0x4du, 0x55u, 0x48u, 0x54u};
+    for (size_t i = 0u; i < 4u; i++)
+        if (bytes[i] != marker[i])
+            return STATES_PROGRESS_MARKER;
+    *progress = bytes[4] | (bytes[5] << 8);
+    return STATES_PROGRESS_OK;
+}
+
+static int states_parse_save_files_reply(const char *reply)
+{
+    return strcmp(reply, "OK") == 0 ? 0 : 1;
+}
+
+static const char *states_identity_error(int result)
+{
+    switch (result) {
+    case STATES_IDENTITY_VERSION:
+        return "RetroArch VERSION reply was not 1.22.2";
+    case STATES_IDENTITY_CORE:
+        return "GET_STATUS identified the wrong core system_id";
+    case STATES_IDENTITY_CONTENT:
+        return "GET_STATUS identified the wrong fixture basename";
+    case STATES_IDENTITY_CRC:
+        return "GET_STATUS fixture CRC did not match the admitted ROM";
+    case STATES_IDENTITY_STATUS:
+        return "GET_STATUS reply was missing or malformed";
+    default:
+        return "frontend process identity could not be verified";
+    }
 }
 
 static int states_read_exact(states_ops *ops, unsigned expected, uint64_t deadline,
@@ -143,8 +316,9 @@ static int states_save_load(states_ops *ops, states_result *result)
         failed = states_fail(result, "sandbox and child ownership preflight failed");
         goto cleanup;
     }
-    if (ops->verify_identity(ops->user, states_timeout(ops, work_deadline)) != 0) {
-        failed = states_fail(result, "version, fixture, or core identity failed");
+    int identity = ops->verify_identity(ops->user, states_timeout(ops, work_deadline));
+    if (identity != STATES_IDENTITY_OK) {
+        failed = states_fail(result, states_identity_error(identity));
         goto cleanup;
     }
     if (ops->read_progress(ops->user, &saved, states_timeout(ops, work_deadline)) != 0) {
@@ -241,6 +415,26 @@ cleanup:
     return failed ? 1 : 0;
 }
 
+enum mock_fault {
+    MOCK_FAULT_NONE = 0,
+    MOCK_FAULT_NO_CONTAINMENT,
+    MOCK_FAULT_VERSION,
+    MOCK_FAULT_CORE_ID,
+    MOCK_FAULT_CONTENT,
+    MOCK_FAULT_CRC,
+    MOCK_FAULT_SLOT_PRESENT,
+    MOCK_FAULT_SAVE_SILENCE,
+    MOCK_FAULT_SAVE_UNCHANGED,
+    MOCK_FAULT_FRAME_SILENCE,
+    MOCK_FAULT_DUPLICATE_PROGRESS,
+    MOCK_FAULT_OUT_OF_ORDER_PROGRESS,
+    MOCK_FAULT_PROGRESS_SILENCE,
+    MOCK_FAULT_LOAD_SILENCE,
+    MOCK_FAULT_LOAD_UNCHANGED,
+    MOCK_FAULT_STALE_CAPTURE,
+    MOCK_FAULT_INTERRUPTED_PROGRESS,
+};
+
 typedef struct mock_session {
     uint64_t now;
     unsigned progress;
@@ -248,8 +442,14 @@ typedef struct mock_session {
     unsigned picture_generation;
     unsigned pictures[3];
     unsigned frames;
-    int identity_fault;
+    unsigned progress_reads;
+    unsigned save_calls;
+    unsigned load_calls;
+    unsigned frame_calls;
+    unsigned capture_calls;
+    enum mock_fault fault;
     int child_owned;
+    int child_hangs;
     int state_exists;
     int child_reaped;
 #if STATES_POSIX
@@ -258,6 +458,12 @@ typedef struct mock_session {
     char self_path[PATH_MAX];
 #endif
 } mock_session;
+
+#if !STATES_POSIX
+typedef struct protected_fixture {
+    int unused;
+} protected_fixture;
+#endif
 
 static uint64_t mock_now(void *user)
 {
@@ -270,7 +476,7 @@ static int mock_preflight(void *user, unsigned timeout_ms)
     mock_session *mock = user;
     (void)timeout_ms;
     mock->now += 1u;
-    return mock->child_owned ? 0 : 1;
+    return mock->child_owned && mock->fault != MOCK_FAULT_NO_CONTAINMENT ? 0 : 1;
 }
 
 static int mock_identity(void *user, unsigned timeout_ms)
@@ -278,8 +484,18 @@ static int mock_identity(void *user, unsigned timeout_ms)
     mock_session *mock = user;
     (void)timeout_ms;
     mock->now += 1u;
-    if (mock->identity_fault != 0)
-        return mock->identity_fault;
+    switch (mock->fault) {
+    case MOCK_FAULT_VERSION:
+        return STATES_IDENTITY_VERSION;
+    case MOCK_FAULT_CORE_ID:
+        return STATES_IDENTITY_CORE;
+    case MOCK_FAULT_CONTENT:
+        return STATES_IDENTITY_CONTENT;
+    case MOCK_FAULT_CRC:
+        return STATES_IDENTITY_CRC;
+    default:
+        break;
+    }
     return mock->child_owned ? 0 : 1;
 }
 
@@ -288,6 +504,19 @@ static int mock_progress(void *user, unsigned *progress, unsigned timeout_ms)
     mock_session *mock = user;
     (void)timeout_ms;
     mock->now += 1u;
+    mock->progress_reads++;
+    if (mock->fault == MOCK_FAULT_PROGRESS_SILENCE && mock->frame_calls == 0u)
+        return 1;
+    if (mock->fault == MOCK_FAULT_INTERRUPTED_PROGRESS && mock->frame_calls != 0u)
+        return 1;
+    if (mock->fault == MOCK_FAULT_DUPLICATE_PROGRESS && mock->frame_calls != 0u) {
+        *progress = mock->saved;
+        return 0;
+    }
+    if (mock->fault == MOCK_FAULT_OUT_OF_ORDER_PROGRESS && mock->frame_calls != 0u) {
+        *progress = (mock->progress + 1u) & 0xffffu;
+        return 0;
+    }
     *progress = mock->progress;
     return 0;
 }
@@ -297,16 +526,23 @@ static int mock_state_absent(void *user, int absent, unsigned timeout_ms)
     mock_session *mock = user;
     (void)timeout_ms;
     mock->now += 1u;
+    if (absent && mock->fault == MOCK_FAULT_SLOT_PRESENT)
+        mock->state_exists = 1;
     return absent ? mock->state_exists : !mock->state_exists;
 }
 
 static int mock_save(void *user)
 {
     mock_session *mock = user;
+    mock->save_calls++;
     mock->saved = mock->progress;
+    if (mock->fault == MOCK_FAULT_SAVE_UNCHANGED) {
+        mock->now += 1u;
+        return 0;
+    }
     mock->state_exists = 1;
     mock->now += 1u;
-    return 0;
+    return mock->fault == MOCK_FAULT_SAVE_SILENCE ? 1 : 0;
 }
 
 static int mock_state_created(void *user, unsigned timeout_ms)
@@ -320,7 +556,14 @@ static int mock_state_created(void *user, unsigned timeout_ms)
 static int mock_frame(void *user)
 {
     mock_session *mock = user;
+    mock->frame_calls++;
+    if (mock->fault == MOCK_FAULT_FRAME_SILENCE) {
+        mock->now += 1u;
+        return 1;
+    }
     mock->progress = (mock->progress + 1u) & 0xffffu;
+    if (mock->fault == MOCK_FAULT_OUT_OF_ORDER_PROGRESS)
+        mock->progress = (mock->progress + 1u) & 0xffffu;
     mock->frames++;
     mock->now += 1u;
     return 0;
@@ -329,9 +572,14 @@ static int mock_frame(void *user)
 static int mock_load(void *user)
 {
     mock_session *mock = user;
+    mock->load_calls++;
+    if (mock->fault == MOCK_FAULT_LOAD_UNCHANGED) {
+        mock->now += 1u;
+        return 0;
+    }
     mock->progress = mock->saved;
     mock->now += 1u;
-    return 0;
+    return mock->fault == MOCK_FAULT_LOAD_SILENCE ? 1 : 0;
 }
 
 static int mock_capture(void *user, unsigned expected, unsigned picture_id, int baseline,
@@ -339,7 +587,10 @@ static int mock_capture(void *user, unsigned expected, unsigned picture_id, int 
 {
     mock_session *mock = user;
     (void)timeout_ms;
+    mock->capture_calls++;
     mock->now += 1u;
+    if (mock->fault == MOCK_FAULT_STALE_CAPTURE)
+        return 1;
     if (mock->progress != expected || picture_id == 0u || picture_id > 2u)
         return 1;
     mock->picture_generation++;
@@ -352,8 +603,12 @@ static int mock_capture(void *user, unsigned expected, unsigned picture_id, int 
 }
 
 #if STATES_POSIX
-static int mock_child_main(void)
+static int mock_child_main(int hung)
 {
+    if (hung) {
+        for (;;)
+            (void)pause();
+    }
     char command = 0;
     while (read(STDIN_FILENO, &command, 1u) == 1) {
         if (command == 'Q')
@@ -381,6 +636,84 @@ static int process_path(pid_t pid, char *path, size_t capacity)
 #endif
 }
 
+typedef struct protected_fixture {
+    pid_t child;
+    char directory[PATH_MAX];
+    char sentinel[PATH_MAX];
+} protected_fixture;
+
+static int wait_child(pid_t pid, unsigned timeout_ms, int *status);
+
+static int protected_setup(protected_fixture *fixture, const char *self_path)
+{
+    char directory[] = "/tmp/muhtari-states-controls-XXXXXX";
+    char *made = mkdtemp(directory);
+    if (made == NULL || strlen(made) >= sizeof fixture->directory)
+        return 1;
+    memcpy(fixture->directory, made, strlen(made) + 1u);
+    int n = snprintf(fixture->sentinel, sizeof fixture->sentinel, "%s/save.sentinel",
+                     fixture->directory);
+    if (n < 0 || (size_t)n >= sizeof fixture->sentinel)
+        return 1;
+    FILE *file = fopen(fixture->sentinel, "wb");
+    if (file == NULL)
+        return 1;
+    int wrote = fputs("keep\n", file);
+    if (fclose(file) != 0 || wrote < 0)
+        return 1;
+    pid_t child = fork();
+    if (child < 0)
+        return 1;
+    if (child == 0) {
+        execl(self_path, self_path, "--unrelated-child", (char *)NULL);
+        _exit(127);
+    }
+    fixture->child = child;
+    return 0;
+}
+
+static int protected_unchanged(const protected_fixture *fixture, const char *self_path)
+{
+    int status = 0;
+    if (waitpid(fixture->child, &status, WNOHANG) != 0)
+        return 0;
+    char actual[PATH_MAX];
+    if (process_path(fixture->child, actual, sizeof actual) != 0 ||
+        strcmp(actual, self_path) != 0)
+        return 0;
+    FILE *file = fopen(fixture->sentinel, "rb");
+    if (file == NULL)
+        return 0;
+    char content[16] = {0};
+    size_t n = fread(content, 1u, sizeof content - 1u, file);
+    int extra = fgetc(file);
+    int read_failed = ferror(file);
+    int close_failed = fclose(file) != 0;
+    int failed = read_failed || close_failed;
+    return !failed && n == 5u && extra == EOF && strcmp(content, "keep\n") == 0;
+}
+
+static int protected_destroy(protected_fixture *fixture, const char *self_path)
+{
+    int rc = 0;
+    int status = 0;
+    pid_t waited = waitpid(fixture->child, &status, WNOHANG);
+    if (waited == 0) {
+        char actual[PATH_MAX];
+        if (process_path(fixture->child, actual, sizeof actual) != 0 ||
+            strcmp(actual, self_path) != 0 || kill(fixture->child, SIGTERM) != 0 ||
+            wait_child(fixture->child, 1000u, &status) != 0)
+            rc = 1;
+    } else if (waited != fixture->child) {
+        rc = 1;
+    }
+    if (fixture->sentinel[0] != '\0' && unlink(fixture->sentinel) != 0)
+        rc = 1;
+    if (fixture->directory[0] != '\0' && rmdir(fixture->directory) != 0)
+        rc = 1;
+    return rc;
+}
+
 static int spawn_mock_child(mock_session *mock)
 {
     int pipefd[2];
@@ -397,7 +730,8 @@ static int spawn_mock_child(mock_session *mock)
         if (dup2(pipefd[0], STDIN_FILENO) < 0)
             _exit(126);
         close(pipefd[0]);
-        execl(mock->self_path, mock->self_path, "--mock-child", (char *)NULL);
+        execl(mock->self_path, mock->self_path,
+              mock->child_hangs ? "--mock-child-hung" : "--mock-child", (char *)NULL);
         _exit(127);
     }
     close(pipefd[0]);
@@ -440,18 +774,27 @@ static int mock_cleanup(void *user, unsigned timeout_ms)
     if (write(mock->child_stdin, "Q", 1u) != 1)
         return 1;
     int status = 0;
-    if (wait_child(mock->child_pid, timeout_ms, &status) != 0) {
+    uint64_t deadline = states_now_ms() + timeout_ms;
+    unsigned graceful = timeout_ms < 50u ? timeout_ms : 50u;
+    if (wait_child(mock->child_pid, graceful, &status) != 0) {
+        uint64_t now = states_now_ms();
+        unsigned remaining = now >= deadline ? 0u : (unsigned)(deadline - now);
+        unsigned term_wait = remaining < 50u ? remaining : 50u;
         if (!child_is_ours(mock) || kill(mock->child_pid, SIGTERM) != 0)
             return 1;
-        if (wait_child(mock->child_pid, timeout_ms, &status) != 0) {
+        if (wait_child(mock->child_pid, term_wait, &status) != 0) {
+            now = states_now_ms();
+            remaining = now >= deadline ? 0u : (unsigned)(deadline - now);
             if (!child_is_ours(mock) || kill(mock->child_pid, SIGKILL) != 0 ||
-                wait_child(mock->child_pid, timeout_ms, &status) != 0)
+                wait_child(mock->child_pid, remaining, &status) != 0)
                 return 1;
         }
     }
     close(mock->child_stdin);
     mock->child_owned = 0;
-    mock->child_reaped = WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    mock->child_reaped = (WIFEXITED(status) && WEXITSTATUS(status) == 0) ||
+                         (WIFSIGNALED(status) &&
+                          (WTERMSIG(status) == SIGTERM || WTERMSIG(status) == SIGKILL));
     return mock->child_reaped ? 0 : 1;
 }
 #else
@@ -513,23 +856,20 @@ static int run_controls(const char *self_path)
     return 1;
 }
 
-static int run_fault_controls(const char *self_path)
+typedef struct mock_control_case {
+    const char *name;
+    enum mock_fault fault;
+    const char *expected_error;
+    unsigned saves;
+    unsigned loads;
+    unsigned frame_calls;
+    int hang_child;
+} mock_control_case;
+
+static states_ops mock_operations(mock_session *mock)
 {
-    mock_session mock;
-    memset(&mock, 0, sizeof mock);
-    mock.progress = 12u;
-    mock.identity_fault = 1;
-#if STATES_POSIX
-    if (strlen(self_path) >= sizeof mock.self_path)
-        return 2;
-    strcpy(mock.self_path, self_path);
-    if (spawn_mock_child(&mock) != 0)
-        return 2;
-#else
-    mock.child_owned = 1;
-#endif
     states_ops ops = {
-        .user = &mock,
+        .user = mock,
         .now_ms = mock_now,
         .preflight = mock_preflight,
         .verify_identity = mock_identity,
@@ -542,20 +882,188 @@ static int run_fault_controls(const char *self_path)
         .capture = mock_capture,
         .cleanup = mock_cleanup,
     };
+    return ops;
+}
+
+static void tap_result(unsigned *count, unsigned *failures, const char *name, int passed,
+                       const char *detail)
+{
+    (*count)++;
+    if (passed)
+        printf("ok %u - %s\n", *count, name);
+    else {
+        (*failures)++;
+        printf("not ok %u - %s\n  ---\n  error: %s\n  ...\n", *count, name,
+               detail != NULL ? detail : "assertion failed");
+    }
+}
+
+static void parser_controls(unsigned *count, unsigned *failures)
+{
+    static const uint32_t crc = 0x12ab34cdu;
+    static const char status[] =
+        "GET_STATUS PAUSED atari_7800,frontend-states.a78,crc32=12ab34cd";
+    unsigned progress = 0u;
+    int paused = 0;
+    tap_result(count, failures, "VERSION 1.22.2 is accepted",
+               states_parse_version("1.22.2") == STATES_IDENTITY_OK, NULL);
+    tap_result(count, failures, "wrong or truncated VERSION is named",
+               states_parse_version("1.22") == STATES_IDENTITY_VERSION, NULL);
+    tap_result(count, failures, "paused status with exact system, fixture, and CRC is accepted",
+               states_parse_status(status, crc, &paused) == STATES_IDENTITY_OK && paused, NULL);
+    tap_result(count, failures, "wrong GET_STATUS system_id is rejected by name",
+               states_parse_status(
+                   "GET_STATUS PAUSED another_core,frontend-states.a78,crc32=12ab34cd", crc,
+                   &paused) == STATES_IDENTITY_CORE,
+               NULL);
+    tap_result(count, failures, "wrong GET_STATUS fixture basename is rejected by name",
+               states_parse_status("GET_STATUS PLAYING atari_7800,other.a78,crc32=12ab34cd",
+                                   crc, &paused) == STATES_IDENTITY_CONTENT,
+               NULL);
+    tap_result(count, failures, "wrong GET_STATUS CRC is rejected by name",
+               states_parse_status(
+                   "GET_STATUS PAUSED atari_7800,frontend-states.a78,crc32=12ab34ce", crc,
+                   &paused) == STATES_IDENTITY_CRC,
+               NULL);
+    tap_result(count, failures, "truncated or trailing GET_STATUS fields are rejected",
+               states_parse_status("GET_STATUS PAUSED atari_7800,frontend-states.a78", crc,
+                                   &paused) == STATES_IDENTITY_STATUS &&
+                   states_parse_status("GET_STATUS PAUSED atari_7800,frontend-states.a78,crc32=12ab34cd,extra",
+                                       crc, &paused) == STATES_IDENTITY_STATUS,
+               NULL);
+    tap_result(count, failures, "READ_CORE_MEMORY marker and little-endian progress are parsed",
+               states_parse_progress("READ_CORE_MEMORY 2300 4D 55 48 54 0C 00", &progress) ==
+                       STATES_PROGRESS_OK &&
+                   progress == 12u,
+               NULL);
+    tap_result(count, failures, "wrong READ_CORE_MEMORY command or address is rejected",
+               states_parse_progress("READ_CORE_RAM 2300 4D 55 48 54 0C 00", &progress) ==
+                       STATES_PROGRESS_PROTOCOL &&
+                   states_parse_progress("READ_CORE_MEMORY 2301 4D 55 48 54 0C 00", &progress) ==
+                       STATES_PROGRESS_PROTOCOL,
+               NULL);
+    tap_result(count, failures, "wrong fixture marker is rejected",
+               states_parse_progress("READ_CORE_MEMORY 2300 4D 55 00 54 0C 00", &progress) ==
+                   STATES_PROGRESS_MARKER,
+               NULL);
+    tap_result(count, failures, "truncated, duplicated, or failed counter replies are rejected",
+               states_parse_progress("READ_CORE_MEMORY 2300 4D 55 48 54 0C", &progress) ==
+                       STATES_PROGRESS_PROTOCOL &&
+                   states_parse_progress("READ_CORE_MEMORY 2300 4D 55 48 54 0C 00 01", &progress) ==
+                       STATES_PROGRESS_PROTOCOL &&
+                   states_parse_progress("READ_CORE_MEMORY 2300 4D 55 48 54 -1", &progress) ==
+                       STATES_PROGRESS_COUNTER,
+               NULL);
+    tap_result(count, failures, "SAVE_FILES succeeds only on exact OK",
+               states_parse_save_files_reply("OK") == 0 &&
+                   states_parse_save_files_reply("NO") != 0 &&
+                   states_parse_save_files_reply("") != 0 &&
+                   states_parse_save_files_reply("OK trailing") != 0,
+               NULL);
+}
+
+static int run_engine_control(const mock_control_case *test, const char *self_path,
+                              const protected_fixture *protected)
+{
+    mock_session mock;
+    memset(&mock, 0, sizeof mock);
+    mock.progress = 12u;
+    mock.fault = test->fault;
+    mock.child_hangs = test->hang_child;
+#if STATES_POSIX
+    if (strlen(self_path) >= sizeof mock.self_path)
+        return 0;
+    memcpy(mock.self_path, self_path, strlen(self_path) + 1u);
+    if (spawn_mock_child(&mock) != 0)
+        return 0;
+#else
+    mock.child_owned = 1;
+#endif
+    states_ops ops = mock_operations(&mock);
     states_result result;
     int rc = states_save_load(&ops, &result);
-    puts("TAP version 13\n1..1");
-    if (rc != 0 && result.error != NULL &&
-        strcmp(result.error, "RetroArch VERSION reply was not 1.22.2") == 0 &&
-        !mock.child_owned && mock.child_reaped) {
-        puts("ok 1 - wrong version has a named cause and reaps its owned child");
-        return 0;
+    int passed = !mock.child_owned && mock.child_reaped &&
+                 mock.save_calls == test->saves && mock.load_calls == test->loads &&
+                 mock.frame_calls == test->frame_calls;
+    if (test->expected_error == NULL) {
+        passed = passed && rc == 0 && result.error == NULL && mock.progress == 20u &&
+                 mock.frames == 16u && result.frames == 16u && mock.picture_generation == 4u;
+    } else {
+        passed = passed && rc != 0 && result.error != NULL &&
+                 strcmp(result.error, test->expected_error) == 0;
     }
-    printf("not ok 1 - wrong version has a named cause and reaps its owned child\n"
-           "  ---\n  error: got %s, child_owned=%d reaped=%d\n  ...\n",
-           result.error != NULL ? result.error : "no sequence failure", mock.child_owned,
-           mock.child_reaped);
-    return 1;
+#if STATES_POSIX
+    passed = passed && protected_unchanged(protected, self_path);
+#else
+    (void)protected;
+#endif
+    return passed;
+}
+
+static int run_fault_controls(const char *self_path)
+{
+    unsigned count = 0u, failures = 0u;
+    puts("TAP version 13");
+    parser_controls(&count, &failures);
+    static const mock_control_case cases[] = {
+        {"valid owned save-load and replay passes", MOCK_FAULT_NONE, NULL, 1u, 1u, 16u, 0},
+        {"missing containment fails before mutation", MOCK_FAULT_NO_CONTAINMENT,
+         "sandbox and child ownership preflight failed", 0u, 0u, 0u, 0},
+        {"wrong version has a specific cause", MOCK_FAULT_VERSION,
+         "RetroArch VERSION reply was not 1.22.2", 0u, 0u, 0u, 0},
+        {"wrong core identity has a specific cause", MOCK_FAULT_CORE_ID,
+         "GET_STATUS identified the wrong core system_id", 0u, 0u, 0u, 0},
+        {"wrong fixture identity has a specific cause", MOCK_FAULT_CONTENT,
+         "GET_STATUS identified the wrong fixture basename", 0u, 0u, 0u, 0},
+        {"wrong fixture CRC has a specific cause", MOCK_FAULT_CRC,
+         "GET_STATUS fixture CRC did not match the admitted ROM", 0u, 0u, 0u, 0},
+        {"preexisting slot-zero state is rejected", MOCK_FAULT_SLOT_PRESENT,
+         "state slot was not initially absent", 0u, 0u, 0u, 0},
+        {"ambiguous SAVE_STATE is sent once", MOCK_FAULT_SAVE_SILENCE,
+         "SAVE_STATE send failed", 1u, 0u, 0u, 0},
+        {"unchanged state slot fails creation observation", MOCK_FAULT_SAVE_UNCHANGED,
+         "fresh nonempty slot-zero state was not observed", 1u, 0u, 0u, 0},
+        {"ambiguous FRAMEADVANCE is sent once", MOCK_FAULT_FRAME_SILENCE,
+         "FRAMEADVANCE send failed", 1u, 0u, 1u, 0},
+        {"duplicate stale progress times out without another advance", MOCK_FAULT_DUPLICATE_PROGRESS,
+         "progress observation timed out", 1u, 0u, 1u, 0},
+        {"out-of-order progress is rejected", MOCK_FAULT_OUT_OF_ORDER_PROGRESS,
+         "progress observation was stale or skipped", 1u, 0u, 1u, 0},
+        {"silent initial memory observation fails closed", MOCK_FAULT_PROGRESS_SILENCE,
+         "initial fixture progress could not be read", 0u, 0u, 0u, 0},
+        {"ambiguous LOAD_STATE is sent once", MOCK_FAULT_LOAD_SILENCE,
+         "LOAD_STATE send failed", 1u, 1u, 8u, 0},
+        {"unchanged LOAD_STATE fails restoration observation", MOCK_FAULT_LOAD_UNCHANGED,
+         "LOAD_STATE did not restore saved progress", 1u, 1u, 8u, 0},
+        {"stale picture capture cannot pass", MOCK_FAULT_STALE_CAPTURE,
+         "fresh picture or independent pixel judgment failed", 1u, 0u, 1u, 0},
+        {"interrupted observation reaps the hung owned child", MOCK_FAULT_INTERRUPTED_PROGRESS,
+         "progress observation protocol failed", 1u, 0u, 1u, 1},
+    };
+    protected_fixture protected;
+    memset(&protected, 0, sizeof protected);
+#if STATES_POSIX
+    if (protected_setup(&protected, self_path) != 0) {
+        tap_result(&count, &failures, "unrelated child and save sentinel setup", 0,
+                   "could not create owned protection fixtures");
+        printf("1..%u\n", count);
+        return 1;
+    }
+#else
+    (void)self_path;
+#endif
+    for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {
+        int passed = run_engine_control(&cases[i], self_path, &protected);
+        tap_result(&count, &failures, cases[i].name, passed,
+                   "sequence cause, single-send count, child reap, or unrelated sentinel check failed");
+    }
+#if STATES_POSIX
+    int cleanup_ok = protected_destroy(&protected, self_path) == 0;
+    tap_result(&count, &failures, "test-owned unrelated child and save sentinel clean up", cleanup_ok,
+               "control fixture cleanup failed");
+#endif
+    printf("1..%u\n", count);
+    return failures == 0u ? 0 : 1;
 }
 
 #if defined(__APPLE__)
@@ -797,12 +1305,14 @@ static int run_capture(char *const argv[], char *output, size_t capacity, unsign
                 break;
             }
         }
-        pid_t waited = waitpid(pid, &status, WNOHANG);
-        if (waited == pid)
-            done = 1;
-        else if (waited < 0 && errno != EINTR) {
-            failed = 1;
-            break;
+        if (!done) {
+            pid_t waited = waitpid(pid, &status, WNOHANG);
+            if (waited == pid)
+                done = 1;
+            else if (waited < 0 && errno != EINTR) {
+                failed = 1;
+                break;
+            }
         }
     }
     close(pipefd[0]);
@@ -1438,51 +1948,12 @@ static int host_nci_reply(host_session *host, const char *command, unsigned time
     return 0;
 }
 
-static int parse_status(host_session *host, const char *reply, int *paused)
-{
-    const char *body = reply;
-    if (strncmp(body, "GET_STATUS ", 11u) == 0)
-        body += 11u;
-    if (strncmp(body, "PAUSED ", 7u) == 0) {
-        *paused = 1;
-        body += 7u;
-    } else if (strncmp(body, "PLAYING ", 8u) == 0) {
-        *paused = 0;
-        body += 8u;
-    } else {
-        return 1;
-    }
-    const char *comma = strchr(body, ',');
-    if (comma == NULL || (size_t)(comma - body) != strlen("atari_7800") ||
-        strncmp(body, "atari_7800", strlen("atari_7800")) != 0)
-        return 1;
-    const char *name = comma + 1;
-    const char *next = strchr(name, ',');
-    if (next == NULL || (size_t)(next - name) != strlen("frontend-states.a78") ||
-        strncmp(name, "frontend-states.a78", strlen("frontend-states.a78")) != 0)
-        return 1;
-    const char *crc = next + 1;
-    if (strncmp(crc, "crc32=", 6u) != 0 || strlen(crc + 6) != 8u)
-        return 1;
-    char actual[9];
-    for (unsigned i = 0u; i < 8u; i++) {
-        char c = crc[6u + i];
-        actual[i] = (char)(c >= 'A' && c <= 'F' ? c + ('a' - 'A') : c);
-        if (!((actual[i] >= '0' && actual[i] <= '9') || (actual[i] >= 'a' && actual[i] <= 'f')))
-            return 1;
-    }
-    actual[8] = '\0';
-    char expected[9];
-    (void)snprintf(expected, sizeof expected, "%08x", host->fixture_crc);
-    return strcmp(actual, expected) == 0 ? 0 : 1;
-}
-
 static int host_status(host_session *host, unsigned timeout_ms, int *paused)
 {
     char reply[512];
     if (host_nci_reply(host, "GET_STATUS", timeout_ms, reply, sizeof reply) != 0)
-        return 1;
-    return parse_status(host, reply, paused);
+        return STATES_IDENTITY_STATUS;
+    return states_parse_status(reply, host->fixture_crc, paused);
 }
 
 static uint64_t host_now(void *user)
@@ -1503,28 +1974,31 @@ static int host_verify_identity(void *user, unsigned timeout_ms)
     host_session *host = user;
     char reply[256];
     if (host_nci_reply(host, "VERSION", timeout_ms, reply, sizeof reply) != 0)
-        return 1;
-    if (strcmp(reply, "1.22.2") != 0 && strcmp(reply, "VERSION 1.22.2") != 0)
-        return 1;
+        return STATES_IDENTITY_VERSION;
+    int version = states_parse_version(reply);
+    if (version != STATES_IDENTITY_OK)
+        return version;
     int paused = 0;
     uint64_t deadline = states_now_ms() + timeout_ms;
-    if (host_status(host, timeout_ms, &paused) != 0)
-        return 1;
+    int status = host_status(host, timeout_ms, &paused);
+    if (status != STATES_IDENTITY_OK)
+        return status;
     if (!paused) {
         if (host_nci_send(host, "PAUSE_TOGGLE") != 0)
-            return 1;
+            return STATES_IDENTITY_STATUS;
         while (states_now_ms() < deadline) {
             uint64_t now = states_now_ms();
             unsigned left = (unsigned)(deadline - now);
             if (left > STATES_OBSERVE_MS)
                 left = STATES_OBSERVE_MS;
-            if (host_status(host, left, &paused) != 0)
-                return 1;
+            status = host_status(host, left, &paused);
+            if (status != STATES_IDENTITY_OK)
+                return status;
             if (paused)
                 break;
         }
     }
-    return paused ? 0 : 1;
+    return paused ? STATES_IDENTITY_OK : STATES_IDENTITY_STATUS;
 }
 
 static int host_read_progress(void *user, unsigned *progress, unsigned timeout_ms)
@@ -1533,31 +2007,7 @@ static int host_read_progress(void *user, unsigned *progress, unsigned timeout_m
     char reply[256];
     if (host_nci_reply(host, "READ_CORE_MEMORY 2300 6", timeout_ms, reply, sizeof reply) != 0)
         return 1;
-    char command[64], address[32], bytes[6][8];
-    int consumed = 0;
-    int count = sscanf(reply, "%63s %31s %7s %7s %7s %7s %7s %7s %n",
-                       command, address, bytes[0], bytes[1], bytes[2], bytes[3], bytes[4],
-                       bytes[5], &consumed);
-    if (count != 8 || strcmp(command, "READ_CORE_MEMORY") != 0 || strcmp(address, "2300") != 0)
-        return 1;
-    while (reply[consumed] == ' ' || reply[consumed] == '\t' || reply[consumed] == '\r' ||
-           reply[consumed] == '\n')
-        consumed++;
-    if (reply[consumed] != '\0')
-        return 1;
-    static const char *marker[4] = {"4D", "55", "48", "54"};
-    for (unsigned i = 0u; i < 4u; i++)
-        if (strcasecmp(bytes[i], marker[i]) != 0)
-            return 1;
-    char *end = NULL;
-    unsigned long low = strtoul(bytes[4], &end, 16);
-    if (end == bytes[4] || *end != '\0' || low > 255u)
-        return 1;
-    unsigned long high = strtoul(bytes[5], &end, 16);
-    if (end == bytes[5] || *end != '\0' || high > 255u)
-        return 1;
-    *progress = (unsigned)(low | (high << 8));
-    return 0;
+    return states_parse_progress(reply, progress) == STATES_PROGRESS_OK ? 0 : 1;
 }
 
 static int host_state_absent(void *user, int absent, unsigned timeout_ms)
@@ -1748,7 +2198,7 @@ static int host_cleanup(void *user, unsigned timeout_ms)
         rc = host_cleanup_without_endpoint(host, remaining);
     } else if (host_nci_send(host, "QUIT") != 0) {
         rc = 1;
-        (void)host_wait_child(host, cleanup_remaining(deadline));
+        (void)host_cleanup_without_endpoint(host, cleanup_remaining(deadline));
     } else {
         remaining = cleanup_remaining(deadline);
         unsigned graceful = remaining < 1750u ? remaining : 1750u;
@@ -1948,7 +2398,13 @@ int main(int argc, char **argv)
 {
 #if STATES_POSIX
     if (argc == 2 && strcmp(argv[1], "--mock-child") == 0)
-        return mock_child_main();
+        return mock_child_main(0);
+    if (argc == 2 && strcmp(argv[1], "--mock-child-hung") == 0)
+        return mock_child_main(1);
+    if (argc == 2 && strcmp(argv[1], "--unrelated-child") == 0) {
+        for (;;)
+            (void)pause();
+    }
 #if defined(__APPLE__)
     if (argc == 3 && strcmp(argv[1], "--udp-helper") == 0)
         return udp_helper_main(argv[2]);
