@@ -4,16 +4,16 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
-status: executing
-stopped_at: Completed 14-04-PLAN.md
-last_updated: "2026-11-03T05:25:30.530Z"
+status: verifying
+stopped_at: Completed 14-05-PLAN.md
+last_updated: "2026-11-03T06:03:46.747Z"
 last_activity: 2026-11-03
-state_head: 7f71cd0805748a4c4d8a9cc3eda73bf79849f9c6
+state_head: 1bb568b32175f9869738004c66435af34638eabd
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
   percent: 33
 ---
 
@@ -30,7 +30,7 @@ Current focus: Phase 14 plans 14-01 through 14-04 are complete; plan 14-05 remai
 
 Phase: 14 (Proven frontend states and responsive play) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Next action: From the Phase 14 worktree, run `$gsd-execute-phase 14` to continue with plan 14-05. Its source-bound host attempt and any CI action remain subject to that plan's gates. No Phase 12 plan or allowance may be resumed.
 Boundary: Phase 13's native, PowerPC/QEMU, complete normal/release, equality and ASan/UBSan gates passed locally and are documented in its verification/resource evidence. Phase 14 plan 14-04's selected local tests passed; it launched no RetroArch process or CI dispatch. Phase 12 remains halted at accepted 0/4 with causes unresolved and all hosted allowances spent. The Phase 12 allowance remains unavailable.
 
@@ -99,6 +99,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 | Phase 14 P02 | 19min | 2 tasks | 5 files |
 | Phase 14 P03 | 29min | 2 tasks | 8 files |
 | Phase 14 P04 | 14min | 3 tasks | 7 files |
+| Phase 14 P05 | 29min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,8 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: Accept run-ahead only when committed RAM advances once and the new picture shows exactly the fixture-defined one-frame-ahead value.
 - [Phase 14]: Tie deterministic state metadata to loaded-core equality, repeated continuation, and the recurring host-control registration.
 - [Phase 14]: Keep FRONT-02, FRONT-03, and FRONT-04 pending until plan 14-05 reviews source-bound pinned-host evidence.
+- [Phase 14]: The single Phase 14 source-bound host dispatch is spent; its RetroArch job skipped, so no retry or frontend launch follows.
+- [Phase 14]: FRONT-02, FRONT-03, and FRONT-04 remain pending until fresh actual-host observations exist.
 
 ### Pending Todos
 
@@ -148,7 +151,7 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 - Latest [scratch WASI proposal](debug/phase12-wasi-local-proposal.md) is prepared read-only, awaiting a NEW local download/execution decision. Installed compiler lacks builtins as well as linker. Recommend one checksum-frozen official SDK28 arm64 bundle in temporary storage, existing pinned runtime, actual owning two-test mock registration and ten scratch counterfactuals within finite bounds. Its bundled libc differs from CI; success would close only focused local execution, not full hosted WASI or input. Two disjoint assessments and parent synthesis; fresh exact reviewed source/original complete attempt/jobs/steps/artifacts/health checks agree, required failure preserved, noPR/noactiveCI. No package fetched, binary generated, target/helper/content executed or source/remote changed. Agent owns checks after any new decision; no owner verification or acknowledgment is needed to preserve halt. Earlier next-actions below are historical; accepted0/4/downstream blocks/spent live allowances unchanged.
 
-- Latest [approved local WASI batch](debug/phase12-held-capture-diagnosis.md#approved-local-wasi-transport-batch-2026-10-31) is finished/uncommitted. Native/fallback/forced-branch semantic controls, target compilation, owning registration simulations and independent pinned-runtime fixtures pass; real helper127/native127 preserved, only WASI mock outward125 changes. Initial full workflow failed solely docs budget; compact equivalent prose and final full workflow/exact ordinary+release inventories/three packages pass. One bounded source review has no blocker. Complete C mock still lacks local WASI linked execution; no compatible linker found and none fetched. Fresh original complete hosted receipts/source/health/noPR/noactiveCI unchanged, required verdict stays failed. Recommend next separate read-only scratch tooling proposal, not another host run. No approved local work awaits user action; no publication/live authority or acceptance follows. Earlier pending-local-decision text below is historical. Keep accepted0/4/downstream halt automatically.
+- Latest [approved local WASI batch](debug/phase12-held-capture-diagnosis.md#approved-local-wasi-transport-batch-2026-10-31) is finished/uncommitted. Native/fallback/forced-branch semantic controls, target compilation, owning registration simulations and independent pinned-runtime fixtures pass; real helper127/native127 preserved, only WASI mock outward125 changes. Initial full workflow failed solely docs budget; compact equivalent prose and final full workflow/exact ordinary+release inventories/three packages pass. One bounded source review has no blocker. Complete C mock still lacks local WASI linked execution; no compatible linker found and fetched. Fresh original complete hosted receipts/source/health/noPR/noactiveCI unchanged, required verdict stays failed. Recommend next separate read-only scratch tooling proposal, not another host run. No approved local work awaits user action; no publication/live authority or acceptance follows. Earlier pending-local-decision text below is historical. Keep accepted0/4/downstream halt automatically.
 
 - Latest [read-only assessment](debug/phase12-held-capture-diagnosis.md#read-only-readiness-and-wasi-exit-assessment-2026-10-31) is finished. Fresh complete receipts/source/health/noPR/noactiveCI checks preserve the required failure. Pinned WASI runtime rejects the mock's outward127 after its actual-helper127 assertion passes; recommend a new local-only mock transport125 batch in the two owning test files plus docs, with native127 and all semantic controls retained. Existing host logs already report window/draw initialization; defer low-value window-only instrumentation and any live retry. Readiness/focus/consumption/hotkey/audio cause remains unproved. Await this NEW local repair scope decision only; no repair/publication/content/live allowance or acceptance is implied. Keep accepted0/4/downstream halt automatically. Earlier next-actions below remain historical.
 
@@ -170,6 +173,7 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 - Keep optional Phase 10/11 findings, hardware/PAL fit confidence and HSC stub/unsupported sound limits. Pinned accounting remains 201 unknown/3 skipped of 204; conformance/title screens and voluntary gameplay reports are separate evidence.
 - SEED-007/009/010 inform bounded Phase 12 work; SEED-008 is preferred next candidate. SEED-006 unpromoted; SEED-011–014 retain optional triggers.
 - Owner-requested [browser-player](seeds/SEED-261030-tt4-browser-libretro-player.md) and [optional-interface](seeds/SEED-261030-zk3-emulator-interface.md) ideas are dormant, indexed research with future-session prompts. They start no project or specification, change no active roadmap/acceptance, and include read-only dirty-snapshot Playstead context.
+- Phase 14 actual-host qualification remains pending: the one source-bound workflow run failed upstream and skipped RetroArch before host observations. Do not retry or launch locally under the spent allowance.
 
 ### Roadmap Evolution
 
@@ -177,8 +181,8 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T05:25:30.455Z
-Stopped at: Completed 14-04-PLAN.md
+Last session: 2026-11-03T06:03:46.667Z
+Stopped at: Completed 14-05-PLAN.md
 Resume file: None
 Next separate command: From the Phase 14 worktree, run `$gsd-execute-phase 14` to continue with plan 14-05. Do not run any Phase 12 plan or reuse its spent hosted allowance.
 Context handoff: Phase 14 plans 14-01 through 14-04 are complete. Plan 14-04 adds local proof for three rewind reversals, active one-frame run-ahead, and explicit HSC persistence, plus deterministic metadata proof gates. The combined selected local checks pass. The environment denied the local sandbox helper preflight in plan 14-03, so the host case remains disabled until plan 14-05 proves hosted containment before its single source-bound invocation. No RetroArch launch, CI dispatch, push, or Phase 12 input attempt occurred. Continue with plan 14-05 in this Phase 14 worktree; Phase 12 remains halted at 0/4 with every hosted allowance spent.
