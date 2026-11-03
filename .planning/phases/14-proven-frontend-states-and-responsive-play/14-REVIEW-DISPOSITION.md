@@ -5,22 +5,22 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "Windows warning-as-error rejects the state-test target"
   - id: CR-02
     severity: critical
     disposition: fixed
     title: "[BLOCKER] Changing progress screenshots are compared to stale references"
-open: 1
+open: 0
 total: 2
-recorded: 2026-11-03T10:44:20.493Z
+recorded: 2026-11-03T12:47:45Z
 ---
 
 # Phase 14: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
+| CR-01 | critical | fixed | Plan 14-07 added explicit self_path consumption in the three non-POSIX branches; the focused read-only review found no issues, and run 41629846188 passed both required Windows build lanes. See 14-07-SUMMARY.md and 14-RESOURCE-EVIDENCE.md. |
 | CR-02 | critical | fixed | Added separate expected counters and static-pixel comparison with stale-reference controls; absent from the clean re-review. (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.

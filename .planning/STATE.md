@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
-current_phase_name: AWAITING FINAL VERIFIER
-status: executing
-stopped_at: Completed 14-07-PLAN.md; final Phase 14 verifier remains
-last_updated: "2026-11-03T12:36:06.910Z"
+current_phase_name: GAPS FOUND — HOST EVIDENCE REQUIRED
+status: blocked
+stopped_at: Phase 14 verification found missing actual-host evidence; the one dispatch is spent
+last_updated: "2026-11-03T12:43:44Z"
 last_activity: 2026-11-03
 state_head: 496826e22afa5c04ba3a0a25d0995d84edb6ccd3
 progress:
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Plan 14-07 is executed. Run 41629846188 passed Windows x64/ARM64 and Ubuntu x64 ASan but failed the macOS Intel parent baseline, so RetroArch was skipped. FRONT-02/03/04 remain pending; Phase 12 remains halted.
+Current focus: Phase 14 verification is gaps_found. Run 41629846188 passed Windows x64/ARM64 and Ubuntu x64 ASan but timed out in the macOS Intel parent baseline, so the quality join failed and RetroArch was skipped. FRONT-02/03/04 remain pending; Phase 12 remains halted.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — AWAITING FINAL VERIFIER
+Phase: 14 (Proven frontend states and responsive play) — GAPS FOUND
 Plan: 7 of 7
-Status: Executing
-Next action: The orchestrator runs the final Phase 14 verifier using the 14-07 summary and run 41629846188; keep FRONT-02/03/04 pending unless qualifying host evidence exists.
-Boundary: The one 14-07 dispatch is spent: no retry, rerun, local RetroArch launch, or post-run push. FRONT-02/03/04 remain pending. Phase 12 remains halted.
+Status: Blocked on actual pinned-host evidence
+Next action: No host command is valid under the spent allowance. Any further attempt requires a new separately authorized scope after the macOS parent-baseline timeout is addressed.
+Boundary: The one 14-07 dispatch is spent: no retry, rerun, dispatch, local RetroArch launch, PR/merge/release, or post-run push. FRONT-02/03/04 remain pending. Phase 12 remains halted.
 
 ## Preserved Phase 12 position — halt remains binding
 
@@ -184,11 +184,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T12:34:58.637Z
-Stopped at: Completed 14-07-PLAN.md; final Phase 14 verifier remains
+Last session: 2026-11-03T12:43:44Z
+Stopped at: Phase 14 verifier recorded gaps_found after confirming the host job was skipped
 Resume file: None
-Next separate command: The orchestrator performs final Phase 14 verification using 14-07-SUMMARY.md; no new host command is valid under the spent allowance.
-Context handoff: Plan 14-07 is locally complete. Run 41629846188 passed both Windows builds and Ubuntu x64 ASan, but the macOS Intel independent-parent baseline timed out; required artifact join failed and RetroArch was skipped. FRONT-02/03/04 remain pending, the one dispatch is spent, and Phase 12 remains halted. Orchestrator final verification is next.
+Next separate command: No command is valid under the current stop. A future host attempt requires a new separately authorized, cause-addressed scope; do not reuse run 41629846188.
+Context handoff: Phase 14 verification is complete with gaps_found. Run 41629846188 (https://github.com/szTheory/muhtari/actions/runs/41629846188) passed Windows x64/ARM64 and Ubuntu x64 ASan but timed out in the macOS Intel independent-parent baseline; the required artifact join failed and RetroArch was skipped. FRONT-02/03/04 remain pending, the one dispatch is spent, and Phase 12 remains halted. No owner UAT is needed.
 
 ## Deferred Items
 
