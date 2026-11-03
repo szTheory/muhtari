@@ -4,16 +4,16 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
-status: blocked
-stopped_at: Phase 14 recovery-plan review complete; the mitigation still awaits its exact source/test decision
-last_updated: "2026-11-03T20:02:54Z"
+status: Blocked
+stopped_at: Completed 14-12-PLAN.md
+last_updated: "2026-11-03T20:31:53.043Z"
 last_activity: 2026-11-03
-state_head: 6a95a5f61ec4e446f56e858e03a9077f911ed5f3
+state_head: ed2f58c2d7a24ac92f81685a56979f2ebdca950c
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
   percent: 33
 ---
 
@@ -28,10 +28,10 @@ Current focus: Phase 14 remains blocked because the complete local workflow fail
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — BLOCKED
-Plan: 9 of 13 complete; Plan 14-10 remains terminal halted history; Plan 14-12 is a documentation-only evidence review; Plan 14-13 has the source/test decision gate; Plan 14-11 remains downstream.
-Status: Blocked on the required full local workflow and actual-host state evidence, not on the exhausted diagnostic cap. FRONT-02/03/04 remain pending.
-Next action: From this Phase 14 checkout, run `$gsd-execute-phase 14 --gaps-only`. It runs the evidence review and advances to the exact Plan 14-13 decision. No source change or CTest workload starts before that decision; Plan 14-11 still requires two complete local workflows and a separate actual-host decision.
+Phase: 14 (Proven frontend states and responsive play) — EXECUTING
+Plan: 12 of 13
+Status: Blocked
+Next action: From this Phase 14 checkout, run $gsd-execute-phase 14 --gaps-only. Plan 14-12 is complete; the next item is Plan 14-13 exact source/test decision checkpoint. No source edit or focused CTest batch starts before that decision. Plan 14-11 still requires authorized mitigation, complete local workflows, and its separate host decision.
 Boundary: Never resume Plan 14-10 or reuse its spent cap. The new Plan 14-13 decision covers only the five RUN_SERIAL properties, metadata controls and one focused BIOS batch; it does not authorize full workflows, host/CI, push, cancel/rerun, local RetroArch, PR/merge/release or Phase 12. Plan 14-11's local full-workflow gate and separate actual-host checkpoint remain intact.
 
 ## Current Blockers
@@ -109,6 +109,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 | Phase 14 P07 | 57min | 3 tasks | 6 files |
 | Phase 14 P08 | 65min | 3 tasks | 8 files |
 | Phase 14 P10 | 20min | 1 tasks | 4 files |
+| Phase 14 P12 | 12min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -195,11 +196,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T20:02:54Z
-Stopped at: Phase 14 recovery approach review; no test launched and phase remains blocked
+Last session: 2026-11-03T20:28:58.244Z
+Stopped at: Completed 14-12-PLAN.md
 Resume file: None
-Next separate command: Run in the current Phase 14 checkout: `$gsd-execute-phase 14 --gaps-only`. This records the existing evidence, then stops at Plan 14-13's exact source/test decision before any edit or focused CTest workload. Phase 14 acceptance remains blocked.
-Context handoff: Phase 14 has nine of thirteen plans complete. Plan 14-10 stays terminal halted history: two valid default/serial pairs did not reproduce the five BIOS timeouts; its invalid third pair launched no tests but consumed the three-pair allowance. Do not reopen it or treat its cap as the acceptance blocker. The denied `ps` probe means the process cause remains unknown, but the revised route does not require another process diagnosis. Plan 14-12 is an evidence-only review. Plan 14-13 proposes `RUN_SERIAL` on exactly the five affected tests, retaining one-second deadlines, with a fresh decision before source/test work. If authorized and successful, Plan 14-11 runs full workflows on the repaired candidate and the frozen evidence commit whose immediate first parent is that candidate, then reaches its separate host decision. Keep FRONT-02/03/04 pending and all old host allowances spent. This planning review ran no emulator tests, full workflow, CI or host action.
+Next separate command: Run in the current Phase 14 checkout: $gsd-execute-phase 14 --gaps-only. It now reaches Plan 14-13 exact source/test decision; no source or focused test work starts before it. Phase acceptance remains blocked.
+Context handoff: Phase 14 now has ten complete plans; Plan 14-10 remains halted and its diagnostic cap stays spent. Plan 14-12 completed the documentation-only evidence review, recording that the five-test RUN_SERIAL proposal is a hypothesis and the historical timeout cause is unknown. Plan 14-13 needs a fresh exact owner decision before its source edit, metadata controls, and one focused BIOS batch. Plan 14-11 remains blocked on authorized mitigation, full local workflows on the repaired candidate and evidence commit with that candidate as its immediate first parent, then a separate host decision. Keep FRONT-02/03/04 pending and preserve all prior host allowances. Plan 14-12 ran no tests, build, tracer, CI, RetroArch, or remote action.
 
 ## Deferred Items
 

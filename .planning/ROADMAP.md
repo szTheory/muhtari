@@ -164,7 +164,7 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 1. A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip using the released core rather than only callback-level agreement.
 2. A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing and battery semantics remain correct; the frontend owns rewind storage and UI.
 3. A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative durable writes, and comparable completed-work performance evidence; capability declarations and user instructions claim only the qualified host path.
-**Plans:** 13 plans in 12 dependency-derived waves; 9 complete. Plan 14-10 remains halted history. Plan 14-12 records the existing failure evidence without another diagnostic run. Plan 14-13 offers an explicitly gated five-test RUN_SERIAL mitigation and focused validation. Plan 14-11 remains blocked on that mitigation and complete local workflows, with actual-host authority kept separate. FRONT-02/03/04 are pending.
+**Plans:** 11/13 plans executed in 12 dependency-derived waves; 9 complete. Plan 14-10 remains halted history. Plan 14-12 records the existing failure evidence without another diagnostic run. Plan 14-13 offers an explicitly gated five-test RUN_SERIAL mitigation and focused validation. Plan 14-11 remains blocked on that mitigation and complete local workflows, with actual-host authority kept separate. FRONT-02/03/04 are pending.
 **Wave 1**
 - [x] 14-01-PLAN.md
 
@@ -193,8 +193,8 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 - [x] 14-09-PLAN.md — Replace the retired host line ceiling with reporting and recurring fault controls.
 
 **Wave 10** *(14-10 is skipped as terminal halted history; 14-12 records evidence only after completed 14-09)*
-- [ ] 14-10-PLAN.md — HALTED after its bounded Task 1: no cause was attributed, no BIOS remedy was applied, and its three-pair cap is spent.
-- [ ] 14-12-PLAN.md — Reconcile existing results and recommend a reversible five-test CTest isolation mitigation; no diagnostic or test run.
+- [x] 14-10-PLAN.md — HALTED after its bounded Task 1: no cause was attributed, no BIOS remedy was applied, and its three-pair cap is spent.
+- [x] 14-12-PLAN.md — Reconcile existing results and recommend a reversible five-test CTest isolation mitigation; no diagnostic or test run.
 
 **Wave 11** *(after the evidence review; source/test work waits for its exact owner decision)*
 - [ ] 14-13-PLAN.md — Add RUN_SERIAL only to the five affected BIOS tests after explicit authority; verify metadata and one focused batch while preserving one-second deadlines.
@@ -251,6 +251,6 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 |---|---|---|---|
 | 12. Player-ready delivery and Playstead bridge | 3/9 | Halted at 12-01 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
-| 14. Proven frontend states and responsive play | 9/13 | Blocked; full local workflow fails and actual-host evidence remains pending; the proposed test mitigation has a separate authority gate | - |
+| 14. Proven frontend states and responsive play | 11/13 | Blocked; full local workflow fails and actual-host evidence remains pending; the proposed test mitigation has a separate authority gate | - |
 
 Phase 14 verification remains `gaps_found` (19/27 must-haves verified). Run 41656505025 reached the pinned host and passed its battery checks, then failed the existing RetroArch input line-count guard before state-mode checks; FRONT-02/03/04 remain pending. The required local `cmake --workflow --preset ci` gate also exited 8 twice on the same five one-second BIOS timeouts. Plan 14-10's focused command passed and two valid bounded default/serial pairs passed, but neither attributed the earlier failures; process ownership and per-process CPU were unavailable, and the third pair used an invalid option and launched no tests. The three-pair cap is spent and Plan 14-10 remains halted; that cap is not the acceptance blocker. Phase 14 is blocked by the unresolved complete local workflow gate and missing actual-host state evidence. The revised follow-up proposes only a reversible RUN_SERIAL mitigation for the five affected tests, preserving deadlines; the cause remains unproved and source/test work waits for a fresh exact decision. Plan 14-11 still requires full local workflows on the repaired candidate and its frozen evidence commit before its separate host decision. The completed [14-08 scheduling plan](phases/14-proven-frontend-states-and-responsive-play/14-08-PLAN.md) used its single authorized push and host-enabled dispatch allowance. No new push, dispatch, rerun, cancel, post-run push, local RetroArch, PR/merge/release or Phase 12 work is authorized. Phase 13 is complete; Phase 12 remains halted at 0/4, unaccepted and unwaived, with its hosted allowances spent.
