@@ -5,15 +5,15 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: executing
-stopped_at: Completed 14-03-PLAN.md
-last_updated: "2026-11-03T05:08:50.651Z"
+stopped_at: Completed 14-04-PLAN.md
+last_updated: "2026-11-03T05:25:30.530Z"
 last_activity: 2026-11-03
-state_head: bfab8001fd3a3029a3c8813c275acebbf0ec07ad
+state_head: 7f71cd0805748a4c4d8a9cc3eda73bf79849f9c6
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 33
 ---
 
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 is planned in five sequential plans and is ready to execute; Phase 13 is complete on `phase/13-portable-save-load-across-three-interfaces`. Phase 12 remains halted at accepted 0/4 with its input-proof cause unresolved and all hosted allowances spent. Do not resume it or use those allowances.
+Current focus: Phase 14 plans 14-01 through 14-04 are complete; plan 14-05 remains for the source-bound pinned-host evidence. Phase 13 is complete on `phase/13-portable-save-load-across-three-interfaces`. Phase 12 remains halted at accepted 0/4 with its input-proof cause unresolved and all hosted allowances spent. Do not resume it or use those allowances.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
-Next action: From the Phase 14 worktree, run `$gsd-execute-phase 14` once. It executes the five plans continuously; the final plan permits one source-bound Phase 14 CI dispatch. No wave-by-wave commands are needed.
-Boundary: Phase 13's native, PowerPC/QEMU, complete normal/release, equality and ASan/UBSan gates passed locally and are documented in its verification/resource evidence. Phase 12 remains halted at accepted 0/4 with causes unresolved and all hosted allowances spent. Phase 14 planning ran no tests, RetroArch or CI. The Phase 12 allowance remains unavailable.
+Next action: From the Phase 14 worktree, run `$gsd-execute-phase 14` to continue with plan 14-05. Its source-bound host attempt and any CI action remain subject to that plan's gates. No Phase 12 plan or allowance may be resumed.
+Boundary: Phase 13's native, PowerPC/QEMU, complete normal/release, equality and ASan/UBSan gates passed locally and are documented in its verification/resource evidence. Phase 14 plan 14-04's selected local tests passed; it launched no RetroArch process or CI dispatch. Phase 12 remains halted at accepted 0/4 with causes unresolved and all hosted allowances spent. The Phase 12 allowance remains unavailable.
 
 ## Preserved Phase 12 position — halt remains binding
 
@@ -98,6 +98,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 | Phase 14 P01 | 17min | 2 tasks | 5 files |
 | Phase 14 P02 | 19min | 2 tasks | 5 files |
 | Phase 14 P03 | 29min | 2 tasks | 8 files |
+| Phase 14 P04 | 14min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,10 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: Require exact RetroArch version, core, fixture basename, and CRC before state commands.
 - [Phase 14]: Send state-changing commands once and require fresh bounded observations before accepting them.
 - [Phase 14]: Keep FRONT-02, FRONT-03, and FRONT-04 pending until plan 14-05 records source-bound host evidence.
+- [Phase 14]: Accept rewind only after three distinct strict progress reversals and fresh matching pictures; do not assume a fixed decrement.
+- [Phase 14]: Accept run-ahead only when committed RAM advances once and the new picture shows exactly the fixture-defined one-frame-ahead value.
+- [Phase 14]: Tie deterministic state metadata to loaded-core equality, repeated continuation, and the recurring host-control registration.
+- [Phase 14]: Keep FRONT-02, FRONT-03, and FRONT-04 pending until plan 14-05 reviews source-bound pinned-host evidence.
 
 ### Pending Todos
 
@@ -172,11 +177,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T05:08:50.558Z
-Stopped at: Completed 14-03-PLAN.md
+Last session: 2026-11-03T05:25:30.455Z
+Stopped at: Completed 14-04-PLAN.md
 Resume file: None
-Next separate command: From the Phase 14 worktree, run `$gsd-execute-phase 14` to continue plans 14-04 and 14-05. Do not run any Phase 12 plan or reuse its spent hosted allowance.
-Context handoff: Phase 14 plans 14-01 through 14-03 are complete. Plan 14-03 adds the owned-child RetroArch save/load path, fresh progress/picture observations, and portable fault controls; the targeted local CI tests pass. The environment denied the local sandbox helper preflight, so the host case remains disabled until plan 14-05 proves the hosted containment check before its single source-bound invocation. No RetroArch launch, CI dispatch, push, or Phase 12 input attempt occurred. Continue with plan 14-04 in this Phase 14 worktree, then plan 14-05; Phase 12 remains halted at 0/4 with every hosted allowance spent.
+Next separate command: From the Phase 14 worktree, run `$gsd-execute-phase 14` to continue with plan 14-05. Do not run any Phase 12 plan or reuse its spent hosted allowance.
+Context handoff: Phase 14 plans 14-01 through 14-04 are complete. Plan 14-04 adds local proof for three rewind reversals, active one-frame run-ahead, and explicit HSC persistence, plus deterministic metadata proof gates. The combined selected local checks pass. The environment denied the local sandbox helper preflight in plan 14-03, so the host case remains disabled until plan 14-05 proves hosted containment before its single source-bound invocation. No RetroArch launch, CI dispatch, push, or Phase 12 input attempt occurred. Continue with plan 14-05 in this Phase 14 worktree; Phase 12 remains halted at 0/4 with every hosted allowance spent.
 
 ## Deferred Items
 
