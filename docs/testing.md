@@ -353,13 +353,15 @@ the shared mailbox/media faults and pixel judge; loaded-module tests retain life
 Hosted support files total at most 300 lines. Only owned diagnostic shots enter `retroarch-frames`;
 saves, firmware and logs stay uncommitted.
 
-**Rerunning it.** Rerun the job from the run page, or `gh run rerun <run-id> --failed`. On a Mac with a desktop
-session, the same steps run locally from the job's commands, with `-DRETROARCH` pointing at an installed
-`RetroArch.app/Contents/MacOS/RetroArch`.
+**Phase 14 state case.** One explicit `workflow_dispatch` uses same-run macOS arm64 artifacts only when their
+recorded commit matches `GITHUB_SHA`. `retroarch-frames` carries the receipt, screenshot, full 2 KiB save and
+log; accept them only when event, head SHA and artifact identity agree. Limits are a five-minute job,
+50-second child, 45-second work plus five-second cleanup, 120 frames and 64 forward actions. The owned sandbox
+probe must reject external UDP before launch. Failed, skipped or incomplete evidence leaves qualification
+pending; never rerun or launch locally. Record command, exit and run URL.
 
-**If a launch fails.** `run_retroarch.cmake` prints its private RetroArch log. The agent diagnoses it and records
-command, exit status and run URL; owner action is needed only for the owner's hardware. These diagnostics
-establish the exercised persistence and optional-firmware behavior, not general retail-game compatibility.
+For the existing DMA and battery cases, `run_retroarch.cmake` prints the private RetroArch log. Record the
+command, exit and run URL; those results do not establish general retail-game compatibility.
 
 ## Release archives
 

@@ -473,3 +473,18 @@ remain unknown; no second hosted attempt is claimed.
 |---|---|---|---|
 | MU-GSD-018 | Long, jargon-heavy handoffs with several candidate commands made the owner translate state after the work was complete. A workflow-suggested command can be invalid under an already-used cap. | Reproduced in the Phase 12 closeout: verification was `gaps_found`, execution had zero runnable plans, and the one allowed gap round was spent. Give one short recommendation and its exact valid command; when none is valid, say so and identify the authority needed. Assume the owner follows the recommendation; ask only at a serious scope, authority, risk or explicit-cap boundary. | adopted |
 | MU-GSD-019 | A blocked phase must not leave the owner without a forward path, and a stale branch can make completed work look runnable. | Reproduced 2026-11-03: the current Phase 12 branch still described Phase 13 as next work, but `origin/main`'s roadmap and Phase 13 verification show Phase 13 shipped and Phase 14 pending; Phase 12's host allowance remains spent. Reconcile against `origin/main` and the roadmap before recommending a stop or next phase. Continue independent approved work; if all paths need new authority, give the exact decision and resume command. | adopted |
+
+## TDD parent and dispatch baseline (2026-11-03)
+
+MU-CI-015 (reproduced): this workflow's `workflow_dispatch` quality comparison uses the
+dispatched commit's first parent as its base. When a required TDD RED test commit is the
+implementation commit's immediate parent, the base intentionally lacks the implementation
+and fails that test. The quality job then rejects missing producer artifacts, and downstream
+artifact consumers such as the opt-in host job skip. Before a single-use dispatch, inspect the
+baseline source and run the independent-base check while preserving the RED evidence in history.
+
+Evidence: the current-source local CTest control and the dispatched source `1e8f019` pass
+`retroarch.states.controls`, while its parent `e638c53` lacks the receipt implementation and
+fails that control. [Run 41585416888](https://github.com/szTheory/muhtari/actions/runs/41585416888)
+completed with no artifacts and `retroarch` skipped. The attempt was not repeated; no actual-host
+behavior is inferred from the build or test failures.
