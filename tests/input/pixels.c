@@ -5,6 +5,7 @@
 #include "palette.h"
 
 unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held);
+unsigned input_history_response(const uint8_t *rgb, uint32_t w, uint32_t h);
 
 static int input_color(const uint8_t *p, unsigned value, unsigned mask)
 {
@@ -36,4 +37,49 @@ unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held)
             return field + 2u;
     }
     return 0u;
+}
+
+enum {
+    HISTORY_PIXEL_COMPLETE = 0u,
+    HISTORY_PIXEL_DIMENSIONS = 1u,
+    HISTORY_PIXEL_WAITING = 2u,
+    HISTORY_PIXEL_HELD = 3u,
+    HISTORY_PIXEL_SIGNATURE = 4u
+};
+
+static int history_pixel_is(const uint8_t *p, uint8_t r, uint8_t g, uint8_t b)
+{
+    return p[0] == r && p[1] == g && p[2] == b;
+}
+
+/* This judge is intentionally separate from the generated 6502 program:
+   the four sample bands encode waiting/held/completed as a single NTSC $46
+   marker, with every other band black. */
+unsigned input_history_response(const uint8_t *rgb, uint32_t w, uint32_t h)
+{
+    static const uint32_t rows[4] = {14u, 42u, 70u, 98u};
+    const uint8_t *sample[4];
+    int marker = -1;
+
+    if (w != 320u || h != 242u)
+        return HISTORY_PIXEL_DIMENSIONS;
+    if (rgb == NULL)
+        return HISTORY_PIXEL_SIGNATURE;
+    for (unsigned band = 0u; band < 4u; band++) {
+        sample[band] = rgb + ((size_t)rows[band] * w + 160u) * 3u;
+        if (history_pixel_is(sample[band], 0xAFu, 0x51u, 0x63u)) {
+            if (marker >= 0)
+                return HISTORY_PIXEL_SIGNATURE;
+            marker = (int)band;
+        } else if (!history_pixel_is(sample[band], 0x00u, 0x00u, 0x00u)) {
+            return HISTORY_PIXEL_SIGNATURE;
+        }
+    }
+    if (marker == 0)
+        return HISTORY_PIXEL_WAITING;
+    if (marker == 1)
+        return HISTORY_PIXEL_HELD;
+    if (marker == 2)
+        return HISTORY_PIXEL_COMPLETE;
+    return HISTORY_PIXEL_SIGNATURE;
 }

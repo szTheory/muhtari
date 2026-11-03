@@ -1,7 +1,7 @@
 /* Controllers and console switches as a game reads them, one case per run:
 
      muhtari-test-input <case>
-     muhtari-test-input --write-cart FILE [even] [--write-cart FILE [even]]...
+     muhtari-test-input --write-cart FILE [even|history] ...
 
    Each case builds a 48 KiB linear cartridge in memory from the 6502 bytes
    below, so no image is tracked. Every frame the cartridge waits for MSTAT's
@@ -16,9 +16,10 @@
    k; the first frame after a load starts at the hand-off, so line 1 never
    reaches the machine and every row's input is on line 2 (docs/embedding.md,
    Input). --write-cart writes the cartridge to FILE instead, the even
-   variant reading only on even frames, for the runner's movie tests. Exit
-   status: 0 when the case passes or the files are written, 1 when it fails,
-   2 on an unknown case. */
+   variant reading only on even frames, for the runner's movie tests. The
+   opt-in history variant draws a waiting, held, or completed marker after
+   sampling its ordered input state. Exit status: 0 when the case passes or
+   the files are written, 1 when it fails, 2 on an unknown case. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +32,15 @@
 #include "palette.h"
 
 unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held);
+unsigned input_history_response(const uint8_t *rgb, uint32_t w, uint32_t h);
+
+enum {
+    HISTORY_PIXEL_COMPLETE = 0u,
+    HISTORY_PIXEL_DIMENSIONS = 1u,
+    HISTORY_PIXEL_WAITING = 2u,
+    HISTORY_PIXEL_HELD = 3u,
+    HISTORY_PIXEL_SIGNATURE = 4u
+};
 
 /* A 48 KiB linear body maps $4000-$FFFF; the program starts at $4000. */
 #define BODY (48u * IMAGES_KIB)
@@ -134,10 +144,44 @@ static const uint8_t program[] = {
 };
 /* clang-format on */
 
+/* Optional owned history cartridge. $40 counts sampled frames and $41 is
+   waiting (0), held (1), or sticky complete (2). The visible signature puts
+   palette $46 in band 0, 1, or 2 respectively; band 3 and later stay black.
+   Each loop samples once at VBLANK, so release can only follow a held sample
+   on a later frame. The register masks follow docs/hardware/controllers.md. */
+/* clang-format off */
+static const uint8_t history_program[] = {
+    0xD8u, 0xA9u, 0x07u, 0x85u, 0x01u, 0xA9u, 0x00u, 0x8Du,
+    0x83u, 0x02u, 0x85u, 0x41u, 0xA5u, 0x28u, 0x30u, 0xFCu,
+    0xA5u, 0x28u, 0x10u, 0xFCu, 0xE6u, 0x40u, 0xA5u, 0x41u,
+    0xC9u, 0x00u, 0xF0u, 0x07u, 0xC9u, 0x01u, 0xF0u, 0x39u,
+    0x4Cu, 0x8Cu, 0x40u, 0xADu, 0x80u, 0x02u, 0xC9u, 0xEFu,
+    0xD0u, 0x62u, 0xA5u, 0x08u, 0x29u, 0x80u, 0xC9u, 0x80u,
+    0xD0u, 0x5Au, 0xA5u, 0x09u, 0x29u, 0x80u, 0xD0u, 0x54u,
+    0xA5u, 0x0Au, 0x29u, 0x80u, 0xD0u, 0x4Eu, 0xA5u, 0x0Bu,
+    0x29u, 0x80u, 0xD0u, 0x48u, 0xA5u, 0x0Cu, 0x29u, 0x80u,
+    0xD0u, 0x42u, 0xA5u, 0x0Du, 0x29u, 0x80u, 0xC9u, 0x80u,
+    0xD0u, 0x3Au, 0xA9u, 0x01u, 0x85u, 0x41u, 0x4Cu, 0x8Cu,
+    0x40u, 0xADu, 0x80u, 0x02u, 0xC9u, 0xFFu, 0xD0u, 0x2Cu,
+    0xA5u, 0x08u, 0x29u, 0x80u, 0xD0u, 0x26u, 0xA5u, 0x09u,
+    0x29u, 0x80u, 0xD0u, 0x20u, 0xA5u, 0x0Au, 0x29u, 0x80u,
+    0xD0u, 0x1Au, 0xA5u, 0x0Bu, 0x29u, 0x80u, 0xD0u, 0x14u,
+    0xA5u, 0x0Cu, 0x29u, 0x80u, 0xC9u, 0x80u, 0xD0u, 0x0Cu,
+    0xA5u, 0x0Du, 0x29u, 0x80u, 0xC9u, 0x80u, 0xD0u, 0x04u,
+    0xA9u, 0x02u, 0x85u, 0x41u, 0xA5u, 0x28u, 0x30u, 0xFCu,
+    0xA2u, 0x00u, 0xE4u, 0x41u, 0xD0u, 0x05u, 0xA9u, 0x46u,
+    0x4Cu, 0x9Du, 0x40u, 0xA9u, 0x00u, 0x85u, 0x20u, 0xA9u,
+    0x1Cu, 0x85u, 0x42u, 0x85u, 0x24u, 0xC6u, 0x42u, 0xD0u,
+    0xFAu, 0xE8u, 0xE0u, 0x03u, 0xD0u, 0xE4u, 0xA9u, 0x00u,
+    0x85u, 0x20u, 0x4Cu, 0x0Cu, 0x40u,
+};
+/* clang-format on */
+
 static alloc_counts counts;
 static uint8_t image[IMAGES_HEADER + BODY];
 static uint8_t video[MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC];
 static uint8_t pal_video[320u * 292u];
+static uint8_t history_rgb[MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC * 3u];
 static uint8_t baseline[MUHTARI__WIDTH * MUHTARI__HEIGHT_NTSC];
 static int16_t audio[2u * MUHTARI__MAX_AUDIO_SAMPLES];
 static muhtari_input frames[8];
@@ -165,11 +209,24 @@ static void build(const settings *s)
     put(0xFFFDu, (uint8_t)(ROM_BASE >> 8));
 }
 
-/* An instance running the program with settings s, loaded through
-   muhtari_load and its fast boot. NULL on failure. */
-static muhtari *boot_region(const settings *s, uint32_t region)
+/* Builds the separate ordered-input history variant without changing the
+   bytes produced by build() for existing plain/even callers. */
+static void build_history(void)
 {
-    build(s);
+    memset(image, 0, sizeof image);
+    images_header(image, 3u, "Input", BODY, 0u);
+    memcpy(image + IMAGES_HEADER, history_program, sizeof history_program);
+    put(RTI_AT, 0x40u); /* RTI */
+    put(0xFFFAu, (uint8_t)(RTI_AT & 0xFFu));
+    put(0xFFFBu, (uint8_t)(RTI_AT >> 8));
+    put(0xFFFCu, (uint8_t)(ROM_BASE & 0xFFu));
+    put(0xFFFDu, (uint8_t)(ROM_BASE >> 8));
+}
+
+/* Loads the image currently in memory through muhtari_load and its fast
+   boot. NULL on failure. */
+static muhtari *load_image(uint32_t region)
+{
     muhtari_config cfg = alloc_config(&counts);
     muhtari *m = NULL;
     if (muhtari_create(&cfg, &m) != MUHTARI_STATUS_OK) {
@@ -190,9 +247,22 @@ static muhtari *boot_region(const settings *s, uint32_t region)
     return m;
 }
 
+/* An instance running the program with settings s. */
+static muhtari *boot_region(const settings *s, uint32_t region)
+{
+    build(s);
+    return load_image(region);
+}
+
 static muhtari *boot(const settings *s)
 {
     return boot_region(s, MUHTARI_REGION_NTSC);
+}
+
+static muhtari *boot_history(void)
+{
+    build_history();
+    return load_image(MUHTARI_REGION_NTSC);
 }
 
 /* Runs one frame into rows. */
@@ -1322,6 +1392,134 @@ static void input_pixels(void)
     }
 }
 
+static void history_sample(muhtari *m, uint32_t p1, uint32_t p2)
+{
+    muhtari_input input;
+    memset(&input, 0, sizeof input);
+    input.size = (uint32_t)sizeof input;
+    input.device[0] = MUHTARI_PORT_PROLINE;
+    input.device[1] = MUHTARI_PORT_PROLINE;
+    input.buttons[0] = p1;
+    input.buttons[1] = p2;
+    CHECK_EQ_U64(muhtari_set_input(m, &input), MUHTARI_STATUS_OK);
+    frame(m, video);
+}
+
+static void history_convert(void)
+{
+    for (size_t p = 0u; p < sizeof video; p++) {
+        uint32_t color = muhtari__palette_rgb_region(video[p], MUHTARI_REGION_NTSC);
+        history_rgb[p * 3u] = (uint8_t)(color >> 16);
+        history_rgb[p * 3u + 1u] = (uint8_t)(color >> 8);
+        history_rgb[p * 3u + 2u] = (uint8_t)color;
+    }
+}
+
+static unsigned history_judge(void)
+{
+    history_convert();
+    return input_history_response(history_rgb, 320u, 242u);
+}
+
+static muhtari *history_begin(void)
+{
+    muhtari *m = boot_history();
+    CHECK(m != NULL);
+    if (m != NULL)
+        frame(m, NULL); /* The first post-load frame is the hand-off. */
+    return m;
+}
+
+static unsigned history_run(const uint32_t *p1, const uint32_t *p2, size_t n)
+{
+    muhtari *m = history_begin();
+    if (m == NULL)
+        return HISTORY_PIXEL_SIGNATURE;
+    for (size_t i = 0u; i < n; i++)
+        history_sample(m, p1[i], p2[i]);
+    unsigned result = history_judge();
+    muhtari_destroy(m);
+    return result;
+}
+
+static void input_history_pixels(void)
+{
+    static const uint32_t idle[] = {0u, 0u};
+    static const uint32_t early_release[] = {0u, MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1,
+                                              MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1};
+    static const uint32_t stuck[] = {MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1,
+                                     MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1,
+                                     MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1};
+    static const uint32_t wrong_button[] = {MUHTARI_BUTTON_UP | MUHTARI_BUTTON_2, 0u};
+    static const uint32_t partial_up[] = {MUHTARI_BUTTON_UP, 0u};
+    static const uint32_t partial_button[] = {MUHTARI_BUTTON_1, 0u};
+    static const uint32_t delayed[] = {0u, 0u, 0u, 0u, 0u,
+                                       MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1,
+                                       MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1, 0u};
+    static const uint32_t p2_wrong[] = {MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1, 0u};
+    static const uint32_t p2_idle[8] = {0u};
+    static const struct {
+        const char *name;
+        const uint32_t *p1;
+        const uint32_t *p2;
+        size_t count;
+        unsigned expected;
+    } cases[] = {
+        {"idle-only", idle, p2_idle, sizeof idle / sizeof idle[0], HISTORY_PIXEL_WAITING},
+        {"release-before-hold-without-later-release", early_release, p2_idle,
+         sizeof early_release / sizeof early_release[0], HISTORY_PIXEL_HELD},
+        {"stuck-held", stuck, p2_idle, sizeof stuck / sizeof stuck[0], HISTORY_PIXEL_HELD},
+        {"wrong-port", p2_idle, p2_wrong, sizeof p2_wrong / sizeof p2_wrong[0],
+         HISTORY_PIXEL_WAITING},
+        {"wrong-button", wrong_button, p2_idle, sizeof wrong_button / sizeof wrong_button[0],
+         HISTORY_PIXEL_WAITING},
+        {"partial-up", partial_up, p2_idle, sizeof partial_up / sizeof partial_up[0],
+         HISTORY_PIXEL_WAITING},
+        {"partial-button", partial_button, p2_idle, sizeof partial_button / sizeof partial_button[0],
+         HISTORY_PIXEL_WAITING},
+        {"delayed-valid", delayed, p2_idle, sizeof delayed / sizeof delayed[0],
+         HISTORY_PIXEL_COMPLETE},
+    };
+    static const uint32_t band_rows[] = {14u, 42u, 70u, 98u};
+    const uint32_t held = MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1;
+    muhtari *m = history_begin();
+    CHECK(m != NULL);
+    if (m == NULL)
+        return;
+
+    history_sample(m, 0u, 0u);
+    CHECK_EQ_U64(history_judge(), HISTORY_PIXEL_WAITING);
+    history_sample(m, held, 0u);
+    CHECK_EQ_U64(history_judge(), HISTORY_PIXEL_HELD);
+    history_sample(m, 0u, 0u); /* release on the next sampled frame */
+    CHECK_EQ_U64(history_judge(), HISTORY_PIXEL_COMPLETE);
+    CHECK_EQ_U64(input_history_response(history_rgb, 319u, 242u), HISTORY_PIXEL_DIMENSIONS);
+    CHECK_EQ_U64(input_history_response(history_rgb, 320u, 241u), HISTORY_PIXEL_DIMENSIONS);
+
+    for (size_t band = 0u; band < sizeof band_rows / sizeof band_rows[0]; band++) {
+        size_t at = ((size_t)band_rows[band] * 320u + 160u) * 3u;
+        history_rgb[at] ^= 1u;
+        CHECK_EQ_U64(input_history_response(history_rgb, 320u, 242u), HISTORY_PIXEL_SIGNATURE);
+        CHECK_EQ_U64(input_history_response(history_rgb, 320u, 242u), HISTORY_PIXEL_SIGNATURE);
+        history_rgb[at] ^= 1u;
+        CHECK_EQ_U64(input_history_response(history_rgb, 320u, 242u), HISTORY_PIXEL_COMPLETE);
+    }
+
+    for (unsigned frame_number = 0u; frame_number < 260u; frame_number++)
+        history_sample(m, 0u, 0u);
+    CHECK_EQ_U64(history_judge(), HISTORY_PIXEL_COMPLETE);
+    muhtari_destroy(m);
+
+    for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {
+        unsigned result = history_run(cases[i].p1, cases[i].p2, cases[i].count);
+        if (result != cases[i].expected) {
+            fprintf(stderr, "FAIL input history %s: pixel result %u, expected %u\n", cases[i].name,
+                    result, cases[i].expected);
+            check_failures++;
+        }
+    }
+}
+
 static int proline_one_button(void)
 {
     input_latches();
@@ -1337,28 +1535,7 @@ static int proline_one_button(void)
         {&plain, PROLINES "|......|......|...BB|\n", {0xFFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
     };
     check_rows("proline_one_button", rows, sizeof rows / sizeof rows[0]);
-    /* The history fixture's completion band is centered at row 94 and uses
-       palette value $46. The plain register-band cart has no sticky result. */
-    muhtari *history = boot(&plain);
-    CHECK(history != NULL);
-    if (history != NULL) {
-        frame(history, NULL); /* cartridge hand-off frame */
-        muhtari_input input;
-        memset(&input, 0, sizeof input);
-        input.size = (uint32_t)sizeof input;
-        input.device[0] = MUHTARI_PORT_PROLINE;
-        input.device[1] = MUHTARI_PORT_PROLINE;
-        input.buttons[0] = MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1;
-        CHECK_EQ_U64(muhtari_set_input(history, &input), MUHTARI_STATUS_OK);
-        frame(history, video);
-        input.buttons[0] = 0u;
-        CHECK_EQ_U64(muhtari_set_input(history, &input), MUHTARI_STATUS_OK);
-        frame(history, video);
-        CHECK_EQ_U64(muhtari_set_input(history, &input), MUHTARI_STATUS_OK);
-        frame(history, video);
-        CHECK_EQ_HEX(video[94u * MUHTARI__WIDTH + 160u], 0x46u);
-        muhtari_destroy(history);
-    }
+    input_history_pixels();
     return check_failures == 0;
 }
 
@@ -2699,20 +2876,33 @@ static int lag_dma_and_peek(void)
     return check_failures == 0;
 }
 
-/* Writes the cartridge for each --write-cart FILE [even] in argv to FILE.
+/* Writes the cartridge for each --write-cart FILE [even|history] in argv.
    Returns the exit status. */
 static int write_carts(int argc, char **argv)
 {
     static const settings even = {0x07u, 0x00u, 0x00u, 0x00u, READ_EVEN};
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--write-cart") != 0 || i + 1 >= argc) {
-            fprintf(stderr, "usage: muhtari-test-input --write-cart FILE [even]...\n");
+            fprintf(stderr, "usage: muhtari-test-input --write-cart FILE [even|history]...\n");
             return 2;
         }
         const char *path = argv[++i];
-        int is_even = i + 1 < argc && strcmp(argv[i + 1], "even") == 0;
-        i += is_even;
-        build(is_even ? &even : &plain);
+        int variant = 0;
+        if (i + 1 < argc && argv[i + 1][0] != '-') {
+            if (strcmp(argv[i + 1], "even") == 0)
+                variant = 1;
+            else if (strcmp(argv[i + 1], "history") == 0)
+                variant = 2;
+            else {
+                fprintf(stderr, "unknown cartridge variant %s\n", argv[i + 1]);
+                return 2;
+            }
+            i++;
+        }
+        if (variant == 2)
+            build_history();
+        else
+            build(variant == 1 ? &even : &plain);
         FILE *f = fopen(path, "wb");
         if (f == NULL || fwrite(image, 1u, sizeof image, f) != sizeof image) {
             fprintf(stderr, "cannot write %s\n", path);

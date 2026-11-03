@@ -45,5 +45,6 @@ file(MAKE_DIRECTORY ${input_cart_dir})
 muhtari_add_test(NAME input.cart_files
   COMMAND muhtari-test-input --write-cart ${input_cart_dir}/input.a78
     --write-cart ${input_cart_dir}/input-even.a78 even
+    --write-cart ${input_cart_dir}/input-history.a78 history
   LABELS input portable TIMEOUT 1)
 set_tests_properties(input.cart_files PROPERTIES FIXTURES_SETUP input_carts)
