@@ -223,8 +223,7 @@ rewind storage, and rewind controls and UI.
 The `.info` `savestate = "true"` and `savestate_features = "deterministic"` declarations are tied to the
 loaded callback, repeated-continuation, and host-control test registrations. They describe the core's state
 contract; they are not evidence that a frontend has exercised it. Actual pinned RetroArch save/load, rewind,
-and run-ahead qualification remains pending: the latest source-bound CI dispatch failed its Windows builds
-before the dependent RetroArch host step could run. No actual-host result is claimed.
+and run-ahead qualification remains pending. In [run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188), the Windows x64 and ARM64 builds and hosted Ubuntu x64 ASan passed, but the macOS Intel independent-parent baseline timed out in `fuzz.regress.run`. The exact artifact join failed and the dependent RetroArch host job was skipped; no actual-host result is claimed.
 
 **Restart** power-cycles the console: volatile memory is cleared, the cartridge starts again the way it was loaded, and the
 difficulty switches go back to their options.

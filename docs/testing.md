@@ -360,6 +360,8 @@ child, 45-second work plus five-second cleanup, 120 frames and 64 forward action
 rejects external UDP before launch. Failed, skipped or incomplete evidence leaves qualification pending; never
 rerun or launch locally. Record command, exit and run URL.
 
+Host job skipped (41629846188).
+
 For the existing DMA and battery cases, `run_retroarch.cmake` prints the private RetroArch log. Record the
 command, exit and run URL; those results do not establish general retail-game compatibility.
 

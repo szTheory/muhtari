@@ -495,7 +495,20 @@ with `/W4 /WX`, MSVC C4100 blocks the full CI matrix even when macOS CI and hygi
 pass. Reproduced in [run 41618546347](https://github.com/szTheory/muhtari/actions/runs/41618546347):
 both Windows x64 and ARM64 fail compiling `tests/retroarch/states.c` because `self_path`
 is unused at three call sites; the required aggregate and exact quality artifact join fail,
-so RetroArch is skipped. The dispatch source's exact immediate parent passed local CI,
-hygiene and inventories; hosted Ubuntu x64 ASan and hygiene also passed. The Windows issue
-remains unresolved, no host behavior is inferred, and the one bounded dispatch allowance is
-consumed.
+so RetroArch is skipped. Plan 14-07 consumed the parameter in each non-POSIX branch;
+[run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188) passes both
+Windows x64 and ARM64 builds for that repair. The earlier Windows failure remains historical;
+this compiler blocker is resolved for the repaired source. The new run's macOS Intel
+independent-parent baseline separately timed out, and its RetroArch job was skipped, so no
+actual-host behavior is inferred.
+
+MU-CI-017 (observed): a single workflow-dispatch can pass current-source CI and all required
+Windows builds yet fail while executing the independent-parent macOS Intel quality baseline.
+In [run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188),
+`cmake -DROOT=. -DBUILD=build/ci -DOUT=build/ci/quality-current.json -DSHA="$(git rev-parse HEAD)" -DCONFIG=ci -DBUILD_BASE=ON -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" -P tests/cmake/quality_evidence.cmake`
+exited 1 because its independent-parent CTest child exited 8: `fuzz.regress.run` timed out
+at 28.06 seconds. The required artifact join then exited 1 and `retroarch` was skipped.
+The local exact-parent workflow passed, but one hosted observation does not establish a
+general timeout or resource regression; preserve the full log and require comparable evidence
+before changing deadlines, topology or caches. This lesson is observed, and the underlying
+timeout cause remains unknown.

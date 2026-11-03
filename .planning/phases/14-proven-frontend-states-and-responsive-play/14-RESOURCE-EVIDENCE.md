@@ -179,3 +179,44 @@ Remaining exact-parent checks, all run after the successful full workflow and be
 The complete warm CI output and each command's captured exit are retained in ignored `build/phase14-gap07-evidence/parent-*.log`. The exact-parent checkout's own build directory generated the JUnit files; no prior checkout receipt was reused. No local macOS arm64 ASan run was repeated. These local results establish neither Windows compiler acceptance nor hosted ASan.
 
 Read-only publication checks on 2026-11-03: `gh auth status` succeeded (exit 0); `gh pr list --head phase/14-proven-frontend-states-and-responsive-play --state open --json number,url,state,headRefName,baseRefName` returned `[]` (exit 0); the branch workflow listing contained only preserved, completed dispatch runs `41585416888` and `41618546347`, with no active run (exit 0). `git ls-remote origin refs/heads/phase/14-proven-frontend-states-and-responsive-play refs/heads/main` showed branch SHA `0869c655008fc5344c428313ae519a91f5e9db42`; it is an ancestor of the local repair commit and there is no remote-only branch commit. `.github/workflows/ci.yml` triggers `push` only on `main`, while `workflow_dispatch` exposes the boolean `phase14_host` input. The authorized new push and dispatch remain unused at this preflight point. These remote and PR checks will be repeated immediately before the single push.
+
+### Plan 14-07 single dispatch outcome
+
+The repaired source commit was `234c81abd5bb80b72b56c851b4031867a9a236cc`. The evidence-only commit `27818674366f80e230b8fa44493e1046282c3a66` froze that repaired commit as its first parent; `tests/cmake/quality_evidence.cmake` confirms that `workflow_dispatch` compares against `HEAD^1`. The one authorized normal push, `git push origin phase/14-proven-frontend-states-and-responsive-play`, exited 0. A subsequent read-only `git ls-remote origin refs/heads/phase/14-proven-frontend-states-and-responsive-play` advertised the frozen SHA `27818674366f80e230b8fa44493e1046282c3a66` (exit 0).
+
+Exactly one `gh workflow run ci.yml --ref phase/14-proven-frontend-states-and-responsive-play -f phase14_host=true` was issued (exit 0). It resolved unambiguously to [run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188), workflow `CI`, event `workflow_dispatch`, the Phase 14 branch, frozen source SHA `27818674366f80e230b8fa44493e1046282c3a66`, attempt 1. Its state is completed/failure. `gh run watch 41629846188 --exit-status` exited 1. The saved `gh run view --json attempt,status,conclusion,headSha,url,jobs` response is `build/phase14-gap07-evidence/run.json`; the full run, job, step and API receipts are under the same ignored evidence directory. The required source audit, `cmake -DINPUT=build/phase14-gap07-evidence/run.json -DEXPECTED_SHA=27818674366f80e230b8fa44493e1046282c3a66 -P tools/check_ci_run.cmake`, exited 1 because the required aggregate did not succeed. No retry or rerun occurred. Runs `41585416888` and `41618546347` remain preserved.
+
+The warning repair is confirmed by both required hosted compiler lanes: `build (windows-x64)` and `build (windows-arm64)` succeeded, as did fresh hosted Ubuntu x64 `asan` (`cmake --workflow --preset asan` and its inventory step). Linux x64/ARM64 and macOS ARM64 builds, library, hygiene, big-endian and no-floating-point jobs passed. The macOS x64 build and its ordinary tests/package/inventory passed, but its `Quality observations and independent base` step failed: `cmake -DROOT=. -DBUILD=build/ci -DOUT=build/ci/quality-current.json -DSHA="$(git rev-parse HEAD)" -DCONFIG=ci -DBUILD_BASE=ON -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" -P tests/cmake/quality_evidence.cmake` exited 1. Its independent-parent CTest run reached 518/693 and `fuzz.regress.run` timed out at 28.06 seconds; the CTest child exited 8. The `quality` job then failed at `quality_join: exact artifact set required` because the macOS x64 producer artifact was absent. The required aggregate failed. `retroarch` was skipped before host execution; no receipt, screenshot, save, containment observation, RetroArch launch or `retroarch-frames` artifact exists. `wasm32` and `hash-equality` were skipped after failed dependencies; `title` was skipped for this non-PR dispatch. There were no cancelled or unfinished jobs or steps.
+
+The artifact API returned 17 artifacts, all associated with run `41629846188`, the exact branch and frozen source SHA. Same-run `archives-macos-arm64` (ID `13227896979`, digest `sha256:3b952c48a2a4edc2753061f8643773f2616c3cb94a87a34ccd2162fc64ab61ca`) and `hashes-macos-arm64` (ID `13227792037`, digest `sha256:df4d05a00d8e5397343d1946c8423dd914555e82b814d1c74c46dbde443409b9`) were downloaded by their names from that run (each download command exit 0). The hash artifact's `commit.txt` exactly matches the frozen source SHA. The package archive SHA-256 values are library `c8d8d6c8c7315c32ad2a5aa9bb6f467d966ed773461d81e78ac9d87ca7238f1d`, libretro `8c46c47c69847aea132c283f1add3f187ae5a980f5b04e80bc78f03b47a97c02`, and runner `b2dcd0fae806349b565cde5f7a075e0059a7e9d4b8d2c42993a4fdd093da681c`. The artifact API contains no `retroarch-frames` artifact; none was downloaded.
+
+Run start was `2026-11-03T11:43:40Z`, and completion was `2026-11-03T12:21:02Z` (37m22s). The job API provides `started_at` and `completed_at` but no separate `queued_at`, so start offsets combine dependency wait and runner queue and cannot be decomposed. Durations below are job start-to-completion; the start offset is measured from workflow start:
+
+| Job | Start offset | Duration | Result |
+| --- | ---: | ---: | --- |
+| changes | 3s | 5s | pass |
+| hygiene | 4s | 127s | pass |
+| be32 | 10s | 107s | pass |
+| library | 10s | 49s | pass |
+| asan | 11s | 586s | pass |
+| nofp (ubuntu-26.04) | 10s | 14s | pass |
+| build (windows-x64) | 10s | 1392s | pass |
+| build (linux-arm64) | 20s | 208s | pass |
+| nofp (ubuntu-26.04-arm) | 12s | 18s | pass |
+| perf | 11s | 26s | pass |
+| build (macos-x64) | 12s | 929s | fail in independent-parent quality baseline |
+| build (macos-arm64) | 11s | 392s | pass; same-run artifacts available |
+| build (linux-x64) | 10s | 347s | pass |
+| build (windows-arm64) | 10s | 2216s | pass; critical path |
+| quality | 2228s | 7s | fail: exact artifact set |
+| wasm32 | 2226s | 0s | skipped |
+| hash-equality | 2226s | 0s | skipped |
+| retroarch | 2226s | 0s | skipped before host execution |
+| title | 2s | 0s | skipped for non-PR event |
+| CI required | 2237s | 4s | fail |
+
+The Windows ARM64 lane was the critical path at 36m56s; the aggregate completed about 15 seconds later. The failing macOS x64 baseline step ran from `11:56:39Z` to `11:59:17Z` (about 2m38s), including the 28.06-second timed-out test. No jobs or steps were cancelled. One run does not establish a safe structural, timeout, or cache improvement; none is supported or proposed by this evidence. The exact-parent local warm CI and serial diagnostic results remain separately recorded above, and no local ASan retry was made.
+
+This failed/partial result exhausts the one 14-07 dispatch allowance. FRONT-02/03/04 remain pending because the actual RetroArch host job did not run. The hosted Windows warning verdict is now passing for the repaired source; the historical failure in run `41618546347` remains unchanged. No post-run push, another dispatch, job rerun, local RetroArch launch, PR, merge or release is authorized in this scope.
+
+The six spec-less candidates retain their existing classifications: FRONT-02 boundary, precision, idempotency and concurrency remain unresolved; FRONT-03 and FRONT-04 remain unclassified. The warning repair and skipped host job do not resolve them. Both recalled prohibitions remain flagged for evidence review: do not substitute callback/mock success for actual-host picture, progress, rewind, run-ahead and durable-storage observations; do not conceal lost committed battery progress or broaden claims beyond the demonstrated host/mode. Neither is silently passed or dismissed.
