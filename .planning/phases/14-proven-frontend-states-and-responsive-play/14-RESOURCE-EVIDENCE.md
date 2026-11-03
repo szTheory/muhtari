@@ -268,3 +268,61 @@ After the two fixture-backed tests passed alone, the one bounded warm parent wor
 The remaining parent gates each passed: ordinary and release inventory commands reported 693 and six tests exactly once; hygiene passed 30/30 and its inventory reported 30 exactly once; the corrected property comparison passed; and the focused six-test command passed, including `retroarch.states.controls`, loader, empty-corpus guard, install consumer, fixture setup and portable replay. The focused replay took 1.94 seconds and ran after the other selected tests completed. Per the bounded diagnosis, the full workflow was not run again.
 
 No push or dispatch has occurred. The next step is to commit this evidence locally, freeze that commit with immediate parent `6de1300b6e1a697162f3143a48ae0311985c1477`, run the required frozen-source local preflight, and then recheck remote/auth/trigger/PR/run state before deciding whether the single authorized push and dispatch gates pass. The earlier read-only checks showed remote branch SHA `27818674366f80e230b8fa44493e1046282c3a66` and only historical runs `41629846188`, `41618546347`, and `41585416888`; no new allowance has been used. `PHASE14_DISPATCH_SHA` is not yet frozen. FRONT-02/03/04 remain pending.
+
+### Plan 14-08 single dispatch outcome (2026-11-03)
+
+The final frozen source was `2e32dc51558dceb5c536c704459f9d4765f959d7`; its immediate first parent was `32b3e3eea111f43858f601774071dc068ccd29af`, which contains the `RUN_SERIAL TRUE` repair. The normal phase branch was fast-forwarded locally to that source, then pushed once. `git push origin phase/14-proven-frontend-states-and-responsive-play` exited 0; `git ls-remote origin refs/heads/phase/14-proven-frontend-states-and-responsive-play` exited 0 and returned exactly the frozen SHA. The one fresh `gh workflow run ci.yml --ref phase/14-proven-frontend-states-and-responsive-play -f phase14_host=true` command exited 0. Its exact run identity is [41656505025](https://github.com/szTheory/muhtari/actions/runs/41656505025), event `workflow_dispatch`, branch `phase/14-proven-frontend-states-and-responsive-play`, head SHA `2e32dc51558dceb5c536c704459f9d4765f959d7`, attempt 1. The pre-dispatch run-ID set was `[41629846188, 41618546347, 41585416888]`. No second push/dispatch, rerun, cancellation or post-run push occurred.
+
+After committing the planning records required before source freeze, every exact-source local gate was repeated at `2e32dc5`; the working tree was clean before publication. The `source-final-*.log` and matching `.exit` receipts are ignored under `build/phase14-gap08-evidence/`.
+
+| Frozen-source command | Exit | Result |
+| --- | ---: | --- |
+| `cmake --workflow --preset ci` | 0 | Full CI passed: all 693 ordinary tests and six release tests. |
+| `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 0 | All 693 ordinary tests ran once. |
+| `cmake -DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release -P tests/cmake/check_junit.cmake` | 0 | All six release tests ran once. |
+| `cmake --workflow --preset hygiene` | 0 | All 30 hygiene checks passed. |
+| `cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake` | 0 | All 30 hygiene checks ran once. |
+| `cmake -P build/phase14-gap08-evidence/check-portable-scheduling.cmake` | 0 | The final CTest metadata has 693 names; the portable replay keeps its command, corpus, labels and scaled `TIMEOUT`, and adds only `RUN_SERIAL TRUE` (apart from normalized generated source offsets/tool path). |
+| `ctest --preset ci -R '^(fuzz\.regress\.(run(\.self_test)?|loader)|install\.consumer|retroarch\.states\.controls)$' --no-tests=error --output-on-failure --output-junit build/ci/junit-gap08-focused.xml` | 0 | All six selected tests, including replay and mock controls, passed; replay took 2.29 seconds. |
+| `ctest --preset ci --show-only=json-v1` (saved `source-final-after.json`) | 0 | Fresh exact-source registration metadata captured for the property comparison. |
+
+The detached exact-parent source `32b3e3eea111f43858f601774071dc068ccd29af` had a first cold CI exit 8 only for `bios.splash_skip` and `bios.rejects_cart` at their existing one-second limits. The two tests plus fixtures passed the bounded diagnosis 4/4 in 0.21 seconds; the one authorized warm `cmake --workflow --preset ci` then exited 0 with 693 ordinary and six release tests. Parent ordinary/release/hygiene inventories, the portable property comparison and the six-test focused command all exited 0. The complete parent and cold/warm receipts remain in the detached checkout's ignored evidence directory. This supports local parallel contention as a likely trigger for that cold run but does not establish hosted Intel behavior.
+
+The complete hosted run response was saved to ignored `build/phase14-gap08-evidence/run.json`; `gh run view` and the run/job/artifact API fetches exited 0. `gh run watch 41656505025 --interval 15 --compact` exited 0 because it was invoked without `--exit-status`; the authoritative run conclusion is `failure`, not a watch success. `cmake -DINPUT=build/phase14-gap08-evidence/run.json -DEXPECTED_SHA=2e32dc51558dceb5c536c704459f9d4765f959d7 -P tools/check_ci_run.cmake` exited 1 because the required aggregate failed. The complete failed-job log is `run-failed.log`; focused macOS x64 and arm64 job logs are retained as `run-macos-x64.log` and `run-macos-arm64.log`.
+
+On macOS x64, both portable replay registrations honored the new serial policy. In current-source CI, the other 692 tests completed first; `fuzz.regress.run` then passed in 5.48 seconds. In the independent-parent repeat, the other 692 tests likewise completed first and the replay passed in 5.90 seconds. The whole CI test phases passed 693/693 in 172.74 and 249.28 seconds respectively. These one-run results show that CTest honored the property and that this attempt did not reproduce the earlier timeout. They do not prove the earlier timeout's cause or establish a general performance result.
+
+The required hosted Ubuntu x64 ASan lane passed, both Windows architecture builds passed, both macOS builds and the standalone quality/hash-equality jobs passed. The `wasm32` job failed as an advisory job while compiling `tests/core/test_state.c:2022`: WASI marks `tmpfile` as unavailable/deprecated, and `-Werror` promotes that warning to an error. It is not a dependency of `CI required`; the required aggregate failed because `retroarch` failed.
+
+The `retroarch` job started only after the build matrix completed and ran for 34 seconds. Its `Fresh frontend and runner battery roundtrip` step passed both 120-frame battery runs, matched all 34,816 save bytes against the independent counts and reported exact 320x242 pixel equality. The step then exited 1 on its final command, `test "$(cat tests/retroarch/* | wc -l | tr -d ' ')" -le 300`. The current files total 3,845 lines (`states.c` alone is 3,145); this guard is tracked at `.github/workflows/ci.yml:535` from `f5e67068` and is independent of this plan's scheduling change. Consequently `Opt-in owned RetroArch save/load control`, `Require the Phase 14 states pass receipt`, and the compare negative control were skipped. The uploaded receipt says `host_outcome=skipped_before_host_step` and `reason=an earlier job step failed or was cancelled`; it has no `state_mode=states` or pass outcome. No state-mode screenshot, raw save, loaded-core digest, owned-fixture judgment, containment or complete-work observation exists. The six downloaded images are only generic DMA/battery controls; the available battery screenshot was visually inspected and is not a state-mode observation.
+
+Only artifacts from this run and the three plan-authorized names were downloaded. The run artifact API associated all three with run `41656505025`: `archives-macos-arm64` ID `13240417131`, `hashes-macos-arm64` ID `13240751319`, and `retroarch-frames` ID `13242324221`. `hashes-macos-arm64/commit.txt` exactly equals the frozen SHA, and its 76-line `identity.txt` exactly matches the tree manifest for the pinned source and CI configuration. The three archive SHA-256 values are library `c2780c6c49f47c94c606f373428187e2e5ea6a3caae1300361bc89e0b88c0702`, libretro `481347ca654f145db3268bcc17eee5b24ea4e391151a9273fe47514027e32792`, and runner `64a994a6b886f5fdf56aed0aa8aeb31afdfd00f88619b0231922598c6cc452a2`. The `retroarch-frames` artifact contains the generic battery/DMA images and only `frontend-states/host-receipt.txt`; it has no host state capture. Because the host consumer did not run, there is no loaded-core digest, state-mode/host-version receipt, owned fixture result, or state screenshot/raw save to authenticate.
+
+The job API provides `started_at` and `completed_at` but no `queued_at`; offsets below combine dependency wait and runner queue. Run start was `2026-11-03T14:43:30Z` and the workflow ended at `15:22:38Z` (39m08s).
+
+| Job | Start offset | Duration | Result |
+| --- | ---: | ---: | --- |
+| changes | +3s | 6s | pass |
+| hygiene | +3s | 2m07s | pass |
+| title | +2s | — | skipped for non-PR dispatch |
+| nofp (ubuntu-26.04) | +12s | 10s | pass |
+| asan | +11s | 10m52s | pass |
+| nofp (ubuntu-26.04-arm) | +13s | 8s | pass |
+| be32 | +11s | 59s | pass |
+| library | +11s | 34s | pass |
+| build (windows-arm64) | +12s | 36m50s | pass; longest job and critical path |
+| build (windows-x64) | +21s | 24m39s | pass |
+| build (macos-x64) | +12s | 8m20s | pass |
+| build (macos-arm64) | +19s | 5m43s | pass; supplied same-run artifacts |
+| build (linux-x64) | +11s | 5m49s | pass |
+| build (linux-arm64) | +17s | 3m35s | pass |
+| perf | +11s | 31s | pass (non-PR artifact step skipped) |
+| hash-equality | +37m05s | 6s | pass |
+| quality | +37m05s | 7s | pass |
+| wasm32 | +37m05s | 25s | failed (advisory) |
+| retroarch | +38m08s | 34s | failed before owned state control |
+| CI required | +38m54s | 13s | failed on required `retroarch` result |
+
+There were no cancelled jobs or steps. Windows ARM64 was the critical path; the downstream hash, quality and WASI jobs started around +37m05s, the host job around +38m08s, and the required aggregate finished at +39m07s. No separate queue time can be computed. This single run supports no safe runner topology, cache or timeout change. The five-minute host limit was not reached; the host job ended early on the line-count guard.
+
+This new attempt exhausts the 14-08 push/dispatch allowance. The requirement verdict remains pending: this evidence establishes one local scheduling proof and one hosted current/base non-reproduction, but no actual RetroArch state-mode observation. FRONT-02, FRONT-03 and FRONT-04 remain pending. Do not repeat, rerun, cancel, push, dispatch or launch RetroArch locally. A future host attempt requires a separately authorized scope that addresses the existing line-count guard and obtains a distinct live allowance.

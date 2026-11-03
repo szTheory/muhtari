@@ -512,3 +512,12 @@ The local exact-parent workflow passed, but one hosted observation does not esta
 general timeout or resource regression; preserve the full log and require comparable evidence
 before changing deadlines, topology or caches. This lesson is observed, and the underlying
 timeout cause remains unknown.
+
+2026-11-03 addendum: Plan 14-08 applies the existing CTest `RUN_SERIAL` property to the normal
+portable replay. In run [41656505025](https://github.com/szTheory/muhtari/actions/runs/41656505025),
+both the frozen source and its immediate parent completed the other 692 tests before the replay;
+the source replay passed in 5.48 seconds and the parent replay in 5.90 seconds. This directly
+confirms the property was honored in this attempt and that the earlier timeout did not recur.
+It does not establish that overlap caused the earlier timeout or that the scheduling change
+improves all hosted runs. The actual-host step remained unverified because its preceding battery
+job exited at the existing 300-line source guard; no frontend state behavior is inferred.
