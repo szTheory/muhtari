@@ -671,6 +671,7 @@ enum mock_fault {
     MOCK_FAULT_LOAD_SILENCE,
     MOCK_FAULT_LOAD_UNCHANGED,
     MOCK_FAULT_STALE_CAPTURE,
+    MOCK_FAULT_STALE_REFERENCE,
     MOCK_FAULT_INTERRUPTED_PROGRESS,
     MOCK_FAULT_REWIND_IGNORED,
     MOCK_FAULT_RUNAHEAD_TOGGLE_IGNORED,
@@ -688,6 +689,8 @@ typedef struct mock_session {
     unsigned presented;
     unsigned picture_generation;
     unsigned pictures[4];
+    unsigned picture_progress[4];
+    unsigned picture_reference_progress[4];
     uint8_t durable[STATES_MEDIA_BYTES];
     unsigned frames;
     unsigned progress_reads;
@@ -862,11 +865,20 @@ static int mock_capture(void *user, unsigned expected, unsigned picture_id, int 
     mock->picture_generation++;
     if (baseline) {
         mock->pictures[picture_id] = 1u;
+        mock->picture_progress[picture_id] = expected;
+        mock->picture_reference_progress[picture_id] = expected;
         return 0;
     }
     if (mock->fault == MOCK_FAULT_WRONG_REPLAY && mock->capture_calls <= 4u)
         return 1;
-    return mock->pictures[picture_id] == 1u ? 0 : 1;
+    if (mock->pictures[picture_id] != 1u)
+        return 1;
+    if (mock->fault == MOCK_FAULT_STALE_REFERENCE)
+        mock->picture_progress[picture_id] =
+            (mock->picture_reference_progress[picture_id] + 1u) & 0xffffu;
+    return mock->picture_progress[picture_id] == mock->picture_reference_progress[picture_id]
+               ? 0
+               : 1;
 }
 
 static void mock_media_set(mock_session *mock, unsigned progress)
@@ -1364,6 +1376,8 @@ static void complete_workload_controls(unsigned *count, unsigned *failures, cons
          "SAVE_FILES did not return exact OK"},
         {"silent SAVE_FILES fails before durable judgement", MOCK_FAULT_SAVE_FILES_SILENT,
          "SAVE_FILES did not return exact OK"},
+        {"stale progress reference is rejected by the mock image judge",
+         MOCK_FAULT_STALE_REFERENCE, "fresh picture or independent pixel judgment failed"},
     };
     for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {
         memset(detail, 0, sizeof detail);
@@ -1574,6 +1588,7 @@ typedef struct host_session {
     char shot_dir[PATH_MAX];
     char media_path[PATH_MAX];
     char captures[4][PATH_MAX];
+    unsigned capture_progress[4];
     char last_capture[PATH_MAX];
     unsigned capture_count;
     unsigned frames;
@@ -2707,16 +2722,23 @@ static int host_durable_committed(void *user, unsigned expected)
 static int compare_capture(host_session *host, unsigned expected, unsigned picture_id,
                            int baseline, const char *path)
 {
-    char value[8];
+    char reference_value[8], actual_value[8];
     char reference_path[PATH_MAX], image_path[PATH_MAX];
-    (void)snprintf(value, sizeof value, "%04X", expected & 0xffffu);
+    unsigned reference_progress = expected;
     const char *reference = baseline ? path : host->captures[picture_id];
-    if (baseline && picture_id == 3u && host->captures[2][0] != '\0')
+    if (!baseline)
+        reference_progress = host->capture_progress[picture_id];
+    if (baseline && picture_id == 3u && host->captures[2][0] != '\0') {
         reference = host->captures[2];
+        reference_progress = host->capture_progress[2];
+    }
     if (copy_path(reference_path, sizeof reference_path, reference) != 0 ||
         copy_path(image_path, sizeof image_path, path) != 0)
         return 1;
-    char *argv[] = {host->compare, "--progress", value, reference_path, image_path, NULL};
+    (void)snprintf(reference_value, sizeof reference_value, "%04X", reference_progress & 0xffffu);
+    (void)snprintf(actual_value, sizeof actual_value, "%04X", expected & 0xffffu);
+    char *argv[] = {host->compare, "--progress-pair", reference_value, actual_value,
+                    reference_path, image_path, NULL};
     char output[1024] = {0};
     int status = 0;
     if (run_capture(argv, output, sizeof output, STATES_OBSERVE_MS, &status) != 0 || status != 0)
@@ -2776,6 +2798,8 @@ static int host_capture(void *user, unsigned expected, unsigned picture_id, int 
     if (rc == 0 && baseline &&
         copy_path(host->captures[picture_id], sizeof host->captures[picture_id], target) != 0)
         rc = 1;
+    if (rc == 0 && baseline)
+        host->capture_progress[picture_id] = expected;
     if (rc == 0 && copy_path(host->last_capture, sizeof host->last_capture, target) != 0)
         rc = 1;
     host->capture_count++;

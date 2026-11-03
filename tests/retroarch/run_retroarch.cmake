@@ -144,12 +144,13 @@ if(MODE STREQUAL "states")
   file(SHA256 "${core}" core_sha256)
   file(SHA256 "${content}" fixture_sha256)
   set(receipt_metadata
-    "receipt_version=1\nsource_sha256=${SOURCE_SHA}\nrun_id=${RUN_ID}\nrun_attempt=${RUN_ATTEMPT}\nworkflow_event=${WORKFLOW_EVENT}\nrun_url=${RUN_URL}\nhost_runner=macos-15\nhost_version=${HOST_VERSION}\nhost_mode=RetroArch-1.22.2-Metal;run_ahead=one-frame;instance=single;audio=disabled\ncore_artifact_sha256=${CORE_ARTIFACT_SHA}\nrunner_artifact_sha256=${RUNNER_ARTIFACT_SHA}\nlibrary_artifact_sha256=${LIBRARY_ARTIFACT_SHA}\ncore_sha256=${core_sha256}\nfixture_sha256=${fixture_sha256}\nprocess_timeout_seconds=50\nwork_deadline_ms=45000\nowned_cleanup_ms=5000\npresented_frame_cap=120\nexplicit_forward_action_cap=64\n")
+    "receipt_version=1\nsource_sha256=${SOURCE_SHA}\nrun_id=${RUN_ID}\nrun_attempt=${RUN_ATTEMPT}\nworkflow_event=${WORKFLOW_EVENT}\nrun_url=${RUN_URL}\nhost_runner=macos-15\nhost_version=${HOST_VERSION}\nstate_mode=states\nhost_mode=RetroArch-1.22.2-Metal;run_ahead=one-frame;instance=single;audio=disabled\ncore_artifact_sha256=${CORE_ARTIFACT_SHA}\nrunner_artifact_sha256=${RUNNER_ARTIFACT_SHA}\nlibrary_artifact_sha256=${LIBRARY_ARTIFACT_SHA}\ncore_sha256=${core_sha256}\nfixture_sha256=${fixture_sha256}\nprocess_timeout_seconds=50\nwork_deadline_ms=45000\nowned_cleanup_ms=5000\npresented_frame_cap=120\nexplicit_forward_action_cap=64\n")
   if(EXISTS "${HOST_RECEIPT}")
     file(READ "${HOST_RECEIPT}" prior_receipt)
     foreach(required IN ITEMS "source_sha256=${SOURCE_SHA}" "run_id=${RUN_ID}"
         "run_attempt=${RUN_ATTEMPT}" "workflow_event=${WORKFLOW_EVENT}" "run_url=${RUN_URL}"
-        "host_version=${HOST_VERSION}" "core_artifact_sha256=${CORE_ARTIFACT_SHA}"
+        "host_version=${HOST_VERSION}" "state_mode=states"
+        "core_artifact_sha256=${CORE_ARTIFACT_SHA}"
         "runner_artifact_sha256=${RUNNER_ARTIFACT_SHA}"
         "library_artifact_sha256=${LIBRARY_ARTIFACT_SHA}")
       string(FIND "${prior_receipt}" "${required}" found)

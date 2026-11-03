@@ -570,7 +570,7 @@ jobs:
           runner_sha=$(shasum -a 256 build/runner/bin/muhtari-run | awk '{print $1}')
           library_sha=$(shasum -a 256 build/library/lib/libmuhtari.a | awk '{print $1}')
           {
-            printf 'host_version=%s\nhost_mode=RetroArch-1.22.2-Metal;run_ahead=one-frame;instance=single;audio=disabled\n' "$host_version"
+            printf 'host_version=%s\nstate_mode=states\nhost_mode=RetroArch-1.22.2-Metal;run_ahead=one-frame;instance=single;audio=disabled\n' "$host_version"
             printf 'core_artifact_sha256=%s\nrunner_artifact_sha256=%s\nlibrary_artifact_sha256=%s\n' \
               "$core_archive_sha" "$runner_archive_sha" "$library_archive_sha"
             printf 'core_sha256=%s\ninfo_sha256=%s\nrunner_sha256=%s\nlibrary_sha256=%s\n' \
@@ -586,6 +586,7 @@ jobs:
             -DINFO=build/libretro/info/muhtari_libretro.info \
             -DINFO_NAME=muhtari_libretro.info \
             -DTEMPLATE=tests/retroarch/test.cfg.in \
+            -DMODE=states \
             -DSTATE_DRIVER=build/frames/states \
             -DCOMPARE=build/frames/compare \
             -DSTATE_OUT="$PWD/build/frames/frontend-states" \
@@ -604,6 +605,14 @@ jobs:
             "-DRUNNER_ARTIFACT_SHA=$runner_archive_sha" \
             "-DLIBRARY_ARTIFACT_SHA=$library_archive_sha" \
             -P tests/retroarch/run_retroarch.cmake
+      - name: Require the Phase 14 states pass receipt
+        if: success() && github.event_name == 'workflow_dispatch' && inputs.phase14_host == true
+        run: |
+          set -euo pipefail
+          receipt=build/frames/frontend-states/host-receipt.txt
+          test -s "$receipt"
+          grep -Fqx 'state_mode=states' "$receipt"
+          grep -Fqx 'host_outcome=pass' "$receipt"
       - name: Record an opted-in host step that was not reached
         if: always() && github.event_name == 'workflow_dispatch' && inputs.phase14_host == true
         run: |

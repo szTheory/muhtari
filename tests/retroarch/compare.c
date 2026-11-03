@@ -70,7 +70,7 @@ static int progress_glyph(const uint8_t *rgb, uint32_t w, unsigned digit, unsign
 
 /* The owned progress screen is 320x242 with four counter glyphs and a black
    border. Validate identity and decode progress in each image before comparing
-   the complete pictures, so equal wrong captures cannot pass. */
+   static pixels, so equal wrong captures cannot pass and changing counters do. */
 static int progress_judge(const uint8_t *rgb, uint32_t w, uint32_t h, unsigned expected,
                           unsigned image)
 {
@@ -131,26 +131,81 @@ static int pixels_equal(const uint8_t *a, const uint8_t *b, uint32_t w, uint32_t
     return 1;
 }
 
+static int progress_pixel(unsigned x, unsigned y)
+{
+    return x >= 40u && x < 72u && y >= 26u && y < 34u;
+}
+
+static int pixels_equal_except_progress(const uint8_t *a, const uint8_t *b, uint32_t w,
+                                        uint32_t h, int report_difference)
+{
+    for (uint32_t y = 0; y < h; y++) {
+        for (uint32_t x = 0; x < w; x++) {
+            if (progress_pixel(x, y))
+                continue;
+            const uint8_t *pa = a + ((size_t)y * w + x) * 3u;
+            const uint8_t *pb = b + ((size_t)y * w + x) * 3u;
+            if (pa[0] != pb[0] || pa[1] != pb[1] || pa[2] != pb[2]) {
+                if (report_difference)
+                    printf("first difference outside progress counter at %u,%u: expected %06X, actual %06X\n",
+                           x, y, compare_hex(pa), compare_hex(pb));
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+static void progress_draw_counter(uint8_t *rgb, uint32_t w, unsigned value)
+{
+    for (unsigned digit = 0; digit < 4u; digit++) {
+        unsigned nibble = (value >> (12u - 4u * digit)) & 15u;
+        for (unsigned y = 0; y < 8u; y++) {
+            for (unsigned x = 0; x < 8u; x++) {
+                unsigned on = y >= 1u && y <= 5u && x < 6u &&
+                              (glyph[nibble][y - 1u] & (4u >> (x / 2u))) != 0u;
+                uint8_t color = on ? 0xEFu : 0u;
+                memset(rgb + ((size_t)(26u + y) * w + 40u + digit * 8u + x) * 3u,
+                       color, 3u);
+            }
+        }
+    }
+}
+
 static int progress_controls(const uint8_t *rgb, uint32_t w, uint32_t h, unsigned expected)
 {
     size_t n = (size_t)w * h * 3u;
     uint8_t *bad = calloc(n, 1u);
-    if (bad == NULL)
+    uint8_t *changed_progress = malloc(n);
+    if (bad == NULL || changed_progress == NULL) {
+        free(bad);
+        free(changed_progress);
         return 2;
+    }
     int failed = progress_judge(bad, w, h, expected, 2u) != PROGRESS_BAD_COUNTER;
     if (!failed)
         failed = progress_judge(rgb, w, h, (expected + 1u) & 0xFFFFu, 0u) !=
                  PROGRESS_BAD_COUNTER;
+    memcpy(changed_progress, rgb, n);
+    progress_draw_counter(changed_progress, w, (expected + 1u) & 0xFFFFu);
+    if (!failed)
+        failed = progress_judge(rgb, w, h, expected, 0u) != PROGRESS_OK ||
+                 progress_judge(changed_progress, w, h, (expected + 1u) & 0xFFFFu, 1u) !=
+                     PROGRESS_OK ||
+                 !pixels_equal_except_progress(rgb, changed_progress, w, h, 0) ||
+                 progress_judge(rgb, w, h, (expected + 1u) & 0xFFFFu, 2u) !=
+                     PROGRESS_BAD_COUNTER;
     memcpy(bad, rgb, n);
     bad[((size_t)100u * w + 100u) * 3u] ^= 0xFFu;
     if (!failed &&
         (progress_judge(bad, w, h, expected, 1u) != PROGRESS_OK ||
-         pixels_equal(rgb, bad, w, h, 0)))
+         pixels_equal_except_progress(rgb, bad, w, h, 0)))
         failed = 1;
     free(bad);
+    free(changed_progress);
     if (failed)
         return 1;
-    printf("progress controls: equal wrong glyph, changed counter, and unrelated pixel rejected\n");
+    printf("progress controls: wrong counter, changing glyph, and unrelated pixel judged independently\n");
     return 0;
 }
 
@@ -162,7 +217,8 @@ int main(int argc, char **argv)
     int progress_controls_mode = argc == 5 && strcmp(argv[1], "--progress-controls") == 0;
     int progress_mode = argc == 5 &&
                         (progress_controls_mode || strcmp(argv[1], "--progress") == 0);
-    unsigned count = 0, marker = 0, progress_count = 0;
+    int progress_pair_mode = argc == 6 && strcmp(argv[1], "--progress-pair") == 0;
+    unsigned count = 0, marker = 0, progress_count = 0, reference_progress_count = 0;
     const char *expected_path = NULL, *actual_path = NULL;
     if (battery_check) {
         char *end;
@@ -182,14 +238,27 @@ int main(int argc, char **argv)
         if (argv[2][0] == '\0' || *end != '\0' || n > 65535u)
             return 2;
         progress_count = (unsigned)n;
+        reference_progress_count = progress_count;
         expected_path = argv[3];
         actual_path = argv[4];
+    } else if (progress_pair_mode) {
+        char *end;
+        unsigned long n = strtoul(argv[2], &end, 16);
+        if (argv[2][0] == '\0' || *end != '\0' || n > 65535u)
+            return 2;
+        reference_progress_count = (unsigned)n;
+        n = strtoul(argv[3], &end, 16);
+        if (argv[3][0] == '\0' || *end != '\0' || n > 65535u)
+            return 2;
+        progress_count = (unsigned)n;
+        expected_path = argv[4];
+        actual_path = argv[5];
     } else if (argc == 3) {
         expected_path = argv[1];
         actual_path = argv[2];
     }
     if (expected_path == NULL || actual_path == NULL) {
-        fprintf(stderr, "usage: compare EXPECTED.bmp ACTUAL.bmp | --battery COUNT MARKER EXPECTED.bmp ACTUAL.bmp | --progress HEX EXPECTED.bmp ACTUAL.bmp\n");
+        fprintf(stderr, "usage: compare EXPECTED.bmp ACTUAL.bmp | --battery COUNT MARKER EXPECTED.bmp ACTUAL.bmp | --progress HEX EXPECTED.bmp ACTUAL.bmp | --progress-pair REFERENCE_HEX ACTUAL_HEX REFERENCE.bmp ACTUAL.bmp\n");
         return 2;
     }
     uint32_t w[2], h[2];
@@ -214,7 +283,13 @@ int main(int argc, char **argv)
         rc = progress_judge(rgb[0], w[0], h[0], progress_count, 0u) != PROGRESS_OK ||
              progress_judge(rgb[1], w[1], h[1], progress_count, 1u) != PROGRESS_OK;
     }
-    if (rc == 0 && !pixels_equal(rgb[0], rgb[1], w[0], h[0], 1))
+    if (rc == 0 && progress_pair_mode) {
+        rc = progress_judge(rgb[0], w[0], h[0], reference_progress_count, 0u) != PROGRESS_OK ||
+             progress_judge(rgb[1], w[1], h[1], progress_count, 1u) != PROGRESS_OK;
+    }
+    if (rc == 0 && !(progress_pair_mode
+                         ? pixels_equal_except_progress(rgb[0], rgb[1], w[0], h[0], 1)
+                         : pixels_equal(rgb[0], rgb[1], w[0], h[0], 1)))
         rc = 1;
     if (rc == 0 && battery_controls) {
         size_t n = (size_t)w[0] * h[0] * 3u;

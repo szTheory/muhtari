@@ -7,8 +7,8 @@ function(diag_ledger_crc id report)
     COMMAND_ERROR_IS_FATAL ANY)
 endfunction()
 
-# An independent visual progress judge checks the owned fixture counter before
-# comparing complete pictures and exercises falsifiable media/pixel controls.
+# An independent visual progress judge checks each owned fixture counter before
+# comparing static picture pixels and exercises falsifiable media/pixel controls.
 if(DIAG_FRONTEND_STATES_RUN)
   file(MAKE_DIRECTORY "${OUT}")
   function(frontend_exec)
@@ -30,11 +30,13 @@ if(DIAG_FRONTEND_STATES_RUN)
     frontend_compare(--progress ${value} "${OUT}/progress-${value}.bmp"
       "${OUT}/progress-${value}.bmp")
   endforeach()
+  frontend_compare(--progress-pair 000B 0040 "${OUT}/progress-000B.bmp"
+    "${OUT}/progress-0040.bmp")
   execute_process(COMMAND ${EMULATOR} "${COMPARE}" --progress-controls 000B
     "${OUT}/progress-000B.bmp" "${OUT}/progress-000B.bmp"
     RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
   if(NOT rc STREQUAL "0" OR NOT out MATCHES
-      "equal wrong glyph, changed counter, and unrelated pixel rejected")
+      "wrong counter, changing glyph, and unrelated pixel judged independently")
     message(FATAL_ERROR "frontend progress comparator controls failed: ${rc}\n${out}${err}")
   endif()
   execute_process(COMMAND ${EMULATOR} "${COMPARE}" --progress 000C
@@ -42,6 +44,12 @@ if(DIAG_FRONTEND_STATES_RUN)
     RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
   if(rc STREQUAL "0" OR NOT out MATCHES "progress counter image 0 is 000B, expected 000C")
     message(FATAL_ERROR "frontend accepted changed expected progress counter: ${rc}\n${out}${err}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${COMPARE}" --progress-pair 0000 0040
+    "${OUT}/progress-000B.bmp" "${OUT}/progress-0040.bmp"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT out MATCHES "progress counter image 0 is 000B, expected 0000")
+    message(FATAL_ERROR "frontend accepted stale progress reference: ${rc}\n${out}${err}")
   endif()
 
   foreach(media IN ITEMS committed-0000.raw committed-0001.raw committed-0100.raw replay.raw)
@@ -943,9 +951,15 @@ file(WRITE "${receipt_compare}" "compare\\n")
 set(source_sha "0123456789abcdef0123456789abcdef01234567")
 set(run_url "https://github.com/owner/repository/actions/runs/12345")
 function(run_receipt_case suffix expected_result expected_output)
+  set(receipt_mode states)
+  if(ARGC GREATER 3)
+    set(receipt_mode "${ARGV3}")
+  endif()
   set(state_root "${receipt_root}/${suffix}")
   file(MAKE_DIRECTORY "${state_root}")
   set(shot "${state_root}/${suffix}.bmp")
+  file(WRITE "${state_root}/host-receipt.txt"
+    "receipt_version=1\nsource_sha256=${source_sha}\nrun_id=12345\nrun_attempt=1\nworkflow_event=workflow_dispatch\nrun_url=${run_url}\nhost_runner=macos-15\nhost_version=1.22.2\nstate_mode=${receipt_mode}\ncore_artifact_sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nrunner_artifact_sha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nlibrary_artifact_sha256=cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\nprelaunch_status=started\n")
   execute_process(COMMAND "${CMAKE_BIN}"
     "-DRETROARCH=${receipt_retroarch}" "-DCORE=${receipt_core}"
     "-DINFO=${receipt_info}" -DINFO_NAME=muhtari_libretro.info
@@ -973,9 +987,18 @@ function(run_receipt_case suffix expected_result expected_output)
     message(FATAL_ERROR "host receipt missing for ${expected_result} path; expected ${expected_output}")
   endif()
   file(READ "${receipt}" content)
+  if(expected_output STREQUAL "MODE_REJECTED")
+    if(NOT "${out}${err}" MATCHES "prelaunch receipt identity mismatch" OR
+       NOT "${out}${err}" MATCHES "state_mode=states" OR
+       content MATCHES "host_process_started=true")
+      message(FATAL_ERROR "legacy prelaunch receipt reached the host driver: ${rc}\n${out}${err}\n${content}")
+    endif()
+    return()
+  endif()
   foreach(required IN ITEMS "source_sha256=${source_sha}"
       "run_id=12345" "run_attempt=1" "workflow_event=workflow_dispatch"
       "run_url=${run_url}" "host_version=1.22.2"
+      "state_mode=states"
       "core_artifact_sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       "runner_artifact_sha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
       "library_artifact_sha256=cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
@@ -1005,6 +1028,7 @@ endfunction()
 if(NOT RECEIPT_DRIVER STREQUAL "")
   run_receipt_case(success success "MOCK_SUCCESS")
   run_receipt_case(failure failure "MOCK_FAILURE")
+  run_receipt_case(wrong-mode failure "MODE_REJECTED" legacy)
 endif()
 message("retroarch states: strict replies, owned-child faults, and symlink cleanup guard pass")
 ]=])
