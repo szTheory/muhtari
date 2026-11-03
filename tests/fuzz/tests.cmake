@@ -204,6 +204,8 @@ else()
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
     LABELS fuzz portable TIMEOUT 14)  # ceil(2 x 6.64s), complete Windows x64 run40414104123/job121892328427; scales retained.
+  # Keep the bounded portable replay isolated within this CTest invocation.
+  set_tests_properties(fuzz.regress.run PROPERTIES RUN_SERIAL TRUE)
   # Fault prevented: the run replay passing having run nothing.
   set(fuzz_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-fuzz-run-replay>)
   string(REPLACE ";" "$<SEMICOLON>" fuzz_cmd "${fuzz_cmd}")
