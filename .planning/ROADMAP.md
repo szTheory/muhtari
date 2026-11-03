@@ -51,13 +51,13 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 6 plans (4 acceptance plans and 2 additive gap plans; accepted 0/4)
+**Plans:** 3/9 active plans executed (4 acceptance plans and 5 active additive gap plans; 12-08 is superseded and excluded from the active count; accepted 0/4)
 
 Plans:
 
 **Wave 1**
 
-- [ ] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
+- [x] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
 
 Execution halted: original run 41056151292 failed before RetroArch; scoped recovery
 41062201311 attempt 1/source 28e13e1 reached the host but held input produced idle
@@ -67,10 +67,14 @@ spent; accepted 0/4 and PLAY-03 remain pending. Preserve the
 and diagnose driver/config/event delivery with new evidence before any new bounded
 host test or dependent plan.
 
-**Additive gap plans** *(direct ordinary host observation pending; original acceptance halt and successor blocks remain)*
+**Additive gap plans** *(direct ordinary host observation pending; 12-08 is superseded and excluded from the active count; original acceptance halt and successor blocks remain)*
 
 - [x] 12-05-PLAN.md — Published the prior portability repair; its single diagnostic failed Linux preflight before RetroArch and its allowance is spent.
-- [ ] 12-06-PLAN.md — After one explicit gaps-only execution invocation, wire/test/review the existing one-process input capture into the normal packaged-host case, publish exact source and observe one standard full CI run with held/released, DMA, fresh battery and aggregate evidence; no retry or automatic acceptance.
+- [x] 12-06-PLAN.md — Wired the ordinary one-process capture and controls; its single full CI run timed out on Windows ARM64 before RetroArch, so PLAY-03 remains pending and the allowance is spent.
+- [x] 12-07-PLAN.md — Reconcile the new Windows ARM64 timeout and 12-01 commit ledger; permit one ordinary acceptance run only after a causal finding and all local gates pass.
+- [ ] 12-08-PLAN.md — Superseded and excluded from the active count; its blocked attempt and evidence remain immutable history.
+- [x] 12-09-PLAN.md — Reconcile current source identities and check local docs readiness; next command is `$gsd-execute-phase 12 --gaps-only --wave 2`, then stop. Wave 3/12-07 requires a separate scope.
+- [ ] 12-10-PLAN.md — Repair helper trace observability and child-status cutoff locally; add generated held/released input controls; no host or CI action.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -103,7 +107,7 @@ external Playstead flow as pending until paired consumer evidence exists.
 ### Phase 13: Portable save/load across three interfaces
 
 **Goal:** Hosts and runner users can restore a complete compatible machine point safely and continue identically through one bounded library-owned state contract.
-**Depends on:** Phase 12
+**Depends on:** shipped v2.0 baseline
 **Requirements:** STATE-01, STATE-02, STATE-03, STATE-04, STATE-05, STATE-06, FRONT-01
 **Success Criteria** (what must be TRUE):
 1. A library or libretro caller can query a size fixed for the loaded machine and save/restore a complete versioned byte-wise little-endian snapshot in caller-owned buffers, covering mutable supported chip/device/board/region state, pending work and emulated battery bytes; unloaded and failed-load callbacks behave safely and declarations match proven support.
@@ -111,7 +115,30 @@ external Playstead flow as pending until paired consumer evidence exists.
 3. A caller can save, restore and continue each supported machine topology with matching independent semantic observations, frame output and raw/PCM audio against uninterrupted execution; state bytes and continuation agree across the existing required native and big-endian lanes, with advisory evidence still labeled.
 4. A host can repeatedly save/load without core allocation after content load or unbounded work, including hostile restored clocks, deadlines and lengths; changed restored battery bytes notify live dirty tracking without restoring an old token, equal/refused restores preserve the appropriate metadata, and speculative work cannot commit durable save files.
 5. A runner user can save at a chosen frame, load in a fresh process and hash state for repeatable continuation, with checked file I/O, explicit refusal status and preservation of the live machine and durable files on failure.
-**Plans:** TBD — no execution plans yet.
+**Plans:** 8 plans in 8 sequential waves.
+**Wave 1**
+- [ ] 13-01-PLAN.md — Complete private visitor and field proofs.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 13-02-PLAN.md — Shared digests and effective machine identity.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 13-03-PLAN.md — Public state API and live battery metadata.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 13-04-PLAN.md — Independent continuation and hostile-state evidence.
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 13-05-PLAN.md — Runner state files, frame points and hashes.
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 13-06-PLAN.md — Libretro serialization and truthful basic claims.
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 13-07-PLAN.md — State and continuation rows in existing equality producers.
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 13-08-PLAN.md — Resource/docs verification and exact-source executed BE evidence.
 **Canonical refs:** [accepted requirements](REQUIREMENTS.md), [state research](research/ARCHITECTURE.md), [pitfalls](research/PITFALLS.md), [stack](research/STACK.md), [architecture §7](preparation/ARCHITECTURE.md#7-state-and-saves), [settled decisions](preparation/DECISIONS.md#architecture), [hosts §1/4](preparation/HOSTS-AND-INTEGRATION.md#1-libretro-contract), [state seed](seeds/SEED-002-states-and-movies.md), [lessons](LESSONS.md), [engineering §11](preparation/ENGINEERING.md#11-docs-standards).
 **UI hint:** no
 
@@ -177,13 +204,15 @@ this roadmap does not retroactively qualify them.
 
 ## Progress
 
-Execution order: 12 → 13 → 14. Discuss, plan, execute and ship are separate GSD
-steps/sessions under [GSD-HANDOFF §3](preparation/GSD-HANDOFF.md#3-each-phase--one-session-per-step-so-the-model-can-change-between-steps).
+Phase 12's player-readiness evidence and Phase 13's state foundation may proceed
+independently from the shipped v2.0 baseline; Phase 14 follows Phase 13. All
+approved phase requirements remain mandatory for v3.0 completion. Discuss, plan,
+execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](preparation/GSD-HANDOFF.md#3-each-phase--one-session-per-step-so-the-model-can-change-between-steps).
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 0/4 | Halted at 12-01 | - |
-| 13. Portable save/load across three interfaces | 0/TBD | Not started | - |
+| 12. Player-ready delivery and Playstead bridge | 5/9 | Halted at 12-01 | - |
+| 13. Portable save/load across three interfaces | 0/8 | Planned; ready to execute | - |
 | 14. Proven frontend states and responsive play | 0/TBD | Not started | - |
 
-Next separate command: `$gsd-execute-phase 12`.
+Next separate command: `$gsd-execute-phase 12 --gaps-only`. This selects the newly planned local diagnostic repair; Phase 12 acceptance remains halted at 0/4, and all hosted allowances remain spent.
