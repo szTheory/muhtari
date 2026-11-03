@@ -38,7 +38,29 @@
 #define STATES_FRAME_CAP 64u
 #define STATES_ADVANCE 8u
 #define STATES_REWIND_ACTIONS 3u
+#define STATES_REWIND_WINDOW_MS 100u
+#define STATES_MAX_REFRESH_HZ 120u
+#define STATES_STARTUP_FRAME_RESERVE 32u
+#define STATES_HOST_FRAME_CAP 120u
+#define STATES_CAPTURE_CAP 32u
 #define STATES_MEDIA_BYTES 2048u
+#define STATES_HISTORY_ADVANCES STATES_ADVANCE
+#define STATES_BASELINE_ADVANCES STATES_ADVANCE
+#define STATES_RUNAHEAD_ADVANCES STATES_ADVANCE
+#define STATES_FINAL_ADVANCES 1u
+#define STATES_TOTAL_EXPLICIT_ADVANCES \
+    (2u * STATES_ADVANCE + STATES_HISTORY_ADVANCES + STATES_BASELINE_ADVANCES + \
+     STATES_RUNAHEAD_ADVANCES + STATES_FINAL_ADVANCES)
+#define STATES_REWIND_TICK_BUDGET \
+    ((STATES_REWIND_WINDOW_MS * STATES_MAX_REFRESH_HZ + 999u) / 1000u)
+#define STATES_PRESENTED_FRAME_BUDGET \
+    (STATES_TOTAL_EXPLICIT_ADVANCES + STATES_REWIND_ACTIONS * STATES_REWIND_TICK_BUDGET + \
+     STATES_STARTUP_FRAME_RESERVE)
+
+_Static_assert(STATES_TOTAL_EXPLICIT_ADVANCES <= STATES_FRAME_CAP,
+               "complete state sequence must fit the explicit frame-advance cap");
+_Static_assert(STATES_PRESENTED_FRAME_BUDGET <= STATES_HOST_FRAME_CAP,
+               "complete state sequence and bounded startup must fit the host frame cap");
 
 typedef struct states_ops {
     void *user;
@@ -66,9 +88,11 @@ typedef struct states_ops {
 
 typedef struct states_result {
     unsigned frames;
+    unsigned startup_progress;
     unsigned baseline_frames;
     unsigned runahead_frames;
     unsigned rewind_reversals;
+    unsigned rewind_progress[STATES_REWIND_ACTIONS];
     uint64_t elapsed_ms;
     uint64_t baseline_elapsed_ms;
     uint64_t runahead_elapsed_ms;
@@ -315,6 +339,179 @@ static int states_capture(states_ops *ops, unsigned expected, unsigned picture_i
     return 0;
 }
 
+static int states_wait_status(states_ops *ops, int expected_paused, uint64_t deadline,
+                              states_result *result)
+{
+    uint64_t observation_deadline = ops->now_ms(ops->user) + STATES_OBSERVE_MS;
+    if (observation_deadline > deadline)
+        observation_deadline = deadline;
+    for (;;) {
+        unsigned timeout = states_timeout(ops, observation_deadline);
+        if (timeout == 0u)
+            return states_fail(result, "GET_STATUS did not confirm the requested pause state");
+        int paused = -1;
+        if (ops->status(ops->user, timeout, &paused) != 0)
+            return states_fail(result, "GET_STATUS failed while observing a control transition");
+        if (paused == expected_paused)
+            return 0;
+    }
+}
+
+static int states_restore_saved(states_ops *ops, unsigned saved, unsigned current,
+                                uint64_t deadline, states_result *result)
+{
+    if (states_wait_status(ops, 1, deadline, result) != 0)
+        return 1;
+    if (ops->load_once(ops->user) != 0)
+        return states_fail(result, "LOAD_STATE send failed before matched workload");
+    uint64_t observation_deadline = ops->now_ms(ops->user) + STATES_OBSERVE_MS;
+    if (observation_deadline > deadline)
+        observation_deadline = deadline;
+    for (;;) {
+        unsigned timeout = states_timeout(ops, observation_deadline);
+        if (timeout == 0u)
+            return states_fail(result, "LOAD_STATE did not restore the common workload start");
+        unsigned actual = 0u;
+        if (ops->read_progress(ops->user, &actual, timeout) != 0)
+            return states_fail(result, "restored workload progress observation failed");
+        if (actual == saved)
+            break;
+        if (actual != current)
+            return states_fail(result, "LOAD_STATE produced neither the prior nor saved workload value");
+    }
+    return states_wait_status(ops, 1, deadline, result);
+}
+
+static int states_rewind_once(states_ops *ops, unsigned previous, unsigned *restored,
+                              uint64_t deadline, states_result *result)
+{
+    if (previous == 0u)
+        return states_fail(result, "rewind progress cannot be judged without unsigned wrap");
+    if (states_wait_status(ops, 1, deadline, result) != 0)
+        return 1;
+    if (ops->pause_toggle_once(ops->user) != 0 ||
+        states_wait_status(ops, 0, deadline, result) != 0)
+        return states_fail(result, "rewind did not enter a GET_STATUS-confirmed running tick");
+    if (ops->rewind_once(ops->user) != 0)
+        return states_fail(result, "REWIND send failed");
+
+    uint64_t rewind_deadline = ops->now_ms(ops->user) + STATES_REWIND_WINDOW_MS;
+    if (rewind_deadline > deadline)
+        rewind_deadline = deadline;
+    int reversed = 0;
+    while (ops->now_ms(ops->user) < rewind_deadline) {
+        unsigned timeout = states_timeout(ops, rewind_deadline);
+        if (timeout == 0u)
+            break;
+        unsigned actual = 0u;
+        if (ops->read_progress(ops->user, &actual, timeout) != 0)
+            return states_fail(result, "rewind progress observation failed");
+        if (actual < previous) {
+            reversed = 1;
+            break;
+        }
+    }
+    if (!reversed)
+        return states_fail(result, "REWIND did not reverse fixture progress");
+    if (ops->pause_toggle_once(ops->user) != 0 ||
+        states_wait_status(ops, 1, deadline, result) != 0)
+        return states_fail(result, "rewind tick did not return to a confirmed pause");
+    if (ops->read_progress(ops->user, restored, states_timeout(ops, deadline)) != 0 ||
+        *restored >= previous)
+        return states_fail(result, "paused rewind progress was not a strict no-wrap reversal");
+    return 0;
+}
+
+static int states_measure_workload(states_ops *ops, unsigned saved, int runahead,
+                                  unsigned *frames, uint64_t deadline,
+                                  states_result *result, uint64_t *duration)
+{
+    uint64_t start = ops->now_ms(ops->user);
+    unsigned current = 0u;
+    if (ops->read_progress(ops->user, &current, states_timeout(ops, deadline)) != 0)
+        return states_fail(result, "prior workload progress could not be observed");
+    if (states_restore_saved(ops, saved, current, deadline, result) != 0)
+        return 1;
+    if (runahead && ops->runahead_toggle_once(ops->user) != 0)
+        return states_fail(result, "RUNAHEAD_TOGGLE enable send failed");
+
+    for (unsigned step = 1u; step <= STATES_ADVANCE; step++) {
+        unsigned committed = saved + step;
+        if (states_advance_to(ops, frames, committed, deadline, result) != 0)
+            return 1;
+        if (states_wait_status(ops, 1, deadline, result) != 0)
+            return states_fail(result, "matched workload did not complete a paused committed frame");
+        if (runahead) {
+            if (committed == UINT16_MAX)
+                return states_fail(result, "one-frame presentation would wrap the fixture counter");
+            if (ops->durable_sentinel(ops->user) != 0)
+                return states_fail(result, "speculative progress reached durable HSC bytes");
+            if (states_capture(ops, committed + 1u, 3u, 0, deadline, result) != 0)
+                return states_fail(result,
+                                   "one-frame run-ahead presentation did not match committed memory");
+        } else if (states_capture(ops, committed, 3u, step == 1u, deadline, result) != 0) {
+            return 1;
+        }
+    }
+    uint64_t end = ops->now_ms(ops->user);
+    if (end < start)
+        return states_fail(result, "matched workload clock moved backwards");
+    *duration = end - start;
+    return 0;
+}
+
+static int states_rewind_runahead(states_ops *ops, unsigned saved, unsigned *frames,
+                                  uint64_t deadline, states_result *result)
+{
+    if (saved > STATES_STARTUP_FRAME_RESERVE ||
+        saved > UINT16_MAX - (STATES_ADVANCE + STATES_HISTORY_ADVANCES))
+        return states_fail(result, "fixture start exceeds the no-wrap presented-frame budget");
+    unsigned current = saved + STATES_ADVANCE;
+    for (unsigned step = 1u; step <= STATES_HISTORY_ADVANCES; step++) {
+        current = saved + STATES_ADVANCE + step;
+        if (states_advance_to(ops, frames, current, deadline, result) != 0)
+            return 1;
+    }
+    if (states_capture(ops, current, 2u, 0, deadline, result) != 0)
+        return 1;
+
+    for (unsigned i = 0u; i < STATES_REWIND_ACTIONS; i++) {
+        unsigned restored = 0u;
+        if (states_rewind_once(ops, current, &restored, deadline, result) != 0)
+            return 1;
+        if (states_capture(ops, restored, 2u, 0, deadline, result) != 0)
+            return 1;
+        current = restored;
+        result->rewind_progress[result->rewind_reversals] = restored;
+        result->rewind_reversals++;
+    }
+
+    if (states_measure_workload(ops, saved, 0, frames, deadline, result,
+                                &result->baseline_elapsed_ms) != 0)
+        return 1;
+    result->baseline_frames = STATES_BASELINE_ADVANCES;
+    if (ops->durable_sentinel(ops->user) != 0)
+        return states_fail(result, "durable HSC sentinel changed before speculative workload");
+    if (states_measure_workload(ops, saved, 1, frames, deadline, result,
+                                &result->runahead_elapsed_ms) != 0)
+        return 1;
+    result->runahead_frames = STATES_RUNAHEAD_ADVANCES;
+    if (ops->runahead_toggle_once(ops->user) != 0)
+        return states_fail(result, "RUNAHEAD_TOGGLE disable send failed");
+    unsigned committed = saved + STATES_RUNAHEAD_ADVANCES + STATES_FINAL_ADVANCES;
+    if (states_advance_to(ops, frames, committed, deadline, result) != 0 ||
+        states_wait_status(ops, 1, deadline, result) != 0 ||
+        states_capture(ops, committed, 3u, 0, deadline, result) != 0)
+        return states_fail(result, "disabled run-ahead presentation was not accounted for");
+    if (ops->durable_sentinel(ops->user) != 0)
+        return states_fail(result, "durable HSC sentinel changed before explicit SAVE_FILES");
+    if (ops->save_files_once(ops->user, states_timeout(ops, deadline)) != 0)
+        return states_fail(result, "SAVE_FILES did not return exact OK");
+    if (ops->durable_committed(ops->user, committed) != 0)
+        return states_fail(result, "complete durable HSC image did not match committed progress");
+    return 0;
+}
+
 /* Only state changes are sent here; callers observe their effects separately. */
 static int states_save_load(states_ops *ops, states_result *result)
 {
@@ -339,6 +536,7 @@ static int states_save_load(states_ops *ops, states_result *result)
         failed = states_fail(result, "initial fixture progress could not be read");
         goto cleanup;
     }
+    result->startup_progress = saved;
     if (ops->state_absent(ops->user, 1, states_timeout(ops, work_deadline)) != 0) {
         failed = states_fail(result, "state slot was not initially absent");
         goto cleanup;
@@ -413,6 +611,8 @@ static int states_save_load(states_ops *ops, states_result *result)
             goto cleanup;
         }
     }
+    if (states_rewind_runahead(ops, saved, &frames, work_deadline, result) != 0)
+        failed = 1;
 
 cleanup:
     {
@@ -599,8 +799,11 @@ static int mock_frame(void *user)
     mock->presented = mock->runahead_enabled ? (mock->progress + 1u) & 0xffffu : mock->progress;
     if (mock->fault == MOCK_FAULT_OUT_OF_ORDER_PROGRESS)
         mock->progress = (mock->progress + 1u) & 0xffffu;
-    if (mock->fault == MOCK_FAULT_AHEAD_MEDIA && mock->runahead_enabled)
-        memset(mock->durable, 0, sizeof mock->durable);
+    if (mock->fault == MOCK_FAULT_AHEAD_MEDIA && mock->runahead_enabled) {
+        memset(mock->durable, 0xff, sizeof mock->durable);
+        mock->durable[0x100u] = (uint8_t)(mock->presented & 0xffu);
+        mock->durable[0x101u] = (uint8_t)((mock->presented >> 8) & 0xffu);
+    }
     mock->frames++;
     mock->now += 1u;
     return 0;
@@ -938,6 +1141,9 @@ static int run_controls(const char *self_path)
     mock_session mock;
     memset(&mock, 0, sizeof mock);
     mock.progress = 12u;
+    mock.presented = mock.progress;
+    mock.paused = 1;
+    memset(mock.durable, 0xff, sizeof mock.durable);
 #if STATES_POSIX
     if (strlen(self_path) >= sizeof mock.self_path)
         return 2;
@@ -961,20 +1167,34 @@ static int run_controls(const char *self_path)
         .frame_once = mock_frame,
         .load_once = mock_load,
         .capture = mock_capture,
+        .status = mock_status,
+        .pause_toggle_once = mock_pause_toggle,
+        .rewind_once = mock_rewind,
+        .runahead_toggle_once = mock_runahead_toggle,
+        .durable_sentinel = mock_durable_sentinel,
+        .save_files_once = mock_save_files,
+        .durable_committed = mock_durable_committed,
         .cleanup = mock_cleanup,
     };
     states_result result;
     int rc = states_save_load(&ops, &result);
     puts("TAP version 13");
     puts("1..1");
-    if (rc == 0 && mock.progress == 20u && mock.frames == 16u && !mock.child_owned &&
+    if (rc == 0 && mock.progress == 21u && mock.frames == STATES_TOTAL_EXPLICIT_ADVANCES &&
+        result.rewind_reversals == STATES_REWIND_ACTIONS &&
+        result.baseline_frames == STATES_BASELINE_ADVANCES &&
+        result.runahead_frames == STATES_RUNAHEAD_ADVANCES && !mock.child_owned &&
         mock.child_reaped) {
-        puts("ok 1 - owned save load restores progress and judges fresh replay");
-        printf("# FRAME_ACTIONS=%u PICTURE_OBSERVATIONS=%u CHILD_REAPED=%d ELAPSED_MS=%" PRIu64 "\n",
-               result.frames, mock.picture_generation, mock.child_reaped, result.elapsed_ms);
+        puts("ok 1 - owned state controller proves rewind and single-instance run-ahead");
+        printf("# EXPLICIT_ADVANCES=%u PICTURE_OBSERVATIONS=%u REWIND_PROGRESS=%u,%u,%u "
+               "BASELINE_MS=%" PRIu64 " RUNAHEAD_MS=%" PRIu64 " CHILD_REAPED=%d ELAPSED_MS=%" PRIu64 "\n",
+               result.frames, mock.picture_generation, result.rewind_progress[0],
+               result.rewind_progress[1], result.rewind_progress[2],
+               result.baseline_elapsed_ms, result.runahead_elapsed_ms, mock.child_reaped,
+               result.elapsed_ms);
         return 0;
     }
-    printf("not ok 1 - owned save load restores progress and judges fresh replay\n"
+    printf("not ok 1 - owned state controller proves rewind and single-instance run-ahead\n"
            "  ---\n  error: %s progress=%u frames=%u child_owned=%d reaped=%d\n  ...\n",
            result.error != NULL ? result.error : "valid mock scenario produced wrong result",
            mock.progress, mock.frames, mock.child_owned, mock.child_reaped);
@@ -1059,6 +1279,9 @@ static int run_complete_workload_control(enum mock_fault fault, const char *expe
         passed = passed && rc == 0 && result.error == NULL && mock.progress == 21u &&
                  mock.frames == 41u && result.frames == 41u &&
                  result.rewind_reversals == STATES_REWIND_ACTIONS && mock.rewind_calls == 3u &&
+                 result.rewind_progress[0] < result.startup_progress + 16u &&
+                 result.rewind_progress[1] < result.rewind_progress[0] &&
+                 result.rewind_progress[2] < result.rewind_progress[1] &&
                  mock.runahead_toggle_calls == 2u && mock.save_files_calls == 1u &&
                  result.baseline_frames == STATES_ADVANCE &&
                  result.runahead_frames == STATES_ADVANCE &&
@@ -1195,6 +1418,9 @@ static int run_engine_control(const mock_control_case *test, const char *self_pa
     mock_session mock;
     memset(&mock, 0, sizeof mock);
     mock.progress = 12u;
+    mock.presented = mock.progress;
+    mock.paused = 1;
+    memset(mock.durable, 0xff, sizeof mock.durable);
     mock.fault = test->fault;
     mock.child_hangs = test->hang_child;
 #if STATES_POSIX
@@ -1213,8 +1439,17 @@ static int run_engine_control(const mock_control_case *test, const char *self_pa
                  mock.save_calls == test->saves && mock.load_calls == test->loads &&
                  mock.frame_calls == test->frame_calls;
     if (test->expected_error == NULL) {
-        passed = passed && rc == 0 && result.error == NULL && mock.progress == 20u &&
-                 mock.frames == 16u && result.frames == 16u && mock.picture_generation == 4u;
+        passed = passed && rc == 0 && result.error == NULL && mock.progress == 21u &&
+                 mock.frames == STATES_TOTAL_EXPLICIT_ADVANCES &&
+                 result.frames == STATES_TOTAL_EXPLICIT_ADVANCES &&
+                 mock.picture_generation == 25u &&
+                 result.rewind_reversals == STATES_REWIND_ACTIONS &&
+                 result.rewind_progress[0] < result.startup_progress + 16u &&
+                 result.rewind_progress[1] < result.rewind_progress[0] &&
+                 result.rewind_progress[2] < result.rewind_progress[1] &&
+                 result.baseline_frames == STATES_BASELINE_ADVANCES &&
+                 result.runahead_frames == STATES_RUNAHEAD_ADVANCES &&
+                 mock.save_files_calls == 1u && mock_durable_committed(&mock, mock.progress) == 0;
     } else {
         passed = passed && rc != 0 && result.error != NULL &&
                  strcmp(result.error, test->expected_error) == 0;
@@ -1233,7 +1468,8 @@ static int run_fault_controls(const char *self_path)
     puts("TAP version 13");
     parser_controls(&count, &failures);
     static const mock_control_case cases[] = {
-        {"valid owned save-load and replay passes", MOCK_FAULT_NONE, NULL, 1u, 1u, 16u, 0},
+        {"valid owned save-load, rewind, run-ahead, and flush passes", MOCK_FAULT_NONE, NULL,
+         1u, 3u, STATES_TOTAL_EXPLICIT_ADVANCES, 0},
         {"missing containment fails before mutation", MOCK_FAULT_NO_CONTAINMENT,
          "sandbox and child ownership preflight failed", 0u, 0u, 0u, 0},
         {"wrong version has a specific cause", MOCK_FAULT_VERSION,
@@ -1311,7 +1547,9 @@ typedef struct host_session {
     char config_path[PATH_MAX];
     char state_path[PATH_MAX];
     char shot_dir[PATH_MAX];
-    char captures[3][PATH_MAX];
+    char media_path[PATH_MAX];
+    char captures[4][PATH_MAX];
+    char last_capture[PATH_MAX];
     unsigned capture_count;
     unsigned frames;
     uint32_t fixture_crc;
@@ -1447,10 +1685,13 @@ static int validate_host_paths(host_session *host)
     int n4 = snprintf(host->profile_path, sizeof host->profile_path,
                       "%s/states-network.sb", host->ra_dir);
     int n5 = snprintf(host->log_path, sizeof host->log_path, "%s/retroarch.log", host->ra_dir);
+    int n6 = snprintf(host->media_path, sizeof host->media_path,
+                      "%s/frontend-states.srm", host->save_dir);
     if (n1 < 0 || (size_t)n1 >= sizeof host->shot_dir || n2 < 0 ||
         (size_t)n2 >= sizeof host->state_path || n3 < 0 || (size_t)n3 >= sizeof host->config_path ||
         n4 < 0 || (size_t)n4 >= sizeof host->profile_path || n5 < 0 ||
-        (size_t)n5 >= sizeof host->log_path)
+        (size_t)n5 >= sizeof host->log_path || n6 < 0 ||
+        (size_t)n6 >= sizeof host->media_path || !path_is_within(host->save_dir, host->media_path))
         return 1;
     char final_shot[PATH_MAX];
     if (normalize_output_file(host->final_shot, root, final_shot, sizeof final_shot) != 0 ||
@@ -2080,6 +2321,118 @@ static int update_config_port(host_session *host)
     return close(fd) == 0 ? 0 : 1;
 }
 
+static int host_validate_runahead_config(host_session *host)
+{
+    static const struct {
+        const char *key;
+        const char *line;
+    } required[] = {
+        {"run_ahead_enabled", "run_ahead_enabled = \"false\""},
+        {"run_ahead_frames", "run_ahead_frames = \"1\""},
+        {"run_ahead_secondary_instance", "run_ahead_secondary_instance = \"false\""},
+        {"preemptive_frames_enable", "preemptive_frames_enable = \"false\""},
+    };
+    FILE *file = fopen(host->config_path, "rb");
+    if (file == NULL)
+        return 1;
+    unsigned matches[sizeof required / sizeof required[0]] = {0u};
+    char line[512];
+    while (fgets(line, sizeof line, file) != NULL) {
+        size_t length = strcspn(line, "\r\n");
+        line[length] = '\0';
+        for (size_t i = 0u; i < sizeof required / sizeof required[0]; i++) {
+            size_t key_length = strlen(required[i].key);
+            if (strncmp(line, required[i].key, key_length) == 0 && line[key_length] == ' ') {
+                if (strcmp(line, required[i].line) != 0 || ++matches[i] != 1u) {
+                    fclose(file);
+                    return 1;
+                }
+            }
+        }
+    }
+    int failed = ferror(file);
+    if (fclose(file) != 0)
+        failed = 1;
+    for (size_t i = 0u; i < sizeof required / sizeof required[0]; i++)
+        failed |= matches[i] != 1u;
+    return failed;
+}
+
+static int host_prepare_media(host_session *host)
+{
+    if (!path_is_within(host->save_dir, host->media_path))
+        return 1;
+    int fd = open(host->media_path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
+    if (fd < 0)
+        return 1;
+    uint8_t bytes[STATES_MEDIA_BYTES];
+    memset(bytes, 0xff, sizeof bytes);
+    size_t offset = 0u;
+    int failed = 0;
+    while (offset < sizeof bytes) {
+        ssize_t n = write(fd, bytes + offset, sizeof bytes - offset);
+        if (n < 0 && errno == EINTR)
+            continue;
+        if (n <= 0) {
+            failed = 1;
+            break;
+        }
+        offset += (size_t)n;
+    }
+    if (fsync(fd) != 0)
+        failed = 1;
+    if (close(fd) != 0)
+        failed = 1;
+    return failed;
+}
+
+static int host_media_matches(host_session *host, unsigned expected, int sentinel)
+{
+    if (!path_is_within(host->save_dir, host->media_path))
+        return 1;
+    struct stat before, opened;
+    if (lstat(host->media_path, &before) != 0 || !S_ISREG(before.st_mode) ||
+        S_ISLNK(before.st_mode) || before.st_size != (off_t)STATES_MEDIA_BYTES)
+        return 1;
+    int fd = open(host->media_path, O_RDONLY | O_NOFOLLOW);
+    if (fd < 0 || fstat(fd, &opened) != 0 || !S_ISREG(opened.st_mode) ||
+        opened.st_dev != before.st_dev || opened.st_ino != before.st_ino ||
+        opened.st_size != (off_t)STATES_MEDIA_BYTES) {
+        if (fd >= 0)
+            close(fd);
+        return 1;
+    }
+    uint8_t bytes[STATES_MEDIA_BYTES];
+    size_t offset = 0u;
+    while (offset < sizeof bytes) {
+        ssize_t n = read(fd, bytes + offset, sizeof bytes - offset);
+        if (n < 0 && errno == EINTR)
+            continue;
+        if (n <= 0) {
+            close(fd);
+            return 1;
+        }
+        offset += (size_t)n;
+    }
+    uint8_t extra = 0u;
+    ssize_t tail;
+    do {
+        tail = read(fd, &extra, 1u);
+    } while (tail < 0 && errno == EINTR);
+    if (tail != 0 || close(fd) != 0)
+        return 1;
+    for (size_t i = 0u; i < sizeof bytes; i++) {
+        uint8_t wanted = 0xffu;
+        if (!sentinel && i == 0x100u)
+            wanted = (uint8_t)(expected & 0xffu);
+        else if (!sentinel && i == 0x101u)
+            wanted = (uint8_t)((expected >> 8) & 0xffu);
+        if (bytes[i] != wanted)
+            return 1;
+    }
+    return 0;
+}
+
 static int spawn_retroarch(host_session *host)
 {
     char frames_arg[32];
@@ -2184,6 +2537,26 @@ static int host_status(host_session *host, unsigned timeout_ms, int *paused)
     return states_parse_status(reply, host->fixture_crc, paused);
 }
 
+static int host_status_op(void *user, unsigned timeout_ms, int *paused)
+{
+    return host_status(user, timeout_ms, paused) == STATES_IDENTITY_OK ? 0 : 1;
+}
+
+static int host_pause_toggle_once(void *user)
+{
+    return host_nci_send(user, "PAUSE_TOGGLE");
+}
+
+static int host_rewind_once(void *user)
+{
+    return host_nci_send(user, "REWIND");
+}
+
+static int host_runahead_toggle_once(void *user)
+{
+    return host_nci_send(user, "RUNAHEAD_TOGGLE");
+}
+
 static uint64_t host_now(void *user)
 {
     (void)user;
@@ -2283,6 +2656,25 @@ static int host_load_once(void *user)
     return host_nci_send(user, "LOAD_STATE");
 }
 
+static int host_save_files_once(void *user, unsigned timeout_ms)
+{
+    host_session *host = user;
+    char reply[128];
+    if (host_nci_reply(host, "SAVE_FILES", timeout_ms, reply, sizeof reply) != 0)
+        return 1;
+    return states_parse_save_files_reply(reply);
+}
+
+static int host_durable_sentinel(void *user)
+{
+    return host_media_matches(user, 0u, 1);
+}
+
+static int host_durable_committed(void *user, unsigned expected)
+{
+    return host_media_matches(user, expected, 0);
+}
+
 static int compare_capture(host_session *host, unsigned expected, unsigned picture_id,
                            int baseline, const char *path)
 {
@@ -2290,6 +2682,8 @@ static int compare_capture(host_session *host, unsigned expected, unsigned pictu
     char reference_path[PATH_MAX], image_path[PATH_MAX];
     (void)snprintf(value, sizeof value, "%04X", expected & 0xffffu);
     const char *reference = baseline ? path : host->captures[picture_id];
+    if (baseline && picture_id == 3u && host->captures[2][0] != '\0')
+        reference = host->captures[2];
     if (copy_path(reference_path, sizeof reference_path, reference) != 0 ||
         copy_path(image_path, sizeof image_path, path) != 0)
         return 1;
@@ -2305,7 +2699,7 @@ static int host_capture(void *user, unsigned expected, unsigned picture_id, int 
                         unsigned timeout_ms)
 {
     host_session *host = user;
-    if (picture_id == 0u || picture_id > 2u || host->capture_count >= 4u ||
+    if (picture_id == 0u || picture_id > 3u || host->capture_count >= STATES_CAPTURE_CAP ||
         host_nci_send(host, "SCREENSHOT") != 0)
         return 1;
     uint64_t deadline = states_now_ms() + timeout_ms;
@@ -2347,15 +2741,14 @@ static int host_capture(void *user, unsigned expected, unsigned picture_id, int 
     struct stat st;
     if (lstat(target, &st) != 0 || !S_ISREG(st.st_mode) || S_ISLNK(st.st_mode) || st.st_size <= 70)
         return 1;
-    if (host->capture_count == 0u && picture_id == 1u &&
-        copy_path(host->captures[1], sizeof host->captures[1], target) != 0)
-        return 1;
-    if (host->capture_count == 1u && picture_id == 2u &&
-        copy_path(host->captures[2], sizeof host->captures[2], target) != 0)
-        return 1;
     if (!baseline && host->captures[picture_id][0] == '\0')
         return 1;
     int rc = compare_capture(host, expected, picture_id, baseline, target);
+    if (rc == 0 && baseline &&
+        copy_path(host->captures[picture_id], sizeof host->captures[picture_id], target) != 0)
+        rc = 1;
+    if (rc == 0 && copy_path(host->last_capture, sizeof host->last_capture, target) != 0)
+        rc = 1;
     host->capture_count++;
     return rc;
 }
@@ -2554,7 +2947,7 @@ static int host_run(int argc, char **argv, const char *self_path)
         return 2;
     char *end = NULL;
     unsigned long frames = strtoul(argv[12], &end, 10);
-    if (end == argv[12] || *end != '\0' || frames != 120u ||
+    if (end == argv[12] || *end != '\0' || frames != STATES_HOST_FRAME_CAP ||
         !digest_is_hex(host.core_sha256))
         return 2;
     host.frames = (unsigned)frames;
@@ -2576,8 +2969,15 @@ static int host_run(int argc, char **argv, const char *self_path)
     host.start_ms = states_now_ms();
     if (access("/usr/bin/sandbox-exec", X_OK) != 0 ||
         sandbox_helper(&host, self_path) != 0 ||
-        states_now_ms() >= host.start_ms + STATES_WORK_MS || update_config_port(&host) != 0) {
+        states_now_ms() >= host.start_ms + STATES_WORK_MS || update_config_port(&host) != 0 ||
+        host_validate_runahead_config(&host) != 0) {
         fprintf(stderr, "states: fail-closed sandbox UDP containment preflight\n");
+        if (host.reserved_fd >= 0)
+            close(host.reserved_fd);
+        return 1;
+    }
+    if (host_prepare_media(&host) != 0) {
+        fprintf(stderr, "states: could not create the complete HSC flush sentinel\n");
         if (host.reserved_fd >= 0)
             close(host.reserved_fd);
         return 1;
@@ -2602,6 +3002,13 @@ static int host_run(int argc, char **argv, const char *self_path)
         .frame_once = host_frame_once,
         .load_once = host_load_once,
         .capture = host_capture,
+        .status = host_status_op,
+        .pause_toggle_once = host_pause_toggle_once,
+        .rewind_once = host_rewind_once,
+        .runahead_toggle_once = host_runahead_toggle_once,
+        .durable_sentinel = host_durable_sentinel,
+        .save_files_once = host_save_files_once,
+        .durable_committed = host_durable_committed,
         .cleanup = host_cleanup,
     };
     states_result result;
@@ -2609,12 +3016,18 @@ static int host_run(int argc, char **argv, const char *self_path)
     if (file_contains(host.log_path, host.core) != 0 ||
         core_digest_matches(host.core, host.core_sha256) != 0)
         rc = 1;
-    if (host.capture_count >= 2u &&
-        copy_file(host.captures[2], host.final_shot) != 0)
+    if (host.last_capture[0] != '\0' &&
+        copy_file(host.last_capture, host.final_shot) != 0)
         rc = 1;
-    printf("states host: frames=%u explicit_advances=%u duration_ms=%" PRIu64
-           " core_sha256=%s core_path=%s\n",
-           host.frames, result.frames, result.elapsed_ms, host.core_sha256, host.core);
+    printf("states host: explicit_advances=%u/%u presented_budget=%u/%u startup_progress=%u "
+           "rewind_progress=%u,%u,%u runahead_secondary_instance=false owned_retroarch_children=1 "
+           "baseline_frames=%u baseline_ms=%" PRIu64 " runahead_frames=%u runahead_ms=%" PRIu64
+           " save_files_flush=1 duration_ms=%" PRIu64 " core_sha256=%s core_path=%s\n",
+           result.frames, STATES_FRAME_CAP, STATES_PRESENTED_FRAME_BUDGET, host.frames,
+           result.startup_progress,
+           result.rewind_progress[0], result.rewind_progress[1], result.rewind_progress[2],
+           result.baseline_frames, result.baseline_elapsed_ms, result.runahead_frames,
+           result.runahead_elapsed_ms, result.elapsed_ms, host.core_sha256, host.core);
     if (rc != 0)
         fprintf(stderr, "states host failed: %s\n", result.error != NULL ? result.error :
                 "host log, final artifact, or cleanup validation failed");
