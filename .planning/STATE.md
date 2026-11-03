@@ -6,7 +6,7 @@ current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: blocked
 stopped_at: Phase 14 planning complete; Plan 14-12 requires a fresh authorization before any observation
-last_updated: "2026-11-03T19:27:07Z"
+last_updated: "2026-11-03T19:41:56Z"
 last_activity: 2026-11-03
 state_head: 6a95a5f61ec4e446f56e858e03a9077f911ed5f3
 progress:
@@ -24,20 +24,20 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 remains blocked after additive planning. Plan 14-10 is terminal halted history with its three-pair cap spent. Plan 14-12 is the next runnable plan only through its fresh authorization checkpoint; no observation is authorized yet. Plan 14-13 requires attributable evidence and separate exact-remedy authority, and Plan 14-11 remains downstream. FRONT-02/03/04 remain pending; the 14-08 remote allowance is spent and Phase 12 remains halted.
+Current focus: Phase 14 remains blocked after additive planning. Plan 14-10 is terminal halted history; its third comparison launched no tests but the plan's three-pair cap was charged. Plan 14-12 now qualifies command, identity and process visibility before asking or spending its one observation. This sandbox still denies `ps`, so no observation can run here without changing the environment or violating the no-bypass boundary. Plan 14-13 and Plan 14-11 remain downstream; FRONT-02/03/04 remain pending.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — BLOCKED
 Plan: 9 of 13 complete; Plan 14-10 remains terminal halted history; Plan 14-12 awaits its fresh authorization checkpoint; conditional 14-13 and downstream 14-11 are blocked.
 Status: Blocked on attributable evidence for the five existing one-second BIOS timeouts and a separately approved cause-specific remedy/property producer. FRONT-02/03/04 remain pending.
-Next action: Run `$gsd-execute-phase 14 --gaps-only --wave 10` to prepare the exact Plan 14-12 authorization packet and stop at Task 1. No diagnostic starts until a fresh decision authorizes that packet's exact source, cached build, process-observable environment and one bounded observation.
+Next action: No diagnostic command is valid in this process-restricted environment: a current read-only `ps` probe exited 127 with “operation not permitted,” and Plan 14-12 forbids elevation or bypass. Do not rerun tests here. Once a normal process-observable local environment is available, run `$gsd-execute-phase 14 --gaps-only --wave 10`; it selects the Plan 14-12 prerequisite only, qualifies source/command/process visibility without tests, then asks for one exact observation. A failure before the first selected test starts does not consume that observation; any outcome after test start does.
 Boundary: Never resume Plan 14-10 or spend its exhausted three-pair cap. Plan 14-13 requires a separately authorized exact remedy after attributable evidence; Plan 14-11 waits for both plans and retains its complete local regression and separate actual-host authority checkpoints. No observation, remedy, Plan 14-11 full workflow, push, hosted CI, cancel/rerun, local RetroArch, PR/merge/release, or Phase 12 work is authorized by planning.
 
 ## Current Blockers
 
 - The required full local workflow failed twice on the same five BIOS timeouts. Plan 14-10's two valid default/serial pairs passed without reproducing them. The third pair was invalid and not retried. `ps`, `pgrep`, `top`, and `sysctl -n hw.ncpu` were denied, so PID ownership, parentage, and per-process CPU remain unknown. Its cap remains spent; no supported remedy is established.
-- Plan 14-12 has not started its observation. Its first task must present the exact source/build/environment packet for a fresh decision; planning and standing preferences do not authorize the test. If authorized, it allows one observation only and stops unresolved on missing attribution or non-reproduction.
+- Plan 14-12 has not started its observation. In this environment, `ps` remains denied. Its first task must qualify the exact source/build/environment packet before a fresh decision; planning and standing preferences do not authorize the test. Prelaunch command or capability failures do not consume the one observation, and no permission workaround is allowed. If qualified and separately authorized, a launched observation remains single-use and stops unresolved on missing attribution or non-reproduction.
 - Plan 14-13 requires attributable evidence and its own exact-remedy decision. Plan 14-11's coordinated full local preflight remains blocked until 14-12/13 produce their required evidence; its actual-host checkpoint remains separate. FRONT-02, FRONT-03, and FRONT-04 remain pending, and the 14-08 actual-host allowance remains spent.
 
 ## Preserved Phase 12 position — halt remains binding
@@ -195,11 +195,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T19:27:07Z
-Stopped at: Phase 14 additive planning and independent plan verification complete; phase remains blocked
+Last session: 2026-11-03T19:41:56Z
+Stopped at: Phase 14 recovery approach review; no test launched and phase remains blocked
 Resume file: None
-Next separate command: In this Phase 14 checkout, run `$gsd-execute-phase 14 --gaps-only --wave 10`. It may prepare and present Plan 14-12's exact authorization packet, then must stop at Task 1. No diagnostic is authorized until the owner decides on that concrete packet; that decision does not authorize a remedy, Plan 14-11, or a host attempt.
-Context handoff: Phase 14 has nine of thirteen plans complete. Plan 14-10 remains terminal halted history; its two valid bounded pairs did not reproduce the five BIOS timeouts, the third pair was invalid and not retried, native process attribution was unavailable, and the three-pair cap is spent. New Plan 14-12 permits only one observation after a fresh decision on its exact unchanged local source/build/environment packet; no observation has run. Plan 14-13 needs attributable evidence plus separate exact-remedy authority, and Plan 14-11 needs both plans and retains its full local regression/actual-host checkpoints. Keep FRONT-02/03/04 pending. Do not resume 14-10, run diagnostics before authorization, apply a remedy without its gate, or run 14-11/full local workflow, push, hosted CI, cancel/rerun, local RetroArch, PR/merge/release, or Phase 12 work. The 14-08 host allowance is spent. No owner action is needed now; at the future Task 1 checkpoint the owner decides whether to authorize the presented observation.
+Next separate command: No command should be run in the current sandbox: ordinary `ps` is still denied, so Plan 14-12's required capability preflight cannot pass. After switching to a process-observable local session, run `$gsd-execute-phase 14 --gaps-only --wave 10` from this Phase 14 checkout. This runs only the prerequisite plan, does not imply Phase 14 acceptance is ready, and stops for an exact owner decision before any project test. No owner decision is needed just to preserve the stop.
+Context handoff: Phase 14 has nine of thirteen plans complete. Plan 14-10 stays terminal halted history: two valid default/serial pairs did not reproduce the five BIOS timeouts, and pair 3 used an invalid option, launched no tests, but was charged against the arbitrary three-pair cap. Do not reopen it. Plan 14-12 was corrected so command/identity/process capability checks happen before consent and before the one observation is charged; a real test failure or non-reproduction after launch still consumes it. This current sandbox denies `ps` (`operation not permitted`), and no elevation/bypass is allowed, so do not run the diagnostic here. In a process-observable local session, the command above selects only Plan 14-12 to qualify/present the exact one-observation scope; a new explicit owner decision is still required before CTest. Plan 14-13 would require separate remedy authority; Plan 14-11 still needs both plans and retains full local regression and actual-host checkpoints. Keep FRONT-02/03/04 pending and all host allowances spent. No code, emulator tests, CI, host, or diagnostic workload ran in this review.
 
 ## Deferred Items
 
