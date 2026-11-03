@@ -5,14 +5,14 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: blocked
-stopped_at: Plan 14-10 Task 1 halted after bounded unresolved diagnosis
-last_updated: "2026-11-03T17:49:03.885Z"
+stopped_at: Phase 14 planning complete; Plan 14-12 requires a fresh authorization before any observation
+last_updated: "2026-11-03T19:27:07Z"
 last_activity: 2026-11-03
-state_head: daa6a3e66b426f648cdc2839951858f0696e829c
+state_head: 6a95a5f61ec4e446f56e858e03a9077f911ed5f3
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 19
+  total_plans: 21
   completed_plans: 18
   percent: 33
 ---
@@ -24,20 +24,21 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 is blocked at Plan 14-10's unresolved BIOS timeout diagnosis. The bounded three-pair cap is spent, process attribution was unavailable, and Plan 14-11's coordinated full local preflight must wait for attributable evidence. FRONT-02/03/04 remain pending; the 14-08 remote allowance is spent and Phase 12 remains halted.
+Current focus: Phase 14 remains blocked after additive planning. Plan 14-10 is terminal halted history with its three-pair cap spent. Plan 14-12 is the next runnable plan only through its fresh authorization checkpoint; no observation is authorized yet. Plan 14-13 requires attributable evidence and separate exact-remedy authority, and Plan 14-11 remains downstream. FRONT-02/03/04 remain pending; the 14-08 remote allowance is spent and Phase 12 remains halted.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — BLOCKED
-Plan: 9 of 11 complete; Plan 14-10 halted after its bounded diagnosis task; Plan 14-11 is blocked by that dependency.
-Status: Blocked on attributable evidence for the five existing one-second BIOS timeouts.
-Next action: After a new bounded local diagnostic scope is authorized in a process-observable environment, replace the halted diagnosis with a narrower investigation of the exact BIOS and receipt-named competing CTest workloads.
-Boundary: The three-pair diagnostic cap is spent. Do not run Plan 14-10 Tasks 2 or 3, the Plan 14-11 full workflow, push, hosted CI, cancel/rerun, local RetroArch, PR/merge/release, or Phase 12 work under this scope.
+Plan: 9 of 13 complete; Plan 14-10 remains terminal halted history; Plan 14-12 awaits its fresh authorization checkpoint; conditional 14-13 and downstream 14-11 are blocked.
+Status: Blocked on attributable evidence for the five existing one-second BIOS timeouts and a separately approved cause-specific remedy/property producer. FRONT-02/03/04 remain pending.
+Next action: Run `$gsd-execute-phase 14 --gaps-only --wave 10` to prepare the exact Plan 14-12 authorization packet and stop at Task 1. No diagnostic starts until a fresh decision authorizes that packet's exact source, cached build, process-observable environment and one bounded observation.
+Boundary: Never resume Plan 14-10 or spend its exhausted three-pair cap. Plan 14-13 requires a separately authorized exact remedy after attributable evidence; Plan 14-11 waits for both plans and retains its complete local regression and separate actual-host authority checkpoints. No observation, remedy, Plan 14-11 full workflow, push, hosted CI, cancel/rerun, local RetroArch, PR/merge/release, or Phase 12 work is authorized by planning.
 
 ## Current Blockers
 
-- Plan 14-10's two valid default/serial pairs passed without reproducing the prior timeouts. The third pair was invalid and not retried. `ps`, `pgrep`, `top`, and `sysctl -n hw.ncpu` were denied, so PID ownership, parentage, and per-process CPU remain unknown. No supported remedy exists.
-- Plan 14-11's coordinated full local preflight remains blocked; the required regression workflow is still failed. FRONT-02, FRONT-03, and FRONT-04 remain pending, and the actual-host allowance remains spent.
+- The required full local workflow failed twice on the same five BIOS timeouts. Plan 14-10's two valid default/serial pairs passed without reproducing them. The third pair was invalid and not retried. `ps`, `pgrep`, `top`, and `sysctl -n hw.ncpu` were denied, so PID ownership, parentage, and per-process CPU remain unknown. Its cap remains spent; no supported remedy is established.
+- Plan 14-12 has not started its observation. Its first task must present the exact source/build/environment packet for a fresh decision; planning and standing preferences do not authorize the test. If authorized, it allows one observation only and stops unresolved on missing attribution or non-reproduction.
+- Plan 14-13 requires attributable evidence and its own exact-remedy decision. Plan 14-11's coordinated full local preflight remains blocked until 14-12/13 produce their required evidence; its actual-host checkpoint remains separate. FRONT-02, FRONT-03, and FRONT-04 remain pending, and the 14-08 actual-host allowance remains spent.
 
 ## Preserved Phase 12 position — halt remains binding
 
@@ -95,7 +96,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 |---|---|---|---|
 | 12 | 0 complete; 4 acceptance plans plus 4 gap plans | — | — |
 | 13 | 8 | - | - |
-| 14 | 8 plans executed; phase incomplete | — | — |
+| 14 | 9 plans completed; phase incomplete | — | — |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -194,11 +195,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T17:49:03.823Z
-Stopped at: Plan 14-10 Task 1 halted after bounded unresolved diagnosis
+Last session: 2026-11-03T19:27:07Z
+Stopped at: Phase 14 additive planning and independent plan verification complete; phase remains blocked
 Resume file: None
-Next separate command: No Phase 14 execution command is valid under the exhausted diagnostic cap. After a new bounded local process-attribution scope is authorized, run `$gsd-plan-phase 14` in the current Phase 14 checkout to plan only the narrower diagnosis.
-Context handoff: Phase 14 has nine of eleven plans complete; 14-10 is halted and 14-11 is blocked. Two phase-level full local CI runs exited 8 on the same five BIOS timeouts. The focused BIOS command and two valid default/serial pairs passed, but no cause was attributed; process ownership and per-process CPU were unavailable, and the third pair was malformed and not retried. The three-pair cap is spent. Do not run 14-10 Tasks 2/3 or the 14-11 full workflow, push, hosted CI, cancel/rerun, launch RetroArch locally, or work on Phase 12. The 14-08 dispatch allowance is spent; any future host attempt still needs the fresh explicit owner decision in 14-11 after its complete local preflight.
+Next separate command: In this Phase 14 checkout, run `$gsd-execute-phase 14 --gaps-only --wave 10`. It may prepare and present Plan 14-12's exact authorization packet, then must stop at Task 1. No diagnostic is authorized until the owner decides on that concrete packet; that decision does not authorize a remedy, Plan 14-11, or a host attempt.
+Context handoff: Phase 14 has nine of thirteen plans complete. Plan 14-10 remains terminal halted history; its two valid bounded pairs did not reproduce the five BIOS timeouts, the third pair was invalid and not retried, native process attribution was unavailable, and the three-pair cap is spent. New Plan 14-12 permits only one observation after a fresh decision on its exact unchanged local source/build/environment packet; no observation has run. Plan 14-13 needs attributable evidence plus separate exact-remedy authority, and Plan 14-11 needs both plans and retains its full local regression/actual-host checkpoints. Keep FRONT-02/03/04 pending. Do not resume 14-10, run diagnostics before authorization, apply a remedy without its gate, or run 14-11/full local workflow, push, hosted CI, cancel/rerun, local RetroArch, PR/merge/release, or Phase 12 work. The 14-08 host allowance is spent. No owner action is needed now; at the future Task 1 checkpoint the owner decides whether to authorize the presented observation.
 
 ## Deferred Items
 
