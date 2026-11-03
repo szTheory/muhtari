@@ -215,10 +215,15 @@ validated little-endian format. If the frontend explicitly requests rollback-net
 report size zero and refuse save/load because that context requires big-endian integers. There is no second
 netplay codec.
 
-State bytes include emulated battery contents. Restore updates the live `RETRO_MEMORY_SAVE_RAM` span in place;
-the core does not read or write `.srm` files, which remain the frontend's responsibility. The `.info`
-`savestate = "true"` claim covers the loaded callback path exercised by the host harness. It does not qualify
-actual RetroArch use, rewind, run-ahead or rollback netplay; actual-host qualification is left to Phase 14.
+State bytes include emulated battery contents. Restoring a state rolls those emulated bytes back and updates
+the live `RETRO_MEMORY_SAVE_RAM` span in place. The core does not read or write `.srm` files: the frontend
+owns raw-save persistence and decides when to flush committed bytes. The frontend also owns state files,
+rewind storage, and rewind controls and UI.
+
+The `.info` `savestate = "true"` and `savestate_features = "deterministic"` declarations are tied to the
+loaded callback, repeated-continuation, and host-control test registrations. They describe the core's state
+contract; they are not evidence that a frontend has exercised it. Actual pinned RetroArch save/load, rewind,
+and run-ahead qualification remains pending until the source-bound Phase 14 evidence is reviewed.
 
 **Restart** power-cycles the console: volatile memory is cleared, the cartridge starts again the way it was loaded, and the
 difficulty switches go back to their options.
