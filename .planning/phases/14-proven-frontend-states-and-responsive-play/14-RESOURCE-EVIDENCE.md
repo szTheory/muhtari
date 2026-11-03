@@ -473,4 +473,42 @@ default-scheduled observation of the unchanged focused BIOS command plus only
 the receipt-named workloads, collecting process ancestry and CPU near launch
 and timeout. Preserve the existing one-second deadlines; if the timeout does
 not recur or the process record cannot attribute it, keep the cause unresolved
-and stop without a registration change.
+
+## Plan 14-12 evidence review (2026-11-03)
+
+This review reconciles the existing receipts only. Both required full local
+`cmake --workflow --preset ci` runs exited 8 on the same five BIOS tests:
+`bios.splash_skip`, `bios.rejects_cart`, `bios.k_window`,
+`bios.k_first_fetch`, and `bios.load_aliases`, each at its existing one-second
+CTest deadline. The focused five-test command passed with its two fixture
+prerequisites (7/7; the recorded runs took 0.52 seconds and 0.32 seconds).
+Two valid default-versus-serial pairs also passed all 13 selected tests: pair 1
+took 1.06/2.02 seconds, and pair 2 took 0.87/1.85 seconds. These passes show
+that the bounded observations did not reproduce the failures; they do not
+identify why either full workflow timed out.
+
+The third planned comparison pair passed the invalid `--output-failure`
+argument to CTest, which exited 1 before launching tests. Plan 14-10 counted
+that attempt against its three-pair limit and remains terminal halted history;
+this evidence review neither retries it nor renews or charges that cap to new
+work. The previously attempted read-only `ps` probe was denied by the sandbox
+(exit 127, `Operation not permitted`). Process identity and CPU attribution
+therefore remain unknown. The failure is a sandbox restriction, not evidence
+about which processes caused the timeouts.
+
+The scheduling hypothesis worth validating is limited to `RUN_SERIAL TRUE` on
+exactly the five named BIOS tests. CTest would keep each of those tests from
+overlapping other tests in the same CTest invocation. This reversible,
+test-only metadata change would preserve each one-second deadline, command,
+fixture prerequisite, label, inventory row, and every other test contract.
+No deadline increase or broader scheduling change is proposed. The available
+receipts make this a bounded hypothesis, not a diagnosis: isolation would not
+establish the historical timeout cause or satisfy FRONT-02, FRONT-03, or
+FRONT-04.
+
+Plan 14-13 requires a fresh explicit owner decision on its exact five-property
+source change, metadata controls, and one focused BIOS batch before any of that
+work begins. Plan 14-11 owns the complete ordinary/release workflows on the
+repaired candidate and on the frozen evidence commit whose immediate first
+parent is that candidate, followed by its separate host decision. The three
+frontend requirements remain pending.
