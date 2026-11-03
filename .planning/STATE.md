@@ -5,15 +5,15 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: executing
-stopped_at: Completed 14-01-PLAN.md
-last_updated: "2026-11-03T04:19:05.878Z"
+stopped_at: Completed 14-02-PLAN.md
+last_updated: "2026-11-03T04:38:12.453Z"
 last_activity: 2026-11-02
-state_head: f88bb41552a52dbd891091ab3c9259aefa88165a
+state_head: 8587ce054f00549a9049882cd4ca39900e528835
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 13
-  completed_plans: 9
+  completed_plans: 10
   percent: 33
 ---
 
@@ -29,7 +29,7 @@ Current focus: Phase 14 is planned in five sequential plans and is ready to exec
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Next action: From the Phase 14 worktree, run `$gsd-execute-phase 14` once. It executes the five plans continuously; the final plan permits one source-bound Phase 14 CI dispatch. No wave-by-wave commands are needed.
 Boundary: Phase 13's native, PowerPC/QEMU, complete normal/release, equality and ASan/UBSan gates passed locally and are documented in its verification/resource evidence. Phase 12 remains halted at accepted 0/4 with causes unresolved and all hosted allowances spent. Phase 14 planning ran no tests, RetroArch or CI. The Phase 12 allowance remains unavailable.
@@ -96,6 +96,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 14 P01 | 17min | 2 tasks | 5 files |
+| Phase 14 P02 | 19min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,9 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: Use RAM $2300/$2304 for the fixture marker and little-endian progress counter.
 - [Phase 14]: Check the whole 2048-byte HSC image with the counter at raw offsets 0x100/0x101.
 - [Phase 14]: Derive the completed-frame picture phase and glyph pixels from fixture/source code.
+- [Phase 14]: Decode the visible progress glyph before whole-picture equality so equal but wrong pictures cannot pass.
+- [Phase 14]: Register the portable diagnostic when either the libretro target or a cross-compiling emulator consumes it.
+- [Phase 14]: Keep local callback evidence separate from actual pinned-host acceptance.
 
 ### Pending Todos
 
@@ -164,11 +168,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T04:19:05.818Z
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-11-03T04:38:12.344Z
+Stopped at: Completed 14-02-PLAN.md
 Resume file: None
 Next separate command: From the Phase 14 worktree, run `$gsd-execute-phase 14` once to execute all five plans continuously. Do not run any Phase 12 plan or reuse its spent hosted allowance.
-Context handoff: Phase 14 planning is complete with five sequential plans; no implementation, tests, RetroArch or CI ran. The final plan contains one bounded source-bound Phase 14 CI dispatch. Phase 13 is complete and its local native, PowerPC/QEMU, release, equality, and sanitizer evidence is in `13-RESOURCE-EVIDENCE.md`; receipts are under ignored `build/phase13-local/`. Phase 12 remains halted at 0/4 with every hosted allowance spent.
+Context handoff: Phase 14 plans 14-01 and 14-02 are complete. Plan 14-02 adds the independent fixture progress/picture/raw-save oracle and repeated loaded-module restore/replay checks; the local CI preset build and both targeted tests pass. No RetroArch launch or CI dispatch occurred. Continue with plan 14-03 in this Phase 14 worktree; the final plan contains one bounded source-bound Phase 14 CI dispatch. Phase 13's local native, PowerPC/QEMU, release, equality, and sanitizer evidence is in `13-RESOURCE-EVIDENCE.md`; receipts are under ignored `build/phase13-local/`. Phase 12 remains halted at 0/4 with every hosted allowance spent.
 
 ## Deferred Items
 
