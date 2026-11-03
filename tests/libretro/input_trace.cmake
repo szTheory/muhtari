@@ -36,6 +36,10 @@ foreach(command IN ITEMS mock protocol host helper)
     if(matched STREQUAL "")
       message(FATAL_ERROR "synthetic helper omitted its owned trace directory")
     endif()
+    if(NOT err MATCHES "input trace key=126 state=down count=50 first_ms=0 last_ms=4900" OR
+        NOT err MATCHES "input trace key=126 state=up count=400 first_ms=5000 last_ms=44900")
+      message(FATAL_ERROR "synthetic helper omitted exact bounded repeat summaries: ${err}")
+    endif()
   endif()
 endforeach()
 

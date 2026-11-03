@@ -15,6 +15,9 @@
 #include <unistd.h>
 #include <ApplicationServices/ApplicationServices.h>
 static int sync_pipe[2], ticks, posts, bad;
+static uint32_t mock_posts[3][2];
+static int capture_after_tick = -1;
+static char capture_path[4096];
 static pid_t owned;
 static pid_t native_fork(void)
 {
@@ -68,6 +71,11 @@ void CGEventSetFlags(CGEventRef e, uint64_t flags)
 void CGEventPostToPid(int pid, CGEventRef e)
 {
     bad |= pid != owned || e != &event;
+    unsigned key_index = event.key == 126 ? 0u : event.key == 6 ? 1u : event.key == 100 ? 2u : 3u;
+    if (key_index >= 3u)
+        bad = 1;
+    else
+        mock_posts[key_index][event.down != 0]++;
     posts++;
 }
 void CFRelease(CGEventRef e)
@@ -98,6 +106,11 @@ static int helper_sleep(const struct timespec *delay, struct timespec *remaining
 {
     bad |= delay->tv_sec != 0 || delay->tv_nsec != 100000000 || remaining != NULL;
     ticks++;
+    if (ticks == capture_after_tick) {
+        int fd = open(capture_path, O_CREAT | O_EXCL | O_WRONLY, 0600);
+        if (fd < 0 || close(fd) != 0)
+            bad = 1;
+    }
     const struct timespec short_delay = {0, 1000000};
     return real_sleep(&short_delay);
 }
@@ -463,14 +476,23 @@ int main(int argc, char **argv)
     close(fd);
     REQUIRE(unlink(helper) == 0 && unlink(core) == 0);
     REQUIRE(mkdir(raw, 0700) == 0 && pipe(sync_pipe) == 0);
+    REQUIRE(snprintf(capture_path, sizeof capture_path, "%s/capture.png", raw) > 0);
+    capture_after_tick = -1;
     char sync_fd[32];
     snprintf(sync_fd, sizeof sync_fd, "%d", sync_pipe[1]);
     char *args[] = {"synthetic-helper", "--probe", raw, argv[0], "--fixture", sync_fd, NULL};
-    REQUIRE(helper_main(6, args) == 1 && !bad && posts > 0);
+    REQUIRE(helper_main(6, args) == 1 && !bad && posts == 150);
     REQUIRE(waitpid(owned, NULL, WNOHANG) == -1); /* helper reaped exactly its own killed child */
     it_read(helper, IT_HELPER, &h);
     it_read(core, IT_CORE, &c);
     REQUIRE(h.status == IT_COMPLETE && h.count == 7 && c.status == IT_UNFINISHED && c.count == 3);
+    for (unsigned i = 0; i < 3u; i++) {
+        REQUIRE(keyboard_trace_keys[i].down_count == mock_posts[i][1]);
+        REQUIRE(keyboard_trace_keys[i].up_count == mock_posts[i][0]);
+        REQUIRE(mock_posts[i][1] == 50u && mock_posts[i][0] == 0u);
+        REQUIRE(keyboard_trace_keys[i].first_down_ms == 0 &&
+                keyboard_trace_keys[i].last_down_ms == 4900);
+    }
     REQUIRE(h.records[3].type == IT_POST && h.records[3].a == 126u && h.records[3].b == 1u &&
             h.records[3].c == (uint32_t)owned);
     REQUIRE(h.records[4].type == IT_POST && h.records[4].a == 6u && h.records[4].b == 1u &&
@@ -483,7 +505,9 @@ int main(int argc, char **argv)
     fd = open(helper, O_RDWR | O_CLOEXEC);
     REQUIRE(fd >= 3);
     uint8_t complete[IT_LIMIT * IT_BYTES];
-    REQUIRE(read(fd, complete, sizeof complete) == (ssize_t)sizeof complete);
+    size_t complete_bytes = (size_t)h.count * IT_BYTES;
+    REQUIRE(complete_bytes <= sizeof complete &&
+            read(fd, complete, complete_bytes) == (ssize_t)complete_bytes);
     REQUIRE(ftruncate(fd, 3 * IT_BYTES) == 0);
     pid_t collector = native_fork();
     REQUIRE(collector >= 0);
@@ -494,7 +518,7 @@ int main(int argc, char **argv)
     int status;
     REQUIRE(waitpid(collector, &status, 0) == collector && WIFEXITED(status) &&
             WEXITSTATUS(status) == 1);
-    REQUIRE(pwrite(fd, complete, sizeof complete, 0) == (ssize_t)sizeof complete);
+    REQUIRE(pwrite(fd, complete, complete_bytes, 0) == (ssize_t)complete_bytes);
     close(fd);
     c.records[0].pid++;
     REQUIRE(!it_pair(&h, &c));
@@ -502,6 +526,47 @@ int main(int argc, char **argv)
     c.clock_ok = 0;
     REQUIRE(!it_pair(&h, &c));
     close(sync_pipe[0]);
+
+    char raw_release[4096], capture_release[4096];
+    REQUIRE(snprintf(raw_release, sizeof raw_release, "%s/raw-release", argv[1]) > 0);
+    REQUIRE(mkdir(raw_release, 0700) == 0 && pipe(sync_pipe) == 0);
+    REQUIRE(snprintf(capture_release, sizeof capture_release, "%s/capture.png", raw_release) > 0);
+    char release_sync_fd[32];
+    snprintf(release_sync_fd, sizeof release_sync_fd, "%d", sync_pipe[1]);
+    REQUIRE(setenv("MUHTARI_TRACE_SYNC_FD", release_sync_fd, 1) == 0);
+    REQUIRE(setenv("MUHTARI_INPUT_TRACE_DIR", raw_release, 1) == 0);
+    REQUIRE(snprintf(capture_path, sizeof capture_path, "%s", capture_release) > 0);
+    capture_after_tick = 3;
+    ticks = posts = bad = 0;
+    memset(mock_posts, 0, sizeof mock_posts);
+    char *release_args[] = {"synthetic-helper", "--probe", raw_release, argv[0], "--fixture",
+                            release_sync_fd, NULL};
+    REQUIRE(helper_main(6, release_args) == 1 && !bad && ticks == 450 && posts == 904);
+    REQUIRE(waitpid(owned, NULL, WNOHANG) == -1);
+    char helper_release[sizeof raw_release + sizeof "/helper.trace"];
+    char core_release[sizeof raw_release + sizeof "/core.trace"];
+    REQUIRE(snprintf(helper_release, sizeof helper_release, "%s/helper.trace", raw_release) > 0);
+    REQUIRE(snprintf(core_release, sizeof core_release, "%s/core.trace", raw_release) > 0);
+    it_read(helper_release, IT_HELPER, &h);
+    it_read(core_release, IT_CORE, &c);
+    REQUIRE(h.status == IT_COMPLETE && h.count == 10u && c.status == IT_UNFINISHED && c.count == 3u);
+    REQUIRE(keyboard_trace_keys[0].down_count == 50u && keyboard_trace_keys[0].up_count == 400u);
+    REQUIRE(keyboard_trace_keys[1].down_count == 50u && keyboard_trace_keys[1].up_count == 400u);
+    REQUIRE(keyboard_trace_keys[2].down_count == 3u && keyboard_trace_keys[2].up_count == 1u);
+    REQUIRE(keyboard_trace_keys[0].first_down_ms == 0 && keyboard_trace_keys[0].last_down_ms == 4900 &&
+            keyboard_trace_keys[0].first_up_ms == 5000 && keyboard_trace_keys[0].last_up_ms == 44900);
+    REQUIRE(keyboard_trace_keys[1].first_down_ms == 0 && keyboard_trace_keys[1].last_down_ms == 4900 &&
+            keyboard_trace_keys[1].first_up_ms == 5000 && keyboard_trace_keys[1].last_up_ms == 44900);
+    REQUIRE(keyboard_trace_keys[2].first_down_ms == 0 && keyboard_trace_keys[2].last_down_ms == 200 &&
+            keyboard_trace_keys[2].first_up_ms == 300 && keyboard_trace_keys[2].last_up_ms == 300);
+    REQUIRE(h.records[3].type == IT_POST && h.records[3].a == 126u && h.records[3].b == 1u);
+    REQUIRE(h.records[4].type == IT_POST && h.records[4].a == 6u && h.records[4].b == 1u);
+    REQUIRE(h.records[5].type == IT_POST && h.records[5].a == 100u && h.records[5].b == 1u);
+    REQUIRE(h.records[6].type == IT_POST && h.records[6].a == 100u && h.records[6].b == 0u);
+    REQUIRE(h.records[7].type == IT_POST && h.records[7].a == 126u && h.records[7].b == 0u);
+    REQUIRE(h.records[8].type == IT_POST && h.records[8].a == 6u && h.records[8].b == 0u);
+    REQUIRE(h.records[9].type == IT_END);
+    REQUIRE(close(sync_pipe[0]) == 0);
     REQUIRE(unsetenv("MUHTARI_INPUT_TRACE_DIR") == 0);
     puts("exclusive descriptors, no overwrite, synthetic kill survival and paired collection "
          "passed");

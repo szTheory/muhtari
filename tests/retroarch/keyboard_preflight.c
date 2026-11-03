@@ -146,6 +146,13 @@ int main(int argc, char **argv)
         }
         if (probe && !acknowledged && elapsed >= 5000) {
             reason = "acknowledgment-deadline";
+            pid_t result = waitpid(child, &status, WNOHANG);
+            if (result == child) {
+                report(reason, elapsed, shots, 0, 1, status);
+                return 1;
+            }
+            if (result < 0)
+                error = errno;
             break;
         }
         pid_t result = waitpid(child, &status, WNOHANG);
@@ -174,8 +181,7 @@ int main(int argc, char **argv)
             CGEventSetFlags(event, 0);
             CGEventPostToPid(child, event);
 #ifdef MUHTARI_INPUT_TRACE
-            it_emit(&keyboard_trace, IT_POST, (uint32_t)keys[i],
-                    (uint32_t)(i == 2 ? shots == 0 : down), (uint32_t)child);
+            keyboard_trace_post((uint32_t)keys[i], i == 2 ? shots == 0 : down, child, elapsed);
 #endif
             CFRelease(event);
             if (i == 2 || tick == 0 || (released && holding && !down))
