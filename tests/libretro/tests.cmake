@@ -337,6 +337,37 @@ include([==[${CMAKE_CURRENT_LIST_FILE}]==])
     COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
       "-DREGEX=savestate needs libretro.host.state" -P ${libretro_scripts}/expect_fail.cmake
     LABELS libretro TIMEOUT 10)
+  # A deterministic metadata claim needs both the loaded-state continuation
+  # proof and this phase's recurring host-control proof. Keep the invalid
+  # fixtures behind the same claim consumer as the production .info file.
+  set(libretro_deterministic_claim ${PROJECT_BINARY_DIR}/libretro/deterministic_state_claim.info)
+  file(WRITE ${libretro_deterministic_claim}
+    "savestate = \"true\"\nsavestate_features = \"deterministic\"\n")
+  set(libretro_deterministic_missing_inventory
+    ${PROJECT_BINARY_DIR}/libretro/deterministic_state_missing_inventory.txt)
+  file(WRITE ${libretro_deterministic_missing_inventory}
+    "libretro.host.state\tlibretro,portable\nprop.state_continuation\tportable,prop\n")
+  set(libretro_cmd ${CMAKE_COMMAND} -DINFO=${libretro_deterministic_claim}
+    -DINVENTORY=${libretro_deterministic_missing_inventory}
+    -P ${libretro_scripts}/info_claims.cmake)
+  string(REPLACE ";" "$<SEMICOLON>" libretro_cmd "${libretro_cmd}")
+  muhtari_add_test(NAME libretro.info_claims.deterministic_missing_proof.self_test
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
+      "-DREGEX=savestate_features needs retroarch.states.controls"
+      -P ${libretro_scripts}/expect_fail.cmake
+    LABELS libretro TIMEOUT 10)
+  set(libretro_deterministic_invalid_claim
+    ${PROJECT_BINARY_DIR}/libretro/deterministic_state_invalid_claim.info)
+  file(WRITE ${libretro_deterministic_invalid_claim}
+    "savestate = \"true\"\nsavestate_features = \"rollback\"\n")
+  set(libretro_cmd ${CMAKE_COMMAND} -DINFO=${libretro_deterministic_invalid_claim}
+    -DINVENTORY=${libretro_inventory} -P ${libretro_scripts}/info_claims.cmake)
+  string(REPLACE ";" "$<SEMICOLON>" libretro_cmd "${libretro_cmd}")
+  muhtari_add_test(NAME libretro.info_claims.deterministic_invalid_level.self_test
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
+      "-DREGEX=savestate_features must be.*deterministic"
+      -P ${libretro_scripts}/expect_fail.cmake
+    LABELS libretro TIMEOUT 10)
   # Unknown capabilities remain rejected after savestate is a recognized claim.
   set(libretro_fixture ${PROJECT_BINARY_DIR}/libretro/unmapped_claim.info)
   file(WRITE ${libretro_fixture} "supports_no_game = \"true\"\nnetplay = \"true\"\n")
