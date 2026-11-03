@@ -50,7 +50,7 @@ commits: 2
 plan_head_before: 7a89411bb5e1a3a00aeeff6b89490fc9d2b7f957
 plan_head_after: 89404dc454fb8ab63b15d3014c2d5ef33b4763e5
 actuals:
-  tokens: 8063
+  tokens: 8104
   tasks: 2
   commits: 2
 duration: 13min
@@ -80,6 +80,8 @@ status: complete
 
 1. **Task 1: Make the existing host job report source totals through a locally exercised consumer** — `1447e4d` (`fix`).
 2. **Task 2: Review the narrow boundary repair and preserve its evidence** — `89404dc` (`fix`).
+
+**Plan metadata:** `a7dc8c2` (`docs`).
 
 ## Files Created/Modified
 
