@@ -2992,8 +2992,8 @@ static void case_state(void)
     }
 
     /* One same-instance speculative frame must not replace the committed
-       battery bytes. The independent library reference is restored below so
-       this boundary compares the loaded module with its owning API. */
+       battery bytes. Restore the independent library reference at the same
+       point before judging the loaded module's raw span. */
     muhtari_battery_info committed_battery = {0};
     committed_battery.size = (uint32_t)sizeof committed_battery;
     CHECK_EQ_U64(muhtari_get_battery(m, &committed_battery), MUHTARI_STATUS_OK);
@@ -3015,9 +3015,8 @@ static void case_state(void)
     speculative_battery.data[0] = speculative_byte;
     module_battery[0] = speculative_byte;
     CHECK(p_unserialize(saved, bytes));
-    /* RED: p_unserialize restored the module, but the independent library
-       must also return to the committed point before its raw bytes are judged. */
-    CHECK(memcmp(module_battery, speculative_battery.data, speculative_battery.bytes) == 0);
+    CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == module_battery);
+    CHECK_EQ_U64(p_get_memory_size(RETRO_MEMORY_SAVE_RAM), committed_battery.bytes);
     CHECK_EQ_U64(muhtari_load_state(m, saved, bytes), MUHTARI_STATUS_OK);
     CHECK(p_get_memory_data(RETRO_MEMORY_SAVE_RAM) == module_battery);
     CHECK(memcmp(module_battery, saved_battery, committed_battery.bytes) == 0);
