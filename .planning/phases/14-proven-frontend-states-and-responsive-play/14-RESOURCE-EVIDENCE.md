@@ -382,3 +382,95 @@ one-second BIOS timeouts. This gap plan did not rerun the complete workflow or
 change those limits. FRONT-02, FRONT-03, and FRONT-04 remain pending; the
 14-08 hosted allowance remains spent, Phase 12 remains halted, and no new host
 or remote allowance was created.
+
+## Plan 14-10 bounded BIOS diagnosis (local, 2026-11-03)
+
+The previously recorded two full-workflow failures remain separate from the
+focused serial result. Both full workflows exited 8 on
+`bios.splash_skip`, `bios.rejects_cart`, `bios.k_window`,
+`bios.k_first_fetch`, and `bios.load_aliases`, each at the existing one-second
+CTest deadline. The earlier focused command passed 7/7 with its two fixture
+prerequisites in 0.52 seconds; that result did not establish why the full runs
+timed out.
+
+Before the new focused run, `ctest --test-dir build/ci --show-only=json-v1`
+was saved to ignored `build/phase14-gap10-evidence/ctest-before.json`. It
+records the same five BIOS commands, fixture prerequisites, working directory,
+labels, and unscaled one-second deadlines. The configured executable is
+`build/ci/tests/muhtari-test-boot` (SHA-256
+`062012c2aedc8ef7b416c42f64afa607993f793462a755df0515ad678ced5690`), built
+from the current `daa6a3e66b426f648cdc2839951858f0696e829c` source tree with
+CMake 4.4.3, Apple Clang 21.0.0, Release `-O3 -DNDEBUG`, and timeout scale 1.
+The OpenBIOS fixture SHA-256 is
+`46b5bc2b716a20a1c40e2b920365c29cbab1594d01da94f4567b240181365cb2`; the
+simple cartridge fixture SHA-256 is
+`d09da3ed27fe82e0a4dd2821ff2cb9bde26c9531c59890788acb1cfdc4004ecf`.
+These values and the test metadata are preserved with the ignored diagnostic
+receipts; no BIOS command, assertion, fixture, label, or deadline was edited.
+
+The required focused command was run once more against those exact files:
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `ctest --test-dir build/ci -R '^bios\.(splash_skip|rejects_cart|k_window|k_first_fetch|load_aliases)$' --output-on-failure -j1` | 0 | Both fixture prerequisites and all five BIOS cases passed, 7/7 in 0.32 seconds. This is diagnostic only. |
+
+The failed full-run logs identify the only narrowed competing CTest workload
+used for three attempted pairs: `frame.sample_renders`,
+`bios.handoff_simple`, `title.simple.fast`, `title.simple.bios`,
+`title.pal.fast`, and `title.pal.bios`. Each pair used those six tests plus the
+five timed BIOS tests and the two fixture prerequisites; default CTest preset
+scheduling was compared with `--parallel 1`. No full workflow, build, worker
+topology, cache, timeout, or test registration was changed.
+
+| Pair | Default schedule | Serial schedule | Measurement and qualification |
+| --- | --- | --- | --- |
+| 1 | Exit 0; 13/13, 1.06s | Exit 0; 13/13, 2.02s | The CTest output shows the selected jobs overlapping. The wrapper did not capture aggregate CPU, so this pair is incomplete causal evidence. |
+| 2 | Exit 0; 13/13, 0.87s | Exit 0; 13/13, 1.85s | Aggregate default CPU was 1.66s user / 0.12s system (199%); serial was 1.73s / 0.12s (99%). CTest output shows the selected jobs overlapping. No BIOS timeout reproduced. |
+| 3 | Exit 1 before test launch | Exit 1 before test launch | Both commands used the invalid option `--output-failure`; CTest reported “Unknown argument”. This pair is not comparable. The three-pair cap is exhausted; no retry was made. |
+
+The exact commands, logs, JUnit output, source and fixture identities, elapsed
+times, aggregate CPU where captured, load snapshots, and CTest metadata are in
+ignored `build/phase14-gap10-evidence/`. Pair 1 and pair 2 both passed under
+default and serial scheduling. They confirm that those selected tests can
+overlap in CTest and pass in this local observation; they do not attribute the
+prior failures to those consumers or prove that serial isolation is a remedy.
+Pair 3 is explicitly excluded from causal evidence.
+
+Process ancestry, PID ownership, and per-process CPU could not be observed in
+this environment: `ps`, `pgrep`, `top`, and `sysctl -n hw.ncpu` were denied by
+the sandbox. `uptime` provided only a machine-wide load average. No process was
+terminated and no cleanup was attempted. The earlier timeout log's
+`sh: /bin/ps: Operation not permitted` message is likewise not a process
+identity receipt. There is no evidence of a stale owned child or an attributable
+external competitor.
+
+The ignored `check-bios-diagnosis.cmake` validator checks the saved CTest
+registrations, source/executable/fixture identity, the original five failure
+names and deadlines, all three paired receipts, command comparability, and an
+explicit supported mechanism. Its current receipt is intentionally rejected:
+one pair omitted aggregate CPU, one pair did not launch tests, and the remaining
+valid pair did not reproduce a timeout or establish a cause. Missing-pair,
+changed-command, and missing-cause fault probes are recorded separately. No
+causal remedy is supported, so Tasks 2 and 3, any full workflow, and any
+registration edit are stopped here. `tests/boot/tests.cmake` remains unchanged;
+FRONT-02, FRONT-03, and FRONT-04 remain pending, and Plan 14-11's coordinated
+full-workflow preflight is blocked.
+
+| CMake receipt check | Exit | Result |
+| --- | ---: | --- |
+| `cmake -DPROBE=missing-pair -P build/phase14-gap10-evidence/check-bios-diagnosis.cmake` | 1 (expected) | Rejected the missing-pair mutation. |
+| `cmake -DPROBE=changed-command -P build/phase14-gap10-evidence/check-bios-diagnosis.cmake` | 1 (expected) | Rejected the changed-command mutation. |
+| `cmake -DPROBE=missing-cause -P build/phase14-gap10-evidence/check-bios-diagnosis.cmake` | 1 (expected) | Rejected the missing-cause mutation. |
+| `cmake -P build/phase14-gap10-evidence/check-bios-diagnosis.cmake` | 1 (expected) | Rejected the current receipt at the invalid pair 3 CTest command. |
+
+The missing evidence is a time-aligned process record from an observed BIOS
+timeout: PID, parent PID, executable and worktree ownership, launch/elapsed
+time, and user/system CPU for the failing test process and any overlapping
+receipt-named workload during the one-second window. Machine-wide load and
+successful serial runs do not supply that attribution. The narrower next
+investigation should use a process-observable local environment and one bounded
+default-scheduled observation of the unchanged focused BIOS command plus only
+the receipt-named workloads, collecting process ancestry and CPU near launch
+and timeout. Preserve the existing one-second deadlines; if the timeout does
+not recur or the process record cannot attribute it, keep the cause unresolved
+and stop without a registration change.

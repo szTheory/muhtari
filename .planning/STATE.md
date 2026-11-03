@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
-current_phase_name: GAPS FOUND — THREE GAP PLANS READY
-status: planning — gap plans checked; local execution requires separate scope authorization
-stopped_at: Phase 14 gap planning and independent plan review completed; 14-09 through 14-11 are ready, while local regression and actual-host evidence remain unresolved.
-last_updated: "2026-11-03T16:38:22.000Z"
+current_phase_name: Proven frontend states and responsive play
+status: blocked
+stopped_at: Plan 14-10 Task 1 halted after bounded unresolved diagnosis
+last_updated: "2026-11-03T17:49:03.885Z"
 last_activity: 2026-11-03
-state_head: b8e5dfda56ab5c077b2f718ab0ab19fee6502992
+state_head: daa6a3e66b426f648cdc2839951858f0696e829c
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 19
-  completed_plans: 16
+  completed_plans: 18
   percent: 33
 ---
 
@@ -24,15 +24,20 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 verification is gaps_found (19/27). Three gap-closure plans now address the retired host line-count guard, unresolved BIOS timeouts, and complete local/conditional host evidence. FRONT-02/03/04 remain pending; the 14-08 remote allowance is spent and Phase 12 remains halted.
+Current focus: Phase 14 is blocked at Plan 14-10's unresolved BIOS timeout diagnosis. The bounded three-pair cap is spent, process attribution was unavailable, and Plan 14-11's coordinated full local preflight must wait for attributable evidence. FRONT-02/03/04 remain pending; the 14-08 remote allowance is spent and Phase 12 remains halted.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — GAP PLANS READY
-Plan: 8 of 11 executed; 14-09 through 14-11 are planned, and phase verification remains gaps_found
-Status: planning — local gap-plan execution requires separate scope authorization
-Next action: After separate authorization for local gap-plan execution, run `$gsd-execute-phase 14 --gaps-only` in the current Phase 14 checkout. This does not authorize a host attempt; Plan 14-11 requires a fresh owner decision after every local gate passes.
-Boundary: No further Phase 14 push, dispatch, rerun, cancel, post-run push, local RetroArch, PR/merge/release, or Phase 12 work is authorized. Any later hosted action needs separate scope and a fresh allowance.
+Phase: 14 (Proven frontend states and responsive play) — BLOCKED
+Plan: 9 of 11 complete; Plan 14-10 halted after its bounded diagnosis task; Plan 14-11 is blocked by that dependency.
+Status: Blocked on attributable evidence for the five existing one-second BIOS timeouts.
+Next action: After a new bounded local diagnostic scope is authorized in a process-observable environment, replace the halted diagnosis with a narrower investigation of the exact BIOS and receipt-named competing CTest workloads.
+Boundary: The three-pair diagnostic cap is spent. Do not run Plan 14-10 Tasks 2 or 3, the Plan 14-11 full workflow, push, hosted CI, cancel/rerun, local RetroArch, PR/merge/release, or Phase 12 work under this scope.
+
+## Current Blockers
+
+- Plan 14-10's two valid default/serial pairs passed without reproducing the prior timeouts. The third pair was invalid and not retried. `ps`, `pgrep`, `top`, and `sysctl -n hw.ncpu` were denied, so PID ownership, parentage, and per-process CPU remain unknown. No supported remedy exists.
+- Plan 14-11's coordinated full local preflight remains blocked; the required regression workflow is still failed. FRONT-02, FRONT-03, and FRONT-04 remain pending, and the actual-host allowance remains spent.
 
 ## Preserved Phase 12 position — halt remains binding
 
@@ -102,6 +107,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 | Phase 14 P05 | 29min | 2 tasks | 10 files |
 | Phase 14 P07 | 57min | 3 tasks | 6 files |
 | Phase 14 P08 | 65min | 3 tasks | 8 files |
+| Phase 14 P10 | 20min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -134,6 +140,8 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: Run 41629846188 skipped RetroArch after a macOS Intel parent-baseline timeout; FRONT-02/03/04 remain pending and the one dispatch is spent.
 - [Phase 14]: Do not change CI deadlines, topology, or caching from the single macOS Intel baseline timeout.
 - [Phase 14]: The owner separately authorized 14-08's one-test portable RUN_SERIAL scheduling amendment, complete local source/parent preflight and at most one normal push plus one fresh host-enabled dispatch. This does not reset prior allowances or review counters; local Rosetta success did not reproduce hosted slowness or establish causation.
+- [Phase 14]: Keep the five BIOS commands, fixtures, labels, and one-second deadlines unchanged because two valid paired passes did not establish a cause.
+- [Phase 14]: Keep FRONT-02, FRONT-03, and FRONT-04 pending and block Plan 14-11 until process-attributable evidence resolves the local regression gate.
 
 ### Pending Todos
 
@@ -186,11 +194,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T16:38:22.000Z
-Stopped at: Phase 14 gap planning and independent plan review completed; 14-09 through 14-11 are ready, with local regression and actual-host evidence still unresolved.
+Last session: 2026-11-03T17:49:03.823Z
+Stopped at: Plan 14-10 Task 1 halted after bounded unresolved diagnosis
 Resume file: None
-Next separate command: After separate authorization for local gap-plan execution, run `$gsd-execute-phase 14 --gaps-only` in the current Phase 14 checkout.
-Context handoff: Phase 14 has 8/11 plans executed and remains `gaps_found` (19/27). Run 41656505025 failed the existing host line-count guard before state-mode tests. Two phase-level full local CI runs exited 8 on the same five BIOS timeouts; focused serial diagnostics passed and cause remains unresolved. Plans 14-09 through 14-11 are ready in sequence. The 14-08 dispatch allowance is spent. Do not push, dispatch, rerun, cancel, launch RetroArch locally, or work on Phase 12. Any future host attempt needs the fresh explicit owner decision in 14-11 after its complete local preflight.
+Next separate command: No Phase 14 execution command is valid under the exhausted diagnostic cap. After a new bounded local process-attribution scope is authorized, run `$gsd-plan-phase 14` in the current Phase 14 checkout to plan only the narrower diagnosis.
+Context handoff: Phase 14 has nine of eleven plans complete; 14-10 is halted and 14-11 is blocked. Two phase-level full local CI runs exited 8 on the same five BIOS timeouts. The focused BIOS command and two valid default/serial pairs passed, but no cause was attributed; process ownership and per-process CPU were unavailable, and the third pair was malformed and not retried. The three-pair cap is spent. Do not run 14-10 Tasks 2/3 or the 14-11 full workflow, push, hosted CI, cancel/rerun, launch RetroArch locally, or work on Phase 12. The 14-08 dispatch allowance is spent; any future host attempt still needs the fresh explicit owner decision in 14-11 after its complete local preflight.
 
 ## Deferred Items
 
