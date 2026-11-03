@@ -2990,6 +2990,26 @@ static void case_state(void)
         CHECK_EQ_U64(muhtari_get_battery(m, &equal_battery), MUHTARI_STATUS_OK);
         CHECK_EQ_U64(equal_battery.generation, rewound_battery.generation);
     }
+    state_frame(m, replay_buttons[0], 0, false);
+    state_frame(m, replay_buttons[1], 1, false);
+    muhtari_battery_info last_branch = {0};
+    last_branch.size = (uint32_t)sizeof last_branch;
+    CHECK_EQ_U64(muhtari_get_battery(m, &last_branch), MUHTARI_STATUS_OK);
+    bool last_branch_changed = memcmp(last_branch.data, saved_battery, last_branch.bytes) != 0;
+    uint64_t last_branch_generation = last_branch.generation;
+    CHECK(p_unserialize(saved, bytes));
+    CHECK_EQ_U64(muhtari_load_state(m, saved, bytes), MUHTARI_STATUS_OK);
+    state_check_battery(m, module_battery);
+    muhtari_battery_info last_rewind = {0};
+    last_rewind.size = (uint32_t)sizeof last_rewind;
+    CHECK_EQ_U64(muhtari_get_battery(m, &last_rewind), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(last_rewind.generation,
+                 last_branch_changed ? last_branch_generation + 1u : last_branch_generation);
+    CHECK_EQ_U64(muhtari_load_state(m, saved, bytes), MUHTARI_STATUS_OK);
+    muhtari_battery_info last_equal = {0};
+    last_equal.size = (uint32_t)sizeof last_equal;
+    CHECK_EQ_U64(muhtari_get_battery(m, &last_equal), MUHTARI_STATUS_OK);
+    CHECK_EQ_U64(last_equal.generation, last_rewind.generation);
 
     /* One same-instance speculative frame must not replace the committed
        battery bytes. Restore the independent library reference at the same
