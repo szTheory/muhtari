@@ -494,6 +494,7 @@ host.palette	host,portable
 input.cart_files	input,portable
 input.ctlswb_no_swchb_write	input,portable
 input.directions	input,portable
+input.history_cart	input,portable
 input.joystick_fire	input,portable
 input.lag_dma_and_peek	input,portable
 input.lag_even_frames	input,portable

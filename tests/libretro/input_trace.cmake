@@ -2,7 +2,7 @@
 # Faults: corrupt/missing records, changed callbacks, descriptor leaks and lost kill evidence.
 cmake_minimum_required(VERSION 3.25)
 file(MAKE_DIRECTORY "${WORK}")
-foreach(case IN ITEMS clean inherit cloexec helper directory core identity)
+foreach(case IN ITEMS clean inherit cloexec helper helper-high directory core identity)
   if(case STREQUAL "identity")
     set(args "${HELPER}" --identity)
   else()

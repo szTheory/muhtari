@@ -28,19 +28,9 @@
 #include "../cart/images.h"
 #include "../check.h"
 #include "internal.h"
+#include "input_pixels.h"
 #include "movie.h"
 #include "palette.h"
-
-unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held);
-unsigned input_history_response(const uint8_t *rgb, uint32_t w, uint32_t h);
-
-enum {
-    HISTORY_PIXEL_COMPLETE = 0u,
-    HISTORY_PIXEL_DIMENSIONS = 1u,
-    HISTORY_PIXEL_WAITING = 2u,
-    HISTORY_PIXEL_HELD = 3u,
-    HISTORY_PIXEL_SIGNATURE = 4u
-};
 
 /* A 48 KiB linear body maps $4000-$FFFF; the program starts at $4000. */
 #define BODY (48u * IMAGES_KIB)
@@ -2919,6 +2909,29 @@ static int write_carts(int argc, char **argv)
     return 0;
 }
 
+/* Confirms the generated history fixture is the selected serialized cart. */
+static int check_history_cart(const char *path)
+{
+    uint8_t actual[sizeof image];
+    build_history();
+    FILE *f = fopen(path, "rb");
+    if (f == NULL) {
+        fprintf(stderr, "cannot read %s\n", path);
+        return 1;
+    }
+    size_t count = fread(actual, 1u, sizeof actual, f);
+    int extra = fgetc(f);
+    int read_error = ferror(f);
+    int close_error = fclose(f);
+    if (count != sizeof actual || extra != EOF || read_error || close_error != 0 ||
+        memcmp(actual, image, sizeof image) != 0) {
+        fprintf(stderr, "history cartridge does not match the ordered-input image: %s\n", path);
+        return 1;
+    }
+    puts("generated history cartridge matches the ordered-input image");
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     static const struct {
@@ -2944,6 +2957,9 @@ int main(int argc, char **argv)
     };
     if (argc > 1 && strcmp(argv[1], "--write-cart") == 0) {
         return write_carts(argc, argv);
+    }
+    if (argc == 3 && strcmp(argv[1], "--check-history-cart") == 0) {
+        return check_history_cart(argv[2]);
     }
     if (argc != 2) {
         fprintf(stderr, "usage: muhtari-test-input <case>\n");

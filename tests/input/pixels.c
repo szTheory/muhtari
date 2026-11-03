@@ -2,10 +2,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "input_pixels.h"
 #include "palette.h"
-
-unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held);
-unsigned input_history_response(const uint8_t *rgb, uint32_t w, uint32_t h);
 
 static int input_color(const uint8_t *p, unsigned value, unsigned mask)
 {
@@ -38,14 +36,6 @@ unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held)
     }
     return 0u;
 }
-
-enum {
-    HISTORY_PIXEL_COMPLETE = 0u,
-    HISTORY_PIXEL_DIMENSIONS = 1u,
-    HISTORY_PIXEL_WAITING = 2u,
-    HISTORY_PIXEL_HELD = 3u,
-    HISTORY_PIXEL_SIGNATURE = 4u
-};
 
 static int history_pixel_is(const uint8_t *p, uint8_t r, uint8_t g, uint8_t b)
 {

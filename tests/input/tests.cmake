@@ -5,6 +5,7 @@
 # what the cartridge read (docs/hardware/controllers.md).
 add_executable(muhtari-test-input
   ${CMAKE_CURRENT_LIST_DIR}/test_input.c
+  ${CMAKE_CURRENT_LIST_DIR}/input_pixels.h
   ${CMAKE_CURRENT_LIST_DIR}/pixels.c
   ${CMAKE_SOURCE_DIR}/tests/cart/images.c
   ${CMAKE_SOURCE_DIR}/runner/movie.c)
@@ -48,3 +49,7 @@ muhtari_add_test(NAME input.cart_files
     --write-cart ${input_cart_dir}/input-history.a78 history
   LABELS input portable TIMEOUT 1)
 set_tests_properties(input.cart_files PROPERTIES FIXTURES_SETUP input_carts)
+muhtari_add_test(NAME input.history_cart
+  COMMAND muhtari-test-input --check-history-cart ${input_cart_dir}/input-history.a78
+  LABELS input portable TIMEOUT 1)
+set_tests_properties(input.history_cart PROPERTIES FIXTURES_REQUIRED input_carts)

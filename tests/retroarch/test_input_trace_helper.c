@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
@@ -131,19 +132,43 @@ static int descriptor_check(int core_fd, int ack_fd)
     REQUIRE(dir != NULL);
     int n = snprintf(path, sizeof path, "%s/helper.trace", dir);
     REQUIRE(n >= 0 && (size_t)n < sizeof path);
-    /* stat does not add an inspector descriptor to the observed fd3..127 set. */
+    /* stat does not add an inspector descriptor to the observed descriptor range. */
     REQUIRE(fstat(core_fd, &core) == 0 && stat(path, &helper) == 0 && stat(dir, &directory) == 0);
-    for (int i = 3; i < 128; i++) {
+    DIR *descriptors = opendir("/dev/fd");
+    REQUIRE(descriptors != NULL);
+    int inspector_fd = dirfd(descriptors);
+    int scan_error = 0;
+    const char *leak_kind = NULL;
+    for (;;) {
+        errno = 0;
+        struct dirent *entry = readdir(descriptors);
+        if (entry == NULL) {
+            scan_error = errno;
+            break;
+        }
+        char *end = NULL;
+        errno = 0;
+        long descriptor = strtol(entry->d_name, &end, 10);
+        if (errno != 0 || end == entry->d_name || *end != '\0' || descriptor < 3 ||
+            descriptor > INT_MAX)
+            continue;
+        int i = (int)descriptor;
+        if (i == inspector_fd)
+            continue;
         if (i == core_fd || i == ack_fd || fstat(i, &info) != 0)
             continue;
-        const char *kind = same_file(&info, &helper)      ? "helper file"
-                           : same_file(&info, &directory) ? "trace directory"
-                           : same_file(&info, &core)      ? "extra core alias"
-                                                          : NULL;
-        if (kind != NULL) {
-            fprintf(stderr, "trace helper leaked %s descriptor\n", kind);
-            return 1;
-        }
+        leak_kind = same_file(&info, &helper)      ? "helper file"
+                    : same_file(&info, &directory) ? "trace directory"
+                    : same_file(&info, &core)      ? "extra core alias"
+                                                   : NULL;
+        if (leak_kind != NULL)
+            break;
+    }
+    int close_error = closedir(descriptors);
+    REQUIRE(scan_error == 0 && close_error == 0);
+    if (leak_kind != NULL) {
+        fprintf(stderr, "trace helper leaked %s descriptor\n", leak_kind);
+        return 1;
     }
     return 0;
 }
@@ -308,6 +333,14 @@ static int descriptor_control(const char *exe, const char *root, const char *mod
         REQUIRE(snprintf(path, sizeof path, "%s/helper.trace", dir) > 0);
         alias = open(path, O_RDONLY);
         diagnostic = "trace helper leaked helper file descriptor\n";
+    } else if (strcmp(mode, "helper-high") == 0) {
+        REQUIRE(snprintf(path, sizeof path, "%s/helper.trace", dir) > 0);
+        alias = open(path, O_RDONLY);
+        REQUIRE(alias >= 3);
+        int high_alias = fcntl(alias, F_DUPFD, 128);
+        REQUIRE(high_alias >= 128 && close(alias) == 0);
+        alias = high_alias;
+        diagnostic = "trace helper leaked helper file descriptor\n";
     } else if (strcmp(mode, "directory") == 0) {
         alias = open(dir, O_RDONLY);
         diagnostic = "trace helper leaked trace directory descriptor\n";
@@ -317,7 +350,11 @@ static int descriptor_control(const char *exe, const char *root, const char *mod
     } else {
         REQUIRE(strcmp(mode, "clean") == 0 || strcmp(mode, "cloexec") == 0);
     }
-    REQUIRE((diagnostic == NULL || alias >= 3) && sentinel < 128 && alias < 128);
+    REQUIRE((diagnostic == NULL || alias >= 3) && sentinel < 128);
+    if (strcmp(mode, "helper-high") == 0)
+        REQUIRE(alias >= 128);
+    else
+        REQUIRE(alias < 128);
     int ack[2], errors[2];
     REQUIRE(pipe(ack) == 0 && pipe(errors) == 0);
     char core_text[32], ack_text[32];
