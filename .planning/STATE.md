@@ -6,9 +6,9 @@ current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: verifying
 stopped_at: 14-VERIFICATION.md — gaps_found
-last_updated: "2026-11-03T06:27:01.548Z"
+last_updated: "2026-11-03T10:54:15.387Z"
 last_activity: 2026-11-03
-state_head: 1590d7f153ffdc968699c08edfe0ce50d1dd2cfc
+state_head: 9827f55177a0991d2be2de85dd6b9ed8febd9588
 progress:
   total_phases: 3
   completed_phases: 1
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 plans 14-01 through 14-05 are complete, the review is clean, and the full local CI workflow passes. Goal verification found 15/21 truths; the only hosted run skipped RetroArch, leaving FRONT-02/03/04 pending. Phase 12 remains halted with all allowances spent.
+Current focus: Phase 14 plans 14-01 through 14-06 are complete. Local CI and hygiene pass; the hosted run failed Windows state-test builds, and verification found 15/21 truths. FRONT-02/03/04 remain pending. Phase 12 remains halted with all allowances spent.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — EXECUTING
-Plan: 5 of 5
-Status: Goal verification found gaps; Phase 14 remains pending.
-Next action: A fresh source-bound pinned-host evidence attempt needs owner authorization because the single host dispatch allowance is spent. After that scope is approved, run $gsd-plan-phase 14 --gaps from the Phase 14 worktree.
-Boundary: Phase 13 verification remains documented. Phase 14 plans 14-01 through 14-05 are complete, the clean review and final local workflow passed, and goal verification found 15/21 truths. The only source-bound host run failed upstream before RetroArch and uploaded no artifacts, leaving FRONT-02/03/04 pending (see 14-05-SUMMARY.md, 14-RESOURCE-EVIDENCE.md, and 14-VERIFICATION.md). Do not dispatch or launch RetroArch again under the spent allowance. Phase 12 remains halted at 0/4 with all hosted allowances spent and unavailable.
+Phase: 14 (Proven frontend states and responsive play) — VERIFYING
+Plan: 6 of 6
+Status: verifying
+Next action: A separate owner-approved gap scope is needed to repair the Windows C4100 build failure and obtain fresh source-bound host evidence. Once approved, run $gsd-plan-phase 14 --gaps. The one-shot host allowance is spent.
+Boundary: Phase 14 verification found 15/21 truths. Run 41618546347 failed Windows x64 and ARM64 builds on MSVC C4100 for unused self_path parameters; the required artifact join failed and RetroArch was skipped, so FRONT-02/03/04 remain pending. Local CI, hygiene, and hosted Ubuntu x64 ASan passed; local macOS arm64 ASan was unavailable because processes hung before main. No retry, rerun, RetroArch launch, or post-run push is authorized. Phase 12 remains halted with all allowances spent.
 
 ## Preserved Phase 12 position — halt remains binding
 

@@ -164,7 +164,8 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 1. A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip using the released core rather than only callback-level agreement.
 2. A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing and battery semantics remain correct; the frontend owns rewind storage and UI.
 3. A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative durable writes, and comparable completed-work performance evidence; capability declarations and user instructions claim only the qualified host path.
-**Plans:** 5/5 plans executed across 5 sequential waves.
+**Plans:** 6/6 plans executed across 5 sequential waves.
+- [x] 14-06-PLAN.md
 **Wave 1**
 - [x] 14-01-PLAN.md
 
@@ -229,6 +230,6 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 |---|---|---|---|
 | 12. Player-ready delivery and Playstead bridge | 3/9 | Halted at 12-01 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
-| 14. Proven frontend states and responsive play | 5/5 | In Progress | - |
+| 14. Proven frontend states and responsive play | 6/6 | In Progress | - |
 
-Next separate command: from the Phase 14 worktree, run `$gsd-execute-phase 14` to execute remaining plan 14-05. It contains one bounded source-bound Phase 14 CI dispatch. Phase 13 is complete. Phase 12 remains halted at 0/4, is not accepted or waived, and all its hosted allowances remain spent; do not resume Phase 12 or reuse those allowances.
+Next separate command: from the Phase 14 worktree, after a separate owner-approved gap scope, run `$gsd-plan-phase 14 --gaps`. Verification found a Windows warning-as-error failure and the one-shot host dispatch allowance is spent; the three actual-host requirements remain pending. Phase 13 is complete. Phase 12 remains halted at 0/4, is not accepted or waived, and all its hosted allowances remain spent; do not resume Phase 12 or reuse those allowances.

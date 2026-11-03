@@ -1,6 +1,6 @@
 ---
 phase: 14-proven-frontend-states-and-responsive-play
-verified: 2026-11-03T06:25:27Z
+verified: 2026-11-03T10:51:30Z
 status: gaps_found
 score: "15/21 must-haves verified"
 covered_files:
@@ -15,7 +15,11 @@ covered_files:
   - .planning/phases/14-proven-frontend-states-and-responsive-play/14-04-SUMMARY.md
   - .planning/phases/14-proven-frontend-states-and-responsive-play/14-05-PLAN.md
   - .planning/phases/14-proven-frontend-states-and-responsive-play/14-05-SUMMARY.md
+  - .planning/phases/14-proven-frontend-states-and-responsive-play/14-06-PLAN.md
+  - .planning/phases/14-proven-frontend-states-and-responsive-play/14-06-SUMMARY.md
   - .planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md
+  - .planning/phases/14-proven-frontend-states-and-responsive-play/14-REVIEW-DISPOSITION.md
+  - .planning/phases/14-proven-frontend-states-and-responsive-play/14-REVIEW.md
   - docs/libretro.md
   - docs/testing.md
   - libretro/muhtari_libretro.info.in
@@ -35,57 +39,70 @@ covered_files:
   - tests/retroarch/states.c
   - tests/retroarch/test.cfg.in
   - tests/roms/manifest.txt
-covered_digest: "v4:sha256:109a62725cbc5db9e8f851c8405f012f0c5b1d777aab57f2df12ad36cbfd8b86"
+covered_digest: "v4:sha256:fdbb853e45def5ae62c9a104844edc88f462693525b384152890844c82eb2fc2"
 behavior_unverified: 1
-behavior_unverified_items:
-  - truth: "The actual pinned RetroArch process is contained to loopback traffic and only the uniquely identified owned child is controlled and reaped."
-    test: "Run the bounded states case on the pinned host; verify loopback works, external UDP is rejected, paths remain isolated, and the owned child is reaped."
-    expected: "Containment is proven before mutation and the run controls only its owned host process within the configured bounds."
-    why_human: "The hosted run skipped before host preflight, and the local OS sandbox helper was denied, so local mocks cannot prove the real sandbox behavior."
 overrides_applied: 0
 decision_coverage:
   honored: 6
   total: 6
   not_honored: []
+re_verification:
+  previous_status: gaps_found
+  previous_score: "15/21 must-haves verified"
+  gaps_closed: []
+  gaps_remaining:
+    - "FRONT-02 actual pinned RetroArch save/load, progress, picture, and committed storage evidence"
+    - "FRONT-03 actual pinned RetroArch repeated rewind observations and deterministic continuation"
+    - "FRONT-04 actual pinned RetroArch run-ahead, containment, committed storage, and completed-work evidence"
+  regressions:
+    - "The modified state-test source still fails both Windows warning-as-error builds on unreferenced self_path parameters."
 gaps:
-  - truth: "A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress (Roadmap success criterion 1; FRONT-02)."
+  - truth: "A gamer can save and load through actual pinned RetroArch and resume the expected picture, progress, and committed storage (FRONT-02)."
     status: failed
-    reason: "The single authenticated workflow run failed upstream and skipped the RetroArch job before host observations; its artifact list is empty. Local tests exercise the library and controller seams but do not establish this host behavior."
+    reason: "Run 41618546347 failed both Windows builds on MSVC C4100 for self_path, then failed the required artifact join and aggregate. The RetroArch job was skipped and produced no host receipt or retroarch-frames artifact."
     artifacts:
+      - path: "tests/retroarch/states.c"
+        issue: "Windows x64 and ARM64 reject three unreferenced self_path parameters under /W4 /WX (C4100, promoted to C2220)."
+      - path: ".planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md"
+        issue: "Records the exact run, failed build jobs, skipped RetroArch job, and absent host artifacts."
       - path: ".github/workflows/ci.yml"
-        issue: "The host invocation is wired, but the dispatched run did not reach it."
-      - path: ".planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md"
-        issue: "Records a skipped host job and zero uploaded artifacts."
+        issue: "The source-bound host step is correctly gated and wired, but its required dependencies failed before invocation."
     missing:
-      - "A separately authorized source-bound pinned-host run with a fresh save/load picture and progress receipt."
-  - truth: "A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing, and battery semantics remain correct and frontend-owned (Roadmap success criterion 2; FRONT-03)."
+      - "A warning-clean Windows build of the state-test target."
+      - "A newly authorized source-bound host result with fresh progress, picture, save, and load observations."
+  - truth: "A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing, and battery semantics remain correct and frontend-owned (FRONT-03)."
     status: failed
-    reason: "The local owned-controller controls pass, but the only hosted run skipped before RetroArch; no actual rewind observations or host-owned storage behavior were recorded."
+    reason: "The local loaded-module and controller tests pass, but run 41618546347 skipped RetroArch before any rewind observation; there is no host receipt or retroarch-frames artifact."
     artifacts:
       - path: "tests/retroarch/states.c"
-        issue: "Controller and mock coverage exists, but the host callback path did not run."
+        issue: "Portable mock controls cover rewind decisions, but Windows compilation fails before the hosted consumer can run."
       - path: ".planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md"
-        issue: "Confirms no host rewind observations or artifacts."
+        issue: "Confirms no actual-host rewind observations were produced."
     missing:
-      - "A separately authorized pinned-host run recording repeated rewind progress, pictures, input, audio, timing, and persistence observations."
-  - truth: "A gamer can use the supported RetroArch run-ahead path with verified restore/replay, instance isolation, no speculative durable writes, and comparable completed-work evidence (Roadmap success criterion 3; FRONT-04)."
+      - "A source-bound host result with three fresh rewind progress reversals and matching pictures; existing in-process tests remain the evidence for deterministic input, audio, and timing semantics."
+  - truth: "A gamer can use the supported RetroArch run-ahead path with verified restore/replay, isolation, no speculative durable writes, and comparable completed-work evidence (FRONT-04)."
     status: failed
-    reason: "Local controller tests cover the supported one-frame path and durable-write guards, but the hosted run skipped before the host process. No actual host run-ahead or baseline/enabled completed-work measurements exist."
+    reason: "Run 41618546347 skipped RetroArch after both Windows builds and the required artifact join failed. No host containment, run-ahead, committed-storage, or baseline/enabled workload observations exist."
     artifacts:
       - path: "tests/retroarch/states.c"
-        issue: "Local sequence and mock controls exist; actual host observations are absent."
+        issue: "Local mock controls are present, but the state-test target does not compile on the required Windows jobs."
       - path: ".planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md"
-        issue: "Records no host run-ahead observations, measurements, or artifacts."
+        issue: "Confirms no host receipt, screenshot, raw save, or retroarch-frames artifact exists for this run."
     missing:
-      - "A separately authorized pinned-host run recording active/off run-ahead, restore/replay, isolation, durable bytes, and comparable completed-work measurements."
+      - "A source-bound host result proving active/off one-frame run-ahead, isolation, unchanged speculative durable bytes, committed bytes after SAVE_FILES, and comparable complete-work measurements."
+behavior_unverified_items:
+  - truth: "The actual pinned RetroArch process is contained to loopback traffic and only the uniquely identified owned child is controlled and reaped."
+    test: "Run the bounded states case on the pinned host; verify loopback works, external UDP is rejected, isolated paths are used, and the owned child is reaped."
+    expected: "Containment is proven before launch, and the run controls only its owned host process within the configured bounds."
+    why_human: "The hosted run skipped before host preflight, and local sandbox execution was unavailable; mocks cannot prove the real OS sandbox behavior. This requires a new authorized automated host scope, not owner UAT."
 ---
 
 # Phase 14: Proven Frontend States and Responsive Play Verification
 
 **Phase Goal:** Gamers can save/load, rewind and use the supported run-ahead path in the pinned RetroArch host with deterministic progress and safe persistent storage.
-**Verified:** 2026-11-03T06:25:27Z
+**Verified:** 2026-11-03T10:51:30Z
 **Status:** gaps_found
-**Re-verification:** No — initial verification.
+**Re-verification:** Yes — after the bounded evidence gap-closure plan.
 
 ## Goal Achievement
 
@@ -93,103 +110,126 @@ gaps:
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | The owned fixture exposes a committed counter in RAM, visible glyphs, and raw HSC bytes. | ✓ VERIFIED | `tests/diag/frontend-states.s`, `.cfg`, `.a78`, the manifest, and the diagnostic test are wired; the final `cmake --workflow --preset ci` passed. |
-| 2 | The public-library diagnostic independently judges progress, the complete picture, and committed battery bytes. | ✓ VERIFIED | `tests/diag/driver.c` contains an independent raw-byte/pixel oracle; `diag.frontend_states` passed in the final local workflow. |
-| 3 | Startup, zero, one-step, carry, wrap, save, restore, and replay expectations are explicit and repeatable. | ✓ VERIFIED | The owned fixture tests boundary cases and the final local workflow passed the diagnostic suite. |
-| 4 | Local recurring tests reject wrong pictures, stale progress, incomplete/extra save bytes, and representative injected faults. | ✓ VERIFIED | `tests/diag/tests.cmake` registers the fixture and comparator controls; the final workflow passed. The new progress-pair control also rejects a stale reference counter. |
-| 5 | Repeated loaded-module restores preserve the observed input, video, audio, and timing continuation. | ✓ VERIFIED | `libretro.host.state` is registered in `tests/libretro/tests.cmake` and passed in the final local workflow. |
-| 6 | In-process same-instance speculation restores committed battery state and preserves instance isolation. | ✓ VERIFIED | Loaded-module state tests and the recurring local state controls passed; this is local libretro evidence, not pinned-host qualification. |
-| 7 | The host consumer controls only a uniquely identified owned RetroArch child and isolated fixture/session paths. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Source has child/path guards and a bounded cleanup path, but the actual host process never started; see `behavior_unverified_items`. |
-| 8 | Actual pinned RetroArch save/load resumes the expected picture and numeric progress. | ✗ FAILED | The only host run skipped before RetroArch and uploaded no artifacts. This is the FRONT-02 blocker in `gaps`. |
-| 9 | Missing network containment, child/fixture identity, current progress, or bounded cleanup prevents a pass. | ✓ VERIFIED | Portable controller fault cases cover rejected preflight/identity/progress/cleanup inputs. The real OS-level network containment remains unverified under truth 7. |
-| 10 | Ordinary CI and pushes cannot launch the Phase 14 host case; it requires the explicit source-bound dispatch. | ✓ VERIFIED | `.github/workflows/ci.yml` gates the invocation on `workflow_dispatch` with `phase14_host=true`; the sole observed dispatch used that input. |
-| 11 | The owned controller observes at least three rewind reversals and judges each fresh picture. | ✓ VERIFIED | `retroarch.states.controls` exercises the complete controller sequence and its fault controls; the final local workflow passed. |
-| 12 | The supported local one-frame run-ahead path requires the expected ahead presentation and a single instance. | ✓ VERIFIED | The complete controller test covers active/off run-ahead, committed progress, and presentation; the final local workflow passed. |
-| 13 | Speculative run-ahead leaves durable bytes unchanged until explicit flush and committed-byte judgment. | ✓ VERIFIED | The controller test includes a speculative-media fault and explicit `SAVE_FILES`/committed-byte checks; the final local workflow passed. |
-| 14 | Capability metadata is tied to deterministic state tests, and docs keep host acceptance pending. | ✓ VERIFIED | `tests/cmake/info_claims.cmake` requires registered proof tests; `docs/libretro.md` states actual pinned-host qualification remains pending. |
-| 15 | Exactly one explicit dispatch runs the complete host case against the implementation source and same-run artifacts. | ⚠️ PARTIAL | Exactly one dispatch was authenticated, but it failed before the host job and produced no same-run artifacts. The intended host case did not run. |
-| 16 | Actual host state observations are accepted only from fresh host captures and source-bound receipts. | ✓ VERIFIED | The runner validates receipt identity, states mode, screenshot, and committed save; the workflow now requires a states-mode pass receipt. No host result was accepted from the skipped run. |
-| 17 | Completed baseline/enabled work and current process/frame/time use are recorded. | ⚠️ PARTIAL | Bounds and the failed-run timing are recorded, but no baseline/enabled host measurements exist because RetroArch never ran. |
-| 18 | User docs claim only the host/mode supported by observed evidence, and skipped evidence is not called qualified. | ✓ VERIFIED | `docs/libretro.md`, `docs/testing.md`, and `14-RESOURCE-EVIDENCE.md` all keep qualification pending and record the skipped job. |
-| 19 | Phase 12's halt and spent allowance remain unchanged. | ✓ VERIFIED | `.planning/STATE.md` still records Phase 12 halted at 0/4 with allowances spent; this execution performed no Phase 12 action. |
-| 20 | Actual RetroArch rewind preserves deterministic input, audio, timing, and battery semantics while the frontend owns rewind history/UI. | ✗ FAILED | No host rewind behavior or repeated-restore evidence exists; the hosted job skipped. This is the FRONT-03 blocker in `gaps`. |
-| 21 | Actual supported RetroArch run-ahead proves restore/replay, isolation, durable-write safety, and comparable completed-work performance. | ✗ FAILED | No host run-ahead or baseline/enabled measurements exist; the hosted job skipped. This is the FRONT-04 blocker in `gaps`. |
+| 1 | The owned fixture exposes a committed counter in RAM, visible glyphs, and raw HSC bytes. | ✓ VERIFIED | Fixture, manifest, diagnostic registration, and rebuild path remain present; the final local CI workflow passed. |
+| 2 | The public-library diagnostic independently judges progress, the complete picture, and committed battery bytes. | ✓ VERIFIED | `tests/diag/driver.c` has independent pixel and raw-byte checks; the registered diagnostic passed locally. |
+| 3 | Startup, zero, one-step, carry, wrap, save, restore, and replay expectations are explicit and repeatable. | ✓ VERIFIED | Existing fixture tests cover these transitions; local CI and the focused frontend state controls passed. |
+| 4 | Local recurring tests reject wrong pictures, stale progress, incomplete/extra save bytes, and representative injected faults. | ✓ VERIFIED | `diag.frontend_states` and comparator controls remain registered and passed in local CI. |
+| 5 | Repeated loaded-module restores preserve input, video, audio, and timing continuation. | ✓ VERIFIED | `libretro.host.state` remains registered and passed locally; no serializer changes were made in the gap-closure plan. |
+| 6 | In-process same-instance speculation restores committed battery state and preserves instance isolation. | ✓ VERIFIED | The loaded-module state test and local controller checks remain present and passed in the final local workflow. |
+| 7 | The host consumer controls only a uniquely identified owned RetroArch child and isolated fixture/session paths. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | The fail-closed source and mock controls remain wired, but the real host preflight did not execute; see `behavior_unverified_items`. |
+| 8 | Actual pinned RetroArch save/load resumes the expected picture and numeric progress. | ✗ FAILED | Run 41618546347 failed both Windows builds; the required artifact join failed, RetroArch was skipped, and no host receipt or frame artifact exists. |
+| 9 | Missing containment, child/fixture identity, current progress, or bounded cleanup prevents a pass. | ✓ VERIFIED | Portable fault controls still exercise these rejection paths and passed; actual OS containment remains unverified under truth 7. |
+| 10 | Ordinary CI cannot launch the Phase 14 host case; it requires the explicit source-bound dispatch input. | ✓ VERIFIED | `.github/workflows/ci.yml` gates the launch on `workflow_dispatch` and `phase14_host=true`; run metadata confirms that input path was selected. |
+| 11 | The owned controller observes three rewind reversals and judges each fresh picture. | ✓ VERIFIED | The named `retroarch.states.controls` test exercises this mock sequence and passed on the repaired tree; this is not host qualification. |
+| 12 | The supported one-frame run-ahead path requires the expected ahead presentation and a single instance. | ✓ VERIFIED | The local controller checks active/off presentation and committed progress and passed; host activation was not observed. |
+| 13 | Speculative run-ahead leaves durable bytes unchanged until explicit flush and committed-byte judgment. | ✓ VERIFIED | Local controls assert the flush boundary and fault speculative bytes; the actual host path did not run. |
+| 14 | Capability metadata is tied to deterministic state tests, and docs keep host acceptance pending. | ✓ VERIFIED | The metadata claim checker remains linked to proof registrations; current docs state qualification is pending after the failed dispatch. |
+| 15 | One explicit dispatch runs the complete host case against implementation source and same-run artifacts. | ✗ FAILED | Exactly one dispatch used source `0869c655008fc5344c428313ae519a91f5e9db42`, but its Windows failures prevented the quality join and host job; no host artifacts were produced. |
+| 16 | Host observations are accepted only from fresh captures and source-bound receipts. | ✓ VERIFIED | Workflow and receipt checks require source/run identity, screenshot, and raw-save evidence; no result was accepted from the skipped run. |
+| 17 | Completed baseline/enabled work and current host process/frame/time use are recorded. | ✗ FAILED | CI run duration and bounds are recorded, but the host scenario never ran, so baseline/enabled completed-work measurements and host frame/action counts are absent. |
+| 18 | User docs claim only host/mode supported by observed evidence. | ✓ VERIFIED | `docs/libretro.md` and `docs/testing.md` retain the pending qualification boundary and cite the Windows build failure. |
+| 19 | Phase 12's halt and spent allowance remain unchanged. | ✓ VERIFIED | Phase 12 was not touched; Phase 14 evidence records no Phase 12 operation or allowance renewal. |
+| 20 | Actual RetroArch rewind preserves deterministic continuation and frontend-owned history/UI. | ✗ FAILED | No actual host rewind observations exist because the host job was skipped. |
+| 21 | Actual supported RetroArch run-ahead proves restore/replay, isolation, storage safety, and comparable completed work. | ✗ FAILED | No host run-ahead, containment, committed-storage, or baseline/enabled measurement was produced. |
 
-**Score:** 15/21 truths verified (1 behavior-unverified, 2 partial, 3 failed).
+**Score:** 15/21 truths verified (1 present, behavior-unverified; 5 failed).
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `tests/diag/frontend-states.s`, `.cfg`, `.a78`, and `tests/roms/manifest.txt` | Owned fixture with an admitted build and independent progress/storage observations | ✓ EXISTS + SUBSTANTIVE + WIRED | Artifact checks passed 3/3 for the plan; the fixture rebuild and local diagnostic checks pass. |
-| `tests/diag/driver.c`, `tests/retroarch/compare.c`, and `tests/diag/tests.cmake` | Independent fixture, image, media, and fault judgments | ✓ EXISTS + SUBSTANTIVE + WIRED | All artifacts exist and the final local workflow runs the registered diagnostic/control tests. |
-| `tests/libretro/host.c` and `tests/libretro/tests.cmake` | Loaded-module state and repeated-restore tests | ✓ EXISTS + SUBSTANTIVE + WIRED | `libretro.host.state` is registered and passed locally. |
-| `tests/retroarch/states.c`, `tests/retroarch/run_retroarch.cmake`, and `.github/workflows/ci.yml` | Bounded actual-host consumer with states-mode receipt gate | ✓ EXISTS + SUBSTANTIVE + WIRED | Source invocation and state path are connected. Runtime host behavior is unverified because the only hosted run skipped before this step. |
-| `tests/retroarch` host receipt, screenshot, and save artifacts from run 41585416888 | Same-run evidence for actual host qualification | ✗ MISSING | GitHub reported zero artifacts; the RetroArch job was skipped. |
-| `docs/libretro.md`, `docs/testing.md`, and `14-RESOURCE-EVIDENCE.md` | Accurate qualification and run outcome | ✓ EXISTS + SUBSTANTIVE + WIRED | Docs correctly state pending qualification and describe the failed/skipped run without claiming a host pass. |
+| `tests/diag/frontend-states.s`, `.cfg`, `.a78`, and `tests/roms/manifest.txt` | Owned fixture and admitted binary | ✓ EXISTS + SUBSTANTIVE + WIRED | Prior verified fixture checks remain intact; final local CI passed. |
+| `tests/diag/driver.c`, `tests/retroarch/compare.c`, and `tests/diag/tests.cmake` | Independent progress, picture, media, and fault checks | ✓ EXISTS + SUBSTANTIVE + WIRED | Local recurring tests are registered and passed. |
+| `tests/libretro/host.c` and `tests/libretro/tests.cmake` | Loaded-module continuation and repeated restore tests | ✓ EXISTS + SUBSTANTIVE + WIRED | `libretro.host.state` is registered and passed locally. |
+| `tests/retroarch/states.c`, `tests/retroarch/run_retroarch.cmake`, and `.github/workflows/ci.yml` | Bounded host controller, launcher, and opt-in source-bound wiring | ✓ EXISTS + SUBSTANTIVE + WIRED | Workflow compiles the state driver, passes it to states mode, and requires its pass receipt. The Windows builds fail C4100 at three `self_path` parameters. |
+| `14-RESOURCE-EVIDENCE.md`, `docs/libretro.md`, and `docs/testing.md` | Authenticated run outcome and truthful qualification status | ✓ EXISTS + SUBSTANTIVE + WIRED | The evidence records run 41618546347; both docs leave qualification pending and describe the failed Windows builds. |
+| Same-run RetroArch receipt, screenshot, and committed raw-save from run 41618546347 | Actual-host qualification evidence | ✗ MISSING | The RetroArch job was skipped. The artifact API returned no `retroarch-frames` artifact, receipt, screenshot, or save. |
+
+**Plan artifact checks:** `verify.artifacts` passed 3/3 for Plan 14-05 and 4/4 for Plan 14-06. Key-link query heuristics found the workflow-to-launcher links directly. Manual tracing confirmed the indirect state-driver compile/launch chain and docs/evidence agreement; these content and command-line links are not represented as literal file-path references.
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |---|---|---|---|---|
-| Fixture binary | `tests/roms/manifest.txt` | Fixture admission and rebuild test | ✓ WIRED | Manifest admission is exercised by the passing diagnostic rebuild checks. |
-| `tests/diag/tests.cmake` | `tests/retroarch/compare.c` | Registered progress-pair/image controls | ✓ WIRED | The fixture test invokes the comparator; changing progress values and stale-reference controls pass. |
-| `tests/libretro/tests.cmake` | `tests/libretro/host.c` / loaded core module | `libretro.host.state` registration | ✓ WIRED | The loaded-module state test passed in the final workflow. |
-| `.github/workflows/ci.yml` | `tests/retroarch/run_retroarch.cmake` | Explicit `MODE=states` invocation and receipt gate | ✓ WIRED | Workflow source is explicit and action syntax passed local CI checks; the remote run did not reach the step. |
-| `tests/retroarch/run_retroarch.cmake` | `tests/retroarch/states.c` | Compiled owned state driver invoked with bounded arguments | ✓ WIRED | CMake invokes the driver in states mode; this host path was not executed in the remote run. |
-| `tests/retroarch/states.c` | `tests/retroarch/compare.c` | Progress-pair comparisons for fresh captures | ✓ WIRED | Host capture invokes the independent comparator with reference and actual counters; portable tests cover changing counters. |
-| `libretro/muhtari_libretro.info.in` | `tests/cmake/info_claims.cmake` | Deterministic state capability claim backed by inventory tests | ✓ WIRED | Claim checks and required proof registrations passed locally. |
+| `.github/workflows/ci.yml` | `tests/retroarch/run_retroarch.cmake` | Opt-in states-mode invocation | ✓ WIRED | The workflow invokes the launcher only for the explicit dispatch input and passes the state-driver path. |
+| Workflow build step | `tests/retroarch/states.c` | Compile and pass `STATE_DRIVER` | ✓ WIRED | The workflow builds the driver from this source; `run_retroarch.cmake` invokes that executable with `--host`. |
+| `tests/diag/tests.cmake` | `tests/retroarch/states.c` | Registered mock controls | ✓ WIRED | `retroarch.states.controls` compiles/runs the shared controller on the local CI path. |
+| `tests/cmake/quality_evidence.cmake` | `.github/workflows/ci.yml` | Exact-parent policy gate | ✓ WIRED | The CI quality step calls the verifier that resolves the workflow-dispatch source's immediate parent. |
+| `14-RESOURCE-EVIDENCE.md` | `docs/libretro.md` and `docs/testing.md` | Qualification follows authenticated outcome | ✓ WIRED (content) | The resource record says the host job was skipped; both docs state qualification remains pending for that result. |
+| Host launcher | Actual host receipt, screenshot, and save | Same-run output | ✗ NOT PRODUCED | The dependent job skipped before launch, so this final data-flow link has no output. |
+
+The GSD key-link heuristic reported false for indirect compile/launch and content-alignment links because the target paths are not named literally in the source file. The manual traces above show the actual commands and condition. This does not close the missing host-output link.
+
+### Data-Flow Trace (Level 4)
+
+| Artifact | Data variable | Source | Produces real host data | Status |
+|---|---|---|---|---|
+| Host receipt, screenshot, and raw save | `host-receipt.txt`, final BMP, `.srm` | The bounded RetroArch job and fixture execution | No; job skipped before execution | ✗ DISCONNECTED |
+| CI source/build receipt | Workflow source SHA and same-run archive artifacts | Run 41618546347 | Yes for the macOS arm64 archives; no host consumer output | ⚠️ PARTIAL |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Full local build, test, package, and release workflow | `cmake --workflow --preset ci` | Exit 0; ordinary and release checks passed after the review fixes. | ✓ PASS |
-| Portable controller and receipt negative controls | `ctest --test-dir build/ci -R '^retroarch\.states\.controls$' --output-on-failure` | Exit 0 after correcting the receipt-control test harness. | ✓ PASS |
-| Source-bound pinned RetroArch host case | `gh run watch 41585416888 --exit-status` | Exit 1; workflow failed upstream, RetroArch job skipped, zero artifacts. [Run](https://github.com/szTheory/muhtari/actions/runs/41585416888) | ✗ NOT RUN |
+| Local workflow, package, and release checks | `cmake --workflow --preset ci` | Exit 0; 693 ordinary and six release tests passed. | ✓ PASS |
+| Local state-controller controls | `ctest --test-dir build/ci -R '^retroarch\.states\.controls$' --no-tests=error --output-on-failure` | Exit 0 on the repaired source; mocked save/load, rewind, run-ahead, and fault controls passed. | ✓ PASS |
+| Local hygiene | `cmake --workflow --preset hygiene` | Exit 0; all 30 checks passed. | ✓ PASS |
+| Hosted Ubuntu x64 ASan | Run 41618546347, ASan job | Passed on the dispatched source. | ✓ PASS |
+| Windows x64 and ARM64 state-test builds | `gh run view 41618546347 --log-failed` | Both fail C4100 for `self_path` at lines 1176, 1292, and 1453; `/WX` promotes to C2220. | ✗ FAIL |
+| Required aggregate and RetroArch host scenario | `gh run view 41618546347 --json headSha,event,status,conclusion,url,jobs` | Run conclusion failure; quality and required aggregate failed; RetroArch job skipped. [Run 41618546347](https://github.com/szTheory/muhtari/actions/runs/41618546347) | ✗ NOT RUN |
+
+Local ASan on macOS arm64 remains unavailable after instrumented processes hung before `main`, including an unrelated API test. The owner-directed classification is unavailable, not pass; the source-bound Ubuntu x64 ASan lane passed. Details and command exits are in `14-RESOURCE-EVIDENCE.md`.
 
 ### Test Quality Audit
 
 | Test File | Linked Requirement | Active Coverage | Disabled | Circular | Assertion Level | Verdict |
 |---|---|---|---:|---|---|---|
-| `tests/diag/tests.cmake`, `tests/diag/driver.c` | FRONT-02 | `diag.frontend_states`, fixture rebuild and media controls | 0 | No; expected glyphs/bytes are independently specified | Value and multi-step behavior | ✓ PASS locally |
-| `tests/libretro/tests.cmake`, `tests/libretro/host.c` | FRONT-02/03/04 local contracts | `libretro.host.state` and loaded-module state controls | 0 | No; tests assert observed values and state continuation | Multi-step behavior | ✓ PASS locally; not host qualification |
-| `tests/retroarch/states.c`, `tests/retroarch/compare.c` | FRONT-02/03/04 host observation path | `retroarch.states.controls` mock and comparator controls | 0 | No; mock is explicitly not treated as host output | Multi-step/value | ✓ PASS locally; host path not run |
-| `.github/workflows/ci.yml`, `tests/retroarch/run_retroarch.cmake` | FRONT-02/03/04 actual-host gate | One dispatch attempted; host job skipped | — | No | End-to-end assertions are wired but did not execute | ✗ Host evidence absent |
+| `tests/diag/tests.cmake`, `tests/diag/driver.c` | FRONT-02 local contract | Fixture rebuild, progress/picture, and raw-media checks | 0 | No | Value and multi-step behavior | ✓ PASS locally; not host qualification |
+| `tests/libretro/tests.cmake`, `tests/libretro/host.c` | FRONT-02/03/04 local semantics | Loaded-module restore/replay, input/video/audio/timing and isolation | 0 | No | Multi-step behavior | ✓ PASS locally; not host qualification |
+| `tests/retroarch/states.c`, `tests/retroarch/compare.c` | FRONT-02/03/04 host path | Active mock controls; actual job skipped | 0 | No | Multi-step/value | ✓ PASS locally; hosted proof absent |
+| `.github/workflows/ci.yml`, `tests/retroarch/run_retroarch.cmake` | FRONT-02/03/04 actual host | Host dependency path and receipt gate | — | No | End-to-end path did not execute | ✗ Host evidence absent |
 
-Disabled requirement tests found: 0. Circular expected-value generation found: 0. The test files contain fixture/output writes, but their expected values are independently specified; none are generated by the system under test. The host test itself was skipped, so its end-to-end assertion strength has not been observed.
+No disabled requirement tests or circular expected-value generation were found in the current requirement-linked test sources. The Windows compile blocker prevents the host consumer from reaching its intended end-to-end assertions in the required run.
 
 ### Requirements Coverage
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |---|---|---|---|---|
-| FRONT-02 | 14-01 through 14-05 | Save/load in pinned RetroArch restores expected picture, progress, and committed storage. | BLOCKED | Local fixture and controller checks pass; the only host run skipped before RetroArch and uploaded no artifacts. |
-| FRONT-03 | 14-02 through 14-05 | Actual RetroArch rewind preserves deterministic behavior and frontend-owned history. | BLOCKED | Local controller and libretro tests pass, but there are no host rewind observations. |
-| FRONT-04 | 14-02 through 14-05 | Supported host run-ahead, isolation, durable storage safety, and measured completed work. | BLOCKED | Local controls and metadata checks pass; the host path and measurements were not run. |
+| FRONT-02 | 14-01 through 14-06 | Pinned RetroArch save/load restores expected picture, progress, and committed storage. | BLOCKED | Windows builds failed; required artifact join failed; host job skipped with no receipt or frame artifact. |
+| FRONT-03 | 14-02 through 14-06 | Actual RetroArch rewind preserves deterministic behavior and frontend-owned history. | BLOCKED | Local semantic tests pass, but no host rewind observations exist. |
+| FRONT-04 | 14-02 through 14-06 | Supported host run-ahead, isolation, durable-storage safety, and measured completed work. | BLOCKED | Local controls pass, but host run-ahead, containment, durable bytes, and measurements were not observed. |
+
+No additional requirement is mapped to Phase 14 outside FRONT-02 through FRONT-04; no orphaned Phase 14 requirement was found.
 
 ### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| None | — | No debt markers, implementation placeholders, or disabled requirement tests found in scanned files. | — | No source anti-pattern blocker. |
+| `tests/retroarch/states.c` | 1176, 1292, 1453 | MSVC C4100: `self_path` is unused in non-POSIX builds; `/WX` raises C2220 | 🛑 Blocker | Windows x64 and ARM64 builds fail, removing required artifacts and preventing the RetroArch job from running. |
+
+No unresolved `TBD`, `FIXME`, or `XXX` marker was found in the scanned phase files. Existing `return NULL` statements are helper error paths, not empty implementations. The latest `14-REVIEW.md` independently records this same open blocker; its second finding is marked fixed in `14-REVIEW-DISPOSITION.md`.
 
 ### Probe Execution
 
-No `probe-*.sh` script is declared by the phase plans or summaries, and none was found under `scripts/`. The automatic probe classifications recorded in `14-RESOURCE-EVIDENCE.md` remain unresolved; no unrecorded probe result is inferred.
+No phase-declared `probe-*.sh` exists, and no conventional `scripts/*/tests/probe-*.sh` was found. The automatic specless probe report remains unresolved for FRONT-02 boundary/precision/idempotency/concurrency and unclassified for FRONT-03/FRONT-04; no host evidence supports changing those classifications.
 
 ### Decision Coverage
 
-The decision coverage gate reported **6 of 6 trackable CONTEXT.md decisions honored**, with no unhonored decisions. This is non-blocking.
+The Phase 14 decision-coverage check remains 6/6 honored, with no unhonored decisions. This does not change the blocking verification result.
+
+### Advisory (New Scope, Unevidenced)
+
+None. The open Windows build finding is tied to the Phase 14 gap-closure source and has reproducible hosted compiler output; it is not an unevidenced advisory.
 
 ### Human Verification Required
 
-No manual UAT is requested under this verification. The actual-host gap requires a separately authorized automated pinned-host run; the current one-dispatch allowance is spent.
+No owner UAT is requested. The remaining host evidence is agent-verifiable only through a future authorized pinned-host run; the consumed dispatch allowance cannot be reused under this scope.
 
 ### Gaps Summary
 
-The local fixture, comparator, loaded-module state contract, mock controller, metadata checks, and documentation pass local verification. Phase 14 is not achieved because the single source-bound workflow run failed before host execution, skipped RetroArch, and uploaded no artifacts. Therefore FRONT-02, FRONT-03, and FRONT-04 remain pending. The local sandbox helper was denied and does not prove host containment. Do not retry the host workflow or launch RetroArch under this scope; closing the three gaps requires a separately authorized host-evidence scope.
+The local fixture, independent comparators, loaded-module state tests, mock host controls, metadata checks, and pending-claim documentation remain present and pass their recorded local checks. Phase 14's goal is not achieved: run 41618546347 failed both Windows builds on unused `self_path` parameters, which caused the quality join and required aggregate to fail and RetroArch to skip. No source-bound host receipt, screenshot, raw save, rewind observations, run-ahead observations, containment proof, or completed-work measurements were produced. FRONT-02, FRONT-03, and FRONT-04 remain pending. The one newly authorized dispatch is spent; fixing the compile blocker and obtaining host evidence require a separate authorized scope.
 
 ---
 
-_Verified: 2026-11-03T06:25:27Z_  
+_Verified: 2026-11-03T10:51:30Z_
 _Verifier: the agent (gsd-verifier)_
