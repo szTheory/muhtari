@@ -33,3 +33,7 @@ endforeach()
 # Provisional: 0.02s locally for ten alias/region/size combinations.
 muhtari_add_test(NAME bios.load_aliases COMMAND muhtari-test-boot load_aliases
   LABELS bios portable TIMEOUT 1)
+
+# Keep the five short BIOS checks from competing with the wider CTest suite.
+set_tests_properties(bios.splash_skip bios.rejects_cart bios.k_window
+  bios.k_first_fetch bios.load_aliases PROPERTIES RUN_SERIAL TRUE)

@@ -522,3 +522,17 @@ confirms the property was honored in this attempt and that the earlier timeout d
 It does not establish that overlap caused the earlier timeout or that the scheduling change
 improves all hosted runs. The actual-host step remained unverified because its preceding battery
 job exited at the existing 300-line source guard; no frontend state behavior is inferred.
+
+MU-CI-018 (observed): With ctest --preset ci, a relative --output-junit path
+resolves under the preset's binary directory. A source-root receipt check can
+therefore fail with a missing-file error even after CTest passed and wrote the
+JUnit file. Use an absolute output path or locate and copy the same receipt
+before validating it; do not rerun a single-use test batch to correct receipt
+lookup.
+
+Evidence: Plan 14-13 ran the approved focused CTest batch once (exit 0, seven
+tests passed) with --output-junit build/phase14-gap13-evidence/junit-bios.xml;
+CTest wrote build/ci/build/phase14-gap13-evidence/junit-bios.xml. The initial
+source-root JUnit check exited 1 because that path was absent. Copying the
+exact generated receipt to the evidence directory let the seven-row inventory
+checker pass (exit 0). Run URL N/A-local; no host or CI run occurred.

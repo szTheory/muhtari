@@ -512,3 +512,57 @@ work begins. Plan 14-11 owns the complete ordinary/release workflows on the
 repaired candidate and on the frozen evidence commit whose immediate first
 parent is that candidate, followed by its separate host decision. The three
 frontend requirements remain pending.
+
+## Plan 14-13 authorized BIOS isolation result (local, 2026-11-03)
+
+### Owner decision and scope
+
+On 2026-11-03 the owner explicitly replied, “yes i authorize that,” to the
+Plan 14-13 checkpoint packet. The decision authorizes only RUN_SERIAL TRUE
+on bios.splash_skip, bios.rejects_cart, bios.k_window,
+bios.k_first_fetch, and bios.load_aliases, one CMake configure, metadata
+comparison/property/fault controls, and one focused BIOS CTest batch. It does
+not establish why the earlier full workflows timed out.
+
+The base checkout was d3d5ae2e7a44751643514bea422c6ce5989bdd98; the original
+tests/boot/tests.cmake blob was
+619b5cddd7bf72bee132fdf5c8944162e5517dc3 (Git blob ID). The repaired source blob is
+160a86846dac73b629a8e8dd536cb7c3d1feb386. The sole tracked source change adds
+the five scheduling properties. Commands, fixtures, labels, assertions, exact
+inventory rows, deadlines, CTest preset, and worker settings are unchanged.
+Each BIOS timeout remains one second.
+
+### Metadata and focused test receipts
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| ctest --preset ci --show-only=json-v1 > build/phase14-gap13-evidence/ctest-before.json | 0 | Captured pre-change metadata at the approved base before the source edit. The five target registrations had their expected commands, fixtures, labels, and one-second deadlines. |
+| cmake --preset ci | 0 | The single authorized configure. |
+| ctest --preset ci --show-only=json-v1 > build/phase14-gap13-evidence/ctest-after.json | 0 | Captured regenerated metadata; the suite still contains 694 tests. |
+| cmake -DROOT=. -DMODE=compare -DBEFORE=build/phase14-gap13-evidence/ctest-before.json -DAFTER=build/phase14-gap13-evidence/ctest-after.json -P build/phase14-gap13-evidence/check-bios-isolation.cmake | 0 | Only the five approved RUN_SERIAL properties were added; every other test and metadata field is preserved. Rechecked at the tracer gate. |
+| cmake -DROOT=. -DINPUT=build/phase14-gap13-evidence/ctest-after.json -DMODE=property -P build/phase14-gap13-evidence/check-bios-isolation.cmake | 0 | The five new properties, existing fuzz.regress.run property, unchanged target metadata, one-second deadlines, and exact seven-row inventory pass. Rechecked at the tracer gate. |
+| cmake -DROOT=. -DMODE=controls -DBEFORE=build/phase14-gap13-evidence/ctest-before.json -DAFTER=build/phase14-gap13-evidence/ctest-after.json -P build/phase14-gap13-evidence/check-bios-isolation.cmake | 0 | Rejected copied metadata with one required property removed, a new unrelated RUN_SERIAL, or a relaxed BIOS timeout. Rechecked at the tracer gate. |
+| ctest --preset ci -R '^(bios\.(splash_skip|rejects_cart|k_window|k_first_fetch|load_aliases))$' -N -V | 0 | Prelaunch selection resolved to exactly five BIOS tests plus built.openbios and built.simple; no project test started. |
+| ctest --preset ci -R '^(bios\.(splash_skip|rejects_cart|k_window|k_first_fetch|load_aliases))$' --no-tests=error --output-on-failure --output-junit build/phase14-gap13-evidence/junit-bios.xml | 0 | The single focused batch passed all seven tests: two fixture setups and five BIOS cases. Total CTest time was 0.26 seconds. This batch is consumed; it was not rerun. |
+| cmake -DJUNIT=build/phase14-gap13-evidence/junit-bios.xml -DINVENTORY=build/phase14-gap13-evidence/inventory-bios.txt -P tests/cmake/check_junit.cmake | 0 | JUnit receipt contains the exact seven inventory tests once each, with no skips or failures. Rechecked at the tracer gate. |
+| git diff --check && git diff --exit-code -- CMakePresets.json cmake/MuhtariTests.cmake tests/inventory/ci.txt .github/workflows/ci.yml | 0 | No whitespace errors or changes to protected configuration, CI, or the shared test inventory. |
+
+The JUnit command above resolved its relative output path under the ci preset's
+binary directory, producing
+build/ci/build/phase14-gap13-evidence/junit-bios.xml. The first receipt-check
+invocation pointed at the absent source-root path and exited 1 with
+-DJUNIT=<file> is required; no test was launched by that check. The exact CTest
+receipt was copied to build/phase14-gap13-evidence/junit-bios.xml, then the
+inventory check passed. No test was retried.
+
+The first checker implementation repeatedly parsed the complete metadata
+document and returned no result within its initial 30-second command window.
+It was replaced with a per-test-object comparison; the final compare,
+property, and three fault controls passed above. An attempt to stop that
+first metadata-only command exited 3 because the process-list service was
+unavailable. This did not launch or alter any project test.
+
+All local run URLs: N/A-local. The isolation property is a bounded scheduling
+mitigation only; the historical timeout cause remains unknown. Plan 14-11 owns
+the later complete ordinary/release workflows and its distinct host decision.
+FRONT-02, FRONT-03, and FRONT-04 remain pending.
