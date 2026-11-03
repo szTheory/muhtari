@@ -164,9 +164,9 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 1. A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip using the released core rather than only callback-level agreement.
 2. A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing and battery semantics remain correct; the frontend owns rewind storage and UI.
 3. A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative durable writes, and comparable completed-work performance evidence; capability declarations and user instructions claim only the qualified host path.
-**Plans:** 5 plans across 5 sequential waves.
+**Plans:** 1/5 plans executed across 5 sequential waves.
 **Wave 1**
-- [ ] 14-01-PLAN.md
+- [x] 14-01-PLAN.md
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 14-02-PLAN.md
@@ -229,6 +229,6 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 |---|---|---|---|
 | 12. Player-ready delivery and Playstead bridge | 3/9 | Halted at 12-01 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
-| 14. Proven frontend states and responsive play | 0/5 | Planned     | - |
+| 14. Proven frontend states and responsive play | 1/5 | In Progress | - |
 
 Next separate command: from the Phase 14 worktree, run `$gsd-execute-phase 14` once to execute all five Phase 14 plans continuously. The final plan contains one bounded source-bound Phase 14 CI dispatch. Phase 13 is complete. Phase 12 remains halted at 0/4, is not accepted or waived, and all its hosted allowances remain spent; do not resume Phase 12 or reuse those allowances.
