@@ -2943,8 +2943,8 @@ static int frontend_check_identity(const muhtari *m, uint16_t expected)
 {
     for (unsigned i = 0u; i < sizeof frontend_marker; i++) {
         if (muhtari__peek(m, (uint16_t)(FRONTEND_MARKER + i)) != frontend_marker[i]) {
-            fprintf(stderr, "frontend progress: marker byte %u at $%04X is %02X, expected %02X\n", i,
-                    FRONTEND_MARKER + i,
+            fprintf(stderr, "frontend progress: marker byte %u at $%04X is %02X, expected %02X\n",
+                    i, FRONTEND_MARKER + i,
                     (unsigned)muhtari__peek(m, (uint16_t)(FRONTEND_MARKER + i)),
                     (unsigned)frontend_marker[i]);
             return 1;
@@ -2960,15 +2960,17 @@ static int frontend_check_identity(const muhtari *m, uint16_t expected)
 
 static int frontend_check_hsc(const muhtari_battery_info *battery, uint16_t expected)
 {
-    if (battery->data == NULL || battery->bytes != FRONTEND_HSC_BYTES || battery->hsc_attached != 1u) {
-        fprintf(stderr, "frontend progress: HSC span is %zu bytes, attached=%u; expected 2048 attached\n",
+    if (battery->data == NULL || battery->bytes != FRONTEND_HSC_BYTES ||
+        battery->hsc_attached != 1u) {
+        fprintf(stderr,
+                "frontend progress: HSC span is %zu bytes, attached=%u; expected 2048 attached\n",
                 battery->bytes, battery->hsc_attached);
         return 1;
     }
     for (size_t i = 0u; i < FRONTEND_HSC_BYTES; i++) {
-        uint8_t want = i == FRONTEND_HSC_COUNTER     ? (uint8_t)expected
+        uint8_t want = i == FRONTEND_HSC_COUNTER        ? (uint8_t)expected
                        : i == FRONTEND_HSC_COUNTER + 1u ? (uint8_t)(expected >> 8)
-                                                       : 0xFFu;
+                                                        : 0xFFu;
         if (battery->data[i] != want) {
             fprintf(stderr, "frontend progress: HSC byte %zu is %02X, expected %02X for %04X\n", i,
                     (unsigned)battery->data[i], (unsigned)want, expected);
@@ -3028,7 +3030,8 @@ static int frontend_check_picture(uint16_t value, const uint8_t *pixels)
     int failed = 0;
     for (size_t i = 0u; i < FRONTEND_PIXELS; i++) {
         if (pixels[i] != expected[i]) {
-            fprintf(stderr, "frontend progress: picture %04X differs at (%zu,%zu): %02X, expected %02X\n",
+            fprintf(stderr,
+                    "frontend progress: picture %04X differs at (%zu,%zu): %02X, expected %02X\n",
                     value, i % 320u, i / 320u, (unsigned)pixels[i], (unsigned)expected[i]);
             failed = 1;
             break;
@@ -3174,8 +3177,8 @@ static int frontend_progress(const char *rom_path, const char *out)
        executes reset and reaches the first VBLANK; startup remains at zero. */
     muhtari_frame first = {0};
     first.size = (uint32_t)sizeof first;
-    if (muhtari_run_frame(m, &first) != MUHTARI_STATUS_OK ||
-        frontend_check_identity(m, 0u) || frontend_check_hsc(&battery, 0u))
+    if (muhtari_run_frame(m, &first) != MUHTARI_STATUS_OK || frontend_check_identity(m, 0u) ||
+        frontend_check_hsc(&battery, 0u))
         goto done;
 
     frontend_set_progress(m, 0u, &battery);
@@ -3233,7 +3236,8 @@ static int frontend_progress(const char *rom_path, const char *out)
         frontend_write_bmp("progress-0000-wrap.bmp", pixels) ||
         frontend_save_raw(&battery, "committed-0000.raw", 0u))
         goto done;
-    printf("frontend progress: startup, 0000..0040, 00FF carry, FFFF wrap, HSC and save/restore/replay PASS\n");
+    printf("frontend progress: startup, 0000..0040, 00FF carry, FFFF wrap, HSC and "
+           "save/restore/replay PASS\n");
     failed = 0;
 done:
     free(state);
@@ -3252,9 +3256,9 @@ static int frontend_progress_media(const char *path, uint32_t count)
         return 1;
     int failed = n != FRONTEND_HSC_BYTES;
     for (size_t i = 0u; i < FRONTEND_HSC_BYTES && !failed; i++) {
-        uint8_t want = i == FRONTEND_HSC_COUNTER     ? (uint8_t)count
+        uint8_t want = i == FRONTEND_HSC_COUNTER        ? (uint8_t)count
                        : i == FRONTEND_HSC_COUNTER + 1u ? (uint8_t)(count >> 8)
-                                                       : 0xFFu;
+                                                        : 0xFFu;
         if (bytes[i] != want) {
             fprintf(stderr, "frontend media: byte %zu is %02X, expected %02X\n", i,
                     (unsigned)bytes[i], (unsigned)want);

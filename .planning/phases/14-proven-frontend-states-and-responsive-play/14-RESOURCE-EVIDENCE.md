@@ -67,4 +67,28 @@ The critical path was `build (macos-x64)` at 689 seconds, including roughly 350 
 
 ## Follow-up boundary
 
-The run covers only source `1e8f019`; later documentation and formatting commits are not covered by it. The one-dispatch allowance is spent. Do not dispatch again, retry, or launch the frontend locally. The current-source change to baseline selection or any new host evidence requires a separately authorized scope and a new plan.
+The run covers only source `1e8f019`; later documentation and formatting commits are not covered by it. The original one-dispatch allowance described by this attempt is spent. The owner separately authorized one bounded Phase 14 gap-closure dispatch on 2026-11-03; that additional allowance remains unused until the gates below pass. Phase 12 remains halted. No retry or local frontend launch is authorized.
+
+## Plan 14-06 local gap-closure preflight
+
+Owner authorization on 2026-11-03 permits one additional `workflow_dispatch` with `phase14_host=true`, after the planned source, local, review, exact-parent, and publication preconditions pass. The original failed run above and Phase 12 allowance remain unchanged. No local RetroArch process was launched.
+
+The repair is limited to declaring POSIX `realpath` under strict C17 and compiling the monotonic clock helper only where its POSIX-only callers exist, plus pinned clang-format output in the four existing test sources. No controller, containment, host behavior, assertion, timeout, preset, or workflow topology changed. The independent read-only gap-diff review passed: the only semantic changes are `_XOPEN_SOURCE 700` on non-Windows/non-WASI and the `STATES_POSIX` guard; callers of the helper are POSIX-only; remaining changes are formatting.
+
+Local commands run on macOS arm64 against the repaired source:
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `cmake --workflow --preset ci` | 0 | Passed; 693 ordinary and six release tests passed, including compilation of the four changed C sources. |
+| `cmake -DJUNIT=build/ci/junit.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 0 | Ordinary inventory complete: 693 tests. |
+| `cmake -DJUNIT=build/ci/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release -P tests/cmake/check_junit.cmake` | 0 | Release inventory complete: six tests. |
+| `ctest --preset ci -R 'retroarch\\.states' --no-tests=error --output-on-failure` | 0 | Focused state controls passed; these use mocks and do not launch RetroArch. |
+| `cmake --workflow --preset hygiene` | 0 | Passed all 30 hygiene checks. |
+| `cmake -DJUNIT=build/hygiene/junit.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake` | 0 | Hygiene inventory complete: 30 checks. |
+| `git diff --check` and pinned clang-format 21 dry run for the four changed sources | 0 | No whitespace errors; changed sources meet the pinned formatter. |
+| `PATH="$PWD/build/phase14-tools:$PATH" cmake --workflow --preset asan` | 130 | Build completed, then macOS arm64 test processes hung before test output and were interrupted after repeated timeouts. |
+| `ctest --test-dir build/asan -R '^retroarch\\.states\\.controls$' --parallel 1 --no-tests=error --output-on-failure` | 8 | Focused ASan control timed out after 15.03 seconds while running `--fault-controls`. |
+
+ASan diagnosis: the instrumented unrelated `build/asan/tests/muhtari-test-api-v1` also hung with no output before `main`; the state binary emitted only `AddressSanitizer: libc interceptors initialized` before hanging. `ASAN_OPTIONS=detect_leaks=0` did not change the hang. The exact workflow reproduced timeouts outside the sandbox as well, including unrelated `input.cart_files`, `runner.boot_to_play`, and `basic.*` tests, so sandbox process-enumeration restrictions do not explain the failure. No source or preset was changed in response. Per the owner's 2026-11-03 decision, local macOS arm64 ASan is treated as unavailable; the single hosted Ubuntu x64 ASan job must pass before the host result can be accepted.
+
+The bounded ASan commands above did not pass locally. Their failure is a platform limitation, not evidence that the repaired code passed ASan. The exact immediate-parent checkout and its CI, hygiene, and inventory checks remain required; only local ASan is omitted there for the same documented macOS arm64 limitation. The host dispatch allowance remains unused until those checks and all publication preconditions pass.

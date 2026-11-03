@@ -2958,7 +2958,8 @@ static void case_state(void)
     refused_after.size = (uint32_t)sizeof refused_after;
     CHECK_EQ_U64(muhtari_get_battery(m, &refused_after), MUHTARI_STATUS_OK);
     CHECK_EQ_U64(refused_after.generation, refused_before.generation);
-    CHECK(refused_bytes != NULL && memcmp(refused_after.data, refused_bytes, refused_after.bytes) == 0);
+    CHECK(refused_bytes != NULL &&
+          memcmp(refused_after.data, refused_bytes, refused_after.bytes) == 0);
     free(refused_bytes);
     savestate_context_available = false;
     state_check_current(m, saved, bytes);
@@ -2973,7 +2974,8 @@ static void case_state(void)
         muhtari_battery_info branch_battery = {0};
         branch_battery.size = (uint32_t)sizeof branch_battery;
         CHECK_EQ_U64(muhtari_get_battery(m, &branch_battery), MUHTARI_STATUS_OK);
-        bool battery_changed = memcmp(branch_battery.data, saved_battery, branch_battery.bytes) != 0;
+        bool battery_changed =
+            memcmp(branch_battery.data, saved_battery, branch_battery.bytes) != 0;
         uint64_t branch_generation = branch_battery.generation;
         CHECK(p_unserialize(saved, bytes));
         CHECK_EQ_U64(muhtari_load_state(m, saved, bytes), MUHTARI_STATUS_OK);

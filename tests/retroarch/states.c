@@ -1,4 +1,7 @@
 /* Bounded RetroArch save/load control engine and owned mock transport. */
+#if !defined(__wasi__) && !defined(_WIN32)
+#define _XOPEN_SOURCE 700
+#endif
 #define _DARWIN_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #include <errno.h>
@@ -48,13 +51,12 @@
 #define STATES_BASELINE_ADVANCES STATES_ADVANCE
 #define STATES_RUNAHEAD_ADVANCES STATES_ADVANCE
 #define STATES_FINAL_ADVANCES 1u
-#define STATES_TOTAL_EXPLICIT_ADVANCES \
-    (2u * STATES_ADVANCE + STATES_HISTORY_ADVANCES + STATES_BASELINE_ADVANCES + \
+#define STATES_TOTAL_EXPLICIT_ADVANCES                                                             \
+    (2u * STATES_ADVANCE + STATES_HISTORY_ADVANCES + STATES_BASELINE_ADVANCES +                    \
      STATES_RUNAHEAD_ADVANCES + STATES_FINAL_ADVANCES)
-#define STATES_REWIND_TICK_BUDGET \
-    ((STATES_REWIND_WINDOW_MS * STATES_MAX_REFRESH_HZ + 999u) / 1000u)
-#define STATES_PRESENTED_FRAME_BUDGET \
-    (STATES_TOTAL_EXPLICIT_ADVANCES + STATES_REWIND_ACTIONS * STATES_REWIND_TICK_BUDGET + \
+#define STATES_REWIND_TICK_BUDGET ((STATES_REWIND_WINDOW_MS * STATES_MAX_REFRESH_HZ + 999u) / 1000u)
+#define STATES_PRESENTED_FRAME_BUDGET                                                              \
+    (STATES_TOTAL_EXPLICIT_ADVANCES + STATES_REWIND_ACTIONS * STATES_REWIND_TICK_BUDGET +          \
      STATES_STARTUP_FRAME_RESERVE)
 
 _Static_assert(STATES_TOTAL_EXPLICIT_ADVANCES <= STATES_FRAME_CAP,
@@ -124,6 +126,7 @@ enum states_progress_result {
     STATES_PROGRESS_COUNTER = 3,
 };
 
+#if STATES_POSIX
 static uint64_t states_now_ms(void)
 {
     struct timespec ts;
@@ -131,6 +134,7 @@ static uint64_t states_now_ms(void)
         return 0u;
     return (uint64_t)ts.tv_sec * 1000u + (uint64_t)ts.tv_nsec / 1000000u;
 }
+#endif
 
 static unsigned states_timeout(states_ops *ops, uint64_t deadline)
 {
@@ -389,7 +393,8 @@ static int states_restore_saved(states_ops *ops, unsigned saved, unsigned curren
         if (actual == saved)
             break;
         if (actual != current)
-            return states_fail(result, "LOAD_STATE produced neither the prior nor saved workload value");
+            return states_fail(result,
+                               "LOAD_STATE produced neither the prior nor saved workload value");
     }
     return states_wait_status(ops, 1, deadline, result);
 }
@@ -401,8 +406,7 @@ static int states_rewind_once(states_ops *ops, unsigned previous, unsigned *rest
         return states_fail(result, "rewind progress cannot be judged without unsigned wrap");
     if (states_wait_status(ops, 1, deadline, result) != 0)
         return 1;
-    if (ops->pause_toggle_once(ops->user) != 0 ||
-        states_wait_status(ops, 0, deadline, result) != 0)
+    if (ops->pause_toggle_once(ops->user) != 0 || states_wait_status(ops, 0, deadline, result) != 0)
         return states_fail(result, "rewind did not enter a GET_STATUS-confirmed running tick");
     if (ops->rewind_once(ops->user) != 0)
         return states_fail(result, "REWIND send failed");
@@ -425,8 +429,7 @@ static int states_rewind_once(states_ops *ops, unsigned previous, unsigned *rest
     }
     if (!reversed)
         return states_fail(result, "REWIND did not reverse fixture progress");
-    if (ops->pause_toggle_once(ops->user) != 0 ||
-        states_wait_status(ops, 1, deadline, result) != 0)
+    if (ops->pause_toggle_once(ops->user) != 0 || states_wait_status(ops, 1, deadline, result) != 0)
         return states_fail(result, "rewind tick did not return to a confirmed pause");
     if (ops->read_progress(ops->user, restored, states_timeout(ops, deadline)) != 0 ||
         *restored >= previous)
@@ -434,9 +437,8 @@ static int states_rewind_once(states_ops *ops, unsigned previous, unsigned *rest
     return 0;
 }
 
-static int states_measure_workload(states_ops *ops, unsigned saved, int runahead,
-                                  unsigned *frames, uint64_t deadline,
-                                  states_result *result, uint64_t *duration)
+static int states_measure_workload(states_ops *ops, unsigned saved, int runahead, unsigned *frames,
+                                   uint64_t deadline, states_result *result, uint64_t *duration)
 {
     uint64_t start = ops->now_ms(ops->user);
     unsigned current = 0u;
@@ -453,15 +455,16 @@ static int states_measure_workload(states_ops *ops, unsigned saved, int runahead
         if (states_advance_to(ops, frames, committed, deadline, result) != 0)
             return 1;
         if (states_wait_status(ops, 1, deadline, result) != 0)
-            return states_fail(result, "matched workload did not complete a paused committed frame");
+            return states_fail(result,
+                               "matched workload did not complete a paused committed frame");
         if (runahead) {
             if (committed == UINT16_MAX)
                 return states_fail(result, "one-frame presentation would wrap the fixture counter");
             if (ops->durable_sentinel(ops->user) != 0)
                 return states_fail(result, "speculative progress reached durable HSC bytes");
             if (states_capture(ops, committed + 1u, 3u, 0, deadline, result) != 0)
-                return states_fail(result,
-                                   "one-frame run-ahead presentation did not match committed memory");
+                return states_fail(
+                    result, "one-frame run-ahead presentation did not match committed memory");
             result->runahead_presented_progress = committed + 1u;
         } else if (states_capture(ops, committed, 3u, step == 1u, deadline, result) != 0) {
             return 1;
@@ -639,16 +642,15 @@ static int states_save_load(states_ops *ops, states_result *result)
     if (states_rewind_runahead(ops, saved, &frames, work_deadline, result) != 0)
         failed = 1;
 
-cleanup:
-    {
-        uint64_t now = ops->now_ms(ops->user);
-        unsigned cleanup_ms = now >= cleanup_deadline ? 0u :
-                              (cleanup_deadline - now < STATES_CLEANUP_MS
-                                   ? (unsigned)(cleanup_deadline - now)
-                                   : STATES_CLEANUP_MS);
-        if (ops->cleanup(ops->user, cleanup_ms) != 0 && !failed)
-            failed = states_fail(result, "owned child cleanup or reap failed");
-    }
+cleanup: {
+    uint64_t now = ops->now_ms(ops->user);
+    unsigned cleanup_ms = now >= cleanup_deadline ? 0u
+                                                  : (cleanup_deadline - now < STATES_CLEANUP_MS
+                                                         ? (unsigned)(cleanup_deadline - now)
+                                                         : STATES_CLEANUP_MS);
+    if (ops->cleanup(ops->user, cleanup_ms) != 0 && !failed)
+        failed = states_fail(result, "owned child cleanup or reap failed");
+}
     result->frames = frames;
     result->elapsed_ms = ops->now_ms(ops->user) - start;
     return failed ? 1 : 0;
@@ -876,9 +878,8 @@ static int mock_capture(void *user, unsigned expected, unsigned picture_id, int 
     if (mock->fault == MOCK_FAULT_STALE_REFERENCE)
         mock->picture_progress[picture_id] =
             (mock->picture_reference_progress[picture_id] + 1u) & 0xffffu;
-    return mock->picture_progress[picture_id] == mock->picture_reference_progress[picture_id]
-               ? 0
-               : 1;
+    return mock->picture_progress[picture_id] == mock->picture_reference_progress[picture_id] ? 0
+                                                                                              : 1;
 }
 
 static void mock_media_set(mock_session *mock, unsigned progress)
@@ -1043,8 +1044,7 @@ static int protected_unchanged(const protected_fixture *fixture, const char *sel
     if (waitpid(fixture->child, &status, WNOHANG) != 0)
         return 0;
     char actual[PATH_MAX];
-    if (process_path(fixture->child, actual, sizeof actual) != 0 ||
-        strcmp(actual, self_path) != 0)
+    if (process_path(fixture->child, actual, sizeof actual) != 0 || strcmp(actual, self_path) != 0)
         return 0;
     FILE *file = fopen(fixture->sentinel, "rb");
     if (file == NULL)
@@ -1157,9 +1157,9 @@ static int mock_cleanup(void *user, unsigned timeout_ms)
     }
     close(mock->child_stdin);
     mock->child_owned = 0;
-    mock->child_reaped = (WIFEXITED(status) && WEXITSTATUS(status) == 0) ||
-                         (WIFSIGNALED(status) &&
-                          (WTERMSIG(status) == SIGTERM || WTERMSIG(status) == SIGKILL));
+    mock->child_reaped =
+        (WIFEXITED(status) && WEXITSTATUS(status) == 0) ||
+        (WIFSIGNALED(status) && (WTERMSIG(status) == SIGTERM || WTERMSIG(status) == SIGKILL));
     return mock->child_reaped ? 0 : 1;
 }
 #else
@@ -1186,7 +1186,8 @@ static int run_controls(const char *self_path)
         return 2;
     strcpy(mock.self_path, self_path);
     if (spawn_mock_child(&mock) != 0) {
-        puts("TAP version 13\n1..1\nnot ok 1 - owned save load restores progress and judges fresh replay # process-start-failed");
+        puts("TAP version 13\n1..1\nnot ok 1 - owned save load restores progress and judges fresh "
+             "replay # process-start-failed");
         return 1;
     }
 #else
@@ -1224,11 +1225,11 @@ static int run_controls(const char *self_path)
         mock.child_reaped) {
         puts("ok 1 - owned state controller proves rewind and single-instance run-ahead");
         printf("# EXPLICIT_ADVANCES=%u PICTURE_OBSERVATIONS=%u REWIND_PROGRESS=%u,%u,%u "
-               "BASELINE_MS=%" PRIu64 " RUNAHEAD_MS=%" PRIu64 " CHILD_REAPED=%d ELAPSED_MS=%" PRIu64 "\n",
+               "BASELINE_MS=%" PRIu64 " RUNAHEAD_MS=%" PRIu64 " CHILD_REAPED=%d ELAPSED_MS=%" PRIu64
+               "\n",
                result.frames, mock.picture_generation, result.rewind_progress[0],
-               result.rewind_progress[1], result.rewind_progress[2],
-               result.baseline_elapsed_ms, result.runahead_elapsed_ms, mock.child_reaped,
-               result.elapsed_ms);
+               result.rewind_progress[1], result.rewind_progress[2], result.baseline_elapsed_ms,
+               result.runahead_elapsed_ms, mock.child_reaped, result.elapsed_ms);
         return 0;
     }
     printf("not ok 1 - owned state controller proves rewind and single-instance run-ahead\n"
@@ -1288,8 +1289,7 @@ static void tap_result(unsigned *count, unsigned *failures, const char *name, in
 }
 
 static int run_complete_workload_control(enum mock_fault fault, const char *expected_error,
-                                         const char *self_path,
-                                         const protected_fixture *protected,
+                                         const char *self_path, const protected_fixture *protected,
                                          char *detail, size_t detail_capacity)
 {
     mock_session mock;
@@ -1321,13 +1321,12 @@ static int run_complete_workload_control(enum mock_fault fault, const char *expe
                  result.rewind_progress[2] < result.rewind_progress[1] &&
                  mock.runahead_toggle_calls == 2u && mock.save_files_calls == 1u &&
                  result.baseline_frames == STATES_ADVANCE &&
-                 result.runahead_frames == STATES_ADVANCE &&
-                 result.baseline_elapsed_ms > 0u && result.runahead_elapsed_ms > 0u &&
-                 mock.paused && !mock.runahead_enabled &&
+                 result.runahead_frames == STATES_ADVANCE && result.baseline_elapsed_ms > 0u &&
+                 result.runahead_elapsed_ms > 0u && mock.paused && !mock.runahead_enabled &&
                  mock_durable_committed(&mock, mock.progress) == 0;
     } else {
-        passed = passed && rc != 0 && result.error != NULL &&
-                 strcmp(result.error, expected_error) == 0;
+        passed =
+            passed && rc != 0 && result.error != NULL && strcmp(result.error, expected_error) == 0;
     }
 #if STATES_POSIX
     passed = passed && protected_unchanged(protected, self_path);
@@ -1336,13 +1335,13 @@ static int run_complete_workload_control(enum mock_fault fault, const char *expe
 #endif
     if (!passed && detail != NULL && detail_capacity > 0u)
         (void)snprintf(detail, detail_capacity,
-                       "error=%s rc=%d progress=%u frames=%u rewinds=%u toggles=%u flushes=%u baseline=%u/%llu enabled=%u/%llu reaped=%d",
+                       "error=%s rc=%d progress=%u frames=%u rewinds=%u toggles=%u flushes=%u "
+                       "baseline=%u/%llu enabled=%u/%llu reaped=%d",
                        result.error != NULL ? result.error : "valid full sequence was not observed",
                        rc, mock.progress, result.frames, mock.rewind_calls,
-                       mock.runahead_toggle_calls, mock.save_files_calls,
-                       result.baseline_frames, (unsigned long long)result.baseline_elapsed_ms,
-                       result.runahead_frames, (unsigned long long)result.runahead_elapsed_ms,
-                       mock.child_reaped);
+                       mock.runahead_toggle_calls, mock.save_files_calls, result.baseline_frames,
+                       (unsigned long long)result.baseline_elapsed_ms, result.runahead_frames,
+                       (unsigned long long)result.runahead_elapsed_ms, mock.child_reaped);
     return passed;
 }
 
@@ -1351,8 +1350,8 @@ static void complete_workload_controls(unsigned *count, unsigned *failures, cons
 {
     char detail[512];
     memset(detail, 0, sizeof detail);
-    int passed = run_complete_workload_control(MOCK_FAULT_NONE, NULL, self_path, protected,
-                                               detail, sizeof detail);
+    int passed = run_complete_workload_control(MOCK_FAULT_NONE, NULL, self_path, protected, detail,
+                                               sizeof detail);
     tap_result(count, failures,
                "complete controller observes three rewind reversals and active one-frame run-ahead",
                passed, passed ? NULL : detail);
@@ -1376,13 +1375,13 @@ static void complete_workload_controls(unsigned *count, unsigned *failures, cons
          "SAVE_FILES did not return exact OK"},
         {"silent SAVE_FILES fails before durable judgement", MOCK_FAULT_SAVE_FILES_SILENT,
          "SAVE_FILES did not return exact OK"},
-        {"stale progress reference is rejected by the mock image judge",
-         MOCK_FAULT_STALE_REFERENCE, "fresh picture or independent pixel judgment failed"},
+        {"stale progress reference is rejected by the mock image judge", MOCK_FAULT_STALE_REFERENCE,
+         "fresh picture or independent pixel judgment failed"},
     };
     for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {
         memset(detail, 0, sizeof detail);
-        passed = run_complete_workload_control(cases[i].fault, cases[i].error, self_path,
-                                               protected, detail, sizeof detail);
+        passed = run_complete_workload_control(cases[i].fault, cases[i].error, self_path, protected,
+                                               detail, sizeof detail);
         tap_result(count, failures, cases[i].name, passed, passed ? NULL : detail);
     }
 }
@@ -1390,8 +1389,7 @@ static void complete_workload_controls(unsigned *count, unsigned *failures, cons
 static void parser_controls(unsigned *count, unsigned *failures)
 {
     static const uint32_t crc = 0x12ab34cdu;
-    static const char status[] =
-        "GET_STATUS PAUSED atari_7800,frontend-states.a78,crc32=12ab34cd";
+    static const char status[] = "GET_STATUS PAUSED atari_7800,frontend-states.a78,crc32=12ab34cd";
     unsigned progress = 0u;
     int paused = 0;
     tap_result(count, failures, "VERSION 1.22.2 is accepted",
@@ -1400,25 +1398,26 @@ static void parser_controls(unsigned *count, unsigned *failures)
                states_parse_version("1.22") == STATES_IDENTITY_VERSION, NULL);
     tap_result(count, failures, "paused status with exact system, fixture, and CRC is accepted",
                states_parse_status(status, crc, &paused) == STATES_IDENTITY_OK && paused, NULL);
-    tap_result(count, failures, "wrong GET_STATUS system_id is rejected by name",
-               states_parse_status(
-                   "GET_STATUS PAUSED another_core,frontend-states.a78,crc32=12ab34cd", crc,
-                   &paused) == STATES_IDENTITY_CORE,
-               NULL);
+    tap_result(
+        count, failures, "wrong GET_STATUS system_id is rejected by name",
+        states_parse_status("GET_STATUS PAUSED another_core,frontend-states.a78,crc32=12ab34cd",
+                            crc, &paused) == STATES_IDENTITY_CORE,
+        NULL);
     tap_result(count, failures, "wrong GET_STATUS fixture basename is rejected by name",
-               states_parse_status("GET_STATUS PLAYING atari_7800,other.a78,crc32=12ab34cd",
-                                   crc, &paused) == STATES_IDENTITY_CONTENT,
+               states_parse_status("GET_STATUS PLAYING atari_7800,other.a78,crc32=12ab34cd", crc,
+                                   &paused) == STATES_IDENTITY_CONTENT,
                NULL);
-    tap_result(count, failures, "wrong GET_STATUS CRC is rejected by name",
-               states_parse_status(
-                   "GET_STATUS PAUSED atari_7800,frontend-states.a78,crc32=12ab34ce", crc,
-                   &paused) == STATES_IDENTITY_CRC,
-               NULL);
+    tap_result(
+        count, failures, "wrong GET_STATUS CRC is rejected by name",
+        states_parse_status("GET_STATUS PAUSED atari_7800,frontend-states.a78,crc32=12ab34ce", crc,
+                            &paused) == STATES_IDENTITY_CRC,
+        NULL);
     tap_result(count, failures, "truncated or trailing GET_STATUS fields are rejected",
                states_parse_status("GET_STATUS PAUSED atari_7800,frontend-states.a78", crc,
                                    &paused) == STATES_IDENTITY_STATUS &&
-                   states_parse_status("GET_STATUS PAUSED atari_7800,frontend-states.a78,crc32=12ab34cd,extra",
-                                       crc, &paused) == STATES_IDENTITY_STATUS,
+                   states_parse_status(
+                       "GET_STATUS PAUSED atari_7800,frontend-states.a78,crc32=12ab34cd,extra", crc,
+                       &paused) == STATES_IDENTITY_STATUS,
                NULL);
     tap_result(count, failures, "READ_CORE_MEMORY marker and little-endian progress are parsed",
                states_parse_progress("READ_CORE_MEMORY 2300 4D 55 48 54 0C 00", &progress) ==
@@ -1474,9 +1473,8 @@ static int run_engine_control(const mock_control_case *test, const char *self_pa
     states_ops ops = mock_operations(&mock);
     states_result result;
     int rc = states_save_load(&ops, &result);
-    int passed = !mock.child_owned && mock.child_reaped &&
-                 mock.save_calls == test->saves && mock.load_calls == test->loads &&
-                 mock.frame_calls == test->frame_calls;
+    int passed = !mock.child_owned && mock.child_reaped && mock.save_calls == test->saves &&
+                 mock.load_calls == test->loads && mock.frame_calls == test->frame_calls;
     if (test->expected_error == NULL) {
         passed = passed && rc == 0 && result.error == NULL && mock.progress == 21u &&
                  mock.frames == STATES_TOTAL_EXPLICIT_ADVANCES &&
@@ -1507,8 +1505,8 @@ static int run_fault_controls(const char *self_path)
     puts("TAP version 13");
     parser_controls(&count, &failures);
     static const mock_control_case cases[] = {
-        {"valid owned save-load, rewind, run-ahead, and flush passes", MOCK_FAULT_NONE, NULL,
-         1u, 3u, STATES_TOTAL_EXPLICIT_ADVANCES, 0},
+        {"valid owned save-load, rewind, run-ahead, and flush passes", MOCK_FAULT_NONE, NULL, 1u,
+         3u, STATES_TOTAL_EXPLICIT_ADVANCES, 0},
         {"missing containment fails before mutation", MOCK_FAULT_NO_CONTAINMENT,
          "sandbox and child ownership preflight failed", 0u, 0u, 0u, 0},
         {"wrong version has a specific cause", MOCK_FAULT_VERSION,
@@ -1521,20 +1519,20 @@ static int run_fault_controls(const char *self_path)
          "GET_STATUS fixture CRC did not match the admitted ROM", 0u, 0u, 0u, 0},
         {"preexisting slot-zero state is rejected", MOCK_FAULT_SLOT_PRESENT,
          "state slot was not initially absent", 0u, 0u, 0u, 0},
-        {"ambiguous SAVE_STATE is sent once", MOCK_FAULT_SAVE_SILENCE,
-         "SAVE_STATE send failed", 1u, 0u, 0u, 0},
+        {"ambiguous SAVE_STATE is sent once", MOCK_FAULT_SAVE_SILENCE, "SAVE_STATE send failed", 1u,
+         0u, 0u, 0},
         {"unchanged state slot fails creation observation", MOCK_FAULT_SAVE_UNCHANGED,
          "fresh nonempty slot-zero state was not observed", 1u, 0u, 0u, 0},
         {"ambiguous FRAMEADVANCE is sent once", MOCK_FAULT_FRAME_SILENCE,
          "FRAMEADVANCE send failed", 1u, 0u, 1u, 0},
-        {"duplicate stale progress times out without another advance", MOCK_FAULT_DUPLICATE_PROGRESS,
-         "progress observation timed out", 1u, 0u, 1u, 0},
+        {"duplicate stale progress times out without another advance",
+         MOCK_FAULT_DUPLICATE_PROGRESS, "progress observation timed out", 1u, 0u, 1u, 0},
         {"out-of-order progress is rejected", MOCK_FAULT_OUT_OF_ORDER_PROGRESS,
          "progress observation was stale or skipped", 1u, 0u, 1u, 0},
         {"silent initial memory observation fails closed", MOCK_FAULT_PROGRESS_SILENCE,
          "initial fixture progress could not be read", 0u, 0u, 0u, 0},
-        {"ambiguous LOAD_STATE is sent once", MOCK_FAULT_LOAD_SILENCE,
-         "LOAD_STATE send failed", 1u, 1u, 8u, 0},
+        {"ambiguous LOAD_STATE is sent once", MOCK_FAULT_LOAD_SILENCE, "LOAD_STATE send failed", 1u,
+         1u, 8u, 0},
         {"unchanged LOAD_STATE fails restoration observation", MOCK_FAULT_LOAD_UNCHANGED,
          "LOAD_STATE did not restore saved progress", 1u, 1u, 8u, 0},
         {"stale picture capture cannot pass", MOCK_FAULT_STALE_CAPTURE,
@@ -1556,14 +1554,15 @@ static int run_fault_controls(const char *self_path)
 #endif
     for (size_t i = 0u; i < sizeof cases / sizeof cases[0]; i++) {
         int passed = run_engine_control(&cases[i], self_path, &protected);
-        tap_result(&count, &failures, cases[i].name, passed,
-                   "sequence cause, single-send count, child reap, or unrelated sentinel check failed");
+        tap_result(
+            &count, &failures, cases[i].name, passed,
+            "sequence cause, single-send count, child reap, or unrelated sentinel check failed");
     }
     complete_workload_controls(&count, &failures, self_path, &protected);
 #if STATES_POSIX
     int cleanup_ok = protected_destroy(&protected, self_path) == 0;
-    tap_result(&count, &failures, "test-owned unrelated child and save sentinel clean up", cleanup_ok,
-               "control fixture cleanup failed");
+    tap_result(&count, &failures, "test-owned unrelated child and save sentinel clean up",
+               cleanup_ok, "control fixture cleanup failed");
 #endif
     printf("1..%u\n", count);
     return failures == 0u ? 0 : 1;
@@ -1618,8 +1617,7 @@ static int copy_path(char *dst, size_t capacity, const char *src)
 static int path_is_within(const char *root, const char *path)
 {
     size_t n = strlen(root);
-    return strcmp(root, path) == 0 ||
-           (strncmp(root, path, n) == 0 && path[n] == '/');
+    return strcmp(root, path) == 0 || (strncmp(root, path, n) == 0 && path[n] == '/');
 }
 
 static int paths_overlap(const char *a, const char *b)
@@ -1702,8 +1700,7 @@ static int validate_host_paths(host_session *host)
         !path_is_within(root, ra) || !path_is_within(root, save) || paths_overlap(ra, save) ||
         rom_len <= suffix_len || strcmp(rom + rom_len - suffix_len, fixture_suffix) != 0)
         return 1;
-    if (strcmp(strrchr(rom, '/') != NULL ? strrchr(rom, '/') + 1 : rom,
-               "frontend-states.a78") != 0)
+    if (strcmp(strrchr(rom, '/') != NULL ? strrchr(rom, '/') + 1 : rom, "frontend-states.a78") != 0)
         return 1;
     if (copy_path(host->retroarch, sizeof host->retroarch, retroarch) != 0 ||
         copy_path(host->core, sizeof host->core, core) != 0 ||
@@ -1721,19 +1718,19 @@ static int validate_host_paths(host_session *host)
             return 1;
     }
     int n1 = snprintf(host->shot_dir, sizeof host->shot_dir, "%s/shots", host->ra_dir);
-    int n2 = snprintf(host->state_path, sizeof host->state_path,
-                      "%s/states/frontend-states.state", host->ra_dir);
+    int n2 = snprintf(host->state_path, sizeof host->state_path, "%s/states/frontend-states.state",
+                      host->ra_dir);
     int n3 = snprintf(host->config_path, sizeof host->config_path, "%s/test.cfg", host->ra_dir);
-    int n4 = snprintf(host->profile_path, sizeof host->profile_path,
-                      "%s/states-network.sb", host->ra_dir);
+    int n4 = snprintf(host->profile_path, sizeof host->profile_path, "%s/states-network.sb",
+                      host->ra_dir);
     int n5 = snprintf(host->log_path, sizeof host->log_path, "%s/retroarch.log", host->ra_dir);
-    int n6 = snprintf(host->media_path, sizeof host->media_path,
-                      "%s/frontend-states.srm", host->save_dir);
+    int n6 = snprintf(host->media_path, sizeof host->media_path, "%s/frontend-states.srm",
+                      host->save_dir);
     if (n1 < 0 || (size_t)n1 >= sizeof host->shot_dir || n2 < 0 ||
         (size_t)n2 >= sizeof host->state_path || n3 < 0 || (size_t)n3 >= sizeof host->config_path ||
         n4 < 0 || (size_t)n4 >= sizeof host->profile_path || n5 < 0 ||
-        (size_t)n5 >= sizeof host->log_path || n6 < 0 ||
-        (size_t)n6 >= sizeof host->media_path || !path_is_within(host->save_dir, host->media_path))
+        (size_t)n5 >= sizeof host->log_path || n6 < 0 || (size_t)n6 >= sizeof host->media_path ||
+        !path_is_within(host->save_dir, host->media_path))
         return 1;
     char final_shot[PATH_MAX];
     if (normalize_output_file(host->final_shot, root, final_shot, sizeof final_shot) != 0 ||
@@ -1742,11 +1739,10 @@ static int validate_host_paths(host_session *host)
     struct stat nested;
     char state_dir[PATH_MAX];
     int ns = snprintf(state_dir, sizeof state_dir, "%s/states", host->ra_dir);
-    if (ns < 0 || (size_t)ns >= sizeof state_dir ||
-        lstat(host->shot_dir, &nested) != 0 || !S_ISDIR(nested.st_mode) || S_ISLNK(nested.st_mode) ||
-        lstat(state_dir, &nested) != 0 || !S_ISDIR(nested.st_mode) || S_ISLNK(nested.st_mode) ||
-        !directory_empty(host->save_dir) || !directory_empty(host->shot_dir) ||
-        !directory_empty(state_dir))
+    if (ns < 0 || (size_t)ns >= sizeof state_dir || lstat(host->shot_dir, &nested) != 0 ||
+        !S_ISDIR(nested.st_mode) || S_ISLNK(nested.st_mode) || lstat(state_dir, &nested) != 0 ||
+        !S_ISDIR(nested.st_mode) || S_ISLNK(nested.st_mode) || !directory_empty(host->save_dir) ||
+        !directory_empty(host->shot_dir) || !directory_empty(state_dir))
         return 1;
     if (paths_overlap(host->final_shot, host->ra_dir) ||
         paths_overlap(host->final_shot, host->save_dir))
@@ -2165,8 +2161,13 @@ static int sandbox_helper(host_session *host, const char *self_path)
         if (dup2(out_pipe[1], STDOUT_FILENO) < 0)
             _exit(126);
         close(out_pipe[1]);
-        char *argv[] = {"/usr/bin/sandbox-exec", "-f", host->profile_path,
-                        self_exec, "--udp-helper", port_text, NULL};
+        char *argv[] = {"/usr/bin/sandbox-exec",
+                        "-f",
+                        host->profile_path,
+                        self_exec,
+                        "--udp-helper",
+                        port_text,
+                        NULL};
         execv(argv[0], argv);
         _exit(127);
     }
@@ -2208,8 +2209,8 @@ static int sandbox_helper(host_session *host, const char *self_path)
     char response[32] = {0};
     struct sockaddr_in from;
     socklen_t from_len = sizeof from;
-    ssize_t n = recvfrom(client, response, sizeof response - 1u, 0,
-                         (struct sockaddr *)&from, &from_len);
+    ssize_t n =
+        recvfrom(client, response, sizeof response - 1u, 0, (struct sockaddr *)&from, &from_len);
     if (n != 8 || strcmp(response, "LOOPBACK") != 0 ||
         ntohl(from.sin_addr.s_addr) != INADDR_LOOPBACK || ntohs(from.sin_port) != host->port ||
         read_line_fd(out_pipe[0], line, sizeof line, 250u) != 0 || strcmp(line, "LOOPBACK") != 0) {
@@ -2244,8 +2245,8 @@ static int sandbox_helper(host_session *host, const char *self_path)
         (void)waitpid(helper, NULL, 0);
         return 1;
     }
-    struct sockaddr_in external_target = {.sin_family = AF_INET, .sin_addr = external,
-                                          .sin_port = htons(host->port)};
+    struct sockaddr_in external_target = {
+        .sin_family = AF_INET, .sin_addr = external, .sin_port = htons(host->port)};
     if (sendto(external_client, "EXTERNAL", 8u, 0, (struct sockaddr *)&external_target,
                sizeof external_target) != 8) {
         close(external_client);
@@ -2287,8 +2288,8 @@ static int sandbox_helper(host_session *host, const char *self_path)
     if (reserve_port(host->port, &final_reserve, &final_port) != 0 || final_port != host->port)
         return 1;
     owner_count = 0u;
-    int owner_ok = socket_owners(host->port, owners, 8u, &owner_count) == 0 &&
-                   owner_count == 1u && owners[0] == getpid();
+    int owner_ok = socket_owners(host->port, owners, 8u, &owner_count) == 0 && owner_count == 1u &&
+                   owners[0] == getpid();
     if (!owner_ok) {
         close(final_reserve);
         return 1;
@@ -2305,8 +2306,8 @@ static int preflight_only(const char *self_path, const char *output_dir)
     if (canonical_path(output_dir, host.ra_dir, sizeof host.ra_dir) != 0 ||
         strcmp(host.ra_dir, "/") == 0)
         return 2;
-    int n = snprintf(host.profile_path, sizeof host.profile_path, "%s/states-network.sb",
-                     host.ra_dir);
+    int n =
+        snprintf(host.profile_path, sizeof host.profile_path, "%s/states-network.sb", host.ra_dir);
     if (n < 0 || (size_t)n >= sizeof host.profile_path ||
         access("/usr/bin/sandbox-exec", X_OK) != 0 || sandbox_helper(&host, self_path) != 0) {
         if (host.reserved_fd >= 0)
@@ -2315,8 +2316,9 @@ static int preflight_only(const char *self_path, const char *output_dir)
         return 1;
     }
     close(host.reserved_fd);
-    printf("states preflight: loopback UDP replied; non-loopback request was not delivered; port=%u\n",
-           (unsigned)host.port);
+    printf(
+        "states preflight: loopback UDP replied; non-loopback request was not delivered; port=%u\n",
+        (unsigned)host.port);
     return 0;
 }
 
@@ -2483,9 +2485,9 @@ static int spawn_retroarch(host_session *host)
     int log_fd = open(host->log_path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
     if (log_fd < 0)
         return 1;
-    char *argv[] = {"/usr/bin/sandbox-exec", "-f", host->profile_path, host->retroarch,
-                    "--verbose", "--config", host->config_path, "-L", host->core,
-                    frames_arg, host->rom, NULL};
+    char *argv[] = {
+        "/usr/bin/sandbox-exec", "-f", host->profile_path, host->retroarch, "--verbose", "--config",
+        host->config_path,       "-L", host->core,         frames_arg,      host->rom,   NULL};
     close(host->reserved_fd);
     host->reserved_fd = -1;
     pid_t pid = fork();
@@ -2547,8 +2549,8 @@ static int host_nci_send(host_session *host, const char *command)
                : 1;
 }
 
-static int host_nci_reply(host_session *host, const char *command, unsigned timeout_ms,
-                          char *reply, size_t capacity)
+static int host_nci_reply(host_session *host, const char *command, unsigned timeout_ms, char *reply,
+                          size_t capacity)
 {
     if (host_nci_send(host, command) != 0)
         return 1;
@@ -2719,8 +2721,8 @@ static int host_durable_committed(void *user, unsigned expected)
     return host_media_matches(user, expected, 0);
 }
 
-static int compare_capture(host_session *host, unsigned expected, unsigned picture_id,
-                           int baseline, const char *path)
+static int compare_capture(host_session *host, unsigned expected, unsigned picture_id, int baseline,
+                           const char *path)
 {
     char reference_value[8], actual_value[8];
     char reference_path[PATH_MAX], image_path[PATH_MAX];
@@ -2737,8 +2739,9 @@ static int compare_capture(host_session *host, unsigned expected, unsigned pictu
         return 1;
     (void)snprintf(reference_value, sizeof reference_value, "%04X", reference_progress & 0xffffu);
     (void)snprintf(actual_value, sizeof actual_value, "%04X", expected & 0xffffu);
-    char *argv[] = {host->compare, "--progress-pair", reference_value, actual_value,
-                    reference_path, image_path, NULL};
+    char *argv[] = {host->compare, "--progress-pair", reference_value,
+                    actual_value,  reference_path,    image_path,
+                    NULL};
     char output[1024] = {0};
     int status = 0;
     if (run_capture(argv, output, sizeof output, STATES_OBSERVE_MS, &status) != 0 || status != 0)
@@ -2948,8 +2951,7 @@ static int digest_is_hex(const char *digest)
     if (strlen(digest) != 64u)
         return 0;
     for (size_t i = 0u; i < 64u; i++)
-        if (!((digest[i] >= '0' && digest[i] <= '9') ||
-              (digest[i] >= 'a' && digest[i] <= 'f') ||
+        if (!((digest[i] >= '0' && digest[i] <= '9') || (digest[i] >= 'a' && digest[i] <= 'f') ||
               (digest[i] >= 'A' && digest[i] <= 'F')))
             return 0;
     return 1;
@@ -3020,8 +3022,7 @@ static int host_run(int argc, char **argv, const char *self_path)
     if (validate_host_paths(&host) != 0 || core_digest_matches(host.core, host.core_sha256) != 0)
         return 1;
     host.start_ms = states_now_ms();
-    if (access("/usr/bin/sandbox-exec", X_OK) != 0 ||
-        sandbox_helper(&host, self_path) != 0 ||
+    if (access("/usr/bin/sandbox-exec", X_OK) != 0 || sandbox_helper(&host, self_path) != 0 ||
         states_now_ms() >= host.start_ms + STATES_WORK_MS || update_config_port(&host) != 0 ||
         host_validate_runahead_config(&host) != 0) {
         fprintf(stderr, "states: fail-closed sandbox UDP containment preflight\n");
