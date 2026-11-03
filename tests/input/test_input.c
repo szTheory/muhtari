@@ -1337,6 +1337,28 @@ static int proline_one_button(void)
         {&plain, PROLINES "|......|......|...BB|\n", {0xFFu, 0x3Fu, L, L, L, L, H, H}, 0u, 0u},
     };
     check_rows("proline_one_button", rows, sizeof rows / sizeof rows[0]);
+    /* The history fixture's completion band is centered at row 94 and uses
+       palette value $46. The plain register-band cart has no sticky result. */
+    muhtari *history = boot(&plain);
+    CHECK(history != NULL);
+    if (history != NULL) {
+        frame(history, NULL); /* cartridge hand-off frame */
+        muhtari_input input;
+        memset(&input, 0, sizeof input);
+        input.size = (uint32_t)sizeof input;
+        input.device[0] = MUHTARI_PORT_PROLINE;
+        input.device[1] = MUHTARI_PORT_PROLINE;
+        input.buttons[0] = MUHTARI_BUTTON_UP | MUHTARI_BUTTON_1;
+        CHECK_EQ_U64(muhtari_set_input(history, &input), MUHTARI_STATUS_OK);
+        frame(history, video);
+        input.buttons[0] = 0u;
+        CHECK_EQ_U64(muhtari_set_input(history, &input), MUHTARI_STATUS_OK);
+        frame(history, video);
+        CHECK_EQ_U64(muhtari_set_input(history, &input), MUHTARI_STATUS_OK);
+        frame(history, video);
+        CHECK_EQ_HEX(video[94u * MUHTARI__WIDTH + 160u], 0x46u);
+        muhtari_destroy(history);
+    }
     return check_failures == 0;
 }
 
