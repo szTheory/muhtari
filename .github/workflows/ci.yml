@@ -9,6 +9,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      phase14_host:
+        description: "Run the opt-in Phase 14 owned save/load host case"
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       ref:
@@ -522,6 +528,31 @@ jobs:
           grep -q 'signature-only stub' build/ra-battery-2/retroarch.log
           test ! -e build/ra-battery-2/system/highscre.bin
           test "$(cat tests/retroarch/* | wc -l | tr -d ' ')" -le 300
+      - name: Opt-in owned RetroArch save/load control
+        if: github.event_name == 'workflow_dispatch' && inputs.phase14_host == true
+        run: |
+          test -x build/runner/bin/muhtari-run
+          test -s build/library/lib/libmuhtari.a
+          test -s build/libretro/cores/muhtari_libretro.dylib
+          test -s build/libretro/info/muhtari_libretro.info
+          mkdir -p build/frames/frontend-states
+          cc -std=c17 -O2 -Wall -Wextra -Werror tests/retroarch/states.c \
+            -o build/frames/states
+          cmake \
+            -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
+            -DCORE=build/libretro/cores/muhtari_libretro.dylib \
+            -DINFO=build/libretro/info/muhtari_libretro.info \
+            -DINFO_NAME=muhtari_libretro.info \
+            -DTEMPLATE=tests/retroarch/test.cfg.in \
+            -DSTATE_DRIVER=build/frames/states \
+            -DCOMPARE=build/frames/compare \
+            -DSTATE_OUT="$PWD/build/frames/frontend-states" \
+            -DRA_DIR="$PWD/build/frames/frontend-states/ra" \
+            -DSAVE_DIR="$PWD/build/frames/frontend-states/save" \
+            -DFRAMES=120 \
+            -DROM=tests/diag/frontend-states.a78 \
+            -DSHOT="$PWD/build/frames/frontend-states/final.bmp" \
+            -P tests/retroarch/run_retroarch.cmake
       # Fault prevented: a compare that cannot fail. One byte of pixel (7,3)
       # in a copy of the runner's BMP is inverted, at an offset read from
       # the BMP header; the tool must exit 1 naming exactly that pixel.

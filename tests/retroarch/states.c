@@ -1,43 +1,1913 @@
-/* Portable owned-child state controls; production host calls are added below. */
+/* Bounded RetroArch save/load control engine and owned mock transport. */
+#define _DARWIN_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#include <errno.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
-typedef struct mock_session {
-    unsigned progress;
-    unsigned picture_generation;
-    int child_owned;
-} mock_session;
+#if !defined(__wasi__) && !defined(_WIN32)
+#define STATES_POSIX 1
+#include <arpa/inet.h>
+#include <dirent.h>
+#include <ifaddrs.h>
+#include <fcntl.h>
+#include <net/if.h>
+#include <poll.h>
+#include <signal.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#if defined(__APPLE__)
+#include <libproc.h>
+#endif
+#else
+#define STATES_POSIX 0
+#endif
 
-static int run_save_load(mock_session *session)
+#define STATES_WORK_MS 45000u
+#define STATES_CLEANUP_MS 5000u
+#define STATES_TOTAL_MS (STATES_WORK_MS + STATES_CLEANUP_MS)
+#define STATES_OBSERVE_MS 1000u
+#define STATES_FRAME_CAP 64u
+#define STATES_ADVANCE 8u
+
+typedef struct states_ops {
+    void *user;
+    uint64_t start_ms;
+    uint64_t (*now_ms)(void *user);
+    int (*preflight)(void *user, unsigned timeout_ms);
+    int (*verify_identity)(void *user, unsigned timeout_ms);
+    int (*read_progress)(void *user, unsigned *progress, unsigned timeout_ms);
+    int (*state_absent)(void *user, int absent, unsigned timeout_ms);
+    int (*save_once)(void *user);
+    int (*state_created)(void *user, unsigned timeout_ms);
+    int (*frame_once)(void *user);
+    int (*load_once)(void *user);
+    int (*capture)(void *user, unsigned expected, unsigned picture_id, int baseline,
+                   unsigned timeout_ms);
+    int (*cleanup)(void *user, unsigned timeout_ms);
+} states_ops;
+
+typedef struct states_result {
+    unsigned frames;
+    uint64_t elapsed_ms;
+    const char *error;
+} states_result;
+
+static uint64_t states_now_ms(void)
 {
-    (void)session;
-    return -1;
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+        return 0u;
+    return (uint64_t)ts.tv_sec * 1000u + (uint64_t)ts.tv_nsec / 1000000u;
 }
 
-static int run_controls(void)
+static unsigned states_timeout(states_ops *ops, uint64_t deadline)
 {
-    mock_session session = {.progress = 12u, .picture_generation = 4u, .child_owned = 1};
-    int result = run_save_load(&session);
-    int passed = result == 0 && session.progress == 12u && session.picture_generation >= 6u &&
-                 session.child_owned == 0;
+    uint64_t now = ops->now_ms(ops->user);
+    if (now >= deadline)
+        return 0u;
+    uint64_t remaining = deadline - now;
+    return remaining < STATES_OBSERVE_MS ? (unsigned)remaining : STATES_OBSERVE_MS;
+}
 
-    puts("TAP version 13");
-    puts("1..1");
-    if (passed) {
-        puts("ok 1 - owned save load restores progress and judges fresh replay");
-        return 0;
-    }
-    printf("not ok 1 - owned save load restores progress and judges fresh replay\n"
-           "  ---\n  error: valid mock sequence did not finish (result=%d progress=%u picture=%u child=%d)\n"
-           "  ...\n",
-           result, session.progress, session.picture_generation, session.child_owned);
+static int states_fail(states_result *result, const char *message)
+{
+    result->error = message;
     return 1;
 }
 
+static int states_read_exact(states_ops *ops, unsigned expected, uint64_t deadline,
+                             states_result *result)
+{
+    uint64_t observation_deadline = ops->now_ms(ops->user) + STATES_OBSERVE_MS;
+    if (observation_deadline > deadline)
+        observation_deadline = deadline;
+    for (;;) {
+        unsigned timeout = states_timeout(ops, observation_deadline);
+        if (timeout == 0u)
+            return states_fail(result, "progress observation timed out");
+        unsigned actual = 0u;
+        if (ops->read_progress(ops->user, &actual, timeout) != 0)
+            return states_fail(result, "progress observation protocol failed");
+        if (actual == expected)
+            return 0;
+        if (actual != ((expected - 1u) & 0xffffu))
+            return states_fail(result, "progress observation was stale or skipped");
+    }
+}
+
+static int states_advance_to(states_ops *ops, unsigned *frames, unsigned expected,
+                             uint64_t deadline, states_result *result)
+{
+    if (*frames >= STATES_FRAME_CAP)
+        return states_fail(result, "explicit FRAMEADVANCE cap exceeded");
+    if (states_timeout(ops, deadline) == 0u)
+        return states_fail(result, "work deadline exhausted before FRAMEADVANCE");
+    if (ops->frame_once(ops->user) != 0)
+        return states_fail(result, "FRAMEADVANCE send failed");
+    (*frames)++;
+    return states_read_exact(ops, expected, deadline, result);
+}
+
+static int states_capture(states_ops *ops, unsigned expected, unsigned picture_id, int baseline,
+                          uint64_t deadline, states_result *result)
+{
+    unsigned timeout = states_timeout(ops, deadline);
+    if (timeout == 0u)
+        return states_fail(result, "work deadline exhausted before picture observation");
+    if (ops->capture(ops->user, expected, picture_id, baseline, timeout) != 0)
+        return states_fail(result, "fresh picture or independent pixel judgment failed");
+    return 0;
+}
+
+/* Only state changes are sent here; callers observe their effects separately. */
+static int states_save_load(states_ops *ops, states_result *result)
+{
+    memset(result, 0, sizeof *result);
+    uint64_t start = ops->start_ms != 0u ? ops->start_ms : ops->now_ms(ops->user);
+    uint64_t work_deadline = start + STATES_WORK_MS;
+    uint64_t cleanup_deadline = start + STATES_TOTAL_MS;
+    int failed = 0;
+    unsigned saved = 0u;
+    unsigned frames = 0u;
+
+    if (ops->preflight(ops->user, states_timeout(ops, work_deadline)) != 0) {
+        failed = states_fail(result, "sandbox and child ownership preflight failed");
+        goto cleanup;
+    }
+    if (ops->verify_identity(ops->user, states_timeout(ops, work_deadline)) != 0) {
+        failed = states_fail(result, "version, fixture, or core identity failed");
+        goto cleanup;
+    }
+    if (ops->read_progress(ops->user, &saved, states_timeout(ops, work_deadline)) != 0) {
+        failed = states_fail(result, "initial fixture progress could not be read");
+        goto cleanup;
+    }
+    if (ops->state_absent(ops->user, 1, states_timeout(ops, work_deadline)) != 0) {
+        failed = states_fail(result, "state slot was not initially absent");
+        goto cleanup;
+    }
+    if (ops->save_once(ops->user) != 0) {
+        failed = states_fail(result, "SAVE_STATE send failed");
+        goto cleanup;
+    }
+    if (ops->state_created(ops->user, states_timeout(ops, work_deadline)) != 0) {
+        failed = states_fail(result, "fresh nonempty slot-zero state was not observed");
+        goto cleanup;
+    }
+
+    for (unsigned step = 1u; step <= STATES_ADVANCE; step++) {
+        unsigned expected = (saved + step) & 0xffffu;
+        if (states_advance_to(ops, &frames, expected, work_deadline, result) != 0) {
+            failed = 1;
+            goto cleanup;
+        }
+        if (step == 1u && states_capture(ops, expected, 1u, 1, work_deadline, result) != 0) {
+            failed = 1;
+            goto cleanup;
+        }
+        if (step == STATES_ADVANCE &&
+            states_capture(ops, expected, 2u, 1, work_deadline, result) != 0) {
+            failed = 1;
+            goto cleanup;
+        }
+    }
+
+    if (ops->load_once(ops->user) != 0) {
+        failed = states_fail(result, "LOAD_STATE send failed");
+        goto cleanup;
+    }
+    {
+        uint64_t restore_deadline = ops->now_ms(ops->user) + STATES_OBSERVE_MS;
+        if (restore_deadline > work_deadline)
+            restore_deadline = work_deadline;
+        for (;;) {
+            unsigned timeout = states_timeout(ops, restore_deadline);
+            if (timeout == 0u) {
+                failed = states_fail(result, "LOAD_STATE did not restore saved progress");
+                goto cleanup;
+            }
+            unsigned actual = 0u;
+            if (ops->read_progress(ops->user, &actual, timeout) != 0) {
+                failed = states_fail(result, "restored progress observation failed");
+                goto cleanup;
+            }
+            if (actual == saved)
+                break;
+            if (actual != ((saved + STATES_ADVANCE) & 0xffffu)) {
+                failed = states_fail(result, "LOAD_STATE progress was neither saved nor current");
+                goto cleanup;
+            }
+        }
+    }
+
+    for (unsigned step = 1u; step <= STATES_ADVANCE; step++) {
+        unsigned expected = (saved + step) & 0xffffu;
+        if (states_advance_to(ops, &frames, expected, work_deadline, result) != 0) {
+            failed = 1;
+            goto cleanup;
+        }
+        if (step == 1u && states_capture(ops, expected, 1u, 0, work_deadline, result) != 0) {
+            failed = 1;
+            goto cleanup;
+        }
+        if (step == STATES_ADVANCE &&
+            states_capture(ops, expected, 2u, 0, work_deadline, result) != 0) {
+            failed = 1;
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    {
+        uint64_t now = ops->now_ms(ops->user);
+        unsigned cleanup_ms = now >= cleanup_deadline ? 0u :
+                              (cleanup_deadline - now < STATES_CLEANUP_MS
+                                   ? (unsigned)(cleanup_deadline - now)
+                                   : STATES_CLEANUP_MS);
+        if (ops->cleanup(ops->user, cleanup_ms) != 0 && !failed)
+            failed = states_fail(result, "owned child cleanup or reap failed");
+    }
+    result->frames = frames;
+    result->elapsed_ms = ops->now_ms(ops->user) - start;
+    return failed ? 1 : 0;
+}
+
+typedef struct mock_session {
+    uint64_t now;
+    unsigned progress;
+    unsigned saved;
+    unsigned picture_generation;
+    unsigned pictures[3];
+    unsigned frames;
+    int child_owned;
+    int state_exists;
+    int child_reaped;
+#if STATES_POSIX
+    pid_t child_pid;
+    int child_stdin;
+    char self_path[PATH_MAX];
+#endif
+} mock_session;
+
+static uint64_t mock_now(void *user)
+{
+    mock_session *mock = user;
+    return mock->now;
+}
+
+static int mock_preflight(void *user, unsigned timeout_ms)
+{
+    mock_session *mock = user;
+    (void)timeout_ms;
+    mock->now += 1u;
+    return mock->child_owned ? 0 : 1;
+}
+
+static int mock_identity(void *user, unsigned timeout_ms)
+{
+    mock_session *mock = user;
+    (void)timeout_ms;
+    mock->now += 1u;
+    return mock->child_owned ? 0 : 1;
+}
+
+static int mock_progress(void *user, unsigned *progress, unsigned timeout_ms)
+{
+    mock_session *mock = user;
+    (void)timeout_ms;
+    mock->now += 1u;
+    *progress = mock->progress;
+    return 0;
+}
+
+static int mock_state_absent(void *user, int absent, unsigned timeout_ms)
+{
+    mock_session *mock = user;
+    (void)timeout_ms;
+    mock->now += 1u;
+    return absent ? mock->state_exists : !mock->state_exists;
+}
+
+static int mock_save(void *user)
+{
+    mock_session *mock = user;
+    mock->saved = mock->progress;
+    mock->state_exists = 1;
+    mock->now += 1u;
+    return 0;
+}
+
+static int mock_state_created(void *user, unsigned timeout_ms)
+{
+    mock_session *mock = user;
+    (void)timeout_ms;
+    mock->now += 1u;
+    return mock->state_exists ? 0 : 1;
+}
+
+static int mock_frame(void *user)
+{
+    mock_session *mock = user;
+    mock->progress = (mock->progress + 1u) & 0xffffu;
+    mock->frames++;
+    mock->now += 1u;
+    return 0;
+}
+
+static int mock_load(void *user)
+{
+    mock_session *mock = user;
+    mock->progress = mock->saved;
+    mock->now += 1u;
+    return 0;
+}
+
+static int mock_capture(void *user, unsigned expected, unsigned picture_id, int baseline,
+                        unsigned timeout_ms)
+{
+    mock_session *mock = user;
+    (void)timeout_ms;
+    mock->now += 1u;
+    if (mock->progress != expected || picture_id == 0u || picture_id > 2u)
+        return 1;
+    mock->picture_generation++;
+    unsigned picture = expected;
+    if (baseline) {
+        mock->pictures[picture_id] = picture;
+        return 0;
+    }
+    return mock->pictures[picture_id] == picture ? 0 : 1;
+}
+
+#if STATES_POSIX
+static int mock_child_main(void)
+{
+    char command = 0;
+    while (read(STDIN_FILENO, &command, 1u) == 1) {
+        if (command == 'Q')
+            return 0;
+    }
+    return 1;
+}
+
+static int process_path(pid_t pid, char *path, size_t capacity)
+{
+#if defined(__APPLE__)
+    if (proc_pidpath(pid, path, (uint32_t)capacity) <= 0)
+        return 1;
+    return 0;
+#else
+    char link[64];
+    int n = snprintf(link, sizeof link, "/proc/%ld/exe", (long)pid);
+    if (n < 0 || (size_t)n >= sizeof link)
+        return 1;
+    ssize_t got = readlink(link, path, capacity - 1u);
+    if (got <= 0 || (size_t)got >= capacity)
+        return 1;
+    path[got] = '\0';
+    return 0;
+#endif
+}
+
+static int spawn_mock_child(mock_session *mock)
+{
+    int pipefd[2];
+    if (pipe(pipefd) != 0)
+        return 1;
+    pid_t pid = fork();
+    if (pid < 0) {
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return 1;
+    }
+    if (pid == 0) {
+        close(pipefd[1]);
+        if (dup2(pipefd[0], STDIN_FILENO) < 0)
+            _exit(126);
+        close(pipefd[0]);
+        execl(mock->self_path, mock->self_path, "--mock-child", (char *)NULL);
+        _exit(127);
+    }
+    close(pipefd[0]);
+    mock->child_pid = pid;
+    mock->child_stdin = pipefd[1];
+    mock->child_owned = 1;
+    return 0;
+}
+
+static int child_is_ours(mock_session *mock)
+{
+    char actual[PATH_MAX];
+    return mock->child_pid > 0 && process_path(mock->child_pid, actual, sizeof actual) == 0 &&
+           strcmp(actual, mock->self_path) == 0;
+}
+
+static int wait_child(pid_t pid, unsigned timeout_ms, int *status)
+{
+    uint64_t deadline = states_now_ms() + timeout_ms;
+    for (;;) {
+        pid_t waited = waitpid(pid, status, WNOHANG);
+        if (waited == pid)
+            return 0;
+        if (waited < 0 && errno != EINTR)
+            return 1;
+        if (states_now_ms() >= deadline)
+            return 1;
+        struct timespec delay = {.tv_sec = 0, .tv_nsec = 10000000L};
+        (void)nanosleep(&delay, NULL);
+    }
+}
+
+static int mock_cleanup(void *user, unsigned timeout_ms)
+{
+    mock_session *mock = user;
+    if (!mock->child_owned)
+        return 0;
+    if (!child_is_ours(mock))
+        return 1;
+    if (write(mock->child_stdin, "Q", 1u) != 1)
+        return 1;
+    int status = 0;
+    if (wait_child(mock->child_pid, timeout_ms, &status) != 0) {
+        if (!child_is_ours(mock) || kill(mock->child_pid, SIGTERM) != 0)
+            return 1;
+        if (wait_child(mock->child_pid, timeout_ms, &status) != 0) {
+            if (!child_is_ours(mock) || kill(mock->child_pid, SIGKILL) != 0 ||
+                wait_child(mock->child_pid, timeout_ms, &status) != 0)
+                return 1;
+        }
+    }
+    close(mock->child_stdin);
+    mock->child_owned = 0;
+    mock->child_reaped = WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    return mock->child_reaped ? 0 : 1;
+}
+#else
+static int mock_cleanup(void *user, unsigned timeout_ms)
+{
+    mock_session *mock = user;
+    (void)timeout_ms;
+    mock->child_owned = 0;
+    mock->child_reaped = 1;
+    return 0;
+}
+#endif
+
+static int run_controls(const char *self_path)
+{
+    mock_session mock;
+    memset(&mock, 0, sizeof mock);
+    mock.progress = 12u;
+#if STATES_POSIX
+    if (strlen(self_path) >= sizeof mock.self_path)
+        return 2;
+    strcpy(mock.self_path, self_path);
+    if (spawn_mock_child(&mock) != 0) {
+        puts("TAP version 13\n1..1\nnot ok 1 - owned save load restores progress and judges fresh replay # process-start-failed");
+        return 1;
+    }
+#else
+    mock.child_owned = 1;
+#endif
+    states_ops ops = {
+        .user = &mock,
+        .now_ms = mock_now,
+        .preflight = mock_preflight,
+        .verify_identity = mock_identity,
+        .read_progress = mock_progress,
+        .state_absent = mock_state_absent,
+        .save_once = mock_save,
+        .state_created = mock_state_created,
+        .frame_once = mock_frame,
+        .load_once = mock_load,
+        .capture = mock_capture,
+        .cleanup = mock_cleanup,
+    };
+    states_result result;
+    int rc = states_save_load(&ops, &result);
+    puts("TAP version 13");
+    puts("1..1");
+    if (rc == 0 && mock.progress == 20u && mock.frames == 16u && !mock.child_owned &&
+        mock.child_reaped) {
+        puts("ok 1 - owned save load restores progress and judges fresh replay");
+        printf("# FRAME_ACTIONS=%u PICTURE_OBSERVATIONS=%u CHILD_REAPED=%d ELAPSED_MS=%" PRIu64 "\n",
+               result.frames, mock.picture_generation, mock.child_reaped, result.elapsed_ms);
+        return 0;
+    }
+    printf("not ok 1 - owned save load restores progress and judges fresh replay\n"
+           "  ---\n  error: %s progress=%u frames=%u child_owned=%d reaped=%d\n  ...\n",
+           result.error != NULL ? result.error : "valid mock scenario produced wrong result",
+           mock.progress, mock.frames, mock.child_owned, mock.child_reaped);
+    return 1;
+}
+
+#if defined(__APPLE__)
+typedef struct host_session {
+    char retroarch[PATH_MAX];
+    char core[PATH_MAX];
+    char core_sha256[65];
+    char info[PATH_MAX];
+    char rom[PATH_MAX];
+    char ra_dir[PATH_MAX];
+    char save_dir[PATH_MAX];
+    char output_root[PATH_MAX];
+    char compare[PATH_MAX];
+    char final_shot[PATH_MAX];
+    char log_path[PATH_MAX];
+    char profile_path[PATH_MAX];
+    char config_path[PATH_MAX];
+    char state_path[PATH_MAX];
+    char shot_dir[PATH_MAX];
+    char captures[3][PATH_MAX];
+    unsigned capture_count;
+    unsigned frames;
+    uint32_t fixture_crc;
+    uint16_t port;
+    pid_t child;
+    int child_owned;
+    int child_reaped;
+    int child_status;
+    int udp_fd;
+    int reserved_fd;
+    uint64_t start_ms;
+    char child_path[PATH_MAX];
+} host_session;
+
+static int copy_path(char *dst, size_t capacity, const char *src)
+{
+    size_t n = strlen(src);
+    if (n == 0u || n >= capacity)
+        return 1;
+    memcpy(dst, src, n + 1u);
+    return 0;
+}
+
+static int path_is_within(const char *root, const char *path)
+{
+    size_t n = strlen(root);
+    return strcmp(root, path) == 0 ||
+           (strncmp(root, path, n) == 0 && path[n] == '/');
+}
+
+static int paths_overlap(const char *a, const char *b)
+{
+    return path_is_within(a, b) || path_is_within(b, a);
+}
+
+static int canonical_path(const char *path, char *out, size_t capacity);
+
+static int directory_empty(const char *path)
+{
+    DIR *dir = opendir(path);
+    if (dir == NULL)
+        return 0;
+    int empty = 1;
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            empty = 0;
+            break;
+        }
+    }
+    closedir(dir);
+    return empty;
+}
+
+static int normalize_output_file(const char *path, const char *root, char *out, size_t capacity)
+{
+    const char *slash = strrchr(path, '/');
+    if (slash == NULL || slash[1] == '\0')
+        return 1;
+    char parent[PATH_MAX];
+    size_t parent_len = (size_t)(slash - path);
+    if (parent_len == 0u || parent_len >= sizeof parent)
+        return 1;
+    memcpy(parent, path, parent_len);
+    parent[parent_len] = '\0';
+    char resolved_parent[PATH_MAX];
+    if (canonical_path(parent, resolved_parent, sizeof resolved_parent) != 0 ||
+        strcmp(parent, resolved_parent) != 0 || !path_is_within(root, resolved_parent))
+        return 1;
+    int n = snprintf(out, capacity, "%s/%s", resolved_parent, slash + 1);
+    if (n < 0 || (size_t)n >= capacity || !path_is_within(root, out))
+        return 1;
+    struct stat st;
+    if (lstat(out, &st) == 0 || errno != ENOENT)
+        return 1;
+    return 0;
+}
+
+static int canonical_path(const char *path, char *out, size_t capacity)
+{
+    char resolved[PATH_MAX];
+    if (realpath(path, resolved) == NULL || strlen(resolved) >= capacity)
+        return 1;
+    return copy_path(out, capacity, resolved);
+}
+
+static int validate_host_paths(host_session *host)
+{
+    char root[PATH_MAX], ra[PATH_MAX], save[PATH_MAX], retroarch[PATH_MAX];
+    char core[PATH_MAX], info[PATH_MAX], rom[PATH_MAX], compare[PATH_MAX];
+    if (canonical_path(host->output_root, root, sizeof root) != 0 ||
+        canonical_path(host->ra_dir, ra, sizeof ra) != 0 ||
+        canonical_path(host->save_dir, save, sizeof save) != 0 ||
+        canonical_path(host->retroarch, retroarch, sizeof retroarch) != 0 ||
+        canonical_path(host->core, core, sizeof core) != 0 ||
+        canonical_path(host->info, info, sizeof info) != 0 ||
+        canonical_path(host->rom, rom, sizeof rom) != 0 ||
+        canonical_path(host->compare, compare, sizeof compare) != 0)
+        return 1;
+    if (strcmp(root, host->output_root) != 0 || strcmp(ra, host->ra_dir) != 0 ||
+        strcmp(save, host->save_dir) != 0 || strcmp(retroarch, host->retroarch) != 0 ||
+        strcmp(core, host->core) != 0 || strcmp(info, host->info) != 0 ||
+        strcmp(rom, host->rom) != 0 || strcmp(compare, host->compare) != 0)
+        return 1;
+    static const char fixture_suffix[] = "tests/diag/frontend-states.a78";
+    size_t rom_len = strlen(rom), suffix_len = sizeof fixture_suffix - 1u;
+    if (strcmp(root, "/") == 0 || strcmp(ra, "/") == 0 || strcmp(save, "/") == 0 ||
+        !path_is_within(root, ra) || !path_is_within(root, save) || paths_overlap(ra, save) ||
+        rom_len <= suffix_len || strcmp(rom + rom_len - suffix_len, fixture_suffix) != 0)
+        return 1;
+    if (strcmp(strrchr(rom, '/') != NULL ? strrchr(rom, '/') + 1 : rom,
+               "frontend-states.a78") != 0)
+        return 1;
+    if (copy_path(host->retroarch, sizeof host->retroarch, retroarch) != 0 ||
+        copy_path(host->core, sizeof host->core, core) != 0 ||
+        copy_path(host->info, sizeof host->info, info) != 0 ||
+        copy_path(host->rom, sizeof host->rom, rom) != 0 ||
+        copy_path(host->ra_dir, sizeof host->ra_dir, ra) != 0 ||
+        copy_path(host->save_dir, sizeof host->save_dir, save) != 0 ||
+        copy_path(host->output_root, sizeof host->output_root, root) != 0 ||
+        copy_path(host->compare, sizeof host->compare, compare) != 0)
+        return 1;
+    struct stat st;
+    const char *dirs[] = {host->output_root, host->ra_dir, host->save_dir};
+    for (size_t i = 0u; i < sizeof dirs / sizeof dirs[0]; i++) {
+        if (lstat(dirs[i], &st) != 0 || !S_ISDIR(st.st_mode) || S_ISLNK(st.st_mode))
+            return 1;
+    }
+    int n1 = snprintf(host->shot_dir, sizeof host->shot_dir, "%s/shots", host->ra_dir);
+    int n2 = snprintf(host->state_path, sizeof host->state_path,
+                      "%s/states/frontend-states.state", host->ra_dir);
+    int n3 = snprintf(host->config_path, sizeof host->config_path, "%s/test.cfg", host->ra_dir);
+    int n4 = snprintf(host->profile_path, sizeof host->profile_path,
+                      "%s/states-network.sb", host->ra_dir);
+    int n5 = snprintf(host->log_path, sizeof host->log_path, "%s/retroarch.log", host->ra_dir);
+    if (n1 < 0 || (size_t)n1 >= sizeof host->shot_dir || n2 < 0 ||
+        (size_t)n2 >= sizeof host->state_path || n3 < 0 || (size_t)n3 >= sizeof host->config_path ||
+        n4 < 0 || (size_t)n4 >= sizeof host->profile_path || n5 < 0 ||
+        (size_t)n5 >= sizeof host->log_path)
+        return 1;
+    char final_shot[PATH_MAX];
+    if (normalize_output_file(host->final_shot, root, final_shot, sizeof final_shot) != 0 ||
+        copy_path(host->final_shot, sizeof host->final_shot, final_shot) != 0)
+        return 1;
+    struct stat nested;
+    char state_dir[PATH_MAX];
+    int ns = snprintf(state_dir, sizeof state_dir, "%s/states", host->ra_dir);
+    if (ns < 0 || (size_t)ns >= sizeof state_dir ||
+        lstat(host->shot_dir, &nested) != 0 || !S_ISDIR(nested.st_mode) || S_ISLNK(nested.st_mode) ||
+        lstat(state_dir, &nested) != 0 || !S_ISDIR(nested.st_mode) || S_ISLNK(nested.st_mode) ||
+        !directory_empty(host->save_dir) || !directory_empty(host->shot_dir) ||
+        !directory_empty(state_dir))
+        return 1;
+    if (paths_overlap(host->final_shot, host->ra_dir) ||
+        paths_overlap(host->final_shot, host->save_dir))
+        return 1;
+    return 0;
+}
+
+static int run_capture(char *const argv[], char *output, size_t capacity, unsigned timeout_ms,
+                       int *exit_status)
+{
+    int pipefd[2];
+    if (pipe(pipefd) != 0)
+        return 1;
+    pid_t pid = fork();
+    if (pid < 0) {
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return 1;
+    }
+    if (pid == 0) {
+        close(pipefd[0]);
+        if (dup2(pipefd[1], STDOUT_FILENO) < 0)
+            _exit(126);
+        close(pipefd[1]);
+        execv(argv[0], argv);
+        _exit(127);
+    }
+    close(pipefd[1]);
+    int flags = fcntl(pipefd[0], F_GETFL, 0);
+    if (flags >= 0)
+        (void)fcntl(pipefd[0], F_SETFL, flags | O_NONBLOCK);
+    size_t used = 0u;
+    int eof = 0, status = 0, done = 0, failed = 0;
+    uint64_t start = states_now_ms();
+    uint64_t deadline = start + timeout_ms;
+    uint64_t observe_deadline = timeout_ms > 100u ? deadline - 100u : start;
+    while (!eof || !done) {
+        uint64_t now = states_now_ms();
+        if (now >= observe_deadline) {
+            failed = 1;
+            break;
+        }
+        int wait_ms = (int)(observe_deadline - now);
+        if (wait_ms > 50)
+            wait_ms = 50;
+        struct pollfd pfd = {.fd = pipefd[0], .events = POLLIN | POLLHUP};
+        int polled = poll(&pfd, 1u, wait_ms);
+        if (polled < 0 && errno != EINTR) {
+            failed = 1;
+            break;
+        }
+        if (polled > 0 && (pfd.revents & (POLLIN | POLLHUP)) != 0) {
+            char chunk[512];
+            ssize_t n = read(pipefd[0], chunk, sizeof chunk);
+            if (n == 0) {
+                eof = 1;
+            } else if (n > 0) {
+                if ((size_t)n >= capacity - used) {
+                    failed = 1;
+                    break;
+                }
+                memcpy(output + used, chunk, (size_t)n);
+                used += (size_t)n;
+                output[used] = '\0';
+            } else if (errno != EAGAIN && errno != EINTR) {
+                failed = 1;
+                break;
+            }
+        }
+        pid_t waited = waitpid(pid, &status, WNOHANG);
+        if (waited == pid)
+            done = 1;
+        else if (waited < 0 && errno != EINTR) {
+            failed = 1;
+            break;
+        }
+    }
+    close(pipefd[0]);
+    if (failed) {
+        if (kill(pid, SIGTERM) != 0 && errno != ESRCH)
+            return 1;
+        uint64_t term_deadline = states_now_ms() + 30u;
+        if (term_deadline > deadline)
+            term_deadline = deadline;
+        while (states_now_ms() < term_deadline) {
+            pid_t waited = waitpid(pid, &status, WNOHANG);
+            if (waited == pid)
+                return 1;
+            if (waited < 0 && errno != EINTR)
+                return 1;
+            struct timespec delay = {.tv_sec = 0, .tv_nsec = 5000000L};
+            (void)nanosleep(&delay, NULL);
+        }
+        if (kill(pid, SIGKILL) != 0 && errno != ESRCH)
+            return 1;
+        while (states_now_ms() < deadline) {
+            pid_t waited = waitpid(pid, &status, WNOHANG);
+            if (waited == pid)
+                return 1;
+            if (waited < 0 && errno != EINTR)
+                return 1;
+            struct timespec delay = {.tv_sec = 0, .tv_nsec = 5000000L};
+            (void)nanosleep(&delay, NULL);
+        }
+        return 1;
+    }
+    if (!done)
+        return 1;
+    if (!WIFEXITED(status))
+        return 1;
+    *exit_status = WEXITSTATUS(status);
+    return 0;
+}
+
+static int parse_owner_pids(const char *text, unsigned port, pid_t *pids, size_t capacity,
+                            size_t *count)
+{
+    char copy[4096];
+    size_t n = strlen(text);
+    if (n >= sizeof copy)
+        return 1;
+    memcpy(copy, text, n + 1u);
+    *count = 0u;
+    pid_t current = -1;
+    int local_match = 0;
+    char port_text[16];
+    int plen = snprintf(port_text, sizeof port_text, ":%u", port);
+    if (plen < 0 || (size_t)plen >= sizeof port_text)
+        return 1;
+    for (char *line = strtok(copy, "\n"); line != NULL; line = strtok(NULL, "\n")) {
+        if (line[0] == 'p') {
+            if (current > 0 && local_match) {
+                int seen = 0;
+                for (size_t i = 0u; i < *count; i++)
+                    seen |= pids[i] == current;
+                if (!seen) {
+                    if (*count >= capacity)
+                        return 1;
+                    pids[(*count)++] = current;
+                }
+            }
+            char *end = NULL;
+            long value = strtol(line + 1, &end, 10);
+            if (end == line + 1 || *end != '\0' || value <= 0 || value > INT_MAX)
+                return 1;
+            current = (pid_t)value;
+            local_match = 0;
+        } else if (line[0] == 'n') {
+            const char *name = line + 1;
+            const char *arrow = strstr(name, "->");
+            size_t local_len = arrow == NULL ? strlen(name) : (size_t)(arrow - name);
+            if (local_len >= (size_t)plen &&
+                strncmp(name + local_len - (size_t)plen, port_text, (size_t)plen) == 0)
+                local_match = 1;
+        }
+    }
+    if (current > 0 && local_match) {
+        int seen = 0;
+        for (size_t i = 0u; i < *count; i++)
+            seen |= pids[i] == current;
+        if (!seen) {
+            if (*count >= capacity)
+                return 1;
+            pids[(*count)++] = current;
+        }
+    }
+    return 0;
+}
+
+static int socket_owners(unsigned port, pid_t *pids, size_t capacity, size_t *count)
+{
+    char selector[32], output[4096] = {0};
+    int n = snprintf(selector, sizeof selector, "-iUDP:%u", port);
+    if (n < 0 || (size_t)n >= sizeof selector)
+        return 1;
+    char *argv[] = {"/usr/sbin/lsof", "-nP", "-Fpn", selector, NULL};
+    int status = 0;
+    if (run_capture(argv, output, sizeof output, 750u, &status) != 0)
+        return 1;
+    if (status == 1 && output[0] == '\0') {
+        *count = 0u;
+        return 0;
+    }
+    if (status != 0)
+        return 1;
+    return parse_owner_pids(output, port, pids, capacity, count);
+}
+
+static int process_is_child(host_session *host)
+{
+    char actual[PATH_MAX];
+    return host->child > 0 && process_path(host->child, actual, sizeof actual) == 0 &&
+           strcmp(actual, host->retroarch) == 0;
+}
+
+static int reap_if_exited(host_session *host)
+{
+    if (host->child_reaped)
+        return 1;
+    int status = 0;
+    pid_t waited = waitpid(host->child, &status, WNOHANG);
+    if (waited == host->child) {
+        host->child_reaped = 1;
+        host->child_owned = 0;
+        host->child_status = status;
+        return 1;
+    }
+    return waited == 0;
+}
+
+static int endpoint_owned(host_session *host)
+{
+    if (!host->child_owned || !reap_if_exited(host) || host->child_reaped ||
+        !process_is_child(host))
+        return 0;
+    pid_t owners[8];
+    size_t count = 0u;
+    return socket_owners(host->port, owners, sizeof owners / sizeof owners[0], &count) == 0 &&
+           count == 1u && owners[0] == host->child;
+}
+
+static int reserve_port(uint16_t wanted, int *fd_out, uint16_t *port_out)
+{
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+        return 1;
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof addr);
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = htons(wanted);
+    if (bind(fd, (struct sockaddr *)&addr, sizeof addr) != 0) {
+        close(fd);
+        return 1;
+    }
+    socklen_t len = sizeof addr;
+    if (getsockname(fd, (struct sockaddr *)&addr, &len) != 0) {
+        close(fd);
+        return 1;
+    }
+    *fd_out = fd;
+    *port_out = ntohs(addr.sin_port);
+    return 0;
+}
+
+static int write_profile(host_session *host)
+{
+    FILE *file = fopen(host->profile_path, "wx");
+    if (file == NULL)
+        return 1;
+    int rc = fprintf(file,
+                     "(version 1)\n"
+                     "(allow default)\n"
+                     "(deny network-outbound)\n"
+                     "(deny network-inbound)\n"
+                     "(deny network-bind)\n"
+                     "(allow network-bind (local udp \"*:%u\"))\n"
+                     "(allow network-outbound (remote udp \"localhost:*\"))\n"
+                     "(allow network-inbound (local udp \"localhost:%u\"))\n",
+                     (unsigned)host->port, (unsigned)host->port);
+    int close_rc = fclose(file);
+    if (rc < 0 || close_rc != 0)
+        return 1;
+    return 0;
+}
+
+static int parse_port(const char *text, uint16_t *port)
+{
+    char *end = NULL;
+    unsigned long n = strtoul(text, &end, 10);
+    if (end == text || *end != '\0' || n == 0u || n > 65535u)
+        return 1;
+    *port = (uint16_t)n;
+    return 0;
+}
+
+static int helper_write(const char *text)
+{
+    size_t n = strlen(text);
+    return write(STDOUT_FILENO, text, n) == (ssize_t)n ? 0 : 1;
+}
+
+static int udp_helper_main(const char *port_text)
+{
+    uint16_t port;
+    if (parse_port(port_text, &port) != 0)
+        return 2;
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+        return 1;
+    struct sockaddr_in bind_addr;
+    memset(&bind_addr, 0, sizeof bind_addr);
+    bind_addr.sin_family = AF_INET;
+    bind_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    bind_addr.sin_port = htons(port);
+    if (bind(fd, (struct sockaddr *)&bind_addr, sizeof bind_addr) != 0 ||
+        helper_write("READY\n") != 0) {
+        close(fd);
+        return 1;
+    }
+    for (unsigned stage = 0u; stage < 2u; stage++) {
+        struct pollfd pfd = {.fd = fd, .events = POLLIN};
+        int rc = poll(&pfd, 1u, stage == 0u ? 1000 : 800);
+        if (rc <= 0)
+            break;
+        char bytes[32] = {0};
+        struct sockaddr_in from;
+        socklen_t from_len = sizeof from;
+        ssize_t n = recvfrom(fd, bytes, sizeof bytes - 1u, 0, (struct sockaddr *)&from, &from_len);
+        if (n <= 0)
+            break;
+        bytes[n] = '\0';
+        if (stage == 0u && strcmp(bytes, "LOOPBACK") == 0 &&
+            ntohl(from.sin_addr.s_addr) == INADDR_LOOPBACK) {
+            if (helper_write("LOOPBACK\n") != 0 ||
+                sendto(fd, "LOOPBACK", 8u, 0, (struct sockaddr *)&from, from_len) != 8)
+                break;
+            continue;
+        }
+        if (stage == 1u && strcmp(bytes, "EXTERNAL") == 0) {
+            (void)helper_write("EXTERNAL\n");
+            (void)sendto(fd, "EXTERNAL", 8u, 0, (struct sockaddr *)&from, from_len);
+            close(fd);
+            return 1;
+        }
+        break;
+    }
+    close(fd);
+    (void)helper_write("REJECTED\n");
+    return 0;
+}
+
+static int read_line_fd(int fd, char *line, size_t capacity, unsigned timeout_ms)
+{
+    size_t used = 0u;
+    uint64_t deadline = states_now_ms() + timeout_ms;
+    while (used + 1u < capacity) {
+        uint64_t now = states_now_ms();
+        if (now >= deadline)
+            return 1;
+        struct pollfd pfd = {.fd = fd, .events = POLLIN | POLLHUP};
+        int left = (int)(deadline - now);
+        int rc = poll(&pfd, 1u, left);
+        if (rc <= 0)
+            return 1;
+        char c;
+        ssize_t n = read(fd, &c, 1u);
+        if (n != 1)
+            return 1;
+        if (c == '\n') {
+            line[used] = '\0';
+            return 0;
+        }
+        line[used++] = c;
+    }
+    return 1;
+}
+
+static int nonloopback_ipv4(struct in_addr *address)
+{
+    struct ifaddrs *list = NULL;
+    if (getifaddrs(&list) != 0)
+        return 1;
+    int found = 1;
+    for (struct ifaddrs *it = list; it != NULL; it = it->ifa_next) {
+        if (it->ifa_addr == NULL || it->ifa_addr->sa_family != AF_INET ||
+            (it->ifa_flags & (IFF_UP | IFF_LOOPBACK)) != IFF_UP)
+            continue;
+        struct in_addr candidate = ((struct sockaddr_in *)it->ifa_addr)->sin_addr;
+        uint32_t host = ntohl(candidate.s_addr);
+        if ((host >> 24) == 127u || host == 0u)
+            continue;
+        *address = candidate;
+        found = 0;
+        break;
+    }
+    freeifaddrs(list);
+    return found;
+}
+
+static int sandbox_helper(host_session *host, const char *self_path)
+{
+    int port_fd = -1;
+    uint16_t selected = 0u;
+    if (reserve_port(0u, &port_fd, &selected) != 0)
+        return 1;
+    host->port = selected;
+    pid_t owners[8];
+    size_t owner_count = 0u;
+    if (socket_owners(host->port, owners, 8u, &owner_count) != 0 || owner_count != 1u ||
+        owners[0] != getpid() || write_profile(host) != 0) {
+        close(port_fd);
+        return 1;
+    }
+    close(port_fd);
+    port_fd = -1;
+    int out_pipe[2];
+    if (pipe(out_pipe) != 0)
+        return 1;
+    char port_text[16];
+    (void)snprintf(port_text, sizeof port_text, "%u", (unsigned)host->port);
+    pid_t helper = fork();
+    if (helper < 0) {
+        close(out_pipe[0]);
+        close(out_pipe[1]);
+        return 1;
+    }
+    if (helper == 0) {
+        close(out_pipe[0]);
+        if (dup2(out_pipe[1], STDOUT_FILENO) < 0)
+            _exit(126);
+        close(out_pipe[1]);
+        char *argv[] = {"/usr/bin/sandbox-exec", "-f", host->profile_path,
+                        (char *)self_path, "--udp-helper", port_text, NULL};
+        execv(argv[0], argv);
+        _exit(127);
+    }
+    close(out_pipe[1]);
+    char line[64];
+    if (read_line_fd(out_pipe[0], line, sizeof line, 1000u) != 0 || strcmp(line, "READY") != 0) {
+        close(out_pipe[0]);
+        (void)kill(helper, SIGTERM);
+        (void)waitpid(helper, NULL, 0);
+        return 1;
+    }
+    int client = socket(AF_INET, SOCK_DGRAM, 0);
+    if (client < 0) {
+        close(out_pipe[0]);
+        (void)kill(helper, SIGTERM);
+        (void)waitpid(helper, NULL, 0);
+        return 1;
+    }
+    struct sockaddr_in loopback;
+    memset(&loopback, 0, sizeof loopback);
+    loopback.sin_family = AF_INET;
+    loopback.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    loopback.sin_port = htons(host->port);
+    if (sendto(client, "LOOPBACK", 8u, 0, (struct sockaddr *)&loopback, sizeof loopback) != 8) {
+        close(client);
+        close(out_pipe[0]);
+        (void)kill(helper, SIGTERM);
+        (void)waitpid(helper, NULL, 0);
+        return 1;
+    }
+    struct pollfd pfd = {.fd = client, .events = POLLIN};
+    if (poll(&pfd, 1u, 1000) <= 0) {
+        close(client);
+        close(out_pipe[0]);
+        (void)kill(helper, SIGTERM);
+        (void)waitpid(helper, NULL, 0);
+        return 1;
+    }
+    char response[32] = {0};
+    struct sockaddr_in from;
+    socklen_t from_len = sizeof from;
+    ssize_t n = recvfrom(client, response, sizeof response - 1u, 0,
+                         (struct sockaddr *)&from, &from_len);
+    if (n != 8 || strcmp(response, "LOOPBACK") != 0 ||
+        ntohl(from.sin_addr.s_addr) != INADDR_LOOPBACK || ntohs(from.sin_port) != host->port ||
+        read_line_fd(out_pipe[0], line, sizeof line, 250u) != 0 || strcmp(line, "LOOPBACK") != 0) {
+        close(client);
+        close(out_pipe[0]);
+        (void)kill(helper, SIGTERM);
+        (void)waitpid(helper, NULL, 0);
+        return 1;
+    }
+    struct in_addr external;
+    if (nonloopback_ipv4(&external) != 0) {
+        close(client);
+        close(out_pipe[0]);
+        (void)kill(helper, SIGTERM);
+        (void)waitpid(helper, NULL, 0);
+        return 1;
+    }
+    int external_client = socket(AF_INET, SOCK_DGRAM, 0);
+    if (external_client < 0) {
+        close(client);
+        close(out_pipe[0]);
+        (void)kill(helper, SIGTERM);
+        (void)waitpid(helper, NULL, 0);
+        return 1;
+    }
+    struct sockaddr_in source = {.sin_family = AF_INET, .sin_addr = external, .sin_port = 0};
+    if (bind(external_client, (struct sockaddr *)&source, sizeof source) != 0) {
+        close(external_client);
+        close(client);
+        close(out_pipe[0]);
+        (void)kill(helper, SIGTERM);
+        (void)waitpid(helper, NULL, 0);
+        return 1;
+    }
+    struct sockaddr_in external_target = {.sin_family = AF_INET, .sin_addr = external,
+                                          .sin_port = htons(host->port)};
+    if (sendto(external_client, "EXTERNAL", 8u, 0, (struct sockaddr *)&external_target,
+               sizeof external_target) != 8) {
+        close(external_client);
+        close(client);
+        close(out_pipe[0]);
+        (void)kill(helper, SIGTERM);
+        (void)waitpid(helper, NULL, 0);
+        return 1;
+    }
+    pfd.fd = external_client;
+    pfd.events = POLLIN;
+    int external_reply = poll(&pfd, 1u, 1000);
+    int helper_report = read_line_fd(out_pipe[0], line, sizeof line, 1000u);
+    close(external_client);
+    close(client);
+    close(out_pipe[0]);
+    int helper_status = 0;
+    uint64_t helper_deadline = states_now_ms() + 1000u;
+    pid_t helper_waited = 0;
+    while (states_now_ms() < helper_deadline) {
+        helper_waited = waitpid(helper, &helper_status, WNOHANG);
+        if (helper_waited == helper || helper_waited < 0)
+            break;
+        struct timespec delay = {.tv_sec = 0, .tv_nsec = 10000000L};
+        (void)nanosleep(&delay, NULL);
+    }
+    if (helper_waited != helper) {
+        if (helper_waited == 0)
+            (void)kill(helper, SIGTERM);
+        if (helper_waited == 0)
+            (void)waitpid(helper, &helper_status, 0);
+        return 1;
+    }
+    if (helper_report != 0 || strcmp(line, "REJECTED") != 0 || external_reply > 0 ||
+        !WIFEXITED(helper_status) || WEXITSTATUS(helper_status) != 0)
+        return 1;
+    int final_reserve = -1;
+    uint16_t final_port = 0u;
+    if (reserve_port(host->port, &final_reserve, &final_port) != 0 || final_port != host->port)
+        return 1;
+    owner_count = 0u;
+    int owner_ok = socket_owners(host->port, owners, 8u, &owner_count) == 0 &&
+                   owner_count == 1u && owners[0] == getpid();
+    if (!owner_ok) {
+        close(final_reserve);
+        return 1;
+    }
+    host->reserved_fd = final_reserve;
+    return 0;
+}
+
+static int preflight_only(const char *self_path, const char *output_dir)
+{
+    host_session host;
+    memset(&host, 0, sizeof host);
+    host.reserved_fd = -1;
+    if (canonical_path(output_dir, host.ra_dir, sizeof host.ra_dir) != 0 ||
+        strcmp(host.ra_dir, "/") == 0)
+        return 2;
+    int n = snprintf(host.profile_path, sizeof host.profile_path, "%s/states-network.sb",
+                     host.ra_dir);
+    if (n < 0 || (size_t)n >= sizeof host.profile_path ||
+        access("/usr/bin/sandbox-exec", X_OK) != 0 || sandbox_helper(&host, self_path) != 0) {
+        if (host.reserved_fd >= 0)
+            close(host.reserved_fd);
+        fprintf(stderr, "states preflight: external UDP containment not proven\n");
+        return 1;
+    }
+    close(host.reserved_fd);
+    printf("states preflight: loopback UDP replied; non-loopback request was not delivered; port=%u\n",
+           (unsigned)host.port);
+    return 0;
+}
+
+static int update_config_port(host_session *host)
+{
+    FILE *file = fopen(host->config_path, "rb");
+    if (file == NULL)
+        return 1;
+    char content[32768];
+    size_t n = fread(content, 1u, sizeof content - 1u, file);
+    int read_error = ferror(file);
+    fclose(file);
+    if (read_error || n == sizeof content - 1u)
+        return 1;
+    content[n] = '\0';
+    const char *old = "network_cmd_port = \"0\"";
+    char *where = strstr(content, old);
+    if (where == NULL || strstr(where + strlen(old), old) != NULL)
+        return 1;
+    char replacement[64];
+    int m = snprintf(replacement, sizeof replacement, "network_cmd_port = \"%u\"",
+                     (unsigned)host->port);
+    if (m < 0 || (size_t)m >= sizeof replacement)
+        return 1;
+    char result[32768];
+    size_t before = (size_t)(where - content), after = n - before - strlen(old);
+    if (before + (size_t)m + after >= sizeof result)
+        return 1;
+    memcpy(result, content, before);
+    memcpy(result + before, replacement, (size_t)m);
+    memcpy(result + before + (size_t)m, where + strlen(old), after);
+    result[before + (size_t)m + after] = '\0';
+    int fd = open(host->config_path, O_WRONLY | O_TRUNC | O_NOFOLLOW);
+    if (fd < 0)
+        return 1;
+    size_t left = strlen(result), offset = 0u;
+    while (offset < left) {
+        ssize_t wrote = write(fd, result + offset, left - offset);
+        if (wrote <= 0) {
+            close(fd);
+            return 1;
+        }
+        offset += (size_t)wrote;
+    }
+    return close(fd) == 0 ? 0 : 1;
+}
+
+static int spawn_retroarch(host_session *host)
+{
+    char frames_arg[32];
+    (void)snprintf(frames_arg, sizeof frames_arg, "--max-frames=%u", host->frames);
+    int log_fd = open(host->log_path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
+    if (log_fd < 0)
+        return 1;
+    char *argv[] = {"/usr/bin/sandbox-exec", "-f", host->profile_path, host->retroarch,
+                    "--verbose", "--config", host->config_path, "-L", host->core,
+                    frames_arg, host->rom, NULL};
+    close(host->reserved_fd);
+    host->reserved_fd = -1;
+    pid_t pid = fork();
+    if (pid < 0) {
+        close(log_fd);
+        return 1;
+    }
+    if (pid == 0) {
+        if (dup2(log_fd, STDOUT_FILENO) < 0 || dup2(log_fd, STDERR_FILENO) < 0)
+            _exit(126);
+        close(log_fd);
+        char home[PATH_MAX];
+        int home_len = snprintf(home, sizeof home, "%s/home", host->ra_dir);
+        if (home_len < 0 || (size_t)home_len >= sizeof home)
+            _exit(126);
+        (void)setenv("HOME", home, 1);
+        (void)setenv("CFFIXED_USER_HOME", home, 1);
+        execv(argv[0], argv);
+        _exit(127);
+    }
+    close(log_fd);
+    host->child = pid;
+    host->child_owned = 1;
+    host->udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (host->udp_fd < 0)
+        return 1;
+    struct sockaddr_in local;
+    memset(&local, 0, sizeof local);
+    local.sin_family = AF_INET;
+    local.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (bind(host->udp_fd, (struct sockaddr *)&local, sizeof local) != 0)
+        return 1;
+    uint64_t deadline = states_now_ms() + STATES_OBSERVE_MS * 5u;
+    while (states_now_ms() < deadline) {
+        if (endpoint_owned(host))
+            return 0;
+        if (host->child_reaped)
+            return 1;
+        struct timespec delay = {.tv_sec = 0, .tv_nsec = 20000000L};
+        (void)nanosleep(&delay, NULL);
+    }
+    return 1;
+}
+
+static int host_nci_send(host_session *host, const char *command)
+{
+    if (!endpoint_owned(host))
+        return 1;
+    struct sockaddr_in target;
+    memset(&target, 0, sizeof target);
+    target.sin_family = AF_INET;
+    target.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    target.sin_port = htons(host->port);
+    size_t n = strlen(command);
+    return sendto(host->udp_fd, command, n, 0, (struct sockaddr *)&target, sizeof target) ==
+                   (ssize_t)n
+               ? 0
+               : 1;
+}
+
+static int host_nci_reply(host_session *host, const char *command, unsigned timeout_ms,
+                          char *reply, size_t capacity)
+{
+    if (host_nci_send(host, command) != 0)
+        return 1;
+    struct pollfd pfd = {.fd = host->udp_fd, .events = POLLIN};
+    int rc = poll(&pfd, 1u, (int)timeout_ms);
+    if (rc <= 0 || (pfd.revents & POLLIN) == 0)
+        return 1;
+    struct sockaddr_in from;
+    struct iovec iov = {.iov_base = reply, .iov_len = capacity - 1u};
+    struct msghdr msg;
+    memset(&msg, 0, sizeof msg);
+    msg.msg_name = &from;
+    msg.msg_namelen = sizeof from;
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1u;
+    ssize_t got = recvmsg(host->udp_fd, &msg, 0);
+    if (got <= 0 || (msg.msg_flags & MSG_TRUNC) != 0 || (size_t)got >= capacity ||
+        from.sin_family != AF_INET || ntohl(from.sin_addr.s_addr) != INADDR_LOOPBACK ||
+        ntohs(from.sin_port) != host->port)
+        return 1;
+    reply[got] = '\0';
+    return 0;
+}
+
+static int parse_status(host_session *host, const char *reply, int *paused)
+{
+    const char *body = reply;
+    if (strncmp(body, "GET_STATUS ", 11u) == 0)
+        body += 11u;
+    if (strncmp(body, "PAUSED ", 7u) == 0) {
+        *paused = 1;
+        body += 7u;
+    } else if (strncmp(body, "PLAYING ", 8u) == 0) {
+        *paused = 0;
+        body += 8u;
+    } else {
+        return 1;
+    }
+    const char *comma = strchr(body, ',');
+    if (comma == NULL || (size_t)(comma - body) != strlen("atari_7800") ||
+        strncmp(body, "atari_7800", strlen("atari_7800")) != 0)
+        return 1;
+    const char *name = comma + 1;
+    const char *next = strchr(name, ',');
+    if (next == NULL || (size_t)(next - name) != strlen("frontend-states.a78") ||
+        strncmp(name, "frontend-states.a78", strlen("frontend-states.a78")) != 0)
+        return 1;
+    const char *crc = next + 1;
+    if (strncmp(crc, "crc32=", 6u) != 0 || strlen(crc + 6) != 8u)
+        return 1;
+    char actual[9];
+    for (unsigned i = 0u; i < 8u; i++) {
+        char c = crc[6u + i];
+        actual[i] = (char)(c >= 'A' && c <= 'F' ? c + ('a' - 'A') : c);
+        if (!((actual[i] >= '0' && actual[i] <= '9') || (actual[i] >= 'a' && actual[i] <= 'f')))
+            return 1;
+    }
+    actual[8] = '\0';
+    char expected[9];
+    (void)snprintf(expected, sizeof expected, "%08x", host->fixture_crc);
+    return strcmp(actual, expected) == 0 ? 0 : 1;
+}
+
+static int host_status(host_session *host, unsigned timeout_ms, int *paused)
+{
+    char reply[512];
+    if (host_nci_reply(host, "GET_STATUS", timeout_ms, reply, sizeof reply) != 0)
+        return 1;
+    return parse_status(host, reply, paused);
+}
+
+static uint64_t host_now(void *user)
+{
+    (void)user;
+    return states_now_ms();
+}
+
+static int host_preflight(void *user, unsigned timeout_ms)
+{
+    host_session *host = user;
+    (void)timeout_ms;
+    return endpoint_owned(host) ? 0 : 1;
+}
+
+static int host_verify_identity(void *user, unsigned timeout_ms)
+{
+    host_session *host = user;
+    char reply[256];
+    if (host_nci_reply(host, "VERSION", timeout_ms, reply, sizeof reply) != 0)
+        return 1;
+    if (strcmp(reply, "1.22.2") != 0 && strcmp(reply, "VERSION 1.22.2") != 0)
+        return 1;
+    int paused = 0;
+    uint64_t deadline = states_now_ms() + timeout_ms;
+    if (host_status(host, timeout_ms, &paused) != 0)
+        return 1;
+    if (!paused) {
+        if (host_nci_send(host, "PAUSE_TOGGLE") != 0)
+            return 1;
+        while (states_now_ms() < deadline) {
+            uint64_t now = states_now_ms();
+            unsigned left = (unsigned)(deadline - now);
+            if (left > STATES_OBSERVE_MS)
+                left = STATES_OBSERVE_MS;
+            if (host_status(host, left, &paused) != 0)
+                return 1;
+            if (paused)
+                break;
+        }
+    }
+    return paused ? 0 : 1;
+}
+
+static int host_read_progress(void *user, unsigned *progress, unsigned timeout_ms)
+{
+    host_session *host = user;
+    char reply[256];
+    if (host_nci_reply(host, "READ_CORE_MEMORY 2300 6", timeout_ms, reply, sizeof reply) != 0)
+        return 1;
+    char command[64], address[32], bytes[6][8];
+    int consumed = 0;
+    int count = sscanf(reply, "%63s %31s %7s %7s %7s %7s %7s %7s %n",
+                       command, address, bytes[0], bytes[1], bytes[2], bytes[3], bytes[4],
+                       bytes[5], &consumed);
+    if (count != 8 || strcmp(command, "READ_CORE_MEMORY") != 0 || strcmp(address, "2300") != 0)
+        return 1;
+    while (reply[consumed] == ' ' || reply[consumed] == '\t' || reply[consumed] == '\r' ||
+           reply[consumed] == '\n')
+        consumed++;
+    if (reply[consumed] != '\0')
+        return 1;
+    static const char *marker[4] = {"4D", "55", "48", "54"};
+    for (unsigned i = 0u; i < 4u; i++)
+        if (strcasecmp(bytes[i], marker[i]) != 0)
+            return 1;
+    char *end = NULL;
+    unsigned long low = strtoul(bytes[4], &end, 16);
+    if (end == bytes[4] || *end != '\0' || low > 255u)
+        return 1;
+    unsigned long high = strtoul(bytes[5], &end, 16);
+    if (end == bytes[5] || *end != '\0' || high > 255u)
+        return 1;
+    *progress = (unsigned)(low | (high << 8));
+    return 0;
+}
+
+static int host_state_absent(void *user, int absent, unsigned timeout_ms)
+{
+    host_session *host = user;
+    (void)timeout_ms;
+    struct stat st;
+    if (lstat(host->state_path, &st) == 0)
+        return absent || !S_ISREG(st.st_mode) || S_ISLNK(st.st_mode) || st.st_size <= 0;
+    return errno == ENOENT ? !absent : 1;
+}
+
+static int host_save_once(void *user)
+{
+    return host_nci_send(user, "SAVE_STATE");
+}
+
+static int host_state_created(void *user, unsigned timeout_ms)
+{
+    host_session *host = user;
+    uint64_t deadline = states_now_ms() + timeout_ms;
+    do {
+        struct stat st;
+        if (lstat(host->state_path, &st) == 0)
+            return S_ISREG(st.st_mode) && !S_ISLNK(st.st_mode) && st.st_size > 0 ? 0 : 1;
+        if (errno != ENOENT)
+            return 1;
+        struct timespec delay = {.tv_sec = 0, .tv_nsec = 10000000L};
+        (void)nanosleep(&delay, NULL);
+    } while (states_now_ms() < deadline);
+    return 1;
+}
+
+static int host_frame_once(void *user)
+{
+    host_session *host = user;
+    if (host_nci_send(host, "FRAMEADVANCE") != 0)
+        return 1;
+    host->frames++;
+    return 0;
+}
+
+static int host_load_once(void *user)
+{
+    return host_nci_send(user, "LOAD_STATE");
+}
+
+static int compare_capture(host_session *host, unsigned expected, unsigned picture_id,
+                           int baseline, const char *path)
+{
+    char value[8];
+    (void)snprintf(value, sizeof value, "%04X", expected & 0xffffu);
+    const char *reference = baseline ? path : host->captures[picture_id];
+    char *argv[] = {host->compare, "--progress", value, (char *)reference, (char *)path, NULL};
+    char output[1024] = {0};
+    int status = 0;
+    if (run_capture(argv, output, sizeof output, STATES_OBSERVE_MS, &status) != 0 || status != 0)
+        return 1;
+    return 0;
+}
+
+static int host_capture(void *user, unsigned expected, unsigned picture_id, int baseline,
+                        unsigned timeout_ms)
+{
+    host_session *host = user;
+    if (picture_id == 0u || picture_id > 2u || host->capture_count >= 4u ||
+        host_nci_send(host, "SCREENSHOT") != 0)
+        return 1;
+    uint64_t deadline = states_now_ms() + timeout_ms;
+    char source[PATH_MAX] = "";
+    while (states_now_ms() < deadline) {
+        DIR *dir = opendir(host->shot_dir);
+        if (dir == NULL)
+            return 1;
+        struct dirent *entry;
+        unsigned fresh = 0u;
+        while ((entry = readdir(dir)) != NULL) {
+            if (entry->d_name[0] == '.' || strncmp(entry->d_name, "capture-", 8u) == 0)
+                continue;
+            char candidate[PATH_MAX];
+            if (snprintf(candidate, sizeof candidate, "%s/%s", host->shot_dir, entry->d_name) < 0)
+                continue;
+            struct stat st;
+            if (lstat(candidate, &st) != 0 || !S_ISREG(st.st_mode) || S_ISLNK(st.st_mode) ||
+                st.st_size <= 0)
+                continue;
+            if (copy_path(source, sizeof source, candidate) != 0)
+                continue;
+            fresh++;
+        }
+        closedir(dir);
+        if (fresh == 1u)
+            break;
+        source[0] = '\0';
+        struct timespec delay = {.tv_sec = 0, .tv_nsec = 10000000L};
+        (void)nanosleep(&delay, NULL);
+    }
+    if (source[0] == '\0')
+        return 1;
+    char target[PATH_MAX];
+    int n = snprintf(target, sizeof target, "%s/capture-%02u.bmp", host->shot_dir,
+                     host->capture_count + 1u);
+    if (n < 0 || (size_t)n >= sizeof target || rename(source, target) != 0)
+        return 1;
+    struct stat st;
+    if (lstat(target, &st) != 0 || !S_ISREG(st.st_mode) || S_ISLNK(st.st_mode) || st.st_size <= 70)
+        return 1;
+    if (host->capture_count == 0u && picture_id == 1u &&
+        copy_path(host->captures[1], sizeof host->captures[1], target) != 0)
+        return 1;
+    if (host->capture_count == 1u && picture_id == 2u &&
+        copy_path(host->captures[2], sizeof host->captures[2], target) != 0)
+        return 1;
+    if (!baseline && host->captures[picture_id][0] == '\0')
+        return 1;
+    int rc = compare_capture(host, expected, picture_id, baseline, target);
+    host->capture_count++;
+    return rc;
+}
+
+static int host_wait_child(host_session *host, unsigned timeout_ms)
+{
+    uint64_t deadline = states_now_ms() + timeout_ms;
+    while (states_now_ms() < deadline) {
+        if (!reap_if_exited(host))
+            return 1;
+        if (host->child_reaped)
+            return 0;
+        struct timespec delay = {.tv_sec = 0, .tv_nsec = 10000000L};
+        (void)nanosleep(&delay, NULL);
+    }
+    return reap_if_exited(host) && host->child_reaped ? 0 : 1;
+}
+
+static int host_signal_owned_child(host_session *host, int signal_number, unsigned timeout_ms)
+{
+    if (!host->child_owned || host->child_reaped || !process_is_child(host))
+        return 1;
+    if (!reap_if_exited(host))
+        return 1;
+    if (host->child_reaped)
+        return 0;
+    if (!process_is_child(host) || kill(host->child, signal_number) != 0)
+        return 1;
+    return host_wait_child(host, timeout_ms);
+}
+
+static int host_cleanup_without_endpoint(host_session *host, unsigned timeout_ms)
+{
+    unsigned graceful = timeout_ms < 1000u ? timeout_ms : 1000u;
+    if (host_wait_child(host, graceful) == 0)
+        return 0;
+    unsigned remaining = timeout_ms - graceful;
+    unsigned term_wait = remaining < 500u ? remaining : 500u;
+    if (host_signal_owned_child(host, SIGTERM, term_wait) == 0)
+        return 0;
+    remaining -= term_wait;
+    return host_signal_owned_child(host, SIGKILL, remaining);
+}
+
+static unsigned cleanup_remaining(uint64_t deadline)
+{
+    uint64_t now = states_now_ms();
+    if (now >= deadline)
+        return 0u;
+    uint64_t left = deadline - now;
+    return left > UINT_MAX ? UINT_MAX : (unsigned)left;
+}
+
+static int host_cleanup(void *user, unsigned timeout_ms)
+{
+    host_session *host = user;
+    uint64_t deadline = states_now_ms() + timeout_ms;
+    int rc = 0;
+    if (!host->child_owned) {
+        if (host->udp_fd >= 0)
+            close(host->udp_fd);
+        host->udp_fd = -1;
+        return 0;
+    }
+    int endpoint = endpoint_owned(host);
+    unsigned remaining = cleanup_remaining(deadline);
+    if (!endpoint) {
+        rc = host_cleanup_without_endpoint(host, remaining);
+    } else if (host_nci_send(host, "QUIT") != 0) {
+        rc = 1;
+        (void)host_wait_child(host, cleanup_remaining(deadline));
+    } else {
+        remaining = cleanup_remaining(deadline);
+        unsigned graceful = remaining < 1750u ? remaining : 1750u;
+        if (host_wait_child(host, graceful) != 0) {
+            remaining = cleanup_remaining(deadline);
+            unsigned term_wait = remaining < 750u ? remaining : 750u;
+            if (host_signal_owned_child(host, SIGTERM, term_wait) != 0) {
+                if (host_signal_owned_child(host, SIGKILL, cleanup_remaining(deadline)) != 0)
+                    rc = 1;
+            }
+        }
+    }
+    if (host->udp_fd >= 0)
+        close(host->udp_fd);
+    host->udp_fd = -1;
+    return rc;
+}
+
+static int file_contains(const char *path, const char *needle)
+{
+    FILE *file = fopen(path, "rb");
+    if (file == NULL)
+        return 1;
+    char buffer[65536];
+    size_t n = fread(buffer, 1u, sizeof buffer - 1u, file);
+    int err = ferror(file);
+    fclose(file);
+    if (err || n == sizeof buffer - 1u)
+        return 1;
+    buffer[n] = '\0';
+    return strstr(buffer, needle) == NULL;
+}
+
+static int copy_file(const char *from, const char *to)
+{
+    int src = open(from, O_RDONLY | O_NOFOLLOW);
+    if (src < 0)
+        return 1;
+    int dst = open(to, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
+    if (dst < 0) {
+        close(src);
+        return 1;
+    }
+    char buffer[16384];
+    int failed = 0;
+    for (;;) {
+        ssize_t n = read(src, buffer, sizeof buffer);
+        if (n == 0)
+            break;
+        if (n < 0) {
+            failed = 1;
+            break;
+        }
+        ssize_t offset = 0;
+        while (offset < n) {
+            ssize_t wrote = write(dst, buffer + offset, (size_t)(n - offset));
+            if (wrote <= 0) {
+                failed = 1;
+                break;
+            }
+            offset += wrote;
+        }
+        if (failed)
+            break;
+    }
+    if (close(src) != 0 || close(dst) != 0)
+        failed = 1;
+    return failed;
+}
+
+static int digest_is_hex(const char *digest)
+{
+    if (strlen(digest) != 64u)
+        return 0;
+    for (size_t i = 0u; i < 64u; i++)
+        if (!((digest[i] >= '0' && digest[i] <= '9') ||
+              (digest[i] >= 'a' && digest[i] <= 'f') ||
+              (digest[i] >= 'A' && digest[i] <= 'F')))
+            return 0;
+    return 1;
+}
+
+static int core_digest_matches(const char *path, const char *expected)
+{
+    char *argv[] = {"/usr/bin/shasum", "-a", "256", (char *)path, NULL};
+    char output[1024] = {0};
+    int status = 0;
+    if (!digest_is_hex(expected) ||
+        run_capture(argv, output, sizeof output, STATES_OBSERVE_MS, &status) != 0 || status != 0)
+        return 1;
+    for (size_t i = 0u; i < 64u; i++) {
+        char c = output[i];
+        if (c >= 'A' && c <= 'F')
+            c = (char)(c + ('a' - 'A'));
+        char e = expected[i];
+        if (e >= 'A' && e <= 'F')
+            e = (char)(e + ('a' - 'A'));
+        if (c != e)
+            return 1;
+    }
+    return output[64] == ' ' || output[64] == '\t' ? 0 : 1;
+}
+
+static int host_run(int argc, char **argv, const char *self_path)
+{
+    if (argc != 13)
+        return 2;
+    host_session host;
+    memset(&host, 0, sizeof host);
+    host.udp_fd = -1;
+    host.reserved_fd = -1;
+    if (copy_path(host.retroarch, sizeof host.retroarch, argv[2]) != 0 ||
+        copy_path(host.core, sizeof host.core, argv[3]) != 0 ||
+        copy_path(host.core_sha256, sizeof host.core_sha256, argv[4]) != 0 ||
+        copy_path(host.info, sizeof host.info, argv[5]) != 0 ||
+        copy_path(host.rom, sizeof host.rom, argv[6]) != 0 ||
+        copy_path(host.ra_dir, sizeof host.ra_dir, argv[7]) != 0 ||
+        copy_path(host.save_dir, sizeof host.save_dir, argv[8]) != 0 ||
+        copy_path(host.output_root, sizeof host.output_root, argv[9]) != 0 ||
+        copy_path(host.compare, sizeof host.compare, argv[10]) != 0 ||
+        copy_path(host.final_shot, sizeof host.final_shot, argv[11]) != 0)
+        return 2;
+    char *end = NULL;
+    unsigned long frames = strtoul(argv[12], &end, 10);
+    if (end == argv[12] || *end != '\0' || frames != 120u ||
+        !digest_is_hex(host.core_sha256))
+        return 2;
+    host.frames = (unsigned)frames;
+    FILE *fixture = fopen(host.rom, "rb");
+    if (fixture == NULL)
+        return 1;
+    uint32_t crc = 0xffffffffu;
+    int byte;
+    while ((byte = fgetc(fixture)) != EOF) {
+        crc ^= (uint32_t)(uint8_t)byte;
+        for (unsigned bit = 0u; bit < 8u; bit++)
+            crc = (crc >> 1) ^ (0xedb88320u & (0u - (crc & 1u)));
+    }
+    if (ferror(fixture) || fclose(fixture) != 0)
+        return 1;
+    host.fixture_crc = ~crc;
+    if (validate_host_paths(&host) != 0 || core_digest_matches(host.core, host.core_sha256) != 0)
+        return 1;
+    host.start_ms = states_now_ms();
+    if (access("/usr/bin/sandbox-exec", X_OK) != 0 ||
+        sandbox_helper(&host, self_path) != 0 ||
+        states_now_ms() >= host.start_ms + STATES_WORK_MS || update_config_port(&host) != 0) {
+        fprintf(stderr, "states: fail-closed sandbox UDP containment preflight\n");
+        if (host.reserved_fd >= 0)
+            close(host.reserved_fd);
+        return 1;
+    }
+    if (spawn_retroarch(&host) != 0) {
+        fprintf(stderr, "states: could not prove the unique owned RetroArch endpoint\n");
+        (void)host_cleanup(&host, STATES_CLEANUP_MS);
+        if (host.reserved_fd >= 0)
+            close(host.reserved_fd);
+        return 1;
+    }
+    states_ops ops = {
+        .user = &host,
+        .start_ms = host.start_ms,
+        .now_ms = host_now,
+        .preflight = host_preflight,
+        .verify_identity = host_verify_identity,
+        .read_progress = host_read_progress,
+        .state_absent = host_state_absent,
+        .save_once = host_save_once,
+        .state_created = host_state_created,
+        .frame_once = host_frame_once,
+        .load_once = host_load_once,
+        .capture = host_capture,
+        .cleanup = host_cleanup,
+    };
+    states_result result;
+    int rc = states_save_load(&ops, &result);
+    if (file_contains(host.log_path, host.core) != 0 ||
+        core_digest_matches(host.core, host.core_sha256) != 0)
+        rc = 1;
+    if (host.capture_count >= 2u &&
+        copy_file(host.captures[2], host.final_shot) != 0)
+        rc = 1;
+    printf("states host: frames=%u explicit_advances=%u duration_ms=%" PRIu64
+           " core_sha256=%s core_path=%s\n",
+           host.frames, result.frames, result.elapsed_ms, host.core_sha256, host.core);
+    if (rc != 0)
+        fprintf(stderr, "states host failed: %s\n", result.error != NULL ? result.error :
+                "host log, final artifact, or cleanup validation failed");
+    return rc;
+}
+#endif
+
 int main(int argc, char **argv)
 {
+#if STATES_POSIX
+    if (argc == 2 && strcmp(argv[1], "--mock-child") == 0)
+        return mock_child_main();
+#if defined(__APPLE__)
+    if (argc == 3 && strcmp(argv[1], "--udp-helper") == 0)
+        return udp_helper_main(argv[2]);
+#endif
+    char resolved[PATH_MAX];
+    const char *self = argc > 0 && realpath(argv[0], resolved) != NULL ? resolved : argv[0];
+#else
+    const char *self = "portable-mock";
+#endif
     if (argc == 2 && strcmp(argv[1], "--controls") == 0)
-        return run_controls();
-    fprintf(stderr, "usage: states --controls\n");
+        return run_controls(self);
+#if defined(__APPLE__)
+    if (argc == 3 && strcmp(argv[1], "--preflight") == 0)
+        return preflight_only(self, argv[2]);
+    if (argc > 1 && strcmp(argv[1], "--host") == 0)
+        return host_run(argc, argv, self);
+#endif
+    fprintf(stderr, "usage: states --controls | --host ...\n");
     return 2;
 }
