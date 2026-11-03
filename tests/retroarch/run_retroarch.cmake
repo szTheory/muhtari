@@ -1,5 +1,57 @@
 # Isolated bounded frontend launch; shared save storage must survive launch cleanup.
 cmake_minimum_required(VERSION 3.25)
+if(MODE STREQUAL "support-report")
+  if(NOT DEFINED ROOT OR "${ROOT}" STREQUAL "")
+    message(FATAL_ERROR "run_retroarch support-report: -DROOT is required")
+  endif()
+  file(REAL_PATH "${ROOT}" support_root)
+  set(support_dir "${support_root}/tests/retroarch")
+  if(NOT IS_DIRECTORY "${support_dir}")
+    message(FATAL_ERROR "run_retroarch support-report: support directory is absent: ${support_dir}")
+  endif()
+
+  set(required_support_files
+    bmp.c
+    compare.c
+    receipt_driver.c
+    run_retroarch.cmake
+    states.c
+    test.cfg.in
+  )
+  foreach(name IN LISTS required_support_files)
+    set(path "${support_dir}/${name}")
+    if(NOT EXISTS "${path}" OR IS_DIRECTORY "${path}" OR IS_SYMLINK "${path}")
+      message(FATAL_ERROR "run_retroarch support-report: missing required support input: ${path}")
+    endif()
+    file(READ "${path}" readable_check)
+  endforeach()
+
+  file(GLOB support_paths LIST_DIRECTORIES FALSE "${support_dir}/*")
+  list(SORT support_paths)
+  set(file_count 0)
+  set(total_lines 0)
+  foreach(path IN LISTS support_paths)
+    if(IS_SYMLINK "${path}" OR IS_DIRECTORY "${path}")
+      continue()
+    endif()
+    if(NOT EXISTS "${path}")
+      message(FATAL_ERROR "run_retroarch support-report: support input disappeared: ${path}")
+    endif()
+    file(READ "${path}" contents)
+    string(REGEX REPLACE "[^\n]" "" newline_chars "${contents}")
+    string(LENGTH "${newline_chars}" lines)
+    get_filename_component(name "${path}" NAME)
+    message(STATUS "support-report: tests/retroarch/${name}: ${lines} newline(s)")
+    math(EXPR total_lines "${total_lines} + ${lines}")
+    math(EXPR file_count "${file_count} + 1")
+  endforeach()
+  if(file_count EQUAL 0)
+    message(FATAL_ERROR "run_retroarch support-report: no regular support files found in ${support_dir}")
+  endif()
+  message(STATUS "support-report: total ${total_lines} newline(s)")
+  return()
+endif()
+
 set(RA_DIR_REQUESTED "${RA_DIR}")
 set(SHOT_REQUESTED "${SHOT}")
 set(SAVE_DIR_REQUESTED "${SAVE_DIR}")

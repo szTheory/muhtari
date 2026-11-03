@@ -149,6 +149,251 @@ muhtari_add_test(NAME policy.compat_ratchet.controls
     -P ${CMAKE_SOURCE_DIR}/tests/cmake/compat_ratchet_controls.cmake
   LABELS policy TIMEOUT 30)  # provisional, n=1, local
 
+if(MUHTARI_INVENTORY MATCHES "^(ci|wasm32)$")
+  # Prevents a retired source-line ceiling from making the hosted state consumer unreachable.
+  file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/policy/host_support_controls.cmake CONTENT [=[
+cmake_minimum_required(VERSION 3.25)
+
+function(inspect_workflow workflow_path)
+  if(NOT EXISTS "${workflow_path}" OR IS_DIRECTORY "${workflow_path}")
+    message(FATAL_ERROR "policy.host_support.controls: workflow is absent: ${workflow_path}")
+  endif()
+  file(READ "${workflow_path}" workflow)
+  string(FIND "${workflow}" "\n  retroarch:\n" job_start)
+  if(job_start LESS 0)
+    message(FATAL_ERROR "policy.host_support.controls: retroarch job is absent")
+  endif()
+  math(EXPR job_start "${job_start} + 1")
+  string(SUBSTRING "${workflow}" ${job_start} -1 after_job_start)
+  string(REGEX MATCH "\n  [A-Za-z0-9_-]+:\n" next_job_heading "${after_job_start}")
+  if(next_job_heading STREQUAL "")
+    set(job_text "${after_job_start}")
+  else()
+    string(FIND "${after_job_start}" "${next_job_heading}" job_end)
+    string(SUBSTRING "${after_job_start}" 0 ${job_end} job_text)
+  endif()
+
+  string(FIND "${job_text}" "      - name: Fresh frontend and runner battery roundtrip" battery_start)
+  if(battery_start LESS 0)
+    message(FATAL_ERROR "policy.host_support.controls: battery step is absent from retroarch job")
+  endif()
+  string(SUBSTRING "${job_text}" ${battery_start} -1 after_battery_start)
+  string(REGEX MATCH "\n      - name: " next_step_heading "${after_battery_start}")
+  if(next_step_heading STREQUAL "")
+    set(battery_text "${after_battery_start}")
+  else()
+    string(FIND "${after_battery_start}" "${next_step_heading}" battery_end)
+    string(SUBSTRING "${after_battery_start}" 0 ${battery_end} battery_text)
+  endif()
+  string(REGEX REPLACE "(^|\n)[ \t]*#[^\n]*" "" active_battery "${battery_text}")
+
+  if("${active_battery}" MATCHES "wc[ \t]+-l" AND
+      "${active_battery}" MATCHES "(-le|-lt|-ge|-gt|-eq|<=|>=|<|>)[ \t]*[0-9]+")
+    string(REGEX MATCH "[^\n]*wc[ \t]+-l[^\n]*" source_gate "${active_battery}")
+    message(FATAL_ERROR "policy.host_support.controls: battery source-line ceiling detected: ${source_gate}")
+  endif()
+  if("${active_battery}" MATCHES "(source|support)[_-]?(line|total|count)" AND
+      "${active_battery}" MATCHES "(-le|-lt|-ge|-gt|-eq|<=|>=|<|>)[ \t]*[0-9]+")
+    message(FATAL_ERROR "policy.host_support.controls: numeric battery source total gate detected")
+  endif()
+
+  set(reporter [==[cmake -DMODE=support-report -DROOT="$PWD" -P tests/retroarch/run_retroarch.cmake]==])
+  string(FIND "${active_battery}" "${reporter}" reporter_position)
+  if(reporter_position LESS 0)
+    message(FATAL_ERROR "policy.host_support.controls: battery support reporter invocation is missing")
+  endif()
+endfunction()
+
+if(MODE STREQUAL "inspect")
+  if(NOT DEFINED WORKFLOW OR "${WORKFLOW}" STREQUAL "")
+    message(FATAL_ERROR "policy.host_support.controls: -DWORKFLOW is required in inspect mode")
+  endif()
+  inspect_workflow("${WORKFLOW}")
+  return()
+endif()
+
+if(NOT DEFINED ROOT OR "${ROOT}" STREQUAL "" OR
+    NOT DEFINED BUILD OR "${BUILD}" STREQUAL "" OR
+    NOT DEFINED WORK OR "${WORK}" STREQUAL "")
+  message(FATAL_ERROR "policy.host_support.controls: ROOT, BUILD and WORK are required")
+endif()
+set(build_root "${BUILD}")
+cmake_path(IS_PREFIX build_root "${WORK}" NORMALIZE work_under_build)
+if(NOT work_under_build)
+  message(FATAL_ERROR "policy.host_support.controls: scratch path must be under the build directory: ${WORK}")
+endif()
+file(REMOVE_RECURSE "${WORK}")
+set(fixture_root "${WORK}/copied-support")
+file(MAKE_DIRECTORY "${fixture_root}/tests")
+file(COPY "${ROOT}/tests/retroarch" DESTINATION "${fixture_root}/tests")
+
+set(preserve_dir "${WORK}/preserved-frontend")
+set(unused_save_dir "${WORK}/unused-save")
+set(unused_shot "${WORK}/unused-shot.png")
+file(MAKE_DIRECTORY "${preserve_dir}")
+file(WRITE "${preserve_dir}/sentinel" "preserve\n")
+
+function(run_report report_root result_var output_var)
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" "-DMODE=support-report" "-DROOT=${report_root}"
+      "-DRETROARCH=${CMAKE_COMMAND}"
+      "-DCORE=${report_root}/tests/retroarch/run_retroarch.cmake"
+      "-DINFO=${report_root}/tests/retroarch/test.cfg.in"
+      "-DTEMPLATE=${report_root}/tests/retroarch/test.cfg.in"
+      "-DRA_DIR=${preserve_dir}" "-DSAVE_DIR=${unused_save_dir}"
+      -DFRAMES=1 "-DSHOT=${unused_shot}"
+      -P "${report_root}/tests/retroarch/run_retroarch.cmake"
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE output
+    ERROR_VARIABLE error
+  )
+  set("${result_var}" "${result}" PARENT_SCOPE)
+  set("${output_var}" "${output}${error}" PARENT_SCOPE)
+endfunction()
+
+function(count_newlines path result_var)
+  file(READ "${path}" contents)
+  string(REGEX REPLACE "[^\n]" "" newline_chars "${contents}")
+  string(LENGTH "${newline_chars}" count)
+  set("${result_var}" "${count}" PARENT_SCOPE)
+endfunction()
+
+set(support_dir "${fixture_root}/tests/retroarch")
+file(GLOB support_paths LIST_DIRECTORIES FALSE "${support_dir}/*")
+list(SORT support_paths)
+if(NOT support_paths)
+  message(FATAL_ERROR "policy.host_support.controls: copied support tree is empty")
+endif()
+set(expected_total 0)
+foreach(path IN LISTS support_paths)
+  if(IS_SYMLINK "${path}" OR IS_DIRECTORY "${path}" OR NOT EXISTS "${path}")
+    message(FATAL_ERROR "policy.host_support.controls: copied support input is not a regular file: ${path}")
+  endif()
+  count_newlines("${path}" expected_lines)
+  get_filename_component(name "${path}" NAME)
+  math(EXPR expected_total "${expected_total} + ${expected_lines}")
+endforeach()
+
+run_report("${fixture_root}" report_status baseline_report)
+if(NOT "${report_status}" STREQUAL "0")
+  message(FATAL_ERROR "policy.host_support.controls: actual reporter rejected the copied support tree: ${baseline_report}")
+endif()
+foreach(path IN LISTS support_paths)
+  count_newlines("${path}" expected_lines)
+  get_filename_component(name "${path}" NAME)
+  set(expected_row "support-report: tests/retroarch/${name}: ${expected_lines} newline(s)")
+  string(FIND "${baseline_report}" "${expected_row}" row_position)
+  if(row_position LESS 0)
+    message(FATAL_ERROR "policy.host_support.controls: actual reporter omitted or miscounted ${name}: expected ${expected_lines} newlines")
+  endif()
+endforeach()
+set(expected_total_row "support-report: total ${expected_total} newline(s)")
+string(FIND "${baseline_report}" "${expected_total_row}" total_position)
+if(total_position LESS 0)
+  message(FATAL_ERROR "policy.host_support.controls: actual reporter total differs from independent count ${expected_total}")
+endif()
+if(NOT EXISTS "${preserve_dir}/sentinel" OR EXISTS "${unused_save_dir}" OR EXISTS "${unused_shot}")
+  message(FATAL_ERROR "policy.host_support.controls: support reporting performed frontend cleanup or output work")
+endif()
+
+string(REPEAT "growth\n" 301 growth_content)
+file(WRITE "${support_dir}/policy-growth.txt" "${growth_content}")
+math(EXPR grown_total "${expected_total} + 301")
+if(NOT grown_total GREATER 300)
+  message(FATAL_ERROR "policy.host_support.controls: growth fixture did not exceed the historical ceiling")
+endif()
+run_report("${fixture_root}" report_status grown_report)
+if(NOT "${report_status}" STREQUAL "0")
+  message(FATAL_ERROR "policy.host_support.controls: actual reporter rejected known support growth: ${grown_report}")
+endif()
+set(growth_row "support-report: tests/retroarch/policy-growth.txt: 301 newline(s)")
+string(FIND "${grown_report}" "${growth_row}" growth_position)
+set(grown_total_row "support-report: total ${grown_total} newline(s)")
+string(FIND "${grown_report}" "${grown_total_row}" grown_total_position)
+if(growth_position LESS 0 OR grown_total_position LESS 0)
+  message(FATAL_ERROR "policy.host_support.controls: growth report did not increase by exactly 301 newline characters")
+endif()
+if(NOT EXISTS "${preserve_dir}/sentinel" OR EXISTS "${unused_save_dir}" OR EXISTS "${unused_shot}")
+  message(FATAL_ERROR "policy.host_support.controls: growth reporting performed frontend cleanup or output work")
+endif()
+
+file(REMOVE "${support_dir}/states.c")
+run_report("${fixture_root}" missing_status missing_report)
+set(missing_input "${support_dir}/states.c")
+string(FIND "${missing_report}" "missing required support input" missing_message_position)
+string(FIND "${missing_report}" "${missing_input}" missing_path_position)
+if("${missing_status}" STREQUAL "0" OR
+    missing_message_position LESS 0 OR missing_path_position LESS 0)
+  message(FATAL_ERROR "policy.host_support.controls: missing required input was not rejected by path: ${missing_report}")
+endif()
+
+set(workflow "${ROOT}/.github/workflows/ci.yml")
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DMODE=inspect" "-DWORKFLOW=${workflow}"
+  -P "${CMAKE_CURRENT_LIST_FILE}"
+  RESULT_VARIABLE inspect_status OUTPUT_VARIABLE inspect_output ERROR_VARIABLE inspect_error)
+if(NOT "${inspect_status}" STREQUAL "0")
+  message(FATAL_ERROR "policy.host_support.controls: actual retroarch battery region failed policy inspection: ${inspect_output}${inspect_error}")
+endif()
+
+file(READ "${workflow}" workflow_text)
+set(reporter [==[cmake -DMODE=support-report -DROOT="$PWD" -P tests/retroarch/run_retroarch.cmake]==])
+set(historical_gate [==[test "$(cat tests/retroarch/* | wc -l | tr -d ' ')" -le 300]==])
+set(other_gate [==[test "$(cat tests/retroarch/* | wc -l | tr -d ' ')" -le 400]==])
+
+function(expect_inspection_failure candidate expected)
+  execute_process(COMMAND "${CMAKE_COMMAND}" "-DMODE=inspect" "-DWORKFLOW=${candidate}"
+    -P "${CMAKE_CURRENT_LIST_FILE}"
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+  set(combined "${output}${error}")
+  string(REGEX REPLACE "[ \t\r\n]+" " " combined "${combined}")
+  if("${status}" STREQUAL "0" OR NOT "${combined}" MATCHES "${expected}")
+    message(FATAL_ERROR "policy.host_support.controls: workflow mutation missed ${expected}: ${combined}")
+  endif()
+endfunction()
+
+set(noisy_workflow "${WORK}/workflow-comments-and-other-jobs.yml")
+set(noisy_text "${workflow_text}")
+string(REPLACE "${reporter}" "${reporter}\n          # Historical source-line check: ${historical_gate}"
+  noisy_text "${noisy_text}")
+string(APPEND noisy_text [==[
+
+  unrelated-policy-probe:
+    steps:
+      - run: test "$(cat tests/retroarch/* | wc -l | tr -d ' ')" -le 400
+]==])
+file(WRITE "${noisy_workflow}" "${noisy_text}")
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DMODE=inspect" "-DWORKFLOW=${noisy_workflow}"
+  -P "${CMAKE_CURRENT_LIST_FILE}"
+  RESULT_VARIABLE noisy_status OUTPUT_VARIABLE noisy_output ERROR_VARIABLE noisy_error)
+if(NOT "${noisy_status}" STREQUAL "0")
+  message(FATAL_ERROR "policy.host_support.controls: comments or unrelated jobs affected the bounded inspection: ${noisy_output}${noisy_error}")
+endif()
+
+set(historical_workflow "${WORK}/workflow-historical-ceiling.yml")
+set(historical_text "${workflow_text}")
+string(REPLACE "${reporter}" "${historical_gate}" historical_text "${historical_text}")
+file(WRITE "${historical_workflow}" "${historical_text}")
+expect_inspection_failure("${historical_workflow}" "battery source-line ceiling detected")
+
+set(other_workflow "${WORK}/workflow-different-ceiling.yml")
+set(other_text "${workflow_text}")
+string(REPLACE "${reporter}" "${other_gate}" other_text "${other_text}")
+file(WRITE "${other_workflow}" "${other_text}")
+expect_inspection_failure("${other_workflow}" "battery source-line ceiling detected")
+
+set(missing_reporter_workflow "${WORK}/workflow-missing-reporter.yml")
+set(missing_reporter_text "${workflow_text}")
+string(REPLACE "${reporter}" "" missing_reporter_text "${missing_reporter_text}")
+file(WRITE "${missing_reporter_workflow}" "${missing_reporter_text}")
+expect_inspection_failure("${missing_reporter_workflow}" "battery support reporter invocation is missing")
+]=])
+  muhtari_add_test(NAME policy.host_support.controls
+    COMMAND ${CMAKE_COMMAND} "-DROOT=${CMAKE_SOURCE_DIR}" "-DBUILD=${CMAKE_BINARY_DIR}"
+      "-DWORK=${CMAKE_BINARY_DIR}/policy/host_support_controls"
+      -P ${CMAKE_BINARY_DIR}/policy/host_support_controls.cmake
+    LABELS policy TIMEOUT 20)
+endif()
+
 if(MUHTARI_INVENTORY STREQUAL "ci")
   set(publish_timeout 130)
   if(WIN32)
