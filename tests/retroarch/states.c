@@ -3046,13 +3046,11 @@ static int host_run(int argc, char **argv, const char *self_path)
     if (file_contains(host.log_path, host.core) != 0 ||
         core_digest_matches(host.core, host.core_sha256) != 0)
         rc = 1;
-    if (host.last_capture[0] != '\0' &&
-        copy_file(host.last_capture, host.final_shot) != 0)
+    if (host.last_capture[0] != '\0' && copy_file(host.last_capture, host.final_shot) != 0)
         rc = 1;
     int process_exit = WIFEXITED(host.child_status) ? WEXITSTATUS(host.child_status) : -1;
-    uint64_t process_duration = host.child_exit_ms >= host.child_start_ms
-                                    ? host.child_exit_ms - host.child_start_ms
-                                    : 0u;
+    uint64_t process_duration =
+        host.child_exit_ms >= host.child_start_ms ? host.child_exit_ms - host.child_start_ms : 0u;
     printf("states host: result=%s verified_version=1.22.2 runahead=one_frame_single_instance "
            "sandbox_external_udp_rejected=%d loopback_port=%u retroarch_pid=%ld "
            "retroarch_process_exit=%d retroarch_process_duration_ms=%" PRIu64 " "
@@ -3074,11 +3072,12 @@ static int host_run(int argc, char **argv, const char *self_path)
            result.baseline_frames, result.baseline_progress, result.baseline_elapsed_ms,
            result.runahead_frames, result.runahead_progress, result.runahead_presented_progress,
            result.runahead_elapsed_ms, result.disabled_progress, result.picture_observations,
-           rc == 0 ? "pass" : "incomplete", STATES_MEDIA_BYTES,
-           rc == 0 ? "OK" : "unresolved", rc == 0 ? "pass" : "incomplete");
+           rc == 0 ? "pass" : "incomplete", STATES_MEDIA_BYTES, rc == 0 ? "OK" : "unresolved",
+           rc == 0 ? "pass" : "incomplete");
     if (rc != 0)
-        fprintf(stderr, "states host failed: %s\n", result.error != NULL ? result.error :
-                "host log, final artifact, or cleanup validation failed");
+        fprintf(stderr, "states host failed: %s\n",
+                result.error != NULL ? result.error
+                                     : "host log, final artifact, or cleanup validation failed");
     return rc;
 }
 #endif
