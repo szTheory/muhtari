@@ -162,6 +162,8 @@ None. The exact-parent cold failure was diagnosed and the one bounded warm retes
 
 The host job's battery controls passed: both 120-frame runs matched all 34,816 save bytes and exact 320x242 pixels. The same step then failed at `.github/workflows/ci.yml:535`, which asserts that `cat tests/retroarch/*` has at most 300 lines. The current files total 3,845 lines, including `states.c` at 3,145. The owned state-mode control and state receipt checks were skipped. This independent guard must be addressed in a separately scoped change before any new host attempt.
 
+The later phase-level regression gate ran the configured `cmake --workflow --preset ci` with a 600-second bound. Its one warm full-workflow retest also exited 8 on the same five one-second BIOS timeouts; the focused serial test plus fixtures passed 7/7 in 0.52 seconds. The cause remains unresolved, no timeout or source change was made, and there was no further full local run. Exact commands and receipts are in `14-RESOURCE-EVIDENCE.md`.
+
 The best-effort `gsd_run windows append --kind unrun-verify ...` was rejected because existing `.planning/WINDOWS.md` counts disagree with its entries (17 open/35 fixed in frontmatter versus 16 open/36 fixed in the entries). The known ledger inconsistency remains deferred; no ledger repair was attempted.
 
 ## User Setup Required
