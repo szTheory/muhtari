@@ -877,8 +877,18 @@ add_executable(muhtari-test-retroarch-states ${PROJECT_SOURCE_DIR}/tests/retroar
 set_target_properties(muhtari-test-retroarch-states PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-retroarch-states)
+if(NOT CMAKE_CROSSCOMPILING)
+  add_executable(muhtari-test-retroarch-receipt ${PROJECT_SOURCE_DIR}/tests/retroarch/receipt_driver.c)
+  set_target_properties(muhtari-test-retroarch-receipt PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-retroarch-receipt)
+  set(receipt_driver "$<TARGET_FILE:muhtari-test-retroarch-receipt>")
+else()
+  set(receipt_driver "")
+endif()
 set(states_controls_template [=[
 set(DRIVER "@DRIVER@")
+set(RECEIPT_DRIVER "@RECEIPT_DRIVER@")
 set(ROOT "@ROOT@")
 set(CMAKE_BIN "@CMAKE_BIN@")
 set(OUT "@OUT@")
@@ -919,9 +929,84 @@ file(READ "${ra_real}/sentinel" sentinel)
 if(NOT sentinel STREQUAL "keep\\n")
   message(FATAL_ERROR "Symlink path rejection removed or changed its unrelated sentinel")
 endif()
+set(receipt_root "${OUT}/receipt-controls")
+file(REMOVE_RECURSE "${receipt_root}")
+set(receipt_core "${receipt_root}/core.dylib")
+set(receipt_info "${receipt_root}/muhtari_libretro.info")
+set(receipt_retroarch "${receipt_root}/RetroArch")
+set(receipt_compare "${receipt_root}/compare")
+file(MAKE_DIRECTORY "${receipt_root}")
+file(WRITE "${receipt_core}" "core\\n")
+file(WRITE "${receipt_info}" "info\\n")
+file(WRITE "${receipt_retroarch}" "retroarch\\n")
+file(WRITE "${receipt_compare}" "compare\\n")
+set(source_sha "0123456789abcdef0123456789abcdef01234567")
+set(run_url "https://github.com/owner/repository/actions/runs/12345")
+function(run_receipt_case suffix expected_result expected_output)
+  set(state_root "${receipt_root}/${suffix}")
+  file(MAKE_DIRECTORY "${state_root}")
+  set(shot "${state_root}/${suffix}.bmp")
+  execute_process(COMMAND "${CMAKE_BIN}"
+    "-DRETROARCH=${receipt_retroarch}" "-DCORE=${receipt_core}"
+    "-DINFO=${receipt_info}" -DINFO_NAME=muhtari_libretro.info
+    "-DTEMPLATE=${ROOT}/tests/retroarch/test.cfg.in"
+    "-DSTATE_DRIVER=${RECEIPT_DRIVER}"
+    "-DCOMPARE=${receipt_compare}" "-DSTATE_OUT=${state_root}"
+    "-DRA_DIR=${state_root}/ra" "-DSAVE_DIR=${state_root}/save"
+    "-DSOURCE_SHA=${source_sha}" -DRUN_ID=12345 -DRUN_ATTEMPT=1
+    -DWORKFLOW_EVENT=workflow_dispatch "-DRUN_URL=${run_url}"
+    -DHOST_VERSION=1.22.2
+    -DCORE_ARTIFACT_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    -DRUNNER_ARTIFACT_SHA=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    -DLIBRARY_ARTIFACT_SHA=cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+    -DFRAMES=120 -DROM=${ROOT}/tests/diag/frontend-states.a78
+    "-DSHOT=${shot}" -DMODE=states
+    -P "${ROOT}/tests/retroarch/run_retroarch.cmake"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(expected_result STREQUAL "success" AND NOT rc STREQUAL "0")
+    message(FATAL_ERROR "receipt success path failed: ${rc}\\n${out}${err}")
+  elseif(expected_result STREQUAL "failure" AND rc STREQUAL "0")
+    message(FATAL_ERROR "receipt failure path unexpectedly succeeded\\n${out}${err}")
+  endif()
+  set(receipt "${state_root}/host-receipt.txt")
+  if(NOT EXISTS "${receipt}")
+    message(FATAL_ERROR "host receipt missing for ${expected_result} path; expected ${expected_output}")
+  endif()
+  file(READ "${receipt}" content)
+  foreach(required IN ITEMS "source_sha256=${source_sha}"
+      "run_id=12345" "run_attempt=1" "workflow_event=workflow_dispatch"
+      "run_url=${run_url}" "host_version=1.22.2"
+      "core_artifact_sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      "runner_artifact_sha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      "library_artifact_sha256=cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      "${expected_output}")
+    string(FIND "${content}" "${required}" position)
+    if(position EQUAL -1)
+      message(FATAL_ERROR "host receipt omitted '${required}' on ${expected_result} path")
+    endif()
+  endforeach()
+  if(expected_result STREQUAL "success")
+    foreach(required IN ITEMS "driver_result=0" "screenshot_sha256=" "screenshot_bytes=")
+      string(FIND "${content}" "${required}" position)
+      if(position EQUAL -1)
+        message(FATAL_ERROR "successful host receipt omitted '${required}'")
+      endif()
+    endforeach()
+  else()
+    string(FIND "${content}" "driver_result=" result_position)
+    if(result_position EQUAL -1)
+      message(FATAL_ERROR "failed host receipt omitted the child exit result")
+    endif()
+  endif()
+endfunction()
+if(NOT RECEIPT_DRIVER STREQUAL "")
+  run_receipt_case(success success "MOCK_SUCCESS")
+  run_receipt_case(failure failure "MOCK_FAILURE")
+endif()
 message("retroarch states: strict replies, owned-child faults, and symlink cleanup guard pass")
 ]=])
 set(DRIVER "$<TARGET_FILE:muhtari-test-retroarch-states>")
+set(RECEIPT_DRIVER "${receipt_driver}")
 set(ROOT "${PROJECT_SOURCE_DIR}")
 set(CMAKE_BIN "${CMAKE_COMMAND}")
 set(OUT "${PROJECT_BINARY_DIR}/tests/retroarch/states-path-controls")
