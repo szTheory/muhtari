@@ -1,45 +1,44 @@
 ---
 phase: 14-proven-frontend-states-and-responsive-play
-reviewed: 2026-11-03T15:37:11Z
+reviewed: 2026-11-03T23:52:55Z
 depth: standard
 files_reviewed: 4
 files_reviewed_list:
+  - .planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md
+  - .planning/phases/14-proven-frontend-states-and-responsive-play/14-11-SUMMARY.md
   - docs/libretro.md
   - docs/testing.md
-  - tests/fuzz/tests.cmake
-  - tests/retroarch/states.c
 findings:
   critical: 0
   warning: 1
   info: 0
   total: 1
+  necessity: 0
 status: issues_found
 ---
 
 # Phase 14: Code Review Report
 
-**Reviewed:** 2026-11-03T15:37:11Z
+**Reviewed:** 2026-11-03T23:52:55Z
 **Depth:** standard
 **Files Reviewed:** 4
 **Status:** issues_found
 
 ## Summary
 
-The CTest scheduling change isolates the portable replay, and the three non-POSIX parameter suppressions address the prior Windows warning failure. The recorded hosted outcome is incomplete in `docs/testing.md`: it omits the command, exit status, and direct run URL required by the surrounding procedure and project evidence rule.
-
-## Narrative Findings (AI reviewer)
+The outcome notes consistently preserve the failed host run as an unresolved compound preflight result and keep frontend qualification pending. One evidence sentence inaccurately says the downloaded artifact contains saves; its archive contains screenshots and the host receipt, but no save files.
 
 ## Warnings
 
-### WR-01: Host outcome omits the required evidence fields
+### WR-01 [WARNING]: Evidence record says the artifact contains save files
 
+**File:** `.planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md:611`
 **Severity:** WARNING
-**File:** `docs/testing.md:363`
-**Issue:** The new status line says only `Host job skipped (41629846188).` The preceding procedure says to record the command, exit, and run URL, and the project instructions require evidence to contain all three. A reader cannot identify the exact dispatch/check command or its result from this entry, and the run number is not a clickable link here.
-**Fix:** Record the dispatch command and its exit status, the relevant aggregate check and exit status, and a direct Markdown link to run 41629846188. If the complete evidence is maintained elsewhere, link that record and state the host job result here.
+**Issue:** The sentence says “The screenshots and saves in this artifact” belong to the earlier DMA/battery steps. The recorded `retroarch-frames` artifact (`13279667108`) is available locally as `build/phase14-gap11-evidence/artifacts/13279667108.zip`; its complete listing contains six PNG screenshots and `frontend-states/host-receipt.txt`, with no save file. This misstates what evidence was retained, although the sentence correctly says no states-mode raw save is available.
+**Fix:** Change the phrase to “The screenshots in this artifact belong to the earlier DMA/battery steps”; if useful, separately say that the battery roundtrip produced a save during the job but save bytes were not included in this artifact.
 
 ---
 
-_Reviewed: 2026-11-03T15:37:11Z_
+_Reviewed: 2026-11-03T23:52:55Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
