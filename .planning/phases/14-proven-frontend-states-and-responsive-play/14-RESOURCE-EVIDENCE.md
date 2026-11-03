@@ -67,7 +67,7 @@ The critical path was `build (macos-x64)` at 689 seconds, including roughly 350 
 
 ## Follow-up boundary
 
-The run covers only source `1e8f019`; later documentation and formatting commits are not covered by it. The original one-dispatch allowance described by this attempt is spent. The owner separately authorized one bounded Phase 14 gap-closure dispatch on 2026-11-03; that additional allowance remains unused until the gates below pass. Phase 12 remains halted. No retry or local frontend launch is authorized.
+The run covers only source `1e8f019`; later documentation and formatting commits are not covered by it. Its original one-dispatch allowance is spent. On 2026-11-03 the owner separately authorized one bounded Phase 14 gap-closure dispatch; it was used once as run `41618546347`, documented below. Phase 12 remains halted. No retry or local frontend launch is authorized.
 
 ## Plan 14-06 local gap-closure preflight
 
@@ -91,11 +91,50 @@ Local commands run on macOS arm64 against the repaired source:
 
 ASan diagnosis: the instrumented unrelated `build/asan/tests/muhtari-test-api-v1` also hung with no output before `main`; the state binary emitted only `AddressSanitizer: libc interceptors initialized` before hanging. `ASAN_OPTIONS=detect_leaks=0` did not change the hang. The exact workflow reproduced timeouts outside the sandbox as well, including unrelated `input.cart_files`, `runner.boot_to_play`, and `basic.*` tests, so sandbox process-enumeration restrictions do not explain the failure. No source or preset was changed in response. Per the owner's 2026-11-03 decision, local macOS arm64 ASan is treated as unavailable; the single hosted Ubuntu x64 ASan job must pass before the host result can be accepted.
 
-The bounded ASan commands above did not pass locally. Their failure is a platform limitation, not evidence that the repaired code passed ASan. The exact immediate-parent checkout and its CI, hygiene, and inventory checks remain required; only local ASan is omitted there for the same documented macOS arm64 limitation. The host dispatch allowance remains unused until those checks and all publication preconditions pass.
+The bounded ASan commands above did not pass locally. Their failure is a platform limitation, not evidence that the repaired code passed ASan. The exact immediate-parent checkout was performed: CI, hygiene, and all three inventories passed after diagnosing one cold parallel BIOS timeout, and only local ASan was omitted for the documented macOS arm64 limitation. The hosted Ubuntu x64 ASan job passed in run `41618546347`; its wider workflow failed and the host job was skipped, so the single gap-closure allowance is spent without actual-host evidence.
 
 ### Repair commit and frozen-source preflight setup
 
 - **Repair commit:** `a51732e` (`fix(14-06): restore portable frontend test builds`); it contains only the four repaired/formatted test sources and this local evidence. Its first parent is `b338797847ba4a6a4c70d1318e20a6b0c1800605`.
 - **Review:** independent read-only gap-diff review passed before commit; the exact finding summary is recorded above.
-- **Preflight state:** no open PR targets this branch; GitHub CLI authentication is available; the only branch workflow run is the preserved failed run `41585416888`; the advertised remote branch at the time of inspection was `ee5067c12b9ca9138af6de57d52e5210d181f38c`, an ancestor of local `b338797`.
-- **Dispatch state:** the repair has not been pushed and no new run has been started. This evidence update will be committed before reading the final dispatch SHA. The immediate parent of that final evidence commit must be exactly the repair commit above, and the independent parent checkout must pass CI, hygiene, and both inventory consumers before publication is reconsidered.
+- **Preflight state at evidence commit:** no open PR targeted this branch; GitHub CLI authentication was available; the only prior branch workflow run was the preserved failure `41585416888`; remote `ee5067c12b9ca9138af6de57d52e5210d181f38c` was an ancestor of local `b338797`.
+- **Dispatch state at evidence commit:** the repair had not yet been pushed or dispatched. The next commit's immediate parent was the repair commit above; that exact detached parent checkout was subsequently verified and its receipts are saved in ignored `build/phase14-dispatch-evidence/`.
+
+## Plan 14-06 bounded dispatch result
+
+- **Owner authorization:** one additional source-bound Phase 14 attempt on 2026-11-03, with no change to the original failed run or Phase 12 allowance.
+- **Pre-dispatch source:** evidence commit `0869c655008fc5344c428313ae519a91f5e9db42`; its immediate parent was `a51732ebb97fb66f4b02b861a0931f7aad51f3c7`. A detached checkout of that exact parent passed the warmed `cmake --workflow --preset ci` (693 ordinary and six release tests), CI/release inventories (693/6), `cmake --workflow --preset hygiene` (30 checks), and hygiene inventory (30). The first cold parallel CI run exited 8 on `bios.splash_skip`, `bios.rejects_cart`, and `bios.k_window`; their serial diagnostic plus fixtures passed 5/5, and the full warmed workflow then passed. No source or timeout was changed. Parent JUnit receipts and this diagnosis are saved in ignored build output. The required Ubuntu ASan lane remained for the dispatch.
+- **Push:** one normal push, command `git push origin phase/14-proven-frontend-states-and-responsive-play` — exit 0. Immediately afterward `git ls-remote origin refs/heads/phase/14-proven-frontend-states-and-responsive-play` returned `0869c655008fc5344c428313ae519a91f5e9db42`, exactly matching the frozen local HEAD. No PR was open, no conflicting run was active, and `.github/workflows/ci.yml` only triggers on pushes to `main`, so this branch push created no extra CI run.
+- **Dispatch:** `gh workflow run ci.yml --ref phase/14-proven-frontend-states-and-responsive-play -f phase14_host=true` — exit 0, invoked exactly once. The new run is [GitHub Actions run 41618546347](https://github.com/szTheory/muhtari/actions/runs/41618546347), event `workflow_dispatch`, branch `phase/14-proven-frontend-states-and-responsive-play`, source SHA `0869c655008fc5344c428313ae519a91f5e9db42`, attempt 1. The pre-dispatch run list contained only the original failed run `41585416888`; there is no second dispatch or job rerun.
+- **Terminal result and audit:** `gh run watch 41618546347 --exit-status` — exit 1. The complete attempt/status/conclusion/head SHA/URL/jobs/steps response is saved as ignored `build/phase14-gap-run.json`; raw API and compact summary are beside it. `cmake -DINPUT=build/phase14-gap-run.json -DEXPECTED_SHA=0869c655008fc5344c428313ae519a91f5e9db42 -P tools/check_ci_run.cmake` — exit 1 because the required aggregate was not completed/success. The exact job/step failures were inspected from run logs; there were no cancelled jobs.
+
+| Job | Start offset from run start | Duration | Result |
+| --- | ---: | ---: | --- |
+| changes | 3s | 16s | success |
+| hygiene | 3s | 89s | success |
+| title | 2s | — | skipped (non-PR event) |
+| nofp (ubuntu-26.04) | 21s | 11s | success |
+| asan (ubuntu-26.04) | 21s | 351s | success; `cmake --workflow --preset asan` and inventory passed |
+| nofp (ubuntu-26.04-arm) | 24s | 27s | success |
+| library | 21s | 48s | success |
+| build (windows-arm64) | 21s | 48s | failure |
+| build (macos-arm64) | 32s | 335s | success |
+| be32 | 21s | 36s | success |
+| perf | 21s | 28s | success |
+| build (linux-x64) | 26s | 344s | success |
+| build (windows-x64) | 22s | 48s | failure |
+| build (macos-x64) | 23s | 621s | success |
+| build (linux-arm64) | 31s | 214s | success |
+| quality | 646s | 6s | failure: `quality_join: exact artifact set required` |
+| wasm32 | 645s | — | skipped after failed dependency |
+| retroarch | 645s | — | skipped before host execution |
+| hash-equality | 645s | — | skipped after failed dependency |
+| CI required | 654s | 2s | failure: required jobs did not all succeed |
+
+The run lasted 657 seconds. The API exposes start time and duration but not a separate runner `queued_at` for each job, so the table's start offset includes both dependency wait and runner queue. The critical path was the macOS x64 job: its quality-observation step ran from 10:26:48Z to 10:31:45Z (297 seconds) after its 301-second build/test/package step, followed by the six-second quality join and the required aggregate. Ordinary jobs started 21–32 seconds after the run began. The run had zero cancelled jobs or steps. This single failed sample supports no safe change to topology, cache, or deadlines; none was made.
+
+Both Windows build jobs fail compiling `tests/retroarch/states.c`: MSVC `/W4 /WX` reports C4100 for the unused `self_path` parameter at lines 1176, 1292, and 1453, promoted to C2220. Their build artifacts are therefore absent, and the quality join rejects the incomplete producer set. The required aggregate fails. The dispatch command set `phase14_host=true`, but `retroarch` was skipped because its required build/quality dependencies failed; no host step, containment probe, RetroArch launch, or actual state/run-ahead/rewind observation occurred.
+
+The artifact API returned 14 artifacts. Same-run `archives-macos-arm64` (artifact 13223615092) and `hashes-macos-arm64` (artifact 13223081611) were available and downloaded with exit 0. The archive's `commit.txt` equals the frozen source SHA. The macOS arm64 archive SHA-256 values are library `7aedd1e651b3d670a551d64096344d5b4bd8a1270570b725372598b6240d7b09`, libretro `aceb29604b092eaec32ed6dbb633f6fa84c05da9de637c5d2de3dbfb077a5185`, and runner `20aa096f47bda970888c1b151f339f365cdd61e48c928ee49c30c4993ac28981`. No `retroarch-frames` artifact exists, so there is no host receipt, screenshot, or save to authenticate or inspect.
+
+FRONT-02, FRONT-03, and FRONT-04 remain pending. The local fixture, mock controls, native contracts, parent checkout, and hosted ASan do not establish actual RetroArch behavior. The one additional allowance is consumed; do not dispatch again, rerun a job, or launch RetroArch locally. Closing the Windows warnings and obtaining fresh host evidence require a new separately authorized scope.

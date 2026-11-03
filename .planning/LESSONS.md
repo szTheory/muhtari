@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 # Lesson exchange
@@ -486,5 +486,16 @@ baseline source and run the independent-base check while preserving the RED evid
 Evidence: the current-source local CTest control and the dispatched source `1e8f019` pass
 `retroarch.states.controls`, while its parent `e638c53` lacks the receipt implementation and
 fails that control. [Run 41585416888](https://github.com/szTheory/muhtari/actions/runs/41585416888)
-completed with no artifacts and `retroarch` skipped. The attempt was not repeated; no actual-host
-behavior is inferred from the build or test failures.
+completed with no artifacts and `retroarch` skipped. That run was not retried; the later separately
+authorized Plan 14-06 dispatch is a distinct run and is recorded below. No actual-host behavior is
+inferred from either run's build or test failures.
+
+MU-CI-016 (observed): POSIX-only call paths can leave parameters unused on Windows;
+with `/W4 /WX`, MSVC C4100 blocks the full CI matrix even when macOS CI and hygiene
+pass. Reproduced in [run 41618546347](https://github.com/szTheory/muhtari/actions/runs/41618546347):
+both Windows x64 and ARM64 fail compiling `tests/retroarch/states.c` because `self_path`
+is unused at three call sites; the required aggregate and exact quality artifact join fail,
+so RetroArch is skipped. The dispatch source's exact immediate parent passed local CI,
+hygiene and inventories; hosted Ubuntu x64 ASan and hygiene also passed. The Windows issue
+remains unresolved, no host behavior is inferred, and the one bounded dispatch allowance is
+consumed.

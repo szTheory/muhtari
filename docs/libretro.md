@@ -223,8 +223,8 @@ rewind storage, and rewind controls and UI.
 The `.info` `savestate = "true"` and `savestate_features = "deterministic"` declarations are tied to the
 loaded callback, repeated-continuation, and host-control test registrations. They describe the core's state
 contract; they are not evidence that a frontend has exercised it. Actual pinned RetroArch save/load, rewind,
-and run-ahead qualification remains pending: the single source-bound Phase 14 workflow attempt failed in
-upstream jobs before its dependent RetroArch host step could run. No actual-host result is claimed.
+and run-ahead qualification remains pending: the latest source-bound CI dispatch failed its Windows builds
+before the dependent RetroArch host step could run. No actual-host result is claimed.
 
 **Restart** power-cycles the console: volatile memory is cleared, the cartridge starts again the way it was loaded, and the
 difficulty switches go back to their options.
