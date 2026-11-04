@@ -5,14 +5,14 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: Blocked
-stopped_at: Completed 14-16 with pre-workload stop; Phase 14 acceptance remains Blocked
-last_updated: "2026-11-04T03:47:30.120Z"
-last_activity: 2026-11-03
-state_head: 4094110475187bf4eac1a228645dad2547123584
+stopped_at: Planned 14-17; no task or test executed; Phase 14 acceptance remains Blocked
+last_updated: "2026-11-04T13:01:33.000Z"
+last_activity: 2026-11-04
+state_head: 3984dfa0016dc49655181c5ee576de164e109c9f
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 24
+  total_plans: 25
   completed_plans: 24
   percent: 33
 ---
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 remains blocked after its one authorized host attempt failed at the compound states preflight before state-mode RetroArch launched. Plan 14-14 added stage-specific offline diagnostics and fixed a separately reproduced UDP poll-error fail-open; that local defect does not identify the historical failed member. Plan 14-15's frozen source passed complete local CI/hygiene, but its independent parent had 12 ordinary-test timeouts, so the remote decision checkpoint was not reached. Plan 14-16 reconciled the saved parent receipt and CTest metadata, then stopped before workload because process listing was denied; neither focused command ran and the cause remains unknown. FRONT-02/03/04 remain pending, the parent complete-CI gate remains failed, and the host allowance is spent.
+Current focus: Phase 14 acceptance remains blocked after its one authorized host attempt failed at the compound states preflight before state-mode RetroArch launched. Plan 14-14 added stage-specific offline diagnostics and fixed a separately reproduced UDP poll-error fail-open; that local defect does not identify the historical failed member. Plan 14-15's frozen source passed complete local CI/hygiene, but its independent parent had 12 ordinary-test timeouts, so the remote decision checkpoint was not reached. Plan 14-16 reconciled the saved parent receipt and CTest metadata, then stopped before workload because process listing was denied; neither focused command ran and the cause remains unknown. New plan 14-17 is unexecuted local prerequisite work only. FRONT-02/03/04 remain pending, the parent complete-CI gate remains failed, and the host allowance is spent.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — BLOCKED
-Plan: 16 of 16 (16 summaries; 14 complete, 14-10 and 14-15 halted)
+Phase: 14 (Proven frontend states and responsive play) — ACCEPTANCE BLOCKED; gap plan 14-17 is pending
+Plan: 16 of 17 (16 summaries; 14 complete, 14-10 and 14-15 halted; 14-17 unstarted)
 Status: Blocked — phase verification is gaps_found (20/27 must-haves verified)
-Next action: No Plan 14-16 test command is valid under the current stop: process ownership could not be established, so the focused pair was not launched. Any further timeout diagnostic requires a separately scoped decision and a process-observable environment. Phase acceptance remains blocked by the failed parent complete-CI gate and spent host allowance.
-Boundary: Do not repeat denied process checks, launch either focused CTest command, resume Plan 14-10, or reuse its spent diagnostic cap. Plan 14-13's focused BIOS batch and both Plan 14-15 complete workflows are consumed. The single Plan 14-11 host attempt is spent; no additional push, dispatch, cancellation, local RetroArch, PR/merge/release, or Phase 12 action is authorized.
+Next action: `$gsd-execute-phase 14 --gaps-only` selects only Plan 14-17. It qualifies process observation and exact inputs before any tests, then permits at most one default/serial local comparison; if inspection is unavailable, it stops before the workload. This removes a diagnosis prerequisite only and does not establish Phase 14 acceptance.
+Boundary: Plan 14-17 is unexecuted; its explicit execution command is required before its new local scope starts. Do not resume Plan 14-10, reuse any spent BIOS or complete-workflow allowance, retry the prior host run, or infer process ownership from missing data. Plan 14-13's focused BIOS batch and both Plan 14-15 complete workflows are consumed. The single Plan 14-11 host attempt is spent; no push, dispatch, cancellation, local RetroArch, PR/merge/release, or Phase 12 action is authorized.
 
 ## Current Blockers
 
@@ -89,7 +89,7 @@ linked outcome; earlier unchanged-source preservation checks are historical.
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
 Plan: 0 of 4 acceptance plans accepted; gap plans 12-05 and 12-06 executed with failed hosted evidence; 12-09 complete; 12-07 remains halted after a non-reproducing OpenBIOS diagnostic; 12-08 is superseded for scheduling
 Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 remain blocked
-Last activity: 2026-11-03
+Last activity: 2026-11-04
 Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
@@ -204,11 +204,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-04T03:47:30.010Z
-Stopped at: Completed 14-16 with pre-workload stop; Phase 14 acceptance remains Blocked
+Last session: 2026-11-04T12:59:04.000Z
+Stopped at: Planned 14-17; no task or test executed; Phase 14 acceptance remains Blocked
 Resume file: None
-Next separate command: None is valid under the current stop. Any additional timeout diagnostic needs a separately scoped decision and an environment that can establish process ownership.
-Context handoff: Plan 14-16 reconciled the exact parent receipt, CTest metadata and fixture closure, then stopped before workload because both process-list commands were denied. Neither focused CTest command ran and the cause remains unknown. The parent complete-CI gate failed; FRONT-02/03/04 remain pending; the Phase 14 host allowance is spent. Do not rerun process checks, launch the focused pair, retry either consumed workflow, publish, push, or launch RetroArch locally. Plan 14-10 remains halted and Plan 14-13's focused batch remains consumed. Phase 12 remains halted. No owner UAT is needed.
+Next separate command: `$gsd-execute-phase 14 --gaps-only` to run only the newly planned 14-17 local prerequisite investigation. It stops before tests if process observation or exact inputs cannot be qualified; it does not authorize host, CI, or remote work.
+Context handoff: Plan 14-17 is created and passed plan review; this planning session ran no task, process probe or test. It addresses only process-observable readiness and one bounded exact-parent default/serial comparison over the recorded twelve cases plus fixture closure. Phase acceptance remains blocked, the parent complete-CI gate failed, FRONT-02/03/04 remain pending, and the Phase 14 host allowance is spent. Plan 14-10 remains halted, Plan 14-13's focused batch and both Plan 14-15 complete workflows remain consumed, and the prior Plan 14-16 stop remains historical. Phase 12 remains halted. No owner UAT is needed.
 
 ## Deferred Items
 
