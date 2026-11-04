@@ -743,3 +743,41 @@ frontend launch is part of this failure investigation.
 | `pgrep -fl 'phase-14-gap15-parent|ctest|muhtari-test'` | 3 | The system process-list service was unavailable; no retry or cleanup followed. |
 
 All local run URLs: N/A-local.
+
+## Plan 14-15 frozen-source workflow outcome (2026-11-03)
+
+The evidence child was frozen at `48abbfddf4dddd09ae25be02d38c1ddce1cf0be2`;
+its actual first parent and the independent checkout are both
+`3e31b9be45e287f58d3e02b8d2b3ab73120cc704`. On that unchanged source, the
+complete CI workflow exited 0: all 694 ordinary tests passed, three macOS
+arm64 ZIP packages were produced, and all six release checks passed. The
+complete hygiene workflow also exited 0 with all 30 checks passing. The three
+full JUnit receipts were preserved before any later bookkeeping under ignored
+`build/phase14-gap15-evidence/frozen/` and each matched its exact inventory.
+
+The repaired candidate passed, but its required independent parent did not:
+the parent's complete CI workflow timed out 12 ordinary tests. Therefore the
+source/parent gate is failed, and Plan 14-15 stops before remote command
+qualification or its owner decision checkpoint. No host decision packet was
+presented. The parent workflow failure is not retried, and the passing child
+cannot substitute for its parent. No push, dispatch, PR lookup, remote run
+inspection, local RetroArch launch or host activity occurred. The one prior
+host allowance remains spent and FRONT-02/03/04 remain pending.
+
+The receipts below correspond exactly to frozen source `48abbfd`. Any later
+outcome-summary or state-bookkeeping commit is outside that frozen source and
+is not qualified for publication or dispatch without fresh local validation.
+No test or timeout bound was changed to turn the parent failure into a pass.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `cmake --workflow --preset ci` (cwd current Phase 14 checkout, source `48abbfd`) | 0 | Full ordinary CI, packaging and release workflow passed. Run URL N/A-local. |
+| `cmake --workflow --preset hygiene` (same cwd and frozen source) | 0 | Full hygiene workflow passed. Run URL N/A-local. |
+| `cmake -DJUNIT=build/phase14-gap15-evidence/frozen/junit-ci.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 0 | All 694 ordinary CI tests ran once and passed. |
+| `cmake -DJUNIT=build/phase14-gap15-evidence/frozen/junit-release.xml -DINVENTORY=tests/inventory/ci.txt -DLABELS=release -P tests/cmake/check_junit.cmake` | 0 | All six release checks ran once and passed. |
+| `cmake -DJUNIT=build/phase14-gap15-evidence/frozen/junit-hygiene.xml -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake` | 0 | All 30 hygiene checks ran once and passed. |
+| Exact source/first-parent/clean-tree check plus `git diff --check 3e31b9be45e287f58d3e02b8d2b3ab73120cc704` | 0 | Frozen source, actual parent, independent parent checkout and tracked working tree matched the plan. |
+
+Receipt SHA-256 values: ordinary CI `64efbd9e9d4a7b8427f0dda8e36ba640c8bb13443270b964fbaccdbdc8ff7b1f`, release `52cf73f8e20caf9e639f2a9ba025cb9a1f22a100dd258f2fd6e2e4fcd065fd00`, hygiene `8bbf4e05db12ee117851e3b7e984c87db76ef09e8433c7458bf13436b907a979`.
+
+All local run URLs: N/A-local.
