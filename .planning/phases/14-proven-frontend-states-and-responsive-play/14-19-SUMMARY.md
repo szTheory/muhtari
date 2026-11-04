@@ -83,7 +83,7 @@ status: halted
 
 ## Task Commits
 
-No executor task commit was made. The orchestrator will reconcile and commit the tracked artifacts on the project-required Phase 14 branch.
+No executor task commit was made. The orchestrator reconciled and committed the tracked artifacts on the project-required Phase 14 branch.
 
 ## Files Created/Modified
 
@@ -107,5 +107,5 @@ No executor task commit was made. The orchestrator will reconcile and commit the
 
 - The tracked resource record, halted summary, STATE.md, and ROADMAP.md exist; the diagnostic directory is ignored.
 - The saved receipt passes the CMake checker and reports `tests_started=false` with default and serial counters at zero.
-- No task commit exists in this execution; the orchestrator will commit the reconciled tracked artifacts on the project-required Phase 14 branch.
+- No executor task commit was made; the orchestrator reconciled and committed the tracked artifacts on the project-required Phase 14 branch.
 
