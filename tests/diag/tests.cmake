@@ -995,6 +995,15 @@ function(run_receipt_case suffix expected_result expected_output)
     endif()
     return()
   endif()
+  if(expected_output STREQUAL "STAGE_SANDBOX_HELPER")
+    string(FIND "${content}" "states prelaunch stage=sandbox-helper failed" stage_position)
+    if(stage_position EQUAL -1 OR EXISTS "${shot}" OR
+       EXISTS "${state_root}/save/frontend-states.srm" OR
+       content MATCHES "host_outcome=pass|screenshot_sha256=|raw_save_status=present")
+      message(FATAL_ERROR "failed launcher receipt did not retain the sandbox-helper stage or created a passing artifact: ${rc}\n${out}${err}\n${content}")
+    endif()
+    return()
+  endif()
   foreach(required IN ITEMS "source_sha256=${source_sha}"
       "run_id=12345" "run_attempt=1" "workflow_event=workflow_dispatch"
       "run_url=${run_url}" "host_version=1.22.2"
@@ -1028,6 +1037,7 @@ endfunction()
 if(NOT RECEIPT_DRIVER STREQUAL "")
   run_receipt_case(success success "MOCK_SUCCESS")
   run_receipt_case(failure failure "MOCK_FAILURE")
+  run_receipt_case(sandbox-helper-failure failure "STAGE_SANDBOX_HELPER")
   run_receipt_case(wrong-mode failure "MODE_REJECTED" legacy)
 endif()
 message("retroarch states: strict replies, owned-child faults, and symlink cleanup guard pass")
