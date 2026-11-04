@@ -15,13 +15,17 @@ The six remaining acceptance gaps, two prohibition flags, and actual process-con
 
 **Recommendation:** designate an owner-controlled native macOS execution context in which the prescribed process enumeration and executable/working-directory attribution are permitted. The agent owns technical qualification and any future checks. The owner is not being asked to run a diagnostic or judge emulator behavior.
 
-The current record does not identify an eligible context. Please provide:
+The selection does not identify the specific eligible context. Please provide:
 
 1. The existing local execution context or checkout location that may be used.
 2. Its permission boundary, including whether process enumeration and executable/working-directory attribution are available to the agent.
 3. How the agent should receive access without disclosing credentials.
 
 Selecting a context permits only planning a separately bounded prerequisite investigation. It does not prove the needed capability, clear the failed parent CI gate, renew CI or host allowances, authorize another inspection attempt, or authorize any workload. A concrete alternate prerequisite remedy may be supplied instead.
+
+**Owner response (2026-11-04):** The owner selected an eligible native macOS context for successor-scope planning. The existing context or checkout, its specific process-inspection permission boundary, and the agent access path remain unspecified; this selection is not capability evidence and authorizes no inspection.
+
+**Owner's follow-up (2026-11-04):** The owner offered to run terminal commands if needed and asked to move as much of the diagnostic work as possible into Docker. Record this as the alternate remedy for the next scope: qualify a fresh container with a private source/build copy and use its own process view, avoiding reliance on host-wide process visibility or a shared build directory. On macOS, Docker Desktop runs Linux containers, so this can support portable local diagnosis but cannot establish the native macOS parent CI result or pinned RetroArch host behavior. This resolves the decision for successor-scope planning only. Docker availability, image/source identity, and resource limits still need qualification. This plan authorizes no Docker check, container creation, or workload.
 
 ## Acceptance evidence still required
 
