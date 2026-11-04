@@ -744,6 +744,91 @@ frontend launch is part of this failure investigation.
 
 All local run URLs: N/A-local.
 
+## Plan 14-16 parent timeout read-only audit (2026-11-04)
+
+This local investigation uses only the independent parent preserved by Plan 14-15. It does not repeat either complete workflow and it does not reopen the spent Phase 14 host allowance.
+
+### Source, checkout, saved receipt, and CTest metadata
+
+- Exact parent source: `3e31b9be45e287f58d3e02b8d2b3ab73120cc704` in `.worktrees/phase-14-gap15-parent`; `git rev-parse HEAD` exited 0 and `git status --short` was empty (exit 0). The existing `build/ci/CMakeCache.txt` points at this checkout and records Ninja, Release, `MUHTARI_INVENTORY=ci`, and `MUHTARI_TIMEOUT_SCALE=1`.
+- Preserved receipt paths: `build/phase14-gap15-evidence/parent/junit-ci.xml`, `ci-LastTest.log`, and `ci-LastTestsFailed.log`. Their SHA-256 values are respectively `e7937ec020fe2d48b6b42b2e5c64568e8f936dcfe1e9c4d178905e30a4048fd4`, `305a7889e359d2bcad278716ae87a5ff2493b901f93dbc61800dbe34342b2a1e`, and `afc952c6d0397bc6dec6881284538d9c595bf1ce9a5290f867b2d7ebf006f544`.
+- The parent JUnit records 694 ordinary tests, 682 run successfully, 12 failed with `Timeout`, and none skipped. It matches the exact twelve IDs below. The earlier parent `cmake --workflow --preset ci` exited 8 in ordinary CTest and stopped before packaging/release; its separately completed hygiene workflow remains historical and is not repeated.
+- Read-only saved-receipt check: `cmake -DJUNIT=build/phase14-gap15-evidence/parent/junit-ci.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` — exit 1, expected; it names exactly the twelve timeout failures. This result validates the saved failure inventory and is not a new test result.
+- Fresh metadata command: `ctest --test-dir .worktrees/phase-14-gap15-parent/build/ci --show-only=json-v1 > build/phase14-gap16-evidence/parent/ctest-parent.json` — exit 0. This separate ignored file has SHA-256 `a5f8fb8a687744a55429ebf0a72cdb77e640ceb280a9f3e7541e0b969efdb784`; no Plan 14-15 receipt was overwritten. It reports 700 registrations because the shared build tree includes six release registrations; the failed CI JUnit is the 694-test ordinary selection.
+- The CI workflow preset is configure, build, ordinary `ci` tests, package, then `ci-release` tests. The ordinary test preset excludes the `release` label and uses `noTestsAction=error`; `jobs` is empty, so the default-schedule command would retain the preset behavior without a worker override. No cache, worker, schedule, test registration, or deadline was changed.
+
+### Exact target commands, limits, and fixture closure
+
+The generated CTest metadata has these twelve target IDs once each. The command table below shortens only the checkout root to `.worktrees/phase-14-gap15-parent`; commands, arguments, labels and registered limits are unchanged. Observed times come from the original JUnit and are censored timeout durations, not completed-work measurements.
+
+| Test | Registered TIMEOUT | Observed JUnit time | Generated command relative to exact checkout |
+| --- | ---: | ---: | --- |
+| `title.simple.fast` | 2 s | 2.00434 s | `build/ci/tests/muhtari-test-predicate build/ci/built/simple/simple.bas.a78 title@120=07c13a656b348d010554f5760ea965799caab9b1220ef3e51c6599422aeec8df` |
+| `title.simple.bios` | 2 s | 2.00434 s | Same predicate/sample/hash plus `--bios build/ci/built/openbios/openbios.bin` |
+| `title.pal.fast` | 2 s | 2.00536 s | `build/ci/tests/muhtari-test-predicate tests/diag/pal.a78 boots@120` |
+| `title.pin.self_test` | 1 s | 1.00586 s | CMake `expect_fail.cmake` around `muhtari-test-predicate build/ci/runner-probe/linear-v3-16k title@120=- --pin`; expected child exit 1 and `single colour` output |
+| `maria.dma_line.empty_dl` | 1 s | 1.01354 s | `build/ci/tests/muhtari-test-maria empty_dl` |
+| `maria.dma_line.headers` | 1 s | 1.00819 s | `build/ci/tests/muhtari-test-maria headers` |
+| `maria.dma_line.widths` | 1 s | 1.21118 s | `build/ci/tests/muhtari-test-maria widths` |
+| `maria.dma_line.indirect` | 1 s | 1.20552 s | `build/ci/tests/muhtari-test-maria indirect` |
+| `maria.dma_line.holes` | 1 s | 1.19569 s | `build/ci/tests/muhtari-test-maria holes` |
+| `maria.dma_line.terminators` | 1 s | 1.18573 s | `build/ci/tests/muhtari-test-maria terminators` |
+| `maria.dma_line.last_line` | 1 s | 1.03383 s | `build/ci/tests/muhtari-test-maria last_line` |
+| `maria.dma_line.abort` | 1 s | 1.03572 s | `build/ci/tests/muhtari-test-maria abort` |
+
+Only three fixture setup tests are added by the target requirements: `built.openbios` (TIMEOUT 1 s), `built.simple` (5 s; it also sets up `built_samples`), and `runner.probe.images` (30 s). The first two title tests require `built_openbios` and `built_simple`; `title.pin.self_test` requires `probe_images`; the other nine targets have no fixture requirement. There are 15 cases in the closure. Target TIMEOUTs sum to 15 s and setup TIMEOUTs to 36 s, so the serial upper bound is 51 s, below the plan's 90-second ceiling. None of the twelve targets has `RUN_SERIAL` set; the existing five BIOS-only serial properties do not include these names.
+
+The four title tests use the compatibility predicate at frame 120, including the generated simple sample/OpenBIOS fixtures and the probe image used by the negative pin control. The eight Maria cases use the direct `muhtari-test-maria` cases from `tests/maria/test_maria.c`; they construct bounded in-memory display lists and do not read ROM fixtures. `tests/bus/test_bus.c` is not invoked by these selected CTest IDs.
+
+### Toolchain and input identity
+
+The exact parent's build reports CMake/CTest 4.4.3, Ninja 1.13.2, and Apple clang 21.0.0.21000101. Required binaries, ROM/BIOS/probe inputs, and fixture build inputs were present. SHA-256 values:
+
+| Input | SHA-256 |
+| --- | --- |
+| `build/ci/tests/muhtari-test-predicate` | `a09e9ff0c4d15ad6575e9cdc95613389d526057cec30a7b3931df71c3e206138` |
+| `build/ci/tests/muhtari-test-maria` | `85378ae197c267519a6b29ede9070cc8b9849cb9feeb2cdb5f479a068598051d` |
+| `build/ci/tests/muhtari-test-images` | `7cbf012c0ba4a2628bd1484a54b47d8a918e78731aaf5e3627c3d57622495592` |
+| `build/ci/runner-probe/linear-v3-16k` | `a2f096c6e0109a76749cac94c9b0aff59cd5bf0c002283a52ec86ac26d1859c1` |
+| `build/ci/built/simple/simple.bas.a78` | `d09da3ed27fe82e0a4dd2821ff2cb9bde26c9531c59890788acb1cfdc4004ecf` |
+| `build/ci/built/openbios/openbios.bin` | `46b5bc2b716a20a1c40e2b920365c29cbab1594d01da94f4567b240181365cb2` |
+| `tests/diag/pal.a78` | `676381441af4dd33568f6d4adf7b84fc602f42606b87dc888f29c582af74b216` |
+| `tests/built/expected.txt` | `d549d4691aca7c004325102613fd6ac2337ecfe8a4c0cec004472e5bbcc80ca8` |
+| `tests/built/openbios.cmake` | `55cd28ab7b5de7adbaa8b3ffd7070080a9f6a2e57043e6b3866b32bd8caa9a2d` |
+| `tests/built/build.cmake` | `dfac910fb32d3e67e5ec8d5d6b77aeb29c6ea11e7dd7c6fdb2d4eb841fdea9c2` |
+| `build/pins/wasmtime/wasmtime` | `9dad9691c32e097241d1f70371e36bea39ec3d51499134133340f77ecd9e6758` |
+| `build/pins/openbios/7800openbios.asm` | `ff04da42db52480cf4cd5e11d415a6c55a54b72ab24af9b461cd4dff4e422109` |
+| `build/pins/7800basic/7800preprocess.wasm` | `a9f2859c96f6d76b4c0075219b7ac8056e2b721baad3ec8a9cc392f19db67bc3` |
+| `build/pins/7800basic/7800basic.wasm` | `6b18fa3b4cda5d5b4313d98119a5c26bbdd13b7d0ccfd4652a5c2dc31a587286` |
+| `build/pins/7800basic/7800postprocess.wasm` | `7d5807ba93f026857119a1648c71046a4d16344e730cb84e6831944b5dcbdf0e` |
+| `build/pins/7800basic/7800optimize.wasm` | `f27333dce60ebd1c1d4e71e151b3f13e0e6598316f82ad4712b4b5958a333a3c` |
+| `build/pins/7800basic/dasm.wasm` | `5905543c1614470fb4d750323b2c980624ad46aa328617a426b90c81edd42da3` |
+| `build/pins/7800basic/7800filter.wasm` | `44719f54e1f39c8ec11d03015f459248ab5e91cbf99e0523f53caeea4af4d1ef` |
+| `build/pins/7800basic/7800sign.wasm` | `b9f8278e92757bb522228158929a97797fa52ee8bdced3bd654599329eef9b68` |
+| `build/pins/7800basic/7800header.wasm` | `fc4ec650d7392cf82205cbff5639ff11f02ecf60748e71701a8de103e07a4e4d` |
+
+### Process/resource gate and diagnostic outcome
+
+At `2026-11-04T03:11:30Z`, `ps -axo pid=,ppid=,etime=,time=,command=` was unavailable (exit 127, `Operation not permitted`) and `pgrep -fl 'phase-14-gap15-parent|ctest|muhtari-test|built/openbios|built/simple'` was unavailable (exit 3, `Cannot get process list`). This cannot establish that no unowned test process exists. `uptime` exited 0 and reported load averages 5.54, 6.02, 7.38; `sysctl -n hw.ncpu` was denied (exit 1); `memory_pressure` exited 0 and reported 36% system-wide free. The prior Plan 14-15 process listing was also denied. No process was signalled or cleaned up.
+
+The saved evidence establishes the timeouts and their deadlines, but no causal mechanism: the children produced no output before their deadline, and there is no attributable process CPU/ownership evidence. Cause remains **unknown**. Although source, receipt, fixture closure and 51-second serial bound qualified, process ownership did not. The exact default and `--parallel 1` commands were therefore **not launched**; neither side has a new JUnit or test result. This is a pre-workload stop, not a retry, and the two sides remain one unspent-but-ineligible paired diagnostic under this environment. The ignored stop receipt is `build/phase14-gap16-evidence/parent/diagnostic-status.txt`.
+
+No source, fixture, test registration, timeout, cache, schedule, workflow, or host setting changed. Plan 14-15's two complete workflow attempts remain consumed; the complete parent CI gate remains failed; FRONT-02/03/04 remain pending; the Phase 14 host allowance remains spent. The phase stays Blocked.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `git -C .worktrees/phase-14-gap15-parent rev-parse HEAD` | 0 | Exact expected parent commit. |
+| `git -C .worktrees/phase-14-gap15-parent status --short` | 0 | Empty; parent tracked/untracked checkout clean. |
+| `ctest --test-dir .worktrees/phase-14-gap15-parent/build/ci --show-only=json-v1 > build/phase14-gap16-evidence/parent/ctest-parent.json` | 0 | Fresh read-only CTest metadata captured separately. |
+| `cmake -DJUNIT=build/phase14-gap15-evidence/parent/junit-ci.xml -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 1 | Expected rejection of the preserved twelve-timeout receipt; no tests launched. |
+| `ps -axo pid=,ppid=,etime=,time=,command=` | 127 | Unavailable: process listing denied. |
+| `pgrep -fl 'phase-14-gap15-parent\|ctest\|muhtari-test\|built/openbios\|built/simple'` | 3 | Unavailable: process list denied. |
+| `uptime` | 0 | Load averages recorded above; not process attribution. |
+| `sysctl -n hw.ncpu` | 1 | CPU count unavailable: permission denied. |
+| `memory_pressure` | 0 | 36% system-wide free at the observation. |
+| `ctest --preset ci -R "$PHASE14_TEST_REGEX" --no-tests=error --output-on-failure --output-junit "$PHASE14_DIAG_DIR/focused-default.xml"` | N/A | Not launched; no-overlap precondition could not be established. |
+| `ctest --preset ci -R "$PHASE14_TEST_REGEX" --no-tests=error --output-on-failure --parallel 1 --output-junit "$PHASE14_DIAG_DIR/focused-serial.xml"` | N/A | Not launched; no-overlap precondition could not be established. |
+
 ## Plan 14-15 frozen-source workflow outcome (2026-11-03)
 
 The evidence child was frozen at `48abbfddf4dddd09ae25be02d38c1ddce1cf0be2`;
