@@ -744,6 +744,28 @@ frontend launch is part of this failure investigation.
 
 All local run URLs: N/A-local.
 
+## Plan 14-22 fresh qualification stop (2026-11-04)
+
+Plan 14-22's offline controls passed, including a call through the production stop-receipt writer. Its one new qualification began at 2026-11-04T21:59:13.025799Z and exited 1 after about 32.8 seconds, before container creation. The image-inspection command failed while Docker rendered the requested output: the template referenced `.Config.Volumes`, but that key was absent from the image configuration. Docker returned `template parsing error: template: :1:192: executing "" at <.Config.Volumes>: map has no entry for key "Volumes"`. The raw stderr is preserved in the ignored image-inspection log; the stopped preflight receipt records a generic image-inspection stop. This is a diagnostic-template failure; it does not establish that the image is missing or that its identity matches the approved values. No image ID, digest, architecture, or labels were observed, and the one-off image exception was not exercised.
+
+The preliminary Docker checks reached the local `desktop-linux` context over a Unix socket. Docker client/server were both 29.5.2. `docker info` reported Linux aarch64, 8 CPUs and 16,748,310,528 bytes of memory. The supplied Wasmtime executable still matched SHA-256 `1da96b596266ad432b6e652aefbbc507de38795ed3197f859ac8197c1c5a276a` and `file` identified it as an ELF AArch64 Linux binary. The new SHA-verified rcheevos extraction path and its file manifest were implemented, but neither `scripts/fetch-pin.sh rcheevos` nor that identity check ran because qualification stopped at image inspection.
+
+The actual failed qualification wrote checker-valid stopped receipts. No container was created, no build or CTest metadata command ran, and no fixture or protected test started. The default/serial pair has zero reservations, launches and unknown launches; its allowance remains unspent but is ineligible. The qualification is spent. Do not rerun `qualify` or invoke `pair` under Plan 14-22. A future attempt requires a corrected image-inspection template and a new authorized qualification scope. Phase 14 remains acceptance-blocked; FRONT-02/03/04 remain pending, and the parent CI timeout, spent host allowance, absent pinned RetroArch evidence and Phase 12 stop remain unchanged. All local run URLs: N/A-local.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `sh build/phase14-gap22-evidence/docker-diagnostic.sh controls` | 0 | POSIX shell and embedded Python syntax, production runlog/watchdog/child cleanup, one-shot claim, CMake receipt mutation controls, and the production stop writer all passed. Docker and project tests were not started. |
+| `shasum -a 256 build/pins/wasmtime/wasmtime` | 0 | Supplied artifact SHA-256 matched. |
+| `file build/pins/wasmtime/wasmtime` | 0 | Supplied artifact was identified as ELF 64-bit ARM aarch64. |
+| `docker version --format '{{.Client.Version}} {{.Server.Version}}'` | 0 | Client/server 29.5.2. |
+| `docker context show` and `docker context inspect desktop-linux --format '{{(index .Endpoints "docker").Host}}'` | 0 | Active context was `desktop-linux`; endpoint was a local Unix socket. The personal socket path is omitted. |
+| `docker info --format '{{.OSType}} {{.Architecture}} {{.NCPU}} {{.MemTotal}}'` | 0 | `linux aarch64 8 16748310528`; VM capacity exceeded the configured minimum. |
+| `docker image inspect --format '{{.Id}}\|{{join .RepoDigests ","}}\|{{.Os}}\|{{.Architecture}}\|{{index .Config.Labels "org.opencontainers.image.source"}}\|{{index .Config.Labels "org.opencontainers.image.revision"}}\|{{if .Config.Volumes}}volumes{{else}}none{{end}}' catthehacker/ubuntu@sha256:c58e2b364da03b0c804c7d660f2ecbedf2f221a382b9baa0b344b0144780ff43` | 1 | Docker's formatter rejected missing `.Config.Volumes`; no image identity was observed. This ended the sole qualification before `docker create`. |
+| `sh build/phase14-gap22-evidence/docker-diagnostic.sh qualify` | 1 | Sole qualification stopped at image inspection. Run URL N/A-local. |
+| `sh build/phase14-gap22-evidence/docker-diagnostic.sh inspect` | 0 | Stopped receipts matched the observed no-container/no-test state. |
+| `cmake -DEVIDENCE=build/phase14-gap22-evidence -P build/phase14-gap22-evidence/check-receipts.cmake` | 0 | Stopped receipts and zero-launch accounting validated without Docker. |
+| `sh scripts/fetch-pin.sh rcheevos build/phase14-gap22-evidence/staged-pins/rcheevos`; configure/build; CTest metadata; `pair` | N/A | Not run because the image-inspection gate failed. The pair is unspent but ineligible; no retry is allowed. |
+
 ## Plan 14-20 pinned-input admission stop (2026-11-04)
 
 The new qualification was invoked once and stopped before Docker access because

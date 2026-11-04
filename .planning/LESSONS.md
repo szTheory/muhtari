@@ -468,6 +468,21 @@ and bounded independent review pass locally. See the [phase 12 debug record](deb
 The hosted descriptor's exact identity and the original RetroArch input cause
 remain unknown; no second hosted attempt is claimed.
 
+## Container image inspection (2026-11-04)
+
+MU-TEST-012 (observed): Docker image config templates must tolerate optional or
+absent keys. Directly evaluating `{{.Config.Volumes}}` can fail the entire
+inspection when that map key is absent, before any image identity fields are
+returned. Prefer structured JSON plus a parser that handles missing keys, or
+prove the template's missing-key behavior with a local fixture before using it
+as an admission gate.
+
+Evidence: Plan 14-22's sole `docker image inspect` exited 1 with `template
+parsing error: template: :1:192: executing "" at <.Config.Volumes>: map has
+no entry for key "Volumes"`. Docker version/context/VM checks passed, but no
+image identity, container or project test was observed. The qualification was
+not retried; run URL N/A-local.
+
 ## Concise owner handoffs (2026-11-03)
 
 | ID | Symptom and invariant | Fix and evidence | Status |
