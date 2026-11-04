@@ -164,7 +164,7 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 1. A gamer can save and load through actual pinned RetroArch and resume the expected picture and progress, demonstrated by an automated owned-fixture round trip using the released core rather than only callback-level agreement.
 2. A gamer can use RetroArch rewind through repeated restores while deterministic input, audio, timing and battery semantics remain correct; the frontend owns rewind storage and UI.
 3. A gamer can use the supported RetroArch run-ahead path with verified restore/replay and instance isolation, no speculative durable writes, and comparable completed-work performance evidence; capability declarations and user instructions claim only the qualified host path.
-**Plans:** 12/13 plans complete in 12 dependency-derived waves; Plan 14-10 remains halted history. Plan 14-12 recorded the prior failure evidence. Plan 14-13 applied the approved five-test RUN_SERIAL mitigation and passed its metadata controls and one focused batch without establishing the historical cause. Plan 14-11 passed complete local workflows, then its one authorized host attempt failed at the compound states preflight before state-mode RetroArch launch. Phase verification is `gaps_found` (20/27); FRONT-02/03/04 remain pending and the host allowance is spent.
+**Plans:** 13/15 plans have summaries across 14 dependency-derived waves. Plan 14-10 remains halted history. Plan 14-12 recorded the prior failure evidence. Plan 14-13 applied the approved five-test RUN_SERIAL mitigation and passed its metadata controls and one focused batch without establishing the historical cause. Plan 14-11 passed complete local workflows, then its one authorized host attempt failed at the compound states preflight before state-mode RetroArch launch. Phase verification is `gaps_found` (20/27); FRONT-02/03/04 remain pending and the host allowance is spent.
 **Wave 1**
 - [x] 14-01-PLAN.md
 
@@ -180,27 +180,33 @@ Actual frontend save/load and responsiveness claims await Phase 14 evidence.
 **Wave 5** *(blocked on Wave 4 completion)*
 - [x] 14-05-PLAN.md
 
-**Wave 6**
+**Wave 6** *(blocked on Wave 5 completion)*
 - [x] 14-06-PLAN.md
 
-**Wave 7**
+**Wave 7** *(blocked on Wave 6 completion)*
 - [x] 14-07-PLAN.md
 
-**Wave 8**
+**Wave 8** *(blocked on Wave 7 completion)*
 - [x] 14-08-PLAN.md — Isolate the normal portable replay, preflight exact source/parent, then audit one newly authorized host-enabled attempt; its allowance is spent.
 
-**Wave 9**
+**Wave 9** *(blocked on Wave 8 completion)*
 - [x] 14-09-PLAN.md — Replace the retired host line ceiling with reporting and recurring fault controls.
 
-**Wave 10** *(14-10 is skipped as terminal halted history; 14-12 records evidence only after completed 14-09)*
-- [x] 14-10-PLAN.md — HALTED after its bounded Task 1: no cause was attributed, no BIOS remedy was applied, and its three-pair cap is spent.
-- [x] 14-12-PLAN.md — Reconcile existing results and recommend a reversible five-test CTest isolation mitigation; no diagnostic or test run.
+**Wave 10** *(blocked on Wave 9 completion)*
+- [x] 14-10-PLAN.md — HALTED after its bounded Task 1: no cause was attributed, no BIOS remedy was applied, and its three-pair cap is spent; terminal halted history.
+- [x] 14-12-PLAN.md — Reconcile existing results and recommend a reversible five-test CTest isolation mitigation; records evidence only after completed 14-09, with no diagnostic or test run.
 
-**Wave 11** *(after the evidence review; source/test work waits for its exact owner decision)*
-- [x] 14-13-PLAN.md — Add RUN_SERIAL only to the five affected BIOS tests after explicit authority; verify metadata and one focused batch while preserving one-second deadlines.
+**Wave 11** *(blocked on Wave 10 completion)*
+- [x] 14-13-PLAN.md — Add RUN_SERIAL only to the five affected BIOS tests after explicit authority; verify metadata and one focused batch while preserving one-second deadlines. Source/test work followed the evidence review and waited for its exact owner decision.
 
-**Wave 12** *(after completed 14-12/13; no dependency on halted 14-10 completion)*
-- [x] 14-11-PLAN.md — Complete local workflows and record the single authorized host attempt; the attempt failed before state-mode RetroArch launch, leaving FRONT-02/03/04 pending.
+**Wave 12** *(blocked on Wave 11 completion)*
+- [x] 14-11-PLAN.md — Complete local workflows and record the single authorized host attempt; the attempt failed before state-mode RetroArch launch, leaving FRONT-02/03/04 pending. It followed completed 14-12/13 and did not depend on halted 14-10 completion.
+
+**Wave 13** *(blocked on Wave 12 completion)*
+- [ ] 14-14-PLAN.md
+
+**Wave 14** *(blocked on Wave 13 completion)*
+- [ ] 14-15-PLAN.md
 
 **Canonical refs:** [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#phase-14-state-consumers-and-continuation-proof), [feature ownership](research/FEATURES.md), [state/battery pitfalls](research/PITFALLS.md), [hosts §1/3](preparation/HOSTS-AND-INTEGRATION.md#1-libretro-contract), [settled host decisions](preparation/DECISIONS.md#hosts-and-integration), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [lessons](LESSONS.md).
 **UI hint:** no
@@ -251,6 +257,6 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 |---|---|---|---|
 | 12. Player-ready delivery and Playstead bridge | 3/9 | Halted at 12-01 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
-| 14. Proven frontend states and responsive play | 12/13 | Blocked after Plan 14-11's one authorized host attempt failed before state-mode launch; verification is `gaps_found` (20/27), and FRONT-02/03/04 remain pending | - |
+| 14. Proven frontend states and responsive play | 13/15 | Blocked after Plan 14-11's one authorized host attempt failed before state-mode launch; verification is `gaps_found` (20/27), and FRONT-02/03/04 remain pending | - |
 
 Phase 14 verification is `gaps_found` (20/27 must-haves verified). The frozen source and independent parent passed complete local CI and hygiene. In the single authorized run 41733613173, the battery controls passed, but the states driver failed at a compound preflight before media setup or state-mode RetroArch launch; the exact failing member is unknown and no state-mode screenshot or save exists. FRONT-02/03/04 remain pending. Plan 14-10's historical three-pair diagnostic cap remains spent and halted; Plan 14-13's narrowly scoped RUN_SERIAL mitigation passed without identifying the old timeout cause. Plan 14-11's separate host allowance is now spent; no retry, rerun, cancellation, push, local RetroArch, PR/merge/release, or Phase 12 action is authorized. The advisory WASI build failed at `tmpfile` under `-Werror` and remains advisory. The next valid planning command is `$gsd-plan-phase 14 --gaps`; it does not grant host authority. Phase 13 is complete; Phase 12 remains halted at 0/4, unaccepted and unwaived, with its hosted allowances spent.
