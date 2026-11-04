@@ -744,6 +744,65 @@ frontend launch is part of this failure investigation.
 
 All local run URLs: N/A-local.
 
+## Plan 14-19 Docker qualification stop (2026-11-04)
+
+The one authorized `qualify` entry point ran once against exact parent
+`3e31b9be45e287f58d3e02b8d2b3ab73120cc704`. The checkout was clean before the
+diagnostic, the parent commit exists locally, and
+`build/phase14-gap19-evidence/` is ignored. Docker client/server access and
+resource capacity passed. Qualification stopped before container creation:
+Docker's local image inspection metadata did not expose an independently
+verifiable provenance receipt bound to a cached immutable platform digest and
+image ID. The image list contained 235 unique image IDs; 220 were Linux arm64,
+52 of those exposed repository digests, 12 of those had an OCI source label and
+4 had a revision label. None exposed a provenance receipt through the local
+inspection interface. Self-asserted labels, a mutable tag, or an image ID alone
+were not treated as provenance. No image was selected, so compiler/tool versions,
+private namespaces, cgroup enforcement, source staging, and the process
+supervisor could not be qualified. No image was pulled and no container was
+created.
+
+Docker Desktop reported client/server 29.5.2, Linux arm64 VM kernel
+6.12.76-linuxkit, 8 CPUs, and 16,748,310,528 bytes of memory. The active context
+used a local Unix socket. This met the VM capacity gate, but does not establish
+container limits because no container was created. The Docker run help contained
+all required resource/isolation options. Qualification ran from
+2026-11-04T16:56:21Z to 2026-11-04T16:56:35Z (14 seconds total); no source archive,
+configure, build, or test time was incurred.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `docker --help` | 0 | Local client help captured in ignored output. |
+| `docker run --help` | 0 | Required `--cpus`, memory/swap, PID, read-only, user, capability, security, network, tmpfs, namespace, label, naming, workdir, detach, and entrypoint options were individually found. |
+| `for option in --cpus --memory --memory-swap --pids-limit --read-only --user --cap-drop --security-opt --network --tmpfs --ipc --pid --label --name --workdir --detach --entrypoint; do rg -q -- "$option" build/phase14-gap19-evidence/docker-run-help.stdout || exit 1; done` | 0 | Post-run read-only check of every required Docker run option in saved local help; no Docker call or qualification retry. |
+| `sh -n build/phase14-gap19-evidence/docker-diagnostic.sh` | 0 | POSIX shell syntax passed inside the one qualification. |
+| `docker version --format '{{json .}}'` | 0 | Docker Desktop client/server identity captured. |
+| `docker context show` | 0 | Active context was `desktop-linux`. |
+| `docker context inspect desktop-linux --format '{{json .Endpoints.docker.Host}}'` | 0 | Endpoint classified as a local Unix socket. |
+| `docker info --format '{{json .}}'` | 0 | Linux VM architecture and available CPU/memory captured. |
+| `docker image ls --digests --no-trunc --format '{{json .}}'` | 0 | Local image inventory captured. |
+| `docker image inspect <local image ID> --format '{{json .}}'` | 0 × 235 | All local image IDs inspected once; none exposed a verifiable provenance receipt. |
+| `sh build/phase14-gap19-evidence/docker-diagnostic.sh qualify` | 1 | Expected pre-workload stop at image provenance qualification. |
+| `sh build/phase14-gap19-evidence/docker-diagnostic.sh inspect` | 0 | Saved receipt confirms stopped, `tests_started=false`, both counters 0. |
+| `cmake -DRECEIPT=build/phase14-gap19-evidence/preflight.json -P build/phase14-gap19-evidence/check-receipts.cmake` | 0 | Source identity, stopped status, local run URL, and zero counters validated. |
+| `sh -n build/phase14-gap19-evidence/container-driver.sh` | 0 | The guard refuses any container workload without a live qualified receipt. |
+
+The ignored receipt records the exact source SHA, Docker versions, VM limits,
+image inventory/inspection outputs, stop reason, preparation timestamps,
+`tests_started=false`, and zero default/serial counters. No owner-terminal
+command was needed because daemon access succeeded. The exact target selection
+and its three fixture setup tests were **not launched**; both default and serial
+commands are N/A-local. The paired workload remains unspent, but is ineligible
+until a locally available provenance-verification path can qualify a cached
+image. No host process tool was invoked. No project source, test, preset,
+deadline, schedule, cache, or workflow changed.
+
+This is Linux qualification evidence only. It does not establish the cause of
+the prior native macOS timeouts or replace the failed native parent CI gate.
+The pinned RetroArch actual-host evidence is still absent, the prior host
+allowance remains spent, and FRONT-02, FRONT-03, and FRONT-04 remain pending.
+All local run URLs: N/A-local.
+
 ## Plan 14-17 process-observation preflight stop (2026-11-04)
 
 Execution authority was `$gsd-execute-phase 14 --gaps-only`, which selected this local-only plan. The current checkout was branch `phase/14-proven-frontend-states-and-responsive-play` at `feb1cf18cb443166145078295ea251e3168dff24`. Its pre-existing working-tree modification to `.planning/STATE.md` was left unchanged. The required parent checkout exists at `.worktrees/phase-14-gap15-parent`, is clean including untracked files, is at the exact source `3e31b9be45e287f58d3e02b8d2b3ab73120cc704`, and contains `build/ci`.
