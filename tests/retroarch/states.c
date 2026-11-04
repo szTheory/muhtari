@@ -151,6 +151,88 @@ static int states_fail(states_result *result, const char *message)
     return 1;
 }
 
+typedef enum states_prelaunch_stage {
+    STATES_PRELAUNCH_OK = 0,
+    STATES_PRELAUNCH_SANDBOX_EXEC,
+    STATES_PRELAUNCH_SANDBOX_HELPER,
+    STATES_PRELAUNCH_WORK_DEADLINE,
+    STATES_PRELAUNCH_CONFIG_PORT,
+    STATES_PRELAUNCH_RUNAHEAD_CONFIG,
+} states_prelaunch_stage;
+
+typedef struct states_prelaunch_ops {
+    void *user;
+    uint64_t (*now_ms)(void *user);
+    int (*sandbox_exec_available)(void *user);
+    int (*sandbox_helper)(void *user);
+    int (*update_config_port)(void *user);
+    int (*validate_runahead_config)(void *user);
+    void (*release_reserved)(void *user);
+} states_prelaunch_ops;
+
+static int states_external_udp_probe_passes(int poll_result)
+{
+    return poll_result == 0;
+}
+
+static const char *states_prelaunch_stage_name(states_prelaunch_stage stage)
+{
+    switch (stage) {
+    case STATES_PRELAUNCH_SANDBOX_EXEC:
+        return "sandbox-exec";
+    case STATES_PRELAUNCH_SANDBOX_HELPER:
+        return "sandbox-helper";
+    case STATES_PRELAUNCH_WORK_DEADLINE:
+        return "work-deadline";
+    case STATES_PRELAUNCH_CONFIG_PORT:
+        return "config-port";
+    case STATES_PRELAUNCH_RUNAHEAD_CONFIG:
+        return "runahead-config";
+    case STATES_PRELAUNCH_OK:
+        return "ok";
+    }
+    return "unknown";
+}
+
+static int states_prelaunch_run(const states_prelaunch_ops *ops, uint64_t start_ms,
+                                states_prelaunch_stage *failed_stage)
+{
+    states_prelaunch_stage stage = STATES_PRELAUNCH_OK;
+    if (failed_stage != NULL)
+        *failed_stage = STATES_PRELAUNCH_OK;
+    if (ops == NULL || ops->now_ms == NULL || ops->sandbox_exec_available == NULL ||
+        ops->sandbox_helper == NULL || ops->update_config_port == NULL ||
+        ops->validate_runahead_config == NULL || ops->release_reserved == NULL)
+        return 1;
+    if (ops->sandbox_exec_available(ops->user) != 0) {
+        stage = STATES_PRELAUNCH_SANDBOX_EXEC;
+        goto failed;
+    }
+    if (ops->sandbox_helper(ops->user) != 0) {
+        stage = STATES_PRELAUNCH_SANDBOX_HELPER;
+        goto failed;
+    }
+    if (ops->now_ms(ops->user) >= start_ms + STATES_WORK_MS) {
+        stage = STATES_PRELAUNCH_WORK_DEADLINE;
+        goto failed;
+    }
+    if (ops->update_config_port(ops->user) != 0) {
+        stage = STATES_PRELAUNCH_CONFIG_PORT;
+        goto failed;
+    }
+    if (ops->validate_runahead_config(ops->user) != 0) {
+        stage = STATES_PRELAUNCH_RUNAHEAD_CONFIG;
+        goto failed;
+    }
+    return 0;
+
+failed:
+    if (failed_stage != NULL)
+        *failed_stage = stage;
+    ops->release_reserved(ops->user);
+    return 1;
+}
+
 static int states_ascii_equal(const char *left, size_t left_len, const char *right)
 {
     size_t right_len = strlen(right);
@@ -1571,6 +1653,160 @@ static int run_fault_controls(const char *self_path)
     return failures == 0u ? 0 : 1;
 }
 
+typedef struct states_prelaunch_control {
+    states_prelaunch_stage fail_stage;
+    uint64_t now_ms;
+    states_prelaunch_stage order[5];
+    unsigned calls[6];
+    size_t order_count;
+    unsigned release_calls;
+    unsigned owned_releases;
+    unsigned next_calls;
+    int reserved_owned;
+    void *config_user;
+    int (*update_config)(void *user);
+    int (*validate_config)(void *user);
+} states_prelaunch_control;
+
+static int states_prelaunch_control_record(states_prelaunch_control *control,
+                                           states_prelaunch_stage stage)
+{
+    control->calls[stage]++;
+    if (control->order_count < sizeof control->order / sizeof control->order[0])
+        control->order[control->order_count++] = stage;
+    return control->fail_stage == stage;
+}
+
+static uint64_t states_prelaunch_control_now(void *user)
+{
+    states_prelaunch_control *control = user;
+    (void)states_prelaunch_control_record(control, STATES_PRELAUNCH_WORK_DEADLINE);
+    return control->now_ms;
+}
+
+static int states_prelaunch_control_sandbox_exec(void *user)
+{
+    states_prelaunch_control *control = user;
+    return states_prelaunch_control_record(control, STATES_PRELAUNCH_SANDBOX_EXEC) ? 1 : 0;
+}
+
+static int states_prelaunch_control_sandbox_helper(void *user)
+{
+    states_prelaunch_control *control = user;
+    if (states_prelaunch_control_record(control, STATES_PRELAUNCH_SANDBOX_HELPER))
+        return 1;
+    control->reserved_owned = 1;
+    return 0;
+}
+
+static int states_prelaunch_control_update_config(void *user)
+{
+    states_prelaunch_control *control = user;
+    if (states_prelaunch_control_record(control, STATES_PRELAUNCH_CONFIG_PORT))
+        return 1;
+    return control->update_config != NULL ? control->update_config(control->config_user) : 0;
+}
+
+static int states_prelaunch_control_validate_config(void *user)
+{
+    states_prelaunch_control *control = user;
+    if (states_prelaunch_control_record(control, STATES_PRELAUNCH_RUNAHEAD_CONFIG))
+        return 1;
+    return control->validate_config != NULL ? control->validate_config(control->config_user) : 0;
+}
+
+static void states_prelaunch_control_release(void *user)
+{
+    states_prelaunch_control *control = user;
+    control->release_calls++;
+    if (control->reserved_owned) {
+        control->reserved_owned = 0;
+        control->owned_releases++;
+    }
+}
+
+static states_prelaunch_ops states_prelaunch_control_ops(states_prelaunch_control *control)
+{
+    return (states_prelaunch_ops){
+        .user = control,
+        .now_ms = states_prelaunch_control_now,
+        .sandbox_exec_available = states_prelaunch_control_sandbox_exec,
+        .sandbox_helper = states_prelaunch_control_sandbox_helper,
+        .update_config_port = states_prelaunch_control_update_config,
+        .validate_runahead_config = states_prelaunch_control_validate_config,
+        .release_reserved = states_prelaunch_control_release,
+    };
+}
+
+#if defined(__APPLE__)
+static int run_prelaunch_config_controls(const char *config_path, unsigned *count,
+                                         unsigned *failures);
+#endif
+
+static int run_prelaunch_controls(const char *config_path)
+{
+    static const states_prelaunch_stage stages[] = {
+        STATES_PRELAUNCH_SANDBOX_EXEC,    STATES_PRELAUNCH_SANDBOX_HELPER,
+        STATES_PRELAUNCH_WORK_DEADLINE,   STATES_PRELAUNCH_CONFIG_PORT,
+        STATES_PRELAUNCH_RUNAHEAD_CONFIG,
+    };
+    unsigned count = 0u, failures = 0u;
+    puts("TAP version 13");
+
+    int poll_status_passed = states_external_udp_probe_passes(0) &&
+                             !states_external_udp_probe_passes(1) &&
+                             !states_external_udp_probe_passes(-1);
+    tap_result(&count, &failures, "UDP poll errors do not prove external delivery was rejected",
+               poll_status_passed, "an unavailable poll result was accepted as a no-reply result");
+
+    states_prelaunch_control pass;
+    memset(&pass, 0, sizeof pass);
+    pass.now_ms = STATES_WORK_MS - 1u;
+    states_prelaunch_ops ops = states_prelaunch_control_ops(&pass);
+    states_prelaunch_stage failed_stage = STATES_PRELAUNCH_OK;
+    int rc = states_prelaunch_run(&ops, 0u, &failed_stage);
+    if (rc == 0)
+        pass.next_calls++;
+    int passed = rc == 0 && failed_stage == STATES_PRELAUNCH_OK && pass.order_count == 5u &&
+                 pass.release_calls == 0u && pass.reserved_owned && pass.next_calls == 1u;
+    for (size_t i = 0u; i < sizeof stages / sizeof stages[0]; i++)
+        passed = passed && pass.order[i] == stages[i] && pass.calls[stages[i]] == 1u;
+    tap_result(&count, &failures, "prelaunch all-pass ordering reaches only local sentinel", passed,
+               "pass path skipped/reordered a check, released ownership, or reached no sentinel");
+
+    for (size_t i = 0u; i < sizeof stages / sizeof stages[0]; i++) {
+        states_prelaunch_control control;
+        memset(&control, 0, sizeof control);
+        control.fail_stage = stages[i];
+        control.now_ms = stages[i] == STATES_PRELAUNCH_WORK_DEADLINE ? STATES_WORK_MS : 1u;
+        ops = states_prelaunch_control_ops(&control);
+        failed_stage = STATES_PRELAUNCH_OK;
+        rc = states_prelaunch_run(&ops, 0u, &failed_stage);
+        int ownership_released =
+            i >= 2u ? control.owned_releases == 1u : control.owned_releases == 0u;
+        passed = rc != 0 && failed_stage == stages[i] && control.release_calls == 1u &&
+                 ownership_released && !control.reserved_owned && control.next_calls == 0u &&
+                 control.order_count == i + 1u;
+        for (size_t j = 0u; j <= i; j++)
+            passed = passed && control.order[j] == stages[j] && control.calls[stages[j]] == 1u;
+        for (size_t j = i + 1u; j < sizeof stages / sizeof stages[0]; j++)
+            passed = passed && control.calls[stages[j]] == 0u;
+        char name[96];
+        (void)snprintf(name, sizeof name, "prelaunch %s rejection stops and releases owned state",
+                       states_prelaunch_stage_name(stages[i]));
+        tap_result(&count, &failures, name, passed,
+                   "wrong stage, later operation, launch sentinel, or descriptor cleanup");
+    }
+
+#if defined(__APPLE__)
+    (void)run_prelaunch_config_controls(config_path, &count, &failures);
+#else
+    (void)config_path;
+#endif
+    printf("1..%u\n", count);
+    return failures == 0u ? 0 : 1;
+}
+
 #if defined(__APPLE__)
 typedef struct host_session {
     char retroarch[PATH_MAX];
@@ -2406,6 +2642,213 @@ static int host_validate_runahead_config(host_session *host)
     return failed;
 }
 
+typedef struct host_prelaunch_context {
+    host_session *host;
+    const char *self_path;
+} host_prelaunch_context;
+
+static uint64_t host_prelaunch_now_ms(void *user)
+{
+    (void)user;
+    return states_now_ms();
+}
+
+static int host_prelaunch_sandbox_exec(void *user)
+{
+    (void)user;
+    return access("/usr/bin/sandbox-exec", X_OK) == 0 ? 0 : 1;
+}
+
+static int host_prelaunch_sandbox_helper(void *user)
+{
+    host_prelaunch_context *context = user;
+    return sandbox_helper(context->host, context->self_path);
+}
+
+static int host_prelaunch_update_config(void *user)
+{
+    host_prelaunch_context *context = user;
+    return update_config_port(context->host);
+}
+
+static int host_prelaunch_validate_config(void *user)
+{
+    host_prelaunch_context *context = user;
+    return host_validate_runahead_config(context->host);
+}
+
+static void host_prelaunch_release_reserved(void *user)
+{
+    host_prelaunch_context *context = user;
+    int fd = context->host->reserved_fd;
+    context->host->reserved_fd = -1;
+    if (fd >= 0)
+        (void)close(fd);
+}
+
+static int states_prelaunch_config_read(const char *path, char *content, size_t capacity)
+{
+    FILE *file = fopen(path, "rb");
+    if (file == NULL)
+        return 1;
+    size_t size = fread(content, 1u, capacity - 1u, file);
+    int failed = ferror(file) || size == capacity - 1u;
+    if (fclose(file) != 0)
+        failed = 1;
+    if (failed)
+        return 1;
+    content[size] = '\0';
+    return 0;
+}
+
+static int states_prelaunch_config_write(const char *path, const char *content)
+{
+    FILE *file = fopen(path, "wb");
+    if (file == NULL)
+        return 1;
+    size_t size = strlen(content);
+    int failed = fwrite(content, 1u, size, file) != size;
+    if (fclose(file) != 0)
+        failed = 1;
+    return failed;
+}
+
+static int states_prelaunch_config_replace(const char *source, const char *old_text,
+                                           const char *new_text, char *result, size_t capacity)
+{
+    const char *match = strstr(source, old_text);
+    if (match == NULL || strstr(match + strlen(old_text), old_text) != NULL)
+        return 1;
+    size_t before = (size_t)(match - source);
+    size_t old_size = strlen(old_text), new_size = strlen(new_text);
+    size_t after = strlen(match + old_size);
+    if (before + new_size + after >= capacity)
+        return 1;
+    memcpy(result, source, before);
+    memcpy(result + before, new_text, new_size);
+    memcpy(result + before + new_size, match + old_size, after + 1u);
+    return 0;
+}
+
+static int states_prelaunch_test_update_config(void *user)
+{
+    return update_config_port(user);
+}
+
+static int states_prelaunch_test_validate_config(void *user)
+{
+    return host_validate_runahead_config(user);
+}
+
+static int states_prelaunch_config_case(const char *path, const char *config,
+                                        states_prelaunch_stage expected_stage,
+                                        const char *expected_config)
+{
+    if (states_prelaunch_config_write(path, config) != 0)
+        return 0;
+    host_session host;
+    memset(&host, 0, sizeof host);
+    host.reserved_fd = -1;
+    host.port = 23456u;
+    if (copy_path(host.config_path, sizeof host.config_path, path) != 0)
+        return 0;
+    states_prelaunch_control control;
+    memset(&control, 0, sizeof control);
+    control.now_ms = 1u;
+    control.config_user = &host;
+    control.update_config = states_prelaunch_test_update_config;
+    control.validate_config = states_prelaunch_test_validate_config;
+    states_prelaunch_ops ops = states_prelaunch_control_ops(&control);
+    states_prelaunch_stage failed_stage = STATES_PRELAUNCH_OK;
+    int rc = states_prelaunch_run(&ops, 0u, &failed_stage);
+    int passed = expected_stage == STATES_PRELAUNCH_OK
+                     ? rc == 0 && failed_stage == STATES_PRELAUNCH_OK &&
+                           control.release_calls == 0u && control.reserved_owned
+                     : rc != 0 && failed_stage == expected_stage && control.release_calls == 1u &&
+                           control.owned_releases == 1u && !control.reserved_owned;
+    if (expected_config != NULL) {
+        char actual[32768];
+        passed = passed && states_prelaunch_config_read(path, actual, sizeof actual) == 0 &&
+                 strcmp(actual, expected_config) == 0;
+    }
+    return passed;
+}
+
+static int run_prelaunch_config_controls(const char *config_path, unsigned *count,
+                                         unsigned *failures)
+{
+    char base[32768], changed_port[32768], variant[32768], config_port[PATH_MAX];
+    static const char port_zero[] = "network_cmd_port = \"0\"\n";
+    static const char port_value[] = "network_cmd_port = \"23456\"\n";
+    static const char runahead_secondary[] = "run_ahead_secondary_instance = \"false\"\n";
+    int ready = states_prelaunch_config_read(config_path, base, sizeof base) == 0 &&
+                states_prelaunch_config_replace(base, port_zero, port_value, changed_port,
+                                                sizeof changed_port) == 0;
+    int path_size = snprintf(config_port, sizeof config_port, "%s.prelaunch-control", config_path);
+    ready = ready && path_size > 0 && (size_t)path_size < sizeof config_port;
+    if (!ready) {
+        tap_result(count, failures, "prelaunch config fixture is readable and bounded", 0,
+                   "could not prepare the existing test.cfg.in fixture");
+        return 1;
+    }
+    tap_result(count, failures, "prelaunch config fixture is readable and bounded", 1, "");
+
+    int passed = states_prelaunch_config_case(config_port, base, STATES_PRELAUNCH_OK, changed_port);
+    tap_result(count, failures, "real config patch accepts generated settings exactly", passed,
+               "port update or validated configuration differed from the generated fixture");
+
+    if (states_prelaunch_config_replace(base, runahead_secondary, "", variant, sizeof variant) != 0)
+        passed = 0;
+    else
+        passed = states_prelaunch_config_case(config_port, variant,
+                                              STATES_PRELAUNCH_RUNAHEAD_CONFIG, NULL);
+    tap_result(count, failures, "missing run-ahead field is rejected", passed,
+               "missing required run-ahead key passed validation");
+
+    int append_size = snprintf(variant, sizeof variant, "%s%s", base, runahead_secondary);
+    passed =
+        append_size > 0 && (size_t)append_size < sizeof variant &&
+        states_prelaunch_config_case(config_port, variant, STATES_PRELAUNCH_RUNAHEAD_CONFIG, NULL);
+    tap_result(count, failures, "duplicate run-ahead field is rejected", passed,
+               "duplicate required run-ahead key passed validation");
+
+    passed =
+        states_prelaunch_config_replace(base, runahead_secondary,
+                                        "run_ahead_secondary_instance = \"true\"\n", variant,
+                                        sizeof variant) == 0 &&
+        states_prelaunch_config_case(config_port, variant, STATES_PRELAUNCH_RUNAHEAD_CONFIG, NULL);
+    tap_result(count, failures, "changed run-ahead field is rejected", passed,
+               "changed required run-ahead value passed validation");
+
+    passed = states_prelaunch_config_replace(base, port_zero, "", variant, sizeof variant) == 0 &&
+             states_prelaunch_config_case(config_port, variant, STATES_PRELAUNCH_CONFIG_PORT, NULL);
+    tap_result(count, failures, "absent port sentinel is rejected", passed,
+               "missing network port sentinel passed configuration patching");
+
+    append_size = snprintf(variant, sizeof variant, "%s%s", base, port_zero);
+    passed = append_size > 0 && (size_t)append_size < sizeof variant &&
+             states_prelaunch_config_case(config_port, variant, STATES_PRELAUNCH_CONFIG_PORT, NULL);
+    tap_result(count, failures, "duplicate port sentinel is rejected", passed,
+               "duplicate network port sentinel passed configuration patching");
+
+    host_session release_host;
+    memset(&release_host, 0, sizeof release_host);
+    release_host.reserved_fd = open(config_port, O_RDONLY);
+    int owned_fd = release_host.reserved_fd;
+    host_prelaunch_context release_context = {.host = &release_host, .self_path = ""};
+    if (owned_fd >= 0) {
+        host_prelaunch_release_reserved(&release_context);
+        host_prelaunch_release_reserved(&release_context);
+    }
+    errno = 0;
+    passed = owned_fd >= 0 && release_host.reserved_fd == -1 && fcntl(owned_fd, F_GETFD) == -1 &&
+             errno == EBADF;
+    tap_result(count, failures, "owned prelaunch descriptor closes once", passed,
+               "reservation cleanup did not invalidate the descriptor exactly once");
+    (void)remove(config_port);
+    return 0;
+}
+
 static int host_prepare_media(host_session *host)
 {
     if (!path_is_within(host->save_dir, host->media_path))
@@ -3025,12 +3468,20 @@ static int host_run(int argc, char **argv, const char *self_path)
     if (validate_host_paths(&host) != 0 || core_digest_matches(host.core, host.core_sha256) != 0)
         return 1;
     host.start_ms = states_now_ms();
-    if (access("/usr/bin/sandbox-exec", X_OK) != 0 || sandbox_helper(&host, self_path) != 0 ||
-        states_now_ms() >= host.start_ms + STATES_WORK_MS || update_config_port(&host) != 0 ||
-        host_validate_runahead_config(&host) != 0) {
-        fprintf(stderr, "states: fail-closed sandbox UDP containment preflight\n");
-        if (host.reserved_fd >= 0)
-            close(host.reserved_fd);
+    host_prelaunch_context prelaunch_context = {.host = &host, .self_path = self_path};
+    states_prelaunch_ops prelaunch_ops = {
+        .user = &prelaunch_context,
+        .now_ms = host_prelaunch_now_ms,
+        .sandbox_exec_available = host_prelaunch_sandbox_exec,
+        .sandbox_helper = host_prelaunch_sandbox_helper,
+        .update_config_port = host_prelaunch_update_config,
+        .validate_runahead_config = host_prelaunch_validate_config,
+        .release_reserved = host_prelaunch_release_reserved,
+    };
+    states_prelaunch_stage failed_stage = STATES_PRELAUNCH_OK;
+    if (states_prelaunch_run(&prelaunch_ops, host.start_ms, &failed_stage) != 0) {
+        fprintf(stderr, "states prelaunch stage=%s failed\n",
+                states_prelaunch_stage_name(failed_stage));
         return 1;
     }
     int sandbox_preflight_passed = 1;
@@ -3134,12 +3585,15 @@ int main(int argc, char **argv)
         return run_controls(self);
     if (argc == 2 && strcmp(argv[1], "--fault-controls") == 0)
         return run_fault_controls(self);
+    if (argc == 3 && strcmp(argv[1], "--prelaunch-controls") == 0)
+        return run_prelaunch_controls(argv[2]);
 #if defined(__APPLE__)
     if (argc == 3 && strcmp(argv[1], "--preflight") == 0)
         return preflight_only(self, argv[2]);
     if (argc > 1 && strcmp(argv[1], "--host") == 0)
         return host_run(argc, argv, self);
 #endif
-    fprintf(stderr, "usage: states --controls | --host ...\n");
+    fprintf(stderr, "usage: states --controls | --fault-controls | --prelaunch-controls <config> | "
+                    "--host ...\n");
     return 2;
 }

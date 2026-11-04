@@ -9,6 +9,7 @@ int main(int argc, char **argv)
     const char *shot = argv[11];
     if (strstr(shot, "failure.bmp") != NULL) {
         puts("states host: MOCK_FAILURE output retained");
+        fputs("states prelaunch stage=sandbox-helper failed\n", stderr);
         fputs("receipt mock intentional host failure\n", stderr);
         return 7;
     }
