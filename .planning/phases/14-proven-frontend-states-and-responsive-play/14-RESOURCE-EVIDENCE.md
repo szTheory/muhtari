@@ -991,3 +991,32 @@ No test or timeout bound was changed to turn the parent failure into a pass.
 Receipt SHA-256 values: ordinary CI `64efbd9e9d4a7b8427f0dda8e36ba640c8bb13443270b964fbaccdbdc8ff7b1f`, release `52cf73f8e20caf9e639f2a9ba025cb9a1f22a100dd258f2fd6e2e4fcd065fd00`, hygiene `8bbf4e05db12ee117851e3b7e984c87db76ef09e8433c7458bf13436b907a979`.
 
 All local run URLs: N/A-local.
+
+## Plan 14-21 fresh qualification stop (2026-11-04)
+
+The owner-authorized single qualification began at 2026-11-04T20:55:50.564960Z and stopped before any Docker command. Its command wrapper returned exit 1 after approximately 18.7 seconds. The local-input check ran `git -C build/pins/rcheevos rev-parse HEAD` and compared the result, `1253a747b7cd1580692712a5f25e68c27c7d3256`, with the pinned source commit `6755915f2bdf6c11c83b3e0e68c4623a39c0dabe`. The extracted rcheevos archive has no `.git` directory, so Git walked up to the parent project worktree; `git -C build/pins/rcheevos rev-parse --show-toplevel` confirmed the reported repository was the Phase 14 worktree. The comparison did not identify the extracted rcheevos source revision. The qualification stopped conservatively, and the local rcheevos contents remain unverified by this attempt. No fetch or checkout change followed.
+
+The authorized input acquisition chain was preserved as owner-reported command sh scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime, exit 0, followed by fresh SHA-256 1da96b596266ad432b6e652aefbbc507de38795ed3197f859ac8197c1c5a276a and file identification as ELF 64-bit ARM aarch64. The artifact was not copied into a container and its Linux version was not checked. Its distinct expected release-archive digest is 206a572cd4fab81e86bb4e808976e822603fd2aa9c67730c921710c2c6bf1c00; the deleted temporary archive was not retained or fetched again.
+
+Static controls completed before qualification. Shell syntax and Python compilation passed; host CMake/CTest were 4.4.3 and Ninja was 1.13.2. The production runlog control observed exit 0, raw failure 17, timeout 124 and child reaping. The production watchdog killed and reaped its harmless owned shell child at deadline. Atomic duplicate-claim refusal and receipt mutation controls passed. These controls reported Docker and project tests not started. The host tool versions are not observations of the approved image.
+
+The stop handler then failed while writing its receipt with NameError: os is not defined. To preserve the one-shot cap, the qualification was not retried. A zero-workload preflight receipt and an absent-pair receipt were reconstructed from the captured command output and local identity checks, then validated by the new read-only inspector and CMake receipt checker. Both returned exit 0. The receipts record the rcheevos mismatch, the receipt-writer error, qualification counter 1, and zero pair-side reservations, launches, or unknown launches.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| sh -n build/phase14-gap21-evidence/docker-diagnostic.sh | 0 | POSIX shell syntax passed. |
+| sh -n build/phase14-gap21-evidence/container-driver.sh | 0 | POSIX shell syntax passed. |
+| python3 compile checks for pair-runner.py and embedded Python | 0 | Python syntax passed. |
+| cmake -DMODE=controls -DEVIDENCE=build/phase14-gap21-evidence -P build/phase14-gap21-evidence/check-receipts.cmake | 0 | Valid complete/halted/eligible records and required fault mutations behaved as expected. |
+| sh build/phase14-gap21-evidence/docker-diagnostic.sh controls | 0 | Production supervisor/watchdog, owned-child reaping, claim, and receipt controls passed; no Docker or project test started. |
+| git -C build/pins/rcheevos rev-parse HEAD | 0 | Printed the parent Phase 14 worktree commit because the extracted archive has no `.git` metadata; this is not a valid rcheevos source identity result. |
+| git -C build/pins/rcheevos rev-parse --show-toplevel | 0 | Confirmed the command had traversed to the current Phase 14 worktree root. |
+| sh build/phase14-gap21-evidence/docker-diagnostic.sh qualify | 1 | Sole invocation stopped at the invalid rcheevos revision check before any Docker command, image inspection, container, build, fixture, or test. Run URL N/A-local. |
+| sh build/phase14-gap21-evidence/docker-diagnostic.sh pair | N/A | Not invoked because qualification stopped; pair remains unspent and ineligible. |
+| sh build/phase14-gap21-evidence/docker-diagnostic.sh inspect | 0 | Reconstructed halted receipts were structurally consistent. |
+| cmake -DEVIDENCE=build/phase14-gap21-evidence -P build/phase14-gap21-evidence/check-receipts.cmake | 0 | Halted receipt and zero-launch accounting validated without Docker or project tests. |
+| Docker version/context/info/image inspection, container creation, CMake configure/build, CTest metadata, default side, serial side | N/A | None was reached or started. |
+
+The expected image digest sha256:c58e2b364da03b0c804c7d660f2ecbedf2f221a382b9baa0b344b0144780ff43, ID sha256:10ca2cfc3a29b70e13fe0a2a9244fe7e5d24fbd7350ac4205028335c9541f926, and self-asserted labels remain expected-only; no fresh image inspection occurred. No container existed, so cleanup was not needed. The recorded preservation manifests and before/after diffs show historical gap19/gap20 evidence and the pre-existing worktree state unchanged.
+
+This diagnosis establishes only that the newly supplied Wasmtime file matches its expected extracted Linux artifact identity. The rcheevos source identity check was invalid, so this attempt establishes neither a match nor a mismatch for that source. The approved image, native tools, isolation, and CTest closure were not qualified. No pair allowance was charged, but the pair is now ineligible under this stopped qualification. The qualification is spent; neither `qualify` nor `pair` may be run again under Plan 14-21. A future attempt needs a correct check for the extracted archive contents and a new authorized scope. FRONT-02, FRONT-03, and FRONT-04 remain pending; native CI, the unknown macOS timeout cause, the spent host allowance, missing pinned RetroArch evidence, and the Phase 12 stop are unchanged. All local run URLs: N/A-local.

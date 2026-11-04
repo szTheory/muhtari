@@ -5,15 +5,15 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: blocked
-stopped_at: "Plan 14-21 prepared for the newly authorized one-time qualification using the supplied pinned Linux Wasmtime input; no new qualification or pair has run; Phase 14 acceptance remains blocked"
-last_updated: "2026-11-04T18:58:23Z"
+stopped_at: "Plan 14-21 used its one qualification; an invalid rcheevos revision check stopped before Docker. No container or tests ran, the pair is ineligible, and Phase 14 acceptance remains blocked"
+last_updated: "2026-11-04T21:08:39Z"
 last_activity: 2026-11-04
-state_head: 5891fd865fbe306821f97f901d32fb0207d81233
+state_head: 1253a747b7cd1580692712a5f25e68c27c7d3256
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 29
-  completed_plans: 27
+  completed_plans: 29
   percent: 33
 ---
 
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the authorized host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-21 is prepared for the newly authorized one-time qualification and conditional existing single default/serial pair, using a fresh ignored evidence directory and the now-supplied pinned Linux arm64 Wasmtime 48.0.6 input. No new qualification, container or test has run. Plan 14-20 remains halted at its historical missing-input gate and Plan 14-19 at its original provenance gate; neither is resumed or replaces native macOS CI/pinned RetroArch acceptance.
+Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the authorized host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-21 used its one qualification and stopped before Docker because `git -C build/pins/rcheevos rev-parse HEAD` walked out of the extracted archive (which has no `.git`) and reported the parent worktree commit. That check did not establish the rcheevos source identity. No container or project test ran; the pair is unspent but ineligible. The receipt writer also failed, so the zero-workload receipts were reconstructed and passed the read-only checker. Do not rerun either Plan 14-21 command. Plans 14-20 and 14-19 remain halted historical records; none replaces native macOS CI or pinned RetroArch acceptance.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — ACCEPTANCE BLOCKED
-Plan: 21 of 21 planned — 14-21 prepared, not executed (20 summaries; 15 complete; 14-10/14-15/14-17/14-19/14-20 halted)
+Plan: 21 of 21 summarized — 15 complete; 14-10/14-15/14-17/14-19/14-20/14-21 halted
 Status: Blocked — phase verification remains gaps_found (20/27 must-haves verified)
-Next action: independently review prepared Plan 14-21, then execute only this prerequisite with `$gsd-execute-phase 14 --gaps-only` in the current Phase 14 worktree. Its new qualification may run once; only successful admission permits the existing single pair in the same container and original bounded envelope. No owner checkpoint is inserted for the already authorized attempt. Plan 14-20's qualification remains spent and its pair command invalid; do not run either stopped plan or fetch any input during execution. This does not complete Phase 14 acceptance.
-Boundary: The owner supplied the Linux artifact through the hash-verifying fetch script and authorized one fresh qualification under Plan 14-21, with mandatory `build/phase14-gap21-evidence/` state. The exact cached-image digest/ID/OCI-label exception remains one-off and labels self-asserted; fresh image inspection and all other gates remain required. Missing native inputs halt before pair, with no retry, second container, endpoint/image change or privilege escalation. Preserve Plan 14-20's original missing-input stop/receipts, native parent timeout failure/unknown cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt.
+Next action: Do not run Plan 14-21 `qualify` or `pair` again. Its qualification is spent and the pair is ineligible. A future bounded attempt first needs a correct check of the extracted rcheevos archive contents and then a newly planned, newly authorized scope. No Docker command was reached in this attempt.
+Boundary: The owner supplied the Linux artifact through the hash-verifying fetch script and authorized exactly one fresh qualification under Plan 14-21 using the existing image exception; that qualification has now been used. The exact image exception remains one-off and labels self-asserted. Preserve Plan 14-21's stop, the prior Plan 14-20/14-19 history, native parent timeout failure/unknown cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. No retry, image/container change, privilege escalation or host action follows from this stopped attempt.
 
 ## Current Blockers
 
@@ -45,7 +45,7 @@ Boundary: The owner supplied the Linux artifact through the hash-verifying fetch
 - Plan 14-17 stopped at the single prescribed process-enumeration preflight: `/bin/ps` was denied with exit 126. It did not capture fresh CTest metadata or start either focused command; invocation counters remain zero. Do not retry or substitute a process probe in this runtime. A successor scope needs an environment where process enumeration and executable/cwd attribution are available; the complete-parent gate and FRONT-02/03/04 remain unresolved.
 - Plan 14-19 reached the local Docker daemon and passed VM capacity, but stopped before container creation because the local image inspection interface exposed no independently verifiable provenance receipt for a cached native Linux image. No source/toolchain qualification or project workload occurred; default and serial counters remain zero. The pair is unspent but ineligible until provenance can be verified. The native parent timeout cause remains unknown, and FRONT-02/03/04 remain pending.
 - Plan 14-20 used its one qualification invocation under the owner's exact one-off image trust exception, then halted before Docker because the pinned Linux arm64 Wasmtime 48.0.6 archive/binary was absent. No container or test ran; the pair remains unspent but ineligible, and neither `qualify` nor `pair` may be rerun under that plan. The next prerequisite is the exact hash-checked Linux artifact and a separately authorized qualification scope. FRONT-02/03/04 remain pending; Phase 14 acceptance stays blocked.
-- Plan 14-21 is prepared after the owner successfully supplied the pinned Linux arm64 Wasmtime input and authorized one new qualification. The new plan uses only fresh `build/phase14-gap21-evidence/` controllers/receipts and depends on completed 14-16/14-18. It has not executed. The existing pair is eligible only after all new gates pass; missing other native inputs still halt. No FRONT requirement is closed and no native/host allowance is renewed.
+- Plan 14-21 used its one qualification after the owner supplied the Linux Wasmtime input. It stopped before Docker because `git -C build/pins/rcheevos rev-parse HEAD` returned the parent worktree commit: the extracted rcheevos archive has no `.git`, and `--show-toplevel` confirmed Git walked up to the project. The source contents were not verified as matching or mismatching the pin. The stop receipt writer raised `NameError: os is not defined`; reconstructed preflight/pair receipts passed the read-only inspector and CMake checker. No Docker command, container, or project test ran. The pair has zero reservations/launches and is unspent but ineligible. Do not retry; a future attempt requires correct archive-content verification and a new authorized scope. FRONT-02/03/04 and all native/host acceptance blockers remain unchanged.
 - The advisory WASI job in run 41733613173 failed because `tmpfile` is deprecated/not defined for WASI at `tests/core/test_state.c:2022` under `-Werror`; it remains advisory and was not retried.
 
 ## Preserved Phase 12 position — halt remains binding
