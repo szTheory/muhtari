@@ -30,7 +30,7 @@ The outcome notes consistently preserve the failed host run as an unresolved com
 
 ## Warnings
 
-### WR-01 [WARNING]: Evidence record says the artifact contains save files
+### WR-01: Evidence record says the artifact contains save files
 
 **File:** `.planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md:611`
 **Severity:** WARNING
