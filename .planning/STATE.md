@@ -5,10 +5,10 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: Blocked
-stopped_at: Completed 14-14-PLAN.md
-last_updated: "2026-11-04T01:51:50Z"
+stopped_at: Halted 14-15-PLAN.md after the independent parent CI gate timed out
+last_updated: "2026-11-04T02:11:11Z"
 last_activity: 2026-11-03
-state_head: 7580780dfd40307d81e586d962b1bad6c3d79932
+state_head: 7e4e32824b2a361c689dd33e7726744ca9136be1
 progress:
   total_phases: 3
   completed_phases: 1
@@ -24,22 +24,23 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 remains blocked after its one authorized host attempt failed at the compound states preflight before state-mode RetroArch launched. Plan 14-14 added stage-specific offline diagnostics and fixed a separately reproduced UDP poll-error fail-open; that local defect does not identify the historical failed member. FRONT-02/03/04 remain pending, and the one-attempt allowance is spent.
+Current focus: Phase 14 remains blocked after its one authorized host attempt failed at the compound states preflight before state-mode RetroArch launched. Plan 14-14 added stage-specific offline diagnostics and fixed a separately reproduced UDP poll-error fail-open; that local defect does not identify the historical failed member. Plan 14-15's frozen source passed complete local CI/hygiene, but its independent parent had 12 ordinary-test timeouts, so the remote decision checkpoint was not reached. FRONT-02/03/04 remain pending and the host allowance is spent.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — READY TO EXECUTE
-Plan: 14 of 15 (14 summarized; 14-10 remains halted history)
+Plan: 15 of 15 (15 summarized; 14-10 and 14-15 are halted outcomes)
 Status: Blocked — verification is gaps_found (20/27 must-haves verified)
-Next action: Continue Plan 14-15 from this Phase 14 checkout. It runs complete independent parent/frozen-source CI and hygiene, then prepares a decision packet and stops at the fresh owner-authorization checkpoint before publication or any host attempt. Phase acceptance remains blocked.
-Boundary: Do not resume Plan 14-10 or reuse its spent diagnostic cap. Plan 14-13's focused BIOS batch is consumed and must not be rerun. The single Plan 14-11 host attempt is also spent; no additional push, dispatch, rerun, cancellation, local RetroArch, PR/merge/release, or Phase 12 action is authorized. Plan 14-15's checkpoint requires separate fresh authorization for any future host attempt.
+Next action: Plan a bounded local investigation of the 12 parent CI timeouts with `$gsd-plan-phase 14 --gaps`. The parent/frozen-source workflow attempts are spent under Plan 14-15; the planning command does not authorize a retry, timeout change, publication or host action. Phase acceptance remains blocked.
+Boundary: Do not resume Plan 14-10 or reuse its spent diagnostic cap. Plan 14-13's focused BIOS batch is consumed and must not be rerun. Plan 14-15's parent and frozen-source workflows each ran once; no retry or warm rerun is authorized under that plan. The single Plan 14-11 host attempt is also spent; no additional push, dispatch, cancellation, local RetroArch, PR/merge/release, or Phase 12 action is authorized.
 
 ## Current Blockers
 
 - The historical BIOS timeout cause remains unknown. The approved five-test RUN_SERIAL mitigation preserved one-second limits; after it, the independent parent and frozen source passed complete CI and hygiene workflows. This does not attribute the earlier timeouts.
 - Plan 14-13 is complete: the exact five RUN_SERIAL properties and metadata fault controls passed, and the sole focused batch passed 7/7 including both fixture setup tests. That batch is consumed; do not retry it. No deadline or unrelated test metadata changed.
 - Plan 14-11 completed its local workflow and evidence tasks. Run 41733613173 failed at a compound states preflight before host media setup or state-mode RetroArch launch; the exact failing member is unknown. No state-mode save/load, rewind, or run-ahead observation exists, so FRONT-02/03/04 remain pending. Its single host allowance is spent.
-- Plan 14-14 completed the local coordinator, receipt, configuration and cleanup controls. Its poll-error regression was reproduced and fixed offline, but it is unrelated and unattributed to run 41733613173. No sandbox, network, RetroArch or host action ran. Plan 14-15 owns the remaining local workflows and fresh authority checkpoint.
+- Plan 14-14 completed the local coordinator, receipt, configuration and cleanup controls. Its poll-error regression was reproduced and fixed offline, but it is unrelated and unattributed to run 41733613173. No sandbox, network, RetroArch or host action ran.
+- Plan 14-15 tested the independent parent and frozen evidence child. The parent's CI workflow failed with 12 ordinary-test timeouts (four title and eight Maria DMA cases); its hygiene passed. The frozen child passed ordinary CI, release and hygiene, but cannot replace the required parent. No retry, remote qualification or host decision followed. The cause of the parent timeouts is unknown; FRONT-02/03/04 and the spent host stop remain unchanged.
 - The advisory WASI job in run 41733613173 failed because `tmpfile` is deprecated/not defined for WASI at `tests/core/test_state.c:2022` under `-Werror`; it remains advisory and was not retried.
 
 ## Preserved Phase 12 position — halt remains binding
@@ -200,10 +201,10 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-04T01:51:50Z
-Stopped at: Completed 14-14-PLAN.md; Phase 14 remains blocked with actual host evidence pending
+Last session: 2026-11-04T02:11:11Z
+Stopped at: Halted 14-15-PLAN.md after the independent parent CI gate timed out
 Resume file: None
-Next separate command: From the current Phase 14 checkout, run `$gsd-execute-phase 14 --gaps-only` to continue Plan 14-15's complete local gates and decision packet. Stop at its fresh owner-authorization checkpoint before publication or host work; the previous host allowance remains spent.
+Next separate command: From the current Phase 14 checkout, run `$gsd-plan-phase 14 --gaps` to scope a bounded local investigation of the 12 parent CI timeouts. Do not rerun the consumed workflows or resume the spent host allowance without a new explicit scope.
 Context handoff: Plan 14-11 is complete. Exact-parent and frozen-source local CI/hygiene passed, but the one authorized run 41733613173 failed during compound preflight before state-mode RetroArch launch. The current artifact has no state-mode screenshot or raw save; FRONT-02/03/04 remain pending. The host allowance is spent. Do not retry, rerun, cancel, push, or launch RetroArch locally. Plan 14-10 remains halted with its diagnostic cap spent; Plan 14-13's single focused batch remains consumed. Phase 12 remains halted. No owner UAT is needed. Context may be cleared; the next session continues with `$gsd-plan-phase 14 --gaps` in this checkout.
 
 ## Deferred Items
