@@ -5,14 +5,14 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: blocked
-stopped_at: "Plan 14-19 Docker qualification stopped before container creation at image provenance; no project workload ran; Phase 14 acceptance remains Blocked"
-last_updated: "2026-11-04T17:05:51Z"
+stopped_at: "Plan 14-20 prepared for review: owner approved the exact cached-image trust exception; fresh qualification and the existing conditional pair are not executed; Phase 14 acceptance remains Blocked"
+last_updated: "2026-11-04T18:00:04Z"
 last_activity: 2026-11-04
 state_head: 8353b9b19ef03c0735d7f993fefb3ec51477ad03
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 27
+  total_plans: 28
   completed_plans: 26
   percent: 33
 ---
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the authorized host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-19's one Docker qualification reached the local daemon and VM but stopped before container creation because local image inspection exposed no independently verifiable provenance receipt. No project build/test ran; this does not replace native macOS CI or pinned RetroArch evidence.
+Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the authorized host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-20 is prepared for review under the owner's exact cached-image trust exception, with fresh ignored paths, one new qualification and only the existing unspent conditional pair. No diagnostic was executed during planning. Plan 14-19 remains halted before container creation at its original provenance gate; Linux evidence cannot replace native macOS CI or pinned RetroArch acceptance.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — ACCEPTANCE BLOCKED (Plan 14-19 halted before container creation at image provenance)
-Plan: 19 of 19 planned (19 summaries; 15 complete, 14-10/14-15/14-17/14-19 halted)
+Phase: 14 (Proven frontend states and responsive play) — ACCEPTANCE BLOCKED (Plan 14-20 prerequisite prepared for review; 14-19 remains halted)
+Plan: 20 of 20 planned (19 summaries; 15 complete, 14-10/14-15/14-17/14-19 halted; 14-20 unexecuted)
 Status: Blocked — phase verification remains gaps_found (20/27 must-haves verified)
-Next action: before any new diagnostic plan, make a locally verifiable provenance receipt available for a cached native Linux arm64 image or define an authorized way to verify its registry provenance without pulling it. Plan 14-19's qualification is single-use in this execution and must not be retried; no Docker owner-terminal command is needed because daemon access succeeded.
-Boundary: Plan 14-19 verified Docker Desktop 29.5.2 access and VM capacity, then stopped before container creation because no inspected cached image exposed independent provenance evidence. No source archive, configure, build, fixture, or target test ran; the one default/serial pair remains unspent and ineligible. Preserve the native parent timeout failure and unknown cause, spent host allowance, and pending FRONT-02/03/04. Native macOS CI and pinned RetroArch acceptance remain separate.
+Next action: orchestrator reviews and commits Plan 14-20, then `$gsd-execute-phase 14 --gaps-only` in this checkout selects its new prerequisite scope. It has no new owner checkpoint: the exact image exception is already approved. Qualification may halt before workload; only all passing gates permit the existing single pair. Do not resume Plan 14-19 or add a wave filter.
+Boundary: Owner accepted only the exact digest/ID/OCI labels in Plan 14-20 despite absent signed attestation; labels remain self-asserted. New qualification must prove the saved source, required local tools and strict offline private container/resource/process controls. No planning-time Docker/build/test ran. The pair remains unspent until an actual protected launch; no retry follows any launched failure. Preserve native parent timeout failure/unknown cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt.
 
 ## Current Blockers
 
@@ -44,6 +44,7 @@ Boundary: Plan 14-19 verified Docker Desktop 29.5.2 access and VM capacity, then
 - Plan 14-16 completed the saved-receipt, exact-parent and fixture-closure audit. The process-list tools were denied, so the no-overlap precondition failed; neither focused command ran and the cause remains unknown. No source or test policy changed; the parent complete-CI gate and FRONT-02/03/04 remain unresolved.
 - Plan 14-17 stopped at the single prescribed process-enumeration preflight: `/bin/ps` was denied with exit 126. It did not capture fresh CTest metadata or start either focused command; invocation counters remain zero. Do not retry or substitute a process probe in this runtime. A successor scope needs an environment where process enumeration and executable/cwd attribution are available; the complete-parent gate and FRONT-02/03/04 remain unresolved.
 - Plan 14-19 reached the local Docker daemon and passed VM capacity, but stopped before container creation because the local image inspection interface exposed no independently verifiable provenance receipt for a cached native Linux image. No source/toolchain qualification or project workload occurred; default and serial counters remain zero. The pair is unspent but ineligible until provenance can be verified. The native parent timeout cause remains unknown, and FRONT-02/03/04 remain pending.
+- Plan 14-20 is separately planned under the owner's explicit one-off acceptance of the exact cached image digest/ID and self-asserted OCI source/revision labels despite no signed attestation. This supersedes the next-prerequisite choice only, not Plan 14-19's halt or history. One fresh qualification must pass every remaining gate before the existing single pair may launch; no workload or Docker operation ran during planning. Dependencies are completed 14-16/14-18, computed wave 2; halted 14-19 is evidence only. Review/commit remains with the orchestrator.
 - The advisory WASI job in run 41733613173 failed because `tmpfile` is deprecated/not defined for WASI at `tests/core/test_state.c:2022` under `-Werror`; it remains advisory and was not retried.
 
 ## Preserved Phase 12 position — halt remains binding
@@ -208,10 +209,10 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 ## Session Continuity
 
 Last session: 2026-11-04
-Stopped at: Plan 14-19 Docker qualification stopped before container creation because locally inspectable image provenance was insufficient; Phase 14 acceptance remains Blocked.
+Stopped at: Plan 14-20 written for orchestrator review and commit under the exact approved image exception; no execution. Plan 14-19 stays halted and Phase 14 acceptance remains Blocked.
 Resume file: None
-Next command: None for Plan 14-19; its single qualification was used. After a locally verifiable provenance receipt for a cached native Linux image is available, the orchestrator must scope the next qualification step. Do not rerun the qualifier or launch the pair.
-Context handoff: Docker Desktop client/server 29.5.2 was reachable on a local Unix socket; the Linux arm64 VM reported 8 CPUs and 16,748,310,528 bytes. The image inventory inspected 235 IDs, including 52 native-arm64 repo-digest images, but the local inspection output exposed no independently verifiable provenance receipt. No container, source archive, build, fixture, or target test was launched. The default/serial pair is unspent but ineligible; no owner-terminal command is needed. Preserve the failed native parent CI gate and unknown timeout cause, spent host allowance, pending FRONT-02/03/04, Plan 14-10/14-15/14-17 halted history, Plan 14-13's consumed batch, both Plan 14-15 complete workflows, and the Phase 12 halt. Native macOS and pinned RetroArch acceptance remain separate. No owner UAT is needed.
+Next command: After orchestrator plan review/commit, `$gsd-execute-phase 14 --gaps-only` in the current checkout runs only ready unsummarized Plan 14-20, not phase acceptance. No wave filter or Plan 14-19 command is valid. No additional owner approval is needed within the already settled scope.
+Context handoff: Plan 14-20 records the exact image digest/ID/labels and one-off trust exception verbatim; labels are self-asserted and no signed attestation is claimed. Its fresh ignored gap20 paths and completed dependencies 14-16/14-18 isolate it from halted 14-19. One fresh local offline qualification, saved source/toolchain/limits and private process controls are required before the existing unspent single pair. A preflight failure halts with zero workload; any actual protected launch charges the pair and any launched failure stops without retry. Plan 14-19's saved daemon/VM/image observations and zero counters remain historical, not a fresh admission. Preserve failed native parent CI/unknown cause, spent host allowance, pending FRONT-02/03/04, Plan 14-10/14-15/14-17/14-19 halted history, Plan 14-13's consumed batch, both Plan 14-15 complete workflows and Phase 12 halt. Orchestrator acts next on review/commit; no owner UAT is needed.
 
 ## Deferred Items
 
