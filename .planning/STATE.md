@@ -5,15 +5,15 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: blocked
-stopped_at: "Plan 14-20 prepared for review: owner approved the exact cached-image trust exception; fresh qualification and the existing conditional pair are not executed; Phase 14 acceptance remains Blocked"
-last_updated: "2026-11-04T18:00:04Z"
+stopped_at: "Plan 14-20 used its one qualification invocation and halted before Docker because pinned Linux arm64 Wasmtime 48.0.6 is absent; no tests ran and the conditional pair remains unspent but ineligible"
+last_updated: "2026-11-04T18:39:37Z"
 last_activity: 2026-11-04
-state_head: 8353b9b19ef03c0735d7f993fefb3ec51477ad03
+state_head: 5891fd865fbe306821f97f901d32fb0207d81233
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 28
-  completed_plans: 26
+  completed_plans: 27
   percent: 33
 ---
 
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the authorized host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-20 is prepared for review under the owner's exact cached-image trust exception, with fresh ignored paths, one new qualification and only the existing unspent conditional pair. No diagnostic was executed during planning. Plan 14-19 remains halted before container creation at its original provenance gate; Linux evidence cannot replace native macOS CI or pinned RetroArch acceptance.
+Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the authorized host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-20 used its one qualification invocation and halted before Docker because the exact pinned Linux arm64 Wasmtime 48.0.6 artifact is absent; no container or test ran, and the pair remains unspent but ineligible. Plan 14-19 remains halted at its original provenance gate; neither stop replaces native macOS CI or pinned RetroArch acceptance.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — ACCEPTANCE BLOCKED (Plan 14-20 prerequisite prepared for review; 14-19 remains halted)
-Plan: 20 of 20 planned (19 summaries; 15 complete, 14-10/14-15/14-17/14-19 halted; 14-20 unexecuted)
+Phase: 14 (Proven frontend states and responsive play) — ACCEPTANCE BLOCKED
+Plan: 20 of 20 planned (20 summaries; 15 complete; 14-10/14-15/14-17/14-19/14-20 halted)
 Status: Blocked — phase verification remains gaps_found (20/27 must-haves verified)
-Next action: orchestrator reviews and commits Plan 14-20, then `$gsd-execute-phase 14 --gaps-only` in this checkout selects its new prerequisite scope. It has no new owner checkpoint: the exact image exception is already approved. Qualification may halt before workload; only all passing gates permit the existing single pair. Do not resume Plan 14-19 or add a wave filter.
-Boundary: Owner accepted only the exact digest/ID/OCI labels in Plan 14-20 despite absent signed attestation; labels remain self-asserted. New qualification must prove the saved source, required local tools and strict offline private container/resource/process controls. No planning-time Docker/build/test ran. The pair remains unspent until an actual protected launch; no retry follows any launched failure. Preserve native parent timeout failure/unknown cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt.
+Next action: provide the exact pinned Linux arm64 Wasmtime 48.0.6 artifact in the ignored `build/pins/wasmtime/` cache, then authorize a new qualification scope. Plan 14-20's only `qualify` invocation is spent and cannot be rerun; its `pair` command is invalid because qualification halted. Do not resume Plan 14-19, fetch inputs under the stopped plan, or treat this prerequisite diagnostic as Phase 14 acceptance.
+Boundary: Owner accepted only the exact digest/ID/OCI labels in Plan 14-20 despite absent signed attestation; labels remain self-asserted. The mandatory local Linux Wasmtime pin was absent, so the new run stopped before Docker inspection, container creation or project workload. The pair is unspent but ineligible; no retry follows this stop. Preserve native parent timeout failure/unknown cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt.
 
 ## Current Blockers
 
@@ -44,7 +44,7 @@ Boundary: Owner accepted only the exact digest/ID/OCI labels in Plan 14-20 despi
 - Plan 14-16 completed the saved-receipt, exact-parent and fixture-closure audit. The process-list tools were denied, so the no-overlap precondition failed; neither focused command ran and the cause remains unknown. No source or test policy changed; the parent complete-CI gate and FRONT-02/03/04 remain unresolved.
 - Plan 14-17 stopped at the single prescribed process-enumeration preflight: `/bin/ps` was denied with exit 126. It did not capture fresh CTest metadata or start either focused command; invocation counters remain zero. Do not retry or substitute a process probe in this runtime. A successor scope needs an environment where process enumeration and executable/cwd attribution are available; the complete-parent gate and FRONT-02/03/04 remain unresolved.
 - Plan 14-19 reached the local Docker daemon and passed VM capacity, but stopped before container creation because the local image inspection interface exposed no independently verifiable provenance receipt for a cached native Linux image. No source/toolchain qualification or project workload occurred; default and serial counters remain zero. The pair is unspent but ineligible until provenance can be verified. The native parent timeout cause remains unknown, and FRONT-02/03/04 remain pending.
-- Plan 14-20 is separately planned under the owner's explicit one-off acceptance of the exact cached image digest/ID and self-asserted OCI source/revision labels despite no signed attestation. This supersedes the next-prerequisite choice only, not Plan 14-19's halt or history. One fresh qualification must pass every remaining gate before the existing single pair may launch; no workload or Docker operation ran during planning. Dependencies are completed 14-16/14-18, computed wave 2; halted 14-19 is evidence only. Review/commit remains with the orchestrator.
+- Plan 14-20 used its one qualification invocation under the owner's exact one-off image trust exception, then halted before Docker because the pinned Linux arm64 Wasmtime 48.0.6 archive/binary was absent. No container or test ran; the pair remains unspent but ineligible, and neither `qualify` nor `pair` may be rerun under that plan. The next prerequisite is the exact hash-checked Linux artifact and a separately authorized qualification scope. FRONT-02/03/04 remain pending; Phase 14 acceptance stays blocked.
 - The advisory WASI job in run 41733613173 failed because `tmpfile` is deprecated/not defined for WASI at `tests/core/test_state.c:2022` under `-Werror`; it remains advisory and was not retried.
 
 ## Preserved Phase 12 position — halt remains binding
@@ -209,10 +209,10 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 ## Session Continuity
 
 Last session: 2026-11-04
-Stopped at: Plan 14-20 written for orchestrator review and commit under the exact approved image exception; no execution. Plan 14-19 stays halted and Phase 14 acceptance remains Blocked.
+Stopped at: Plan 14-20 used its single `qualify` invocation and halted before Docker because the pinned Linux arm64 Wasmtime 48.0.6 artifact is missing. No container or test ran; the pair is unspent but ineligible. Phase 14 acceptance remains blocked.
 Resume file: None
-Next command: After orchestrator plan review/commit, `$gsd-execute-phase 14 --gaps-only` in the current checkout runs only ready unsummarized Plan 14-20, not phase acceptance. No wave filter or Plan 14-19 command is valid. No additional owner approval is needed within the already settled scope.
-Context handoff: Plan 14-20 records the exact image digest/ID/labels and one-off trust exception verbatim; labels are self-asserted and no signed attestation is claimed. Its fresh ignored gap20 paths and completed dependencies 14-16/14-18 isolate it from halted 14-19. One fresh local offline qualification, saved source/toolchain/limits and private process controls are required before the existing unspent single pair. A preflight failure halts with zero workload; any actual protected launch charges the pair and any launched failure stops without retry. Plan 14-19's saved daemon/VM/image observations and zero counters remain historical, not a fresh admission. Preserve failed native parent CI/unknown cause, spent host allowance, pending FRONT-02/03/04, Plan 14-10/14-15/14-17/14-19 halted history, Plan 14-13's consumed batch, both Plan 14-15 complete workflows and Phase 12 halt. Orchestrator acts next on review/commit; no owner UAT is needed.
+Next command: From the repository root, `sh scripts/fetch-pin.sh wasmtime-aarch64-linux build/pins/wasmtime` downloads the exact `pins.txt` artifact and verifies its SHA-256 into the ignored cache. Plan 14-20's `qualify` and `pair` commands are not valid again; after the artifact is present, a new qualification scope requires authorization.
+Context handoff: Plan 14-20 records the exact owner-approved image identity and trust limitation, but its only qualification stopped before Docker because the Linux Wasmtime input was missing. The ignored preflight/pair receipts record zero Docker calls, zero container/test launches, qualification count one and pair count zero; local read-only receipt checks pass. Keep the pair unspent but ineligible, do not rerun either Plan 14-20 command, and do not treat adding the input as authorization for a new qualification. Plan 14-19 remains unchanged. Preserve failed native parent CI/unknown cause, spent host allowance, pending FRONT-02/03/04, Plan 14-10/14-15/14-17/14-19 halted history, Plan 14-13's consumed batch, both Plan 14-15 complete workflows and Phase 12 halt. The owner acts next by provisioning the hash-checked artifact or authorizing a new bounded scope; no UAT is needed.
 
 ## Deferred Items
 

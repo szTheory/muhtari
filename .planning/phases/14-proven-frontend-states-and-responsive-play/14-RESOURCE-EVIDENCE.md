@@ -744,6 +744,56 @@ frontend launch is part of this failure investigation.
 
 All local run URLs: N/A-local.
 
+## Plan 14-20 pinned-input admission stop (2026-11-04)
+
+The new qualification was invoked once and stopped before Docker access because
+the exact pinned Linux arm64 Wasmtime 48.0.6 input was unavailable. `pins.txt`
+requires archive SHA-256
+`206a572cd4fab81e86bb4e808976e822603fd2aa9c67730c921710c2c6bf1c00`; the
+ignored `build/pins/` tree has neither that Linux archive nor a native Linux
+binary at the configured `build/pins/wasmtime/wasmtime` path. That configured
+executable has the
+previously recorded hash
+`9dad9691c32e097241d1f70371e36bea39ec3d51499134133340f77ecd9e6758` and is a
+Mach-O arm64 binary. The separate unpinned `wasmtime-min` entry was not treated
+as a substitute. The plan forbids staging the macOS binary or downloading the
+Linux pin, so no input substitution was attempted.
+
+The owner-approved exception remains limited to the exact expected image
+reference `catthehacker/ubuntu@sha256:c58e2b364da03b0c804c7d660f2ecbedf2f221a382b9baa0b344b0144780ff43`,
+image ID `sha256:10ca2cfc3a29b70e13fe0a2a9244fe7e5d24fbd7350ac4205028335c9541f926`,
+source label `https://github.com/catthehacker/catthehacker/docker_images`, and
+revision `e2f8efe464c82732f78e967ee709c00b6af53643`. The exception knowingly
+accepts self-asserted labels without a signed attestation for this one
+diagnostic. The admission stopped before a fresh image inspection, so none of
+these expected image values was freshly observed or used.
+
+The one-shot preflight receipt records source commit
+`3e31b9be45e287f58d3e02b8d2b3ab73120cc704`, but source staging, toolchain and
+input verification, container isolation, cgroup limits, metadata closure and
+process observation were not reached. The operating caps remained the plan's
+300-second preparation, 90 seconds per side, 10-second cleanup and 490-second
+total; preparation started and stopped at `2026-11-04T18:24:59Z` with zero
+elapsed seconds. No Docker command, container, project build, fixture or
+protected test launched. There was no container to collect or clean up.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `sh -n build/phase14-gap20-evidence/docker-diagnostic.sh && sh -n build/phase14-gap20-evidence/container-driver.sh` | 0 | Both POSIX shell scripts passed syntax validation. |
+| `sh build/phase14-gap20-evidence/docker-diagnostic.sh qualify` | 1 | The single qualification invocation recorded the missing pinned Linux Wasmtime input; Docker was not called. Run URL N/A-local. |
+| `sh build/phase14-gap20-evidence/docker-diagnostic.sh pair` | N/A | Not invoked: qualification halted, so the pair was ineligible. Both sides remain explicitly not launched with zero counters and no raw test exit. |
+| `sh build/phase14-gap20-evidence/docker-diagnostic.sh inspect` | 0 | Read-only receipt inspection accepted the halted, zero-launch outcome. |
+| `cmake -DEVIDENCE=build/phase14-gap20-evidence -P build/phase14-gap20-evidence/check-receipts.cmake` | 0 | Saved receipts passed. Fault controls rejected wrong source/image/label, changed deadline, missing or duplicate case, launch count above one, missing raw exit, altered resource limit, and unsupported acceptance claim. |
+| `git diff --check HEAD -- .planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md` | 0 | This plan's resource append has no whitespace errors. |
+
+The pair allowance remains unspent but ineligible; no default or serial test
+launch occurred. Plan 14-19 remains halted and unchanged. The failed native
+parent CI and its unknown timeout cause remain authoritative; this stopped
+preflight does not supply Linux results or actual-host evidence. FRONT-02,
+FRONT-03 and FRONT-04 remain pending, Phase 14 acceptance remains blocked, the
+previous host allowance remains spent, and the Phase 12 stop is unchanged. Run
+URL: N/A-local.
+
 ## Plan 14-19 Docker qualification stop (2026-11-04)
 
 The one authorized `qualify` entry point ran once against exact parent
