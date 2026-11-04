@@ -332,34 +332,33 @@ sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `c
 
 ## Hosted RetroArch
 
-On `macos-15`, `retroarch` tests DMA equivalence and a battery roundtrip using macOS arm64 archives and
-pinned RetroArch 1.22.2 Metal. Each launch has fresh home, config, system and output directories;
-`SAVE_DIR` stays outside each disposable tree, overlaps fail before cleanup, and processes retain the
-50-second bound.
+On `macos-15`, `retroarch` checks DMA equivalence and battery persistence with macOS arm64 archives and pinned
+RetroArch 1.22.2 Metal. Launches use fresh private directories, a shared save path outside disposable trees,
+pre-cleanup overlap checks and a 50-second child bound. DMA runs 120 frames against the pinned runner hash;
+the screenshot must match pixel-for-pixel, and the flipped-pixel control must name (7,3).
 
-DMA runs the committed diagnostic for 120 frames. Its runner hash retains the `diag/dma` ledger pin, and every
-screenshot pixel must match. A flipped pixel control must exit 1 naming exactly pixel (7,3).
+The battery case uses two fresh RetroArch and runner launches. Its owned diagnostic writes and reads HSC and
+EEPROM counters, testing C6/FE firmware with marker 5A and no routines, then FF stubs. Independent judges check
+the 34,816 expected bytes, counters 1/1 then 2/2, runner saves and screenshot glyphs. Equal-black, wrong-counter
+and stale-medium controls must fail. `diag.battery` covers shared mailbox/media faults; loaded-module tests cover
+lifecycle and no-content behavior. Support-file line totals are reported. Runtime bounds, owned-child cleanup,
+and independent image and media judgments remain required. Only owned diagnostic shots enter
+`retroarch-frames`; saves, firmware and logs stay uncommitted.
 
-Two fresh RetroArch and runner launches start with separate empty saves. The owned diagnostic increments
-16-bit HSC and EEPROM counters through SRAM and RIOT writes, waits for programming, then reads and draws them.
-It tests owned C6/FE firmware with marker 5A and no routines, then FF stubs. Immutable snapshots must match
-all 34,816 expected bytes, counters 1/1 then 2/2, and runner saves; the mailbox judge checks runner hardware.
+**Phase 14 state case.** A single `workflow_dispatch` must use matching same-run macOS arm64 artifacts and
+receipt identity. Limits remain five minutes per job, 50 seconds per child, 45 seconds of work plus five seconds
+of cleanup, 120 frames and 64 forward actions. Qualification requires external UDP rejection before launch.
+The state driver retains the first failed prelaunch stage: `sandbox-exec`, `sandbox-helper`, `work-deadline`,
+`config-port` or `runahead-config`. `retroarch.states.controls` checks ordering, faults, config validation,
+descriptor cleanup and receipt retention offline; it launches no sandbox, network request or RetroArch process
+and cannot qualify frontend behavior. Never rerun or launch locally; failed or incomplete evidence stays
+pending.
 
-After PNG-to-BMP conversion, independent glyphs judge counters and marker before pixel equality; equal-black,
-wrong-counter and stale-one-medium controls must fail. Ordinary `diag.battery` runs shared mailbox/media faults
-and the pixel judge; loaded-module tests cover lifecycle/no-content. Hosted support files stay at most 300 lines.
-Only owned diagnostic shots enter `retroarch-frames`; saves, firmware and logs stay uncommitted.
-
-**Phase 14 state case.** One `workflow_dispatch` uses same-run macOS arm64 artifacts for `GITHUB_SHA`.
-Accept `retroarch-frames` only from a completed job with matching receipt event, SHA, attempt and artifact
-identity. Limits: five-minute job, 50-second child, 45-second work plus five-second cleanup, 120 frames and
-64 forward actions. The sandbox probe rejects external UDP before launch. Failed or incomplete evidence leaves
-qualification pending; never rerun or launch locally. Record command, exit and run URL.
-
-Run 41733613173 passed the main builds, ASan, quality and hash checks, but states-mode startup stopped at an opaque fail-closed preflight. WASI advisory failed on `tmpfile`. No state capture exists; FRONT-02/03/04 remain pending and the allowance is spent. See [receipt](../.planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md).
-
-For the existing DMA and battery cases, `run_retroarch.cmake` prints the private RetroArch log. Record the
-command, exit and run URL; those results do not establish general retail-game compatibility.
+Run 41733613173 stopped at an opaque state preflight; its WASI advisory also failed on `tmpfile`. It produced no
+state capture, so FRONT-02/03/04 remain pending and the host allowance is spent. See the
+[resource record](../.planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md).
+`run_retroarch.cmake` retains private logs for the DMA and battery cases; neither establishes general retail-game
+compatibility.
 
 ## Release archives
 

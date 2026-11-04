@@ -2365,35 +2365,45 @@ static int nonloopback_ipv4(struct in_addr *address)
     return found;
 }
 
+static int sandbox_helper_failed(const char *stage)
+{
+    fprintf(stderr, "states sandbox-helper stage=%s failed\n", stage);
+    return 1;
+}
+
 static int sandbox_helper(host_session *host, const char *self_path)
 {
     char self_exec[PATH_MAX];
     if (copy_path(self_exec, sizeof self_exec, self_path) != 0)
-        return 1;
+        return sandbox_helper_failed("self-path");
     int port_fd = -1;
     uint16_t selected = 0u;
     if (reserve_port(0u, &port_fd, &selected) != 0)
-        return 1;
+        return sandbox_helper_failed("port-reservation");
     host->port = selected;
     pid_t owners[8];
     size_t owner_count = 0u;
     if (socket_owners(host->port, owners, 8u, &owner_count) != 0 || owner_count != 1u ||
-        owners[0] != getpid() || write_profile(host) != 0) {
+        owners[0] != getpid()) {
         close(port_fd);
-        return 1;
+        return sandbox_helper_failed("port-owner-validation");
+    }
+    if (write_profile(host) != 0) {
+        close(port_fd);
+        return sandbox_helper_failed("profile-creation");
     }
     close(port_fd);
     port_fd = -1;
     int out_pipe[2];
     if (pipe(out_pipe) != 0)
-        return 1;
+        return sandbox_helper_failed("helper-pipe");
     char port_text[16];
     (void)snprintf(port_text, sizeof port_text, "%u", (unsigned)host->port);
     pid_t helper = fork();
     if (helper < 0) {
         close(out_pipe[0]);
         close(out_pipe[1]);
-        return 1;
+        return sandbox_helper_failed("helper-start");
     }
     if (helper == 0) {
         close(out_pipe[0]);
@@ -2416,14 +2426,14 @@ static int sandbox_helper(host_session *host, const char *self_path)
         close(out_pipe[0]);
         (void)kill(helper, SIGTERM);
         (void)waitpid(helper, NULL, 0);
-        return 1;
+        return sandbox_helper_failed("helper-ready");
     }
     int client = socket(AF_INET, SOCK_DGRAM, 0);
     if (client < 0) {
         close(out_pipe[0]);
         (void)kill(helper, SIGTERM);
         (void)waitpid(helper, NULL, 0);
-        return 1;
+        return sandbox_helper_failed("loopback-client");
     }
     struct sockaddr_in loopback;
     memset(&loopback, 0, sizeof loopback);
@@ -2435,7 +2445,7 @@ static int sandbox_helper(host_session *host, const char *self_path)
         close(out_pipe[0]);
         (void)kill(helper, SIGTERM);
         (void)waitpid(helper, NULL, 0);
-        return 1;
+        return sandbox_helper_failed("loopback-send");
     }
     struct pollfd pfd = {.fd = client, .events = POLLIN};
     if (poll(&pfd, 1u, 1000) <= 0) {
@@ -2443,7 +2453,7 @@ static int sandbox_helper(host_session *host, const char *self_path)
         close(out_pipe[0]);
         (void)kill(helper, SIGTERM);
         (void)waitpid(helper, NULL, 0);
-        return 1;
+        return sandbox_helper_failed("loopback-reply");
     }
     char response[32] = {0};
     struct sockaddr_in from;
@@ -2457,7 +2467,7 @@ static int sandbox_helper(host_session *host, const char *self_path)
         close(out_pipe[0]);
         (void)kill(helper, SIGTERM);
         (void)waitpid(helper, NULL, 0);
-        return 1;
+        return sandbox_helper_failed("loopback-exchange");
     }
     struct in_addr external;
     if (nonloopback_ipv4(&external) != 0) {
@@ -2465,7 +2475,7 @@ static int sandbox_helper(host_session *host, const char *self_path)
         close(out_pipe[0]);
         (void)kill(helper, SIGTERM);
         (void)waitpid(helper, NULL, 0);
-        return 1;
+        return sandbox_helper_failed("external-interface");
     }
     int external_client = socket(AF_INET, SOCK_DGRAM, 0);
     if (external_client < 0) {
@@ -2473,7 +2483,7 @@ static int sandbox_helper(host_session *host, const char *self_path)
         close(out_pipe[0]);
         (void)kill(helper, SIGTERM);
         (void)waitpid(helper, NULL, 0);
-        return 1;
+        return sandbox_helper_failed("external-client");
     }
     struct sockaddr_in source = {.sin_family = AF_INET, .sin_addr = external, .sin_port = 0};
     if (bind(external_client, (struct sockaddr *)&source, sizeof source) != 0) {
@@ -2482,7 +2492,7 @@ static int sandbox_helper(host_session *host, const char *self_path)
         close(out_pipe[0]);
         (void)kill(helper, SIGTERM);
         (void)waitpid(helper, NULL, 0);
-        return 1;
+        return sandbox_helper_failed("external-bind");
     }
     struct sockaddr_in external_target = {
         .sin_family = AF_INET, .sin_addr = external, .sin_port = htons(host->port)};
@@ -2493,7 +2503,7 @@ static int sandbox_helper(host_session *host, const char *self_path)
         close(out_pipe[0]);
         (void)kill(helper, SIGTERM);
         (void)waitpid(helper, NULL, 0);
-        return 1;
+        return sandbox_helper_failed("external-delivery");
     }
     pfd.fd = external_client;
     pfd.events = POLLIN;
@@ -2517,21 +2527,24 @@ static int sandbox_helper(host_session *host, const char *self_path)
             (void)kill(helper, SIGTERM);
         if (helper_waited == 0)
             (void)waitpid(helper, &helper_status, 0);
-        return 1;
+        return sandbox_helper_failed("helper-reap");
     }
-    if (helper_report != 0 || strcmp(line, "REJECTED") != 0 || external_reply > 0 ||
-        !WIFEXITED(helper_status) || WEXITSTATUS(helper_status) != 0)
-        return 1;
+    if (!states_external_udp_probe_passes(external_reply))
+        return sandbox_helper_failed("external-reply");
+    if (helper_report != 0 || strcmp(line, "REJECTED") != 0)
+        return sandbox_helper_failed("helper-report");
+    if (!WIFEXITED(helper_status) || WEXITSTATUS(helper_status) != 0)
+        return sandbox_helper_failed("helper-exit");
     int final_reserve = -1;
     uint16_t final_port = 0u;
     if (reserve_port(host->port, &final_reserve, &final_port) != 0 || final_port != host->port)
-        return 1;
+        return sandbox_helper_failed("port-re-reservation");
     owner_count = 0u;
     int owner_ok = socket_owners(host->port, owners, 8u, &owner_count) == 0 && owner_count == 1u &&
                    owners[0] == getpid();
     if (!owner_ok) {
         close(final_reserve);
-        return 1;
+        return sandbox_helper_failed("port-owner-revalidation");
     }
     host->reserved_fd = final_reserve;
     return 0;

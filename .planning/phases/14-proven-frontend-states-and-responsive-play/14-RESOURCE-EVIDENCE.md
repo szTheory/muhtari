@@ -630,6 +630,69 @@ The first prescribed docs-filter run exited 8 because the initial `docs/testing.
 
 No full workflow or host command was repeated for these outcome-only edits.
 
+## Plan 14-14 local prelaunch diagnostic result (2026-11-03)
+
+The clean pre-edit source was `f0f64dbe4f075b65b5f54916fe154c76c14695bc` on
+`phase/14-proven-frontend-states-and-responsive-play`. The diagnostic now reports
+the first failed production prelaunch stage (`sandbox-exec`, `sandbox-helper`,
+`work-deadline`, `config-port`, or `runahead-config`) in stderr, which the
+existing CMake launcher retains in its failed receipt. The sandbox helper also
+names bounded internal failure points. The shared coordinator preserves the
+original operation order and deadline; failed paths release only the owned
+reserved descriptor, and media preparation and frontend startup remain after
+the coordinator's successful return.
+
+`retroarch.states.controls` exercises the production coordinator through
+offline callbacks. It covers all five first-failure stops, pass ordering,
+deadline equality/live behavior, exact owned-descriptor cleanup, the generated
+`test.cfg.in` port patch and run-ahead validation, and the existing failed
+launcher receipt. No sandbox helper, network request, media preparation,
+RetroArch process, host receipt pass, screenshot, or save was produced by these
+controls. The config mutation/validation controls run on Darwin; non-Apple
+builds retain the portable coordinator pass/fault coverage.
+
+The pre-implementation receipt assertion first passed because its mock had
+already been updated. After removing that mock diagnostic, the intended RED
+ran the selected test and exited 8 because the failed receipt lacked
+`states prelaunch stage=sandbox-helper failed`; this was an assertion failure,
+not a build or test-discovery error. Restoring the fixture diagnostic and
+implementing the production coordinator produced the recorded GREEN pass.
+
+The boundary review also found that the external-UDP check treated a negative
+`poll` result like a timeout, although it means the parent could not observe a
+reply. A new offline control exercised statuses 0, 1, and -1 through the
+production decision: the selected CTest failed on -1 before the fix, then
+passed after only a completed no-reply result (0) was accepted. This local
+correction does not identify which check failed in the historical host run.
+Its failed member remains unknown and no cause is attributed.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `cmake --preset ci` | 0 | Configured the existing CI build for the focused target. |
+| `cmake --build --preset ci` | 0 | Built the updated state driver and existing receipt fixture. |
+| `ctest --preset ci -R '^retroarch\\.states\\.controls$' --no-tests=error --output-on-failure --output-junit "$PWD/build/ci/junit-gap14-tracer-red.xml"` (RED) | 8 (expected) | The selected receipt control failed on the missing exact stage diagnostic. |
+| `ctest --preset ci -R '^retroarch\\.states\\.controls$' --no-tests=error --output-on-failure --output-junit "$PWD/build/ci/junit-gap14-tracer-green.xml"` | 0 | The stage-specific failed receipt was retained; the focused control passed. |
+| `ctest --preset ci -R '^retroarch\\.states\\.controls$' --no-tests=error --output-on-failure --output-junit "$PWD/build/ci/junit-gap14-controls.xml"` | 0 | All five stage faults, pass ordering, deadlines, config cases, and owned cleanup passed offline. |
+| `ctest --preset ci -R '^retroarch\\.states\\.controls$' --no-tests=error --output-on-failure --output-junit "$PWD/build/ci/junit-gap14-udp-red.xml"` (UDP observation RED) | 8 (expected) | The offline production-decision control failed because `poll_result=-1` was accepted as a no-reply result. No network operation ran. |
+| `ctest --preset ci -R '^retroarch\\.states\\.controls$' --no-tests=error --output-on-failure --output-junit "$PWD/build/ci/junit-gap14-udp-green.xml"` | 0 | Only `poll_result=0` now passes the external-UDP observation; all state prelaunch controls pass. |
+| `ctest --preset ci -R '^docs\\.(budgets|api_names(\\.self_test)?)$' --no-tests=error --output-on-failure --output-junit "$PWD/build/ci/junit-gap14-docs.xml"` (first documentation edit) | 8 | The unchanged `docs/testing.md` budget correctly rejected the initial addition. The text was shortened; no budget changed. |
+| `ctest --preset ci -R '^docs\\.(budgets|api_names(\\.self_test)?)$' --no-tests=error --output-on-failure --output-junit "$PWD/build/ci/junit-gap14-docs-final.xml"` | 0 | `docs.budgets`, `docs.api_names`, and its fault control passed. |
+| `/opt/homebrew/opt/llvm@21/bin/clang-format --dry-run --Werror` on changed `states.c` ranges | 0 | Changed C ranges conform to clang-format 21.1.8. |
+| `git diff --check f0f64dbe4f075b65b5f54916fe154c76c14695bc` | 0 | No whitespace errors against the recorded clean base. |
+| `cmake --preset ci` | 0 | Configured the final Plan 14-14 source after task commits. |
+| `cmake --build --preset ci` | 0 | Built the final state driver. |
+| `ctest --preset ci -R '^retroarch\.states\.controls$' --no-tests=error --output-on-failure --output-junit "$PWD/build/ci/junit-gap14-controls-final.xml"` | 0 | Final offline coordinator, receipt, configuration, cleanup and UDP poll controls passed. |
+| `ctest --preset ci -R '^docs\.(budgets|api_names(\.self_test)?)$' --no-tests=error --output-on-failure --output-junit "$PWD/build/ci/junit-gap14-docs-final.xml"` | 0 | Final documentation budget and API-name checks passed. |
+| `git diff --check f0f64dbe4f075b65b5f54916fe154c76c14695bc` | 0 | Final source has no whitespace errors against the recorded clean base. |
+| `git diff --exit-code f0f64dbe4f075b65b5f54916fe154c76c14695bc -- CMakePresets.json cmake/MuhtariTests.cmake tests/boot/tests.cmake tests/fuzz/tests.cmake tests/inventory/ci.txt tests/inventory/wasm32.txt .github/workflows/ci.yml tests/retroarch/test.cfg.in` | 0 | Protected inventories, workflow and template remain unchanged. |
+
+The bounded review found no unresolved blocking issue. No test inventory,
+deadline, host policy, workflow topology, or resource cap changed. Run URLs:
+N/A-local. The prior one-attempt host allowance remains spent; FRONT-02,
+FRONT-03, and FRONT-04 remain pending. Plan 14-15 owns complete source/parent
+local workflows and reaches a fresh owner checkpoint before publication or
+any host attempt.
+
 ### Phase-level regression gate
 
 The phase regression gate's configured command resolves to `cmake --workflow --preset ci`, which would repeat the complete workflow. Plan 14-11 Task 3 allows only read-only audit and local outcome bookkeeping after a failed host attempt and explicitly prohibits repeating full workflows. The exact frozen source had already passed the complete local CI workflow, including all ordinary tests, before these documentation-only edits; the prescribed docs filter passed after the edits. Therefore no duplicate full workflow was run.
