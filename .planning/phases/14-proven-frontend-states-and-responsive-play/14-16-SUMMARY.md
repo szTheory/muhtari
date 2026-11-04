@@ -18,14 +18,14 @@ affects:
   - FRONT-03
   - FRONT-04
 actuals:
-  tokens: 4200
+  tokens: 7701
   tasks: 2
   commits: 1
   plan_head_before: 59ecf31390500e3d5ff48c2da9833eead784e025
-  plan_head_after: pending
+  plan_head_after: 4094110475187bf4eac1a228645dad2547123584
 commits: 1
 plan_head_before: 59ecf31390500e3d5ff48c2da9833eead784e025
-plan_head_after: pending
+plan_head_after: 4094110475187bf4eac1a228645dad2547123584
 tech-stack:
   added: []
   patterns:
@@ -50,7 +50,7 @@ coverage:
         ref: "Non-test receipt presence checks and scoped git diff --check; no project tests were launched."
         status: pass
     human_judgment: false
-duration: 23min
+duration: 34min
 completed: 2026-11-04
 status: complete
 ---
@@ -61,7 +61,7 @@ status: complete
 
 ## Performance
 
-- **Duration:** 23 minutes
+- **Duration:** 34 minutes from the first recorded process/resource observation; this is the recorded interval, not a claim about an earlier unrecorded start.
 - **Started:** 2026-11-04T03:11:30Z (first recorded process/resource observation)
 - **Completed:** 2026-11-04
 - **Tasks:** 2 (Task 2 closed through its documented pre-workload stop)
@@ -76,7 +76,7 @@ status: complete
 
 ## Task Commits
 
-1. **Tasks 1 and 2: Audit saved parent evidence and record the allowed pre-workload stop** — `pending` (docs)
+1. **Tasks 1 and 2: Audit saved parent evidence and record the allowed pre-workload stop** — `4094110` (docs)
 
 ## Files Created/Modified
 
@@ -105,7 +105,7 @@ The failed parent `cmake --workflow --preset ci` (exit 8) and separate parent `c
 
 Target metadata identified the same twelve cases, with three fixture setup tests (`built.openbios`, `built.simple`, and `runner.probe.images`). Their original TIMEOUT totals are 15 seconds for target cases and 36 seconds for setup, 51 seconds serially, under the plan's 90-second cap. The metadata does not show a cause for the historical failures.
 
-Task 2 commands were not launched:
+Task 2 selection was exactly `^(title.simple.fast|title.simple.bios|title.pal.fast|title.pin.self_test|maria.dma_line.empty_dl|maria.dma_line.headers|maria.dma_line.widths|maria.dma_line.indirect|maria.dma_line.holes|maria.dma_line.terminators|maria.dma_line.last_line|maria.dma_line.abort)$`. The command output directory would have been `$PWD/build/phase14-gap16-evidence/parent`. Neither command was launched:
 
 | Command | Exit | Result |
 | --- | ---: | --- |
@@ -122,7 +122,9 @@ Allowed non-test closeout checks:
 | `test -s build/phase14-gap16-evidence/parent/audit-status.txt` | 0 | Task 1 stop/audit receipt exists and is non-empty. |
 | `test -s build/phase14-gap16-evidence/parent/diagnostic-status.txt` | 0 | Task 2 pre-workload stop receipt exists and is non-empty. |
 | `test -s build/phase14-gap16-evidence/parent/ctest-parent.json` | 0 | Fresh read-only metadata receipt exists and is non-empty. |
-| `git diff --check HEAD -- .planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md` | 0 | No whitespace errors in the task evidence. |
+| `test -s .planning/phases/14-proven-frontend-states-and-responsive-play/14-16-SUMMARY.md` | 0 | Summary exists and is non-empty. |
+| `test -s .planning/STATE.md` and `test -s .planning/ROADMAP.md` | 0 | State and roadmap bookkeeping files exist and are non-empty. |
+| `git diff --check HEAD -- .planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md .planning/phases/14-proven-frontend-states-and-responsive-play/14-16-SUMMARY.md .planning/STATE.md .planning/ROADMAP.md` | 0 | No whitespace errors in the scoped evidence, summary, state, or roadmap changes. |
 
 No project test, CI/hygiene workflow, remote/host action, push, publication, timeout change, or test-policy change was run in this closeout.
 
@@ -147,3 +149,9 @@ Plan 14-16 is closed as a local evidence investigation. Phase 14 remains Blocked
 ---
 *Phase: 14-proven-frontend-states-and-responsive-play*
 *Completed: 2026-11-04*
+
+## Self-Check: PASSED
+
+- The summary, evidence, state, and roadmap files exist and are non-empty.
+- Task evidence commit `4094110475187bf4eac1a228645dad2547123584` is an ancestor of the current branch.
+- The scoped whitespace check passed. Ignored receipts remain outside Git.
