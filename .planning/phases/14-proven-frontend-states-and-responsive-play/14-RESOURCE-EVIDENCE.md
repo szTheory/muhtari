@@ -744,6 +744,22 @@ frontend launch is part of this failure investigation.
 
 All local run URLs: N/A-local.
 
+## Plan 14-17 process-observation preflight stop (2026-11-04)
+
+Execution authority was `$gsd-execute-phase 14 --gaps-only`, which selected this local-only plan. The current checkout was branch `phase/14-proven-frontend-states-and-responsive-play` at `feb1cf18cb443166145078295ea251e3168dff24`. Its pre-existing working-tree modification to `.planning/STATE.md` was left unchanged. The required parent checkout exists at `.worktrees/phase-14-gap15-parent`, is clean including untracked files, is at the exact source `3e31b9be45e287f58d3e02b8d2b3ab73120cc704`, and contains `build/ci`.
+
+The installed CMake and CTest are both 4.4.3. `/bin/sh` executed a POSIX-shell identity probe. The installed `ps` manual documents the requested PID, PPID, elapsed time, CPU time and command fields. `lsof` 4.91 and its help were inspected for the native `-a`, `-p`, `-d` and `-F` query options. The single required process-enumeration attempt failed before returning process rows:
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `ps -axo pid=,ppid=,etime=,time=,command=` | 126 | `/bin/ps` execution denied by the environment: `Operation not permitted`; observer PID/PPID and raw output are retained under ignored `build/phase14-gap17-evidence/`. |
+| `lsof -a -p <pid> -d cwd,txt -Fn` | N/A | Not invoked because process enumeration was denied; no alternate process probe followed. |
+| `ctest --test-dir .worktrees/phase-14-gap15-parent/build/ci --show-only=json-v1` | N/A | Not invoked because process ownership could not be established. |
+| `cmake -DMODE=qualify -DPARENT=.worktrees/phase-14-gap15-parent -DEVIDENCE=build/phase14-gap17-evidence -P build/phase14-gap17-evidence/run-focused.cmake` | N/A | Not invoked; the denied inspection prevented supervisor creation and qualification. |
+| Default and serial CTest commands from Plan 14-17 Task 2 | N/A | Not invoked; both invocation counters remain zero and `tests_started=false`. |
+
+The ignored preflight receipt at `build/phase14-gap17-evidence/preflight.json` records `status=stopped`, unavailable process attribution, and the exact reason. Fresh CTest metadata was not captured, so current metadata match and counts remain unchecked. Plan 14-16's prior audit expected 12 targets, three fixture setup cases and 51 seconds of serial timeout; those values were not treated as a fresh comparison. The supervisor was not created. No project test, build, configure, complete workflow, hygiene workflow, host action, cleanup or policy change occurred in Plan 14-17. The exact-parent complete-CI failure, unknown cause, spent host allowance and pending FRONT-02/03/04 status remain unchanged.
+
 ## Plan 14-16 parent timeout read-only audit (2026-11-04)
 
 This local investigation uses only the independent parent preserved by Plan 14-15. It does not repeat either complete workflow and it does not reopen the spent Phase 14 host allowance.
