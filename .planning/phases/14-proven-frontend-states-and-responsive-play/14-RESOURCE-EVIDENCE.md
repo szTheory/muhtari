@@ -695,4 +695,51 @@ any host attempt.
 
 ### Phase-level regression gate
 
-The phase regression gate's configured command resolves to `cmake --workflow --preset ci`, which would repeat the complete workflow. Plan 14-11 Task 3 allows only read-only audit and local outcome bookkeeping after a failed host attempt and explicitly prohibits repeating full workflows. The exact frozen source had already passed the complete local CI workflow, including all ordinary tests, before these documentation-only edits; the prescribed docs filter passed after the edits. Therefore no duplicate full workflow was run.
+The phase regression gate's configured command resolves to `cmake --workflow --preset ci`, which would repeat the complete workflow. Plan 14-11 Task 3 allows only read-only audit and local outcome bookkeeping after a failed host attempt and explicitly prohibits repeating full workflows. The exact frozen source had already passed the complete local CI workflow, including all ordinary tests, before these documentation-only edits; the prescribed docs filter passed after the edits. Therefore no duplicate full workflow was run in Plan 14-14.
+
+## Plan 14-15 independent parent workflow outcome (2026-11-03)
+
+After Plan 14-14's source, summary and state/roadmap commits, the repaired
+candidate parent was `3e31b9be45e287f58d3e02b8d2b3ab73120cc704`. A fresh clean
+detached worktree at `.worktrees/phase-14-gap15-parent` used the same pinned
+prerequisites as the current checkout: only the ignored `build/pins` directory
+(69 MiB) was copied; no build output or test results were copied. The local
+toolchain reported CMake 4.4.3 and AppleClang 21.0.0.21000101.
+
+The complete parent CI workflow exited 8 in its ordinary CTest step. Of 694
+selected ordinary tests, 12 timed out: four title checks (`title.simple.fast`,
+`title.simple.bios`, `title.pal.fast`, `title.pin.self_test`) and eight Maria
+DMA cases (`maria.dma_line.empty_dl`, `headers`, `widths`, `indirect`, `holes`,
+`terminators`, `last_line`, `abort`). The other 682 selected tests passed. The
+workflow stopped before packaging and the release suite, so no release JUnit
+was produced. The saved JUnit, full CTest log and failed-test list are kept
+under ignored `build/phase14-gap15-evidence/parent/`; the parent worktree is
+clean. The failures and their timeouts are recorded without attributing a
+cause or changing any test bound.
+
+The independent parent hygiene workflow exited 0; all 30 selected checks
+passed. JUnit validation from the current checkout confirmed the failed
+ordinary receipt (exit 1 naming exactly the 12 timeout cases) and the complete
+hygiene receipt (exit 0). The expected release JUnit existence check exited 1
+because CI stopped before that workflow step.
+
+Process inspection through both `ps` and `pgrep` was denied by the local
+environment (`Operation not permitted` / `Cannot get process list`). The
+workflow command had already exited; no process cleanup or retry was attempted.
+This failed parent CI gate prevents the Plan 14-15 host decision checkpoint.
+It does not reopen the spent host allowance or identify run 41733613173's
+failed prelaunch member. The remaining source-local workflows are separately
+bounded to one run each; no remote qualification, publication, host command or
+frontend launch is part of this failure investigation.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `cmake --workflow --preset ci` (cwd `.worktrees/phase-14-gap15-parent`) | 8 | The ordinary test step had 12 timeouts; packaging and release tests did not run. Run URL N/A-local. |
+| `cmake --workflow --preset hygiene` (same cwd) | 0 | All 30 hygiene/policy checks passed. Run URL N/A-local. |
+| `cmake -DJUNIT="$PWD/build/phase14-gap15-evidence/parent/junit-ci.xml" -DINVENTORY=tests/inventory/ci.txt -DEXCLUDE=release -P tests/cmake/check_junit.cmake` | 1 | The preserved ordinary receipt matches the expected inventory and reports exactly the 12 timeouts above. |
+| `cmake -DJUNIT="$PWD/build/phase14-gap15-evidence/parent/junit-hygiene.xml" -DINVENTORY=tests/inventory/hygiene.txt -P tests/cmake/check_junit.cmake` | 0 | All 30 hygiene tests ran once and passed. |
+| `test -e build/phase14-gap15-evidence/parent/junit-release.xml` | 1 | Expected absence: the CI workflow stopped before its release step. |
+| `ps -axo pid,etime,command` filtered to the parent checkout | 1 | Local policy denied process listing; the workflow command itself had terminated. |
+| `pgrep -fl 'phase-14-gap15-parent|ctest|muhtari-test'` | 3 | The system process-list service was unavailable; no retry or cleanup followed. |
+
+All local run URLs: N/A-local.
