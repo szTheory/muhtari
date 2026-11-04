@@ -6,14 +6,14 @@ current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: blocked
 stopped_at: "Plan 14-17 stopped before project tests: required ps enumeration denied (exit 126); Phase 14 acceptance remains Blocked"
-last_updated: "2026-11-04T14:30:18.484Z"
+last_updated: "2026-11-04T16:08:03.907Z"
 last_activity: 2026-11-04
-state_head: 6006591ec8c7e241aa2078729f4afe5a33214d38
+state_head: 8353b9b19ef03c0735d7f993fefb3ec51477ad03
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 26
-  completed_plans: 25
+  completed_plans: 26
   percent: 33
 ---
 
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 acceptance remains blocked after its one authorized host attempt failed at the compound states preflight before state-mode RetroArch launched. Plan 14-14 added stage-specific offline diagnostics and fixed a separately reproduced UDP poll-error fail-open; that local defect does not identify the historical failed member. Plan 14-15's frozen source passed complete local CI/hygiene, but its independent parent had 12 ordinary-test timeouts, so the remote decision checkpoint was not reached. Plan 14-16 reconciled the saved parent receipt and CTest metadata, then stopped before workload because process listing was denied. Plan 14-17 hit the same environment boundary at its single prescribed `ps` attempt (exit 126); no new CTest metadata or project test ran, and the historical timeout cause remains unknown. New plan 14-18 is limited to a source-linked decision packet and owner checkpoint; it authorizes no probe or workload and renews no allowance. FRONT-02/03/04 remain pending, the parent complete-CI gate remains failed, and the host allowance is spent.
+Current focus: Phase 14 remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the authorized host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-18 records the owner-requested Docker direction for a separately planned portable diagnostic; Linux results cannot replace native macOS CI or pinned RetroArch evidence.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — ACCEPTANCE BLOCKED (prerequisite plan 14-18 is ready)
-Plan: 18 of 18 (17 summaries; 14 complete, 14-10/14-15/14-17 halted; 14-18 pending)
+Phase: 14 (Proven frontend states and responsive play) — ACCEPTANCE BLOCKED (Plan 14-18 decision complete; Docker diagnostic planning next)
+Plan: 18 of 18 (18 summaries; 15 complete, 14-10/14-15/14-17 halted)
 Status: Blocked — phase verification remains gaps_found (20/27 must-haves verified)
-Next action: `$gsd-execute-phase 14 --gaps-only` selects only Plan 14-18. It creates a source-linked readiness packet and stops at the owner environment/authority decision checkpoint; that decision does not clear Phase 14 acceptance.
-Boundary: Plan 14-17 stopped before CTest metadata and tests because the one prescribed `ps` attempt was denied (exit 126). Do not retry that probe here or substitute another process tool. Plan 14-18 authorizes only its documentation task and owner checkpoint; it does not renew a workload, CI or host allowance. Keep FRONT-02/03/04 pending and the parent complete-CI gate failed. Plan 14-13's focused BIOS batch, both Plan 14-15 complete workflows and the Plan 14-11 host allowance remain consumed; no push, dispatch, cancellation, local RetroArch, PR/merge/release, or Phase 12 action is authorized.
+Next action: $gsd-plan-phase 14 --gaps to define a bounded Docker-based portable timeout diagnostic; no container or workload is authorized until that plan qualifies access and limits.
+Boundary: Plan 14-18 is complete and selected Docker only for successor-scope planning. No Docker check/container/test ran. Keep the parent CI gate failed, timeout cause unknown, host allowance spent, and FRONT-02/03/04 pending. Any successor scope must qualify Docker access, exact source/image/toolchain, private build storage, and resource caps before workload; native macOS and RetroArch acceptance remain separate.
 
 ## Current Blockers
 
@@ -153,6 +153,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: Keep FRONT-02/03/04 pending. Plan 14-11 may proceed only after the repaired candidate passes complete local workflows; process attribution is not a prerequisite, and its actual-host decision remains separate.
 - [Phase 14]: Apply RUN_SERIAL only to the five approved BIOS tests as a scheduling mitigation; preserve one-second deadlines and keep the historical timeout cause and frontend acceptance unresolved.
 - [Phase 14]: Close Plan 14-16 after the saved parent timeout audit; process listing was denied, so the focused pair was not launched and the cause remains unknown.
+- [Phase 14]: Owner requested a Docker-based portable timeout diagnostic using a fresh private source/build copy; Linux results cannot replace native macOS CI or pinned RetroArch acceptance.
 
 ### Pending Todos
 
