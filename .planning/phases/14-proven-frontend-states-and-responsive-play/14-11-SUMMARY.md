@@ -80,6 +80,7 @@ The repaired parent and frozen source passed the required local workflows. The s
 - Updated the user-facing RetroArch and testing documentation to preserve the pending qualification status.
 - Ran the prescribed documentation checks after shortening the outcome note to satisfy the existing documentation budget; `git diff --check` passed.
 - Corrected one review finding: the same-run host artifact contains screenshots and a receipt, but no save files.
+- Did not repeat the full CI workflow for the phase-level regression gate: Task 3 forbids repeating full workflows after a host failure, and the frozen source had already passed complete CI before the documentation-only outcome edits.
 
 ## Task Outcomes
 

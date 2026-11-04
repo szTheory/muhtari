@@ -629,3 +629,7 @@ The first prescribed docs-filter run exited 8 because the initial `docs/testing.
 | `git diff --check` | 0 | No whitespace errors. |
 
 No full workflow or host command was repeated for these outcome-only edits.
+
+### Phase-level regression gate
+
+The phase regression gate's configured command resolves to `cmake --workflow --preset ci`, which would repeat the complete workflow. Plan 14-11 Task 3 allows only read-only audit and local outcome bookkeeping after a failed host attempt and explicitly prohibits repeating full workflows. The exact frozen source had already passed the complete local CI workflow, including all ordinary tests, before these documentation-only edits; the prescribed docs filter passed after the edits. Therefore no duplicate full workflow was run.
