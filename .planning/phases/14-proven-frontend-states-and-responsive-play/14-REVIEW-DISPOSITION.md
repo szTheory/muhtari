@@ -17,14 +17,14 @@ findings:
     title: "[BLOCKER] Changing progress screenshots are compared to stale references"
 open: 0
 total: 3
-recorded: 2026-11-04T00:00:32.228Z
+recorded: 2026-11-04T04:00:23.497Z
 ---
 
 # Phase 14: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | Fixed in `001506c` after checking the complete artifact listing. This is a later WR-01 finding; the earlier different WR-01 remains in the prior disposition history. |
+| WR-01 | warning | fixed | Fixed in `001506c` after checking the complete artifact listing. This is a later WR-01 finding; the earlier different WR-01 remains in the prior disposition history. (not in the current review) |
 | CR-01 | critical | fixed | Plan 14-07 added explicit self_path consumption in the three non-POSIX branches; the focused read-only review found no issues, and run 41629846188 passed both required Windows build lanes. See 14-07-SUMMARY.md and 14-RESOURCE-EVIDENCE.md. (not in the current review) |
 | CR-02 | critical | fixed | Added separate expected counters and static-pixel comparison with stale-reference controls; absent from the clean re-review. (not in the current review) |
 
