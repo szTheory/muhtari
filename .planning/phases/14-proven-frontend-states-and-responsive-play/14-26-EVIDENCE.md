@@ -1,6 +1,6 @@
 # Phase 14 Plan 26: Recovery Evidence
 
-**Outcome:** The existing CI inventory is now in the order required by its configure-time consumer. Plan 14-24's terminal halt remains intact. Plan 14-25 retains its 14-26 dependency and owner gate. The single new automatic local wave gate is pending for execute-phase.
+**Outcome:** The existing CI inventory is now in the order required by its configure-time consumer, and Plan 14-24's terminal halt remains intact. The single new automatic local wave gate reached CTest and failed because the ignored Wasmtime executable is a Linux binary on this Darwin arm64 host. The gate is spent; Plan 14-25 remains blocked and no retry is authorized under this scope.
 
 ## Inventory correction
 
@@ -30,11 +30,19 @@ Plan 14-25 already had `depends_on: ["14-26"]` and `wave: 2` at this plan's exec
 | `git diff --check "$(cat build/phase14-recovery26-evidence/start-head.txt)" -- tests/inventory/ci.txt .planning/phases/14-proven-frontend-states-and-responsive-play/14-25-PLAN.md` | 0 | No whitespace errors in the scoped paths. |
 | Six `cmp` checks between each saved protected file and its execution-start snapshot | 0 | Historical and phase bookkeeping files are byte-identical to the baseline. |
 | Plan 14-24's `cmake --workflow --preset ci` | 1 | Historical configure failure; not rerun in this recovery. Run URL: `N/A-local`. |
+| `cmake --workflow --preset ci` (Plan 14-26 automatic wave gate) | 8 | Configure and build passed; CTest failed when `built.*` fixtures could not launch Wasmtime. Run URL: `N/A-local`. |
+| `uname -a` and `file build/pins/wasmtime/wasmtime` | 0 | Host is Darwin arm64; the ignored Wasmtime file is an AArch64 Linux ELF executable. This explains the recorded `exec format error` without another test invocation. |
 
-The task commit is `93c53cc` (`fix(14-26): sort CI inventory`). No configure, build, CTest, Docker, RetroArch, host, remote, or publication command was run for this plan.
+The inventory task commit is `93c53cc` (`fix(14-26): sort CI inventory`). The configured workflow ran exactly once after the summary. No Docker, RetroArch, host, remote, or publication command was run for this plan.
 
 ## Automatic wave gate
 
-**Pending — execute-phase is the sole runner.** After this plan's summary and commits, execute-phase will invoke `cmake --workflow --preset ci` once as the fresh local recovery gate and record its raw result and `N/A-local` run URL. This plan did not run or duplicate that gate. A failure, incomplete workflow, or missing receipt blocks Plan 14-25 without retry. A pass supplies no native-parent or actual-host acceptance evidence.
+**Terminal failure — execute-phase ran once.** `cmake --workflow --preset ci` exited 8: configure and build completed, then CTest failed as the `built.*` preprocess fixtures attempted to execute `build/pins/wasmtime/wasmtime`. `LastTest.log` records the invoked Wasmtime path and `exec format error`. Read-only inspection found the host is Darwin arm64 while that file is an AArch64 Linux ELF executable. The existing ignored pin artifact is for the wrong operating system; no project source or CI inventory failure remains in this run.
+
+The one-use recovery gate is consumed. Do not rerun it or start Plan 14-25 under this scope. Plan 14-25 remains blocked until a distinct recovery scope is authorized to repair the local tool artifact and define a new verification allowance. This failure supplies no native-parent or actual-host acceptance evidence.
+
+## GSD summary scan advisory
+
+`gsd-tools verify-summary .planning/phases/14-proven-frontend-states-and-responsive-play/14-26-SUMMARY.md` exited 0 but returned `passed: false`. Its file heuristic treated backticked command text ending in `.txt` as missing generated files, and its self-check scan started at the earlier `## Verification` heading, so it saw the CTest failure before the explicit `## Self-Check: PASSED` section. Read-only checks confirmed the declared evidence, summary and inventory files exist, and the two task commits and summary commit exist (`test -s`/`git cat-file -e`, exit 0). This reproduces the advisory scanner limitation documented in GSD-HANDOFF §3.1; it does not change the plan's recorded CTest failure or acceptance status.
 
 FRONT-02, FRONT-03, and FRONT-04 remain pending. This recovery changes no acceptance verdict and renews no Docker, remote, host, or Phase 12 allowance.

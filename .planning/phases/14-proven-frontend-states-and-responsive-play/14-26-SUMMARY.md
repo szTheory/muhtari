@@ -53,7 +53,7 @@ coverage:
     human_judgment: false
 duration: 9m 38s
 completed: 2026-11-05
-status: complete
+status: halted
 commits: 2
 plan_head_before: bf12c74a7b1c23600266c713b3472af9854c303b
 plan_head_after: 18bb4ee5f258fbd00ce054707a180f8d0a91d71c
@@ -61,7 +61,7 @@ plan_head_after: 18bb4ee5f258fbd00ce054707a180f8d0a91d71c
 
 # Phase 14 Plan 26: CI Inventory Recovery Summary
 
-**The CI inventory now satisfies its existing configure-time ordering check, while Plan 14-24's halted record and Plan 14-25's owner checkpoint remain intact.**
+**The CI inventory now satisfies its existing configure-time ordering check, but the sole recovery workflow failed in CTest because the local Wasmtime binary targets Linux. Plan 14-25 remains blocked; no retry is authorized under this scope.**
 
 ## Performance
 
@@ -77,7 +77,8 @@ plan_head_after: 18bb4ee5f258fbd00ce054707a180f8d0a91d71c
 - Captured the execution-start sorted inventory and six protected-file snapshots in the ignored recovery evidence area. The six protected files remain byte-identical to those snapshots.
 - Reviewed Plan 14-24's malformed-digest terminal halt and zero-start accounting. No qualification or Docker action was invoked, and the old failed workflow gate was not repeated.
 - Verified Plan 14-25 already depends on 14-26 in wave 2, keeps distinct native gates, and retains its blocking owner decision before any remote or host action. No additional Plan 14-25 edit was needed.
-- Left the one fresh automatic local wave gate pending for execute-phase, its sole runner.
+- Execute-phase ran the fresh automatic local workflow exactly once. Configure and build passed; CTest failed when the existing Wasmtime file produced `exec format error`.
+- Read-only inspection confirmed the host is Darwin arm64 and the ignored Wasmtime executable is an AArch64 Linux ELF. No project test was rerun after this diagnosis.
 
 ## Task Commits
 
@@ -89,7 +90,7 @@ plan_head_after: 18bb4ee5f258fbd00ce054707a180f8d0a91d71c
 ## Files Created or Modified
 
 - [tests/inventory/ci.txt](../../../tests/inventory/ci.txt) — order-only correction to the existing inventory.
-- [14-26-EVIDENCE.md](14-26-EVIDENCE.md) — command results, protected-file review, and pending wave-gate status.
+- [14-26-EVIDENCE.md](14-26-EVIDENCE.md) — command results, protected-file review, and terminal recovery-gate failure.
 - `14-25-PLAN.md` was reviewed and already contained the required dependency and prerequisite wording, so it was left unchanged.
 
 ## Verification
@@ -98,7 +99,8 @@ plan_head_after: 18bb4ee5f258fbd00ce054707a180f8d0a91d71c
 - `cmp build/phase14-recovery26-evidence/inventory-sorted-before.txt tests/inventory/ci.txt` — exit 0; confirms only row order changed.
 - Task 2 evidence/dependency/snapshot checks — exit 0.
 - `git diff --check` against execution-start HEAD — exit 0.
-- `cmake --workflow --preset ci` — pending; execute-phase will run it once after this summary and commits. No configure, build, or CTest command was run directly for this plan.
+- `cmake --workflow --preset ci` — exit 8, run URL `N/A-local`; configure/build passed and CTest failed at the Wasmtime-backed preprocessing fixtures.
+- `uname -a` and `file build/pins/wasmtime/wasmtime` — exit 0; confirmed Darwin arm64 host and AArch64 Linux ELF tool mismatch.
 
 ## Decisions Made
 
@@ -110,10 +112,10 @@ None. The single automatic wave gate remains at the orchestrator-owned boundary 
 
 ## Acceptance Status
 
-`requirements-completed: []`. FRONT-02, FRONT-03, and FRONT-04 remain pending. Plan 14-24 remains halted and ineligible without retry; the unknown native parent CI failure, spent host allowance, and Phase 12 halt remain unchanged. A passing local wave gate can make separately selected Plan 14-25 eligible to begin its native work; it does not establish native-parent or actual-host acceptance.
+`requirements-completed: []`. FRONT-02, FRONT-03, and FRONT-04 remain pending. Plan 14-24 remains halted and ineligible without retry; this plan's one-use recovery gate also halted after the wrong-platform local Wasmtime executable caused CTest failures. Plan 14-25 is not eligible to run. The unknown native parent CI failure, spent host allowance, and Phase 12 halt remain unchanged. A new, distinct recovery scope is required before another local workflow or Plan 14-25 execution.
 
 ## Self-Check: PASSED
 
 - The inventory, evidence, and summary files exist.
 - Both task commits are ancestors of the current plan head.
-- The task read-only checks passed; the execute-phase automatic wave gate remains pending.
+- The task read-only checks passed and the single automatic gate result is recorded; no retry occurred.
