@@ -25,7 +25,7 @@ key-files:
     - .planning/ROADMAP.md
 key-decisions:
   - "Use only the existing wasmtime-aarch64-macos pin and its checksum-validating fetch path."
-  - "Keep FRONT-02/03/04 pending; the one automatic post-wave workflow belongs to execute-phase and is not run by this executor."
+  - "Keep FRONT-02/03/04 pending; execute-phase ran the one authorized local workflow after the summary and preservation checks, and it passed."
 patterns-established:
   - "Capture tracked, staged, untracked, and protected-file baselines before replacing an ignored local tool."
   - "Identify native executable bytes read-only without running the executable."
@@ -65,7 +65,7 @@ plan_head_after: 77e995407133958ec3d5aeeabbcade89d19e4097
 
 # Phase 14 Plan 27: Pinned native Wasmtime recovery Summary
 
-**The checksum-validated Darwin arm64 Wasmtime artifact now occupies the existing ignored build input path; frontend acceptance and the single automatic CI gate remain pending.**
+**The checksum-validated Darwin arm64 Wasmtime artifact now occupies the existing ignored build input path, and its single automatic CI gate passed; frontend acceptance remains pending.**
 
 ## Performance
 
@@ -91,9 +91,9 @@ The summary, STATE, and ROADMAP closeout is committed separately after self-chec
 
 ## Files Created/Modified
 
-- `.planning/phases/14-proven-frontend-states-and-responsive-play/14-27-EVIDENCE.md` — records acquisition identity, starting-state receipts, preservation checks, historical halts, and the pending automatic gate.
+- `.planning/phases/14-proven-frontend-states-and-responsive-play/14-27-EVIDENCE.md` — records acquisition identity, starting-state receipts, preservation checks, historical halts, and the passing automatic gate.
 - `.planning/phases/14-27-SUMMARY.md` — records task outcomes and keeps all three frontend requirements pending.
-- `.planning/STATE.md` and `.planning/ROADMAP.md` — sequential plan progress bookkeeping; the next actionable plan remains 14-25 after the automatic gate.
+- `.planning/STATE.md` and `.planning/ROADMAP.md` — sequential progress bookkeeping; Plan 14-25 is now selected for local work through its owner checkpoint.
 
 ## Verification
 
@@ -102,7 +102,7 @@ The summary, STATE, and ROADMAP closeout is committed separately after self-chec
 | `env -u PINS sh scripts/fetch-pin.sh wasmtime-aarch64-macos build/pins/wasmtime` | 0 | Exactly one invocation; the existing script validated the pinned archive SHA-256 before extraction. Run URL: `N/A-local`. |
 | Task 1 read-only host/pin/destination preflight and Mach-O arm64 identity check | 0 | Host is Darwin arm64; the ignored executable is a native 64-bit Mach-O arm64 executable. Its observed SHA-256 is in the evidence file. |
 | Task 2 tracked, cached, untracked, protected-byte, dependency, and whitespace checks | 0 | All checks passed against the execution-start snapshots. |
-| Automatic post-wave `cmake --workflow --preset ci` | Pending | Execute-phase owns exactly one invocation after this summary commit. This executor did not run configure, build, CTest, or the workflow. |
+| Automatic post-wave `cmake --workflow --preset ci` | 0 | Execute-phase invoked it once after the summary and preservation checks. Configure/build/package completed, CTest passed 695/695, release tests passed 6/6, and three expected macOS arm64 packages were produced. Run URL: `N/A-local`. |
 
 Remote CI, push, workflow dispatch, Docker, RetroArch, and host actions were `N/A-local` and not attempted.
 
@@ -114,7 +114,7 @@ Remote CI, push, workflow dispatch, Docker, RetroArch, and host actions were `N/
 
 ## Deviations from Plan
 
-None in implementation scope. The single automatic workflow remains pending for execute-phase as specified; no manual duplicate was run.
+None. The single automatic workflow passed under execute-phase as specified; no duplicate was run.
 
 ## Issues Encountered
 
@@ -127,13 +127,13 @@ None.
 
 ## Next Phase Readiness
 
-The local tool prerequisite and preservation checks are complete. The one post-wave workflow must still pass before Plan 14-25 can be separately selected for local preparation through its existing owner checkpoint. Phase 14 acceptance and FRONT-02/03/04 remain blocked; this summary grants no remote or host authorization.
+The local tool prerequisite, preservation checks, and one post-wave workflow are complete. Plan 14-25 is now selected for local preparation through its existing blocking owner checkpoint. Phase 14 acceptance and FRONT-02/03/04 remain blocked; this summary grants no remote or host authorization.
 
 ## Self-Check: PASSED
 
 - The evidence and summary files exist.
 - Both task commits are ancestors of the current phase branch.
-- All Task 1 and Task 2 acceptance checks passed; the execute-phase automatic workflow remains intentionally pending.
+- All Task 1 and Task 2 acceptance checks and the single execute-phase automatic workflow passed.
 
 ---
 *Phase: 14-proven-frontend-states-and-responsive-play*

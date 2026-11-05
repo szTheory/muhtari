@@ -1,6 +1,6 @@
 # Phase 14 Plan 27: Recovery Evidence
 
-**Outcome so far:** The single checksum-validating fetch replaced the ignored Linux Wasmtime executable with the pinned Darwin arm64 executable. Task 1's read-only identity checks pass. Tracked-preservation checks and the automatic wave gate are still pending.
+**Outcome:** The single checksum-validating fetch replaced the ignored Linux Wasmtime executable with the pinned Darwin arm64 executable. Task 1 identity checks, tracked-preservation checks, and the one automatic local CI workflow all passed. Plan 14-25 is now eligible for its separately selected local preparation through its owner checkpoint.
 
 ## Scope and execution-start baseline
 
@@ -21,7 +21,13 @@ Before acquisition, read-only inspection found the ignored executable was a Linu
 | `env -u PINS sh scripts/fetch-pin.sh wasmtime-aarch64-macos build/pins/wasmtime` | 0 | Invoked exactly once. The existing fetch script selected the exact `pins.txt` row, retained its `curl --retry 3` transport behavior, validated the downloaded archive against the archive SHA-256 above, and extracted in place. Output: `build/pins/wasmtime`. |
 | Task 1 read-only Python Mach-O identity check | 0 | `build/pins/wasmtime/wasmtime` is a non-symlink executable, little-endian 64-bit Mach-O arm64 (`cputype=0x0100000c`, executable file type 2). Observed extracted executable SHA-256: `9dad9691c32e097241d1f70371e36bea39ec3d51499134133340f77ecd9e6758`. This is the executable digest, distinct from the archive digest. |
 
-The automatic post-wave `cmake --workflow --preset ci` gate is **pending**. It has not been run by this task; execute-phase owns exactly one invocation after the summary and preservation checks. No manual duplicate is authorized.
+## Automatic local workflow gate
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `cmake --workflow --preset ci` | 0 | Invoked once by execute-phase after the Plan 14-27 summary and preservation checks. Configure, build, and packaging completed; CTest passed 695/695, and the release-test suite passed 6/6. Three expected macOS arm64 packages were produced. Run URL: `N/A-local`. |
+
+This is the sole workflow invocation authorized for Plan 14-27. It is complete and must not be repeated. No remote CI, push, workflow dispatch, Docker, RetroArch, or host action occurred.
 
 ## Preserved acceptance and follow-on boundaries
 
@@ -43,6 +49,6 @@ Plan 14-25 remains `wave: 2` with `depends_on: ["14-27"]`. Its existing source a
 | Task 2 `cmp` loop over all 17 entries in its protected-file list | 0 | Plan 14-24/14-26 history, Plan 14-25, pins/fetch/build inputs, config, STATE, ROADMAP and REQUIREMENTS match their execution-start snapshots byte-for-byte. |
 | `test -s 14-27-EVIDENCE.md`, exact Plan 14-25 dependency check, and `git diff --check <start-head>` | 0 | Evidence exists, the dependency is unchanged, and the scoped diff has no whitespace errors. |
 
-The first shell wrapper attempt for the three Python comparators exited 1 in zsh with `unmatched '`, before Python ran. Corrected wrappers ran the specified read-only comparisons, each with exit 0; no project or Git state was changed by the malformed wrapper. These task checks are local (`N/A-local`); they do not run or stand in for the pending automatic workflow.
+The first shell wrapper attempt for the three Python comparators exited 1 in zsh with `unmatched '`, before Python ran. Corrected wrappers ran the specified read-only comparisons, each with exit 0; no project or Git state was changed by the malformed wrapper. These task checks are local (`N/A-local`); the later automatic workflow result is recorded above.
 
-The preservation review passed. The single automatic post-wave workflow is still pending execute-phase and remains limited to one invocation after the committed summary. `requirements-completed: []`; FRONT-02/03/04 and Phase 14 acceptance remain pending.
+The preservation review and the single automatic post-wave workflow passed. The workflow exited 0 after configure, build, packaging, CTest (695/695), and release tests (6/6). `requirements-completed: []`; FRONT-02/03/04 and Phase 14 acceptance remain pending.
