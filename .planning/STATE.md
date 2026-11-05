@@ -4,11 +4,11 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
-status: blocked
-stopped_at: Phase 14 wave 1 stopped after the single local CI gate failed; Plan 14-25 not started
-last_updated: "2026-11-05T12:19:47.228Z"
-last_activity: 2026-11-04
-state_head: 1fd88f08c286ee2e8bbf42ca03f195fe10bb5b6f
+status: Blocked — phase verification remains gaps_found (20/27 must-haves verified)
+stopped_at: Plan 14-26 is planned and checked; the fresh recovery gate has not run, and Plan 14-25 remains behind it
+last_updated: "2026-11-05T12:21:44.515Z"
+last_activity: 2026-11-05
+state_head: 7de86d50831011dbc7ef346c904e8d0c435279d9
 progress:
   total_phases: 3
   completed_phases: 1
@@ -28,7 +28,7 @@ Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate 
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — PLANS READY; ACCEPTANCE BLOCKED
+Phase: 14 (Proven frontend states and responsive play)
 Plan: 24 of 26 summarized — 15 complete; 14-10/14-15/14-17/14-19/14-20/14-21/14-22/14-23/14-24 halted; 14-25 planned behind new recovery plan 14-26; 14-26 planned and runnable
 Status: Blocked — phase verification remains gaps_found (20/27 must-haves verified)
 Next action: Run `$gsd-execute-phase 14` in the current `.worktrees/phase-14` directory. It selects Plan 14-26, which corrects only the inventory order and owns one new automatic local gate. A pass makes Plan 14-25's separately scoped native work runnable; a failure stops without retry. Plan 14-25 still stops at its owner checkpoint before any remote or host action. Phase 14 acceptance remains blocked until actual pinned-host evidence passes and final verification accepts it.
@@ -96,7 +96,7 @@ linked outcome; earlier unchanged-source preservation checks are historical.
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
 Plan: 0 of 4 acceptance plans accepted; gap plans 12-05 and 12-06 executed with failed hosted evidence; 12-09 complete; 12-07 remains halted after a non-reproducing OpenBIOS diagnostic; 12-08 is superseded for scheduling
 Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 remain blocked
-Last activity: 2026-11-04
+Last activity: 2026-11-05
 Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
