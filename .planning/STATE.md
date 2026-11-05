@@ -4,16 +4,16 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
-status: Blocked — phase verification remains gaps_found (20/27); Plan 14-27 is the next runnable local blocker-removal plan
-stopped_at: Plan 14-27 planned for one existing pinned Darwin arm64 Wasmtime fetch and one automatic local gate; Plan 14-25 waits on its result
-last_updated: "2026-11-05T13:24:22.941Z"
+status: executing
+stopped_at: Completed 14-27; execute-phase automatic local gate pending; Plan 14-25 is next after the gate
+last_updated: "2026-11-05T13:56:57.812Z"
 last_activity: 2026-11-05
-state_head: ca1ec8284c32a7b327d93d366d2ee4aade6dbbf8
+state_head: 77e995407133958ec3d5aeeabbcade89d19e4097
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 35
-  completed_plans: 33
+  completed_plans: 34
   percent: 33
 ---
 
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 acceptance remains blocked: the exact parent complete-CI gate has twelve timeouts of unknown cause, the host allowance is spent, and FRONT-02/03/04 remain pending. Plans 14-24 and 14-26 remain halted with their failures and spent gates preserved. Plan 14-27 is the next runnable, owner-authorized local recovery: one existing pinned Darwin arm64 Wasmtime fetch replaces the ignored wrong-platform executable, then execute-phase runs exactly one fresh automatic local CI gate. Fetch failure prevents that workflow; failed/incomplete gate stops without retry. On pass, separately selected Plan 14-25 may run local preparation only through its unchanged blocking owner checkpoint. No remote/host scope is renewed.
+Current focus: Phase 14 acceptance remains blocked: the exact parent complete-CI gate has twelve timeouts of unknown cause, the host allowance is spent, and FRONT-02/03/04 remain pending. Plans 14-24 and 14-26 remain halted with their failures and spent gates preserved. Plan 14-27's one pinned Darwin arm64 Wasmtime fetch and read-only identity/preservation checks passed; its summary is committed and its single automatic local CI gate is pending execute-phase. If that gate passes, Plan 14-25 is the next actionable local work through its unchanged blocking owner checkpoint. A failed or incomplete gate stops without retry. No remote/host scope is renewed.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — READY TO EXECUTE
-Plan: 25 of 27 summarized — 15 complete; 14-10/14-15/14-17/14-19/14-20/14-21/14-22/14-23/14-24/14-26 halted; 14-27 is next runnable; 14-25 depends on its complete passing gate
-Status: Acceptance blocked — phase verification remains gaps_found (20/27 must-haves verified); authorized Plan 14-27 is runnable prerequisite work
-Next action: Execute Plan 14-27 in the current worktree with $gsd-execute-phase 14. It is runnable blocker removal with no owner checkpoint of its own: one pinned native artifact fetch, read-only preservation/identity checks and one automatic post-wave local gate. A complete pass makes separate Plan 14-25 local preparation eligible through its existing owner checkpoint; failure stops without retry. Phase acceptance and FRONT-02/03/04 remain pending. No remote CI, push, host dispatch, RetroArch, Docker or host work is authorized by this recovery.
-Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-25 did not start; the owner has authorized the distinct Plan 14-27 local recovery, whose passing automatic gate is required before separately selected 14-25 local preparation through its existing owner checkpoint. That checkpoint has not been reached. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, unknown native parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. Do not retry the qualification or original gate, substitute an input, or begin remote/host work before the owner checkpoint.
+Phase: 14 (Proven frontend states and responsive play) — EXECUTING
+Plan: 26 of 27 summarized
+Status: Executing Phase 14; Plan 14-27 task work is complete and its automatic local gate is pending
+Next action: Let execute-phase run the one pending `cmake --workflow --preset ci` after the committed 14-27 summary. If it passes, Plan 14-25 is next actionable for local preparation through its unchanged blocking owner checkpoint; failure or incompleteness stops without retry. Phase acceptance and FRONT-02/03/04 remain pending. No remote CI, push, host dispatch, RetroArch, Docker or host work is authorized by this recovery.
+Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-25 did not start. Plan 14-27's one pinned artifact fetch and read-only identity/preservation checks passed; its summary is committed, with its single automatic gate pending execute-phase. Plan 14-25 remains next actionable only after a passing gate, with its owner checkpoint before remote/host work. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, unknown native parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. Do not retry the qualification or original gate, substitute an input, or begin remote/host work before the owner checkpoint.
 
 ## Current Blockers
 
@@ -126,6 +126,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 | Phase 14 P16 | 34min | 2 tasks | 4 files |
 | Phase 14 P23 | 25min | 1 tasks | 10 files |
 | Phase 14 P24 | 122min | 1 tasks | 6 files |
+| Phase 14 P27 | 14min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -166,6 +167,8 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: Stop Plan 14-23 after its sole qualification returned KeyError: 0; do not retry or launch the ineligible pair.
 - [Phase 14]: Keep Phase 14 acceptance blocked with FRONT-02/03/04 pending; image and Linux diagnostics do not prove pinned RetroArch behavior.
 - [Phase 14]: Plan 14-24 stopped before qualification because the generated local MAME digest is truncated; qualification remains N/A and ineligible.
+- [Phase 14]: Use only the existing pinned Darwin arm64 Wasmtime artifact and checksum-validating fetch path.
+- [Phase 14]: Keep FRONT-02/03/04 pending until evidence beyond local tool recovery passes.
 
 ### Pending Todos
 
@@ -221,8 +224,8 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-05T12:19:47.150Z
-Stopped at: Plan 14-27 is planned; acquisition and its single automatic local gate have not run; Plan 14-25 remains behind its passing result
+Last session: 2026-11-05T13:56:57.717Z
+Stopped at: Completed 14-27; execute-phase automatic local gate pending; Plan 14-25 is next after the gate
 Resume file: None
 Next command: Run `$gsd-execute-phase 14` in the current `.worktrees/phase-14` directory.
 Context handoff: Plan 14-27 is the next runnable wave-1 local blocker-removal plan, with depends_on empty despite halted 14-26. Replace only the ignored wrong-platform tool through the existing pinned Darwin arm64 fetch, preserve the already repaired CI inventory and historical 14-24/14-26 records, then let execute-phase run exactly one automatic local CI gate. Do not run configure/build/CTest or the workflow from a task. Acquisition failure forbids the gate; gate failure/incompleteness stops without retry. On pass, Plan 14-25 remains a separate follow-on local scope and must stop at its exact existing blocking owner checkpoint before remote/host action. FRONT-02/03/04 stay pending; no acceptance or spent allowance is renewed. Continue in this worktree; the parent checkout is not needed.
