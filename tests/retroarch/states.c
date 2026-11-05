@@ -175,6 +175,14 @@ static int states_external_udp_probe_passes(int poll_result)
     return poll_result == 0;
 }
 
+static int states_endpoint_owner_decision(int child_owned, int child_reaped, int process_matches,
+                                          int socket_status, size_t owner_count, int64_t owner,
+                                          int64_t child)
+{
+    return child_owned && !child_reaped && process_matches && socket_status == 0 &&
+           owner_count == 1u && owner == child;
+}
+
 static const char *states_prelaunch_stage_name(states_prelaunch_stage stage)
 {
     switch (stage) {
@@ -1803,6 +1811,33 @@ static int run_prelaunch_controls(const char *config_path)
 #else
     (void)config_path;
 #endif
+    static const struct {
+        const char *name;
+        int child_owned;
+        int child_reaped;
+        int process_matches;
+        int socket_status;
+        size_t owner_count;
+        int64_t owner;
+        int64_t child;
+        int expected;
+    } endpoint_cases[] = {
+        {"single live exact child owns the endpoint", 1, 0, 1, 0, 1u, 41, 41, 1},
+        {"endpoint with no socket owner is rejected", 1, 0, 1, 0, 0u, 0, 41, 0},
+        {"endpoint with multiple socket owners is rejected", 1, 0, 1, 0, 2u, 41, 41, 0},
+        {"endpoint with a foreign socket owner is rejected", 1, 0, 1, 0, 1u, 42, 41, 0},
+        {"endpoint owned by an exited child is rejected", 1, 1, 1, 0, 1u, 41, 41, 0},
+        {"endpoint from a non-matching process path is rejected", 1, 0, 0, 0, 1u, 41, 41, 0},
+        {"endpoint with an unknown owner scan is rejected", 1, 0, 1, 1, 0u, 0, 41, 0},
+    };
+    for (size_t i = 0u; i < sizeof endpoint_cases / sizeof endpoint_cases[0]; i++) {
+        const int actual = states_endpoint_owner_decision(
+            endpoint_cases[i].child_owned, endpoint_cases[i].child_reaped,
+            endpoint_cases[i].process_matches, endpoint_cases[i].socket_status,
+            endpoint_cases[i].owner_count, endpoint_cases[i].owner, endpoint_cases[i].child);
+        tap_result(&count, &failures, endpoint_cases[i].name, actual == endpoint_cases[i].expected,
+                   "owned-child and exact unique socket-owner observations were not enforced");
+    }
     printf("1..%u\n", count);
     return failures == 0u ? 0 : 1;
 }
@@ -2197,13 +2232,16 @@ static int reap_if_exited(host_session *host)
 
 static int endpoint_owned(host_session *host)
 {
-    if (!host->child_owned || !reap_if_exited(host) || host->child_reaped ||
-        !process_is_child(host))
-        return 0;
     pid_t owners[8];
     size_t count = 0u;
-    return socket_owners(host->port, owners, sizeof owners / sizeof owners[0], &count) == 0 &&
-           count == 1u && owners[0] == host->child;
+    int child_running = host->child_owned && reap_if_exited(host) && !host->child_reaped;
+    int process_matches = child_running && process_is_child(host);
+    int socket_status = process_matches ? socket_owners(host->port, owners,
+                                                        sizeof owners / sizeof owners[0], &count)
+                                        : 1;
+    int64_t owner = count == 1u ? (int64_t)owners[0] : 0;
+    return states_endpoint_owner_decision(host->child_owned, host->child_reaped, process_matches,
+                                          socket_status, count, owner, (int64_t)host->child);
 }
 
 static int reserve_port(uint16_t wanted, int *fd_out, uint16_t *port_out)

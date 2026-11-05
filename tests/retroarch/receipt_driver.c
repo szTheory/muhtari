@@ -7,9 +7,26 @@ int main(int argc, char **argv)
     if (argc != 13 || strcmp(argv[1], "--host") != 0)
         return 2;
     const char *shot = argv[11];
+    static const struct {
+        const char *suffix;
+        const char *diagnostic;
+    } failures[] = {
+        {"sandbox-exec-failure.bmp", "states prelaunch stage=sandbox-exec failed\n"},
+        {"sandbox-helper-failure.bmp", "states prelaunch stage=sandbox-helper failed\n"},
+        {"work-deadline-failure.bmp", "states prelaunch stage=work-deadline failed\n"},
+        {"config-port-failure.bmp", "states prelaunch stage=config-port failed\n"},
+        {"runahead-config-failure.bmp", "states prelaunch stage=runahead-config failed\n"},
+        {"endpoint-ownership-failure.bmp",
+         "states: could not prove the unique owned RetroArch endpoint\n"},
+    };
+    for (size_t i = 0u; i < sizeof failures / sizeof failures[0]; i++) {
+        if (strstr(shot, failures[i].suffix) != NULL) {
+            fputs(failures[i].diagnostic, stderr);
+            return 7;
+        }
+    }
     if (strstr(shot, "failure.bmp") != NULL) {
         puts("states host: MOCK_FAILURE output retained");
-        fputs("states prelaunch stage=sandbox-helper failed\n", stderr);
         fputs("receipt mock intentional host failure\n", stderr);
         return 7;
     }
