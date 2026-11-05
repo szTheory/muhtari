@@ -6,13 +6,13 @@ current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: blocked
 stopped_at: Phase 14 wave 1 stopped after the single local CI gate failed; Plan 14-25 not started
-last_updated: "2026-11-05T03:37:10.299Z"
+last_updated: "2026-11-05T12:19:47.228Z"
 last_activity: 2026-11-04
-state_head: 3a6de69d2d93b34f260136a0d4022a95574dfb2a
+state_head: 1fd88f08c286ee2e8bbf42ca03f195fe10bb5b6f
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 33
+  total_plans: 34
   completed_plans: 32
   percent: 33
 ---
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the native-host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-23's qualification history and cleanup receipt remain unchanged. Plan 14-24's offline controls passed, but its generated local-input gate expected a truncated MAME digest and stopped before qualification; no active claim, Docker contact, or workload start occurred. That scope is blocked/ineligible and must not be retried. The single required wave-1 `cmake --workflow --preset ci` gate then failed during configure because `tests/inventory/ci.txt` is not sorted (exit 1); build and test workflow steps did not run. The gate cannot be repeated under this scope, and Plan 14-25 remains planned and unstarted. No Plan 14-24 qualification or Plan 14-25 execution command is valid under this stop; correcting the inventory and resuming requires a separate plan and authorization. Preserve all earlier failures, the unknown native parent timeout cause, spent host allowance, missing pinned RetroArch evidence, pending requirements, and Phase 12 stop.
+Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the native-host allowance is spent, and FRONT-02/03/04 remain pending. Plan 14-24 remains halted/ineligible because its generated MAME digest is truncated; qualification, Docker contact and protected workload starts are zero, with no retry. Plan 14-26 is now the runnable recovery plan: correct only the inventory order, preserve the halted history, and run one fresh automatic local wave gate. If it passes, Plan 14-25's native local work may proceed to its explicit owner checkpoint; no remote or host action occurs before that checkpoint.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — PLANS READY; ACCEPTANCE BLOCKED
-Plan: 24 of 25 summarized — 15 complete; 14-10/14-15/14-17/14-19/14-20/14-21/14-22/14-23/14-24 halted; 14-25 planned and blocked
+Plan: 24 of 26 summarized — 15 complete; 14-10/14-15/14-17/14-19/14-20/14-21/14-22/14-23/14-24 halted; 14-25 planned behind new recovery plan 14-26; 14-26 planned and runnable
 Status: Blocked — phase verification remains gaps_found (20/27 must-haves verified)
-Next action: No command is valid under the current stop. The one allowed wave-1 `cmake --workflow --preset ci` invocation failed because `tests/inventory/ci.txt` is unsorted; do not rerun it or start Plan 14-25. A new plan and authorization are required to correct the inventory and define any later validation. Phase 14 acceptance remains blocked until actual pinned-host evidence passes and final verification accepts it.
-Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. The one required wave-1 local gate failed during CMake configure with exit 1 because `tests/inventory/ci.txt` is unsorted; no build or test workflow step ran, and the gate cannot be repeated under this scope. Plan 14-25 did not start and its owner checkpoint was not reached. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, unknown native parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. Do not retry the qualification or CI gate, substitute an input, or start Plan 14-25.
+Next action: Run `$gsd-execute-phase 14` in the current `.worktrees/phase-14` directory. It selects Plan 14-26, which corrects only the inventory order and owns one new automatic local gate. A pass makes Plan 14-25's separately scoped native work runnable; a failure stops without retry. Plan 14-25 still stops at its owner checkpoint before any remote or host action. Phase 14 acceptance remains blocked until actual pinned-host evidence passes and final verification accepts it.
+Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 is a separate recovery scope with one automatic local gate after the ordering fix. Plan 14-25 did not start and its owner checkpoint was not reached. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, unknown native parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. Do not retry the qualification or original gate, substitute an input, or begin remote/host work before the owner checkpoint.
 
 ## Current Blockers
 
@@ -212,6 +212,7 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 - Phase 14 actual-host qualification remains pending: run 41629846188 failed upstream and skipped RetroArch. Its allowance stays spent. Plan 14-08's separately authorized single new attempt is available only after its complete preflight; no local frontend launch is permitted.
 - Plan 14-23 qualification is spent after container-contract validation raised KeyError: 0; the pair remains unspent but ineligible. A new plan and authorization are required before fixing the object parsing and cleanup-handler bugs.
 - Plan 14-24 local-input gate failed: the generated controller expects a 62-character MAME a7800.xml digest; pins.txt and the local file agree on the 64-character hash. Qualification invocation 0, Docker contact 0, protected workload starts 0; scope blocked/ineligible with no retry.
+- Plan 14-26 is the new runnable recovery plan. It only reorders the CI inventory entry, checks the saved Plan 14-24 halt, and then relies on one separate automatic local wave gate. If that gate passes, Plan 14-25 may run its native local gates under this phase execution; it must stop for the explicit owner decision before any remote or host action.
 
 ### Roadmap Evolution
 
@@ -219,11 +220,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-05T03:37:10.228Z
-Stopped at: Phase 14 wave 1 stopped after the single local CI gate failed; Plan 14-25 not started
+Last session: 2026-11-05T12:19:47.150Z
+Stopped at: Plan 14-26 is planned and checked; the fresh recovery gate has not run, and Plan 14-25 remains behind it
 Resume file: None
-Next command: No command is valid under the spent Plan 14-23 qualification. If continuation is authorized, run `$gsd-plan-phase 14` from the repository root to plan the object/list and cleanup-handler fixes and request a new bounded qualification.
-Context handoff: Plan 14-23's offline controls passed. The one qualification observed the approved image and verified the pinned rcheevos archive, then exited 1 because Docker returned a JSON object and the HostConfig checker indexed it as a list (`KeyError: 0`). The pair was not invoked and remains unspent but ineligible. The stop handler's cleanup ownership check initially refused; an exact ID/owner-label check succeeded and the same container was removed with exit 0. Read-only receipt inspection and the CMake receipt checker passed. Do not run gap23 `qualify` or `pair` again. Preserve the Plan 14-22 stop, parent CI failure/unknown timeout cause, spent native-host allowance, missing pinned RetroArch evidence, pending FRONT-02/03/04, earlier halted plans and Phase 12 halt. No UAT is needed for this record.
+Next command: Run `$gsd-execute-phase 14` in the current `.worktrees/phase-14` directory.
+Context handoff: Plan 14-26 is the checked wave-1 recovery prerequisite. Correct only the policy inventory order, preserve Plan 14-24's terminal malformed-digest/zero-start record, and let execute-phase run the single new automatic local gate. The failed Plan 14-24 gate and Docker qualification remain closed. If the new gate passes, Plan 14-25 runs its approved native local preparation and stops at the owner checkpoint before remote or host action. FRONT-02/03/04 stay pending; the parent CI timeout cause and spent host allowance remain unchanged. The parent checkout at `~/projects/muhtari` is on Phase 12 with unrelated edits; continue in this worktree.
 
 ## Deferred Items
 
