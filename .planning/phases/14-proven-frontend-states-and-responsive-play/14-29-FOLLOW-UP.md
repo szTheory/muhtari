@@ -22,4 +22,4 @@ FRONT-02/03/04 remain pending. This report provides no host acceptance.
 
 ## Recommended next decision
 
-Close this particular run as an honest non-reproduction while keeping the historical cause unknown. If root-cause diagnosis continues, first propose a launch-time process observer and demonstrate that it captures a controlled child shorter than the observed 0.0645173-second test interval. Then request a separate, exact one-invocation scope. Even a successful future run cannot retroactively explain the historical timeout. For further diagnosis, no test command or scope is granted.
+The owner selected **close this diagnosis as unresolved** on 2026-11-05. This particular run is closed as an honest non-reproduction; the historical cause remains unknown. If root-cause diagnosis continues later, first propose a launch-time process observer and demonstrate that it captures a controlled child shorter than the observed 0.0645173-second test interval. Then request a separate, exact one-invocation scope. Even a successful future run cannot retroactively explain the historical timeout. For further diagnosis, no test command or scope is granted.
