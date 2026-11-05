@@ -4,15 +4,15 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
-status: Plan 14-28 diagnosis is complete. Phase 14 acceptance remains blocked; the Plan 14-25 timeout cause is still unknown.
-stopped_at: Completed Plan 14-28 diagnosis; cause unresolved; awaiting owner decision on one bounded CTest invocation and process attribution
-last_updated: "2026-11-05T16:53:06.064Z"
+status: Plan 14-29 is planned to record the non-reproduction and stop at a new-scope decision. Phase 14 acceptance remains blocked; the Plan 14-25 timeout cause is still unknown and the one-run scope is spent.
+stopped_at: Planned a report-only follow-up and decision checkpoint. No CTest or project workflow ran; the historical timeout remains unresolved.
+last_updated: "2026-11-05T18:05:22Z"
 last_activity: 2026-11-05
-state_head: 89c9f8cc2f981f89f230a44912f5894af94c24b7
+state_head: ee146df28447d910659032774d031f05f5aeb9f6
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 36
+  total_plans: 37
   completed_plans: 36
   percent: 33
 ---
@@ -24,14 +24,14 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 acceptance remains blocked: the earlier complete-parent CI timeouts are still unexplained, the host allowance is spent, and FRONT-02/03/04 remain pending. Plans 14-24 and 14-26 remain halted with their failures and spent gates preserved. Plan 14-27's pinned Darwin arm64 Wasmtime fetch, identity/preservation checks, and one automatic local `cmake --workflow --preset ci` gate passed; CTest passed 695/695 and release tests passed 6/6. Plan 14-25's offline controls passed, then its sole independent R workflow gate failed because `title.pin.self_test` timed out and `/bin/ps` was denied. Its scope ended before hygiene, the frozen-source gate, and the owner checkpoint. A new bounded diagnosis scope is required before another local workflow; no remote or host scope is renewed.
+Current focus: Phase 14 acceptance remains blocked: the earlier complete-parent CI timeout is still unexplained, the host allowance is spent, and FRONT-02/03/04 remain pending. Plans 14-24 and 14-26 remain halted with their failures and spent gates preserved. Plan 14-27's pinned Darwin arm64 Wasmtime fetch, identity/preservation checks, and one automatic local `cmake --workflow --preset ci` gate passed; CTest passed 695/695 and release tests passed 6/6. Plan 14-25's offline controls passed, then its sole independent R workflow gate failed because `title.pin.self_test` timed out and `/bin/ps` was denied. The separately authorized follow-on target observation passed `title.pin.self_test` in 0.0645173 seconds with its registered fixture and one-second timeout unchanged. CTest executable/cwd were observed, but lsof did not capture the short-lived predicate PID; this does not explain the historical timeout or establish its child status. Plan 14-25 remains halted before hygiene, the frozen-source gate, and the owner checkpoint. The single diagnostic run is spent; no further local workload, remote or host scope is authorized.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — EXECUTING
-Plan: 28 of 28 plans have terminal summaries (17 complete, 11 halted)
-Status: Plan 14-28 diagnosis is complete. Phase 14 acceptance remains blocked; the Plan 14-25 timeout cause is still unknown.
-Next action: The next proposed step requires a new owner-approved scope for one title.pin.self_test CTest invocation with bounded process attribution. Preserve the existing one-second timeout; no further workload is authorized yet.
+Phase: 14 (Proven frontend states and responsive play) — READY TO EXECUTE
+Plan: 28 of 29 plans have terminal summaries (17 complete, 11 halted); Plan 14-29 is pending.
+Status: The target-only observation passed once without explaining the historical timeout. Plan 14-29 records this non-reproduction and stops at a blocking decision. Phase 14 acceptance remains blocked.
+Next action: If continuing, run `$gsd-execute-phase 14 --gaps-only` for the report-only Plan 14-29 task and decision checkpoint. It prohibits CTest and project workflows; stop before dispatch if the executor cannot suppress the automatic project gate. No further CTest or project workflow is valid under the spent diagnostic scope. Plan 14-25's workflow gate and owner checkpoint remain incomplete.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
@@ -226,12 +226,12 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-05T16:53:05.991Z
-Stopped at: Completed Plan 14-28 diagnosis; cause unresolved; awaiting owner decision on one bounded CTest invocation and process attribution
-Resume file: No command authorized until the owner approves that bounded scope.
+Last session: 2026-11-05T18:01:34Z
+Stopped at: Created Plan 14-29 to record the non-reproduction and stop at a new-scope decision. No CTest or CMake project workflow ran.
+Resume file: `$gsd-execute-phase 14 --gaps-only` in the Phase 14 worktree. Plan 14-29 permits only report writing and its decision checkpoint; do not run CTest or a CMake project workflow under the spent scope.
 
-Next command: No workflow command is valid under the terminal Plan 14-25 scope. After a new bounded diagnosis scope is approved, use `$gsd-plan-phase 14 --gaps` to plan the `title.pin.self_test` timeout and `/bin/ps` denial; do not rerun Plan 14-25's spent full gate.
-Context handoff: The offline controls and exact pinned inputs for Plan 14-25 were prepared. Its one independent R CI workflow failed after 694/695 ordinary tests passed; `title.pin.self_test` timed out with `/bin/ps: Operation not permitted`. The saved JUnit check confirmed the failure. Hygiene, release/package, E/frozen gate and the owner checkpoint were not reached. No remote or host action occurred. Do not retry this scope; FRONT-02/03/04 and Phase 14 acceptance remain pending. The linked evidence record is `phases/14-proven-frontend-states-and-responsive-play/14-25-EVIDENCE.md`.
+Next command: In the Phase 14 worktree, run `$gsd-execute-phase 14 --gaps-only` to execute only Plan 14-29's report-only task and decision checkpoint. If execute-phase cannot suppress its automatic CMake project gate, stop before dispatch. No CTest or CMake project workflow is valid under the spent diagnostic scope.
+Context handoff: Plan 14-25's offline controls and exact pinned inputs were prepared, but its one independent R CI workflow failed after 694/695 ordinary tests passed; `title.pin.self_test` timed out and workflow stderr included `/bin/ps: Operation not permitted`. The separately authorized target-only CTest invocation on candidate R passed in 0.0645173 seconds with its fixture; lsof did not capture the predicate PID because the query outlasted the test, so the historical cause remains unknown. Plan 14-29 records this non-reproduction and stops before any new workload; its checkpoint offers either closing the diagnosis as unresolved or preparing a separate proposal. Hygiene, release/package, E/frozen gate and the Plan 14-25 owner checkpoint remain unreached. No remote or host action occurred. FRONT-02/03/04 and Phase 14 acceptance remain pending. The original failure evidence is `phases/14-proven-frontend-states-and-responsive-play/14-25-EVIDENCE.md`; the new observation is in `debug/phase14-title-pin-self-test.md` and its private receipt.
 
 ## Deferred Items
 
