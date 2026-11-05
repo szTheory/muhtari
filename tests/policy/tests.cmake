@@ -1,6 +1,12 @@
 # Repository policy tests: rules about the tests themselves.
 set(policy_scripts ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
+muhtari_add_test(NAME policy.docker_contract.controls
+  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
+    -DWORK=${CMAKE_BINARY_DIR}/policy/docker_contract_controls
+    -P ${CMAKE_CURRENT_LIST_DIR}/docker_contract.cmake
+  LABELS policy TIMEOUT 10)
+
 muhtari_add_test(NAME policy.ci_run.controls
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
     -DWORK=${CMAKE_BINARY_DIR}/policy/ci_run_fixture -P ${CMAKE_CURRENT_LIST_DIR}/ci_run.cmake

@@ -567,6 +567,7 @@ pokey.clock	pokey,portable
 pokey.logic	pokey,portable
 pokey.maps	pokey,portable
 policy.ci_run.controls	policy
+policy.docker_contract.controls	policy
 policy.claims_wording	policy
 policy.claims_wording.self_test	policy
 policy.compat_doc_fresh	policy
