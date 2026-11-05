@@ -5,15 +5,15 @@ milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
 status: blocked
-stopped_at: Phase 14 acceptance blocked; Plans 14-24 and 14-25 now planned for fresh sequential continuation
-last_updated: "2026-11-05T00:54:33.859Z"
+stopped_at: "Halted at 14-24-PLAN.md: exact local-input preflight failed; qualification N/A and ineligible"
+last_updated: "2026-11-05T03:26:44.878Z"
 last_activity: 2026-11-04
-state_head: 1eb0d6251751224f38f39683858c83b2c671ca89
+state_head: efad6c4d80d5fc18fe5a37d85f5b77cb515c998a
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 33
-  completed_plans: 31
+  completed_plans: 32
   percent: 33
 ---
 
@@ -24,15 +24,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the native-host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-23's offline controls passed, and its single qualification freshly observed the approved image ID, digest, arm64 platform and labels; absent `.Config.Volumes` was handled as no inherited volumes. The pinned rcheevos archive hash was verified and its extraction manifest recorded. Container contract validation then raised `KeyError: 0` because Docker's JSON object was indexed as a list, before source or pin archives were copied into the container or any build/test began. The original stop cleanup handler refused because it passed file paths instead of their contents; the exact owned container was checked and removed after the stop. That qualification is spent, and the default/serial pair has zero reservations, starts or unknown starts and remains unspent but ineligible. Do not rerun Plan 14-23 `qualify` or `pair`. Plan 14-24 now defines a separate offline repair and new bounded diagnostic scope; Plan 14-25 defines fresh native gates and a new owner checkpoint before remote work. Neither reopens an earlier allowance. Preserve Plan 14-22's separate historical failure, native parent timeout cause as unknown, spent host allowance, missing pinned RetroArch evidence, pending requirements, and Phase 12 stop.
+Current focus: Phase 14 acceptance remains blocked: the parent complete-CI gate failed with twelve timeouts of unknown cause, the native-host attempt is spent, and FRONT-02/03/04 remain pending. Plan 14-23's qualification history and cleanup receipt remain unchanged. Plan 14-24's offline controls passed, but its generated local-input gate expected a truncated MAME digest and stopped before qualification; no active claim, Docker contact, or workload start occurred. That scope is blocked/ineligible and must not be retried. Plan 14-25 remains planned and unstarted. No Plan 14-24 qualification or Plan 14-25 execution command is valid under this stop; any controller correction and new qualification require a separate plan and authorization. Preserve all earlier failures, the unknown native parent timeout cause, spent host allowance, missing pinned RetroArch evidence, pending requirements, and Phase 12 stop.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — PLANS READY; ACCEPTANCE BLOCKED
-Plan: 23 of 25 summarized — 15 complete; 14-10/14-15/14-17/14-19/14-20/14-21/14-22/14-23 halted; 14-24/14-25 planned
+Plan: 24 of 25 summarized — 15 complete; 14-10/14-15/14-17/14-19/14-20/14-21/14-22/14-23/14-24 halted; 14-25 planned and blocked
 Status: Blocked — phase verification remains gaps_found (20/27 must-haves verified)
-Next action: Run `$gsd-execute-phase 14` from the repository root. It selects the new sequential plans 14-24 then 14-25: 14-24 has offline controls and one separately scoped Docker qualification with only its eligible conditional pair; 14-25 runs fresh native gates and stops at an exact owner decision before any remote push or host dispatch. This does not reopen Plan 14-23, the spent native-host allowance, or Phase 12. Phase 14 acceptance remains blocked until actual pinned-host evidence passes and final verification accepts it.
-Boundary: Plan 14-23's sole qualification observed the exact approved image and rcheevos archive, then stopped with `KeyError: 0` while checking the started container. The saved image and HostConfig logs are diagnostic; container HostConfig admission did not pass. No archive was copied into the container and no CMake/build/test ran. Its cleanup receipt records the initial refusal and the later exact-container removal. The pair remains unspent but ineligible. The one-off image exception remains limited to the previously approved ID/digest/labels, which are self-asserted. Preserve Plan 14-22 and older stops, native parent timeout failure/unknown cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. No retry, image substitution, privilege escalation or host action follows from this stopped attempt.
+Next action: No command is valid for a Plan 14-24 qualification retry or Plan 14-25 execution. A new plan and authorization are required before correcting the controller's truncated MAME digest or requesting a new bounded qualification. The orchestrator owns the automatic local post-wave CI gate. Phase 14 acceptance remains blocked until actual pinned-host evidence passes and final verification accepts it.
+Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, unknown native parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. Do not retry this scope, substitute an input, or start Plan 14-25.
 
 ## Current Blockers
 
@@ -47,7 +47,7 @@ Boundary: Plan 14-23's sole qualification observed the exact approved image and 
 - Plan 14-20 used its one qualification invocation under the owner's exact one-off image trust exception, then halted before Docker because the pinned Linux arm64 Wasmtime 48.0.6 archive/binary was absent. No container or test ran; the pair remains unspent but ineligible, and neither `qualify` nor `pair` may be rerun under that plan. The next prerequisite is the exact hash-checked Linux artifact and a separately authorized qualification scope. FRONT-02/03/04 remain pending; Phase 14 acceptance stays blocked.
 - Plan 14-21 used its one qualification after the owner supplied the Linux Wasmtime input. It stopped before Docker because `git -C build/pins/rcheevos rev-parse HEAD` returned the parent worktree commit: the extracted rcheevos archive has no `.git`, and `--show-toplevel` confirmed Git walked up to the project. The source contents were not verified as matching or mismatching the pin. The stop receipt writer raised `NameError: os is not defined`; reconstructed preflight/pair receipts passed the read-only inspector and CMake checker. No Docker command, container, or project test ran. The pair has zero reservations/launches and is unspent but ineligible. Do not retry; a future attempt requires correct archive-content verification and a new authorized scope. FRONT-02/03/04 and all native/host acceptance blockers remain unchanged.
 - Plan 14-22 fixed the rcheevos check to use `fetch-pin.sh`'s archive SHA verification and fixed/import-tested the production stop receipt writer. Offline syntax, supervisor, watchdog, claim and receipt controls passed. Its sole qualification reached the local Docker daemon and VM, then the image-inspection template failed because `.Config.Volumes` was absent. The captured stderr has the exact formatter error; no image identity was established, no container or project test ran, and the rcheevos fetch was not reached. The stopped receipts validate, and the pair has zero reservations/launches and is unspent but ineligible. Do not retry this plan; a new qualification requires a corrected image-inspection template and new authority. FRONT-02/03/04 and all native/host acceptance blockers remain unchanged.
-- Plan 14-23 fixed optional image-field inspection and passed offline controls. Its one fresh qualification observed the exact approved image and verified rcheevos, then stopped because `docker inspect --format '{{json .}}'` returned an object and the contract check indexed it as a list (`KeyError: 0`). No source or pin archive was copied into the container; no build, CTest metadata, fixture, or protected test ran. The original cleanup receipt said `refused_not_owned` because the handler passed the ID and owner-label file paths instead of their contents; after an exact saved-ID/label check the same container was removed successfully. The qualification is spent; the pair has zero reservations, starts and unknown starts and remains unspent but ineligible. Do not rerun gap23 `qualify` or `pair`; fresh repair/qualification work is limited to Plan 14-24, followed by Plan 14-25's separate native and owner-decision gates. FRONT-02/03/04 and the native/host acceptance blockers remain unchanged.
+- Plan 14-23 fixed optional image-field inspection and passed offline controls. Its one fresh qualification observed the exact approved image and verified rcheevos, then stopped because `docker inspect --format '{{json .}}'` returned an object and the contract check indexed it as a list (`KeyError: 0`). No source or pin archive was copied into the container; no build, CTest metadata, fixture, or protected test ran. The original cleanup receipt said `refused_not_owned` because the handler passed the ID and owner-label file paths instead of their contents; after an exact saved-ID/label check the same container was removed successfully. The qualification is spent; the pair has zero reservations, starts and unknown starts and remains unspent but ineligible. Do not rerun gap23 `qualify` or `pair`. Plan 14-24's offline correction stopped before qualification because its generated controller had a truncated MAME digest; that new scope is blocked/ineligible with zero Docker/workload starts. Plan 14-25 remains unstarted. A future correction/qualification needs a separate plan and authorization. FRONT-02/03/04 and the native/host acceptance blockers remain unchanged.
 - The advisory WASI job in run 41733613173 failed because `tmpfile` is deprecated/not defined for WASI at `tests/core/test_state.c:2022` under `-Werror`; it remains advisory and was not retried.
 
 ## Preserved Phase 12 position — halt remains binding
@@ -123,6 +123,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 | Phase 14 P13 | 38min | 3 tasks | 6 files |
 | Phase 14 P16 | 34min | 2 tasks | 4 files |
 | Phase 14 P23 | 25min | 1 tasks | 10 files |
+| Phase 14 P24 | 122min | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -162,6 +163,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 - [Phase 14]: Owner requested a Docker-based portable timeout diagnostic using a fresh private source/build copy; Linux results cannot replace native macOS CI or pinned RetroArch acceptance.
 - [Phase 14]: Stop Plan 14-23 after its sole qualification returned KeyError: 0; do not retry or launch the ineligible pair.
 - [Phase 14]: Keep Phase 14 acceptance blocked with FRONT-02/03/04 pending; image and Linux diagnostics do not prove pinned RetroArch behavior.
+- [Phase 14]: Plan 14-24 stopped before qualification because the generated local MAME digest is truncated; qualification remains N/A and ineligible.
 
 ### Pending Todos
 
@@ -208,6 +210,7 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 - Owner-requested [browser-player](seeds/SEED-261030-tt4-browser-libretro-player.md) and [optional-interface](seeds/SEED-261030-zk3-emulator-interface.md) ideas are dormant, indexed research with future-session prompts. They start no project or specification, change no active roadmap/acceptance, and include read-only dirty-snapshot Playstead context.
 - Phase 14 actual-host qualification remains pending: run 41629846188 failed upstream and skipped RetroArch. Its allowance stays spent. Plan 14-08's separately authorized single new attempt is available only after its complete preflight; no local frontend launch is permitted.
 - Plan 14-23 qualification is spent after container-contract validation raised KeyError: 0; the pair remains unspent but ineligible. A new plan and authorization are required before fixing the object parsing and cleanup-handler bugs.
+- Plan 14-24 local-input gate failed: the generated controller expects a 62-character MAME a7800.xml digest; pins.txt and the local file agree on the 64-character hash. Qualification invocation 0, Docker contact 0, protected workload starts 0; scope blocked/ineligible with no retry.
 
 ### Roadmap Evolution
 
@@ -215,8 +218,8 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-04T23:09:57.819Z
-Stopped at: Completed 14-23 halted qualification and evidence bookkeeping
+Last session: 2026-11-05T03:26:44.809Z
+Stopped at: Halted at 14-24-PLAN.md: exact local-input preflight failed; qualification N/A and ineligible
 Resume file: None
 Next command: No command is valid under the spent Plan 14-23 qualification. If continuation is authorized, run `$gsd-plan-phase 14` from the repository root to plan the object/list and cleanup-handler fixes and request a new bounded qualification.
 Context handoff: Plan 14-23's offline controls passed. The one qualification observed the approved image and verified the pinned rcheevos archive, then exited 1 because Docker returned a JSON object and the HostConfig checker indexed it as a list (`KeyError: 0`). The pair was not invoked and remains unspent but ineligible. The stop handler's cleanup ownership check initially refused; an exact ID/owner-label check succeeded and the same container was removed with exit 0. Read-only receipt inspection and the CMake receipt checker passed. Do not run gap23 `qualify` or `pair` again. Preserve the Plan 14-22 stop, parent CI failure/unknown timeout cause, spent native-host allowance, missing pinned RetroArch evidence, pending FRONT-02/03/04, earlier halted plans and Phase 12 halt. No UAT is needed for this record.
