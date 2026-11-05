@@ -28,3 +28,21 @@ The automatic post-wave `cmake --workflow --preset ci` gate is **pending**. It h
 Plan 14-24 remains halted with zero qualification, Docker contact, container, build, CTest and protected-workload starts; its failed historical workflow is not retried. Plan 14-26 remains halted after its one failed automatic gate, which is spent. Neither historical record is reopened or changed by this task.
 
 Plan 14-25 remains the separate follow-on local scope, with `depends_on: ["14-27"]`, its existing native source/actual-parent gates and its blocking owner decision before any push, remote dispatch or host action. This recovery supplies none of its host evidence or authorization. FRONT-02, FRONT-03 and FRONT-04 remain pending; this plan does not accept Phase 14.
+
+## Task 2 preservation review
+
+The preserved Plan 14-24 records say its malformed local MAME digest stopped preflight before qualification; qualification, Docker, container, build, CTest and protected-workload starts were zero. Its one historical automatic workflow exited 1 at configure on the unsorted inventory and is not retried. The preserved Plan 14-26 evidence says its one automatic workflow exited 8 after configure/build, when CTest could not execute the Linux ELF on Darwin arm64; that gate is spent and is not retried. No old controller, Docker command, process probe, remote tool or prior workflow was run for this review.
+
+Plan 14-25 remains `wave: 2` with `depends_on: ["14-27"]`. Its existing source and actual-parent native gates remain intact. Its `gate="blocking-human"` decision asks for an explicit choice on one exact push and one full `workflow_dispatch` attempt, within the existing stated cost ceiling, before publication or host work. A passing recovery gate supplies no such consent and does not authorize remote or host activity.
+
+| Read-only check | Exit | Result |
+| --- | ---: | --- |
+| Task 2 tracked comparator: `git diff --binary --no-ext-diff --no-renames <start-head> -- .` with only `14-27-EVIDENCE.md` and `14-27-SUMMARY.md` excluded, compared byte-for-byte to `tracked-before.patch` | 0 | The execution-start tracked diff, including the owner's starting `.planning/STATE.md` change, is unchanged outside the two new recovery outputs. |
+| Task 2 cached comparator: `git diff --cached --binary --no-ext-diff --no-renames <start-head> -- .` with the same two exclusions, compared to `index-before.patch` | 0 | The execution-start index state is unchanged. |
+| Task 2 untracked comparator: `git ls-files --others --exclude-standard -- .` with the same two exclusions, compared to `untracked-before.txt` | 0 | No unrelated non-ignored untracked path changed. |
+| Task 2 `cmp` loop over all 17 entries in its protected-file list | 0 | Plan 14-24/14-26 history, Plan 14-25, pins/fetch/build inputs, config, STATE, ROADMAP and REQUIREMENTS match their execution-start snapshots byte-for-byte. |
+| `test -s 14-27-EVIDENCE.md`, exact Plan 14-25 dependency check, and `git diff --check <start-head>` | 0 | Evidence exists, the dependency is unchanged, and the scoped diff has no whitespace errors. |
+
+The first shell wrapper attempt for the three Python comparators exited 1 in zsh with `unmatched '`, before Python ran. Corrected wrappers ran the specified read-only comparisons, each with exit 0; no project or Git state was changed by the malformed wrapper. These task checks are local (`N/A-local`); they do not run or stand in for the pending automatic workflow.
+
+The preservation review passed. The single automatic post-wave workflow is still pending execute-phase and remains limited to one invocation after the committed summary. `requirements-completed: []`; FRONT-02/03/04 and Phase 14 acceptance remain pending.
