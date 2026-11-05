@@ -4,11 +4,11 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
-status: "Blocked: Plan 14-31 halted; forked child exit and cleanup are unknown; Phase 14 acceptance remains blocked."
-stopped_at: "Plan 14-31 halted: exit 137; forked child's exit and cleanup remain unknown"
-last_updated: "2026-11-05T21:37:11.833Z"
+status: "Blocked: Plan 14-31 halted; no process now matches the recorded PID, but the child's exit/reap/cleanup remain unproved; Phase 14 acceptance remains blocked."
+stopped_at: "Plan 14-31 halted: exit 137; later PID query found no current process, but historical exit/reap/cleanup remain unknown"
+last_updated: "2026-11-05T22:57:51Z"
 last_activity: 2026-11-05
-state_head: e43bd7ca4e3cc44b7bcd2fbc6cc2661adf244302
+state_head: e0db98105b364d73a49ca39400438245efb5ae30
 progress:
   total_phases: 3
   completed_phases: 1
@@ -24,14 +24,14 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Plan 14-31 ended terminal unknown: exit 137 after one recorded fork; child receipt and cleanup proof are missing. No retry, process inspection or target proposal.
+Current focus: Plan 14-31 ended terminal unknown: exit 137 after one recorded fork; child receipt and cleanup proof are missing. One separately authorized read-only PID query (`ps -p 62950 -o pid=,ppid=,stat=,etime=,comm=`) exited 1 with no matching row, so no process with that PID was present at check time; this does not establish the child's historical exit or cleanup. No further process inspection, retry or target proposal.
 
 ## Current Position
 
 Phase: 14 (Proven frontend states and responsive play) — EXECUTING
 Plan: 31 of 31
-Status: Blocked: Plan 14-31 halted; forked child exit and cleanup are unknown; Phase 14 acceptance remains blocked.
-Next action: Owner must decide whether to authorize a separate, exact receipt/cleanup investigation. No command is valid under the spent one-shot scope; no target observation is proposed.
+Status: Blocked: Plan 14-31 halted; forked child exit and cleanup are unproved; Phase 14 acceptance remains blocked.
+Next action: No execution, CTest, project workflow or target-observation command is valid under the existing scopes. Any further process inspection or workload requires a new exact scope; no target observation is proposed.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
@@ -226,12 +226,12 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-05T21:36:24.059Z
-Stopped at: Plan 14-31 halted: exit 137; forked child's exit and cleanup remain unknown
+Last session: 2026-11-05T22:57:51Z
+Stopped at: Plan 14-31 halted: exit 137; later PID query found no current process, but historical exit/reap/cleanup remain unknown
 Resume file: phases/14-proven-frontend-states-and-responsive-play/14-31-OBSERVER.md
 
-Next command: No command is valid under the spent one-shot scope. Wait for owner authorization of a separate, exact receipt/cleanup investigation.
-Context handoff: Plan 14-31 halted after exit 137; attempt.json records one forked child (PID 62950), but child.json and qualification.json are missing, and exit/reap/cleanup remain unknown. No inspection, signal or retry is allowed under this spent scope. Owner decides whether to authorize a separate exact receipt/cleanup investigation; no command is valid until then. Phase 14 remains blocked and FRONT-02/03/04 remain pending. See phases/14-proven-frontend-states-and-responsive-play/14-31-OBSERVER.md and 14-31-SUMMARY.md.
+Next command: No Phase 14 execution, verification, CTest, project workflow or target-observation command is valid under existing scopes. A separately authorized read-only PID query found no current process, but no child or qualification receipt proves the historical exit, reap or cleanup. Any additional inspection or workload needs a new exact scope.
+Context handoff: Plan 14-31 halted after exit 137; attempt.json records one forked child (PID 62950), but child.json and qualification.json are missing. The one authorized `ps -p 62950 -o pid=,ppid=,stat=,etime=,comm=` query exited 1 with no matching row, showing only that no process with that PID was present at check time. The child’s exit, reap and cleanup remain unproved. Do not retry, signal, inspect another process, or launch target/test/CI/host work without a new exact scope. Phase 14 remains blocked and FRONT-02/03/04 remain pending. See phases/14-proven-frontend-states-and-responsive-play/14-31-OBSERVER.md and 14-31-SUMMARY.md.
 
 ## Deferred Items
 
