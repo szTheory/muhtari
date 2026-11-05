@@ -37,3 +37,11 @@ The Plan 14-24 active namespace and claim are absent. No container ID or owner l
 ## Preserved acceptance status
 
 `requirements-completed: []`. FRONT-02, FRONT-03, and FRONT-04 remain pending. This local offline control result does not provide actual pinned-host evidence, resolve the parent CI timeout, establish native macOS behavior, or qualify RetroArch behavior. Phase 14 remains blocked by its existing acceptance requirements.
+
+## Execute-phase wave-1 local gate
+
+- Command: `cmake --workflow --preset ci`
+- Exit: 1
+- Run URL: `N/A-local`.
+- The workflow stopped during configure preset `ci` (step 1 of 5). CMake reported that `tests/inventory/ci.txt` is not sorted at `cmake/MuhtariTests.cmake:53`; build and test workflow steps did not run.
+- This was the single required automatic wave-1 gate. It is not retried under this scope. Plan 14-25 did not start, and its owner decision checkpoint was not reached.
