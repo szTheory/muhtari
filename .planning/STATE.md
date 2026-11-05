@@ -4,16 +4,16 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 14
 current_phase_name: Proven frontend states and responsive play
-status: Plan 14-31 is planned as a receipt-hardening follow-up; Phase 14 acceptance remains blocked and all existing stops are preserved.
-stopped_at: Plan 14-31 planning and local plan checks completed. No child, project test, workflow, target observation or phase verification ran.
-last_updated: "2026-11-05T20:51:52Z"
+status: "Blocked: Plan 14-31 halted; forked child exit and cleanup are unknown; Phase 14 acceptance remains blocked."
+stopped_at: "Plan 14-31 halted: exit 137; forked child's exit and cleanup remain unknown"
+last_updated: "2026-11-05T21:37:11.833Z"
 last_activity: 2026-11-05
-state_head: 1eb28a5de1a7e59e55e36b9dcf5831bc04372960
+state_head: e43bd7ca4e3cc44b7bcd2fbc6cc2661adf244302
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 39
-  completed_plans: 38
+  completed_plans: 39
   percent: 33
 ---
 
@@ -24,14 +24,14 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Plan 14-30's one-shot observer qualification is terminal unknown after exit 137; its receipt does not establish whether a harmless child launched or was cleaned up. Plan 14-31 is planned to harden receipts and qualify at most one new harmless child after offline controls; it has not run. No target observation, project test/workflow or phase verification ran. Plan 14-25's independent R gate remains failed and spent, the historical timeout cause remains unknown, FRONT-02/03/04 remain pending, and Phase 14 acceptance remains blocked.
+Current focus: Plan 14-31 ended terminal unknown: exit 137 after one recorded fork; child receipt and cleanup proof are missing. No retry, process inspection or target proposal.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — ACCEPTANCE BLOCKED; Plan 14-31 planned
-Plan: 31 total; 30 have terminal summaries (18 complete, 12 halted); Plan 14-31 has not run.
-Status: Plan 14-30's receipt remains reserved and its child count/cleanup are unknown. Plan 14-31 proposes a distinct, bounded receipt-hardening qualification; selecting it would permit offline controls and at most one harmless `/usr/bin/true` child, with no target. Plan 14-25 remains halted before hygiene, frozen-source validation and the owner checkpoint. FRONT-02/03/04 remain pending.
-Next action: Select Plan 14-31 for its wave-3 execution using `$gsd-execute-phase 14 --wave 3 --interactive --text`. That scope permits no target observation or project test/workflow.
+Phase: 14 (Proven frontend states and responsive play) — EXECUTING
+Plan: 31 of 31
+Status: Blocked: Plan 14-31 halted; forked child exit and cleanup are unknown; Phase 14 acceptance remains blocked.
+Next action: Owner must decide whether to authorize a separate, exact receipt/cleanup investigation. No command is valid under the spent one-shot scope; no target observation is proposed.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
@@ -226,12 +226,12 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-05T20:51:52Z
-Stopped at: Plan 14-31 was drafted and its planning checks completed. It has not executed; Plan 14-30's sole qualification command remains exit 137 with no final receipt, and its one-shot scope is spent.
-Resume file: `phases/14-proven-frontend-states-and-responsive-play/14-31-PLAN.md`, `14-30-OBSERVER.md` and `14-30-SUMMARY.md`. Phase 14 acceptance remains blocked.
+Last session: 2026-11-05T21:36:24.059Z
+Stopped at: Plan 14-31 halted: exit 137; forked child's exit and cleanup remain unknown
+Resume file: phases/14-proven-frontend-states-and-responsive-play/14-31-OBSERVER.md
 
-Next command: `$gsd-execute-phase 14 --wave 3 --interactive --text`; select Plan 14-31. This permits its offline receipt controls and at most one harmless child only; no target observation is authorized.
-Context handoff: Plan 14-30 did not produce a child PID, event, reap or cleanup record. The actual harmless-child count remains unknown (zero or one), and exit 137 does not identify a termination actor or cause. Plan 14-31 uses a fresh ignored evidence directory and explicitly leaves any ambiguous result terminal. The command creating the plan ran only planning checks; no child, project test, CMake workflow, process enumeration, target or phase verification ran. Plan 14-25's independent R workflow remains failed after 694/695 tests; hygiene, frozen-source validation and its owner checkpoint remain unreached. Plan 14-29's target-only observation passed once in 0.0645173 seconds but did not identify the predicate PID; its historical timeout cause remains unknown. FRONT-02/03/04 remain pending. See `phases/14-proven-frontend-states-and-responsive-play/14-25-EVIDENCE.md`, `14-29-FOLLOW-UP.md`, `14-30-OBSERVER.md` and `14-31-PLAN.md`.
+Next command: No command is valid under the spent one-shot scope. Wait for owner authorization of a separate, exact receipt/cleanup investigation.
+Context handoff: Plan 14-31 halted after exit 137; attempt.json records one forked child (PID 62950), but child.json and qualification.json are missing, and exit/reap/cleanup remain unknown. No inspection, signal or retry is allowed under this spent scope. Owner decides whether to authorize a separate exact receipt/cleanup investigation; no command is valid until then. Phase 14 remains blocked and FRONT-02/03/04 remain pending. See phases/14-proven-frontend-states-and-responsive-play/14-31-OBSERVER.md and 14-31-SUMMARY.md.
 
 ## Deferred Items
 
