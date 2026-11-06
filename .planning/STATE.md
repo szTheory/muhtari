@@ -4,16 +4,16 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
-status: executing
-stopped_at: "Plan 12-14 halted after the local WASI build found no target libc; Plan 12-15 remains ready and Phase 14 Plan 14-31 is unchanged"
-last_updated: "2026-11-06T17:02:33Z"
+status: blocked
+stopped_at: Plan 12-15 halted at the nonprompting event-post preflight; no Phase 12 plan is runnable
+last_updated: "2026-11-06T17:25:41.156Z"
 last_activity: 2026-11-06
-state_head: 63d6bd21a84263e1738c1ebc143122b92547efd0
+state_head: 916313c61df2f59d20e8ac2154cb9b119e34935d
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 54
-  completed_plans: 48
+  completed_plans: 50
   percent: 33
 ---
 
@@ -24,18 +24,19 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Plan 12-13 is terminal and halted after its one ordinary host run. Plan 12-14 added the two missing WASI registrations and its configure inventory check passed, but the complete local workflow stopped at compilation because the machine has no WASI libc headers or sysroot. That plan is terminal halted. Plan 12-15 is the only ready recovery plan and permits one local traced input diagnosis; Plan 12-16 remains gated on both prerequisites passing. The owner has authorized this bounded recovery scope. Phase 12 remains accepted 0/4; Plan 12-01 is halted and 12-02/03/04 remain blocked. Phase 13 is complete. Preserve the separate Phase 14 Plan 14-31 stop.
+Current focus: Plans 12-14 and 12-15 are terminal halted. Plan 12-14's corrected WASI inventory passes configure, but the full local workflow cannot compile without a WASI C-library sysroot. Plan 12-15's qualified nonprompting event-post preflight returned 77 (`post-event-access=denied`) before a launch reservation or content child; it did not establish the earlier hosted input-failure cause. Plan 12-16 is blocked by both prerequisites, and no Phase 12 plan is runnable. The owner authorized recovery work; preserve Plan 12-15's no-permission-change stop unless a new scope addresses it. Phase 12 remains accepted 0/4; Plan 12-01 is halted and 12-02/03/04 remain blocked. Phase 13 is complete. Preserve the separate Phase 14 Plan 14-31 stop.
 
 ## Current Position
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Plan: Plan 12-14 is terminal halted after its configure check passed and local WASI compilation failed on the missing target libc. Plan 12-15 is the only ready gap plan; 12-16 is blocked by 12-14 and awaits 12-15. Original 12-02/03/04 remain blocked by the 12-01 halt. Phase 12 remains accepted 0/4.
+Plan: Plans 12-14 and 12-15 are terminal halted: the first on a missing local WASI sysroot, the second on a denied nonprompting event-post preflight before content launch. Plan 12-16 is blocked by both. No Phase 12 plan is runnable; 12-02/03/04 remain blocked by the 12-01 halt. Phase 12 remains accepted 0/4.
 Status: Blocked
-Next action: Run `$gsd-execute-phase 12 --gaps-only` from the root checkout to continue the only ready plan, 12-15. Do not start Plan 12-16's publication or dispatch until the local WASI prerequisite is resolved and 12-15's cause and local gates pass. Preserve the separate Phase 14 Plan 14-31 stop.
+Next action: Run `$gsd-plan-phase 12 --gaps` from the root checkout to plan an evidence-based recovery for the WASI sysroot and event-post refusal. Do not start Plan 12-16's publication or dispatch; both prerequisites are halted. Preserve the separate Phase 14 Plan 14-31 stop.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
 
+- Phase 12 Plans 12-14 and 12-15 are terminal halted. Plan 12-14's local WASI compile has no target libc/sysroot; Plan 12-15's nonprompting `CGPreflightPostEventAccess()` returned 77 before any content-child reservation or launch. No causal input finding exists, and the plan's permission/settings prohibition was preserved. Plan 12-16 is blocked by both; no Phase 12 plan is runnable. See the [12-14 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-14-LOCAL-EVIDENCE.md) and [12-15 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-15-LOCAL-EVIDENCE.md).
 - Root-merge reconciliation corrected the Phase 14 `support-report` file path to `tests/common/bmp.c`. The existing `retroarch.states.controls` test now checks both the successful report and a missing-reader failure. Its local pass does not clear the Phase 14 workflow gate or authorize host work.
 - The historical BIOS timeout cause remains unknown. The approved five-test RUN_SERIAL mitigation preserved one-second limits; after it, the independent parent and frozen source passed complete CI and hygiene workflows. This does not attribute the earlier timeouts.
 - Plan 14-13 is complete: the exact five RUN_SERIAL properties and metadata fault controls passed, and the sole focused batch passed 7/7 including both fixture setup tests. That batch is consumed; do not retry it. No deadline or unrelated test metadata changed.
@@ -121,9 +122,12 @@ supported repair, then at most one ordinary hosted attempt after both local
 prerequisites and gates pass. Plan 12-14 restored both missing inventory rows
 and its configure check passed, but the portable workflow halted because this
 machine has no WASI C-library headers/sysroot; no portable tests ran. Plan 12-15
-remains ready and independent. Plan 12-16 is blocked until the WASI toolchain
-issue has a supported resolution and 12-15 passes. The failed advisory receipt,
-old ref/run and Phase 14 stop are preserved; acceptance remains 0/4.
+is terminal halted: its qualified helper returned 77 (`post-event-access=denied`)
+at the nonprompting preflight, before any reservation or content launch. No
+permission/settings change or causal finding was made. Plan 12-16 is blocked
+until both the WASI toolchain and event-post prerequisites receive a supported
+resolution in a new scope. The failed advisory receipt, old ref/run and Phase 14
+stop are preserved; acceptance remains 0/4.
 Complete-C WASI local execution already passed separately; older linker-only
 proposals remain historical and hosted WASI remains advisory/unaccepted.
 Earlier latest/next-action statements below are historical where superseded.
@@ -131,9 +135,9 @@ Current repair source/evidence hashes and preservation checks belong to the
 linked outcome; earlier unchanged-source preservation checks are historical.
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Plan: 0 of 4 acceptance plans accepted; 10 of 15 active plans have terminal outcomes. Plan 12-01 remains halted; 12-02/03/04 remain blocked; Plans 12-12/13 are terminal evidence attempts and do not satisfy PLAY-03. Plan 12-14 is terminal halted on the missing local WASI sysroot, Plan 12-15 is the only ready recovery plan, and 12-16 is blocked pending both passing prerequisites.
+Plan: 0 of 4 acceptance plans accepted; 11 of 15 active plans have terminal outcomes. Plan 12-01 remains halted; 12-02/03/04 remain blocked; Plans 12-12/13 are terminal evidence attempts and do not satisfy PLAY-03. Plans 12-14 and 12-15 are terminal halted on the missing local WASI sysroot and denied event-post preflight, respectively. Plan 12-16 is blocked pending both prerequisites; no plan is runnable.
 Status: Blocked on actual held/released RetroArch input proof and the original 12-01 halt.
-Next local step: `$gsd-execute-phase 12 --gaps-only` to execute 12-15. Plan 12-16's one hosted run remains disallowed by its dependency gate until a supported local WASI result and a passing 12-15 cause/gate summary exist. TUNE-06, PLAY-01/02/04, final TUNE-07 disposition and Phase 14 acceptance remain separate.
+Next local step: `$gsd-plan-phase 12 --gaps` to plan recovery from both new local prerequisites. Plan 12-16's one hosted run remains disallowed by its dependency gate until supported WASI and event-post results pass. TUNE-06, PLAY-01/02/04, final TUNE-07 disposition and Phase 14 acceptance remain separate.
 Last activity: 2026-11-06
 Progress: [███░░░░░░░] 33%
 
@@ -143,7 +147,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 
 | Phase | Plans | Total | Avg/Plan |
 |---|---|---|---|
-| 12 | 0/4 accepted; 10/15 active plans have outcomes | — | — |
+| 12 | 0/4 accepted; 11/15 active plans have outcomes | — | — |
 | 13 | 8 | - | - |
 | 14 | 9 plans completed; phase incomplete | — | — |
 **Per-Plan Metrics:**
@@ -263,12 +267,12 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-06T17:02:33Z
-Stopped at: Plan 12-14's inventory correction/configure passed; local WASI execution halted because the target libc is absent. Plan 12-15 remains ready.
-Resume file: phases/12-player-ready-delivery-and-playstead-bridge/12-15-PLAN.md
+Last session: 2026-11-06T17:25:41.087Z
+Stopped at: Plan 12-15 halted at the nonprompting event-post preflight; no Phase 12 plan is runnable
+Resume file: phases/12-player-ready-delivery-and-playstead-bridge/12-15-SUMMARY.md
 
-Next command: Run `$gsd-execute-phase 12 --gaps-only` from the root checkout; Plan 12-15 is the only ready plan. Plan 12-16 cannot publish or dispatch while 12-14 is halted on the missing WASI sysroot. No directory switch is needed.
-Context handoff: The owner authorized one new bounded recovery scope. Plan 12-14's exact inventory correction and configure check passed, but its local workflow could not compile because WASI libc headers/sysroot are missing; no test or JUnit result exists. Its exact tool identities, logs and cache snapshot are in 12-14-LOCAL-EVIDENCE.md and ignored build/phase12-gap14-evidence. Plan 12-15 allows one qualified local traced RetroArch child and stops before any hosted attempt if evidence is inconclusive. Plan 12-16 allows one dedicated evidence-ref publication and one ordinary dispatch only after 12-14 and 12-15 prerequisites pass; no retry or cancellation. Plan 12-01's old failed evidence remains preserved and accepted stays 0/4. Phase 14 Plan 14-31's stop remains unchanged: no process inspection, retry, host or dispatch action.
+Next command: Run `$gsd-plan-phase 12 --gaps` from the root checkout. Plans 12-14 and 12-15 are terminal halted on the missing WASI sysroot and the denied event-post preflight; no Phase 12 plan is runnable. Plan 12-16 cannot publish or dispatch until both prerequisites pass. No directory switch is needed.
+Context handoff: The owner authorized recovery work. Plan 12-14's inventory correction and configure check passed, but its local workflow could not compile because WASI libc headers/sysroot are missing; no portable tests ran. Its tool identities, logs and cache snapshot are in 12-14-LOCAL-EVIDENCE.md and ignored build/phase12-gap14-evidence. Plan 12-15's qualified nonprompting preflight returned 77 (`post-event-access=denied`) before reservation or content launch; no causal input finding exists, and the plan's permission/settings stop was preserved. Plan 12-16 allows one evidence-ref publication and one ordinary dispatch only after both prerequisites pass; no retry or cancellation. Plan 12-01's failed history remains preserved and accepted stays 0/4. Phase 14 Plan 14-31's stop remains unchanged: no process inspection, retry, host or dispatch action.
 
 Worktree reconciliation: Phase 13 shipped as PR #42 and is present in `origin/main`; the root branch contains `origin/main`. The committed Phase 14 and OpenBIOS worktree HEADs are already ancestors of root, so there is no committed work to merge from them. Their worktrees remain dirty and preserved; do not overwrite or remove them. The Phase 13 dirty input files are older than the root version, and the OpenBIOS capture changes are already present in root. The Phase 14 uncommitted state/checkpoint remains in its worktree under its existing stop. Reconcile any future dirty-file changes against root before copying them.
 
