@@ -52,7 +52,7 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 6/9 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
+**Plans:** 6/10 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
 
 Plans:
 
@@ -76,6 +76,7 @@ host test or dependent plan.
 - [ ] 12-08-PLAN.md — Superseded and excluded from the active count; its blocked attempt and evidence remain immutable history.
 - [x] 12-09-PLAN.md — Reconcile current source identities and check local docs readiness; no runnable acceptance plan is available while 12-01 remains halted. Wave 3/12-07 still needs a separate scope.
 - [x] 12-10-PLAN.md — Repair helper trace observability and child-status cutoff locally; add generated ordered-input history and held/released pixel controls; no host or CI action.
+- [ ] 12-11-PLAN.md — Wave 1, local documentation only: complete launch/refusal prose and missing-artifact disposition; record the bounded property deferral, preserve all eight current registrations and restore the existing docs budget. Original acceptance plans stay blocked; accepted 0/4.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -295,7 +296,7 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 6/9 outcomes | Halted at 12-01; accepted 0/4 | - |
+| 12. Player-ready delivery and Playstead bridge | 6/10 outcomes | Halted at 12-01; accepted 0/4 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
 | 14. Proven frontend states and responsive play | 31/31 | Acceptance blocked. Plan 14-25's sole independent R gate failed on `title.pin.self_test` at one second; workflow stderr recorded denied `/bin/ps`, with cause unknown. No hygiene, frozen gate or owner checkpoint followed; that scope is spent. Plan 14-29 records a passing target-only non-reproduction and the owner's decision to close its diagnosis unresolved. Earlier native/Docker stops, unknown parent timeouts, spent host allowance and Phase 12 halt remain preserved. Verification stays `gaps_found` (20/27); FRONT-02/03/04 pending; no allowance renewed | - |
 
