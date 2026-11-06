@@ -52,7 +52,7 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 9/12 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
+**Plans:** 9/15 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
 
 Plans:
 
@@ -79,8 +79,12 @@ host test or dependent plan.
 - [x] 12-11-PLAN.md — Wave 1, local documentation only: complete launch/refusal prose and missing-artifact disposition; record the bounded property deferral, preserve all eight current registrations and restore the existing docs budget. Original acceptance plans stay blocked; accepted 0/4.
 - [x] 12-12-PLAN.md — One authorized ordinary run failed the required hygiene formatter gate before RetroArch. Its one ref, dispatch, and cancellation are spent; it supplied no host evidence.
 - [x] 12-13-PLAN.md — One authorized post-format ordinary run passed the candidate package and DMA comparison but failed the input acknowledgment deadline before held/released images; battery checks were skipped and CI required failed. Its one ref and dispatch are spent; PLAY-03 remains open.
+- [ ] 12-14-PLAN.md — Correct the two registered-test omissions in the advisory wasm32 inventory and retain a complete local portable result.
+- [ ] 12-15-PLAN.md — Use one qualified local traced RetroArch child to resolve the input acknowledgment cause, then apply only a supported repair and pass local gates.
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Wave 2** *(12-16 is gated on both Wave 1 recovery plans; 12-02 remains blocked until the 12-01 acceptance halt is closed)*
+
+- [ ] 12-16-PLAN.md — After both local recovery plans pass, use at most one new source-bound ordinary host attempt; close the former 12-01 halt only on complete revised host proof.
 
 - [ ] 12-02-PLAN.md — Ship a small measured Windows publication-control improvement with complete fault/current-base evidence.
 
@@ -298,7 +302,7 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 7/10 | Original 12-01 halted; accepted 0/4. Plan 12-12's one attempt failed at hygiene before host; the six-file formatting repair passes locally. Plan 12-13 is ready but awaits separate authorization for one new hosted attempt | - |
+| 12. Player-ready delivery and Playstead bridge | 9/15 | Original 12-01 halted; accepted 0/4. Plans 12-14/15 are ready for bounded local diagnosis; Plan 12-16 allows one ordinary hosted attempt only after their gates pass. Plans 12-02/03/04 remain blocked until 12-01 is closed by complete candidate proof | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
 | 14. Proven frontend states and responsive play | 31/31 | Acceptance blocked. Plan 14-25's sole independent R gate failed on `title.pin.self_test` at one second; workflow stderr recorded denied `/bin/ps`, with cause unknown. No hygiene, frozen gate or owner checkpoint followed; that scope is spent. Plan 14-29 records a passing target-only non-reproduction and the owner's decision to close its diagnosis unresolved. Earlier native/Docker stops, unknown parent timeouts, spent host allowance and Phase 12 halt remain preserved. Verification stays `gaps_found` (20/27); FRONT-02/03/04 pending; no allowance renewed | - |
 
