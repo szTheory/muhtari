@@ -502,6 +502,7 @@ host.palette	host,portable
 input.cart_files	input,portable
 input.ctlswb_no_swchb_write	input,portable
 input.directions	input,portable
+input.history_cart	input,portable
 input.joystick_fire	input,portable
 input.lag_dma_and_peek	input,portable
 input.lag_even_frames	input,portable
@@ -546,6 +547,7 @@ policy.claims_wording.self_test	policy
 policy.compat_doc_fresh	policy
 policy.compat_doc_fresh.self_test	policy
 policy.compat_ratchet.controls	policy
+policy.docker_contract.controls	policy
 policy.host_support.controls	policy
 policy.no_skip	policy
 policy.no_skip.self_test	policy
