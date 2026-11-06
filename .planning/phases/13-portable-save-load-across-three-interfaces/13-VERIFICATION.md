@@ -1,6 +1,6 @@
 ---
 phase: 13-portable-save-load-across-three-interfaces
-verified: 2026-11-02T00:16:48Z
+verified: 2026-11-06T04:34:04Z
 status: passed
 score: 44/44 must-haves verified
 covered_files:
@@ -20,55 +20,30 @@ covered_files:
   - .planning/phases/13-portable-save-load-across-three-interfaces/13-07-SUMMARY.md
   - .planning/phases/13-portable-save-load-across-three-interfaces/13-08-PLAN.md
   - .planning/phases/13-portable-save-load-across-three-interfaces/13-08-SUMMARY.md
-  - CMakeLists.txt
-  - docs/embedding.md
   - docs/libretro.md
-  - docs/runner.md
   - docs/testing.md
-  - include/muhtari.h
-  - libretro/libretro.c
-  - libretro/muhtari_libretro.info.in
-  - runner/exit_status.h
-  - runner/main.c
-  - src/instance.c
-  - src/internal.h
-  - src/ports.c
-  - src/state.c
-  - tests/abi/tests.cmake
-  - tests/api/v7.c
-  - tests/api/v8.c
-  - tests/cart/tests.cmake
-  - tests/cmake/hashes.cmake
-  - tests/cmake/info_claims.cmake
-  - tests/compat/tests.cmake
-  - tests/core/test_core.c
-  - tests/core/test_state.c
-  - tests/core/tests.cmake
-  - tests/fuzz/run.c
-  - tests/fuzz/tests.cmake
-  - tests/header/header.c
-  - tests/header/header.cpp
-  - tests/inventory/ci.txt
-  - tests/inventory/nofp.txt
-  - tests/inventory/wasm32.txt
-  - tests/libretro/host.c
-  - tests/libretro/tests.cmake
-  - tests/prop/test_prop.c
-  - tests/prop/tests.cmake
-  - tests/runner/test_save.c
-  - tests/runner/tests.cmake
-covered_digest: "v4:sha256:13c8ffc2980ae4d67ee35b9c6025f61440035ada562a225558e04852a3dc0afa"
+covered_digest: "v4:sha256:8871794ec69c00ca4c0f34dc2284c1c72b338b5e69ca949aa574793041403b1f"
 behavior_unverified: 0
 overrides_applied: 0
+decision_coverage:
+  honored: 17
+  total: 17
+  not_honored: []
 ---
 
 # Phase 13: Portable Save/Load Across Three Interfaces Verification Report
 
 **Phase Goal:** Hosts and runner users can restore a complete compatible machine point safely and continue identically through one bounded library-owned state contract.
 
-**Verified:** 2026-11-02T00:16:48Z
+**Verified:** 2026-11-06T04:34:04Z
 **Status:** passed
-**Re-verification:** No — initial verification
+**Re-verification:** No — initial-mode refresh; the previous report had no gaps.
+
+### Verification Refresh
+
+This refresh rechecked the covered documentation against the current source and saved evidence. `docs/libretro.md` matches the library-backed libretro callbacks, exact restore-length rules, state ownership, and current `.info` test-registration guard. It explicitly leaves actual RetroArch qualification pending. `docs/testing.md`'s state inventory entries match the registered tests; its updated TUNE-07 paragraph links to SEED-010, which records the same dormant deferral. The Phase 14 receipt cited by both docs records that its state driver stopped before launch, so no host behavior is claimed.
+
+No tests or workflows were run for this refresh. The retained Phase 13 local receipts in `13-RESOURCE-EVIDENCE.md` are for source SHA `13bb1af4e7b63fb727854d42ad4431091f2083cc`; they report successful native, PowerPC/QEMU, release, equality, and sanitizer runs. The current Phase 14 policy-guard working-tree edits were not runtime-tested and are outside this Phase 13 verification scope.
 
 ## Goal Achievement
 
@@ -220,19 +195,23 @@ These source/document/fixture-checkable prohibitions are verified for the curren
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| None | — | No debt markers, placeholders or empty implementations in changed implementation/test files | None | No stub or debt-marker blocker. Benign NULL returns are error paths, not empty implementations. |
+| `docs/libretro.md`, `docs/testing.md` | — | No debt markers or placeholders | None | No documentation stub or debt-marker blocker. |
 
 The phase code review in 13-REVIEW.md is clean with no findings.
 
 ### Human Verification Required
 
-None. The prohibitions were checked against source, tests and evidence records under the project’s automation-first rule. This phase has no user-facing visual flow; actual RetroArch behavior is outside FRONT-01 and belongs to the following phase.
+None for Phase 13. Actual RetroArch save/load, rewind, and run-ahead remain outside FRONT-01 and are explicitly pending in the docs and Phase 14 evidence.
+
+### Decision Coverage
+
+All trackable CONTEXT.md decisions are honored by shipped artifacts (17/17; non-blocking gate).
 
 ### Gaps Summary
 
-No roadmap or plan truth failed. All seven phase requirements are satisfied by code, tests and final-source local receipts. The scope limits above remain explicit; they do not claim undefined STATE-02 shapes, physical PowerPC behavior, hosted publication or actual RetroArch/Playstead integration.
+No roadmap or plan truth failed. All seven phase requirements remain supported by the retained Phase 13 local receipts and current source inspection. The two covered documents match the implementation and preserve the limits on undefined STATE-02 shapes, physical PowerPC behavior, hosted publication, and actual RetroArch/Playstead integration. No Phase 14 policy-guard runtime result is claimed.
 
 ---
 
-_Verified: 2026-11-02T00:16:48Z_
+_Verified: 2026-11-06T04:34:04Z_
 _Verifier: the agent (gsd-verifier)_
