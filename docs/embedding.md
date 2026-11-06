@@ -191,56 +191,38 @@ It checks, in this order:
 The two refusals that write `info` are the one exception to the rule that an error writes nothing: a host can
 show what it refused.
 
-| Field | Values |
+| Fields | Meaning |
 |---|---|
-| `kind` | `MUHTARI_KIND_7800`, `MUHTARI_KIND_2600` |
-| `source` | What identified it: `MUHTARI_SOURCE_HEADER`, `MUHTARI_SOURCE_HASH`, `MUHTARI_SOURCE_FOOTER`, `MUHTARI_SOURCE_SIZE` |
-| `flags` | `MUHTARI_CART_HEADER` (it has an A78 header), `MUHTARI_CART_HASH_MATCH` (a list entry matched), `MUHTARI_CART_ACTIVISION_HALF_SWAPPED` (the identified Activision input has swapped halves) |
-| `warnings` | Header defects it accepted, listed below |
-| `rom_size` | Bytes the cartridge maps, header excluded |
-| `board` | `MUHTARI_BOARD_LINEAR`, `MUHTARI_BOARD_SUPERGAME`, `MUHTARI_BOARD_ACTIVISION`, `MUHTARI_BOARD_ABSOLUTE`, `MUHTARI_BOARD_FRACTALUS`, `MUHTARI_BOARD_BANKSET`, `MUHTARI_BOARD_SOUPER` |
-| `board_options` | Bits: `MUHTARI_BOARD_ROM_AT_4000`, `MUHTARI_BOARD_BANK6_AT_4000`, `MUHTARI_BOARD_BANKED_RAM`, `MUHTARI_BOARD_HALT_BANKED_RAM` |
-| `ram_size` | Cartridge RAM in bytes |
-| `sound` | Bits: `MUHTARI_SOUND_POKEY_4000`, `MUHTARI_SOUND_POKEY_450`, `MUHTARI_SOUND_POKEY_440`, `MUHTARI_SOUND_POKEY_800`, `MUHTARI_SOUND_YM2151`, `MUHTARI_SOUND_COVOX` |
-| `devices` | Bits: `MUHTARI_DEVICE_HSC`, `MUHTARI_DEVICE_SAVEKEY`, `MUHTARI_DEVICE_XM` |
-| `port1`, `port2` | `MUHTARI_PORT_NONE`, `MUHTARI_PORT_PROLINE`, `MUHTARI_PORT_LIGHTGUN`, `MUHTARI_PORT_PADDLE`, `MUHTARI_PORT_TRAKBALL`, `MUHTARI_PORT_JOYSTICK`, `MUHTARI_PORT_DRIVING`, `MUHTARI_PORT_KEYPAD`, `MUHTARI_PORT_ST_MOUSE`, `MUHTARI_PORT_AMIGA_MOUSE`, `MUHTARI_PORT_ATARIVOX`, `MUHTARI_PORT_SNES2ATARI`, `MUHTARI_PORT_MEGA7800`: the A78 codes 0 to 12 |
-| `region` | `MUHTARI_REGION_NTSC`, `MUHTARI_REGION_PAL` |
-| `a78_version`, `a78_rom_size`, `a78_cart_type`, `a78_port1`, `a78_port2`, `a78_tv`, `a78_save`, `a78_xm` | The A78 header's fields as written; zero without a header |
-| `a78_mapper`, `a78_mapper_options`, `a78_audio`, `a78_irq` | The version 4 block as written; zero below version 4 |
-| `title` | The header's title: at most 32 printable ASCII bytes, trailing spaces dropped, NUL-terminated and zero-padded |
+| `kind`, `source`, `flags` | `MUHTARI_KIND_7800`, `MUHTARI_KIND_2600`; `MUHTARI_SOURCE_HEADER`, `MUHTARI_SOURCE_HASH`, `MUHTARI_SOURCE_FOOTER`, `MUHTARI_SOURCE_SIZE`; `MUHTARI_CART_HEADER`, `MUHTARI_CART_HASH_MATCH`, `MUHTARI_CART_ACTIVISION_HALF_SWAPPED` |
+| `warnings`, `rom_size` | Accepted header defects (below); mapped ROM bytes, excluding the header |
+| `board`, `board_options`, `ram_size` | `MUHTARI_BOARD_LINEAR`, `MUHTARI_BOARD_SUPERGAME`, `MUHTARI_BOARD_ACTIVISION`, `MUHTARI_BOARD_ABSOLUTE`, `MUHTARI_BOARD_FRACTALUS`, `MUHTARI_BOARD_BANKSET`, `MUHTARI_BOARD_SOUPER`; options `MUHTARI_BOARD_ROM_AT_4000`, `MUHTARI_BOARD_BANK6_AT_4000`, `MUHTARI_BOARD_BANKED_RAM`, `MUHTARI_BOARD_HALT_BANKED_RAM`; RAM bytes |
+| `sound`, `devices` | Sound bits `MUHTARI_SOUND_POKEY_4000`, `MUHTARI_SOUND_POKEY_450`, `MUHTARI_SOUND_POKEY_440`, `MUHTARI_SOUND_POKEY_800`, `MUHTARI_SOUND_YM2151`, `MUHTARI_SOUND_COVOX`; device bits `MUHTARI_DEVICE_HSC`, `MUHTARI_DEVICE_SAVEKEY`, `MUHTARI_DEVICE_XM` |
+| `port1`, `port2`, `region` | `MUHTARI_PORT_NONE`, `MUHTARI_PORT_PROLINE`, `MUHTARI_PORT_LIGHTGUN`, `MUHTARI_PORT_PADDLE`, `MUHTARI_PORT_TRAKBALL`, `MUHTARI_PORT_JOYSTICK`, `MUHTARI_PORT_DRIVING`, `MUHTARI_PORT_KEYPAD`, `MUHTARI_PORT_ST_MOUSE`, `MUHTARI_PORT_AMIGA_MOUSE`, `MUHTARI_PORT_ATARIVOX`, `MUHTARI_PORT_SNES2ATARI`, `MUHTARI_PORT_MEGA7800` (A78 codes 0–12); `MUHTARI_REGION_NTSC`, `MUHTARI_REGION_PAL` |
+| `a78_version`, `a78_rom_size`, `a78_cart_type`, `a78_port1`, `a78_port2`, `a78_tv`, `a78_save`, `a78_xm`, `a78_mapper`, `a78_mapper_options`, `a78_audio`, `a78_irq` | Raw header fields; version-4 fields are zero below version 4, and all are zero without a header |
+| `title` | Up to 32 printable ASCII bytes; trailing spaces dropped, NUL-terminated and zero-padded |
 
 Zero means absent in every field. `MUHTARI_PORT_UNPLUGGED` (256) sits outside the A78 byte range: probing never
 reports it, and a host passes it for an empty controller port. A board moves from `MUHTARI_STATUS_ERR_UNSUPPORTED_BOARD` to
 `MUHTARI_STATUS_OK` in the release that runs it. The warning bits:
 
-| Bit | Meaning |
-|---|---|
-| `MUHTARI_CART_WARN_HEADER_V4_IGNORED` | says version 4 or above, but its version 4 block is invalid or its board does not fit the ROM, so the cart type was used |
-| `MUHTARI_CART_WARN_HEADER_CORRECTED` | names a board, RAM or sound that a list entry for the same bytes corrects |
-| `MUHTARI_CART_WARN_VERSION_ABOVE_4` | gives a version above 4, read as 4 |
-| `MUHTARI_CART_WARN_SIZE_FIELD_MISMATCH` | gives a ROM size other than the bytes after it |
-| `MUHTARI_CART_WARN_TITLE_NONPRINTABLE` | has a title byte outside printable ASCII, shown as `?` |
-| `MUHTARI_CART_WARN_UNKNOWN_PORT` | names a controller code above 12, read as `MUHTARI_PORT_NONE` |
-| `MUHTARI_CART_WARN_LEGACY_SAVE_BIT` | marks the High Score Cartridge with the old bit 2 |
-| `MUHTARI_CART_WARN_XM_VALUE` | gives an XM byte other than 0 or 1 |
-| `MUHTARI_CART_WARN_RESERVED_NONZERO` | has a reserved byte or bit set |
-| `MUHTARI_CART_WARN_CART_TYPE_CONFLICT` | sets cart-type bits that cannot all hold, resolved as `docs/hardware/cartridge.md` says |
-| `MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED` | an unmatched image explicitly declares Activision, so its layout is assumed to be OM order |
+`warnings` may contain `MUHTARI_CART_WARN_HEADER_V4_IGNORED` (invalid v4 block or impossible board),
+`MUHTARI_CART_WARN_HEADER_CORRECTED` (hash-list correction), `MUHTARI_CART_WARN_VERSION_ABOVE_4`,
+`MUHTARI_CART_WARN_SIZE_FIELD_MISMATCH`, `MUHTARI_CART_WARN_TITLE_NONPRINTABLE` (shown as `?`),
+`MUHTARI_CART_WARN_UNKNOWN_PORT` (read as `MUHTARI_PORT_NONE`),
+`MUHTARI_CART_WARN_LEGACY_SAVE_BIT`, `MUHTARI_CART_WARN_XM_VALUE`,
+`MUHTARI_CART_WARN_RESERVED_NONZERO`, `MUHTARI_CART_WARN_CART_TYPE_CONFLICT`, or
+`MUHTARI_CART_WARN_ACTIVISION_LAYOUT_ASSUMED` (an unmatched explicit Activision board assumes OM order).
 
-API 4 adds the Activision orientation and assumed-layout bits without changing
-the 140-byte `muhtari_cart_info`. `activision_half_swapped` is a descriptive probe
-flag: only a hash match authorizes interpreting the supplied image as half-swapped
-AM order. `activision_layout_assumed` is a warning for an unknown image that
-explicitly declares Activision; it records an OM assumption, not detected layout.
-These are the runner's lowercase names for the two bits. The loader normalizes
-only an authorized hash match into its private OM copy; it never modifies caller bytes.
+API 4 adds Activision orientation and assumed-layout flags without changing the
+140-byte `muhtari_cart_info`. Only a hash match authorizes half-swapped AM input;
+an unmatched explicit Activision declaration records an OM assumption. The loader
+normalizes an authorized match in its private copy and never changes caller bytes.
 
-The supplied full-image and headerless hashes keep their existing meanings,
-including trailer handling. Normalizing a private loaded copy does not replace
-supplied-image, movie or RetroAchievements identity. An unmatched modified AM
-image must be converted externally to OM order. There is no layout override in
-the API or runner, and an unknown headerless image's size alone does not identify
-an Activision board.
+Full-image and headerless hashes retain their meanings, including trailer
+handling; private normalization does not change supplied-image, movie or
+RetroAchievements identity. Convert unmatched modified AM images to OM order
+externally. There is no layout override, and size alone cannot identify an
+unknown headerless Activision image.
 
 ## Loading content
 
@@ -295,31 +277,26 @@ load.
 
 ## Battery storage and HSC firmware
 
-API 5 appends `hsc_mode`, `hsc_rom`, `hsc_rom_size` and `port[2]` to `muhtari_media`.
-Old media objects keep their original minimum size; missing or incomplete appended fields
-take their zero defaults. `MUHTARI_HSC_AUTO` uses resolved cartridge metadata
-and provisions HSC when the effective expansion is XM;
-`MUHTARI_HSC_ON` forces attachment and `MUHTARI_HSC_OFF` disables it. A supplied ROM
-implies attachment and conflicts with OFF. Both pointer/length directions must agree,
-and firmware is exactly 4,096 bytes. HSC firmware has no BIOS reset-vector requirement.
+API 5 appends `hsc_mode`, `hsc_rom`, `hsc_rom_size` and `port[2]` to `muhtari_media`;
+older size tags keep zero defaults. `MUHTARI_HSC_AUTO` follows metadata and attaches
+HSC for XM, `MUHTARI_HSC_ON` forces it, and `MUHTARI_HSC_OFF` disables it. A supplied
+ROM implies attachment, conflicts with OFF, and must be exactly 4,096 bytes with a
+matching pointer/length pair. BIOS vector rules do not apply.
 
-The load copies firmware before replacing installed state, including caller buffers that
-alias installed ROM. `muhtari_get_battery` reports its SHA-1 in `hsc_sha1` and flags:
-`MUHTARI_HSC_FIRMWARE_KNOWN` identifies the canonical image; an explicit unknown image
-is accepted with `MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN`. Missing C6/FE signature bytes at
-offsets $900/$904 independently set `MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE`.
-Without a supplied image, `MUHTARI_HSC_FIRMWARE_STUB` describes an FF-filled ROM with
-only those two signature bytes. This stub implements no firmware routines, formatting,
-screens or full OpenHSC compatibility. It supports software that accesses SRAM directly.
-See [HSC hardware](hardware/cartridge.md#hsc).
+Firmware is staged before replacing the installed machine, including when input aliases
+its ROM. `muhtari_get_battery` reports `hsc_sha1` and flags: `MUHTARI_HSC_FIRMWARE_KNOWN`
+identifies the canonical image; unknown supplied firmware is accepted with
+`MUHTARI_HSC_FIRMWARE_WARN_UNKNOWN`; missing C6/FE signatures at $900/$904 set
+`MUHTARI_HSC_FIRMWARE_WARN_SIGNATURE`. Without firmware,
+`MUHTARI_HSC_FIRMWARE_STUB` describes an FF-filled stub with those signatures only; it
+has no firmware routines or full OpenHSC compatibility. See [HSC hardware](hardware/cartridge.md#hsc).
 
-`port[0]` and `port[1]` are load-time device overrides: zero is automatic;
-`MUHTARI_PORT_UNPLUGGED` explicitly suppresses a device. An explicit override wins over
-the cartridge's controller declaration. `MUHTARI_PORT_SAVEKEY` or `MUHTARI_PORT_ATARIVOX`
-reserves one EEPROM on that physical port. Otherwise a SaveKey metadata hint defaults
-to port 2, unless an explicit non-save selection suppresses it. Dual EEPROM attachment
-is refused, while HSC and one EEPROM may coexist. Placement is fixed at load; serial
-protocol behavior is specified separately in the controller hardware documentation.
+`port[0]`/`port[1]` are load-time overrides; zero is Auto and
+`MUHTARI_PORT_UNPLUGGED` suppresses a device. Explicit choices override cartridge
+metadata. `MUHTARI_PORT_SAVEKEY` and `MUHTARI_PORT_ATARIVOX` select an EEPROM location;
+otherwise a locationless hint uses port 2 unless a non-save choice suppresses it.
+Two EEPROMs are refused; HSC and one EEPROM may coexist. Placement is fixed until
+reload; see [serial EEPROM](hardware/controllers.md#serial-eeprom).
 
 Zero and size-tag a `muhtari_battery_info` and call `muhtari_get_battery(m, &battery)`.
 Layout version 1 is exactly these raw bytes, with no header or host-endian fields:
@@ -331,48 +308,29 @@ Layout version 1 is exactly these raw bytes, with no header or host-endian field
 | EEPROM | 32,768 | EEPROM |
 | Both | 34,816 | HSC SRAM followed by EEPROM |
 
-The pointer, length, layout and placement remain stable through frames and power cycles,
-until the next successful load or destroy. Firmware is outside the save span.
-XM starts with both HSC CPU windows hidden. Restore through this same physical
-span before execution; $0470 bit 3 only changes visibility. Gate stores never
-move or clear storage, change firmware identity, or increment generation. Hidden
-SRAM stores are ignored. Explicit HSC Off suppresses attachment even with XM.
-`muhtari_get_hsc_rom` fills a size-tagged `muhtari_const_span` with the installed read-only
-ROM/stub, or NULL/0 when HSC is absent. Both queries are bounded observers: they allocate
-nothing, scan no battery bytes and advance no emulated time.
+Pointer, length, layout and placement stay stable through frames and power cycles until
+successful reload or destruction; firmware is separate. XM hides both HSC windows until
+software enables them, but the same battery span remains directly available.
+`muhtari_get_hsc_rom` returns a read-only `muhtari_const_span`, or NULL/0 when absent.
+Both getters allocate nothing, scan no battery bytes and advance no time.
 
-After a successful load, restore host save bytes through `data` before the first frame.
-Boot setup executes no cartridge instructions before this import window. Imported bytes
-are the clean baseline; arbitrary host mutation after this window is outside the contract.
-`generation` changes only when emulated committed bytes change: reads and same-value HSC
-stores leave it unchanged. It is a uint64 equality token with defined unsigned wrap;
-compare for inequality, never ordering or elapsed writes. Power cycle retains bytes and
-generation. Successful load starts FF-filled storage with generation zero; refused load
-preserves bytes, pointers, topology, generation and subsequent execution. Hosts own files.
-Power cycle retains effective expansion/HSC attachment and committed EEPROM
-bytes, but clears volatile expansion RAM, controls/pages and POKEY state.
-The console Reset input is a physical switch and does not power cycle them.
+After load, restore host bytes through `data` before the first frame; boot executes no
+cartridge instructions before that import window. Imported bytes are the clean baseline;
+later arbitrary host mutation is outside the contract. `generation` is a uint64 equality
+token: only changed committed bytes increment it, with unsigned wrap. Compare inequality,
+not order. Power cycle retains bytes and token; successful load starts FF-filled storage
+at generation zero, while refusal preserves the old machine and metadata. Hosts own files.
+Power cycle retains expansion/HSC attachment and committed EEPROM bytes, but clears
+volatile expansion RAM, controls/pages and POKEY state. Console Reset is only a switch.
 
-EEPROM page data becomes persistent only after completed programming in emulated time.
-Buffered or aborted serial traffic is outside the save span, and same-value programming
-is busy without changing the token. Reset settles work already due, discards future
-programming and retains committed data. Neither a getter nor a host flush advances time
-to finish a write; see [serial EEPROM](hardware/controllers.md#serial-eeprom).
-
-Per-frame input may select automatic or the already attached save device. Adding,
-removing or moving an EEPROM requires another successful load; a refused input leaves
-the pending joystick state unchanged. Use these load-time choices before importing:
-
-| Choice | Result |
-|---|---|
-| Explicit save device on one port | That port owns the EEPROM |
-| Automatic port with a save-device declaration | The declared port owns it |
-| Save hint without a location | Port 2 owns it |
-| Explicit non-save device on the hinted port | The hint is suppressed |
-| Two save devices after applying overrides | Load fails transactionally |
-
-Every layout uses the same instance-owned array; no second save copy is synchronized
-by a query. Frames, serial traffic, reset and observers allocate no memory after load.
+EEPROM bytes commit only after programming completes in emulated time. Buffered or
+aborted traffic is outside the save span; same-value writes can be busy without changing
+the token. Reset settles due work and discards future writes. Getters and host flushes
+never advance time. Per-frame input may select Auto or the attached device, but cannot
+move/add/remove an EEPROM; a refused input changes nothing. A save-device hint selects
+its declared port, defaults to port 2 when locationless, and is suppressed by an explicit
+non-save choice; two EEPROMs refuse load. All layouts use one instance-owned array, and
+frames, serial traffic, reset and observers allocate nothing after load.
 
 ## The first frame after load
 
@@ -459,7 +417,8 @@ muhtari_status st = muhtari_set_input(m, &in);
   one reaches.
 - **Timing.** The input is latched and reaches the machine at the next VBLANK start, which is where every frame
   but the first after a load begins, so one frame sees one input. Two calls before that apply only the second.
-  A refused call changes nothing, and the pending input is not machine state.
+  A refused call changes nothing. The accepted core-owned input waiting for VBLANK is part of a state snapshot;
+  future input from a callback, movie or frontend remains host-owned.
 
 ### Extended packets
 
@@ -467,17 +426,11 @@ muhtari_status st = muhtari_set_input(m, &in);
 24-byte `muhtari_input`, masks and unsupported-device refusals are unchanged.
 The extended packet is 88 bytes: `size` at byte 0, two 40-byte
 `muhtari_port_input` blocks at byte 4, and console `switches` at byte 84.
-Within each port the scalar offsets are:
-
-| Offset | Field | Units / meaning |
-|---|---|---|
-| 0 | `device` | Explicit device, or zero for Auto |
-| 4 | `buttons` | Existing direction and primary button bits |
-| 8, 12 | `paddle[0]`, `paddle[1]` | 0..65535, increasing resistance, independent of polling |
-| 16 | `keypad` | Low 12 bits, row-major keys |
-| 20, 24 | `dx`, `dy` | Signed 32-bit relative steps; +X right, +Y down |
-| 28, 32 | `gun_x`, `gun_y` | Native image coordinates, zero-based |
-| 36 | `flags` | `MUHTARI_INPUT_GUN_OFFSCREEN` separates off-screen aim from trigger |
+Within each port the fields are `device` at 0, `buttons` at 4, `paddle[0..1]`
+at 8/12 (0..65535), `keypad` at 16 (12 row-major bits), `dx`/`dy` at 20/24
+(signed relative steps, +X right and +Y down), `gun_x`/`gun_y` at 28/32
+(zero-based image coordinates), and `flags` at 36. `MUHTARI_INPUT_GUN_OFFSCREEN`
+separates off-screen aim from trigger.
 
 The extended path supports ProLine, joystick, XG-1, paddles, keypad, driving,
 CX22, ST/Amiga mice, SNES2Atari, Mega7800, unplugged and the already attached
@@ -488,14 +441,11 @@ with the bounded cadence described in [Controllers](hardware/controllers.md#driv
 adapter bits 6..11 are reserved for their named device: SNES Y/X/L/R/Select/Start
 and Mega C/X/Y/Z/Mode/Start, with primary buttons B/A:
 
-| Bit | SNES | Mega |
-|---|---|---|
-| 6 | `MUHTARI_SNES_BUTTON_Y` | `MUHTARI_MEGA_BUTTON_C` |
-| 7 | `MUHTARI_SNES_BUTTON_X` | `MUHTARI_MEGA_BUTTON_X` |
-| 8 | `MUHTARI_SNES_BUTTON_L` | `MUHTARI_MEGA_BUTTON_Y` |
-| 9 | `MUHTARI_SNES_BUTTON_R` | `MUHTARI_MEGA_BUTTON_Z` |
-| 10 | `MUHTARI_SNES_BUTTON_SELECT` | `MUHTARI_MEGA_BUTTON_MODE` |
-| 11 | `MUHTARI_SNES_BUTTON_START` | `MUHTARI_MEGA_BUTTON_START` |
+Bits 6–11 are SNES Y/X/L/R/Select/Start (`MUHTARI_SNES_BUTTON_Y`,
+`MUHTARI_SNES_BUTTON_X`, `MUHTARI_SNES_BUTTON_L`, `MUHTARI_SNES_BUTTON_R`,
+`MUHTARI_SNES_BUTTON_SELECT`, `MUHTARI_SNES_BUTTON_START`) or Mega C/X/Y/Z/Mode/Start
+(`MUHTARI_MEGA_BUTTON_C`, `MUHTARI_MEGA_BUTTON_X`, `MUHTARI_MEGA_BUTTON_Y`,
+`MUHTARI_MEGA_BUTTON_Z`, `MUHTARI_MEGA_BUTTON_MODE`, `MUHTARI_MEGA_BUTTON_START`).
 
 These names never broaden the
 legacy mask. Gun trigger uses primary button 1; paddles use primary buttons 1/2.
@@ -546,11 +496,10 @@ instance storage without allocating after load, including with an opposite EEPRO
 | `MUHTARI_MEMORY_CART_RAM` | Physical cartridge RAM, including both HALT halves | `ram_size`, or 0 |
 | `MUHTARI_MEMORY_EXPANSION_RAM` | Physical volatile expansion RAM, independent of active windows and battery storage | 131,072, or 0 |
 
-The pointer is not const: a host may write through it, for cheats or achievements. It is the one deliberate
-exception to the rule that no struct carries a pointer into the library's state, because libretro memory maps
-need live pointers. It stays valid from the load until `muhtari_destroy`, across frames and power cycles, except
-the cartridge RAM's, below. A kind the loaded content does not have, such as cartridge RAM on a cartridge without
-any, returns `MUHTARI_STATUS_OK` with a NULL `data` and zero `bytes`. Any other `kind` returns
+The pointer is writable, mainly for cheats and achievements, and is the API's deliberate
+live-pointer exception. Spans stay valid from load through frames and power cycles until
+destroy, except cartridge RAM, which a successful reload replaces. Unsupported memory
+kinds return `MUHTARI_STATUS_OK` with NULL/0; an unknown kind returns
 `MUHTARI_STATUS_ERR_ARGUMENT`.
 
 Physical cartridge and expansion spans describe storage, not permanently mapped
@@ -562,36 +511,66 @@ library load preserves the previous spans; the libretro adapter releases its
 old session before attempting replacement, so failure or unload clears its map
 and SAVE_RAM. Reacquire frontend pointers only after another successful load.
 
-The largest backing is 1,048,576 ROM + 32,768 cartridge RAM + 131,072 expansion
-RAM = 1,212,416 bytes, checked and freed exactly. Both regions pass 600-frame
-dual-POKEY/gate/power/observer controls with no allocator calls after load.
+`MUHTARI_MEMORY_CART_RAM` reports `ram_size`: 16,384 bytes on SuperGame, 32,768 on
+banked RAM, or a known image's listed size. It is cartridge-owned, starts zeroed, and
+is replaced by a successful load; query it again then. Power cycle zeroes it.
 
-Libretro's static achievement descriptors omit banked/HALT RAM, all cartridge
-windows at $4000-$7FFF with XBoard/XM installed, and XM HSC windows regardless
-of gate state. HSC remains physically accessible through the battery API and
-SAVE_RAM. BankSet's stable ROM descriptors use CPU-half geometry and omit its
-switched window and MARIA half; see [libretro memory maps](libretro.md#achievements).
+Fractalus exposes 2,048 physical bytes with CPU aliases across $4000-$7FFF; its A8
+name does not imply an 8 KiB span. It is volatile and has no battery/save span. See
+[the cartridge map](hardware/cartridge.md#fractalus).
 
-`MUHTARI_MEMORY_CART_RAM` is the RAM the cartridge info's `ram_size` names: 16,384 bytes on a SuperGame board with
-RAM, 32,768 with banked RAM (both halves, in order), and the list's size for a game the hash list knows. It lives in
-the cartridge's allocation, so a new load replaces it: ask again after each load. It starts zeroed, and a power cycle
-zeroes it again.
+Loading or power cycling restores bank zero on Absolute/Activision and clears
+Fractalus RAM. Power cycle preserves its span pointer. Repeated bus traffic,
+frames and power cycles allocate nothing after load. `MUHTARI_SWITCH_RESET` is a
+game-read switch; libretro `retro_reset` instead calls `muhtari_power_cycle`.
 
-Fractalus exposes exactly 2,048 physical bytes in `MUHTARI_MEMORY_CART_RAM`,
-in physical order. The CPU's $4000-$7FFF aliases cover those bytes as described
-in [the cartridge map](hardware/cartridge.md#fractalus); the A8 header name does
-not imply an 8 KiB span. This is volatile RAM, with no battery/save span or
-save-device declaration. Its bus aliases do not promise complete achievement
-visibility through host descriptors.
+## Portable state snapshots
 
-Loading a cartridge or calling `muhtari_power_cycle` restores bank zero on
-Absolute and Activision and zeroes all Fractalus RAM. A power cycle preserves
-the existing span pointer; loading replaces the allocation, so query the span
-again. Repeated bus traffic, frames and power cycles allocate nothing after
-load. `MUHTARI_SWITCH_RESET` is a console input the game reads and leaves
-cartridge state intact unless the game's own code changes it. The libretro
-adapter's `retro_reset` calls `muhtari_power_cycle`, so a frontend Restart
-restores that deterministic profile.
+API 8 adds `muhtari_state_size`, `muhtari_save_state` and `muhtari_load_state`.
+The size query is zero for a NULL instance or an instance without loaded content.
+For loaded content, the exact byte count stays fixed until another successful
+load or destruction. Callers own the buffer; the core does not allocate, advance
+emulated time, call observers or access files while sizing, saving or restoring.
+
+The saved bytes use the exact `MUHTST01` envelope and the installed machine's
+effective identity. Save accepts any capacity at least the queried size and
+writes only that prefix, leaving the caller's tail untouched. Load requires the
+exact queried length. It validates the complete envelope, installed identity
+and every payload field before applying anything. It rejects input/output ranges
+that overlap the instance or its cartridge/expansion allocation. All RAM and
+battery span addresses remain stable across a restore.
+
+State format 1 is versioned and byte-wise little-endian. Its CRC-32 detects
+accidental corruption; it is not authentication. The effective machine identity
+uses SHA-256 over installed media and machine-affecting configuration, not a
+filename or header CRC. Clock values are checked against current hardware
+producers and their cross-field timing relationships; the format does not impose
+an arbitrary absolute tick ceiling.
+
+Both functions return `MUHTARI_STATUS_ERR_ARGUMENT` for a NULL instance or
+buffer. A non-NULL instance without content returns
+`MUHTARI_STATUS_ERR_STATE_UNAVAILABLE`; a short save capacity returns
+`MUHTARI_STATUS_ERR_BUFFER_TOO_SMALL`. Short, trailing, corrupt or internally
+invalid state bytes return `MUHTARI_STATUS_ERR_INVALID_STATE`. Unknown state
+format or behaviour revisions return `MUHTARI_STATUS_ERR_UNSUPPORTED_STATE`,
+and a valid state for different effective media or configuration returns
+`MUHTARI_STATUS_ERR_STATE_MISMATCH`. Every refusal preserves the live machine;
+save errors leave the caller's output bytes unchanged.
+
+State snapshots include mutable emulated chip, device, board, input and battery
+state. Immutable media and host persistence metadata are outside the snapshot.
+The frontend or runner remains responsible for storing bytes and deciding when
+to restore them.
+
+The live battery generation is host metadata and is not restored from the
+snapshot. A restore advances it once when committed battery bytes change,
+including normal unsigned wrap; equal, repeated and refused restores preserve
+it. SaveKey pins, protocol state, pending page and busy deadline are part of the
+snapshot. Restoring a pending write with unchanged committed bytes stays clean
+until the existing EEPROM commit path changes them. An accepted rollback can
+therefore replace newer durable progress when the host next flushes the battery
+span. The core never reads or writes save files, and state sizing, save and load
+do not invoke observers.
 
 ## Counters
 
@@ -616,18 +595,21 @@ Statuses are only ever added. Those after the probe's:
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_REGION` | `muhtari_load` | Reserved numeric region-refusal status; both current regions execute. |
 | `MUHTARI_STATUS_ERR_UNSUPPORTED_DEVICE` | load, input setters | Unsupported declared sound/topology, a device outside the frozen legacy set, or an attempted change to load-frozen EEPROM topology. |
 | `MUHTARI_STATUS_ERR_INVALID_HSC` | `muhtari_load` | Invalid firmware size/pointer pair, HSC mode, or supplied firmware conflicting with OFF. |
+| `MUHTARI_STATUS_ERR_STATE_UNAVAILABLE` | state save/load | The instance has no successfully loaded content. |
+| `MUHTARI_STATUS_ERR_INVALID_STATE` | state save/load | A state envelope or field is invalid, or the live machine cannot be represented canonically. |
+| `MUHTARI_STATUS_ERR_UNSUPPORTED_STATE` | state load | The state format or behaviour revision is unsupported. |
+| `MUHTARI_STATUS_ERR_STATE_MISMATCH` | state load | The state belongs to different effective media or machine configuration. |
 
 ## Version numbers
 
 `MUHTARI_API_VERSION` in the header is the API the program was compiled against. At run time,
 `muhtari_get_versions` fills a `muhtari_versions`:
 
-The current interface is API 7, ABI 1, behaviour revision 6. API 7 appends
-expansion selection and effective information, ADPCM metadata and a distinct
-physical expansion memory kind. The original media/info prefixes, all prior
-size minima, signatures and constant values remain compatible. Revision 6
-includes the corrected slow-edge DMA handoff; versioned test observations
-retain their independently established values.
+The current interface is API 8, ABI 1, behaviour revision 6 and state format 1.
+API 8 appends portable state operations and the state-format version field.
+The earlier API 7 additions, original media/info prefixes, prior status values
+and size minima remain compatible. Revision 6 includes the corrected slow-edge
+DMA handoff; state format 1 does not change emulation behavior.
 
 | Field | Meaning |
 |---|---|
@@ -635,9 +617,12 @@ retain their independently established values.
 | `api` | The API the library implements. |
 | `abi` | The binary interface: struct layouts and calling conventions. |
 | `behaviour_revision` | Changes when the same inputs give a different frame, audio or state hash. |
+| `state_format` | The version of the portable state byte format. |
 
 `api`, `abi` and `behaviour_revision` start at 1, so zero means absent: a field that a library older than your
-header does not know stays at the zero you wrote. The library version numbers carry no such meaning.
+header does not know stays at the zero you wrote. The same applies to `state_format`; the library version
+numbers carry no such meaning. API 8 appends `state_format` at byte 28 and preserves the older 28-byte
+`muhtari_versions` prefix for callers with that size tag.
 
 Sound output is fixed-rate 48,000/1 Hz mono signed int16. A fast-boot first
 frame returns 54 NTSC or 960 PAL samples; full frames return 800/801 or 961/962. Use audio_count,

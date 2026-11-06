@@ -5,18 +5,21 @@
 # what the cartridge read (docs/hardware/controllers.md).
 add_executable(muhtari-test-input
   ${CMAKE_CURRENT_LIST_DIR}/test_input.c
-  ${CMAKE_CURRENT_LIST_DIR}/input_pixels.h
-  ${CMAKE_CURRENT_LIST_DIR}/pixels.c
+  ${CMAKE_CURRENT_LIST_DIR}/history_pixels.c
   ${CMAKE_SOURCE_DIR}/tests/cart/images.c
   ${CMAKE_SOURCE_DIR}/runner/movie.c)
 target_include_directories(muhtari-test-input PRIVATE ${CMAKE_SOURCE_DIR}/src
-  ${CMAKE_SOURCE_DIR}/runner)
+  ${CMAKE_SOURCE_DIR}/runner ${CMAKE_SOURCE_DIR}/host)
 target_link_libraries(muhtari-test-input PRIVATE muhtari::muhtari muhtari_host)
 set_target_properties(muhtari-test-input PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-test-input)
 
-# One case per argv.
+set(input_cart_dir ${PROJECT_BINARY_DIR}/tests/input-carts)
+file(MAKE_DIRECTORY ${input_cart_dir})
+
+# One case per argv. proline_one_button also consumes the generated
+# ordered-history cartridge from input.cart_files.
 foreach(input_case IN ITEMS directions proline_two_button proline_one_button joystick_fire
     ctlswb_no_swchb_write tia_en_disables_two_button switches unplugged pa7_edge
     lag_even_frames lag_dma_and_peek)
@@ -26,8 +29,15 @@ foreach(input_case IN ITEMS directions proline_two_button proline_one_button joy
     set(input_timeout 2)
   endif()
   # Other cases: 2 x 0.20s, macOS x64, run 39382016958.
-  muhtari_add_test(NAME input.${input_case} COMMAND muhtari-test-input ${input_case}
-    LABELS input portable TIMEOUT ${input_timeout})
+  if(input_case STREQUAL "proline_one_button")
+    muhtari_add_test(NAME input.${input_case}
+      COMMAND muhtari-test-input ${input_case} ${input_cart_dir}/input-history.a78
+      LABELS input portable TIMEOUT ${input_timeout})
+    set_tests_properties(input.${input_case} PROPERTIES FIXTURES_REQUIRED input_carts)
+  else()
+    muhtari_add_test(NAME input.${input_case} COMMAND muhtari-test-input ${input_case}
+      LABELS input portable TIMEOUT ${input_timeout})
+  endif()
 endforeach()
 # Provisional ceil(2 x 2.70s), complete NTSC/PAL/prefix/wrap workload,
 # macOS x64, run 40227081044. All scenarios and normal lane scaling remain.
@@ -38,15 +48,13 @@ foreach(input_case IN ITEMS pins protocol wrap recovery)
     COMMAND muhtari-test-input savekey.${input_case} LABELS input portable TIMEOUT 10)
 endforeach()
 
-# The cartridge as files, for the runner's movie tests (tests/runner): the
-# program reading every frame, and the variant reading only on even ones.
-set(input_cart_dir ${PROJECT_BINARY_DIR}/tests/input-carts)
-file(MAKE_DIRECTORY ${input_cart_dir})
+# Standard/even-frame cartridges feed the runner's movie tests (tests/runner).
+# The ordered-history cartridge is loaded by input.proline_one_button.
 # 2 x 0.14 s, Windows arm64, slowest of 17 runs, run 39368351340
 muhtari_add_test(NAME input.cart_files
   COMMAND muhtari-test-input --write-cart ${input_cart_dir}/input.a78
     --write-cart ${input_cart_dir}/input-even.a78 even
-    --write-cart ${input_cart_dir}/input-history.a78 history
+    --write-history-cart ${input_cart_dir}/input-history.a78
   LABELS input portable TIMEOUT 1)
 set_tests_properties(input.cart_files PROPERTIES FIXTURES_SETUP input_carts)
 muhtari_add_test(NAME input.history_cart

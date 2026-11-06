@@ -20,6 +20,7 @@ set(claim_firmware0_opt libretro.host.bios)
 set(claim_firmware1_opt libretro.host.bios)
 set(claim_firmware2_opt libretro.host.hsc_firmware)
 set(claim_libretro_saves libretro.host.battery)
+set(claim_savestate libretro.host.state)
 set(exempt is_experimental)
 
 file(STRINGS "${INVENTORY}" inventory)
@@ -39,6 +40,29 @@ foreach(line IN LISTS lines)
     message(FATAL_ERROR "info_claims: ${key} needs ${claim_${key}}, which is not in ${INVENTORY}")
   endif()
 endforeach()
+
+# RetroArch accepts this non-boolean feature level as a promise about saved
+# state continuation. Keep it tied to the loaded-core equality proof, repeated
+# continuation property, and this phase's observed host-control sequence.
+file(STRINGS "${INFO}" feature_lines REGEX "^[ \t]*savestate_features[ \t]*=")
+list(LENGTH feature_lines feature_count)
+if(feature_count GREATER 1)
+  message(FATAL_ERROR "info_claims: savestate_features must appear exactly once")
+elseif(feature_count EQUAL 1)
+  list(GET feature_lines 0 feature_line)
+  if(NOT feature_line STREQUAL "savestate_features = \"deterministic\"")
+    message(FATAL_ERROR "info_claims: savestate_features must be \"deterministic\"")
+  endif()
+  foreach(test IN ITEMS libretro.host.state prop.state_continuation retroarch.states.controls)
+    string(REPLACE "." "\\." name "${test}")
+    set(found ${inventory})
+    list(FILTER found INCLUDE REGEX "^${name}\t")
+    if(NOT found)
+      message(FATAL_ERROR "info_claims: savestate_features needs ${test}, which is not in ${INVENTORY}")
+    endif()
+  endforeach()
+endif()
+
 # A file without a description line is not this check's concern.
 file(READ "${INFO}" info_text)
 if(info_text MATCHES "(^|\n)description = \"([^\"\n]*)\"")

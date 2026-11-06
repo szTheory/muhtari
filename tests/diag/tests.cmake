@@ -7,6 +7,94 @@ function(diag_ledger_crc id report)
     COMMAND_ERROR_IS_FATAL ANY)
 endfunction()
 
+# An independent visual progress judge checks each owned fixture counter before
+# comparing static picture pixels and exercises falsifiable media/pixel controls.
+if(DIAG_FRONTEND_STATES_RUN)
+  file(MAKE_DIRECTORY "${OUT}")
+  function(frontend_exec)
+    execute_process(COMMAND ${EMULATOR} "${DRIVER}" ${ARGV}
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 30)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "frontend states ${ARGV}: ${rc}\n${out}${err}")
+    endif()
+  endfunction()
+  function(frontend_compare)
+    execute_process(COMMAND ${EMULATOR} "${COMPARE}" ${ARGV}
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "frontend picture judgment ${ARGV}: ${rc}\n${out}${err}")
+    endif()
+  endfunction()
+  frontend_exec(--frontend-progress "${ROOT}/tests/diag/frontend-states.a78" "${OUT}")
+  foreach(value IN ITEMS 0000 000B 0040 0100)
+    frontend_compare(--progress ${value} "${OUT}/progress-${value}.bmp"
+      "${OUT}/progress-${value}.bmp")
+  endforeach()
+  frontend_compare(--progress-pair 000B 0040 "${OUT}/progress-000B.bmp"
+    "${OUT}/progress-0040.bmp")
+  execute_process(COMMAND ${EMULATOR} "${COMPARE}" --progress-controls 000B
+    "${OUT}/progress-000B.bmp" "${OUT}/progress-000B.bmp"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(NOT rc STREQUAL "0" OR NOT out MATCHES
+      "wrong counter, changing glyph, and unrelated pixel judged independently")
+    message(FATAL_ERROR "frontend progress comparator controls failed: ${rc}\n${out}${err}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${COMPARE}" --progress 000C
+    "${OUT}/progress-000B.bmp" "${OUT}/progress-000B.bmp"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT out MATCHES "progress counter image 0 is 000B, expected 000C")
+    message(FATAL_ERROR "frontend accepted changed expected progress counter: ${rc}\n${out}${err}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${COMPARE}" --progress-pair 0000 0040
+    "${OUT}/progress-000B.bmp" "${OUT}/progress-0040.bmp"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT out MATCHES "progress counter image 0 is 000B, expected 0000")
+    message(FATAL_ERROR "frontend accepted stale progress reference: ${rc}\n${out}${err}")
+  endif()
+
+  foreach(media IN ITEMS committed-0000.raw committed-0001.raw committed-0100.raw replay.raw)
+    set(value 1)
+    if(media STREQUAL "committed-0000.raw")
+      set(value 0)
+    elseif(media STREQUAL "committed-0100.raw")
+      set(value 256)
+    endif()
+    frontend_exec(--frontend-progress-media "${OUT}/${media}" ${value})
+  endforeach()
+  execute_process(COMMAND ${CMAKE_COMMAND} -E compare_files
+    "${OUT}/replay.raw" "${OUT}/committed-0001.raw" RESULT_VARIABLE same)
+  if(NOT same STREQUAL "0")
+    message(FATAL_ERROR "frontend one-frame speculative HSC value escaped state restore")
+  endif()
+
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress-media
+    "${OUT}/replay.raw" 2 RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT err MATCHES "frontend media: byte 256 is 01, expected 02")
+    message(FATAL_ERROR "frontend accepted one-frame speculative HSC value: ${rc}\n${out}${err}")
+  endif()
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress-media
+    "${OUT}/missing.raw" 1 RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0")
+    message(FATAL_ERROR "frontend accepted missing HSC save media")
+  endif()
+  file(READ "${OUT}/committed-0001.raw" short LIMIT 2047)
+  file(WRITE "${OUT}/truncated.raw" "${short}")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress-media
+    "${OUT}/truncated.raw" 1 RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT err MATCHES "frontend media: length 2047, expected 2048")
+    message(FATAL_ERROR "frontend accepted truncated HSC save media: ${rc}\n${out}${err}")
+  endif()
+  file(COPY_FILE "${OUT}/committed-0001.raw" "${OUT}/trailing.raw")
+  file(APPEND "${OUT}/trailing.raw" "x")
+  execute_process(COMMAND ${EMULATOR} "${DRIVER}" --frontend-progress-media
+    "${OUT}/trailing.raw" 1 RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(rc STREQUAL "0" OR NOT err MATCHES "frontend media: length 2049, expected 2048")
+    message(FATAL_ERROR "frontend accepted trailing HSC save data: ${rc}\n${out}${err}")
+  endif()
+  message("frontend states: independent progress, whole picture and complete HSC save judgments pass")
+  return()
+endif()
+
 # Finite startup groups reuse the protocol/hosts/PNG consumer. Every run first
 # judges measurements and actual pages; matching hashes alone cannot admit it.
 if(DIAG_EXPANSION_RUN)
@@ -800,6 +888,253 @@ muhtari_warnings(muhtari-test-retroarch-compare)
 add_executable(muhtari-test-battery-pixels ${diag_dir}/test_battery_pixels.c
   ${diag_dir}/battery_pixels.c ${PROJECT_SOURCE_DIR}/tests/common/bmp.c)
 muhtari_warnings(muhtari-test-battery-pixels)
+add_executable(muhtari-test-retroarch-states ${PROJECT_SOURCE_DIR}/tests/retroarch/states.c)
+set_target_properties(muhtari-test-retroarch-states PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+muhtari_warnings(muhtari-test-retroarch-states)
+if(NOT CMAKE_CROSSCOMPILING)
+  add_executable(muhtari-test-retroarch-receipt ${PROJECT_SOURCE_DIR}/tests/retroarch/receipt_driver.c)
+  set_target_properties(muhtari-test-retroarch-receipt PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+  muhtari_warnings(muhtari-test-retroarch-receipt)
+  set(receipt_driver "$<TARGET_FILE:muhtari-test-retroarch-receipt>")
+else()
+  set(receipt_driver "")
+endif()
+set(states_controls_template [=[
+set(DRIVER "@DRIVER@")
+set(RECEIPT_DRIVER "@RECEIPT_DRIVER@")
+set(ROOT "@ROOT@")
+set(CMAKE_BIN "@CMAKE_BIN@")
+set(OUT "@OUT@")
+execute_process(COMMAND "${CMAKE_BIN}" -DMODE=support-report "-DROOT=${ROOT}"
+  -P "${ROOT}/tests/retroarch/run_retroarch.cmake"
+  RESULT_VARIABLE support_rc OUTPUT_VARIABLE support_out ERROR_VARIABLE support_err TIMEOUT 10)
+if(NOT support_rc STREQUAL "0" OR
+   NOT "${support_out}${support_err}" MATCHES "support-report: tests/common/bmp[.]c: [0-9]+ newline")
+  message(FATAL_ERROR "RetroArch support report omitted the common BMP reader: ${support_rc}\n${support_out}${support_err}")
+endif()
+set(bad_support_root "${OUT}/support-report-missing-common")
+file(REMOVE_RECURSE "${bad_support_root}")
+file(MAKE_DIRECTORY "${bad_support_root}/tests/common")
+file(COPY "${ROOT}/tests/retroarch" DESTINATION "${bad_support_root}/tests")
+file(COPY_FILE "${ROOT}/tests/common/bmp.c" "${bad_support_root}/tests/common/bmp.c")
+file(REMOVE "${bad_support_root}/tests/common/bmp.c")
+execute_process(COMMAND "${CMAKE_BIN}" -DMODE=support-report "-DROOT=${bad_support_root}"
+  -P "${ROOT}/tests/retroarch/run_retroarch.cmake"
+  RESULT_VARIABLE missing_support_rc OUTPUT_VARIABLE missing_support_out
+  ERROR_VARIABLE missing_support_err TIMEOUT 10)
+string(FIND "${missing_support_out}${missing_support_err}" "missing required support input" missing_support_label)
+string(FIND "${missing_support_out}${missing_support_err}" "tests/common/bmp.c" missing_support_path)
+if(missing_support_rc STREQUAL "0" OR missing_support_label EQUAL -1 OR missing_support_path EQUAL -1)
+  message(FATAL_ERROR "RetroArch support report did not reject the missing common BMP reader: ${missing_support_rc}\n${missing_support_out}${missing_support_err}")
+endif()
+execute_process(COMMAND "${DRIVER}" --fault-controls RESULT_VARIABLE rc
+  OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 15)
+if(NOT rc STREQUAL "0")
+  message(FATAL_ERROR "RetroArch state fault controls failed: ${rc}\n${out}${err}")
+endif()
+file(REMOVE_RECURSE "${OUT}")
+set(prelaunch_root "${OUT}/prelaunch-controls")
+file(REMOVE_RECURSE "${prelaunch_root}")
+file(MAKE_DIRECTORY "${prelaunch_root}")
+set(RA_DIR "${prelaunch_root}/ra")
+set(SAVE_DIR "${prelaunch_root}/save")
+set(STATES_CONFIG
+  "network_cmd_enable = \"true\"\nnetwork_cmd_port = \"0\"\nstate_slot = \"0\"\nsavestate_auto_index = \"false\"\nsavestate_auto_save = \"false\"\nsavestate_auto_load = \"false\"\nautosave_interval = \"0\"\nrewind_enable = \"true\"\nrewind_granularity = \"1\"\nscreenshot_format = \"bmp\"\n")
+configure_file("${ROOT}/tests/retroarch/test.cfg.in" "${prelaunch_root}/test.cfg" @ONLY)
+execute_process(COMMAND "${DRIVER}" --prelaunch-controls "${prelaunch_root}/test.cfg"
+  RESULT_VARIABLE prelaunch_rc OUTPUT_VARIABLE prelaunch_out ERROR_VARIABLE prelaunch_err TIMEOUT 15)
+if(NOT prelaunch_rc STREQUAL "0")
+  message(FATAL_ERROR "RetroArch state prelaunch controls failed: ${prelaunch_rc}\n${prelaunch_out}${prelaunch_err}")
+endif()
+set(state_root "${OUT}/state-root")
+set(ra_real "${state_root}/ra-real")
+set(ra_link "${state_root}/ra-alias")
+file(MAKE_DIRECTORY "${ra_real}/shots" "${ra_real}/states" "${state_root}")
+file(WRITE "${ra_real}/sentinel" "keep\\n")
+file(WRITE "${OUT}/core" "core\\n")
+file(WRITE "${OUT}/info" "info\\n")
+file(WRITE "${OUT}/state-driver" "driver\\n")
+file(WRITE "${OUT}/compare" "compare\\n")
+file(CREATE_LINK "${ra_real}" "${ra_link}" SYMBOLIC RESULT link_result)
+if(NOT link_result STREQUAL "0")
+  message(FATAL_ERROR "Could not create the symlink alias fault fixture: ${link_result}")
+endif()
+execute_process(COMMAND "${CMAKE_BIN}" -DRETROARCH=/bin/false "-DCORE=${OUT}/core"
+  "-DINFO=${OUT}/info" -DINFO_NAME=muhtari_libretro.info
+  "-DTEMPLATE=${ROOT}/tests/retroarch/test.cfg.in"
+  "-DSTATE_DRIVER=${OUT}/state-driver" "-DCOMPARE=${OUT}/compare"
+  "-DSTATE_OUT=${state_root}" "-DRA_DIR=${ra_link}"
+  "-DSAVE_DIR=${state_root}/save" -DFRAMES=120
+  "-DROM=${ROOT}/tests/diag/frontend-states.a78"
+  "-DSHOT=${state_root}/final.bmp" -DMODE=states
+  -P "${ROOT}/tests/retroarch/run_retroarch.cmake"
+  RESULT_VARIABLE path_rc OUTPUT_VARIABLE path_out ERROR_VARIABLE path_err TIMEOUT 10)
+if(path_rc STREQUAL "0" OR
+   NOT "${path_out}${path_err}" MATCHES "symlink or path alias rejected before cleanup")
+  message(FATAL_ERROR "Symlink alias did not fail at the pre-cleanup guard: ${path_rc}\\n${path_out}${path_err}")
+endif()
+file(READ "${ra_real}/sentinel" sentinel)
+if(NOT sentinel STREQUAL "keep\\n")
+  message(FATAL_ERROR "Symlink path rejection removed or changed its unrelated sentinel")
+endif()
+set(receipt_root "${OUT}/receipt-controls")
+file(REMOVE_RECURSE "${receipt_root}")
+set(receipt_core "${receipt_root}/core.dylib")
+set(receipt_info "${receipt_root}/muhtari_libretro.info")
+set(receipt_retroarch "${receipt_root}/RetroArch")
+set(receipt_compare "${receipt_root}/compare")
+file(MAKE_DIRECTORY "${receipt_root}")
+file(WRITE "${receipt_core}" "core\\n")
+file(WRITE "${receipt_info}" "info\\n")
+file(WRITE "${receipt_retroarch}" "retroarch\\n")
+file(WRITE "${receipt_compare}" "compare\\n")
+set(source_sha "0123456789abcdef0123456789abcdef01234567")
+set(run_url "https://github.com/owner/repository/actions/runs/12345")
+function(run_receipt_case suffix expected_result expected_output)
+  set(receipt_mode states)
+  if(ARGC GREATER 3)
+    set(receipt_mode "${ARGV3}")
+  endif()
+  set(state_root "${receipt_root}/${suffix}")
+  file(MAKE_DIRECTORY "${state_root}")
+  set(shot "${state_root}/${suffix}.bmp")
+  set(unrelated_sentinel "${state_root}/unrelated-sentinel.txt")
+  file(WRITE "${unrelated_sentinel}" "preserve receipt fixture\n")
+  file(WRITE "${state_root}/host-receipt.txt"
+    "receipt_version=1\nsource_sha256=${source_sha}\nrun_id=12345\nrun_attempt=1\nworkflow_event=workflow_dispatch\nrun_url=${run_url}\nhost_runner=macos-15\nhost_version=1.22.2\nstate_mode=${receipt_mode}\ncore_artifact_sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nrunner_artifact_sha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nlibrary_artifact_sha256=cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\nprelaunch_status=started\n")
+  execute_process(COMMAND "${CMAKE_BIN}"
+    "-DRETROARCH=${receipt_retroarch}" "-DCORE=${receipt_core}"
+    "-DINFO=${receipt_info}" -DINFO_NAME=muhtari_libretro.info
+    "-DTEMPLATE=${ROOT}/tests/retroarch/test.cfg.in"
+    "-DSTATE_DRIVER=${RECEIPT_DRIVER}"
+    "-DCOMPARE=${receipt_compare}" "-DSTATE_OUT=${state_root}"
+    "-DRA_DIR=${state_root}/ra" "-DSAVE_DIR=${state_root}/save"
+    "-DSOURCE_SHA=${source_sha}" -DRUN_ID=12345 -DRUN_ATTEMPT=1
+    -DWORKFLOW_EVENT=workflow_dispatch "-DRUN_URL=${run_url}"
+    -DHOST_VERSION=1.22.2
+    -DCORE_ARTIFACT_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    -DRUNNER_ARTIFACT_SHA=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    -DLIBRARY_ARTIFACT_SHA=cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+    -DFRAMES=120 -DROM=${ROOT}/tests/diag/frontend-states.a78
+    "-DSHOT=${shot}" -DMODE=states
+    -P "${ROOT}/tests/retroarch/run_retroarch.cmake"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 10)
+  if(expected_result STREQUAL "success" AND NOT rc STREQUAL "0")
+    message(FATAL_ERROR "receipt success path failed: ${rc}\\n${out}${err}")
+  elseif(expected_result STREQUAL "failure" AND rc STREQUAL "0")
+    message(FATAL_ERROR "receipt failure path unexpectedly succeeded\\n${out}${err}")
+  endif()
+  set(receipt "${state_root}/host-receipt.txt")
+  if(NOT EXISTS "${receipt}")
+    message(FATAL_ERROR "host receipt missing for ${expected_result} path; expected ${expected_output}")
+  endif()
+  file(READ "${receipt}" content)
+  if(expected_output STREQUAL "MODE_REJECTED")
+    if(NOT "${out}${err}" MATCHES "prelaunch receipt identity mismatch" OR
+       NOT "${out}${err}" MATCHES "state_mode=states" OR
+       content MATCHES "host_process_started=true")
+      message(FATAL_ERROR "legacy prelaunch receipt reached the host driver: ${rc}\n${out}${err}\n${content}")
+    endif()
+    return()
+  endif()
+  if(expected_output MATCHES "^STAGE_" OR expected_output STREQUAL "ENDPOINT_OWNERSHIP")
+    if(expected_output MATCHES "^STAGE_")
+      string(REGEX REPLACE "^STAGE_" "" expected_stage "${expected_output}")
+      string(TOLOWER "${expected_stage}" expected_stage)
+      string(REPLACE "_" "-" expected_stage "${expected_stage}")
+      set(expected_diagnostic "states prelaunch stage=${expected_stage} failed")
+    else()
+      set(expected_diagnostic "states: could not prove the unique owned RetroArch endpoint")
+    endif()
+    foreach(required IN ITEMS "${expected_diagnostic}" "driver_result=7" "host_outcome=failed")
+      string(FIND "${content}" "${required}" position)
+      if(position EQUAL -1)
+        message(FATAL_ERROR "failed launcher receipt omitted '${required}': ${rc}\n${out}${err}\n${content}")
+      endif()
+    endforeach()
+    if(EXISTS "${shot}" OR EXISTS "${state_root}/save/frontend-states.srm" OR
+       content MATCHES "host_outcome=pass|screenshot_sha256=|raw_save_status=present")
+      message(FATAL_ERROR "failed launcher receipt created or claimed a passing artifact: ${rc}\n${out}${err}\n${content}")
+    endif()
+    file(READ "${unrelated_sentinel}" sentinel_content)
+    if(NOT sentinel_content STREQUAL "preserve receipt fixture\n")
+      message(FATAL_ERROR "failed launcher changed the unrelated receipt sentinel: ${rc}\n${out}${err}")
+    endif()
+    return()
+  endif()
+  file(READ "${unrelated_sentinel}" sentinel_content)
+  if(NOT sentinel_content STREQUAL "preserve receipt fixture\n")
+    message(FATAL_ERROR "launcher changed the unrelated receipt sentinel: ${rc}\n${out}${err}")
+  endif()
+  foreach(required IN ITEMS "source_sha256=${source_sha}"
+      "run_id=12345" "run_attempt=1" "workflow_event=workflow_dispatch"
+      "run_url=${run_url}" "host_version=1.22.2"
+      "state_mode=states"
+      "core_artifact_sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      "runner_artifact_sha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      "library_artifact_sha256=cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      "${expected_output}")
+    string(FIND "${content}" "${required}" position)
+    if(position EQUAL -1)
+      message(FATAL_ERROR "host receipt omitted '${required}' on ${expected_result} path")
+    endif()
+  endforeach()
+  if(expected_result STREQUAL "success")
+    foreach(required IN ITEMS "driver_result=0" "screenshot_sha256=" "screenshot_bytes="
+        "raw_save_status=present" "raw_save_sha256=" "raw_save_bytes=2048" "host_outcome=pass")
+      string(FIND "${content}" "${required}" position)
+      if(position EQUAL -1)
+        message(FATAL_ERROR "successful host receipt omitted '${required}'")
+      endif()
+    endforeach()
+  else()
+    foreach(required IN ITEMS "driver_result=7" "host_outcome=failed")
+      string(FIND "${content}" "${required}" position)
+      if(position EQUAL -1)
+        message(FATAL_ERROR "failed host receipt omitted '${required}'")
+      endif()
+    endforeach()
+  endif()
+endfunction()
+if(NOT RECEIPT_DRIVER STREQUAL "")
+  run_receipt_case(success success "MOCK_SUCCESS")
+  run_receipt_case(failure failure "MOCK_FAILURE")
+  run_receipt_case(sandbox-exec-failure failure "STAGE_SANDBOX_EXEC")
+  run_receipt_case(sandbox-helper-failure failure "STAGE_SANDBOX_HELPER")
+  run_receipt_case(work-deadline-failure failure "STAGE_WORK_DEADLINE")
+  run_receipt_case(config-port-failure failure "STAGE_CONFIG_PORT")
+  run_receipt_case(runahead-config-failure failure "STAGE_RUNAHEAD_CONFIG")
+  run_receipt_case(endpoint-ownership-failure failure "ENDPOINT_OWNERSHIP")
+  run_receipt_case(wrong-mode failure "MODE_REJECTED" legacy)
+endif()
+message("retroarch states: strict replies, owned-child faults, and symlink cleanup guard pass")
+]=])
+set(DRIVER "$<TARGET_FILE:muhtari-test-retroarch-states>")
+set(RECEIPT_DRIVER "${receipt_driver}")
+set(ROOT "${PROJECT_SOURCE_DIR}")
+set(CMAKE_BIN "${CMAKE_COMMAND}")
+set(OUT "${PROJECT_BINARY_DIR}/tests/retroarch/states-path-controls")
+string(CONFIGURE "${states_controls_template}" states_controls_content @ONLY)
+set(states_controls_script ${PROJECT_BINARY_DIR}/tests/diag/retroarch_states_controls.cmake)
+file(GENERATE OUTPUT ${states_controls_script} CONTENT "${states_controls_content}")
+muhtari_add_test(NAME retroarch.states.controls COMMAND ${CMAKE_COMMAND} -P ${states_controls_script}
+  LABELS diag portable TIMEOUT 20)
+if(TARGET muhtari_libretro OR CMAKE_CROSSCOMPILING_EMULATOR)
+  set(diag_frontend_states ${PROJECT_BINARY_DIR}/tests/diag/frontend_states.cmake)
+  file(GENERATE OUTPUT ${diag_frontend_states} CONTENT
+"set(DIAG_FRONTEND_STATES_RUN TRUE)
+set(COMPARE [==[$<TARGET_FILE:muhtari-test-retroarch-compare>]==])
+set(ROOT [==[${PROJECT_SOURCE_DIR}]==])
+set(OUT [==[${PROJECT_BINARY_DIR}/tests/diag/frontend-states]==])
+set(DRIVER [==[$<TARGET_FILE:muhtari-test-diag>]==])
+set(EMULATOR [==[${CMAKE_CROSSCOMPILING_EMULATOR}]==])
+include([==[${CMAKE_CURRENT_LIST_FILE}]==])
+")
+  muhtari_add_test(NAME diag.frontend_states COMMAND ${CMAKE_COMMAND} -P ${diag_frontend_states}
+    LABELS diag portable TIMEOUT 45)
+endif()
 if(TARGET muhtari_libretro)
   target_include_directories(muhtari-test-diag PRIVATE ${PROJECT_SOURCE_DIR}/libretro)
   target_compile_definitions(muhtari-test-diag PRIVATE DIAG_LIBRETRO

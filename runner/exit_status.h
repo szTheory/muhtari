@@ -22,9 +22,9 @@ static const muhtari__exit_status muhtari__exit_statuses[] = {
     {MUHTARI__EXIT_DONE, "done",
      "every frame ran, or SIGINT or SIGTERM stopped the run after a whole frame"},
     {MUHTARI__EXIT_FAILURE, "failure",
-     "a file could not be read or written, an image or a movie is malformed, truncated or too "
-     "large, a BIOS is invalid, a movie names another cartridge or BIOS, memory ran out or the "
-     "core failed"},
+     "a file could not be read or written, a state is malformed, unsupported or incompatible, "
+     "an image or a movie is malformed, truncated or too large, a BIOS is invalid, a movie names "
+     "another cartridge or BIOS, memory ran out or the core failed"},
     {MUHTARI__EXIT_USAGE, "usage",
      "the command line is invalid or conflicts with the movie's header, so nothing ran"},
     {MUHTARI__EXIT_SAVE_SIZE, "save-size", "the save file is larger than the attached battery RAM"},

@@ -210,3 +210,46 @@ the helper exits before its next waitpid, so child status is unknown. This
 identifies a diagnostic observability defect; the actual input cause remains
 unknown. Record MU-HOST-007 and plan a dependency-free local repair with
 pass/fault controls. No new host/CI run is authorized.
+
+---
+
+## Follow-up owner authorization and local outcome
+
+After the context discussion, the owner separately authorized a bounded local-only
+scope in this writable Phase 13 checkout: add an owned generated input-history
+cartridge, an independent rendered-pixel oracle, and pass/fault controls; run bounded
+local verification. The implementation was uncommitted in the Phase 13 worktree at the time of that run; it has since been carried into the reconciled root checkout for verification.
+This later authorization did not cover RetroArch wiring, CI/remote actions,
+publication, retry, cancellation, timeout changes, hosted allowance renewal or
+Phase 12 acceptance. The trace allowance remains spent; run 41461948345 must not be
+repeated.
+
+The fixture checks waiting, exact P1 Up/button-1 held, then a release in a later
+sampled frame with persistent completion. Fault controls cover missing hold, wrong
+port, wrong button, missing release and release-before-hold. Its pixel oracle
+compares RGB output independently from the cartridge's indexed palette values.
+
+Verification on an isolated source snapshot:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cmake -S src -B build -G Ninja -DMUHTARI_INVENTORY=local -DMUHTARI_BUILD_LIBRETRO=OFF` | 0 | Configured the bounded input-only inventory |
+| `cmake --build build --target muhtari-test-input --parallel 4` | 0 | Built the input test runner |
+| `ctest --test-dir build -L input --output-on-failure` | 0 | All 17 input tests passed, including generated-cart fixture setup |
+
+The direct worktree build command `cmake --build build/ci --target
+muhtari-test-input --parallel 4` could not regenerate CMake because the pinned
+Wasmtime, 7800basic and OpenBIOS packages are absent in this checkout; no package
+fetch was attempted. The isolated snapshot run establishes the local fixture and
+oracle behavior only; it is not actual pinned-host input evidence and leaves the
+Phase 12 halt unchanged.
+
+## Root-checkout integration — 2026-11-05
+
+The authorized generated input-history refinement was carried into the root
+checkout. Its CTest fixture is consumed by `input.proline_one_button`, and the
+serialized-image check remains registered. Root-local configure and focused
+build passed; seven selected input, battery, frontend-state-control and policy
+tests passed. No RetroArch process, full CI workflow, remote action or host
+acceptance ran. Phase 12 remains accepted 0/4; spent hosted allowances and the
+12-01 halt are unchanged. Command/exit evidence is recorded in `12-10-SUMMARY.md`.

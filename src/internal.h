@@ -455,6 +455,7 @@ struct muhtari {
     uint32_t audio_rem;          /* ticks carried into the next frame's sample count */
     uint32_t effective_region;   /* committed with successful content installation */
     uint8_t loaded;              /* content is loaded and handed off */
+    uint8_t state_identity[32];  /* installed immutable machine identity */
     uint64_t frame_start;
     uint64_t frame_deadline;
     struct muhtari__cpu cpu;
@@ -492,6 +493,8 @@ static inline struct muhtari__timing muhtari__timing(const muhtari *m)
     ((uint32_t)(offsetof(muhtari_config, allocator) + sizeof(muhtari_allocator)))
 #define MUHTARI__VERSIONS_SIZE_FIRST                                                               \
     ((uint32_t)(offsetof(muhtari_versions, behaviour_revision) + sizeof(uint32_t)))
+_Static_assert(offsetof(muhtari_versions, state_format) == MUHTARI__VERSIONS_SIZE_FIRST,
+               "state format must append after the frozen version prefix");
 #define MUHTARI__INFO_SIZE_FIRST                                                                   \
     ((uint32_t)(offsetof(muhtari_info, max_audio_samples) + sizeof(uint32_t)))
 #define MUHTARI__FRAME_SIZE_FIRST                                                                  \
@@ -529,7 +532,7 @@ _Static_assert(offsetof(muhtari_versions, library_patch) == 12, "versions.librar
 _Static_assert(offsetof(muhtari_versions, api) == 16, "versions.api");
 _Static_assert(offsetof(muhtari_versions, abi) == 20, "versions.abi");
 _Static_assert(offsetof(muhtari_versions, behaviour_revision) == 24, "versions.behaviour_revision");
-_Static_assert(sizeof(muhtari_versions) == 28, "versions size");
+_Static_assert(sizeof(muhtari_versions) == 32, "versions size");
 
 _Static_assert(offsetof(muhtari_info, size) == 0, "info.size");
 _Static_assert(offsetof(muhtari_info, width) == 4, "info.width");
@@ -835,6 +838,12 @@ void muhtari__ports_catch_up(muhtari *m, uint64_t tick);
 void muhtari__ports_light_sample(muhtari *m, uint32_t raster, uint32_t x, uint64_t tick,
                                  uint8_t color, int visible);
 void muhtari__bus_rearm(muhtari *m);
+void muhtari__ports_rearm(muhtari *m);
+size_t muhtari__state_payload_size(const muhtari *m);
+void muhtari__state_bind_identity(muhtari *m);
+int muhtari__state_payload_write(const muhtari *m, uint8_t *bytes, size_t size);
+int muhtari__state_payload_validate(const muhtari *m, const uint8_t *bytes, size_t size);
+void muhtari__state_payload_apply(muhtari *m, const uint8_t *bytes, size_t size);
 muhtari_status muhtari__ports_check_device_ex(uint32_t device);
 
 /* The device wired to port 0 or 1: MUHTARI_PORT_PROLINE, _JOYSTICK or

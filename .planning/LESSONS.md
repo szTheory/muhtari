@@ -100,6 +100,7 @@ Exported to the sibling projects on 2026-10-15 (preparation, `8ab05fa`). GSD fin
 | MU-CI-003 | Repository settings drift from their docs (nesturbator's live `sha_pinning_required` is off though its doc says on); keep settings as a script with a `--check` mode run at each tune-up | `gh api` read of live settings | adopted (`scripts/apply-repo-settings.sh --check`) |
 | MU-ARCH-001 | Under PIC a file-scope `const` table of function pointers lives in `.data.rel.ro`, which `nm` reports as `d`, so a no-mutable-globals symbol check flags it; dispatch with `switch` or keep pointers in the instance | nesturbator `tests/cmake/global_symbols.cmake` behaviour | adopted (DEC.31) |
 | MU-LEGAL-001 | A permissive licence today does not clear a repository's history: the MiSTer Atari7800 core went GPL-2.0 → CC BY-NC 4.0 → MIT (2026-08-30), files others edited in between are facts-only, and the repository ships Atari firmware; audit licence history, per-file editors and embedded firmware at the pin | MiSTer-devel/Atari7800_MiSTer `99ba8c7f08df`, `aef45f04b8dd`, `8c96e1f7cc24` | adopted (PROVENANCE 2, 3) |
+| MU-LEGAL-002 | Apply the emulator-source license boundary before browsing source files; answer protocol questions from official documentation and released binaries, and stop if a search opens prohibited emulator code | Observed during Phase 14 planning: a browser inspection opened RetroArch `config.def.h` despite AGENTS rule 1; no source was copied into the repository. `scripts/hygiene.sh --tree` exit 0; no hosted run | observed |
 | MU-TEST-001 | The `theft` property-testing library needs `fork`/`waitpid` (no MSVC); a ~60-line seeded splitmix64 harness covers the need on every platform | theft v0.4.5 `src/theft_run.c` | adopted (ENGINEERING 3) |
 | MU-GSD-008 | GSD's secret-read guard blocks agents from reading `.env.local` and key files (it fires even on a grep), so secret setup is an owner command, planned as such | observed in this session | adopted (GSD-HANDOFF 7) |
 | MU-REL-004 | GitHub's App manifest flow turns the release App into one owner command and two clicks: a local page posts the manifest (exact permissions, private, webhook off), and the conversion response (`POST /app-manifests/{code}/conversions`) carries the private key, which a short owner-run helper pipes into `gh secret set` for Actions and Dependabot with no file; the helper then mints an installation token with that key to prove it reaches only this repository. gh's OAuth token cannot list installations (`GET /user/installations` answers 403), so verify from the App's side | owner-run helper on 2026-10-15: App registered, variable and both secrets set, installation token listed only this repository and was revoked | adopted (GSD-HANDOFF 7) |
@@ -147,6 +148,7 @@ failure. This new sample does not establish the cause of earlier slowdown.
 |---|---|---|
 | MU-HOST-006 | Permitted posting and a helper's key schedule do not prove host consumption or held capture. A terminal released frame cannot substitute for held evidence. | [Run41133992538/job124346024270](https://github.com/szTheory/muhtari/actions/runs/41133992538/job/124346024270): one child logs Up/Z down/up and600frames; artifact contains only released PNG. Independent released predicate0, missing F8 held capture rejects before comparisons. Existing fail-closed consumer is retained; missing-capture cause remains unproved. Complete audit0/required audit1; sole process spent, no blind retry. |
 | MU-HOST-007 | A fixed diagnostic record budget can be exhausted by repeated input-post logs before it captures the poll/state evidence needed to explain a failed host observation. Classify the child at the deadline before reporting an acknowledgment timeout. | [Run41461948345](https://github.com/szTheory/muhtari/actions/runs/41461948345): `python3 /private/tmp/muhtari-trace-observation-interpret-20261102.py` exits 0; the 64-record helper trace contains INIT/FORK/START, 60 repetitive POST records and SATURATED by 2.934s, while posts continue through 4.84s and the no-ack branch fires at 5.014s. `git show 8e5acda806a1d7c3551bb0ca8136254648151757:tests/retroarch/keyboard_preflight.c` and matching `tests/libretro/input_trace.h` confirm up to three POST writes per 100ms tick and a 64-record ceiling. On the cutoff iteration, the helper exits before its next `waitpid`; child status at the deadline is therefore unknown. Next local diagnostic repair should aggregate repeated posts, preserve space for lifecycle/poll/state/end evidence, and observe child completion at the cutoff with deterministic pass/fault controls. This reproduces an observability defect; the actual input-failure cause remains unknown. An unfinished INIT-only core prefix does not prove no polling, no input, or a stall. |
+| MU-HOST-008 | A poll error is not proof that a network response was absent; only a completed no-reply observation can pass a containment check. | Reproduced with offline statuses in Plan 14-14: `poll_result=-1` passed the old decision, while the focused control fails before the fix and passes after accepting only `poll_result=0`. No sandbox, network request, or frontend process ran; N/A-local. The historical host preflight cause remains unknown. |
 
 The separately approved acknowledgment experiment in
 [run41150939552/job124397648612](https://github.com/szTheory/muhtari/actions/runs/41150939552/job/124397648612)
@@ -467,9 +469,87 @@ and bounded independent review pass locally. See the [phase 12 debug record](deb
 The hosted descriptor's exact identity and the original RetroArch input cause
 remain unknown; no second hosted attempt is claimed.
 
+## Container image inspection (2026-11-04)
+
+MU-TEST-012 (observed): Docker image config templates must tolerate optional or
+absent keys. Directly evaluating `{{.Config.Volumes}}` can fail the entire
+inspection when that map key is absent, before any image identity fields are
+returned. Prefer structured JSON plus a parser that handles missing keys, or
+prove the template's missing-key behavior with a local fixture before using it
+as an admission gate.
+
+Evidence: Plan 14-22's sole `docker image inspect` exited 1 with `template
+parsing error: template: :1:192: executing "" at <.Config.Volumes>: map has
+no entry for key "Volumes"`. Docker version/context/VM checks passed, but no
+image identity, container or project test was observed. The qualification was
+not retried; run URL N/A-local.
+
 ## Concise owner handoffs (2026-11-03)
 
 | ID | Symptom and invariant | Fix and evidence | Status |
 |---|---|---|---|
 | MU-GSD-018 | Long, jargon-heavy handoffs with several candidate commands made the owner translate state after the work was complete. A workflow-suggested command can be invalid under an already-used cap. | Reproduced in the Phase 12 closeout: `node <GSD_TOOLS> query verification.status .planning/phases/12-player-ready-delivery-and-playstead-bridge` exits 0 with `gaps_found`; `node <GSD_TOOLS> query init.execute-phase 12` exits 0 with zero runnable plans, while the one allowed gap round was spent. Give one short recommendation and its exact valid command; when none is valid, say so and identify the authority needed. Assume the owner follows the recommendation; ask only at a serious scope, authority, risk or explicit-cap boundary. `AGENTS.md` now carries this preference. | adopted |
 | MU-GSD-019 | A blocked phase must not leave the owner without a forward path, and a stale branch can make completed work look runnable. | Reproduced 2026-11-03: the current Phase 12 branch still described Phase 13 as the next runnable work, but `origin/main`'s roadmap and Phase 13 verification show Phase 13 shipped and Phase 14 pending; Phase 12's host allowance remains spent. Before recommending a stop or next phase, reconcile the current branch against `origin/main` and the roadmap. Continue independent approved work; if all remaining paths need new authority, give the exact decision and resume command. | adopted |
+| MU-GSD-020 | A test-workload cap charged before any selected test starts can exhaust useful capacity on a command/preflight error. | Reproduced in Phase 14: diagnostic pair 3 used invalid CTest `--output-failure`, launched no tests, but consumed the three-pair cap; Plan 14-12 initially repeated the same rule for tool/option/prelaunch failures. Preflight syntax, identities and capabilities without running tests; charge the workload allowance at the first protected test launch, while any failure/non-reproduction after launch consumes it. Evidence: [14-10 summary](phases/14-proven-frontend-states-and-responsive-play/14-10-SUMMARY.md#issues-encountered), [14-10 resource record](phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md#plan-14-10-bounded-bios-diagnosis-local-2026-11-03), and revised [14-12 plan](phases/14-proven-frontend-states-and-responsive-play/14-12-PLAN.md). | adopted |
+
+## TDD parent and dispatch baseline (2026-11-03)
+
+MU-CI-015 (reproduced): this workflow's `workflow_dispatch` quality comparison uses the
+dispatched commit's first parent as its base. When a required TDD RED test commit is the
+implementation commit's immediate parent, the base intentionally lacks the implementation
+and fails that test. The quality job then rejects missing producer artifacts, and downstream
+artifact consumers such as the opt-in host job skip. Before a single-use dispatch, inspect the
+baseline source and run the independent-base check while preserving the RED evidence in history.
+
+Evidence: the current-source local CTest control and the dispatched source `1e8f019` pass
+`retroarch.states.controls`, while its parent `e638c53` lacks the receipt implementation and
+fails that control. [Run 41585416888](https://github.com/szTheory/muhtari/actions/runs/41585416888)
+completed with no artifacts and `retroarch` skipped. That run was not retried; the later separately
+authorized Plan 14-06 dispatch is a distinct run and is recorded below. No actual-host behavior is
+inferred from either run's build or test failures.
+
+MU-CI-016 (observed): POSIX-only call paths can leave parameters unused on Windows;
+with `/W4 /WX`, MSVC C4100 blocks the full CI matrix even when macOS CI and hygiene
+pass. Reproduced in [run 41618546347](https://github.com/szTheory/muhtari/actions/runs/41618546347):
+both Windows x64 and ARM64 fail compiling `tests/retroarch/states.c` because `self_path`
+is unused at three call sites; the required aggregate and exact quality artifact join fail,
+so RetroArch is skipped. Plan 14-07 consumed the parameter in each non-POSIX branch;
+[run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188) passes both
+Windows x64 and ARM64 builds for that repair. The earlier Windows failure remains historical;
+this compiler blocker is resolved for the repaired source. The new run's macOS Intel
+independent-parent baseline separately timed out, and its RetroArch job was skipped, so no
+actual-host behavior is inferred.
+
+MU-CI-017 (observed): a single workflow-dispatch can pass current-source CI and all required
+Windows builds yet fail while executing the independent-parent macOS Intel quality baseline.
+In [run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188),
+`cmake -DROOT=. -DBUILD=build/ci -DOUT=build/ci/quality-current.json -DSHA="$(git rev-parse HEAD)" -DCONFIG=ci -DBUILD_BASE=ON -DSOURCE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" -P tests/cmake/quality_evidence.cmake`
+exited 1 because its independent-parent CTest child exited 8: `fuzz.regress.run` timed out
+at 28.06 seconds. The required artifact join then exited 1 and `retroarch` was skipped.
+The local exact-parent workflow passed, but one hosted observation does not establish a
+general timeout or resource regression; preserve the full log and require comparable evidence
+before changing deadlines, topology or caches. This lesson is observed, and the underlying
+timeout cause remains unknown.
+
+2026-11-03 addendum: Plan 14-08 applies the existing CTest `RUN_SERIAL` property to the normal
+portable replay. In run [41656505025](https://github.com/szTheory/muhtari/actions/runs/41656505025),
+both the frozen source and its immediate parent completed the other 692 tests before the replay;
+the source replay passed in 5.48 seconds and the parent replay in 5.90 seconds. This directly
+confirms the property was honored in this attempt and that the earlier timeout did not recur.
+It does not establish that overlap caused the earlier timeout or that the scheduling change
+improves all hosted runs. The actual-host step remained unverified because its preceding battery
+job exited at the existing 300-line source guard; no frontend state behavior is inferred.
+
+MU-CI-018 (observed): With ctest --preset ci, a relative --output-junit path
+resolves under the preset's binary directory. A source-root receipt check can
+therefore fail with a missing-file error even after CTest passed and wrote the
+JUnit file. Use an absolute output path or locate and copy the same receipt
+before validating it; do not rerun a single-use test batch to correct receipt
+lookup.
+
+Evidence: Plan 14-13 ran the approved focused CTest batch once (exit 0, seven
+tests passed) with --output-junit build/phase14-gap13-evidence/junit-bios.xml;
+CTest wrote build/ci/build/phase14-gap13-evidence/junit-bios.xml. The initial
+source-root JUnit check exited 1 because that path was absent. Copying the
+exact generated receipt to the evidence directory let the seven-row inventory
+checker pass (exit 0). Run URL N/A-local; no host or CI run occurred.

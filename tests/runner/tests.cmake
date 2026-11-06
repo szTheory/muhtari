@@ -2,6 +2,7 @@
 #
 # This file is also the command-line checks themselves, run as
 #   cmake -DRUN=<muhtari-run> [-DEMULATOR=<list>] -DCASE=<name> [-DOUT=<file>]
+#     [-DSTATE_TEST=<muhtari-test-state>]
 #     [-DVERSION_FILE=<file>] [-DFRAMES=<long run>] [-DDIR=<image directory>]
 #     [-DWORK=<scratch directory>]
 #     -P tests/runner/tests.cmake
@@ -22,15 +23,77 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     hashes_controller_report(controller.motion.driving.both "${SCENARIO}" "${observed}" unused)
     return()
   endif()
+  if(CASE STREQUAL "hashes_state_control")
+    set(HASHES_FUNCTIONS_ONLY ON)
+    include("${HASHES}")
+    if(NOT COMMAND hashes_state_rows)
+      message(FATAL_ERROR "ASSERTION: hashes state producer must emit reports for all 13 scenarios")
+    endif()
+    if(NOT COMMAND hashes_state_validate)
+      message(FATAL_ERROR "ASSERTION: hashes state consumer must validate exactly 78 rows")
+    endif()
+    hashes_state_rows(expected)
+    hashes_state_validate("${expected}" valid)
+    if(NOT valid)
+      message(FATAL_ERROR "hashes: rejected valid state report rows")
+    endif()
+    string(REGEX REPLACE "state[.]supergame_banked[.][a-z0-9_]+ [0-9a-f]+\n" "" bad "${expected}")
+    hashes_state_validate("${bad}" valid)
+    if(valid)
+      message(FATAL_ERROR "hashes: accepted missing state scenario")
+    endif()
+    string(REGEX REPLACE "state[.]linear_ntsc[.]frame_sha256 [0-9a-f]+\n" "" bad "${expected}")
+    hashes_state_validate("${bad}" valid)
+    if(valid)
+      message(FATAL_ERROR "hashes: accepted missing state field")
+    endif()
+    string(REGEX MATCH "state[.]linear_ntsc[.]bytes_sha256 [^\n]+\n" row "${expected}")
+    set(bad "${expected}${row}")
+    hashes_state_validate("${bad}" valid)
+    if(valid)
+      message(FATAL_ERROR "hashes: accepted duplicate state field")
+    endif()
+    string(REGEX REPLACE "(state[.]linear_ntsc[.]bytes_sha256 )[0-9a-f]+" "\\1a" bad "${expected}")
+    hashes_state_validate("${bad}" valid)
+    if(valid)
+      message(FATAL_ERROR "hashes: accepted malformed state digest")
+    endif()
+    string(REPEAT "0" 64 zero)
+    string(REGEX REPLACE "(state[.]linear_ntsc[.]bytes_sha256 )[0-9a-f]+" "\\1${zero}" changed "${expected}")
+    hashes_state_validate("${changed}" valid)
+    if(NOT valid)
+      message(FATAL_ERROR "hashes: changed but well-formed state row was not structurally valid")
+    endif()
+    file(MAKE_DIRECTORY "${OUT}/hashes-state-controls")
+    file(WRITE "${OUT}/hashes-state-controls/original.txt" "${expected}")
+    file(WRITE "${OUT}/hashes-state-controls/changed.txt" "${changed}")
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E compare_files
+      "${OUT}/hashes-state-controls/original.txt" "${OUT}/hashes-state-controls/changed.txt"
+      RESULT_VARIABLE rc)
+    if(rc STREQUAL "0")
+      message(FATAL_ERROR "hashes: identical-file consumer accepted changed canonical state bytes")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${STATE_TEST}" equality_report
+      RESULT_VARIABLE rc OUTPUT_VARIABLE observed ERROR_VARIABLE err TIMEOUT 30)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "hashes: state semantic oracle control failed: ${rc} ${err}")
+    endif()
+    hashes_state_validate("${observed}" valid)
+    if(NOT valid)
+      message(FATAL_ERROR "hashes: state report consumer rejected the oracle-checked report")
+    endif()
+    return()
+  endif()
   if(CASE STREQUAL "hashes")
     execute_process(COMMAND "${CMAKE_COMMAND}" -DMODE=write "-DRUN=${RUN}"
       "-DDRIVER=${DRIVER}" "-DDIAG=${DIAG}" "-DOUT=${OUT}"
       "-DEMULATOR=${EMULATOR}" "-DSOUNDTEST=${SOUNDTEST}" "-DPOKEY=${POKEY}"
+      "-DSTATE_TEST=${STATE_TEST}"
       -P "${HASHES}" COMMAND_ERROR_IS_FATAL ANY)
     file(STRINGS "${OUT}/hashes.txt" rows)
     list(LENGTH rows count)
-  if(NOT count EQUAL 3088)
-    message(FATAL_ERROR "hashes: expected956 retained and2132 BankSet/expansion observation rows, got ${count}")
+  if(NOT count EQUAL 3166)
+    message(FATAL_ERROR "hashes: expected3088 retained and78 state equality rows, got ${count}")
     endif()
     # Retain the independent accepted digests, normalizing only the exact
     # causal slow-HALT audio changes and revision 6 back to their old rows.
@@ -86,33 +149,52 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     endforeach()
     file(READ "${OUT}/hashes.txt" complete)
     foreach(fault missing_old duplicate_old missing_new duplicate_new missing_controller
-        duplicate_controller reordered_controller malformed_numeric wrong_family blank_controller)
+        duplicate_controller reordered_controller malformed_numeric wrong_family blank_controller
+        missing_state_scenario missing_state_field duplicate_state_field malformed_state_digest
+        changed_state_digest)
       set(prefix frame1)
-      if(fault MATCHES "_new$")
+      if(fault STREQUAL "missing_state_scenario")
+        string(REGEX REPLACE "state[.]supergame_banked[.][^\n]+\n" "" bad "${complete}")
+      elseif(fault STREQUAL "missing_state_field")
+        string(REGEX REPLACE "state[.]linear_ntsc[.]frame_sha256 [^\n]+\n" "" bad "${complete}")
+      elseif(fault STREQUAL "malformed_state_digest")
+        string(REGEX REPLACE "(state[.]linear_ntsc[.]bytes_sha256 )[0-9a-f]+" "\\1a" bad "${complete}")
+      elseif(fault STREQUAL "changed_state_digest")
+        string(REPEAT "0" 64 zero)
+        string(REGEX REPLACE "(state[.]linear_ntsc[.]bytes_sha256 )[0-9a-f]+" "\\1${zero}" bad "${complete}")
+      elseif(fault MATCHES "_new$")
         set(prefix "battery[.]second[.]save_sha256")
+      elseif(fault STREQUAL "duplicate_state_field")
+        set(prefix "state[.]linear_ntsc[.]bytes_sha256")
       elseif(fault MATCHES "controller$")
         set(prefix "controller[.]light[.]lightgun[.]both[.]frame1")
       endif()
-      string(REGEX MATCH "${prefix} [^\n]+\n" row "${complete}")
-      if(fault MATCHES "^missing_")
-        string(REPLACE "${row}" "" bad "${complete}")
-      elseif(fault MATCHES "^duplicate_")
-        set(bad "${complete}${row}")
-      elseif(fault STREQUAL "reordered_controller")
-        string(REPLACE "${row}" "" bad "${complete}")
-        string(APPEND bad "${row}")
-      elseif(fault STREQUAL "malformed_numeric")
-        string(REPLACE "controller.motion.driving.both.audio_frames 12"
-          "controller.motion.driving.both.audio_frames x" bad "${complete}")
-      elseif(fault STREQUAL "blank_controller")
-        string(REPLACE "controller.motion.driving.both.audio_frames 12\n"
-          "controller.motion.driving.both.audio_frames 12\n\n" bad "${complete}")
-      else()
-        string(REPLACE "controller.motion.driving.both." "controller.motion.foreign.both."
-          bad "${complete}")
+      if(NOT fault MATCHES "^(missing_state_scenario|missing_state_field|malformed_state_digest|changed_state_digest)$")
+        string(REGEX MATCH "${prefix} [^\n]+\n" row "${complete}")
+        if(fault MATCHES "^missing_")
+          string(REPLACE "${row}" "" bad "${complete}")
+        elseif(fault MATCHES "^duplicate_")
+          set(bad "${complete}${row}")
+        elseif(fault STREQUAL "reordered_controller")
+          string(REPLACE "${row}" "" bad "${complete}")
+          string(APPEND bad "${row}")
+        elseif(fault STREQUAL "malformed_numeric")
+          string(REPLACE "controller.motion.driving.both.audio_frames 12"
+            "controller.motion.driving.both.audio_frames x" bad "${complete}")
+        elseif(fault STREQUAL "blank_controller")
+          string(REPLACE "controller.motion.driving.both.audio_frames 12\n"
+            "controller.motion.driving.both.audio_frames 12\n\n" bad "${complete}")
+        else()
+          string(REPLACE "controller.motion.driving.both." "controller.motion.foreign.both."
+            bad "${complete}")
+        endif()
+      endif()
+      set(second "${bad}")
+      if(fault STREQUAL "changed_state_digest")
+        set(second "${complete}")
       endif()
       file(WRITE "${OUT}/hashes-battery/${fault}-a.txt" "${bad}")
-      file(WRITE "${OUT}/hashes-battery/${fault}-b.txt" "${bad}")
+      file(WRITE "${OUT}/hashes-battery/${fault}-b.txt" "${second}")
       execute_process(COMMAND "${CMAKE_COMMAND}" -DMODE=compare -DCOUNT=2
         "-DFILES=${OUT}/hashes-battery/${fault}-a.txt;${OUT}/hashes-battery/${fault}-b.txt"
         -P "${HASHES}" RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
@@ -197,6 +279,13 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
         message(FATAL_ERROR "hashes: report ${fault} control: ${rc} ${out}${err}")
       endif()
     endforeach()
+    execute_process(COMMAND "${CMAKE_COMMAND}" -DCASE=hashes_state_control
+      "-DHASHES=${HASHES}" "-DSTATE_TEST=${STATE_TEST}" "-DEMULATOR=${EMULATOR}"
+      "-DOUT=${OUT}" -P "${CMAKE_CURRENT_LIST_FILE}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 60)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "hashes: state report/fault controls failed: ${rc} ${out}${err}")
+    endif()
     return()
   endif()
   if(CASE STREQUAL "save_roundtrip")
@@ -212,6 +301,136 @@ if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" verify RESULT_VARIABLE rc)
     if(NOT rc STREQUAL "0")
       message(FATAL_ERROR "fresh process exact save bytes failed: ${rc}")
+    endif()
+    return()
+  endif()
+  if(CASE STREQUAL "state_roundtrip" OR CASE STREQUAL "state_options")
+    execute_process(COMMAND ${EMULATOR} "${SAVE_TEST}" "${DIR}" roundtrip RESULT_VARIABLE rc)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "generated state fixture failed: ${rc}")
+    endif()
+    set(image "${DIR}/game.a78")
+    if(CASE STREQUAL "state_options")
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --frames0 --hash-state 0
+        --state-at-frame "0:${DIR}/zero.state" "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE zero_out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "0" OR NOT zero_out MATCHES "^state 0 sha256 [0-9a-f]+\n$")
+        message(FATAL_ERROR "zero-frame state-only operation failed: ${rc}\n${zero_out}${err}")
+      endif()
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --hash-state 1 --hash-state 0
+        --state-at-frame "0:${DIR}/other-zero.state" --state-at-frame "1:${DIR}/one.state" "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "0" OR NOT out MATCHES "state 0 sha256 [0-9a-f]+\nstate 1 sha256 [0-9a-f]+\n")
+        message(FATAL_ERROR "state option pass case failed: ${rc}\n${out}${err}")
+      endif()
+      string(REGEX MATCH "state 0 sha256 [0-9a-f]+" zero_digest "${zero_out}")
+      string(REGEX MATCH "state 0 sha256 [0-9a-f]+" initial_digest "${out}")
+      if(NOT zero_digest STREQUAL initial_digest)
+        message(FATAL_ERROR "state hash changed across same-content point zero output paths\n${zero_out}\n${out}")
+      endif()
+
+      file(SHA256 "${DIR}/zero.state" initial_state_file_hash)
+      file(SHA256 "${DIR}/other-zero.state" alternate_state_file_hash)
+      if(NOT initial_state_file_hash STREQUAL alternate_state_file_hash)
+        message(FATAL_ERROR "state bytes changed when only the output filename changed")
+      endif()
+
+      set(battery_dir "${DIR}/battery-generation")
+      file(MAKE_DIRECTORY "${battery_dir}")
+      string(REPEAT "b" 2048 imported_battery)
+      file(WRITE "${battery_dir}/game.sav" "${imported_battery}")
+      execute_process(COMMAND ${EMULATOR} "${RUN}" --frames0 --save-dir "${battery_dir}"
+        --load-state "${DIR}/zero.state" --hash-state 0
+        --state-at-frame "0:${DIR}/restored-zero.state" "${image}"
+        RESULT_VARIABLE rc OUTPUT_VARIABLE restored_out ERROR_VARIABLE err)
+      if(NOT rc STREQUAL "0" OR NOT restored_out MATCHES "^state 0 sha256 [0-9a-f]+\n$")
+        message(FATAL_ERROR "zero-frame restore with imported battery failed: ${rc}\n${restored_out}${err}")
+      endif()
+      string(REGEX MATCH "state 0 sha256 [0-9a-f]+" restored_digest "${restored_out}")
+      if(NOT zero_digest STREQUAL restored_digest)
+        message(FATAL_ERROR "host battery import generation changed the canonical state hash\n${zero_out}\n${restored_out}")
+      endif()
+      file(SHA256 "${DIR}/zero.state" initial_state_file_hash)
+      file(SHA256 "${DIR}/restored-zero.state" restored_state_file_hash)
+      if(NOT initial_state_file_hash STREQUAL restored_state_file_hash)
+        message(FATAL_ERROR "restored canonical state bytes changed across host battery generation")
+      endif()
+
+      function(require_state_usage label)
+        execute_process(COMMAND ${EMULATOR} "${RUN}" ${ARGN}
+          RESULT_VARIABLE rejected_rc OUTPUT_VARIABLE rejected_out ERROR_VARIABLE rejected_err)
+        if(NOT "${rejected_rc}" STREQUAL "2" OR NOT "${rejected_err}" MATCHES "usage: muhtari-run")
+          message(FATAL_ERROR "${label} was not rejected with a usage diagnostic: ${rejected_rc}\n${rejected_out}${rejected_err}")
+        endif()
+      endfunction()
+
+      set(state_path "${DIR}/negative.state")
+      set(movie_path "${DIR}/negative.movie")
+      file(WRITE "${movie_path}"
+        "muhtari-movie 1\nport1 proline\nport2 joystick\n|...R1.|.....|...BB|\n")
+      require_state_usage("duplicate load-state" --frames 1 --load-state "${DIR}/zero.state"
+        --load-state "${DIR}/zero.state" "${image}")
+      require_state_usage("duplicate hash-state point" --frames 1 --hash-state 0 --hash-state 0 "${image}")
+      require_state_usage("duplicate state-save point" --frames 1
+        --state-at-frame "0:${DIR}/a.state" --state-at-frame "0:${DIR}/b.state" "${image}")
+      require_state_usage("duplicate state output path" --frames 1
+        --state-at-frame "0:${state_path}" --state-at-frame "1:${state_path}" "${image}")
+      require_state_usage("state output and dump path collision" --frames 1
+        --state-at-frame "0:${DIR}/shared.output" --dump-frame "1:${DIR}/shared.output" "${image}")
+      require_state_usage("state output and load path collision" --frames 1
+        --load-state "${DIR}/zero.state" --state-at-frame "0:${DIR}/zero.state" "${image}")
+      require_state_usage("state output and movie path collision" --movie "${movie_path}" --frames 1
+        --state-at-frame "0:${movie_path}" "${image}")
+      require_state_usage("state output and content path collision" --frames 1
+        --state-at-frame "0:${image}" "${image}")
+      require_state_usage("state output and BIOS path collision" --frames 1 --boot bios
+        --bios "${state_path}" --state-at-frame "0:${state_path}" "${image}")
+      require_state_usage("state output and HSC path collision" --frames 1 --hsc on
+        --hsc-rom "${state_path}" --state-at-frame "0:${state_path}" "${image}")
+      require_state_usage("empty state output path" --frames 1 --state-at-frame 0: "${image}")
+      require_state_usage("dash state output path" --frames 1 --state-at-frame 0:- "${image}")
+      require_state_usage("empty load-state path" --frames 1 --load-state "" "${image}")
+      require_state_usage("dash load-state path" --frames 1 --load-state - "${image}")
+      require_state_usage("state point overflow" --frames 1 --hash-state 4294967296 "${image}")
+      require_state_usage("state output point overflow" --frames 1
+        --state-at-frame "4294967296:${state_path}" "${image}")
+      require_state_usage("out-of-range hash-state point" --frames 1 --hash-state 2 "${image}")
+      require_state_usage("out-of-range state-save point" --frames 1
+        --state-at-frame "2:${state_path}" "${image}")
+      require_state_usage("state without content" --frames 1 --hash-state 0)
+      require_state_usage("state with bench" --bench 1 --hash-state 0 "${image}")
+      require_state_usage("state with probe" --probe "${image}" --load-state "${DIR}/zero.state")
+      require_state_usage("frames0 without state operation" --frames0 "${image}")
+      require_state_usage("frames0 with movie output" --frames0 --movie "${movie_path}"
+        --hash-state 0 "${image}")
+      require_state_usage("frames0 with frame output" --frames0 --hash-state 0 --hash-frame 1 "${image}")
+      return()
+    endif()
+    file(WRITE "${DIR}/full.movie"
+      "muhtari-movie 1\nport1 proline\nport2 joystick\n|...R1.|.....|...BB|\n|U.L..2|U...1|RS.AB|\n")
+    file(WRITE "${DIR}/suffix.movie"
+      "muhtari-movie 1\nport1 proline\nport2 joystick\n|U.L..2|U...1|RS.AB|\n")
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 2 --movie "${DIR}/full.movie"
+      --state-at-frame "1:${DIR}/resume.state" --hash-state 2 --hash-frame 2 "${image}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE uninterrupted ERROR_VARIABLE err)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "uninterrupted state run failed: ${rc}\n${uninterrupted}${err}")
+    endif()
+    execute_process(COMMAND ${EMULATOR} "${RUN}" --frames 1 --movie "${DIR}/suffix.movie"
+      --load-state "${DIR}/resume.state" --hash-state 1 --hash-frame 1 "${image}"
+      RESULT_VARIABLE rc OUTPUT_VARIABLE resumed ERROR_VARIABLE err)
+    if(NOT rc STREQUAL "0")
+      message(FATAL_ERROR "fresh-process state continuation failed: ${rc}\n${resumed}${err}")
+    endif()
+    string(REGEX MATCH "state 2 sha256 [0-9a-f]+" state_full "${uninterrupted}")
+    string(REGEX MATCH "state 1 sha256 [0-9a-f]+" state_resumed "${resumed}")
+    string(REPLACE "state 2 " "state 1 " state_full "${state_full}")
+    string(REGEX MATCH "frame 2 sha256 [0-9a-f]+" frame_full "${uninterrupted}")
+    string(REGEX MATCH "frame 1 sha256 [0-9a-f]+" frame_resumed "${resumed}")
+    string(REPLACE "frame 2 " "frame 1 " frame_full "${frame_full}")
+    if(state_full STREQUAL "" OR NOT state_full STREQUAL state_resumed OR
+        frame_full STREQUAL "" OR NOT frame_full STREQUAL frame_resumed)
+      message(FATAL_ERROR "state/frame continuation differs\nfull:\n${uninterrupted}\nresumed:\n${resumed}")
     endif()
     return()
   endif()
@@ -1399,7 +1618,7 @@ add_executable(muhtari-run-testdb
   $<TARGET_OBJECTS:muhtari_objs>
   $<TARGET_OBJECTS:muhtari_cpu>)
 target_include_directories(muhtari-run-testdb PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(muhtari-run-testdb PRIVATE muhtari_host)
+target_link_libraries(muhtari-run-testdb PRIVATE muhtari_host muhtari::muhtari)
 target_compile_definitions(muhtari-run-testdb PRIVATE _POSIX_C_SOURCE=200809L)
 set_target_properties(muhtari-run-testdb PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
@@ -1433,9 +1652,10 @@ set(runner_hashes ${PROJECT_SOURCE_DIR}/tests/cmake/hashes.cmake)
 muhtari_add_test(NAME runner.hashes_file
   COMMAND ${runner_check} -DCASE=hashes -DOUT=${PROJECT_BINARY_DIR} -DHASHES=${runner_hashes}
     -DDRIVER=$<TARGET_FILE:muhtari-test-diag> -DDIAG=${PROJECT_SOURCE_DIR}/tests/diag
+    -DSTATE_TEST=$<TARGET_FILE:muhtari-test-state>
     "-DSOUNDTEST=${PROJECT_BINARY_DIR}/built/soundtest/soundtest.bas.a78"
     "-DPOKEY=${PROJECT_BINARY_DIR}/built/pokey/pokey.bas.a78" -P ${CMAKE_CURRENT_LIST_FILE}
-  LABELS runner portable TIMEOUT 143) # ceil(2 x 71.07s), complete Windows x64 run40414104123/job121892328427; all3088 rows retained.
+  LABELS runner portable TIMEOUT 143) # ceil(2 x 71.07s), complete Windows x64 run40414104123/job121892328427; all3088 old rows plus78 state rows.
 set_tests_properties(runner.hashes_file PROPERTIES FIXTURES_REQUIRED "built_soundtest;built_pokey")
 # The comparison's self tests: two files where three are required, and two
 # files one byte apart.
@@ -1570,11 +1790,26 @@ muhtari_add_test(NAME runner.save.roundtrip COMMAND ${CMAKE_COMMAND}
   "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>"
   "-DRUN=$<TARGET_FILE:muhtari-run>" "-DDIR=${PROJECT_BINARY_DIR}/tests/save-roundtrip"
   -DCASE=save_roundtrip -P ${CMAKE_CURRENT_LIST_FILE} LABELS runner portable TIMEOUT 10)
+foreach(case IN ITEMS state_roundtrip state_options)
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/${case})
+  if(case STREQUAL "state_roundtrip")
+    set(state_case roundtrip)
+  else()
+    set(state_case options)
+  endif()
+  muhtari_add_test(NAME runner.state.${state_case} COMMAND ${CMAKE_COMMAND}
+    "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}" "-DSAVE_TEST=$<TARGET_FILE:muhtari-test-save-runner>"
+    "-DRUN=$<TARGET_FILE:muhtari-run>" "-DDIR=${PROJECT_BINARY_DIR}/tests/${case}"
+    -DCASE=${case} -P ${CMAKE_CURRENT_LIST_FILE} LABELS runner portable TIMEOUT 10)
+endforeach()
 foreach(case IN ITEMS import faults options cadence)
   file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/save-${case})
   muhtari_add_test(NAME runner.save.${case} COMMAND muhtari-test-save-runner
     ${PROJECT_BINARY_DIR}/tests/save-${case} ${case} LABELS runner portable TIMEOUT 10)
 endforeach()
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tests/state-files)
+muhtari_add_test(NAME runner.state.files COMMAND muhtari-test-save-runner
+  ${PROJECT_BINARY_DIR}/tests/state-files files LABELS runner portable TIMEOUT 10)
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI")
   add_executable(muhtari-test-control ${CMAKE_CURRENT_LIST_DIR}/test_control.c)
   target_compile_definitions(muhtari-test-control PRIVATE _POSIX_C_SOURCE=200809L

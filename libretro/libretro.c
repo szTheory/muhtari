@@ -1112,24 +1112,41 @@ void retro_run(void)
     }
 }
 
-/* L7707: no save states yet; the size is 0 and nothing loads. */
+/* Context3 requires big-endian rollback state, while the portable library
+   format is explicitly little-endian. Keep every supported context on the
+   same fully validated library state path. */
+static bool lr_netplay_state_context(void)
+{
+    enum retro_savestate_context context = RETRO_SAVESTATE_CONTEXT_NORMAL;
+    return env_cb != NULL && env_cb(RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT, &context) &&
+           context == RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
+}
+
 size_t retro_serialize_size(void)
 {
-    return 0u;
+    if (inst == NULL || lr_netplay_state_context())
+        return 0u;
+    return muhtari_state_size(inst);
 }
 
 bool retro_serialize(void *data, size_t len)
 {
-    (void)data;
-    (void)len;
-    return false;
+    if (inst == NULL || data == NULL || lr_netplay_state_context())
+        return false;
+    size_t bytes = muhtari_state_size(inst);
+    if (bytes == 0u || len < bytes)
+        return false;
+    return muhtari_save_state(inst, data, bytes) == MUHTARI_STATUS_OK;
 }
 
 bool retro_unserialize(const void *data, size_t len)
 {
-    (void)data;
-    (void)len;
-    return false;
+    if (inst == NULL || data == NULL || lr_netplay_state_context())
+        return false;
+    size_t bytes = muhtari_state_size(inst);
+    if (bytes == 0u || len != bytes)
+        return false;
+    return muhtari_load_state(inst, data, bytes) == MUHTARI_STATUS_OK;
 }
 
 void retro_cheat_reset(void)

@@ -27,4 +27,11 @@ screenshot_directory = "@RA_DIR@/shots"
 system_directory = "@RA_DIR@/system"
 log_dir = "@RA_DIR@/logs"
 bundle_assets_extract_enable = "false"
+# The states controller toggles run-ahead once and proves its presentation.
+# Keep every other host case explicitly off and single-instance as well.
+run_ahead_enabled = "false"
+run_ahead_frames = "1"
+run_ahead_secondary_instance = "false"
+preemptive_frames_enable = "false"
+@STATES_CONFIG@
 @INPUT_JOYPAD_CONFIG@

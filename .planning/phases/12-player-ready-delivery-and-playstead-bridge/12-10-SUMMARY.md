@@ -199,6 +199,28 @@ None. No external service or owner action is needed to retain this local result.
 
 This diagnostic plan is complete. Phase 12 remains halted at accepted 0/4; this summary does not unblock the acceptance plans or authorize another host observation. Any later host action needs its own bounded scope and stopping rule.
 
+
+## Follow-up implementation integration — 2026-11-05
+
+A later owner-authorized local refinement in the Phase 13 checkout made the
+ordered-history cartridge a generated CTest fixture consumed by
+`input.proline_one_button`. The refreshed implementation and independent pixel
+predicate are now integrated here as `tests/input/history_pixels.c` and
+`tests/input/history_pixels.h`; the existing `input.history_cart` serialized
+image check and CI inventory entry remain in place. This supplements the
+original task record above without changing PLAY-03 acceptance.
+
+Root-checkout verification:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cmake --preset ci` | 0 | Configured the merged tree. |
+| `cmake --build --preset ci --target muhtari-test-input muhtari-test-retroarch-compare muhtari-test-battery-pixels muhtari-test-diag muhtari-test-retroarch-states muhtari-test-retroarch-receipt muhtari_libretro muhtari-run --parallel 4` | 0 | All changed local targets built with warnings as errors. |
+| `ctest --test-dir build/ci -R '^(input\.(cart_files|history_cart|proline_one_button)|diag\.(battery|frontend_states)|retroarch\.states\.controls|policy\.docker_contract\.controls)$' --no-tests=error --output-on-failure` | 0 | Seven selected input, battery, state-control and policy tests passed. |
+
+No RetroArch process, full workflow, hosted CI, remote action or acceptance
+attempt ran. The prior Phase 12 host stops and spent allowances remain binding.
+
 ## Self-Check
 
 PASSED — this summary exists with a final newline and clean whitespace; all five task commits are ancestors of the source HEAD.

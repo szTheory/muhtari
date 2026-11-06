@@ -1,7 +1,8 @@
 /* The run fuzz target: bounded linear or explicitly selected retail images
    (run_cart.h), loaded with the fast boot into two instances and run for 2 frames
-   in each, call by call. Any broken invariant calls abort(), which libFuzzer
-   and the replay both report:
+   in each, call by call. It then applies a bounded portable-state mutation
+   recipe to the same independent instances. Any broken invariant calls abort(),
+   which libFuzzer and the replay both report:
    1. both loads return the same status;
    2. each frame returns the same status, audio count and picture in both;
    3. each frame of a loaded cartridge returns within its bound: at the first
@@ -18,6 +19,7 @@
 #include "muhtari.h"
 #include "run_cart.h"
 #include "../alloc.h"
+#include "../../runner/crc32.h"
 
 /* Four lines. WSYNC can hold an instruction to the end of a line and DMA
    most of the next; the worst seen over 3,000 random cartridges run for 60
@@ -26,9 +28,12 @@
 #define RUN_FRAMES 2u
 #define RUN_AUDIO 962u
 #define RUN_PICTURE (MUHTARI__WIDTH * 292u)
+#define RUN_STATE_MAX_BYTES 307932u
 
 /* libFuzzer's -max_len in tests.cmake is the cartridge's size. */
 _Static_assert(RUN_CART_BYTES == 1048704u, "-max_len=1048704");
+_Static_assert(3u * RUN_STATE_MAX_BYTES <= RUN_CART_BYTES,
+               "state recipe uses three bounded slices of the cart scratch buffer");
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 
@@ -244,6 +249,144 @@ static void run_typed(muhtari *m[2], alloc_counts counts[2], muhtari_media *medi
     }
 }
 
+static uint32_t run_state_crc(const uint8_t *bytes, size_t size)
+{
+    static const uint8_t zero_crc[4] = {0u, 0u, 0u, 0u};
+    uint32_t crc = muhtari__crc32(0u, bytes, 24u);
+    crc = muhtari__crc32(crc, zero_crc, sizeof zero_crc);
+    return muhtari__crc32(crc, bytes + 28u, size - 28u);
+}
+
+static void run_state_put_u32(uint8_t *bytes, uint32_t value)
+{
+    bytes[0] = (uint8_t)value;
+    bytes[1] = (uint8_t)(value >> 8);
+    bytes[2] = (uint8_t)(value >> 16);
+    bytes[3] = (uint8_t)(value >> 24);
+}
+
+static void run_state_put_u64(uint8_t *bytes, uint64_t value)
+{
+    run_state_put_u32(bytes, (uint32_t)value);
+    run_state_put_u32(bytes + 4u, (uint32_t)(value >> 32));
+}
+
+static void run_state_rechecksum(uint8_t *bytes, size_t size)
+{
+    run_state_put_u32(bytes + 24u, 0u);
+    run_state_put_u32(bytes + 24u, run_state_crc(bytes, size));
+}
+
+static void run_state_spans(muhtari *m, muhtari_span spans[4])
+{
+    for (uint32_t kind = MUHTARI_MEMORY_SYSTEM_RAM; kind <= MUHTARI_MEMORY_EXPANSION_RAM; kind++) {
+        memset(&spans[kind - 1u], 0, sizeof spans[kind - 1u]);
+        spans[kind - 1u].size = (uint32_t)sizeof spans[kind - 1u];
+        require(muhtari_get_memory(m, kind, &spans[kind - 1u]) == MUHTARI_STATUS_OK);
+    }
+}
+
+static void run_state_recipe(muhtari *m[2], alloc_counts counts[2], uint8_t *scratch,
+                             const uint8_t *data, size_t size, uint8_t *video, int16_t *audio)
+{
+    uint8_t *candidate = scratch;
+    uint8_t *before = scratch + RUN_STATE_MAX_BYTES;
+    uint8_t *after = scratch + 2u * RUN_STATE_MAX_BYTES;
+    size_t bytes = muhtari_state_size(m[0]);
+    require(bytes > 0u && bytes <= RUN_STATE_MAX_BYTES);
+    require(muhtari_state_size(m[1]) == bytes);
+    require(muhtari_save_state(m[0], before, bytes) == MUHTARI_STATUS_OK);
+    require(muhtari_save_state(m[1], after, bytes) == MUHTARI_STATUS_OK);
+    require(memcmp(before, after, bytes) == 0);
+
+    /* UINT64_MAX is also the valid MARIA-terminated HALT-until sentinel. */
+    memcpy(candidate, before, bytes);
+    run_state_put_u64(candidate + 173u, UINT64_MAX);
+    run_state_rechecksum(candidate, bytes);
+    uint32_t allocations[2] = {counts[0].allocs, counts[1].allocs};
+    require(muhtari_load_state(m[0], candidate, bytes) == MUHTARI_STATUS_OK);
+    require(muhtari_load_state(m[1], candidate, bytes) == MUHTARI_STATUS_OK);
+    require(counts[0].allocs == allocations[0] && counts[1].allocs == allocations[1]);
+    require(muhtari_save_state(m[0], before, bytes) == MUHTARI_STATUS_OK);
+    require(muhtari_save_state(m[1], after, bytes) == MUHTARI_STATUS_OK);
+    require(memcmp(candidate, before, bytes) == 0 && memcmp(before, after, bytes) == 0);
+
+    muhtari_span spans_before[4], spans_after[4];
+    run_state_spans(m[1], spans_before);
+    muhtari_battery_info battery_before = {0}, battery_after = {0};
+    battery_before.size = battery_after.size = (uint32_t)sizeof battery_before;
+    require(muhtari_get_battery(m[1], &battery_before) == MUHTARI_STATUS_OK);
+
+    /* Input bytes select a validator recipe only; lengths, loop bounds and
+       the three state slices remain fixed by this compiled harness. */
+    memcpy(candidate, before, bytes);
+    uint8_t selector = size != 0u ? data[0] : 0u;
+    switch (selector % 3u) {
+    case 0u:
+        candidate[216u] = 1u;
+        run_state_put_u64(candidate + 165u, UINT64_MAX);
+        break;
+    case 1u: {
+        uint64_t frame_ticks = muhtari__timing(m[0]).frame_ticks;
+        uint64_t margin = 2u * frame_ticks + MUHTARI__SYNTH_OVERSHOOT_TICKS + UINT32_MAX;
+        uint64_t near_limit = UINT64_MAX - margin + 1u;
+        run_state_put_u64(candidate + 68u, near_limit);
+        run_state_put_u64(candidate + 76u, near_limit + frame_ticks);
+        run_state_put_u64(candidate + 117u, near_limit);
+        run_state_put_u64(candidate + 149u, near_limit);
+        run_state_put_u64(candidate + 7334u, near_limit);
+        run_state_put_u64(candidate + 7862u, near_limit);
+        run_state_put_u64(candidate + 7870u, near_limit);
+        run_state_put_u64(candidate + 7878u, near_limit);
+        run_state_put_u64(candidate + 10332u, near_limit + 64u);
+        run_state_put_u64(candidate + 10340u, near_limit);
+        break;
+    }
+    default:
+        run_state_put_u32(candidate + 8066u, MUHTARI__SYNTH_PCM_CAPACITY);
+        break;
+    }
+    run_state_rechecksum(candidate, bytes);
+    require(run_state_crc(candidate, bytes) ==
+            ((uint32_t)candidate[24u] | ((uint32_t)candidate[25u] << 8) |
+             ((uint32_t)candidate[26u] << 16) | ((uint32_t)candidate[27u] << 24)));
+    allocations[0] = counts[0].allocs;
+    allocations[1] = counts[1].allocs;
+    require(muhtari_load_state(m[1], candidate, bytes) == MUHTARI_STATUS_ERR_INVALID_STATE);
+    require(counts[0].allocs == allocations[0] && counts[1].allocs == allocations[1]);
+    run_state_spans(m[1], spans_after);
+    require(memcmp(spans_before, spans_after, sizeof spans_before) == 0);
+    require(muhtari_get_battery(m[1], &battery_after) == MUHTARI_STATUS_OK);
+    require(battery_before.data == battery_after.data &&
+            battery_before.bytes == battery_after.bytes &&
+            battery_before.generation == battery_after.generation &&
+            battery_before.layout_version == battery_after.layout_version &&
+            battery_before.eeprom_port == battery_after.eeprom_port &&
+            battery_before.eeprom_device == battery_after.eeprom_device &&
+            battery_before.hsc_attached == battery_after.hsc_attached &&
+            battery_before.firmware_flags == battery_after.firmware_flags &&
+            memcmp(battery_before.hsc_sha1, battery_after.hsc_sha1,
+                   sizeof battery_before.hsc_sha1) == 0);
+    require(muhtari_save_state(m[0], before, bytes) == MUHTARI_STATUS_OK);
+    require(muhtari_save_state(m[1], after, bytes) == MUHTARI_STATUS_OK);
+    require(memcmp(before, after, bytes) == 0);
+
+    uint32_t audio_count[2] = {0u, 0u};
+    muhtari_status status[2];
+    status[0] = run_one(m[0], video, audio, &audio_count[0]);
+    status[1] = run_one(m[1], video + RUN_PICTURE, audio + RUN_AUDIO, &audio_count[1]);
+    require(status[0] == MUHTARI_STATUS_OK && status[1] == MUHTARI_STATUS_OK);
+    require(audio_count[0] == audio_count[1]);
+    require(memcmp(video, video + RUN_PICTURE, MUHTARI__WIDTH * muhtari__timing(m[0]).height) == 0);
+    require(memcmp(audio, audio + RUN_AUDIO, audio_count[0] * sizeof *audio) == 0);
+    require(m[0]->bus.ticks == m[1]->bus.ticks);
+    require(m[0]->battery.generation == m[1]->battery.generation);
+    require(memcmp(m[0]->battery.data, m[1]->battery.data, m[0]->battery.bytes) == 0);
+    require(muhtari_save_state(m[0], before, bytes) == MUHTARI_STATUS_OK);
+    require(muhtari_save_state(m[1], after, bytes) == MUHTARI_STATUS_OK);
+    require(memcmp(before, after, bytes) == 0);
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     uint8_t *cart = (uint8_t *)malloc(RUN_CART_BYTES);
@@ -309,6 +452,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         counts[i].fail_from = 0u;
     }
     run_typed(m, counts, &media, data, size, video, audio);
+    run_state_recipe(m, counts, cart, data, size, video, audio);
     for (uint32_t i = 0u; i < 2u; i++) {
         require(counts[i].allocs == 3u && counts[i].frees == 1u);
         require(muhtari_power_cycle(m[i]) == MUHTARI_STATUS_OK);

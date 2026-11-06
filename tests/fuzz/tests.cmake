@@ -26,6 +26,7 @@ add_executable(muhtari-fuzz-loader-replay
   $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
 target_compile_definitions(muhtari-fuzz-loader-replay PRIVATE MUHTARI_FUZZ_REPLAY)
 target_include_directories(muhtari-fuzz-loader-replay PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(muhtari-fuzz-loader-replay PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-fuzz-loader-replay PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 muhtari_warnings(muhtari-fuzz-loader-replay)
@@ -106,6 +107,7 @@ if(MUHTARI_FUZZ)
     ${CMAKE_SOURCE_DIR}/tests/cart/test_cartdb.c
     $<TARGET_OBJECTS:muhtari_objs> $<TARGET_OBJECTS:muhtari_cpu>)
   target_include_directories(muhtari-fuzz-loader PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include)
+  target_link_libraries(muhtari-fuzz-loader PRIVATE muhtari::muhtari)
   target_compile_options(muhtari-fuzz-loader PRIVATE -fsanitize=fuzzer)
   target_link_options(muhtari-fuzz-loader PRIVATE -fsanitize=fuzzer)
   set_target_properties(muhtari-fuzz-loader PROPERTIES
@@ -202,6 +204,8 @@ else()
   muhtari_add_test(NAME fuzz.regress.run
     COMMAND muhtari-fuzz-run-replay --seeds ${fuzz_run_regress}
     LABELS fuzz portable TIMEOUT 14)  # ceil(2 x 6.64s), complete Windows x64 run40414104123/job121892328427; scales retained.
+  # Keep the bounded portable replay isolated within this CTest invocation.
+  set_tests_properties(fuzz.regress.run PROPERTIES RUN_SERIAL TRUE)
   # Fault prevented: the run replay passing having run nothing.
   set(fuzz_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:muhtari-fuzz-run-replay>)
   string(REPLACE ";" "$<SEMICOLON>" fuzz_cmd "${fuzz_cmd}")

@@ -25,6 +25,11 @@ on:
         type: boolean
         required: false
         default: false
+      phase14_host:
+        description: "Run the opt-in Phase 14 owned save/load host case"
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       ref:
@@ -475,11 +480,17 @@ jobs:
           EVENT: ${{ github.event_name }}
           PROBE: ${{ inputs.keyboard_probe_only }}
           PREFLIGHT: ${{ inputs.keyboard_preflight_only }}
+          PHASE14: ${{ inputs.phase14_host }}
         run: |
+          if [ "$PHASE14" = true ] && { [ "$TRACE" = true ] || [ "$PROBE" = true ] || [ "$PREFLIGHT" = true ]; }; then
+            echo "Phase 14 state host scope cannot be combined with keyboard/probe/trace scopes"
+            exit 1
+          fi
           if [ "$TRACE" = true ]; then
             test "$EVENT" = workflow_dispatch && test "$PROBE" = true && test "$PREFLIGHT" != true
           fi
       - name: Keyboard access preflight before all content
+        if: ${{ !inputs.phase14_host }}
         run: |
           mkdir -p build/frames
           cc -std=c17 -Wall -Wextra -Werror tests/retroarch/keyboard_preflight.c \
@@ -493,9 +504,14 @@ jobs:
         with:
           name: archives-macos-arm64
           path: build/archives
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: hashes-macos-arm64
+          path: build/provenance
       - name: Core and runner from the build
         run: |
           shasum -a 256 build/archives/muhtari-libretro-macos-arm64.zip
+          test "$(cat build/provenance/commit.txt)" = "$GITHUB_SHA"
           unzip -q build/archives/muhtari-libretro-macos-arm64.zip -d build/libretro
           unzip -q build/archives/muhtari-runner-macos-arm64.zip -d build/runner
           unzip -q build/archives/muhtari-library-macos-arm64.zip -d build/library
@@ -539,7 +555,7 @@ jobs:
           cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Ihost tests/diag/driver.c tests/runner/png_read.c host/palette.c runner/sha256.c \
             build/library/lib/libmuhtari.a -o build/frames/diag
           cc -std=c17 -O2 -Wall -Wextra -Werror -Iinclude -Ihost -o build/frames/compare tests/common/bmp.c tests/retroarch/compare.c tests/input/pixels.c tests/diag/battery_pixels.c host/palette.c
-          cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Irunner -Ihost tests/input/test_input.c tests/input/pixels.c tests/cart/images.c runner/movie.c host/palette.c \
+          cc -std=c17 -O2 -Wall -Wextra -Werror -Isrc -Iinclude -Irunner -Ihost tests/input/test_input.c tests/input/history_pixels.c tests/cart/images.c runner/movie.c host/palette.c \
             build/library/lib/libmuhtari.a -o build/frames/input-fixture
           build/frames/input-fixture --write-cart build/frames/input.a78
       - name: RetroArch runs the dma diagnostic
@@ -759,6 +775,106 @@ jobs:
           grep -q 'signature-only stub' build/ra-battery-2/retroarch.log
           test ! -e build/ra-battery-2/system/highscre.bin
           wc -l tests/retroarch/*
+          cmake -DMODE=support-report -DROOT="$PWD" -P tests/retroarch/run_retroarch.cmake
+      - name: Opt-in owned RetroArch save/load control
+        if: github.event_name == 'workflow_dispatch' && inputs.phase14_host == true
+        run: |
+          set -euo pipefail
+          state_root=build/frames/frontend-states
+          receipt="$state_root/host-receipt.txt"
+          mkdir -p "$state_root"
+          test ! -e "$receipt" && test ! -L "$receipt"
+          source_sha=$(git rev-parse HEAD)
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          {
+            printf 'receipt_version=1\nsource_sha256=%s\nrun_id=%s\nrun_attempt=%s\n' \
+              "$source_sha" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            printf 'workflow_event=%s\nrun_url=%s\nhost_runner=macos-15\n' \
+              "$GITHUB_EVENT_NAME" "$run_url"
+            printf 'prelaunch_status=started\n'
+          } > "$receipt"
+          finish_receipt() {
+            step_status=$?
+            printf 'host_step_exit=%s\n' "$step_status" >> "$receipt"
+          }
+          trap finish_receipt EXIT
+          test "$source_sha" = "$GITHUB_SHA"
+          test -x build/runner/bin/muhtari-run
+          test -s build/library/lib/libmuhtari.a
+          test -s build/libretro/cores/muhtari_libretro.dylib
+          test -s build/libretro/info/muhtari_libretro.info
+          host_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/RetroArch.app/Contents/Info.plist)
+          test "$host_version" = 1.22.2
+          core_archive_sha=$(shasum -a 256 build/archives/muhtari-libretro-macos-arm64.zip | awk '{print $1}')
+          runner_archive_sha=$(shasum -a 256 build/archives/muhtari-runner-macos-arm64.zip | awk '{print $1}')
+          library_archive_sha=$(shasum -a 256 build/archives/muhtari-library-macos-arm64.zip | awk '{print $1}')
+          core_sha=$(shasum -a 256 build/libretro/cores/muhtari_libretro.dylib | awk '{print $1}')
+          info_sha=$(shasum -a 256 build/libretro/info/muhtari_libretro.info | awk '{print $1}')
+          runner_sha=$(shasum -a 256 build/runner/bin/muhtari-run | awk '{print $1}')
+          library_sha=$(shasum -a 256 build/library/lib/libmuhtari.a | awk '{print $1}')
+          {
+            printf 'host_version=%s\nstate_mode=states\nhost_mode=RetroArch-1.22.2-Metal;run_ahead=one-frame;instance=single;audio=disabled\n' "$host_version"
+            printf 'core_artifact_sha256=%s\nrunner_artifact_sha256=%s\nlibrary_artifact_sha256=%s\n' \
+              "$core_archive_sha" "$runner_archive_sha" "$library_archive_sha"
+            printf 'core_sha256=%s\ninfo_sha256=%s\nrunner_sha256=%s\nlibrary_sha256=%s\n' \
+              "$core_sha" "$info_sha" "$runner_sha" "$library_sha"
+            printf 'artifact_source_sha256=%s\n' "$(cat build/provenance/commit.txt)"
+            printf 'artifact_origin=same-workflow-run\n'
+          } >> "$receipt"
+          cc -std=c17 -O2 -Wall -Wextra -Werror tests/retroarch/states.c \
+            -o build/frames/states
+          cmake \
+            -DRETROARCH=build/RetroArch.app/Contents/MacOS/RetroArch \
+            -DCORE=build/libretro/cores/muhtari_libretro.dylib \
+            -DINFO=build/libretro/info/muhtari_libretro.info \
+            -DINFO_NAME=muhtari_libretro.info \
+            -DTEMPLATE=tests/retroarch/test.cfg.in \
+            -DMODE=states \
+            -DSTATE_DRIVER=build/frames/states \
+            -DCOMPARE=build/frames/compare \
+            -DSTATE_OUT="$PWD/build/frames/frontend-states" \
+            -DRA_DIR="$PWD/build/frames/frontend-states/ra" \
+            -DSAVE_DIR="$PWD/build/frames/frontend-states/save" \
+            -DFRAMES=120 \
+            -DROM=tests/diag/frontend-states.a78 \
+            -DSHOT="$PWD/build/frames/frontend-states/final.bmp" \
+            "-DSOURCE_SHA=$source_sha" \
+            "-DRUN_ID=$GITHUB_RUN_ID" \
+            "-DRUN_ATTEMPT=$GITHUB_RUN_ATTEMPT" \
+            "-DWORKFLOW_EVENT=$GITHUB_EVENT_NAME" \
+            "-DRUN_URL=$run_url" \
+            "-DHOST_VERSION=$host_version" \
+            "-DCORE_ARTIFACT_SHA=$core_archive_sha" \
+            "-DRUNNER_ARTIFACT_SHA=$runner_archive_sha" \
+            "-DLIBRARY_ARTIFACT_SHA=$library_archive_sha" \
+            -P tests/retroarch/run_retroarch.cmake
+      - name: Require the Phase 14 states pass receipt
+        if: success() && github.event_name == 'workflow_dispatch' && inputs.phase14_host == true
+        run: |
+          set -euo pipefail
+          receipt=build/frames/frontend-states/host-receipt.txt
+          test -s "$receipt"
+          grep -Fqx 'state_mode=states' "$receipt"
+          grep -Fqx 'host_outcome=pass' "$receipt"
+      - name: Record an opted-in host step that was not reached
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.phase14_host == true
+        run: |
+          set -euo pipefail
+          state_root=build/frames/frontend-states
+          receipt="$state_root/host-receipt.txt"
+          mkdir -p "$state_root"
+          if [ ! -e "$receipt" ] && [ ! -L "$receipt" ]; then
+            source_sha=$(git rev-parse HEAD)
+            run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            {
+              printf 'receipt_version=1\nsource_sha256=%s\nrun_id=%s\nrun_attempt=%s\n' \
+                "$source_sha" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+              printf 'workflow_event=%s\nrun_url=%s\nhost_runner=macos-15\n' \
+                "$GITHUB_EVENT_NAME" "$run_url"
+              printf 'host_outcome=skipped_before_host_step\n'
+              printf 'reason=an earlier job step failed or was cancelled\n'
+            } > "$receipt"
+          fi
       # Fault prevented: a compare that cannot fail. One byte of pixel (7,3)
       # in a copy of the runner's BMP is inverted, at an offset read from
       # the BMP header; the tool must exit 1 naming exactly that pixel.
@@ -781,7 +897,11 @@ jobs:
           case $out in "first difference at $x,$y: "*) ;; *) exit 1 ;; esac
       - name: RetroArch log
         if: failure()
-        run: cmake -DBUILD=build -P tests/retroarch/report.cmake
+        run: |
+          report_rc=0
+          cmake -DBUILD=build -P tests/retroarch/report.cmake || report_rc=$?
+          cat build/ra-dma/retroarch.log build/ra-battery-1/retroarch.log build/ra-battery-2/retroarch.log build/frames/frontend-states/ra/retroarch.log || true
+          exit "$report_rc"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -792,6 +912,10 @@ jobs:
             build/frames/input-wrapper.log
             build/ra-input-probe/test.cfg
             build/ra-input-probe/retroarch.log
+            build/frames/frontend-states/host-receipt.txt
+            build/frames/frontend-states/final.bmp
+            build/frames/frontend-states/save/frontend-states.srm
+            build/frames/frontend-states/ra/retroarch.log
 
   # Cachegrind instructions per frame of the test card, the pull request's
   # merge commit against its first parent measured twice (docs/testing.md,

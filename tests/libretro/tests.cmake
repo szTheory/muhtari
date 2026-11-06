@@ -143,6 +143,13 @@ if(TARGET muhtari_libretro)
   muhtari_add_test(NAME libretro.host.battery_order
     COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> battery_order
     LABELS libretro portable TIMEOUT 5)
+  # Fault prevented: a loaded module save that differs from the library's
+  # canonical bytes, loses continuation state, or leaves stale state after load.
+  muhtari_add_test(NAME libretro.host.state
+    COMMAND muhtari-test-libretro-host $<TARGET_FILE:muhtari_libretro> state
+      ${PROJECT_SOURCE_DIR}/tests/diag/battery.a78
+      ${PROJECT_SOURCE_DIR}/tests/diag/linear16.a78
+    LABELS libretro portable TIMEOUT 10)
   # Fault prevented: the core RetroArch loads shows a frame, timing or
   # geometry other than the library's, or needs content to start.
   muhtari_add_test(NAME libretro.host.xrgb8888
@@ -244,7 +251,8 @@ if(TARGET muhtari_libretro)
     ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/runner ${PROJECT_BINARY_DIR}/generated)
   target_include_directories(muhtari-test-rcheevos SYSTEM PRIVATE ${libretro_rc}/include
     ${libretro_rc}/src)
-  target_link_libraries(muhtari-test-rcheevos PRIVATE muhtari_test_rcheevos muhtari_host ${CMAKE_DL_LIBS})
+  target_link_libraries(muhtari-test-rcheevos PRIVATE muhtari_test_rcheevos muhtari_host
+    muhtari::muhtari ${CMAKE_DL_LIBS})
   set_target_properties(muhtari-test-rcheevos PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-rcheevos)
@@ -256,7 +264,7 @@ if(TARGET muhtari_libretro)
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari_libretro_testdb PRIVATE ${PROJECT_SOURCE_DIR}/libretro
     ${PROJECT_SOURCE_DIR}/runner ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/generated)
-  target_link_libraries(muhtari_libretro_testdb PRIVATE muhtari_host)
+  target_link_libraries(muhtari_libretro_testdb PRIVATE muhtari_host muhtari::muhtari)
   set_target_properties(muhtari_libretro_testdb PROPERTIES PREFIX "" C_VISIBILITY_PRESET hidden
     LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
@@ -272,7 +280,7 @@ if(TARGET muhtari_libretro)
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari_libretro_testdb565 PRIVATE ${PROJECT_SOURCE_DIR}/libretro
     ${PROJECT_SOURCE_DIR}/runner ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/generated)
-  target_link_libraries(muhtari_libretro_testdb565 PRIVATE muhtari_host)
+  target_link_libraries(muhtari_libretro_testdb565 PRIVATE muhtari_host muhtari::muhtari)
   set_target_properties(muhtari_libretro_testdb565 PROPERTIES PREFIX "" C_VISIBILITY_PRESET hidden
     LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   if(APPLE)
@@ -289,7 +297,8 @@ if(TARGET muhtari_libretro)
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
   target_include_directories(muhtari-test-diag-testdb PRIVATE ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/libretro ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(muhtari-test-diag-testdb PRIVATE muhtari_host ${CMAKE_DL_LIBS})
+  target_link_libraries(muhtari-test-diag-testdb PRIVATE muhtari_host muhtari::muhtari
+    ${CMAKE_DL_LIBS})
   set_target_properties(muhtari-test-diag-testdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
   muhtari_warnings(muhtari-test-diag-testdb)
   set(libretro_retail ${PROJECT_BINARY_DIR}/tests/libretro-retail.cmake)
@@ -335,16 +344,63 @@ include([==[${CMAKE_CURRENT_LIST_FILE}]==])
     COMMAND ${CMAKE_COMMAND} -DINFO=${PROJECT_BINARY_DIR}/libretro/muhtari_libretro.info
       -DINVENTORY=${libretro_inventory} -P ${libretro_scripts}/info_claims.cmake
     LABELS libretro TIMEOUT 10)
-  # The self test checks a .info whose "true" claim maps to no test and
-  # expects that claim named.
+  # Exercise the actual claim consumer with state support and with its backing
+  # test row removed, so metadata cannot outlive its executable evidence.
+  set(libretro_state_claim ${PROJECT_BINARY_DIR}/libretro/savestate_claim.info)
+  file(WRITE ${libretro_state_claim} "savestate = \"true\"\n")
+  muhtari_add_test(NAME libretro.info_claims.savestate
+    COMMAND ${CMAKE_COMMAND} -DINFO=${libretro_state_claim}
+      -DINVENTORY=${libretro_inventory} -P ${libretro_scripts}/info_claims.cmake
+    LABELS libretro TIMEOUT 10)
+  set(libretro_missing_inventory ${PROJECT_BINARY_DIR}/libretro/state_missing_inventory.txt)
+  file(WRITE ${libretro_missing_inventory} "libretro.host.battery\tlibretro,portable\n")
+  set(libretro_cmd ${CMAKE_COMMAND} -DINFO=${libretro_state_claim}
+    -DINVENTORY=${libretro_missing_inventory} -P ${libretro_scripts}/info_claims.cmake)
+  string(REPLACE ";" "$<SEMICOLON>" libretro_cmd "${libretro_cmd}")
+  muhtari_add_test(NAME libretro.info_claims.missing_state.self_test
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
+      "-DREGEX=savestate needs libretro.host.state" -P ${libretro_scripts}/expect_fail.cmake
+    LABELS libretro TIMEOUT 10)
+  # A deterministic metadata claim needs both the loaded-state continuation
+  # proof and this phase's recurring host-control proof. Keep the invalid
+  # fixtures behind the same claim consumer as the production .info file.
+  set(libretro_deterministic_claim ${PROJECT_BINARY_DIR}/libretro/deterministic_state_claim.info)
+  file(WRITE ${libretro_deterministic_claim}
+    "savestate = \"true\"\nsavestate_features = \"deterministic\"\n")
+  set(libretro_deterministic_missing_inventory
+    ${PROJECT_BINARY_DIR}/libretro/deterministic_state_missing_inventory.txt)
+  file(WRITE ${libretro_deterministic_missing_inventory}
+    "libretro.host.state\tlibretro,portable\nprop.state_continuation\tportable,prop\n")
+  set(libretro_cmd ${CMAKE_COMMAND} -DINFO=${libretro_deterministic_claim}
+    -DINVENTORY=${libretro_deterministic_missing_inventory}
+    -P ${libretro_scripts}/info_claims.cmake)
+  string(REPLACE ";" "$<SEMICOLON>" libretro_cmd "${libretro_cmd}")
+  muhtari_add_test(NAME libretro.info_claims.deterministic_missing_proof.self_test
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
+      "-DREGEX=savestate_features needs retroarch.states.controls"
+      -P ${libretro_scripts}/expect_fail.cmake
+    LABELS libretro TIMEOUT 10)
+  set(libretro_deterministic_invalid_claim
+    ${PROJECT_BINARY_DIR}/libretro/deterministic_state_invalid_claim.info)
+  file(WRITE ${libretro_deterministic_invalid_claim}
+    "savestate = \"true\"\nsavestate_features = \"rollback\"\n")
+  set(libretro_cmd ${CMAKE_COMMAND} -DINFO=${libretro_deterministic_invalid_claim}
+    -DINVENTORY=${libretro_inventory} -P ${libretro_scripts}/info_claims.cmake)
+  string(REPLACE ";" "$<SEMICOLON>" libretro_cmd "${libretro_cmd}")
+  muhtari_add_test(NAME libretro.info_claims.deterministic_invalid_level.self_test
+    COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
+      "-DREGEX=savestate_features must be.*deterministic"
+      -P ${libretro_scripts}/expect_fail.cmake
+    LABELS libretro TIMEOUT 10)
+  # Unknown capabilities remain rejected after savestate is a recognized claim.
   set(libretro_fixture ${PROJECT_BINARY_DIR}/libretro/unmapped_claim.info)
-  file(WRITE ${libretro_fixture} "supports_no_game = \"true\"\nsavestate = \"true\"\n")
+  file(WRITE ${libretro_fixture} "supports_no_game = \"true\"\nnetplay = \"true\"\n")
   set(libretro_cmd ${CMAKE_COMMAND} -DINFO=${libretro_fixture}
     -DINVENTORY=${libretro_inventory} -P ${libretro_scripts}/info_claims.cmake)
   string(REPLACE ";" "$<SEMICOLON>" libretro_cmd "${libretro_cmd}")
   muhtari_add_test(NAME libretro.info_claims.self_test
     COMMAND ${CMAKE_COMMAND} "-DCMD=${libretro_cmd}" -DCODE=1
-      "-DREGEX=savestate = .true. maps to no test" -P ${libretro_scripts}/expect_fail.cmake
+      "-DREGEX=netplay = .true. maps to no test" -P ${libretro_scripts}/expect_fail.cmake
     LABELS libretro TIMEOUT 10)
   # A description one character over the limit must be named with its length.
   set(libretro_fixture ${PROJECT_BINARY_DIR}/libretro/long_description.info)

@@ -225,7 +225,36 @@ selection are unavailable. No full-XM service or gameplay compatibility is claim
 unloaded/no-content sessions return NULL/0. The frontend restores bytes before the first frame and owns
 all `.srm` file I/O; the adapter has no save-file operations or mirror buffer. Pointer and length remain
 stable until unload or reload. Restart retains committed battery bytes; it discards incomplete EEPROM
-programming without advancing emulated time. Save states remain unavailable.
+programming without advancing emulated time.
+
+## Save states
+
+For loaded content, `retro_serialize_size`, `retro_serialize` and `retro_unserialize` use the same canonical
+bytes as the library state API. The reported size stays fixed until unload or reload. Serialization accepts a
+non-null buffer at least that large and leaves any extra capacity untouched; restore requires a non-null buffer
+of exactly that length. Invalid, short or oversized states are rejected without changing the machine. Unloaded,
+failed-load and no-content test-card sessions report size zero and refuse save/load callbacks.
+
+The versioned bytes are little-endian and bound to a SHA-256 effective machine identity. Their CRC-32 detects
+corruption but does not authenticate a state file; unsupported format or behavior revisions are refused without
+migration.
+
+Normal disk states, run-ahead contexts 1 and 2, and an unavailable context query all use the library's fully
+validated little-endian format. If the frontend explicitly requests rollback-netplay context 3, the callbacks
+report size zero and refuse save/load because that context requires big-endian integers. There is no second
+netplay codec.
+
+State bytes include emulated battery contents. Restoring a state rolls those emulated bytes back and updates
+the live `RETRO_MEMORY_SAVE_RAM` span in place. The core does not read or write `.srm` files: the frontend
+owns raw-save persistence and decides when to flush committed bytes. The frontend also owns state files,
+rewind storage, and rewind controls and UI.
+
+The `.info` `savestate = "true"` and `savestate_features = "deterministic"` declarations are tied to the
+loaded callback, repeated-continuation, and host-control test registrations. They describe the core's state
+contract; they are not evidence that a frontend has exercised it. Actual pinned RetroArch save/load, rewind,
+and run-ahead qualification remains pending. In [run 41629846188](https://github.com/szTheory/muhtari/actions/runs/41629846188), the Windows x64 and ARM64 builds and hosted Ubuntu x64 ASan passed, but the macOS Intel independent-parent baseline timed out in `fuzz.regress.run`. The exact artifact join failed and the dependent RetroArch host job was skipped; no actual-host result is claimed.
+
+The later authorized attempt, [run 41733613173](https://github.com/szTheory/muhtari/actions/runs/41733613173), authenticated the pinned source and same-run macOS arm64 artifacts, but its states driver exited before state-mode media preparation and RetroArch launch. It emitted a fail-closed preflight message from a compound check; the exact failing condition is unknown. No state-mode save/load, rewind, run-ahead, picture, progress, or durability observation was collected, so these declarations remain unqualified for an actual frontend.
 
 **Restart** power-cycles the console: volatile memory is cleared, the cartridge starts again the way it was loaded, and the
 difficulty switches go back to their options.
@@ -262,7 +291,8 @@ routines, formatting or high-score screens and does not provide full OpenHSC fun
 Loaded-module tests cover persistence and firmware failures. A separate automated RetroArch roundtrip
 starts two fresh frontend processes, checks independently drawn HSC and EEPROM counters from 1 to 2,
 and compares every saved byte with independent expectations and fresh runner processes. The package
-declares battery saves and optional HSC firmware. Save states and AtariVox speech are unavailable.
+declares battery saves, basic savestate callback support and optional HSC firmware. AtariVox speech is
+unavailable.
 
 ## Achievements
 

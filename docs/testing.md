@@ -1,20 +1,22 @@
 # Testing
 
+Run CI locally with inventory and release checks.
+
 ## The entry point
 
 ```sh
 cmake --workflow --preset ci
 ```
 
-Needs CMake 4.3+, Ninja, C/C++ compilers:
+Needs CMake 4.3+, Ninja and C/C++ compilers:
 
 1. configure `build/ci` (Release, warnings fatal, macOS deployment target 10.13);
 2. build;
-3. test all but label `release`; write `build/ci/junit.xml`;
-4. package three release zips into `build/ci`;
-5. test label `release` against those zips; write `build/ci/junit-release.xml`.
+3. test every test except those labelled `release`, writing `build/ci/junit.xml`;
+4. package the three release zips into `build/ci`;
+5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
 
-Tests build samples, OpenBIOS and rcheevos' resolver from pins. Fetch first:
+Tests build samples, OpenBIOS and rcheevos' resolver from pins. Fetch them first:
 
 ```sh
 scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # e.g. wasmtime-aarch64-macos
@@ -34,7 +36,7 @@ arithmetic carry alone cannot replace execution.
 
 ## Lanes
 
-Each `cmake --workflow --preset <name>` lane builds in `build/<name>`.
+Each lane is one workflow preset: `cmake --workflow --preset <name>`. Its build goes to `build/<name>`.
 
 | Preset | What it proves | Inventory | Tests run |
 |---|---|---|---|
@@ -99,7 +101,7 @@ with the module disabled. Both keep the portable BankSet/XBoard/XM diagnostics a
 
 | Label | Tests |
 |---|---|
-| `core` | The library's behaviour: sizes, allocation, the frame and the test card hash. |
+| `core` | The library's behaviour: sizes, allocation, frame/test-card hashes, and state payload, lifecycle, battery, topology and refusal cases. |
 | `vectors` | SALLY against public tests. `cpu.vectors.<op>`, one per opcode, runs the committed sample, the first 100 SingleStepTests `6502/v1` tests of that opcode, and checks every bus cycle, the final registers and RAM, and the cycle where the instruction polls NMI. `cpu.decimal.clark` runs Bruce Clark's decimal-mode test to `ERROR` = 0. `cpu.unstable.sally_constant` pins the ANE and LXA constant. The rest test the vector tooling: the reader, the converter and the pin. |
 | `vectors-full` | The `vectors-full` lane: the fetch, the sample match, and `cpu.vectors-full.<op>` over all 10,000 tests of each opcode's file. |
 | `sally` | SALLY on the 7800's bus (`docs/hardware/bus.md`): 4- and 6-tick cycles, RDY holding reads only, the HALT gate and its two-cycle latency, and the NMI latch, with `cpu.nmi.*` for the instruction after which an edge is taken. |
@@ -108,20 +110,20 @@ with the module disabled. Both keep the portable BankSet/XBoard/XM diagnostics a
 | `frame` | Whole frames through the run loop: SALLY, the bus and MARIA together ([emulation tests, frame](emulation-tests.md#frame)). |
 | `input` | Controllers and console switches as a game reads them, driven by movie rows ([emulation tests, input](emulation-tests.md#input)). |
 | `bios` | The boot through OpenBIOS and through a BIOS built in memory ([emulation tests, bios](emulation-tests.md#bios)). |
-| `portable` | Tests that hold on every platform, including the frame and audio hashes. |
+| `portable` | Tests common to every platform, including frame/audio hashes and state-byte/continuation report rows. |
 | `abi` | The public header compiled alone as C17 and C++17, the API test, and the core library's symbols. |
 | `host` | The palette helper shared by the runner and the core. |
 | `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. `cart.identify.test_list` finds the built 7800basic sample through the test hash list. No image bytes are tracked. |
 | `fuzz` | Loader/run replay, typed pin/EEPROM traffic and output/allocation invariants; Linux also uses libFuzzer. [Expansion coverage and fault evidence](hardware/bus.md#expansion-replay-and-properties). |
-| `prop` | 100 seeded cases; advisory nightly 10,000. Isolation covers nine typed families and all BankSet/expansion profiles, battery gates, refusals and pure observers. |
-| `runner` | `muhtari-run` options, output, exit statuses, the PNG writer and MD5, the movie reader (`runner.movie_parse`: good movies, and each bad one refused at its exact line and column), and `--probe` on the images `muhtari-test-images` writes into `build/<preset>/runner-probe`: the lines, their order, the digests against CMake's own, and each refusal's status and message. |
+| `prop` | 100 seeded cases; advisory nightly 10,000. Isolation covers nine typed families and all BankSet/expansion profiles, battery gates, state continuation/refusal and pure observers. |
+| `runner` | `muhtari-run` options/output/statuses, PNG/MD5, `runner.movie_parse` exact bad-line locations, `runner.state.*`, and `--probe` generated-image order/digests/refusals. |
 | `built` | Samples built from pinned tools (`tests/built/`). `built.<name>` builds one 7800basic 0.41 sample per row of `expected.txt` under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/<name>/`, and checks the `.a78` and `.bin` SHA-256s in that row. `runner.probe.sample_*` then probe `simple`: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` ([emulation tests, basic](emulation-tests.md#basic)). |
 | `diag` | Our own diagnostic ROMs judged through their mailbox against values derived beforehand, and the core's statistics ([emulation tests, diag](emulation-tests.md#diag)). `diag.rebuild` carries `built`. |
 | `title` | The ledger's title predicates on `simple`, on the fast boot and through OpenBIOS, the pin writer's refusal of a blank screen, and the local driver on public bytes (`title.local.fixture`) ([emulation tests, title](emulation-tests.md#title)). |
 | `library` | Each `pr` ledger row, the ratchet (`policy.compat_ratchet.controls`) and the generated page, run by CI's `library` job ([emulation tests, ledger](emulation-tests.md#ledger); [CI](#ci)). |
 | `bench` | The runner's benchmark report. |
-| `libretro` | The libretro core in an in-process host (content, controls, devices, Restart, BIOS files, options, the memory map), BIOS file/allocation/path faults (`libretro.bios_failures`), rcheevos' resolver over that map (`libretro.rcheevos`), its `.info` file (claims backed, description at most 512 characters) and its vendored header. |
+| `libretro` | In-process host (content, controls, devices, Restart, BIOS/options/memory/state); `libretro.bios_failures`, `libretro.rcheevos`, `.info` claim/description checks and vendored header. |
 | `install` | The library installed and found by an outside project, and embedded with `add_subdirectory`. |
 | `perf` | Allocation-free frames. |
 | `policy` | Rules about the repository and the tests themselves; `policy.claims_wording` requires the disclaimer and rejects overclaims in user-facing files (`tests/cmake/claims_wording.cmake`). |
@@ -304,19 +306,21 @@ integration fit. Native timings alone do not qualify them; no gameplay performan
 `<rom> <max % × 100> <expiry YYYY-MM-DD> <reason>`. It
 raises that ROM's limit through its expiry, at most 60 days away, and is removed after the pull request merges. `ctest -L perf` runs the gate's own tests on synthetic values.
 
-**Nightly bench.** `.github/workflows/nightly.yml`: nightly `muhtari-run --bench 300000` on `ubuntu-26.04`,
-`ubuntu-26.04-arm`, `macos-15`; wasmtime 48.0.6 on `ubuntu-26.04` (row `wasm32-wasmtime-48.0.6`).
-Reports: nine runner keys (`frames`, `fps_milli`, `p50_us` to `p99_999_us`, `max_us`),
-`/usr/bin/time`'s `max_rss_kb` (omitted for wasm32: it measures wasmtime), then `runner`.
-Summaries/artifacts `bench-<runner>`/`bench-wasm32`: uncommitted trends, never gates.
-Job results open/comment on the single open `nightly` issue (failure) or close it (success).
-`force_failure` dispatch fails on purpose. Also on `ubuntu-26.04`: `vectors-full` and `fuzz` lanes
-(`cmake --workflow --preset <lane>`, job `fuzz`), each with its inventory's JUnit check;
-failed `fuzz` uploads both targets' crash directories. `prop`: build `ci` with `MUHTARI_TIMEOUT_SCALE=10`,
-run `ctest -L prop` with `MUHTARI_PROP_CASES=10000`, `MUHTARI_PROP_SEED`=run ID;
-advisory outside `report.needs` (2/10 main runs successful,2026-10-22).
-PRs run the whole workflow without issue writes for trigger `paths`: workflow, core/runner sources,
-build files/pins, each job's tests/scripts/inventories.
+**Nightly bench.** `.github/workflows/nightly.yml` runs `muhtari-run --bench 300000` every night on `ubuntu-26.04`,
+`ubuntu-26.04-arm` and `macos-15`, and under wasmtime 48.0.6 on `ubuntu-26.04` (row `wasm32-wasmtime-48.0.6`).
+Each report has the runner's nine keys (`frames`, `fps_milli`, `p50_us` to `p99_999_us`, `max_us`), then
+`max_rss_kb` from `/usr/bin/time` (not for wasm32, where it would measure wasmtime) and `runner`. Find them in the
+run's job summaries and its `bench-<runner>` and `bench-wasm32` artifacts; they are trend data, never a gate and
+never committed. A failed night opens or comments on the one open issue labelled `nightly`, and a good night closes
+it; the report decides from the jobs' results. Dispatching the workflow with `force_failure` fails a run on purpose.
+The same workflow runs the `vectors-full` lane (`cmake --workflow --preset vectors-full`) and the `fuzz` lane (job
+`fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its inventory;
+`fuzz` uploads both targets' crash directories when it fails. The `prop` job
+builds the `ci` preset with `MUHTARI_TIMEOUT_SCALE=10` and runs `ctest -L prop` with `MUHTARI_PROP_CASES=10000` and
+the run's ID as `MUHTARI_PROP_SEED`; it stays advisory outside `report.needs`: 2/10 successful main runs as of
+2026-10-22. A pull request runs the whole workflow, writing no issue, when it changes a file listed in the trigger's
+`paths`: the workflow, the core and runner sources, the build files and pins, and each job's tests, scripts and
+inventories.
 
 **Bumping the vector pin.** One `ci:` pull request: set the new commit in the `sst-6502-v1` row and the sample's
 manifest row; run the `vectors-full` workflow once, whose fetch fails against the old list but leaves the new files
@@ -361,14 +365,29 @@ diagnostic modules prove neither delivery nor packaged-core acceptance.
 The offline preflight allows unrelated inherited descriptors but rejects helper-file, trace-directory
 and extra core aliases by device/inode identity; pass/leak and identity controls run in that consumer.
 
+**Phase 14 state case.** A single `workflow_dispatch` must use matching same-run macOS arm64 artifacts and
+receipt identity. Limits remain five minutes per job, 50 seconds per child, 45 seconds of work plus five seconds
+of cleanup, 120 frames and 64 forward actions. Qualification requires external UDP rejection before launch.
+The state driver retains the first failed prelaunch stage: `sandbox-exec`, `sandbox-helper`, `work-deadline`,
+`config-port` or `runahead-config`. `retroarch.states.controls` checks ordering, faults, config validation,
+descriptor cleanup and receipt retention offline; it launches no sandbox, network request or RetroArch process
+and cannot qualify frontend behavior. Never rerun or launch locally; failed or incomplete evidence stays
+pending.
+
+Run 41733613173 stopped at an opaque state preflight; its WASI advisory also failed on `tmpfile`. It produced no
+state capture, so FRONT-02/03/04 remain pending and the host allowance is spent. See the
+[resource record](../.planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md).
+`run_retroarch.cmake` retains private logs for the DMA and battery cases; neither establishes general retail-game
+compatibility.
+
 ## Release archives
 
-`release.archive_contents` unpacks three zips in `build/ci/release/extract`, requiring:
+`release.archive_contents` unpacks the three zips under `build/ci/release/extract` and requires:
 
-- exactly `muhtari-{library,runner,libretro}-<os>-<arch>.zip`, unversioned;
-- expected root members, no top-level folder;
-- source-identical `LICENSE` and `THIRD-PARTY-NOTICES.md`;
-- no absolute source/build paths.
+- the names `muhtari-{library,runner,libretro}-<os>-<arch>.zip`, with no version and no other `muhtari-*.zip`;
+- exactly the expected members at the root, with no top-level folder;
+- `LICENSE` and `THIRD-PARTY-NOTICES.md` byte-identical to the source tree's;
+- no file containing the absolute source or build directory.
 
 The README's install line is checked on macOS arm64 against the locally built zip:
 
@@ -438,7 +457,7 @@ build apart from the host's:
 ```sh
 docker run --rm --platform linux/arm64 -v "$PWD:/src" -v /src/build -w /src ubuntu:26.04 sh -c '
   apt-get update -qq &&
-  apt-get install -y -qq --no-install-recommends ca-certificates curl xz-utils git ninja-build gcc g++ binutils &&
+  apt-get install -y -qq --no-install-recommends ca-certificates curl xz-utils git ninja-build gcc g++ binutils jq &&
   scripts/fetch-pin.sh cmake-linux-aarch64 /opt/cmake &&
   PATH=/opt/cmake/bin:$PATH cmake --workflow --preset ci'
 ```

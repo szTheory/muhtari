@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
-current_phase: 12
-current_phase_name: Player-ready delivery and Playstead bridge
-status: executing
-stopped_at: Completed 12-10-PLAN.md
-last_updated: "2026-11-03T01:55:32.171Z"
-last_activity: 2026-11-02
-state_head: 97d1af6550445f7b50a1fe270fa76afb70d21dfc
+current_phase: 14
+current_phase_name: Proven frontend states and responsive play
+status: "Blocked: Plan 14-31 halted; no process now matches the recorded PID, but the child's exit/reap/cleanup remain unproved; Phase 14 acceptance remains blocked."
+stopped_at: "Plan 14-31 halted: exit 137; later PID query found no current process, but historical exit/reap/cleanup remain unknown"
+last_updated: "2026-11-06T00:52:23Z"
+last_activity: 2026-11-06
+state_head: 6df27c46722c2a6f100d7168a7da5929f6b54398
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 17
-  completed_plans: 11
+  total_plans: 48
+  completed_plans: 45
   percent: 33
 ---
 
@@ -21,22 +21,46 @@ progress:
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-10-29.
+See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 13 shipped in PR #42 and v0.11.1. Phase 12 is current and remains blocked at accepted 0/4 on actual pinned-host input proof. Run 41461948345 exposed a saturated helper trace and a missed child-status check at the acknowledgment cutoff; the actual host cause remains unknown. Continue local diagnostic planning. All hosted allowances remain spent; do not repeat that run or initiate another host/CI action without a separate bounded scope.
+Current focus: Plan 14-31 ended terminal unknown: exit 137 after one recorded fork; child receipt and cleanup proof are missing. One separately authorized read-only PID query (`ps -p 62950 -o pid=,ppid=,stat=,etime=,comm=`) exited 1 with no matching row, so no process with that PID was present at check time; this does not establish the child's historical exit or cleanup. No further process inspection, retry or target proposal.
 
 ## Current Position
 
-Phase: 12 (Player-ready delivery and Playstead bridge) — EXECUTING
-Plan: 3 of 9
-Status: Ready to execute
-Next separate command: $gsd-execute-phase 12 --gaps-only
-Boundary: The previous host allowance is spent and cannot be reused. Local diagnosis/planning continue; no new RetroArch or CI run, publication, retry, timeout change or allowance renewal is authorized.
+Phase: 14 (Proven frontend states and responsive play) — EXECUTING
+Plan: 31 of 31
+Status: Blocked: Plan 14-31 halted; forked child exit and cleanup are unproved; Phase 14 acceptance remains blocked.
+Next action: Phase 14 acceptance remains blocked by unresolved host evidence. Do not inspect or retry Plan 14-31's recorded child or initiate host/remote actions. The owner pre-authorizes bounded local builds, tests and CI workflows for new work under about one hour; this does not renew a plan-specific cap or authorize host/remote action. The renewed isolated `title.pin.self_test` run passed, but the historical full-workflow timeout remains unexplained; see `.planning/debug/phase14-title-pin-self-test.md`. The phase's one gap round is used, so no new gap plan is available. Once this reconciliation is complete, the recommended next GSD command is `$gsd-discuss-phase 12` to reassess the Phase 12 halt against the new local evidence; it does not authorize another host run.
+Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
-Latest Phase 12 diagnostic observation: [run 41461948345](https://github.com/szTheory/muhtari/actions/runs/41461948345) ended at the 5014ms acknowledgment cutoff with zero captures and unknown child status. Its 64-record helper trace saturated by 2.934s after 60 repeated POST records; the helper continued posting through 4.84s. The core trace was unfinished and INIT-only. This establishes an observability gap; actual input polling, returned values and the underlying host cause remain unknown. See MU-HOST-007 and D-13. Do not repeat this run.
+## Current Blockers
+
+- Root-merge reconciliation corrected the Phase 14 `support-report` file path to `tests/common/bmp.c`. The existing `retroarch.states.controls` test now checks both the successful report and a missing-reader failure. Its local pass does not clear the Phase 14 workflow gate or authorize host work.
+- The historical BIOS timeout cause remains unknown. The approved five-test RUN_SERIAL mitigation preserved one-second limits; after it, the independent parent and frozen source passed complete CI and hygiene workflows. This does not attribute the earlier timeouts.
+- Plan 14-13 is complete: the exact five RUN_SERIAL properties and metadata fault controls passed, and the sole focused batch passed 7/7 including both fixture setup tests. That batch is consumed; do not retry it. No deadline or unrelated test metadata changed.
+- Plan 14-11 completed its local workflow and evidence tasks. Run 41733613173 failed at a compound states preflight before host media setup or state-mode RetroArch launch; the exact failing member is unknown. No state-mode save/load, rewind, or run-ahead observation exists, so FRONT-02/03/04 remain pending. Its single host allowance is spent.
+- Plan 14-14 completed the local coordinator, receipt, configuration and cleanup controls. Its poll-error regression was reproduced and fixed offline, but it is unrelated and unattributed to run 41733613173. No sandbox, network, RetroArch or host action ran.
+- Plan 14-15 tested the independent parent and frozen evidence child. The parent's CI workflow failed with 12 ordinary-test timeouts (four title and eight Maria DMA cases); its hygiene passed. The frozen child passed ordinary CI, release and hygiene, but cannot replace the required parent. No retry, remote qualification or host decision followed. The cause of the parent timeouts is unknown; FRONT-02/03/04 and the spent host stop remain unchanged.
+- Plan 14-16 completed the saved-receipt, exact-parent and fixture-closure audit. The process-list tools were denied, so the no-overlap precondition failed; neither focused command ran and the cause remains unknown. No source or test policy changed; the parent complete-CI gate and FRONT-02/03/04 remain unresolved.
+- Plan 14-17 stopped at the single prescribed process-enumeration preflight: `/bin/ps` was denied with exit 126. It did not capture fresh CTest metadata or start either focused command; invocation counters remain zero. Do not retry or substitute a process probe in this runtime. A successor scope needs an environment where process enumeration and executable/cwd attribution are available; the complete-parent gate and FRONT-02/03/04 remain unresolved.
+- Plan 14-19 reached the local Docker daemon and passed VM capacity, but stopped before container creation because the local image inspection interface exposed no independently verifiable provenance receipt for a cached native Linux image. No source/toolchain qualification or project workload occurred; default and serial counters remain zero. The pair is unspent but ineligible until provenance can be verified. The native parent timeout cause remains unknown, and FRONT-02/03/04 remain pending.
+- Plan 14-20 used its one qualification invocation under the owner's exact one-off image trust exception, then halted before Docker because the pinned Linux arm64 Wasmtime 48.0.6 archive/binary was absent. No container or test ran; the pair remains unspent but ineligible, and neither `qualify` nor `pair` may be rerun under that plan. The next prerequisite is the exact hash-checked Linux artifact and a separately authorized qualification scope. FRONT-02/03/04 remain pending; Phase 14 acceptance stays blocked.
+- Plan 14-21 used its one qualification after the owner supplied the Linux Wasmtime input. It stopped before Docker because `git -C build/pins/rcheevos rev-parse HEAD` returned the parent worktree commit: the extracted rcheevos archive has no `.git`, and `--show-toplevel` confirmed Git walked up to the project. The source contents were not verified as matching or mismatching the pin. The stop receipt writer raised `NameError: os is not defined`; reconstructed preflight/pair receipts passed the read-only inspector and CMake checker. No Docker command, container, or project test ran. The pair has zero reservations/launches and is unspent but ineligible. Do not retry; a future attempt requires correct archive-content verification and a new authorized scope. FRONT-02/03/04 and all native/host acceptance blockers remain unchanged.
+- Plan 14-22 fixed the rcheevos check to use `fetch-pin.sh`'s archive SHA verification and fixed/import-tested the production stop receipt writer. Offline syntax, supervisor, watchdog, claim and receipt controls passed. Its sole qualification reached the local Docker daemon and VM, then the image-inspection template failed because `.Config.Volumes` was absent. The captured stderr has the exact formatter error; no image identity was established, no container or project test ran, and the rcheevos fetch was not reached. The stopped receipts validate, and the pair has zero reservations/launches and is unspent but ineligible. Do not retry this plan; a new qualification requires a corrected image-inspection template and new authority. FRONT-02/03/04 and all native/host acceptance blockers remain unchanged.
+- Plan 14-23 fixed optional image-field inspection and passed offline controls. Its one fresh qualification observed the exact approved image and verified rcheevos, then stopped because `docker inspect --format '{{json .}}'` returned an object and the contract check indexed it as a list (`KeyError: 0`). No source or pin archive was copied into the container; no build, CTest metadata, fixture, or protected test ran. The original cleanup receipt said `refused_not_owned` because the handler passed the ID and owner-label file paths instead of their contents; after an exact saved-ID/label check the same container was removed successfully. The qualification is spent; the pair has zero reservations, starts and unknown starts and remains unspent but ineligible. Do not rerun gap23 `qualify` or `pair`. Plan 14-24's offline correction stopped before qualification because its generated controller had a truncated MAME digest; that scope remains blocked/ineligible with zero Docker/workload starts. Plan 14-25 subsequently entered local preparation but halted at its failed independent R gate before hygiene, frozen-source validation and the owner checkpoint. A future correction/qualification needs a separate plan and authorization. FRONT-02/03/04 and the native/host acceptance blockers remain unchanged.
+- The single automatic wave-1 Plan 14-24 `cmake --workflow --preset ci` gate failed during configure because `tests/inventory/ci.txt` is unsorted (exit 1). No build/test workflow steps ran. That historical gate cannot be repeated; Plan 14-25 subsequently ran under its separate scope and then halted at its own failed gate.
+- Plan 14-26 fixed the CI inventory-order blocker, then its single automatic `cmake --workflow --preset ci` gate exited 8 after configure and build passed. CTest could not launch `build/pins/wasmtime/wasmtime`: read-only inspection confirmed it is an AArch64 Linux ELF on the Darwin arm64 host. No retry occurred. Plan 14-27 then replaced only that ignored tool through its pinned Darwin arm64 fetch; its single automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25 later stopped at its failed independent R gate; no remote or host work followed.
+- The advisory WASI job in run 41733613173 failed because `tmpfile` is deprecated/not defined for WASI at `tests/core/test_state.c:2022` under `-Werror`; it remains advisory and was not retried.
 
 ## Preserved Phase 12 position — halt remains binding
+
+**Local follow-up integrated 2026-11-05:** the later authorized Phase 12 input-history
+revision is now in this root checkout. Its generated cartridge is consumed by
+`input.proline_one_button`; the serialized-image check remains registered. The
+local build and seven focused tests pass. This only improves owned diagnostic
+coverage: Phase 12 remains accepted 0/4, 12-02/03/04 remain blocked, and no host
+allowance or retry was reopened.
 
 Latest step: [Phase 12 gap plan 12-09](phases/12-player-ready-delivery-and-playstead-bridge/12-09-PLAN.md)
 is complete. The [OpenBIOS diagnostic and later input-trace attempt](phases/12-player-ready-delivery-and-playstead-bridge/12-07-SUMMARY.md#post-halt-input-trace-attempt-2026-11-01)
@@ -86,18 +110,32 @@ Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
-Current milestone: 0 completed plans; duration and trend not measured. Historical counts stay in [MILESTONES.md](MILESTONES.md).
+Current milestone: 8 completed plans in Phase 13; duration and trend not measured. Historical counts stay in [MILESTONES.md](MILESTONES.md).
 
 | Phase | Plans | Total | Avg/Plan |
 |---|---|---|---|
 | 12 | 0 complete; 4 acceptance plans plus 4 gap plans | — | — |
-| 13 | 0 complete; 8 planned | — | — |
-| 14 | 0 complete; total TBD | — | — |
+| 13 | 8 | - | - |
+| 14 | 9 plans completed; phase incomplete | — | — |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
-| Phase 12 P10 | 24m | 3 tasks | 9 files |
+| Phase 14 P01 | 17min | 2 tasks | 5 files |
+| Phase 14 P02 | 19min | 2 tasks | 5 files |
+| Phase 14 P03 | 29min | 2 tasks | 8 files |
+| Phase 14 P04 | 14min | 3 tasks | 7 files |
+| Phase 14 P05 | 29min | 2 tasks | 10 files |
+| Phase 14 P07 | 57min | 3 tasks | 6 files |
+| Phase 14 P08 | 65min | 3 tasks | 8 files |
+| Phase 14 P10 | 20min | 1 tasks | 4 files |
+| Phase 14 P12 | 12min | 1 tasks | 2 files |
+| Phase 14 P13 | 38min | 3 tasks | 6 files |
+| Phase 14 P16 | 34min | 2 tasks | 4 files |
+| Phase 14 P23 | 25min | 1 tasks | 10 files |
+| Phase 14 P24 | 122min | 1 tasks | 6 files |
+| Phase 14 P27 | 14min | 2 tasks | 4 files |
+| Phase 14 P25 | 34m approx | 1 partial, 2 not reached tasks | 5 files |
 
 ## Accumulated Context
 
@@ -112,8 +150,34 @@ Current milestone: 0 completed plans; duration and trend not measured. Historica
 - State includes emulated battery bytes and pending work; host dirty tokens are not restored, changed bytes notify dirty tracking, and speculative work cannot commit durable files. Layout/pins are downstream design.
 - Playstead owns actual adapter/install/input/session changes in a separate session; initial state UI is RetroArch-managed. Full recording/AI/TAS/generalized continuation and native Continue/history remain later.
 - Read settled decisions and reproduced LESSONS before subsystem work. One GSD step/session; tag creation disabled, release-please owns packages; completed quick tasks stay in place.
-- [Phase 12]: Keep the repair local and diagnostic-only; PLAY-03 acceptance remains pending at 0/4.
-- [Phase 12]: Preserve the helper protocol, input schedule, existing CTest identities and time limits.
+- [Phase 14]: Use RAM $2300/$2304 for the fixture marker and little-endian progress counter.
+- [Phase 14]: Check the whole 2048-byte HSC image with the counter at raw offsets 0x100/0x101.
+- [Phase 14]: Derive the completed-frame picture phase and glyph pixels from fixture/source code.
+- [Phase 14]: Decode the visible progress glyph before whole-picture equality so equal but wrong pictures cannot pass.
+- [Phase 14]: Register the portable diagnostic when either the libretro target or a cross-compiling emulator consumes it.
+- [Phase 14]: Keep local callback evidence separate from actual pinned-host acceptance.
+- [Phase 14]: Require exact RetroArch version, core, fixture basename, and CRC before state commands.
+- [Phase 14]: Send state-changing commands once and require fresh bounded observations before accepting them.
+- [Phase 14]: Keep FRONT-02, FRONT-03, and FRONT-04 pending until plan 14-05 records source-bound host evidence.
+- [Phase 14]: Accept rewind only after three distinct strict progress reversals and fresh matching pictures; do not assume a fixed decrement.
+- [Phase 14]: Accept run-ahead only when committed RAM advances once and the new picture shows exactly the fixture-defined one-frame-ahead value.
+- [Phase 14]: Tie deterministic state metadata to loaded-core equality, repeated continuation, and the recurring host-control registration.
+- [Phase 14]: Keep FRONT-02, FRONT-03, and FRONT-04 pending until plan 14-05 reviews source-bound pinned-host evidence.
+- [Phase 14]: The single Phase 14 source-bound host dispatch is spent; its RetroArch job skipped, so no retry or frontend launch follows.
+- [Phase 14]: FRONT-02, FRONT-03, and FRONT-04 remain pending until fresh actual-host observations exist.
+- [Phase 14]: Run 41629846188 skipped RetroArch after a macOS Intel parent-baseline timeout; FRONT-02/03/04 remain pending and the one dispatch is spent.
+- [Phase 14]: Do not change CI deadlines, topology, or caching from the single macOS Intel baseline timeout.
+- [Phase 14]: The owner separately authorized 14-08's one-test portable RUN_SERIAL scheduling amendment, complete local source/parent preflight and at most one normal push plus one fresh host-enabled dispatch. This does not reset prior allowances or review counters; local Rosetta success did not reproduce hosted slowness or establish causation.
+- [Phase 14]: Preserve the five BIOS commands, fixtures, labels, assertions, and one-second deadlines. A separately authorized RUN_SERIAL property on only those tests is a reversible scheduling mitigation, not proof of the historical cause.
+- [Phase 14]: Keep FRONT-02/03/04 pending. Plan 14-11 may proceed only after the repaired candidate passes complete local workflows; process attribution is not a prerequisite, and its actual-host decision remains separate.
+- [Phase 14]: Apply RUN_SERIAL only to the five approved BIOS tests as a scheduling mitigation; preserve one-second deadlines and keep the historical timeout cause and frontend acceptance unresolved.
+- [Phase 14]: Close Plan 14-16 after the saved parent timeout audit; process listing was denied, so the focused pair was not launched and the cause remains unknown.
+- [Phase 14]: Owner requested a Docker-based portable timeout diagnostic using a fresh private source/build copy; Linux results cannot replace native macOS CI or pinned RetroArch acceptance.
+- [Phase 14]: Stop Plan 14-23 after its sole qualification returned KeyError: 0; do not retry or launch the ineligible pair.
+- [Phase 14]: Keep Phase 14 acceptance blocked with FRONT-02/03/04 pending; image and Linux diagnostics do not prove pinned RetroArch behavior.
+- [Phase 14]: Plan 14-24 stopped before qualification because the generated local MAME digest is truncated; qualification remains N/A and ineligible.
+- [Phase 14]: Use only the existing pinned Darwin arm64 Wasmtime artifact and checksum-validating fetch path.
+- [Phase 14]: Keep FRONT-02/03/04 pending until evidence beyond local tool recovery passes.
 
 ### Pending Todos
 
@@ -136,7 +200,7 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 - Latest [scratch WASI proposal](debug/phase12-wasi-local-proposal.md) is prepared read-only, awaiting a NEW local download/execution decision. Installed compiler lacks builtins as well as linker. Recommend one checksum-frozen official SDK28 arm64 bundle in temporary storage, existing pinned runtime, actual owning two-test mock registration and ten scratch counterfactuals within finite bounds. Its bundled libc differs from CI; success would close only focused local execution, not full hosted WASI or input. Two disjoint assessments and parent synthesis; fresh exact reviewed source/original complete attempt/jobs/steps/artifacts/health checks agree, required failure preserved, noPR/noactiveCI. No package fetched, binary generated, target/helper/content executed or source/remote changed. Agent owns checks after any new decision; no owner verification or acknowledgment is needed to preserve halt. Earlier next-actions below are historical; accepted0/4/downstream blocks/spent live allowances unchanged.
 
-- Latest [approved local WASI batch](debug/phase12-held-capture-diagnosis.md#approved-local-wasi-transport-batch-2026-10-31) is finished/uncommitted. Native/fallback/forced-branch semantic controls, target compilation, owning registration simulations and independent pinned-runtime fixtures pass; real helper127/native127 preserved, only WASI mock outward125 changes. Initial full workflow failed solely docs budget; compact equivalent prose and final full workflow/exact ordinary+release inventories/three packages pass. One bounded source review has no blocker. Complete C mock still lacks local WASI linked execution; no compatible linker found and none fetched. Fresh original complete hosted receipts/source/health/noPR/noactiveCI unchanged, required verdict stays failed. Recommend next separate read-only scratch tooling proposal, not another host run. No approved local work awaits user action; no publication/live authority or acceptance follows. Earlier pending-local-decision text below is historical. Keep accepted0/4/downstream halt automatically.
+- Latest [approved local WASI batch](debug/phase12-held-capture-diagnosis.md#approved-local-wasi-transport-batch-2026-10-31) is finished/uncommitted. Native/fallback/forced-branch semantic controls, target compilation, owning registration simulations and independent pinned-runtime fixtures pass; real helper127/native127 preserved, only WASI mock outward125 changes. Initial full workflow failed solely docs budget; compact equivalent prose and final full workflow/exact ordinary+release inventories/three packages pass. One bounded source review has no blocker. Complete C mock still lacks local WASI linked execution; no compatible linker found and fetched. Fresh original complete hosted receipts/source/health/noPR/noactiveCI unchanged, required verdict stays failed. Recommend next separate read-only scratch tooling proposal, not another host run. No approved local work awaits user action; no publication/live authority or acceptance follows. Earlier pending-local-decision text below is historical. Keep accepted0/4/downstream halt automatically.
 
 - Latest [read-only assessment](debug/phase12-held-capture-diagnosis.md#read-only-readiness-and-wasi-exit-assessment-2026-10-31) is finished. Fresh complete receipts/source/health/noPR/noactiveCI checks preserve the required failure. Pinned WASI runtime rejects the mock's outward127 after its actual-helper127 assertion passes; recommend a new local-only mock transport125 batch in the two owning test files plus docs, with native127 and all semantic controls retained. Existing host logs already report window/draw initialization; defer low-value window-only instrumentation and any live retry. Readiness/focus/consumption/hotkey/audio cause remains unproved. Await this NEW local repair scope decision only; no repair/publication/content/live allowance or acceptance is implied. Keep accepted0/4/downstream halt automatically. Earlier next-actions below remain historical.
 
@@ -158,6 +222,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 - Keep optional Phase 10/11 findings, hardware/PAL fit confidence and HSC stub/unsupported sound limits. Pinned accounting remains 201 unknown/3 skipped of 204; conformance/title screens and voluntary gameplay reports are separate evidence.
 - SEED-007/009/010 inform bounded Phase 12 work; SEED-008 is preferred next candidate. SEED-006 unpromoted; SEED-011–014 retain optional triggers.
 - Owner-requested [browser-player](seeds/SEED-261030-tt4-browser-libretro-player.md) and [optional-interface](seeds/SEED-261030-zk3-emulator-interface.md) ideas are dormant, indexed research with future-session prompts. They start no project or specification, change no active roadmap/acceptance, and include read-only dirty-snapshot Playstead context.
+- Phase 14 actual-host qualification remains pending: run 41629846188 failed upstream and skipped RetroArch. Its allowance stays spent. Plan 14-08's separately authorized single new attempt is available only after its complete preflight; no local frontend launch is permitted.
+- Plan 14-23 qualification is spent after container-contract validation raised KeyError: 0; the pair remains unspent but ineligible. A new plan and authorization are required before fixing the object parsing and cleanup-handler bugs.
+- Plan 14-24 local-input gate failed: the generated controller expects a 62-character MAME a7800.xml digest; pins.txt and the local file agree on the 64-character hash. Qualification invocation 0, Docker contact 0, protected workload starts 0; scope blocked/ineligible with no retry.
+- Plan 14-26 remains historical and halted with its failed automatic gate spent. Plan 14-27's one pinned Darwin arm64 Wasmtime fetch and one automatic local CI workflow passed; the workflow completed CTest (695/695) and release tests (6/6). Plan 14-25 later stopped at its sole independent R gate, before hygiene, frozen-source validation and its owner checkpoint. No push, remote dispatch, RetroArch, Docker, or host action is authorized by that terminal scope.
+- Plan 14-25 stopped at its sole independent R CI gate: 694/695 ordinary tests passed, while title.pin.self_test timed out and reported /bin/ps Operation not permitted. The local scope is terminal; do not run hygiene, a frozen-source gate, or the owner checkpoint. A new bounded investigation/scope is required before any further workflow attempt. FRONT-02/03/04 remain pending.
 
 ### Roadmap Evolution
 
@@ -165,11 +234,12 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-03T01:55:32.151Z
-Stopped at: Completed 12-10-PLAN.md
-Resume file: None
-Next separate command: `$gsd-plan-phase 12 --gaps`
-Context handoff: Phase 13 is shipped. Phase 12 remains at accepted 0/4 with all prior hosted allowances spent and actual input cause unknown. Reconcile the uncommitted Phase 12 plans/summaries and latest debug closeout; plan the dependency-free diagnostic repair and deterministic controls. The current plan grants no host/CI action. Context can be cleared; the next agent owns local planning and its required evidence checks.
+Last session: 2026-11-05T22:57:51Z
+Stopped at: Plan 14-31 halted: exit 137; later PID query found no current process, but historical exit/reap/cleanup remain unknown
+Resume file: phases/14-proven-frontend-states-and-responsive-play/14-31-OBSERVER.md
+
+Next command: No Phase 14 execution, verification, CTest, project workflow or target-observation command is valid under existing scopes. A separately authorized read-only PID query found no current process, but no child or qualification receipt proves the historical exit, reap or cleanup. Any additional inspection or workload needs a new exact scope.
+Context handoff: Plan 14-31 halted after exit 137; attempt.json records one forked child (PID 62950), but child.json and qualification.json are missing. The one authorized `ps -p 62950 -o pid=,ppid=,stat=,etime=,comm=` query exited 1 with no matching row, showing only that no process with that PID was present at check time. The child’s exit, reap and cleanup remain unproved. Do not retry, signal, inspect another process, or launch target/test/CI/host work without a new exact scope. Phase 14 remains blocked and FRONT-02/03/04 remain pending. See phases/14-proven-frontend-states-and-responsive-play/14-31-OBSERVER.md and 14-31-SUMMARY.md.
 
 ## Deferred Items
 

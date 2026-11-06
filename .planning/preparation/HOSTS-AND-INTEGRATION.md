@@ -32,10 +32,12 @@ and muhtari artifacts; the headless runner remains an automation interface.
 Actual Playstead adapter and paired E2E acceptance remain sibling-owned. Initial
 state UI is RetroArch-managed; native Playstead hosting/Continue has separate triggers.
 
-Keep the settled LE visitor, three deliverables and host ownership. Derive the full
-state inventory, media/firmware binding and battery/dirty-token semantics from current
-code and STATE requirements during phase design; the old proposed header/field list
-is not proof that current pending input/device/audio state is covered.
+Keep the settled LE visitor, three deliverables and host ownership. Phase 13 now records
+the complete state inventory, effective media/firmware identity, battery rollback and
+core-owned pending input in `13-FIELD-PROOF.md`; pending host input and callbacks remain
+host-owned. That source ledger establishes local implementation coverage, not exact-source
+native/PowerPC execution or phase acceptance. The old proposed header/field
+list alone is not proof that current pending input/device/audio state is covered.
 
 Actual RetroArch save/load is a new consumer boundary in FRONT-02; exhaustive
 rewind/run-ahead semantics stay in-process, with host claims limited to qualified
@@ -90,11 +92,12 @@ Port devices are `SET_CONTROLLER_INFO` (35) subclasses, not options: ProLine (de
 **Saves and HSC (implemented):** [docs/libretro.md](../../docs/libretro.md) owns load-time option/controller/metadata
 precedence, exact immediately published SAVE_RAM, reload-only changes, optional copied `highscre.bin` and
 truthful HSC SRAM/ROM descriptors. The frontend owns per-game raw `.srm` I/O; the adapter owns no save files.
-Detailed loaded-module and pinned-resolver tests cover this path. The two-launch hosted RetroArch proof
-checks independent counters, complete media and pixels; `.info` declares saves and optional HSC firmware.
-No save states or speech are claimed.
+Detailed loaded-module and pinned-resolver tests cover this path. `.info` also declares serialized state, backed
+by `libretro.host.state` and the capability-claim checks. Those are in-process callback checks; actual RetroArch
+save/load remains a separate host boundary for FRONT-02. The two-launch hosted RetroArch proof covers battery
+counters, media and pixels, not serialized states.
 
-**Serialize.** Size constant between load and unload (L7699), 0 without content; no `SET_SERIALIZATION_QUIRKS` (44); byte-wise little-endian; savestate context ignored although `ROLLBACK_NETPLAY` (L5707) asks for big-endian. Run-ahead (same or second instance) and rewind need only speed + determinism; netplay compares content, core version and states [HI.22] → byte-identical states on six platforms + BE qemu. XM's 128 KB RAM dominates size (derived). **Rec:** LE always. **Alt:** BE in context 3. **Would change if:** a frontend really exchanges context-3 states across machines.
+**Serialize.** Size is constant while content is loaded and zero otherwise (L7699); the callbacks use the versioned little-endian core format and do not advertise `SET_SERIALIZATION_QUIRKS` (44). They ignore context, including `ROLLBACK_NETPLAY` (L5707), which requests big-endian; context 3 therefore reports size zero and refuses save/load. `libretro.host.state` covers byte delegation, refusal and continuation in-process. Exact-source native/PowerPC state-byte and continuation equality still requires the full executed lane receipts; compile-only or local callback evidence cannot establish it. XM's 128 KB RAM dominates ordinary state size (derived). **Rec:** keep one LE format. **Alt:** a separate BE format only if an actual frontend exchanges context-3 states across machines.
 
 **`.info`.** `display_name "Atari - 7800 (muhtari)"`, `corename "muhtari"`, `systemname "Atari 7800"`, `systemid "atari_7800"`, `database "Atari - 7800"`, `manufacturer "Atari"`, `supported_extensions "a78|bin"`, `license "MIT"`, `needs_fullpath`/`hw_render`/`cheats`/`disk_control`/`load_subsystem` false, `display_version` generated from `version.txt` (ProSystem: `serialized`, `memory_descriptors true`, `core_options false` [HI.02]). Each claim maps to its proving tests at configure time (nesturbator pattern [HI.22]):
 
