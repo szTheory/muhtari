@@ -52,7 +52,7 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 6/10 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
+**Plans:** 9/12 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
 
 Plans:
 
@@ -68,7 +68,7 @@ spent; accepted 0/4 and PLAY-03 remain pending. Preserve the
 and diagnose driver/config/event delivery with new evidence before any new bounded
 host test or dependent plan.
 
-**Additive gap plans** *(direct ordinary host observation pending; 12-08 is superseded and excluded from the active count; original acceptance halt and successor blocks remain)*
+**Additive gap plans** *(direct ordinary host acceptance pending; 12-08 is superseded and excluded from the active count; original acceptance halt and successor blocks remain)*
 
 - [x] 12-05-PLAN.md — Published the prior portability repair; its single diagnostic failed Linux preflight before RetroArch and its allowance is spent.
 - [x] 12-06-PLAN.md — Wired the ordinary one-process capture and controls; its single full CI run timed out on Windows ARM64 before RetroArch, so PLAY-03 remains pending and the allowance is spent.
@@ -77,6 +77,8 @@ host test or dependent plan.
 - [x] 12-09-PLAN.md — Reconcile current source identities and check local docs readiness; no runnable acceptance plan is available while 12-01 remains halted. Wave 3/12-07 still needs a separate scope.
 - [x] 12-10-PLAN.md — Repair helper trace observability and child-status cutoff locally; add generated ordered-input history and held/released pixel controls; no host or CI action.
 - [x] 12-11-PLAN.md — Wave 1, local documentation only: complete launch/refusal prose and missing-artifact disposition; record the bounded property deferral, preserve all eight current registrations and restore the existing docs budget. Original acceptance plans stay blocked; accepted 0/4.
+- [x] 12-12-PLAN.md — One authorized ordinary run failed the required hygiene formatter gate before RetroArch. Its one ref, dispatch, and cancellation are spent; it supplied no host evidence.
+- [x] 12-13-PLAN.md — One authorized post-format ordinary run passed the candidate package and DMA comparison but failed the input acknowledgment deadline before held/released images; battery checks were skipped and CI required failed. Its one ref and dispatch are spent; PLAY-03 remains open.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

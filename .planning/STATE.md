@@ -6,14 +6,14 @@ current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
 status: executing
 stopped_at: "Plan 14-31 halted: exit 137; later PID query found no current process, but historical exit/reap/cleanup remain unknown"
-last_updated: "2026-11-06T14:54:28Z"
+last_updated: "2026-11-06T15:58:25Z"
 last_activity: 2026-11-06
-state_head: ec1b474c74b49c907a7d4e2b66f14e0577735af6
+state_head: 235d1b665cbf05cebfa3f30a0021c13cc5a55fd5
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 49
-  completed_plans: 46
+  total_plans: 51
+  completed_plans: 48
   percent: 33
 ---
 
@@ -24,14 +24,14 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 12 plan 12-12's single fresh host attempt is terminal and failed at `hygiene.format` before RetroArch started. The six flagged files are now formatted locally with clang-format 21.1.8 and tree hygiene passes. Reviewed plan 12-13 is ready for a possible new host attempt, but no separate owner authorization for that remote scope is recorded. Phase 12 remains accepted 0/4; original 12-01 and blocked 12-02/03/04 remain intact. Phase 14 remains stopped at Plan 14-31; the Phase 12 attempt did not change its process-inspection, retry, host or dispatch stop.
+Current focus: Phase 12 Plan 12-13 is terminal and halted after one ordinary host run. The repaired formatter gate and DMA comparison passed, but the actual held/released input probe hit its acknowledgment deadline before producing images; battery controls were skipped and CI required failed. Phase 12 remains accepted 0/4, 12-01 remains halted, and 12-02/03/04 remain blocked. Phase 13 is complete. Phase 14 remains stopped at Plan 14-31; no Phase 14 process-inspection, retry, host or dispatch stop changed.
 
 ## Current Position
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Plan: Plan 12-13 is the only runnable gap plan; its remote scope is held for separate owner authorization. Plan 12-12 is terminal and spent; 12-02/03/04 remain blocked by 12-01.
-Status: In progress
-Next action: Owner: explicitly authorize one new bounded ordinary host attempt under [Plan 12-13](phases/12-player-ready-delivery-and-playstead-bridge/12-13-PLAN.md). After that authorization, run `$gsd-execute-phase 12 --gaps-only --wave 1`, which selects only Plan 12-13. Preserve the Phase 14 Plan 14-31 stop.
+Plan: Plan 12-13 is terminal and halted; the only incomplete plans are 12-02/03/04, all blocked by 12-01. Phase 12 has no runnable plans and remains accepted 0/4.
+Status: Blocked
+Next action: Prepare a new gap plan from the Plan 12-13 input acknowledgment failure and the separate advisory wasm32 inventory failure. The one new ref publication and ordinary host dispatch are spent; any further host attempt needs a new bounded scope. Preserve the Phase 14 Plan 14-31 stop.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
@@ -100,11 +100,18 @@ candidate package or host frames, and did not pass PLAY-03. The exact receipt is
 The six files were then formatted locally in [quick task 261106-cri](quick/261106-cri-fix-host-input-formatting/261106-cri-SUMMARY.md);
 clang-format 21.1.8, diff checks and `scripts/hygiene.sh --tree` pass. That local
 repair does not retry the host run or renew its spent allowance. Phase 12 remains
-accepted 0/4; a further hosted attempt requires separate authorization. Plan
-[12-13](phases/12-player-ready-delivery-and-playstead-bridge/12-13-PLAN.md)
-is reviewed and runnable, but has not been authorized for execution. Its exact
-command after authorization is `$gsd-execute-phase 12 --gaps-only --wave 1`.
-No Phase 14 action or allowance changed.
+accepted 0/4; a further hosted attempt requires a separately scoped decision.
+Plan [12-13](phases/12-player-ready-delivery-and-playstead-bridge/12-13-PLAN.md)
+has now run under the owner's bounded authorization. Its exact-source ordinary
+run [42239124226](https://github.com/szTheory/muhtari/actions/runs/42239124226)
+passed formatting and DMA host comparison but failed the held/released input
+step at the 5013 ms acknowledgment deadline (capture 0, child status unknown);
+the battery controls were skipped and CI required failed. The exact package,
+host, job and command evidence is in the
+[12-13 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-13-SUMMARY.md).
+That one ref publication and dispatch are spent. Phase 12 remains accepted 0/4,
+Plan 12-01 remains halted, and 12-02/03/04 remain blocked. No Phase 14 action or
+allowance changed.
 Complete-C WASI local execution already passed separately; older linker-only
 proposals remain historical and hosted WASI remains advisory/unaccepted.
 Earlier latest/next-action statements below are historical where superseded.
@@ -112,10 +119,10 @@ Current repair source/evidence hashes and preservation checks belong to the
 linked outcome; earlier unchanged-source preservation checks are historical.
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Plan: 0 of 4 acceptance plans accepted; 6 of 9 active plans have terminal outcomes, including gap plans 12-05/06/07/09/10; 12-01 remains halted, 12-08 is superseded, and acceptance plans 12-02/03/04 remain blocked
-Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 remain blocked
-Next local step: `$gsd-execute-phase 12 --gaps-only --wave 1` selects only 12-11 for local documentation/evidence disposition. TUNE-06 still needs complete comparable Windows measurements, and PLAY-03 needs actual RetroArch host evidence; this plan supplies neither.
-Last activity: 2026-11-05
+Plan: 0 of 4 acceptance plans accepted; 9 of 12 active plans have terminal outcomes. Plan 12-01 remains halted; 12-02/03/04 remain blocked; Plans 12-12/13 are terminal evidence attempts and do not satisfy PLAY-03.
+Status: Blocked on actual held/released RetroArch input proof and the original 12-01 halt.
+Next local step: `$gsd-plan-phase 12 --gaps` to plan a local response to the new input acknowledgment failure and advisory inventory mismatch. No new hosted dispatch is authorized by the spent 12-13 scope. TUNE-06, PLAY-01/02/04, final TUNE-07 disposition and Phase 14 acceptance remain separate.
+Last activity: 2026-11-06
 Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
