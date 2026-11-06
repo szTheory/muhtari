@@ -76,7 +76,7 @@ host test or dependent plan.
 - [ ] 12-08-PLAN.md — Superseded and excluded from the active count; its blocked attempt and evidence remain immutable history.
 - [x] 12-09-PLAN.md — Reconcile current source identities and check local docs readiness; no runnable acceptance plan is available while 12-01 remains halted. Wave 3/12-07 still needs a separate scope.
 - [x] 12-10-PLAN.md — Repair helper trace observability and child-status cutoff locally; add generated ordered-input history and held/released pixel controls; no host or CI action.
-- [ ] 12-11-PLAN.md — Wave 1, local documentation only: complete launch/refusal prose and missing-artifact disposition; record the bounded property deferral, preserve all eight current registrations and restore the existing docs budget. Original acceptance plans stay blocked; accepted 0/4.
+- [x] 12-11-PLAN.md — Wave 1, local documentation only: complete launch/refusal prose and missing-artifact disposition; record the bounded property deferral, preserve all eight current registrations and restore the existing docs budget. Original acceptance plans stay blocked; accepted 0/4.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -296,7 +296,7 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 6/10 outcomes | Halted at 12-01; accepted 0/4 | - |
+| 12. Player-ready delivery and Playstead bridge | 7/10 | Halted at 12-01; accepted 0/4 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
 | 14. Proven frontend states and responsive play | 31/31 | Acceptance blocked. Plan 14-25's sole independent R gate failed on `title.pin.self_test` at one second; workflow stderr recorded denied `/bin/ps`, with cause unknown. No hygiene, frozen gate or owner checkpoint followed; that scope is spent. Plan 14-29 records a passing target-only non-reproduction and the owner's decision to close its diagnosis unresolved. Earlier native/Docker stops, unknown parent timeouts, spent host allowance and Phase 12 halt remain preserved. Verification stays `gaps_found` (20/27); FRONT-02/03/04 pending; no allowance renewed | - |
 

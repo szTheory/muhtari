@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
-current_phase: 14
-current_phase_name: Proven frontend states and responsive play
-status: "Blocked: Plan 14-31 halted; no process now matches the recorded PID, but the child's exit/reap/cleanup remain unproved; Phase 14 acceptance remains blocked."
+current_phase: 12
+current_phase_name: Player-ready delivery and Playstead bridge
+status: executing
 stopped_at: "Plan 14-31 halted: exit 137; later PID query found no current process, but historical exit/reap/cleanup remain unknown"
-last_updated: "2026-11-06T01:14:43Z"
+last_updated: "2026-11-06T04:29:45.138Z"
 last_activity: 2026-11-06
-state_head: b307d63
+state_head: e008705b56b91f79d54665425311ae227aa1fa96
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 48
-  completed_plans: 45
+  total_plans: 49
+  completed_plans: 46
   percent: 33
 ---
 
@@ -24,14 +24,14 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Plan 14-31 ended terminal unknown: exit 137 after one recorded fork; child receipt and cleanup proof are missing. One separately authorized read-only PID query (`ps -p 62950 -o pid=,ppid=,stat=,etime=,comm=`) exited 1 with no matching row, so no process with that PID was present at check time; this does not establish the child's historical exit or cleanup. No further process inspection, retry or target proposal.
+Current focus: Phase 12 gap plan 12-11 is complete; its local documentation does not accept the phase. Phase 12 remains accepted 0/4 with 12-01 halted and 12-02/03/04 blocked. Phase 14 remains stopped at Plan 14-31; no further process inspection, retry, host action, or remote dispatch.
 
 ## Current Position
 
-Phase: 14 (Proven frontend states and responsive play) — EXECUTING
-Plan: 31 of 31
-Status: Blocked: Plan 14-31 halted; forked child exit and cleanup are unproved; Phase 14 acceptance remains blocked.
-Next action: Phase 14 acceptance remains blocked by unresolved host evidence. Do not inspect or retry Plan 14-31's recorded child or initiate host/remote actions. The owner pre-authorizes bounded local builds, tests and CI workflows for new work under about one hour; this does not renew a plan-specific cap or authorize host/remote action. The renewed isolated `title.pin.self_test` run passed, but the historical full-workflow timeout remains unexplained; see `.planning/debug/phase14-title-pin-self-test.md`. Phase 14's one gap round is used. Phase 12's discussion is already refreshed in its CONTEXT and DISCUSSION-LOG, and MU-HOST-007 provides new diagnostic evidence. After reconciliation, run `$gsd-plan-phase 12 --gaps` in this root checkout for a local-only diagnostic repair and deterministic controls plan. Keep Phase 12 acceptance at 0/4 and all spent host allowances closed; this planning command authorizes no host or remote run.
+Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
+Plan: No runnable plan: 12-02/03/04 are blocked by halted 12-01
+Status: In progress
+Next action: No Phase 12, 13 or 14 execute command is valid: 12-02/03/04 remain blocked by halted 12-01 and Phase 12 acceptance is 0/4. Owner action: authorize a new bounded host-evidence scope; preserve the Phase 14 Plan 14-31 stop.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
@@ -55,15 +55,10 @@ Boundary: Plan 14-24 offline controls passed, then the generated controller's ex
 
 ## Preserved Phase 12 position — halt remains binding
 
-**Local follow-up integrated 2026-11-05:** the later authorized Phase 12 input-history
-revision is now in this root checkout. Its generated cartridge is consumed by
-`input.proline_one_button`; the serialized-image check remains registered. The
-local build and seven focused tests pass. This only improves owned diagnostic
-coverage: Phase 12 remains accepted 0/4, 12-02/03/04 remain blocked, and no host
-allowance or retry was reopened.
+**Latest local diagnostic integrated 2026-11-05:** [Phase 12 gap plan 12-10](phases/12-player-ready-delivery-and-playstead-bridge/12-10-SUMMARY.md)
+is complete. Its helper trace controls, ordered-input cartridge and pixel checks pass locally, including the full local workflow. This improves diagnostics only: PLAY-03 still lacks actual RetroArch input and fresh-process battery proof; Phase 12 remains accepted 0/4, and no host allowance or retry was reopened.
 
-Latest step: [Phase 12 gap plan 12-09](phases/12-player-ready-delivery-and-playstead-bridge/12-09-PLAN.md)
-is complete. The [OpenBIOS diagnostic and later input-trace attempt](phases/12-player-ready-delivery-and-playstead-bridge/12-07-SUMMARY.md#post-halt-input-trace-attempt-2026-11-01)
+The [OpenBIOS diagnostic and later input-trace attempt](phases/12-player-ready-delivery-and-playstead-bridge/12-07-SUMMARY.md#post-halt-input-trace-attempt-2026-11-01)
 used the same source commit. In run 41323089043, Windows ARM64 `built.openbios`
 passed in 0.14 seconds; in run 41329055050 it timed out at 1.74 seconds after
 the script recorded `assemble`. The authenticated stage artifact includes the
@@ -92,8 +87,7 @@ actual keyboard child. The full dispatch has a 329 configured runner-minute
 ceiling and would not explain the historical timeout. Do not spend that budget
 or add a duplicate workflow for this evidence. Keep the local change uncommitted
 until a separately scoped source publication/full-CI action has independent
-value. Phase 13 planning may proceed without reopening this host check. The
-original timeout/input causes remain unknown, accepted remains 0/4, and every
+value. The original timeout/input causes remain unknown, accepted remains 0/4, and every
 hosted allowance remains spent. No owner acknowledgment is needed to preserve
 the Phase 12 stop.
 Complete-C WASI local execution already passed separately; older linker-only
@@ -103,9 +97,10 @@ Current repair source/evidence hashes and preservation checks belong to the
 linked outcome; earlier unchanged-source preservation checks are historical.
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Plan: 0 of 4 acceptance plans accepted; gap plans 12-05 and 12-06 executed with failed hosted evidence; 12-09 complete; 12-07 remains halted after a non-reproducing OpenBIOS diagnostic; 12-08 is superseded for scheduling
+Plan: 0 of 4 acceptance plans accepted; 6 of 9 active plans have terminal outcomes, including gap plans 12-05/06/07/09/10; 12-01 remains halted, 12-08 is superseded, and acceptance plans 12-02/03/04 remain blocked
 Status: Blocked on 12-01 hosted input proof; 12-02, 12-03 and 12-04 remain blocked
-Last activity: 2026-11-02
+Next local step: `$gsd-execute-phase 12 --gaps-only --wave 1` selects only 12-11 for local documentation/evidence disposition. TUNE-06 still needs complete comparable Windows measurements, and PLAY-03 needs actual RetroArch host evidence; this plan supplies neither.
+Last activity: 2026-11-05
 Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
@@ -114,7 +109,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 
 | Phase | Plans | Total | Avg/Plan |
 |---|---|---|---|
-| 12 | 0 complete; 4 acceptance plans plus 4 gap plans | — | — |
+| 12 | 0/4 accepted; 6/9 active plans have outcomes | — | — |
 | 13 | 8 | - | - |
 | 14 | 9 plans completed; phase incomplete | — | — |
 **Per-Plan Metrics:**
