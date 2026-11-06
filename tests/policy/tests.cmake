@@ -72,8 +72,9 @@ muhtari_add_test(NAME policy.retroarch.preflight_gate
   LABELS policy TIMEOUT 10)
 
 muhtari_add_test(NAME policy.retroarch.report
-  COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR}
-    -DWORK=${CMAKE_BINARY_DIR}/policy/retroarch_report -P ${CMAKE_CURRENT_LIST_DIR}/retroarch_report.cmake
+  COMMAND ${CMAKE_COMMAND} "-DROOT=${CMAKE_SOURCE_DIR}" "-DBUILD=${CMAKE_BINARY_DIR}"
+    "-DWORK=${CMAKE_BINARY_DIR}/policy/retroarch_report"
+    -P ${CMAKE_CURRENT_LIST_DIR}/retroarch_report.cmake
   LABELS policy TIMEOUT 10) # Provisional local bound; no host process is launched.
 
 muhtari_add_test(NAME policy.docker_contract.controls
@@ -268,11 +269,12 @@ function(inspect_workflow workflow_path)
   endif()
   string(REGEX REPLACE "(^|\n)[ \t]*#[^\n]*" "" active_battery "${battery_text}")
 
-  if("${active_battery}" MATCHES "wc[ \t]+-l" AND
-      "${active_battery}" MATCHES "(-le|-lt|-ge|-gt|-eq|<=|>=|<|>)[ \t]*[0-9]+")
-    string(REGEX MATCH "[^\n]*wc[ \t]+-l[^\n]*" source_gate "${active_battery}")
-    message(FATAL_ERROR "policy.host_support.controls: battery source-line ceiling detected: ${source_gate}")
-  endif()
+  string(REGEX MATCHALL "[^\n]*wc[ \t]+-l[^\n]*" source_gates "${active_battery}")
+  foreach(source_gate IN LISTS source_gates)
+    if("${source_gate}" MATCHES "(-le|-lt|-ge|-gt|-eq|<=|>=|<|>)[ \t]*[0-9]+")
+      message(FATAL_ERROR "policy.host_support.controls: battery source-line ceiling detected: ${source_gate}")
+    endif()
+  endforeach()
   if("${active_battery}" MATCHES "(source|support)[_-]?(line|total|count)" AND
       "${active_battery}" MATCHES "(-le|-lt|-ge|-gt|-eq|<=|>=|<|>)[ \t]*[0-9]+")
     message(FATAL_ERROR "policy.host_support.controls: numeric battery source total gate detected")
@@ -314,8 +316,9 @@ endif()
 set(WORK "${work_path_normalized}")
 file(REMOVE_RECURSE "${WORK}")
 set(fixture_root "${WORK}/copied-support")
-file(MAKE_DIRECTORY "${fixture_root}/tests")
+file(MAKE_DIRECTORY "${fixture_root}/tests/common")
 file(COPY "${ROOT}/tests/retroarch" DESTINATION "${fixture_root}/tests")
+file(COPY "${ROOT}/tests/common/bmp.c" DESTINATION "${fixture_root}/tests/common")
 
 set(preserve_dir "${WORK}/preserved-frontend")
 set(unused_save_dir "${WORK}/unused-save")
@@ -350,6 +353,7 @@ endfunction()
 
 set(support_dir "${fixture_root}/tests/retroarch")
 file(GLOB support_paths LIST_DIRECTORIES FALSE "${support_dir}/*")
+list(APPEND support_paths "${fixture_root}/tests/common/bmp.c")
 list(SORT support_paths)
 if(NOT support_paths)
   message(FATAL_ERROR "policy.host_support.controls: copied support tree is empty")
@@ -370,11 +374,11 @@ if(NOT "${report_status}" STREQUAL "0")
 endif()
 foreach(path IN LISTS support_paths)
   count_newlines("${path}" expected_lines)
-  get_filename_component(name "${path}" NAME)
-  set(expected_row "support-report: tests/retroarch/${name}: ${expected_lines} newline(s)")
+  file(RELATIVE_PATH relative "${fixture_root}" "${path}")
+  set(expected_row "support-report: ${relative}: ${expected_lines} newline(s)")
   string(FIND "${baseline_report}" "${expected_row}" row_position)
   if(row_position LESS 0)
-    message(FATAL_ERROR "policy.host_support.controls: actual reporter omitted or miscounted ${name}: expected ${expected_lines} newlines")
+    message(FATAL_ERROR "policy.host_support.controls: actual reporter omitted or miscounted ${relative}: expected ${expected_lines} newlines")
   endif()
 endforeach()
 set(expected_total_row "support-report: total ${expected_total} newline(s)")
