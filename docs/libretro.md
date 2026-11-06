@@ -2,37 +2,82 @@
 
 `muhtari_libretro` runs Atari 7800 cartridges in RetroArch or any other libretro frontend. It loads `.a78` images
 and headerless `.bin` images from memory, including automatically selected PAL. Started with no content, it shows
-the built-in test card ([docs/runner.md](runner.md#test-card)). A refused image leaves a line in the frontend's
-log naming the reason, such as `muhtari: content refused: unsupported board: bankset`.
+the built-in test card ([docs/runner.md](runner.md#test-card)). A refused load is reported in the frontend log;
+unsupported sound also names the unavailable sound configuration.
 
-## Launching a game
+## External frontend contract
 
-Install the libretro archive for your system using the [README](../README.md#install-in-retroarch-macos-apple-silicon).
-In RetroArch, select **Load Core → Atari - 7800 (muhtari)**, then **Load Content** and your `.a78` or `.bin` image.
-The loader checks the image's bytes, including any cartridge header; the extension alone does not establish
-its format. A headerless dump needs a recognised image or an inferred supported layout. A refused image
-reports its reason in the frontend log. Atari 2600 images are not supported.
+Install the core archive for your system using the [README](../README.md#install-in-retroarch-macos-apple-silicon),
+then select **Load Core → Atari - 7800 (muhtari)** and **Load Content**. The loader checks image bytes, including
+any cartridge header; the extension alone does not establish the format. A refused image reports its reason.
+Atari 2600 images are not supported. The core architecture must match the frontend process. Keep **Boot: Fast**
+for a first launch; no BIOS is needed. Firmware setup is [below](#bios-files).
 
-The command-line equivalent is `retroarch -L CORE GAME`, with paths quoted when they contain spaces:
+### Artifact identity and evidence
+
+The [`retroarch-dmg` row in `pins.txt`](../pins.txt) identifies the separately pinned host package by version,
+official URL and SHA-256. It is an app-package pin, not evidence for a muhtari core or proof that an installed
+app matches it. The project release process describes the existing [archive, attestation and install
+verification](maintaining.md#how-a-release-happens). Packages install `muhtari_libretro.dylib` on macOS,
+`muhtari_libretro.so` on Linux or `muhtari_libretro.dll` on Windows under `cores/`, and
+`muhtari_libretro.info` under `info/`; the local README install check confirms those member paths for its
+macOS archive. A source pin, candidate archive digest or installed member name does not by itself qualify a
+published core.
+
+No current local receipt binds a published core archive to a release and source commit. The core's release tag
+and immutable source identity, platform/architecture archive name and SHA-256, released core and `.info` member
+paths, and verification receipt for the supplied attestation subject, signer and source ref remain pending.
+The app pin and these core fields are separate; neither establishes an actual-host result. Keep them pending
+until the existing release verifier and an authorized host observation supply the corresponding evidence.
+
+### Per-game launch paths
+
+RetroArch owns the window, audio, input focus and its save/state files. An integrating application should give
+each game a stable identity and separate content, config, save, state and log paths under a local directory it
+controls. Use one writer per game's save/state paths; do not share them between concurrent sessions. For example:
 
 ```sh
-# macOS, using the standard installation paths
-/Applications/RetroArch.app/Contents/MacOS/RetroArch -L "$HOME/Library/Application Support/RetroArch/cores/muhtari_libretro.dylib" "/path/to/game.a78"
-
-# Linux: substitute the installed core path and your game path
-retroarch -L "/path/to/muhtari_libretro.so" "/path/to/game.a78"
+RETROARCH="/Applications/RetroArch.app/Contents/MacOS/RetroArch"
+CORE="/path/to/cores/muhtari_libretro.dylib"
+GAME_ROOT="/path/to/playstead/games/game-123"
+"$RETROARCH" --verbose --config "$GAME_ROOT/config/retroarch.cfg" \
+  -L "$CORE" "$GAME_ROOT/content/game.a78" \
+  --log-file "$GAME_ROOT/log/retroarch.log"
 ```
 
-On Windows, use `retroarch.exe -L "C:\path\to\muhtari_libretro.dll" "C:\path\to\game.a78"`.
-Omit GAME for the no-content test card. The core architecture must match the frontend: for example, an arm64
-core needs an arm64 RetroArch process. `muhtari-run` is headless; interactive play uses the libretro core.
+The example paths are illustrative and must be created by the caller; the executable and core must be the
+separately verified artifacts for the target architecture. On Linux, use the installed `retroarch` executable
+and `.so` core; on Windows, use `retroarch.exe` and the `.dll` core in equivalent paths. An example per-game
+configuration is:
+
+```ini
+savefile_directory = "/path/to/playstead/games/game-123/save"
+savestate_directory = "/path/to/playstead/games/game-123/state"
+system_directory = "/path/to/playstead/shared/firmware"
+sort_savefiles_enable = "false"
+```
+
+RetroArch maps controllers to the RetroPad layout in [Controls](#controls); the README lists the default
+keyboard bindings. The frontend must have keyboard focus for those bindings to reach the core. Use RetroArch's
+normal Quit/Close flow when play ends. The core does not access `.srm` files or control frontend flushing;
+forced termination has no battery-save flush guarantee. `muhtari-run` is headless and is not the player UI.
+
+### Exit and refusal reporting
+
+`muhtari-run --probe FILE` checks a cartridge before launch; it neither starts RetroArch nor proves that a core
+loaded or ran. Its refusal and exit distinctions are in the [runner guide](runner.md#probing-an-image). A core
+load refusal appears in the frontend log as `muhtari: content refused: ...`; unsupported sound also reports
+`muhtari: unavailable sound configuration: ...`. For example, the loader reports an unavailable `ym2151`
+configuration. A host startup failure is a RetroArch/process failure, not a runner result or proof of a core
+refusal. RetroArch's exit status is not the `muhtari-run` status table: zero alone proves neither successful
+content loading nor save flushing. The frontend owns normal exit and persistence behavior; forced termination
+does not establish durable battery progress.
 
 If muhtari is missing from Load Core, check **Settings → Directory → Cores** and **Core Info**, copy the
 archive's corresponding files there, then restart RetroArch. When stale core information persists after an
-update, close RetroArch and remove only `core_info.cache` from its Core Info directory; it is rebuilt.
-Keep **Boot: Fast** for a first launch; no BIOS is needed. Firmware setup is [below](#bios-files).
-For a load failure, use `--verbose --log-file "/path/to/local-retroarch.log"` on the launch command and inspect
-the `muhtari:` lines. Keep personal game files, firmware, saves, screenshots and logs outside this repository.
+update, close RetroArch and remove only `core_info.cache` from its Core Info directory; it is rebuilt. For a
+load failure, use `--verbose --log-file` with the launch command and inspect the `muhtari:` lines. Keep personal
+game files, firmware, saves, screenshots and logs outside this repository.
 
 ## Controls
 

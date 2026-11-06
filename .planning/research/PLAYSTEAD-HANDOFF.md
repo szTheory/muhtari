@@ -33,6 +33,8 @@ config, per-game save directory and optional firmware directory. RetroArch owns
 the game window, audio and input. muhtari-run is headless automation, not a player.
 Muhtari binaries: https://github.com/szTheory/muhtari/releases/latest
 Use exact tested versions/digests for an adapter pin, not a moving latest URL.
+The muhtari-side boundary is documented in the [external frontend contract](../../docs/libretro.md#external-frontend-contract),
+including the distinct pending identity fields for a published core.
 
 Read the current Playstead AdapterHost/AdapterInstaller/AdapterPin/AdapterCatalog,
 GameRow launch readiness/controller gates and state-support code. The inspected
