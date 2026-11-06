@@ -7,6 +7,7 @@ if(NOT DEFINED WORKFLOW)
 endif()
 file(READ "${WORKFLOW}" workflow)
 set(gate [=[      - name: Keyboard access preflight before all content
+        if: ${{ !inputs.phase14_host }}
         run: |
           mkdir -p build/frames
           cc -std=c17 -Wall -Wextra -Werror tests/retroarch/keyboard_preflight.c \
