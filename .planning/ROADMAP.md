@@ -52,7 +52,7 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 10/15 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
+**Plans:** 11/15 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
 
 Plans:
 
@@ -80,9 +80,9 @@ host test or dependent plan.
 - [x] 12-12-PLAN.md — One authorized ordinary run failed the required hygiene formatter gate before RetroArch. Its one ref, dispatch, and cancellation are spent; it supplied no host evidence.
 - [x] 12-13-PLAN.md — One authorized post-format ordinary run passed the candidate package and DMA comparison but failed the input acknowledgment deadline before held/released images; battery checks were skipped and CI required failed. Its one ref and dispatch are spent; PLAY-03 remains open.
 - [x] 12-14-PLAN.md — Added both missing registered-test rows and passed the exact configure inventory check. The local portable workflow halted at compilation because the machine has no WASI C-library sysroot; no tests ran and acceptance remains pending.
-- [ ] 12-15-PLAN.md — Use one qualified local traced RetroArch child to resolve the input acknowledgment cause, then apply only a supported repair and pass local gates.
+- [x] 12-15-PLAN.md — Halted before content launch: the qualified helper's nonprompting CoreGraphics event-post preflight returned 77 (`post-event-access=denied`). No reservation or child was created, no causal finding was made, and no permission/settings change or hosted attempt followed. Plan 12-16 remains blocked.
 
-**Wave 2** *(12-16 requires complete 12-14/15 results; 12-14 is halted on the missing local WASI sysroot. 12-02 remains blocked until the 12-01 acceptance halt is closed.)*
+**Wave 2** *(12-16 requires both 12-14 and 12-15 to pass; both are terminal halted, on the missing local WASI sysroot and denied event-post preflight respectively. 12-02 remains blocked until the 12-01 acceptance halt is closed.)*
 
 - [ ] 12-16-PLAN.md — After both local recovery plans pass, use at most one new source-bound ordinary host attempt; close the former 12-01 halt only on complete revised host proof.
 
@@ -302,7 +302,7 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 10/15 | Original 12-01 halted; accepted 0/4. Plan 12-14's inventory correction/configure passed, but its local WASI workflow is halted for missing headers. Plan 12-15 is the only ready recovery plan. Plan 12-16 cannot publish or dispatch until both prerequisites pass. Plans 12-02/03/04 remain blocked | - |
+| 12. Player-ready delivery and Playstead bridge | 11/15 | Original 12-01 remains halted; accepted 0/4. Plan 12-14 passed inventory/configure but halted at compilation because the local WASI sysroot is absent. Plan 12-15's qualified nonprompting preflight returned 77 (`post-event-access=denied`) before reservation or content launch; no cause was established and no permission/settings change was made. Plan 12-16 is blocked by both halted prerequisites. No Phase 12 plan is runnable; 12-02/03/04 remain blocked by 12-01 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
 | 14. Proven frontend states and responsive play | 31/31 | Acceptance blocked. Plan 14-25's sole independent R gate failed on `title.pin.self_test` at one second; workflow stderr recorded denied `/bin/ps`, with cause unknown. No hygiene, frozen gate or owner checkpoint followed; that scope is spent. Plan 14-29 records a passing target-only non-reproduction and the owner's decision to close its diagnosis unresolved. Earlier native/Docker stops, unknown parent timeouts, spent host allowance and Phase 12 halt remain preserved. Verification stays `gaps_found` (20/27); FRONT-02/03/04 pending; no allowance renewed | - |
 
