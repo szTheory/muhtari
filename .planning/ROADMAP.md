@@ -296,7 +296,7 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 7/10 | Halted at 12-01; accepted 0/4 | - |
+| 12. Player-ready delivery and Playstead bridge | 7/10 | Original 12-01 halted; accepted 0/4. Plan 12-12 is runnable for one fresh bounded host-evidence attempt; this does not complete the phase | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
 | 14. Proven frontend states and responsive play | 31/31 | Acceptance blocked. Plan 14-25's sole independent R gate failed on `title.pin.self_test` at one second; workflow stderr recorded denied `/bin/ps`, with cause unknown. No hygiene, frozen gate or owner checkpoint followed; that scope is spent. Plan 14-29 records a passing target-only non-reproduction and the owner's decision to close its diagnosis unresolved. Earlier native/Docker stops, unknown parent timeouts, spent host allowance and Phase 12 halt remain preserved. Verification stays `gaps_found` (20/27); FRONT-02/03/04 pending; no allowance renewed | - |
 

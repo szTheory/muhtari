@@ -24,14 +24,14 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 12 gap plan 12-11 is complete; its local documentation does not accept the phase. Phase 12 remains accepted 0/4 with 12-01 halted and 12-02/03/04 blocked. Phase 14 remains stopped at Plan 14-31; no further process inspection, retry, host action, or remote dispatch.
+Current focus: Phase 12 gap plan 12-12 is ready under the owner's 2026-11-06 authorization for one new, bounded ordinary host-evidence attempt. Phase 12 remains accepted 0/4; the original 12-01 halt and blocked 12-02/03/04 remain intact. Phase 14 remains stopped at Plan 14-31; no further process inspection, retry, host action, or remote dispatch is authorized for Phase 14.
 
 ## Current Position
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Plan: No runnable plan: 12-02/03/04 are blocked by halted 12-01
+Plan: 12-12 is the only runnable gap plan; 12-02/03/04 remain blocked by halted 12-01
 Status: In progress
-Next action: No Phase 12, 13 or 14 execute command is valid: 12-02/03/04 remain blocked by halted 12-01 and Phase 12 acceptance is 0/4. Owner action: authorize a new bounded host-evidence scope; preserve the Phase 14 Plan 14-31 stop.
+Next action: `$gsd-execute-phase 12 --gaps-only --wave 1` selects only Plan 12-12 for one source-bound ordinary host-evidence attempt and receipt review. It does not accept Phase 12 or complete v3.0. Preserve the Phase 14 Plan 14-31 stop.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
