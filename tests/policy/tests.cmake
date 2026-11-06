@@ -308,12 +308,48 @@ cmake_path(ABSOLUTE_PATH build_path NORMALIZE OUTPUT_VARIABLE build_path_normali
 cmake_path(ABSOLUTE_PATH work_path NORMALIZE OUTPUT_VARIABLE work_path_normalized)
 set(project_build_root "${root_path_normalized}/build")
 cmake_path(IS_PREFIX project_build_root "${build_path_normalized}" NORMALIZE build_under_project)
-cmake_path(IS_PREFIX build_path_normalized "${work_path_normalized}" NORMALIZE work_under_build)
-if(NOT build_under_project OR NOT work_under_build OR
-    work_path_normalized STREQUAL build_path_normalized)
+file(REAL_PATH "${project_build_root}" project_build_root_real)
+file(REAL_PATH "${build_path_normalized}" build_path_real)
+file(REAL_PATH "${work_path_normalized}" work_path_real)
+cmake_path(IS_PREFIX project_build_root_real "${build_path_real}" NORMALIZE real_build_under_project)
+cmake_path(IS_PREFIX build_path_real "${work_path_real}" NORMALIZE real_work_under_build)
+if(NOT build_under_project OR NOT real_build_under_project OR
+    NOT real_work_under_build OR work_path_real STREQUAL build_path_real)
   message(FATAL_ERROR "policy.host_support.controls: scratch path must be a strict child of the project build directory: ${WORK}")
 endif()
-set(WORK "${work_path_normalized}")
+if(NOT HOST_SUPPORT_SYMLINK_CHILD)
+  string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef symlink_token)
+  set(symlink_target "${project_build_root_real}/policy-host-support-target-${symlink_token}")
+  set(symlink_parent "${build_path_real}/policy/host-support-link-${symlink_token}")
+  set(symlink_sentinel "${symlink_target}/scratch/sentinel")
+  if(EXISTS "${symlink_target}" OR EXISTS "${symlink_parent}" OR IS_SYMLINK "${symlink_parent}")
+    message(FATAL_ERROR "policy.host_support.controls: symlink fault fixture path unexpectedly exists")
+  endif()
+  file(MAKE_DIRECTORY "${symlink_target}/scratch")
+  file(WRITE "${symlink_sentinel}" "symlink target must survive\n")
+  file(CREATE_LINK "${symlink_target}" "${symlink_parent}" SYMBOLIC RESULT symlink_result)
+  if(symlink_result STREQUAL "0")
+    execute_process(
+      COMMAND "${CMAKE_COMMAND}" "-DROOT=${ROOT}" "-DBUILD=${BUILD}"
+        "-DWORK=${symlink_parent}/scratch" -DHOST_SUPPORT_SYMLINK_CHILD=TRUE
+        -P "${CMAKE_CURRENT_LIST_FILE}"
+      RESULT_VARIABLE symlink_status OUTPUT_VARIABLE symlink_output ERROR_VARIABLE symlink_error
+    )
+    if("${symlink_status}" STREQUAL "0" OR
+        NOT "${symlink_output}${symlink_error}" MATCHES "scratch path must be a strict child" OR
+        NOT EXISTS "${symlink_sentinel}")
+      file(REMOVE "${symlink_parent}")
+      file(REMOVE_RECURSE "${symlink_target}")
+      message(FATAL_ERROR "policy.host_support.controls: symlink-parent scratch escape was not safely rejected: ${symlink_output}${symlink_error}")
+    endif()
+    file(REMOVE "${symlink_parent}")
+    file(REMOVE_RECURSE "${symlink_target}")
+  else()
+    file(REMOVE_RECURSE "${symlink_target}")
+    message(STATUS "policy.host_support.controls: symlink-parent fault control skipped: ${symlink_result}")
+  endif()
+endif()
+set(WORK "${work_path_real}")
 file(REMOVE_RECURSE "${WORK}")
 set(fixture_root "${WORK}/copied-support")
 file(MAKE_DIRECTORY "${fixture_root}/tests/common")
