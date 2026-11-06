@@ -172,13 +172,14 @@ jobs:
             build/fuzz/fuzz/run/crash/
           if-no-files-found: warn
 
-  # The four property tests at 10,000 cases each, seeded with this run's ID,
-  # under the names a pull request runs at 100 from a fixed seed. A failure
-  # prints the seed and case to rerun locally. MUHTARI_TIMEOUT_SCALE 10 gives
-  # each test 390 s; the slowest took 190 s at 10,000 cases, run 39381236115.
-  # Report-only: 2/10 distinct successful main executions as of 2026-10-22.
-  # It stays out of report's needs and keeps continue-on-error until ten,
-  # then gates with a timeout of twice its slowest run.
+  # Six Phase 12 properties are split_run, peek_pure, instances_isolated,
+  # input_at_vblank, battery_lifecycle and battery_observers. Later state
+  # additions state_continuation and state_refusal make eight current tests.
+  # Each gets 10,000 cases with this run's ID as seed; -j 4 is worker count.
+  # Scale 10 turns each registered 39 s timeout into 390 s. Historical
+  # timeout/cancelled runs are censored; see docs/testing.md for criteria.
+  # Keep advisory: continue-on-error, outside report.needs; no automatic
+  # promotion or deadline change follows from this documentation.
   prop:
     runs-on: ubuntu-26.04
     timeout-minutes: 9  # 2 x 246 s, n=2, run 39529469620; provisional

@@ -141,6 +141,13 @@ fresh full reports and three-ZIP authentication remain required. Other lanes and
 the current-source workflow keep their scheduling. Serialization trades Windows
 baseline wall time for isolation; a failed baseline still blocks acceptance.
 
+### Property calibration deferral
+
+Review [SEED-010](../.planning/seeds/SEED-010-nightly-prop-calibration.md) at
+Phase 12 close. If still open, revisit at the next milestone tune-up, or earlier
+when complete comparable evidence is supplied. The documentation update does
+not close TUNE-07.
+
 ## Withdrawing a release
 
 A published release cannot be edited, so a bad one is withdrawn and fixed forward:

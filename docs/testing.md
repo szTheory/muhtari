@@ -115,7 +115,7 @@ with the module disabled. Both keep the portable BankSet/XBoard/XM diagnostics a
 | `host` | The palette helper shared by the runner and the core. |
 | `cart` | Cartridge identification: the core's SHA-1 against the FIPS 180-4 example messages, and `muhtari_probe` on images that `tests/cart/images.c` builds in memory, one test per status class and one for the warning bits, and the internal loader, which allocates nothing for a refused image. `cart.identify.test_list` finds the built 7800basic sample through the test hash list. No image bytes are tracked. |
 | `fuzz` | Loader/run replay, typed pin/EEPROM traffic and output/allocation invariants; Linux also uses libFuzzer. [Expansion coverage and fault evidence](hardware/bus.md#expansion-replay-and-properties). |
-| `prop` | 100 seeded cases; advisory nightly 10,000. Isolation covers nine typed families and all BankSet/expansion profiles, battery gates, state continuation/refusal and pure observers. |
+| `prop` | CI uses 100 cases/property; nightly uses 10,000. Six Phase 12 properties cover frame behavior, observers/instances, input timing and battery lifecycle; two later additions cover state. See [the calibration deferral](#property-calibration-deferral). |
 | `runner` | `muhtari-run` options/output/statuses, PNG/MD5, `runner.movie_parse` exact bad-line locations, `runner.state.*`, and `--probe` generated-image order/digests/refusals. |
 | `built` | Samples built from pinned tools (`tests/built/`). `built.<name>` builds one 7800basic 0.41 sample per row of `expected.txt` under wasmtime with our own recipe (`build.cmake`, each stage run with the package mapped to `/b`) in a fresh `build/<preset>/built/<name>/`, and checks the `.a78` and `.bin` SHA-256s in that row. `runner.probe.sample_*` then probe `simple`: the headered `.a78`, the stripped `.bin` found by its footer (reset vector $F4AD), and the `.bin` found by the test hash list through `muhtari-run-testdb`, the runner linked with `tests/cart/test_cartdb.c` in place of `src/cartdb.c`. The built files never leave the build tree. |
 | `basic` | Each built sample's 600 fast-boot frames against the chain pinned in `tests/built/expected.txt` ([emulation tests, basic](emulation-tests.md#basic)). |
@@ -315,12 +315,20 @@ never committed. A failed night opens or comments on the one open issue labelled
 it; the report decides from the jobs' results. Dispatching the workflow with `force_failure` fails a run on purpose.
 The same workflow runs the `vectors-full` lane (`cmake --workflow --preset vectors-full`) and the `fuzz` lane (job
 `fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its inventory;
-`fuzz` uploads both targets' crash directories when it fails. The `prop` job
-builds the `ci` preset with `MUHTARI_TIMEOUT_SCALE=10` and runs `ctest -L prop` with `MUHTARI_PROP_CASES=10000` and
-the run's ID as `MUHTARI_PROP_SEED`; it stays advisory outside `report.needs`: 2/10 successful main runs as of
-2026-10-22. A pull request runs the whole workflow, writing no issue, when it changes a file listed in the trigger's
-`paths`: the workflow, the core and runner sources, the build files and pins, and each job's tests, scripts and
-inventories.
+`fuzz` uploads both targets' crash directories when it fails. Nightly's `prop` job runs eight 10,000-case
+properties with run-ID seed and four workers; scale 10 gives 390 seconds per test, with a nine-minute cap.
+It stays advisory (`continue-on-error`, outside `report.needs`); see [the deferral](#property-calibration-deferral).
+Pull requests run without issue updates when a triggering path changes.
+
+### Property calibration deferral
+
+TUNE-07 remains the six Phase 12 properties: `split_run`, `peek_pure`, `instances_isolated`,
+`input_at_vblank`, `battery_lifecycle` and `battery_observers`. The current lane adds `state_continuation` and
+`state_refusal`.
+
+The 390.08-second timeout (Nightly 40157750598) and cancellations 40419374584, 40702203633 are censored,
+unaccepted and not deadline evidence. [SEED-010](../.planning/seeds/SEED-010-nightly-prop-calibration.md) owns
+the criteria and revisit. No run is scheduled; TUNE-07 remains pending.
 
 **Bumping the vector pin.** One `ci:` pull request: set the new commit in the `sst-6502-v1` row and the sample's
 manifest row; run the `vectors-full` workflow once, whose fetch fails against the old list but leaves the new files
@@ -332,53 +340,26 @@ sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `c
 
 ## Hosted RetroArch
 
-macos-15 arm64, pinned RetroArch1.22.2 Metal; isolated home/config/system/output, external `SAVE_DIR`.
-Overlap fails before cleanup; cap50s; support lines reported.
+The hosted lane uses the pinned macOS arm64 app, isolated home/config/system/output and a disjoint external
+`SAVE_DIR` (overlap fails before cleanup); launches cap at 50 seconds. The support report is static.
 
-DMA keeps its120-frame hash/pixel pin; flipped-pixel rejection names(7,3).
-Keyboard pending. `keyboard_probe_only=true`: one child, isolated `RAW_SHOTS`, hold Up/Z;
-F8-downs until one capture before5s, F8-up; release Up/Z at5s; terminal600-frame shot.
-Missing/multiple captures/early exit fail; cap45s. Reports: reason, monotonic ms/captures(-1 unknown),
-errno(0 inapplicable), child status(unknown until polled). Ordinary launches skip; success stops.
-Runner movies and independent register/pixel judges check both shots.
-`input.proline_one_button` rejects input/pixel/dimension faults. `KEYBOARD`: regular/outside `RA_DIR`;
-unsafe controls preserve a sentinel before cleanup.
+- **DMA:** 120-frame hash/pixel pin; flipped-pixel control rejects at `(7,3)`.
+- **Keyboard (PLAY-03):** delivery remains pending. Probe-only uses one regular script outside `RA_DIR`, expects
+  one Up/Z-held capture before 5 seconds, releases at 5 seconds and requires the terminal 600-frame image
+  (45-second cap). Missing/multiple captures or early exit fail; `input.proline_one_button` checks input and
+  pixels/dimensions. See the [12-01 receipt](../.planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md).
+- **Battery:** two fresh frontend/runner processes must advance owned HSC/EEPROM counters 1→2 and match all
+  34,816 save bytes against independent expectations. `diag.battery` covers firmware, stub, mailbox, glyph,
+  lifecycle and no-content faults; see the [same receipt](../.planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md).
+- **Offline safety/trace:** controls reject access denial before content, preserve permissions and check ownership,
+  cleanup and reports. Manual trace mode is probe-only; missing records, unknown health, saturation or no
+  same-host clock are inconclusive. See the [local record](../.planning/phases/12-player-ready-delivery-and-playstead-bridge/12-10-SUMMARY.md).
 
-Battery: two fresh frontend/runner pairs, empty stores; owned SRAM/RIOT cartridge increments16-bit
-HSC/EEPROM counters1/1 then2/2; judge34,816 bytes/runner saves. Owned C6/FE firmware(marker5A, no routines),
-then stubFF; mailbox/`sips` glyphs precede equality. Black/counter/stale-medium/pixel faults fail;
-`diag.battery` covers mailbox/media/pixels/lifecycle/no-content. `retroarch-frames` holds only owned PNGs.
-
-`policy.retroarch.report`: empty/partial/full config/logs. Nonprompting denial77 stops before content;
-`keyboard_preflight_only=true` stops on grant; no permission changes. Mocks cover access/events/child/time/
-capture/cleanup/order/reports; clocks retain target types or missing-clock fallback.
-Child-exec checks helper127/argv/ownership, exports WASI125/native127; exact status+marker required.
-Real helper stays127. Access is not delivery; spent gates persist. Replay published bytes at ship.
-Retail compatibility, Playstead focus/lifecycle, ergonomics and audio need evidence.
-
-Manual `input_trace_diagnostic=true` requires probe=true/preflight=false. Same-run arm64 diagnostic
-module/parser/source hashes stay outside ZIPs. Always upload raw traces/logs/`input-dump.txt` in
-`retroarch-input-diagnostic`. `muhtari-test-trace-protocol --dump DIR` lists statuses/all valid-prefix
-records/PIDs/clock errors;≤64×64bytes/stream. Saturation limits coverage; unfinished health is unknown.
-Same-host clock provenance is required; missing records are inconclusive. Writes alter timing;
-diagnostic modules prove neither delivery nor packaged-core acceptance.
-The offline preflight allows unrelated inherited descriptors but rejects helper-file, trace-directory
-and extra core aliases by device/inode identity; pass/leak and identity controls run in that consumer.
-
-**Phase 14 state case.** A single `workflow_dispatch` must use matching same-run macOS arm64 artifacts and
-receipt identity. Limits remain five minutes per job, 50 seconds per child, 45 seconds of work plus five seconds
-of cleanup, 120 frames and 64 forward actions. Qualification requires external UDP rejection before launch.
-The state driver retains the first failed prelaunch stage: `sandbox-exec`, `sandbox-helper`, `work-deadline`,
-`config-port` or `runahead-config`. `retroarch.states.controls` checks ordering, faults, config validation,
-descriptor cleanup and receipt retention offline; it launches no sandbox, network request or RetroArch process
-and cannot qualify frontend behavior. Never rerun or launch locally; failed or incomplete evidence stays
-pending.
-
-Run 41733613173 stopped at an opaque state preflight; its WASI advisory also failed on `tmpfile`. It produced no
-state capture, so FRONT-02/03/04 remain pending and the host allowance is spent. See the
+**Phase 14 state case.** Matching same-run macOS arm64 artifacts and receipt, UDP denial before launch, 5-minute
+job/50-second child limits, 45+5-second window, 120 frames and 64 forward actions remain required. Offline
+controls launch no process and cannot qualify behavior. Run 41733613173 stopped before launch; no capture exists,
+FRONT-02/03/04 remain pending, the allowance is spent and local replay is invalid. See the
 [resource record](../.planning/phases/14-proven-frontend-states-and-responsive-play/14-RESOURCE-EVIDENCE.md).
-`run_retroarch.cmake` retains private logs for the DMA and battery cases; neither establishes general retail-game
-compatibility.
 
 ## Release archives
 
