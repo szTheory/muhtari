@@ -1,31 +1,30 @@
 ---
 phase: 13-portable-save-load-across-three-interfaces
-reviewed: 2026-11-02T00:04:11Z
+reviewed: 2026-11-06T03:41:03Z
 depth: standard
-files_reviewed: 4
+files_reviewed: 2
 files_reviewed_list:
-  - tests/core/test_core.c
-  - tests/libretro/host.c
-  - runner/exit_status.h
+  - docs/libretro.md
   - docs/testing.md
 findings:
   critical: 0
   warning: 0
   info: 0
   total: 0
+  necessity: 0
 status: clean
 ---
 
 # Phase 13: Code Review Report
 
-**Reviewed:** 2026-11-02T00:04:11Z
-**Depth:** standard
-**Files Reviewed:** 4
+**Reviewed:** 2026-11-06T03:41:03Z  
+**Depth:** standard  
+**Files Reviewed:** 2  
 **Status:** clean
 
 ## Summary
 
-The four changed files were reviewed against the public API/state-size contract, the documented runner behavior, and the existing resource ceiling. The API 7 versions prefix remains accepted while API 8 adds `state_format`; the literal API version assertion agrees with the public version; the libretro test bounds its allocations before copying state data using the existing 307932-byte ceiling; runner help matches the exit-status documentation; and the Ubuntu testing recipe installs `jq`, which its documented checks require. No issues found.
+Reviewed `docs/libretro.md` and `docs/testing.md` against the Phase 13 context and plan summaries. The calibration note now distinguishes deferred TUNE-07 calibration from continuing advisory nightly property runs, consistent with the scheduled nightly `prop` job. The enforced document budget check passes at 40,952 bytes for `docs/testing.md`. No additional correctness, security, or quality issues were found.
 
 ## Narrative Findings (AI reviewer)
 
@@ -33,6 +32,6 @@ All reviewed files meet quality standards. No issues found.
 
 ---
 
-_Reviewed: 2026-11-02T00:04:11Z_
-_Reviewer: the agent (gsd-code-reviewer)_
+_Reviewed: 2026-11-06T03:41:03Z_  
+_Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
