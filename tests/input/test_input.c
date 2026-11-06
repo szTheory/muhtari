@@ -1386,9 +1386,7 @@ static void history_to_rgb(void)
 static void input_history_pixel_controls(void)
 {
     static const uint8_t color[INPUT_HISTORY_STATES] = {
-        INPUT_HISTORY_WAITING_COLOR,
-        INPUT_HISTORY_HELD_COLOR,
-        INPUT_HISTORY_COMPLETE_COLOR};
+        INPUT_HISTORY_WAITING_COLOR, INPUT_HISTORY_HELD_COLOR, INPUT_HISTORY_COMPLETE_COLOR};
     static uint8_t pixels[320u * 242u * 3u];
 
     for (unsigned state = 0; state < INPUT_HISTORY_STATES; state++) {
@@ -1399,9 +1397,8 @@ static void input_history_pixel_controls(void)
             pixels[p * 3u + 2u] = (uint8_t)rgb;
         }
         CHECK_EQ_U64(input_history_response(pixels, 320u, 242u, state), 0u);
-        CHECK_EQ_U64(input_history_response(pixels, 320u, 242u,
-                                            (state + 1u) % INPUT_HISTORY_STATES),
-                     2u);
+        CHECK_EQ_U64(
+            input_history_response(pixels, 320u, 242u, (state + 1u) % INPUT_HISTORY_STATES), 2u);
         pixels[(121u * 320u + 160u) * 3u] ^= 0xFFu;
         CHECK_EQ_U64(input_history_response(pixels, 320u, 242u, state), 2u);
         pixels[(121u * 320u + 160u) * 3u] ^= 0xFFu;
@@ -1411,7 +1408,7 @@ static void input_history_pixel_controls(void)
 }
 
 static void input_history_sequence(const char *name, const char *movie, const unsigned *want,
-                                  size_t want_count)
+                                   size_t want_count)
 {
     uint32_t count = parse(movie);
     CHECK_EQ_U64(count, want_count);
@@ -1423,11 +1420,11 @@ static void input_history_sequence(const char *name, const char *movie, const un
         CHECK_EQ_U64(muhtari_set_input(m, &frames[i]), MUHTARI_STATUS_OK);
         frame(m, video);
         history_to_rgb();
-        unsigned got = input_history_response(history_rgb, MUHTARI__WIDTH,
-                                              MUHTARI__HEIGHT_NTSC, want[i]);
+        unsigned got =
+            input_history_response(history_rgb, MUHTARI__WIDTH, MUHTARI__HEIGHT_NTSC, want[i]);
         if (got != 0u) {
-            fprintf(stderr, "FAIL %s frame %u: history pixels returned %u\n", name,
-                    (unsigned)i, got);
+            fprintf(stderr, "FAIL %s frame %u: history pixels returned %u\n", name, (unsigned)i,
+                    got);
             check_failures++;
         }
     }
@@ -1441,18 +1438,18 @@ static void input_history_fixture(void)
     static const char held[] = "|U...1.|......|...BB|\n";
     static const char p2_held[] = "|......|U...1.|...BB|\n";
     static const char wrong_button[] = "|U....2|......|...BB|\n";
-    static const unsigned success[] = {INPUT_HISTORY_WAITING, INPUT_HISTORY_WAITING,
-                                       INPUT_HISTORY_HELD, INPUT_HISTORY_HELD,
+    static const unsigned success[] = {INPUT_HISTORY_WAITING,  INPUT_HISTORY_WAITING,
+                                       INPUT_HISTORY_HELD,     INPUT_HISTORY_HELD,
                                        INPUT_HISTORY_COMPLETE, INPUT_HISTORY_COMPLETE};
     static const unsigned waiting[] = {INPUT_HISTORY_WAITING, INPUT_HISTORY_WAITING,
                                        INPUT_HISTORY_WAITING, INPUT_HISTORY_WAITING,
                                        INPUT_HISTORY_WAITING, INPUT_HISTORY_WAITING};
     static const unsigned held_without_release[] = {INPUT_HISTORY_WAITING, INPUT_HISTORY_WAITING,
-                                                    INPUT_HISTORY_HELD, INPUT_HISTORY_HELD,
-                                                    INPUT_HISTORY_HELD, INPUT_HISTORY_HELD};
+                                                    INPUT_HISTORY_HELD,    INPUT_HISTORY_HELD,
+                                                    INPUT_HISTORY_HELD,    INPUT_HISTORY_HELD};
     static const unsigned release_before_hold[] = {INPUT_HISTORY_WAITING, INPUT_HISTORY_WAITING,
                                                    INPUT_HISTORY_WAITING, INPUT_HISTORY_HELD,
-                                                   INPUT_HISTORY_HELD, INPUT_HISTORY_HELD};
+                                                   INPUT_HISTORY_HELD,    INPUT_HISTORY_HELD};
     char movie[256];
 
     (void)snprintf(movie, sizeof movie, "%s%s%s%s%s%s%s", header, neutral, neutral, held, held,
@@ -1467,16 +1464,16 @@ static void input_history_fixture(void)
                    p2_held, neutral, neutral);
     input_history_sequence("input history wrong port", movie, waiting,
                            sizeof waiting / sizeof waiting[0]);
-    (void)snprintf(movie, sizeof movie, "%s%s%s%s%s%s%s", header, neutral, neutral,
-                   wrong_button, wrong_button, neutral, neutral);
+    (void)snprintf(movie, sizeof movie, "%s%s%s%s%s%s%s", header, neutral, neutral, wrong_button,
+                   wrong_button, neutral, neutral);
     input_history_sequence("input history wrong button", movie, waiting,
                            sizeof waiting / sizeof waiting[0]);
     (void)snprintf(movie, sizeof movie, "%s%s%s%s%s%s%s", header, neutral, neutral, held, held,
                    held, held);
     input_history_sequence("input history release required", movie, held_without_release,
                            sizeof held_without_release / sizeof held_without_release[0]);
-    (void)snprintf(movie, sizeof movie, "%s%s%s%s%s%s%s", header, neutral, neutral, neutral,
-                   held, held, held);
+    (void)snprintf(movie, sizeof movie, "%s%s%s%s%s%s%s", header, neutral, neutral, neutral, held,
+                   held, held);
     input_history_sequence("input history release must follow hold", movie, release_before_hold,
                            sizeof release_before_hold / sizeof release_before_hold[0]);
 }
@@ -2918,8 +2915,8 @@ int main(int argc, char **argv)
         {"lag_even_frames", lag_even_frames},
         {"lag_dma_and_peek", lag_dma_and_peek},
     };
-    if (argc > 1 && (strcmp(argv[1], "--write-cart") == 0 ||
-                     strcmp(argv[1], "--write-history-cart") == 0)) {
+    if (argc > 1 &&
+        (strcmp(argv[1], "--write-cart") == 0 || strcmp(argv[1], "--write-history-cart") == 0)) {
         return write_carts(argc, argv);
     }
     if (argc == 3 && strcmp(argv[1], "--check-history-cart") == 0)
