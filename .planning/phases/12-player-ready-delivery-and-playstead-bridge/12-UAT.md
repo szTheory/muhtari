@@ -187,6 +187,14 @@ The recorded 12-01 summary interval `0ca7c9aa92152b09a277388e0fb2c977601016fa..5
 
 The required retained run receipt, complete Windows ARM64 log, and matched successful log still have no exact local paths in the project ledgers. They remain unverified; no logs were fetched or tests, source repairs, publication, or hosted actions were performed. The cause of the Windows timeout remains unknown, `TIMEOUT=1` remains unchanged, the prior hosted allowance remains spent, and PLAY-03 host acceptance remains blocked.
 
+## 2026-11-06 bounded candidate-host evidence after plan 12-12
+
+One newly authorized ordinary `workflow_dispatch` was bound to source `d22dca50abea335aefcb917cf428d32f5324f93c`, ref `phase/12-host-evidence-20261106`, attempt 1: [run 42227540379](https://github.com/szTheory/muhtari/actions/runs/42227540379). All four optional inputs were false, including `phase14_host=false`. The final receipt is `completed/cancelled`; the exact-run audit exited 1 because `CI required` failed.
+
+The required hygiene job failed `hygiene.format`, flagging six C files for clang-format. One ordinary cancellation was issued while the remaining matrix jobs were active. Windows ARM64 reached 603/700 tests before its build/test/package step was canceled, and macOS ARM64 reached 42/700 before cancellation. The RetroArch job had no steps, and no macOS ARM64 candidate archive/hash or RetroArch frame artifact was produced. There are no actual-host images or comparator results, DMA comparison, or fresh-process battery results. The full command, job, and artifact ledger is in [12-12 host evidence](12-12-HOST-EVIDENCE.md).
+
+This receipt adds no passing PLAY-03 evidence and does not change the original UAT rows, counts, accepted 0/4, or prior attempt history. The malformed initial shell refspec failed before remote mutation; the corrected single push published only the frozen source. The one dispatch and cancellation are now spent. No Phase 14 host action occurred.
+
 ## 2026-11-01 read-only evidence follow-up
 
 The owner later authorized reading exactly the run 41255515829 receipt and the two already-referenced Windows ARM64 job logs. The receipt matches the recorded source, branch, event and attempt; it is terminal with overall conclusion `cancelled`, one failed Windows ARM64 build and one failed `CI required` aggregate. The failed log confirms `built.openbios` timed out at 1.53 seconds; the matched run 41224305264 log has two passes at 0.15 and 0.06 seconds. Six source, registration, timeout-helper, preset and pin files are identical across those commits, and the exact-receipt audit confirms the required aggregate failure. This evidence confirms the failure and the matched control but does not identify its cause. The existing failure rows/totals, `TIMEOUT=1`, accepted 0/4, and spent allowance remain unchanged; no tests, repair, publication, or new hosted run occurred. See [12-07 summary](12-07-SUMMARY.md) for commands and exits.
