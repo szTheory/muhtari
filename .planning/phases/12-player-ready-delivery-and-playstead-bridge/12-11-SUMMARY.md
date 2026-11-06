@@ -12,7 +12,7 @@ affects: [PLAY-02, TUNE-07, Phase 12 acceptance]
 actuals:
   tokens: 6854
   tasks: 3
-  commits: 2
+  commits: 3
 tech-stack:
   added: []
   patterns:
@@ -96,8 +96,8 @@ metrics:
   completed: 2026-11-05
   status: complete
 plan_head_before: 92f4563bd947a33191bfd98e967fa0a055bc559c
-plan_head_after: 74d248635ec9d67bad87f87eb2184749e44ca410
-commits: 2
+plan_head_after: 63ecdc721a922cdf2e969310c78b7ebc2fbd027d
+commits: 3
 ---
 
 # Phase 12 Plan 11: Local Documentation and Evidence Disposition Summary
@@ -121,7 +121,7 @@ commits: 2
 
 1. **Task 1: Follow the handoff into a truthful isolated launch and artifact contract** — `ab0d767` (`docs(12-11): document launch and artifact evidence contract`).
 2. **Task 2: Publish the bounded property deferral against the current inventory** — `74d2486` (`docs(12-11): defer property calibration against current inventory`).
-3. **Task 3: Record local disposition without accepting the phase** — verification addendum and this summary committed together as the terminal task commit; its hash is returned in the execution result.
+3. **Task 3: Record local disposition and preserve Phase 12 acceptance status** — `63ecdc7` (`docs(12-11): record local evidence disposition`).
 
 ## Local Verification
 
@@ -158,4 +158,4 @@ None. The missing Seed heading was a task-local correction found by the specifie
 
 ## Self-Check: PASSED
 
-The summary and verification report exist; task commits `ab0d767` and `74d2486` are ancestors of HEAD; all nine execution-start protected paths retain their recorded SHA-256 values; summary extraction reports `requirements_completed: []`; the coverage classifier parses seven entries with zero errors; and the full scoped whitespace check exits 0.
+The summary and verification report exist; task commits `ab0d767`, `74d2486`, and `63ecdc7` are ancestors of HEAD; all nine execution-start protected paths retain their recorded SHA-256 values; summary extraction reports `requirements_completed: []`; the coverage classifier parses seven entries with zero errors; and the full scoped whitespace check exits 0.
