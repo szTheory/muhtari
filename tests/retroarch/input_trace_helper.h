@@ -124,8 +124,7 @@ static void keyboard_trace_finish(uint32_t reason, uint32_t detail)
                 fprintf(stderr, "input trace key=%u state=up count=0 first_ms=na last_ms=na\n",
                         entry->key);
             else
-                fprintf(stderr,
-                        "input trace key=%u state=up count=%u first_ms=%lld last_ms=%lld\n",
+                fprintf(stderr, "input trace key=%u state=up count=%u first_ms=%lld last_ms=%lld\n",
                         entry->key, entry->up_count, (long long)entry->first_up_ms,
                         (long long)entry->last_up_ms);
         }

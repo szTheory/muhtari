@@ -576,8 +576,8 @@ int main(int argc, char **argv)
     capture_after_tick = 3;
     ticks = posts = bad = 0;
     memset(mock_posts, 0, sizeof mock_posts);
-    char *release_args[] = {"synthetic-helper", "--probe", raw_release, argv[0], "--fixture",
-                            release_sync_fd, NULL};
+    char *release_args[] = {"synthetic-helper", "--probe",       raw_release, argv[0],
+                            "--fixture",        release_sync_fd, NULL};
     REQUIRE(helper_main(6, release_args) == 1 && !bad && ticks == 450 && posts == 904);
     REQUIRE(waitpid(owned, NULL, WNOHANG) == -1);
     char helper_release[sizeof raw_release + sizeof "/helper.trace"];
@@ -586,15 +586,19 @@ int main(int argc, char **argv)
     REQUIRE(snprintf(core_release, sizeof core_release, "%s/core.trace", raw_release) > 0);
     it_read(helper_release, IT_HELPER, &h);
     it_read(core_release, IT_CORE, &c);
-    REQUIRE(h.status == IT_COMPLETE && h.count == 10u && c.status == IT_UNFINISHED && c.count == 3u);
+    REQUIRE(h.status == IT_COMPLETE && h.count == 10u && c.status == IT_UNFINISHED &&
+            c.count == 3u);
     REQUIRE(keyboard_trace_keys[0].down_count == 50u && keyboard_trace_keys[0].up_count == 400u);
     REQUIRE(keyboard_trace_keys[1].down_count == 50u && keyboard_trace_keys[1].up_count == 400u);
     REQUIRE(keyboard_trace_keys[2].down_count == 3u && keyboard_trace_keys[2].up_count == 1u);
-    REQUIRE(keyboard_trace_keys[0].first_down_ms == 0 && keyboard_trace_keys[0].last_down_ms == 4900 &&
-            keyboard_trace_keys[0].first_up_ms == 5000 && keyboard_trace_keys[0].last_up_ms == 44900);
-    REQUIRE(keyboard_trace_keys[1].first_down_ms == 0 && keyboard_trace_keys[1].last_down_ms == 4900 &&
-            keyboard_trace_keys[1].first_up_ms == 5000 && keyboard_trace_keys[1].last_up_ms == 44900);
-    REQUIRE(keyboard_trace_keys[2].first_down_ms == 0 && keyboard_trace_keys[2].last_down_ms == 200 &&
+    REQUIRE(
+        keyboard_trace_keys[0].first_down_ms == 0 && keyboard_trace_keys[0].last_down_ms == 4900 &&
+        keyboard_trace_keys[0].first_up_ms == 5000 && keyboard_trace_keys[0].last_up_ms == 44900);
+    REQUIRE(
+        keyboard_trace_keys[1].first_down_ms == 0 && keyboard_trace_keys[1].last_down_ms == 4900 &&
+        keyboard_trace_keys[1].first_up_ms == 5000 && keyboard_trace_keys[1].last_up_ms == 44900);
+    REQUIRE(keyboard_trace_keys[2].first_down_ms == 0 &&
+            keyboard_trace_keys[2].last_down_ms == 200 &&
             keyboard_trace_keys[2].first_up_ms == 300 && keyboard_trace_keys[2].last_up_ms == 300);
     REQUIRE(h.records[3].type == IT_POST && h.records[3].a == 126u && h.records[3].b == 1u);
     REQUIRE(h.records[4].type == IT_POST && h.records[4].a == 6u && h.records[4].b == 1u);

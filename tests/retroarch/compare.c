@@ -5,8 +5,8 @@
 #include <string.h>
 
 int bmp_read(const char *path, uint32_t *w, uint32_t *h, uint8_t **rgb);
-int diag_battery_pixels(const uint8_t *rgb, uint32_t w, uint32_t h, unsigned count,
-                        unsigned marker, int controls);
+int diag_battery_pixels(const uint8_t *rgb, uint32_t w, uint32_t h, unsigned count, unsigned marker,
+                        int controls);
 unsigned input_response(const uint8_t *rgb, uint32_t w, uint32_t h, int held);
 
 static unsigned compare_hex(const uint8_t *p)
@@ -264,7 +264,10 @@ int main(int argc, char **argv)
             unsigned failed = input_response(rgb[i], w[i], h[i], held);
             if (failed != 0u) {
                 static const char *const faults[] = {"invalid", "image dimensions",
-                    "SWCHA", "SWCHB", "INPT0", "INPT1", "INPT2", "INPT3", "INPT4", "INPT5"};
+                                                     "SWCHA",   "SWCHB",
+                                                     "INPT0",   "INPT1",
+                                                     "INPT2",   "INPT3",
+                                                     "INPT4",   "INPT5"};
                 printf("input-control: %s mismatch\n", faults[failed]);
                 rc = 1;
             }
