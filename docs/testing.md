@@ -328,7 +328,8 @@ TUNE-07 remains the six Phase 12 properties: `split_run`, `peek_pure`, `instance
 
 The 390.08-second timeout (Nightly 40157750598) and cancellations 40419374584, 40702203633 are censored,
 unaccepted and not deadline evidence. [SEED-010](../.planning/seeds/SEED-010-nightly-prop-calibration.md) owns
-the criteria and revisit. No run is scheduled; TUNE-07 remains pending.
+the criteria and revisit. No separate calibration run is scheduled; routine advisory nightly property runs
+continue. TUNE-07 remains pending.
 
 **Bumping the vector pin.** One `ci:` pull request: set the new commit in the `sst-6502-v1` row and the sample's
 manifest row; run the `vectors-full` workflow once, whose fetch fails against the old list but leaves the new files
