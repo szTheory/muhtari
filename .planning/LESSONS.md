@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 # Lesson exchange
@@ -116,6 +116,9 @@ the operative rules. A ledger alone is not a control.
 | MU-GSD-009 | One known archive failure hid a required RetroArch linker failure. Native success is not a complete hosted outcome audit. | Reproduced run40132929297; full-job/source audit and changed standalone-consumer preflight, GSD-HANDOFF §3.1. Reproduced again in run 41056151292 attempt 1/source bf21fc3: moving the BMP reader without updating its diagnostic target skipped RetroArch; missing palette linkage surfaced in local correction. Exact-SHA check_ci_run audit exits 1; corrected comparator build and complete local 673+6 workflow exit 0, N/A-local. The halted 12-01 summary preserves the failed run; local success is not hosted input evidence. |
 | MU-GSD-010 | Advisory prose scanning treated a command as a missing file; summarized counts include halted plans. Neither proves accepted outcomes. | Reproduced verify-summary03 and halted graph; declared files/commits/consumer evidence and one state owner |
 | MU-GSD-011 | Repeated unchanged polling, metadata reconciliation and general replanning did not change acceptance. | Observed execution/state mismatch; bounded relevant fan-out, one adversarial synthesis, explicit stop and single state writer |
+| MU-GSD-015 | The one-major-step-per-session rule was applied to every debug continuation, fragmenting diagnosis, scratch controls, preflight, replay and cleanup into repeated commands and authorizations. A sample cap is a per-supervisor-attempt bound, not a tool quota. | Reproduced in [phase12 debug record](debug/phase12-packaged-input-tracer.md): preflight exit1 before invocation did not spend a sample; the later v1 supervisor attempt failed on an empty CID and was spent; v2's seven offline controls and one separately authorized sample completed without resolving the historical hosted/RetroArch cause. Stop after major OpenGSD transitions (discuss, plan, execute, phase/milestone management, audit, ship/archive), not each `gsd-debug continue`. Bundle the agent-owned preflight, scratch edits, controls, bounded review, reservation and owned cleanup within one finite scope. Ask again only at a new live/remote/irreversible boundary, a failed gate requiring changed scope, or an attempt beyond the stated cap; preserve the halt without acknowledgment. |
+| MU-GSD-016 | GitHub Actions job-log responses can contain terminal escapes; a default `gh api .../logs` read may fail even when the log is available. | Reproduced: the first read of `repos/szTheory/muhtari/actions/jobs/124605180515/logs` exited1 with empty stdout and a terminal-escape refusal; one authorized `gh api --allow-escape-sequences ...` redirected to a private file exited0, and local filtering extracted test timings without printing raw escapes. [Run41224305264/job124605180515](https://github.com/szTheory/muhtari/actions/runs/41224305264/job/124605180515); [diagnostic report](debug/phase12-publication-diagnostic-proposal.md). Use the explicit option only with file redirection, inspect locally, and stop rather than repeating failed API calls. |
+| MU-GSD-017 | A checkpoint focus or active-sounding STATE handoff can lag behind newer closeouts; repeating `continue` then replays completed work without producing evidence and hides the real blocker. | Reproduced 2026-11-01: `sed -n '1,14p' .planning/debug/phase12-packaged-input-tracer.md` and `sed -n '2947,2972p' .planning/debug/phase12-packaged-input-tracer.md` showed an older checkpoint focus beside later closeouts; a later read of STATE lines 106 and 150 found stale active instructions for a superseded supervisor failure and already-completed capture work. The repeated resume-manager invocations added no diagnostic evidence. Before each debug continuation, reconcile Current Focus and active STATE handoffs with the newest dated checkpoint closeout, phase summary and current project boundary. Require the next operation to have authorized scope and known inputs; mark superseded handoffs historical. If the blocker is unchanged, hand off its missing input, consequence, next action and command, then resume only on new evidence or authority. Adopted in AGENTS rule 8. |
 | MU-CI-004 | A30s Apple control deadline repeatedly killed otherwise passing work; timeout samples are censored. | Successful22.79s maximum in run40135571745/job121002299364; existing twice-observed-max gives provisional46s Apple-only, same cases/oracles |
 | MU-CI-005 | A~28s frontend waited behind~25min Windows publication controls across current/base. New emulator code was not the bottleneck. | Reproduced run40135571745; seed measured publication-control profiling before DAG redesign, preserve Windows failure coverage |
 | MU-ARCH-001 | Historical compressed minimum399937 blocked correct growth by1750bytes without a demonstrated capacity objective. | Reproduced9a64bbc/run40135571745; DEC.61 retires only cutoff, preserves required authenticated measurements/integrity, no replacement quota |
@@ -127,8 +130,141 @@ the operative rules. A ledger alone is not a control.
 | MU-TEST-004 | A one-row held movie is not a held state at a later observation: the runner releases buttons at movie EOF. | Actual600-frame runner replay with one held row makes the independent held judge reject SWCHA1; the workflow's600-row producer passes0, N/A-local. `policy.retroarch.preflight_gate` executes that actual producer, asserts600 held/released rows and rejects a one-row mutation. Scoped review caught the caller mismatch before the single hosted content probe; movie EOF behavior remains unchanged. |
 | MU-TEST-005 | A failedexec mock must return an error so the real child's terminating fallback stays reachable. Test both the mock contract and the actual child ownership boundary. | [Run41086569269](https://github.com/szTheory/muhtari/actions/runs/41086569269), sourcea7aa889 attempt1: both Windows compilers reject unreachable `_exit(127)` after an always-aborting mock; actual RetroArch skips. Returning-1 plus a direct regression rejects the old mock bySIGABRT and passes locally. `policy.retroarch.child_failure` requires forwarded argv, exit127 and no input/wait/kill; wrong-argv, child-fallthrough and child-input mutants all fail the external expected-code/marker consumer. Native clang-cl compatibility passes; only a real MSVC run can establish its verdict. |
 | MU-TEST-006 | Fault generation and validation must have the same platform applicability. A Mac-only full run and review did not exercise a portable check's non-Unix branch. | [Run41090838885/job124184107734](https://github.com/szTheory/muhtari/actions/runs/41090838885/job/124184107734): real MSVC compile/API/child-exec tests pass, but the shared policy check fails because its short-movie mutant is generated everywhere while execution-based validation is Unix-only. Forcing the original checker's non-Unix branch reproduces1; local common validation of actual producer start/stop/stride/destination, runner window and mode bindings passes0. A shifted equivalent600-row span passes; truncation/binding/window/stride faults reject1, with Unix execution retained. Full local677+6 and exact inventories pass; this repair has no new hosted verdict. |
-| MU-CI-012 | A slow-lane multiplier does not establish twice-complete-work margin: the Intel PAL BIOS test allowed8s although unchanged work had completed in5.66s. A later8.72s timeout cannot measure completion. | Seven historical complete Intel current/base observations reach5.66s in [run41062201311/job124084546980](https://github.com/szTheory/muhtari/actions/runs/41062201311/job/124084546980). The owning registration now uses base6s, giving12s with unchanged Intel scale2; generated properties, unchanged predicate/fixture and full local workflow/inventories pass0,N/A-local. This restores measured margin, not proof of the failed execution's cause or native acceptance. |
+| MU-TEST-007 | A platform clock identifier need not be an integer. A replacement mock that narrows the real clock API can compile on native platforms and fail under WASI. | [Run41150939552/job124397648745](https://github.com/szTheory/muhtari/actions/runs/41150939552/job/124397648745): `keyboard_clock(int, ...)` conflicts with pointer-valued WASI CLOCK_MONOTONIC, producing three compile errors before tests while all six native current/base suites pass. Complete direct-log/outcome audit exits0; required checker exits1 solely on independent host failure. WASM stays advisory; no fix or successful WASI test is claimed. Read the target header and preserve its clock identifier type before proposing a repair. |
+| MU-CI-012 | A slow-lane multiplier does not establish twice-complete-work margin: the Intel PAL BIOS test allowed8s although unchanged work had completed in5.66s. A later8.72s timeout cannot measure completion. | Seven historical complete Intel current/base observations reach5.66s in [run41062201311/job124084546980](https://github.com/szTheory/muhtari/actions/runs/41062201311/job/124084546980). The owning registration now uses base6s, giving12s with unchanged Intel scale2; generated properties, unchanged predicate/fixture and full local workflow/inventories pass0,N/A-local. This restores measured margin, not proof of the failed execution's cause or native acceptance. A second CTest timeout is also censored: the Windows ARM64 OpenBIOS test uses base TIMEOUT 1 from 2x the historical 0.40s maximum across 16 runs; run41255515829 reported 1.53s at timeout, while one matching successful lane job in run41224305264 passed two observations in 0.15s and 0.06s. Keep the original evidence labeled: these samples do not establish a new upper bound or justify a global timeout increase. |
 | MU-CI-013 | A pooled native job limit can lose the required margin for one lane even when per-test scaling is intact. Calibrate from complete successful jobs; completed tests inside a cancelled producer are insufficient. | [Intel budget review](debug/phase12-intel-budget-review.md):40 successful complete Intel jobs reach1085s in [run40783431377/job123150624076](https://github.com/szTheory/muhtari/actions/runs/40783431377/job/123150624076), so existing DEC.47 gives37m rather than19m. Owner-approved local Intel-only correction preserves every test/scale/join. Actual-expression pass/fault evaluation, existing timeout/policy consumers, full local workflow and exact inventories exit0,N/A-local; one bounded review PASS. Historical workload differs from current677+6, so expanded-workload margin remains provisional; no hosted success, slowdown cause or keyboard delivery is established. |
+| MU-CI-014 | A stage marker written before `execute_process` proves the wrapper reached the call site, not that the child launched. If stdout is redirected to an unuploaded file and stderr is held by CMake until return, a CTest timeout leaves no child progress or status to diagnose. Treat elapsed timeout observations as censored and retain the command and both output streams in the failure artifact. | Reproduced on the same source in [run 41329055050](https://github.com/szTheory/muhtari/actions/runs/41329055050): Windows ARM64 `built.openbios` timed out at 1.74s, the stage trace ended at `assemble`, and `LastTest.log` had empty output; the authenticated ZIP contained no `assemble.log`. [The prior same-source run](https://github.com/szTheory/muhtari/actions/runs/41323089043) passed in 0.14s, establishing different outcomes but no cause. The failed recipe held stderr until return. Separately authorized local capture now records prepared argv and both streams on disk and lists them in that existing artifact step. Existing self-test checks successful stdout and a rejected real missing-module child with persistent stderr; scratch baseline control1/repaired0, focused/adjacent CTest0, both firmware digests and TIMEOUT1/1 preserved, N/A-local. [Local closeout](phases/12-player-ready-delivery-and-playstead-bridge/12-07-SUMMARY.md#local-openbios-output-capture-2026-11-01) retains exact commands/exits. Prepared command or empty streams still do not prove launch; Windows timeout/input causes unknown, no hosted allowance renewed. |
+| MU-CI-015 | A workflow input that narrows one job does not narrow the workflow's matrix. The existing manual CI event cannot validate Windows ARM64 OpenBIOS alone without also running the full matrix and either launching RetroArch input or intentionally failing its preflight path. | Reproduced by source review of `.github/workflows/ci.yml`: non-PR dispatch sets `heavy=true`, `build` expands six platforms, and `ci-required` expects the full job set. `keyboard_preflight_only=true` exits 1 before content; `keyboard_probe_only=true` launches the actual keyboard child. The full dispatch ceiling is 329 configured runner-minutes. Do not spend it for the already locally validated artifact-path change or add a duplicate workflow solely for this observation. Defer hosted validation until a separately authorized source publication/full-CI scope has independent value. [Read-only review closeout](phases/12-player-ready-delivery-and-playstead-bridge/12-07-SUMMARY.md#post-capture-hosted-scope-review-2026-11-01); run URL N/A-local. |
+
+Follow-up [run41133992538](https://github.com/szTheory/muhtari/actions/runs/41133992538)
+supplies exact677+6 complete Intel current/base production/uploads in1107s,
+retaining37m under DEC.47. Complete Windows-arm64 work takes2207s, so its68m
+deadline lacks twice-this-sample margin (74m arithmetic); no deadline change is
+authorized. Complete job/source audit exits0; required audit remains1 on host
+failure. This new sample does not establish the cause of earlier slowdown.
+
+| ID | Symptom and invariant | Disposition and control |
+|---|---|---|
+| MU-HOST-006 | Permitted posting and a helper's key schedule do not prove host consumption or held capture. A terminal released frame cannot substitute for held evidence. | [Run41133992538/job124346024270](https://github.com/szTheory/muhtari/actions/runs/41133992538/job/124346024270): one child logs Up/Z down/up and600frames; artifact contains only released PNG. Independent released predicate0, missing F8 held capture rejects before comparisons. Existing fail-closed consumer is retained; missing-capture cause remains unproved. Complete audit0/required audit1; sole process spent, no blind retry. |
+| MU-HOST-007 | A fixed diagnostic record budget can be exhausted by repeated input-post logs before it captures the poll/state evidence needed to explain a failed host observation. Classify the child at the deadline before reporting an acknowledgment timeout. | [Run41461948345](https://github.com/szTheory/muhtari/actions/runs/41461948345): `python3 /private/tmp/muhtari-trace-observation-interpret-20261102.py` exits 0; the 64-record helper trace contains INIT/FORK/START, 60 repetitive POST records and SATURATED by 2.934s, while posts continue through 4.84s and the no-ack branch fires at 5.014s. `git show 8e5acda806a1d7c3551bb0ca8136254648151757:tests/retroarch/keyboard_preflight.c` and matching `tests/libretro/input_trace.h` confirm up to three POST writes per 100ms tick and a 64-record ceiling. On the cutoff iteration, the helper exits before its next `waitpid`; child status at the deadline is therefore unknown. Next local diagnostic repair should aggregate repeated posts, preserve space for lifecycle/poll/state/end evidence, and observe child completion at the cutoff with deterministic pass/fault controls. This reproduces an observability defect; the actual input-failure cause remains unknown. An unfinished INIT-only core prefix does not prove no polling, no input, or a stall. |
+
+The separately approved acknowledgment experiment in
+[run41150939552/job124397648612](https://github.com/szTheory/muhtari/actions/runs/41150939552/job/124397648612)
+also posts repeatedly without capture: one child,35F8-down observations through
+4925ms/capture0, generic helper failure around5.2s, no release/images/pixel judge.
+The no-ack guard is consistent with timing; the exact failure branch and frontend
+startup/routing cause remain unproved. Audio initialization errors are evidence,
+not established causality. Complete job/step/log/artifact audit exits0; required
+audit remains1, no frames artifact exists and the one-process scope is spent.
+Investigate startup/capture readiness read-only before another source/live scope;
+do not widen the window or infer event consumption from repeated posting.
+
+The subsequent read-only continuation identifies a diagnostic limit: the helper
+tests the5s no-ack guard before child status, and several unrelated exits share
+one message. Last4925ms posting plus generic failure supports cutoff attribution
+but cannot identify the executed branch or establish frontend readiness. Preserve
+that uncertainty; report a named stopping condition before changing schedules.
+The [diagnosis](debug/phase12-held-capture-diagnosis.md#read-only-startup-and-wasi-diagnosis-after-the-acknowledgment-experiment)
+records unchanged complete receipts/audit0 and required audit1; no source repair
+or new hosted execution is implied.
+
+The separately approved instrumented
+[run41158640754/job124418953455](https://github.com/szTheory/muhtari/actions/runs/41158640754/job/124418953455)
+now confirms its own immediate stop: acknowledgment-deadline at5090ms with
+capture0/errno0/child_status unknown. One child posts35F8downs through4988ms,
+then no release/image is produced. Guard-before-wait preserves an unknown child
+state; cleanup reaping cannot recover it. Named diagnostics establish a branch,
+not readiness, routing, audio cause or the old execution's branch. Full outcome
+audit0/required audit1; no frames artifact and allowance spent. Preserve this
+distinction before proposing further readiness/routing instrumentation; another
+no-ack outcome alone authorizes no retry or wider window.
+
+| ID | Symptom and invariant | Disposition and control |
+|---|---|---|
+| MU-TEST-008 | A deterministic mock of a platform API must preserve its argument type. WASI's clock identifier is a pointer; native integer-like identifiers do not establish portability. | Latest [WASI job124397648745](https://github.com/szTheory/muhtari/actions/runs/41150939552/job/124397648745) fails three diagnostics before tests. `python3 /tmp/muhtari-wasi-clock.SSDai9/check.py` exits0,N/A-local: complete original mock compile1 reproduces all three; a private conditional int/clockid_t alias compiles0 for WASI/native/no-clock fallback, while signature-only clockid_t fails fallback1. Source repair awaits separate authority; no runtime or hosted acceptance is inferred. |
+| MU-TEST-009 | Exit-code transport is part of a portable negative-control contract. A native127 assertion can fail before it reaches the observer when the selected runtime rejects that status. | [WASI job124418953566](https://github.com/szTheory/muhtari/actions/runs/41158640754/job/124418953566) compiles the repaired clock mock and passes its ordinary valid/fault test;605/606tests pass. Child-exit control prints its required argv/no-input/no-wait marker, then the runtime explicitly rejects127 as outside[0..126) and returns1. `python3 /tmp/muhtari-diagnostic-exec.Hak1cS/audit_outcome.py` exits0; required audit1 solely host. Runtime remains advisory/unaccepted, native127 contract unchanged; no new repair or pin/semantic change is authorized. |
+
+MU-TEST-009 local follow-up: the separately approved mock-only WASI transport125
+preserves the real helper127 and native127 assertions. `python3
+/tmp/muhtari-wasi-transport.atnGLI/checks.py` exits0,N/A-local: actual native,
+fallback and native-executed WASI branch pass; wrong exit/argv/child activity,
+omitted termination, wrong transport and missing marker reject1. Independent
+fixtures in pinned Wasmtime48.0.6 reproduce127-plus-marker runtime rejection,
+accept125-plus-marker, and reject125 without marker through the unchanged
+observer. Actual WASI source compiles0, but complete C-mock target execution
+still lacks a linker; no full WASI or hosted input acceptance is claimed.
+Final full local workflow and exact ordinary/release inventories pass0 after
+an initial docs-budget failure was corrected in prose, without changing its
+limit. Source stays uncommitted and all live allowances stay spent. Earlier
+awaiting-local-repair wording is historical; hosted advisory failure remains.
+
+MU-TEST-008 follow-up: approved three-file sourcecee6dea in the same new run
+repairs the actual target compile failure and passes `policy.retroarch.preflight_api`.
+Its earlier awaiting-authority text is historical; MU-TEST-009 and the full
+advisory failure remain. Native/fallback fault tests and six native current/base
+productions also pass; compilation success alone still does not establish full
+WASI runtime acceptance.
+
+MU-TEST-009 tooling follow-up: compile-only target evidence can hide more than
+one absent link input. `python3 /tmp/muhtari-wasi-tool-proposal.5zh8vi74/inspect.py`
+exits0,N/A-local: the installed Clang21 driver-only plan selects absent
+`wasm-ld` and WASI `libclang_rt.builtins.a`; no binary is generated or executed.
+A linker-only fetch would not supply that runtime archive. The
+[read-only proposal](debug/phase12-wasi-local-proposal.md) selects one coherent
+private SDK rather than serial tooling fixes, with explicit local/CI sysroot
+differences and a new download/execution decision. This is a proposed route,
+not reproduced SDK compatibility or full runtime/host acceptance. No package
+was fetched and every existing stop/allowance remains intact.
+
+MU-TEST-009 actual-target follow-up: the separately approved private SDK batch
+now links and executes the complete actual C mock as WASI. `python3
+/tmp/muhtari-wasi-exec.ludxi_mr/execute.py continue-after-metadata` exits0,
+N/A-local: direct ordinary0/child125 plus exact marker, both actual owning
+registrations pass, all ten linked target counterfactual observers reject1.
+The frozen pre-repair127 mock reproduces pinned-runtime rejection despite
+the marker. [Outcome and receipts](debug/phase12-wasi-local-proposal.md#approved-execution-outcome-2026-10-31)
+close focused local complete-C execution only: SDK libc differs from hosted
+CI, whose full WASI result stays advisory/unaccepted; hosted input stays failed.
+
+The same batch reproduced a tooling-metadata pitfall: a release-note summary
+described LLVM21.1.0, but the exact approved SDK28 artifact's compiler/linker
+report21.1.4 at its exact recorded LLVM submodule revision. Initial driver
+exits1 before any target build; documented prebuild continuation reuses saved
+versions and original deadline after correcting the descriptive assertion.
+Asset/digest/SDK/compiler-major/semantic conditions remain unchanged, no
+target attempt repeats, bounded reviewPASS. Identify actual verified tools by
+their reported version and pinned component revision; a summary is not exact
+binary identity. Unexpected asset/digest/revision still stops the batch.
+
+Approved local follow-up, 2026-10-30: the actual mock now uses the conditional
+private clock identifier type. `python3 /tmp/muhtari-clock-diagnostics.HhNyhn/check.py`
+exits0 for changed-source WASI compile-only, native/fallback valid/fault execution
+and standalone links. The helper reports named stopping conditions, last valid
+observations and saved API errors; cleanup reaping does not turn an unobserved
+child state into evidence. Tests preserve guard precedence and reject fabricated
+child-status claims. Full local CI and exact ordinary/release inventories exit0;
+one bounded review has no blocking findings. N/A-local; hosted capture/readiness
+and complete WASI runtime acceptance remain unproved. This supersedes only the
+pending local-repair disposition above, not historical failures or live limits.
+
+Local continuation extends the existing helper/wrapper consumers with bounded
+capture acknowledgment and monotonic timing. The actual original helper and
+single-pulse/no-release/no-F8-up counterfactuals compile0/reject1; corrected
+controls and full local workflow/inventories exit0,N/A-local. This reproduces
+the consumer distinction, not the original hosted cause. The existing support
+cap separately rejects347/300lines and remains binding despite localCI success.
+The [local report](debug/phase12-held-capture-diagnosis.md) records commands,
+the one bounded review and the still-pending contract decision. Its complete
+Windows review also finds2324s among40 successful arm64 jobs, so DEC.47 supports
+78m rather than latest-only74m; historical workload differences remain explicit.
+
+The owner subsequently approved retiring only that numeric support ceiling,
+without a replacement quota (DEC.56). Its historical347/300 rejection remains
+a failure. The current workflow reports actual line totals; the existing policy
+consumer accepts reporting301lines, rejects missing inputs and detects restored
+numeric gating. Two cases, owned-child/process bounds, independent judges and
+ordinary architecture review remain binding. The cap amendment grants no live
+allowance and does not establish the original hosted missing-capture cause.
 
 The local-only verdicts above retain their original checkpoint scope. In
 [renewed run41099366366](https://github.com/szTheory/muhtari/actions/runs/41099366366),
@@ -265,3 +401,75 @@ results. The [planning index](README.md) makes their sources and related lessons
 discoverable. Current source-backed [research](research/SUMMARY.md) separates
 inspection from inference and leaves implementation acceptance to later phases.
 No new hardware or integration lesson is declared reproduced by this scoping step.
+
+## Local diagnostic evidence (2026-10-31)
+
+A record-aligned prefix can hide a late write failure. Initial local tracing
+accepted an unfinished helper and ignored a core write error after INIT. The
+bounded review exposed both; actual collector/wrapper controls reproduce the
+failure boundaries. Require helper END/saturation, reject captured writer-failure
+diagnostics, label killed core prefixes unfinished with writer health unknown,
+and never infer missing input from missing records alone. Parent/child PIDs and
+valid timestamps still require same-host/clock provenance from fresh descriptor
+ownership before comparing event times.
+
+Evidence: `python3 /private/tmp/muhtari-tracer-review-controls.py` exits0 after
+both old-guard observers reject1; corrected `policy.retroarch.preflight_api`
+exits0, N/A-local. Durable scope, fault mechanisms and final full-workflow receipts
+are in [the approved local outcome](debug/phase12-input-tracer-proposal.md#approved-local-execution-outcome-2026-10-31).
+This is diagnostic reliability, not resolution of the actual hosted input cause.
+
+## Diagnostic artifact shell guards (2026-10-31)
+
+MU-CI-013 (reproduced): Bash exempts negated commands from `errexit`.
+The initial diagnostic identity script used `! cmp -s` to reject a diagnostic
+module identical to the ordinary module; the actual extracted script continued
+and exited0 for that substitution. An explicit `if cmp -s ...; then exit 1; fi`
+rejects it. Hash/source identity checks alone cannot establish this branch exits.
+The existing offline workflow consumer now exercises the real shell script with
+valid and substituted modules, wrong run/source/parser and missing-digest faults.
+`cmake -DROOT="$PWD" -DWORK=<scratch>/policy -P tests/policy/retroarch_preflight.cmake`
+exits0 after the substitution control rejects; N/A-local. This establishes local
+guard behavior, not hosted artifact delivery or input acceptance. See the
+[local wiring outcome](debug/phase12-hosted-input-tracer-proposal.md#approved-local-wiring-outcome-2026-10-31).
+
+## Portable diagnostic test compilation (2026-10-31)
+
+MU-TEST-010 (reproduced): warning-clean native Clang diagnostics do not establish
+GCC warning compatibility. A discarded `write` result and fixed-size paths
+formed by appending suffixes to another full-size buffer passed local/Mac
+checks but failed the required Linux producer builds under warnings-as-errors.
+Use checked syscall results and prove path capacity in portable test fixtures;
+retain each compiler's warnings and the existing required producers. The
+unchanged quality join correctly rejects missing Linux artifact producers.
+
+Evidence: both Linux build steps exit1 in
+[run41208847091](https://github.com/szTheory/muhtari/actions/runs/41208847091);
+`python3 /private/tmp/muhtari-frozen17-terminal.py` exits0 after complete
+20job/step/artifact/log reconciliation, while the required CMake audit exits1.
+The Mac diagnostic artifact identity/digest verifies0, but RetroArch is skipped
+and no child/input observation exists. This establishes a test compilation
+blocker, not the original hosted input cause; no repair or retry is claimed.
+
+## Exec descriptor oracle ownership (2026-10-31)
+
+MU-TEST-011 (reproduced): an exec-time descriptor oracle must identify the
+helper's owned files, not reject unrelated inherited descriptors. Compare
+`(st_dev, st_ino)` and reject only aliases of the helper file, trace directory
+or core file; inode-only checks and blanket close-on-exec expectations are not
+portable ownership tests.
+
+Evidence: [run41224305264](https://github.com/szTheory/muhtari/actions/runs/41224305264)
+fails both Linux `policy.retroarch.preflight_api` producers at the old combined
+inode/CLOEXEC assertion before RetroArch. The corrected synthetic native/Linux
+pass and owned-alias fault controls, full local workflow, hygiene, budget checks
+and bounded independent review pass locally. See the [phase 12 debug record](debug/phase12-packaged-input-tracer.md).
+The hosted descriptor's exact identity and the original RetroArch input cause
+remain unknown; no second hosted attempt is claimed.
+
+## Concise owner handoffs (2026-11-03)
+
+| ID | Symptom and invariant | Fix and evidence | Status |
+|---|---|---|---|
+| MU-GSD-018 | Long, jargon-heavy handoffs with several candidate commands made the owner translate state after the work was complete. A workflow-suggested command can be invalid under an already-used cap. | Reproduced in the Phase 12 closeout: `node <GSD_TOOLS> query verification.status .planning/phases/12-player-ready-delivery-and-playstead-bridge` exits 0 with `gaps_found`; `node <GSD_TOOLS> query init.execute-phase 12` exits 0 with zero runnable plans, while the one allowed gap round was spent. Give one short recommendation and its exact valid command; when none is valid, say so and identify the authority needed. Assume the owner follows the recommendation; ask only at a serious scope, authority, risk or explicit-cap boundary. `AGENTS.md` now carries this preference. | adopted |
+| MU-GSD-019 | A blocked phase must not leave the owner without a forward path, and a stale branch can make completed work look runnable. | Reproduced 2026-11-03: the current Phase 12 branch still described Phase 13 as the next runnable work, but `origin/main`'s roadmap and Phase 13 verification show Phase 13 shipped and Phase 14 pending; Phase 12's host allowance remains spent. Before recommending a stop or next phase, reconcile the current branch against `origin/main` and the roadmap. Continue independent approved work; if all remaining paths need new authority, give the exact decision and resume command. | adopted |

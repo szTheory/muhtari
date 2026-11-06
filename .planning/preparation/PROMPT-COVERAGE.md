@@ -1,8 +1,8 @@
 ---
 title: "Prompt coverage: every owner ask and where it lives"
-summary: "Maps each of the owner's 57 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
+summary: "Maps each of the owner's 59 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
 read_when: "At kickoff review and at every milestone close; also before calling an owner ask done, deferred or out of scope."
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 # Prompt coverage
@@ -88,7 +88,11 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 56 | Gamer-facing README: short clear value/status, GUI and CLI happy paths, current instructions, voice matching the product | Root README; PROJECT onboarding constraint; INTENT; PLAY-01 | Documented | Install line and existing wording/budget controls remain; detail stays in docs. |
 | 57 | Discoverable high-signal second brain with provenance, rolling horizons refreshed at milestone boundaries and bidirectional emulator-family learning | Planning README/INTENT; research fan-out prompt; LESSONS; PRODUCT-ROADMAP | Documented | Owner direction 2026-10-29. Muhtari is the current leading example; sibling mechanisms stay hypotheses until reproduced locally; no shared framework or bulk export presumed. |
 
-Totals: Documented 51, Partial 3, Later 3, Inapplicable 0.
+| 58 | Bank a possible separate open-source browser/libretro player for Playstead and other sites; research existing products and high-level scope with bounded primary-source fan-out and small dependencies | INTENT; PRODUCT-ROADMAP Next; seeds/SEED-261030-tt4-browser-libretro-player; research/browser-player/RECOMMENDATION | Later | Owner direction 2026-10-30. Idea/research only; no project creation, full specification or promotion into active muhtari work. |
+
+| 59 | Bank a possible interface project alongside libretro, exploring observability, AI/automated play, configuration and performance; leave a source-backed initial read for a deeper session | INTENT; PRODUCT-ROADMAP Long; seeds/SEED-261030-zk3-emulator-interface; research/emulator-interface/RECOMMENDATION | Later | Owner direction 2026-10-30. Keep libretro; compare host remedies/optional profiles/new standard, with no unmeasured superiority claim or full specification. |
+
+Totals: Documented 51, Partial 3, Later 5, Inapplicable 0.
 
 ## 2. Owner constraints vs agent recommendations
 

@@ -1,8 +1,7 @@
 # Phase 12: Player-ready delivery and Playstead bridge - Context
 
-**Gathered:** 2026-10-29; updated 2026-11-01
-**Status:** Updated; Phase 12 remains blocked at 0/4 accepted plans.
-The Phase Boundary and D-05 preserve the current stop.
+**Gathered:** 2026-10-29; updated 2026-11-02
+**Status:** Phase 12 remains blocked at 0/4 while local diagnostic repair planning continues.
 
 <domain>
 ## Phase Boundary
@@ -10,9 +9,11 @@ The Phase Boundary and D-05 preserve the current stop.
 Deliver TUNE-06, TUNE-07 and PLAY-01 through PLAY-04: current player onboarding,
 a release-qualified external RetroArch launch contract, automated owned-fixture
 host-readiness evidence, an explicit Playstead handoff and one measured small
-pipeline improvement. The baseline is package v0.10.0, API7/ABI1/behavior6.
-All six requirements remain unaccepted; required implementation and evidence
-remain incomplete.
+pipeline improvement. The current published baseline is package v0.11.1,
+API8/ABI1/behavior6. Phase 13 merged in PR #42 and its portable state API is in
+the v0.11.1 release. Actual RetroArch save/load, rewind/run-ahead and Playstead
+use remain unverified; frontend state evidence belongs to Phase 14. All six Phase
+12 requirements remain pending.
 
 Muhtari owns the library, headless runner and libretro core. Playstead owns its
 adapter, installer, verified cache, readiness, input/focus and child lifecycle.
@@ -20,11 +21,12 @@ Its actual launch/input/orderly-return/battery flow is an external dependency;
 independent muhtari state work can proceed while it is pending. Portable states
 belong to Phase 13 and actual frontend state consumers to Phase 14.
 
-Phase 12 remains halted at 0/4 accepted plans; the PLAY-03 host-input cause is
-unresolved and all hosted allowances are spent. This context refresh authorizes
-no implementation, local test/build, hosted run, RetroArch launch, publication,
-or allowance renewal. Resume only under a newly defined, explicitly authorized
-bounded scope.
+Phase 12 remains at accepted 0/4; the PLAY-03 host-input cause is unresolved and
+all recorded hosted allowances are spent. The owner directed continued local
+diagnosis, lesson recording and planning for a bounded diagnostic repair. The halt
+applies to external/hosted actions using spent allowances; it does not stop this
+local work. This update authorizes no new RetroArch/CI run, publication, retry,
+timeout change or allowance renewal.
 
 </domain>
 
@@ -99,7 +101,10 @@ These are discussion decisions, not implementation or hosted acceptance evidence
   new workflow, hosted dispatch, RetroArch launch, publication, pin/dependency/
   permission change, or allowance renewal. Any later hosted action needs a
   separate bounded scope that names the unresolved observation, source/artifact,
-  cost and stopping rule.
+  cost and stopping rule. The latest [run 41461948345](https://github.com/szTheory/muhtari/actions/runs/41461948345)
+  saturated its 64-record helper trace with repeated POST events before the
+  acknowledgment deadline. The trace is inconclusive; the actual input cause
+  remains unknown. See D-13 for the local diagnostic repair recommendation.
 - **D-06 (PLAY-03):** Keep the two actual-host cases, existing no-UDP approach
   and runtime bounds. The separately approved2026-10-30 DEC.56 amendment retires
   only the numeric hosted-test line ceiling; report totals with no replacement
@@ -162,6 +167,20 @@ These are discussion decisions, not implementation or hosted acceptance evidence
   where five other properties passed. Do not derive a deadline from timeout values,
   drop cases, shrink the pool or promote the lane. Any later deadline change uses
   complete comparable measurements under DEC.47 with its run identity.
+- **D-13 (continued local unblock path):** Continue a dependency-free local
+  diagnostic repair plan while preserving accepted 0/4 and all spent hosted
+  allowances. At published source `8e5acda806a1d7c3551bb0ca8136254648151757`,
+  the helper can emit three POST records per 100ms tick into a 64-record stream.
+  In run 41461948345, INIT/FORK/START plus 60 repeated POST records filled the
+  stream and emitted SATURATED by 2.934s; posts continued through 4.84s and the
+  acknowledgment deadline fired at 5.014s. On that cutoff iteration the helper
+  exits before its next `waitpid`, leaving child status unknown. Plan to aggregate
+  repeated posts, preserve capacity for lifecycle/poll/state/end evidence, check
+  child completion at the cutoff, and add representative pass/fault controls
+  using the existing generated input-history fixture and pixel oracle. This
+  explains the diagnostic gap; the actual input-failure cause remains unknown.
+  The plan does not authorize another host/CI action; any later observation needs
+  its own bounded scope.
 
 ### Agent's Discretion
 
@@ -192,7 +211,12 @@ changes feasibility, safety, scope or acceptance; stop fan-out after this synthe
   reference index and settled choices, particularly DEC.09/10/15/47/49/56/61.
 - `.planning/preparation/ENGINEERING.md` §11–12 and
   `.planning/preparation/GSD-HANDOFF.md` §3–3.1 — proportional gates and bounded work.
-- `.planning/LESSONS.md` — workflow recovery, complete-work timing and local onboarding.
+- `.planning/LESSONS.md` — workflow recovery, complete-work timing and local onboarding;
+  read MU-HOST-007 for the reproduced trace-capacity/deadline-reporting defect.
+- At published source `8e5acda806a1d7c3551bb0ca8136254648151757`,
+  `tests/retroarch/keyboard_preflight.c`, `tests/retroarch/test_input_trace_helper.c`,
+  `tests/libretro/input_trace.c` and `tests/libretro/input_trace.h` — exact helper
+  schedule, fixed trace limit, parser and mocked-host controls for this observation.
 - `PROVENANCE.md` and `ASSET_POLICY.md` — permitted source and owned-fixture policy.
 
 ### Product, host and release consumers
@@ -288,9 +312,9 @@ roles, prefer primary sources, compare meaningful alternatives, perform an
 adversarial synthesis and follow the coherent recommendations. Another small,
 understood permissive copy can be preferable to another dependency; copied code
 still needs provenance and maintenance. Preserve useful findings in local project
-memory without exporting lessons or manufacturing new reproduced results. The
-2026-11-01 refresh changes D-05 only; all other settled decisions remain
-locked.
+memory without exporting lessons or manufacturing new reproduced results. This
+2026-11-02 follow-up clarifies halt scope and adds D-13 from the latest trace
+evidence; all other settled decisions remain locked.
 
 </specifics>
 
@@ -325,4 +349,4 @@ historical optional label cannot excuse a newly reproduced required defect.
 ---
 
 *Phase: 12-player-ready-delivery-and-playstead-bridge*
-*Context gathered: 2026-10-29; updated: 2026-11-01*
+*Context gathered: 2026-10-29; updated: 2026-11-02*

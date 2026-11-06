@@ -37,10 +37,10 @@ metrics:
 status: halted
 actuals:
   tasks: 2
-  commits: 3
-commits: 3
+  commits: 24
+commits: 24
 plan_head_before: 0ca7c9aa92152b09a277388e0fb2c977601016fa
-plan_head_after: 28e13e1cb7da122d72d1c83d438861001b503504
+plan_head_after: 55f30d64ad1999231a97ea05a96e6a29d061c116
 requirements-completed: []
 coverage:
   - id: PLAY-03-packaged-host-input
@@ -48,7 +48,7 @@ coverage:
     requirement: PLAY-03
     verification:
       kind: e2e
-      ref: "gh run watch 41062201311 --exit-status (exit 1); https://github.com/szTheory/muhtari/actions/runs/41062201311; original pre-host failure 41056151292 retained below"
+      ref: "Latest diagnostic run 41208847091 failed before RetroArch (zero host steps); https://github.com/szTheory/muhtari/actions/runs/41208847091; prior actual host failure 41062201311 and original pre-host failure 41056151292 retained below"
       status: fail
     human_judgment: false
   - id: PLAY-03-input-oracles
@@ -62,6 +62,101 @@ coverage:
 ---
 
 # Phase 12 Plan 01: Player-ready delivery and Playstead bridge Summary
+
+Latest approved local repair (2026-10-31): the [narrow observer continuation](../../debug/phase12-portability-repair-proposal.md#completed-observer-continuation-and-local-repair-2026-10-31)
+finished remaining fault consumers, unmodified full local workflow and sole
+independent repair review. The two C repairs remain reviewed/uncommitted;
+optional consumer unchanged, no source edits this continuation. Permitted
+owned-PID observation confirms cleanup; child/parent omissions and capacity/
+guard faults are detected. Full workflow0/about54s, original677+6 inventories
+0/0, three-package diagnostic exclusions/format/hygiene/budgets/diff0; review
+PASS/no findings and zero correction rounds. Prior11compiler/native/focused
+passes and old supervisor failure remain immutable, with no passed-stage replay
+or compiler reserve used. Fresh complete hosted receipts reconcile0; both
+required audits remain1. This accepts local test repairs only, not Linux runtime
+or original-host input acceptance. Final scoped handoff0 preserves exact two
+C/five planning paths, optional consumer/HEAD/index/all unrelated bytes/old
+receipts and halt; no owned child/container remains. This step is stopped.
+Context may be cleared; exact next separate command
+`$gsd-debug continue phase12-packaged-input-tracer` for read-only preparation
+of a concrete publication/diagnostic proposal. Agent owns fresh checks; no
+owner verification or acknowledgment is needed to keep the halt. Accepted0/4,
+PLAY-03 pending/downstream blocks, both failed audits and all spent allowances
+persist; no live/publication/archive/promotion or allowance renewal follows.
+Earlier latest/next-action entries below are historical where superseded.
+
+Latest read-only continuation (2026-10-31): the
+[narrower tooling-only proposal](../../debug/phase12-portability-repair-proposal.md#narrower-tooling-verification-decision-2026-10-31)
+is ready for a NEW scope decision. Fresh complete original/latest receipts and
+every executed log reconcile0; both required audits remain1, source/index and
+protected bytes are unchanged, service operational/resolved/noPR/noactiveCI.
+Primary glibc headers explain the cached compiler's missing annotation, while
+hosted logs do not establish an exact effective fortification level. One
+independent bounded tooling specialist supports a fixed unchanged-source
+baseline/fortify2 comparison, with unchanged warnings and no download.
+No container/compiler/target or source repair occurred. Proposed success stops
+before repair/runtime/full workflow; original hosted cause remains unknown.
+Await the owner's tooling-only decision. Context may be cleared; exact next
+separate command `$gsd-debug continue phase12-packaged-input-tracer` with that
+decision. Agent owns later checks and comparison if approved; no owner
+verification or acknowledgment is required to preserve the halt. Accepted0/4,
+PLAY-03 pending, downstream blocks and spent allowances remain unchanged.
+Earlier read-only/approval entries below are historical where superseded.
+
+Latest local execution (2026-10-31): the approved
+[portability batch](../../debug/phase12-portability-repair-proposal.md#local-execution-stopped-before-repair-2026-10-31)
+stopped before source repair at its mandatory compiler-discrimination gate.
+Fresh complete receipts exit0, both required hosted audits remain1. Cached
+immutable offline GCC15.3.0/glibc2.41 reproduces all three helper truncation
+errors (object1) but compiles the old ignored write (object0); effective
+fortification0 leaves its declaration without warn_unused_result. All three
+test hashes remain frozen. No source edit, warning/flag/fortification tuning,
+NEW comparison, runtime verification, full workflow or independent repair review
+followed. Original actual-host cause remains unresolved, accepted0/4 and
+PLAY-03 pending; downstream halt and spent allowances persist automatically.
+Context may be cleared. Exact next separate command
+`$gsd-debug continue phase12-packaged-input-tracer` prepares a narrower tooling
+proposal read-only; next agent owns fresh checks. No owner verification or
+acknowledgment is needed to retain stop, and no source/publication/live action,
+download/install, allowance renewal, archive or phase promotion is authorized.
+Earlier next-session implementation wording below is historical.
+
+Owner approval recorded (2026-10-31): "Yes, I approve it." authorizes the exact
+[local portability-repair batch](../../debug/phase12-portability-repair-proposal.md)
+for the next session. Agent-owned fresh checks, implementation, offline
+verification and one bounded review require no further scope confirmation.
+No implementation occurred in this completed read-only step, and no
+publication/live allowance, requirement completion or phase acceptance changes.
+Earlier awaiting-decision wording below is historical.
+
+Latest read-only follow-up (2026-10-31): the
+[local portability-repair proposal](../../debug/phase12-portability-repair-proposal.md)
+is ready for a new local-only scope decision. Fresh complete original/latest
+receipts and all executed logs agree; required audits remain failed, source
+and index are preserved, and no host observation was added. The proposal fixes
+the two test-source blockers and verifies them through the existing offline
+consumer, native workflow and a cached immutable GCC image whose actual fault
+sensitivity remains untested. No source, target, container or live action was
+performed; no allowance, requirement completion or phase acceptance changes.
+The agent owns later checks; the owner acts next only on the proposed scope.
+
+Latest continuation (2026-10-31): the approved frozen17-path source was
+published as commit `55f30d64ad1999231a97ea05a96e6a29d061c116` and dispatched
+once as [run41208847091](https://github.com/szTheory/muhtari/actions/runs/41208847091).
+The terminal run failed: Linux x64/arm64 builds reject an unchecked `write`,
+and x64 also rejects potentially truncated fixture paths. The required
+aggregate failed; RetroArch had zero executed steps, so there was no host
+preflight, child, trace or image. Mac and Windows producers passed, including
+the arm64 diagnostic artifact, but packaged-host acceptance remains unmet.
+The original failed receipts, PLAY-03 pending state, accepted0/4 and downstream
+halt remain. No repair, retry, archive or promotion authority remains.
+The approved local wiring and its offline checks are recorded in the
+[proposal](../../debug/phase12-hosted-input-tracer-proposal.md#approved-local-wiring-outcome-2026-10-31);
+the full publication/run audit and frozen hashes are in the
+[terminal outcome](../../debug/phase12-hosted-input-tracer-proposal.md#approved-frozen-publication-terminal-outcome-2026-10-31).
+Next separate command is `$gsd-debug continue phase12-packaged-input-tracer`
+for a read-only narrow portability-repair proposal after fresh checks. No
+owner verification is needed to preserve the halt.
 
 The original run failed before host execution. After scoped recovery, corrected
 source builds and local input-oracle controls pass, but actual pinned RetroArch
@@ -773,3 +868,651 @@ preparation of a concrete corrected-source/parent, dependent-job closure, runner
 budget/window and content proposal, plus fresh service-health/receipt checks;
 no owner review is a prerequisite. A later live proposal must account for18 extra
 Intel runner-minutes and receive separate authority. This command grants none.
+
+## Approved corrected-source keyboard feasibility result
+
+Owner approved the [concrete scope](../../debug/phase12-live-proposal.md): one
+existing-source push, one probe-only dispatch,319 configured runner-minutes,
+120m queue-inclusive cancellation-request cutoff plus10m observation, and one
+50s keyboard process after nonprompting preflight. Exact push and dispatch each
+exit0; remote/run independently bind186c0cc4b39c12fb149ddc0ef3f43897fba55865,
+genuine parentd8dd74b6598da71e30434dad380b79c2d784aa27.
+[Run41133992538](https://github.com/szTheory/muhtari/actions/runs/41133992538)
+attempt1 completes/failure; all20jobs reconcile16success/1allowedskip/3failure.
+All six native current/base677+6 producers/uploads, quality and equality pass.
+Intel's complete1107s supports37m under DEC.47. Windows-arm64's complete2207s
+is new calibration evidence:68m lacks twice-this-sample margin (74m arithmetic).
+No deadline change or phase-versus-main performance claim follows.
+
+The actual host passes fresh permission preflight and exact pinned package/core
+identity. One PID-targeted child logs Up/Z down/up and completes600frames, saving
+only the final released PNG. Agent visual inspection and the existing independent
+released-pixel predicate pass0. No F8 held screenshot exists, so the probe fails
+before held/released comparisons and the deliberate scope-only stop. Event
+posting and released pixels do not establish held delivery; missing-capture cause
+remains unproved. Ordinary DMA/input-loop/battery launches skip as scoped.
+WASM separately fails child_failure (expected127/runtime1;605of606pass); it
+remains advisory. The required aggregate fails solely on RetroArch.
+
+Evidence: `python3 /tmp/muhtari-live-exec.y0WqX4/terminal.py` exit0 reconciles
+source/attempt/all jobs,19executed logs and21exact-source artifacts;
+`media.py` exit0 checks archive/frame integrity and released pixels.
+`gh run view 41133992538 --repo szTheory/muhtari --json attempt,status,conclusion,headSha,url,jobs`
+exits0. `cmake -DINPUT=/tmp/muhtari-live-exec.y0WqX4/terminal-view.out
+-DEXPECTED_SHA=186c0cc4b39c12fb149ddc0ef3f43897fba55865
+-P tools/check_ci_run.cmake` exits1, preserving required failure.
+Raw logs/media remain scratch; linked scope retains artifact digests and receipts.
+
+Push, submission and one-process allowances are spent. Cancellation was unused
+and expires with this terminal run. No retry, source/deadline/pin/permission
+change, full acceptance or phase promotion is authorized. Accepted0/4 and plans
+12-02 through12-04 blocked remain unchanged; every historical failure above stays.
+Context may be cleared. Next separate command:
+`$gsd-debug continue phase12-packaged-input-tracer`. Agent owns read-only
+missing-held-evidence diagnosis, Windows calibration preparation and health/
+receipt checks. No owner verification or acknowledgment is needed; no live
+allowance is renewed. Local handoff edits remain uncommitted.
+
+Final handoff checks: `git diff --check`, absolute-root document budgets,
+`sh scripts/hygiene.sh --tree` and the existing summary-extract consumer each
+exit0, N/A-local. Source/workflow/original-edit hash assertions and append-only
+summary/accepted-count assertions exit0. Fresh canonical run view exits0;
+`check_ci_run.cmake` against parent-final-view.json still exits1. This validates
+the halted handoff, not plan acceptance.
+
+## Read-only held-capture diagnosis and Windows calibration preparation
+
+The [diagnostic report](../../debug/phase12-held-capture-diagnosis.md) preserves
+the failed run and separates the missing capture from its unproved cause. The
+exact pinned released binary maps the helper's keys correctly. Its single100ms
+F8 pulse has no readiness or capture acknowledgment; event ordering, routing and
+effective hotkey gating remain possible causes. No host process was launched.
+
+Latest40 complete comparable Windows-arm64 executions include a2324s successful
+whole job, supporting78m under DEC.47 rather than latest-only74m. Existing x6468m
+already exceeds its selected margin. Historical workloads have fewer cases;
+calibration remains provisional for expanded work. No deadline changed.
+
+`python3 /tmp/muhtari-held-diagnosis.lOayAx/refresh.py --fresh` exits0:
+primary health operational, incident resolved, exact latest source/attempt/all20
+jobs/all21 artifacts unchanged. Existing required audit exits1 solely on the
+host-blocked aggregate; WASM stays advisory. `windows_review.py` and
+`static_keys.py` in the same scratch directory each exit0; the linked report
+records commands and direct job URLs. Raw logs and disassembly stay scratch-only.
+
+Recommend a separately authorized local-only capture acknowledgment within the
+existing held/process bounds, monotonic phase timing and existing deterministic
+mock/wrapper coverage, plus arm64-only68to78m provenance/calibration checks.
+This is a proposed experiment protocol, not a proven input fix. No code/workflow,
+pin/permission, commit or remote mutation occurred. Accepted0/4, downstream
+blocks and all spent allowances remain. Waiting for the owner's scope decision;
+no owner verification is needed. Context may be cleared. Exact next command:
+`$gsd-debug continue phase12-packaged-input-tracer`; invocation alone renews
+no source, deadline or live authority.
+
+Parent handoff verification: `windows_review.py`, `static_keys.py` and cached
+receipt reconciliation `refresh.py` each exit0; required aggregate remains1.
+Absolute-root document budgets exit0 (22files). Source/workflow paths have no
+diff from the same HEAD; no acceptance or live authorization is claimed.
+
+## Local capture acknowledgment implementation; support cap still blocks
+
+The owner's exact continuation was "I accidentally quit my terminal. Please
+continue." This was interpreted narrowly as proceeding with the previously
+presented local-only capture/timing/tests and arm64 calibration scope, without
+renewing live allowances or authorizing another contract change.
+
+The helper now waits for exactly one isolated raw capture within the existing
+held window, repeats F8-down until acknowledgment, sends F8-up once, records
+monotonic timing and retains owned-child cleanup and all runtime/frame bounds.
+The wrapper validates explicit raw-shot/terminal separation before cleanup.
+Existing mock/wrapper/policy consumers reject delayed/missing/multiple/vanishing
+capture, argv, release, child-exec/exit and clock faults. Only Windowsarm64 changes
+68to78m from the complete historical2324s maximum; other lanes/scales/joins stay.
+Historical workload differences and the unproved actual-host cause remain.
+
+`python3 /tmp/muhtari-capture-local.8_5_au7r/workflow.py` invokes the full
+`cmake --workflow --preset ci` and exits0; exact677 ordinary/6 release inventory
+consumers each exit0. Focused actual consumers and meaningful counterfactuals,
+standalone compile, actual six-lane expression/faults and timeout provenance
+pass. One bounded review found the cap plus two documentation omissions; the
+omissions were corrected before the final workflow. The
+[report](../../debug/phase12-held-capture-diagnosis.md) records all command/exit
+receipts,N/A-local; raw logs remain scratch-only.
+
+The actual required support-cap expression exits1:347lines versus300. No cap
+change, packing or relocation occurred; this remains a real acceptance blocker.
+Local test success is not source readiness or hosted proof. Recommend a separate
+decision retiring only this numeric proxy while preserving two cases, runtime
+bounds, independent judges, isolated ownership and existing architecture review;
+no arbitrary replacement quota. The report contains the concrete scope and
+alternatives. Waiting for the owner's cap decision, not owner verification.
+
+Source and handoff remain uncommitted; no remote mutation, actual content launch
+or phase promotion. Accepted0/4, dependent-plan blocks and every spent live
+allowance remain. Context may be cleared. Exact next separate command:
+`$gsd-debug continue phase12-packaged-input-tracer`; cap resolution requires
+separate authority, and later live-proposal preparation is read-only.
+
+## Approved support-ceiling retirement; local repair verified
+
+The owner answered "yes" to the specific separate cap proposal. DEC.56 now
+retires only the numeric300-line ceiling, without a replacement quota; support
+totals are reported and two host cases, all runtime/frame/ownership/pixel controls
+and ordinary architecture review remain binding. Active host-reference/D-06/task2
+clauses and downstream coverage are synchronized; initial research has a scoped
+amendment note. The historical347/300 rejection above remains failed evidence.
+
+The only workflow change from the reviewed local repair is replacement of that
+numeric test with `wc -l tests/retroarch/*`, reporting347lines. The existing
+policy consumer accepts301line reporting, refuses missing inputs and rejects
+restoration of the old cap, retaining the earlier preflight/capture/movie faults.
+No host implementation byte or actual process/frame/pixel bound changed in this
+amendment. The earlier cap review warning is resolved by explicit scope revision;
+it is not a retroactive pass of the old contract.
+
+`python3 /tmp/muhtari-cap-amendment.1L3jBd/workflow.py` invokes the full
+`cmake --workflow --preset ci`, exit0; exact ordinary/release JUnit consumers
+each exit0, proving677/6 tests once each. Focused actual reporting/fault policy,
+forced-common-platform branch, actionlint with existing allowances, timeout
+provenance and protected-source/HEAD assertions exit0. The
+[report](../../debug/phase12-held-capture-diagnosis.md) records commands and
+exits,N/A-local. Raw logs remain scratch-only.
+
+Local repair and approved policy amendment are verified and uncommitted. Actual
+host held/released input and missing-F8 cause remain unproved. Prior hosted run
+failure, advisory WASM failure, accepted0/4 and downstream blocks remain; all live
+allowances are spent. No commit, publication, content launch, remote mutation or
+phase promotion occurred. No owner verification or acknowledgment is needed.
+Context may be cleared. Exact next separate command:
+`$gsd-debug continue phase12-packaged-input-tracer` for read-only future
+live-proposal preparation; the agent owns source/health/receipt/budget checks.
+Invocation alone authorizes no local commit or new live scope.
+
+Final amendment handoff: `sh scripts/hygiene.sh --tree`, `git diff --check`
+and absolute-root `tests/cmake/budgets.cmake` each exit0,N/A-local. The full
+ordinary/release inventories remain exact and all three packages were produced.
+
+## Capture acknowledgment experiment: no images; halt retained
+
+The owner approved the distinct [capture proposal](../../debug/phase12-capture-live-proposal.md),
+including exclusive branch use, one genuine scoped commit/push/dispatch,329
+configured runner-minutes,120m cutoff plus10m observation, one conditional
+cancellation and at most one50s host child. Commit26c8268 has genuine parent186c0cc;
+its14path projected manifest, protected original edits, normal push and independent
+remote advertisement all pass. No extra source or documentation fence was added.
+
+[Run41150939552](https://github.com/szTheory/muhtari/actions/runs/41150939552),
+exact26c8268/attempt1, completed/failure at2026-10-31T01:14:32Z. Complete audit
+reconciles20jobs/191steps, all19executed direct logs and20source-bound artifacts.
+Six native current/base677/6/677/6 suites and production/uploads pass, as do
+quality/equality and required peers. Windows-arm64 complete2334s fits78m;
+Intel complete630s is this attempt's observation, not product improvement proof.
+
+The exact pinned host and candidate archive pass identity checks and fresh
+nonprompting event preflight. One childPID3819 logs35F8-down observations from0
+through4925ms, all capture0, then generic helper failure around5.2s. Release,
+terminal600frame screenshot, expected-image generation and pixel judges are
+never reached. No raw or terminal PNG and no frames artifact exists. The5s
+no-acknowledgment guard fits this timing, but the generic error does not identify
+its exact branch. Frontend audio initialization errors are preserved without
+causal attribution; routing/readiness/configuration and missing capture remain
+unproved. Repeated failure-report output is not a second process. Ordinary host
+launches all skip; no held/released input acceptance is inferred.
+
+WASM independently exposes a new advisory compile regression before tests:
+`keyboard_clock(int, ...)` conflicts with the pointer-valued WASI clock identifier,
+producing three unchanged-Werror diagnostics. The prior127/runtime1 failure
+remains historical. No source repair or further execution followed this finding.
+
+`python3 /tmp/muhtari-capture-exec.Uy5Wh9/terminal.py`, `media.py`,
+`audit_outcome.py` and `final_refresh.py` each exit0. Existing
+`cmake -DINPUT=/tmp/muhtari-capture-exec.Uy5Wh9/final-view.out
+-DEXPECTED_SHA=26c8268f9c56db39308287eaceb935e97eaf3a77
+-P tools/check_ci_run.cmake` exits1: real required aggregate fails solely
+RetroArch; WASM remains advisory. Full command/exits/run URLs and artifact
+bindings are in the proposal; raw responses/logs/media stay scratch-only.
+
+Commit/push/dispatch and actualchild1of1 are spent; unused cancellation expired
+at terminal completion. No retry, archive, acceptance or phase promotion occurred.
+Accepted0/4 and12-02 through12-04 blocks remain. Shared handoff changes are
+uncommitted. No owner verification or acknowledgment is needed. Context may be
+cleared. Exact next separate command:
+`$gsd-debug continue phase12-packaged-input-tracer`, restricted to read-only
+capture/startup/WASI diagnosis and agent-owned health/receipt checks. No source
+repair, publication, deadline/pin/permission change or live allowance follows.
+
+Parent handoff checks: exact committed manifest/genuine parent/protected original
+edits/empty-index/halted-count assertions0; `audit_outcome.py`0;
+`query summary-extract`0 with no completed requirement; hygiene0, diff0 and
+document-budget check0. Run URL above; local bookkeeping checks N/A-local.
+
+## Read-only startup and WASI diagnosis; local scope decision pending (historical)
+
+The separate continuation refreshes the unchanged exact run/attempt/all20jobs,
+191steps and20artifacts. Existing required audit remains1, solely host failure;
+official service is operational and the earlier incident resolved. No source,
+workflow, pin, permission, runtime bound or actual host execution changed.
+
+The helper starts its timer before fork and evaluates the5s missing-capture
+guard before observing child status. Its shared generic failure message and
+buffered frontend output cannot identify the actual branch or input readiness.
+The cutoff remains consistent with timing, not a proven startup cause. Repeated
+F8 posting still establishes no capture or consumed input; audio errors retain
+no causal attribution.
+
+The WASI compiler regression is now independently reproduced with exact-version
+headers and the complete original mock: int versus pointer clock identifier,
+three errors. A scratch-only conditional private int/clockid_t alias compiles
+under target/native/no-clock-fallback headers. Unconditional clockid_t fails the
+fallback fixture. `python3 /tmp/muhtari-wasi-clock.SSDai9/check.py` exits0;
+original target compile1/corrected0 are expected outcomes, not a repository fix,
+WASI runtime success or hosted acceptance.
+
+The [concrete recommendation](../../debug/phase12-held-capture-diagnosis.md#concrete-local-only-recommendation-awaiting-authority)
+requests a new local-only scope: portable mock signature, explicit helper
+stop-reason/elapsed/capture/error/observed-child-status reports, existing fault
+assertions/docs and local verification. Preserve predicate order, statuses,
+schedules and all existing lifetime/ownership/pixel controls. Diagnostics cannot
+recover a historical branch or establish readiness; no wider window, focus or
+driver experiment is justified here. Stop after local verification if approved.
+
+`python3 /tmp/muhtari-startup-diagnosis.igtqEs/receipts.py` exits0; its existing
+`check_ci_run.cmake` child exits1 as required for the unchanged failed run.
+Hosted URL remains https://github.com/szTheory/muhtari/actions/runs/41150939552;
+local compile/bookkeeping URL N/A-local. Raw receipts stay in scratch.
+
+Waiting for the owner's local-scope decision, not owner verification. No source
+repair, commit/publication, live allowance, archive or acceptance is authorized;
+accepted0/4/downstream blocks and every failed receipt remain. Context may be
+cleared. Exact next separate command:
+`$gsd-debug continue phase12-packaged-input-tracer`; without explicit approval
+of the local batch it preserves the stop. The agent owns continuation checks.
+
+## Approved local portable-clock and helper-diagnostics batch
+
+Owner explicitly approved the concrete local-only recommendation in the next
+continuation. The mock now preserves the target clock identifier with its
+existing missing-clock integer fallback. The helper reports named stopping
+conditions, last valid elapsed/capture observations, saved relevant API errors
+and child status only when observed before cleanup. Tests retain valid outcomes,
+distinct fault reports and simultaneous-fault guard precedence. Original return
+statuses, event schedule, five/45/50-second bounds, ownership and every workflow,
+pixel, pin and permission control remain unchanged. Three source/test/doc paths
+change; the repair and shared bookkeeping remain uncommitted.
+
+`python3 /tmp/muhtari-clock-diagnostics.HhNyhn/check.py` exits0: actual-source
+native/fallback valid/fault executions, actual-source WASI compile-only, real
+helper and all standalone consumer links, affected existing policies, formatting
+and docs budget. `python3 /tmp/muhtari-approved-local-workflow.py` runs
+`cmake --workflow --preset ci`, exit0 through full ordinary tests, three packages
+and release tests; both exact `check_junit.cmake` ordinary/release inventories
+exit0. One bounded independent review finds no blocking issues. Commands and
+limits are retained in the [batch receipt](../../debug/phase12-held-capture-diagnosis.md#approved-local-clock-type-and-failure-reporting-batch);
+local run URL N/A-local.
+
+The saved hosted run remains
+[41150939552](https://github.com/szTheory/muhtari/actions/runs/41150939552),
+exact26c8268/attempt1/terminalfailure; the previous full audit and required
+aggregate failure stand. Remote source is unchanged and official service remains
+operational. No actual frontend/content launch, commit, push, dispatch, rerun or
+cancellation occurred. Historical capture/readiness/routing/audio cause, full
+WASI runtime and native MSVC acceptance remain unproved; no image was recovered.
+
+The local batch is finished, not the plan. Accepted0/4, PLAY-03 pending and all
+downstream blocks remain. Owner-requested browser-player/optional-interface
+research is indexed through dormant seeds, outside this phase's execution scope.
+Context may be cleared; exact next separate command:
+`$gsd-debug continue phase12-packaged-input-tracer` for read-only preparation of
+a concrete future publication/host-experiment scope. The agent owns all fresh
+checks; invocation alone grants no live allowance. No user action is needed to
+preserve the halt or finish the approved local batch.
+
+## Read-only diagnostic publication proposal
+
+The [new proposal](../../debug/phase12-diagnostics-live-proposal.md) narrows future
+publication to the three verified source/test/doc files, with genuine26c8268
+parent/base, and one unchanged bounded keyboard-only diagnostic experiment.
+Fresh source/remote/workflow/health/PR/active-run checks and complete latest
+20job/191step/20artifact reconciliation pass; the existing required audit remains
+exit1 for the failed aggregate. `python3 /tmp/muhtari-diagnostic-proposal.7VvQPJ/prepare.py`
+and `active.py` exit0; hosted URL remains
+https://github.com/szTheory/muhtari/actions/runs/41150939552, local URL N/A-local.
+Two bounded specialists and parent synthesis retain limited causal value and
+the non-atomic PR race, requiring a new explicit exclusive-branch decision.
+
+Preparation stages/commits/publishes/launches nothing. New329configured-minute
+dispatch,120+10-minute queue/observation window, uniquely-new-run conditional
+ordinary cancellation and one5/45/50-second child are proposed only. Wait for
+owner scope decision; every old allowance stays spent. No acceptance, archive
+or next GSD step follows. Context may be cleared; next separate command remains
+`$gsd-debug continue phase12-packaged-input-tracer`, with fresh checks owned by
+the agent. No acknowledgment is needed merely to preserve halt.
+
+## Approved diagnostic publication and terminal host failure
+
+Owner answered "yes" to the concrete three-file publication/one329configured-
+minute dispatch/120+10-minute window/conditional cancellation/exclusive-branch
+scope. Commitcee6dea491918282d034f8c6e9a90087d8213439 has genuine26c8268
+parent and only the verified clock mock, helper diagnostics and testing guide.
+Exact-path staging/committed-blob assertions, hooks/hygiene and sole push pass;
+all unrelated owner/planning/research edits stay outside the commit. Fresh
+affected compile/link/mock/fault/policy checks and exact local inventories pass;
+unchanged previous full-workflow evidence is retained without another full run.
+
+Sole [run41158640754](https://github.com/szTheory/muhtari/actions/runs/41158640754)
+attempt1 is terminal/failure2026-10-31T02:45:31Z. All20jobs/191steps/all20source-
+bound artifacts and every executed log are audited:16success, allowed title skip,
+3failure (host/advisoryWASM/requiredaggregate). Existing required checker exits1
+solely because the actual host job fails. All six native current/base677+6
+suites, package production and uploads pass. Intel596s/Windows-arm642020s
+retain existing37m/78m; quality base is genuine26c8268 and dispatch performance
+remains same-head, not phase-versus-main evidence.
+
+Fresh nonprompting event preflight passes and the unchanged pinned package/core
+identity is reconciled. One actualPID1933 posts35F8downs through4988ms/capture0.
+New reason reporting confirms **acknowledgment-deadline at5090ms, capture0,
+errno0, child status unknown**. The guard precedes child polling. This proves
+this immediate stop, not historical branch, readiness/routing/hotkey/audio cause
+or input delivery. No raw/terminal PNG or frames artifact exists; release and
+pixel judges are not reached. Agent image review is impossible without images.
+Ordinary host launches skip. No retry or wider window is inferred.
+
+Actual WASI target compilation and ordinary mock now pass, fixing the observed
+clock-type regression. Its separate child-exit negative control prints the right
+marker but the runtime rejects127 as outside[0..126) and returns1:605of606
+tests pass, full WASI remains advisory/unaccepted. Native127 contract and runtime
+pins/assertions stay unchanged. This re-exposes the older runtime failure rather
+than claiming full portability acceptance.
+
+`python3 /tmp/muhtari-diagnostic-exec.Hak1cS/terminal.py`, `media.py` and
+`audit_outcome.py` each exit0; the exact-source `check_ci_run.cmake` exits1.
+[Full commands, source/artifact identities and limits](../../debug/phase12-diagnostics-live-proposal.md#terminal-outcome)
+retain evidence; raw logs/responses stay scratch-only, local URL N/A-local.
+Commit/push/dispatch/oneactualchild are spent, cancellation unused/expired at
+terminal. Shared handoff remains uncommitted; no second commit/publication.
+
+Approved step finished, debug unresolved/unarchived; accepted0/4, PLAY-03 pending
+and all downstream blocks remain. Context may be cleared. Exact next separate
+command: `$gsd-debug continue phase12-packaged-input-tracer` for read-only
+readiness/routing observation and WASI127 runtime-test-boundary assessment only;
+agent owns fresh checks. No source repair/live allowance/window renewal or
+phase promotion is authorized. No user acknowledgment or verification is needed
+merely to preserve halt.
+
+## Read-only readiness and WASI boundary assessment
+
+The [latest assessment](../../debug/phase12-held-capture-diagnosis.md#read-only-readiness-and-wasi-exit-assessment-2026-10-31)
+finishes the separately invoked read-only continuation. Fresh complete run,
+attempt, job, step and artifact receipts match the retained failed diagnostic;
+the required auditor stays1. Service health is operational/resolved, source
+and remote unchanged, no open phase PR or active CI. Commands/exits/run URL are
+in the linked report; raw logs remain scratch only.
+
+Two disjoint source assessments and one adversarial synthesis separate the
+confirmed WASI test-result transport defect from unresolved hosted input.
+The mock checks the actual helper's127 exit argument and ownership invariants,
+then exports127 through a pinned runtime that rejects>=126. Recommend a new
+local-only two-test-file plus docs batch: WASI-only outward125 after unchanged
+semantic assertions, native127 retained, exact-status/marker observer unchanged.
+No source repair or new test execution occurred in this assessment.
+
+Existing host logs already report native-window/display/draw initialization.
+Those self-reports still do not establish focus, input-ready processing, held
+input or F8 handling. A new independent window-only snapshot offers limited
+decision value and adds API/mock surface; defer it and any live retry.
+
+Await the owner's new local-only repair scope decision; preserving the halt
+needs no acknowledgment or owner verification. Source/publication/content/live
+allowances remain spent or expired, PLAY-03 pending, accepted0/4 and all
+downstream blocks unchanged. Context may be cleared. Exact next separate command
+is `$gsd-debug continue phase12-packaged-input-tracer` with that scope decision;
+the agent owns fresh source/service/receipt checks. Invocation alone grants no
+repair, publication, new window or phase promotion.
+
+## Approved local WASI mock transport repair
+
+Owner approved the concrete local-only repair and checks. The
+[completed batch](../../debug/phase12-held-capture-diagnosis.md#approved-local-wasi-transport-batch-2026-10-31)
+changes only the mock's WASI outward transport to125 after preserving the actual
+helper127/argv/ownership assertions, the owning WASI expected status, and the
+test documentation. Native127, real helper, observer, clocks, inventory,
+workflows/pins/permissions, event ordering/bounds and pixel judges remain.
+Source is uncommitted; no actual helper/frontend/content or remote action ran.
+
+Strict native/fallback/native-executed WASI-branch valid/fault controls,
+actual WASI compilation, helper link-only, owning registration simulations,
+semantic mutations and original-source counterfactual pass their expected
+outcomes. Independent fixtures in the pinned runtime confirm125 plus marker
+passes and127 plus marker/runtime error or125 without marker rejects.
+These do not establish complete C-mock WASI execution; the local WASM linker
+is missing, and no tool was fetched or installed. Hosted WASI remains advisory
+and unaccepted; actual held/released host input remains unresolved.
+
+Initial full local workflow exits8 solely on the new documentation's size;
+the same description was condensed within the unchanged budget. Final
+`cmake --workflow --preset ci` exits0 with all three packages, ordinary and
+release suites; exact inventory consumers both exit0. The single bounded
+source review returns PASS, with the runtime limitation explicit. Fresh
+original complete run/source/attempt/jobs/steps/artifacts and health/active-run
+checks match the preserved terminal failure; required audit remains1.
+Commands/exits and run URL are in the linked batch report; no logs committed.
+
+This authorized local step is finished. Keep summary halted, PLAY-03 pending,
+accepted0/4/downstream blocks and spent live allowances automatically. No owner
+verification or acknowledgment is needed. Context may be cleared. Exact next
+separate command `$gsd-debug continue phase12-packaged-input-tracer` prepares
+a concrete scratch WASI linker/target-execution proposal read-only, with fresh
+agent-owned source/service/receipt checks. No fetch/install, further repair,
+publication/content/live action, renewed window or phase promotion is granted.
+
+## Read-only scratch WASI tooling proposal
+
+The [finite proposal](../../debug/phase12-wasi-local-proposal.md) is prepared;
+the prior request to prepare it is finished. Fresh source/HEAD/index and original
+exact attempt/all-job/step/artifact/service checks agree; required hosted audit
+remains failed, with no active CI or open phase PR. Driver-only inspection
+reproduces missing WASI builtins as well as linker. Two disjoint bounded
+assessments and one parent adversarial synthesis recommend a single official
+checksum-frozen SDK28 arm64-macOS bundle privately in scratch, unchanged pinned
+runtime and actual owning two-test registration plus ten WASI counterfactuals.
+Its bundled sysroot differs from CI; a pass would be focused local evidence
+only. Exact asset, trust, time/storage bounds, commands/exits and stop conditions
+are in the proposal. No package was fetched, binary generated, target/helper/
+frontend/content executed, source changed or remote action taken in this step.
+
+Waiting for a NEW owner decision on that concrete local tooling/execution
+scope. No acknowledgment is required merely to preserve the halt. Repair stays
+uncommitted; complete-C WASI execution, hosted WASI acceptance and actual host
+input remain unresolved, PLAY-03 pending, accepted0/4/downstream blocks and
+spent live allowances unchanged. Context may be cleared. Exact next separate
+command `$gsd-debug continue phase12-packaged-input-tracer` with approval or
+revision of the proposal; agent owns fresh source/service/receipt checks and
+all permitted verification. No source repair, publication, new host allowance,
+archive or phase promotion is granted by this preparation or invocation alone.
+
+## Approved focused complete-C WASI execution
+
+Owner approved the [finite scratch SDK batch](../../debug/phase12-wasi-local-proposal.md#approved-execution-outcome-2026-10-31).
+It is finished/PASS: exact sole SDK28 asset/private extraction and official
+component notices, actual Clang/LLD21.1.4 plus bundled sysroot and unchanged
+Wasmtime48.0.6, complete actual C mock WASI link/execution. Direct ordinary0
+and child125 plus marker pass; both actual owning registrations pass with
+unchanged status/marker observer and deadlines. All ten linked WASI controls
+reject, including pre-repair127 runtime rejection despite its marker.
+The single bounded evidence reviewPASS and parent synthesis agree. Sources,
+runtime, HEAD/index, other edits and full native reports remain unchanged;
+the prior three-file repair remains uncommitted. No actual helper/frontend/
+content, persistent installation, publication or hosted action occurred.
+
+Initial scratch driver exits1 on an incorrect21.1.0 compiler-description
+assertion before target compilation. Exact approved SDK tools identify21.1.4
+at the SDK's recorded LLVM submodule; documented prebuild continuation0 uses
+saved versions and original deadline without another target attempt/download.
+Failure is preserved, actual semantic conditions unchanged. Commands/exits,
+tool/source/module identities, bounds, review and complete limits are in the
+linked outcome; raw logs stay scratch.
+
+This closes the focused local complete-C WASI runtime gap. Bundled libc differs
+from CI; full hosted WASI remains advisory/unaccepted. Actual hosted input
+failure/readiness/routing cause stays unresolved, PLAY-03 pending, accepted0/4,
+downstream blocks, failed history and spent live allowances unchanged. No local
+batch decision or owner verification remains. Context may be cleared. Exact
+next separate command `$gsd-debug continue phase12-packaged-input-tracer`
+assesses the smallest useful hosted-input readiness/routing experiment and
+concrete next scope read-only; agent owns fresh source/service/receipt checks.
+No further tool/target/helper/content/source repair/commit/publication/dispatch/
+rerun/cancel/new window/archive/phase promotion authority. Stop this GSD step.
+
+## Approved local input-tracer batch
+
+The owner-approved [concrete batch](../../debug/phase12-input-tracer-proposal.md#approved-local-execution-outcome-2026-10-31)
+is finished/uncommitted. A separate noninstalled POSIX module observes completed/
+null polls and existing port1 Up/B callback returns; fixed64-byte/max64-record
+streams use exclusive helper/core files outside disposable paths and a dedicated
+inherited descriptor. Actual normal/instrumented synthetic callback order/count/
+returns/frame/audio agree. Deterministic faults, state changes, descriptor ownership,
+forced child kill and pre-error collection through the actual wrapper pass.
+
+One typed independent review found unfinished-helper acceptance and ignored
+late-write errors. One correction round requires helper END/saturation and rejects
+known writer-failure logs. Actual helper-prefix and post-INIT EBADF consumers,
+plus reintroduced old guards, verify rejection. Four compiled omitted-poll/state,
+extra-callback and wrong-value faults also reject; baseline without hooks fails
+and current diagnostic passes. Unfinished writer health remains unknown, and no
+missing-input inference is made. Timing sample deltas−0.139..+0.698ms are noisy,
+not a real-time/latency guarantee or demonstrated improvement.
+
+Final unchanged `cmake --workflow --preset ci` exits0 through all three packages;
+ordinary/release exact inventories, affected tests, hygiene/explicit new-source
+format and protected-byte/index checks exit0, N/A-local. Original complete hosted
+receipt remains unchanged/failure/required1. Initial setup/test failures and the
+review's original blockers are preserved in the linked outcome with commands,
+exits and correction evidence. HEAD/tree/index, unrelated owner bytes and prior
+WASI source/policy/docs repair remain protected. No stage/commit/publication,
+actual helper/platform/frontend/content/input, fetch or hosted action occurred.
+
+This establishes local diagnostic reliability only. Actual host readiness/routing/
+input cause is unresolved; PLAY-03 pending, accepted0/4, downstream blocks, failed
+history and spent allowances remain. No owner verification or acknowledgment.
+Context may be cleared; exact next separate command
+`$gsd-debug continue phase12-packaged-input-tracer` prepares a concrete hosted
+diagnostic proposal read-only, with agent-owned fresh source/service/full-receipt
+checks. No live allowance or phase promotion follows. Stop this GSD step.
+
+## Revised read-only local portability-repair proposal
+
+The separately invoked proposal step is finished. The [current local scope](../../debug/phase12-portability-repair-proposal.md#revised-narrow-local-repair-scope-2026-10-31)
+uses the completed seven-invocation fortify0/2 actual-source discrimination and
+retained old-helper truncation evidence. It recommends checked acknowledgment/
+owned-child cleanup and suffix-derived capacities in the two owning test
+sources, with their existing CMake consumer optional for negative modes.
+Fixed compiler gate: eleven initial invocations and only one conditional
+three-repaired-object correction set, fourteen maximum/no retry; native
+synthetic controls, original full workflow/inventories/package exclusions and
+one bounded repair review would follow only after a NEW separate decision.
+Earlier broader repair approval remains stopped and does not resume.
+
+`python3 /private/tmp/muhtari-portability-preflight.py` exits0: complete original
+and latest attempts/all jobs/steps/artifacts/executed logs agree, retained
+diagnostic identity/source/member hashes0, operational/resolved/noPR/noactiveCI,
+advertised source/HEAD/index/protected bytes unchanged. Both required
+`tools/check_ci_run.cmake` audits remain1; failed run URLs are linked in the
+proposal. Private receipts `muhtari-portability-proposal.q6edwrwr`, N/A-local;
+no committed logs. One bounded independent read-only proposal review clarified
+the correction allowance; no further proposal fan-out. No source repair,
+compiler/container/target/program run or actual frontend/content/input occurred.
+Focused complete-C WASI execution already passed separately; older SDK28
+linker-only proposals remain historical, hosted WASI advisory/unaccepted.
+
+Preserve accepted0/4, PLAY-03 pending, downstream blocks, both failed audits and
+all spent allowances. Await only the new local repair scope decision, not owner
+verification or acknowledgment to retain the stop. Context may be cleared;
+exact next separate command `$gsd-debug continue phase12-packaged-input-tracer`
+with that decision. Agent owns fresh source/service/complete-receipt checks and
+later execution only if approved. No stage/commit/publication/hosted action,
+allowance renewal/archive/promotion follows. Earlier next actions below are
+historical where superseded.
+Final `python3 /private/tmp/muhtari-portability-stop-check.py`0 and
+`git diff --check`0 verify frozen source/HEAD/index/all unrelated bytes,
+five allowed planning paths only, links/halt/both failed audits/no active
+compiler container. These checks establish proposal/handoff preservation,
+not local repair or actual packaged-input acceptance.
+
+## Approved fixed offline tooling comparison
+
+The owner selected option1 for the [fixed seven-invocation batch](../../debug/phase12-portability-repair-proposal.md#approved-fixed-tooling-comparison-outcome-2026-10-31).
+It finished with local compiler sensitivity established: baseline effective
+fortify0/unannotated real `write`/actual protocol object0, versus fixed scratch
+fortify2/annotated real declaration/object1 with only the intended ignored-write
+error at line247. GCC15.3.0/aarch64-linux-gnu/glibc2.41 metadata and both macro/
+declaration commands exit0. Exactly seven immutable cached-image offline
+containers used unchanged read-only source, original strict warnings, private
+outputs,60s deadlines and no retry; every owned ID/cleanup is recorded.
+
+`python3 /private/tmp/muhtari-portability-preflight.py` exits0 for complete
+original/latest run/attempt/jobs/steps/artifacts/all executed logs, retained
+diagnostic identity, operational/resolved service, noPR/noactiveCI/remote
+source/HEAD/index/protected bytes. Both required audits remain1 and their
+original hosted run URLs are linked in the proposal. `python3
+/private/tmp/muhtari-portability-fortify-comparison.py` exits0; individual
+compiler exits and oracles above establish the comparison, not collector0
+alone. Raw diagnostics/argv/IDs/hashes stay private; N/A-local.
+
+All three frozen test hashes/HEAD/index/unrelated bytes remain unchanged and
+all owned containers stopped. No program was linked/executed, helper recompiled,
+source repaired, runtime/native/full workflow or repair review run. This
+neither establishes exact hosted toolchain equivalence nor resolves original
+packaged-input readiness/routing/F8/audio. Preserve accepted0/4, PLAY-03 pending,
+downstream halt, both failed hosted audits and all spent allowances. No stage,
+commit/publication/hosted action, download/install, archive or promotion follows.
+
+Stop this completed tooling GSD step after final preservation/handoff checks.
+`python3 /private/tmp/muhtari-portability-fortify-handoff-check.py` exits0 for
+exact seven payloads/individual exits/oracles/output hashes, no owned container,
+unchanged frozen source/HEAD/index/all unrelated bytes, five planning paths only,
+links/halt/both failed audits and `git diff --check`0.
+No owner verification or acknowledgment is needed. Context may be cleared;
+exact next separate command `$gsd-debug continue phase12-packaged-input-tracer`
+prepares a revised narrow local portability-repair proposal read-only using
+this evidence. The agent owns fresh source/service/complete-receipt checks;
+a later separate decision is required before repair. Earlier repair approval
+does not resume automatically, and invocation renews nothing.
+
+## Commit-window reconciliation (2026-11-01)
+
+The recorded interval `0ca7c9aa92152b09a277388e0fb2c977601016fa..55f30d64ad1999231a97ea05a96e6a29d061c116`
+contains 24 commits (`git rev-list --count` exit 0). The broad historical
+boundary is retained; no commits are omitted to manufacture a narrower plan
+window. The original four-commit 12-01 implementation/halt subset is the first
+four commits below. The remaining twenty are later phase recoveries and
+handoffs. Both `actuals.commits` and the top-level `commits` now report the
+measured 24 for the recorded interval. This reconciles G-12-12 only; it does
+not change the halted acceptance result, requirements, or earlier failures.
+
+| Commit | Recorded work |
+| --- | --- |
+| `bf21fc3ae7d89f4e03f61f1f7a2426dc4af5df29` | Original 12-01 held/released RetroArch input schedule and comparator wiring. |
+| `b36001767b97060d9c5830bec504cba797a8255e` | Original 12-01 diagnostic comparator target/link correction. |
+| `31b12c39b02f477ad8777fee4363b7e325cab460` | Original 12-01 halted summary. |
+| `2b5f36d6348f53ebed97b9552e58ddb27ef16398` | Original phase halt and recovery handoff bookkeeping. |
+| `28e13e1cb7da122d72d1c83d438861001b503504` | Later packaged-input band verification and pixel oracle correction. |
+| `fa8fafa845d7a55278da6300059a470826cde19a` | Semantic halt record for the packaged-input correction. |
+| `258f285acf0dec03e615ea3705177c5c9b5c07e4` | Actual packaged-input failure and continuation record. |
+| `19121b1109df267497360e5c85a82b1621895666` | CI failure evidence retention and reporting consumers. |
+| `f9da764d711600ab554d8a74aeb70ebd8561644f` | Communication preference documentation. |
+| `cb68bd0c6fe1d83ab1165479b4242256219de674` | Hosted keyboard-access preflight without content launch. |
+| `b89b05fdb322f2f87b2fdf85bd5c4c483857137b` | Workflow-momentum handoff guidance. |
+| `a7aa88994f6f2d5df5c3dcc9c22cc1887bd76fc5` | Bounded keyboard feasibility through one RetroArch process. |
+| `39879d8f06cf65a8452ec11211a4ad6d597d6f7c` | Failed child-exec fixture correction. |
+| `abc4f570d2ccc6d7198c41d47ba0a1ba6797decf` | Failed keyboard-child ownership regression control. |
+| `7e07c4cb8890227eea1eeef1eda1a5d7cad58217` | Portable keyboard movie-span validation. |
+| `753bf4acd7ec7a438dd7ce0da87bf5879ca9f0f3` | Bounded keyboard-feasibility halt record. |
+| `a0834db21b2b22f30d2147458aeec27df6ae1530` | Intel-completed-run PAL BIOS deadline calibration. |
+| `18e05d48b58d72e81c784f4a98501cf900df8c78` | Renewed keyboard-feasibility halt record. |
+| `ef5357cb2b6cb259ed096f4c8d2d5928a650230d` | Context handoff and agent-owned check guidance. |
+| `d8dd74b6598da71e30434dad380b79c2d784aa27` | Targeted Intel retry halt and durable handoff. |
+| `186c0cc4b39c12fb149ddc0ef3f43897fba55865` | Intel job timeout margin restored from completed evidence. |
+| `26c8268f9c56db39308287eaceb935e97eaf3a77` | Held keyboard capture acknowledgement before release. |
+| `cee6dea491918282d034f8c6e9a90087d8213439` | Clock-type preservation and keyboard-probe failure reporting. |
+| `55f30d64ad1999231a97ea05a96e6a29d061c116` | Bounded hosted input-tracing diagnostics. |

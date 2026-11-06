@@ -2,7 +2,7 @@
 title: "Product roadmap (rolling)"
 summary: "Immediate / Near / Mid / Long direction for muhtari with the evidence and promotion trigger for each horizon; ROADMAP.md is the execution contract, seeds hold the source narratives."
 read_when: "At every new-milestone and complete-milestone step, and when a finding changes priorities."
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 # Product roadmap (rolling)
@@ -48,6 +48,13 @@ reweighed at v3.0 close. It lowers installation friction and reuses the core's
 portability; its existing WASM equality evidence stays advisory. No date or fixed
 future milestone number is promised.
 
+**Related separate-project idea, captured 2026-10-30:** a reusable browser
+libretro player for Playstead and other sites. Existing players and permissive
+reuse need assessment before choosing a custom host. The
+[seed](seeds/SEED-261030-tt4-browser-libretro-player.md) and
+[bounded research](research/browser-player/RECOMMENDATION.md) keep this distinct
+from muhtari's browser build; no new project or current-phase scope is started.
+
 **Competing priority:** Playstead's native one-app play/Continue experience. A
 Playstead-owned in-process libretro host is the candidate north star: library to
 play in one calm flow, responsive controls, sound/picture and safe state capture
@@ -79,6 +86,12 @@ Muhtari is the current leading example for a family of console cores sharing
 [product/engineering intent](INTENT.md). Exchange high-signal evidence and lessons
 bidirectionally with NES, Game Boy, Neo Geo and later siblings; reproduce mechanisms
 locally and keep console-specific facts distinct. No shared framework is presumed.
+
+**Separate-project hypothesis, captured 2026-10-30:** an optional interface
+alongside libretro for observability, automated play and simpler host setup.
+The [seed](seeds/SEED-261030-zk3-emulator-interface.md) keeps this at initial-read
+depth. First compare existing APIs and host tools; require measured cross-consumer
+benefit before treating a new standard as the remedy. Libretro support remains.
 
 ## Decision log
 

@@ -199,3 +199,14 @@ Update D-05 in place with an explicit date and evidence. Leave every other locke
 ## Deferred Ideas
 
 None added; existing deferred items remain unchanged.
+
+## Owner correction and trace finding — 2026-11-02
+
+The owner clarified that preserving an exhausted host allowance must not stop
+useful local work. The helper emitted up to three repeated POST records per
+100ms tick; run 41461948345 filled its 64-record stream with 60 POST records by
+2.934s, then continued posting through 4.84s. At the 5.014s acknowledgment cutoff,
+the helper exits before its next waitpid, so child status is unknown. This
+identifies a diagnostic observability defect; the actual input cause remains
+unknown. Record MU-HOST-007 and plan a dependency-free local repair with
+pass/fault controls. No new host/CI run is authorized.

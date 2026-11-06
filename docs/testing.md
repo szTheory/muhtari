@@ -6,15 +6,15 @@
 cmake --workflow --preset ci
 ```
 
-Needs CMake 4.3+, Ninja and C/C++ compilers:
+Needs CMake 4.3+, Ninja, C/C++ compilers:
 
 1. configure `build/ci` (Release, warnings fatal, macOS deployment target 10.13);
 2. build;
-3. test every test except those labelled `release`, writing `build/ci/junit.xml`;
-4. package the three release zips into `build/ci`;
-5. test the `release` label against those zips, writing `build/ci/junit-release.xml`.
+3. test all but label `release`; write `build/ci/junit.xml`;
+4. package three release zips into `build/ci`;
+5. test label `release` against those zips; write `build/ci/junit-release.xml`.
 
-Tests build samples, OpenBIOS and rcheevos' resolver from pins. Fetch them first:
+Tests build samples, OpenBIOS and rcheevos' resolver from pins. Fetch first:
 
 ```sh
 scripts/fetch-pin.sh wasmtime-<arch>-<os> build/pins/wasmtime   # e.g. wasmtime-aarch64-macos
@@ -304,21 +304,19 @@ integration fit. Native timings alone do not qualify them; no gameplay performan
 `<rom> <max % × 100> <expiry YYYY-MM-DD> <reason>`. It
 raises that ROM's limit through its expiry, at most 60 days away, and is removed after the pull request merges. `ctest -L perf` runs the gate's own tests on synthetic values.
 
-**Nightly bench.** `.github/workflows/nightly.yml` runs `muhtari-run --bench 300000` every night on `ubuntu-26.04`,
-`ubuntu-26.04-arm` and `macos-15`, and under wasmtime 48.0.6 on `ubuntu-26.04` (row `wasm32-wasmtime-48.0.6`).
-Each report has the runner's nine keys (`frames`, `fps_milli`, `p50_us` to `p99_999_us`, `max_us`), then
-`max_rss_kb` from `/usr/bin/time` (not for wasm32, where it would measure wasmtime) and `runner`. Find them in the
-run's job summaries and its `bench-<runner>` and `bench-wasm32` artifacts; they are trend data, never a gate and
-never committed. A failed night opens or comments on the one open issue labelled `nightly`, and a good night closes
-it; the report decides from the jobs' results. Dispatching the workflow with `force_failure` fails a run on purpose.
-The same workflow runs the `vectors-full` lane (`cmake --workflow --preset vectors-full`) and the `fuzz` lane (job
-`fuzz`, `cmake --workflow --preset fuzz`) on `ubuntu-26.04`, each followed by the JUnit check on its inventory;
-`fuzz` uploads both targets' crash directories when it fails. The `prop` job
-builds the `ci` preset with `MUHTARI_TIMEOUT_SCALE=10` and runs `ctest -L prop` with `MUHTARI_PROP_CASES=10000` and
-the run's ID as `MUHTARI_PROP_SEED`; it stays advisory outside `report.needs`: 2/10 successful main runs as of
-2026-10-22. A pull request runs the whole workflow, writing no issue, when it changes a file listed in the trigger's
-`paths`: the workflow, the core and runner sources, the build files and pins, and each job's tests, scripts and
-inventories.
+**Nightly bench.** `.github/workflows/nightly.yml`: nightly `muhtari-run --bench 300000` on `ubuntu-26.04`,
+`ubuntu-26.04-arm`, `macos-15`; wasmtime 48.0.6 on `ubuntu-26.04` (row `wasm32-wasmtime-48.0.6`).
+Reports: nine runner keys (`frames`, `fps_milli`, `p50_us` to `p99_999_us`, `max_us`),
+`/usr/bin/time`'s `max_rss_kb` (omitted for wasm32: it measures wasmtime), then `runner`.
+Summaries/artifacts `bench-<runner>`/`bench-wasm32`: uncommitted trends, never gates.
+Job results open/comment on the single open `nightly` issue (failure) or close it (success).
+`force_failure` dispatch fails on purpose. Also on `ubuntu-26.04`: `vectors-full` and `fuzz` lanes
+(`cmake --workflow --preset <lane>`, job `fuzz`), each with its inventory's JUnit check;
+failed `fuzz` uploads both targets' crash directories. `prop`: build `ci` with `MUHTARI_TIMEOUT_SCALE=10`,
+run `ctest -L prop` with `MUHTARI_PROP_CASES=10000`, `MUHTARI_PROP_SEED`=run ID;
+advisory outside `report.needs` (2/10 main runs successful,2026-10-22).
+PRs run the whole workflow without issue writes for trigger `paths`: workflow, core/runner sources,
+build files/pins, each job's tests/scripts/inventories.
 
 **Bumping the vector pin.** One `ci:` pull request: set the new commit in the `sst-6502-v1` row and the sample's
 manifest row; run the `vectors-full` workflow once, whose fetch fails against the old list but leaves the new files
@@ -360,6 +358,8 @@ module/parser/source hashes stay outside ZIPs. Always upload raw traces/logs/`in
 records/PIDs/clock errors;≤64×64bytes/stream. Saturation limits coverage; unfinished health is unknown.
 Same-host clock provenance is required; missing records are inconclusive. Writes alter timing;
 diagnostic modules prove neither delivery nor packaged-core acceptance.
+The offline preflight allows unrelated inherited descriptors but rejects helper-file, trace-directory
+and extra core aliases by device/inode identity; pass/leak and identity controls run in that consumer.
 
 ## Release archives
 

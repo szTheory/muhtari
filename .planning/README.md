@@ -17,6 +17,8 @@ relevant source links instead of scanning every historical plan.
 | Current research synthesis and phase questions | [research/SUMMARY.md](research/SUMMARY.md) |
 | Playstead quick route, native-host north star and pasteable handoff | [research/PLAYSTEAD-HANDOFF.md](research/PLAYSTEAD-HANDOFF.md) |
 | Reusable bounded specialist brief | [research/fan-out/prompt.txt](research/fan-out/prompt.txt) |
+| Separate browser/libretro player idea, existing alternatives and Playstead fit | [Browser-player seed](seeds/SEED-261030-tt4-browser-libretro-player.md), [bounded research](research/browser-player/RECOMMENDATION.md) |
+| Possible emulator interface alongside libretro; automation and observability gaps | [Interface seed](seeds/SEED-261030-zk3-emulator-interface.md), [initial read and future-session handoff](research/emulator-interface/RECOMMENDATION.md) |
 | Every owner ask and its disposition | [preparation/PROMPT-COVERAGE.md](preparation/PROMPT-COVERAGE.md) |
 | Shipped evidence and historical limits | [MILESTONES.md](MILESTONES.md), [milestones/](milestones/) |
 

@@ -368,3 +368,24 @@ The validation architecture section is omitted because config contains the exact
 
 **Research date:** 2026-10-30  
 **Valid until:** 2026-11-29 for stable repository contracts; recheck the pinned host and Playstead source when implementation starts.
+
+## Current planning-status reconciliation (2026-11-01)
+
+This reconciliation closes every research question at the planning level and
+supersedes only the earlier next-step assignments. These are planning
+dispositions, not technical resolution or requirement completion. The original
+Open Questions, receipts, failed history and evidence qualifications above remain
+intact.
+
+| Question | Current planning disposition | Technical evidence still pending |
+|---|---|---|
+| Q1 — pinned `test` joypad availability | Closed: retain the resolved-unavailable finding for the inspected pin; no new inspection or attempt is assigned. | No alternative input seam is established by that finding. |
+| Q2 — independently visible press and release within bounds | Closed as a planning decision: first complete the local-only prerequisite in [12-08](12-08-PLAN.md), then separately execute [12-07](12-07-PLAN.md)'s conditional Windows diagnosis/ledger route. Only its established causal finding and passed local gates permit its single ordinary full acceptance observation; an unknown cause or failed gate stops without dispatch. The halted 12-06 did not start RetroArch and is not a route to replay. | PLAY-03 remains pending: exact ordinary extracted-candidate held/released images, independent pixels, DMA, two fresh-process battery checks and the successful required aggregate are still necessary. Local readiness cannot establish Windows causality or host input delivery. |
+| Q3 — cheapest Windows publisher remedy | Closed as a planning decision: keep ownership with 12-02 tasks 1–2. Select a remedy only after comparable complete Windows current/base measurements on the same runner class with source/workload identities and representative pass/fault evidence, per D-09/D-10. | The publisher result and shipped measured improvement remain unresolved; local macOS timings select no remedy and 12-02 remains blocked. |
+| Q4 — current Playstead revision and dirty state | Closed as a planning decision: keep ownership with 12-03 task 2's fresh read-only sibling HEAD/relevant dirty-file metadata refresh immediately before the handoff, per D-07/D-08. Historical metadata is not a frozen implementation pin; no sibling edit is assigned. | Actual paired Playstead launch, visible response/input, orderly return and fresh-process battery continuity remain pending. |
+
+All existing bounds, owner choices, failed receipts and spent allowances remain
+unchanged. This reconciliation authorizes no execution or live attempt, does not
+renew an allowance or change dependencies, and does not unblock 12-02/03/04.
+12-01 remains halted, accepted remains 0/4, and actual host and Playstead
+acceptance remain separate pending truths.

@@ -19,6 +19,19 @@ uses an external RetroArch process with muhtari. The longer-term goal is a calm,
 integrated Playstead play/Continue experience; a Playstead-owned native libretro host
 is a candidate route, requiring its own product and technical validation.
 
+Owner direction, 2026-10-30: bank a possible separate open-source browser emulator
+player, compatible with libretro and embeddable by Playstead and other sites.
+Research existing products before choosing to build; retain the same quality and
+small-dependency posture. The [seed](seeds/SEED-261030-tt4-browser-libretro-player.md)
+is a high-level idea, not an active milestone or a change to muhtari's deliverables.
+
+The same conversation adds a second possible project: an optional emulator
+interface alongside libretro, investigating better observability, automated play,
+configuration and host integration. Preserve libretro support; compare existing
+solutions before inventing a standard. The [interface seed](seeds/SEED-261030-zk3-emulator-interface.md)
+keeps performance/superiority claims as hypotheses and gives a later session an
+entry point for deeper research.
+
 Provenance: owner steering after successful local Choplifter/Ninja Golf sanity
 checks; [FEATURES research](research/FEATURES.md) records the inspected Playstead
 revision, relevant dirty files, brand/product sources and unresolved integration.

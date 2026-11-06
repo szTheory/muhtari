@@ -47,3 +47,11 @@ frame-time and power checks in Chrome, Firefox and Safari, including on a phone.
 No threads means no SharedArrayBuffer, so no COOP/COEP headers, and any static host works (HOSTS 6). Web 7800
 emulators already exist (JS7800, test7800's WASM build; both GPL, ECOSYSTEM 1); muhtari's would be the accurate,
 permissive one that other sites can embed.
+
+Owner follow-up, 2026-10-30: the
+[separate player seed](SEED-261030-tt4-browser-libretro-player.md) explores a
+reusable libretro browser host for Playstead and other sites. This seed keeps
+the core browser-build responsibility. The old harness size/rate sketch above
+is directional, not a quota or verified browser design; consult the new bounded
+research before promoting either idea. Current WASI CI is headless/advisory and
+does not establish browser audio, input, persistence or embedding behavior.
