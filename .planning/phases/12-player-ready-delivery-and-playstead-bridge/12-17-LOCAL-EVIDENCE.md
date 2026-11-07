@@ -1,6 +1,6 @@
 # Plan 12-17 local WASI evidence
 
-**Current disposition:** the focused real-target WASI prerequisite passed. The complete registered portable lane and its JUnit audit are pending; no PLAY-03 or Phase 12 acceptance is claimed.
+**Disposition:** focused real-target WASI verification passed; the complete local WASI lane halted during build at the existing `tmpfile()` use in `tests/core/test_state.c`. No portable tests or full-lane JUnit report were produced. No PLAY-03 or Phase 12 acceptance is claimed.
 
 ## Frozen source and toolchain
 
@@ -23,6 +23,12 @@ The prior `build/wasm32` cache and JUnit were preserved under ignored `build/pha
 
 The compiler’s optional `-print-sysroot` probe exited 1 because this Clang build does not implement that option. The initial `-###` link-only probe omitted C compilation because `/dev/null` was used as input; its validator therefore did not find compile-only flags. These were metadata-probe limitations, not lane failures or tool changes. The SDK config, actual generated compile/link commands and target tests establish the paths and semantics directly.
 
+## Complete lane result
+
+`cmake --workflow --preset wasm32` configured successfully, then stopped in its build step after 88 of 230 Ninja actions when compiling `tests/core/test_state.c:2022`: `tmpfile()` is deprecated because WASI does not define it, and `-Werror` makes this diagnostic fatal. The same unsupported call is present in the unchanged root source. The failure is preserved in ignored `build/phase12-gap17-evidence/full-workflow.stdout`; command exit is 1. The task scope prohibits a source change or retry. The workflow did not reach the test step, and there is no new full JUnit file to audit. The previous cache and JUnit remain preserved in `prior-wasm32`.
+
+The configured wasm32 inventory was accepted, and the focused mock proved the coherent SDK can compile, link and run those two registrations. This does not close the complete local WASI prerequisite: the full workflow and portable JUnit completeness check remain blocked on a supported disposition of the existing `tmpfile()` use.
+
 ## Acceptance boundary
 
-The focused pass permits only the full-lane expansion below. It does not establish complete inventory execution, hosted sysroot equivalence, cross-platform hashes, actual RetroArch input, packaged-core readiness or PLAY-03. Plan 12-14/15 history remains unchanged; Phase 12 remains accepted 0/4 and Plan 12-16 stays blocked pending all prerequisites.
+The focused pass establishes only the two named mock registrations. It does not establish complete inventory execution, hosted sysroot equivalence, cross-platform hashes, actual RetroArch input, packaged-core readiness or PLAY-03. Plan 12-14/15 history remains unchanged; Phase 12 remains accepted 0/4 and Plan 12-16 stays blocked pending all prerequisites.
