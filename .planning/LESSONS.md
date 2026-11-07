@@ -2,7 +2,7 @@
 title: "Lesson exchange"
 summary: "Lessons imported from the owner's sibling emulators (hypotheses until reproduced here) and the template for exporting this project's lessons."
 read_when: "At each phase or milestone boundary, when a sibling lesson might apply, or when the owner asks to export lessons."
-updated: 2026-11-03
+updated: 2026-11-07
 ---
 
 # Lesson exchange
@@ -185,6 +185,7 @@ no-ack outcome alone authorizes no retry or wider window.
 |---|---|---|
 | MU-TEST-008 | A deterministic mock of a platform API must preserve its argument type. WASI's clock identifier is a pointer; native integer-like identifiers do not establish portability. | Latest [WASI job124397648745](https://github.com/szTheory/muhtari/actions/runs/41150939552/job/124397648745) fails three diagnostics before tests. `python3 /tmp/muhtari-wasi-clock.SSDai9/check.py` exits0,N/A-local: complete original mock compile1 reproduces all three; a private conditional int/clockid_t alias compiles0 for WASI/native/no-clock fallback, while signature-only clockid_t fails fallback1. Source repair awaits separate authority; no runtime or hosted acceptance is inferred. |
 | MU-TEST-009 | Exit-code transport is part of a portable negative-control contract. A native127 assertion can fail before it reaches the observer when the selected runtime rejects that status. | [WASI job124418953566](https://github.com/szTheory/muhtari/actions/runs/41158640754/job/124418953566) compiles the repaired clock mock and passes its ordinary valid/fault test;605/606tests pass. Child-exit control prints its required argv/no-input/no-wait marker, then the runtime explicitly rejects127 as outside[0..126) and returns1. `python3 /tmp/muhtari-diagnostic-exec.Hak1cS/audit_outcome.py` exits0; required audit1 solely host. Runtime remains advisory/unaccepted, native127 contract unchanged; no new repair or pin/semantic change is authorized. |
+| MU-TEST-010 | A WASI host-file observer cannot depend on `tmpfile()`; bind a fresh exclusive fixture to the test's existing build preopen and test both valid observation and content/cursor faults. | Plan 12-20: native and pinned Wasmtime battery tracers pass once, preserving the marker and cursor and rejecting wrong-cursor/changed-marker controls; the file is absent after each run. Full `cmake --workflow --preset wasm32` exits8 and the exact portable JUnit audit exits1 on three unrelated cases (direct execution of a WASI driver without its emulator and two existing timeout limits). The local fixture is portable, but the full WASI gate and hosted/Playstead acceptance remain unproved. |
 
 MU-TEST-009 local follow-up: the separately approved mock-only WASI transport125
 preserves the real helper127 and native127 assertions. `python3
