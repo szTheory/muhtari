@@ -4,12 +4,12 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
-current_plan: 14 of 18
+current_plan: 15 of 18
 status: blocked
-stopped_at: Plan 12-18 prepared; awaiting explicit owner decision at consent/hardware checkpoint
-last_updated: "2026-11-07T05:01:37.184Z"
+stopped_at: Plan 12-18 halted after its sole request and postflight both returned denied; no diagnostic ran
+last_updated: "2026-11-07T13:22:18.408Z"
 last_activity: 2026-11-07
-state_head: 4f8f75ba30ac7e9952c6dd192d45946ecd0d2183
+state_head: b41712d64e1dfd1e1de50ffd9621c9446c67b716
 progress:
   total_phases: 3
   completed_phases: 1
@@ -25,20 +25,20 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Plan 12-17 is terminal halted after the exact SDK passed the focused mock tests but the complete local workflow failed at the existing `tmpfile()` use under `-Werror`; no full-lane tests/JUnit or retry followed. Plan 12-18's local preparation and mocked controls passed and its exact-identity consent/hardware decision is pending. No real permission API, RetroArch preflight or content action has occurred. Plan 12-19 requires a supported 12-18 finding; 12-16 requires all three successors to pass. Phase 12 remains accepted 0/4; Plan 12-01 is halted and 12-02/03/04 remain blocked. Phase 13 is complete; preserve the separate Phase 14 Plan 14-31 stop.
+Current focus: Plan 12-17 is terminal halted after the full local WASI workflow failed at the existing `tmpfile()` use under `-Werror`; no full-lane tests/JUnit or retry followed. Plan 12-18's explicitly approved request and sole follow-up preflight both returned denied, so it halted before diagnostic reservation or RetroArch. Its one request allowance is spent; do not retry. Plan 12-19 remains blocked without a causal finding; 12-16 remains gated on 12-17/18/19. Phase 12 remains accepted 0/4; preserve the 12-01 halt, downstream blocks, and separate Phase 14 Plan 14-31 stop.
 
 ## Current Position
 
-Phase: 12 (Player-ready delivery and Playstead bridge) — OWNER CHECKPOINT PENDING; ACCEPTANCE BLOCKED
-Current Plan: 14 of 18
-Plan: 12-17 is halted on the existing WASI `tmpfile()` compile failure. Plan 12-18 completed preparation and is paused at its blocking-human checkpoint. Plans 12-19 and 12-16 remain gated on their stated prerequisites. Plans 12-02/03/04 remain blocked by the 12-01 halt. Phase 12 remains accepted 0/4.
+Phase: 12 (Player-ready delivery and Playstead bridge) — GAP EXECUTION HALTED; ACCEPTANCE BLOCKED
+Current Plan: 15 of 18
+Plan: 12-17 is halted on the existing WASI `tmpfile()` compile failure. Plan 12-18 is halted after its sole request and postflight returned denied, before any RetroArch diagnostic. No gap plan is currently runnable. Plans 12-19 and 12-16 remain gated on their stated prerequisites. Plans 12-02/03/04 remain blocked by the 12-01 halt. Phase 12 remains accepted 0/4.
 Status: Blocked
-Next action: The owner must choose whether to permit the exact consent request and one local diagnostic in [12-18-CONSENT-EVIDENCE.md](phases/12-player-ready-delivery-and-playstead-bridge/12-18-CONSENT-EVIDENCE.md). No OpenGSD command is valid until that decision arrives. On affirmative approval, resume the current execution; on refusal, record it and keep 12-19/16 gated. Preserve the separate Phase 14 Plan 14-31 stop.
+Next action: Plan a new evidence-based recovery for the newly observed permission denial with `$gsd-plan-phase 12 --gaps`. This starts planning only; it does not authorize another permission request, settings change, or content launch. The owner must approve any new identity-bound operation in that plan. Preserve the separate Phase 14 Plan 14-31 stop.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
 
-- Phase 12 Plans 12-14/15 remain terminal halted with immutable receipts. Plan 12-17 also halted: the exact SDK passed the two focused mock registrations, but the full workflow failed compiling `tests/core/test_state.c:2022` because `tmpfile()` is unsupported on WASI under `-Werror`; no full tests/JUnit or retry followed. Plan 12-18's preparation passed and is paused at the owner decision checkpoint; no real request, preflight or content operation occurred. Plans 12-19/16 remain dependency-gated; accepted remains 0/4 and 12-01 remains halted. See [12-14 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-14-LOCAL-EVIDENCE.md), [12-15 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-15-LOCAL-EVIDENCE.md), [12-17 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-17-LOCAL-EVIDENCE.md), and [12-18 consent evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-18-CONSENT-EVIDENCE.md).
+- Phase 12 Plans 12-14/15 remain terminal halted with immutable receipts. Plan 12-17's exact SDK passed the focused WASI mocks, but its full workflow halted compiling `tests/core/test_state.c:2022` because `tmpfile()` is unsupported on WASI under `-Werror`; no full tests/JUnit or retry followed. Plan 12-18's explicitly authorized request and sole postflight both returned denied (exit 77); it halted before the diagnostic invocation, with zero content children. Its request allowance is spent. Plans 12-19/16 remain dependency-gated; accepted remains 0/4 and 12-01 remains halted. See [12-14 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-14-LOCAL-EVIDENCE.md), [12-15 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-15-LOCAL-EVIDENCE.md), [12-17 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-17-LOCAL-EVIDENCE.md), and [12-18 consent evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-18-CONSENT-EVIDENCE.md).
 - Root-merge reconciliation corrected the Phase 14 `support-report` file path to `tests/common/bmp.c`. The existing `retroarch.states.controls` test now checks both the successful report and a missing-reader failure. Its local pass does not clear the Phase 14 workflow gate or authorize host work.
 - The historical BIOS timeout cause remains unknown. The approved five-test RUN_SERIAL mitigation preserved one-second limits; after it, the independent parent and frozen source passed complete CI and hygiene workflows. This does not attribute the earlier timeouts.
 - Plan 14-13 is complete: the exact five RUN_SERIAL properties and metadata fault controls passed, and the sole focused batch passed 7/7 including both fixture setup tests. That batch is consumed; do not retry it. No deadline or unrelated test metadata changed.
@@ -137,11 +137,11 @@ Current repair source/evidence hashes and preservation checks belong to the
 linked outcome; earlier unchanged-source preservation checks are historical.
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Current Plan: 14 of 18
-Plan: 0 of 4 acceptance plans accepted. Plan 12-17's local WASI lane is halted at `tmpfile()`; 12-18 is paused at its exact-identity owner checkpoint after preparation. Plan 12-01 remains halted; 12-02/03/04 remain blocked; 12-19/16 remain gated.
-Status: Blocked on actual held/released RetroArch input proof and the original 12-01 halt; the complete local WASI prerequisite also failed at `tmpfile()` under `-Werror`.
-Next local step: Owner decision at the existing Plan 12-18 checkpoint. No OpenGSD command is valid until the decision is recorded; an affirmative answer resumes this execution, while refusal leaves the dependent plans blocked. TUNE-06, PLAY-01/02/04, final TUNE-07 disposition and Phase 14 acceptance remain separate.
-Last activity: 2026-11-06
+Current Plan: 15 of 18
+Plan: 0 of 4 acceptance plans accepted. Plan 12-17's local WASI lane is halted at `tmpfile()`; 12-18 halted after the exact request and postflight both returned denied. No gap plan is runnable. Plan 12-01 remains halted; 12-02/03/04 remain blocked; 12-19/16 remain gated.
+Status: Blocked on actual held/released RetroArch input proof, the original 12-01 halt, the failed local WASI prerequisite, and the event-post permission denial.
+Next local step: `$gsd-plan-phase 12 --gaps` to plan against the new denial evidence. Planning does not renew the spent request or authorize a prompt, settings change, or content launch. TUNE-06, PLAY-01/02/04, final TUNE-07 disposition and Phase 14 acceptance remain separate.
+Last activity: 2026-11-07
 Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
@@ -264,8 +264,8 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 - Plan 14-24 local-input gate failed: the generated controller expects a 62-character MAME a7800.xml digest; pins.txt and the local file agree on the 64-character hash. Qualification invocation 0, Docker contact 0, protected workload starts 0; scope blocked/ineligible with no retry.
 - Plan 14-26 remains historical and halted with its failed automatic gate spent. Plan 14-27's one pinned Darwin arm64 Wasmtime fetch and one automatic local CI workflow passed; the workflow completed CTest (695/695) and release tests (6/6). Plan 14-25 later stopped at its sole independent R gate, before hygiene, frozen-source validation and its owner checkpoint. No push, remote dispatch, RetroArch, Docker, or host action is authorized by that terminal scope.
 - Plan 14-25 stopped at its sole independent R CI gate: 694/695 ordinary tests passed, while title.pin.self_test timed out and reported /bin/ps Operation not permitted. The local scope is terminal; do not run hygiene, a frozen-source gate, or the owner checkpoint. A new bounded investigation/scope is required before any further workflow attempt. FRONT-02/03/04 remain pending.
-- Plan 12-17 local full WASI workflow halted during compile at tests/core/test_state.c:2022: tmpfile() is deprecated/undefined on WASI under -Werror. No tests/JUnit or retry; new scope needed to address this existing advisory portability fault. Plan 12-18 preparation passed and its owner decision is pending; see the consent evidence ledger. No real permission or content operation has occurred.
-- Phase 12 Plan 12-18 has completed local preparation and is paused at the blocking-human checkpoint. The exact identity-bound consent and one local diagnostic decision is pending; no real request, preflight, or content invocation has occurred. Do not advance to Plan 12-19 or start those operations until the owner chooses.
+- Plan 12-17 local full WASI workflow halted during compile at tests/core/test_state.c:2022: tmpfile() is deprecated/undefined on WASI under -Werror. No tests/JUnit or retry; a new evidence-based scope is needed to address this advisory portability fault.
+- Phase 12 Plan 12-18 recorded explicit owner approval, one event-post request (denied, exit 77), and one nonprompting postflight (denied, exit 77). No diagnostic invocation or content child occurred. The request allowance is spent; do not retry. Plan 12-19 remains gated because there is no causal finding.
 
 ### Roadmap Evolution
 
@@ -274,11 +274,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 ## Session Continuity
 
 Last session: 2026-11-07T04:44:12.557Z
-Stopped at: Plan 12-18's blocking-human consent/hardware decision checkpoint; Plan 12-17's WASI halt remains preserved
+Stopped at: Plan 12-18 terminal halt after denied request/postflight; Plan 12-17's WASI halt remains preserved
 Resume file: None
 
-Next command: Run `$gsd-execute-phase 12 --gaps-only` from the root checkout. It selects only gap-closure plans; 12-17/18 form Wave 1, 12-19 follows a supported 12-18 diagnosis, and 12-16 stays gated behind all three. No directory switch is needed.
-Context handoff: Plans 12-14/15 remain terminal halted, with historical evidence unchanged. Wave 1 plan 12-17 uses the exact hash-verified WASI SDK in private scratch to complete the local portable workflow. Plan 12-18 first prepares identity and isolated controls, then requires the owner's new explicit decision for one exact-identity CoreGraphics permission request and one local diagnostic on the owner's hardware. Until affirmative approval, no permission request, content reservation, or launch occurs; decline/no answer keeps the stop. Plan 12-19 can correct only a supported in-scope cause and must pass its full local gates. Plan 12-16's existing one-host allowance remains unchanged and is unavailable until all three successor summaries pass. Plan 12-01 stays halted and accepted remains 0/4. Phase 14 Plan 14-31's stop remains unchanged.
+Next command: Run `$gsd-plan-phase 12 --gaps` from the root checkout to define a new plan for the observed event-post denial. This is planning only and does not authorize another request or content run.
+Context handoff: Plan 12-17 halted at the WASI `tmpfile()` compile; Plan 12-18's one explicitly authorized request and follow-up preflight both returned denied, and the single request allowance is spent. No diagnostic or content child ran, so Plan 12-19 has no causal finding to repair and Plan 12-16 remains gated on 12-17/18/19. Any proposed new permission operation needs a fresh exact identity-bound owner decision. Plans 12-14/15 and the separate Phase 14 stop remain unchanged; Phase 12 acceptance remains 0/4.
 
 Worktree reconciliation: Phase 13 shipped as PR #42 and is present in `origin/main`; the root branch contains `origin/main`. The committed Phase 14 and OpenBIOS worktree HEADs are already ancestors of root, so there is no committed work to merge from them. Their worktrees remain dirty and preserved; do not overwrite or remove them. The Phase 13 dirty input files are older than the root version, and the OpenBIOS capture changes are already present in root. The Phase 14 uncommitted state/checkpoint remains in its worktree under its existing stop. Reconcile any future dirty-file changes against root before copying them.
 

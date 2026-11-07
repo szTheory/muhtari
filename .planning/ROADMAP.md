@@ -82,7 +82,7 @@ host test or dependent plan.
 **Recovery Wave 1** *(additive successors; terminal 12-14/15 outcomes remain immutable history; no execution authority is created by planning)*
 
 - [x] 12-17-PLAN.md — Complete the unchanged local wasm32 workflow and portable inventory with the exact hash-verified coherent SDK in private scratch; keep hosted-toolchain/acceptance limits explicit.
-- [ ] 12-18-PLAN.md — Prepare exact identities and require a new execution-time consent/owner-hardware decision before one bounded local causal diagnostic. Refusal or an inconclusive result halts without a retry.
+- [x] 12-18-PLAN.md — Prepare exact identities and require a new execution-time consent/owner-hardware decision before one bounded local causal diagnostic. Refusal or an inconclusive result halts without a retry.
 
 **Recovery Wave 2** *(requires a complete supported causal finding from 12-18; no permission/content allowance)*
 
@@ -310,7 +310,7 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 12/18 | Acceptance remains 0/4 and original 12-01 remains halted. Plans 12-14/15 remain terminal halted. Plan 12-17's exact local SDK passed the focused WASI mock tests, then the complete workflow halted compiling `tests/core/test_state.c:2022` because WASI deprecates `tmpfile()` under `-Werror`; no portable tests/JUnit or retry followed. Plan 12-18 preparation passed and is paused at its identity-bound consent/owner-hardware checkpoint; no real request, preflight or content action occurred. Plans 12-19/16 remain dependency-gated; 12-02/03/04 remain blocked by 12-01 | - |
+| 12. Player-ready delivery and Playstead bridge | 13/18 | Acceptance remains 0/4 and original 12-01 remains halted. Plans 12-14/15 remain terminal halted. Plan 12-17's exact local SDK passed the focused WASI mocks, then the complete workflow halted compiling `tests/core/test_state.c:2022` because WASI deprecates `tmpfile()` under `-Werror`; no portable tests/JUnit or retry followed. Plan 12-18's one authorized request and sole follow-up preflight both returned denied; it halted before RetroArch with zero content children, and its request allowance is spent. Plans 12-19/16 remain dependency-gated; 12-02/03/04 remain blocked by 12-01 | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
 | 14. Proven frontend states and responsive play | 31/31 | Acceptance blocked. Plan 14-25's sole independent R gate failed on `title.pin.self_test` at one second; workflow stderr recorded denied `/bin/ps`, with cause unknown. No hygiene, frozen gate or owner checkpoint followed; that scope is spent. Plan 14-29 records a passing target-only non-reproduction and the owner's decision to close its diagnosis unresolved. Earlier native/Docker stops, unknown parent timeouts, spent host allowance and Phase 12 halt remain preserved. Verification stays `gaps_found` (20/27); FRONT-02/03/04 pending; no allowance renewed | - |
 

@@ -1,6 +1,6 @@
-# Phase 12 Plan 12-18: Consent and diagnostic preparation
+# Phase 12 Plan 12-18: Consent and diagnostic evidence
 
-**Disposition:** prepared; awaiting the exact owner decision below. No OS permission request, real preflight, event post, RetroArch launch, invocation reservation, or content child has occurred. Plan 12-15's denial and zero-child result remain unchanged.
+**Disposition:** halted before the RetroArch diagnostic. The owner explicitly authorized the exact request and one local diagnostic. The request and its one nonprompting follow-up preflight both returned denied; no diagnostic invocation or content child occurred. No permission request retry is allowed under this plan.
 
 ## Bound execution identity
 
@@ -17,15 +17,17 @@
 
 The isolated controls passed: denied and permitted preflight each called only the mocked preflight once; permitted and denied request each called only the mocked request once; unknown arguments called neither; missing and changed-identity approvals blocked dispatch; denied postflight blocked diagnostic reservation. Mock helper SHA-256: `b6758caac349ac0686d72c32c252b2cc289942ba649073b1b9633c327b9ad131`.
 
-`python3 build/phase12-gap18-evidence/consent.py audit-receipts` — exit 0. The read-only audit found no decision, request reservation/receipt, postflight reservation/receipt, diagnostic reservation/receipt, or content child. Preparation counters: real requests 0; real preflights 0; helper pre-fork rechecks 0; diagnostic reservations 0; content children 0. Current code/pin diff against Plan 12-15 inputs is empty. Scratch binaries, logs, driver, and receipts are under ignored `build/phase12-gap18-evidence/`.
+`python3 build/phase12-gap18-evidence/consent.py audit-receipts` — exit 0 before the owner checkpoint. At that point the read-only audit found no decision or real-operation reservations/receipts. The post-operation audit also exited 0 and found exactly one request reservation and one standalone preflight reservation, both identity-bound; no diagnostic reservation or child was observed. Current code/pin diff against the frozen helper inputs is empty. Scratch binaries, logs, driver, and receipts are under ignored `build/phase12-gap18-evidence/`.
 
-## Exact operations covered by the decision
+## Owner decision and executed operations
 
-After an affirmative choice only:
+The owner explicitly chose **“Yes, authorize both exact operations”** in response to the checkpoint bound to the helper SHA, Terminal identity, pinned host, diagnostic core and cartridge identities above. The private decision receipt is `build/phase12-gap18-evidence/owner-decision.json`.
 
-1. `python3 build/phase12-gap18-evidence/consent.py request-approved` reserves before invoking this exact helper once as `keyboard-input-trace-consent --request-event-post-access`. The single `CGRequestPostEventAccess()` call may show a macOS prompt and may establish persistent event-post permission for the identified Terminal context. Timeout or ambiguous completion spends the request; no retry.
-2. If the request process completes normally, `python3 build/phase12-gap18-evidence/consent.py postflight` reserves and invokes the same binary's `--preflight` once (15-second maximum), even if the request returned denied. A denied or ambiguous preflight stops before RetroArch.
-3. Only with permitted preflight and the same affirmative hardware authorization, `python3 build/phase12-gap18-evidence/consent.py diagnose-once` reserves and runs the prepared existing RetroArch probe once. The helper repeats its nonprompting pre-fork gate inside that invocation. The wrapper has 600 frames, a 5-second acknowledgment deadline, 45-second helper bound, and 50-second wrapper bound; input events target only its own RetroArch child. It uses isolated paths and does not change settings or TCC state. The probe can remain inconclusive; permission success alone is not a causal finding.
+1. `python3 build/phase12-gap18-evidence/consent.py request-approved` — driver exit 0; its exclusive request reservation preceded the sole helper invocation. The helper's one `CGRequestPostEventAccess()` call completed normally with output `post-event-access-request=denied` and exit 77. Whether macOS displayed a prompt is unknown. No retry followed.
+2. `python3 build/phase12-gap18-evidence/consent.py postflight` — driver exit 1 after the same helper's one `--preflight` call returned `post-event-access=denied`, exit 77. Its exclusive reservation and receipt were retained. The denied result stopped execution before any diagnostic reservation or RetroArch invocation.
+3. `python3 build/phase12-gap18-evidence/consent.py diagnose-once` was not run. The helper's mandatory pre-fork recheck was not reached. The prepared diagnostic invocation was not reserved, no RetroArch process/content child launched, and no trace/screenshot or causal finding was produced.
+
+The request result alone does not establish whether system permission state changed. No Settings automation, TCC inspection/reset, alternate identity, or second request was used. The local diagnostic remains unavailable under this plan because its required standalone preflight denied access.
 
 Prepared wrapper command (not run):
 
@@ -48,6 +50,14 @@ cmake \
   -P tests/retroarch/run_retroarch.cmake
 ```
 
-## Owner decision
+## Final accounting and acceptance effect
 
-The prepared scope is one access request in the identified Apple Terminal session, then at most one nonprompting preflight and one bounded RetroArch keyboard diagnostic on this machine. Choose either to permit both the consent request and diagnostic, or to retain the refusal. No decision or partial approval authorizes any operation; all real-operation counters remain zero until a complete affirmative decision is recorded.
+| Operation | Reserved | Observed result |
+|---|---:|---|
+| Identity-bound access request | 1 | Completed normally; denied, helper exit 77 |
+| Standalone nonprompting preflight | 1 | Denied, helper exit 77 |
+| Helper-owned pre-fork permission recheck | 0 | Not reached |
+| Diagnostic invocation | 0 | Not reserved because preflight denied |
+| RetroArch/content child | 0 | Not launched |
+
+There is no causal finding for the earlier hosted input failure. Plan 12-18 is halted, not passed. Plan 12-19 remains blocked because it requires a supported in-scope causal finding; Plan 12-16 remains gated on Plans 12-17/18/19. Phase 12 remains accepted 0/4; Plan 12-01 remains halted and Plans 12-02/03/04 remain blocked. Plan 12-17's WASI `tmpfile()` halt and the separate Phase 14 stop are unchanged.
