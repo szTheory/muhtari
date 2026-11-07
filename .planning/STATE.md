@@ -4,17 +4,17 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
-current_plan: 15 of 18
+current_plan: 15 of 20
 status: blocked
-stopped_at: Plan 12-18 halted after its sole request and postflight both returned denied; no diagnostic ran
-last_updated: "2026-11-07T16:13:29.691Z"
+stopped_at: Plan 12-21 complete; Phase 12 has no runnable gap plan until the owner resolves the Terminal event-post access boundary and authorizes a new bounded diagnostic scope.
+last_updated: "2026-11-07T17:12:18.335Z"
 last_activity: 2026-11-07
-state_head: f8636f91f7f999b066f9114c0a61ec7b1972c50f
+state_head: b0f9f079f92850a8ecb2ec17c1f6c4127f9b719d
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 59
-  completed_plans: 53
+  completed_plans: 54
   percent: 33
 ---
 
@@ -25,15 +25,15 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 12 remains accepted 0/4. Newly authorized Plan 12-21 is the only runnable plan: route the two state-driver controls through the configured Wasmtime emulator, then rerun the full WASI lane. If the same runner timeouts recur, isolate only those two WASI tests without changing deadlines. RetroArch 1.22.2 is installed and signed; direct executable launch aborts in macOS `NSApplicationMain`, and `open -a` cannot reach the unavailable Launch Services registration server. Native app control loaded the project core and checked-in fixture and displayed the game. This verifies startup/rendering only, not held/released input. Plan 12-18's denied event-post request remains spent; do not retry it or change macOS permissions. Preserve the 12-01 halt, remote/host stops and separate Phase 14 Plan 14-31 stop.
+Current focus: Phase 12 remains accepted 0/4. Plan 12-21 is complete and the local WASI, native, release/package, formatter, and hygiene gates pass. No Phase 12 gap plan is runnable: Plan 12-19 awaits a supported causal finding, and Plan 12-16 awaits Plans 12-18 and 12-19. The checked-in game rendered in RetroArch through native app control, but held/released input remains unproven. The Terminal-bound event-post request and preflight were denied; that allowance is spent.
 
 ## Current Position
 
-Phase: 12 (Player-ready delivery and Playstead bridge) — READY TO EXECUTE
-Current Plan: 12-21 (Wave 1; ready to execute)
-Plan: Plan 12-17's original `tmpfile()` build failure remains immutable. Plan 12-20 replaced that fixture and passed its battery tracers, native workflow, formatting and hygiene; its full WASI report remains failed on `retroarch.states.controls` and the two registered runner timeouts. Plan 12-21 is the explicitly authorized second local gap scope and fixes the missing emulator route before rerunning the unchanged full WASI lane. Its reviewed plan includes conditional metadata checks if the same timeouts recur. Separately, the installed RetroArch app loaded the project core and checked-in cartridge through native app control and rendered a frame; direct shell launch and `open -a` hit macOS launch-context/service failures. No keyboard/event-post test ran. Plan 12-18's request and follow-up remain denied and spent. Plan 12-16 now depends on 12-21/18/19, so it remains blocked; Phase 12 acceptance remains 0/4. Plans 12-02/03/04 remain blocked by the 12-01 halt.
-Status: Phase acceptance is still blocked on full local WASI evidence, actual held/released input and supported causal/host evidence. Plan 12-21 is the only runnable plan. The owner authorized its bounded local execution and a separate startup smoke; this does not renew permission, hosted CI or Phase 14 authority.
-Next action: `$gsd-execute-phase 12 --gaps-only` — execute Plan 12-21 only. Preserve the spent 12-18 permission attempt and separate Phase 14 Plan 14-31 stop.
+Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
+Current Plan: 15 of 20
+Plan: Plan 12-21 is complete: Wasmtime now runs both generated state-driver controls, the complete local WASI lane and exact audit pass, the two runner timeouts did not recur, and native CI/release/package/format/hygiene pass. No runner scheduling change was needed. Phase 12 remains accepted 0/4; 12-19 and 12-16 remain blocked by 12-18.
+Status: blocked
+Next action: Owner action: if willing, enable Terminal under System Settings > Privacy & Security > Accessibility, then explicitly authorize a new bounded preflight/diagnostic plan. After that, run $gsd-plan-phase 12 --gaps; planning alone does not execute the request or launch content.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
@@ -140,7 +140,7 @@ Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
 Current Plan: 12-21 of 20 active plans (ready)
 Plan: 0 of 4 acceptance plans accepted. Plan 12-21 is the only runnable recovery: fix the missing configured emulator route for the WASI state controls, rerun the full lane, and apply only the specified two-test WASI serialization if the same timeouts recur. The denied 12-18 event-post request remains spent. Plan 12-16 depends on 12-21/18/19; Phase 12 acceptance remains blocked and unwaived. Plan 12-01 remains halted; 12-02/03/04 remain blocked.
 Status: Acceptance remains blocked on the full local WASI gate, actual held/released RetroArch input, and causal evidence.
-Next local step: `$gsd-execute-phase 12 --gaps-only` to run Plan 12-21. It is local only; it does not retry event-post permission, use remote CI, or start Phase 14. TUNE-06, PLAY-01/02/04, final TUNE-07 disposition and Phase 14 acceptance remain separate.
+Next local step: No Phase 12 local gap step is runnable. Plan 12-21 completed the WASI prerequisite; Plan 12-19 and Plan 12-16 remain blocked on the unfulfilled 12-18 causal and consent gate. Owner must decide whether to grant Terminal Accessibility and explicitly authorize a fresh bounded scope before planning another diagnostic.
 Last activity: 2026-11-07
 Progress: [███░░░░░░░] 33%
 
@@ -266,6 +266,7 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 - Plan 14-25 stopped at its sole independent R CI gate: 694/695 ordinary tests passed, while title.pin.self_test timed out and reported /bin/ps Operation not permitted. The local scope is terminal; do not run hygiene, a frozen-source gate, or the owner checkpoint. A new bounded investigation/scope is required before any further workflow attempt. FRONT-02/03/04 remain pending.
 - Plan 12-17 local full WASI workflow halted during compile at tests/core/test_state.c:2022: tmpfile() is deprecated/undefined on WASI under -Werror. No tests/JUnit or retry; a new evidence-based scope is needed to address this advisory portability fault.
 - Phase 12 Plan 12-18 recorded explicit owner approval, one event-post request (denied, exit 77), and one nonprompting postflight (denied, exit 77). No diagnostic invocation or content child occurred. The request allowance is spent; do not retry. Plan 12-19 remains gated because there is no causal finding.
+- Phase 12: Plan 12-21 complete; local WASI (622 tests plus exact portable audit), native CI, package/release, formatter and tree hygiene pass; no runner timeout recurred and no scheduling change was made. RetroArch startup/render succeeded through native app control; this does not prove held/released input. The Terminal-bound event-post request and standalone preflight both returned denied (exit 77) before any diagnostic or content child, and the request allowance is spent. Plans 12-19/16 remain blocked, accepted 0/4. See 12-21-SUMMARY.md and 12-18-CONSENT-EVIDENCE.md. No permission retry or settings change is authorized.
 
 ### Roadmap Evolution
 
@@ -274,11 +275,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 ## Session Continuity
 
 Last session: 2026-11-07
-Stopped at: Plans 12-20 and 12-16 dependency update are planned and reviewed; Plan 12-20 is the only runnable local prerequisite, while the 12-18 denial remains binding
+Stopped at: Plan 12-21 complete; Phase 12 has no runnable gap plan until the owner resolves the Terminal event-post access boundary and authorizes a new bounded diagnostic scope.
 Resume file: None
 
-Next command: No GSD command is valid under the current one-gap-round limit. If the owner authorizes one additional local gap round based on the new exact WASI failures, the next command is `$gsd-plan-phase 12 --gaps`; it will not authorize permission, settings/TCC, RetroArch/content, remote CI or Phase 14 actions.
-Context handoff: Plan 12-20 fixed the unsupported `tmpfile()` fixture and passed native/WASI tracers plus native CI, formatter and hygiene. The full 622-case WASI audit still fails because `retroarch.states.controls` does not invoke Wasmtime and two runner tests reach existing timeouts. Plan 12-18's denied request/postflight remains immutable and its allowance is spent. Plan 12-16 depends on 12-20/18/19; 12-19/16 remain blocked by the 12-18 denial and missing causal finding. Plans 12-14/15/17/18/20 remain terminal; Phase 12 acceptance remains 0/4.
+Next command: No GSD command is valid yet. Owner: review Terminal access in System Settings > Privacy & Security > Accessibility and decide whether to grant it; then explicitly authorize a new bounded preflight/diagnostic scope. After that, run $gsd-plan-phase 12 --gaps. Planning alone will not run the permission request or launch content.
+Context handoff: Plan 12-21 is complete: full local WASI (622/622 plus exact audit), native CI, release/package, formatter and hygiene pass; the runner timeouts did not recur. RetroArch startup/render passed through native app control; CLI launch failed in this session, separate from input. Terminal event-post request and preflight both denied before the diagnostic/content child; allowance spent. No runnable Phase 12 plans; 12-19 awaits causal evidence, 12-16 awaits 12-18/19, accepted 0/4. Owner decides whether to grant Terminal Accessibility and authorize a fresh bounded scope. Then run $gsd-plan-phase 12 --gaps.
 
 Worktree reconciliation: Phase 13 shipped as PR #42 and is present in `origin/main`; the root branch contains `origin/main`. The committed Phase 14 and OpenBIOS worktree HEADs are already ancestors of root, so there is no committed work to merge from them. Their worktrees remain dirty and preserved; do not overwrite or remove them. The Phase 13 dirty input files are older than the root version, and the OpenBIOS capture changes are already present in root. The Phase 14 uncommitted state/checkpoint remains in its worktree under its existing stop. Reconcile any future dirty-file changes against root before copying them.
 
