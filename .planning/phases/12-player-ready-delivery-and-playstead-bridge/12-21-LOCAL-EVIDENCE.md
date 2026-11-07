@@ -1,6 +1,6 @@
 # Plan 12-21 local evidence
 
-**Disposition at task 1:** The generated native and WASI state-control routes pass. The complete WASI lane and final native/hygiene gates are recorded below as they run; Phase 12 remains accepted 0/4. This is local prerequisite evidence only and makes no claim about RetroArch input delivery, released-core readiness, hosted CI, or Playstead.
+**Disposition at task 2:** The generated native and WASI state-control routes and the complete local WASI lane pass. Final native/hygiene gates are recorded below as they run; Phase 12 remains accepted 0/4. This is local prerequisite evidence only and makes no claim about RetroArch input delivery, released-core readiness, hosted CI, or Playstead.
 
 ## Frozen source and preserved failure
 
@@ -39,7 +39,18 @@ The generated template now preserves the configured emulator as a CMake list. Na
 
 The new native and WASI focused reports are in ignored `build/phase12-gap21-evidence/states-native.xml` and `states-wasi.xml`; their SHA-256 values are `659bc15f9c653db9995a33f6055fc6141213cec605c6bc24405f0ac138b429a4` and `2108f2a021034de556ef3fce760e2a1f92c7d67997f0a2de56b5eb5d96d6d698`. The focused checks launched no RetroArch or content process and made no permission/API call. Run URL: N/A-local.
 
+## Task 2 — complete WASI lane and runner scheduling decision
+
+The complete corrected-source lane passed before any runner scheduling change. The prior full report and focused timing sample remain preserved. Since neither named timeout recurred, `tests/runner/tests.cmake` remains byte-identical to the plan base; no `RUN_SERIAL` property, before/after metadata checker, copied metadata fault, or extra focused runner invocation was needed.
+
+| Command | Exit | Result |
+|---|---:|---|
+| `python3 build/phase12-gap21-evidence/run_bounded.py workflow-wasi-initial wasi cmake --workflow --preset wasm32` | 0 | Complete local WASI workflow finished in 69.144 seconds without timeout or scratch-cap breach. |
+| `python3 build/phase12-gap21-evidence/run_bounded.py audit-junit-wasi-initial wasi cmake -DJUNIT=build/wasm32/junit.xml -DINVENTORY=tests/inventory/wasm32.txt -DLABELS=portable -P tests/cmake/check_junit.cmake` | 0 | Exact portable inventory accepted 622 tests, each once, with no failures, errors, or skips. |
+
+The full report SHA-256 is `7817a1d3a3a056fe832cccff8ac9ad139830d58b81e807f3bca58281733bac06`. In that complete report, `retroarch.states.controls` passed in 0.166 seconds; `runner.movie.v2_edges` passed in 5.370 seconds under its unchanged six-second limit; and `runner.region.pal` passed in 3.405 seconds under its unchanged four-second limit. No cause is attributed to the prior timeout results. The full WASI result establishes only this retained local advisory SDK lane, not hosted CI or PLAY-03 acceptance. Run URL: N/A-local.
+
 ## Resource bounds
 
-The fixed 45-minute local cutoff is `2026-11-07T17:24:24.621416Z`. The WASI cutoff above includes configuration through the final complete portable JUnit audit. The scratch/build cap is 2 GiB; current attributable growth remains under 2 MiB. Reused SDK/archive/runtime sizes are recorded separately in ignored `build/phase12-gap21-evidence/budget.json`.
+The fixed 45-minute local cutoff is `2026-11-07T17:24:24.621416Z`. The WASI cutoff above includes configuration through the final complete portable JUnit audit. At the end of the WASI audit, attributable growth was 1,392,690 bytes against the 2 GiB cap. Reused SDK/archive/runtime sizes are recorded separately in ignored `build/phase12-gap21-evidence/budget.json`.
 
