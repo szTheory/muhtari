@@ -52,12 +52,9 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 11/15 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
+**Plans:** 11/18 active plans have recorded outcomes (12-08 is superseded and excluded from the active count; accepted 0/4).
 
 Plans:
-
-**Wave 1**
-
 - [x] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
 
 Execution halted: original run 41056151292 failed before RetroArch; scoped recovery
@@ -82,9 +79,20 @@ host test or dependent plan.
 - [x] 12-14-PLAN.md — Added both missing registered-test rows and passed the exact configure inventory check. The local portable workflow halted at compilation because the machine has no WASI C-library sysroot; no tests ran and acceptance remains pending.
 - [x] 12-15-PLAN.md — Halted before content launch: the qualified helper's nonprompting CoreGraphics event-post preflight returned 77 (`post-event-access=denied`). No reservation or child was created, no causal finding was made, and no permission/settings change or hosted attempt followed. Plan 12-16 remains blocked.
 
-**Wave 2** *(12-16 requires both 12-14 and 12-15 to pass; both are terminal halted, on the missing local WASI sysroot and denied event-post preflight respectively. 12-02 remains blocked until the 12-01 acceptance halt is closed.)*
+**Recovery Wave 1** *(additive successors; terminal 12-14/15 outcomes remain immutable history; no execution authority is created by planning)*
 
-- [ ] 12-16-PLAN.md — After both local recovery plans pass, use at most one new source-bound ordinary host attempt; close the former 12-01 halt only on complete revised host proof.
+- [ ] 12-17-PLAN.md — Complete the unchanged local wasm32 workflow and portable inventory with the exact hash-verified coherent SDK in private scratch; keep hosted-toolchain/acceptance limits explicit.
+- [ ] 12-18-PLAN.md — Prepare exact identities and require a new execution-time consent/owner-hardware decision before one bounded local causal diagnostic. Refusal or an inconclusive result halts without a retry.
+
+**Recovery Wave 2** *(requires a complete supported causal finding from 12-18; no permission/content allowance)*
+
+- [ ] 12-19-PLAN.md — Correct only the demonstrated in-scope cause, retain representative fault controls, and pass the complete corrected-source local native/WASI/format/hygiene gates and bounded review.
+
+**Recovery Wave 3** *(12-16 requires complete passing 12-17/18/19 results; permission alone does not establish cause. Its existing one-time future host allowance and every gate remain unchanged.)*
+
+- [ ] 12-16-PLAN.md — After all successor prerequisites pass, use its existing at-most-one source-bound ordinary host attempt; close the former 12-01 halt only on complete revised host proof.
+
+**Original Wave 2** *(12-02 remains blocked until the 12-01 acceptance halt is closed)*
 
 - [ ] 12-02-PLAN.md — Ship a small measured Windows publication-control improvement with complete fault/current-base evidence.
 

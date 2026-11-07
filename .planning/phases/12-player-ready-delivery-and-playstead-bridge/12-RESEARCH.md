@@ -283,7 +283,12 @@ This command shape and explicit config are documented; the test-input driver sti
 | A3 | Repeated shell/process setup is a material cause of Windows publisher-control cost. This is the locked profiling hypothesis, not an established cause. | Bounded publisher measurement | A premature code change may not improve the Windows workload. |
 | A4 | A single small publisher remedy will yield a comparable measurable improvement while keeping every fault row. No remedy is selected until current/base profiling confirms it. | Bounded publisher measurement | TUNE-06 cannot be completed on source-shape or documentation changes alone. |
 
-## Open Questions
+## Research Questions and Planning Dispositions
+
+**Current status (2026-11-06): Q2, Q3 and Q4 are RESOLVED (planning disposition).**
+Their current handling is recorded in the dated disposition update below;
+execution outcomes remain unknown. Earlier question statuses and evidence below
+are retained as dated history, not unresolved planning choices.
 
 1. **Q1 — Does `test` joypad input work in the pinned binary? RESOLVED: unavailable.** MU-HOST-004's retained exact-DMG/executable inspection establishes absence in RetroArch 1.22.2/git69a4f0ea. Upstream PR/config establishes an optional driver, not its inclusion in this binary. 12-01's obsolete mechanism is superseded by 12-06; no hosted attempt is allocated to it. [VERIFIED: `.planning/LESSONS.md:126`; official PR/config provenance below]
 2. **Q2 — Can press and release both be independently visible within current bounds? OPEN; bounded planning disposition: 12-06 tasks 1–2.** Reuse keyboard_preflight.c --probe and run_retroarch.cmake in the normal packaged-host path: one input child, raw held and terminal released images, independent complete-window runner/pixel expectations, retained DMA/two-fresh-process battery and required CI aggregate. One standard full run is the discriminating observation, with no feasibility-only run or diagnostic-core substitution. Existing capture failures and permission-only success do not prove delivery. Keep PLAY-03 pending on any failed/missing input/package/aggregate evidence. D-06/DEC.56 retires only the numeric support-line ceiling. [VERIFIED: `tests/retroarch/keyboard_preflight.c`, `tests/retroarch/run_retroarch.cmake`, `.github/workflows/ci.yml` ordinary/probe/control steps; MU-HOST-005/006; `12-CONTEXT.md:81-90`; `12-06-PLAN.md`]
@@ -389,3 +394,20 @@ unchanged. This reconciliation authorizes no execution or live attempt, does not
 renew an allowance or change dependencies, and does not unblock 12-02/03/04.
 12-01 remains halted, accepted remains 0/4, and actual host and Playstead
 acceptance remain separate pending truths.
+
+### Current planning dispositions (2026-11-06)
+
+This update supersedes earlier next-step assignments only. It resolves how the
+questions are handled, without resolving their execution outcomes or changing any
+plan, bound, checkpoint, dependency or allowance.
+
+| Question | Current status and planning decision | Execution evidence still pending |
+|---|---|---|
+| Q2 — independently visible press and release within bounds | **RESOLVED (planning disposition).** [12-18](12-18-PLAN.md)'s exact-identity consent/owner-hardware checkpoint and bounded diagnostic must establish a supported in-scope causal finding; [12-19](12-19-PLAN.md)'s conditional correction and local gates must then pass. Together with [12-17](12-17-PLAN.md)'s complete local WASI evidence, these precede [12-16](12-16-PLAN.md)'s unchanged ordinary packaged-host proof. Refusal, unknown causality or failed gates keep that proof blocked. | Feasibility, causal findings, correction results and actual host delivery are unknown. No host result is presumed, no allowance is renewed, and PLAY-03 remains pending. |
+| Q3 — cheapest Windows publisher remedy | **RESOLVED (planning disposition); measurement and remedy selection deferred to 12-02 tasks 1–2.** Retain complete same-runner-class current/base Windows measurement, source/workload identities and representative pass/fault evidence before selecting a remedy per D-09/D-10. | Actual measurement, remedy selection and shipped measured improvement remain unknown; local macOS timing supplies none of them and 12-02 remains blocked. |
+| Q4 — current Playstead revision and dirty state | **RESOLVED (planning disposition).** No live Playstead revision/dirty-state snapshot is frozen now. [12-03](12-03-PLAN.md) task 2's read-only refresh of current sibling HEAD and relevant adapter/pin/readiness/launch dirty files immediately before writing remains the source of current metadata per D-07/D-08. Historical metadata stays historical; no sibling edits are assigned. | Refreshed metadata and actual paired launch, visible response/input, orderly return and fresh-process battery continuity remain pending. |
+
+This docs-only clarification performs no execution, measurement, metadata refresh,
+permission request, host action or remote action. Preserve the immutable 12-14/15
+receipts, accepted 0/4, pending requirements, the 12-01 halt and all spent
+allowances; Phases 13/14 are unchanged.
