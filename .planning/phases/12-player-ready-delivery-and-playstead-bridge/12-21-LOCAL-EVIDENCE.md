@@ -1,6 +1,6 @@
 # Plan 12-21 local evidence
 
-**Disposition at task 2:** The generated native and WASI state-control routes and the complete local WASI lane pass. Final native/hygiene gates are recorded below as they run; Phase 12 remains accepted 0/4. This is local prerequisite evidence only and makes no claim about RetroArch input delivery, released-core readiness, hosted CI, or Playstead.
+**Disposition:** All three plan tasks pass: generated native and WASI state-control routes, complete local WASI lane, and final native/package/format/hygiene gates. Phase 12 remains accepted 0/4. This is local prerequisite evidence only and makes no claim about RetroArch input delivery, released-core readiness, hosted CI, or Playstead.
 
 ## Frozen source and preserved failure
 
@@ -50,7 +50,20 @@ The complete corrected-source lane passed before any runner scheduling change. T
 
 The full report SHA-256 is `7817a1d3a3a056fe832cccff8ac9ad139830d58b81e807f3bca58281733bac06`. In that complete report, `retroarch.states.controls` passed in 0.166 seconds; `runner.movie.v2_edges` passed in 5.370 seconds under its unchanged six-second limit; and `runner.region.pal` passed in 3.405 seconds under its unchanged four-second limit. No cause is attributed to the prior timeout results. The full WASI result establishes only this retained local advisory SDK lane, not hosted CI or PLAY-03 acceptance. Run URL: N/A-local.
 
+## Task 3 — final native workflow, hygiene, and bounded review
+
+All final gates ran after the implementation source was frozen. The only tracked implementation change is the emulator-list route in `tests/diag/tests.cmake`; `tests/runner/tests.cmake` is byte-identical to the frozen base. The lesson and evidence ledger are documentation changes. The protected 1,051-file source, fixture, pin, preset, and inventory baseline matches its frozen identities.
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cmake --workflow --preset ci` | 0 | Full native workflow passed 700/700 ordinary tests, produced library/libretro/runner ZIP packages, and passed all 6/6 release tests. |
+| `cmake --preset hygiene` | 0 | Existing hygiene configuration completed without acquiring tools. |
+| `ctest --test-dir build/hygiene -R '^hygiene[.]format$' --no-tests=error --output-on-failure` | 0 | Registered formatter case passed on the final source. |
+| `scripts/hygiene.sh --tree` | 0 | Tracked-tree hygiene passed, including a final recheck after writing this ledger. |
+| `git diff --check 018de7728f746e7c41f86b8e21f7383be0ff636d -- tests/diag/tests.cmake tests/runner/tests.cmake .planning/LESSONS.md .planning/phases/12-player-ready-delivery-and-playstead-bridge` | 0 | Frozen-base delta passed whitespace validation. |
+
+Bounded review found no material issues. The CMake change forwards the configured emulator as a list, preserving semicolon-separated argv and the empty native command; both existing fault/control modes are still exercised by native and WASI runs. No test bodies, assertions, fixtures, labels, inventories, or deadlines changed. The complete corrected WASI run did not reproduce either named runner timeout, so there is no scheduling mitigation or unsupported attribution. No product API, package, SDK, runtime, or permission/host operation was added. Run URL: N/A-local.
+
 ## Resource bounds
 
-The fixed 45-minute local cutoff is `2026-11-07T17:24:24.621416Z`. The WASI cutoff above includes configuration through the final complete portable JUnit audit. At the end of the WASI audit, attributable growth was 1,392,690 bytes against the 2 GiB cap. Reused SDK/archive/runtime sizes are recorded separately in ignored `build/phase12-gap21-evidence/budget.json`.
-
+The fixed 45-minute local cutoff is `2026-11-07T17:24:24.621416Z`; all bounded commands finished by `2026-11-07T16:54:16.636197Z`. The WASI cutoff above includes configuration through the final complete portable JUnit audit. Peak measured attributable growth across the recorded commands was 1,503,776 bytes against the 2 GiB cap. Reused SDK/archive/runtime sizes are recorded separately in ignored `build/phase12-gap21-evidence/budget.json`. No cutoff or scratch cap was exceeded.
