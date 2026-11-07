@@ -903,6 +903,7 @@ else()
 endif()
 set(states_controls_template [=[
 set(DRIVER "@DRIVER@")
+set(EMULATOR [==[@EMULATOR@]==])
 set(RECEIPT_DRIVER "@RECEIPT_DRIVER@")
 set(ROOT "@ROOT@")
 set(CMAKE_BIN "@CMAKE_BIN@")
@@ -929,7 +930,7 @@ string(FIND "${missing_support_out}${missing_support_err}" "tests/common/bmp.c" 
 if(missing_support_rc STREQUAL "0" OR missing_support_label EQUAL -1 OR missing_support_path EQUAL -1)
   message(FATAL_ERROR "RetroArch support report did not reject the missing common BMP reader: ${missing_support_rc}\n${missing_support_out}${missing_support_err}")
 endif()
-execute_process(COMMAND "${DRIVER}" --fault-controls RESULT_VARIABLE rc
+execute_process(COMMAND ${EMULATOR} "${DRIVER}" --fault-controls RESULT_VARIABLE rc
   OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 15)
 if(NOT rc STREQUAL "0")
   message(FATAL_ERROR "RetroArch state fault controls failed: ${rc}\n${out}${err}")
@@ -943,7 +944,7 @@ set(SAVE_DIR "${prelaunch_root}/save")
 set(STATES_CONFIG
   "network_cmd_enable = \"true\"\nnetwork_cmd_port = \"0\"\nstate_slot = \"0\"\nsavestate_auto_index = \"false\"\nsavestate_auto_save = \"false\"\nsavestate_auto_load = \"false\"\nautosave_interval = \"0\"\nrewind_enable = \"true\"\nrewind_granularity = \"1\"\nscreenshot_format = \"bmp\"\n")
 configure_file("${ROOT}/tests/retroarch/test.cfg.in" "${prelaunch_root}/test.cfg" @ONLY)
-execute_process(COMMAND "${DRIVER}" --prelaunch-controls "${prelaunch_root}/test.cfg"
+execute_process(COMMAND ${EMULATOR} "${DRIVER}" --prelaunch-controls "${prelaunch_root}/test.cfg"
   RESULT_VARIABLE prelaunch_rc OUTPUT_VARIABLE prelaunch_out ERROR_VARIABLE prelaunch_err TIMEOUT 15)
 if(NOT prelaunch_rc STREQUAL "0")
   message(FATAL_ERROR "RetroArch state prelaunch controls failed: ${prelaunch_rc}\n${prelaunch_out}${prelaunch_err}")
@@ -1112,6 +1113,7 @@ endif()
 message("retroarch states: strict replies, owned-child faults, and symlink cleanup guard pass")
 ]=])
 set(DRIVER "$<TARGET_FILE:muhtari-test-retroarch-states>")
+set(EMULATOR "${CMAKE_CROSSCOMPILING_EMULATOR}")
 set(RECEIPT_DRIVER "${receipt_driver}")
 set(ROOT "${PROJECT_SOURCE_DIR}")
 set(CMAKE_BIN "${CMAKE_COMMAND}")
