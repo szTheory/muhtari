@@ -15,6 +15,7 @@ affects:
 actuals:
   tasks: 3
   commits: 3
+commits: 3
 tech-stack:
   added: []
   patterns:
@@ -88,6 +89,12 @@ The preflight denial stopped the conditional diagnostic before its invocation re
 | 1. Prepare exact consent route and isolated controls | Passed; real-route helper, mock controls, cached host/core/parser and owned cartridge were qualified without real API calls or RetroArch launch. |
 | 2. Owner decision | Explicit approval recorded for the exact request and one local hardware diagnostic. |
 | 3. Run approved diagnostic | Halted before content: request exit 77 (`denied`), follow-up preflight exit 77 (`denied`), so no diagnostic invocation was reserved. |
+
+## Task Commits
+
+1. **Prepare the exact consent route and controls** — `4f8f75b`.
+2. **Record the owner decision checkpoint in project state** — `b41712d`.
+3. **Record the authorized request, denied preflight, and halted outcome** — `62f45af`.
 
 ## Recorded Results
 
