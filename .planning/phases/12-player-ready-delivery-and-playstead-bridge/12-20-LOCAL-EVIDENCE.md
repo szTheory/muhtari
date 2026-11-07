@@ -68,3 +68,16 @@ The total verification window was fixed at `2026-11-07T14:42:12Z` with a `15:27:
 **Pass for this fixture repair:** the file belongs to the test's binary directory and its target; no product API, core storage, general file abstraction, dependency, test registration or new preopen was added. The exclusive open avoids truncating a competing file. Each observation rejects failed I/O and verifies the cursor/content contract, while `CHECK` failures still flow through close and removal. The two fault controls fail at the intended cursor/content boundary. The extra work is one small local file and a few fixed-size operations in the existing case. No fixture defect or threat surface was found under `.planning/preparation/ENGINEERING.md` §11.
 
 This review does not clear the unrelated full-lane failures, hosted CI's distinct sysroot, actual RetroArch delivery, any permission state or PLAY-03. No RetroArch/content process, event-post API, Accessibility/TCC/settings operation, remote CI, publication or Phase 14 action occurred.
+
+## Follow-up timeout diagnosis (2026-11-07)
+
+To distinguish test logic failures from the full-lane timeout, the two runner cases were run once with a bounded 30-second outer timeout and the existing WASI build:
+
+```text
+ctest --test-dir build/wasm32 -R '^runner[.](movie[.]v2_edges|region[.]pal)$' --timeout 30 --no-tests=error --output-on-failure --output-junit ../phase12-gap20-evidence/diagnostic-timeout-sample.xml
+exit status: 0
+```
+
+The required `input.cart_files` and `runner.probe.images` fixtures passed. `runner.movie.v2_edges` completed in 2.86 seconds and `runner.region.pal` in 1.52 seconds, both below their registered 6- and 4-second CTest limits. The larger diagnostic ceiling did not affect these measured durations. This was a focused timing diagnosis, not a rerun of the complete WASI lane and not acceptance evidence.
+
+The WASI test preset sets `execution.jobs` to an empty string, which CMake 4.4 maps to `ctest --parallel` without a numeric job limit. Combined with these cases' many Wasmtime subprocesses, this makes scheduling contention a plausible explanation for the full-workflow timeouts. It is an inference, not yet reproduced as the cause. A follow-up local plan can test serial isolation for just these two cases while retaining their current deadlines, and pass the emulator through the direct driver call in `retroarch.states.controls`. The original full-workflow failure remains authoritative until the corrected complete workflow and exact JUnit audit pass.
