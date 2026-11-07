@@ -7,14 +7,14 @@ current_phase_name: Player-ready delivery and Playstead bridge
 current_plan: 15 of 18
 status: blocked
 stopped_at: Plan 12-18 halted after its sole request and postflight both returned denied; no diagnostic ran
-last_updated: "2026-11-07T14:24:37.699Z"
+last_updated: "2026-11-07T16:13:29.691Z"
 last_activity: 2026-11-07
-state_head: 20bc2bce59b9d9486f1f5e21835dee65ecc07206
+state_head: f8636f91f7f999b066f9114c0a61ec7b1972c50f
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 58
-  completed_plans: 52
+  total_plans: 59
+  completed_plans: 53
   percent: 33
 ---
 
@@ -25,20 +25,20 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 12 remains accepted 0/4. Plan 12-20 fixed the WASI-incompatible `tmpfile()` fixture; its native and WASI battery tracers, full native workflow, formatting and hygiene passed. Its complete 622-case WASI workflow remains halted by three cases: `retroarch.states.controls` executes a WASI module without Wasmtime, while `runner.movie.v2_edges` and `runner.region.pal` hit their existing timeouts. Plan 12-20 is terminal halted and no gap plan is runnable. Plan 12-16 depends on 12-20/18/19; Plan 12-18's exact request and one follow-up preflight were denied, its request allowance is spent, and 12-19 still lacks supported causal evidence. Preserve the 12-01 halt, every host/remote stop, and the separate Phase 14 Plan 14-31 stop.
+Current focus: Phase 12 remains accepted 0/4. Newly authorized Plan 12-21 is the only runnable plan: route the two state-driver controls through the configured Wasmtime emulator, then rerun the full WASI lane. If the same runner timeouts recur, isolate only those two WASI tests without changing deadlines. RetroArch 1.22.2 is installed and signed; direct executable launch aborts in macOS `NSApplicationMain`, and `open -a` cannot reach the unavailable Launch Services registration server. Native app control loaded the project core and checked-in fixture and displayed the game. This verifies startup/rendering only, not held/released input. Plan 12-18's denied event-post request remains spent; do not retry it or change macOS permissions. Preserve the 12-01 halt, remote/host stops and separate Phase 14 Plan 14-31 stop.
 
 ## Current Position
 
-Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED; no plans are runnable
-Current Plan: 12-20 (Wave 1; terminal halted)
-Plan: Plan 12-17's original `tmpfile()` build failure remains immutable. Plan 12-20 replaced that fixture, and its battery tracer passes on native and WASI; native CI passed 700 tests and 6 release/package checks, and formatting/tree hygiene pass. Its complete local WASI lane still fails: `retroarch.states.controls` directly invokes the WASI module instead of using the configured emulator, and `runner.movie.v2_edges`/`runner.region.pal` hit their 6-second/4-second limits. The exact 622-case JUnit report rejects these three cases. Plan 12-18's exact request and one follow-up preflight both returned denied (exit 77) before any diagnostic reservation or RetroArch/content child; its request allowance is spent. Plan 12-16 depends on 12-20/18/19, and 12-19 still requires supported causality from 12-18. Plans 12-02/03/04 remain blocked by the 12-01 halt. Phase 12 remains accepted 0/4.
-Status: Phase acceptance is blocked on the local WASI gate, denied host-input permission, and missing causal/host evidence. Plan 12-20 is terminal halted; the one gap round for this phase has been used.
-Next action: No GSD command is valid under the current one-gap-round limit. The evidence supports a proposed second, bounded local plan to use the configured Wasmtime emulator in `retroarch.states.controls` and investigate the two timeout cases without weakening their assertions. That plan would not renew the spent permission request or authorize a RetroArch/content run, remote CI or Phase 14 work. Preserve the separate Phase 14 Plan 14-31 stop.
+Phase: 12 (Player-ready delivery and Playstead bridge) — READY TO EXECUTE
+Current Plan: 12-21 (Wave 1; ready to execute)
+Plan: Plan 12-17's original `tmpfile()` build failure remains immutable. Plan 12-20 replaced that fixture and passed its battery tracers, native workflow, formatting and hygiene; its full WASI report remains failed on `retroarch.states.controls` and the two registered runner timeouts. Plan 12-21 is the explicitly authorized second local gap scope and fixes the missing emulator route before rerunning the unchanged full WASI lane. Its reviewed plan includes conditional metadata checks if the same timeouts recur. Separately, the installed RetroArch app loaded the project core and checked-in cartridge through native app control and rendered a frame; direct shell launch and `open -a` hit macOS launch-context/service failures. No keyboard/event-post test ran. Plan 12-18's request and follow-up remain denied and spent. Plan 12-16 now depends on 12-21/18/19, so it remains blocked; Phase 12 acceptance remains 0/4. Plans 12-02/03/04 remain blocked by the 12-01 halt.
+Status: Phase acceptance is still blocked on full local WASI evidence, actual held/released input and supported causal/host evidence. Plan 12-21 is the only runnable plan. The owner authorized its bounded local execution and a separate startup smoke; this does not renew permission, hosted CI or Phase 14 authority.
+Next action: `$gsd-execute-phase 12 --gaps-only` — execute Plan 12-21 only. Preserve the spent 12-18 permission attempt and separate Phase 14 Plan 14-31 stop.
 Boundary: Plan 14-24 offline controls passed, then the generated controller's exact-input check found a 62-character expected MAME digest while `pins.txt` and the local input agree on the correct 64-character hash. Qualification invocation, Docker contact and protected workload starts are all zero; no container existed to clean up, and the pair is ineligible. Its one wave-1 local gate failed during configure because `tests/inventory/ci.txt` is unsorted; no build or test step ran, and that Plan 14-24 scope is not retried. Plan 14-26 corrected the inventory, but its one automatic local workflow exited 8 because `build/pins/wasmtime/wasmtime` is AArch64 Linux ELF on Darwin arm64; the scope is halted and the gate cannot be retried. Plan 14-27's one pinned artifact fetch, read-only identity/preservation checks, and its one automatic local workflow passed (CTest 695/695; release tests 6/6). Plan 14-25's RED/GREEN offline controls passed; its single independent R `cmake --workflow --preset ci` exited 8 after 694/695 ordinary tests passed, with `title.pin.self_test` timing out and `/bin/ps` denied by the environment. The saved-only inventory check confirmed the failure. No package, release, hygiene, E/frozen gate, checkpoint, push, dispatch, RetroArch, Docker, or host work followed. Preserve the Plan 14-23 stop and its completed exact-owned cleanup, older stops, prior unknown parent timeout cause, spent host allowance, pending FRONT-02/03/04, native/pinned-host acceptance separation and the Phase 12 halt. This local gate is spent and is not retried under the current scope.
 
 ## Current Blockers
 
-- Phase 12 Plans 12-14/15/17/18/20 remain terminal halted with immutable receipts. Plan 12-17's exact SDK passed its focused WASI mocks, then its full workflow halted compiling `tests/core/test_state.c:2022` because WASI does not support `tmpfile()` under `-Werror`. Plan 12-20 fixes that test fixture and its native/WASI battery tracers, full native CI, formatter and hygiene pass. Its full 622-case WASI workflow and exact JUnit audit remain halted on three cases: `retroarch.states.controls` directly executes a WASI module without Wasmtime; `runner.movie.v2_edges` and `runner.region.pal` reach their existing 6-second/4-second timeouts. No retry or timeout/source change followed. Plan 12-18's authorized request and sole postflight both returned denied (exit 77); it halted before diagnostics/content with its request allowance spent. Plan 12-19 needs supported causal evidence from 12-18; Plan 12-16 depends on 12-20/18/19. No gap plan is runnable, the one gap round has been used, and acceptance remains 0/4. See [12-14 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-14-LOCAL-EVIDENCE.md), [12-15 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-15-LOCAL-EVIDENCE.md), [12-17 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-17-LOCAL-EVIDENCE.md), [12-18 consent evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-18-CONSENT-EVIDENCE.md), and [12-20 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-20-LOCAL-EVIDENCE.md).
+- Phase 12 Plans 12-14/15/17/18/20 remain terminal halted with immutable receipts. Plan 12-17's exact SDK passed its focused WASI mocks, then its full workflow halted compiling `tests/core/test_state.c:2022` because WASI does not support `tmpfile()` under `-Werror`. Plan 12-20 fixes that test fixture and its native/WASI battery tracers, full native CI, formatter and hygiene pass. Its full 622-case WASI workflow remains failed on `retroarch.states.controls` directly invoking a WASI module without Wasmtime and the two runner timeouts. Plan 12-21 now provides the only runnable local recovery. Plan 12-18's request and follow-up remain denied (exit 77) with its allowance spent; Plan 12-19 still needs supported causality and Plan 12-16 depends on 12-21/18/19. Acceptance remains 0/4. See [12-14 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-14-LOCAL-EVIDENCE.md), [12-15 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-15-LOCAL-EVIDENCE.md), [12-17 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-17-LOCAL-EVIDENCE.md), [12-18 consent evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-18-CONSENT-EVIDENCE.md), and [12-20 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-20-LOCAL-EVIDENCE.md).
 - Root-merge reconciliation corrected the Phase 14 `support-report` file path to `tests/common/bmp.c`. The existing `retroarch.states.controls` test now checks both the successful report and a missing-reader failure. Its local pass does not clear the Phase 14 workflow gate or authorize host work.
 - The historical BIOS timeout cause remains unknown. The approved five-test RUN_SERIAL mitigation preserved one-second limits; after it, the independent parent and frozen source passed complete CI and hygiene workflows. This does not attribute the earlier timeouts.
 - Plan 14-13 is complete: the exact five RUN_SERIAL properties and metadata fault controls passed, and the sole focused batch passed 7/7 including both fixture setup tests. That batch is consumed; do not retry it. No deadline or unrelated test metadata changed.
@@ -137,10 +137,10 @@ Current repair source/evidence hashes and preservation checks belong to the
 linked outcome; earlier unchanged-source preservation checks are historical.
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Current Plan: 12-20 of 19 active plans (halted)
-Plan: 0 of 4 acceptance plans accepted. Plan 12-20 fixed the WASI `tmpfile()` compile blocker but its full portable WASI lane still fails the emulator invocation in `retroarch.states.controls` and existing timeouts in `runner.movie.v2_edges` and `runner.region.pal`; the exact complete JUnit audit rejected those cases. Plan 12-18's request/postflight remain denied with no RetroArch child and its request allowance spent. Plan 12-19 still needs causal evidence; 12-16 depends on 12-20/18/19. No plans are runnable and the one gap round has been used. Plan 12-01 remains halted; 12-02/03/04 remain blocked.
-Status: Acceptance remains blocked on local WASI, actual held/released RetroArch input, and causal evidence.
-Next local step: No GSD command is valid under the current one-gap-round limit. The recommended path, if the owner authorizes another local gap round, is `$gsd-plan-phase 12 --gaps` focused on the three newly evidenced WASI failures. This would not authorize another permission request, a settings/TCC operation, RetroArch/content launch, remote CI, or Phase 14 work. TUNE-06, PLAY-01/02/04, final TUNE-07 disposition and Phase 14 acceptance remain separate.
+Current Plan: 12-21 of 20 active plans (ready)
+Plan: 0 of 4 acceptance plans accepted. Plan 12-21 is the only runnable recovery: fix the missing configured emulator route for the WASI state controls, rerun the full lane, and apply only the specified two-test WASI serialization if the same timeouts recur. The denied 12-18 event-post request remains spent. Plan 12-16 depends on 12-21/18/19; Phase 12 acceptance remains blocked and unwaived. Plan 12-01 remains halted; 12-02/03/04 remain blocked.
+Status: Acceptance remains blocked on the full local WASI gate, actual held/released RetroArch input, and causal evidence.
+Next local step: `$gsd-execute-phase 12 --gaps-only` to run Plan 12-21. It is local only; it does not retry event-post permission, use remote CI, or start Phase 14. TUNE-06, PLAY-01/02/04, final TUNE-07 disposition and Phase 14 acceptance remain separate.
 Last activity: 2026-11-07
 Progress: [███░░░░░░░] 33%
 
@@ -150,7 +150,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 
 | Phase | Plans | Total | Avg/Plan |
 |---|---|---|---|
-| 12 | 0/4 accepted; 14/19 active plans have outcomes | — | — |
+| 12 | 0/4 accepted; 14/20 active plans have outcomes | — | — |
 | 13 | 8 | - | - |
 | 14 | 9 plans completed; phase incomplete | — | — |
 **Per-Plan Metrics:**
