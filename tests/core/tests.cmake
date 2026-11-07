@@ -49,6 +49,10 @@ target_include_directories(muhtari-test-state PRIVATE ${CMAKE_SOURCE_DIR}/src
 target_link_libraries(muhtari-test-state PRIVATE muhtari::muhtari)
 set_target_properties(muhtari-test-state PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+# The battery test owns this file inside the current preset's build preopen.
+file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/tests/state-battery-host.tmp" state_host_file_path)
+target_compile_definitions(muhtari-test-state PRIVATE
+  STATE_HOST_FILE_PATH=\"${state_host_file_path}\")
 muhtari_warnings(muhtari-test-state)
 foreach(case IN ITEMS aliases battery fields lifecycle payload topologies equality_report)
   muhtari_add_test(NAME core.state.${case} COMMAND muhtari-test-state ${case}

@@ -17,6 +17,10 @@
 #define STATE_EXPANSION_BYTES 131072u
 #define STATE_MAX_BYTES 307932u
 
+#ifndef STATE_HOST_FILE_PATH
+#error "The state test requires its build-owned host file path"
+#endif
+
 enum state_fixture {
     STATE_LINEAR,
     STATE_CART_RAM,
@@ -48,6 +52,34 @@ static int16_t public_audio_reference[3u][962u];
 static uint8_t invalid_image[4] = {0u, 0u, 0u, 0u};
 static uint8_t battery_control[34816u];
 static muhtari snapshot;
+
+static const uint8_t state_host_file_marker[] = "host owns battery persistence";
+
+static int state_host_file_matches(FILE *file, long expected_position)
+{
+    uint8_t observed[sizeof state_host_file_marker];
+    long initial_position;
+    long observed_position;
+
+    if (file == NULL || expected_position < 0)
+        return 0;
+    initial_position = ftell(file);
+    if (initial_position < 0 || initial_position != expected_position)
+        return 0;
+    if (fseek(file, 0L, SEEK_SET) != 0)
+        return 0;
+    if (fread(observed, 1u, sizeof observed, file) != sizeof observed || ferror(file))
+        return 0;
+    observed_position = ftell(file);
+    if (observed_position < 0 || observed_position != (long)sizeof observed)
+        return 0;
+    if (memcmp(state_host_file_marker, observed, sizeof observed) != 0)
+        return 0;
+    if (fseek(file, expected_position, SEEK_SET) != 0)
+        return 0;
+    observed_position = ftell(file);
+    return observed_position >= 0 && observed_position == expected_position;
+}
 
 enum boundary_mode { BOUNDARY_AFTER_INSTANCE, BOUNDARY_AFTER_CART };
 struct boundary_allocator {
@@ -2018,14 +2050,18 @@ static void test_battery(void)
     CHECK_EQ_U64(source_observations, source_calls);
     struct muhtari__savekey pending_snapshot = source->savekey;
 
-    static const uint8_t file_marker[] = "host owns battery persistence";
-    FILE *host_file = tmpfile();
+    /* This exact build-owned path is an observer canary, not core storage. */
+    (void)remove(STATE_HOST_FILE_PATH);
+    FILE *host_file = fopen(STATE_HOST_FILE_PATH, "w+x");
     CHECK(host_file != NULL);
     long host_position = -1;
     if (host_file != NULL) {
-        CHECK_EQ_U64(fwrite(file_marker, 1u, sizeof file_marker, host_file), sizeof file_marker);
+        CHECK_EQ_U64(fwrite(state_host_file_marker, 1u, sizeof state_host_file_marker, host_file),
+                     sizeof state_host_file_marker);
         CHECK_EQ_U64(fflush(host_file), 0u);
         host_position = ftell(host_file);
+        CHECK(host_position >= 0);
+        CHECK_EQ_U64(host_position, sizeof state_host_file_marker);
     }
 
     peer->battery.generation = UINT64_MAX;
@@ -2144,13 +2180,30 @@ static void test_battery(void)
     CHECK_EQ_HEX(peer->battery.data[2051u], 0x5Au);
 
     if (host_file != NULL) {
+        CHECK(state_host_file_matches(host_file, host_position));
         CHECK_EQ_U64(ftell(host_file), host_position);
-        CHECK_EQ_U64(fseek(host_file, 0L, SEEK_SET), 0u);
-        uint8_t file_after[sizeof file_marker];
-        CHECK_EQ_U64(fread(file_after, 1u, sizeof file_after, host_file), sizeof file_marker);
-        CHECK(memcmp(file_marker, file_after, sizeof file_marker) == 0);
+        if (host_position >= 0) {
+            CHECK_EQ_U64(fseek(host_file, 0L, SEEK_SET), 0u);
+            CHECK(!state_host_file_matches(host_file, host_position));
+
+            CHECK_EQ_U64(fseek(host_file, 0L, SEEK_SET), 0u);
+            CHECK_EQ_U64(fputc((int)(state_host_file_marker[0] ^ 1u), host_file),
+                         (int)(state_host_file_marker[0] ^ 1u));
+            CHECK_EQ_U64(fflush(host_file), 0u);
+            CHECK_EQ_U64(fseek(host_file, host_position, SEEK_SET), 0u);
+            CHECK(!state_host_file_matches(host_file, host_position));
+
+            CHECK_EQ_U64(fseek(host_file, 0L, SEEK_SET), 0u);
+            CHECK_EQ_U64(
+                fwrite(state_host_file_marker, 1u, sizeof state_host_file_marker, host_file),
+                sizeof state_host_file_marker);
+            CHECK_EQ_U64(fflush(host_file), 0u);
+            CHECK_EQ_U64(fseek(host_file, host_position, SEEK_SET), 0u);
+            CHECK(state_host_file_matches(host_file, host_position));
+        }
         CHECK_EQ_U64(fclose(host_file), 0u);
     }
+    CHECK_EQ_U64(remove(STATE_HOST_FILE_PATH), 0u);
 
     muhtari_destroy(peer);
     muhtari_destroy(source);
