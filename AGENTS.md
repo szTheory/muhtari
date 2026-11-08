@@ -18,6 +18,7 @@
 - Owner preference (2026-11-05): do not ask the owner to switch directories between checkouts. Select the correct worktree internally with the tool working directory and leave the owner's shell/root checkout unchanged. Explain the branch/worktree reason only when it affects which snapshot is safe to use.
 - Owner preference (2026-11-06): when asked to get a tangled OpenGSD state back on track, reconcile the canonical root checkout, worktree ancestry and dirt, milestone roadmap, STATE, verification and saved receipts before recommending a command. Repair recoverable local planning drift and continue the authorized work; do not hand back a stale or invalid command as the next step.
 - Owner preference (2026-11-06): before merging parallel worktrees, compare committed ancestry and dirty-file contents against the root branch and `origin/main`. Keep the root checkout canonical; do not merge or cherry-pick changes already ancestral or represented by newer root content, and preserve dirty checkouts until their uncommitted contents are reconciled.
+- Owner preference (2026-11-08): prefer simulated, offline and CLI checks; avoid recurring control of the owner's Mac. Run a real UI/input check only when it answers a concrete question that automation cannot, and then provide one isolated owner-run command with its evidence value and limits. Keep the relevant host and permission scope closed unless separately authorized.
 - Owner preference (2026-11-06): a newly authorized bounded evidence scope is carried through its plan, local prerequisites, one explicitly capped host attempt, evidence review and bookkeeping. Keep older attempts closed and other phase-specific stops intact; at handoff give one exact next OpenGSD command, or say which actor must act and why no command is valid.
 - Owner preference (2026-11-03, clarified 2026-11-05): carry approved work through implementation, local builds/tests, reviews, planning bookkeeping, and routine CI without step-by-step confirmation. A local attempt cap does not require renewed approval under the standing preauthorization above. Pause for a real plan checkpoint, a materially new remote/host/identity-bound or irreversible action, or a local workload expected to take about an hour or more.
 - Owner preference (2026-11-03, clarified 2026-11-05): keep resource caps concrete and measured. Local runs and bounded retries under the standing authorization are pre-approved; qualify syntax and capability before launch, count workload only after it starts, and investigate a failure before retrying. Do not renew live or remote allowances under this local authorization.
@@ -62,12 +63,15 @@ evidence.
 6. **Verification is automation-first; the owner verifies nothing by default.** This is settled; do not
    re-propose it. Deterministic checks go in tests; integration, end-to-end and smoke checks go in CI when they
    catch recurring regressions; a check with no recurring value is run once by the agent and recorded as a
-   command and an exit status. The agent makes the judgement calls itself: it reads docs against the code, views
-   images and screenshots, and runs RetroArch. What only a merge can show is confirmed at ship (rule 9), not in
-   UAT. During `$gsd-verify-work`, the agent gathers and records every result it can verify from local checks,
-   CI receipts, logs, screenshots and project artifacts; do not ask for blanket UAT confirmation when no item
-   requires human judgment. Ask the owner only for identity-bound consent (the App key, admin settings, a merge)
-   or a run on their own hardware, and say why.
+   command and an exit status. The agent makes the judgement calls itself: it reads docs against the code and
+   views images and screenshots. It runs RetroArch only for an authorized check with a concrete evidence value.
+   Prefer simulated, offline and CLI checks; do not take over the owner's Mac by default. If physical input is
+   uniquely informative, prepare one isolated owner-run command and explain exactly what it proves and what it
+   cannot prove. What only a merge can show is confirmed at ship (rule 9), not in UAT. During
+   `$gsd-verify-work`, the agent gathers and records every result it can verify from local checks, CI receipts,
+   logs, screenshots and project artifacts; do not ask for blanket UAT confirmation when no item requires human
+   judgment. Ask the owner only for identity-bound consent (the App key, admin settings, a merge) or a run on
+   their own hardware, and say why.
 7. **Proportional gates.** Repository checks use CMake `-P` or POSIX sh and reuse existing mechanisms.
    A new or materially changed check names its concrete fault and exercises representative pass/fault behavior;
    consolidation preserves required behavior and fault detection. For architecture review and new resource

@@ -50,6 +50,7 @@ if(TARGET muhtari_libretro_input_trace)
     "-DMODULE=$<TARGET_FILE:muhtari_libretro_input_trace>"
     "-DINFO=${PROJECT_BINARY_DIR}/libretro/muhtari_libretro.info"
     "-DROOT=${PROJECT_SOURCE_DIR}"
+    "-DBUILD=${PROJECT_BINARY_DIR}"
     "-DWORK=${PROJECT_BINARY_DIR}/tests/input-trace"
     -P ${PROJECT_SOURCE_DIR}/tests/libretro/input_trace.cmake)
 endif()

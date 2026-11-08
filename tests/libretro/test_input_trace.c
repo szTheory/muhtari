@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,6 +87,247 @@ static int collect(const char *dir, int dump)
              "pairing-does-not-establish-same-host-clock-domain-or-input-delivery");
     }
     return !paired;
+}
+static int manual_sequence(const it_trace *trace)
+{
+    if (trace->status != IT_COMPLETE || !trace->clock_ok)
+        return 0;
+    int polling = 0;
+    unsigned stage = 0, seen = 0;
+    uint32_t values[2] = {0, 0};
+    for (uint32_t i = 0; i < trace->count; i++) {
+        const it_record *record = &trace->records[i];
+        if (record->type == IT_POLL) {
+            if (record->a > 1u)
+                return 0;
+            polling = record->a == 1u;
+            stage = 0;
+            seen = 0;
+        } else if (record->type == IT_UNAVAILABLE) {
+            polling = 0;
+            stage = 0;
+            seen = 0;
+        } else if (record->type == IT_STATE) {
+            unsigned slot;
+            if (record->a == 4u)
+                slot = 0;
+            else if (record->a == 0u)
+                slot = 1;
+            else
+                return 0;
+            if (record->b > 1u || record->c != 0u)
+                return 0;
+            if (!polling)
+                continue;
+            values[slot] = record->b;
+            seen |= 1u << slot;
+            if (seen != 3u)
+                continue;
+            if (stage == 0u && values[0] == 0u && values[1] == 0u)
+                stage = 1u;
+            else if (stage == 1u && values[0] == 1u && values[1] == 1u)
+                stage = 2u;
+            else if (stage == 2u && values[0] == 0u && values[1] == 0u)
+                return 1;
+        }
+    }
+    return 0;
+}
+static int manual_core(const char *path)
+{
+    it_trace trace;
+    it_read(path, IT_CORE, &trace);
+    if (trace.status != IT_COMPLETE || !trace.clock_ok) {
+        fprintf(stderr,
+                "manual input trace is %s (clock_ok=%s); callback evidence is inconclusive\n",
+                it_status_name(trace.status), trace.clock_ok ? "yes" : "no");
+        return 1;
+    }
+    if (!manual_sequence(&trace)) {
+        fprintf(
+            stderr,
+            "input callback sequence not observed (Up and B neutral, both held, then released); "
+            "this does not identify focus, mapping, backend, or owner-action cause\n");
+        return 1;
+    }
+    puts("input callbacks sampled Up=0+B=0, Up=1+B=1, then Up=0+B=0; "
+         "visible cartridge progression remains a separate owner observation");
+    return 0;
+}
+enum manual_fixture_case {
+    MF_VALID,
+    MF_NO_ACTIVE_POLL,
+    MF_ONE_BUTTON,
+    MF_NONOVERLAP,
+    MF_NO_NEUTRAL,
+    MF_NO_RELEASE,
+    MF_UNAVAILABLE,
+    MF_UNEXPECTED,
+    MF_NO_END,
+    MF_SATURATED,
+    MF_UNAVAILABLE_RESET,
+    MF_DISABLED_RESET,
+    MF_CLOCK,
+    MF_CORRUPT,
+    MF_TRUNCATED
+};
+static void manual_emit_neutral(it_writer *writer)
+{
+    it_emit(writer, IT_STATE, 4, 0, 0);
+    it_emit(writer, IT_STATE, 0, 0, 0);
+}
+static void manual_emit_held(it_writer *writer)
+{
+    it_emit(writer, IT_STATE, 4, 1, 0);
+    it_emit(writer, IT_STATE, 0, 1, 0);
+}
+static void manual_emit_released(it_writer *writer)
+{
+    it_emit(writer, IT_STATE, 4, 0, 0);
+    it_emit(writer, IT_STATE, 0, 0, 0);
+}
+static int manual_write_fixture(const char *path, enum manual_fixture_case which)
+{
+    int fd = create(path);
+    if (fd < 3)
+        return 0;
+    fault = which == MF_CLOCK ? 3 : 0;
+    it_writer writer;
+    int begun = it_begin(&writer, fd, IT_CORE, (uint32_t)getppid());
+    if (!begun) {
+        close(fd);
+        fault = 0;
+        return 0;
+    }
+    if (which == MF_NO_ACTIVE_POLL) {
+        it_emit(&writer, IT_POLL, 0, 0, 0);
+        manual_emit_neutral(&writer);
+        manual_emit_held(&writer);
+        manual_emit_released(&writer);
+    } else if (which == MF_ONE_BUTTON || which == MF_NONOVERLAP) {
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        manual_emit_neutral(&writer);
+        it_emit(&writer, IT_STATE, 4, 1, 0);
+        if (which == MF_NONOVERLAP)
+            it_emit(&writer, IT_STATE, 4, 0, 0);
+        it_emit(&writer, IT_STATE, 0, 1, 0);
+        if (which == MF_NONOVERLAP)
+            it_emit(&writer, IT_STATE, 0, 0, 0);
+    } else if (which == MF_NO_NEUTRAL) {
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        manual_emit_held(&writer);
+        manual_emit_released(&writer);
+    } else if (which == MF_NO_RELEASE) {
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        manual_emit_neutral(&writer);
+        manual_emit_held(&writer);
+    } else if (which == MF_UNAVAILABLE) {
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        it_emit(&writer, IT_UNAVAILABLE, 3, 0, 0);
+    } else if (which == MF_UNEXPECTED) {
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        manual_emit_neutral(&writer);
+        it_emit(&writer, IT_STATE, 4, 2, 0);
+    } else if (which == MF_SATURATED) {
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        for (unsigned i = 0; i < IT_LIMIT; i++)
+            it_emit(&writer, IT_STATE, 4, i & 1u, 0);
+    } else if (which == MF_UNAVAILABLE_RESET) {
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        manual_emit_neutral(&writer);
+        it_emit(&writer, IT_UNAVAILABLE, 3, 0, 0);
+        manual_emit_held(&writer);
+        manual_emit_released(&writer);
+    } else if (which == MF_DISABLED_RESET) {
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        manual_emit_neutral(&writer);
+        it_emit(&writer, IT_POLL, 0, 0, 0);
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        manual_emit_held(&writer);
+        manual_emit_released(&writer);
+    } else {
+        it_emit(&writer, IT_POLL, 1, 0, 0);
+        manual_emit_neutral(&writer);
+        manual_emit_held(&writer);
+        if (which != MF_NO_RELEASE)
+            manual_emit_released(&writer);
+    }
+    if (which != MF_NO_END && which != MF_SATURATED)
+        it_emit(&writer, IT_END, 0, 0, 0);
+    fault = 0;
+    if (close(fd) != 0)
+        return 0;
+    if (which == MF_CORRUPT) {
+        fd = open(path, O_RDWR | O_NOFOLLOW);
+        uint8_t byte;
+        if (fd < 0 || pread(fd, &byte, 1, 0) != 1)
+            return 0;
+        byte ^= 0x80u;
+        if (pwrite(fd, &byte, 1, 0) != 1 || close(fd) != 0)
+            return 0;
+    } else if (which == MF_TRUNCATED) {
+        fd = open(path, O_RDWR | O_NOFOLLOW);
+        struct stat info;
+        if (fd < 0 || fstat(fd, &info) != 0 || info.st_size < 1 ||
+            ftruncate(fd, info.st_size - 1) != 0 || close(fd) != 0)
+            return 0;
+    }
+    return 1;
+}
+static int manual_invoke(const char *program, const char *path, int expected)
+{
+    pid_t child = fork();
+    if (child < 0)
+        return 0;
+    if (child == 0) {
+        execl(program, program, "--manual-core", path, (char *)NULL);
+        _exit(127);
+    }
+    int status;
+    pid_t waited;
+    do {
+        waited = waitpid(child, &status, 0);
+    } while (waited < 0 && errno == EINTR);
+    return waited == child && WIFEXITED(status) && WEXITSTATUS(status) == expected;
+}
+static int manual_fixture_controls(const char *program, const char *dir)
+{
+    static const struct {
+        const char *name;
+        enum manual_fixture_case which;
+        int expected;
+    } controls[] = {{"valid", MF_VALID, 0},
+                    {"no-active-poll", MF_NO_ACTIVE_POLL, 1},
+                    {"one-button", MF_ONE_BUTTON, 1},
+                    {"nonoverlap", MF_NONOVERLAP, 1},
+                    {"no-neutral", MF_NO_NEUTRAL, 1},
+                    {"no-release", MF_NO_RELEASE, 1},
+                    {"unavailable", MF_UNAVAILABLE, 1},
+                    {"unexpected", MF_UNEXPECTED, 1},
+                    {"no-end", MF_NO_END, 1},
+                    {"saturated", MF_SATURATED, 1},
+                    {"unavailable-reset", MF_UNAVAILABLE_RESET, 1},
+                    {"disabled-reset", MF_DISABLED_RESET, 1},
+                    {"clock", MF_CLOCK, 1},
+                    {"corrupt", MF_CORRUPT, 1},
+                    {"truncated", MF_TRUNCATED, 1}};
+    char path[4096];
+    char executable[PATH_MAX];
+    char fixture_dir[4096];
+    if (realpath(program, executable) == NULL)
+        return 0;
+    int count = snprintf(fixture_dir, sizeof fixture_dir, "%s/manual-core-XXXXXX", dir);
+    if (count < 0 || (size_t)count >= sizeof fixture_dir || mkdtemp(fixture_dir) == NULL)
+        return 0;
+    for (size_t i = 0; i < sizeof controls / sizeof controls[0]; i++) {
+        count = snprintf(path, sizeof path, "%s/manual-%s.trace", fixture_dir, controls[i].name);
+        if (count < 0 || (size_t)count >= sizeof path ||
+            !manual_write_fixture(path, controls[i].which) ||
+            !manual_invoke(executable, path, controls[i].expected))
+            return 0;
+    }
+    puts("manual-core accepted the valid ordered sample and rejected 14 offline fault traces");
+    return 1;
 }
 static int dump_fixtures(const char *dir)
 {
@@ -177,6 +419,8 @@ static int killed_prefix(const char *path, int ack_fault)
 }
 int main(int argc, char **argv)
 {
+    if (argc == 3 && strcmp(argv[1], "--manual-core") == 0)
+        return manual_core(argv[2]);
     if (argc == 3 && strcmp(argv[1], "--collect") == 0)
         return collect(argv[2], 0);
     if (argc == 3 && strcmp(argv[1], "--dump") == 0)
@@ -283,6 +527,7 @@ int main(int argc, char **argv)
     REQUIRE(killed_prefix(path, 0) == 0);
     for (int ack_fault = 1; ack_fault <= 3; ack_fault++)
         REQUIRE(killed_prefix(path, ack_fault) == 2);
+    REQUIRE(manual_fixture_controls(argv[0], argv[1]));
     puts("bounded encoding/parser/write/clock/saturation/kill controls passed");
     return 0;
 }

@@ -43,6 +43,91 @@ foreach(command IN ITEMS mock protocol host helper)
   endif()
 endforeach()
 
+# Exercise the production passive launcher and its strict synthetic child without a real app.
+execute_process(COMMAND "${HOST}" --manual-control "${WORK}" "${MODULE}"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+if(NOT rc STREQUAL "0" OR NOT out MATCHES "manual control valid: valid trace" OR
+    NOT out MATCHES "manual control timeout: exact-child SIGTERM/SIGKILL/reap" OR
+    NOT out MATCHES "manual control interrupt: EINTR returns to bounded deadline and exact-child cleanup" OR
+    NOT out MATCHES "manual control unreaped: bounded unreaped result" OR
+    NOT out MATCHES "manual control existing-file: existing trace sentinel preserved" OR
+    NOT out MATCHES "manual control symlink: trace symlink sentinel preserved")
+  message(FATAL_ERROR "passive manual launcher controls failed: ${rc}\n${out}${err}")
+endif()
+string(REGEX MATCH "manual_trace_dir=([^\r\n]+)" manual_match "${out}")
+set(manual_trace_dir "${CMAKE_MATCH_1}")
+if(manual_match STREQUAL "")
+  message(FATAL_ERROR "manual launcher omitted its valid trace directory: ${out}")
+endif()
+execute_process(COMMAND "${PROTOCOL}" --collect "${manual_trace_dir}"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+if(NOT rc STREQUAL "0" OR NOT out MATCHES "helper=complete.*core=complete.*paired_identity_clock_ok=yes")
+  message(FATAL_ERROR "synthetic passive traces did not pair: ${rc}\n${out}${err}")
+endif()
+execute_process(COMMAND "${PROTOCOL}" --manual-core "${manual_trace_dir}/core.trace"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+if(NOT rc STREQUAL "0" OR NOT out MATCHES "callbacks sampled Up=0.*Up=1.*Up=0")
+  message(FATAL_ERROR "manual callback validator rejected the synthetic sequence: ${rc}\n${out}${err}")
+endif()
+
+# Run the wrapper itself with the trace-host test child as the app executable.
+execute_process(COMMAND "${CMAKE_COMMAND}" -E env
+  "MUHTARI_BUILD_DIR=${BUILD}"
+  "MUHTARI_MANUAL_INPUT_TEST_CHILD=1"
+  "MUHTARI_MANUAL_INPUT_EXPECT_CORE=${MODULE}"
+  "${ROOT}/scripts/retroarch-manual-input.sh" --run --retroarch "${HOST}"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+if(NOT rc STREQUAL "0" OR NOT out MATCHES "Callback result: RetroArch delivered" OR
+    NOT out MATCHES "released sequence to the diagnostic core" OR
+    NOT out MATCHES "record its waiting/held/complete color progression separately")
+  message(FATAL_ERROR "owner wrapper's synthetic run did not pass the exact argv/trace contract: ${rc}\n${out}${err}")
+endif()
+string(REGEX MATCH "trace_dir=([^\r\n]+)" manual_match "${out}")
+set(wrapper_trace_dir "${CMAKE_MATCH_1}")
+if(manual_match STREQUAL "")
+  message(FATAL_ERROR "owner wrapper omitted its trace directory: ${out}")
+endif()
+execute_process(COMMAND "${PROTOCOL}" --collect "${wrapper_trace_dir}"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+if(NOT rc STREQUAL "0" OR NOT out MATCHES "helper=complete.*core=complete.*paired_identity_clock_ok=yes")
+  message(FATAL_ERROR "wrapper child traces did not pair: ${rc}\n${out}${err}")
+endif()
+execute_process(COMMAND "${PROTOCOL}" --manual-core "${wrapper_trace_dir}/core.trace"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+if(NOT rc STREQUAL "0" OR NOT out MATCHES "callbacks sampled Up=0.*Up=1.*Up=0")
+  message(FATAL_ERROR "wrapper's actual synthetic launch did not produce the requested callbacks: ${rc}\n${out}${err}")
+endif()
+
+# Preparation qualifies config/cart creation but must not start even the harmless app override.
+execute_process(COMMAND "${ROOT}/scripts/retroarch-manual-input.sh"
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+if(NOT rc STREQUAL "2" OR NOT err MATCHES "Usage:" OR out MATCHES "output_dir=")
+  message(FATAL_ERROR "wrapper without an explicit mode did not refuse to launch: ${rc}\n${out}${err}")
+endif()
+set(nonexecutable "${WORK}/retroarch-not-executable")
+file(WRITE "${nonexecutable}" "synthetic non-executable path\n")
+file(CHMOD "${nonexecutable}" PERMISSIONS OWNER_READ OWNER_WRITE)
+foreach(rejected_app IN ITEMS "${WORK}/missing-retroarch" "${WORK}" "${nonexecutable}")
+  execute_process(COMMAND "${ROOT}/scripts/retroarch-manual-input.sh"
+    --prepare-only --retroarch "${rejected_app}"
+    RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+  if(NOT rc STREQUAL "2" OR NOT err MATCHES "absent or not executable" OR out MATCHES "output_dir=")
+    message(FATAL_ERROR "wrapper accepted an invalid app path ${rejected_app}: ${rc}\n${out}${err}")
+  endif()
+endforeach()
+execute_process(COMMAND "${CMAKE_COMMAND}" -E env "MUHTARI_BUILD_DIR=${BUILD}"
+  "${ROOT}/scripts/retroarch-manual-input.sh" --prepare-only --retroarch /usr/bin/true
+  RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
+if(NOT rc STREQUAL "0" OR NOT out MATCHES "no frontend was launched" OR
+    NOT out MATCHES "output_dir=([^\r\n]+)" OR NOT out MATCHES "trace_dir=([^\r\n]+)")
+  message(FATAL_ERROR "safe prepare-only wrapper path failed: ${rc}\n${out}${err}")
+endif()
+string(REGEX MATCH "trace_dir=([^\r\n]+)" manual_match "${out}")
+set(prepare_trace_dir "${CMAKE_MATCH_1}")
+if(EXISTS "${prepare_trace_dir}/helper.trace" OR EXISTS "${prepare_trace_dir}/core.trace")
+  message(FATAL_ERROR "prepare-only unexpectedly launched a frontend child")
+endif()
+
 # Dump the actual bounded parser's whole validated prefix, not just its last record.
 foreach(case IN ITEMS positive killed saturated malformed write-failure clock-failure invalid)
   execute_process(COMMAND "${PROTOCOL}" --dump "${WORK}/dump-${case}"

@@ -340,20 +340,23 @@ sample_match -V` prints it) and put the sample's new SHA-256 in the manifest. `c
 
 ## Hosted RetroArch
 
-The hosted lane uses the pinned macOS arm64 app, isolated home/config/system/output and a disjoint external
-`SAVE_DIR` (overlap fails before cleanup); launches cap at 50 seconds. The support report is static.
+The hosted arm64 lane uses pinned RetroArch, isolated paths, disjoint `SAVE_DIR`; child cap 50 seconds. See
+[12-01 receipt](../.planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md) for
+support, DMA, keyboard and battery checks; [12-10](../.planning/phases/12-player-ready-delivery-and-playstead-bridge/12-10-SUMMARY.md)
+records offline ownership and trace controls.
 
-- **DMA:** 120-frame hash/pixel pin; flipped-pixel control rejects at `(7,3)`.
-- **Keyboard (PLAY-03):** delivery remains pending. Probe-only uses one regular script outside `RA_DIR`, expects
-  one Up/Z-held capture before 5 seconds, releases at 5 seconds and requires the terminal 600-frame image
-  (45-second cap). Missing/multiple captures or early exit fail; `input.proline_one_button` checks input and
-  pixels/dimensions. See the [12-01 receipt](../.planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md).
-- **Battery:** two fresh frontend/runner processes must advance owned HSC/EEPROM counters 1→2 and match all
-  34,816 save bytes against independent expectations. `diag.battery` covers firmware, stub, mailbox, glyph,
-  lifecycle and no-content faults; see the [same receipt](../.planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md).
-- **Offline safety/trace:** controls reject access denial before content, preserve permissions and check ownership,
-  cleanup and reports. Manual trace mode is probe-only; missing records, unknown health, saturation or no
-  same-host clock are inconclusive. See the [local record](../.planning/phases/12-player-ready-delivery-and-playstead-bridge/12-10-SUMMARY.md).
+**One-time owner keyboard check.** From a GUI-backed Mac Terminal run
+`scripts/retroarch-manual-input.sh --run`. It builds the diagnostic tools, checks a temporary owned history
+cartridge and launches installed RetroArch with a private home/config/save/state/system/cache/log setup; usual
+config and content stay untouched. Focus its window, hold Up+Z about one second and release. The core ends
+at 3600 frames; limits are 75s wall +2s cleanup (1s TERM, 1s bounded reap; PID if unreaped). Output retains config,
+logs and traces; only the generated cartridge is removed. `--prepare-only` checks setup without an app launch.
+
+Offline tests cover core semantics; this asks if RetroArch delivers Up+Z to callbacks. Separately observe the
+waiting/held/complete colors; callback traces do not prove the visible sequence. Missing input cannot identify
+a key/focus/mapping/backend failure or explain the earlier permission denial. This is
+not PLAY-03 acceptance: released-core visible input, DMA, fresh-process battery, aggregate and paired Playstead
+evidence remain pending.
 
 **Phase 14 state case.** Matching same-run macOS arm64 artifacts and receipt, UDP denial before launch, 5-minute
 job/50-second child limits, 45+5-second window, 120 frames and 64 forward actions remain required. Offline
