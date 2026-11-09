@@ -108,6 +108,117 @@ Before a phase or milestone is called done:
 - the latest release is the expected version with 19 assets:
   `gh release view --json tagName,assets --jq '.tagName, (.assets | length)'`.
 
+### Replay the published core at ship
+
+The release workflow's existing `verify` step downloads the immutable release
+assets, checks `SHA256SUMS`, and verifies the publisher attestation from
+`refs/heads/main`. `install-line-latest` exercises the README install command and
+checks that the core and `.info` file appear in RetroArch's folders. Installation
+alone proves neither that the core loaded nor that gameplay input or saves work.
+
+For a published macOS arm64 core, record the release version/tag, tag source
+commit, asset digest, extracted core and `.info` digests, and attestation result.
+Download the archive by its immutable tag, verify it with the existing signer/source
+constraints, then extract it; do not substitute the candidate build-tree module:
+
+```sh
+TAG="v<version>"
+SOURCE_SHA="<tag source commit>"
+PUBLISHED="$PWD/build/published-core"
+ARCHIVE="$PUBLISHED/muhtari-libretro-macos-arm64.zip"
+mkdir -p "$PUBLISHED"
+gh release download "$TAG" --repo szTheory/muhtari \
+  --pattern muhtari-libretro-macos-arm64.zip --dir "$PUBLISHED"
+shasum -a 256 "$ARCHIVE"
+gh attestation verify "$ARCHIVE" --repo szTheory/muhtari \
+  --signer-workflow szTheory/muhtari/.github/workflows/release.yml \
+  --source-ref refs/heads/main --source-digest "$SOURCE_SHA"
+unzip -q "$ARCHIVE" -d "$PUBLISHED"
+CORE="$PUBLISHED/cores/muhtari_libretro.dylib"
+INFO="$PUBLISHED/info/muhtari_libretro.info"
+shasum -a 256 "$CORE" "$INFO"
+RETROARCH="$PWD/build/RetroArch.app/Contents/MacOS/RetroArch"
+```
+
+Install RetroArch from the existing pinned `retroarch-dmg` workflow step and
+confirm its DMG digest/version from `pins.txt`. Then replay the host checks from
+`.github/workflows/ci.yml` using `CORE` and `INFO` above. For DMA, use the existing
+120-frame fixture and comparator:
+
+```sh
+cmake -DRETROARCH="$RETROARCH" -DCORE="$CORE" -DINFO="$INFO" \
+  -DTEMPLATE=tests/retroarch/test.cfg.in \
+  "-DRA_DIR=$PWD/build/published-ra/dma" -DFRAMES=120 \
+  -DROM=tests/diag/dma.a78 \
+  "-DSAVE_DIR=$PWD/build/published-saves/dma" \
+  "-DSHOT=$PWD/build/frames/published-dma-shot.png" \
+  -P tests/retroarch/run_retroarch.cmake
+```
+
+For gameplay input, use the normal CI build outputs, including
+`build/frames/keyboard-preflight`, `build/frames/input-fixture`, the independent
+runner and image comparators. Generate the owned fixture with
+`build/frames/input-fixture --write-cart build/frames/input.a78`, then keep the
+600-frame RetroArch capture and independent runner-frame comparisons. Preserve the
+per-frame held sequence `|U...1.|......|...BB|` and the released sequence
+`|......|......|...BB|`; the held and released images must each pass the existing
+input-pixel predicate. The host launch uses the existing keyboard helper,
+`INPUT_MODE=probe`, one RA directory, one save directory and the `tests/diag` test
+config. Use the same host command shape with the extracted published `CORE` and
+`INFO`:
+
+```bash
+cmake -DRETROARCH="$RETROARCH" -DCORE="$CORE" -DINFO="$INFO" \
+  -DTEMPLATE=tests/retroarch/test.cfg.in \
+  "-DRA_DIR=$PWD/build/published-ra/input" \
+  "-DSAVE_DIR=$PWD/build/published-saves/input" -DFRAMES=600 \
+  -DROM=build/frames/input.a78 \
+  "-DKEYBOARD=$PWD/build/frames/keyboard-preflight" -DINPUT_MODE=probe \
+  "-DRAW_SHOTS=$PWD/build/published-ra/input/shots" \
+  "-DSHOT=$PWD/build/frames/published-input-released.png" \
+  -P tests/retroarch/run_retroarch.cmake
+```
+
+Continue with the existing held/released runner movies and comparator from the
+`RetroArch holds and releases input on the owned diagnostic` step: copy the one
+raw probe screenshot to the held image, save the terminal `SHOT` as the released
+image, generate the two 600-frame movies, render the independent runner frames,
+and run both `compare --input-controls` checks exactly as that step does. Do not
+weaken or replace that input schedule.
+
+For battery continuity, run `tests/diag/battery.a78` in two fresh RetroArch
+processes with distinct RA directories and the same save directory, 120 frames
+each. Keep the first process's generated synthetic HSC firmware and the second
+process's absent-firmware signature-stub path; compare each frontend `.srm` against
+the corresponding runner save and run the existing independent counter/pixel
+judges. Generate the synthetic firmware first with
+`build/frames/diag --battery-firmware build/frames/synthetic.bin`. The two-process
+host invocation keeps one save directory:
+
+```bash
+for count in 1 2; do
+  firmware=()
+  if [ "$count" = 1 ]; then firmware=("-DHSC_ROM=$PWD/build/frames/synthetic.bin"); fi
+  cmake -DRETROARCH="$RETROARCH" -DCORE="$CORE" -DINFO="$INFO" \
+    -DTEMPLATE=tests/retroarch/test.cfg.in \
+    "-DRA_DIR=$PWD/build/published-ra/battery-$count" \
+    "-DSAVE_DIR=$PWD/build/published-saves/battery" "${firmware[@]}" \
+    -DFRAMES=120 -DROM=tests/diag/battery.a78 \
+    "-DSHOT=$PWD/build/frames/published-battery-shot-$count.png" \
+    -P tests/retroarch/run_retroarch.cmake
+done
+```
+
+Continue with the existing `Fresh frontend and runner battery roundtrip` step's
+runner commands, byte comparisons, firmware/counter predicates, log signatures,
+and unsafe-path controls, changing only `CORE` and `INFO` to the extracted published
+archive paths. Record the
+exact commands, each exit status and the run URL
+with the published asset identities. Keep published-byte host proof pending until
+that receipt exists; the retained [v0.11.1 run](https://github.com/szTheory/muhtari/actions/runs/41513877501/attempts/1)
+has no held/released gameplay-input step or a separate post-publication download
+and replay of the published archive.
+
 Run local workflows in the foreground. An outer command deadline must cover the
 whole workflow, including its longest permitted test; a 60s wrapper cannot cover
 the publisher controls' 130s allowance. Measure complete expanded work before
