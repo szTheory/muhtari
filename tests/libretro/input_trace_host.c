@@ -59,6 +59,13 @@ typedef struct {
     pid_t child;
     int outcome, status, exec_error, wait_error, signals_sent;
 } manual_result;
+typedef struct {
+    int dir_fd, helper_fd, core_fd;
+    int helper_created, core_created;
+    int helper_identity_valid, core_identity_valid;
+    struct stat helper_identity, core_identity;
+    it_writer helper;
+} manual_trace_setup;
 
 static uint64_t manual_now_ms(void)
 {
@@ -132,33 +139,86 @@ static int manual_test_reap_killed(pid_t child)
     }
 }
 
-static int manual_open_traces(const char *trace_dir, int *dir_fd, int *helper_fd, int *core_fd,
-                              it_writer *helper)
+static int manual_remove_owned_trace(int dir_fd, const char *name, int created, int identity_valid,
+                                     const struct stat *identity)
 {
-    *dir_fd = *helper_fd = *core_fd = -1;
-    *dir_fd = open(trace_dir, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-    if (*dir_fd < 0)
+    if (!created)
+        return 1;
+    if (dir_fd < 0 || !identity_valid)
+        return 0;
+    struct stat current;
+    if (fstatat(dir_fd, name, &current, AT_SYMLINK_NOFOLLOW) != 0)
+        return errno == ENOENT;
+    if (!S_ISREG(current.st_mode) || current.st_dev != identity->st_dev ||
+        current.st_ino != identity->st_ino)
+        return 1;
+    return unlinkat(dir_fd, name, 0) == 0 || errno == ENOENT;
+}
+
+static int manual_close_trace_setup(manual_trace_setup *setup, int rollback)
+{
+    int removed = 1;
+    if (rollback && setup->dir_fd >= 0) {
+        if (!manual_remove_owned_trace(setup->dir_fd, "core.trace", setup->core_created,
+                                       setup->core_identity_valid, &setup->core_identity))
+            removed = 0;
+        if (!manual_remove_owned_trace(setup->dir_fd, "helper.trace", setup->helper_created,
+                                       setup->helper_identity_valid, &setup->helper_identity))
+            removed = 0;
+    }
+    if (setup->core_fd >= 0)
+        close(setup->core_fd);
+    if (setup->helper_fd >= 0)
+        close(setup->helper_fd);
+    if (setup->dir_fd >= 0)
+        close(setup->dir_fd);
+    setup->core_fd = setup->helper_fd = setup->dir_fd = -1;
+    return removed;
+}
+
+static int manual_open_traces(const char *trace_dir, manual_trace_setup *setup)
+{
+    memset(setup, 0, sizeof *setup);
+    setup->dir_fd = setup->helper_fd = setup->core_fd = -1;
+    setup->dir_fd = open(trace_dir, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    if (setup->dir_fd < 0)
         return 0;
     struct stat dir_info;
-    if (fstat(*dir_fd, &dir_info) != 0 || !S_ISDIR(dir_info.st_mode) ||
+    if (fstat(setup->dir_fd, &dir_info) != 0 || !S_ISDIR(dir_info.st_mode) ||
         (dir_info.st_mode & 0777) != 0700 || dir_info.st_uid != getuid())
-        return 0;
-    *helper_fd =
-        openat(*dir_fd, "helper.trace", O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
-    if (*helper_fd < 3)
-        return 0;
-    *core_fd =
-        openat(*dir_fd, "core.trace", O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
-    if (*core_fd < 3)
-        return 0;
-    struct stat helper_info, core_info;
-    if (fstat(*helper_fd, &helper_info) != 0 || fstat(*core_fd, &core_info) != 0 ||
-        !S_ISREG(helper_info.st_mode) || !S_ISREG(core_info.st_mode) ||
-        (helper_info.st_mode & 0777) != 0600 || (core_info.st_mode & 0777) != 0600 ||
-        helper_info.st_uid != getuid() || core_info.st_uid != getuid() ||
-        !it_begin(helper, *helper_fd, IT_HELPER, 0))
-        return 0;
+        goto refused;
+    setup->helper_fd = openat(setup->dir_fd, "helper.trace",
+                              O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
+    if (setup->helper_fd < 0)
+        goto refused;
+    setup->helper_created = 1;
+    if (fstat(setup->helper_fd, &setup->helper_identity) != 0)
+        goto refused;
+    setup->helper_identity_valid = 1;
+    if (setup->helper_fd < 3)
+        goto refused;
+    setup->core_fd = openat(setup->dir_fd, "core.trace",
+                            O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
+    if (setup->core_fd < 0)
+        goto refused;
+    setup->core_created = 1;
+    if (fstat(setup->core_fd, &setup->core_identity) != 0)
+        goto refused;
+    setup->core_identity_valid = 1;
+    if (setup->core_fd < 3)
+        goto refused;
+    if (!S_ISREG(setup->helper_identity.st_mode) || !S_ISREG(setup->core_identity.st_mode) ||
+        (setup->helper_identity.st_mode & 0777) != 0600 ||
+        (setup->core_identity.st_mode & 0777) != 0600 ||
+        setup->helper_identity.st_uid != getuid() || setup->core_identity.st_uid != getuid() ||
+        !it_begin(&setup->helper, setup->helper_fd, IT_HELPER, 0))
+        goto refused;
     return 1;
+
+refused:
+    if (!manual_close_trace_setup(setup, 1))
+        fprintf(stderr, "manual launcher: failed to remove an owned partial trace file\n");
+    return 0;
 }
 
 static int manual_exec_error(int fd, int *exec_error)
@@ -201,24 +261,16 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
                          uint64_t grace_ms, int force_unreaped, manual_result *result)
 {
     memset(result, 0, sizeof *result);
-    int dir_fd, helper_fd, core_fd;
-    it_writer helper;
-    if (!manual_open_traces(trace_dir, &dir_fd, &helper_fd, &core_fd, &helper)) {
+    manual_trace_setup traces;
+    if (!manual_open_traces(trace_dir, &traces)) {
         fprintf(stderr, "manual launcher: trace directory or exclusive trace files are invalid\n");
-        if (core_fd >= 0)
-            close(core_fd);
-        if (helper_fd >= 0)
-            close(helper_fd);
-        if (dir_fd >= 0)
-            close(dir_fd);
         return 2;
     }
     int exec_pipe[2];
     if (pipe(exec_pipe) != 0) {
         int saved = errno;
-        close(core_fd);
-        close(helper_fd);
-        close(dir_fd);
+        if (!manual_close_trace_setup(&traces, 1))
+            fprintf(stderr, "manual launcher: failed to remove an owned partial trace file\n");
         fprintf(stderr, "manual launcher: exec-status pipe failed: %s\n", strerror(saved));
         return 2;
     }
@@ -226,9 +278,8 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
         int saved = errno;
         close(exec_pipe[0]);
         close(exec_pipe[1]);
-        close(core_fd);
-        close(helper_fd);
-        close(dir_fd);
+        if (!manual_close_trace_setup(&traces, 1))
+            fprintf(stderr, "manual launcher: failed to remove an owned partial trace file\n");
         fprintf(stderr, "manual launcher: exec-status pipe setup failed: %s\n", strerror(saved));
         return 2;
     }
@@ -238,27 +289,26 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
         int saved = errno;
         close(exec_pipe[0]);
         close(exec_pipe[1]);
-        close(core_fd);
-        it_emit(&helper, IT_END, MANUAL_WAIT_FAILED, (uint32_t)saved, 0);
-        close(helper_fd);
-        close(dir_fd);
+        it_emit(&traces.helper, IT_END, MANUAL_WAIT_FAILED, (uint32_t)saved, 0);
+        if (!manual_close_trace_setup(&traces, 1))
+            fprintf(stderr, "manual launcher: failed to remove an owned partial trace file\n");
         fprintf(stderr, "manual launcher: fork failed: %s\n", strerror(saved));
         return 2;
     }
     if (child == 0) {
         close(exec_pipe[0]);
-        close(helper_fd);
-        close(dir_fd);
+        close(traces.helper_fd);
+        close(traces.dir_fd);
         char trace_fd_text[32];
-        snprintf(trace_fd_text, sizeof trace_fd_text, "%d", core_fd);
+        snprintf(trace_fd_text, sizeof trace_fd_text, "%d", traces.core_fd);
         if (setenv("MUHTARI_INPUT_TRACE_FD", trace_fd_text, 1) != 0)
             goto exec_failed;
-        if (fcntl(core_fd, F_SETFD, 0) != 0)
+        if (fcntl(traces.core_fd, F_SETFD, 0) != 0)
             goto exec_failed;
         if (getenv("MUHTARI_MANUAL_INPUT_TEST_CHILD") != NULL) {
             char helper_text[32], dir_text[32];
-            snprintf(helper_text, sizeof helper_text, "%d", helper_fd);
-            snprintf(dir_text, sizeof dir_text, "%d", dir_fd);
+            snprintf(helper_text, sizeof helper_text, "%d", traces.helper_fd);
+            snprintf(dir_text, sizeof dir_text, "%d", traces.dir_fd);
             if (setenv("MUHTARI_MANUAL_HELPER_FD", helper_text, 1) != 0 ||
                 setenv("MUHTARI_MANUAL_DIR_FD", dir_text, 1) != 0)
                 goto exec_failed;
@@ -272,9 +322,10 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
     }
     result->child = child;
     close(exec_pipe[1]);
-    close(core_fd);
-    it_emit(&helper, IT_FORK, (uint32_t)child, 0, 0);
-    it_emit(&helper, IT_START, 0, 0, 0);
+    close(traces.core_fd);
+    traces.core_fd = -1;
+    it_emit(&traces.helper, IT_FORK, (uint32_t)child, 0, 0);
+    it_emit(&traces.helper, IT_START, 0, 0, 0);
     int pipe_error = manual_wait_for_exec(exec_pipe[0], start, wall_ms, &result->exec_error);
     close(exec_pipe[0]);
     int status = 0, wait_error = 0;
@@ -414,10 +465,9 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
     if (waited && result->outcome == 0)
         result->outcome = result->exec_error ? MANUAL_EXEC_FAILED : MANUAL_EXITED;
     result->status = status;
-    it_emit(&helper, IT_END, (uint32_t)result->outcome, (uint32_t)status,
+    it_emit(&traces.helper, IT_END, (uint32_t)result->outcome, (uint32_t)status,
             (uint32_t)result->exec_error);
-    close(helper_fd);
-    close(dir_fd);
+    manual_close_trace_setup(&traces, 0);
     if (result->outcome == MANUAL_EXEC_FAILED)
         fprintf(stderr, "manual launcher: exec failed: %s\n", strerror(result->exec_error));
     else if (result->outcome == MANUAL_TIMED_OUT)
