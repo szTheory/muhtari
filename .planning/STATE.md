@@ -4,16 +4,16 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
-current_plan: 16 of 21
+current_plan: 16 of 23
 status: blocked
-stopped_at: Plan 12-22 local work complete; owner-run input diagnostic pending
-last_updated: "2026-11-08T18:11:35.372Z"
-last_activity: 2026-11-08
-state_head: fa567595d68535d56013f8dd054057f1503a715c
+stopped_at: Plan 12-22 and owner-run diagnostic complete; 12-23 local gap plan next
+last_updated: "2026-11-09T19:20:00.466Z"
+last_activity: 2026-11-09
+state_head: 755aad8e05c98a8c851ce1fbb350bbc0fb152efc
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 60
+  total_plans: 62
   completed_plans: 55
   percent: 33
 ---
@@ -25,20 +25,20 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 12 remains accepted 0/4. Plan 12-22 adds a locally verified, isolated owner-run RetroArch keyboard diagnostic. The physical callback result and separate visible color progression are pending; Plan 12-18 permission attempts remain spent and no permission retry is authorized.
+Current focus: Phase 12 remains blocked at accepted 0/4 with 2/5 roadmap truths verified. The owner-run Up+Z diagnostic result is recorded but does not prove released-core acceptance. Plan 12-23 is the only runnable gap plan; 12-24 and all original acceptance successors retain their dependencies. No host or remote action is authorized.
 
 ## Current Position
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Current Plan: 16 of 21
-Plan: 0 of 4 acceptance plans accepted. Plan 12-22 prepared the owner-run diagnostic; 12-19 and 12-16 remain blocked by the spent 12-18 denial, and original plans 12-02/03/04 remain blocked by 12-01.
+Current Plan: 16 of 23
+Plan: 0 of 4 acceptance plans accepted. Plan 12-22's owner-run diagnostic recorded neutral → Up+Z held → released callbacks and the yellow completion display, but remains diagnostic-only. Plan 12-23 is the only runnable gap plan; 12-19/16 remain blocked by the spent 12-18 denial, 12-02/03/04 remain blocked by 12-01, and 12-24 remains behind those dependencies.
 Status: blocked
-Next action: Owner runs scripts/retroarch-manual-input.sh --run from a normal GUI-backed Terminal, then reports the callback verdict and waiting/held/complete color progression. After that, run $gsd-verify-work 12. No Accessibility/TCC change or permission retry is needed or authorized.
-Boundary: Plan 12-22 used only synthetic children and local CI. RetroArch launch, event injection, Accessibility/TCC, remote work and owner content operations remain zero. The 12-18 request/preflight allowance is spent; 12-19/16 and all older host/remote stops remain unchanged.
+Next action: Run $gsd-execute-phase 12 --gaps-only to execute only 12-23's local trace-cleanup controls and bounded local gates; it does not reach a user decision checkpoint. No host, remote, publication, permission or retry action is authorized.
+Boundary: Plan 12-23 is limited to synthetic children, offline controls, local CI and hygiene. Real RetroArch/content launch, event injection, Accessibility/TCC, remote work, publication and owner content operations remain closed. The 12-18 request/preflight allowance is spent; 12-01 remains halted and accepted 0/4 is unchanged.
 
 ## Current Blockers
 
-- Phase 12's original WASI and host attempts remain terminal historical outcomes. Plan 12-20's first full WASI run failed because `retroarch.states.controls` invoked a WASI module directly and two runner tests timed out; Plan 12-21 corrected the configured emulator route, reran the complete 622-case WASI lane successfully, and observed no recurrence of those timeouts. Plan 12-22 added and locally verified the isolated owner-run keyboard diagnostic and offline controls. Its optional physical callback and visible-color observations are pending; it does not retry Plan 12-18's denied request or satisfy PLAY-03. Plans 12-19/16 remain blocked by the spent 12-18 denial, original plans 12-02/03/04 remain blocked by 12-01, and acceptance remains 0/4. See [12-14 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-14-LOCAL-EVIDENCE.md), [12-15 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-15-LOCAL-EVIDENCE.md), [12-17 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-17-LOCAL-EVIDENCE.md), [12-18 consent evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-18-CONSENT-EVIDENCE.md), [12-20 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-20-LOCAL-EVIDENCE.md), [12-21 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-21-SUMMARY.md), and [12-22 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-22-SUMMARY.md).
+- Phase 12's original WASI and host attempts remain terminal historical outcomes. Plan 12-20's first full WASI run failed because `retroarch.states.controls` invoked a WASI module directly and two runner tests timed out; Plan 12-21 corrected the configured emulator route, reran the complete 622-case WASI lane successfully, and observed no recurrence of those timeouts. Plan 12-22 added the isolated owner-run keyboard diagnostic and offline controls; the recorded neutral → Up+Z held → released callbacks and yellow completion display prove that diagnostic only, not PLAY-03. Plan 12-23 is a local warning repair with no host authority. Plans 12-19/16 remain blocked by the spent 12-18 denial, original plans 12-02/03/04 remain blocked by 12-01, and acceptance remains 0/4. See [12-14 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-14-LOCAL-EVIDENCE.md), [12-15 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-15-LOCAL-EVIDENCE.md), [12-17 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-17-LOCAL-EVIDENCE.md), [12-18 consent evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-18-CONSENT-EVIDENCE.md), [12-20 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-20-LOCAL-EVIDENCE.md), [12-21 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-21-SUMMARY.md), and [12-22 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-22-SUMMARY.md).
 - Root-merge reconciliation corrected the Phase 14 `support-report` file path to `tests/common/bmp.c`. The existing `retroarch.states.controls` test now checks both the successful report and a missing-reader failure. Its local pass does not clear the Phase 14 workflow gate or authorize host work.
 - The historical BIOS timeout cause remains unknown. The approved five-test RUN_SERIAL mitigation preserved one-second limits; after it, the independent parent and frozen source passed complete CI and hygiene workflows. This does not attribute the earlier timeouts.
 - Plan 14-13 is complete: the exact five RUN_SERIAL properties and metadata fault controls passed, and the sole focused batch passed 7/7 including both fixture setup tests. That batch is consumed; do not retry it. No deadline or unrelated test metadata changed.
@@ -141,7 +141,7 @@ Current Plan: 12-21 of 20 active plans (ready)
 Plan: 0 of 4 acceptance plans accepted. Plan 12-21 is the only runnable recovery: fix the missing configured emulator route for the WASI state controls, rerun the full lane, and apply only the specified two-test WASI serialization if the same timeouts recur. The denied 12-18 event-post request remains spent. Plan 12-16 depends on 12-21/18/19; Phase 12 acceptance remains blocked and unwaived. Plan 12-01 remains halted; 12-02/03/04 remain blocked.
 Status: Acceptance remains blocked on the full local WASI gate, actual held/released RetroArch input, and causal evidence.
 Next local step: No Phase 12 local gap step is runnable. Plan 12-21 completed the WASI prerequisite; Plan 12-19 and Plan 12-16 remain blocked on the unfulfilled 12-18 causal and consent gate. Owner must decide whether to grant Terminal Accessibility and explicitly authorize a fresh bounded scope before planning another diagnostic.
-Last activity: 2026-11-08
+Last activity: 2026-11-09
 Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics

@@ -52,11 +52,14 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 16/21 plans executed (12-08 is superseded and excluded from the active count; accepted 0/4).
+**Plans:** 16/23 plans executed (12-08 is superseded and excluded from the active count; accepted 0/4).
 
 Plans:
-- [x] 12-22-PLAN.md — Added an isolated owner-run RetroArch input diagnostic and strict offline controls; local CI, release/package, hygiene and independent security review pass. The owner-run trace confirms neutral → Up+Z held → released and the yellow complete screen; Phase 12 remains accepted 0/4 because packaged-core input, DMA, battery, aggregate and paired Playstead evidence remain open.
+**Wave 1**
 - [x] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 12-22-PLAN.md — Added an isolated owner-run RetroArch input diagnostic and strict offline controls; local CI, release/package, hygiene and independent security review pass. The owner-run trace confirms neutral → Up+Z held → released and the yellow complete screen; Phase 12 remains accepted 0/4 because packaged-core input, DMA, battery, aggregate and paired Playstead evidence remain open.
 
 Execution halted: original run 41056151292 failed before RetroArch; scoped recovery
 41062201311 attempt 1/source 28e13e1 reached the host but held input produced idle
@@ -106,6 +109,11 @@ host test or dependent plan.
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [ ] 12-04-PLAN.md — Record the exact six-property evidence deferral and its bounded close revisit.
+
+**Additional additive gap closures** *(the canonical acceptance halt and accepted 0/4 remain; planning creates no host or remote authority)*
+
+- [ ] 12-23-PLAN.md — Wave 3, after 12-22: close the local partial-trace cleanup warning through synthetic controls and local gates; does not prove released-core acceptance.
+- [ ] 12-24-PLAN.md — Wave 5, after 12-04 and 12-23: future blocking owner checkpoint for judgment-tier claim dispositions; remains behind the original acceptance chain.
 
 **Canonical refs:** [owner intent](INTENT.md), [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#implications-for-roadmap), [feature ownership](research/FEATURES.md), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [hosts §3–4](preparation/HOSTS-AND-INTEGRATION.md#3-retroarch-on-apple-silicon), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [tune-up seed](seeds/SEED-007-milestone-tune-up.md), [maintenance seed](seeds/SEED-009-proportional-maintenance-review.md), [property seed](seeds/SEED-010-nightly-prop-calibration.md), [lessons](LESSONS.md#local-player-onboarding-2026-10-29).
 **UI hint:** no
