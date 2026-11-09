@@ -7,7 +7,7 @@ source:
   - 12-06-SUMMARY.md
   - 12-22-SUMMARY.md
 started: 2026-10-31T21:35:49-04:00
-updated: 2026-11-09T15:09:58.510Z
+updated: 2026-11-09T15:20:45.104Z
 ---
 
 ## Current Test
@@ -141,7 +141,9 @@ blocked: 4
   debug_session: "phase12-packaged-input-tracer"
 - gap_id: G-12-4
   truth: "A source-bound hosted input diagnostic produces its expected RetroArch trace."
-  status: failed
+  status: resolved
+  resolved_by: 12-07-PLAN.md
+  resolved_at: 2026-11-09
   reason: "Run 41224305264 failed its Linux preflight before RetroArch and produced no trace artifact."
   severity: major
   test: 4
@@ -168,7 +170,9 @@ blocked: 4
   debug_session: "phase12-packaged-input-tracer"
 - gap_id: G-12-12
   truth: "The plan 12-01 summary's bounded commit count matches its recorded commit window."
-  status: failed
+  status: resolved
+  resolved_by: 12-07-PLAN.md
+  resolved_at: 2026-11-09
   reason: "The summary claims 4 commits; the recorded base-to-after range contains 24."
   severity: major
   test: 12

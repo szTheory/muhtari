@@ -111,6 +111,12 @@ job; a truth only a merge can show is confirmed at ship (step 8), never in UAT. 
 observed queue, durations, critical path and cancelled work for quality-preserving efficiency gains; change
 timeouts, caches or workflow structure only when evidence supports the improvement.
 
+Reaffirmed 2026-11-09: choose the smallest check that gives useful feedback. A one-off, throwaway local check is
+valid; add a check to CI only when recurring regression prevention justifies its maintenance and runtime cost.
+Review each CI/release run for measured queue, critical-path, duration and cancelled-work improvements while
+preserving pass/fault coverage and release evidence. Record when no safe improvement is supported, then move on;
+do not reopen this settled policy during later UATs.
+
 **Closeout policy:** a fix merged after a phase's verification makes that verification "stale". Accept an
 override closeout at milestone end when CI passes on the merged head and the milestone audit covers the phase;
 do not spend sessions refreshing digests.
