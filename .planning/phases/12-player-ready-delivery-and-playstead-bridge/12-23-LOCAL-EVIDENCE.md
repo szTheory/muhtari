@@ -59,3 +59,31 @@ No RetroArch app/content child, accessibility request, host run, remote operatio
 - The plan's path-limited git diff --check command exited 0.
 - shasum -a 256 -c build/phase12-gap23-evidence/verification.sha256 exited 0 and reported the protected 12-VERIFICATION.md as OK against its original frozen SHA-256.
 - Before the metadata commit, the staged-path allowlist contained only 12-REVIEW-DISPOSITION.md, 12-23-LOCAL-EVIDENCE.md, and 12-23-SUMMARY.md; the allowlist and git diff --cached --check both exited 0.
+
+## Code review follow-up — 2026-11-09
+
+The refreshed standard review found two defects in the passive launcher lifecycle controls. CR-01 was reproduced with a synthetic child that exits successfully while the parent observes it at the wall deadline: the old path returned success. CR-02 was reproduced by forcing the monotonic-clock read at cleanup to fail: the old path skipped signaling and could leave the exact child running. Both controls failed before their corresponding fixes.
+
+The launcher now checks the wall deadline when a child is reaped and preserves timeout status through cleanup. If the monotonic clock is unavailable at cleanup, it sends TERM immediately and uses bounded wait attempts; it escalates to KILL when needed. The regression controls use deterministic observation hooks, leave the five-second CTest timeout unchanged, and clean up any child left by the deliberately failing pre-fix run.
+
+- RED — `cmake --build build/ci --target muhtari-test-trace-host && ctest --test-dir build/ci -R '^policy.retroarch.preflight_api$' --output-on-failure`: exit 8 for the successful late-exit case before the wall-deadline fix.
+- RED — the same focused command: exit 8 for the forced cleanup-clock failure before the clock-independent signal/reap path.
+- Focused GREEN — `cmake --build build/ci --target muhtari-test-trace-host && ctest --test-dir build/ci -R '^policy.retroarch.preflight_api$' --output-on-failure`: exit 0; 1/1 passed in 2.55 seconds.
+- Full local gate — `cmake --workflow --preset ci`: exit 0; 700/700 ordinary tests, three packages generated, six release checks passed. Run URL: N/A-local.
+- `git diff --check`: exit 0.
+
+No host, remote workflow, publication, or RetroArch launch occurred. Phase 12 remains blocked at accepted 0/4 until its missing released-core input and other acceptance evidence are supplied.
+
+## Code review follow-up — post-create identity failure — 2026-11-09
+
+The re-review found that a trace entry created with `O_EXCL` could remain if its descriptor identity check failed immediately afterward. Added deterministic helper/core identity-failure controls. They run under `umask(0077)`, assert rollback leaves both trace names absent and no child launched, then retry in the same directory under the same umask. The retry asserts owner-only regular files at mode `0600` and complete paired traces.
+
+- RED — `cmake --build build/ci --target muhtari-test-trace-host && ctest --test-dir build/ci -R '^policy.retroarch.preflight_api$' --output-on-failure`: exit 8; injected helper identity failure left `helper.trace` behind.
+- Focused GREEN — the same command after rollback and retry fixes: exit 0; 1/1 passed in 2.61 seconds, including helper and core identity-failure cases.
+- Full local gate — `cmake --workflow --preset ci`: exit 0; 700/700 ordinary tests, three packages generated, six release checks passed. Run URL: N/A-local.
+- `scripts/hygiene.sh --tree`: exit 0. `git diff --check`: exit 0.
+- Final standard code review: clean; no remaining findings.
+
+Rollback uses the already-opened, owner-only trace directory. When descriptor identity is unavailable, it removes only a regular file owned by the current user with no group/other permissions; the normal device/inode-checked path remains in place when identity is known. No child had been started at this setup failure point.
+
+No RetroArch launch, host action, remote workflow, publication, or merge occurred. Phase 12 remains blocked at accepted 0/4 pending its separate release-input and acceptance evidence.

@@ -92,11 +92,17 @@ evidence.
    relevant phase summary/STATE. Each continuation must add evidence, complete an authorized action, or resolve a
    blocker. If the same blocker remains, hand off its exact missing input, consequence, next action and command;
    resume only after new evidence or authority arrives.
-   Never run `/gsd-next`, `/gsd-autonomous`, `/gsd-manager`, `/gsd-progress --next` or `--do`, any GSD command whose
+   An explicit owner request for `$gsd-autonomous` authorizes running the autonomous workflow through the requested
+   milestone; when a phase is blocked, keep advancing independent authorized local work while preserving its exact
+   safety stops. This does not renew host/remote attempts or permit command arguments containing `--auto` or `--chain`.
+   Never run `/gsd-next`, `/gsd-manager`, `/gsd-progress --next` or `--do`, any GSD command whose
    arguments contain `--auto` or `--chain`, or `/gsd-profile-user`, and never set the hygiene bypasses `MUHTARI_ALLOW_CHAIN` or
    `MUHTARI_ALLOW_MAIN_COMMIT`. Stop inside a scope only at a real decision boundary, failed gate requiring changed
    scope, exhausted live/remote attempt cap, or an action excluded from the approval; local runs are covered by the
    standing preauthorization above.
+   Resolve the GSD runtime using `gsd-core/references/gsd-run-resolver.md` and use that same executable for status,
+   planning and execution queries; do not trust a `gsd_run` found on `PATH` unless its runtime identity and version
+   match the workflow-selected installation.
 9. **Branch, then pull request.** Never commit on `main` once a remote exists. Before the first GSD step that
    commits, branch off `origin/main`: `phase/NN-slug` for a phase, `milestone/vX.Y-slug` for milestone steps,
    `gsd/roadmap` for the kickoff. After `/gsd-ship`, give the pull request a Conventional Commit title, run

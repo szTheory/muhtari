@@ -40,6 +40,12 @@ typedef struct {
 static result observed;
 static unsigned scenario, frame;
 static volatile sig_atomic_t manual_alarm_count;
+static int manual_test_advance_past_deadline_on_reap;
+static int manual_test_deadline_reached;
+static uint64_t manual_test_wall_deadline_ms;
+static int manual_test_fail_cleanup_clock;
+static int manual_test_fail_helper_identity;
+static int manual_test_fail_core_identity;
 
 static void manual_alarm_handler(int signal_number)
 {
@@ -69,6 +75,8 @@ typedef struct {
 
 static uint64_t manual_now_ms(void)
 {
+    if (manual_test_deadline_reached)
+        return manual_test_wall_deadline_ms;
     struct timespec now;
     if (clock_gettime(CLOCK_MONOTONIC, &now) != 0)
         return 0;
@@ -78,8 +86,11 @@ static uint64_t manual_now_ms(void)
 static int manual_wait_once(pid_t child, int *status, int *error)
 {
     pid_t result = waitpid(child, status, WNOHANG);
-    if (result == child)
+    if (result == child) {
+        if (manual_test_advance_past_deadline_on_reap)
+            manual_test_deadline_reached = 1;
         return 1;
+    }
     if (result == 0)
         return 0;
     *error = errno;
@@ -103,8 +114,7 @@ static int manual_wait_retry(pid_t child, int *status, int *error, uint64_t star
             return result;
         uint64_t now = manual_now_ms();
         if (now == 0) {
-            *error = EIO;
-            return -1;
+            return -2;
         }
         if (now - start_ms >= budget_ms)
             return -2;
@@ -113,6 +123,23 @@ static int manual_wait_retry(pid_t child, int *status, int *error, uint64_t star
             return -1;
         }
     }
+}
+
+static int manual_wait_attempts(pid_t child, int *status, int *error, uint64_t budget_ms)
+{
+    uint64_t attempts = (budget_ms + 9u) / 10u;
+    if (attempts == 0)
+        attempts = 1;
+    for (uint64_t attempt = 0; attempt < attempts; attempt++) {
+        int result = manual_wait_once(child, status, error);
+        if (result != 0 && result != -2)
+            return result;
+        if (attempt + 1u < attempts && !manual_sleep_10ms()) {
+            *error = errno;
+            return -1;
+        }
+    }
+    return 0;
 }
 
 static int manual_child_reaped(pid_t child)
@@ -144,11 +171,19 @@ static int manual_remove_owned_trace(int dir_fd, const char *name, int created, 
 {
     if (!created)
         return 1;
-    if (dir_fd < 0 || !identity_valid)
+    if (dir_fd < 0)
         return 0;
     struct stat current;
     if (fstatat(dir_fd, name, &current, AT_SYMLINK_NOFOLLOW) != 0)
         return errno == ENOENT;
+    if (!identity_valid) {
+        /* Creation was exclusive in the already-validated owner-only directory. No child was
+         * started, so remove this regular owner file before closing its descriptor. */
+        if (!S_ISREG(current.st_mode) || current.st_uid != getuid() ||
+            (current.st_mode & 0077) != 0)
+            return 0;
+        return unlinkat(dir_fd, name, 0) == 0 || errno == ENOENT;
+    }
     if (!S_ISREG(current.st_mode) || current.st_dev != identity->st_dev ||
         current.st_ino != identity->st_ino)
         return 1;
@@ -192,6 +227,11 @@ static int manual_open_traces(const char *trace_dir, manual_trace_setup *setup)
     if (setup->helper_fd < 0)
         goto refused;
     setup->helper_created = 1;
+    if (manual_test_fail_helper_identity) {
+        manual_test_fail_helper_identity = 0;
+        errno = EIO;
+        goto refused;
+    }
     if (fstat(setup->helper_fd, &setup->helper_identity) != 0)
         goto refused;
     setup->helper_identity_valid = 1;
@@ -202,6 +242,11 @@ static int manual_open_traces(const char *trace_dir, manual_trace_setup *setup)
     if (setup->core_fd < 0)
         goto refused;
     setup->core_created = 1;
+    if (manual_test_fail_core_identity) {
+        manual_test_fail_core_identity = 0;
+        errno = EIO;
+        goto refused;
+    }
     if (fstat(setup->core_fd, &setup->core_identity) != 0)
         goto refused;
     setup->core_identity_valid = 1;
@@ -284,6 +329,8 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
         return 2;
     }
     uint64_t start = manual_now_ms();
+    if (manual_test_advance_past_deadline_on_reap)
+        manual_test_wall_deadline_ms = start + wall_ms;
     pid_t child = fork();
     if (child < 0) {
         int saved = errno;
@@ -348,7 +395,11 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
             }
             if (observed_child > 0) {
                 waited = 1;
-                break;
+                uint64_t observed_at = manual_now_ms();
+                if (observed_at == 0 || observed_at - start >= wall_ms)
+                    result->outcome = MANUAL_TIMED_OUT;
+                else
+                    break;
             }
             uint64_t now = manual_now_ms();
             if (observed_child == -2 || now == 0 || now - start >= wall_ms) {
@@ -366,94 +417,140 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
         uint64_t term_grace_ms = grace_ms / 2u;
         uint64_t reap_grace_ms = grace_ms - term_grace_ms;
         uint64_t reap_deadline_ms = term_grace_ms + reap_grace_ms;
-        uint64_t grace_start = manual_now_ms();
-        int observed_child = grace_start == 0 ? -1
-                                              : manual_wait_retry(child, &status, &wait_error,
-                                                                  grace_start, term_grace_ms);
-        if (observed_child > 0) {
-            waited = 1;
-            if (result->outcome != MANUAL_WAIT_FAILED)
-                result->outcome = result->exec_error ? MANUAL_EXEC_FAILED : MANUAL_EXITED;
-        } else if (observed_child == -1) {
-            result->outcome = MANUAL_WAIT_FAILED;
-            result->wait_error = wait_error ? wait_error : EINTR;
-            wait_observation_failed = 1;
+        uint64_t grace_start;
+        if (manual_test_fail_cleanup_clock) {
+            manual_test_fail_cleanup_clock = 0;
+            grace_start = 0;
         } else {
+            grace_start = manual_now_ms();
+        }
+        if (grace_start == 0) {
+            /* The wall deadline is already spent; without a clock, escalate on a bounded poll
+             * count instead of abandoning the exact child or pretending the grace began. */
             if (kill(child, SIGTERM) == 0)
                 result->signals_sent++;
             else if (errno != ESRCH) {
                 result->outcome = MANUAL_WAIT_FAILED;
                 result->wait_error = errno;
             }
-            while (!waited && !wait_observation_failed) {
-                int observed_child2 =
-                    manual_wait_retry(child, &status, &wait_error, grace_start, term_grace_ms);
-                if (observed_child2 > 0) {
-                    waited = 1;
-                    break;
-                }
-                if (observed_child2 < 0 && observed_child2 != -2) {
-                    result->outcome = MANUAL_WAIT_FAILED;
-                    result->wait_error = wait_error;
-                    wait_observation_failed = 1;
-                    break;
-                }
-                if (observed_child2 == -2) {
-                    break;
-                }
-                uint64_t now = manual_now_ms();
-                if (now == 0 || now - grace_start >= term_grace_ms)
-                    break;
-                if (!manual_sleep_10ms()) {
-                    result->outcome = MANUAL_WAIT_FAILED;
-                    result->wait_error = errno;
-                    break;
-                }
+            int observed_child = manual_wait_attempts(child, &status, &wait_error, term_grace_ms);
+            if (observed_child > 0)
+                waited = 1;
+            else if (observed_child < 0) {
+                result->outcome = MANUAL_WAIT_FAILED;
+                result->wait_error = wait_error ? wait_error : EIO;
+                wait_observation_failed = wait_error == ECHILD;
             }
             if (!waited && !wait_observation_failed) {
-                int observed_child3 =
-                    manual_wait_retry(child, &status, &wait_error, grace_start, term_grace_ms);
-                if (observed_child3 > 0)
-                    waited = 1;
-                else if (observed_child3 == -1) {
+                if (kill(child, SIGKILL) == 0)
+                    result->signals_sent++;
+                else if (errno != ESRCH) {
                     result->outcome = MANUAL_WAIT_FAILED;
-                    result->wait_error = wait_error ? wait_error : EINTR;
-                    wait_observation_failed = 1;
+                    result->wait_error = errno;
+                }
+                if (force_unreaped) {
+                    result->outcome = MANUAL_UNREAPED;
                 } else {
-                    if (kill(child, SIGKILL) == 0)
-                        result->signals_sent++;
-                    else if (errno != ESRCH) {
+                    int observed_after_kill =
+                        manual_wait_attempts(child, &status, &wait_error, reap_grace_ms);
+                    if (observed_after_kill > 0)
+                        waited = 1;
+                    else if (observed_after_kill < 0) {
+                        result->outcome = MANUAL_WAIT_FAILED;
+                        result->wait_error = wait_error ? wait_error : EIO;
+                        wait_observation_failed = 1;
+                    } else if (result->outcome != MANUAL_WAIT_FAILED) {
+                        result->outcome = MANUAL_UNREAPED;
+                    }
+                }
+            }
+        } else {
+            int observed_child = manual_wait_retry(child, &status, &wait_error, grace_start,
+                                                   term_grace_ms);
+            if (observed_child > 0) {
+                waited = 1;
+                if (result->outcome != MANUAL_WAIT_FAILED && result->outcome != MANUAL_TIMED_OUT)
+                    result->outcome = result->exec_error ? MANUAL_EXEC_FAILED : MANUAL_EXITED;
+            } else if (observed_child == -1) {
+                result->outcome = MANUAL_WAIT_FAILED;
+                result->wait_error = wait_error ? wait_error : EINTR;
+                wait_observation_failed = 1;
+            } else {
+                if (kill(child, SIGTERM) == 0)
+                    result->signals_sent++;
+                else if (errno != ESRCH) {
+                    result->outcome = MANUAL_WAIT_FAILED;
+                    result->wait_error = errno;
+                }
+                while (!waited && !wait_observation_failed) {
+                    int observed_child2 = manual_wait_retry(child, &status, &wait_error,
+                                                            grace_start, term_grace_ms);
+                    if (observed_child2 > 0) {
+                        waited = 1;
+                        break;
+                    }
+                    if (observed_child2 < 0 && observed_child2 != -2) {
+                        result->outcome = MANUAL_WAIT_FAILED;
+                        result->wait_error = wait_error;
+                        wait_observation_failed = 1;
+                        break;
+                    }
+                    if (observed_child2 == -2)
+                        break;
+                    uint64_t now = manual_now_ms();
+                    if (now == 0 || now - grace_start >= term_grace_ms)
+                        break;
+                    if (!manual_sleep_10ms()) {
                         result->outcome = MANUAL_WAIT_FAILED;
                         result->wait_error = errno;
+                        break;
                     }
-                    if (!wait_observation_failed) {
-                        if (force_unreaped) {
-                            result->outcome = MANUAL_UNREAPED;
-                        } else {
-                            for (;;) {
-                                int observed_child4 = manual_wait_retry(
-                                    child, &status, &wait_error, grace_start, reap_deadline_ms);
-                                if (observed_child4 > 0) {
-                                    waited = 1;
-                                    break;
-                                }
-                                if (observed_child4 < 0 && observed_child4 != -2) {
-                                    result->outcome = MANUAL_WAIT_FAILED;
-                                    result->wait_error = wait_error;
-                                    wait_observation_failed = 1;
-                                    break;
-                                }
-                                uint64_t now = manual_now_ms();
-                                if (observed_child4 == -2 || now == 0 ||
-                                    now - grace_start >= reap_deadline_ms) {
-                                    if (result->outcome != MANUAL_WAIT_FAILED)
-                                        result->outcome = MANUAL_UNREAPED;
-                                    break;
-                                }
-                                if (!manual_sleep_10ms()) {
-                                    result->outcome = MANUAL_WAIT_FAILED;
-                                    result->wait_error = errno;
-                                    break;
+                }
+                if (!waited && !wait_observation_failed) {
+                    int observed_child3 = manual_wait_retry(child, &status, &wait_error,
+                                                            grace_start, term_grace_ms);
+                    if (observed_child3 > 0)
+                        waited = 1;
+                    else if (observed_child3 == -1) {
+                        result->outcome = MANUAL_WAIT_FAILED;
+                        result->wait_error = wait_error ? wait_error : EINTR;
+                        wait_observation_failed = 1;
+                    } else {
+                        if (kill(child, SIGKILL) == 0)
+                            result->signals_sent++;
+                        else if (errno != ESRCH) {
+                            result->outcome = MANUAL_WAIT_FAILED;
+                            result->wait_error = errno;
+                        }
+                        if (!wait_observation_failed) {
+                            if (force_unreaped) {
+                                result->outcome = MANUAL_UNREAPED;
+                            } else {
+                                for (;;) {
+                                    int observed_child4 = manual_wait_retry(
+                                        child, &status, &wait_error, grace_start, reap_deadline_ms);
+                                    if (observed_child4 > 0) {
+                                        waited = 1;
+                                        break;
+                                    }
+                                    if (observed_child4 < 0 && observed_child4 != -2) {
+                                        result->outcome = MANUAL_WAIT_FAILED;
+                                        result->wait_error = wait_error;
+                                        wait_observation_failed = 1;
+                                        break;
+                                    }
+                                    uint64_t now = manual_now_ms();
+                                    if (observed_child4 == -2 || now == 0 ||
+                                        now - grace_start >= reap_deadline_ms) {
+                                        if (result->outcome != MANUAL_WAIT_FAILED)
+                                            result->outcome = MANUAL_UNREAPED;
+                                        break;
+                                    }
+                                    if (!manual_sleep_10ms()) {
+                                        result->outcome = MANUAL_WAIT_FAILED;
+                                        result->wait_error = errno;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -608,11 +705,28 @@ static int manual_hang_app(void)
             struct timespec delay = {.tv_sec = 0, .tv_nsec = 5000000L};
             (void)nanosleep(&delay, NULL);
         }
-    } else {
+    } else if (test_child == NULL || strcmp(test_child, "clock-failure") != 0) {
         (void)signal(SIGTERM, SIG_IGN);
     }
     for (;;)
         pause();
+}
+
+static int manual_late_exit_app(void)
+{
+    const char *trace_text = getenv("MUHTARI_INPUT_TRACE_FD");
+    char *end = NULL;
+    errno = 0;
+    long trace_value = trace_text == NULL ? -1 : strtol(trace_text, &end, 10);
+    if (errno || trace_text == NULL || end == trace_text || *end || trace_value < 3 ||
+        trace_value > INT_MAX)
+        return 1;
+    it_writer writer;
+    if (!it_begin(&writer, (int)trace_value, IT_CORE, (uint32_t)getppid()))
+        return 1;
+    it_emit(&writer, IT_POLL, 1, 0, 0);
+    (void)signal(SIGTERM, SIG_IGN);
+    return 0;
 }
 
 static int manual_write_file(const char *path, const char *text)
@@ -710,6 +824,8 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
     }
     int path_fault = strcmp(fault, "existing-file") == 0 ||
                      strcmp(fault, "existing-core-file") == 0 || strcmp(fault, "symlink") == 0;
+    int identity_fault = strcmp(fault, "helper-fstat") == 0 || strcmp(fault, "core-fstat") == 0;
+    int preflight_fault = path_fault || identity_fault;
     if (path_fault) {
         if (lstat(sentinel, &sentinel_before) != 0)
             return 0;
@@ -734,54 +850,93 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
     } else if (strcmp(fault, "exec") == 0) {
         snprintf(wrong, sizeof wrong, "%s/does-not-exist", work);
         app[0] = wrong;
+    } else if (strcmp(fault, "late-exit") == 0) {
+        app[1] = "--manual-test-late-exit";
+    } else if (strcmp(fault, "clock-failure") == 0) {
+        app[1] = "--manual-test-hang";
     } else if (strcmp(fault, "timeout") == 0 || strcmp(fault, "unreaped") == 0 ||
                strcmp(fault, "interrupt") == 0) {
         app[1] = "--manual-test-hang";
     }
     setenv("MUHTARI_MANUAL_INPUT_TEST_CHILD",
-           strcmp(fault, "interrupt") == 0                                   ? "interrupt"
+           strcmp(fault, "interrupt") == 0 ? "interrupt"
+           : strcmp(fault, "late-exit") == 0 ? "late-exit"
+           : strcmp(fault, "clock-failure") == 0 ? "clock-failure"
            : strcmp(fault, "timeout") == 0 || strcmp(fault, "unreaped") == 0 ? "hang"
-                                                                             : "1",
+                                                                              : "1",
            1);
     setenv("MUHTARI_MANUAL_INPUT_EXPECT_CONFIG", config, 1);
     setenv("MUHTARI_MANUAL_INPUT_EXPECT_CORE", core_path, 1);
     setenv("MUHTARI_MANUAL_INPUT_EXPECT_CONTENT", cart, 1);
+    if (strcmp(fault, "late-exit") == 0)
+        manual_test_advance_past_deadline_on_reap = 1;
+    if (strcmp(fault, "clock-failure") == 0)
+        manual_test_fail_cleanup_clock = 1;
+    if (strcmp(fault, "helper-fstat") == 0)
+        manual_test_fail_helper_identity = 1;
+    if (strcmp(fault, "core-fstat") == 0)
+        manual_test_fail_core_identity = 1;
     uint64_t launch_start = manual_now_ms();
+    mode_t saved_umask = 0;
+    if (identity_fault)
+        saved_umask = umask(0077);
     int rc =
         manual_launch(trace_path, app, wall_ms, grace_ms, strcmp(fault, "unreaped") == 0, result);
+    manual_test_advance_past_deadline_on_reap = 0;
+    manual_test_deadline_reached = 0;
+    manual_test_wall_deadline_ms = 0;
+    manual_test_fail_helper_identity = 0;
+    manual_test_fail_core_identity = 0;
     uint64_t launch_end = manual_now_ms();
+    int clock_child_reaped_by_launcher = 1;
+    if (strcmp(fault, "clock-failure") == 0 && result->child > 0) {
+        int status = 0;
+        pid_t waited = waitpid(result->child, &status, WNOHANG);
+        if (waited == 0) {
+            clock_child_reaped_by_launcher = 0;
+            if (kill(result->child, SIGKILL) == 0)
+                (void)manual_test_reap_killed(result->child);
+        } else if (waited == result->child || (waited < 0 && errno != ECHILD)) {
+            clock_child_reaped_by_launcher = 0;
+        }
+    }
     if (strcmp(fault, "unreaped") == 0 && !manual_test_reap_killed(result->child))
         return 0;
-    if (path_fault) {
-        int path_ok = rc == 2 && result->child == 0 && sentinel_before_valid;
+    if (preflight_fault) {
+        int path_ok = rc == 2 && result->child == 0 && (!path_fault || sentinel_before_valid);
         if (!path_ok)
             fprintf(stderr, "manual control %s: refusal or child-zero assertion failed\n", fault);
-        struct stat sentinel_after;
-        const char *expected_sentinel =
-            strcmp(fault, "existing-file") == 0        ? "preserve existing trace\n"
-            : strcmp(fault, "existing-core-file") == 0 ? "preserve existing core trace\n"
-                                                       : "preserve symlink target\n";
-        if (!manual_file_equals(sentinel, expected_sentinel) ||
-            lstat(sentinel, &sentinel_after) != 0 ||
-            sentinel_after.st_dev != sentinel_before.st_dev ||
-            sentinel_after.st_ino != sentinel_before.st_ino ||
-            (sentinel_after.st_mode & S_IFMT) != (sentinel_before.st_mode & S_IFMT)) {
-            path_ok = 0;
-            fprintf(stderr, "manual control %s: existing sentinel identity/content changed\n",
-                    fault);
-        }
-        if (strcmp(fault, "symlink") == 0) {
-            struct stat conflict_after;
-            if (!conflict_before_valid || lstat(trace_conflict, &conflict_after) != 0 ||
-                !S_ISLNK(conflict_after.st_mode) ||
-                conflict_after.st_dev != conflict_before.st_dev ||
-                conflict_after.st_ino != conflict_before.st_ino)
+        if (path_fault) {
+            struct stat sentinel_after;
+            const char *expected_sentinel =
+                strcmp(fault, "existing-file") == 0        ? "preserve existing trace\n"
+                : strcmp(fault, "existing-core-file") == 0 ? "preserve existing core trace\n"
+                                                           : "preserve symlink target\n";
+            if (!manual_file_equals(sentinel, expected_sentinel) ||
+                lstat(sentinel, &sentinel_after) != 0 ||
+                sentinel_after.st_dev != sentinel_before.st_dev ||
+                sentinel_after.st_ino != sentinel_before.st_ino ||
+                (sentinel_after.st_mode & S_IFMT) != (sentinel_before.st_mode & S_IFMT)) {
                 path_ok = 0;
+                fprintf(stderr, "manual control %s: existing sentinel identity/content changed\n",
+                        fault);
+            }
+            if (strcmp(fault, "symlink") == 0) {
+                struct stat conflict_after;
+                if (!conflict_before_valid || lstat(trace_conflict, &conflict_after) != 0 ||
+                    !S_ISLNK(conflict_after.st_mode) ||
+                    conflict_after.st_dev != conflict_before.st_dev ||
+                    conflict_after.st_ino != conflict_before.st_ino)
+                    path_ok = 0;
+            }
         }
 
         count = snprintf(other, sizeof other, "%s/helper.trace", trace_path);
-        if (count < 0 || (size_t)count >= sizeof other)
+        if (count < 0 || (size_t)count >= sizeof other) {
+            if (identity_fault)
+                (void)umask(saved_umask);
             return 0;
+        }
         struct stat helper_info;
         int helper_exists = lstat(other, &helper_info) == 0;
         if (strcmp(fault, "existing-file") == 0) {
@@ -799,12 +954,29 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
             path_ok = 0;
         }
 
+        count = snprintf(trace_conflict, sizeof trace_conflict, "%s/core.trace", trace_path);
+        if (count < 0 || (size_t)count >= sizeof trace_conflict) {
+            if (identity_fault)
+                (void)umask(saved_umask);
+            return 0;
+        }
+        struct stat core_info;
+        int core_exists = lstat(trace_conflict, &core_info) == 0;
+        int core_error = errno;
+        if (identity_fault && core_exists) {
+            path_ok = 0;
+            fprintf(stderr, "manual control %s: core.trace remained after refused preflight\n",
+                    fault);
+        } else if (identity_fault && core_error != ENOENT) {
+            path_ok = 0;
+        }
+
         if (strcmp(fault, "existing-file") == 0 || strcmp(fault, "existing-core-file") == 0) {
             if (unlink(sentinel) != 0) {
                 path_ok = 0;
                 fprintf(stderr, "manual control %s: test obstruction removal failed\n", fault);
             }
-        } else {
+        } else if (strcmp(fault, "symlink") == 0) {
             if (unlink(trace_conflict) != 0 || unlink(sentinel) != 0) {
                 path_ok = 0;
                 fprintf(stderr, "manual control %s: symlink fixture removal failed\n", fault);
@@ -813,12 +985,17 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
         /* The harness removes a leaked test-owned partial trace only after asserting it existed. */
         if (strcmp(fault, "existing-file") != 0 && helper_exists && unlink(other) != 0)
             path_ok = 0;
+        if (identity_fault && core_exists && unlink(trace_conflict) != 0)
+            path_ok = 0;
 
         manual_result retry_result;
         int retry_rc = manual_launch(trace_path, app, wall_ms, grace_ms, 0, &retry_result);
         count = snprintf(other, sizeof other, "%s/helper.trace", trace_path);
-        if (count < 0 || (size_t)count >= sizeof other)
+        if (count < 0 || (size_t)count >= sizeof other) {
+            if (identity_fault)
+                (void)umask(saved_umask);
             return 0;
+        }
         it_trace retry_helper, retry_core;
         int retry_complete = retry_rc == 0 && retry_result.child > 0 &&
                              retry_result.outcome == MANUAL_EXITED &&
@@ -828,13 +1005,37 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
             retry_complete = retry_helper.status == IT_COMPLETE;
         }
         count = snprintf(other, sizeof other, "%s/core.trace", trace_path);
-        if (count < 0 || (size_t)count >= sizeof other)
+        if (count < 0 || (size_t)count >= sizeof other) {
+            if (identity_fault)
+                (void)umask(saved_umask);
             return 0;
+        }
         if (retry_complete) {
             it_read(other, IT_CORE, &retry_core);
             retry_complete =
                 retry_core.status == IT_COMPLETE && it_pair(&retry_helper, &retry_core);
         }
+        if (identity_fault && retry_complete) {
+            struct stat retry_helper_info, retry_core_info;
+            count = snprintf(other, sizeof other, "%s/helper.trace", trace_path);
+            if (count < 0 || (size_t)count >= sizeof other) {
+                retry_complete = 0;
+            } else {
+                int helper_mode_ok = lstat(other, &retry_helper_info) == 0;
+                count = snprintf(other, sizeof other, "%s/core.trace", trace_path);
+                int core_mode_ok = count >= 0 && (size_t)count < sizeof other &&
+                                   lstat(other, &retry_core_info) == 0;
+                retry_complete = helper_mode_ok && core_mode_ok &&
+                                 S_ISREG(retry_helper_info.st_mode) &&
+                                 S_ISREG(retry_core_info.st_mode) &&
+                                 retry_helper_info.st_uid == getuid() &&
+                                 retry_core_info.st_uid == getuid() &&
+                                 (retry_helper_info.st_mode & 0777) == 0600 &&
+                                 (retry_core_info.st_mode & 0777) == 0600;
+            }
+        }
+        if (identity_fault)
+            (void)umask(saved_umask);
         if (!retry_complete) {
             path_ok = 0;
             fprintf(stderr, "manual control %s: synthetic retry failed (rc=%d, outcome=%d)\n",
@@ -872,7 +1073,9 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
         unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONFIG");
         unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CORE");
         unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONTENT");
-        if (strcmp(fault, "existing-file") == 0)
+        if (identity_fault)
+            printf("manual control %s: %s, child=0, signals=0\n", fault, expected_outcome);
+        else if (strcmp(fault, "existing-file") == 0)
             printf("manual control %s: existing trace sentinel preserved; partial trace absent\n",
                    fault);
         else
@@ -925,7 +1128,8 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
             helper.status != IT_COMPLETE || core.status != IT_EMPTY)
             return 0;
     } else if (strcmp(fault, "timeout") == 0 || strcmp(fault, "unreaped") == 0 ||
-               strcmp(fault, "interrupt") == 0) {
+               strcmp(fault, "interrupt") == 0 || strcmp(fault, "late-exit") == 0 ||
+               strcmp(fault, "clock-failure") == 0) {
         it_trace helper, core;
         count = snprintf(other, sizeof other, "%s/helper.trace", trace_path);
         if (count < 0 || (size_t)count >= sizeof other)
@@ -935,12 +1139,30 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
         if (count < 0 || (size_t)count >= sizeof other)
             return 0;
         it_read(other, IT_CORE, &core);
+        int late_exit = strcmp(fault, "late-exit") == 0;
+        int clock_failure = strcmp(fault, "clock-failure") == 0;
         int cleanup_expected = strcmp(fault, "unreaped") != 0
                                    ? rc == 124 && result->outcome == MANUAL_TIMED_OUT
                                    : rc == 125 && result->outcome == MANUAL_UNREAPED;
-        if (!cleanup_expected || result->signals_sent != 2 || helper.status != IT_COMPLETE ||
-            core.status != IT_UNFINISHED || core.records[0].type != IT_INIT ||
-            !it_pair(&helper, &core))
+        int signals_expected = late_exit ? result->signals_sent == 0
+                               : clock_failure ? result->signals_sent >= 1 &&
+                                                     result->signals_sent <= 2
+                                               : result->signals_sent == 2;
+        int core_lifecycle_ok = core.status == IT_UNFINISHED &&
+                                core.records[0].type == IT_INIT && it_pair(&helper, &core);
+        int fork_recorded = 0;
+        if (clock_failure) {
+            for (uint32_t i = 0; i < helper.count; i++)
+                if (helper.records[i].type == IT_FORK &&
+                    helper.records[i].a == (uint32_t)result->child)
+                    fork_recorded = 1;
+            core_lifecycle_ok = core.status == IT_EMPTY || core_lifecycle_ok;
+        }
+        if (!cleanup_expected || !signals_expected ||
+            (clock_failure && (!clock_child_reaped_by_launcher || !fork_recorded)) ||
+            helper.status != IT_COMPLETE || !core_lifecycle_ok)
+            return 0;
+        if (late_exit && (!WIFEXITED(result->status) || WEXITSTATUS(result->status) != 0))
             return 0;
         if (strcmp(fault, "interrupt") == 0 &&
             (!WIFSIGNALED(result->status) || WTERMSIG(result->status) != SIGKILL))
@@ -948,14 +1170,14 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
     } else if (rc == 0 || strcmp(fault, "valid") == 0) {
         return 0;
     }
-    if (!path_fault &&
+    if (!preflight_fault &&
         (result->child <= 0 || waitpid(result->child, NULL, WNOHANG) != -1 || errno != ECHILD))
         return 0;
     unsetenv("MUHTARI_MANUAL_INPUT_TEST_CHILD");
     unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONFIG");
     unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CORE");
     unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONTENT");
-    if (!path_fault && (unlink(cart) != 0 || rmdir(cart_dir) != 0))
+    if (!preflight_fault && (unlink(cart) != 0 || rmdir(cart_dir) != 0))
         return 0;
     if (strcmp(fault, "interrupt") == 0 && (manual_alarm_count == 0 || launch_end < launch_start ||
                                             launch_end - launch_start > wall_ms + grace_ms + 200u ||
@@ -987,9 +1209,16 @@ static int manual_control(const char *work, char *app_path, char *core_path)
         {"existing-file", "existing trace sentinel preserved", 1000u, 100u},
         {"existing-core-file", "existing core trace preserved and partial file removed", 1000u,
          100u},
+        {"helper-fstat", "post-create helper identity failure rolls back and retries", 1000u,
+         100u},
+        {"core-fstat", "post-create core identity failure rolls back and retries", 1000u,
+         100u},
         {"symlink", "trace symlink sentinel preserved", 1000u, 100u},
         {"exec", "exec error", 1000u, 100u},
         {"timeout", "exact-child SIGTERM/SIGKILL/reap", 150u, 150u},
+        {"late-exit", "wall timeout remains authoritative after successful late child exit", 150u,
+         150u},
+        {"clock-failure", "clock failure still signals and reaps the exact child", 30u, 100u},
         {"interrupt", "EINTR returns to bounded deadline and exact-child cleanup", 150u, 150u},
         {"unreaped", "bounded unreaped result; harness reaped exact child", 150u, 150u}};
     char valid_trace[4096] = {0};
@@ -1169,9 +1398,13 @@ int main(int argc, char **argv)
 {
     const char *manual_test_child = getenv("MUHTARI_MANUAL_INPUT_TEST_CHILD");
     if (manual_test_child != NULL &&
-        (strcmp(manual_test_child, "hang") == 0 || strcmp(manual_test_child, "interrupt") == 0) &&
+        (strcmp(manual_test_child, "hang") == 0 || strcmp(manual_test_child, "interrupt") == 0 ||
+         strcmp(manual_test_child, "clock-failure") == 0) &&
         argc > 1 && strcmp(argv[1], "--manual-test-hang") == 0)
         return manual_hang_app();
+    if (manual_test_child != NULL && strcmp(manual_test_child, "late-exit") == 0 && argc > 1 &&
+        strcmp(argv[1], "--manual-test-late-exit") == 0)
+        return manual_late_exit_app();
     if (manual_test_child != NULL && strcmp(manual_test_child, "1") == 0 && argc > 1 &&
         strcmp(argv[1], "--verbose") == 0)
         return manual_fake_app(argc, argv);

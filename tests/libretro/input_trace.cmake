@@ -48,11 +48,17 @@ execute_process(COMMAND "${HOST}" --manual-control "${WORK}" "${MODULE}"
   RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE err TIMEOUT 5)
 if(NOT rc STREQUAL "0" OR NOT out MATCHES "manual control valid: valid trace" OR
     NOT out MATCHES "manual control timeout: exact-child SIGTERM/SIGKILL/reap" OR
+    NOT out MATCHES "manual control late-exit: wall timeout remains authoritative after successful late child exit" OR
+    NOT out MATCHES "manual control clock-failure: clock failure still signals and reaps the exact child" OR
     NOT out MATCHES "manual control interrupt: EINTR returns to bounded deadline and exact-child cleanup" OR
     NOT out MATCHES "manual control unreaped: bounded unreaped result" OR
     NOT out MATCHES "manual control existing-file: existing trace sentinel preserved; partial trace absent" OR
     NOT out MATCHES "manual control existing-core-file: existing trace preserved; partial helper absent" OR
     NOT out MATCHES "manual control existing-core-file retry: complete paired traces" OR
+    NOT out MATCHES "manual control helper-fstat: post-create helper identity failure rolls back and retries" OR
+    NOT out MATCHES "manual control helper-fstat retry: complete paired traces" OR
+    NOT out MATCHES "manual control core-fstat: post-create core identity failure rolls back and retries" OR
+    NOT out MATCHES "manual control core-fstat retry: complete paired traces" OR
     NOT out MATCHES "manual control symlink: existing trace preserved; partial helper absent" OR
     NOT out MATCHES "manual control symlink retry: complete paired traces")
   message(FATAL_ERROR "passive manual launcher controls failed: ${rc}\n${out}${err}")

@@ -94,6 +94,14 @@ The default all-worker CMake workflow repeatedly hit five-second test deadlines 
 
 Plan 12-23 is complete. Phase 12 remains blocked at accepted 0/4 with 2/5 roadmap truths verified. Release identity, complete released-core RetroArch evidence, and a measured pipeline improvement remain open. Plan 12-24 and the original acceptance successors are still blocked by their dependencies. No host or remote action is authorized.
 
+## Code Review Follow-up — 2026-11-09
+
+The refreshed standard review found and the local fix round corrected two lifecycle faults in the offline passive launcher: a child reaped at the wall deadline could be reported as successful, and a failed cleanup-clock read could skip child termination. Added deterministic synthetic controls for a successful late exit and a cleanup-clock failure. The existing five-second test timeout and the full test inventory remain unchanged. RED/GREEN commands, full CI result and scope limits are recorded in [12-23-LOCAL-EVIDENCE.md](12-23-LOCAL-EVIDENCE.md).
+
+Verification: `cmake --workflow --preset ci` exited 0 (700/700 tests; three packages; six release checks). This only verifies local build/test/release controls; Phase 12 acceptance remains blocked at 0/4.
+
+The final standard re-review found no remaining issues. A post-create `fstat` failure now rolls back helper/core traces in the already-validated owner-only directory. Deterministic controls keep `umask(0077)` through the same-directory retry and assert both paired trace files are owner-only regular files with mode `0600`. The focused preflight test passed 1/1, and the final `cmake --workflow --preset ci` run passed all 700 tests, generated three packages, and passed six release checks. Full red/green and review evidence is in [12-23-LOCAL-EVIDENCE.md](12-23-LOCAL-EVIDENCE.md).
+
 ## Self-Check: PASSED
 
-Both plan tasks and their acceptance criteria passed. The complete ordinary, package, release, hygiene, protected-path, staged-path, and bounded review results are recorded in 12-23-LOCAL-EVIDENCE.md.
+Both plan tasks and their acceptance criteria passed. The complete ordinary, package, release, hygiene, protected-path, staged-path, bounded review, and review-fix results are recorded in 12-23-LOCAL-EVIDENCE.md.

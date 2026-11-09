@@ -6,7 +6,7 @@ findings:
   - id: WR-01
     severity: warning
     disposition: fixed
-    title: "Partial trace-file creation survives preflight failure"
+    title: "Partial trace rollback and same-directory retry under owner-only umask"
   - id: WR-02
     severity: warning
     disposition: fixed
@@ -15,18 +15,28 @@ findings:
     severity: info
     disposition: fixed
     title: "History response codes are duplicated across translation units"
+  - id: CR-01
+    severity: critical
+    disposition: fixed
+    title: "Wall-timeout child can be reported as successful"
+  - id: CR-02
+    severity: critical
+    disposition: fixed
+    title: "Monotonic-clock failure can leave the launched child alive"
 open: 0
-total: 3
-recorded: 2026-11-09T20:11:24Z
+total: 5
+recorded: 2026-11-09T23:29:53Z
 ---
 
 # Phase 12: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 28b2e60 (12-23-LOCAL-EVIDENCE.md) |
+| WR-01 | warning | fixed | Rollback plus restrictive-umask retry verified in 12-23-LOCAL-EVIDENCE.md (not in the current review) |
 | WR-02 | warning | fixed | db134c4 (not in the current review) |
 | IN-01 | info | fixed | db134c4 (not in the current review) |
+| CR-01 | critical | fixed | Local fix and red/green evidence in 12-23-LOCAL-EVIDENCE.md (not in the current review) |
+| CR-02 | critical | fixed | Local fix and red/green evidence in 12-23-LOCAL-EVIDENCE.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
