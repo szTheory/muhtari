@@ -1,65 +1,54 @@
 ---
 phase: 12-player-ready-delivery-and-playstead-bridge
-reviewed: 2026-11-09T18:01:24Z
+reviewed: 2026-11-09T22:41:19Z
 depth: standard
-files_reviewed: 23
+files_reviewed: 5
 files_reviewed_list:
-  - .github/workflows/ci.yml
-  - .github/workflows/nightly.yml
-  - AGENTS.md
+  - README.md
   - docs/libretro.md
   - docs/maintaining.md
-  - docs/testing.md
-  - scripts/retroarch-manual-input.sh
-  - tests/core/test_state.c
-  - tests/core/tests.cmake
-  - tests/diag/tests.cmake
-  - tests/input/pixels.c
-  - tests/input/test_input.c
-  - tests/input/tests.cmake
-  - tests/inventory/wasm32.txt
   - tests/libretro/input_trace.cmake
   - tests/libretro/input_trace_host.c
-  - tests/libretro/test_input_trace.c
-  - tests/policy/retroarch_preflight.c
-  - tests/policy/retroarch_preflight.cmake
-  - tests/policy/tests.cmake
-  - tests/retroarch/input_trace_helper.h
-  - tests/retroarch/keyboard_preflight.c
-  - tests/retroarch/test_input_trace_helper.c
 findings:
-  critical: 0
-  warning: 1
+  critical: 2
+  warning: 0
   info: 0
-  total: 1
+  total: 2
   necessity: 0
 status: issues_found
 ---
 
 # Phase 12: Code Review Report
 
-**Reviewed:** 2026-11-09T18:01:24Z
+**Reviewed:** 2026-11-09T22:41:19Z
 **Depth:** standard
-**Files Reviewed:** 23
+**Files Reviewed:** 5
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the 23 scoped workflow, documentation, test, and diagnostic files. The owner input diagnostic and its callback validator are wired through the existing offline policy test. One failure path leaves a partial trace file behind after preflight rejects a trace directory, which prevents reusing that directory for a retry.
+Reviewed the five files changed since the prior review. The earlier partial-trace rollback issue is addressed by the new ownership tracking and retry controls. The launcher still has two failure paths that can misreport or leave a timed-out child running; both need correction before the diagnostic launcher is reliable.
 
 ## Narrative Findings (AI reviewer)
 
-## Warnings
+## Critical Issues
 
-### WR-01: Partial trace-file creation survives preflight failure
+### CR-01: Wall-timeout child can be reported as successful
 
-**Severity:** WARNING
-**File:** `tests/libretro/input_trace_host.c:146-153`
-**Issue:** `manual_open_traces` creates `helper.trace` with `O_EXCL` before it attempts to create `core.trace`. If the second open fails (including when `core.trace` already exists or is a symlink), it returns failure. `manual_launch` closes the descriptors but does not remove the newly created empty `helper.trace` (`tests/libretro/input_trace_host.c:206-214`). The rejected directory is therefore left changed, and a retry against that directory also fails at the first `O_EXCL` open.
-**Fix:** Track whether this invocation created `helper.trace` and unlink that file on every later setup failure, using the already-open directory descriptor. Add a control that confirms the rejected directory contains no newly created trace and can be retried while preserving the pre-existing `core.trace` target.
+**Severity:** BLOCKER
+**File:** `tests/libretro/input_trace_host.c:340-376`
+**Issue:** Once the wall deadline is reached, the launcher enters the grace cleanup path, but if `waitpid` reaps the child during the initial grace check, lines 373-376 change `MANUAL_TIMED_OUT` to `MANUAL_EXITED`. The earlier wait loop also accepts a reaped child before checking whether the deadline has passed. A child that exceeds the configured wall limit and then exits with status 0 can therefore make `manual_launch` return success instead of timeout status 124.
+**Fix:** Treat the wall deadline as authoritative: check it before accepting a successful reap, and preserve `MANUAL_TIMED_OUT` through all cleanup/reap paths after expiry. Add a synthetic child that exits successfully just after the deadline and assert the launcher still returns timeout.
+
+### CR-02: Monotonic-clock failure can leave the launched child alive
+
+**Severity:** BLOCKER
+**File:** `tests/libretro/input_trace_host.c:365-381`
+**Issue:** `manual_now_ms()` returns zero when `clock_gettime(CLOCK_MONOTONIC)` fails. If that happens when `grace_start` is read, the code sets `observed_child` to -1, marks wait observation failed, and skips both SIGTERM and SIGKILL. `manual_launch` then closes its trace descriptors and returns while the RetroArch child may still be running, defeating the launcher’s bounded child-lifecycle guarantee.
+**Fix:** Do not make signal escalation conditional on obtaining a cleanup timestamp. On clock failure, treat the deadline as expired, signal the exact child, and use an explicit fallback policy to report or complete reaping without abandoning a live child. Add a clock-failure control for this cleanup branch.
 
 ---
 
-_Reviewed: 2026-11-09T18:01:24Z_
+_Reviewed: 2026-11-09T22:41:19Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
