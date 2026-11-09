@@ -12,7 +12,7 @@ affects: [phase-12]
 actuals:
   tokens: 5000
   tasks: 2
-  commits: 3
+  commits: 4
 tech-stack:
   added: []
   patterns:
@@ -74,7 +74,7 @@ status: complete
 - 12-REVIEW-DISPOSITION.md — marks only WR-01 fixed; WR-02 and IN-01 retain their prior dispositions.
 - 12-23-LOCAL-EVIDENCE.md — command, exit, source, review, and preservation evidence.
 
-## Verification
+## Gate Results
 
 - The strengthened old-source consumer failed on the expected leaked-helper assertion; the repaired focused consumer passed 1/1.
 - Four default-parallel CI workflow attempts reached the ordinary test suite but exited 8 on timeout-only failures. With the same preset and unchanged test deadlines/inventory, the complete ordinary suite passed 700/700 using two CTest workers.
