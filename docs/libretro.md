@@ -15,63 +15,96 @@ for a first launch; no BIOS is needed. Firmware setup is [below](#bios-files).
 
 ### Artifact identity and evidence
 
-The [`retroarch-dmg` row in `pins.txt`](../pins.txt) identifies the separately pinned host package by version,
-official URL and SHA-256. It is an app-package pin, not evidence for a muhtari core or proof that an installed
-app matches it. The project release process describes the existing [archive, attestation and install
-verification](maintaining.md#how-a-release-happens). Packages install `muhtari_libretro.dylib` on macOS,
-`muhtari_libretro.so` on Linux or `muhtari_libretro.dll` on Windows under `cores/`, and
-`muhtari_libretro.info` under `info/`; the local README install check confirms those member paths for its
-macOS archive. A source pin, candidate archive digest or installed member name does not by itself qualify a
-published core.
+The host app and muhtari core are separate artifacts with separate identities. The
+[`retroarch-dmg` row in `pins.txt`](../pins.txt) pins RetroArch 1.22.2 Metal for macOS as a universal DMG
+(SHA-256 `81b79121ba26d539064ae13b4d0419a120c3d165afbe656cf5f5412b15fdb434`). That pin identifies the app
+package only; it is not part of the core's publisher attestation. For the macOS arm64 core, the immutable
+[v0.11.1 release](https://github.com/szTheory/muhtari/releases/tag/v0.11.1) provides:
 
-No current local receipt binds a published core archive to a release and source commit. The core's release tag
-and immutable source identity, platform/architecture archive name and SHA-256, released core and `.info` member
-paths, and verification receipt for the supplied attestation subject, signer and source ref remain pending.
-The app pin and these core fields are separate; neither establishes an actual-host result. Keep them pending
-until the existing release verifier and an authorized host observation supply the corresponding evidence.
+| Item | Identity |
+|---|---|
+| Tag source commit | `d58f125297c4d63a7a8108112a5eafff6f53a76a` |
+| Archive | `muhtari-libretro-macos-arm64.zip` |
+| Archive SHA-256 | `7775c014de046c514ab4ad6535ed95ae99643344104d0a43b753895726dc2de3` |
+| Extracted core | `cores/muhtari_libretro.dylib` — SHA-256 `7ef06f36bfa8a357e47834dc1c04fa85dcb1ef058a2db8551bce4ae4b85492cd` |
+| Extracted core information | `info/muhtari_libretro.info` — SHA-256 `2a89f2ac1379800c871bc89d7c9fe4bac0c6af88140a5356a1ea820bb1d5d8b5` |
+
+The exact archive passed offline publisher-attestation verification for repository `szTheory/muhtari`, signer
+workflow `.github/workflows/release.yml`, source ref `refs/heads/main`, and source commit above. The recorded
+[release run](https://github.com/szTheory/muhtari/actions/runs/41513877501/attempts/1) passed the DMA screenshot
+comparison and fresh-process battery roundtrip. It did not include a held/released gameplay-input step, so
+those results do not qualify gameplay input. They apply to this published macOS arm64 archive, not to another
+architecture or the installed bytes on a Playstead machine. Select matching app and core architectures and have
+the adapter verify both immutable tested identities; an installed filename or moving `latest` URL is not a pin.
 
 ### Per-game launch paths
 
-RetroArch owns the window, audio, input focus and its save/state files. An integrating application should give
-each game a stable identity and separate content, config, save, state and log paths under a local directory it
-controls. Use one writer per game's save/state paths; do not share them between concurrent sessions. For example:
+RetroArch owns the game window, audio/input devices and its save/state files. Playstead owns the per-game content
+identity and directories, adapter pins and installed-artifact checks, controller/keyboard mappings, focus handoff,
+and child-process lifecycle and return. Use one writer per game's save/state paths; do not share them between
+concurrent sessions. `muhtari-run` is headless and is not an interactive player. For example, create a local
+RetroArch config and pass every path explicitly:
 
 ```sh
 RETROARCH="/Applications/RetroArch.app/Contents/MacOS/RetroArch"
 CORE="/path/to/cores/muhtari_libretro.dylib"
 GAME_ROOT="/path/to/playstead/games/game-123"
+GAME="$GAME_ROOT/content/game.a78"
+mkdir -p "$GAME_ROOT/config" "$GAME_ROOT/content" "$GAME_ROOT/save" \
+  "$GAME_ROOT/state" "$GAME_ROOT/firmware" "$GAME_ROOT/logs"
 "$RETROARCH" --verbose --config "$GAME_ROOT/config/retroarch.cfg" \
-  -L "$CORE" "$GAME_ROOT/content/game.a78" \
-  --log-file "$GAME_ROOT/log/retroarch.log"
+  -L "$CORE" "$GAME" --log-file "$GAME_ROOT/logs/retroarch.log"
 ```
 
-The example paths are illustrative and must be created by the caller; the executable and core must be the
-separately verified artifacts for the target architecture. On Linux, use the installed `retroarch` executable
-and `.so` core; on Windows, use `retroarch.exe` and the `.dll` core in equivalent paths. An example per-game
-configuration is:
+The caller supplies the verified local content and separately verified executable and core for the same target
+architecture. On Linux, use `retroarch` and the `.so` core; on Windows, use `retroarch.exe` and the `.dll` core.
+Replace the example root with an absolute local path in the config file; RetroArch does not expand `$GAME_ROOT`
+inside config values:
 
 ```ini
 savefile_directory = "/path/to/playstead/games/game-123/save"
 savestate_directory = "/path/to/playstead/games/game-123/state"
-system_directory = "/path/to/playstead/shared/firmware"
 sort_savefiles_enable = "false"
+system_directory = "/path/to/playstead/shared/firmware"
 ```
 
-RetroArch maps controllers to the RetroPad layout in [Controls](#controls); the README lists the default
-keyboard bindings. The frontend must have keyboard focus for those bindings to reach the core. Use RetroArch's
-normal Quit/Close flow when play ends. The core does not access `.srm` files or control frontend flushing;
-forced termination has no battery-save flush guarantee. `muhtari-run` is headless and is not the player UI.
+The save directory gives each game's battery file its own location; disabling save-file sorting keeps the normal
+content-name convention. The state directory is for RetroArch-owned state files. Setting it does not establish
+that save/load, rewind or run-ahead works in the selected frontend. The system directory may be empty when no
+firmware is needed. Fast boot is the default; the console BIOS and `highscre.bin` are optional and are never
+bundled. See [BIOS files](#bios-files) for names and behavior.
+
+RetroArch maps controllers to the RetroPad layout in [Controls](#controls); the README lists keyboard defaults.
+Playstead must provide usable controller mappings and a keyboard fallback, and ensure keyboard focus reaches
+RetroArch while the child is active. Use the host's normal Quit/Close flow and wait for child exit. That gives
+RetroArch its ordinary teardown and persistence opportunity; a zero exit alone does not prove the battery file
+was flushed. The core exposes raw battery memory but does not read or write `.srm` files. A forced kill may lose
+recent battery progress; treat persistence as unknown until the frontend file is checked.
 
 ### Exit and refusal reporting
 
-`muhtari-run --probe FILE` checks a cartridge before launch; it neither starts RetroArch nor proves that a core
-loaded or ran. Its refusal and exit distinctions are in the [runner guide](runner.md#probing-an-image). A core
-load refusal appears in the frontend log as `muhtari: content refused: ...`; unsupported sound also reports
-`muhtari: unavailable sound configuration: ...`. For example, the loader reports an unavailable `ym2151`
-configuration. A host startup failure is a RetroArch/process failure, not a runner result or proof of a core
-refusal. RetroArch's exit status is not the `muhtari-run` status table: zero alone proves neither successful
-content loading nor save flushing. The frontend owns normal exit and persistence behavior; forced termination
-does not establish durable battery progress.
+Keep these outcomes separate when diagnosing a launch:
+
+- `muhtari-run --probe FILE` identifies a cartridge without launching RetroArch. The runner's malformed-image
+  and unsupported-board results are described in [Probing an image](runner.md#probing-an-image); a successful
+  probe does not prove that RetroArch started or loaded the core.
+- A core refusal appears in the frontend log as `muhtari: content refused: ...`; unsupported sound also names
+  `muhtari: unavailable sound configuration: ...`. Use `--verbose --log-file` and keep the log with the
+  per-game run record. For example, a YM2151 request is named rather than reported as a generic load failure.
+- A RetroArch process that fails to start is a host startup failure. It has no core-load result; inspect the
+  process error and host log separately from core refusal messages.
+- A normal RetroArch quit and a clean process exit establish that the host ended normally, not that content
+  loaded successfully or battery bytes reached disk. A forced kill has no normal teardown guarantee; battery
+  continuity is unknown.
+
+RetroArch exit status is not the `muhtari-run` status table. In particular, zero proves neither content loading
+nor a flushed save. A 52 KiB BankSet geometry is supported when its other header and memory requirements are
+met, but the loader refuses that geometry if High Score Cartridge storage is physically attached because its
+ROM occupies the `$3000-$3FFF` window. The core reports `unsupported board` in the content-refusal log in that
+case. HSC attaches in Auto mode for an HSC request or effective XM, or when explicitly On; HSC Off suppresses
+that attachment. The supported equal-half per-set sizes are 32, 48, 52, 128, 256 and 512 KiB; the 48 and 52
+KiB sets require no RAM, and the [cartridge map](hardware/cartridge.md#bankset) documents the complete matrix.
+Do not describe BankSet as unsupported in general.
 
 If muhtari is missing from Load Core, check **Settings → Directory → Cores** and **Core Info**, copy the
 archive's corresponding files there, then restart RetroArch. When stale core information persists after an

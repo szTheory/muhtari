@@ -3,8 +3,9 @@
 Play Atari 7800 games in RetroArch with muhtari, an MIT-licensed emulator core.
 RetroArch provides the window, sound and controls; you supply your game files.
 
-**Early release:** NTSC and PAL, sound, supported controllers and cartridge battery saves are available.
-Save states, rewind and run-ahead are next. Compatibility varies; check the [evidence](docs/compatibility.md).
+**Early release:** NTSC and PAL, sound, supported controllers and supported cartridge battery saves are available.
+The core provides save-state serialization; RetroArch owns state files, and its save/load, rewind and run-ahead
+behavior has not been qualified. Compatibility varies; check the [evidence](docs/compatibility.md).
 Evidence covers the rows listed; there is no claim of universal title compatibility.
 
 ## Install in RetroArch (macOS, Apple Silicon)
