@@ -1,8 +1,8 @@
 ---
 phase: 12-player-ready-delivery-and-playstead-bridge
-verified: "2026-11-03T02:31:26Z"
+verified: "2026-11-09T23:52:05Z"
 status: gaps_found
-score: "1/5 roadmap truths verified"
+score: "3/5 roadmap truths verified"
 covered_files:
   - .github/workflows/ci.yml
   - .github/workflows/nightly.yml
@@ -11,6 +11,7 @@ covered_files:
   - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md
   - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-02-PLAN.md
   - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-03-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-03-SUMMARY.md
   - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-04-PLAN.md
   - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-05-PLAN.md
   - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-05-SUMMARY.md
@@ -24,21 +25,63 @@ covered_files:
   - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-09-SUMMARY.md
   - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-10-PLAN.md
   - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-10-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-11-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-11-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-12-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-12-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-13-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-13-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-14-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-14-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-15-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-15-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-16-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-17-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-17-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-18-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-18-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-19-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-20-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-20-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-21-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-21-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-22-LOCAL-EVIDENCE.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-22-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-22-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-23-LOCAL-EVIDENCE.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-23-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-23-SUMMARY.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-24-PLAN.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-REVIEW-DISPOSITION.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-REVIEW.md
+  - .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-UAT.md
+  - .planning/research/PLAYSTEAD-HANDOFF.md
   - README.md
   - docs/libretro.md
   - docs/maintaining.md
   - docs/testing.md
   - scripts/publish.sh
+  - scripts/retroarch-manual-input.sh
   - tests/cmake/check_junit.cmake
   - tests/cmake/install_line.cmake
+  - tests/common/bmp.c
+  - tests/core/test_state.c
+  - tests/core/tests.cmake
+  - tests/diag/tests.cmake
+  - tests/input/history_pixels.c
+  - tests/input/history_pixels.h
   - tests/input/input_pixels.h
   - tests/input/pixels.c
   - tests/input/test_input.c
   - tests/input/tests.cmake
   - tests/inventory/ci.txt
+  - tests/inventory/wasm32.txt
   - tests/libretro/input_trace.cmake
+  - tests/libretro/input_trace_host.c
+  - tests/libretro/test_input_trace.c
   - tests/policy/publish.cmake
   - tests/policy/retroarch_preflight.c
+  - tests/policy/retroarch_preflight.cmake
   - tests/policy/tests.cmake
   - tests/prop/tests.cmake
   - tests/retroarch/compare.c
@@ -46,81 +89,64 @@ covered_files:
   - tests/retroarch/keyboard_preflight.c
   - tests/retroarch/run_retroarch.cmake
   - tests/retroarch/test_input_trace_helper.c
-covered_digest: "v4:sha256:9df65bf7f922c6d7822699d793d0fe00b044000545058c4f60b5f961a75853c6"
+covered_digest: "v4:sha256:298db4dbbe816aea1b7dcf9cfd53d646d0e156995727d81e04e982f2c6194d44"
 behavior_unverified: 0
 overrides_applied: 0
+decision_coverage:
+  honored: 13
+  total: 13
+  not_honored: []
 re_verification:
   previous_status: gaps_found
-  previous_score: "0/1 scoped blocking truths verified"
-  gaps_closed: []
+  previous_score: "2/5 roadmap truths verified"
+  gaps_closed:
+    - "The integrator can identify the separate RetroArch/core artifacts and verify their documented identities while using the launch/refusal contract and source-linked Playstead handoff."
   gaps_remaining:
-    - "PLAY-02: the public launch contract is not release-qualified for artifact identity, per-game paths, and orderly process exit."
-    - "PLAY-03: successful held/released host output, DMA, fresh-process battery continuity, and required aggregate remain unproven."
-    - "TUNE-06: no shipped small improvement is supported by comparable before/after workload evidence."
-    - "TUNE-07: no complete calibration evidence or bounded explicit deferral is recorded, and the nightly comment still describes four properties."
+    - "PLAY-03: released-core actual RetroArch visible output, held/released input, DMA and fresh-process battery continuity remain incomplete."
+    - "TUNE-06: no shipped measured remedy with comparable complete before/after workload evidence."
+    - "Three judgment-tier owner dispositions remain unresolved; eventual phase acceptance remains blocked."
   regressions: []
 gaps:
-  - truth: "An integrator can use a documented release-qualified launch/refusal contract for separate RetroArch/core artifacts, per-game content and saves, optional firmware, usable input, and orderly exit."
+  - truth: "Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate expected visible output, delivered input and battery continuity in a fresh process, separately from actual Playstead acceptance."
     status: failed
-    reason: "docs/libretro.md gives generic RetroArch -L CORE GAME examples, content refusal logging, input controls, and firmware behavior, but not exact release/core identities and digests, explicit local config/content/per-game save paths, or orderly-exit and forced-kill reporting. The Playstead handoff does not link to the public launch contract."
+    reason: "The retained release record documents DMA and fresh-process battery success but no held/released gameplay-input step; the latest qualifying host input attempt failed at keyboard acknowledgement and skipped battery controls and the required aggregate."
     artifacts:
-      - path: "docs/libretro.md"
-        issue: "The launch instructions do not satisfy the release-qualified artifact, per-game path, and process-exit contract in the roadmap and 12-03 must-haves."
-      - path: ".planning/research/PLAYSTEAD-HANDOFF.md"
-        issue: "The handoff gives the command shape and responsibilities but has no direct link to docs/libretro.md."
+      - path: docs/libretro.md
+        issue: "The cited release run is scoped to DMA and fresh-process battery; gameplay input is not established."
+      - path: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-UAT.md
+        issue: "Held/released input, required battery controls and a successful aggregate remain incomplete; acceptance is still 0/4."
     missing:
-      - "Document how an integrator identifies and verifies the exact RetroArch and core versions, source/release identities, and digests."
-      - "Show quoted launch configuration with explicit content, per-game save, and optional firmware paths."
-      - "Describe usable input/focus and distinguish clean exit, refusal, and forced termination; do not treat exit zero as proof of content load or save flush."
-      - "Link the Playstead handoff directly to the public libretro launch contract."
-  - truth: "Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate expected visible output, delivered input, and fresh-process battery continuity, separately from actual Playstead acceptance."
+      - "A separately authorized source/ref/attempt-bound complete host receipt with exact package identity, correct held and released images, DMA, both fresh-process battery checks, and a successful required aggregate."
+  - truth: "Maintainers demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract."
     status: failed
-    reason: "This is the carried PLAY-03 gap. The normal candidate-core RetroArch path is wired and the 12-10 diagnostic/helper and owned-cartridge controls pass locally, but the supplied run is a local CMake workflow and contains no actual RetroArch observation. Retained host records include idle or incomplete/failed observations, not one reconciled successful receipt with held/released pixels, DMA, both fresh battery processes, exact archive identity, and the required aggregate."
+    reason: "Plan 12-02 remains incomplete and has no execution summary. Current committed evidence contains no shipped remedy or comparable complete Windows before/after workload measurements."
     artifacts:
-      - path: ".planning/phases/12-player-ready-delivery-and-playstead-bridge/12-VERIFICATION.md"
-        issue: "The prior verifier recorded this as a failed carried gap; the new local diagnostic work improves observability but does not close it."
-      - path: ".github/workflows/ci.yml"
-        issue: "The ordinary host route is wired, but no successful terminal host receipt was supplied or authorized in this verification."
-      - path: "tests/retroarch/run_retroarch.cmake"
-        issue: "The wrapper can launch and capture the candidate core; local workflow results do not prove that the pinned RetroArch process delivered input."
+      - path: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-02-PLAN.md
+        issue: "The measured improvement plan remains incomplete behind the original acceptance halt."
+      - path: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-02-SUMMARY.md
+        issue: "Expected execution summary is missing."
     missing:
-      - "A separately authorized, terminal, source/ref/attempt-bound actual-host receipt with the exact core archive identity, independently correct held and released images, DMA, both fresh-process battery checks, and successful required aggregate."
-  - truth: "Maintainers ship a small improvement to reproduced pipeline friction with comparable before/after observations and representative pass/fault evidence preserving every required contract."
-    status: failed
-    reason: "The existing publisher consumer and its fault controls pass in the local workflow, but there is no Phase 12 12-02 summary, no shipped remedy selected from reproduced Windows cost, and no comparable complete before/after Windows current/base observations. The local policy.publish.controls pass is not measurement evidence."
+      - "A reproduced recurring friction, the smallest shipped remedy, and comparable current/base workload evidence with representative pass/fault results."
+  - truth: "The three judgment-tier prohibitions for candidate/published/Playstead evidence, Continue/state claims, and censored/advisory property evidence receive explicit owner disposition."
+    status: partial
+    reason: "Current documents preserve the claim boundaries and the latest review found no overclaim, but the three source prohibitions remain unresolved/unverified and no owner disposition is recorded. Plan 12-24 defines the future blocking decision."
     artifacts:
-      - path: "tests/policy/publish.cmake"
-        issue: "The complete synthetic publication-control consumer exists and passes, but it does not itself establish a shipped improvement or measured cost reduction."
-      - path: "docs/maintaining.md"
-        issue: "The maintenance guidance covers cohort measurement generally but contains no Phase 12 comparable before/after result or remedy."
-      - path: ".planning/phases/12-player-ready-delivery-and-playstead-bridge/12-02-SUMMARY.md"
-        issue: "The plan's required execution summary is absent."
+      - path: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-01-PLAN.md
+        issue: "The judgment-tier prohibition remains unresolved/unverified."
+      - path: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-03-PLAN.md
+        issue: "The judgment-tier prohibition remains unresolved/unverified."
+      - path: .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-04-PLAN.md
+        issue: "The judgment-tier prohibition remains unresolved/unverified."
     missing:
-      - "A demonstrated recurring friction and a shipped smallest remedy behind the existing publisher entry points."
-      - "Complete before/after observations from the same Windows runner/workload with source identities and representative success/fault controls."
-  - truth: "Maintainers distinguish complete nightly-property measurements from censored/cancelled attempts and have evidence-based deadlines or a bounded explicit deferral preserving all six properties, seeds, oracles, fixtures, inventory, and advisory status."
-    status: failed
-    reason: "The nightly job preserves six properties, 10,000 cases, 390-second scaled per-test limits, a nine-minute job cap, and continue-on-error advisory routing. However its comment still says four properties, the seed remains dormant with the older instruction to obtain a complete hosted run, and no bounded revisit-trigger deferral or qualifying six-property calibration evidence is recorded."
-    artifacts:
-      - path: ".github/workflows/nightly.yml"
-        issue: "Lines 175-181 claim four property tests while tests/prop/tests.cmake and tests/inventory/ci.txt register six."
-      - path: "docs/testing.md"
-        issue: "The property section records the advisory 10,000-case workload but not the 12-04 bounded deferral and revisit criteria."
-      - path: ".planning/seeds/SEED-010-nightly-prop-calibration.md"
-        issue: "The seed remains dormant and still requests a complete hosted run before selecting deadlines; it does not record the required bounded deferral and revisit triggers."
-      - path: ".planning/phases/12-player-ready-delivery-and-playstead-bridge/12-04-SUMMARY.md"
-        issue: "The plan's required execution summary is absent."
-    missing:
-      - "Correct the nightly workload comment to six properties without changing the advisory lane or its bounds."
-      - "Record a bounded deferral with all six cases/oracles/fixtures/inventory and advisory status preserved, plus the Phase 12 close, next-milestone, and qualifying-evidence revisit triggers; or provide complete successful evidence for all six 10,000-case runs and seeds."
+      - "An attributable owner disposition for each prohibition before phase acceptance."
 ---
 
 # Phase 12: Player-ready delivery and Playstead bridge Verification Report
 
 **Phase Goal:** Gamers can reach the current playable release easily, and a frontend integrator can use a proven muhtari/RetroArch launch boundary while maintainers ship a small measured reliability or efficiency improvement.
-**Verified:** 2026-11-03T02:31:26Z
+**Verified:** 2026-11-09T23:52:05Z
 **Status:** gaps_found
-**Re-verification:** Yes — after local diagnostic gap work and review fixes.
+**Re-verification:** Yes — release identity and launch documentation were added after the previous report.
 
 ## Goal Achievement
 
@@ -128,147 +154,106 @@ gaps:
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | A gamer can follow the short current README to install the right core, load a local game through GUI or CLI, understand controls and optional BIOS, and find honest save/compatibility limits. | ✓ VERIFIED | README.md gives platform/architecture install routes, GUI and CLI loading, controls, optional BIOS guidance, battery-save availability, unavailable save states, and scoped compatibility claims. tests/cmake/install_line.cmake reads the README command verbatim; .github/workflows/release.yml runs that command against the latest release after publish. The current latest release payload was not fetched in this scope. |
-| 2 | An integrator can identify/verify the separate RetroArch/core artifacts and use the documented launch/refusal contract for paths, firmware, input, and orderly exit; the Playstead handoff names responsibilities, pending evidence, and native-host triggers. | ✗ FAILED | The handoff covers sibling responsibilities, the quickest route, pending paired evidence, and native-host promotion triggers. The public docs/libretro.md contract lacks exact artifact identities/digests, explicit per-game config/save paths, and clean/forced-exit behavior; the handoff does not link to it. |
-| 3 | Automated owned-fixture checks with the released core in actual RetroArch demonstrate visible output, delivered input, and fresh-process battery continuity, separate from Playstead acceptance. | ✗ FAILED | Carried gap remains. Local tests exercise the core fixture and diagnostic helper, but the supplied local workflow has no actual RetroArch observation. The prior host receipts do not contain a successful complete held/released, DMA, two-process battery, and required-aggregate result. |
-| 4 | Maintainers ship a small improvement to reproduced pipeline friction, measured with comparable before/after observations and representative pass/fault evidence. | ✗ FAILED | policy.publish.controls passes locally, but that tests the publisher control matrix; there is no Phase 12 remedy or comparable Windows before/after measurement. Plan 12-02 has no execution summary. |
-| 5 | Maintainers distinguish completed nightly-property work from censored/cancelled attempts and record evidence-based deadlines or a bounded explicit deferral preserving cases/oracles/advisory status. | ✗ FAILED | Six properties remain registered and the lane remains advisory, but .github/workflows/nightly.yml still says “four property tests”; the dormant seed has no bounded revisit triggers or complete six-property evidence. Plan 12-04 has no execution summary. |
+| 1 | A gamer can find/install the current core, load a local game by GUI or CLI, understand controls and optional BIOS, and distinguish battery saves, unavailable states and qualified compatibility claims. | VERIFIED | README.md documents these paths and limits; tests/cmake/install_line.cmake checks the install command. The final local CI workflow passed. |
+| 2 | An integrator can identify and verify the separate RetroArch/core artifacts and use the documented launch/refusal contract for content, per-game saves, optional firmware, usable input and orderly process exit; the source-linked Playstead handoff names responsibilities, missing paired evidence and native-host triggers. | VERIFIED | docs/libretro.md records v0.11.1 tag/source, archive and member hashes, the separate RetroArch pin, and the attestation source/ref/signer; it documents launch paths, input/focus, refusal, exit and persistence limits. The handoff links the contract. No new downloaded-byte replay or gameplay-input result is claimed. |
+| 3 | Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate expected visible output, delivered input and battery continuity in a fresh process, separately from actual Playstead acceptance. | FAILED | The release run passed DMA and fresh-process battery but omitted held/released input. The latest qualifying host input observation failed at keyboard acknowledgement; battery controls and aggregate were skipped. Halt and accepted 0/4 remain. |
+| 4 | Maintainers demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract. | FAILED | Plan 12-02 has no summary or shipped measured remedy. No complete comparable Windows workload evidence is present. Publication controls are not an improvement measurement. |
+| 5 | Maintainers distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence for deadline changes or a bounded explicit deferral preserving cases, oracles and advisory labels. | VERIFIED | docs/testing.md, SEED-010 and nightly configuration identify six Phase 12 properties separately from two later additions, preserve eight registrations and advisory routing, label incomplete attempts censored, and define bounded revisit triggers. |
 
-**Score:** 1/5 roadmap truths verified.
+**Score:** 3/5 roadmap truths verified.
+
+### Decision Coverage
+
+`check.decision-coverage-verify` reported all trackable CONTEXT.md decisions honored: 13/13, with none unhonored.
 
 ### Deferred Items
 
-None. Later Phase 13 and Phase 14 criteria concern machine-state and frontend-state behavior; they do not cover these Phase 12 gaps.
+None. Phase 13 concerns portable state behavior and Phase 14 concerns RetroArch state/rewind/run-ahead; neither roadmap goal or its success criteria covers Phase 12's release identity, packaged input/DMA/battery proof, or measured publisher improvement.
 
 ### Advisory (New Scope, Unevidenced)
 
-None. Findings above are tied to Phase 12 roadmap criteria, its plans, current implementation/docs, and retained verification artifacts.
+None.
 
 ## Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| README.md | Short player onboarding and automatically checked install line | ✓ VERIFIED | Content matches the gamer flow. The release workflow passes README to the verbatim install-line checker. |
-| docs/libretro.md | Release-qualified external launch/artifact/refusal/input/save contract | ⚠️ PARTIAL | Substantive content exists for load/refusal, controls, firmware, battery ownership, and unavailable save states; exact artifact identity, per-game paths, and process-exit semantics are absent. |
-| .planning/research/PLAYSTEAD-HANDOFF.md | Source-linked sibling responsibilities and exact pending cross-project evidence | ✓ VERIFIED | Names adapter/pin/readiness/state responsibilities, fastest external route, required paired fixture evidence, native-host north star, and promotion triggers. |
-| tests/cmake/install_line.cmake + .github/workflows/release.yml | Run README install command against latest release | ✓ VERIFIED | The script reads and executes the README line and checks core/info installation; install-line-latest invokes it after publish. |
-| tests/policy/publish.cmake + docs/maintaining.md | Shipped measured improvement and comparable evidence | ⚠️ PARTIAL | Publisher fault controls are substantive and pass locally; no improvement selection or before/after Windows measurement exists. |
-| .github/workflows/nightly.yml + tests/prop/tests.cmake + tests/inventory/ci.txt | Accurate six-property advisory lane and complete/censored evidence contract | ⚠️ PARTIAL | Six properties are registered and labeled; runtime is wired through CTest. Nightly commentary is stale and the bounded deferral is missing. |
-| tests/retroarch/keyboard_preflight.c, tests/retroarch/input_trace_helper.h, tests/retroarch/test_input_trace_helper.c | Bounded transition diagnostics and exact-child cutoff observation | ✓ VERIFIED | Substantive code is wired to passing local helper/preflight controls in the retained CI log. |
-| tests/input/test_input.c, tests/input/pixels.c, tests/input/input_pixels.h, tests/input/tests.cmake | Owned ordered-input cartridge and independent pixel/state controls | ✓ VERIFIED | Generated fixture and independent judge are exercised by passing local named tests; this verifies the local core path only. |
-| Phase 12 plans 12-02, 12-03, and 12-04 execution summaries | Required closeouts for TUNE-06, PLAY-01/02/04, and TUNE-07 | ✗ MISSING | No execution summaries exist for these acceptance plans. The source/doc outcomes were still checked directly above. |
+| README.md | Short current player install and use guide | VERIFIED | Concrete GUI/CLI paths, controls, optional BIOS, save and compatibility limits. |
+| tests/cmake/install_line.cmake | Checks README install command and archive members | VERIFIED | Final local workflow passed package/release checks; this does not replay published v0.11.1 bytes. |
+| docs/libretro.md | External launch/refusal contract and release identity | VERIFIED | Exact source/archive/member identities, attestation signer/ref, separate RetroArch pin, per-game paths, input/focus, refusal and exit semantics are present. |
+| .planning/research/PLAYSTEAD-HANDOFF.md | Source-linked sibling handoff and paired-flow boundary | VERIFIED | Links the contract and identifies sibling ownership, missing paired evidence, playable route and host-promotion triggers. |
+| .github/workflows/ci.yml and tests/retroarch/run_retroarch.cmake | Bounded ordinary packaged-host route | WIRED; ACCEPTANCE FAILED | Route and local controls exist; retained host evidence does not complete actual-host input and the required aggregate. |
+| docs/testing.md and .planning/seeds/SEED-010-nightly-prop-calibration.md | Exact six-property bounded deferral | VERIFIED | Cohort, later additions, advisory status, censored history and revisit triggers are recorded. |
+| .github/workflows/nightly.yml, tests/prop/tests.cmake, tests/inventory/ci.txt | Eight current registrations remain in advisory lane and inventory | VERIFIED | Static configuration connects selection, generated registrations and JUnit inventory. |
+| .planning/phases/12-player-ready-delivery-and-playstead-bridge/12-02-SUMMARY.md | Measured publisher improvement evidence | MISSING | No summary exists and no committed evidence provides comparable before/after Windows measurements. |
+| tests/libretro/input_trace_host.c and tests/libretro/input_trace.cmake | Safe rollback for partial passive diagnostic setup | VERIFIED | Plan 12-23 controls cover owned-file cleanup, preservation, refusal/no child and same-directory paired-trace retry. |
 
 ## Key Link Verification
 
 | From | To | Via | Status | Details |
 |---|---|---|---|---|
-| README.md | tests/cmake/install_line.cmake | Release workflow passes README to script; script extracts and executes its install line | ✓ WIRED | GSD direct-reference heuristic did not see this indirect link; manual workflow/script trace confirms it. |
-| .planning/research/PLAYSTEAD-HANDOFF.md | docs/libretro.md | Handoff points the integrator to the public launch contract | ⚠️ PARTIAL | Handoff contains an inline command shape but no direct link to the full contract; the contract itself is incomplete for PLAY-02. |
-| docs/maintaining.md | .github/workflows/release.yml | Publish, attestation verification, latest-release install check | ✓ WIRED | The workflow contains the described publish/verify/install steps. |
-| .github/workflows/ci.yml | tests/retroarch/run_retroarch.cmake | Extracted candidate core, one-input-child wrapper, held/released screenshots and battery captures | ✓ WIRED | The normal host route is connected in workflow source. The provided local CI run did not execute the hosted RetroArch job. |
-| .github/workflows/nightly.yml | tests/prop/tests.cmake and tests/cmake/check_junit.cmake | ctest -L prop selects registered properties; exact JUnit checker verifies selected cases | ✓ WIRED | The indirect CTest label flow is present. The “four property tests” comment conflicts with the six registrations. |
-| tests/input/tests.cmake | tests/input/test_input.c / tests/input/pixels.c | Generated history fixture, test case, and independent RGB judge | ✓ WIRED | The test suite generates and reads back the cartridge and invokes the state/pixel checks. |
+| README.md | tests/cmake/install_line.cmake | Test reads and executes the documented command against the local package | WIRED | Static query did not find a direct source reference, but the existing consumer reads README.md and substitutes the package base URL. |
+| .planning/research/PLAYSTEAD-HANDOFF.md | docs/libretro.md | Direct contract link | WIRED | Link is present. |
+| docs/maintaining.md | .github/workflows/release.yml | Release verification and post-publish install-line check | WIRED | Release process points to the release workflow. |
+| .github/workflows/ci.yml | tests/retroarch/run_retroarch.cmake | Extracted package, isolated configuration, host execution and comparisons | WIRED | Workflow references the existing CMake host route; no successful complete receipt was available. |
+| .github/workflows/nightly.yml | tests/prop/tests.cmake | Label selection over generated CTest registrations | WIRED | Connection is through CMake registration/labels rather than a literal filename reference in the workflow. |
+| scripts/retroarch-manual-input.sh | tests/libretro/input_trace_host.c and test_input_trace.c | Build and invoke the passive child launcher, then collect/validate traces | WIRED | Script passes exact executable/argv and invokes the built trace consumer. The route is a diagnostic with synthetic local controls. |
+| scripts/retroarch-manual-input.sh | tests/input/test_input.c | Owned history cartridge generation and identity check | WIRED | Script invokes the built input test utility to generate and verify the owned cartridge. |
 
 ## Data-Flow Trace (Level 4)
 
-| Artifact | Data Variable | Source | Produces Real Data | Status |
+| Artifact | Data variable | Source | Produces real data | Status |
 |---|---|---|---|---|
-| tests/input/test_input.c → tests/input/pixels.c | history_rgb | Rendered pixels from the generated owned cartridge running in the local muhtari core | Yes; passing input.proline_one_button observes waiting, held, release-complete, and fault pixels | ✓ FLOWING (local core fixture) |
-| README.md → tests/cmake/install_line.cmake | extracted README command | The actual install line is read from README and executed by the release workflow | Yes; destination core and info files are checked by the script | ✓ FLOWING (release workflow wiring; no publish action here) |
-| Candidate core → actual RetroArch input image | held/released screenshots | Requires a successful pinned RetroArch host observation | No accepted image receipt in the supplied local run; prior attempts were failed or incomplete | ✗ DISCONNECTED |
+| README install path | Core and info archive members | Package workflow output; the local test substitutes its base URL and checks the archive members | Yes for local package | FLOWING locally; no current published-core digest/attestation receipt |
+| Manual input diagnostic | Cartridge frame colors and callback trace | Owned history cartridge generated by tests/input/test_input.c, run through the diagnostic core and trace consumer | Yes for the installed diagnostic run | FLOWING for diagnostic only; not evidence for the released package or DMA/battery |
+| Nightly property cohort | Selected tests and JUnit results | CTest registrations, inventory and nightly run/seed | Yes when a nightly run completes | Configuration and deferral are present; qualifying complete calibration evidence is not claimed |
 
 ## Behavioral Spot-Checks
 
 | Behavior | Command/evidence | Result | Status |
 |---|---|---|---|
-| Full local CI behavior and packaging | Existing /private/tmp/muhtari-phase12-final-review-fixes.log from cmake --workflow --preset ci | Exit 0; 678 ordinary tests, 6 release tests, and library/runner/libretro packages | ✓ PASS |
-| Exact ordinary/release inventory | Read-only tests/cmake/check_junit.cmake against retained build/ci/junit.xml and build/ci/junit-release.xml | Exit 0 for each; 678 ordinary and 6 release tests ran once each | ✓ PASS |
-| Ordered owned input history and independent pixel oracle | input.proline_one_button in the supplied CI log | Passed; the test covers held input, later release, wrong routing, incomplete sequences, and pixel faults | ✓ PASS |
-| Generated history cartridge identity | input.history_cart in the supplied CI log | Passed; serialized generated image matched expected bytes | ✓ PASS |
-| Helper cutoff and preflight controls | policy.retroarch.preflight_api, policy.retroarch.child_failure, policy.retroarch.preflight_gate in the supplied CI log | All passed; they exercise synthetic cutoff/status paths, not real frontend input delivery | ✓ PASS |
-| Publisher controls | policy.publish.controls in the supplied CI log | Passed locally; it is not a Windows before/after measurement | ✓ PASS |
-| Actual pinned RetroArch held/released host behavior | Not run; no host or hosted action was authorized | No new host observation or receipt | ? SKIP |
-
-The full workflow was not rerun. The local workflow and named test results above come from the supplied retained log.
+| Local ordinary/release regression and packages | `cmake --workflow --preset ci`, recorded in 12-23-LOCAL-EVIDENCE.md and reconfirmed after final source/docs commits | Exit 0; 700 ordinary tests, three packages and six release checks; local run | PASS |
+| Partial-trace rollback and retry | `cmake --build build/ci --target muhtari-test-trace-host && ctest --test-dir build/ci -R '^policy.retroarch.preflight_api$' --output-on-failure` | Exit 0; 1/1 passed in 2.61 seconds with helper/core identity-failure controls | PASS |
+| Published-core actual RetroArch held/released input | Retained UAT/host receipts | Qualifying held-input step failed at acknowledgement; no held/released comparison, later battery controls or passing aggregate | FAIL |
+| Publisher improvement measurement | Phase 12 plan/evidence ledger | No comparable complete current/base Windows workload receipt or shipped remedy | FAIL |
 
 ## Probe Execution
 
-| Probe | Command | Result | Status |
-|---|---|---|---|
-| Phase-declared probe-*.sh files | Search scripts/ and all phase plans/summaries | None found; no shell probe is declared. The --probe runtime mode is part of the RetroArch test path, not a separate probe script. | N/A |
+No phase-declared probe-*.sh file or applicable probe-based success criterion was found. Not applicable.
 
 ## Requirements Coverage
 
-| Requirement | Source Plan | Description | Status | Evidence |
+| Requirement | Source plan | Description | Status | Evidence |
 |---|---|---|---|---|
-| TUNE-06 | 12-02-PLAN.md | Ship a small measured improvement to demonstrated pipeline friction | ✗ BLOCKED | No remedy or comparable complete Windows current/base observations; local policy.publish.controls pass is not a performance comparison. |
-| TUNE-07 | 12-04-PLAN.md | Qualify complete nightly-property evidence or record a bounded deferral | ✗ BLOCKED | Six cases and advisory routing remain, but stale four-case wording and no bounded revisit deferral remain. |
-| PLAY-01 | 12-03-PLAN.md | Short, truthful player README with a checked install command | ✓ SATISFIED | README content and the verbatim latest-release installer consumer are present and wired. |
-| PLAY-02 | 12-03-PLAN.md | Release-qualified external RetroArch/core launch contract | ✗ BLOCKED | Public docs omit exact artifact identity/digests, explicit per-game paths, and process-exit semantics. |
-| PLAY-03 | 12-01-PLAN.md, 12-10-PLAN.md | Actual RetroArch visible input and fresh-process battery proof | ✗ BLOCKED | Carried gap remains; local diagnostics do not establish actual host delivery. |
-| PLAY-04 | 12-03-PLAN.md | Source-linked Playstead handoff, responsibilities, route, triggers, and pending evidence | ✓ SATISFIED | Handoff documents the route, adapter/pin/readiness/state ownership, exact paired evidence, and native-host triggers. |
+| TUNE-06 | 12-02 | Ship a measured improvement to reproduced pipeline friction with pass/fault evidence | BLOCKED | No 12-02 summary or complete comparable before/after evidence. |
+| TUNE-07 | 12-04, 12-11 | Distinguish complete from censored nightly work and keep an explicit bounded deferral | SATISFIED | docs/testing.md, SEED-010, and nightly configuration preserve six Phase 12 cases, two later additions, advisory status, and revisit triggers. Requirement remains unchecked in REQUIREMENTS.md until phase acceptance. |
+| PLAY-01 | 12-03 | Current gamer README and automatically checked install command | SATISFIED | README.md and install-line consumer; parent-provided local CI/release evidence. |
+| PLAY-02 | 12-03, 12-11 | Release-qualified separate RetroArch/core artifacts and launch/refusal contract | SATISFIED | docs/libretro.md records exact identities and attestation source binding plus the external contract; no byte replay or gameplay acceptance is inferred. |
+| PLAY-03 | 12-01 and gap plans | Released-core actual RetroArch visible output, input and fresh-process battery continuity | BLOCKED | Carried UAT gaps G-12-1 and G-12-11 remain. No requirement evidence is inferred from the owner diagnostic. |
+| PLAY-04 | 12-03 | Source-linked Playstead responsibilities, route, triggers and paired evidence boundary | SATISFIED | Current handoff includes the direct public-contract link and required sibling boundaries. Requirement remains unchecked in REQUIREMENTS.md until phase acceptance. |
 
-All six requirement IDs appear in Phase 12 plan frontmatter; no additional Phase 12 requirement is orphaned.
+All six IDs declared by Phase 12 plans are accounted for. No additional Phase 12 requirement is orphaned in REQUIREMENTS.md.
 
 ## Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| .github/workflows/nightly.yml | 175 | Comment says “four property tests”; tests/prop/tests.cmake and the inventory register six | BLOCKER | Stale workload description directly violates the TUNE-07 plan truth; the required explicit deferral/revisit record is also absent. |
+| — | — | No debt markers, placeholder implementations, hardcoded empty output stubs or disabled requirement tests found in the scoped scan | — | None identified. |
+| 12-01/12-03/12-04 plan frontmatter | — | Judgment-tier must-not-claim prohibitions are unresolved/unverified and have no wired negative-claim guard | unverified-prohibition — human review recommended | Current documents and evidence preserve the boundaries; this verification found no overclaim. The plan-level prohibition status still needs explicit human disposition before phase acceptance. |
 
-No unreferenced TBD, FIXME, or XXX debt markers, placeholders, disabled tests, or empty implementations were found in the scoped Phase 12 diagnostic changes.
+The earlier WR-01 warning about partial trace cleanup is fixed. Plan 12-23 records regression controls for refusal cleanup and retry; the current standard review is clean. The three unresolved judgment-tier prohibitions remain flagged for human review.
 
 ## Human Verification Required
 
-None requested in this re-verification. The remaining host result is a failed phase gap, and the explicit scope prohibits starting a RetroArch/hosted acceptance action here.
+No owner-operated RetroArch check or repeat diagnostic is requested by this report. The three unresolved judgment-tier claim dispositions remain a decision checkpoint in plan 12-24 and must be addressed before eventual phase acceptance; they do not supply missing host or Windows workload evidence.
 
 ## Gaps Summary
 
-The player README and Playstead handoff are usable, and the final local diagnostic fixes have substantive tests, a passing local workflow, and exact inventory coverage. Four roadmap outcomes remain unmet: the release-qualified integrator contract is incomplete; PLAY-03 still lacks a successful actual-host receipt; TUNE-06 has no shipped, measured remedy; and TUNE-07 has neither qualifying complete property evidence nor the bounded deferral required by its plan. No later roadmap phase covers these gaps. Phase 12 remains gaps_found.
+The release-identity and launch-contract gap is closed: an integrator can inspect the immutable app/core identities, hashes, source-bound attestation details and documented launch/refusal behavior. Three gaps remain: released-core host input/battery aggregate evidence is incomplete; no measured Windows pipeline improvement has shipped; and the three plan-level judgment prohibitions have no owner disposition. TUNE-07 remains verified. The WR-01 cleanup warning is fixed by plan 12-23 and its regression evidence.
+
+The formal state remains halted: accepted requirements are 0/4, plans 12-02/12-03/12-04 remain incomplete or blocked, and the prior hosted allowance is spent. This verification used committed local evidence and the supplied final local CI result; it did not launch RetroArch, contact a host/remote workflow, publish, alter STATE.md or ROADMAP.md, change plan status or commit.
 
 ---
-*Verified: 2026-11-03T02:31:26Z.*
-*Verifier: the agent (gsd-verifier).*
 
-## Local documentation disposition after plan 12-11
-
-**Recorded:** 2026-11-05. This additive review records local documentation outcomes only. It preserves the report's original frontmatter, 1/5 score, failed truth rows, requirements rows, and acceptance status; Phase 12 remains accepted 0/4.
-
-The public libretro guide now links the pinned RetroArch app package separately from core identity, describes isolated per-game content/config/save/state/log paths, input focus and normal exit, and distinguishes probe, refusal, host failure, forced termination, and battery persistence. The Playstead handoff links directly to that guide. Local package and release-source review confirms that `pins.txt` identifies the app package and the existing package/release consumers describe core and `.info` members, but no retained receipt qualifies a published core. The exact missing fields remain the release/tag-to-source binding; platform/architecture archive name and SHA-256; released core and `.info` member identities and paths; and a supplied attestation verification receipt binding subject, signer, and source ref.
-
-Property source review found eight current registrations in `tests/prop/tests.cmake` and `tests/inventory/ci.txt`: the six Phase 12 properties remain the TUNE-07 cohort, while `state_continuation` and `state_refusal` are later additions. The first six retain the `built_simple` and `built_eightysix` fixtures; the two generated-media state properties require no sample fixture. The nightly comments still describe 10,000 cases per property, run-ID seeding, four workers, scaled 39-second limits, a nine-minute job cap, and advisory routing. No case, seed, fixture, oracle, inventory, timeout, workflow command, or report dependency changed. SEED-010 records a bounded revisit, but this local record does not perform the Phase 12 close revisit or complete TUNE-07 acceptance.
-
-Bounded review under ENGINEERING §11 found the prose changes local to the existing owners, linked to retained evidence, with no new dependency or checker. The existing documentation budget was restored: `docs/testing.md` is exactly 40,960 bytes, and the existing budget consumer reports all 22 checked files within their limits. Nightly execution bytes and property source/inventory files match the execution-start snapshot. One initial heading check found the missing exact Seed heading (exit 1); it was added, and the final checks below pass.
-
-| Local check | Command | Result | Run URL |
-|---|---|---|---|
-| Launch-contract headings and handoff link | `sh -c 'for heading in "## External frontend contract" "### Artifact identity and evidence" "### Per-game launch paths" "### Exit and refusal reporting"; do grep -Fqx "$heading" docs/libretro.md || exit 1; done; grep -Fq "../../docs/libretro.md#external-frontend-contract" .planning/research/PLAYSTEAD-HANDOFF.md'` | Exit 0 | N/A-local |
-| Property-deferral headings and page size | `sh -c 'for file in docs/testing.md docs/maintaining.md .planning/seeds/SEED-010-nightly-prop-calibration.md; do grep -Eq "^#{1,6} Property calibration deferral$" "$file" || exit 1; done; bytes=$(wc -c < docs/testing.md) || exit 1; printf "docs/testing.md bytes=%s\n" "$bytes"; test "$bytes" -le 40960'` | Exit 0; 40,960 bytes | N/A-local |
-| Existing page budgets | `cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake` | Exit 0; 22 files within budget | N/A-local |
-| Nightly execution bytes unchanged from `DOCS_BASE=92f4563bd947a33191bfd98e967fa0a055bc559c` | `git diff --exit-code --ignore-matching-lines='^[[:space:]]*#' 92f4563bd947a33191bfd98e967fa0a055bc559c -- .github/workflows/nightly.yml` | Exit 0 | N/A-local |
-| Eight names present in registration and inventory; source files unchanged | `sh -c 'for name in split_run peek_pure instances_isolated input_at_vblank battery_lifecycle battery_observers state_continuation state_refusal; do grep -Fq "$name" tests/prop/tests.cmake || exit 1; grep -Eq "^prop\\.$name[[:space:]]" tests/inventory/ci.txt || exit 1; done; git diff --exit-code 92f4563bd947a33191bfd98e967fa0a055bc559c -- tests/prop/tests.cmake tests/inventory/ci.txt tests/cmake/check_junit.cmake'` | Exit 0 | N/A-local |
-| Task 1 and 2 whitespace/source-diff check | `git diff --check 92f4563bd947a33191bfd98e967fa0a055bc559c -- docs/libretro.md .planning/research/PLAYSTEAD-HANDOFF.md .github/workflows/nightly.yml docs/testing.md docs/maintaining.md .planning/seeds/SEED-010-nightly-prop-calibration.md` | Exit 0 | N/A-local |
-
-The remaining acceptance evidence is unchanged: TUNE-06 still needs a selected, shipped improvement supported by complete comparable Windows before/after workload measurements and representative pass/fault controls. PLAY-02 still needs the published-core receipt fields above. PLAY-03 still needs actual pinned-RetroArch held/released input and DMA observations, both fresh-process battery checks, and the required aggregate; local diagnostics do not provide these observations. Paired Playstead behavior remains separate and pending. The bounded TUNE-07 deferral is documented, while its final acceptance/close disposition remains with blocked plan 12-04. The original actual-host cause is unresolved, and no host work, process inspection, retry, remote lookup, build, CTest, project test, or CI action was run here. Plans 12-02/03/04 remain blocked behind halted acceptance work; no requirement or accepted count changed.
-
-## Candidate-host disposition after plan 12-12
-
-**Recorded:** 2026-11-06. This additive record preserves the existing verification frontmatter, 1/5 score, failed truth rows, requirements table, four remaining roadmap gaps, and Phase 12 acceptance status.
-
-The offline `retroarch_preflight.cmake` consumer passed once (exit 0), and the frozen candidate request was published to the dedicated evidence ref and dispatched once. The unique attempt-1 receipt is [run 42227540379](https://github.com/szTheory/muhtari/actions/runs/42227540379), source `d22dca50abea335aefcb917cf428d32f5324f93c`. Its `CI required` aggregate failed (exact-run audit exit 1) after the required hygiene job failed in `hygiene.format`. One allowed cancellation stopped the remaining matrix jobs. Exact failing files, job outcomes, available artifacts, and command exits are in [12-12 host evidence](12-12-HOST-EVIDENCE.md); downloaded logs and artifacts remain in ignored scratch.
-
-The result does not meet PLAY-03: no macOS ARM64 candidate archive/member identity or actual RetroArch execution was produced, and no held/released image, independent comparator, DMA, negative-control, or fresh-process battery predicate ran. The `phase14_host` input was false. The one evidence-ref publication, one dispatch, and one cancellation are spent; there was no retry or source edit. The pin's RetroArch version and digest remain configured values, not a version observed in this run.
-
-The candidate-host gap remains open, as do the separate published-byte replay, Playstead obligations, Windows measurement, TUNE-07 close disposition, and Phase 14 frontend-state verification. The attempt supplies no basis to change workflow timeouts, caching, or matrix concurrency. Earlier failures, UAT totals, accepted 0/4, and blocked successor plans remain unchanged. Any further hosted attempt needs a separately authorized scope after the formatting failure is addressed.
-
-## Candidate-host disposition after plan 12-13
-
-**Recorded:** 2026-11-06. This additive record preserves the existing verification frontmatter, score, historical rows, requirements table, gaps, and accepted 0/4 status.
-
-The frozen source included the six-file formatting repair. The exact formatter consumer, tree hygiene, and offline RetroArch policy consumer exited 0. The source-bound ref was created once and directly confirmed at the frozen SHA. One ordinary workflow_dispatch used all four false inputs and bound uniquely to attempt 1 of [run 42239124226](https://github.com/szTheory/muhtari/actions/runs/42239124226). Exact-run identity assertions exited 0; tools/check_ci_run.cmake exited 1 because CI required failed.
-
-The exact macOS ARM64 candidate package was source-bound and loaded by pinned RetroArch 1.22.2. Its DMA screenshot matched the runner reference pixel-for-pixel. The ordinary held/released input step stopped at the 5013 ms acknowledgment deadline with capture 0 and child status unknown; the test produced no held/released images or comparator verdicts. RetroArch logged failed_to_start_audio_driver, but this run does not identify whether that message caused the helper timeout. Battery controls and the dependent input negative control were skipped. PLAY-03 remains unmet.
-
-The full run reached terminal status in about 36 minutes. Windows ARM64 was the critical path at about 35 minutes, followed by a 34-second RetroArch job and the required aggregate. No jobs were cancelled. The wasm32 advisory job failed because two registered cases were absent from its inventory; it is not part of the required aggregate. This single sample supports no timeout, cache, concurrency, matrix, or structural change. No such change was made.
-
-The full command/exit ledger, all job outcomes, exact archive/core/info hashes, and saved run receipt are in [12-13 host evidence](12-13-HOST-EVIDENCE.md). Full logs and artifacts remain in ignored build/phase12-gap13-evidence. The attempted default gh run view --log retrieval failed because the sandbox denied its user-cache write; the same read-only retrieval succeeded after redirecting XDG_CACHE_HOME into ignored scratch. No additional hosted run, CTest, full local workflow, source repair, PR, merge, release, or Phase 14 host action occurred. The new one-run scope is spent; any future host dispatch needs a new bounded scope. Plans 12-01/02/03/04 and the separate Phase 14 obligations remain unresolved.
+_Verified: 2026-11-09T23:52:05Z_
+_Verifier: the agent (gsd-verifier)_
