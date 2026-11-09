@@ -610,6 +610,9 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
     char dir_template[4096], trace_path[4096], config[4096];
     char cart_dir_template[] = "/tmp/muhtari-manual-XXXXXX";
     char cart[4096], other[4096], wrong[4096], sentinel[4096], trace_conflict[4096];
+    struct stat sentinel_before, conflict_before;
+    int sentinel_before_valid = 0;
+    int conflict_before_valid = 0;
     int count = snprintf(dir_template, sizeof dir_template, "%s/manual-%s-XXXXXX", work, fault);
     if (count < 0 || (size_t)count >= sizeof dir_template || mkdtemp(dir_template) == NULL)
         return 0;
@@ -633,6 +636,12 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
         if (count < 0 || (size_t)count >= sizeof sentinel ||
             !manual_write_file(sentinel, "preserve existing trace\n"))
             return 0;
+    } else if (strcmp(fault, "existing-core-file") == 0) {
+        count = snprintf(trace_conflict, sizeof trace_conflict, "%s/core.trace", trace_path);
+        if (count < 0 || (size_t)count >= sizeof trace_conflict ||
+            !manual_write_file(trace_conflict, "preserve existing core trace\n"))
+            return 0;
+        snprintf(sentinel, sizeof sentinel, "%s", trace_conflict);
     } else if (strcmp(fault, "symlink") == 0) {
         count = snprintf(sentinel, sizeof sentinel, "%s/sentinel", dir_template);
         if (count < 0 || (size_t)count >= sizeof sentinel ||
@@ -645,6 +654,16 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
         if (count < 0 || (size_t)count >= sizeof trace_conflict ||
             symlink(sentinel, trace_conflict) != 0)
             return 0;
+        if (lstat(trace_conflict, &conflict_before) != 0)
+            return 0;
+        conflict_before_valid = 1;
+    }
+    int path_fault = strcmp(fault, "existing-file") == 0 ||
+                     strcmp(fault, "existing-core-file") == 0 || strcmp(fault, "symlink") == 0;
+    if (path_fault) {
+        if (lstat(sentinel, &sentinel_before) != 0)
+            return 0;
+        sentinel_before_valid = 1;
     }
     char *app[9] = {app_path,  "--verbose",         "--config", config, "-L",
                     core_path, "--max-frames=3600", cart,       NULL};
@@ -681,36 +700,135 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
     int rc =
         manual_launch(trace_path, app, wall_ms, grace_ms, strcmp(fault, "unreaped") == 0, result);
     uint64_t launch_end = manual_now_ms();
-    unsetenv("MUHTARI_MANUAL_INPUT_TEST_CHILD");
-    unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONFIG");
-    unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CORE");
-    unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONTENT");
     if (strcmp(fault, "unreaped") == 0 && !manual_test_reap_killed(result->child))
         return 0;
-    int path_fault = strcmp(fault, "existing-file") == 0 || strcmp(fault, "symlink") == 0;
     if (path_fault) {
-        struct stat link_info;
-        if (rc != 2 || result->child != 0 ||
-            !manual_file_equals(sentinel, strcmp(fault, "existing-file") == 0
-                                              ? "preserve existing trace\n"
-                                              : "preserve symlink target\n"))
-            return 0;
-        if (strcmp(fault, "symlink") == 0 &&
-            (lstat(trace_conflict, &link_info) != 0 || !S_ISLNK(link_info.st_mode)))
-            return 0;
-        if (strcmp(fault, "symlink") == 0 && unlink(trace_conflict) != 0)
-            return 0;
-        if (strcmp(fault, "existing-file") == 0 && unlink(sentinel) != 0)
-            return 0;
-        if (strcmp(fault, "symlink") == 0 && unlink(sentinel) != 0)
-            return 0;
-        if (unlink(config) != 0)
-            return 0;
+        int path_ok = rc == 2 && result->child == 0 && sentinel_before_valid;
+        if (!path_ok)
+            fprintf(stderr, "manual control %s: refusal or child-zero assertion failed\n", fault);
+        struct stat sentinel_after;
+        const char *expected_sentinel =
+            strcmp(fault, "existing-file") == 0        ? "preserve existing trace\n"
+            : strcmp(fault, "existing-core-file") == 0 ? "preserve existing core trace\n"
+                                                       : "preserve symlink target\n";
+        if (!manual_file_equals(sentinel, expected_sentinel) ||
+            lstat(sentinel, &sentinel_after) != 0 ||
+            sentinel_after.st_dev != sentinel_before.st_dev ||
+            sentinel_after.st_ino != sentinel_before.st_ino ||
+            (sentinel_after.st_mode & S_IFMT) != (sentinel_before.st_mode & S_IFMT)) {
+            path_ok = 0;
+            fprintf(stderr, "manual control %s: existing sentinel identity/content changed\n",
+                    fault);
+        }
+        if (strcmp(fault, "symlink") == 0) {
+            struct stat conflict_after;
+            if (!conflict_before_valid || lstat(trace_conflict, &conflict_after) != 0 ||
+                !S_ISLNK(conflict_after.st_mode) ||
+                conflict_after.st_dev != conflict_before.st_dev ||
+                conflict_after.st_ino != conflict_before.st_ino)
+                path_ok = 0;
+        }
+
         count = snprintf(other, sizeof other, "%s/helper.trace", trace_path);
-        if (count < 0 || (size_t)count >= sizeof other ||
-            (access(other, F_OK) == 0 && unlink(other) != 0))
+        if (count < 0 || (size_t)count >= sizeof other)
             return 0;
-        if ((strcmp(fault, "symlink") == 0 && rmdir(trace_path) != 0) || rmdir(dir_template) != 0)
+        struct stat helper_info;
+        int helper_exists = lstat(other, &helper_info) == 0;
+        if (strcmp(fault, "existing-file") == 0) {
+            if (!helper_exists || !manual_file_equals(other, "preserve existing trace\n") ||
+                helper_info.st_dev != sentinel_before.st_dev ||
+                helper_info.st_ino != sentinel_before.st_ino) {
+                path_ok = 0;
+                fprintf(stderr, "manual control %s: existing helper sentinel changed\n", fault);
+            }
+        } else if (helper_exists) {
+            fprintf(stderr, "manual control %s: helper.trace remained after refused preflight\n",
+                    fault);
+            path_ok = 0;
+        } else if (errno != ENOENT) {
+            path_ok = 0;
+        }
+
+        if (strcmp(fault, "existing-file") == 0 || strcmp(fault, "existing-core-file") == 0) {
+            if (unlink(sentinel) != 0) {
+                path_ok = 0;
+                fprintf(stderr, "manual control %s: test obstruction removal failed\n", fault);
+            }
+        } else {
+            if (unlink(trace_conflict) != 0 || unlink(sentinel) != 0) {
+                path_ok = 0;
+                fprintf(stderr, "manual control %s: symlink fixture removal failed\n", fault);
+            }
+        }
+        /* The harness removes a leaked test-owned partial trace only after asserting it existed. */
+        if (strcmp(fault, "existing-file") != 0 && helper_exists && unlink(other) != 0)
+            path_ok = 0;
+
+        manual_result retry_result;
+        int retry_rc = manual_launch(trace_path, app, wall_ms, grace_ms, 0, &retry_result);
+        count = snprintf(other, sizeof other, "%s/helper.trace", trace_path);
+        if (count < 0 || (size_t)count >= sizeof other)
+            return 0;
+        it_trace retry_helper, retry_core;
+        int retry_complete = retry_rc == 0 && retry_result.child > 0 &&
+                             retry_result.outcome == MANUAL_EXITED &&
+                             waitpid(retry_result.child, NULL, WNOHANG) == -1 && errno == ECHILD;
+        if (retry_complete) {
+            it_read(other, IT_HELPER, &retry_helper);
+            retry_complete = retry_helper.status == IT_COMPLETE;
+        }
+        count = snprintf(other, sizeof other, "%s/core.trace", trace_path);
+        if (count < 0 || (size_t)count >= sizeof other)
+            return 0;
+        if (retry_complete) {
+            it_read(other, IT_CORE, &retry_core);
+            retry_complete =
+                retry_core.status == IT_COMPLETE && it_pair(&retry_helper, &retry_core);
+        }
+        if (!retry_complete) {
+            path_ok = 0;
+            fprintf(stderr, "manual control %s: synthetic retry failed (rc=%d, outcome=%d)\n",
+                    fault, retry_rc, retry_result.outcome);
+        }
+        printf("manual control %s retry: %s\n", fault,
+               retry_complete ? "complete paired traces" : "failed");
+        if (unlink(config) != 0) {
+            path_ok = 0;
+            fprintf(stderr, "manual control %s: config cleanup failed\n", fault);
+        }
+        count = snprintf(other, sizeof other, "%s/helper.trace", trace_path);
+        if (count < 0 || (size_t)count >= sizeof other)
+            return 0;
+        if (access(other, F_OK) == 0 && unlink(other) != 0) {
+            path_ok = 0;
+            fprintf(stderr, "manual control %s: helper trace cleanup failed\n", fault);
+        }
+        count = snprintf(other, sizeof other, "%s/core.trace", trace_path);
+        if (count < 0 || (size_t)count >= sizeof other)
+            return 0;
+        if (access(other, F_OK) == 0 && unlink(other) != 0) {
+            path_ok = 0;
+            fprintf(stderr, "manual control %s: core trace cleanup failed\n", fault);
+        }
+        if (unlink(cart) != 0 || rmdir(cart_dir) != 0) {
+            path_ok = 0;
+            fprintf(stderr, "manual control %s: cart fixture cleanup failed\n", fault);
+        }
+        if ((strcmp(fault, "symlink") == 0 && rmdir(trace_path) != 0) || rmdir(dir_template) != 0) {
+            path_ok = 0;
+            fprintf(stderr, "manual control %s: trace fixture cleanup failed\n", fault);
+        }
+        unsetenv("MUHTARI_MANUAL_INPUT_TEST_CHILD");
+        unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONFIG");
+        unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CORE");
+        unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONTENT");
+        if (strcmp(fault, "existing-file") == 0)
+            printf("manual control %s: existing trace sentinel preserved; partial trace absent\n",
+                   fault);
+        else
+            printf("manual control %s: existing trace preserved; partial helper %s\n", fault,
+                   path_ok ? "absent" : "check failed");
+        if (!path_ok)
             return 0;
     } else if (rc == 0 && strcmp(fault, "valid") == 0) {
         it_trace helper, core;
@@ -783,7 +901,11 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
     if (!path_fault &&
         (result->child <= 0 || waitpid(result->child, NULL, WNOHANG) != -1 || errno != ECHILD))
         return 0;
-    if (unlink(cart) != 0 || rmdir(cart_dir) != 0)
+    unsetenv("MUHTARI_MANUAL_INPUT_TEST_CHILD");
+    unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONFIG");
+    unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CORE");
+    unsetenv("MUHTARI_MANUAL_INPUT_EXPECT_CONTENT");
+    if (!path_fault && (unlink(cart) != 0 || rmdir(cart_dir) != 0))
         return 0;
     if (strcmp(fault, "interrupt") == 0 && (manual_alarm_count == 0 || launch_end < launch_start ||
                                             launch_end - launch_start > wall_ms + grace_ms + 200u ||
@@ -813,6 +935,8 @@ static int manual_control(const char *work, char *app_path, char *core_path)
         {"content", "argv-rejected", 1000u, 100u},
         {"config", "argv-rejected", 1000u, 100u},
         {"existing-file", "existing trace sentinel preserved", 1000u, 100u},
+        {"existing-core-file", "existing core trace preserved and partial file removed", 1000u,
+         100u},
         {"symlink", "trace symlink sentinel preserved", 1000u, 100u},
         {"exec", "exec error", 1000u, 100u},
         {"timeout", "exact-child SIGTERM/SIGKILL/reap", 150u, 150u},

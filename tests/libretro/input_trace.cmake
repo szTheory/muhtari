@@ -50,8 +50,11 @@ if(NOT rc STREQUAL "0" OR NOT out MATCHES "manual control valid: valid trace" OR
     NOT out MATCHES "manual control timeout: exact-child SIGTERM/SIGKILL/reap" OR
     NOT out MATCHES "manual control interrupt: EINTR returns to bounded deadline and exact-child cleanup" OR
     NOT out MATCHES "manual control unreaped: bounded unreaped result" OR
-    NOT out MATCHES "manual control existing-file: existing trace sentinel preserved" OR
-    NOT out MATCHES "manual control symlink: trace symlink sentinel preserved")
+    NOT out MATCHES "manual control existing-file: existing trace sentinel preserved; partial trace absent" OR
+    NOT out MATCHES "manual control existing-core-file: existing trace preserved; partial helper absent" OR
+    NOT out MATCHES "manual control existing-core-file retry: complete paired traces" OR
+    NOT out MATCHES "manual control symlink: existing trace preserved; partial helper absent" OR
+    NOT out MATCHES "manual control symlink retry: complete paired traces")
   message(FATAL_ERROR "passive manual launcher controls failed: ${rc}\n${out}${err}")
 endif()
 string(REGEX MATCH "manual_trace_dir=([^\r\n]+)" manual_match "${out}")
