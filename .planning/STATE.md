@@ -4,17 +4,17 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
-current_plan: 16 of 23
+current_plan: 2
 status: blocked
-stopped_at: Plan 12-22 and owner-run diagnostic complete; 12-23 local gap plan next
-last_updated: "2026-11-09T19:20:00.466Z"
+stopped_at: Completed Plan 12-23 local cleanup; Phase 12 acceptance remains blocked at 0/4
+last_updated: "2026-11-09T20:19:24.808Z"
 last_activity: 2026-11-09
-state_head: 755aad8e05c98a8c851ce1fbb350bbc0fb152efc
+state_head: 59b3995d67108bcc18522027eb47875fd11b78f0
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 62
-  completed_plans: 55
+  completed_plans: 56
   percent: 33
 ---
 
@@ -25,16 +25,16 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 12 remains blocked at accepted 0/4 with 2/5 roadmap truths verified. The owner-run Up+Z diagnostic result is recorded but does not prove released-core acceptance. Plan 12-23 is the only runnable gap plan; 12-24 and all original acceptance successors retain their dependencies. No host or remote action is authorized.
+Current focus: Phase 12 remains blocked at accepted 0/4 with 2/5 roadmap truths verified. Plan 12-23 is complete and fixes only passive trace cleanup; its local controls, all 700 ordinary tests, three packages, six release checks, and hygiene passed. Release identity, complete released-core RetroArch evidence, and measured pipeline improvement remain missing. No host or remote action is authorized.
 
 ## Current Position
 
 Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Current Plan: 16 of 23
-Plan: 0 of 4 acceptance plans accepted. Plan 12-22's owner-run diagnostic recorded neutral → Up+Z held → released callbacks and the yellow completion display, but remains diagnostic-only. Plan 12-23 is the only runnable gap plan; 12-19/16 remain blocked by the spent 12-18 denial, 12-02/03/04 remain blocked by 12-01, and 12-24 remains behind those dependencies.
+Current Plan: 2
+Plan: 2 of 23
 Status: blocked
-Next action: Run $gsd-execute-phase 12 --gaps-only to execute only 12-23's local trace-cleanup controls and bounded local gates; it does not reach a user decision checkpoint. No host, remote, publication, permission or retry action is authorized.
-Boundary: Plan 12-23 is limited to synthetic children, offline controls, local CI and hygiene. Real RetroArch/content launch, event injection, Accessibility/TCC, remote work, publication and owner content operations remain closed. The 12-18 request/preflight allowance is spent; 12-01 remains halted and accepted 0/4 is unchanged.
+Next action: No Phase 12 plan is runnable. Plans 12-02/03/04 remain blocked by halted 12-01; 12-24 also waits for 12-04. Plans 12-19/16 remain blocked by the spent 12-18 denial. Next actor: owner must supply new released-core evidence or explicitly authorize a fresh identity/host-bound scope. No OpenGSD command is valid now.
+Boundary: Plan 12-23 was local only; no host, remote, permission, or publication action occurred. The 12-18 request remains spent; the 12-01 halt and accepted 0/4 remain binding.
 
 ## Current Blockers
 
@@ -276,12 +276,12 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-08T18:03:53.176Z
-Stopped at: Plan 12-22 owner-run input diagnostic passed; Phase 12 acceptance remains blocked
+Last session: 2026-11-09T20:18:49.880Z
+Stopped at: Completed Plan 12-23 local cleanup; Phase 12 acceptance remains blocked at 0/4
 Resume file: None
 
-Next command: $gsd-verify-work 12.
-Context handoff: Plan 12-22's one-time owner run reports a successful neutral → Up+Z held → released callback trace and the yellow complete background; no text is expected and no repeat run is needed. Run $gsd-verify-work 12 to reconcile this result. The 12-18 permission request/preflight allowance remains spent; no Accessibility/TCC change or retry. Phase 12 accepted 0/4; packaged-core input, DMA, battery, aggregate, paired Playstead, Plans 12-19/16 and original 12-02/03/04 gates remain.
+Next command: None — no Phase 12 OpenGSD command is valid until new released-core evidence or a new bounded identity/host authorization is supplied.
+Context handoff: Plan 12-23 completed the local passive trace cleanup repair, all local gates, and the review disposition; Phase 12 remains accepted 0/4 with release identity, full released-core RetroArch evidence, and measured pipeline improvement still open. Plan 12-24 remains blocked by 12-04/12-01; plans 12-02/03/04 and 12-19/16 remain blocked by their halted predecessors. The 12-18 consent/request allowance is spent. Owner acts next by supplying new evidence or deciding whether to authorize a fresh bounded identity/host scope. No host or remote action occurred or is authorized.
 
 Worktree reconciliation: Phase 13 shipped as PR #42 and is present in `origin/main`; the root branch contains `origin/main`. The committed Phase 14 and OpenBIOS worktree HEADs are already ancestors of root, so there is no committed work to merge from them. Their worktrees remain dirty and preserved; do not overwrite or remove them. The Phase 13 dirty input files are older than the root version, and the OpenBIOS capture changes are already present in root. The Phase 14 uncommitted state/checkpoint remains in its worktree under its existing stop. Reconcile any future dirty-file changes against root before copying them.
 
