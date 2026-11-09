@@ -6,15 +6,15 @@ current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
 current_plan: 2
 status: blocked
-stopped_at: Completed Plan 12-23 local cleanup; Phase 12 acceptance remains blocked at 0/4
-last_updated: "2026-11-09T20:19:24.808Z"
+stopped_at: Completed Plan 12-03 documentation; Phase 12 acceptance remains blocked at 0/4 with no runnable plan
+last_updated: "2026-11-09T21:57:44Z"
 last_activity: 2026-11-09
-state_head: 59b3995d67108bcc18522027eb47875fd11b78f0
+state_head: f36df91061b671bae5b1bd04f8e521b3f8dfe117
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 62
-  completed_plans: 56
+  completed_plans: 57
   percent: 33
 ---
 
@@ -25,7 +25,7 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Phase 12 remains blocked at accepted 0/4 with 2/5 roadmap truths verified. Plan 12-23 is complete and fixes only passive trace cleanup; its local controls, all 700 ordinary tests, three packages, six release checks, and hygiene passed. Release identity, complete released-core RetroArch evidence, and measured pipeline improvement remain missing. No host or remote action is authorized.
+Current focus: Phase 12 acceptance remains blocked at 0/4; this is not a stop on library development. The protected verification report remains unchanged at 2/5. Plan 12-03 is complete: the v0.11.1 release identity and source-bound attestation are documented, the player launch/save contract is current, and the Playstead handoff is refreshed. This does not establish held/released input or a separate post-publication archive replay. The Windows pipeline measurement and actual packaged-core host acceptance remain open. No host or remote action is authorized.
 
 ## Current Position
 
@@ -33,12 +33,12 @@ Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
 Current Plan: 2
 Plan: 2 of 23
 Status: blocked
-Next action: No Phase 12 plan is runnable. Plans 12-02/03/04 remain blocked by halted 12-01; 12-24 also waits for 12-04. Plans 12-19/16 remain blocked by the spent 12-18 denial. Next actor: owner must supply new released-core evidence or explicitly authorize a fresh identity/host-bound scope. No OpenGSD command is valid now.
-Boundary: Plan 12-23 was local only; no host, remote, permission, or publication action occurred. The 12-18 request remains spent; the 12-01 halt and accepted 0/4 remain binding.
+Next action: No Phase 12 plan is runnable. Plan 12-02 remains blocked by halted 12-01; 12-04 waits for 12-02/03; 12-24 waits for 12-04; Plans 12-19/16 remain blocked by the spent 12-18 denial. No Phase 12 execution command is valid now. For the remaining host/remote gates, the next actor is the owner to authorize a fresh bounded scope or supply new evidence; no owner action is needed for the completed documentation work.
+Boundary: Plan 12-03 used source review and local documentation checks only; no host, remote, permission, or publication action occurred. The protected verification report is unchanged. The 12-18 request remains spent; the 12-01 halt and accepted 0/4 remain binding.
 
 ## Current Blockers
 
-- Phase 12's original WASI and host attempts remain terminal historical outcomes. Plan 12-20's first full WASI run failed because `retroarch.states.controls` invoked a WASI module directly and two runner tests timed out; Plan 12-21 corrected the configured emulator route, reran the complete 622-case WASI lane successfully, and observed no recurrence of those timeouts. Plan 12-22 added the isolated owner-run keyboard diagnostic and offline controls; the recorded neutral → Up+Z held → released callbacks and yellow completion display prove that diagnostic only, not PLAY-03. Plan 12-23 is a local warning repair with no host authority. Plans 12-19/16 remain blocked by the spent 12-18 denial, original plans 12-02/03/04 remain blocked by 12-01, and acceptance remains 0/4. See [12-14 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-14-LOCAL-EVIDENCE.md), [12-15 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-15-LOCAL-EVIDENCE.md), [12-17 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-17-LOCAL-EVIDENCE.md), [12-18 consent evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-18-CONSENT-EVIDENCE.md), [12-20 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-20-LOCAL-EVIDENCE.md), [12-21 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-21-SUMMARY.md), and [12-22 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-22-SUMMARY.md).
+- Phase 12's original WASI and host attempts remain terminal historical outcomes. Plan 12-20's first full WASI run failed because `retroarch.states.controls` invoked a WASI module directly and two runner tests timed out; Plan 12-21 corrected the configured emulator route, reran the complete 622-case WASI lane successfully, and observed no recurrence of those timeouts. Plan 12-22 added the isolated owner-run keyboard diagnostic and offline controls; the recorded neutral → Up+Z held → released callbacks and yellow completion display prove that diagnostic only, not PLAY-03. Plan 12-23 is a local warning repair with no host authority. Plan 12-03 now documents v0.11.1 release identity, source-bound attestation, and the external launch contract; its local install-line check used a v0.10.0 package and is not the separate published-byte replay. The protected verification report remains at 2/5 and accepted 0/4. Plan 12-02 remains blocked by halted 12-01; 12-04 waits for 12-02; 12-24 waits for 12-04; Plans 12-19/16 remain blocked by the spent 12-18 denial. See [12-14 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-14-LOCAL-EVIDENCE.md), [12-15 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-15-LOCAL-EVIDENCE.md), [12-17 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-17-LOCAL-EVIDENCE.md), [12-18 consent evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-18-CONSENT-EVIDENCE.md), [12-20 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-20-LOCAL-EVIDENCE.md), [12-21 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-21-SUMMARY.md), and [12-22 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-22-SUMMARY.md).
 - Root-merge reconciliation corrected the Phase 14 `support-report` file path to `tests/common/bmp.c`. The existing `retroarch.states.controls` test now checks both the successful report and a missing-reader failure. Its local pass does not clear the Phase 14 workflow gate or authorize host work.
 - The historical BIOS timeout cause remains unknown. The approved five-test RUN_SERIAL mitigation preserved one-second limits; after it, the independent parent and frozen source passed complete CI and hygiene workflows. This does not attribute the earlier timeouts.
 - Plan 14-13 is complete: the exact five RUN_SERIAL properties and metadata fault controls passed, and the sole focused batch passed 7/7 including both fixture setup tests. That batch is consumed; do not retry it. No deadline or unrelated test metadata changed.
@@ -150,7 +150,7 @@ Current milestone: 8 completed plans in Phase 13; duration and trend not measure
 
 | Phase | Plans | Total | Avg/Plan |
 |---|---|---|---|
-| 12 | 0/4 accepted; 16/21 active plans have outcomes | — | — |
+| 12 | 0/4 accepted; 18/23 plans have summaries | — | — |
 | 13 | 8 | - | - |
 | 14 | 9 plans completed; phase incomplete | — | — |
 **Per-Plan Metrics:**
@@ -276,12 +276,12 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 
 ## Session Continuity
 
-Last session: 2026-11-09T20:18:49.880Z
-Stopped at: Completed Plan 12-23 local cleanup; Phase 12 acceptance remains blocked at 0/4
+Last session: 2026-11-09T21:57:44Z
+Stopped at: Completed Plan 12-03 documentation; Phase 12 acceptance remains blocked at 0/4 with no runnable plan
 Resume file: None
 
-Next command: None — no Phase 12 OpenGSD command is valid until new released-core evidence or a new bounded identity/host authorization is supplied.
-Context handoff: Plan 12-23 completed the local passive trace cleanup repair, all local gates, and the review disposition; Phase 12 remains accepted 0/4 with release identity, full released-core RetroArch evidence, and measured pipeline improvement still open. Plan 12-24 remains blocked by 12-04/12-01; plans 12-02/03/04 and 12-19/16 remain blocked by their halted predecessors. The 12-18 consent/request allowance is spent. Owner acts next by supplying new evidence or deciding whether to authorize a fresh bounded identity/host scope. No host or remote action occurred or is authorized.
+Next command: None — the Phase 12 scheduler reports no runnable plans, and existing host/remote stops remain in force.
+Context handoff: Plan 12-03 documentation is complete and its local installer/docs checks passed. The release identity is documented, but the v0.10.0 local installer check was not a v0.11.1 replay; held/released input and a separate downloaded-published-archive replay remain pending. The protected verification report and accepted 0/4 remain unchanged. Plan 12-02 is blocked by halted 12-01; 12-04 waits for 12-02/03; 12-24 waits for 12-04; Plans 12-19/16 remain blocked by the spent 12-18 denial. The agent completed all runnable local work. The next actor for remaining host/remote gates is the owner, only if authorizing a new bounded scope or supplying new evidence. No host or remote action occurred or is authorized.
 
 Worktree reconciliation: Phase 13 shipped as PR #42 and is present in `origin/main`; the root branch contains `origin/main`. The committed Phase 14 and OpenBIOS worktree HEADs are already ancestors of root, so there is no committed work to merge from them. Their worktrees remain dirty and preserved; do not overwrite or remove them. The Phase 13 dirty input files are older than the root version, and the OpenBIOS capture changes are already present in root. The Phase 14 uncommitted state/checkpoint remains in its worktree under its existing stop. Reconcile any future dirty-file changes against root before copying them.
 

@@ -4,7 +4,7 @@
 
 - [x] **v1.0 — 7800 games play with sound in RetroArch** — phases 1–4, shipped 2026-10-21; [archive](milestones/v1.0-ROADMAP.md).
 - [x] **v2.0 — The whole library** — phases 5–11, shipped 2026-10-29; [archive](milestones/v2.0-ROADMAP.md).
-- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted at 0/4 accepted, and Phase 14 acceptance blocked at Plan 14-31. Plan 14-29 closed with the timeout cause unresolved. Plan 14-25 remains halted at its failed independent R workflow; its hygiene, frozen-source validation, and owner checkpoint were not reached. Plan 14-27's pinned Darwin arm64 Wasmtime fetch and local CI workflow passed (CTest 695/695; release tests 6/6), but does not clear the Plan 14-25 gate. Plan 14-31's two-invocation diagnostic allowance is spent: the renewed isolated self-test passed with its one-second timeout unchanged, but the historical full-workflow timeout remains unexplained. The owner separately preauthorizes bounded local builds, tests and CI workflows for new work under about one hour; this does not renew a plan-specific cap or authorize host/remote action.
+- [ ] **v3.0 — Playstead-ready play and states** — phases 12–14, approved 2026-10-29; in progress, with Phase 13 complete, Phase 12 halted at 0/4 accepted, and Phase 14 acceptance blocked at Plan 14-31. Phase 12 Plan 12-03's player/release documentation and Playstead handoff are complete; v0.11.1 artifact identity and attestation are documented, while separate published-byte host replay, packaged-core input evidence, and the measured pipeline tune-up remain open. The protected Phase 12 verification report remains unchanged. Plan 14-29 closed with the timeout cause unresolved. Plan 14-25 remains halted at its failed independent R workflow; its hygiene, frozen-source validation, and owner checkpoint were not reached. Plan 14-27's pinned Darwin arm64 Wasmtime fetch and local CI workflow passed (CTest 695/695; release tests 6/6), but does not clear the Plan 14-25 gate. Plan 14-31's two-invocation diagnostic allowance is spent: the renewed isolated self-test passed with its one-second timeout unchanged, but the historical full-workflow timeout remains unexplained. The owner separately preauthorizes bounded local builds, tests and CI workflows for new work under about one hour; this does not renew a plan-specific cap or authorize host/remote action.
 
 ## v3.0 — Playstead-ready play and states
 
@@ -52,11 +52,12 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 16/23 plans executed (12-08 is superseded and excluded from the active count; accepted 0/4).
+**Plans:** 18/23 plans executed (12-08 is superseded and excluded from the active count; accepted 0/4).
 
 Plans:
 **Wave 1**
 - [x] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
+- [x] 12-03-PLAN.md — Complete player-facing save limits, release-qualified external launch documentation, and the source-linked Playstead handoff. Published-byte host replay and paired Playstead acceptance remain pending.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [x] 12-22-PLAN.md — Added an isolated owner-run RetroArch input diagnostic and strict offline controls; local CI, release/package, hygiene and independent security review pass. The owner-run trace confirms neutral → Up+Z held → released and the yellow complete screen; Phase 12 remains accepted 0/4 because packaged-core input, DMA, battery, aggregate and paired Playstead evidence remain open.
@@ -104,16 +105,12 @@ host test or dependent plan.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 12-03-PLAN.md — Complete the current player/launch contract and source-linked Playstead handoff.
-
-**Wave 4** *(blocked on Wave 3 completion)*
-
 - [ ] 12-04-PLAN.md — Record the exact six-property evidence deferral and its bounded close revisit.
 
 **Additional additive gap closures** *(the canonical acceptance halt and accepted 0/4 remain; planning creates no host or remote authority)*
 
-- [ ] 12-23-PLAN.md — Wave 3, after 12-22: close the local partial-trace cleanup warning through synthetic controls and local gates; does not prove released-core acceptance.
-- [ ] 12-24-PLAN.md — Wave 5, after 12-04 and 12-23: future blocking owner checkpoint for judgment-tier claim dispositions; remains behind the original acceptance chain.
+- [x] 12-23-PLAN.md — Wave 3, after 12-22: close the local partial-trace cleanup warning through synthetic controls and local gates; does not prove released-core acceptance.
+- [ ] 12-24-PLAN.md — Wave 4, after 12-04 and 12-23: future blocking owner checkpoint for judgment-tier claim dispositions; remains behind the original acceptance chain.
 
 **Canonical refs:** [owner intent](INTENT.md), [accepted requirements](REQUIREMENTS.md), [research](research/SUMMARY.md#implications-for-roadmap), [feature ownership](research/FEATURES.md), [Playstead handoff](research/PLAYSTEAD-HANDOFF.md), [hosts §3–4](preparation/HOSTS-AND-INTEGRATION.md#3-retroarch-on-apple-silicon), [engineering §11](preparation/ENGINEERING.md#11-docs-standards), [tune-up seed](seeds/SEED-007-milestone-tune-up.md), [maintenance seed](seeds/SEED-009-proportional-maintenance-review.md), [property seed](seeds/SEED-010-nightly-prop-calibration.md), [lessons](LESSONS.md#local-player-onboarding-2026-10-29).
 **UI hint:** no
@@ -321,7 +318,7 @@ execute and ship are separate GSD steps/sessions under [GSD-HANDOFF §3](prepara
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
-| 12. Player-ready delivery and Playstead bridge | 16/21 | Acceptance remains 0/4 and original 12-01 remains halted. Plans 12-14/15/17/18/20 are terminal halted. Plan 12-21 completed: both generated state-driver controls now use the configured emulator; the full 622-case local WASI workflow and exact portable audit pass, and the two runner timeouts did not recur. Plan 12-22 added a locally verified owner-run keyboard diagnostic: full native CI passed (700 tests, package and 6 release checks), hygiene passed 30/30, and independent review returned SECURED. The isolated wrapper's preparation path passed without launching RetroArch; the owner-run physical callback and separate visible-color observations are pending. Plan 12-18's Terminal-bound event-post request and preflight remain denied with the allowance spent; no retry or Settings/TCC change occurred. Plan 12-19/16 remain blocked, and original plans 12-02/03/04 remain blocked by 12-01. No Phase 12 acceptance evidence was waived; all Phase 14 stops remain unchanged | - |
+| 12. Player-ready delivery and Playstead bridge | 18/23 | Acceptance remains 0/4 and original 12-01 remains halted. Plan 12-03's player/release documentation and source-linked Playstead handoff are complete; the v0.11.1 release identity is documented, while separate published-byte host replay and packaged-core input evidence remain pending. Plans 12-14/15/17/18/20 are terminal halted. Plan 12-21 completed: both generated state-driver controls now use the configured emulator; the full 622-case local WASI workflow and exact portable audit pass, and the two runner timeouts did not recur. Plan 12-22 added a locally verified owner-run keyboard diagnostic: full native CI passed (700 tests, package and 6 release checks), hygiene passed 30/30, and independent review returned SECURED. The isolated wrapper's preparation path passed without launching RetroArch; the owner-run physical callback and separate visible-color observations are pending. Plan 12-18's Terminal-bound event-post request and preflight remain denied with the allowance spent; no retry or Settings/TCC change occurred. Plan 12-19/16 remain blocked; Plan 12-02 remains blocked by halted 12-01, Plan 12-04 waits for 12-02/03, and Plan 12-24 waits for 12-04. No Phase 12 acceptance evidence was waived; all Phase 14 stops remain unchanged | - |
 | 13. Portable save/load across three interfaces | 8/8 | Complete    | 2026-11-01 |
 | 14. Proven frontend states and responsive play | 31/31 | Acceptance blocked. Plan 14-25's sole independent R gate failed on `title.pin.self_test` at one second; workflow stderr recorded denied `/bin/ps`, with cause unknown. No hygiene, frozen gate or owner checkpoint followed; that scope is spent. Plan 14-29 records a passing target-only non-reproduction and the owner's decision to close its diagnosis unresolved. Earlier native/Docker stops, unknown parent timeouts, spent host allowance and Phase 12 halt remain preserved. Verification stays `gaps_found` (20/27); FRONT-02/03/04 pending; no allowance renewed | - |
 
