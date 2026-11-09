@@ -277,11 +277,11 @@ Inherited todos and optional seeds retain their dispositions; no extra milestone
 ## Session Continuity
 
 Last session: 2026-11-08T18:03:53.176Z
-Stopped at: Plan 12-22 local work complete; owner-run input diagnostic pending
+Stopped at: Plan 12-22 owner-run input diagnostic passed; Phase 12 acceptance remains blocked
 Resume file: None
 
-Next command: scripts/retroarch-manual-input.sh --run; after its callback and visible-color results, run $gsd-verify-work 12.
-Context handoff: Plan 12-22 local implementation is verified and committed; the owner-run physical keyboard diagnostic is pending. Run scripts/retroarch-manual-input.sh --run in normal GUI-backed Terminal, report callback and waiting/held/complete color observations, then run $gsd-verify-work 12. The 12-18 permission request/preflight allowance remains spent; no Accessibility/TCC change or retry. Phase 12 accepted 0/4; Plans 12-19/16 and original 12-02/03/04 gates remain.
+Next command: $gsd-verify-work 12.
+Context handoff: Plan 12-22's one-time owner run reports a successful neutral → Up+Z held → released callback trace and the yellow complete background; no text is expected and no repeat run is needed. Run $gsd-verify-work 12 to reconcile this result. The 12-18 permission request/preflight allowance remains spent; no Accessibility/TCC change or retry. Phase 12 accepted 0/4; packaged-core input, DMA, battery, aggregate, paired Playstead, Plans 12-19/16 and original 12-02/03/04 gates remain.
 
 Worktree reconciliation: Phase 13 shipped as PR #42 and is present in `origin/main`; the root branch contains `origin/main`. The committed Phase 14 and OpenBIOS worktree HEADs are already ancestors of root, so there is no committed work to merge from them. Their worktrees remain dirty and preserved; do not overwrite or remove them. The Phase 13 dirty input files are older than the root version, and the OpenBIOS capture changes are already present in root. The Phase 14 uncommitted state/checkpoint remains in its worktree under its existing stop. Reconcile any future dirty-file changes against root before copying them.
 

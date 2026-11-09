@@ -5,8 +5,9 @@ source:
   - 12-01-SUMMARY.md
   - 12-05-SUMMARY.md
   - 12-06-SUMMARY.md
+  - 12-22-SUMMARY.md
 started: 2026-10-31T21:35:49-04:00
-updated: 2026-11-01T01:36:18.554Z
+updated: 2026-11-09T15:09:58.510Z
 ---
 
 ## Current Test
@@ -105,10 +106,16 @@ reported: "12-01-SUMMARY.md claims 4 commits, while `git rev-list --count plan_h
 severity: major
 evidence: "The verify-work bounded commit reconciliation command; 12-01-SUMMARY.md."
 
+### 13. Owner-run RetroArch input diagnostic
+expected: The diagnostic displays no text and reaches the solid yellow complete state after the physical Up+Z sequence.
+result: pass
+source: manual_procedural
+evidence: "Owner reported yellow complete background; terminal output reports the neutral → Up+Z held → released callback sequence and successful callback verdict. See 12-22-LOCAL-EVIDENCE.md."
+
 ## Summary
 
-total: 12
-passed: 4
+total: 13
+passed: 5
 issues: 4
 pending: 0
 skipped: 0

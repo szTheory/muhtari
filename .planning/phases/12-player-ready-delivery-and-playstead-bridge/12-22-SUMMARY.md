@@ -64,8 +64,8 @@ coverage:
     requirement: PLAY-03
     verification:
       - kind: manual_procedural
-        ref: "scripts/retroarch-manual-input.sh --run; owner result not yet available"
-        status: unknown
+        ref: "scripts/retroarch-manual-input.sh --run; owner reported callback success and observed the yellow complete background"
+        status: pass
     human_judgment: true
     rationale: "Only the owner can perform the requested physical keyboard action and observe the actual RetroArch window."
 duration: 58min
@@ -89,7 +89,7 @@ status: complete
 
 - Added `scripts/retroarch-manual-input.sh` with explicit `--run` and `--prepare-only` modes. It uses the existing history-cart generator, private RetroArch settings and output paths, a 3600-frame cap, and the existing trace consumers.
 - Added `--manual-launch` and `--manual-core` plus synthetic valid/fault controls to the existing CTest path. Trace-file/symlink refusals preserve sentinels; input verdicts require a complete clock-valid trace with active polling and neutral → both-held → both-released values.
-- Preserved owner control and phase boundaries in `AGENTS.md` and `docs/testing.md`. The local physical run is pending and does not complete PLAY-03 or Phase 12.
+- Preserved owner control and phase boundaries in `AGENTS.md` and `docs/testing.md`. The owner later completed the one-time diagnostic run; it does not complete PLAY-03 or Phase 12.
 
 ## Task Commits
 
@@ -155,21 +155,21 @@ The first GSD staging attempt failed before staging because `.git/index.lock` cr
 
 ## User Setup Required
 
-No installation or configuration change is required. The owner must run the one physical check from a normal GUI-backed Terminal.
+No installation or configuration change was required. The owner completed the one-time physical check from a normal GUI-backed Terminal.
 
 ## Next Phase Readiness
 
-The diagnostic is ready for the owner's one physical Up+Z check. The callback result and visible waiting/held/complete colors are both pending. Phase 12 remains accepted 0/4, PLAY-03 remains pending, and this tool does not replace released-core visible input, DMA, battery, aggregate or paired Playstead evidence.
+The owner-run diagnostic passed: RetroArch sampled neutral → Up+Z held → released, and the owner saw the yellow complete background. Phase 12 remains accepted 0/4 and PLAY-03 remains pending because this diagnostic does not replace released-core visible input, DMA, battery, aggregate or paired Playstead evidence.
 
-**Owner command:** `scripts/retroarch-manual-input.sh --run`
+**Owner command:** `scripts/retroarch-manual-input.sh --run` (completed once; no repeat needed)
 
-After the owner provides the callback verdict and separate visible-color observation, run `$gsd-verify-work 12` to reconcile it against Phase 12 evidence. The executor must not run the command.
+Reconcile the owner result through `$gsd-verify-work 12`. The executor must not run the physical command.
 
 ## Self-Check: PASSED
 
 - `12-22-SUMMARY.md` and `12-22-LOCAL-EVIDENCE.md` exist.
 - Local command results and the bounded review are recorded in the evidence file.
-- The feature implementation and documentation are committed; the plan is complete while the owner's physical input observation remains pending.
+- The feature implementation, documentation, and owner-run diagnostic result are recorded; the plan is complete.
 
 ---
 *Phase: 12-player-ready-delivery-and-playstead-bridge*

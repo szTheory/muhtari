@@ -55,7 +55,7 @@ Playstead-native exact Continue and state history remain later work.
 **Plans:** 16/21 plans executed (12-08 is superseded and excluded from the active count; accepted 0/4).
 
 Plans:
-- [x] 12-22-PLAN.md — Added an isolated owner-run RetroArch input diagnostic and strict offline controls; local CI, release/package, hygiene and independent security review pass. The owner's callback and visible-color observations remain pending; no app, permission or remote action occurred, and Phase 12 remains accepted 0/4.
+- [x] 12-22-PLAN.md — Added an isolated owner-run RetroArch input diagnostic and strict offline controls; local CI, release/package, hygiene and independent security review pass. The owner-run trace confirms neutral → Up+Z held → released and the yellow complete screen; Phase 12 remains accepted 0/4 because packaged-core input, DMA, battery, aggregate and paired Playstead evidence remain open.
 - [x] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
 
 Execution halted: original run 41056151292 failed before RetroArch; scoped recovery

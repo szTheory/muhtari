@@ -2,7 +2,7 @@
 
 ## Result
 
-The owner-run diagnostic and its offline controls are implemented. The local wrapper is prepared and tested without launching RetroArch. The callback trace result and the cartridge's visible progression remain separate observations; the physical owner run is still pending. Phase 12 remains accepted 0/4 and PLAY-03 remains pending.
+The owner-run diagnostic and its offline controls are implemented. At implementation close, the local wrapper was prepared and tested without launching RetroArch, and the physical owner run was pending. The owner later completed the one-time run; its result is recorded below. Phase 12 remains accepted 0/4 and PLAY-03 remains pending.
 
 **Run URL:** `N/A-local`
 
@@ -36,13 +36,17 @@ The launcher's cleanup uses bounded `WNOHANG` polling after SIGKILL and reports 
 
 ## Scope and remaining evidence
 
-This local execution launched RetroArch **0** times and did not use GUI/computer input, event injection, Accessibility/TCC, permissions, owner content/data, remote CI or publication. `--prepare-only` did not create frontend traces. The wrapper retains its output directory and removes only the generated temporary cartridge it owns.
+The implementation session launched RetroArch **0** times and did not use GUI/computer input, event injection, Accessibility/TCC, permissions, owner content/data, remote CI or publication. `--prepare-only` did not create frontend traces. The owner later launched the app once through the wrapper and used physical keyboard input; no permission change or event injection was involved. The wrapper retains its output directory and removes only the generated temporary cartridge it owns.
 
-The one remaining observation is the owner's physical Up+Z hold and release through installed RetroArch. A passing callback trace proves what the diagnostic core sampled; the owner must separately observe the waiting/held/complete cartridge colors. A missing transition is inconclusive and does not attribute a cause to focus, mapping, backend or the earlier permission denial. This does not satisfy released-core visible input, DMA, battery, aggregate or paired Playstead acceptance.
+## Owner-run result (2026-11-09)
 
-**Owner command:** `scripts/retroarch-manual-input.sh --run`
+**Command:** `scripts/retroarch-manual-input.sh --run`
 
-Run it from the owner's normal GUI-backed Terminal, then provide the callback verdict and the separate visible-color observation. The next OpenGSD route is `$gsd-verify-work 12` to reconcile the owner evidence; Phase 12 stays at accepted 0/4 until its remaining evidence gates are independently satisfied.
+The owner-provided terminal output reports a normal child exit, complete helper and core traces, and the sampled sequence Up=0+B=0 → Up=1+B=1 → Up=0+B=0. The wrapper printed its successful callback verdict. The owner observed the solid background reach yellow, the cartridge's complete state; no text is expected. The pasted transcript did not include a separate numeric shell exit code. `Run URL: N/A-local`.
+
+This single diagnostic confirms the installed RetroArch input callback path and its final visual state. It does not identify focus/mapping/backend causes in a failing run, and it does not satisfy released-core visible input, DMA, fresh-process battery, aggregate or paired Playstead acceptance. Phase 12 remains accepted 0/4.
+
+No further app launch or physical input run is needed for this diagnostic. Reconcile the recorded owner evidence with `$gsd-verify-work 12`.
 
 ## Repository commit boundary
 
