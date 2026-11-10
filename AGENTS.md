@@ -98,6 +98,8 @@ evidence.
    On each autonomous context resume, treat prior summaries as pointers: reconcile the actual branch and dirty tree,
    current verification reports, review disposition, and runnable plan index before repeating a blocker or claiming
    there is no work. Continue independent authorized local work when one phase has no runnable plan.
+   Keep evidence source- and gate-specific: a later pass on another source or scope does not reopen a terminal attempt,
+   satisfy its exact-source gate, or replace the fresh authority required by its stop.
    Never run `/gsd-next`, `/gsd-manager`, `/gsd-progress --next` or `--do`, any GSD command whose
    arguments contain `--auto` or `--chain`, or `/gsd-profile-user`, and never set the hygiene bypasses `MUHTARI_ALLOW_CHAIN` or
    `MUHTARI_ALLOW_MAIN_COMMIT`. Stop inside a scope only at a real decision boundary, failed gate requiring changed
