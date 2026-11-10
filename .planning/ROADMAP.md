@@ -52,17 +52,21 @@ Playstead-native exact Continue and state history remain later work.
 3. Automated owned-fixture checks using the released libretro core in actual RetroArch demonstrate the expected visible output, delivered input and battery continuity in a fresh process, with their host-readiness scope kept separate from actual Playstead acceptance.
 4. Maintainers can demonstrate at least one shipped small improvement to reproduced pipeline friction, with comparable before/after observations and representative pass/fault behavior preserving every required contract; research or debt dispositions alone do not satisfy this outcome.
 5. Maintainers can distinguish completed nightly-property work from censored/cancelled attempts and find complete evidence supporting any deadline change, or a bounded explicit deferral retaining all cases, oracles and advisory labels.
-**Plans:** 19/23 plans executed (12-08 is superseded and excluded from the active count; accepted 0/4).
+**Plans:** 19/24 plans executed (12-08 and 12-24 are superseded and excluded from the active count; accepted 0/4).
 
 Plans:
-- [x] 12-25-PLAN.md
-
 **Wave 1**
 - [x] 12-01-PLAN.md — Prove packaged RetroArch gameplay input with independent visible and retained battery controls.
 - [x] 12-03-PLAN.md — Complete player-facing save limits, release-qualified external launch documentation, and the source-linked Playstead handoff. Published-byte host replay and paired Playstead acceptance remain pending.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [x] 12-22-PLAN.md — Added an isolated owner-run RetroArch input diagnostic and strict offline controls; local CI, release/package, hygiene and independent security review pass. The owner-run trace confirms neutral → Up+Z held → released and the yellow complete screen; Phase 12 remains accepted 0/4 because packaged-core input, DMA, battery, aggregate and paired Playstead evidence remain open.
+
+**Wave 4** *(blocked on Wave 2 completion)*
+- [x] 12-25-PLAN.md
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 12-26-PLAN.md — Prepare a separately identified local diagnostic app and offline controls; stop at one exact owner consent/hardware command. This does not close released-core, Playstead or Windows performance acceptance.
 
 Execution halted: original run 41056151292 failed before RetroArch; scoped recovery
 41062201311 attempt 1/source 28e13e1 reached the host but held input produced idle
