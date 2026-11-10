@@ -4,17 +4,17 @@ milestone: v3.0
 milestone_name: Playstead-ready play and states
 current_phase: 12
 current_phase_name: Player-ready delivery and Playstead bridge
-current_plan: 26
+current_plan: 27
 status: blocked
-stopped_at: Phase 12 acceptance remains blocked; Plan 12-26 local preparation is runnable, with real permission and hardware actions behind the owner checkpoint
-last_updated: "2026-11-10T04:36:48.471Z"
-last_activity: 2026-11-09
-state_head: dd4a78a6ba6829cea3e707c9b8a791a65e202bdb
+stopped_at: Plan 12-27 local preparation passed; waiting at the owner-only permission request checkpoint. No request, app launch, preflight, RetroArch, or content action was made by the agent.
+last_updated: "2026-11-10T06:41:18Z"
+last_activity: 2026-11-10
+state_head: dc8bec31e5241272a9c906147092f246e18e7749
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 63
-  completed_plans: 58
+  total_plans: 64
+  completed_plans: 59
   percent: 33
 ---
 
@@ -25,20 +25,20 @@ progress:
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-01.
 Core value: 7800 games behave as on the console, identically across platforms,
 from a small MIT-licensed C library hosts can embed.
-Current focus: Continue v3.0 autonomously through independent local work. Phase 12 remains accepted 0/4 with refreshed verification at 3/5; released-core host evidence, paired Playstead proof, and the Windows pipeline improvement remain open. Phase 13 is complete and its refreshed verification passes 44/44. Phase 14 remains blocked at 20/27; its local host-support path control now passes after the review fix, but actual RetroArch save/load, rewind, and run-ahead evidence is absent. Host and remote attempt stops remain in force.
+Current focus: Continue v3.0 through independent local work. Phase 12 remains accepted 0/4 with refreshed verification at 3/5. Plan 12-26 remains halted after its stale offline mock made one real permission request and returned denied; the new Plan 12-27 app and runner passed offline safety controls, with the exact request and optional diagnostic still at the owner checkpoint. The Terminal can remain open. Released-core proof, paired Playstead evidence and the Windows performance comparison remain open. Windows support and TUNE-06 remain in scope. Phase 13 is complete; Phase 14 remains blocked at 20/27. Host and remote attempt stops remain in force.
 
 ## Current Position
 
-Phase: 12 (Player-ready delivery and Playstead bridge) — READY TO EXECUTE
-Current Plan: 26 (next runnable; private local app preparation only)
-Plan: 19 of 24 active plans summarized
-Status: local recovery is ready; Phase 12 acceptance remains blocked at 0/4
-Next action: Run `$gsd-execute-phase 12 --gaps-only`; it selects only Plan 12-26. Task 1 prepares the app and offline controls. Task 2 presents one exact owner command after the app identity and limits are reviewable.
-Boundary: Plan 12-26 does not reopen 12-18, launch RetroArch before the owner checkpoint, dispatch remote CI, or claim released-core/Playstead evidence. Windows support remains in scope; TUNE-06's measured performance comparison remains open under 12-02. Phase 13 is complete; Phase 14 has no actual state-mode host evidence.
+Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED AT OWNER CHECKPOINT
+Current Plan: 27 (local preparation complete; owner request pending)
+Plan: 20 of 25 active plans have terminal summaries; Plan 12-27 is incomplete at its owner checkpoint
+Status: The new app identity, runner hash, offline controls, and exact command are recorded in [Plan 12-27 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-27-LAUNCHER-EVIDENCE.md). Phase acceptance remains 0/4.
+Next action: The owner may run the exact command in that evidence ledger once or decline. After a reported result or decline, the agent audits receipts and completes Plan 12-27 bookkeeping. The optional diagnostic requires a second affirmative choice after a permitted actual-context preflight.
+Boundary: Plan 12-26 remains terminal halted; do not repeat its request. Plan 12-27's fresh request remains owner-controlled, and no content may run after denial, timeout, unknown, or declined permission/preflight. No Terminal restart, Settings/TCC access, remote dispatch, or host attempt is authorized. Windows support remains in scope; TUNE-06's measured comparison remains open under 12-02.
 
 ## Current Blockers
 
-- Phase 12 has five incomplete plans; only 12-26 is runnable, and it starts with private local app preparation. Plans 12-02/04 remain blocked behind halted 12-01, while 12-19/16 remain blocked by the spent 12-18 denial. The current 3/5 verification leaves published-byte replay, full released-core input/DMA/battery/aggregate proof, paired Playstead evidence, and a measured Windows publisher improvement open. Plan 12-23 fixed the local trace rollback warning, and the latest standard review has zero findings. The complete local CI gate passed; this does not authorize host/remote work or close acceptance. See [Phase 12 verification](phases/12-player-ready-delivery-and-playstead-bridge/12-VERIFICATION.md), [12-25 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-25-SUMMARY.md), [12-26 plan](phases/12-player-ready-delivery-and-playstead-bridge/12-26-PLAN.md), and the existing [host stop](phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md).
+- Phase 12 remains accepted 0/4 with refreshed verification at 3/5. Plan 12-26 is terminal halted after one real permission API call escaped from its stale unbundled mock; the result was denied/77, and prompt visibility and TCC attribution remain unknown. Plan 12-27's separate app and runner are now locally qualified: all 11 offline control groups and the actual-binary symbol gate passed, with zero agent permission, app, preflight, RetroArch, or content operations. The owner request and optional diagnostic remain pending; see the [12-27 evidence ledger](phases/12-player-ready-delivery-and-playstead-bridge/12-27-LAUNCHER-EVIDENCE.md). Plans 12-02/04 remain blocked behind halted 12-01, while 12-19/16 remain blocked by the spent 12-18 denial. Published-byte replay, released-core input/DMA/battery/aggregate proof, paired Playstead evidence, and measured Windows improvement remain open. See [Phase 12 verification](phases/12-player-ready-delivery-and-playstead-bridge/12-VERIFICATION.md), [12-26 summary](phases/12-player-ready-delivery-and-playstead-bridge/12-26-SUMMARY.md), [12-26 launcher evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-26-LAUNCHER-EVIDENCE.md), and the existing [host stop](phases/12-player-ready-delivery-and-playstead-bridge/12-01-SUMMARY.md).
 - Root-merge reconciliation corrected the Phase 14 `support-report` file path to `tests/common/bmp.c`. The existing `retroarch.states.controls` test now checks both the successful report and a missing-reader failure. Its local pass does not clear the Phase 14 workflow gate or authorize host work.
 - The historical BIOS timeout cause remains unknown. The approved five-test RUN_SERIAL mitigation preserved one-second limits; after it, the independent parent and frozen source passed complete CI and hygiene workflows. This does not attribute the earlier timeouts.
 - Plan 14-13 is complete: the exact five RUN_SERIAL properties and metadata fault controls passed, and the sole focused batch passed 7/7 including both fixture setup tests. That batch is consumed; do not retry it. No deadline or unrelated test metadata changed.
@@ -145,7 +145,7 @@ Current Plan: 12-21 of 20 active plans (ready)
 Plan: 0 of 4 acceptance plans accepted. Plan 12-21 is the only runnable recovery: fix the missing configured emulator route for the WASI state controls, rerun the full lane, and apply only the specified two-test WASI serialization if the same timeouts recur. The denied 12-18 event-post request remains spent. Plan 12-16 depends on 12-21/18/19; Phase 12 acceptance remains blocked and unwaived. Plan 12-01 remains halted; 12-02/03/04 remain blocked.
 Status: Acceptance remains blocked on the full local WASI gate, actual held/released RetroArch input, and causal evidence.
 Next local step: No Phase 12 local gap step is runnable. Plan 12-21 completed the WASI prerequisite; Plan 12-19 and Plan 12-16 remain blocked on the unfulfilled 12-18 causal and consent gate. Owner must decide whether to grant Terminal Accessibility and explicitly authorize a fresh bounded scope before planning another diagnostic.
-Last activity: 2026-11-09
+Last activity: 2026-11-10
 Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
