@@ -2,11 +2,11 @@
 gsd_state_version: "1.0"
 milestone: v4.0
 status: milestone_completed
-stopped_at: PR 46 blocked by inherited host gate; v4.0-only publication approved; shipping in progress
-last_updated: "2026-11-10T22:47:06.103Z"
+stopped_at: Approved v4.0-only shipping tracked by PR 47; agent owns exact-source CI and release checks
+last_updated: "2026-11-10T22:49:04.667Z"
 last_activity: 2026-11-10
-last_activity_desc: Approved v4.0-only source verified; replacement PR preparation complete
-state_head: 05576197722f8ec9e25882d25ff8269ec575d779
+last_activity_desc: "Approved v4.0-only milestone shipped through PR #47"
+state_head: 0a79e1ed403d6e00f185f48abada50a09de6e3e8
 progress:
   total_phases: 2
   completed_phases: 2
@@ -22,14 +22,14 @@ milestone_name: Browser/WebAssembly core readiness
 
 See [PROJECT.md](PROJECT.md), [v4.0 requirements](milestones/v4.0-REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v4.0 offline acceptance is complete; The combined PR #46 is preserved with its failed host evidence. The owner approved the verified v4.0-only candidate; the agent is carrying its [publication scope](milestones/v4.0-SHIP-SCOPE.md) through CI, merge and release checks.
+**Current focus:** The owner-approved v4.0-only publication is tracked in [PR #47](https://github.com/szTheory/muhtari/pull/47). The combined source and failed host evidence remain preserved under superseded PR #46.
 
 ## Current Position
 
 Phase: Milestone v4.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-11-10 -- Approved v4.0-only source verified; replacement PR preparation complete
+Last activity: 2026-11-10 -- Approved v4.0-only milestone shipped through PR #47
 
 ## Performance Metrics
 
@@ -44,7 +44,7 @@ Inherited todos and optional seeds retain their dispositions; no extra v4.0 requ
 
 ### Blockers/Concerns
 
-- No local v4.0 acceptance gap remains. Combined-source hosted native/Emscripten checks pass, but PR #46 cannot merge because its inherited held-input capture gate fails. No host retry is authorized. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
+- No local v4.0 acceptance gap remains. PR #46’s combined-source hosted native/Emscripten checks passed, but its inherited input capture gate failed. PR #47 carries only the approved v4.0 source and preserves main’s existing checks. Candidate-specific hosted acceptance is owned by the agent. No old host retry is authorized. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
 - The loader contract is settled and verified offline. Browser/device behavior, Playstead and prior host scopes remain outside acceptance; hosted Windows native/quality execution passed at the exact source recorded in the ship receipt.
 
 ## Deferred Items
@@ -94,9 +94,9 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-10
-Stopped at: v4.0-only publication approved; agent owns CI, merge and release checks
+Stopped at: v4.0-only publication tracked by PR #47; all earlier host stops preserved
 Resume file: None
-Next command: $gsd-ship 16 (resume the already approved v4.0-only source in .worktrees/phase-16-ship; agent-owned routing).
+Next command: $gsd-new-milestone after the agent confirms PR #47 and release-PR health. Resume $gsd-ship 16 only to finish that already approved ship scope.
 
 ## Operator Next Steps
 
