@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
 milestone: v4.0
-milestone_name: Browser/WebAssembly core readiness
 status: milestone_completed
-stopped_at: v4.0 verified, audited and archived locally; shipping pending
-last_updated: "2026-11-10T20:48:59.256Z"
+stopped_at: v4.0 shipped through PR 46; check current PR and release receipts
+last_updated: "2026-11-10T21:17:04.759Z"
 last_activity: 2026-11-10
-last_activity_desc: Milestone v4.0 completed and archived
-state_head: 4701ff597f52200593053693370e44e169e69ccb
+last_activity_desc: "Phase 16 shipped as PR #46 (full v4.0 milestone branch)"
+state_head: 00ce02425c7588699f0a57a2ff2921fbe5ad6ca8
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 2
   completed_plans: 2
   percent: 100
+milestone_name: Browser/WebAssembly core readiness
 ---
 
 # Project State
@@ -22,14 +22,14 @@ progress:
 
 See [PROJECT.md](PROJECT.md), [v4.0 requirements](milestones/v4.0-REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** v4.0 is complete locally; prepare shipping on the canonical milestone branch.
+**Current focus:** v4.0 offline acceptance is complete; [PR #46](https://github.com/szTheory/muhtari/pull/46) tracks shipping and exact-source hosted checks.
 
 ## Current Position
 
 Phase: Milestone v4.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-11-10 — Milestone v4.0 completed and archived
+Last activity: 2026-11-10 -- Phase 16 shipped as PR #46 (full v4.0 milestone branch)
 
 ## Performance Metrics
 
@@ -44,7 +44,7 @@ Inherited todos and optional seeds retain their dispositions; no extra v4.0 requ
 
 ### Blockers/Concerns
 
-- No local v4.0 acceptance gap remains. Shipping and hosted verification have not run. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
+- No local v4.0 acceptance gap remains. Shipping and hosted receipts are tracked in PR #46. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
 - The loader contract is settled and verified offline. Browser/device behavior, Playstead and prior host scopes remain outside acceptance; hosted Windows execution belongs to ship.
 
 ## Deferred Items
@@ -94,9 +94,9 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-10
-Stopped at: v4.0 local completion, audit and cleanup complete; shipping pending
+Stopped at: v4.0 shipping tracked in PR #46; preserve earlier host stops
 Resume file: None
-Next command: $gsd-ship 16
+Next command: $gsd-new-milestone after PR #46 and its release checks are green
 
 ## Operator Next Steps
 
@@ -104,6 +104,6 @@ Next command: $gsd-ship 16
 
 Context can be cleared. The agent owns source/receipt and service-health preflight on resumption. No host or remote allowance is renewed by this handoff.
 
-Ship 16 selects the archived final phase for verification; the PR must describe the entire canonical v4.0 milestone branch, including Phase 15. The agent owns fresh archived-receipt/CI and service-health checks before any remote action.
+Ship 16 selected the archived final phase and created PR #46 for the entire canonical milestone branch, including Phase 15 and retained v3.0 tooling. The agent owns exact-source CI, service-health and release checks. See milestones/v4.0-SHIP.md for local receipts.
 
 Archive compatibility: OpenGSD 1.20.0 phase-op may return a null directory for archived Phase 16. Resolve it with the same runtime’s `query find-phase 16 --raw` before ship preflight, as GSD-HANDOFF documents; canonical verification and roadmap completion remain mandatory. No owner repair is needed.
