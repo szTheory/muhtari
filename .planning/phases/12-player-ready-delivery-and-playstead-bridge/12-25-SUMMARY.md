@@ -69,7 +69,7 @@ coverage:
         status: pass
     human_judgment: false
 
-duration: 10min
+duration: 14min
 completed: 2026-11-09
 status: complete
 ---
@@ -80,9 +80,9 @@ status: complete
 
 ## Performance
 
-- **Duration:** 10 min
+- **Duration:** 14 min
 - **Started:** 2026-11-10T00:23:01Z
-- **Completed:** 2026-11-10T00:34:37Z
+- **Completed:** 2026-11-10T00:36:54Z
 - **Tasks:** 2
 - **Files modified:** 5, including this summary
 
