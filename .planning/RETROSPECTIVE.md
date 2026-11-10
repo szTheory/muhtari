@@ -99,6 +99,53 @@ totals remain untrusted. The 18.24% local same-workload scheduling improvement i
 historical Phase 5 evidence; no global hosted-cost reduction is claimed.
 Timeline: eight calendar days from initialized v2.0 to shipped package.
 
+## Milestone: v3.0 — Playstead-ready play and states (closed with deferred scope)
+
+**Closeout:** 2026-11-10, `override_closeout`; not a package shipment.
+**Phases:** 3 | **Recorded plans:** 64 | **Requirements:** 7/16 complete.
+
+### What Was Built
+
+Phase 13 delivered portable validated state through the library, runner and
+libretro core. Its refreshed verification passed 44/44 and the local CI workflow
+passed. The player documentation, package checks, launch contract and host-test
+paths also leave reusable local artifacts, but they do not satisfy the open host
+acceptance requirements.
+
+### What Worked
+
+Local deterministic checks and explicit phase evidence extracted useful state
+functionality without needing external Playstead changes. The archive keeps the
+successful state API, the two incomplete phase reports, failed attempts and the
+denied owner request distinguishable.
+
+### What Was Inefficient
+
+Phase 12 accumulated many plans around a released-core host path whose remaining
+permission request was denied before preflight. That blocked acceptance, but it
+did not prevent unrelated core development. Repeatedly treating phase acceptance
+as the only useful next action delayed a clear scope choice. Phase 14 similarly
+has strong local wiring but no host launch evidence; source-level tests cannot
+substitute for that boundary.
+
+### Patterns Established
+
+When an identity-bound host action is denied, preserve the exact stop and evidence,
+close the milestone transparently with unmet requirements still unchecked, and
+move independent development to a separately verifiable scope. Prefer a single
+offline harness over additional owner-run setup when it can answer the question.
+
+### Key Lessons
+
+- A milestone's acceptance blocker is not automatically a project-wide development blocker.
+- Override closeout is valid bookkeeping only when failed verdicts, unmet requirements and unrenewed stops stay explicit.
+- The next scope should reuse an owner-ranked independent direction and start with the recurring SEED-007 tune-up.
+
+### Cost Observations
+
+No trustworthy per-milestone cost total was available. Do not infer productivity from
+64 recorded plans or 100 recorded tasks; only one of three phase goals passed.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |
@@ -106,6 +153,7 @@ Timeline: eight calendar days from initialized v2.0 to shipped package.
 | v1.0 | 4 | 73 | 25/25 scoped | 605 regular + 6 archive checks in milestone audit; green published-release run | Override: 15 deferred artifacts and four stale fingerprints |
 
 | v2.0 | 7 | 75 accepted; 82 historical summaries | 27/27 scoped | 673 regular + 6 package checks in final phase; 55 audit integration checks; published-release run | Override: 15 newly deferred, 13 carried, seven stale fingerprints |
+| v3.0 | 3 (1 verified) | 64 recorded plans | 7/16 complete | Local CI passed; Phase 13 verified 44/44; Phase 12 accepted 0/4; Phase 14 20/27 | Override: 22 newly acknowledged, 28 carried; nine requirements deferred |
 
 Both milestones required explicit historical-fingerprint overrides and post-merge
 publication checks. Repeated output/deadline friction favors existing independent

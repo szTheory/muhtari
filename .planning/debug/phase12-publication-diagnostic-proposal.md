@@ -1,3 +1,10 @@
+---
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: unknown
+---
+
 # Phase 12 publication and single input diagnostic proposal
 
 > **Current state (2026-10-31):** The reconciliation below supersedes the

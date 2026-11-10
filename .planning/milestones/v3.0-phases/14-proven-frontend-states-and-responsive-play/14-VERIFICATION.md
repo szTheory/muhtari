@@ -217,6 +217,10 @@ prohibition_flags:
     flagged: true
     reason: "The actual state-mode storage and run-ahead evidence is absent; current documentation remains qualified."
     gap: "FRONT-04 host-evidence gap."
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: gaps_found
 ---
 
 # Phase 14: Proven Frontend States and Responsive Play Verification Report

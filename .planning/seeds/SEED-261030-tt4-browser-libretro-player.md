@@ -5,6 +5,10 @@ planted: 2026-10-30
 planted_during: v3.0 phase 12 debug continuation
 trigger_when: owner starts a separate browser-player project, or browser play and Playstead embedding are considered at a milestone boundary
 scope: large
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: dormant
 ---
 
 # A reusable browser emulator player for Playstead and other sites

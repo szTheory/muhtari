@@ -5,6 +5,10 @@ planted: 2026-10-30
 planted_during: v3.0 phase 12 debug continuation
 trigger_when: owner initiates an emulator-interface project or a measured cross-core host limitation warrants a deeper comparison
 scope: large
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: dormant
 ---
 
 # An optional emulator interface alongside libretro

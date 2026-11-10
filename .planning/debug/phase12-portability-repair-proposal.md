@@ -1,3 +1,10 @@
+---
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: unknown
+---
+
 # Local diagnostic-test portability repair
 
 Revised execution on 2026-10-31. **The approved narrow observer continuation

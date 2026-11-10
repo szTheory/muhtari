@@ -3,6 +3,10 @@ status: investigating
 trigger: "Recover phase 12-01 halted packaged RetroArch input tracer"
 created: 2026-10-30
 updated: 2026-11-02
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: investigating
 ---
 
 ## Current Focus

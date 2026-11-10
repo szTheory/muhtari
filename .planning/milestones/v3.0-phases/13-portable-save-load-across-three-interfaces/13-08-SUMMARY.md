@@ -38,7 +38,7 @@ key-files:
 key-decisions:
   - Keep the shared little-endian visitor and cached effective machine identity; CRC remains corruption detection only.
   - Do not claim phase acceptance without exact-source executed native/PowerPC equality receipts.
-requirements-completed: []
+requirements-completed: [STATE-01, STATE-02, STATE-03, STATE-04, STATE-05, STATE-06, FRONT-01]
 coverage:
   - id: D1
     description: Public and preparation docs match the implemented state format and identity contract.

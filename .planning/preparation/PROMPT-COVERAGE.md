@@ -1,8 +1,8 @@
 ---
 title: "Prompt coverage: every owner ask and where it lives"
-summary: "Maps each of the owner's 59 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
+summary: "Maps each of the owner's 61 asks (the preparation brief, all layers, plus later messages) to the file section, rule, seed or milestone that carries it, with a status and what remains."
 read_when: "At kickoff review and at every milestone close; also before calling an owner ask done, deferred or out of scope."
-updated: 2026-10-30
+updated: 2026-11-10
 ---
 
 # Prompt coverage
@@ -80,7 +80,7 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 | 49 | Usable as a core inside other emulators and frontends | HOSTS 1 (libretro), 2 (rcheevos map), 4 (runner process contract); ARCHITECTURE; AGENTS 2, 4; ENGINEERING 11 (`docs/embedding.md`) | Documented | Browser remains a next candidate (SEED-008); gamer-first Playstead readiness is now immediate v3.0 (PLAY/STATE/FRONT) |
 | 50 | Use the new OpenGSD (`gsd-core`), not the old GSD | GSD-HANDOFF 1, 2 (`@opengsd/gsd-core` 1.17.0 version check), 5, 8; LESSONS XFER-023, -024 | Documented | — |
 | 51 | Power-efficient, for battery life on handhelds | ECOSYSTEM 4 (work per frame, device budgets); FRAME-08 (instructions-per-frame ratchet), FRAME-09 (bench); ENGINEERING 8, 9 (`armhf` nightly); PROJECT constraints (efficiency); SEED-005 | Partial | The test-card PR comparison is armed after Phase5 controls; it does not measure gameplay energy. Energy is not measured; battery budgets on a handheld come with the ports (SEED-005) |
-| 52 | Efficient in the browser through WebAssembly; the owner ranks it very important | HOSTS 6; ARCHITECTURE (portability row); PROJECT constraints (efficiency); v1.0 ph1 (a wasm32 build and hash-equality lane on every PR, decided at the phase 1 discussion); SEED-008 | Partial | The WASM build/hash lane remains advisory. The owner considered and deferred the browser player at the v2.0 boundary on 2026-10-21 (SEED-008); TUNE-04 makes lane status explicit |
+| 52 | Efficient browser-core portability through WebAssembly remains a high owner priority | HOSTS-AND-INTEGRATION 6; ARCHITECTURE portability; SEED-008; PRODUCT-ROADMAP v4.0 | Partial | v4.0 now scopes an Emscripten build and offline deterministic host shim for the existing libretro core. No browser UI/device code or user-device performance claim is included; real-browser/player work remains open. |
 | 53 | Another copy and paste beats another dependency: small, flat dependency trees, a dependency only when truly needed | AGENTS Style; PROVENANCE 4 (permissive seeds with their notices); PROJECT out of scope (no test framework dependency); ENGINEERING 7 (YAGNI list) | Documented | — |
 | 54 | Automate local player onboarding, explain GUI and direct game launch, and retain voluntary gameplay feedback without recurring owner UAT | PROJECT constraints (onboarding); root README quick starts; `docs/libretro.md` Launching a game; LESSONS MU-HOST-002 and voluntary Choplifter observation | Documented | Local v0.10.0 launchers, isolated profile and homebrew installed outside the repository; owner confirms GUI loading and casual graphics/audio/speed success. Compatibility evidence stays scoped; AGENTS 6 remains in force. |
 
@@ -92,7 +92,10 @@ at the root; LESSONS, PRODUCT-ROADMAP, SEED-NNN under `.planning/`. "v1.0 ph2" =
 
 | 59 | Bank a possible interface project alongside libretro, exploring observability, AI/automated play, configuration and performance; leave a source-backed initial read for a deeper session | INTENT; PRODUCT-ROADMAP Long; seeds/SEED-261030-zk3-emulator-interface; research/emulator-interface/RECOMMENDATION | Later | Owner direction 2026-10-30. Keep libretro; compare host remedies/optional profiles/new standard, with no unmeasured superiority claim or full specification. |
 
-Totals: Documented 51, Partial 3, Later 5, Inapplicable 0.
+| 60 | When a host or identity-bound acceptance gate is denied, preserve that exact stop but continue independently buildable local core work; choose a truthful override closeout and downscope when needed | AGENTS rules 6–8; v3.0 audit and retrospective; PRODUCT-ROADMAP | Documented | v3.0 closes with nine requirements deferred and original Phase 12/14 verdicts intact; v4.0 proceeds on offline WebAssembly work without another permission request. |
+| 61 | At handoff, reconcile the current artifacts and give one exact command that starts the next useful implementation step | AGENTS handoff preferences; GSD-HANDOFF; STATE.md | Documented | This closeout leaves the Phase 15 execution command after its tune-up plan is prepared; no host or remote authority is implied. |
+
+Totals: Documented 53, Partial 3, Later 5, Inapplicable 0.
 
 ## 2. Owner constraints vs agent recommendations
 

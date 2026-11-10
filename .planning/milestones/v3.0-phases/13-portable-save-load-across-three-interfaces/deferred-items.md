@@ -4,3 +4,4 @@
 - `muhtari-test-rcheevos` could not be built from its actual target because the pinned `build/pins/rcheevos` source is absent. Its archive fallback is wired consistently with the compiled libretro testdb targets, but this consumer's build remains unverified until the pin is present; no pin was fetched.
 - Task 3's `tdd="true"` cases and implementation were included in one task commit, so there is no separate RED commit/evidence. The scoped identity assertions pass, but the planned test-first commit cadence was not followed.
 - The targeted documentation byte-budget check remains blocked by pre-existing `docs/embedding.md` at 43,947 bytes against the 40,960-byte limit. Plan 13-06 changes only `docs/libretro.md`; the unrelated embedding guide was left unchanged.
+  status: acknowledged

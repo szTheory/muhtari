@@ -1,5 +1,23 @@
 # Project Milestones: muhtari
 
+## v3.0 — Playstead-ready play and states (Closed with deferred scope: 2026-11-10)
+
+**Closeout type:** `override_closeout`; v3.0 is closed for planning purposes, not shipped as a package.
+**Scope:** 3 phases, 64 recorded plans, 100 recorded tasks; Phase 13 is the only phase goal verified.
+**Requirements:** 7/16 complete. Nine remain unchecked: TUNE-06/07, PLAY-01–04 and FRONT-02–04.
+
+**Delivered:** Phase 13 added portable save/load across the library, runner and libretro core; its refreshed verification passed 44/44. The required local CI workflow passed. The audit records integration as passed for this state path.
+
+**Deferred acceptance:** Phase 12 remains accepted 0/4; released-core input/battery proof, paired Playstead acceptance and the measured Windows improvement remain open. The owner-run request for the exact diagnostic app was denied before preflight or content. Phase 14 remains `gaps_found` at 20/27; actual RetroArch save/load, rewind and run-ahead acceptance is absent. The original phase records and stops remain intact in the archive.
+
+**Known verification overrides:** 22 newly acknowledged, 28 carried forward from the prior close (see STATE.md Deferred Items). No host or remote allowance was renewed; no package release or tag was created by this planning closeout.
+
+**Archive:** [roadmap](milestones/v3.0-ROADMAP.md), [requirements](milestones/v3.0-REQUIREMENTS.md), [audit](milestones/v3.0-MILESTONE-AUDIT.md), [phase records](milestones/v3.0-phases/).
+
+**Next:** v4.0 is scoped to the required tune-up followed by an offline WebAssembly build and deterministic host-shim checks for the existing libretro core. A browser player/UI and the deferred v3 host acceptance remain outside that scope.
+
+---
+
 ## v2.0 — The whole library (Shipped: 2026-10-29)
 
 **Delivered:** Expanded boards, persistent saves, scoped controllers and PAL across all three deliverables, with honest library evidence.

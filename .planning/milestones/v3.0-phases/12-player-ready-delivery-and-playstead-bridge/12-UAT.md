@@ -8,6 +8,10 @@ source:
   - 12-22-SUMMARY.md
 started: 2026-10-31T21:35:49-04:00
 updated: 2026-11-09T15:20:45.104Z
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  gap_snapshot: "partial::scenarios=0"
 ---
 
 ## Current Test

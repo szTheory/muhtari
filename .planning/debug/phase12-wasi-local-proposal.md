@@ -3,6 +3,10 @@ status: complete-local
 created: 2026-10-31
 scope: One scratch toolchain download and focused local WASI mock verification
 authority: Owner answered yes to this exact finite local batch; execution permitted within its bounds
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: complete-local
 ---
 
 # Focused local WASI execution proposal

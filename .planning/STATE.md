@@ -2,20 +2,21 @@
 gsd_state_version: "1.0"
 milestone: v3.0
 milestone_name: Playstead-ready play and states
-current_phase: 12
-current_phase_name: Player-ready delivery and Playstead bridge
-current_plan: 27
-status: blocked
+current_plan: 12-21 of 20 active plans (ready)
+status: Awaiting next milestone
 stopped_at: Plan 12-27's one owner-authorized request returned denied. The plan is terminally halted; no preflight, diagnostic choice, RetroArch, or content operation occurred, and the request will not be retried.
-last_updated: "2026-11-10T15:28:31Z"
+last_updated: "2026-11-10T15:57:08.940Z"
 last_activity: 2026-11-10
-state_head: dc8bec31e5241272a9c906147092f246e18e7749
+last_activity_desc: Milestone v3.0 completed and archived
+state_head: 8ce190fd1275356bfc90bd12550b62cc71d93076
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 64
   completed_plans: 60
   percent: 33
+current_phase: 12
+current_phase_name: Player-ready delivery and Playstead bridge
 ---
 
 # Project State
@@ -29,13 +30,10 @@ Current focus: Continue v3.0 through independent local work. Phase 12 remains ac
 
 ## Current Position
 
-Phase: 12 (Player-ready delivery and Playstead bridge) — BLOCKED
-Current Plan: 27 (terminally halted after the owner request was denied)
-Plan: 21 of 25 active plans have terminal summaries; four remain unsummarized and none is runnable
-Status: [Plan 12-27 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-27-LAUNCHER-EVIDENCE.md) records one denied request and read-only audits confirming that preflight and diagnostic were not reached. Phase acceptance remains 0/4.
-Next action: No Phase 12 plan is runnable. Plans 12-02/04 remain blocked by 12-01; plans 12-19/16 remain blocked by the spent 12-18 denial. New evidence and a separately authorized scope are required before planning another attempt.
-Boundary: Plans 12-26 and 12-27 are terminal; do not repeat either request. No Terminal restart, Settings/TCC access, remote dispatch, RetroArch, or content operation is authorized. Windows support remains in scope; TUNE-06's measured comparison remains open under 12-02.
-Workspace: The canonical checkout is clean. Three stale dirty worktrees were compared and preserved; no uncommitted source change needs importing. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
+Phase: Milestone v3.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-11-10 — Milestone v3.0 completed and archived
 
 ## Current Blockers
 
@@ -295,12 +293,33 @@ Worktree reconciliation: Phase 13 shipped as PR #42 and is present in `origin/ma
 Items acknowledged and deferred at milestone close. These markers preserve source
 verdicts and expire when the underlying artifact changes. The 13 carried items
 are four todos, eight seeds and one historical deferred item; v1.0's original
-receipt remains in [MILESTONES.md](MILESTONES.md) and its audit.
-Two newly acknowledged scanner entries already describe resolved historical faults;
+receipt remains in [MILESTONES.md](MILESTONES.md) and its audit. At v3.0 close, 22 current scanner items were acknowledged and deferred above; the 28 items acknowledged at the prior close remain suppressed only while their source state is unchanged. Two newly acknowledged scanner entries already describe resolved historical faults;
 acknowledgment suppresses the stale bullet without reopening or erasing that resolution.
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
+| debug_sessions | phase12-capture-live-proposal | executed-terminal-failure | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-diagnostics-live-proposal | executed-terminal-failure | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-held-capture-diagnosis | local-repair-and-approved-cap-amendment-verified-host-proof-pending | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-hosted-input-tracer-proposal | unknown | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-input-gap-next-scope | unknown | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-input-tracer-proposal | unknown | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-intel-budget-review | local-correction-verified-live-closed | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-live-proposal | terminal-failed-allowance-spent | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-openbios-observability-scope | unknown | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-packaged-input-tracer | investigating | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-portability-repair-proposal | unknown | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-publication-diagnostic-proposal | unknown | 2026-11-10 | v3.0 |
+| debug_sessions | phase12-wasi-local-proposal | complete-local | 2026-11-10 | v3.0 |
+| debug_sessions | phase14-title-pin-self-test | investigating | 2026-11-10 | v3.0 |
+| debug_sessions | workspace-reconciliation-2026-11-10 | unknown | 2026-11-10 | v3.0 |
+| seeds | SEED-261030-tt4 | dormant | 2026-11-10 | v3.0 |
+| seeds | SEED-261030-zk3 | dormant | 2026-11-10 | v3.0 |
+| uat_gaps | 12/12-UAT.md | partial | 2026-11-10 | v3.0 |
+| verification_gaps | 12/12-VERIFICATION.md | gaps_found | 2026-11-10 | v3.0 |
+| verification_gaps | 14/14-VERIFICATION.md | gaps_found | 2026-11-10 | v3.0 |
+| deferred_items | 13/deferred-items.md: Windows ledger mismatch, unavailable rcheevos source, test-first evidence, docs budget | acknowledged | 2026-11-10 | v3.0 |
+| deferred_items | 14/deferred-items.md: Windows ledger mismatch, lint notes, prior host failures and pending frontend proof | acknowledged | 2026-11-10 | v3.0 |
 | todos | 2026-10-29-keep-the-phase-11-first-review-info-findings.md | presence-only | 2026-10-29 | v2.0 |
 | seeds | SEED-009 | dormant | 2026-10-29 | v2.0 |
 | seeds | SEED-010 | dormant | 2026-10-29 | v2.0 |
@@ -316,3 +335,7 @@ acknowledgment suppresses the stale bullet without reopening or erasing that res
 | deferred_items | 05/deferred-items.md: Tooling seed: full actionlint reports SC2017 and SC2059 in the unchanged RetroArch pixel negative-control shell. Schema/action validation with shellcheck disabled passes. No pipeline control is weakened to silence these inherited advisory diagnostics. status: open | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 | deferred_items | 05/deferred-items.md: Tooling seed: `tests/cmake/budgets.cmake` accepts `-DROOT=.` but its relative document glob observes only the README/header (two files). The registered `docs.budgets` test supplies the absolute source root and correctly rejects oversized documents; use an absolute root for direct checks. Reproduced with `cmake -DROOT=. -P tests/cmake/budgets.cmake` versus `cmake -DROOT="$PWD" -P tests/cmake/budgets.cmake`, exits 0/1 while the candidate testing page exceeded its unchanged budget. Out of scope for this plan; no production check was weakened or removed. status: open | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
 | deferred_items | 11/deferred-items.md: Found in plan 04  - `diag.bankset_tracer` and `diag.bankset` both write `build/ci/tests/diag/bankset/32n/` and carry no resource lock, so under `ctest -j` one can read the other's `pixels.png` half written (`bankset --bankset-png ... png: chunk longer than the file`). Seen once in `cmake --workflow --preset ci`; passes alone and on rerun. Not caused by plan 04; a fix is a `RESOURCE_LOCK` or a separate output directory in `tests/diag/tests.cmake`.  Resolved in the gap round: `diag.bankset` now writes `build/<preset>/tests/diag/bankset-matrix/` and `diag.bankset_tracer` keeps `build/<preset>/tests/diag/bankset/`, so the two tests share no output file. | acknowledged; historical disposition retained | 2026-10-29 | v2.0 |
+
+## Operator Next Steps
+
+- Start the next milestone with $gsd-new-milestone

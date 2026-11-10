@@ -2,6 +2,10 @@
 status: terminal-failed-allowance-spent
 date: 2026-10-30
 scope: Owner yes authorizes this sole proposed live attempt; every prior allowance remains spent
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: terminal-failed-allowance-spent
 ---
 
 # One corrected-source keyboard feasibility proposal

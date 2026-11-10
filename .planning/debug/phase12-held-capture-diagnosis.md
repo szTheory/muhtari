@@ -2,6 +2,10 @@
 status: local-repair-and-approved-cap-amendment-verified-host-proof-pending
 date: 2026-10-30
 scope: Missing held capture diagnosis and future Windows calibration preparation only
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: local-repair-and-approved-cap-amendment-verified-host-proof-pending
 ---
 
 # Held capture and Windows producer evidence
@@ -895,5 +899,3 @@ Context may be cleared; exact next separate command
 hosted diagnostic proposal read-only. The agent owns fresh source/service/full
 receipt checks; actual hosted execution/publication needs a new explicit decision.
 No live allowance, archive or phase promotion follows this invocation.
-
-

@@ -2,6 +2,10 @@
 status: executed-terminal-failure
 date: 2026-10-30
 scope: Approved exact source publication and one capture feasibility attempt; fully reconciled
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: executed-terminal-failure
 ---
 
 # New capture-acknowledgment feasibility proposal

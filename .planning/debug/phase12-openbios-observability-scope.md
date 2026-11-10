@@ -1,3 +1,10 @@
+---
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: unknown
+---
+
 # Phase 12 OpenBIOS output-observability scope
 
 Status: local implementation and bounded controls complete; uncommitted. No hosted run is authorized.

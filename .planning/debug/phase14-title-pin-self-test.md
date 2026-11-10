@@ -3,6 +3,10 @@ status: investigating
 trigger: "Yeah, go for it. Why do you need me to authorize a diagnosis? You can always diagnose things."
 created: 2026-11-05
 updated: 2026-11-05
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: investigating
 ---
 
 ## Symptoms

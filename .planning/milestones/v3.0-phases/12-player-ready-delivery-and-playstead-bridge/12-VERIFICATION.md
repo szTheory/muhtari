@@ -139,6 +139,10 @@ gaps:
         issue: "The planned measured remedy and comparative evidence are not present."
     missing:
       - "A source-bound small remedy that reduces the complete Windows publication-control workload in both comparable pairs while preserving pass/fault contracts, with complete identities and results."
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: gaps_found
 ---
 
 # Phase 12: Player-ready delivery and Playstead bridge Verification Report

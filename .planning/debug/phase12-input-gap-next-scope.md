@@ -1,3 +1,10 @@
+---
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: unknown
+---
+
 # Phase 12 input acknowledgment: minimum new observation
 
 Prepared 2026-11-01. **Proposal only; no execution authority.** The active

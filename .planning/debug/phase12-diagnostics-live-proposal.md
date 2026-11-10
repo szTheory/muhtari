@@ -2,6 +2,10 @@
 status: executed-terminal-failure
 date: 2026-10-31
 scope: Publish verified three-file repair and observe one instrumented keyboard-only CI experiment
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: executed-terminal-failure
 ---
 
 # Diagnostic publication and one host experiment

@@ -1,3 +1,10 @@
+---
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: unknown
+---
+
 # Hosted input-tracer proposal
 
 Current outcome: the approved [observer continuation/local repair](phase12-portability-repair-proposal.md#completed-observer-continuation-and-local-repair-2026-10-31)

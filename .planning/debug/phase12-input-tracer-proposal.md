@@ -1,3 +1,10 @@
+---
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: unknown
+---
+
 # Local input-tracer proposal
 
 Status: owner-approved local-only batch completed and verified2026-10-31,

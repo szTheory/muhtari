@@ -15,24 +15,11 @@ that any host can embed.
 
 ## Current State
 
-Planning milestone **v2.0 — The whole library** shipped 2026-10-29 as package
-[v0.10.0](https://github.com/szTheory/muhtari/releases/tag/v0.10.0), with 19 published assets.
-The C17 library, headless runner and libretro core expose API 7, ABI 1 and behavior revision 6.
-The tracked C/header tree has 58,665 lines, including 10,263 in `src/` at shipped commit `d5fd241`.
-Integer-only, instance-owned, bounded execution and no allocation after load remain binding.
+Planning milestone **v3.0 — Playstead-ready play and states** closed on 2026-11-10 with deferred scope (`override_closeout`); this was not a package release. Phase 13 is verified at 44/44 and delivered portable state handling through the library, runner and libretro core. The local CI workflow passed.
 
-Seven phases (5–11) deliver all 27 scoped requirements. There are 75 accepted plans,
-76 summarized active slots and 82 total historical summaries, retaining halted and superseded work.
-The 82 summaries record 192 tasks; this is a historical record count, not 192 newly accepted outcomes.
-The [audit](milestones/v2.0-MILESTONE-AUDIT.md) retains **tech_debt** and **override_closeout**:
-seven stale verification fingerprints, 15 newly acknowledged artifacts and 13 carried acknowledgments.
-COST-01 monthly numeric totals, WR-01 delayed-release base selection, advisory property calibration
-and optional review findings remain deferred. Hardware fits and HSC stub limits remain explicit.
+The other two phase goals remain incomplete. Phase 12 is accepted 0/4 with 3/5 roadmap truths; the owner-run diagnostic permission request was denied before preflight or content, and released-core/Playstead evidence plus the measured Windows improvement remain open. Phase 14 is `gaps_found` at 20/27, with actual RetroArch save/load, rewind and run-ahead evidence absent. The nine requirements TUNE-06/07, PLAY-01–04 and FRONT-02–04 remain unchecked in the v3 archive. No host or remote allowance was renewed.
 
-All 204 pinned CC0 entries are accounted for: 201 unknown, 3 skipped and no gameplay passes.
-Owned model conformance and public title screens remain separate evidence classes.
-[Final release and latest-install](https://github.com/szTheory/muhtari/actions/runs/40956113369)
-and [merged-head CI](https://github.com/szTheory/muhtari/actions/runs/40956113335) pass.
+The next planning scope is v4.0: SEED-007 tune-up first, then a browser-consumable WebAssembly build of the existing libretro core with offline deterministic checks. The core remains the product; this scope adds no browser UI or device code. See [the v3 audit](milestones/v3.0-MILESTONE-AUDIT.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
 
 <details>
 <summary>Historical v1.0 and v2.0 phase-position receipts (superseded at milestone close)</summary>
@@ -121,26 +108,15 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 </details>
 
-## Current Milestone: v3.0 Playstead-ready play and states
+## Current Milestone: v4.0 Efficient WebAssembly Core Portability
 
-**Goal:** Make muhtari useful for everyday 7800 play through Playstead, with reliable
-save/load states and an automated end-to-end launch and resume path.
+**Goal:** Make the existing libretro core buildable for browser hosts and prove its deterministic behavior with offline, repeatable checks, while keeping the core small and portable.
 
-**Target features:**
-- A measured recurring tune-up, retaining known debt and improving demonstrated friction.
-- Portable validated save states across library, runner and libretro.
-- Playstead integration based on its actual launcher/adapter and product context;
-  first-party local game launch and resume are the immediate consumer outcome.
-- RetroArch save/load, rewind and run-ahead backed by deterministic state.
-- Existing deterministic replay supports state verification. Full recording, generalized
-  continuation, advanced AI play, TAS and speedrun tools remain later unless a concrete consumer needs them.
+**Target phases:**
+- Phase 15: the required SEED-007 tune-up, with measured pipeline friction and documentation freshness.
+- Phase 16: an Emscripten/WebAssembly build of the existing libretro core and a headless host-shim path comparing deterministic output and state behavior with native evidence.
 
-**Owner direction (2026-10-29):** Follow coherent researched recommendations inside this
-milestone step; prioritize actual gamers and early Playstead use. Refresh the rolling
-Immediate / Next / Mid / Long roadmap at every milestone start and close. Persist
-high-signal source-backed findings, decisions, revisit conditions and reproduced
-lessons so later sessions build on them. Read Playstead's product/brand context and
-actual integration before fixing its contract in this milestone.
+**Scope boundary:** No browser player, page, menu, window, audio-device or input-device code. A headless harness proves the core artifact and callback contract; it does not claim a shipped browser experience or measured performance on user devices. v3.0's actual RetroArch and Playstead gaps stay deferred with their original stops intact.
 
 ## Requirements
 
@@ -174,15 +150,11 @@ actual integration before fixing its contract in this milestone.
 - ✓ BankSet and XBoard/XM memory, POKEY and HSC with correct CPU/MARIA ownership — BOARD-04–05 — v2.0, Phase 10 merged in PR36.
 
 - ✓ Evidence-backed library accounting and isolated local evaluation — COMP-01–03 — v2.0, Phase 11 merged in PR40.
+- ✓ Portable validated machine state through the library, runner and libretro core — STATE-01–06 and FRONT-01 — v3.0 Phase 13, verification passed 44/44.
 
 ### Active
 
-The 16 scoped requirements are defined in [REQUIREMENTS.md](REQUIREMENTS.md): bounded
-tune-up/player onboarding, Playstead host readiness, safe portable state across all
-three deliverables, frontend save/load and rewind/run-ahead. Playstead adapter work
-and final cross-project acceptance remain explicitly owned by the sibling project.
-
-Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0-REQUIREMENTS.md).
+The v4.0 requirements are being defined in [REQUIREMENTS.md](REQUIREMENTS.md): the SEED-007 tune-up, an Emscripten/WebAssembly build of the current libretro core, and offline deterministic comparison against native behavior. The nine unmet v3.0 requirements remain in the v3.0 archive and are not represented as completed.
 
 ### Out of Scope
 
@@ -200,6 +172,9 @@ Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0
   see `.planning/seeds/` and `.planning/PRODUCT-ROADMAP.md`.
 
 ## Context
+
+- **v3.0 closeout.** Phase 13's portable machine-state path is verified; Phase 12's host and Windows claims and Phase 14's RetroArch state acceptance remain unresolved. The denied Phase 12 permission request ended before preflight/content and is not retried. See the v3.0 audit for exact scope and evidence.
+- **Next portability slice.** The owner delegated downscoping and milestone selection after the v3.0 acceptance deadlock. v4.0 takes the already-ranked browser/WebAssembly direction but limits Muhtari work to the existing libretro core and offline deterministic checks; the browser host owns presentation and devices.
 
 - **Ecosystem.** The only libretro 7800 core is ProSystem (GPL-2, per-line timing, many homebrew failures); the
   accuracy references are a7800 (MAME-derived, last release 2022), BizHawk's A7800Hawk (C#) and the MiSTer FPGA
@@ -293,6 +268,9 @@ Completed requirements and scope boundaries: [v2.0 requirements](milestones/v2.0
 | The CPU, bus and cartridge tables build once as OBJECT libraries inside the one shipped archive (D-14) | Tests run the CPU object on a flat bus without the library; one archive still ships | ✓ Phase 2: Cachegrind measured a 0.31 % Ir gap against a single translation unit |
 
 The full list with sources is `.planning/preparation/DECISIONS.md`.
+
+| Close v3.0 with nine requirements deferred; continue only the independently buildable next scope | Preserve all original Phase 12/14 verdicts and stops after the denied owner permission request; Phase 13 remains verified | ✓ 2026-11-10: override closeout recorded in the v3.0 archive; no host/remote renewal |
+| Promote WebAssembly core portability after the recurring tune-up | Reuses the existing three-deliverable contract and the owner's high-priority SEED-008; avoids making a browser UI a Muhtari deliverable | Planned for v4.0; build and deterministic harness acceptance to be researched and specified in Phase 16 |
 
 ## Evolution
 

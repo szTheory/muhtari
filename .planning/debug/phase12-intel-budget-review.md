@@ -2,6 +2,10 @@
 status: local-correction-verified-live-closed
 date: 2026-10-30
 scope: Approved Intel-only local correction verified; no live allowance
+audit_acknowledged:
+  milestone: v3.0
+  at: 2026-11-10
+  status: local-correction-verified-live-closed
 ---
 
 # Intel producer outer-job budget review
