@@ -445,3 +445,75 @@ remain unchanged. The diagnostic is silent, so its raw transition stream is
 empty while PCM sample count and bytes are still compared. These checks
 establish selected board semantics and partial descriptor visibility, not
 retail playability or complete achievement support.
+
+## WebAssembly build and offline host
+
+The production libretro adapter can also be built as a no-entry ES module and
+companion Wasm file. Native `.so`, `.dylib` and `.dll` output and the existing
+WASI lane keep their own presets. The required toolchain is the official
+`emscripten/emsdk` 7.0.0 image pinned by index digest
+`sha256:6bd7aef93408b10bf7b36642cb7c91119b302f720b9ec2d20439f73cf07fe894`;
+the Linux x86-64 leaf is
+`sha256:3803e37bf748ddee14d31cf712fcab09ca367fca83bbefeb78ce4c1f284e6f3f`.
+The amd64 image is about 826 MB compressed. The container's CMake 3.28 is
+below this repository's minimum, so the script uses the existing SHA-verified
+CMake 4.4.3 pin and Unix Makefiles. Ninja is not required.
+
+After the native `ci` workflow has generated the owned fixture and numeric
+observer report, run the complete local lane with:
+
+```sh
+sh scripts/emscripten.sh build/ci
+```
+
+The container has network access disabled during configure, build and tests.
+Outputs stay under `build/emscripten` and `build/ci/tests/emscripten`: the
+`libretro/muhtari_libretro.mjs` loader, `libretro/muhtari_libretro.wasm`,
+required CTest/JUnit inventory, native and Node observations, measured size
+and throughput report, and actual Wasm import/export surface. The existing
+Linux x64 CI job runs this lane as a required step after native tests and
+uploads those build-owned artifacts. Missing tools or evidence fail the lane.
+
+The generated `.mjs` exports an async factory. A direct Node consumer supplies
+the companion bytes, then calls the ordinary libretro exports:
+
+```js
+import { readFile } from 'node:fs/promises';
+import createCore from './muhtari_libretro.mjs';
+
+const wasmBinary = await readFile(new URL('./muhtari_libretro.wasm', import.meta.url));
+const core = await createCore({ wasmBinary });
+```
+
+`tests/emscripten/host.mjs` demonstrates the complete callback, content,
+state and input lifecycle without network access. Its callback table uses
+Emscripten signatures `iii` (environment), `viiii` (video), `vii` (single
+sample audio), `iii` (audio batch), `v` (input poll) and `iiiii` (input
+state). Its environment replies cover core-options version/options, the
+supported option values, XRGB8888, no-game, controller/input descriptors,
+memory maps, achievements, messages and normal savestate context; unknown
+commands return false.
+
+The wasm32 `retro_game_info` record is 16 bytes: path pointer at byte 0,
+content pointer at 4, 32-bit size at 8 and metadata pointer at 12. The caller
+copies the image into Wasm memory before `retro_load_game`; this core copies
+accepted content before returning, so the caller can then free its input
+buffer. Save and restore buffers are likewise caller-owned. Register callback
+functions with `addFunction`, and remove them after `retro_deinit`. Copy video
+rows using the reported pitch and copy PCM during its callback. Read
+`HEAPU8`/`HEAPU32` again after calls that may grow memory; never keep a heap
+view as an observation.
+
+The current artifact imports Emscripten's assertion, abort, resize and POSIX
+file/syscall helpers plus WASI `fd_close`, `fd_read`, `fd_seek` and `fd_write`.
+It exports the `retro_*` entry points, Wasm memory/table and C allocation
+functions; Emscripten stack/runtime exports are implementation details. The
+build-owned `wasm-surface.json` contains the exact names from each artifact.
+
+The report runs 12 warm-up frames and three measured windows of 60 neutral
+frames with the same generated fixture, callback copies and SHA-256 work on
+native and Node adapters. It records loader/Wasm/combined uncompressed bytes,
+source and fixture hashes, tool/runtime identities, architecture and each
+window plus median. It sets no speed or size threshold. Local Node execution
+under Docker Desktop amd64 emulation describes that container/host only; it
+does not establish browser, mobile, device or physical-input behavior.
