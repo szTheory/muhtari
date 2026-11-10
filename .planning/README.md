@@ -9,7 +9,7 @@ relevant source links instead of scanning every historical plan.
 | Shared goals, gamer priorities, writing voice, research posture and provenance | [INTENT.md](INTENT.md) |
 | What ships today and binding constraints | [PROJECT.md](PROJECT.md), [../AGENTS.md](../AGENTS.md) |
 | Current position and next allowed step | [STATE.md](STATE.md) |
-| This milestone's execution contract | [REQUIREMENTS.md](REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) |
+| This milestone's execution contract | [v4.0 requirements archive](milestones/v4.0-REQUIREMENTS.md), [ROADMAP.md](ROADMAP.md) |
 | Immediate, next, mid-term and long-term horizons | [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md) |
 | Where hardware/API/engineering facts live | [preparation/README.md](preparation/README.md) |
 | Settled choices and reasons | [preparation/DECISIONS.md](preparation/DECISIONS.md) |
@@ -34,3 +34,5 @@ Muhtari is the current leading example, not a permanently authoritative template
 Refresh this index, intent links and rolling horizons when a milestone begins or
 closes. Keep useful findings in ordinary project artifacts; no external memory
 service or bulk lesson export is needed. Detailed plans stay in their phase.
+
+Latest completion: [v4.0 audit](milestones/v4.0-MILESTONE-AUDIT.md), [phase archive](milestones/v4.0-phases/) and [current state](STATE.md). Offline implementation, verification and cleanup are complete; shipping remains pending.

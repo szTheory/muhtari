@@ -570,11 +570,17 @@ Fix and evidence (command, exit status, run URL): `cmake -DROOT=. -P tests/cmake
 Applies when: A CMake script accepts a relative directory and uses it in globbing or file checks.
 Does not establish: Hosted CI efficiency, queue/job timing, or any Phase 12/14 host acceptance.
 Suggested check: Keep a synthetic source tree with README, public header, regular docs, and hardware docs; verify exact limits and one-byte faults with both absolute and relative roots from a working directory containing spaces.
-Sources: `tests/cmake/budgets.cmake`, `tests/policy/budgets.cmake`, `docs/testing.md`, and `.planning/phases/15-measured-milestone-tune-up/15-TUNEUP.md`.
+Sources: `tests/cmake/budgets.cmake`, `tests/policy/budgets.cmake`, `docs/testing.md`, and `.planning/milestones/v4.0-phases/15-measured-milestone-tune-up/15-TUNEUP.md`.
 Status: reproduced
 
 ## WebAssembly evidence attribution (2026-11-10)
 
 - **Reproduced:** A source identity that hashes C files but omits implementation headers cannot establish matching native/WebAssembly sources. The Phase 16 disposable-copy control changed only `src/internal.h`; the corrected identity changed and returned to its original value on restoration. Include compile headers and generated version input in both fingerprint material and configure dependencies.
 - **Reproduced:** Shifting Perl wait status alone discards signal termination. The corrected bounded runner explicitly checks normal exit, nonzero exit, signal termination and timeout, and the SDK lane invalidates earlier output receipts before execution. This prevents an interrupted run from presenting old evidence as fresh.
-- Evidence: `cmake --workflow --preset ci` and `sh scripts/emscripten.sh build/ci`, both exit 0; run URL N/A-local. Commands and representative controls are recorded in [the Phase 16 fix report](phases/16-emscripten-libretro-core/16-FIX-REPORT.md). This establishes local Node/core behavior; it supplies no browser/device or Phase 12/14 host acceptance.
+- Evidence: `cmake --workflow --preset ci` and `sh scripts/emscripten.sh build/ci`, both exit 0; run URL N/A-local. Commands and representative controls are recorded in [the Phase 16 fix report](milestones/v4.0-phases/16-emscripten-libretro-core/16-FIX-REPORT.md). This establishes local Node/core behavior; it supplies no browser/device or Phase 12/14 host acceptance.
+
+## Milestone archive handoff reconciliation (2026-11-10)
+
+Reproduced with OpenGSD 1.20.0: `milestone.complete v4.0 --dry-run` and the confirmed archive counted two tasks and one accomplishment although the two actual plans contain five tasks. Reconcile generated statistics with plan task blocks and both summaries; preserve a verified planning closeout separately from publication. The archival move also left verification covered paths under the old phase directory and a collapsed roadmap with no ship completion record. Before recommending ship, retain compact completed phase records, compare moved files byte-for-byte with the pre-archive commit, and have the verifier relocate covered paths and regenerate its fingerprint through the CLI.
+
+Evidence: `query verification.status` returned `stale` for moved PLAN/SUMMARY paths; five moved covered files matched the pre-archive source, and both archived reports then returned `passed` after verifier-owned relocation. `query roadmap.analyze` reports both 15 and 16 complete; `query init.phase-op 16` resolves the archive. All commands exited 0; run URL N/A-local. No implementation, acceptance verdict, host authority or remote allowance changed.

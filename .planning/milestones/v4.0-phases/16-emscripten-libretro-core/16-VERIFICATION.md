@@ -5,8 +5,8 @@ status: passed
 score: 7/7 must-haves verified
 covered_files:
   - .github/workflows/ci.yml
-  - .planning/phases/16-emscripten-libretro-core/16-01-PLAN.md
-  - .planning/phases/16-emscripten-libretro-core/16-01-SUMMARY.md
+  - .planning/milestones/v4.0-phases/16-emscripten-libretro-core/16-01-PLAN.md
+  - .planning/milestones/v4.0-phases/16-emscripten-libretro-core/16-01-SUMMARY.md
   - CMakePresets.json
   - docs/libretro.md
   - libretro/CMakeLists.txt
@@ -18,7 +18,7 @@ covered_files:
   - tests/libretro/observe.c
   - tests/libretro/tests.cmake
   - tests/tests.cmake
-covered_digest: "v4:sha256:3b9c245654912ef0a5206d81c4f4987561798923e93eb1fb0487f8dcad09f496"
+covered_digest: "v4:sha256:94ef8b3eaa84783fa89209b9a6d51113c038965d5fa10e0a985e908cf2abbc4e"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:

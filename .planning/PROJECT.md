@@ -15,11 +15,9 @@ that any host can embed.
 
 ## Current State
 
-Planning milestone **v3.0 — Playstead-ready play and states** closed on 2026-11-10 with deferred scope (`override_closeout`); this was not a package release. Phase 13 is verified at 44/44 and delivered portable state handling through the library, runner and libretro core. The local CI workflow passed.
+Planning milestone **v4.0 — Browser/WebAssembly core readiness** is verified and archived locally on 2026-11-10. All five requirements passed: one measured budget-check improvement and the pinned Emscripten core with direct offline Node lifecycle, deterministic native parity, refusal/replay/isolation and bounded reporting. Both local workflows, source reviews and the independent integration audit passed. Shipping, hosted Windows evidence, merge and package release remain pending; no browser/device behavior or performance is claimed. See the [v4.0 audit](milestones/v4.0-MILESTONE-AUDIT.md) and [rolling roadmap](PRODUCT-ROADMAP.md).
 
-The other two phase goals remain incomplete. Phase 12 is accepted 0/4 with 3/5 roadmap truths; the owner-run diagnostic permission request was denied before preflight or content, and released-core/Playstead evidence plus the measured Windows improvement remain open. Phase 14 is `gaps_found` at 20/27, with actual RetroArch save/load, rewind and run-ahead evidence absent. The nine requirements TUNE-06/07, PLAY-01–04 and FRONT-02–04 remain unchecked in the v3 archive. No host or remote allowance was renewed.
-
-The active milestone is v4.0: Phase 15's measured tune-up is verified, fixing relative-root documentation-budget coverage with recurring pass/fault controls and a passing local workflow. Phase 16 now researches a browser-consumable WebAssembly build of the existing libretro core with offline deterministic checks. The core remains the product; this scope adds no browser UI or device code. See [the tune-up evidence](phases/15-measured-milestone-tune-up/15-TUNEUP.md), [v3 audit](milestones/v3.0-MILESTONE-AUDIT.md) and [rolling product roadmap](PRODUCT-ROADMAP.md).
+v3.0 remains closed with deferred scope: Phase 13 passed, Phase 12 remains accepted 0/4 and Phase 14 remains gaps_found at 20/27. Its nine unmet requirements and original denied/spent host scopes are unchanged. The root checkout remains canonical and older dirty worktrees are preserved.
 
 <details>
 <summary>Historical v1.0 and v2.0 phase-position receipts (superseded at milestone close)</summary>
@@ -108,19 +106,25 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 </details>
 
-## Current Milestone: v4.0 Browser/WebAssembly core readiness
+## Last Completed Milestone: v4.0 Browser/WebAssembly core readiness
 
 **Goal:** Make the existing libretro core buildable for browser hosts and prove its deterministic behavior with offline, repeatable checks, while keeping the core small and portable.
 
-**Target phases:**
-- Phase 15: the required SEED-007 tune-up, with measured pipeline friction and documentation freshness.
-- Phase 16: an Emscripten/WebAssembly build of the existing libretro core and a headless host-shim path comparing deterministic output and state behavior with native evidence.
+**Verified phases:**
+- Phase 15: corrected document-budget root coverage with measured pass/fault evidence.
+- Phase 16: emitted Emscripten module, direct offline Node lifecycle and independently checked native parity with refusal/replay/isolation controls.
 
 **Scope boundary:** No browser player, page, menu, window, audio-device or input-device code. A headless harness proves the core artifact and callback contract; it does not claim a shipped browser experience or measured performance on user devices. v3.0's actual RetroArch and Playstead gaps stay deferred with their original stops intact.
 
 ## Requirements
 
 ### Validated
+
+- ✓ TUNE-08: relative-root document budget coverage and representative controls — v4.0, Phase 15.
+- ✓ WASM-01: pinned Emscripten ES module and Wasm with documented loader/export contract — v4.0, Phase 16.
+- ✓ WASM-02: direct offline Node lifecycle, callbacks and state consumer — v4.0, Phase 16.
+- ✓ WASM-03: independent native numeric parity, source/fixture identity and refusal/replay/isolation — v4.0, Phase 16.
+- ✓ WASM-04: same-source size and warmed headless throughput reports with explicit limits — v4.0, Phase 16.
 
 - ✓ `cmake --workflow --preset ci` (`ci-msvc` on Windows) builds and tests everything on Linux, macOS and
   Windows, x64 and arm64, and CI runs the same commands behind one required check — v1.0, Phase 1
@@ -154,7 +158,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 ### Active
 
-The v4.0 requirements are being defined in [REQUIREMENTS.md](REQUIREMENTS.md): the SEED-007 tune-up, an Emscripten/WebAssembly build of the current libretro core, and offline deterministic comparison against native behavior. The nine unmet v3.0 requirements remain in the v3.0 archive and are not represented as completed.
+No next milestone is started. v4.0 requirements are validated in the [archive](milestones/v4.0-REQUIREMENTS.md); preparing and confirming shipping is the next action. The nine unmet v3.0 requirements remain deferred in their archive and are not represented as completed.
 
 ### Out of Scope
 
@@ -270,7 +274,7 @@ The v4.0 requirements are being defined in [REQUIREMENTS.md](REQUIREMENTS.md): t
 The full list with sources is `.planning/preparation/DECISIONS.md`.
 
 | Close v3.0 with nine requirements deferred; continue only the independently buildable next scope | Preserve all original Phase 12/14 verdicts and stops after the denied owner permission request; Phase 13 remains verified | ✓ 2026-11-10: override closeout recorded in the v3.0 archive; no host/remote renewal |
-| Promote WebAssembly core portability after the recurring tune-up | Reuses the existing three-deliverable contract and the owner's high-priority SEED-008; avoids making a browser UI a Muhtari deliverable | Planned for v4.0; build and deterministic harness acceptance to be researched and specified in Phase 16 |
+| Promote WebAssembly core portability after the recurring tune-up | Reuses the existing three-deliverable contract and the owner's high-priority SEED-008; avoids making a browser UI a Muhtari deliverable | ✓ v4.0 verified locally: emitted artifact, direct Node host and independent native checks; browser/device acceptance remains deferred |
 
 ## Evolution
 
@@ -290,4 +294,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-10 after Phase 15 verification*
+*Last updated: 2026-11-10 after v4.0 local milestone completion*

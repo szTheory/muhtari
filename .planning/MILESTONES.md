@@ -1,5 +1,23 @@
 # Project Milestones: muhtari
 
+## v4.0 — Browser/WebAssembly core readiness (Completed locally: 2026-11-10)
+
+**Closeout type:** `verified_closeout`; all five scoped requirements pass. Planning completion is separate from package release; no publication, hosted dispatch, merge or tag occurred.
+**Scope:** Phases 15–16, two plans and five tasks. Task totals are reconciled from the actual plan task blocks; the CLI's summary parser counted only two.
+
+**Delivered:**
+- Corrected relative-root documentation budget coverage with representative exact-limit and fault controls.
+- Built the existing libretro core as a pinned Emscripten ES-module loader and companion Wasm.
+- Added a direct offline Node consumer with independent native numeric expectations, callbacks, input/state parity, refusal/replay/isolation and complete export controls.
+- Added a required Linux artifact step, reproducible offline command and same-workload size/throughput reporting with explicit emulation limits.
+
+**Evidence:** Native and pinned Emscripten workflows, packaging/release checks, hygiene, independent source reviews, both phase verifications and milestone integration passed. One review-fix round resolved all five Phase 16 findings. Windows execution remains a ship check; Node results establish no browser/device acceptance.
+**Carried scope:** 50 previously acknowledged artifacts, zero newly acknowledged; nine unmet v3.0 requirements and all Phase 12/14 host/remote stops remain unchanged.
+**Archive:** [roadmap](milestones/v4.0-ROADMAP.md), [requirements](milestones/v4.0-REQUIREMENTS.md), [audit](milestones/v4.0-MILESTONE-AUDIT.md), [phase records](milestones/v4.0-phases/).
+**Next:** Prepare the reviewed milestone branch for shipping; confirm hosted CI and release evidence within separately authorized ship scope.
+
+---
+
 ## v3.0 — Playstead-ready play and states (Closed with deferred scope: 2026-11-10)
 
 **Closeout type:** `override_closeout`; v3.0 is closed for planning purposes, not shipped as a package.

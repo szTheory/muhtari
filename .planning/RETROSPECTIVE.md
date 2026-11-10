@@ -146,6 +146,30 @@ offline harness over additional owner-run setup when it can answer the question.
 No trustworthy per-milestone cost total was available. Do not infer productivity from
 64 recorded plans or 100 recorded tasks; only one of three phase goals passed.
 
+## Milestone: v4.0 — Browser/WebAssembly core readiness
+
+**Completed locally:** 2026-11-10. Two phases, two plans, five tasks; all five scoped requirements verified. No package release, hosted dispatch or merge occurred.
+
+### What Was Built
+
+Relative-root budget correctness, the production Emscripten module, direct offline Node/native evidence and required Linux integration, with size and warmed headless reports.
+
+### What Worked
+
+Independent toolchain and harness research led to one vertical slice. Existing fixture/oracles, exact inventories and fault controls caught real loader and evidence bugs. One source-review fix round closed all five findings. Automation and agent document judgment needed no owner UAT.
+
+### What Was Inefficient
+
+Long delegated closeout/report turns and repeated status requests lengthened the critical path. Keep research and reports concise, and return terminal results as soon as required evidence exists. The archive CLI omitted one summary's accomplishments and undercounted tasks; reconcile its output against actual plan blocks rather than repeating planning. A later inventory change made the earlier fingerprint stale; refresh that exact verification before auditing.
+
+### Patterns Established
+
+Hash implementation headers and generated compile inputs, preserve signal failures, invalidate previous receipts, validate every retained export, and mount source read-only. Keep native numeric expectations before cross-artifact hashes and actual-emulation limits next to measurements.
+
+### Cost Observations
+
+No reliable model-cost or hosted pipeline-cost series was collected. Local workload receipts support correctness, not global speedup or browser/device performance. Existing v3.0 acknowledgments and denied/spent scopes remain unchanged.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Requirements | Test evidence | Closeout |
@@ -158,3 +182,5 @@ No trustworthy per-milestone cost total was available. Do not infer productivity
 Both milestones required explicit historical-fingerprint overrides and post-merge
 publication checks. Repeated output/deadline friction favors existing independent
 output paths and measured calibration; aggregate record counts never prove acceptance.
+
+| v4.0 | 2 | 2 plans, 5 tasks | 5/5 scoped | Native and pinned SDK workflows passed; reviews and integration passed | Verified locally; zero new acknowledgments, 50 carried; shipping pending |

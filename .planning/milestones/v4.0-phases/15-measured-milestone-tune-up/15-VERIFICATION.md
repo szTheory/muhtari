@@ -4,16 +4,16 @@ verified: 2026-11-10T20:41:26Z
 status: passed
 score: 7/7 must-haves verified
 covered_files:
-  - .planning/phases/15-measured-milestone-tune-up/15-01-PLAN.md
-  - .planning/phases/15-measured-milestone-tune-up/15-01-SUMMARY.md
-  - .planning/phases/15-measured-milestone-tune-up/15-TUNEUP.md
+  - .planning/milestones/v4.0-phases/15-measured-milestone-tune-up/15-01-PLAN.md
+  - .planning/milestones/v4.0-phases/15-measured-milestone-tune-up/15-01-SUMMARY.md
+  - .planning/milestones/v4.0-phases/15-measured-milestone-tune-up/15-TUNEUP.md
   - docs/testing.md
   - tests/cmake/budgets.cmake
   - tests/inventory/ci.txt
   - tests/inventory/wasm32.txt
   - tests/policy/budgets.cmake
   - tests/policy/tests.cmake
-covered_digest: "v4:sha256:43a063e91564798b4e636f2f0b0412de6cb415af933fc4b859989a5e7d4ad8c9"
+covered_digest: "v4:sha256:49bc4e653a8177b9bd6ca45b3e7f93a6d521e29e032ab26b90d468d2858b8c9d"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:

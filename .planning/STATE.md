@@ -2,13 +2,12 @@
 gsd_state_version: "1.0"
 milestone: v4.0
 milestone_name: Browser/WebAssembly core readiness
-current_phase: 16
-status: completed
-stopped_at: Phase 16 complete — all phases complete
-last_updated: "2026-11-10T20:37:37.468Z"
+status: milestone_completed
+stopped_at: v4.0 verified, audited and archived locally; shipping pending
+last_updated: "2026-11-10T20:48:59.256Z"
 last_activity: 2026-11-10
-last_activity_desc: Phase 16 complete
-state_head: d52d4bcd76ea2973e68666f57b52ad5518de07a1
+last_activity_desc: Milestone v4.0 completed and archived
+state_head: 4701ff597f52200593053693370e44e169e69ccb
 progress:
   total_phases: 2
   completed_phases: 2
@@ -21,21 +20,20 @@ progress:
 
 ## Project Reference
 
-See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
+See [PROJECT.md](PROJECT.md), [v4.0 requirements](milestones/v4.0-REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 16 Emscripten libretro core with offline Node acceptance; Phase 15 verified.
+**Current focus:** v4.0 is complete locally; prepare shipping on the canonical milestone branch.
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-11-10 — Phase 16 complete
-Progress: [██████████] 100%
+Phase: Milestone v4.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-11-10 — Milestone v4.0 completed and archived
 
 ## Performance Metrics
 
-Phase 15 completed one plan. The local workflow, fault controls and source review passed; see its [summary](phases/15-measured-milestone-tune-up/15-01-SUMMARY.md). Historical metrics remain in [MILESTONES.md](MILESTONES.md).
+Two plans and five tasks completed. Native and pinned Emscripten workflows passed; phase verification and integration audit passed. Measurements are headless, with Linux amd64 SDK emulation on Darwin arm64 explicitly reported. See the [audit](milestones/v4.0-MILESTONE-AUDIT.md) and phase summaries for source-specific receipts.
 
 ## Accumulated Context
 
@@ -46,8 +44,8 @@ Inherited todos and optional seeds retain their dispositions; no extra v4.0 requ
 
 ### Blockers/Concerns
 
-- No blocker prevents Phase 16 local research. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
-- Phase 16 research must settle Emscripten output/loader/link form; existing WASI/Wasmtime evidence remains advisory and cannot establish browser compatibility. Browser UI, device behavior, Playstead and actual-browser performance stay outside scope.
+- No local v4.0 acceptance gap remains. Shipping and hosted verification have not run. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
+- The loader contract is settled and verified offline. Browser/device behavior, Playstead and prior host scopes remain outside acceptance; hosted Windows execution belongs to ship.
 
 ## Deferred Items
 
@@ -95,7 +93,15 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 
 ## Session Continuity
 
-Last session: 2026-11-10T16:22:35Z
-Stopped at: Phase 16 complete — all phases complete
+Last session: 2026-11-10
+Stopped at: v4.0 local completion, audit and cleanup complete; shipping pending
 Resume file: None
-Next command: $gsd-audit-milestone
+Next command: $gsd-ship 16
+
+## Operator Next Steps
+
+- Start the next milestone with $gsd-new-milestone
+
+Context can be cleared. The agent owns source/receipt and service-health preflight on resumption. No host or remote allowance is renewed by this handoff.
+
+Ship 16 selects the archived final phase for verification; the PR must describe the entire canonical v4.0 milestone branch, including Phase 15. The agent owns fresh archived-receipt/CI and service-health checks before any remote action.
