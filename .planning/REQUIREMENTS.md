@@ -12,7 +12,7 @@ through the existing libretro deliverable. It adds no browser player or device U
 
 ### Recurring milestone tune-up
 
-- [ ] **TUNE-08**: Maintainers can use measured current evidence to select and ship one small pipeline, quality, or documentation improvement while preserving required checks; if no safe improvement is supported by evidence, they record the exact gap and a bounded disposition before feature work proceeds.
+- [x] **TUNE-08**: Maintainers can use measured current evidence to select and ship one small pipeline, quality, or documentation improvement while preserving required checks; if no safe improvement is supported by evidence, they record the exact gap and a bounded disposition before feature work proceeds.
 
 ### Browser-targeted libretro core
 
@@ -41,7 +41,7 @@ All five active v4.0 requirements map exactly once. Deferred v3.0 requirements a
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TUNE-08 | Phase 15 | Pending |
+| TUNE-08 | Phase 15 | Complete |
 | WASM-01 | Phase 16 | Pending |
 | WASM-02 | Phase 16 | Pending |
 | WASM-03 | Phase 16 | Pending |

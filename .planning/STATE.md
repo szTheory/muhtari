@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v4.0
 milestone_name: Browser/WebAssembly core readiness
-current_phase: 15
-current_phase_name: Measured milestone tune-up
-status: executing
-stopped_at: v4.0 roadmap created; Phase 15 ready to plan
-last_updated: "2026-11-10T16:52:39.558Z"
+current_phase: 16
+current_phase_name: Emscripten libretro core
+status: planning
+stopped_at: Phase 15 complete, ready to plan Phase 16
+last_updated: "2026-11-10T18:14:10.130Z"
 last_activity: 2026-11-10
-last_activity_desc: v4.0 requirements and two-phase roadmap defined
-state_head: 05fc8f3491629f9c17c13fb228bacf3f66aefd61
+last_activity_desc: Phase 15 complete, transitioned to Phase 16
+state_head: a8027435db0e11b2f14ff64c0c5e1875aed09a97
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -24,19 +24,19 @@ progress:
 
 See [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md) and [ROADMAP.md](ROADMAP.md), updated 2026-11-10.
 **Core value:** 7800 games behave as on the console, identically across platforms, from a small MIT-licensed C library hosts can embed.
-**Current focus:** Phase 15 measured tune-up, then Phase 16 Emscripten libretro core with offline Node acceptance.
+**Current focus:** Phase 16 Emscripten libretro core with offline Node acceptance; Phase 15 verified.
 
 ## Current Position
 
-Phase: 15 (Measured milestone tune-up) — READY TO EXECUTE
-Plan: Not planned
-Status: Ready to execute
-Last activity: 2026-11-10 — v4.0 requirements and two-phase roadmap defined
-Progress: [░░░░░░░░░░] 0%
+Phase: 16 — Emscripten libretro core
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-11-10 — Phase 15 complete, transitioned to Phase 16
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
-No v4.0 implementation plans have run. Historical metrics remain in [MILESTONES.md](MILESTONES.md).
+Phase 15 completed one plan. The local workflow, fault controls and source review passed; see its [summary](phases/15-measured-milestone-tune-up/15-01-SUMMARY.md). Historical metrics remain in [MILESTONES.md](MILESTONES.md).
 
 ## Accumulated Context
 
@@ -47,7 +47,7 @@ Inherited todos and optional seeds retain their dispositions; no extra v4.0 requ
 
 ### Blockers/Concerns
 
-- No blocker prevents Phase 15 local work. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
+- No blocker prevents Phase 16 local research. Phase 12's exact diagnostic-app request was denied before preflight/content and must not be retried; its host/remote stops and Phase 14's spent host scope remain binding. This milestone renews none of them.
 - Phase 16 research must settle Emscripten output/loader/link form; existing WASI/Wasmtime evidence remains advisory and cannot establish browser compatibility. Browser UI, device behavior, Playstead and actual-browser performance stay outside scope.
 
 ## Deferred Items
@@ -97,6 +97,6 @@ At v3.0 close, 22 items were newly acknowledged and 28 were carried forward. Sou
 ## Session Continuity
 
 Last session: 2026-11-10T16:22:35Z
-Stopped at: v4.0 roadmap created; Phase 15 ready to plan
+Stopped at: Phase 15 complete, ready to plan Phase 16
 Resume file: None
-Next command: $gsd-plan-phase 15
+Next command: $gsd-autonomous --from 16
