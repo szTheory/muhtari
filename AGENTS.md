@@ -95,6 +95,9 @@ evidence.
    An explicit owner request for `$gsd-autonomous` authorizes running the autonomous workflow through the requested
    milestone; when a phase is blocked, keep advancing independent authorized local work while preserving its exact
    safety stops. This does not renew host/remote attempts or permit command arguments containing `--auto` or `--chain`.
+   On each autonomous context resume, treat prior summaries as pointers: reconcile the actual branch and dirty tree,
+   current verification reports, review disposition, and runnable plan index before repeating a blocker or claiming
+   there is no work. Continue independent authorized local work when one phase has no runnable plan.
    Never run `/gsd-next`, `/gsd-manager`, `/gsd-progress --next` or `--do`, any GSD command whose
    arguments contain `--auto` or `--chain`, or `/gsd-profile-user`, and never set the hygiene bypasses `MUHTARI_ALLOW_CHAIN` or
    `MUHTARI_ALLOW_MAIN_COMMIT`. Stop inside a scope only at a real decision boundary, failed gate requiring changed

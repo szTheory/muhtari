@@ -1,6 +1,6 @@
 ---
 phase: 13-portable-save-load-across-three-interfaces
-verified: 2026-11-06T04:34:04Z
+verified: 2026-11-10T01:23:13Z
 status: passed
 score: 44/44 must-haves verified
 covered_files:
@@ -20,9 +20,48 @@ covered_files:
   - .planning/phases/13-portable-save-load-across-three-interfaces/13-07-SUMMARY.md
   - .planning/phases/13-portable-save-load-across-three-interfaces/13-08-PLAN.md
   - .planning/phases/13-portable-save-load-across-three-interfaces/13-08-SUMMARY.md
+  - .planning/phases/13-portable-save-load-across-three-interfaces/13-CONTINUATION-MATRIX.md
+  - .planning/phases/13-portable-save-load-across-three-interfaces/13-FIELD-PROOF.md
+  - .planning/phases/13-portable-save-load-across-three-interfaces/13-RESOURCE-EVIDENCE.md
+  - .planning/preparation/ARCHITECTURE.md
+  - .planning/preparation/DECISIONS.md
+  - .planning/preparation/HOSTS-AND-INTEGRATION.md
+  - CMakeLists.txt
+  - docs/embedding.md
   - docs/libretro.md
+  - docs/runner.md
   - docs/testing.md
-covered_digest: "v4:sha256:8871794ec69c00ca4c0f34dc2284c1c72b338b5e69ca949aa574793041403b1f"
+  - include/muhtari.h
+  - libretro/libretro.c
+  - libretro/muhtari_libretro.info.in
+  - runner/main.c
+  - src/instance.c
+  - src/internal.h
+  - src/ports.c
+  - src/state.c
+  - tests/abi/tests.cmake
+  - tests/api/v8.c
+  - tests/cart/images.c
+  - tests/cart/tests.cmake
+  - tests/cmake/hashes.cmake
+  - tests/cmake/info_claims.cmake
+  - tests/compat/tests.cmake
+  - tests/core/test_core.c
+  - tests/core/test_state.c
+  - tests/core/tests.cmake
+  - tests/fuzz/run.c
+  - tests/fuzz/run_seeds.c
+  - tests/fuzz/tests.cmake
+  - tests/inventory/ci.txt
+  - tests/inventory/wasm32.txt
+  - tests/libretro/host.c
+  - tests/libretro/tests.cmake
+  - tests/prop/test_prop.c
+  - tests/prop/tests.cmake
+  - tests/runner/test_runner.c
+  - tests/runner/test_save.c
+  - tests/runner/tests.cmake
+covered_digest: "v4:sha256:3b932e41bd621322d463c75e8a72fecd87afa9eb252c8a4b3315847fae27fbcc"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -35,15 +74,19 @@ decision_coverage:
 
 **Phase Goal:** Hosts and runner users can restore a complete compatible machine point safely and continue identically through one bounded library-owned state contract.
 
-**Verified:** 2026-11-06T04:34:04Z
+**Verified:** 2026-11-10T01:23:13Z
 **Status:** passed
 **Re-verification:** No — initial-mode refresh; the previous report had no gaps.
 
 ### Verification Refresh
 
-This refresh rechecked the covered documentation against the current source and saved evidence. `docs/libretro.md` matches the library-backed libretro callbacks, exact restore-length rules, state ownership, and current `.info` test-registration guard. It explicitly leaves actual RetroArch qualification pending. `docs/testing.md`'s state inventory entries match the registered tests; its updated TUNE-07 paragraph links to SEED-010, which records the same dormant deferral. The Phase 14 receipt cited by both docs records that its state driver stopped before launch, so no host behavior is claimed.
+This initial-mode refresh rechecked the roadmap contract, all eight plans and summaries, all seven requirements, the current implementation, and the current docs. The 28 declared artifacts remain present and substantive. The source trace confirms the identity is bound after successful install, the public API validates the complete envelope and payload before apply, runner and libretro use that API, and the existing native/BE hash consumer checks the owned state and continuation rows. The automated key-link query returned 0/16 because plan `from` entries are descriptive names rather than relative source paths; manual source-to-test tracing confirms the links in the table below.
 
-No tests or workflows were run for this refresh. The retained Phase 13 local receipts in `13-RESOURCE-EVIDENCE.md` are for source SHA `13bb1af4e7b63fb727854d42ad4431091f2083cc`; they report successful native, PowerPC/QEMU, release, equality, and sanitizer runs. The current Phase 14 policy-guard working-tree edits were not runtime-tested and are outside this Phase 13 verification scope.
+`docs/libretro.md` matches the current callbacks and exact length rules, keeps state-file persistence with the frontend, and explicitly says actual RetroArch save/load, rewind, and run-ahead qualification remains pending. Its current `.info` claim guard is backed by the loaded-module and property test registrations plus the host-control registration. `docs/testing.md` lists the state cases present in the current inventory and its TUNE-07 deferral matches dormant seed SEED-010. No new implementation or documentation claim gap was found.
+
+The retained Phase 13 local receipts in `13-RESOURCE-EVIDENCE.md` are for source SHA `13bb1af4e7b63fb727854d42ad4431091f2083cc`; they record native, PowerPC/QEMU, release, equality, and sanitizer success. No tests or workflows were run for this verifier-only refresh. The current state codec and runner changes since that receipt are formatting-only; current libretro input-tracing additions are guarded by `MUHTARI_INPUT_TRACE` and do not change the serialization callbacks. This report does not claim a new current-HEAD test run.
+
+The three plan-13-08 prohibitions remain marked `verification: judgment` and `status: unverified` in the plan and are retained as visibly unverified advisories below. Project rules assign the document and evidence judgments to the agent; none requires owner-only consent or a hardware run. They therefore do not add a human-verification checkpoint or change the passed status.
 
 ## Goal Achievement
 
@@ -158,6 +201,18 @@ The retained final-source JUnit files were parsed independently. Named state, ru
 
 Exact commands, exits and receipt paths are recorded in 13-RESOURCE-EVIDENCE.md. These are local Docker Desktop Ubuntu ARM64 results with PowerPC QEMU user-mode execution (N/A-local), not physical PowerPC or hosted-run evidence.
 
+### Test Quality Audit
+
+The requirement-linked test sources contain no disabled tests. File writes in the state, runner and host tests create generated inputs or sentinels; expected behavior comes from independent semantic observations, an uninterrupted comparison path, exact public outputs, or explicit preservation checks, rather than values captured from the implementation being tested.
+
+| Test File | Linked Requirement | Active / Skipped | Evidence Quality |
+|---|---|---:|---|
+| `tests/core/test_state.c` | STATE-01, STATE-02, STATE-03, STATE-04, STATE-05 | active / 0 | Canonical bytes, independent semantic observations, refusal statuses and next-run preservation. |
+| `tests/prop/test_prop.c` | STATE-02, STATE-03, STATE-04 | active / 0 | Seeded independent-instance continuation and checksum-repaired refusal properties. |
+| `tests/fuzz/run.c` | STATE-02, STATE-04 | active / 0 | Bounded replay mutations and refusal preservation through the existing consumer. |
+| `tests/runner/test_save.c` | STATE-06 | active / 0 | Generated media, fresh-process I/O, and checked failure boundaries. |
+| `tests/libretro/host.c` | FRONT-01, STATE-05 | active / 0 | Loaded module callbacks compared with the library contract and host battery metadata. |
+
 ### Probe Execution
 
 Not applicable: this is not a migration/tooling phase and no phase plan or summary declares a probe script.
@@ -176,13 +231,13 @@ Not applicable: this is not a migration/tooling phase and no phase plan or summa
 
 ### Policy/Prohibition Checks
 
-These source/document/fixture-checkable prohibitions are verified for the current phase artifacts, not as guarantees about future changes.
+These judgment-tier prohibitions remain explicitly marked `unverified` in plan 13-08 and are retained as advisory flags here. Current project rules assign these source, fixture, documentation, and evidence-boundary judgments to the verifier; they do not require owner-only input.
 
-| Prohibition | Status | Evidence |
-|---|---|---|
-| Do not commit immutable/proprietary media or personal durable state bytes as fixtures | VERIFIED | Phase diff adds no media/state fixtures; hygiene tree/history checks and git diff --check exited 0; fixture manifest remains the binary allowlist. |
-| Do not conflate restored live state with durable file, frontend recovery or Playstead history ownership | VERIFIED | Snapshot omits generation/file tokens; runner/frontend file handling stays outside core; docs distinguish live generation from durable writes. |
-| Do not promote local/callback/advisory evidence to actual-host, hosted-lane or Phase 12 acceptance | VERIFIED | Resource evidence and summary label local QEMU evidence and disclaim physical hardware, hosted run, RetroArch, publication and Phase 12 renewal. |
+| Prohibition | Flag | Human Judgment | Evidence |
+|---|---|---:|---|
+| Do not commit immutable/proprietary media or personal durable state bytes as fixtures | UNVERIFIED — ADVISORY | false | The Phase 13 receipt records no new ROM/BIOS fixtures; generated state/media stays in ignored build output. Allowed binary fixtures are listed in `tests/roms/manifest.txt`, as required by `AGENTS.md`. |
+| Do not conflate restored live state with durable file, frontend recovery or Playstead history ownership | UNVERIFIED — ADVISORY | false | `src/state.c` operates on caller-owned buffers; runner owns file reads/writes, and current embedding/libretro docs distinguish live bytes, generation metadata, and frontend-owned persistence. |
+| Do not promote local/callback/advisory evidence to actual-host, hosted-lane or Phase 12 acceptance | UNVERIFIED — ADVISORY | false | Receipts label native and PowerPC/QEMU runs as local, explicitly disclaim physical hardware, hosted acceptance, RetroArch, publication, and Phase 12 renewal; current libretro docs state actual-host qualification is pending. |
 
 ### Scope Limits
 
@@ -195,13 +250,13 @@ These source/document/fixture-checkable prohibitions are verified for the curren
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| `docs/libretro.md`, `docs/testing.md` | — | No debt markers or placeholders | None | No documentation stub or debt-marker blocker. |
+| Phase 13 modified file set | — | No `TBD`, `FIXME`, `XXX`, TODO, HACK, placeholder, or unimplemented markers | None | Empty-return matches are ordinary error/null helpers; no user-visible stub or debt-marker blocker was found. |
 
 The phase code review in 13-REVIEW.md is clean with no findings.
 
 ### Human Verification Required
 
-None for Phase 13. Actual RetroArch save/load, rewind, and run-ahead remain outside FRONT-01 and are explicitly pending in the docs and Phase 14 evidence.
+None. The plan's three unverified prohibition flags remain visible as advisories; current project instructions do not reserve those source/document/evidence judgments for the owner. Actual RetroArch save/load, rewind and run-ahead qualification remains pending outside Phase 13.
 
 ### Decision Coverage
 
@@ -209,9 +264,9 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (17/17; non-
 
 ### Gaps Summary
 
-No roadmap or plan truth failed. All seven phase requirements remain supported by the retained Phase 13 local receipts and current source inspection. The two covered documents match the implementation and preserve the limits on undefined STATE-02 shapes, physical PowerPC behavior, hosted publication, and actual RetroArch/Playstead integration. No Phase 14 policy-guard runtime result is claimed.
+No code-level truth or requirement failed, and no new source/document claim gap was exposed. All 44 observable truths and all seven requirements remain supported by the current source inspection and retained Phase 13 receipts. The three plan-defined prohibition flags remain visibly unverified as advisories; the evidence and current project rules resolve whether the phase needs owner input, and no owner-only fact or authorization is outstanding. The unclassified STATE-02 edge-probe boundary, local QEMU scope, and pending actual RetroArch qualification remain clearly stated.
 
 ---
 
-_Verified: 2026-11-06T04:34:04Z_
+_Verified: 2026-11-10T01:23:13Z_
 _Verifier: the agent (gsd-verifier)_

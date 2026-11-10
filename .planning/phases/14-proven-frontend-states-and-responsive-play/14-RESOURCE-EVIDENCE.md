@@ -1065,3 +1065,14 @@ The first stop-handler cleanup receipt said `refused_not_owned` because that han
 | `cmake -DEVIDENCE=build/phase14-gap23-evidence -P build/phase14-gap23-evidence/check-receipts.cmake` | 0 | Stop, zero-launch accounting and final cleanup fields validate without launching Docker or project tests. |
 
 Plan 14-23 closes no requirement and Phase 14 remains acceptance-blocked. FRONT-02, FRONT-03 and FRONT-04 remain pending; the parent CI timeouts and unknown cause, spent native-host allowance, missing pinned RetroArch evidence and Phase 12 stop remain. The qualification is spent; do not invoke gap23 `qualify` or `pair` again. All local run URLs: N/A-local.
+
+## Plan 14-22 review-fix control retest (2026-11-10)
+
+The review fix in `79a2d0a` canonicalizes the project/build/work paths before checking strict-child containment and adds a symlink-parent refusal control. The earlier review-fix record said the generated script was not regenerated or run. On current source `29bb9f940227678d4fb3fbf1517a581e27aec1d1`, `cmake --preset ci` regenerated it successfully, then the owning CTest passed once. This verifies the local path-containment control only; it does not qualify a container, RetroArch, host state behavior, or Phase 14 acceptance.
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `cmake --preset ci` | 0 | Reconfigured and regenerated the current `ci` test scripts. Run URL N/A-local. |
+| `ctest --test-dir build/ci --output-on-failure -R '^policy\.host_support\.controls$'` | 0 | The current host-support path guard and its symlink-parent refusal/preservation control passed 1/1. Run URL N/A-local. |
+
+No Docker, host, RetroArch, remote dispatch, or publication action occurred. FRONT-02/03/04 and the Phase 12 stop remain unchanged.
