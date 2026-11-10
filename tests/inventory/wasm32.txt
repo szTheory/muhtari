@@ -478,6 +478,7 @@ diag.sg144	diag,portable
 docs.api_names	policy
 docs.api_names.self_test	policy
 docs.budgets	policy
+docs.budgets.controls	policy
 embed.subdirectory	install
 frame.dli_first_zone	frame,portable
 frame.dli_queued	frame,portable
