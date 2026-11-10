@@ -7,7 +7,7 @@ current_phase_name: Player-ready delivery and Playstead bridge
 current_plan: 27
 status: blocked
 stopped_at: Plan 12-27's one owner-authorized request returned denied. The plan is terminally halted; no preflight, diagnostic choice, RetroArch, or content operation occurred, and the request will not be retried.
-last_updated: "2026-11-10T15:10:39Z"
+last_updated: "2026-11-10T15:28:31Z"
 last_activity: 2026-11-10
 state_head: dc8bec31e5241272a9c906147092f246e18e7749
 progress:
@@ -35,6 +35,7 @@ Plan: 21 of 25 active plans have terminal summaries; four remain unsummarized an
 Status: [Plan 12-27 evidence](phases/12-player-ready-delivery-and-playstead-bridge/12-27-LAUNCHER-EVIDENCE.md) records one denied request and read-only audits confirming that preflight and diagnostic were not reached. Phase acceptance remains 0/4.
 Next action: No Phase 12 plan is runnable. Plans 12-02/04 remain blocked by 12-01; plans 12-19/16 remain blocked by the spent 12-18 denial. New evidence and a separately authorized scope are required before planning another attempt.
 Boundary: Plans 12-26 and 12-27 are terminal; do not repeat either request. No Terminal restart, Settings/TCC access, remote dispatch, RetroArch, or content operation is authorized. Windows support remains in scope; TUNE-06's measured comparison remains open under 12-02.
+Workspace: The canonical checkout is clean. Three stale dirty worktrees were compared and preserved; no uncommitted source change needs importing. See [workspace reconciliation](debug/workspace-reconciliation-2026-11-10.md).
 
 ## Current Blockers
 
