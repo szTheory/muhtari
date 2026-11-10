@@ -15,3 +15,16 @@ v4.0 local implementation, verification, audit and archival are complete. No nex
 
 - [x] **Phase 15: Measured milestone tune-up** — verified and archived locally; [records](milestones/v4.0-phases/15-measured-milestone-tune-up/).
 - [x] **Phase 16: Emscripten libretro core** — verified and archived locally; [records](milestones/v4.0-phases/16-emscripten-libretro-core/).
+
+### Phase 15: Measured milestone tune-up
+
+**Goal:** Reproducible tune-up baseline with corrected document-budget fault detection.
+**Requirements:** TUNE-08
+**Plans:** 1/1 complete; verified and archived in milestones/v4.0-phases/15-measured-milestone-tune-up/.
+
+### Phase 16: Emscripten libretro core
+
+**Goal:** Browser-targeted libretro artifact with direct offline Node lifecycle and independently checked native parity.
+**Depends on:** Phase 15
+**Requirements:** WASM-01, WASM-02, WASM-03, WASM-04
+**Plans:** 1/1 complete; verified and archived in milestones/v4.0-phases/16-emscripten-libretro-core/.

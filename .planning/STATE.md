@@ -105,3 +105,5 @@ Next command: $gsd-ship 16
 Context can be cleared. The agent owns source/receipt and service-health preflight on resumption. No host or remote allowance is renewed by this handoff.
 
 Ship 16 selects the archived final phase for verification; the PR must describe the entire canonical v4.0 milestone branch, including Phase 15. The agent owns fresh archived-receipt/CI and service-health checks before any remote action.
+
+Archive compatibility: OpenGSD 1.20.0 phase-op may return a null directory for archived Phase 16. Resolve it with the same runtime’s `query find-phase 16 --raw` before ship preflight, as GSD-HANDOFF documents; canonical verification and roadmap completion remain mandatory. No owner repair is needed.
