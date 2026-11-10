@@ -37,6 +37,8 @@ Future work may add a real-browser host/player, browser keyboard/gamepad/audio b
 
 ## Traceability
 
+All five active v4.0 requirements map exactly once. Deferred v3.0 requirements are excluded from this map.
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | TUNE-08 | Phase 15 | Pending |

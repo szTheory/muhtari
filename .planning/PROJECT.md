@@ -108,7 +108,7 @@ Next separate command: $gsd-ship 11; milestone audit/archive follows shipping.
 
 </details>
 
-## Current Milestone: v4.0 Efficient WebAssembly Core Portability
+## Current Milestone: v4.0 Browser/WebAssembly core readiness
 
 **Goal:** Make the existing libretro core buildable for browser hosts and prove its deterministic behavior with offline, repeatable checks, while keeping the core small and portable.
 
