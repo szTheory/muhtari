@@ -36,7 +36,10 @@ Emscripten loader contract or browser behavior.
 1. A maintainer can reproduce the selected recurring pipeline, quality or documentation friction from current source-linked evidence; any CI comparison distinguishes queue time, critical path, completed work and cancelled attempts.
 2. A maintainer can compare before/after observations for one shipped small improvement and find its retained representative pass/fault evidence, or reproduce the exact missing evidence and bounded revisit condition when no candidate safely qualifies.
 3. Maintainers can find the resulting current documentation and remaining debt without interpreting a deferred or advisory result as passed acceptance; the required contracts and Phase 12/14 stops remain explicit.
-**Plans:** TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 15-01-PLAN.md — Repair relative-root documentation budget coverage with representative controls and a finite measured tune-up record.
 
 ### Phase 16: Emscripten libretro core
 
@@ -70,5 +73,5 @@ Execution order: Phase 15 → Phase 16.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15. Measured milestone tune-up | 0/TBD | Not started | - |
+| 15. Measured milestone tune-up | 0/1 | Planned | - |
 | 16. Emscripten libretro core | 0/TBD | Not started | - |
