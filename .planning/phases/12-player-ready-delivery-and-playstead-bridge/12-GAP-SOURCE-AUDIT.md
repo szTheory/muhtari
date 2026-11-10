@@ -79,3 +79,22 @@ Exclude deferred native hosting, exact Continue/history/newer-progress recovery,
 The installed read-only planner init reports 21 active plans before these additions, security enforcement disabled, no prior_verify_commands, and no duplicate threat IDs. Estimate calibration returns factor 1/sample_count 0/confidence low. Existing successful 12-22 focused/local workflow commands ground 12-23's verification. No project tests, host actions, remote dispatches, external lookups or publication run during planning; structural/frontmatter validation is planning validation only.
 
 The orchestrator owns plan metadata, commit and ready-plan selection. Only 12-23's local correction can become newly runnable under the existing local authorization; 12-24 waits for the canonical chain and its actual future owner decision. Missing published release identity, complete actual host proof and measured Windows improvement remain blocked under their existing contracts and authority boundaries. This audit creates no new execution permission.
+
+## Current evidence correction — 2026-11-09
+
+The 2/5 score above is the dated planning snapshot, not the current verification
+score. The current `12-VERIFICATION.md` reports 3/5 roadmap truths verified:
+the release identity/launch-contract truth is closed, TUNE-07's bounded
+property deferral is verified, and Plan 12-23 closed the local partial-trace
+setup warning. Accepted requirements remain 0/4.
+
+Plan 12-25 now owns the agent's source-bound comparison of the three
+descriptor-less claim prohibitions. The unverified-prohibition advisory remains
+visible; this comparison is not an owner response, risk acceptance, mechanical
+proof, or waiver. The original released-core host proof remains with halted
+12-01 and its existing recovery/consent chain (12-18, 12-19, and 12-16); the
+missing held/released input and complete DMA/battery/aggregate result remain
+unmet. Plan 12-02 retains the contract for a complete Windows current/base
+measurement and shipped remedy; neither is complete yet. Published-byte replay
+and paired Playstead evidence remain separate requirements. No accepted count,
+historical halt, or spent host, remote, or permission allowance changes here.
