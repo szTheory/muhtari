@@ -36,7 +36,8 @@ Keep the settled LE visitor, three deliverables and host ownership. Phase 13 now
 the complete state inventory, effective media/firmware identity, battery rollback and
 core-owned pending input in `13-FIELD-PROOF.md`; pending host input and callbacks remain
 host-owned. That source ledger establishes local implementation coverage, not exact-source
-native/PowerPC execution or phase acceptance.
+native/PowerPC execution or phase acceptance. The old proposed header/field
+list alone is not proof that current pending input/device/audio state is covered.
 
 Actual RetroArch save/load is a new consumer boundary in FRONT-02; exhaustive
 rewind/run-ahead semantics stay in-process, with host claims limited to qualified

@@ -43,3 +43,8 @@ symbols from dasm, cc65 and 7800basic; a homebrew lint (DMA overrun, POKEY never
 ## Notes
 
 The inspection API (side-effect-free peek, CPU/MARIA getters, per-line statistics) lands earlier, in v1.0–v3.0.
+
+Owner follow-up, 2026-10-30: the
+[interface-project seed](SEED-261030-zk3-emulator-interface.md) considers a shared
+optional interface alongside libretro. This tooling seed remains core-specific;
+the initial research does not promote its work or establish a new standard.

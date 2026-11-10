@@ -39,5 +39,10 @@ exit statuses and run URLs. Preserve required contracts and advisory distinction
 The owner verifies nothing by default; voluntary gameplay feedback is scoped
 evidence, not recurring UAT. Keep ROMs, firmware and personal results local.
 
-Follow approved recommendations within the active GSD step without routine
-reconfirmation. One writer owns shared planning state. Do not chain GSD steps.
+Within an explicitly owner-authorized `$gsd-autonomous` run, adopt the synthesized
+recommendation for ordinary in-scope decisions without routine acceptance prompts.
+Pause only when the choice changes scope, authority, risk, cost, an irreversible
+action, or requires owner-only validation; preserve the exact existing safety stop
+and continue independent authorized work. The explicit autonomous entrypoint may
+chain the requested milestone; never add `--auto` or `--chain` arguments. One writer
+owns shared planning state.

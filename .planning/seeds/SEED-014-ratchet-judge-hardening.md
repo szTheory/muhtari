@@ -5,6 +5,10 @@ planted: 2026-10-29
 planted_during: phase 11 full library acceptance
 trigger_when: the ledger or its judge is edited in a way a pull request base check would have caught, or the ratchet is relied on outside pull requests
 scope: small
+audit_acknowledged:
+  milestone: v2.0
+  at: 2026-10-29
+  status: dormant
 ---
 
 # Ratchet protection beyond pull-request bases

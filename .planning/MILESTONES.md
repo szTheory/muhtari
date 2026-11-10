@@ -1,5 +1,115 @@
 # Project Milestones: muhtari
 
+## v4.0 — Browser/WebAssembly core readiness (Completed locally: 2026-11-10)
+
+**Closeout type:** `verified_closeout`; all five scoped requirements pass. Planning completion is separate from package release; no publication, hosted dispatch, merge or tag occurred.
+**Scope:** Phases 15–16, two plans and five tasks. Task totals are reconciled from the actual plan task blocks; the CLI's summary parser counted only two.
+
+**Delivered:**
+- Corrected relative-root documentation budget coverage with representative exact-limit and fault controls.
+- Built the existing libretro core as a pinned Emscripten ES-module loader and companion Wasm.
+- Added a direct offline Node consumer with independent native numeric expectations, callbacks, input/state parity, refusal/replay/isolation and complete export controls.
+- Added a required Linux artifact step, reproducible offline command and same-workload size/throughput reporting with explicit emulation limits.
+
+**Evidence:** Native and pinned Emscripten workflows, packaging/release checks, hygiene, independent source reviews, both phase verifications and milestone integration passed. One review-fix round resolved all five Phase 16 findings. Windows execution remains a ship check; Node results establish no browser/device acceptance.
+**Carried scope:** 50 previously acknowledged artifacts, zero newly acknowledged; nine unmet v3.0 requirements and all Phase 12/14 host/remote stops remain unchanged.
+**Archive:** [roadmap](milestones/v4.0-ROADMAP.md), [requirements](milestones/v4.0-REQUIREMENTS.md), [audit](milestones/v4.0-MILESTONE-AUDIT.md), [phase records](milestones/v4.0-phases/).
+**Ship checkpoint:** Combined PR #46 passes hosted native/Emscripten checks but fails inherited held-input capture; no merge or release occurred. The owner approved the [v4.0-only publication scope](milestones/v4.0-SHIP-SCOPE.md); the agent is carrying it through candidate-specific CI, merge and release checks.
+
+---
+
+## v3.0 — Playstead-ready play and states (Closed with deferred scope: 2026-11-10)
+
+**Closeout type:** `override_closeout`; v3.0 is closed for planning purposes, not shipped as a package.
+**Scope:** 3 phases, 64 recorded plans, 100 recorded tasks; Phase 13 is the only phase goal verified.
+**Requirements:** 7/16 complete. Nine remain unchecked: TUNE-06/07, PLAY-01–04 and FRONT-02–04.
+
+**Delivered:** Phase 13 added portable save/load across the library, runner and libretro core; its refreshed verification passed 44/44. The required local CI workflow passed. The audit records integration as passed for this state path.
+
+**Deferred acceptance:** Phase 12 remains accepted 0/4; released-core input/battery proof, paired Playstead acceptance and the measured Windows improvement remain open. The owner-run request for the exact diagnostic app was denied before preflight or content. Phase 14 remains `gaps_found` at 20/27; actual RetroArch save/load, rewind and run-ahead acceptance is absent. The original phase records and stops remain intact in the archive.
+
+**Known verification overrides:** 22 newly acknowledged, 28 carried forward from the prior close (see STATE.md Deferred Items). No host or remote allowance was renewed; no package release or tag was created by this planning closeout.
+
+**Archive:** [roadmap](milestones/v3.0-ROADMAP.md), [requirements](milestones/v3.0-REQUIREMENTS.md), [audit](milestones/v3.0-MILESTONE-AUDIT.md), [phase records](milestones/v3.0-phases/).
+
+**Next:** v4.0 is scoped to the required tune-up followed by an offline WebAssembly build and deterministic host-shim checks for the existing libretro core. A browser player/UI and the deferred v3 host acceptance remain outside that scope.
+
+---
+
+## v2.0 — The whole library (Shipped: 2026-10-29)
+
+**Delivered:** Expanded boards, persistent saves, scoped controllers and PAL across all three deliverables, with honest library evidence.
+**Package release:** [v0.10.0](https://github.com/szTheory/muhtari/releases/tag/v0.10.0), 19 assets; planning v2.0 is separate from package semver.
+**Closeout type:** override_closeout under AGENTS rules 6–7 and GSD-HANDOFF §3; audit status tech_debt.
+**Phases completed:** 5–11; 7 phase goals and 27/27 scoped requirements.
+**Plans:** 75 accepted; 76 summarized active slots; 82 total historical summaries.
+**Recorded tasks:** 192 across all 82 summaries, including superseded/partial work; no halted plan is counted as accepted.
+
+**Key accomplishments:**
+
+- Shipped Activision, Absolute, Fractalus, BankSet and the XBoard/XM RAM/POKEY/HSC subset through all three deliverables.
+- Added load-stable HSC/SaveKey battery storage, checked runner saves and real fresh-launch RetroArch persistence.
+- Delivered typed controller input and movie2 replay for lightgun, paddle/keypad, quadrature and modern adapters, with independent pin-level diagnostics.
+- Added PAL timing, geometry, boot and sustained audio carry while retaining existing NTSC observations.
+- Accounted for every pinned-list entry, bound compatibility claims to public evidence and made the library ratchet required in CI.
+- Improved pipeline reliability, armed the controlled performance comparison and completed automated release/install verification.
+
+**Stats:** 469 files changed, 85,109 insertions and 1,737 deletions from initialized
+v2.0 `65b360d` to shipped `d5fd241`; 58,665 tracked C/header lines, including 10,263
+in src/. Timeline: 2026-10-21 to 2026-10-29, eight elapsed calendar days. Counts
+exclude this closeout. The helper's six-task prose-only count is superseded by
+82 parsed summary actuals/tasks_completed values totaling 192.
+
+### Known verification overrides and debt
+
+Known verification overrides: 15 newly acknowledged, 13 carried forward from a prior close
+(see STATE.md Deferred Items). Separately, all seven historical phase fingerprints remain
+stale after later accepted changes. No fingerprint or failed verdict was rewritten.
+The audit reports 25 fully wired paths plus two accepted Phase 5 warnings; eight complete
+flows plus one qualified monthly-report flow; no broken core/host flow or requirement gap.
+COST-01 raw monthly numeric totals, WR-01 delayed-release equal-base selection, advisory
+property calibration, optional Phase 10/11 findings and hardware/HSC limits remain deferred.
+The cancelled Nightly remains cancelled; current release success does not renew that evidence.
+Pinned-list status remains 201 unknown/3 skipped, with no gameplay passes.
+
+**Release evidence:** `gh run view 40956113369 --json attempt,status,conclusion,headSha,url,jobs`
+— exit 0, attempt 1 success at d5fd241, including publish and install-line-latest:
+[release run](https://github.com/szTheory/muhtari/actions/runs/40956113369).
+`gh release view v0.10.0 --json tagName,isDraft,publishedAt,targetCommitish,url,assets`
+— exit 0, published with 19 assets. `cmake -DINPUT=/tmp/muhtari-v2-main-ci.json -DEXPECTED_SHA=d5fd241e3f4d701d73867cc2e465c56a6fe6793d -P tools/check_ci_run.cmake`
+— exit 0, [merged CI](https://github.com/szTheory/muhtari/actions/runs/40956113335).
+Release PR41 merged green: [PR CI](https://github.com/szTheory/muhtari/actions/runs/40946415397).
+
+**Archives:** [roadmap](milestones/v2.0-ROADMAP.md),
+[requirements/outcomes](milestones/v2.0-REQUIREMENTS.md),
+[audit](milestones/v2.0-MILESTONE-AUDIT.md),
+[phase records](milestones/v2.0-phases/),
+[product direction](milestones/v2.0-PRODUCT-ROADMAP.md),
+[historical position receipts](milestones/v2.0-STATE.md).
+
+**Next:** `$gsd-new-milestone` selects scope and creates fresh requirements. Tune-up first;
+states/movies and browser remain alternatives for that discussion. No new milestone begins here.
+Tag creation is disabled; release-please owns package tags. Completed quick-task history stays in place.
+Lesson export is available with `export lessons`; lessons remain project-local by default.
+
+
+### v2.0 closeout verification
+
+| Command | Exit / result | Run URL |
+|---|---|---|
+| `cmake --workflow --preset ci` | 0; 673 CI tests and 6 release/archive checks after requirements removal | N/A-local |
+| `cmake --workflow --preset hygiene` | 0; 30/30 checks | N/A-local |
+| `sh scripts/hygiene.sh --tree` with stable index | 0; an earlier scan overlapping staging reported old missing paths and remains an unaccepted scan | N/A-local |
+| `python3 /tmp/muhtari-v2-verify.py` | 0; 221 phase files preserved, 82 plans/summaries, 7 verifications, 27/27 requirements, links resolve, originals safely archived, user edits/implementation unchanged | N/A-local |
+| `node <GSD_TOOLS> query summary-extract <archived-summary> --fields requirements_completed` for all 82 summaries | 0 each; every archived frontmatter parses | N/A-local |
+| `node <GSD_TOOLS> query audit-open --json` | 0; zero open, 28 acknowledged (15 new, 13 carried) | N/A-local |
+| `git diff --check` and `git diff --cached --check` | 0 | N/A-local |
+
+The safety commit `98dd410` contains the archive before active REQUIREMENTS deletion.
+No verification log, raw API payload or JUnit is committed.
+
+---
+
 ## v1.0 — 7800 games play with sound in RetroArch (Shipped: 2026-10-21)
 
 **Delivered:** NTSC linear and SuperGame cartridges play with TIA and POKEY audio through all three deliverables.
