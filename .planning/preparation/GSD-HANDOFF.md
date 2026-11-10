@@ -76,9 +76,9 @@ node ~/.claude/gsd-core/bin/gsd-tools.cjs query config-get workflow.test_command
 1. The agent branches `phase/NN-slug` off `origin/main` (AGENTS rule 9; the pre-commit hook refuses commits on
    `main` once a remote exists).
 2. `/gsd-discuss-phase N` — the owner's global GSD profile turns on advisor mode, so discuss also spawns advisor
-   researchers; expect that cost. Each advisor gets the owner's fan-out brief: every decision point in its area
-   researched through all relevant lenses, primary sources first, with an adversarial pass, ending in one
-   coherent recommendation per point that the step then follows without asking again (owner, 2026-10-16).
+   researchers; expect that cost. Each advisor gets `.planning/research/fan-out/prompt.txt`: every decision point
+   in its area is researched through relevant lenses, primary sources first, with an adversarial pass, ending in one
+   coherent recommendation per point (owner, 2026-10-16).
 3. `/gsd-plan-phase N`
 4. `/gsd-execute-phase N` — code review, the test gate (`workflow.test_command`), the verifier and the phase
    close all run inside this step [GH.01].
@@ -116,6 +116,15 @@ valid; add a check to CI only when recurring regression prevention justifies its
 Review each CI/release run for measured queue, critical-path, duration and cancelled-work improvements while
 preserving pass/fault coverage and release evidence. Record when no safe improvement is supported, then move on;
 do not reopen this settled policy during later UATs.
+
+Autonomous milestone direction, owner 2026-11-10: when the owner explicitly invokes `$gsd-autonomous`, apply the
+fan-out brief and adopt its recommendation for ordinary in-scope decisions without pausing for routine “accept all”
+prompts. The agent continues through the requested milestone's phases and lifecycle, carrying out useful local,
+offline verification and review. Pause only for a material scope, authority, risk, cost or irreversible-action
+boundary, genuinely owner-only validation, or a failed gate that needs changed scope. Existing host, identity-bound
+and remote stops remain unchanged; independent authorized local work continues around them. For locally resolvable
+verification gaps, choose the bounded gap-closure path, fix the cause and verify it; never skip a phase or call an
+open requirement accepted just to advance. Do not pass `--auto` or `--chain` to any GSD command.
 
 **Closeout policy:** a fix merged after a phase's verification makes that verification "stale". Accept an
 override closeout at milestone end when CI passes on the merged head and the milestone audit covers the phase;
@@ -191,12 +200,15 @@ model and effort explicitly; installed agent TOML files need no model pins. When
 `runtime` in the project config and global defaults, then check `query resolve-model` through that install.
 Keep each runtime's model overrides under its own key so switching preserves the other runtime's choices.
 
-## 6. What keeps GSD from running on by itself
+## 6. Explicit GSD continuation
 
-- GSD commands get only a phase number. An argument containing `--auto` or `--chain` makes one step start the
-  next, and GSD tests for the substring [GH.01].
-- `/gsd-next`, `/gsd-autonomous`, `/gsd-manager` and `/gsd-progress --next` or `--do` start the following step.
-- In interactive mode the phase transition only moves STATE's pointer; it does not start the next phase [GH.01].
+- Normal GSD commands do not start the next step; an argument containing `--auto` or `--chain` does, and GSD
+  tests for the substring [GH.01]. Keep those flags forbidden.
+- `/gsd-autonomous` is an explicit opt-in. Run it only when the owner requests autonomous continuation, and honor
+  the requested milestone range plus the recommendation and safety rules in AGENTS.md rule 8.
+- `/gsd-next`, `/gsd-manager` and `/gsd-progress --next` or `--do` remain outside the autonomous entrypoint.
+- In interactive mode the ordinary phase transition only moves STATE's pointer; it does not start the next phase
+  [GH.01].
 - `scripts/hygiene.sh` refuses a commit if `.planning/config.json` leaves interactive mode or turns a chain flag
   on.
 

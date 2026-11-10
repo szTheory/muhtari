@@ -95,6 +95,13 @@ evidence.
    An explicit owner request for `$gsd-autonomous` authorizes running the autonomous workflow through the requested
    milestone; when a phase is blocked, keep advancing independent authorized local work while preserving its exact
    safety stops. This does not renew host/remote attempts or permit command arguments containing `--auto` or `--chain`.
+   During an explicitly requested autonomous run, use `.planning/research/fan-out/prompt.txt` for phase decisions and
+   adopt its recommended answer for ordinary, in-scope gray areas without routine acceptance prompts. Ask only when
+   the recommendation would change scope, authority, risk, cost, an irreversible action, or a genuine owner-only
+   validation; if no safe recommendation exists, continue independent authorized work and preserve the exact stop.
+   For locally resolvable verification gaps, run the bounded gap-closure path and its required checks; do not skip a
+   phase or record unresolved requirements as accepted merely to advance. Stop only when the fix crosses a real
+   boundary or its documented retry cap is exhausted.
    On each autonomous context resume, treat prior summaries as pointers: reconcile the actual branch and dirty tree,
    current verification reports, review disposition, and runnable plan index before repeating a blocker or claiming
    there is no work. Continue independent authorized local work when one phase has no runnable plan.
