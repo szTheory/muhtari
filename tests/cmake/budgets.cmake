@@ -8,8 +8,12 @@ if(NOT IS_DIRECTORY "${ROOT}")
   message(FATAL_ERROR "budgets: -DROOT=<source dir> is required")
 endif()
 
+# Resolve relative roots from the caller's working directory once, so the
+# document glob and all size checks inspect the same source tree.
+get_filename_component(root "${ROOT}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+
 set(checks "README.md=12288" "include/muhtari.h=24576")
-file(GLOB docs RELATIVE "${ROOT}" "${ROOT}/docs/*.md" "${ROOT}/docs/hardware/*.md")
+file(GLOB docs RELATIVE "${root}" "${root}/docs/*.md" "${root}/docs/hardware/*.md")
 foreach(doc IN LISTS docs)
   list(APPEND checks "${doc}=40960")
 endforeach()
@@ -19,7 +23,7 @@ foreach(check IN LISTS checks)
   string(REGEX MATCH "^(.*)=([0-9]+)$" unused "${check}")
   set(file "${CMAKE_MATCH_1}")
   set(limit "${CMAKE_MATCH_2}")
-  file(SIZE "${ROOT}/${file}" size)
+  file(SIZE "${root}/${file}" size)
   if(size GREATER limit)
     string(APPEND over "\n  ${file}: ${size} bytes, budget ${limit}")
   endif()

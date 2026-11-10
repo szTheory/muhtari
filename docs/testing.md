@@ -481,8 +481,8 @@ To check one version by hand: `cmake -DVERSION=<x.y.z> -P tests/cmake/single_ver
 
 ## Budgets
 
-`docs.budgets` keeps the documents small enough to read: `README.md` at most 12 KB, `include/muhtari.h` at most
-24 KB, and each `docs/*.md` at most 40 KB. Raise a budget only with a reason in the same commit.
+`README.md` 12 KB; `include/muhtari.h` 24 KB; each `docs/*.md`/`docs/hardware/*.md` 40 KB. Raise with a
+same-commit reason. Repo root: `cmake -DROOT=. -P tests/cmake/budgets.cmake`; both `ROOT` forms check the same files.
 
 `audio.stress` runs generated, legal dual-POKEY/TIA CPU programs with fast,
 base, joined and high-pass choices. AUDCTL permits direct clocks only on

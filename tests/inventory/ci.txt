@@ -478,6 +478,7 @@ diag.sg144	diag,portable
 docs.api_names	policy
 docs.api_names.self_test	policy
 docs.budgets	policy
+docs.budgets.controls	policy
 embed.subdirectory	install
 frame.dli_first_zone	frame,portable
 frame.dli_queued	frame,portable
@@ -539,6 +540,8 @@ libretro.info_claims.description.self_test	libretro
 libretro.info_claims.missing_state.self_test	libretro
 libretro.info_claims.savestate	libretro
 libretro.info_claims.self_test	libretro
+libretro.observe	libretro,portable
+libretro.observe.controls	libretro,portable
 libretro.rcheevos	libretro,portable
 libretro.rcheevos.expansion	libretro,portable
 libretro.vendored	libretro

@@ -4,6 +4,10 @@
 # registers only its own tests, the nofp lane only the abi tests, the fuzz
 # lane only the fuzz tests, the vectors-full lane only the full vector set
 # and the library lane only the ledger's library tests.
+if(EMSCRIPTEN AND MUHTARI_INVENTORY STREQUAL "emscripten")
+  include(${CMAKE_CURRENT_LIST_DIR}/emscripten/tests.cmake)
+  return()
+endif()
 if(MUHTARI_HYGIENE)
   include(${CMAKE_CURRENT_LIST_DIR}/hygiene/tests.cmake)
   return()

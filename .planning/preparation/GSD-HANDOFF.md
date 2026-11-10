@@ -76,9 +76,9 @@ node ~/.claude/gsd-core/bin/gsd-tools.cjs query config-get workflow.test_command
 1. The agent branches `phase/NN-slug` off `origin/main` (AGENTS rule 9; the pre-commit hook refuses commits on
    `main` once a remote exists).
 2. `/gsd-discuss-phase N` — the owner's global GSD profile turns on advisor mode, so discuss also spawns advisor
-   researchers; expect that cost. Each advisor gets the owner's fan-out brief: every decision point in its area
-   researched through all relevant lenses, primary sources first, with an adversarial pass, ending in one
-   coherent recommendation per point that the step then follows without asking again (owner, 2026-10-16).
+   researchers; expect that cost. Each advisor gets `.planning/research/fan-out/prompt.txt`: every decision point
+   in its area is researched through relevant lenses, primary sources first, with an adversarial pass, ending in one
+   coherent recommendation per point (owner, 2026-10-16).
 3. `/gsd-plan-phase N`
 4. `/gsd-execute-phase N` — code review, the test gate (`workflow.test_command`), the verifier and the phase
    close all run inside this step [GH.01].
@@ -110,6 +110,24 @@ receipts, and leaves genuinely human-only items blocked. Judging docs, images an
 job; a truth only a merge can show is confirmed at ship (step 8), never in UAT. At each CI/release run, inspect
 observed queue, durations, critical path and cancelled work for quality-preserving efficiency gains; change
 timeouts, caches or workflow structure only when evidence supports the improvement.
+
+Reaffirmed 2026-11-09: choose the smallest check that gives useful feedback. A one-off, throwaway local check is
+valid; add a check to CI only when recurring regression prevention justifies its maintenance and runtime cost.
+Review each CI/release run for measured queue, critical-path, duration and cancelled-work improvements while
+preserving pass/fault coverage and release evidence. Record when no safe improvement is supported, then move on;
+do not reopen this settled policy during later UATs.
+
+Autonomous milestone direction, owner 2026-11-10: when the owner explicitly invokes `$gsd-autonomous`, apply the
+fan-out brief and adopt its recommendation for ordinary in-scope decisions without pausing for routine “accept all”
+prompts. The agent continues through the requested milestone's phases and lifecycle, carrying out useful local,
+offline verification and review. Pause only for a material scope, authority, risk, cost or irreversible-action
+boundary, genuinely owner-only validation, or a failed gate that needs changed scope. Existing host, identity-bound
+and remote stops remain unchanged; independent authorized local work continues around them. Reconcile the live plan
+index on entry and after each phase: reuse existing context and a reviewed runnable plan instead of re-discussing or
+replanning it. For a phase without context, use the fan-out brief and dispatch specialists only where their
+independent evidence can change the choice, scope or acceptance. For locally resolvable verification gaps, choose
+the bounded gap-closure path, fix the cause and verify it; never skip a phase or call an open requirement accepted
+just to advance. Do not pass `--auto` or `--chain` to any GSD command.
 
 **Closeout policy:** a fix merged after a phase's verification makes that verification "stale". Accept an
 override closeout at milestone end when CI passes on the merged head and the milestone audit covers the phase;
@@ -185,12 +203,15 @@ model and effort explicitly; installed agent TOML files need no model pins. When
 `runtime` in the project config and global defaults, then check `query resolve-model` through that install.
 Keep each runtime's model overrides under its own key so switching preserves the other runtime's choices.
 
-## 6. What keeps GSD from running on by itself
+## 6. Explicit GSD continuation
 
-- GSD commands get only a phase number. An argument containing `--auto` or `--chain` makes one step start the
-  next, and GSD tests for the substring [GH.01].
-- `/gsd-next`, `/gsd-autonomous`, `/gsd-manager` and `/gsd-progress --next` or `--do` start the following step.
-- In interactive mode the phase transition only moves STATE's pointer; it does not start the next phase [GH.01].
+- Normal GSD commands do not start the next step; an argument containing `--auto` or `--chain` does, and GSD
+  tests for the substring [GH.01]. Keep those flags forbidden.
+- `/gsd-autonomous` is an explicit opt-in. Run it only when the owner requests autonomous continuation, and honor
+  the requested milestone range plus the recommendation and safety rules in AGENTS.md rule 8.
+- `/gsd-next`, `/gsd-manager` and `/gsd-progress --next` or `--do` remain outside the autonomous entrypoint.
+- In interactive mode the ordinary phase transition only moves STATE's pointer; it does not start the next phase
+  [GH.01].
 - `scripts/hygiene.sh` refuses a commit if `.planning/config.json` leaves interactive mode or turns a chain flag
   on.
 
@@ -248,3 +269,15 @@ All on 2026-10-15, against `@opengsd/gsd-core` 1.17.0.
 | GH.01 | T1 | `@opengsd/gsd-core` installed package: `workflows/new-project.md`, `execute-phase.md`, `ship.md`, `verify-work.md`, `transition.md`, `discuss-phase.md`, `plan-phase.md`; `bin/lib/init.cjs`, `config.cjs`, `config-loader.cjs`, `roadmap-parser.cjs`, `runtime-name-policy.cjs`, `profile-output.cjs` | 1.17.0, read 2026-10-15 | Resume path, chaining, branching, config, ship behaviour, milestone headings, instruction file |
 | GH.02 | T1 | nesturbator `.planning/preparation/GSD-HANDOFF.md`, `RETROSPECTIVE.md`, `MILESTONES.md` | main, read 2026-10-15 | Kickoff text, routine, closeout overrides |
 | GH.03 | T1 | gabbaboy `.planning/context/LESSONS.md`, `DECISIONS.md` (D-025, D-069) | main, read 2026-10-15 | Verification default, confidence-qualified models, release PR blocking |
+
+### Archived phase selection at ship (verified 2026-11-10)
+
+OpenGSD 1.20.0 `init.phase-op` can deliberately replace an archived phase's directory with null when the same number remains in ROADMAP. Ship must not interpret that projection as missing implementation or create a new phase. For the completed v4.0 branch, run `$gsd-ship 16`; the agent resolves its existing directory with the same runtime's `query find-phase 16 --raw`, checks that it is the expected `milestones/v4.0-phases/16-emscripten-libretro-core`, and uses that directory for the normal verification, artifact and PR-body reads. The canonical verification must still return `passed`, and `roadmap.analyze` must still record Phase 16 complete. This is an archive-path adapter, never a waiver of a ship gate. The PR covers both phases on the milestone branch.
+
+Keep compact completed phase records and detail sections for roadmap consumers. Archive fingerprint relocation is verifier-owned and requires byte-equivalence with the pre-archive files. The owner does not repair metadata or switch checkouts; the agent owns this preflight on resumption. No host/remote allowance or publication authority is inferred from the adapter.
+
+### Approved isolated v4.0 publication (2026-11-10)
+
+The owner approved publishing the verified v4.0-only candidate after combined PR #46 failed its inherited held-input gate. Resume `$gsd-ship 16` by selecting `.worktrees/phase-16-ship` internally; do not republish or rerun the combined source. The candidate keeps main's existing checks and adds only the offline Emscripten lane. Historical v3.0 planning records describe preserved, unmerged source; they do not imply that source ships in the isolated PR. All host stops remain binding.
+
+Finalize planning before the first candidate CI run. A preparation head with `[ci skip]` can create the PR without launching a duplicate matrix; then commit the known PR number in a normal ship-note commit and push once to register exact-head CI. Verify that head and its actual run; zero checks never constitute a pass. This ordering avoids the previously observed skip-token blockage and cancelled matrix work without changing checks, deadlines, caches or concurrency.

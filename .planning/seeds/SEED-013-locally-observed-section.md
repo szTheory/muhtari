@@ -5,6 +5,10 @@ planted: 2026-10-29
 planted_during: phase 11 full library acceptance
 trigger_when: someone asks to see local-run results next to the ledger counts
 scope: small
+audit_acknowledged:
+  milestone: v2.0
+  at: 2026-10-29
+  status: dormant
 ---
 
 # Locally observed section in the compatibility doc

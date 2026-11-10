@@ -5,6 +5,10 @@ planted: 2026-10-23
 planted_during: accepted proportional-gates policy migration
 trigger_when: next milestone tune-up, or an attributable review miss or maintenance obstruction
 scope: small
+audit_acknowledged:
+  milestone: v2.0
+  at: 2026-10-29
+  status: dormant
 ---
 
 # Proportional maintenance review

@@ -1,0 +1,2 @@
+emscripten.artifact	emscripten,portable
+emscripten.controls	emscripten,portable

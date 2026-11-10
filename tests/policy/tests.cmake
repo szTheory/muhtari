@@ -94,6 +94,12 @@ muhtari_add_test(NAME docs.budgets
   COMMAND ${CMAKE_COMMAND} -DROOT=${CMAKE_SOURCE_DIR} -P ${policy_scripts}/budgets.cmake
   LABELS policy TIMEOUT 10)
 
+muhtari_add_test(NAME docs.budgets.controls
+  COMMAND ${CMAKE_COMMAND} "-DROOT=${CMAKE_SOURCE_DIR}"
+    "-DWORK=${CMAKE_BINARY_DIR}/policy/budget controls"
+    -P ${CMAKE_CURRENT_LIST_DIR}/budgets.cmake
+  LABELS policy TIMEOUT 30)
+
 # Every public name in the header appears in the embedding guide, and the
 # guide names nothing the header lacks. The self test is a header declaring a
 # call its guide omits beside a guide naming a call its header lacks, and
