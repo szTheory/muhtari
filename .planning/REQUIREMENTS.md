@@ -16,10 +16,10 @@ through the existing libretro deliverable. It adds no browser player or device U
 
 ### Browser-targeted libretro core
 
-- [ ] **WASM-01**: A pinned Emscripten build produces a browser-consumable WebAssembly form of the existing libretro core, with the required loader/link contract and exported/imported surface documented.
-- [ ] **WASM-02**: An offline headless Node host can load the built core, run its libretro lifecycle with an owned fixture and scripted input, capture video/audio callbacks, and exercise state serialization without adding a browser UI or device code.
-- [ ] **WASM-03**: Deterministic frame, audio, input and save/restore observations from the WebAssembly core match independent native expectations, with representative refusal/fault controls and no ROM/BIOS bytes added to the repository.
-- [ ] **WASM-04**: Maintainers can reproduce and report WebAssembly artifact size and warmed headless throughput against the same-source native core without presenting those measurements as cross-browser or device performance claims.
+- [x] **WASM-01**: A pinned Emscripten build produces a browser-consumable WebAssembly form of the existing libretro core, with the required loader/link contract and exported/imported surface documented.
+- [x] **WASM-02**: An offline headless Node host can load the built core, run its libretro lifecycle with an owned fixture and scripted input, capture video/audio callbacks, and exercise state serialization without adding a browser UI or device code.
+- [x] **WASM-03**: Deterministic frame, audio, input and save/restore observations from the WebAssembly core match independent native expectations, with representative refusal/fault controls and no ROM/BIOS bytes added to the repository.
+- [x] **WASM-04**: Maintainers can reproduce and report WebAssembly artifact size and warmed headless throughput against the same-source native core without presenting those measurements as cross-browser or device performance claims.
 
 ## Deferred Requirements
 
@@ -42,7 +42,7 @@ All five active v4.0 requirements map exactly once. Deferred v3.0 requirements a
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | TUNE-08 | Phase 15 | Complete |
-| WASM-01 | Phase 16 | Pending |
-| WASM-02 | Phase 16 | Pending |
-| WASM-03 | Phase 16 | Pending |
-| WASM-04 | Phase 16 | Pending |
+| WASM-01 | Phase 16 | Complete |
+| WASM-02 | Phase 16 | Complete |
+| WASM-03 | Phase 16 | Complete |
+| WASM-04 | Phase 16 | Complete |

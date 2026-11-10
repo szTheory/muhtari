@@ -99,7 +99,7 @@ The production adapter now builds as a no-entry `.mjs` factory plus `.wasm`, wit
 - Added a bounded native adapter/public-library observer. It checks 320x242 output, 48 kHz audio, exact per-frame audio counts, SWCHA 255/239/254, malformed state/content behavior and deterministic continuation before emitting hashes.
 - Added a direct Node consumer for the emitted factory. It verifies all five finite scenarios, state refusal/preservation, two continuation replays, no-game behavior and interleaved instance isolation. Named faults reject missing exports/callbacks, changed hashes and incomplete scenarios.
 - Added an exact two-test Emscripten inventory, local pinned-container entry point, a required Linux x64 CI step and reproduction documentation.
-- The build-owned measurement reports a 57,902-byte loader, 191,040-byte Wasm and 248,942 combined bytes. The three-window medians were 623.68 native frames/s and 924.86 Node frames/s. These are descriptive only: native used AppleClang on macOS arm64 while Node ran Linux x64 through Docker Desktop amd64 emulation; they do not predict browser or device performance.
+- The final build-owned measurement reports a 57,902-byte loader, 191,040-byte Wasm and 248,942 combined bytes. Its three-window medians were 798.945392 native frames/s and 996.2247233919802 Node frames/s. These are descriptive only: native used AppleClang on macOS arm64 while Node ran Linux x64 through Docker Desktop amd64 emulation; they do not predict browser or device performance.
 
 ## Verification
 

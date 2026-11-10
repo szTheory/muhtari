@@ -1,6 +1,6 @@
 ---
 phase: 15-measured-milestone-tune-up
-verified: 2026-11-10T18:13:29Z
+verified: 2026-11-10T20:41:26Z
 status: passed
 score: 7/7 must-haves verified
 covered_files:
@@ -13,9 +13,15 @@ covered_files:
   - tests/inventory/wasm32.txt
   - tests/policy/budgets.cmake
   - tests/policy/tests.cmake
-covered_digest: "v4:sha256:df2e50990d4a7ae808133a0b16d33b696aae5614dfaeef2eecefe35864581ab2"
+covered_digest: "v4:sha256:43a063e91564798b4e636f2f0b0412de6cb415af933fc4b859989a5e7d4ad8c9"
 behavior_unverified: 0
 overrides_applied: 0
+re_verification:
+  previous_status: passed
+  previous_score: 7/7
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
 decision_coverage:
   honored: 0
   total: 0
@@ -25,9 +31,11 @@ decision_coverage:
 # Phase 15: Measured Milestone Tune-up Verification Report
 
 **Phase Goal:** Maintainers can start v4.0 with a reproducible delivery baseline and one evidence-supported improvement or bounded disposition, while required checks retain their fault detection.
-**Verified:** 2026-11-10T18:13:29Z
+**Verified:** 2026-11-10T20:41:26Z
 **Status:** passed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — freshness refresh after Phase 16 added two tests to the shared CI inventory.
+
+**Refresh evidence:** Since the previous pass, the only covered implementation file changed is tests/inventory/ci.txt. Phase 16's clean source review includes that file. The final cmake --workflow --preset ci receipt exited 0 with 703 tests, including docs.budgets and docs.budgets.controls; all three packages and six release checks also passed. Run URL: N/A-local.
 
 ## Goal Achievement
 
@@ -124,5 +132,5 @@ None. The baseline false pass is reproducible, the corrected checker uses one no
 
 ---
 
-_Verified: 2026-11-10T18:13:29Z_  
+_Verified: 2026-11-10T20:41:26Z_
 _Verifier: the agent (gsd-verifier)_
