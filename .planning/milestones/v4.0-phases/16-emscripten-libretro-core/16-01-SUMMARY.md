@@ -140,3 +140,7 @@ Implementation and local acceptance are ready for the parent-owned source review
 ---
 *Phase: 16-emscripten-libretro-core*
 *Completed: 2026-11-10*
+
+## Ship gate correction
+
+Hosted run 42903652231 exposed an observer-only mono/stereo PCM bug that silent local fixtures had masked: the old byte comparison read twice the public library's mono sample count. The observer now compares both adapter channels per native sample and hashes the duplicated mono stream without reading unused buffer space. A non-silent signed/extreme-sample control reproduces the old bug; changed left/right channels remain rejected. Shipping also formats the observer and inherited trace helper with pinned clang-format and admits the exact owned frontend-state fixture in the existing quality policy with pass/fault controls. See [shipping evidence](../../v4.0-SHIP.md). This changes no production core behavior or earlier host acceptance.

@@ -465,8 +465,8 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
                 }
             }
         } else {
-            int observed_child = manual_wait_retry(child, &status, &wait_error, grace_start,
-                                                   term_grace_ms);
+            int observed_child =
+                manual_wait_retry(child, &status, &wait_error, grace_start, term_grace_ms);
             if (observed_child > 0) {
                 waited = 1;
                 if (result->outcome != MANUAL_WAIT_FAILED && result->outcome != MANUAL_TIMED_OUT)
@@ -483,8 +483,8 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
                     result->wait_error = errno;
                 }
                 while (!waited && !wait_observation_failed) {
-                    int observed_child2 = manual_wait_retry(child, &status, &wait_error,
-                                                            grace_start, term_grace_ms);
+                    int observed_child2 =
+                        manual_wait_retry(child, &status, &wait_error, grace_start, term_grace_ms);
                     if (observed_child2 > 0) {
                         waited = 1;
                         break;
@@ -507,8 +507,8 @@ static int manual_launch(const char *trace_dir, char *const app_argv[], uint64_t
                     }
                 }
                 if (!waited && !wait_observation_failed) {
-                    int observed_child3 = manual_wait_retry(child, &status, &wait_error,
-                                                            grace_start, term_grace_ms);
+                    int observed_child3 =
+                        manual_wait_retry(child, &status, &wait_error, grace_start, term_grace_ms);
                     if (observed_child3 > 0)
                         waited = 1;
                     else if (observed_child3 == -1) {
@@ -859,11 +859,11 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
         app[1] = "--manual-test-hang";
     }
     setenv("MUHTARI_MANUAL_INPUT_TEST_CHILD",
-           strcmp(fault, "interrupt") == 0 ? "interrupt"
-           : strcmp(fault, "late-exit") == 0 ? "late-exit"
-           : strcmp(fault, "clock-failure") == 0 ? "clock-failure"
+           strcmp(fault, "interrupt") == 0                                   ? "interrupt"
+           : strcmp(fault, "late-exit") == 0                                 ? "late-exit"
+           : strcmp(fault, "clock-failure") == 0                             ? "clock-failure"
            : strcmp(fault, "timeout") == 0 || strcmp(fault, "unreaped") == 0 ? "hang"
-                                                                              : "1",
+                                                                             : "1",
            1);
     setenv("MUHTARI_MANUAL_INPUT_EXPECT_CONFIG", config, 1);
     setenv("MUHTARI_MANUAL_INPUT_EXPECT_CORE", core_path, 1);
@@ -1025,13 +1025,12 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
                 count = snprintf(other, sizeof other, "%s/core.trace", trace_path);
                 int core_mode_ok = count >= 0 && (size_t)count < sizeof other &&
                                    lstat(other, &retry_core_info) == 0;
-                retry_complete = helper_mode_ok && core_mode_ok &&
-                                 S_ISREG(retry_helper_info.st_mode) &&
-                                 S_ISREG(retry_core_info.st_mode) &&
-                                 retry_helper_info.st_uid == getuid() &&
-                                 retry_core_info.st_uid == getuid() &&
-                                 (retry_helper_info.st_mode & 0777) == 0600 &&
-                                 (retry_core_info.st_mode & 0777) == 0600;
+                retry_complete =
+                    helper_mode_ok && core_mode_ok && S_ISREG(retry_helper_info.st_mode) &&
+                    S_ISREG(retry_core_info.st_mode) && retry_helper_info.st_uid == getuid() &&
+                    retry_core_info.st_uid == getuid() &&
+                    (retry_helper_info.st_mode & 0777) == 0600 &&
+                    (retry_core_info.st_mode & 0777) == 0600;
             }
         }
         if (identity_fault)
@@ -1145,11 +1144,11 @@ static int manual_test_case(const char *work, char *app_path, char *core_path, c
                                    ? rc == 124 && result->outcome == MANUAL_TIMED_OUT
                                    : rc == 125 && result->outcome == MANUAL_UNREAPED;
         int signals_expected = late_exit ? result->signals_sent == 0
-                               : clock_failure ? result->signals_sent >= 1 &&
-                                                     result->signals_sent <= 2
-                                               : result->signals_sent == 2;
-        int core_lifecycle_ok = core.status == IT_UNFINISHED &&
-                                core.records[0].type == IT_INIT && it_pair(&helper, &core);
+                               : clock_failure
+                                   ? result->signals_sent >= 1 && result->signals_sent <= 2
+                                   : result->signals_sent == 2;
+        int core_lifecycle_ok = core.status == IT_UNFINISHED && core.records[0].type == IT_INIT &&
+                                it_pair(&helper, &core);
         int fork_recorded = 0;
         if (clock_failure) {
             for (uint32_t i = 0; i < helper.count; i++)
@@ -1209,10 +1208,8 @@ static int manual_control(const char *work, char *app_path, char *core_path)
         {"existing-file", "existing trace sentinel preserved", 1000u, 100u},
         {"existing-core-file", "existing core trace preserved and partial file removed", 1000u,
          100u},
-        {"helper-fstat", "post-create helper identity failure rolls back and retries", 1000u,
-         100u},
-        {"core-fstat", "post-create core identity failure rolls back and retries", 1000u,
-         100u},
+        {"helper-fstat", "post-create helper identity failure rolls back and retries", 1000u, 100u},
+        {"core-fstat", "post-create core identity failure rolls back and retries", 1000u, 100u},
         {"symlink", "trace symlink sentinel preserved", 1000u, 100u},
         {"exec", "exec error", 1000u, 100u},
         {"timeout", "exact-child SIGTERM/SIGKILL/reap", 150u, 150u},

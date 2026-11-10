@@ -139,7 +139,7 @@ function(quality_fixture_identity out candidate trusted)
         message(FATAL_ERROR "quality: deleted or changed trusted manifest ${path}")
       endif()
     endforeach()
-    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion|pal|bankset|expansion)[.]a78$" OR
+    if(NOT path MATCHES "^tests/diag/(activision|absolute|fractalus|battery|controller-light|controller-analog|controller-motion|pal|bankset|expansion|frontend-states)[.]a78$" OR
         NOT row MATCHES "^[^\t]+\tthis-repo\t[^ \t\r\n;]+\tMIT\t([0-9a-f]+)\t-$")
       message(FATAL_ERROR "quality: unrelated fixture ${path}")
     endif()
@@ -149,6 +149,10 @@ function(quality_fixture_identity out candidate trusted)
     endif()
     # This owned template is immutable: derived cases are build output only.
     # A syntactically plausible invented source pin/digest must not admit it.
+    if(path STREQUAL "tests/diag/frontend-states.a78" AND NOT row STREQUAL
+        "tests/diag/frontend-states.a78\tthis-repo\t7b5f896b21ed5839ee5e1f241e9f434f0ed997ce\tMIT\t18d1e10cac2be0ac400fa8a4060628a693d5cb4eb8622a4e845f5c9477fe43b3\t-")
+      message(FATAL_ERROR "quality: owned frontend fixture identity")
+    endif()
     if(path STREQUAL "tests/diag/bankset.a78" AND NOT row STREQUAL
         "tests/diag/bankset.a78\tthis-repo\t6321fa62cf7cf29c7033b09931edb884079c1545\tMIT\t32f5870fbfcc4745967b8b94c69f87dac4879587c4b0561256cc5160d61a3390\t-")
       message(FATAL_ERROR "quality: owned BankSet identity")

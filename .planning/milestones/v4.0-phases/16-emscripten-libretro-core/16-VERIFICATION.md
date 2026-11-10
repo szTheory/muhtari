@@ -1,6 +1,6 @@
 ---
 phase: 16-emscripten-libretro-core
-verified: 2026-11-10T21:14:07.564911Z
+verified: 2026-11-10T21:30:11.600539Z
 status: passed
 score: 7/7 must-haves verified
 covered_files:
@@ -11,14 +11,17 @@ covered_files:
   - docs/libretro.md
   - libretro/CMakeLists.txt
   - scripts/emscripten.sh
+  - tests/cmake/quality.cmake
   - tests/emscripten/host.mjs
   - tests/emscripten/tests.cmake
   - tests/inventory/ci.txt
   - tests/inventory/emscripten.txt
+  - tests/libretro/input_trace_host.c
   - tests/libretro/observe.c
   - tests/libretro/tests.cmake
+  - tests/policy/quality.cmake
   - tests/tests.cmake
-covered_digest: "v4:sha256:644ca08fe95185253049e15c470dd180e94ca6acff7ad893ea70d202b9892960"
+covered_digest: "v4:sha256:02d11a0f41bf051dbfd8104b0e349573fa8e6447e80b9a677ad12eb8ab78d055"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -47,7 +50,7 @@ human_verification: []
 | 4 | Malformed content/state is refused according to adapter semantics, applicable state is preserved, and restored continuation replays identically. | ✓ VERIFIED | Native receipt flags confirm refusal and preservation. The passing artifact test exercises null/empty/short/long/corrupt states, malformed-content transitions and two continuation replays. |
 | 5 | Two factory instances retain separate memories and state when runs and restores are interleaved. | ✓ VERIFIED | Core.isolatedFactory creates a second production factory and checks each instance’s saved state after interleaved execution and restore. The artifact CTest passed and reports instance isolation. |
 | 6 | Native observer/fault tests run without Docker in ordinary CI, and required Linux CI loads the actual Emscripten artifact with an exact non-skipping inventory. | ✓ VERIFIED | Retained cmake --workflow --preset ci receipt exited 0; libretro.observe and controls passed in the 703-test workflow. The workflow invokes scripts/emscripten.sh on Linux x64 without advisory handling. Final Emscripten JUnit lists both inventoried cases, run with no skips; inventory validation passed. |
-| 7 | Maintainers can reproduce same-source size and warmed-throughput measurements with runtime and interpretation limits recorded. | ✓ VERIFIED | Final measurement.json records 57,902 loader bytes, 191,040 Wasm bytes, 248,942 combined bytes, 12 warm-up frames and three 60-frame windows. Native and Node medians are 798.945392 and 996.2247233919802 frames/s. It identifies AppleClang 21.0.0.21000101, Node v24.19.0/linux-x64, Darwin arm64 host, Linux/aarch64 Docker daemon and selected Linux/amd64 SDK leaf; it makes no browser/device claim. The summary narrative matches this final receipt. |
+| 7 | Maintainers can reproduce same-source size and warmed-throughput measurements with runtime and interpretation limits recorded. | ✓ VERIFIED | Final measurement.json records 57,902 loader bytes, 191,040 Wasm bytes, 248,942 combined bytes, 12 warm-up frames and three 60-frame windows. Latest shipping native and Node medians are 421.188594 and 444.91242640407035 frames/s; the earlier acceptance measurement remains in the summary as historical evidence. It identifies AppleClang 21.0.0.21000101, Node v24.19.0/linux-x64, Darwin arm64 host, Linux/aarch64 Docker daemon and selected Linux/amd64 SDK leaf; it makes no browser/device claim. The summary narrative matches this final receipt. |
 
 **Score:** 7/7 truths verified (0 present, behavior-unverified)
 
@@ -147,3 +150,9 @@ _Verifier: the agent (gsd-verifier)_
 ## Shipping re-verification
 
 Inline verifier recheck after reconciling current main: the only changed covered file is docs/libretro.md. Historical release identity prose moved byte-for-byte into the linked milestone receipt; all sections from Per-game launch paths onward, including the Emscripten reproduction and loader contract, remain byte-identical. The current version scanner, next-version scanner and unchanged document budgets exit 0. The two-worker FIFO invocation of the unchanged native workflow exits 0; native and release JUnit inventories validate without skips. `sh scripts/emscripten.sh build/ci` exits 0 with its exact two-case inventory, 14 parity frames, replay and instance isolation. Run URL N/A-local. The CLI regenerated covered fields after this check; no acceptance scope or host allowance changed.
+
+## Hosted-finding re-verification
+
+Inline source review checked the shipping fixes: sample-by-sample native mono versus both adapter channels, bounded mono storage, little-endian duplicated-stream hashing, signed/extreme non-silent samples and each channel fault. The exact frontend fixture addition retains trusted-base bytes and rejects forged/duplicate/unrelated rows. Only tests and their evidence consumers changed; the production core is unchanged. The ordinary native workflow and native/release inventories, complete hygiene workflow and pinned Emscripten lane all exit 0 after the fixes. Native observer controls were red before the PCM fix and green after it; policy controls were red before the named fixture fix and green after it. The artifact consumer still reports 14 parity frames, state replay and isolated instances.
+
+Local Homebrew sanitizer executables timed out during startup, including the tiny control; no local sanitizer pass is claimed. Linux hosted ASan and the genuine-base hosted quality aggregate remain ship gates. The prior failed run remains evidence, not an accepted attempt. Source-specific details and exact commands are in the shipping receipt. The CLI regenerated all covered fields after source and summary review. No earlier host stop or requirement verdict changed.

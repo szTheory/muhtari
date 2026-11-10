@@ -586,3 +586,9 @@ Reproduced with OpenGSD 1.20.0: `milestone.complete v4.0 --dry-run` and the conf
 Evidence: `query verification.status` returned `stale` for moved PLAN/SUMMARY paths; five moved covered files matched the pre-archive source, and both archived reports then returned `passed` after verifier-owned relocation. `query roadmap.analyze` reports both 15 and 16 complete; `query init.phase-op 16` resolves the archive. All commands exited 0; run URL N/A-local. No implementation, acceptance verdict, host authority or remote allowance changed.
 
 The installed `cmdInitPhaseOp` intentionally masks an archived directory when its phase number appears in the roadmap; minimal detail sections alone do not solve this. The project handoff documents the same-runtime `find-phase` adapter while retaining canonical verification and roadmap-completion gates. This requires no runtime modification or phase re-execution.
+
+## Shipping consumer coverage (2026-11-10)
+
+The v4.0 PR exposed three distinct gates absent from the ordinary native workflow: pinned formatting, genuine-base fixture identity in the quality producer, and sanitizer-sensitive observer PCM parity. An owned fixture addition needs its exact named identity and representative pass/fault controls in the existing quality normalization consumer. The native audio API is mono; compare each sample against both libretro channels before hashing the duplicated stereo stream. Reading twice the native sample count can appear to pass on a silent fixture with zero-looking stack bytes.
+
+Evidence: PR #46, CI https://github.com/szTheory/muhtari/actions/runs/42903652231. The non-silent libretro.observe.controls case fails before the PCM fix and passes after it; policy.quality.controls fails on the valid frontend-state addition before the identity fix and passes after it. Source corrections retain all original pins, bounds and failure detection. Hosted acceptance remains a separate exact-source verdict.

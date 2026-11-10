@@ -82,14 +82,14 @@ static uint16_t pad[2];
 
 static int save_adapter_state(uint8_t **state, size_t *bytes);
 
-#define OBS_CHECK(condition, ...)                                                                     \
-    do {                                                                                              \
-        if (!(condition)) {                                                                           \
-            (void)fprintf(stderr, "libretro observer: ");                                            \
-            (void)fprintf(stderr, __VA_ARGS__);                                                       \
-            (void)fputc('\n', stderr);                                                               \
-            return 0;                                                                                 \
-        }                                                                                             \
+#define OBS_CHECK(condition, ...)                                                                  \
+    do {                                                                                           \
+        if (!(condition)) {                                                                        \
+            (void)fprintf(stderr, "libretro observer: ");                                          \
+            (void)fprintf(stderr, __VA_ARGS__);                                                    \
+            (void)fputc('\n', stderr);                                                             \
+            return 0;                                                                              \
+        }                                                                                          \
     } while (0)
 
 static int fail_reason(char *reason, size_t capacity, const char *format, ...)
@@ -104,15 +104,15 @@ static int fail_reason(char *reason, size_t capacity, const char *format, ...)
 static int replace_report(const char *temporary, const char *path)
 {
 #if defined(_WIN32)
-    return MoveFileExA(temporary, path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) ? 0 : -1;
+    return MoveFileExA(temporary, path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) ? 0
+                                                                                            : -1;
 #else
     return rename(temporary, path);
 #endif
 }
 
 static int validate_numeric(const numeric_observation *observation, int expected_swcha,
-                            int steady_audio,
-                            char *reason, size_t capacity)
+                            int steady_audio, char *reason, size_t capacity)
 {
     if (observation->video_calls != 1u)
         return fail_reason(reason, capacity, "missing video callback");
@@ -139,8 +139,7 @@ static const char *option_value(const char *key)
         strcmp(key, "muhtari_hsc") == 0 || strcmp(key, "muhtari_expansion") == 0 ||
         strcmp(key, "muhtari_battery_port1") == 0 || strcmp(key, "muhtari_battery_port2") == 0)
         return "auto";
-    if (strcmp(key, "muhtari_left_difficulty") == 0 ||
-        strcmp(key, "muhtari_right_difficulty") == 0)
+    if (strcmp(key, "muhtari_left_difficulty") == 0 || strcmp(key, "muhtari_right_difficulty") == 0)
         return "B";
     return NULL;
 }
@@ -276,14 +275,24 @@ static void hash_hex(const void *bytes, size_t length, char hex[65])
     muhtari__sha256_hex(value, hex);
 }
 
-static void pcm_hash(const int16_t *samples, size_t frames, char hex[65])
+static int pcm_matches(const int16_t *mono, const int16_t *stereo, size_t frames)
+{
+    for (size_t i = 0u; i < frames; i++) {
+        if (mono[i] != stereo[2u * i] || mono[i] != stereo[2u * i + 1u])
+            return 0;
+    }
+    return 1;
+}
+
+static void pcm_hash(const int16_t *samples, size_t frames, unsigned channels, char hex[65])
 {
     muhtari__sha256 digest;
     uint8_t bytes[2];
     uint8_t value[32];
     muhtari__sha256_init(&digest);
     for (size_t i = 0u; i < frames * 2u; i++) {
-        uint16_t sample = (uint16_t)samples[i];
+        /* The public library is mono; libretro duplicates it into stereo. */
+        uint16_t sample = (uint16_t)samples[channels == 1u ? i / 2u : i];
         bytes[0] = (uint8_t)sample;
         bytes[1] = (uint8_t)(sample >> 8);
         muhtari__sha256_update(&digest, bytes, sizeof bytes);
@@ -341,7 +350,7 @@ static int benchmark_adapter_frame(int steady_audio, char *reason, size_t reason
     }
     muhtari__sha256_final(&digest, value);
     muhtari__sha256_hex(value, video_sha256);
-    pcm_hash(callbacks.audio, callbacks.audio_frames, audio_sha256);
+    pcm_hash(callbacks.audio, callbacks.audio_frames, 2u, audio_sha256);
     if (video_sha256[0] == '\0' || audio_sha256[0] == '\0')
         return fail_reason(reason, reason_capacity, "benchmark callback hash was not produced");
     reason[0] = '\0';
@@ -349,8 +358,8 @@ static int benchmark_adapter_frame(int steady_audio, char *reason, size_t reason
 }
 
 static int benchmark_adapter(const struct retro_game_info *game,
-                             performance_observation *observation,
-                             char *reason, size_t reason_capacity)
+                             performance_observation *observation, char *reason,
+                             size_t reason_capacity)
 {
     uint8_t *baseline = NULL;
     size_t baseline_bytes = 0u;
@@ -385,7 +394,8 @@ static int benchmark_adapter(const struct retro_game_info *game,
         double finish = monotonic_seconds();
         double elapsed = finish - start;
         if (!isfinite(elapsed) || elapsed <= 0.0) {
-            (void)fail_reason(reason, reason_capacity, "benchmark window duration is not finite and positive");
+            (void)fail_reason(reason, reason_capacity,
+                              "benchmark window duration is not finite and positive");
             goto done;
         }
         observation->elapsed_seconds[window] = elapsed;
@@ -449,13 +459,12 @@ static int set_library_input(muhtari *instance, uint16_t first, uint16_t second)
     return muhtari_set_input_ex(instance, &input) == MUHTARI_STATUS_OK;
 }
 
-static int run_pair_frame(muhtari *reference, uint16_t first, uint16_t second,
-                          unsigned frame_index, int expected_swcha, int steady_audio,
-                          frame_observation *output,
+static int run_pair_frame(muhtari *reference, uint16_t first, uint16_t second, unsigned frame_index,
+                          int expected_swcha, int steady_audio, frame_observation *output,
                           char *reason, size_t reason_capacity)
 {
     uint8_t native_video[VIDEO_WIDTH * VIDEO_HEIGHT];
-    int16_t native_audio[AUDIO_CAPACITY * 2u];
+    int16_t native_audio[AUDIO_CAPACITY];
     muhtari_frame frame = {0};
     uint32_t reference_count;
     unsigned reference_swcha, adapter_swcha;
@@ -493,9 +502,11 @@ static int run_pair_frame(muhtari *reference, uint16_t first, uint16_t second,
     if (!validate_numeric(&numeric, expected_swcha, steady_audio, reason, reason_capacity))
         return 0;
     if (callbacks.sample_calls != 0u || callbacks.audio_frames != reference_count)
-        return fail_reason(reason, reason_capacity, "audio callback count differs from public library");
+        return fail_reason(reason, reason_capacity,
+                           "audio callback count differs from public library");
     if (reference_count > AUDIO_CAPACITY)
-        return fail_reason(reason, reason_capacity, "public-library audio count exceeds observer bound");
+        return fail_reason(reason, reason_capacity,
+                           "public-library audio count exceeds observer bound");
 
     muhtari__sha256_init(&video_digest);
     for (size_t pixel = 0u; pixel < VIDEO_WIDTH * VIDEO_HEIGHT; pixel++) {
@@ -515,9 +526,9 @@ static int run_pair_frame(muhtari *reference, uint16_t first, uint16_t second,
     muhtari__sha256_final(&video_digest, digest);
     muhtari__sha256_hex(digest, output->video_sha256);
 
-    if (memcmp(native_audio, callbacks.audio, reference_count * 2u * sizeof native_audio[0]) != 0)
+    if (!pcm_matches(native_audio, callbacks.audio, reference_count))
         return fail_reason(reason, reason_capacity, "PCM audio differs from public library");
-    pcm_hash(native_audio, reference_count, output->audio_sha256);
+    pcm_hash(native_audio, reference_count, 1u, output->audio_sha256);
     output->index = frame_index;
     output->swcha = reference_swcha;
     output->audio_count = (unsigned)reference_count;
@@ -547,14 +558,15 @@ static int save_adapter_state(uint8_t **state, size_t *bytes)
 static int adapter_state_unchanged(const uint8_t *expected, size_t bytes)
 {
     uint8_t *actual = (uint8_t *)malloc(bytes);
-    int same = actual != NULL && retro_serialize(actual, bytes) && memcmp(actual, expected, bytes) == 0;
+    int same =
+        actual != NULL && retro_serialize(actual, bytes) && memcmp(actual, expected, bytes) == 0;
     free(actual);
     return same;
 }
 
 static int state_refusals(muhtari *reference, const uint8_t *library_state, size_t library_bytes,
-                          const uint8_t *adapter_state, size_t adapter_bytes,
-                          char *reason, size_t reason_capacity)
+                          const uint8_t *adapter_state, size_t adapter_bytes, char *reason,
+                          size_t reason_capacity)
 {
     uint8_t *library_after = NULL;
     uint8_t *adapter_long = NULL, *adapter_corrupt = NULL;
@@ -562,17 +574,22 @@ static int state_refusals(muhtari *reference, const uint8_t *library_state, size
     size_t library_after_bytes = 0u;
     int result = 0;
 
-    if (retro_unserialize(NULL, adapter_bytes) || !adapter_state_unchanged(adapter_state, adapter_bytes)) {
-        (void)fail_reason(reason, reason_capacity, "null adapter state was accepted or changed live state");
+    if (retro_unserialize(NULL, adapter_bytes) ||
+        !adapter_state_unchanged(adapter_state, adapter_bytes)) {
+        (void)fail_reason(reason, reason_capacity,
+                          "null adapter state was accepted or changed live state");
         goto done;
     }
-    if (retro_unserialize(adapter_state, 0u) || !adapter_state_unchanged(adapter_state, adapter_bytes)) {
-        (void)fail_reason(reason, reason_capacity, "empty adapter state was accepted or changed live state");
+    if (retro_unserialize(adapter_state, 0u) ||
+        !adapter_state_unchanged(adapter_state, adapter_bytes)) {
+        (void)fail_reason(reason, reason_capacity,
+                          "empty adapter state was accepted or changed live state");
         goto done;
     }
     if (retro_unserialize(adapter_state, adapter_bytes - 1u) ||
         !adapter_state_unchanged(adapter_state, adapter_bytes)) {
-        (void)fail_reason(reason, reason_capacity, "short adapter state was accepted or changed live state");
+        (void)fail_reason(reason, reason_capacity,
+                          "short adapter state was accepted or changed live state");
         goto done;
     }
     adapter_long = (uint8_t *)malloc(adapter_bytes + 1u);
@@ -590,18 +607,21 @@ static int state_refusals(muhtari *reference, const uint8_t *library_state, size
     adapter_corrupt[adapter_bytes / 2u] ^= 0x80u;
     if (retro_unserialize(adapter_long, adapter_bytes + 1u) ||
         !adapter_state_unchanged(adapter_state, adapter_bytes)) {
-        (void)fail_reason(reason, reason_capacity, "long adapter state was accepted or changed live state");
+        (void)fail_reason(reason, reason_capacity,
+                          "long adapter state was accepted or changed live state");
         goto done;
     }
     if (retro_unserialize(adapter_corrupt, adapter_bytes) ||
         !adapter_state_unchanged(adapter_state, adapter_bytes)) {
-        (void)fail_reason(reason, reason_capacity, "corrupt adapter state was accepted or changed live state");
+        (void)fail_reason(reason, reason_capacity,
+                          "corrupt adapter state was accepted or changed live state");
         goto done;
     }
 
     if (muhtari_load_state(reference, NULL, library_bytes) == MUHTARI_STATUS_OK ||
         !save_library_state(reference, &library_after, &library_after_bytes) ||
-        library_after_bytes != library_bytes || memcmp(library_after, library_state, library_bytes) != 0) {
+        library_after_bytes != library_bytes ||
+        memcmp(library_after, library_state, library_bytes) != 0) {
         (void)fail_reason(reason, reason_capacity, "null public-library state changed live state");
         goto done;
     }
@@ -609,7 +629,8 @@ static int state_refusals(muhtari *reference, const uint8_t *library_state, size
     library_after = NULL;
     if (muhtari_load_state(reference, library_state, library_bytes - 1u) == MUHTARI_STATUS_OK ||
         !save_library_state(reference, &library_after, &library_after_bytes) ||
-        library_after_bytes != library_bytes || memcmp(library_after, library_state, library_bytes) != 0) {
+        library_after_bytes != library_bytes ||
+        memcmp(library_after, library_state, library_bytes) != 0) {
         (void)fail_reason(reason, reason_capacity, "short public-library state changed live state");
         goto done;
     }
@@ -619,7 +640,8 @@ static int state_refusals(muhtari *reference, const uint8_t *library_state, size
     library_long[library_bytes] = 0u;
     if (muhtari_load_state(reference, library_long, library_bytes + 1u) == MUHTARI_STATUS_OK ||
         !save_library_state(reference, &library_after, &library_after_bytes) ||
-        library_after_bytes != library_bytes || memcmp(library_after, library_state, library_bytes) != 0) {
+        library_after_bytes != library_bytes ||
+        memcmp(library_after, library_state, library_bytes) != 0) {
         (void)fail_reason(reason, reason_capacity, "long public-library state changed live state");
         goto done;
     }
@@ -629,8 +651,10 @@ static int state_refusals(muhtari *reference, const uint8_t *library_state, size
     library_corrupt[library_bytes / 2u] ^= 0x80u;
     if (muhtari_load_state(reference, library_corrupt, library_bytes) == MUHTARI_STATUS_OK ||
         !save_library_state(reference, &library_after, &library_after_bytes) ||
-        library_after_bytes != library_bytes || memcmp(library_after, library_state, library_bytes) != 0) {
-        (void)fail_reason(reason, reason_capacity, "corrupt public-library state changed live state");
+        library_after_bytes != library_bytes ||
+        memcmp(library_after, library_state, library_bytes) != 0) {
+        (void)fail_reason(reason, reason_capacity,
+                          "corrupt public-library state changed live state");
         goto done;
     }
     result = 1;
@@ -655,8 +679,30 @@ static int self_test(void)
 {
     numeric_observation clean = {1u, 1u, 1u, VIDEO_WIDTH, VIDEO_HEIGHT, 800u, 255u};
     char reason[128];
+    const int16_t mono[8] = {1, -2, INT16_MAX, INT16_MIN, 71, 72, 73, 74};
+    int16_t stereo[8] = {1, 1, -2, -2, INT16_MAX, INT16_MAX, INT16_MIN, INT16_MIN};
+    char mono_hash[65], stereo_hash[65];
+    if (!pcm_matches(mono, stereo, 4u)) {
+        (void)fprintf(stderr, "libretro observer self-test: mono/stereo PCM control failed\n");
+        return 1;
+    }
+    for (size_t channel = 0u; channel < 2u; channel++) {
+        stereo[channel]++;
+        if (pcm_matches(mono, stereo, 4u)) {
+            (void)fprintf(stderr, "libretro observer self-test: changed PCM channel accepted\n");
+            return 1;
+        }
+        stereo[channel]--;
+    }
+    pcm_hash(mono, 4u, 1u, mono_hash);
+    pcm_hash(stereo, 4u, 2u, stereo_hash);
+    if (strcmp(mono_hash, stereo_hash) != 0) {
+        (void)fprintf(stderr, "libretro observer self-test: mono/stereo hashes differ\n");
+        return 1;
+    }
     if (!validate_numeric(&clean, 255, 1, reason, sizeof reason)) {
-        (void)fprintf(stderr, "libretro observer self-test: clean observation failed: %s\n", reason);
+        (void)fprintf(stderr, "libretro observer self-test: clean observation failed: %s\n",
+                      reason);
         return 1;
     }
     clean.video_calls = 0u;
@@ -691,40 +737,40 @@ static int write_report(const char *path, const char *fixture_sha256,
     file = fopen(temporary, "wb");
     if (file == NULL)
         return fail_reason(reason, reason_capacity, "cannot create observer output");
-    (void)fprintf(file,
-                  "{\n  \"schema\": 1,\n  \"fixture_sha256\": \"%s\",\n"
-                  "  \"source_identity\": \"%s\",\n"
-                  "  \"numeric_oracles\": {\"width\": 320, \"height\": 242, "
-                  "\"sample_rate\": 48000, \"audio_counts\": [800, 801], "
-                  "\"swcha\": {\"neutral\": 255, \"port1_up\": 239, \"port2_up\": 254}},\n"
-                  "  \"abi\": {\"environment\": {\"get_core_options_version\": %u, "
-                  "\"set_core_options\": %u, \"get_variable\": %u, "
-                  "\"get_variable_update\": %u, \"set_pixel_format\": %u, "
-                  "\"set_support_no_game\": %u, \"set_controller_info\": %u, "
-                  "\"set_input_descriptors\": %u, \"set_memory_maps\": %u, "
-                  "\"set_support_achievements\": %u, \"set_message\": %u, "
-                  "\"get_savestate_context\": %u}, \"pixel_format_xrgb8888\": %u, "
-                  "\"device_joypad\": %u, \"joypad_up\": %u, \"memory_system_ram\": %u},\n"
-                  "  \"scenarios\": [\n",
-                  fixture_sha256, MUHTARI_CORE_SOURCE_ID,
-                  (unsigned)RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION,
-                  (unsigned)RETRO_ENVIRONMENT_SET_CORE_OPTIONS,
-                  (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE,
-                  (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,
-                  (unsigned)RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,
-                  (unsigned)RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME,
-                  (unsigned)RETRO_ENVIRONMENT_SET_CONTROLLER_INFO,
-                  (unsigned)RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,
-                  (unsigned)RETRO_ENVIRONMENT_SET_MEMORY_MAPS,
-                  (unsigned)RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS,
-                  (unsigned)RETRO_ENVIRONMENT_SET_MESSAGE,
-                  (unsigned)RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT,
-                  (unsigned)RETRO_PIXEL_FORMAT_XRGB8888, (unsigned)RETRO_DEVICE_JOYPAD,
-                  (unsigned)RETRO_DEVICE_ID_JOYPAD_UP, (unsigned)RETRO_MEMORY_SYSTEM_RAM);
+    (void)fprintf(
+        file,
+        "{\n  \"schema\": 1,\n  \"fixture_sha256\": \"%s\",\n"
+        "  \"source_identity\": \"%s\",\n"
+        "  \"numeric_oracles\": {\"width\": 320, \"height\": 242, "
+        "\"sample_rate\": 48000, \"audio_counts\": [800, 801], "
+        "\"swcha\": {\"neutral\": 255, \"port1_up\": 239, \"port2_up\": 254}},\n"
+        "  \"abi\": {\"environment\": {\"get_core_options_version\": %u, "
+        "\"set_core_options\": %u, \"get_variable\": %u, "
+        "\"get_variable_update\": %u, \"set_pixel_format\": %u, "
+        "\"set_support_no_game\": %u, \"set_controller_info\": %u, "
+        "\"set_input_descriptors\": %u, \"set_memory_maps\": %u, "
+        "\"set_support_achievements\": %u, \"set_message\": %u, "
+        "\"get_savestate_context\": %u}, \"pixel_format_xrgb8888\": %u, "
+        "\"device_joypad\": %u, \"joypad_up\": %u, \"memory_system_ram\": %u},\n"
+        "  \"scenarios\": [\n",
+        fixture_sha256, MUHTARI_CORE_SOURCE_ID,
+        (unsigned)RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION,
+        (unsigned)RETRO_ENVIRONMENT_SET_CORE_OPTIONS, (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE,
+        (unsigned)RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,
+        (unsigned)RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,
+        (unsigned)RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME,
+        (unsigned)RETRO_ENVIRONMENT_SET_CONTROLLER_INFO,
+        (unsigned)RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,
+        (unsigned)RETRO_ENVIRONMENT_SET_MEMORY_MAPS,
+        (unsigned)RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS,
+        (unsigned)RETRO_ENVIRONMENT_SET_MESSAGE, (unsigned)RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT,
+        (unsigned)RETRO_PIXEL_FORMAT_XRGB8888, (unsigned)RETRO_DEVICE_JOYPAD,
+        (unsigned)RETRO_DEVICE_ID_JOYPAD_UP, (unsigned)RETRO_MEMORY_SYSTEM_RAM);
     for (unsigned scenario = 0u; scenario < SCENARIO_COUNT; scenario++) {
         const scenario_observation *item = &scenarios[scenario];
-        (void)fprintf(file, "    {\"index\": %u, \"name\": \"%s\", "
-                            "\"settled_swcha\": %u, \"frames\": [\n",
+        (void)fprintf(file,
+                      "    {\"index\": %u, \"name\": \"%s\", "
+                      "\"settled_swcha\": %u, \"frames\": [\n",
                       item->index, item->name, item->settled_swcha);
         for (unsigned frame = 0u; frame < item->frame_count; frame++) {
             const frame_observation *observed = &item->frames[frame];
@@ -737,29 +783,27 @@ static int write_report(const char *path, const char *fixture_sha256,
         }
         (void)fprintf(file, "    ]}%s\n", scenario + 1u == SCENARIO_COUNT ? "" : ",");
     }
-    (void)fprintf(file,
-                  "  ],\n  \"state\": {\"size\": %lu, \"saved_sha256\": \"%s\", "
-                  "\"continuation_sha256\": \"%s\", \"replays\": 2, "
-                  "\"refused_null_short_long_corrupt\": true, \"preserved_after_refusal\": true},\n"
-                  "  \"content_refusal\": {\"initial_invalid_rejected\": true, "
-                  "\"loaded_transition_rejected\": true, \"old_game_released\": true, "
-                  "\"loaded_library_invalid_preserved\": true},\n"
-                  "  \"no_game\": {\"loaded\": true, \"serialize_size\": 0, "
-                  "\"serialized\": false, \"unserialized\": false, \"video_calls\": 1, "
-                  "\"audio_calls\": 1, \"audio_count\": %u},\n"
-                  "  \"toolchain\": {\"compiler_id\": \"%s\", \"compiler_version\": \"%s\"},\n"
-                  "  \"performance\": {\"warmup_frames\": 12, \"frames_per_window\": 60, \"windows\": [\n",
-                  (unsigned long)state_bytes, state_sha256, continuation_sha256, no_game_audio,
-                  MUHTARI_NATIVE_COMPILER_ID, MUHTARI_NATIVE_COMPILER_VERSION);
+    (void)fprintf(
+        file,
+        "  ],\n  \"state\": {\"size\": %lu, \"saved_sha256\": \"%s\", "
+        "\"continuation_sha256\": \"%s\", \"replays\": 2, "
+        "\"refused_null_short_long_corrupt\": true, \"preserved_after_refusal\": true},\n"
+        "  \"content_refusal\": {\"initial_invalid_rejected\": true, "
+        "\"loaded_transition_rejected\": true, \"old_game_released\": true, "
+        "\"loaded_library_invalid_preserved\": true},\n"
+        "  \"no_game\": {\"loaded\": true, \"serialize_size\": 0, "
+        "\"serialized\": false, \"unserialized\": false, \"video_calls\": 1, "
+        "\"audio_calls\": 1, \"audio_count\": %u},\n"
+        "  \"toolchain\": {\"compiler_id\": \"%s\", \"compiler_version\": \"%s\"},\n"
+        "  \"performance\": {\"warmup_frames\": 12, \"frames_per_window\": 60, \"windows\": [\n",
+        (unsigned long)state_bytes, state_sha256, continuation_sha256, no_game_audio,
+        MUHTARI_NATIVE_COMPILER_ID, MUHTARI_NATIVE_COMPILER_VERSION);
     for (unsigned window = 0u; window < 3u; window++) {
-        (void)fprintf(file,
-                      "    {\"elapsed_seconds\": %.9g, \"frames_per_second\": %.9g}%s\n",
-                      performance->elapsed_seconds[window],
-                      performance->frames_per_second[window],
+        (void)fprintf(file, "    {\"elapsed_seconds\": %.9g, \"frames_per_second\": %.9g}%s\n",
+                      performance->elapsed_seconds[window], performance->frames_per_second[window],
                       window == 2u ? "" : ",");
     }
-    (void)fprintf(file,
-                  "  ], \"median_frames_per_second\": %.9g}\n}\n",
+    (void)fprintf(file, "  ], \"median_frames_per_second\": %.9g}\n}\n",
                   performance->median_frames_per_second);
     if (fclose(file) != 0 || replace_report(temporary, path) != 0) {
         (void)remove(temporary);
@@ -852,11 +896,10 @@ static int observe_fixture(const char *fixture_path, const char *output_path)
               "public-library geometry or sample rate differs from numeric oracle");
 
     for (unsigned frame = 0u; frame < scenarios[0].frame_count; frame++) {
-        int expected = frame + 1u == scenarios[0].frame_count
-                           ? (int)scenarios[0].settled_swcha
-                           : -1;
-        OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, expected, 0,
-                                 &scenarios[0].frames[frame], reason, sizeof reason),
+        int expected =
+            frame + 1u == scenarios[0].frame_count ? (int)scenarios[0].settled_swcha : -1;
+        OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, expected, 0, &scenarios[0].frames[frame],
+                                 reason, sizeof reason),
                   "warmup frame %u: %s", frame, reason);
     }
     for (unsigned scenario = 1u; scenario < 3u; scenario++) {
@@ -886,13 +929,13 @@ static int observe_fixture(const char *fixture_path, const char *output_path)
               "public-library malformed-image refusal changed live state");
     free(library_after);
     library_after = NULL;
-    OBS_CHECK(state_refusals(reference, library_state, library_state_bytes,
-                             adapter_state, adapter_state_bytes, reason, sizeof reason),
+    OBS_CHECK(state_refusals(reference, library_state, library_state_bytes, adapter_state,
+                             adapter_state_bytes, reason, sizeof reason),
               "%s", reason);
 
     for (unsigned frame = 0u; frame < scenarios[3].frame_count; frame++) {
-        OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, 1,
-                                 &scenarios[3].frames[frame], reason, sizeof reason),
+        OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, 1, &scenarios[3].frames[frame],
+                                 reason, sizeof reason),
                   "continuation frame %u: %s", frame, reason);
     }
     OBS_CHECK(save_library_state(reference, &library_after, &library_after_bytes) &&
@@ -901,14 +944,15 @@ static int observe_fixture(const char *fixture_path, const char *output_path)
     hash_hex(adapter_after, adapter_after_bytes, continuation_sha256);
     hash_hex(library_after, library_after_bytes, library_continuation_sha256);
     for (unsigned replay = 0u; replay < 2u; replay++) {
-        OBS_CHECK(muhtari_load_state(reference, library_state, library_state_bytes) == MUHTARI_STATUS_OK &&
+        OBS_CHECK(muhtari_load_state(reference, library_state, library_state_bytes) ==
+                          MUHTARI_STATUS_OK &&
                       retro_unserialize(adapter_state, adapter_state_bytes),
                   "cannot restore saved state for replay %u", replay);
         for (unsigned frame = 0u; frame < scenarios[3].frame_count; frame++) {
             frame_observation observed = {0};
-            OBS_CHECK(run_pair_frame(reference, 0u, 0u, frame, -1, 1, &observed,
-                                     reason, sizeof reason),
-                      "replay %u frame %u: %s", replay, frame, reason);
+            OBS_CHECK(
+                run_pair_frame(reference, 0u, 0u, frame, -1, 1, &observed, reason, sizeof reason),
+                "replay %u frame %u: %s", replay, frame, reason);
             OBS_CHECK(same_frame(&observed, &scenarios[3].frames[frame]),
                       "replay %u frame %u differs from uninterrupted continuation", replay, frame);
         }
@@ -928,14 +972,14 @@ static int observe_fixture(const char *fixture_path, const char *output_path)
                   "replay %u ending state differs from uninterrupted continuation", replay);
     }
 
-    OBS_CHECK(muhtari_load_state(reference, library_state, library_state_bytes) == MUHTARI_STATUS_OK &&
+    OBS_CHECK(muhtari_load_state(reference, library_state, library_state_bytes) ==
+                      MUHTARI_STATUS_OK &&
                   retro_unserialize(adapter_state, adapter_state_bytes),
               "cannot restore saved state before port-2 input scenario");
     for (unsigned frame = 0u; frame < scenarios[4].frame_count; frame++) {
         uint16_t second = (uint16_t)(1u << RETRO_DEVICE_ID_JOYPAD_UP);
-        int expected = frame + 1u == scenarios[4].frame_count
-                           ? (int)scenarios[4].settled_swcha
-                           : -1;
+        int expected =
+            frame + 1u == scenarios[4].frame_count ? (int)scenarios[4].settled_swcha : -1;
         OBS_CHECK(run_pair_frame(reference, 0u, second, frame, expected, 1,
                                  &scenarios[4].frames[frame], reason, sizeof reason),
                   "port2_up frame %u: %s", frame, reason);
@@ -971,8 +1015,9 @@ static int observe_fixture(const char *fixture_path, const char *output_path)
               "no-game callback lifecycle differs from expected contract");
 
     OBS_CHECK(write_report(output_path, fixture_sha256, scenarios, saved_sha256,
-                           continuation_sha256, adapter_state_bytes, no_game_audio,
-                           &performance, reason, sizeof reason), "%s", reason);
+                           continuation_sha256, adapter_state_bytes, no_game_audio, &performance,
+                           reason, sizeof reason),
+              "%s", reason);
     (void)puts("native observer numeric, callback, state and continuation checks passed");
 
     free(image);
@@ -998,7 +1043,8 @@ int main(int argc, char **argv)
         else if (strcmp(argv[i], "--output") == 0 && i + 1 < argc)
             output = argv[++i];
         else {
-            (void)fprintf(stderr, "usage: %s --fixture PATH --output PATH | --self-test\n", argv[0]);
+            (void)fprintf(stderr, "usage: %s --fixture PATH --output PATH | --self-test\n",
+                          argv[0]);
             return 2;
         }
     }
