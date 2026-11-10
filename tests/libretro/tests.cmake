@@ -84,6 +84,37 @@ muhtari_add_test(NAME libretro.vendored
 
 # The rest needs the built core.
 if(TARGET muhtari_libretro)
+  if(NOT EMSCRIPTEN)
+    add_executable(muhtari-test-libretro-observe
+      ${CMAKE_CURRENT_LIST_DIR}/observe.c
+      ${PROJECT_SOURCE_DIR}/libretro/libretro.c
+      ${PROJECT_SOURCE_DIR}/runner/sha256.c)
+    target_include_directories(muhtari-test-libretro-observe PRIVATE
+      ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/libretro
+      ${PROJECT_SOURCE_DIR}/runner ${PROJECT_SOURCE_DIR}/host
+      ${PROJECT_BINARY_DIR}/generated)
+    file(READ "${PROJECT_BINARY_DIR}/libretro/muhtari-source-id.txt" MUHTARI_CORE_SOURCE_ID)
+    string(STRIP "${MUHTARI_CORE_SOURCE_ID}" MUHTARI_CORE_SOURCE_ID)
+    target_compile_definitions(muhtari-test-libretro-observe PRIVATE
+      "MUHTARI_CORE_SOURCE_ID=\"${MUHTARI_CORE_SOURCE_ID}\""
+      "MUHTARI_NATIVE_COMPILER_ID=\"${CMAKE_C_COMPILER_ID}\""
+      "MUHTARI_NATIVE_COMPILER_VERSION=\"${CMAKE_C_COMPILER_VERSION}\""
+      $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+    target_link_libraries(muhtari-test-libretro-observe PRIVATE muhtari::muhtari muhtari_host)
+    set_target_properties(muhtari-test-libretro-observe PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
+    muhtari_warnings(muhtari-test-libretro-observe)
+    set(observer_output_dir ${PROJECT_BINARY_DIR}/tests/emscripten)
+    file(MAKE_DIRECTORY ${observer_output_dir})
+    muhtari_add_test(NAME libretro.observe
+      COMMAND muhtari-test-libretro-observe --fixture
+        ${PROJECT_BINARY_DIR}/tests/input-carts/input.a78 --output ${observer_output_dir}/native.json
+      LABELS libretro portable TIMEOUT 30)
+    set_tests_properties(libretro.observe PROPERTIES FIXTURES_REQUIRED input_carts)
+    muhtari_add_test(NAME libretro.observe.controls
+      COMMAND muhtari-test-libretro-observe --self-test
+      LABELS libretro portable TIMEOUT 2)
+  endif()
   # Fault prevented: unusable BIOS candidates hiding the next file, or
   # allocation/I/O/path failures being mistaken for missing firmware.
   add_executable(muhtari-test-libretro-bios ${CMAKE_CURRENT_LIST_DIR}/bios.c

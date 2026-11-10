@@ -116,6 +116,20 @@
       }
     },
     {
+      "name": "emscripten",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/emscripten",
+      "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+      "$comment": "Production libretro loader and its required offline Node inventory; run inside the digest-pinned emscripten/emsdk image.",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "MUHTARI_TESTS": "ON",
+        "MUHTARI_BUILD_LIBRETRO": "ON",
+        "MUHTARI_INVENTORY": "emscripten"
+      }
+    },
+    {
       "name": "vectors-full",
       "inherits": "ci",
       "$comment": "The nightly full vector set: the fetch of the pinned 6502/v1 files, the sample match and one test per opcode over each whole file.",
@@ -151,6 +165,7 @@
     { "name": "fuzz", "configurePreset": "fuzz" },
     { "name": "be32", "configurePreset": "be32" },
     { "name": "wasm32", "configurePreset": "wasm32" },
+    { "name": "emscripten", "configurePreset": "emscripten", "targets": ["muhtari_libretro"] },
     { "name": "vectors-full", "configurePreset": "vectors-full" },
     { "name": "library", "configurePreset": "library", "targets": ["muhtari-test-predicate"] },
     { "name": "bench", "configurePreset": "bench", "targets": ["muhtari-run"] }
@@ -278,6 +293,15 @@
       "execution": { "noTestsAction": "error", "jobs": "" }
     },
     {
+      "name": "emscripten",
+      "configurePreset": "emscripten",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/emscripten/junit.xml"
+      },
+      "execution": { "noTestsAction": "error", "jobs": "" }
+    },
+    {
       "name": "vectors-full",
       "configurePreset": "vectors-full",
       "output": {
@@ -395,6 +419,14 @@
         { "type": "configure", "name": "wasm32" },
         { "type": "build", "name": "wasm32" },
         { "type": "test", "name": "wasm32" }
+      ]
+    },
+    {
+      "name": "emscripten",
+      "steps": [
+        { "type": "configure", "name": "emscripten" },
+        { "type": "build", "name": "emscripten" },
+        { "type": "test", "name": "emscripten" }
       ]
     },
     {
