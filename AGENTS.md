@@ -99,6 +99,9 @@ evidence.
    adopt its recommended answer for ordinary, in-scope gray areas without routine acceptance prompts. Ask only when
    the recommendation would change scope, authority, risk, cost, an irreversible action, or a genuine owner-only
    validation; if no safe recommendation exists, continue independent authorized work and preserve the exact stop.
+   On entry and after each phase, reconcile the live plan index: reuse existing locked context and a reviewed runnable
+   plan instead of asking to discuss or replan it again. For a phase without context, apply the fan-out brief and
+   dispatch independent specialist research where it can change the recommendation, scope or acceptance.
    For locally resolvable verification gaps, run the bounded gap-closure path and its required checks; do not skip a
    phase or record unresolved requirements as accepted merely to advance. Stop only when the fix crosses a real
    boundary or its documented retry cap is exhausted.

@@ -122,9 +122,12 @@ fan-out brief and adopt its recommendation for ordinary in-scope decisions witho
 prompts. The agent continues through the requested milestone's phases and lifecycle, carrying out useful local,
 offline verification and review. Pause only for a material scope, authority, risk, cost or irreversible-action
 boundary, genuinely owner-only validation, or a failed gate that needs changed scope. Existing host, identity-bound
-and remote stops remain unchanged; independent authorized local work continues around them. For locally resolvable
-verification gaps, choose the bounded gap-closure path, fix the cause and verify it; never skip a phase or call an
-open requirement accepted just to advance. Do not pass `--auto` or `--chain` to any GSD command.
+and remote stops remain unchanged; independent authorized local work continues around them. Reconcile the live plan
+index on entry and after each phase: reuse existing context and a reviewed runnable plan instead of re-discussing or
+replanning it. For a phase without context, use the fan-out brief and dispatch specialists only where their
+independent evidence can change the choice, scope or acceptance. For locally resolvable verification gaps, choose
+the bounded gap-closure path, fix the cause and verify it; never skip a phase or call an open requirement accepted
+just to advance. Do not pass `--auto` or `--chain` to any GSD command.
 
 **Closeout policy:** a fix merged after a phase's verification makes that verification "stale". Accept an
 override closeout at milestone end when CI passes on the merged head and the milestone audit covers the phase;
