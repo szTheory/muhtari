@@ -18,24 +18,10 @@ for a first launch; no BIOS is needed. Firmware setup is [below](#bios-files).
 The host app and muhtari core are separate artifacts with separate identities. The
 [`retroarch-dmg` row in `pins.txt`](../pins.txt) pins RetroArch 1.22.2 Metal for macOS as a universal DMG
 (SHA-256 `81b79121ba26d539064ae13b4d0419a120c3d165afbe656cf5f5412b15fdb434`). That pin identifies the app
-package only; it is not part of the core's publisher attestation. For the macOS arm64 core, the immutable
-[v0.11.1 release](https://github.com/szTheory/muhtari/releases/tag/v0.11.1) provides:
-
-| Item | Identity |
-|---|---|
-| Tag source commit | `d58f125297c4d63a7a8108112a5eafff6f53a76a` |
-| Archive | `muhtari-libretro-macos-arm64.zip` |
-| Archive SHA-256 | `7775c014de046c514ab4ad6535ed95ae99643344104d0a43b753895726dc2de3` |
-| Extracted core | `cores/muhtari_libretro.dylib` — SHA-256 `7ef06f36bfa8a357e47834dc1c04fa85dcb1ef058a2db8551bce4ae4b85492cd` |
-| Extracted core information | `info/muhtari_libretro.info` — SHA-256 `2a89f2ac1379800c871bc89d7c9fe4bac0c6af88140a5356a1ea820bb1d5d8b5` |
-
-The exact archive passed offline publisher-attestation verification for repository `szTheory/muhtari`, signer
-workflow `.github/workflows/release.yml`, source ref `refs/heads/main`, and source commit above. The recorded
-[release run](https://github.com/szTheory/muhtari/actions/runs/41513877501/attempts/1) passed the DMA screenshot
-comparison and fresh-process battery roundtrip. It did not include a held/released gameplay-input step, so
-those results do not qualify gameplay input. They apply to this published macOS arm64 archive, not to another
-architecture or the installed bytes on a Playstead machine. Select matching app and core architectures and have
-the adapter verify both immutable tested identities; an installed filename or moving `latest` URL is not a pin.
+package only; it is not part of the core's publisher attestation. The [retained published-asset receipt](../.planning/milestones/v3.0-published-artifact-receipt.md)
+records the historical macOS arm64 archive, source and extracted-byte identities, attestation scope and
+release-run limits. It does not qualify current bytes or gameplay input. Select matching app and core
+architectures and verify both immutable identities; an installed filename or moving `latest` URL is not a pin.
 
 ### Per-game launch paths
 

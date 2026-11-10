@@ -215,7 +215,7 @@ and unsafe-path controls, changing only `CORE` and `INFO` to the extracted publi
 archive paths. Record the
 exact commands, each exit status and the run URL
 with the published asset identities. Keep published-byte host proof pending until
-that receipt exists; the retained [v0.11.1 run](https://github.com/szTheory/muhtari/actions/runs/41513877501/attempts/1)
+that receipt exists; the retained [release run](https://github.com/szTheory/muhtari/actions/runs/41513877501/attempts/1)
 has no held/released gameplay-input step or a separate post-publication download
 and replay of the published archive.
 

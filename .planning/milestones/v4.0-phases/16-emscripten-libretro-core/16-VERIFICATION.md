@@ -1,6 +1,6 @@
 ---
 phase: 16-emscripten-libretro-core
-verified: 2026-11-10T20:32:36Z
+verified: 2026-11-10T21:14:07.564911Z
 status: passed
 score: 7/7 must-haves verified
 covered_files:
@@ -18,7 +18,7 @@ covered_files:
   - tests/libretro/observe.c
   - tests/libretro/tests.cmake
   - tests/tests.cmake
-covered_digest: "v4:sha256:94ef8b3eaa84783fa89209b9a6d51113c038965d5fa10e0a985e908cf2abbc4e"
+covered_digest: "v4:sha256:644ca08fe95185253049e15c470dd180e94ca6acff7ad893ea70d202b9892960"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -143,3 +143,7 @@ None. All roadmap success criteria and merged plan-specific must-haves are verif
 _Verified: 2026-11-10T20:32:36Z_  
 _Verifier: the agent (gsd-verifier)_
 
+
+## Shipping re-verification
+
+Inline verifier recheck after reconciling current main: the only changed covered file is docs/libretro.md. Historical release identity prose moved byte-for-byte into the linked milestone receipt; all sections from Per-game launch paths onward, including the Emscripten reproduction and loader contract, remain byte-identical. The current version scanner, next-version scanner and unchanged document budgets exit 0. The two-worker FIFO invocation of the unchanged native workflow exits 0; native and release JUnit inventories validate without skips. `sh scripts/emscripten.sh build/ci` exits 0 with its exact two-case inventory, 14 parity frames, replay and instance isolation. Run URL N/A-local. The CLI regenerated covered fields after this check; no acceptance scope or host allowance changed.
